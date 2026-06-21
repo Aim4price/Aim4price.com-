@@ -155,6 +155,12 @@ type SmartLinkProps = {
 
 const NOTIFICATIONS_PER_PAGE = 4;
 const MOBILE_MENU_ID = 'app-header-mobile-menu';
+const PAGE_ZOOM_STORAGE_KEY = 'aim4price-page-zoom-percent';
+const PAGE_ZOOM_DEFAULT = 100;
+const PAGE_ZOOM_MIN = 85;
+const PAGE_ZOOM_MAX = 120;
+const PAGE_ZOOM_STEP = 5;
+const PAGE_ZOOM_DESKTOP_QUERY = '(min-width: 901px)';
 
 const BASE_NAV_ITEMS: NavItem[] = [
   { key: 'home', href: '/', label: 'Home' },
@@ -242,6 +248,48 @@ function clearLegacyPrototypeStorage() {
 
   window.localStorage.removeItem('aim4price-tractors-kit-register');
   window.localStorage.removeItem('aim4price-tractors-kit-marketplace');
+}
+
+function normalizePageZoom(value: number): number {
+  if (!Number.isFinite(value)) return PAGE_ZOOM_DEFAULT;
+
+  const steppedValue = Math.round(value / PAGE_ZOOM_STEP) * PAGE_ZOOM_STEP;
+  return Math.min(PAGE_ZOOM_MAX, Math.max(PAGE_ZOOM_MIN, steppedValue));
+}
+
+function readStoredPageZoom(): number {
+  if (typeof window === 'undefined') return PAGE_ZOOM_DEFAULT;
+
+  const storedValue = window.localStorage.getItem(PAGE_ZOOM_STORAGE_KEY);
+  if (!storedValue) return PAGE_ZOOM_DEFAULT;
+
+  return normalizePageZoom(Number(storedValue));
+}
+
+function persistPageZoom(value: number) {
+  if (typeof window === 'undefined') return;
+
+  if (value === PAGE_ZOOM_DEFAULT) {
+    window.localStorage.removeItem(PAGE_ZOOM_STORAGE_KEY);
+    return;
+  }
+
+  window.localStorage.setItem(PAGE_ZOOM_STORAGE_KEY, String(value));
+}
+
+function applyDocumentPageZoom(value: number) {
+  if (typeof document === 'undefined') return;
+
+  const root = document.documentElement;
+
+  if (value === PAGE_ZOOM_DEFAULT) {
+    root.style.removeProperty('font-size');
+    root.style.removeProperty('--aim4price-page-zoom');
+    return;
+  }
+
+  root.style.fontSize = `${value}%`;
+  root.style.setProperty('--aim4price-page-zoom', String(value / 100));
 }
 
 function getNotificationSeenStorageKey(userId: string): string {
@@ -399,9 +447,43 @@ export default function AppHeader({
   const [notificationDetailError, setNotificationDetailError] = useState<string | null>(null);
   const [loadingNotificationActionId, setLoadingNotificationActionId] = useState<string | null>(null);
   const [canUseNotificationPortal, setCanUseNotificationPortal] = useState(false);
+  const [pageZoom, setPageZoom] = useState(PAGE_ZOOM_DEFAULT);
+  const [pageZoomEnabled, setPageZoomEnabled] = useState(false);
 
   useEffect(() => {
     setCanUseNotificationPortal(true);
+  }, []);
+
+  useEffect(() => {
+    setPageZoom(readStoredPageZoom());
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const mediaQuery = window.matchMedia(PAGE_ZOOM_DESKTOP_QUERY);
+
+    function syncPageZoomAvailability() {
+      setPageZoomEnabled(mediaQuery.matches);
+    }
+
+    syncPageZoomAvailability();
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', syncPageZoomAvailability);
+      return () => mediaQuery.removeEventListener('change', syncPageZoomAvailability);
+    }
+
+    mediaQuery.addListener(syncPageZoomAvailability);
+    return () => mediaQuery.removeListener(syncPageZoomAvailability);
+  }, []);
+
+  useEffect(() => {
+    applyDocumentPageZoom(pageZoomEnabled ? pageZoom : PAGE_ZOOM_DEFAULT);
+  }, [pageZoom, pageZoomEnabled]);
+
+  useEffect(() => {
+    return () => applyDocumentPageZoom(PAGE_ZOOM_DEFAULT);
   }, []);
 
   useEffect(() => {
@@ -663,6 +745,17 @@ export default function AppHeader({
 
   function closeMobileMenu() {
     setMobileMenuOpen(false);
+  }
+
+  function updatePageZoom(delta: number) {
+    const nextZoom = normalizePageZoom(pageZoom + delta);
+    setPageZoom(nextZoom);
+    persistPageZoom(nextZoom);
+  }
+
+  function resetPageZoom() {
+    setPageZoom(PAGE_ZOOM_DEFAULT);
+    persistPageZoom(PAGE_ZOOM_DEFAULT);
   }
 
   async function handleOpenContactRequestNotification(contactRequestId: string) {
@@ -1348,6 +1441,39 @@ export default function AppHeader({
 
           <div className={styles.actions}>
             <div className={styles.actionsRail}>
+              <div className={styles.pageZoomControl} role="group" aria-label="Page zoom controls">
+                <button
+                  type="button"
+                  className={styles.pageZoomButton}
+                  onClick={() => updatePageZoom(-PAGE_ZOOM_STEP)}
+                  disabled={pageZoom <= PAGE_ZOOM_MIN}
+                  aria-label="Zoom page out"
+                  title="Zoom page out"
+                >
+                  −
+                </button>
+                <button
+                  type="button"
+                  className={styles.pageZoomValueButton}
+                  onClick={resetPageZoom}
+                  disabled={pageZoom === PAGE_ZOOM_DEFAULT}
+                  aria-label={`Reset page zoom. Current zoom is ${pageZoom} percent`}
+                  title="Reset page zoom"
+                >
+                  {pageZoom}%
+                </button>
+                <button
+                  type="button"
+                  className={styles.pageZoomButton}
+                  onClick={() => updatePageZoom(PAGE_ZOOM_STEP)}
+                  disabled={pageZoom >= PAGE_ZOOM_MAX}
+                  aria-label="Zoom page in"
+                  title="Zoom page in"
+                >
+                  +
+                </button>
+              </div>
+
               {isLoadingSession ? null : session ? (
                 <>
                   <div className={styles.notificationMenu} ref={notificationMenuRef}>
