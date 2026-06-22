@@ -1,4 +1,5 @@
 import { getDb } from './db';
+import { findMotorReplacementPrice, findMotorUsageProfileSpecs, pickMotorReplacementPriceFromRange } from './motor-catalog';
 import {
   DEFAULT_ENGINE_FLOOR_PERCENT,
   DEFAULT_FALLBACK_LIFETIME_USED_PERCENT,
@@ -621,7 +622,7 @@ export async function listFamilySpecQuestions(input: {
     [...values, Boolean(input.includeInactive)],
   );
 
-  return result.rows.map((row) => ({
+  return (result.rows as DbRecord[]).map((row: DbRecord) => ({
     id: Number(row.id),
     sectorId: Number(row.sector_id),
     sectorKey: cleanText(row.sector_key) as SectorKey,
@@ -637,12 +638,12 @@ export async function listFamilySpecQuestions(input: {
     sortOrder: toInteger(row.sort_order) ?? 100,
     helpText: cleanText(row.help_text) || null,
     options: Array.isArray(row.options)
-      ? row.options.map((option) => ({
-          id: Number((option as DbRecord).id),
-          specQuestionId: Number((option as DbRecord).specQuestionId),
-          optionValue: cleanText((option as DbRecord).optionValue),
-          optionLabel: cleanText((option as DbRecord).optionLabel),
-          sortOrder: toInteger((option as DbRecord).sortOrder) ?? 100,
+      ? (row.options as DbRecord[]).map((option: DbRecord) => ({
+          id: Number(option.id),
+          specQuestionId: Number(option.specQuestionId),
+          optionValue: cleanText(option.optionValue),
+          optionLabel: cleanText(option.optionLabel),
+          sortOrder: toInteger(option.sortOrder) ?? 100,
         }))
       : [],
   }));
@@ -705,13 +706,39 @@ async function fetchBrandContext(familyId: number, brandSlug: string): Promise<B
     [familyId, brandSlug],
   );
 
-  const row = result.rows[0];
-  if (!row) return null;
+  const linkedRow = result.rows[0];
+  if (linkedRow) {
+    return {
+      id: Number(linkedRow.id),
+      slug: cleanText(linkedRow.slug),
+      name: cleanText(linkedRow.name),
+    };
+  }
+
+  // Some imported catalogue rows are linked through equipment_models before the
+  // equipment_family_brands table is fully backfilled. Allow valuation to continue
+  // when the brand exists on active model rows for this family.
+  const modelBrandResult = await db.query<DbRecord>(
+    `
+      select distinct b.id, b.slug, b.name
+      from public.equipment_models em
+      join public.brands b on b.id = em.brand_id
+      where em.equipment_family_id = $1
+        and b.slug = $2
+        and coalesce(em.is_active, true) = true
+        and coalesce(b.is_active, true) = true
+      limit 1
+    `,
+    [familyId, brandSlug],
+  );
+
+  const modelBrandRow = modelBrandResult.rows[0];
+  if (!modelBrandRow) return null;
 
   return {
-    id: Number(row.id),
-    slug: cleanText(row.slug),
-    name: cleanText(row.name),
+    id: Number(modelBrandRow.id),
+    slug: cleanText(modelBrandRow.slug),
+    name: cleanText(modelBrandRow.name),
   };
 }
 
@@ -775,7 +802,7 @@ export async function listReplacementPriceBands(input: {
     values,
   );
 
-  return result.rows.map((row) => ({
+  return (result.rows as DbRecord[]).map((row: DbRecord) => ({
     id: Number(row.id),
     sectorId: Number(row.sector_id),
     sectorKey: cleanText(row.sector_key) as SectorKey,
@@ -1060,7 +1087,7 @@ async function collectTypedModelKeys(input: {
 export async function runGenericValuation(input: GenericValuationInput): Promise<GenericValuationResult> {
   const rawSpecsJson = normalizeSpecsJson(input.specsJson);
   const lifeWorkedPercent = positivePercent(input.lifeWorkedPercent);
-  const specsJson = {
+  let specsJson: Record<string, unknown> = {
     ...rawSpecsJson,
     ...(lifeWorkedPercent !== null ? { life_worked_percent: lifeWorkedPercent } : {}),
     ...(input.yearModelUnknown ? { year_model_unknown: true } : {}),
@@ -1068,6 +1095,19 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
 
   const family = await fetchFamilyContext(input.sectorKey, input.familyKey);
   if (!family) throw new Error('FAMILY_NOT_FOUND');
+
+  const motorUsageProfileSpecs = input.sectorKey === 'motor'
+    ? await findMotorUsageProfileSpecs({
+        familyKey: input.familyKey,
+        specsJson,
+      })
+    : null;
+  if (motorUsageProfileSpecs) {
+    specsJson = {
+      ...motorUsageProfileSpecs,
+      ...specsJson,
+    };
+  }
 
   const advancedAssumptions = normalizeAdvancedAssumptions(input.advancedAssumptions, family.usageMetricType);
 
@@ -1085,13 +1125,27 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
     brandSlug: input.brandSlug,
     specsJson,
   });
+  const motorModelReplacement = input.sectorKey === 'motor'
+    ? await findMotorReplacementPrice({
+        familyKey: input.familyKey,
+        brandSlug: input.brandSlug,
+        typedModelName,
+        specsJson,
+      })
+    : null;
 
-  const replacementPriceMinExVat = replacementBand?.replacementMinExVat ?? null;
-  const replacementPriceMaxExVat = replacementBand?.replacementMaxExVat ?? null;
-  const bandMid =
-    replacementPriceMinExVat !== null && replacementPriceMaxExVat !== null
-      ? Math.round((replacementPriceMinExVat + replacementPriceMaxExVat) / 2)
+  const bandReplacementPrice = input.sectorKey === 'motor'
+    ? pickMotorReplacementPriceFromRange({
+        min: replacementBand?.replacementMinExVat ?? null,
+        max: replacementBand?.replacementMaxExVat ?? null,
+        specLevel: specsJson.spec_level ?? specsJson.specification_level,
+      })
+    : replacementBand?.replacementMinExVat !== null && replacementBand?.replacementMinExVat !== undefined && replacementBand?.replacementMaxExVat !== null && replacementBand?.replacementMaxExVat !== undefined
+      ? Math.round((replacementBand.replacementMinExVat + replacementBand.replacementMaxExVat) / 2)
       : null;
+  const replacementPriceMinExVat = motorModelReplacement?.replacementPriceMinExVat ?? replacementBand?.replacementMinExVat ?? null;
+  const replacementPriceMaxExVat = motorModelReplacement?.replacementPriceMaxExVat ?? replacementBand?.replacementMaxExVat ?? null;
+  const aim4priceReplacementPrice = motorModelReplacement?.replacementPriceUsedExVat ?? bandReplacementPrice;
 
   const marketAverageExVat: number | null = null;
   const marketAverageCount = 0;
@@ -1114,7 +1168,7 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
   const aim4priceReplacementCalculation = buildCalculation({
     ...commonCalculationInput,
     replacementPriceBasis: 'aim4price',
-    replacementPrice: bandMid,
+    replacementPrice: aim4priceReplacementPrice,
   });
   const userReplacementCalculation = userReplacementPriceExVat
     ? buildCalculation({
@@ -1133,11 +1187,15 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
   const valuationMidExVat = selectedCalculation.valuationMidExVat;
   const valuationHighExVat = selectedCalculation.valuationHighExVat;
 
-  const confidenceScore = aim4priceValueExVat !== null ? 0.58 : 0.28;
+  const confidenceScore = aim4priceValueExVat !== null
+    ? motorModelReplacement?.confidenceScore ?? (motorModelReplacement ? 0.64 : 0.58)
+    : 0.28;
   const calculatedConfidenceLabel = confidenceLabel(confidenceScore);
 
   const notes: string[] = [];
-  if (!replacementBand && !userReplacementPriceExVat) notes.push('No replacement price band matched yet. Add a band or enter a user replacement price.');
+  if (!replacementBand && !motorModelReplacement && !userReplacementPriceExVat) notes.push('No replacement price band matched yet. Add a band or enter a user replacement price.');
+  if (motorModelReplacement) notes.push(`Motor model replacement pricing used: ${motorModelReplacement.sourceLabel}.`);
+  if (motorUsageProfileSpecs) notes.push('Motor usage profile applied for useful kilometre life.');
   notes.push('Aim4price used replacement price, usage, age, condition and specs.');
   if (advancedAssumptions) notes.push('Advanced assumptions were applied to this valuation run.');
 
@@ -1158,8 +1216,8 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
   }
 
   if (userReplacementCalculation && userReplacementPriceExVat) {
-    if (bandMid && bandMid > 0) {
-      const differencePct = Math.round(((userReplacementPriceExVat - bandMid) / bandMid) * 100);
+    if (aim4priceReplacementPrice && aim4priceReplacementPrice > 0) {
+      const differencePct = Math.round(((userReplacementPriceExVat - aim4priceReplacementPrice) / aim4priceReplacementPrice) * 100);
       notes.push(
         `User replacement price was used. It is ${Math.abs(differencePct)}% ${differencePct >= 0 ? 'higher' : 'lower'} than the Aim4price replacement estimate.`,
       );
