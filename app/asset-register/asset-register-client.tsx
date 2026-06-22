@@ -5638,6 +5638,30 @@ export default function AssetRegisterClient() {
     return customReplacementPrice !== null && customReplacementPrice > 0 ? Math.round(customReplacementPrice) : null;
   }
 
+  function revalueComparisonValue(value: unknown): number | null {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return Math.round(value);
+    }
+
+    if (typeof value === 'string' && value.trim()) {
+      const parsed = Number(value.replace(/[^0-9.-]/g, ''));
+      return Number.isFinite(parsed) ? Math.round(parsed) : null;
+    }
+
+    return null;
+  }
+
+  function revalueValueDidNotMove(data: RevalueAssetApiResponse, previousAsset: RegisterAsset, updatedAsset: RegisterAsset): boolean {
+    const oldValue = revalueComparisonValue(data.oldValueExVat) ?? revalueComparisonValue(previousAsset.value);
+    const newValue = revalueComparisonValue(data.newValueExVat) ?? revalueComparisonValue(updatedAsset.value);
+
+    return oldValue !== null && newValue !== null && oldValue === newValue;
+  }
+
+  function depreciationStageMessage(assetTitle: string): string {
+    return `${assetTitle} value did not change. Depreciation takes place in stages, so a small hours/km/percentage update may not move the estimate yet.`;
+  }
+
   function openRevalueGuidedDialog(asset: RegisterAsset) {
     setPricingPreview({
       asset,
@@ -5758,13 +5782,21 @@ export default function AssetRegisterClient() {
         setIsPricingModalOpen(false);
       }
 
-      const updatedMethod = data.selectedMethod ?? updatedAsset.selectedMethod;
       const updateLabel = 'Aim4price value';
       const marketplaceNote = isLiveOnMarketplace(asset) ? ' Marketplace asking price was not changed.' : '';
-      setNotice({
-        tone: 'success',
-        message: `${updatedAsset.title} ${updateLabel} updated to ${money(updatedAsset.value)}.${data.warning ? ` ${data.warning}` : ''}${marketplaceNote}`,
-      });
+      const didNotMove = revalueValueDidNotMove(data, asset, updatedAsset);
+
+      if (didNotMove) {
+        setNotice({
+          tone: 'error',
+          message: `${depreciationStageMessage(updatedAsset.title)}${data.warning ? ` ${data.warning}` : ''}${marketplaceNote}`,
+        });
+      } else {
+        setNotice({
+          tone: 'success',
+          message: `${updatedAsset.title} ${updateLabel} updated to ${money(updatedAsset.value)}.${data.warning ? ` ${data.warning}` : ''}${marketplaceNote}`,
+        });
+      }
     } catch (error) {
       setNotice({
         tone: 'error',
@@ -5895,16 +5927,24 @@ export default function AssetRegisterClient() {
       setSaveReplacementPriceWithRevalue(false);
       setIsPricingModalOpen(false);
 
-      const updatedMethod = data.selectedMethod ?? updatedAsset.selectedMethod;
       const updateLabel = 'Aim4price value';
       const marketplaceNote = isLiveOnMarketplace(asset) ? ' Marketplace asking price was not changed.' : '';
       const replacementNote = shouldPersistReplacementPrice && replacementPriceExVat !== null
         ? ` Replacement price saved at ${money(replacementPriceExVat)}.`
         : '';
-      setNotice({
-        tone: 'success',
-        message: `${updatedAsset.title} ${updateLabel} saved at ${money(updatedAsset.value)}.${replacementNote}${data.warning ? ` ${data.warning}` : ''}${marketplaceNote}`,
-      });
+      const didNotMove = revalueValueDidNotMove(data, asset, updatedAsset);
+
+      if (didNotMove) {
+        setNotice({
+          tone: 'error',
+          message: `${depreciationStageMessage(updatedAsset.title)}${replacementNote}${data.warning ? ` ${data.warning}` : ''}${marketplaceNote}`,
+        });
+      } else {
+        setNotice({
+          tone: 'success',
+          message: `${updatedAsset.title} ${updateLabel} saved at ${money(updatedAsset.value)}.${replacementNote}${data.warning ? ` ${data.warning}` : ''}${marketplaceNote}`,
+        });
+      }
     } catch (error) {
       setPricingPreview((current) => (current ? {
         ...current,
