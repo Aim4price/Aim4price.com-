@@ -1,5 +1,4 @@
 import { getDb } from './db';
-import { findMotorReplacementPrice, findMotorUsageProfileSpecs, pickMotorReplacementPriceFromRange } from './motor-catalog';
 import {
   DEFAULT_ENGINE_FLOOR_PERCENT,
   DEFAULT_FALLBACK_LIFETIME_USED_PERCENT,
@@ -117,6 +116,7 @@ export type GenericValuationInput = {
   sectorKey: SectorKey;
   familyKey: EquipmentFamilyKey;
   brandSlug: string;
+  equipmentModelId?: number | null;
   typedModelName?: string | null;
   saveModelCandidate?: boolean | null;
   specsJson?: Record<string, unknown> | null;
@@ -188,6 +188,53 @@ type FamilyContext = GenericValuationResult['family'] & {
 };
 
 type BrandContext = GenericValuationResult['brand'];
+
+type EquipmentModelContext = {
+  id: number;
+  brandId: number | null;
+  aim4ModelKey: string | null;
+  modelName: string;
+  displayName: string;
+  normalizedModelName: string;
+  specsJson: Record<string, unknown>;
+};
+
+type MotorPricingMatrixRow = {
+  id: number;
+  equipmentFamilyId: number;
+  equipmentModelId: number;
+  modelKey: string;
+  typeKey: string;
+  typeLabel: string;
+  driveType: string;
+  transmission: string;
+  specLevel: 'Entry' | 'Mid' | 'Luxury';
+  replacementPriceExVat: number | null;
+  replacementPriceIncVat: number | null;
+  priceLowExVat: number | null;
+  priceMidExVat: number | null;
+  priceHighExVat: number | null;
+  priceLowIncVat: number | null;
+  priceMidIncVat: number | null;
+  priceHighIncVat: number | null;
+  defaultVatDisplay: 'incl' | 'excl';
+  sourcePriceBasis: string | null;
+  confidenceScore: number | null;
+  sourceUrls: string | null;
+  sourceNotes: string | null;
+};
+
+type MotorUsageProfile = {
+  id: number;
+  familyKey: string;
+  typeKey: string;
+  usefulLifeKm: number | null;
+  highUsageWarningKm: number | null;
+  extremeUsageWarningKm: number | null;
+  hardInputCapKm: number | null;
+  residualFloorPct: number | null;
+  notes: string | null;
+};
 
 export function normalizeModelKey(value: unknown): string {
   return String(value ?? '')
@@ -416,6 +463,10 @@ function resolveMaxLifetimeHours(input: DepreciationInput): number {
   return 12_000;
 }
 
+function resolveResidualFloorPercent(input: DepreciationInput, fallbackPercent: number): number {
+  return positivePercent(input.specsJson.residual_floor_pct) ?? fallbackPercent;
+}
+
 function resolveDepreciation(input: DepreciationInput): {
   method: DepreciationMethodUsed;
   depreciationBaseValueExVat: number | null;
@@ -458,7 +509,7 @@ function resolveDepreciation(input: DepreciationInput): {
         hours: knownHours,
         condition: input.condition,
         maxLifetimeHours,
-        floorPercent: DEFAULT_ENGINE_FLOOR_PERCENT,
+        floorPercent: resolveResidualFloorPercent(input, DEFAULT_ENGINE_FLOOR_PERCENT),
         conditionFactorOverride: getAdvancedConditionFactorOverride(input.advancedAssumptions),
       });
       const lifeWorkedPercent = clamp(Math.round((knownHours / maxLifetimeHours) * 100), 0, 100);
@@ -484,7 +535,7 @@ function resolveDepreciation(input: DepreciationInput): {
       hours: estimatedHours,
       condition: input.condition,
       maxLifetimeHours,
-      floorPercent: DEFAULT_ENGINE_FLOOR_PERCENT,
+      floorPercent: resolveResidualFloorPercent(input, DEFAULT_ENGINE_FLOOR_PERCENT),
       conditionFactorOverride: getAdvancedConditionFactorOverride(input.advancedAssumptions),
     });
 
@@ -506,7 +557,7 @@ function resolveDepreciation(input: DepreciationInput): {
     replacementPriceExVat: input.replacementPrice,
     percentUsed: lifeWorkedPercent,
     condition: input.condition,
-    floorPercent: DEFAULT_NON_PROPELLED_FLOOR_PERCENT,
+    floorPercent: resolveResidualFloorPercent(input, DEFAULT_NON_PROPELLED_FLOOR_PERCENT),
     conditionFactorOverride: getAdvancedConditionFactorOverride(input.advancedAssumptions),
   });
 
@@ -622,7 +673,7 @@ export async function listFamilySpecQuestions(input: {
     [...values, Boolean(input.includeInactive)],
   );
 
-  return (result.rows as DbRecord[]).map((row: DbRecord) => ({
+  return result.rows.map((row) => ({
     id: Number(row.id),
     sectorId: Number(row.sector_id),
     sectorKey: cleanText(row.sector_key) as SectorKey,
@@ -638,12 +689,12 @@ export async function listFamilySpecQuestions(input: {
     sortOrder: toInteger(row.sort_order) ?? 100,
     helpText: cleanText(row.help_text) || null,
     options: Array.isArray(row.options)
-      ? (row.options as DbRecord[]).map((option: DbRecord) => ({
-          id: Number(option.id),
-          specQuestionId: Number(option.specQuestionId),
-          optionValue: cleanText(option.optionValue),
-          optionLabel: cleanText(option.optionLabel),
-          sortOrder: toInteger(option.sortOrder) ?? 100,
+      ? row.options.map((option) => ({
+          id: Number((option as DbRecord).id),
+          specQuestionId: Number((option as DbRecord).specQuestionId),
+          optionValue: cleanText((option as DbRecord).optionValue),
+          optionLabel: cleanText((option as DbRecord).optionLabel),
+          sortOrder: toInteger((option as DbRecord).sortOrder) ?? 100,
         }))
       : [],
   }));
@@ -706,39 +757,367 @@ async function fetchBrandContext(familyId: number, brandSlug: string): Promise<B
     [familyId, brandSlug],
   );
 
-  const linkedRow = result.rows[0];
-  if (linkedRow) {
-    return {
-      id: Number(linkedRow.id),
-      slug: cleanText(linkedRow.slug),
-      name: cleanText(linkedRow.name),
-    };
-  }
-
-  // Some imported catalogue rows are linked through equipment_models before the
-  // equipment_family_brands table is fully backfilled. Allow valuation to continue
-  // when the brand exists on active model rows for this family.
-  const modelBrandResult = await db.query<DbRecord>(
-    `
-      select distinct b.id, b.slug, b.name
-      from public.equipment_models em
-      join public.brands b on b.id = em.brand_id
-      where em.equipment_family_id = $1
-        and b.slug = $2
-        and coalesce(em.is_active, true) = true
-        and coalesce(b.is_active, true) = true
-      limit 1
-    `,
-    [familyId, brandSlug],
-  );
-
-  const modelBrandRow = modelBrandResult.rows[0];
-  if (!modelBrandRow) return null;
+  const row = result.rows[0];
+  if (!row) return null;
 
   return {
-    id: Number(modelBrandRow.id),
-    slug: cleanText(modelBrandRow.slug),
-    name: cleanText(modelBrandRow.name),
+    id: Number(row.id),
+    slug: cleanText(row.slug),
+    name: cleanText(row.name),
+  };
+}
+
+
+function normalizeMotorOption(value: unknown): string {
+  return cleanText(value)
+    .toLowerCase()
+    .replace(/&/g, 'and')
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+}
+
+function normalizeMotorSpecLevel(value: unknown): 'Entry' | 'Mid' | 'Luxury' | null {
+  const normalized = normalizeMotorOption(value);
+  if (!normalized) return null;
+  if (['entry', 'base', 'standard', 'low', 'workhorse', 'utility'].includes(normalized)) return 'Entry';
+  if (['mid', 'medium', 'average', 'core'].includes(normalized)) return 'Mid';
+  if (['luxury', 'premium', 'high', 'top', 'flagship'].includes(normalized)) return 'Luxury';
+  return null;
+}
+
+function normalizeMotorDrive(value: unknown): string | null {
+  const text = cleanText(value).toUpperCase().replace(/\s+/g, '');
+  if (!text) return null;
+  if (['4X2', '4×2', '2WD'].includes(text)) return '4x2';
+  if (['4X4', '4×4'].includes(text)) return '4x4';
+  if (text === 'AWD') return 'AWD';
+  if (text === 'FWD') return 'FWD';
+  if (text === 'RWD') return 'RWD';
+  return cleanText(value) || null;
+}
+
+function normalizeMotorTransmission(value: unknown): string | null {
+  const normalized = normalizeMotorOption(value);
+  if (!normalized) return null;
+  if (['manual', 'mt'].includes(normalized)) return 'Manual';
+  if (['automatic', 'auto', 'at', 'dsg', 'cvt', 'dct'].includes(normalized)) return 'Automatic';
+  return cleanText(value) || null;
+}
+
+function getSpecText(specsJson: Record<string, unknown>, keys: string[]): string | null {
+  for (const key of keys) {
+    const value = cleanText(specsJson[key]);
+    if (value) return value;
+  }
+  return null;
+}
+
+function getSpecTextCandidates(specsJson: Record<string, unknown>, keys: string[]): string[] {
+  const output: string[] = [];
+  for (const key of keys) {
+    const value = specsJson[key];
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        const text = cleanText(item);
+        if (text) output.push(text);
+      }
+      continue;
+    }
+    const text = cleanText(value);
+    if (text) output.push(text);
+  }
+  return output;
+}
+
+function getRequestedMotorTypeKeys(specsJson: Record<string, unknown>): Set<string> {
+  const candidates = getSpecTextCandidates(specsJson, [
+    'type_key',
+    'selected_type_key',
+    'default_type_key',
+    'cab_type',
+    'body_type',
+    'vehicle_type',
+    'vehicle_segment',
+    'truck_type',
+    'trailer_type',
+    'bus_type',
+    'motorcycle_type',
+    'quadbike_type',
+    'side_by_side_type',
+    'aim4_source_body_type',
+  ]);
+
+  return new Set(candidates.map(normalizeMotorOption).filter(Boolean));
+}
+
+function getMotorReplacementMid(row: MotorPricingMatrixRow): number | null {
+  return row.priceMidExVat ?? row.replacementPriceExVat ?? (
+    row.priceLowExVat !== null && row.priceHighExVat !== null
+      ? Math.round((row.priceLowExVat + row.priceHighExVat) / 2)
+      : null
+  );
+}
+
+function buildMotorPricingBand(row: MotorPricingMatrixRow, family: FamilyContext, brand: BrandContext): ReplacementPriceBand {
+  const mid = getMotorReplacementMid(row);
+  const minPrice = row.priceLowExVat ?? row.replacementPriceExVat ?? mid ?? 0;
+  const maxPrice = row.priceHighExVat ?? row.replacementPriceExVat ?? mid ?? minPrice;
+  const bandLabelParts = [row.typeLabel, row.driveType, row.transmission, row.specLevel]
+    .map(cleanText)
+    .filter((part) => part && part.toLowerCase() !== 'any/unknown');
+
+  return {
+    id: row.id,
+    sectorId: 0,
+    sectorKey: family.sectorKey,
+    familyId: family.id,
+    familyKey: family.key,
+    brandId: brand.id,
+    brandSlug: brand.slug,
+    brandName: brand.name,
+    bandKey: `motor_pricing_matrix_${row.id}`,
+    bandLabel: bandLabelParts.length ? bandLabelParts.join(' • ') : 'Motor pricing matrix',
+    specMatchJson: {
+      type_key: row.typeKey,
+      drive_type: row.driveType,
+      transmission: row.transmission,
+      spec_level: row.specLevel,
+    },
+    replacementMinExVat: minPrice,
+    replacementMaxExVat: maxPrice,
+    replacementPriceYear: currentBaseYear(),
+    confidence: row.confidenceScore ?? 0.62,
+    sortOrder: 0,
+    notes: row.sourceNotes,
+  };
+}
+
+async function fetchEquipmentModelContext(input: {
+  sectorKey: SectorKey;
+  familyKey: EquipmentFamilyKey;
+  brandSlug: string;
+  equipmentModelId?: number | null;
+  typedModelName?: string | null;
+}): Promise<EquipmentModelContext | null> {
+  const equipmentModelId = toInteger(input.equipmentModelId);
+  const typedModelKey = normalizeModelKey(input.typedModelName);
+
+  if (!equipmentModelId && !typedModelKey) return null;
+
+  const db = getDb();
+  const result = await db.query<DbRecord>(
+    `
+      select
+        em.id,
+        em.brand_id,
+        em.aim4_model_key,
+        em.model_name,
+        em.display_name,
+        em.normalized_model_name,
+        em.specs_json
+      from public.equipment_models em
+      join public.equipment_families ef on ef.id = em.equipment_family_id
+      join public.sectors s on s.id = ef.sector_id
+      left join public.brands b on b.id = em.brand_id
+      where s.sector_key = $1
+        and ef.family_key = $2
+        and b.slug = $3
+        and coalesce(em.is_active, true) = true
+        and coalesce(em.is_generic_fallback, false) = false
+        and (
+          ($4::integer is not null and em.id = $4::integer)
+          or (
+            $5::text <> ''
+            and (
+              public.aim4price_normalize_key(coalesce(em.normalized_model_name, '')) = $5
+              or public.aim4price_normalize_key(coalesce(em.model_name, '')) = $5
+              or public.aim4price_normalize_key(coalesce(em.display_name, '')) = $5
+              or exists (
+                select 1
+                from public.equipment_model_aliases ema
+                where ema.equipment_model_id = em.id
+                  and coalesce(ema.is_active, true) = true
+                  and (
+                    public.aim4price_normalize_key(coalesce(ema.normalized_alias, '')) = $5
+                    or public.aim4price_normalize_key(coalesce(ema.alias_text, '')) = $5
+                  )
+              )
+            )
+          )
+        )
+      order by case when em.id = $4::integer then 0 else 1 end, em.id asc
+      limit 1
+    `,
+    [input.sectorKey, input.familyKey, input.brandSlug, equipmentModelId, typedModelKey],
+  );
+
+  const row = result.rows[0];
+  if (!row) return null;
+
+  return {
+    id: Number(row.id),
+    brandId: toInteger(row.brand_id),
+    aim4ModelKey: cleanText(row.aim4_model_key) || null,
+    modelName: cleanText(row.model_name),
+    displayName: cleanText(row.display_name),
+    normalizedModelName: cleanText(row.normalized_model_name),
+    specsJson: asObject(row.specs_json),
+  };
+}
+
+async function fetchMotorPricingRows(equipmentModelId: number): Promise<MotorPricingMatrixRow[]> {
+  const db = getDb();
+  const result = await db.query<DbRecord>(
+    `
+      select
+        id,
+        equipment_family_id,
+        equipment_model_id,
+        model_key,
+        type_key,
+        type_label,
+        drive_type,
+        transmission,
+        spec_level,
+        replacement_price_ex_vat,
+        replacement_price_inc_vat,
+        price_low_ex_vat,
+        price_mid_ex_vat,
+        price_high_ex_vat,
+        price_low_inc_vat,
+        price_mid_inc_vat,
+        price_high_inc_vat,
+        default_vat_display,
+        source_price_basis,
+        confidence_score,
+        source_urls,
+        source_notes
+      from public.motor_model_pricing_matrix
+      where equipment_model_id = $1
+        and coalesce(is_active, true) = true
+      order by
+        case spec_level when 'Mid' then 0 when 'Entry' then 1 when 'Luxury' then 2 else 3 end,
+        id asc
+    `,
+    [equipmentModelId],
+  );
+
+  return result.rows.map((row) => ({
+    id: Number(row.id),
+    equipmentFamilyId: Number(row.equipment_family_id),
+    equipmentModelId: Number(row.equipment_model_id),
+    modelKey: cleanText(row.model_key),
+    typeKey: cleanText(row.type_key),
+    typeLabel: cleanText(row.type_label),
+    driveType: cleanText(row.drive_type) || 'Any/Unknown',
+    transmission: cleanText(row.transmission) || 'Any/Unknown',
+    specLevel: (cleanText(row.spec_level) || 'Mid') as MotorPricingMatrixRow['specLevel'],
+    replacementPriceExVat: toNumber(row.replacement_price_ex_vat),
+    replacementPriceIncVat: toNumber(row.replacement_price_inc_vat),
+    priceLowExVat: toNumber(row.price_low_ex_vat),
+    priceMidExVat: toNumber(row.price_mid_ex_vat),
+    priceHighExVat: toNumber(row.price_high_ex_vat),
+    priceLowIncVat: toNumber(row.price_low_inc_vat),
+    priceMidIncVat: toNumber(row.price_mid_inc_vat),
+    priceHighIncVat: toNumber(row.price_high_inc_vat),
+    defaultVatDisplay: cleanText(row.default_vat_display) === 'excl' ? 'excl' : 'incl',
+    sourcePriceBasis: cleanText(row.source_price_basis) || null,
+    confidenceScore: toNumber(row.confidence_score),
+    sourceUrls: cleanText(row.source_urls) || null,
+    sourceNotes: cleanText(row.source_notes) || null,
+  }));
+}
+
+function chooseMotorPricingRow(rows: MotorPricingMatrixRow[], specsJson: Record<string, unknown>): MotorPricingMatrixRow | null {
+  if (!rows.length) return null;
+
+  const requestedTypeKeys = getRequestedMotorTypeKeys(specsJson);
+  const requestedSpecLevel = normalizeMotorSpecLevel(
+    getSpecText(specsJson, ['spec_level', 'specification_level', 'trim_level', 'model_grade']),
+  ) ?? 'Mid';
+  const requestedDrive = normalizeMotorDrive(getSpecText(specsJson, ['drive_type', 'drivetrain', 'drive']));
+  const requestedTransmission = normalizeMotorTransmission(getSpecText(specsJson, ['transmission', 'gearbox']));
+
+  function score(row: MotorPricingMatrixRow): number {
+    let total = 0;
+    const rowTypeKey = normalizeMotorOption(row.typeKey);
+    const rowDrive = normalizeMotorDrive(row.driveType);
+    const rowTransmission = normalizeMotorTransmission(row.transmission);
+    const rowHasAnyDrive = row.driveType.toLowerCase() === 'any/unknown';
+    const rowHasAnyTransmission = row.transmission.toLowerCase() === 'any/unknown';
+
+    if (requestedTypeKeys.size) {
+      total += requestedTypeKeys.has(rowTypeKey) ? 80 : -30;
+    } else {
+      total += rowTypeKey === normalizeMotorOption(cleanText(specsJson.default_type_key)) ? 20 : 0;
+    }
+
+    total += row.specLevel === requestedSpecLevel ? 45 : row.specLevel === 'Mid' ? 15 : 0;
+
+    if (requestedDrive) {
+      total += rowDrive === requestedDrive ? 18 : rowHasAnyDrive ? 8 : -5;
+    } else {
+      total += rowHasAnyDrive ? 8 : 0;
+    }
+
+    if (requestedTransmission) {
+      total += rowTransmission === requestedTransmission ? 18 : rowHasAnyTransmission ? 8 : -5;
+    } else {
+      total += rowHasAnyTransmission ? 8 : 0;
+    }
+
+    const price = getMotorReplacementMid(row);
+    if (price !== null && price > 0) total += 10;
+    total += Math.round((row.confidenceScore ?? 0.5) * 10);
+    return total;
+  }
+
+  return [...rows].sort((left, right) => score(right) - score(left) || right.id - left.id)[0] ?? null;
+}
+
+async function fetchMotorUsageProfile(input: {
+  familyId: number;
+  familyKey: EquipmentFamilyKey;
+  typeKey?: string | null;
+}): Promise<MotorUsageProfile | null> {
+  const db = getDb();
+  const normalizedTypeKey = cleanText(input.typeKey);
+  const result = await db.query<DbRecord>(
+    `
+      select
+        id,
+        family_key,
+        type_key,
+        useful_life_km,
+        high_usage_warning_km,
+        extreme_usage_warning_km,
+        hard_input_cap_km,
+        residual_floor_pct,
+        notes
+      from public.motor_usage_profiles
+      where equipment_family_id = $1
+        and coalesce(is_active, true) = true
+      order by
+        case when type_key = $2 then 0 else 1 end,
+        id asc
+      limit 1
+    `,
+    [input.familyId, normalizedTypeKey],
+  );
+
+  const row = result.rows[0];
+  if (!row) return null;
+
+  return {
+    id: Number(row.id),
+    familyKey: cleanText(row.family_key),
+    typeKey: cleanText(row.type_key),
+    usefulLifeKm: toInteger(row.useful_life_km),
+    highUsageWarningKm: toInteger(row.high_usage_warning_km),
+    extremeUsageWarningKm: toInteger(row.extreme_usage_warning_km),
+    hardInputCapKm: toInteger(row.hard_input_cap_km),
+    residualFloorPct: toNumber(row.residual_floor_pct),
+    notes: cleanText(row.notes) || null,
   };
 }
 
@@ -802,7 +1181,7 @@ export async function listReplacementPriceBands(input: {
     values,
   );
 
-  return (result.rows as DbRecord[]).map((row: DbRecord) => ({
+  return result.rows.map((row) => ({
     id: Number(row.id),
     sectorId: Number(row.sector_id),
     sectorKey: cleanText(row.sector_key) as SectorKey,
@@ -1096,60 +1475,89 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
   const family = await fetchFamilyContext(input.sectorKey, input.familyKey);
   if (!family) throw new Error('FAMILY_NOT_FOUND');
 
-  const motorUsageProfileSpecs = input.sectorKey === 'motor'
-    ? await findMotorUsageProfileSpecs({
-        familyKey: input.familyKey,
-        specsJson,
-      })
-    : null;
-  if (motorUsageProfileSpecs) {
-    specsJson = {
-      ...motorUsageProfileSpecs,
-      ...specsJson,
-    };
-  }
-
   const advancedAssumptions = normalizeAdvancedAssumptions(input.advancedAssumptions, family.usageMetricType);
 
   const brand = await fetchBrandContext(family.id, input.brandSlug);
   if (!brand) throw new Error('BRAND_NOT_FOUND_FOR_FAMILY');
 
-  const typedModelName = cleanText(input.typedModelName) || null;
-  const normalizedTypedModelName = typedModelName ? normalizeModelKey(typedModelName) : null;
+  let typedModelName = cleanText(input.typedModelName) || null;
   const userReplacementPriceExVatRaw = toNumber(input.userReplacementPriceExVat);
   const userReplacementPriceExVat = userReplacementPriceExVatRaw && userReplacementPriceExVatRaw > 0 ? userReplacementPriceExVatRaw : null;
   const userReplacementPriceYear = toInteger(input.userReplacementPriceYear) ?? null;
-  const replacementBand = await findReplacementBand({
+
+  const selectedEquipmentModel = await fetchEquipmentModelContext({
     sectorKey: input.sectorKey,
     familyKey: input.familyKey,
     brandSlug: input.brandSlug,
-    specsJson,
+    equipmentModelId: input.equipmentModelId ?? toInteger(specsJson.catalog_model_id),
+    typedModelName,
   });
-  const motorModelReplacement = input.sectorKey === 'motor'
-    ? await findMotorReplacementPrice({
+
+  if (selectedEquipmentModel) {
+    typedModelName = selectedEquipmentModel.displayName || selectedEquipmentModel.modelName || typedModelName;
+    specsJson = {
+      ...selectedEquipmentModel.specsJson,
+      ...specsJson,
+      catalog_model_id: selectedEquipmentModel.id,
+      aim4_model_key: selectedEquipmentModel.aim4ModelKey,
+      selected_model_key: selectedEquipmentModel.aim4ModelKey,
+    };
+  }
+
+  let motorPricingRow: MotorPricingMatrixRow | null = null;
+  let motorUsageProfile: MotorUsageProfile | null = null;
+
+  if (input.sectorKey === 'motor' && selectedEquipmentModel) {
+    const pricingRows = await fetchMotorPricingRows(selectedEquipmentModel.id);
+    motorPricingRow = chooseMotorPricingRow(pricingRows, specsJson);
+
+    if (motorPricingRow) {
+      motorUsageProfile = await fetchMotorUsageProfile({
+        familyId: family.id,
+        familyKey: family.key,
+        typeKey: motorPricingRow.typeKey,
+      });
+
+      specsJson = {
+        ...specsJson,
+        type_key: motorPricingRow.typeKey,
+        type_label: motorPricingRow.typeLabel,
+        drive_type: motorPricingRow.driveType,
+        transmission: motorPricingRow.transmission,
+        spec_level: motorPricingRow.specLevel,
+        default_vat_display: motorPricingRow.defaultVatDisplay,
+        motor_pricing_matrix_id: motorPricingRow.id,
+        motor_pricing_confidence: motorPricingRow.confidenceScore,
+        ...(motorUsageProfile?.usefulLifeKm ? { useful_life_km: motorUsageProfile.usefulLifeKm, max_lifetime_km: motorUsageProfile.usefulLifeKm } : {}),
+        ...(motorUsageProfile?.residualFloorPct !== null && typeof motorUsageProfile?.residualFloorPct !== 'undefined'
+          ? { residual_floor_pct: motorUsageProfile.residualFloorPct }
+          : {}),
+      };
+    }
+  }
+
+  const replacementBand = motorPricingRow
+    ? buildMotorPricingBand(motorPricingRow, family, brand)
+    : await findReplacementBand({
+        sectorKey: input.sectorKey,
         familyKey: input.familyKey,
         brandSlug: input.brandSlug,
-        typedModelName,
         specsJson,
-      })
-    : null;
+      });
 
-  const bandReplacementPrice = input.sectorKey === 'motor'
-    ? pickMotorReplacementPriceFromRange({
-        min: replacementBand?.replacementMinExVat ?? null,
-        max: replacementBand?.replacementMaxExVat ?? null,
-        specLevel: specsJson.spec_level ?? specsJson.specification_level,
-      })
-    : replacementBand?.replacementMinExVat !== null && replacementBand?.replacementMinExVat !== undefined && replacementBand?.replacementMaxExVat !== null && replacementBand?.replacementMaxExVat !== undefined
-      ? Math.round((replacementBand.replacementMinExVat + replacementBand.replacementMaxExVat) / 2)
-      : null;
-  const replacementPriceMinExVat = motorModelReplacement?.replacementPriceMinExVat ?? replacementBand?.replacementMinExVat ?? null;
-  const replacementPriceMaxExVat = motorModelReplacement?.replacementPriceMaxExVat ?? replacementBand?.replacementMaxExVat ?? null;
-  const aim4priceReplacementPrice = motorModelReplacement?.replacementPriceUsedExVat ?? bandReplacementPrice;
+  const replacementPriceMinExVat = replacementBand?.replacementMinExVat ?? null;
+  const replacementPriceMaxExVat = replacementBand?.replacementMaxExVat ?? null;
+  const matrixMid = motorPricingRow ? getMotorReplacementMid(motorPricingRow) : null;
+  const bandMid = matrixMid ?? (
+    replacementPriceMinExVat !== null && replacementPriceMaxExVat !== null
+      ? Math.round((replacementPriceMinExVat + replacementPriceMaxExVat) / 2)
+      : null
+  );
+  const normalizedTypedModelName = typedModelName ? normalizeModelKey(typedModelName) : null;
 
   const marketAverageExVat: number | null = null;
   const marketAverageCount = 0;
-  const marketMatchStrategy: GenericValuationResult['marketMatchStrategy'] = 'none';
+  const marketMatchStrategy: GenericValuationResult['marketMatchStrategy'] = selectedEquipmentModel ? 'exact_model' : 'none';
   const marketSources: MarketMatch[] = [];
 
   const commonCalculationInput = {
@@ -1168,7 +1576,7 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
   const aim4priceReplacementCalculation = buildCalculation({
     ...commonCalculationInput,
     replacementPriceBasis: 'aim4price',
-    replacementPrice: aim4priceReplacementPrice,
+    replacementPrice: bandMid,
   });
   const userReplacementCalculation = userReplacementPriceExVat
     ? buildCalculation({
@@ -1188,14 +1596,18 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
   const valuationHighExVat = selectedCalculation.valuationHighExVat;
 
   const confidenceScore = aim4priceValueExVat !== null
-    ? motorModelReplacement?.confidenceScore ?? (motorModelReplacement ? 0.64 : 0.58)
+    ? clamp(motorPricingRow?.confidenceScore ?? replacementBand?.confidence ?? 0.58, 0.18, 0.95)
     : 0.28;
   const calculatedConfidenceLabel = confidenceLabel(confidenceScore);
 
   const notes: string[] = [];
-  if (!replacementBand && !motorModelReplacement && !userReplacementPriceExVat) notes.push('No replacement price band matched yet. Add a band or enter a user replacement price.');
-  if (motorModelReplacement) notes.push(`Motor model replacement pricing used: ${motorModelReplacement.sourceLabel}.`);
-  if (motorUsageProfileSpecs) notes.push('Motor usage profile applied for useful kilometre life.');
+  if (!replacementBand && !userReplacementPriceExVat) notes.push('No replacement price matched yet. Add pricing data or enter a user replacement price.');
+  if (motorPricingRow) {
+    notes.push(`Motor pricing matrix matched: ${motorPricingRow.typeLabel}, ${motorPricingRow.specLevel} specification.`);
+    if (motorUsageProfile?.usefulLifeKm) {
+      notes.push(`Motor usage profile used ${motorUsageProfile.usefulLifeKm.toLocaleString('en-ZA')} lifetime kilometres.`);
+    }
+  }
   notes.push('Aim4price used replacement price, usage, age, condition and specs.');
   if (advancedAssumptions) notes.push('Advanced assumptions were applied to this valuation run.');
 
@@ -1216,17 +1628,17 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
   }
 
   if (userReplacementCalculation && userReplacementPriceExVat) {
-    if (aim4priceReplacementPrice && aim4priceReplacementPrice > 0) {
-      const differencePct = Math.round(((userReplacementPriceExVat - aim4priceReplacementPrice) / aim4priceReplacementPrice) * 100);
+    if (bandMid && bandMid > 0) {
+      const differencePct = Math.round(((userReplacementPriceExVat - bandMid) / bandMid) * 100);
       notes.push(
         `User replacement price was used. It is ${Math.abs(differencePct)}% ${differencePct >= 0 ? 'higher' : 'lower'} than the Aim4price replacement estimate.`,
       );
     } else {
-      notes.push('User replacement price was used because no Aim4price replacement band was available.');
+      notes.push('User replacement price was used because no Aim4price replacement estimate was available.');
     }
   }
 
-  if (typedModelName && input.saveModelCandidate) {
+  if (typedModelName && input.saveModelCandidate && !selectedEquipmentModel) {
     await saveModelCandidate({
       sectorKey: input.sectorKey,
       familyKey: input.familyKey,
@@ -1280,6 +1692,7 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
     notes,
   };
 }
+
 export function getGenericSelectedMethodValue(result: GenericValuationResult, _method: GenericSelectedMethod): number | null {
   return result.valuationMidExVat ?? result.aim4priceValueExVat;
 }

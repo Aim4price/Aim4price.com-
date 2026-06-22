@@ -43,6 +43,7 @@ export type EquipmentModelRecord = {
   brandId: number | null;
   brandSlug: string;
   brandName: string;
+  aim4ModelKey: string | null;
   legacyTractorCatalogId: number | null;
   modelName: string;
   variantName: string | null;
@@ -105,6 +106,14 @@ function toBoolean(value: unknown, fallback = false): boolean {
     if (['false', 'f', '0', 'no', 'n'].includes(normalized)) return false;
   }
   return fallback;
+}
+
+function normalizeModelSearchKey(value: unknown): string {
+  return String(value ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, 'and')
+    .replace(/[^a-z0-9]+/g, '');
 }
 
 function normalizeLimit(value: unknown, fallback: number, maximum: number): number {
@@ -286,12 +295,26 @@ export async function listEquipmentModels(input?: ListEquipmentModelsInput): Pro
 
   if (input?.search && input.search.trim()) {
     values.push(`%${input.search.trim().toLowerCase()}%`);
-    const placeholder = `$${values.length}`;
+    const textPlaceholder = `$${values.length}`;
+    values.push(`%${normalizeModelSearchKey(input.search)}%`);
+    const normalizedPlaceholder = `$${values.length}`;
     conditions.push(`(
-      lower(em.display_name) like ${placeholder}
-      or lower(em.model_name) like ${placeholder}
-      or lower(coalesce(em.variant_name, '')) like ${placeholder}
-      or lower(coalesce(b.name, '')) like ${placeholder}
+      lower(em.display_name) like ${textPlaceholder}
+      or lower(em.model_name) like ${textPlaceholder}
+      or lower(coalesce(em.variant_name, '')) like ${textPlaceholder}
+      or lower(coalesce(b.name, '')) like ${textPlaceholder}
+      or lower(coalesce(em.normalized_model_name, '')) like ${normalizedPlaceholder}
+      or lower(coalesce(em.aim4_model_key, '')) like ${normalizedPlaceholder}
+      or exists (
+        select 1
+        from public.equipment_model_aliases ema
+        where ema.equipment_model_id = em.id
+          and coalesce(ema.is_active, true) = true
+          and (
+            lower(coalesce(ema.alias_text, '')) like ${textPlaceholder}
+            or lower(coalesce(ema.normalized_alias, '')) like ${normalizedPlaceholder}
+          )
+      )
     )`);
   }
 
@@ -326,6 +349,7 @@ export async function listEquipmentModels(input?: ListEquipmentModelsInput): Pro
         em.brand_id,
         b.slug as brand_slug,
         b.name as brand_name,
+        em.aim4_model_key,
         em.model_name,
         em.variant_name,
         em.normalized_model_name,
@@ -376,6 +400,7 @@ export async function listEquipmentModels(input?: ListEquipmentModelsInput): Pro
     brandId: toInteger(row.brand_id),
     brandSlug: toText(row.brand_slug),
     brandName: toText(row.brand_name),
+    aim4ModelKey: toText(row.aim4_model_key) || null,
     legacyTractorCatalogId: null,
     modelName: toText(row.model_name),
     variantName: toText(row.variant_name) || null,
