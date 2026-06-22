@@ -2,6 +2,7 @@ import { getDb } from './db';
 import { MAX_ASSET_REGISTER_PHOTOS } from './asset-register-uploads';
 import { ensureFuelLedgerTables } from './fuel-ledger';
 import { captureAssetDepreciationSnapshotForAssetId } from './asset-depreciation-timeline';
+import { revalueAssetRegisterItem } from './asset-register-revaluation';
 
 export type ScanAssetQrStatus = 'active' | 'transferred' | 'retired' | 'deleted' | '';
 export type ScanAssetUsageMode = 'hours' | 'percent' | 'km' | 'none';
@@ -438,6 +439,29 @@ function inferIsPropelled(row: ScanAccessRow): boolean {
 function hasSavedValuation(row: ScanAccessRow): boolean {
   const selectedMethod = asText(row.selected_method).toLowerCase();
   return Boolean(row.valuation_run_id && selectedMethod !== 'manual');
+}
+
+function readIsoYear(value: unknown): number | null {
+  const raw = asText(value);
+
+  if (!raw) {
+    return null;
+  }
+
+  const parsed = new Date(raw);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+
+  return parsed.getFullYear();
+}
+
+function valuationYearHasLapsed(row: ScanAccessRow): boolean {
+  const specs = asRecord(row.specs_json);
+  const lastValuationYear = readIsoYear(specs.valuationLastUpdatedAt ?? specs.valuation_last_updated_at);
+
+  return lastValuationYear !== null && lastValuationYear < new Date().getFullYear();
 }
 
 function markValuationNeedsUpdate(specs: Record<string, unknown>, reasons: string[]): Record<string, unknown> {
@@ -1216,8 +1240,13 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
       throw new Error('LIFE_WORKED_PERCENT_CANNOT_DECREASE');
     }
 
+    const hasValuationYearLapsed = hasSavedValuation(existingRow) && valuationYearHasLapsed(existingRow);
     const valuationStaleReasons: string[] = [];
     if (hasSavedValuation(existingRow)) {
+      if (hasValuationYearLapsed) {
+        valuationStaleReasons.push('year elapsed');
+      }
+
       if (nextHours !== null && nextHours !== currentAsset.hours) {
         valuationStaleReasons.push('usage changed');
       }
@@ -1232,6 +1261,7 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
     }
 
     const shouldCaptureDepreciationSnapshot =
+      hasValuationYearLapsed ||
       (nextHours !== null && nextHours !== currentAsset.hours) ||
       (nextLifeWorkedPercent !== null && nextLifeWorkedPercent !== currentLifeWorkedPercent) ||
       Boolean(nextCondition && currentAsset.condition && nextCondition !== currentAsset.condition);
@@ -1403,7 +1433,32 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
     const asset = mapScanSafeAsset(assetRow);
     const event = mapScanEventRow(eventRow);
 
-    if (shouldCaptureDepreciationSnapshot) {
+    if (shouldCaptureDepreciationSnapshot && valuationStaleReasons.length > 0 && hasSavedValuation(existingRow)) {
+      try {
+        await revalueAssetRegisterItem({
+          userId: currentAsset.userId,
+          assetId: currentAsset.id,
+        });
+      } catch (error) {
+        console.error('asset register QR auto revalue failed', error);
+        await captureAssetDepreciationSnapshotForAssetId({
+          userId: currentAsset.userId,
+          assetId: currentAsset.id,
+          eventType: 'qr_scan_update',
+          eventSource: 'asset-register-qr-scan',
+          capturedAt: event.createdAtIso,
+          metadata: {
+            scanEventId: event.id,
+            publicAssetCode: normalizedCode,
+            valuationNeedsUpdate: true,
+            valuationStaleReasons,
+            usageMode: currentUsageMode,
+            automaticRevaluationFailed: true,
+            automaticRevaluationError: error instanceof Error ? error.message : 'Automatic revaluation failed.',
+          },
+        });
+      }
+    } else if (shouldCaptureDepreciationSnapshot) {
       await captureAssetDepreciationSnapshotForAssetId({
         userId: currentAsset.userId,
         assetId: currentAsset.id,
