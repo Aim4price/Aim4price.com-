@@ -472,8 +472,8 @@ function formatDepreciationEventLabel(eventType: string): string {
       valuation_asset_saved: 'Valuation saved',
       automatic_revaluation_saved: 'Revaluation saved',
       qr_scan_update: 'QR scan update',
-      asset_snapshot: 'Asset snapshot',
-    }[normalized] ?? displayValue(eventType, 'Asset snapshot')
+      asset_snapshot: 'Timeline entry',
+    }[normalized] ?? displayValue(eventType, 'Timeline entry')
   );
 }
 
@@ -1233,13 +1233,13 @@ function buildDepreciationRecordRows(
 ): KeyValueRow[] {
   return [
     { label: 'Report Period', value: dateRangeLabel },
-    { label: 'Snapshots', value: String(snapshots.length) },
+    { label: 'Timeline entries', value: String(snapshots.length) },
     { label: 'Opening Value', value: formatMoney(summary.openingTimelineValueExVat) },
     { label: 'Current Value', value: formatMoney(summary.currentValueExVat ?? asset.selectedValueExVat ?? asset.value) },
     { label: 'Total Depreciation', value: formatSignedMoney(summary.totalMarketDepreciationExVat) },
     { label: 'Total Movement', value: formatMovementPercent(summary.totalMovementPercent) },
-    { label: 'First Snapshot', value: formatDate(summary.firstSnapshotDateIso) },
-    { label: 'Latest Snapshot', value: formatDate(summary.latestSnapshotDateIso) },
+    { label: 'First Entry', value: formatDate(summary.firstSnapshotDateIso) },
+    { label: 'Latest Entry', value: formatDate(summary.latestSnapshotDateIso) },
     { label: 'Latest Usage', value: formatDepreciationUsage(summary.latestUsageAmount, summary.latestUsageMetric) },
     { label: 'Latest Condition', value: formatCondition(summary.latestCondition || asset.condition) },
     { label: 'Replacement Price', value: formatMoneyExVat(summary.replacementPriceUsedExVat ?? readAssetReplacementPriceExVat(asset)) },
@@ -1253,9 +1253,9 @@ function buildDepreciationSummaryRows(summary: DepreciationTimelineSummary): Key
     { label: 'Current value', value: formatMoney(summary.currentValueExVat) },
     { label: 'Total market depreciation', value: formatSignedMoney(summary.totalMarketDepreciationExVat) },
     { label: 'Total movement %', value: formatMovementPercent(summary.totalMovementPercent) },
-    { label: 'First snapshot date', value: formatDateTime(summary.firstSnapshotDateIso) },
-    { label: 'Latest snapshot date', value: formatDateTime(summary.latestSnapshotDateIso) },
-    { label: 'Snapshot count', value: String(summary.snapshotCount) },
+    { label: 'First entry date', value: formatDateTime(summary.firstSnapshotDateIso) },
+    { label: 'Latest entry date', value: formatDateTime(summary.latestSnapshotDateIso) },
+    { label: 'Entry count', value: String(summary.snapshotCount) },
     { label: 'Latest usage', value: formatDepreciationUsage(summary.latestUsageAmount, summary.latestUsageMetric) },
     { label: 'Latest condition', value: formatCondition(summary.latestCondition) },
     { label: 'Replacement price used', value: formatMoneyExVat(summary.replacementPriceUsedExVat) },
@@ -1306,7 +1306,7 @@ function buildDepreciationBody(
           <h2>Depreciation Summary</h2>
           <p>Market value movement based on saved Aim4price asset-register values and valuation-relevant updates.</p>
         </div>
-        <strong>${escapeHtml(formatNumber(summary.snapshotCount))} ${summary.snapshotCount === 1 ? 'snapshot' : 'snapshots'}</strong>
+        <strong>${escapeHtml(formatNumber(summary.snapshotCount))} ${summary.snapshotCount === 1 ? 'entry' : 'entries'}</strong>
       </div>
       ${renderRows(
         buildDepreciationSummaryRows(summary),
@@ -1319,7 +1319,7 @@ function buildDepreciationBody(
       <div class="assetReportSectionHeading">
         <div>
           <h2>Timeline Table</h2>
-          <p>Each line records the saved market value, usage, condition and movement from the previous saved snapshot.</p>
+          <p>Each line records a valuation update entry with the saved market value, usage, condition and movement from the previous entry.</p>
         </div>
         <strong>${escapeHtml(formatNumber(snapshots.length))} ${snapshots.length === 1 ? 'entry' : 'entries'}</strong>
       </div>
@@ -1336,7 +1336,7 @@ function buildDepreciationBody(
           'Movement %',
         ],
         rows: buildDepreciationTimelineBodyRows(snapshots),
-        emptyText: 'No depreciation snapshots have been recorded for this asset yet.',
+        emptyText: 'No depreciation timeline entries have been recorded for this asset yet.',
       })}
     </section>
 
@@ -1344,7 +1344,7 @@ function buildDepreciationBody(
       <div class="assetReportSectionHeading">
         <div>
           <h2>Annual Summary</h2>
-          <p>Year-by-year opening value, closing value and market movement from saved timeline snapshots.</p>
+          <p>Year-by-year opening value, closing value and market movement from saved timeline entries.</p>
         </div>
         <strong>${escapeHtml(formatNumber(annualSummaries.length))} ${annualSummaries.length === 1 ? 'year' : 'years'}</strong>
       </div>
@@ -1356,7 +1356,7 @@ function buildDepreciationBody(
           'Closing value',
           'Yearly depreciation',
           'Yearly movement %',
-          'Snapshots',
+          'Entries',
           'Latest usage / condition',
         ],
         rows: buildDepreciationAnnualBodyRows(annualSummaries),
@@ -2841,7 +2841,7 @@ function buildDepreciationReportWorkbook(
   const timelineRows: XlsxCellValue[][] = [
     fullWidthRow(`${asset.title || 'Asset'} - Market Depreciation Timeline`, 'title', timelineHeaders.length),
     fullWidthRow(`Filtered report: ${dateRangeLabel}`, 'subtitle', timelineHeaders.length),
-    fullWidthRow('Saved market value snapshots exported from the Aim4price asset register.', 'note', timelineHeaders.length),
+    fullWidthRow('Saved valuation update entries exported from the Aim4price asset register.', 'note', timelineHeaders.length),
     [],
     [
       styled('Asset', 'metaLabel'),
@@ -2880,14 +2880,14 @@ function buildDepreciationReportWorkbook(
     'Closing value',
     'Yearly depreciation',
     'Yearly movement %',
-    'Snapshots',
+    'Entries',
     'Latest usage / condition',
   ];
   const annualHeaderRow = 7;
   const annualRows: XlsxCellValue[][] = [
     fullWidthRow(`${asset.title || 'Asset'} - Annual Summary`, 'title', annualHeaders.length),
     fullWidthRow(`Filtered report: ${dateRangeLabel}`, 'subtitle', annualHeaders.length),
-    fullWidthRow('Year-by-year market movement from saved depreciation timeline snapshots.', 'note', annualHeaders.length),
+    fullWidthRow('Year-by-year market movement from saved depreciation timeline entries.', 'note', annualHeaders.length),
     [],
     [
       styled('Asset', 'metaLabel'),
