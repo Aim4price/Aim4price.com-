@@ -1503,6 +1503,7 @@ export default function ValuationClient() {
   const genericExactModelPath = flowMode === 'exact_model' && !exactTractorAvailable && exactModelRowsAvailable && !selectedBrandIsUnknown;
   const genericValuationPath = flowMode === 'generic_specs' || genericExactModelPath;
   const genericModelRequired = genericExactModelPath;
+  const shouldAskGenericSpecQuestions = genericValuationPath && !genericExactModelPath;
   const tractorSetupComplete = Boolean(tractorType && drive && cab);
   const filteredModels = useMemo(() => {
     const query = modelQuery.trim().toLowerCase();
@@ -1591,7 +1592,7 @@ export default function ValuationClient() {
   const canSaveToAssetRegister = isSignedIn && normalizedSignedInAccountType === 'owner';
   const requiredSpecQuestionsCompleted = Boolean(
     conditionStepComplete &&
-      genericValuationPath &&
+      shouldAskGenericSpecQuestions &&
       specQuestions.length > 0 &&
       specQuestions.every((question) => !question.isRequired || isSpecQuestionAnswered(question, specAnswers[question.specKey])),
   );
@@ -1873,7 +1874,7 @@ export default function ValuationClient() {
     setSpecQuestions([]);
     setSpecAnswers({});
 
-    if (!selectedFamily || !selectedSector || !genericValuationPath) {
+    if (!selectedFamily || !selectedSector || !shouldAskGenericSpecQuestions) {
       return () => {
         ignore = true;
       };
@@ -1903,7 +1904,7 @@ export default function ValuationClient() {
     return () => {
       ignore = true;
     };
-  }, [selectedFamily, selectedSector, genericValuationPath]);
+  }, [selectedFamily, selectedSector, shouldAskGenericSpecQuestions]);
 
   useEffect(() => {
     if (!brandSlug || selectedBrandIsUnknown || !exactTractorAvailable || !exactModelRowsAvailable || flowMode !== 'exact_model' || !tractorType || !drive || !cab) {
@@ -2214,9 +2215,11 @@ export default function ValuationClient() {
       const genericModelMessage = validateGenericModelSelection();
       if (genericModelMessage) return genericModelMessage;
 
-      for (const question of specQuestions) {
-        if (question.isRequired && !isSpecQuestionAnswered(question, specAnswers[question.specKey])) {
-          return `Answer: ${question.label}.`;
+      if (shouldAskGenericSpecQuestions) {
+        for (const question of specQuestions) {
+          if (question.isRequired && !isSpecQuestionAnswered(question, specAnswers[question.specKey])) {
+            return `Answer: ${question.label}.`;
+          }
         }
       }
     }
@@ -4779,11 +4782,19 @@ export default function ValuationClient() {
     const selfPropelled = selectedFamily?.isPropelled || selectedFamily?.usageMetricType === 'hours' || selectedFamily?.usageMetricType === 'km';
     const showHoursInput = !genericPath || selfPropelled;
     const usageTitle = showHoursInput ? selectedUsageFieldLabel : 'Worked percentage';
+    const detailsTitle = genericExactModelPath
+      ? `${getAssetNounTitle(selectedSector)} details`
+      : genericPath
+        ? getSpecsTitle(selectedSector)
+        : 'Tractor details';
+    const detailsIntro = genericExactModelPath
+      ? `Aim4price will use the selected catalogue model replacement price. Add year, ${usageTitle.toLowerCase()} and condition to calculate the estimate.`
+      : 'Answer one step at a time. Aim4price only reveals the next question after the current one is saved.';
 
     return (
       <div>
-        <h2 className={styles.stepTitle}>{genericPath ? getSpecsTitle(selectedSector) : 'Tractor details'}</h2>
-        <p className={styles.stepText}>Answer one step at a time. Aim4price only reveals the next question after the current one is saved.</p>
+        <h2 className={styles.stepTitle}>{detailsTitle}</h2>
+        <p className={styles.stepText}>{detailsIntro}</p>
 
         <div className={styles.specFlowStack}>
           <button
@@ -4846,7 +4857,7 @@ export default function ValuationClient() {
               </div>
             </div>
           ) : null}
-          {conditionStepComplete && genericPath ? renderSpecQuestionsProgress() : null}
+          {conditionStepComplete && shouldAskGenericSpecQuestions ? renderSpecQuestionsProgress() : null}
         </div>
 
         {!genericPath && conditionStepComplete ? (
