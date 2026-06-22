@@ -987,94 +987,7 @@ function firstSpecText(specsJson: Record<string, unknown>, keys: string[]): stri
   return null;
 }
 
-function formatSpecToken(value: unknown): string | null {
-  const text = normalizeText(value);
-  if (!text) return null;
-
-  const readable = text
-    .replace(/[_-]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-
-  if (!readable) return null;
-
-  const preserveUppercase = ['SUV', 'MPV', 'LCV', 'ABS', 'AMT', 'EV', 'EPS'];
-  const upper = readable.toUpperCase();
-  if (preserveUppercase.includes(upper)) return upper;
-  if (/^\d+x\d+$/i.test(readable)) return readable.toLowerCase();
-
-  return readable
-    .split(' ')
-    .map((part) => {
-      const partUpper = part.toUpperCase();
-      if (preserveUppercase.includes(partUpper)) return partUpper;
-      if (/^\d/.test(part)) return part;
-      return part.charAt(0).toUpperCase() + part.slice(1).toLowerCase();
-    })
-    .join(' ');
-}
-
-function formatSpecPart(label: string, value: unknown): string | null {
-  const formatted = formatSpecToken(value);
-  return formatted ? `${label}: ${formatted}` : null;
-}
-
-function formatMotorBodyOrType(model: GenericCatalogModel, specsJson: Record<string, unknown>): string | null {
-  const keysByFamily: Record<string, string[]> = {
-    bakkies_ldvs: ['cab_type', 'body_type', 'aim4_source_body_type'],
-    cars_suvs: ['body_type', 'aim4_source_body_type', 'vehicle_segment'],
-    light_commercial_vehicles: ['body_type', 'aim4_source_body_type'],
-    buses: ['bus_type', 'body_type', 'aim4_source_body_type'],
-    trucks: ['truck_type', 'body_type', 'category', 'aim4_source_body_type'],
-    trailers: ['trailer_type', 'body_type', 'category', 'aim4_source_body_type'],
-    motorcycles: ['motorcycle_type', 'body_type'],
-    quadbikes: ['quadbike_type', 'body_type'],
-    side_by_sides: ['side_by_side_type', 'body_type'],
-  };
-
-  const keys = keysByFamily[model.familyKey] ?? ['body_type', 'type', 'vehicle_type'];
-  return firstSpecText(specsJson, keys);
-}
-
-function getMotorModelPriceText(model: GenericCatalogModel, specsJson: Record<string, unknown>): string | null {
-  const exactPrice =
-    toNumberOrNull(specsJson.aim4_replacement_price_ex_vat) ??
-    toNumberOrNull(specsJson.aim4_replacement_price_avg_ex_vat) ??
-    model.aim4priceReplacementPriceExVat;
-
-  if (exactPrice === null) return null;
-
-  const label = MOTOR_VAT_INCLUDED_DEFAULT_FAMILIES.has(model.familyKey) ? 'Default incl. VAT' : 'Excl. VAT';
-  const displayValue = MOTOR_VAT_INCLUDED_DEFAULT_FAMILIES.has(model.familyKey) ? toVatIncluded(exactPrice) : exactPrice;
-
-  return displayValue === null ? null : `${label}: ${money(displayValue)}`;
-}
-
-function formatMotorModelDetail(model: GenericCatalogModel): string {
-  const specsJson = normalizeGenericSpecsRecord(model.specsJson);
-  const bodyOrType = formatMotorBodyOrType(model, specsJson);
-
-  const parts = [
-    formatSpecPart('Type', bodyOrType),
-    normalizeText(model.variantName) ? formatSpecPart('Variant', model.variantName) : null,
-    formatSpecPart('Fuel', specsJson.fuel_type),
-    formatSpecPart('Drive', specsJson.drive_type ?? specsJson.drivetrain ?? specsJson.configuration),
-    formatSpecPart('Transmission', specsJson.transmission),
-    specsJson.gvm_kg ? `GVM: ${formatWholeNumber(toNumberOrNull(specsJson.gvm_kg))} kg` : null,
-    formatSpecPart('Seats', specsJson.seating_capacity),
-    getMotorModelPriceText(model, specsJson),
-  ].filter((part): part is string => Boolean(part));
-
-  const uniqueParts = parts.filter((part, index) => parts.findIndex((candidate) => candidate.toLowerCase() === part.toLowerCase()) === index);
-
-  return uniqueParts.length
-    ? uniqueParts.join(' • ')
-    : 'Catalogue row with hidden exact replacement-price key. Specs remain editable.';
-}
-
 function formatGenericModelDetail(model: GenericCatalogModel): string {
-  if (model.sectorKey === 'motor') return formatMotorModelDetail(model);
-
   const specsJson = normalizeGenericSpecsRecord(model.specsJson);
   const parts = [
     normalizeText(model.variantName) || null,
@@ -4293,7 +4206,7 @@ export default function ValuationClient() {
                         onClick={() => handleGenericModelSelection(model.id)}
                       >
                         <span className={styles.modelOptionText}>{formatGenericModelLabel(model)}</span>
-                        <span className={styles.modelOptionMeta}>{formatGenericModelDetail(model)}</span>
+                        {selectedSector === 'motor' ? null : <span className={styles.modelOptionMeta}>{formatGenericModelDetail(model)}</span>}
                       </button>
                     ))
                   ) : (
@@ -4302,12 +4215,6 @@ export default function ValuationClient() {
                 </div>
               ) : null}
             </div>
-
-            {selectedSector === 'motor' && selectedGenericModel ? (
-              <p className={styles.fieldHint}>
-                Catalogue hint: {formatGenericModelDetail(selectedGenericModel)}. These details are shown for context only; confirm fuel, drive and transmission below if Aim4price asks.
-              </p>
-            ) : null}
 
             {!genericModelRequired ? (
               <div className={styles.inlineOptionRow}>
