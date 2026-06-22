@@ -24252,3 +24252,95 @@ button.documentOpenLink {
     height: 2.95rem !important;
   }
 }
+
+/* === Add Asset choice modal compact layout, June 2026 === */
+.addAssetChoiceModal {
+  width: min(100%, 740px) !important;
+  max-height: min(86vh, calc(100dvh - 2rem)) !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  padding: clamp(1.05rem, 1.7vw, 1.35rem) !important;
+  padding-top: clamp(3.2rem, 4vw, 3.4rem) !important;
+  border-radius: 1.75rem !important;
+}
+
+.addAssetChoiceCloseButton {
+  position: absolute !important;
+  top: clamp(0.85rem, 1.4vw, 1.05rem) !important;
+  right: clamp(0.85rem, 1.4vw, 1.05rem) !important;
+  z-index: 2 !important;
+  width: 2.45rem !important;
+  min-width: 2.45rem !important;
+  min-height: 2.45rem !important;
+}
+
+.addAssetChoiceCloseButton .buttonIcon {
+  width: 1rem !important;
+  height: 1rem !important;
+}
+
+.addAssetChoiceGrid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: clamp(0.85rem, 1.6vw, 1.05rem) !important;
+}
+
+.addAssetChoiceButton {
+  min-height: clamp(8.25rem, 16vw, 9.35rem) !important;
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  grid-template-rows: auto auto !important;
+  align-content: center !important;
+  align-items: center !important;
+  justify-items: center !important;
+  gap: 0.78rem !important;
+  padding: clamp(1.1rem, 1.8vw, 1.35rem) !important;
+  border-radius: 1.4rem !important;
+  text-align: center !important;
+}
+
+.addAssetChoiceButton > .buttonIcon {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  justify-self: center !important;
+  width: 3.2rem !important;
+  height: 3.2rem !important;
+  padding: 0.82rem !important;
+}
+
+.addAssetChoiceButton > span {
+  grid-column: 1 !important;
+  grid-row: 2 !important;
+  width: 100% !important;
+  display: grid !important;
+  justify-items: center !important;
+  gap: 0 !important;
+  text-align: center !important;
+}
+
+.addAssetChoiceButton strong {
+  max-width: 14rem !important;
+  text-align: center !important;
+  text-wrap: balance !important;
+}
+
+.addAssetChoiceButton small {
+  display: none !important;
+}
+
+@media (max-width: 700px) {
+  .addAssetChoiceModal {
+    width: min(100%, calc(100vw - 1rem)) !important;
+    padding: 1rem !important;
+    padding-top: 3.15rem !important;
+    border-radius: 1.35rem !important;
+  }
+
+  .addAssetChoiceGrid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .addAssetChoiceButton {
+    min-height: 7.35rem !important;
+  }
+}

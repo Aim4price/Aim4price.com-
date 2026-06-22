@@ -8020,35 +8020,21 @@ export default function AssetRegisterClient() {
         <div className={styles.modalOverlay}>
           <div className={styles.modalBackdrop} onClick={closeAddAssetChoiceModal} />
 
-          <div className={`${styles.modalCard} ${styles.addAssetChoiceModal}`} role="dialog" aria-modal="true" aria-labelledby="add-asset-choice-title">
-            <div className={`${styles.modalHeader} ${styles.addAssetChoiceHeader}`}>
-              <div className={styles.addAssetChoiceIntro}>
-                <span className={styles.addAssetChoiceHeroIcon} aria-hidden="true">
-                  <TrendIcon className={styles.addAssetChoiceHeroIconGraphic} />
-                </span>
-
-                <div className={styles.modalHeaderText}>
-                  <h3 id="add-asset-choice-title">Choose how to add the asset</h3>
-                  <p>Start with an Aim4price valuation or add a known asset value manually.</p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                className={styles.modalCloseButton}
-                onClick={closeAddAssetChoiceModal}
-                aria-label="Close add asset options"
-              >
-                <CloseIcon className={styles.buttonIcon} />
-              </button>
-            </div>
+          <div className={`${styles.modalCard} ${styles.addAssetChoiceModal}`} role="dialog" aria-modal="true" aria-label="Add asset options">
+            <button
+              type="button"
+              className={`${styles.modalCloseButton} ${styles.addAssetChoiceCloseButton}`}
+              onClick={closeAddAssetChoiceModal}
+              aria-label="Close add asset options"
+            >
+              <CloseIcon className={styles.buttonIcon} />
+            </button>
 
             <div className={styles.addAssetChoiceGrid}>
               <Link href="/valuation" className={`${styles.addAssetChoiceButton} ${styles.addAssetChoiceButtonPrimary}`}>
                 <TrendIcon className={styles.buttonIcon} />
                 <span>
                   <strong>Aim4price Value</strong>
-                  <small>Estimate with Aim4price, save it to this register, and allow pricing to auto-update when the asset gets updated.</small>
                 </span>
               </Link>
 
@@ -8056,7 +8042,6 @@ export default function AssetRegisterClient() {
                 <DocumentIcon className={styles.buttonIcon} />
                 <span>
                   <strong>Manual Entry</strong>
-                  <small>Add a known value, asset details, documents, photos and status information yourself.</small>
                 </span>
               </button>
             </div>
