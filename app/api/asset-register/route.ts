@@ -4,7 +4,6 @@ import { getServerSession, isAdminSupportSession } from '../../../lib/auth-sessi
 import { getAccountProfile } from '../../../lib/account-profile';
 import { attachOpenPartnerNotesToAssets } from '../../../lib/partner-access';
 import { attachLatestMaintenanceStatusToAssets } from '../../../lib/scan-assets';
-import { revalueAssetRegisterItem } from '../../../lib/asset-register-revaluation';
 import {
   getAssetRegisterForUser,
   getSelectedAssetRegister,
@@ -23,7 +22,6 @@ import {
   updateAssetRegisterItem,
   updateAssetRegisterItemMedia,
   type AssetRegisterDocument,
-  type AssetRegisterItem,
   type AssetRegisterItemKind,
   type CreateManualAssetInput,
   type UpdateAssetRegisterItemInput,
@@ -248,71 +246,6 @@ function normalizeCondition(value: unknown): UpdateAssetRegisterItemInput['condi
 
   if (normalized === 'good') return 'good';
   return null;
-}
-
-function normalizeComparableNumber(value: unknown): number | null {
-  if (value === null || typeof value === 'undefined' || value === '') {
-    return null;
-  }
-
-  const numeric = Number(value);
-  return Number.isFinite(numeric) ? Math.round(numeric * 10) / 10 : null;
-}
-
-function numbersChanged(left: unknown, right: unknown): boolean {
-  const normalizedLeft = normalizeComparableNumber(left);
-  const normalizedRight = normalizeComparableNumber(right);
-
-  if (normalizedLeft === null && normalizedRight === null) return false;
-  if (normalizedLeft === null || normalizedRight === null) return true;
-
-  return Math.abs(normalizedLeft - normalizedRight) >= 0.1;
-}
-
-function textChanged(left: unknown, right: unknown): boolean {
-  return String(left ?? '').trim().toLowerCase() !== String(right ?? '').trim().toLowerCase();
-}
-
-function readIsoYear(value: unknown): number | null {
-  const raw = String(value ?? '').trim();
-
-  if (!raw) {
-    return null;
-  }
-
-  const parsed = new Date(raw);
-
-  if (Number.isNaN(parsed.getTime())) {
-    return null;
-  }
-
-  return parsed.getFullYear();
-}
-
-function valuationYearHasLapsed(existing: AssetRegisterItem): boolean {
-  const specs = existing.specsJson ?? {};
-  const lastValuationYear = readIsoYear(specs.valuationLastUpdatedAt ?? specs.valuation_last_updated_at);
-
-  return lastValuationYear !== null && lastValuationYear < new Date().getFullYear();
-}
-
-function shouldAutoRevalueAfterAssetUpdate(
-  existing: AssetRegisterItem,
-  next: Pick<AssetRegisterItem, 'yearModel' | 'hours' | 'lifeWorkedPercent' | 'condition'>,
-): boolean {
-  if (!existing.valuationRunId || existing.selectedMethod === 'manual') {
-    return false;
-  }
-
-  const existingLifeWorkedPercent = existing.lifeWorkedPercent ?? readLifeWorkedPercentFromSpecs(existing.specsJson);
-
-  return (
-    numbersChanged(existing.hours, next.hours) ||
-    numbersChanged(existingLifeWorkedPercent, next.lifeWorkedPercent) ||
-    numbersChanged(existing.yearModel, next.yearModel) ||
-    textChanged(existing.condition, next.condition) ||
-    valuationYearHasLapsed(existing)
-  );
 }
 
 function normalizePhotos(value: unknown): string[] {
@@ -572,9 +505,6 @@ export async function PUT(request: NextRequest) {
   const title = String(body.title ?? '').trim();
   const value = Math.round(Number(body.value) || 0);
   const usageMetric = normalizeUsageMetric(body.usageMetric);
-  const normalizedYearModel = normalizeYearModel(body.yearModel);
-  const normalizedHours = normalizeHours(body.hours);
-  const normalizedCondition = normalizeCondition(body.condition);
   const licenseRegistrationNumber = Boolean(body.isLicensed)
     ? normalizeLicenseRegistrationNumber((body as { licenseRegistrationNumber?: unknown }).licenseRegistrationNumber)
     : null;
@@ -614,15 +544,6 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Asset not found.' }, { status: 404 });
   }
 
-  const nextSpecsJson = buildManualSpecsJson(body.specsJson, usageMetric, lifeWorkedPercent, replacementPriceExVat);
-  const nextLifeWorkedPercent = readLifeWorkedPercentFromSpecs(nextSpecsJson) ?? existing.lifeWorkedPercent;
-  const shouldAutoRevalue = shouldAutoRevalueAfterAssetUpdate(existing, {
-    yearModel: existing.valuationRunId && normalizedYearModel === null ? existing.yearModel : normalizedYearModel,
-    hours: existing.valuationRunId && normalizedHours === null ? existing.hours : normalizedHours,
-    lifeWorkedPercent: nextLifeWorkedPercent,
-    condition: normalizedCondition ?? existing.condition,
-  });
-
   const nextPhotos = normalizePhotos(body.photos);
   const nextDocuments = normalizeDocuments(body.documents);
   const nextDocumentUrls = documentUrls(nextDocuments);
@@ -646,14 +567,13 @@ export async function PUT(request: NextRequest) {
       financeNote: body.financeNote ?? null,
       photos: nextPhotos,
       documents: nextDocuments,
-      yearModel: normalizedYearModel,
-      hours: normalizedHours,
+      yearModel: normalizeYearModel(body.yearModel),
+      hours: normalizeHours(body.hours),
       usageMetric,
       lifeWorkedPercent,
       replacementPriceExVat,
-      specsJson: nextSpecsJson,
-      condition: normalizedCondition,
-      suppressDepreciationSnapshot: shouldAutoRevalue,
+      specsJson: buildManualSpecsJson(body.specsJson, usageMetric, lifeWorkedPercent, replacementPriceExVat),
+      condition: normalizeCondition(body.condition),
     });
 
     await deleteUnreferencedAssetRegisterUploads({
@@ -662,27 +582,8 @@ export async function PUT(request: NextRequest) {
       excludeAssetId: assetId,
     });
 
-    let responseItem = item;
-    let autoRevalueApplied = false;
-    let autoRevalueError: string | null = null;
-
-    if (shouldAutoRevalue) {
-      try {
-        const revalueResult = await revalueAssetRegisterItem({
-          userId: session.user.id,
-          assetId: item.id,
-          selectedMethod: item.selectedMethod,
-        });
-        responseItem = revalueResult.item;
-        autoRevalueApplied = true;
-      } catch (error) {
-        autoRevalueError = formatUnknownError(error, 'The asset was saved, but the Aim4price estimate could not be recalculated automatically.');
-        console.error('asset register auto revalue after update failed', error);
-      }
-    }
-
-    const [itemWithPartnerNote] = await attachOpenPartnerNotesToAssets(session.user.id, [responseItem]);
-    const [itemWithMaintenanceStatus] = await attachLatestMaintenanceStatusToAssets(itemWithPartnerNote ? [itemWithPartnerNote] : [responseItem]);
+    const [itemWithPartnerNote] = await attachOpenPartnerNotesToAssets(session.user.id, [item]);
+    const [itemWithMaintenanceStatus] = await attachLatestMaintenanceStatusToAssets(itemWithPartnerNote ? [itemWithPartnerNote] : [item]);
 
     const usageUserId = getUsageUserId(session);
     if (usageUserId) {
@@ -690,23 +591,12 @@ export async function PUT(request: NextRequest) {
         userId: usageUserId,
         eventType: 'asset_updated',
         eventSource: 'asset-register',
-        metadata: {
-          assetId: item.id,
-          kind: item.kind,
-          automaticRevaluationAttempted: shouldAutoRevalue,
-          automaticRevaluationApplied: autoRevalueApplied,
-        },
+        metadata: { assetId: item.id, kind: item.kind },
       });
     }
 
 
-    return NextResponse.json({
-      ok: true,
-      item: itemWithMaintenanceStatus ?? itemWithPartnerNote ?? responseItem,
-      automaticRevaluationAttempted: shouldAutoRevalue,
-      automaticRevaluationApplied: autoRevalueApplied,
-      automaticRevaluationError: autoRevalueError,
-    });
+    return NextResponse.json({ ok: true, item: itemWithMaintenanceStatus ?? itemWithPartnerNote ?? item });
   } catch (error) {
     if (error instanceof Error && error.message === 'ASSET_NOT_FOUND') {
       return NextResponse.json({ ok: false, error: 'Asset not found.' }, { status: 404 });
