@@ -1277,6 +1277,7 @@ export default function ValuationClient() {
   const [equipmentDropdownOpen, setEquipmentDropdownOpen] = useState(false);
   const [familyKey, setFamilyKey] = useState('');
   const [motorSubtypeValue, setMotorSubtypeValue] = useState('');
+  const [motorSubtypeDropdownOpen, setMotorSubtypeDropdownOpen] = useState(false);
   const [brands, setBrands] = useState<BrandRow[]>([]);
   const [brandsLoading, setBrandsLoading] = useState(false);
   const [brandSearch, setBrandSearch] = useState('');
@@ -1716,6 +1717,7 @@ export default function ValuationClient() {
     setFamilies([]);
     setFamilyKey('');
     setMotorSubtypeValue('');
+    setMotorSubtypeDropdownOpen(false);
     setFamilySearch('');
     setEquipmentDropdownOpen(false);
     setBrandSearch('');
@@ -1805,6 +1807,7 @@ export default function ValuationClient() {
     setFinalSaveError('');
     setSavedMarketplaceAssetId(null);
     setMotorSubtypeValue('');
+    setMotorSubtypeDropdownOpen(false);
     setBrandSearch('');
     setBrandDropdownOpen(false);
     setBrandSlug('');
@@ -3383,6 +3386,7 @@ export default function ValuationClient() {
     setFamilies([]);
     setFamilyKey('');
     setMotorSubtypeValue('');
+    setMotorSubtypeDropdownOpen(false);
     setFamilySearch('');
     setEquipmentDropdownOpen(false);
     setBrands([]);
@@ -3432,6 +3436,7 @@ export default function ValuationClient() {
 
     setFamilyKey(nextFamilyKey);
     setMotorSubtypeValue('');
+    setMotorSubtypeDropdownOpen(false);
     setFamilySearch('');
     setEquipmentDropdownOpen(false);
     setTypedModelName('');
@@ -3464,6 +3469,7 @@ export default function ValuationClient() {
     const keysToReplace = getMotorSubtypeSpecKeys(selectedMotorSubtypeConfig);
 
     setMotorSubtypeValue(nextSubtypeValue);
+    setMotorSubtypeDropdownOpen(false);
     setSpecAnswers((current) => {
       const next = { ...current };
       for (const key of keysToReplace) {
@@ -3762,26 +3768,44 @@ export default function ValuationClient() {
           <p className={styles.stepText}>{config.helpText}</p>
         </div>
 
-        <div className={`${styles.currentCard} ${styles.tractorSetupCard}`}>
-          <div className={styles.currentCardHead}>
+        <div className={`${styles.currentCard} ${styles.equipmentPickerCard}`}>
+          <div className={styles.equipmentPickerHead}>
             <div>
               <span className={styles.fieldLabel}>{config.fieldLabel}</span>
-              <p className={styles.currentHint}>This keeps the Motor flow cleaner and helps Aim4price narrow the model list later.</p>
+              <p className={styles.equipmentPickerHint}>Select the closest type from the dropdown. This narrows the model list later.</p>
             </div>
-            <span className={styles.selectedSummaryPill}>{config.options.length} options</span>
+            <span className={styles.equipmentCountPill}>{config.options.length} options</span>
           </div>
 
-          <div className={styles.inlineOptionRow}>
-            {config.options.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                className={`${styles.inlineOptionButton} ${motorSubtypeValue === option.value ? styles.inlineOptionButtonActive : ''}`}
-                onClick={() => handleMotorSubtypeSelection(option.value)}
-              >
-                {option.label}
-              </button>
-            ))}
+          <div className={styles.equipmentDropdownWrap}>
+            <button
+              type="button"
+              className={`${styles.equipmentDropdownTrigger} ${motorSubtypeDropdownOpen ? styles.equipmentDropdownTriggerOpen : ''}`}
+              onClick={() => setMotorSubtypeDropdownOpen((value) => !value)}
+              aria-expanded={motorSubtypeDropdownOpen}
+            >
+              <span>{selectedMotorSubtypeOption ? selectedMotorSubtypeOption.label : `Select ${config.fieldLabel.toLowerCase()}...`}</span>
+              <span className={styles.equipmentDropdownChevron} aria-hidden="true">
+                <svg viewBox="0 0 20 20" focusable="false">
+                  <path d="M5.5 7.5 10 12l4.5-4.5" />
+                </svg>
+              </span>
+            </button>
+
+            {motorSubtypeDropdownOpen ? (
+              <div className={styles.equipmentDropdownMenu}>
+                {config.options.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    className={`${styles.equipmentDropdownOption} ${motorSubtypeValue === option.value ? styles.equipmentDropdownOptionActive : ''}`}
+                    onClick={() => handleMotorSubtypeSelection(option.value)}
+                  >
+                    <span>{option.label}</span>
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
@@ -3803,6 +3827,7 @@ export default function ValuationClient() {
               className={`${styles.selectedSummaryPill} ${styles.selectedSummaryButton}`}
               onClick={() => {
                 setMotorSubtypeValue('');
+                setMotorSubtypeDropdownOpen(true);
                 setBrandSlug('');
                 clearGenericModelSelection({ clearManual: true, clearPrefilledSpecs: true });
                 resetResult();
