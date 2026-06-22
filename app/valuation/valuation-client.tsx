@@ -437,6 +437,167 @@ const GPS_TYPE_OPTIONS: Array<{ value: GpsType; label: string }> = [
 
 type DropdownOption = { value: string; label: string };
 
+type MotorSubtypeOption = {
+  value: string;
+  label: string;
+  searchAliases?: string[];
+  specs?: Record<string, string>;
+};
+
+type MotorSubtypeConfig = {
+  specKey: string;
+  title: string;
+  fieldLabel: string;
+  helpText: string;
+  options: MotorSubtypeOption[];
+};
+
+const MOTOR_SUBTYPE_CONFIG: Record<string, MotorSubtypeConfig> = {
+  bakkies_ldvs: {
+    specKey: 'cab_type',
+    title: 'Choose bakkie type',
+    fieldLabel: 'Bakkie type',
+    helpText: 'First choose the bakkie body/cab type. Then choose the brand.',
+    options: [
+      { value: 'single_cab', label: 'Single cab', searchAliases: ['Single Cab', 'Single cabs', 'single cab'], specs: { body_type: 'single_cab' } },
+      { value: 'extended_cab', label: 'Extended cab', searchAliases: ['Extended cabs', 'extra_cab', 'extra cab'], specs: { body_type: 'extended_cab' } },
+      { value: 'kingcab', label: 'Kingcab', searchAliases: ['Kingcabs', 'king cab'], specs: { body_type: 'kingcab' } },
+      { value: 'supercab', label: 'Supercab', searchAliases: ['Supercab', 'super cab'], specs: { body_type: 'supercab' } },
+      { value: 'double_cab', label: 'Double cab', searchAliases: ['Double cabs', 'crew cab'], specs: { body_type: 'double_cab' } },
+    ],
+  },
+  cars_suvs: {
+    specKey: 'body_type',
+    title: 'Choose car type',
+    fieldLabel: 'Car type',
+    helpText: 'Choose the vehicle body type before selecting the brand.',
+    options: [
+      { value: 'cabriolet', label: 'Cabriolet', searchAliases: ['Cabriolets', 'convertible'], specs: { vehicle_segment: 'performance' } },
+      { value: 'coupe', label: 'Coupé', searchAliases: ['Coupe', 'Coupé', 'coupes'], specs: { vehicle_segment: 'performance' } },
+      { value: 'fastback', label: 'Fastback', searchAliases: ['Fastbacks'], specs: { vehicle_segment: 'sedan' } },
+      { value: 'hatchback', label: 'Hatchback', searchAliases: ['Hatchbacks', 'hatch', 'entry_hatch', 'compact_hatch'], specs: { vehicle_segment: 'compact_hatch' } },
+      { value: 'mpv', label: 'MPV', searchAliases: ['MPV', 'multi purpose vehicle'], specs: { vehicle_segment: 'mpv' } },
+      { value: 'sedan', label: 'Sedan', searchAliases: ['Sedans'], specs: { vehicle_segment: 'sedan' } },
+      { value: 'sportback', label: 'Sportback', searchAliases: ['Sportback'], specs: { vehicle_segment: 'performance' } },
+      { value: 'station_wagon', label: 'Station wagon', searchAliases: ['Station wagon', 'Station wagons', 'estate'], specs: { vehicle_segment: 'sedan' } },
+      { value: 'suv', label: 'SUV', searchAliases: ['SUV', 'SUVs', 'crossover', 'compact_suv', 'midsize_suv', 'large_suv', 'luxury_suv'], specs: { vehicle_segment: 'compact_suv' } },
+    ],
+  },
+  light_commercial_vehicles: {
+    specKey: 'body_type',
+    title: 'Choose light commercial type',
+    fieldLabel: 'Light commercial type',
+    helpText: 'Choose the closest van, minibus or light commercial body type before selecting the brand.',
+    options: [
+      { value: 'lcv', label: 'LCV', searchAliases: ['LCV', 'pickup_commercial'] },
+      { value: 'panel_van', label: 'Panel van', searchAliases: ['Panel vans', 'panel van', 'van'] },
+      { value: 'crew_bus', label: 'Crew bus', searchAliases: ['Crew buses', 'crew bus'] },
+      { value: 'minibus', label: 'Minibus', searchAliases: ['Minibus', 'minibus_taxi'] },
+      { value: 'mpv', label: 'MPV', searchAliases: ['MPV'] },
+    ],
+  },
+  buses: {
+    specKey: 'bus_type',
+    title: 'Choose bus type',
+    fieldLabel: 'Bus type',
+    helpText: 'Choose the closest bus class before selecting the brand.',
+    options: [
+      { value: 'minibus_taxi', label: 'Minibus taxi', searchAliases: ['Minibus', 'minibus', 'minibus_taxi'] },
+      { value: 'panel_van_bus', label: 'Van-based bus', searchAliases: ['Crew buses', 'crew_bus', 'panel_van_bus'] },
+      { value: 'midi_bus', label: 'Midi bus', searchAliases: ['midi_bus'] },
+      { value: 'commuter_bus', label: 'Commuter bus', searchAliases: ['commuter_bus'] },
+      { value: 'coach', label: 'Coach', searchAliases: ['coach'] },
+      { value: 'city_bus', label: 'City bus', searchAliases: ['city_bus'] },
+    ],
+  },
+  trucks: {
+    specKey: 'truck_type',
+    title: 'Choose truck type',
+    fieldLabel: 'Truck type',
+    helpText: 'Choose the main truck application before selecting the brand.',
+    options: [
+      { value: 'truck_tractor', label: 'Truck tractor', searchAliases: ['tractor', 'horse'] },
+      { value: 'rigid_truck', label: 'Rigid truck', searchAliases: ['rigid'] },
+      { value: 'tipper', label: 'Tipper', searchAliases: ['tipper_body', 'tipper'] },
+      { value: 'dropside', label: 'Dropside', searchAliases: ['dropside_body', 'dropside'] },
+      { value: 'tanker', label: 'Tanker', searchAliases: ['tanker_body', 'tanker'] },
+      { value: 'refrigerated', label: 'Refrigerated', searchAliases: ['refrigerated_body', 'fridge'] },
+      { value: 'crane_truck', label: 'Crane truck', searchAliases: ['crane'] },
+      { value: 'concrete_mixer', label: 'Concrete mixer', searchAliases: ['mixer'] },
+      { value: 'refuse_truck', label: 'Refuse truck', searchAliases: ['refuse'] },
+      { value: 'rollback', label: 'Rollback', searchAliases: ['rollback'] },
+    ],
+  },
+  trailers: {
+    specKey: 'trailer_type',
+    title: 'Choose trailer type',
+    fieldLabel: 'Trailer type',
+    helpText: 'Choose the trailer body/application before selecting the brand.',
+    options: [
+      { value: 'flatdeck', label: 'Flatdeck', searchAliases: ['flatdeck', 'flatbed'] },
+      { value: 'tautliner', label: 'Tautliner', searchAliases: ['tautliner'] },
+      { value: 'side_tipper', label: 'Side tipper', searchAliases: ['side tipper'] },
+      { value: 'lowbed', label: 'Lowbed', searchAliases: ['lowbed'] },
+      { value: 'tanker', label: 'Tanker', searchAliases: ['tanker'] },
+      { value: 'skeletal', label: 'Skeletal', searchAliases: ['skeletal', 'skel'] },
+      { value: 'refrigerated', label: 'Refrigerated', searchAliases: ['refrigerated', 'fridge'] },
+      { value: 'livestock', label: 'Livestock', searchAliases: ['livestock'] },
+      { value: 'dolly', label: 'Dolly', searchAliases: ['dolly'] },
+    ],
+  },
+  motorcycles: {
+    specKey: 'motorcycle_type',
+    title: 'Choose motorcycle type',
+    fieldLabel: 'Motorcycle type',
+    helpText: 'Choose the motorcycle type before selecting the brand.',
+    options: [
+      { value: 'commuter', label: 'Commuter' },
+      { value: 'adventure', label: 'Adventure' },
+      { value: 'touring', label: 'Touring' },
+      { value: 'sport', label: 'Sport' },
+      { value: 'cruiser', label: 'Cruiser' },
+      { value: 'off_road', label: 'Off-road' },
+      { value: 'scooter', label: 'Scooter' },
+    ],
+  },
+  quadbikes: {
+    specKey: 'quadbike_type',
+    title: 'Choose quadbike type',
+    fieldLabel: 'Quadbike type',
+    helpText: 'Choose the quadbike type before selecting the brand.',
+    options: [
+      { value: 'utility', label: 'Utility' },
+      { value: 'sport', label: 'Sport' },
+      { value: 'youth', label: 'Youth' },
+      { value: 'electric', label: 'Electric' },
+    ],
+  },
+  side_by_sides: {
+    specKey: 'side_by_side_type',
+    title: 'Choose side-by-side type',
+    fieldLabel: 'Side-by-side type',
+    helpText: 'Choose the side-by-side type before selecting the brand.',
+    options: [
+      { value: 'utility', label: 'Utility' },
+      { value: 'recreation', label: 'Recreation' },
+      { value: 'sport', label: 'Sport' },
+      { value: 'crew', label: 'Crew cab' },
+      { value: 'electric', label: 'Electric' },
+    ],
+  },
+};
+
+const MOTOR_VAT_INCLUDED_DEFAULT_FAMILIES = new Set([
+  'cars_suvs',
+  'bakkies_ldvs',
+  'light_commercial_vehicles',
+  'motorcycles',
+  'quadbikes',
+  'side_by_sides',
+]);
+
+const MOTOR_VAT_EXCLUDED_DEFAULT_FAMILIES = new Set(['trucks', 'trailers', 'buses']);
+
 function sentenceCase(value: string): string {
   return value ? value.charAt(0).toUpperCase() + value.slice(1) : value;
 }
@@ -497,6 +658,90 @@ function previousStep(step: Step): Step {
 
 function normalizeText(value: unknown): string {
   return String(value ?? '').trim();
+}
+
+function normalizeComparisonValue(value: unknown): string {
+  return normalizeText(value).toLowerCase().replace(/[^a-z0-9]+/g, '');
+}
+
+function getMotorSubtypeConfig(sectorKey?: SectorKey | null, familyKey?: string | null): MotorSubtypeConfig | null {
+  if (sectorKey !== 'motor' || !familyKey) return null;
+  return MOTOR_SUBTYPE_CONFIG[familyKey] ?? null;
+}
+
+function getMotorSubtypeOption(config: MotorSubtypeConfig | null, value: string): MotorSubtypeOption | null {
+  if (!config || !value) return null;
+  return config.options.find((option) => option.value === value) ?? null;
+}
+
+function getMotorSubtypeSpecs(config: MotorSubtypeConfig | null, option: MotorSubtypeOption | null): Record<string, string> {
+  if (!config || !option) return {};
+  return {
+    [config.specKey]: option.value,
+    ...(option.specs ?? {}),
+  };
+}
+
+function getMotorSubtypeSpecKeys(config: MotorSubtypeConfig | null): Set<string> {
+  const keys = new Set<string>();
+  if (!config) return keys;
+  keys.add(config.specKey);
+  return keys;
+}
+
+function getMotorSubtypeDisplayLabel(config: MotorSubtypeConfig | null, value: string): string {
+  return getMotorSubtypeOption(config, value)?.label ?? 'Choose type';
+}
+
+function modelMatchesMotorSubtype(
+  model: GenericCatalogModel,
+  config: MotorSubtypeConfig | null,
+  option: MotorSubtypeOption | null,
+): boolean {
+  if (!config || !option) return true;
+
+  const specsJson = normalizeGenericSpecsRecord(model.specsJson);
+  const expectedValues = new Set([
+    option.value,
+    option.label,
+    ...(option.searchAliases ?? []),
+    ...Object.values(option.specs ?? {}),
+  ].map(normalizeComparisonValue).filter(Boolean));
+
+  const candidateValues = [
+    specsJson[config.specKey],
+    specsJson.body_type,
+    specsJson.cab_type,
+    specsJson.bus_type,
+    specsJson.truck_type,
+    specsJson.trailer_type,
+    specsJson.motorcycle_type,
+    specsJson.quadbike_type,
+    specsJson.side_by_side_type,
+    specsJson.vehicle_segment,
+    specsJson.aim4_source_body_type,
+  ].map(normalizeComparisonValue).filter(Boolean);
+
+  return candidateValues.some((value) => expectedValues.has(value));
+}
+
+function getDefaultVatDisplayMode(
+  sectorKey?: SectorKey | null,
+  familyKey?: string | null,
+): VatDisplayMode {
+  if (sectorKey !== 'motor') return 'excl';
+  if (familyKey && MOTOR_VAT_INCLUDED_DEFAULT_FAMILIES.has(familyKey)) return 'incl';
+  if (familyKey && MOTOR_VAT_EXCLUDED_DEFAULT_FAMILIES.has(familyKey)) return 'excl';
+  return 'excl';
+}
+
+function getVatDefaultNote(sectorKey?: SectorKey | null, familyKey?: string | null): string {
+  if (sectorKey !== 'motor') return 'Aim4price stores replacement prices excluding VAT. Use the toggle to view the estimate either excluding or including VAT.';
+  if (getDefaultVatDisplayMode(sectorKey, familyKey) === 'incl') {
+    return 'Default view for cars, bakkies, light vehicles, motorcycles, quadbikes and side-by-sides is VAT included. Stored replacement prices remain VAT excluded.';
+  }
+
+  return 'Default view for trucks, buses and trailers is VAT excluded. Use the toggle if you need a VAT included view.';
 }
 
 function isUnknownBrandSlug(value: unknown): boolean {
@@ -1031,6 +1276,7 @@ export default function ValuationClient() {
   const [familySearch, setFamilySearch] = useState('');
   const [equipmentDropdownOpen, setEquipmentDropdownOpen] = useState(false);
   const [familyKey, setFamilyKey] = useState('');
+  const [motorSubtypeValue, setMotorSubtypeValue] = useState('');
   const [brands, setBrands] = useState<BrandRow[]>([]);
   const [brandsLoading, setBrandsLoading] = useState(false);
   const [brandSearch, setBrandSearch] = useState('');
@@ -1131,6 +1377,23 @@ export default function ValuationClient() {
     () => families.find((family) => family.familyKey === familyKey) ?? null,
     [families, familyKey],
   );
+  const selectedMotorSubtypeConfig = useMemo(
+    () => getMotorSubtypeConfig(selectedSector, selectedFamily?.familyKey),
+    [selectedSector, selectedFamily],
+  );
+  const selectedMotorSubtypeOption = useMemo(
+    () => getMotorSubtypeOption(selectedMotorSubtypeConfig, motorSubtypeValue),
+    [selectedMotorSubtypeConfig, motorSubtypeValue],
+  );
+  const selectedMotorSubtypeSpecs = useMemo(
+    () => getMotorSubtypeSpecs(selectedMotorSubtypeConfig, selectedMotorSubtypeOption),
+    [selectedMotorSubtypeConfig, selectedMotorSubtypeOption],
+  );
+  const selectedMotorSubtypeSpecKeys = useMemo(
+    () => getMotorSubtypeSpecKeys(selectedMotorSubtypeConfig),
+    [selectedMotorSubtypeConfig],
+  );
+  const motorSubtypeRequired = Boolean(selectedMotorSubtypeConfig);
   const brandsWithUnknown = useMemo(() => {
     const seenSlugs = new Set<string>([UNKNOWN_BRAND_SLUG]);
     const realBrands = brands.filter((brand) => {
@@ -1158,7 +1421,6 @@ export default function ValuationClient() {
       !genericModelsLoading &&
       genericModelLookupKey === currentGenericModelLookupKey,
   );
-  const exactModelRowsAvailable = genericModelAvailabilityChecked && genericCatalogModels.length > 0;
   const selectedModel = useMemo(
     () => tractorModels.find((model) => model.id === modelId) ?? null,
     [tractorModels, modelId],
@@ -1225,7 +1487,18 @@ export default function ValuationClient() {
     return [UNKNOWN_BRAND_OPTION, ...realMatches.sort((a, b) => scoreBrand(a) - scoreBrand(b) || a.name.localeCompare(b.name))];
   }, [brandsWithUnknown, brandSearch]);
 
+  const genericCatalogModelsForSelectedSubtype = useMemo(() => {
+    if (!selectedMotorSubtypeConfig || !selectedMotorSubtypeOption) return genericCatalogModels;
+    return genericCatalogModels.filter((model) =>
+      modelMatchesMotorSubtype(model, selectedMotorSubtypeConfig, selectedMotorSubtypeOption),
+    );
+  }, [genericCatalogModels, selectedMotorSubtypeConfig, selectedMotorSubtypeOption]);
+
   const exactTractorAvailable = selectedFamily?.familyKey === 'tractors' && selectedFamily.catalogMode === 'hybrid';
+  const exactModelRowsAvailable =
+    genericModelAvailabilityChecked &&
+    (!motorSubtypeRequired || Boolean(motorSubtypeValue)) &&
+    genericCatalogModelsForSelectedSubtype.length > 0;
   const genericExactModelPath = flowMode === 'exact_model' && !exactTractorAvailable && exactModelRowsAvailable && !selectedBrandIsUnknown;
   const genericValuationPath = flowMode === 'generic_specs' || genericExactModelPath;
   const genericModelRequired = genericExactModelPath;
@@ -1254,7 +1527,7 @@ export default function ValuationClient() {
   }, [modelQuery, tractorModels]);
   const filteredGenericModels = useMemo(() => {
     const query = genericModelQuery.trim().toLowerCase();
-    const matches = genericCatalogModels.filter((model) => {
+    const matches = genericCatalogModelsForSelectedSubtype.filter((model) => {
       const specsJson = normalizeGenericSpecsRecord(model.specsJson);
       const searchableSpecs = Object.values(specsJson)
         .map((value) => normalizeText(value))
@@ -1284,7 +1557,7 @@ export default function ValuationClient() {
     }
 
     return [...matches].sort((a, b) => scoreGenericModel(a) - scoreGenericModel(b) || formatGenericModelLabel(a).localeCompare(formatGenericModelLabel(b)));
-  }, [genericCatalogModels, genericModelQuery]);
+  }, [genericCatalogModelsForSelectedSubtype, genericModelQuery]);
 
   const yearNumber = Number(year);
   const usageNumber = toNumberOrNull(usageAmount);
@@ -1296,6 +1569,7 @@ export default function ValuationClient() {
     return {
       ...(genericValuationPath && selectedGenericModel ? normalizeGenericSpecsRecord(selectedGenericModel.specsJson) : {}),
       ...specsJson,
+      ...selectedMotorSubtypeSpecs,
       ...(typedUnlistedBrandName
         ? {
             [UNLISTED_BRAND_NAME_SPEC_KEY]: typedUnlistedBrandName,
@@ -1305,7 +1579,7 @@ export default function ValuationClient() {
       ...(lifeWorkedPercentNumber !== null ? { life_worked_percent: lifeWorkedPercentNumber } : {}),
       ...(yearModelUnknown ? { year_model_unknown: true } : {}),
     };
-  }, [genericValuationPath, selectedGenericModel, specsJson, selectedBrandIsUnknown, unlistedBrandName, lifeWorkedPercentNumber, yearModelUnknown]);
+  }, [genericValuationPath, selectedGenericModel, specsJson, selectedMotorSubtypeSpecs, selectedBrandIsUnknown, unlistedBrandName, lifeWorkedPercentNumber, yearModelUnknown]);
   const headlineValue = getHeadlineValue(resultState, selectedMethod, replacementPriceBasis);
   const headlineDisplayValue = getVatDisplayValue(headlineValue, vatDisplayMode);
   const headlineVatLabel = getVatDisplayLabel(vatDisplayMode);
@@ -1441,6 +1715,7 @@ export default function ValuationClient() {
 
     setFamilies([]);
     setFamilyKey('');
+    setMotorSubtypeValue('');
     setFamilySearch('');
     setEquipmentDropdownOpen(false);
     setBrandSearch('');
@@ -1529,6 +1804,7 @@ export default function ValuationClient() {
     setFinalSaveIntent(null);
     setFinalSaveError('');
     setSavedMarketplaceAssetId(null);
+    setMotorSubtypeValue('');
     setBrandSearch('');
     setBrandDropdownOpen(false);
     setBrandSlug('');
@@ -1767,7 +2043,7 @@ export default function ValuationClient() {
     setSelectedMethod('aim4price');
     setReplacementPriceBasis('aim4price');
     setReplacementPanelOpen(false);
-    setVatDisplayMode('excl');
+    setVatDisplayMode(getDefaultVatDisplayMode(selectedSector, selectedFamily?.familyKey));
     setAdvancedPanelOpen(false);
     setAdvancedLifetimeUsage('');
     setAdvancedConditionFactorPercent('');
@@ -1858,7 +2134,7 @@ export default function ValuationClient() {
     if (genericModelRequired && !selectedGenericModel) {
       if (genericModelsLoading) return 'Catalogue models are still loading. Please wait.';
 
-      return genericCatalogModels.length
+      return genericCatalogModelsForSelectedSubtype.length
         ? 'Choose a catalogue model first.'
         : `No catalogue models are available yet for this brand and ${getAssetTypeLabel(selectedSector)}. Aim4price will use ${getSpecsLabel(selectedSector)}.`;
     }
@@ -1875,7 +2151,7 @@ export default function ValuationClient() {
     setLifeWorkedPercent('');
     setUserReplacementPrice('');
     setCondition('good');
-    setSpecAnswers({});
+    setSpecAnswers(selectedMotorSubtypeSpecs);
     setOpenSpecDropdownKey(null);
     setGpsTypeDropdownOpen(false);
     genericModelPrefilledSpecKeysRef.current = new Set();
@@ -2202,7 +2478,7 @@ export default function ValuationClient() {
     }
 
     setMessage('');
-    setVatDisplayMode('excl');
+    setVatDisplayMode(getDefaultVatDisplayMode(selectedSector, selectedFamily?.familyKey));
     setAdvancedPanelOpen(false);
     setAdvancedError('');
     setValuationLoading(true);
@@ -3065,6 +3341,10 @@ export default function ValuationClient() {
       setMessage(`Choose an ${getAssetTypeLabel(selectedSector)} first.`);
       return;
     }
+    if (step === 2 && selectedMotorSubtypeConfig && !motorSubtypeValue) {
+      setMessage(`Choose the ${selectedMotorSubtypeConfig.fieldLabel.toLowerCase()} first.`);
+      return;
+    }
     if (step === 2 && !selectedBrand) {
       setMessage('Choose a brand first.');
       return;
@@ -3102,6 +3382,7 @@ export default function ValuationClient() {
     setSelectedSector(null);
     setFamilies([]);
     setFamilyKey('');
+    setMotorSubtypeValue('');
     setFamilySearch('');
     setEquipmentDropdownOpen(false);
     setBrands([]);
@@ -3150,6 +3431,7 @@ export default function ValuationClient() {
     if (!nextFamilyKey) return;
 
     setFamilyKey(nextFamilyKey);
+    setMotorSubtypeValue('');
     setFamilySearch('');
     setEquipmentDropdownOpen(false);
     setTypedModelName('');
@@ -3170,6 +3452,45 @@ export default function ValuationClient() {
     setUnlistedBrandName('');
     resetResult();
     setStep(2);
+  }
+
+  function handleMotorSubtypeSelection(nextSubtypeValue: string) {
+    if (!selectedMotorSubtypeConfig) return;
+
+    const nextOption = getMotorSubtypeOption(selectedMotorSubtypeConfig, nextSubtypeValue);
+    if (!nextOption) return;
+
+    const nextSpecs = getMotorSubtypeSpecs(selectedMotorSubtypeConfig, nextOption);
+    const keysToReplace = getMotorSubtypeSpecKeys(selectedMotorSubtypeConfig);
+
+    setMotorSubtypeValue(nextSubtypeValue);
+    setSpecAnswers((current) => {
+      const next = { ...current };
+      for (const key of keysToReplace) {
+        delete next[key];
+      }
+      return { ...next, ...nextSpecs };
+    });
+    setBrandSlug('');
+    setUnlistedBrandName('');
+    setFlowMode('');
+    setBrandSearch('');
+    setBrandDropdownOpen(false);
+    setTypedModelName('');
+    setModelQuery('');
+    setModelDropdownOpen(false);
+    setModelId('');
+    setTractorType('');
+    setDrive('');
+    setCab('');
+    setTractorModels([]);
+    setGenericCatalogModels([]);
+    setGenericModelsLoading(false);
+    setGenericModelLookupKey('');
+    genericModelPrefilledSpecKeysRef.current = new Set();
+    clearGenericModelSelection({ clearManual: true });
+    setMessage('');
+    resetResult();
   }
 
   function handleBrandSelection(nextBrandSlug: string) {
@@ -3429,7 +3750,7 @@ export default function ValuationClient() {
     );
   }
 
-  function renderBrandStep() {
+  function renderMotorSubtypeSelection(config: MotorSubtypeConfig) {
     return (
       <div className={styles.equipmentStage}>
         <div className={`${styles.equipmentStageTop} ${styles.equipmentStageTopSolo}`}>
@@ -3437,8 +3758,64 @@ export default function ValuationClient() {
         </div>
 
         <div className={styles.equipmentStageIntro}>
+          <h2 className={styles.stepTitle}>{config.title}</h2>
+          <p className={styles.stepText}>{config.helpText}</p>
+        </div>
+
+        <div className={`${styles.currentCard} ${styles.tractorSetupCard}`}>
+          <div className={styles.currentCardHead}>
+            <div>
+              <span className={styles.fieldLabel}>{config.fieldLabel}</span>
+              <p className={styles.currentHint}>This keeps the Motor flow cleaner and helps Aim4price narrow the model list later.</p>
+            </div>
+            <span className={styles.selectedSummaryPill}>{config.options.length} options</span>
+          </div>
+
+          <div className={styles.inlineOptionRow}>
+            {config.options.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                className={`${styles.inlineOptionButton} ${motorSubtypeValue === option.value ? styles.inlineOptionButtonActive : ''}`}
+                onClick={() => handleMotorSubtypeSelection(option.value)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  function renderBrandStep() {
+    if (selectedMotorSubtypeConfig && !motorSubtypeValue) {
+      return renderMotorSubtypeSelection(selectedMotorSubtypeConfig);
+    }
+
+    return (
+      <div className={styles.equipmentStage}>
+        <div className={`${styles.equipmentStageTop} ${styles.equipmentStageTopSolo}`}>
+          {selectedFamily ? <span className={styles.selectedSummaryPill}>{selectedFamily.familyLabel}</span> : null}
+          {selectedMotorSubtypeOption ? (
+            <button
+              type="button"
+              className={`${styles.selectedSummaryPill} ${styles.selectedSummaryButton}`}
+              onClick={() => {
+                setMotorSubtypeValue('');
+                setBrandSlug('');
+                clearGenericModelSelection({ clearManual: true, clearPrefilledSpecs: true });
+                resetResult();
+              }}
+            >
+              {selectedMotorSubtypeOption.label}
+            </button>
+          ) : null}
+        </div>
+
+        <div className={styles.equipmentStageIntro}>
           <h2 className={styles.stepTitle}>Choose brand</h2>
-          <p className={styles.stepText}>Search or choose the brand. Selecting one moves to the next step automatically.</p>
+          <p className={styles.stepText}>Search or choose the brand for this {selectedMotorSubtypeConfig ? selectedMotorSubtypeConfig.fieldLabel.toLowerCase() : getAssetItemLabel(selectedSector)}. Selecting one moves to the next step automatically.</p>
         </div>
 
         <div className={`${styles.currentCard} ${styles.equipmentPickerCard}`}>
@@ -4315,22 +4692,24 @@ export default function ValuationClient() {
   function renderSpecQuestionsProgress() {
     if (!conditionStepComplete) return null;
 
-    if (!specQuestions.length) {
+    const questionsForProgress = selectedMotorSubtypeSpecKeys.size
+      ? specQuestions.filter((question) => !selectedMotorSubtypeSpecKeys.has(question.specKey))
+      : specQuestions;
+
+    if (!questionsForProgress.length) {
       return (
         <div className={`${styles.currentCard} ${styles.specProgressCard}`}>
           <h3 className={styles.currentTitle}>Answer a few simple questions</h3>
-          <p className={styles.message}>No family-specific questions imported yet. Aim4price will use year, condition, worked percentage, brand and replacement bands if available.</p>
+          <p className={styles.message}>No further family-specific questions are needed. Aim4price will use the selected type, year, usage, condition, brand and replacement bands if available.</p>
         </div>
       );
     }
 
     const visibleQuestions: SpecQuestion[] = [];
-    for (const question of specQuestions) {
+    for (const question of questionsForProgress) {
       visibleQuestions.push(question);
       if (question.isRequired && !isSpecQuestionAnswered(question, specAnswers[question.specKey])) break;
     }
-
-    const requiredAnswered = specQuestions.every((question) => !question.isRequired || isSpecQuestionAnswered(question, specAnswers[question.specKey]));
 
     return (
       <div className={`${styles.currentCard} ${styles.specProgressCard}`}>
@@ -4340,7 +4719,7 @@ export default function ValuationClient() {
             <h3 className={styles.currentTitle}>Answer a few simple questions</h3>
             <p className={styles.currentHint}>Answer each question in order. The next question appears underneath once the required answer is captured.</p>
           </div>
-          <span className={styles.selectedSummaryPill}>{visibleQuestions.length} of {specQuestions.length}</span>
+          <span className={styles.selectedSummaryPill}>{visibleQuestions.length} of {questionsForProgress.length}</span>
         </div>
 
         <div className={styles.progressiveQuestionStack}>
@@ -4572,6 +4951,10 @@ export default function ValuationClient() {
       : `Current basis: saved replacement estimate of ${money(genericResult?.aim4priceReplacementCalculation?.replacementPriceExVat ?? null)}`;
     const replacementBasisText = isGeneric ? genericReplacementBasisText : tractorReplacementBasisText;
     const resultValueSizeClass = getResultValueSizeClass(headlineDisplayValue);
+    const vatDefaultNote = getVatDefaultNote(
+      genericResult?.sector.key ?? selectedSector,
+      genericResult?.family.key ?? selectedFamily?.familyKey,
+    );
     const resultUsageMetricType = getResultUsageMetricType(resultState);
     const resultSectorKey = getResultSectorKey(resultState);
     const advancedLifetimeShortUnit = getUsageShortUnit(resultSectorKey, resultUsageMetricType);
@@ -4615,6 +4998,7 @@ export default function ValuationClient() {
               ) : null}
             </div>
             <p className={styles.resultMachineTitle}>{machineTitle}</p>
+            <p className={styles.resultConfidenceNote}>{vatDefaultNote}</p>
             <p className={styles.resultConfidenceNote}>{confidenceNote}</p>
             <div className={styles.resultFactsGrid}>
               <div className={styles.resultFactCard}>

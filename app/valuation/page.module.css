@@ -10907,3 +10907,16 @@
     width: min(92%, 24rem);
   }
 }
+
+/* Motor subtype selection polish */
+.selectedSummaryButton {
+  cursor: pointer;
+}
+
+.selectedSummaryButton:hover,
+.selectedSummaryButton:focus-visible {
+  border-color: rgba(24, 77, 61, 0.28);
+  box-shadow:
+    0 10px 20px rgba(15, 53, 42, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
