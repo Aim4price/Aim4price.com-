@@ -24070,3 +24070,185 @@ button.documentOpenLink {
   }
 }
 
+
+/* === Asset Register modal corrections: manage pricing + add asset, June 2026 === */
+.pricingModal {
+  width: min(100%, 800px) !important;
+  max-height: min(88vh, calc(100dvh - 2rem)) !important;
+  padding: clamp(1.35rem, 2vw, 1.75rem) !important;
+}
+
+.pricingModalHeader {
+  align-items: flex-start !important;
+  margin-bottom: 1.05rem !important;
+  padding-bottom: 1.05rem !important;
+}
+
+.pricingModalHeader .modalHeaderText {
+  max-width: calc(100% - 4.2rem) !important;
+}
+
+.pricingModalBody {
+  padding: 0 !important;
+  margin-right: 0 !important;
+  overflow: visible !important;
+}
+
+.pricingOptionsGrid {
+  width: 100% !important;
+  max-width: none !important;
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: clamp(0.85rem, 1.4vw, 1.05rem) !important;
+}
+
+.pricingOptionButton {
+  min-height: 8rem !important;
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  grid-template-rows: auto auto !important;
+  align-content: center !important;
+  align-items: center !important;
+  justify-items: center !important;
+  gap: 0.78rem !important;
+  padding: clamp(1rem, 1.6vw, 1.25rem) !important;
+  text-align: center !important;
+}
+
+.pricingOptionButton > .buttonIcon {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  justify-self: center !important;
+  width: 3.25rem !important;
+  height: 3.25rem !important;
+  padding: 0.82rem !important;
+}
+
+.pricingOptionButton > span {
+  grid-column: 1 !important;
+  grid-row: 2 !important;
+  width: 100% !important;
+  display: grid !important;
+  justify-items: center !important;
+  text-align: center !important;
+}
+
+.pricingOptionButton strong,
+.pricingOptionButton small {
+  text-align: center !important;
+  text-wrap: balance !important;
+}
+
+.pricingOptionButton strong {
+  max-width: 14rem !important;
+}
+
+.addAssetChoiceModal {
+  width: min(100%, 790px) !important;
+  max-height: min(86vh, calc(100dvh - 2rem)) !important;
+  padding: clamp(1.35rem, 2.1vw, 1.8rem) !important;
+}
+
+.addAssetChoiceHeader {
+  position: relative !important;
+  justify-content: center !important;
+  align-items: center !important;
+  margin-bottom: 1.05rem !important;
+  padding: 0 4rem 1.05rem !important;
+  text-align: center !important;
+}
+
+.addAssetChoiceIntro {
+  width: 100% !important;
+  display: grid !important;
+  justify-items: center !important;
+  gap: 0.72rem !important;
+}
+
+.addAssetChoiceHeroIcon {
+  width: 3.25rem !important;
+  height: 3.25rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 1.1rem !important;
+  color: #124635 !important;
+  background:
+    radial-gradient(circle at 30% 0%, rgba(22, 83, 64, 0.16), transparent 48%),
+    linear-gradient(180deg, #ffffff 0%, #eef8f2 100%) !important;
+  border: 1px solid rgba(190, 221, 207, 0.98) !important;
+  box-shadow:
+    0 12px 24px rgba(16, 42, 34, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.addAssetChoiceHeroIconGraphic {
+  width: 1.35rem !important;
+  height: 1.35rem !important;
+}
+
+.addAssetChoiceHeader .modalHeaderText {
+  width: 100% !important;
+  max-width: 36rem !important;
+  justify-items: center !important;
+  text-align: center !important;
+}
+
+.addAssetChoiceHeader h3 {
+  margin: 0 !important;
+  text-align: center !important;
+}
+
+.addAssetChoiceHeader p {
+  max-width: 34rem !important;
+  margin: 0 !important;
+  text-align: center !important;
+}
+
+.addAssetChoiceHeader .modalCloseButton {
+  position: absolute !important;
+  top: 0 !important;
+  right: 0 !important;
+}
+
+.addAssetChoiceGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: clamp(0.85rem, 1.4vw, 1.05rem) !important;
+}
+
+@media (max-width: 900px) {
+  .pricingModal,
+  .addAssetChoiceModal {
+    width: min(100%, calc(100vw - 1.25rem)) !important;
+  }
+
+  .pricingOptionsGrid,
+  .addAssetChoiceGrid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 560px) {
+  .pricingModal,
+  .addAssetChoiceModal {
+    padding: 1rem !important;
+    border-radius: 1.35rem !important;
+  }
+
+  .pricingModalHeader .modalHeaderText {
+    max-width: calc(100% - 3.4rem) !important;
+  }
+
+  .pricingOptionButton {
+    min-height: 6.7rem !important;
+  }
+
+  .addAssetChoiceHeader {
+    padding: 0 3.35rem 0.85rem !important;
+  }
+
+  .addAssetChoiceHeroIcon {
+    width: 2.95rem !important;
+    height: 2.95rem !important;
+  }
+}

@@ -467,6 +467,24 @@ type RevalueAssetApiResponse = {
   error?: string;
 };
 
+const STAGED_DEPRECIATION_NOTICE_MESSAGE =
+  'Estimate checked. The value is unchanged for now because Aim4price depreciation works in stages. The price will move down once the next depreciation stage is reached.';
+
+function roundedEstimateValue(value: unknown): number | null {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return null;
+  }
+
+  return Math.round(value);
+}
+
+function savedRevalueValueStayedTheSame(data: RevalueAssetApiResponse, fallbackAsset: RegisterAsset): boolean {
+  const oldValue = roundedEstimateValue(data.oldValueExVat) ?? roundedEstimateValue(fallbackAsset.value);
+  const newValue = roundedEstimateValue(data.newValueExVat) ?? roundedEstimateValue(data.item?.value);
+
+  return oldValue !== null && newValue !== null && oldValue === newValue;
+}
+
 type PricingRevaluePreview = {
   asset: RegisterAsset;
   method: RevalueMethod;
@@ -5758,12 +5776,15 @@ export default function AssetRegisterClient() {
         setIsPricingModalOpen(false);
       }
 
-      const updatedMethod = data.selectedMethod ?? updatedAsset.selectedMethod;
       const updateLabel = 'Aim4price value';
       const marketplaceNote = isLiveOnMarketplace(asset) ? ' Marketplace asking price was not changed.' : '';
+      const message = savedRevalueValueStayedTheSame(data, asset)
+        ? `${STAGED_DEPRECIATION_NOTICE_MESSAGE}${data.warning ? ` ${data.warning}` : ''}${marketplaceNote}`
+        : `${updatedAsset.title} ${updateLabel} updated to ${money(updatedAsset.value)}.${data.warning ? ` ${data.warning}` : ''}${marketplaceNote}`;
+
       setNotice({
         tone: 'success',
-        message: `${updatedAsset.title} ${updateLabel} updated to ${money(updatedAsset.value)}.${data.warning ? ` ${data.warning}` : ''}${marketplaceNote}`,
+        message,
       });
     } catch (error) {
       setNotice({
@@ -5895,15 +5916,18 @@ export default function AssetRegisterClient() {
       setSaveReplacementPriceWithRevalue(false);
       setIsPricingModalOpen(false);
 
-      const updatedMethod = data.selectedMethod ?? updatedAsset.selectedMethod;
       const updateLabel = 'Aim4price value';
       const marketplaceNote = isLiveOnMarketplace(asset) ? ' Marketplace asking price was not changed.' : '';
       const replacementNote = shouldPersistReplacementPrice && replacementPriceExVat !== null
         ? ` Replacement price saved at ${money(replacementPriceExVat)}.`
         : '';
+      const message = savedRevalueValueStayedTheSame(data, asset)
+        ? `${STAGED_DEPRECIATION_NOTICE_MESSAGE}${replacementNote}${data.warning ? ` ${data.warning}` : ''}${marketplaceNote}`
+        : `${updatedAsset.title} ${updateLabel} saved at ${money(updatedAsset.value)}.${replacementNote}${data.warning ? ` ${data.warning}` : ''}${marketplaceNote}`;
+
       setNotice({
         tone: 'success',
-        message: `${updatedAsset.title} ${updateLabel} saved at ${money(updatedAsset.value)}.${replacementNote}${data.warning ? ` ${data.warning}` : ''}${marketplaceNote}`,
+        message,
       });
     } catch (error) {
       setPricingPreview((current) => (current ? {
@@ -7998,8 +8022,15 @@ export default function AssetRegisterClient() {
 
           <div className={`${styles.modalCard} ${styles.addAssetChoiceModal}`} role="dialog" aria-modal="true" aria-labelledby="add-asset-choice-title">
             <div className={`${styles.modalHeader} ${styles.addAssetChoiceHeader}`}>
-              <div className={styles.modalHeaderText}>
-                <h3 id="add-asset-choice-title">Choose how to add the asset</h3>
+              <div className={styles.addAssetChoiceIntro}>
+                <span className={styles.addAssetChoiceHeroIcon} aria-hidden="true">
+                  <TrendIcon className={styles.addAssetChoiceHeroIconGraphic} />
+                </span>
+
+                <div className={styles.modalHeaderText}>
+                  <h3 id="add-asset-choice-title">Choose how to add the asset</h3>
+                  <p>Start with an Aim4price valuation or add a known asset value manually.</p>
+                </div>
               </div>
 
               <button
