@@ -8020,15 +8020,27 @@ export default function AssetRegisterClient() {
         <div className={styles.modalOverlay}>
           <div className={styles.modalBackdrop} onClick={closeAddAssetChoiceModal} />
 
-          <div className={`${styles.modalCard} ${styles.addAssetChoiceModal}`} role="dialog" aria-modal="true" aria-label="Add asset options">
-            <button
-              type="button"
-              className={`${styles.modalCloseButton} ${styles.addAssetChoiceCloseButton}`}
-              onClick={closeAddAssetChoiceModal}
-              aria-label="Close add asset options"
-            >
-              <CloseIcon className={styles.buttonIcon} />
-            </button>
+          <div
+            className={`${styles.modalCard} ${styles.addAssetChoiceModal}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="add-asset-choice-title"
+          >
+            <div className={`${styles.modalHeader} ${styles.addAssetChoiceHeader}`}>
+              <div className={styles.modalHeaderText}>
+                <h3 id="add-asset-choice-title">Choose how to add an asset</h3>
+                <p>Start with an Aim4price valuation, or add a manually priced asset.</p>
+              </div>
+
+              <button
+                type="button"
+                className={styles.modalCloseButton}
+                onClick={closeAddAssetChoiceModal}
+                aria-label="Close add asset options"
+              >
+                <CloseIcon className={styles.buttonIcon} />
+              </button>
+            </div>
 
             <div className={styles.addAssetChoiceGrid}>
               <Link href="/valuation" className={`${styles.addAssetChoiceButton} ${styles.addAssetChoiceButtonPrimary}`}>
@@ -9306,16 +9318,8 @@ export default function AssetRegisterClient() {
           >
             <div className={`${styles.modalHeader} ${styles.assetReportModalHeader}`}>
               <div className={styles.modalHeaderText}>
-                <h3 id="asset-report-title">
-                  {assetReportStep === 'fuel-filter'
-                    ? 'Export fuel report'
-                    : assetReportStep === 'maintenance-filter'
-                      ? 'Export maintenance report'
-                      : assetReportStep === 'depreciation-filter'
-                        ? 'Export depreciation timeline'
-                        : 'Download reports'}
-                </h3>
-                <p>{activeAsset.title}</p>
+                <h3 id="asset-report-title">{activeAsset.title}</h3>
+                <p>{buildAssetMeta(activeAsset)}</p>
               </div>
 
               <button type="button" className={styles.modalCloseButton} onClick={closeAssetReportDialog} aria-label="Close report options">
