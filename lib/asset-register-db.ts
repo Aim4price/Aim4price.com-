@@ -127,7 +127,6 @@ export type UpdateAssetRegisterItemInput = {
   lifeWorkedPercent?: number | null;
   specsJson?: Record<string, unknown>;
   condition?: ConditionKey | null;
-  suppressDepreciationSnapshot?: boolean;
 };
 
 type AssetRegisterRow = {
@@ -519,28 +518,6 @@ function hasValueChanged(left: unknown, right: unknown): boolean {
   return String(left ?? '').trim() !== String(right ?? '').trim();
 }
 
-function readIsoYear(value: unknown): number | null {
-  const raw = asText(value);
-
-  if (!raw) {
-    return null;
-  }
-
-  const parsed = new Date(raw);
-
-  if (Number.isNaN(parsed.getTime())) {
-    return null;
-  }
-
-  return parsed.getFullYear();
-}
-
-function valuationYearHasLapsed(specs: Record<string, unknown>): boolean {
-  const lastValuationYear = readIsoYear(specs.valuationLastUpdatedAt ?? specs.valuation_last_updated_at);
-
-  return lastValuationYear !== null && lastValuationYear < new Date().getFullYear();
-}
-
 function buildValuationStaleReasons(input: {
   existing: AssetRegisterItem;
   nextYearModel: number | null;
@@ -556,10 +533,6 @@ function buildValuationStaleReasons(input: {
 
   if (hasValueChanged(input.existing.yearModel, input.nextYearModel)) {
     reasons.push('year changed');
-  }
-
-  if (valuationYearHasLapsed(input.existing.specsJson)) {
-    reasons.push('year elapsed');
   }
 
   if (hasValueChanged(input.existing.hours, input.nextHours)) {
@@ -1832,7 +1805,7 @@ export async function updateAssetRegisterItem(
   }
 
   const item = mapAssetRegisterRow(row);
-  if (shouldCaptureDepreciationSnapshot && input.suppressDepreciationSnapshot !== true) {
+  if (shouldCaptureDepreciationSnapshot) {
     await captureAssetDepreciationSnapshot({
       asset: item,
       eventType: 'manual_asset_updated',

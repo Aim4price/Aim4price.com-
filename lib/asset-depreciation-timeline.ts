@@ -407,7 +407,6 @@ function isDuplicateSnapshot(latest: AssetDepreciationSnapshot | null, next: Ret
 
   return (
     numbersMatch(latest.estimatedValueExVat, next.estimatedValueExVat) &&
-    numbersMatch(latest.yearModel, next.yearModel) &&
     numbersMatch(latest.usageAmount, next.usageAmount) &&
     textMatches(latest.usageMetric, next.usageMetric) &&
     textMatches(latest.condition, next.condition) &&
