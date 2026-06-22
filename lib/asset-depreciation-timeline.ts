@@ -402,13 +402,90 @@ function textMatches(left: string | null | undefined, right: string | null | und
   return String(left ?? '').trim() === String(right ?? '').trim();
 }
 
+const BASELINE_TIMELINE_EVENT_TYPES = new Set([
+  'backfill_current_asset_state',
+  'manual_asset_created',
+  'valuation_asset_saved',
+]);
+
+const SAVED_REVALUATION_TIMELINE_EVENT_TYPES = new Set([
+  'automatic_revaluation_saved',
+]);
+
+const VALUATION_RELEVANT_UPDATE_EVENT_TYPES = new Set([
+  'manual_asset_updated',
+  'qr_scan_update',
+]);
+
+const DEPRECIATION_REASON_MARKERS = [
+  'usage',
+  'hour',
+  'km',
+  'kilometre',
+  'kilometer',
+  'life worked',
+  'percent',
+  'condition',
+  'year',
+  'age',
+  'staged depreciation',
+  'value unchanged',
+];
+
+function collectReasonText(value: unknown, reasons: string[]): void {
+  if (Array.isArray(value)) {
+    value.forEach((item) => collectReasonText(item, reasons));
+    return;
+  }
+
+  if (typeof value === 'string' && value.trim()) {
+    reasons.push(value.trim());
+  }
+}
+
+function readTimelineReasonText(metadata: Record<string, unknown>): string[] {
+  const reasons: string[] = [];
+
+  collectReasonText(metadata.valuationRelevantReasons, reasons);
+  collectReasonText(metadata.timelineEventReasons, reasons);
+  collectReasonText(metadata.valuationStaleReasons, reasons);
+  collectReasonText(metadata.depreciationReasons, reasons);
+  collectReasonText(metadata.depreciationReason, reasons);
+  collectReasonText(metadata.reason, reasons);
+
+  return reasons;
+}
+
+function hasDepreciationReason(metadata: Record<string, unknown>): boolean {
+  return readTimelineReasonText(metadata).some((reason) => {
+    const normalized = reason.toLowerCase();
+    return DEPRECIATION_REASON_MARKERS.some((marker) => normalized.includes(marker));
+  });
+}
+
+function isDepreciationTimelineEntry(snapshot: AssetDepreciationSnapshot): boolean {
+  const eventType = snapshot.eventType.trim().toLowerCase();
+
+  if (BASELINE_TIMELINE_EVENT_TYPES.has(eventType) || SAVED_REVALUATION_TIMELINE_EVENT_TYPES.has(eventType)) {
+    return true;
+  }
+
+  if (!VALUATION_RELEVANT_UPDATE_EVENT_TYPES.has(eventType)) {
+    return false;
+  }
+
+  return snapshot.metadataJson.valuationNeedsUpdate === true || hasDepreciationReason(snapshot.metadataJson);
+}
+
 function isDuplicateSnapshot(latest: AssetDepreciationSnapshot | null, next: ReturnType<typeof buildSnapshotValues>): boolean {
   if (!latest) return false;
 
   return (
     numbersMatch(latest.estimatedValueExVat, next.estimatedValueExVat) &&
+    numbersMatch(latest.yearModel, next.yearModel) &&
     numbersMatch(latest.usageAmount, next.usageAmount) &&
     textMatches(latest.usageMetric, next.usageMetric) &&
+    numbersMatch(latest.lifeWorkedPercent, next.lifeWorkedPercent) &&
     textMatches(latest.condition, next.condition) &&
     numbersMatch(latest.replacementPriceExVat, next.replacementPriceExVat) &&
     numbersMatch(latest.valuationRunId, next.valuationRunId)
@@ -674,7 +751,7 @@ export async function listAssetDepreciationSnapshotsForAsset(input: {
     values,
   );
 
-  return result.rows.map(mapSnapshotRow);
+  return result.rows.map(mapSnapshotRow).filter(isDepreciationTimelineEntry);
 }
 
 export function buildDepreciationTimelineSummary(

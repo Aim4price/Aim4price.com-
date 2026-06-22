@@ -1231,10 +1231,7 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
       }
     }
 
-    const shouldCaptureDepreciationSnapshot =
-      (nextHours !== null && nextHours !== currentAsset.hours) ||
-      (nextLifeWorkedPercent !== null && nextLifeWorkedPercent !== currentLifeWorkedPercent) ||
-      Boolean(nextCondition && currentAsset.condition && nextCondition !== currentAsset.condition);
+    const shouldCaptureDepreciationSnapshot = valuationStaleReasons.length > 0;
 
     const baseSpecsJson = nextLifeWorkedPercent !== null
       ? applyLifeWorkedPercent(asRecord(existingRow.specs_json), nextLifeWorkedPercent)
@@ -1415,6 +1412,8 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
           publicAssetCode: normalizedCode,
           valuationNeedsUpdate: valuationStaleReasons.length > 0,
           valuationStaleReasons,
+          valuationRelevantReasons: valuationStaleReasons,
+          timelineEventReasons: valuationStaleReasons,
           usageMode: currentUsageMode,
         },
       });

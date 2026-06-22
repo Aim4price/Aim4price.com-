@@ -551,6 +551,40 @@ function buildValuationStaleReasons(input: {
   return reasons;
 }
 
+function buildSavedRevaluationTimelineMetadata(input: {
+  existing: AssetRegisterItem;
+  selectedValueExVat: number;
+  staleReasons: string[];
+  valuationRunId: number;
+  selectedMethod: string;
+  saveReplacementPrice?: boolean;
+}): Record<string, unknown> {
+  const valueChanged =
+    hasValueChanged(input.existing.value, input.selectedValueExVat) ||
+    hasValueChanged(input.existing.selectedValueExVat, input.selectedValueExVat);
+  const reasons = input.staleReasons.length > 0
+    ? [...input.staleReasons]
+    : valueChanged
+      ? ['year lapse']
+      : ['valuation checked'];
+
+  if (!valueChanged && !reasons.some((reason) => reason.toLowerCase().includes('staged depreciation'))) {
+    reasons.push('staged depreciation / value unchanged');
+  }
+
+  return {
+    valuationRunId: input.valuationRunId,
+    selectedMethod: input.selectedMethod,
+    saveReplacementPrice: input.saveReplacementPrice === true,
+    valuationRelevantReasons: reasons,
+    timelineEventReasons: reasons,
+    valueChanged,
+    stagedDepreciation: !valueChanged,
+    oldValueExVat: Math.round(Number(input.existing.value) || 0),
+    newValueExVat: Math.round(Number(input.selectedValueExVat) || 0),
+  };
+}
+
 function asIdText(value: unknown): string {
   if (typeof value === 'string') return value.trim();
   if (typeof value === 'number' && Number.isFinite(value)) return String(value);
@@ -1749,14 +1783,7 @@ export async function updateAssetRegisterItem(
     nextCondition,
   });
   const nextSpecsJson = markValuationNeedsUpdate(baseSpecsJson, staleReasons, now);
-  const shouldCaptureDepreciationSnapshot =
-    hasValueChanged(existing.value, nextValue) ||
-    hasValueChanged(existing.selectedValueExVat, nextValue) ||
-    hasValueChanged(existing.hours, nextHours) ||
-    hasValueChanged(existingLifeWorkedPercent, nextLifeWorkedPercent) ||
-    hasValueChanged(existing.condition, nextCondition) ||
-    hasValueChanged(existing.yearModel, nextYearModel) ||
-    hasValueChanged(existing.replacementPriceExVat, nextReplacementPriceExVat);
+  const shouldCaptureDepreciationSnapshot = staleReasons.length > 0;
 
   pushField(fields, schema, ['kind', 'equipment_type', 'asset_type', 'item_type'], nextKind);
   pushField(fields, schema, ['title', 'name', 'asset_name'], asText(input.title));
@@ -1813,6 +1840,8 @@ export async function updateAssetRegisterItem(
       metadata: {
         valuationNeedsUpdate: staleReasons.length > 0,
         valuationStaleReasons: staleReasons,
+        valuationRelevantReasons: staleReasons,
+        timelineEventReasons: staleReasons,
       },
     });
   }
@@ -1930,11 +1959,20 @@ export async function updateAssetRegisterItemFromValuation(input: {
     asset: item,
     eventType: 'automatic_revaluation_saved',
     eventSource: 'asset-register-revalue-tractor',
-    metadata: {
+    metadata: buildSavedRevaluationTimelineMetadata({
+      existing,
+      selectedValueExVat,
+      staleReasons: buildValuationStaleReasons({
+        existing,
+        nextYearModel: input.year,
+        nextHours: input.hours,
+        nextLifeWorkedPercent: existing.lifeWorkedPercent ?? percentFromSpecs(existing.specsJson),
+        nextCondition: input.condition,
+      }),
       valuationRunId: input.valuationRunId,
       selectedMethod: input.selectedMethod,
-      saveReplacementPrice: input.saveReplacementPrice === true,
-    },
+      saveReplacementPrice: input.saveReplacementPrice,
+    }),
   });
 
   return item;
@@ -2055,11 +2093,20 @@ export async function updateAssetRegisterItemFromGenericValuation(input: {
     asset: item,
     eventType: 'automatic_revaluation_saved',
     eventSource: 'asset-register-revalue-generic',
-    metadata: {
+    metadata: buildSavedRevaluationTimelineMetadata({
+      existing,
+      selectedValueExVat,
+      staleReasons: buildValuationStaleReasons({
+        existing,
+        nextYearModel: valuationResult.year,
+        nextHours: valuationResult.usageAmount ?? null,
+        nextLifeWorkedPercent: valuationResult.lifeWorkedPercent,
+        nextCondition: valuationResult.condition,
+      }),
       valuationRunId: input.valuationRunId,
       selectedMethod: input.selectedMethod,
-      saveReplacementPrice: input.saveReplacementPrice === true,
-    },
+      saveReplacementPrice: input.saveReplacementPrice,
+    }),
   });
 
   return item;
