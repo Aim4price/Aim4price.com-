@@ -13,6 +13,7 @@ type Body = {
   sectorKey?: unknown;
   familyKey?: unknown;
   brandSlug?: unknown;
+  equipmentModelId?: unknown;
   typedModelName?: unknown;
   saveModelCandidate?: unknown;
   specsJson?: unknown;
@@ -40,6 +41,11 @@ function normalizeCondition(value: unknown): GenericCondition | null {
   const normalized = String(value ?? '').trim().toLowerCase();
   if (['excellent', 'good', 'fair', 'used', 'serious'].includes(normalized)) return normalized as GenericCondition;
   return null;
+}
+
+function normalizePositiveInteger(value: unknown): number | null {
+  const numeric = Number(value);
+  return Number.isInteger(numeric) && numeric > 0 ? numeric : null;
 }
 
 function normalizeReplacementPrice(value: unknown): number | null {
@@ -115,6 +121,7 @@ export async function POST(request: NextRequest) {
       sectorKey: sectorKey as SectorKey,
       familyKey,
       brandSlug,
+      equipmentModelId: normalizePositiveInteger(body.equipmentModelId),
       typedModelName: String(body.typedModelName ?? '').trim() || null,
       saveModelCandidate: parseBoolean(body.saveModelCandidate),
       specsJson: body.specsJson && typeof body.specsJson === 'object' ? (body.specsJson as Record<string, unknown>) : {},
