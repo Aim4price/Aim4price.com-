@@ -463,8 +463,23 @@ function resolveMaxLifetimeHours(input: DepreciationInput): number {
   return 12_000;
 }
 
+function normalizeResidualFloorFactor(value: unknown, fallbackPercent: number): number {
+  const numeric = toNumber(value);
+  if (numeric === null || numeric < 0) return fallbackPercent;
+
+  // Some catalogue rows store residual floors as whole percentages, for example
+  // 12 for 12%. The depreciation engine expects a factor, for example 0.12.
+  const factor = numeric > 1 ? numeric / 100 : numeric;
+  return clamp(factor, 0, 1);
+}
+
 function resolveResidualFloorPercent(input: DepreciationInput, fallbackPercent: number): number {
-  return positivePercent(input.specsJson.residual_floor_pct) ?? fallbackPercent;
+  // Motor must stay on the same engine-hours depreciation mechanics as tractors.
+  // Kilometres are passed through the existing "hours" input, but Motor must not
+  // apply a separate motor-specific residual floor from catalogue/profile data.
+  if (input.usageMetricType === 'km') return fallbackPercent;
+
+  return normalizeResidualFloorFactor(input.specsJson.residual_floor_pct, fallbackPercent);
 }
 
 function resolveDepreciation(input: DepreciationInput): {
