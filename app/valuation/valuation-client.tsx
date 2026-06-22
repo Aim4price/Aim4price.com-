@@ -255,6 +255,37 @@ type EquipmentModelsApiResponse = {
   error?: string;
 };
 
+
+type MotorTypeOption = {
+  value: string;
+  label: string;
+  specs?: Record<string, string>;
+};
+
+type MotorCanonicalModelResult = {
+  id: string;
+  modelKey: string;
+  representativeModelId: number;
+  sectorKey: SectorKey;
+  familyKey: string;
+  familyLabel: string;
+  brandId: number;
+  brandSlug: string;
+  brandName: string;
+  modelName: string;
+  displayLabel: string;
+  typeOptions: MotorTypeOption[];
+  defaultTypeValue: string | null;
+  specsJson: Record<string, unknown>;
+};
+
+type MotorModelSearchApiResponse = {
+  ok: boolean;
+  count?: number;
+  models?: MotorCanonicalModelResult[];
+  error?: string;
+};
+
 type TractorValuationApiResponse = {
   ok: boolean;
   result?: Result;
@@ -379,6 +410,20 @@ const WIZARD_STEPS: Array<{ step: Step; label: string }> = [
   { step: 5, label: 'Value' },
 ];
 
+
+function getWizardStepLabel(step: Step, sectorKey: SectorKey | null): string {
+  if (sectorKey === 'motor') {
+    if (step === 1) return 'Sector';
+    if (step === 2) return 'Model';
+    if (step === 3) return 'Type';
+    if (step === 4) return 'Options';
+    return 'Value';
+  }
+
+  if (step === 1) return getAssetNounTitle(sectorKey);
+  return WIZARD_STEPS.find((item) => item.step === step)?.label ?? String(step);
+}
+
 const SECTOR_OPTIONS: Array<{ key: SectorKey; label: string; available: boolean; videoSrc: string }> = [
   { key: 'agricultural', label: SECTOR_LABELS.agricultural, available: true, videoSrc: '/brand/valuation/Agriculture.mp4' },
   { key: 'construction', label: SECTOR_LABELS.construction, available: true, videoSrc: '/brand/valuation/Construction.mp4' },
@@ -410,8 +455,8 @@ const VALUATION_SEARCH_PLACEHOLDERS: Record<SectorKey, Record<ValuationSearchPla
   motor: {
     family: 'e.g. bakkie, SUV, sedan',
     brand: 'e.g. Toyota, Ford, Isuzu',
-    model: 'e.g. Hilux, Ranger, D-Max',
-    manualModel: 'e.g. Hilux 2.4 GD-6',
+    model: 'e.g. Toyota Hilux, Hilux, Ford Ranger, Yamaha MT-07',
+    manualModel: 'e.g. Toyota Hilux',
   },
 };
 
@@ -1206,7 +1251,6 @@ function getMotorPricingSpecQuestions(
   if (!isMotorSector(sectorKey) || !family) return [];
 
   return [
-    ...getMotorModelTypeQuestions(sectorKey, family, model),
     {
       id: -9002,
       sectorId: family.sectorId,
@@ -1464,6 +1508,14 @@ export default function ValuationClient() {
   const [genericModelDropdownOpen, setGenericModelDropdownOpen] = useState(false);
   const [genericModelId, setGenericModelId] = useState('');
   const [genericModelMode, setGenericModelMode] = useState<GenericModelSelectionMode>('');
+  const [motorCanonicalQuery, setMotorCanonicalQuery] = useState('');
+  const [motorCanonicalResults, setMotorCanonicalResults] = useState<MotorCanonicalModelResult[]>([]);
+  const [motorCanonicalLoading, setMotorCanonicalLoading] = useState(false);
+  const [motorCanonicalSearchError, setMotorCanonicalSearchError] = useState('');
+  const [motorCanonicalDropdownOpen, setMotorCanonicalDropdownOpen] = useState(false);
+  const [motorCanonicalModelId, setMotorCanonicalModelId] = useState('');
+  const [motorSelectedTypeKey, setMotorSelectedTypeKey] = useState('');
+  const [motorTypeDropdownOpen, setMotorTypeDropdownOpen] = useState(false);
   const [specQuestions, setSpecQuestions] = useState<SpecQuestion[]>([]);
   const [specAnswers, setSpecAnswers] = useState<Record<string, string>>({});
   const [openSpecDropdownKey, setOpenSpecDropdownKey] = useState<string | null>(null);
@@ -1594,6 +1646,18 @@ export default function ValuationClient() {
     () => genericCatalogModels.find((model) => String(model.id) === genericModelId) ?? null,
     [genericCatalogModels, genericModelId],
   );
+
+  const selectedMotorCanonicalModel = useMemo(
+    () => motorCanonicalResults.find((model) => model.id === motorCanonicalModelId) ?? null,
+    [motorCanonicalResults, motorCanonicalModelId],
+  );
+  const selectedMotorTypeOption = useMemo(
+    () => selectedMotorCanonicalModel?.typeOptions.find((option) => option.value === motorSelectedTypeKey) ?? null,
+    [selectedMotorCanonicalModel, motorSelectedTypeKey],
+  );
+  const motorTypeOptions = selectedMotorCanonicalModel?.typeOptions ?? [];
+  const motorTypeRequiredForSelectedModel = motorTypeOptions.length > 1;
+  const motorSearchFlowActive = isMotorSector(selectedSector);
   const submittedGenericModelName =
     genericModelMode === 'catalog'
       ? getGenericModelSubmitName(selectedGenericModel)
@@ -1665,9 +1729,10 @@ export default function ValuationClient() {
     (!motorSubtypeRequired || Boolean(motorSubtypeValue)) &&
     genericCatalogModelsForSelectedSubtype.length > 0;
   const genericExactModelPath = flowMode === 'exact_model' && !exactTractorAvailable && exactModelRowsAvailable && !selectedBrandIsUnknown;
-  const motorExactModelPricingPath = isMotorSector(selectedSector) && genericExactModelPath;
-  const genericValuationPath = flowMode === 'generic_specs' || genericExactModelPath;
-  const genericModelRequired = genericExactModelPath;
+  const motorCanonicalPricingPath = motorSearchFlowActive && Boolean(selectedGenericModel);
+  const motorExactModelPricingPath = motorSearchFlowActive && (genericExactModelPath || motorCanonicalPricingPath);
+  const genericValuationPath = flowMode === 'generic_specs' || genericExactModelPath || motorCanonicalPricingPath;
+  const genericModelRequired = genericExactModelPath || motorCanonicalPricingPath;
   const shouldAskGenericSpecQuestions = genericValuationPath && (!genericExactModelPath || motorExactModelPricingPath);
   const tractorSetupComplete = Boolean(tractorType && drive && cab);
   const filteredModels = useMemo(() => {
@@ -1753,6 +1818,14 @@ export default function ValuationClient() {
         : {}),
       ...specsJson,
       ...selectedMotorSubtypeSpecs,
+      ...(isMotorSector(selectedSector) ? getMotorCanonicalTypeSpecs(selectedFamily?.familyKey, selectedMotorTypeOption) : {}),
+      ...(isMotorSector(selectedSector) && selectedMotorCanonicalModel
+        ? {
+            canonical_model_label: selectedMotorCanonicalModel.displayLabel,
+            canonical_model_key: selectedMotorCanonicalModel.modelKey,
+            motor_type_required: motorTypeRequiredForSelectedModel,
+          }
+        : {}),
       ...(typedUnlistedBrandName
         ? {
             [UNLISTED_BRAND_NAME_SPEC_KEY]: typedUnlistedBrandName,
@@ -1893,6 +1966,50 @@ export default function ValuationClient() {
     };
   }, []);
 
+
+  useEffect(() => {
+    if (!isMotorSector(selectedSector)) return;
+
+    const query = normalizeText(motorCanonicalQuery);
+    if (query.length < 2) {
+      setMotorCanonicalResults([]);
+      setMotorCanonicalLoading(false);
+      setMotorCanonicalSearchError('');
+      return;
+    }
+
+    let ignore = false;
+    const timer = window.setTimeout(() => {
+      setMotorCanonicalLoading(true);
+      setMotorCanonicalSearchError('');
+
+      const params = new URLSearchParams({ search: query, limit: '25' });
+      fetch(`/api/motor-model-search?${params.toString()}`, { cache: 'no-store' })
+        .then(async (response) => {
+          const data = (await response.json()) as MotorModelSearchApiResponse;
+          if (!response.ok || !data.ok || !Array.isArray(data.models)) {
+            throw new Error(data.error ?? 'Failed to search Motor models.');
+          }
+          if (!ignore) setMotorCanonicalResults(data.models);
+        })
+        .catch((error) => {
+          console.error(error);
+          if (!ignore) {
+            setMotorCanonicalResults([]);
+            setMotorCanonicalSearchError(error instanceof Error ? error.message : 'Failed to search Motor models.');
+          }
+        })
+        .finally(() => {
+          if (!ignore) setMotorCanonicalLoading(false);
+        });
+    }, 220);
+
+    return () => {
+      ignore = true;
+      window.clearTimeout(timer);
+    };
+  }, [selectedSector, motorCanonicalQuery]);
+
   useEffect(() => {
     let ignore = false;
 
@@ -1919,6 +2036,14 @@ export default function ValuationClient() {
     setGenericModelsLoading(false);
     setGenericModelLookupKey('');
     clearGenericModelSelection({ clearManual: true, clearPrefilledSpecs: true });
+    setMotorCanonicalQuery('');
+    setMotorCanonicalResults([]);
+    setMotorCanonicalLoading(false);
+    setMotorCanonicalSearchError('');
+    setMotorCanonicalDropdownOpen(false);
+    setMotorCanonicalModelId('');
+    setMotorSelectedTypeKey('');
+    setMotorTypeDropdownOpen(false);
     setSpecQuestions([]);
     setSpecAnswers({});
     setOpenSpecDropdownKey(null);
@@ -1976,6 +2101,11 @@ export default function ValuationClient() {
 
   useEffect(() => {
     if (!selectedFamily || !selectedSector) return;
+
+    if (isMotorSector(selectedSector)) {
+      setBrandsLoading(false);
+      return;
+    }
 
     const sectorForRequest = selectedSector;
     const familyForRequest = selectedFamily;
@@ -2055,7 +2185,7 @@ export default function ValuationClient() {
     setSpecQuestions([]);
     setSpecAnswers({});
 
-    if (!selectedFamily || !selectedSector || !shouldAskGenericSpecQuestions) {
+    if (!selectedFamily || !selectedSector || !shouldAskGenericSpecQuestions || isMotorSector(selectedSector)) {
       return () => {
         ignore = true;
       };
@@ -2144,6 +2274,11 @@ export default function ValuationClient() {
       return;
     }
 
+    if (isMotorSector(selectedSector)) {
+      setGenericModelsLoading(false);
+      return;
+    }
+
     const sectorForRequest = selectedSector;
     const familyKeyForRequest = selectedFamily.familyKey;
     const brandSlugForRequest = brandSlug;
@@ -2189,6 +2324,7 @@ export default function ValuationClient() {
 
   useEffect(() => {
     if (!selectedFamily || !brandSlug) return;
+    if (isMotorSector(selectedSector)) return;
 
     if (selectedBrandIsUnknown) {
       if (flowMode !== 'generic_specs') setFlowMode('generic_specs');
@@ -2313,6 +2449,12 @@ export default function ValuationClient() {
   function validateGenericModelSelection(): string | null {
     if (!genericValuationPath) return null;
 
+    if (isMotorSector(selectedSector)) {
+      if (!selectedMotorCanonicalModel || !selectedGenericModel) return 'Search and choose the clean Motor model first.';
+      if (motorTypeRequiredForSelectedModel && !motorSelectedTypeKey) return 'Choose the type for this Motor model first.';
+      return null;
+    }
+
     const manualModelName = normalizeText(typedModelName);
 
     if (selectedBrandIsUnknown) {
@@ -2341,7 +2483,7 @@ export default function ValuationClient() {
     setLifeWorkedPercent('');
     setUserReplacementPrice('');
     setCondition('good');
-    setSpecAnswers(selectedMotorSubtypeSpecs);
+    setSpecAnswers(isMotorSector(selectedSector) ? getMotorCanonicalTypeSpecs(selectedFamily?.familyKey, selectedMotorTypeOption) : selectedMotorSubtypeSpecs);
     setOpenSpecDropdownKey(null);
     setGpsTypeDropdownOpen(false);
     genericModelPrefilledSpecKeysRef.current = new Set();
@@ -2496,6 +2638,7 @@ export default function ValuationClient() {
             sectorKey: currentResult.sector.key,
             familyKey: currentResult.family.key,
             brandSlug: currentResult.brand.slug,
+            equipmentModelId: toNumberOrNull(currentResult.specsJson.catalog_model_id),
             typedModelName: currentResult.typedModelName,
             saveModelCandidate: false,
             specsJson: currentResult.specsJson,
@@ -3531,6 +3674,21 @@ export default function ValuationClient() {
 
   function handleNext() {
     setMessage('');
+    if (isMotorSector(selectedSector)) {
+      if (step === 2) {
+        const motorModelMessage = validateMotorCanonicalSelection();
+        if (motorModelMessage) {
+          setMessage(motorModelMessage);
+          return;
+        }
+        setStep(4);
+        return;
+      }
+      if (step === 4) {
+        void calculateValuation();
+        return;
+      }
+    }
     if (step === 1 && !selectedFamily) {
       setMessage(`Choose an ${getAssetTypeLabel(selectedSector)} first.`);
       return;
@@ -3597,6 +3755,14 @@ export default function ValuationClient() {
     setGenericModelsLoading(false);
     setGenericModelLookupKey('');
     clearGenericModelSelection({ clearManual: true, clearPrefilledSpecs: true });
+    setMotorCanonicalQuery('');
+    setMotorCanonicalResults([]);
+    setMotorCanonicalLoading(false);
+    setMotorCanonicalSearchError('');
+    setMotorCanonicalDropdownOpen(false);
+    setMotorCanonicalModelId('');
+    setMotorSelectedTypeKey('');
+    setMotorTypeDropdownOpen(false);
     setSpecQuestions([]);
     setSpecAnswers({});
     setOpenSpecDropdownKey(null);
@@ -3619,7 +3785,140 @@ export default function ValuationClient() {
 
     setMessage('');
     setSelectedSector(sectorKey);
+    if (sectorKey === 'motor') {
+      setStep(2);
+    }
     resetResult();
+  }
+
+
+  function buildGenericModelFromMotorResult(result: MotorCanonicalModelResult): GenericCatalogModel {
+    return {
+      id: result.representativeModelId,
+      sectorId: 0,
+      sectorKey: 'motor',
+      familyId: 0,
+      familyKey: result.familyKey,
+      familyLabel: result.familyLabel,
+      usageMetricType: 'km',
+      valuationMode: 'engine_hours',
+      catalogMode: 'generic_specs',
+      isPropelled: true,
+      brandId: result.brandId,
+      brandSlug: result.brandSlug,
+      brandName: result.brandName,
+      aim4ModelKey: result.modelKey,
+      legacyTractorCatalogId: null,
+      modelName: result.modelName,
+      variantName: null,
+      normalizedModelName: result.modelKey,
+      displayName: result.displayLabel,
+      yearStart: null,
+      yearEnd: null,
+      powerKw: null,
+      tractorType: null,
+      driveType: null,
+      cabType: null,
+      workingWidthM: null,
+      rowsCount: null,
+      tankCapacityL: null,
+      aim4priceReplacementPriceExVat: null,
+      replacementPriceYear: null,
+      isGenericFallback: false,
+      specsJson: {
+        ...result.specsJson,
+        aim4_model_key: result.modelKey,
+        selected_model_key: result.modelKey,
+        available_type_keys: result.typeOptions.map((option) => option.value),
+        available_type_labels: result.typeOptions.map((option) => option.label),
+        default_type_key: result.defaultTypeValue ?? result.typeOptions[0]?.value ?? '',
+      },
+      isActive: true,
+    };
+  }
+
+  function getMotorCanonicalTypeSpecs(familyForType: string | null | undefined, option: MotorTypeOption | null): Record<string, string> {
+    if (!option?.value) return {};
+    const family = familyForType ?? '';
+    const typeKey = option.value;
+    const specs: Record<string, string> = {
+      type_key: typeKey,
+      type_label: option.label,
+      motor_type: typeKey,
+      ...(option.specs ?? {}),
+    };
+
+    if (family === 'bakkies_ldvs') specs.cab_type = typeKey;
+    if (family === 'cars_suvs' || family === 'light_commercial_vehicles') specs.body_type = typeKey;
+    if (family === 'trucks') specs.truck_type = typeKey;
+    if (family === 'trailers') specs.trailer_type = typeKey;
+    if (family === 'buses') specs.bus_type = typeKey;
+    if (family === 'motorcycles') specs.motorcycle_type = typeKey;
+    if (family === 'quadbikes') specs.quadbike_type = typeKey;
+    if (family === 'side_by_sides') specs.side_by_side_type = typeKey;
+
+    return specs;
+  }
+
+  function applyMotorCanonicalModel(result: MotorCanonicalModelResult) {
+    const model = buildGenericModelFromMotorResult(result);
+    const firstType = result.typeOptions.length === 1 ? result.typeOptions[0] : null;
+    const defaultType = result.typeOptions.find((option) => option.value === result.defaultTypeValue) ?? firstType;
+    const resolvedTypeKey = defaultType?.value ?? '';
+    const resolvedTypeSpecs = getMotorCanonicalTypeSpecs(result.familyKey, defaultType);
+
+    setMotorCanonicalModelId(result.id);
+    setMotorCanonicalQuery(result.displayLabel);
+    setMotorCanonicalDropdownOpen(false);
+    setMotorCanonicalSearchError('');
+    setMotorSelectedTypeKey(resolvedTypeKey);
+    setMotorTypeDropdownOpen(false);
+    setFamilyKey(result.familyKey);
+    setBrands([{ slug: result.brandSlug, name: result.brandName }]);
+    setBrandSlug(result.brandSlug);
+    setBrandSearch(result.brandName);
+    setUnlistedBrandName('');
+    setFlowMode('exact_model');
+    setGenericCatalogModels([model]);
+    setGenericModelLookupKey(`motor|${result.familyKey}|${result.brandSlug}`);
+    setGenericModelId(String(model.id));
+    setGenericModelMode('catalog');
+    setGenericModelQuery(result.displayLabel);
+    setTypedModelName('');
+    setSpecAnswers((current) => ({
+      ...current,
+      ...resolvedTypeSpecs,
+      ...(current.spec_level ? {} : { spec_level: 'Mid' }),
+      ...(current.drive_type ? {} : { drive_type: 'Any/Unknown' }),
+      ...(current.transmission ? {} : { transmission: 'Any/Unknown' }),
+    }));
+    resetResult();
+
+    if (result.typeOptions.length <= 1) {
+      setStep(4);
+    }
+  }
+
+  function handleMotorTypeSelection(nextTypeKey: string) {
+    const option = motorTypeOptions.find((item) => item.value === nextTypeKey) ?? null;
+    if (!option) return;
+    setMotorSelectedTypeKey(nextTypeKey);
+    setMotorTypeDropdownOpen(false);
+    const nextTypeSpecs = getMotorCanonicalTypeSpecs(selectedMotorCanonicalModel?.familyKey ?? selectedFamily?.familyKey, option);
+    setSpecAnswers((current) => ({ ...current, ...nextTypeSpecs }));
+    setMessage('');
+    resetResult();
+    setStep(4);
+  }
+
+  function validateMotorCanonicalSelection(): string | null {
+    if (!selectedMotorCanonicalModel || !selectedGenericModel || !selectedFamily || !selectedBrand) {
+      return 'Search and choose the Motor brand and model first.';
+    }
+    if (motorTypeRequiredForSelectedModel && !motorSelectedTypeKey) {
+      return 'Choose the type for this Motor model first.';
+    }
+    return null;
   }
 
   function handleFamilySelection(nextFamilyKey: string) {
@@ -3796,6 +4095,10 @@ export default function ValuationClient() {
       }
 
       router.push('/');
+      return;
+    }
+    if (isMotorSector(selectedSector) && step === 4) {
+      setStep(2);
       return;
     }
     setStep(previousStep(step));
@@ -3998,6 +4301,142 @@ export default function ValuationClient() {
               </div>
             ) : null}
           </div>
+        </div>
+      </div>
+    );
+  }
+
+
+  function renderMotorSearchStep() {
+    const selectedLabel = selectedMotorCanonicalModel?.displayLabel ?? 'Choose vehicle model';
+    const showTypePicker = Boolean(selectedMotorCanonicalModel && motorTypeOptions.length > 1);
+
+    return (
+      <div className={styles.stepBlock}>
+        <div className={styles.selectedSummary}>
+          <span className={styles.selectedSummaryPill}>Motor</span>
+          {selectedMotorCanonicalModel ? <span className={styles.selectedSummaryPill}>{selectedMotorCanonicalModel.familyLabel}</span> : null}
+          {selectedMotorCanonicalModel ? <span className={styles.selectedSummaryPill}>{selectedMotorCanonicalModel.brandName}</span> : null}
+        </div>
+
+        <div>
+          <h2 className={styles.stepTitle}>Search brand and model</h2>
+          <p className={styles.stepText}>Search for the clean Motor model. Aim4price will keep detailed variants hidden in the pricing matrix.</p>
+        </div>
+
+        <div className={`${styles.currentCard} ${styles.tractorSetupCard}`}>
+          <div className={styles.currentCardHead}>
+            <div>
+              <h3 className={styles.currentTitle}>Motor model</h3>
+              <p className={styles.currentHint}>Examples: Toyota Hilux, Hilux, Ford Ranger, Volkswagen Polo, Yamaha MT-07.</p>
+            </div>
+            <span className={styles.equipmentCountPill}>{motorCanonicalLoading ? 'Searching' : `${motorCanonicalResults.length} results`}</span>
+          </div>
+
+          <label className={`${styles.field} ${styles.searchPanel}`}>
+            <span className={styles.fieldLabel}>Search brand and model</span>
+            <input
+              className={styles.searchInput}
+              value={motorCanonicalQuery}
+              onChange={(event) => {
+                setMotorCanonicalQuery(event.target.value);
+                setMotorCanonicalDropdownOpen(true);
+                setMotorCanonicalModelId('');
+                setMotorSelectedTypeKey('');
+                setGenericCatalogModels([]);
+                clearGenericModelSelection({ clearManual: true, clearPrefilledSpecs: true });
+                resetResult();
+              }}
+              onFocus={() => setMotorCanonicalDropdownOpen(true)}
+              placeholder={getSearchPlaceholder('motor', 'model')}
+              autoComplete="off"
+            />
+          </label>
+
+          <div className={styles.equipmentDropdownWrap}>
+            <button
+              type="button"
+              className={`${styles.equipmentDropdownTrigger} ${motorCanonicalDropdownOpen || motorCanonicalQuery ? styles.equipmentDropdownTriggerOpen : ''}`}
+              onClick={() => setMotorCanonicalDropdownOpen((value) => !value)}
+              disabled={motorCanonicalLoading && !motorCanonicalResults.length}
+              aria-expanded={motorCanonicalDropdownOpen}
+            >
+              <span>{selectedLabel}</span>
+              <span className={styles.equipmentDropdownChevron} aria-hidden="true">
+                <svg viewBox="0 0 20 20" focusable="false">
+                  <path d="M5.5 7.5 10 12l4.5-4.5" />
+                </svg>
+              </span>
+            </button>
+
+            {motorCanonicalDropdownOpen || motorCanonicalQuery ? (
+              <div className={styles.equipmentDropdownMenu}>
+                {motorCanonicalResults.length ? (
+                  motorCanonicalResults.map((model) => (
+                    <button
+                      key={model.id}
+                      type="button"
+                      className={`${styles.equipmentDropdownOption} ${motorCanonicalModelId === model.id ? styles.equipmentDropdownOptionActive : ''}`}
+                      onClick={() => applyMotorCanonicalModel(model)}
+                    >
+                      <span className={styles.modelOptionText}>{model.displayLabel}</span>
+                      <span className={styles.modelOptionMeta}>{model.familyLabel}</span>
+                    </button>
+                  ))
+                ) : (
+                  <div className={styles.equipmentDropdownEmpty}>
+                    {motorCanonicalQuery.trim().length < 2 ? 'Type at least two letters to search.' : motorCanonicalLoading ? 'Searching...' : 'No clean Motor model found.'}
+                  </div>
+                )}
+              </div>
+            ) : null}
+          </div>
+
+          {motorCanonicalSearchError ? <p className={styles.message}>{motorCanonicalSearchError}</p> : null}
+
+          {showTypePicker ? (
+            <div className={`${styles.inlineSetupGroup} ${styles.modelSetupGroup}`} style={{ marginTop: '1rem' }}>
+              <div className={styles.inlineSetupHeader}>
+                <span className={styles.fieldLabel}>Type</span>
+                <strong>{selectedMotorTypeOption?.label ?? 'Choose type'}</strong>
+              </div>
+
+              <div className={styles.equipmentDropdownWrap}>
+                <button
+                  type="button"
+                  className={`${styles.equipmentDropdownTrigger} ${motorTypeDropdownOpen ? styles.equipmentDropdownTriggerOpen : ''}`}
+                  onClick={() => setMotorTypeDropdownOpen((value) => !value)}
+                  aria-expanded={motorTypeDropdownOpen}
+                >
+                  <span>{selectedMotorTypeOption?.label ?? 'Select type...'}</span>
+                  <span className={styles.equipmentDropdownChevron} aria-hidden="true">
+                    <svg viewBox="0 0 20 20" focusable="false">
+                      <path d="M5.5 7.5 10 12l4.5-4.5" />
+                    </svg>
+                  </span>
+                </button>
+
+                {motorTypeDropdownOpen ? (
+                  <div className={styles.equipmentDropdownMenu}>
+                    {motorTypeOptions.map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        className={`${styles.equipmentDropdownOption} ${motorSelectedTypeKey === option.value ? styles.equipmentDropdownOptionActive : ''}`}
+                        onClick={() => handleMotorTypeSelection(option.value)}
+                      >
+                        <span className={styles.modelOptionText}>{option.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+
+              <p className={styles.fieldHint}>This question is only shown because the selected model has more than one Motor type.</p>
+            </div>
+          ) : selectedMotorCanonicalModel ? (
+            <p className={styles.fieldHint}>Only one type is available for this model, so Aim4price skipped the type question.</p>
+          ) : null}
         </div>
       </div>
     );
@@ -5487,6 +5926,11 @@ export default function ValuationClient() {
 
   function renderStepBody() {
     if (step === 1) return renderMachineStep();
+    if (isMotorSector(selectedSector)) {
+      if (step === 2) return renderMotorSearchStep();
+      if (step === 3 || step === 4) return renderDetailsStep();
+      return renderResultStep();
+    }
     if (step === 2) return renderBrandStep();
     if (step === 3) return renderPathStep();
     if (step === 4) return renderDetailsStep();
@@ -5527,7 +5971,7 @@ export default function ValuationClient() {
                         <span className={`${styles.stepperBullet} ${active ? styles.stepperBulletActive : ''} ${complete ? styles.stepperBulletComplete : ''}`}>
                           {complete ? '✓' : item.step}
                         </span>
-                        <span className={`${styles.stepperLabel} ${active ? styles.stepperLabelActive : ''} ${complete ? styles.stepperLabelComplete : ''}`}>{item.step === 1 ? getAssetNounTitle(selectedSector) : item.label}</span>
+                        <span className={`${styles.stepperLabel} ${active ? styles.stepperLabelActive : ''} ${complete ? styles.stepperLabelComplete : ''}`}>{getWizardStepLabel(item.step, selectedSector)}</span>
                       </div>
                     );
                   })}
@@ -5563,7 +6007,7 @@ export default function ValuationClient() {
                   type="button"
                   className={styles.primaryButton}
                   onClick={handleNext}
-                  disabled={valuationLoading || (step === 2 && (brandsLoading || !selectedBrand))}
+                  disabled={valuationLoading || (step === 2 && (isMotorSector(selectedSector) ? motorCanonicalLoading : brandsLoading || !selectedBrand))}
                 >
                   {valuationLoading ? 'Calculating...' : step === 4 ? 'Get Estimate' : 'Continue'}
                 </button>
