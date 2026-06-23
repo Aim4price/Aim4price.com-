@@ -577,7 +577,9 @@ type IconProps = {
 
 const MAX_PHOTOS = 12;
 const MAX_DOCUMENTS = 20;
-const PAGE_SIZE = 6;
+const PAGE_SIZE_OPTIONS = [6, 12, 18] as const;
+type PageSize = (typeof PAGE_SIZE_OPTIONS)[number];
+const DEFAULT_PAGE_SIZE: PageSize = 6;
 const FALLBACK_ASSET_IMAGE = '/brand/Tractor.png';
 const MANUAL_ASSET_TYPE_OPTIONS: Array<{
   value: Extract<AssetKind, 'vehicle' | 'tools' | 'property' | 'equipment' | 'manual'>;
@@ -3495,6 +3497,7 @@ export default function AssetRegisterClient() {
   const [isAssetFilterOpen, setIsAssetFilterOpen] = useState(false);
   const assetFilterWrapRef = useRef<HTMLDivElement | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState<PageSize>(DEFAULT_PAGE_SIZE);
   const [registerValueVatMode, setRegisterValueVatMode] = useState<'excluded' | 'included'>('excluded');
   const [replacementValueVatMode, setReplacementValueVatMode] = useState<'excluded' | 'included'>('excluded');
   const [registerSummaryStartIndex, setRegisterSummaryStartIndex] = useState(0);
@@ -4416,10 +4419,10 @@ export default function AssetRegisterClient() {
     return sortAssetsByRegisterPriority(nextAssets, assetFilter);
   }, [assets, assetFilter, searchTerm]);
 
-  const pageCount = Math.max(1, Math.ceil(filteredAssets.length / PAGE_SIZE));
-  const pageStart = (currentPage - 1) * PAGE_SIZE;
-  const pageEnd = Math.min(filteredAssets.length, pageStart + PAGE_SIZE);
-  const visibleAssets = filteredAssets.slice(pageStart, pageStart + PAGE_SIZE);
+  const pageCount = Math.max(1, Math.ceil(filteredAssets.length / pageSize));
+  const pageStart = (currentPage - 1) * pageSize;
+  const pageEnd = Math.min(filteredAssets.length, pageStart + pageSize);
+  const visibleAssets = filteredAssets.slice(pageStart, pageStart + pageSize);
   const paginationItems = useMemo(() => buildPaginationItems(currentPage, pageCount), [currentPage, pageCount]);
 
   useEffect(() => {
@@ -4431,12 +4434,12 @@ export default function AssetRegisterClient() {
   useEffect(() => {
     if (!expandedAssetId) return;
 
-    const currentPageAssets = filteredAssets.slice(pageStart, pageStart + PAGE_SIZE);
+    const currentPageAssets = filteredAssets.slice(pageStart, pageStart + pageSize);
 
     if (!currentPageAssets.some((asset) => asset.id === expandedAssetId)) {
       setExpandedAssetId(null);
     }
-  }, [expandedAssetId, filteredAssets, pageStart]);
+  }, [expandedAssetId, filteredAssets, pageSize, pageStart]);
 
   function resetEditor() {
     pendingPhotoFilesRef.current.forEach((entry) => revokePhotoPreviewUrl(entry.previewUrl));
@@ -7035,6 +7038,14 @@ export default function AssetRegisterClient() {
     void requestProjection(projectionAsset, projectionForm);
   }
 
+  function handlePageSizeChange(nextPageSize: PageSize) {
+    if (nextPageSize === pageSize) return;
+
+    setPageSize(nextPageSize);
+    setCurrentPage(1);
+    setExpandedAssetId(null);
+  }
+
   const hasActiveAssetFilter = assetFilter !== 'all';
   const registerRangeDescription = filteredAssets.length
     ? `Showing ${pageStart + 1}-${pageEnd} of ${filteredAssets.length} ${filteredAssets.length === 1 ? 'asset' : 'assets'}${hasActiveAssetFilter ? ` · ${activeAssetFilterLabel}` : ''}`
@@ -7965,50 +7976,71 @@ export default function AssetRegisterClient() {
                   })}
                 </div>
 
-                {pageCount > 1 ? (
+                {filteredAssets.length > 0 ? (
                   <div className={styles.paginationBar}>
-                    <div className={styles.paginationMeta}>
-                      Page {currentPage} of {pageCount}
+                    <div className={styles.paginationInfo}>
+                      <div className={styles.paginationMeta}>
+                        Page {currentPage} of {pageCount}
+                      </div>
+
+                      <div className={styles.pageSizeControls} aria-label="Assets per page">
+                        <span>Show</span>
+                        <div className={styles.pageSizeButtonGroup}>
+                          {PAGE_SIZE_OPTIONS.map((option) => (
+                            <button
+                              type="button"
+                              key={option}
+                              className={`${styles.paginationButton} ${styles.pageSizeButton} ${pageSize === option ? styles.pageSizeButtonActive : ''}`}
+                              onClick={() => handlePageSizeChange(option)}
+                              aria-pressed={pageSize === option}
+                            >
+                              {option}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     </div>
 
-                    <div className={styles.paginationActions}>
-                      <button
-                        type="button"
-                        className={styles.paginationButton}
-                        onClick={() => setCurrentPage((current) => Math.max(1, current - 1))}
-                        disabled={currentPage === 1}
-                      >
-                        <ChevronLeftIcon className={styles.buttonIcon} />
-                        <span>Previous</span>
-                      </button>
+                    {pageCount > 1 ? (
+                      <div className={styles.paginationActions}>
+                        <button
+                          type="button"
+                          className={styles.paginationButton}
+                          onClick={() => setCurrentPage((current) => Math.max(1, current - 1))}
+                          disabled={currentPage === 1}
+                        >
+                          <ChevronLeftIcon className={styles.buttonIcon} />
+                          <span>Previous</span>
+                        </button>
 
-                      {paginationItems.map((item, index) =>
-                        item === 'ellipsis' ? (
-                          <span className={styles.paginationEllipsis} key={`ellipsis-${index}`}>
-                            …
-                          </span>
-                        ) : (
-                          <button
-                            type="button"
-                            key={item}
-                            className={`${styles.paginationButton} ${item === currentPage ? styles.paginationButtonActive : ''}`}
-                            onClick={() => setCurrentPage(item)}
-                          >
-                            {item}
-                          </button>
-                        ),
-                      )}
+                        {paginationItems.map((item, index) =>
+                          item === 'ellipsis' ? (
+                            <span className={styles.paginationEllipsis} key={`ellipsis-${index}`}>
+                              …
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              key={item}
+                              className={`${styles.paginationButton} ${item === currentPage ? styles.paginationButtonActive : ''}`}
+                              onClick={() => setCurrentPage(item)}
+                            >
+                              {item}
+                            </button>
+                          ),
+                        )}
 
-                      <button
-                        type="button"
-                        className={styles.paginationButton}
-                        onClick={() => setCurrentPage((current) => Math.min(pageCount, current + 1))}
-                        disabled={currentPage === pageCount}
-                      >
-                        <span>Next</span>
-                        <ChevronRightIcon className={styles.buttonIcon} />
-                      </button>
-                    </div>
+                        <button
+                          type="button"
+                          className={styles.paginationButton}
+                          onClick={() => setCurrentPage((current) => Math.min(pageCount, current + 1))}
+                          disabled={currentPage === pageCount}
+                        >
+                          <span>Next</span>
+                          <ChevronRightIcon className={styles.buttonIcon} />
+                        </button>
+                      </div>
+                    ) : null}
                   </div>
                 ) : null}
               </>
