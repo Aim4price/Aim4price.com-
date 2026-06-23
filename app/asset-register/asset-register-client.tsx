@@ -224,19 +224,9 @@ type AssetFilterKey =
   | 'manual-value'
   | 'marketplace';
 
-type AssetFilterGroupKey = 'view' | 'asset-type' | 'status' | 'value' | 'channel';
-
 type AssetFilterOption = {
   value: AssetFilterKey;
   label: string;
-  description: string;
-  group: AssetFilterGroupKey;
-};
-
-type AssetFilterGroup = {
-  key: AssetFilterGroupKey;
-  title: string;
-  description: string;
 };
 
 type AssetDocument = {
@@ -673,31 +663,23 @@ const CONDITION_OPTIONS: Array<{ value: AssetConditionValue; label: string }> = 
   { value: 'serious', label: 'Requires attention' },
 ];
 
-const ASSET_FILTER_GROUPS: AssetFilterGroup[] = [
-  { key: 'view', title: 'View', description: 'Choose the overall asset list view.' },
-  { key: 'asset-type', title: 'Asset type', description: 'Include or remove property assets from the register list.' },
-  { key: 'status', title: 'Status', description: 'Filter by saved finance, insurance and licence status.' },
-  { key: 'value', title: 'Value and pricing', description: 'Sort or narrow the list by current value and pricing source.' },
-  { key: 'channel', title: 'Marketplace', description: 'Show assets currently published to the marketplace.' },
-];
-
 const ASSET_FILTER_OPTIONS: AssetFilterOption[] = [
-  { value: 'all', label: 'All assets', description: 'Show every asset in this register.', group: 'view' },
-  { value: 'property', label: 'Property only', description: 'Show only property and building assets.', group: 'asset-type' },
-  { value: 'no-property', label: 'No property', description: 'Hide property and building assets from the list.', group: 'asset-type' },
-  { value: 'insured', label: 'Insured', description: 'Only assets marked as insured.', group: 'status' },
-  { value: 'not-insured', label: 'Not insured', description: 'Only assets marked as not insured.', group: 'status' },
-  { value: 'financed', label: 'Financed', description: 'Only assets marked as financed.', group: 'status' },
-  { value: 'not-financed', label: 'Not financed', description: 'Only assets marked as not financed.', group: 'status' },
-  { value: 'licensed', label: 'Licensed', description: 'Only assets marked as licensed.', group: 'status' },
-  { value: 'not-licensed', label: 'Not licensed', description: 'Only assets marked as not licensed.', group: 'status' },
-  { value: 'highest-value', label: 'Highest current value', description: 'Keep all assets, sorted from highest to lowest value.', group: 'value' },
-  { value: 'lowest-value', label: 'Lowest current value', description: 'Keep all assets, sorted from lowest to highest value.', group: 'value' },
-  { value: 'highest-replacement-price', label: 'Highest replacement price', description: 'Keep all assets, sorted by highest replacement price.', group: 'value' },
-  { value: 'lowest-replacement-price', label: 'Lowest replacement price', description: 'Keep all assets, sorted by lowest replacement price.', group: 'value' },
-  { value: 'aim4price-value', label: 'Aim4price value', description: 'Only assets valued through Aim4price.', group: 'value' },
-  { value: 'manual-value', label: 'Manual value', description: 'Only manually priced assets.', group: 'value' },
-  { value: 'marketplace', label: 'Marketplace', description: 'Only assets currently live on the marketplace.', group: 'channel' },
+  { value: 'all', label: 'All assets' },
+  { value: 'property', label: 'Property only' },
+  { value: 'no-property', label: 'No property' },
+  { value: 'insured', label: 'Insured' },
+  { value: 'not-insured', label: 'Not insured' },
+  { value: 'financed', label: 'Financed' },
+  { value: 'not-financed', label: 'Not financed' },
+  { value: 'licensed', label: 'Licensed' },
+  { value: 'not-licensed', label: 'Not licensed' },
+  { value: 'highest-value', label: 'Highest current value' },
+  { value: 'lowest-value', label: 'Lowest current value' },
+  { value: 'highest-replacement-price', label: 'Highest replacement price' },
+  { value: 'lowest-replacement-price', label: 'Lowest replacement price' },
+  { value: 'aim4price-value', label: 'Aim4price value' },
+  { value: 'manual-value', label: 'Manual value' },
+  { value: 'marketplace', label: 'Marketplace' },
 ];
 
 const LEAFLET_SCRIPT_ID = 'aim4price-leaflet-script';
@@ -4429,13 +4411,6 @@ export default function AssetRegisterClient() {
       : assets;
   }, [assets, searchTerm]);
 
-  const assetFilterCounts = useMemo(() => {
-    return ASSET_FILTER_OPTIONS.reduce((counts, option) => {
-      counts[option.value] = filterAssetsByRegisterFilter(searchMatchedAssets, option.value).length;
-      return counts;
-    }, {} as Record<AssetFilterKey, number>);
-  }, [searchMatchedAssets]);
-
   const filteredAssets = useMemo(() => {
     return sortAssetsByRegisterPriority(filterAssetsByRegisterFilter(searchMatchedAssets, assetFilter), assetFilter);
   }, [assetFilter, searchMatchedAssets]);
@@ -6697,12 +6672,10 @@ export default function AssetRegisterClient() {
 
   function selectAssetFilter(nextFilter: AssetFilterKey) {
     setAssetFilter(nextFilter);
-    setIsAssetFilterOpen(false);
   }
 
   function clearAssetFilter() {
     setAssetFilter('all');
-    setIsAssetFilterOpen(false);
   }
 
   function openExportModal() {
@@ -7287,9 +7260,7 @@ export default function AssetRegisterClient() {
               >
                 <div className={`${styles.modalHeader} ${styles.assetFilterModalHeader}`}>
                   <div className={styles.modalHeaderText}>
-                    <span className={styles.modalEyebrow}>Asset register</span>
                     <h3 id="asset-register-filter-title">Filter assets</h3>
-                    <p>Choose a focused view for this register. The No property option hides property and building assets from the list.</p>
                   </div>
 
                   <button
@@ -7303,57 +7274,23 @@ export default function AssetRegisterClient() {
                 </div>
 
                 <div className={`${styles.modalScrollBody} ${styles.assetFilterModalBody}`}>
-                  <section className={styles.assetFilterCurrentPanel} aria-label="Current asset filter">
-                    <div>
-                      <span>Current filter</span>
-                      <strong>{activeAssetFilterLabel}</strong>
-                    </div>
-                    <div>
-                      <span>Assets shown</span>
-                      <strong>{filteredAssets.length.toLocaleString('en-ZA')} of {searchMatchedAssets.length.toLocaleString('en-ZA')}</strong>
-                    </div>
-                  </section>
-
-                  <div className={styles.assetFilterGroups}>
-                    {ASSET_FILTER_GROUPS.map((group) => {
-                      const groupOptions = ASSET_FILTER_OPTIONS.filter((option) => option.group === group.key);
+                  <div className={styles.assetFilterOptionGrid} role="group" aria-label="Asset filter options">
+                    {ASSET_FILTER_OPTIONS.map((option) => {
+                      const isActiveFilter = assetFilter === option.value;
 
                       return (
-                        <section className={styles.assetFilterGroup} key={group.key}>
-                          <div className={styles.assetFilterGroupHeader}>
-                            <div>
-                              <h4>{group.title}</h4>
-                              <p>{group.description}</p>
-                            </div>
-                          </div>
-
-                          <div className={styles.assetFilterOptionGrid}>
-                            {groupOptions.map((option) => {
-                              const isActiveFilter = assetFilter === option.value;
-                              const optionCount = assetFilterCounts[option.value] ?? 0;
-
-                              return (
-                                <button
-                                  type="button"
-                                  key={option.value}
-                                  className={`${styles.assetFilterOptionCard} ${isActiveFilter ? styles.assetFilterOptionCardActive : ''}`}
-                                  onClick={() => selectAssetFilter(option.value)}
-                                  aria-pressed={isActiveFilter}
-                                >
-                                  <span className={styles.assetFilterOptionText}>
-                                    <strong>{option.label}</strong>
-                                    <small>{option.description}</small>
-                                  </span>
-                                  <span className={styles.assetFilterOptionMeta}>
-                                    <strong>{optionCount.toLocaleString('en-ZA')}</strong>
-                                    <small>{optionCount === 1 ? 'asset' : 'assets'}</small>
-                                  </span>
-                                  {isActiveFilter ? <span className={styles.assetFilterModalTick}>✓</span> : null}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </section>
+                        <button
+                          type="button"
+                          key={option.value}
+                          className={`${styles.assetFilterOptionCard} ${isActiveFilter ? styles.assetFilterOptionCardActive : ''}`}
+                          onClick={() => selectAssetFilter(option.value)}
+                          aria-pressed={isActiveFilter}
+                        >
+                          <span className={styles.assetFilterOptionText}>
+                            <strong>{option.label}</strong>
+                          </span>
+                          {isActiveFilter ? <span className={styles.assetFilterModalTick}>✓</span> : null}
+                        </button>
                       );
                     })}
                   </div>
