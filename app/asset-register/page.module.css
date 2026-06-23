@@ -24268,21 +24268,60 @@ button.documentOpenLink {
   max-height: min(86vh, calc(100dvh - 2rem)) !important;
   overflow-x: hidden !important;
   overflow-y: auto !important;
-  padding: clamp(1.05rem, 1.7vw, 1.35rem) !important;
-  padding-top: clamp(3.2rem, 4vw, 3.4rem) !important;
+  padding: clamp(1.2rem, 1.85vw, 1.5rem) !important;
   border-radius: 1.75rem !important;
 }
 
-.addAssetChoiceCloseButton {
-  position: absolute !important;
-  top: clamp(0.85rem, 1.4vw, 1.05rem) !important;
-  right: clamp(0.85rem, 1.4vw, 1.05rem) !important;
-  z-index: 2 !important;
-  width: 2.45rem !important;
-  min-width: 2.45rem !important;
-  min-height: 2.45rem !important;
+.addAssetChoiceHeader {
+  position: relative !important;
+  justify-content: flex-start !important;
+  align-items: flex-start !important;
+  gap: 1rem !important;
+  margin-bottom: clamp(1rem, 1.8vw, 1.2rem) !important;
+  padding: 0 3.6rem clamp(1rem, 1.6vw, 1.16rem) 0 !important;
+  text-align: left !important;
+  border-bottom: 1px solid rgba(216, 226, 236, 0.88) !important;
 }
 
+.addAssetChoiceHeader .modalHeaderText {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  display: grid !important;
+  justify-items: start !important;
+  gap: 0.52rem !important;
+  text-align: left !important;
+}
+
+.addAssetChoiceHeader h3 {
+  max-width: 36rem !important;
+  margin: 0 !important;
+  text-align: left !important;
+  line-height: 1.04 !important;
+}
+
+.addAssetChoiceHeader p {
+  max-width: 38rem !important;
+  margin: 0 !important;
+  color: #5f7186 !important;
+  font-size: clamp(0.96rem, 1.45vw, 1.04rem) !important;
+  font-weight: 620 !important;
+  line-height: 1.55 !important;
+  text-align: left !important;
+}
+
+.addAssetChoiceHeader .modalCloseButton,
+.addAssetChoiceCloseButton {
+  position: absolute !important;
+  top: 0 !important;
+  right: 0 !important;
+  z-index: 2 !important;
+  width: 2.55rem !important;
+  min-width: 2.55rem !important;
+  min-height: 2.55rem !important;
+}
+
+.addAssetChoiceHeader .modalCloseButton .buttonIcon,
 .addAssetChoiceCloseButton .buttonIcon {
   width: 1rem !important;
   height: 1rem !important;
@@ -24341,8 +24380,22 @@ button.documentOpenLink {
   .addAssetChoiceModal {
     width: min(100%, calc(100vw - 1rem)) !important;
     padding: 1rem !important;
-    padding-top: 3.15rem !important;
     border-radius: 1.35rem !important;
+  }
+
+  .addAssetChoiceHeader {
+    margin-bottom: 0.95rem !important;
+    padding: 0 3.05rem 0.9rem 0 !important;
+  }
+
+  .addAssetChoiceHeader h3 {
+    font-size: clamp(1.34rem, 6.8vw, 1.68rem) !important;
+  }
+
+  .addAssetChoiceHeader p {
+    max-width: 100% !important;
+    font-size: 0.95rem !important;
+    line-height: 1.5 !important;
   }
 
   .addAssetChoiceGrid {
