@@ -16,6 +16,7 @@ import { getSelectedMethodValue, saveGenericValuationRunFromResult, saveValuatio
 import { runServerValuation } from './server-valuation';
 import type { GpsType, RunValuationInput } from './tractor-logic';
 import type { ConditionKey } from './tractor-data';
+import type { AdvancedAssumptionsInput } from './valuation/shared';
 
 export type AssetRevaluationMarketSource = {
   id: string | number;
@@ -342,6 +343,8 @@ function buildPreviewAssetFromTractorValuation(input: {
     yearModel: Math.round(input.year),
     hours: Math.max(0, Math.round(input.hours)),
     condition: input.condition,
+    estimatedHours: Math.max(0, Math.round(input.hours)),
+    maxLifetimeHours: roundFiniteValue(input.result.maxLifetimeHours),
     aim4priceValueExVat: roundMoneyValue(input.result.aim4priceValueExVat),
     marketMidExVat: null,
     updatedAtIso: new Date().toISOString(),
@@ -466,11 +469,14 @@ async function revalueTractorAsset(input: {
   previewOnly?: boolean;
   replacementPriceExVat?: number | null;
   saveReplacementPrice?: boolean;
+  advancedAssumptions?: AdvancedAssumptionsInput;
 }): Promise<AssetRevaluationResult> {
   const payload = asRecord(input.row.valuation_payload);
   const payloadInput = readNestedRecord(payload, 'input');
   const payloadOutput = readNestedRecord(payload, 'output');
-  const advancedAssumptions = readSavedAdvancedAssumptions(payloadInput, payloadOutput);
+  const advancedAssumptions = typeof input.advancedAssumptions === 'undefined'
+    ? readSavedAdvancedAssumptions(payloadInput, payloadOutput)
+    : input.advancedAssumptions;
   const modelId = requireText(
     payloadInput.modelId ?? input.row.equipment_model_id ?? input.row.model_id ?? input.asset.equipmentModelId,
     'This tractor is missing its original model link, so Aim4price cannot re-run the estimate yet.',
@@ -592,11 +598,14 @@ async function revalueGenericAsset(input: {
   previewOnly?: boolean;
   replacementPriceExVat?: number | null;
   saveReplacementPrice?: boolean;
+  advancedAssumptions?: AdvancedAssumptionsInput;
 }): Promise<AssetRevaluationResult> {
   const payload = asRecord(input.row.valuation_payload);
   const payloadInput = readNestedRecord(payload, 'input');
   const payloadOutput = readNestedRecord(payload, 'output');
-  const advancedAssumptions = readSavedAdvancedAssumptions(payloadInput, payloadOutput);
+  const advancedAssumptions = typeof input.advancedAssumptions === 'undefined'
+    ? readSavedAdvancedAssumptions(payloadInput, payloadOutput)
+    : input.advancedAssumptions;
   const sectorKeyRaw = payloadInput.sectorKey ?? input.row.sector_key;
 
   if (!isSectorKey(sectorKeyRaw)) {
@@ -723,6 +732,7 @@ export async function revalueAssetRegisterItem(input: {
   previewOnly?: boolean;
   replacementPriceExVat?: number | null;
   saveReplacementPrice?: boolean;
+  advancedAssumptions?: AdvancedAssumptionsInput;
 }): Promise<AssetRevaluationResult> {
   const asset = await getAssetRegisterItemById(input.userId, input.assetId);
 
@@ -753,6 +763,7 @@ export async function revalueAssetRegisterItem(input: {
       previewOnly: input.previewOnly,
       replacementPriceExVat: input.replacementPriceExVat,
       saveReplacementPrice: input.saveReplacementPrice,
+      advancedAssumptions: input.advancedAssumptions,
     });
   }
 
@@ -764,5 +775,6 @@ export async function revalueAssetRegisterItem(input: {
     previewOnly: input.previewOnly,
     replacementPriceExVat: input.replacementPriceExVat,
     saveReplacementPrice: input.saveReplacementPrice,
+    advancedAssumptions: input.advancedAssumptions,
   });
 }

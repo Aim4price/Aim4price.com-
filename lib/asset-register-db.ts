@@ -639,7 +639,18 @@ function hoursFromSpecs(specs: Record<string, unknown>): number | null {
 }
 
 function lifetimeHoursFromSpecs(specs: Record<string, unknown>): number | null {
-  const value = numberFromRecord(specs, ['max_lifetime_hours', 'expected_lifetime_hours', 'lifetime_hours', 'design_life_hours']);
+  const value = numberFromRecord(specs, [
+    'max_lifetime_hours',
+    'expected_lifetime_hours',
+    'lifetime_hours',
+    'design_life_hours',
+    'useful_life_hours',
+    'max_lifetime_km',
+    'expected_lifetime_km',
+    'lifetime_km',
+    'design_life_km',
+    'useful_life_km',
+  ]);
   return value === null ? null : Math.max(0, Math.round(value));
 }
 
@@ -1918,6 +1929,8 @@ export async function updateAssetRegisterItemFromValuation(input: {
   pushField(fields, schema, ['year_model', 'year'], Math.round(input.year));
   pushField(fields, schema, ['hours', 'engine_hours'], Math.max(0, Math.round(input.hours)));
   pushField(fields, schema, ['condition'], normalizeConditionForDb(input.condition));
+  pushField(fields, schema, ['estimated_hours'], Math.max(0, Math.round(input.hours)));
+  pushField(fields, schema, ['max_lifetime_hours'], input.result.maxLifetimeHours);
   pushField(fields, schema, ['aim4price_value_ex_vat', 'aim4price_value'], toRoundedNumber(input.result.aim4priceValueExVat));
   pushField(fields, schema, ['market_mid_ex_vat', 'market_value_ex_vat', 'market_value'], marketValueExVat);
   if (input.saveReplacementPrice === true) {
