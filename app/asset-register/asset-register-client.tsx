@@ -9,6 +9,12 @@ import {
   type ReportKeyValue,
   type ReportMethodCard,
 } from '../../lib/report-print';
+import {
+  ADVANCED_LIFETIME_HOURS_MAX,
+  ADVANCED_LIFETIME_HOURS_MIN,
+  ADVANCED_LIFETIME_KM_MAX,
+  ADVANCED_LIFETIME_KM_MIN,
+} from '../../lib/valuation/shared';
 import styles from './page.module.css';
 
 type NoticeTone = 'success' | 'error';
@@ -81,6 +87,9 @@ type AssetKind = 'tractor' | 'equipment' | 'manual' | 'property' | 'vehicle' | '
 type AssetMethod = 'aim4price' | 'manual';
 type RevalueMethod = 'aim4price';
 type RevalueReplacementMode = 'saved' | 'custom';
+type RevalueAdvancedAssumptionsRequest = {
+  maxLifetimeUsage?: number | null;
+};
 type ConditionKey = 'excellent' | 'good' | 'fair' | 'used' | 'serious';
 type AssetConditionValue = ConditionKey | '';
 type UsageMetric = 'hours' | 'km';
@@ -434,6 +443,9 @@ type AssetFutureProjection = {
   inflationRatePct: number;
   yearsForward: number;
   extraHours: number;
+  extraUsage?: number;
+  usageMetric?: UsageMetric;
+  usageUnitLabel?: string;
   condition: ConditionKey;
   current: ProjectionSnapshot;
   projected: ProjectionSnapshot;
@@ -490,6 +502,7 @@ type PricingRevaluePreview = {
   method: RevalueMethod;
   replacementMode: RevalueReplacementMode | null;
   replacementPriceExVat: number | null;
+  advancedAssumptions: RevalueAdvancedAssumptionsRequest | null;
   result: RevalueAssetApiResponse | null;
   error: string | null;
 };
@@ -2218,14 +2231,27 @@ function getManualAssetNote(value: string | null | undefined): string {
   return isQrOperationalAssetNote(note) ? '' : note;
 }
 
+function isMotorProjectionAsset(asset: Pick<RegisterAsset, 'kind' | 'specsJson'>): boolean {
+  const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
+  const sectorKey = String(specs.sectorKey ?? specs.sector_key ?? '').trim().toLowerCase();
+
+  return asset.kind === 'vehicle' || sectorKey === 'motor' || getAssetUsageMetric(asset) === 'km';
+}
+
 function canProjectFuturePrice(asset: RegisterAsset): boolean {
-  return Boolean(
-    isTractorAsset(asset) &&
-      asset.valuationRunId !== null &&
-      asset.yearModel !== null &&
-      asset.powerKw !== null &&
-      asset.tractorType,
-  );
+  if (asset.valuationRunId === null || asset.selectedMethod === 'manual' || asset.yearModel === null) {
+    return false;
+  }
+
+  if (isTractorAsset(asset)) {
+    return Boolean(asset.powerKw !== null && asset.tractorType);
+  }
+
+  if (isMotorProjectionAsset(asset)) {
+    return readAssetReplacementPriceExVat(asset) !== null;
+  }
+
+  return false;
 }
 
 function canRefreshAssetEstimate(asset: RegisterAsset): boolean {
@@ -2259,6 +2285,58 @@ function readAssetReplacementPriceExVat(asset: Pick<RegisterAsset, 'replacementP
   const fromSpecs = readNumberFromSpecs(specs, [...REPLACEMENT_PRICE_SPEC_KEYS]);
 
   return fromSpecs !== null && fromSpecs > 0 ? Math.round(fromSpecs) : null;
+}
+
+const LIFETIME_USAGE_SPEC_KEYS = [
+  'maxLifetimeHours',
+  'max_lifetime_hours',
+  'expectedLifetimeHours',
+  'expected_lifetime_hours',
+  'lifetimeHours',
+  'lifetime_hours',
+  'designLifeHours',
+  'design_life_hours',
+  'usefulLifeHours',
+  'useful_life_hours',
+  'maxLifetimeKm',
+  'max_lifetime_km',
+  'expectedLifetimeKm',
+  'expected_lifetime_km',
+  'lifetimeKm',
+  'lifetime_km',
+  'designLifeKm',
+  'design_life_km',
+  'usefulLifeKm',
+  'useful_life_km',
+] as const;
+
+function readAssetMaxLifetimeUsage(asset: Pick<RegisterAsset, 'maxLifetimeHours' | 'specsJson'>): number | null {
+  const direct = Number(asset.maxLifetimeHours);
+  if (Number.isFinite(direct) && direct > 0) {
+    return Math.round(direct);
+  }
+
+  const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
+  const fromSpecs = readNumberFromSpecs(specs, [...LIFETIME_USAGE_SPEC_KEYS]);
+
+  return fromSpecs !== null && fromSpecs > 0 ? Math.round(fromSpecs) : null;
+}
+
+function shouldShowRevalueLifetimeInput(asset: RegisterAsset): boolean {
+  return !assetUsesPercentUsage(asset);
+}
+
+function getLifetimeUnitLabel(metric: UsageMetric): string {
+  return metric === 'km' ? 'kilometres' : 'hours';
+}
+
+function getLifetimeShortUnit(metric: UsageMetric): string {
+  return metric === 'km' ? 'km' : 'hours';
+}
+
+function formatPlainNumber(value: number | null | undefined): string {
+  if (value === null || typeof value === 'undefined' || !Number.isFinite(value)) return 'N/A';
+  return Math.round(value).toLocaleString('en-ZA');
 }
 
 function sumAssetReplacementValues(assetList: Array<Pick<RegisterAsset, 'replacementPriceExVat' | 'specsJson'>>): number {
@@ -3409,6 +3487,8 @@ export default function AssetRegisterClient() {
   const [isSavingPricingPreview, setIsSavingPricingPreview] = useState(false);
   const [revalueReplacementPriceInput, setRevalueReplacementPriceInput] = useState('');
   const [revalueReplacementPriceError, setRevalueReplacementPriceError] = useState<string | null>(null);
+  const [revalueLifetimeUsageInput, setRevalueLifetimeUsageInput] = useState('');
+  const [revalueAdvancedError, setRevalueAdvancedError] = useState<string | null>(null);
   const [saveReplacementPriceWithRevalue, setSaveReplacementPriceWithRevalue] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [assetFilter, setAssetFilter] = useState<AssetFilterKey>('all');
@@ -4852,9 +4932,11 @@ export default function AssetRegisterClient() {
     setOpenAssetReportSelect(null);
   }
 
-  function resetRevalueReplacementForm(_asset: RegisterAsset | null) {
+  function resetRevalueReplacementForm(asset: RegisterAsset | null) {
     setRevalueReplacementPriceInput('');
     setRevalueReplacementPriceError(null);
+    setRevalueLifetimeUsageInput(asset ? formatRegisterValueInput(readAssetMaxLifetimeUsage(asset) ?? '') : '');
+    setRevalueAdvancedError(null);
     setSaveReplacementPriceWithRevalue(false);
   }
 
@@ -4870,6 +4952,7 @@ export default function AssetRegisterClient() {
     if (isLoadingPricingPreview || isSavingPricingPreview) return;
     setPricingPreview(null);
     setRevalueReplacementPriceError(null);
+    setRevalueAdvancedError(null);
     setSaveReplacementPriceWithRevalue(false);
     setIsPricingModalOpen(false);
   }
@@ -4878,6 +4961,7 @@ export default function AssetRegisterClient() {
     if (isLoadingPricingPreview || isSavingPricingPreview) return;
     setPricingPreview(null);
     setRevalueReplacementPriceError(null);
+    setRevalueAdvancedError(null);
     setSaveReplacementPriceWithRevalue(false);
   }
 
@@ -5635,6 +5719,15 @@ export default function AssetRegisterClient() {
   }
 
 
+  function clearRevaluePreviewResult() {
+    setPricingPreview((current) => (current ? {
+      ...current,
+      advancedAssumptions: null,
+      result: null,
+      error: null,
+    } : current));
+  }
+
   function handleRevalueReplacementPriceChange(event: ChangeEvent<HTMLInputElement>) {
     setRevalueReplacementPriceInput(formatRegisterValueInput(event.target.value));
     if (revalueReplacementPriceError) {
@@ -5649,15 +5742,53 @@ export default function AssetRegisterClient() {
       return {
         ...current,
         replacementPriceExVat: null,
+        advancedAssumptions: null,
         result: null,
         error: null,
       };
     });
   }
 
+  function handleRevalueLifetimeUsageChange(event: ChangeEvent<HTMLInputElement>) {
+    setRevalueLifetimeUsageInput(formatUsageAmountInput(event.target.value));
+    if (revalueAdvancedError) {
+      setRevalueAdvancedError(null);
+    }
+    clearRevaluePreviewResult();
+  }
+
   function readCustomRevalueReplacementPrice(): number | null {
     const customReplacementPrice = parseMoneyInput(revalueReplacementPriceInput);
     return customReplacementPrice !== null && customReplacementPrice > 0 ? Math.round(customReplacementPrice) : null;
+  }
+
+  function buildRevalueAdvancedAssumptionsRequest(asset: RegisterAsset): RevalueAdvancedAssumptionsRequest | null | undefined {
+    if (!shouldShowRevalueLifetimeInput(asset)) {
+      setRevalueAdvancedError(null);
+      return null;
+    }
+
+    const usageMetric = getAssetUsageMetric(asset);
+    const lifetimeUnitLabel = getLifetimeUnitLabel(usageMetric);
+    const lifetimeShortUnit = getLifetimeShortUnit(usageMetric);
+    const lifetimeMin = usageMetric === 'km' ? ADVANCED_LIFETIME_KM_MIN : ADVANCED_LIFETIME_HOURS_MIN;
+    const lifetimeMax = usageMetric === 'km' ? ADVANCED_LIFETIME_KM_MAX : ADVANCED_LIFETIME_HOURS_MAX;
+    const lifetime = parseMoneyInput(revalueLifetimeUsageInput);
+
+    if (lifetime === null) {
+      setRevalueAdvancedError(`Enter expected lifetime ${lifetimeUnitLabel}.`);
+      return undefined;
+    }
+
+    if (lifetime < lifetimeMin || lifetime > lifetimeMax) {
+      setRevalueAdvancedError(
+        `Expected lifetime ${lifetimeUnitLabel} must be between ${formatPlainNumber(lifetimeMin)} and ${formatPlainNumber(lifetimeMax)} ${lifetimeShortUnit}.`,
+      );
+      return undefined;
+    }
+
+    setRevalueAdvancedError(null);
+    return { maxLifetimeUsage: Math.round(lifetime) };
   }
 
   function openRevalueGuidedDialog(asset: RegisterAsset) {
@@ -5666,6 +5797,7 @@ export default function AssetRegisterClient() {
       method: 'aim4price',
       replacementMode: null,
       replacementPriceExVat: null,
+      advancedAssumptions: null,
       result: null,
       error: null,
     });
@@ -5673,6 +5805,8 @@ export default function AssetRegisterClient() {
     setIsSavingPricingPreview(false);
     setRevalueReplacementPriceInput('');
     setRevalueReplacementPriceError(null);
+    setRevalueLifetimeUsageInput(formatRegisterValueInput(readAssetMaxLifetimeUsage(asset) ?? ''));
+    setRevalueAdvancedError(null);
     setSaveReplacementPriceWithRevalue(false);
   }
 
@@ -5682,12 +5816,14 @@ export default function AssetRegisterClient() {
       method: 'aim4price',
       replacementMode: 'custom',
       replacementPriceExVat: null,
+      advancedAssumptions: null,
       result: null,
       error: null,
     });
     setIsLoadingPricingPreview(false);
     setIsSavingPricingPreview(false);
     setRevalueReplacementPriceError(null);
+    setRevalueAdvancedError(null);
   }
 
   function showSavedReplacementStep(asset: RegisterAsset) {
@@ -5696,12 +5832,14 @@ export default function AssetRegisterClient() {
       method: 'aim4price',
       replacementMode: null,
       replacementPriceExVat: null,
+      advancedAssumptions: null,
       result: null,
       error: null,
     });
     setIsLoadingPricingPreview(false);
     setIsSavingPricingPreview(false);
     setRevalueReplacementPriceError(null);
+    setRevalueAdvancedError(null);
     setSaveReplacementPriceWithRevalue(false);
   }
 
@@ -5717,6 +5855,7 @@ export default function AssetRegisterClient() {
           method: 'aim4price',
           replacementMode: 'custom',
           replacementPriceExVat: null,
+          advancedAssumptions: null,
           result: null,
           error: null,
         });
@@ -5731,10 +5870,14 @@ export default function AssetRegisterClient() {
   }
 
   function openSavedReplacementPreview(asset: RegisterAsset) {
+    const advancedAssumptions = buildRevalueAdvancedAssumptionsRequest(asset);
+    if (typeof advancedAssumptions === 'undefined') return;
+
     setSaveReplacementPriceWithRevalue(false);
     setRevalueReplacementPriceError(null);
     void openRevaluePreviewDialog(asset, 'aim4price', {
       replacementMode: 'saved',
+      advancedAssumptions,
     });
   }
 
@@ -5746,10 +5889,14 @@ export default function AssetRegisterClient() {
       return;
     }
 
+    const advancedAssumptions = buildRevalueAdvancedAssumptionsRequest(asset);
+    if (typeof advancedAssumptions === 'undefined') return;
+
     setRevalueReplacementPriceError(null);
     void openRevaluePreviewDialog(asset, 'aim4price', {
       replacementMode: 'custom',
       replacementPriceExVat: customReplacementPrice,
+      advancedAssumptions,
     });
   }
 
@@ -5804,7 +5951,11 @@ export default function AssetRegisterClient() {
   async function openRevaluePreviewDialog(
     asset: RegisterAsset,
     method: RevalueMethod,
-    options?: { replacementMode?: RevalueReplacementMode | null; replacementPriceExVat?: number | null },
+    options?: {
+      replacementMode?: RevalueReplacementMode | null;
+      replacementPriceExVat?: number | null;
+      advancedAssumptions?: RevalueAdvancedAssumptionsRequest | null;
+    },
   ) {
     const replacementPriceExVat =
       typeof options?.replacementPriceExVat === 'number' &&
@@ -5813,6 +5964,9 @@ export default function AssetRegisterClient() {
         ? Math.round(options.replacementPriceExVat)
         : null;
     const replacementMode = options?.replacementMode ?? 'saved';
+    const advancedAssumptions = options && Object.prototype.hasOwnProperty.call(options, 'advancedAssumptions')
+      ? options.advancedAssumptions ?? null
+      : null;
     const shouldSendReplacementOverride = replacementPriceExVat !== null;
 
     if (replacementMode !== 'custom') {
@@ -5824,6 +5978,7 @@ export default function AssetRegisterClient() {
       method,
       replacementMode,
       replacementPriceExVat,
+      advancedAssumptions,
       result: null,
       error: null,
     };
@@ -5842,6 +5997,7 @@ export default function AssetRegisterClient() {
           selectedMethod: method,
           previewOnly: true,
           ...(shouldSendReplacementOverride ? { replacementPriceExVat } : {}),
+          ...(advancedAssumptions ? { advancedAssumptions } : {}),
         }),
       });
       const data = (await response.json()) as RevalueAssetApiResponse;
@@ -5881,7 +6037,7 @@ export default function AssetRegisterClient() {
   async function handleSavePricingPreview() {
     if (!pricingPreview) return;
 
-    const { asset, method, replacementMode, replacementPriceExVat } = pricingPreview;
+    const { asset, method, replacementMode, replacementPriceExVat, advancedAssumptions } = pricingPreview;
     const shouldUseReplacementOverride = method === 'aim4price' && replacementMode === 'custom' && replacementPriceExVat !== null;
     const shouldPersistReplacementPrice = shouldUseReplacementOverride && saveReplacementPriceWithRevalue;
 
@@ -5905,6 +6061,7 @@ export default function AssetRegisterClient() {
           assetId: asset.id,
           selectedMethod: method,
           ...(shouldUseReplacementOverride ? { replacementPriceExVat, saveReplacementPrice: shouldPersistReplacementPrice } : {}),
+          ...(advancedAssumptions ? { advancedAssumptions } : {}),
         }),
       });
       const data = (await response.json()) as RevalueAssetApiResponse;
@@ -5917,6 +6074,7 @@ export default function AssetRegisterClient() {
       syncUpdatedAsset(updatedAsset);
       setPricingPreview(null);
       setRevalueReplacementPriceError(null);
+      setRevalueAdvancedError(null);
       setSaveReplacementPriceWithRevalue(false);
       setIsPricingModalOpen(false);
 
@@ -6764,7 +6922,9 @@ export default function AssetRegisterClient() {
   async function requestProjection(asset: RegisterAsset, formState: ProjectionFormState) {
     const targetYear = Math.round(Number(formState.targetYear));
     const inflationRatePct = Number(formState.inflationRatePct);
-    const extraHours = formState.extraHours.trim() ? Number(formState.extraHours) : 0;
+    const extraUsage = formState.extraHours.trim() ? Number(formState.extraHours) : 0;
+    const usageMetric = getAssetUsageMetric(asset);
+    const extraUsageErrorLabel = usageMetric === 'km' ? 'Extra kilometres' : 'Extra hours';
 
     if (!Number.isFinite(targetYear)) {
       setShouldScrollToProjectionResult(false);
@@ -6778,9 +6938,9 @@ export default function AssetRegisterClient() {
       return;
     }
 
-    if (!Number.isFinite(extraHours) || extraHours < 0) {
+    if (!Number.isFinite(extraUsage) || extraUsage < 0) {
       setShouldScrollToProjectionResult(false);
-      setProjectionError('Extra hours must be zero or greater.');
+      setProjectionError(`${extraUsageErrorLabel} must be zero or greater.`);
       return;
     }
 
@@ -6801,7 +6961,7 @@ export default function AssetRegisterClient() {
           assetId: asset.id,
           targetYear,
           inflationRatePct,
-          extraHours,
+          extraUsage,
         }),
       });
 
@@ -6944,6 +7104,20 @@ export default function AssetRegisterClient() {
         : 'New price used for preview only'
       : 'Using saved price'
     : null;
+  const pricingPreviewUsageMetric = pricingPreview ? getAssetUsageMetric(pricingPreview.asset) : 'hours';
+  const pricingPreviewLifetimeShortUnit = getLifetimeShortUnit(pricingPreviewUsageMetric);
+  const pricingPreviewLifetimeValue = pricingPreview
+    ? pricingPreview.advancedAssumptions?.maxLifetimeUsage ??
+      (pricingPreview.result?.item ? readAssetMaxLifetimeUsage(pricingPreview.result.item) : readAssetMaxLifetimeUsage(pricingPreview.asset))
+    : null;
+  const projectionUsageMetric = projectionResult?.usageMetric ?? (projectionAsset ? getAssetUsageMetric(projectionAsset) : 'hours');
+  const projectionUsageShortUnit = usageMetricLabel(projectionUsageMetric);
+  const projectionUsageFieldLabel = projectionUsageMetric === 'km' ? 'Add extra kilometres' : 'Add extra hours';
+  const projectionUsagePlaceholder = projectionUsageMetric === 'km' ? 'Type extra kilometres' : 'Type extra hours';
+  const projectionUsageHelpText = projectionUsageMetric === 'km'
+    ? 'Only change what you know. Leave extra kilometres empty if usage stays the same.'
+    : 'Only change what you know. Leave extra hours empty if usage stays the same.';
+  const projectionUsageMetaLabel = projectionUsageMetric === 'km' ? 'Kilometres' : 'Hours';
   const pricingPreviewWizardStep = pricingPreview?.method === 'aim4price'
     ? isLoadingPricingPreview || pricingPreview.result || pricingPreview.error
       ? 3
@@ -6962,6 +7136,38 @@ export default function AssetRegisterClient() {
     !isSavingPricingPreview &&
     !pricingPreviewHasUnpreviewedReplacementInput,
   );
+
+  function renderRevalueLifetimeField(asset: RegisterAsset) {
+    if (!shouldShowRevalueLifetimeInput(asset)) {
+      return null;
+    }
+
+    const usageMetric = getAssetUsageMetric(asset);
+    const lifetimeUnitLabel = getLifetimeUnitLabel(usageMetric);
+    const lifetimeShortUnit = getLifetimeShortUnit(usageMetric);
+    const lifetimeMin = usageMetric === 'km' ? ADVANCED_LIFETIME_KM_MIN : ADVANCED_LIFETIME_HOURS_MIN;
+    const lifetimeMax = usageMetric === 'km' ? ADVANCED_LIFETIME_KM_MAX : ADVANCED_LIFETIME_HOURS_MAX;
+
+    return (
+      <div className={styles.revalueCustomReplacementCard}>
+        <label className={styles.revalueReplacementField}>
+          <span>Expected lifetime ({lifetimeShortUnit})</span>
+          <input
+            type="text"
+            inputMode="numeric"
+            value={revalueLifetimeUsageInput}
+            onChange={handleRevalueLifetimeUsageChange}
+            placeholder={usageMetric === 'km' ? 'Example: 350 000' : 'Example: 12 000'}
+            disabled={isLoadingPricingPreview || isSavingPricingPreview}
+          />
+        </label>
+
+        <p className={styles.revalueReplacementHelper}>
+          Adjust the expected lifetime {lifetimeUnitLabel} used by the depreciation calculation. Allowed range: {formatPlainNumber(lifetimeMin)}–{formatPlainNumber(lifetimeMax)} {lifetimeShortUnit}.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <main className={styles.page}>
@@ -9111,8 +9317,8 @@ export default function AssetRegisterClient() {
                       <div className={styles.revalueReplacementHeader}>
                         <div>
                           <span>Step 1 of 3</span>
-                          <h4>Use saved replacement price?</h4>
-                          <p className={styles.revalueStepCopy}>Choose whether the saved replacement price should be used for the recalculation.</p>
+                          <h4>Use saved replacement price and lifetime?</h4>
+                          <p className={styles.revalueStepCopy}>Choose whether the saved replacement price should be used, then adjust expected lifetime if needed.</p>
                         </div>
                       </div>
 
@@ -9121,6 +9327,9 @@ export default function AssetRegisterClient() {
                         <strong>{pricingPreviewSavedReplacementPriceExVat !== null ? `${money(pricingPreviewSavedReplacementPriceExVat)} excl. VAT` : 'No saved price'}</strong>
                         <small>This is the replacement price currently saved on this asset.</small>
                       </div>
+
+                      {renderRevalueLifetimeField(pricingPreview.asset)}
+                      {revalueAdvancedError ? <p className={styles.revalueReplacementError}>{revalueAdvancedError}</p> : null}
 
                       <div className={styles.revalueDecisionCard}>
                         <strong>Continue with this replacement price?</strong>
@@ -9151,8 +9360,8 @@ export default function AssetRegisterClient() {
                       <div className={styles.revalueReplacementHeader}>
                         <div>
                           <span>Step 2 of 3</span>
-                          <h4>Enter a different price</h4>
-                          <p className={styles.revalueStepCopy}>Type the replacement price excluding VAT. Aim4price will use it to calculate the new value.</p>
+                          <h4>Enter a different price and lifetime</h4>
+                          <p className={styles.revalueStepCopy}>Type the replacement price excluding VAT and adjust expected lifetime before calculating the new value.</p>
                         </div>
                       </div>
 
@@ -9181,7 +9390,10 @@ export default function AssetRegisterClient() {
                         <p className={styles.revalueReplacementHelper}>Leave unticked to use this price for this calculation only.</p>
                       </div>
 
+                      {renderRevalueLifetimeField(pricingPreview.asset)}
+
                       {revalueReplacementPriceError ? <p className={styles.revalueReplacementError}>{revalueReplacementPriceError}</p> : null}
+                      {revalueAdvancedError ? <p className={styles.revalueReplacementError}>{revalueAdvancedError}</p> : null}
                     </section>
                   ) : null}
 
@@ -9233,6 +9445,10 @@ export default function AssetRegisterClient() {
                             <div>
                               <span>Replacement price action:</span>
                               <strong>{pricingPreviewReplacementActionLabel}</strong>
+                            </div>
+                            <div>
+                              <span>Expected lifetime used:</span>
+                              <strong>{pricingPreviewLifetimeValue !== null ? `${formatPlainNumber(pricingPreviewLifetimeValue)} ${pricingPreviewLifetimeShortUnit}` : 'Not set'}</strong>
                             </div>
                           </div>
                         </section>
@@ -9919,7 +10135,7 @@ export default function AssetRegisterClient() {
             <div className={`${styles.modalHeader} ${styles.projectionModalHeader}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="projection-title">{projectionAsset.title}</h3>
-                <p>Change the year, inflation, or extra hours. Then calculate the estimated future value.</p>
+                <p>Change the year, inflation, or extra usage. Then calculate the estimated future value.</p>
               </div>
 
               <button type="button" className={styles.modalCloseButton} onClick={closeProjectionModal} aria-label="Close future price modal">
@@ -9947,7 +10163,7 @@ export default function AssetRegisterClient() {
                 <section className={styles.projectionSimpleCard}>
                   <div className={styles.projectionSimpleSectionHeader}>
                     <h4>Future settings</h4>
-                    <p>Only change what you know. Leave extra hours empty if usage stays the same.</p>
+                    <p>{projectionUsageHelpText}</p>
                   </div>
 
                   <div className={styles.projectionInputRow}>
@@ -9972,14 +10188,14 @@ export default function AssetRegisterClient() {
                     </label>
 
                     <label className={styles.field}>
-                      <span>Add extra hours</span>
+                      <span>{projectionUsageFieldLabel}</span>
                       <input
                         type="number"
                         min="0"
                         step="50"
                         value={projectionForm.extraHours}
                         onChange={(event) => updateProjectionForm({ extraHours: event.target.value })}
-                        placeholder="Type extra hours"
+                        placeholder={projectionUsagePlaceholder}
                       />
                     </label>
                   </div>
@@ -10016,8 +10232,8 @@ export default function AssetRegisterClient() {
                         <strong>{projectionResult.baseYear} → {projectionResult.targetYear}</strong>
                       </div>
                       <div>
-                        <span>Hours</span>
-                        <strong>{projectionResult.current.hours.toLocaleString('en-ZA')} → {projectionResult.projected.hours.toLocaleString('en-ZA')}</strong>
+                        <span>{projectionUsageMetaLabel}</span>
+                        <strong>{projectionResult.current.hours.toLocaleString('en-ZA')} → {projectionResult.projected.hours.toLocaleString('en-ZA')} {projectionUsageShortUnit}</strong>
                       </div>
                       <div>
                         <span>Inflation</span>
