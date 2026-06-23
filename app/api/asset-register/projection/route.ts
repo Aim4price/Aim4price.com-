@@ -25,12 +25,13 @@ export async function POST(request: NextRequest) {
     targetYear: number;
     inflationRatePct: number;
     extraHours: number;
+    extraUsage: number;
   }>;
 
   const assetId = String(body.assetId ?? '').trim();
   const targetYear = Math.round(Number(body.targetYear));
   const inflationRatePct = Number(body.inflationRatePct);
-  const extraHours = Number(body.extraHours ?? 0);
+  const extraUsage = Number(body.extraUsage ?? body.extraHours ?? 0);
 
   if (!assetId) {
     return badRequest('A valid asset id is required.');
@@ -44,8 +45,8 @@ export async function POST(request: NextRequest) {
     return badRequest('A valid inflation percentage is required.');
   }
 
-  if (!Number.isFinite(extraHours) || extraHours < 0) {
-    return badRequest('Extra hours must be zero or greater.');
+  if (!Number.isFinite(extraUsage) || extraUsage < 0) {
+    return badRequest('Extra usage must be zero or greater.');
   }
 
   try {
@@ -54,7 +55,7 @@ export async function POST(request: NextRequest) {
       assetId,
       targetYear,
       inflationRatePct,
-      extraHours,
+      extraHours: extraUsage,
     });
 
     return NextResponse.json({ ok: true, projection });
@@ -69,7 +70,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (error.message === 'FUTURE_PRICE_UNAVAILABLE') {
-      return badRequest('Future price is only available for saved tractor valuations with the required machine data.');
+      return badRequest('Future price is only available for saved tractor and motor vehicle valuations with the required asset data.');
     }
 
     if (error.message === 'VALUATION_RUN_NOT_FOUND') {
