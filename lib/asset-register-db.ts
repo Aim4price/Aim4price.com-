@@ -785,6 +785,11 @@ function normalizeCondition(value: unknown): AssetRegisterItemCondition {
   return '';
 }
 
+function normalizeConditionForDb(value: unknown): ConditionKey | null {
+  const normalized = normalizeCondition(value);
+  return normalized || null;
+}
+
 function normalizeQrStatus(value: unknown): AssetRegisterQrStatus {
   const normalized = String(value ?? '').trim().toLowerCase();
 
@@ -1643,7 +1648,7 @@ export async function createManualAssetRegisterItem(
   pushField(fields, schema, ['life_worked_percent'], nextLifeWorkedPercent);
   pushField(fields, schema, ['life_remaining_percent'], nextLifeWorkedPercent === null ? null : Math.max(0, 100 - nextLifeWorkedPercent));
   pushField(fields, schema, ['hours', 'engine_hours'], input.hours === null || input.hours === undefined ? null : Math.max(0, Math.round(input.hours)));
-  pushField(fields, schema, ['condition'], input.condition ?? null);
+  pushField(fields, schema, ['condition'], normalizeConditionForDb(input.condition));
   pushPhotoField(fields, schema, input.photos ?? []);
   pushDocumentField(fields, schema, input.documents ?? []);
   pushField(fields, schema, ['created_at', 'createdon', 'created'], now);
@@ -1756,7 +1761,9 @@ export async function updateAssetRegisterItem(
   const incomingHours = input.hours === null || input.hours === undefined ? null : Math.max(0, Math.round(input.hours));
   const nextYearModel = existing.valuationRunId && incomingYearModel === null ? existing.yearModel : incomingYearModel;
   const nextHours = existing.valuationRunId && incomingHours === null ? existing.hours : incomingHours;
-  const nextCondition = input.condition ?? existing.condition ?? null;
+  const incomingCondition = normalizeConditionForDb(input.condition);
+  const existingCondition = normalizeConditionForDb(existing.condition);
+  const nextCondition = typeof input.condition === 'undefined' ? existingCondition : incomingCondition;
   const baseSpecsJson = buildManualSpecsJson(input, nextKind, existing.specsJson);
   const nextLicenseRegistrationNumber = Boolean(input.isLicensed) ? normalizeLicenseRegistrationNumber(input.licenseRegistrationNumber) : null;
   const nextLifeWorkedPercent = percentFromSpecs(baseSpecsJson);
@@ -1910,7 +1917,7 @@ export async function updateAssetRegisterItemFromValuation(input: {
   pushField(fields, schema, ['power_kw', 'kw', 'power'], model.powerKw);
   pushField(fields, schema, ['year_model', 'year'], Math.round(input.year));
   pushField(fields, schema, ['hours', 'engine_hours'], Math.max(0, Math.round(input.hours)));
-  pushField(fields, schema, ['condition'], input.condition);
+  pushField(fields, schema, ['condition'], normalizeConditionForDb(input.condition));
   pushField(fields, schema, ['aim4price_value_ex_vat', 'aim4price_value'], toRoundedNumber(input.result.aim4priceValueExVat));
   pushField(fields, schema, ['market_mid_ex_vat', 'market_value_ex_vat', 'market_value'], marketValueExVat);
   if (input.saveReplacementPrice === true) {
@@ -2065,7 +2072,7 @@ export async function updateAssetRegisterItemFromGenericValuation(input: {
   pushField(fields, schema, ['max_lifetime_hours'], valuationResult.maxLifetimeHours);
   pushField(fields, schema, ['year_model', 'year'], valuationResult.year);
   pushField(fields, schema, ['hours', 'engine_hours'], valuationResult.usageAmount ?? null);
-  pushField(fields, schema, ['condition'], valuationResult.condition);
+  pushField(fields, schema, ['condition'], normalizeConditionForDb(valuationResult.condition));
   pushField(fields, schema, ['aim4price_value_ex_vat', 'aim4price_value'], toRoundedNumber(valuationResult.aim4priceValueExVat));
   pushField(fields, schema, ['market_mid_ex_vat', 'market_value_ex_vat', 'market_value'], marketValueExVat);
   pushField(fields, schema, ['updated_at', 'modified_at', 'updatedon'], now);
@@ -2191,7 +2198,7 @@ export async function createAssetRegisterItemFromValuation(input: {
   pushField(fields, schema, ['year_model', 'year'], Math.round(input.year));
   pushField(fields, schema, ['hours', 'engine_hours'], Math.max(0, Math.round(input.hours)));
   pushField(fields, schema, ['max_lifetime_hours'], valuationResult.maxLifetimeHours);
-  pushField(fields, schema, ['condition'], typeof valuationRow.condition === 'string' ? valuationRow.condition : 'good');
+  pushField(fields, schema, ['condition'], normalizeConditionForDb(valuationRow.condition) ?? 'good');
   pushField(fields, schema, ['aim4price_value_ex_vat', 'aim4price_value'], toRoundedNumber(valuationResult.aim4priceValueExVat));
   pushField(fields, schema, ['market_mid_ex_vat', 'market_value_ex_vat', 'market_value'], marketValueExVat);
   pushField(fields, schema, ['replacement_price_used_ex_vat', 'replacement_price_ex_vat', 'official_replacement_price_ex_vat'], replacementPriceUsedExVat);
@@ -2357,7 +2364,7 @@ export async function createAssetRegisterItemFromGenericValuation(input: {
   pushField(fields, schema, ['max_lifetime_hours'], valuationResult.maxLifetimeHours);
   pushField(fields, schema, ['year_model', 'year'], valuationResult.year);
   pushField(fields, schema, ['hours', 'engine_hours'], valuationResult.usageAmount ?? null);
-  pushField(fields, schema, ['condition'], valuationResult.condition);
+  pushField(fields, schema, ['condition'], normalizeConditionForDb(valuationResult.condition));
   pushField(fields, schema, ['aim4price_value_ex_vat', 'aim4price_value'], toRoundedNumber(valuationResult.aim4priceValueExVat));
   pushField(fields, schema, ['market_mid_ex_vat', 'market_value_ex_vat', 'market_value'], marketValueExVat);
   pushField(fields, schema, ['note', 'notes', 'description'], cleanAssetRegisterNote(input.note) || null);
