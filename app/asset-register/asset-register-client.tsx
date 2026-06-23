@@ -571,42 +571,36 @@ const MANUAL_ASSET_TYPE_OPTIONS: Array<{
   label: string;
   description: string;
   titlePlaceholder: string;
-  badge: string;
 }> = [
   {
     value: 'equipment',
     label: 'Equipment',
     description: 'General machines and larger equipment not added through valuation.',
     titlePlaceholder: 'Example: Water pump trailer',
-    badge: 'EQ',
   },
   {
     value: 'vehicle',
     label: 'Vehicle',
     description: 'Bakkies, trucks, trailers and other road or farm vehicles.',
     titlePlaceholder: 'Example: Toyota Hilux farm bakkie',
-    badge: 'VE',
   },
   {
     value: 'property',
     label: 'Property/Buildings',
     description: 'Buildings, sheds, houses, stores and fixed improvements.',
     titlePlaceholder: 'Example: Main workshop building',
-    badge: 'PR',
   },
   {
     value: 'tools',
     label: 'Tools',
     description: 'Smaller tools, workshop items and handheld equipment.',
     titlePlaceholder: 'Example: Workshop tool set',
-    badge: 'TL',
   },
   {
     value: 'manual',
     label: 'Other',
     description: 'Any asset that does not fit the standard equipment, vehicle, property or tools groups.',
     titlePlaceholder: 'Example: Irrigation rights, livestock equipment or custom asset',
-    badge: 'OT',
   },
 ];
 
@@ -1180,7 +1174,6 @@ type ModalSelectOption<T extends string> = {
   value: T;
   label: string;
   description?: string;
-  badge?: string;
 };
 
 type ModalSelectProps<T extends string> = {
@@ -1245,11 +1238,6 @@ function ModalSelect<T extends string>({
         autoFocus={autoFocus}
       >
         <span className={styles.customSelectButtonText}>
-          {selectedOption?.badge ? (
-            <span className={styles.customSelectButtonBadge} aria-hidden="true">
-              {selectedOption.badge}
-            </span>
-          ) : null}
           <span className={styles.customSelectButtonCopy}>
             <span>{selectedOption?.label ?? placeholder}</span>
           </span>
@@ -1274,16 +1262,10 @@ function ModalSelect<T extends string>({
                   setIsOpen(false);
                 }}
               >
-                {option.badge ? (
-                  <span className={styles.customSelectOptionBadge} aria-hidden="true">
-                    {option.badge}
-                  </span>
-                ) : null}
                 <span className={styles.customSelectOptionText}>
                   <strong>{option.label}</strong>
                   {option.description ? <small>{option.description}</small> : null}
                 </span>
-                {isSelected ? <b aria-hidden="true">✓</b> : null}
               </button>
             );
           })}
@@ -8595,42 +8577,32 @@ export default function AssetRegisterClient() {
                   </section>
                 ) : null}
 
-                <div className={`${styles.formActions} ${styles.assetFormActions} ${styles.manualStepFormActions}`}>
-                  <div className={styles.assetFormActionRight}>
-                    {manualAssetStep === 1 ? (
-                      <button type="button" className={styles.secondaryButton} onClick={closeAssetModal}>
-                        Cancel
-                      </button>
-                    ) : (
-                      <button type="button" className={styles.secondaryButton} onClick={goToPreviousManualAssetStep}>
-                        Back
-                      </button>
-                    )}
+                {manualAssetStep > 1 || editingAsset?.valuationRunId ? (
+                  <div className={`${styles.formActions} ${styles.assetFormActions} ${styles.manualStepFormActions}`}>
+                    <div className={styles.assetFormActionRight}>
+                      {manualAssetStep > 1 ? (
+                        <button type="button" className={styles.secondaryButton} onClick={goToPreviousManualAssetStep}>
+                          Back
+                        </button>
+                      ) : null}
 
-                    {manualAssetStep > 1 ? (
-                      <button type="button" className={styles.secondaryButton} onClick={closeAssetModal}>
-                        Cancel
-                      </button>
-                    ) : null}
-
-                    {manualAssetStep < 4 ? (
-                      manualAssetStep > 1 || editingAsset?.valuationRunId ? (
+                      {manualAssetStep < 4 ? (
                         <button type="button" className={styles.primaryButton} onClick={goToNextManualAssetStep}>
                           {manualAssetStep === 1 ? 'Next' : manualStepPrimaryLabel}
                         </button>
-                      ) : null
-                    ) : (
-                      <button
-                        type="button"
-                        className={styles.primaryButton}
-                        onClick={() => void handleAssetSubmit()}
-                        disabled={isSavingAsset || isUploadingPhotos || isUploadingDocuments}
-                      >
-                        {isSavingAsset ? 'Saving...' : manualStepPrimaryLabel}
-                      </button>
-                    )}
+                      ) : (
+                        <button
+                          type="button"
+                          className={styles.primaryButton}
+                          onClick={() => void handleAssetSubmit()}
+                          disabled={isSavingAsset || isUploadingPhotos || isUploadingDocuments}
+                        >
+                          {isSavingAsset ? 'Saving...' : manualStepPrimaryLabel}
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
+                ) : null}
               </form>
             </div>
           </div>

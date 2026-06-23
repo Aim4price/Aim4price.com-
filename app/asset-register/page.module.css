@@ -24407,161 +24407,174 @@ button.documentOpenLink {
   }
 }
 
-/* === Add Asset modal: refined Aim4price asset-type dropdown === */
+/* === Add Asset modal: final clean asset-type dropdown === */
 .assetFormModalStepOne {
-  width: min(100%, 820px) !important;
+  width: min(100%, 760px) !important;
+  max-height: min(90vh, calc(100dvh - 2rem)) !important;
+  overflow: visible !important;
+}
+
+.assetFormModalStepOne .manualWizardHeader {
+  margin-bottom: 0.95rem !important;
+  padding-bottom: 0.95rem !important;
+  border-bottom: 1px solid rgba(216, 226, 236, 0.88) !important;
+}
+
+.assetFormModalStepOne .manualStepScrollBodyNoScroll {
+  max-height: none !important;
+  overflow: visible !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  scrollbar-gutter: auto !important;
+}
+
+.assetFormModalStepOne .manualStepForm {
+  gap: 0 !important;
 }
 
 .assetFormModalStepOne .manualStepOneCard {
-  padding: clamp(1.15rem, 2vw, 1.45rem) !important;
-  border-radius: 1.45rem !important;
+  gap: 1rem !important;
+  padding: clamp(1.08rem, 1.8vw, 1.32rem) !important;
+  border-radius: 1.3rem !important;
+  border: 1px solid rgba(205, 220, 230, 0.96) !important;
   background:
-    radial-gradient(circle at 0% 0%, rgba(22, 83, 64, 0.075), transparent 36%),
-    linear-gradient(180deg, #ffffff 0%, #f7fafb 100%) !important;
-  border-color: rgba(211, 223, 233, 0.98) !important;
+    radial-gradient(circle at 0% 0%, rgba(22, 83, 64, 0.055), transparent 38%),
+    linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%) !important;
   box-shadow:
-    0 18px 38px rgba(16, 31, 28, 0.055),
+    0 14px 34px rgba(16, 31, 28, 0.055),
     inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
 }
 
 .assetFormModalStepOne .manualStepIntro {
-  padding-bottom: 0.78rem !important;
+  margin: 0 !important;
+  padding: 0 0 0.78rem !important;
+  border-bottom: 1px solid rgba(216, 226, 236, 0.86) !important;
 }
 
 .assetFormModalStepOne .manualStepIntro h4 {
-  font-size: clamp(1.18rem, 1.7vw, 1.38rem) !important;
+  margin: 0 !important;
+  color: #10352b !important;
+  font-size: clamp(1.14rem, 1.6vw, 1.32rem) !important;
   font-weight: 780 !important;
-  letter-spacing: -0.04em !important;
+  line-height: 1.12 !important;
+  letter-spacing: -0.035em !important;
 }
 
-.manualCompactSelectField {
-  gap: 0.55rem !important;
+.assetFormModalStepOne .manualCompactSelectField {
+  gap: 0.52rem !important;
 }
 
-.customSelectButtonText {
-  display: flex !important;
-  align-items: center !important;
-  gap: 0.72rem !important;
+.assetFormModalStepOne .manualCompactSelectField > span {
+  color: #243845 !important;
+  font-size: 0.88rem !important;
+  font-weight: 760 !important;
+  line-height: 1.2 !important;
+}
+
+.assetFormModalStepOne .customSelectButton {
+  min-height: 3.55rem !important;
+  padding: 0.72rem 0.88rem !important;
+  border-radius: 1rem !important;
+  border-color: rgba(190, 210, 220, 0.98) !important;
+  color: #1f3340 !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(22, 83, 64, 0.05), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #f6faf9 100%) !important;
+  box-shadow:
+    0 9px 20px rgba(16, 31, 28, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+  font-size: 0.98rem !important;
+  font-weight: 700 !important;
+}
+
+.assetFormModalStepOne .customSelectButton:hover,
+.assetFormModalStepOne .customSelectButtonOpen,
+.assetFormModalStepOne .customSelectButton:focus-visible {
+  transform: none !important;
+  border-color: rgba(22, 83, 64, 0.36) !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(22, 83, 64, 0.075), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #f0f7f4 100%) !important;
+  box-shadow:
+    0 0 0 4px rgba(22, 83, 64, 0.085),
+    0 12px 26px rgba(16, 31, 28, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.assetFormModalStepOne .customSelectButtonPlaceholder {
+  color: #5f7186 !important;
+  font-weight: 650 !important;
+}
+
+.assetFormModalStepOne .customSelectButtonText,
+.assetFormModalStepOne .customSelectButtonCopy {
+  display: block !important;
   min-width: 0 !important;
 }
 
-.customSelectButtonBadge {
-  flex: 0 0 auto !important;
-  width: 2.25rem !important;
-  height: 2.25rem !important;
-  display: inline-grid !important;
-  place-items: center !important;
-  border-radius: 0.78rem !important;
-  color: #124635 !important;
-  background: linear-gradient(180deg, #f5fcf8 0%, #e9f6ef 100%) !important;
-  border: 1px solid rgba(190, 224, 206, 0.96) !important;
-  font-size: 0.72rem !important;
-  font-weight: 900 !important;
-  letter-spacing: 0.015em !important;
-}
-
-.customSelectButtonCopy {
-  display: grid !important;
-  gap: 0.08rem !important;
-  min-width: 0 !important;
-}
-
-.customSelectButtonCopy > span {
+.assetFormModalStepOne .customSelectButtonCopy > span {
+  display: block !important;
   min-width: 0 !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
   white-space: nowrap !important;
 }
 
-.assetFormModalStepOne .customSelectButton {
-  min-height: 4rem !important;
-  padding: 0.82rem 0.95rem !important;
-  border-radius: 1.15rem !important;
-  border-color: rgba(195, 212, 224, 0.98) !important;
-  background:
-    radial-gradient(circle at 0% 0%, rgba(22, 83, 64, 0.07), transparent 42%),
-    linear-gradient(180deg, #ffffff 0%, #f5f9fb 100%) !important;
-  box-shadow:
-    0 12px 26px rgba(16, 31, 28, 0.045),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
-}
-
-.assetFormModalStepOne .customSelectButton:hover,
-.assetFormModalStepOne .customSelectButtonOpen,
-.assetFormModalStepOne .customSelectButton:focus-visible {
-  border-color: rgba(22, 83, 64, 0.38) !important;
-  background:
-    radial-gradient(circle at 0% 0%, rgba(22, 83, 64, 0.095), transparent 42%),
-    linear-gradient(180deg, #ffffff 0%, #f0f7f4 100%) !important;
-  box-shadow:
-    0 0 0 4px rgba(22, 83, 64, 0.09),
-    0 16px 32px rgba(16, 31, 28, 0.075),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
-}
-
 .assetFormModalStepOne .customSelectChevron {
-  width: 1rem !important;
-  height: 1rem !important;
+  width: 0.95rem !important;
+  height: 0.95rem !important;
   color: #124635 !important;
 }
 
 .assetFormModalStepOne .customSelectMenu {
-  gap: 0.46rem !important;
+  display: grid !important;
+  gap: 0 !important;
   max-height: none !important;
-  margin-top: 0.58rem !important;
-  padding: 0.58rem !important;
+  margin-top: 0.52rem !important;
+  padding: 0.34rem !important;
   overflow: visible !important;
-  border-radius: 1.22rem !important;
-  border-color: rgba(205, 218, 230, 0.98) !important;
-  background:
-    radial-gradient(circle at 0% 0%, rgba(22, 83, 64, 0.055), transparent 42%),
-    linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%) !important;
+  border-radius: 1.05rem !important;
+  border: 1px solid rgba(203, 218, 229, 0.98) !important;
+  background: rgba(255, 255, 255, 0.98) !important;
   box-shadow:
-    0 22px 50px rgba(16, 31, 28, 0.15),
+    0 18px 42px rgba(16, 31, 28, 0.13),
     inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
 }
 
 .assetFormModalStepOne .customSelectOption {
-  min-height: 4.18rem !important;
+  min-height: auto !important;
   display: grid !important;
-  grid-template-columns: 2.45rem minmax(0, 1fr) auto !important;
-  align-items: center !important;
-  gap: 0.75rem !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  align-items: start !important;
+  gap: 0 !important;
   padding: 0.72rem 0.82rem !important;
-  border-radius: 1rem !important;
-  border-color: rgba(221, 229, 237, 0.88) !important;
-  background: rgba(255, 255, 255, 0.86) !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92) !important;
+  border: 0 !important;
+  border-radius: 0.78rem !important;
+  color: #20313b !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.assetFormModalStepOne .customSelectOption + .customSelectOption {
+  border-top: 1px solid rgba(222, 231, 238, 0.78) !important;
 }
 
 .assetFormModalStepOne .customSelectOption:hover {
-  transform: translateY(-1px) !important;
-  border-color: rgba(181, 202, 217, 0.98) !important;
+  transform: none !important;
+  border-color: transparent !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f3f8f6 100%) !important;
+  box-shadow: none !important;
+}
+
+.assetFormModalStepOne .customSelectOptionActive,
+.assetFormModalStepOne .customSelectOptionActive:hover {
   background:
-    radial-gradient(circle at 0% 0%, rgba(22, 83, 64, 0.055), transparent 44%),
-    linear-gradient(180deg, #ffffff 0%, #f2f8f5 100%) !important;
-  box-shadow:
-    0 10px 20px rgba(16, 31, 28, 0.05),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+    radial-gradient(circle at 0% 0%, rgba(22, 83, 64, 0.1), transparent 46%),
+    linear-gradient(180deg, #ffffff 0%, #edf8f2 100%) !important;
+  box-shadow: inset 0 0 0 1px rgba(22, 83, 64, 0.18) !important;
 }
 
-.assetFormModalStepOne .customSelectOption > .customSelectOptionBadge {
-  width: 2.35rem !important;
-  height: 2.35rem !important;
-  display: inline-grid !important;
-  place-items: center !important;
-  border-radius: 0.82rem !important;
-  color: #124635 !important;
-  background: linear-gradient(180deg, #f5fcf8 0%, #e9f6ef 100%) !important;
-  border: 1px solid rgba(190, 224, 206, 0.96) !important;
-  font-size: 0.72rem !important;
-  font-weight: 900 !important;
-  letter-spacing: 0.015em !important;
-  line-height: 1 !important;
-  min-width: 0 !important;
-}
-
-.assetFormModalStepOne .customSelectOption > .customSelectOptionText {
+.assetFormModalStepOne .customSelectOptionText {
   display: grid !important;
   gap: 0.16rem !important;
   min-width: 0 !important;
@@ -24569,47 +24582,38 @@ button.documentOpenLink {
 
 .assetFormModalStepOne .customSelectOptionText strong {
   color: #102f2a !important;
-  font-size: 1rem !important;
-  font-weight: 820 !important;
-  line-height: 1.12 !important;
+  font-size: 0.98rem !important;
+  font-weight: 800 !important;
+  line-height: 1.16 !important;
+  letter-spacing: -0.018em !important;
 }
 
 .assetFormModalStepOne .customSelectOptionText small {
   color: #607286 !important;
-  font-size: 0.8rem !important;
-  font-weight: 600 !important;
-  line-height: 1.32 !important;
+  font-size: 0.79rem !important;
+  font-weight: 590 !important;
+  line-height: 1.34 !important;
 }
 
-.assetFormModalStepOne .customSelectOption b {
-  width: 1.5rem !important;
-  height: 1.5rem !important;
-  font-size: 0.78rem !important;
-  background: linear-gradient(180deg, #1c6049 0%, #124635 100%) !important;
-  box-shadow: 0 8px 16px rgba(18, 70, 53, 0.18) !important;
-}
-
-.assetFormModalStepOne .customSelectOptionActive,
-.assetFormModalStepOne .customSelectOptionActive:hover {
-  border-color: rgba(22, 83, 64, 0.28) !important;
-  background:
-    radial-gradient(circle at 0% 0%, rgba(22, 83, 64, 0.12), transparent 44%),
-    linear-gradient(180deg, #ffffff 0%, #edf8f2 100%) !important;
-}
-
-.assetFormModalStepOne .customSelectOptionActive > .customSelectOptionBadge {
-  color: #ffffff !important;
-  background: linear-gradient(180deg, #1c6049 0%, #124635 100%) !important;
-  border-color: rgba(18, 70, 53, 0.2) !important;
-}
-
-@media (max-width: 900px) {
+@media (max-width: 700px), (max-height: 720px) {
   .assetFormModalStepOne {
     width: min(100%, calc(100vw - 1rem)) !important;
+    max-height: min(92vh, calc(100dvh - 1rem)) !important;
+    overflow: hidden !important;
+    padding: 1rem !important;
+    border-radius: 1.35rem !important;
+  }
+
+  .assetFormModalStepOne .manualStepScrollBodyNoScroll {
+    max-height: calc(100dvh - 8.6rem) !important;
+    overflow-y: auto !important;
+    padding-right: 0.38rem !important;
+    margin-right: -0.18rem !important;
+    overscroll-behavior: contain !important;
   }
 
   .assetFormModalStepOne .customSelectMenu {
-    max-height: min(22rem, calc(100dvh - 17rem)) !important;
+    max-height: min(20rem, calc(100dvh - 16.8rem)) !important;
     overflow-y: auto !important;
     overscroll-behavior: contain !important;
   }
@@ -24618,39 +24622,31 @@ button.documentOpenLink {
 @media (max-width: 540px) {
   .assetFormModalStepOne .manualStepOneCard {
     padding: 1rem !important;
+    border-radius: 1.15rem !important;
   }
 
   .assetFormModalStepOne .customSelectButton {
-    min-height: 3.7rem !important;
-    padding: 0.74rem 0.82rem !important;
-  }
-
-  .assetFormModalStepOne .customSelectButtonBadge {
-    width: 2.05rem !important;
-    height: 2.05rem !important;
-    border-radius: 0.72rem !important;
-    font-size: 0.68rem !important;
-  }
-
-  .assetFormModalStepOne .customSelectOption {
-    grid-template-columns: 2.2rem minmax(0, 1fr) auto !important;
-    gap: 0.62rem !important;
-    min-height: 4rem !important;
-    padding: 0.68rem 0.7rem !important;
-  }
-
-  .assetFormModalStepOne .customSelectOption > .customSelectOptionBadge {
-    width: 2.1rem !important;
-    height: 2.1rem !important;
-    border-radius: 0.72rem !important;
-    font-size: 0.68rem !important;
-  }
-
-  .assetFormModalStepOne .customSelectOptionText strong {
+    min-height: 3.35rem !important;
+    padding: 0.68rem 0.78rem !important;
+    border-radius: 0.92rem !important;
     font-size: 0.95rem !important;
   }
 
+  .assetFormModalStepOne .customSelectMenu {
+    padding: 0.28rem !important;
+    border-radius: 0.95rem !important;
+  }
+
+  .assetFormModalStepOne .customSelectOption {
+    padding: 0.68rem 0.72rem !important;
+    border-radius: 0.7rem !important;
+  }
+
+  .assetFormModalStepOne .customSelectOptionText strong {
+    font-size: 0.94rem !important;
+  }
+
   .assetFormModalStepOne .customSelectOptionText small {
-    font-size: 0.76rem !important;
+    font-size: 0.75rem !important;
   }
 }
