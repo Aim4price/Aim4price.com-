@@ -208,6 +208,8 @@ const PDF_REPORT_OPTIONS: PdfReportOption[] = [
 ];
 type AssetFilterKey =
   | 'all'
+  | 'property'
+  | 'no-property'
   | 'insured'
   | 'not-insured'
   | 'financed'
@@ -221,6 +223,21 @@ type AssetFilterKey =
   | 'aim4price-value'
   | 'manual-value'
   | 'marketplace';
+
+type AssetFilterGroupKey = 'view' | 'asset-type' | 'status' | 'value' | 'channel';
+
+type AssetFilterOption = {
+  value: AssetFilterKey;
+  label: string;
+  description: string;
+  group: AssetFilterGroupKey;
+};
+
+type AssetFilterGroup = {
+  key: AssetFilterGroupKey;
+  title: string;
+  description: string;
+};
 
 type AssetDocument = {
   id: string;
@@ -656,21 +673,31 @@ const CONDITION_OPTIONS: Array<{ value: AssetConditionValue; label: string }> = 
   { value: 'serious', label: 'Requires attention' },
 ];
 
-const ASSET_FILTER_OPTIONS: Array<{ value: AssetFilterKey; label: string }> = [
-  { value: 'all', label: 'All assets' },
-  { value: 'insured', label: 'Insured' },
-  { value: 'not-insured', label: 'Not insured' },
-  { value: 'financed', label: 'Financed' },
-  { value: 'not-financed', label: 'Not financed' },
-  { value: 'licensed', label: 'Licensed' },
-  { value: 'not-licensed', label: 'Not licensed' },
-  { value: 'highest-value', label: 'Highest current value' },
-  { value: 'lowest-value', label: 'Lowest current value' },
-  { value: 'highest-replacement-price', label: 'Highest replacement price' },
-  { value: 'lowest-replacement-price', label: 'Lowest replacement price' },
-  { value: 'aim4price-value', label: 'Aim4price value' },
-  { value: 'manual-value', label: 'Manual value' },
-  { value: 'marketplace', label: 'Marketplace' },
+const ASSET_FILTER_GROUPS: AssetFilterGroup[] = [
+  { key: 'view', title: 'View', description: 'Choose the overall asset list view.' },
+  { key: 'asset-type', title: 'Asset type', description: 'Include or remove property assets from the register list.' },
+  { key: 'status', title: 'Status', description: 'Filter by saved finance, insurance and licence status.' },
+  { key: 'value', title: 'Value and pricing', description: 'Sort or narrow the list by current value and pricing source.' },
+  { key: 'channel', title: 'Marketplace', description: 'Show assets currently published to the marketplace.' },
+];
+
+const ASSET_FILTER_OPTIONS: AssetFilterOption[] = [
+  { value: 'all', label: 'All assets', description: 'Show every asset in this register.', group: 'view' },
+  { value: 'property', label: 'Property only', description: 'Show only property and building assets.', group: 'asset-type' },
+  { value: 'no-property', label: 'No property', description: 'Hide property and building assets from the list.', group: 'asset-type' },
+  { value: 'insured', label: 'Insured', description: 'Only assets marked as insured.', group: 'status' },
+  { value: 'not-insured', label: 'Not insured', description: 'Only assets marked as not insured.', group: 'status' },
+  { value: 'financed', label: 'Financed', description: 'Only assets marked as financed.', group: 'status' },
+  { value: 'not-financed', label: 'Not financed', description: 'Only assets marked as not financed.', group: 'status' },
+  { value: 'licensed', label: 'Licensed', description: 'Only assets marked as licensed.', group: 'status' },
+  { value: 'not-licensed', label: 'Not licensed', description: 'Only assets marked as not licensed.', group: 'status' },
+  { value: 'highest-value', label: 'Highest current value', description: 'Keep all assets, sorted from highest to lowest value.', group: 'value' },
+  { value: 'lowest-value', label: 'Lowest current value', description: 'Keep all assets, sorted from lowest to highest value.', group: 'value' },
+  { value: 'highest-replacement-price', label: 'Highest replacement price', description: 'Keep all assets, sorted by highest replacement price.', group: 'value' },
+  { value: 'lowest-replacement-price', label: 'Lowest replacement price', description: 'Keep all assets, sorted by lowest replacement price.', group: 'value' },
+  { value: 'aim4price-value', label: 'Aim4price value', description: 'Only assets valued through Aim4price.', group: 'value' },
+  { value: 'manual-value', label: 'Manual value', description: 'Only manually priced assets.', group: 'value' },
+  { value: 'marketplace', label: 'Marketplace', description: 'Only assets currently live on the marketplace.', group: 'channel' },
 ];
 
 const LEAFLET_SCRIPT_ID = 'aim4price-leaflet-script';
@@ -2071,6 +2098,40 @@ function isMarketplaceEligible(asset: RegisterAsset): boolean {
 
 function isLiveOnMarketplace(asset: RegisterAsset): boolean {
   return String(asset.marketplaceStatus ?? 'draft').toLowerCase() === 'live';
+}
+
+function filterAssetsByRegisterFilter(assetList: RegisterAsset[], assetFilter: AssetFilterKey): RegisterAsset[] {
+  switch (assetFilter) {
+    case 'property':
+      return assetList.filter((asset) => asset.kind === 'property');
+    case 'no-property':
+      return assetList.filter((asset) => asset.kind !== 'property');
+    case 'insured':
+      return assetList.filter((asset) => readInsuranceStatusChoice(asset) === 'yes');
+    case 'not-insured':
+      return assetList.filter((asset) => readInsuranceStatusChoice(asset) === 'no');
+    case 'financed':
+      return assetList.filter((asset) => readFinanceStatusChoice(asset) === 'yes');
+    case 'not-financed':
+      return assetList.filter((asset) => readFinanceStatusChoice(asset) === 'no');
+    case 'licensed':
+      return assetList.filter((asset) => readLicenseStatusChoice(asset) === 'yes');
+    case 'not-licensed':
+      return assetList.filter((asset) => readLicenseStatusChoice(asset) === 'no');
+    case 'aim4price-value':
+      return assetList.filter((asset) => isAim4priceValuedAsset(asset));
+    case 'manual-value':
+      return assetList.filter((asset) => asset.selectedMethod === 'manual');
+    case 'marketplace':
+      return assetList.filter((asset) => isLiveOnMarketplace(asset));
+    case 'highest-value':
+    case 'lowest-value':
+    case 'highest-replacement-price':
+    case 'lowest-replacement-price':
+    case 'all':
+    default:
+      return assetList;
+  }
 }
 
 function readBooleanFromSpecs(specs: Record<string, unknown>, keys: string[]): boolean {
@@ -3962,22 +4023,6 @@ export default function AssetRegisterClient() {
   }, [searchTerm, assetFilter]);
 
   useEffect(() => {
-    if (!isAssetFilterOpen) return undefined;
-
-    const handlePointerDown = (event: PointerEvent) => {
-      const target = event.target;
-      if (target instanceof Node && assetFilterWrapRef.current?.contains(target)) {
-        return;
-      }
-
-      setIsAssetFilterOpen(false);
-    };
-
-    document.addEventListener('pointerdown', handlePointerDown);
-    return () => document.removeEventListener('pointerdown', handlePointerDown);
-  }, [isAssetFilterOpen]);
-
-  useEffect(() => {
     if (!openAssetReportSelect) return undefined;
 
     const handlePointerDown = (event: PointerEvent) => {
@@ -4001,6 +4046,7 @@ export default function AssetRegisterClient() {
     isQuoteModalOpen ||
     Boolean(deleteCandidateAsset) ||
     isAssetReportModalOpen ||
+    isAssetFilterOpen ||
     isPricingModalOpen ||
     Boolean(pricingPreview) ||
     isQrModalOpen ||
@@ -4021,7 +4067,10 @@ export default function AssetRegisterClient() {
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
 
-      setIsAssetFilterOpen(false);
+      if (isAssetFilterOpen) {
+        setIsAssetFilterOpen(false);
+        return;
+      }
 
       if (deleteCandidateAsset) {
         closeDeleteConfirmDialog();
@@ -4104,7 +4153,7 @@ export default function AssetRegisterClient() {
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [activeAsset, anyModalOpen, deleteCandidateAsset, isAddChoiceModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isPricingModalOpen, pricingPreview, isQrModalOpen, isRegisterShareModalOpen, isSummaryModalOpen, marketplaceAsset, projectionAsset, isQuoteModalOpen, quoteLeadStep]);
+  }, [activeAsset, anyModalOpen, deleteCandidateAsset, isAddChoiceModalOpen, isAssetFilterOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isPricingModalOpen, pricingPreview, isQrModalOpen, isRegisterShareModalOpen, isSummaryModalOpen, marketplaceAsset, projectionAsset, isQuoteModalOpen, quoteLeadStep]);
 
   useEffect(() => {
     if (!isQuoteModalOpen || !selectedQuoteLeadType) return;
@@ -4372,52 +4421,24 @@ export default function AssetRegisterClient() {
     return ASSET_FILTER_OPTIONS.find((option) => option.value === assetFilter)?.label ?? 'All assets';
   }, [assetFilter]);
 
-  const filteredAssets = useMemo(() => {
+  const searchMatchedAssets = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
-    let nextAssets = normalizedSearch
+
+    return normalizedSearch
       ? assets.filter((asset) => buildSearchableText(asset).includes(normalizedSearch))
-      : [...assets];
+      : assets;
+  }, [assets, searchTerm]);
 
-    switch (assetFilter) {
-      case 'insured':
-        nextAssets = nextAssets.filter((asset) => readInsuranceStatusChoice(asset) === 'yes');
-        break;
-      case 'not-insured':
-        nextAssets = nextAssets.filter((asset) => readInsuranceStatusChoice(asset) === 'no');
-        break;
-      case 'financed':
-        nextAssets = nextAssets.filter((asset) => readFinanceStatusChoice(asset) === 'yes');
-        break;
-      case 'not-financed':
-        nextAssets = nextAssets.filter((asset) => readFinanceStatusChoice(asset) === 'no');
-        break;
-      case 'licensed':
-        nextAssets = nextAssets.filter((asset) => readLicenseStatusChoice(asset) === 'yes');
-        break;
-      case 'not-licensed':
-        nextAssets = nextAssets.filter((asset) => readLicenseStatusChoice(asset) === 'no');
-        break;
-      case 'highest-value':
-      case 'lowest-value':
-      case 'highest-replacement-price':
-      case 'lowest-replacement-price':
-        break;
-      case 'aim4price-value':
-        nextAssets = nextAssets.filter((asset) => isAim4priceValuedAsset(asset));
-        break;
-      case 'manual-value':
-        nextAssets = nextAssets.filter((asset) => asset.selectedMethod === 'manual');
-        break;
-      case 'marketplace':
-        nextAssets = nextAssets.filter((asset) => isLiveOnMarketplace(asset));
-        break;
-      case 'all':
-      default:
-        break;
-    }
+  const assetFilterCounts = useMemo(() => {
+    return ASSET_FILTER_OPTIONS.reduce((counts, option) => {
+      counts[option.value] = filterAssetsByRegisterFilter(searchMatchedAssets, option.value).length;
+      return counts;
+    }, {} as Record<AssetFilterKey, number>);
+  }, [searchMatchedAssets]);
 
-    return sortAssetsByRegisterPriority(nextAssets, assetFilter);
-  }, [assets, assetFilter, searchTerm]);
+  const filteredAssets = useMemo(() => {
+    return sortAssetsByRegisterPriority(filterAssetsByRegisterFilter(searchMatchedAssets, assetFilter), assetFilter);
+  }, [assetFilter, searchMatchedAssets]);
 
   const pageCount = Math.max(1, Math.ceil(filteredAssets.length / pageSize));
   const pageStart = (currentPage - 1) * pageSize;
@@ -7238,40 +7259,117 @@ export default function AssetRegisterClient() {
                 <button
                   type="button"
                   className={`${styles.secondaryButton} ${styles.filterTriggerButton} ${hasActiveAssetFilter ? styles.filterTriggerButtonActive : ''} ${isAssetFilterOpen ? styles.filterTriggerButtonOpen : ''}`}
-                  onClick={() => setIsAssetFilterOpen((current) => !current)}
+                  onClick={() => setIsAssetFilterOpen(true)}
                   disabled={isLoading}
-                  aria-haspopup="menu"
+                  aria-haspopup="dialog"
                   aria-expanded={isAssetFilterOpen}
+                  aria-controls="asset-register-filter-modal"
                 >
                   <FilterIcon className={styles.buttonIcon} />
                   <span>Filters</span>
+                  {hasActiveAssetFilter ? <span className={styles.filterActiveBadge}>1</span> : null}
                   <ChevronDownIcon className={styles.filterChevron} />
                 </button>
-
-                {isAssetFilterOpen ? (
-                  <div className={styles.assetFilterMenu} role="menu" aria-label="Filter asset register">
-                    {ASSET_FILTER_OPTIONS.map((option) => {
-                      const isActiveFilter = assetFilter === option.value;
-
-                      return (
-                        <button
-                          type="button"
-                          role="menuitemradio"
-                          aria-checked={isActiveFilter}
-                          key={option.value}
-                          className={`${styles.assetFilterMenuButton} ${isActiveFilter ? styles.assetFilterMenuButtonActive : ''}`}
-                          onClick={() => selectAssetFilter(option.value)}
-                        >
-                          <span>{option.label}</span>
-                          {isActiveFilter ? <span className={styles.assetFilterMenuTick}>✓</span> : null}
-                        </button>
-                      );
-                    })}
-                  </div>
-                ) : null}
               </div>
             </div>
           </div>
+
+          {isAssetFilterOpen ? (
+            <div className={`${styles.modalOverlay} ${styles.assetFilterModalOverlay}`}>
+              <div className={styles.modalBackdrop} onClick={() => setIsAssetFilterOpen(false)} />
+
+              <div
+                id="asset-register-filter-modal"
+                className={`${styles.modalCard} ${styles.assetFilterModal}`}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="asset-register-filter-title"
+              >
+                <div className={`${styles.modalHeader} ${styles.assetFilterModalHeader}`}>
+                  <div className={styles.modalHeaderText}>
+                    <span className={styles.modalEyebrow}>Asset register</span>
+                    <h3 id="asset-register-filter-title">Filter assets</h3>
+                    <p>Choose a focused view for this register. The No property option hides property and building assets from the list.</p>
+                  </div>
+
+                  <button
+                    type="button"
+                    className={styles.modalCloseButton}
+                    onClick={() => setIsAssetFilterOpen(false)}
+                    aria-label="Close asset filters"
+                  >
+                    <CloseIcon className={styles.buttonIcon} />
+                  </button>
+                </div>
+
+                <div className={`${styles.modalScrollBody} ${styles.assetFilterModalBody}`}>
+                  <section className={styles.assetFilterCurrentPanel} aria-label="Current asset filter">
+                    <div>
+                      <span>Current filter</span>
+                      <strong>{activeAssetFilterLabel}</strong>
+                    </div>
+                    <div>
+                      <span>Assets shown</span>
+                      <strong>{filteredAssets.length.toLocaleString('en-ZA')} of {searchMatchedAssets.length.toLocaleString('en-ZA')}</strong>
+                    </div>
+                  </section>
+
+                  <div className={styles.assetFilterGroups}>
+                    {ASSET_FILTER_GROUPS.map((group) => {
+                      const groupOptions = ASSET_FILTER_OPTIONS.filter((option) => option.group === group.key);
+
+                      return (
+                        <section className={styles.assetFilterGroup} key={group.key}>
+                          <div className={styles.assetFilterGroupHeader}>
+                            <div>
+                              <h4>{group.title}</h4>
+                              <p>{group.description}</p>
+                            </div>
+                          </div>
+
+                          <div className={styles.assetFilterOptionGrid}>
+                            {groupOptions.map((option) => {
+                              const isActiveFilter = assetFilter === option.value;
+                              const optionCount = assetFilterCounts[option.value] ?? 0;
+
+                              return (
+                                <button
+                                  type="button"
+                                  key={option.value}
+                                  className={`${styles.assetFilterOptionCard} ${isActiveFilter ? styles.assetFilterOptionCardActive : ''}`}
+                                  onClick={() => selectAssetFilter(option.value)}
+                                  aria-pressed={isActiveFilter}
+                                >
+                                  <span className={styles.assetFilterOptionText}>
+                                    <strong>{option.label}</strong>
+                                    <small>{option.description}</small>
+                                  </span>
+                                  <span className={styles.assetFilterOptionMeta}>
+                                    <strong>{optionCount.toLocaleString('en-ZA')}</strong>
+                                    <small>{optionCount === 1 ? 'asset' : 'assets'}</small>
+                                  </span>
+                                  {isActiveFilter ? <span className={styles.assetFilterModalTick}>✓</span> : null}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </section>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className={styles.assetFilterModalFooter}>
+                  <button type="button" className={styles.secondaryButton} onClick={clearAssetFilter} disabled={!hasActiveAssetFilter}>
+                    Clear filter
+                  </button>
+                  <button type="button" className={styles.primaryButton} onClick={() => setIsAssetFilterOpen(false)}>
+                    Done
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : null}
 
           <section className={styles.assetSummaryCarousel} aria-label="Asset register summary">
             <button
