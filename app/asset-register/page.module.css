@@ -651,6 +651,30 @@
   line-height: 1.6;
 }
 
+
+/* === Manual asset note visibility === */
+.assetManualNotePanel {
+  grid-column: 1 / -1;
+  padding: 0.95rem 1rem;
+  border-radius: 1rem;
+  background: #ffffff;
+  border: 1px solid rgba(220, 228, 236, 0.95);
+}
+
+.assetManualNotePanel > span {
+  display: block;
+  color: #708092;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.assetManualNotePanel .note {
+  margin-top: 0.35rem;
+  white-space: pre-wrap;
+}
+
 .assetFooter {
   display: flex;
   justify-content: space-between;

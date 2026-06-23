@@ -2277,7 +2277,7 @@ function buildDraftFromAsset(asset: RegisterAsset): AssetDraft {
     title: asset.title,
     value: formatRegisterValueInput(asset.value || ''),
     replacementPrice: formatRegisterValueInput(readAssetReplacementPriceExVat(asset) ?? ''),
-    note: '',
+    note: getManualAssetNote(asset.note),
     serialNumber: asset.serialNumber,
     isFinanced: financeStatus === 'yes',
     isInsured: insuranceStatus === 'yes',
@@ -5234,8 +5234,9 @@ export default function AssetRegisterClient() {
     const hasLifeWorkedPercent = assetDraft.lifeWorkedPercent.trim() !== '';
     const lifeWorkedPercent = hasLifeWorkedPercent ? Number(assetDraft.lifeWorkedPercent) : null;
     const usageErrorLabel = assetDraft.usageMetric === 'km' ? 'Kilometres' : 'Machine hours';
+    const title = assetDraft.title.trim();
 
-    if (!assetDraft.title.trim() || value <= 0) {
+    if (!title || value <= 0) {
       setNotice({ tone: 'error', message: 'Asset title and current value are required.' });
       return;
     }
@@ -5369,7 +5370,7 @@ export default function AssetRegisterClient() {
       const payload = {
         registerId: activeRegister?.id || activeRegisterId || null,
         kind: editingAsset?.valuationRunId ? editingAsset.kind : assetDraft.kind,
-        title: assetDraft.title,
+        title,
         value,
         replacementPriceExVat: replacementPrice,
         note: assetDraft.note.trim(),
@@ -7530,6 +7531,7 @@ export default function AssetRegisterClient() {
                               const hasRealPhotos = detailPhotos.length > 0;
                               const isDetailPhotoUploading = detailMediaUpload?.assetId === asset.id && detailMediaUpload.type === 'photo';
                               const isDetailDocumentUploading = detailMediaUpload?.assetId === asset.id && detailMediaUpload.type === 'document';
+                              const manualAssetNote = getManualAssetNote(asset.note);
 
                               return (
                                 <>
@@ -7737,6 +7739,13 @@ export default function AssetRegisterClient() {
                                       <strong>{readAssetReplacementPriceExVat(asset) ? money(readAssetReplacementPriceExVat(asset) ?? 0) : 'Not set'}</strong>
                                       <small>Excl. VAT</small>
                                     </div>
+
+                                    {manualAssetNote ? (
+                                      <div className={`${styles.noteStack} ${styles.assetManualNotePanel}`}>
+                                        <span>Notes</span>
+                                        <p className={styles.note}>{manualAssetNote}</p>
+                                      </div>
+                                    ) : null}
                                   </div>
                                 </>
                               );
