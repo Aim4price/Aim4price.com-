@@ -7739,14 +7739,13 @@ export default function AssetRegisterClient() {
                                       <strong>{readAssetReplacementPriceExVat(asset) ? money(readAssetReplacementPriceExVat(asset) ?? 0) : 'Not set'}</strong>
                                       <small>Excl. VAT</small>
                                     </div>
-
-                                    {manualAssetNote ? (
-                                      <div className={`${styles.noteStack} ${styles.assetManualNotePanel}`}>
-                                        <span>Notes</span>
-                                        <p className={styles.note}>{manualAssetNote}</p>
-                                      </div>
-                                    ) : null}
                                   </div>
+
+                                  {manualAssetNote ? (
+                                    <div className={`${styles.noteStack} ${styles.assetManualNotePanel}`}>
+                                      <p className={styles.note}>{manualAssetNote}</p>
+                                    </div>
+                                  ) : null}
                                 </>
                               );
                             })()}
