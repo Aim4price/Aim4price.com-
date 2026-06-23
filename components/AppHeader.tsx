@@ -1373,11 +1373,6 @@ export default function AppHeader({
                   </div>
 
                   <div className={styles.accountMenu} ref={accountMenuRef}>
-                    <span className={styles.accountWidthSizer} aria-hidden="true">
-                      <span className={styles.accountWidthSizerIcon} />
-                      <span>{accountName}</span>
-                    </span>
-
                     <button
                       type="button"
                       className={`${styles.accountButton} ${menuOpen ? styles.accountButtonActive : ''}`}
