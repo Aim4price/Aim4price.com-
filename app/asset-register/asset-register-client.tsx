@@ -3543,6 +3543,7 @@ export default function AssetRegisterClient() {
   const [pageSize, setPageSize] = useState<PageSize>(DEFAULT_PAGE_SIZE);
   const [registerValueVatMode, setRegisterValueVatMode] = useState<'excluded' | 'included'>('excluded');
   const [replacementValueVatMode, setReplacementValueVatMode] = useState<'excluded' | 'included'>('excluded');
+  const [assetValueVatModes, setAssetValueVatModes] = useState<Record<string, 'excluded' | 'included'>>({});
   const [registerSummaryStartIndex, setRegisterSummaryStartIndex] = useState(0);
   const [registerSummaryCardsPerView, setRegisterSummaryCardsPerView] = useState(REGISTER_SUMMARY_VISIBLE_CARD_COUNT);
   const registerSummaryViewportRef = useRef<HTMLDivElement | null>(null);
@@ -3646,6 +3647,17 @@ export default function AssetRegisterClient() {
       const nextIndex = Math.round((viewport.scrollLeft / maxScrollLeft) * registerSummaryMaxIndex);
       setRegisterSummaryStartIndex((currentIndex) => (currentIndex === nextIndex ? currentIndex : nextIndex));
     }, 120);
+  }
+
+  function handleAssetValueVatToggle(assetId: string) {
+    setAssetValueVatModes((currentModes) => {
+      const currentMode = currentModes[assetId] ?? 'excluded';
+
+      return {
+        ...currentModes,
+        [assetId]: currentMode === 'included' ? 'excluded' : 'included',
+      };
+    });
   }
 
   function rememberDocumentObjectUrl(cacheKey: string, objectUrl: string): string {
@@ -7597,6 +7609,10 @@ export default function AssetRegisterClient() {
                     const partnerNoteLabel = openPartnerNote?.partnerType ? `${formatQuotePartnerType(openPartnerNote.partnerType)} note` : 'Partner note';
                     const latestMaintenanceStatus = asset.latestMaintenanceStatus ?? null;
                     const isManualValueAsset = asset.selectedMethod === 'manual';
+                    const assetValueVatMode = assetValueVatModes[asset.id] ?? 'excluded';
+                    const displayedAssetValue = assetValueVatMode === 'included' ? Math.round(Number(asset.value || 0) * 1.15) : asset.value;
+                    const assetValueVatLabel = assetValueVatMode === 'included' ? 'Incl. VAT' : 'Excl. VAT';
+                    const assetValueVatToggleLabel = assetValueVatMode === 'included' ? `Show ${asset.title} value excluding VAT` : `Show ${asset.title} value including VAT`;
                     const maintenanceDoneLabel =
                       latestMaintenanceStatus?.kind === 'checked'
                         ? 'Maintenance checked'
@@ -7659,8 +7675,22 @@ export default function AssetRegisterClient() {
 
                           <div className={styles.assetHeaderAside}>
                             <div className={styles.valueBlock}>
-                              <strong>{money(asset.value)}</strong>
-                              <span>Excl. VAT</span>
+                              <div className={styles.assetValueVatDisplay}>
+                                <div className={styles.assetValueVatText}>
+                                  <strong>{money(displayedAssetValue)}</strong>
+                                  <span>{assetValueVatLabel}</span>
+                                </div>
+                                <button
+                                  type="button"
+                                  className={`${styles.assetValueVatToggle} ${assetValueVatMode === 'included' ? styles.assetValueVatToggleIncluded : ''}`}
+                                  onClick={() => handleAssetValueVatToggle(asset.id)}
+                                  aria-label={assetValueVatToggleLabel}
+                                  aria-pressed={assetValueVatMode === 'included'}
+                                  title={assetValueVatToggleLabel}
+                                >
+                                  <span aria-hidden="true">{assetValueVatMode === 'included' ? '‹' : '›'}</span>
+                                </button>
+                              </div>
                             </div>
 
                             <div className={styles.assetHeaderActions}>

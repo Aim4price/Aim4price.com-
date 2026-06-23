@@ -24930,3 +24930,90 @@ button.documentOpenLink {
     width: 100%;
   }
 }
+
+/* === Asset-card VAT display toggle === */
+.assetValueVatDisplay {
+  width: 100%;
+  display: inline-grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  justify-content: end;
+  gap: 0.64rem;
+}
+
+.assetValueVatText {
+  min-width: 0;
+  display: grid;
+  justify-items: end;
+  align-content: center;
+  text-align: right;
+}
+
+.assetValueVatText strong {
+  white-space: nowrap !important;
+}
+
+.assetValueVatText span {
+  white-space: nowrap !important;
+}
+
+.assetValueVatToggle {
+  flex: 0 0 auto;
+  width: 1.45rem;
+  min-width: 1.45rem;
+  height: 2.75rem;
+  min-height: 2.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  color: rgba(7, 59, 48, 0.84);
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 160ms ease,
+    color 160ms ease,
+    opacity 160ms ease;
+}
+
+.assetValueVatToggle span {
+  display: block !important;
+  margin: 0 !important;
+  color: inherit !important;
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
+  font-size: clamp(2.2rem, 2.55vw, 2.8rem) !important;
+  font-weight: 520;
+  line-height: 0.78;
+  letter-spacing: -0.1em;
+  transform: translateY(-0.03em);
+}
+
+.assetValueVatToggle:hover:not(:disabled) {
+  color: #073b30;
+  opacity: 1;
+  transform: translateX(0.12rem);
+}
+
+.assetValueVatToggleIncluded:hover:not(:disabled) {
+  transform: translateX(-0.12rem);
+}
+
+.assetValueVatToggle:focus-visible {
+  outline: 2px solid rgba(20, 112, 82, 0.24);
+  outline-offset: 0.22rem;
+}
+
+@media (max-width: 900px) {
+  .assetValueVatDisplay {
+    justify-content: start;
+  }
+
+  .assetValueVatText {
+    justify-items: start;
+    text-align: left;
+  }
+}
