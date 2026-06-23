@@ -571,36 +571,42 @@ const MANUAL_ASSET_TYPE_OPTIONS: Array<{
   label: string;
   description: string;
   titlePlaceholder: string;
+  badge: string;
 }> = [
   {
     value: 'equipment',
     label: 'Equipment',
     description: 'General machines and larger equipment not added through valuation.',
     titlePlaceholder: 'Example: Water pump trailer',
+    badge: 'EQ',
   },
   {
     value: 'vehicle',
     label: 'Vehicle',
     description: 'Bakkies, trucks, trailers and other road or farm vehicles.',
     titlePlaceholder: 'Example: Toyota Hilux farm bakkie',
+    badge: 'VE',
   },
   {
     value: 'property',
     label: 'Property/Buildings',
     description: 'Buildings, sheds, houses, stores and fixed improvements.',
     titlePlaceholder: 'Example: Main workshop building',
+    badge: 'PR',
   },
   {
     value: 'tools',
     label: 'Tools',
     description: 'Smaller tools, workshop items and handheld equipment.',
     titlePlaceholder: 'Example: Workshop tool set',
+    badge: 'TL',
   },
   {
     value: 'manual',
     label: 'Other',
     description: 'Any asset that does not fit the standard equipment, vehicle, property or tools groups.',
     titlePlaceholder: 'Example: Irrigation rights, livestock equipment or custom asset',
+    badge: 'OT',
   },
 ];
 
@@ -1174,6 +1180,7 @@ type ModalSelectOption<T extends string> = {
   value: T;
   label: string;
   description?: string;
+  badge?: string;
 };
 
 type ModalSelectProps<T extends string> = {
@@ -1237,7 +1244,16 @@ function ModalSelect<T extends string>({
         aria-expanded={isOpen}
         autoFocus={autoFocus}
       >
-        <span>{selectedOption?.label ?? placeholder}</span>
+        <span className={styles.customSelectButtonText}>
+          {selectedOption?.badge ? (
+            <span className={styles.customSelectButtonBadge} aria-hidden="true">
+              {selectedOption.badge}
+            </span>
+          ) : null}
+          <span className={styles.customSelectButtonCopy}>
+            <span>{selectedOption?.label ?? placeholder}</span>
+          </span>
+        </span>
         <ChevronDownIcon className={styles.customSelectChevron} />
       </button>
 
@@ -1258,7 +1274,12 @@ function ModalSelect<T extends string>({
                   setIsOpen(false);
                 }}
               >
-                <span>
+                {option.badge ? (
+                  <span className={styles.customSelectOptionBadge} aria-hidden="true">
+                    {option.badge}
+                  </span>
+                ) : null}
+                <span className={styles.customSelectOptionText}>
                   <strong>{option.label}</strong>
                   {option.description ? <small>{option.description}</small> : null}
                 </span>
