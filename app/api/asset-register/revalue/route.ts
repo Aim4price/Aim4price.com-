@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '../../../../lib/auth-session';
 import { revalueAssetRegisterItem } from '../../../../lib/asset-register-revaluation';
 import { attachOpenPartnerNotesToAssets } from '../../../../lib/partner-access';
+import type { AdvancedAssumptionsInput } from '../../../../lib/valuation/shared';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -51,6 +52,31 @@ function normalizeReplacementPrice(value: unknown): number | null {
   return null;
 }
 
+function normalizeAdvancedScalar(value: unknown): number | string | null | undefined {
+  if (typeof value === 'undefined') return undefined;
+  if (value === null || typeof value === 'number' || typeof value === 'string') return value;
+  return undefined;
+}
+
+function normalizeAdvancedAssumptionsRequest(value: unknown): AdvancedAssumptionsInput {
+  if (value === null || typeof value === 'undefined') {
+    return null;
+  }
+
+  if (typeof value !== 'object' || Array.isArray(value)) {
+    return null;
+  }
+
+  const source = value as Record<string, unknown>;
+
+  return {
+    maxLifetimeUsage: normalizeAdvancedScalar(source.maxLifetimeUsage),
+    maxLifetimeHours: normalizeAdvancedScalar(source.maxLifetimeHours),
+    conditionFactorPercent: normalizeAdvancedScalar(source.conditionFactorPercent),
+  };
+}
+
+
 function formatError(error: unknown): { status: number; message: string } {
   if (error instanceof Error) {
     if (error.message === 'ASSET_NOT_FOUND') {
@@ -92,7 +118,12 @@ function formatError(error: unknown): { status: number; message: string } {
       };
     }
 
-    if (error.message.startsWith('This asset is missing') || error.message.startsWith('This tractor is missing')) {
+    if (
+      error.message.startsWith('This asset is missing') ||
+      error.message.startsWith('This tractor is missing') ||
+      error.message.startsWith('Expected lifetime') ||
+      error.message.startsWith('Condition retained value')
+    ) {
       return { status: 400, message: error.message };
     }
 
@@ -119,6 +150,7 @@ export async function POST(request: NextRequest) {
     previewOnly?: unknown;
     replacementPriceExVat?: unknown;
     saveReplacementPrice?: unknown;
+    advancedAssumptions?: unknown;
   };
   try {
     body = (await request.json()) as {
@@ -127,6 +159,7 @@ export async function POST(request: NextRequest) {
       previewOnly?: unknown;
       replacementPriceExVat?: unknown;
       saveReplacementPrice?: unknown;
+      advancedAssumptions?: unknown;
     };
   } catch {
     return badRequest('Enter a valid estimate update request.');
@@ -146,6 +179,10 @@ export async function POST(request: NextRequest) {
   }
 
   const saveReplacementPrice = body.saveReplacementPrice === true;
+  const hasAdvancedAssumptionsOverride = Object.prototype.hasOwnProperty.call(body, 'advancedAssumptions');
+  const advancedAssumptions = hasAdvancedAssumptionsOverride
+    ? normalizeAdvancedAssumptionsRequest(body.advancedAssumptions)
+    : undefined;
 
   if (saveReplacementPrice && replacementPriceExVat === null) {
     return badRequest('Enter a valid replacement price excluding VAT before saving it as the new replacement price.');
@@ -159,6 +196,7 @@ export async function POST(request: NextRequest) {
       previewOnly: body.previewOnly === true,
       replacementPriceExVat,
       saveReplacementPrice,
+      ...(hasAdvancedAssumptionsOverride ? { advancedAssumptions } : {}),
     });
 
     const [itemWithPartnerNote] = await attachOpenPartnerNotesToAssets(session.user.id, [result.item]);
