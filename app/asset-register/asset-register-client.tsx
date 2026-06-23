@@ -7640,11 +7640,11 @@ export default function AssetRegisterClient() {
                       : false;
 
                     return (
-                      <article
-                        id={`asset-card-${asset.id}`}
-                        className={`${styles.assetCard} ${isExpanded ? styles.assetCardExpanded : ''} ${estimateNeedsUpdate ? styles.assetCardEstimateStale : ''} ${openPartnerNote ? `${styles.assetCardPartnerNote} ${partnerNoteToneClass}` : ''} ${latestMaintenanceStatus ? styles.assetCardMaintenanceDone : ''}`}
-                        key={asset.id}
-                      >
+                      <div className={styles.assetCardRow} key={asset.id}>
+                        <article
+                          id={`asset-card-${asset.id}`}
+                          className={`${styles.assetCard} ${isExpanded ? styles.assetCardExpanded : ''} ${estimateNeedsUpdate ? styles.assetCardEstimateStale : ''} ${openPartnerNote ? `${styles.assetCardPartnerNote} ${partnerNoteToneClass}` : ''} ${latestMaintenanceStatus ? styles.assetCardMaintenanceDone : ''}`}
+                        >
                         <div className={styles.assetHeader}>
                           <div className={styles.assetTitleBlock}>
                             {isLive || estimateNeedsUpdate || openPartnerNote || latestMaintenanceStatus ? (
@@ -7680,16 +7680,6 @@ export default function AssetRegisterClient() {
                                   <strong>{money(displayedAssetValue)}</strong>
                                   <span>{assetValueVatLabel}</span>
                                 </div>
-                                <button
-                                  type="button"
-                                  className={`${styles.assetValueVatToggle} ${assetValueVatMode === 'included' ? styles.assetValueVatToggleIncluded : ''}`}
-                                  onClick={() => handleAssetValueVatToggle(asset.id)}
-                                  aria-label={assetValueVatToggleLabel}
-                                  aria-pressed={assetValueVatMode === 'included'}
-                                  title={assetValueVatToggleLabel}
-                                >
-                                  <span aria-hidden="true">{assetValueVatMode === 'included' ? '‹' : '›'}</span>
-                                </button>
                               </div>
                             </div>
 
@@ -8036,7 +8026,18 @@ export default function AssetRegisterClient() {
                             })()}
                           </div>
                         ) : null}
-                      </article>
+                        </article>
+                        <button
+                          type="button"
+                          className={`${styles.assetValueVatToggle} ${styles.assetCardVatToggle} ${assetValueVatMode === 'included' ? styles.assetValueVatToggleIncluded : ''}`}
+                          onClick={() => handleAssetValueVatToggle(asset.id)}
+                          aria-label={assetValueVatToggleLabel}
+                          aria-pressed={assetValueVatMode === 'included'}
+                          title={assetValueVatToggleLabel}
+                        >
+                          <span aria-hidden="true">{assetValueVatMode === 'included' ? '‹' : '›'}</span>
+                        </button>
+                      </div>
                     );
                   })}
                 </div>
