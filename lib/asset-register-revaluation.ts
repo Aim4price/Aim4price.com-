@@ -481,11 +481,23 @@ async function revalueTractorAsset(input: {
     payloadInput.modelId ?? input.row.equipment_model_id ?? input.row.model_id ?? input.asset.equipmentModelId,
     'This tractor is missing its original model link, so Aim4price cannot re-run the estimate yet.',
   );
+  const assetSpecs = asRecord(input.asset.specsJson);
+  const rowSpecs = asRecord(input.row.specs_json);
+  const yearModelUnknown = asBoolean(
+    payloadInput.yearModelUnknown ??
+      payloadInput.year_model_unknown ??
+      assetSpecs.year_model_unknown ??
+      assetSpecs.yearModelUnknown ??
+      rowSpecs.year_model_unknown ??
+      rowSpecs.yearModelUnknown,
+  );
   const year = Math.round(
-    requireNumber(
-      input.asset.yearModel ?? payloadInput.year ?? input.row.year_model,
-      'This tractor is missing its year model, so Aim4price cannot re-run the estimate yet.',
-    ),
+    yearModelUnknown
+      ? asNumber(payloadInput.year) ?? asNumber(payloadInput.calculationYear) ?? asNumber(input.row.year_model) ?? new Date().getFullYear()
+      : requireNumber(
+          input.asset.yearModel ?? payloadInput.year ?? input.row.year_model,
+          'This tractor is missing its year model, so Aim4price cannot re-run the estimate yet.',
+        ),
   );
   const hours = Math.max(
     0,
@@ -558,6 +570,7 @@ async function revalueTractorAsset(input: {
       ...valuationInput,
       selectedMethod,
       selectedValueOverrideExVat: selectedValueExVat,
+      yearModelUnknown,
       valuationVersion: 'v1-revalue',
       userId: input.userId,
     },
@@ -571,6 +584,7 @@ async function revalueTractorAsset(input: {
     selectedMethod,
     selectedValueExVat,
     year,
+    yearModelUnknown,
     hours,
     condition,
     saveReplacementPrice: input.saveReplacementPrice === true,
@@ -621,18 +635,6 @@ async function revalueGenericAsset(input: {
     payloadInput.brandSlug ?? input.row.brand_slug,
     'This asset is missing its brand link, so Aim4price cannot re-run the estimate yet.',
   );
-  const year = Math.round(
-    requireNumber(
-      input.asset.yearModel ?? payloadInput.year ?? input.row.year_model,
-      'This asset is missing its year model, so Aim4price cannot re-run the estimate yet.',
-    ),
-  );
-  const condition = normalizeGenericCondition(input.asset.condition || payloadInput.condition || input.row.condition);
-
-  if (!condition) {
-    throw new Error('This asset is missing its condition, so Aim4price cannot re-run the estimate yet.');
-  }
-
   const assetSpecs = cleanSpecsForValuation(input.asset.specsJson ?? {});
   const rowSpecs = cleanSpecsForValuation(asRecord(input.row.specs_json));
   const payloadSpecs = cleanSpecsForValuation(asRecord(payloadInput.specsJson));
@@ -641,6 +643,25 @@ async function revalueGenericAsset(input: {
     ...rowSpecs,
     ...assetSpecs,
   };
+  const yearModelUnknown = asBoolean(
+    payloadInput.yearModelUnknown ??
+      payloadInput.year_model_unknown ??
+      specsJson.year_model_unknown ??
+      specsJson.yearModelUnknown,
+  );
+  const year = Math.round(
+    yearModelUnknown
+      ? asNumber(payloadInput.year) ?? asNumber(payloadInput.calculationYear) ?? asNumber(input.row.year_model) ?? new Date().getFullYear()
+      : requireNumber(
+          input.asset.yearModel ?? payloadInput.year ?? input.row.year_model,
+          'This asset is missing its year model, so Aim4price cannot re-run the estimate yet.',
+        ),
+  );
+  const condition = normalizeGenericCondition(input.asset.condition || payloadInput.condition || input.row.condition);
+
+  if (!condition) {
+    throw new Error('This asset is missing its condition, so Aim4price cannot re-run the estimate yet.');
+  }
   const lifeWorkedPercent = readLifeWorkedPercent(input.asset, payloadInput);
   const usePercentUsage = assetUsesPercentUsageForRevaluation(input.asset);
   const usageAmount = usePercentUsage
@@ -660,7 +681,7 @@ async function revalueGenericAsset(input: {
     typedModelName: input.asset.typedModelName || asText(payloadInput.typedModelName) || asText(input.row.typed_model_name) || null,
     specsJson,
     year,
-    yearModelUnknown: asBoolean(payloadInput.yearModelUnknown ?? specsJson.year_model_unknown),
+    yearModelUnknown,
     usageAmount,
     lifeWorkedPercent,
     condition,

@@ -143,6 +143,7 @@ export async function saveValuationRunFromResult(
   const gpsType = gpsEnabled ? input.gpsType ?? null : null;
   const gpsYear = gpsEnabled ? parseGpsYear(input.gpsYear) : null;
   const valuationPayload = buildValuationPayload(input, result, roundMoney(selectedValueExVat));
+  const savedYearModel = input.yearModelUnknown ? null : Math.round(input.year);
 
   const inserted = await db.query<InsertedValuationRunRow>(
     `
@@ -177,7 +178,7 @@ export async function saveValuationRunFromResult(
       result.model.drive,
       result.model.cab,
       result.model.powerKw,
-      Math.round(input.year),
+      savedYearModel,
       Math.max(0, Number(input.hours) || 0),
       input.condition,
       Boolean(input.frontPto),
@@ -253,6 +254,8 @@ export async function saveGenericValuationRunFromResult(
   const marketListingIds = getGenericMarketListingIds(result);
   const valuationVersion = String(input.valuationVersion ?? 'generic-v1').trim() || 'generic-v1';
   const selectedValue = roundMoney(selectedValueExVat);
+  const yearModelUnknown = Boolean(result.yearModelUnknown ?? result.specsJson.year_model_unknown);
+  const savedYearModel = yearModelUnknown ? null : result.year;
 
   const valuationPayload = {
     input: {
@@ -263,9 +266,10 @@ export async function saveGenericValuationRunFromResult(
       normalizedTypedModelName: result.normalizedTypedModelName,
       specsJson: result.specsJson,
       year: result.year,
+      displayYearModel: savedYearModel,
       usageAmount: result.usageAmount,
       lifeWorkedPercent: result.lifeWorkedPercent,
-      yearModelUnknown: Boolean(result.yearModelUnknown ?? result.specsJson.year_model_unknown),
+      yearModelUnknown,
       condition: result.condition,
       userReplacementPriceExVat: result.userReplacementPriceExVat,
       userReplacementPriceYear: result.userReplacementPriceYear,
@@ -321,7 +325,7 @@ export async function saveGenericValuationRunFromResult(
       null,
       null,
       null,
-      result.year,
+      savedYearModel,
       result.usageAmount ?? null,
       result.condition,
       false,
