@@ -188,6 +188,7 @@ type GenericValuationResult = {
   normalizedTypedModelName: string | null;
   specsJson: Record<string, unknown>;
   year: number;
+  yearModelUnknown?: boolean | null;
   usageAmount: number | null;
   condition: ConditionKey;
   replacementPriceBand: { id: number; bandLabel: string } | null;
@@ -1792,6 +1793,7 @@ export default function ValuationClient() {
   }, [genericCatalogModelsForSelectedSubtype, genericModelQuery]);
 
   const yearNumber = Number(year);
+  const calculationYear = yearModelUnknown || !Number.isInteger(yearNumber) ? CURRENT_YEAR : yearNumber;
   const usageNumber = toNumberOrNull(usageAmount);
   const lifeWorkedPercentNumber = toPercentOrNull(lifeWorkedPercent);
   const effectiveSpecQuestions = useMemo(
@@ -2663,7 +2665,7 @@ export default function ValuationClient() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             modelId: currentResult.model.id,
-            year: yearModelUnknown ? CURRENT_YEAR : yearNumber,
+            year: calculationYear,
             hours: usageNumber ?? estimateHoursFromWorkedPercent(currentResult.model, lifeWorkedPercentNumber) ?? 0,
             condition,
             frontPto,
@@ -2720,7 +2722,7 @@ export default function ValuationClient() {
           typedModelName: submittedGenericModelName,
           saveModelCandidate: shouldSaveGenericModelCandidate,
           specsJson: enrichedSpecsJson,
-          year: yearModelUnknown ? CURRENT_YEAR : yearNumber,
+          year: calculationYear,
           yearModelUnknown,
           usageAmount: usageNumber,
           lifeWorkedPercent: lifeWorkedPercentNumber,
@@ -2768,7 +2770,7 @@ export default function ValuationClient() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           modelId: selectedModel.id,
-          year: yearModelUnknown ? CURRENT_YEAR : yearNumber,
+          year: calculationYear,
           hours: usageNumber ?? estimateHoursFromWorkedPercent(selectedModel, lifeWorkedPercentNumber) ?? 0,
           condition,
           frontPto,
@@ -2829,7 +2831,7 @@ export default function ValuationClient() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             modelId: selectedModel.id,
-            year: yearModelUnknown ? CURRENT_YEAR : yearNumber,
+            year: calculationYear,
             hours: usageNumber ?? estimateHoursFromWorkedPercent(selectedModel, lifeWorkedPercentNumber) ?? 0,
             condition,
             frontPto,
@@ -2858,7 +2860,7 @@ export default function ValuationClient() {
             typedModelName: submittedGenericModelName,
             saveModelCandidate: shouldSaveGenericModelCandidate,
             specsJson: enrichedSpecsJson,
-            year: yearModelUnknown ? CURRENT_YEAR : yearNumber,
+            year: calculationYear,
             yearModelUnknown,
             usageAmount: usageNumber,
             lifeWorkedPercent: lifeWorkedPercentNumber,
@@ -2904,7 +2906,8 @@ export default function ValuationClient() {
 
       return {
         modelId: resultState.result.model.id,
-        year: yearModelUnknown ? CURRENT_YEAR : yearNumber,
+        year: calculationYear,
+        yearModelUnknown,
         hours: usageNumber ?? estimateHoursFromWorkedPercent(selectedModel, lifeWorkedPercentNumber) ?? 0,
         condition,
         frontPto,
@@ -2931,7 +2934,7 @@ export default function ValuationClient() {
       typedModelName: resultState.result.typedModelName,
       specsJson: resultState.result.specsJson,
       year: resultState.result.year,
-      yearModelUnknown,
+      yearModelUnknown: Boolean(resultState.result.yearModelUnknown ?? resultState.result.specsJson.year_model_unknown ?? yearModelUnknown),
       usageAmount: resultState.result.usageAmount,
       lifeWorkedPercent: resultState.result.lifeWorkedPercent,
       condition: resultState.result.condition,
@@ -3008,7 +3011,7 @@ export default function ValuationClient() {
     return [
       getDisplayBrandName(result.brand, result.specsJson),
       result.typedModelName || result.family.label,
-      result.year,
+      result.yearModelUnknown || result.specsJson.year_model_unknown ? null : result.year,
       usageLabel,
       conditionLabel(result.condition),
     ]
@@ -3043,7 +3046,7 @@ export default function ValuationClient() {
       ? `${genericBrandNameForPdf} ${genericModelNameForResult || genericResult?.family.label || selectedFamily?.familyLabel || ''}`.trim()
       : `${exactModel?.brandName ?? selectedBrand?.name ?? ''} ${exactModel?.modelName ?? ''}`.trim();
     const resultCondition: ConditionKey = isGeneric ? genericResult?.condition ?? condition : condition;
-    const resultYear = isGeneric ? genericResult?.year ?? yearNumber : yearModelUnknown ? CURRENT_YEAR : yearNumber;
+    const resultYear = isGeneric ? genericResult?.year ?? calculationYear : calculationYear;
     const yearSummary = yearModelUnknown ? 'Unknown' : String(resultYear);
     const resultUsageShortUnit = isGeneric && genericResult
       ? getUsageShortUnit(genericResult.sector.key, genericResult.family.usageMetricType)
@@ -5098,7 +5101,7 @@ export default function ValuationClient() {
   }
 
   function saveUnknownYear() {
-    setYear(String(CURRENT_YEAR));
+    setYear('');
     setYearModelUnknown(true);
     setYearStepComplete(true);
     setActiveDetailsModal(null);
@@ -5594,7 +5597,7 @@ export default function ValuationClient() {
         : `${genericFamilyLabelForResult} • ${genericBrandNameForResult}${genericModelNameForResult ? ` • ${genericModelNameForResult}` : ''}`
       : `${tractorResult?.model.brandName ?? ''} ${tractorResult?.model.modelName ?? ''}`.trim();
     const resultCondition = isGeneric ? genericResult?.condition ?? condition : condition;
-    const resultYear = isGeneric ? genericResult?.year ?? yearNumber : yearModelUnknown ? CURRENT_YEAR : yearNumber;
+    const resultYear = isGeneric ? genericResult?.year ?? calculationYear : calculationYear;
     const yearSummary = yearModelUnknown ? 'Unknown' : String(resultYear);
     const resultUsageShortUnit = isGeneric && genericResult
       ? getUsageShortUnit(genericResult.sector.key, genericResult.family.usageMetricType)
