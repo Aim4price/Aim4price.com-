@@ -147,6 +147,7 @@ export type GenericValuationResult = {
   normalizedTypedModelName: string | null;
   specsJson: Record<string, unknown>;
   year: number;
+  yearModelUnknown?: boolean | null;
   usageAmount: number | null;
   condition: GenericCondition;
   replacementPriceBand: ReplacementPriceBand | null;
@@ -1675,6 +1676,7 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
     normalizedTypedModelName,
     specsJson,
     year: Math.round(input.year),
+    yearModelUnknown: input.yearModelUnknown,
     usageAmount: toNumber(input.usageAmount),
     condition: normalizeCondition(input.condition),
     replacementPriceBand: replacementBand,

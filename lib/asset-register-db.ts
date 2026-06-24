@@ -310,6 +310,8 @@ function buildManualSpecsJson(
     ? explicitLifeWorkedPercent
     : percentFromSpecs(specs);
   const replacementPriceExVat = normalizeReplacementPriceExVat(input.replacementPriceExVat) ?? replacementPriceFromSpecs(specs);
+  const hasIncomingYearModel = Object.prototype.hasOwnProperty.call(input, 'yearModel');
+  const incomingYearModelUnknown = hasIncomingYearModel && (input.yearModel === null || typeof input.yearModel === 'undefined');
 
   return {
     ...specs,
@@ -340,6 +342,12 @@ function buildManualSpecsJson(
     usageMetric,
     usage_metric: usageMetric,
     usage_unit: usageMetric,
+    ...(hasIncomingYearModel
+      ? {
+          yearModelUnknown: incomingYearModelUnknown,
+          year_model_unknown: incomingYearModelUnknown,
+        }
+      : {}),
     licenseRegistrationNumber,
     license_registration_number: licenseRegistrationNumber,
     licenceRegistrationNumber: licenseRegistrationNumber,
@@ -425,6 +433,7 @@ function buildCurrentValuationSpecs(
     hours?: number | null;
     lifeWorkedPercent?: number | null;
     condition?: string | null;
+    yearModelUnknown?: boolean | null;
     now: Date;
   },
 ): Record<string, unknown> {
@@ -449,11 +458,17 @@ function buildCurrentValuationSpecs(
     valuation_last_life_worked_percent: context.lifeWorkedPercent ?? null,
     valuationLastCondition: context.condition ?? null,
     valuation_last_condition: context.condition ?? null,
+    yearModelUnknown: Boolean(context.yearModelUnknown),
+    year_model_unknown: Boolean(context.yearModelUnknown),
   };
 }
 
 function getGenericAssetRegisterKind(result: GenericValuationResult): AssetRegisterItemKind {
   return result.sector.key === 'motor' || result.family.usageMetricType === 'km' ? 'vehicle' : 'equipment';
+}
+
+function isGenericYearModelUnknown(result: GenericValuationResult): boolean {
+  return Boolean(result.yearModelUnknown ?? result.specsJson?.year_model_unknown ?? result.specsJson?.yearModelUnknown);
 }
 
 function withGenericUsageMetadata(
@@ -1770,7 +1785,7 @@ export async function updateAssetRegisterItem(
 
   const incomingYearModel = input.yearModel === null || input.yearModel === undefined ? null : Math.max(0, Math.round(input.yearModel));
   const incomingHours = input.hours === null || input.hours === undefined ? null : Math.max(0, Math.round(input.hours));
-  const nextYearModel = existing.valuationRunId && incomingYearModel === null ? existing.yearModel : incomingYearModel;
+  const nextYearModel = incomingYearModel;
   const nextHours = existing.valuationRunId && incomingHours === null ? existing.hours : incomingHours;
   const incomingCondition = normalizeConditionForDb(input.condition);
   const existingCondition = normalizeConditionForDb(existing.condition);
@@ -1879,6 +1894,7 @@ export async function updateAssetRegisterItemFromValuation(input: {
   marketAdjustmentDeltaExVat?: number | null;
   marketRawAverageExVat?: number | null;
   year: number;
+  yearModelUnknown?: boolean | null;
   hours: number;
   condition: ConditionKey;
   saveReplacementPrice?: boolean;
@@ -1901,6 +1917,7 @@ export async function updateAssetRegisterItemFromValuation(input: {
   const now = new Date();
   const model = input.result.model;
   const selectedValueExVat = Math.round(Number(input.selectedValueExVat) || 0);
+  const savedYearModel = input.yearModelUnknown ? null : Math.round(input.year);
   const marketValueExVat: number | null = null;
   const replacementPriceUsedExVat = normalizeReplacementPriceExVat(input.result.replacementPriceUsedExVat);
   const userReplacementPriceExVat = normalizeReplacementPriceExVat(input.result.userReplacementPriceExVat);
@@ -1926,7 +1943,7 @@ export async function updateAssetRegisterItemFromValuation(input: {
   pushField(fields, schema, ['tractor_type', 'tractor_category'], model.tractorType);
   pushField(fields, schema, ['cab_type', 'cab'], model.cab);
   pushField(fields, schema, ['power_kw', 'kw', 'power'], model.powerKw);
-  pushField(fields, schema, ['year_model', 'year'], Math.round(input.year));
+  pushField(fields, schema, ['year_model', 'year'], savedYearModel);
   pushField(fields, schema, ['hours', 'engine_hours'], Math.max(0, Math.round(input.hours)));
   pushField(fields, schema, ['condition'], normalizeConditionForDb(input.condition));
   pushField(fields, schema, ['estimated_hours'], Math.max(0, Math.round(input.hours)));
@@ -1949,6 +1966,7 @@ export async function updateAssetRegisterItemFromValuation(input: {
         hours: input.hours,
         lifeWorkedPercent: null,
         condition: input.condition,
+        yearModelUnknown: input.yearModelUnknown,
         now,
       }),
     ),
@@ -1984,7 +2002,7 @@ export async function updateAssetRegisterItemFromValuation(input: {
       selectedValueExVat,
       staleReasons: buildValuationStaleReasons({
         existing,
-        nextYearModel: input.year,
+        nextYearModel: savedYearModel,
         nextHours: input.hours,
         nextLifeWorkedPercent: existing.lifeWorkedPercent ?? percentFromSpecs(existing.specsJson),
         nextCondition: input.condition,
@@ -2029,6 +2047,8 @@ export async function updateAssetRegisterItemFromGenericValuation(input: {
   const valuationResult = input.result;
   const nextKind = getGenericAssetRegisterKind(valuationResult);
   const selectedValueExVat = Math.round(Number(input.selectedValueExVat) || 0);
+  const yearModelUnknown = isGenericYearModelUnknown(valuationResult);
+  const savedYearModel = yearModelUnknown ? null : valuationResult.year;
   const marketValueExVat: number | null = null;
   const replacementPriceUsedExVat = normalizeReplacementPriceExVat(valuationResult.replacementPriceUsedExVat);
   const userReplacementPriceExVat = normalizeReplacementPriceExVat(valuationResult.userReplacementPriceExVat);
@@ -2066,6 +2086,7 @@ export async function updateAssetRegisterItemFromGenericValuation(input: {
           hours: valuationResult.usageAmount ?? null,
           lifeWorkedPercent: valuationResult.lifeWorkedPercent,
           condition: valuationResult.condition,
+          yearModelUnknown,
           now,
         }),
         valuationResult,
@@ -2083,7 +2104,7 @@ export async function updateAssetRegisterItemFromGenericValuation(input: {
   pushField(fields, schema, ['life_remaining_percent'], valuationResult.lifeRemainingPercent);
   pushField(fields, schema, ['estimated_hours'], valuationResult.estimatedHours);
   pushField(fields, schema, ['max_lifetime_hours'], valuationResult.maxLifetimeHours);
-  pushField(fields, schema, ['year_model', 'year'], valuationResult.year);
+  pushField(fields, schema, ['year_model', 'year'], savedYearModel);
   pushField(fields, schema, ['hours', 'engine_hours'], valuationResult.usageAmount ?? null);
   pushField(fields, schema, ['condition'], normalizeConditionForDb(valuationResult.condition));
   pushField(fields, schema, ['aim4price_value_ex_vat', 'aim4price_value'], toRoundedNumber(valuationResult.aim4priceValueExVat));
@@ -2118,7 +2139,7 @@ export async function updateAssetRegisterItemFromGenericValuation(input: {
       selectedValueExVat,
       staleReasons: buildValuationStaleReasons({
         existing,
-        nextYearModel: valuationResult.year,
+        nextYearModel: savedYearModel,
         nextHours: valuationResult.usageAmount ?? null,
         nextLifeWorkedPercent: valuationResult.lifeWorkedPercent,
         nextCondition: valuationResult.condition,
@@ -2155,6 +2176,7 @@ export async function createAssetRegisterItemFromValuation(input: {
   marketAdjustmentDeltaExVat?: number | null;
   marketRawAverageExVat?: number | null;
   year: number;
+  yearModelUnknown?: boolean | null;
   hours: number;
   note?: string | null;
   photos?: string[];
@@ -2181,6 +2203,7 @@ export async function createAssetRegisterItemFromValuation(input: {
   const title = `${model.brandName} ${model.modelName}`.trim();
   const now = new Date();
   const selectedValueExVat = Math.round(Number(input.selectedValueExVat) || 0);
+  const savedYearModel = input.yearModelUnknown ? null : Math.round(input.year);
   const marketValueExVat: number | null = null;
   const replacementPriceUsedExVat = normalizeReplacementPriceExVat(valuationResult.replacementPriceUsedExVat);
   const userReplacementPriceExVat = normalizeReplacementPriceExVat(valuationResult.userReplacementPriceExVat);
@@ -2208,7 +2231,7 @@ export async function createAssetRegisterItemFromValuation(input: {
   pushField(fields, schema, ['tractor_type', 'tractor_category'], model.tractorType);
   pushField(fields, schema, ['cab_type', 'cab'], model.cab);
   pushField(fields, schema, ['power_kw', 'kw', 'power'], model.powerKw);
-  pushField(fields, schema, ['year_model', 'year'], Math.round(input.year));
+  pushField(fields, schema, ['year_model', 'year'], savedYearModel);
   pushField(fields, schema, ['hours', 'engine_hours'], Math.max(0, Math.round(input.hours)));
   pushField(fields, schema, ['max_lifetime_hours'], valuationResult.maxLifetimeHours);
   pushField(fields, schema, ['condition'], normalizeConditionForDb(valuationRow.condition) ?? 'good');
@@ -2228,6 +2251,7 @@ export async function createAssetRegisterItemFromValuation(input: {
         hours: input.hours,
         lifeWorkedPercent: null,
         condition: typeof valuationRow.condition === 'string' ? valuationRow.condition : 'good',
+        yearModelUnknown: input.yearModelUnknown,
         now,
       }),
     ),
@@ -2253,7 +2277,7 @@ export async function createAssetRegisterItemFromValuation(input: {
     tractorType: model.tractorType,
     cab: model.cab,
     powerKw: model.powerKw,
-    year: Math.round(input.year),
+    year: savedYearModel,
     hours: Math.max(0, Math.round(input.hours)),
     condition: typeof valuationRow.condition === 'string' ? valuationRow.condition : 'good',
     now,
@@ -2320,6 +2344,8 @@ export async function createAssetRegisterItemFromGenericValuation(input: {
     .trim();
   const now = new Date();
   const selectedValueExVat = Math.round(Number(input.selectedValueExVat) || 0);
+  const yearModelUnknown = isGenericYearModelUnknown(valuationResult);
+  const savedYearModel = yearModelUnknown ? null : valuationResult.year;
   const marketValueExVat: number | null = null;
   const replacementPriceUsedExVat = normalizeReplacementPriceExVat(valuationResult.replacementPriceUsedExVat);
   const userReplacementPriceExVat = normalizeReplacementPriceExVat(valuationResult.userReplacementPriceExVat);
@@ -2360,6 +2386,7 @@ export async function createAssetRegisterItemFromGenericValuation(input: {
           hours: valuationResult.usageAmount ?? null,
           lifeWorkedPercent: valuationResult.lifeWorkedPercent,
           condition: valuationResult.condition,
+          yearModelUnknown,
           now,
         }),
         valuationResult,
@@ -2375,7 +2402,7 @@ export async function createAssetRegisterItemFromGenericValuation(input: {
   pushField(fields, schema, ['life_remaining_percent'], valuationResult.lifeRemainingPercent);
   pushField(fields, schema, ['estimated_hours'], valuationResult.estimatedHours);
   pushField(fields, schema, ['max_lifetime_hours'], valuationResult.maxLifetimeHours);
-  pushField(fields, schema, ['year_model', 'year'], valuationResult.year);
+  pushField(fields, schema, ['year_model', 'year'], savedYearModel);
   pushField(fields, schema, ['hours', 'engine_hours'], valuationResult.usageAmount ?? null);
   pushField(fields, schema, ['condition'], normalizeConditionForDb(valuationResult.condition));
   pushField(fields, schema, ['aim4price_value_ex_vat', 'aim4price_value'], toRoundedNumber(valuationResult.aim4priceValueExVat));
@@ -2396,7 +2423,7 @@ export async function createAssetRegisterItemFromGenericValuation(input: {
     note: cleanAssetRegisterNote(input.note) || null,
     brandName: valuationResult.brand.name,
     modelName: valuationResult.typedModelName || 'Specs-based valuation',
-    year: valuationResult.year,
+    year: savedYearModel,
     hours: valuationResult.usageAmount ?? null,
     condition: valuationResult.condition,
     now,

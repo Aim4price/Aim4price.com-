@@ -7,6 +7,7 @@ import { getGenericSelectedMethodValue, type GenericSelectedMethod, type Generic
 export type MethodKey = 'aim4price';
 
 export type SaveValuationRunInput = RunValuationInput & {
+  yearModelUnknown?: boolean | null;
   selectedMethod: MethodKey;
   selectedValueOverrideExVat?: number | null;
   valuationVersion?: string | null;
@@ -87,6 +88,7 @@ function buildValuationPayload(input: SaveValuationRunInput, result: Result, sel
     input: {
       modelId: String(input.modelId),
       year: Math.round(input.year),
+      yearModelUnknown: Boolean(input.yearModelUnknown),
       hours: Math.max(0, Number(input.hours) || 0),
       condition: input.condition,
       frontPto: Boolean(input.frontPto),
@@ -263,7 +265,7 @@ export async function saveGenericValuationRunFromResult(
       year: result.year,
       usageAmount: result.usageAmount,
       lifeWorkedPercent: result.lifeWorkedPercent,
-      yearModelUnknown: Boolean(result.specsJson.year_model_unknown),
+      yearModelUnknown: Boolean(result.yearModelUnknown ?? result.specsJson.year_model_unknown),
       condition: result.condition,
       userReplacementPriceExVat: result.userReplacementPriceExVat,
       userReplacementPriceYear: result.userReplacementPriceYear,
