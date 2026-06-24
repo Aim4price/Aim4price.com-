@@ -135,7 +135,7 @@ function normalizeReplacementPrice(value: unknown): number | null {
 }
 
 function buildInput(
-  body: Partial<RunValuationInput> & { selectedMethod?: unknown; valuationVersion?: unknown },
+  body: Partial<RunValuationInput> & { selectedMethod?: unknown; valuationVersion?: unknown; yearModelUnknown?: unknown },
 ): SaveValuationRunInput | null {
   const modelId = String(body.modelId ?? '').trim();
   const year = Number(body.year);
@@ -151,6 +151,7 @@ function buildInput(
   return {
     modelId,
     year,
+    yearModelUnknown: parseBoolean(body.yearModelUnknown),
     hours,
     condition,
     frontPto: parseBoolean(body.frontPto),
@@ -504,6 +505,7 @@ export async function POST(request: NextRequest) {
         selectedMethod: input.selectedMethod,
         selectedValueExVat,
         year: input.year,
+        yearModelUnknown: input.yearModelUnknown,
         hours: input.hours,
         note: '',
         photos: photoUrls,
