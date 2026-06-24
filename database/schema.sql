@@ -60,3 +60,4 @@
 --   33-drop-market-vault-listings.sql
 --   34-unknown-brand-family-links.sql
 --   35-asset-depreciation-timeline.sql
+--   36-year-model-unknown-nullable.sql
