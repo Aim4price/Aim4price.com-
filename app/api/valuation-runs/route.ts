@@ -310,6 +310,16 @@ function buildFriendlyError(error: unknown): { status: number; message: string }
     };
   }
 
+  if (
+    message.includes('valuation_runs_year_model_check') ||
+    message.includes('asset_register_items_year_model_check')
+  ) {
+    return {
+      status: 500,
+      message: 'The valuation calculated correctly, but the database still has an older year-model constraint. Run database/migrations/36-year-model-unknown-nullable.sql once in DBeaver, then save again.',
+    };
+  }
+
   return {
     status: 500,
     message,
