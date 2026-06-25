@@ -632,7 +632,19 @@ const MANUAL_ASSET_TYPE_OPTIONS: Array<{
 ];
 
 const LIFETIME_PERCENT_SETTINGS_ERROR =
-  'The new lifetime worked percentage cannot be lower than the percentage already saved on this asset. Go to Settings to adjust it.';
+  'The new lifetime worked percentage cannot be lower than the percentage already saved on this asset. Please go to Settings to override this.';
+const USAGE_READING_SETTINGS_ERROR =
+  'The new usage reading cannot be lower than the reading already saved on this asset. Please go to Settings to override this.';
+const ASSET_SETTINGS_USAGE_COPY =
+  'This is the only place where usage can be adjusted lower for this saved Aim4price asset.';
+const USAGE_OVERRIDE_CONFIRMATION_TEXT =
+  'Are you sure you want to override the saved usage for this asset? This can lower the usage recorded for this saved Aim4price asset and may affect its valuation/depreciation history.';
+
+type AssetSettingsUsageMode = 'percent' | 'hours' | 'km' | 'none';
+type AssetUsageOverrideRequest = {
+  mode: Exclude<AssetSettingsUsageMode, 'none'>;
+  value: number;
+};
 
 const FINANCE_STATUS_OPTIONS: Array<{ value: AssetStatusChoice; label: string; description: string }> = [
   { value: 'yes', label: 'Is financed', description: 'This asset has active finance or a lender linked to it.' },
@@ -1681,6 +1693,106 @@ function normalizeSettingsLifeWorkedInput(value: unknown): number | null {
   if (!Number.isFinite(parsed) || parsed < 0 || parsed > 100) return null;
 
   return Math.round(parsed * 10) / 10;
+}
+
+function normalizeSettingsUsageAmountInput(value: unknown): number | null {
+  const raw = String(value ?? '').trim();
+  if (!raw || raw.replace(/\s+/g, '').startsWith('-')) return null;
+
+  const digits = raw.replace(/[^0-9]/g, '');
+  if (!digits) return null;
+
+  const parsed = Number(digits);
+  if (!Number.isFinite(parsed) || parsed < 0) return null;
+
+  return Math.round(parsed);
+}
+
+function getAssetSettingsUsageMode(asset: RegisterAsset): AssetSettingsUsageMode {
+  if (assetUsesPercentUsage(asset)) {
+    return 'percent';
+  }
+
+  if (asset.kind === 'vehicle' || getAssetUsageMetric(asset) === 'km') {
+    return 'km';
+  }
+
+  if (asset.kind === 'tractor' || asset.kind === 'equipment') {
+    return 'hours';
+  }
+
+  const savedHours = Number(asset.hours);
+  return Number.isFinite(savedHours) && savedHours >= 0 ? 'hours' : 'none';
+}
+
+function getAssetSettingsUsageCurrentValue(asset: RegisterAsset, mode: AssetSettingsUsageMode): number | null {
+  if (mode === 'percent') {
+    return getAssetLifeWorkedPercent(asset);
+  }
+
+  if (mode === 'hours' || mode === 'km') {
+    const savedUsage = Number(asset.hours);
+    return Number.isFinite(savedUsage) && savedUsage >= 0 ? Math.round(savedUsage) : null;
+  }
+
+  return null;
+}
+
+function assetSettingsUsageHeading(mode: AssetSettingsUsageMode): string {
+  if (mode === 'percent') return 'Override Lifetime %';
+  if (mode === 'hours') return 'Override Machine Hours';
+  if (mode === 'km') return 'Override Kilometres';
+  return 'Override Usage';
+}
+
+function assetSettingsUsageInputLabel(mode: AssetSettingsUsageMode): string {
+  if (mode === 'percent') return 'New lifetime worked %';
+  if (mode === 'hours') return 'New machine hours';
+  if (mode === 'km') return 'New odometer reading';
+  return 'New usage reading';
+}
+
+function assetSettingsUsagePlaceholder(mode: AssetSettingsUsageMode, currentValue: number | null): string {
+  if (currentValue !== null) {
+    return mode === 'percent' ? formatLifetimePercentPlain(currentValue) : formatUsageAmountInput(currentValue);
+  }
+
+  if (mode === 'percent') return 'Enter percentage';
+  if (mode === 'hours') return 'Enter machine hours';
+  if (mode === 'km') return 'Enter kilometres';
+  return 'Enter usage';
+}
+
+function assetSettingsUsageInvalidMessage(mode: AssetSettingsUsageMode): string {
+  if (mode === 'percent') return 'Lifetime worked must be between 0% and 100%.';
+  if (mode === 'hours') return 'Machine hours must be zero or greater.';
+  if (mode === 'km') return 'Odometer reading must be zero or greater.';
+  return 'Usage reading must be zero or greater.';
+}
+
+function formatAssetSettingsUsageDisplay(mode: AssetSettingsUsageMode, value: number | null): string {
+  if (value === null) return 'Not set';
+  if (mode === 'percent') return `${formatLifetimePercentPlain(value)}%`;
+  if (mode === 'hours') return `${Math.round(value).toLocaleString('en-ZA')} hours`;
+  if (mode === 'km') return `${Math.round(value).toLocaleString('en-ZA')} km`;
+  return Math.round(value).toLocaleString('en-ZA');
+}
+
+function formatAssetSettingsUsageInput(asset: RegisterAsset, mode: AssetSettingsUsageMode): string {
+  const currentValue = getAssetSettingsUsageCurrentValue(asset, mode);
+  if (currentValue === null) return '';
+  return mode === 'percent' ? formatLifetimePercentPlain(currentValue) : formatUsageAmountInput(currentValue);
+}
+
+function parseAssetSettingsUsageInput(mode: AssetSettingsUsageMode, value: unknown): number | null {
+  return mode === 'percent' ? normalizeSettingsLifeWorkedInput(value) : normalizeSettingsUsageAmountInput(value);
+}
+
+function getAssetSettingsUsageSuccessMessage(mode: AssetSettingsUsageMode): string {
+  if (mode === 'percent') return 'Lifetime worked percentage updated.';
+  if (mode === 'hours') return 'Machine hours updated.';
+  if (mode === 'km') return 'Odometer reading updated.';
+  return 'Usage updated.';
 }
 
 function getAssetSettingsUsageForKind(asset: RegisterAsset, nextKind: AssetKind): {
@@ -3795,9 +3907,10 @@ export default function AssetRegisterClient() {
   const [isAssetModalOpen, setIsAssetModalOpen] = useState(false);
   const [isAssetSettingsModalOpen, setIsAssetSettingsModalOpen] = useState(false);
   const [assetSettingsTypeDraft, setAssetSettingsTypeDraft] = useState<AssetKind>('equipment');
-  const [assetSettingsLifePercentInput, setAssetSettingsLifePercentInput] = useState('');
+  const [assetSettingsUsageInput, setAssetSettingsUsageInput] = useState('');
   const [assetSettingsError, setAssetSettingsError] = useState('');
   const [isSavingAssetSettings, setIsSavingAssetSettings] = useState(false);
+  const [pendingUsageOverride, setPendingUsageOverride] = useState<AssetUsageOverrideRequest | null>(null);
   const [isManualConversionConfirmOpen, setIsManualConversionConfirmOpen] = useState(false);
   const [isAddChoiceModalOpen, setIsAddChoiceModalOpen] = useState(false);
   const [manualAssetStep, setManualAssetStep] = useState<ManualAssetStep>(1);
@@ -4776,13 +4889,12 @@ export default function AssetRegisterClient() {
 
   const isEditingSavedManualAsset = isSavedManualAsset(editingAsset);
   const isEditingSavedAim4priceAsset = isSavedAim4priceAsset(editingAsset);
-  const lockAim4priceLifeWorkedInSettings = isEditingSavedAim4priceAsset && assetFormUsesPercentUsage;
-  const showPercentUsageField = assetFormUsesPercentUsage && !lockAim4priceLifeWorkedInSettings;
+  const showPercentUsageField = assetFormUsesPercentUsage;
 
   const showUsageHoursField = useMemo(() => {
-    if (lockAim4priceLifeWorkedInSettings || showPercentUsageField) return false;
+    if (showPercentUsageField) return false;
     return assetFormKind === 'tractor' || assetFormKind === 'equipment' || assetFormKind === 'vehicle';
-  }, [assetFormKind, lockAim4priceLifeWorkedInSettings, showPercentUsageField]);
+  }, [assetFormKind, showPercentUsageField]);
 
   const showConditionField = useMemo(() => {
     return assetFormKind !== 'property';
@@ -4892,8 +5004,9 @@ export default function AssetRegisterClient() {
     setIsAssetSettingsModalOpen(false);
     setIsManualConversionConfirmOpen(false);
     setAssetSettingsTypeDraft('equipment');
-    setAssetSettingsLifePercentInput('');
+    setAssetSettingsUsageInput('');
     setAssetSettingsError('');
+    setPendingUsageOverride(null);
     setMainPhotoSelection(null);
     setPendingPhotoFiles([]);
     setPendingDocumentFiles([]);
@@ -4946,6 +5059,7 @@ export default function AssetRegisterClient() {
     setHasManualAssetKindSelection(true);
     setIsAssetSettingsModalOpen(false);
     setIsManualConversionConfirmOpen(false);
+    setPendingUsageOverride(null);
     setAssetSettingsError('');
     setIsAssetModalOpen(true);
   }
@@ -4956,10 +5070,11 @@ export default function AssetRegisterClient() {
       return;
     }
 
-    const currentLifeWorkedPercent = getAssetLifeWorkedPercent(editingAsset);
+    const usageMode = getAssetSettingsUsageMode(editingAsset);
     setAssetSettingsTypeDraft(getManualAssetOption(editingAsset.kind).value);
-    setAssetSettingsLifePercentInput(formatLifetimePercentPlain(currentLifeWorkedPercent));
+    setAssetSettingsUsageInput(formatAssetSettingsUsageInput(editingAsset, usageMode));
     setAssetSettingsError('');
+    setPendingUsageOverride(null);
     setIsManualConversionConfirmOpen(false);
     setIsAssetSettingsModalOpen(true);
   }
@@ -4968,6 +5083,7 @@ export default function AssetRegisterClient() {
     if (isSavingAssetSettings) return;
     setIsAssetSettingsModalOpen(false);
     setIsManualConversionConfirmOpen(false);
+    setPendingUsageOverride(null);
     setAssetSettingsError('');
   }
 
@@ -5064,6 +5180,7 @@ export default function AssetRegisterClient() {
     }
 
     setAssetSettingsError('');
+    setPendingUsageOverride(null);
     setIsManualConversionConfirmOpen(true);
   }
 
@@ -5078,27 +5195,44 @@ export default function AssetRegisterClient() {
     window.location.assign(`/valuation?${params.toString()}`);
   }
 
-  async function saveAim4priceLifetimeOverrideSetting() {
+  function requestAim4priceUsageOverrideSetting() {
     if (!isSavedAim4priceAsset(editingAsset)) {
       setAssetSettingsError('Only saved Aim4price valued assets can use this setting.');
       return;
     }
 
-    if (!assetUsesPercentUsage(editingAsset)) {
-      setAssetSettingsError('This asset does not use lifetime worked percentage.');
+    const usageMode = getAssetSettingsUsageMode(editingAsset);
+
+    if (usageMode === 'none') {
+      setAssetSettingsError('This asset does not have a saved usage field to override.');
       return;
     }
 
-    const currentLifeWorkedPercent = getAssetLifeWorkedPercent(editingAsset);
-    const nextLifeWorkedPercent = normalizeSettingsLifeWorkedInput(assetSettingsLifePercentInput);
+    const nextUsageValue = parseAssetSettingsUsageInput(usageMode, assetSettingsUsageInput);
 
-    if (nextLifeWorkedPercent === null) {
-      setAssetSettingsError('Lifetime worked must be between 0% and 100%.');
+    if (nextUsageValue === null) {
+      setAssetSettingsError(assetSettingsUsageInvalidMessage(usageMode));
       return;
     }
 
-    if (currentLifeWorkedPercent !== null && nextLifeWorkedPercent < currentLifeWorkedPercent) {
-      setAssetSettingsError(LIFETIME_PERCENT_SETTINGS_ERROR);
+    setAssetSettingsError('');
+    setPendingUsageOverride({ mode: usageMode, value: nextUsageValue });
+  }
+
+  function cancelAim4priceUsageOverrideConfirmation() {
+    if (isSavingAssetSettings) return;
+    setPendingUsageOverride(null);
+  }
+
+  async function confirmAim4priceUsageOverrideSetting() {
+    if (!isSavedAim4priceAsset(editingAsset)) {
+      setAssetSettingsError('Only saved Aim4price valued assets can use this setting.');
+      setPendingUsageOverride(null);
+      return;
+    }
+
+    if (!pendingUsageOverride) {
+      setAssetSettingsError('Confirm the usage override before saving.');
       return;
     }
 
@@ -5113,23 +5247,29 @@ export default function AssetRegisterClient() {
         body: JSON.stringify({
           assetId: editingAsset.id,
           selectedMethod: 'aim4price',
-          lifeWorkedPercentOverride: nextLifeWorkedPercent,
+          allowUsageDecrease: true,
+          usageOverrideConfirmed: true,
+          ...(pendingUsageOverride.mode === 'percent'
+            ? { lifeWorkedPercentOverride: pendingUsageOverride.value }
+            : { usageAmountOverride: pendingUsageOverride.value }),
         }),
       });
       const data = (await response.json()) as AssetRegisterApiResponse;
 
       if (!response.ok || !data.ok || !data.item) {
-        throw new Error(data.error ?? 'Failed to save lifetime worked percentage.');
+        throw new Error(data.error ?? 'Failed to save usage override.');
       }
 
+      const updatedUsageMode = getAssetSettingsUsageMode(data.item);
       syncUpdatedAsset(data.item);
       setAssetDraft(buildDraftFromAsset(data.item));
-      setAssetSettingsLifePercentInput(formatLifetimePercentPlain(getAssetLifeWorkedPercent(data.item)));
-      setNotice({ tone: 'success', message: 'Lifetime worked percentage updated.' });
+      setAssetSettingsUsageInput(formatAssetSettingsUsageInput(data.item, updatedUsageMode));
+      setNotice({ tone: 'success', message: getAssetSettingsUsageSuccessMessage(pendingUsageOverride.mode) });
       closeAssetSettingsModal();
     } catch (error) {
-      setAssetSettingsError(error instanceof Error ? error.message : 'Failed to save lifetime worked percentage.');
+      setAssetSettingsError(error instanceof Error ? error.message : 'Failed to save usage override.');
     } finally {
+      setPendingUsageOverride(null);
       setIsSavingAssetSettings(false);
     }
   }
@@ -5232,6 +5372,22 @@ export default function AssetRegisterClient() {
       return false;
     }
 
+    const savedUsageReading = editingAsset?.hours;
+    if (
+      editingAsset &&
+      isSavedAim4priceAsset(editingAsset) &&
+      showUsageHoursField &&
+      !hasHours &&
+      savedUsageReading !== null &&
+      typeof savedUsageReading !== 'undefined'
+    ) {
+      setNotice({
+        tone: 'error',
+        message: USAGE_READING_SETTINGS_ERROR,
+      });
+      return false;
+    }
+
     if (
       editingAsset &&
       hasHours &&
@@ -5241,12 +5397,26 @@ export default function AssetRegisterClient() {
     ) {
       setNotice({
         tone: 'error',
-        message: `${usageErrorLabel} cannot be lower than the reading already saved on this asset.`,
+        message: USAGE_READING_SETTINGS_ERROR,
       });
       return false;
     }
 
     const currentLifeWorkedPercent = editingAsset ? getAssetLifeWorkedPercent(editingAsset) : null;
+    if (
+      editingAsset &&
+      isSavedAim4priceAsset(editingAsset) &&
+      showPercentUsageField &&
+      !hasLifeWorkedPercent &&
+      currentLifeWorkedPercent !== null
+    ) {
+      setNotice({
+        tone: 'error',
+        message: LIFETIME_PERCENT_SETTINGS_ERROR,
+      });
+      return false;
+    }
+
     if (
       editingAsset &&
       hasLifeWorkedPercent &&
@@ -6011,6 +6181,22 @@ export default function AssetRegisterClient() {
       return;
     }
 
+    const savedUsageReading = editingAsset?.hours;
+    if (
+      editingAsset &&
+      isSavedAim4priceAsset(editingAsset) &&
+      showUsageHoursField &&
+      !hasHours &&
+      savedUsageReading !== null &&
+      typeof savedUsageReading !== 'undefined'
+    ) {
+      setNotice({
+        tone: 'error',
+        message: USAGE_READING_SETTINGS_ERROR,
+      });
+      return;
+    }
+
     if (
       editingAsset &&
       hasHours &&
@@ -6020,12 +6206,26 @@ export default function AssetRegisterClient() {
     ) {
       setNotice({
         tone: 'error',
-        message: `${usageErrorLabel} cannot be lower than the reading already saved on this asset.`,
+        message: USAGE_READING_SETTINGS_ERROR,
       });
       return;
     }
 
     const currentLifeWorkedPercent = editingAsset ? getAssetLifeWorkedPercent(editingAsset) : null;
+    if (
+      editingAsset &&
+      isSavedAim4priceAsset(editingAsset) &&
+      showPercentUsageField &&
+      !hasLifeWorkedPercent &&
+      currentLifeWorkedPercent !== null
+    ) {
+      setNotice({
+        tone: 'error',
+        message: LIFETIME_PERCENT_SETTINGS_ERROR,
+      });
+      return;
+    }
+
     if (
       editingAsset &&
       hasLifeWorkedPercent &&
@@ -7769,8 +7969,8 @@ export default function AssetRegisterClient() {
         : editingAsset
           ? 'Update asset'
           : 'Add asset';
-  const settingsLifeWorkedPercent = editingAsset ? getAssetLifeWorkedPercent(editingAsset) : null;
-  const settingsAssetUsesLifetimePercent = editingAsset ? assetUsesPercentUsage(editingAsset) : false;
+  const settingsUsageMode = editingAsset ? getAssetSettingsUsageMode(editingAsset) : 'none';
+  const settingsUsageCurrentValue = editingAsset ? getAssetSettingsUsageCurrentValue(editingAsset, settingsUsageMode) : null;
   const marketplacePhotoUrls = marketplaceAsset ? normalizePhotos(marketplaceAsset.photos) : [];
   const marketplaceListingTitle = marketplaceAsset ? buildMarketplaceListingTitle(marketplaceAsset, true) : '';
   const marketplaceModalTitle = marketplaceAsset
@@ -9249,12 +9449,7 @@ export default function AssetRegisterClient() {
                           />
                         </label>
 
-                        {lockAim4priceLifeWorkedInSettings ? (
-                          <label className={`${styles.field} ${styles.assetStaticField}`}>
-                            <span>Lifetime worked %</span>
-                            <input value={formatLifetimePercentPlain(editingAsset ? getAssetLifeWorkedPercent(editingAsset) : null) || 'Not set'} disabled readOnly />
-                          </label>
-                        ) : showPercentUsageField ? (
+                        {showPercentUsageField ? (
                           <label className={styles.field}>
                             <span>{usageFieldLabel}</span>
                             <input
@@ -9769,40 +9964,53 @@ export default function AssetRegisterClient() {
                 <section className={styles.assetSettingsSection}>
                   <div className={styles.assetSettingsSectionCopy}>
                     <span>Aim4price asset</span>
-                    <h4>Override Lifetime %</h4>
-                    <p>This is the only place where lifetime worked percentage can be adjusted for this saved Aim4price asset.</p>
+                    <h4>{assetSettingsUsageHeading(settingsUsageMode)}</h4>
+                    <p>{ASSET_SETTINGS_USAGE_COPY}</p>
                   </div>
 
-                  {settingsAssetUsesLifetimePercent ? (
+                  {settingsUsageMode !== 'none' ? (
                     <>
                       <div className={styles.assetSettingsStaticGrid}>
                         <div>
                           <span>Currently saved</span>
-                          <strong>{settingsLifeWorkedPercent === null ? 'Not set' : `${formatLifetimePercentPlain(settingsLifeWorkedPercent)}%`}</strong>
+                          <strong>{formatAssetSettingsUsageDisplay(settingsUsageMode, settingsUsageCurrentValue)}</strong>
                         </div>
                       </div>
 
                       <label className={styles.assetSettingsField}>
-                        <span>New lifetime worked %</span>
-                        <input
-                          type="number"
-                          min={settingsLifeWorkedPercent ?? 0}
-                          max="100"
-                          step="0.1"
-                          value={assetSettingsLifePercentInput}
-                          onChange={(event) => {
-                            setAssetSettingsLifePercentInput(event.target.value);
-                            setAssetSettingsError('');
-                          }}
-                          placeholder={settingsLifeWorkedPercent === null ? 'Enter percentage' : formatLifetimePercentPlain(settingsLifeWorkedPercent)}
-                        />
+                        <span>{assetSettingsUsageInputLabel(settingsUsageMode)}</span>
+                        {settingsUsageMode === 'percent' ? (
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="0.1"
+                            value={assetSettingsUsageInput}
+                            onChange={(event) => {
+                              setAssetSettingsUsageInput(event.target.value);
+                              setAssetSettingsError('');
+                            }}
+                            placeholder={assetSettingsUsagePlaceholder(settingsUsageMode, settingsUsageCurrentValue)}
+                          />
+                        ) : (
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            value={assetSettingsUsageInput}
+                            onChange={(event) => {
+                              setAssetSettingsUsageInput(formatUsageAmountInput(event.target.value));
+                              setAssetSettingsError('');
+                            }}
+                            placeholder={assetSettingsUsagePlaceholder(settingsUsageMode, settingsUsageCurrentValue)}
+                          />
+                        )}
                       </label>
 
                       <div className={styles.assetSettingsActions}>
                         <button
                           type="button"
                           className={styles.primaryButton}
-                          onClick={() => void saveAim4priceLifetimeOverrideSetting()}
+                          onClick={requestAim4priceUsageOverrideSetting}
                           disabled={isSavingAssetSettings}
                         >
                           {isSavingAssetSettings ? 'Saving...' : 'Save override'}
@@ -9811,7 +10019,7 @@ export default function AssetRegisterClient() {
                     </>
                   ) : (
                     <div className={styles.assetSettingsDisabledNote}>
-                      This asset does not use lifetime worked percentage, so there is no percentage to override.
+                      This asset does not have a saved usage field to override.
                     </div>
                   )}
                 </section>
@@ -9822,6 +10030,49 @@ export default function AssetRegisterClient() {
               )}
 
               {assetSettingsError ? <p className={styles.assetSettingsError}>{assetSettingsError}</p> : null}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {pendingUsageOverride && editingAsset ? (
+        <div className={`${styles.modalOverlay} ${styles.assetSettingsConfirmOverlay}`}>
+          <div className={styles.modalBackdrop} onClick={cancelAim4priceUsageOverrideConfirmation} />
+
+          <div
+            className={`${styles.modalCard} ${styles.assetSettingsConfirmModal}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="asset-usage-override-confirm-title"
+          >
+            <div className={`${styles.modalHeader} ${styles.assetSettingsHeader}`}>
+              <div className={styles.modalHeaderText}>
+                <h3 id="asset-usage-override-confirm-title">Save usage override?</h3>
+                <p>{editingAsset.title}</p>
+              </div>
+
+              <button
+                type="button"
+                className={styles.modalCloseButton}
+                onClick={cancelAim4priceUsageOverrideConfirmation}
+                aria-label="Close usage override confirmation"
+                disabled={isSavingAssetSettings}
+              >
+                <CloseIcon className={styles.buttonIcon} />
+              </button>
+            </div>
+
+            <div className={`${styles.modalScrollBody} ${styles.assetSettingsBody}`}>
+              <p className={styles.assetSettingsConfirmCopy}>{USAGE_OVERRIDE_CONFIRMATION_TEXT}</p>
+
+              <div className={styles.assetSettingsActions}>
+                <button type="button" className={styles.secondaryButton} onClick={cancelAim4priceUsageOverrideConfirmation} disabled={isSavingAssetSettings}>
+                  Cancel
+                </button>
+                <button type="button" className={styles.primaryButton} onClick={() => void confirmAim4priceUsageOverrideSetting()} disabled={isSavingAssetSettings}>
+                  {isSavingAssetSettings ? 'Saving...' : 'Save override'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
