@@ -361,6 +361,32 @@ function buildManualSpecsJson(
   };
 }
 
+function buildAssetFlagSpecs(
+  specs: Record<string, unknown>,
+  isFlagged: boolean,
+  timestampIso = new Date().toISOString(),
+): Record<string, unknown> {
+  const nextSpecs = { ...specs };
+
+  nextSpecs.assetFlagged = isFlagged;
+  nextSpecs.asset_flagged = isFlagged;
+  nextSpecs.flagged = isFlagged;
+
+  if (isFlagged) {
+    nextSpecs.assetFlaggedAt = timestampIso;
+    nextSpecs.asset_flagged_at = timestampIso;
+    nextSpecs.assetFlagUpdatedAt = timestampIso;
+    nextSpecs.asset_flag_updated_at = timestampIso;
+  } else {
+    delete nextSpecs.assetFlaggedAt;
+    delete nextSpecs.asset_flagged_at;
+    delete nextSpecs.assetFlagUpdatedAt;
+    delete nextSpecs.asset_flag_updated_at;
+  }
+
+  return nextSpecs;
+}
+
 const VALUATION_STALE_SPEC_KEYS = [
   'valuationNeedsUpdate',
   'valuation_needs_update',
@@ -1761,6 +1787,55 @@ export async function updateAssetRegisterItemMedia(
 
   return mapAssetRegisterRow(row);
 }
+
+export async function updateAssetRegisterItemFlag(
+  userId: string,
+  input: {
+    assetId: string;
+    isFlagged: boolean;
+  },
+): Promise<AssetRegisterItem> {
+  const db = getDb();
+  const schema = await getAssetRegisterSchema();
+  const existing = await getAssetRegisterItemById(userId, input.assetId);
+
+  if (!existing) {
+    throw new Error('ASSET_NOT_FOUND');
+  }
+
+  const fields: SqlField[] = [];
+  const nextSpecsJson = buildAssetFlagSpecs(existing.specsJson ?? {}, input.isFlagged);
+
+  pushField(fields, schema, ['specs_json'], nextSpecsJson, '::jsonb');
+
+  if (!fields.length) {
+    return {
+      ...existing,
+      specsJson: nextSpecsJson,
+    };
+  }
+
+  const update = buildUpdateSetClause(fields);
+  const result = await db.query<AssetRegisterRow>(
+    `
+      update asset_register_items
+      set
+        ${update.clause}
+      where user_id = $1 and id = $2
+      returning
+        ${buildSelectList(schema)}
+    `,
+    [userId, input.assetId, ...update.values],
+  );
+
+  const row = result.rows[0];
+  if (!row) {
+    throw new Error('ASSET_UPDATE_FAILED');
+  }
+
+  return mapAssetRegisterRow(row);
+}
+
 
 export async function updateAssetRegisterItem(
   userId: string,
