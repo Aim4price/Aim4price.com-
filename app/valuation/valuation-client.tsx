@@ -307,6 +307,31 @@ type SaveValuationRunApiResponse = {
   error?: string;
 };
 
+type ConversionSourceAsset = {
+  id: string;
+  title: string;
+  selectedMethod?: string | null;
+  valuationRunId?: number | null;
+  kind?: string | null;
+  brandName?: string | null;
+  modelName?: string | null;
+  typedModelName?: string | null;
+  yearModel?: number | null;
+  hours?: number | null;
+  lifeWorkedPercent?: number | null;
+  condition?: ConditionKey | null;
+  replacementPriceExVat?: number | null;
+  value?: number | null;
+  specsJson?: Record<string, unknown> | null;
+};
+
+type AssetRegisterListApiResponse = {
+  ok: boolean;
+  items?: ConversionSourceAsset[];
+  assets?: ConversionSourceAsset[];
+  error?: string;
+};
+
 type AccountProfile = Partial<{
   userId: string;
   name: string;
@@ -860,6 +885,56 @@ function formatMoneyInput(value: unknown): string {
 
 function normalizeAccountType(value: unknown): string {
   return String(value ?? '').trim().toLowerCase() || 'public';
+}
+
+function readNumberFromRecord(record: Record<string, unknown> | null | undefined, keys: string[]): number | null {
+  if (!record) return null;
+
+  for (const key of keys) {
+    const value = record[key];
+    if (value === null || typeof value === 'undefined' || value === '') continue;
+
+    const numeric = Number(value);
+    if (Number.isFinite(numeric)) return numeric;
+  }
+
+  return null;
+}
+
+function readConversionReplacementPrice(asset: ConversionSourceAsset): number | null {
+  const direct = Number(asset.replacementPriceExVat);
+  if (Number.isFinite(direct) && direct > 0) return Math.round(direct);
+
+  const fromSpecs = readNumberFromRecord(asset.specsJson, [
+    'replacementPriceExVat',
+    'replacement_price_ex_vat',
+    'replacementPrice',
+    'replacement_price',
+    'userReplacementPriceExVat',
+    'user_replacement_price_ex_vat',
+  ]);
+
+  return fromSpecs !== null && fromSpecs > 0 ? Math.round(fromSpecs) : null;
+}
+
+function readConversionLifeWorkedPercent(asset: ConversionSourceAsset): number | null {
+  const direct = Number(asset.lifeWorkedPercent);
+  if (Number.isFinite(direct)) return Math.min(100, Math.max(0, Math.round(direct * 10) / 10));
+
+  const fromSpecs = readNumberFromRecord(asset.specsJson, [
+    'life_worked_percent',
+    'worked_percent',
+    'lifetime_worked_percent',
+    'percent_worked',
+    'lifetime_used_percent',
+  ]);
+
+  return fromSpecs === null ? null : Math.min(100, Math.max(0, Math.round(fromSpecs * 10) / 10));
+}
+
+function normalizeConversionCondition(value: unknown): ConditionKey | null {
+  const normalized = normalizeText(value).toLowerCase();
+  return conditionOptions.some((option) => option.key === normalized) ? (normalized as ConditionKey) : null;
 }
 
 function createMarketplacePhotoId(): string {
@@ -1559,6 +1634,9 @@ export default function ValuationClient() {
   const [isSignedIn, setIsSignedIn] = useState(false);
   const [guestValuationCount, setGuestValuationCount] = useState(0);
   const [marketplaceMode, setMarketplaceMode] = useState(false);
+  const [conversionAssetId, setConversionAssetId] = useState<string | null>(null);
+  const [conversionSourceAsset, setConversionSourceAsset] = useState<ConversionSourceAsset | null>(null);
+  const [conversionPrefillLoaded, setConversionPrefillLoaded] = useState(false);
   const [accountType, setAccountType] = useState('public');
   const [accountProfile, setAccountProfile] = useState<AccountProfile | null>(null);
   const [marketplaceDraft, setMarketplaceDraft] = useState<MarketplacePublishDraft | null>(null);
@@ -1901,15 +1979,111 @@ export default function ValuationClient() {
   }, []);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') return undefined;
 
     const searchParams = new URLSearchParams(window.location.search);
-    const nextMarketplaceMode = searchParams.get('marketplace') === '1' || searchParams.get('marketplaceListing') === '1';
+    const nextConversionAssetId = normalizeText(searchParams.get('convertAssetId') ?? searchParams.get('conversionAssetId'));
+    const nextConversionMode = searchParams.get('conversion') === 'manual-to-aim4price' || Boolean(nextConversionAssetId);
+    const nextMarketplaceMode = !nextConversionMode && (searchParams.get('marketplace') === '1' || searchParams.get('marketplaceListing') === '1');
+    let cancelled = false;
+
     setMarketplaceMode(nextMarketplaceMode);
+    setConversionAssetId(nextConversionAssetId || null);
+
+    if (nextConversionMode && nextConversionAssetId) {
+      setMarketplaceIntroOpen(false);
+      setMessage('Conversion mode: complete the Aim4price estimate, then Save to update the existing manual asset.');
+      setConversionPrefillLoaded(false);
+
+      void (async () => {
+        try {
+          const response = await fetch('/api/asset-register', { credentials: 'include', cache: 'no-store' });
+          const data = (await response.json()) as AssetRegisterListApiResponse;
+
+          if (!response.ok || !data.ok) {
+            throw new Error(data.error ?? 'Could not load the manual asset for conversion.');
+          }
+
+          if (cancelled) return;
+
+          const sourceAsset = [...(data.items ?? []), ...(data.assets ?? [])].find((asset) => asset.id === nextConversionAssetId) ?? null;
+          if (!sourceAsset) {
+            throw new Error('The manual asset being converted could not be found.');
+          }
+
+          setConversionSourceAsset(sourceAsset);
+
+          const specsJson = sourceAsset.specsJson ?? {};
+          const brandName = normalizeText(
+            sourceAsset.brandName ?? specsJson.brandName ?? specsJson.brand_name ?? specsJson.brand ?? specsJson.make,
+          );
+          const modelName = normalizeText(
+            sourceAsset.modelName ?? sourceAsset.typedModelName ?? specsJson.modelName ?? specsJson.model_name ?? specsJson.model ?? sourceAsset.title,
+          );
+          const assetYear = Number(sourceAsset.yearModel);
+          const assetHours = Number(sourceAsset.hours);
+          const assetLifeWorkedPercent = readConversionLifeWorkedPercent(sourceAsset);
+          const assetCondition = normalizeConversionCondition(sourceAsset.condition ?? specsJson.condition);
+          const assetReplacementPrice = readConversionReplacementPrice(sourceAsset);
+
+          if (brandName) {
+            setBrandSearch(brandName);
+            setUnlistedBrandName(brandName);
+          }
+
+          if (modelName) {
+            setTypedModelName(modelName);
+            setModelQuery(modelName);
+            setGenericModelQuery(modelName);
+            setMotorCanonicalQuery(modelName);
+          }
+
+          if (Number.isInteger(assetYear) && assetYear > 1800) {
+            setYear(String(assetYear));
+            setYearModelUnknown(false);
+            setYearStepComplete(true);
+          }
+
+          if (assetLifeWorkedPercent !== null) {
+            setLifeWorkedPercent(String(assetLifeWorkedPercent));
+            setUsageModalMode('percent');
+            setUsageStepComplete(true);
+          } else if (Number.isFinite(assetHours) && assetHours >= 0) {
+            setUsageAmount(String(Math.round(assetHours)));
+            setUsageModalMode('hours');
+            setUsageStepComplete(true);
+          }
+
+          if (assetCondition) {
+            setCondition(assetCondition);
+            setConditionStepComplete(true);
+          }
+
+          if (assetReplacementPrice !== null) {
+            setUserReplacementPrice(String(assetReplacementPrice));
+            setReplacementPriceBasis('user');
+          }
+
+          setConversionPrefillLoaded(true);
+        } catch (error) {
+          if (!cancelled) {
+            setMessage(error instanceof Error ? error.message : 'Could not load the manual asset for conversion.');
+            setConversionPrefillLoaded(true);
+          }
+        }
+      })();
+
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    setConversionSourceAsset(null);
+    setConversionPrefillLoaded(true);
 
     if (!nextMarketplaceMode) {
       setMarketplaceIntroOpen(false);
-      return;
+      return undefined;
     }
 
     try {
@@ -1917,6 +2091,10 @@ export default function ValuationClient() {
     } catch {
       setMarketplaceIntroOpen(true);
     }
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -2900,6 +3078,12 @@ export default function ValuationClient() {
           photos: options.photos ?? [],
         }
       : {};
+    const conversionFields = conversionAssetId
+      ? {
+          conversionAssetId,
+          conversionMode: 'manual-to-aim4price',
+        }
+      : {};
 
     if (resultState.kind === 'tractor') {
       const replacementPriceForSave = resultState.result.userReplacementPriceExVat ?? null;
@@ -2919,6 +3103,7 @@ export default function ValuationClient() {
         advancedAssumptions: resultState.result.advancedAssumptions ?? null,
         selectedMethod: 'aim4price',
         valuationVersion: 'v1',
+        ...conversionFields,
         ...marketplaceFields,
       };
     }
@@ -2943,6 +3128,7 @@ export default function ValuationClient() {
       advancedAssumptions: resultState.result.advancedAssumptions ?? null,
       selectedMethod: 'aim4price',
       valuationVersion: 'generic-v1',
+      ...conversionFields,
       ...marketplaceFields,
     };
   }
@@ -3415,7 +3601,8 @@ export default function ValuationClient() {
       }
 
       if (options.redirectToAssetRegister) {
-        router.push('/asset-register');
+        const focusAssetId = data.assetId ?? conversionAssetId;
+        router.push(focusAssetId ? `/asset-register?convertedAssetId=${encodeURIComponent(focusAssetId)}` : '/asset-register');
       }
 
       return data;
@@ -3664,6 +3851,23 @@ export default function ValuationClient() {
       setMarketplacePublishError(error instanceof Error ? error.message : 'Failed to publish this marketplace listing.');
     } finally {
       setIsPublishingMarketplace(false);
+    }
+  }
+
+  async function saveConversionToAssetRegister() {
+    if (!conversionAssetId) {
+      setMessage('No manual asset conversion was supplied.');
+      return;
+    }
+
+    setFinalSaveIntent('asset-register');
+    const saved = await saveCurrentValuationToRegister({
+      redirectToAssetRegister: true,
+      setError: setMessage,
+    });
+
+    if (!saved) {
+      setFinalSaveIntent(null);
     }
   }
 
@@ -5880,47 +6084,70 @@ export default function ValuationClient() {
         <aside className={styles.resultsSide}>
           <section className={styles.resultFinalActions} aria-label="Estimate actions">
             <div className={styles.resultFinalActionsCopy}>
-              <span>Estimate actions</span>
-              <h3>Next steps</h3>
-              <p>Download the estimate PDF, send the asset to Marketplace, or save it to your Asset Register.</p>
+              <span>{conversionAssetId ? 'Conversion mode' : 'Estimate actions'}</span>
+              <h3>{conversionAssetId ? 'Save converted asset' : 'Next steps'}</h3>
+              <p>
+                {conversionAssetId
+                  ? 'Save this estimate to update the existing manual asset. Marketplace, PDF and duplicate asset-register saves are hidden in conversion mode.'
+                  : 'Download the estimate PDF, send the asset to Marketplace, or save it to your Asset Register.'}
+              </p>
             </div>
 
             <div className={styles.resultFinalActionsButtons}>
-              <button
-                type="button"
-                className={styles.resultPdfActionButton}
-                onClick={downloadValuationPdf}
-                disabled={pdfLoading || advancedRecalculateLoading || !resultState || headlineValue === null}
-              >
-                {pdfLoading ? 'Preparing PDF...' : 'Download PDF'}
-              </button>
-              {isSignedIn ? (
-                <>
-                  <button
-                    type="button"
-                    className={styles.resultAlternateActionButton}
-                    onClick={saveAndSendToMarketplace}
-                    disabled={saveLoading || isPublishingMarketplace || replacementRecalculateLoading || advancedRecalculateLoading || !canUseMarketplacePublishFlow || headlineValue === null}
-                  >
-                    {saveLoading && finalSaveIntent === 'marketplace' ? 'Saving...' : isPublishingMarketplace ? 'Sending...' : 'Send to Marketplace'}
-                  </button>
+              {conversionAssetId ? (
+                isSignedIn ? (
                   <button
                     type="button"
                     className={styles.resultPrimaryActionButton}
-                    onClick={saveToAssetRegister}
-                    disabled={saveLoading || isPublishingMarketplace || replacementRecalculateLoading || advancedRecalculateLoading || !canSaveToAssetRegister || headlineValue === null}
+                    onClick={() => void saveConversionToAssetRegister()}
+                    disabled={saveLoading || replacementRecalculateLoading || advancedRecalculateLoading || !canSaveToAssetRegister || headlineValue === null || !conversionPrefillLoaded}
                   >
-                    {saveLoading && finalSaveIntent === 'asset-register' ? 'Saving...' : 'Save to Asset Register'}
+                    {saveLoading && finalSaveIntent === 'asset-register' ? 'Saving...' : 'Save'}
                   </button>
-                </>
+                ) : (
+                  <div className={styles.resultSignedOutNotice}>
+                    <p>Sign in to save this conversion.</p>
+                  </div>
+                )
               ) : (
-                <div className={styles.resultSignedOutNotice}>
-                  <p>Sign in to save this estimate to your Asset Register or send it to Marketplace.</p>
-                </div>
+                <>
+                  <button
+                    type="button"
+                    className={styles.resultPdfActionButton}
+                    onClick={downloadValuationPdf}
+                    disabled={pdfLoading || advancedRecalculateLoading || !resultState || headlineValue === null}
+                  >
+                    {pdfLoading ? 'Preparing PDF...' : 'Download PDF'}
+                  </button>
+                  {isSignedIn ? (
+                    <>
+                      <button
+                        type="button"
+                        className={styles.resultAlternateActionButton}
+                        onClick={saveAndSendToMarketplace}
+                        disabled={saveLoading || isPublishingMarketplace || replacementRecalculateLoading || advancedRecalculateLoading || !canUseMarketplacePublishFlow || headlineValue === null}
+                      >
+                        {saveLoading && finalSaveIntent === 'marketplace' ? 'Saving...' : isPublishingMarketplace ? 'Sending...' : 'Send to Marketplace'}
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.resultPrimaryActionButton}
+                        onClick={saveToAssetRegister}
+                        disabled={saveLoading || isPublishingMarketplace || replacementRecalculateLoading || advancedRecalculateLoading || !canSaveToAssetRegister || headlineValue === null}
+                      >
+                        {saveLoading && finalSaveIntent === 'asset-register' ? 'Saving...' : 'Save to Asset Register'}
+                      </button>
+                    </>
+                  ) : (
+                    <div className={styles.resultSignedOutNotice}>
+                      <p>Sign in to save this estimate to your Asset Register or send it to Marketplace.</p>
+                    </div>
+                  )}
+                </>
               )}
             </div>
 
-            {pdfError ? <p className={styles.resultActionError}>{pdfError}</p> : null}
+            {!conversionAssetId && pdfError ? <p className={styles.resultActionError}>{pdfError}</p> : null}
           </section>
         </aside>
       </div>
@@ -6020,7 +6247,7 @@ export default function ValuationClient() {
         </section>
       </div>
 
-      {finalSaveIntent ? (
+      {finalSaveIntent && !conversionAssetId ? (
         <div className={styles.finalSaveOverlay} onClick={closeFinalSaveModal}>
           <section
             className={styles.finalSaveModal}
