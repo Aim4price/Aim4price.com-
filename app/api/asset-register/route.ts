@@ -675,7 +675,7 @@ export async function PUT(request: NextRequest) {
     }
 
     if (error instanceof Error && error.message === 'LIFE_WORKED_PERCENT_CANNOT_DECREASE') {
-      return NextResponse.json({ ok: false, error: 'The new lifetime worked percentage cannot be lower than the percentage already saved on this asset.' }, { status: 400 });
+      return NextResponse.json({ ok: false, error: 'The new lifetime worked percentage cannot be lower than the percentage already saved on this asset. Go to Settings to adjust it.' }, { status: 400 });
     }
 
     if (error instanceof Error && error.message === 'REPLACEMENT_PRICE_REQUIRED') {
