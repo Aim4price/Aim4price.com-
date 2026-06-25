@@ -25289,3 +25289,91 @@ button.documentOpenLink {
     min-width: 1.45rem;
   }
 }
+
+/* Asset update/manage details layout */
+.assetFormModal .assetFormDetailsStack {
+  display: grid;
+  gap: 1.08rem;
+}
+
+.assetFormModal .assetTitleRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.assetFormModal .assetTitleRow .manualTitleField,
+.assetFormModal .assetTripleGrid > .field,
+.assetFormModal .assetTripleGrid > .customSelectField,
+.assetFormModal .assetAuxiliaryGrid > .field,
+.assetFormModal .assetValueBoxGrid > .field,
+.assetFormModal .assetNotesField {
+  width: 100%;
+  min-width: 0;
+}
+
+.assetFormModal .assetTripleGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: end;
+}
+
+.assetFormModal .assetAuxiliaryGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: end;
+}
+
+.assetFormModal .assetValueBoxGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.assetFormModal .assetValueBoxGrid > .field {
+  justify-content: center;
+  min-height: 7.1rem;
+  padding: 1.05rem;
+  border-radius: 1.2rem;
+}
+
+.assetFormModal .assetValueBoxGrid .manualCurrencyInput {
+  min-height: 3.75rem;
+}
+
+.assetFormModal .assetStaticField input:disabled {
+  color: #738396;
+  background: rgba(246, 250, 249, 0.94);
+  -webkit-text-fill-color: #738396;
+}
+
+.assetFormModal .assetInsuredValueField .manualCurrencyInput {
+  border-color: rgba(25, 111, 79, 0.22);
+  background: rgba(255, 255, 255, 0.98);
+}
+
+@media (max-width: 1180px) {
+  .assetFormModal .assetTripleGrid,
+  .assetFormModal .assetValueBoxGrid,
+  .assetFormModal .assetAuxiliaryGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 820px) {
+  .assetFormModal .assetTripleGrid,
+  .assetFormModal .assetValueBoxGrid,
+  .assetFormModal .assetAuxiliaryGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .assetFormModal .assetValueBoxGrid > .field {
+    min-height: 6.2rem;
+  }
+}
+
+.assetFormModal .assetConditionField {
+  min-width: 0;
+}

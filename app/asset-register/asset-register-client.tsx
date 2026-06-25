@@ -313,6 +313,7 @@ type RegisterAsset = {
   serialNumber: string;
   isFinanced: boolean;
   isInsured: boolean;
+  insuredValueExVat: number | null;
   isLicensed: boolean;
   licenseRegistrationNumber: string;
   financeNote: string;
@@ -530,8 +531,11 @@ type AssetDraft = {
   title: string;
   value: string;
   replacementPrice: string;
+  insuredValue: string;
   note: string;
   serialNumber: string;
+  brandName: string;
+  modelName: string;
   isFinanced: boolean;
   isInsured: boolean;
   isLicensed: boolean;
@@ -764,8 +768,11 @@ const initialAssetDraft: AssetDraft = {
   title: '',
   value: '',
   replacementPrice: '',
+  insuredValue: '',
   note: '',
   serialNumber: '',
+  brandName: '',
+  modelName: '',
   isFinanced: false,
   isInsured: false,
   isLicensed: false,
@@ -2405,6 +2412,29 @@ function readAssetReplacementPriceExVat(asset: Pick<RegisterAsset, 'replacementP
   return fromSpecs !== null && fromSpecs > 0 ? Math.round(fromSpecs) : null;
 }
 
+const INSURED_VALUE_SPEC_KEYS = [
+  'insuredValueExVat',
+  'insured_value_ex_vat',
+  'insuranceValueExVat',
+  'insurance_value_ex_vat',
+  'insuredValue',
+  'insured_value',
+  'insuranceValue',
+  'insurance_value',
+] as const;
+
+function readAssetInsuredValueExVat(asset: Pick<RegisterAsset, 'insuredValueExVat' | 'specsJson'>): number | null {
+  const direct = Number(asset.insuredValueExVat);
+  if (Number.isFinite(direct) && direct > 0) {
+    return Math.round(direct);
+  }
+
+  const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
+  const fromSpecs = readNumberFromSpecs(specs, [...INSURED_VALUE_SPEC_KEYS]);
+
+  return fromSpecs !== null && fromSpecs > 0 ? Math.round(fromSpecs) : null;
+}
+
 const LIFETIME_USAGE_SPEC_KEYS = [
   'maxLifetimeHours',
   'max_lifetime_hours',
@@ -2465,19 +2495,30 @@ function countAssetsWithReplacementPrice(assetList: Array<Pick<RegisterAsset, 'r
   return assetList.filter((asset) => readAssetReplacementPriceExVat(asset) !== null).length;
 }
 
+function sumAssetInsuredValues(assetList: Array<Pick<RegisterAsset, 'insuredValueExVat' | 'specsJson'>>): number {
+  return assetList.reduce((sum, asset) => sum + (readAssetInsuredValueExVat(asset) ?? 0), 0);
+}
+
 function buildDraftFromAsset(asset: RegisterAsset): AssetDraft {
   const financeStatus = readFinanceStatusChoice(asset);
-  const insuranceStatus = readInsuranceStatusChoice(asset);
+  const insuredValueExVat = readAssetInsuredValueExVat(asset);
+  const insuranceStatus = insuredValueExVat !== null ? 'yes' : readInsuranceStatusChoice(asset);
   const licenseStatus = readLicenseStatusChoice(asset);
   const insuranceNote = readInsuranceNote(asset);
+  const initialModelValue = asset.modelName || asset.typedModelName || '';
+  const derivedBrandName = deriveAssetReportBrandName(asset, initialModelValue);
+  const derivedModelName = deriveAssetReportModelName(asset, derivedBrandName);
 
   return {
     kind: normalizeDraftKind(asset.kind),
     title: asset.title,
     value: formatRegisterValueInput(asset.value || ''),
     replacementPrice: formatRegisterValueInput(readAssetReplacementPriceExVat(asset) ?? ''),
+    insuredValue: insuredValueExVat === null ? '' : formatRegisterValueInput(insuredValueExVat),
     note: getManualAssetNote(asset.note),
     serialNumber: asset.serialNumber,
+    brandName: derivedBrandName === '—' ? '' : derivedBrandName,
+    modelName: derivedModelName === '—' ? '' : derivedModelName,
     isFinanced: financeStatus === 'yes',
     isInsured: insuranceStatus === 'yes',
     isLicensed: licenseStatus === 'yes',
@@ -4480,7 +4521,7 @@ export default function AssetRegisterClient() {
 
         return {
           count: stats.count + 1,
-          value: stats.value + Math.round(Number(asset.value || 0)),
+          value: stats.value + (readAssetInsuredValueExVat(asset) ?? Math.round(Number(asset.value || 0))),
         };
       },
       { count: 0, value: 0 },
@@ -4680,7 +4721,20 @@ export default function AssetRegisterClient() {
       ...current,
       insuranceStatus: nextStatus,
       isInsured: nextStatus === 'yes',
+      insuredValue: nextStatus === 'yes' ? current.insuredValue : '',
       insuranceNote: nextStatus === 'yes' ? current.insuranceNote : '',
+    }));
+  }
+
+  function handleInsuredValueChange(value: string) {
+    const formattedValue = formatRegisterValueInput(value);
+    const insuredValue = parseRegisterValueInput(formattedValue);
+
+    setAssetDraft((current) => ({
+      ...current,
+      insuredValue: formattedValue,
+      insuranceStatus: insuredValue > 0 ? 'yes' : current.insuranceStatus,
+      isInsured: insuredValue > 0 || current.insuranceStatus === 'yes',
     }));
   }
 
@@ -4702,6 +4756,8 @@ export default function AssetRegisterClient() {
     const hours = hasHours ? parseUsageAmountInput(assetDraft.hours) : null;
     const hasLifeWorkedPercent = assetDraft.lifeWorkedPercent.trim() !== '';
     const lifeWorkedPercent = hasLifeWorkedPercent ? Number(assetDraft.lifeWorkedPercent) : null;
+    const hasInsuredValue = assetDraft.insuredValue.trim() !== '';
+    const insuredValueExVat = hasInsuredValue ? parseRegisterValueInput(assetDraft.insuredValue) : null;
     const usageErrorLabel = assetDraft.usageMetric === 'km' ? 'Kilometres' : 'Machine hours';
 
     if (!assetDraft.title.trim() || value <= 0) {
@@ -4711,6 +4767,11 @@ export default function AssetRegisterClient() {
 
     if (!replacementPrice || replacementPrice <= 0) {
       setNotice({ tone: 'error', message: 'Replacement price is required and must be greater than zero.' });
+      return false;
+    }
+
+    if (hasInsuredValue && (!insuredValueExVat || insuredValueExVat <= 0)) {
+      setNotice({ tone: 'error', message: 'Insured value must be greater than zero when entered.' });
       return false;
     }
 
@@ -5470,8 +5531,13 @@ export default function AssetRegisterClient() {
     const hours = hasHours ? parseUsageAmountInput(assetDraft.hours) : null;
     const hasLifeWorkedPercent = assetDraft.lifeWorkedPercent.trim() !== '';
     const lifeWorkedPercent = hasLifeWorkedPercent ? Number(assetDraft.lifeWorkedPercent) : null;
+    const hasInsuredValue = assetDraft.insuredValue.trim() !== '';
+    const insuredValueExVat = hasInsuredValue ? parseRegisterValueInput(assetDraft.insuredValue) : null;
     const usageErrorLabel = assetDraft.usageMetric === 'km' ? 'Kilometres' : 'Machine hours';
     const title = assetDraft.title.trim();
+    const brandName = assetDraft.brandName.trim();
+    const modelName = assetDraft.modelName.trim();
+    const nextInsuranceStatus: AssetStatusChoice = insuredValueExVat !== null && insuredValueExVat > 0 ? 'yes' : assetDraft.insuranceStatus;
 
     if (!title || value <= 0) {
       setNotice({ tone: 'error', message: 'Asset title and current value are required.' });
@@ -5480,6 +5546,11 @@ export default function AssetRegisterClient() {
 
     if (!replacementPrice || replacementPrice <= 0) {
       setNotice({ tone: 'error', message: 'Replacement price is required and must be greater than zero.' });
+      return;
+    }
+
+    if (hasInsuredValue && (!insuredValueExVat || insuredValueExVat <= 0)) {
+      setNotice({ tone: 'error', message: 'Insured value must be greater than zero when entered.' });
       return;
     }
 
@@ -5535,8 +5606,10 @@ export default function AssetRegisterClient() {
     const specsJson: Record<string, unknown> = {
       financeStatus: assetDraft.financeStatus,
       finance_status: assetDraft.financeStatus,
-      insuranceStatus: assetDraft.insuranceStatus,
-      insurance_status: assetDraft.insuranceStatus,
+      insuranceStatus: nextInsuranceStatus,
+      insurance_status: nextInsuranceStatus,
+      insuredStatus: nextInsuranceStatus,
+      insured_status: nextInsuranceStatus,
       licenseStatus: assetDraft.licenseStatus,
       license_status: assetDraft.licenseStatus,
       licensedStatus: assetDraft.licenseStatus,
@@ -5567,11 +5640,37 @@ export default function AssetRegisterClient() {
       official_replacement_price_ex_vat: replacementPrice,
       replacementPriceBasis: 'user',
       replacement_price_basis: 'user',
-      insuranceNote: assetDraft.insuranceStatus === 'yes' ? assetDraft.insuranceNote.trim() : '',
-      insurance_note: assetDraft.insuranceStatus === 'yes' ? assetDraft.insuranceNote.trim() : '',
-      insuredNote: assetDraft.insuranceStatus === 'yes' ? assetDraft.insuranceNote.trim() : '',
-      insured_note: assetDraft.insuranceStatus === 'yes' ? assetDraft.insuranceNote.trim() : '',
+      insuranceNote: nextInsuranceStatus === 'yes' ? assetDraft.insuranceNote.trim() : '',
+      insurance_note: nextInsuranceStatus === 'yes' ? assetDraft.insuranceNote.trim() : '',
+      insuredNote: nextInsuranceStatus === 'yes' ? assetDraft.insuranceNote.trim() : '',
+      insured_note: nextInsuranceStatus === 'yes' ? assetDraft.insuranceNote.trim() : '',
     };
+
+    if (brandName) {
+      specsJson.brandName = brandName;
+      specsJson.brand_name = brandName;
+      specsJson.brand = brandName;
+    }
+
+    if (modelName) {
+      specsJson.modelName = modelName;
+      specsJson.model_name = modelName;
+      specsJson.model = modelName;
+      specsJson.typedModelName = modelName;
+      specsJson.typed_model_name = modelName;
+    }
+
+    if (insuredValueExVat !== null && insuredValueExVat > 0) {
+      specsJson.insuredValueExVat = insuredValueExVat;
+      specsJson.insured_value_ex_vat = insuredValueExVat;
+      specsJson.insuranceValueExVat = insuredValueExVat;
+      specsJson.insurance_value_ex_vat = insuredValueExVat;
+      specsJson.insuredValue = insuredValueExVat;
+      specsJson.insured_value = insuredValueExVat;
+      specsJson.insuranceValue = insuredValueExVat;
+      specsJson.insurance_value = insuredValueExVat;
+    }
+
     if (roundedLifeWorkedPercent !== null) {
       specsJson.life_worked_percent = roundedLifeWorkedPercent;
       specsJson.worked_percent = roundedLifeWorkedPercent;
@@ -5610,10 +5709,13 @@ export default function AssetRegisterClient() {
         title,
         value,
         replacementPriceExVat: replacementPrice,
+        insuredValueExVat: insuredValueExVat !== null && insuredValueExVat > 0 ? insuredValueExVat : null,
         note: assetDraft.note.trim(),
         serialNumber: assetDraft.serialNumber,
+        brandName,
+        modelName,
         isFinanced: assetDraft.financeStatus === 'yes',
-        isInsured: assetDraft.insuranceStatus === 'yes',
+        isInsured: nextInsuranceStatus === 'yes',
         isLicensed: assetDraft.licenseStatus === 'yes',
         licenseRegistrationNumber,
         financeNote: assetDraft.financeStatus === 'yes' ? assetDraft.financeNote : '',
@@ -6365,6 +6467,7 @@ export default function AssetRegisterClient() {
       { label: 'Replacement Price', value: readAssetReplacementPriceExVat(asset) !== null ? `${money(readAssetReplacementPriceExVat(asset) ?? 0)} excl. VAT` : 'Not set' },
       { label: 'Serial Number', value: asset.serialNumber || '—' },
       { label: 'Insured', value: statusChoiceReportLabel(readInsuranceStatusChoice(asset)) },
+      { label: 'Insured Value', value: readAssetInsuredValueExVat(asset) !== null ? `${money(readAssetInsuredValueExVat(asset) ?? 0)} excl. VAT` : 'Not set' },
       { label: 'Financed', value: statusChoiceReportLabel(readFinanceStatusChoice(asset)) },
       { label: 'Licensed', value: statusChoiceReportLabel(readLicenseStatusChoice(asset)) },
       ...(readLicenseStatusChoice(asset) === 'yes' && readLicenseRegistrationNumber(asset)
@@ -6880,6 +6983,8 @@ export default function AssetRegisterClient() {
     const reportReplacementValue = sumAssetReplacementValues(reportAssets);
     const reportReplacementValueInclVat = Math.round(reportReplacementValue * 1.15);
     const reportReplacementPricedCount = countAssetsWithReplacementPrice(reportAssets);
+    const reportInsuredValue = sumAssetInsuredValues(reportAssets);
+    const reportInsuredValueInclVat = Math.round(reportInsuredValue * 1.15);
     const reportAim4priceStats = calculateAssetStats(reportAssets, isAim4priceValuedAsset);
     const reportInsuredStats = calculateAssetStats(reportAssets, (asset) => readInsuranceStatusChoice(asset) === 'yes');
     const reportFinancedStats = calculateAssetStats(reportAssets, (asset) => readFinanceStatusChoice(asset) === 'yes');
@@ -6923,7 +7028,7 @@ export default function AssetRegisterClient() {
         { label: 'Value incl VAT', value: money(reportValueInclVat), note: 'Filtered report total including 15% VAT.' },
         { label: 'Replacement value', value: money(reportReplacementValue), note: `${reportReplacementPricedCount} assets · ${money(reportReplacementValueInclVat)} incl. VAT.` },
         { label: 'Aim4price values', value: String(reportAim4priceStats.count), note: `${money(reportAim4priceStats.value)} total value.` },
-        { label: 'Insured assets', value: String(reportInsuredStats.count), note: `${money(reportInsuredStats.value)} marked insured.` },
+        { label: 'Insured assets', value: String(reportInsuredStats.count), note: `${money(reportInsuredValue)} insured value excl. VAT · ${money(reportInsuredValueInclVat)} incl. VAT.` },
         { label: 'Financed assets', value: String(reportFinancedStats.count), note: `${money(reportFinancedStats.value)} marked financed.` },
         { label: 'Licensed assets', value: String(reportLicensedStats.count), note: `${money(reportLicensedStats.value)} marked licensed.` },
       ],
@@ -6949,6 +7054,7 @@ export default function AssetRegisterClient() {
           condition: conditionLabel(asset.condition),
           serial: asset.serialNumber || '—',
           insured: statusChoiceReportLabel(readInsuranceStatusChoice(asset)),
+          insuredValue: readAssetInsuredValueExVat(asset) !== null ? money(readAssetInsuredValueExVat(asset) ?? 0) : '—',
           financed: statusChoiceReportLabel(readFinanceStatusChoice(asset)),
           licensed: statusChoiceReportLabel(readLicenseStatusChoice(asset)),
           licenseRegistrationNumber: readLicenseRegistrationNumber(asset) || undefined,
@@ -8594,164 +8700,208 @@ export default function AssetRegisterClient() {
                       <strong>{selectedManualAssetType.label}</strong>
                     </div>
 
-                    <div className={`${styles.manualStageGrid} ${styles.manualPrimaryFields} ${styles.manualValueGrid}`}>
-                      <label className={`${styles.field} ${styles.manualTitleField}`}>
-                        <span>Asset title</span>
-                        <input
-                          value={assetDraft.title}
-                          onChange={(event) =>
-                            setAssetDraft((current) => ({
-                              ...current,
-                              title: event.target.value,
-                            }))
-                          }
-                          placeholder={selectedManualAssetType.titlePlaceholder}
-                          autoFocus
-                        />
-                      </label>
-
-                      <label className={`${styles.field} ${styles.manualValueField}`}>
-                        <span>Current Value excl. VAT</span>
-                        <div className={styles.manualCurrencyInput}>
-                          <span>R</span>
+                    <div className={styles.assetFormDetailsStack}>
+                      <div className={styles.assetTitleRow}>
+                        <label className={`${styles.field} ${styles.manualTitleField}`}>
+                          <span>Asset title</span>
                           <input
-                            type="text"
-                            inputMode="numeric"
-                            value={formatRegisterValueInput(assetDraft.value)}
+                            value={assetDraft.title}
                             onChange={(event) =>
                               setAssetDraft((current) => ({
                                 ...current,
-                                value: formatRegisterValueInput(event.target.value),
+                                title: event.target.value,
                               }))
                             }
-                            placeholder="0"
+                            placeholder={selectedManualAssetType.titlePlaceholder}
+                            autoFocus
                           />
-                        </div>
-                      </label>
+                        </label>
+                      </div>
 
-                      <label className={`${styles.field} ${styles.manualReplacementValueField}`}>
-                        <span>Replacement Price excl. VAT *</span>
-                        <div className={styles.manualCurrencyInput}>
-                          <span>R</span>
-                          <input
-                            type="text"
-                            inputMode="numeric"
-                            value={formatRegisterValueInput(assetDraft.replacementPrice)}
-                            onChange={(event) =>
-                              setAssetDraft((current) => ({
-                                ...current,
-                                replacementPrice: formatRegisterValueInput(event.target.value),
-                              }))
-                            }
-                            placeholder="Required"
-                          />
-                        </div>
-                      </label>
-                    </div>
-
-                    <div className={`${styles.manualStageGrid} ${styles.manualOptionalGrid}`}>
-                      <label className={styles.field}>
-                        <span>Serial / reference</span>
-                        <input
-                          value={assetDraft.serialNumber}
-                          onChange={(event) =>
-                            setAssetDraft((current) => ({
-                              ...current,
-                              serialNumber: event.target.value,
-                            }))
-                          }
-                          placeholder="Optional"
-                        />
-                      </label>
-
-                      <label className={styles.field}>
-                        <span>{yearFieldLabel}</span>
-                        <input
-                          type="number"
-                          min="1800"
-                          max={new Date().getFullYear() + 1}
-                          step="1"
-                          value={assetDraft.yearModel}
-                          onChange={(event) =>
-                            setAssetDraft((current) => ({
-                              ...current,
-                              yearModel: event.target.value,
-                            }))
-                          }
-                          placeholder="Optional"
-                        />
-                      </label>
-
-                      {assetFormKind === 'vehicle' ? (
-                        <ModalSelect<UsageMetric>
-                          label="Usage type"
-                          value={assetDraft.usageMetric}
-                          options={[
-                            { value: 'km', label: 'Kilometres', description: 'Use odometer readings for vehicles.' },
-                            { value: 'hours', label: 'Hours', description: 'Use machine or engine hours.' },
-                          ]}
-                          onChange={(nextUsageMetric) =>
-                            setAssetDraft((current) => ({
-                              ...current,
-                              usageMetric: normalizeUsageMetric(nextUsageMetric, 'vehicle'),
-                            }))
-                          }
-                        />
-                      ) : null}
-
-                      {showUsageHoursField ? (
+                      <div className={styles.assetTripleGrid}>
                         <label className={styles.field}>
-                          <span>{usageFieldLabel}</span>
+                          <span>Serial / reference</span>
                           <input
-                            type="text"
-                            inputMode="numeric"
-                            value={formatUsageAmountInput(assetDraft.hours)}
+                            value={assetDraft.serialNumber}
                             onChange={(event) =>
                               setAssetDraft((current) => ({
                                 ...current,
-                                hours: formatUsageAmountInput(event.target.value),
+                                serialNumber: event.target.value,
                               }))
                             }
                             placeholder="Optional"
                           />
                         </label>
-                      ) : null}
 
-                      {showLifeWorkedPercentField ? (
                         <label className={styles.field}>
-                          <span>Lifetime worked %</span>
+                          <span>Brand</span>
+                          <input
+                            value={assetDraft.brandName}
+                            onChange={(event) =>
+                              setAssetDraft((current) => ({
+                                ...current,
+                                brandName: event.target.value,
+                              }))
+                            }
+                            placeholder="Optional"
+                          />
+                        </label>
+
+                        <label className={styles.field}>
+                          <span>Model</span>
+                          <input
+                            value={assetDraft.modelName}
+                            onChange={(event) =>
+                              setAssetDraft((current) => ({
+                                ...current,
+                                modelName: event.target.value,
+                              }))
+                            }
+                            placeholder="Optional"
+                          />
+                        </label>
+                      </div>
+
+                      <div className={styles.assetTripleGrid}>
+                        <label className={styles.field}>
+                          <span>{yearFieldLabel}</span>
                           <input
                             type="number"
-                            min="0"
-                            max="100"
-                            step="0.1"
-                            value={assetDraft.lifeWorkedPercent}
+                            min="1800"
+                            max={new Date().getFullYear() + 1}
+                            step="1"
+                            value={assetDraft.yearModel}
                             onChange={(event) =>
                               setAssetDraft((current) => ({
                                 ...current,
-                                lifeWorkedPercent: event.target.value,
+                                yearModel: event.target.value,
                               }))
                             }
                             placeholder="Optional"
                           />
                         </label>
+
+                        {showUsageHoursField ? (
+                          <label className={styles.field}>
+                            <span>{usageFieldLabel}</span>
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              value={formatUsageAmountInput(assetDraft.hours)}
+                              onChange={(event) =>
+                                setAssetDraft((current) => ({
+                                  ...current,
+                                  hours: formatUsageAmountInput(event.target.value),
+                                }))
+                              }
+                              placeholder={usageFieldPlaceholder}
+                            />
+                          </label>
+                        ) : (
+                          <label className={`${styles.field} ${styles.assetStaticField}`}>
+                            <span>{usageFieldLabel}</span>
+                            <input value="Not applicable" disabled readOnly />
+                          </label>
+                        )}
+
+                        {showConditionField ? (
+                          <ModalSelect<AssetConditionValue>
+                            label="Condition"
+                            value={assetDraft.condition}
+                            options={CONDITION_OPTIONS}
+                            onChange={(nextCondition) =>
+                              setAssetDraft((current) => ({
+                                ...current,
+                                condition: nextCondition,
+                              }))
+                            }
+                            className={styles.assetConditionField}
+                          />
+                        ) : (
+                          <label className={`${styles.field} ${styles.assetStaticField}`}>
+                            <span>Condition</span>
+                            <input value="Not applicable" disabled readOnly />
+                          </label>
+                        )}
+                      </div>
+
+                      <div className={styles.assetValueBoxGrid}>
+                        <label className={`${styles.field} ${styles.manualValueField}`}>
+                          <span>Current Value excl. VAT</span>
+                          <div className={styles.manualCurrencyInput}>
+                            <span>R</span>
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              value={formatRegisterValueInput(assetDraft.value)}
+                              onChange={(event) =>
+                                setAssetDraft((current) => ({
+                                  ...current,
+                                  value: formatRegisterValueInput(event.target.value),
+                                }))
+                              }
+                              placeholder="0"
+                            />
+                          </div>
+                        </label>
+
+                        <label className={`${styles.field} ${styles.manualReplacementValueField}`}>
+                          <span>Replacement Price excl. VAT *</span>
+                          <div className={styles.manualCurrencyInput}>
+                            <span>R</span>
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              value={formatRegisterValueInput(assetDraft.replacementPrice)}
+                              onChange={(event) =>
+                                setAssetDraft((current) => ({
+                                  ...current,
+                                  replacementPrice: formatRegisterValueInput(event.target.value),
+                                }))
+                              }
+                              placeholder="Required"
+                            />
+                          </div>
+                        </label>
+
+                        <label className={`${styles.field} ${styles.assetInsuredValueField}`}>
+                          <span>Insured Value excl. VAT</span>
+                          <div className={styles.manualCurrencyInput}>
+                            <span>R</span>
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              value={formatRegisterValueInput(assetDraft.insuredValue)}
+                              onChange={(event) => handleInsuredValueChange(event.target.value)}
+                              placeholder="Optional"
+                            />
+                          </div>
+                        </label>
+                      </div>
+
+                      {showLifeWorkedPercentField ? (
+                        <div className={styles.assetAuxiliaryGrid}>
+                          <label className={styles.field}>
+                            <span>Lifetime worked %</span>
+                            <input
+                              type="number"
+                              min="0"
+                              max="100"
+                              step="0.1"
+                              value={assetDraft.lifeWorkedPercent}
+                              onChange={(event) =>
+                                setAssetDraft((current) => ({
+                                  ...current,
+                                  lifeWorkedPercent: event.target.value,
+                                }))
+                              }
+                              placeholder="Optional"
+                            />
+                          </label>
+                        </div>
                       ) : null}
 
-                      {showConditionField ? (
-                        <ModalSelect<AssetConditionValue>
-                          label="Condition"
-                          value={assetDraft.condition}
-                          options={CONDITION_OPTIONS}
-                          onChange={(nextCondition) =>
-                            setAssetDraft((current) => ({
-                              ...current,
-                              condition: nextCondition,
-                            }))
-                          }
-                        />
-                      ) : null}
-
-                      <label className={`${styles.field} ${styles.fullWidth}`}>
+                      <label className={`${styles.field} ${styles.fullWidth} ${styles.assetNotesField}`}>
                         <span>Notes</span>
                         <textarea
                           rows={3}
