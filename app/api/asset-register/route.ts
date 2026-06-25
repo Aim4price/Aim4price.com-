@@ -203,9 +203,14 @@ function buildManualSpecsJson(
   usageMetric: 'hours' | 'km' | null,
   lifeWorkedPercent: number | null,
   replacementPriceExVat: number | null = null,
+  insuredValueExVat: number | null = null,
+  brandName = '',
+  modelName = '',
 ): Record<string, unknown> {
   const specs = normalizeSpecsJson(value);
   const resolvedLifeWorkedPercent = lifeWorkedPercent ?? readLifeWorkedPercentFromSpecs(specs);
+  const cleanBrandName = String(brandName ?? '').trim();
+  const cleanModelName = String(modelName ?? '').trim();
 
   return {
     ...specs,
@@ -222,6 +227,38 @@ function buildManualSpecsJson(
           worked_percent: resolvedLifeWorkedPercent,
           percent_worked: resolvedLifeWorkedPercent,
           lifetime_worked_percent: resolvedLifeWorkedPercent,
+        }
+      : {}),
+    ...(cleanBrandName
+      ? {
+          brandName: cleanBrandName,
+          brand_name: cleanBrandName,
+          brand: cleanBrandName,
+        }
+      : {}),
+    ...(cleanModelName
+      ? {
+          modelName: cleanModelName,
+          model_name: cleanModelName,
+          model: cleanModelName,
+          typedModelName: cleanModelName,
+          typed_model_name: cleanModelName,
+        }
+      : {}),
+    ...(insuredValueExVat !== null
+      ? {
+          insuranceStatus: 'yes',
+          insurance_status: 'yes',
+          insuredStatus: 'yes',
+          insured_status: 'yes',
+          insuredValueExVat,
+          insured_value_ex_vat: insuredValueExVat,
+          insuranceValueExVat: insuredValueExVat,
+          insurance_value_ex_vat: insuredValueExVat,
+          insuredValue: insuredValueExVat,
+          insured_value: insuredValueExVat,
+          insuranceValue: insuredValueExVat,
+          insurance_value: insuredValueExVat,
         }
       : {}),
     ...(replacementPriceExVat !== null
@@ -426,6 +463,13 @@ export async function POST(request: NextRequest) {
     (body as { replacementPriceExVat?: unknown; replacementPrice?: unknown }).replacementPriceExVat ??
       (body as { replacementPrice?: unknown }).replacementPrice,
   );
+  const insuredValueExVat = normalizeReplacementPrice(
+    (body as { insuredValueExVat?: unknown; insuredValue?: unknown; insuranceValue?: unknown }).insuredValueExVat ??
+      (body as { insuredValue?: unknown; insuranceValue?: unknown }).insuredValue ??
+      (body as { insuranceValue?: unknown }).insuranceValue,
+  );
+  const brandName = String((body as { brandName?: unknown }).brandName ?? '').trim();
+  const modelName = String((body as { modelName?: unknown }).modelName ?? '').trim();
 
   if (!title || value <= 0) {
     return NextResponse.json(
@@ -455,8 +499,11 @@ export async function POST(request: NextRequest) {
       value,
       note: body.note ?? null,
       serialNumber: body.serialNumber ?? null,
+      brandName,
+      modelName,
       isFinanced: Boolean(body.isFinanced),
-      isInsured: Boolean(body.isInsured),
+      isInsured: Boolean(body.isInsured) || insuredValueExVat !== null,
+      insuredValueExVat,
       isLicensed: Boolean(body.isLicensed),
       licenseRegistrationNumber,
       financeNote: body.financeNote ?? null,
@@ -467,7 +514,7 @@ export async function POST(request: NextRequest) {
       usageMetric,
       lifeWorkedPercent,
       replacementPriceExVat,
-      specsJson: buildManualSpecsJson(body.specsJson, usageMetric, lifeWorkedPercent, replacementPriceExVat),
+      specsJson: buildManualSpecsJson(body.specsJson, usageMetric, lifeWorkedPercent, replacementPriceExVat, insuredValueExVat, brandName, modelName),
       condition: normalizeCondition(body.condition),
     });
 
@@ -522,6 +569,13 @@ export async function PUT(request: NextRequest) {
     (body as { replacementPriceExVat?: unknown; replacementPrice?: unknown }).replacementPriceExVat ??
       (body as { replacementPrice?: unknown }).replacementPrice,
   );
+  const insuredValueExVat = normalizeReplacementPrice(
+    (body as { insuredValueExVat?: unknown; insuredValue?: unknown; insuranceValue?: unknown }).insuredValueExVat ??
+      (body as { insuredValue?: unknown; insuranceValue?: unknown }).insuredValue ??
+      (body as { insuranceValue?: unknown }).insuranceValue,
+  );
+  const brandName = String((body as { brandName?: unknown }).brandName ?? '').trim();
+  const modelName = String((body as { modelName?: unknown }).modelName ?? '').trim();
 
   if (!assetId) {
     return NextResponse.json({ ok: false, error: 'Valid asset id is required.' }, { status: 400 });
@@ -569,8 +623,11 @@ export async function PUT(request: NextRequest) {
       value,
       note: body.note ?? null,
       serialNumber: body.serialNumber ?? null,
+      brandName,
+      modelName,
       isFinanced: Boolean(body.isFinanced),
-      isInsured: Boolean(body.isInsured),
+      isInsured: Boolean(body.isInsured) || insuredValueExVat !== null,
+      insuredValueExVat,
       isLicensed: Boolean(body.isLicensed),
       licenseRegistrationNumber,
       financeNote: body.financeNote ?? null,
@@ -581,7 +638,7 @@ export async function PUT(request: NextRequest) {
       usageMetric,
       lifeWorkedPercent,
       replacementPriceExVat,
-      specsJson: buildManualSpecsJson(body.specsJson, usageMetric, lifeWorkedPercent, replacementPriceExVat),
+      specsJson: buildManualSpecsJson(body.specsJson, usageMetric, lifeWorkedPercent, replacementPriceExVat, insuredValueExVat, brandName, modelName),
       condition: normalizeCondition(body.condition),
     });
 
