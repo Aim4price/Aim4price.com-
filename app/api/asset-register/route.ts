@@ -31,6 +31,11 @@ import {
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+const LIFETIME_PERCENT_SETTINGS_ERROR =
+  'The new lifetime worked percentage cannot be lower than the percentage already saved on this asset. Please go to Settings to override this.';
+const USAGE_READING_SETTINGS_ERROR =
+  'The new usage reading cannot be lower than the reading already saved on this asset. Please go to Settings to override this.';
+
 type ErrorLike = {
   message?: unknown;
   detail?: unknown;
@@ -671,11 +676,11 @@ export async function PUT(request: NextRequest) {
     }
 
     if (error instanceof Error && error.message === 'USAGE_READING_CANNOT_DECREASE') {
-      return NextResponse.json({ ok: false, error: 'The new usage reading cannot be lower than the reading already saved on this asset.' }, { status: 400 });
+      return NextResponse.json({ ok: false, error: USAGE_READING_SETTINGS_ERROR }, { status: 400 });
     }
 
     if (error instanceof Error && error.message === 'LIFE_WORKED_PERCENT_CANNOT_DECREASE') {
-      return NextResponse.json({ ok: false, error: 'The new lifetime worked percentage cannot be lower than the percentage already saved on this asset. Go to Settings to adjust it.' }, { status: 400 });
+      return NextResponse.json({ ok: false, error: LIFETIME_PERCENT_SETTINGS_ERROR }, { status: 400 });
     }
 
     if (error instanceof Error && error.message === 'REPLACEMENT_PRICE_REQUIRED') {
