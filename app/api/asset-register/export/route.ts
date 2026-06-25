@@ -32,7 +32,7 @@ const EXPORT_DETAILS_SECTION_ROW = 5;
 const EXPORT_NOTE_SECTION_ROW = 13;
 const EXPORT_NOTE_START_ROW = EXPORT_NOTE_SECTION_ROW + 1;
 const SUMMARY_SECTION_ROW = 17;
-const SUMMARY_ROW_COUNT = 8;
+const SUMMARY_ROW_COUNT = 10;
 const TABLE_HEADER_ROW = SUMMARY_SECTION_ROW + 1 + SUMMARY_ROW_COUNT + 1;
 const DATA_START_ROW = TABLE_HEADER_ROW + 1;
 
@@ -40,9 +40,11 @@ const REGISTER_VALUE_EX_VAT_COLUMN = 'M';
 const REGISTER_VALUE_INCL_VAT_COLUMN = 'N';
 const FINANCE_STATUS_COLUMN = 'O';
 const INSURANCE_STATUS_COLUMN = 'Q';
-const LICENSE_STATUS_COLUMN = 'S';
-const REPLACEMENT_VALUE_EX_VAT_COLUMN = 'U';
-const REPLACEMENT_VALUE_INCL_VAT_COLUMN = 'V';
+const INSURED_VALUE_EX_VAT_COLUMN = 'S';
+const INSURED_VALUE_INCL_VAT_COLUMN = 'T';
+const LICENSE_STATUS_COLUMN = 'U';
+const REPLACEMENT_VALUE_EX_VAT_COLUMN = 'W';
+const REPLACEMENT_VALUE_INCL_VAT_COLUMN = 'X';
 
 const TABLE_HEADERS = [
   'Asset title',
@@ -63,6 +65,8 @@ const TABLE_HEADERS = [
   'Finance notes',
   'Insurance status',
   'Insurance notes',
+  'Insured value ex VAT',
+  'Insured value incl VAT',
   'License status',
   'License registration',
   'Replacement price ex VAT',
@@ -88,6 +92,8 @@ const WORKBOOK_COLUMN_WIDTHS = [
   28,
   17,
   28,
+  20,
+  20,
   17,
   24,
   22,
@@ -294,6 +300,31 @@ function replacementPriceExVat(item: AssetRegisterItem): number | null {
   return null;
 }
 
+const INSURED_VALUE_SPEC_KEYS = [
+  'insuredValueExVat',
+  'insured_value_ex_vat',
+  'insuranceValueExVat',
+  'insurance_value_ex_vat',
+  'insuredValue',
+  'insured_value',
+  'insuranceValue',
+  'insurance_value',
+] as const;
+
+function insuredValueExVat(item: AssetRegisterItem): number | null {
+  const direct = numericValue(item.insuredValueExVat);
+  if (direct !== null && direct > 0) return Math.round(direct);
+
+  const specs = isPlainRecord(item.specsJson) ? item.specsJson : {};
+
+  for (const key of INSURED_VALUE_SPEC_KEYS) {
+    const value = numericValue(specs[key]);
+    if (value !== null && value > 0) return Math.round(value);
+  }
+
+  return null;
+}
+
 function methodLabel(value: AssetRegisterItem['selectedMethod'] | string | null | undefined): string {
   const normalized = String(value ?? '').trim().toLowerCase();
   if (normalized === 'manual') return 'Manual';
@@ -424,6 +455,14 @@ function replacementValueInclVatTotal(items: AssetRegisterItem[]): number {
   return items.reduce((sum, item) => sum + moneyInclVatTotal(replacementPriceExVat(item)), 0);
 }
 
+function insuredValueTotal(items: AssetRegisterItem[]): number {
+  return items.reduce((sum, item) => sum + Math.round(insuredValueExVat(item) ?? 0), 0);
+}
+
+function insuredValueInclVatTotal(items: AssetRegisterItem[]): number {
+  return items.reduce((sum, item) => sum + moneyInclVatTotal(insuredValueExVat(item)), 0);
+}
+
 function countFinanced(items: AssetRegisterItem[]): number {
   return items.filter((item) => readFinanceStatusChoice(item) === 'yes').length;
 }
@@ -486,6 +525,7 @@ function buildAssetRow(item: AssetRegisterItem, index: number): XlsxCellValue[] 
   const financeStatus = readFinanceStatusChoice(item);
   const insuranceStatus = readInsuranceStatusChoice(item);
   const licenseStatus = readLicenseStatusChoice(item);
+  const insuredValue = insuredValueExVat(item);
   const replacementPrice = replacementPriceExVat(item);
 
   return [
@@ -507,6 +547,8 @@ function buildAssetRow(item: AssetRegisterItem, index: number): XlsxCellValue[] 
     textOrNaCell(item.financeNote, 'note'),
     statusCellForChoice(insuranceStatus, 'Insured', 'Not insured'),
     textOrNaCell(readInsuranceNote(item), 'note'),
+    insuredValue === null ? naCell() : moneyCell(insuredValue),
+    insuredValue === null ? naCell() : vatIncludedFormulaCell(INSURED_VALUE_EX_VAT_COLUMN, rowNumber, insuredValue),
     statusCellForChoice(licenseStatus, 'Licensed', 'Not licensed'),
     licenseStatus === 'yes' ? textOrNaCell(readLicenseRegistrationNumber(item)) : naCell(),
     replacementPrice === null ? naCell() : moneyCell(replacementPrice),
@@ -525,6 +567,8 @@ function buildSummaryRows(items: AssetRegisterItem[]): XlsxCellValue[][] {
   const registerValueInclVatRange = buildFormulaRange(REGISTER_VALUE_INCL_VAT_COLUMN, items.length);
   const financeRange = buildFormulaRange(FINANCE_STATUS_COLUMN, items.length);
   const insuranceRange = buildFormulaRange(INSURANCE_STATUS_COLUMN, items.length);
+  const insuredValueExVatRange = buildFormulaRange(INSURED_VALUE_EX_VAT_COLUMN, items.length);
+  const insuredValueInclVatRange = buildFormulaRange(INSURED_VALUE_INCL_VAT_COLUMN, items.length);
   const licenseRange = buildFormulaRange(LICENSE_STATUS_COLUMN, items.length);
   const replacementValueExVatRange = buildFormulaRange(REPLACEMENT_VALUE_EX_VAT_COLUMN, items.length);
   const replacementValueInclVatRange = buildFormulaRange(REPLACEMENT_VALUE_INCL_VAT_COLUMN, items.length);
@@ -551,6 +595,18 @@ function buildSummaryRows(items: AssetRegisterItem[]): XlsxCellValue[][] {
     [
       textCell('Insured assets', 'metaLabel'),
       insuranceRange ? formulaCell(`COUNTIF(${insuranceRange},"Insured")`, countInsured(items)) : numberCell(0),
+    ],
+    [
+      textCell('Insured value ex VAT', 'metaLabel'),
+      insuredValueExVatRange
+        ? formulaCell(`SUM(${insuredValueExVatRange})`, insuredValueTotal(items), 'currency')
+        : moneyCell(0),
+    ],
+    [
+      textCell('Insured value incl VAT', 'metaLabel'),
+      insuredValueInclVatRange
+        ? formulaCell(`SUM(${insuredValueInclVatRange})`, insuredValueInclVatTotal(items), 'currency')
+        : moneyCell(0),
     ],
     [
       textCell('Licensed assets', 'metaLabel'),
@@ -879,6 +935,10 @@ function buildPdfAssetLines(item: AssetRegisterItem, index: number): Array<{ tex
   const serial = cleanText(item.serialNumber) || 'N/A';
   const docs = Array.isArray(item.documents) ? item.documents.length : 0;
   const replacementPrice = replacementPriceExVat(item);
+  const insuredValue = insuredValueExVat(item);
+  const insuredValueSummary = insuredValue === null
+    ? 'Insured value: N/A'
+    : `Insured value: ${formatPdfMoney(insuredValue)} excl. VAT | ${formatPdfMoney(moneyInclVatTotal(insuredValue))} incl. VAT`;
   const replacementSummary = replacementPrice === null
     ? 'Replacement price: N/A'
     : `Replacement price: ${formatPdfMoney(replacementPrice)} excl. VAT | ${formatPdfMoney(moneyInclVatTotal(replacementPrice))} incl. VAT`;
@@ -886,7 +946,7 @@ function buildPdfAssetLines(item: AssetRegisterItem, index: number): Array<{ tex
   return [
     { text: `${index + 1}. ${cleanText(item.title) || 'Asset'}`, font: 'F2', size: 11.2 },
     { text: `${kindLabel(item)} | ${assetModelPdfLabel(item)} | Year: ${year} | Usage: ${usagePdfLabel(item)} | Condition: ${condition}`, font: 'F1', size: 9.2 },
-    { text: `Serial/VIN: ${serial} | Finance: ${financeStatus} | Insurance: ${insuranceStatus} | License: ${licenseStatus}${registration ? ` (${registration})` : ''}`, font: 'F1', size: 9.2 },
+    { text: `Serial/VIN: ${serial} | Finance: ${financeStatus} | Insurance: ${insuranceStatus} | ${insuredValueSummary} | License: ${licenseStatus}${registration ? ` (${registration})` : ''}`, font: 'F1', size: 9.2 },
     { text: `Register value: ${formatPdfMoney(item.value)} excl. VAT | ${formatPdfMoney(moneyInclVatTotal(item.value))} incl. VAT | ${replacementSummary} | Method: ${methodLabel(item.selectedMethod)} | Documents: ${docs ? `${docs} saved` : 'None'}`, font: 'F2', size: 9.2 },
   ];
 }
@@ -924,6 +984,8 @@ function buildFullRegisterPdf(items: AssetRegisterItem[], profile: AccountProfil
   const registerValueInclVat = registerValueInclVatTotal(uniqueItems);
   const replacementValue = replacementValueTotal(uniqueItems);
   const replacementValueInclVat = replacementValueInclVatTotal(uniqueItems);
+  const insuredScheduleValue = insuredValueTotal(uniqueItems);
+  const insuredScheduleValueInclVat = insuredValueInclVatTotal(uniqueItems);
 
   addPdfPage(state, false);
 
@@ -951,7 +1013,7 @@ function buildFullRegisterPdf(items: AssetRegisterItem[], profile: AccountProfil
   drawPdfSummaryCard(state, 'Assets', String(uniqueItems.length), PDF_MARGIN, state.y, cardWidth);
   drawPdfSummaryCard(state, 'Replacement', formatPdfMoney(replacementValue), PDF_MARGIN + cardWidth + cardGap, state.y, cardWidth);
   drawPdfSummaryCard(state, 'Financed', String(countFinanced(uniqueItems)), PDF_MARGIN + (cardWidth + cardGap) * 2, state.y, cardWidth);
-  drawPdfSummaryCard(state, 'Insured', String(countInsured(uniqueItems)), PDF_MARGIN + (cardWidth + cardGap) * 3, state.y, cardWidth);
+  drawPdfSummaryCard(state, 'Insured value', formatPdfMoney(insuredScheduleValue), PDF_MARGIN + (cardWidth + cardGap) * 3, state.y, cardWidth);
   state.y -= 66;
 
   drawPdfText(state, 'Owner details', PDF_MARGIN, state.y, 13, 'F2');
@@ -960,7 +1022,7 @@ function buildFullRegisterPdf(items: AssetRegisterItem[], profile: AccountProfil
   drawPdfRect(state, PDF_MARGIN, detailsTop - 52, PDF_PAGE_WIDTH - PDF_MARGIN * 2, 52, '0.98 0.99 1.00');
   drawPdfKeyValue(state, 'Business email', ownerEmail, PDF_MARGIN + 12, detailsTop - 14, 176);
   drawPdfKeyValue(state, 'Phone', ownerPhone, PDF_MARGIN + 205, detailsTop - 14, 126);
-  drawPdfKeyValue(state, 'Replacement incl VAT', formatPdfMoney(replacementValueInclVat), PDF_MARGIN + 350, detailsTop - 14, 130);
+  drawPdfKeyValue(state, 'Insured incl VAT', formatPdfMoney(insuredScheduleValueInclVat), PDF_MARGIN + 350, detailsTop - 14, 130);
   state.y -= 74;
 
   drawPdfText(state, 'Asset list', PDF_MARGIN, state.y, 14, 'F2');
