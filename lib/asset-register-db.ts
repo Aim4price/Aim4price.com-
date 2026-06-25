@@ -134,6 +134,7 @@ export type UpdateAssetRegisterItemInput = {
   lifeWorkedPercent?: number | null;
   specsJson?: Record<string, unknown>;
   condition?: ConditionKey | null;
+  allowUsageDecrease?: boolean;
 };
 
 type AssetRegisterRow = {
@@ -1988,13 +1989,34 @@ export async function updateAssetRegisterItem(
   const nextLicenseRegistrationNumber = Boolean(input.isLicensed) ? normalizeLicenseRegistrationNumber(input.licenseRegistrationNumber) : null;
   const nextLifeWorkedPercent = percentFromSpecs(baseSpecsJson);
   const existingLifeWorkedPercent = existing.lifeWorkedPercent ?? percentFromSpecs(existing.specsJson);
+  const isValuationBackedAsset = existing.valuationRunId !== null && existing.selectedMethod !== 'manual';
   const fields: SqlField[] = [];
 
-  if (incomingHours !== null && existing.hours !== null && incomingHours < existing.hours) {
+  if (
+    !input.allowUsageDecrease &&
+    isValuationBackedAsset &&
+    incomingHours === null &&
+    existing.hours !== null &&
+    nextLifeWorkedPercent === null
+  ) {
+    throw new Error('USAGE_READING_CANNOT_DECREASE');
+  }
+
+  if (!input.allowUsageDecrease && incomingHours !== null && existing.hours !== null && incomingHours < existing.hours) {
     throw new Error('USAGE_READING_CANNOT_DECREASE');
   }
 
   if (
+    !input.allowUsageDecrease &&
+    isValuationBackedAsset &&
+    nextLifeWorkedPercent === null &&
+    existingLifeWorkedPercent !== null
+  ) {
+    throw new Error('LIFE_WORKED_PERCENT_CANNOT_DECREASE');
+  }
+
+  if (
+    !input.allowUsageDecrease &&
     nextLifeWorkedPercent !== null &&
     existingLifeWorkedPercent !== null &&
     nextLifeWorkedPercent < existingLifeWorkedPercent
@@ -2095,6 +2117,7 @@ export async function updateAssetRegisterItemFromValuation(input: {
   hours: number;
   condition: ConditionKey;
   saveReplacementPrice?: boolean;
+  allowUsageDecrease?: boolean;
 }): Promise<AssetRegisterItem> {
   const db = getDb();
   const schema = await getAssetRegisterSchema();
@@ -2121,6 +2144,14 @@ export async function updateAssetRegisterItemFromValuation(input: {
 
   if (replacementPriceUsedExVat === null) {
     throw new Error('REPLACEMENT_PRICE_REQUIRED');
+  }
+
+  if (
+    input.allowUsageDecrease !== true &&
+    existing.hours !== null &&
+    Math.max(0, Math.round(input.hours)) < existing.hours
+  ) {
+    throw new Error('USAGE_READING_CANNOT_DECREASE');
   }
 
   const fields: SqlField[] = [];
@@ -2224,6 +2255,7 @@ export async function updateAssetRegisterItemFromGenericValuation(input: {
   marketAdjustmentDeltaExVat?: number | null;
   marketRawAverageExVat?: number | null;
   saveReplacementPrice?: boolean;
+  allowUsageDecrease?: boolean;
 }): Promise<AssetRegisterItem> {
   const db = getDb();
   const schema = await getAssetRegisterSchema();
@@ -2252,6 +2284,28 @@ export async function updateAssetRegisterItemFromGenericValuation(input: {
 
   if (replacementPriceUsedExVat === null) {
     throw new Error('REPLACEMENT_PRICE_REQUIRED');
+  }
+
+  const existingUsageAmount = existing.hours;
+  const nextUsageAmount = valuationResult.usageAmount ?? null;
+  const existingLifeWorkedPercent = existing.lifeWorkedPercent ?? percentFromSpecs(existing.specsJson);
+
+  if (
+    input.allowUsageDecrease !== true &&
+    nextUsageAmount !== null &&
+    existingUsageAmount !== null &&
+    nextUsageAmount < existingUsageAmount
+  ) {
+    throw new Error('USAGE_READING_CANNOT_DECREASE');
+  }
+
+  if (
+    input.allowUsageDecrease !== true &&
+    valuationResult.lifeWorkedPercent !== null &&
+    existingLifeWorkedPercent !== null &&
+    valuationResult.lifeWorkedPercent < existingLifeWorkedPercent
+  ) {
+    throw new Error('LIFE_WORKED_PERCENT_CANNOT_DECREASE');
   }
 
   const fields: SqlField[] = [];

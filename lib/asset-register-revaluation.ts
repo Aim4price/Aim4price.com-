@@ -470,6 +470,8 @@ async function revalueTractorAsset(input: {
   replacementPriceExVat?: number | null;
   saveReplacementPrice?: boolean;
   advancedAssumptions?: AdvancedAssumptionsInput;
+  usageAmountOverride?: number | null;
+  allowUsageDecrease?: boolean;
 }): Promise<AssetRevaluationResult> {
   const payload = asRecord(input.row.valuation_payload);
   const payloadInput = readNestedRecord(payload, 'input');
@@ -499,11 +501,26 @@ async function revalueTractorAsset(input: {
           'This tractor is missing its year model, so Aim4price cannot re-run the estimate yet.',
         ),
   );
+  const savedHours = asNumber(input.asset.hours) ?? asNumber(payloadInput.hours) ?? asNumber(input.row.hours);
+  const usageAmountOverride = input.usageAmountOverride;
+  const hasUsageAmountOverride = typeof usageAmountOverride !== 'undefined';
+  const nextHoursInput = hasUsageAmountOverride ? usageAmountOverride : savedHours;
+
+  if (
+    hasUsageAmountOverride &&
+    usageAmountOverride !== null &&
+    savedHours !== null &&
+    usageAmountOverride < savedHours &&
+    input.allowUsageDecrease !== true
+  ) {
+    throw new Error('USAGE_READING_CANNOT_DECREASE');
+  }
+
   const hours = Math.max(
     0,
     Math.round(
       requireNumber(
-        input.asset.hours ?? payloadInput.hours ?? input.row.hours,
+        nextHoursInput,
         'This tractor is missing its latest hours, so Aim4price cannot re-run the estimate yet.',
       ),
     ),
@@ -588,6 +605,7 @@ async function revalueTractorAsset(input: {
     hours,
     condition,
     saveReplacementPrice: input.saveReplacementPrice === true,
+    allowUsageDecrease: input.allowUsageDecrease === true,
   });
 
   return {
@@ -614,6 +632,8 @@ async function revalueGenericAsset(input: {
   saveReplacementPrice?: boolean;
   advancedAssumptions?: AdvancedAssumptionsInput;
   lifeWorkedPercentOverride?: number | null;
+  usageAmountOverride?: number | null;
+  allowUsageDecrease?: boolean;
 }): Promise<AssetRevaluationResult> {
   const payload = asRecord(input.row.valuation_payload);
   const payloadInput = readNestedRecord(payload, 'input');
@@ -676,15 +696,36 @@ async function revalueGenericAsset(input: {
     hasLifeWorkedPercentOverride &&
     lifeWorkedPercentOverride !== null &&
     savedLifeWorkedPercent !== null &&
-    lifeWorkedPercentOverride < savedLifeWorkedPercent
+    lifeWorkedPercentOverride < savedLifeWorkedPercent &&
+    input.allowUsageDecrease !== true
   ) {
     throw new Error('LIFE_WORKED_PERCENT_CANNOT_DECREASE');
   }
 
   const lifeWorkedPercent = hasLifeWorkedPercentOverride ? lifeWorkedPercentOverride ?? null : savedLifeWorkedPercent;
+  const savedUsageAmount = asNumber(input.asset.hours) ?? asNumber(payloadInput.usageAmount) ?? asNumber(input.row.hours);
+  const usageAmountOverride = input.usageAmountOverride;
+  const hasUsageAmountOverride = typeof usageAmountOverride !== 'undefined';
+
+  if (hasUsageAmountOverride && usePercentUsage) {
+    throw new Error('ASSET_DOES_NOT_USE_USAGE_READING');
+  }
+
+  if (
+    hasUsageAmountOverride &&
+    usageAmountOverride !== null &&
+    savedUsageAmount !== null &&
+    usageAmountOverride < savedUsageAmount &&
+    input.allowUsageDecrease !== true
+  ) {
+    throw new Error('USAGE_READING_CANNOT_DECREASE');
+  }
+
   const usageAmount = usePercentUsage
     ? null
-    : asNumber(input.asset.hours) ?? asNumber(payloadInput.usageAmount) ?? asNumber(input.row.hours);
+    : hasUsageAmountOverride
+      ? usageAmountOverride ?? null
+      : savedUsageAmount;
   const replacementPriceOverrideExVat = optionalReplacementPrice(input.replacementPriceExVat);
   const userReplacementPriceExVat =
     replacementPriceOverrideExVat ??
@@ -748,6 +789,7 @@ async function revalueGenericAsset(input: {
     selectedMethod,
     selectedValueExVat,
     saveReplacementPrice: input.saveReplacementPrice === true,
+    allowUsageDecrease: input.allowUsageDecrease === true,
   });
 
   return {
@@ -773,6 +815,8 @@ export async function revalueAssetRegisterItem(input: {
   saveReplacementPrice?: boolean;
   advancedAssumptions?: AdvancedAssumptionsInput;
   lifeWorkedPercentOverride?: number | null;
+  usageAmountOverride?: number | null;
+  allowUsageDecrease?: boolean;
 }): Promise<AssetRevaluationResult> {
   const asset = await getAssetRegisterItemById(input.userId, input.assetId);
 
@@ -812,6 +856,8 @@ export async function revalueAssetRegisterItem(input: {
       replacementPriceExVat: input.replacementPriceExVat,
       saveReplacementPrice: input.saveReplacementPrice,
       advancedAssumptions: input.advancedAssumptions,
+      usageAmountOverride: input.usageAmountOverride,
+      allowUsageDecrease: input.allowUsageDecrease,
     });
   }
 
@@ -825,5 +871,7 @@ export async function revalueAssetRegisterItem(input: {
     saveReplacementPrice: input.saveReplacementPrice,
     advancedAssumptions: input.advancedAssumptions,
     lifeWorkedPercentOverride: input.lifeWorkedPercentOverride,
+    usageAmountOverride: input.usageAmountOverride,
+    allowUsageDecrease: input.allowUsageDecrease,
   });
 }
