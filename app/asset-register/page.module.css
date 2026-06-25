@@ -25892,3 +25892,239 @@ button.documentOpenLink {
     max-width: 100% !important;
   }
 }
+
+/* === Asset settings modal and squared utility cards === */
+.assetFormModal .manualUtilityRow .manualSelectedTypeStrip,
+.assetFormModal .manualUtilityRow .manualSettingsButton,
+.manualSettingsButton {
+  min-height: 3.35rem !important;
+  padding: 0.76rem 1rem !important;
+  border-radius: 1rem !important;
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.045), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%) !important;
+  border: 1px solid rgba(202, 219, 229, 0.98) !important;
+  box-shadow: 0 10px 22px rgba(16, 31, 28, 0.026), inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.assetFormModal .manualUtilityRow .manualSelectedTypeStrip {
+  align-self: stretch !important;
+}
+
+.assetFormModal .manualUtilityRow .manualSettingsButton,
+.manualSettingsButton {
+  cursor: pointer !important;
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease, background 160ms ease !important;
+}
+
+.assetFormModal .manualUtilityRow .manualSettingsButton:hover,
+.manualSettingsButton:hover {
+  border-color: rgba(23, 116, 90, 0.35) !important;
+  background:
+    radial-gradient(circle at top right, rgba(23, 116, 90, 0.08), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #f5faf8 100%) !important;
+  box-shadow: 0 12px 24px rgba(16, 31, 28, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+  transform: translateY(-1px) !important;
+}
+
+.assetFormModal .manualUtilityRow .manualSettingsButton:focus-visible,
+.manualSettingsButton:focus-visible {
+  outline: 3px solid rgba(23, 116, 90, 0.18) !important;
+  outline-offset: 2px !important;
+}
+
+.assetSettingsOverlay {
+  z-index: 240 !important;
+}
+
+.assetSettingsConfirmOverlay {
+  z-index: 260 !important;
+}
+
+.assetSettingsModal,
+.assetSettingsConfirmModal {
+  width: min(94vw, 43rem) !important;
+  max-height: min(88vh, 42rem) !important;
+  border-radius: 1.45rem !important;
+}
+
+.assetSettingsConfirmModal {
+  width: min(92vw, 34rem) !important;
+}
+
+.assetSettingsHeader {
+  border-bottom: 1px solid rgba(214, 226, 235, 0.95) !important;
+}
+
+.assetSettingsBody {
+  display: grid !important;
+  gap: 1rem !important;
+  padding: 1rem !important;
+  overflow: auto !important;
+}
+
+.assetSettingsSection {
+  display: grid !important;
+  gap: 0.9rem !important;
+  padding: 1rem !important;
+  border-radius: 1.18rem !important;
+  border: 1px solid rgba(205, 220, 231, 0.96) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+}
+
+.assetSettingsSectionCopy {
+  display: grid !important;
+  gap: 0.26rem !important;
+}
+
+.assetSettingsSectionCopy span {
+  color: #6b7b8d !important;
+  font-size: 0.72rem !important;
+  font-weight: 860 !important;
+  letter-spacing: 0.075em !important;
+  line-height: 1 !important;
+  text-transform: uppercase !important;
+}
+
+.assetSettingsSectionCopy h4 {
+  margin: 0 !important;
+  color: #182f3a !important;
+  font-size: 1.02rem !important;
+  font-weight: 880 !important;
+  letter-spacing: -0.02em !important;
+}
+
+.assetSettingsSectionCopy p,
+.assetSettingsConfirmCopy {
+  margin: 0 !important;
+  color: #5f7082 !important;
+  font-size: 0.92rem !important;
+  font-weight: 610 !important;
+  line-height: 1.5 !important;
+}
+
+.assetSettingsSelectField,
+.assetSettingsField {
+  position: relative !important;
+  display: grid !important;
+  gap: 0.42rem !important;
+  min-width: 0 !important;
+}
+
+.assetSettingsField > span,
+.assetSettingsSelectField > span {
+  color: #33414b !important;
+  font-size: 0.84rem !important;
+  font-weight: 760 !important;
+}
+
+.assetSettingsField input {
+  width: 100% !important;
+  min-height: 3.35rem !important;
+  border-radius: 0.95rem !important;
+  border: 1px solid rgba(201, 218, 229, 0.98) !important;
+  background: #ffffff !important;
+  color: #14242d !important;
+  font: inherit !important;
+  font-size: 0.98rem !important;
+  font-weight: 710 !important;
+  padding: 0 0.95rem !important;
+  outline: none !important;
+}
+
+.assetSettingsField input:focus {
+  border-color: rgba(23, 116, 90, 0.42) !important;
+  box-shadow: 0 0 0 3px rgba(23, 116, 90, 0.11) !important;
+}
+
+.assetSettingsStaticGrid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)) !important;
+  gap: 0.75rem !important;
+}
+
+.assetSettingsStaticGrid > div,
+.assetSettingsDisabledNote {
+  display: grid !important;
+  gap: 0.2rem !important;
+  min-height: 4.1rem !important;
+  padding: 0.85rem 0.95rem !important;
+  border-radius: 1rem !important;
+  border: 1px solid rgba(205, 220, 231, 0.9) !important;
+  background: rgba(247, 250, 252, 0.96) !important;
+}
+
+.assetSettingsStaticGrid span {
+  color: #6a7a8c !important;
+  font-size: 0.74rem !important;
+  font-weight: 820 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+}
+
+.assetSettingsStaticGrid strong {
+  color: #122c37 !important;
+  font-size: 1.1rem !important;
+  font-weight: 860 !important;
+}
+
+.assetSettingsDisabledNote {
+  align-content: center !important;
+  color: #5f7082 !important;
+  font-size: 0.92rem !important;
+  font-weight: 650 !important;
+  line-height: 1.45 !important;
+}
+
+.assetSettingsActions {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 0.75rem !important;
+  flex-wrap: wrap !important;
+}
+
+.assetSettingsConversionButton {
+  appearance: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 3rem !important;
+  padding: 0 1rem !important;
+  border-radius: 0.95rem !important;
+  border: 1px solid rgba(23, 116, 90, 0.32) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f4faf7 100%) !important;
+  color: #134c3b !important;
+  cursor: pointer !important;
+  font: inherit !important;
+  font-size: 0.92rem !important;
+  font-weight: 820 !important;
+}
+
+.assetSettingsConversionButton:hover {
+  border-color: rgba(23, 116, 90, 0.5) !important;
+  box-shadow: 0 10px 20px rgba(16, 31, 28, 0.045) !important;
+}
+
+.assetSettingsError {
+  margin: 0 !important;
+  padding: 0.78rem 0.9rem !important;
+  border-radius: 0.9rem !important;
+  border: 1px solid rgba(190, 58, 58, 0.22) !important;
+  background: rgba(255, 246, 246, 0.96) !important;
+  color: #9b1c1c !important;
+  font-size: 0.9rem !important;
+  font-weight: 720 !important;
+  line-height: 1.35 !important;
+}
+
+@media (max-width: 720px) {
+  .assetSettingsActions {
+    justify-content: stretch !important;
+  }
+
+  .assetSettingsActions > button {
+    width: 100% !important;
+  }
+}

@@ -631,6 +631,9 @@ const MANUAL_ASSET_TYPE_OPTIONS: Array<{
   },
 ];
 
+const LIFETIME_PERCENT_SETTINGS_ERROR =
+  'The new lifetime worked percentage cannot be lower than the percentage already saved on this asset. Go to Settings to adjust it.';
+
 const FINANCE_STATUS_OPTIONS: Array<{ value: AssetStatusChoice; label: string; description: string }> = [
   { value: 'yes', label: 'Is financed', description: 'This asset has active finance or a lender linked to it.' },
   { value: 'no', label: 'Is not financed', description: 'This asset is fully owned and has no finance balance.' },
@@ -1653,6 +1656,98 @@ function draftYearLabel(kind: AssetKind): string {
 function getManualAssetOption(kind: AssetKind) {
   const normalizedKind = normalizeDraftKind(kind);
   return MANUAL_ASSET_TYPE_OPTIONS.find((option) => option.value === normalizedKind) ?? MANUAL_ASSET_TYPE_OPTIONS[0];
+}
+
+function isSavedManualAsset(asset: RegisterAsset | null | undefined): asset is RegisterAsset {
+  if (!asset || asset.valuationRunId) return false;
+  return asset.selectedMethod !== 'aim4price';
+}
+
+function isSavedAim4priceAsset(asset: RegisterAsset | null | undefined): asset is RegisterAsset {
+  return Boolean(asset && (asset.selectedMethod === 'aim4price' || asset.valuationRunId));
+}
+
+function formatLifetimePercentPlain(value: number | null | undefined): string {
+  if (value === null || typeof value === 'undefined' || !Number.isFinite(Number(value))) return '';
+  const rounded = Math.round(Number(value) * 10) / 10;
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+}
+
+function normalizeSettingsLifeWorkedInput(value: unknown): number | null {
+  const normalized = String(value ?? '').replace(',', '.').trim();
+  if (!normalized) return null;
+
+  const parsed = Number(normalized);
+  if (!Number.isFinite(parsed) || parsed < 0 || parsed > 100) return null;
+
+  return Math.round(parsed * 10) / 10;
+}
+
+function getAssetSettingsUsageForKind(asset: RegisterAsset, nextKind: AssetKind): {
+  hours: number | null;
+  usageMetric: UsageMetric | null;
+  lifeWorkedPercent: number | null;
+  condition: AssetConditionValue | null;
+} {
+  const existingPercent = getAssetLifeWorkedPercent(asset);
+
+  if (nextKind === 'vehicle') {
+    return {
+      hours: asset.hours ?? null,
+      usageMetric: 'km',
+      lifeWorkedPercent: null,
+      condition: asset.condition || null,
+    };
+  }
+
+  if (nextKind === 'equipment' || nextKind === 'tractor') {
+    return {
+      hours: asset.hours ?? null,
+      usageMetric: 'hours',
+      lifeWorkedPercent: existingPercent,
+      condition: asset.condition || null,
+    };
+  }
+
+  if (nextKind === 'tools') {
+    return {
+      hours: null,
+      usageMetric: null,
+      lifeWorkedPercent: existingPercent,
+      condition: asset.condition || null,
+    };
+  }
+
+  return {
+    hours: null,
+    usageMetric: null,
+    lifeWorkedPercent: null,
+    condition: nextKind === 'property' ? null : asset.condition || null,
+  };
+}
+
+function buildAssetSettingsSpecsJson(asset: RegisterAsset, nextKind: AssetKind, usageMetric: UsageMetric | null, lifeWorkedPercent: number | null): Record<string, unknown> {
+  const specs = isPlainRecord(asset.specsJson) ? { ...asset.specsJson } : {};
+
+  specs.manualAssetKind = nextKind;
+  specs.manual_asset_kind = nextKind;
+  specs.usageMetric = usageMetric;
+  specs.usage_metric = usageMetric;
+
+  if (lifeWorkedPercent === null) {
+    delete specs.life_worked_percent;
+    delete specs.worked_percent;
+    delete specs.percent_worked;
+    delete specs.lifetime_worked_percent;
+    delete specs.lifetime_used_percent;
+  } else {
+    specs.life_worked_percent = lifeWorkedPercent;
+    specs.worked_percent = lifeWorkedPercent;
+    specs.percent_worked = lifeWorkedPercent;
+    specs.lifetime_worked_percent = lifeWorkedPercent;
+  }
+
+  return specs;
 }
 
 function normalizeAssetStatusChoice(value: unknown, fallback: AssetStatusChoice = 'unknown'): AssetStatusChoice {
@@ -3698,6 +3793,12 @@ export default function AssetRegisterClient() {
   const [assetDraft, setAssetDraft] = useState<AssetDraft>(initialAssetDraft);
   const [editingAssetId, setEditingAssetId] = useState<string | null>(null);
   const [isAssetModalOpen, setIsAssetModalOpen] = useState(false);
+  const [isAssetSettingsModalOpen, setIsAssetSettingsModalOpen] = useState(false);
+  const [assetSettingsTypeDraft, setAssetSettingsTypeDraft] = useState<AssetKind>('equipment');
+  const [assetSettingsLifePercentInput, setAssetSettingsLifePercentInput] = useState('');
+  const [assetSettingsError, setAssetSettingsError] = useState('');
+  const [isSavingAssetSettings, setIsSavingAssetSettings] = useState(false);
+  const [isManualConversionConfirmOpen, setIsManualConversionConfirmOpen] = useState(false);
   const [isAddChoiceModalOpen, setIsAddChoiceModalOpen] = useState(false);
   const [manualAssetStep, setManualAssetStep] = useState<ManualAssetStep>(1);
   const [hasManualAssetKindSelection, setHasManualAssetKindSelection] = useState(false);
@@ -3798,6 +3899,7 @@ export default function AssetRegisterClient() {
   const documentInputRef = useRef<HTMLInputElement | null>(null);
   const documentObjectUrlsRef = useRef<Map<string, CachedDocumentObjectUrl>>(new Map());
   const assetMapActionHandledRef = useRef(false);
+  const assetFocusActionHandledRef = useRef(false);
 
   useEffect(() => {
     return () => {
@@ -4672,12 +4774,15 @@ export default function AssetRegisterClient() {
     return editingAsset ? assetUsesPercentUsage(editingAsset) : false;
   }, [editingAsset]);
 
-  const showPercentUsageField = assetFormUsesPercentUsage;
+  const isEditingSavedManualAsset = isSavedManualAsset(editingAsset);
+  const isEditingSavedAim4priceAsset = isSavedAim4priceAsset(editingAsset);
+  const lockAim4priceLifeWorkedInSettings = isEditingSavedAim4priceAsset && assetFormUsesPercentUsage;
+  const showPercentUsageField = assetFormUsesPercentUsage && !lockAim4priceLifeWorkedInSettings;
 
   const showUsageHoursField = useMemo(() => {
-    if (showPercentUsageField) return false;
+    if (lockAim4priceLifeWorkedInSettings || showPercentUsageField) return false;
     return assetFormKind === 'tractor' || assetFormKind === 'equipment' || assetFormKind === 'vehicle';
-  }, [assetFormKind, showPercentUsageField]);
+  }, [assetFormKind, lockAim4priceLifeWorkedInSettings, showPercentUsageField]);
 
   const showConditionField = useMemo(() => {
     return assetFormKind !== 'property';
@@ -4749,6 +4854,33 @@ export default function AssetRegisterClient() {
     }
   }, [expandedAssetId, filteredAssets, pageSize, pageStart]);
 
+  useEffect(() => {
+    if (assetFocusActionHandledRef.current || typeof window === 'undefined' || !assets.length) return;
+
+    const params = new URLSearchParams(window.location.search);
+    const focusAssetId = params.get('convertedAssetId') || params.get('assetId') || params.get('focusAssetId');
+
+    if (!focusAssetId) return;
+
+    const matchingAssetIndex = assets.findIndex((asset) => asset.id === focusAssetId);
+    if (matchingAssetIndex < 0) return;
+
+    assetFocusActionHandledRef.current = true;
+    setSearchTerm('');
+    setAssetFilter('all');
+    setExpandedAssetId(focusAssetId);
+    setCurrentPage(Math.floor(matchingAssetIndex / pageSize) + 1);
+    scrollToAssetCard(focusAssetId);
+
+    params.delete('convertedAssetId');
+    params.delete('assetId');
+    params.delete('focusAssetId');
+
+    const nextSearch = params.toString();
+    const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ''}${window.location.hash}`;
+    window.history.replaceState(null, '', nextUrl);
+  }, [assets, pageSize]);
+
   function resetEditor() {
     pendingPhotoFilesRef.current.forEach((entry) => revokePhotoPreviewUrl(entry.previewUrl));
     pendingPhotoFilesRef.current = [];
@@ -4757,6 +4889,11 @@ export default function AssetRegisterClient() {
     setAssetDraft(initialAssetDraft);
     setManualAssetStep(1);
     setHasManualAssetKindSelection(false);
+    setIsAssetSettingsModalOpen(false);
+    setIsManualConversionConfirmOpen(false);
+    setAssetSettingsTypeDraft('equipment');
+    setAssetSettingsLifePercentInput('');
+    setAssetSettingsError('');
     setMainPhotoSelection(null);
     setPendingPhotoFiles([]);
     setPendingDocumentFiles([]);
@@ -4807,7 +4944,31 @@ export default function AssetRegisterClient() {
     setAssetDraft(buildDraftFromAsset(asset));
     setManualAssetStep(2);
     setHasManualAssetKindSelection(true);
+    setIsAssetSettingsModalOpen(false);
+    setIsManualConversionConfirmOpen(false);
+    setAssetSettingsError('');
     setIsAssetModalOpen(true);
+  }
+
+  function openAssetSettingsModal() {
+    if (!editingAsset) {
+      setNotice({ tone: 'error', message: 'Open a saved asset before changing asset settings.' });
+      return;
+    }
+
+    const currentLifeWorkedPercent = getAssetLifeWorkedPercent(editingAsset);
+    setAssetSettingsTypeDraft(getManualAssetOption(editingAsset.kind).value);
+    setAssetSettingsLifePercentInput(formatLifetimePercentPlain(currentLifeWorkedPercent));
+    setAssetSettingsError('');
+    setIsManualConversionConfirmOpen(false);
+    setIsAssetSettingsModalOpen(true);
+  }
+
+  function closeAssetSettingsModal() {
+    if (isSavingAssetSettings) return;
+    setIsAssetSettingsModalOpen(false);
+    setIsManualConversionConfirmOpen(false);
+    setAssetSettingsError('');
   }
 
   function selectManualAssetKind(nextKind: AssetKind, shouldAdvance = false) {
@@ -4824,6 +4985,152 @@ export default function AssetRegisterClient() {
 
     if (shouldAdvance) {
       setManualAssetStep(2);
+    }
+  }
+
+  async function saveManualAssetTypeSetting() {
+    if (!isSavedManualAsset(editingAsset)) {
+      setAssetSettingsError('Only saved manual assets can change equipment type here.');
+      return;
+    }
+
+    const nextKind = assetSettingsTypeDraft;
+    const replacementPrice = readAssetReplacementPriceExVat(editingAsset);
+
+    if (!replacementPrice || replacementPrice <= 0) {
+      setAssetSettingsError('This asset needs a saved replacement price before its type can be changed.');
+      return;
+    }
+
+    const usage = getAssetSettingsUsageForKind(editingAsset, nextKind);
+    const nextSpecsJson = buildAssetSettingsSpecsJson(editingAsset, nextKind, usage.usageMetric, usage.lifeWorkedPercent);
+
+    setIsSavingAssetSettings(true);
+    setAssetSettingsError('');
+
+    try {
+      const response = await fetch('/api/asset-register', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          assetId: editingAsset.id,
+          kind: nextKind,
+          title: editingAsset.title,
+          value: Math.round(Number(editingAsset.value || 0)),
+          replacementPriceExVat: replacementPrice,
+          insuredValueExVat: readAssetInsuredValueExVat(editingAsset),
+          note: getManualAssetNote(editingAsset.note),
+          serialNumber: editingAsset.serialNumber,
+          brandName: deriveAssetReportBrandName(editingAsset) === '—' ? '' : deriveAssetReportBrandName(editingAsset),
+          modelName: deriveAssetReportModelName(editingAsset) === '—' ? '' : deriveAssetReportModelName(editingAsset),
+          isFinanced: readFinanceStatusChoice(editingAsset) === 'yes',
+          isInsured: readInsuranceStatusChoice(editingAsset) === 'yes',
+          isLicensed: readLicenseStatusChoice(editingAsset) === 'yes',
+          licenseRegistrationNumber: readLicenseStatusChoice(editingAsset) === 'yes' ? readLicenseRegistrationNumber(editingAsset) : '',
+          financeNote: editingAsset.financeNote ?? null,
+          photos: normalizePhotos(editingAsset.photos),
+          documents: assetDocuments(editingAsset),
+          yearModel: editingAsset.yearModel ?? null,
+          hours: usage.hours,
+          usageMetric: usage.usageMetric,
+          lifeWorkedPercent: usage.lifeWorkedPercent,
+          specsJson: nextSpecsJson,
+          condition: usage.condition,
+        }),
+      });
+      const data = (await response.json()) as AssetRegisterApiResponse;
+
+      if (!response.ok || !data.ok || !data.item) {
+        throw new Error(data.error ?? 'Failed to update asset type.');
+      }
+
+      syncUpdatedAsset(data.item);
+      setAssetDraft(buildDraftFromAsset(data.item));
+      setAssetSettingsTypeDraft(data.item.kind);
+      setNotice({ tone: 'success', message: 'Asset type updated.' });
+      closeAssetSettingsModal();
+    } catch (error) {
+      setAssetSettingsError(error instanceof Error ? error.message : 'Failed to update asset type.');
+    } finally {
+      setIsSavingAssetSettings(false);
+    }
+  }
+
+  function startManualAssetConversion() {
+    if (!isSavedManualAsset(editingAsset)) {
+      setAssetSettingsError('Only saved manual assets can be converted to Aim4price valued assets.');
+      return;
+    }
+
+    setAssetSettingsError('');
+    setIsManualConversionConfirmOpen(true);
+  }
+
+  function confirmManualAssetConversion() {
+    if (!isSavedManualAsset(editingAsset)) return;
+
+    const params = new URLSearchParams({
+      conversion: 'manual-to-aim4price',
+      convertAssetId: editingAsset.id,
+    });
+
+    window.location.assign(`/valuation?${params.toString()}`);
+  }
+
+  async function saveAim4priceLifetimeOverrideSetting() {
+    if (!isSavedAim4priceAsset(editingAsset)) {
+      setAssetSettingsError('Only saved Aim4price valued assets can use this setting.');
+      return;
+    }
+
+    if (!assetUsesPercentUsage(editingAsset)) {
+      setAssetSettingsError('This asset does not use lifetime worked percentage.');
+      return;
+    }
+
+    const currentLifeWorkedPercent = getAssetLifeWorkedPercent(editingAsset);
+    const nextLifeWorkedPercent = normalizeSettingsLifeWorkedInput(assetSettingsLifePercentInput);
+
+    if (nextLifeWorkedPercent === null) {
+      setAssetSettingsError('Lifetime worked must be between 0% and 100%.');
+      return;
+    }
+
+    if (currentLifeWorkedPercent !== null && nextLifeWorkedPercent < currentLifeWorkedPercent) {
+      setAssetSettingsError(LIFETIME_PERCENT_SETTINGS_ERROR);
+      return;
+    }
+
+    setIsSavingAssetSettings(true);
+    setAssetSettingsError('');
+
+    try {
+      const response = await fetch('/api/asset-register/revalue', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          assetId: editingAsset.id,
+          selectedMethod: 'aim4price',
+          lifeWorkedPercentOverride: nextLifeWorkedPercent,
+        }),
+      });
+      const data = (await response.json()) as AssetRegisterApiResponse;
+
+      if (!response.ok || !data.ok || !data.item) {
+        throw new Error(data.error ?? 'Failed to save lifetime worked percentage.');
+      }
+
+      syncUpdatedAsset(data.item);
+      setAssetDraft(buildDraftFromAsset(data.item));
+      setAssetSettingsLifePercentInput(formatLifetimePercentPlain(getAssetLifeWorkedPercent(data.item)));
+      setNotice({ tone: 'success', message: 'Lifetime worked percentage updated.' });
+      closeAssetSettingsModal();
+    } catch (error) {
+      setAssetSettingsError(error instanceof Error ? error.message : 'Failed to save lifetime worked percentage.');
+    } finally {
+      setIsSavingAssetSettings(false);
     }
   }
 
@@ -4948,7 +5255,7 @@ export default function AssetRegisterClient() {
     ) {
       setNotice({
         tone: 'error',
-        message: 'Lifetime worked cannot be lower than the percentage already saved on this asset.',
+        message: LIFETIME_PERCENT_SETTINGS_ERROR,
       });
       return false;
     }
@@ -5727,7 +6034,7 @@ export default function AssetRegisterClient() {
     ) {
       setNotice({
         tone: 'error',
-        message: 'Lifetime worked cannot be lower than the percentage already saved on this asset.',
+        message: LIFETIME_PERCENT_SETTINGS_ERROR,
       });
       return;
     }
@@ -7462,6 +7769,8 @@ export default function AssetRegisterClient() {
         : editingAsset
           ? 'Update asset'
           : 'Add asset';
+  const settingsLifeWorkedPercent = editingAsset ? getAssetLifeWorkedPercent(editingAsset) : null;
+  const settingsAssetUsesLifetimePercent = editingAsset ? assetUsesPercentUsage(editingAsset) : false;
   const marketplacePhotoUrls = marketplaceAsset ? normalizePhotos(marketplaceAsset.photos) : [];
   const marketplaceListingTitle = marketplaceAsset ? buildMarketplaceListingTitle(marketplaceAsset, true) : '';
   const marketplaceModalTitle = marketplaceAsset
@@ -8850,6 +9159,7 @@ export default function AssetRegisterClient() {
                       <button
                         type="button"
                         className={styles.manualSettingsButton}
+                        onClick={openAssetSettingsModal}
                         aria-label="Asset settings"
                         title="Asset settings"
                       >
@@ -8939,7 +9249,12 @@ export default function AssetRegisterClient() {
                           />
                         </label>
 
-                        {showPercentUsageField ? (
+                        {lockAim4priceLifeWorkedInSettings ? (
+                          <label className={`${styles.field} ${styles.assetStaticField}`}>
+                            <span>Lifetime worked %</span>
+                            <input value={formatLifetimePercentPlain(editingAsset ? getAssetLifeWorkedPercent(editingAsset) : null) || 'Not set'} disabled readOnly />
+                          </label>
+                        ) : showPercentUsageField ? (
                           <label className={styles.field}>
                             <span>{usageFieldLabel}</span>
                             <input
@@ -9369,6 +9684,188 @@ export default function AssetRegisterClient() {
                   </div>
                 ) : null}
               </form>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {isAssetSettingsModalOpen && editingAsset ? (
+        <div className={`${styles.modalOverlay} ${styles.assetSettingsOverlay}`}>
+          <div className={styles.modalBackdrop} onClick={closeAssetSettingsModal} />
+
+          <div
+            className={`${styles.modalCard} ${styles.assetSettingsModal}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="asset-settings-title"
+          >
+            <div className={`${styles.modalHeader} ${styles.assetSettingsHeader}`}>
+              <div className={styles.modalHeaderText}>
+                <h3 id="asset-settings-title">Settings</h3>
+                <p>{editingAsset.title}</p>
+              </div>
+
+              <button
+                type="button"
+                className={styles.modalCloseButton}
+                onClick={closeAssetSettingsModal}
+                aria-label="Close settings"
+                disabled={isSavingAssetSettings}
+              >
+                <CloseIcon className={styles.buttonIcon} />
+              </button>
+            </div>
+
+            <div className={`${styles.modalScrollBody} ${styles.assetSettingsBody}`}>
+              {isSavedManualAsset(editingAsset) ? (
+                <>
+                  <section className={styles.assetSettingsSection}>
+                    <div className={styles.assetSettingsSectionCopy}>
+                      <span>Manual asset</span>
+                      <h4>Change Equipment Type</h4>
+                      <p>Change the saved type on this same asset record. Existing values, files, notes, finance, insurance and licence details are preserved.</p>
+                    </div>
+
+                    <ModalSelect<AssetKind>
+                      label="Asset type"
+                      value={assetSettingsTypeDraft}
+                      options={MANUAL_ASSET_TYPE_OPTIONS}
+                      onChange={setAssetSettingsTypeDraft}
+                      className={styles.assetSettingsSelectField}
+                    />
+
+                    <div className={styles.assetSettingsActions}>
+                      <button
+                        type="button"
+                        className={styles.primaryButton}
+                        onClick={() => void saveManualAssetTypeSetting()}
+                        disabled={isSavingAssetSettings || assetSettingsTypeDraft === editingAsset.kind}
+                      >
+                        {isSavingAssetSettings ? 'Saving...' : 'Save type'}
+                      </button>
+                    </div>
+                  </section>
+
+                  <section className={styles.assetSettingsSection}>
+                    <div className={styles.assetSettingsSectionCopy}>
+                      <span>Conversion</span>
+                      <h4>Change from Manual Asset to Aim4price Valued Asset</h4>
+                      <p>Complete a normal Aim4price estimate. The manual asset is only changed after the final Save succeeds.</p>
+                    </div>
+
+                    <div className={styles.assetSettingsActions}>
+                      <button
+                        type="button"
+                        className={styles.assetSettingsConversionButton}
+                        onClick={startManualAssetConversion}
+                        disabled={isSavingAssetSettings}
+                      >
+                        Start Aim4price conversion
+                      </button>
+                    </div>
+                  </section>
+                </>
+              ) : isSavedAim4priceAsset(editingAsset) ? (
+                <section className={styles.assetSettingsSection}>
+                  <div className={styles.assetSettingsSectionCopy}>
+                    <span>Aim4price asset</span>
+                    <h4>Override Lifetime %</h4>
+                    <p>This is the only place where lifetime worked percentage can be adjusted for this saved Aim4price asset.</p>
+                  </div>
+
+                  {settingsAssetUsesLifetimePercent ? (
+                    <>
+                      <div className={styles.assetSettingsStaticGrid}>
+                        <div>
+                          <span>Currently saved</span>
+                          <strong>{settingsLifeWorkedPercent === null ? 'Not set' : `${formatLifetimePercentPlain(settingsLifeWorkedPercent)}%`}</strong>
+                        </div>
+                      </div>
+
+                      <label className={styles.assetSettingsField}>
+                        <span>New lifetime worked %</span>
+                        <input
+                          type="number"
+                          min={settingsLifeWorkedPercent ?? 0}
+                          max="100"
+                          step="0.1"
+                          value={assetSettingsLifePercentInput}
+                          onChange={(event) => {
+                            setAssetSettingsLifePercentInput(event.target.value);
+                            setAssetSettingsError('');
+                          }}
+                          placeholder={settingsLifeWorkedPercent === null ? 'Enter percentage' : formatLifetimePercentPlain(settingsLifeWorkedPercent)}
+                        />
+                      </label>
+
+                      <div className={styles.assetSettingsActions}>
+                        <button
+                          type="button"
+                          className={styles.primaryButton}
+                          onClick={() => void saveAim4priceLifetimeOverrideSetting()}
+                          disabled={isSavingAssetSettings}
+                        >
+                          {isSavingAssetSettings ? 'Saving...' : 'Save override'}
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className={styles.assetSettingsDisabledNote}>
+                      This asset does not use lifetime worked percentage, so there is no percentage to override.
+                    </div>
+                  )}
+                </section>
+              ) : (
+                <div className={styles.assetSettingsDisabledNote}>
+                  Settings are available after this asset has been saved.
+                </div>
+              )}
+
+              {assetSettingsError ? <p className={styles.assetSettingsError}>{assetSettingsError}</p> : null}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {isManualConversionConfirmOpen && editingAsset ? (
+        <div className={`${styles.modalOverlay} ${styles.assetSettingsConfirmOverlay}`}>
+          <div className={styles.modalBackdrop} onClick={() => setIsManualConversionConfirmOpen(false)} />
+
+          <div
+            className={`${styles.modalCard} ${styles.assetSettingsConfirmModal}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="asset-conversion-confirm-title"
+          >
+            <div className={`${styles.modalHeader} ${styles.assetSettingsHeader}`}>
+              <div className={styles.modalHeaderText}>
+                <h3 id="asset-conversion-confirm-title">Convert manual asset?</h3>
+                <p>{editingAsset.title}</p>
+              </div>
+
+              <button
+                type="button"
+                className={styles.modalCloseButton}
+                onClick={() => setIsManualConversionConfirmOpen(false)}
+                aria-label="Close conversion confirmation"
+              >
+                <CloseIcon className={styles.buttonIcon} />
+              </button>
+            </div>
+
+            <div className={`${styles.modalScrollBody} ${styles.assetSettingsBody}`}>
+              <p className={styles.assetSettingsConfirmCopy}>
+                The current manual asset will stay unchanged while you complete the estimate. It will only become an Aim4price valued asset after you click Save on the final result page.
+              </p>
+
+              <div className={styles.assetSettingsActions}>
+                <button type="button" className={styles.secondaryButton} onClick={() => setIsManualConversionConfirmOpen(false)}>
+                  Cancel
+                </button>
+                <button type="button" className={styles.primaryButton} onClick={confirmManualAssetConversion}>
+                  Continue to estimate
+                </button>
+              </div>
             </div>
           </div>
         </div>
