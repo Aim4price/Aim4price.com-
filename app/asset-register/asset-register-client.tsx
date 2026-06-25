@@ -1527,6 +1527,10 @@ function assetUsesPercentUsage(asset: RegisterAsset): boolean {
     .trim()
     .toLowerCase();
 
+  if (asset.kind === 'vehicle') {
+    return false;
+  }
+
   if (
     rawUsageMode === 'percent' ||
     rawUsageMode === 'percentage' ||
@@ -1535,10 +1539,6 @@ function assetUsesPercentUsage(asset: RegisterAsset): boolean {
     rawUsageMode === 'wear_class'
   ) {
     return true;
-  }
-
-  if (asset.kind === 'vehicle') {
-    return percent !== null && !hasPositiveHours;
   }
 
   if (depreciationMethod === 'percentage_depreciation') {
@@ -1597,12 +1597,7 @@ function readFinanceStatusChoice(asset: RegisterAsset): AssetStatusChoice {
 }
 
 function readInsuranceStatusChoice(asset: RegisterAsset): AssetStatusChoice {
-  const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
-
-  return normalizeAssetStatusChoice(
-    specs.insuranceStatus ?? specs.insurance_status ?? specs.insuredStatus ?? specs.insured_status,
-    asset.isInsured ? 'yes' : 'no',
-  );
+  return readAssetInsuredValueExVat(asset) !== null ? 'yes' : 'no';
 }
 
 function readLicenseStatusChoice(asset: RegisterAsset): AssetStatusChoice {
@@ -2537,7 +2532,7 @@ function buildDraftFromAsset(asset: RegisterAsset): AssetDraft {
     photos: normalizePhotos(asset.photos),
     documents: assetDocuments(asset),
     yearModel: asset.yearModel === null || typeof asset.yearModel === 'undefined' ? '' : String(asset.yearModel),
-    hours: asset.hours === null || typeof asset.hours === 'undefined' ? '' : formatUsageAmountInput(asset.hours),
+    hours: assetUsesPercentUsage(asset) || asset.hours === null || typeof asset.hours === 'undefined' ? '' : formatUsageAmountInput(asset.hours),
     usageMetric: asset.kind === 'vehicle' ? 'km' : getAssetUsageMetric(asset),
     lifeWorkedPercent: getAssetLifeWorkedPercent(asset) === null ? '' : String(getAssetLifeWorkedPercent(asset)),
     condition: asset.condition,
@@ -2776,6 +2771,10 @@ function buildAssetUsageValue(asset: RegisterAsset): string {
     depreciationMethod === 'semi_depreciation' ||
     depreciationMethod === 'percentage_depreciation' ||
     assetUsesPercentUsage(asset);
+
+  if (asset.kind === 'vehicle') {
+    return hasHours ? `${Math.round(hours).toLocaleString('en-ZA')} km` : '—';
+  }
 
   if (percent !== null && (usesPercentDepreciation || !hasHours)) {
     return formatUsagePercent(percent);
@@ -4583,25 +4582,38 @@ export default function AssetRegisterClient() {
     return editingAsset ? assetUsesPercentUsage(editingAsset) : false;
   }, [editingAsset]);
 
+  const showPercentUsageField = assetFormUsesPercentUsage;
+
   const showUsageHoursField = useMemo(() => {
-    if (assetFormUsesPercentUsage) return false;
+    if (showPercentUsageField) return false;
     return assetFormKind === 'tractor' || assetFormKind === 'equipment' || assetFormKind === 'vehicle';
-  }, [assetFormKind, assetFormUsesPercentUsage]);
+  }, [assetFormKind, showPercentUsageField]);
 
   const showConditionField = useMemo(() => {
     return assetFormKind !== 'property';
   }, [assetFormKind]);
 
   const showLifeWorkedPercentField = useMemo(() => {
-    if (editingAsset) return assetFormUsesPercentUsage;
+    if (editingAsset) return false;
     return assetFormKind === 'tractor' || assetFormKind === 'equipment' || assetFormKind === 'tools';
-  }, [assetFormKind, assetFormUsesPercentUsage, editingAsset]);
+  }, [assetFormKind, editingAsset]);
 
   const yearFieldLabel = draftYearLabel(assetFormKind);
-  const usageFieldLabel = assetFormKind === 'vehicle' ? 'Odometer reading' : 'Machine hours';
-  const usageFieldPlaceholder = assetFormKind === 'vehicle' ? 'Enter kilometres' : 'Enter machine hours';
-  const usageFieldHint =
-    assetFormKind === 'vehicle'
+  const usageFieldLabel = showPercentUsageField
+    ? 'Lifetime worked %'
+    : assetFormKind === 'vehicle'
+      ? 'Odometer reading'
+      : showUsageHoursField
+        ? 'Machine hours'
+        : 'Usage';
+  const usageFieldPlaceholder = showPercentUsageField
+    ? 'Enter lifetime worked %'
+    : assetFormKind === 'vehicle'
+      ? 'Enter kilometres'
+      : 'Enter machine hours';
+  const usageFieldHint = showPercentUsageField
+    ? 'Saved as lifetime worked percentage, not as machine hours.'
+    : assetFormKind === 'vehicle'
       ? 'Vehicle usage will show as kilometres across the register and marketplace.'
       : 'This can be updated later whenever the machine hours change.';
 
@@ -4735,24 +4747,39 @@ export default function AssetRegisterClient() {
   }
 
   function setAssetInsuranceStatus(nextStatus: AssetStatusChoice) {
-    setAssetDraft((current) => ({
-      ...current,
-      insuranceStatus: nextStatus,
-      isInsured: nextStatus === 'yes',
-      insuredValue: nextStatus === 'yes' ? current.insuredValue : '',
-      insuranceNote: nextStatus === 'yes' ? current.insuranceNote : '',
-    }));
+    setAssetDraft((current) => {
+      const insuredValue = parseRegisterValueInput(current.insuredValue);
+      const hasValidInsuredValue = insuredValue > 0;
+
+      if (nextStatus === 'yes' && hasValidInsuredValue) {
+        return {
+          ...current,
+          insuranceStatus: 'yes',
+          isInsured: true,
+        };
+      }
+
+      return {
+        ...current,
+        insuranceStatus: 'no',
+        isInsured: false,
+        insuredValue: nextStatus === 'yes' ? current.insuredValue : '',
+        insuranceNote: '',
+      };
+    });
   }
 
   function handleInsuredValueChange(value: string) {
     const formattedValue = formatRegisterValueInput(value);
     const insuredValue = parseRegisterValueInput(formattedValue);
+    const hasValidInsuredValue = insuredValue > 0;
 
     setAssetDraft((current) => ({
       ...current,
       insuredValue: formattedValue,
-      insuranceStatus: insuredValue > 0 ? 'yes' : current.insuranceStatus,
-      isInsured: insuredValue > 0 || current.insuranceStatus === 'yes',
+      insuranceStatus: hasValidInsuredValue ? 'yes' : 'no',
+      isInsured: hasValidInsuredValue,
+      insuranceNote: hasValidInsuredValue ? current.insuranceNote : '',
     }));
   }
 
@@ -5555,7 +5582,7 @@ export default function AssetRegisterClient() {
     const title = assetDraft.title.trim();
     const brandName = assetDraft.brandName.trim();
     const modelName = assetDraft.modelName.trim();
-    const nextInsuranceStatus: AssetStatusChoice = insuredValueExVat !== null && insuredValueExVat > 0 ? 'yes' : assetDraft.insuranceStatus;
+    const nextInsuranceStatus: AssetStatusChoice = insuredValueExVat !== null && insuredValueExVat > 0 ? 'yes' : 'no';
 
     if (!title || value <= 0) {
       setNotice({ tone: 'error', message: 'Asset title and current value are required.' });
@@ -5615,7 +5642,7 @@ export default function AssetRegisterClient() {
       return;
     }
 
-    const roundedLifeWorkedPercent = showLifeWorkedPercentField && hasLifeWorkedPercent
+    const roundedLifeWorkedPercent = (showPercentUsageField || showLifeWorkedPercentField) && hasLifeWorkedPercent
       ? Math.round(Number(lifeWorkedPercent) * 10) / 10
       : null;
     const licenseRegistrationNumber = assetDraft.licenseStatus === 'yes'
@@ -7867,6 +7894,7 @@ export default function AssetRegisterClient() {
                     const isFlagBusy = busyFlagAssetId === asset.id;
                     const isExpanded = expandedAssetId === asset.id;
                     const detailDocuments = assetDocuments(asset);
+                    const insuredValueExVat = readAssetInsuredValueExVat(asset);
                     const estimateNeedsUpdate = doesEstimateNeedUpdate(asset) && isValuationUpdateAvailable(asset);
                     const openPartnerNote = asset.openPartnerNote ?? null;
                     const partnerNoteAuthor = openPartnerNote?.partnerBusinessName || openPartnerNote?.partnerName || 'Aim4price partner';
@@ -8287,10 +8315,20 @@ export default function AssetRegisterClient() {
                                       </div>
                                     </div>
 
-                                    <div className={styles.assetReplacementPriceBubble}>
-                                      <span>Replacement Price</span>
-                                      <strong>{readAssetReplacementPriceExVat(asset) ? money(readAssetReplacementPriceExVat(asset) ?? 0) : 'Not set'}</strong>
-                                      <small>Excl. VAT</small>
+                                    <div className={styles.assetValueBubbleStack}>
+                                      <div className={styles.assetReplacementPriceBubble}>
+                                        <span>Replacement Price</span>
+                                        <strong>{readAssetReplacementPriceExVat(asset) ? money(readAssetReplacementPriceExVat(asset) ?? 0) : 'Not set'}</strong>
+                                        <small>Excl. VAT</small>
+                                      </div>
+
+                                      {insuredValueExVat !== null ? (
+                                        <div className={styles.assetInsuredValueBubble}>
+                                          <span>Insured For</span>
+                                          <strong>{money(insuredValueExVat)}</strong>
+                                          <small>Excl. VAT</small>
+                                        </div>
+                                      ) : null}
                                     </div>
                                   </div>
 
@@ -8713,9 +8751,21 @@ export default function AssetRegisterClient() {
                       <h4>Details</h4>
                     </div>
 
-                    <div className={styles.manualSelectedTypeStrip}>
-                      <span>Type</span>
-                      <strong>{selectedManualAssetType.label}</strong>
+                    <div className={styles.manualUtilityRow}>
+                      <div className={styles.manualSelectedTypeStrip}>
+                        <span>Type</span>
+                        <strong>{selectedManualAssetType.label}</strong>
+                      </div>
+
+                      <button
+                        type="button"
+                        className={styles.manualSettingsButton}
+                        aria-label="Asset settings"
+                        title="Asset settings"
+                      >
+                        <ManageIcon className={styles.buttonIcon} />
+                        <span>Settings</span>
+                      </button>
                     </div>
 
                     <div className={styles.assetFormDetailsStack}>
@@ -8799,7 +8849,25 @@ export default function AssetRegisterClient() {
                           />
                         </label>
 
-                        {showUsageHoursField ? (
+                        {showPercentUsageField ? (
+                          <label className={styles.field}>
+                            <span>{usageFieldLabel}</span>
+                            <input
+                              type="number"
+                              min="0"
+                              max="100"
+                              step="0.1"
+                              value={assetDraft.lifeWorkedPercent}
+                              onChange={(event) =>
+                                setAssetDraft((current) => ({
+                                  ...current,
+                                  lifeWorkedPercent: event.target.value,
+                                }))
+                              }
+                              placeholder={usageFieldPlaceholder}
+                            />
+                          </label>
+                        ) : showUsageHoursField ? (
                           <label className={styles.field}>
                             <span>{usageFieldLabel}</span>
                             <input
