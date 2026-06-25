@@ -8,7 +8,9 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const LIFETIME_PERCENT_SETTINGS_ERROR =
-  'The new lifetime worked percentage cannot be lower than the percentage already saved on this asset. Go to Settings to adjust it.';
+  'The new lifetime worked percentage cannot be lower than the percentage already saved on this asset. Please go to Settings to override this.';
+const USAGE_READING_SETTINGS_ERROR =
+  'The new usage reading cannot be lower than the reading already saved on this asset. Please go to Settings to override this.';
 
 type RevalueAssetResponse = {
   ok: boolean;
@@ -66,6 +68,28 @@ function normalizeLifeWorkedPercent(value: unknown): number | null {
   }
 
   return Math.round(parsed * 10) / 10;
+}
+
+function normalizeUsageAmount(value: unknown): number | null {
+  if (value === null || typeof value === 'undefined' || value === '') {
+    return null;
+  }
+
+  if (typeof value === 'number') {
+    return Number.isFinite(value) && value >= 0 ? Math.round(value) : null;
+  }
+
+  const text = String(value).trim();
+  if (!text || text.replace(/\s+/g, '').startsWith('-')) {
+    return null;
+  }
+
+  const numeric = Number(text.replace(/[^0-9.]/g, ''));
+  if (!Number.isFinite(numeric) || numeric < 0) {
+    return null;
+  }
+
+  return Math.round(numeric);
 }
 
 function normalizeAdvancedScalar(value: unknown): number | string | null | undefined {
@@ -138,8 +162,16 @@ function formatError(error: unknown): { status: number; message: string } {
       return { status: 400, message: LIFETIME_PERCENT_SETTINGS_ERROR };
     }
 
+    if (error.message === 'USAGE_READING_CANNOT_DECREASE') {
+      return { status: 400, message: USAGE_READING_SETTINGS_ERROR };
+    }
+
     if (error.message === 'ASSET_DOES_NOT_USE_LIFE_WORKED_PERCENT') {
       return { status: 400, message: 'This asset does not use lifetime worked percentage.' };
+    }
+
+    if (error.message === 'ASSET_DOES_NOT_USE_USAGE_READING') {
+      return { status: 400, message: 'This asset does not use machine hours or kilometres.' };
     }
 
     if (
@@ -176,6 +208,9 @@ export async function POST(request: NextRequest) {
     saveReplacementPrice?: unknown;
     advancedAssumptions?: unknown;
     lifeWorkedPercentOverride?: unknown;
+    usageAmountOverride?: unknown;
+    allowUsageDecrease?: unknown;
+    usageOverrideConfirmed?: unknown;
   };
   try {
     body = (await request.json()) as {
@@ -186,6 +221,9 @@ export async function POST(request: NextRequest) {
       saveReplacementPrice?: unknown;
       advancedAssumptions?: unknown;
       lifeWorkedPercentOverride?: unknown;
+      usageAmountOverride?: unknown;
+      allowUsageDecrease?: unknown;
+      usageOverrideConfirmed?: unknown;
     };
   } catch {
     return badRequest('Enter a valid estimate update request.');
@@ -223,6 +261,17 @@ export async function POST(request: NextRequest) {
     return badRequest('Lifetime worked must be between 0% and 100%.');
   }
 
+  const hasUsageAmountOverride = Object.prototype.hasOwnProperty.call(body, 'usageAmountOverride');
+  const usageAmountOverride = hasUsageAmountOverride
+    ? normalizeUsageAmount(body.usageAmountOverride)
+    : undefined;
+
+  if (hasUsageAmountOverride && usageAmountOverride === null) {
+    return badRequest('Usage reading must be zero or greater.');
+  }
+
+  const allowUsageDecrease = body.allowUsageDecrease === true || body.usageOverrideConfirmed === true;
+
   try {
     const result = await revalueAssetRegisterItem({
       userId: session.user.id,
@@ -233,6 +282,8 @@ export async function POST(request: NextRequest) {
       saveReplacementPrice,
       ...(hasAdvancedAssumptionsOverride ? { advancedAssumptions } : {}),
       ...(hasLifeWorkedPercentOverride ? { lifeWorkedPercentOverride } : {}),
+      ...(hasUsageAmountOverride ? { usageAmountOverride } : {}),
+      allowUsageDecrease,
     });
 
     const [itemWithPartnerNote] = await attachOpenPartnerNotesToAssets(session.user.id, [result.item]);
