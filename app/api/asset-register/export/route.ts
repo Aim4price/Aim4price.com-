@@ -355,6 +355,10 @@ function conditionLabel(value: AssetRegisterItem['condition']): string {
 }
 
 function normalizedUsageMetric(item: AssetRegisterItem): string {
+  if (item.kind === 'vehicle') {
+    return 'km';
+  }
+
   const specs = isPlainRecord(item.specsJson) ? item.specsJson : {};
 
   return String(
@@ -371,13 +375,26 @@ function normalizedUsageMetric(item: AssetRegisterItem): string {
 }
 
 function usageDisplay(item: AssetRegisterItem): UsageDisplay {
+  const specs = isPlainRecord(item.specsJson) ? item.specsJson : {};
+  const rawUsageMode = String(
+    specs.usageMode ??
+      specs.usage_mode ??
+      specs.usageMetricType ??
+      specs.usage_metric_type ??
+      specs.valuationMode ??
+      specs.valuation_mode ??
+      '',
+  )
+    .trim()
+    .toLowerCase();
   const normalized = normalizedUsageMetric(item);
   const lifeWorkedPercent = numericValue(item.lifeWorkedPercent);
 
   if (
     ['percent', 'percentage', '%', 'percent_used', 'percent used', 'life_worked_percent', 'life worked percent'].includes(
       normalized,
-    )
+    ) ||
+    ['percent', 'percentage', 'percent_used', 'percentage_depreciation', 'wear_class'].includes(rawUsageMode)
   ) {
     return {
       value: lifeWorkedPercent === null ? null : Math.round(lifeWorkedPercent),
