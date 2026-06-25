@@ -25377,3 +25377,199 @@ button.documentOpenLink {
 .assetFormModal .assetConditionField {
   min-width: 0;
 }
+
+/* === Asset Register manage modal cleanup: consistent fields, overlay selects, notes/media alignment === */
+.assetFormModal .manualCompactStageCard {
+  overflow: visible !important;
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.035), transparent 36%),
+    linear-gradient(180deg, #ffffff 0%, #f8fbfb 100%) !important;
+  border-color: rgba(211, 226, 235, 0.98) !important;
+  box-shadow:
+    0 14px 32px rgba(16, 31, 28, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.assetFormModal .assetFormDetailsStack {
+  gap: 1rem !important;
+  overflow: visible !important;
+}
+
+.assetFormModal .assetTitleRow,
+.assetFormModal .assetTripleGrid,
+.assetFormModal .assetAuxiliaryGrid,
+.assetFormModal .assetValueBoxGrid {
+  overflow: visible !important;
+}
+
+.assetFormModal .field,
+.assetFormModal .customSelectField {
+  min-width: 0 !important;
+}
+
+.assetFormModal .field > span,
+.assetFormModal .customSelectField > span {
+  color: #253746 !important;
+  font-size: 0.88rem !important;
+  font-weight: 820 !important;
+  line-height: 1.2 !important;
+}
+
+.assetFormModal .assetTripleGrid > .field,
+.assetFormModal .assetTripleGrid > .customSelectField,
+.assetFormModal .assetAuxiliaryGrid > .field,
+.assetFormModal .assetNotesField {
+  padding: 0.96rem !important;
+  border: 1px solid rgba(215, 226, 235, 0.98) !important;
+  border-radius: 1.15rem !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f9fbfc 100%) !important;
+  box-shadow:
+    0 10px 22px rgba(16, 31, 28, 0.025),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.assetFormModal .assetTitleRow .manualTitleField {
+  padding: 1rem !important;
+  border: 1px solid rgba(215, 226, 235, 0.98) !important;
+  border-radius: 1.18rem !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f9fbfc 100%) !important;
+  box-shadow:
+    0 10px 22px rgba(16, 31, 28, 0.025),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.assetFormModal .field input,
+.assetFormModal .field textarea,
+.assetFormModal .customSelectButton {
+  min-height: 3.55rem !important;
+  border-radius: 1rem !important;
+  border-color: rgba(211, 223, 233, 0.98) !important;
+  background: #ffffff !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.assetFormModal .assetTitleRow .field input {
+  min-height: 4rem !important;
+  font-size: 1.12rem !important;
+  font-weight: 720 !important;
+}
+
+.assetFormModal .assetValueBoxGrid > .field {
+  justify-content: start !important;
+  min-height: 7rem !important;
+  padding: 1.05rem !important;
+  border: 1px solid rgba(188, 224, 205, 0.98) !important;
+  border-radius: 1.18rem !important;
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.045), transparent 40%),
+    linear-gradient(180deg, #ffffff 0%, #f7fbf9 100%) !important;
+  box-shadow:
+    0 12px 24px rgba(16, 31, 28, 0.03),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.assetFormModal .assetValueBoxGrid .manualCurrencyInput {
+  width: 100% !important;
+  min-height: 3.75rem !important;
+  border-radius: 1rem !important;
+  background: #ffffff !important;
+}
+
+.assetFormModal .customSelectField {
+  position: relative !important;
+  isolation: isolate !important;
+}
+
+.assetFormModal .customSelectMenu,
+.customSelectMenu {
+  position: absolute !important;
+  top: calc(100% + 0.5rem) !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 5000 !important;
+  margin-top: 0 !important;
+}
+
+.assetFormModal .assetConditionField {
+  z-index: 20 !important;
+}
+
+.assetFormModal .assetNotesField textarea {
+  min-height: 6rem !important;
+  line-height: 1.5 !important;
+}
+
+.assetManualNotePanel {
+  padding: 0.95rem 1.05rem !important;
+  border: 1px solid rgba(214, 226, 235, 0.98) !important;
+  border-radius: 1.05rem !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%) !important;
+}
+
+.assetManualNotePanel .note,
+.noteStack .note {
+  margin: 0 !important;
+  color: #20313b !important;
+  font-size: 0.96rem !important;
+  font-weight: 600 !important;
+  line-height: 1.52 !important;
+  overflow-wrap: anywhere !important;
+  white-space: pre-wrap !important;
+}
+
+.assetBody .previewWrap,
+.assetBody .assetDocumentsPanel {
+  align-content: stretch !important;
+  justify-content: stretch !important;
+}
+
+.assetBody .previewStage,
+.assetBody .assetDocumentsCard {
+  min-height: 18rem !important;
+  height: 100% !important;
+  display: grid !important;
+  place-items: center !important;
+}
+
+.assetBody .previewPlaceholder {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 18rem !important;
+  display: grid !important;
+  place-items: center !important;
+  text-align: center !important;
+}
+
+.assetBody .previewPlaceholderBadge,
+.assetBody .assetDocumentsMainLabel {
+  justify-self: center !important;
+  align-self: center !important;
+}
+
+.assetBody .assetDocumentsUploadCard {
+  display: grid !important;
+  place-items: center !important;
+  text-align: center !important;
+}
+
+@media (max-width: 1180px) {
+  .assetFormModal .assetTripleGrid,
+  .assetFormModal .assetValueBoxGrid,
+  .assetFormModal .assetAuxiliaryGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 860px) {
+  .assetFormModal .assetTripleGrid,
+  .assetFormModal .assetValueBoxGrid,
+  .assetFormModal .assetAuxiliaryGrid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .assetBody .previewStage,
+  .assetBody .assetDocumentsCard,
+  .assetBody .previewPlaceholder {
+    min-height: 13.5rem !important;
+  }
+}

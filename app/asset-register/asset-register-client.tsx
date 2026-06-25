@@ -1483,6 +1483,12 @@ function normalizeDraftKind(value: AssetKind): AssetKind {
 function normalizeUsageMetric(value: unknown, kind?: AssetKind): UsageMetric {
   const normalized = String(value ?? '').trim().toLowerCase();
 
+  // Motor assets must always be treated as odometer/km based inside the register,
+  // even when older saved specs contain an incorrect hours-style usage label.
+  if (kind === 'vehicle') {
+    return 'km';
+  }
+
   if (normalized === 'km' || normalized === 'kms' || normalized === 'kilometres' || normalized === 'kilometers') {
     return 'km';
   }
@@ -1491,7 +1497,7 @@ function normalizeUsageMetric(value: unknown, kind?: AssetKind): UsageMetric {
     return 'hours';
   }
 
-  return kind === 'vehicle' ? 'km' : 'hours';
+  return 'hours';
 }
 
 function getAssetUsageMetric(asset: Pick<RegisterAsset, 'kind' | 'specsJson'>): UsageMetric {
@@ -1532,7 +1538,7 @@ function assetUsesPercentUsage(asset: RegisterAsset): boolean {
   }
 
   if (asset.kind === 'vehicle') {
-    return false;
+    return percent !== null && !hasPositiveHours;
   }
 
   if (depreciationMethod === 'percentage_depreciation') {
@@ -2532,7 +2538,7 @@ function buildDraftFromAsset(asset: RegisterAsset): AssetDraft {
     documents: assetDocuments(asset),
     yearModel: asset.yearModel === null || typeof asset.yearModel === 'undefined' ? '' : String(asset.yearModel),
     hours: asset.hours === null || typeof asset.hours === 'undefined' ? '' : formatUsageAmountInput(asset.hours),
-    usageMetric: getAssetUsageMetric(asset),
+    usageMetric: asset.kind === 'vehicle' ? 'km' : getAssetUsageMetric(asset),
     lifeWorkedPercent: getAssetLifeWorkedPercent(asset) === null ? '' : String(getAssetLifeWorkedPercent(asset)),
     condition: asset.condition,
   };
@@ -2816,8 +2822,22 @@ function buildMarketplaceListingTitle(asset: RegisterAsset, includeMissingDetail
   return titleDetails.length ? `${baseTitle} · ${titleDetails.join(' · ')}` : baseTitle;
 }
 
+function normalizeRegisterSearchText(value: unknown): string {
+  return String(value ?? '')
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .replace(/\s+/g, ' ');
+}
+
+function normalizeCompactSearchText(value: unknown): string {
+  return normalizeRegisterSearchText(value).replace(/\s+/g, '');
+}
+
 function buildSearchableText(asset: RegisterAsset): string {
-  return [
+  const searchParts = [
     asset.title,
     asset.brandName,
     asset.modelName,
@@ -2825,6 +2845,8 @@ function buildSearchableText(asset: RegisterAsset): string {
     asset.equipmentFamilyLabel,
     asset.equipmentFamilyKey,
     asset.serialNumber,
+    asset.note,
+    getManualAssetNote(asset.note),
     asset.financeNote,
     readInsuranceNote(asset),
     readLicenseRegistrationNumber(asset),
@@ -2851,8 +2873,12 @@ function buildSearchableText(asset: RegisterAsset): string {
     methodLabel(asset.selectedMethod),
   ]
     .filter(Boolean)
-    .join(' ')
-    .toLowerCase();
+    .join(' ');
+  const normalized = normalizeRegisterSearchText(searchParts);
+  const compactSerial = normalizeCompactSearchText(asset.serialNumber);
+  const compactSearchParts = [compactSerial].filter(Boolean).join(' ');
+
+  return [normalized, compactSearchParts].filter(Boolean).join(' ');
 }
 
 function buildExportDetail(asset: RegisterAsset): string {
@@ -4572,23 +4598,11 @@ export default function AssetRegisterClient() {
   }, [assetFormKind, assetFormUsesPercentUsage, editingAsset]);
 
   const yearFieldLabel = draftYearLabel(assetFormKind);
-  const usageFieldLabel =
-    assetFormKind === 'vehicle'
-      ? assetDraft.usageMetric === 'km'
-        ? 'Odometer reading'
-        : 'Vehicle hours'
-      : 'Machine hours';
-  const usageFieldPlaceholder =
-    assetFormKind === 'vehicle'
-      ? assetDraft.usageMetric === 'km'
-        ? 'Enter kilometres'
-        : 'Enter vehicle hours'
-      : 'Enter machine hours';
+  const usageFieldLabel = assetFormKind === 'vehicle' ? 'Odometer reading' : 'Machine hours';
+  const usageFieldPlaceholder = assetFormKind === 'vehicle' ? 'Enter kilometres' : 'Enter machine hours';
   const usageFieldHint =
     assetFormKind === 'vehicle'
-      ? assetDraft.usageMetric === 'km'
-        ? 'Vehicle usage will show as kilometres across the register and marketplace.'
-        : 'Vehicle usage will show as hours across the register and marketplace.'
+      ? 'Vehicle usage will show as kilometres across the register and marketplace.'
       : 'This can be updated later whenever the machine hours change.';
 
   const activeAssetFilterLabel = useMemo(() => {
@@ -4596,10 +4610,14 @@ export default function AssetRegisterClient() {
   }, [assetFilter]);
 
   const searchMatchedAssets = useMemo(() => {
-    const normalizedSearch = searchTerm.trim().toLowerCase();
+    const normalizedSearch = normalizeRegisterSearchText(searchTerm);
+    const compactSearch = normalizeCompactSearchText(searchTerm);
 
     return normalizedSearch
-      ? assets.filter((asset) => buildSearchableText(asset).includes(normalizedSearch))
+      ? assets.filter((asset) => {
+          const searchableText = buildSearchableText(asset);
+          return searchableText.includes(normalizedSearch) || (compactSearch ? searchableText.includes(compactSearch) : false);
+        })
       : assets;
   }, [assets, searchTerm]);
 
@@ -5723,7 +5741,7 @@ export default function AssetRegisterClient() {
         documents,
         yearModel: hasYearModel ? Math.round(Number(yearModel)) : null,
         hours: showUsageHoursField && hasHours ? Math.round(Number(hours)) : null,
-        usageMetric: showUsageHoursField ? assetDraft.usageMetric : null,
+        usageMetric: showUsageHoursField ? (assetFormKind === 'vehicle' ? 'km' : assetDraft.usageMetric) : null,
         lifeWorkedPercent: roundedLifeWorkedPercent,
         specsJson,
         condition: showConditionField ? assetDraft.condition || null : null,
