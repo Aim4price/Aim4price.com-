@@ -824,6 +824,24 @@ function FilterIcon({ className }: IconProps) {
   );
 }
 
+function FlagIcon({ className }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.1"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M6 20V4" />
+      <path d="M6 4h10.8a1 1 0 0 1 .86 1.5L15.9 8.5l1.76 3a1 1 0 0 1-.86 1.5H6" />
+    </svg>
+  );
+}
+
 function OptionsIcon({ className }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
@@ -2023,6 +2041,11 @@ const HIDDEN_BASIC_SPEC_KEYS = new Set([
   'life worked percent',
   'hours',
   'engine hours',
+  'asset flagged',
+  'asset flag',
+  'asset flagged at',
+  'asset flag updated at',
+  'flagged',
   'valuation needs update',
   'valuation stale since',
   'valuation stale reason',
@@ -2140,6 +2163,47 @@ function doesEstimateNeedUpdate(asset: RegisterAsset): boolean {
   return readBooleanFromSpecs(asset.specsJson ?? {}, ['valuationNeedsUpdate', 'valuation_needs_update']);
 }
 
+function isAssetFlagged(asset: RegisterAsset): boolean {
+  return readBooleanFromSpecs(asset.specsJson ?? {}, ['assetFlagged', 'asset_flagged', 'flagged']);
+}
+
+function buildAssetFlagSpecs(
+  specs: Record<string, unknown>,
+  isFlagged: boolean,
+  timestampIso = new Date().toISOString(),
+): Record<string, unknown> {
+  const nextSpecs = { ...specs };
+
+  nextSpecs.assetFlagged = isFlagged;
+  nextSpecs.asset_flagged = isFlagged;
+  nextSpecs.flagged = isFlagged;
+
+  if (isFlagged) {
+    nextSpecs.assetFlaggedAt = timestampIso;
+    nextSpecs.asset_flagged_at = timestampIso;
+    nextSpecs.assetFlagUpdatedAt = timestampIso;
+    nextSpecs.asset_flag_updated_at = timestampIso;
+  } else {
+    delete nextSpecs.assetFlaggedAt;
+    delete nextSpecs.asset_flagged_at;
+    delete nextSpecs.assetFlagUpdatedAt;
+    delete nextSpecs.asset_flag_updated_at;
+  }
+
+  return nextSpecs;
+}
+
+function withAssetFlagState(asset: RegisterAsset, isFlagged: boolean, timestampIso = new Date().toISOString()): RegisterAsset {
+  return {
+    ...asset,
+    specsJson: buildAssetFlagSpecs(asset.specsJson ?? {}, isFlagged, timestampIso),
+  };
+}
+
+function assetFlaggedTimestamp(asset: RegisterAsset): number {
+  return timestampFromSpecs(asset.specsJson ?? {}, ['assetFlaggedAt', 'asset_flagged_at', 'assetFlagUpdatedAt', 'asset_flag_updated_at']);
+}
+
 function valuationStaleReason(asset: RegisterAsset): string {
   const specs = asset.specsJson ?? {};
   const rawReasons = specs.valuation_stale_reasons ?? specs.valuationStaleReasons;
@@ -2177,6 +2241,7 @@ function assetNeedsEstimateAttention(asset: RegisterAsset): boolean {
 }
 
 function assetAttentionRank(asset: RegisterAsset): number {
+  if (isAssetFlagged(asset)) return 4;
   if (asset.openPartnerNote) return 3;
   if (asset.latestMaintenanceStatus) return 2;
   if (assetNeedsEstimateAttention(asset)) return 1;
@@ -2187,6 +2252,14 @@ function assetAttentionRank(asset: RegisterAsset): number {
 function assetAttentionTimestamp(asset: RegisterAsset): number {
   const openPartnerNote = asset.openPartnerNote ?? null;
   const latestMaintenanceStatus = asset.latestMaintenanceStatus ?? null;
+
+  if (isAssetFlagged(asset)) {
+    return (
+      assetFlaggedTimestamp(asset) ||
+      timestampFromIso(asset.updatedAtIso) ||
+      timestampFromIso(asset.createdAtIso)
+    );
+  }
 
   if (openPartnerNote) {
     return (
@@ -3524,6 +3597,7 @@ export default function AssetRegisterClient() {
   const [marketplaceDraft, setMarketplaceDraft] = useState<MarketplacePublishDraft | null>(null);
   const [isPublishingMarketplace, setIsPublishingMarketplace] = useState(false);
   const [busyMarketplaceRemoveId, setBusyMarketplaceRemoveId] = useState<string | null>(null);
+  const [busyFlagAssetId, setBusyFlagAssetId] = useState<string | null>(null);
   const [busyRevalueAssetId, setBusyRevalueAssetId] = useState<string | null>(null);
   const [busyMaintenanceStatusId, setBusyMaintenanceStatusId] = useState<string | null>(null);
   const [busyRevalueAction, setBusyRevalueAction] = useState<RevalueMethod | null>(null);
@@ -3658,6 +3732,71 @@ export default function AssetRegisterClient() {
         [assetId]: currentMode === 'included' ? 'excluded' : 'included',
       };
     });
+  }
+
+  async function handleAssetFlagToggle(asset: RegisterAsset): Promise<void> {
+    if (busyFlagAssetId === asset.id) return;
+
+    const nextIsFlagged = !isAssetFlagged(asset);
+    const timestampIso = new Date().toISOString();
+    const optimisticAsset = withAssetFlagState(asset, nextIsFlagged, timestampIso);
+    const previousPage = currentPage;
+    let previousAssetsSnapshot: RegisterAsset[] | null = null;
+
+    setNotice(null);
+    setBusyFlagAssetId(asset.id);
+    setAssets((currentAssets) => {
+      previousAssetsSnapshot = currentAssets;
+
+      if (nextIsFlagged) {
+        return [optimisticAsset, ...currentAssets.filter((currentAsset) => currentAsset.id !== asset.id)];
+      }
+
+      return currentAssets.map((currentAsset) => (currentAsset.id === asset.id ? optimisticAsset : currentAsset));
+    });
+
+    if (nextIsFlagged) {
+      setCurrentPage(1);
+    }
+
+    try {
+      const response = await fetch('/api/asset-register', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          assetId: asset.id,
+          assetFlagged: nextIsFlagged,
+        }),
+      });
+
+      const data = (await response.json()) as AssetRegisterApiResponse;
+
+      if (!response.ok || !data.ok || !data.item) {
+        throw new Error(data.error ?? 'Failed to update asset flag.');
+      }
+
+      if (nextIsFlagged) {
+        syncUpdatedAsset(data.item);
+      } else {
+        syncMediaUpdatedAsset(data.item);
+      }
+
+      setNotice({
+        tone: 'success',
+        message: nextIsFlagged ? `${asset.title} flagged and moved to the top.` : `${asset.title} unflagged.`,
+      });
+    } catch (error) {
+      if (previousAssetsSnapshot) {
+        setAssets(previousAssetsSnapshot);
+      }
+      setCurrentPage(previousPage);
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Failed to update asset flag.',
+      });
+    } finally {
+      setBusyFlagAssetId(null);
+    }
   }
 
   function rememberDocumentObjectUrl(cacheKey: string, objectUrl: string): string {
@@ -7600,6 +7739,8 @@ export default function AssetRegisterClient() {
                   {visibleAssets.map((asset) => {
                     const previewPhoto = assetPreviewImage(asset);
                     const isLive = isLiveOnMarketplace(asset);
+                    const isFlagged = isAssetFlagged(asset);
+                    const isFlagBusy = busyFlagAssetId === asset.id;
                     const isExpanded = expandedAssetId === asset.id;
                     const detailDocuments = assetDocuments(asset);
                     const estimateNeedsUpdate = doesEstimateNeedUpdate(asset) && isValuationUpdateAvailable(asset);
@@ -7641,14 +7782,27 @@ export default function AssetRegisterClient() {
 
                     return (
                       <div className={styles.assetCardRow} key={asset.id}>
+                        <button
+                          type="button"
+                          className={`${styles.assetFlagButton} ${isFlagged ? styles.assetFlagButtonActive : ''}`}
+                          onClick={() => void handleAssetFlagToggle(asset)}
+                          disabled={isFlagBusy}
+                          aria-label={isFlagged ? `Unflag ${asset.title}` : `Flag ${asset.title}`}
+                          aria-pressed={isFlagged}
+                          title={isFlagged ? `Unflag ${asset.title}` : `Flag ${asset.title}`}
+                        >
+                          <FlagIcon className={styles.assetFlagIcon} />
+                        </button>
+
                         <article
                           id={`asset-card-${asset.id}`}
-                          className={`${styles.assetCard} ${isExpanded ? styles.assetCardExpanded : ''} ${estimateNeedsUpdate ? styles.assetCardEstimateStale : ''} ${openPartnerNote ? `${styles.assetCardPartnerNote} ${partnerNoteToneClass}` : ''} ${latestMaintenanceStatus ? styles.assetCardMaintenanceDone : ''}`}
+                          className={`${styles.assetCard} ${isExpanded ? styles.assetCardExpanded : ''} ${isFlagged ? styles.assetCardFlagged : ''} ${estimateNeedsUpdate ? styles.assetCardEstimateStale : ''} ${openPartnerNote ? `${styles.assetCardPartnerNote} ${partnerNoteToneClass}` : ''} ${latestMaintenanceStatus ? styles.assetCardMaintenanceDone : ''}`}
                         >
                         <div className={styles.assetHeader}>
                           <div className={styles.assetTitleBlock}>
-                            {isLive || estimateNeedsUpdate || openPartnerNote || latestMaintenanceStatus ? (
+                            {isFlagged || isLive || estimateNeedsUpdate || openPartnerNote || latestMaintenanceStatus ? (
                               <div className={styles.badgeRow}>
+                                {isFlagged ? <span className={`${styles.badge} ${styles.badgeDanger}`}>Flagged</span> : null}
                                 {isLive ? <span className={`${styles.badge} ${styles.badgeSuccess}`}>Live on marketplace</span> : null}
                                 {estimateNeedsUpdate ? (
                                   <span className={`${styles.badge} ${styles.badgeWarning}`}>Estimate needs update</span>

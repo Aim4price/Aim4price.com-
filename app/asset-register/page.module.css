@@ -25149,3 +25149,143 @@ button.documentOpenLink {
     font-size: clamp(1.65rem, 8.4vw, 2.18rem) !important;
   }
 }
+
+/* === Asset flag priority marker === */
+.badgeDanger {
+  color: #991b1b !important;
+  background: #fee2e2 !important;
+  border-color: #fecaca !important;
+}
+
+.assetFlagButton {
+  position: absolute;
+  top: 1.34rem;
+  left: calc(0rem - clamp(2.35rem, 2.8vw, 3.05rem));
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.05rem;
+  min-width: 2.05rem;
+  height: 2.05rem;
+  min-height: 2.05rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0.6rem;
+  color: rgba(3, 24, 21, 0.78);
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 160ms ease,
+    color 160ms ease,
+    opacity 160ms ease,
+    background 160ms ease;
+}
+
+.assetFlagButton:hover:not(:disabled) {
+  color: #991b1b;
+  background: rgba(254, 226, 226, 0.72);
+  transform: translateY(-1px);
+}
+
+.assetFlagButton:focus-visible {
+  outline: 3px solid rgba(239, 68, 68, 0.24);
+  outline-offset: 3px;
+}
+
+.assetFlagButton:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
+.assetFlagButtonActive {
+  color: #b91c1c !important;
+  background: #fee2e2;
+}
+
+.assetFlagIcon {
+  display: block;
+  width: 1.4rem;
+  height: 1.4rem;
+}
+
+.page .assetCardFlagged,
+.page .assetCardFlagged.assetCardPartnerNote,
+.page .assetCardFlagged.assetQuoteToneFinance,
+.page .assetCardFlagged.assetQuoteToneInsurance,
+.page .assetCardFlagged.assetQuoteToneDealer {
+  background:
+    radial-gradient(circle at 0% 0%, rgba(220, 38, 38, 0.08) 0%, rgba(220, 38, 38, 0) 36%),
+    linear-gradient(180deg, #fff7f7 0%, #fff0f0 100%) !important;
+  border-color: rgba(248, 137, 137, 0.98) !important;
+  box-shadow:
+    0 18px 42px rgba(166, 42, 42, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.page .assetCardFlagged:hover,
+.page .assetCardFlagged.assetCardPartnerNote:hover,
+.page .assetCardFlagged.assetQuoteToneFinance:hover,
+.page .assetCardFlagged.assetQuoteToneInsurance:hover,
+.page .assetCardFlagged.assetQuoteToneDealer:hover {
+  border-color: rgba(231, 91, 91, 0.98) !important;
+  box-shadow:
+    0 22px 48px rgba(166, 42, 42, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+}
+
+.page .assetCardFlagged.assetCardExpanded {
+  border-color: rgba(231, 91, 91, 0.98) !important;
+}
+
+@media (max-width: 760px) {
+  .assetCardRow {
+    grid-template-columns: 1.65rem minmax(0, 1fr) 1.65rem !important;
+    gap: 0.2rem !important;
+  }
+
+  .assetFlagButton {
+    position: static !important;
+    grid-column: 1;
+    grid-row: 1;
+    align-self: start;
+    width: 1.65rem;
+    min-width: 1.65rem;
+    height: 4.4rem;
+    min-height: 4.4rem;
+    margin-top: 0.58rem;
+    border-radius: 0.75rem;
+    transform: none !important;
+  }
+
+  .assetFlagButton:hover:not(:disabled) {
+    transform: none !important;
+  }
+
+  .assetCardRow > .assetCard {
+    grid-column: 2 !important;
+  }
+
+  .assetCardVatToggle {
+    grid-column: 3 !important;
+  }
+
+  .assetFlagIcon {
+    width: 1.18rem;
+    height: 1.18rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .assetCardRow {
+    grid-template-columns: 1.45rem minmax(0, 1fr) 1.45rem !important;
+    gap: 0.14rem !important;
+  }
+
+  .assetFlagButton {
+    width: 1.45rem;
+    min-width: 1.45rem;
+  }
+}
