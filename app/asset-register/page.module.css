@@ -25743,3 +25743,152 @@ button.documentOpenLink {
     justify-self: start !important;
   }
 }
+
+/* === Manual Add / Update Asset cleanup: dropdown overlays, document upload sizing, utility pills === */
+.customSelectMenuPortal {
+  position: fixed !important;
+  top: var(--asset-select-top) !important;
+  left: var(--asset-select-left) !important;
+  right: auto !important;
+  width: var(--asset-select-width) !important;
+  max-height: var(--asset-select-max-height) !important;
+  margin-top: 0 !important;
+  z-index: 2147483000 !important;
+}
+
+.customSelectMenuSingleLine {
+  gap: 0.22rem !important;
+  padding: 0.38rem !important;
+}
+
+.customSelectMenuSingleLine .customSelectOption,
+.customSelectOptionSingleLine {
+  min-height: 2.78rem !important;
+  padding: 0.66rem 0.82rem !important;
+  align-items: center !important;
+}
+
+.customSelectOptionLabel {
+  min-width: 0 !important;
+  overflow: hidden !important;
+  color: #20313b !important;
+  font-size: 0.98rem !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.assetFormModal .manualUploadGrid {
+  align-items: stretch !important;
+  gap: 1rem !important;
+}
+
+.assetFormModal .manualUploadGrid > .field {
+  display: grid !important;
+  grid-template-rows: auto minmax(10.25rem, 1fr) !important;
+  gap: 0.58rem !important;
+  min-width: 0 !important;
+}
+
+.assetFormModal .manualUploadGrid .documentUploadPanel,
+.assetFormModal .manualUploadGrid .uploadPanel {
+  min-height: 10.25rem !important;
+  height: 100% !important;
+  padding: 1.35rem !important;
+  border-radius: 1.2rem !important;
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.035), transparent 38%),
+    linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%) !important;
+  border: 1px dashed rgba(198, 216, 229, 0.98) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.assetFormModal .manualUploadGrid .documentUploadPanel .uploadRow,
+.assetFormModal .manualUploadGrid .uploadPanel .uploadRow {
+  width: min(100%, 22rem) !important;
+  max-width: 22rem !important;
+  grid-template-columns: minmax(0, 1fr) 5.75rem !important;
+  gap: 0.95rem !important;
+}
+
+.assetFormModal .manualUploadGrid .documentUploadPanel .filePickerButton,
+.assetFormModal .manualUploadGrid .uploadPanel .filePickerButton,
+.assetFormModal .manualUploadGrid .documentUploadPanel .uploadCount,
+.assetFormModal .manualUploadGrid .uploadPanel .uploadCount {
+  min-height: 3.72rem !important;
+  height: 3.72rem !important;
+  border-radius: 1rem !important;
+}
+
+.assetFormModal .manualUtilityRow {
+  align-items: center !important;
+  gap: 0.75rem !important;
+}
+
+.assetFormModal .manualUtilityRow .manualSelectedTypeStrip,
+.assetFormModal .manualUtilityRow .manualSettingsButton,
+.manualSettingsButton {
+  min-height: 3.15rem !important;
+  padding: 0 1rem !important;
+  border-radius: 999px !important;
+  background: rgba(250, 252, 253, 0.96) !important;
+  border: 1px solid rgba(202, 219, 229, 0.95) !important;
+  box-shadow: none !important;
+}
+
+.assetFormModal .manualUtilityRow .manualSelectedTypeStrip {
+  gap: 0.42rem !important;
+}
+
+.assetFormModal .manualUtilityRow .manualSelectedTypeStrip span {
+  color: #657689 !important;
+  font-size: 0.92rem !important;
+  font-weight: 720 !important;
+  letter-spacing: 0 !important;
+  line-height: 1.1 !important;
+  text-transform: none !important;
+}
+
+.assetFormModal .manualUtilityRow .manualSelectedTypeStrip strong {
+  color: #10352b !important;
+  font-size: 1rem !important;
+  font-weight: 820 !important;
+  line-height: 1.1 !important;
+}
+
+.assetFormModal .manualUtilityRow .manualSettingsButton,
+.manualSettingsButton {
+  gap: 0.5rem !important;
+  color: #10352b !important;
+  font-size: 0.96rem !important;
+  font-weight: 820 !important;
+}
+
+.assetFormModal .manualUtilityRow .manualSettingsButton .buttonIcon,
+.manualSettingsButton .buttonIcon {
+  width: 1rem !important;
+  height: 1rem !important;
+  color: #17745a !important;
+}
+
+@media (max-width: 720px) {
+  .assetFormModal .manualUploadGrid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .assetFormModal .manualUploadGrid > .field {
+    grid-template-rows: auto minmax(9rem, 1fr) !important;
+  }
+
+  .assetFormModal .manualUploadGrid .documentUploadPanel,
+  .assetFormModal .manualUploadGrid .uploadPanel {
+    min-height: 9rem !important;
+  }
+
+  .assetFormModal .manualUploadGrid .documentUploadPanel .uploadRow,
+  .assetFormModal .manualUploadGrid .uploadPanel .uploadRow {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}

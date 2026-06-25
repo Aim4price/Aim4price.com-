@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type KeyboardEvent as ReactKeyboardEvent } from 'react';
+import { createPortal } from 'react-dom';
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ChangeEvent, type FormEvent, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import AppHeader from '../../components/AppHeader';
 import {
   openAssetRegisterSummaryPrint,
@@ -1225,6 +1226,13 @@ type ModalSelectOption<T extends string> = {
   description?: string;
 };
 
+type ModalSelectPortalStyle = CSSProperties & {
+  '--asset-select-top': string;
+  '--asset-select-left': string;
+  '--asset-select-width': string;
+  '--asset-select-max-height': string;
+};
+
 type ModalSelectProps<T extends string> = {
   label: string;
   value: T | '';
@@ -1233,6 +1241,8 @@ type ModalSelectProps<T extends string> = {
   placeholder?: string;
   className?: string;
   autoFocus?: boolean;
+  showDescriptions?: boolean;
+  usePortal?: boolean;
 };
 
 function ModalSelect<T extends string>({
@@ -1243,9 +1253,14 @@ function ModalSelect<T extends string>({
   placeholder = 'Select option',
   className = '',
   autoFocus = false,
+  showDescriptions = true,
+  usePortal = false,
 }: ModalSelectProps<T>) {
   const [isOpen, setIsOpen] = useState(false);
+  const [portalMenuStyle, setPortalMenuStyle] = useState<ModalSelectPortalStyle | null>(null);
   const wrapRef = useRef<HTMLDivElement | null>(null);
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
   const selectedOption = options.find((option) => option.value === value) ?? null;
 
   useEffect(() => {
@@ -1255,9 +1270,16 @@ function ModalSelect<T extends string>({
 
     function handlePointerDown(event: PointerEvent) {
       const target = event.target;
-      if (wrapRef.current && target instanceof Node && !wrapRef.current.contains(target)) {
-        setIsOpen(false);
+
+      if (!(target instanceof Node)) {
+        return;
       }
+
+      if (wrapRef.current?.contains(target) || menuRef.current?.contains(target)) {
+        return;
+      }
+
+      setIsOpen(false);
     }
 
     function handleKeyDown(event: KeyboardEvent) {
@@ -1275,10 +1297,99 @@ function ModalSelect<T extends string>({
     };
   }, [isOpen]);
 
+  useEffect(() => {
+    if (!isOpen || !usePortal) {
+      setPortalMenuStyle(null);
+      return undefined;
+    }
+
+    function updatePortalPosition() {
+      const button = buttonRef.current;
+      if (!button) {
+        return;
+      }
+
+      const rect = button.getBoundingClientRect();
+      const viewportWidth = window.visualViewport?.width ?? window.innerWidth;
+      const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+      const viewportLeft = window.visualViewport?.offsetLeft ?? 0;
+      const viewportTop = window.visualViewport?.offsetTop ?? 0;
+      const gap = 8;
+      const edgeGap = 12;
+      const availableWidth = Math.max(160, viewportWidth - edgeGap * 2);
+      const menuWidth = Math.min(Math.max(220, rect.width), availableWidth);
+      const left = Math.min(Math.max(rect.left, viewportLeft + edgeGap), viewportLeft + viewportWidth - menuWidth - edgeGap);
+      const spaceBelow = viewportTop + viewportHeight - rect.bottom - gap - edgeGap;
+      const spaceAbove = rect.top - viewportTop - gap - edgeGap;
+      const openAbove = spaceBelow < 180 && spaceAbove > spaceBelow;
+      const availableHeight = Math.max(144, openAbove ? spaceAbove : spaceBelow);
+      const maxHeight = Math.min(288, availableHeight);
+      const top = openAbove ? Math.max(viewportTop + edgeGap, rect.top - gap - maxHeight) : Math.min(viewportTop + viewportHeight - edgeGap, rect.bottom + gap);
+
+      setPortalMenuStyle({
+        '--asset-select-top': `${Math.round(top)}px`,
+        '--asset-select-left': `${Math.round(left)}px`,
+        '--asset-select-width': `${Math.round(menuWidth)}px`,
+        '--asset-select-max-height': `${Math.round(maxHeight)}px`,
+      });
+    }
+
+    updatePortalPosition();
+    window.addEventListener('resize', updatePortalPosition);
+    window.addEventListener('scroll', updatePortalPosition, true);
+    window.visualViewport?.addEventListener('resize', updatePortalPosition);
+    window.visualViewport?.addEventListener('scroll', updatePortalPosition);
+
+    return () => {
+      window.removeEventListener('resize', updatePortalPosition);
+      window.removeEventListener('scroll', updatePortalPosition, true);
+      window.visualViewport?.removeEventListener('resize', updatePortalPosition);
+      window.visualViewport?.removeEventListener('scroll', updatePortalPosition);
+    };
+  }, [isOpen, usePortal]);
+
+  const menu = (
+    <div
+      ref={menuRef}
+      className={`${styles.customSelectMenu} ${usePortal ? styles.customSelectMenuPortal : ''} ${!showDescriptions ? styles.customSelectMenuSingleLine : ''}`}
+      style={usePortal ? portalMenuStyle ?? undefined : undefined}
+      role="listbox"
+      aria-label={label}
+    >
+      {options.map((option) => {
+        const isSelected = option.value === value;
+
+        return (
+          <button
+            type="button"
+            role="option"
+            aria-selected={isSelected}
+            key={option.value || option.label}
+            className={`${styles.customSelectOption} ${!showDescriptions ? styles.customSelectOptionSingleLine : ''} ${isSelected ? styles.customSelectOptionActive : ''}`}
+            onClick={() => {
+              onChange(option.value);
+              setIsOpen(false);
+            }}
+          >
+            {showDescriptions ? (
+              <span className={styles.customSelectOptionText}>
+                <strong>{option.label}</strong>
+                {option.description ? <small>{option.description}</small> : null}
+              </span>
+            ) : (
+              <span className={styles.customSelectOptionLabel}>{option.label}</span>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+
   return (
     <div className={`${styles.field} ${styles.customSelectField} ${className}`} ref={wrapRef}>
       <span>{label}</span>
       <button
+        ref={buttonRef}
         type="button"
         className={`${styles.customSelectButton} ${isOpen ? styles.customSelectButtonOpen : ''} ${!selectedOption ? styles.customSelectButtonPlaceholder : ''}`}
         onClick={() => setIsOpen((current) => !current)}
@@ -1294,32 +1405,11 @@ function ModalSelect<T extends string>({
         <ChevronDownIcon className={styles.customSelectChevron} />
       </button>
 
-      {isOpen ? (
-        <div className={styles.customSelectMenu} role="listbox" aria-label={label}>
-          {options.map((option) => {
-            const isSelected = option.value === value;
-
-            return (
-              <button
-                type="button"
-                role="option"
-                aria-selected={isSelected}
-                key={option.value || option.label}
-                className={`${styles.customSelectOption} ${isSelected ? styles.customSelectOptionActive : ''}`}
-                onClick={() => {
-                  onChange(option.value);
-                  setIsOpen(false);
-                }}
-              >
-                <span className={styles.customSelectOptionText}>
-                  <strong>{option.label}</strong>
-                  {option.description ? <small>{option.description}</small> : null}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      ) : null}
+      {isOpen && (!usePortal || portalMenuStyle)
+        ? usePortal && typeof document !== 'undefined'
+          ? createPortal(menu, document.body)
+          : menu
+        : null}
     </div>
   );
 }
@@ -8753,7 +8843,7 @@ export default function AssetRegisterClient() {
 
                     <div className={styles.manualUtilityRow}>
                       <div className={styles.manualSelectedTypeStrip}>
-                        <span>Type</span>
+                        <span>Type of Asset:</span>
                         <strong>{selectedManualAssetType.label}</strong>
                       </div>
 
@@ -9017,6 +9107,8 @@ export default function AssetRegisterClient() {
                         value={assetDraft.financeStatus}
                         options={FINANCE_STATUS_OPTIONS}
                         onChange={setAssetFinanceStatus}
+                        showDescriptions={false}
+                        usePortal
                       />
 
                       <ModalSelect<AssetStatusChoice>
@@ -9024,6 +9116,8 @@ export default function AssetRegisterClient() {
                         value={assetDraft.insuranceStatus}
                         options={INSURANCE_STATUS_OPTIONS}
                         onChange={setAssetInsuranceStatus}
+                        showDescriptions={false}
+                        usePortal
                       />
 
                       <ModalSelect<AssetStatusChoice>
@@ -9031,6 +9125,8 @@ export default function AssetRegisterClient() {
                         value={assetDraft.licenseStatus}
                         options={LICENSE_STATUS_OPTIONS}
                         onChange={setAssetLicenseStatus}
+                        showDescriptions={false}
+                        usePortal
                       />
 
                       {assetDraft.licenseStatus === 'yes' ? (
@@ -9090,32 +9186,7 @@ export default function AssetRegisterClient() {
                       <h4>Documents and photos</h4>
                     </div>
 
-                    <div className={styles.manualReviewStrip}>
-                      <div>
-                        <span>Type</span>
-                        <strong>{selectedManualAssetType.label}</strong>
-                      </div>
-                      <div>
-                        <span>Title</span>
-                        <strong>{assetDraft.title.trim() || 'No title'}</strong>
-                      </div>
-                      <div className={styles.manualReviewValueTile}>
-                        <span>Current Value</span>
-                        <strong>
-                          {money(parseRegisterValueInput(assetDraft.value))}
-                          <small>Excl. VAT</small>
-                        </strong>
-                      </div>
-                      <div className={styles.manualReviewValueTile}>
-                        <span>Replacement Price</span>
-                        <strong>
-                          {money(parseRegisterValueInput(assetDraft.replacementPrice))}
-                          <small>Excl. VAT</small>
-                        </strong>
-                      </div>
-                    </div>
-
-                    <div className={styles.manualStageGrid}>
+                    <div className={`${styles.manualStageGrid} ${styles.manualUploadGrid}`}>
                       <div className={styles.field}>
                         <span>Documents <small>(optional)</small></span>
 
