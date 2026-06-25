@@ -335,6 +335,11 @@ function buildManualSpecsJson(
     for (const key of INSURED_VALUE_SPEC_KEYS) {
       delete specs[key];
     }
+
+    delete specs.insuranceStatus;
+    delete specs.insurance_status;
+    delete specs.insuredStatus;
+    delete specs.insured_status;
   }
 
   if (hasIncomingBrandName && !brandName) {
@@ -352,8 +357,14 @@ function buildManualSpecsJson(
   }
   const incomingYearModelUnknown = hasIncomingYearModel && (input.yearModel === null || typeof input.yearModel === 'undefined');
 
+  const hasValidInsuredValue = insuredValueExVat !== null;
+
   return {
     ...specs,
+    insuranceStatus: hasValidInsuredValue ? 'yes' : 'no',
+    insurance_status: hasValidInsuredValue ? 'yes' : 'no',
+    insuredStatus: hasValidInsuredValue ? 'yes' : 'no',
+    insured_status: hasValidInsuredValue ? 'yes' : 'no',
     ...(lifeWorkedPercent !== null
       ? {
           life_worked_percent: lifeWorkedPercent,
@@ -380,10 +391,6 @@ function buildManualSpecsJson(
       : {}),
     ...(insuredValueExVat !== null
       ? {
-          insuranceStatus: 'yes',
-          insurance_status: 'yes',
-          insuredStatus: 'yes',
-          insured_status: 'yes',
           insuredValueExVat,
           insured_value_ex_vat: insuredValueExVat,
           insuranceValueExVat: insuredValueExVat,
@@ -1061,7 +1068,7 @@ function mapAssetRegisterRow(row: AssetRegisterRow): AssetRegisterItem {
     note: cleanAssetRegisterNote(row.note),
     serialNumber: asText(row.serial_number),
     isFinanced: Boolean(row.is_financed),
-    isInsured: Boolean(row.is_insured) || insuredValueExVat !== null,
+    isInsured: insuredValueExVat !== null,
     insuredValueExVat,
     isLicensed: Boolean(row.is_licensed),
     licenseRegistrationNumber: normalizeLicenseRegistrationNumber(row.license_registration_number) || readLicenseRegistrationFromSpecs(specsJson),
@@ -1799,7 +1806,7 @@ export async function createManualAssetRegisterItem(
   pushField(fields, schema, ['note', 'notes', 'description'], cleanAssetRegisterNote(input.note) || null);
   pushField(fields, schema, ['serial_number', 'serial', 'vin'], asText(input.serialNumber) || null);
   pushField(fields, schema, ['is_financed', 'financed'], Boolean(input.isFinanced));
-  pushField(fields, schema, ['is_insured', 'insured'], Boolean(input.isInsured) || nextInsuredValueExVat !== null);
+  pushField(fields, schema, ['is_insured', 'insured'], nextInsuredValueExVat !== null);
   pushField(fields, schema, ['insured_value_ex_vat', 'insurance_value_ex_vat', 'insured_value', 'insurance_value'], nextInsuredValueExVat);
   pushField(fields, schema, ['is_licensed', 'licensed', 'licenced'], Boolean(input.isLicensed));
   pushField(fields, schema, ['license_registration_number', 'licence_registration_number', 'registration_number', 'number_plate', 'numberplate'], nextLicenseRegistrationNumber);
@@ -2017,7 +2024,7 @@ export async function updateAssetRegisterItem(
   pushField(fields, schema, ['note', 'notes', 'description'], cleanAssetRegisterNote(input.note) || null);
   pushField(fields, schema, ['serial_number', 'serial', 'vin'], asText(input.serialNumber) || null);
   pushField(fields, schema, ['is_financed', 'financed'], Boolean(input.isFinanced));
-  pushField(fields, schema, ['is_insured', 'insured'], Boolean(input.isInsured) || nextInsuredValueExVat !== null);
+  pushField(fields, schema, ['is_insured', 'insured'], nextInsuredValueExVat !== null);
   pushField(fields, schema, ['insured_value_ex_vat', 'insurance_value_ex_vat', 'insured_value', 'insurance_value'], nextInsuredValueExVat);
   pushField(fields, schema, ['is_licensed', 'licensed', 'licenced'], Boolean(input.isLicensed));
   pushField(fields, schema, ['license_registration_number', 'licence_registration_number', 'registration_number', 'number_plate', 'numberplate'], nextLicenseRegistrationNumber);
