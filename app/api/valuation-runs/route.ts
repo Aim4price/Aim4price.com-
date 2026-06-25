@@ -5,6 +5,9 @@ import { getAccountProfile } from '../../../lib/account-profile';
 import {
   createAssetRegisterItemFromGenericValuation,
   createAssetRegisterItemFromValuation,
+  getAssetRegisterItemById,
+  updateAssetRegisterItemFromGenericValuation,
+  updateAssetRegisterItemFromValuation,
 } from '../../../lib/asset-register-db';
 import { MAX_ASSET_REGISTER_PHOTOS } from '../../../lib/asset-register-uploads';
 import { runServerValuation } from '../../../lib/server-valuation';
@@ -132,6 +135,24 @@ function normalizeReplacementPrice(value: unknown): number | null {
 
   const numeric = Number(String(value).replace(/[^0-9.-]/g, ''));
   return Number.isFinite(numeric) && numeric > 0 ? Math.round(numeric) : null;
+}
+
+function normalizeConversionAssetId(value: unknown): string {
+  return String(value ?? '').trim();
+}
+
+async function getManualConversionAsset(userId: string, assetId: string) {
+  const asset = await getAssetRegisterItemById(userId, assetId);
+
+  if (!asset) {
+    throw new Error('CONVERSION_ASSET_NOT_FOUND');
+  }
+
+  if (asset.valuationRunId || asset.selectedMethod === 'aim4price') {
+    throw new Error('CONVERSION_ASSET_NOT_MANUAL');
+  }
+
+  return asset;
 }
 
 function buildInput(
@@ -291,6 +312,20 @@ function buildFriendlyError(error: unknown): { status: number; message: string }
     };
   }
 
+  if (message.includes('CONVERSION_ASSET_NOT_FOUND')) {
+    return {
+      status: 404,
+      message: 'The manual asset being converted could not be found.',
+    };
+  }
+
+  if (message.includes('CONVERSION_ASSET_NOT_MANUAL')) {
+    return {
+      status: 400,
+      message: 'Only saved manual assets can be converted to Aim4price valued assets.',
+    };
+  }
+
   if (message.startsWith('Expected lifetime') || message.startsWith('Condition retained value')) {
     return {
       status: 400,
@@ -357,10 +392,13 @@ export async function POST(request: NextRequest) {
       advancedAssumptions?: unknown;
       saveForMarketplace?: unknown;
       photos?: unknown;
+      conversionAssetId?: unknown;
+      conversionMode?: unknown;
     };
 
     const saveForMarketplace = parseBoolean(body.saveForMarketplace);
     const photoUrls = saveForMarketplace ? normalizePhotos(body.photos) : [];
+    const requestedConversionAssetId = normalizeConversionAssetId(body.conversionAssetId);
 
     const profile = await getAccountProfile({
       id: session.user.id,
@@ -379,7 +417,7 @@ export async function POST(request: NextRequest) {
 
     const accountType = String(profile.accountType ?? '').trim().toLowerCase();
     const canSaveAssetRegister = accountType === 'owner';
-    const canSaveMarketplaceAsset = saveForMarketplace && (accountType === 'owner' || accountType === 'dealer');
+    const canSaveMarketplaceAsset = !requestedConversionAssetId && saveForMarketplace && (accountType === 'owner' || accountType === 'dealer');
 
     if (!canSaveAssetRegister && !canSaveMarketplaceAsset) {
       return NextResponse.json<SaveValuationRunApiResponse>(
@@ -390,6 +428,13 @@ export async function POST(request: NextRequest) {
         { status: 403 },
       );
     }
+
+    const conversionAssetId = requestedConversionAssetId;
+    const conversionAsset = conversionAssetId
+      ? await getManualConversionAsset(session.user.id, conversionAssetId)
+      : null;
+    const effectiveSaveForMarketplace = conversionAsset ? false : saveForMarketplace;
+    const effectivePhotoUrls = effectiveSaveForMarketplace ? photoUrls : [];
 
     const catalogModeUsed = String(body.catalogModeUsed ?? '').trim();
 
@@ -440,15 +485,25 @@ export async function POST(request: NextRequest) {
       });
 
       try {
-        const asset = await createAssetRegisterItemFromGenericValuation({
-          userId: session.user.id,
-          valuationRunId: savedRun.runId,
-          result: genericResult,
-          selectedMethod,
-          selectedValueExVat: savedRun.selectedValueExVat,
-          note: '',
-          photos: photoUrls,
-        });
+        const asset = conversionAsset
+          ? await updateAssetRegisterItemFromGenericValuation({
+              userId: session.user.id,
+              assetId: conversionAsset.id,
+              valuationRunId: savedRun.runId,
+              result: genericResult,
+              selectedMethod,
+              selectedValueExVat: savedRun.selectedValueExVat,
+              saveReplacementPrice: true,
+            })
+          : await createAssetRegisterItemFromGenericValuation({
+              userId: session.user.id,
+              valuationRunId: savedRun.runId,
+              result: genericResult,
+              selectedMethod,
+              selectedValueExVat: savedRun.selectedValueExVat,
+              note: '',
+              photos: effectivePhotoUrls,
+            });
 
         await recordSavedValuationUsage({
           userId: getUsageUserId(session),
@@ -456,7 +511,7 @@ export async function POST(request: NextRequest) {
           runId: savedRun.runId,
           selectedMethod,
           valuationMode: 'generic',
-          saveForMarketplace,
+          saveForMarketplace: effectiveSaveForMarketplace,
         });
 
         return NextResponse.json<SaveValuationRunApiResponse>({
@@ -508,18 +563,32 @@ export async function POST(request: NextRequest) {
     );
 
     try {
-      const asset = await createAssetRegisterItemFromValuation({
-        userId: session.user.id,
-        valuationRunId: savedRun.runId,
-        result: valuationResult,
-        selectedMethod: input.selectedMethod,
-        selectedValueExVat,
-        year: input.year,
-        yearModelUnknown: input.yearModelUnknown,
-        hours: input.hours,
-        note: '',
-        photos: photoUrls,
-      });
+      const asset = conversionAsset
+        ? await updateAssetRegisterItemFromValuation({
+            userId: session.user.id,
+            assetId: conversionAsset.id,
+            valuationRunId: savedRun.runId,
+            result: valuationResult,
+            selectedMethod: input.selectedMethod,
+            selectedValueExVat,
+            year: input.year,
+            yearModelUnknown: input.yearModelUnknown,
+            hours: input.hours,
+            condition: input.condition,
+            saveReplacementPrice: true,
+          })
+        : await createAssetRegisterItemFromValuation({
+            userId: session.user.id,
+            valuationRunId: savedRun.runId,
+            result: valuationResult,
+            selectedMethod: input.selectedMethod,
+            selectedValueExVat,
+            year: input.year,
+            yearModelUnknown: input.yearModelUnknown,
+            hours: input.hours,
+            note: '',
+            photos: effectivePhotoUrls,
+          });
 
       await recordSavedValuationUsage({
         userId: getUsageUserId(session),
@@ -527,7 +596,7 @@ export async function POST(request: NextRequest) {
         runId: savedRun.runId,
         selectedMethod: input.selectedMethod,
         valuationMode: 'tractor',
-        saveForMarketplace,
+        saveForMarketplace: effectiveSaveForMarketplace,
       });
 
       return NextResponse.json<SaveValuationRunApiResponse>({
