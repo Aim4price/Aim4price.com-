@@ -226,12 +226,7 @@ function readFinanceStatusChoice(item: AssetRegisterItem): AssetStatusChoice {
 }
 
 function readInsuranceStatusChoice(item: AssetRegisterItem): AssetStatusChoice {
-  const specs = isPlainRecord(item.specsJson) ? item.specsJson : {};
-
-  return normalizeAssetStatusChoice(
-    specs.insuranceStatus ?? specs.insurance_status ?? specs.insuredStatus ?? specs.insured_status,
-    item.isInsured ? 'yes' : 'no',
-  );
+  return insuredValueExVat(item) !== null ? 'yes' : 'no';
 }
 
 function readLicenseStatusChoice(item: AssetRegisterItem): AssetStatusChoice {
@@ -389,6 +384,13 @@ function usageDisplay(item: AssetRegisterItem): UsageDisplay {
     .toLowerCase();
   const normalized = normalizedUsageMetric(item);
   const lifeWorkedPercent = numericValue(item.lifeWorkedPercent);
+  const hours = numericValue(item.hours);
+
+  if (item.kind === 'vehicle') {
+    return hours !== null && hours > 0
+      ? { value: Math.round(hours), unit: 'km' }
+      : { value: null, unit: 'km' };
+  }
 
   if (
     ['percent', 'percentage', '%', 'percent_used', 'percent used', 'life_worked_percent', 'life worked percent'].includes(
@@ -402,9 +404,8 @@ function usageDisplay(item: AssetRegisterItem): UsageDisplay {
     };
   }
 
-  const hours = numericValue(item.hours);
   if (hours !== null && hours > 0) {
-    return { value: Math.round(hours), unit: item.kind === 'vehicle' ? 'km' : 'hours' };
+    return { value: Math.round(hours), unit: 'hours' };
   }
 
   if (lifeWorkedPercent !== null) {
@@ -413,7 +414,7 @@ function usageDisplay(item: AssetRegisterItem): UsageDisplay {
 
   const estimatedHours = numericValue(item.estimatedHours);
   if (estimatedHours !== null && estimatedHours > 0) {
-    return { value: Math.round(estimatedHours), unit: item.kind === 'vehicle' ? 'km' : 'hours' };
+    return { value: Math.round(estimatedHours), unit: 'hours' };
   }
 
   if (normalized === 'km' || normalized === 'kms' || normalized === 'kilometres' || normalized === 'kilometers') {
