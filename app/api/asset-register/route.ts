@@ -212,8 +212,14 @@ function buildManualSpecsJson(
   const cleanBrandName = String(brandName ?? '').trim();
   const cleanModelName = String(modelName ?? '').trim();
 
+  const hasValidInsuredValue = insuredValueExVat !== null;
+
   return {
     ...specs,
+    insuranceStatus: hasValidInsuredValue ? 'yes' : 'no',
+    insurance_status: hasValidInsuredValue ? 'yes' : 'no',
+    insuredStatus: hasValidInsuredValue ? 'yes' : 'no',
+    insured_status: hasValidInsuredValue ? 'yes' : 'no',
     ...(usageMetric
       ? {
           usageMetric,
@@ -247,10 +253,6 @@ function buildManualSpecsJson(
       : {}),
     ...(insuredValueExVat !== null
       ? {
-          insuranceStatus: 'yes',
-          insurance_status: 'yes',
-          insuredStatus: 'yes',
-          insured_status: 'yes',
           insuredValueExVat,
           insured_value_ex_vat: insuredValueExVat,
           insuranceValueExVat: insuredValueExVat,
@@ -502,7 +504,7 @@ export async function POST(request: NextRequest) {
       brandName,
       modelName,
       isFinanced: Boolean(body.isFinanced),
-      isInsured: Boolean(body.isInsured) || insuredValueExVat !== null,
+      isInsured: insuredValueExVat !== null,
       insuredValueExVat,
       isLicensed: Boolean(body.isLicensed),
       licenseRegistrationNumber,
@@ -626,7 +628,7 @@ export async function PUT(request: NextRequest) {
       brandName,
       modelName,
       isFinanced: Boolean(body.isFinanced),
-      isInsured: Boolean(body.isInsured) || insuredValueExVat !== null,
+      isInsured: insuredValueExVat !== null,
       insuredValueExVat,
       isLicensed: Boolean(body.isLicensed),
       licenseRegistrationNumber,
