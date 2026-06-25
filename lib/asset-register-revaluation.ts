@@ -613,6 +613,7 @@ async function revalueGenericAsset(input: {
   replacementPriceExVat?: number | null;
   saveReplacementPrice?: boolean;
   advancedAssumptions?: AdvancedAssumptionsInput;
+  lifeWorkedPercentOverride?: number | null;
 }): Promise<AssetRevaluationResult> {
   const payload = asRecord(input.row.valuation_payload);
   const payloadInput = readNestedRecord(payload, 'input');
@@ -662,8 +663,25 @@ async function revalueGenericAsset(input: {
   if (!condition) {
     throw new Error('This asset is missing its condition, so Aim4price cannot re-run the estimate yet.');
   }
-  const lifeWorkedPercent = readLifeWorkedPercent(input.asset, payloadInput);
+  const savedLifeWorkedPercent = readLifeWorkedPercent(input.asset, payloadInput);
   const usePercentUsage = assetUsesPercentUsageForRevaluation(input.asset);
+  const lifeWorkedPercentOverride = input.lifeWorkedPercentOverride;
+  const hasLifeWorkedPercentOverride = typeof lifeWorkedPercentOverride !== 'undefined';
+
+  if (hasLifeWorkedPercentOverride && !usePercentUsage) {
+    throw new Error('ASSET_DOES_NOT_USE_LIFE_WORKED_PERCENT');
+  }
+
+  if (
+    hasLifeWorkedPercentOverride &&
+    lifeWorkedPercentOverride !== null &&
+    savedLifeWorkedPercent !== null &&
+    lifeWorkedPercentOverride < savedLifeWorkedPercent
+  ) {
+    throw new Error('LIFE_WORKED_PERCENT_CANNOT_DECREASE');
+  }
+
+  const lifeWorkedPercent = hasLifeWorkedPercentOverride ? lifeWorkedPercentOverride ?? null : savedLifeWorkedPercent;
   const usageAmount = usePercentUsage
     ? null
     : asNumber(input.asset.hours) ?? asNumber(payloadInput.usageAmount) ?? asNumber(input.row.hours);
@@ -754,6 +772,7 @@ export async function revalueAssetRegisterItem(input: {
   replacementPriceExVat?: number | null;
   saveReplacementPrice?: boolean;
   advancedAssumptions?: AdvancedAssumptionsInput;
+  lifeWorkedPercentOverride?: number | null;
 }): Promise<AssetRevaluationResult> {
   const asset = await getAssetRegisterItemById(input.userId, input.assetId);
 
@@ -774,8 +793,16 @@ export async function revalueAssetRegisterItem(input: {
   const preferredMethod = resolvePreferredMethod(asset, row, input.selectedMethod);
   const familyKey = asText(row.family_key || asset.equipmentFamilyKey).toLowerCase();
   const equipmentType = asText(row.equipment_type).toLowerCase();
+  const hasLifeWorkedPercentOverride = typeof input.lifeWorkedPercentOverride !== 'undefined';
+
+  if (hasLifeWorkedPercentOverride && !assetUsesPercentUsageForRevaluation(asset)) {
+    throw new Error('ASSET_DOES_NOT_USE_LIFE_WORKED_PERCENT');
+  }
 
   if (asset.kind === 'tractor' || familyKey === 'tractors' || equipmentType === 'tractor') {
+    if (hasLifeWorkedPercentOverride) {
+      throw new Error('ASSET_DOES_NOT_USE_LIFE_WORKED_PERCENT');
+    }
     return revalueTractorAsset({
       userId: input.userId,
       asset,
@@ -797,5 +824,6 @@ export async function revalueAssetRegisterItem(input: {
     replacementPriceExVat: input.replacementPriceExVat,
     saveReplacementPrice: input.saveReplacementPrice,
     advancedAssumptions: input.advancedAssumptions,
+    lifeWorkedPercentOverride: input.lifeWorkedPercentOverride,
   });
 }
