@@ -20,6 +20,7 @@ import {
   getAssetRegisterItemById,
   listAssetRegisterItems,
   updateAssetRegisterItem,
+  updateAssetRegisterItemFlag,
   updateAssetRegisterItemMedia,
   type AssetRegisterDocument,
   type AssetRegisterItemKind,
@@ -156,6 +157,14 @@ function normalizeUsageMetric(value: unknown): 'hours' | 'km' | null {
   }
 
   return null;
+}
+
+function normalizeBooleanFlag(value: unknown): boolean {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return value === 1;
+
+  const normalized = String(value ?? '').trim().toLowerCase();
+  return normalized === 'true' || normalized === '1' || normalized === 'yes' || normalized === 'on' || normalized === 'flagged';
 }
 
 function normalizeLifeWorkedPercent(value: unknown): number | null {
@@ -635,6 +644,9 @@ export async function PATCH(request: NextRequest) {
 
   const body = (await request.json()) as {
     assetId?: unknown;
+    assetFlagged?: unknown;
+    isFlagged?: unknown;
+    flagged?: unknown;
     photos?: unknown;
     documents?: unknown;
   };
@@ -648,6 +660,51 @@ export async function PATCH(request: NextRequest) {
 
   if (!existing) {
     return NextResponse.json({ ok: false, error: 'Asset not found.' }, { status: 404 });
+  }
+
+  const hasFlagRequest =
+    Object.prototype.hasOwnProperty.call(body, 'assetFlagged') ||
+    Object.prototype.hasOwnProperty.call(body, 'isFlagged') ||
+    Object.prototype.hasOwnProperty.call(body, 'flagged');
+
+  if (hasFlagRequest) {
+    const flagValue = Object.prototype.hasOwnProperty.call(body, 'assetFlagged')
+      ? body.assetFlagged
+      : Object.prototype.hasOwnProperty.call(body, 'isFlagged')
+        ? body.isFlagged
+        : body.flagged;
+
+    try {
+      const item = await updateAssetRegisterItemFlag(session.user.id, {
+        assetId,
+        isFlagged: normalizeBooleanFlag(flagValue),
+      });
+
+      const [itemWithPartnerNote] = await attachOpenPartnerNotesToAssets(session.user.id, [item]);
+      const [itemWithMaintenanceStatus] = await attachLatestMaintenanceStatusToAssets(itemWithPartnerNote ? [itemWithPartnerNote] : [item]);
+
+      const usageUserId = getUsageUserId(session);
+      if (usageUserId) {
+        await recordAdminUsageEventSafely({
+          userId: usageUserId,
+          eventType: 'asset_updated',
+          eventSource: 'asset-register-flag',
+          metadata: { assetId: item.id, assetFlagged: normalizeBooleanFlag(flagValue) },
+        });
+      }
+
+      return NextResponse.json({ ok: true, item: itemWithMaintenanceStatus ?? itemWithPartnerNote ?? item });
+    } catch (error) {
+      if (error instanceof Error && error.message === 'ASSET_NOT_FOUND') {
+        return NextResponse.json({ ok: false, error: 'Asset not found.' }, { status: 404 });
+      }
+
+      console.error('asset register flag PATCH failed', error);
+      return NextResponse.json(
+        { ok: false, error: formatUnknownError(error, 'Failed to update asset flag.') },
+        { status: 500 },
+      );
+    }
   }
 
   const nextPhotos = Array.isArray(body.photos) ? normalizePhotos(body.photos) : existing.photos;
