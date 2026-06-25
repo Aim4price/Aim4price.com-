@@ -7,6 +7,9 @@ import type { AdvancedAssumptionsInput } from '../../../../lib/valuation/shared'
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+const LIFETIME_PERCENT_SETTINGS_ERROR =
+  'The new lifetime worked percentage cannot be lower than the percentage already saved on this asset. Go to Settings to adjust it.';
+
 type RevalueAssetResponse = {
   ok: boolean;
   item?: unknown;
@@ -50,6 +53,19 @@ function normalizeReplacementPrice(value: unknown): number | null {
   }
 
   return null;
+}
+
+function normalizeLifeWorkedPercent(value: unknown): number | null {
+  if (value === null || typeof value === 'undefined' || value === '') {
+    return null;
+  }
+
+  const parsed = Number(String(value).replace(',', '.'));
+  if (!Number.isFinite(parsed) || parsed < 0 || parsed > 100) {
+    return null;
+  }
+
+  return Math.round(parsed * 10) / 10;
 }
 
 function normalizeAdvancedScalar(value: unknown): number | string | null | undefined {
@@ -118,6 +134,14 @@ function formatError(error: unknown): { status: number; message: string } {
       };
     }
 
+    if (error.message === 'LIFE_WORKED_PERCENT_CANNOT_DECREASE') {
+      return { status: 400, message: LIFETIME_PERCENT_SETTINGS_ERROR };
+    }
+
+    if (error.message === 'ASSET_DOES_NOT_USE_LIFE_WORKED_PERCENT') {
+      return { status: 400, message: 'This asset does not use lifetime worked percentage.' };
+    }
+
     if (
       error.message.startsWith('This asset is missing') ||
       error.message.startsWith('This tractor is missing') ||
@@ -151,6 +175,7 @@ export async function POST(request: NextRequest) {
     replacementPriceExVat?: unknown;
     saveReplacementPrice?: unknown;
     advancedAssumptions?: unknown;
+    lifeWorkedPercentOverride?: unknown;
   };
   try {
     body = (await request.json()) as {
@@ -160,6 +185,7 @@ export async function POST(request: NextRequest) {
       replacementPriceExVat?: unknown;
       saveReplacementPrice?: unknown;
       advancedAssumptions?: unknown;
+      lifeWorkedPercentOverride?: unknown;
     };
   } catch {
     return badRequest('Enter a valid estimate update request.');
@@ -188,6 +214,15 @@ export async function POST(request: NextRequest) {
     return badRequest('Enter a valid replacement price excluding VAT before saving it as the new replacement price.');
   }
 
+  const hasLifeWorkedPercentOverride = Object.prototype.hasOwnProperty.call(body, 'lifeWorkedPercentOverride');
+  const lifeWorkedPercentOverride = hasLifeWorkedPercentOverride
+    ? normalizeLifeWorkedPercent(body.lifeWorkedPercentOverride)
+    : undefined;
+
+  if (hasLifeWorkedPercentOverride && lifeWorkedPercentOverride === null) {
+    return badRequest('Lifetime worked must be between 0% and 100%.');
+  }
+
   try {
     const result = await revalueAssetRegisterItem({
       userId: session.user.id,
@@ -197,6 +232,7 @@ export async function POST(request: NextRequest) {
       replacementPriceExVat,
       saveReplacementPrice,
       ...(hasAdvancedAssumptionsOverride ? { advancedAssumptions } : {}),
+      ...(hasLifeWorkedPercentOverride ? { lifeWorkedPercentOverride } : {}),
     });
 
     const [itemWithPartnerNote] = await attachOpenPartnerNotesToAssets(session.user.id, [result.item]);
