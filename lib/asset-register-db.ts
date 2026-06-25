@@ -63,6 +63,7 @@ export type AssetRegisterItem = {
   serialNumber: string;
   isFinanced: boolean;
   isInsured: boolean;
+  insuredValueExVat: number | null;
   isLicensed: boolean;
   licenseRegistrationNumber: string;
   financeNote: string;
@@ -91,8 +92,11 @@ export type CreateManualAssetInput = {
   replacementPriceExVat?: number | null;
   note?: string | null;
   serialNumber?: string | null;
+  brandName?: string | null;
+  modelName?: string | null;
   isFinanced?: boolean;
   isInsured?: boolean;
+  insuredValueExVat?: number | null;
   isLicensed?: boolean;
   licenseRegistrationNumber?: string | null;
   financeNote?: string | null;
@@ -114,8 +118,11 @@ export type UpdateAssetRegisterItemInput = {
   replacementPriceExVat?: number | null;
   note?: string | null;
   serialNumber?: string | null;
+  brandName?: string | null;
+  modelName?: string | null;
   isFinanced?: boolean;
   isInsured?: boolean;
+  insuredValueExVat?: number | null;
   isLicensed?: boolean;
   licenseRegistrationNumber?: string | null;
   financeNote?: string | null;
@@ -170,6 +177,7 @@ type AssetRegisterRow = {
   serial_number: string | null;
   is_financed: boolean | null;
   is_insured: boolean | null;
+  insured_value_ex_vat: string | number | null;
   is_licensed: boolean | null;
   license_registration_number: string | null;
   finance_note: string | null;
@@ -310,7 +318,38 @@ function buildManualSpecsJson(
     ? explicitLifeWorkedPercent
     : percentFromSpecs(specs);
   const replacementPriceExVat = normalizeReplacementPriceExVat(input.replacementPriceExVat) ?? replacementPriceFromSpecs(specs);
+  const hasIncomingInsuredValue = Object.prototype.hasOwnProperty.call(input, 'insuredValueExVat');
+  const incomingInsuredValueExVat = normalizeInsuredValueExVat(input.insuredValueExVat);
+  const insuredValueExVat = hasIncomingInsuredValue ? incomingInsuredValueExVat : insuredValueFromSpecs(specs);
+  const hasIncomingBrandName = Object.prototype.hasOwnProperty.call(input, 'brandName');
+  const hasIncomingModelName = Object.prototype.hasOwnProperty.call(input, 'modelName');
+  const brandName = hasIncomingBrandName
+    ? asText(input.brandName)
+    : asText(specs.brandName) || asText(specs.brand_name) || asText(specs.brand) || '';
+  const modelName = hasIncomingModelName
+    ? asText(input.modelName)
+    : asText(specs.modelName) || asText(specs.model_name) || asText(specs.model) || asText(specs.typedModelName) || asText(specs.typed_model_name) || '';
   const hasIncomingYearModel = Object.prototype.hasOwnProperty.call(input, 'yearModel');
+
+  if (hasIncomingInsuredValue && insuredValueExVat === null) {
+    for (const key of INSURED_VALUE_SPEC_KEYS) {
+      delete specs[key];
+    }
+  }
+
+  if (hasIncomingBrandName && !brandName) {
+    delete specs.brandName;
+    delete specs.brand_name;
+    delete specs.brand;
+  }
+
+  if (hasIncomingModelName && !modelName) {
+    delete specs.modelName;
+    delete specs.model_name;
+    delete specs.model;
+    delete specs.typedModelName;
+    delete specs.typed_model_name;
+  }
   const incomingYearModelUnknown = hasIncomingYearModel && (input.yearModel === null || typeof input.yearModel === 'undefined');
 
   return {
@@ -321,6 +360,38 @@ function buildManualSpecsJson(
           worked_percent: lifeWorkedPercent,
           percent_worked: lifeWorkedPercent,
           lifetime_worked_percent: lifeWorkedPercent,
+        }
+      : {}),
+    ...(brandName
+      ? {
+          brandName,
+          brand_name: brandName,
+          brand: brandName,
+        }
+      : {}),
+    ...(modelName
+      ? {
+          modelName,
+          model_name: modelName,
+          model: modelName,
+          typedModelName: modelName,
+          typed_model_name: modelName,
+        }
+      : {}),
+    ...(insuredValueExVat !== null
+      ? {
+          insuranceStatus: 'yes',
+          insurance_status: 'yes',
+          insuredStatus: 'yes',
+          insured_status: 'yes',
+          insuredValueExVat,
+          insured_value_ex_vat: insuredValueExVat,
+          insuranceValueExVat: insuredValueExVat,
+          insurance_value_ex_vat: insuredValueExVat,
+          insuredValue: insuredValueExVat,
+          insured_value: insuredValueExVat,
+          insuranceValue: insuredValueExVat,
+          insurance_value: insuredValueExVat,
         }
       : {}),
     ...(replacementPriceExVat !== null
@@ -718,6 +789,26 @@ function replacementPriceFromSpecs(specs: Record<string, unknown>): number | nul
   return normalizeReplacementPriceExVat(numberFromRecord(specs, [...REPLACEMENT_PRICE_SPEC_KEYS]));
 }
 
+const INSURED_VALUE_SPEC_KEYS = [
+  'insuredValueExVat',
+  'insured_value_ex_vat',
+  'insuranceValueExVat',
+  'insurance_value_ex_vat',
+  'insuredValue',
+  'insured_value',
+  'insuranceValue',
+  'insurance_value',
+] as const;
+
+function normalizeInsuredValueExVat(value: unknown): number | null {
+  const numeric = asNumber(value);
+  return numeric !== null && numeric > 0 ? Math.round(numeric) : null;
+}
+
+function insuredValueFromSpecs(specs: Record<string, unknown>): number | null {
+  return normalizeInsuredValueExVat(numberFromRecord(specs, [...INSURED_VALUE_SPEC_KEYS]));
+}
+
 function roundFiniteNumber(value: unknown): number | null {
   const numeric = asNumber(value);
   return numeric === null ? null : Math.round(numeric);
@@ -918,6 +1009,17 @@ function mapAssetRegisterRow(row: AssetRegisterRow): AssetRegisterItem {
     normalizeReplacementPriceExVat(row.user_replacement_price_ex_vat) ??
     replacementPriceFromSpecs(specsJson);
   const lifeWorkedPercent = asNumber(row.life_worked_percent) ?? percentFromSpecs(specsJson);
+  const insuredValueExVat = normalizeInsuredValueExVat(row.insured_value_ex_vat) ?? insuredValueFromSpecs(specsJson);
+  const brandName =
+    asText(specsJson.brandName) ||
+    asText(specsJson.brand_name) ||
+    asText(specsJson.brand) ||
+    asText(row.brand_name);
+  const modelName =
+    asText(specsJson.modelName) ||
+    asText(specsJson.model_name) ||
+    asText(specsJson.model) ||
+    asText(row.model_name);
   const estimatedHours = asNumber(row.estimated_hours) ?? hoursFromSpecs(specsJson);
   const maxLifetimeHours = asNumber(row.max_lifetime_hours) ?? lifetimeHoursFromSpecs(specsJson);
 
@@ -945,8 +1047,8 @@ function mapAssetRegisterRow(row: AssetRegisterRow): AssetRegisterItem {
     selectedMethod: normalizeMethod(row.selected_method),
     selectedValueExVat,
     replacementPriceExVat,
-    brandName: asText(row.brand_name),
-    modelName: asText(row.model_name),
+    brandName,
+    modelName,
     drive: mapDrive(row.drive_type),
     tractorType: mapTractorType(row.tractor_type),
     cab: mapCab(row.cab_type),
@@ -959,7 +1061,8 @@ function mapAssetRegisterRow(row: AssetRegisterRow): AssetRegisterItem {
     note: cleanAssetRegisterNote(row.note),
     serialNumber: asText(row.serial_number),
     isFinanced: Boolean(row.is_financed),
-    isInsured: Boolean(row.is_insured),
+    isInsured: Boolean(row.is_insured) || insuredValueExVat !== null,
+    insuredValueExVat,
     isLicensed: Boolean(row.is_licensed),
     licenseRegistrationNumber: normalizeLicenseRegistrationNumber(row.license_registration_number) || readLicenseRegistrationFromSpecs(specsJson),
     financeNote: asText(row.finance_note),
@@ -1101,6 +1204,7 @@ function buildSelectList(schema: TableSchema): string {
   const serialColumn = resolveColumn(schema, 'serial_number', 'serial', 'vin');
   const financedColumn = resolveColumn(schema, 'is_financed', 'financed');
   const insuredColumn = resolveColumn(schema, 'is_insured', 'insured');
+  const insuredValueColumn = resolveColumn(schema, 'insured_value_ex_vat', 'insurance_value_ex_vat', 'insured_value', 'insurance_value');
   const licensedColumn = resolveColumn(schema, 'is_licensed', 'licensed', 'licenced');
   const licenseRegistrationNumberColumn = resolveColumn(
     schema,
@@ -1189,6 +1293,7 @@ function buildSelectList(schema: TableSchema): string {
     serialColumn ? `${serialColumn} as serial_number` : 'null::text as serial_number',
     financedColumn ? `${financedColumn} as is_financed` : 'false as is_financed',
     insuredColumn ? `${insuredColumn} as is_insured` : 'false as is_insured',
+    insuredValueColumn ? `${insuredValueColumn} as insured_value_ex_vat` : 'null::numeric as insured_value_ex_vat',
     licensedColumn ? `${licensedColumn} as is_licensed` : 'false as is_licensed',
     licenseRegistrationNumberColumn ? `${licenseRegistrationNumberColumn} as license_registration_number` : 'null::text as license_registration_number',
     financeNoteColumn ? `${financeNoteColumn} as finance_note` : 'null::text as finance_note',
@@ -1665,6 +1770,7 @@ export async function createManualAssetRegisterItem(
   const now = new Date();
   const nextValue = Math.round(Number(input.value) || 0);
   const nextReplacementPriceExVat = normalizeReplacementPriceExVat(input.replacementPriceExVat);
+  const nextInsuredValueExVat = normalizeInsuredValueExVat(input.insuredValueExVat);
 
   if (nextReplacementPriceExVat === null) {
     throw new Error('REPLACEMENT_PRICE_REQUIRED');
@@ -1681,6 +1787,8 @@ export async function createManualAssetRegisterItem(
   pushField(fields, schema, ['valuation_run_id', 'run_id'], null);
   pushField(fields, schema, ['kind', 'equipment_type', 'asset_type', 'item_type'], nextKind);
   pushField(fields, schema, ['title', 'name', 'asset_name'], asText(input.title));
+  pushField(fields, schema, ['brand_name', 'brand'], asText(input.brandName) || null);
+  pushField(fields, schema, ['model_name', 'model'], asText(input.modelName) || null);
   pushField(fields, schema, ['value', 'selected_value_ex_vat', 'selected_value', 'saved_value_ex_vat'], nextValue);
   pushField(fields, schema, ['selected_method', 'method', 'valuation_method'], 'manual');
   pushField(fields, schema, ['selected_value_ex_vat', 'selected_value', 'value', 'saved_value_ex_vat'], nextValue);
@@ -1691,7 +1799,8 @@ export async function createManualAssetRegisterItem(
   pushField(fields, schema, ['note', 'notes', 'description'], cleanAssetRegisterNote(input.note) || null);
   pushField(fields, schema, ['serial_number', 'serial', 'vin'], asText(input.serialNumber) || null);
   pushField(fields, schema, ['is_financed', 'financed'], Boolean(input.isFinanced));
-  pushField(fields, schema, ['is_insured', 'insured'], Boolean(input.isInsured));
+  pushField(fields, schema, ['is_insured', 'insured'], Boolean(input.isInsured) || nextInsuredValueExVat !== null);
+  pushField(fields, schema, ['insured_value_ex_vat', 'insurance_value_ex_vat', 'insured_value', 'insurance_value'], nextInsuredValueExVat);
   pushField(fields, schema, ['is_licensed', 'licensed', 'licenced'], Boolean(input.isLicensed));
   pushField(fields, schema, ['license_registration_number', 'licence_registration_number', 'registration_number', 'number_plate', 'numberplate'], nextLicenseRegistrationNumber);
   pushField(fields, schema, ['finance_note', 'finance_notes', 'finance_status'], asText(input.financeNote) || null);
@@ -1710,6 +1819,8 @@ export async function createManualAssetRegisterItem(
     registerId: activeRegister.id,
     valuationRunId: null,
     title: asText(input.title),
+    brandName: asText(input.brandName) || null,
+    modelName: asText(input.modelName) || null,
     kind: nextKind,
     selectedMethod: 'manual',
     selectedValueExVat: nextValue,
@@ -1853,6 +1964,7 @@ export async function updateAssetRegisterItem(
   const nextKind = existing.valuationRunId ? existing.kind : normalizeKind(input.kind);
   const nextValue = Math.round(Number(input.value) || 0);
   const nextReplacementPriceExVat = normalizeReplacementPriceExVat(input.replacementPriceExVat);
+  const nextInsuredValueExVat = normalizeInsuredValueExVat(input.insuredValueExVat);
 
   if (nextReplacementPriceExVat === null) {
     throw new Error('REPLACEMENT_PRICE_REQUIRED');
@@ -1895,6 +2007,8 @@ export async function updateAssetRegisterItem(
 
   pushField(fields, schema, ['kind', 'equipment_type', 'asset_type', 'item_type'], nextKind);
   pushField(fields, schema, ['title', 'name', 'asset_name'], asText(input.title));
+  pushField(fields, schema, ['brand_name', 'brand'], asText(input.brandName) || null);
+  pushField(fields, schema, ['model_name', 'model'], asText(input.modelName) || null);
   pushField(fields, schema, ['value', 'selected_value_ex_vat', 'selected_value', 'saved_value_ex_vat'], nextValue);
   pushField(fields, schema, ['selected_value_ex_vat', 'selected_value', 'value', 'saved_value_ex_vat'], nextValue);
   pushField(fields, schema, ['replacement_price_used_ex_vat', 'replacement_price_ex_vat', 'official_replacement_price_ex_vat'], nextReplacementPriceExVat);
@@ -1903,7 +2017,8 @@ export async function updateAssetRegisterItem(
   pushField(fields, schema, ['note', 'notes', 'description'], cleanAssetRegisterNote(input.note) || null);
   pushField(fields, schema, ['serial_number', 'serial', 'vin'], asText(input.serialNumber) || null);
   pushField(fields, schema, ['is_financed', 'financed'], Boolean(input.isFinanced));
-  pushField(fields, schema, ['is_insured', 'insured'], Boolean(input.isInsured));
+  pushField(fields, schema, ['is_insured', 'insured'], Boolean(input.isInsured) || nextInsuredValueExVat !== null);
+  pushField(fields, schema, ['insured_value_ex_vat', 'insurance_value_ex_vat', 'insured_value', 'insurance_value'], nextInsuredValueExVat);
   pushField(fields, schema, ['is_licensed', 'licensed', 'licenced'], Boolean(input.isLicensed));
   pushField(fields, schema, ['license_registration_number', 'licence_registration_number', 'registration_number', 'number_plate', 'numberplate'], nextLicenseRegistrationNumber);
   pushField(fields, schema, ['finance_note', 'finance_notes', 'finance_status'], asText(input.financeNote) || null);

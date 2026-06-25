@@ -79,6 +79,7 @@ export type AssetRegisterSummaryRow = {
   condition?: string;
   serial?: string;
   insured?: string;
+  insuredValue?: string;
   financed?: string;
   licensed?: string;
   licenseRegistrationNumber?: string;
@@ -2560,6 +2561,7 @@ function renderFullRegisterAssetRows(rows: AssetRegisterSummaryRow[], emptyMessa
           const condition = sanitizeRegisterDisplayValue(row.condition);
           const serial = sanitizeRegisterDisplayValue(row.serial);
           const insured = sanitizeRegisterDisplayValue(row.insured);
+          const insuredValue = sanitizeRegisterDisplayValue(row.insuredValue);
           const financed = sanitizeRegisterDisplayValue(row.financed);
           const licensed = sanitizeRegisterDisplayValue(row.licensed);
           const licenseRegistrationNumber = sanitizeRegisterDisplayValue(row.licenseRegistrationNumber);
@@ -2596,6 +2598,7 @@ function renderFullRegisterAssetRows(rows: AssetRegisterSummaryRow[], emptyMessa
 
               <div class="fullRegisterAssetStatus">
                 <div><span>Insured</span><strong>${escapeHtml(insured)}</strong></div>
+                ${insuredValue !== '-' ? `<div><span>Insured value</span><strong>${escapeHtml(insuredValue)}</strong></div>` : ''}
                 <div><span>Financed</span><strong>${escapeHtml(financed)}</strong></div>
                 <div><span>Licensed</span><strong>${escapeHtml(licensed)}</strong></div>
                 ${licenseRegistrationNumber !== '-' ? `<div><span>Registration</span><strong>${escapeHtml(licenseRegistrationNumber)}</strong></div>` : ''}
