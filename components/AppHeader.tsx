@@ -227,12 +227,13 @@ function SmartLink({ href, className, children, onClick }: SmartLinkProps) {
 function AccountProfileIcon({ className }: { className: string }) {
   return (
     <span className={className} aria-hidden="true">
-      <svg className={styles.accountAvatarIcon} viewBox="0 0 24 24" focusable="false">
-        <path
-          d="M12 12.15a4.15 4.15 0 1 0 0-8.3 4.15 4.15 0 0 0 0 8.3Zm0 2.1c-4.04 0-7.3 2.02-7.3 4.5 0 .78.63 1.4 1.4 1.4h11.8c.77 0 1.4-.62 1.4-1.4 0-2.48-3.26-4.5-7.3-4.5Z"
-          fill="currentColor"
-        />
-      </svg>
+      <Image
+        src="/brand/aim4price-mark-black.png"
+        alt=""
+        width={42}
+        height={33}
+        className={styles.accountAvatarLogo}
+      />
     </span>
   );
 }
@@ -1396,13 +1397,6 @@ export default function AppHeader({
 
                     {menuOpen ? (
                       <div id="header-account-menu" className={styles.accountPopover} role="menu">
-                        <div className={styles.accountSummary}>
-                          <AccountProfileIcon className={styles.accountAvatarLarge} />
-                          <div className={styles.accountSummaryText}>
-                            <strong className={styles.accountName}>{accountName}</strong>
-                          </div>
-                        </div>
-
                         {ACCOUNT_MENU_ITEMS.map((item) => {
                           const isActive = isAccountMenuLinkActive(item.href);
                           const menuLinkClassName = [
@@ -1422,7 +1416,8 @@ export default function AppHeader({
                               className={menuLinkClassName}
                               onClick={closeAccountMenu}
                             >
-                              {item.label}
+                              {item.href === '/account' ? <AccountProfileIcon className={styles.menuLinkLogo} /> : null}
+                              <span>{item.label}</span>
                             </Link>
                           );
                         })}
