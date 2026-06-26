@@ -64,14 +64,22 @@ type SessionResponse = {
   user: SessionUser | null;
 };
 
-type AccountLogoLookupResponse = AccountLogoFields & {
-  user?: AccountLogoFields | null;
-  account?: AccountLogoFields | null;
-  company?: AccountLogoFields | null;
-  business?: AccountLogoFields | null;
-  profile?: AccountLogoFields | null;
-  organization?: AccountLogoFields | null;
-  accountDetails?: AccountLogoFields | null;
+type AccountProfileLogo = AccountLogoFields & {
+  name?: string | null;
+  displayName?: string | null;
+  businessName?: string | null;
+  email?: string | null;
+};
+
+type AccountProfileResponse = {
+  ok?: boolean;
+  profile?: AccountProfileLogo | null;
+  error?: string;
+};
+
+type AccountProfileLogoState = {
+  loaded: boolean;
+  logoUrl: string | null;
 };
 
 type HeaderNotificationCategory = 'partner_note' | 'lead' | 'qr_scan' | 'fuel' | 'contact_request' | 'account';
@@ -322,19 +330,8 @@ function pickAccountLogoUrl(user: SessionUser | null | undefined): string | null
   );
 }
 
-function pickAccountLogoUrlFromLookup(data: AccountLogoLookupResponse | null | undefined): string | null {
-  if (!data) return null;
-
-  return (
-    pickLogoUrlFromSource(data) ??
-    pickLogoUrlFromSource(data.company) ??
-    pickLogoUrlFromSource(data.account) ??
-    pickLogoUrlFromSource(data.business) ??
-    pickLogoUrlFromSource(data.profile) ??
-    pickLogoUrlFromSource(data.organization) ??
-    pickLogoUrlFromSource(data.accountDetails) ??
-    pickLogoUrlFromSource(data.user)
-  );
+function pickAccountLogoUrlFromProfileResponse(data: AccountProfileResponse | null | undefined): string | null {
+  return normalizeAccountLogoUrl(data?.profile?.logoUrl);
 }
 
 function buildAccountInitials(value: string | null | undefined): string {
@@ -532,7 +529,11 @@ export default function AppHeader({
   const hasLoadedSessionOnceRef = useRef(false);
 
   const [session, setSession] = useState<SessionResponse['user']>(null);
-  const [accountLogoUrlFromProfile, setAccountLogoUrlFromProfile] = useState<string | null>(null);
+  const [accountProfileLogoState, setAccountProfileLogoState] = useState<AccountProfileLogoState>({
+    loaded: false,
+    logoUrl: null,
+  });
+  const [accountProfileLogoRefreshKey, setAccountProfileLogoRefreshKey] = useState(0);
   const [isLoadingSession, setIsLoadingSession] = useState(true);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -552,6 +553,30 @@ export default function AppHeader({
 
   useEffect(() => {
     setCanUseNotificationPortal(true);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+
+    function requestAccountProfileLogoRefresh() {
+      setAccountProfileLogoRefreshKey((current) => current + 1);
+    }
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === 'visible') {
+        requestAccountProfileLogoRefresh();
+      }
+    }
+
+    window.addEventListener('focus', requestAccountProfileLogoRefresh);
+    window.addEventListener('aim4price-account-profile-updated', requestAccountProfileLogoRefresh);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('focus', requestAccountProfileLogoRefresh);
+      window.removeEventListener('aim4price-account-profile-updated', requestAccountProfileLogoRefresh);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   useEffect(() => {
@@ -713,7 +738,9 @@ export default function AppHeader({
 
   const accountName = useMemo(() => session?.name?.trim() || 'Aim4price User', [session]);
   const sessionAccountLogoUrl = useMemo(() => pickAccountLogoUrl(session), [session]);
-  const accountLogoUrl = sessionAccountLogoUrl ?? accountLogoUrlFromProfile;
+  const accountLogoUrl = accountProfileLogoState.loaded
+    ? accountProfileLogoState.logoUrl
+    : sessionAccountLogoUrl;
   const isOwnerAccount = session?.accountType === 'owner';
   const navAccountType = isLoadingSession ? null : (session?.accountType ?? 'public');
   const navItems = useMemo(() => buildNavItems(navAccountType), [navAccountType]);
@@ -741,8 +768,8 @@ export default function AppHeader({
   const hasNotificationPages = notifications.length > NOTIFICATIONS_PER_PAGE;
 
   useEffect(() => {
-    if (!session?.id || sessionAccountLogoUrl) {
-      setAccountLogoUrlFromProfile(null);
+    if (!session?.id) {
+      setAccountProfileLogoState({ loaded: false, logoUrl: null });
       return;
     }
 
@@ -750,22 +777,27 @@ export default function AppHeader({
 
     async function loadAccountLogoFromProfile() {
       try {
-        const response = await fetch('/api/account', {
+        const response = await fetch('/api/account-profile', {
           credentials: 'include',
           cache: 'no-store',
         });
 
         if (!response.ok) {
-          if (mounted) setAccountLogoUrlFromProfile(null);
+          if (mounted) setAccountProfileLogoState({ loaded: false, logoUrl: null });
           return;
         }
 
-        const data = (await response.json()) as AccountLogoLookupResponse;
-        const nextLogoUrl = pickAccountLogoUrlFromLookup(data);
+        const data = (await response.json()) as AccountProfileResponse;
+        const nextLogoUrl = pickAccountLogoUrlFromProfileResponse(data);
 
-        if (mounted) setAccountLogoUrlFromProfile(nextLogoUrl);
+        if (mounted) {
+          setAccountProfileLogoState({
+            loaded: Boolean(data?.ok && data?.profile),
+            logoUrl: nextLogoUrl,
+          });
+        }
       } catch {
-        if (mounted) setAccountLogoUrlFromProfile(null);
+        if (mounted) setAccountProfileLogoState({ loaded: false, logoUrl: null });
       }
     }
 
@@ -774,7 +806,7 @@ export default function AppHeader({
     return () => {
       mounted = false;
     };
-  }, [session?.id, sessionAccountLogoUrl, pathname]);
+  }, [session?.id, pathname, accountProfileLogoRefreshKey]);
 
   function markNotificationsSeen() {
     if (!session?.id || typeof window === 'undefined') return;
