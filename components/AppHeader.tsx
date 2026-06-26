@@ -31,15 +31,47 @@ type AccountMenuItem = {
   mobileOnly?: boolean;
 };
 
+type AccountLogoFields = {
+  logo?: string | null;
+  logoUrl?: string | null;
+  accountLogo?: string | null;
+  accountLogoUrl?: string | null;
+  companyLogo?: string | null;
+  companyLogoUrl?: string | null;
+  businessLogo?: string | null;
+  businessLogoUrl?: string | null;
+  profileLogo?: string | null;
+  profileLogoUrl?: string | null;
+  imageUrl?: string | null;
+  avatarUrl?: string | null;
+};
+
+type SessionUser = AccountLogoFields & {
+  id: string;
+  name: string;
+  email: string;
+  accountType: AccountType;
+  account?: AccountLogoFields | null;
+  company?: AccountLogoFields | null;
+  business?: AccountLogoFields | null;
+  profile?: AccountLogoFields | null;
+  organization?: AccountLogoFields | null;
+};
+
 type SessionResponse = {
   ok: boolean;
   signedIn: boolean;
-  user: {
-    id: string;
-    name: string;
-    email: string;
-    accountType: AccountType;
-  } | null;
+  user: SessionUser | null;
+};
+
+type AccountLogoLookupResponse = AccountLogoFields & {
+  user?: AccountLogoFields | null;
+  account?: AccountLogoFields | null;
+  company?: AccountLogoFields | null;
+  business?: AccountLogoFields | null;
+  profile?: AccountLogoFields | null;
+  organization?: AccountLogoFields | null;
+  accountDetails?: AccountLogoFields | null;
 };
 
 type HeaderNotificationCategory = 'partner_note' | 'lead' | 'qr_scan' | 'fuel' | 'contact_request' | 'account';
@@ -224,16 +256,132 @@ function SmartLink({ href, className, children, onClick }: SmartLinkProps) {
   );
 }
 
-function AccountProfileIcon({ className }: { className: string }) {
+const ACCOUNT_LOGO_FIELD_KEYS: (keyof AccountLogoFields)[] = [
+  'accountLogoUrl',
+  'companyLogoUrl',
+  'businessLogoUrl',
+  'profileLogoUrl',
+  'logoUrl',
+  'accountLogo',
+  'companyLogo',
+  'businessLogo',
+  'profileLogo',
+  'logo',
+  'imageUrl',
+  'avatarUrl',
+];
+
+type AccountProfileIconProps = {
+  className: string;
+  logoUrl?: string | null;
+  fallbackLabel?: string | null;
+};
+
+function normalizeAccountLogoUrl(value: string | null | undefined): string | null {
+  const rawValue = String(value ?? '').trim();
+
+  if (!rawValue) return null;
+
+  const lowerValue = rawValue.toLowerCase();
+  const isAim4priceBrandAsset =
+    lowerValue.includes('/brand/aim4price') ||
+    lowerValue.includes('aim4price_home_logo') ||
+    lowerValue.includes('aim4price-mark-black');
+
+  if (isAim4priceBrandAsset) return null;
+
+  if (/^(https?:\/\/|\/|blob:|data:image\/)/i.test(rawValue)) {
+    return rawValue;
+  }
+
+  return `/${rawValue.replace(/^public\//i, '')}`;
+}
+
+function pickLogoUrlFromSource(source: AccountLogoFields | null | undefined): string | null {
+  if (!source) return null;
+
+  for (const key of ACCOUNT_LOGO_FIELD_KEYS) {
+    const logoUrl = normalizeAccountLogoUrl(source[key]);
+
+    if (logoUrl) return logoUrl;
+  }
+
+  return null;
+}
+
+function pickAccountLogoUrl(user: SessionUser | null | undefined): string | null {
+  if (!user) return null;
+
+  return (
+    pickLogoUrlFromSource(user) ??
+    pickLogoUrlFromSource(user.company) ??
+    pickLogoUrlFromSource(user.account) ??
+    pickLogoUrlFromSource(user.business) ??
+    pickLogoUrlFromSource(user.profile) ??
+    pickLogoUrlFromSource(user.organization)
+  );
+}
+
+function pickAccountLogoUrlFromLookup(data: AccountLogoLookupResponse | null | undefined): string | null {
+  if (!data) return null;
+
+  return (
+    pickLogoUrlFromSource(data) ??
+    pickLogoUrlFromSource(data.company) ??
+    pickLogoUrlFromSource(data.account) ??
+    pickLogoUrlFromSource(data.business) ??
+    pickLogoUrlFromSource(data.profile) ??
+    pickLogoUrlFromSource(data.organization) ??
+    pickLogoUrlFromSource(data.accountDetails) ??
+    pickLogoUrlFromSource(data.user)
+  );
+}
+
+function buildAccountInitials(value: string | null | undefined): string {
+  const cleanedValue = String(value ?? '').replace(/[^a-zA-Z0-9\s@._-]/g, ' ').trim();
+
+  if (!cleanedValue) return 'A';
+
+  const namePart = cleanedValue.includes('@') ? cleanedValue.split('@')[0] : cleanedValue;
+  const words = namePart
+    .split(/\s+/)
+    .map((word) => word.trim())
+    .filter(Boolean);
+
+  if (words.length >= 2) {
+    const firstInitial = words[0]?.[0] ?? '';
+    const secondInitial = words[1]?.[0] ?? '';
+
+    return `${firstInitial}${secondInitial}`.toUpperCase();
+  }
+
+  return (words[0] ?? 'A').slice(0, 2).toUpperCase();
+}
+
+function AccountProfileIcon({ className, logoUrl, fallbackLabel }: AccountProfileIconProps) {
+  const [imageFailed, setImageFailed] = useState(false);
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [logoUrl]);
+
+  const shouldRenderLogo = Boolean(logoUrl) && !imageFailed;
+  const initials = buildAccountInitials(fallbackLabel);
+
   return (
     <span className={className} aria-hidden="true">
-      <Image
-        src="/brand/aim4price-mark-black.png"
-        alt=""
-        width={42}
-        height={33}
-        className={styles.accountAvatarLogo}
-      />
+      {shouldRenderLogo ? (
+        <img
+          src={logoUrl as string}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          className={styles.accountAvatarLogo}
+          onError={() => setImageFailed(true)}
+        />
+      ) : (
+        <span className={styles.accountAvatarInitials}>{initials}</span>
+      )}
     </span>
   );
 }
@@ -384,6 +532,7 @@ export default function AppHeader({
   const hasLoadedSessionOnceRef = useRef(false);
 
   const [session, setSession] = useState<SessionResponse['user']>(null);
+  const [accountLogoUrlFromProfile, setAccountLogoUrlFromProfile] = useState<string | null>(null);
   const [isLoadingSession, setIsLoadingSession] = useState(true);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -563,6 +712,8 @@ export default function AppHeader({
   }, [session?.id, pathname]);
 
   const accountName = useMemo(() => session?.name?.trim() || 'Aim4price User', [session]);
+  const sessionAccountLogoUrl = useMemo(() => pickAccountLogoUrl(session), [session]);
+  const accountLogoUrl = sessionAccountLogoUrl ?? accountLogoUrlFromProfile;
   const isOwnerAccount = session?.accountType === 'owner';
   const navAccountType = isLoadingSession ? null : (session?.accountType ?? 'public');
   const navItems = useMemo(() => buildNavItems(navAccountType), [navAccountType]);
@@ -588,6 +739,42 @@ export default function AppHeader({
     ? Math.min(activeNotificationPage * NOTIFICATIONS_PER_PAGE, notifications.length)
     : 0;
   const hasNotificationPages = notifications.length > NOTIFICATIONS_PER_PAGE;
+
+  useEffect(() => {
+    if (!session?.id || sessionAccountLogoUrl) {
+      setAccountLogoUrlFromProfile(null);
+      return;
+    }
+
+    let mounted = true;
+
+    async function loadAccountLogoFromProfile() {
+      try {
+        const response = await fetch('/api/account', {
+          credentials: 'include',
+          cache: 'no-store',
+        });
+
+        if (!response.ok) {
+          if (mounted) setAccountLogoUrlFromProfile(null);
+          return;
+        }
+
+        const data = (await response.json()) as AccountLogoLookupResponse;
+        const nextLogoUrl = pickAccountLogoUrlFromLookup(data);
+
+        if (mounted) setAccountLogoUrlFromProfile(nextLogoUrl);
+      } catch {
+        if (mounted) setAccountLogoUrlFromProfile(null);
+      }
+    }
+
+    void loadAccountLogoFromProfile();
+
+    return () => {
+      mounted = false;
+    };
+  }, [session?.id, sessionAccountLogoUrl, pathname]);
 
   function markNotificationsSeen() {
     if (!session?.id || typeof window === 'undefined') return;
@@ -1100,6 +1287,13 @@ export default function AppHeader({
                     className={`${styles.mobileMenuNavLink} ${isActive ? styles.mobileMenuNavLinkActive : ''}`}
                     onClick={closeMobileMenu}
                   >
+                    {item.href === '/account' ? (
+                      <AccountProfileIcon
+                        className={styles.menuLinkLogo}
+                        logoUrl={accountLogoUrl}
+                        fallbackLabel={accountName}
+                      />
+                    ) : null}
                     <span>{item.label}</span>
                   </Link>
                 );
@@ -1383,7 +1577,11 @@ export default function AppHeader({
                       aria-label="Open account menu"
                       onClick={handleAccountMenuToggle}
                     >
-                      <AccountProfileIcon className={styles.accountAvatar} />
+                      <AccountProfileIcon
+                        className={styles.accountAvatar}
+                        logoUrl={accountLogoUrl}
+                        fallbackLabel={accountName}
+                      />
                       <span className={styles.accountButtonText}>
                         <span className={styles.accountButtonTextFull}>My Account</span>
                         <span className={styles.accountButtonTextCompact}>Menu</span>
@@ -1416,7 +1614,13 @@ export default function AppHeader({
                               className={menuLinkClassName}
                               onClick={closeAccountMenu}
                             >
-                              {item.href === '/account' ? <AccountProfileIcon className={styles.menuLinkLogo} /> : null}
+                              {item.href === '/account' ? (
+                                <AccountProfileIcon
+                                  className={styles.menuLinkLogo}
+                                  logoUrl={accountLogoUrl}
+                                  fallbackLabel={accountName}
+                                />
+                              ) : null}
                               <span>{item.label}</span>
                             </Link>
                           );
