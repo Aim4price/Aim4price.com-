@@ -3065,6 +3065,33 @@ function getAssetLifeWorkedPercent(asset: RegisterAsset): number | null {
   return fromSpecs === null ? null : Math.min(100, Math.max(0, fromSpecs));
 }
 
+const LIFE_WORKED_PERCENT_DECREASE_TOLERANCE = 0.05;
+
+function getAssetSavedUsageReading(asset: RegisterAsset | null | undefined): number | null {
+  if (!asset || asset.hours === null || typeof asset.hours === 'undefined') return null;
+
+  const savedUsage = Number(asset.hours);
+  return Number.isFinite(savedUsage) && savedUsage >= 0 ? Math.round(savedUsage) : null;
+}
+
+function isLifeWorkedPercentDecrease(nextValue: number, savedValue: number): boolean {
+  return nextValue < savedValue - LIFE_WORKED_PERCENT_DECREASE_TOLERANCE;
+}
+
+function resolveLifeWorkedPercentForSave(nextValue: number | null, savedValue: number | null): number | null {
+  if (nextValue === null) {
+    return savedValue;
+  }
+
+  const roundedNextValue = Math.round(nextValue * 10) / 10;
+
+  if (savedValue !== null && roundedNextValue < savedValue && !isLifeWorkedPercentDecrease(roundedNextValue, savedValue)) {
+    return savedValue;
+  }
+
+  return roundedNextValue;
+}
+
 function formatUsagePercent(value: number): string {
   const rounded = Math.round(value * 10) / 10;
   const formatted = Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
@@ -5421,29 +5448,8 @@ export default function AssetRegisterClient() {
       return false;
     }
 
-    const savedUsageReading = editingAsset?.hours;
-    if (
-      editingAsset &&
-      isSavedAim4priceAsset(editingAsset) &&
-      showUsageHoursField &&
-      !hasHours &&
-      savedUsageReading !== null &&
-      typeof savedUsageReading !== 'undefined'
-    ) {
-      setNotice({
-        tone: 'error',
-        message: USAGE_READING_SETTINGS_ERROR,
-      });
-      return false;
-    }
-
-    if (
-      editingAsset &&
-      hasHours &&
-      editingAsset.hours !== null &&
-      typeof editingAsset.hours !== 'undefined' &&
-      Number(hours) < Number(editingAsset.hours)
-    ) {
+    const savedUsageReading = getAssetSavedUsageReading(editingAsset);
+    if (editingAsset && hasHours && savedUsageReading !== null && Math.round(Number(hours)) < savedUsageReading) {
       setNotice({
         tone: 'error',
         message: USAGE_READING_SETTINGS_ERROR,
@@ -5454,23 +5460,9 @@ export default function AssetRegisterClient() {
     const currentLifeWorkedPercent = editingAsset ? getAssetLifeWorkedPercent(editingAsset) : null;
     if (
       editingAsset &&
-      isSavedAim4priceAsset(editingAsset) &&
-      showPercentUsageField &&
-      !hasLifeWorkedPercent &&
-      currentLifeWorkedPercent !== null
-    ) {
-      setNotice({
-        tone: 'error',
-        message: LIFETIME_PERCENT_SETTINGS_ERROR,
-      });
-      return false;
-    }
-
-    if (
-      editingAsset &&
       hasLifeWorkedPercent &&
       currentLifeWorkedPercent !== null &&
-      Number(lifeWorkedPercent) < currentLifeWorkedPercent
+      isLifeWorkedPercentDecrease(Number(lifeWorkedPercent), currentLifeWorkedPercent)
     ) {
       setNotice({
         tone: 'error',
@@ -6230,29 +6222,8 @@ export default function AssetRegisterClient() {
       return;
     }
 
-    const savedUsageReading = editingAsset?.hours;
-    if (
-      editingAsset &&
-      isSavedAim4priceAsset(editingAsset) &&
-      showUsageHoursField &&
-      !hasHours &&
-      savedUsageReading !== null &&
-      typeof savedUsageReading !== 'undefined'
-    ) {
-      setNotice({
-        tone: 'error',
-        message: USAGE_READING_SETTINGS_ERROR,
-      });
-      return;
-    }
-
-    if (
-      editingAsset &&
-      hasHours &&
-      editingAsset.hours !== null &&
-      typeof editingAsset.hours !== 'undefined' &&
-      Number(hours) < Number(editingAsset.hours)
-    ) {
+    const savedUsageReading = getAssetSavedUsageReading(editingAsset);
+    if (editingAsset && hasHours && savedUsageReading !== null && Math.round(Number(hours)) < savedUsageReading) {
       setNotice({
         tone: 'error',
         message: USAGE_READING_SETTINGS_ERROR,
@@ -6263,23 +6234,9 @@ export default function AssetRegisterClient() {
     const currentLifeWorkedPercent = editingAsset ? getAssetLifeWorkedPercent(editingAsset) : null;
     if (
       editingAsset &&
-      isSavedAim4priceAsset(editingAsset) &&
-      showPercentUsageField &&
-      !hasLifeWorkedPercent &&
-      currentLifeWorkedPercent !== null
-    ) {
-      setNotice({
-        tone: 'error',
-        message: LIFETIME_PERCENT_SETTINGS_ERROR,
-      });
-      return;
-    }
-
-    if (
-      editingAsset &&
       hasLifeWorkedPercent &&
       currentLifeWorkedPercent !== null &&
-      Number(lifeWorkedPercent) < currentLifeWorkedPercent
+      isLifeWorkedPercentDecrease(Number(lifeWorkedPercent), currentLifeWorkedPercent)
     ) {
       setNotice({
         tone: 'error',
@@ -6288,9 +6245,15 @@ export default function AssetRegisterClient() {
       return;
     }
 
-    const roundedLifeWorkedPercent = (showPercentUsageField || showLifeWorkedPercentField) && hasLifeWorkedPercent
-      ? Math.round(Number(lifeWorkedPercent) * 10) / 10
+    const draftLifeWorkedPercent = (showPercentUsageField || showLifeWorkedPercentField) && hasLifeWorkedPercent
+      ? Number(lifeWorkedPercent)
       : null;
+    const roundedLifeWorkedPercent = resolveLifeWorkedPercentForSave(draftLifeWorkedPercent, editingAsset ? currentLifeWorkedPercent : null);
+    const hoursForSave = showUsageHoursField && hasHours
+      ? Math.round(Number(hours))
+      : editingAsset
+        ? savedUsageReading
+        : null;
     const licenseRegistrationNumber = assetDraft.licenseStatus === 'yes'
       ? normalizeLicenseRegistrationText(assetDraft.licenseRegistrationNumber)
       : '';
@@ -6413,8 +6376,8 @@ export default function AssetRegisterClient() {
         photos,
         documents,
         yearModel: hasYearModel ? Math.round(Number(yearModel)) : null,
-        hours: showUsageHoursField && hasHours ? Math.round(Number(hours)) : null,
-        usageMetric: showUsageHoursField ? (assetFormKind === 'vehicle' ? 'km' : assetDraft.usageMetric) : null,
+        hours: hoursForSave,
+        usageMetric: hoursForSave !== null || showUsageHoursField ? (assetFormKind === 'vehicle' ? 'km' : assetDraft.usageMetric) : null,
         lifeWorkedPercent: roundedLifeWorkedPercent,
         specsJson,
         condition: showConditionField ? assetDraft.condition || null : null,
