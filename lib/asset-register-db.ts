@@ -293,6 +293,8 @@ function normalizeUsageMetric(value: unknown, kind?: AssetRegisterItemKind): 'ho
   return kind === 'vehicle' ? 'km' : 'hours';
 }
 
+const LIFE_WORKED_PERCENT_DECREASE_TOLERANCE = 0.05;
+
 function buildManualSpecsJson(
   input: CreateManualAssetInput | UpdateAssetRegisterItemInput,
   kind: AssetRegisterItemKind,
@@ -1987,20 +1989,25 @@ export async function updateAssetRegisterItem(
   const nextCondition = typeof input.condition === 'undefined' ? existingCondition : incomingCondition;
   const baseSpecsJson = buildManualSpecsJson(input, nextKind, existing.specsJson);
   const nextLicenseRegistrationNumber = Boolean(input.isLicensed) ? normalizeLicenseRegistrationNumber(input.licenseRegistrationNumber) : null;
-  const nextLifeWorkedPercent = percentFromSpecs(baseSpecsJson);
   const existingLifeWorkedPercent = existing.lifeWorkedPercent ?? percentFromSpecs(existing.specsJson);
-  const isValuationBackedAsset = existing.valuationRunId !== null && existing.selectedMethod !== 'manual';
+  const baseLifeWorkedPercent = percentFromSpecs(baseSpecsJson);
+  const nextLifeWorkedPercent =
+    baseLifeWorkedPercent !== null &&
+    existingLifeWorkedPercent !== null &&
+    baseLifeWorkedPercent < existingLifeWorkedPercent &&
+    baseLifeWorkedPercent >= existingLifeWorkedPercent - LIFE_WORKED_PERCENT_DECREASE_TOLERANCE
+      ? existingLifeWorkedPercent
+      : baseLifeWorkedPercent ?? existingLifeWorkedPercent;
+  const usagePreservedSpecsJson = nextLifeWorkedPercent === null
+    ? baseSpecsJson
+    : {
+        ...baseSpecsJson,
+        life_worked_percent: nextLifeWorkedPercent,
+        worked_percent: nextLifeWorkedPercent,
+        percent_worked: nextLifeWorkedPercent,
+        lifetime_worked_percent: nextLifeWorkedPercent,
+      };
   const fields: SqlField[] = [];
-
-  if (
-    !input.allowUsageDecrease &&
-    isValuationBackedAsset &&
-    incomingHours === null &&
-    existing.hours !== null &&
-    nextLifeWorkedPercent === null
-  ) {
-    throw new Error('USAGE_READING_CANNOT_DECREASE');
-  }
 
   if (!input.allowUsageDecrease && incomingHours !== null && existing.hours !== null && incomingHours < existing.hours) {
     throw new Error('USAGE_READING_CANNOT_DECREASE');
@@ -2008,18 +2015,9 @@ export async function updateAssetRegisterItem(
 
   if (
     !input.allowUsageDecrease &&
-    isValuationBackedAsset &&
-    nextLifeWorkedPercent === null &&
-    existingLifeWorkedPercent !== null
-  ) {
-    throw new Error('LIFE_WORKED_PERCENT_CANNOT_DECREASE');
-  }
-
-  if (
-    !input.allowUsageDecrease &&
     nextLifeWorkedPercent !== null &&
     existingLifeWorkedPercent !== null &&
-    nextLifeWorkedPercent < existingLifeWorkedPercent
+    nextLifeWorkedPercent < existingLifeWorkedPercent - LIFE_WORKED_PERCENT_DECREASE_TOLERANCE
   ) {
     throw new Error('LIFE_WORKED_PERCENT_CANNOT_DECREASE');
   }
@@ -2031,7 +2029,7 @@ export async function updateAssetRegisterItem(
     nextLifeWorkedPercent,
     nextCondition,
   });
-  const nextSpecsJson = markValuationNeedsUpdate(baseSpecsJson, staleReasons, now);
+  const nextSpecsJson = markValuationNeedsUpdate(usagePreservedSpecsJson, staleReasons, now);
   const shouldCaptureDepreciationSnapshot = staleReasons.length > 0;
 
   pushField(fields, schema, ['kind', 'equipment_type', 'asset_type', 'item_type'], nextKind);
