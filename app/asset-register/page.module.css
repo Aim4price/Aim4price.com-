@@ -24786,6 +24786,11 @@ button.documentOpenLink {
   overscroll-behavior: contain;
 }
 
+.assetFilterOptionStack {
+  display: grid;
+  gap: 0.72rem;
+}
+
 .assetFilterOptionGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -24838,6 +24843,21 @@ button.documentOpenLink {
   box-shadow:
     0 16px 30px rgba(18, 70, 53, 0.12),
     inset 0 0 0 1px rgba(255, 255, 255, 0.82);
+}
+
+.assetFilterAllOptionCard {
+  min-height: 3.8rem;
+  justify-content: center;
+  padding: 1rem 1.25rem;
+  border-width: 1.5px;
+  border-radius: 1.05rem;
+  text-align: center;
+}
+
+.assetFilterAllOptionCard .assetFilterOptionText strong {
+  font-size: clamp(1.04rem, 1.55vw, 1.2rem);
+  font-weight: 950;
+  letter-spacing: -0.025em;
 }
 
 .assetFilterOptionText {

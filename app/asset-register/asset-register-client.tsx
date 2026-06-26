@@ -684,9 +684,7 @@ const CONDITION_OPTIONS: Array<{ value: AssetConditionValue; label: string }> = 
 ];
 
 const ASSET_FILTER_OPTIONS: AssetFilterOption[] = [
-  { value: 'all', label: 'All assets' },
-  { value: 'property', label: 'Property only' },
-  { value: 'no-property', label: 'No property' },
+  { value: 'all', label: 'All Assets' },
   { value: 'insured', label: 'Insured' },
   { value: 'not-insured', label: 'Not insured' },
   { value: 'financed', label: 'Financed' },
@@ -700,7 +698,12 @@ const ASSET_FILTER_OPTIONS: AssetFilterOption[] = [
   { value: 'aim4price-value', label: 'Aim4price value' },
   { value: 'manual-value', label: 'Manual value' },
   { value: 'marketplace', label: 'Marketplace' },
+  { value: 'property', label: 'Property only' },
+  { value: 'no-property', label: 'No property' },
 ];
+
+const PRIMARY_ASSET_FILTER_OPTION = ASSET_FILTER_OPTIONS.find((option) => option.value === 'all') ?? ASSET_FILTER_OPTIONS[0];
+const SECONDARY_ASSET_FILTER_OPTIONS = ASSET_FILTER_OPTIONS.filter((option) => option.value !== 'all');
 
 const LEAFLET_SCRIPT_ID = 'aim4price-leaflet-script';
 const LEAFLET_CSS_ID = 'aim4price-leaflet-css';
@@ -4925,7 +4928,7 @@ export default function AssetRegisterClient() {
       : 'This can be updated later whenever the machine hours change.';
 
   const activeAssetFilterLabel = useMemo(() => {
-    return ASSET_FILTER_OPTIONS.find((option) => option.value === assetFilter)?.label ?? 'All assets';
+    return ASSET_FILTER_OPTIONS.find((option) => option.value === assetFilter)?.label ?? 'All Assets';
   }, [assetFilter]);
 
   const searchMatchedAssets = useMemo(() => {
@@ -8175,25 +8178,40 @@ export default function AssetRegisterClient() {
                 </div>
 
                 <div className={`${styles.modalScrollBody} ${styles.assetFilterModalBody}`}>
-                  <div className={styles.assetFilterOptionGrid} role="group" aria-label="Asset filter options">
-                    {ASSET_FILTER_OPTIONS.map((option) => {
-                      const isActiveFilter = assetFilter === option.value;
+                  <div className={styles.assetFilterOptionStack} role="group" aria-label="Asset filter options">
+                    {PRIMARY_ASSET_FILTER_OPTION ? (
+                      <button
+                        type="button"
+                        className={`${styles.assetFilterOptionCard} ${styles.assetFilterAllOptionCard} ${assetFilter === PRIMARY_ASSET_FILTER_OPTION.value ? styles.assetFilterOptionCardActive : ''}`}
+                        onClick={() => selectAssetFilter(PRIMARY_ASSET_FILTER_OPTION.value)}
+                        aria-pressed={assetFilter === PRIMARY_ASSET_FILTER_OPTION.value}
+                      >
+                        <span className={styles.assetFilterOptionText}>
+                          <strong>{PRIMARY_ASSET_FILTER_OPTION.label}</strong>
+                        </span>
+                      </button>
+                    ) : null}
 
-                      return (
-                        <button
-                          type="button"
-                          key={option.value}
-                          className={`${styles.assetFilterOptionCard} ${isActiveFilter ? styles.assetFilterOptionCardActive : ''}`}
-                          onClick={() => selectAssetFilter(option.value)}
-                          aria-pressed={isActiveFilter}
-                        >
-                          <span className={styles.assetFilterOptionText}>
-                            <strong>{option.label}</strong>
-                          </span>
-                          {isActiveFilter ? <span className={styles.assetFilterModalTick}>✓</span> : null}
-                        </button>
-                      );
-                    })}
+                    <div className={styles.assetFilterOptionGrid}>
+                      {SECONDARY_ASSET_FILTER_OPTIONS.map((option) => {
+                        const isActiveFilter = assetFilter === option.value;
+
+                        return (
+                          <button
+                            type="button"
+                            key={option.value}
+                            className={`${styles.assetFilterOptionCard} ${isActiveFilter ? styles.assetFilterOptionCardActive : ''}`}
+                            onClick={() => selectAssetFilter(option.value)}
+                            aria-pressed={isActiveFilter}
+                          >
+                            <span className={styles.assetFilterOptionText}>
+                              <strong>{option.label}</strong>
+                            </span>
+                            {isActiveFilter ? <span className={styles.assetFilterModalTick}>✓</span> : null}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
 
