@@ -26148,3 +26148,365 @@ button.documentOpenLink {
     width: 100% !important;
   }
 }
+
+/* === Export PDF report picker + selected-assets download mode === */
+.exportModal .pdfReportTopChoices {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 1rem !important;
+}
+
+.exportModal .pdfReportTopChoices + .pdfReportChoices {
+  margin-top: 1rem !important;
+}
+
+.exportModal .pdfReportOption {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  justify-content: stretch !important;
+  gap: 1rem !important;
+  min-height: 6.05rem !important;
+  padding: 1.1rem 1.18rem !important;
+  border-radius: 1.22rem !important;
+  text-align: left !important;
+}
+
+.exportModal .pdfReportPrimaryOption {
+  min-height: 7.1rem !important;
+  padding: 1.28rem 1.35rem !important;
+  border-radius: 1.35rem !important;
+}
+
+.exportModal .pdfReportSpecificOption {
+  background:
+    radial-gradient(circle at top left, rgba(15, 91, 68, 0.08), transparent 46%),
+    linear-gradient(180deg, #ffffff 0%, #f3faf7 100%) !important;
+  border-color: rgba(183, 220, 202, 0.98) !important;
+}
+
+.exportModal .pdfReportOptionMain {
+  align-content: center !important;
+  justify-items: start !important;
+  text-align: left !important;
+}
+
+.exportModal .pdfReportOptionMain strong {
+  font-size: clamp(1.05rem, 1.22vw, 1.18rem) !important;
+  font-weight: 860 !important;
+}
+
+.exportModal .pdfReportPrimaryOption .pdfReportOptionMain strong {
+  font-size: clamp(1.2rem, 1.55vw, 1.42rem) !important;
+}
+
+.exportModal .pdfReportOptionMain small {
+  max-width: 30rem !important;
+  font-size: clamp(0.88rem, 0.96vw, 0.95rem) !important;
+}
+
+.exportModal .pdfReportOptionMeta {
+  display: grid !important;
+  justify-items: center !important;
+  align-content: center !important;
+  gap: 0.18rem !important;
+  min-width: 4.2rem !important;
+  white-space: nowrap !important;
+}
+
+.exportModal .pdfReportOptionMeta strong {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 2.7rem !important;
+  min-height: 2.7rem !important;
+  padding: 0 0.62rem !important;
+  border-radius: 999px !important;
+  color: #10352b !important;
+  background: #eef5f1 !important;
+  border: 1px solid rgba(205, 226, 216, 0.98) !important;
+  font-size: 1rem !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+}
+
+.exportModal .pdfReportOptionMeta small {
+  color: #617286 !important;
+  font-size: 0.75rem !important;
+  font-weight: 820 !important;
+}
+
+.exportModal .pdfReportOptionActive .pdfReportOptionMeta strong {
+  color: #ffffff !important;
+  background: linear-gradient(180deg, #1d6048 0%, #124635 100%) !important;
+  border-color: rgba(18, 70, 53, 0.26) !important;
+}
+
+.exportAssetPickerModal {
+  width: min(100%, 1320px) !important;
+  max-height: min(92vh, calc(100dvh - 1.25rem)) !important;
+  padding: clamp(1.65rem, 2.5vw, 2.25rem) !important;
+}
+
+.exportAssetPickerModal .exportModalHeader {
+  margin-bottom: 0 !important;
+}
+
+.exportAssetPickerModal .exportModalHeader h3 {
+  font-size: clamp(2rem, 3vw, 2.8rem) !important;
+  line-height: 1.02 !important;
+}
+
+.exportAssetPickerModal .exportModalScrollBody {
+  overflow-y: auto !important;
+  padding-top: 1.05rem !important;
+  padding-right: 0.8rem !important;
+  margin-right: -0.32rem !important;
+}
+
+.pdfAssetDownloadPanel {
+  display: grid !important;
+  gap: 0.82rem !important;
+}
+
+.pdfAssetDownloadToolbar {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 1rem !important;
+  padding: 0.15rem 0 0.1rem !important;
+}
+
+.pdfAssetDownloadToolbarCopy {
+  display: grid !important;
+  gap: 0.22rem !important;
+  min-width: 0 !important;
+}
+
+.pdfAssetDownloadToolbarCopy strong {
+  color: #10352b !important;
+  font-size: clamp(1.06rem, 1.2vw, 1.16rem) !important;
+  font-weight: 860 !important;
+  letter-spacing: -0.025em !important;
+}
+
+.pdfAssetDownloadToolbarCopy span {
+  color: #617286 !important;
+  font-size: 0.95rem !important;
+  font-weight: 680 !important;
+}
+
+.pdfAssetDownloadToolbarActions {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 0.68rem !important;
+  flex-wrap: wrap !important;
+}
+
+.pdfAssetDownloadToolbarActions .secondaryButton {
+  min-height: 2.9rem !important;
+  padding-inline: 1rem !important;
+  border-radius: 0.95rem !important;
+  font-size: 0.92rem !important;
+  font-weight: 850 !important;
+}
+
+.pdfAssetDownloadList {
+  display: grid !important;
+  gap: 0.72rem !important;
+}
+
+.pdfAssetDownloadRow {
+  position: relative !important;
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 0.9rem !important;
+  padding: 0.95rem 1rem !important;
+  border: 1px solid rgba(199, 222, 237, 0.96) !important;
+  border-radius: 1.1rem !important;
+  background: #ffffff !important;
+  box-shadow:
+    0 10px 22px rgba(16, 31, 28, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+  cursor: pointer !important;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease !important;
+}
+
+.pdfAssetDownloadRow:hover {
+  transform: translateY(-1px) !important;
+  border-color: rgba(160, 195, 176, 0.98) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f7fbf9 100%) !important;
+  box-shadow:
+    0 14px 28px rgba(16, 31, 28, 0.055),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.pdfAssetDownloadRowSelected {
+  border-color: rgba(98, 166, 131, 0.98) !important;
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.08), transparent 45%),
+    linear-gradient(180deg, #ffffff 0%, #f0faf5 100%) !important;
+  box-shadow:
+    0 16px 32px rgba(22, 83, 64, 0.095),
+    inset 0 0 0 2px rgba(22, 83, 64, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.pdfAssetDownloadCheckboxInput {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.pdfAssetDownloadCheckbox {
+  position: relative !important;
+  width: 2.28rem !important;
+  height: 2.28rem !important;
+  border: 1.5px solid rgba(183, 202, 216, 0.98) !important;
+  border-radius: 0.78rem !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f4f8fb 100%) !important;
+  box-shadow:
+    0 8px 16px rgba(16, 31, 28, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+}
+
+.pdfAssetDownloadRowSelected .pdfAssetDownloadCheckbox {
+  border-color: rgba(18, 70, 53, 0.86) !important;
+  background: linear-gradient(180deg, #1d6048 0%, #124635 100%) !important;
+  box-shadow: 0 10px 20px rgba(18, 70, 53, 0.18) !important;
+}
+
+.pdfAssetDownloadRowSelected .pdfAssetDownloadCheckbox::after {
+  content: '✓' !important;
+  position: absolute !important;
+  inset: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #ffffff !important;
+  font-size: 1.28rem !important;
+  font-weight: 950 !important;
+  line-height: 1 !important;
+}
+
+.pdfAssetDownloadCopy {
+  display: grid !important;
+  gap: 0.22rem !important;
+  min-width: 0 !important;
+}
+
+.pdfAssetDownloadCopy strong {
+  color: #073b30 !important;
+  font-size: clamp(1rem, 1.08vw, 1.12rem) !important;
+  font-weight: 900 !important;
+  line-height: 1.2 !important;
+  overflow-wrap: anywhere !important;
+}
+
+.pdfAssetDownloadCopy span,
+.pdfAssetDownloadCopy small {
+  color: #647587 !important;
+  font-size: 0.93rem !important;
+  font-weight: 660 !important;
+  line-height: 1.35 !important;
+}
+
+.pdfAssetDownloadCopy small {
+  font-size: 0.86rem !important;
+}
+
+.pdfAssetDownloadValue {
+  display: grid !important;
+  justify-items: end !important;
+  gap: 0.16rem !important;
+  min-width: 9.5rem !important;
+  color: #10352b !important;
+  text-align: right !important;
+  white-space: nowrap !important;
+}
+
+.pdfAssetDownloadValue strong {
+  font-size: 1rem !important;
+  font-weight: 880 !important;
+  line-height: 1.2 !important;
+}
+
+.pdfAssetDownloadValue small {
+  color: #647587 !important;
+  font-size: 0.8rem !important;
+  font-weight: 780 !important;
+}
+
+.pdfAssetDownloadActions {
+  position: sticky !important;
+  bottom: 0 !important;
+  z-index: 4 !important;
+  justify-content: flex-end !important;
+  padding: 1rem 0 0.05rem !important;
+  border-top: 1px solid rgba(216, 226, 236, 0.88) !important;
+  background:
+    linear-gradient(180deg, rgba(248, 251, 252, 0) 0%, rgba(248, 251, 252, 0.98) 34%, rgba(248, 251, 252, 1) 100%) !important;
+}
+
+.pdfAssetDownloadButton {
+  min-width: 19rem !important;
+  min-height: 3.75rem !important;
+  border-radius: 1.15rem !important;
+  font-size: 1.02rem !important;
+  font-weight: 900 !important;
+}
+
+@media (max-width: 900px) {
+  .exportModal .pdfReportTopChoices,
+  .exportModal .pdfReportChoices {
+    grid-template-columns: 1fr !important;
+  }
+
+  .exportAssetPickerModal {
+    width: min(100%, calc(100vw - 1rem)) !important;
+    max-height: calc(100dvh - 1rem) !important;
+    padding: 1rem !important;
+    border-radius: 1.35rem !important;
+  }
+
+  .pdfAssetDownloadToolbar {
+    align-items: stretch !important;
+    flex-direction: column !important;
+  }
+
+  .pdfAssetDownloadToolbarActions {
+    justify-content: stretch !important;
+  }
+
+  .pdfAssetDownloadToolbarActions .secondaryButton {
+    flex: 1 1 0 !important;
+  }
+
+  .pdfAssetDownloadRow {
+    grid-template-columns: auto minmax(0, 1fr) !important;
+  }
+
+  .pdfAssetDownloadValue {
+    grid-column: 2 / -1 !important;
+    justify-items: start !important;
+    min-width: 0 !important;
+    text-align: left !important;
+  }
+
+  .pdfAssetDownloadActions {
+    position: static !important;
+  }
+
+  .pdfAssetDownloadButton {
+    min-width: 0 !important;
+  }
+}

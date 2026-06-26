@@ -97,7 +97,7 @@ type UsageMetric = 'hours' | 'km';
 type AssetStatusChoice = 'yes' | 'no' | 'unknown' | 'not_applicable';
 type ManualAssetStep = 1 | 2 | 3 | 4;
 type ExportFormat = 'pdf' | 'xlsx';
-type ExportStep = 'format' | 'pdf-report';
+type ExportStep = 'format' | 'pdf-report' | 'pdf-assets';
 type PdfReportKind = 'full' | 'financed' | 'insured' | 'licensed' | 'not-financed' | 'not-insured' | 'not-licensed';
 type AssetPdfReportKind = 'fuel' | 'maintenance' | 'depreciation';
 type AssetReportFormat = 'pdf' | 'xlsx';
@@ -134,6 +134,8 @@ type PdfReportOption = {
   emptyLabel: string;
 };
 
+type PdfReportDetails = Omit<PdfReportOption, 'value'>;
+
 const MONTH_LABELS = [
   'January',
   'February',
@@ -159,36 +161,12 @@ const PDF_REPORT_OPTIONS: PdfReportOption[] = [
     emptyLabel: 'No saved assets are currently available for this report.',
   },
   {
-    value: 'financed',
-    label: 'Financed',
-    description: 'Only assets marked as financed.',
-    intro: 'Filtered asset register snapshot showing only financed assets.',
-    sectionTitle: 'Financed Assets',
-    emptyLabel: 'No financed assets are currently saved in this register.',
-  },
-  {
     value: 'insured',
     label: 'Insured',
     description: 'Only assets marked as insured.',
     intro: 'Filtered asset register snapshot showing only insured assets.',
     sectionTitle: 'Insured Assets',
     emptyLabel: 'No insured assets are currently saved in this register.',
-  },
-  {
-    value: 'licensed',
-    label: 'Licensed',
-    description: 'Only assets marked as licensed.',
-    intro: 'Filtered asset register snapshot showing only licensed assets.',
-    sectionTitle: 'Licensed Assets',
-    emptyLabel: 'No licensed assets are currently saved in this register.',
-  },
-  {
-    value: 'not-financed',
-    label: 'Not Financed',
-    description: 'Only assets not marked as financed.',
-    intro: 'Filtered asset register snapshot showing only assets not marked as financed.',
-    sectionTitle: 'Not Financed Assets',
-    emptyLabel: 'No assets without finance are currently saved in this register.',
   },
   {
     value: 'not-insured',
@@ -199,6 +177,30 @@ const PDF_REPORT_OPTIONS: PdfReportOption[] = [
     emptyLabel: 'No assets without insurance are currently saved in this register.',
   },
   {
+    value: 'financed',
+    label: 'Financed',
+    description: 'Only assets marked as financed.',
+    intro: 'Filtered asset register snapshot showing only financed assets.',
+    sectionTitle: 'Financed Assets',
+    emptyLabel: 'No financed assets are currently saved in this register.',
+  },
+  {
+    value: 'not-financed',
+    label: 'Not Financed',
+    description: 'Only assets not marked as financed.',
+    intro: 'Filtered asset register snapshot showing only assets not marked as financed.',
+    sectionTitle: 'Not Financed Assets',
+    emptyLabel: 'No assets without finance are currently saved in this register.',
+  },
+  {
+    value: 'licensed',
+    label: 'Licensed',
+    description: 'Only assets marked as licensed.',
+    intro: 'Filtered asset register snapshot showing only licensed assets.',
+    sectionTitle: 'Licensed Assets',
+    emptyLabel: 'No licensed assets are currently saved in this register.',
+  },
+  {
     value: 'not-licensed',
     label: 'Not Licensed',
     description: 'Only assets not marked as licensed.',
@@ -207,6 +209,14 @@ const PDF_REPORT_OPTIONS: PdfReportOption[] = [
     emptyLabel: 'No assets without licensing are currently saved in this register.',
   },
 ];
+
+const SELECTED_ASSETS_PDF_REPORT: PdfReportDetails = {
+  label: 'Selected Assets',
+  description: 'Only the assets selected in the download list.',
+  intro: 'Custom asset register snapshot showing only the selected assets.',
+  sectionTitle: 'Selected Assets',
+  emptyLabel: 'No assets were selected for this report.',
+};
 type AssetFilterKey =
   | 'all'
   | 'property'
@@ -4005,6 +4015,7 @@ export default function AssetRegisterClient() {
   const [exportStep, setExportStep] = useState<ExportStep>('format');
   const [pdfReportKind, setPdfReportKind] = useState<PdfReportKind>('full');
   const [pdfReportSelection, setPdfReportSelection] = useState<PdfReportKind | ''>('');
+  const [selectedPdfAssetIds, setSelectedPdfAssetIds] = useState<string[]>([]);
   const [isExporting, setIsExporting] = useState(false);
   const [projectionAsset, setProjectionAsset] = useState<RegisterAsset | null>(null);
   const [projectionForm, setProjectionForm] = useState<ProjectionFormState>(createDefaultProjectionForm());
@@ -4877,6 +4888,33 @@ export default function AssetRegisterClient() {
     );
   }, [assets]);
 
+  const pdfReportAssetCounts = useMemo<Record<PdfReportKind, number>>(() => {
+    return PDF_REPORT_OPTIONS.reduce(
+      (counts, option) => ({
+        ...counts,
+        [option.value]: filterAssetsByPdfReportKind(assets, option.value).length,
+      }),
+      {
+        full: 0,
+        financed: 0,
+        insured: 0,
+        licensed: 0,
+        'not-financed': 0,
+        'not-insured': 0,
+        'not-licensed': 0,
+      },
+    );
+  }, [assets]);
+
+  const quickPdfReportOptions = useMemo(() => PDF_REPORT_OPTIONS.filter((option) => option.value !== 'full'), []);
+  const fullPdfReportOption = PDF_REPORT_OPTIONS[0];
+  const selectedPdfAssetIdSet = useMemo(() => new Set(selectedPdfAssetIds), [selectedPdfAssetIds]);
+  const selectedPdfAssets = useMemo(
+    () => assets.filter((asset) => selectedPdfAssetIdSet.has(asset.id)),
+    [assets, selectedPdfAssetIdSet],
+  );
+  const selectedPdfAssetCount = selectedPdfAssets.length;
+  const allPdfAssetsSelected = assets.length > 0 && selectedPdfAssetCount === assets.length;
 
   const editingAsset = useMemo(() => {
     return editingAssetId === null ? null : assets.find((asset) => asset.id === editingAssetId) ?? null;
@@ -7586,6 +7624,7 @@ export default function AssetRegisterClient() {
     setExportStep('format');
     setPdfReportKind('full');
     setPdfReportSelection('');
+    setSelectedPdfAssetIds([]);
     setIsExportModalOpen(true);
   }
 
@@ -7595,17 +7634,20 @@ export default function AssetRegisterClient() {
     setIsExportModalOpen(false);
     setExportStep('format');
     setPdfReportSelection('');
+    setSelectedPdfAssetIds([]);
   }
 
   function selectExportFormat(nextFormat: ExportFormat) {
     setExportFormat(nextFormat);
     setExportStep('format');
     setPdfReportSelection('');
+    setSelectedPdfAssetIds([]);
   }
 
   function openPdfReportChooser() {
     setExportStep('pdf-report');
     setPdfReportSelection('');
+    setSelectedPdfAssetIds([]);
   }
 
   function closePdfReportChooser() {
@@ -7613,6 +7655,36 @@ export default function AssetRegisterClient() {
 
     setExportStep('format');
     setPdfReportSelection('');
+    setSelectedPdfAssetIds([]);
+  }
+
+  function openPdfAssetChooser() {
+    if (isExporting) return;
+
+    setExportStep('pdf-assets');
+    setPdfReportSelection('');
+    setSelectedPdfAssetIds([]);
+  }
+
+  function backToPdfReportChooser() {
+    if (isExporting) return;
+
+    setExportStep('pdf-report');
+    setPdfReportSelection('');
+  }
+
+  function selectAllPdfAssets() {
+    setSelectedPdfAssetIds(assets.map((asset) => asset.id));
+  }
+
+  function clearSelectedPdfAssets() {
+    setSelectedPdfAssetIds([]);
+  }
+
+  function togglePdfAssetSelection(assetId: string) {
+    setSelectedPdfAssetIds((current) =>
+      current.includes(assetId) ? current.filter((id) => id !== assetId) : [...current, assetId],
+    );
   }
 
   function handlePdfReportChoice(reportKind: PdfReportKind) {
@@ -7620,9 +7692,14 @@ export default function AssetRegisterClient() {
     void handleExportPdfReport(reportKind);
   }
 
-  async function handleExportPdf(reportKind: PdfReportKind = pdfReportKind) {
-    const reportOption = getPdfReportOption(reportKind);
-    const reportAssets = filterAssetsByPdfReportKind(assets, reportKind);
+  async function handleExportPdf(
+    reportKind: PdfReportKind = pdfReportKind,
+    overrideAssets?: RegisterAsset[],
+    overrideReportDetails?: PdfReportDetails,
+  ) {
+    const isCustomAssetSelection = Boolean(overrideAssets);
+    const reportOption = overrideReportDetails ? { value: reportKind, ...overrideReportDetails } : getPdfReportOption(reportKind);
+    const reportAssets = overrideAssets ?? filterAssetsByPdfReportKind(assets, reportKind);
     const reportValue = sumAssetValues(reportAssets);
     const reportValueInclVat = Math.round(reportValue * 1.15);
     const reportReplacementValue = sumAssetReplacementValues(reportAssets);
@@ -7653,7 +7730,7 @@ export default function AssetRegisterClient() {
       generatedAt: formatDate(new Date().toISOString()),
       reportTitle: `${reportOption.label} Report`,
       reportSubtitle: 'Aim4price asset register',
-      valueLabel: reportKind === 'full' ? 'Register Value' : 'Filtered Register Value',
+      valueLabel: isCustomAssetSelection ? 'Selected Register Value' : reportKind === 'full' ? 'Register Value' : 'Filtered Register Value',
       assetSectionTitle: reportOption.sectionTitle,
       emptyStateMessage: reportOption.emptyLabel,
       ownerName,
@@ -7668,7 +7745,11 @@ export default function AssetRegisterClient() {
         { label: 'Address', value: profileAddress || '—' },
       ],
       stats: [
-        { label: 'Assets', value: String(reportAssets.length), note: reportKind === 'full' ? 'Saved register items.' : reportOption.description },
+        {
+          label: 'Assets',
+          value: String(reportAssets.length),
+          note: isCustomAssetSelection ? 'Selected register items.' : reportKind === 'full' ? 'Saved register items.' : reportOption.description,
+        },
         { label: 'Value ex VAT', value: money(reportValue), note: 'Filtered report total excluding VAT.' },
         { label: 'Value incl VAT', value: money(reportValueInclVat), note: 'Filtered report total including 15% VAT.' },
         { label: 'Replacement value', value: money(reportReplacementValue), note: `${reportReplacementPricedCount} assets · ${money(reportReplacementValueInclVat)} incl. VAT.` },
@@ -7731,6 +7812,7 @@ export default function AssetRegisterClient() {
     try {
       await handleExportPdf(reportKind);
       setIsExportModalOpen(false);
+      setSelectedPdfAssetIds([]);
       setNotice({
         tone: 'success',
         message: `${reportOption.label} PDF opened.`,
@@ -7740,6 +7822,33 @@ export default function AssetRegisterClient() {
       setNotice({
         tone: 'error',
         message: error instanceof Error ? error.message : 'Failed to export the asset register PDF.',
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  }
+
+  async function handleExportSelectedPdfReport() {
+    if (!assets.length || !selectedPdfAssetCount || isExporting) {
+      return;
+    }
+
+    setExportFormat('pdf');
+    setPdfReportKind('full');
+    setIsExporting(true);
+
+    try {
+      await handleExportPdf('full', selectedPdfAssets, SELECTED_ASSETS_PDF_REPORT);
+      setIsExportModalOpen(false);
+      setSelectedPdfAssetIds([]);
+      setNotice({
+        tone: 'success',
+        message: `${selectedPdfAssetCount} selected asset${selectedPdfAssetCount === 1 ? '' : 's'} PDF opened.`,
+      });
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Failed to export the selected assets PDF.',
       });
     } finally {
       setIsExporting(false);
@@ -11097,7 +11206,12 @@ export default function AssetRegisterClient() {
         <div className={styles.modalOverlay}>
           <div className={styles.modalBackdrop} onClick={closeExportModal} />
 
-          <div className={`${styles.modalCard} ${styles.exportModal}`} role="dialog" aria-modal="true" aria-labelledby="export-title">
+          <div
+            className={`${styles.modalCard} ${styles.exportModal} ${exportStep === 'pdf-assets' ? styles.exportAssetPickerModal : ''}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="export-title"
+          >
             <div className={`${styles.modalHeader} ${styles.exportModalHeader}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="export-title">Export asset register</h3>
@@ -11159,35 +11273,165 @@ export default function AssetRegisterClient() {
                   </>
                 ) : (
                   <>
-                    <div className={styles.pdfReportSelector}>
-                      <div className={styles.pdfReportChoices}>
-                        {PDF_REPORT_OPTIONS.map((option) => (
-                          <button
-                            key={option.value}
-                            type="button"
-                            className={`${styles.pdfReportOption} ${pdfReportSelection === option.value ? styles.pdfReportOptionActive : ''}`}
-                            onClick={() => handlePdfReportChoice(option.value)}
-                            disabled={isExporting}
-                            aria-pressed={pdfReportSelection === option.value}
-                          >
-                            <span className={styles.pdfReportOptionMain}>
-                              <strong>{option.label}</strong>
-                              <small>{option.description}</small>
-                            </span>
+                    {exportStep === 'pdf-report' ? (
+                      <>
+                        <div className={styles.pdfReportSelector}>
+                          <div className={styles.pdfReportTopChoices}>
+                            <button
+                              type="button"
+                              className={`${styles.pdfReportOption} ${styles.pdfReportPrimaryOption} ${pdfReportSelection === fullPdfReportOption.value ? styles.pdfReportOptionActive : ''}`}
+                              onClick={() => handlePdfReportChoice(fullPdfReportOption.value)}
+                              disabled={isExporting}
+                              aria-pressed={pdfReportSelection === fullPdfReportOption.value}
+                            >
+                              <span className={styles.pdfReportOptionMain}>
+                                <strong>{fullPdfReportOption.label}</strong>
+                                <small>{fullPdfReportOption.description}</small>
+                              </span>
+
+                              <span className={styles.pdfReportOptionMeta}>
+                                <strong>{pdfReportAssetCounts.full}</strong>
+                                <small>{pdfReportAssetCounts.full === 1 ? 'asset' : 'assets'}</small>
+                              </span>
+                            </button>
+
+                            <button
+                              type="button"
+                              className={`${styles.pdfReportOption} ${styles.pdfReportPrimaryOption} ${styles.pdfReportSpecificOption}`}
+                              onClick={openPdfAssetChooser}
+                              disabled={isExporting}
+                            >
+                              <span className={styles.pdfReportOptionMain}>
+                                <strong>Choose Specific Assets</strong>
+                                <small>Select individual assets first, then download one clean PDF.</small>
+                              </span>
+
+                              <span className={styles.pdfReportOptionMeta}>
+                                <strong>{assets.length}</strong>
+                                <small>{assets.length === 1 ? 'asset' : 'assets'}</small>
+                              </span>
+                            </button>
+                          </div>
+
+                          <div className={styles.pdfReportChoices}>
+                            {quickPdfReportOptions.map((option) => (
+                              <button
+                                key={option.value}
+                                type="button"
+                                className={`${styles.pdfReportOption} ${pdfReportSelection === option.value ? styles.pdfReportOptionActive : ''}`}
+                                onClick={() => handlePdfReportChoice(option.value)}
+                                disabled={isExporting}
+                                aria-pressed={pdfReportSelection === option.value}
+                              >
+                                <span className={styles.pdfReportOptionMain}>
+                                  <strong>{option.label}</strong>
+                                  <small>{option.description}</small>
+                                </span>
+
+                                <span className={styles.pdfReportOptionMeta}>
+                                  <strong>{pdfReportAssetCounts[option.value]}</strong>
+                                  <small>{pdfReportAssetCounts[option.value] === 1 ? 'asset' : 'assets'}</small>
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className={`${styles.formActions} ${styles.exportActions}`}>
+                          <button type="button" className={styles.secondaryButton} onClick={closePdfReportChooser} disabled={isExporting}>
+                            Back
                           </button>
-                        ))}
-                      </div>
-                    </div>
 
-                    <div className={`${styles.formActions} ${styles.exportActions}`}>
-                      <button type="button" className={styles.secondaryButton} onClick={closePdfReportChooser} disabled={isExporting}>
-                        Back
-                      </button>
+                          <button type="button" className={styles.secondaryButton} onClick={closeExportModal} disabled={isExporting}>
+                            Cancel
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <section className={styles.pdfAssetDownloadPanel} aria-label="Choose assets for PDF download">
+                          <div className={styles.pdfAssetDownloadToolbar}>
+                            <div className={styles.pdfAssetDownloadToolbarCopy}>
+                              <strong>Choose assets to download</strong>
+                              <span>{selectedPdfAssetCount} of {assets.length} selected</span>
+                            </div>
 
-                      <button type="button" className={styles.secondaryButton} onClick={closeExportModal} disabled={isExporting}>
-                        Cancel
-                      </button>
-                    </div>
+                            <div className={styles.pdfAssetDownloadToolbarActions}>
+                              <button
+                                type="button"
+                                className={styles.secondaryButton}
+                                onClick={selectAllPdfAssets}
+                                disabled={isExporting || allPdfAssetsSelected}
+                              >
+                                Select all
+                              </button>
+
+                              <button
+                                type="button"
+                                className={styles.secondaryButton}
+                                onClick={clearSelectedPdfAssets}
+                                disabled={isExporting || selectedPdfAssetCount === 0}
+                              >
+                                Clear
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className={styles.pdfAssetDownloadList}>
+                            {assets.map((asset) => {
+                              const isSelectedForPdf = selectedPdfAssetIdSet.has(asset.id);
+
+                              return (
+                                <label
+                                  key={asset.id}
+                                  className={`${styles.pdfAssetDownloadRow} ${isSelectedForPdf ? styles.pdfAssetDownloadRowSelected : ''}`}
+                                >
+                                  <input
+                                    className={styles.pdfAssetDownloadCheckboxInput}
+                                    type="checkbox"
+                                    checked={isSelectedForPdf}
+                                    onChange={() => togglePdfAssetSelection(asset.id)}
+                                    disabled={isExporting}
+                                  />
+                                  <span className={styles.pdfAssetDownloadCheckbox} aria-hidden="true" />
+
+                                  <span className={styles.pdfAssetDownloadCopy}>
+                                    <strong>{asset.title}</strong>
+                                    <span>{buildAssetMeta(asset)}</span>
+                                    <small>{assetKindLabel(asset)} · {methodLabel(asset.selectedMethod)}</small>
+                                  </span>
+
+                                  <span className={styles.pdfAssetDownloadValue}>
+                                    <strong>{money(asset.value)}</strong>
+                                    <small>current value</small>
+                                  </span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </section>
+
+                        <div className={`${styles.formActions} ${styles.exportActions} ${styles.pdfAssetDownloadActions}`}>
+                          <button type="button" className={styles.secondaryButton} onClick={backToPdfReportChooser} disabled={isExporting}>
+                            Back
+                          </button>
+
+                          <button type="button" className={styles.secondaryButton} onClick={closeExportModal} disabled={isExporting}>
+                            Cancel
+                          </button>
+
+                          <button
+                            type="button"
+                            className={`${styles.primaryButton} ${styles.pdfAssetDownloadButton}`}
+                            onClick={() => void handleExportSelectedPdfReport()}
+                            disabled={isExporting || selectedPdfAssetCount === 0}
+                          >
+                            <DownloadIcon className={styles.buttonIcon} />
+                            <span>{isExporting ? 'Preparing PDF...' : selectedPdfAssetCount ? `Download ${selectedPdfAssetCount} selected PDF` : 'Download selected PDF'}</span>
+                          </button>
+                        </div>
+                      </>
+                    )}
                   </>
                 )}
               </div>
