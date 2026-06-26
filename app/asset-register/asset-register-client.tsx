@@ -4016,6 +4016,7 @@ export default function AssetRegisterClient() {
   const [pdfReportKind, setPdfReportKind] = useState<PdfReportKind>('full');
   const [pdfReportSelection, setPdfReportSelection] = useState<PdfReportKind | ''>('');
   const [selectedPdfAssetIds, setSelectedPdfAssetIds] = useState<string[]>([]);
+  const [pdfAssetSearchTerm, setPdfAssetSearchTerm] = useState('');
   const [isExporting, setIsExporting] = useState(false);
   const [projectionAsset, setProjectionAsset] = useState<RegisterAsset | null>(null);
   const [projectionForm, setProjectionForm] = useState<ProjectionFormState>(createDefaultProjectionForm());
@@ -4888,33 +4889,40 @@ export default function AssetRegisterClient() {
     );
   }, [assets]);
 
-  const pdfReportAssetCounts = useMemo<Record<PdfReportKind, number>>(() => {
-    return PDF_REPORT_OPTIONS.reduce(
-      (counts, option) => ({
-        ...counts,
-        [option.value]: filterAssetsByPdfReportKind(assets, option.value).length,
-      }),
-      {
-        full: 0,
-        financed: 0,
-        insured: 0,
-        licensed: 0,
-        'not-financed': 0,
-        'not-insured': 0,
-        'not-licensed': 0,
-      },
-    );
-  }, [assets]);
-
   const quickPdfReportOptions = useMemo(() => PDF_REPORT_OPTIONS.filter((option) => option.value !== 'full'), []);
   const fullPdfReportOption = PDF_REPORT_OPTIONS[0];
+  const normalizedPdfAssetSearch = useMemo(() => normalizeRegisterSearchText(pdfAssetSearchTerm), [pdfAssetSearchTerm]);
+  const compactPdfAssetSearch = useMemo(() => normalizeCompactSearchText(pdfAssetSearchTerm), [pdfAssetSearchTerm]);
+  const visiblePdfAssets = useMemo(() => {
+    if (!normalizedPdfAssetSearch) {
+      return assets;
+    }
+
+    return assets.filter((asset) => {
+      const searchableText = [
+        buildSearchableText(asset),
+        buildAssetMeta(asset),
+        assetKindLabel(asset),
+        methodLabel(asset.selectedMethod),
+        money(asset.value),
+        String(asset.value ?? ''),
+      ].join(' ');
+      const normalizedSearchableText = normalizeRegisterSearchText(searchableText);
+      const compactSearchableText = normalizeCompactSearchText(searchableText);
+
+      return (
+        normalizedSearchableText.includes(normalizedPdfAssetSearch) ||
+        (compactPdfAssetSearch ? compactSearchableText.includes(compactPdfAssetSearch) : false)
+      );
+    });
+  }, [assets, compactPdfAssetSearch, normalizedPdfAssetSearch]);
   const selectedPdfAssetIdSet = useMemo(() => new Set(selectedPdfAssetIds), [selectedPdfAssetIds]);
   const selectedPdfAssets = useMemo(
     () => assets.filter((asset) => selectedPdfAssetIdSet.has(asset.id)),
     [assets, selectedPdfAssetIdSet],
   );
   const selectedPdfAssetCount = selectedPdfAssets.length;
-  const allPdfAssetsSelected = assets.length > 0 && selectedPdfAssetCount === assets.length;
+  const allVisiblePdfAssetsSelected = visiblePdfAssets.length > 0 && visiblePdfAssets.every((asset) => selectedPdfAssetIdSet.has(asset.id));
 
   const editingAsset = useMemo(() => {
     return editingAssetId === null ? null : assets.find((asset) => asset.id === editingAssetId) ?? null;
@@ -7625,6 +7633,7 @@ export default function AssetRegisterClient() {
     setPdfReportKind('full');
     setPdfReportSelection('');
     setSelectedPdfAssetIds([]);
+    setPdfAssetSearchTerm('');
     setIsExportModalOpen(true);
   }
 
@@ -7635,6 +7644,7 @@ export default function AssetRegisterClient() {
     setExportStep('format');
     setPdfReportSelection('');
     setSelectedPdfAssetIds([]);
+    setPdfAssetSearchTerm('');
   }
 
   function selectExportFormat(nextFormat: ExportFormat) {
@@ -7642,12 +7652,14 @@ export default function AssetRegisterClient() {
     setExportStep('format');
     setPdfReportSelection('');
     setSelectedPdfAssetIds([]);
+    setPdfAssetSearchTerm('');
   }
 
   function openPdfReportChooser() {
     setExportStep('pdf-report');
     setPdfReportSelection('');
     setSelectedPdfAssetIds([]);
+    setPdfAssetSearchTerm('');
   }
 
   function closePdfReportChooser() {
@@ -7656,6 +7668,7 @@ export default function AssetRegisterClient() {
     setExportStep('format');
     setPdfReportSelection('');
     setSelectedPdfAssetIds([]);
+    setPdfAssetSearchTerm('');
   }
 
   function openPdfAssetChooser() {
@@ -7664,6 +7677,7 @@ export default function AssetRegisterClient() {
     setExportStep('pdf-assets');
     setPdfReportSelection('');
     setSelectedPdfAssetIds([]);
+    setPdfAssetSearchTerm('');
   }
 
   function backToPdfReportChooser() {
@@ -7671,10 +7685,13 @@ export default function AssetRegisterClient() {
 
     setExportStep('pdf-report');
     setPdfReportSelection('');
+    setPdfAssetSearchTerm('');
   }
 
   function selectAllPdfAssets() {
-    setSelectedPdfAssetIds(assets.map((asset) => asset.id));
+    const targetAssets = normalizedPdfAssetSearch ? visiblePdfAssets : assets;
+
+    setSelectedPdfAssetIds((current) => Array.from(new Set([...current, ...targetAssets.map((asset) => asset.id)])));
   }
 
   function clearSelectedPdfAssets() {
@@ -7813,6 +7830,7 @@ export default function AssetRegisterClient() {
       await handleExportPdf(reportKind);
       setIsExportModalOpen(false);
       setSelectedPdfAssetIds([]);
+      setPdfAssetSearchTerm('');
       setNotice({
         tone: 'success',
         message: `${reportOption.label} PDF opened.`,
@@ -7841,6 +7859,7 @@ export default function AssetRegisterClient() {
       await handleExportPdf('full', selectedPdfAssets, SELECTED_ASSETS_PDF_REPORT);
       setIsExportModalOpen(false);
       setSelectedPdfAssetIds([]);
+      setPdfAssetSearchTerm('');
       setNotice({
         tone: 'success',
         message: `${selectedPdfAssetCount} selected asset${selectedPdfAssetCount === 1 ? '' : 's'} PDF opened.`,
@@ -11203,7 +11222,7 @@ export default function AssetRegisterClient() {
       ) : null}
 
       {isExportModalOpen ? (
-        <div className={styles.modalOverlay}>
+        <div className={`${styles.modalOverlay} ${styles.exportModalOverlay}`}>
           <div className={styles.modalBackdrop} onClick={closeExportModal} />
 
           <div
@@ -11286,12 +11305,6 @@ export default function AssetRegisterClient() {
                             >
                               <span className={styles.pdfReportOptionMain}>
                                 <strong>{fullPdfReportOption.label}</strong>
-                                <small>{fullPdfReportOption.description}</small>
-                              </span>
-
-                              <span className={styles.pdfReportOptionMeta}>
-                                <strong>{pdfReportAssetCounts.full}</strong>
-                                <small>{pdfReportAssetCounts.full === 1 ? 'asset' : 'assets'}</small>
                               </span>
                             </button>
 
@@ -11303,12 +11316,6 @@ export default function AssetRegisterClient() {
                             >
                               <span className={styles.pdfReportOptionMain}>
                                 <strong>Choose Specific Assets</strong>
-                                <small>Select individual assets first, then download one clean PDF.</small>
-                              </span>
-
-                              <span className={styles.pdfReportOptionMeta}>
-                                <strong>{assets.length}</strong>
-                                <small>{assets.length === 1 ? 'asset' : 'assets'}</small>
                               </span>
                             </button>
                           </div>
@@ -11325,12 +11332,6 @@ export default function AssetRegisterClient() {
                               >
                                 <span className={styles.pdfReportOptionMain}>
                                   <strong>{option.label}</strong>
-                                  <small>{option.description}</small>
-                                </span>
-
-                                <span className={styles.pdfReportOptionMeta}>
-                                  <strong>{pdfReportAssetCounts[option.value]}</strong>
-                                  <small>{pdfReportAssetCounts[option.value] === 1 ? 'asset' : 'assets'}</small>
                                 </span>
                               </button>
                             ))}
@@ -11351,17 +11352,22 @@ export default function AssetRegisterClient() {
                       <>
                         <section className={styles.pdfAssetDownloadPanel} aria-label="Choose assets for PDF download">
                           <div className={styles.pdfAssetDownloadToolbar}>
-                            <div className={styles.pdfAssetDownloadToolbarCopy}>
-                              <strong>Choose assets to download</strong>
-                              <span>{selectedPdfAssetCount} of {assets.length} selected</span>
-                            </div>
+                            <input
+                              className={styles.pdfAssetSearchInput}
+                              type="search"
+                              value={pdfAssetSearchTerm}
+                              onChange={(event) => setPdfAssetSearchTerm(event.target.value)}
+                              placeholder="Search..."
+                              aria-label="Search assets"
+                              disabled={isExporting}
+                            />
 
                             <div className={styles.pdfAssetDownloadToolbarActions}>
                               <button
                                 type="button"
                                 className={styles.secondaryButton}
                                 onClick={selectAllPdfAssets}
-                                disabled={isExporting || allPdfAssetsSelected}
+                                disabled={isExporting || visiblePdfAssets.length === 0 || allVisiblePdfAssetsSelected}
                               >
                                 Select all
                               </button>
@@ -11378,36 +11384,40 @@ export default function AssetRegisterClient() {
                           </div>
 
                           <div className={styles.pdfAssetDownloadList}>
-                            {assets.map((asset) => {
-                              const isSelectedForPdf = selectedPdfAssetIdSet.has(asset.id);
+                            {visiblePdfAssets.length ? (
+                              visiblePdfAssets.map((asset) => {
+                                const isSelectedForPdf = selectedPdfAssetIdSet.has(asset.id);
 
-                              return (
-                                <label
-                                  key={asset.id}
-                                  className={`${styles.pdfAssetDownloadRow} ${isSelectedForPdf ? styles.pdfAssetDownloadRowSelected : ''}`}
-                                >
-                                  <input
-                                    className={styles.pdfAssetDownloadCheckboxInput}
-                                    type="checkbox"
-                                    checked={isSelectedForPdf}
-                                    onChange={() => togglePdfAssetSelection(asset.id)}
-                                    disabled={isExporting}
-                                  />
-                                  <span className={styles.pdfAssetDownloadCheckbox} aria-hidden="true" />
+                                return (
+                                  <label
+                                    key={asset.id}
+                                    className={`${styles.pdfAssetDownloadRow} ${isSelectedForPdf ? styles.pdfAssetDownloadRowSelected : ''}`}
+                                  >
+                                    <input
+                                      className={styles.pdfAssetDownloadCheckboxInput}
+                                      type="checkbox"
+                                      checked={isSelectedForPdf}
+                                      onChange={() => togglePdfAssetSelection(asset.id)}
+                                      disabled={isExporting}
+                                    />
+                                    <span className={styles.pdfAssetDownloadCheckbox} aria-hidden="true" />
 
-                                  <span className={styles.pdfAssetDownloadCopy}>
-                                    <strong>{asset.title}</strong>
-                                    <span>{buildAssetMeta(asset)}</span>
-                                    <small>{assetKindLabel(asset)} · {methodLabel(asset.selectedMethod)}</small>
-                                  </span>
+                                    <span className={styles.pdfAssetDownloadCopy}>
+                                      <strong>{asset.title}</strong>
+                                      <span>{buildAssetMeta(asset)}</span>
+                                      <small>{assetKindLabel(asset)} · {methodLabel(asset.selectedMethod)}</small>
+                                    </span>
 
-                                  <span className={styles.pdfAssetDownloadValue}>
-                                    <strong>{money(asset.value)}</strong>
-                                    <small>current value</small>
-                                  </span>
-                                </label>
-                              );
-                            })}
+                                    <span className={styles.pdfAssetDownloadValue}>
+                                      <strong>{money(asset.value)}</strong>
+                                      <small>current value</small>
+                                    </span>
+                                  </label>
+                                );
+                              })
+                            ) : (
+                              <div className={styles.pdfAssetDownloadEmpty}>No assets match your search.</div>
+                            )}
                           </div>
                         </section>
 
