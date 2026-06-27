@@ -1,6 +1,7 @@
 import type { PoolClient } from 'pg';
 import { getDb } from './db';
 import { getAssetRegisterItemById, listAssetRegisterItems, type AssetRegisterItem } from './asset-register-db';
+import { listAssetRegisters } from './asset-registers';
 import { buildAssetRegisterUploadUrl, getLegacyAssetRegisterUploadResponse } from './asset-register-uploads';
 
 export type MyInvoiceSource = 'manual' | 'automatic';
@@ -565,8 +566,27 @@ export async function ensureMyInvoiceTables(): Promise<void> {
 
 export async function listMyInvoiceAssets(userId: string): Promise<MyInvoiceAssetOption[]> {
   try {
-    const assets = await listAssetRegisterItems(userId);
-    return assets.map(mapAssetOption);
+    const registers = await listAssetRegisters(userId);
+    const assetGroups = await Promise.all(
+      registers.map(async (register) => {
+        try {
+          return await listAssetRegisterItems(userId, register.id);
+        } catch (error) {
+          if (error instanceof Error && error.message === 'ASSET_REGISTER_NOT_FOUND') return [];
+          throw error;
+        }
+      }),
+    );
+
+    const assetOptionsById = new Map<string, MyInvoiceAssetOption>();
+
+    for (const asset of assetGroups.flat()) {
+      if (!assetOptionsById.has(asset.id)) {
+        assetOptionsById.set(asset.id, mapAssetOption(asset));
+      }
+    }
+
+    return Array.from(assetOptionsById.values());
   } catch (error) {
     if (error instanceof Error && error.message === 'ASSET_REGISTER_NOT_FOUND') return [];
     throw error;
@@ -651,7 +671,7 @@ export async function listMyInvoices(userId: string, filters: MyInvoiceListFilte
         i.*,
         ai.title as asset_title,
         ai.kind as asset_kind,
-        ai.equipment_family_label as asset_category_label,
+        coalesce(nullif(ef.family_label, ''), nullif(ai.kind, ''), 'Asset') as asset_category_label,
         ai.year_model as asset_year_model,
         ai.hours as asset_hours,
         ai.condition as asset_condition,
@@ -663,6 +683,10 @@ export async function listMyInvoices(userId: string, filters: MyInvoiceListFilte
       join public.asset_register_items ai
         on ai.id = i.asset_register_item_id
        and ai.user_id = i.user_id
+      left join public.valuation_runs vr
+        on vr.id::text = (to_jsonb(ai)->>'valuation_run_id')
+      left join public.equipment_families ef
+        on ef.id::text = coalesce((to_jsonb(ai)->>'equipment_family_id'), (to_jsonb(vr)->>'equipment_family_id'))
       where ${filterClause}
       order by i.invoice_date desc nulls last, i.created_at desc, i.id desc
     `,
