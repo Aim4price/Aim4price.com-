@@ -652,11 +652,17 @@ const USAGE_OVERRIDE_CONFIRMATION_TEXT =
   'Are you sure you want to override the saved usage for this asset? This can lower the usage recorded for this saved Aim4price asset and may affect its valuation/depreciation history.';
 
 type AssetSettingsUsageMode = 'percent' | 'hours' | 'km' | 'none';
-type AssetSettingsLocationState = 'idle' | 'capturing' | 'saving';
+type AssetSettingsLocationState = 'idle' | 'capturing' | 'savingManual' | 'savingDevice';
 type AssetUsageOverrideRequest = {
   mode: Exclude<AssetSettingsUsageMode, 'none'>;
   value: number;
 };
+
+type AssetSettingsManualGpsValidation =
+  | { ok: true; latitude: number; longitude: number; locationText: string }
+  | { ok: false; error: string };
+
+const MAX_ASSET_SETTINGS_LOCATION_TEXT_LENGTH = 180;
 
 const FINANCE_STATUS_OPTIONS: Array<{ value: AssetStatusChoice; label: string; description: string }> = [
   { value: 'yes', label: 'Is financed', description: 'This asset has active finance or a lender linked to it.' },
@@ -1599,6 +1605,100 @@ function formatAssetSettingsGpsPosition(asset: RegisterAsset): string {
   return `${asset.lastKnownLat.toFixed(6)}, ${asset.lastKnownLng.toFixed(6)}`;
 }
 
+function formatAssetSettingsCoordinateInput(value: number | null): string {
+  return typeof value === 'number' && Number.isFinite(value) ? value.toFixed(6) : '';
+}
+
+function formatAssetSettingsLocationText(asset: RegisterAsset): string {
+  return String(asset.lastKnownLocationText ?? '').trim();
+}
+
+function getAssetSettingsManualLocationTextInput(asset: RegisterAsset | null): string {
+  const locationText = String(asset?.lastKnownLocationText ?? '').trim();
+
+  if (!locationText || /^GPS\s+-?\d+(?:\.\d+)?,\s*-?\d+(?:\.\d+)?$/i.test(locationText)) {
+    return '';
+  }
+
+  return locationText.slice(0, MAX_ASSET_SETTINGS_LOCATION_TEXT_LENGTH);
+}
+
+function normalizeAssetSettingsLocationTextInput(value: string): string {
+  return value
+    .replace(/[\u0000-\u001f\u007f]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, MAX_ASSET_SETTINGS_LOCATION_TEXT_LENGTH);
+}
+
+function parseAssetSettingsCoordinate(value: string): number | null {
+  const text = value.trim().replace(/[°]/g, '').replace(/\s+/g, '');
+  if (!text) return null;
+
+  const normalized = text.includes(',') && !text.includes('.') ? text.replace(',', '.') : text;
+  const numeric = Number(normalized);
+
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
+function parseAssetSettingsCoordinatePair(value: string): { latitude: number; longitude: number } | null {
+  const matches = value.match(/-?\d+(?:[.,]\d+)?/g);
+  if (!matches || matches.length < 2) return null;
+
+  const latitude = Number(matches[0].replace(',', '.'));
+  const longitude = Number(matches[1].replace(',', '.'));
+
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+
+  return { latitude, longitude };
+}
+
+function formatAssetSettingsManualCoordinate(value: number): string {
+  return value.toFixed(6);
+}
+
+function validateAssetSettingsManualGpsInputs(
+  latitudeInput: string,
+  longitudeInput: string,
+  locationTextInput: string,
+): AssetSettingsManualGpsValidation {
+  let latitude = parseAssetSettingsCoordinate(latitudeInput);
+  let longitude = parseAssetSettingsCoordinate(longitudeInput);
+
+  if ((latitude === null || longitude === null) && !longitudeInput.trim()) {
+    const pair = parseAssetSettingsCoordinatePair(latitudeInput);
+    if (pair) {
+      latitude = pair.latitude;
+      longitude = pair.longitude;
+    }
+  }
+
+  if (latitude === null) {
+    return { ok: false, error: 'Latitude must be a finite number between -90 and 90.' };
+  }
+
+  if (latitude < -90 || latitude > 90) {
+    return { ok: false, error: 'Latitude must be between -90 and 90.' };
+  }
+
+  if (longitude === null) {
+    return { ok: false, error: 'Longitude must be a finite number between -180 and 180.' };
+  }
+
+  if (longitude < -180 || longitude > 180) {
+    return { ok: false, error: 'Longitude must be between -180 and 180.' };
+  }
+
+  const manualLocationText = normalizeAssetSettingsLocationTextInput(locationTextInput);
+
+  return {
+    ok: true,
+    latitude,
+    longitude,
+    locationText: manualLocationText || `GPS ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`,
+  };
+}
+
 function buildAssetSettingsGoogleMapsUrl(asset: RegisterAsset | null | undefined): string | null {
   if (!hasAssetGpsCoordinates(asset)) {
     return null;
@@ -1613,11 +1713,11 @@ function gpsCaptureErrorMessage(error: unknown): string | null {
     : null;
 
   if (maybeCode === 1) {
-    return 'Location permission was denied. Allow location access and try again.';
+    return 'Location permission was denied. You can enter the latitude and longitude manually above.';
   }
 
   if (maybeCode !== null && Number.isFinite(maybeCode)) {
-    return 'Could not capture GPS position. Please try again.';
+    return 'Could not capture GPS position. Please try again, or enter the latitude and longitude manually above.';
   }
 
   return null;
@@ -4018,8 +4118,14 @@ export default function AssetRegisterClient() {
   const [assetSettingsLocationState, setAssetSettingsLocationState] = useState<AssetSettingsLocationState>('idle');
   const [assetSettingsLocationError, setAssetSettingsLocationError] = useState('');
   const [assetSettingsLocationSuccess, setAssetSettingsLocationSuccess] = useState('');
+  const [assetSettingsManualLatInput, setAssetSettingsManualLatInput] = useState('');
+  const [assetSettingsManualLngInput, setAssetSettingsManualLngInput] = useState('');
+  const [assetSettingsManualLocationText, setAssetSettingsManualLocationText] = useState('');
   const [pendingUsageOverride, setPendingUsageOverride] = useState<AssetUsageOverrideRequest | null>(null);
   const isAssetSettingsLocationBusy = assetSettingsLocationState !== 'idle';
+  const isAssetSettingsManualLocationSaving = assetSettingsLocationState === 'savingManual';
+  const isAssetSettingsDeviceLocationSaving = assetSettingsLocationState === 'savingDevice';
+  const isAssetSettingsDeviceLocationCapturing = assetSettingsLocationState === 'capturing';
   const isAssetSettingsBusy = isSavingAssetSettings || isAssetSettingsLocationBusy;
   const [isManualConversionConfirmOpen, setIsManualConversionConfirmOpen] = useState(false);
   const [isAddChoiceModalOpen, setIsAddChoiceModalOpen] = useState(false);
@@ -5156,6 +5262,9 @@ export default function AssetRegisterClient() {
     setAssetSettingsLocationState('idle');
     setAssetSettingsLocationError('');
     setAssetSettingsLocationSuccess('');
+    setAssetSettingsManualLatInput('');
+    setAssetSettingsManualLngInput('');
+    setAssetSettingsManualLocationText('');
     setPendingUsageOverride(null);
     setMainPhotoSelection(null);
     setPendingPhotoFiles([]);
@@ -5214,7 +5323,40 @@ export default function AssetRegisterClient() {
     setAssetSettingsLocationState('idle');
     setAssetSettingsLocationError('');
     setAssetSettingsLocationSuccess('');
+    setAssetSettingsManualLatInput('');
+    setAssetSettingsManualLngInput('');
+    setAssetSettingsManualLocationText('');
     setIsAssetModalOpen(true);
+  }
+
+  function setAssetSettingsManualLocationInputsFromAsset(asset: RegisterAsset | null) {
+    setAssetSettingsManualLatInput(asset ? formatAssetSettingsCoordinateInput(asset.lastKnownLat) : '');
+    setAssetSettingsManualLngInput(asset ? formatAssetSettingsCoordinateInput(asset.lastKnownLng) : '');
+    setAssetSettingsManualLocationText(getAssetSettingsManualLocationTextInput(asset));
+  }
+
+  function clearAssetSettingsManualLocationInputs() {
+    setAssetSettingsManualLatInput('');
+    setAssetSettingsManualLngInput('');
+    setAssetSettingsManualLocationText('');
+  }
+
+  function clearAssetSettingsLocationFeedback() {
+    setAssetSettingsLocationError('');
+    setAssetSettingsLocationSuccess('');
+  }
+
+  function applyAssetSettingsCoordinatePair(value: string): boolean {
+    const pair = parseAssetSettingsCoordinatePair(value);
+
+    if (!pair) {
+      return false;
+    }
+
+    setAssetSettingsManualLatInput(formatAssetSettingsManualCoordinate(pair.latitude));
+    setAssetSettingsManualLngInput(formatAssetSettingsManualCoordinate(pair.longitude));
+    clearAssetSettingsLocationFeedback();
+    return true;
   }
 
   function openAssetSettingsModal() {
@@ -5228,8 +5370,8 @@ export default function AssetRegisterClient() {
     setAssetSettingsUsageInput(formatAssetSettingsUsageInput(editingAsset, usageMode));
     setAssetSettingsError('');
     setAssetSettingsLocationState('idle');
-    setAssetSettingsLocationError('');
-    setAssetSettingsLocationSuccess('');
+    clearAssetSettingsLocationFeedback();
+    setAssetSettingsManualLocationInputsFromAsset(editingAsset);
     setPendingUsageOverride(null);
     setIsManualConversionConfirmOpen(false);
     setIsAssetSettingsModalOpen(true);
@@ -5242,8 +5384,81 @@ export default function AssetRegisterClient() {
     setPendingUsageOverride(null);
     setAssetSettingsError('');
     setAssetSettingsLocationState('idle');
-    setAssetSettingsLocationError('');
-    setAssetSettingsLocationSuccess('');
+    clearAssetSettingsLocationFeedback();
+    clearAssetSettingsManualLocationInputs();
+  }
+
+  async function persistAssetSettingsGpsPosition(input: {
+    assetId: string;
+    latitude: number;
+    longitude: number;
+    gpsAccuracyMeters: number | null;
+    clientCapturedAt: string;
+    locationText: string;
+    source: 'manual' | 'device';
+  }): Promise<RegisterAsset> {
+    const response = await fetch('/api/asset-register/location', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(input),
+    });
+    const data = (await response.json().catch(() => null)) as AssetRegisterApiResponse | null;
+
+    if (!response.ok || !data?.ok || !data.item) {
+      throw new Error(data?.error ?? 'Failed to save GPS position.');
+    }
+
+    syncSettingsUpdatedAsset(data.item);
+    setAssetDraft(buildDraftFromAsset(data.item));
+    setAssetSettingsManualLocationInputsFromAsset(data.item);
+
+    return data.item;
+  }
+
+  async function saveAssetSettingsManualGpsPosition() {
+    if (!editingAsset) {
+      setAssetSettingsLocationError('Open a saved asset before updating GPS position.');
+      return;
+    }
+
+    if (isAssetSettingsBusy) {
+      return;
+    }
+
+    const validatedGps = validateAssetSettingsManualGpsInputs(
+      assetSettingsManualLatInput,
+      assetSettingsManualLngInput,
+      assetSettingsManualLocationText,
+    );
+
+    if (!validatedGps.ok) {
+      setAssetSettingsLocationError(validatedGps.error);
+      setAssetSettingsLocationSuccess('');
+      return;
+    }
+
+    setAssetSettingsLocationState('savingManual');
+    clearAssetSettingsLocationFeedback();
+
+    try {
+      await persistAssetSettingsGpsPosition({
+        assetId: editingAsset.id,
+        latitude: validatedGps.latitude,
+        longitude: validatedGps.longitude,
+        gpsAccuracyMeters: null,
+        clientCapturedAt: new Date().toISOString(),
+        locationText: validatedGps.locationText,
+        source: 'manual',
+      });
+
+      setAssetSettingsLocationSuccess('Manual GPS position saved.');
+      setNotice({ tone: 'success', message: 'Manual GPS position updated.' });
+    } catch (error) {
+      setAssetSettingsLocationError(error instanceof Error ? error.message : 'Failed to save GPS position.');
+    } finally {
+      setAssetSettingsLocationState('idle');
+    }
   }
 
   async function updateAssetSettingsGpsPosition() {
@@ -5257,7 +5472,7 @@ export default function AssetRegisterClient() {
     }
 
     if (typeof navigator === 'undefined' || !navigator.geolocation) {
-      setAssetSettingsLocationError('GPS is not available in this browser.');
+      setAssetSettingsLocationError('GPS is not available in this browser. You can enter the latitude and longitude manually above.');
       setAssetSettingsLocationSuccess('');
       return;
     }
@@ -5265,8 +5480,7 @@ export default function AssetRegisterClient() {
     const targetAssetId = editingAsset.id;
 
     setAssetSettingsLocationState('capturing');
-    setAssetSettingsLocationError('');
-    setAssetSettingsLocationSuccess('');
+    clearAssetSettingsLocationFeedback();
 
     try {
       const position = await new Promise<GeolocationPosition>((resolve, reject) => {
@@ -5281,7 +5495,7 @@ export default function AssetRegisterClient() {
       const longitude = position.coords.longitude;
 
       if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
-        throw new Error('Could not capture GPS position. Please try again.');
+        throw new Error('Could not capture GPS position. Please try again, or enter the latitude and longitude manually above.');
       }
 
       const gpsAccuracyMeters = Number.isFinite(position.coords.accuracy) && position.coords.accuracy >= 0
@@ -5289,34 +5503,26 @@ export default function AssetRegisterClient() {
         : null;
       const clientCapturedAt = new Date(position.timestamp || Date.now()).toISOString();
 
-      setAssetSettingsLocationState('saving');
+      setAssetSettingsLocationState('savingDevice');
 
-      const response = await fetch('/api/asset-register/location', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          assetId: targetAssetId,
-          latitude,
-          longitude,
-          gpsAccuracyMeters,
-          clientCapturedAt,
-        }),
+      await persistAssetSettingsGpsPosition({
+        assetId: targetAssetId,
+        latitude,
+        longitude,
+        gpsAccuracyMeters,
+        clientCapturedAt,
+        locationText: `GPS ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`,
+        source: 'device',
       });
-      const data = (await response.json().catch(() => null)) as AssetRegisterApiResponse | null;
 
-      if (!response.ok || !data?.ok || !data.item) {
-        throw new Error(data?.error ?? 'Failed to save GPS position.');
-      }
-
-      syncSettingsUpdatedAsset(data.item);
-      setAssetDraft(buildDraftFromAsset(data.item));
-      setAssetSettingsLocationSuccess('GPS position saved.');
-      setNotice({ tone: 'success', message: 'GPS position updated.' });
+      setAssetSettingsLocationSuccess('Device GPS position saved.');
+      setNotice({ tone: 'success', message: 'Device GPS position updated.' });
     } catch (error) {
       setAssetSettingsLocationError(
         gpsCaptureErrorMessage(error) ??
-          (error instanceof Error ? error.message : 'Could not capture GPS position. Please try again.'),
+          (error instanceof Error
+            ? error.message
+            : 'Could not capture GPS position. Please try again, or enter the latitude and longitude manually above.'),
       );
     } finally {
       setAssetSettingsLocationState('idle');
@@ -8257,12 +8463,15 @@ export default function AssetRegisterClient() {
   const settingsUsageMode = editingAsset ? getAssetSettingsUsageMode(editingAsset) : 'none';
   const settingsUsageCurrentValue = editingAsset ? getAssetSettingsUsageCurrentValue(editingAsset, settingsUsageMode) : null;
   const assetSettingsMapsUrl = editingAsset ? buildAssetSettingsGoogleMapsUrl(editingAsset) : null;
-  const assetSettingsLocationButtonLabel =
-    assetSettingsLocationState === 'capturing'
-      ? 'Capturing GPS...'
-      : assetSettingsLocationState === 'saving'
-        ? 'Saving GPS...'
-        : 'Update GPS position';
+  const assetSettingsLocationText = editingAsset ? formatAssetSettingsLocationText(editingAsset) : '';
+  const assetSettingsManualGpsButtonLabel = isAssetSettingsManualLocationSaving
+    ? 'Saving GPS...'
+    : 'Save manual GPS position';
+  const assetSettingsDeviceGpsButtonLabel = isAssetSettingsDeviceLocationCapturing
+    ? 'Capturing GPS...'
+    : isAssetSettingsDeviceLocationSaving
+      ? 'Saving GPS...'
+      : 'Use this device’s GPS';
   const marketplacePhotoUrls = marketplaceAsset ? normalizePhotos(marketplaceAsset.photos) : [];
   const marketplaceListingTitle = marketplaceAsset ? buildMarketplaceListingTitle(marketplaceAsset, true) : '';
   const marketplaceModalTitle = marketplaceAsset
@@ -10221,6 +10430,133 @@ export default function AssetRegisterClient() {
             </div>
 
             <div className={`${styles.modalScrollBody} ${styles.assetSettingsBody}`}>
+              <section className={`${styles.assetSettingsSection} ${styles.assetSettingsLocationSection}`}>
+                <div className={styles.assetSettingsSectionCopy}>
+                  <span>Location</span>
+                  <h4>Update Last Scanned / GPS Position</h4>
+                  <p>Save the asset’s latest known position. This only updates the saved location — it does not change the asset value, usage, serial number, brand, model, finance, insurance or licence details.</p>
+                </div>
+
+                <div className={styles.assetSettingsLocationSummary}>
+                  <div className={styles.assetSettingsStaticGrid}>
+                    <div>
+                      <span>Last scanned</span>
+                      <strong>{formatAssetSettingsLastScanned(editingAsset)}</strong>
+                    </div>
+                    <div>
+                      <span>GPS position</span>
+                      <strong>{formatAssetSettingsGpsPosition(editingAsset)}</strong>
+                    </div>
+                    {assetSettingsLocationText ? (
+                      <div className={styles.assetSettingsStaticGridWide}>
+                        <span>Location text</span>
+                        <strong>{assetSettingsLocationText}</strong>
+                      </div>
+                    ) : null}
+                    {assetSettingsMapsUrl ? (
+                      <div>
+                        <span>Map</span>
+                        <a className={styles.assetSettingsMapLink} href={assetSettingsMapsUrl} target="_blank" rel="noreferrer">
+                          Open in Google Maps
+                        </a>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+
+                <div className={styles.assetSettingsLocationMethods}>
+                  <div className={`${styles.assetSettingsLocationMethodCard} ${styles.assetSettingsLocationMethodPrimary}`}>
+                    <div className={styles.assetSettingsLocationMethodHeader}>
+                      <strong>Manual GPS position</strong>
+                      <p>Paste coordinates from Google Maps, or type the latitude and longitude below.</p>
+                    </div>
+
+                    <div className={styles.assetSettingsCoordinateGrid}>
+                      <label className={styles.assetSettingsField}>
+                        <span>Latitude</span>
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          value={assetSettingsManualLatInput}
+                          onChange={(event) => {
+                            setAssetSettingsManualLatInput(event.target.value);
+                            clearAssetSettingsLocationFeedback();
+                          }}
+                          onPaste={(event) => {
+                            const pastedText = event.clipboardData.getData('text');
+                            if (applyAssetSettingsCoordinatePair(pastedText)) {
+                              event.preventDefault();
+                            }
+                          }}
+                          placeholder="-33.924869"
+                        />
+                      </label>
+
+                      <label className={styles.assetSettingsField}>
+                        <span>Longitude</span>
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          value={assetSettingsManualLngInput}
+                          onChange={(event) => {
+                            setAssetSettingsManualLngInput(event.target.value);
+                            clearAssetSettingsLocationFeedback();
+                          }}
+                          placeholder="18.424055"
+                        />
+                      </label>
+                    </div>
+
+                    <label className={styles.assetSettingsField}>
+                      <span>Optional location note</span>
+                      <textarea
+                        rows={2}
+                        value={assetSettingsManualLocationText}
+                        onChange={(event) => {
+                          setAssetSettingsManualLocationText(event.target.value.slice(0, MAX_ASSET_SETTINGS_LOCATION_TEXT_LENGTH));
+                          clearAssetSettingsLocationFeedback();
+                        }}
+                        placeholder="Example: Main shed, north camp, client yard"
+                      />
+                    </label>
+
+                    <p className={styles.assetSettingsFieldTip}>Tip: You can copy coordinates from Google Maps and paste them here.</p>
+
+                    <div className={styles.assetSettingsActions}>
+                      <button
+                        type="button"
+                        className={styles.primaryButton}
+                        onClick={() => void saveAssetSettingsManualGpsPosition()}
+                        disabled={isAssetSettingsBusy}
+                      >
+                        {assetSettingsManualGpsButtonLabel}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className={`${styles.assetSettingsLocationMethodCard} ${styles.assetSettingsLocationMethodSecondary}`}>
+                    <div className={styles.assetSettingsLocationMethodHeader}>
+                      <strong>Use this device’s GPS</strong>
+                      <p>Only requests browser GPS after you click the button. Manual entry above works without location permission.</p>
+                    </div>
+
+                    <div className={styles.assetSettingsActions}>
+                      <button
+                        type="button"
+                        className={styles.assetSettingsConversionButton}
+                        onClick={() => void updateAssetSettingsGpsPosition()}
+                        disabled={isAssetSettingsBusy}
+                      >
+                        {assetSettingsDeviceGpsButtonLabel}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {assetSettingsLocationSuccess ? <p className={styles.assetSettingsLocationSuccess}>{assetSettingsLocationSuccess}</p> : null}
+                {assetSettingsLocationError ? <p className={styles.assetSettingsError}>{assetSettingsLocationError}</p> : null}
+              </section>
+
               {isSavedManualAsset(editingAsset) ? (
                 <>
                   <section className={styles.assetSettingsSection}>
@@ -10338,46 +10674,7 @@ export default function AssetRegisterClient() {
                 </div>
               )}
 
-              <section className={`${styles.assetSettingsSection} ${styles.assetSettingsLocationSection}`}>
-                <div className={styles.assetSettingsSectionCopy}>
-                  <span>Location</span>
-                  <h4>Update Last Scanned / GPS Position</h4>
-                  <p>Capture this device’s current GPS position and save it as this asset’s latest location. This does not change the asset value, usage, serial number, brand, model, finance, insurance or licence details.</p>
-                </div>
 
-                <div className={styles.assetSettingsStaticGrid}>
-                  <div>
-                    <span>Last scanned</span>
-                    <strong>{formatAssetSettingsLastScanned(editingAsset)}</strong>
-                  </div>
-                  <div>
-                    <span>GPS position</span>
-                    <strong>{formatAssetSettingsGpsPosition(editingAsset)}</strong>
-                  </div>
-                  {assetSettingsMapsUrl ? (
-                    <div>
-                      <span>Map</span>
-                      <a className={styles.assetSettingsMapLink} href={assetSettingsMapsUrl} target="_blank" rel="noreferrer">
-                        Open in Google Maps
-                      </a>
-                    </div>
-                  ) : null}
-                </div>
-
-                <div className={styles.assetSettingsActions}>
-                  <button
-                    type="button"
-                    className={styles.primaryButton}
-                    onClick={() => void updateAssetSettingsGpsPosition()}
-                    disabled={isAssetSettingsBusy}
-                  >
-                    {assetSettingsLocationButtonLabel}
-                  </button>
-                </div>
-
-                {assetSettingsLocationSuccess ? <p className={styles.assetSettingsLocationSuccess}>{assetSettingsLocationSuccess}</p> : null}
-                {assetSettingsLocationError ? <p className={styles.assetSettingsError}>{assetSettingsLocationError}</p> : null}
-              </section>
 
               {assetSettingsError ? <p className={styles.assetSettingsError}>{assetSettingsError}</p> : null}
             </div>
