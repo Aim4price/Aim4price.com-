@@ -8703,18 +8703,6 @@ export default function AssetRegisterClient() {
               {canUseOwnerOnlyAssetActions ? (
                 <button
                   type="button"
-                  className={`${styles.secondaryButton} ${styles.summaryTriggerButton} ${styles.headerOptionsButton}`}
-                  onClick={openSummaryModal}
-                  disabled={isLoading}
-                >
-                  <OptionsIcon className={styles.buttonIcon} />
-                  <span>Summary</span>
-                </button>
-              ) : null}
-
-              {canUseOwnerOnlyAssetActions ? (
-                <button
-                  type="button"
                   className={`${styles.secondaryButton} ${styles.headerShareButton}`}
                   onClick={openRegisterShareModal}
                   disabled={!assets.length || isLoading || isExporting}
@@ -8727,12 +8715,12 @@ export default function AssetRegisterClient() {
               {canUseOwnerOnlyAssetActions ? (
                 <button
                   type="button"
-                  className={`${styles.secondaryButton} ${styles.headerDownloadButton}`}
-                  onClick={openExportModal}
-                  disabled={!assets.length || isLoading || isExporting}
+                  className={`${styles.secondaryButton} ${styles.summaryTriggerButton} ${styles.headerOptionsButton}`}
+                  onClick={openSummaryModal}
+                  disabled={isLoading}
                 >
-                  <DownloadIcon className={styles.buttonIcon} />
-                  <span>Download</span>
+                  <OptionsIcon className={styles.buttonIcon} />
+                  <span>Summary</span>
                 </button>
               ) : null}
 
@@ -8752,6 +8740,18 @@ export default function AssetRegisterClient() {
                   <ChevronDownIcon className={styles.filterChevron} />
                 </button>
               </div>
+
+              {canUseOwnerOnlyAssetActions ? (
+                <button
+                  type="button"
+                  className={`${styles.secondaryButton} ${styles.headerDownloadButton}`}
+                  onClick={openExportModal}
+                  disabled={!assets.length || isLoading || isExporting}
+                >
+                  <DownloadIcon className={styles.buttonIcon} />
+                  <span>Download</span>
+                </button>
+              ) : null}
             </div>
           </div>
 

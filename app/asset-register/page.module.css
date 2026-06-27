@@ -26853,3 +26853,122 @@ button.documentOpenLink {
     margin-right: -0.18rem !important;
   }
 }
+
+/* === Asset Register top action ordering and colours === */
+.page {
+  --header-action-copper-bg: #fff0e3;
+  --header-action-copper-bg-hover: #ffe2ca;
+  --header-action-copper-text: #723b0d;
+  --header-action-copper-border: #c87534;
+  --header-action-copper-border-hover: #a95b1d;
+  --header-action-copper-shadow: rgba(114, 59, 13, 0.1);
+
+  --header-action-blue-bg: #eaf5ff;
+  --header-action-blue-bg-hover: #daecff;
+  --header-action-blue-text: #0f3b64;
+  --header-action-blue-border: #7eb4df;
+  --header-action-blue-border-hover: #558fc6;
+  --header-action-blue-shadow: rgba(15, 59, 100, 0.085);
+
+  --header-action-light-green-bg: #ecf9f1;
+  --header-action-light-green-bg-hover: #ddf3e6;
+  --header-action-light-green-text: #0d5a42;
+  --header-action-light-green-border: #75c79a;
+  --header-action-light-green-border-hover: #4daf78;
+  --header-action-light-green-shadow: rgba(13, 90, 66, 0.085);
+
+  --header-action-dark-green-top: #1d7255;
+  --header-action-dark-green-bottom: #10533e;
+  --header-action-dark-green-hover-top: #218462;
+  --header-action-dark-green-hover-bottom: #0d4937;
+  --header-action-dark-green-border: #0f6248;
+  --header-action-dark-green-shadow: rgba(25, 116, 84, 0.22);
+}
+
+.page .registerHeader .ownerRegisterHeaderActions {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+}
+
+.page .registerHeader .headerShareButton {
+  color: var(--header-action-copper-text) !important;
+  background: linear-gradient(180deg, #fffaf5 0%, var(--header-action-copper-bg) 100%) !important;
+  border: 1.5px solid var(--header-action-copper-border) !important;
+  box-shadow:
+    0 10px 22px var(--header-action-copper-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.page .registerHeader .headerShareButton:hover:not(:disabled) {
+  color: var(--header-action-copper-text) !important;
+  background: linear-gradient(180deg, #fff7f0 0%, var(--header-action-copper-bg-hover) 100%) !important;
+  border-color: var(--header-action-copper-border-hover) !important;
+  box-shadow:
+    0 14px 28px rgba(114, 59, 13, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+}
+
+.page .registerHeader .summaryTriggerButton.headerOptionsButton {
+  color: var(--header-action-blue-text) !important;
+  background: linear-gradient(180deg, #ffffff 0%, var(--header-action-blue-bg) 100%) !important;
+  border: 1.5px solid var(--header-action-blue-border) !important;
+  box-shadow:
+    0 10px 22px var(--header-action-blue-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.page .registerHeader .summaryTriggerButton.headerOptionsButton:hover:not(:disabled) {
+  color: var(--header-action-blue-text) !important;
+  background: linear-gradient(180deg, #ffffff 0%, var(--header-action-blue-bg-hover) 100%) !important;
+  border-color: var(--header-action-blue-border-hover) !important;
+  box-shadow:
+    0 14px 28px rgba(15, 59, 100, 0.115),
+    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+}
+
+.page .registerHeader .filterTriggerButton,
+.page .registerHeader .filterTriggerButtonActive,
+.page .registerHeader .filterTriggerButtonOpen,
+.page .registerHeader .filterTriggerButtonActive:hover:not(:disabled),
+.page .registerHeader .filterTriggerButtonOpen:hover:not(:disabled),
+.page .registerHeader .filterTriggerButton:hover:not(:disabled) {
+  color: var(--header-action-light-green-text) !important;
+  background: linear-gradient(180deg, #ffffff 0%, var(--header-action-light-green-bg) 100%) !important;
+  border: 1.5px solid var(--header-action-light-green-border) !important;
+  box-shadow:
+    0 10px 22px var(--header-action-light-green-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.page .registerHeader .filterTriggerButton:hover:not(:disabled),
+.page .registerHeader .filterTriggerButtonOpen,
+.page .registerHeader .filterTriggerButtonOpen:hover:not(:disabled),
+.page .registerHeader .filterTriggerButtonActive:hover:not(:disabled) {
+  background: linear-gradient(180deg, #ffffff 0%, var(--header-action-light-green-bg-hover) 100%) !important;
+  border-color: var(--header-action-light-green-border-hover) !important;
+  box-shadow:
+    0 14px 28px rgba(13, 90, 66, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+}
+
+.page .registerHeader .filterTriggerButtonActive .buttonIcon,
+.page .registerHeader .filterTriggerButtonActive .filterChevron {
+  color: currentColor !important;
+}
+
+.page .registerHeader .headerDownloadButton {
+  color: #ffffff !important;
+  background: linear-gradient(180deg, var(--header-action-dark-green-top) 0%, var(--header-action-dark-green-bottom) 100%) !important;
+  border: 1.5px solid var(--header-action-dark-green-border) !important;
+  box-shadow:
+    0 15px 28px var(--header-action-dark-green-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+}
+
+.page .registerHeader .headerDownloadButton:hover:not(:disabled) {
+  color: #ffffff !important;
+  background: linear-gradient(180deg, var(--header-action-dark-green-hover-top) 0%, var(--header-action-dark-green-hover-bottom) 100%) !important;
+  border-color: var(--header-action-dark-green-hover-bottom) !important;
+  box-shadow:
+    0 18px 34px rgba(25, 116, 84, 0.26),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+}
