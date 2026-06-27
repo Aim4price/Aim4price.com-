@@ -105,6 +105,8 @@ type ExtractionDraft = {
   subtotalExVat?: number | null;
   vatAmount?: number | null;
   totalIncVat?: number | null;
+  usageReading?: number | null;
+  usageMetric?: UsageMetric;
   maintenanceWorkDone?: string;
   partsSupplied?: string;
   repairWorkDone?: string;
@@ -233,8 +235,8 @@ function draftFromExtraction(extractionDraft: ExtractionDraft, source: InvoiceSo
     subtotalExVat: formatMoneyWithCents(extractionDraft.subtotalExVat ?? null),
     vatAmount: formatMoneyWithCents(extractionDraft.vatAmount ?? null),
     totalIncVat: formatMoneyWithCents(extractionDraft.totalIncVat ?? null),
-    usageReading: '',
-    usageMetric: 'none',
+    usageReading: extractionDraft.usageReading === null || typeof extractionDraft.usageReading === 'undefined' ? '' : String(extractionDraft.usageReading),
+    usageMetric: extractionDraft.usageMetric ?? 'none',
     maintenanceWorkDone: extractionDraft.maintenanceWorkDone ?? '',
     partsSupplied: extractionDraft.partsSupplied ?? '',
     repairWorkDone: extractionDraft.repairWorkDone ?? '',
@@ -410,7 +412,7 @@ export default function MyInvoicesClient() {
       const response = await fetch('/api/my-invoices/extract', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ documentId: document.id }),
+        body: JSON.stringify({ documentId: document.id, assetId: selectedAssetId }),
       });
       const data = (await response.json()) as ExtractionResponse;
 
