@@ -679,16 +679,134 @@ function trimPdfStreamBoundaries(streamBody: string): Buffer {
   return Buffer.from(body, 'latin1');
 }
 
-function extractPdfStreamText(buffer: Buffer): string {
-  const binary = buffer.toString('latin1');
-  const streamPattern = /<<(.*?)>>\s*stream([\s\S]*?)endstream/g;
-  const fragments: string[] = [];
-  let match: RegExpExecArray | null;
+type PdfStreamSegment = {
+  dictionary: string;
+  body: Buffer;
+};
 
-  while ((match = streamPattern.exec(binary))) {
-    const dictionary = match[1] ?? '';
-    const streamBody = match[2] ?? '';
-    const decodedBuffer = decodePdfStream(trimPdfStreamBoundaries(streamBody), dictionary);
+function isPdfKeywordBoundaryChar(char: string | undefined): boolean {
+  return typeof char === 'undefined' || isWhitespace(char) || char === '<' || char === '>' || char === '[' || char === ']' || char === '(' || char === ')' || char === '/' || char === '%';
+}
+
+function findPdfKeyword(binary: string, keyword: string, startIndex: number): number {
+  let index = Math.max(0, startIndex);
+
+  while (index < binary.length) {
+    const matchIndex = binary.indexOf(keyword, index);
+    if (matchIndex === -1) return -1;
+
+    const before = binary[matchIndex - 1];
+    const after = binary[matchIndex + keyword.length];
+    if (isPdfKeywordBoundaryChar(before) && isPdfKeywordBoundaryChar(after)) {
+      return matchIndex;
+    }
+
+    index = matchIndex + keyword.length;
+  }
+
+  return -1;
+}
+
+function findPdfDictionaryStart(binary: string, dictionaryCloseStart: number): number {
+  let depth = 1;
+
+  for (let index = dictionaryCloseStart - 1; index > 0; index -= 1) {
+    if (binary[index - 1] === '>' && binary[index] === '>') {
+      depth += 1;
+      index -= 1;
+      continue;
+    }
+
+    if (binary[index - 1] === '<' && binary[index] === '<') {
+      depth -= 1;
+      if (depth === 0) return index - 1;
+      index -= 1;
+    }
+  }
+
+  return -1;
+}
+
+function skipPdfEndOfLine(binary: string, index: number): number {
+  if (binary.startsWith('\r\n', index)) return index + 2;
+  if (binary[index] === '\n' || binary[index] === '\r') return index + 1;
+  return index;
+}
+
+function readDirectPdfStreamLength(dictionary: string): number | null {
+  const match = dictionary.match(/(?:^|\s)\/Length\s+(\d+)\b/i);
+  if (!match?.[1]) return null;
+
+  const length = Number(match[1]);
+  if (!Number.isSafeInteger(length) || length < 0 || length > 100_000_000) return null;
+  return length;
+}
+
+function findPdfEndstreamAfterLength(binary: string, bodyEnd: number): number | null {
+  let index = bodyEnd;
+  while (index < binary.length && isWhitespace(binary[index])) index += 1;
+  return binary.startsWith('endstream', index) ? index + 'endstream'.length : null;
+}
+
+function scanPdfStreams(buffer: Buffer): PdfStreamSegment[] {
+  const binary = buffer.toString('latin1');
+  const streams: PdfStreamSegment[] = [];
+  let searchIndex = 0;
+
+  while (searchIndex < binary.length) {
+    const streamIndex = findPdfKeyword(binary, 'stream', searchIndex);
+    if (streamIndex === -1) break;
+
+    let dictionaryEnd = streamIndex;
+    while (dictionaryEnd > 0 && isWhitespace(binary[dictionaryEnd - 1])) dictionaryEnd -= 1;
+
+    const dictionaryCloseStart = dictionaryEnd - 2;
+    if (dictionaryCloseStart < 0 || binary.slice(dictionaryCloseStart, dictionaryEnd) !== '>>') {
+      searchIndex = streamIndex + 'stream'.length;
+      continue;
+    }
+
+    const dictionaryStart = findPdfDictionaryStart(binary, dictionaryCloseStart);
+    if (dictionaryStart === -1) {
+      searchIndex = streamIndex + 'stream'.length;
+      continue;
+    }
+
+    const dictionary = binary.slice(dictionaryStart + 2, dictionaryCloseStart);
+    const streamBodyStart = skipPdfEndOfLine(binary, streamIndex + 'stream'.length);
+    const streamLength = readDirectPdfStreamLength(dictionary);
+
+    if (streamLength !== null && streamBodyStart + streamLength <= binary.length) {
+      const streamBodyEnd = streamBodyStart + streamLength;
+      streams.push({
+        dictionary,
+        body: Buffer.from(binary.slice(streamBodyStart, streamBodyEnd), 'latin1'),
+      });
+      searchIndex = findPdfEndstreamAfterLength(binary, streamBodyEnd) ?? streamBodyEnd;
+      continue;
+    }
+
+    const endstreamIndex = findPdfKeyword(binary, 'endstream', streamBodyStart);
+    if (endstreamIndex === -1) {
+      searchIndex = streamIndex + 'stream'.length;
+      continue;
+    }
+
+    streams.push({
+      dictionary,
+      body: trimPdfStreamBoundaries(binary.slice(streamIndex + 'stream'.length, endstreamIndex)),
+    });
+    searchIndex = endstreamIndex + 'endstream'.length;
+  }
+
+  return streams;
+}
+
+function extractPdfStreamText(buffer: Buffer): string {
+  const fragments: string[] = [];
+
+  for (const stream of scanPdfStreams(buffer)) {
+    const decodedBuffer = decodePdfStream(stream.body, stream.dictionary);
     if (!decodedBuffer) continue;
 
     const streamText = decodedBuffer.toString('latin1');
@@ -708,7 +826,7 @@ function hasInvoiceSignals(value: string): boolean {
   const text = collapseText(value).toLowerCase();
   if (!text) return false;
 
-  const hasInvoiceLabel = /\b(?:tax\s+invoice|invoice|inv\s*(?:no|#|number)|document\s*(?:no|number)|doc\s*(?:no|number))\b/i.test(text);
+  const hasInvoiceLabel = /\b(?:tax\s+invoice|invoice|inv\s*(?:no|number)|document\s*(?:no|number)|doc\s*(?:no|number))\b|\b(?:invoice|inv|document|doc)\s*#/i.test(text);
   const hasAmountLabel = /\b(?:grand\s+total|amount\s+due|amount\s+payable|balance\s+due|total\s+due|subtotal|sub\s+total|vat\s*(?:@|amount)|output\s+vat|tax\s+amount)\b/i.test(text);
   const hasMoney = /(?:\bZAR\s*\d|\bR\s*\d|\d[\d\s,.]*(?:[.,]\d{2}))/.test(text);
 
@@ -1024,7 +1142,7 @@ function isFalseInvoiceNumber(value: string, sourceLine = ''): boolean {
 }
 
 function findInvoiceNumber(lines: string[]): string {
-  const labelPattern = /\b(?:tax\s+invoice\s*(?:no\.?|number|#)|invoice\s*(?:no\.?|number|#)|inv\s*(?:no\.?|number|#)|document\s*(?:no\.?|number|#)|doc\s*(?:no\.?|number|#)|number)\b/i;
+  const labelPattern = /\b(?:tax\s+invoice\s*(?:no\.?|number|#)|invoice\s*(?:no\.?|number|#)|inv\s*(?:no\.?|number|#)|document\s*(?:no\.?|number|#)|doc\s*(?:no\.?|number|#)|number)(?=\b|\s*[:#.-])/i;
 
   for (let index = 0; index < Math.min(lines.length, 80); index += 1) {
     const line = lines[index] ?? '';
@@ -1068,9 +1186,10 @@ function isBadSupplierLine(line: string): boolean {
   if (findMoneyCandidates(text).some(candidateLooksLikeAmount)) return true;
   if (parseDateValue(text)) return true;
   if (/^\d+[\d\s,.]*$/.test(text)) return true;
-  if (/\b(?:tax\s+invoice|invoice|quote|statement|date|vat|total|subtotal|amount\s+due|balance\s+due|registration|reg\s+no|tel|phone|email|bank|account|page|bill\s+to|customer|client|sold\s+to|ship\s+to|delivery|serial|model\s+no)\b/i.test(text)) return true;
+  if (/\b(?:tax\s+invoice|invoice|quote|statement|date|vat|total|subtotal|amount\s+due|balance\s+due|registration|reg\s+no|tel|phone|email|bank|account|page|bill\s+to|customer|client|sold\s+to|ship\s+to|delivery|serial|model\s+no|machine\s+hours|engine\s+hours|hour\s+meter|usage\s+(?:metric|reading)|meter\s+reading|odometer|mileage)\b/i.test(text)) return true;
   if (/^[A-Za-z]+\s+[A-Z]{1,5}\d{2,}[A-Z0-9-]*$/i.test(text) && !hasBusinessNameKeyword(text)) return true;
   if (/^kubota\s+[a-z0-9-]+$/i.test(normalized)) return true;
+  if (/^(?:inv|doc|tax|tst)[a-z0-9/_#-]*\d/i.test(text)) return true;
   return false;
 }
 
@@ -1113,13 +1232,13 @@ function parseReadingNumber(value: string): number | null {
 
 function metricForUsageLine(line: string): InvoiceExtractionUsageMetric {
   const text = line.toLowerCase();
-  if (/\b(?:odometer|mileage|kilometres|kilometers|kms|km\s*(?:reading|meter)?)\b/.test(text)) return 'km';
-  if (/\b(?:machine\s+hours|engine\s+hours|hour\s+meter|hrs?|hours?|meter\s+reading)\b/.test(text)) return 'hours';
+  if (/\b(?:odometer|mileage|kilometres|kilometers|kms|km|km\s*(?:reading|meter)?)\b/.test(text)) return 'km';
+  if (/\b(?:machine\s+hours|engine\s+hours|usage\s+reading|hour\s+meter|hrs?|hours?|meter\s+reading)\b/.test(text)) return 'hours';
   return 'none';
 }
 
 function findUsageReading(lines: string[]): UsageExtraction {
-  const strongLabel = /\b(?:machine\s+hours|engine\s+hours|hour\s+meter|meter\s+reading|odometer|mileage|kilometres|kilometers|km\s+reading|kms)\b/i;
+  const strongLabel = /\b(?:machine\s+hours|engine\s+hours|usage\s+reading|hour\s+meter|meter\s+reading|odometer|mileage|kilometres|kilometers|km\s+reading|kms|km)\b/i;
   const weakHoursLabel = /\b(?:hours|hrs)\b/i;
 
   for (let index = 0; index < Math.min(lines.length, 120); index += 1) {
@@ -1148,20 +1267,77 @@ function includesAnyKeyword(line: string, keywords: string[]): boolean {
 }
 
 function isClassificationRejectedLine(line: string): boolean {
-  if (isPdfInternalLine(line)) return true;
-  if (/\b(?:invoice|subtotal|sub\s+total|total|vat|tax|amount\s+due|balance\s+due|bank|account|payment|terms|supplier|customer|bill\s+to|date|document\s+no|invoice\s+no|page|registration|reg\s+no)\b/i.test(line)) return true;
-  if (/^[Rr]?\s*\d[\d\s,.]*$/.test(line)) return true;
+  const text = collapseText(line);
+  if (isPdfInternalLine(text)) return true;
+  if (/\b(?:invoice|subtotal|sub\s+total|total|vat|tax|amount\s+due|balance\s+due|bank|account|payment|terms|supplier|customer|bill\s+to|date|document\s+no|invoice\s+no|page|registration|reg\s+no|expense\s+category|payment\s+reference|asset\s+(?:model|make|type)|serial|engine\s+no|machine\s+hours|usage\s+(?:metric|reading)|meter\s+reading|odometer|mileage|prepared\s+for|test\s+document|ocr|extraction|warranty\s+claim)\b/i.test(text)) return true;
+  if (/\b(?:email|phone|tel|mobile|cell|fax|address|street|p\.?\s*o\.?\s*box|south\s+africa|branch\s+code|reference)\b/i.test(text)) return true;
+  if (/^(?:#|description|qty|quantity|unit\s+price|line\s+total)$/i.test(text)) return true;
+  if (/^[Rr]?\s*\d[\d\s,.]*$/.test(text)) return true;
   return false;
+}
+
+function extractInvoiceItemLines(lines: string[]): string[] {
+  const startIndex = lines.findIndex((line) => /\b(?:invoice\s+items|line\s+items|item\s+description|description)\b/i.test(line));
+  if (startIndex === -1) return lines;
+
+  const itemLines: string[] = [];
+
+  for (let index = startIndex + 1; index < lines.length; index += 1) {
+    const line = lines[index] ?? '';
+    const isTableHeader = /^(?:#|description|qty|quantity|unit\s+price|line\s+total)$/i.test(collapseText(line));
+    if (/\b(?:payment\s+details|cost\s+of\s+ownership|test\s+fields|bank|account\s+name|terms\s+and\s+conditions)\b/i.test(line)) break;
+    if (!isTableHeader && (isSubtotalLabel(line) || isVatAmountLabel(line) || isTotalLabel(line))) break;
+    itemLines.push(line);
+  }
+
+  return itemLines.length ? itemLines : lines;
+}
+
+function cleanClassificationText(line: string): string {
+  return collapseText(line)
+    .replace(/^\d+\s+/, '')
+    .replace(/\s+(?:qty|quantity|unit\s+price|line\s+total)\b.*$/i, '')
+    .replace(/\s+(?:ZAR\s*)?R\s*\d[\d\s,.]*(?:[.,]\d{2})?(?:\s+(?:ZAR\s*)?R\s*\d[\d\s,.]*(?:[.,]\d{2})?)*$/i, '')
+    .trim();
+}
+
+function cleanInvoiceNoteText(value: string): string {
+  return collapseText(value)
+    .replace(/^notes?\s*[:#.-]?\s*/i, '')
+    .split(/\b(?:This PDF|Prepared for|TEST DOCUMENT ONLY|Do not pay|Aim4price|OCR|extraction\/?OCR|upload\/extraction)\b/i)[0]
+    .trim();
+}
+
+function extractInvoiceNotes(lines: string[]): string {
+  const noteLines: string[] = [];
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index] ?? '';
+    if (!/^notes?\s*[:#.-]/i.test(line)) continue;
+
+    const first = cleanInvoiceNoteText(line);
+    if (first) noteLines.push(first);
+
+    for (let nextIndex = index + 1; nextIndex < Math.min(lines.length, index + 4); nextIndex += 1) {
+      const nextLine = cleanInvoiceNoteText(lines[nextIndex] ?? '');
+      if (!nextLine || isClassificationRejectedLine(nextLine)) break;
+      if (/\b(?:invoice|subtotal|total|vat|bank|account|payment|customer|supplier|bill\s+to|asset\s+details)\b/i.test(nextLine)) break;
+      noteLines.push(nextLine);
+    }
+
+    break;
+  }
+
+  return uniqueStrings(noteLines).join('\n').slice(0, 1200);
 }
 
 function classifyText(lines: string[]): TextClassification {
   const maintenanceLines: string[] = [];
   const partLines: string[] = [];
   const repairLines: string[] = [];
-  const noteLines: string[] = [];
 
-  for (const line of lines) {
-    const text = collapseText(line);
+  for (const line of extractInvoiceItemLines(lines)) {
+    const text = cleanClassificationText(line);
     if (text.length < 3 || text.length > 220) continue;
     if (isClassificationRejectedLine(text)) continue;
 
@@ -1172,9 +1348,6 @@ function classifyText(lines: string[]): TextClassification {
     if (hasMaintenance) maintenanceLines.push(text);
     if (hasParts) partLines.push(text);
     if (hasRepair) repairLines.push(text);
-    if (!hasMaintenance && !hasParts && !hasRepair && noteLines.length < 8 && /[A-Za-z]{4,}/.test(text)) {
-      noteLines.push(text);
-    }
   }
 
   const join = (values: string[]) => uniqueStrings(values).slice(0, 12).join('\n').slice(0, 1200);
@@ -1183,7 +1356,7 @@ function classifyText(lines: string[]): TextClassification {
     maintenanceWorkDone: join(maintenanceLines),
     partsSupplied: join(partLines),
     repairWorkDone: join(repairLines),
-    notes: join(noteLines),
+    notes: extractInvoiceNotes(lines),
   };
 }
 
