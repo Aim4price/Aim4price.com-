@@ -26097,6 +26097,37 @@ button.documentOpenLink {
   line-height: 1.45 !important;
 }
 
+.assetSettingsLocationSection {
+  border-color: rgba(23, 116, 90, 0.28) !important;
+  background:
+    radial-gradient(circle at top right, rgba(23, 116, 90, 0.07), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #f6fbf8 100%) !important;
+}
+
+.assetSettingsMapLink {
+  width: fit-content !important;
+  color: #155e46 !important;
+  font-size: 0.95rem !important;
+  font-weight: 820 !important;
+  text-decoration: none !important;
+}
+
+.assetSettingsMapLink:hover {
+  text-decoration: underline !important;
+}
+
+.assetSettingsLocationSuccess {
+  margin: 0 !important;
+  padding: 0.78rem 0.9rem !important;
+  border-radius: 0.9rem !important;
+  border: 1px solid rgba(23, 116, 90, 0.22) !important;
+  background: rgba(236, 248, 241, 0.96) !important;
+  color: #126343 !important;
+  font-size: 0.9rem !important;
+  font-weight: 720 !important;
+  line-height: 1.35 !important;
+}
+
 .assetSettingsActions {
   display: flex !important;
   align-items: center !important;
