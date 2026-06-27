@@ -377,7 +377,7 @@ function buildPreviewAssetFromGenericValuation(input: {
     lifeRemainingPercent: input.result.lifeRemainingPercent,
     estimatedHours: input.result.estimatedHours,
     maxLifetimeHours: input.result.maxLifetimeHours,
-    kind: 'equipment',
+    kind: input.result.sector.key === 'motor' || input.result.family.usageMetricType === 'km' ? 'vehicle' : 'equipment',
     value: input.selectedValueExVat,
     selectedValueExVat: input.selectedValueExVat,
     selectedMethod: input.selectedMethod,

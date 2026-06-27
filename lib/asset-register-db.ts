@@ -574,6 +574,10 @@ function getGenericAssetRegisterKind(result: GenericValuationResult): AssetRegis
   return result.sector.key === 'motor' || result.family.usageMetricType === 'km' ? 'vehicle' : 'equipment';
 }
 
+function genericValuationResultUsesUsageReading(result: GenericValuationResult): boolean {
+  return asNumber(result.usageAmount) !== null || result.depreciationMethodUsed === 'full_depreciation';
+}
+
 function isGenericYearModelUnknown(result: GenericValuationResult): boolean {
   return Boolean(result.yearModelUnknown ?? result.specsJson?.year_model_unknown ?? result.specsJson?.yearModelUnknown);
 }
@@ -2287,6 +2291,7 @@ export async function updateAssetRegisterItemFromGenericValuation(input: {
   const existingUsageAmount = existing.hours;
   const nextUsageAmount = valuationResult.usageAmount ?? null;
   const existingLifeWorkedPercent = existing.lifeWorkedPercent ?? percentFromSpecs(existing.specsJson);
+  const shouldProtectLifeWorkedPercent = !genericValuationResultUsesUsageReading(valuationResult);
 
   if (
     input.allowUsageDecrease !== true &&
@@ -2299,6 +2304,7 @@ export async function updateAssetRegisterItemFromGenericValuation(input: {
 
   if (
     input.allowUsageDecrease !== true &&
+    shouldProtectLifeWorkedPercent &&
     valuationResult.lifeWorkedPercent !== null &&
     existingLifeWorkedPercent !== null &&
     valuationResult.lifeWorkedPercent < existingLifeWorkedPercent
