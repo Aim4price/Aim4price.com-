@@ -102,7 +102,7 @@ type PdfReportKind = 'full' | 'financed' | 'insured' | 'licensed' | 'not-finance
 type AssetPdfReportKind = 'fuel' | 'maintenance' | 'depreciation';
 type AssetReportFormat = 'pdf' | 'xlsx';
 type AssetReportSelectKey = 'type' | 'year' | 'month';
-type AssetReportStep = 'options' | 'fuel-filter' | 'maintenance-filter' | 'depreciation-filter';
+type AssetReportStep = 'options' | 'fuel-filter' | 'maintenance-filter' | 'depreciation-filter' | 'ownership-filter';
 
 type AssetPdfReportFilters = {
   year?: string;
@@ -3675,6 +3675,27 @@ function buildAssetPdfReportUrl(
   return `/api/asset-register/scan-report?${searchParams.toString()}`;
 }
 
+function buildAssetOwnershipReportUrl(
+  asset: RegisterAsset,
+  filters?: AssetPdfReportFilters,
+  format: AssetReportFormat = 'pdf',
+): string {
+  const searchParams = new URLSearchParams({
+    assetId: asset.id,
+    format,
+  });
+
+  if (filters?.year && filters.year !== 'all') {
+    searchParams.set('year', filters.year);
+
+    if (filters.month && filters.month !== 'all') {
+      searchParams.set('month', filters.month);
+    }
+  }
+
+  return `/api/my-invoices/report?${searchParams.toString()}`;
+}
+
 function extractAssetReportYear(value?: string | null): number | null {
   if (!value) return null;
 
@@ -4159,6 +4180,8 @@ export default function AssetRegisterClient() {
   const [assetMaintenanceReportMonth, setAssetMaintenanceReportMonth] = useState('all');
   const [assetDepreciationReportYear, setAssetDepreciationReportYear] = useState('all');
   const [assetDepreciationReportMonth, setAssetDepreciationReportMonth] = useState('all');
+  const [assetOwnershipReportYear, setAssetOwnershipReportYear] = useState('all');
+  const [assetOwnershipReportMonth, setAssetOwnershipReportMonth] = useState('all');
   const [openAssetReportSelect, setOpenAssetReportSelect] = useState<AssetReportSelectKey | null>(null);
   const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
@@ -6153,6 +6176,8 @@ export default function AssetRegisterClient() {
     setAssetMaintenanceReportMonth('all');
     setAssetDepreciationReportYear('all');
     setAssetDepreciationReportMonth('all');
+    setAssetOwnershipReportYear('all');
+    setAssetOwnershipReportMonth('all');
     setOpenAssetReportSelect(null);
     setIsAssetReportModalOpen(true);
   }
@@ -6167,6 +6192,8 @@ export default function AssetRegisterClient() {
     setAssetMaintenanceReportMonth('all');
     setAssetDepreciationReportYear('all');
     setAssetDepreciationReportMonth('all');
+    setAssetOwnershipReportYear('all');
+    setAssetOwnershipReportMonth('all');
     setOpenAssetReportSelect(null);
   }
 
@@ -7688,6 +7715,13 @@ export default function AssetRegisterClient() {
     setOpenAssetReportSelect(null);
   }
 
+  function openAssetOwnershipReportFilter() {
+    setAssetReportStep('ownership-filter');
+    setAssetOwnershipReportYear('all');
+    setAssetOwnershipReportMonth('all');
+    setOpenAssetReportSelect(null);
+  }
+
   function backToAssetReportOptions() {
     setAssetReportStep('options');
     setOpenAssetReportSelect(null);
@@ -7732,6 +7766,17 @@ export default function AssetRegisterClient() {
 
   function selectAssetDepreciationReportMonth(value: string) {
     setAssetDepreciationReportMonth(value);
+    setOpenAssetReportSelect(null);
+  }
+
+  function selectAssetOwnershipReportYear(value: string) {
+    setAssetOwnershipReportYear(value);
+    setAssetOwnershipReportMonth('all');
+    setOpenAssetReportSelect(null);
+  }
+
+  function selectAssetOwnershipReportMonth(value: string) {
+    setAssetOwnershipReportMonth(value);
     setOpenAssetReportSelect(null);
   }
 
@@ -7788,6 +7833,65 @@ export default function AssetRegisterClient() {
     if (didOpen) {
       closeActionDialog();
     }
+  }
+
+  async function handleDownloadFilteredOwnershipReport(asset: RegisterAsset, format: AssetReportFormat = 'pdf') {
+    const filters: AssetPdfReportFilters = {
+      year: assetOwnershipReportYear,
+      month: assetOwnershipReportYear === 'all' ? 'all' : assetOwnershipReportMonth,
+    };
+
+    if (format === 'xlsx') {
+      try {
+        const response = await fetch(buildAssetOwnershipReportUrl(asset, filters, 'xlsx'), {
+          credentials: 'include',
+          cache: 'no-store',
+        });
+
+        if (!response.ok) {
+          try {
+            const data = (await response.json()) as { error?: string };
+            throw new Error(data.error ?? 'Failed to download the cost of ownership Excel file.');
+          } catch (error) {
+            if (error instanceof Error) {
+              throw error;
+            }
+
+            throw new Error('Failed to download the cost of ownership Excel file.');
+          }
+        }
+
+        const blob = await response.blob();
+        const assetSlug = asset.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'asset';
+        const fileName = parseDownloadFileName(response, `${assetSlug}-cost-of-ownership.xlsx`);
+        downloadBlob(blob, fileName);
+        setNotice({ tone: 'success', message: 'Cost of Ownership Excel downloaded.' });
+        closeActionDialog();
+      } catch (error) {
+        setNotice({
+          tone: 'error',
+          message: error instanceof Error ? error.message : 'Failed to download the cost of ownership Excel file.',
+        });
+      }
+
+      return;
+    }
+
+    const opened = window.open(buildAssetOwnershipReportUrl(asset, filters, 'pdf'), '_blank', 'noopener,noreferrer');
+
+    if (!opened) {
+      setNotice({
+        tone: 'error',
+        message: 'Unable to open the cost of ownership report. Please allow pop-ups and try again.',
+      });
+      return;
+    }
+
+    setNotice({
+      tone: 'success',
+      message: 'Cost of Ownership report opened in a new tab. Use Print to save it as a PDF.',
+    });
+    closeActionDialog();
   }
 
   async function handleDownloadQr(asset: RegisterAsset) {
@@ -11141,7 +11245,7 @@ export default function AssetRegisterClient() {
                     <DownloadIcon className={styles.buttonIcon} />
                     <span>
                       <strong>Download reports</strong>
-                      <small>Valuation, fuel and maintenance reports.</small>
+                      <small>Valuation, fuel, maintenance, depreciation and ownership reports.</small>
                     </span>
                   </button>
 
@@ -11625,6 +11729,45 @@ export default function AssetRegisterClient() {
                     </button>
                   </div>
                 </>
+              ) : assetReportStep === 'ownership-filter' ? (
+                <>
+                  <div className={styles.assetFuelReportFilterBox}>
+                    <ReportSelect
+                      label="Year"
+                      value={assetOwnershipReportYear}
+                      options={assetReportYearOptions}
+                      isOpen={openAssetReportSelect === 'year'}
+                      onToggle={() => toggleAssetReportSelect('year')}
+                      onChange={selectAssetOwnershipReportYear}
+                    />
+
+                    <ReportSelect
+                      label="Month"
+                      value={assetOwnershipReportMonth}
+                      options={assetReportMonthOptions}
+                      isOpen={openAssetReportSelect === 'month'}
+                      disabled={assetOwnershipReportYear === 'all'}
+                      onToggle={() => toggleAssetReportSelect('month')}
+                      onChange={selectAssetOwnershipReportMonth}
+                    />
+                  </div>
+
+                  <div className={`${styles.formActions} ${styles.exportActions} ${styles.assetFuelReportActions}`}>
+                    <button type="button" className={styles.secondaryButton} onClick={backToAssetReportOptions}>Back</button>
+                    <button type="button" className={styles.primaryButton} onClick={() => void handleDownloadFilteredOwnershipReport(activeAsset, 'pdf')}>
+                      <PdfIcon className={styles.buttonIcon} />
+                      <span>Download PDF</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`${styles.primaryButton} ${styles.assetReportExcelButton}`}
+                      onClick={() => void handleDownloadFilteredOwnershipReport(activeAsset, 'xlsx')}
+                    >
+                      <SpreadsheetIcon className={styles.buttonIcon} />
+                      <span>Download Excel</span>
+                    </button>
+                  </div>
+                </>
               ) : (
                 <div className={styles.assetReportOptionsGrid}>
                   <button type="button" className={styles.assetReportOptionButton} onClick={() => handlePrintAssetSheet(activeAsset)}>
@@ -11658,6 +11801,14 @@ export default function AssetRegisterClient() {
                         <span>
                           <strong>Download depreciation timeline</strong>
                           <small>Market value history, yearly movement and depreciation log.</small>
+                        </span>
+                      </button>
+
+                      <button type="button" className={styles.assetReportOptionButton} onClick={openAssetOwnershipReportFilter}>
+                        <DocumentIcon className={styles.buttonIcon} />
+                        <span>
+                          <strong>Download cost of ownership report</strong>
+                          <small>Invoices, parts, repairs, maintenance and VAT linked to this asset.</small>
                         </span>
                       </button>
                     </>
