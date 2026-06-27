@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent, type SV
 import AppHeader from '../../components/AppHeader';
 import styles from './page.module.css';
 
-type FlowMode = 'asset-manual' | 'asset-automatic' | 'manual-form' | 'upload' | 'review' | 'edit' | null;
+type FlowMode = 'asset-manual' | 'asset-automatic' | 'manual-form' | 'upload' | 'review' | null;
 type InvoiceSource = 'manual' | 'automatic';
 type UsageMetric = 'none' | 'hours' | 'km';
 type NoticeTone = 'success' | 'error';
@@ -145,32 +145,6 @@ type Notice = {
   message: string;
 };
 
-const EMPTY_SUMMARY: InvoiceSummary = {
-  totalSpent: 0,
-  maintenanceSpend: 0,
-  partsSpend: 0,
-  repairSpend: 0,
-  otherSpend: 0,
-  vatTotal: 0,
-  invoiceCount: 0,
-};
-
-const MONTH_OPTIONS = [
-  { value: 'all', label: 'All months' },
-  { value: '1', label: 'January' },
-  { value: '2', label: 'February' },
-  { value: '3', label: 'March' },
-  { value: '4', label: 'April' },
-  { value: '5', label: 'May' },
-  { value: '6', label: 'June' },
-  { value: '7', label: 'July' },
-  { value: '8', label: 'August' },
-  { value: '9', label: 'September' },
-  { value: '10', label: 'October' },
-  { value: '11', label: 'November' },
-  { value: '12', label: 'December' },
-];
-
 function IconBase(props: SVGProps<SVGSVGElement>) {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props} />;
 }
@@ -181,16 +155,6 @@ function UploadIcon(props: SVGProps<SVGSVGElement>) {
       <path d="M12 3v12" />
       <path d="m7 8 5-5 5 5" />
       <path d="M5 17v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2" />
-    </IconBase>
-  );
-}
-
-function DownloadIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <IconBase {...props}>
-      <path d="M12 3v11" />
-      <path d="m7 9 5 5 5-5" />
-      <path d="M5 20h14" />
     </IconBase>
   );
 }
@@ -212,19 +176,6 @@ function formatMoney(value: number | null | undefined): string {
 function formatMoneyWithCents(value: number | null | undefined): string {
   if (typeof value !== 'number' || !Number.isFinite(value)) return '';
   return value.toFixed(2);
-}
-
-function formatInvoiceDate(value?: string | null): string {
-  if (!value) return '-';
-  const date = new Date(`${value}T00:00:00Z`);
-  if (Number.isNaN(date.getTime())) return '-';
-
-  return new Intl.DateTimeFormat('en-ZA', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    timeZone: 'UTC',
-  }).format(date);
 }
 
 function parseMoney(value: string): number | null {
@@ -293,25 +244,6 @@ function draftFromExtraction(extractionDraft: ExtractionDraft, source: InvoiceSo
   };
 }
 
-function draftFromInvoice(invoice: InvoiceRecord): InvoiceDraft {
-  return {
-    supplierName: invoice.supplierName,
-    invoiceNumber: invoice.invoiceNumber,
-    invoiceDate: invoice.invoiceDate ?? '',
-    subtotalExVat: formatMoneyWithCents(invoice.subtotalExVat),
-    vatAmount: formatMoneyWithCents(invoice.vatAmount),
-    totalIncVat: formatMoneyWithCents(invoice.totalIncVat),
-    usageReading: typeof invoice.usageReading === 'number' ? String(invoice.usageReading) : '',
-    usageMetric: invoice.usageMetric ?? 'none',
-    maintenanceWorkDone: invoice.maintenanceWorkDone,
-    partsSupplied: invoice.partsSupplied,
-    repairWorkDone: invoice.repairWorkDone,
-    notes: invoice.notes,
-    source: invoice.source,
-    invoiceDocumentId: invoice.invoiceDocumentId,
-  };
-}
-
 function recalculatedDraft(draft: InvoiceDraft): InvoiceDraft {
   const subtotal = parseMoney(draft.subtotalExVat);
   const vat = parseMoney(draft.vatAmount);
@@ -332,22 +264,12 @@ function recalculatedDraft(draft: InvoiceDraft): InvoiceDraft {
   return draft;
 }
 
-function buildReportUrl(format: 'pdf' | 'xlsx', assetId: string, year: string, month: string): string {
-  const params = new URLSearchParams({ format });
-  if (assetId !== 'all') params.set('assetId', assetId);
-  if (year !== 'all') params.set('year', year);
-  if (month !== 'all') params.set('month', month);
-  return `/api/my-invoices/report?${params.toString()}`;
-}
-
 function assetSearchText(asset: AssetOption): string {
   return `${asset.title} ${asset.categoryLabel} ${asset.meta} ${asset.value}`.toLowerCase();
 }
 
 export default function MyInvoicesClient() {
   const [assets, setAssets] = useState<AssetOption[]>([]);
-  const [invoices, setInvoices] = useState<InvoiceRecord[]>([]);
-  const [summary, setSummary] = useState<InvoiceSummary>(EMPTY_SUMMARY);
   const [isLoading, setIsLoading] = useState(true);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [flow, setFlow] = useState<FlowMode>(null);
@@ -362,22 +284,14 @@ export default function MyInvoicesClient() {
   const [extractionWarnings, setExtractionWarnings] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
-  const [filterAssetId, setFilterAssetId] = useState('all');
-  const [filterYear, setFilterYear] = useState('all');
-  const [filterMonth, setFilterMonth] = useState('all');
-
   useEffect(() => {
     let cancelled = false;
 
     async function loadInvoices() {
       setIsLoading(true);
-      const params = new URLSearchParams();
-      if (filterAssetId !== 'all') params.set('assetId', filterAssetId);
-      if (filterYear !== 'all') params.set('year', filterYear);
-      if (filterMonth !== 'all') params.set('month', filterMonth);
 
       try {
-        const response = await fetch(`/api/my-invoices?${params.toString()}`, { cache: 'no-store' });
+        const response = await fetch('/api/my-invoices', { cache: 'no-store' });
         const data = (await response.json()) as InvoicesResponse;
 
         if (!response.ok || !data.ok) {
@@ -386,8 +300,6 @@ export default function MyInvoicesClient() {
 
         if (!cancelled) {
           setAssets(data.assets ?? []);
-          setInvoices(data.invoices ?? []);
-          setSummary(data.summary ?? EMPTY_SUMMARY);
         }
       } catch (error) {
         if (!cancelled) {
@@ -403,7 +315,7 @@ export default function MyInvoicesClient() {
     return () => {
       cancelled = true;
     };
-  }, [filterAssetId, filterYear, filterMonth]);
+  }, []);
 
   const selectedAsset = useMemo(
     () => assets.find((asset) => asset.id === selectedAssetId) ?? null,
@@ -416,37 +328,13 @@ export default function MyInvoicesClient() {
     return assets.filter((asset) => assetSearchText(asset).includes(query));
   }, [assets, pickerSearch]);
 
-  const yearOptions = useMemo(() => {
-    const years = new Set<number>();
-    const currentYear = new Date().getFullYear();
-
-    for (let year = currentYear; year >= currentYear - 6; year -= 1) {
-      years.add(year);
-    }
-
-    for (const invoice of invoices) {
-      if (invoice.invoiceDate?.slice(0, 4)) years.add(Number(invoice.invoiceDate.slice(0, 4)));
-    }
-
-    return Array.from(years)
-      .filter((year) => Number.isFinite(year))
-      .sort((a, b) => b - a);
-  }, [invoices]);
-
   async function reloadData() {
-    const params = new URLSearchParams();
-    if (filterAssetId !== 'all') params.set('assetId', filterAssetId);
-    if (filterYear !== 'all') params.set('year', filterYear);
-    if (filterMonth !== 'all') params.set('month', filterMonth);
-
-    const response = await fetch(`/api/my-invoices?${params.toString()}`, { cache: 'no-store' });
+    const response = await fetch('/api/my-invoices', { cache: 'no-store' });
     const data = (await response.json()) as InvoicesResponse;
 
     if (!response.ok || !data.ok) throw new Error(data.error || 'My Invoices could not be refreshed.');
 
     setAssets(data.assets ?? []);
-    setInvoices(data.invoices ?? []);
-    setSummary(data.summary ?? EMPTY_SUMMARY);
   }
 
   function closeModal() {
@@ -476,8 +364,9 @@ export default function MyInvoicesClient() {
     setFlow(source === 'manual' ? 'asset-manual' : 'asset-automatic');
   }
 
-  function continueFromAssetPicker() {
-    if (!selectedAssetId) return;
+  function selectAssetAndContinue(assetId: string) {
+    setSelectedAssetId(assetId);
+    setPickerSearch('');
 
     if (flow === 'asset-automatic') {
       setDraft(buildEmptyDraft('automatic'));
@@ -605,33 +494,6 @@ export default function MyInvoicesClient() {
     }
   }
 
-  function openEdit(invoice: InvoiceRecord) {
-    setSelectedAssetId(invoice.assetId);
-    setEditingInvoiceId(invoice.id);
-    setDraft(draftFromInvoice(invoice));
-    setUploadedDocument(invoice.document);
-    setRawTextPreview(invoice.document?.rawExtractedText?.slice(0, 3000) ?? '');
-    setExtractionWarnings(invoice.document?.extractionWarnings ?? []);
-    setManualUploadFile(null);
-    setAutomaticUploadFile(null);
-    setFlow('edit');
-  }
-
-  async function deleteInvoice(invoice: InvoiceRecord) {
-    const confirmed = window.confirm(`Delete invoice ${invoice.invoiceNumber || invoice.supplierName || invoice.id}?`);
-    if (!confirmed) return;
-
-    try {
-      const response = await fetch(`/api/my-invoices/${invoice.id}`, { method: 'DELETE' });
-      const data = (await response.json()) as InvoicesResponse;
-      if (!response.ok || !data.ok) throw new Error(data.error || 'The invoice could not be deleted.');
-      await reloadData();
-      setNotice({ tone: 'success', message: 'Invoice deleted.' });
-    } catch (error) {
-      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'The invoice could not be deleted.' });
-    }
-  }
-
   function setDraftField<K extends keyof InvoiceDraft>(key: K, value: InvoiceDraft[K]) {
     setDraft((current) => ({ ...current, [key]: value }));
   }
@@ -645,9 +507,9 @@ export default function MyInvoicesClient() {
   }
 
   const assetPickerOpen = flow === 'asset-manual' || flow === 'asset-automatic';
-  const formOpen = flow === 'manual-form' || flow === 'review' || flow === 'edit';
+  const formOpen = flow === 'manual-form' || flow === 'review';
   const flowTitle = flow === 'asset-automatic' ? 'Choose asset for automatic invoice' : 'Choose asset for manual invoice';
-  const formTitle = flow === 'review' ? 'Review automatic invoice' : editingInvoiceId ? 'Edit invoice' : 'Manual invoice';
+  const formTitle = flow === 'review' ? 'Review automatic invoice' : 'Manual invoice';
 
   return (
     <main className={styles.page}>
@@ -658,122 +520,16 @@ export default function MyInvoicesClient() {
         <section className={styles.pageTitleBlock}>
           <div>
             <h1>My Invoices</h1>
-            <p>Save manual or uploaded invoices against your assets and build Cost of Ownership reports.</p>
           </div>
         </section>
 
         <section className={styles.optionGrid} aria-label="Invoice capture options">
           <button type="button" className={styles.optionCard} onClick={() => startFlow('manual')}>
             <span>Manual</span>
-            <strong>Enter invoice details yourself.</strong>
           </button>
           <button type="button" className={styles.optionCard} onClick={() => startFlow('automatic')}>
             <span>Automatic</span>
-            <strong>Upload a PDF or photo and let Aim4price try to read the invoice.</strong>
           </button>
-        </section>
-
-        <section className={styles.summaryGrid}>
-          <article className={styles.summaryCard}>
-            <span>Total spent</span>
-            <strong>{formatMoney(summary.totalSpent)}</strong>
-          </article>
-          <article className={styles.summaryCard}>
-            <span>Maintenance</span>
-            <strong>{formatMoney(summary.maintenanceSpend)}</strong>
-          </article>
-          <article className={styles.summaryCard}>
-            <span>Parts</span>
-            <strong>{formatMoney(summary.partsSpend)}</strong>
-          </article>
-          <article className={styles.summaryCard}>
-            <span>Repairs</span>
-            <strong>{formatMoney(summary.repairSpend)}</strong>
-          </article>
-          <article className={styles.summaryCard}>
-            <span>VAT</span>
-            <strong>{formatMoney(summary.vatTotal)}</strong>
-          </article>
-          <article className={styles.summaryCard}>
-            <span>Invoices</span>
-            <strong>{summary.invoiceCount.toLocaleString('en-ZA')}</strong>
-          </article>
-        </section>
-
-        <section className={styles.controlsPanel}>
-          <label>
-            <span>Asset</span>
-            <select value={filterAssetId} onChange={(event) => setFilterAssetId(event.target.value)}>
-              <option value="all">All assets</option>
-              {assets.map((asset) => (
-                <option key={asset.id} value={asset.id}>{asset.title}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            <span>Year</span>
-            <select value={filterYear} onChange={(event) => setFilterYear(event.target.value)}>
-              <option value="all">All years</option>
-              {yearOptions.map((year) => (
-                <option key={year} value={String(year)}>{year}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            <span>Month</span>
-            <select value={filterMonth} onChange={(event) => setFilterMonth(event.target.value)}>
-              {MONTH_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>{option.label}</option>
-              ))}
-            </select>
-          </label>
-          <div className={styles.exportButtons}>
-            <a className={styles.secondaryButton} href={buildReportUrl('pdf', filterAssetId, filterYear, filterMonth)} target="_blank" rel="noreferrer">
-              Cost PDF
-            </a>
-            <a className={styles.primaryButton} href={buildReportUrl('xlsx', filterAssetId, filterYear, filterMonth)}>
-              <DownloadIcon /> Excel
-            </a>
-          </div>
-        </section>
-
-        <section className={styles.invoicePanel}>
-          <div className={styles.panelHeading}>
-            <div>
-              <h2>Saved invoices</h2>
-              <p>Invoices are linked to saved Asset Register assets and included in Cost of Ownership reports.</p>
-            </div>
-          </div>
-
-          {isLoading ? (
-            <div className={styles.emptyState}>Loading invoices...</div>
-          ) : invoices.length ? (
-            <div className={styles.invoiceList}>
-              {invoices.map((invoice) => (
-                <article className={styles.invoiceRow} key={invoice.id}>
-                  <div className={styles.invoiceMain}>
-                    <span>{formatInvoiceDate(invoice.invoiceDate)}</span>
-                    <h3>{invoice.assetTitle}</h3>
-                    <p>{invoice.supplierName || 'Supplier not set'} · {invoice.invoiceNumber || 'No invoice number'}</p>
-                    <small>{invoice.source === 'automatic' ? 'Automatic' : 'Manual'} · VAT {formatMoney(invoice.vatAmount ?? 0)}</small>
-                  </div>
-                  <div className={styles.invoiceValue}>
-                    <strong>{formatMoney(invoice.totalIncVat)}</strong>
-                    <span>Total incl. VAT</span>
-                  </div>
-                  <div className={styles.rowActions}>
-                    {invoice.document?.uploadUrl ? (
-                      <a className={styles.secondaryButtonSmall} href={invoice.document.uploadUrl} target="_blank" rel="noreferrer">Open file</a>
-                    ) : null}
-                    <button type="button" className={styles.secondaryButtonSmall} onClick={() => openEdit(invoice)}>View/Edit</button>
-                    <button type="button" className={styles.dangerButtonSmall} onClick={() => deleteInvoice(invoice)}>Delete</button>
-                  </div>
-                </article>
-              ))}
-            </div>
-          ) : (
-            <div className={styles.emptyState}>No invoices saved yet. Choose Manual or Automatic to add the first invoice.</div>
-          )}
         </section>
       </section>
 
@@ -795,32 +551,29 @@ export default function MyInvoicesClient() {
               <button type="button" className={styles.secondaryButton} onClick={() => setPickerSearch('')}>Clear</button>
             </div>
             <div className={styles.assetList}>
-              {filteredAssets.length ? filteredAssets.map((asset) => {
-                const selected = asset.id === selectedAssetId;
-                return (
-                  <button
-                    type="button"
-                    key={asset.id}
-                    className={`${styles.assetRow} ${selected ? styles.assetRowSelected : ''}`}
-                    onClick={() => setSelectedAssetId(asset.id)}
-                  >
-                    <span className={styles.checkBox}>{selected ? '✓' : ''}</span>
-                    <span className={styles.assetInfo}>
-                      <strong>{asset.title}</strong>
-                      <small>{asset.meta}</small>
-                      <small>{asset.categoryLabel} · {asset.selectedMethod === 'manual' ? 'Manual' : 'Aim4price'}</small>
-                    </span>
-                    <span className={styles.assetValue}>
-                      <strong>{formatMoney(asset.value)}</strong>
-                      <small>current value</small>
-                    </span>
-                  </button>
-                );
-              }) : <div className={styles.emptyState}>No matching assets found.</div>}
+              {isLoading ? (
+                <div className={styles.emptyState}>Loading assets...</div>
+              ) : filteredAssets.length ? filteredAssets.map((asset) => (
+                <button
+                  type="button"
+                  key={asset.id}
+                  className={styles.assetRow}
+                  onClick={() => selectAssetAndContinue(asset.id)}
+                >
+                  <span className={styles.assetInfo}>
+                    <strong>{asset.title}</strong>
+                    <small>{asset.meta}</small>
+                    <small>{asset.categoryLabel} · {asset.selectedMethod === 'manual' ? 'Manual' : 'Aim4price'}</small>
+                  </span>
+                  <span className={styles.assetValue}>
+                    <strong>{formatMoney(asset.value)}</strong>
+                    <small>current value</small>
+                  </span>
+                </button>
+              )) : <div className={styles.emptyState}>No matching assets found.</div>}
             </div>
             <div className={styles.modalFooter}>
               <button type="button" className={styles.secondaryButton} onClick={closeModal}>Cancel</button>
-              <button type="button" className={styles.primaryButton} onClick={continueFromAssetPicker} disabled={!selectedAssetId}>Continue</button>
             </div>
           </div>
         </div>

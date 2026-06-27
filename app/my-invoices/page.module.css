@@ -481,7 +481,8 @@
 }
 
 .assetList {
-  min-height: 20rem;
+  flex: 1 1 20rem;
+  min-height: 0;
   overflow-y: auto;
   display: grid;
   align-content: start;
@@ -502,7 +503,7 @@
 .assetRow {
   width: 100%;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 1rem;
   padding: 0.95rem 1rem;
@@ -796,11 +797,11 @@
   }
 
   .assetRow {
-    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-columns: 1fr;
   }
 
   .assetValue {
-    grid-column: 2;
+    grid-column: 1;
     justify-items: start;
     text-align: left;
   }
