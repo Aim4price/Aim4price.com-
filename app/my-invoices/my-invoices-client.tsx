@@ -6,6 +6,7 @@ import styles from './page.module.css';
 
 type FlowMode = 'asset-manual' | 'asset-automatic' | 'manual-form' | 'upload' | 'review' | null;
 type InvoiceSource = 'manual' | 'automatic';
+type FilterSource = 'all' | InvoiceSource;
 type UsageMetric = 'none' | 'hours' | 'km';
 type NoticeTone = 'success' | 'error';
 
@@ -142,13 +143,83 @@ type InvoiceDraft = {
   invoiceDocumentId: string | null;
 };
 
+type InvoiceFilterState = {
+  assetId: string;
+  source: FilterSource;
+  year: string;
+  month: string;
+};
+
 type Notice = {
   tone: NoticeTone;
   message: string;
 };
 
+type ReportFormat = 'pdf' | 'xlsx';
+
+const EMPTY_SUMMARY: InvoiceSummary = {
+  totalSpent: 0,
+  maintenanceSpend: 0,
+  partsSpend: 0,
+  repairSpend: 0,
+  otherSpend: 0,
+  vatTotal: 0,
+  invoiceCount: 0,
+};
+
+const DEFAULT_FILTERS: InvoiceFilterState = {
+  assetId: 'all',
+  source: 'all',
+  year: 'all',
+  month: 'all',
+};
+
+const MONTH_OPTIONS = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
+
 function IconBase(props: SVGProps<SVGSVGElement>) {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props} />;
+}
+
+function SearchIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-3.5-3.5" />
+    </IconBase>
+  );
+}
+
+function FilterIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M4 5h16" />
+      <path d="M7 12h10" />
+      <path d="M10 19h4" />
+    </IconBase>
+  );
+}
+
+function DownloadIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M12 3v12" />
+      <path d="m7 10 5 5 5-5" />
+      <path d="M5 21h14" />
+    </IconBase>
+  );
 }
 
 function UploadIcon(props: SVGProps<SVGSVGElement>) {
@@ -180,32 +251,32 @@ function formatMoneyWithCents(value: number | null | undefined): string {
   return value.toFixed(2);
 }
 
-function parseMoney(value: string): number | null {
-  const raw = String(value ?? '').trim();
-  if (!raw) return null;
+function formatDate(value: string | null | undefined): string {
+  if (!value) return 'No date';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
 
-  let text = raw
-    .replace(/zar/gi, '')
-    .replace(/rand/gi, '')
-    .replace(/r/gi, '')
-    .replace(/\u00a0/g, ' ')
-    .replace(/[^0-9, .-]/g, '')
-    .replace(/\s+/g, '');
+  return new Intl.DateTimeFormat('en-ZA', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(parsed);
+}
 
-  if (!/[0-9]/.test(text)) return null;
+function formatDateTime(value: string | null | undefined): string {
+  if (!value) return '';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return '';
 
-  if (text.includes(',') && text.includes('.')) {
-    const lastComma = text.lastIndexOf(',');
-    const lastDot = text.lastIndexOf('.');
-    text = lastComma > lastDot ? text.replace(/\./g, '').replace(',', '.') : text.replace(/,/g, '');
-  } else if (text.includes(',') && !text.includes('.')) {
-    const parts = text.split(',');
-    const last = parts[parts.length - 1] ?? '';
-    text = last.length === 2 ? `${parts.slice(0, -1).join('')}.${last}` : text.replace(/,/g, '');
-  }
+  return new Intl.DateTimeFormat('en-ZA', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(parsed);
+}
 
-  const parsed = Number(text);
-  return Number.isFinite(parsed) ? Math.max(0, Math.round(parsed * 100) / 100) : null;
+function sourceLabel(source: InvoiceSource): string {
+  return source === 'automatic' ? 'Automatic' : 'Manual';
 }
 
 function buildEmptyDraft(source: InvoiceSource): InvoiceDraft {
@@ -246,37 +317,117 @@ function draftFromExtraction(extractionDraft: ExtractionDraft, source: InvoiceSo
   };
 }
 
-function recalculatedDraft(draft: InvoiceDraft): InvoiceDraft {
-  const subtotal = parseMoney(draft.subtotalExVat);
-  const vat = parseMoney(draft.vatAmount);
-  const total = parseMoney(draft.totalIncVat);
-
-  if (subtotal !== null && vat !== null && total === null) {
-    return { ...draft, totalIncVat: (subtotal + vat).toFixed(2) };
-  }
-
-  if (subtotal !== null && total !== null && vat === null) {
-    return { ...draft, vatAmount: Math.max(0, total - subtotal).toFixed(2) };
-  }
-
-  if (vat !== null && total !== null && subtotal === null) {
-    return { ...draft, subtotalExVat: Math.max(0, total - vat).toFixed(2) };
-  }
-
-  return draft;
+function draftFromInvoice(invoice: InvoiceRecord): InvoiceDraft {
+  return {
+    supplierName: invoice.supplierName ?? '',
+    invoiceNumber: invoice.invoiceNumber ?? '',
+    invoiceDate: invoice.invoiceDate ?? '',
+    subtotalExVat: formatMoneyWithCents(invoice.subtotalExVat),
+    vatAmount: formatMoneyWithCents(invoice.vatAmount),
+    totalIncVat: formatMoneyWithCents(invoice.totalIncVat),
+    usageReading: invoice.usageReading === null || typeof invoice.usageReading === 'undefined' ? '' : String(invoice.usageReading),
+    usageMetric: invoice.usageMetric ?? 'none',
+    maintenanceWorkDone: invoice.maintenanceWorkDone ?? '',
+    partsSupplied: invoice.partsSupplied ?? '',
+    repairWorkDone: invoice.repairWorkDone ?? '',
+    notes: invoice.notes ?? '',
+    source: invoice.source,
+    invoiceDocumentId: invoice.invoiceDocumentId,
+  };
 }
 
 function assetSearchText(asset: AssetOption): string {
   return `${asset.title} ${asset.categoryLabel} ${asset.meta} ${asset.value}`.toLowerCase();
 }
 
+function invoiceSearchText(invoice: InvoiceRecord): string {
+  return [
+    invoice.supplierName,
+    invoice.invoiceNumber,
+    invoice.assetTitle,
+    invoice.source,
+    sourceLabel(invoice.source),
+    invoice.invoiceDate,
+    invoice.totalIncVat,
+    invoice.vatAmount,
+    invoice.notes,
+    invoice.maintenanceWorkDone,
+    invoice.partsSupplied,
+    invoice.repairWorkDone,
+  ]
+    .join(' ')
+    .toLowerCase();
+}
+
+function invoiceYear(invoice: InvoiceRecord): number | null {
+  if (!invoice.invoiceDate) return null;
+  const year = Number(invoice.invoiceDate.slice(0, 4));
+  return Number.isInteger(year) && year >= 2000 && year <= 2100 ? year : null;
+}
+
+function calculateInvoiceSummary(invoices: InvoiceRecord[]): InvoiceSummary {
+  const summary = { ...EMPTY_SUMMARY, invoiceCount: invoices.length };
+
+  for (const invoice of invoices) {
+    summary.totalSpent += invoice.totalIncVat || 0;
+    summary.vatTotal += invoice.vatAmount ?? 0;
+
+    for (const block of invoice.blocks ?? []) {
+      const amount = block.totalIncVat ?? 0;
+      if (block.blockType === 'maintenance') summary.maintenanceSpend += amount;
+      else if (block.blockType === 'parts') summary.partsSpend += amount;
+      else if (block.blockType === 'repair') summary.repairSpend += amount;
+      else summary.otherSpend += amount;
+    }
+  }
+
+  return {
+    totalSpent: Math.round(summary.totalSpent * 100) / 100,
+    maintenanceSpend: Math.round(summary.maintenanceSpend * 100) / 100,
+    partsSpend: Math.round(summary.partsSpend * 100) / 100,
+    repairSpend: Math.round(summary.repairSpend * 100) / 100,
+    otherSpend: Math.round(summary.otherSpend * 100) / 100,
+    vatTotal: Math.round(summary.vatTotal * 100) / 100,
+    invoiceCount: summary.invoiceCount,
+  };
+}
+
+function buildInvoiceListUrl(filters: InvoiceFilterState): string {
+  const params = new URLSearchParams();
+
+  if (filters.assetId !== 'all') params.set('assetId', filters.assetId);
+  if (filters.year !== 'all') params.set('year', filters.year);
+  if (filters.month !== 'all') params.set('month', filters.month);
+
+  const query = params.toString();
+  return query ? `/api/my-invoices?${query}` : '/api/my-invoices';
+}
+
+function buildReportUrl(filters: InvoiceFilterState, format: ReportFormat): string {
+  const params = new URLSearchParams({ format });
+
+  if (filters.assetId !== 'all') params.set('assetId', filters.assetId);
+  if (filters.year !== 'all') params.set('year', filters.year);
+  if (filters.month !== 'all') params.set('month', filters.month);
+
+  return `/api/my-invoices/report?${params.toString()}`;
+}
+
 export default function MyInvoicesClient() {
   const [assets, setAssets] = useState<AssetOption[]>([]);
+  const [invoices, setInvoices] = useState<InvoiceRecord[]>([]);
+  const [summary, setSummary] = useState<InvoiceSummary>(EMPTY_SUMMARY);
+  const [availableYears, setAvailableYears] = useState<number[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [flow, setFlow] = useState<FlowMode>(null);
   const [selectedAssetId, setSelectedAssetId] = useState('');
   const [pickerSearch, setPickerSearch] = useState('');
+  const [invoiceSearch, setInvoiceSearch] = useState('');
+  const [activeFilters, setActiveFilters] = useState<InvoiceFilterState>(DEFAULT_FILTERS);
+  const [draftFilters, setDraftFilters] = useState<InvoiceFilterState>(DEFAULT_FILTERS);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [downloadOpen, setDownloadOpen] = useState(false);
   const [draft, setDraft] = useState<InvoiceDraft>(buildEmptyDraft('manual'));
   const [editingInvoiceId, setEditingInvoiceId] = useState<string | null>(null);
   const [manualUploadFile, setManualUploadFile] = useState<File | null>(null);
@@ -286,6 +437,8 @@ export default function MyInvoicesClient() {
   const [extractionWarnings, setExtractionWarnings] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
+  const [deletingInvoiceId, setDeletingInvoiceId] = useState<string | null>(null);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -293,15 +446,10 @@ export default function MyInvoicesClient() {
       setIsLoading(true);
 
       try {
-        const response = await fetch('/api/my-invoices', { cache: 'no-store' });
-        const data = (await response.json()) as InvoicesResponse;
-
-        if (!response.ok || !data.ok) {
-          throw new Error(data.error || 'My Invoices could not be loaded.');
-        }
+        const data = await fetchInvoiceData(activeFilters);
 
         if (!cancelled) {
-          setAssets(data.assets ?? []);
+          applyInvoiceData(data);
         }
       } catch (error) {
         if (!cancelled) {
@@ -312,12 +460,12 @@ export default function MyInvoicesClient() {
       }
     }
 
-    loadInvoices();
+    void loadInvoices();
 
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [activeFilters.assetId, activeFilters.year, activeFilters.month]);
 
   const selectedAsset = useMemo(
     () => assets.find((asset) => asset.id === selectedAssetId) ?? null,
@@ -330,13 +478,90 @@ export default function MyInvoicesClient() {
     return assets.filter((asset) => assetSearchText(asset).includes(query));
   }, [assets, pickerSearch]);
 
-  async function reloadData() {
-    const response = await fetch('/api/my-invoices', { cache: 'no-store' });
+  const visibleInvoices = useMemo(() => {
+    const query = invoiceSearch.trim().toLowerCase();
+
+    return invoices.filter((invoice) => {
+      if (activeFilters.source !== 'all' && invoice.source !== activeFilters.source) return false;
+      if (query && !invoiceSearchText(invoice).includes(query)) return false;
+      return true;
+    });
+  }, [activeFilters.source, invoiceSearch, invoices]);
+
+  const visibleSummary = useMemo(() => {
+    const hasClientOnlyFilters = activeFilters.source !== 'all' || invoiceSearch.trim().length > 0;
+    return hasClientOnlyFilters ? calculateInvoiceSummary(visibleInvoices) : summary;
+  }, [activeFilters.source, invoiceSearch, summary, visibleInvoices]);
+
+  const yearOptions = useMemo(() => {
+    const years = new Set(availableYears);
+    for (const value of [activeFilters.year, draftFilters.year]) {
+      const year = Number(value);
+      if (Number.isInteger(year) && year >= 2000 && year <= 2100) years.add(year);
+    }
+    return Array.from(years).sort((a, b) => b - a);
+  }, [activeFilters.year, availableYears, draftFilters.year]);
+
+  const activeFilterCount = useMemo(() => {
+    return [
+      activeFilters.assetId !== 'all',
+      activeFilters.source !== 'all',
+      activeFilters.year !== 'all',
+      activeFilters.month !== 'all',
+    ].filter(Boolean).length;
+  }, [activeFilters]);
+
+  const assetPickerOpen = flow === 'asset-manual' || flow === 'asset-automatic';
+  const formOpen = flow === 'manual-form' || flow === 'review';
+  const flowTitle = flow === 'asset-automatic' ? 'Choose asset for automatic invoice' : 'Choose asset for manual invoice';
+  const formTitle = flow === 'review' ? 'Review automatic invoice' : 'Manual invoice';
+  const hasInvoiceSearch = invoiceSearch.trim().length > 0;
+  const modalOpen = assetPickerOpen || flow === 'upload' || formOpen || filterOpen || downloadOpen;
+
+  useEffect(() => {
+    if (!modalOpen) return undefined;
+
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+    };
+  }, [modalOpen]);
+
+  async function fetchInvoiceData(filters: InvoiceFilterState): Promise<InvoicesResponse> {
+    const response = await fetch(buildInvoiceListUrl(filters), { cache: 'no-store' });
     const data = (await response.json()) as InvoicesResponse;
 
-    if (!response.ok || !data.ok) throw new Error(data.error || 'My Invoices could not be refreshed.');
+    if (!response.ok || !data.ok) {
+      throw new Error(data.error || 'My Invoices could not be loaded.');
+    }
+
+    return data;
+  }
+
+  function applyInvoiceData(data: InvoicesResponse) {
+    const nextInvoices = data.invoices ?? [];
 
     setAssets(data.assets ?? []);
+    setInvoices(nextInvoices);
+    setSummary(data.summary ?? EMPTY_SUMMARY);
+    setAvailableYears((current) => {
+      const years = new Set(current);
+      for (const invoice of nextInvoices) {
+        const year = invoiceYear(invoice);
+        if (year) years.add(year);
+      }
+      return Array.from(years).sort((a, b) => b - a);
+    });
+  }
+
+  async function reloadData(filters: InvoiceFilterState = activeFilters) {
+    const data = await fetchInvoiceData(filters);
+    applyInvoiceData(data);
   }
 
   function closeModal() {
@@ -378,6 +603,47 @@ export default function MyInvoicesClient() {
 
     setDraft(buildEmptyDraft('manual'));
     setFlow('manual-form');
+  }
+
+  function openFilterPanel() {
+    setDraftFilters(activeFilters);
+    setFilterOpen(true);
+  }
+
+  function closeFilterPanel() {
+    setDraftFilters(activeFilters);
+    setFilterOpen(false);
+  }
+
+  function applyFilters() {
+    setActiveFilters(draftFilters);
+    setFilterOpen(false);
+  }
+
+  function clearFilters() {
+    setDraftFilters(DEFAULT_FILTERS);
+    setActiveFilters(DEFAULT_FILTERS);
+    setFilterOpen(false);
+  }
+
+  function handleDownloadReport(format: ReportFormat) {
+    const url = buildReportUrl(activeFilters, format);
+
+    if (format === 'xlsx') {
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = '';
+      link.rel = 'noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setDownloadOpen(false);
+      return;
+    }
+
+    const opened = window.open(url, '_blank', 'noopener,noreferrer');
+    if (!opened) window.location.href = url;
+    setDownloadOpen(false);
   }
 
   async function uploadInvoiceFile(assetId: string, source: InvoiceSource, file: File): Promise<InvoiceDocument> {
@@ -496,6 +762,44 @@ export default function MyInvoicesClient() {
     }
   }
 
+  function editInvoice(invoice: InvoiceRecord) {
+    setNotice(null);
+    setSelectedAssetId(invoice.assetId);
+    setEditingInvoiceId(invoice.id);
+    setManualUploadFile(null);
+    setAutomaticUploadFile(null);
+    setUploadedDocument(invoice.document);
+    setRawTextPreview((invoice.document?.rawExtractedText ?? '').slice(0, 3000));
+    setExtractionWarnings(invoice.document?.extractionWarnings ?? []);
+    setDraft(draftFromInvoice(invoice));
+    setFlow(invoice.source === 'automatic' ? 'review' : 'manual-form');
+  }
+
+  async function deleteInvoice(invoice: InvoiceRecord) {
+    const invoiceLabel = invoice.invoiceNumber ? `invoice ${invoice.invoiceNumber}` : 'this invoice';
+    const confirmed = window.confirm(`Delete ${invoiceLabel}? This cannot be undone.`);
+    if (!confirmed) return;
+
+    setDeletingInvoiceId(invoice.id);
+    setNotice(null);
+
+    try {
+      const response = await fetch(`/api/my-invoices/${invoice.id}`, { method: 'DELETE' });
+      const data = (await response.json()) as InvoicesResponse;
+
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error || 'The invoice could not be deleted.');
+      }
+
+      await reloadData();
+      setNotice({ tone: 'success', message: 'Invoice deleted.' });
+    } catch (error) {
+      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'The invoice could not be deleted.' });
+    } finally {
+      setDeletingInvoiceId(null);
+    }
+  }
+
   function setDraftField<K extends keyof InvoiceDraft>(key: K, value: InvoiceDraft[K]) {
     setDraft((current) => ({ ...current, [key]: value }));
   }
@@ -507,11 +811,6 @@ export default function MyInvoicesClient() {
   function handleAutomaticFileChange(event: ChangeEvent<HTMLInputElement>) {
     setAutomaticUploadFile(event.target.files?.[0] ?? null);
   }
-
-  const assetPickerOpen = flow === 'asset-manual' || flow === 'asset-automatic';
-  const formOpen = flow === 'manual-form' || flow === 'review';
-  const flowTitle = flow === 'asset-automatic' ? 'Choose asset for automatic invoice' : 'Choose asset for manual invoice';
-  const formTitle = flow === 'review' ? 'Review automatic invoice' : 'Manual invoice';
 
   return (
     <main className={styles.page}>
@@ -533,13 +832,200 @@ export default function MyInvoicesClient() {
             <span>Automatic</span>
           </button>
         </section>
+
+        <section className={styles.invoiceToolbar} aria-label="Saved invoice controls">
+          <label className={styles.searchWrap}>
+            <SearchIcon className={styles.searchIcon} />
+            <input
+              type="search"
+              className={styles.searchInput}
+              value={invoiceSearch}
+              onChange={(event) => setInvoiceSearch(event.target.value)}
+              placeholder="Search saved invoices..."
+              aria-label="Search saved invoices"
+            />
+            {hasInvoiceSearch ? (
+              <button type="button" className={styles.clearSearchButton} onClick={() => setInvoiceSearch('')} aria-label="Clear saved invoice search">
+                ×
+              </button>
+            ) : null}
+          </label>
+
+          <div className={styles.toolbarButtons}>
+            <button type="button" className={`${styles.secondaryButton} ${styles.toolbarButton} ${styles.toolbarFilterButton}`} onClick={openFilterPanel}>
+              <FilterIcon className={styles.buttonIcon} />
+              <span>Filter</span>
+              {activeFilterCount ? <strong>{activeFilterCount}</strong> : null}
+            </button>
+            <button type="button" className={`${styles.primaryButton} ${styles.toolbarButton} ${styles.toolbarDownloadButton}`} onClick={() => setDownloadOpen(true)}>
+              <DownloadIcon className={styles.buttonIcon} />
+              <span>Download</span>
+            </button>
+          </div>
+        </section>
+
+        <section className={styles.invoicePanel} aria-label="Saved invoices">
+          <div className={styles.savedListHeader}>
+            <div>
+              <h2>Saved invoices</h2>
+              <p>{isLoading ? 'Loading saved invoices...' : `${visibleInvoices.length.toLocaleString('en-ZA')} shown from ${invoices.length.toLocaleString('en-ZA')} loaded invoices.`}</p>
+            </div>
+            <div className={styles.savedSummaryGrid} aria-label="Invoice summary">
+              <span>
+                <small>Invoices</small>
+                <strong>{visibleSummary.invoiceCount.toLocaleString('en-ZA')}</strong>
+              </span>
+              <span>
+                <small>Total incl. VAT</small>
+                <strong>{formatMoney(visibleSummary.totalSpent)}</strong>
+              </span>
+              <span>
+                <small>VAT amount</small>
+                <strong>{formatMoney(visibleSummary.vatTotal)}</strong>
+              </span>
+            </div>
+          </div>
+
+          <div className={styles.invoiceList}>
+            {isLoading ? <div className={styles.emptyState}>Loading saved invoices...</div> : null}
+
+            {!isLoading && !visibleInvoices.length ? (
+              <div className={styles.emptyState}>No saved invoices yet. Add a manual invoice or upload one automatically.</div>
+            ) : null}
+
+            {!isLoading ? visibleInvoices.map((invoice) => (
+              <article className={styles.invoiceRow} key={invoice.id}>
+                <div className={styles.invoiceMain}>
+                  <div className={styles.invoiceTopLine}>
+                    <span className={`${styles.sourceBadge} ${invoice.source === 'automatic' ? styles.sourceAutomatic : styles.sourceManual}`}>{sourceLabel(invoice.source)}</span>
+                    <span>{formatDate(invoice.invoiceDate)}</span>
+                  </div>
+                  <h3>{invoice.supplierName || 'Unknown supplier'}</h3>
+                  <p>{invoice.assetTitle || 'Saved asset'}</p>
+                  <div className={styles.invoiceMetaList}>
+                    <span>{invoice.invoiceNumber ? `Invoice ${invoice.invoiceNumber}` : 'No invoice number'}</span>
+                    {invoice.vatAmount !== null ? <span>VAT {formatMoney(invoice.vatAmount)}</span> : null}
+                    {invoice.updatedAtIso ? <span>Updated {formatDateTime(invoice.updatedAtIso)}</span> : null}
+                  </div>
+                </div>
+
+                <div className={styles.invoiceValue}>
+                  <span>Total incl. VAT</span>
+                  <strong>{formatMoney(invoice.totalIncVat)}</strong>
+                  {invoice.usageMetric !== 'none' && invoice.usageReading !== null ? <small>{invoice.usageReading.toLocaleString('en-ZA')} {invoice.usageMetric}</small> : null}
+                </div>
+
+                <div className={styles.rowActions}>
+                  {invoice.document?.uploadUrl ? (
+                    <a className={styles.secondaryButtonSmall} href={invoice.document.uploadUrl} target="_blank" rel="noreferrer">
+                      Open file
+                    </a>
+                  ) : null}
+                  <button type="button" className={styles.secondaryButtonSmall} onClick={() => editInvoice(invoice)}>Edit</button>
+                  <button
+                    type="button"
+                    className={styles.dangerButtonSmall}
+                    onClick={() => void deleteInvoice(invoice)}
+                    disabled={deletingInvoiceId === invoice.id}
+                  >
+                    {deletingInvoiceId === invoice.id ? 'Deleting...' : 'Delete'}
+                  </button>
+                </div>
+              </article>
+            )) : null}
+          </div>
+        </section>
       </section>
+
+      {filterOpen ? (
+        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label="Filter saved invoices">
+          <div className={styles.filterModal}>
+            <div className={styles.modalHeader}>
+              <div>
+                <h2>Filter invoices</h2>
+                <p>Limit the saved invoice list and report filters.</p>
+              </div>
+              <button type="button" className={styles.closeButton} onClick={closeFilterPanel} aria-label="Close filter"><CloseIcon /></button>
+            </div>
+            <div className={styles.modalDivider} />
+            <div className={styles.filterGrid}>
+              <label>
+                <span>Asset</span>
+                <select value={draftFilters.assetId} onChange={(event) => setDraftFilters((current) => ({ ...current, assetId: event.target.value }))}>
+                  <option value="all">All assets</option>
+                  {assets.map((asset) => <option key={asset.id} value={asset.id}>{asset.title}</option>)}
+                </select>
+              </label>
+              <label>
+                <span>Source</span>
+                <select value={draftFilters.source} onChange={(event) => setDraftFilters((current) => ({ ...current, source: event.target.value as FilterSource }))}>
+                  <option value="all">All sources</option>
+                  <option value="manual">Manual</option>
+                  <option value="automatic">Automatic</option>
+                </select>
+              </label>
+              <label>
+                <span>Year</span>
+                <select value={draftFilters.year} onChange={(event) => setDraftFilters((current) => ({ ...current, year: event.target.value, month: event.target.value === 'all' ? 'all' : current.month }))}>
+                  <option value="all">All years</option>
+                  {yearOptions.map((year) => <option key={year} value={String(year)}>{year}</option>)}
+                </select>
+              </label>
+              <label>
+                <span>Month</span>
+                <select value={draftFilters.month} onChange={(event) => setDraftFilters((current) => ({ ...current, month: event.target.value }))} disabled={draftFilters.year === 'all'}>
+                  <option value="all">All months</option>
+                  {MONTH_OPTIONS.map((month, index) => <option key={month} value={String(index + 1)}>{month}</option>)}
+                </select>
+              </label>
+            </div>
+            <div className={styles.modalFooter}>
+              <button type="button" className={styles.secondaryButton} onClick={closeFilterPanel}>Close</button>
+              <button type="button" className={styles.secondaryButton} onClick={clearFilters}>Clear filters</button>
+              <button type="button" className={styles.primaryButton} onClick={applyFilters}>Apply filters</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {downloadOpen ? (
+        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label="Download Cost of Ownership report">
+          <div className={styles.downloadModal}>
+            <div className={styles.modalHeader}>
+              <div>
+                <h2>Download report</h2>
+                <p>Export the current Cost of Ownership report using the active asset, year and month filters.</p>
+              </div>
+              <button type="button" className={styles.closeButton} onClick={() => setDownloadOpen(false)} aria-label="Close download"><CloseIcon /></button>
+            </div>
+            <div className={styles.modalDivider} />
+            <div className={styles.downloadChoiceGrid}>
+              <button type="button" className={styles.downloadChoiceButton} onClick={() => handleDownloadReport('pdf')}>
+                <DownloadIcon />
+                <strong>Download PDF / report</strong>
+                <span>Open the printable Cost of Ownership report.</span>
+              </button>
+              <button type="button" className={styles.downloadChoiceButton} onClick={() => handleDownloadReport('xlsx')}>
+                <DownloadIcon />
+                <strong>Download Excel</strong>
+                <span>Download the filtered invoice data as XLSX.</span>
+              </button>
+            </div>
+            <div className={styles.modalFooter}>
+              <button type="button" className={styles.secondaryButton} onClick={() => setDownloadOpen(false)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {assetPickerOpen ? (
         <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label={flowTitle}>
           <div className={styles.assetModal}>
             <div className={styles.modalHeader}>
-              <h2>{flowTitle}</h2>
+              <div>
+                <h2>{flowTitle}</h2>
+                <p>Select the saved asset this invoice belongs to.</p>
+              </div>
               <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close"><CloseIcon /></button>
             </div>
             <div className={styles.modalDivider} />
@@ -547,7 +1033,7 @@ export default function MyInvoicesClient() {
               <input
                 value={pickerSearch}
                 onChange={(event) => setPickerSearch(event.target.value)}
-                placeholder="Search..."
+                placeholder="Search assets..."
                 aria-label="Search assets"
               />
               <button type="button" className={styles.secondaryButton} onClick={() => setPickerSearch('')}>Clear</button>
@@ -587,24 +1073,26 @@ export default function MyInvoicesClient() {
             <div className={styles.modalHeader}>
               <div>
                 <h2>Upload invoice</h2>
-                <p>{selectedAsset?.title ?? 'Selected asset'}</p>
+                <p>{selectedAsset?.title ?? 'Selected asset'} · Automatic</p>
               </div>
               <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close"><CloseIcon /></button>
             </div>
             <div className={styles.modalDivider} />
-            <section className={styles.uploadPanel}>
-              <h3>Documents and photos</h3>
-              <div className={styles.uploadBox}>
-                <label className={styles.uploadButton}>
-                  <UploadIcon />
-                  Add invoice
-                  <input type="file" accept="application/pdf,image/jpeg,image/png,image/webp" onChange={handleAutomaticFileChange} />
-                </label>
-                <span className={styles.uploadCounter}>{automaticUploadFile ? '1 / 1' : '0 / 1'}</span>
-                {automaticUploadFile ? <p>{automaticUploadFile.name}</p> : null}
-              </div>
-              <p className={styles.helperText}>Digital PDFs are read with free text extraction. Images and scanned PDFs remain editable if extraction is weak.</p>
-            </section>
+            <div className={styles.formModalScrollBody}>
+              <section className={styles.uploadPanel}>
+                <h3>Documents and photos</h3>
+                <div className={styles.uploadBox}>
+                  <label className={styles.uploadButton}>
+                    <UploadIcon />
+                    Add invoice
+                    <input type="file" accept="application/pdf,image/jpeg,image/png,image/webp" onChange={handleAutomaticFileChange} />
+                  </label>
+                  <span className={styles.uploadCounter}>{automaticUploadFile ? '1 / 1' : '0 / 1'}</span>
+                  {automaticUploadFile ? <p>{automaticUploadFile.name}</p> : null}
+                </div>
+                <p className={styles.helperText}>Digital PDFs are read with free text extraction. Images and scanned PDFs remain editable if extraction is weak.</p>
+              </section>
+            </div>
             <div className={styles.modalFooter}>
               <button type="button" className={styles.secondaryButton} onClick={() => setFlow('asset-automatic')}>Back</button>
               <button type="button" className={styles.primaryButton} onClick={handleAutomaticExtract} disabled={!automaticUploadFile || isExtracting}>
@@ -627,98 +1115,101 @@ export default function MyInvoicesClient() {
             </div>
             <div className={styles.modalDivider} />
 
-            {extractionWarnings.length ? (
-              <div className={styles.warningBox}>
-                {extractionWarnings.map((warning) => <p key={warning}>{warning}</p>)}
-              </div>
-            ) : null}
+            <div className={styles.formModalScrollBody}>
+              {extractionWarnings.length ? (
+                <div className={styles.warningBox}>
+                  {extractionWarnings.map((warning) => <p key={warning}>{warning}</p>)}
+                </div>
+              ) : null}
 
-            <div className={styles.formGrid}>
-              <label>
-                <span>Supplier name</span>
-                <input value={draft.supplierName} onChange={(event) => setDraftField('supplierName', event.target.value)} />
-              </label>
-              <label>
-                <span>Invoice number</span>
-                <input value={draft.invoiceNumber} onChange={(event) => setDraftField('invoiceNumber', event.target.value)} />
-              </label>
-              <label>
-                <span>Invoice date</span>
-                <input type="date" value={draft.invoiceDate} onChange={(event) => setDraftField('invoiceDate', event.target.value)} />
-              </label>
-              <label>
-                <span>Usage metric</span>
-                <select value={draft.usageMetric} onChange={(event) => setDraftField('usageMetric', event.target.value as UsageMetric)}>
-                  <option value="none">None</option>
-                  <option value="hours">Hours</option>
-                  <option value="km">KM</option>
-                </select>
-              </label>
-              <label>
-                <span>Usage reading</span>
-                <input inputMode="decimal" value={draft.usageReading} disabled={draft.usageMetric === 'none'} onChange={(event) => setDraftField('usageReading', event.target.value)} />
-              </label>
-              <label>
-                <span>Subtotal Excl. VAT</span>
-                <input inputMode="decimal" value={draft.subtotalExVat} onChange={(event) => setDraftField('subtotalExVat', event.target.value)} />
-              </label>
-              <label>
-                <span>VAT amount</span>
-                <input inputMode="decimal" value={draft.vatAmount} onChange={(event) => setDraftField('vatAmount', event.target.value)} />
-              </label>
-              <label>
-                <span>Total Incl. VAT</span>
-                <input inputMode="decimal" value={draft.totalIncVat} onChange={(event) => setDraftField('totalIncVat', event.target.value)} />
-              </label>
-            </div>
+              <section className={styles.invoiceFormCard}>
+                <div className={styles.formGrid}>
+                  <label>
+                    <span>Supplier name</span>
+                    <input value={draft.supplierName} onChange={(event) => setDraftField('supplierName', event.target.value)} />
+                  </label>
+                  <label>
+                    <span>Invoice number</span>
+                    <input value={draft.invoiceNumber} onChange={(event) => setDraftField('invoiceNumber', event.target.value)} />
+                  </label>
+                  <label>
+                    <span>Invoice date</span>
+                    <input type="date" value={draft.invoiceDate} onChange={(event) => setDraftField('invoiceDate', event.target.value)} />
+                  </label>
+                  <label>
+                    <span>Usage metric</span>
+                    <select value={draft.usageMetric} onChange={(event) => setDraftField('usageMetric', event.target.value as UsageMetric)}>
+                      <option value="none">None</option>
+                      <option value="hours">Hours</option>
+                      <option value="km">KM</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>Usage reading</span>
+                    <input inputMode="decimal" value={draft.usageReading} disabled={draft.usageMetric === 'none'} onChange={(event) => setDraftField('usageReading', event.target.value)} />
+                  </label>
+                  <label>
+                    <span>Subtotal Excl. VAT</span>
+                    <input inputMode="decimal" value={draft.subtotalExVat} onChange={(event) => setDraftField('subtotalExVat', event.target.value)} />
+                  </label>
+                  <label>
+                    <span>VAT amount</span>
+                    <input inputMode="decimal" value={draft.vatAmount} onChange={(event) => setDraftField('vatAmount', event.target.value)} />
+                  </label>
+                  <label>
+                    <span>Total Incl. VAT</span>
+                    <input inputMode="decimal" value={draft.totalIncVat} onChange={(event) => setDraftField('totalIncVat', event.target.value)} />
+                  </label>
+                </div>
 
-            <button type="button" className={styles.secondaryButton} onClick={() => setDraft((current) => recalculatedDraft(current))}>Calculate missing VAT/total</button>
+                <div className={styles.textAreaGrid}>
+                  <label>
+                    <span>Maintenance work done</span>
+                    <textarea value={draft.maintenanceWorkDone} onChange={(event) => setDraftField('maintenanceWorkDone', event.target.value)} rows={4} />
+                  </label>
+                  <label>
+                    <span>Parts supplied</span>
+                    <textarea value={draft.partsSupplied} onChange={(event) => setDraftField('partsSupplied', event.target.value)} rows={4} />
+                  </label>
+                  <label>
+                    <span>Repair work done</span>
+                    <textarea value={draft.repairWorkDone} onChange={(event) => setDraftField('repairWorkDone', event.target.value)} rows={4} />
+                  </label>
+                  <label>
+                    <span>Notes</span>
+                    <textarea value={draft.notes} onChange={(event) => setDraftField('notes', event.target.value)} rows={4} />
+                  </label>
+                </div>
 
-            <div className={styles.textAreaGrid}>
-              <label>
-                <span>Maintenance work done</span>
-                <textarea value={draft.maintenanceWorkDone} onChange={(event) => setDraftField('maintenanceWorkDone', event.target.value)} rows={4} />
-              </label>
-              <label>
-                <span>Parts supplied</span>
-                <textarea value={draft.partsSupplied} onChange={(event) => setDraftField('partsSupplied', event.target.value)} rows={4} />
-              </label>
-              <label>
-                <span>Repair work done</span>
-                <textarea value={draft.repairWorkDone} onChange={(event) => setDraftField('repairWorkDone', event.target.value)} rows={4} />
-              </label>
-              <label>
-                <span>Notes</span>
-                <textarea value={draft.notes} onChange={(event) => setDraftField('notes', event.target.value)} rows={4} />
-              </label>
-            </div>
+                {draft.source === 'manual' ? (
+                  <section className={styles.uploadInline}>
+                    <span>Optional document/photo upload</span>
+                    <label className={styles.uploadButtonSmall}>
+                      <UploadIcon />
+                      Add file
+                      <input type="file" accept="application/pdf,image/jpeg,image/png,image/webp" onChange={handleManualFileChange} />
+                    </label>
+                    <strong>{manualUploadFile ? manualUploadFile.name : uploadedDocument?.fileName || 'No file selected'}</strong>
+                  </section>
+                ) : null}
 
-            {draft.source === 'manual' ? (
-              <section className={styles.uploadInline}>
-                <span>Optional document/photo upload</span>
-                <label className={styles.uploadButtonSmall}>
-                  <UploadIcon />
-                  Add file
-                  <input type="file" accept="application/pdf,image/jpeg,image/png,image/webp" onChange={handleManualFileChange} />
-                </label>
-                <strong>{manualUploadFile ? manualUploadFile.name : uploadedDocument?.fileName || 'No file selected'}</strong>
+                {uploadedDocument?.uploadUrl ? (
+                  <a className={styles.fileLink} href={uploadedDocument.uploadUrl} target="_blank" rel="noreferrer">Open attached invoice: {uploadedDocument.fileName}</a>
+                ) : null}
+
+                {rawTextPreview ? (
+                  <details className={styles.rawPreview}>
+                    <summary>Raw extraction preview</summary>
+                    <pre>{rawTextPreview}</pre>
+                  </details>
+                ) : null}
               </section>
-            ) : null}
-
-            {uploadedDocument?.uploadUrl ? (
-              <a className={styles.fileLink} href={uploadedDocument.uploadUrl} target="_blank" rel="noreferrer">Open attached invoice: {uploadedDocument.fileName}</a>
-            ) : null}
-
-            {rawTextPreview ? (
-              <details className={styles.rawPreview}>
-                <summary>Raw extraction preview</summary>
-                <pre>{rawTextPreview}</pre>
-              </details>
-            ) : null}
+            </div>
 
             <div className={styles.modalFooter}>
               <button type="button" className={styles.secondaryButton} onClick={() => {
-                if (flow === 'manual-form') setFlow('asset-manual');
+                if (editingInvoiceId) closeModal();
+                else if (flow === 'manual-form') setFlow('asset-manual');
                 else if (flow === 'review') setFlow('upload');
                 else closeModal();
               }}>Back</button>
