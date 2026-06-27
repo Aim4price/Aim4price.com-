@@ -524,6 +524,7 @@ type PricingRevaluePreview = {
   advancedAssumptions: RevalueAdvancedAssumptionsRequest | null;
   result: RevalueAssetApiResponse | null;
   error: string | null;
+  errorContext: 'preview' | 'save' | null;
 };
 
 type MarketplacePublishDraft = {
@@ -4012,6 +4013,7 @@ export default function AssetRegisterClient() {
   const [busyMaintenanceStatusId, setBusyMaintenanceStatusId] = useState<string | null>(null);
   const [busyRevalueAction, setBusyRevalueAction] = useState<RevalueMethod | null>(null);
   const [pricingPreview, setPricingPreview] = useState<PricingRevaluePreview | null>(null);
+  const revaluePreviewRequestSeqRef = useRef(0);
   const [isLoadingPricingPreview, setIsLoadingPricingPreview] = useState(false);
   const [isSavingPricingPreview, setIsSavingPricingPreview] = useState(false);
   const [revalueReplacementPriceInput, setRevalueReplacementPriceInput] = useState('');
@@ -6631,6 +6633,7 @@ export default function AssetRegisterClient() {
       advancedAssumptions: null,
       result: null,
       error: null,
+      errorContext: null,
     } : current));
   }
 
@@ -6651,6 +6654,7 @@ export default function AssetRegisterClient() {
         advancedAssumptions: null,
         result: null,
         error: null,
+        errorContext: null,
       };
     });
   }
@@ -6706,6 +6710,7 @@ export default function AssetRegisterClient() {
       advancedAssumptions: null,
       result: null,
       error: null,
+      errorContext: null,
     });
     setIsLoadingPricingPreview(false);
     setIsSavingPricingPreview(false);
@@ -6725,6 +6730,7 @@ export default function AssetRegisterClient() {
       advancedAssumptions: null,
       result: null,
       error: null,
+      errorContext: null,
     });
     setIsLoadingPricingPreview(false);
     setIsSavingPricingPreview(false);
@@ -6741,6 +6747,7 @@ export default function AssetRegisterClient() {
       advancedAssumptions: null,
       result: null,
       error: null,
+      errorContext: null,
     });
     setIsLoadingPricingPreview(false);
     setIsSavingPricingPreview(false);
@@ -6764,6 +6771,7 @@ export default function AssetRegisterClient() {
           advancedAssumptions: null,
           result: null,
           error: null,
+          errorContext: null,
         });
       } else {
         showSavedReplacementStep(pricingPreview.asset);
@@ -6887,7 +6895,11 @@ export default function AssetRegisterClient() {
       advancedAssumptions,
       result: null,
       error: null,
+      errorContext: null,
     };
+
+    const previewRequestId = revaluePreviewRequestSeqRef.current + 1;
+    revaluePreviewRequestSeqRef.current = previewRequestId;
 
     setPricingPreview(initialPreview);
     setIsLoadingPricingPreview(true);
@@ -6912,6 +6924,10 @@ export default function AssetRegisterClient() {
         throw new Error(data.error ?? 'Failed to calculate the new value preview.');
       }
 
+      if (revaluePreviewRequestSeqRef.current !== previewRequestId) {
+        return;
+      }
+
       setPricingPreview((current) => {
         if (!current || current.asset.id !== asset.id || current.method !== method) {
           return current;
@@ -6921,9 +6937,14 @@ export default function AssetRegisterClient() {
           ...current,
           result: data,
           error: null,
+          errorContext: null,
         };
       });
     } catch (error) {
+      if (revaluePreviewRequestSeqRef.current !== previewRequestId) {
+        return;
+      }
+
       setPricingPreview((current) => {
         if (!current || current.asset.id !== asset.id || current.method !== method) {
           return current;
@@ -6933,10 +6954,13 @@ export default function AssetRegisterClient() {
           ...current,
           result: null,
           error: error instanceof Error ? error.message : 'Failed to calculate the new value preview.',
+          errorContext: 'preview',
         };
       });
     } finally {
-      setIsLoadingPricingPreview(false);
+      if (revaluePreviewRequestSeqRef.current === previewRequestId) {
+        setIsLoadingPricingPreview(false);
+      }
     }
   }
 
@@ -7001,6 +7025,7 @@ export default function AssetRegisterClient() {
       setPricingPreview((current) => (current ? {
         ...current,
         error: error instanceof Error ? error.message : 'Failed to save the new value.',
+        errorContext: 'save',
       } : current));
     } finally {
       setIsSavingPricingPreview(false);
@@ -8087,6 +8112,7 @@ export default function AssetRegisterClient() {
     pricingPreview.replacementMode === 'custom' &&
     pricingPreview.replacementPriceExVat !== null;
   const pricingPreviewShouldSaveReplacement = pricingPreviewUsesCustomReplacement && saveReplacementPriceWithRevalue;
+  const pricingPreviewErrorTitle = pricingPreview?.errorContext === 'save' ? 'Could not save new value' : 'Could not calculate preview';
   const pricingPreviewHasUnpreviewedReplacementInput =
     Boolean(pricingPreviewUsesCustomReplacement && pricingPreview?.replacementPriceExVat !== normalizedRevalueReplacementPriceInput);
   const pricingPreviewOldValueExVat = pricingPreview?.result?.oldValueExVat ?? pricingPreview?.asset.value ?? null;
@@ -8132,6 +8158,7 @@ export default function AssetRegisterClient() {
   );
   const canSavePricingPreview = Boolean(
     pricingPreview?.result?.item &&
+    !pricingPreview.error &&
     !isLoadingPricingPreview &&
     !isSavingPricingPreview &&
     !pricingPreviewHasUnpreviewedReplacementInput,
@@ -10818,7 +10845,7 @@ export default function AssetRegisterClient() {
                       <div className={styles.pricingPreviewStatus}>Calculating new value...</div>
                     ) : pricingPreview.error ? (
                       <div className={`${styles.pricingPreviewStatus} ${styles.pricingPreviewError}`}>
-                        <strong>Could not calculate preview</strong>
+                        <strong>{pricingPreviewErrorTitle}</strong>
                         <span>{pricingPreview.error}</span>
                       </div>
                     ) : pricingPreview.result?.item ? (
