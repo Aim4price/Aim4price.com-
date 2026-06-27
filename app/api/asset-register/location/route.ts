@@ -60,6 +60,20 @@ function asText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
 }
 
+function normalizeLocationText(value: unknown): string {
+  return asText(value)
+    .replace(/[\u0000-\u001f\u007f]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .slice(0, 180)
+    .trim();
+}
+
+function normalizeLocationSource(value: unknown): 'manual' | 'device' {
+  const normalized = asText(value).toLowerCase();
+
+  return normalized === 'manual' ? 'manual' : 'device';
+}
+
 export async function POST(request: NextRequest) {
   const session = await getServerSession();
 
@@ -76,6 +90,9 @@ export async function POST(request: NextRequest) {
     longitude?: unknown;
     gpsAccuracyMeters?: unknown;
     clientCapturedAt?: unknown;
+    locationText?: unknown;
+    source?: unknown;
+    mode?: unknown;
   } | null;
 
   if (!body || typeof body !== 'object') {
@@ -86,6 +103,8 @@ export async function POST(request: NextRequest) {
   const latitude = normalizeRequiredNumber(body.latitude);
   const longitude = normalizeRequiredNumber(body.longitude);
   const gpsAccuracy = normalizeGpsAccuracy(body.gpsAccuracyMeters);
+  const locationText = normalizeLocationText(body.locationText);
+  const source = normalizeLocationSource(body.source ?? body.mode);
 
   if (!assetId) {
     return NextResponse.json({ ok: false, error: 'Valid asset id is required.' }, { status: 400 });
@@ -110,6 +129,8 @@ export async function POST(request: NextRequest) {
       longitude,
       gpsAccuracyMeters: gpsAccuracy.value,
       clientCapturedAt: asText(body.clientCapturedAt) || null,
+      locationText: locationText || null,
+      source,
     });
 
     const [itemWithPartnerNote] = await attachOpenPartnerNotesToAssets(session.user.id, [item]);
@@ -124,6 +145,7 @@ export async function POST(request: NextRequest) {
         metadata: {
           assetId: item.id,
           hasGpsAccuracy: gpsAccuracy.value !== null,
+          source,
         },
       });
     }
