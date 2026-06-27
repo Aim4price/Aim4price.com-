@@ -144,6 +144,8 @@ export type UpdateAssetRegisterItemLocationInput = {
   longitude: number;
   gpsAccuracyMeters?: number | null;
   clientCapturedAt?: string | Date | null;
+  locationText?: string | null;
+  source?: 'manual' | 'device' | string | null;
 };
 
 type AssetRegisterRow = {
@@ -237,6 +239,20 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function asText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
+}
+
+function normalizeAssetLocationText(value: unknown): string {
+  return asText(value)
+    .replace(/[\u0000-\u001f\u007f]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .slice(0, 180)
+    .trim();
+}
+
+function normalizeAssetLocationSource(value: unknown): 'manual' | 'device' {
+  const normalized = asText(value).toLowerCase();
+
+  return normalized === 'manual' ? 'manual' : 'device';
 }
 
 function normalizeLicenseRegistrationNumber(value: unknown): string {
@@ -2003,7 +2019,12 @@ export async function updateAssetRegisterItemLocation(
   const capturedAt = parsedClientCapturedAt && Number.isFinite(parsedClientCapturedAt.getTime())
     ? parsedClientCapturedAt
     : new Date();
-  const locationText = `GPS ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+  const locationText = normalizeAssetLocationText(input.locationText) || `GPS ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+  const source = normalizeAssetLocationSource(input.source);
+  const activityText = source === 'manual' ? 'GPS position manually updated' : 'GPS position updated';
+  const eventNote = source === 'manual'
+    ? 'GPS position updated manually from Asset Register Settings.'
+    : 'GPS position updated from Asset Register Settings device GPS.';
 
   await ensureFuelLedgerTables();
   assetRegisterSchemaPromises.delete('asset_register_items');
@@ -2063,12 +2084,12 @@ export async function updateAssetRegisterItemLocation(
           $1::uuid,
           'owner_session',
           null,
-          'GPS position updated',
+          $7::text,
           null,
           null,
           null,
           null,
-          'GPS position updated from Asset Register Settings.',
+          $8::text,
           '[]'::jsonb,
           $2::double precision,
           $3::double precision,
@@ -2080,7 +2101,7 @@ export async function updateAssetRegisterItemLocation(
           $5::timestamptz
         )
       `,
-      [assetId, latitude, longitude, locationText, capturedAt, gpsAccuracyMeters],
+      [assetId, latitude, longitude, locationText, capturedAt, gpsAccuracyMeters, activityText, eventNote],
     );
 
     await client.query('COMMIT');
