@@ -337,12 +337,19 @@ function assetUsageMetric(asset: AssetRegisterItem): 'hours' | 'km' {
   return 'hours';
 }
 
+function labelFromAssetKind(value: unknown): string {
+  const kind = asText(value).toLowerCase();
+  if (kind === 'tractor') return 'Tractor';
+  if (kind === 'vehicle') return 'Vehicle';
+  if (kind === 'property') return 'Property';
+  if (kind === 'tools') return 'Tools';
+  if (kind === 'equipment') return 'Equipment';
+  if (kind === 'manual') return 'Manual asset';
+  return asText(value);
+}
+
 function assetCategoryLabel(asset: AssetRegisterItem): string {
-  if (asset.kind === 'tractor') return 'Tractor';
-  if (asset.kind === 'vehicle') return 'Vehicle';
-  if (asset.kind === 'property') return 'Property';
-  if (asset.kind === 'tools') return 'Tools';
-  return asset.equipmentFamilyLabel || 'Asset';
+  return asText(asset.equipmentFamilyLabel) || labelFromAssetKind(asset.kind) || 'Asset';
 }
 
 function assetConditionLabel(value: string): string {
@@ -389,7 +396,20 @@ function mapAssetOption(asset: AssetRegisterItem): MyInvoiceAssetOption {
 }
 
 function normalizeAssetSpecs(value: unknown): Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value) ? value as Record<string, unknown> : {};
+  if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+
+  if (typeof value === 'string' && value.trim()) {
+    try {
+      const parsed = JSON.parse(value) as unknown;
+      return typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed) ? parsed as Record<string, unknown> : {};
+    } catch {
+      return {};
+    }
+  }
+
+  return {};
 }
 
 function assetUsageMetricFromRow(row: MyInvoiceRow): 'hours' | 'km' {
@@ -401,12 +421,7 @@ function assetUsageMetricFromRow(row: MyInvoiceRow): 'hours' | 'km' {
 }
 
 function assetCategoryLabelFromRow(row: MyInvoiceRow): string {
-  const kind = asText(row.asset_kind).toLowerCase();
-  if (kind === 'tractor') return 'Tractor';
-  if (kind === 'vehicle') return 'Vehicle';
-  if (kind === 'property') return 'Property';
-  if (kind === 'tools') return 'Tools';
-  return asText(row.asset_category_label) || 'Asset';
+  return asText(row.asset_category_label) || labelFromAssetKind(row.asset_kind) || 'Asset';
 }
 
 function mapDocumentRow(row: MyInvoiceDocumentRow | null | undefined): MyInvoiceDocument | null {
@@ -669,24 +684,66 @@ export async function listMyInvoices(userId: string, filters: MyInvoiceListFilte
     `
       select
         i.*,
-        ai.title as asset_title,
-        ai.kind as asset_kind,
-        coalesce(nullif(ef.family_label, ''), nullif(ai.kind, ''), 'Asset') as asset_category_label,
-        ai.year_model as asset_year_model,
-        ai.hours as asset_hours,
-        ai.condition as asset_condition,
-        ai.value as asset_value,
-        ai.selected_value_ex_vat as asset_selected_value,
-        ai.selected_method as asset_selected_method,
-        ai.specs_json as asset_specs_json
+        coalesce(
+          nullif(to_jsonb(ai)->>'title', ''),
+          nullif(to_jsonb(ai)->>'asset_name', ''),
+          nullif(to_jsonb(ai)->>'model_name', ''),
+          nullif(to_jsonb(ai)->>'typed_model_name', ''),
+          'Saved asset'
+        ) as asset_title,
+        coalesce(nullif(to_jsonb(ai)->>'kind', ''), nullif(to_jsonb(ai)->>'asset_type', ''), 'asset') as asset_kind,
+        coalesce(nullif(ef.family_label, ''), nullif(to_jsonb(ai)->>'kind', ''), 'Asset') as asset_category_label,
+        nullif(coalesce(to_jsonb(ai)->>'year_model', to_jsonb(ai)->>'year'), '') as asset_year_model,
+        nullif(coalesce(to_jsonb(ai)->>'hours', to_jsonb(ai)->>'engine_hours'), '') as asset_hours,
+        nullif(to_jsonb(ai)->>'condition', '') as asset_condition,
+        nullif(
+          coalesce(
+            to_jsonb(ai)->>'value',
+            to_jsonb(ai)->>'selected_value_ex_vat',
+            to_jsonb(ai)->>'selected_value',
+            to_jsonb(ai)->>'saved_value_ex_vat',
+            to_jsonb(ai)->>'aim4price_value_ex_vat',
+            to_jsonb(ai)->>'aim4price_value',
+            to_jsonb(ai)->>'market_mid_ex_vat',
+            to_jsonb(ai)->>'market_value_ex_vat',
+            to_jsonb(ai)->>'market_value',
+            to_jsonb(ai)->>'valuation_amount',
+            to_jsonb(ai)->>'manual_value'
+          ),
+          ''
+        ) as asset_value,
+        nullif(
+          coalesce(
+            to_jsonb(ai)->>'selected_value_ex_vat',
+            to_jsonb(ai)->>'selected_value',
+            to_jsonb(ai)->>'saved_value_ex_vat',
+            to_jsonb(ai)->>'value',
+            to_jsonb(ai)->>'aim4price_value_ex_vat',
+            to_jsonb(ai)->>'aim4price_value',
+            to_jsonb(ai)->>'market_mid_ex_vat',
+            to_jsonb(ai)->>'market_value_ex_vat',
+            to_jsonb(ai)->>'market_value',
+            to_jsonb(ai)->>'valuation_amount',
+            to_jsonb(ai)->>'manual_value'
+          ),
+          ''
+        ) as asset_selected_value,
+        nullif(coalesce(to_jsonb(ai)->>'selected_method', to_jsonb(ai)->>'method', to_jsonb(ai)->>'valuation_method'), '') as asset_selected_method,
+        coalesce(to_jsonb(ai)->'specs_json', '{}'::jsonb) as asset_specs_json
       from public.asset_invoices i
       join public.asset_register_items ai
         on ai.id = i.asset_register_item_id
        and ai.user_id = i.user_id
       left join public.valuation_runs vr
-        on vr.id::text = (to_jsonb(ai)->>'valuation_run_id')
+        on vr.id::text = nullif(to_jsonb(ai)->>'valuation_run_id', '')
+      left join public.equipment_models em
+        on em.id::text = nullif(to_jsonb(ai)->>'equipment_model_id', '')
       left join public.equipment_families ef
-        on ef.id::text = coalesce((to_jsonb(ai)->>'equipment_family_id'), (to_jsonb(vr)->>'equipment_family_id'))
+        on ef.id::text = coalesce(
+          nullif(to_jsonb(ai)->>'equipment_family_id', ''),
+          nullif(to_jsonb(vr)->>'equipment_family_id', ''),
+          nullif(to_jsonb(em)->>'equipment_family_id', '')
+        )
       where ${filterClause}
       order by i.invoice_date desc nulls last, i.created_at desc, i.id desc
     `,
