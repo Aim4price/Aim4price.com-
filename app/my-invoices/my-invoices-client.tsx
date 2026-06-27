@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent, type SV
 import AppHeader from '../../components/AppHeader';
 import styles from './page.module.css';
 
-type FlowMode = 'asset-manual' | 'asset-automatic' | 'manual-form' | 'upload' | 'review' | null;
+type FlowMode = 'source-choice' | 'asset-manual' | 'asset-automatic' | 'manual-form' | 'upload' | 'review' | null;
 type InvoiceSource = 'manual' | 'automatic';
 type FilterSource = 'all' | InvoiceSource;
 type UsageMetric = 'none' | 'hours' | 'km';
@@ -157,16 +157,6 @@ type Notice = {
 
 type ReportFormat = 'pdf' | 'xlsx';
 
-const EMPTY_SUMMARY: InvoiceSummary = {
-  totalSpent: 0,
-  maintenanceSpend: 0,
-  partsSpend: 0,
-  repairSpend: 0,
-  otherSpend: 0,
-  vatTotal: 0,
-  invoiceCount: 0,
-};
-
 const DEFAULT_FILTERS: InvoiceFilterState = {
   assetId: 'all',
   source: 'all',
@@ -228,6 +218,38 @@ function UploadIcon(props: SVGProps<SVGSVGElement>) {
       <path d="M12 3v12" />
       <path d="m7 8 5-5 5 5" />
       <path d="M5 17v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2" />
+    </IconBase>
+  );
+}
+
+function ManualInvoiceIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M7 3h7l3 3v15H7z" />
+      <path d="M14 3v4h4" />
+      <path d="M9 11h6" />
+      <path d="M9 15h6" />
+      <path d="M9 19h4" />
+    </IconBase>
+  );
+}
+
+function AutomaticInvoiceIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M12 3v10" />
+      <path d="m8 9 4 4 4-4" />
+      <path d="M5 18h14" />
+      <path d="M4 5l1-2 1 2 2 1-2 1-1 2-1-2-2-1z" />
+      <path d="M18 4l.7-1.4L19.4 4l1.4.7-1.4.7-.7 1.4-.7-1.4-1.4-.7z" />
+    </IconBase>
+  );
+}
+
+function ChevronDownIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="m6 9 6 6 6-6" />
     </IconBase>
   );
 }
@@ -365,33 +387,6 @@ function invoiceYear(invoice: InvoiceRecord): number | null {
   return Number.isInteger(year) && year >= 2000 && year <= 2100 ? year : null;
 }
 
-function calculateInvoiceSummary(invoices: InvoiceRecord[]): InvoiceSummary {
-  const summary = { ...EMPTY_SUMMARY, invoiceCount: invoices.length };
-
-  for (const invoice of invoices) {
-    summary.totalSpent += invoice.totalIncVat || 0;
-    summary.vatTotal += invoice.vatAmount ?? 0;
-
-    for (const block of invoice.blocks ?? []) {
-      const amount = block.totalIncVat ?? 0;
-      if (block.blockType === 'maintenance') summary.maintenanceSpend += amount;
-      else if (block.blockType === 'parts') summary.partsSpend += amount;
-      else if (block.blockType === 'repair') summary.repairSpend += amount;
-      else summary.otherSpend += amount;
-    }
-  }
-
-  return {
-    totalSpent: Math.round(summary.totalSpent * 100) / 100,
-    maintenanceSpend: Math.round(summary.maintenanceSpend * 100) / 100,
-    partsSpend: Math.round(summary.partsSpend * 100) / 100,
-    repairSpend: Math.round(summary.repairSpend * 100) / 100,
-    otherSpend: Math.round(summary.otherSpend * 100) / 100,
-    vatTotal: Math.round(summary.vatTotal * 100) / 100,
-    invoiceCount: summary.invoiceCount,
-  };
-}
-
 function buildInvoiceListUrl(filters: InvoiceFilterState): string {
   const params = new URLSearchParams();
 
@@ -416,7 +411,6 @@ function buildReportUrl(filters: InvoiceFilterState, format: ReportFormat): stri
 export default function MyInvoicesClient() {
   const [assets, setAssets] = useState<AssetOption[]>([]);
   const [invoices, setInvoices] = useState<InvoiceRecord[]>([]);
-  const [summary, setSummary] = useState<InvoiceSummary>(EMPTY_SUMMARY);
   const [availableYears, setAvailableYears] = useState<number[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [notice, setNotice] = useState<Notice | null>(null);
@@ -428,6 +422,7 @@ export default function MyInvoicesClient() {
   const [draftFilters, setDraftFilters] = useState<InvoiceFilterState>(DEFAULT_FILTERS);
   const [filterOpen, setFilterOpen] = useState(false);
   const [downloadOpen, setDownloadOpen] = useState(false);
+  const [reportFormat, setReportFormat] = useState<ReportFormat>('pdf');
   const [draft, setDraft] = useState<InvoiceDraft>(buildEmptyDraft('manual'));
   const [editingInvoiceId, setEditingInvoiceId] = useState<string | null>(null);
   const [manualUploadFile, setManualUploadFile] = useState<File | null>(null);
@@ -488,11 +483,6 @@ export default function MyInvoicesClient() {
     });
   }, [activeFilters.source, invoiceSearch, invoices]);
 
-  const visibleSummary = useMemo(() => {
-    const hasClientOnlyFilters = activeFilters.source !== 'all' || invoiceSearch.trim().length > 0;
-    return hasClientOnlyFilters ? calculateInvoiceSummary(visibleInvoices) : summary;
-  }, [activeFilters.source, invoiceSearch, summary, visibleInvoices]);
-
   const yearOptions = useMemo(() => {
     const years = new Set(availableYears);
     for (const value of [activeFilters.year, draftFilters.year]) {
@@ -511,12 +501,13 @@ export default function MyInvoicesClient() {
     ].filter(Boolean).length;
   }, [activeFilters]);
 
+  const sourceChoiceOpen = flow === 'source-choice';
   const assetPickerOpen = flow === 'asset-manual' || flow === 'asset-automatic';
   const formOpen = flow === 'manual-form' || flow === 'review';
   const flowTitle = flow === 'asset-automatic' ? 'Choose asset for automatic invoice' : 'Choose asset for manual invoice';
   const formTitle = flow === 'review' ? 'Review automatic invoice' : 'Manual invoice';
   const hasInvoiceSearch = invoiceSearch.trim().length > 0;
-  const modalOpen = assetPickerOpen || flow === 'upload' || formOpen || filterOpen || downloadOpen;
+  const modalOpen = sourceChoiceOpen || assetPickerOpen || flow === 'upload' || formOpen || filterOpen || downloadOpen;
 
   useEffect(() => {
     if (!modalOpen) return undefined;
@@ -548,7 +539,6 @@ export default function MyInvoicesClient() {
 
     setAssets(data.assets ?? []);
     setInvoices(nextInvoices);
-    setSummary(data.summary ?? EMPTY_SUMMARY);
     setAvailableYears((current) => {
       const years = new Set(current);
       for (const invoice of nextInvoices) {
@@ -575,6 +565,20 @@ export default function MyInvoicesClient() {
     setRawTextPreview('');
     setExtractionWarnings([]);
     setDraft(buildEmptyDraft('manual'));
+  }
+
+  function openAddInvoiceModal() {
+    setNotice(null);
+    setSelectedAssetId('');
+    setPickerSearch('');
+    setEditingInvoiceId(null);
+    setManualUploadFile(null);
+    setAutomaticUploadFile(null);
+    setUploadedDocument(null);
+    setRawTextPreview('');
+    setExtractionWarnings([]);
+    setDraft(buildEmptyDraft('manual'));
+    setFlow('source-choice');
   }
 
   function startFlow(source: InvoiceSource) {
@@ -820,17 +824,8 @@ export default function MyInvoicesClient() {
 
         <section className={styles.pageTitleBlock}>
           <div>
-            <h1>My Invoices</h1>
+            <h1>ADD INVOICES</h1>
           </div>
-        </section>
-
-        <section className={styles.optionGrid} aria-label="Invoice capture options">
-          <button type="button" className={styles.optionCard} onClick={() => startFlow('manual')}>
-            <span>Manual</span>
-          </button>
-          <button type="button" className={styles.optionCard} onClick={() => startFlow('automatic')}>
-            <span>Automatic</span>
-          </button>
         </section>
 
         <section className={styles.invoiceToolbar} aria-label="Saved invoice controls">
@@ -852,6 +847,10 @@ export default function MyInvoicesClient() {
           </label>
 
           <div className={styles.toolbarButtons}>
+            <button type="button" className={`${styles.secondaryButton} ${styles.toolbarButton} ${styles.toolbarAddButton}`} onClick={openAddInvoiceModal}>
+              <span className={styles.plusMark} aria-hidden="true">+</span>
+              <span>Add Invoice</span>
+            </button>
             <button type="button" className={`${styles.secondaryButton} ${styles.toolbarButton} ${styles.toolbarFilterButton}`} onClick={openFilterPanel}>
               <FilterIcon className={styles.buttonIcon} />
               <span>Filter</span>
@@ -869,20 +868,6 @@ export default function MyInvoicesClient() {
             <div>
               <h2>Saved invoices</h2>
               <p>{isLoading ? 'Loading saved invoices...' : `${visibleInvoices.length.toLocaleString('en-ZA')} shown from ${invoices.length.toLocaleString('en-ZA')} loaded invoices.`}</p>
-            </div>
-            <div className={styles.savedSummaryGrid} aria-label="Invoice summary">
-              <span>
-                <small>Invoices</small>
-                <strong>{visibleSummary.invoiceCount.toLocaleString('en-ZA')}</strong>
-              </span>
-              <span>
-                <small>Total incl. VAT</small>
-                <strong>{formatMoney(visibleSummary.totalSpent)}</strong>
-              </span>
-              <span>
-                <small>VAT amount</small>
-                <strong>{formatMoney(visibleSummary.vatTotal)}</strong>
-              </span>
             </div>
           </div>
 
@@ -937,6 +922,44 @@ export default function MyInvoicesClient() {
         </section>
       </section>
 
+      {sourceChoiceOpen ? (
+        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label="Choose invoice capture method">
+          <div className={`${styles.downloadModal} ${styles.sourceChoiceModal}`}>
+            <div className={styles.modalHeader}>
+              <div>
+                <h2>Add invoice</h2>
+                <p>Choose how you want to capture the invoice against a saved asset.</p>
+              </div>
+              <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close add invoice"><CloseIcon /></button>
+            </div>
+            <div className={styles.modalDivider} />
+            <div className={styles.sourceChoiceGrid}>
+              <button type="button" className={styles.sourceChoiceOption} onClick={() => startFlow('manual')}>
+                <span className={styles.choiceGraphic}>
+                  <ManualInvoiceIcon />
+                </span>
+                <span className={styles.choiceTitleBlock}>
+                  <strong>Manual invoice</strong>
+                  <small>Type the supplier, invoice date, VAT and work details yourself.</small>
+                </span>
+              </button>
+              <button type="button" className={styles.sourceChoiceOption} onClick={() => startFlow('automatic')}>
+                <span className={styles.choiceGraphic}>
+                  <AutomaticInvoiceIcon />
+                </span>
+                <span className={styles.choiceTitleBlock}>
+                  <strong>Automatic invoice</strong>
+                  <small>Upload a PDF or photo, then review the extracted invoice details.</small>
+                </span>
+              </button>
+            </div>
+            <div className={styles.modalFooter}>
+              <button type="button" className={styles.secondaryButton} onClick={closeModal}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {filterOpen ? (
         <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label="Filter saved invoices">
           <div className={styles.filterModal}>
@@ -951,32 +974,44 @@ export default function MyInvoicesClient() {
             <div className={styles.filterGrid}>
               <label>
                 <span>Asset</span>
-                <select value={draftFilters.assetId} onChange={(event) => setDraftFilters((current) => ({ ...current, assetId: event.target.value }))}>
-                  <option value="all">All assets</option>
-                  {assets.map((asset) => <option key={asset.id} value={asset.id}>{asset.title}</option>)}
-                </select>
+                <div className={styles.selectWrap}>
+                  <select value={draftFilters.assetId} onChange={(event) => setDraftFilters((current) => ({ ...current, assetId: event.target.value }))}>
+                    <option value="all">All assets</option>
+                    {assets.map((asset) => <option key={asset.id} value={asset.id}>{asset.title}</option>)}
+                  </select>
+                  <ChevronDownIcon className={styles.selectArrow} />
+                </div>
               </label>
               <label>
                 <span>Source</span>
-                <select value={draftFilters.source} onChange={(event) => setDraftFilters((current) => ({ ...current, source: event.target.value as FilterSource }))}>
-                  <option value="all">All sources</option>
-                  <option value="manual">Manual</option>
-                  <option value="automatic">Automatic</option>
-                </select>
+                <div className={styles.selectWrap}>
+                  <select value={draftFilters.source} onChange={(event) => setDraftFilters((current) => ({ ...current, source: event.target.value as FilterSource }))}>
+                    <option value="all">All sources</option>
+                    <option value="manual">Manual</option>
+                    <option value="automatic">Automatic</option>
+                  </select>
+                  <ChevronDownIcon className={styles.selectArrow} />
+                </div>
               </label>
               <label>
                 <span>Year</span>
-                <select value={draftFilters.year} onChange={(event) => setDraftFilters((current) => ({ ...current, year: event.target.value, month: event.target.value === 'all' ? 'all' : current.month }))}>
-                  <option value="all">All years</option>
-                  {yearOptions.map((year) => <option key={year} value={String(year)}>{year}</option>)}
-                </select>
+                <div className={styles.selectWrap}>
+                  <select value={draftFilters.year} onChange={(event) => setDraftFilters((current) => ({ ...current, year: event.target.value, month: event.target.value === 'all' ? 'all' : current.month }))}>
+                    <option value="all">All years</option>
+                    {yearOptions.map((year) => <option key={year} value={String(year)}>{year}</option>)}
+                  </select>
+                  <ChevronDownIcon className={styles.selectArrow} />
+                </div>
               </label>
               <label>
                 <span>Month</span>
-                <select value={draftFilters.month} onChange={(event) => setDraftFilters((current) => ({ ...current, month: event.target.value }))} disabled={draftFilters.year === 'all'}>
-                  <option value="all">All months</option>
-                  {MONTH_OPTIONS.map((month, index) => <option key={month} value={String(index + 1)}>{month}</option>)}
-                </select>
+                <div className={styles.selectWrap}>
+                  <select value={draftFilters.month} onChange={(event) => setDraftFilters((current) => ({ ...current, month: event.target.value }))} disabled={draftFilters.year === 'all'}>
+                    <option value="all">All months</option>
+                    {MONTH_OPTIONS.map((month, index) => <option key={month} value={String(index + 1)}>{month}</option>)}
+                  </select>
+                  <ChevronDownIcon className={styles.selectArrow} />
+                </div>
               </label>
             </div>
             <div className={styles.modalFooter}>
@@ -989,30 +1024,52 @@ export default function MyInvoicesClient() {
       ) : null}
 
       {downloadOpen ? (
-        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label="Download Cost of Ownership report">
-          <div className={styles.downloadModal}>
+        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label="Export invoice report">
+          <div className={`${styles.downloadModal} ${styles.reportModal}`}>
             <div className={styles.modalHeader}>
               <div>
-                <h2>Download report</h2>
-                <p>Export the current Cost of Ownership report using the active asset, year and month filters.</p>
+                <h2>Export invoice report</h2>
+                <p>Download the Cost of Ownership report using the active asset, year and month filters.</p>
               </div>
               <button type="button" className={styles.closeButton} onClick={() => setDownloadOpen(false)} aria-label="Close download"><CloseIcon /></button>
             </div>
             <div className={styles.modalDivider} />
-            <div className={styles.downloadChoiceGrid}>
-              <button type="button" className={styles.downloadChoiceButton} onClick={() => handleDownloadReport('pdf')}>
-                <DownloadIcon />
-                <strong>Download PDF / report</strong>
-                <span>Open the printable Cost of Ownership report.</span>
+            <div className={styles.reportChoiceGrid}>
+              <button
+                type="button"
+                className={`${styles.reportOption} ${reportFormat === 'pdf' ? styles.reportOptionActive : ''}`}
+                onClick={() => setReportFormat('pdf')}
+                aria-pressed={reportFormat === 'pdf'}
+              >
+                <span className={styles.reportGraphic}>
+                  <img className={styles.reportGraphicImage} src="/brand/pdf.png" alt="" />
+                </span>
+                <span className={styles.reportTitleBlock}>
+                  <strong>PDF report</strong>
+                  <small>Open the printable Cost of Ownership report for the current filters.</small>
+                </span>
               </button>
-              <button type="button" className={styles.downloadChoiceButton} onClick={() => handleDownloadReport('xlsx')}>
-                <DownloadIcon />
-                <strong>Download Excel</strong>
-                <span>Download the filtered invoice data as XLSX.</span>
+              <button
+                type="button"
+                className={`${styles.reportOption} ${reportFormat === 'xlsx' ? styles.reportOptionActive : ''}`}
+                onClick={() => setReportFormat('xlsx')}
+                aria-pressed={reportFormat === 'xlsx'}
+              >
+                <span className={styles.reportGraphic}>
+                  <img className={styles.reportGraphicImage} src="/brand/sheet.png" alt="" />
+                </span>
+                <span className={styles.reportTitleBlock}>
+                  <strong>XLSX workbook</strong>
+                  <small>Download the filtered invoice data as an Excel-ready workbook.</small>
+                </span>
               </button>
             </div>
             <div className={styles.modalFooter}>
               <button type="button" className={styles.secondaryButton} onClick={() => setDownloadOpen(false)}>Cancel</button>
+              <button type="button" className={styles.primaryButton} onClick={() => handleDownloadReport(reportFormat)}>
+                <DownloadIcon className={styles.buttonIcon} />
+                <span>{reportFormat === 'pdf' ? 'Open PDF report' : 'Download XLSX'}</span>
+              </button>
             </div>
           </div>
         </div>

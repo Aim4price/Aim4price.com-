@@ -10,6 +10,8 @@
   --brand-mid: #197454;
   --brand-deep: #0f5840;
   --brand-soft: #eaf7f1;
+  --brand-light: #f0fbf5;
+  --brand-light-border: #bfe2ce;
   --danger: #a03535;
   --danger-soft: #fff1f1;
   --copper-text: #6d350f;
@@ -175,7 +177,7 @@
 
 .toolbarButtons {
   display: grid;
-  grid-template-columns: repeat(2, minmax(8.5rem, auto));
+  grid-template-columns: repeat(3, minmax(9.5rem, auto));
   gap: clamp(0.8rem, 1vw, 0.95rem);
 }
 
@@ -288,21 +290,44 @@
   font-weight: 900;
 }
 
-.toolbarFilterButton {
+.toolbarAddButton {
   color: var(--copper-text);
   background: linear-gradient(180deg, #fffaf6 0%, var(--copper-bg) 100%);
   border-color: var(--copper-border);
   box-shadow: 0 10px 22px rgba(180, 107, 43, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.98);
 }
 
-.toolbarFilterButton:hover:not(:disabled) {
+.toolbarAddButton:hover:not(:disabled) {
   background: linear-gradient(180deg, #ffffff 0%, #ffead7 100%);
   border-color: #dc8b48;
   box-shadow: 0 14px 28px rgba(180, 107, 43, 0.12), inset 0 1px 0 rgba(255, 255, 255, 1);
 }
 
+.toolbarFilterButton {
+  color: var(--brand-deep);
+  background: linear-gradient(180deg, #fbfffd 0%, var(--brand-light) 100%);
+  border-color: var(--brand-light-border);
+  box-shadow: 0 10px 22px rgba(25, 116, 84, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.toolbarFilterButton:hover:not(:disabled) {
+  background: linear-gradient(180deg, #ffffff 0%, #e6f7ed 100%);
+  border-color: #9fd1b4;
+  box-shadow: 0 14px 28px rgba(25, 116, 84, 0.12), inset 0 1px 0 rgba(255, 255, 255, 1);
+}
+
 .toolbarDownloadButton {
   color: #ffffff;
+}
+
+.plusMark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.38rem;
+  font-weight: 950;
+  line-height: 0.8;
+  transform: translateY(-0.04rem);
 }
 
 .buttonIcon,
@@ -331,7 +356,7 @@
 
 .savedListHeader {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr);
   align-items: center;
   gap: 1rem;
   margin-bottom: 1rem;
@@ -981,6 +1006,152 @@
   line-height: 1.35;
 }
 
+.filterModal {
+  width: min(100%, 800px);
+}
+
+.downloadModal,
+.sourceChoiceModal,
+.reportModal {
+  width: min(100%, 900px);
+}
+
+.sourceChoiceGrid,
+.reportChoiceGrid {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.86rem;
+  padding: 0 clamp(1.25rem, 2.4vw, 2rem) 1rem;
+}
+
+.sourceChoiceOption,
+.reportOption {
+  min-height: 5.35rem;
+  display: grid;
+  grid-template-columns: 3.55rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.9rem;
+  padding: 1rem 1.05rem;
+  border: 1px solid rgba(216, 226, 236, 0.98);
+  border-radius: 1.18rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f5f8fb 100%);
+  color: #1d3b62;
+  box-shadow: 0 10px 22px rgba(16, 31, 28, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.sourceChoiceOption:hover,
+.reportOption:hover {
+  transform: translateY(-1px);
+  border-color: rgba(184, 202, 218, 0.98);
+  background: linear-gradient(180deg, #ffffff 0%, #eef5fb 100%);
+  box-shadow: 0 16px 30px rgba(16, 31, 28, 0.065), inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.sourceChoiceOption:focus-visible,
+.reportOption:focus-visible {
+  outline: none;
+  border-color: rgba(25, 116, 84, 0.45);
+  box-shadow: 0 0 0 4px rgba(25, 116, 84, 0.12), 0 16px 30px rgba(16, 31, 28, 0.065);
+}
+
+.reportOptionActive {
+  background: radial-gradient(circle at top left, rgba(22, 83, 64, 0.1), transparent 42%), linear-gradient(180deg, #ffffff 0%, #edf8f2 100%);
+  border-color: rgba(190, 224, 206, 0.98);
+}
+
+.choiceGraphic,
+.reportGraphic {
+  width: 3.55rem;
+  min-width: 3.55rem;
+  height: 3.55rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(216, 226, 236, 0.98);
+  border-radius: 1rem;
+  background: #ffffff;
+  box-shadow: 0 9px 18px rgba(16, 31, 28, 0.035), inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.choiceGraphic svg {
+  width: 2rem;
+  height: 2rem;
+  color: var(--brand-mid);
+}
+
+.reportGraphicImage {
+  width: 2.25rem;
+  height: 2.25rem;
+  object-fit: contain;
+}
+
+.choiceTitleBlock,
+.reportTitleBlock {
+  min-width: 0;
+  display: grid;
+  align-content: center;
+  gap: 0.22rem;
+}
+
+.choiceTitleBlock strong,
+.reportTitleBlock strong {
+  color: #10352b;
+  font-size: 1rem;
+  font-weight: 850;
+  line-height: 1.18;
+  letter-spacing: -0.025em;
+}
+
+.choiceTitleBlock small,
+.reportTitleBlock small {
+  color: #627386;
+  font-size: 0.83rem;
+  font-weight: 620;
+  line-height: 1.32;
+}
+
+.sourceChoiceModal .modalFooter,
+.reportModal .modalFooter {
+  padding-top: 0.2rem;
+  border-top: 0;
+  background: transparent;
+}
+
+.selectWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.filterGrid .selectWrap select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 3.1rem;
+  cursor: pointer;
+}
+
+.selectArrow {
+  position: absolute;
+  right: 1.05rem;
+  width: 1.05rem;
+  height: 1.05rem;
+  color: #17364b;
+  pointer-events: none;
+}
+
+.selectWrap select:disabled {
+  cursor: not-allowed;
+}
+
+.selectWrap select:disabled + .selectArrow {
+  color: #a2adb9;
+}
+
 .modalFooter {
   display: flex;
   justify-content: flex-end;
@@ -999,7 +1170,7 @@
   }
 
   .toolbarButtons {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .savedSummaryGrid {
@@ -1022,6 +1193,8 @@
   .optionGrid,
   .formGrid,
   .filterGrid,
+  .sourceChoiceGrid,
+  .reportChoiceGrid,
   .downloadChoiceGrid,
   .savedSummaryGrid,
   .toolbarButtons,
