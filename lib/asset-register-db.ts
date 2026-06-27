@@ -9,6 +9,7 @@ import type { MethodKey } from './valuation-runs';
 import type { Result } from './tractor-logic';
 import type { GenericSelectedMethod, GenericValuationResult } from './generic-valuation';
 import { captureAssetDepreciationSnapshot } from './asset-depreciation-timeline';
+import { ensureFuelLedgerTables } from './fuel-ledger';
 
 export type AssetRegisterItemKind = 'tractor' | 'equipment' | 'manual' | 'property' | 'vehicle' | 'tools';
 export type AssetRegisterItemMethod = MethodKey | 'manual';
@@ -135,6 +136,14 @@ export type UpdateAssetRegisterItemInput = {
   specsJson?: Record<string, unknown>;
   condition?: ConditionKey | null;
   allowUsageDecrease?: boolean;
+};
+
+export type UpdateAssetRegisterItemLocationInput = {
+  assetId: string;
+  latitude: number;
+  longitude: number;
+  gpsAccuracyMeters?: number | null;
+  clientCapturedAt?: string | Date | null;
 };
 
 type AssetRegisterRow = {
@@ -1959,6 +1968,130 @@ export async function updateAssetRegisterItemFlag(
   }
 
   return mapAssetRegisterRow(row);
+}
+
+
+export async function updateAssetRegisterItemLocation(
+  userId: string,
+  input: UpdateAssetRegisterItemLocationInput,
+): Promise<AssetRegisterItem> {
+  const assetId = asText(input.assetId);
+  const latitude = Number(input.latitude);
+  const longitude = Number(input.longitude);
+
+  if (!assetId) {
+    throw new Error('ASSET_ID_REQUIRED');
+  }
+
+  if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90 || !Number.isFinite(longitude) || longitude < -180 || longitude > 180) {
+    throw new Error('INVALID_GPS_COORDINATES');
+  }
+
+  const gpsAccuracyMeters = input.gpsAccuracyMeters === null || typeof input.gpsAccuracyMeters === 'undefined'
+    ? null
+    : Number(input.gpsAccuracyMeters);
+
+  if (gpsAccuracyMeters !== null && (!Number.isFinite(gpsAccuracyMeters) || gpsAccuracyMeters < 0)) {
+    throw new Error('INVALID_GPS_ACCURACY');
+  }
+
+  const parsedClientCapturedAt = input.clientCapturedAt instanceof Date
+    ? input.clientCapturedAt
+    : input.clientCapturedAt
+      ? new Date(input.clientCapturedAt)
+      : null;
+  const capturedAt = parsedClientCapturedAt && Number.isFinite(parsedClientCapturedAt.getTime())
+    ? parsedClientCapturedAt
+    : new Date();
+  const locationText = `GPS ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+
+  await ensureFuelLedgerTables();
+  assetRegisterSchemaPromises.delete('asset_register_items');
+
+  const db = getDb();
+  const schema = await getAssetRegisterSchema();
+  const client = await db.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    const result = await client.query<AssetRegisterRow>(
+      `
+        update public.asset_register_items
+        set
+          last_scanned_at = $3::timestamptz,
+          last_known_lat = $4::double precision,
+          last_known_lng = $5::double precision,
+          last_known_location_text = $6::text,
+          updated_at = now()
+        where user_id = $1 and id = $2
+        returning
+          ${buildSelectList(schema)}
+      `,
+      [userId, assetId, capturedAt, latitude, longitude, locationText],
+    );
+
+    const row = result.rows[0];
+
+    if (!row) {
+      throw new Error('ASSET_NOT_FOUND');
+    }
+
+    await client.query(
+      `
+        insert into public.asset_scan_events (
+          asset_id,
+          actor_type,
+          operator_name,
+          activity_text,
+          work_area_text,
+          hours,
+          fuel_percent,
+          condition,
+          note,
+          photo_urls,
+          latitude,
+          longitude,
+          location_text,
+          client_event_id,
+          client_captured_at,
+          synced_at,
+          gps_accuracy_meters,
+          created_at
+        )
+        values (
+          $1::uuid,
+          'owner_session',
+          null,
+          'GPS position updated',
+          null,
+          null,
+          null,
+          null,
+          'GPS position updated from Asset Register Settings.',
+          '[]'::jsonb,
+          $2::double precision,
+          $3::double precision,
+          $4::text,
+          null,
+          $5::timestamptz,
+          now(),
+          $6::double precision,
+          $5::timestamptz
+        )
+      `,
+      [assetId, latitude, longitude, locationText, capturedAt, gpsAccuracyMeters],
+    );
+
+    await client.query('COMMIT');
+
+    return mapAssetRegisterRow(row);
+  } catch (error) {
+    await client.query('ROLLBACK').catch(() => undefined);
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 
