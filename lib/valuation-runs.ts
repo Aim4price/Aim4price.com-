@@ -53,6 +53,34 @@ function toIntegerOrNull(value: unknown): number | null {
   return Number.isInteger(numeric) ? numeric : null;
 }
 
+function toPositiveIntegerOrNull(value: unknown): number | null {
+  const numeric = toIntegerOrNull(value);
+  return numeric !== null && numeric > 0 ? numeric : null;
+}
+
+function getGenericEquipmentModelId(result: GenericValuationResult): number | null {
+  return (
+    toPositiveIntegerOrNull(result.specsJson.catalog_model_id) ??
+    toPositiveIntegerOrNull(result.specsJson.equipment_model_id) ??
+    toPositiveIntegerOrNull(result.specsJson.equipmentModelId) ??
+    null
+  );
+}
+
+function getPersistableReplacementPriceBandId(result: GenericValuationResult): number | null {
+  const band = result.replacementPriceBand;
+
+  if (!band) {
+    return null;
+  }
+
+  if (String(band.bandKey ?? '').startsWith('motor_pricing_matrix_')) {
+    return null;
+  }
+
+  return toPositiveIntegerOrNull(band.id);
+}
+
 function parseGpsYear(value: number | string | null | undefined): number | null {
   if (value === null || value === undefined) return null;
   const parsed = Number(typeof value === 'string' ? value.trim() : value);
@@ -254,6 +282,8 @@ export async function saveGenericValuationRunFromResult(
   const marketListingIds = getGenericMarketListingIds(result);
   const valuationVersion = String(input.valuationVersion ?? 'generic-v1').trim() || 'generic-v1';
   const selectedValue = roundMoney(selectedValueExVat);
+  const equipmentModelId = getGenericEquipmentModelId(result);
+  const replacementPriceBandId = getPersistableReplacementPriceBandId(result);
   const yearModelUnknown = Boolean(result.yearModelUnknown ?? result.specsJson.year_model_unknown);
   const savedYearModel = yearModelUnknown ? null : result.year;
 
@@ -316,7 +346,7 @@ export async function saveGenericValuationRunFromResult(
       result.brand.id,
       result.sector.id,
       result.family.id,
-      null,
+      equipmentModelId,
       result.family.key,
       result.brand.slug,
       result.brand.name,
@@ -349,7 +379,7 @@ export async function saveGenericValuationRunFromResult(
       result.typedModelName,
       result.normalizedTypedModelName,
       JSON.stringify(result.specsJson),
-      result.replacementPriceBand?.id ?? null,
+      replacementPriceBandId,
       result.replacementPriceMinExVat,
       result.replacementPriceMaxExVat,
       result.replacementPriceUsedExVat,

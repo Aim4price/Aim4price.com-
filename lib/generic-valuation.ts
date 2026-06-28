@@ -883,8 +883,10 @@ function buildMotorPricingBand(row: MotorPricingMatrixRow, family: FamilyContext
     .filter((part) => part && part.toLowerCase() !== 'any/unknown');
 
   return {
-    id: row.id,
-    sectorId: 0,
+    // Motor pricing rows are not rows in replacement_price_bands, so this must
+    // never be saved as a replacement_price_band_id foreign key.
+    id: 0,
+    sectorId: family.sectorId,
     sectorKey: family.sectorKey,
     familyId: family.id,
     familyKey: family.key,

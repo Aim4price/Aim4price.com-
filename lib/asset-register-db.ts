@@ -752,6 +752,20 @@ function asNumber(value: unknown): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function asPositiveIntegerId(value: unknown): number | null {
+  const numeric = asNumber(value);
+  return numeric !== null && Number.isInteger(numeric) && numeric > 0 ? numeric : null;
+}
+
+function getGenericEquipmentModelId(result: GenericValuationResult): number | null {
+  return (
+    asPositiveIntegerId(result.specsJson.catalog_model_id) ??
+    asPositiveIntegerId(result.specsJson.equipment_model_id) ??
+    asPositiveIntegerId(result.specsJson.equipmentModelId) ??
+    null
+  );
+}
+
 function numberFromRecord(record: Record<string, unknown>, keys: string[]): number | null {
   for (const key of keys) {
     const value = record[key];
@@ -2431,6 +2445,7 @@ export async function updateAssetRegisterItemFromGenericValuation(input: {
   const now = new Date();
   const valuationResult = input.result;
   const nextKind = getGenericAssetRegisterKind(valuationResult);
+  const equipmentModelId = getGenericEquipmentModelId(valuationResult);
   const selectedValueExVat = Math.round(Number(input.selectedValueExVat) || 0);
   const yearModelUnknown = isGenericYearModelUnknown(valuationResult);
   const savedYearModel = yearModelUnknown ? null : valuationResult.year;
@@ -2473,7 +2488,7 @@ export async function updateAssetRegisterItemFromGenericValuation(input: {
   pushField(fields, schema, ['valuation_run_id', 'run_id'], input.valuationRunId);
   pushField(fields, schema, ['sector_id'], valuationResult.sector.id);
   pushField(fields, schema, ['equipment_family_id'], valuationResult.family.id);
-  pushField(fields, schema, ['equipment_model_id'], null);
+  pushField(fields, schema, ['equipment_model_id'], equipmentModelId);
   pushField(fields, schema, ['kind', 'equipment_type', 'asset_type', 'item_type'], nextKind);
   pushField(fields, schema, ['value', 'selected_value_ex_vat', 'selected_value', 'saved_value_ex_vat'], selectedValueExVat);
   pushField(fields, schema, ['selected_method', 'method', 'valuation_method'], input.selectedMethod);
@@ -2746,6 +2761,7 @@ export async function createAssetRegisterItemFromGenericValuation(input: {
 
   const valuationResult = input.result;
   const nextKind = getGenericAssetRegisterKind(valuationResult);
+  const equipmentModelId = getGenericEquipmentModelId(valuationResult);
   const title = [valuationResult.brand.name, valuationResult.typedModelName || valuationResult.family.label]
     .map((part) => asText(part))
     .filter(Boolean)
@@ -2772,7 +2788,7 @@ export async function createAssetRegisterItemFromGenericValuation(input: {
   pushField(fields, schema, ['valuation_run_id', 'run_id'], input.valuationRunId);
   pushField(fields, schema, ['sector_id'], valuationResult.sector.id);
   pushField(fields, schema, ['equipment_family_id'], valuationResult.family.id);
-  pushField(fields, schema, ['equipment_model_id'], null);
+  pushField(fields, schema, ['equipment_model_id'], equipmentModelId);
   pushField(fields, schema, ['kind', 'equipment_type', 'asset_type', 'item_type'], nextKind);
   pushField(fields, schema, ['title', 'name', 'asset_name'], title);
   pushField(fields, schema, ['value', 'selected_value_ex_vat', 'selected_value', 'saved_value_ex_vat'], selectedValueExVat);
