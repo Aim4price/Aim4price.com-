@@ -398,6 +398,39 @@ function formatMoneyWithCents(value: number | null | undefined): string {
   return value.toFixed(2);
 }
 
+function formatGroupedInteger(value: unknown): string {
+  const digits = String(value ?? '').replace(/[^0-9]/g, '').replace(/^0+(?=\d)/, '');
+  if (!digits) return '';
+
+  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+}
+
+function formatInvoiceMoneyInput(value: unknown): string {
+  const raw = String(value ?? '')
+    .replace(/zar/gi, '')
+    .replace(/rand/gi, '')
+    .replace(/r/gi, '')
+    .replace(/\u00a0/g, ' ')
+    .trim();
+
+  if (!raw) return '';
+
+  const normalized = raw.replace(/,/g, '.');
+  const decimalIndex = normalized.indexOf('.');
+  const hasDecimal = decimalIndex >= 0;
+  const integerPart = hasDecimal ? normalized.slice(0, decimalIndex) : normalized;
+  const decimalPart = hasDecimal ? normalized.slice(decimalIndex + 1).replace(/[^0-9]/g, '').slice(0, 2) : '';
+  const groupedInteger = formatGroupedInteger(integerPart);
+
+  if (!groupedInteger && !hasDecimal) return '';
+
+  return hasDecimal ? `${groupedInteger || '0'}.${decimalPart}` : groupedInteger;
+}
+
+function formatInvoiceUsageInput(value: unknown): string {
+  return formatGroupedInteger(value);
+}
+
 function formatDate(value: string | null | undefined): string {
   if (!value) return 'No date';
   const parsed = new Date(value);
@@ -455,10 +488,10 @@ function draftFromExtraction(extractionDraft: ExtractionDraft, source: InvoiceSo
     supplierName: extractionDraft.supplierName ?? '',
     invoiceNumber: extractionDraft.invoiceNumber ?? '',
     invoiceDate: extractionDraft.invoiceDate ?? '',
-    subtotalExVat: formatMoneyWithCents(extractionDraft.subtotalExVat ?? null),
-    vatAmount: formatMoneyWithCents(extractionDraft.vatAmount ?? null),
-    totalIncVat: formatMoneyWithCents(extractionDraft.totalIncVat ?? null),
-    usageReading: extractionDraft.usageReading === null || typeof extractionDraft.usageReading === 'undefined' ? '' : String(extractionDraft.usageReading),
+    subtotalExVat: formatInvoiceMoneyInput(formatMoneyWithCents(extractionDraft.subtotalExVat ?? null)),
+    vatAmount: formatInvoiceMoneyInput(formatMoneyWithCents(extractionDraft.vatAmount ?? null)),
+    totalIncVat: formatInvoiceMoneyInput(formatMoneyWithCents(extractionDraft.totalIncVat ?? null)),
+    usageReading: extractionDraft.usageReading === null || typeof extractionDraft.usageReading === 'undefined' ? '' : formatInvoiceUsageInput(extractionDraft.usageReading),
     usageMetric: extractionDraft.usageMetric ?? 'none',
     maintenanceWorkDone: extractionDraft.maintenanceWorkDone ?? '',
     partsSupplied: extractionDraft.partsSupplied ?? '',
@@ -474,10 +507,10 @@ function draftFromInvoice(invoice: InvoiceRecord): InvoiceDraft {
     supplierName: invoice.supplierName ?? '',
     invoiceNumber: invoice.invoiceNumber ?? '',
     invoiceDate: invoice.invoiceDate ?? '',
-    subtotalExVat: formatMoneyWithCents(invoice.subtotalExVat),
-    vatAmount: formatMoneyWithCents(invoice.vatAmount),
-    totalIncVat: formatMoneyWithCents(invoice.totalIncVat),
-    usageReading: invoice.usageReading === null || typeof invoice.usageReading === 'undefined' ? '' : String(invoice.usageReading),
+    subtotalExVat: formatInvoiceMoneyInput(formatMoneyWithCents(invoice.subtotalExVat)),
+    vatAmount: formatInvoiceMoneyInput(formatMoneyWithCents(invoice.vatAmount)),
+    totalIncVat: formatInvoiceMoneyInput(formatMoneyWithCents(invoice.totalIncVat)),
+    usageReading: invoice.usageReading === null || typeof invoice.usageReading === 'undefined' ? '' : formatInvoiceUsageInput(invoice.usageReading),
     usageMetric: invoice.usageMetric ?? 'none',
     maintenanceWorkDone: invoice.maintenanceWorkDone ?? '',
     partsSupplied: invoice.partsSupplied ?? '',
@@ -1353,7 +1386,7 @@ export default function MyInvoicesClient() {
 
       {flow === 'upload' ? (
         <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label="Upload invoice/photo">
-          <div className={styles.formModal}>
+          <div className={`${styles.formModal} ${styles.costUploadModal}`}>
             <div className={styles.modalHeader}>
               <div>
                 <h2>Upload invoice/photo</h2>
@@ -1365,7 +1398,7 @@ export default function MyInvoicesClient() {
             <div className={styles.formModalScrollBody}>
               <section className={styles.uploadPanel}>
                 <h3>Documents and photos</h3>
-                <div className={styles.uploadBox}>
+                <div className={`${styles.uploadBox} ${automaticUploadFile ? styles.uploadBoxReady : ''}`}>
                   <label className={styles.uploadButton}>
                     <UploadIcon />
                     Add invoice/photo
@@ -1389,7 +1422,7 @@ export default function MyInvoicesClient() {
 
       {formOpen ? (
         <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label={formTitle}>
-          <form className={styles.formModal} onSubmit={submitInvoiceDraft}>
+          <form className={`${styles.formModal} ${styles.costFormModal}`} onSubmit={submitInvoiceDraft}>
             <div className={styles.modalHeader}>
               <div>
                 <h2>{formTitle}</h2>
@@ -1430,19 +1463,53 @@ export default function MyInvoicesClient() {
                   </label>
                   <label>
                     <span>Usage reading</span>
-                    <input inputMode="decimal" value={draft.usageReading} disabled={draft.usageMetric === 'none'} onChange={(event) => setDraftField('usageReading', event.target.value)} />
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={draft.usageReading}
+                      disabled={draft.usageMetric === 'none'}
+                      onChange={(event) => setDraftField('usageReading', formatInvoiceUsageInput(event.target.value))}
+                      placeholder={draft.usageMetric === 'none' ? 'Not applicable' : 'Optional'}
+                    />
                   </label>
-                  <label>
-                    <span>Subtotal Excl. VAT</span>
-                    <input inputMode="decimal" value={draft.subtotalExVat} onChange={(event) => setDraftField('subtotalExVat', event.target.value)} />
+                  <label className={styles.invoiceCurrencyField}>
+                    <span>Subtotal excl. VAT</span>
+                    <div className={styles.invoiceCurrencyInput}>
+                      <span aria-hidden="true">R</span>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={draft.subtotalExVat}
+                        onChange={(event) => setDraftField('subtotalExVat', formatInvoiceMoneyInput(event.target.value))}
+                        placeholder="0"
+                      />
+                    </div>
                   </label>
-                  <label>
+                  <label className={styles.invoiceCurrencyField}>
                     <span>VAT amount</span>
-                    <input inputMode="decimal" value={draft.vatAmount} onChange={(event) => setDraftField('vatAmount', event.target.value)} />
+                    <div className={styles.invoiceCurrencyInput}>
+                      <span aria-hidden="true">R</span>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={draft.vatAmount}
+                        onChange={(event) => setDraftField('vatAmount', formatInvoiceMoneyInput(event.target.value))}
+                        placeholder="0"
+                      />
+                    </div>
                   </label>
-                  <label>
-                    <span>Total Incl. VAT</span>
-                    <input inputMode="decimal" value={draft.totalIncVat} onChange={(event) => setDraftField('totalIncVat', event.target.value)} />
+                  <label className={styles.invoiceCurrencyField}>
+                    <span>Total incl. VAT</span>
+                    <div className={styles.invoiceCurrencyInput}>
+                      <span aria-hidden="true">R</span>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={draft.totalIncVat}
+                        onChange={(event) => setDraftField('totalIncVat', formatInvoiceMoneyInput(event.target.value))}
+                        placeholder="Required"
+                      />
+                    </div>
                   </label>
                 </div>
 
@@ -1466,8 +1533,8 @@ export default function MyInvoicesClient() {
                 </div>
 
                 {draft.source === 'manual' ? (
-                  <section className={styles.uploadInline}>
-                    <span>Optional document/photo upload</span>
+                  <section className={`${styles.uploadInline} ${manualUploadFile || uploadedDocument ? styles.uploadInlineReady : ''}`}>
+                    <span>Optional document/photo</span>
                     <label className={styles.uploadButtonSmall}>
                       <UploadIcon />
                       Add file

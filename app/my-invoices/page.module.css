@@ -1789,3 +1789,443 @@
     min-width: 0;
   }
 }
+
+/* === My Invoices: match Asset Register update modal styling === */
+.costFormModal,
+.costUploadModal {
+  width: min(100%, 1120px);
+  max-height: min(92vh, calc(100dvh - 1rem));
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 0;
+  padding: clamp(1.35rem, 2.2vw, 1.85rem);
+  border-radius: 2rem;
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.055), transparent 34%),
+    linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
+}
+
+.costUploadModal {
+  width: min(100%, 860px);
+  max-height: none;
+  overflow: visible;
+}
+
+.costFormModal .modalHeader,
+.costUploadModal .modalHeader {
+  align-items: flex-start;
+  gap: 1rem;
+  margin: 0 0 1rem;
+  padding: 0 0 1rem;
+  border-bottom: 1px solid rgba(216, 226, 236, 0.9);
+}
+
+.costFormModal .modalHeader h2,
+.costUploadModal .modalHeader h2 {
+  margin: 0;
+  color: #0f3329;
+  font-size: clamp(1.85rem, 2.45vw, 2.35rem);
+  font-weight: 720;
+  line-height: 1.04;
+  letter-spacing: -0.04em;
+  text-transform: none;
+}
+
+.costFormModal .modalHeader p,
+.costUploadModal .modalHeader p {
+  max-width: 46rem;
+  margin: 0.38rem 0 0;
+  color: #607286;
+  font-size: 1.04rem;
+  font-weight: 590;
+  line-height: 1.4;
+}
+
+.costFormModal .closeButton,
+.costUploadModal .closeButton {
+  width: 3.25rem;
+  min-width: 3.25rem;
+  height: 3.25rem;
+  min-height: 3.25rem;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #f7fbff 0%, #eef5fb 100%);
+  border-color: rgba(210, 222, 237, 0.98);
+}
+
+.costFormModal .modalDivider,
+.costUploadModal .modalDivider {
+  display: none;
+}
+
+.costFormModal .formModalScrollBody,
+.costUploadModal .formModalScrollBody {
+  display: grid;
+  align-content: start;
+  gap: 1rem;
+  min-height: 0;
+  margin-right: -0.2rem;
+  padding: 0 0.68rem 0 0;
+}
+
+.costFormModal .invoiceFormCard {
+  display: grid;
+  gap: 1rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.costFormModal .formGrid,
+.costFormModal .textAreaGrid {
+  gap: 1rem;
+}
+
+.costFormModal .formGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.costFormModal .textAreaGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.costFormModal .formGrid label,
+.costFormModal .textAreaGrid label {
+  min-width: 0;
+  gap: 0.5rem;
+  padding: 1rem;
+  border: 1px solid rgba(216, 226, 236, 0.96);
+  border-radius: 1.18rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
+  box-shadow:
+    0 10px 22px rgba(16, 31, 28, 0.028),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.costFormModal .formGrid label > span,
+.costFormModal .textAreaGrid label > span,
+.costFormModal .uploadInline > span {
+  color: #263845;
+  font-size: 0.96rem;
+  font-weight: 700;
+  letter-spacing: -0.006em;
+  line-height: 1.2;
+  text-transform: none;
+}
+
+.costFormModal .formGrid input,
+.costFormModal .formGrid select,
+.costFormModal .textAreaGrid textarea {
+  min-height: 3.75rem;
+  border-radius: 1.08rem;
+  color: #20313b;
+  font-size: 1.12rem;
+  font-weight: 560;
+}
+
+.costFormModal .formGrid input::placeholder,
+.costFormModal .textAreaGrid textarea::placeholder,
+.costFormModal .invoiceCurrencyInput input::placeholder {
+  color: #708094;
+  opacity: 1;
+  font-weight: 560;
+}
+
+.costFormModal .formGrid input:disabled,
+.costFormModal .formGrid select:disabled {
+  color: #798695;
+  background: #f4f6f8;
+}
+
+.costFormModal .textAreaGrid textarea {
+  min-height: 6.4rem;
+  padding: 0.95rem 1rem;
+  resize: vertical;
+}
+
+.costFormModal .invoiceCurrencyField {
+  border-color: rgba(190, 224, 206, 0.98);
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.06), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #f3fbf6 100%);
+}
+
+.costFormModal .invoiceCurrencyInput {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.48rem;
+  min-height: 3.75rem;
+  padding: 0 0.95rem;
+  border: 1px solid rgba(190, 224, 206, 0.98);
+  border-radius: 1.08rem;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.costFormModal .invoiceCurrencyInput:focus-within {
+  border-color: rgba(22, 83, 64, 0.44);
+  box-shadow:
+    0 0 0 4px rgba(22, 83, 64, 0.09),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.costFormModal .invoiceCurrencyInput > span {
+  color: #124635;
+  font-size: 1.15rem;
+  font-weight: 780;
+  letter-spacing: -0.02em;
+  text-transform: none;
+}
+
+.costFormModal .invoiceCurrencyInput input {
+  width: 100%;
+  min-height: 3.45rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #20313b;
+  font-size: 1.12rem;
+  font-weight: 560;
+}
+
+.costFormModal .invoiceCurrencyInput input:focus {
+  outline: none;
+  border: 0;
+  box-shadow: none;
+}
+
+.costFormModal .uploadInline {
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 1rem;
+  min-height: 5.7rem;
+  padding: 1rem 1.1rem;
+  border: 1px dashed rgba(210, 222, 237, 0.98);
+  border-radius: 1.18rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f7fafb 100%);
+  box-shadow:
+    0 8px 18px rgba(16, 31, 28, 0.028),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.costFormModal .uploadInlineReady {
+  border-style: solid;
+  border-color: rgba(190, 224, 206, 0.98);
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.07), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #effaf4 100%);
+}
+
+.costFormModal .uploadButtonSmall,
+.costUploadModal .uploadButton {
+  border-color: rgba(210, 222, 237, 0.98);
+  background: linear-gradient(180deg, #ffffff 0%, #f5f8fb 100%);
+  box-shadow:
+    0 10px 20px rgba(16, 31, 28, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.costFormModal .uploadInlineReady .uploadButtonSmall,
+.costUploadModal .uploadBoxReady .uploadButton {
+  color: #124635;
+  border-color: rgba(190, 224, 206, 0.98);
+  background: linear-gradient(180deg, #ffffff 0%, #edf8f2 100%);
+}
+
+.costFormModal .uploadInline strong {
+  min-width: 0;
+  color: #617286;
+  font-size: 0.95rem;
+  font-weight: 660;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.costFormModal .uploadInlineReady strong {
+  color: #124635;
+  font-weight: 760;
+}
+
+.costFormModal .fileLink {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 2.65rem;
+  padding: 0 0.9rem;
+  border: 1px solid rgba(190, 224, 206, 0.98);
+  border-radius: 0.9rem;
+  background: linear-gradient(180deg, #ffffff 0%, #edf8f2 100%);
+  color: #124635;
+  font-size: 0.92rem;
+  font-weight: 760;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.costFormModal .rawPreview,
+.costFormModal .warningBox {
+  border-radius: 1.12rem;
+}
+
+.costFormModal .modalFooter,
+.costUploadModal .modalFooter {
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.72rem;
+  margin-top: 1rem;
+  padding: 1rem 0 0;
+  border-top: 1px solid rgba(216, 226, 236, 0.88);
+  background: transparent;
+}
+
+.costFormModal .modalFooter .primaryButton,
+.costFormModal .modalFooter .secondaryButton,
+.costUploadModal .modalFooter .primaryButton,
+.costUploadModal .modalFooter .secondaryButton {
+  min-height: 3.35rem;
+  border-radius: 1rem;
+  padding-inline: 1.3rem;
+  font-size: 1.02rem;
+  font-weight: 760;
+}
+
+.costFormModal .modalFooter .primaryButton,
+.costUploadModal .modalFooter .primaryButton {
+  min-width: 12rem;
+}
+
+.costUploadModal .uploadPanel {
+  gap: 1rem;
+  padding: clamp(1.2rem, 2vw, 1.55rem);
+  border-radius: 1.48rem;
+}
+
+.costUploadModal .uploadPanel h3 {
+  margin: 0;
+  padding-bottom: 0.85rem;
+  color: #10352b;
+  font-size: clamp(1.38rem, 1.85vw, 1.68rem);
+  font-weight: 720;
+  letter-spacing: -0.028em;
+  line-height: 1.15;
+}
+
+.costUploadModal .uploadBox {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 5.55rem;
+  align-items: stretch;
+  justify-content: center;
+  gap: 0.9rem;
+  min-height: 7.8rem;
+  max-width: 24rem;
+  width: 100%;
+  margin: 0 auto;
+  padding: 1.2rem;
+  border: 1px dashed rgba(210, 222, 237, 0.98);
+  border-radius: 1.16rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f7fafb 100%);
+}
+
+.costUploadModal .uploadBoxReady {
+  border-style: solid;
+  border-color: rgba(190, 224, 206, 0.98);
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.07), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #effaf4 100%);
+}
+
+.costUploadModal .uploadButton,
+.costUploadModal .uploadCounter {
+  width: 100%;
+  min-width: 0;
+  min-height: 3.5rem;
+  height: 3.5rem;
+  border-radius: 1.05rem;
+}
+
+.costUploadModal .uploadCounter {
+  color: #21394a;
+  background: linear-gradient(180deg, #f7fbff 0%, #edf4fb 100%);
+  border-color: rgba(210, 222, 237, 0.98);
+  font-size: 0.98rem;
+  font-weight: 820;
+}
+
+.costUploadModal .uploadBoxReady .uploadCounter {
+  color: #124635;
+  background: linear-gradient(180deg, #ffffff 0%, #edf8f2 100%);
+  border-color: rgba(190, 224, 206, 0.98);
+}
+
+.costUploadModal .uploadBox p {
+  grid-column: 1 / -1;
+  color: #124635;
+  font-size: 0.92rem;
+  font-weight: 760;
+  overflow-wrap: anywhere;
+}
+
+.costUploadModal .helperText {
+  margin: 0;
+  color: #617286;
+  font-size: 0.92rem;
+  font-weight: 560;
+  line-height: 1.45;
+  text-align: center;
+}
+
+@media (max-width: 900px) {
+  .costFormModal,
+  .costUploadModal {
+    width: min(100%, calc(100vw - 1rem));
+    max-height: min(92vh, calc(100dvh - 1rem));
+    padding: 1.08rem;
+    border-radius: 1.35rem;
+  }
+
+  .costUploadModal {
+    overflow: hidden;
+  }
+
+  .costFormModal .formGrid,
+  .costFormModal .textAreaGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .costFormModal .uploadInline {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .costFormModal .uploadInline strong {
+    white-space: normal;
+  }
+
+  .costFormModal .modalFooter,
+  .costUploadModal .modalFooter {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .costFormModal .modalFooter .primaryButton,
+  .costFormModal .modalFooter .secondaryButton,
+  .costUploadModal .modalFooter .primaryButton,
+  .costUploadModal .modalFooter .secondaryButton {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 520px) {
+  .costUploadModal .uploadBox {
+    grid-template-columns: 1fr;
+    max-width: 100%;
+  }
+}
