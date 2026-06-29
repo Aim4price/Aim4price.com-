@@ -448,7 +448,7 @@ export default function MyInvoicesClient() {
         }
       } catch (error) {
         if (!cancelled) {
-          setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'My Invoices could not be loaded.' });
+          setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'My Cost Ledger could not be loaded.' });
         }
       } finally {
         if (!cancelled) setIsLoading(false);
@@ -504,8 +504,8 @@ export default function MyInvoicesClient() {
   const sourceChoiceOpen = flow === 'source-choice';
   const assetPickerOpen = flow === 'asset-manual' || flow === 'asset-automatic';
   const formOpen = flow === 'manual-form' || flow === 'review';
-  const flowTitle = flow === 'asset-automatic' ? 'Choose asset for automatic invoice' : 'Choose asset for manual invoice';
-  const formTitle = flow === 'review' ? 'Review automatic invoice' : 'Manual invoice';
+  const flowTitle = flow === 'asset-automatic' ? 'Choose asset for uploaded cost' : 'Choose asset for manual cost';
+  const formTitle = flow === 'review' ? 'Review cost details' : 'Enter cost manually';
   const hasInvoiceSearch = invoiceSearch.trim().length > 0;
   const modalOpen = sourceChoiceOpen || assetPickerOpen || flow === 'upload' || formOpen || filterOpen || downloadOpen;
 
@@ -528,7 +528,7 @@ export default function MyInvoicesClient() {
     const data = (await response.json()) as InvoicesResponse;
 
     if (!response.ok || !data.ok) {
-      throw new Error(data.error || 'My Invoices could not be loaded.');
+      throw new Error(data.error || 'My Cost Ledger could not be loaded.');
     }
 
     return data;
@@ -663,7 +663,7 @@ export default function MyInvoicesClient() {
     const data = (await response.json()) as UploadResponse;
 
     if (!response.ok || !data.ok || !data.document) {
-      throw new Error(data.error || 'The invoice file could not be uploaded.');
+      throw new Error(data.error || 'The invoice/photo file could not be uploaded.');
     }
 
     return data.document;
@@ -688,7 +688,7 @@ export default function MyInvoicesClient() {
 
       if (!response.ok || !data.ok || !data.extraction) {
         setDraft({ ...buildEmptyDraft('automatic'), invoiceDocumentId: document.id });
-        setExtractionWarnings([data.error || 'Aim4price could not read this invoice automatically. Complete the fields manually.']);
+        setExtractionWarnings([data.error || 'Aim4price could not read this invoice/photo automatically. Complete the cost details manually.']);
         setRawTextPreview('');
         setFlow('review');
         return;
@@ -701,7 +701,7 @@ export default function MyInvoicesClient() {
       setRawTextPreview((data.extraction.rawText ?? '').slice(0, 3000));
       setFlow('review');
     } catch (error) {
-      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'The automatic invoice flow could not continue.' });
+      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'The uploaded cost flow could not continue.' });
     } finally {
       setIsExtracting(false);
     }
@@ -711,7 +711,7 @@ export default function MyInvoicesClient() {
     event.preventDefault();
 
     if (!selectedAssetId) {
-      setNotice({ tone: 'error', message: 'Choose an asset before saving the invoice.' });
+      setNotice({ tone: 'error', message: 'Choose an asset before saving the cost record.' });
       return;
     }
 
@@ -752,15 +752,15 @@ export default function MyInvoicesClient() {
       const data = (await response.json()) as InvoicesResponse;
 
       if (!response.ok || !data.ok) {
-        throw new Error(data.error || 'The invoice could not be saved.');
+        throw new Error(data.error || 'The cost record could not be saved.');
       }
 
       await reloadData();
       const duplicateText = data.duplicateWarnings?.length ? ` ${data.duplicateWarnings.join(' ')}` : '';
       closeModal();
-      setNotice({ tone: 'success', message: `Invoice saved.${duplicateText}` });
+      setNotice({ tone: 'success', message: `Cost record saved.${duplicateText}` });
     } catch (error) {
-      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'The invoice could not be saved.' });
+      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'The cost record could not be saved.' });
     } finally {
       setIsSaving(false);
     }
@@ -780,8 +780,8 @@ export default function MyInvoicesClient() {
   }
 
   async function deleteInvoice(invoice: InvoiceRecord) {
-    const invoiceLabel = invoice.invoiceNumber ? `invoice ${invoice.invoiceNumber}` : 'this invoice';
-    const confirmed = window.confirm(`Delete ${invoiceLabel}? This cannot be undone.`);
+    const costRecordLabel = invoice.invoiceNumber ? `cost record ${invoice.invoiceNumber}` : 'this cost record';
+    const confirmed = window.confirm(`Delete ${costRecordLabel}? This cannot be undone.`);
     if (!confirmed) return;
 
     setDeletingInvoiceId(invoice.id);
@@ -792,13 +792,13 @@ export default function MyInvoicesClient() {
       const data = (await response.json()) as InvoicesResponse;
 
       if (!response.ok || !data.ok) {
-        throw new Error(data.error || 'The invoice could not be deleted.');
+        throw new Error(data.error || 'The cost record could not be deleted.');
       }
 
       await reloadData();
-      setNotice({ tone: 'success', message: 'Invoice deleted.' });
+      setNotice({ tone: 'success', message: 'Cost record deleted.' });
     } catch (error) {
-      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'The invoice could not be deleted.' });
+      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'The cost record could not be deleted.' });
     } finally {
       setDeletingInvoiceId(null);
     }
@@ -824,11 +824,11 @@ export default function MyInvoicesClient() {
 
         <section className={styles.pageTitleBlock}>
           <div>
-            <h1>ADD INVOICES</h1>
+            <h1>ASSET COST LEDGER</h1>
           </div>
         </section>
 
-        <section className={styles.invoiceToolbar} aria-label="Saved invoice controls">
+        <section className={styles.invoiceToolbar} aria-label="Saved cost record controls">
           <label className={styles.searchWrap}>
             <SearchIcon className={styles.searchIcon} />
             <input
@@ -836,11 +836,11 @@ export default function MyInvoicesClient() {
               className={styles.searchInput}
               value={invoiceSearch}
               onChange={(event) => setInvoiceSearch(event.target.value)}
-              placeholder="Search saved invoices..."
-              aria-label="Search saved invoices"
+              placeholder="Search suppliers, assets, invoice numbers or costs..."
+              aria-label="Search saved cost records"
             />
             {hasInvoiceSearch ? (
-              <button type="button" className={styles.clearSearchButton} onClick={() => setInvoiceSearch('')} aria-label="Clear saved invoice search">
+              <button type="button" className={styles.clearSearchButton} onClick={() => setInvoiceSearch('')} aria-label="Clear saved cost record search">
                 ×
               </button>
             ) : null}
@@ -849,7 +849,7 @@ export default function MyInvoicesClient() {
           <div className={styles.toolbarButtons}>
             <button type="button" className={`${styles.secondaryButton} ${styles.toolbarButton} ${styles.toolbarAddButton}`} onClick={openAddInvoiceModal}>
               <span className={styles.plusMark} aria-hidden="true">+</span>
-              <span>Add Invoice</span>
+              <span>Add Cost</span>
             </button>
             <button type="button" className={`${styles.secondaryButton} ${styles.toolbarButton} ${styles.toolbarFilterButton}`} onClick={openFilterPanel}>
               <FilterIcon className={styles.buttonIcon} />
@@ -863,19 +863,19 @@ export default function MyInvoicesClient() {
           </div>
         </section>
 
-        <section className={styles.invoicePanel} aria-label="Saved invoices">
+        <section className={styles.invoicePanel} aria-label="Saved cost records">
           <div className={styles.savedListHeader}>
             <div>
-              <h2>Saved invoices</h2>
-              <p>{isLoading ? 'Loading saved invoices...' : `${visibleInvoices.length.toLocaleString('en-ZA')} shown from ${invoices.length.toLocaleString('en-ZA')} loaded invoices.`}</p>
+              <h2>Saved cost records</h2>
+              <p>{isLoading ? 'Loading saved cost records...' : `${visibleInvoices.length.toLocaleString('en-ZA')} shown from ${invoices.length.toLocaleString('en-ZA')} saved cost records.`}</p>
             </div>
           </div>
 
           <div className={styles.invoiceList}>
-            {isLoading ? <div className={styles.emptyState}>Loading saved invoices...</div> : null}
+            {isLoading ? <div className={styles.emptyState}>Loading saved cost records...</div> : null}
 
             {!isLoading && !visibleInvoices.length ? (
-              <div className={styles.emptyState}>No saved invoices yet. Add a manual invoice or upload one automatically.</div>
+              <div className={styles.emptyState}>No asset costs saved yet. Add a manual cost or upload an invoice/photo.</div>
             ) : null}
 
             {!isLoading ? visibleInvoices.map((invoice) => (
@@ -923,14 +923,14 @@ export default function MyInvoicesClient() {
       </section>
 
       {sourceChoiceOpen ? (
-        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label="Choose invoice capture method">
+        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label="Choose cost capture method">
           <div className={`${styles.downloadModal} ${styles.sourceChoiceModal}`}>
             <div className={styles.modalHeader}>
               <div>
-                <h2>Add invoice</h2>
-                <p>Choose how you want to capture the invoice against a saved asset.</p>
+                <h2>Add asset cost</h2>
+                <p>Save an invoice, repair, parts or maintenance cost against a saved asset.</p>
               </div>
-              <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close add invoice"><CloseIcon /></button>
+              <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close add asset cost"><CloseIcon /></button>
             </div>
             <div className={styles.modalDivider} />
             <div className={styles.sourceChoiceGrid}>
@@ -939,8 +939,8 @@ export default function MyInvoicesClient() {
                   <ManualInvoiceIcon />
                 </span>
                 <span className={styles.choiceTitleBlock}>
-                  <strong>Manual invoice</strong>
-                  <small>Type the supplier, invoice date, VAT and work details yourself.</small>
+                  <strong>Enter cost manually</strong>
+                  <small>Type the supplier, invoice date, VAT, usage and work details yourself.</small>
                 </span>
               </button>
               <button type="button" className={styles.sourceChoiceOption} onClick={() => startFlow('automatic')}>
@@ -948,8 +948,8 @@ export default function MyInvoicesClient() {
                   <AutomaticInvoiceIcon />
                 </span>
                 <span className={styles.choiceTitleBlock}>
-                  <strong>Automatic invoice</strong>
-                  <small>Upload a PDF or photo, then review the extracted invoice details.</small>
+                  <strong>Upload invoice/photo</strong>
+                  <small>Upload a PDF or photo, then review the extracted cost details.</small>
                 </span>
               </button>
             </div>
@@ -961,12 +961,12 @@ export default function MyInvoicesClient() {
       ) : null}
 
       {filterOpen ? (
-        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label="Filter saved invoices">
+        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label="Filter saved cost records">
           <div className={styles.filterModal}>
             <div className={styles.modalHeader}>
               <div>
-                <h2>Filter invoices</h2>
-                <p>Limit the saved invoice list and report filters.</p>
+                <h2>Filter cost records</h2>
+                <p>Limit the saved cost record list and report filters.</p>
               </div>
               <button type="button" className={styles.closeButton} onClick={closeFilterPanel} aria-label="Close filter"><CloseIcon /></button>
             </div>
@@ -1024,11 +1024,11 @@ export default function MyInvoicesClient() {
       ) : null}
 
       {downloadOpen ? (
-        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label="Export invoice report">
+        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label="Export Cost of Ownership report">
           <div className={`${styles.downloadModal} ${styles.reportModal}`}>
             <div className={styles.modalHeader}>
               <div>
-                <h2>Export invoice report</h2>
+                <h2>Export Cost of Ownership report</h2>
                 <p>Download the Cost of Ownership report using the active asset, year and month filters.</p>
               </div>
               <button type="button" className={styles.closeButton} onClick={() => setDownloadOpen(false)} aria-label="Close download"><CloseIcon /></button>
@@ -1060,7 +1060,7 @@ export default function MyInvoicesClient() {
                 </span>
                 <span className={styles.reportTitleBlock}>
                   <strong>XLSX workbook</strong>
-                  <small>Download the filtered invoice data as an Excel-ready workbook.</small>
+                  <small>Download the filtered cost record data as an Excel-ready workbook.</small>
                 </span>
               </button>
             </div>
@@ -1081,7 +1081,7 @@ export default function MyInvoicesClient() {
             <div className={styles.modalHeader}>
               <div>
                 <h2>{flowTitle}</h2>
-                <p>Select the saved asset this invoice belongs to.</p>
+                <p>Select the saved asset this cost belongs to.</p>
               </div>
               <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close"><CloseIcon /></button>
             </div>
@@ -1125,11 +1125,11 @@ export default function MyInvoicesClient() {
       ) : null}
 
       {flow === 'upload' ? (
-        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label="Upload automatic invoice">
+        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label="Upload invoice/photo">
           <div className={styles.formModal}>
             <div className={styles.modalHeader}>
               <div>
-                <h2>Upload invoice</h2>
+                <h2>Upload invoice/photo</h2>
                 <p>{selectedAsset?.title ?? 'Selected asset'} · Automatic</p>
               </div>
               <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close"><CloseIcon /></button>
@@ -1141,7 +1141,7 @@ export default function MyInvoicesClient() {
                 <div className={styles.uploadBox}>
                   <label className={styles.uploadButton}>
                     <UploadIcon />
-                    Add invoice
+                    Add invoice/photo
                     <input type="file" accept="application/pdf,image/jpeg,image/png,image/webp" onChange={handleAutomaticFileChange} />
                   </label>
                   <span className={styles.uploadCounter}>{automaticUploadFile ? '1 / 1' : '0 / 1'}</span>
@@ -1153,7 +1153,7 @@ export default function MyInvoicesClient() {
             <div className={styles.modalFooter}>
               <button type="button" className={styles.secondaryButton} onClick={() => setFlow('asset-automatic')}>Back</button>
               <button type="button" className={styles.primaryButton} onClick={handleAutomaticExtract} disabled={!automaticUploadFile || isExtracting}>
-                {isExtracting ? 'Reading invoice...' : 'Review invoice'}
+                {isExtracting ? 'Reading invoice/photo...' : 'Review cost details'}
               </button>
             </div>
           </div>
@@ -1251,7 +1251,7 @@ export default function MyInvoicesClient() {
                 ) : null}
 
                 {uploadedDocument?.uploadUrl ? (
-                  <a className={styles.fileLink} href={uploadedDocument.uploadUrl} target="_blank" rel="noreferrer">Open attached invoice: {uploadedDocument.fileName}</a>
+                  <a className={styles.fileLink} href={uploadedDocument.uploadUrl} target="_blank" rel="noreferrer">Open attached invoice/photo: {uploadedDocument.fileName}</a>
                 ) : null}
 
                 {rawTextPreview ? (
@@ -1270,7 +1270,7 @@ export default function MyInvoicesClient() {
                 else if (flow === 'review') setFlow('upload');
                 else closeModal();
               }}>Back</button>
-              <button type="submit" className={styles.primaryButton} disabled={isSaving}>{isSaving ? 'Saving...' : 'Save invoice'}</button>
+              <button type="submit" className={styles.primaryButton} disabled={isSaving}>{isSaving ? 'Saving...' : 'Save cost record'}</button>
             </div>
           </form>
         </div>
