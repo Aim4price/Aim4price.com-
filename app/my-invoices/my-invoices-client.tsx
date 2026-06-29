@@ -283,8 +283,13 @@ type FilterDropdownProps = {
   options: FilterSelectOption[];
   openDropdown: FilterDropdownKey | null;
   disabled?: boolean;
+  searchable?: boolean;
+  searchValue?: string;
+  searchPlaceholder?: string;
+  noMatchesLabel?: string;
   onOpenChange: (key: FilterDropdownKey | null) => void;
   onChange: (value: string) => void;
+  onSearchChange?: (value: string) => void;
 };
 
 function FilterDropdown({
@@ -294,11 +299,24 @@ function FilterDropdown({
   options,
   openDropdown,
   disabled = false,
+  searchable = false,
+  searchValue = '',
+  searchPlaceholder = 'Search options',
+  noMatchesLabel = 'No options found',
   onOpenChange,
   onChange,
+  onSearchChange,
 }: FilterDropdownProps) {
   const selectedOption = options.find((option) => option.value === value) ?? options[0];
   const isOpen = openDropdown === dropdownKey && !disabled;
+  const searchQuery = searchValue.trim().toLowerCase();
+  const fixedOption = searchable ? options[0] : null;
+  const searchableOptions = searchable ? options.slice(1) : options;
+  const visibleOptions = searchable && searchQuery
+    ? searchableOptions.filter((option) => option.label.toLowerCase().includes(searchQuery))
+    : searchableOptions;
+  const menuOptions = searchable && fixedOption ? [fixedOption, ...visibleOptions] : visibleOptions;
+  const noSearchMatches = searchable && Boolean(searchQuery) && visibleOptions.length === 0;
 
   return (
     <div className={styles.filterField}>
@@ -322,7 +340,21 @@ function FilterDropdown({
 
         {isOpen ? (
           <div className={styles.customFilterSelectMenu} role="listbox" aria-label={label}>
-            {options.map((option) => {
+            {searchable ? (
+              <div className={styles.customFilterSearchRow}>
+                <input
+                  type="search"
+                  className={styles.customFilterSearchInput}
+                  value={searchValue}
+                  onChange={(event) => onSearchChange?.(event.target.value)}
+                  placeholder={searchPlaceholder}
+                  aria-label={searchPlaceholder}
+                  autoComplete="off"
+                />
+              </div>
+            ) : null}
+
+            {menuOptions.map((option) => {
               const isSelected = option.value === value;
 
               return (
@@ -341,6 +373,12 @@ function FilterDropdown({
                 </button>
               );
             })}
+
+            {noSearchMatches ? (
+              <div className={`${styles.customFilterSelectOption} ${styles.customFilterSelectEmptyOption}`} role="option" aria-disabled="true">
+                <span className={styles.customFilterSelectOptionLabel}>{noMatchesLabel}</span>
+              </div>
+            ) : null}
           </div>
         ) : null}
       </div>
@@ -507,6 +545,7 @@ export default function MyInvoicesClient() {
   const [draftFilters, setDraftFilters] = useState<InvoiceFilterState>(DEFAULT_FILTERS);
   const [filterOpen, setFilterOpen] = useState(false);
   const [openFilterDropdown, setOpenFilterDropdown] = useState<FilterDropdownKey | null>(null);
+  const [filterAssetSearch, setFilterAssetSearch] = useState('');
   const [downloadOpen, setDownloadOpen] = useState(false);
   const [reportFormat, setReportFormat] = useState<ReportFormat>('pdf');
   const [draft, setDraft] = useState<InvoiceDraft>(buildEmptyDraft('manual'));
@@ -630,11 +669,17 @@ export default function MyInvoicesClient() {
     function handlePointerDown(event: MouseEvent) {
       const target = event.target;
       if (!(target instanceof Element)) return;
-      if (!target.closest('[data-filter-dropdown="true"]')) setOpenFilterDropdown(null);
+      if (!target.closest('[data-filter-dropdown="true"]')) {
+        setOpenFilterDropdown(null);
+        setFilterAssetSearch('');
+      }
     }
 
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') setOpenFilterDropdown(null);
+      if (event.key === 'Escape') {
+        setOpenFilterDropdown(null);
+        setFilterAssetSearch('');
+      }
     }
 
     document.addEventListener('mousedown', handlePointerDown);
@@ -735,18 +780,21 @@ export default function MyInvoicesClient() {
   function openFilterPanel() {
     setDraftFilters(activeFilters);
     setOpenFilterDropdown(null);
+    setFilterAssetSearch('');
     setFilterOpen(true);
   }
 
   function closeFilterPanel() {
     setDraftFilters(activeFilters);
     setOpenFilterDropdown(null);
+    setFilterAssetSearch('');
     setFilterOpen(false);
   }
 
   function applyFilters() {
     setActiveFilters(draftFilters);
     setOpenFilterDropdown(null);
+    setFilterAssetSearch('');
     setFilterOpen(false);
   }
 
@@ -754,7 +802,19 @@ export default function MyInvoicesClient() {
     setDraftFilters(DEFAULT_FILTERS);
     setActiveFilters(DEFAULT_FILTERS);
     setOpenFilterDropdown(null);
+    setFilterAssetSearch('');
     setFilterOpen(false);
+  }
+
+  function handleFilterDropdownOpenChange(key: FilterDropdownKey | null) {
+    setOpenFilterDropdown(key);
+
+    if (key !== 'asset') {
+      setFilterAssetSearch('');
+      return;
+    }
+
+    setFilterAssetSearch('');
   }
 
   function handleDownloadReport(format: ReportFormat) {
@@ -1104,8 +1164,13 @@ export default function MyInvoicesClient() {
                 value={draftFilters.assetId}
                 options={assetFilterOptions}
                 openDropdown={openFilterDropdown}
-                onOpenChange={setOpenFilterDropdown}
+                searchable
+                searchValue={filterAssetSearch}
+                searchPlaceholder="Search saved assets"
+                noMatchesLabel="No saved assets found"
+                onOpenChange={handleFilterDropdownOpenChange}
                 onChange={(value) => setDraftFilters((current) => ({ ...current, assetId: value }))}
+                onSearchChange={setFilterAssetSearch}
               />
               <FilterDropdown
                 label="Source"
@@ -1113,7 +1178,7 @@ export default function MyInvoicesClient() {
                 value={draftFilters.source}
                 options={SOURCE_FILTER_OPTIONS}
                 openDropdown={openFilterDropdown}
-                onOpenChange={setOpenFilterDropdown}
+                onOpenChange={handleFilterDropdownOpenChange}
                 onChange={(value) => setDraftFilters((current) => ({ ...current, source: value as FilterSource }))}
               />
               <FilterDropdown
@@ -1122,7 +1187,7 @@ export default function MyInvoicesClient() {
                 value={draftFilters.year}
                 options={yearFilterOptions}
                 openDropdown={openFilterDropdown}
-                onOpenChange={setOpenFilterDropdown}
+                onOpenChange={handleFilterDropdownOpenChange}
                 onChange={(value) => setDraftFilters((current) => ({ ...current, year: value, month: value === 'all' ? 'all' : current.month }))}
               />
               <FilterDropdown
@@ -1131,7 +1196,7 @@ export default function MyInvoicesClient() {
                 value={draftFilters.month}
                 options={monthFilterOptions}
                 openDropdown={openFilterDropdown}
-                onOpenChange={setOpenFilterDropdown}
+                onOpenChange={handleFilterDropdownOpenChange}
                 onChange={(value) => setDraftFilters((current) => ({ ...current, month: value }))}
                 disabled={draftFilters.year === 'all'}
               />

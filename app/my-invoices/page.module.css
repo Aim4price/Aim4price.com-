@@ -1238,6 +1238,44 @@
   background-clip: padding-box;
 }
 
+.customFilterSearchRow {
+  position: sticky;
+  top: -0.35rem;
+  z-index: 2;
+  margin: -0.35rem -0.35rem 0.25rem;
+  padding: 0.35rem;
+  border-bottom: 1px solid rgba(227, 235, 241, 0.96);
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdfe 100%);
+}
+
+.customFilterSearchInput {
+  width: 100%;
+  min-height: 2.8rem;
+  padding: 0 0.85rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 0.82rem;
+  background: #ffffff;
+  color: var(--text);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 760;
+  outline: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.customFilterSearchInput:focus {
+  border-color: rgba(22, 83, 64, 0.38);
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(22, 83, 64, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.customFilterSearchInput::placeholder {
+  color: #7c8997;
+  opacity: 1;
+  font-weight: 650;
+}
+
 .customFilterSelectOption {
   width: 100%;
   min-height: 2.65rem;
@@ -1268,6 +1306,16 @@
   border-color: rgba(90, 188, 130, 0.45);
   background: #eaf8f1;
   color: #0d5a42;
+}
+
+.customFilterSelectEmptyOption,
+.customFilterSelectEmptyOption:hover,
+.customFilterSelectEmptyOption:focus-visible {
+  border-color: transparent;
+  background: #f7fafc;
+  color: #738191;
+  cursor: default;
+  outline: none;
 }
 
 .filterGrid .customFilterSelectOptionLabel {
