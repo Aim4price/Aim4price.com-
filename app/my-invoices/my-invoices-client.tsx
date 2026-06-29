@@ -1645,7 +1645,7 @@ export default function MyInvoicesClient() {
             <div className={styles.deleteConfirmContent}>
               <h3 id="delete-cost-confirm-title">Are you sure you want to delete this?</h3>
               <p id="delete-cost-confirm-copy">
-                All data will be lost. This permanently removes <strong>{deleteCandidateInvoice.supplierName || 'this cost record'}</strong> from the Asset Cost Tracking System,
+                This cost record will be permanently removed from the Asset Cost Tracking System,
                 including saved invoice details and any attached invoice/photo file.
               </p>
 
@@ -1657,7 +1657,7 @@ export default function MyInvoicesClient() {
                     deleteCandidateInvoice.assetTitle || 'Saved asset',
                     deleteCandidateInvoice.invoiceNumber || null,
                     deleteCandidateInvoice.vatAmount !== null ? `VAT ${formatMoney(deleteCandidateInvoice.vatAmount)}` : null,
-                    formatMoney(deleteCandidateInvoice.totalIncVat),
+                    `Total incl. VAT ${formatMoney(deleteCandidateInvoice.totalIncVat)}`,
                   ].filter(Boolean).join(' · ')}
                 </small>
               </div>

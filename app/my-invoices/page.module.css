@@ -373,229 +373,6 @@
   gap: 1.02rem;
 }
 
-.invoiceRow {
-  display: grid;
-  gap: clamp(0.95rem, 1.45vw, 1.18rem);
-  min-height: clamp(7.5rem, 8.8vw, 8.95rem);
-  padding: clamp(1.12rem, 1.55vw, 1.34rem) clamp(1.18rem, 1.85vw, 1.45rem);
-  border: 1px solid rgba(217, 227, 235, 0.96);
-  border-radius: 1.58rem;
-  background: linear-gradient(180deg, #ffffff 0%, #f9fbfc 100%);
-  box-shadow:
-    0 12px 26px rgba(16, 31, 28, 0.035),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96);
-  transition:
-    transform 160ms ease,
-    border-color 160ms ease,
-    box-shadow 160ms ease;
-}
-
-.invoiceRow:hover {
-  transform: translateY(-1px);
-  border-color: rgba(197, 211, 223, 0.98);
-  box-shadow:
-    0 18px 34px rgba(16, 31, 28, 0.055),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
-}
-
-.invoiceCardTop {
-  min-width: 0;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) max-content;
-  grid-template-areas:
-    "title price"
-    "asset vat"
-    "meta usage";
-  column-gap: clamp(1.25rem, 3.2vw, 2.75rem);
-  row-gap: 0.32rem;
-  align-items: start;
-}
-
-.invoiceTitle,
-.invoicePrice {
-  margin: 0;
-  color: #0d3028;
-  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: clamp(1.5rem, 2.05vw, 1.9rem);
-  font-weight: 900;
-  line-height: 1;
-  letter-spacing: -0.055em;
-}
-
-.invoiceTitle {
-  grid-area: title;
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-
-.invoicePrice {
-  grid-area: price;
-  justify-self: end;
-  display: block;
-  text-align: right;
-  white-space: nowrap;
-}
-
-.invoiceAsset {
-  grid-area: asset;
-  min-width: 0;
-  margin: 0;
-  color: #637282;
-  font-size: 0.94rem;
-  font-weight: 650;
-  line-height: 1.32;
-  overflow-wrap: anywhere;
-}
-
-.invoiceVatLabel {
-  grid-area: vat;
-  justify-self: end;
-  display: block;
-  margin: 0;
-  color: #647486;
-  font-size: 0.88rem;
-  font-weight: 780;
-  line-height: 1.15;
-  text-align: right;
-  white-space: nowrap;
-}
-
-.invoiceMetaList {
-  grid-area: meta;
-  min-width: 0;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  margin-top: 0.02rem;
-  color: #657586;
-}
-
-.invoiceMetaList span {
-  display: inline-flex;
-  align-items: center;
-  min-width: 0;
-  color: #657586;
-  font-size: 0.89rem;
-  font-weight: 690;
-  line-height: 1.35;
-  overflow-wrap: anywhere;
-}
-
-.invoiceMetaList span + span::before {
-  content: '•';
-  flex: 0 0 auto;
-  margin: 0 0.48rem;
-  color: #9aa8b5;
-  font-weight: 760;
-}
-
-.invoiceUsage {
-  grid-area: usage;
-  justify-self: end;
-  display: block;
-  margin: 0;
-  color: #68798a;
-  font-size: 0.88rem;
-  font-weight: 720;
-  line-height: 1.2;
-  text-align: right;
-  white-space: nowrap;
-}
-
-.rowActions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 0.62rem;
-  margin-top: auto;
-}
-
-.secondaryButtonSmall,
-.dangerButtonSmall {
-  min-width: 7.1rem;
-  min-height: 2.78rem;
-  padding: 0 0.92rem;
-  border-radius: 0.92rem;
-  border-width: 1.35px;
-  font-size: 0.92rem;
-  font-weight: 880;
-  box-shadow:
-    0 9px 20px rgba(31, 51, 71, 0.05),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
-}
-
-.secondaryButtonSmall {
-  color: #183143;
-  background: linear-gradient(180deg, #ffffff 0%, #f4f8fc 100%);
-  border-color: var(--line-strong);
-}
-
-.dangerButtonSmall {
-  color: var(--danger);
-  background: var(--danger-soft);
-  border-color: #f0d0d0;
-}
-
-.invoiceOpenButton {
-  color: #0f5a43;
-  background: linear-gradient(180deg, #ffffff 0%, #eefbf4 100%);
-  border-color: #aedbc1;
-  box-shadow:
-    0 9px 20px rgba(10, 84, 61, 0.075),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
-}
-
-.invoiceOpenButton:hover:not(:disabled) {
-  color: #083f2f;
-  background: linear-gradient(180deg, #ffffff 0%, #e4f8ee 100%);
-  border-color: #8fcaa9;
-  box-shadow:
-    0 13px 26px rgba(10, 84, 61, 0.11),
-    inset 0 1px 0 rgba(255, 255, 255, 1);
-}
-
-.invoiceEditButton {
-  color: #123d66;
-  background: linear-gradient(180deg, #ffffff 0%, #eef7ff 100%);
-  border-color: #b9d8f4;
-  box-shadow:
-    0 9px 20px rgba(15, 59, 100, 0.075),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
-}
-
-.invoiceEditButton:hover:not(:disabled) {
-  color: #123d66;
-  background: linear-gradient(180deg, #ffffff 0%, #e3f1ff 100%);
-  border-color: #9fc8ee;
-  box-shadow:
-    0 13px 26px rgba(15, 59, 100, 0.105),
-    inset 0 1px 0 rgba(255, 255, 255, 1);
-}
-
-.invoiceDeleteButton {
-  color: #b42318;
-  background: linear-gradient(180deg, #fffafa 0%, #fff1f1 100%);
-  border-color: #f2b8b5;
-  box-shadow:
-    0 9px 20px rgba(154, 51, 51, 0.065),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
-}
-
-.invoiceDeleteButton:hover:not(:disabled) {
-  color: #981b12;
-  background: linear-gradient(180deg, #fffafa 0%, #ffe7e7 100%);
-  border-color: #ee9e99;
-  box-shadow:
-    0 13px 26px rgba(154, 51, 51, 0.095),
-    inset 0 1px 0 rgba(255, 255, 255, 1);
-}
-
-.secondaryButtonSmall:focus-visible,
-.dangerButtonSmall:focus-visible {
-  outline: 2px solid rgba(20, 112, 82, 0.22);
-  outline-offset: 0.22rem;
-}
-
 .emptyState {
   padding: 1.25rem;
   border: 1px dashed var(--line-strong);
@@ -1450,8 +1227,7 @@
 }
 
 @media (max-width: 1100px) {
-  .invoiceToolbar,
-  .invoiceRow {
+  .invoiceToolbar {
     grid-template-columns: minmax(0, 1fr);
   }
 
@@ -1459,12 +1235,6 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-
-  .rowActions {
-    width: 100%;
-    min-width: 0;
-    justify-content: flex-start;
-  }
 }
 
 @media (max-width: 760px) {
@@ -1516,41 +1286,6 @@
     flex-direction: column-reverse;
   }
 
-  .invoiceRow {
-    min-height: auto;
-    padding: 1.05rem;
-    border-radius: 1.3rem;
-  }
-
-  .invoiceCardTop {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas:
-      "title"
-      "price"
-      "asset"
-      "vat"
-      "meta"
-      "usage";
-    row-gap: 0.3rem;
-  }
-
-  .invoiceTitle,
-  .invoicePrice {
-    font-size: 1.34rem;
-  }
-
-  .invoicePrice,
-  .invoiceVatLabel,
-  .invoiceUsage {
-    justify-self: start;
-    text-align: left;
-  }
-
-  .rowActions {
-    display: grid;
-    grid-template-columns: 1fr;
-  }
-
   .paginationRow {
     display: grid;
     grid-template-columns: 1fr;
@@ -1562,8 +1297,6 @@
   }
 
   .paginationButton,
-  .secondaryButtonSmall,
-  .dangerButtonSmall,
   .modalFooter button,
   .modalFooter a,
   .toolbarButtons button,
@@ -2243,6 +1976,10 @@
   box-shadow:
     0 14px 28px rgba(20, 43, 43, 0.04),
     inset 0 1px 0 rgba(255, 255, 255, 0.96);
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
 }
 
 .invoiceRow:hover {
@@ -2266,6 +2003,15 @@
   align-content: center;
   gap: 0.6rem;
   padding: 0;
+}
+
+.invoiceTitle,
+.invoiceAsset,
+.invoiceMetaList,
+.invoicePrice,
+.invoiceVatLabel,
+.invoiceUsage {
+  grid-area: auto;
 }
 
 .invoiceTitle {
