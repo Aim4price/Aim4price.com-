@@ -227,6 +227,37 @@ function DownloadIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+function OpenFileIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+      <path d="M14 3v5h5" />
+      <path d="M9 15h6" />
+    </IconBase>
+  );
+}
+
+function EditIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" />
+    </IconBase>
+  );
+}
+
+function TrashIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M3 6h18" />
+      <path d="M8 6V4h8v2" />
+      <path d="M19 6l-1 14H6L5 6" />
+      <path d="M10 11v5" />
+      <path d="M14 11v5" />
+    </IconBase>
+  );
+}
+
 function UploadIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <IconBase {...props}>
@@ -599,6 +630,7 @@ export default function MyInvoicesClient() {
   const [isSaving, setIsSaving] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
   const [deletingInvoiceId, setDeletingInvoiceId] = useState<string | null>(null);
+  const [deleteCandidateInvoice, setDeleteCandidateInvoice] = useState<InvoiceRecord | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -696,7 +728,8 @@ export default function MyInvoicesClient() {
   const flowTitle = flow === 'asset-automatic' ? 'Choose asset for uploaded cost' : 'Choose asset for manual cost';
   const formTitle = flow === 'review' ? 'Review cost details' : 'Enter cost manually';
   const hasInvoiceSearch = invoiceSearch.trim().length > 0;
-  const modalOpen = sourceChoiceOpen || assetPickerOpen || flow === 'upload' || formOpen || filterOpen || downloadOpen;
+  const deleteConfirmOpen = Boolean(deleteCandidateInvoice);
+  const modalOpen = sourceChoiceOpen || assetPickerOpen || flow === 'upload' || formOpen || filterOpen || downloadOpen || deleteConfirmOpen;
 
   useEffect(() => {
     setCurrentInvoicePage(1);
@@ -1023,16 +1056,25 @@ export default function MyInvoicesClient() {
     setFlow(invoice.source === 'automatic' ? 'review' : 'manual-form');
   }
 
-  async function deleteInvoice(invoice: InvoiceRecord) {
-    const costRecordLabel = invoice.invoiceNumber ? `cost record ${invoice.invoiceNumber}` : 'this cost record';
-    const confirmed = window.confirm(`Delete ${costRecordLabel}? This cannot be undone.`);
-    if (!confirmed) return;
+  function openDeleteInvoiceDialog(invoice: InvoiceRecord) {
+    setNotice(null);
+    setDeleteCandidateInvoice(invoice);
+  }
 
-    setDeletingInvoiceId(invoice.id);
+  function closeDeleteInvoiceDialog() {
+    if (deletingInvoiceId && deleteCandidateInvoice?.id === deletingInvoiceId) return;
+    setDeleteCandidateInvoice(null);
+  }
+
+  async function confirmDeleteInvoice() {
+    if (!deleteCandidateInvoice) return;
+
+    const invoiceId = deleteCandidateInvoice.id;
+    setDeletingInvoiceId(invoiceId);
     setNotice(null);
 
     try {
-      const response = await fetch(`/api/my-invoices/${invoice.id}`, { method: 'DELETE' });
+      const response = await fetch(`/api/my-invoices/${invoiceId}`, { method: 'DELETE' });
       const data = (await response.json()) as InvoicesResponse;
 
       if (!response.ok || !data.ok) {
@@ -1040,6 +1082,7 @@ export default function MyInvoicesClient() {
       }
 
       await reloadData();
+      setDeleteCandidateInvoice((current) => (current?.id === invoiceId ? null : current));
       setNotice({ tone: 'success', message: 'Cost record deleted.' });
     } catch (error) {
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'The cost record could not be deleted.' });
@@ -1124,34 +1167,43 @@ export default function MyInvoicesClient() {
 
               return (
                 <article className={styles.invoiceRow} key={invoice.id}>
-                  <div className={styles.invoiceCardTop}>
-                    <h3 className={styles.invoiceTitle}>{invoice.supplierName || 'Unknown supplier'}</h3>
-                    <strong className={styles.invoicePrice}>{formatMoney(invoice.totalIncVat)}</strong>
-                    <p className={styles.invoiceAsset}>{invoice.assetTitle || 'Saved asset'}</p>
-                    <span className={styles.invoiceVatLabel}>Total incl. VAT</span>
-                    <div className={styles.invoiceMetaList}>
-                      {invoiceMetaParts.map((part, index) => <span key={`${part}-${index}`}>{part}</span>)}
+                  <div className={styles.invoiceHeader}>
+                    <div className={styles.invoiceTitleBlock}>
+                      <h3 className={styles.invoiceTitle}>{invoice.supplierName || 'Unknown supplier'}</h3>
+                      <p className={styles.invoiceAsset}>{invoice.assetTitle || 'Saved asset'}</p>
+                      <div className={styles.invoiceMetaList}>
+                        {invoiceMetaParts.map((part, index) => <span key={`${part}-${index}`}>{part}</span>)}
+                      </div>
                     </div>
-                    {invoice.usageMetric !== 'none' && invoice.usageReading !== null ? (
-                      <small className={styles.invoiceUsage}>{invoice.usageReading.toLocaleString('en-ZA')} {invoice.usageMetric}</small>
-                    ) : null}
-                  </div>
 
-                  <div className={styles.rowActions}>
-                    {invoice.document?.uploadUrl ? (
-                      <a className={`${styles.secondaryButtonSmall} ${styles.invoiceOpenButton}`} href={invoice.document.uploadUrl} target="_blank" rel="noreferrer">
-                        Open file
-                      </a>
-                    ) : null}
-                    <button type="button" className={`${styles.secondaryButtonSmall} ${styles.invoiceEditButton}`} onClick={() => editInvoice(invoice)}>Edit</button>
-                    <button
-                      type="button"
-                      className={`${styles.dangerButtonSmall} ${styles.invoiceDeleteButton}`}
-                      onClick={() => void deleteInvoice(invoice)}
-                      disabled={deletingInvoiceId === invoice.id}
-                    >
-                      {deletingInvoiceId === invoice.id ? 'Deleting...' : 'Delete'}
-                    </button>
+                    <div className={styles.invoiceHeaderAside}>
+                      <div className={styles.invoiceValueBlock}>
+                        <strong className={styles.invoicePrice}>{formatMoney(invoice.totalIncVat)}</strong>
+                        <span className={styles.invoiceVatLabel}>Total incl. VAT</span>
+                      </div>
+
+                      <div className={styles.rowActions}>
+                        {invoice.document?.uploadUrl ? (
+                          <a className={`${styles.secondaryButtonSmall} ${styles.invoiceOpenButton}`} href={invoice.document.uploadUrl} target="_blank" rel="noreferrer">
+                            <OpenFileIcon className={styles.buttonIcon} />
+                            <span>Open file</span>
+                          </a>
+                        ) : null}
+                        <button type="button" className={`${styles.secondaryButtonSmall} ${styles.invoiceEditButton}`} onClick={() => editInvoice(invoice)}>
+                          <EditIcon className={styles.buttonIcon} />
+                          <span>Edit</span>
+                        </button>
+                        <button
+                          type="button"
+                          className={`${styles.dangerButtonSmall} ${styles.invoiceDeleteButton}`}
+                          onClick={() => openDeleteInvoiceDialog(invoice)}
+                          disabled={deletingInvoiceId === invoice.id}
+                        >
+                          <TrashIcon className={styles.buttonIcon} />
+                          <span>{deletingInvoiceId === invoice.id ? 'Deleting...' : 'Delete'}</span>
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </article>
               );
@@ -1569,6 +1621,66 @@ export default function MyInvoicesClient() {
           </form>
         </div>
       ) : null}
+
+      {deleteCandidateInvoice ? (
+        <div className={`${styles.modalBackdrop} ${styles.confirmDeleteBackdrop}`} onClick={closeDeleteInvoiceDialog}>
+          <div
+            className={styles.deleteConfirmModal}
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="delete-cost-confirm-title"
+            aria-describedby="delete-cost-confirm-copy"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              className={styles.deleteConfirmCloseButton}
+              onClick={closeDeleteInvoiceDialog}
+              aria-label="Close delete confirmation"
+              disabled={deletingInvoiceId === deleteCandidateInvoice.id}
+            >
+              <CloseIcon className={styles.buttonIcon} />
+            </button>
+
+            <div className={styles.deleteConfirmContent}>
+              <h3 id="delete-cost-confirm-title">Are you sure you want to delete this?</h3>
+              <p id="delete-cost-confirm-copy">
+                All data will be lost. This permanently removes <strong>{deleteCandidateInvoice.supplierName || 'this cost record'}</strong> from the Asset Cost Tracking System,
+                including saved invoice details and any attached invoice/photo file.
+              </p>
+
+              <div className={styles.deleteConfirmAsset}>
+                <span>Selected cost record</span>
+                <strong>{deleteCandidateInvoice.supplierName || 'Unknown supplier'}</strong>
+                <small>
+                  {[
+                    deleteCandidateInvoice.assetTitle || 'Saved asset',
+                    deleteCandidateInvoice.invoiceNumber || null,
+                    deleteCandidateInvoice.vatAmount !== null ? `VAT ${formatMoney(deleteCandidateInvoice.vatAmount)}` : null,
+                    formatMoney(deleteCandidateInvoice.totalIncVat),
+                  ].filter(Boolean).join(' · ')}
+                </small>
+              </div>
+
+              <div className={styles.deleteConfirmActions}>
+                <button type="button" className={styles.secondaryButton} onClick={closeDeleteInvoiceDialog} disabled={deletingInvoiceId === deleteCandidateInvoice.id}>
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  className={`${styles.primaryButton} ${styles.deleteConfirmButton}`}
+                  onClick={() => void confirmDeleteInvoice()}
+                  disabled={deletingInvoiceId === deleteCandidateInvoice.id}
+                >
+                  <span>{deletingInvoiceId === deleteCandidateInvoice.id ? 'Deleting...' : 'Yes, delete cost record'}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
     </main>
   );
 }
