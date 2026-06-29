@@ -1420,3 +1420,157 @@
     width: 100%;
   }
 }
+
+/* === Cost of Ownership export modal: mirror Asset Register export modal === */
+.reportModal {
+  width: min(100%, 960px);
+  max-height: none;
+  overflow: visible;
+  display: grid;
+  grid-template-rows: auto auto auto;
+  gap: 1.12rem;
+  padding: clamp(1.5rem, 2.35vw, 1.95rem);
+  border-radius: 2rem;
+}
+
+.reportModal .modalHeader {
+  align-items: flex-start;
+  gap: 1.15rem;
+  margin: 0;
+  padding: 0 0 1.18rem;
+  border-bottom: 1px solid rgba(216, 226, 236, 0.9);
+}
+
+.reportModal .modalHeader > div {
+  min-width: 0;
+  display: grid;
+  gap: 0.48rem;
+}
+
+.reportModal .modalHeader h2 {
+  margin: 0;
+  color: #0f3329;
+  font-size: clamp(1.86rem, 2.65vw, 2.38rem);
+  font-weight: 760;
+  line-height: 1.03;
+  letter-spacing: -0.052em;
+}
+
+.reportModal .modalHeader p {
+  display: none;
+}
+
+.reportModal .closeButton {
+  width: 3.15rem;
+  min-width: 3.15rem;
+  height: 3.15rem;
+  min-height: 3.15rem;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #f7fbff 0%, #eef5fb 100%);
+  border-color: rgba(210, 222, 237, 0.98);
+}
+
+.reportModal .modalDivider {
+  display: none;
+}
+
+.reportChoiceGrid {
+  gap: 1rem;
+  padding: 0;
+}
+
+.reportOption {
+  min-height: 5.9rem;
+  grid-template-columns: 3.8rem minmax(0, 1fr);
+  gap: 1rem;
+  padding: 1.12rem 1.18rem;
+  border-radius: 1.24rem;
+}
+
+.reportGraphic {
+  width: 3.8rem;
+  min-width: 3.8rem;
+  height: 3.8rem;
+}
+
+.reportGraphicImage {
+  width: 2.38rem;
+  height: 2.38rem;
+}
+
+.reportTitleBlock {
+  gap: 0.3rem;
+}
+
+.reportTitleBlock strong {
+  font-size: 1.08rem;
+  line-height: 1.2;
+}
+
+.reportTitleBlock small {
+  font-size: 0.93rem;
+  line-height: 1.45;
+}
+
+.reportModal .modalFooter {
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.8rem;
+  margin: 0.12rem 0 0;
+  padding: 0;
+  border-top: 0;
+  background: transparent;
+}
+
+.reportModal .modalFooter .primaryButton,
+.reportModal .modalFooter .secondaryButton {
+  min-height: 3.35rem;
+  border-radius: 1rem;
+  padding-inline: 1.28rem;
+  font-size: 1rem;
+  font-weight: 850;
+}
+
+.reportModal .modalFooter .primaryButton {
+  min-width: 13.5rem;
+}
+
+@media (max-width: 900px) {
+  .reportModal {
+    width: min(100%, calc(100vw - 1rem));
+    max-height: min(88vh, calc(100dvh - 1rem));
+    overflow-y: auto;
+    padding: 1rem;
+    border-radius: 1.35rem;
+  }
+
+  .reportModal .modalHeader {
+    margin-bottom: 0;
+    padding-bottom: 1rem;
+  }
+
+  .reportModal .modalHeader h2 {
+    font-size: 1.58rem;
+  }
+
+  .reportChoiceGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .reportOption {
+    min-height: auto;
+    padding: 1rem;
+    border-radius: 1.12rem;
+  }
+
+  .reportModal .modalFooter {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .reportModal .modalFooter .primaryButton,
+  .reportModal .modalFooter .secondaryButton {
+    width: 100%;
+    min-width: 0;
+  }
+}
