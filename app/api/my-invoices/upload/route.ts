@@ -49,7 +49,7 @@ export async function POST(request: Request) {
   const userId = await currentUserId();
 
   if (!userId) {
-    return NextResponse.json({ ok: false, error: 'You must be signed in to upload invoice files.' }, { status: 401 });
+    return NextResponse.json({ ok: false, error: 'You must be signed in to upload invoice/photo files.' }, { status: 401 });
   }
 
   let formData: FormData;
@@ -64,19 +64,19 @@ export async function POST(request: Request) {
   const file = pickUploadFile(formData);
 
   if (!assetId) {
-    return NextResponse.json({ ok: false, error: 'Choose an asset before uploading an invoice.' }, { status: 400 });
+    return NextResponse.json({ ok: false, error: 'Choose an asset before uploading an invoice/photo.' }, { status: 400 });
   }
 
   if (!file) {
-    return NextResponse.json({ ok: false, error: 'Choose a PDF or photo invoice to upload.' }, { status: 400 });
+    return NextResponse.json({ ok: false, error: 'Choose a PDF or photo to upload.' }, { status: 400 });
   }
 
   if (!INVOICE_UPLOAD_MIME_TYPES.has(file.type)) {
-    return NextResponse.json({ ok: false, error: 'Upload a PDF, JPG, PNG or WEBP invoice file.' }, { status: 400 });
+    return NextResponse.json({ ok: false, error: 'Upload a PDF, JPG, PNG or WEBP invoice/photo file.' }, { status: 400 });
   }
 
   if (file.size > MAX_ASSET_REGISTER_DOCUMENT_UPLOAD_BYTES) {
-    return NextResponse.json({ ok: false, error: 'The invoice file is too large for this free MVP upload.' }, { status: 400 });
+    return NextResponse.json({ ok: false, error: 'The invoice/photo file is too large for this free MVP upload.' }, { status: 400 });
   }
 
   try {
@@ -94,10 +94,10 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ ok: true, document });
   } catch (error) {
-    console.error('Aim4price My Invoices upload failed.', error);
+    console.error('Aim4price My Cost Ledger upload failed.', error);
     const message = error instanceof Error && error.message === 'ASSET_NOT_FOUND'
       ? 'The selected asset could not be found for this account.'
-      : 'The invoice upload could not be saved.';
+      : 'The invoice/photo upload could not be saved.';
 
     return NextResponse.json({ ok: false, error: message }, { status: message.includes('asset') ? 404 : 500 });
   }
