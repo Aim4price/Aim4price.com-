@@ -150,6 +150,13 @@ type InvoiceFilterState = {
   month: string;
 };
 
+type FilterDropdownKey = 'asset' | 'source' | 'year' | 'month';
+
+type FilterSelectOption = {
+  value: string;
+  label: string;
+};
+
 type Notice = {
   tone: NoticeTone;
   message: string;
@@ -177,6 +184,12 @@ const MONTH_OPTIONS = [
   'October',
   'November',
   'December',
+];
+
+const SOURCE_FILTER_OPTIONS: FilterSelectOption[] = [
+  { value: 'all', label: 'All cost sources' },
+  { value: 'manual', label: 'Manual cost records' },
+  { value: 'automatic', label: 'Uploaded invoice/photo records' },
 ];
 
 function IconBase(props: SVGProps<SVGSVGElement>) {
@@ -260,6 +273,78 @@ function CloseIcon(props: SVGProps<SVGSVGElement>) {
       <path d="m6 6 12 12" />
       <path d="m18 6-12 12" />
     </IconBase>
+  );
+}
+
+type FilterDropdownProps = {
+  label: string;
+  dropdownKey: FilterDropdownKey;
+  value: string;
+  options: FilterSelectOption[];
+  openDropdown: FilterDropdownKey | null;
+  disabled?: boolean;
+  onOpenChange: (key: FilterDropdownKey | null) => void;
+  onChange: (value: string) => void;
+};
+
+function FilterDropdown({
+  label,
+  dropdownKey,
+  value,
+  options,
+  openDropdown,
+  disabled = false,
+  onOpenChange,
+  onChange,
+}: FilterDropdownProps) {
+  const selectedOption = options.find((option) => option.value === value) ?? options[0];
+  const isOpen = openDropdown === dropdownKey && !disabled;
+
+  return (
+    <div className={styles.filterField}>
+      <span>{label}</span>
+      <div
+        className={`${styles.customFilterSelect} ${isOpen ? styles.customFilterSelectOpen : ''} ${disabled ? styles.customFilterSelectDisabled : ''}`}
+        data-filter-dropdown="true"
+      >
+        <button
+          type="button"
+          className={`${styles.customFilterSelectButton} ${isOpen ? styles.customFilterSelectButtonOpen : ''}`}
+          onClick={() => onOpenChange(isOpen ? null : dropdownKey)}
+          disabled={disabled}
+          aria-haspopup="listbox"
+          aria-expanded={isOpen}
+          aria-label={label}
+        >
+          <span className={styles.customFilterSelectButtonText}>{selectedOption?.label ?? 'Choose option'}</span>
+          <ChevronDownIcon className={styles.customFilterSelectChevron} />
+        </button>
+
+        {isOpen ? (
+          <div className={styles.customFilterSelectMenu} role="listbox" aria-label={label}>
+            {options.map((option) => {
+              const isSelected = option.value === value;
+
+              return (
+                <button
+                  type="button"
+                  key={`${dropdownKey}-${option.value}`}
+                  className={`${styles.customFilterSelectOption} ${isSelected ? styles.customFilterSelectOptionActive : ''}`}
+                  onClick={() => {
+                    onChange(option.value);
+                    onOpenChange(null);
+                  }}
+                  role="option"
+                  aria-selected={isSelected}
+                >
+                  <span className={styles.customFilterSelectOptionLabel}>{option.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
+      </div>
+    </div>
   );
 }
 
@@ -421,6 +506,7 @@ export default function MyInvoicesClient() {
   const [activeFilters, setActiveFilters] = useState<InvoiceFilterState>(DEFAULT_FILTERS);
   const [draftFilters, setDraftFilters] = useState<InvoiceFilterState>(DEFAULT_FILTERS);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [openFilterDropdown, setOpenFilterDropdown] = useState<FilterDropdownKey | null>(null);
   const [downloadOpen, setDownloadOpen] = useState(false);
   const [reportFormat, setReportFormat] = useState<ReportFormat>('pdf');
   const [draft, setDraft] = useState<InvoiceDraft>(buildEmptyDraft('manual'));
@@ -492,6 +578,21 @@ export default function MyInvoicesClient() {
     return Array.from(years).sort((a, b) => b - a);
   }, [activeFilters.year, availableYears, draftFilters.year]);
 
+  const assetFilterOptions = useMemo<FilterSelectOption[]>(() => [
+    { value: 'all', label: 'All saved assets' },
+    ...assets.map((asset) => ({ value: asset.id, label: asset.title })),
+  ], [assets]);
+
+  const yearFilterOptions = useMemo<FilterSelectOption[]>(() => [
+    { value: 'all', label: 'All invoice years' },
+    ...yearOptions.map((year) => ({ value: String(year), label: String(year) })),
+  ], [yearOptions]);
+
+  const monthFilterOptions = useMemo<FilterSelectOption[]>(() => [
+    { value: 'all', label: 'All invoice months' },
+    ...MONTH_OPTIONS.map((month, index) => ({ value: String(index + 1), label: month })),
+  ], []);
+
   const activeFilterCount = useMemo(() => {
     return [
       activeFilters.assetId !== 'all',
@@ -522,6 +623,28 @@ export default function MyInvoicesClient() {
       document.documentElement.style.overflow = previousHtmlOverflow;
     };
   }, [modalOpen]);
+
+  useEffect(() => {
+    if (!filterOpen || !openFilterDropdown) return undefined;
+
+    function handlePointerDown(event: MouseEvent) {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      if (!target.closest('[data-filter-dropdown="true"]')) setOpenFilterDropdown(null);
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') setOpenFilterDropdown(null);
+    }
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [filterOpen, openFilterDropdown]);
 
   async function fetchInvoiceData(filters: InvoiceFilterState): Promise<InvoicesResponse> {
     const response = await fetch(buildInvoiceListUrl(filters), { cache: 'no-store' });
@@ -611,22 +734,26 @@ export default function MyInvoicesClient() {
 
   function openFilterPanel() {
     setDraftFilters(activeFilters);
+    setOpenFilterDropdown(null);
     setFilterOpen(true);
   }
 
   function closeFilterPanel() {
     setDraftFilters(activeFilters);
+    setOpenFilterDropdown(null);
     setFilterOpen(false);
   }
 
   function applyFilters() {
     setActiveFilters(draftFilters);
+    setOpenFilterDropdown(null);
     setFilterOpen(false);
   }
 
   function clearFilters() {
     setDraftFilters(DEFAULT_FILTERS);
     setActiveFilters(DEFAULT_FILTERS);
+    setOpenFilterDropdown(null);
     setFilterOpen(false);
   }
 
@@ -966,53 +1093,48 @@ export default function MyInvoicesClient() {
             <div className={styles.modalHeader}>
               <div>
                 <h2>Filter cost records</h2>
-                <p>Limit the saved cost record list and report filters.</p>
               </div>
               <button type="button" className={styles.closeButton} onClick={closeFilterPanel} aria-label="Close filter"><CloseIcon /></button>
             </div>
             <div className={styles.modalDivider} />
             <div className={styles.filterGrid}>
-              <label>
-                <span>Asset</span>
-                <div className={styles.selectWrap}>
-                  <select value={draftFilters.assetId} onChange={(event) => setDraftFilters((current) => ({ ...current, assetId: event.target.value }))}>
-                    <option value="all">All assets</option>
-                    {assets.map((asset) => <option key={asset.id} value={asset.id}>{asset.title}</option>)}
-                  </select>
-                  <ChevronDownIcon className={styles.selectArrow} />
-                </div>
-              </label>
-              <label>
-                <span>Source</span>
-                <div className={styles.selectWrap}>
-                  <select value={draftFilters.source} onChange={(event) => setDraftFilters((current) => ({ ...current, source: event.target.value as FilterSource }))}>
-                    <option value="all">All sources</option>
-                    <option value="manual">Manual</option>
-                    <option value="automatic">Automatic</option>
-                  </select>
-                  <ChevronDownIcon className={styles.selectArrow} />
-                </div>
-              </label>
-              <label>
-                <span>Year</span>
-                <div className={styles.selectWrap}>
-                  <select value={draftFilters.year} onChange={(event) => setDraftFilters((current) => ({ ...current, year: event.target.value, month: event.target.value === 'all' ? 'all' : current.month }))}>
-                    <option value="all">All years</option>
-                    {yearOptions.map((year) => <option key={year} value={String(year)}>{year}</option>)}
-                  </select>
-                  <ChevronDownIcon className={styles.selectArrow} />
-                </div>
-              </label>
-              <label>
-                <span>Month</span>
-                <div className={styles.selectWrap}>
-                  <select value={draftFilters.month} onChange={(event) => setDraftFilters((current) => ({ ...current, month: event.target.value }))} disabled={draftFilters.year === 'all'}>
-                    <option value="all">All months</option>
-                    {MONTH_OPTIONS.map((month, index) => <option key={month} value={String(index + 1)}>{month}</option>)}
-                  </select>
-                  <ChevronDownIcon className={styles.selectArrow} />
-                </div>
-              </label>
+              <FilterDropdown
+                label="Asset"
+                dropdownKey="asset"
+                value={draftFilters.assetId}
+                options={assetFilterOptions}
+                openDropdown={openFilterDropdown}
+                onOpenChange={setOpenFilterDropdown}
+                onChange={(value) => setDraftFilters((current) => ({ ...current, assetId: value }))}
+              />
+              <FilterDropdown
+                label="Source"
+                dropdownKey="source"
+                value={draftFilters.source}
+                options={SOURCE_FILTER_OPTIONS}
+                openDropdown={openFilterDropdown}
+                onOpenChange={setOpenFilterDropdown}
+                onChange={(value) => setDraftFilters((current) => ({ ...current, source: value as FilterSource }))}
+              />
+              <FilterDropdown
+                label="Year"
+                dropdownKey="year"
+                value={draftFilters.year}
+                options={yearFilterOptions}
+                openDropdown={openFilterDropdown}
+                onOpenChange={setOpenFilterDropdown}
+                onChange={(value) => setDraftFilters((current) => ({ ...current, year: value, month: value === 'all' ? 'all' : current.month }))}
+              />
+              <FilterDropdown
+                label="Month"
+                dropdownKey="month"
+                value={draftFilters.month}
+                options={monthFilterOptions}
+                openDropdown={openFilterDropdown}
+                onOpenChange={setOpenFilterDropdown}
+                onChange={(value) => setDraftFilters((current) => ({ ...current, month: value }))}
+                disabled={draftFilters.year === 'all'}
+              />
             </div>
             <div className={styles.modalFooter}>
               <button type="button" className={styles.secondaryButton} onClick={closeFilterPanel}>Close</button>
