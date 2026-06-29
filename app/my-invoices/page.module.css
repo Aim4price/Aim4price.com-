@@ -345,13 +345,11 @@
 }
 
 .invoicePanel {
-  padding: clamp(1rem, 1.7vw, 1.35rem);
-  border: 1px solid rgba(198, 216, 223, 0.98);
-  border-radius: 1.55rem;
-  background:
-    radial-gradient(circle at 0% 0%, rgba(25, 116, 84, 0.04) 0%, rgba(25, 116, 84, 0) 34%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(248, 252, 253, 0.99) 100%);
-  box-shadow: 0 18px 42px rgba(18, 35, 39, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.96);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .savedListHeader {
@@ -359,9 +357,9 @@
   grid-template-columns: minmax(0, 1fr);
   align-items: center;
   gap: 1rem;
-  margin-bottom: 1rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid var(--line);
+  margin-bottom: clamp(1.05rem, 1.45vw, 1.35rem);
+  padding: 0 0 clamp(0.95rem, 1.35vw, 1.18rem);
+  border-bottom: 1px solid rgba(216, 226, 236, 0.9);
 }
 
 .savedListHeader h2,
@@ -419,47 +417,66 @@
 
 .invoiceList {
   display: grid;
-  gap: 0.85rem;
+  gap: 1.05rem;
 }
 
 .invoiceRow {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(9rem, auto) auto;
-  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, auto);
   align-items: center;
-  padding: 1rem;
-  border: 1px solid var(--line-strong);
-  border-radius: 1.15rem;
-  background: #ffffff;
-  box-shadow: 0 12px 24px rgba(18, 35, 39, 0.045);
+  gap: 1.3rem;
+  min-height: clamp(8.6rem, 10vw, 10.25rem);
+  padding: 1.3rem 1.38rem;
+  border: 1px solid rgba(217, 227, 235, 0.96);
+  border-radius: 1.58rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f9fbfc 100%);
+  box-shadow:
+    0 12px 26px rgba(16, 31, 28, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.invoiceRow:hover {
+  transform: translateY(-1px);
+  border-color: rgba(197, 211, 223, 0.98);
+  box-shadow:
+    0 18px 34px rgba(16, 31, 28, 0.055),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
 }
 
 .invoiceMain {
   min-width: 0;
+  display: grid;
+  align-content: center;
+  gap: 0.48rem;
 }
 
 .invoiceTopLine {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.35rem;
+  gap: 0.55rem;
+  margin-bottom: 0.02rem;
 }
 
 .invoiceTopLine > span:not(.sourceBadge),
 .invoiceMetaList span,
 .invoiceValue span,
 .invoiceValue small {
-  color: var(--text-muted);
-  font-size: 0.86rem;
-  font-weight: 850;
+  color: #657586;
+  font-size: 0.92rem;
+  font-weight: 760;
+  line-height: 1.3;
 }
 
 .sourceBadge {
   display: inline-flex;
   align-items: center;
-  min-height: 1.75rem;
-  padding: 0 0.68rem;
+  min-height: 1.82rem;
+  padding: 0 0.78rem;
   border: 1px solid transparent;
   border-radius: 999px;
   font-size: 0.78rem;
@@ -481,55 +498,107 @@
 }
 
 .invoiceMain h3 {
-  margin: 0.18rem 0;
-  color: var(--brand-dark);
-  font-size: 1.13rem;
+  margin: 0;
+  color: #0d3028;
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
+  font-size: clamp(1.42rem, 1.9vw, 1.72rem);
   font-weight: 900;
+  line-height: 1.08;
+  letter-spacing: -0.045em;
 }
 
 .invoiceMain p {
-  margin: 0 0 0.35rem;
-  color: #506173;
-  font-weight: 850;
+  margin: 0;
+  color: #637282;
+  font-size: 0.96rem;
+  font-weight: 650;
+  line-height: 1.45;
 }
 
 .invoiceMetaList {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem 0.72rem;
+  gap: 0.42rem 0.82rem;
+  margin-top: 0.02rem;
+}
+
+.invoiceMetaList span:first-child {
+  color: #3e4d61;
+  font-weight: 880;
+}
+
+.invoiceAside {
+  display: grid;
+  gap: 0.85rem;
+  justify-items: end;
+  align-content: center;
+  min-width: min(100%, 340px);
 }
 
 .invoiceValue {
   display: grid;
   justify-items: end;
-  gap: 0.15rem;
+  align-content: center;
+  gap: 0.16rem;
+  min-width: 230px;
+  width: 100%;
+  padding-left: 0.7rem;
   text-align: right;
 }
 
 .invoiceValue strong {
-  color: var(--brand-dark);
-  font-size: 1.25rem;
+  display: block;
+  margin: 0;
+  color: #0d3028;
+  font-size: clamp(1.5rem, 2.05vw, 1.9rem);
   font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.055em;
+  white-space: nowrap;
+}
+
+.invoiceValue span {
+  display: block;
+  margin: 0;
+  color: #647486;
+  font-size: 0.9rem;
+  font-weight: 780;
+  white-space: nowrap;
+}
+
+.invoiceValue small {
+  display: block;
+  margin: 0;
+  color: #68798a;
+  font-size: 0.9rem;
+  font-weight: 720;
+  white-space: nowrap;
 }
 
 .rowActions {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 0.45rem;
+  gap: 0.72rem;
 }
 
 .secondaryButtonSmall,
 .dangerButtonSmall {
-  min-height: 2.45rem;
-  padding: 0 0.8rem;
-  border-radius: 0.78rem;
-  font-size: 0.82rem;
+  min-width: 7.6rem;
+  min-height: 3.1rem;
+  padding: 0 1rem;
+  border-radius: 1rem;
+  border-width: 1.5px;
+  font-size: 0.96rem;
+  font-weight: 900;
+  box-shadow:
+    0 10px 22px rgba(31, 51, 71, 0.055),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
 }
 
 .secondaryButtonSmall {
   color: #183143;
-  background: #ffffff;
+  background: linear-gradient(180deg, #ffffff 0%, #f4f8fc 100%);
   border-color: var(--line-strong);
 }
 
@@ -537,6 +606,66 @@
   color: var(--danger);
   background: var(--danger-soft);
   border-color: #f0d0d0;
+}
+
+.invoiceOpenButton {
+  color: #0f5a43;
+  background: linear-gradient(180deg, #ffffff 0%, #eefbf4 100%);
+  border-color: #aedbc1;
+  box-shadow:
+    0 10px 22px rgba(10, 84, 61, 0.085),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.invoiceOpenButton:hover:not(:disabled) {
+  color: #083f2f;
+  background: linear-gradient(180deg, #ffffff 0%, #e4f8ee 100%);
+  border-color: #8fcaa9;
+  box-shadow:
+    0 14px 28px rgba(10, 84, 61, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+}
+
+.invoiceEditButton {
+  color: #123d66;
+  background: linear-gradient(180deg, #ffffff 0%, #eef7ff 100%);
+  border-color: #b9d8f4;
+  box-shadow:
+    0 10px 22px rgba(15, 59, 100, 0.085),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.invoiceEditButton:hover:not(:disabled) {
+  color: #123d66;
+  background: linear-gradient(180deg, #ffffff 0%, #e3f1ff 100%);
+  border-color: #9fc8ee;
+  box-shadow:
+    0 14px 28px rgba(15, 59, 100, 0.115),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+}
+
+.invoiceDeleteButton {
+  color: #b42318;
+  background: linear-gradient(180deg, #fffafa 0%, #fff1f1 100%);
+  border-color: #f2b8b5;
+  box-shadow:
+    0 10px 22px rgba(154, 51, 51, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.invoiceDeleteButton:hover:not(:disabled) {
+  color: #981b12;
+  background: linear-gradient(180deg, #fffafa 0%, #ffe7e7 100%);
+  border-color: #ee9e99;
+  box-shadow:
+    0 14px 28px rgba(154, 51, 51, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+}
+
+.secondaryButtonSmall:focus-visible,
+.dangerButtonSmall:focus-visible {
+  outline: 2px solid rgba(20, 112, 82, 0.22);
+  outline-offset: 0.22rem;
 }
 
 .emptyState {
@@ -1355,8 +1484,17 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
+  .invoiceAside {
+    width: 100%;
+    min-width: 0;
+    justify-items: start;
+  }
+
   .invoiceValue,
   .rowActions {
+    width: 100%;
+    min-width: 0;
+    padding-left: 0;
     justify-items: start;
     justify-content: flex-start;
     text-align: left;
@@ -1413,11 +1551,29 @@
     flex-direction: column-reverse;
   }
 
+  .invoiceRow {
+    min-height: auto;
+    padding: 1.05rem;
+    border-radius: 1.3rem;
+  }
+
+  .invoiceMain h3 {
+    font-size: 1.3rem;
+  }
+
+  .rowActions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .secondaryButtonSmall,
+  .dangerButtonSmall,
   .modalFooter button,
   .modalFooter a,
   .toolbarButtons button,
   .toolbarButtons a {
     width: 100%;
+    min-width: 0;
   }
 }
 

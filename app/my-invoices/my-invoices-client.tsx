@@ -1081,27 +1081,29 @@ export default function MyInvoicesClient() {
                   </div>
                 </div>
 
-                <div className={styles.invoiceValue}>
-                  <span>Total incl. VAT</span>
-                  <strong>{formatMoney(invoice.totalIncVat)}</strong>
-                  {invoice.usageMetric !== 'none' && invoice.usageReading !== null ? <small>{invoice.usageReading.toLocaleString('en-ZA')} {invoice.usageMetric}</small> : null}
-                </div>
+                <div className={styles.invoiceAside}>
+                  <div className={styles.invoiceValue}>
+                    <strong>{formatMoney(invoice.totalIncVat)}</strong>
+                    <span>Total incl. VAT</span>
+                    {invoice.usageMetric !== 'none' && invoice.usageReading !== null ? <small>{invoice.usageReading.toLocaleString('en-ZA')} {invoice.usageMetric}</small> : null}
+                  </div>
 
-                <div className={styles.rowActions}>
-                  {invoice.document?.uploadUrl ? (
-                    <a className={styles.secondaryButtonSmall} href={invoice.document.uploadUrl} target="_blank" rel="noreferrer">
-                      Open file
-                    </a>
-                  ) : null}
-                  <button type="button" className={styles.secondaryButtonSmall} onClick={() => editInvoice(invoice)}>Edit</button>
-                  <button
-                    type="button"
-                    className={styles.dangerButtonSmall}
-                    onClick={() => void deleteInvoice(invoice)}
-                    disabled={deletingInvoiceId === invoice.id}
-                  >
-                    {deletingInvoiceId === invoice.id ? 'Deleting...' : 'Delete'}
-                  </button>
+                  <div className={styles.rowActions}>
+                    {invoice.document?.uploadUrl ? (
+                      <a className={`${styles.secondaryButtonSmall} ${styles.invoiceOpenButton}`} href={invoice.document.uploadUrl} target="_blank" rel="noreferrer">
+                        Open file
+                      </a>
+                    ) : null}
+                    <button type="button" className={`${styles.secondaryButtonSmall} ${styles.invoiceEditButton}`} onClick={() => editInvoice(invoice)}>Edit</button>
+                    <button
+                      type="button"
+                      className={`${styles.dangerButtonSmall} ${styles.invoiceDeleteButton}`}
+                      onClick={() => void deleteInvoice(invoice)}
+                      disabled={deletingInvoiceId === invoice.id}
+                    >
+                      {deletingInvoiceId === invoice.id ? 'Deleting...' : 'Delete'}
+                    </button>
+                  </div>
                 </div>
               </article>
             )) : null}
