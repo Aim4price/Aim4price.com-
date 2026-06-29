@@ -43,11 +43,11 @@ function errorMessage(error: unknown): string {
   const message = typeof error === 'object' && error !== null ? (error as ErrorWithMessage).message : '';
 
   if (message === 'ASSET_NOT_FOUND') return 'The selected asset could not be found for this account.';
-  if (message === 'INVOICE_DOCUMENT_NOT_FOUND') return 'The selected invoice document could not be found for this asset.';
-  if (message === 'INVOICE_CREATE_FAILED') return 'The invoice could not be saved. Please try again.';
+  if (message === 'INVOICE_DOCUMENT_NOT_FOUND') return 'The selected invoice/photo document could not be found for this asset.';
+  if (message === 'INVOICE_CREATE_FAILED') return 'The cost record could not be saved. Please try again.';
   if (typeof message === 'string' && message.trim()) return message;
 
-  return 'The My Invoices request could not be completed.';
+  return 'The My Cost Ledger request could not be completed.';
 }
 
 async function currentUserId() {
@@ -59,14 +59,14 @@ export async function GET(request: NextRequest) {
   const userId = await currentUserId();
 
   if (!userId) {
-    return NextResponse.json({ ok: false, error: 'You must be signed in to view My Invoices.' }, { status: 401 });
+    return NextResponse.json({ ok: false, error: 'You must be signed in to view My Cost Ledger.' }, { status: 401 });
   }
 
   try {
     const data = await listMyInvoicesData(userId, parseFilters(request));
     return NextResponse.json({ ok: true, ...data });
   } catch (error) {
-    console.error('Aim4price My Invoices GET failed.', error);
+    console.error('Aim4price My Cost Ledger GET failed.', error);
     return NextResponse.json({ ok: false, error: errorMessage(error) }, { status: 500 });
   }
 }
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
   const userId = await currentUserId();
 
   if (!userId) {
-    return NextResponse.json({ ok: false, error: 'You must be signed in to save invoices.' }, { status: 401 });
+    return NextResponse.json({ ok: false, error: 'You must be signed in to save cost records.' }, { status: 401 });
   }
 
   let body: MyInvoiceDraftInput;
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
   try {
     body = (await request.json()) as MyInvoiceDraftInput;
   } catch {
-    return NextResponse.json({ ok: false, error: 'Invalid invoice payload.' }, { status: 400 });
+    return NextResponse.json({ ok: false, error: 'Invalid cost record payload.' }, { status: 400 });
   }
 
   try {
@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
       ...data,
     });
   } catch (error) {
-    console.error('Aim4price My Invoices POST failed.', error);
+    console.error('Aim4price My Cost Ledger POST failed.', error);
     const message = errorMessage(error);
     const status = message.includes('asset') || message.includes('document') ? 404 : 400;
     return NextResponse.json({ ok: false, error: message }, { status });
