@@ -210,7 +210,7 @@ const ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
   { href: '/marketplace', label: 'Marketplace', mobileOnly: true },
   { href: '/asset-map', label: 'My Asset Map' },
   { href: '/fuel', label: 'My Fuel Ledger' },
-  { href: '/my-invoices', label: 'My Invoices' },
+  { href: '/my-invoices', label: 'My Cost Ledger' },
 ];
 
 function buildNavItems(accountType: AccountType | 'public' | null): NavItem[] {
