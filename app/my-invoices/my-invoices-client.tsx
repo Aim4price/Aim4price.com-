@@ -171,6 +171,8 @@ const DEFAULT_FILTERS: InvoiceFilterState = {
   month: 'all',
 };
 
+const INVOICE_PAGE_SIZE = 10;
+
 const MONTH_OPTIONS = [
   'January',
   'February',
@@ -424,6 +426,10 @@ function sourceLabel(source: InvoiceSource): string {
   return source === 'automatic' ? 'Automatic' : 'Manual';
 }
 
+function recordLabel(count: number): string {
+  return count === 1 ? 'record' : 'records';
+}
+
 function captureMethodLabel(source: InvoiceSource): string {
   return source === 'automatic' ? 'Automatic capture' : 'Manual entry';
 }
@@ -548,6 +554,7 @@ export default function MyInvoicesClient() {
   const [activeFilters, setActiveFilters] = useState<InvoiceFilterState>(DEFAULT_FILTERS);
   const [draftFilters, setDraftFilters] = useState<InvoiceFilterState>(DEFAULT_FILTERS);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [currentInvoicePage, setCurrentInvoicePage] = useState(1);
   const [openFilterDropdown, setOpenFilterDropdown] = useState<FilterDropdownKey | null>(null);
   const [filterAssetSearch, setFilterAssetSearch] = useState('');
   const [downloadOpen, setDownloadOpen] = useState(false);
@@ -612,6 +619,16 @@ export default function MyInvoicesClient() {
     });
   }, [activeFilters.source, invoiceSearch, invoices]);
 
+  const totalInvoicePages = useMemo(() => Math.max(1, Math.ceil(visibleInvoices.length / INVOICE_PAGE_SIZE)), [visibleInvoices.length]);
+  const safeInvoicePage = Math.min(currentInvoicePage, totalInvoicePages);
+  const paginatedInvoices = useMemo(() => {
+    const startIndex = (safeInvoicePage - 1) * INVOICE_PAGE_SIZE;
+    return visibleInvoices.slice(startIndex, startIndex + INVOICE_PAGE_SIZE);
+  }, [safeInvoicePage, visibleInvoices]);
+  const pageStartNumber = visibleInvoices.length ? (safeInvoicePage - 1) * INVOICE_PAGE_SIZE + 1 : 0;
+  const pageEndNumber = visibleInvoices.length ? Math.min(safeInvoicePage * INVOICE_PAGE_SIZE, visibleInvoices.length) : 0;
+  const shouldShowPagination = visibleInvoices.length > INVOICE_PAGE_SIZE;
+
   const yearOptions = useMemo(() => {
     const years = new Set(availableYears);
     for (const value of [activeFilters.year, draftFilters.year]) {
@@ -651,7 +668,22 @@ export default function MyInvoicesClient() {
   const flowTitle = flow === 'asset-automatic' ? 'Choose asset for uploaded cost' : 'Choose asset for manual cost';
   const formTitle = flow === 'review' ? 'Review cost details' : 'Enter cost manually';
   const hasInvoiceSearch = invoiceSearch.trim().length > 0;
+  const listSummaryText = isLoading
+    ? 'Loading cost records...'
+    : shouldShowPagination
+      ? `${pageStartNumber.toLocaleString('en-ZA')}–${pageEndNumber.toLocaleString('en-ZA')} shown from ${visibleInvoices.length.toLocaleString('en-ZA')} ${recordLabel(visibleInvoices.length)}`
+      : visibleInvoices.length === invoices.length
+        ? `${visibleInvoices.length.toLocaleString('en-ZA')} cost ${recordLabel(visibleInvoices.length)}`
+        : `${visibleInvoices.length.toLocaleString('en-ZA')} shown from ${invoices.length.toLocaleString('en-ZA')} ${recordLabel(invoices.length)}`;
   const modalOpen = sourceChoiceOpen || assetPickerOpen || flow === 'upload' || formOpen || filterOpen || downloadOpen;
+
+  useEffect(() => {
+    setCurrentInvoicePage(1);
+  }, [activeFilters.assetId, activeFilters.source, activeFilters.year, activeFilters.month, invoiceSearch]);
+
+  useEffect(() => {
+    setCurrentInvoicePage((page) => Math.min(page, totalInvoicePages));
+  }, [totalInvoicePages]);
 
   useEffect(() => {
     if (!modalOpen) return undefined;
@@ -1055,11 +1087,8 @@ export default function MyInvoicesClient() {
         </section>
 
         <section className={styles.invoicePanel} aria-label="Saved cost records">
-          <div className={styles.savedListHeader}>
-            <div>
-              <h2>Saved cost records</h2>
-              <p>{isLoading ? 'Loading saved cost records...' : `${visibleInvoices.length.toLocaleString('en-ZA')} shown from ${invoices.length.toLocaleString('en-ZA')} saved cost records.`}</p>
-            </div>
+          <div className={styles.costListSummary} aria-live="polite">
+            <span>{listSummaryText}</span>
           </div>
 
           <div className={styles.invoiceList}>
@@ -1069,7 +1098,7 @@ export default function MyInvoicesClient() {
               <div className={styles.emptyState}>No asset costs saved yet. Add a manual cost or upload an invoice/photo.</div>
             ) : null}
 
-            {!isLoading ? visibleInvoices.map((invoice) => {
+            {!isLoading ? paginatedInvoices.map((invoice) => {
               const invoiceMetaParts = [
                 invoice.invoiceNumber || 'No invoice number',
                 invoice.vatAmount !== null ? `VAT ${formatMoney(invoice.vatAmount)}` : null,
@@ -1079,11 +1108,6 @@ export default function MyInvoicesClient() {
               return (
                 <article className={styles.invoiceRow} key={invoice.id}>
                   <div className={styles.invoiceMain}>
-                    <div className={styles.invoiceTopLine}>
-                      <span>{captureMethodLabel(invoice.source)}</span>
-                      <span aria-hidden="true">•</span>
-                      <span>{formatDate(invoice.invoiceDate)}</span>
-                    </div>
                     <h3>{invoice.supplierName || 'Unknown supplier'}</h3>
                     <p>{invoice.assetTitle || 'Saved asset'}</p>
                     <div className={styles.invoiceMetaList}>
@@ -1119,6 +1143,28 @@ export default function MyInvoicesClient() {
               );
             }) : null}
           </div>
+
+          {!isLoading && shouldShowPagination ? (
+            <nav className={styles.paginationRow} aria-label="Cost records pagination">
+              <button
+                type="button"
+                className={styles.paginationButton}
+                onClick={() => setCurrentInvoicePage((page) => Math.max(1, page - 1))}
+                disabled={safeInvoicePage <= 1}
+              >
+                Previous
+              </button>
+              <span className={styles.paginationStatus}>Page {safeInvoicePage.toLocaleString('en-ZA')} of {totalInvoicePages.toLocaleString('en-ZA')}</span>
+              <button
+                type="button"
+                className={styles.paginationButton}
+                onClick={() => setCurrentInvoicePage((page) => Math.min(totalInvoicePages, page + 1))}
+                disabled={safeInvoicePage >= totalInvoicePages}
+              >
+                Next
+              </button>
+            </nav>
+          ) : null}
         </section>
       </section>
 
@@ -1330,7 +1376,7 @@ export default function MyInvoicesClient() {
             <div className={styles.modalHeader}>
               <div>
                 <h2>Upload invoice/photo</h2>
-                <p>{selectedAsset?.title ?? 'Selected asset'} · Automatic</p>
+                <p>{selectedAsset?.title ?? 'Selected asset'} · Automatic capture</p>
               </div>
               <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close"><CloseIcon /></button>
             </div>
@@ -1366,7 +1412,7 @@ export default function MyInvoicesClient() {
             <div className={styles.modalHeader}>
               <div>
                 <h2>{formTitle}</h2>
-                <p>{selectedAsset?.title ?? 'Selected asset'} · {draft.source === 'automatic' ? 'Automatic' : 'Manual'}</p>
+                <p>{selectedAsset?.title ?? 'Selected asset'} · {captureMethodLabel(draft.source)}</p>
               </div>
               <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close"><CloseIcon /></button>
             </div>
