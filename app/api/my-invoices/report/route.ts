@@ -163,7 +163,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Aim4price My Invoices report failed.', error);
+    console.error('Aim4price My Cost Ledger report failed.', error);
     return NextResponse.json({ ok: false, error: 'The Cost of Ownership report could not be generated.' }, { status: 500 });
   }
 }
