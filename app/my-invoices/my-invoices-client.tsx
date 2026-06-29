@@ -424,6 +424,10 @@ function sourceLabel(source: InvoiceSource): string {
   return source === 'automatic' ? 'Automatic' : 'Manual';
 }
 
+function captureMethodLabel(source: InvoiceSource): string {
+  return source === 'automatic' ? 'Automatic capture' : 'Manual entry';
+}
+
 function buildEmptyDraft(source: InvoiceSource): InvoiceDraft {
   return {
     supplierName: '',
@@ -1065,48 +1069,55 @@ export default function MyInvoicesClient() {
               <div className={styles.emptyState}>No asset costs saved yet. Add a manual cost or upload an invoice/photo.</div>
             ) : null}
 
-            {!isLoading ? visibleInvoices.map((invoice) => (
-              <article className={styles.invoiceRow} key={invoice.id}>
-                <div className={styles.invoiceMain}>
-                  <div className={styles.invoiceTopLine}>
-                    <span className={`${styles.sourceBadge} ${invoice.source === 'automatic' ? styles.sourceAutomatic : styles.sourceManual}`}>{sourceLabel(invoice.source)}</span>
-                    <span>{formatDate(invoice.invoiceDate)}</span>
-                  </div>
-                  <h3>{invoice.supplierName || 'Unknown supplier'}</h3>
-                  <p>{invoice.assetTitle || 'Saved asset'}</p>
-                  <div className={styles.invoiceMetaList}>
-                    <span>{invoice.invoiceNumber ? `Invoice ${invoice.invoiceNumber}` : 'No invoice number'}</span>
-                    {invoice.vatAmount !== null ? <span>VAT {formatMoney(invoice.vatAmount)}</span> : null}
-                    {invoice.updatedAtIso ? <span>Updated {formatDateTime(invoice.updatedAtIso)}</span> : null}
-                  </div>
-                </div>
+            {!isLoading ? visibleInvoices.map((invoice) => {
+              const invoiceMetaParts = [
+                invoice.invoiceNumber || 'No invoice number',
+                invoice.vatAmount !== null ? `VAT ${formatMoney(invoice.vatAmount)}` : null,
+                invoice.updatedAtIso ? `Updated ${formatDateTime(invoice.updatedAtIso)}` : null,
+              ].filter((part): part is string => Boolean(part));
 
-                <div className={styles.invoiceAside}>
-                  <div className={styles.invoiceValue}>
-                    <strong>{formatMoney(invoice.totalIncVat)}</strong>
-                    <span>Total incl. VAT</span>
-                    {invoice.usageMetric !== 'none' && invoice.usageReading !== null ? <small>{invoice.usageReading.toLocaleString('en-ZA')} {invoice.usageMetric}</small> : null}
+              return (
+                <article className={styles.invoiceRow} key={invoice.id}>
+                  <div className={styles.invoiceMain}>
+                    <div className={styles.invoiceTopLine}>
+                      <span>{captureMethodLabel(invoice.source)}</span>
+                      <span aria-hidden="true">•</span>
+                      <span>{formatDate(invoice.invoiceDate)}</span>
+                    </div>
+                    <h3>{invoice.supplierName || 'Unknown supplier'}</h3>
+                    <p>{invoice.assetTitle || 'Saved asset'}</p>
+                    <div className={styles.invoiceMetaList}>
+                      {invoiceMetaParts.map((part, index) => <span key={`${part}-${index}`}>{part}</span>)}
+                    </div>
                   </div>
 
-                  <div className={styles.rowActions}>
-                    {invoice.document?.uploadUrl ? (
-                      <a className={`${styles.secondaryButtonSmall} ${styles.invoiceOpenButton}`} href={invoice.document.uploadUrl} target="_blank" rel="noreferrer">
-                        Open file
-                      </a>
-                    ) : null}
-                    <button type="button" className={`${styles.secondaryButtonSmall} ${styles.invoiceEditButton}`} onClick={() => editInvoice(invoice)}>Edit</button>
-                    <button
-                      type="button"
-                      className={`${styles.dangerButtonSmall} ${styles.invoiceDeleteButton}`}
-                      onClick={() => void deleteInvoice(invoice)}
-                      disabled={deletingInvoiceId === invoice.id}
-                    >
-                      {deletingInvoiceId === invoice.id ? 'Deleting...' : 'Delete'}
-                    </button>
+                  <div className={styles.invoiceAside}>
+                    <div className={styles.invoiceValue}>
+                      <strong>{formatMoney(invoice.totalIncVat)}</strong>
+                      <span>Total incl. VAT</span>
+                      {invoice.usageMetric !== 'none' && invoice.usageReading !== null ? <small>{invoice.usageReading.toLocaleString('en-ZA')} {invoice.usageMetric}</small> : null}
+                    </div>
+
+                    <div className={styles.rowActions}>
+                      {invoice.document?.uploadUrl ? (
+                        <a className={`${styles.secondaryButtonSmall} ${styles.invoiceOpenButton}`} href={invoice.document.uploadUrl} target="_blank" rel="noreferrer">
+                          Open file
+                        </a>
+                      ) : null}
+                      <button type="button" className={`${styles.secondaryButtonSmall} ${styles.invoiceEditButton}`} onClick={() => editInvoice(invoice)}>Edit</button>
+                      <button
+                        type="button"
+                        className={`${styles.dangerButtonSmall} ${styles.invoiceDeleteButton}`}
+                        onClick={() => void deleteInvoice(invoice)}
+                        disabled={deletingInvoiceId === invoice.id}
+                      >
+                        {deletingInvoiceId === invoice.id ? 'Deleting...' : 'Delete'}
+                      </button>
+                    </div>
                   </div>
-                </div>
-              </article>
-            )) : null}
+                </article>
+              );
+            }) : null}
           </div>
         </section>
       </section>
