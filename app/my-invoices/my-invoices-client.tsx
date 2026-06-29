@@ -824,7 +824,7 @@ export default function MyInvoicesClient() {
 
         <section className={styles.pageTitleBlock}>
           <div>
-            <h1>ASSET COST LEDGER</h1>
+            <h1>ASSET COST TRACKING SYSTEM</h1>
           </div>
         </section>
 
