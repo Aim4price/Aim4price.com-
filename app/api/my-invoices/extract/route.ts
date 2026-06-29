@@ -30,7 +30,7 @@ export async function POST(request: Request) {
   const userId = await currentUserId();
 
   if (!userId) {
-    return NextResponse.json({ ok: false, error: 'You must be signed in to extract invoice data.' }, { status: 401 });
+    return NextResponse.json({ ok: false, error: 'You must be signed in to extract cost details.' }, { status: 401 });
   }
 
   let payload: ExtractPayload;
@@ -45,11 +45,11 @@ export async function POST(request: Request) {
   const assetId = asText(payload.assetId);
 
   if (!documentId) {
-    return NextResponse.json({ ok: false, error: 'Choose an uploaded invoice document first.' }, { status: 400 });
+    return NextResponse.json({ ok: false, error: 'Choose an uploaded invoice/photo document first.' }, { status: 400 });
   }
 
   if (!assetId) {
-    return NextResponse.json({ ok: false, error: 'Choose the asset before extracting invoice data.' }, { status: 400 });
+    return NextResponse.json({ ok: false, error: 'Choose the asset before extracting cost details.' }, { status: 400 });
   }
 
   try {
@@ -62,7 +62,7 @@ export async function POST(request: Request) {
     const upload = await getInvoiceDocumentUpload({ userId, documentId });
 
     if (!upload || upload.document.assetId !== assetId) {
-      return NextResponse.json({ ok: false, error: 'The uploaded invoice document could not be found for this asset.' }, { status: 404 });
+      return NextResponse.json({ ok: false, error: 'The uploaded invoice/photo document could not be found for this asset.' }, { status: 404 });
     }
 
     const extraction = extractInvoiceFromUpload({
@@ -82,11 +82,11 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ ok: true, extraction, document });
   } catch (error) {
-    console.error('Aim4price My Invoices extraction failed.', error);
+    console.error('Aim4price My Cost Ledger extraction failed.', error);
     return NextResponse.json(
       {
         ok: false,
-        error: 'Aim4price could not read this invoice automatically. You can still complete the invoice manually.',
+        error: 'Aim4price could not read this invoice/photo automatically. You can still complete the cost details manually.',
       },
       { status: 500 },
     );
