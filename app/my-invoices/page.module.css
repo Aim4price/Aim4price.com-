@@ -352,23 +352,6 @@
   box-shadow: none;
 }
 
-.costListSummary {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  min-height: 1.75rem;
-  margin: -0.1rem 0 0.85rem;
-  padding: 0 0 0.58rem;
-  border-bottom: 1px solid rgba(216, 226, 236, 0.78);
-}
-
-.costListSummary span {
-  color: #728194;
-  font-size: 0.88rem;
-  font-weight: 760;
-  line-height: 1.35;
-}
-
 .modalHeader h2,
 .uploadPanel h3 {
   margin: 0;
@@ -392,11 +375,9 @@
 
 .invoiceRow {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(300px, auto);
-  align-items: stretch;
-  gap: 1.22rem;
-  min-height: clamp(7.85rem, 9.4vw, 9.35rem);
-  padding: 1.22rem 1.28rem;
+  gap: clamp(0.95rem, 1.45vw, 1.18rem);
+  min-height: clamp(7.5rem, 8.8vw, 8.95rem);
+  padding: clamp(1.12rem, 1.55vw, 1.34rem) clamp(1.18rem, 1.85vw, 1.45rem);
   border: 1px solid rgba(217, 227, 235, 0.96);
   border-radius: 1.58rem;
   background: linear-gradient(180deg, #ffffff 0%, #f9fbfc 100%);
@@ -417,39 +398,75 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.98);
 }
 
-.invoiceMain {
+.invoiceCardTop {
   min-width: 0;
   display: grid;
-  align-content: start;
-  gap: 0.38rem;
-  padding-top: 0.05rem;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  grid-template-areas:
+    "title price"
+    "asset vat"
+    "meta usage";
+  column-gap: clamp(1.25rem, 3.2vw, 2.75rem);
+  row-gap: 0.32rem;
+  align-items: start;
 }
 
-.invoiceMain h3 {
+.invoiceTitle,
+.invoicePrice {
   margin: 0;
   color: #0d3028;
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: clamp(1.26rem, 1.58vw, 1.54rem);
+  font-size: clamp(1.5rem, 2.05vw, 1.9rem);
   font-weight: 900;
-  line-height: 1.08;
-  letter-spacing: -0.04em;
+  line-height: 1;
+  letter-spacing: -0.055em;
+}
+
+.invoiceTitle {
+  grid-area: title;
+  min-width: 0;
   overflow-wrap: anywhere;
 }
 
-.invoiceMain p {
+.invoicePrice {
+  grid-area: price;
+  justify-self: end;
+  display: block;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.invoiceAsset {
+  grid-area: asset;
+  min-width: 0;
   margin: 0;
   color: #637282;
   font-size: 0.94rem;
   font-weight: 650;
-  line-height: 1.45;
+  line-height: 1.32;
   overflow-wrap: anywhere;
 }
 
+.invoiceVatLabel {
+  grid-area: vat;
+  justify-self: end;
+  display: block;
+  margin: 0;
+  color: #647486;
+  font-size: 0.88rem;
+  font-weight: 780;
+  line-height: 1.15;
+  text-align: right;
+  white-space: nowrap;
+}
+
 .invoiceMetaList {
+  grid-area: meta;
+  min-width: 0;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  margin-top: 0.04rem;
+  margin-top: 0.02rem;
   color: #657586;
 }
 
@@ -472,52 +489,16 @@
   font-weight: 760;
 }
 
-.invoiceAside {
-  min-width: min(100%, 320px);
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 1rem;
-}
-
-.invoiceValue {
-  display: grid;
-  justify-items: end;
-  align-content: start;
-  gap: 0.12rem;
-  min-width: 220px;
-  width: 100%;
-  padding-left: 0.65rem;
-  text-align: right;
-}
-
-.invoiceValue strong {
-  display: block;
-  margin: 0;
-  color: #0d3028;
-  font-size: clamp(1.5rem, 2.05vw, 1.9rem);
-  font-weight: 900;
-  line-height: 1;
-  letter-spacing: -0.055em;
-  white-space: nowrap;
-}
-
-.invoiceValue span {
-  display: block;
-  margin: 0;
-  color: #647486;
-  font-size: 0.88rem;
-  font-weight: 780;
-  white-space: nowrap;
-}
-
-.invoiceValue small {
+.invoiceUsage {
+  grid-area: usage;
+  justify-self: end;
   display: block;
   margin: 0;
   color: #68798a;
   font-size: 0.88rem;
   font-weight: 720;
+  line-height: 1.2;
+  text-align: right;
   white-space: nowrap;
 }
 
@@ -1478,25 +1459,11 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .costListSummary {
-    justify-content: flex-start;
-  }
 
-  .invoiceAside {
-    width: 100%;
-    min-width: 0;
-    align-items: flex-start;
-    justify-content: flex-start;
-  }
-
-  .invoiceValue,
   .rowActions {
     width: 100%;
     min-width: 0;
-    padding-left: 0;
-    justify-items: start;
     justify-content: flex-start;
-    text-align: left;
   }
 }
 
@@ -1555,8 +1522,28 @@
     border-radius: 1.3rem;
   }
 
-  .invoiceMain h3 {
-    font-size: 1.3rem;
+  .invoiceCardTop {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "title"
+      "price"
+      "asset"
+      "vat"
+      "meta"
+      "usage";
+    row-gap: 0.3rem;
+  }
+
+  .invoiceTitle,
+  .invoicePrice {
+    font-size: 1.34rem;
+  }
+
+  .invoicePrice,
+  .invoiceVatLabel,
+  .invoiceUsage {
+    justify-self: start;
+    text-align: left;
   }
 
   .rowActions {
@@ -1586,7 +1573,9 @@
   }
 }
 
-/* === Cost of Ownership export modal: mirror Asset Register export modal === */
+/* === Shared Cost of Ownership modal system === */
+.filterModal,
+.sourceChoiceModal,
 .reportModal {
   width: min(100%, 960px);
   max-height: none;
@@ -1598,6 +1587,8 @@
   border-radius: 2rem;
 }
 
+.filterModal .modalHeader,
+.sourceChoiceModal .modalHeader,
 .reportModal .modalHeader {
   align-items: flex-start;
   gap: 1.15rem;
@@ -1606,12 +1597,16 @@
   border-bottom: 1px solid rgba(216, 226, 236, 0.9);
 }
 
+.filterModal .modalHeader > div,
+.sourceChoiceModal .modalHeader > div,
 .reportModal .modalHeader > div {
   min-width: 0;
   display: grid;
   gap: 0.48rem;
 }
 
+.filterModal .modalHeader h2,
+.sourceChoiceModal .modalHeader h2,
 .reportModal .modalHeader h2 {
   margin: 0;
   color: #0f3329;
@@ -1625,6 +1620,16 @@
   display: none;
 }
 
+.sourceChoiceModal .modalHeader p {
+  margin: 0;
+  color: #627386;
+  font-size: 0.98rem;
+  font-weight: 720;
+  line-height: 1.38;
+}
+
+.filterModal .closeButton,
+.sourceChoiceModal .closeButton,
 .reportModal .closeButton {
   width: 3.15rem;
   min-width: 3.15rem;
@@ -1635,15 +1640,34 @@
   border-color: rgba(210, 222, 237, 0.98);
 }
 
+.filterModal .modalDivider,
+.sourceChoiceModal .modalDivider,
 .reportModal .modalDivider {
   display: none;
 }
 
+.filterModal .filterGrid,
+.sourceChoiceGrid,
 .reportChoiceGrid {
   gap: 1rem;
   padding: 0;
 }
 
+.filterModal .filterGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.filterModal .filterField {
+  gap: 0.58rem;
+}
+
+.filterModal .customFilterSelectButton {
+  min-height: 3.48rem;
+  border-radius: 1.08rem;
+  font-size: 1rem;
+}
+
+.sourceChoiceOption,
 .reportOption {
   min-height: 5.9rem;
   grid-template-columns: 3.8rem minmax(0, 1fr);
@@ -1652,6 +1676,7 @@
   border-radius: 1.24rem;
 }
 
+.choiceGraphic,
 .reportGraphic {
   width: 3.8rem;
   min-width: 3.8rem;
@@ -1663,20 +1688,25 @@
   height: 2.38rem;
 }
 
+.choiceTitleBlock,
 .reportTitleBlock {
   gap: 0.3rem;
 }
 
+.choiceTitleBlock strong,
 .reportTitleBlock strong {
   font-size: 1.08rem;
   line-height: 1.2;
 }
 
+.choiceTitleBlock small,
 .reportTitleBlock small {
   font-size: 0.93rem;
   line-height: 1.45;
 }
 
+.filterModal .modalFooter,
+.sourceChoiceModal .modalFooter,
 .reportModal .modalFooter {
   justify-content: flex-end;
   align-items: center;
@@ -1687,6 +1717,10 @@
   background: transparent;
 }
 
+.filterModal .modalFooter .primaryButton,
+.filterModal .modalFooter .secondaryButton,
+.sourceChoiceModal .modalFooter .primaryButton,
+.sourceChoiceModal .modalFooter .secondaryButton,
 .reportModal .modalFooter .primaryButton,
 .reportModal .modalFooter .secondaryButton {
   min-height: 3.35rem;
@@ -1696,11 +1730,14 @@
   font-weight: 850;
 }
 
+.filterModal .modalFooter .primaryButton,
 .reportModal .modalFooter .primaryButton {
   min-width: 13.5rem;
 }
 
 @media (max-width: 900px) {
+  .filterModal,
+  .sourceChoiceModal,
   .reportModal {
     width: min(100%, calc(100vw - 1rem));
     max-height: min(88vh, calc(100dvh - 1rem));
@@ -1709,30 +1746,43 @@
     border-radius: 1.35rem;
   }
 
+  .filterModal .modalHeader,
+  .sourceChoiceModal .modalHeader,
   .reportModal .modalHeader {
     margin-bottom: 0;
     padding-bottom: 1rem;
   }
 
+  .filterModal .modalHeader h2,
+  .sourceChoiceModal .modalHeader h2,
   .reportModal .modalHeader h2 {
     font-size: 1.58rem;
   }
 
+  .filterModal .filterGrid,
+  .sourceChoiceGrid,
   .reportChoiceGrid {
     grid-template-columns: 1fr;
   }
 
+  .sourceChoiceOption,
   .reportOption {
     min-height: auto;
     padding: 1rem;
     border-radius: 1.12rem;
   }
 
+  .filterModal .modalFooter,
+  .sourceChoiceModal .modalFooter,
   .reportModal .modalFooter {
     flex-direction: column;
     align-items: stretch;
   }
 
+  .filterModal .modalFooter .primaryButton,
+  .filterModal .modalFooter .secondaryButton,
+  .sourceChoiceModal .modalFooter .primaryButton,
+  .sourceChoiceModal .modalFooter .secondaryButton,
   .reportModal .modalFooter .primaryButton,
   .reportModal .modalFooter .secondaryButton {
     width: 100%;

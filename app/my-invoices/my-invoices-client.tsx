@@ -426,9 +426,6 @@ function sourceLabel(source: InvoiceSource): string {
   return source === 'automatic' ? 'Automatic' : 'Manual';
 }
 
-function recordLabel(count: number): string {
-  return count === 1 ? 'record' : 'records';
-}
 
 function captureMethodLabel(source: InvoiceSource): string {
   return source === 'automatic' ? 'Automatic capture' : 'Manual entry';
@@ -625,8 +622,6 @@ export default function MyInvoicesClient() {
     const startIndex = (safeInvoicePage - 1) * INVOICE_PAGE_SIZE;
     return visibleInvoices.slice(startIndex, startIndex + INVOICE_PAGE_SIZE);
   }, [safeInvoicePage, visibleInvoices]);
-  const pageStartNumber = visibleInvoices.length ? (safeInvoicePage - 1) * INVOICE_PAGE_SIZE + 1 : 0;
-  const pageEndNumber = visibleInvoices.length ? Math.min(safeInvoicePage * INVOICE_PAGE_SIZE, visibleInvoices.length) : 0;
   const shouldShowPagination = visibleInvoices.length > INVOICE_PAGE_SIZE;
 
   const yearOptions = useMemo(() => {
@@ -668,13 +663,6 @@ export default function MyInvoicesClient() {
   const flowTitle = flow === 'asset-automatic' ? 'Choose asset for uploaded cost' : 'Choose asset for manual cost';
   const formTitle = flow === 'review' ? 'Review cost details' : 'Enter cost manually';
   const hasInvoiceSearch = invoiceSearch.trim().length > 0;
-  const listSummaryText = isLoading
-    ? 'Loading cost records...'
-    : shouldShowPagination
-      ? `${pageStartNumber.toLocaleString('en-ZA')}–${pageEndNumber.toLocaleString('en-ZA')} shown from ${visibleInvoices.length.toLocaleString('en-ZA')} ${recordLabel(visibleInvoices.length)}`
-      : visibleInvoices.length === invoices.length
-        ? `${visibleInvoices.length.toLocaleString('en-ZA')} cost ${recordLabel(visibleInvoices.length)}`
-        : `${visibleInvoices.length.toLocaleString('en-ZA')} shown from ${invoices.length.toLocaleString('en-ZA')} ${recordLabel(invoices.length)}`;
   const modalOpen = sourceChoiceOpen || assetPickerOpen || flow === 'upload' || formOpen || filterOpen || downloadOpen;
 
   useEffect(() => {
@@ -1087,10 +1075,6 @@ export default function MyInvoicesClient() {
         </section>
 
         <section className={styles.invoicePanel} aria-label="Saved cost records">
-          <div className={styles.costListSummary} aria-live="polite">
-            <span>{listSummaryText}</span>
-          </div>
-
           <div className={styles.invoiceList}>
             {isLoading ? <div className={styles.emptyState}>Loading saved cost records...</div> : null}
 
@@ -1107,37 +1091,34 @@ export default function MyInvoicesClient() {
 
               return (
                 <article className={styles.invoiceRow} key={invoice.id}>
-                  <div className={styles.invoiceMain}>
-                    <h3>{invoice.supplierName || 'Unknown supplier'}</h3>
-                    <p>{invoice.assetTitle || 'Saved asset'}</p>
+                  <div className={styles.invoiceCardTop}>
+                    <h3 className={styles.invoiceTitle}>{invoice.supplierName || 'Unknown supplier'}</h3>
+                    <strong className={styles.invoicePrice}>{formatMoney(invoice.totalIncVat)}</strong>
+                    <p className={styles.invoiceAsset}>{invoice.assetTitle || 'Saved asset'}</p>
+                    <span className={styles.invoiceVatLabel}>Total incl. VAT</span>
                     <div className={styles.invoiceMetaList}>
                       {invoiceMetaParts.map((part, index) => <span key={`${part}-${index}`}>{part}</span>)}
                     </div>
+                    {invoice.usageMetric !== 'none' && invoice.usageReading !== null ? (
+                      <small className={styles.invoiceUsage}>{invoice.usageReading.toLocaleString('en-ZA')} {invoice.usageMetric}</small>
+                    ) : null}
                   </div>
 
-                  <div className={styles.invoiceAside}>
-                    <div className={styles.invoiceValue}>
-                      <strong>{formatMoney(invoice.totalIncVat)}</strong>
-                      <span>Total incl. VAT</span>
-                      {invoice.usageMetric !== 'none' && invoice.usageReading !== null ? <small>{invoice.usageReading.toLocaleString('en-ZA')} {invoice.usageMetric}</small> : null}
-                    </div>
-
-                    <div className={styles.rowActions}>
-                      {invoice.document?.uploadUrl ? (
-                        <a className={`${styles.secondaryButtonSmall} ${styles.invoiceOpenButton}`} href={invoice.document.uploadUrl} target="_blank" rel="noreferrer">
-                          Open file
-                        </a>
-                      ) : null}
-                      <button type="button" className={`${styles.secondaryButtonSmall} ${styles.invoiceEditButton}`} onClick={() => editInvoice(invoice)}>Edit</button>
-                      <button
-                        type="button"
-                        className={`${styles.dangerButtonSmall} ${styles.invoiceDeleteButton}`}
-                        onClick={() => void deleteInvoice(invoice)}
-                        disabled={deletingInvoiceId === invoice.id}
-                      >
-                        {deletingInvoiceId === invoice.id ? 'Deleting...' : 'Delete'}
-                      </button>
-                    </div>
+                  <div className={styles.rowActions}>
+                    {invoice.document?.uploadUrl ? (
+                      <a className={`${styles.secondaryButtonSmall} ${styles.invoiceOpenButton}`} href={invoice.document.uploadUrl} target="_blank" rel="noreferrer">
+                        Open file
+                      </a>
+                    ) : null}
+                    <button type="button" className={`${styles.secondaryButtonSmall} ${styles.invoiceEditButton}`} onClick={() => editInvoice(invoice)}>Edit</button>
+                    <button
+                      type="button"
+                      className={`${styles.dangerButtonSmall} ${styles.invoiceDeleteButton}`}
+                      onClick={() => void deleteInvoice(invoice)}
+                      disabled={deletingInvoiceId === invoice.id}
+                    >
+                      {deletingInvoiceId === invoice.id ? 'Deleting...' : 'Delete'}
+                    </button>
                   </div>
                 </article>
               );
