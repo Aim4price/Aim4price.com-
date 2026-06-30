@@ -16,7 +16,6 @@ type RouteContext = {
 type ScanEventRequest = {
   hours?: unknown;
   lifeWorkedPercent?: unknown;
-  fuelPercent?: unknown;
   note?: unknown;
   operatorName?: unknown;
   photoUrls?: unknown;
@@ -31,25 +30,15 @@ function asText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
 }
 
+function hasSubmittedValue(value: unknown): boolean {
+  return !(value === null || typeof value === 'undefined' || value === '');
+}
+
 function normalizeHours(value: unknown): number | null {
   if (value === null || typeof value === 'undefined' || value === '') return null;
   const parsed = Number(value);
   if (!Number.isFinite(parsed) || parsed < 0) return null;
   return Math.round(parsed);
-}
-
-function normalizeLifeWorkedPercent(value: unknown): number | null {
-  if (value === null || typeof value === 'undefined' || value === '') return null;
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed) || parsed < 0 || parsed > 100) return null;
-  return Math.round(parsed * 10) / 10;
-}
-
-function normalizeFuelPercent(value: unknown): number | null {
-  if (value === null || typeof value === 'undefined' || value === '') return null;
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return null;
-  return Math.max(0, Math.min(100, Math.round(parsed)));
 }
 
 function normalizeCoordinates(value: unknown, maxAbsolute: number): number | null {
@@ -99,11 +88,10 @@ function normalizePhotoUrls(value: unknown): string[] {
 function hasMeaningfulUpdate(body: {
   hours: number | null;
   lifeWorkedPercent: number | null;
-  fuelPercent: number | null;
   note: string;
   photoUrls: string[];
 }): boolean {
-  return Boolean(body.hours !== null || body.lifeWorkedPercent !== null || body.fuelPercent !== null || body.note || body.photoUrls.length);
+  return Boolean(body.hours !== null || body.lifeWorkedPercent !== null || body.note || body.photoUrls.length);
 }
 
 export async function POST(request: NextRequest, context: RouteContext) {
@@ -128,10 +116,11 @@ export async function POST(request: NextRequest, context: RouteContext) {
     return NextResponse.json({ ok: false, error: 'Enter a valid scan update.' }, { status: 400 });
   }
 
+  const triedLifeWorkedPercentUpdate = hasSubmittedValue(body.lifeWorkedPercent);
+
   const payload = {
     hours: normalizeHours(body.hours),
-    lifeWorkedPercent: normalizeLifeWorkedPercent(body.lifeWorkedPercent),
-    fuelPercent: normalizeFuelPercent(body.fuelPercent),
+    lifeWorkedPercent: null,
     note: asText(body.note),
     operatorName: asText(body.operatorName).slice(0, 80),
     photoUrls: normalizePhotoUrls(body.photoUrls),
@@ -144,6 +133,13 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
   if (payload.operatorName.length < 2) {
     return NextResponse.json({ ok: false, error: 'Enter the name of the person scanning this asset.' }, { status: 400 });
+  }
+
+  if (triedLifeWorkedPercentUpdate && !hasMeaningfulUpdate(payload)) {
+    return NextResponse.json(
+      { ok: false, error: 'The QR scanner cannot update percentage worked. Update percentage worked from the main Aim4price asset workflow.' },
+      { status: 400 },
+    );
   }
 
   if (!hasMeaningfulUpdate(payload)) {
@@ -166,7 +162,6 @@ export async function POST(request: NextRequest, context: RouteContext) {
       operatorName: payload.operatorName,
       hours: payload.hours,
       lifeWorkedPercent: payload.lifeWorkedPercent,
-      fuelPercent: payload.fuelPercent,
       condition: null,
       note: payload.note || null,
       photoUrls: payload.photoUrls,
@@ -224,13 +219,6 @@ export async function POST(request: NextRequest, context: RouteContext) {
     if (error instanceof Error && error.message === 'USAGE_MODE_HOURS_CANNOT_ACCEPT_PERCENT') {
       return NextResponse.json(
         { ok: false, error: 'This asset is valued by hours or kilometres, so the QR page cannot update it with a lifetime worked percentage.' },
-        { status: 400 },
-      );
-    }
-
-    if (error instanceof Error && error.message === 'ASSET_DOES_NOT_ACCEPT_FUEL') {
-      return NextResponse.json(
-        { ok: false, error: 'Fuel cannot be updated for this asset because it is not marked as self-propelled.' },
         { status: 400 },
       );
     }
