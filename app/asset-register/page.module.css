@@ -26981,3 +26981,245 @@ button.documentOpenLink {
     0 18px 34px rgba(25, 116, 84, 0.26),
     inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
 }
+
+/* === Asset Register download reports modal: wider premium desktop layout === */
+.assetReportModal {
+  width: min(92vw, 1100px) !important;
+  max-width: 1100px !important;
+  max-height: min(90vh, calc(100dvh - 2.5rem)) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  padding: clamp(1.5rem, 2.2vw, 2.05rem) !important;
+  padding-right: clamp(1.5rem, 2.2vw, 2.05rem) !important;
+  border-radius: 2.08rem !important;
+}
+
+.assetFuelReportModal {
+  width: min(92vw, 940px) !important;
+  max-width: 940px !important;
+}
+
+.assetReportModalHeader {
+  flex: 0 0 auto !important;
+  align-items: center !important;
+  gap: 1.25rem !important;
+  margin-bottom: 1.25rem !important;
+  padding-bottom: 1.18rem !important;
+  border-bottom: 1px solid rgba(216, 226, 236, 0.92) !important;
+}
+
+.assetReportModalHeader .modalHeaderText {
+  min-width: 0 !important;
+}
+
+.assetReportModalHeader h3 {
+  margin: 0 !important;
+  color: #10352b !important;
+  font-size: clamp(2rem, 3vw, 2.55rem) !important;
+  font-weight: 760 !important;
+  line-height: 1.03 !important;
+  letter-spacing: -0.045em !important;
+}
+
+.assetReportModalHeader p {
+  margin-top: 0.48rem !important;
+  color: #607087 !important;
+  font-size: clamp(1rem, 1.2vw, 1.14rem) !important;
+  font-weight: 620 !important;
+  line-height: 1.35 !important;
+}
+
+.assetReportModal .modalCloseButton {
+  width: 3.4rem !important;
+  min-width: 3.4rem !important;
+  min-height: 3.4rem !important;
+}
+
+.assetReportModalBody {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  scrollbar-gutter: stable !important;
+  padding: 0.08rem 0.25rem 0.08rem 0 !important;
+  margin: 0 -0.1rem 0 0 !important;
+}
+
+.assetReportOptionsGrid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 1.15rem !important;
+  align-items: stretch !important;
+}
+
+.assetReportPrimaryOption {
+  grid-column: 1 / -1 !important;
+  justify-self: center !important;
+  justify-content: center !important;
+  width: min(100%, 780px) !important;
+  min-height: 6.55rem !important;
+}
+
+.assetReportPrimaryOption > span {
+  flex: 0 1 auto !important;
+}
+
+.assetReportOptionButton {
+  min-height: 6.85rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 1.25rem !important;
+  padding: 1.42rem 1.55rem !important;
+  border-radius: 1.42rem !important;
+  border: 1px solid rgba(213, 226, 237, 0.98) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f5f9fb 100%) !important;
+  box-shadow:
+    0 12px 24px rgba(16, 31, 28, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+  text-align: left !important;
+}
+
+.assetReportOptionButton:hover {
+  transform: translateY(-1px) !important;
+  border-color: rgba(181, 200, 216, 0.98) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #edf5fa 100%) !important;
+  box-shadow:
+    0 18px 34px rgba(16, 31, 28, 0.075),
+    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+}
+
+.assetReportOptionButton > .buttonIcon {
+  flex: 0 0 auto !important;
+  box-sizing: content-box !important;
+  width: 1.72rem !important;
+  height: 1.72rem !important;
+  padding: 0.54rem !important;
+  border-radius: 1.05rem !important;
+  color: #1d3b62 !important;
+  background: rgba(29, 59, 98, 0.055) !important;
+  border: 1px solid rgba(29, 59, 98, 0.12) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78) !important;
+}
+
+.assetReportOptionButton > span {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  display: grid !important;
+  gap: 0.34rem !important;
+  align-content: center !important;
+}
+
+.assetReportOptionButton strong {
+  color: #10352b !important;
+  font-size: clamp(1.15rem, 1.2vw, 1.28rem) !important;
+  font-weight: 780 !important;
+  line-height: 1.12 !important;
+  letter-spacing: -0.02em !important;
+  white-space: nowrap !important;
+}
+
+.assetReportOptionButton small {
+  color: #607287 !important;
+  font-size: clamp(0.95rem, 0.98vw, 1.03rem) !important;
+  font-weight: 570 !important;
+  line-height: 1.34 !important;
+  text-wrap: pretty !important;
+}
+
+@media (max-width: 1080px) {
+  .assetReportModal {
+    width: min(94vw, 980px) !important;
+  }
+
+  .assetReportOptionButton strong {
+    white-space: normal !important;
+  }
+}
+
+@media (max-width: 860px) {
+  .assetReportModal,
+  .assetFuelReportModal {
+    width: min(94vw, 760px) !important;
+    max-width: 760px !important;
+  }
+
+  .assetReportOptionsGrid {
+    grid-template-columns: 1fr !important;
+    gap: 0.88rem !important;
+  }
+
+  .assetReportPrimaryOption {
+    width: 100% !important;
+    justify-content: flex-start !important;
+  }
+
+  .assetReportPrimaryOption > span {
+    flex: 1 1 auto !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .assetReportModal,
+  .assetFuelReportModal {
+    width: min(100%, calc(100vw - 1rem)) !important;
+    max-height: calc(100dvh - 1.5rem) !important;
+    padding: 1rem !important;
+    padding-right: 1rem !important;
+    border-radius: 1.38rem !important;
+  }
+
+  .assetReportModalHeader {
+    gap: 0.75rem !important;
+    margin-bottom: 0.82rem !important;
+    padding-bottom: 0.82rem !important;
+  }
+
+  .assetReportModalHeader h3 {
+    font-size: clamp(1.36rem, 7.6vw, 1.82rem) !important;
+    line-height: 1.08 !important;
+  }
+
+  .assetReportModalHeader p {
+    font-size: 0.9rem !important;
+    line-height: 1.4 !important;
+  }
+
+  .assetReportModal .modalCloseButton {
+    width: 2.8rem !important;
+    min-width: 2.8rem !important;
+    min-height: 2.8rem !important;
+  }
+
+  .assetReportModalBody {
+    max-height: calc(100dvh - 10.5rem) !important;
+    overflow-y: auto !important;
+    padding-right: 0.2rem !important;
+  }
+
+  .assetReportOptionButton,
+  .assetReportPrimaryOption {
+    min-height: 5.25rem !important;
+    gap: 0.88rem !important;
+    padding: 1rem !important;
+    border-radius: 1.14rem !important;
+  }
+
+  .assetReportOptionButton > .buttonIcon {
+    width: 1.28rem !important;
+    height: 1.28rem !important;
+    padding: 0.42rem !important;
+    border-radius: 0.86rem !important;
+  }
+
+  .assetReportOptionButton strong {
+    font-size: 1.04rem !important;
+    white-space: normal !important;
+  }
+
+  .assetReportOptionButton small {
+    font-size: 0.86rem !important;
+    line-height: 1.38 !important;
+  }
+}
