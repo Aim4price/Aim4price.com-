@@ -27,6 +27,9 @@ type UsageDisplay = {
 const NA_VALUE = 'N/A';
 const VAT_RATE = 0.15;
 const VAT_MULTIPLIER = 1 + VAT_RATE;
+const PROPERTY_ASSET_LABEL = 'Property / Land / Building';
+const PROPERTY_YEAR_LABEL = 'Year built/bought';
+const PROPERTY_SIZE_SPEC_KEYS = ['propertySize', 'property_size', 'size', 'sizeText', 'size_text'] as const;
 
 const EXPORT_DETAILS_SECTION_ROW = 5;
 const EXPORT_NOTE_SECTION_ROW = 13;
@@ -53,7 +56,7 @@ const TABLE_HEADERS = [
   'Asset type',
   'Brand',
   'Model / description',
-  'Year model / built',
+  'Year model / built/bought',
   'Plate / QR code',
   'Drive',
   'Usage value',
@@ -216,6 +219,25 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+function isMeaningfulText(value: string): boolean {
+  const normalized = cleanText(value).toLowerCase();
+  return Boolean(normalized && normalized !== '-' && normalized !== '—' && normalized !== 'unknown' && normalized !== 'n/a');
+}
+
+function readTextFromSpecs(specs: Record<string, unknown>, keys: readonly string[]): string {
+  for (const key of keys) {
+    const value = cleanText(specs[key]);
+    if (isMeaningfulText(value)) return value;
+  }
+
+  return '';
+}
+
+function propertySizeDisplay(item: AssetRegisterItem): string {
+  const specs = isPlainRecord(item.specsJson) ? item.specsJson : {};
+  return readTextFromSpecs(specs, PROPERTY_SIZE_SPEC_KEYS) || NA_VALUE;
+}
+
 function readFinanceStatusChoice(item: AssetRegisterItem): AssetStatusChoice {
   const specs = isPlainRecord(item.specsJson) ? item.specsJson : {};
 
@@ -230,6 +252,10 @@ function readInsuranceStatusChoice(item: AssetRegisterItem): AssetStatusChoice {
 }
 
 function readLicenseStatusChoice(item: AssetRegisterItem): AssetStatusChoice {
+  if (item.kind === 'property') {
+    return 'not_applicable';
+  }
+
   const specs = isPlainRecord(item.specsJson) ? item.specsJson : {};
 
   return normalizeAssetStatusChoice(
@@ -330,7 +356,7 @@ function kindLabel(asset: AssetRegisterItem): string {
   if (asset.equipmentFamilyLabel) return asset.equipmentFamilyLabel;
   if (asset.kind === 'tractor') return 'Tractor';
   if (asset.kind === 'equipment' || Boolean(asset.brandName && asset.modelName && asset.yearModel)) return 'Equipment';
-  if (asset.kind === 'property') return 'Property/Buildings';
+  if (asset.kind === 'property') return PROPERTY_ASSET_LABEL;
   if (asset.kind === 'vehicle') return 'Vehicle';
   if (asset.kind === 'tools') return 'Tools';
   return 'Manual asset';
@@ -370,6 +396,10 @@ function normalizedUsageMetric(item: AssetRegisterItem): string {
 }
 
 function usageDisplay(item: AssetRegisterItem): UsageDisplay {
+  if (item.kind === 'property') {
+    return { value: null, unit: null };
+  }
+
   const specs = isPlainRecord(item.specsJson) ? item.specsJson : {};
   const rawUsageMode = String(
     specs.usageMode ??
@@ -545,17 +575,18 @@ function buildAssetRow(item: AssetRegisterItem, index: number): XlsxCellValue[] 
   const licenseStatus = readLicenseStatusChoice(item);
   const insuredValue = insuredValueExVat(item);
   const replacementPrice = replacementPriceExVat(item);
+  const isProperty = item.kind === 'property';
 
   return [
     textOrNaCell(item.title),
-    textOrNaCell(item.serialNumber),
+    isProperty ? naCell() : textOrNaCell(item.serialNumber),
     numberCell(index + 1),
     textOrNaCell(kindLabel(item)),
-    textOrNaCell(item.brandName),
-    textOrNaCell(item.modelName || item.typedModelName),
+    isProperty ? naCell() : textOrNaCell(item.brandName),
+    isProperty ? textOrNaCell(`Size: ${propertySizeDisplay(item)}`) : textOrNaCell(item.modelName || item.typedModelName),
     item.yearModel ? numberCell(item.yearModel) : naCell(),
-    textOrNaCell(buildPlateOrQrCode(item)),
-    textOrNaCell(formatDrive(item.drive)),
+    isProperty ? naCell() : textOrNaCell(buildPlateOrQrCode(item)),
+    isProperty ? naCell() : textOrNaCell(formatDrive(item.drive)),
     usage.value === null ? naCell() : numberCell(usage.value),
     textOrNaCell(usage.unit),
     textOrNaCell(conditionLabel(item.condition)),
@@ -567,8 +598,8 @@ function buildAssetRow(item: AssetRegisterItem, index: number): XlsxCellValue[] 
     textOrNaCell(readInsuranceNote(item), 'note'),
     insuredValue === null ? naCell() : moneyCell(insuredValue),
     insuredValue === null ? naCell() : vatIncludedFormulaCell(INSURED_VALUE_EX_VAT_COLUMN, rowNumber, insuredValue),
-    statusCellForChoice(licenseStatus, 'Licensed', 'Not licensed'),
-    licenseStatus === 'yes' ? textOrNaCell(readLicenseRegistrationNumber(item)) : naCell(),
+    isProperty ? naCell() : statusCellForChoice(licenseStatus, 'Licensed', 'Not licensed'),
+    !isProperty && licenseStatus === 'yes' ? textOrNaCell(readLicenseRegistrationNumber(item)) : naCell(),
     replacementPrice === null ? naCell() : moneyCell(replacementPrice),
     replacementPrice === null ? naCell() : vatIncludedFormulaCell(REPLACEMENT_VALUE_EX_VAT_COLUMN, rowNumber, replacementPrice),
   ];
@@ -922,6 +953,10 @@ function statusPdfLabel(status: AssetStatusChoice, positiveLabel: string, negati
 }
 
 function assetModelPdfLabel(item: AssetRegisterItem): string {
+  if (item.kind === 'property') {
+    return `Size: ${propertySizeDisplay(item)}`;
+  }
+
   return [item.brandName, item.modelName || item.typedModelName]
     .map((part) => cleanText(part))
     .filter(Boolean)
@@ -954,12 +989,22 @@ function buildPdfAssetLines(item: AssetRegisterItem, index: number): Array<{ tex
   const docs = Array.isArray(item.documents) ? item.documents.length : 0;
   const replacementPrice = replacementPriceExVat(item);
   const insuredValue = insuredValueExVat(item);
+  const isProperty = item.kind === 'property';
   const insuredValueSummary = insuredValue === null
     ? 'Insured value: N/A'
     : `Insured value: ${formatPdfMoney(insuredValue)} excl. VAT | ${formatPdfMoney(moneyInclVatTotal(insuredValue))} incl. VAT`;
   const replacementSummary = replacementPrice === null
     ? 'Replacement price: N/A'
     : `Replacement price: ${formatPdfMoney(replacementPrice)} excl. VAT | ${formatPdfMoney(moneyInclVatTotal(replacementPrice))} incl. VAT`;
+
+  if (isProperty) {
+    return [
+      { text: `${index + 1}. ${cleanText(item.title) || 'Asset'}`, font: 'F2', size: 11.2 },
+      { text: `${kindLabel(item)} | ${PROPERTY_YEAR_LABEL}: ${year} | Size: ${propertySizeDisplay(item)} | Condition: ${condition}`, font: 'F1', size: 9.2 },
+      { text: `Finance: ${financeStatus} | Insurance: ${insuranceStatus} | ${insuredValueSummary}`, font: 'F1', size: 9.2 },
+      { text: `Register value: ${formatPdfMoney(item.value)} excl. VAT | ${formatPdfMoney(moneyInclVatTotal(item.value))} incl. VAT | ${replacementSummary} | Method: ${methodLabel(item.selectedMethod)} | Documents: ${docs ? `${docs} saved` : 'None'}`, font: 'F2', size: 9.2 },
+    ];
+  }
 
   return [
     { text: `${index + 1}. ${cleanText(item.title) || 'Asset'}`, font: 'F2', size: 11.2 },
