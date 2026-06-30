@@ -486,10 +486,62 @@ function formatDateTime(value: string | null | undefined): string {
   if (Number.isNaN(parsed.getTime())) return '';
 
   return new Intl.DateTimeFormat('en-ZA', {
-    day: '2-digit',
+    day: 'numeric',
     month: 'short',
     year: 'numeric',
   }).format(parsed);
+}
+
+function conditionLabel(value: string | null | undefined): string {
+  const normalized = String(value ?? '').trim().toLowerCase();
+
+  if (!normalized) return '';
+
+  return (
+    {
+      excellent: 'Excellent',
+      good: 'Good',
+      fair: 'Fair',
+      used: 'Used',
+      serious: 'Requires attention',
+    }[normalized] ??
+    normalized
+      .replace(/[_-]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .split(' ')
+      .map((part) => part ? `${part[0].toUpperCase()}${part.slice(1)}` : '')
+      .join(' ')
+  );
+}
+
+function formatAssetUsageReading(value: number | null | undefined, metric: 'hours' | 'km'): string {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) return '';
+
+  const rounded = Math.round(value);
+  const unit = metric === 'km' ? 'km' : 'hours';
+
+  return `${rounded.toLocaleString('en-ZA')} ${unit}`;
+}
+
+function invoiceAssetYearLabel(invoice: InvoiceRecord): string {
+  const category = String(invoice.assetCategoryLabel ?? '').toLowerCase();
+  return category.includes('property') || category.includes('building') ? 'Year Built' : 'Year Model';
+}
+
+function buildInvoiceAssetMeta(invoice: InvoiceRecord): string {
+  const assetTitle = String(invoice.assetTitle || 'Saved asset').trim();
+  const assetYear = typeof invoice.assetYearModel === 'number' && Number.isFinite(invoice.assetYearModel) && invoice.assetYearModel > 0
+    ? `${invoiceAssetYearLabel(invoice)}: ${invoice.assetYearModel}`
+    : '';
+  const assetUsage = formatAssetUsageReading(invoice.assetUsageReading, invoice.assetUsageMetric);
+  const assetCondition = conditionLabel(invoice.assetCondition);
+  const details = [
+    assetYear,
+    assetUsage ? `Usage: ${assetUsage}` : '',
+    assetCondition ? `Condition: ${assetCondition}` : '',
+  ].filter(Boolean);
+
+  return details.length ? `${assetTitle} ${details.join(' • ')}` : assetTitle;
 }
 
 function sourceLabel(source: InvoiceSource): string {
@@ -1221,19 +1273,17 @@ export default function MyInvoicesClient() {
             ) : null}
 
             {!isLoading ? paginatedInvoices.map((invoice) => {
-              const invoiceMetaParts = [
-                invoice.invoiceNumber || 'No invoice number',
-                invoice.updatedAtIso ? `Updated ${formatDateTime(invoice.updatedAtIso)}` : null,
-              ].filter((part): part is string => Boolean(part));
+              const updatedLabel = invoice.updatedAtIso ? `Updated ${formatDateTime(invoice.updatedAtIso)}` : '';
 
               return (
                 <article className={styles.invoiceRow} key={invoice.id}>
                   <div className={styles.invoiceHeader}>
                     <div className={styles.invoiceTitleBlock}>
                       <h3 className={styles.invoiceTitle}>{invoice.supplierName || 'Unknown supplier'}</h3>
-                      <p className={styles.invoiceAsset}>{invoice.assetTitle || 'Saved asset'}</p>
+                      <p className={styles.invoiceAsset}>{buildInvoiceAssetMeta(invoice)}</p>
                       <div className={styles.invoiceMetaList}>
-                        {invoiceMetaParts.map((part, index) => <span key={`${part}-${index}`}>{part}</span>)}
+                        <span className={styles.invoiceValueMethodLabel}>{invoice.invoiceNumber || 'No invoice number'}</span>
+                        {updatedLabel ? <span className={styles.invoiceSavedDateLabel}>{updatedLabel}</span> : null}
                       </div>
                     </div>
 
