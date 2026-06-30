@@ -94,6 +94,7 @@ type RevalueAdvancedAssumptionsRequest = {
 type ConditionKey = 'excellent' | 'good' | 'fair' | 'used' | 'serious';
 type AssetConditionValue = ConditionKey | '';
 type UsageMetric = 'hours' | 'km';
+type ProjectionUsageMetric = UsageMetric | 'percent';
 type AssetStatusChoice = 'yes' | 'no' | 'unknown' | 'not_applicable';
 type ManualAssetStep = 1 | 2 | 3 | 4;
 type ExportFormat = 'pdf' | 'xlsx';
@@ -349,6 +350,12 @@ type RegisterAsset = {
   latestMaintenanceStatus?: LatestMaintenanceStatus | null;
 };
 
+type ReplacementPriceRevaluePrompt = {
+  asset: RegisterAsset;
+  oldReplacementPriceExVat: number | null;
+  newReplacementPriceExVat: number;
+};
+
 type AssetRegisterSummary = {
   id: string;
   userId: string;
@@ -451,6 +458,7 @@ type ProjectionSnapshot = {
   tractorExVat: number;
   loaderExVat: number;
   gpsExVat: number;
+  lifeWorkedPercent?: number | null;
 };
 
 type AssetFutureProjection = {
@@ -464,7 +472,8 @@ type AssetFutureProjection = {
   yearsForward: number;
   extraHours: number;
   extraUsage?: number;
-  usageMetric?: UsageMetric;
+  targetLifeWorkedPercent?: number | null;
+  usageMetric?: ProjectionUsageMetric;
   usageUnitLabel?: string;
   condition: ConditionKey;
   current: ProjectionSnapshot;
@@ -592,6 +601,7 @@ type ProjectionFormState = {
   targetYear: string;
   inflationRatePct: string;
   extraHours: string;
+  targetLifeWorkedPercent: string;
 };
 
 type PageItem = number | 'ellipsis';
@@ -837,13 +847,15 @@ const initialAssetDraft: AssetDraft = {
   condition: '',
 };
 
-function createDefaultProjectionForm(): ProjectionFormState {
+function createDefaultProjectionForm(asset?: RegisterAsset | null): ProjectionFormState {
   const nextYear = new Date().getFullYear() + 1;
+  const currentLifeWorkedPercent = asset && assetUsesPercentUsage(asset) ? getAssetLifeWorkedPercent(asset) : null;
 
   return {
     targetYear: String(nextYear),
     inflationRatePct: '5',
     extraHours: '',
+    targetLifeWorkedPercent: currentLifeWorkedPercent === null ? '' : formatLifetimePercentPlain(currentLifeWorkedPercent),
   };
 }
 
@@ -1872,6 +1884,11 @@ function formatLifetimePercentPlain(value: number | null | undefined): string {
   return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
 }
 
+function formatProjectionWorkedPercent(value: number | null | undefined): string {
+  const formatted = formatLifetimePercentPlain(value);
+  return formatted ? `${formatted}%` : '—';
+}
+
 function normalizeSettingsLifeWorkedInput(value: unknown): number | null {
   const normalized = String(value ?? '').replace(',', '.').trim();
   if (!normalized) return null;
@@ -2888,7 +2905,19 @@ function isMotorProjectionAsset(asset: Pick<RegisterAsset, 'kind' | 'specsJson'>
 }
 
 function canProjectFuturePrice(asset: RegisterAsset): boolean {
-  if (asset.valuationRunId === null || asset.selectedMethod === 'manual' || asset.yearModel === null) {
+  if (asset.valuationRunId === null || asset.selectedMethod === 'manual') {
+    return false;
+  }
+
+  if (assetUsesPercentUsage(asset)) {
+    return (
+      readAssetReplacementPriceExVat(asset) !== null &&
+      getAssetLifeWorkedPercent(asset) !== null &&
+      Boolean(asset.condition)
+    );
+  }
+
+  if (asset.yearModel === null) {
     return false;
   }
 
@@ -4289,6 +4318,7 @@ export default function AssetRegisterClient() {
   const [busyRevalueAssetId, setBusyRevalueAssetId] = useState<string | null>(null);
   const [busyMaintenanceStatusId, setBusyMaintenanceStatusId] = useState<string | null>(null);
   const [busyRevalueAction, setBusyRevalueAction] = useState<RevalueMethod | null>(null);
+  const [replacementPriceRevaluePrompt, setReplacementPriceRevaluePrompt] = useState<ReplacementPriceRevaluePrompt | null>(null);
   const [pricingPreview, setPricingPreview] = useState<PricingRevaluePreview | null>(null);
   const revaluePreviewRequestSeqRef = useRef(0);
   const [isLoadingPricingPreview, setIsLoadingPricingPreview] = useState(false);
@@ -4927,6 +4957,7 @@ export default function AssetRegisterClient() {
     isAssetSettingsModalOpen ||
     Boolean(pendingUsageOverride) ||
     isManualConversionConfirmOpen ||
+    Boolean(replacementPriceRevaluePrompt) ||
     Boolean(activeAsset) ||
     isQuoteModalOpen ||
     Boolean(deleteCandidateAsset) ||
@@ -4981,6 +5012,11 @@ export default function AssetRegisterClient() {
         if (!isSavingAssetSettings) {
           setIsManualConversionConfirmOpen(false);
         }
+        return;
+      }
+
+      if (replacementPriceRevaluePrompt) {
+        closeReplacementPriceRevaluePrompt();
         return;
       }
 
@@ -5075,7 +5111,7 @@ export default function AssetRegisterClient() {
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [activeAsset, anyModalOpen, deleteCandidateAsset, isAddChoiceModalOpen, isAssetFilterOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isPricingModalOpen, pricingPreview, isQrModalOpen, isRegisterShareModalOpen, isSummaryModalOpen, marketplaceAsset, projectionAsset, isQuoteModalOpen, quoteLeadStep, isAssetSettingsModalOpen, pendingUsageOverride, isManualConversionConfirmOpen, isSavingAssetSettings, photoViewer]);
+  }, [activeAsset, anyModalOpen, deleteCandidateAsset, isAddChoiceModalOpen, isAssetFilterOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isPricingModalOpen, pricingPreview, isQrModalOpen, isRegisterShareModalOpen, isSummaryModalOpen, marketplaceAsset, projectionAsset, isQuoteModalOpen, quoteLeadStep, isAssetSettingsModalOpen, pendingUsageOverride, isManualConversionConfirmOpen, isSavingAssetSettings, replacementPriceRevaluePrompt, photoViewer]);
 
   useEffect(() => {
     if (!isQuoteModalOpen || !selectedQuoteLeadType) return;
@@ -7217,6 +7253,14 @@ export default function AssetRegisterClient() {
         condition: showConditionField ? assetDraft.condition || null : null,
       };
 
+      const previousReplacementPriceExVat = editingAsset ? readAssetReplacementPriceExVat(editingAsset) : null;
+      const nextReplacementPriceExVat = Math.round(replacementPrice);
+      const shouldPromptReplacementPriceRevalue = Boolean(
+        editingAssetId !== null &&
+        isSavedAim4priceAsset(editingAsset) &&
+        previousReplacementPriceExVat !== nextReplacementPriceExVat,
+      );
+
       let assetIdToFocus: string | null = null;
 
       if (editingAssetId !== null) {
@@ -7246,6 +7290,14 @@ export default function AssetRegisterClient() {
           tone: 'success',
           message: 'Asset updated successfully.',
         });
+
+        if (shouldPromptReplacementPriceRevalue) {
+          setReplacementPriceRevaluePrompt({
+            asset: data.item,
+            oldReplacementPriceExVat: previousReplacementPriceExVat,
+            newReplacementPriceExVat: nextReplacementPriceExVat,
+          });
+        }
       } else {
         const response = await fetch('/api/asset-register', {
           method: 'POST',
@@ -7586,6 +7638,38 @@ export default function AssetRegisterClient() {
     setRevalueReplacementPriceError(null);
     setRevalueAdvancedError(null);
     setSaveReplacementPriceWithRevalue(false);
+  }
+
+  function closeReplacementPriceRevaluePrompt() {
+    setReplacementPriceRevaluePrompt(null);
+    setNotice({ tone: 'success', message: 'Asset updated successfully.' });
+  }
+
+  function openReplacementPriceRevaluePromptFlow() {
+    if (!replacementPriceRevaluePrompt) return;
+
+    const { asset, newReplacementPriceExVat } = replacementPriceRevaluePrompt;
+
+    setReplacementPriceRevaluePrompt(null);
+    setActiveAsset(asset);
+    setIsPricingModalOpen(false);
+    setPricingPreview({
+      asset,
+      method: 'aim4price',
+      replacementMode: 'custom',
+      replacementPriceExVat: null,
+      advancedAssumptions: null,
+      result: null,
+      error: null,
+      errorContext: null,
+    });
+    setIsLoadingPricingPreview(false);
+    setIsSavingPricingPreview(false);
+    setRevalueReplacementPriceInput(formatRegisterValueInput(newReplacementPriceExVat));
+    setRevalueReplacementPriceError(null);
+    setRevalueLifetimeUsageInput(formatRegisterValueInput(readAssetMaxLifetimeUsage(asset) ?? ''));
+    setRevalueAdvancedError(null);
+    setSaveReplacementPriceWithRevalue(true);
   }
 
   function handlePreviousRevalueStep() {
@@ -8861,7 +8945,11 @@ export default function AssetRegisterClient() {
   async function requestProjection(asset: RegisterAsset, formState: ProjectionFormState) {
     const targetYear = Math.round(Number(formState.targetYear));
     const inflationRatePct = Number(formState.inflationRatePct);
-    const extraUsage = formState.extraHours.trim() ? Number(formState.extraHours) : 0;
+    const usesPercentProjection = assetUsesPercentUsage(asset);
+    const currentLifeWorkedPercent = getAssetLifeWorkedPercent(asset);
+    const normalizedTargetLifeWorkedPercentInput = formState.targetLifeWorkedPercent.replace(',', '.').trim();
+    const targetLifeWorkedPercent = Number(normalizedTargetLifeWorkedPercentInput);
+    const extraUsage = !usesPercentProjection && formState.extraHours.trim() ? Number(formState.extraHours) : 0;
     const usageMetric = getAssetUsageMetric(asset);
     const extraUsageErrorLabel = usageMetric === 'km' ? 'Extra kilometres' : 'Extra hours';
 
@@ -8877,7 +8965,25 @@ export default function AssetRegisterClient() {
       return;
     }
 
-    if (!Number.isFinite(extraUsage) || extraUsage < 0) {
+    if (usesPercentProjection) {
+      if (!normalizedTargetLifeWorkedPercentInput || !Number.isFinite(targetLifeWorkedPercent)) {
+        setShouldScrollToProjectionResult(false);
+        setProjectionError('New Expected % must be a valid number.');
+        return;
+      }
+
+      if (targetLifeWorkedPercent < 0 || targetLifeWorkedPercent > 100) {
+        setShouldScrollToProjectionResult(false);
+        setProjectionError('New Expected % must be between 0% and 100%.');
+        return;
+      }
+
+      if (currentLifeWorkedPercent !== null && targetLifeWorkedPercent < currentLifeWorkedPercent) {
+        setShouldScrollToProjectionResult(false);
+        setProjectionError('New Expected % cannot be lower than the current worked percentage.');
+        return;
+      }
+    } else if (!Number.isFinite(extraUsage) || extraUsage < 0) {
       setShouldScrollToProjectionResult(false);
       setProjectionError(`${extraUsageErrorLabel} must be zero or greater.`);
       return;
@@ -8900,7 +9006,9 @@ export default function AssetRegisterClient() {
           assetId: asset.id,
           targetYear,
           inflationRatePct,
-          extraUsage,
+          ...(usesPercentProjection
+            ? { targetLifeWorkedPercent: Math.round(targetLifeWorkedPercent * 10) / 10 }
+            : { extraUsage }),
         }),
       });
 
@@ -8941,7 +9049,7 @@ export default function AssetRegisterClient() {
   }
 
   function openProjectionModal(asset: RegisterAsset) {
-    const defaults = createDefaultProjectionForm();
+    const defaults = createDefaultProjectionForm(asset);
     closeActionDialog();
     setProjectionAsset(asset);
     setProjectionForm(defaults);
@@ -9068,14 +9176,32 @@ export default function AssetRegisterClient() {
     ? pricingPreview.advancedAssumptions?.maxLifetimeUsage ??
       (pricingPreview.result?.item ? readAssetMaxLifetimeUsage(pricingPreview.result.item) : readAssetMaxLifetimeUsage(pricingPreview.asset))
     : null;
-  const projectionUsageMetric = projectionResult?.usageMetric ?? (projectionAsset ? getAssetUsageMetric(projectionAsset) : 'hours');
-  const projectionUsageShortUnit = usageMetricLabel(projectionUsageMetric);
-  const projectionUsageFieldLabel = projectionUsageMetric === 'km' ? 'Add extra kilometres' : 'Add extra hours';
-  const projectionUsagePlaceholder = projectionUsageMetric === 'km' ? 'Type extra kilometres' : 'Type extra hours';
-  const projectionUsageHelpText = projectionUsageMetric === 'km'
-    ? 'Only change what you know. Leave extra kilometres empty if usage stays the same.'
-    : 'Only change what you know. Leave extra hours empty if usage stays the same.';
-  const projectionUsageMetaLabel = projectionUsageMetric === 'km' ? 'Kilometres' : 'Hours';
+  const projectionUsesPercentUsage = Boolean(
+    projectionResult?.usageMetric === 'percent' ||
+    (projectionAsset && assetUsesPercentUsage(projectionAsset)),
+  );
+  const projectionUsageMetric: ProjectionUsageMetric = projectionUsesPercentUsage
+    ? 'percent'
+    : projectionResult?.usageMetric ?? (projectionAsset ? getAssetUsageMetric(projectionAsset) : 'hours');
+  const projectionUsageShortUnit = projectionUsageMetric === 'percent' ? '%' : usageMetricLabel(projectionUsageMetric);
+  const projectionUsageFieldLabel = projectionUsageMetric === 'percent'
+    ? 'New Expected %'
+    : projectionUsageMetric === 'km'
+      ? 'Add extra kilometres'
+      : 'Add extra hours';
+  const projectionUsagePlaceholder = projectionUsageMetric === 'percent'
+    ? 'Example: 60'
+    : projectionUsageMetric === 'km'
+      ? 'Type extra kilometres'
+      : 'Type extra hours';
+  const projectionUsageHelpText = projectionUsageMetric === 'percent'
+    ? 'Enter the expected worked percentage for the target year.'
+    : projectionUsageMetric === 'km'
+      ? 'Only change what you know. Leave extra kilometres empty if usage stays the same.'
+      : 'Only change what you know. Leave extra hours empty if usage stays the same.';
+  const projectionUsageMetaLabel = projectionUsageMetric === 'percent' ? 'Worked %' : projectionUsageMetric === 'km' ? 'Kilometres' : 'Hours';
+  const projectionCurrentWorkedPercent = projectionResult?.current.lifeWorkedPercent ?? (projectionAsset ? getAssetLifeWorkedPercent(projectionAsset) : null);
+  const projectionTargetWorkedPercent = projectionResult?.projected.lifeWorkedPercent ?? projectionResult?.targetLifeWorkedPercent ?? null;
   const pricingPreviewWizardStep = pricingPreview?.method === 'aim4price'
     ? isLoadingPricingPreview || pricingPreview.result || pricingPreview.error
       ? 3
@@ -11888,6 +12014,50 @@ export default function AssetRegisterClient() {
         </div>
       ) : null}
 
+      {replacementPriceRevaluePrompt ? (
+        <div className={`${styles.modalOverlay} ${styles.assetSettingsConfirmOverlay}`}>
+          <div className={styles.modalBackdrop} onClick={closeReplacementPriceRevaluePrompt} />
+
+          <div
+            className={`${styles.modalCard} ${styles.assetSettingsConfirmModal}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="replacement-price-revalue-title"
+          >
+            <div className={`${styles.modalHeader} ${styles.assetSettingsHeader}`}>
+              <div className={styles.modalHeaderText}>
+                <h3 id="replacement-price-revalue-title">Replacement price changed</h3>
+                <p>{replacementPriceRevaluePrompt.asset.title}</p>
+              </div>
+
+              <button
+                type="button"
+                className={styles.modalCloseButton}
+                onClick={closeReplacementPriceRevaluePrompt}
+                aria-label="Close replacement price recalculation confirmation"
+              >
+                <CloseIcon className={styles.buttonIcon} />
+              </button>
+            </div>
+
+            <div className={`${styles.modalScrollBody} ${styles.assetSettingsBody}`}>
+              <p className={styles.assetSettingsConfirmCopy}>
+                Do you want to recalculate this asset’s Aim4price value using {money(replacementPriceRevaluePrompt.newReplacementPriceExVat)} excl. VAT?
+              </p>
+
+              <div className={styles.assetSettingsActions}>
+                <button type="button" className={styles.secondaryButton} onClick={closeReplacementPriceRevaluePrompt}>
+                  Not now
+                </button>
+                <button type="button" className={styles.primaryButton} onClick={openReplacementPriceRevaluePromptFlow}>
+                  Recalculate value
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {activeAsset ? (
         <div className={styles.modalOverlay}>
           <div className={styles.modalBackdrop} onClick={closeActionDialog} />
@@ -13073,7 +13243,7 @@ export default function AssetRegisterClient() {
             <div className={`${styles.modalHeader} ${styles.projectionModalHeader}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="projection-title">{projectionAsset.title}</h3>
-                <p>Change the year, inflation, or extra usage. Then calculate the estimated future value.</p>
+                <p>{projectionUsesPercentUsage ? 'Change the year, inflation, or expected worked percentage. Then calculate the estimated future value.' : 'Change the year, inflation, or extra usage. Then calculate the estimated future value.'}</p>
               </div>
 
               <button type="button" className={styles.modalCloseButton} onClick={closeProjectionModal} aria-label="Close future price modal">
@@ -13130,9 +13300,14 @@ export default function AssetRegisterClient() {
                       <input
                         type="number"
                         min="0"
-                        step="50"
-                        value={projectionForm.extraHours}
-                        onChange={(event) => updateProjectionForm({ extraHours: event.target.value })}
+                        max={projectionUsesPercentUsage ? '100' : undefined}
+                        step={projectionUsesPercentUsage ? '0.1' : '50'}
+                        value={projectionUsesPercentUsage ? projectionForm.targetLifeWorkedPercent : projectionForm.extraHours}
+                        onChange={(event) => updateProjectionForm(
+                          projectionUsesPercentUsage
+                            ? { targetLifeWorkedPercent: event.target.value }
+                            : { extraHours: event.target.value },
+                        )}
                         placeholder={projectionUsagePlaceholder}
                       />
                     </label>
@@ -13171,7 +13346,11 @@ export default function AssetRegisterClient() {
                       </div>
                       <div>
                         <span>{projectionUsageMetaLabel}</span>
-                        <strong>{projectionResult.current.hours.toLocaleString('en-ZA')} → {projectionResult.projected.hours.toLocaleString('en-ZA')} {projectionUsageShortUnit}</strong>
+                        <strong>
+                          {projectionUsesPercentUsage
+                            ? `${formatProjectionWorkedPercent(projectionCurrentWorkedPercent)} → ${formatProjectionWorkedPercent(projectionTargetWorkedPercent)}`
+                            : `${projectionResult.current.hours.toLocaleString('en-ZA')} → ${projectionResult.projected.hours.toLocaleString('en-ZA')} ${projectionUsageShortUnit}`}
+                        </strong>
                       </div>
                       <div>
                         <span>Inflation</span>
