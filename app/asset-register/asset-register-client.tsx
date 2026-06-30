@@ -103,6 +103,7 @@ type AssetPdfReportKind = 'fuel' | 'maintenance' | 'depreciation';
 type AssetReportFormat = 'pdf' | 'xlsx';
 type AssetReportSelectKey = 'type' | 'year' | 'month';
 type AssetReportStep = 'options' | 'fuel-filter' | 'maintenance-filter' | 'depreciation-filter' | 'ownership-filter';
+type PhotoViewerState = { assetId: string; index: number };
 
 type AssetPdfReportFilters = {
   year?: string;
@@ -4253,7 +4254,9 @@ export default function AssetRegisterClient() {
   const [pendingDocumentFiles, setPendingDocumentFiles] = useState<File[]>([]);
   const [expandedAssetId, setExpandedAssetId] = useState<string | null>(null);
   const [detailPhotoIndexByAsset, setDetailPhotoIndexByAsset] = useState<Record<string, number>>({});
+  const [photoViewer, setPhotoViewer] = useState<PhotoViewerState | null>(null);
   const detailTouchStartXRef = useRef<number | null>(null);
+  const detailTouchDidSwipeRef = useRef(false);
   const [busyDeleteId, setBusyDeleteId] = useState<string | null>(null);
   const [deleteCandidateAsset, setDeleteCandidateAsset] = useState<RegisterAsset | null>(null);
   const [marketplaceAsset, setMarketplaceAsset] = useState<RegisterAsset | null>(null);
@@ -4620,13 +4623,56 @@ export default function AssetRegisterClient() {
 
   function cycleDetailPhoto(asset: RegisterAsset, direction: 1 | -1) {
     const photos = getDetailPhotos(asset);
+    if (!photos.length) return;
+
     const currentIndex = getDetailPhotoIndex(asset);
     const nextIndex = (currentIndex + direction + photos.length) % photos.length;
     setDetailPhotoIndex(asset.id, nextIndex);
   }
 
+  function openPhotoViewer(asset: RegisterAsset, requestedIndex: number) {
+    const photos = getDetailPhotos(asset);
+    if (!photos.length) return;
+
+    const safeIndex = Math.max(0, Math.min(requestedIndex, photos.length - 1));
+    setDetailPhotoIndex(asset.id, safeIndex);
+    setPhotoViewer({ assetId: asset.id, index: safeIndex });
+  }
+
+  function closePhotoViewer() {
+    setPhotoViewer(null);
+  }
+
+  function cyclePhotoViewerPhoto(direction: 1 | -1) {
+    if (!photoViewer) return;
+
+    const asset = assets.find((candidate) => candidate.id === photoViewer.assetId);
+    if (!asset) {
+      setPhotoViewer(null);
+      return;
+    }
+
+    const photos = getDetailPhotos(asset);
+    if (!photos.length) {
+      setPhotoViewer(null);
+      return;
+    }
+
+    const currentIndex = Math.max(0, Math.min(photoViewer.index, photos.length - 1));
+    const nextIndex = (currentIndex + direction + photos.length) % photos.length;
+    setDetailPhotoIndex(asset.id, nextIndex);
+    setPhotoViewer({ assetId: asset.id, index: nextIndex });
+  }
+
+  const photoViewerAsset = photoViewer ? assets.find((asset) => asset.id === photoViewer.assetId) ?? null : null;
+  const photoViewerPhotos = photoViewerAsset ? getDetailPhotos(photoViewerAsset) : [];
+  const photoViewerIndex = photoViewerPhotos.length ? Math.max(0, Math.min(photoViewer?.index ?? 0, photoViewerPhotos.length - 1)) : 0;
+  const photoViewerPhoto = photoViewerPhotos[photoViewerIndex] ?? '';
+  const hasMultiplePhotoViewerPhotos = photoViewerPhotos.length > 1;
+
   function handleDetailPhotoTouchStart(clientX: number) {
     detailTouchStartXRef.current = clientX;
+    detailTouchDidSwipeRef.current = false;
   }
 
   function handleDetailPhotoTouchEnd(asset: RegisterAsset, clientX: number) {
@@ -4638,7 +4684,12 @@ export default function AssetRegisterClient() {
       return;
     }
 
+    detailTouchDidSwipeRef.current = true;
     cycleDetailPhoto(asset, delta < 0 ? 1 : -1);
+
+    window.setTimeout(() => {
+      detailTouchDidSwipeRef.current = false;
+    }, 280);
   }
 
   useEffect(() => {
@@ -4840,6 +4891,7 @@ export default function AssetRegisterClient() {
   }, [openAssetReportSelect]);
 
   const anyModalOpen =
+    Boolean(photoViewerAsset && photoViewerPhoto) ||
     isAddChoiceModalOpen ||
     isAssetModalOpen ||
     isAssetSettingsModalOpen ||
@@ -4868,6 +4920,26 @@ export default function AssetRegisterClient() {
     document.body.style.overflow = 'hidden';
 
     const handleEscape = (event: KeyboardEvent) => {
+      if (photoViewer) {
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          closePhotoViewer();
+          return;
+        }
+
+        if (event.key === 'ArrowLeft') {
+          event.preventDefault();
+          cyclePhotoViewerPhoto(-1);
+          return;
+        }
+
+        if (event.key === 'ArrowRight') {
+          event.preventDefault();
+          cyclePhotoViewerPhoto(1);
+          return;
+        }
+      }
+
       if (event.key !== 'Escape') return;
 
       if (pendingUsageOverride) {
@@ -4973,7 +5045,7 @@ export default function AssetRegisterClient() {
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [activeAsset, anyModalOpen, deleteCandidateAsset, isAddChoiceModalOpen, isAssetFilterOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isPricingModalOpen, pricingPreview, isQrModalOpen, isRegisterShareModalOpen, isSummaryModalOpen, marketplaceAsset, projectionAsset, isQuoteModalOpen, quoteLeadStep, isAssetSettingsModalOpen, pendingUsageOverride, isManualConversionConfirmOpen, isSavingAssetSettings]);
+  }, [activeAsset, anyModalOpen, deleteCandidateAsset, isAddChoiceModalOpen, isAssetFilterOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isPricingModalOpen, pricingPreview, isQrModalOpen, isRegisterShareModalOpen, isSummaryModalOpen, marketplaceAsset, projectionAsset, isQuoteModalOpen, quoteLeadStep, isAssetSettingsModalOpen, pendingUsageOverride, isManualConversionConfirmOpen, isSavingAssetSettings, photoViewer]);
 
   useEffect(() => {
     if (!isQuoteModalOpen || !selectedQuoteLeadType) return;
@@ -9680,6 +9752,8 @@ export default function AssetRegisterClient() {
                               const hasRealPhotos = detailPhotos.length > 0;
                               const isDetailPhotoUploading = detailMediaUpload?.assetId === asset.id && detailMediaUpload.type === 'photo';
                               const isDetailDocumentUploading = detailMediaUpload?.assetId === asset.id && detailMediaUpload.type === 'document';
+                              const canOpenPhotoViewer = hasRealPhotos && Boolean(detailPhoto);
+                              const canInteractWithPhotoStage = canOpenPhotoViewer || canUseOwnerOnlyAssetActions;
                               const manualAssetNote = getManualAssetNote(asset.note);
 
                               return (
@@ -9696,18 +9770,44 @@ export default function AssetRegisterClient() {
                                     />
 
                                     <div
-                                      className={`${styles.previewStage} ${canUseOwnerOnlyAssetActions ? styles.previewStageClickable : ''} ${isDetailPhotoUploading ? styles.assetMediaBusy : ''}`}
-                                      role={canUseOwnerOnlyAssetActions ? 'button' : undefined}
-                                      tabIndex={canUseOwnerOnlyAssetActions ? 0 : undefined}
+                                      className={`${styles.previewStage} ${canInteractWithPhotoStage ? styles.previewStageClickable : ''} ${isDetailPhotoUploading ? styles.assetMediaBusy : ''}`}
+                                      role={canInteractWithPhotoStage ? 'button' : undefined}
+                                      tabIndex={canInteractWithPhotoStage ? 0 : undefined}
                                       onClick={() => {
-                                        if (canUseOwnerOnlyAssetActions && !isDetailPhotoUploading) {
+                                        if (isDetailPhotoUploading || detailTouchDidSwipeRef.current) {
+                                          return;
+                                        }
+
+                                        if (canOpenPhotoViewer) {
+                                          openPhotoViewer(asset, detailPhotoIndex);
+                                          return;
+                                        }
+
+                                        if (canUseOwnerOnlyAssetActions) {
                                           triggerDetailMediaInput(asset.id, 'photo');
                                         }
                                       }}
-                                      onKeyDown={(event) => handleDetailMediaKeyDown(event, asset.id, 'photo')}
+                                      onKeyDown={(event) => {
+                                        if (event.target !== event.currentTarget || isDetailPhotoUploading) {
+                                          return;
+                                        }
+
+                                        if (canOpenPhotoViewer) {
+                                          if (event.key === 'Enter' || event.key === ' ') {
+                                            event.preventDefault();
+                                            openPhotoViewer(asset, detailPhotoIndex);
+                                          }
+
+                                          return;
+                                        }
+
+                                        if (canUseOwnerOnlyAssetActions) {
+                                          handleDetailMediaKeyDown(event, asset.id, 'photo');
+                                        }
+                                      }}
                                       onTouchStart={(event) => handleDetailPhotoTouchStart(event.changedTouches[0]?.clientX ?? 0)}
                                       onTouchEnd={(event) => handleDetailPhotoTouchEnd(asset, event.changedTouches[0]?.clientX ?? 0)}
-                                      aria-label={hasRealPhotos ? 'Upload more asset photos' : 'Upload asset photos'}
+                                      aria-label={canOpenPhotoViewer ? 'Open photo viewer' : canUseOwnerOnlyAssetActions ? 'Upload asset photos' : undefined}
                                     >
                                       {hasRealPhotos && detailPhoto ? (
                                         <>
@@ -10042,6 +10142,63 @@ export default function AssetRegisterClient() {
           ) : null}
         </section>
       </section>
+
+      {photoViewerAsset && photoViewerPhoto ? (
+        <div className={`${styles.modalOverlay} ${styles.photoViewerOverlay}`}>
+          <div className={styles.modalBackdrop} onClick={closePhotoViewer} />
+
+          <div
+            className={styles.photoViewerModal}
+            role="dialog"
+            aria-modal="true"
+            aria-label={`${photoViewerAsset.title} photo viewer`}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              className={styles.photoViewerCloseButton}
+              onClick={closePhotoViewer}
+              aria-label="Close photo viewer"
+            >
+              <CloseIcon className={styles.buttonIcon} />
+            </button>
+
+            <div className={styles.photoViewerStage}>
+              <img
+                src={photoViewerPhoto}
+                alt={`${photoViewerAsset.title} photo ${photoViewerIndex + 1}`}
+                className={styles.photoViewerImage}
+              />
+
+              {hasMultiplePhotoViewerPhotos ? (
+                <>
+                  <button
+                    type="button"
+                    className={`${styles.photoViewerNavButton} ${styles.photoViewerNavPrev}`}
+                    onClick={() => cyclePhotoViewerPhoto(-1)}
+                    aria-label="Show previous photo"
+                  >
+                    <ChevronLeftIcon className={styles.buttonIcon} />
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`${styles.photoViewerNavButton} ${styles.photoViewerNavNext}`}
+                    onClick={() => cyclePhotoViewerPhoto(1)}
+                    aria-label="Show next photo"
+                  >
+                    <ChevronRightIcon className={styles.buttonIcon} />
+                  </button>
+
+                  <div className={styles.photoViewerCounter}>
+                    {photoViewerIndex + 1} / {photoViewerPhotos.length}
+                  </div>
+                </>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {isRegisterShareModalOpen ? (
         <div className={styles.modalOverlay}>

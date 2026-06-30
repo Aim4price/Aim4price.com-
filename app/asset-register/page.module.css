@@ -27488,3 +27488,199 @@ button.documentOpenLink {
     line-height: 1.38 !important;
   }
 }
+
+/* === Asset detail photo viewer modal === */
+.photoViewerOverlay {
+  z-index: 2147483001 !important;
+  padding: clamp(0.75rem, 2.4vw, 1.35rem) !important;
+  overflow: hidden !important;
+}
+
+.photoViewerOverlay .modalBackdrop {
+  background: rgba(7, 15, 24, 0.72) !important;
+  backdrop-filter: blur(14px) !important;
+}
+
+.photoViewerModal {
+  position: relative !important;
+  z-index: 1 !important;
+  width: min(96vw, 76rem) !important;
+  max-width: calc(100vw - 1.5rem) !important;
+  max-height: min(92vh, calc(100dvh - 1.5rem)) !important;
+  display: grid !important;
+  padding: clamp(0.72rem, 1.7vw, 1.12rem) !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(220, 232, 240, 0.92) !important;
+  border-radius: 1.55rem !important;
+  background:
+    radial-gradient(circle at top left, rgba(23, 116, 90, 0.08), transparent 34%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(244, 249, 251, 0.98) 100%) !important;
+  box-shadow: 0 34px 90px rgba(3, 13, 24, 0.38) !important;
+  margin: auto !important;
+}
+
+.photoViewerStage {
+  position: relative !important;
+  display: grid !important;
+  place-items: center !important;
+  width: 100% !important;
+  min-height: min(72vh, 45rem) !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(203, 216, 226, 0.7) !important;
+  border-radius: 1.18rem !important;
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.14), transparent 40%),
+    linear-gradient(180deg, #101a25 0%, #06101b 100%) !important;
+}
+
+.photoViewerImage {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: min(76vh, 46rem) !important;
+  max-height: calc(100dvh - 6.4rem) !important;
+  object-fit: contain !important;
+  border-radius: 0.95rem !important;
+}
+
+.photoViewerCloseButton,
+.photoViewerNavButton {
+  appearance: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  border-radius: 999px !important;
+  font: inherit !important;
+  cursor: pointer !important;
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, box-shadow 160ms ease !important;
+}
+
+.photoViewerCloseButton {
+  position: absolute !important;
+  top: 0.95rem !important;
+  right: 0.95rem !important;
+  z-index: 6 !important;
+  width: 2.75rem !important;
+  height: 2.75rem !important;
+  border: 1px solid rgba(255, 255, 255, 0.72) !important;
+  color: #102f27 !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  box-shadow: 0 14px 30px rgba(3, 13, 24, 0.22) !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+.photoViewerCloseButton:hover,
+.photoViewerNavButton:hover {
+  transform: translateY(-1px) !important;
+  background: rgba(255, 255, 255, 0.98) !important;
+  border-color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.photoViewerCloseButton:focus-visible,
+.photoViewerNavButton:focus-visible {
+  outline: 3px solid rgba(255, 255, 255, 0.72) !important;
+  outline-offset: 3px !important;
+}
+
+.photoViewerCloseButton .buttonIcon,
+.photoViewerNavButton .buttonIcon {
+  width: 1.1rem !important;
+  height: 1.1rem !important;
+}
+
+.photoViewerNavButton {
+  position: absolute !important;
+  top: 50% !important;
+  z-index: 5 !important;
+  width: 3rem !important;
+  height: 3rem !important;
+  border: 1px solid rgba(255, 255, 255, 0.42) !important;
+  color: #ffffff !important;
+  background: rgba(13, 24, 36, 0.58) !important;
+  box-shadow: 0 16px 34px rgba(3, 13, 24, 0.28) !important;
+  backdrop-filter: blur(12px) !important;
+  transform: translateY(-50%) !important;
+}
+
+.photoViewerNavButton:hover {
+  color: #102f27 !important;
+  transform: translateY(calc(-50% - 1px)) !important;
+}
+
+.photoViewerNavPrev {
+  left: 1rem !important;
+}
+
+.photoViewerNavNext {
+  right: 1rem !important;
+}
+
+.photoViewerCounter {
+  position: absolute !important;
+  right: 1rem !important;
+  bottom: 1rem !important;
+  z-index: 5 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  min-height: 2rem !important;
+  padding: 0 0.82rem !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  border-radius: 999px !important;
+  color: rgba(255, 255, 255, 0.96) !important;
+  background: rgba(13, 24, 36, 0.64) !important;
+  font-size: 0.82rem !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.04em !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+@media (max-width: 700px) {
+  .photoViewerOverlay {
+    padding: 0.6rem !important;
+  }
+
+  .photoViewerModal {
+    width: 100% !important;
+    max-width: calc(100vw - 1.2rem) !important;
+    max-height: calc(100dvh - 1.2rem) !important;
+    padding: 0.58rem !important;
+    border-radius: 1.18rem !important;
+  }
+
+  .photoViewerStage {
+    min-height: min(68vh, 34rem) !important;
+    border-radius: 0.95rem !important;
+  }
+
+  .photoViewerImage {
+    height: min(74vh, calc(100dvh - 5.8rem)) !important;
+    max-height: calc(100dvh - 5.8rem) !important;
+    border-radius: 0.78rem !important;
+  }
+
+  .photoViewerCloseButton {
+    top: 0.78rem !important;
+    right: 0.78rem !important;
+    width: 2.52rem !important;
+    height: 2.52rem !important;
+  }
+
+  .photoViewerNavButton {
+    width: 2.5rem !important;
+    height: 2.5rem !important;
+  }
+
+  .photoViewerNavPrev {
+    left: 0.55rem !important;
+  }
+
+  .photoViewerNavNext {
+    right: 0.55rem !important;
+  }
+
+  .photoViewerCounter {
+    right: 0.7rem !important;
+    bottom: 0.7rem !important;
+  }
+}
