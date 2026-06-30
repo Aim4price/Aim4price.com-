@@ -609,7 +609,7 @@ const FALLBACK_ASSET_IMAGE = '/brand/Tractor.png';
 const PROPERTY_ASSET_LABEL = 'Property / Land / Building';
 const PROPERTY_ASSET_DESCRIPTION = 'Land, buildings, houses, sheds, stores and fixed improvements.';
 const PROPERTY_ASSET_TITLE_PLACEHOLDER = 'Example: Farm land, machinery shed or workshop building';
-const PROPERTY_YEAR_LABEL = 'Year built/bought';
+const PROPERTY_YEAR_LABEL = 'Year';
 const PROPERTY_SIZE_SPEC_KEYS = ['propertySize', 'property_size', 'size', 'sizeText', 'size_text'] as const;
 const MANUAL_ASSET_TYPE_OPTIONS: Array<{
   value: Extract<AssetKind, 'vehicle' | 'tools' | 'property' | 'equipment' | 'manual'>;
@@ -2100,7 +2100,13 @@ function readFinanceStatusChoice(asset: RegisterAsset): AssetStatusChoice {
 }
 
 function readInsuranceStatusChoice(asset: RegisterAsset): AssetStatusChoice {
-  return readAssetInsuredValueExVat(asset) !== null ? 'yes' : 'no';
+  const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
+  const insuredValueExVat = readAssetInsuredValueExVat(asset);
+
+  return normalizeAssetStatusChoice(
+    specs.insuranceStatus ?? specs.insurance_status ?? specs.insuredStatus ?? specs.insured_status,
+    asset.isInsured || insuredValueExVat !== null ? 'yes' : 'no',
+  );
 }
 
 function readLicenseStatusChoice(asset: RegisterAsset): AssetStatusChoice {
@@ -3010,7 +3016,7 @@ function sumAssetInsuredValues(assetList: Array<Pick<RegisterAsset, 'insuredValu
 function buildDraftFromAsset(asset: RegisterAsset): AssetDraft {
   const financeStatus = readFinanceStatusChoice(asset);
   const insuredValueExVat = readAssetInsuredValueExVat(asset);
-  const insuranceStatus = insuredValueExVat !== null ? 'yes' : readInsuranceStatusChoice(asset);
+  const insuranceStatus = readInsuranceStatusChoice(asset);
   const licenseStatus = readLicenseStatusChoice(asset);
   const insuranceNote = readInsuranceNote(asset);
   const initialModelValue = asset.modelName || asset.typedModelName || '';
@@ -3072,7 +3078,7 @@ function buildSavedItemFromAsset(asset: RegisterAsset) {
     updatedAtIso: asset.updatedAtIso,
     serialNumber: asset.serialNumber || undefined,
     isFinanced: asset.isFinanced,
-    isInsured: asset.isInsured,
+    isInsured: readInsuranceStatusChoice(asset) === 'yes',
     isLicensed: asset.isLicensed,
     licenseRegistrationNumber: readLicenseRegistrationNumber(asset) || undefined,
     financeNote: asset.financeNote || undefined,
@@ -3404,7 +3410,13 @@ function buildSearchableText(asset: RegisterAsset): string {
     statusChoiceReportLabel(readLicenseStatusChoice(asset)),
     ...assetDocuments(asset).map((document) => document.fileName),
     assetDocuments(asset).length ? 'documents paperwork invoice natis papers' : '',
-    readInsuranceStatusChoice(asset) === 'yes' ? 'insured insurance' : readInsuranceStatusChoice(asset) === 'no' ? 'not insured no insurance' : '',
+    readInsuranceStatusChoice(asset) === 'yes'
+      ? 'insured insurance'
+      : readInsuranceStatusChoice(asset) === 'no'
+        ? 'not insured no insurance'
+        : readInsuranceStatusChoice(asset) === 'not_applicable'
+          ? 'not applicable n/a insurance'
+          : 'not sure unknown insurance',
     readFinanceStatusChoice(asset) === 'yes' ? 'financed finance' : readFinanceStatusChoice(asset) === 'no' ? 'not financed no finance' : '',
     readLicenseStatusChoice(asset) === 'yes' ? 'licensed licence license registered' : readLicenseStatusChoice(asset) === 'no' ? 'not licensed no licence no license' : readLicenseStatusChoice(asset) === 'not_applicable' ? 'not applicable n/a licence license' : '',
     asset.tractorType,
@@ -6148,23 +6160,14 @@ export default function AssetRegisterClient() {
 
   function setAssetInsuranceStatus(nextStatus: AssetStatusChoice) {
     setAssetDraft((current) => {
-      const insuredValue = parseRegisterValueInput(current.insuredValue);
-      const hasValidInsuredValue = insuredValue > 0;
-
-      if (nextStatus === 'yes' && hasValidInsuredValue) {
-        return {
-          ...current,
-          insuranceStatus: 'yes',
-          isInsured: true,
-        };
-      }
+      const isInsured = nextStatus === 'yes';
 
       return {
         ...current,
-        insuranceStatus: 'no',
-        isInsured: false,
-        insuredValue: nextStatus === 'yes' ? current.insuredValue : '',
-        insuranceNote: '',
+        insuranceStatus: nextStatus,
+        isInsured,
+        insuredValue: isInsured ? current.insuredValue : '',
+        insuranceNote: isInsured ? current.insuranceNote : '',
       };
     });
   }
@@ -6174,13 +6177,18 @@ export default function AssetRegisterClient() {
     const insuredValue = parseRegisterValueInput(formattedValue);
     const hasValidInsuredValue = insuredValue > 0;
 
-    setAssetDraft((current) => ({
-      ...current,
-      insuredValue: formattedValue,
-      insuranceStatus: hasValidInsuredValue ? 'yes' : 'no',
-      isInsured: hasValidInsuredValue,
-      insuranceNote: hasValidInsuredValue ? current.insuranceNote : '',
-    }));
+    setAssetDraft((current) => {
+      const nextInsuranceStatus: AssetStatusChoice = hasValidInsuredValue ? 'yes' : current.insuranceStatus;
+      const isInsured = nextInsuranceStatus === 'yes';
+
+      return {
+        ...current,
+        insuredValue: formattedValue,
+        insuranceStatus: nextInsuranceStatus,
+        isInsured,
+        insuranceNote: isInsured ? current.insuranceNote : '',
+      };
+    });
   }
 
   function setAssetLicenseStatus(nextStatus: AssetStatusChoice) {
@@ -6992,7 +7000,8 @@ export default function AssetRegisterClient() {
     const modelName = isPropertyAsset ? '' : assetDraft.modelName.trim();
     const propertySize = isPropertyAsset ? assetDraft.propertySize.trim().replace(/\s+/g, ' ') : '';
     const nextLicenseStatus: AssetStatusChoice = isPropertyAsset ? 'not_applicable' : assetDraft.licenseStatus;
-    const nextInsuranceStatus: AssetStatusChoice = insuredValueExVat !== null && insuredValueExVat > 0 ? 'yes' : 'no';
+    const nextInsuranceStatus: AssetStatusChoice = assetDraft.insuranceStatus;
+    const insuredValueForSave = nextInsuranceStatus === 'yes' && insuredValueExVat !== null && insuredValueExVat > 0 ? insuredValueExVat : null;
 
     if (!title || value <= 0) {
       setNotice({ tone: 'error', message: 'Asset title and current value are required.' });
@@ -7121,15 +7130,15 @@ export default function AssetRegisterClient() {
       specsJson.property_size = propertySize;
     }
 
-    if (insuredValueExVat !== null && insuredValueExVat > 0) {
-      specsJson.insuredValueExVat = insuredValueExVat;
-      specsJson.insured_value_ex_vat = insuredValueExVat;
-      specsJson.insuranceValueExVat = insuredValueExVat;
-      specsJson.insurance_value_ex_vat = insuredValueExVat;
-      specsJson.insuredValue = insuredValueExVat;
-      specsJson.insured_value = insuredValueExVat;
-      specsJson.insuranceValue = insuredValueExVat;
-      specsJson.insurance_value = insuredValueExVat;
+    if (insuredValueForSave !== null) {
+      specsJson.insuredValueExVat = insuredValueForSave;
+      specsJson.insured_value_ex_vat = insuredValueForSave;
+      specsJson.insuranceValueExVat = insuredValueForSave;
+      specsJson.insurance_value_ex_vat = insuredValueForSave;
+      specsJson.insuredValue = insuredValueForSave;
+      specsJson.insured_value = insuredValueForSave;
+      specsJson.insuranceValue = insuredValueForSave;
+      specsJson.insurance_value = insuredValueForSave;
     }
 
     if (roundedLifeWorkedPercent !== null) {
@@ -7170,7 +7179,7 @@ export default function AssetRegisterClient() {
         title,
         value,
         replacementPriceExVat: replacementPrice,
-        insuredValueExVat: insuredValueExVat !== null && insuredValueExVat > 0 ? insuredValueExVat : null,
+        insuredValueExVat: insuredValueForSave,
         note: assetDraft.note.trim(),
         serialNumber: isPropertyAsset ? '' : assetDraft.serialNumber.trim(),
         brandName,
