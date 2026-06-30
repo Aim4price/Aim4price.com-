@@ -24608,13 +24608,16 @@ button.documentOpenLink {
   color: #124635 !important;
 }
 
-.assetFormModalStepOne .customSelectMenu {
+.assetFormModalStepOne .customSelectMenu:not(.customSelectMenuPortal) {
   display: grid !important;
   gap: 0 !important;
-  max-height: none !important;
+  max-height: min(18rem, calc(100dvh - 14rem)) !important;
   margin-top: 0.52rem !important;
   padding: 0.34rem !important;
-  overflow: visible !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  scrollbar-gutter: stable !important;
   border-radius: 1.05rem !important;
   border: 1px solid rgba(203, 218, 229, 0.98) !important;
   background: rgba(255, 255, 255, 0.98) !important;
@@ -24694,7 +24697,7 @@ button.documentOpenLink {
     overscroll-behavior: contain !important;
   }
 
-  .assetFormModalStepOne .customSelectMenu {
+  .assetFormModalStepOne .customSelectMenu:not(.customSelectMenuPortal) {
     max-height: min(20rem, calc(100dvh - 16.8rem)) !important;
     overflow-y: auto !important;
     overscroll-behavior: contain !important;
@@ -24714,7 +24717,7 @@ button.documentOpenLink {
     font-size: 0.95rem !important;
   }
 
-  .assetFormModalStepOne .customSelectMenu {
+  .assetFormModalStepOne .customSelectMenu:not(.customSelectMenuPortal) {
     padding: 0.28rem !important;
     border-radius: 0.95rem !important;
   }
@@ -25782,6 +25785,13 @@ button.documentOpenLink {
   width: var(--asset-select-width) !important;
   max-height: var(--asset-select-max-height) !important;
   margin-top: 0 !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  scrollbar-gutter: stable !important;
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.035), transparent 42%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(248, 252, 250, 0.99) 100%) !important;
   z-index: 2147483000 !important;
 }
 

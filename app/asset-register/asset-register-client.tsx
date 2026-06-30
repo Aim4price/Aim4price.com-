@@ -643,7 +643,7 @@ const MANUAL_ASSET_TYPE_OPTIONS: Array<{
 ];
 
 const LIFETIME_PERCENT_SETTINGS_ERROR =
-  'The new lifetime worked percentage cannot be lower than the percentage already saved on this asset. Please go to Settings to override this.';
+  'The new lifetime usage percentage cannot be lower than the usage already saved on this asset. Please go to Settings to override this.';
 const USAGE_READING_SETTINGS_ERROR =
   'The new usage reading cannot be lower than the reading already saved on this asset. Please go to Settings to override this.';
 const ASSET_SETTINGS_USAGE_COPY =
@@ -1918,14 +1918,14 @@ function getAssetSettingsUsageCurrentValue(asset: RegisterAsset, mode: AssetSett
 }
 
 function assetSettingsUsageHeading(mode: AssetSettingsUsageMode): string {
-  if (mode === 'percent') return 'Override Lifetime %';
+  if (mode === 'percent') return 'Override lifetime usage';
   if (mode === 'hours') return 'Override Machine Hours';
   if (mode === 'km') return 'Override Kilometres';
   return 'Override Usage';
 }
 
 function assetSettingsUsageInputLabel(mode: AssetSettingsUsageMode): string {
-  if (mode === 'percent') return 'New lifetime worked %';
+  if (mode === 'percent') return 'New lifetime usage %';
   if (mode === 'hours') return 'New machine hours';
   if (mode === 'km') return 'New odometer reading';
   return 'New usage reading';
@@ -1943,7 +1943,7 @@ function assetSettingsUsagePlaceholder(mode: AssetSettingsUsageMode, currentValu
 }
 
 function assetSettingsUsageInvalidMessage(mode: AssetSettingsUsageMode): string {
-  if (mode === 'percent') return 'Lifetime worked must be between 0% and 100%.';
+  if (mode === 'percent') return 'Lifetime usage must be between 0% and 100%.';
   if (mode === 'hours') return 'Machine hours must be zero or greater.';
   if (mode === 'km') return 'Odometer reading must be zero or greater.';
   return 'Usage reading must be zero or greater.';
@@ -1968,7 +1968,7 @@ function parseAssetSettingsUsageInput(mode: AssetSettingsUsageMode, value: unkno
 }
 
 function getAssetSettingsUsageSuccessMessage(mode: AssetSettingsUsageMode): string {
-  if (mode === 'percent') return 'Lifetime worked percentage updated.';
+  if (mode === 'percent') return 'Lifetime usage updated.';
   if (mode === 'hours') return 'Machine hours updated.';
   if (mode === 'km') return 'Odometer reading updated.';
   return 'Usage updated.';
@@ -10237,6 +10237,7 @@ export default function AssetRegisterClient() {
                         onChange={(nextKind) => selectManualAssetKind(nextKind, true)}
                         className={styles.manualCompactSelectField}
                         autoFocus
+                        usePortal
                       />
                     )}
                   </section>
@@ -10877,7 +10878,7 @@ export default function AssetRegisterClient() {
                       <ManageIcon className={styles.assetSettingsOptionIcon} />
                       <span>
                         <strong>Lifetime Expectancy</strong>
-                        <small>Override saved lifetime percentage.</small>
+                        <small>Override lifetime usage.</small>
                       </span>
                     </button>
                   ) : null}
@@ -11102,6 +11103,7 @@ export default function AssetRegisterClient() {
                     options={MANUAL_ASSET_TYPE_OPTIONS}
                     onChange={setAssetSettingsTypeDraft}
                     className={styles.assetSettingsSelectField}
+                    usePortal
                   />
 
                   <div className={styles.assetSettingsActions}>
