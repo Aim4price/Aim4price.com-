@@ -12253,7 +12253,6 @@ export default function AssetRegisterClient() {
                         <div>
                           <span>Step 1 of 3</span>
                           <h4>Use saved replacement price and lifetime?</h4>
-                          <p className={styles.revalueStepCopy}>Choose whether the saved replacement price should be used, then adjust expected lifetime if&nbsp;needed.</p>
                         </div>
                       </div>
 
