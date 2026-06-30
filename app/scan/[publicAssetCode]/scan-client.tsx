@@ -19,7 +19,7 @@ import {
 
 type NoticeTone = "success" | "error";
 type PendingSyncKind = "asset-scan-update";
-type EditorKey = "usage" | "fuel" | "service" | "photos";
+type EditorKey = "usage" | "service" | "photos";
 type LocationState = "idle" | "capturing" | "ready" | "error";
 type ScanAssetUsageMode = "hours" | "percent" | "km" | "none";
 type ScanAssetStatusChoice = "yes" | "no" | "unknown" | "not_applicable";
@@ -69,7 +69,6 @@ type ScanSafeAsset = {
   lifeWorkedPercent: number | null;
   isPropelled: boolean;
   canUpdateFuel: boolean;
-  fuelPercent: number | null;
   condition: string;
   note: string;
   photos: string[];
@@ -132,8 +131,6 @@ type DealerShareLeadResponse = {
 
 type DraftState = {
   hours: string;
-  lifeWorkedPercent: string;
-  fuelPercent: string;
   note: string;
   latitude: string;
   longitude: string;
@@ -148,8 +145,6 @@ type DraftState = {
 
 type PendingScanUpdate = {
   hours: string;
-  lifeWorkedPercent: string;
-  fuelPercent: string;
   notes: string[];
   photoUrls: string[];
   latitude: string;
@@ -158,14 +153,12 @@ type PendingScanUpdate = {
   clientCapturedAt: string;
   clientEventId: string;
   hasUsage: boolean;
-  hasFuel: boolean;
   hasService: boolean;
   hasPhotos: boolean;
 };
 
 const MAX_QR_PHOTOS = 12;
 const MAX_SHARE_PHOTOS = 3;
-const QUICK_FUEL_OPTIONS = [25, 50, 75, 100] as const;
 const QR_PHOTO_MAX_DIMENSION = 1400;
 const QR_PHOTO_JPEG_QUALITY = 0.72;
 const QR_PHOTO_SKIP_COMPRESSION_BYTES = 700 * 1024;
@@ -293,8 +286,6 @@ const PROPELLED_HINTS = [
 
 const initialDraft: DraftState = {
   hours: "",
-  lifeWorkedPercent: "",
-  fuelPercent: "",
   note: "",
   latitude: "",
   longitude: "",
@@ -309,8 +300,6 @@ const initialDraft: DraftState = {
 
 const initialPendingUpdate: PendingScanUpdate = {
   hours: "",
-  lifeWorkedPercent: "",
-  fuelPercent: "",
   notes: [],
   photoUrls: [],
   latitude: "",
@@ -319,7 +308,6 @@ const initialPendingUpdate: PendingScanUpdate = {
   clientCapturedAt: "",
   clientEventId: "",
   hasUsage: false,
-  hasFuel: false,
   hasService: false,
   hasPhotos: false,
 };
@@ -338,7 +326,6 @@ type QrScanSessionState = {
   locationCapturedAtIso?: string;
   usageMode?: ScanAssetUsageMode;
   hours?: string;
-  lifeWorkedPercent?: string;
   hasUsage?: boolean;
   updatedAtIso?: string;
 };
@@ -413,7 +400,6 @@ function readQrScanSession(publicAssetCode: string): QrScanSessionState | null {
       locationCapturedAtIso: normalizeSessionString(parsed.locationCapturedAtIso, 80) || undefined,
       usageMode: normalizeSessionUsageMode(parsed.usageMode),
       hours: normalizeSessionString(parsed.hours, 32) || undefined,
-      lifeWorkedPercent: normalizeSessionString(parsed.lifeWorkedPercent, 32) || undefined,
       hasUsage: parsed.hasUsage === true,
       updatedAtIso: normalizeSessionString(parsed.updatedAtIso, 80) || undefined,
     };
@@ -501,26 +487,17 @@ function scanLocationPayloadText(value: string | undefined): string {
 function sessionUsageForAsset(
   asset: ScanSafeAsset,
   session: QrScanSessionState | null,
-): { hasUsage: boolean; hours: string; lifeWorkedPercent: string } {
+): { hasUsage: boolean; hours: string } {
   if (!session || normalizePublicAssetCode(session.publicAssetCode) !== normalizePublicAssetCode(asset.publicAssetCode)) {
-    return { hasUsage: false, hours: "", lifeWorkedPercent: "" };
+    return { hasUsage: false, hours: "" };
   }
 
   if (session.assetId && session.assetId !== asset.id) {
-    return { hasUsage: false, hours: "", lifeWorkedPercent: "" };
+    return { hasUsage: false, hours: "" };
   }
 
   if (session.usageMode && session.usageMode !== asset.usageMode) {
-    return { hasUsage: false, hours: "", lifeWorkedPercent: "" };
-  }
-
-  if (asset.usageMode === "percent") {
-    const lifeWorkedPercent = normalizePercentInput(session.lifeWorkedPercent || "");
-    return {
-      hasUsage: session.hasUsage === true && lifeWorkedPercent !== "",
-      hours: "",
-      lifeWorkedPercent,
-    };
+    return { hasUsage: false, hours: "" };
   }
 
   if (asset.usageMode === "hours" || asset.usageMode === "km") {
@@ -528,22 +505,16 @@ function sessionUsageForAsset(
     return {
       hasUsage: session.hasUsage === true && hours !== "",
       hours,
-      lifeWorkedPercent: "",
     };
   }
 
-  return { hasUsage: true, hours: "", lifeWorkedPercent: "" };
+  return { hasUsage: false, hours: "" };
 }
 
 function applySessionUsageToAsset(asset: ScanSafeAsset, session: QrScanSessionState | null): ScanSafeAsset {
   const usage = sessionUsageForAsset(asset, session);
 
   if (!usage.hasUsage) return asset;
-
-  if (asset.usageMode === "percent" && usage.lifeWorkedPercent) {
-    const parsed = Number(usage.lifeWorkedPercent);
-    return Number.isFinite(parsed) ? { ...asset, lifeWorkedPercent: parsed } : asset;
-  }
 
   if ((asset.usageMode === "hours" || asset.usageMode === "km") && usage.hours) {
     const parsed = Number(usage.hours);
@@ -559,10 +530,13 @@ function seedQrSessionFromAsset(publicAssetCode: string, asset: ScanSafeAsset): 
     publicAssetCode: normalizePublicAssetCode(asset.publicAssetCode),
     assetId: asset.id,
     usageMode: asset.usageMode,
-    hours: current.hours || (asset.hours !== null && Number.isFinite(asset.hours) ? String(Math.round(asset.hours)) : undefined),
-    lifeWorkedPercent:
-      current.lifeWorkedPercent ||
-      (asset.lifeWorkedPercent !== null && Number.isFinite(asset.lifeWorkedPercent) ? String(asset.lifeWorkedPercent) : undefined),
+    hours:
+      current.hours ||
+      (asset.usageMode === "hours" || asset.usageMode === "km"
+        ? asset.hours !== null && Number.isFinite(asset.hours)
+          ? String(Math.round(asset.hours))
+          : undefined
+        : undefined),
   }));
 }
 
@@ -645,19 +619,6 @@ function formatNumber(value: number | null): string {
   return new Intl.NumberFormat("en-ZA").format(Math.round(value));
 }
 
-function formatFuel(value: number | null): string {
-  if (value === null || !Number.isFinite(value)) return "—";
-  return `${Math.max(0, Math.min(100, Math.round(value)))}%`;
-}
-
-function normalizeFuelPercentText(value: string, fallback: number | null = null): string {
-  const source = value.trim() || (fallback !== null && Number.isFinite(fallback) ? String(fallback) : "0");
-  const parsed = Number(source);
-
-  if (!Number.isFinite(parsed)) return "0";
-  return String(Math.max(0, Math.min(100, Math.round(parsed))));
-}
-
 function formatPercent(value: number | null): string {
   if (value === null || !Number.isFinite(value)) return "—";
   const rounded = Math.round(value * 10) / 10;
@@ -700,18 +661,11 @@ function usageTitle(asset: ScanSafeAsset | null): string {
 }
 
 function usageModalLabel(asset: ScanSafeAsset): string {
-  if (asset.usageMode === "percent") return "Current worked percentage";
   if (asset.usageMode === "km") return "Current kilometre reading";
   return "Current hour-meter reading";
 }
 
 function usagePlaceholder(asset: ScanSafeAsset): string {
-  if (asset.usageMode === "percent") {
-    return asset.lifeWorkedPercent !== null
-      ? String(asset.lifeWorkedPercent)
-      : "Enter % worked";
-  }
-
   if (asset.usageMode === "km") {
     return asset.hours !== null
       ? String(Math.round(asset.hours))
@@ -859,13 +813,7 @@ function serviceCopyForProfile(profile: AssetServiceProfile) {
 function buildEditorSummary(editor: EditorKey, asset: ScanSafeAsset | null): string {
   if (editor === "usage") return formatUsage(asset);
 
-  if (editor === "fuel") {
-    return asset?.fuelPercent !== null && typeof asset?.fuelPercent !== "undefined"
-      ? `${formatFuel(asset.fuelPercent)} fuel level`
-      : "Capture fuel level";
-  }
-
-  if (editor === "service") return "Check · service · repair";
+  if (editor === "service") return "Check Service Repair";
 
   if (asset?.photos.length) {
     return `${asset.photos.length} photo${asset.photos.length === 1 ? "" : "s"} stored`;
@@ -874,14 +822,17 @@ function buildEditorSummary(editor: EditorKey, asset: ScanSafeAsset | null): str
   return "Upload or take photos";
 }
 
+function isMeterUsageMode(asset: ScanSafeAsset | null): boolean {
+  return asset?.usageMode === "hours" || asset?.usageMode === "km";
+}
+
 function needsUsageUpdateBeforeActions(
   asset: ScanSafeAsset | null,
   update: PendingScanUpdate,
   hasCompletedRequiredUsageUpdate: boolean,
 ): boolean {
   return Boolean(
-    asset &&
-      asset.usageMode !== "none" &&
+    isMeterUsageMode(asset) &&
       !update.hasUsage &&
       !hasCompletedRequiredUsageUpdate,
   );
@@ -889,25 +840,19 @@ function needsUsageUpdateBeforeActions(
 
 function requiredUsageTitle(asset: ScanSafeAsset): string {
   if (asset.usageMode === "km") return "Update kilometres first";
-  if (asset.usageMode === "percent") return "Update worked percentage first";
   return "Update hours first";
 }
 
 function requiredUsageCopy(asset: ScanSafeAsset): string {
   if (asset.usageMode === "km") {
-    return "Enter the latest kilometre reading before fuel, maintenance or photos can be added.";
+    return "Enter the latest kilometre reading before maintenance or photos can be added.";
   }
 
-  if (asset.usageMode === "percent") {
-    return "Enter the latest worked percentage before fuel, maintenance or photos can be added.";
-  }
-
-  return "Enter the latest hour-meter reading before fuel, maintenance or photos can be added.";
+  return "Enter the latest hour-meter reading before maintenance or photos can be added.";
 }
 
 function requiredUsageButtonLabel(asset: ScanSafeAsset): string {
   if (asset.usageMode === "km") return "Update kilometres";
-  if (asset.usageMode === "percent") return "Update percentage";
   return "Update hours";
 }
 
@@ -932,7 +877,7 @@ function mergeUniqueStrings(values: string[], limit?: number): string[] {
 }
 
 function hasPendingScanUpdate(update: PendingScanUpdate): boolean {
-  return update.hasUsage || update.hasFuel || update.hasService || update.hasPhotos;
+  return update.hasUsage || update.hasService || update.hasPhotos;
 }
 
 function keepCurrentLocation(current: DraftState, session: QrScanSessionState | null = null): DraftState {
@@ -1128,18 +1073,6 @@ function MeterIcon({ className }: IconProps) {
       <path d="M7.7 10.4l.8.8" />
       <path d="M16.3 10.4l-.8.8" />
       <path d="M12 8.2v1.2" />
-    </svg>
-  );
-}
-
-function FuelIcon({ className }: IconProps) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
-      <path d="M6.5 21V5.5A2.5 2.5 0 0 1 9 3h5a2.5 2.5 0 0 1 2.5 2.5V21" />
-      <path d="M7 21h10" />
-      <path d="M9 7h5" />
-      <path d="M16.5 8h1.4l2.1 2.5V17a2 2 0 0 1-2 2h-1.5" />
-      <path d="M20 10.5h-2.2a1.3 1.3 0 0 1-1.3-1.3V8" />
     </svg>
   );
 }
@@ -1630,7 +1563,7 @@ export default function ScanClient({
       const seededSession = seedQrSessionFromAsset(normalizedCode, openedAsset) ?? readQrScanSession(normalizedCode);
       const sessionUsage = sessionUsageForAsset(openedAsset, seededSession);
       const openedAssetWithSessionUsage = applySessionUsageToAsset(openedAsset, seededSession);
-      const requiresInitialUsageUpdate = openedAsset.usageMode !== "none" && !sessionUsage.hasUsage;
+      const requiresInitialUsageUpdate = isMeterUsageMode(openedAsset) && !sessionUsage.hasUsage;
       const restoredLatitude = seededSession?.latitude || draft.latitude;
       const restoredLongitude = seededSession?.longitude || draft.longitude;
       const nextDraftBase = {
@@ -1638,17 +1571,12 @@ export default function ScanClient({
         latitude: restoredLatitude,
         longitude: restoredLongitude,
       };
-      const nextDraft = openedAsset.usageMode === "percent"
+      const nextDraft = openedAsset.usageMode === "hours" || openedAsset.usageMode === "km"
         ? {
             ...nextDraftBase,
-            lifeWorkedPercent: sessionUsage.lifeWorkedPercent || (openedAsset.lifeWorkedPercent !== null ? String(openedAsset.lifeWorkedPercent) : ""),
+            hours: sessionUsage.hours || (openedAsset.hours !== null ? String(Math.round(openedAsset.hours)) : ""),
           }
-        : openedAsset.usageMode === "hours" || openedAsset.usageMode === "km"
-          ? {
-              ...nextDraftBase,
-              hours: sessionUsage.hours || (openedAsset.hours !== null ? String(Math.round(openedAsset.hours)) : ""),
-            }
-          : nextDraftBase;
+        : nextDraftBase;
 
       setAsset(openedAssetWithSessionUsage);
       setSavedAsset(openedAsset);
@@ -1659,7 +1587,6 @@ export default function ScanClient({
         latitude: restoredLatitude,
         longitude: restoredLongitude,
         hours: sessionUsage.hours,
-        lifeWorkedPercent: sessionUsage.lifeWorkedPercent,
         hasUsage: sessionUsage.hasUsage,
       });
       setIsDone(false);
@@ -1866,34 +1793,14 @@ export default function ScanClient({
 
       if (!asset) return nextDraft;
 
-      if (enforcedEditor === "usage") {
-        if (asset.usageMode === "percent") {
-          const stagedPercent = pendingUpdate.hasUsage && pendingUpdate.lifeWorkedPercent
-            ? pendingUpdate.lifeWorkedPercent
-            : asset.lifeWorkedPercent !== null
-              ? String(asset.lifeWorkedPercent)
-              : "";
+      if (enforcedEditor === "usage" && (asset.usageMode === "hours" || asset.usageMode === "km")) {
+        const stagedHours = pendingUpdate.hasUsage && pendingUpdate.hours
+          ? pendingUpdate.hours
+          : asset.hours !== null
+            ? String(Math.round(asset.hours))
+            : "";
 
-          return { ...nextDraft, lifeWorkedPercent: stagedPercent };
-        }
-
-        if (asset.usageMode === "hours" || asset.usageMode === "km") {
-          const stagedHours = pendingUpdate.hasUsage && pendingUpdate.hours
-            ? pendingUpdate.hours
-            : asset.hours !== null
-              ? String(Math.round(asset.hours))
-              : "";
-
-          return { ...nextDraft, hours: stagedHours };
-        }
-      }
-
-      if (enforcedEditor === "fuel") {
-        const stagedFuel = pendingUpdate.hasFuel && pendingUpdate.fuelPercent
-          ? pendingUpdate.fuelPercent
-          : String(Math.round(asset.fuelPercent ?? 100));
-
-        return { ...nextDraft, fuelPercent: stagedFuel };
+        return { ...nextDraft, hours: stagedHours };
       }
 
       if (enforcedEditor === "service") {
@@ -1917,6 +1824,15 @@ export default function ScanClient({
     setShowServiceDetailsStep(false);
     setShowServicePhotoStep(false);
     setActiveEditor(null);
+  }
+
+  function skipRequiredUsageUpdate() {
+    setDraft((current) => keepCurrentLocation(current, readQrScanSession(normalizedCode)));
+    setHasCompletedRequiredUsageUpdate(true);
+    setShowServiceDetailsStep(false);
+    setShowServicePhotoStep(false);
+    setActiveEditor(null);
+    setNotice(null);
   }
 
   function removeShareMap() {
@@ -2133,15 +2049,6 @@ export default function ScanClient({
     }
   }
 
-  function handleFuelTap() {
-    if (!asset?.canUpdateFuel) {
-      setNotice({ tone: "error", message: "Fuel updates are not enabled for this asset yet." });
-      return;
-    }
-
-    openEditor("fuel");
-  }
-
   async function captureLocation(isAutomatic = false) {
     const storedSession = readQrScanSession(normalizedCode);
 
@@ -2228,13 +2135,8 @@ export default function ScanClient({
     }
 
     if (activeEditor === "usage") {
-      if (asset.usageMode === "percent") {
-        if (!draft.lifeWorkedPercent.trim()) return { ok: false, message: "Enter the current worked percentage." };
-        const nextPercent = Number(draft.lifeWorkedPercent);
-        if (persistedAsset.lifeWorkedPercent !== null && nextPercent < persistedAsset.lifeWorkedPercent) {
-          return { ok: false, message: "The new percentage cannot be lower than the saved percentage." };
-        }
-        return { ok: true };
+      if (!isMeterUsageMode(asset)) {
+        return { ok: false, message: "This asset does not accept QR usage updates." };
       }
 
       if (!draft.hours.trim()) return { ok: false, message: "Enter the current reading." };
@@ -2248,11 +2150,6 @@ export default function ScanClient({
               : "The new hour reading cannot be lower than the saved reading.",
         };
       }
-      return { ok: true };
-    }
-
-    if (activeEditor === "fuel") {
-      if (!draft.fuelPercent.trim()) return { ok: false, message: "Choose the fuel level." };
       return { ok: true };
     }
 
@@ -2330,82 +2227,33 @@ export default function ScanClient({
       }));
     }
 
-    if (activeEditor === "usage") {
-      if (asset.usageMode === "percent") {
-        const stagedPercent = draft.lifeWorkedPercent.trim();
-        const parsedPercent = Number(stagedPercent);
-
-        setPendingUpdate((current) => ({
-          ...current,
-          hours: "",
-          lifeWorkedPercent: stagedPercent,
-          latitude: savedLatitude || current.latitude,
-          longitude: savedLongitude || current.longitude,
-          gpsAccuracyMeters: savedGpsAccuracyMeters || current.gpsAccuracyMeters,
-          clientCapturedAt: savedClientCapturedAt || current.clientCapturedAt,
-          hasUsage: true,
-        }));
-        updateQrScanSession(normalizedCode, (current) => ({
-          ...current,
-          assetId: asset.id,
-          usageMode: asset.usageMode,
-          hours: "",
-          lifeWorkedPercent: stagedPercent,
-          hasUsage: true,
-          latitude: savedLatitude || current.latitude,
-          longitude: savedLongitude || current.longitude,
-          gpsAccuracyMeters: savedGpsAccuracyMeters || current.gpsAccuracyMeters,
-          locationCapturedAtIso: savedClientCapturedAt || current.locationCapturedAtIso,
-          locationMessage: current.locationMessage || GPS_READY_SESSION_MESSAGE,
-        }));
-        setAsset((current) => current ? { ...current, lifeWorkedPercent: parsedPercent } : current);
-      } else if (asset.usageMode === "hours" || asset.usageMode === "km") {
-        const stagedHours = draft.hours.trim();
-        const parsedHours = Number(stagedHours);
-
-        setPendingUpdate((current) => ({
-          ...current,
-          hours: stagedHours,
-          lifeWorkedPercent: "",
-          latitude: savedLatitude || current.latitude,
-          longitude: savedLongitude || current.longitude,
-          gpsAccuracyMeters: savedGpsAccuracyMeters || current.gpsAccuracyMeters,
-          clientCapturedAt: savedClientCapturedAt || current.clientCapturedAt,
-          hasUsage: true,
-        }));
-        updateQrScanSession(normalizedCode, (current) => ({
-          ...current,
-          assetId: asset.id,
-          usageMode: asset.usageMode,
-          hours: stagedHours,
-          lifeWorkedPercent: "",
-          hasUsage: true,
-          latitude: savedLatitude || current.latitude,
-          longitude: savedLongitude || current.longitude,
-          gpsAccuracyMeters: savedGpsAccuracyMeters || current.gpsAccuracyMeters,
-          locationCapturedAtIso: savedClientCapturedAt || current.locationCapturedAtIso,
-          locationMessage: current.locationMessage || GPS_READY_SESSION_MESSAGE,
-        }));
-        setAsset((current) => current ? { ...current, hours: parsedHours } : current);
-      }
-
-      setHasCompletedRequiredUsageUpdate(true);
-    }
-
-    if (activeEditor === "fuel") {
-      const stagedFuel = draft.fuelPercent.trim();
-      const parsedFuel = Number(stagedFuel);
+    if (activeEditor === "usage" && (asset.usageMode === "hours" || asset.usageMode === "km")) {
+      const stagedHours = draft.hours.trim();
+      const parsedHours = Number(stagedHours);
 
       setPendingUpdate((current) => ({
         ...current,
-        fuelPercent: stagedFuel,
+        hours: stagedHours,
         latitude: savedLatitude || current.latitude,
         longitude: savedLongitude || current.longitude,
         gpsAccuracyMeters: savedGpsAccuracyMeters || current.gpsAccuracyMeters,
         clientCapturedAt: savedClientCapturedAt || current.clientCapturedAt,
-        hasFuel: true,
+        hasUsage: true,
       }));
-      setAsset((current) => current ? { ...current, fuelPercent: parsedFuel } : current);
+      updateQrScanSession(normalizedCode, (current) => ({
+        ...current,
+        assetId: asset.id,
+        usageMode: asset.usageMode,
+        hours: stagedHours,
+        hasUsage: true,
+        latitude: savedLatitude || current.latitude,
+        longitude: savedLongitude || current.longitude,
+        gpsAccuracyMeters: savedGpsAccuracyMeters || current.gpsAccuracyMeters,
+        locationCapturedAtIso: savedClientCapturedAt || current.locationCapturedAtIso,
+        locationMessage: current.locationMessage || GPS_READY_SESSION_MESSAGE,
+      }));
+      setAsset((current) => current ? { ...current, hours: parsedHours } : current);
+      setHasCompletedRequiredUsageUpdate(true);
     }
 
     if (activeEditor === "service") {
@@ -2494,10 +2342,6 @@ export default function ScanClient({
     const sessionHours = asset.usageMode === "hours" || asset.usageMode === "km"
       ? pendingUpdate.hours || storedSessionUsage.hours || (sessionUsageAsset.hours !== null && Number.isFinite(sessionUsageAsset.hours) ? String(Math.round(sessionUsageAsset.hours)) : "")
       : "";
-    const sessionLifeWorkedPercent = asset.usageMode === "percent"
-      ? pendingUpdate.lifeWorkedPercent || storedSessionUsage.lifeWorkedPercent
-      : "";
-
     if (operatorName.trim().length < 2) {
       setNotice({ tone: "error", message: "Enter your name before saving." });
       return null;
@@ -2513,11 +2357,6 @@ export default function ScanClient({
     const payload = {
       operatorName: operatorName.trim(),
       hours: sessionHours,
-      lifeWorkedPercent:
-        (pendingUpdate.hasUsage || storedSessionUsage.hasUsage) && asset.usageMode === "percent"
-          ? sessionLifeWorkedPercent
-          : "",
-      fuelPercent: pendingUpdate.hasFuel && asset.canUpdateFuel ? pendingUpdate.fuelPercent : "",
       note: pendingUpdate.notes.join("\n\n---\n\n"),
       photoUrls: pendingUpdate.photoUrls,
       latitude: scanLocationPayloadText(finalLatitude),
@@ -2558,10 +2397,6 @@ export default function ScanClient({
         assetId: savedAssetFromResponse.id,
         usageMode: savedAssetFromResponse.usageMode,
         hours: savedAssetFromResponse.hours !== null && Number.isFinite(savedAssetFromResponse.hours) ? String(Math.round(savedAssetFromResponse.hours)) : current.hours,
-        lifeWorkedPercent:
-          savedAssetFromResponse.lifeWorkedPercent !== null && Number.isFinite(savedAssetFromResponse.lifeWorkedPercent)
-            ? String(savedAssetFromResponse.lifeWorkedPercent)
-            : current.lifeWorkedPercent,
         hasUsage: current.hasUsage || pendingUpdate.hasUsage || storedSessionUsage.hasUsage,
         latitude: finalLatitude || current.latitude,
         longitude: finalLongitude || current.longitude,
@@ -2637,10 +2472,7 @@ export default function ScanClient({
   }
 
   const locationReady = hasLocationCaptured(draft) || sessionHasLocation(readQrScanSession(normalizedCode));
-  const showUsageAction = asset ? asset.usageMode !== "none" : false;
-  const usageUpdateRequired = showUsageAction && needsUsageUpdateBeforeActions(asset, pendingUpdate, hasCompletedRequiredUsageUpdate);
-  const currentFuelPercent = normalizeFuelPercentText(draft.fuelPercent, asset?.fuelPercent ?? null);
-  const showFuelAction = Boolean(asset?.canUpdateFuel);
+  const usageUpdateRequired = needsUsageUpdateBeforeActions(asset, pendingUpdate, hasCompletedRequiredUsageUpdate);
   const serviceProfile = useMemo(() => resolveAssetServiceProfile(asset), [asset]);
   const checkedOptions = useMemo(() => checkedOptionsForProfile(serviceProfile), [serviceProfile]);
   const servicedOptions = useMemo(() => servicedOptionsForProfile(serviceProfile), [serviceProfile]);
@@ -2861,19 +2693,11 @@ export default function ScanClient({
                     </span>
                   </button>
 
-                  <button type="button" className={styles.actionCard} onClick={handleFuelTap}>
-                    <span className={styles.actionIconWrap}><FuelIcon className={styles.actionIcon} /></span>
-                    <span className={styles.actionTextBlock}>
-                      <strong>Fuel</strong>
-                      <small>{showFuelAction ? buildEditorSummary("fuel", asset) : "Not enabled"}</small>
-                    </span>
-                  </button>
-
                   <button type="button" className={styles.actionCard} onClick={() => openEditor("service")}>
                     <span className={styles.actionIconWrap}><WrenchIcon className={styles.actionIcon} /></span>
                     <span className={styles.actionTextBlock}>
                       <strong>Maintenance</strong>
-                      <small>{buildEditorSummary("service", asset)}</small>
+                      <small className={styles.actionSubtitleNoWrap}>{buildEditorSummary("service", asset)}</small>
                     </span>
                   </button>
 
@@ -3096,56 +2920,48 @@ export default function ScanClient({
 
       {asset && activeEditor ? (
         <div className={styles.editorOverlay}>
-          <div className={`${styles.editorCard} ${activeEditor && activeEditor !== "usage" ? styles.actionEditorCard : ""} ${activeEditor === "fuel" ? styles.fuelEditorCard : ""}`} role="dialog" aria-modal="true" aria-labelledby="scan-editor-title">
+          <div className={`${styles.editorCard} ${activeEditor && activeEditor !== "usage" ? styles.actionEditorCard : ""}`} role="dialog" aria-modal="true" aria-labelledby="scan-editor-title">
             <div className={styles.editorHeader}>
               <div className={styles.editorTitleBlock}>
                 <h3 id="scan-editor-title">
                   {activeEditor === "usage"
                     ? asset.usageMode === "km"
                       ? "Capture the latest kilometres"
-                      : asset.usageMode === "hours"
-                        ? "Capture the latest hours"
-                        : "Update worked percentage"
-                    : activeEditor === "fuel"
-                      ? "Fuel level"
-                      : activeEditor === "service"
-                        ? showServicePhotoStep
-                          ? "Photos"
-                          : draft.serviceMode === "checked"
-                            ? serviceCopy.checkedTitle
-                            : draft.serviceMode === "serviced"
+                      : "Capture the latest hours"
+                    : activeEditor === "service"
+                      ? showServicePhotoStep
+                        ? "Photos"
+                        : draft.serviceMode === "checked"
+                          ? serviceCopy.checkedTitle
+                          : draft.serviceMode === "serviced"
+                            ? showServiceDetailsStep
+                              ? "Service details"
+                              : serviceCopy.servicedTitle
+                            : draft.serviceMode === "repaired"
                               ? showServiceDetailsStep
-                                ? "Service details"
-                                : serviceCopy.servicedTitle
-                              : draft.serviceMode === "repaired"
-                                ? showServiceDetailsStep
-                                  ? "Repairer details"
-                                  : serviceCopy.repairedTitle
-                                : "Maintenance"
-                        : "Photos"}
+                                ? "Repairer details"
+                                : serviceCopy.repairedTitle
+                              : "Maintenance"
+                      : "Photos"}
                 </h3>
                 <p>
                   {activeEditor === "usage"
-                    ? asset.usageMode === "percent"
-                      ? "Enter the current percentage worked."
-                      : "Use the latest reading shown on the machine."
-                    : activeEditor === "fuel"
-                      ? "Save the asset fuel gauge as it is now."
-                      : activeEditor === "service"
-                        ? showServicePhotoStep
-                          ? "Add clear photos."
-                          : draft.serviceMode === "checked"
-                            ? serviceCopy.checkedPrompt
-                            : draft.serviceMode === "serviced"
+                    ? "Use the latest reading shown on the machine."
+                    : activeEditor === "service"
+                      ? showServicePhotoStep
+                        ? "Add clear photos."
+                        : draft.serviceMode === "checked"
+                          ? serviceCopy.checkedPrompt
+                          : draft.serviceMode === "serviced"
+                            ? showServiceDetailsStep
+                              ? serviceCopy.detailsSubheader
+                              : serviceCopy.servicedPrompt
+                            : draft.serviceMode === "repaired"
                               ? showServiceDetailsStep
                                 ? serviceCopy.detailsSubheader
-                                : serviceCopy.servicedPrompt
-                              : draft.serviceMode === "repaired"
-                                ? showServiceDetailsStep
-                                  ? serviceCopy.detailsSubheader
-                                  : serviceCopy.repairedPrompt
-                                : "Choose update type."
-                        : "Add clear photos."}
+                                : serviceCopy.repairedPrompt
+                              : "Choose update type."
+                      : "Add clear photos."}
                 </p>
               </div>
 
@@ -3155,7 +2971,7 @@ export default function ScanClient({
             </div>
 
             <div className={styles.editorBody}>
-              {activeEditor === "usage" && asset.usageMode !== "none" ? (
+              {activeEditor === "usage" && isMeterUsageMode(asset) ? (
                 <div className={styles.centerStack}>
                   <label className={styles.field}>
                     <span>{usageModalLabel(asset)}</span>
@@ -3163,21 +2979,12 @@ export default function ScanClient({
                       className={styles.largeInput}
                       inputMode="numeric"
                       placeholder={usagePlaceholder(asset)}
-                      value={asset.usageMode === "percent" ? draft.lifeWorkedPercent : draft.hours}
+                      value={draft.hours}
                       onChange={(event) =>
-                        setDraft((current) =>
-                          asset.usageMode === "percent"
-                            ? {
-                                ...current,
-                                lifeWorkedPercent: normalizePercentInput(event.target.value),
-                                hours: "",
-                              }
-                            : {
-                                ...current,
-                                hours: normalizeIntegerInput(event.target.value),
-                                lifeWorkedPercent: "",
-                              },
-                        )
+                        setDraft((current) => ({
+                          ...current,
+                          hours: normalizeIntegerInput(event.target.value),
+                        }))
                       }
                       disabled={isSaving}
                     />
@@ -3185,52 +2992,6 @@ export default function ScanClient({
                   <p className={styles.helperText}>
                     Current saved reading: {formatUsage(asset)}
                   </p>
-                </div>
-              ) : null}
-
-              {activeEditor === "fuel" ? (
-                <div className={styles.fuelSliderBlock}>
-                  <div className={styles.fuelValueRow}>
-                    <strong>{currentFuelPercent}%</strong>
-                    <span>Asset fuel gauge</span>
-                  </div>
-                  <div className={styles.sliderTrackWrap}>
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      step="5"
-                      className={styles.rangeInput}
-                      value={currentFuelPercent}
-                      style={{
-                        background: `linear-gradient(90deg, #176b4f 0%, #176b4f ${currentFuelPercent}%, #dce8e4 ${currentFuelPercent}%, #dce8e4 100%)`,
-                      }}
-                      onChange={(event) =>
-                        setDraft((current) => ({
-                          ...current,
-                          fuelPercent: normalizeFuelPercentText(event.target.value),
-                        }))
-                      }
-                      disabled={isSaving}
-                    />
-                    <div className={styles.fuelScale}>
-                      <span>Empty</span>
-                      <span>Full</span>
-                    </div>
-                  </div>
-                  <div className={styles.quickFuelGrid}>
-                    {QUICK_FUEL_OPTIONS.map((option) => (
-                      <button
-                        type="button"
-                        key={option}
-                        className={`${styles.quickFuelButton} ${currentFuelPercent === String(option) ? styles.quickFuelButtonActive : ""}`}
-                        onClick={() => setDraft((current) => ({ ...current, fuelPercent: String(option) }))}
-                        disabled={isSaving}
-                      >
-                        {option}%
-                      </button>
-                    ))}
-                  </div>
                 </div>
               ) : null}
 
@@ -3798,8 +3559,13 @@ export default function ScanClient({
             </div>
 
             <div className={styles.editorFooter}>
-              <button type="button" className={styles.secondaryButton} onClick={closeEditor} disabled={isSaving}>
-                Cancel
+              <button
+                type="button"
+                className={styles.secondaryButton}
+                onClick={activeEditor === "usage" && usageUpdateRequired ? skipRequiredUsageUpdate : closeEditor}
+                disabled={isSaving}
+              >
+                {activeEditor === "usage" && usageUpdateRequired ? "Skip for now" : "Cancel"}
               </button>
               <button
                 type="button"

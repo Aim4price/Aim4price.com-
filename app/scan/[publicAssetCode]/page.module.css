@@ -668,6 +668,18 @@
   text-align: center;
 }
 
+.actionCard small.actionSubtitleNoWrap {
+  width: min(100%, 12.8rem);
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  -webkit-line-clamp: unset;
+  -webkit-box-orient: initial;
+  font-size: clamp(0.82rem, 2.65vw, 1rem);
+  letter-spacing: -0.01em;
+}
+
 .usageGateCard {
   display: grid;
   gap: 1rem;
