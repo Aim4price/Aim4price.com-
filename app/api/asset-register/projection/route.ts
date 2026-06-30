@@ -26,12 +26,17 @@ export async function POST(request: NextRequest) {
     inflationRatePct: number;
     extraHours: number;
     extraUsage: number;
+    targetLifeWorkedPercent: number;
   }>;
 
   const assetId = String(body.assetId ?? '').trim();
   const targetYear = Math.round(Number(body.targetYear));
   const inflationRatePct = Number(body.inflationRatePct);
   const extraUsage = Number(body.extraUsage ?? body.extraHours ?? 0);
+  const hasTargetLifeWorkedPercent = body.targetLifeWorkedPercent !== null &&
+    typeof body.targetLifeWorkedPercent !== 'undefined' &&
+    String(body.targetLifeWorkedPercent).trim() !== '';
+  const targetLifeWorkedPercent = hasTargetLifeWorkedPercent ? Number(body.targetLifeWorkedPercent) : null;
 
   if (!assetId) {
     return badRequest('A valid asset id is required.');
@@ -49,6 +54,10 @@ export async function POST(request: NextRequest) {
     return badRequest('Extra usage must be zero or greater.');
   }
 
+  if (targetLifeWorkedPercent !== null && (!Number.isFinite(targetLifeWorkedPercent) || targetLifeWorkedPercent < 0 || targetLifeWorkedPercent > 100)) {
+    return badRequest('New Expected % must be between 0% and 100%.');
+  }
+
   try {
     const projection = await calculateFuturePriceForAsset({
       userId: session.user.id,
@@ -56,6 +65,7 @@ export async function POST(request: NextRequest) {
       targetYear,
       inflationRatePct,
       extraHours: extraUsage,
+      targetLifeWorkedPercent,
     });
 
     return NextResponse.json({ ok: true, projection });
@@ -70,7 +80,19 @@ export async function POST(request: NextRequest) {
     }
 
     if (error.message === 'FUTURE_PRICE_UNAVAILABLE') {
-      return badRequest('Future price is only available for saved tractor and motor vehicle valuations with the required asset data.');
+      return badRequest('Future price is only available for saved tractor, motor vehicle, and percentage-worked valuations with the required asset data.');
+    }
+
+    if (error.message === 'TARGET_PERCENT_INVALID') {
+      return badRequest('New Expected % must be between 0% and 100%.');
+    }
+
+    if (error.message === 'TARGET_PERCENT_BELOW_CURRENT') {
+      return badRequest('New Expected % cannot be lower than the current worked percentage.');
+    }
+
+    if (error.message === 'TARGET_PERCENT_UNSUPPORTED') {
+      return badRequest('New Expected % can only be used for percentage-worked assets.');
     }
 
     if (error.message === 'VALUATION_RUN_NOT_FOUND') {
