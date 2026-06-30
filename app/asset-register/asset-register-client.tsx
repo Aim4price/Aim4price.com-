@@ -740,16 +740,6 @@ let leafletLoaderPromise: Promise<any> | null = null;
 
 const ASSET_QUOTE_OPTIONS: AssetQuoteOption[] = [
   {
-    leadType: 'replacement_quote',
-    partnerType: 'dealer',
-    title: 'Get replacement price',
-    shortTitle: 'Replacement price',
-    descriptionLines: ['Send this asset to a dealer.', 'Request a replacement price.'],
-    mapTitle: 'Choose a dealer.',
-    sendLabel: 'Send replacement price request',
-    emptyPartnerText: 'No listed dealers found yet. Dealer accounts must enable their directory listing under Account details.',
-  },
-  {
     leadType: 'finance',
     partnerType: 'finance',
     title: 'Get finance offer',
@@ -768,6 +758,16 @@ const ASSET_QUOTE_OPTIONS: AssetQuoteOption[] = [
     mapTitle: 'Choose an insurer or broker.',
     sendLabel: 'Send insurance request',
     emptyPartnerText: 'No listed insurers or brokers found yet. Insurance accounts must enable their directory listing under Account details.',
+  },
+  {
+    leadType: 'replacement_quote',
+    partnerType: 'dealer',
+    title: 'Get replacement price',
+    shortTitle: 'Replacement price',
+    descriptionLines: ['Send this asset to a dealer.', 'Request a replacement price.'],
+    mapTitle: 'Choose a dealer.',
+    sendLabel: 'Send replacement price request',
+    emptyPartnerText: 'No listed dealers found yet. Dealer accounts must enable their directory listing under Account details.',
   },
 ];
 
