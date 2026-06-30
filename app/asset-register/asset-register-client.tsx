@@ -740,6 +740,16 @@ let leafletLoaderPromise: Promise<any> | null = null;
 
 const ASSET_QUOTE_OPTIONS: AssetQuoteOption[] = [
   {
+    leadType: 'replacement_quote',
+    partnerType: 'dealer',
+    title: 'Get replacement price',
+    shortTitle: 'Replacement price',
+    descriptionLines: ['Send this asset to a dealer.', 'Request a replacement price.'],
+    mapTitle: 'Choose a dealer.',
+    sendLabel: 'Send replacement price request',
+    emptyPartnerText: 'No listed dealers found yet. Dealer accounts must enable their directory listing under Account details.',
+  },
+  {
     leadType: 'finance',
     partnerType: 'finance',
     title: 'Get finance offer',
@@ -4596,6 +4606,14 @@ export default function AssetRegisterClient() {
   const isFullRegisterQuoteLead = quoteScope === 'register';
 
   const selectedQuoteOption = useMemo(() => quoteOptionForLeadType(selectedQuoteLeadType), [selectedQuoteLeadType]);
+  const availableAssetQuoteOptions = useMemo(
+    () => (
+      quoteAsset?.kind === 'property'
+        ? ASSET_QUOTE_OPTIONS.filter((option) => option.leadType !== 'replacement_quote')
+        : ASSET_QUOTE_OPTIONS
+    ),
+    [quoteAsset?.kind],
+  );
   const selectedQuotePartner = useMemo(
     () => quotePartners.find((partner) => partner.userId === selectedQuotePartnerId) ?? null,
     [quotePartners, selectedQuotePartnerId],
@@ -11593,7 +11611,7 @@ export default function AssetRegisterClient() {
               {!selectedQuoteOption ? (
                 <div className={styles.optionsContent}>
                   <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid} ${styles.assetQuoteChoiceGrid}`}>
-                    {ASSET_QUOTE_OPTIONS.map((option) => (
+                    {availableAssetQuoteOptions.map((option) => (
                       <button
                         key={option.leadType}
                         type="button"
