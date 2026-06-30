@@ -1279,7 +1279,7 @@ export default function MyInvoicesClient() {
                 <article className={styles.invoiceRow} key={invoice.id}>
                   <div className={styles.invoiceHeader}>
                     <div className={styles.invoiceTitleBlock}>
-                      <h3 className={styles.invoiceTitle}>{invoice.supplierName || 'Unknown supplier'}</h3>
+                      <h2 className={styles.invoiceTitle}>{invoice.supplierName || 'Unknown supplier'}</h2>
                       <p className={styles.invoiceAsset}>{buildInvoiceAssetMeta(invoice)}</p>
                       <div className={styles.invoiceMetaList}>
                         <span className={styles.invoiceValueMethodLabel}>{invoice.invoiceNumber || 'No invoice number'}</span>

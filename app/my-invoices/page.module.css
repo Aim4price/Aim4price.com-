@@ -2042,7 +2042,7 @@
   margin: 0;
   overflow-wrap: anywhere;
   color: #073b30;
-  font-family: inherit;
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
   font-size: clamp(1.42rem, 1.9vw, 1.72rem);
   font-weight: 760;
   line-height: 1.08;
@@ -2159,8 +2159,9 @@
   padding: 0 1rem;
   border-radius: 1rem;
   border-width: 1.5px;
+  gap: 0.55rem;
   font-size: 0.96rem;
-  font-weight: 760;
+  font-weight: 700;
   box-shadow:
     0 10px 22px rgba(31, 51, 71, 0.07),
     inset 0 1px 0 rgba(255, 255, 255, 0.98);
@@ -2168,8 +2169,8 @@
 
 .rowActions .buttonIcon,
 .rowActions svg {
-  width: 1rem;
-  height: 1rem;
+  width: 1.05rem;
+  height: 1.05rem;
 }
 
 .invoiceOpenButton {
@@ -2378,15 +2379,16 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 960px) {
   .invoiceHeader {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: 1fr;
     align-items: start;
   }
 
   .invoiceHeaderAside {
+    width: 100%;
     min-width: 0;
-    justify-items: start;
+    justify-items: stretch;
   }
 
   .invoiceValueBlock {
@@ -2402,25 +2404,30 @@
   }
 
   .rowActions {
-    justify-content: flex-start;
+    justify-content: stretch;
+  }
+
+  .rowActions .secondaryButtonSmall,
+  .rowActions .dangerButtonSmall {
+    flex: 1 1 180px;
   }
 }
 
 @media (max-width: 760px) {
   .invoiceRow {
     padding: 1.05rem;
-    border-radius: 1.3rem;
+    border-radius: 1.25rem;
   }
 
   .invoiceTitle {
-    font-size: 1.34rem;
+    font-size: 1.35rem;
     font-weight: 740;
     letter-spacing: -0.026em;
   }
 
   .invoicePrice {
-    font-size: clamp(1.9rem, 9vw, 2.6rem);
-    white-space: normal;
+    font-size: 1.45rem;
+    white-space: nowrap;
   }
 
   .rowActions {
