@@ -4151,8 +4151,6 @@ export default function AssetRegisterClient() {
   const isAssetSettingsLocationBusy = assetSettingsLocationState !== 'idle';
   const isAssetSettingsManualLocationSaving = assetSettingsLocationState === 'savingManual';
   const isAssetSettingsMapLocationSaving = assetSettingsLocationState === 'savingMap';
-  const isAssetSettingsDeviceLocationSaving = assetSettingsLocationState === 'savingDevice';
-  const isAssetSettingsDeviceLocationCapturing = assetSettingsLocationState === 'capturing';
   const isAssetSettingsBusy = isSavingAssetSettings || isAssetSettingsLocationBusy;
   const [isManualConversionConfirmOpen, setIsManualConversionConfirmOpen] = useState(false);
   const [isAddChoiceModalOpen, setIsAddChoiceModalOpen] = useState(false);
@@ -5087,8 +5085,8 @@ export default function AssetRegisterClient() {
         if (!assetSettingsLeafletMapRef.current) {
           assetSettingsLeafletMapRef.current = L.map(assetSettingsMapElementRef.current, { zoomControl: true }).setView(center, zoom);
 
-          L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+          L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community',
             maxZoom: 19,
           }).addTo(assetSettingsLeafletMapRef.current);
 
@@ -8854,11 +8852,6 @@ export default function AssetRegisterClient() {
   const assetSettingsMapGpsButtonLabel = isAssetSettingsMapLocationSaving
     ? 'Saving GPS...'
     : 'Save map position';
-  const assetSettingsDeviceGpsButtonLabel = isAssetSettingsDeviceLocationCapturing
-    ? 'Capturing GPS...'
-    : isAssetSettingsDeviceLocationSaving
-      ? 'Saving GPS...'
-      : 'Use this device’s GPS';
   const marketplacePhotoUrls = marketplaceAsset ? normalizePhotos(marketplaceAsset.photos) : [];
   const marketplaceListingTitle = marketplaceAsset ? buildMarketplaceListingTitle(marketplaceAsset, true) : '';
   const marketplaceModalTitle = marketplaceAsset
@@ -10794,7 +10787,7 @@ export default function AssetRegisterClient() {
           <div className={styles.modalBackdrop} onClick={closeAssetSettingsModal} />
 
           <div
-            className={`${styles.modalCard} ${styles.assetSettingsModal} ${assetSettingsView !== 'menu' ? styles.assetSettingsSubModal : ''}`}
+            className={`${styles.modalCard} ${styles.assetSettingsModal} ${assetSettingsView !== 'menu' ? styles.assetSettingsSubModal : ''} ${assetSettingsView === 'location' ? styles.assetSettingsLocationModal : ''} ${assetSettingsView === 'locationMap' ? styles.assetSettingsMapModal : ''}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="asset-settings-title"
@@ -10830,7 +10823,7 @@ export default function AssetRegisterClient() {
               ) : null}
 
               {assetSettingsView === 'menu' ? (
-                <div className={styles.assetSettingsMenuGrid}>
+                <div className={`${styles.assetSettingsMenuGrid} ${isSavedManualAsset(editingAsset) ? styles.assetSettingsMenuGridManual : ''}`}>
                   <button
                     type="button"
                     className={styles.assetSettingsOptionButton}
@@ -10840,7 +10833,7 @@ export default function AssetRegisterClient() {
                     <FlagIcon className={styles.assetSettingsOptionIcon} />
                     <span>
                       <strong>Location</strong>
-                      <small>Update manual, device or map GPS position.</small>
+                      <small>Update GPS position.</small>
                     </span>
                   </button>
 
@@ -10854,8 +10847,8 @@ export default function AssetRegisterClient() {
                       >
                         <OptionsIcon className={styles.assetSettingsOptionIcon} />
                         <span>
-                          <strong>Change Equipment Type</strong>
-                          <small>Change this manual asset’s saved category.</small>
+                          <strong>Equipment Type</strong>
+                          <small>Change this manual asset’s category.</small>
                         </span>
                       </button>
 
@@ -10867,8 +10860,8 @@ export default function AssetRegisterClient() {
                       >
                         <TrendIcon className={styles.assetSettingsOptionIcon} />
                         <span>
-                          <strong>Change Manual Asset to Aim4price Valued Asset</strong>
-                          <small>Run an Aim4price valuation for this asset.</small>
+                          <strong>Aim4price Valuation</strong>
+                          <small>Run an Aim4price valuation.</small>
                         </span>
                       </button>
                     </>
@@ -10883,8 +10876,8 @@ export default function AssetRegisterClient() {
                     >
                       <ManageIcon className={styles.assetSettingsOptionIcon} />
                       <span>
-                        <strong>Change Lifetime Expectancy</strong>
-                        <small>Override saved lifetime or usage percentage.</small>
+                        <strong>Lifetime Expectancy</strong>
+                        <small>Override saved lifetime percentage.</small>
                       </span>
                     </button>
                   ) : null}
@@ -10936,7 +10929,6 @@ export default function AssetRegisterClient() {
                       <DocumentIcon className={styles.assetSettingsOptionIcon} />
                       <span>
                         <strong>Manual</strong>
-                        <small>Enter latitude and longitude manually.</small>
                       </span>
                     </button>
 
@@ -10948,8 +10940,7 @@ export default function AssetRegisterClient() {
                     >
                       <RefreshIcon className={styles.assetSettingsOptionIcon} />
                       <span>
-                        <strong>{isAssetSettingsDeviceLocationCapturing || isAssetSettingsDeviceLocationSaving ? assetSettingsDeviceGpsButtonLabel : 'Automatic'}</strong>
-                        <small>Use this device’s GPS position.</small>
+                        <strong>Automatic</strong>
                       </span>
                     </button>
 
@@ -10961,8 +10952,7 @@ export default function AssetRegisterClient() {
                     >
                       <FlagIcon className={styles.assetSettingsOptionIcon} />
                       <span>
-                        <strong>Choose on map</strong>
-                        <small>Drop a pin on the map and save it.</small>
+                        <strong>Map</strong>
                       </span>
                     </button>
                   </div>
@@ -11050,7 +11040,7 @@ export default function AssetRegisterClient() {
               {assetSettingsView === 'locationMap' ? (
                 <section className={`${styles.assetSettingsSection} ${styles.assetSettingsLocationSection}`}>
                   <div className={styles.assetSettingsSectionCopy}>
-                    <span>Choose on map</span>
+                    <span>Map</span>
                     <h4>Drop a GPS Pin</h4>
                     <p>Click or tap the map to place the asset position. Drag the marker to fine-tune the coordinates.</p>
                   </div>
@@ -11102,7 +11092,7 @@ export default function AssetRegisterClient() {
                 <section className={styles.assetSettingsSection}>
                   <div className={styles.assetSettingsSectionCopy}>
                     <span>Manual asset</span>
-                    <h4>Change Equipment Type</h4>
+                    <h4>Equipment Type</h4>
                     <p>Change the saved type on this same asset record. Existing values, files, notes, finance, insurance and licence details are preserved.</p>
                   </div>
 
@@ -11131,7 +11121,7 @@ export default function AssetRegisterClient() {
                 <section className={styles.assetSettingsSection}>
                   <div className={styles.assetSettingsSectionCopy}>
                     <span>Conversion</span>
-                    <h4>Change Manual Asset to Aim4price Valued Asset</h4>
+                    <h4>Aim4price Valuation</h4>
                     <p>Complete a normal Aim4price estimate. The manual asset is only changed after the final Save succeeds.</p>
                   </div>
 
