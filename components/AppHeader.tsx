@@ -205,7 +205,6 @@ const ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
   { href: '/', label: 'Home', mobileOnly: true },
   { href: '/account', label: 'Account Details' },
   { href: '/asset-register', label: 'Asset Register', mobileOnly: true },
-  { href: '/companies', label: 'Companies' },
   { href: '/valuation', label: 'Get Estimate', mobileOnly: true },
   { href: '/marketplace', label: 'Marketplace', mobileOnly: true },
   { href: '/asset-map', label: 'My Asset Map' },
