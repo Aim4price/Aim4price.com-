@@ -194,6 +194,12 @@ const SOURCE_FILTER_OPTIONS: FilterSelectOption[] = [
   { value: 'automatic', label: 'Uploaded invoice/photo records' },
 ];
 
+const USAGE_METRIC_OPTIONS: Array<{ value: UsageMetric; label: string }> = [
+  { value: 'none', label: 'No usage reading' },
+  { value: 'hours', label: 'Hours reading' },
+  { value: 'km', label: 'Kilometre reading' },
+];
+
 function IconBase(props: SVGProps<SVGSVGElement>) {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props} />;
 }
@@ -514,7 +520,7 @@ function buildEmptyDraft(source: InvoiceSource): InvoiceDraft {
   };
 }
 
-function draftFromExtraction(extractionDraft: ExtractionDraft, source: InvoiceSource, documentId: string): InvoiceDraft {
+function draftFromExtraction(extractionDraft: ExtractionDraft, source: InvoiceSource, documentId: string, defaultUsageMetric: UsageMetric = 'none'): InvoiceDraft {
   return {
     supplierName: extractionDraft.supplierName ?? '',
     invoiceNumber: extractionDraft.invoiceNumber ?? '',
@@ -523,7 +529,7 @@ function draftFromExtraction(extractionDraft: ExtractionDraft, source: InvoiceSo
     vatAmount: formatInvoiceMoneyInput(formatMoneyWithCents(extractionDraft.vatAmount ?? null)),
     totalIncVat: formatInvoiceMoneyInput(formatMoneyWithCents(extractionDraft.totalIncVat ?? null)),
     usageReading: extractionDraft.usageReading === null || typeof extractionDraft.usageReading === 'undefined' ? '' : formatInvoiceUsageInput(extractionDraft.usageReading),
-    usageMetric: extractionDraft.usageMetric ?? 'none',
+    usageMetric: extractionDraft.usageMetric && extractionDraft.usageMetric !== 'none' ? extractionDraft.usageMetric : defaultUsageMetric,
     maintenanceWorkDone: extractionDraft.maintenanceWorkDone ?? '',
     partsSupplied: extractionDraft.partsSupplied ?? '',
     repairWorkDone: extractionDraft.repairWorkDone ?? '',
@@ -617,6 +623,7 @@ export default function MyInvoicesClient() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [currentInvoicePage, setCurrentInvoicePage] = useState(1);
   const [openFilterDropdown, setOpenFilterDropdown] = useState<FilterDropdownKey | null>(null);
+  const [usageMetricDropdownOpen, setUsageMetricDropdownOpen] = useState(false);
   const [filterAssetSearch, setFilterAssetSearch] = useState('');
   const [downloadOpen, setDownloadOpen] = useState(false);
   const [reportFormat, setReportFormat] = useState<ReportFormat>('pdf');
@@ -730,6 +737,7 @@ export default function MyInvoicesClient() {
   const hasInvoiceSearch = invoiceSearch.trim().length > 0;
   const deleteConfirmOpen = Boolean(deleteCandidateInvoice);
   const modalOpen = sourceChoiceOpen || assetPickerOpen || flow === 'upload' || formOpen || filterOpen || downloadOpen || deleteConfirmOpen;
+  const selectedUsageMetricOption = USAGE_METRIC_OPTIONS.find((option) => option.value === draft.usageMetric) ?? USAGE_METRIC_OPTIONS[0];
 
   useEffect(() => {
     setCurrentInvoicePage(1);
@@ -781,6 +789,36 @@ export default function MyInvoicesClient() {
     };
   }, [filterOpen, openFilterDropdown]);
 
+  useEffect(() => {
+    if (!formOpen) setUsageMetricDropdownOpen(false);
+  }, [formOpen]);
+
+  useEffect(() => {
+    if (!usageMetricDropdownOpen) return undefined;
+
+    function handlePointerDown(event: MouseEvent) {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      if (!target.closest('[data-usage-metric-dropdown="true"]')) {
+        setUsageMetricDropdownOpen(false);
+      }
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setUsageMetricDropdownOpen(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [usageMetricDropdownOpen]);
+
   async function fetchInvoiceData(filters: InvoiceFilterState): Promise<InvoicesResponse> {
     const response = await fetch(buildInvoiceListUrl(filters), { cache: 'no-store' });
     const data = (await response.json()) as InvoicesResponse;
@@ -812,6 +850,18 @@ export default function MyInvoicesClient() {
     applyInvoiceData(data);
   }
 
+  function defaultUsageMetricForAsset(assetId: string): UsageMetric {
+    const asset = assets.find((candidate) => candidate.id === assetId);
+    return asset?.usageMetric ?? 'none';
+  }
+
+  function buildDraftForAsset(source: InvoiceSource, assetId: string): InvoiceDraft {
+    return {
+      ...buildEmptyDraft(source),
+      usageMetric: defaultUsageMetricForAsset(assetId),
+    };
+  }
+
   function closeModal() {
     setFlow(null);
     setSelectedAssetId('');
@@ -822,6 +872,7 @@ export default function MyInvoicesClient() {
     setUploadedDocument(null);
     setRawTextPreview('');
     setExtractionWarnings([]);
+    setUsageMetricDropdownOpen(false);
     setDraft(buildEmptyDraft('manual'));
   }
 
@@ -835,6 +886,7 @@ export default function MyInvoicesClient() {
     setUploadedDocument(null);
     setRawTextPreview('');
     setExtractionWarnings([]);
+    setUsageMetricDropdownOpen(false);
     setDraft(buildEmptyDraft('manual'));
     setFlow('source-choice');
   }
@@ -849,6 +901,7 @@ export default function MyInvoicesClient() {
     setUploadedDocument(null);
     setRawTextPreview('');
     setExtractionWarnings([]);
+    setUsageMetricDropdownOpen(false);
     setDraft(buildEmptyDraft(source));
     setFlow(source === 'manual' ? 'asset-manual' : 'asset-automatic');
   }
@@ -858,12 +911,12 @@ export default function MyInvoicesClient() {
     setPickerSearch('');
 
     if (flow === 'asset-automatic') {
-      setDraft(buildEmptyDraft('automatic'));
+      setDraft(buildDraftForAsset('automatic', assetId));
       setFlow('upload');
       return;
     }
 
-    setDraft(buildEmptyDraft('manual'));
+    setDraft(buildDraftForAsset('manual', assetId));
     setFlow('manual-form');
   }
 
@@ -964,7 +1017,7 @@ export default function MyInvoicesClient() {
       const data = (await response.json()) as ExtractionResponse;
 
       if (!response.ok || !data.ok || !data.extraction) {
-        setDraft({ ...buildEmptyDraft('automatic'), invoiceDocumentId: document.id });
+        setDraft({ ...buildDraftForAsset('automatic', selectedAssetId), invoiceDocumentId: document.id });
         setExtractionWarnings([data.error || 'Aim4price could not read this invoice/photo automatically. Complete the cost details manually.']);
         setRawTextPreview('');
         setFlow('review');
@@ -973,7 +1026,7 @@ export default function MyInvoicesClient() {
 
       const nextDocument = data.document ?? document;
       setUploadedDocument(nextDocument);
-      setDraft(draftFromExtraction(data.extraction.draft, 'automatic', nextDocument.id));
+      setDraft(draftFromExtraction(data.extraction.draft, 'automatic', nextDocument.id, defaultUsageMetricForAsset(selectedAssetId)));
       setExtractionWarnings(data.extraction.warnings ?? []);
       setRawTextPreview((data.extraction.rawText ?? '').slice(0, 3000));
       setFlow('review');
@@ -1091,6 +1144,15 @@ export default function MyInvoicesClient() {
     }
   }
 
+  function setUsageMetric(value: UsageMetric) {
+    setDraft((current) => ({
+      ...current,
+      usageMetric: value,
+      usageReading: value === 'none' ? '' : current.usageReading,
+    }));
+    setUsageMetricDropdownOpen(false);
+  }
+
   function setDraftField<K extends keyof InvoiceDraft>(key: K, value: InvoiceDraft[K]) {
     setDraft((current) => ({ ...current, [key]: value }));
   }
@@ -1161,7 +1223,6 @@ export default function MyInvoicesClient() {
             {!isLoading ? paginatedInvoices.map((invoice) => {
               const invoiceMetaParts = [
                 invoice.invoiceNumber || 'No invoice number',
-                invoice.vatAmount !== null ? `VAT ${formatMoney(invoice.vatAmount)}` : null,
                 invoice.updatedAtIso ? `Updated ${formatDateTime(invoice.updatedAtIso)}` : null,
               ].filter((part): part is string => Boolean(part));
 
@@ -1505,14 +1566,46 @@ export default function MyInvoicesClient() {
                     <span>Invoice date</span>
                     <input type="date" value={draft.invoiceDate} onChange={(event) => setDraftField('invoiceDate', event.target.value)} />
                   </label>
-                  <label>
+                  <div className={styles.costUsageMetricField}>
                     <span>Usage metric</span>
-                    <select value={draft.usageMetric} onChange={(event) => setDraftField('usageMetric', event.target.value as UsageMetric)}>
-                      <option value="none">None</option>
-                      <option value="hours">Hours</option>
-                      <option value="km">KM</option>
-                    </select>
-                  </label>
+                    <div
+                      className={`${styles.customFilterSelect} ${usageMetricDropdownOpen ? styles.customFilterSelectOpen : ''}`}
+                      data-usage-metric-dropdown="true"
+                    >
+                      <button
+                        type="button"
+                        className={`${styles.customFilterSelectButton} ${usageMetricDropdownOpen ? styles.customFilterSelectButtonOpen : ''}`}
+                        onClick={() => setUsageMetricDropdownOpen((current) => !current)}
+                        aria-haspopup="listbox"
+                        aria-expanded={usageMetricDropdownOpen}
+                        aria-label="Usage metric"
+                      >
+                        <span className={styles.customFilterSelectButtonText}>{selectedUsageMetricOption.label}</span>
+                        <ChevronDownIcon className={styles.customFilterSelectChevron} />
+                      </button>
+
+                      {usageMetricDropdownOpen ? (
+                        <div className={styles.customFilterSelectMenu} role="listbox" aria-label="Usage metric">
+                          {USAGE_METRIC_OPTIONS.map((option) => {
+                            const isSelected = option.value === draft.usageMetric;
+
+                            return (
+                              <button
+                                type="button"
+                                key={`usage-metric-${option.value}`}
+                                className={`${styles.customFilterSelectOption} ${isSelected ? styles.customFilterSelectOptionActive : ''}`}
+                                onClick={() => setUsageMetric(option.value)}
+                                role="option"
+                                aria-selected={isSelected}
+                              >
+                                <span className={styles.customFilterSelectOptionLabel}>{option.label}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
                   <label>
                     <span>Usage reading</span>
                     <input
