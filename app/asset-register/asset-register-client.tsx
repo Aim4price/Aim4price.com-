@@ -560,6 +560,7 @@ type AssetDraft = {
   photos: string[];
   documents: AssetDocument[];
   yearModel: string;
+  propertySize: string;
   hours: string;
   usageMetric: UsageMetric;
   lifeWorkedPercent: string;
@@ -604,6 +605,11 @@ const PAGE_SIZE_OPTIONS = [6, 12, 18] as const;
 type PageSize = (typeof PAGE_SIZE_OPTIONS)[number];
 const DEFAULT_PAGE_SIZE: PageSize = 6;
 const FALLBACK_ASSET_IMAGE = '/brand/Tractor.png';
+const PROPERTY_ASSET_LABEL = 'Property / Land / Building';
+const PROPERTY_ASSET_DESCRIPTION = 'Land, buildings, houses, sheds, stores and fixed improvements.';
+const PROPERTY_ASSET_TITLE_PLACEHOLDER = 'Example: Farm land, machinery shed or workshop building';
+const PROPERTY_YEAR_LABEL = 'Year built/bought';
+const PROPERTY_SIZE_SPEC_KEYS = ['propertySize', 'property_size', 'size', 'sizeText', 'size_text'] as const;
 const MANUAL_ASSET_TYPE_OPTIONS: Array<{
   value: Extract<AssetKind, 'vehicle' | 'tools' | 'property' | 'equipment' | 'manual'>;
   label: string;
@@ -624,9 +630,9 @@ const MANUAL_ASSET_TYPE_OPTIONS: Array<{
   },
   {
     value: 'property',
-    label: 'Property/Buildings',
-    description: 'Buildings, sheds, houses, stores and fixed improvements.',
-    titlePlaceholder: 'Example: Main workshop building',
+    label: PROPERTY_ASSET_LABEL,
+    description: PROPERTY_ASSET_DESCRIPTION,
+    titlePlaceholder: PROPERTY_ASSET_TITLE_PLACEHOLDER,
   },
   {
     value: 'tools',
@@ -717,8 +723,8 @@ const ASSET_FILTER_OPTIONS: AssetFilterOption[] = [
   { value: 'aim4price-value', label: 'Aim4price value' },
   { value: 'manual-value', label: 'Manual value' },
   { value: 'marketplace', label: 'Marketplace' },
-  { value: 'property', label: 'Property only' },
-  { value: 'no-property', label: 'No property' },
+  { value: 'property', label: `${PROPERTY_ASSET_LABEL} only` },
+  { value: 'no-property', label: `No ${PROPERTY_ASSET_LABEL.toLowerCase()}` },
 ];
 
 const PRIMARY_ASSET_FILTER_OPTION = ASSET_FILTER_OPTIONS.find((option) => option.value === 'all') ?? ASSET_FILTER_OPTIONS[0];
@@ -751,16 +757,6 @@ const ASSET_QUOTE_OPTIONS: AssetQuoteOption[] = [
     mapTitle: 'Choose an insurer or broker.',
     sendLabel: 'Send insurance request',
     emptyPartnerText: 'No listed insurers or brokers found yet. Insurance accounts must enable their directory listing under Account details.',
-  },
-  {
-    leadType: 'replacement_quote',
-    partnerType: 'dealer',
-    title: 'Get replacement quote',
-    shortTitle: 'Replacement quote',
-    descriptionLines: ['Send this asset to a dealer.', 'Request a quote.'],
-    mapTitle: 'Choose a dealer.',
-    sendLabel: 'Send replacement quote request',
-    emptyPartnerText: 'No listed dealers found yet. Dealer accounts must enable their directory listing under Account details.',
   },
 ];
 
@@ -823,6 +819,7 @@ const initialAssetDraft: AssetDraft = {
   photos: [],
   documents: [],
   yearModel: '',
+  propertySize: '',
   hours: '',
   usageMetric: 'hours',
   lifeWorkedPercent: '',
@@ -1753,7 +1750,7 @@ function kindLabel(value: AssetKind): string {
       tractor: 'Tractor',
       equipment: 'Equipment',
       manual: 'Other',
-      property: 'Property/Buildings',
+      property: PROPERTY_ASSET_LABEL,
       vehicle: 'Vehicle',
       tools: 'Tools',
     }[value] ?? 'Manual asset'
@@ -1837,11 +1834,11 @@ function usageMetricLabel(value: UsageMetric): string {
 }
 
 function assetYearLabel(asset: Pick<RegisterAsset, 'kind'>): string {
-  return asset.kind === 'property' ? 'Year Built' : 'Year Model';
+  return asset.kind === 'property' ? PROPERTY_YEAR_LABEL : 'Year Model';
 }
 
 function draftYearLabel(kind: AssetKind): string {
-  return kind === 'property' ? 'Year built' : 'Year model';
+  return kind === 'property' ? PROPERTY_YEAR_LABEL : 'Year model';
 }
 
 function getManualAssetOption(kind: AssetKind) {
@@ -2013,7 +2010,7 @@ function getAssetSettingsUsageForKind(asset: RegisterAsset, nextKind: AssetKind)
     hours: null,
     usageMetric: null,
     lifeWorkedPercent: null,
-    condition: nextKind === 'property' ? null : asset.condition || null,
+    condition: asset.condition || null,
   };
 }
 
@@ -2036,6 +2033,35 @@ function buildAssetSettingsSpecsJson(asset: RegisterAsset, nextKind: AssetKind, 
     specs.worked_percent = lifeWorkedPercent;
     specs.percent_worked = lifeWorkedPercent;
     specs.lifetime_worked_percent = lifeWorkedPercent;
+  }
+
+  if (nextKind === 'property') {
+    specs.licenseStatus = 'not_applicable';
+    specs.license_status = 'not_applicable';
+    specs.licensedStatus = 'not_applicable';
+    specs.licensed_status = 'not_applicable';
+    specs.licenceStatus = 'not_applicable';
+    specs.licence_status = 'not_applicable';
+    specs.licencedStatus = 'not_applicable';
+    specs.licenced_status = 'not_applicable';
+    specs.licenseRegistrationNumber = '';
+    specs.license_registration_number = '';
+    specs.licenceRegistrationNumber = '';
+    specs.licence_registration_number = '';
+    specs.licenseRegistration = '';
+    specs.license_registration = '';
+    specs.registrationNumber = '';
+    specs.registration_number = '';
+    specs.numberPlate = '';
+    specs.number_plate = '';
+    delete specs.brandName;
+    delete specs.brand_name;
+    delete specs.brand;
+    delete specs.modelName;
+    delete specs.model_name;
+    delete specs.model;
+    delete specs.typedModelName;
+    delete specs.typed_model_name;
   }
 
   return specs;
@@ -2077,6 +2103,10 @@ function readInsuranceStatusChoice(asset: RegisterAsset): AssetStatusChoice {
 }
 
 function readLicenseStatusChoice(asset: RegisterAsset): AssetStatusChoice {
+  if (asset.kind === 'property') {
+    return 'not_applicable';
+  }
+
   const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
 
   return normalizeAssetStatusChoice(
@@ -3008,9 +3038,10 @@ function buildDraftFromAsset(asset: RegisterAsset): AssetDraft {
     photos: normalizePhotos(asset.photos),
     documents: assetDocuments(asset),
     yearModel: asset.yearModel === null || typeof asset.yearModel === 'undefined' ? '' : String(asset.yearModel),
-    hours: assetUsesPercentUsage(asset) || asset.hours === null || typeof asset.hours === 'undefined' ? '' : formatUsageAmountInput(asset.hours),
+    propertySize: asset.kind === 'property' ? readAssetPropertySize(asset) : '',
+    hours: asset.kind === 'property' || assetUsesPercentUsage(asset) || asset.hours === null || typeof asset.hours === 'undefined' ? '' : formatUsageAmountInput(asset.hours),
     usageMetric: asset.kind === 'vehicle' ? 'km' : getAssetUsageMetric(asset),
-    lifeWorkedPercent: getAssetLifeWorkedPercent(asset) === null ? '' : String(getAssetLifeWorkedPercent(asset)),
+    lifeWorkedPercent: asset.kind === 'property' || getAssetLifeWorkedPercent(asset) === null ? '' : String(getAssetLifeWorkedPercent(asset)),
     condition: asset.condition,
   };
 }
@@ -3082,7 +3113,7 @@ function assetPreviewImage(asset: RegisterAsset): string | null {
 
 function assetSectorLabel(asset: RegisterAsset): string {
   if (isTractorAsset(asset) || isValuedEquipmentAsset(asset)) return 'Agricultural';
-  if (asset.kind === 'property') return 'Property/Buildings';
+  if (asset.kind === 'property') return PROPERTY_ASSET_LABEL;
   if (asset.kind === 'vehicle') return 'Vehicle';
   if (asset.kind === 'tools') return 'Tools';
   return 'Other';
@@ -3092,7 +3123,7 @@ function assetFamilyLabel(asset: RegisterAsset): string {
   if (asset.equipmentFamilyLabel) return asset.equipmentFamilyLabel;
   if (isTractorAsset(asset)) return 'Tractor';
   if (asset.kind === 'equipment') return 'Equipment';
-  if (asset.kind === 'property') return 'Property/Buildings';
+  if (asset.kind === 'property') return PROPERTY_ASSET_LABEL;
   if (asset.kind === 'vehicle') return 'Vehicle';
   if (asset.kind === 'tools') return 'Tools';
   if (isValuedEquipmentAsset(asset)) return 'Valued equipment';
@@ -3116,6 +3147,15 @@ function readTextFromSpecs(specs: Record<string, unknown>, keys: string[]): stri
   }
 
   return '';
+}
+
+function readAssetPropertySize(asset: Pick<RegisterAsset, 'specsJson'>): string {
+  const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
+  return readTextFromSpecs(specs, [...PROPERTY_SIZE_SPEC_KEYS]);
+}
+
+function propertySizeDisplay(asset: Pick<RegisterAsset, 'specsJson'>): string {
+  return readAssetPropertySize(asset) || '—';
 }
 
 function removeFirstCaseInsensitive(source: string, part: string): string {
@@ -3265,6 +3305,10 @@ function formatUsagePercent(value: number): string {
 }
 
 function buildAssetUsageValue(asset: RegisterAsset): string {
+  if (asset.kind === 'property') {
+    return '—';
+  }
+
   const percent = getAssetLifeWorkedPercent(asset);
   const hours = Number(asset.hours);
   const hasHours = Number.isFinite(hours) && hours > 0;
@@ -3300,9 +3344,10 @@ function buildAssetUsageMeta(asset: RegisterAsset): string {
 }
 
 function buildAssetMeta(asset: RegisterAsset): string {
+  const propertySize = asset.kind === 'property' ? readAssetPropertySize(asset) : '';
   const parts = [
     asset.yearModel ? `${assetYearLabel(asset)}: ${asset.yearModel}` : '',
-    buildAssetUsageMeta(asset),
+    asset.kind === 'property' ? (propertySize ? `Size: ${propertySize}` : '') : buildAssetUsageMeta(asset),
     asset.condition ? `Condition: ${conditionLabel(asset.condition)}` : '',
   ].filter(Boolean);
 
@@ -3339,6 +3384,7 @@ function normalizeCompactSearchText(value: unknown): string {
 }
 
 function buildSearchableText(asset: RegisterAsset): string {
+  const propertySize = asset.kind === 'property' ? readAssetPropertySize(asset) : '';
   const searchParts = [
     asset.title,
     asset.brandName,
@@ -3364,6 +3410,7 @@ function buildSearchableText(asset: RegisterAsset): string {
     asset.drive,
     asset.cab,
     asset.yearModel ? String(asset.yearModel) : '',
+    propertySize,
     asset.hours !== null && typeof asset.hours !== 'undefined' ? String(asset.hours) : '',
     readAssetReplacementPriceExVat(asset) !== null ? String(readAssetReplacementPriceExVat(asset)) : '',
     readAssetReplacementPriceExVat(asset) !== null ? `replacement price replacement value ${money(readAssetReplacementPriceExVat(asset) ?? 0)}` : 'replacement price not set',
@@ -3386,11 +3433,11 @@ function buildSearchableText(asset: RegisterAsset): string {
 function buildExportDetail(asset: RegisterAsset): string {
   const parts = [
     buildAssetMeta(asset),
-    asset.serialNumber ? `Serial: ${asset.serialNumber}` : '',
+    asset.kind !== 'property' && asset.serialNumber ? `Serial: ${asset.serialNumber}` : '',
     `Insurance: ${statusChoiceReportLabel(readInsuranceStatusChoice(asset))}`,
     `Finance: ${statusChoiceReportLabel(readFinanceStatusChoice(asset))}`,
-    `License: ${statusChoiceReportLabel(readLicenseStatusChoice(asset))}`,
-    readLicenseRegistrationNumber(asset) ? `Registration: ${readLicenseRegistrationNumber(asset)}` : '',
+    asset.kind !== 'property' ? `License: ${statusChoiceReportLabel(readLicenseStatusChoice(asset))}` : '',
+    asset.kind !== 'property' && readLicenseRegistrationNumber(asset) ? `Registration: ${readLicenseRegistrationNumber(asset)}` : '',
     readAssetReplacementPriceExVat(asset) !== null ? `Replacement: ${money(readAssetReplacementPriceExVat(asset) ?? 0)}` : 'Replacement: Not set',
     assetDocuments(asset).length ? `Documents: ${assetDocuments(asset).length}` : '',
   ].filter(Boolean);
@@ -5273,7 +5320,7 @@ export default function AssetRegisterClient() {
   }, [assetFormKind, showPercentUsageField]);
 
   const showConditionField = useMemo(() => {
-    return assetFormKind !== 'property';
+    return true;
   }, [assetFormKind]);
 
   const showLifeWorkedPercentField = useMemo(() => {
@@ -5839,7 +5886,7 @@ export default function AssetRegisterClient() {
       hours: nextKind === 'property' || nextKind === 'tools' || nextKind === 'manual' ? '' : current.hours,
       usageMetric: nextKind === 'vehicle' ? normalizeUsageMetric(current.usageMetric, 'vehicle') : 'hours',
       lifeWorkedPercent: nextKind === 'property' || nextKind === 'vehicle' || nextKind === 'manual' ? '' : current.lifeWorkedPercent,
-      condition: nextKind === 'property' ? '' : current.condition,
+      propertySize: nextKind === 'property' ? current.propertySize : '',
     }));
 
     if (shouldAdvance) {
@@ -5854,6 +5901,7 @@ export default function AssetRegisterClient() {
     }
 
     const nextKind = assetSettingsTypeDraft;
+    const nextKindIsProperty = nextKind === 'property';
     const replacementPrice = readAssetReplacementPriceExVat(editingAsset);
 
     if (!replacementPrice || replacementPrice <= 0) {
@@ -5880,13 +5928,13 @@ export default function AssetRegisterClient() {
           replacementPriceExVat: replacementPrice,
           insuredValueExVat: readAssetInsuredValueExVat(editingAsset),
           note: getManualAssetNote(editingAsset.note),
-          serialNumber: editingAsset.serialNumber,
-          brandName: deriveAssetReportBrandName(editingAsset) === '—' ? '' : deriveAssetReportBrandName(editingAsset),
-          modelName: deriveAssetReportModelName(editingAsset) === '—' ? '' : deriveAssetReportModelName(editingAsset),
+          serialNumber: nextKindIsProperty ? '' : editingAsset.serialNumber,
+          brandName: nextKindIsProperty || deriveAssetReportBrandName(editingAsset) === '—' ? '' : deriveAssetReportBrandName(editingAsset),
+          modelName: nextKindIsProperty || deriveAssetReportModelName(editingAsset) === '—' ? '' : deriveAssetReportModelName(editingAsset),
           isFinanced: readFinanceStatusChoice(editingAsset) === 'yes',
           isInsured: readInsuranceStatusChoice(editingAsset) === 'yes',
-          isLicensed: readLicenseStatusChoice(editingAsset) === 'yes',
-          licenseRegistrationNumber: readLicenseStatusChoice(editingAsset) === 'yes' ? readLicenseRegistrationNumber(editingAsset) : '',
+          isLicensed: nextKindIsProperty ? false : readLicenseStatusChoice(editingAsset) === 'yes',
+          licenseRegistrationNumber: nextKindIsProperty || readLicenseStatusChoice(editingAsset) !== 'yes' ? '' : readLicenseRegistrationNumber(editingAsset),
           financeNote: editingAsset.financeNote ?? null,
           photos: normalizePhotos(editingAsset.photos),
           documents: assetDocuments(editingAsset),
@@ -6077,9 +6125,9 @@ export default function AssetRegisterClient() {
     const replacementPrice = parseRegisterValueInput(assetDraft.replacementPrice);
     const hasYearModel = assetDraft.yearModel.trim() !== '';
     const yearModel = hasYearModel ? Number(assetDraft.yearModel) : null;
-    const hasHours = assetDraft.hours.trim() !== '';
+    const hasHours = showUsageHoursField && assetDraft.hours.trim() !== '';
     const hours = hasHours ? parseUsageAmountInput(assetDraft.hours) : null;
-    const hasLifeWorkedPercent = assetDraft.lifeWorkedPercent.trim() !== '';
+    const hasLifeWorkedPercent = (showPercentUsageField || showLifeWorkedPercentField) && assetDraft.lifeWorkedPercent.trim() !== '';
     const lifeWorkedPercent = hasLifeWorkedPercent ? Number(assetDraft.lifeWorkedPercent) : null;
     const hasInsuredValue = assetDraft.insuredValue.trim() !== '';
     const insuredValueExVat = hasInsuredValue ? parseRegisterValueInput(assetDraft.insuredValue) : null;
@@ -6859,16 +6907,19 @@ export default function AssetRegisterClient() {
     const replacementPrice = parseRegisterValueInput(assetDraft.replacementPrice);
     const hasYearModel = assetDraft.yearModel.trim() !== '';
     const yearModel = hasYearModel ? Number(assetDraft.yearModel) : null;
-    const hasHours = assetDraft.hours.trim() !== '';
+    const hasHours = showUsageHoursField && assetDraft.hours.trim() !== '';
     const hours = hasHours ? parseUsageAmountInput(assetDraft.hours) : null;
-    const hasLifeWorkedPercent = assetDraft.lifeWorkedPercent.trim() !== '';
+    const hasLifeWorkedPercent = (showPercentUsageField || showLifeWorkedPercentField) && assetDraft.lifeWorkedPercent.trim() !== '';
     const lifeWorkedPercent = hasLifeWorkedPercent ? Number(assetDraft.lifeWorkedPercent) : null;
     const hasInsuredValue = assetDraft.insuredValue.trim() !== '';
     const insuredValueExVat = hasInsuredValue ? parseRegisterValueInput(assetDraft.insuredValue) : null;
     const usageErrorLabel = assetDraft.usageMetric === 'km' ? 'Kilometres' : 'Machine hours';
     const title = assetDraft.title.trim();
-    const brandName = assetDraft.brandName.trim();
-    const modelName = assetDraft.modelName.trim();
+    const isPropertyAsset = assetFormKind === 'property';
+    const brandName = isPropertyAsset ? '' : assetDraft.brandName.trim();
+    const modelName = isPropertyAsset ? '' : assetDraft.modelName.trim();
+    const propertySize = isPropertyAsset ? assetDraft.propertySize.trim().replace(/\s+/g, ' ') : '';
+    const nextLicenseStatus: AssetStatusChoice = isPropertyAsset ? 'not_applicable' : assetDraft.licenseStatus;
     const nextInsuranceStatus: AssetStatusChoice = insuredValueExVat !== null && insuredValueExVat > 0 ? 'yes' : 'no';
 
     if (!title || value <= 0) {
@@ -6927,13 +6978,13 @@ export default function AssetRegisterClient() {
     const draftLifeWorkedPercent = (showPercentUsageField || showLifeWorkedPercentField) && hasLifeWorkedPercent
       ? Number(lifeWorkedPercent)
       : null;
-    const roundedLifeWorkedPercent = resolveLifeWorkedPercentForSave(draftLifeWorkedPercent, editingAsset ? currentLifeWorkedPercent : null);
+    const roundedLifeWorkedPercent = isPropertyAsset ? null : resolveLifeWorkedPercentForSave(draftLifeWorkedPercent, editingAsset ? currentLifeWorkedPercent : null);
     const hoursForSave = showUsageHoursField && hasHours
       ? Math.round(Number(hours))
-      : editingAsset
+      : editingAsset && !isPropertyAsset
         ? savedUsageReading
         : null;
-    const licenseRegistrationNumber = assetDraft.licenseStatus === 'yes'
+    const licenseRegistrationNumber = nextLicenseStatus === 'yes'
       ? normalizeLicenseRegistrationText(assetDraft.licenseRegistrationNumber)
       : '';
     const specsJson: Record<string, unknown> = {
@@ -6943,14 +6994,14 @@ export default function AssetRegisterClient() {
       insurance_status: nextInsuranceStatus,
       insuredStatus: nextInsuranceStatus,
       insured_status: nextInsuranceStatus,
-      licenseStatus: assetDraft.licenseStatus,
-      license_status: assetDraft.licenseStatus,
-      licensedStatus: assetDraft.licenseStatus,
-      licensed_status: assetDraft.licenseStatus,
-      licenceStatus: assetDraft.licenseStatus,
-      licence_status: assetDraft.licenseStatus,
-      licencedStatus: assetDraft.licenseStatus,
-      licenced_status: assetDraft.licenseStatus,
+      licenseStatus: nextLicenseStatus,
+      license_status: nextLicenseStatus,
+      licensedStatus: nextLicenseStatus,
+      licensed_status: nextLicenseStatus,
+      licenceStatus: nextLicenseStatus,
+      licence_status: nextLicenseStatus,
+      licencedStatus: nextLicenseStatus,
+      licenced_status: nextLicenseStatus,
       licenseRegistrationNumber,
       license_registration_number: licenseRegistrationNumber,
       licenceRegistrationNumber: licenseRegistrationNumber,
@@ -6991,6 +7042,11 @@ export default function AssetRegisterClient() {
       specsJson.model = modelName;
       specsJson.typedModelName = modelName;
       specsJson.typed_model_name = modelName;
+    }
+
+    if (isPropertyAsset) {
+      specsJson.propertySize = propertySize;
+      specsJson.property_size = propertySize;
     }
 
     if (insuredValueExVat !== null && insuredValueExVat > 0) {
@@ -7044,19 +7100,19 @@ export default function AssetRegisterClient() {
         replacementPriceExVat: replacementPrice,
         insuredValueExVat: insuredValueExVat !== null && insuredValueExVat > 0 ? insuredValueExVat : null,
         note: assetDraft.note.trim(),
-        serialNumber: assetDraft.serialNumber,
+        serialNumber: isPropertyAsset ? '' : assetDraft.serialNumber.trim(),
         brandName,
         modelName,
         isFinanced: assetDraft.financeStatus === 'yes',
         isInsured: nextInsuranceStatus === 'yes',
-        isLicensed: assetDraft.licenseStatus === 'yes',
+        isLicensed: nextLicenseStatus === 'yes',
         licenseRegistrationNumber,
         financeNote: assetDraft.financeStatus === 'yes' ? assetDraft.financeNote : '',
         photos,
         documents,
         yearModel: hasYearModel ? Math.round(Number(yearModel)) : null,
         hours: hoursForSave,
-        usageMetric: hoursForSave !== null || showUsageHoursField ? (assetFormKind === 'vehicle' ? 'km' : assetDraft.usageMetric) : null,
+        usageMetric: isPropertyAsset ? null : hoursForSave !== null || showUsageHoursField ? (assetFormKind === 'vehicle' ? 'km' : assetDraft.usageMetric) : null,
         lifeWorkedPercent: roundedLifeWorkedPercent,
         specsJson,
         condition: showConditionField ? assetDraft.condition || null : null,
@@ -7210,7 +7266,7 @@ export default function AssetRegisterClient() {
     }
 
     if (!isMarketplaceEligible(marketplaceAsset)) {
-      setNotice({ tone: 'error', message: 'Property/Buildings cannot be sent to marketplace.' });
+      setNotice({ tone: 'error', message: `${PROPERTY_ASSET_LABEL} assets cannot be sent to marketplace.` });
       return;
     }
 
@@ -7809,29 +7865,43 @@ export default function AssetRegisterClient() {
     const modelValue = deriveAssetReportModelName(asset, reportBrandName);
     const selectedMethodCards = buildAssetSheetMethodCards(asset).filter((card) => card.selected);
     const methodCards = selectedMethodCards.length ? selectedMethodCards : buildAssetSheetMethodCards(asset).slice(0, 1);
-    const assetRows = [
-      { label: 'Category', value: familyLabel },
-      { label: 'Brand', value: reportBrandName },
-      { label: 'Model', value: modelValue },
-      ...(asset.powerKw ? [{ label: 'Power', value: `${asset.powerKw} kW` }] : []),
-      ...(asset.tractorType ? [{ label: 'Type', value: formatTractorType(asset.tractorType) }] : []),
-      ...(asset.drive ? [{ label: 'Drive', value: formatDrive(asset.drive) }] : []),
-      ...(asset.cab ? [{ label: 'Cab', value: formatCab(asset.cab) }] : []),
-      { label: asset.kind === 'property' ? 'Year Built' : 'Year', value: asset.yearModel ? String(asset.yearModel) : '—' },
-      { label: 'Usage', value: buildAssetUsageValue(asset) },
-      { label: 'Condition', value: conditionLabel(asset.condition) },
-      { label: 'Replacement Price', value: readAssetReplacementPriceExVat(asset) !== null ? `${money(readAssetReplacementPriceExVat(asset) ?? 0)} excl. VAT` : 'Not set' },
-      { label: 'Serial Number', value: asset.serialNumber || '—' },
-      { label: 'Insured', value: statusChoiceReportLabel(readInsuranceStatusChoice(asset)) },
-      { label: 'Insured Value', value: readAssetInsuredValueExVat(asset) !== null ? `${money(readAssetInsuredValueExVat(asset) ?? 0)} excl. VAT` : 'Not set' },
-      { label: 'Financed', value: statusChoiceReportLabel(readFinanceStatusChoice(asset)) },
-      { label: 'Licensed', value: statusChoiceReportLabel(readLicenseStatusChoice(asset)) },
-      ...(readLicenseStatusChoice(asset) === 'yes' && readLicenseRegistrationNumber(asset)
-        ? [{ label: 'Registration', value: readLicenseRegistrationNumber(asset) }]
-        : []),
-      { label: 'Documents', value: documentsCount ? `${documentsCount} saved` : 'None' },
-      { label: 'Last Updated', value: assetStatusDateLabel(asset) },
-    ];
+    const isPropertyAsset = asset.kind === 'property';
+    const assetRows = isPropertyAsset
+      ? [
+          { label: 'Category', value: familyLabel },
+          { label: PROPERTY_YEAR_LABEL, value: asset.yearModel ? String(asset.yearModel) : '—' },
+          { label: 'Size', value: propertySizeDisplay(asset) },
+          { label: 'Condition', value: conditionLabel(asset.condition) || '—' },
+          { label: 'Replacement Price', value: readAssetReplacementPriceExVat(asset) !== null ? `${money(readAssetReplacementPriceExVat(asset) ?? 0)} excl. VAT` : 'Not set' },
+          { label: 'Insured', value: statusChoiceReportLabel(readInsuranceStatusChoice(asset)) },
+          { label: 'Insured Value', value: readAssetInsuredValueExVat(asset) !== null ? `${money(readAssetInsuredValueExVat(asset) ?? 0)} excl. VAT` : 'Not set' },
+          { label: 'Financed', value: statusChoiceReportLabel(readFinanceStatusChoice(asset)) },
+          { label: 'Documents', value: documentsCount ? `${documentsCount} saved` : 'None' },
+          { label: 'Last Updated', value: assetStatusDateLabel(asset) },
+        ]
+      : [
+          { label: 'Category', value: familyLabel },
+          { label: 'Brand', value: reportBrandName },
+          { label: 'Model', value: modelValue },
+          ...(asset.powerKw ? [{ label: 'Power', value: `${asset.powerKw} kW` }] : []),
+          ...(asset.tractorType ? [{ label: 'Type', value: formatTractorType(asset.tractorType) }] : []),
+          ...(asset.drive ? [{ label: 'Drive', value: formatDrive(asset.drive) }] : []),
+          ...(asset.cab ? [{ label: 'Cab', value: formatCab(asset.cab) }] : []),
+          { label: 'Year', value: asset.yearModel ? String(asset.yearModel) : '—' },
+          { label: 'Usage', value: buildAssetUsageValue(asset) },
+          { label: 'Condition', value: conditionLabel(asset.condition) || '—' },
+          { label: 'Replacement Price', value: readAssetReplacementPriceExVat(asset) !== null ? `${money(readAssetReplacementPriceExVat(asset) ?? 0)} excl. VAT` : 'Not set' },
+          { label: 'Serial Number', value: asset.serialNumber || '—' },
+          { label: 'Insured', value: statusChoiceReportLabel(readInsuranceStatusChoice(asset)) },
+          { label: 'Insured Value', value: readAssetInsuredValueExVat(asset) !== null ? `${money(readAssetInsuredValueExVat(asset) ?? 0)} excl. VAT` : 'Not set' },
+          { label: 'Financed', value: statusChoiceReportLabel(readFinanceStatusChoice(asset)) },
+          { label: 'Licensed', value: statusChoiceReportLabel(readLicenseStatusChoice(asset)) },
+          ...(readLicenseStatusChoice(asset) === 'yes' && readLicenseRegistrationNumber(asset)
+            ? [{ label: 'Registration', value: readLicenseRegistrationNumber(asset) }]
+            : []),
+          { label: 'Documents', value: documentsCount ? `${documentsCount} saved` : 'None' },
+          { label: 'Last Updated', value: assetStatusDateLabel(asset) },
+        ];
 
     const didOpen = openAssetSheetPrint({
       logoUrl: reportLogoUrl ?? getRegisterReportLogoUrl(activeRegister),
@@ -8523,6 +8593,7 @@ export default function AssetRegisterClient() {
         const reportBrandName = deriveAssetReportBrandName(asset, initialModelValue);
         const reportModelName = deriveAssetReportModelName(asset, reportBrandName);
         const documentsCount = assetDocuments(asset).length;
+        const isPropertyAsset = asset.kind === 'property';
 
         return {
           asset: asset.title,
@@ -8532,17 +8603,17 @@ export default function AssetRegisterClient() {
           value: money(asset.value),
           replacementPrice: readAssetReplacementPriceExVat(asset) !== null ? money(readAssetReplacementPriceExVat(asset) ?? 0) : 'Not set',
           status: assetStatusDateLabel(asset),
-          brand: reportBrandName,
-          model: reportModelName,
+          brand: isPropertyAsset ? '—' : reportBrandName,
+          model: isPropertyAsset ? `Size: ${propertySizeDisplay(asset)}` : reportModelName,
           year: asset.yearModel ? String(asset.yearModel) : '—',
-          usage: buildAssetUsageValue(asset),
-          condition: conditionLabel(asset.condition),
-          serial: asset.serialNumber || '—',
+          usage: isPropertyAsset ? '—' : buildAssetUsageValue(asset),
+          condition: conditionLabel(asset.condition) || '—',
+          serial: isPropertyAsset ? '—' : asset.serialNumber || '—',
           insured: statusChoiceReportLabel(readInsuranceStatusChoice(asset)),
           insuredValue: readAssetInsuredValueExVat(asset) !== null ? money(readAssetInsuredValueExVat(asset) ?? 0) : '—',
           financed: statusChoiceReportLabel(readFinanceStatusChoice(asset)),
-          licensed: statusChoiceReportLabel(readLicenseStatusChoice(asset)),
-          licenseRegistrationNumber: readLicenseRegistrationNumber(asset) || undefined,
+          licensed: isPropertyAsset ? 'N/A' : statusChoiceReportLabel(readLicenseStatusChoice(asset)),
+          licenseRegistrationNumber: isPropertyAsset ? undefined : readLicenseRegistrationNumber(asset) || undefined,
           documents: documentsCount ? `${documentsCount} saved` : 'None',
           updated: assetStatusDateLabel(asset),
           photoUrl: reportPhotoUrlByAssetId.get(asset.id) ?? toAbsoluteUrl(assetPreviewImage(asset)) ?? null,
@@ -9773,21 +9844,30 @@ export default function AssetRegisterClient() {
                                   <div className={styles.assetDetailsPanel}>
                                     <div className={styles.assetDetailsGrid}>
                                       <div className={styles.assetPrimaryDetails}>
+                                        {asset.kind !== 'property' ? (
+                                          <div className={styles.assetDetailRow}>
+                                            <span>Serial</span>
+                                            <strong>{asset.serialNumber || '—'}</strong>
+                                          </div>
+                                        ) : null}
                                         <div className={styles.assetDetailRow}>
-                                          <span>Serial</span>
-                                          <strong>{asset.serialNumber || '—'}</strong>
-                                        </div>
-                                        <div className={styles.assetDetailRow}>
-                                          <span>{asset.kind === 'property' ? 'Year Built' : 'Year'}</span>
+                                          <span>{asset.kind === 'property' ? PROPERTY_YEAR_LABEL : 'Year'}</span>
                                           <strong>{asset.yearModel || '—'}</strong>
                                         </div>
-                                        <div className={styles.assetDetailRow}>
-                                          <span>Usage</span>
-                                          <strong>{buildAssetUsageValue(asset)}</strong>
-                                        </div>
+                                        {asset.kind === 'property' ? (
+                                          <div className={styles.assetDetailRow}>
+                                            <span>Size</span>
+                                            <strong>{propertySizeDisplay(asset)}</strong>
+                                          </div>
+                                        ) : (
+                                          <div className={styles.assetDetailRow}>
+                                            <span>Usage</span>
+                                            <strong>{buildAssetUsageValue(asset)}</strong>
+                                          </div>
+                                        )}
                                         <div className={styles.assetDetailRow}>
                                           <span>Condition</span>
-                                          <strong>{conditionLabel(asset.condition)}</strong>
+                                          <strong>{conditionLabel(asset.condition) || '—'}</strong>
                                         </div>
                                       </div>
 
@@ -9800,11 +9880,13 @@ export default function AssetRegisterClient() {
                                           <span>Insured</span>
                                           {renderAssetStatusMark(readInsuranceStatusChoice(asset))}
                                         </div>
-                                        <div className={styles.assetStatusRow}>
-                                          <span>Licensed</span>
-                                          {renderAssetStatusMark(readLicenseStatusChoice(asset))}
-                                        </div>
-                                        {readLicenseStatusChoice(asset) === 'yes' && readLicenseRegistrationNumber(asset) ? (
+                                        {asset.kind !== 'property' ? (
+                                          <div className={styles.assetStatusRow}>
+                                            <span>Licensed</span>
+                                            {renderAssetStatusMark(readLicenseStatusChoice(asset))}
+                                          </div>
+                                        ) : null}
+                                        {asset.kind !== 'property' && readLicenseStatusChoice(asset) === 'yes' && readLicenseRegistrationNumber(asset) ? (
                                           <div className={`${styles.assetStatusRow} ${styles.assetRegistrationRow}`}>
                                             <strong>{readLicenseRegistrationNumber(asset)}</strong>
                                           </div>
@@ -10285,49 +10367,51 @@ export default function AssetRegisterClient() {
                         </label>
                       </div>
 
-                      <div className={styles.assetTripleGrid}>
-                        <label className={styles.field}>
-                          <span>Serial / reference</span>
-                          <input
-                            value={assetDraft.serialNumber}
-                            onChange={(event) =>
-                              setAssetDraft((current) => ({
-                                ...current,
-                                serialNumber: event.target.value,
-                              }))
-                            }
-                            placeholder="Optional"
-                          />
-                        </label>
+                      {assetFormKind !== 'property' ? (
+                        <div className={styles.assetTripleGrid}>
+                          <label className={styles.field}>
+                            <span>Serial / reference</span>
+                            <input
+                              value={assetDraft.serialNumber}
+                              onChange={(event) =>
+                                setAssetDraft((current) => ({
+                                  ...current,
+                                  serialNumber: event.target.value,
+                                }))
+                              }
+                              placeholder="Optional"
+                            />
+                          </label>
 
-                        <label className={styles.field}>
-                          <span>Brand</span>
-                          <input
-                            value={assetDraft.brandName}
-                            onChange={(event) =>
-                              setAssetDraft((current) => ({
-                                ...current,
-                                brandName: event.target.value,
-                              }))
-                            }
-                            placeholder="Optional"
-                          />
-                        </label>
+                          <label className={styles.field}>
+                            <span>Brand</span>
+                            <input
+                              value={assetDraft.brandName}
+                              onChange={(event) =>
+                                setAssetDraft((current) => ({
+                                  ...current,
+                                  brandName: event.target.value,
+                                }))
+                              }
+                              placeholder="Optional"
+                            />
+                          </label>
 
-                        <label className={styles.field}>
-                          <span>Model</span>
-                          <input
-                            value={assetDraft.modelName}
-                            onChange={(event) =>
-                              setAssetDraft((current) => ({
-                                ...current,
-                                modelName: event.target.value,
-                              }))
-                            }
-                            placeholder="Optional"
-                          />
-                        </label>
-                      </div>
+                          <label className={styles.field}>
+                            <span>Model</span>
+                            <input
+                              value={assetDraft.modelName}
+                              onChange={(event) =>
+                                setAssetDraft((current) => ({
+                                  ...current,
+                                  modelName: event.target.value,
+                                }))
+                              }
+                              placeholder="Optional"
+                            />
+                          </label>
+                        </div>
+                      ) : null}
 
                       <div className={styles.assetTripleGrid}>
                         <label className={styles.field}>
@@ -10348,7 +10432,22 @@ export default function AssetRegisterClient() {
                           />
                         </label>
 
-                        {showPercentUsageField ? (
+                        {assetFormKind === 'property' ? (
+                          <label className={styles.field}>
+                            <span>Size</span>
+                            <input
+                              type="text"
+                              value={assetDraft.propertySize}
+                              onChange={(event) =>
+                                setAssetDraft((current) => ({
+                                  ...current,
+                                  propertySize: event.target.value,
+                                }))
+                              }
+                              placeholder="Example: 12 ha, 450 m² or 1 200 m² shed"
+                            />
+                          </label>
+                        ) : showPercentUsageField ? (
                           <label className={styles.field}>
                             <span>{usageFieldLabel}</span>
                             <input
@@ -10389,25 +10488,18 @@ export default function AssetRegisterClient() {
                           </label>
                         )}
 
-                        {showConditionField ? (
-                          <ModalSelect<AssetConditionValue>
-                            label="Condition"
-                            value={assetDraft.condition}
-                            options={CONDITION_OPTIONS}
-                            onChange={(nextCondition) =>
-                              setAssetDraft((current) => ({
-                                ...current,
-                                condition: nextCondition,
-                              }))
-                            }
-                            className={styles.assetConditionField}
-                          />
-                        ) : (
-                          <label className={`${styles.field} ${styles.assetStaticField}`}>
-                            <span>Condition</span>
-                            <input value="Not applicable" disabled readOnly />
-                          </label>
-                        )}
+                        <ModalSelect<AssetConditionValue>
+                          label="Condition"
+                          value={assetDraft.condition}
+                          options={CONDITION_OPTIONS}
+                          onChange={(nextCondition) =>
+                            setAssetDraft((current) => ({
+                              ...current,
+                              condition: nextCondition,
+                            }))
+                          }
+                          className={styles.assetConditionField}
+                        />
                       </div>
 
                       <div className={styles.assetValueBoxGrid}>
@@ -10507,7 +10599,7 @@ export default function AssetRegisterClient() {
                 {manualAssetStep === 3 ? (
                   <section className={`${styles.manualStageCard} ${styles.manualSingleStageCard} ${styles.manualCompactStageCard} ${styles.fullWidth}`}>
                     <div className={styles.manualStepIntro}>
-                      <h4>Finance, insurance and license</h4>
+                      <h4>{assetFormKind === 'property' ? 'Finance and insurance' : 'Finance, insurance and license'}</h4>
                     </div>
 
                     <div className={styles.manualStageGrid}>
@@ -10529,16 +10621,18 @@ export default function AssetRegisterClient() {
                         usePortal
                       />
 
-                      <ModalSelect<AssetStatusChoice>
-                        label="License status"
-                        value={assetDraft.licenseStatus}
-                        options={LICENSE_STATUS_OPTIONS}
-                        onChange={setAssetLicenseStatus}
-                        showDescriptions={false}
-                        usePortal
-                      />
+                      {assetFormKind !== 'property' ? (
+                        <ModalSelect<AssetStatusChoice>
+                          label="License status"
+                          value={assetDraft.licenseStatus}
+                          options={LICENSE_STATUS_OPTIONS}
+                          onChange={setAssetLicenseStatus}
+                          showDescriptions={false}
+                          usePortal
+                        />
+                      ) : null}
 
-                      {assetDraft.licenseStatus === 'yes' ? (
+                      {assetFormKind !== 'property' && assetDraft.licenseStatus === 'yes' ? (
                         <label className={`${styles.field} ${styles.manualStatusNoteField}`}>
                           <span>Numberplate / registration</span>
                           <input
@@ -11094,7 +11188,7 @@ export default function AssetRegisterClient() {
                   <div className={styles.assetSettingsSectionCopy}>
                     <span>Manual asset</span>
                     <h4>Equipment Type</h4>
-                    <p>Change the saved type on this same asset record. Existing values, files, notes, finance, insurance and licence details are preserved.</p>
+                    <p>Change the saved type on this same asset record. Existing values, files, notes, finance and insurance details are preserved. Licence details are only kept for non-property assets.</p>
                   </div>
 
                   <ModalSelect<AssetKind>
