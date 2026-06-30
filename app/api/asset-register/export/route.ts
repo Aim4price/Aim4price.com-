@@ -28,7 +28,7 @@ const NA_VALUE = 'N/A';
 const VAT_RATE = 0.15;
 const VAT_MULTIPLIER = 1 + VAT_RATE;
 const PROPERTY_ASSET_LABEL = 'Property / Land / Building';
-const PROPERTY_YEAR_LABEL = 'Year built/bought';
+const PROPERTY_YEAR_LABEL = 'Year';
 const PROPERTY_SIZE_SPEC_KEYS = ['propertySize', 'property_size', 'size', 'sizeText', 'size_text'] as const;
 
 const EXPORT_DETAILS_SECTION_ROW = 5;
@@ -56,7 +56,7 @@ const TABLE_HEADERS = [
   'Asset type',
   'Brand',
   'Model / description',
-  'Year model / built/bought',
+  'Year',
   'Plate / QR code',
   'Drive',
   'Usage value',
@@ -248,7 +248,12 @@ function readFinanceStatusChoice(item: AssetRegisterItem): AssetStatusChoice {
 }
 
 function readInsuranceStatusChoice(item: AssetRegisterItem): AssetStatusChoice {
-  return insuredValueExVat(item) !== null ? 'yes' : 'no';
+  const specs = isPlainRecord(item.specsJson) ? item.specsJson : {};
+
+  return normalizeAssetStatusChoice(
+    specs.insuranceStatus ?? specs.insurance_status ?? specs.insuredStatus ?? specs.insured_status,
+    item.isInsured || insuredValueExVat(item) !== null ? 'yes' : 'no',
+  );
 }
 
 function readLicenseStatusChoice(item: AssetRegisterItem): AssetStatusChoice {
