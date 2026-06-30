@@ -11292,7 +11292,7 @@
 
 /* === Asset Options: unified PDF reports + QR final layout === */
 .assetReportModal {
-  width: min(100%, 640px) !important;
+  width: min(100%, 860px) !important;
   max-height: none !important;
   overflow: visible !important;
   padding: clamp(1.25rem, 2vw, 1.65rem) !important;
@@ -11330,8 +11330,12 @@
 
 .assetReportOptionsGrid {
   display: grid !important;
-  grid-template-columns: 1fr !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   gap: 0.85rem !important;
+}
+
+.assetReportPrimaryOption {
+  grid-column: 1 / -1 !important;
 }
 
 .assetReportOptionButton {
@@ -20469,7 +20473,7 @@
 
 /* === PDF report modal update: larger options + maintenance filters === */
 .assetReportModal {
-  width: min(100%, 720px) !important;
+  width: min(100%, 860px) !important;
   padding: clamp(1.42rem, 2.15vw, 1.85rem) !important;
   border-radius: 2rem !important;
 }
@@ -20496,7 +20500,12 @@
 }
 
 .assetReportOptionsGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   gap: 1rem !important;
+}
+
+.assetReportPrimaryOption {
+  grid-column: 1 / -1 !important;
 }
 
 .assetReportOptionButton {

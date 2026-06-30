@@ -11245,7 +11245,11 @@ export default function AssetRegisterClient() {
                     <DownloadIcon className={styles.buttonIcon} />
                     <span>
                       <strong>Download reports</strong>
-                      <small>Valuation, fuel, maintenance, depreciation and ownership reports.</small>
+                      <small>
+                        Valuation, fuel, maintenance, depreciation
+                        <br />
+                        and ownership reports.
+                      </small>
                     </span>
                   </button>
 
@@ -11770,7 +11774,7 @@ export default function AssetRegisterClient() {
                 </>
               ) : (
                 <div className={styles.assetReportOptionsGrid}>
-                  <button type="button" className={styles.assetReportOptionButton} onClick={() => handlePrintAssetSheet(activeAsset)}>
+                  <button type="button" className={`${styles.assetReportOptionButton} ${styles.assetReportPrimaryOption}`} onClick={() => handlePrintAssetSheet(activeAsset)}>
                     <PdfIcon className={styles.buttonIcon} />
                     <span>
                       <strong>Download asset valuation</strong>
