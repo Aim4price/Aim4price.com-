@@ -26984,8 +26984,8 @@ button.documentOpenLink {
 
 /* === Asset Register download reports modal: wider premium desktop layout === */
 .assetReportModal {
-  width: min(92vw, 1100px) !important;
-  max-width: 1100px !important;
+  width: min(94vw, 1180px) !important;
+  max-width: 1180px !important;
   max-height: min(90vh, calc(100dvh - 2.5rem)) !important;
   display: flex !important;
   flex-direction: column !important;
@@ -27055,10 +27055,10 @@ button.documentOpenLink {
 
 .assetReportPrimaryOption {
   grid-column: 1 / -1 !important;
-  justify-self: center !important;
-  justify-content: center !important;
-  width: min(100%, 780px) !important;
-  min-height: 6.55rem !important;
+  width: 100% !important;
+  justify-self: stretch !important;
+  justify-content: flex-start !important;
+  min-height: 7.1rem !important;
 }
 
 .assetReportPrimaryOption > span {
@@ -27066,12 +27066,12 @@ button.documentOpenLink {
 }
 
 .assetReportOptionButton {
-  min-height: 6.85rem !important;
+  min-height: 7.1rem !important;
   display: flex !important;
   align-items: center !important;
   justify-content: flex-start !important;
-  gap: 1.25rem !important;
-  padding: 1.42rem 1.55rem !important;
+  gap: 1.3rem !important;
+  padding: 1.5rem 1.7rem !important;
   border-radius: 1.42rem !important;
   border: 1px solid rgba(213, 226, 237, 0.98) !important;
   background: linear-gradient(180deg, #ffffff 0%, #f5f9fb 100%) !important;

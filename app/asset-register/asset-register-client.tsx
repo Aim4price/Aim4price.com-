@@ -11778,7 +11778,7 @@ export default function AssetRegisterClient() {
                     <PdfIcon className={styles.buttonIcon} />
                     <span>
                       <strong>Download asset valuation</strong>
-                      <small>Asset details, value summary, notes and saved documents.</small>
+                      <small>PDF value summary with notes and documents.</small>
                     </span>
                   </button>
 
@@ -11788,7 +11788,7 @@ export default function AssetRegisterClient() {
                         <DocumentIcon className={styles.buttonIcon} />
                         <span>
                           <strong>Download fuel report</strong>
-                          <small>Choose a year and month, then download PDF or Excel.</small>
+                          <small>PDF or Excel fuel costs by month.</small>
                         </span>
                       </button>
 
@@ -11796,7 +11796,7 @@ export default function AssetRegisterClient() {
                         <DocumentIcon className={styles.buttonIcon} />
                         <span>
                           <strong>Download maintenance report</strong>
-                          <small>Filter by type, year and month, then download PDF or Excel.</small>
+                          <small>PDF or Excel service and repair costs.</small>
                         </span>
                       </button>
 
@@ -11804,7 +11804,7 @@ export default function AssetRegisterClient() {
                         <DocumentIcon className={styles.buttonIcon} />
                         <span>
                           <strong>Download depreciation timeline</strong>
-                          <small>Market value history, yearly movement and depreciation log.</small>
+                          <small>PDF or Excel value movement over time.</small>
                         </span>
                       </button>
 
@@ -11812,7 +11812,7 @@ export default function AssetRegisterClient() {
                         <DocumentIcon className={styles.buttonIcon} />
                         <span>
                           <strong>Download cost of ownership report</strong>
-                          <small>Invoices, parts, repairs, maintenance and VAT linked to this asset.</small>
+                          <small>PDF or Excel ownership costs and VAT.</small>
                         </span>
                       </button>
                     </>
