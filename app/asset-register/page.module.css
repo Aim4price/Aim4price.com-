@@ -26003,6 +26003,137 @@ button.documentOpenLink {
   overscroll-behavior: contain !important;
 }
 
+.assetSettingsSubModal {
+  width: min(94vw, 47rem) !important;
+}
+
+.assetSettingsMenuGrid,
+.assetSettingsLocationChoiceGrid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 0.95rem !important;
+  align-items: stretch !important;
+}
+
+.assetSettingsLocationChoiceGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
+.assetSettingsOptionButton {
+  appearance: none !important;
+  width: 100% !important;
+  min-height: 6.7rem !important;
+  display: grid !important;
+  grid-template-columns: 3.1rem minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 1rem !important;
+  padding: 1.08rem 1.12rem !important;
+  border-radius: 1.16rem !important;
+  border: 1px solid rgba(205, 220, 231, 0.95) !important;
+  background:
+    radial-gradient(circle at top left, rgba(23, 116, 90, 0.055), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #f7fbfc 100%) !important;
+  color: #12333c !important;
+  text-align: left !important;
+  cursor: pointer !important;
+  box-shadow:
+    0 10px 22px rgba(16, 31, 28, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease !important;
+}
+
+.assetSettingsOptionButton:hover:not(:disabled) {
+  transform: translateY(-1px) !important;
+  border-color: rgba(23, 116, 90, 0.34) !important;
+  background:
+    radial-gradient(circle at top left, rgba(23, 116, 90, 0.09), transparent 44%),
+    linear-gradient(180deg, #ffffff 0%, #f1f8f5 100%) !important;
+  box-shadow:
+    0 14px 28px rgba(16, 31, 28, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.assetSettingsOptionButton:focus-visible {
+  outline: 3px solid rgba(23, 116, 90, 0.18) !important;
+  outline-offset: 3px !important;
+}
+
+.assetSettingsOptionButton:disabled {
+  cursor: not-allowed !important;
+  opacity: 0.68 !important;
+}
+
+.assetSettingsOptionIcon {
+  box-sizing: border-box !important;
+  width: 2.72rem !important;
+  height: 2.72rem !important;
+  padding: 0.68rem !important;
+  justify-self: center !important;
+  color: #14533f !important;
+  border-radius: 0.95rem !important;
+  border: 1px solid rgba(185, 218, 204, 0.96) !important;
+  background: linear-gradient(180deg, #f4fbf7 0%, #e6f4ec 100%) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+}
+
+.assetSettingsOptionButton > span {
+  min-width: 0 !important;
+  display: grid !important;
+  gap: 0.28rem !important;
+  align-content: center !important;
+  justify-items: start !important;
+}
+
+.assetSettingsOptionButton strong {
+  margin: 0 !important;
+  color: #10352b !important;
+  font-size: 1.02rem !important;
+  font-weight: 880 !important;
+  line-height: 1.14 !important;
+  letter-spacing: -0.026em !important;
+}
+
+.assetSettingsOptionButton small {
+  margin: 0 !important;
+  color: #5f7186 !important;
+  font-size: 0.86rem !important;
+  font-weight: 640 !important;
+  line-height: 1.34 !important;
+}
+
+.assetSettingsBackButton {
+  appearance: none !important;
+  width: fit-content !important;
+  min-height: 2.45rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.44rem !important;
+  padding: 0 0.78rem !important;
+  border-radius: 999px !important;
+  border: 1px solid rgba(205, 220, 231, 0.95) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f6fafc 100%) !important;
+  color: #174b3b !important;
+  cursor: pointer !important;
+  font: inherit !important;
+  font-size: 0.88rem !important;
+  font-weight: 820 !important;
+}
+
+.assetSettingsBackButton:hover:not(:disabled) {
+  border-color: rgba(23, 116, 90, 0.36) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f0f8f4 100%) !important;
+}
+
+.assetSettingsBackButton:disabled {
+  cursor: not-allowed !important;
+  opacity: 0.7 !important;
+}
+
 .assetSettingsSection {
   display: grid !important;
   gap: 0.9rem !important;
@@ -26200,6 +26331,58 @@ button.documentOpenLink {
   gap: 0.75rem !important;
 }
 
+.assetSettingsMapShell {
+  display: grid !important;
+  gap: 0.85rem !important;
+  min-width: 0 !important;
+}
+
+.assetSettingsMapCanvas {
+  width: 100% !important;
+  height: min(48vh, 22rem) !important;
+  min-height: 17rem !important;
+  overflow: hidden !important;
+  border-radius: 1.08rem !important;
+  border: 1px solid rgba(188, 210, 224, 0.96) !important;
+  background:
+    radial-gradient(circle at 20% 10%, rgba(23, 116, 90, 0.08), transparent 42%),
+    linear-gradient(180deg, #f7fbfc 0%, #eef5f3 100%) !important;
+  box-shadow:
+    0 12px 24px rgba(16, 31, 28, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+}
+
+.assetSettingsMapSelectedGrid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 0.75rem !important;
+}
+
+.assetSettingsMapSelectedGrid > div {
+  display: grid !important;
+  gap: 0.22rem !important;
+  min-height: 3.75rem !important;
+  padding: 0.78rem 0.9rem !important;
+  border-radius: 0.96rem !important;
+  border: 1px solid rgba(205, 220, 231, 0.9) !important;
+  background: rgba(247, 250, 252, 0.96) !important;
+}
+
+.assetSettingsMapSelectedGrid span {
+  color: #6a7a8c !important;
+  font-size: 0.72rem !important;
+  font-weight: 820 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+}
+
+.assetSettingsMapSelectedGrid strong {
+  color: #122c37 !important;
+  font-size: 0.98rem !important;
+  font-weight: 850 !important;
+  overflow-wrap: anywhere !important;
+}
+
 .assetSettingsMapLink {
   width: fit-content !important;
   color: #155e46 !important;
@@ -26276,8 +26459,21 @@ button.documentOpenLink {
     padding: 0.85rem !important;
   }
 
-  .assetSettingsCoordinateGrid {
+  .assetSettingsMenuGrid,
+  .assetSettingsLocationChoiceGrid,
+  .assetSettingsCoordinateGrid,
+  .assetSettingsMapSelectedGrid {
     grid-template-columns: 1fr !important;
+  }
+
+  .assetSettingsOptionButton {
+    min-height: 6.05rem !important;
+    padding: 0.95rem !important;
+  }
+
+  .assetSettingsMapCanvas {
+    height: 18rem !important;
+    min-height: 16rem !important;
   }
 
   .assetSettingsActions {

@@ -652,7 +652,8 @@ const USAGE_OVERRIDE_CONFIRMATION_TEXT =
   'Are you sure you want to override the saved usage for this asset? This can lower the usage recorded for this saved Aim4price asset and may affect its valuation/depreciation history.';
 
 type AssetSettingsUsageMode = 'percent' | 'hours' | 'km' | 'none';
-type AssetSettingsLocationState = 'idle' | 'capturing' | 'savingManual' | 'savingDevice';
+type AssetSettingsLocationState = 'idle' | 'capturing' | 'savingManual' | 'savingDevice' | 'savingMap';
+type AssetSettingsView = 'menu' | 'location' | 'locationManual' | 'locationMap' | 'type' | 'conversion' | 'usage';
 type AssetUsageOverrideRequest = {
   mode: Exclude<AssetSettingsUsageMode, 'none'>;
   value: number;
@@ -4142,9 +4143,14 @@ export default function AssetRegisterClient() {
   const [assetSettingsManualLatInput, setAssetSettingsManualLatInput] = useState('');
   const [assetSettingsManualLngInput, setAssetSettingsManualLngInput] = useState('');
   const [assetSettingsManualLocationText, setAssetSettingsManualLocationText] = useState('');
+  const [assetSettingsMapLatInput, setAssetSettingsMapLatInput] = useState('');
+  const [assetSettingsMapLngInput, setAssetSettingsMapLngInput] = useState('');
+  const [assetSettingsMapLocationText, setAssetSettingsMapLocationText] = useState('');
+  const [assetSettingsView, setAssetSettingsView] = useState<AssetSettingsView>('menu');
   const [pendingUsageOverride, setPendingUsageOverride] = useState<AssetUsageOverrideRequest | null>(null);
   const isAssetSettingsLocationBusy = assetSettingsLocationState !== 'idle';
   const isAssetSettingsManualLocationSaving = assetSettingsLocationState === 'savingManual';
+  const isAssetSettingsMapLocationSaving = assetSettingsLocationState === 'savingMap';
   const isAssetSettingsDeviceLocationSaving = assetSettingsLocationState === 'savingDevice';
   const isAssetSettingsDeviceLocationCapturing = assetSettingsLocationState === 'capturing';
   const isAssetSettingsBusy = isSavingAssetSettings || isAssetSettingsLocationBusy;
@@ -4171,6 +4177,9 @@ export default function AssetRegisterClient() {
   const quoteLeafletMapRef = useRef<any>(null);
   const quoteMarkerLayerRef = useRef<any>(null);
   const quoteMarkersByPartnerRef = useRef<Map<string, any>>(new Map());
+  const assetSettingsMapElementRef = useRef<HTMLDivElement | null>(null);
+  const assetSettingsLeafletMapRef = useRef<any>(null);
+  const assetSettingsMapMarkerRef = useRef<any>(null);
   const [isAssetReportModalOpen, setIsAssetReportModalOpen] = useState(false);
   const [assetReportStep, setAssetReportStep] = useState<AssetReportStep>('options');
   const [assetFuelReportYear, setAssetFuelReportYear] = useState('all');
@@ -4788,6 +4797,9 @@ export default function AssetRegisterClient() {
   const anyModalOpen =
     isAddChoiceModalOpen ||
     isAssetModalOpen ||
+    isAssetSettingsModalOpen ||
+    Boolean(pendingUsageOverride) ||
+    isManualConversionConfirmOpen ||
     Boolean(activeAsset) ||
     isQuoteModalOpen ||
     Boolean(deleteCandidateAsset) ||
@@ -4812,6 +4824,23 @@ export default function AssetRegisterClient() {
 
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
+
+      if (pendingUsageOverride) {
+        cancelAim4priceUsageOverrideConfirmation();
+        return;
+      }
+
+      if (isManualConversionConfirmOpen) {
+        if (!isSavingAssetSettings) {
+          setIsManualConversionConfirmOpen(false);
+        }
+        return;
+      }
+
+      if (isAssetSettingsModalOpen) {
+        closeAssetSettingsModal();
+        return;
+      }
 
       if (isAssetFilterOpen) {
         setIsAssetFilterOpen(false);
@@ -4899,7 +4928,7 @@ export default function AssetRegisterClient() {
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [activeAsset, anyModalOpen, deleteCandidateAsset, isAddChoiceModalOpen, isAssetFilterOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isPricingModalOpen, pricingPreview, isQrModalOpen, isRegisterShareModalOpen, isSummaryModalOpen, marketplaceAsset, projectionAsset, isQuoteModalOpen, quoteLeadStep]);
+  }, [activeAsset, anyModalOpen, deleteCandidateAsset, isAddChoiceModalOpen, isAssetFilterOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isPricingModalOpen, pricingPreview, isQrModalOpen, isRegisterShareModalOpen, isSummaryModalOpen, marketplaceAsset, projectionAsset, isQuoteModalOpen, quoteLeadStep, isAssetSettingsModalOpen, pendingUsageOverride, isManualConversionConfirmOpen, isSavingAssetSettings]);
 
   useEffect(() => {
     if (!isQuoteModalOpen || !selectedQuoteLeadType) return;
@@ -5034,6 +5063,79 @@ export default function AssetRegisterClient() {
 
     return undefined;
   }, [isQuoteModalOpen, selectedQuoteOption, quotePartnersWithCoordinates.length]);
+
+  useEffect(() => {
+    if (!isAssetSettingsModalOpen || assetSettingsView !== 'locationMap' || !assetSettingsMapElementRef.current) {
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    async function setupAssetSettingsMap() {
+      try {
+        const L = await loadLeaflet();
+        if (cancelled || !assetSettingsMapElementRef.current) return;
+
+        const savedLatitude = parseAssetSettingsCoordinate(assetSettingsMapLatInput);
+        const savedLongitude = parseAssetSettingsCoordinate(assetSettingsMapLngInput);
+        const hasSavedCoordinates = savedLatitude !== null && savedLongitude !== null;
+        const center: [number, number] = hasSavedCoordinates
+          ? [savedLatitude, savedLongitude]
+          : DEFAULT_PARTNER_MAP_CENTER;
+        const zoom = hasSavedCoordinates ? 13 : DEFAULT_PARTNER_MAP_ZOOM;
+
+        if (!assetSettingsLeafletMapRef.current) {
+          assetSettingsLeafletMapRef.current = L.map(assetSettingsMapElementRef.current, { zoomControl: true }).setView(center, zoom);
+
+          L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 19,
+          }).addTo(assetSettingsLeafletMapRef.current);
+
+          assetSettingsLeafletMapRef.current.on('click', (event: { latlng?: { lat: number; lng: number } }) => {
+            const latitude = event.latlng?.lat;
+            const longitude = event.latlng?.lng;
+            if (typeof latitude !== 'number' || typeof longitude !== 'number' || !Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
+
+            setAssetSettingsMapCoordinates(latitude, longitude);
+            syncAssetSettingsMapMarker(L, latitude, longitude);
+          });
+        } else {
+          assetSettingsLeafletMapRef.current.setView(center, zoom);
+        }
+
+        if (hasSavedCoordinates) {
+          syncAssetSettingsMapMarker(L, savedLatitude, savedLongitude);
+        } else {
+          removeAssetSettingsMapMarker();
+        }
+
+        window.setTimeout(() => assetSettingsLeafletMapRef.current?.invalidateSize(), 80);
+      } catch (error) {
+        setAssetSettingsLocationError(error instanceof Error ? error.message : 'Failed to load the asset location map.');
+      }
+    }
+
+    void setupAssetSettingsMap();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAssetSettingsModalOpen, assetSettingsView]);
+
+  useEffect(() => {
+    if (isAssetSettingsModalOpen && assetSettingsView === 'locationMap') {
+      return undefined;
+    }
+
+    if (assetSettingsLeafletMapRef.current) {
+      assetSettingsLeafletMapRef.current.remove();
+      assetSettingsLeafletMapRef.current = null;
+      assetSettingsMapMarkerRef.current = null;
+    }
+
+    return undefined;
+  }, [isAssetSettingsModalOpen, assetSettingsView]);
 
   const totalValue = useMemo(() => {
     return assets.reduce((sum, asset) => sum + Math.round(Number(asset.value || 0)), 0);
@@ -5288,6 +5390,10 @@ export default function AssetRegisterClient() {
     setAssetSettingsManualLatInput('');
     setAssetSettingsManualLngInput('');
     setAssetSettingsManualLocationText('');
+    setAssetSettingsMapLatInput('');
+    setAssetSettingsMapLngInput('');
+    setAssetSettingsMapLocationText('');
+    setAssetSettingsView('menu');
     setPendingUsageOverride(null);
     setMainPhotoSelection(null);
     setPendingPhotoFiles([]);
@@ -5349,6 +5455,10 @@ export default function AssetRegisterClient() {
     setAssetSettingsManualLatInput('');
     setAssetSettingsManualLngInput('');
     setAssetSettingsManualLocationText('');
+    setAssetSettingsMapLatInput('');
+    setAssetSettingsMapLngInput('');
+    setAssetSettingsMapLocationText('');
+    setAssetSettingsView('menu');
     setIsAssetModalOpen(true);
   }
 
@@ -5358,10 +5468,59 @@ export default function AssetRegisterClient() {
     setAssetSettingsManualLocationText(getAssetSettingsManualLocationTextInput(asset));
   }
 
+  function setAssetSettingsMapLocationInputsFromAsset(asset: RegisterAsset | null) {
+    setAssetSettingsMapLatInput(asset ? formatAssetSettingsCoordinateInput(asset.lastKnownLat) : '');
+    setAssetSettingsMapLngInput(asset ? formatAssetSettingsCoordinateInput(asset.lastKnownLng) : '');
+    setAssetSettingsMapLocationText(getAssetSettingsManualLocationTextInput(asset));
+  }
+
   function clearAssetSettingsManualLocationInputs() {
     setAssetSettingsManualLatInput('');
     setAssetSettingsManualLngInput('');
     setAssetSettingsManualLocationText('');
+  }
+
+  function clearAssetSettingsMapLocationInputs() {
+    setAssetSettingsMapLatInput('');
+    setAssetSettingsMapLngInput('');
+    setAssetSettingsMapLocationText('');
+  }
+
+  function setAssetSettingsMapCoordinates(latitude: number, longitude: number) {
+    setAssetSettingsMapLatInput(formatAssetSettingsManualCoordinate(latitude));
+    setAssetSettingsMapLngInput(formatAssetSettingsManualCoordinate(longitude));
+    clearAssetSettingsLocationFeedback();
+  }
+
+  function syncAssetSettingsMapMarker(leaflet: any, latitude: number, longitude: number) {
+    const map = assetSettingsLeafletMapRef.current;
+    if (!map) return;
+
+    const position: [number, number] = [latitude, longitude];
+
+    if (assetSettingsMapMarkerRef.current) {
+      assetSettingsMapMarkerRef.current.setLatLng(position);
+      return;
+    }
+
+    const marker = leaflet.marker(position, {
+      draggable: true,
+      title: 'Selected asset GPS position',
+    }).addTo(map);
+
+    marker.on('dragend', () => {
+      const nextPosition = marker.getLatLng();
+      setAssetSettingsMapCoordinates(nextPosition.lat, nextPosition.lng);
+    });
+
+    assetSettingsMapMarkerRef.current = marker;
+  }
+
+  function removeAssetSettingsMapMarker() {
+    if (assetSettingsMapMarkerRef.current) {
+      assetSettingsMapMarkerRef.current.remove();
+      assetSettingsMapMarkerRef.current = null;
+    }
   }
 
   function clearAssetSettingsLocationFeedback() {
@@ -5395,6 +5554,8 @@ export default function AssetRegisterClient() {
     setAssetSettingsLocationState('idle');
     clearAssetSettingsLocationFeedback();
     setAssetSettingsManualLocationInputsFromAsset(editingAsset);
+    setAssetSettingsMapLocationInputsFromAsset(editingAsset);
+    setAssetSettingsView('menu');
     setPendingUsageOverride(null);
     setIsManualConversionConfirmOpen(false);
     setIsAssetSettingsModalOpen(true);
@@ -5407,8 +5568,77 @@ export default function AssetRegisterClient() {
     setPendingUsageOverride(null);
     setAssetSettingsError('');
     setAssetSettingsLocationState('idle');
+    setAssetSettingsView('menu');
     clearAssetSettingsLocationFeedback();
     clearAssetSettingsManualLocationInputs();
+    clearAssetSettingsMapLocationInputs();
+  }
+
+  function openAssetSettingsMenuView() {
+    if (isAssetSettingsBusy) return;
+    setAssetSettingsView('menu');
+    setAssetSettingsError('');
+    clearAssetSettingsLocationFeedback();
+  }
+
+  function openAssetSettingsLocationView() {
+    if (isAssetSettingsBusy) return;
+    setAssetSettingsView('location');
+    setAssetSettingsError('');
+    clearAssetSettingsLocationFeedback();
+    setAssetSettingsManualLocationInputsFromAsset(editingAsset);
+    setAssetSettingsMapLocationInputsFromAsset(editingAsset);
+  }
+
+  function openAssetSettingsManualLocationView() {
+    if (isAssetSettingsBusy) return;
+    setAssetSettingsView('locationManual');
+    setAssetSettingsError('');
+    clearAssetSettingsLocationFeedback();
+    setAssetSettingsManualLocationInputsFromAsset(editingAsset);
+  }
+
+  function openAssetSettingsMapLocationView() {
+    if (isAssetSettingsBusy) return;
+    setAssetSettingsView('locationMap');
+    setAssetSettingsError('');
+    clearAssetSettingsLocationFeedback();
+    setAssetSettingsMapLocationInputsFromAsset(editingAsset);
+  }
+
+  function openAssetSettingsTypeView() {
+    if (isAssetSettingsBusy || !isSavedManualAsset(editingAsset)) return;
+    setAssetSettingsView('type');
+    setAssetSettingsTypeDraft(getManualAssetOption(editingAsset.kind).value);
+    setAssetSettingsError('');
+    clearAssetSettingsLocationFeedback();
+  }
+
+  function openAssetSettingsConversionView() {
+    if (isAssetSettingsBusy || !isSavedManualAsset(editingAsset)) return;
+    setAssetSettingsView('conversion');
+    setAssetSettingsError('');
+    clearAssetSettingsLocationFeedback();
+  }
+
+  function openAssetSettingsUsageView() {
+    if (isAssetSettingsBusy || !isSavedAim4priceAsset(editingAsset)) return;
+    const usageMode = getAssetSettingsUsageMode(editingAsset);
+    setAssetSettingsView('usage');
+    setAssetSettingsUsageInput(formatAssetSettingsUsageInput(editingAsset, usageMode));
+    setAssetSettingsError('');
+    clearAssetSettingsLocationFeedback();
+  }
+
+  function goBackFromAssetSettingsSubView() {
+    if (isAssetSettingsBusy) return;
+    if (assetSettingsView === 'locationManual' || assetSettingsView === 'locationMap') {
+      setAssetSettingsView('location');
+      clearAssetSettingsLocationFeedback();
+      return;
+    }
+
+    openAssetSettingsMenuView();
   }
 
   async function persistAssetSettingsGpsPosition(input: {
@@ -5435,6 +5665,7 @@ export default function AssetRegisterClient() {
     syncSettingsUpdatedAsset(data.item);
     setAssetDraft(buildDraftFromAsset(data.item));
     setAssetSettingsManualLocationInputsFromAsset(data.item);
+    setAssetSettingsMapLocationInputsFromAsset(data.item);
 
     return data.item;
   }
@@ -5477,6 +5708,55 @@ export default function AssetRegisterClient() {
 
       setAssetSettingsLocationSuccess('Manual GPS position saved.');
       setNotice({ tone: 'success', message: 'Manual GPS position updated.' });
+    } catch (error) {
+      setAssetSettingsLocationError(error instanceof Error ? error.message : 'Failed to save GPS position.');
+    } finally {
+      setAssetSettingsLocationState('idle');
+    }
+  }
+
+  async function saveAssetSettingsMapGpsPosition() {
+    if (!editingAsset) {
+      setAssetSettingsLocationError('Open a saved asset before updating GPS position.');
+      return;
+    }
+
+    if (isAssetSettingsBusy) {
+      return;
+    }
+
+    const validatedGps = validateAssetSettingsManualGpsInputs(
+      assetSettingsMapLatInput,
+      assetSettingsMapLngInput,
+      assetSettingsMapLocationText,
+    );
+
+    if (!validatedGps.ok) {
+      setAssetSettingsLocationError(
+        assetSettingsMapLatInput || assetSettingsMapLngInput
+          ? validatedGps.error
+          : 'Click or tap the map to place a pin before saving.',
+      );
+      setAssetSettingsLocationSuccess('');
+      return;
+    }
+
+    setAssetSettingsLocationState('savingMap');
+    clearAssetSettingsLocationFeedback();
+
+    try {
+      await persistAssetSettingsGpsPosition({
+        assetId: editingAsset.id,
+        latitude: validatedGps.latitude,
+        longitude: validatedGps.longitude,
+        gpsAccuracyMeters: null,
+        clientCapturedAt: new Date().toISOString(),
+        locationText: validatedGps.locationText,
+        source: 'manual',
+      });
+
+      setAssetSettingsLocationSuccess('Map GPS position saved.');
+      setNotice({ tone: 'success', message: 'Map GPS position updated.' });
     } catch (error) {
       setAssetSettingsLocationError(error instanceof Error ? error.message : 'Failed to save GPS position.');
     } finally {
@@ -8571,6 +8851,9 @@ export default function AssetRegisterClient() {
   const assetSettingsManualGpsButtonLabel = isAssetSettingsManualLocationSaving
     ? 'Saving GPS...'
     : 'Save manual GPS position';
+  const assetSettingsMapGpsButtonLabel = isAssetSettingsMapLocationSaving
+    ? 'Saving GPS...'
+    : 'Save map position';
   const assetSettingsDeviceGpsButtonLabel = isAssetSettingsDeviceLocationCapturing
     ? 'Capturing GPS...'
     : isAssetSettingsDeviceLocationSaving
@@ -10511,7 +10794,7 @@ export default function AssetRegisterClient() {
           <div className={styles.modalBackdrop} onClick={closeAssetSettingsModal} />
 
           <div
-            className={`${styles.modalCard} ${styles.assetSettingsModal}`}
+            className={`${styles.modalCard} ${styles.assetSettingsModal} ${assetSettingsView !== 'menu' ? styles.assetSettingsSubModal : ''}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="asset-settings-title"
@@ -10534,182 +10817,338 @@ export default function AssetRegisterClient() {
             </div>
 
             <div className={`${styles.modalScrollBody} ${styles.assetSettingsBody}`}>
-              <section className={`${styles.assetSettingsSection} ${styles.assetSettingsLocationSection}`}>
-                <div className={styles.assetSettingsSectionCopy}>
-                  <span>Location</span>
-                  <h4>Update Last Scanned / GPS Position</h4>
-                  <p>Save the asset’s latest known position. This only updates the saved location — it does not change the asset value, usage, serial number, brand, model, finance, insurance or licence details.</p>
-                </div>
+              {assetSettingsView !== 'menu' ? (
+                <button
+                  type="button"
+                  className={styles.assetSettingsBackButton}
+                  onClick={goBackFromAssetSettingsSubView}
+                  disabled={isAssetSettingsBusy}
+                >
+                  <span aria-hidden="true">←</span>
+                  <span>{assetSettingsView === 'locationManual' || assetSettingsView === 'locationMap' ? 'Back to Location' : 'Back to Settings'}</span>
+                </button>
+              ) : null}
 
-                <div className={styles.assetSettingsLocationSummary}>
-                  <div className={styles.assetSettingsStaticGrid}>
-                    <div>
-                      <span>Last scanned</span>
-                      <strong>{formatAssetSettingsLastScanned(editingAsset)}</strong>
-                    </div>
-                    <div>
-                      <span>GPS position</span>
-                      <strong>{formatAssetSettingsGpsPosition(editingAsset)}</strong>
-                    </div>
-                    {assetSettingsLocationText ? (
-                      <div className={styles.assetSettingsStaticGridWide}>
-                        <span>Location text</span>
-                        <strong>{assetSettingsLocationText}</strong>
-                      </div>
-                    ) : null}
-                    {assetSettingsMapsUrl ? (
-                      <div>
-                        <span>Map</span>
-                        <a className={styles.assetSettingsMapLink} href={assetSettingsMapsUrl} target="_blank" rel="noreferrer">
-                          Open in Google Maps
-                        </a>
-                      </div>
-                    ) : null}
+              {assetSettingsView === 'menu' ? (
+                <div className={styles.assetSettingsMenuGrid}>
+                  <button
+                    type="button"
+                    className={styles.assetSettingsOptionButton}
+                    onClick={openAssetSettingsLocationView}
+                    disabled={isAssetSettingsBusy}
+                  >
+                    <FlagIcon className={styles.assetSettingsOptionIcon} />
+                    <span>
+                      <strong>Location</strong>
+                      <small>Update manual, device or map GPS position.</small>
+                    </span>
+                  </button>
+
+                  {isSavedManualAsset(editingAsset) ? (
+                    <>
+                      <button
+                        type="button"
+                        className={styles.assetSettingsOptionButton}
+                        onClick={openAssetSettingsTypeView}
+                        disabled={isAssetSettingsBusy}
+                      >
+                        <OptionsIcon className={styles.assetSettingsOptionIcon} />
+                        <span>
+                          <strong>Change Equipment Type</strong>
+                          <small>Change this manual asset’s saved category.</small>
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        className={styles.assetSettingsOptionButton}
+                        onClick={openAssetSettingsConversionView}
+                        disabled={isAssetSettingsBusy}
+                      >
+                        <TrendIcon className={styles.assetSettingsOptionIcon} />
+                        <span>
+                          <strong>Change Manual Asset to Aim4price Valued Asset</strong>
+                          <small>Run an Aim4price valuation for this asset.</small>
+                        </span>
+                      </button>
+                    </>
+                  ) : null}
+
+                  {isSavedAim4priceAsset(editingAsset) ? (
+                    <button
+                      type="button"
+                      className={styles.assetSettingsOptionButton}
+                      onClick={openAssetSettingsUsageView}
+                      disabled={isAssetSettingsBusy}
+                    >
+                      <ManageIcon className={styles.assetSettingsOptionIcon} />
+                      <span>
+                        <strong>Change Lifetime Expectancy</strong>
+                        <small>Override saved lifetime or usage percentage.</small>
+                      </span>
+                    </button>
+                  ) : null}
+                </div>
+              ) : null}
+
+              {assetSettingsView === 'location' ? (
+                <section className={`${styles.assetSettingsSection} ${styles.assetSettingsLocationSection}`}>
+                  <div className={styles.assetSettingsSectionCopy}>
+                    <span>Location</span>
+                    <h4>Update GPS Position</h4>
+                    <p>Save the asset’s latest known position without changing its value, usage, serial number, brand, model, finance, insurance or licence details.</p>
                   </div>
-                </div>
 
-                <div className={styles.assetSettingsLocationMethods}>
-                  <div className={`${styles.assetSettingsLocationMethodCard} ${styles.assetSettingsLocationMethodPrimary}`}>
-                    <div className={styles.assetSettingsLocationMethodHeader}>
-                      <strong>Manual GPS position</strong>
-                      <p>Paste coordinates from Google Maps, or type the latitude and longitude below.</p>
+                  <div className={styles.assetSettingsLocationSummary}>
+                    <div className={styles.assetSettingsStaticGrid}>
+                      <div>
+                        <span>Last scanned</span>
+                        <strong>{formatAssetSettingsLastScanned(editingAsset)}</strong>
+                      </div>
+                      <div>
+                        <span>GPS position</span>
+                        <strong>{formatAssetSettingsGpsPosition(editingAsset)}</strong>
+                      </div>
+                      {assetSettingsLocationText ? (
+                        <div className={styles.assetSettingsStaticGridWide}>
+                          <span>Location text</span>
+                          <strong>{assetSettingsLocationText}</strong>
+                        </div>
+                      ) : null}
+                      {assetSettingsMapsUrl ? (
+                        <div>
+                          <span>Map</span>
+                          <a className={styles.assetSettingsMapLink} href={assetSettingsMapsUrl} target="_blank" rel="noreferrer">
+                            Open in Google Maps
+                          </a>
+                        </div>
+                      ) : null}
                     </div>
+                  </div>
 
-                    <div className={styles.assetSettingsCoordinateGrid}>
-                      <label className={styles.assetSettingsField}>
-                        <span>Latitude</span>
-                        <input
-                          type="text"
-                          inputMode="decimal"
-                          value={assetSettingsManualLatInput}
-                          onChange={(event) => {
-                            setAssetSettingsManualLatInput(event.target.value);
-                            clearAssetSettingsLocationFeedback();
-                          }}
-                          onPaste={(event) => {
-                            const pastedText = event.clipboardData.getData('text');
-                            if (applyAssetSettingsCoordinatePair(pastedText)) {
-                              event.preventDefault();
-                            }
-                          }}
-                          placeholder="-33.924869"
-                        />
-                      </label>
+                  <div className={styles.assetSettingsLocationChoiceGrid}>
+                    <button
+                      type="button"
+                      className={styles.assetSettingsOptionButton}
+                      onClick={openAssetSettingsManualLocationView}
+                      disabled={isAssetSettingsBusy}
+                    >
+                      <DocumentIcon className={styles.assetSettingsOptionIcon} />
+                      <span>
+                        <strong>Manual</strong>
+                        <small>Enter latitude and longitude manually.</small>
+                      </span>
+                    </button>
 
-                      <label className={styles.assetSettingsField}>
-                        <span>Longitude</span>
-                        <input
-                          type="text"
-                          inputMode="decimal"
-                          value={assetSettingsManualLngInput}
-                          onChange={(event) => {
-                            setAssetSettingsManualLngInput(event.target.value);
-                            clearAssetSettingsLocationFeedback();
-                          }}
-                          placeholder="18.424055"
-                        />
-                      </label>
-                    </div>
+                    <button
+                      type="button"
+                      className={styles.assetSettingsOptionButton}
+                      onClick={() => void updateAssetSettingsGpsPosition()}
+                      disabled={isAssetSettingsBusy}
+                    >
+                      <RefreshIcon className={styles.assetSettingsOptionIcon} />
+                      <span>
+                        <strong>{isAssetSettingsDeviceLocationCapturing || isAssetSettingsDeviceLocationSaving ? assetSettingsDeviceGpsButtonLabel : 'Automatic'}</strong>
+                        <small>Use this device’s GPS position.</small>
+                      </span>
+                    </button>
 
+                    <button
+                      type="button"
+                      className={styles.assetSettingsOptionButton}
+                      onClick={openAssetSettingsMapLocationView}
+                      disabled={isAssetSettingsBusy}
+                    >
+                      <FlagIcon className={styles.assetSettingsOptionIcon} />
+                      <span>
+                        <strong>Choose on map</strong>
+                        <small>Drop a pin on the map and save it.</small>
+                      </span>
+                    </button>
+                  </div>
+
+                  {assetSettingsLocationSuccess ? <p className={styles.assetSettingsLocationSuccess}>{assetSettingsLocationSuccess}</p> : null}
+                  {assetSettingsLocationError ? <p className={styles.assetSettingsError}>{assetSettingsLocationError}</p> : null}
+                </section>
+              ) : null}
+
+              {assetSettingsView === 'locationManual' ? (
+                <section className={`${styles.assetSettingsSection} ${styles.assetSettingsLocationSection}`}>
+                  <div className={styles.assetSettingsSectionCopy}>
+                    <span>Manual location</span>
+                    <h4>Enter GPS Coordinates</h4>
+                    <p>Paste coordinates from Google Maps, or type the latitude and longitude below.</p>
+                  </div>
+
+                  <div className={styles.assetSettingsCoordinateGrid}>
                     <label className={styles.assetSettingsField}>
-                      <span>Optional location note</span>
-                      <textarea
-                        rows={2}
-                        value={assetSettingsManualLocationText}
+                      <span>Latitude</span>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={assetSettingsManualLatInput}
                         onChange={(event) => {
-                          setAssetSettingsManualLocationText(event.target.value.slice(0, MAX_ASSET_SETTINGS_LOCATION_TEXT_LENGTH));
+                          setAssetSettingsManualLatInput(event.target.value);
                           clearAssetSettingsLocationFeedback();
                         }}
-                        placeholder="Example: Main shed, north camp, client yard"
+                        onPaste={(event) => {
+                          const pastedText = event.clipboardData.getData('text');
+                          if (applyAssetSettingsCoordinatePair(pastedText)) {
+                            event.preventDefault();
+                          }
+                        }}
+                        placeholder="-33.924869"
                       />
                     </label>
 
-                    <p className={styles.assetSettingsFieldTip}>Tip: You can copy coordinates from Google Maps and paste them here.</p>
-
-                    <div className={styles.assetSettingsActions}>
-                      <button
-                        type="button"
-                        className={styles.primaryButton}
-                        onClick={() => void saveAssetSettingsManualGpsPosition()}
-                        disabled={isAssetSettingsBusy}
-                      >
-                        {assetSettingsManualGpsButtonLabel}
-                      </button>
-                    </div>
+                    <label className={styles.assetSettingsField}>
+                      <span>Longitude</span>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={assetSettingsManualLngInput}
+                        onChange={(event) => {
+                          setAssetSettingsManualLngInput(event.target.value);
+                          clearAssetSettingsLocationFeedback();
+                        }}
+                        placeholder="18.424055"
+                      />
+                    </label>
                   </div>
 
-                  <div className={`${styles.assetSettingsLocationMethodCard} ${styles.assetSettingsLocationMethodSecondary}`}>
-                    <div className={styles.assetSettingsLocationMethodHeader}>
-                      <strong>Use this device’s GPS</strong>
-                      <p>Only requests browser GPS after you click the button. Manual entry above works without location permission.</p>
-                    </div>
-
-                    <div className={styles.assetSettingsActions}>
-                      <button
-                        type="button"
-                        className={styles.assetSettingsConversionButton}
-                        onClick={() => void updateAssetSettingsGpsPosition()}
-                        disabled={isAssetSettingsBusy}
-                      >
-                        {assetSettingsDeviceGpsButtonLabel}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {assetSettingsLocationSuccess ? <p className={styles.assetSettingsLocationSuccess}>{assetSettingsLocationSuccess}</p> : null}
-                {assetSettingsLocationError ? <p className={styles.assetSettingsError}>{assetSettingsLocationError}</p> : null}
-              </section>
-
-              {isSavedManualAsset(editingAsset) ? (
-                <>
-                  <section className={styles.assetSettingsSection}>
-                    <div className={styles.assetSettingsSectionCopy}>
-                      <span>Manual asset</span>
-                      <h4>Change Equipment Type</h4>
-                      <p>Change the saved type on this same asset record. Existing values, files, notes, finance, insurance and licence details are preserved.</p>
-                    </div>
-
-                    <ModalSelect<AssetKind>
-                      label="Asset type"
-                      value={assetSettingsTypeDraft}
-                      options={MANUAL_ASSET_TYPE_OPTIONS}
-                      onChange={setAssetSettingsTypeDraft}
-                      className={styles.assetSettingsSelectField}
+                  <label className={styles.assetSettingsField}>
+                    <span>Optional location note</span>
+                    <textarea
+                      rows={2}
+                      value={assetSettingsManualLocationText}
+                      onChange={(event) => {
+                        setAssetSettingsManualLocationText(event.target.value.slice(0, MAX_ASSET_SETTINGS_LOCATION_TEXT_LENGTH));
+                        clearAssetSettingsLocationFeedback();
+                      }}
+                      placeholder="Example: Main shed, north camp, client yard"
                     />
+                  </label>
 
-                    <div className={styles.assetSettingsActions}>
-                      <button
-                        type="button"
-                        className={styles.primaryButton}
-                        onClick={() => void saveManualAssetTypeSetting()}
-                        disabled={isAssetSettingsBusy || assetSettingsTypeDraft === editingAsset.kind}
-                      >
-                        {isSavingAssetSettings ? 'Saving...' : 'Save type'}
-                      </button>
-                    </div>
-                  </section>
+                  <p className={styles.assetSettingsFieldTip}>Tip: You can copy coordinates from Google Maps and paste them here.</p>
 
-                  <section className={styles.assetSettingsSection}>
-                    <div className={styles.assetSettingsSectionCopy}>
-                      <span>Conversion</span>
-                      <h4>Change from Manual Asset to Aim4price Valued Asset</h4>
-                      <p>Complete a normal Aim4price estimate. The manual asset is only changed after the final Save succeeds.</p>
-                    </div>
+                  <div className={styles.assetSettingsActions}>
+                    <button
+                      type="button"
+                      className={styles.primaryButton}
+                      onClick={() => void saveAssetSettingsManualGpsPosition()}
+                      disabled={isAssetSettingsBusy}
+                    >
+                      {assetSettingsManualGpsButtonLabel}
+                    </button>
+                  </div>
 
-                    <div className={styles.assetSettingsActions}>
-                      <button
-                        type="button"
-                        className={styles.assetSettingsConversionButton}
-                        onClick={startManualAssetConversion}
-                        disabled={isAssetSettingsBusy}
-                      >
-                        Start Aim4price conversion
-                      </button>
+                  {assetSettingsLocationSuccess ? <p className={styles.assetSettingsLocationSuccess}>{assetSettingsLocationSuccess}</p> : null}
+                  {assetSettingsLocationError ? <p className={styles.assetSettingsError}>{assetSettingsLocationError}</p> : null}
+                </section>
+              ) : null}
+
+              {assetSettingsView === 'locationMap' ? (
+                <section className={`${styles.assetSettingsSection} ${styles.assetSettingsLocationSection}`}>
+                  <div className={styles.assetSettingsSectionCopy}>
+                    <span>Choose on map</span>
+                    <h4>Drop a GPS Pin</h4>
+                    <p>Click or tap the map to place the asset position. Drag the marker to fine-tune the coordinates.</p>
+                  </div>
+
+                  <div className={styles.assetSettingsMapShell}>
+                    <div ref={assetSettingsMapElementRef} className={styles.assetSettingsMapCanvas} aria-label="Asset location map" />
+                    <div className={styles.assetSettingsMapSelectedGrid}>
+                      <div>
+                        <span>Selected latitude</span>
+                        <strong>{assetSettingsMapLatInput || 'No pin selected'}</strong>
+                      </div>
+                      <div>
+                        <span>Selected longitude</span>
+                        <strong>{assetSettingsMapLngInput || 'No pin selected'}</strong>
+                      </div>
                     </div>
-                  </section>
-                </>
-              ) : isSavedAim4priceAsset(editingAsset) ? (
+                  </div>
+
+                  <label className={styles.assetSettingsField}>
+                    <span>Optional location note</span>
+                    <textarea
+                      rows={2}
+                      value={assetSettingsMapLocationText}
+                      onChange={(event) => {
+                        setAssetSettingsMapLocationText(event.target.value.slice(0, MAX_ASSET_SETTINGS_LOCATION_TEXT_LENGTH));
+                        clearAssetSettingsLocationFeedback();
+                      }}
+                      placeholder="Example: Main shed, north camp, client yard"
+                    />
+                  </label>
+
+                  <div className={styles.assetSettingsActions}>
+                    <button
+                      type="button"
+                      className={styles.primaryButton}
+                      onClick={() => void saveAssetSettingsMapGpsPosition()}
+                      disabled={isAssetSettingsBusy}
+                    >
+                      {assetSettingsMapGpsButtonLabel}
+                    </button>
+                  </div>
+
+                  {assetSettingsLocationSuccess ? <p className={styles.assetSettingsLocationSuccess}>{assetSettingsLocationSuccess}</p> : null}
+                  {assetSettingsLocationError ? <p className={styles.assetSettingsError}>{assetSettingsLocationError}</p> : null}
+                </section>
+              ) : null}
+
+              {assetSettingsView === 'type' && isSavedManualAsset(editingAsset) ? (
+                <section className={styles.assetSettingsSection}>
+                  <div className={styles.assetSettingsSectionCopy}>
+                    <span>Manual asset</span>
+                    <h4>Change Equipment Type</h4>
+                    <p>Change the saved type on this same asset record. Existing values, files, notes, finance, insurance and licence details are preserved.</p>
+                  </div>
+
+                  <ModalSelect<AssetKind>
+                    label="Asset type"
+                    value={assetSettingsTypeDraft}
+                    options={MANUAL_ASSET_TYPE_OPTIONS}
+                    onChange={setAssetSettingsTypeDraft}
+                    className={styles.assetSettingsSelectField}
+                  />
+
+                  <div className={styles.assetSettingsActions}>
+                    <button
+                      type="button"
+                      className={styles.primaryButton}
+                      onClick={() => void saveManualAssetTypeSetting()}
+                      disabled={isAssetSettingsBusy || assetSettingsTypeDraft === editingAsset.kind}
+                    >
+                      {isSavingAssetSettings ? 'Saving...' : 'Save type'}
+                    </button>
+                  </div>
+                </section>
+              ) : null}
+
+              {assetSettingsView === 'conversion' && isSavedManualAsset(editingAsset) ? (
+                <section className={styles.assetSettingsSection}>
+                  <div className={styles.assetSettingsSectionCopy}>
+                    <span>Conversion</span>
+                    <h4>Change Manual Asset to Aim4price Valued Asset</h4>
+                    <p>Complete a normal Aim4price estimate. The manual asset is only changed after the final Save succeeds.</p>
+                  </div>
+
+                  <div className={styles.assetSettingsActions}>
+                    <button
+                      type="button"
+                      className={styles.assetSettingsConversionButton}
+                      onClick={startManualAssetConversion}
+                      disabled={isAssetSettingsBusy}
+                    >
+                      Start Aim4price conversion
+                    </button>
+                  </div>
+                </section>
+              ) : null}
+
+              {assetSettingsView === 'usage' && isSavedAim4priceAsset(editingAsset) ? (
                 <section className={styles.assetSettingsSection}>
                   <div className={styles.assetSettingsSectionCopy}>
                     <span>Aim4price asset</span>
@@ -10772,13 +11211,7 @@ export default function AssetRegisterClient() {
                     </div>
                   )}
                 </section>
-              ) : (
-                <div className={styles.assetSettingsDisabledNote}>
-                  Settings are available after this asset has been saved.
-                </div>
-              )}
-
-
+              ) : null}
 
               {assetSettingsError ? <p className={styles.assetSettingsError}>{assetSettingsError}</p> : null}
             </div>
