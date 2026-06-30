@@ -2,14 +2,14 @@ import { getDb } from './db';
 import { getAssetRegisterItemById, type AssetRegisterItem, type AssetRegisterItemMethod } from './asset-register-db';
 import type { ConditionKey, TractorType } from './tractor-data';
 import type { GpsType } from './tractor-logic';
-import { calculateEngineHoursValue, tractorLifetimeHours, applyFloor, clamp, roundMoney } from './valuation/shared';
+import { calculateEngineHoursValue, calculatePercentUsedValue, tractorLifetimeHours, applyFloor, clamp, roundMoney } from './valuation/shared';
 import {
   FRONT_PTO_REPLACEMENT_EX_VAT,
   GPS_FULL_AUTOSTEER_REPLACEMENT_EX_VAT,
   GPS_GUIDANCE_REPLACEMENT_EX_VAT,
 } from './valuation/tractors';
 
-type UsageMetric = 'hours' | 'km';
+type UsageMetric = 'hours' | 'km' | 'percent';
 
 type ProjectionSnapshot = {
   retailExVat: number;
@@ -17,6 +17,7 @@ type ProjectionSnapshot = {
   tractorExVat: number;
   loaderExVat: number;
   gpsExVat: number;
+  lifeWorkedPercent?: number | null;
 };
 
 export type AssetFutureProjection = {
@@ -30,6 +31,7 @@ export type AssetFutureProjection = {
   yearsForward: number;
   extraHours: number;
   extraUsage: number;
+  targetLifeWorkedPercent?: number | null;
   usageMetric: UsageMetric;
   usageUnitLabel: string;
   condition: ConditionKey;
@@ -82,6 +84,32 @@ const MAX_LIFETIME_USAGE_KEYS = [
   'design_life_km',
   'usefulLifeKm',
   'useful_life_km',
+] as const;
+
+const LIFE_WORKED_PERCENT_KEYS = [
+  'lifeWorkedPercent',
+  'life_worked_percent',
+  'workedPercent',
+  'worked_percent',
+  'percentWorked',
+  'percent_worked',
+  'lifetimeWorkedPercent',
+  'lifetime_worked_percent',
+  'lifetimeUsedPercent',
+  'lifetime_used_percent',
+] as const;
+
+const USAGE_MODE_KEYS = [
+  'usageMode',
+  'usage_mode',
+  'usageMetricType',
+  'usage_metric_type',
+  'valuationMode',
+  'valuation_mode',
+  'depreciationMethodUsed',
+  'depreciation_method_used',
+  'depreciationMethod',
+  'depreciation_method',
 ] as const;
 
 function asText(value: unknown): string {
@@ -176,6 +204,49 @@ function firstPositiveNumberFromRecords(records: Record<string, unknown>[], keys
   }
 
   return null;
+}
+
+function normalizePercent(value: unknown): number | null {
+  const numeric = asNumber(value);
+  if (numeric === null || numeric < 0 || numeric > 100) {
+    return null;
+  }
+
+  return Math.round(numeric * 10) / 10;
+}
+
+function firstPercentNumber(...values: unknown[]): number | null {
+  for (const value of values) {
+    const numeric = normalizePercent(value);
+    if (numeric !== null) {
+      return numeric;
+    }
+  }
+
+  return null;
+}
+
+function firstPercentNumberFromRecords(records: Record<string, unknown>[], keys: readonly string[]): number | null {
+  for (const record of records) {
+    const numeric = firstPercentNumber(pickFromRecord(record, keys));
+    if (numeric !== null) {
+      return numeric;
+    }
+  }
+
+  return null;
+}
+
+function firstUsageModeFromRecords(records: Record<string, unknown>[]): string {
+  for (const record of records) {
+    const rawMode = pickFromRecord(record, USAGE_MODE_KEYS);
+    const mode = asText(rawMode).toLowerCase();
+    if (mode) {
+      return mode;
+    }
+  }
+
+  return '';
 }
 
 function normalizeCondition(value: unknown): ConditionKey {
@@ -358,6 +429,36 @@ function calculateUsageBasedSnapshot(input: {
   };
 }
 
+function calculatePercentBasedSnapshot(input: {
+  targetYear: number;
+  baseYear: number;
+  replacementPriceExVat: number;
+  percentUsed: number;
+  condition: ConditionKey;
+  inflationRatePct: number;
+}): { snapshot: ProjectionSnapshot } {
+  const yearsForward = Math.max(0, input.targetYear - input.baseYear);
+  const inflator = inflationFactor(input.inflationRatePct, yearsForward);
+  const percentUsed = Math.min(100, Math.max(0, Math.round(input.percentUsed * 10) / 10));
+  const replacementPriceExVat = input.replacementPriceExVat * inflator;
+  const baseValueExVat = calculatePercentUsedValue({
+    replacementPriceExVat,
+    percentUsed,
+    condition: input.condition,
+  }).finalValueExVat;
+
+  return {
+    snapshot: {
+      retailExVat: baseValueExVat,
+      hours: 0,
+      tractorExVat: baseValueExVat,
+      loaderExVat: 0,
+      gpsExVat: 0,
+      lifeWorkedPercent: percentUsed,
+    },
+  };
+}
+
 function scaleSnapshotFromCurrentSavedValue(
   snapshot: ProjectionSnapshot,
   anchorFactor: number,
@@ -377,6 +478,7 @@ function scaleSnapshotFromCurrentSavedValue(
     tractorExVat,
     loaderExVat,
     gpsExVat,
+    lifeWorkedPercent: snapshot.lifeWorkedPercent ?? null,
   };
 }
 
@@ -475,6 +577,59 @@ function getSectorKey(input: {
       input.valuationInput.sector_key ||
       pick(input.row, ['sector_key']),
   ).toLowerCase();
+}
+
+function readLifeWorkedPercentForProjection(input: {
+  asset: AssetRegisterItem;
+  row: GenericDbRow;
+  valuationInput: Record<string, unknown>;
+  valuationOutput: Record<string, unknown>;
+}): number | null {
+  const specs = asObject(input.asset.specsJson);
+  const selectedCalculation = asObject(input.valuationOutput.selectedCalculation);
+  const nestedResult = asObject(input.valuationOutput.result);
+
+  return firstPercentNumber(
+    input.asset.lifeWorkedPercent,
+    firstPercentNumberFromRecords(
+      [specs, input.valuationInput, input.valuationOutput, selectedCalculation, nestedResult, input.row],
+      LIFE_WORKED_PERCENT_KEYS,
+    ),
+  );
+}
+
+function isPercentProjectionCandidate(input: {
+  asset: AssetRegisterItem;
+  row: GenericDbRow;
+  valuationInput: Record<string, unknown>;
+  valuationOutput: Record<string, unknown>;
+}): boolean {
+  if (input.asset.kind === 'vehicle') {
+    return false;
+  }
+
+  const specs = asObject(input.asset.specsJson);
+  const mode = firstUsageModeFromRecords([specs, input.valuationInput, input.valuationOutput, input.row]);
+  const depreciationMethod = asText(
+    input.asset.depreciationMethodUsed ||
+      specs.depreciationMethodUsed ||
+      specs.depreciation_method_used ||
+      input.valuationInput.depreciationMethodUsed ||
+      input.valuationInput.depreciation_method_used ||
+      input.valuationOutput.depreciationMethodUsed ||
+      input.valuationOutput.depreciation_method_used ||
+      pick(input.row, ['depreciation_method_used', 'depreciation_method']),
+  ).toLowerCase();
+
+  return (
+    mode === 'percent' ||
+    mode === 'percentage' ||
+    mode === 'percent_used' ||
+    mode === 'percentage_depreciation' ||
+    mode === 'wear_class' ||
+    depreciationMethod === 'percentage_depreciation' ||
+    readLifeWorkedPercentForProjection(input) !== null
+  );
 }
 
 function isMotorProjectionCandidate(input: {
@@ -598,12 +753,83 @@ function buildProjectionResult(input: {
     yearsForward: Math.max(0, input.targetYear - input.baseYear),
     extraHours: input.extraUsage,
     extraUsage: input.extraUsage,
+    targetLifeWorkedPercent: input.projectedModelSnapshot.lifeWorkedPercent ?? null,
     usageMetric: input.usageMetric,
-    usageUnitLabel: input.usageMetric === 'km' ? 'km' : 'hours',
+    usageUnitLabel: input.usageMetric === 'percent' ? '%' : input.usageMetric === 'km' ? 'km' : 'hours',
     condition: input.condition,
     current,
     projected,
   };
+}
+
+function calculatePercentProjection(input: {
+  asset: AssetRegisterItem;
+  row: GenericDbRow;
+  valuationInput: Record<string, unknown>;
+  valuationOutput: Record<string, unknown>;
+  selectedMethod: AssetRegisterItemMethod;
+  currentRegisterValueExVat: number;
+  baseYear: number;
+  targetYear: number;
+  inflationRatePct: number;
+  targetLifeWorkedPercent: number | null;
+}): AssetFutureProjection {
+  const replacementPriceExVat = readReplacementPriceForProjection(input);
+
+  if (!replacementPriceExVat || replacementPriceExVat <= 0) {
+    throw new Error('REPLACEMENT_PRICE_NOT_AVAILABLE');
+  }
+
+  const currentLifeWorkedPercent = readLifeWorkedPercentForProjection(input);
+  if (currentLifeWorkedPercent === null) {
+    throw new Error('FUTURE_PRICE_UNAVAILABLE');
+  }
+
+  const targetLifeWorkedPercent = input.targetLifeWorkedPercent === null
+    ? currentLifeWorkedPercent
+    : Math.round(input.targetLifeWorkedPercent * 10) / 10;
+
+  if (targetLifeWorkedPercent < 0 || targetLifeWorkedPercent > 100) {
+    throw new Error('TARGET_PERCENT_INVALID');
+  }
+
+  if (targetLifeWorkedPercent < currentLifeWorkedPercent) {
+    throw new Error('TARGET_PERCENT_BELOW_CURRENT');
+  }
+
+  const condition = normalizeCondition(input.asset.condition || pick(input.row, ['condition']) || input.valuationInput.condition);
+
+  const currentModelSnapshot = calculatePercentBasedSnapshot({
+    targetYear: input.baseYear,
+    baseYear: input.baseYear,
+    replacementPriceExVat,
+    percentUsed: currentLifeWorkedPercent,
+    condition,
+    inflationRatePct: 0,
+  }).snapshot;
+
+  const projectedModelSnapshot = calculatePercentBasedSnapshot({
+    targetYear: input.targetYear,
+    baseYear: input.baseYear,
+    replacementPriceExVat,
+    percentUsed: targetLifeWorkedPercent,
+    condition,
+    inflationRatePct: input.inflationRatePct,
+  }).snapshot;
+
+  return buildProjectionResult({
+    asset: input.asset,
+    selectedMethod: input.selectedMethod,
+    currentRegisterValueExVat: input.currentRegisterValueExVat,
+    baseYear: input.baseYear,
+    targetYear: input.targetYear,
+    inflationRatePct: input.inflationRatePct,
+    extraUsage: 0,
+    usageMetric: 'percent',
+    condition,
+    currentModelSnapshot,
+    projectedModelSnapshot,
+  });
 }
 
 function calculateMotorProjection(input: {
@@ -780,6 +1006,7 @@ export async function calculateFuturePriceForAsset(input: {
   targetYear: number;
   inflationRatePct: number;
   extraHours?: number;
+  targetLifeWorkedPercent?: number | null;
 }): Promise<AssetFutureProjection> {
   const asset = await getAssetRegisterItemById(input.userId, input.assetId);
 
@@ -806,6 +1033,9 @@ export async function calculateFuturePriceForAsset(input: {
   const targetYear = Math.max(baseYear, Math.round(input.targetYear));
   const inflationRatePct = Number.isFinite(input.inflationRatePct) ? Number(input.inflationRatePct) : 0;
   const extraUsage = Math.max(0, Math.round(Number(input.extraHours ?? 0) || 0));
+  const targetLifeWorkedPercent = typeof input.targetLifeWorkedPercent === 'number' && Number.isFinite(input.targetLifeWorkedPercent)
+    ? Math.round(input.targetLifeWorkedPercent * 10) / 10
+    : null;
 
   const baseContext = {
     asset,
@@ -818,6 +1048,17 @@ export async function calculateFuturePriceForAsset(input: {
     targetYear,
     inflationRatePct,
   };
+
+  if (isPercentProjectionCandidate({ asset, row: valuationRow, valuationInput, valuationOutput })) {
+    return calculatePercentProjection({
+      ...baseContext,
+      targetLifeWorkedPercent,
+    });
+  }
+
+  if (targetLifeWorkedPercent !== null) {
+    throw new Error('TARGET_PERCENT_UNSUPPORTED');
+  }
 
   if (isMotorProjectionCandidate({ asset, row: valuationRow, valuationInput, valuationOutput })) {
     return calculateMotorProjection({
