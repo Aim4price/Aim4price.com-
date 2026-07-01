@@ -2076,7 +2076,7 @@ export default function FuelClient() {
           </label>
           <label>
             <span>Card last 4</span>
-            <input value={fuelSlipDraft.cardLast4} onChange={(event) => handleFuelSlipCardLast4Change(event.target.value)} inputMode="numeric" maxLength={4} pattern="[0-9]{4}" placeholder="1234" />
+            <input value={fuelSlipDraft.cardLast4} onChange={(event) => handleFuelSlipCardLast4Change(event.target.value)} inputMode="numeric" maxLength={4} pattern="[0-9]{4}" placeholder="Last 4 only" />
           </label>
           <label>
             <span>Slip/reference number</span>
