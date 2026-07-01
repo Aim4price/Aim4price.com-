@@ -5,7 +5,7 @@ import AppHeader from '../../components/AppHeader';
 import styles from './page.module.css';
 
 type FlowMode = 'source-choice' | 'asset-manual' | 'asset-automatic' | 'manual-form' | 'upload' | 'review' | null;
-type InvoiceSource = 'manual' | 'automatic';
+type InvoiceSource = 'manual' | 'automatic' | 'fuel_slip';
 type FilterSource = 'all' | InvoiceSource;
 type UsageMetric = 'none' | 'hours' | 'km';
 type NoticeTone = 'success' | 'error';
