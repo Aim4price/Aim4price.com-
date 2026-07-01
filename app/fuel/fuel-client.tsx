@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent, type ReactNode, type SVGProps } from 'react';
 import AppHeader from '../../components/AppHeader';
 import styles from './page.module.css';
+import { fuelSlipDecimalToInput, parseFuelSlipDecimal, reconcileFuelSlipNumbers } from '../../lib/fuel-slip-number';
 
 type FuelStorageStatus = 'active' | 'archived';
 type ModalMode = 'create-storage' | 'edit-storage' | 'pin' | 'report' | 'qr' | 'fuel-slip' | 'fuel-slip-menu' | 'fuel-slip-manager' | null;
@@ -88,9 +89,9 @@ type FuelSlipRecord = {
   documentDate: string;
   documentTime: string;
   fuelType: string;
-  litres: number;
+  litres: number | null;
   pricePerLitre: number | null;
-  totalAmount: number;
+  totalAmount: number | null;
   vatAmount: number | null;
   vatIncluded: boolean | null;
   vatRate: number | null;
@@ -129,6 +130,8 @@ type FuelLedgerResponse = {
   assets?: FuelLedgerAsset[];
   summary?: FuelLedgerSummary;
   error?: string;
+  pendingReview?: boolean;
+  message?: string;
 };
 
 type StorageDraft = {
@@ -220,6 +223,8 @@ type FuelSlipExtractResponse = {
     warnings: string[];
   };
   error?: string;
+  pendingReview?: boolean;
+  message?: string;
 };
 
 type Notice = {
@@ -289,7 +294,7 @@ const emptyFuelSlipDraft: FuelSlipDraft = {
   transactionNumber: '',
   documentDate: '',
   documentTime: '',
-  fuelType: 'Diesel',
+  fuelType: '',
   litres: '',
   pricePerLitre: '',
   totalAmount: '',
@@ -848,8 +853,8 @@ function fuelSlipDownloadFileName(): string {
   return `fuel-slips-${new Date().toISOString().slice(0, 10)}.csv`;
 }
 
-function numberToInput(value: number | null | undefined): string {
-  return typeof value === 'number' && Number.isFinite(value) ? String(value) : '';
+function numberToInput(value: number | null | undefined, decimals?: number): string {
+  return fuelSlipDecimalToInput(value, decimals);
 }
 
 function booleanToInput(value: boolean | null | undefined): string {
@@ -859,11 +864,8 @@ function booleanToInput(value: boolean | null | undefined): string {
 }
 
 
-function numberInputToValue(value: string): number | null {
-  const trimmed = value.trim();
-  if (!trimmed) return null;
-  const parsed = Number(trimmed);
-  return Number.isFinite(parsed) ? parsed : null;
+function numberInputToValue(value: string, decimals = 2): number | null {
+  return parseFuelSlipDecimal(value, decimals);
 }
 
 function safeFuelSlipCardMask(last4: string): string {
@@ -922,11 +924,11 @@ function applyExtractionToFuelSlipDraft(current: FuelSlipDraft, response: FuelSl
     slipNumber: extracted.slipNumber ?? current.slipNumber,
     transactionNumber: extracted.transactionNumber ?? current.transactionNumber,
     documentDate: extracted.documentDate ?? current.documentDate,
-    documentTime: extracted.documentTime ?? current.documentTime,
+    documentTime: '',
     fuelType: extracted.fuelType ?? current.fuelType,
-    litres: numberToInput(extracted.litres) || current.litres,
-    pricePerLitre: numberToInput(extracted.pricePerLitre) || current.pricePerLitre,
-    totalAmount: numberToInput(extracted.totalAmount) || current.totalAmount,
+    litres: numberToInput(extracted.litres, 3) || current.litres,
+    pricePerLitre: numberToInput(extracted.pricePerLitre, 4) || current.pricePerLitre,
+    totalAmount: numberToInput(extracted.totalAmount, 2) || current.totalAmount,
     vatAmount: '',
     vatIncluded: '',
     vatRate: '',
@@ -1546,7 +1548,7 @@ export default function FuelClient() {
     setSearchText('');
   }
 
-  async function applyLedgerResponse(response: Response) {
+  async function applyLedgerResponse(response: Response): Promise<FuelLedgerResponse> {
     const data = (await response.json()) as FuelLedgerResponse;
 
     if (!response.ok || !data.ok) {
@@ -1557,6 +1559,7 @@ export default function FuelClient() {
     if (data.recentEvents) setRecentEvents(data.recentEvents);
     if (data.assets) setAssets(data.assets);
     if (data.recentFuelSlips) setRecentFuelSlips(data.recentFuelSlips);
+    return data;
   }
 
   async function handleStorageSubmit(event: FormEvent<HTMLFormElement>) {
@@ -1586,6 +1589,29 @@ export default function FuelClient() {
 
   function setFuelSlipField<K extends keyof FuelSlipDraft>(field: K, value: FuelSlipDraft[K]) {
     setFuelSlipDraft((current) => ({ ...current, [field]: value }));
+  }
+
+  function setFuelSlipNumericField(field: 'litres' | 'pricePerLitre' | 'totalAmount', value: string) {
+    setFuelSlipDraft((current) => {
+      const next: FuelSlipDraft = { ...current, [field]: value };
+      const reconciled = reconcileFuelSlipNumbers({
+        litres: numberInputToValue(next.litres, 3),
+        pricePerLitre: numberInputToValue(next.pricePerLitre, 4),
+        totalAmount: numberInputToValue(next.totalAmount, 2),
+      });
+
+      if (!next.totalAmount.trim() && reconciled.fields.totalAmount !== null) {
+        next.totalAmount = numberToInput(reconciled.fields.totalAmount, 2);
+      }
+      if (!next.litres.trim() && reconciled.fields.litres !== null) {
+        next.litres = numberToInput(reconciled.fields.litres, 3);
+      }
+      if (!next.pricePerLitre.trim() && reconciled.fields.pricePerLitre !== null) {
+        next.pricePerLitre = numberToInput(reconciled.fields.pricePerLitre, 4);
+      }
+
+      return next;
+    });
   }
 
   function handleFuelSlipCardLast4Change(value: string) {
@@ -1720,23 +1746,23 @@ export default function FuelClient() {
           slipNumber: fuelSlipDraft.slipNumber,
           transactionNumber: fuelSlipDraft.transactionNumber,
           documentDate: fuelSlipDraft.documentDate,
-          documentTime: fuelSlipDraft.documentTime,
+          documentTime: '',
           fuelType: fuelSlipDraft.fuelType,
-          litres: numberInputToValue(fuelSlipDraft.litres),
-          pricePerLitre: numberInputToValue(fuelSlipDraft.pricePerLitre),
-          totalAmount: numberInputToValue(fuelSlipDraft.totalAmount),
+          litres: numberInputToValue(fuelSlipDraft.litres, 3),
+          pricePerLitre: numberInputToValue(fuelSlipDraft.pricePerLitre, 4),
+          totalAmount: numberInputToValue(fuelSlipDraft.totalAmount, 2),
           vatAmount: null,
           vatIncluded: null,
           vatRate: null,
-          paymentMethod: fuelSlipDraft.paymentMethod,
-          cardType: fuelSlipDraft.cardType,
+          paymentMethod: '',
+          cardType: '',
           cardNumberMasked: card.masked,
           cardLast4: card.last4,
-          merchantNumber: fuelSlipDraft.merchantNumber,
-          terminalNumber: fuelSlipDraft.terminalNumber,
-          siteNumber: fuelSlipDraft.siteNumber,
-          odometerReading: numberInputToValue(fuelSlipDraft.odometerReading),
-          hourMeterReading: numberInputToValue(fuelSlipDraft.hourMeterReading),
+          merchantNumber: '',
+          terminalNumber: '',
+          siteNumber: '',
+          odometerReading: numberInputToValue(fuelSlipDraft.odometerReading, 2),
+          hourMeterReading: numberInputToValue(fuelSlipDraft.hourMeterReading, 2),
           extractionStatus: fuelSlipDraft.extractionStatus,
           ocrConfidence: fuelSlipDraft.ocrConfidence,
           reviewRequired: fuelSlipDraft.reviewRequired,
@@ -1745,8 +1771,8 @@ export default function FuelClient() {
         }),
       });
 
-      await applyLedgerResponse(response);
-      setNotice({ tone: 'success', message: 'Fuel Slip saved to Fuel Ledger.' });
+      const data = await applyLedgerResponse(response);
+      setNotice({ tone: 'success', message: data.message || (data.pendingReview ? 'Fuel slip saved for review. Litres or fuel type missing.' : 'Fuel Slip saved to Fuel Ledger.') });
       closeModal();
     } catch (error) {
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to save fuel slip.' });
@@ -2013,6 +2039,8 @@ export default function FuelClient() {
   const hasActiveSearch = searchText.trim().length > 0;
 
   function renderFuelSlipFormFields() {
+    const requireCompletedFields = fuelSlipDraft.mode === 'manual';
+
     return (
       <section className={styles.invoiceFormCard}>
         <div className={styles.formGrid}>
@@ -2022,85 +2050,55 @@ export default function FuelClient() {
           </label>
           <label>
             <span>Slip date</span>
-            <input type="date" value={fuelSlipDraft.documentDate} onChange={(event) => setFuelSlipField('documentDate', event.target.value)} required />
+            <input type="date" value={fuelSlipDraft.documentDate} onChange={(event) => setFuelSlipField('documentDate', event.target.value)} required={requireCompletedFields} />
           </label>
           <label>
             <span>Fuel type</span>
-            <input value={fuelSlipDraft.fuelType} onChange={(event) => setFuelSlipField('fuelType', event.target.value)} placeholder="Diesel 50ppm" />
+            <input value={fuelSlipDraft.fuelType} onChange={(event) => setFuelSlipField('fuelType', event.target.value)} placeholder="Diesel 50ppm, Unleaded 95" required={requireCompletedFields} />
           </label>
           <label>
             <span>Litres</span>
-            <input type="number" step="0.001" min="0" value={fuelSlipDraft.litres} onChange={(event) => setFuelSlipField('litres', event.target.value)} required />
+            <input type="text" inputMode="decimal" value={fuelSlipDraft.litres} onChange={(event) => setFuelSlipNumericField('litres', event.target.value)} placeholder="25.21" required={requireCompletedFields} />
           </label>
           <label className={styles.invoiceCurrencyField}>
             <span>Price per litre</span>
             <div className={styles.invoiceCurrencyInput}>
               <span aria-hidden="true">R</span>
-              <input type="text" inputMode="decimal" value={fuelSlipDraft.pricePerLitre} onChange={(event) => setFuelSlipField('pricePerLitre', event.target.value)} placeholder="0" />
+              <input type="text" inputMode="decimal" value={fuelSlipDraft.pricePerLitre} onChange={(event) => setFuelSlipNumericField('pricePerLitre', event.target.value)} placeholder="19.83" />
             </div>
           </label>
           <label className={styles.invoiceCurrencyField}>
             <span>Total amount</span>
             <div className={styles.invoiceCurrencyInput}>
               <span aria-hidden="true">R</span>
-              <input type="text" inputMode="decimal" value={fuelSlipDraft.totalAmount} onChange={(event) => setFuelSlipField('totalAmount', event.target.value)} placeholder="Required" required />
+              <input type="text" inputMode="decimal" value={fuelSlipDraft.totalAmount} onChange={(event) => setFuelSlipNumericField('totalAmount', event.target.value)} placeholder="500.00" required={requireCompletedFields} />
             </div>
           </label>
           <label>
             <span>Card last 4</span>
-            <input value={fuelSlipDraft.cardLast4} onChange={(event) => handleFuelSlipCardLast4Change(event.target.value)} inputMode="numeric" maxLength={4} pattern="[0-9]{4}" placeholder="5732" />
+            <input value={fuelSlipDraft.cardLast4} onChange={(event) => handleFuelSlipCardLast4Change(event.target.value)} inputMode="numeric" maxLength={4} pattern="[0-9]{4}" placeholder="1234" />
+          </label>
+          <label>
+            <span>Slip/reference number</span>
+            <input value={fuelSlipDraft.slipNumber} onChange={(event) => setFuelSlipField('slipNumber', event.target.value)} placeholder="Optional" />
+          </label>
+          <label>
+            <span>Transaction/reference number</span>
+            <input value={fuelSlipDraft.transactionNumber} onChange={(event) => setFuelSlipField('transactionNumber', event.target.value)} placeholder="Optional" />
           </label>
           {selectedFuelSlipTarget?.type === 'asset' && showFuelSlipOdometer ? (
             <label>
               <span>Current km / odometer</span>
-              <input type="number" min="0" step="1" value={fuelSlipDraft.odometerReading} onChange={(event) => setFuelSlipField('odometerReading', event.target.value)} required />
+              <input type="text" inputMode="numeric" value={fuelSlipDraft.odometerReading} onChange={(event) => setFuelSlipField('odometerReading', event.target.value)} required={requireCompletedFields} />
             </label>
           ) : null}
           {selectedFuelSlipTarget?.type === 'asset' && showFuelSlipHours ? (
             <label>
               <span>Current hours</span>
-              <input type="number" min="0" step="1" value={fuelSlipDraft.hourMeterReading} onChange={(event) => setFuelSlipField('hourMeterReading', event.target.value)} required />
+              <input type="text" inputMode="numeric" value={fuelSlipDraft.hourMeterReading} onChange={(event) => setFuelSlipField('hourMeterReading', event.target.value)} required={requireCompletedFields} />
             </label>
           ) : null}
         </div>
-
-        <details className={styles.fuelSlipMoreDetails}>
-          <summary>More details</summary>
-          <div className={styles.formGrid}>
-            <label>
-              <span>Slip / invoice number</span>
-              <input value={fuelSlipDraft.slipNumber} onChange={(event) => setFuelSlipField('slipNumber', event.target.value)} placeholder="Slip number" />
-            </label>
-            <label>
-              <span>Transaction number</span>
-              <input value={fuelSlipDraft.transactionNumber} onChange={(event) => setFuelSlipField('transactionNumber', event.target.value)} placeholder="Transaction number" />
-            </label>
-            <label>
-              <span>Slip time</span>
-              <input value={fuelSlipDraft.documentTime} onChange={(event) => setFuelSlipField('documentTime', event.target.value)} placeholder="07:40:43" />
-            </label>
-            <label>
-              <span>Payment method</span>
-              <input value={fuelSlipDraft.paymentMethod} onChange={(event) => setFuelSlipField('paymentMethod', event.target.value)} placeholder="Card / Cash / Account" />
-            </label>
-            <label>
-              <span>Card type</span>
-              <input value={fuelSlipDraft.cardType} onChange={(event) => setFuelSlipField('cardType', event.target.value)} placeholder="Visa / Mastercard" />
-            </label>
-            <label>
-              <span>Merchant/site number</span>
-              <input value={fuelSlipDraft.merchantNumber} onChange={(event) => setFuelSlipField('merchantNumber', event.target.value)} placeholder="Merchant number" />
-            </label>
-            <label>
-              <span>Terminal number</span>
-              <input value={fuelSlipDraft.terminalNumber} onChange={(event) => setFuelSlipField('terminalNumber', event.target.value)} placeholder="Terminal number" />
-            </label>
-            <label>
-              <span>Site number</span>
-              <input value={fuelSlipDraft.siteNumber} onChange={(event) => setFuelSlipField('siteNumber', event.target.value)} placeholder="Site number" />
-            </label>
-          </div>
-        </details>
       </section>
     );
   }
