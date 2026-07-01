@@ -207,11 +207,36 @@ function eventTargetLabel(event: FuelLedgerEvent): string {
 }
 
 function eventWorkActivityLabel(event: FuelLedgerEvent): string {
+  if (event.sourceType === 'fuel_slip') {
+    return asText(event.fuelSlipSupplierName) || asText(event.operatorName) || 'Fuel Slip';
+  }
+
   return asText(event.activityText) || '-';
 }
 
 function eventWorkAreaLabel(event: FuelLedgerEvent): string {
+  if (event.sourceType === 'fuel_slip') {
+    return asText(event.fuelSlipFuelType) || asText(event.workAreaText) || '-';
+  }
+
   return asText(event.workAreaText) || '-';
+}
+
+function eventNoteLabel(event: FuelLedgerEvent): string {
+  if (event.sourceType !== 'fuel_slip') {
+    return normalizeSpaces(event.note) || '-';
+  }
+
+  const parts = [
+    asText(event.fuelSlipSupplierName) ? `Supplier: ${asText(event.fuelSlipSupplierName)}` : '',
+    asText(event.fuelSlipFuelType) ? `Fuel type: ${asText(event.fuelSlipFuelType)}` : '',
+    asText(event.paymentMethod) ? `Payment: ${asText(event.paymentMethod)}` : '',
+    asText(event.cardNumberMasked) ? `Card: ${asText(event.cardNumberMasked)}` : '',
+    asText(event.documentFileUrl) ? `Document: ${asText(event.documentFileUrl)}` : '',
+    asText(event.fuelSlipReviewStatus) ? `Review: ${asText(event.fuelSlipReviewStatus)}` : '',
+  ].filter(Boolean);
+
+  return parts.join(' · ') || 'Fuel Slip';
 }
 
 function slugifyFileSegment(value: string): string {
@@ -340,7 +365,7 @@ function renderFuelEventTable(events: FuelLedgerEvent[]): string {
 
   const rows = events
     .map((event) => {
-      const note = normalizeSpaces(event.note) || '-';
+      const note = eventNoteLabel(event);
 
       return `
         <tr>
@@ -385,9 +410,9 @@ function renderFuelEventTable(events: FuelLedgerEvent[]): string {
             <th>Odometer</th>
             <th>Operator</th>
             <th>GPS location</th>
-            <th>Work activity</th>
-            <th>Work area</th>
-            <th>Notes</th>
+            <th>Supplier / Activity</th>
+            <th>Fuel Type / Work Area</th>
+            <th>Notes / Slip Details</th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
@@ -1109,7 +1134,7 @@ function buildReportHtml(options: FuelReportOptions): string {
             <div class="assetReportSectionHeading">
               <div>
                 <h2>Fuel Movement Records</h2>
-                <p>Each line includes the date, activity, direction, asset, litres filled, litres before fill, storage balances, odometer and the operator responsible.</p>
+                <p>Each line includes the date, activity, direction, asset, litres filled, litres before fill, storage balances, odometer, operator and non-cost Fuel Slip details where available.</p>
               </div>
               <strong>${escapeHtml(String(options.eventCount))} ${options.eventCount === 1 ? 'entry' : 'entries'}</strong>
             </div>
@@ -1215,16 +1240,16 @@ function buildFuelWorkbook(options: FuelReportOptions): XlsxSheet[] {
     'Odometer',
     'Operator',
     'GPS location',
-    'Work activity',
-    'Work area',
-    'Notes',
+    'Supplier / Activity',
+    'Fuel Type / Work Area',
+    'Notes / Slip Details',
   ];
 
   const movementHeaderRow = 7;
   const movementRows: XlsxCellValue[][] = [
     [styled('Fuel Movement Records', 'title'), '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
     [styled(`Filtered report: ${options.dateRangeLabel}`, 'subtitle'), '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
-    [styled('PDF and XLSX include date, asset, odometer, fuel percentages, litres, litres before fill, operator, GPS, work activity and work area.', 'note'), '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+    [styled('PDF and XLSX include date, asset, odometer, fuel percentages, litres, litres before fill, operator, GPS, supplier/activity, fuel type/work area and non-cost slip details.', 'note'), '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
     [],
     [styled('Storage', 'metaLabel'), styled(options.storageName, 'metaValue'), styled('Fuel type', 'metaLabel'), styled(options.storageFuelType, 'metaValue')],
     [],
@@ -1254,7 +1279,7 @@ function buildFuelWorkbook(options: FuelReportOptions): XlsxSheet[] {
         styled(formatLocation(event), 'text'),
         styled(eventWorkActivityLabel(event), 'text'),
         styled(eventWorkAreaLabel(event), 'text'),
-        styled(normalizeSpaces(event.note), 'note'),
+        styled(eventNoteLabel(event), 'note'),
       ];
     }),
   ];
