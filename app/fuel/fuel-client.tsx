@@ -2200,7 +2200,6 @@ export default function FuelClient() {
 
                         <div className={styles.storageValueBlock}>
                           <strong>{formatLitres(storage.currentLitres)}</strong>
-                          <span>{formatPercent(storage.stockPercent)} full</span>
                         </div>
                       </div>
 
