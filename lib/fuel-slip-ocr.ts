@@ -1,3 +1,5 @@
+import path from 'node:path';
+
 export type FuelSlipOcrInput = {
   data: Buffer;
   contentType: string;
@@ -9,14 +11,37 @@ export type FuelSlipOcrResult = {
   warnings: string[];
 };
 
-const DEFAULT_OPENAI_OCR_MODEL = 'gpt-4o-mini';
+type TesseractModule = typeof import('tesseract.js');
+type TesseractWorker = Awaited<ReturnType<TesseractModule['createWorker']>>;
+
 const SUPPORTED_IMAGE_TYPES = new Set(['image/jpeg', 'image/jpg', 'image/png', 'image/webp']);
+const SUPPORTED_IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
+const MAX_OCR_TEXT_LENGTH = 20000;
+const TESSERACT_LANGUAGE = 'eng';
 
 function cleanText(value: unknown): string {
   return String(value ?? '')
     .replace(/\u00a0/g, ' ')
     .replace(/[\t\f\v]+/g, ' ')
     .trim();
+}
+
+function fileExtension(fileName: string): string {
+  const normalized = cleanText(fileName).toLowerCase();
+  const dotIndex = normalized.lastIndexOf('.');
+  return dotIndex >= 0 ? normalized.slice(dotIndex) : '';
+}
+
+function imageMimeType(input: Pick<FuelSlipOcrInput, 'contentType' | 'fileName'>): string {
+  const contentType = cleanText(input.contentType).toLowerCase();
+  if (SUPPORTED_IMAGE_TYPES.has(contentType)) return contentType === 'image/jpg' ? 'image/jpeg' : contentType;
+
+  const extension = fileExtension(input.fileName);
+  if (extension === '.jpg' || extension === '.jpeg') return 'image/jpeg';
+  if (extension === '.png') return 'image/png';
+  if (extension === '.webp') return 'image/webp';
+
+  return '';
 }
 
 function maskDigits(value: string): string {
@@ -27,68 +52,62 @@ function maskDigits(value: string): string {
 }
 
 function maskSensitiveOcrText(value: string): string {
-  return value.replace(/\b(?:\d[\s-]?){13,19}\b/g, (match) => maskDigits(match));
+  return String(value ?? '').replace(/\b(?:\d[\s-]?){13,19}\b/g, (match) => maskDigits(match));
 }
 
-function imageMimeType(input: FuelSlipOcrInput): string {
-  const contentType = cleanText(input.contentType).toLowerCase();
-  if (SUPPORTED_IMAGE_TYPES.has(contentType)) return contentType === 'image/jpg' ? 'image/jpeg' : contentType;
-
-  const fileName = cleanText(input.fileName).toLowerCase();
-  if (fileName.endsWith('.jpg') || fileName.endsWith('.jpeg')) return 'image/jpeg';
-  if (fileName.endsWith('.png')) return 'image/png';
-  if (fileName.endsWith('.webp')) return 'image/webp';
-
-  return '';
-}
-
-function readOpenAIContent(responseJson: unknown): string {
-  const root = responseJson as {
-    choices?: Array<{ message?: { content?: unknown } }>;
-    output_text?: unknown;
-  };
-
-  if (typeof root.output_text === 'string') {
-    return root.output_text;
-  }
-
-  const content = root.choices?.[0]?.message?.content;
-
-  if (typeof content === 'string') {
-    return content;
-  }
-
-  if (Array.isArray(content)) {
-    return content
-      .map((part) => {
-        if (typeof part === 'string') return part;
-        if (part && typeof part === 'object' && 'text' in part) {
-          const text = (part as { text?: unknown }).text;
-          return typeof text === 'string' ? text : '';
-        }
-        return '';
-      })
+function normalizeOcrText(value: unknown): string {
+  return maskSensitiveOcrText(
+    String(value ?? '')
+      .replace(/\r/g, '\n')
+      .replace(/\u00a0/g, ' ')
+      .split('\n')
+      .map((line) => line.replace(/[\t\f\v]+/g, ' ').replace(/[ ]{2,}/g, ' ').trim())
       .filter(Boolean)
-      .join('\n');
-  }
+      .join('\n'),
+  ).slice(0, MAX_OCR_TEXT_LENGTH);
+}
 
-  return '';
+function localEnglishLanguagePath(): string {
+  return path.join(process.cwd(), 'node_modules', '@tesseract.js-data', 'eng', '4.0.0_best_int');
+}
+
+function localTesseractCorePath(): string {
+  return path.join(process.cwd(), 'node_modules', 'tesseract.js-core');
+}
+
+function localTesseractWorkerPath(): string {
+  return path.join(process.cwd(), 'node_modules', 'tesseract.js', 'src', 'worker-script', 'node', 'index.js');
 }
 
 export function isSupportedFuelSlipImage(input: { contentType: string; fileName: string }): boolean {
-  return Boolean(imageMimeType({ data: Buffer.alloc(0), contentType: input.contentType, fileName: input.fileName }));
+  const contentType = cleanText(input.contentType).toLowerCase();
+  if (SUPPORTED_IMAGE_TYPES.has(contentType)) return true;
+  return SUPPORTED_IMAGE_EXTENSIONS.has(fileExtension(input.fileName));
+}
+
+async function createLocalTesseractWorker(tesseract: TesseractModule): Promise<TesseractWorker> {
+  tesseract.setLogging(false);
+
+  const worker = await tesseract.createWorker(TESSERACT_LANGUAGE, tesseract.OEM.LSTM_ONLY, {
+    corePath: localTesseractCorePath(),
+    workerPath: localTesseractWorkerPath(),
+    langPath: localEnglishLanguagePath(),
+    cacheMethod: 'none',
+    gzip: true,
+    logger: () => undefined,
+    errorHandler: () => undefined,
+  });
+
+  await worker.setParameters({
+    preserve_interword_spaces: '1',
+    tessedit_pageseg_mode: tesseract.PSM.SPARSE_TEXT,
+    user_defined_dpi: '300',
+  });
+
+  return worker;
 }
 
 export async function extractFuelSlipImageText(input: FuelSlipOcrInput): Promise<FuelSlipOcrResult> {
-  const apiKey = cleanText(process.env.OPENAI_API_KEY);
-
-  if (!apiKey) {
-    return {
-      rawText: '',
-      warnings: ['Fuel slip photo saved, but OCR is not configured yet. Complete the fields manually before saving.'],
-    };
-  }
-
   const mimeType = imageMimeType(input);
 
   if (!mimeType) {
@@ -98,70 +117,26 @@ export async function extractFuelSlipImageText(input: FuelSlipOcrInput): Promise
     };
   }
 
+  if (!Buffer.isBuffer(input.data) || input.data.length === 0) {
+    return {
+      rawText: '',
+      warnings: ['Fuel slip photo saved, but no readable image data was available. Complete the fields manually before saving.'],
+    };
+  }
+
+  let worker: TesseractWorker | null = null;
+
   try {
-    const model = cleanText(process.env.OPENAI_OCR_MODEL) || DEFAULT_OPENAI_OCR_MODEL;
-    const imageUrl = `data:${mimeType};base64,${input.data.toString('base64')}`;
+    const tesseract = await import('tesseract.js');
+    worker = await createLocalTesseractWorker(tesseract);
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model,
-        temperature: 0,
-        max_tokens: 2500,
-        messages: [
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: [
-                  'Extract readable text from this South African fuel slip photo.',
-                  'Return plain text only. Keep line breaks where useful.',
-                  'Include visible supplier, VAT, slip, transaction, date, time, fuel type, litres, price per litre, total, VAT, payment, masked card, merchant, terminal and site details when present.',
-                  'Do not guess missing values.',
-                ].join(' '),
-              },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: imageUrl,
-                  detail: 'high',
-                },
-              },
-            ],
-          },
-        ],
-      }),
-    });
-
-    const responseJson = (await response.json().catch(() => null)) as unknown;
-
-    if (!response.ok) {
-      const errorMessage =
-        responseJson && typeof responseJson === 'object' && 'error' in responseJson
-          ? cleanText((responseJson as { error?: { message?: unknown } }).error?.message)
-          : '';
-
-      return {
-        rawText: '',
-        warnings: [
-          errorMessage
-            ? `Fuel slip photo saved, but OCR could not read the photo: ${errorMessage}. Complete the fields manually before saving.`
-            : 'Fuel slip photo saved, but OCR could not read the photo. Complete the fields manually before saving.',
-        ],
-      };
-    }
-
-    const rawText = maskSensitiveOcrText(readOpenAIContent(responseJson)).slice(0, 20000);
+    const result = await worker.recognize(input.data, undefined, { text: true });
+    const rawText = normalizeOcrText(result.data.text);
 
     if (!rawText.trim()) {
       return {
         rawText: '',
-        warnings: ['Fuel slip photo saved, but OCR did not return readable text. Complete the fields manually before saving.'],
+        warnings: ['Fuel slip photo saved, but local OCR did not return readable text. Complete the fields manually before saving.'],
       };
     }
 
@@ -172,7 +147,11 @@ export async function extractFuelSlipImageText(input: FuelSlipOcrInput): Promise
   } catch {
     return {
       rawText: '',
-      warnings: ['Fuel slip photo saved, but OCR failed. Complete the fields manually before saving.'],
+      warnings: ['Fuel slip photo saved, but local OCR could not read the photo. Complete the fields manually before saving.'],
     };
+  } finally {
+    if (worker) {
+      await worker.terminate().catch(() => undefined);
+    }
   }
 }
