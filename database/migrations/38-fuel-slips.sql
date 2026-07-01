@@ -45,7 +45,7 @@ create table if not exists public.fuel_slips (
   document_date date,
   document_time text,
   fuel_type text,
-  litres numeric(12,2) not null,
+  litres numeric(12,3) not null,
   price_per_litre numeric(14,4),
   total_amount numeric(14,2) not null,
   vat_amount numeric(14,2),
@@ -90,7 +90,7 @@ alter table if exists public.fuel_slips
   add column if not exists document_date date,
   add column if not exists document_time text,
   add column if not exists fuel_type text,
-  add column if not exists litres numeric(12,2),
+  add column if not exists litres numeric(12,3),
   add column if not exists price_per_litre numeric(14,4),
   add column if not exists total_amount numeric(14,2),
   add column if not exists vat_amount numeric(14,2),
@@ -112,6 +112,26 @@ alter table if exists public.fuel_slips
   add column if not exists extraction_warnings jsonb not null default '[]'::jsonb,
   add column if not exists created_at timestamptz not null default now(),
   add column if not exists updated_at timestamptz not null default now();
+
+alter table if exists public.fuel_storage_events
+  alter column litres type numeric(12,3) using litres::numeric(12,3),
+  alter column storage_level_before_litres type numeric(12,3) using storage_level_before_litres::numeric(12,3),
+  alter column storage_level_after_litres type numeric(12,3) using storage_level_after_litres::numeric(12,3);
+
+alter table if exists public.fuel_slips
+  alter column litres type numeric(12,3) using litres::numeric(12,3);
+
+update public.fuel_storage_events
+set card_number_masked = '************' || right(regexp_replace(coalesce(card_number_masked, ''), '[^0-9]', '', 'g'), 4)
+where card_number_masked is not null
+  and length(right(regexp_replace(card_number_masked, '[^0-9]', '', 'g'), 4)) = 4;
+
+update public.fuel_slips
+set
+  card_last4 = right(regexp_replace(coalesce(nullif(card_last4, ''), card_number_masked, ''), '[^0-9]', '', 'g'), 4),
+  card_number_masked = '************' || right(regexp_replace(coalesce(nullif(card_last4, ''), card_number_masked, ''), '[^0-9]', '', 'g'), 4)
+where coalesce(card_last4, card_number_masked, '') <> ''
+  and length(right(regexp_replace(coalesce(nullif(card_last4, ''), card_number_masked, ''), '[^0-9]', '', 'g'), 4)) = 4;
 
 update public.fuel_slips
 set
