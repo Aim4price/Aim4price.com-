@@ -196,8 +196,10 @@ function normaliseFuelType(value: string): string {
   if (/excellium\s*d\s*50/i.test(text)) return 'Excellium D50';
 
   if (/diesel|\bd\s*50\b/i.test(text)) {
-    if (/500\s*(?:ppm)?/i.test(text)) return 'Diesel 500ppm';
-    if (/50\s*(?:ppm|a)?\b|\bd\s*50\b/i.test(text)) return 'Diesel 50ppm';
+    if (/500\s*ppm\b/i.test(text)) return 'Diesel 500ppm';
+    if (/\b500\b/i.test(text)) return 'Diesel 500';
+    if (/50\s*ppm\b/i.test(text)) return 'Diesel 50ppm';
+    if (/50\s*a\b/i.test(text) || /\bd\s*50\b/i.test(text) || /\b50\b/i.test(text)) return 'Diesel 50';
     return 'Diesel';
   }
 
@@ -447,10 +449,10 @@ export function parseFuelSlipText(rawText: string): FuelSlipExtractionResult {
     };
   }
 
-  draft.supplierName = extractSupplier(lines);
+  draft.supplierName = maskFuelSlipSensitiveText(extractSupplier(lines));
   draft.supplierVatNumber = extractVatNumber(text);
-  draft.slipNumber = extractSlipNumber(text);
-  draft.transactionNumber = extractTransactionNumber(text);
+  draft.slipNumber = maskFuelSlipSensitiveText(extractSlipNumber(text));
+  draft.transactionNumber = maskFuelSlipSensitiveText(extractTransactionNumber(text));
   draft.documentDate = extractDate(text);
   draft.documentTime = extractTime(text);
   draft.fuelType = extractFuelType(lines);
@@ -460,14 +462,14 @@ export function parseFuelSlipText(rawText: string): FuelSlipExtractionResult {
   draft.vatAmount = extractVatAmount(lines);
   draft.vatIncluded = draft.vatAmount !== null || /\bvat\s*(?:inclusive|incl|included)|tax\s*(?:inclusive|incl|included)\b/i.test(text) ? true : null;
   draft.vatRate = /\b15\s*%|vat\s*@\s*15/i.test(text) ? 15 : null;
-  draft.paymentMethod = detectPaymentMethod(text);
-  draft.cardType = detectCardType(text);
+  draft.paymentMethod = maskFuelSlipSensitiveText(detectPaymentMethod(text));
+  draft.cardType = maskFuelSlipSensitiveText(detectCardType(text));
   const card = extractCardDetails(text);
   draft.cardNumberMasked = card.masked;
   draft.cardLast4 = card.last4;
-  draft.merchantNumber = extractNumberByLabel(text, 'merchant|merch');
-  draft.terminalNumber = extractNumberByLabel(text, 'terminal|term');
-  draft.siteNumber = extractNumberByLabel(text, 'site|station');
+  draft.merchantNumber = maskFuelSlipSensitiveText(extractNumberByLabel(text, 'merchant|merch'));
+  draft.terminalNumber = maskFuelSlipSensitiveText(extractNumberByLabel(text, 'terminal|term'));
+  draft.siteNumber = maskFuelSlipSensitiveText(extractNumberByLabel(text, 'site|station'));
 
   if (draft.pricePerLitre === null && draft.totalAmount !== null && draft.litres !== null && draft.litres > 0) {
     const calculatedRate = draft.totalAmount / draft.litres;

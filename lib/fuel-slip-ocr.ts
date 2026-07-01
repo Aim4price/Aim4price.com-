@@ -13,9 +13,14 @@ export type FuelSlipOcrResult = {
 
 type TesseractModule = typeof import('tesseract.js');
 type TesseractWorker = Awaited<ReturnType<TesseractModule['createWorker']>>;
+type TesseractPageSegMode = TesseractModule['PSM'][keyof TesseractModule['PSM']];
 type OcrCandidate = {
   label: string;
   data: Buffer;
+};
+
+type OcrAttempt = OcrCandidate & {
+  pageSegMode: TesseractPageSegMode;
 };
 
 const SUPPORTED_IMAGE_TYPES = new Set(['image/jpeg', 'image/jpg', 'image/png', 'image/webp']);
@@ -123,7 +128,6 @@ async function createLocalTesseractWorker(tesseract: TesseractModule): Promise<T
 
   await worker.setParameters({
     preserve_interword_spaces: '1',
-    tessedit_pageseg_mode: tesseract.PSM.SPARSE_TEXT,
     user_defined_dpi: '300',
   });
 
@@ -135,6 +139,38 @@ async function buildOcrCandidates(input: FuelSlipOcrInput): Promise<OcrCandidate
   // This avoids adding native image-processing packages that can break `npm ci` on Railway
   // when the package proxy is slow or unavailable.
   return [{ label: 'original', data: input.data }];
+}
+
+function psmValue(tesseract: TesseractModule, key: string): TesseractPageSegMode | null {
+  const values = tesseract.PSM as unknown as Record<string, TesseractPageSegMode | undefined>;
+  return values[key] ?? null;
+}
+
+function buildOcrAttempts(candidates: OcrCandidate[], tesseract: TesseractModule): OcrAttempt[] {
+  const pageSegModes = [
+    { label: 'sparse-text', value: psmValue(tesseract, 'SPARSE_TEXT') },
+    { label: 'sparse-text-osd', value: psmValue(tesseract, 'SPARSE_TEXT_OSD') },
+    { label: 'auto-osd', value: psmValue(tesseract, 'AUTO_OSD') },
+    { label: 'auto', value: psmValue(tesseract, 'AUTO') },
+  ];
+  const attempts: OcrAttempt[] = [];
+  const seen = new Set<string>();
+
+  for (const candidate of candidates) {
+    for (const mode of pageSegModes) {
+      if (!mode.value) continue;
+      const key = `${candidate.label}:${String(mode.value)}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      attempts.push({
+        ...candidate,
+        label: `${candidate.label}:${mode.label}`,
+        pageSegMode: mode.value,
+      });
+    }
+  }
+
+  return attempts.length ? attempts : candidates.map((candidate) => ({ ...candidate, pageSegMode: psmValue(tesseract, 'SPARSE_TEXT') ?? tesseract.PSM.SPARSE_TEXT }));
 }
 
 function scoreFuelSlipOcrText(text: string, confidence: number | null): number {
@@ -176,15 +212,21 @@ export async function extractFuelSlipImageText(input: FuelSlipOcrInput): Promise
   try {
     const tesseract = await import('tesseract.js');
     const candidates = await buildOcrCandidates(input);
+    const attempts = buildOcrAttempts(candidates, tesseract);
     worker = await createLocalTesseractWorker(tesseract);
 
     let bestText = '';
     let bestScore = -1;
     let successfulAttempts = 0;
 
-    for (const candidate of candidates) {
+    for (const attempt of attempts) {
       try {
-        const result = await worker.recognize(candidate.data, undefined, { text: true });
+        await worker.setParameters({
+          preserve_interword_spaces: '1',
+          tessedit_pageseg_mode: attempt.pageSegMode,
+          user_defined_dpi: '300',
+        });
+        const result = await worker.recognize(attempt.data, undefined, { text: true });
         const rawText = normalizeOcrText(result.data.text);
         const confidence = typeof result.data.confidence === 'number' ? result.data.confidence : null;
         const score = scoreFuelSlipOcrText(rawText, confidence);
@@ -195,7 +237,7 @@ export async function extractFuelSlipImageText(input: FuelSlipOcrInput): Promise
           bestScore = score;
         }
       } catch {
-        // Continue gracefully if local OCR fails on this candidate.
+        // Continue gracefully if local OCR fails on this OCR mode.
       }
     }
 

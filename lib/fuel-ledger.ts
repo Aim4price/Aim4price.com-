@@ -548,6 +548,10 @@ function maskStoredFuelSlipRawText(value: string): string {
     .replace(/\b(?:\d[\s-]?){13,19}\b/g, (match) => maskCardLikeMatch(match));
 }
 
+function sanitizeFuelSlipTextField(value: unknown, maxLength: number): string {
+  return maskStoredFuelSlipRawText(trimText(value, maxLength));
+}
+
 function toDateOnly(value: unknown): string {
   if (!value) return '';
   if (value instanceof Date) return value.toISOString().slice(0, 10);
@@ -794,8 +798,8 @@ function mapFuelEventRow(row: FuelEventRow): FuelLedgerEvent {
     sourceLabel: isFuelSlip ? 'Fuel Slip' : asText(row.source_label),
     fuelSlipId: asText(row.fuel_slip_id),
     fuelSlipTargetType: asText(row.fs_target_type),
-    fuelSlipSupplierName: asText(row.fs_supplier_name),
-    fuelSlipFuelType: asText(row.fs_fuel_type),
+    fuelSlipSupplierName: maskStoredFuelSlipRawText(asText(row.fs_supplier_name)),
+    fuelSlipFuelType: maskStoredFuelSlipRawText(asText(row.fs_fuel_type)),
     fuelSlipDocumentDate: toDateOnly(row.fs_document_date) ?? '',
     fuelSlipDocumentTime: asText(row.fs_document_time),
     fuelSlipExtractionStatus: extractionStatus,
@@ -803,7 +807,7 @@ function mapFuelEventRow(row: FuelEventRow): FuelLedgerEvent {
     fuelSlipReviewStatus: isFuelSlip ? fuelSlipReviewStatusLabel(extractionStatus, reviewRequired) : '',
     totalAmount: isFuelSlip ? null : normalizeMoneyValue(row.total_amount),
     documentFileUrl: isFuelSlip ? asText(row.fs_document_file_url) || asText(row.document_file_url) : asText(row.document_file_url),
-    paymentMethod: isFuelSlip ? asText(row.fs_payment_method) || asText(row.payment_method) : asText(row.payment_method),
+    paymentMethod: maskStoredFuelSlipRawText(isFuelSlip ? asText(row.fs_payment_method) || asText(row.payment_method) : asText(row.payment_method)),
     cardNumberMasked: card.masked,
     assetId: asText(row.asset_register_item_id),
     assetTitle: asText(row.asset_title),
@@ -814,10 +818,10 @@ function mapFuelEventRow(row: FuelEventRow): FuelLedgerEvent {
     assetFuelPercentBefore: normalizeFuelPercent(row.asset_fuel_percent_before),
     assetFuelPercentAfter: normalizeFuelPercent(row.asset_fuel_percent_after),
     assetUsageReading: normalizeUsageReading(row.asset_usage_reading),
-    operatorName: asText(row.operator_name),
-    activityText: asText(row.activity_text),
-    workAreaText: asText(row.work_area_text),
-    note: asText(row.note),
+    operatorName: maskStoredFuelSlipRawText(asText(row.operator_name)),
+    activityText: maskStoredFuelSlipRawText(asText(row.activity_text)),
+    workAreaText: maskStoredFuelSlipRawText(asText(row.work_area_text)),
+    note: maskStoredFuelSlipRawText(asText(row.note)),
     latitude: normalizeCoordinate(row.latitude, 90),
     longitude: normalizeCoordinate(row.longitude, 180),
     locationText: asText(row.location_text),
@@ -843,29 +847,29 @@ function mapFuelSlipRow(row: FuelSlipRow): FuelSlipTransaction {
     invoiceDocumentId: asText(row.invoice_document_id),
     uploadId: asText(row.upload_id),
     documentFileUrl: asText(row.document_file_url),
-    originalFilename: asText(row.original_filename),
+    originalFilename: maskStoredFuelSlipRawText(asText(row.original_filename)),
     contentType: asText(row.content_type),
     byteSize: asNumber(row.byte_size),
-    supplierName: asText(row.supplier_name),
+    supplierName: maskStoredFuelSlipRawText(asText(row.supplier_name)),
     supplierVatNumber: asText(row.supplier_vat_number),
-    slipNumber: asText(row.slip_number),
-    transactionNumber: asText(row.transaction_number),
+    slipNumber: maskStoredFuelSlipRawText(asText(row.slip_number)),
+    transactionNumber: maskStoredFuelSlipRawText(asText(row.transaction_number)),
     documentDate: toDateOnly(row.document_date),
     documentTime: asText(row.document_time),
-    fuelType: asText(row.fuel_type),
+    fuelType: maskStoredFuelSlipRawText(asText(row.fuel_type)),
     litres: normalizeOptionalLitres(row.litres) ?? 0,
     pricePerLitre: normalizeRateValue(row.price_per_litre),
     totalAmount: normalizeMoneyValue(row.total_amount) ?? 0,
     vatAmount: normalizeMoneyValue(row.vat_amount),
     vatIncluded: normalizeBoolean(row.vat_included),
     vatRate: normalizeRateValue(row.vat_rate),
-    paymentMethod: asText(row.payment_method),
-    cardType: asText(row.card_type),
+    paymentMethod: maskStoredFuelSlipRawText(asText(row.payment_method)),
+    cardType: maskStoredFuelSlipRawText(asText(row.card_type)),
     cardNumberMasked: card.masked,
     cardLast4: card.last4,
-    merchantNumber: asText(row.merchant_number),
-    terminalNumber: asText(row.terminal_number),
-    siteNumber: asText(row.site_number),
+    merchantNumber: maskStoredFuelSlipRawText(asText(row.merchant_number)),
+    terminalNumber: maskStoredFuelSlipRawText(asText(row.terminal_number)),
+    siteNumber: maskStoredFuelSlipRawText(asText(row.site_number)),
     odometerReading: normalizeUsageReading(row.odometer_reading),
     hourMeterReading: normalizeUsageReading(row.hour_meter_reading),
     extractionStatus: normalizeFuelSlipExtractionStatus(row.extraction_status),
@@ -1703,7 +1707,7 @@ function fuelSlipReportNote(slip: FuelSlipTransaction): string {
     `Review: ${fuelSlipReviewStatusLabel(slip.extractionStatus, slip.reviewRequired)}`,
   ].filter(Boolean);
 
-  return parts.join(' · ') || 'Fuel Slip';
+  return maskStoredFuelSlipRawText(parts.join(' · ') || 'Fuel Slip');
 }
 
 function mapFuelSlipToReportEvent(slip: FuelSlipTransaction): FuelLedgerEvent {
@@ -2896,7 +2900,7 @@ type FuelSlipAssetRow = FuelAssetRow & {
 
 function normalizeExtractionWarnings(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
-  return value.map((entry) => asText(entry)).filter(Boolean).slice(0, 12);
+  return value.map((entry) => maskStoredFuelSlipRawText(asText(entry))).filter(Boolean).slice(0, 12);
 }
 
 function buildFuelSlipDescription(input: { fuelType: string; litres: number; pricePerLitre: number | null; totalAmount: number }): string {
@@ -2946,21 +2950,21 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
   const originalFilename = trimText(input.originalFilename, 180);
   const contentType = trimText(input.contentType, 120);
   const byteSize = asNumber(input.byteSize);
-  const supplierName = trimText(input.supplierName, 180);
+  const supplierName = sanitizeFuelSlipTextField(input.supplierName, 180);
   const supplierVatNumber = trimText(input.supplierVatNumber, 40).replace(/[^0-9A-Za-z -]/g, '');
-  const slipNumber = trimText(input.slipNumber, 120);
-  const transactionNumber = trimText(input.transactionNumber, 120);
-  const fuelType = trimText(input.fuelType, 120) || 'Fuel';
+  const slipNumber = sanitizeFuelSlipTextField(input.slipNumber, 120);
+  const transactionNumber = sanitizeFuelSlipTextField(input.transactionNumber, 120);
+  const fuelType = sanitizeFuelSlipTextField(input.fuelType, 120) || 'Fuel';
   const pricePerLitre = normalizeRateValue(input.pricePerLitre);
   const vatAmount = normalizeMoneyValue(input.vatAmount);
   const vatIncluded = normalizeBoolean(input.vatIncluded);
   const vatRate = normalizeRateValue(input.vatRate);
-  const paymentMethod = trimText(input.paymentMethod, 80);
-  const cardType = trimText(input.cardType, 80);
+  const paymentMethod = sanitizeFuelSlipTextField(input.paymentMethod, 80);
+  const cardType = sanitizeFuelSlipTextField(input.cardType, 80);
   const card = normalizeMaskedCard(input.cardNumberMasked, input.cardLast4);
-  const merchantNumber = trimText(input.merchantNumber, 80);
-  const terminalNumber = trimText(input.terminalNumber, 80);
-  const siteNumber = trimText(input.siteNumber, 80);
+  const merchantNumber = sanitizeFuelSlipTextField(input.merchantNumber, 80);
+  const terminalNumber = sanitizeFuelSlipTextField(input.terminalNumber, 80);
+  const siteNumber = sanitizeFuelSlipTextField(input.siteNumber, 80);
   const odometerReading = normalizeUsageReading(input.odometerReading);
   const hourMeterReading = normalizeUsageReading(input.hourMeterReading);
   const extractionStatus = captureMode === 'manual' ? 'manual' : normalizeFuelSlipExtractionStatus(input.extractionStatus);
