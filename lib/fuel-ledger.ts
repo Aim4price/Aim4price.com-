@@ -1603,7 +1603,7 @@ export async function listFuelAssetsForUser(userId: string): Promise<FuelLedgerA
   return result.rows.map(mapFuelAssetRow);
 }
 
-async function listFuelEvents(userId: string, options: { storageId?: string; limit?: number; fromIso?: string; toIso?: string } = {}): Promise<FuelLedgerEvent[]> {
+async function listFuelEvents(userId: string, options: { storageId?: string; limit?: number; fromIso?: string; toIso?: string; includeFuelSlipEvents?: boolean } = {}): Promise<FuelLedgerEvent[]> {
   await ensureFuelLedgerTables();
   const db = getDb();
   const limit = Math.max(1, Math.min(2000, Math.round(options.limit ?? 80)));
@@ -1613,6 +1613,10 @@ async function listFuelEvents(userId: string, options: { storageId?: string; lim
   if (options.storageId) {
     params.push(options.storageId);
     filter += ` and e.storage_id::text = $${params.length}`;
+  }
+
+  if (options.includeFuelSlipEvents === false) {
+    filter += ` and coalesce(e.source_type, '') <> 'fuel_slip'`;
   }
 
   if (options.fromIso) {
@@ -1764,7 +1768,7 @@ async function listFuelSlipEventsForReport(
 async function listFuelSlips(userId: string, options: { limit?: number } = {}): Promise<FuelSlipTransaction[]> {
   await ensureFuelLedgerTables();
   const db = getDb();
-  const limit = Math.max(1, Math.min(250, Math.round(options.limit ?? 80)));
+  const limit = Math.max(1, Math.min(2000, Math.round(options.limit ?? 80)));
 
   const result = await db.query<FuelSlipRow>(
     `
@@ -1798,7 +1802,7 @@ export async function listFuelLedger(userId: string): Promise<FuelLedgerData> {
       [userId],
     ),
     listFuelEvents(userId, { limit: 80 }),
-    listFuelSlips(userId, { limit: 80 }),
+    listFuelSlips(userId, { limit: 2000 }),
     listFuelAssetsForUser(userId),
     db.query<{ issued_30: string | number | null; filled_30: string | number | null }>(
       `
@@ -3505,23 +3509,27 @@ export async function getFuelScanPayload(userId: string, storageId: string): Pro
 
 export async function listFuelEventsForReport(
   userId: string,
-  storageIdOrOptions?: string | { storageId?: string; fromIso?: string; toIso?: string; limit?: number },
+  storageIdOrOptions?: string | { storageId?: string; fromIso?: string; toIso?: string; limit?: number; includeFuelSlips?: boolean },
 ): Promise<FuelLedgerEvent[]> {
   const options = typeof storageIdOrOptions === 'string' ? { storageId: storageIdOrOptions } : storageIdOrOptions ?? {};
   const limit = Math.max(1, Math.min(2000, Math.round(options.limit ?? 2000)));
+  const includeFuelSlips = options.includeFuelSlips !== false;
   const [events, fuelSlipEvents] = await Promise.all([
     listFuelEvents(userId, {
       storageId: options.storageId,
       fromIso: options.fromIso,
       toIso: options.toIso,
       limit,
+      includeFuelSlipEvents: includeFuelSlips,
     }),
-    listFuelSlipEventsForReport(userId, {
-      storageId: options.storageId,
-      fromIso: options.fromIso,
-      toIso: options.toIso,
-      limit,
-    }),
+    includeFuelSlips
+      ? listFuelSlipEventsForReport(userId, {
+        storageId: options.storageId,
+        fromIso: options.fromIso,
+        toIso: options.toIso,
+        limit,
+      })
+      : Promise.resolve([]),
   ]);
 
   return [...events, ...fuelSlipEvents]
