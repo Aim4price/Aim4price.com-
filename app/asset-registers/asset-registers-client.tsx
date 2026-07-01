@@ -11,6 +11,11 @@ import {
   type SVGProps,
 } from "react";
 import AppHeader from "../../components/AppHeader";
+import {
+  openAssetRegisterSummaryPrint,
+  type AssetRegisterSummaryRow,
+  type ReportKeyValue,
+} from "../../lib/report-print";
 import styles from "./page.module.css";
 
 type NoticeTone = "success" | "error";
@@ -37,6 +42,17 @@ type AssetRegisterSummary = {
   updatedAtIso: string;
 };
 
+type AssetStatusChoice = "yes" | "no" | "unknown" | "not_applicable";
+
+type AssetRegisterDocument = {
+  id?: string;
+  url?: string;
+  fileName?: string;
+  contentType?: string;
+  byteSize?: number;
+  uploadedAtIso?: string;
+};
+
 type RegisterAsset = {
   id: string;
   userId: string;
@@ -45,10 +61,30 @@ type RegisterAsset = {
   title: string;
   value: number;
   replacementPriceExVat: number | null;
+  selectedMethod?: string | null;
   serialNumber: string;
   brandName: string;
   modelName: string;
+  typedModelName?: string;
+  equipmentFamilyLabel?: string;
+  drive?: string;
+  hours?: number | null;
+  estimatedHours?: number | null;
+  lifeWorkedPercent?: number | null;
+  condition?: string;
   yearModel: number | null;
+  photos?: string[];
+  documents?: AssetRegisterDocument[];
+  specsJson?: Record<string, unknown>;
+  isFinanced?: boolean;
+  financeNote?: string;
+  isInsured?: boolean;
+  insuredValueExVat?: number | null;
+  isLicensed?: boolean;
+  licenseRegistrationNumber?: string;
+  publicAssetCode?: string;
+  plateLabel?: string;
+  createdAtIso?: string;
   updatedAtIso: string;
 };
 
@@ -254,12 +290,41 @@ function money(value: unknown): string {
   }).format(Math.round(safeValue));
 }
 
-function contactLine(register: AssetRegisterSummary): string {
-  const parts = [register.phone, register.addressLine1, register.email]
+function registerContactParts(register: AssetRegisterSummary): { primary: string; email: string } {
+  const primary = [register.phone, register.addressLine1]
     .map((value) => String(value ?? "").trim())
-    .filter(Boolean);
+    .filter(Boolean)
+    .join(" • ");
+  const email = String(register.email ?? "").trim();
+
+  return { primary, email };
+}
+
+function contactLine(register: AssetRegisterSummary): string {
+  const { primary, email } = registerContactParts(register);
+  const parts = [primary, email].filter(Boolean);
 
   return parts.join(" • ") || "No contact details saved yet";
+}
+
+type RegisterContactDetailsProps = {
+  register: AssetRegisterSummary;
+  className?: string;
+};
+
+function RegisterContactDetails({ register, className = "" }: RegisterContactDetailsProps) {
+  const { primary, email } = registerContactParts(register);
+
+  if (!primary && !email) {
+    return <span className={`${styles.registerContactDetails} ${className}`.trim()}>No contact details saved yet</span>;
+  }
+
+  return (
+    <span className={`${styles.registerContactDetails} ${className}`.trim()}>
+      {primary ? <span className={styles.registerContactPrimary}>{primary}</span> : null}
+      {email ? <span className={styles.registerContactEmail}>{email}</span> : null}
+    </span>
+  );
 }
 
 function compactAssetMeta(asset: RegisterAsset): string {
@@ -400,6 +465,446 @@ function registerExportSearchText(register: AssetRegisterSummary): string {
 function matchesExportRegisterSearch(register: AssetRegisterSummary, searchTerm: string): boolean {
   const normalizedSearch = searchTerm.trim().toLowerCase();
   return !normalizedSearch || registerExportSearchText(register).includes(normalizedSearch);
+}
+
+function cleanText(value: unknown): string {
+  return String(value ?? "").trim();
+}
+
+function numericValue(value: unknown): number | null {
+  if (value === null || typeof value === "undefined" || value === "") return null;
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function formatReportDate(value?: string | Date | null): string {
+  const parsed = value instanceof Date ? value : value ? new Date(value) : new Date();
+  const safeDate = Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+
+  return safeDate.toLocaleDateString("en-ZA", {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+  });
+}
+
+function normalizeAssetStatusChoice(value: unknown, fallback: AssetStatusChoice = "unknown"): AssetStatusChoice {
+  const normalized = String(value ?? "").trim().toLowerCase().replace(/[\s-]+/g, "_");
+
+  if (["yes", "y", "true", "financed", "insured", "licensed", "licenced"].includes(normalized)) {
+    return "yes";
+  }
+
+  if (["no", "n", "false", "not_financed", "not_insured", "not_licensed", "not_licenced", "unfinanced", "uninsured", "unlicensed", "unlicenced"].includes(normalized)) {
+    return "no";
+  }
+
+  if (["na", "n_a", "not_applicable", "not_aplicable", "not_relevant", "does_not_apply"].includes(normalized)) {
+    return "not_applicable";
+  }
+
+  if (["unknown", "not_sure", "unsure", "maybe", ""].includes(normalized)) {
+    return normalized ? "unknown" : fallback;
+  }
+
+  return fallback;
+}
+
+function statusChoiceReportLabel(status: AssetStatusChoice): string {
+  const normalized = normalizeAssetStatusChoice(status);
+  if (normalized === "yes") return "Yes";
+  if (normalized === "no") return "No";
+  if (normalized === "not_applicable") return "N/A";
+  return "Not sure";
+}
+
+function readFinanceStatusChoice(asset: RegisterAsset): AssetStatusChoice {
+  const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
+
+  return normalizeAssetStatusChoice(
+    specs.financeStatus ?? specs.finance_status ?? specs.financedStatus ?? specs.financed_status,
+    asset.isFinanced ? "yes" : "no",
+  );
+}
+
+const INSURED_VALUE_SPEC_KEYS = [
+  "insuredValueExVat",
+  "insured_value_ex_vat",
+  "insuranceValueExVat",
+  "insurance_value_ex_vat",
+  "insuredValue",
+  "insured_value",
+  "insuranceValue",
+  "insurance_value",
+] as const;
+
+function readAssetInsuredValueExVat(asset: RegisterAsset): number | null {
+  const direct = numericValue(asset.insuredValueExVat);
+  if (direct !== null && direct > 0) return Math.round(direct);
+
+  const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
+
+  for (const key of INSURED_VALUE_SPEC_KEYS) {
+    const value = numericValue(specs[key]);
+    if (value !== null && value > 0) return Math.round(value);
+  }
+
+  return null;
+}
+
+function readInsuranceStatusChoice(asset: RegisterAsset): AssetStatusChoice {
+  const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
+
+  return normalizeAssetStatusChoice(
+    specs.insuranceStatus ?? specs.insurance_status ?? specs.insuredStatus ?? specs.insured_status,
+    asset.isInsured || readAssetInsuredValueExVat(asset) !== null ? "yes" : "no",
+  );
+}
+
+function readLicenseStatusChoice(asset: RegisterAsset): AssetStatusChoice {
+  if (asset.kind === "property") return "not_applicable";
+
+  const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
+
+  return normalizeAssetStatusChoice(
+    specs.licenseStatus ??
+      specs.license_status ??
+      specs.licensedStatus ??
+      specs.licensed_status ??
+      specs.licenceStatus ??
+      specs.licence_status ??
+      specs.licencedStatus ??
+      specs.licenced_status,
+    asset.isLicensed ? "yes" : "no",
+  );
+}
+
+function readLicenseRegistrationNumber(asset: RegisterAsset): string {
+  const direct = cleanText(asset.licenseRegistrationNumber).toUpperCase();
+  if (direct) return direct;
+
+  const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
+
+  return cleanText(
+    specs.licenseRegistrationNumber ??
+      specs.license_registration_number ??
+      specs.licenceRegistrationNumber ??
+      specs.licence_registration_number ??
+      specs.licenseRegistration ??
+      specs.license_registration ??
+      specs.licenceRegistration ??
+      specs.licence_registration ??
+      specs.registrationNumber ??
+      specs.registration_number ??
+      specs.numberPlate ??
+      specs.number_plate ??
+      specs.numberplate,
+  ).toUpperCase();
+}
+
+const REPLACEMENT_PRICE_SPEC_KEYS = [
+  "replacementPriceExVat",
+  "replacement_price_ex_vat",
+  "replacementPriceUsedExVat",
+  "replacement_price_used_ex_vat",
+  "userReplacementPriceExVat",
+  "user_replacement_price_ex_vat",
+  "officialReplacementPriceExVat",
+  "official_replacement_price_ex_vat",
+  "replacementPrice",
+  "replacement_price",
+] as const;
+
+function readAssetReplacementPriceExVat(asset: RegisterAsset): number | null {
+  const direct = numericValue(asset.replacementPriceExVat);
+  if (direct !== null && direct > 0) return Math.round(direct);
+
+  const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
+
+  for (const key of REPLACEMENT_PRICE_SPEC_KEYS) {
+    const value = numericValue(specs[key]);
+    if (value !== null && value > 0) return Math.round(value);
+  }
+
+  return null;
+}
+
+function assetKindLabel(asset: RegisterAsset): string {
+  if (asset.equipmentFamilyLabel) return asset.equipmentFamilyLabel;
+  if (asset.kind === "tractor") return "Tractors";
+  if (asset.kind === "property") return "Property / Land / Building";
+  if (asset.kind === "vehicle") return "Vehicle";
+  if (asset.kind === "tools") return "Tools";
+  if (asset.kind === "equipment" || Boolean(asset.brandName && asset.modelName && asset.yearModel)) return "Equipment";
+  return "Equipment";
+}
+
+function conditionLabel(value: unknown): string {
+  const normalized = String(value ?? "").trim().toLowerCase();
+  const labels: Record<string, string> = {
+    excellent: "Excellent",
+    good: "Good",
+    fair: "Fair",
+    used: "Used",
+    serious: "Requires attention",
+  };
+
+  return labels[normalized] ?? cleanText(value);
+}
+
+function normalizeUsageMetric(asset: RegisterAsset): string {
+  if (asset.kind === "vehicle") return "km";
+
+  const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
+
+  return String(
+    specs.usageMetric ??
+      specs.usage_metric ??
+      specs.usageUnit ??
+      specs.usage_unit ??
+      specs.usageType ??
+      specs.usage_type ??
+      "",
+  )
+    .trim()
+    .toLowerCase();
+}
+
+function buildAssetUsageValue(asset: RegisterAsset): string {
+  if (asset.kind === "property") return "—";
+
+  const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
+  const rawUsageMode = String(
+    specs.usageMode ??
+      specs.usage_mode ??
+      specs.usageMetricType ??
+      specs.usage_metric_type ??
+      specs.valuationMode ??
+      specs.valuation_mode ??
+      "",
+  )
+    .trim()
+    .toLowerCase();
+  const normalized = normalizeUsageMetric(asset);
+  const hours = numericValue(asset.hours);
+  const estimatedHours = numericValue(asset.estimatedHours);
+  const lifeWorkedPercent = numericValue(asset.lifeWorkedPercent);
+
+  if (asset.kind === "vehicle") {
+    return hours !== null && hours > 0 ? `${Math.round(hours).toLocaleString("en-ZA")} km` : "—";
+  }
+
+  if (
+    ["percent", "percentage", "%", "percent_used", "percent used", "life_worked_percent", "life worked percent"].includes(normalized) ||
+    ["percent", "percentage", "percent_used", "percentage_depreciation", "wear_class"].includes(rawUsageMode)
+  ) {
+    return lifeWorkedPercent !== null ? `${Math.round(lifeWorkedPercent)}% worked` : "—";
+  }
+
+  if (hours !== null && hours > 0) {
+    return `${Math.round(hours).toLocaleString("en-ZA")} hours`;
+  }
+
+  if (lifeWorkedPercent !== null) {
+    return `${Math.round(lifeWorkedPercent)}% worked`;
+  }
+
+  if (estimatedHours !== null && estimatedHours > 0) {
+    return `${Math.round(estimatedHours).toLocaleString("en-ZA")} hours`;
+  }
+
+  return "—";
+}
+
+function methodLabel(value: unknown): string {
+  return String(value ?? "").trim().toLowerCase() === "manual" ? "Manual" : "Aim4price";
+}
+
+function assetStatusDateLabel(asset: RegisterAsset): string {
+  const createdDate = asset.createdAtIso ? new Date(asset.createdAtIso) : null;
+  const updatedDate = asset.updatedAtIso ? new Date(asset.updatedAtIso) : null;
+  const hasUpdatedDate = updatedDate && !Number.isNaN(updatedDate.getTime());
+  const hasCreatedDate = createdDate && !Number.isNaN(createdDate.getTime());
+  const isSavedOnly = hasCreatedDate && hasUpdatedDate && Math.abs(updatedDate.getTime() - createdDate.getTime()) < 1000;
+  const label = isSavedOnly ? "Saved" : "Updated";
+
+  return hasUpdatedDate ? `${label} ${formatReportDate(updatedDate)}` : "Saved";
+}
+
+function propertySizeDisplay(asset: RegisterAsset): string {
+  const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
+  const value = cleanText(
+    specs.propertySize ??
+      specs.property_size ??
+      specs.size ??
+      specs.sizeText ??
+      specs.size_text,
+  );
+
+  return value || "—";
+}
+
+function buildReportModelName(asset: RegisterAsset): string {
+  if (asset.kind === "property") return `Size: ${propertySizeDisplay(asset)}`;
+  return cleanText(asset.modelName || asset.typedModelName) || "—";
+}
+
+function buildReportBrandName(asset: RegisterAsset): string {
+  if (asset.kind === "property") return "—";
+  return cleanText(asset.brandName) || "—";
+}
+
+function normalizePhotoUrls(value: unknown): string[] {
+  const source = Array.isArray(value) ? value : [];
+  const seen = new Set<string>();
+  const result: string[] = [];
+
+  for (const entry of source) {
+    const url = String(entry ?? "").trim();
+    if (!url || seen.has(url)) continue;
+    seen.add(url);
+    result.push(url);
+  }
+
+  return result;
+}
+
+function toAbsoluteUrl(value?: string | null): string | null {
+  const text = String(value ?? "").trim();
+  if (!text) return null;
+  if (/^(https?:|data:|blob:)/i.test(text)) return text;
+  if (typeof window === "undefined") return text;
+
+  try {
+    return new URL(text, window.location.origin).toString();
+  } catch {
+    return text;
+  }
+}
+
+function registerLogoForReport(registers: AssetRegisterSummary[]): string {
+  for (const register of registers) {
+    const logo = visibleLogoUrls(register)[0];
+    if (logo) return toAbsoluteUrl(logo) ?? logo;
+  }
+
+  return "";
+}
+
+type ExportRegisterBundle = {
+  register: AssetRegisterSummary;
+  items: RegisterAsset[];
+};
+
+function sumAssetValues(items: RegisterAsset[]): number {
+  return items.reduce((sum, asset) => sum + Math.round(numericValue(asset.value) ?? 0), 0);
+}
+
+function sumAssetReplacementValues(items: RegisterAsset[]): number {
+  return items.reduce((sum, asset) => sum + Math.round(readAssetReplacementPriceExVat(asset) ?? 0), 0);
+}
+
+function sumAssetInsuredValues(items: RegisterAsset[]): number {
+  return items.reduce((sum, asset) => sum + Math.round(readAssetInsuredValueExVat(asset) ?? 0), 0);
+}
+
+function countAssetsWithReplacementPrice(items: RegisterAsset[]): number {
+  return items.filter((asset) => readAssetReplacementPriceExVat(asset) !== null).length;
+}
+
+function calculateAssetStats(items: RegisterAsset[], predicate: (asset: RegisterAsset) => boolean): { count: number; value: number } {
+  return items.reduce(
+    (stats, asset) => {
+      if (!predicate(asset)) return stats;
+      return {
+        count: stats.count + 1,
+        value: stats.value + Math.round(numericValue(asset.value) ?? 0),
+      };
+    },
+    { count: 0, value: 0 },
+  );
+}
+
+function buildReportOwnerMeta(scope: ExportScope, registers: AssetRegisterSummary[], bundles: ExportRegisterBundle[]): string {
+  if (scope === "single" && registers[0]) {
+    return contactLine(registers[0]);
+  }
+
+  const totalAssets = bundles.reduce((sum, bundle) => sum + bundle.items.length, 0);
+  const firstContact = registers[0] ? contactLine(registers[0]) : "";
+  const registerSummary = `${registers.length} asset register${registers.length === 1 ? "" : "s"} • ${totalAssets} asset${totalAssets === 1 ? "" : "s"}`;
+
+  return [registerSummary, firstContact].filter(Boolean).join(" • ");
+}
+
+function buildReportOwnerRows(scope: ExportScope, registers: AssetRegisterSummary[], entityName: string): ReportKeyValue[] {
+  if (scope === "single" && registers[0]) {
+    const register = registers[0];
+
+    return [
+      { label: "Name", value: register.businessName || entityName },
+      { label: "Business email", value: register.email || "—" },
+      { label: "Phone", value: register.phone || "—" },
+      { label: "Address", value: register.addressLine1 || "—" },
+    ];
+  }
+
+  return [
+    { label: "Report name", value: entityName },
+    { label: "Included registers", value: registers.map((register) => register.businessName).filter(Boolean).join(", ") || "—" },
+    { label: "Primary contact", value: registers[0] ? contactLine(registers[0]) : "—" },
+  ];
+}
+
+function buildExportReportRows(bundles: ExportRegisterBundle[], scope: ExportScope): AssetRegisterSummaryRow[] {
+  return bundles.flatMap((bundle) =>
+    bundle.items.map((asset) => {
+      const replacementPrice = readAssetReplacementPriceExVat(asset);
+      const insuredValue = readAssetInsuredValueExVat(asset);
+      const sourcePrefix = scope === "single" ? "" : `Source: ${bundle.register.businessName} · `;
+      const documentsCount = Array.isArray(asset.documents) ? asset.documents.length : 0;
+      const photoUrl = toAbsoluteUrl(normalizePhotoUrls(asset.photos)[0] ?? null);
+      const licenseRegistrationNumber = readLicenseRegistrationNumber(asset);
+
+      return {
+        asset: cleanText(asset.title) || "Asset",
+        type: `${sourcePrefix}${assetKindLabel(asset)}`,
+        method: methodLabel(asset.selectedMethod),
+        detail: compactAssetMeta(asset),
+        value: money(asset.value),
+        replacementPrice: replacementPrice !== null ? money(replacementPrice) : "Not set",
+        status: assetStatusDateLabel(asset),
+        brand: buildReportBrandName(asset),
+        model: buildReportModelName(asset),
+        year: asset.yearModel ? String(asset.yearModel) : "—",
+        usage: buildAssetUsageValue(asset),
+        condition: conditionLabel(asset.condition) || "—",
+        serial: asset.kind === "property" ? "—" : asset.serialNumber || "—",
+        insured: statusChoiceReportLabel(readInsuranceStatusChoice(asset)),
+        insuredValue: insuredValue !== null ? money(insuredValue) : "—",
+        financed: statusChoiceReportLabel(readFinanceStatusChoice(asset)),
+        licensed: asset.kind === "property" ? "N/A" : statusChoiceReportLabel(readLicenseStatusChoice(asset)),
+        licenseRegistrationNumber: asset.kind === "property" ? undefined : licenseRegistrationNumber || undefined,
+        documents: documentsCount ? `${documentsCount} saved` : "None",
+        updated: assetStatusDateLabel(asset),
+        photoUrl,
+      };
+    }),
+  );
+}
+
+function buildExportReportTitle(scope: ExportScope): string {
+  if (scope === "combined") return "Combined Asset Register Report";
+  return "Full Asset Register Report";
+}
+
+function buildExportAssetSectionTitle(scope: ExportScope): string {
+  if (scope === "combined") return "Combined Asset Register";
+  return "Asset Register";
 }
 
 type RegisterLogoBlockProps = {
@@ -681,7 +1186,11 @@ export default function AssetRegistersClient() {
       ? "Choose Asset Register"
       : exportStep === "combined-picker"
         ? "Combine Asset Registers"
-        : "Export Asset Registers";
+        : exportScope === "all"
+          ? "Export All Asset Registers"
+          : exportScope === "combined"
+            ? "Export Combined Asset Registers"
+            : "Export Asset Register";
   const exportIntro = exportStep === "choice"
     ? "Choose whether to export all registers, one register, or a selected combined set."
     : exportStep === "single-picker"
@@ -995,11 +1504,124 @@ export default function AssetRegistersClient() {
     }
   }
 
+  function selectedRegistersForExport(): AssetRegisterSummary[] {
+    if (exportScope === "all") {
+      return registers;
+    }
+
+    return selectedExportRegisterIds
+      .map((registerId) => registers.find((register) => register.id === registerId) ?? null)
+      .filter((register): register is AssetRegisterSummary => Boolean(register));
+  }
+
+  async function loadExportRegisterBundles(targetRegisters: AssetRegisterSummary[]): Promise<ExportRegisterBundle[]> {
+    const bundles = await Promise.all(
+      targetRegisters.map(async (register) => {
+        const params = new URLSearchParams({ registerId: register.id });
+        const response = await fetch(`/api/asset-register?${params.toString()}`, {
+          cache: "no-store",
+          credentials: "include",
+        });
+        const payload = await readJsonPayload(response);
+        const data = (payload ?? null) as AssetRegisterItemsApiResponse | null;
+
+        if (!response.ok || !data?.ok) {
+          throw new Error(
+            extractErrorMessage(payload, `Failed to load assets for ${register.businessName}.`),
+          );
+        }
+
+        const items = Array.isArray(data.items)
+          ? data.items
+          : Array.isArray(data.assets)
+            ? data.assets
+            : [];
+
+        return { register: data.register ?? register, items };
+      }),
+    );
+
+    return bundles;
+  }
+
+  async function handlePrintablePdfExport(entityName: string) {
+    const targetRegisters = selectedRegistersForExport();
+
+    if (exportScope === "single" && targetRegisters.length !== 1) {
+      throw new Error("Choose one asset register to download.");
+    }
+
+    if (exportScope === "combined" && targetRegisters.length < 2) {
+      throw new Error("Select at least two asset registers to combine.");
+    }
+
+    if (!targetRegisters.length) {
+      throw new Error("No asset registers were found to export.");
+    }
+
+    const bundles = await loadExportRegisterBundles(targetRegisters);
+    const allAssets = bundles.flatMap((bundle) => bundle.items);
+    const reportValue = sumAssetValues(allAssets);
+    const reportValueInclVat = Math.round(reportValue * 1.15);
+    const reportReplacementValue = sumAssetReplacementValues(allAssets);
+    const reportReplacementValueInclVat = Math.round(reportReplacementValue * 1.15);
+    const reportReplacementPricedCount = countAssetsWithReplacementPrice(allAssets);
+    const reportInsuredValue = sumAssetInsuredValues(allAssets);
+    const reportInsuredValueInclVat = Math.round(reportInsuredValue * 1.15);
+    const reportAim4priceStats = calculateAssetStats(allAssets, (asset) => methodLabel(asset.selectedMethod) !== "Manual");
+    const reportInsuredStats = calculateAssetStats(allAssets, (asset) => readInsuranceStatusChoice(asset) === "yes");
+    const reportFinancedStats = calculateAssetStats(allAssets, (asset) => readFinanceStatusChoice(asset) === "yes");
+    const reportLicensedStats = calculateAssetStats(allAssets, (asset) => readLicenseStatusChoice(asset) === "yes");
+    const rows = buildExportReportRows(bundles, exportScope);
+    const reportName = entityName || buildDefaultEntityName(exportScope, targetRegisters);
+    const reportTitle = buildExportReportTitle(exportScope);
+    const didOpen = openAssetRegisterSummaryPrint({
+      logoUrl: registerLogoForReport(targetRegisters),
+      generatedAt: formatReportDate(new Date()),
+      reportTitle,
+      reportSubtitle: "Aim4price asset register",
+      valueLabel: exportScope === "combined" ? "Combined Register Value" : "Register Value",
+      assetSectionTitle: buildExportAssetSectionTitle(exportScope),
+      emptyStateMessage: "No saved assets are currently available for this report.",
+      ownerName: reportName,
+      ownerMeta: buildReportOwnerMeta(exportScope, targetRegisters, bundles),
+      intro:
+        exportScope === "single"
+          ? "Complete saved asset register snapshot."
+          : `Complete saved asset register snapshot across ${targetRegisters.length} asset register${targetRegisters.length === 1 ? "" : "s"}.`,
+      registerValue: money(reportValue),
+      registerValueNote: `VAT excluded · ${money(reportValueInclVat)} incl. VAT · Replacement ${money(reportReplacementValue)} excl. VAT`,
+      ownerRows: buildReportOwnerRows(exportScope, targetRegisters, reportName),
+      stats: [
+        {
+          label: "Assets",
+          value: String(rows.length),
+          note: exportScope === "single" ? "Saved register items." : "Combined saved register items.",
+        },
+        { label: "Value ex VAT", value: money(reportValue), note: "Filtered report total excluding VAT." },
+        { label: "Value incl VAT", value: money(reportValueInclVat), note: "Filtered report total including 15% VAT." },
+        { label: "Replacement value", value: money(reportReplacementValue), note: `${reportReplacementPricedCount} assets · ${money(reportReplacementValueInclVat)} incl. VAT.` },
+        { label: "Aim4price values", value: String(reportAim4priceStats.count), note: `${money(reportAim4priceStats.value)} total value.` },
+        { label: "Insured assets", value: String(reportInsuredStats.count), note: `${money(reportInsuredValue)} insured value excl. VAT · ${money(reportInsuredValueInclVat)} incl. VAT.` },
+        { label: "Financed assets", value: String(reportFinancedStats.count), note: `${money(reportFinancedStats.value)} marked financed.` },
+        { label: "Licensed assets", value: String(reportLicensedStats.count), note: `${money(reportLicensedStats.value)} marked licensed.` },
+      ],
+      rows,
+      footerNote:
+        "Values are indicative estimates based on saved Aim4price asset-register information and available pricing inputs. Values exclude VAT unless stated otherwise. This is not a certified valuation, inspection report or guarantee of selling price. Final values remain subject to physical inspection, documents, attachments, condition, location and live market demand.",
+    });
+
+    if (!didOpen) {
+      throw new Error("Unable to open the asset register PDF. Please allow pop-ups and try again.");
+    }
+  }
+
   async function handleExportDownload() {
     if (isExporting) return;
 
     const selectedIds = exportScope === "all" ? [] : selectedExportRegisterIds;
-    const entityName = exportEntityName.trim() || buildDefaultEntityName(exportScope, selectedExportRegisters);
+    const targetRegisters = selectedRegistersForExport();
+    const entityName = exportEntityName.trim() || buildDefaultEntityName(exportScope, targetRegisters);
 
     if (exportScope === "single" && selectedIds.length !== 1) {
       setNotice({ tone: "error", message: "Choose one asset register to download." });
@@ -1011,37 +1633,33 @@ export default function AssetRegistersClient() {
       return;
     }
 
+    if (!targetRegisters.length) {
+      setNotice({ tone: "error", message: "No asset registers were found to export." });
+      return;
+    }
+
     setIsExporting(true);
 
     try {
-      const response = await fetch(buildExportUrl(exportFormat, exportScope, selectedIds, entityName), {
-        cache: "no-store",
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        const payload = await readJsonPayload(response);
-        throw new Error(extractErrorMessage(payload, "Failed to export asset registers."));
-      }
-
-      const blob = await response.blob();
-      const date = new Date().toISOString().slice(0, 10);
-      const fallbackName = `aim4price-asset-registers-${slugFallback(entityName)}-${date}.${exportFormat}`;
-      const fileName = parseDownloadFileName(response, fallbackName);
-
       if (exportFormat === "pdf") {
-        const objectUrl = window.URL.createObjectURL(blob);
-        const opened = window.open(objectUrl, "_blank", "noopener,noreferrer");
-
-        if (!opened) {
-          downloadBlob(blob, fileName);
-          window.URL.revokeObjectURL(objectUrl);
-        } else {
-          window.setTimeout(() => window.URL.revokeObjectURL(objectUrl), 60_000);
-        }
-
+        await handlePrintablePdfExport(entityName);
         setNotice({ tone: "success", message: "Asset registers PDF opened." });
       } else {
+        const response = await fetch(buildExportUrl(exportFormat, exportScope, selectedIds, entityName), {
+          cache: "no-store",
+          credentials: "include",
+        });
+
+        if (!response.ok) {
+          const payload = await readJsonPayload(response);
+          throw new Error(extractErrorMessage(payload, "Failed to export asset registers."));
+        }
+
+        const blob = await response.blob();
+        const date = new Date().toISOString().slice(0, 10);
+        const fallbackName = `aim4price-asset-registers-${slugFallback(entityName)}-${date}.xlsx`;
+        const fileName = parseDownloadFileName(response, fallbackName);
+
         downloadBlob(blob, fileName);
         setNotice({ tone: "success", message: "Asset registers XLSX downloaded." });
       }
@@ -1120,7 +1738,7 @@ export default function AssetRegistersClient() {
     register: AssetRegisterSummary,
     event: ChangeEvent<HTMLInputElement>,
   ) {
-    const selectedFiles = Array.from(event.target.files ?? []);
+    const selectedFiles = Array.from(event.target.files ?? []) as File[];
     event.target.value = "";
 
     if (!selectedFiles.length) {
@@ -1557,7 +2175,7 @@ export default function AssetRegistersClient() {
                         <div className={styles.registerTitleBlock}>
                           <h2>{register.businessName}</h2>
                           <div className={styles.registerDetails}>
-                            <span>{contactLine(register)}</span>
+                            <RegisterContactDetails register={register} />
                           </div>
                         </div>
 
@@ -1654,6 +2272,10 @@ export default function AssetRegistersClient() {
         >
           <section
             className={`${styles.modalCard} ${styles.exportFlowModal} ${
+              exportStep === "choice" ? styles.exportChoiceModal : ""
+            } ${
+              exportStep === "format" ? styles.exportFormatModal : ""
+            } ${
               exportStep === "single-picker" || exportStep === "combined-picker"
                 ? styles.exportPickerModal
                 : ""
@@ -1813,7 +2435,7 @@ export default function AssetRegistersClient() {
 
                             <span className={styles.registerPickerInfo}>
                               <strong>{register.businessName}</strong>
-                              <small>{contactLine(register)}</small>
+                              <RegisterContactDetails register={register} className={styles.registerPickerContact} />
                               <small>
                                 {register.assetCount} asset{register.assetCount === 1 ? "" : "s"}
                               </small>
@@ -1870,7 +2492,7 @@ export default function AssetRegistersClient() {
                   {exportStep === "combined-picker" ? (
                     <button
                       type="button"
-                      className={styles.primaryButton}
+                      className={`${styles.primaryButton} ${styles.exportNextButton}`}
                       onClick={continueCombinedExport}
                       disabled={!isCombinedSelectionValid || isExporting}
                     >
@@ -1973,7 +2595,7 @@ export default function AssetRegistersClient() {
                     type="button"
                     className={styles.primaryButton}
                     onClick={() => void handleExportDownload()}
-                    disabled={isExporting || !exportEntityName.trim()}
+                    disabled={isExporting}
                   >
                     <DownloadIcon className={styles.buttonIcon} />
                     <span>

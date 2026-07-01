@@ -3169,6 +3169,146 @@
   border-radius: 1.05rem;
 }
 
+
+/* === /asset-registers toolbar, card action and export-flow polish === */
+.toolbar {
+  grid-template-columns: minmax(18rem, 1fr) auto auto;
+  align-items: stretch;
+  gap: clamp(0.75rem, 1vw, 1rem);
+}
+
+.searchWrap,
+.toolbarPrimaryButton {
+  min-height: 3.45rem;
+  height: 3.45rem;
+}
+
+.searchWrap {
+  min-width: 0;
+}
+
+.toolbarPrimaryButton {
+  padding-inline: clamp(1.05rem, 1.2vw, 1.35rem);
+}
+
+.topAddButton,
+.topDownloadButton {
+  align-self: stretch;
+}
+
+.registerContactDetails {
+  min-width: 0;
+  display: grid;
+  gap: 0.1rem;
+  color: inherit;
+  line-height: 1.38;
+}
+
+.registerContactPrimary,
+.registerContactEmail {
+  display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.registerContactEmail {
+  color: #5d6d7c;
+}
+
+.registerAside {
+  min-width: min(100%, 300px);
+  align-self: stretch;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.unitActions {
+  width: 100%;
+  max-width: 18rem;
+  justify-self: end;
+  align-self: center;
+  gap: 0.72rem;
+}
+
+.unitButton {
+  width: 100%;
+  min-height: 3.38rem;
+  padding-inline: 1.15rem;
+}
+
+.exportChoiceModal {
+  width: min(860px, 100%);
+  max-height: min(88dvh, 45rem);
+}
+
+.exportFormatModal {
+  width: min(1050px, 100%);
+}
+
+.exportChoiceModal .exportFlowBody {
+  padding-top: clamp(1rem, 1.7vw, 1.35rem);
+  padding-bottom: clamp(1rem, 1.7vw, 1.35rem);
+}
+
+.exportChoiceGrid {
+  grid-template-columns: 1fr;
+  gap: 0.85rem;
+}
+
+.exportChoiceOption {
+  min-height: 6.15rem;
+  padding: 0.95rem 1.05rem;
+  gap: 1rem;
+}
+
+.exportChoiceGraphic {
+  width: 4.5rem;
+  height: 4.5rem;
+  border-radius: 1.1rem;
+}
+
+.exportChoiceIcon {
+  width: 2rem;
+  height: 2rem;
+}
+
+.exportChoiceTitleBlock strong {
+  font-size: 1.1rem;
+  line-height: 1.08;
+}
+
+.exportChoiceTitleBlock small {
+  font-size: 0.94rem;
+}
+
+.registerPickerContact {
+  color: #607183;
+  font-size: 0.86rem;
+  font-weight: 720;
+  line-height: 1.3;
+}
+
+.registerPickerInfo .registerContactDetails {
+  gap: 0.08rem;
+}
+
+.exportSetupBody {
+  padding-bottom: 1.25rem;
+}
+
+.exportModalFooter {
+  min-height: 0;
+  padding-top: 0.9rem;
+  padding-bottom: 1rem;
+}
+
+.exportModalFooter .primaryButton {
+  min-width: 14rem;
+}
+
+.exportNextButton {
+  min-width: 8rem;
+}
+
 @media (max-width: 1180px) {
   .exportChoiceGrid {
     grid-template-columns: 1fr;
@@ -3241,6 +3381,52 @@
   }
 
   .exportModalFooter > * {
+    width: 100%;
+  }
+}
+
+
+@media (max-width: 980px) {
+  .toolbar {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .searchWrap,
+  .toolbarPrimaryButton,
+  .topAddButton,
+  .topDownloadButton {
+    width: 100%;
+  }
+
+  .registerAside {
+    min-width: 0;
+  }
+
+  .unitActions {
+    max-width: none;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    justify-self: stretch;
+  }
+
+  .unitButton {
+    min-height: 3.25rem;
+  }
+}
+
+@media (max-width: 760px) {
+  .unitActions {
+    grid-template-columns: 1fr;
+  }
+
+  .exportChoiceModal,
+  .exportFormatModal,
+  .exportPickerModal {
+    width: 100%;
+    max-height: calc(100dvh - 1rem);
+  }
+
+  .exportModalFooter .primaryButton {
     width: 100%;
   }
 }
