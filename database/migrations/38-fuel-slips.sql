@@ -45,9 +45,9 @@ create table if not exists public.fuel_slips (
   document_date date,
   document_time text,
   fuel_type text,
-  litres numeric(12,3) not null,
+  litres numeric(12,3),
   price_per_litre numeric(14,4),
-  total_amount numeric(14,2) not null,
+  total_amount numeric(14,2),
   vat_amount numeric(14,2),
   vat_included boolean,
   vat_rate numeric(6,2),
@@ -119,7 +119,10 @@ alter table if exists public.fuel_storage_events
   alter column storage_level_after_litres type numeric(12,3) using storage_level_after_litres::numeric(12,3);
 
 alter table if exists public.fuel_slips
-  alter column litres type numeric(12,3) using litres::numeric(12,3);
+  alter column litres type numeric(12,3) using litres::numeric(12,3),
+  alter column total_amount type numeric(14,2) using total_amount::numeric(14,2),
+  alter column litres drop not null,
+  alter column total_amount drop not null;
 
 update public.fuel_storage_events
 set card_number_masked = '************' || right(regexp_replace(coalesce(card_number_masked, ''), '[^0-9]', '', 'g'), 4)
@@ -139,8 +142,8 @@ set
   source_label = 'Fuel Slip',
   target_type = case when target_type in ('asset', 'storage_tank') then target_type else coalesce(nullif(target_type, ''), 'asset') end,
   extraction_status = case when extraction_status in ('manual', 'extracted', 'needs_review') then extraction_status else 'manual' end,
-  litres = greatest(0, coalesce(litres, 0)),
-  total_amount = greatest(0, coalesce(total_amount, 0)),
+  litres = case when litres is null then null else greatest(0, litres) end,
+  total_amount = case when total_amount is null then null else greatest(0, total_amount) end,
   updated_at = coalesce(updated_at, now()),
   created_at = coalesce(created_at, now());
 
