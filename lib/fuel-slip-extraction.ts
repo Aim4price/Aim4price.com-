@@ -1,4 +1,5 @@
 import { extractDigitalPdfText } from './my-invoices-extraction';
+import { extractFuelSlipImageText, isSupportedFuelSlipImage } from './fuel-slip-ocr';
 
 export type FuelSlipExtractionStatus = 'manual' | 'extracted' | 'needs_review';
 export type FuelSlipExtractionQuality = 'none' | 'weak' | 'good';
@@ -85,6 +86,18 @@ function normalizeLines(rawText: string): string[] {
 
 function compact(rawText: string): string {
   return normalizeLines(rawText).join('\n');
+}
+
+
+function maskDigits(value: string): string {
+  const digits = value.replace(/\D/g, '');
+  if (digits.length < 13 || digits.length > 19) return value;
+  const last4 = digits.slice(-4);
+  return `${'*'.repeat(Math.max(0, digits.length - 4))}${last4}`;
+}
+
+export function maskFuelSlipSensitiveText(value: string): string {
+  return String(value ?? '').replace(/\b(?:\d[\s-]?){13,19}\b/g, (match) => maskDigits(match));
 }
 
 function parseDecimal(value: unknown, decimals = 2): number | null {
@@ -384,27 +397,49 @@ export function parseFuelSlipText(rawText: string): FuelSlipExtractionResult {
 
   return {
     draft,
-    rawText: text.slice(0, 20000),
+    rawText: maskFuelSlipSensitiveText(text).slice(0, 20000),
     warnings: warnings.slice(0, 12),
     quality: requiredFound && confidence >= 0.72 ? 'good' : 'weak',
   };
 }
 
-export function extractFuelSlipFromUpload(input: { data: Buffer; contentType: string; fileName: string }): FuelSlipExtractionResult {
+export async function extractFuelSlipFromUpload(input: { data: Buffer; contentType: string; fileName: string }): Promise<FuelSlipExtractionResult> {
   const contentType = cleanText(input.contentType).toLowerCase();
   const fileName = cleanText(input.fileName).toLowerCase();
 
   if (contentType === 'application/pdf' || fileName.endsWith('.pdf')) {
     const text = extractDigitalPdfText(input.data);
+    const compactText = compact(text);
+
+    if (!compactText || compactText.length < 20) {
+      return {
+        draft: cloneEmptyDraft(),
+        rawText: '',
+        warnings: ['This PDF appears to be scanned or image-based. Fuel slip photo OCR currently supports JPG, JPEG, PNG and WEBP uploads. Complete the fields manually before saving.'],
+        quality: 'none',
+      };
+    }
+
     return parseFuelSlipText(text);
   }
 
-  if (contentType.startsWith('image/')) {
+  if (isSupportedFuelSlipImage({ contentType, fileName })) {
+    const ocr = await extractFuelSlipImageText(input);
+
+    if (!ocr.rawText.trim()) {
+      return {
+        draft: cloneEmptyDraft(),
+        rawText: '',
+        warnings: ocr.warnings.length ? ocr.warnings.slice(0, 12) : ['No readable text was found. Complete the fuel slip manually.'],
+        quality: 'none',
+      };
+    }
+
+    const parsed = parseFuelSlipText(ocr.rawText);
     return {
-      draft: cloneEmptyDraft(),
-      rawText: '',
-      warnings: ['Image fuel slips are saved, but this build does not include server-side OCR for photos yet. Complete the fields manually before saving.'],
-      quality: 'none',
+      ...parsed,
+      rawText: maskFuelSlipSensitiveText(parsed.rawText),
+      warnings: [...ocr.warnings, ...parsed.warnings].slice(0, 12),
     };
   }
 

@@ -136,6 +136,10 @@ export type FuelLedgerAsset = {
   publicAssetCode: string;
   hours: number | null;
   fuelPercent: number | null;
+  yearModel: number | null;
+  condition: string;
+  selectedMethod: string;
+  currentValue: number | null;
   canReceiveFuel: boolean;
   usageMetric: 'hours' | 'km' | 'both' | 'none';
 };
@@ -252,6 +256,10 @@ type FuelAssetRow = {
   public_asset_code: string | null;
   hours: string | number | null;
   fuel_percent: string | number | null;
+  year_model?: string | number | null;
+  condition?: string | null;
+  selected_method?: string | null;
+  current_value?: string | number | null;
   family_is_propelled: boolean | string | number | null;
   specs_json: unknown;
 };
@@ -532,6 +540,15 @@ function normalizeMaskedCard(value: unknown, fallbackLast4: unknown): { masked: 
 
 function trimText(value: unknown, maxLength: number): string {
   return asText(value).slice(0, maxLength);
+}
+
+function maskStoredFuelSlipRawText(value: string): string {
+  return value.replace(/\b(?:\d[\s-]?){13,19}\b/g, (match) => {
+    const digits = match.replace(/\D/g, '');
+    if (digits.length < 13 || digits.length > 19) return match;
+    const last4 = digits.slice(-4);
+    return `${'*'.repeat(Math.max(0, digits.length - 4))}${last4}`;
+  });
 }
 
 function toDateOnly(value: unknown): string {
@@ -924,6 +941,7 @@ function inferAssetUsageMetric(row: FuelAssetRow): 'hours' | 'km' | 'both' | 'no
 function mapFuelAssetRow(row: FuelAssetRow): FuelLedgerAsset {
   const familyLabel = asText(row.equipment_family_label);
   const kind = asText(row.kind).toLowerCase();
+  const specs = asRecord(row.specs_json);
 
   return {
     id: String(row.id ?? '').trim(),
@@ -937,6 +955,10 @@ function mapFuelAssetRow(row: FuelAssetRow): FuelLedgerAsset {
     publicAssetCode: asText(row.public_asset_code),
     hours: normalizeUsageReading(row.hours),
     fuelPercent: normalizeFuelPercent(row.fuel_percent),
+    yearModel: normalizeUsageReading(row.year_model ?? specs.yearModel ?? specs.year_model),
+    condition: asText(row.condition ?? specs.condition),
+    selectedMethod: asText(row.selected_method ?? specs.selectedMethod ?? specs.selected_method),
+    currentValue: normalizeMoneyValue(row.current_value ?? specs.currentValue ?? specs.current_value ?? specs.valuationValue ?? specs.valuation_value),
     canReceiveFuel: inferAssetCanReceiveFuel(row),
     usageMetric: inferAssetUsageMetric(row),
   };
@@ -1552,6 +1574,18 @@ export async function listFuelAssetsForUser(userId: string): Promise<FuelLedgerA
         to_jsonb(a)->>'public_asset_code' as public_asset_code,
         a.hours,
         to_jsonb(a)->>'fuel_percent' as fuel_percent,
+        coalesce(to_jsonb(a)->>'year_model', to_jsonb(a)->>'yearModel', to_jsonb(a)->>'year') as year_model,
+        coalesce(to_jsonb(a)->>'condition', '') as condition,
+        coalesce(to_jsonb(a)->>'selected_method', to_jsonb(a)->>'selectedMethod', to_jsonb(a)->>'method', '') as selected_method,
+        coalesce(
+          to_jsonb(a)->>'current_value',
+          to_jsonb(a)->>'currentValue',
+          to_jsonb(a)->>'selected_value_ex_vat',
+          to_jsonb(a)->>'selectedValueExVat',
+          to_jsonb(a)->>'selected_value',
+          to_jsonb(a)->>'value',
+          to_jsonb(a)->>'opening_value'
+        ) as current_value,
         ef.is_propelled as family_is_propelled,
         coalesce(a.specs_json, '{}'::jsonb) as specs_json
       from public.asset_register_items a
@@ -2897,7 +2931,7 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
   const extractionStatus = captureMode === 'manual' ? 'manual' : normalizeFuelSlipExtractionStatus(input.extractionStatus);
   const ocrConfidence = normalizeRateValue(input.ocrConfidence);
   const reviewRequired = (normalizeBoolean(input.reviewRequired) ?? false) || extractionStatus === 'needs_review';
-  const rawExtractedText = trimText(input.rawExtractedText, 20000);
+  const rawExtractedText = maskStoredFuelSlipRawText(trimText(input.rawExtractedText, 20000));
   const extractionWarnings = normalizeExtractionWarnings(input.extractionWarnings);
   const description = buildFuelSlipDescription({ fuelType, litres, pricePerLitre, totalAmount: totalAmount ?? 0 });
   let committed = false;
@@ -2944,6 +2978,18 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
             to_jsonb(a)->>'public_asset_code' as public_asset_code,
             a.hours,
             to_jsonb(a)->>'fuel_percent' as fuel_percent,
+            coalesce(to_jsonb(a)->>'year_model', to_jsonb(a)->>'yearModel', to_jsonb(a)->>'year') as year_model,
+            coalesce(to_jsonb(a)->>'condition', '') as condition,
+            coalesce(to_jsonb(a)->>'selected_method', to_jsonb(a)->>'selectedMethod', to_jsonb(a)->>'method', '') as selected_method,
+            coalesce(
+              to_jsonb(a)->>'current_value',
+              to_jsonb(a)->>'currentValue',
+              to_jsonb(a)->>'selected_value_ex_vat',
+              to_jsonb(a)->>'selectedValueExVat',
+              to_jsonb(a)->>'selected_value',
+              to_jsonb(a)->>'value',
+              to_jsonb(a)->>'opening_value'
+            ) as current_value,
             ef.is_propelled as family_is_propelled,
             coalesce(a.specs_json, '{}'::jsonb) as specs_json,
             a.valuation_run_id,
