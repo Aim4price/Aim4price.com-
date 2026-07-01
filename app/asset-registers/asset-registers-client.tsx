@@ -14,6 +14,10 @@ import AppHeader from "../../components/AppHeader";
 import styles from "./page.module.css";
 
 type NoticeTone = "success" | "error";
+type ExportFormat = "pdf" | "xlsx";
+type ExportScope = "all" | "single" | "combined";
+type ExportFlowStep = "closed" | "choice" | "single-picker" | "combined-picker" | "format";
+
 
 type AssetRegisterSummary = {
   id: string;
@@ -126,6 +130,16 @@ function PlusIcon(props: SVGProps<SVGSVGElement>) {
     <IconBase {...props}>
       <path d="M12 5v14" />
       <path d="M5 12h14" />
+    </IconBase>
+  );
+}
+
+function DownloadIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M12 3v12" />
+      <path d="m7 10 5 5 5-5" />
+      <path d="M5 21h14" />
     </IconBase>
   );
 }
@@ -306,6 +320,86 @@ function extractErrorMessage(payload: unknown, fallback: string): string {
   }
 
   return fallback;
+}
+
+function parseDownloadFileName(response: Response, fallback: string): string {
+  const disposition = response.headers.get("content-disposition") || "";
+  const quotedMatch = /filename="([^"]+)"/i.exec(disposition);
+  const plainMatch = /filename=([^;]+)/i.exec(disposition);
+
+  return (quotedMatch?.[1] || plainMatch?.[1] || fallback).trim();
+}
+
+function downloadBlob(blob: Blob, fileName: string) {
+  const objectUrl = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = objectUrl;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(objectUrl);
+}
+
+function slugFallback(value: string): string {
+  return (
+    value
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "asset-registers"
+  );
+}
+
+function buildDefaultEntityName(scope: ExportScope, selectedRegisters: AssetRegisterSummary[]): string {
+  if (scope === "single" && selectedRegisters[0]?.businessName) {
+    return selectedRegisters[0].businessName;
+  }
+
+  if (scope === "combined") {
+    return "Combined Asset Registers";
+  }
+
+  return selectedRegisters.length === 1 && selectedRegisters[0]?.businessName
+    ? selectedRegisters[0].businessName
+    : "All Asset Registers";
+}
+
+function buildExportUrl(
+  format: ExportFormat,
+  scope: ExportScope,
+  selectedRegisterIds: string[],
+  entityName: string,
+): string {
+  const params = new URLSearchParams({
+    format,
+    scope,
+    entityName: entityName.trim(),
+  });
+
+  if (scope !== "all") {
+    params.set("registerIds", selectedRegisterIds.join(","));
+  }
+
+  return `/api/asset-register/export?${params.toString()}`;
+}
+
+function registerExportSearchText(register: AssetRegisterSummary): string {
+  return [
+    register.businessName,
+    register.email,
+    register.phone,
+    register.addressLine1,
+    `${register.assetCount} assets`,
+    money(register.totalValue),
+    money(register.totalReplacementPrice),
+  ]
+    .join(" ")
+    .toLowerCase();
+}
+
+function matchesExportRegisterSearch(register: AssetRegisterSummary, searchTerm: string): boolean {
+  const normalizedSearch = searchTerm.trim().toLowerCase();
+  return !normalizedSearch || registerExportSearchText(register).includes(normalizedSearch);
 }
 
 type RegisterLogoBlockProps = {
@@ -537,6 +631,13 @@ export default function AssetRegistersClient() {
   const [removingRegisterId, setRemovingRegisterId] = useState<string | null>(
     null,
   );
+  const [exportStep, setExportStep] = useState<ExportFlowStep>("closed");
+  const [exportScope, setExportScope] = useState<ExportScope>("all");
+  const [exportFormat, setExportFormat] = useState<ExportFormat>("pdf");
+  const [exportEntityName, setExportEntityName] = useState("");
+  const [exportRegisterSearch, setExportRegisterSearch] = useState("");
+  const [selectedExportRegisterIds, setSelectedExportRegisterIds] = useState<string[]>([]);
+  const [isExporting, setIsExporting] = useState(false);
 
   const managedRegister = useMemo(
     () =>
@@ -557,6 +658,37 @@ export default function AssetRegistersClient() {
       ),
     [registerSearchTerm, registers],
   );
+  const exportPickerRegisters = useMemo(
+    () =>
+      registers.filter((register) =>
+        matchesExportRegisterSearch(register, exportRegisterSearch),
+      ),
+    [exportRegisterSearch, registers],
+  );
+  const selectedExportRegisters = useMemo(
+    () =>
+      selectedExportRegisterIds
+        .map((registerId) => registers.find((register) => register.id === registerId) ?? null)
+        .filter((register): register is AssetRegisterSummary => Boolean(register)),
+    [registers, selectedExportRegisterIds],
+  );
+  const selectedExportRegisterCount = selectedExportRegisterIds.length;
+  const isExportFlowOpen = exportStep !== "closed";
+  const isCombinedSelectionValid = exportScope === "combined" && selectedExportRegisterCount >= 2;
+  const exportTitle = exportStep === "choice"
+    ? "Download Asset Registers"
+    : exportStep === "single-picker"
+      ? "Choose Asset Register"
+      : exportStep === "combined-picker"
+        ? "Combine Asset Registers"
+        : "Export Asset Registers";
+  const exportIntro = exportStep === "choice"
+    ? "Choose whether to export all registers, one register, or a selected combined set."
+    : exportStep === "single-picker"
+      ? "Select the saved asset register to download."
+      : exportStep === "combined-picker"
+        ? "Select at least two asset registers to combine into one export."
+        : "Confirm the report name and choose the export format.";
   const deleteMoveTargets = useMemo(
     () =>
       deleteCandidateRegister
@@ -569,7 +701,8 @@ export default function AssetRegistersClient() {
   const isBlockingModalOpen =
     isCreateModalOpen ||
     Boolean(managedRegister) ||
-    Boolean(deleteCandidateRegister);
+    Boolean(deleteCandidateRegister) ||
+    isExportFlowOpen;
 
   async function refreshRegisters(
     showLoading = false,
@@ -643,6 +776,10 @@ export default function AssetRegistersClient() {
         if (deleteCandidateRegister && !removingRegisterId) {
           closeDeleteRegisterDialog();
         }
+
+        if (isExportFlowOpen && !isExporting) {
+          closeExportFlow();
+        }
       }
     };
 
@@ -658,6 +795,8 @@ export default function AssetRegistersClient() {
     isBlockingModalOpen,
     isCreateModalOpen,
     isCreating,
+    isExportFlowOpen,
+    isExporting,
     isSavingDetails,
     managedRegister,
     movingAssetId,
@@ -768,6 +907,159 @@ export default function AssetRegistersClient() {
     setDeleteCandidateRegister(null);
     setDeleteTargetRegisterId("");
     setOpenTargetDropdownId(null);
+  }
+
+  function openExportChoiceModal() {
+    setOpenTargetDropdownId(null);
+    setExportScope("all");
+    setExportFormat("pdf");
+    setExportEntityName(buildDefaultEntityName("all", registers));
+    setSelectedExportRegisterIds([]);
+    setExportRegisterSearch("");
+    setExportStep("choice");
+  }
+
+  function closeExportFlow() {
+    if (isExporting) return;
+    setExportStep("closed");
+    setExportScope("all");
+    setExportFormat("pdf");
+    setExportEntityName("");
+    setExportRegisterSearch("");
+    setSelectedExportRegisterIds([]);
+  }
+
+  function openAllRegistersExport() {
+    setExportScope("all");
+    setSelectedExportRegisterIds([]);
+    setExportRegisterSearch("");
+    setExportEntityName(buildDefaultEntityName("all", registers));
+    setExportStep("format");
+  }
+
+  function openSingleRegisterPicker() {
+    setExportScope("single");
+    setSelectedExportRegisterIds([]);
+    setExportRegisterSearch("");
+    setExportStep("single-picker");
+  }
+
+  function openCombinedRegisterPicker() {
+    setExportScope("combined");
+    setSelectedExportRegisterIds([]);
+    setExportRegisterSearch("");
+    setExportStep("combined-picker");
+  }
+
+  function selectSingleRegisterForExport(register: AssetRegisterSummary) {
+    setExportScope("single");
+    setSelectedExportRegisterIds([register.id]);
+    setExportEntityName(buildDefaultEntityName("single", [register]));
+    setExportStep("format");
+  }
+
+  function toggleCombinedRegister(registerId: string) {
+    setSelectedExportRegisterIds((current) =>
+      current.includes(registerId)
+        ? current.filter((id) => id !== registerId)
+        : [...current, registerId],
+    );
+  }
+
+  function selectAllVisibleCombinedRegisters() {
+    setSelectedExportRegisterIds((current) =>
+      Array.from(new Set([...current, ...exportPickerRegisters.map((register) => register.id)])),
+    );
+  }
+
+  function continueCombinedExport() {
+    if (!isCombinedSelectionValid) {
+      setNotice({ tone: "error", message: "Select at least two asset registers to combine." });
+      return;
+    }
+
+    setExportEntityName(buildDefaultEntityName("combined", selectedExportRegisters));
+    setExportStep("format");
+  }
+
+  function goBackInExportFlow() {
+    if (isExporting) return;
+
+    if (exportStep === "format") {
+      setExportStep(exportScope === "single" ? "single-picker" : exportScope === "combined" ? "combined-picker" : "choice");
+      return;
+    }
+
+    if (exportStep === "single-picker" || exportStep === "combined-picker") {
+      setExportStep("choice");
+    }
+  }
+
+  async function handleExportDownload() {
+    if (isExporting) return;
+
+    const selectedIds = exportScope === "all" ? [] : selectedExportRegisterIds;
+    const entityName = exportEntityName.trim() || buildDefaultEntityName(exportScope, selectedExportRegisters);
+
+    if (exportScope === "single" && selectedIds.length !== 1) {
+      setNotice({ tone: "error", message: "Choose one asset register to download." });
+      return;
+    }
+
+    if (exportScope === "combined" && selectedIds.length < 2) {
+      setNotice({ tone: "error", message: "Select at least two asset registers to combine." });
+      return;
+    }
+
+    setIsExporting(true);
+
+    try {
+      const response = await fetch(buildExportUrl(exportFormat, exportScope, selectedIds, entityName), {
+        cache: "no-store",
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const payload = await readJsonPayload(response);
+        throw new Error(extractErrorMessage(payload, "Failed to export asset registers."));
+      }
+
+      const blob = await response.blob();
+      const date = new Date().toISOString().slice(0, 10);
+      const fallbackName = `aim4price-asset-registers-${slugFallback(entityName)}-${date}.${exportFormat}`;
+      const fileName = parseDownloadFileName(response, fallbackName);
+
+      if (exportFormat === "pdf") {
+        const objectUrl = window.URL.createObjectURL(blob);
+        const opened = window.open(objectUrl, "_blank", "noopener,noreferrer");
+
+        if (!opened) {
+          downloadBlob(blob, fileName);
+          window.URL.revokeObjectURL(objectUrl);
+        } else {
+          window.setTimeout(() => window.URL.revokeObjectURL(objectUrl), 60_000);
+        }
+
+        setNotice({ tone: "success", message: "Asset registers PDF opened." });
+      } else {
+        downloadBlob(blob, fileName);
+        setNotice({ tone: "success", message: "Asset registers XLSX downloaded." });
+      }
+
+      setExportStep("closed");
+      setExportScope("all");
+      setExportFormat("pdf");
+      setExportEntityName("");
+      setExportRegisterSearch("");
+      setSelectedExportRegisterIds([]);
+    } catch (error) {
+      setNotice({
+        tone: "error",
+        message: error instanceof Error ? error.message : "Failed to export asset registers.",
+      });
+    } finally {
+      setIsExporting(false);
+    }
   }
 
   async function uploadRegisterLogoFiles(registerId: string, files: File[]): Promise<RegisterLogoUploadResult> {
@@ -1210,6 +1502,16 @@ export default function AssetRegistersClient() {
                   <PlusIcon className={styles.buttonIcon} />
                   <span>Add Asset Register</span>
                 </button>
+
+                <button
+                  type="button"
+                  className={`${styles.primaryButton} ${styles.toolbarPrimaryButton} ${styles.topDownloadButton}`}
+                  onClick={openExportChoiceModal}
+                  disabled={isLoading || !registers.length}
+                >
+                  <DownloadIcon className={styles.buttonIcon} />
+                  <span>Download</span>
+                </button>
               </div>
             </div>
 
@@ -1342,6 +1644,352 @@ export default function AssetRegistersClient() {
           </section>
         </section>
       </main>
+
+      {isExportFlowOpen ? (
+        <div
+          className={`${styles.modalOverlay} ${styles.exportFlowOverlay}`}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="export-registers-title"
+        >
+          <section
+            className={`${styles.modalCard} ${styles.exportFlowModal} ${
+              exportStep === "single-picker" || exportStep === "combined-picker"
+                ? styles.exportPickerModal
+                : ""
+            }`}
+          >
+            <div className={styles.modalHeader}>
+              <div>
+                <h2 id="export-registers-title">{exportTitle}</h2>
+                <p className={styles.modalIntro}>{exportIntro}</p>
+              </div>
+              <button
+                type="button"
+                className={styles.closeButton}
+                onClick={closeExportFlow}
+                disabled={isExporting}
+                aria-label="Close download asset registers modal"
+              >
+                ×
+              </button>
+            </div>
+
+            {exportStep === "choice" ? (
+              <>
+                <div className={`${styles.modalBody} ${styles.exportFlowBody}`}>
+                  <div className={styles.exportChoiceGrid}>
+                    <button
+                      type="button"
+                      className={styles.exportChoiceOption}
+                      onClick={openAllRegistersExport}
+                      disabled={isExporting || !registers.length}
+                    >
+                      <span className={styles.exportChoiceGraphic}>
+                        <DownloadIcon className={styles.exportChoiceIcon} />
+                      </span>
+                      <span className={styles.exportChoiceTitleBlock}>
+                        <strong>Download All Asset Registers</strong>
+                        <small>Export every asset register saved on this owner account.</small>
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      className={styles.exportChoiceOption}
+                      onClick={openSingleRegisterPicker}
+                      disabled={isExporting || !registers.length}
+                    >
+                      <span className={styles.exportChoiceGraphic}>
+                        <OpenIcon className={styles.exportChoiceIcon} />
+                      </span>
+                      <span className={styles.exportChoiceTitleBlock}>
+                        <strong>Download a specific Asset Register</strong>
+                        <small>Choose one register and export only its saved assets.</small>
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      className={styles.exportChoiceOption}
+                      onClick={openCombinedRegisterPicker}
+                      disabled={isExporting || registers.length < 2}
+                    >
+                      <span className={styles.exportChoiceGraphic}>
+                        <PlusIcon className={styles.exportChoiceIcon} />
+                      </span>
+                      <span className={styles.exportChoiceTitleBlock}>
+                        <strong>Combine specific Asset Registers</strong>
+                        <small>Select two or more registers and combine them into one export.</small>
+                      </span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className={`${styles.modalFooter} ${styles.exportModalFooter}`}>
+                  <button
+                    type="button"
+                    className={styles.secondaryButton}
+                    onClick={closeExportFlow}
+                    disabled={isExporting}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </>
+            ) : null}
+
+            {exportStep === "single-picker" || exportStep === "combined-picker" ? (
+              <>
+                <div className={`${styles.modalBody} ${styles.exportFlowBody} ${styles.registerPickerBody}`}>
+                  <div className={styles.registerPickerToolbar}>
+                    <label className={styles.exportSearchWrap}>
+                      <SearchIcon className={styles.searchIcon} />
+                      <input
+                        value={exportRegisterSearch}
+                        onChange={(event) => setExportRegisterSearch(event.target.value)}
+                        placeholder="Search asset registers..."
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      className={styles.secondaryButton}
+                      onClick={() => setExportRegisterSearch("")}
+                      disabled={!exportRegisterSearch.trim() || isExporting}
+                    >
+                      Clear
+                    </button>
+                  </div>
+
+                  {exportStep === "combined-picker" ? (
+                    <div className={styles.registerPickerQuickActions}>
+                      <span className={styles.selectedCount}>
+                        {selectedExportRegisterCount} selected
+                      </span>
+                      <button
+                        type="button"
+                        className={styles.secondaryButton}
+                        onClick={selectAllVisibleCombinedRegisters}
+                        disabled={!exportPickerRegisters.length || isExporting}
+                      >
+                        Select all visible
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.secondaryButton}
+                        onClick={() => setSelectedExportRegisterIds([])}
+                        disabled={!selectedExportRegisterCount || isExporting}
+                      >
+                        Clear selected
+                      </button>
+                    </div>
+                  ) : null}
+
+                  <div className={styles.registerPickerList}>
+                    {exportPickerRegisters.length ? (
+                      exportPickerRegisters.map((register) => {
+                        const isSelected = selectedExportRegisterIds.includes(register.id);
+
+                        return (
+                          <button
+                            key={register.id}
+                            type="button"
+                            className={`${styles.registerPickerRow} ${
+                              isSelected ? styles.registerPickerRowSelected : ""
+                            }`}
+                            onClick={() =>
+                              exportStep === "single-picker"
+                                ? selectSingleRegisterForExport(register)
+                                : toggleCombinedRegister(register.id)
+                            }
+                            aria-pressed={exportStep === "combined-picker" ? isSelected : undefined}
+                            disabled={isExporting}
+                          >
+                            {exportStep === "combined-picker" ? (
+                              <span className={styles.registerPickerCheckbox} aria-hidden="true">
+                                {isSelected ? "✓" : ""}
+                              </span>
+                            ) : null}
+
+                            <span className={styles.registerPickerInfo}>
+                              <strong>{register.businessName}</strong>
+                              <small>{contactLine(register)}</small>
+                              <small>
+                                {register.assetCount} asset{register.assetCount === 1 ? "" : "s"}
+                              </small>
+                            </span>
+
+                            <span className={styles.registerPickerValue}>
+                              <strong>{money(register.totalValue)}</strong>
+                              <small>register value</small>
+                              <strong>{money(register.totalReplacementPrice)}</strong>
+                              <small>replacement value</small>
+                            </span>
+                          </button>
+                        );
+                      })
+                    ) : (
+                      <div className={styles.registerPickerNoResults}>
+                        <strong>No asset registers match the search.</strong>
+                        <button
+                          type="button"
+                          className={styles.secondaryButton}
+                          onClick={() => setExportRegisterSearch("")}
+                          disabled={isExporting}
+                        >
+                          Clear search
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {exportStep === "combined-picker" && selectedExportRegisterCount > 0 && selectedExportRegisterCount < 2 ? (
+                    <p className={styles.exportValidation}>
+                      Select at least two asset registers before continuing.
+                    </p>
+                  ) : null}
+                </div>
+
+                <div className={`${styles.modalFooter} ${styles.exportModalFooter}`}>
+                  <button
+                    type="button"
+                    className={styles.secondaryButton}
+                    onClick={goBackInExportFlow}
+                    disabled={isExporting}
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.secondaryButton}
+                    onClick={closeExportFlow}
+                    disabled={isExporting}
+                  >
+                    Cancel
+                  </button>
+                  {exportStep === "combined-picker" ? (
+                    <button
+                      type="button"
+                      className={styles.primaryButton}
+                      onClick={continueCombinedExport}
+                      disabled={!isCombinedSelectionValid || isExporting}
+                    >
+                      Next
+                    </button>
+                  ) : null}
+                </div>
+              </>
+            ) : null}
+
+            {exportStep === "format" ? (
+              <>
+                <div className={`${styles.modalBody} ${styles.exportSetupBody}`}>
+                  <label className={`${styles.field} ${styles.exportNameField}`}>
+                    <span>Entity / report name</span>
+                    <input
+                      value={exportEntityName}
+                      onChange={(event) => setExportEntityName(event.target.value)}
+                      placeholder="Enter the entity or report name"
+                      disabled={isExporting}
+                    />
+                  </label>
+
+                  <div className={styles.exportScopeSummary}>
+                    <strong>Included asset registers</strong>
+                    <span>
+                      {exportScope === "all"
+                        ? `${registers.length} saved asset register${registers.length === 1 ? "" : "s"}`
+                        : selectedExportRegisters
+                            .map((register) => register.businessName)
+                            .join(", ")}
+                    </span>
+                  </div>
+
+                  <div className={styles.exportFormatGrid}>
+                    <button
+                      type="button"
+                      className={`${styles.exportOption} ${
+                        exportFormat === "pdf" ? styles.exportOptionActive : ""
+                      }`}
+                      onClick={() => setExportFormat("pdf")}
+                      disabled={isExporting}
+                    >
+                      <span className={styles.exportGraphic}>
+                        <img
+                          src="/brand/pdf.png"
+                          alt=""
+                          className={styles.exportGraphicImage}
+                        />
+                      </span>
+                      <span className={styles.exportOptionTitleBlock}>
+                        <strong>PDF report</strong>
+                        <small>
+                          Choose a clear PDF report for clients, banks or insurance partners.
+                        </small>
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      className={`${styles.exportOption} ${
+                        exportFormat === "xlsx" ? styles.exportOptionActive : ""
+                      }`}
+                      onClick={() => setExportFormat("xlsx")}
+                      disabled={isExporting}
+                    >
+                      <span className={styles.exportGraphic}>
+                        <img
+                          src="/brand/sheet.png"
+                          alt=""
+                          className={styles.exportGraphicImage}
+                        />
+                      </span>
+                      <span className={styles.exportOptionTitleBlock}>
+                        <strong>XLSX workbook</strong>
+                        <small>Download all register rows in an Excel-ready workbook.</small>
+                      </span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className={`${styles.modalFooter} ${styles.exportModalFooter}`}>
+                  <button
+                    type="button"
+                    className={styles.secondaryButton}
+                    onClick={goBackInExportFlow}
+                    disabled={isExporting}
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.secondaryButton}
+                    onClick={closeExportFlow}
+                    disabled={isExporting}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.primaryButton}
+                    onClick={() => void handleExportDownload()}
+                    disabled={isExporting || !exportEntityName.trim()}
+                  >
+                    <DownloadIcon className={styles.buttonIcon} />
+                    <span>
+                      {isExporting
+                        ? "Preparing export..."
+                        : exportFormat === "pdf"
+                          ? "Open PDF report"
+                          : "Download XLSX"}
+                    </span>
+                  </button>
+                </div>
+              </>
+            ) : null}
+          </section>
+        </div>
+      ) : null}
 
       {managedRegister ? (
         <div

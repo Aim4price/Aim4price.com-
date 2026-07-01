@@ -2710,3 +2710,537 @@
     height: 0;
   }
 }
+
+/* === Asset registers collection download/export flow === */
+.toolbar {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.topDownloadButton {
+  color: #ffffff;
+  background: linear-gradient(180deg, #197454 0%, #0f5840 100%);
+  border-color: #0f6248;
+  box-shadow:
+    0 14px 26px rgba(25, 116, 84, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.topDownloadButton:hover:not(:disabled) {
+  color: #ffffff;
+  background: linear-gradient(180deg, #218462 0%, #0b4b37 100%);
+  border-color: #0b4b37;
+  box-shadow:
+    0 18px 32px rgba(25, 116, 84, 0.26),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+
+.exportFlowOverlay {
+  z-index: 1200;
+  padding: clamp(1rem, 2vw, 1.75rem);
+  background: rgba(8, 19, 23, 0.58);
+  backdrop-filter: blur(12px) saturate(120%);
+}
+
+.exportFlowModal {
+  width: min(1050px, 100%);
+  max-height: min(88dvh, 54rem);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  gap: 0;
+  padding: 0;
+  border: 1px solid rgba(193, 211, 218, 0.98);
+  border-radius: 1.75rem;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(25, 116, 84, 0.07), rgba(25, 116, 84, 0) 34%),
+    rgba(255, 255, 255, 0.99);
+  box-shadow:
+    0 34px 88px rgba(5, 17, 20, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+}
+
+.exportPickerModal {
+  width: min(1180px, 100%);
+  max-height: min(90dvh, 58rem);
+}
+
+.exportFlowModal .modalHeader {
+  padding: clamp(1.35rem, 2.4vw, 2rem) clamp(1.35rem, 2.6vw, 2rem) 1rem;
+  border-bottom: 1px solid rgba(216, 225, 234, 0.96);
+}
+
+.exportFlowModal .modalHeader h2 {
+  margin: 0;
+  color: #073b30;
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
+  font-size: clamp(1.9rem, 3vw, 2.75rem);
+  font-weight: 900;
+  line-height: 0.98;
+  letter-spacing: -0.055em;
+}
+
+.modalBody,
+.exportFlowBody,
+.exportSetupBody {
+  min-height: 0;
+  padding: clamp(1.1rem, 2.2vw, 1.55rem) clamp(1.35rem, 2.6vw, 2rem);
+  overflow-y: auto;
+}
+
+.exportFlowBody,
+.exportSetupBody,
+.registerPickerList {
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(25, 116, 84, 0.78) rgba(239, 246, 243, 0.9);
+}
+
+.exportFlowBody::-webkit-scrollbar,
+.exportSetupBody::-webkit-scrollbar,
+.registerPickerList::-webkit-scrollbar {
+  width: 0.72rem;
+}
+
+.exportFlowBody::-webkit-scrollbar-track,
+.exportSetupBody::-webkit-scrollbar-track,
+.registerPickerList::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: rgba(239, 246, 243, 0.9);
+}
+
+.exportFlowBody::-webkit-scrollbar-thumb,
+.exportSetupBody::-webkit-scrollbar-thumb,
+.registerPickerList::-webkit-scrollbar-thumb {
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #24946d 0%, #197454 55%, #0f5840 100%);
+  background-clip: padding-box;
+}
+
+.exportChoiceGrid,
+.exportFormatGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.exportChoiceGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.exportChoiceOption,
+.exportOption {
+  width: 100%;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 1rem;
+  min-height: 7rem;
+  padding: 1.1rem 1.15rem;
+  border: 1px solid rgba(196, 217, 207, 0.98);
+  border-radius: 1.25rem;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(25, 116, 84, 0.055), rgba(25, 116, 84, 0) 48%),
+    linear-gradient(180deg, #ffffff 0%, #f7fbfa 100%);
+  color: #10382f;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  box-shadow:
+    0 12px 26px rgba(16, 36, 40, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease,
+    border-color 160ms ease;
+}
+
+.exportChoiceOption:hover:not(:disabled),
+.exportOption:hover:not(:disabled),
+.exportOptionActive {
+  border-color: rgba(25, 116, 84, 0.38);
+  background:
+    radial-gradient(circle at 0% 0%, rgba(25, 116, 84, 0.10), rgba(25, 116, 84, 0) 48%),
+    linear-gradient(180deg, #ffffff 0%, #eef9f4 100%);
+  box-shadow:
+    0 16px 34px rgba(25, 116, 84, 0.11),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+  transform: translateY(-1px);
+}
+
+.exportChoiceOption:disabled,
+.exportOption:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+  transform: none;
+}
+
+.exportChoiceGraphic,
+.exportGraphic {
+  width: 4.1rem;
+  height: 4.1rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(207, 220, 228, 0.98);
+  border-radius: 1.05rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f3f8f7 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 1);
+}
+
+.exportChoiceIcon {
+  width: 1.75rem;
+  height: 1.75rem;
+  color: #197454;
+}
+
+.exportGraphicImage {
+  width: 2.05rem;
+  height: 2.05rem;
+  object-fit: contain;
+}
+
+.exportChoiceTitleBlock,
+.exportOptionTitleBlock,
+.registerPickerInfo,
+.registerPickerValue,
+.exportScopeSummary {
+  min-width: 0;
+  display: grid;
+  gap: 0.24rem;
+}
+
+.exportChoiceTitleBlock strong,
+.exportOptionTitleBlock strong {
+  color: #073b30;
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+}
+
+.exportChoiceTitleBlock small,
+.exportOptionTitleBlock small,
+.exportScopeSummary span {
+  color: #607183;
+  font-size: 0.92rem;
+  font-weight: 650;
+  line-height: 1.42;
+}
+
+.registerPickerBody {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  overflow: hidden;
+}
+
+.registerPickerToolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.8rem;
+  align-items: center;
+}
+
+.exportSearchWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 3.4rem;
+  padding: 0 0.85rem 0 1rem;
+  border: 1px solid rgba(194, 211, 224, 0.98);
+  border-radius: 1.05rem;
+  background: #ffffff;
+  box-shadow:
+    0 8px 18px rgba(30, 56, 66, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.exportSearchWrap:focus-within {
+  border-color: rgba(25, 116, 84, 0.42);
+  box-shadow:
+    0 0 0 4px rgba(25, 116, 84, 0.12),
+    0 10px 22px rgba(30, 56, 66, 0.055);
+}
+
+.exportSearchWrap input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #1f313a;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 750;
+}
+
+.exportSearchWrap input::placeholder {
+  color: #7d8a98;
+  font-weight: 750;
+}
+
+.registerPickerQuickActions {
+  display: grid;
+  grid-template-columns: minmax(9rem, auto) auto auto;
+  align-items: center;
+  justify-content: end;
+  gap: 0.7rem;
+}
+
+.selectedCount {
+  justify-self: start;
+  padding: 0.72rem 0.9rem;
+  border: 1px solid rgba(190, 226, 207, 0.95);
+  border-radius: 999px;
+  color: #0f5840;
+  background: #eef9f4;
+  font-size: 0.9rem;
+  font-weight: 900;
+}
+
+.registerPickerList {
+  flex: 1 1 auto;
+  min-height: 18rem;
+  max-height: min(58dvh, 32rem);
+  display: grid;
+  align-content: start;
+  gap: 0.72rem;
+  overflow-y: auto;
+  padding-right: 0.35rem;
+}
+
+.registerPickerRow {
+  width: 100%;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.95rem 1rem;
+  border: 1px solid rgba(202, 218, 229, 0.98);
+  border-radius: 1.05rem;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdfd 100%);
+  color: #10382f;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  box-shadow:
+    0 8px 18px rgba(16, 36, 40, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease,
+    border-color 160ms ease;
+}
+
+.registerPickerRow:has(.registerPickerCheckbox) {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.registerPickerRow:hover:not(:disabled),
+.registerPickerRowSelected {
+  border-color: rgba(25, 116, 84, 0.42);
+  background: linear-gradient(180deg, #ffffff 0%, #eef9f4 100%);
+  box-shadow:
+    0 12px 26px rgba(25, 116, 84, 0.11),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+  transform: translateY(-1px);
+}
+
+.registerPickerRow:disabled {
+  cursor: not-allowed;
+  opacity: 0.64;
+  transform: none;
+}
+
+.registerPickerCheckbox {
+  width: 1.75rem;
+  height: 1.75rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(25, 116, 84, 0.38);
+  border-radius: 0.55rem;
+  color: #ffffff;
+  background: #ffffff;
+  font-size: 1rem;
+  font-weight: 950;
+}
+
+.registerPickerRowSelected .registerPickerCheckbox {
+  background: linear-gradient(180deg, #197454 0%, #0f5840 100%);
+  border-color: #0f6248;
+}
+
+.registerPickerInfo strong {
+  color: #073b30;
+  font-size: 1.04rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.registerPickerInfo small,
+.registerPickerValue small {
+  color: #607183;
+  font-size: 0.86rem;
+  font-weight: 720;
+  line-height: 1.3;
+}
+
+.registerPickerValue {
+  justify-items: end;
+  text-align: right;
+}
+
+.registerPickerValue strong {
+  color: #073b30;
+  font-size: 1.02rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.registerPickerNoResults {
+  min-height: 12rem;
+  display: grid;
+  place-items: center;
+  gap: 0.85rem;
+  padding: 1.25rem;
+  border: 1px dashed rgba(193, 211, 218, 0.98);
+  border-radius: 1.1rem;
+  color: #607183;
+  background: #fbfdfd;
+  text-align: center;
+}
+
+.exportValidation {
+  margin: 0;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid rgba(222, 176, 78, 0.45);
+  border-radius: 0.9rem;
+  color: #7a530c;
+  background: #fff8e8;
+  font-size: 0.92rem;
+  font-weight: 820;
+}
+
+.exportNameField {
+  margin: 0;
+}
+
+.exportNameField input {
+  width: 100%;
+}
+
+.exportScopeSummary {
+  margin: 1rem 0;
+  padding: 0.95rem 1rem;
+  border: 1px solid rgba(202, 218, 229, 0.95);
+  border-radius: 1.05rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f7fbfa 100%);
+}
+
+.exportScopeSummary strong {
+  color: #073b30;
+  font-size: 0.86rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.exportModalFooter {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+  padding: 1rem clamp(1.35rem, 2.6vw, 2rem) clamp(1.15rem, 2vw, 1.45rem);
+  border-top: 1px solid rgba(216, 225, 234, 0.96);
+  background: linear-gradient(180deg, rgba(247, 250, 252, 0.65) 0%, rgba(242, 247, 246, 0.95) 100%);
+}
+
+.exportModalFooter > * {
+  width: auto;
+}
+
+.exportModalFooter .primaryButton,
+.exportModalFooter .secondaryButton {
+  min-height: 3.35rem;
+  border-radius: 1.05rem;
+}
+
+@media (max-width: 1180px) {
+  .exportChoiceGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 980px) {
+  .toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .toolbarPrimaryButton,
+  .topDownloadButton {
+    width: 100%;
+  }
+
+  .exportFormatGrid,
+  .registerPickerToolbar,
+  .registerPickerQuickActions {
+    grid-template-columns: 1fr;
+  }
+
+  .registerPickerQuickActions {
+    justify-content: stretch;
+  }
+
+  .selectedCount {
+    justify-self: stretch;
+    text-align: center;
+  }
+}
+
+@media (max-width: 760px) {
+  .exportFlowOverlay {
+    padding: 0.5rem;
+  }
+
+  .exportFlowModal,
+  .exportPickerModal {
+    max-height: calc(100dvh - 1rem);
+    border-radius: 1.35rem;
+  }
+
+  .exportChoiceOption,
+  .exportOption,
+  .registerPickerRow,
+  .registerPickerRow:has(.registerPickerCheckbox) {
+    grid-template-columns: 1fr;
+  }
+
+  .exportChoiceGraphic,
+  .exportGraphic {
+    width: 3.4rem;
+    height: 3.4rem;
+  }
+
+  .registerPickerValue {
+    justify-items: start;
+    text-align: left;
+  }
+
+  .registerPickerList {
+    min-height: 14rem;
+    padding-right: 0;
+  }
+
+  .exportModalFooter {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .exportModalFooter > * {
+    width: 100%;
+  }
+}
