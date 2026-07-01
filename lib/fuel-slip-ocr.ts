@@ -13,11 +13,18 @@ export type FuelSlipOcrResult = {
 
 type TesseractModule = typeof import('tesseract.js');
 type TesseractWorker = Awaited<ReturnType<TesseractModule['createWorker']>>;
+type SharpModule = typeof import('sharp');
+
+type OcrCandidate = {
+  label: string;
+  data: Buffer;
+};
 
 const SUPPORTED_IMAGE_TYPES = new Set(['image/jpeg', 'image/jpg', 'image/png', 'image/webp']);
 const SUPPORTED_IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
 const MAX_OCR_TEXT_LENGTH = 20000;
 const TESSERACT_LANGUAGE = 'eng';
+const ROTATION_ANGLES = [0, 90, 180, 270] as const;
 
 function cleanText(value: unknown): string {
   return String(value ?? '')
@@ -44,15 +51,34 @@ function imageMimeType(input: Pick<FuelSlipOcrInput, 'contentType' | 'fileName'>
   return '';
 }
 
-function maskDigits(value: string): string {
-  const digits = value.replace(/\D/g, '');
-  if (digits.length < 13 || digits.length > 19) return value;
-  const last4 = digits.slice(-4);
-  return `${'*'.repeat(Math.max(0, digits.length - 4))}${last4}`;
+function safeCardMask(last4: string): string {
+  return /^\d{4}$/.test(last4) ? `************${last4}` : '';
+}
+
+function extractLast4FromCardLikeValue(value: string): string {
+  const text = cleanText(value);
+  if (!text) return '';
+
+  const masked = /(?:\b\d{4,6}[\s-]*)?(?:[*xX]{2,}[\s-]*){1,4}(\d{4})\b/.exec(text);
+  if (masked) return masked[1];
+
+  const firstMasked = /\b\d{4,6}[\s-]*(?:[*xX]{2,}[\s-]*){1,3}(\d{4})\b/.exec(text);
+  if (firstMasked) return firstMasked[1];
+
+  const digits = text.replace(/\D/g, '');
+  return digits.length >= 13 && digits.length <= 19 ? digits.slice(-4) : '';
+}
+
+function maskCardLikeMatch(value: string): string {
+  const last4 = extractLast4FromCardLikeValue(value);
+  return last4 ? safeCardMask(last4) : value;
 }
 
 function maskSensitiveOcrText(value: string): string {
-  return String(value ?? '').replace(/\b(?:\d[\s-]?){13,19}\b/g, (match) => maskDigits(match));
+  return String(value ?? '')
+    .replace(/\b\d{4,6}[\s-]*(?:[*xX]{2,}[\s-]*){1,3}\d{4}\b/g, (match) => maskCardLikeMatch(match))
+    .replace(/\b(?:[*xX]{2,}[\s-]*){1,4}\d{4}\b/g, (match) => maskCardLikeMatch(match))
+    .replace(/\b(?:\d[\s-]?){13,19}\b/g, (match) => maskCardLikeMatch(match));
 }
 
 function normalizeOcrText(value: unknown): string {
@@ -107,6 +133,57 @@ async function createLocalTesseractWorker(tesseract: TesseractModule): Promise<T
   return worker;
 }
 
+async function buildPreprocessedOcrCandidates(input: FuelSlipOcrInput): Promise<OcrCandidate[]> {
+  let sharp: SharpModule;
+
+  try {
+    sharp = await import('sharp');
+  } catch {
+    return [{ label: 'original', data: input.data }];
+  }
+
+  const candidates: OcrCandidate[] = [];
+
+  try {
+    const base = sharp.default(input.data, { failOn: 'none', limitInputPixels: false })
+      .rotate()
+      .grayscale()
+      .normalize()
+      .sharpen({ sigma: 1.1 });
+
+    for (const angle of ROTATION_ANGLES) {
+      const data = await base
+        .clone()
+        .rotate(angle)
+        .png({ compressionLevel: 9 })
+        .toBuffer();
+
+      candidates.push({ label: `preprocessed-${angle}`, data });
+    }
+  } catch {
+    return [{ label: 'original', data: input.data }];
+  }
+
+  return candidates.length ? candidates : [{ label: 'original', data: input.data }];
+}
+
+function scoreFuelSlipOcrText(text: string, confidence: number | null): number {
+  const normalized = text.toLowerCase();
+  if (!normalized.trim()) return 0;
+
+  let score = Math.min(25, Math.floor(normalized.length / 40));
+  if (confidence !== null && Number.isFinite(confidence)) score += Math.max(0, Math.min(20, confidence / 5));
+  if (/\b(?:litres?|liters?|ltrs?)\s*[:=]?\s*\d|\b\d[\d,.]*\s*(?:litres?|liters?)\b/.test(normalized)) score += 22;
+  if (/\b(?:diesel|excellium|unleaded|petrol|d\s*50)\b/.test(normalized)) score += 14;
+  if (/@\s*(?:zar\s*)?(?:r\s*)?\d|per\s*(?:litre|liter|l)/.test(normalized)) score += 12;
+  if (/\b(?:total\s+amount|total|amnt|amount|purchase)\b/.test(normalized)) score += 12;
+  if (/(?:zar\s*)?r\s*\d[\d\s,.]*(?:[,.]\d{2})/.test(normalized)) score += 8;
+  if (/\b(?:20\d{2}[-/.]\d{1,2}[-/.]\d{1,2}|\d{1,2}[-/.]\d{1,2}[-/.](?:20)?\d{2}|d\s*:\s*\d{1,2}[-/.]\d{1,2}[-/.]\d{2})\b/i.test(text)) score += 12;
+  if (/\b(?:engen|astron|total|courtenay|rainbow|bodorp|motors|garage|fuel)\b/.test(normalized)) score += 10;
+  if (/\*{4,}\d{4}\b|\bcard\b|\bpan\b/.test(normalized)) score += 6;
+  return score;
+}
+
 export async function extractFuelSlipImageText(input: FuelSlipOcrInput): Promise<FuelSlipOcrResult> {
   const mimeType = imageMimeType(input);
 
@@ -128,12 +205,31 @@ export async function extractFuelSlipImageText(input: FuelSlipOcrInput): Promise
 
   try {
     const tesseract = await import('tesseract.js');
+    const candidates = await buildPreprocessedOcrCandidates(input);
     worker = await createLocalTesseractWorker(tesseract);
 
-    const result = await worker.recognize(input.data, undefined, { text: true });
-    const rawText = normalizeOcrText(result.data.text);
+    let bestText = '';
+    let bestScore = -1;
+    let successfulAttempts = 0;
 
-    if (!rawText.trim()) {
+    for (const candidate of candidates) {
+      try {
+        const result = await worker.recognize(candidate.data, undefined, { text: true });
+        const rawText = normalizeOcrText(result.data.text);
+        const confidence = typeof result.data.confidence === 'number' ? result.data.confidence : null;
+        const score = scoreFuelSlipOcrText(rawText, confidence);
+        successfulAttempts += 1;
+
+        if (score > bestScore) {
+          bestText = rawText;
+          bestScore = score;
+        }
+      } catch {
+        // Continue with the remaining local rotations if one candidate fails.
+      }
+    }
+
+    if (!bestText.trim()) {
       return {
         rawText: '',
         warnings: ['Fuel slip photo saved, but local OCR did not return readable text. Complete the fields manually before saving.'],
@@ -141,8 +237,8 @@ export async function extractFuelSlipImageText(input: FuelSlipOcrInput): Promise
     }
 
     return {
-      rawText,
-      warnings: [],
+      rawText: bestText,
+      warnings: successfulAttempts > 0 ? [] : ['Fuel slip photo saved, but local OCR had trouble reading the photo. Review and complete the fields before saving.'],
     };
   } catch {
     return {

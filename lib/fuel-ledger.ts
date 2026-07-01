@@ -218,6 +218,7 @@ type FuelEventRow = {
   fs_document_file_url: string | null;
   fs_payment_method: string | null;
   fs_card_number_masked: string | null;
+  fs_card_last4: string | null;
   fs_extraction_status: string | null;
   fs_review_required: boolean | null;
   total_amount: string | number | null;
@@ -396,7 +397,7 @@ function hasSavedFuelAssetValuation(row: { valuation_run_id?: unknown; selected_
 }
 
 function roundLitres(value: number): number {
-  return Math.round(value * 100) / 100;
+  return Math.round(value * 1000) / 1000;
 }
 
 function normalizePositiveLitres(value: unknown): number {
@@ -499,43 +500,41 @@ function fuelSlipReviewStatusLabel(status: unknown, reviewRequired: unknown): st
   return 'Manual';
 }
 
-function maskPotentialCardNumber(value: unknown): { masked: string; last4: string } {
-  const text = asText(value);
-  if (!text) return { masked: '', last4: '' };
+function safeCardMask(last4: string): string {
+  return /^\d{4}$/.test(last4) ? `************${last4}` : '';
+}
+
+function extractLast4FromCardLikeValue(value: unknown): string {
+  const text = asText(value).slice(0, 160);
+  if (!text) return '';
+
+  const masked = /(?:\b\d{4,6}[\s-]*)?(?:[*xX]{2,}[\s-]*){1,4}(\d{4})\b/.exec(text);
+  if (masked) return masked[1];
+
+  const firstMasked = /\b\d{4,6}[\s-]*(?:[*xX]{2,}[\s-]*){1,3}(\d{4})\b/.exec(text);
+  if (firstMasked) return firstMasked[1];
 
   const digits = text.replace(/\D/g, '');
-  const last4 = digits.length >= 4 ? digits.slice(-4) : '';
+  if (digits.length >= 13 && digits.length <= 19) return digits.slice(-4);
+  if (/^\d{4}$/.test(digits)) return digits;
 
-  if (digits.length >= 13 && digits.length <= 19) {
-    return { masked: `${'*'.repeat(Math.max(0, digits.length - 4))}${last4}`, last4 };
-  }
-
-  if (/[xX*]{2,}/.test(text) && last4) {
-    return { masked: text.replace(/[0-9](?=(?:\D*\d){4})/g, '*').slice(0, 80), last4 };
-  }
-
-  if (last4 && /(?:card|visa|master|credit|debit)/i.test(text)) {
-    return { masked: `************${last4}`, last4 };
-  }
-
-  return { masked: '', last4: '' };
+  return '';
 }
 
 function normalizeMaskedCard(value: unknown, fallbackLast4: unknown): { masked: string; last4: string } {
-  const candidate = asText(value).slice(0, 80);
-  const maskedCandidate = maskPotentialCardNumber(candidate);
-  if (maskedCandidate.masked) return maskedCandidate;
-
   const fallbackDigits = asText(fallbackLast4).replace(/\D/g, '').slice(-4);
-  if (candidate && /[xX*]/.test(candidate)) {
-    return { masked: candidate.replace(/[0-9](?=(?:\D*\d){4})/g, '*'), last4: fallbackDigits || candidate.replace(/\D/g, '').slice(-4) };
-  }
+  const last4 = extractLast4FromCardLikeValue(value) || (/^\d{4}$/.test(fallbackDigits) ? fallbackDigits : '');
+  return { masked: safeCardMask(last4), last4 };
+}
 
-  if (fallbackDigits) {
-    return { masked: `************${fallbackDigits}`, last4: fallbackDigits };
-  }
+function formatCardEnding(value: unknown, fallbackLast4?: unknown): string {
+  const card = normalizeMaskedCard(value, fallbackLast4);
+  return card.last4 ? `Card ending ${card.last4}` : '';
+}
 
-  return { masked: '', last4: '' };
+function maskCardLikeMatch(value: string): string {
+  const last4 = extractLast4FromCardLikeValue(value);
+  return last4 ? safeCardMask(last4) : value;
 }
 
 function trimText(value: unknown, maxLength: number): string {
@@ -543,12 +542,10 @@ function trimText(value: unknown, maxLength: number): string {
 }
 
 function maskStoredFuelSlipRawText(value: string): string {
-  return value.replace(/\b(?:\d[\s-]?){13,19}\b/g, (match) => {
-    const digits = match.replace(/\D/g, '');
-    if (digits.length < 13 || digits.length > 19) return match;
-    const last4 = digits.slice(-4);
-    return `${'*'.repeat(Math.max(0, digits.length - 4))}${last4}`;
-  });
+  return String(value ?? '')
+    .replace(/\b\d{4,6}[\s-]*(?:[*xX]{2,}[\s-]*){1,3}\d{4}\b/g, (match) => maskCardLikeMatch(match))
+    .replace(/\b(?:[*xX]{2,}[\s-]*){1,4}\d{4}\b/g, (match) => maskCardLikeMatch(match))
+    .replace(/\b(?:\d[\s-]?){13,19}\b/g, (match) => maskCardLikeMatch(match));
 }
 
 function toDateOnly(value: unknown): string {
@@ -785,6 +782,7 @@ function mapFuelEventRow(row: FuelEventRow): FuelLedgerEvent {
   const isFuelSlip = sourceType === 'fuel_slip';
   const extractionStatus = isFuelSlip ? asText(row.fs_extraction_status) : '';
   const reviewRequired = isFuelSlip ? Boolean(row.fs_review_required) : false;
+  const card = normalizeMaskedCard(isFuelSlip ? row.fs_card_number_masked ?? row.card_number_masked : row.card_number_masked, isFuelSlip ? row.fs_card_last4 : null);
 
   return {
     id: asText(row.id),
@@ -806,7 +804,7 @@ function mapFuelEventRow(row: FuelEventRow): FuelLedgerEvent {
     totalAmount: isFuelSlip ? null : normalizeMoneyValue(row.total_amount),
     documentFileUrl: isFuelSlip ? asText(row.fs_document_file_url) || asText(row.document_file_url) : asText(row.document_file_url),
     paymentMethod: isFuelSlip ? asText(row.fs_payment_method) || asText(row.payment_method) : asText(row.payment_method),
-    cardNumberMasked: isFuelSlip ? asText(row.fs_card_number_masked) || asText(row.card_number_masked) : asText(row.card_number_masked),
+    cardNumberMasked: card.masked,
     assetId: asText(row.asset_register_item_id),
     assetTitle: asText(row.asset_title),
     assetPlateLabel: asText(row.asset_plate_label),
@@ -828,6 +826,8 @@ function mapFuelEventRow(row: FuelEventRow): FuelLedgerEvent {
 }
 
 function mapFuelSlipRow(row: FuelSlipRow): FuelSlipTransaction {
+  const card = normalizeMaskedCard(row.card_number_masked, row.card_last4);
+
   return {
     id: asText(row.id),
     userId: asText(row.user_id),
@@ -861,8 +861,8 @@ function mapFuelSlipRow(row: FuelSlipRow): FuelSlipTransaction {
     vatRate: normalizeRateValue(row.vat_rate),
     paymentMethod: asText(row.payment_method),
     cardType: asText(row.card_type),
-    cardNumberMasked: asText(row.card_number_masked),
-    cardLast4: asText(row.card_last4),
+    cardNumberMasked: card.masked,
+    cardLast4: card.last4,
     merchantNumber: asText(row.merchant_number),
     terminalNumber: asText(row.terminal_number),
     siteNumber: asText(row.site_number),
@@ -1005,6 +1005,7 @@ function fuelEventSelectSql(): string {
     fs.document_file_url as fs_document_file_url,
     fs.payment_method as fs_payment_method,
     fs.card_number_masked as fs_card_number_masked,
+    fs.card_last4 as fs_card_last4,
     fs.extraction_status as fs_extraction_status,
     fs.review_required as fs_review_required,
     e.total_amount,
@@ -1130,7 +1131,7 @@ export async function ensureFuelLedgerTables(): Promise<void> {
       add column if not exists work_area_text text,
       add column if not exists hours numeric(14,2),
       add column if not exists fuel_percent integer,
-      add column if not exists fuel_litres numeric(12,2),
+      add column if not exists fuel_litres numeric(12,3),
       add column if not exists fuel_storage_id uuid,
       add column if not exists fuel_storage_event_id uuid,
       add column if not exists condition text,
@@ -1246,9 +1247,9 @@ export async function ensureFuelLedgerTables(): Promise<void> {
       user_id text not null,
       name text not null,
       fuel_type text not null default 'diesel',
-      capacity_litres numeric(12,2),
-      current_litres numeric(12,2) not null default 0,
-      reorder_level_litres numeric(12,2),
+      capacity_litres numeric(12,3),
+      current_litres numeric(12,3) not null default 0,
+      reorder_level_litres numeric(12,3),
       location_label text,
       notes text,
       dipstick_note text,
@@ -1266,9 +1267,9 @@ export async function ensureFuelLedgerTables(): Promise<void> {
       add column if not exists user_id text,
       add column if not exists name text,
       add column if not exists fuel_type text not null default 'diesel',
-      add column if not exists capacity_litres numeric(12,2),
-      add column if not exists current_litres numeric(12,2) not null default 0,
-      add column if not exists reorder_level_litres numeric(12,2),
+      add column if not exists capacity_litres numeric(12,3),
+      add column if not exists current_litres numeric(12,3) not null default 0,
+      add column if not exists reorder_level_litres numeric(12,3),
       add column if not exists location_label text,
       add column if not exists notes text,
       add column if not exists dipstick_note text,
@@ -1313,9 +1314,9 @@ export async function ensureFuelLedgerTables(): Promise<void> {
       payment_method text,
       card_number_masked text,
       asset_register_item_id text,
-      litres numeric(12,2) not null default 0,
-      storage_level_before_litres numeric(12,2),
-      storage_level_after_litres numeric(12,2),
+      litres numeric(12,3) not null default 0,
+      storage_level_before_litres numeric(12,3),
+      storage_level_after_litres numeric(12,3),
       asset_fuel_percent_before integer,
       asset_fuel_percent_after integer,
       asset_usage_reading numeric(14,2),
@@ -1345,9 +1346,9 @@ export async function ensureFuelLedgerTables(): Promise<void> {
       add column if not exists payment_method text,
       add column if not exists card_number_masked text,
       add column if not exists asset_register_item_id text,
-      add column if not exists litres numeric(12,2) not null default 0,
-      add column if not exists storage_level_before_litres numeric(12,2),
-      add column if not exists storage_level_after_litres numeric(12,2),
+      add column if not exists litres numeric(12,3) not null default 0,
+      add column if not exists storage_level_before_litres numeric(12,3),
+      add column if not exists storage_level_after_litres numeric(12,3),
       add column if not exists asset_fuel_percent_before integer,
       add column if not exists asset_fuel_percent_after integer,
       add column if not exists asset_usage_reading numeric(14,2),
@@ -1408,7 +1409,7 @@ export async function ensureFuelLedgerTables(): Promise<void> {
       document_date date,
       document_time text,
       fuel_type text,
-      litres numeric(12,2) not null,
+      litres numeric(12,3) not null,
       price_per_litre numeric(14,4),
       total_amount numeric(14,2) not null,
       vat_amount numeric(14,2),
@@ -1453,7 +1454,7 @@ export async function ensureFuelLedgerTables(): Promise<void> {
       add column if not exists document_date date,
       add column if not exists document_time text,
       add column if not exists fuel_type text,
-      add column if not exists litres numeric(12,2),
+      add column if not exists litres numeric(12,3),
       add column if not exists price_per_litre numeric(14,4),
       add column if not exists total_amount numeric(14,2),
       add column if not exists vat_amount numeric(14,2),
@@ -1475,6 +1476,34 @@ export async function ensureFuelLedgerTables(): Promise<void> {
       add column if not exists extraction_warnings jsonb not null default '[]'::jsonb,
       add column if not exists created_at timestamptz not null default now(),
       add column if not exists updated_at timestamptz not null default now();
+
+    alter table if exists public.asset_scan_events
+      alter column fuel_litres type numeric(12,3) using fuel_litres::numeric(12,3);
+
+    alter table if exists public.fuel_storage_units
+      alter column capacity_litres type numeric(12,3) using capacity_litres::numeric(12,3),
+      alter column current_litres type numeric(12,3) using current_litres::numeric(12,3),
+      alter column reorder_level_litres type numeric(12,3) using reorder_level_litres::numeric(12,3);
+
+    alter table if exists public.fuel_storage_events
+      alter column litres type numeric(12,3) using litres::numeric(12,3),
+      alter column storage_level_before_litres type numeric(12,3) using storage_level_before_litres::numeric(12,3),
+      alter column storage_level_after_litres type numeric(12,3) using storage_level_after_litres::numeric(12,3);
+
+    alter table if exists public.fuel_slips
+      alter column litres type numeric(12,3) using litres::numeric(12,3);
+
+    update public.fuel_storage_events
+    set card_number_masked = '************' || right(regexp_replace(coalesce(card_number_masked, ''), '[^0-9]', '', 'g'), 4)
+    where card_number_masked is not null
+      and length(right(regexp_replace(card_number_masked, '[^0-9]', '', 'g'), 4)) = 4;
+
+    update public.fuel_slips
+    set
+      card_last4 = right(regexp_replace(coalesce(nullif(card_last4, ''), card_number_masked, ''), '[^0-9]', '', 'g'), 4),
+      card_number_masked = '************' || right(regexp_replace(coalesce(nullif(card_last4, ''), card_number_masked, ''), '[^0-9]', '', 'g'), 4)
+    where coalesce(card_last4, card_number_masked, '') <> ''
+      and length(right(regexp_replace(coalesce(nullif(card_last4, ''), card_number_masked, ''), '[^0-9]', '', 'g'), 4)) = 4;
 
     update public.fuel_slips
     set
@@ -1669,7 +1698,7 @@ function fuelSlipReportNote(slip: FuelSlipTransaction): string {
     slip.slipNumber ? `Slip: ${slip.slipNumber}` : '',
     slip.transactionNumber ? `Transaction: ${slip.transactionNumber}` : '',
     slip.paymentMethod ? `Payment: ${slip.paymentMethod}` : '',
-    slip.cardNumberMasked ? `Card: ${slip.cardNumberMasked}` : '',
+    formatCardEnding(slip.cardNumberMasked, slip.cardLast4),
     slip.documentFileUrl ? `Document: ${slip.documentFileUrl}` : '',
     `Review: ${fuelSlipReviewStatusLabel(slip.extractionStatus, slip.reviewRequired)}`,
   ].filter(Boolean);
@@ -2346,7 +2375,7 @@ export async function recordFuelStorageStock(
     const eventType: FuelStorageEventType = mode === 'stock_in' ? 'stock_in' : 'dip';
 
     if (storage.capacityLitres !== null && after > storage.capacityLitres + 0.001) {
-      throw new Error(`Storage refill exceeds tank capacity. Capacity is ${storage.capacityLitres.toLocaleString('en-ZA', { maximumFractionDigits: 2 })} L.`);
+      throw new Error(`Storage refill exceeds tank capacity. Capacity is ${storage.capacityLitres.toLocaleString('en-ZA', { maximumFractionDigits: 3 })} L.`);
     }
 
     const updated = await client.query<FuelStorageRow>(
@@ -2428,6 +2457,8 @@ async function insertFuelStorageEvent(
     cardNumberMasked?: string | null;
   },
 ): Promise<FuelLedgerEvent> {
+  const card = normalizeMaskedCard(input.cardNumberMasked, null);
+
   const inserted = await client.query<{ id: string }>(
     `
       insert into public.fuel_storage_events (
@@ -2474,7 +2505,7 @@ async function insertFuelStorageEvent(
       input.totalAmount ?? null,
       input.documentFileUrl ?? null,
       input.paymentMethod ?? null,
-      input.cardNumberMasked ?? null,
+      card.masked || null,
       input.assetId,
       input.litres,
       input.storageLevelBefore,
@@ -2679,7 +2710,7 @@ export async function recordFuelAssetIssue(
     const storageAfter = roundLitres(storageBefore - litres);
     const assetFuelPercentBefore = assetFuelPercentBeforeInput ?? normalizeFuelPercent(asset.fuel_percent);
     const noteText = asText(input.note);
-    const storageNote = `Fuel issued from ${storage.name}: ${litres.toLocaleString('en-ZA', { maximumFractionDigits: 2 })} litres.`;
+    const storageNote = `Fuel issued from ${storage.name}: ${litres.toLocaleString('en-ZA', { maximumFractionDigits: 3 })} litres.`;
     const eventNote = [storageNote, noteText].filter(Boolean).join('\n\n');
 
     await client.query(
@@ -2871,7 +2902,7 @@ function normalizeExtractionWarnings(value: unknown): string[] {
 function buildFuelSlipDescription(input: { fuelType: string; litres: number; pricePerLitre: number | null; totalAmount: number }): string {
   const parts = ['Fuel Slip'];
   if (input.fuelType) parts.push(input.fuelType);
-  parts.push(`${input.litres.toLocaleString('en-ZA', { maximumFractionDigits: 2 })} L`);
+  parts.push(`${input.litres.toLocaleString('en-ZA', { maximumFractionDigits: 3 })} L`);
   if (input.pricePerLitre !== null) parts.push(`R${input.pricePerLitre.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}/L`);
   parts.push(`R${input.totalAmount.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
   return parts.join(' · ');
@@ -3040,7 +3071,7 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
 
       const storageAfter = roundLitres(storage.currentLitres + litres);
       if (storage.capacityLitres !== null && storageAfter > storage.capacityLitres + 0.001) {
-        throw new Error(`Storage refill exceeds tank capacity. Capacity is ${storage.capacityLitres.toLocaleString('en-ZA', { maximumFractionDigits: 2 })} L.`);
+        throw new Error(`Storage refill exceeds tank capacity. Capacity is ${storage.capacityLitres.toLocaleString('en-ZA', { maximumFractionDigits: 3 })} L.`);
       }
     }
 
@@ -3225,7 +3256,7 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
         supplierName ? `Supplier: ${supplierName}` : '',
         fuelType ? `Fuel type: ${fuelType}` : '',
         paymentMethod ? `Payment: ${paymentMethod}` : '',
-        card.masked ? `Card: ${card.masked}` : '',
+        card.last4 ? `Card ending ${card.last4}` : '',
         documentFileUrl ? `Document: ${documentFileUrl}` : '',
       ].filter(Boolean);
 
