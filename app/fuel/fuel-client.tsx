@@ -738,7 +738,7 @@ function fuelSlipSearchText(slip: FuelSlipRecord): string {
     slip.transactionNumber,
     slip.fuelType,
     slip.paymentMethod,
-    slip.cardLast4 || cardLast4FromValue(slip.cardNumberMasked),
+    cardLast4FromValue(slip.cardLast4 || slip.cardNumberMasked),
     slip.assetTitle,
     slip.storageName,
     slip.originalFilename,
@@ -770,7 +770,7 @@ function getFuelSlipYearOptions(slips: FuelSlipRecord[]): string[] {
 }
 
 function csvCell(value: unknown): string {
-  const text = String(value ?? '').replace(/\r?\n/g, ' ').trim();
+  const text = sanitizeFuelSlipSensitiveText(value).replace(/\r?\n/g, ' ').trim();
   return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 
@@ -827,7 +827,7 @@ function buildFuelSlipCsv(slips: FuelSlipRecord[]): string {
     csvNumber(slip.vatRate),
     slip.paymentMethod,
     slip.cardType,
-    slip.cardLast4 || cardLast4FromValue(slip.cardNumberMasked),
+    cardLast4FromValue(slip.cardLast4 || slip.cardNumberMasked),
     slip.merchantNumber,
     slip.terminalNumber,
     slip.siteNumber,
@@ -1589,7 +1589,8 @@ export default function FuelClient() {
   }
 
   function handleFuelSlipCardLast4Change(value: string) {
-    const last4 = value.replace(/\D/g, '').slice(0, 4);
+    const digits = value.replace(/\D/g, '');
+    const last4 = digits.length > 4 ? digits.slice(-4) : digits.slice(0, 4);
     const masked = safeFuelSlipCardMask(last4);
     setFuelSlipDraft((current) => ({
       ...current,
