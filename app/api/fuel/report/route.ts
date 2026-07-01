@@ -1328,6 +1328,7 @@ export async function GET(request: NextRequest) {
   const year = parseReportYear(asText(params.get('year')));
   const month = year ? parseReportMonth(asText(params.get('month'))) : null;
   const format = parseReportFormat(asText(params.get('format')));
+  const includeFuelSlips = asText(params.get('includeFuelSlips')).toLowerCase() !== 'false';
   const dateRange = buildReportDateRange(year, month);
 
   try {
@@ -1337,6 +1338,7 @@ export async function GET(request: NextRequest) {
         storageId: storageId || undefined,
         fromIso: dateRange.fromIso,
         toIso: dateRange.toIso,
+        includeFuelSlips,
       }),
       storageId ? getFuelStorageById(session.user.id, storageId) : Promise.resolve(null),
     ]);
@@ -1363,13 +1365,17 @@ export async function GET(request: NextRequest) {
       timeStyle: 'short',
       timeZone: 'Africa/Johannesburg',
     }).format(new Date());
-    const storageName = storage ? storage.name : 'All storage units';
+    const storageName = storage ? storage.name : includeFuelSlips ? 'All storage units + slips' : 'All storage units';
     const storageFuelType = storage ? storage.fuelType.toUpperCase() : 'All fuel types';
-    const storageCode = storage ? storage.publicFuelStorageCode : 'All storage QR codes';
-    const title = storage ? `${storage.name} Fuel Report` : 'Fuel Ledger Report';
+    const storageCode = storage ? storage.publicFuelStorageCode : includeFuelSlips ? 'All storage QR codes + slips' : 'All storage QR codes';
+    const title = storage ? `${storage.name} Fuel Report` : includeFuelSlips ? 'Fuel Ledger Report' : 'Fuel Storage Report';
     const subtitle = storage
-      ? `${storage.fuelType.toUpperCase()} storage report for ${dateRange.label}.`
-      : `All fuel storage and issue transactions for ${dateRange.label}.`;
+      ? includeFuelSlips
+        ? `${storage.fuelType.toUpperCase()} storage and linked fuel slip report for ${dateRange.label}.`
+        : `${storage.fuelType.toUpperCase()} storage report for ${dateRange.label}.`
+      : includeFuelSlips
+        ? `All fuel storage and fuel slip transactions for ${dateRange.label}.`
+        : `All fuel storage transactions for ${dateRange.label}.`;
     const logoUrl = await getAssetRegisterReportLogoUrl(session.user.id).catch(() => '');
     const reportOptions: FuelReportOptions = {
       title,
