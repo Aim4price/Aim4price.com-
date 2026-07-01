@@ -1,5 +1,6 @@
 import { extractDigitalPdfText } from './my-invoices-extraction';
 import { extractFuelSlipImageText, isSupportedFuelSlipImage } from './fuel-slip-ocr';
+import { parseFuelSlipDecimal, reconcileFuelSlipNumbers } from './fuel-slip-number';
 
 export type FuelSlipExtractionStatus = 'manual' | 'extracted' | 'needs_review';
 export type FuelSlipExtractionQuality = 'none' | 'weak' | 'good';
@@ -136,43 +137,13 @@ export function maskFuelSlipSensitiveText(value: string): string {
 }
 
 function parseDecimal(value: unknown, decimals = 2): number | null {
-  let text = cleanText(value)
-    .replace(/zar/gi, '')
-    .replace(/rand/gi, '')
-    .replace(/litres?|liters?|l\b/gi, '')
-    .replace(/per/gi, '')
-    .replace(/\br\b/gi, '')
-    .replace(/^r/i, '')
-    .replace(/[^0-9, .-]/g, '')
-    .replace(/\s+/g, '');
-
-  if (!/[0-9]/.test(text)) return null;
-
-  const hasComma = text.includes(',');
-  const hasDot = text.includes('.');
-
-  if (hasComma && hasDot) {
-    text = text.lastIndexOf(',') > text.lastIndexOf('.')
-      ? text.replace(/\./g, '').replace(',', '.')
-      : text.replace(/,/g, '');
-  } else if (hasComma) {
-    const parts = text.split(',');
-    const last = parts[parts.length - 1] ?? '';
-    text = last.length <= 3 ? `${parts.slice(0, -1).join('')}.${last}` : text.replace(/,/g, '');
-  } else if ((text.match(/\./g) ?? []).length > 1) {
-    const parts = text.split('.');
-    const last = parts.pop() ?? '';
-    text = `${parts.join('')}.${last}`;
-  }
-
-  const parsed = Number(text);
-  if (!Number.isFinite(parsed)) return null;
-  const factor = 10 ** decimals;
-  return Math.round(parsed * factor) / factor;
+  return parseFuelSlipDecimal(value, decimals);
 }
 
+const FUEL_SLIP_NUMBER_PATTERN = String.raw`\d(?:[\d ,.:]*\d)?`;
+
 function moneyPattern(): string {
-  return String.raw`(?:ZAR\s*)?R\s*\d(?:[\d ,.]*\d)?(?:[.,]\d{2,4})?|(?:ZAR\s*)?\d(?:[\d ,]*\d)?[.,]\d{2,4}`;
+  return String.raw`(?:ZAR\s*)?R\s*${FUEL_SLIP_NUMBER_PATTERN}|(?:ZAR\s*)?${FUEL_SLIP_NUMBER_PATTERN}(?:[.,:]\d{2,4})`;
 }
 
 function firstGroup(pattern: RegExp, text: string): string {
@@ -186,77 +157,102 @@ function titleCaseWords(value: string): string {
     .replace(/\b([a-z])/g, (match) => match.toUpperCase())
     .replace(/\bfc\b/i, 'FC')
     .replace(/\bae\b/i, 'AE')
+    .replace(/\bbp\b/i, 'BP')
+    .replace(/\bulp\b/i, 'ULP')
     .trim();
 }
+
+type FuelTypeRule = {
+  label: string;
+  pattern: RegExp;
+};
+
+const FUEL_TYPE_RULES: FuelTypeRule[] = [
+  { label: 'Diesel 50ppm', pattern: /\b(?:diesel\s*50\s*ppm|50\s*ppm\s*diesel|d\s*[- ]?50|diesel\s*0[,.]005\s*%)\b/i },
+  { label: 'Diesel 500ppm', pattern: /\b(?:diesel\s*500\s*ppm|500\s*ppm\s*diesel|diesel\s*0[,.]05\s*%)\b/i },
+  { label: 'Excellium Diesel', pattern: /\bexcellium\s+diesel\b/i },
+  { label: 'Excellium D10', pattern: /\bexcellium\s*d\s*10\b/i },
+  { label: 'Shell V-Power Diesel', pattern: /\bshell\s+v[- ]?power\s+diesel\b/i },
+  { label: 'Shell FuelSave Diesel', pattern: /\bshell\s+fuel\s*save\s+diesel\b/i },
+  { label: 'Engen Dynamic Diesel', pattern: /\bengen\s+dynamic\s+diesel\b/i },
+  { label: 'Astron Diesel', pattern: /\bastron\s+diesel\b/i },
+  { label: 'Quartech D', pattern: /\bquartech\s*d\b/i },
+  { label: 'Sasol Turbodiesel', pattern: /\bsasol\s+turbo\s*diesel\b/i },
+  { label: 'bp Ultimate Diesel', pattern: /\bbp\s+ultimate\s+diesel\b/i },
+  { label: 'Ultimate Diesel', pattern: /\bultimate\s+diesel\b/i },
+  { label: 'Diesel', pattern: /\bdiesel\b/i },
+  { label: 'Unleaded 93', pattern: /\b(?:unleaded|ulp|petrol)\s*93\b/i },
+  { label: 'Unleaded 95', pattern: /\b(?:unleaded|ulp|petrol)\s*95\b/i },
+  { label: 'Shell V-Power', pattern: /\bshell\s+v[- ]?power\b/i },
+  { label: 'bp Ultimate Unleaded', pattern: /\bbp\s+ultimate\s+unleaded\b/i },
+  { label: 'Engen Primax', pattern: /\bengen\s+primax\b/i },
+  { label: 'Sasol ULP', pattern: /\bsasol\s+ulp\b/i },
+  { label: 'Excellium Petrol', pattern: /\bexcellium\s+petrol\b/i },
+  { label: 'Unleaded', pattern: /\bunleaded\b|\bulp\b/i },
+  { label: 'Petrol', pattern: /\bpetrol\b/i },
+  { label: 'AdBlue', pattern: /\bad\s*blue\b/i },
+  { label: 'Paraffin', pattern: /\bparaffin\b/i },
+];
 
 function normaliseFuelType(value: string): string {
   const text = cleanText(value).replace(/\s+/g, ' ');
   if (!text) return '';
 
-  if (/excellium\s*d\s*50/i.test(text)) return 'Excellium D50';
-
-  if (/diesel|\bd\s*50\b/i.test(text)) {
-    if (/500\s*ppm\b/i.test(text)) return 'Diesel 500ppm';
-    if (/\b500\b/i.test(text)) return 'Diesel 500';
-    if (/50\s*ppm\b/i.test(text)) return 'Diesel 50ppm';
-    if (/50\s*a\b/i.test(text) || /\bd\s*50\b/i.test(text) || /\b50\b/i.test(text)) return 'Diesel 50';
-    return 'Diesel';
+  for (const rule of FUEL_TYPE_RULES) {
+    if (rule.pattern.test(text)) return rule.label;
   }
-
-  const unleaded = /unleaded\s*(93|95)/i.exec(text);
-  if (unleaded) return `Unleaded ${unleaded[1]}`;
-
-  const petrol = /petrol\s*(93|95)?/i.exec(text);
-  if (petrol) return petrol[1] ? `Petrol ${petrol[1]}` : 'Petrol';
 
   return text.slice(0, 80);
 }
 
-function supplierLineScore(line: string, index: number): number {
-  const text = cleanText(line).replace(/^[^A-Za-z0-9]+|[^A-Za-z0-9]+$/g, '');
-  if (!/[A-Za-z]/.test(text) || text.length < 3 || text.length > 80) return -100;
+const BANK_OR_ACQUIRER_LINE = /\b(?:fnb|first\s+national\s+bank|firstrand|nedbank|absa|standard\s+bank|capitec|discovery\s+bank|investec|african\s+bank|bidvest\s+bank|tyme\s*bank|bank\s+zero|visa|master\s*card|mastercard|card\s+division|acquirer|payment\s+terminal|forecourt\s+eft)\b/i;
+const NON_SUPPLIER_LINE = /\b(?:south\s+africa|customer\s+copy|merchant\s+copy|approved|authorised|authorized|declined|receipt|tax\s+invoice|invoice|cashier|attendant|pump|thank\s+you|welcome|call\s+centre|balance|change|date|time|trace|uti|aid|iad|ctq|tvr|rrn|tsn|terminal|merchant|batch|auth|approval|card|pan|debit|credit|amount|amnt|purchase|sale|subtotal|total\s+(?:amount|due)|litres?|ltrs?|price\s*per|per\s*litre)\b/i;
+const ADDRESS_LINE = /\b(?:street|straat|road|rd|avenue|ave|drive|dr|singel|lane|ln|crescent|cresc|close|park|industrial|oudtshoorn|george|western\s+cape|cape|province|south\s+africa)\b/i;
+const FUEL_MERCHANT_WORDS = /\b(?:engen|shell|bp|totalenergies|total|astron|caltex|sasol|puma|gulf|fuel|motors?|garage|service\s+station|filling\s+station|truck\s+stop|stop|depot|energy|petroleum)\b/i;
 
-  const lower = text.toLowerCase();
-  const ignored = /(?:nedbank|first\s+national\s+bank|\bfnb\b|payment24|customer\s+copy|merchant\s+copy|receipt\s+print|tax\s+invoice|forecourt\s+eft|acquirer|approved|declined|terminal|merchant|card|pan|visa|mastercard|debit|credit|rrn|uti|aid|iad|ctq|tvr|batch|auth|trace|vat\s*(?:no|number|reg)?|total|amount|purchase|litres?|diesel|unleaded|petrol|date|time|cashier|attendant|pump|price|thank|visit|welcome|call\s+centre|balance|change|invoice)/i;
-  if (ignored.test(text)) return -100;
+function normalizedSupplierCandidate(line: string): string {
+  return cleanText(line)
+    .replace(/^[^A-Za-z0-9]+|[^A-Za-z0-9]+$/g, '')
+    .replace(/\s{2,}/g, ' ');
+}
+
+function isBankOrAcquirerLine(line: string): boolean {
+  const text = normalizedSupplierCandidate(line);
+  if (!text) return false;
+  const compactLine = text.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  return BANK_OR_ACQUIRER_LINE.test(compactLine);
+}
+
+function supplierLineScore(line: string, index: number): number {
+  const text = normalizedSupplierCandidate(line);
+  if (!/[A-Za-z]/.test(text) || text.length < 3 || text.length > 90) return -100;
   if (/^[-:\d\s.,/]+$/.test(text)) return -100;
+  if (isBankOrAcquirerLine(text)) return -100;
+  if (TECHNICAL_NUMBER_LINE.test(text)) return -100;
+  if (NON_SUPPLIER_LINE.test(text)) return -100;
+  if (/^total$/i.test(text) || (/\btotal\b/i.test(text) && /(?:\d|amount|due|zar|r\s*\d)/i.test(text))) return -100;
+  if (ADDRESS_LINE.test(text) && !FUEL_MERCHANT_WORDS.test(text)) return -80;
+  if (/\b(?:diesel|unleaded|petrol|ad\s*blue|paraffin)\b/i.test(text)) return -100;
+  if (/\b(?:r\s*\d|zar|\d+[,.]\d{2})\b/i.test(text)) return -80;
 
   let score = 0;
-  if (/\b(?:engen|astron|total|caltex|shell|bp|sasol|puma|gulf|fuel|motors?|garage|service\s+station|central|courtenay|bodorp|rainbow|al\s+bodorp|ae\s+george)\b/i.test(text)) score += 8;
-  if (/\b(?:pty|ltd|cc|fc)\b/i.test(text)) score += 2;
-  if (/^[A-Z0-9 .&'/-]{3,}$/.test(text) && /[A-Z]{2}/.test(text)) score += 1;
-  if (text.split(/\s+/).length >= 2) score += 2;
-  if (index <= 14) score += Math.max(0, 4 - Math.floor(index / 4));
-  if (/\d{4,}/.test(text)) score -= 3;
+  if (FUEL_MERCHANT_WORDS.test(text)) score += 12;
+  if (/\b(?:pty|ltd|cc|co\.?|inc)\b/i.test(text)) score += 2;
+  if (/^[A-Z0-9 .&'/-]{3,}$/.test(text) && /[A-Z]{2}/.test(text)) score += 2;
+  if (text.split(/\s+/).length >= 2) score += 3;
+  if (index <= 12) score += Math.max(0, 6 - Math.floor(index / 2));
+  if (/\d{4,}/.test(text)) score -= 5;
 
   return score;
 }
 
 function extractSupplier(lines: string[]): string {
-  const cleaned = lines.map((line) => cleanText(line));
-
-  const explicitPatterns = [
-    /\b(AL\s+BODORP\s+FC)\b/i,
-    /\b(AE\s+GEORGE\s+CENTRAL)\b/i,
-    /\b(TOTAL\s+COURTENAY)\b/i,
-    /\b(ENGEN\s+MULTI\s+MOTORS)\b/i,
-    /\b(RAINBOW\s+MOTORS)\b/i,
-    /\b(ASTRON\s+ENERGY)\b/i,
-  ];
-
-  for (const pattern of explicitPatterns) {
-    for (const line of cleaned) {
-      const match = pattern.exec(line);
-      if (match) return titleCaseWords(match[1]).slice(0, 180);
-    }
-  }
-
-  const ranked = cleaned
-    .map((line, index) => ({ line, score: supplierLineScore(line, index) }))
+  const ranked = lines
+    .map((line, index) => ({ line: normalizedSupplierCandidate(line), index, score: supplierLineScore(line, index) }))
     .filter((candidate) => candidate.score > -100)
-    .sort((a, b) => b.score - a.score);
+    .sort((a, b) => b.score - a.score || a.index - b.index);
 
-  return cleanText(ranked[0]?.line ?? '').slice(0, 180);
+  return titleCaseWords(cleanText(ranked[0]?.line ?? '')).slice(0, 180);
 }
 
 function extractVatNumber(text: string): string {
@@ -289,17 +285,22 @@ function extractTime(text: string): string {
 
 function extractFuelType(lines: string[]): string {
   for (const line of lines) {
-    const match = /(excellium\s*d\s*50|diesel\s*(?:50|500)?\s*(?:ppm|a)?|\bd\s*50\b|unleaded\s*(?:93|95)|petrol\s*(?:93|95)?)/i.exec(line);
-    if (match) return normaliseFuelType(match[1]);
+    if (/\b(?:total|amount|amnt|purchase|sale|vat|rrn|trace|terminal|merchant|card|visa|mastercard)\b/i.test(line)) continue;
+
+    for (const rule of FUEL_TYPE_RULES) {
+      const match = rule.pattern.exec(line);
+      if (match) return normaliseFuelType(match[0]);
+    }
   }
+
   return '';
 }
 
 function extractLitres(text: string): number | null {
   const patterns = [
-    /\b(?:litres?|liters?|ltrs?|qty|quantity)\s*[:=]?\s*(\d[\d ,.]*\d|\d)\b/i,
-    /\b(\d[\d ,.]*\d|\d)\s*(?:l|litres?|liters?)\b/i,
-    /\b(?:diesel|unleaded|petrol|excellium)[^\n]{0,80}?(\d[\d ,.]*\d|\d)\s*(?:l|litres?|liters?)\b/i,
+    new RegExp(String.raw`\b(?:litres?|liters?|ltrs?|qty|quantity)\s*[:=]?\s*(${FUEL_SLIP_NUMBER_PATTERN})\b`, 'i'),
+    new RegExp(String.raw`\b(${FUEL_SLIP_NUMBER_PATTERN})\s*(?:l|litres?|liters?|ltrs?)\b`, 'i'),
+    new RegExp(String.raw`\b(?:diesel|unleaded|petrol|excellium|ad\s*blue|paraffin)[^\n]{0,80}?(${FUEL_SLIP_NUMBER_PATTERN})\s*(?:l|litres?|liters?|ltrs?)\b`, 'i'),
   ];
 
   for (const pattern of patterns) {
@@ -311,10 +312,11 @@ function extractLitres(text: string): number | null {
 }
 
 function extractPricePerLitre(text: string): number | null {
+  const amountPattern = String.raw`(?:ZAR\s*)?(?:R\s*)?${FUEL_SLIP_NUMBER_PATTERN}`;
   const patterns = [
-    /@\s*((?:ZAR\s*)?(?:R\s*)?\d[\d ,.]*(?:[.,]\d{2,4})?)\s*(?:per\s*(?:litre|liter|l))?/i,
-    /(?:price|rate)\s*(?:per|\/)?\s*(?:litre|liter|l)\s*[:=]?\s*((?:ZAR\s*)?(?:R\s*)?\d[\d ,.]*(?:[.,]\d{2,4})?)/i,
-    /\b(?:per\s*(?:litre|liter|l))\s*[:=]?\s*((?:ZAR\s*)?(?:R\s*)?\d[\d ,.]*(?:[.,]\d{2,4})?)/i,
+    new RegExp(String.raw`@\s*(${amountPattern})\s*(?:per\s*(?:litre|liter|l))?`, 'i'),
+    new RegExp(String.raw`(?:price|rate)\s*(?:per|/)?\s*(?:litre|liter|l)\s*[:=]?\s*(${amountPattern})`, 'i'),
+    new RegExp(String.raw`\b(?:per\s*(?:litre|liter|l))\s*[:=]?\s*(${amountPattern})`, 'i'),
   ];
 
   for (const pattern of patterns) {
@@ -341,7 +343,7 @@ function moneyValuesFromLine(line: string, allowUnmarkedAmount: boolean): number
 
 function extractTotal(lines: string[]): number | null {
   const amountLinePattern = /\b(?:grand\s+total|total\s+amount|amount\s+due|total\s+due|amnt|amount|purchase|sale|total)\b/i;
-  const excludedTotalLine = /\b(?:subtotal|sub\s+total|vat\s*(?:no|number|reg)|change|balance|litres?|price\s*per|per\s*litre|pump)\b/i;
+  const excludedTotalLine = /@|\b(?:subtotal|sub\s+total|vat\s*(?:no|number|reg)|change|balance|litres?|ltrs?|price\s*per|per\s*litre|rate\s*\/\s*l|pump|uti|aid|rrn|tsn|trace|tvr|terminal|merchant)\b/i;
   const candidates: number[] = [];
 
   for (const line of lines) {
@@ -353,7 +355,7 @@ function extractTotal(lines: string[]): number | null {
 
   const currencyCandidates: number[] = [];
   for (const line of lines) {
-    if (/\b(?:litres?|price\s*per|per\s*litre|vat\s*(?:no|number|reg))\b/i.test(line)) continue;
+    if (/@|\b(?:litres?|ltrs?|price\s*per|per\s*litre|rate\s*\/\s*l|vat\s*(?:no|number|reg)|uti|aid|rrn|tsn|trace|tvr|terminal|merchant)\b/i.test(line)) continue;
     currencyCandidates.push(...moneyValuesFromLine(line, false));
   }
 
@@ -376,7 +378,7 @@ function extractSlipNumber(text: string): string {
 }
 
 function extractTransactionNumber(text: string): string {
-  return firstGroup(/\b(?:transaction|trans|txn|trace|sequence|seq|rrn|auth(?:orisation|orization)?(?:\s*code)?|approval)\s*(?:no|nr|number|#)?\s*[:#-]?\s*([A-Z0-9][A-Z0-9\/-]{2,40})/i, text).slice(0, 120);
+  return firstGroup(/\b(?:transaction|trans|txn|trace|sequence|seq|rrn|approval|auth(?:orisation|orization)\s*(?:code|number)?|auth\s*(?:code|no|nr|number))\s*(?:no|nr|number|#)?\s*[:#-]\s*([A-Z0-9][A-Z0-9\/-]{2,40})/i, text).slice(0, 120);
 }
 
 function extractNumberByLabel(text: string, labels: string): string {
@@ -440,7 +442,7 @@ export function parseFuelSlipText(rawText: string): FuelSlipExtractionResult {
   const lines = normalizeLines(text);
   const draft = cloneEmptyDraft();
 
-  if (!text || text.length < 20) {
+  if (!text || (text.length < 20 && !/\b(?:total|amnt|amount|purchase|sale|zar|r\s*\d)\b/i.test(text))) {
     return {
       draft,
       rawText: '',
@@ -454,11 +456,22 @@ export function parseFuelSlipText(rawText: string): FuelSlipExtractionResult {
   draft.slipNumber = maskFuelSlipSensitiveText(extractSlipNumber(text));
   draft.transactionNumber = maskFuelSlipSensitiveText(extractTransactionNumber(text));
   draft.documentDate = extractDate(text);
-  draft.documentTime = extractTime(text);
+  draft.documentTime = '';
   draft.fuelType = extractFuelType(lines);
   draft.litres = extractLitres(text);
   draft.pricePerLitre = extractPricePerLitre(text);
   draft.totalAmount = extractTotal(lines);
+
+  const reconciledNumbers = reconcileFuelSlipNumbers({
+    litres: draft.litres,
+    pricePerLitre: draft.pricePerLitre,
+    totalAmount: draft.totalAmount,
+  });
+  draft.litres = reconciledNumbers.fields.litres;
+  draft.pricePerLitre = reconciledNumbers.fields.pricePerLitre;
+  draft.totalAmount = reconciledNumbers.fields.totalAmount;
+  warnings.push(...reconciledNumbers.warnings);
+
   draft.vatAmount = extractVatAmount(lines);
   draft.vatIncluded = draft.vatAmount !== null || /\bvat\s*(?:inclusive|incl|included)|tax\s*(?:inclusive|incl|included)\b/i.test(text) ? true : null;
   draft.vatRate = /\b15\s*%|vat\s*@\s*15/i.test(text) ? 15 : null;
@@ -471,29 +484,29 @@ export function parseFuelSlipText(rawText: string): FuelSlipExtractionResult {
   draft.terminalNumber = maskFuelSlipSensitiveText(extractNumberByLabel(text, 'terminal|term'));
   draft.siteNumber = maskFuelSlipSensitiveText(extractNumberByLabel(text, 'site|station'));
 
-  if (draft.pricePerLitre === null && draft.totalAmount !== null && draft.litres !== null && draft.litres > 0) {
-    const calculatedRate = draft.totalAmount / draft.litres;
-    if (Number.isFinite(calculatedRate) && calculatedRate > 0 && calculatedRate < 1000) {
-      draft.pricePerLitre = Math.round(calculatedRate * 10000) / 10000;
-    }
-  }
-
+  if (!draft.fuelType) warnings.push('Fuel type could not be read confidently.');
   if (draft.litres === null) warnings.push('Litres could not be read confidently.');
+  if (draft.pricePerLitre === null) warnings.push('Price per litre could not be read confidently.');
   if (draft.totalAmount === null) warnings.push('Total amount could not be read confidently.');
   if (!draft.documentDate) warnings.push('Slip date could not be read confidently.');
   if (!draft.cardLast4 && /\bcard|visa|master|credit|debit/i.test(text)) warnings.push('Card payment was detected, but the last 4 card digits could not be read confidently.');
 
   const confidence = confidenceForDraft(draft);
-  const requiredFound = Boolean(draft.documentDate && draft.litres !== null && draft.totalAmount !== null);
+  const completeFuelDetails = Boolean(draft.documentDate && draft.fuelType && draft.litres !== null && draft.litres > 0 && draft.totalAmount !== null);
+  if (!completeFuelDetails && (draft.litres === null || !draft.fuelType) && (draft.totalAmount !== null || draft.cardLast4 || draft.supplierName || draft.documentDate)) {
+    warnings.push('Fuel slip saved for review. Litres or fuel type missing.');
+  }
+
+  const uniqueWarnings = [...new Set(warnings.map((warning) => cleanText(warning)).filter(Boolean))];
   draft.ocrConfidence = confidence;
-  draft.reviewRequired = !requiredFound || confidence < 0.72 || warnings.length > 0;
+  draft.reviewRequired = !completeFuelDetails || reconciledNumbers.mismatch || confidence < 0.72 || uniqueWarnings.length > 0;
   draft.extractionStatus = draft.reviewRequired ? 'needs_review' : 'extracted';
 
   return {
     draft,
     rawText: maskFuelSlipSensitiveText(text).slice(0, 20000),
-    warnings: warnings.slice(0, 12),
-    quality: requiredFound && confidence >= 0.72 ? 'good' : 'weak',
+    warnings: uniqueWarnings.slice(0, 12),
+    quality: completeFuelDetails && confidence >= 0.72 && !reconciledNumbers.mismatch ? 'good' : 'weak',
   };
 }
 

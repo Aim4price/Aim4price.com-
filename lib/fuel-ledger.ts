@@ -5,6 +5,7 @@ import { getDb } from './db';
 import { hashScanPin, verifyScanPin } from './scan-pin';
 import { ensureAccountProfileColumns } from './account-profile';
 import { buildAssetRegisterUploadUrl } from './asset-register-uploads';
+import { parseFuelSlipDecimal, reconcileFuelSlipNumbers } from './fuel-slip-number';
 
 export const FUEL_SCAN_COOKIE_NAME = 'aim4price_fuel_scan';
 export const FUEL_SCAN_SESSION_MAX_AGE_SECONDS = 60 * 60 * 12;
@@ -102,9 +103,9 @@ export type FuelSlipTransaction = {
   documentDate: string;
   documentTime: string;
   fuelType: string;
-  litres: number;
+  litres: number | null;
   pricePerLitre: number | null;
-  totalAmount: number;
+  totalAmount: number | null;
   vatAmount: number | null;
   vatIncluded: boolean | null;
   vatRate: number | null;
@@ -328,12 +329,7 @@ function asText(value: unknown): string {
 }
 
 function asNumber(value: unknown): number | null {
-  if (value === null || typeof value === 'undefined' || value === '') {
-    return null;
-  }
-
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : null;
+  return parseFuelSlipDecimal(value, 4);
 }
 
 function asBoolean(value: unknown): boolean | null {
@@ -434,12 +430,8 @@ function normalizeFuelPercent(value: unknown): number | null {
 }
 
 function normalizeUsageReading(value: unknown): number | null {
-  if (value === null || typeof value === 'undefined' || value === '') {
-    return null;
-  }
-
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed) || parsed < 0) {
+  const parsed = parseFuelSlipDecimal(value, 2);
+  if (parsed === null || parsed < 0) {
     return null;
   }
 
@@ -857,9 +849,9 @@ function mapFuelSlipRow(row: FuelSlipRow): FuelSlipTransaction {
     documentDate: toDateOnly(row.document_date),
     documentTime: asText(row.document_time),
     fuelType: maskStoredFuelSlipRawText(asText(row.fuel_type)),
-    litres: normalizeOptionalLitres(row.litres) ?? 0,
+    litres: normalizeOptionalLitres(row.litres),
     pricePerLitre: normalizeRateValue(row.price_per_litre),
-    totalAmount: normalizeMoneyValue(row.total_amount) ?? 0,
+    totalAmount: normalizeMoneyValue(row.total_amount),
     vatAmount: normalizeMoneyValue(row.vat_amount),
     vatIncluded: normalizeBoolean(row.vat_included),
     vatRate: normalizeRateValue(row.vat_rate),
@@ -1413,9 +1405,9 @@ export async function ensureFuelLedgerTables(): Promise<void> {
       document_date date,
       document_time text,
       fuel_type text,
-      litres numeric(12,3) not null,
+      litres numeric(12,3),
       price_per_litre numeric(14,4),
-      total_amount numeric(14,2) not null,
+      total_amount numeric(14,2),
       vat_amount numeric(14,2),
       vat_included boolean,
       vat_rate numeric(6,2),
@@ -1495,7 +1487,10 @@ export async function ensureFuelLedgerTables(): Promise<void> {
       alter column storage_level_after_litres type numeric(12,3) using storage_level_after_litres::numeric(12,3);
 
     alter table if exists public.fuel_slips
-      alter column litres type numeric(12,3) using litres::numeric(12,3);
+      alter column litres type numeric(12,3) using litres::numeric(12,3),
+      alter column total_amount type numeric(14,2) using total_amount::numeric(14,2),
+      alter column litres drop not null,
+      alter column total_amount drop not null;
 
     update public.fuel_storage_events
     set card_number_masked = '************' || right(regexp_replace(coalesce(card_number_masked, ''), '[^0-9]', '', 'g'), 4)
@@ -1515,8 +1510,8 @@ export async function ensureFuelLedgerTables(): Promise<void> {
       source_label = 'Fuel Slip',
       target_type = case when target_type in ('asset', 'storage_tank') then target_type else coalesce(nullif(target_type, ''), 'asset') end,
       extraction_status = case when extraction_status in ('manual', 'extracted', 'needs_review') then extraction_status else 'manual' end,
-      litres = greatest(0, coalesce(litres, 0)),
-      total_amount = greatest(0, coalesce(total_amount, 0)),
+      litres = case when litres is null then null else greatest(0, litres) end,
+      total_amount = case when total_amount is null then null else greatest(0, total_amount) end,
       updated_at = coalesce(updated_at, now()),
       created_at = coalesce(created_at, now());
 
@@ -1739,7 +1734,7 @@ function mapFuelSlipToReportEvent(slip: FuelSlipTransaction): FuelLedgerEvent {
     assetId: slip.assetId,
     assetTitle: slip.assetTitle,
     assetPlateLabel: '',
-    litres: slip.litres,
+    litres: slip.litres ?? 0,
     storageLevelBefore: null,
     storageLevelAfter: null,
     assetFuelPercentBefore: null,
@@ -2891,6 +2886,8 @@ type FuelSlipSaveResult = {
   storage: FuelLedgerStorage | null;
   event: FuelLedgerEvent | null;
   assets: FuelLedgerAsset[];
+  pendingReview: boolean;
+  message: string;
 };
 
 type FuelSlipAssetRow = FuelAssetRow & {
@@ -2903,12 +2900,12 @@ function normalizeExtractionWarnings(value: unknown): string[] {
   return value.map((entry) => maskStoredFuelSlipRawText(asText(entry))).filter(Boolean).slice(0, 12);
 }
 
-function buildFuelSlipDescription(input: { fuelType: string; litres: number; pricePerLitre: number | null; totalAmount: number }): string {
+function buildFuelSlipDescription(input: { fuelType: string; litres: number | null; pricePerLitre: number | null; totalAmount: number | null }): string {
   const parts = ['Fuel Slip'];
   if (input.fuelType) parts.push(input.fuelType);
-  parts.push(`${input.litres.toLocaleString('en-ZA', { maximumFractionDigits: 3 })} L`);
+  if (input.litres !== null) parts.push(`${input.litres.toLocaleString('en-ZA', { maximumFractionDigits: 3 })} L`);
   if (input.pricePerLitre !== null) parts.push(`R${input.pricePerLitre.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}/L`);
-  parts.push(`R${input.totalAmount.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+  if (input.totalAmount !== null) parts.push(`R${input.totalAmount.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
   return parts.join(' · ');
 }
 
@@ -2941,8 +2938,14 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
   const assetId = targetType === 'asset' ? trimText(input.assetId, 80) || targetId : '';
   const storageId = targetType === 'storage_tank' ? trimText(input.storageId, 80) || targetId : '';
   const captureMode = trimText(input.mode, 20).toLowerCase() === 'automatic' ? 'automatic' : 'manual';
-  const litres = normalizePositiveLitres(input.litres);
-  const totalAmount = normalizeMoneyValue(input.totalAmount);
+  const reconciledNumbers = reconcileFuelSlipNumbers({
+    litres: normalizeOptionalLitres(input.litres),
+    pricePerLitre: normalizeRateValue(input.pricePerLitre),
+    totalAmount: normalizeMoneyValue(input.totalAmount),
+  });
+  const litres = reconciledNumbers.fields.litres !== null && reconciledNumbers.fields.litres > 0 ? reconciledNumbers.fields.litres : null;
+  const pricePerLitre = reconciledNumbers.fields.pricePerLitre;
+  const totalAmount = reconciledNumbers.fields.totalAmount;
   const documentDate = normalizeDateOnly(input.documentDate);
   const documentTime = normalizeTimeText(input.documentTime);
   const uploadId = trimText(input.uploadId, 160);
@@ -2954,8 +2957,7 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
   const supplierVatNumber = trimText(input.supplierVatNumber, 40).replace(/[^0-9A-Za-z -]/g, '');
   const slipNumber = sanitizeFuelSlipTextField(input.slipNumber, 120);
   const transactionNumber = sanitizeFuelSlipTextField(input.transactionNumber, 120);
-  const fuelType = sanitizeFuelSlipTextField(input.fuelType, 120) || 'Fuel';
-  const pricePerLitre = normalizeRateValue(input.pricePerLitre);
+  const fuelType = sanitizeFuelSlipTextField(input.fuelType, 120);
   const vatAmount = normalizeMoneyValue(input.vatAmount);
   const vatIncluded = normalizeBoolean(input.vatIncluded);
   const vatRate = normalizeRateValue(input.vatRate);
@@ -2967,21 +2969,14 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
   const siteNumber = sanitizeFuelSlipTextField(input.siteNumber, 80);
   const odometerReading = normalizeUsageReading(input.odometerReading);
   const hourMeterReading = normalizeUsageReading(input.hourMeterReading);
-  const extractionStatus = captureMode === 'manual' ? 'manual' : normalizeFuelSlipExtractionStatus(input.extractionStatus);
+  const requestedExtractionStatus = captureMode === 'manual' ? 'manual' : normalizeFuelSlipExtractionStatus(input.extractionStatus);
   const ocrConfidence = normalizeRateValue(input.ocrConfidence);
-  const reviewRequired = (normalizeBoolean(input.reviewRequired) ?? false) || extractionStatus === 'needs_review';
   const rawExtractedText = maskStoredFuelSlipRawText(trimText(input.rawExtractedText, 20000));
-  const extractionWarnings = normalizeExtractionWarnings(input.extractionWarnings);
-  const description = buildFuelSlipDescription({ fuelType, litres, pricePerLitre, totalAmount: totalAmount ?? 0 });
+  let extractionWarnings = [...normalizeExtractionWarnings(input.extractionWarnings), ...reconciledNumbers.warnings];
   let committed = false;
 
-  if (totalAmount === null) {
-    throw new Error('Enter the total amount from the fuel slip.');
-  }
-
-  if (!documentDate) {
-    throw new Error('Enter the fuel slip date.');
-  }
+  const coreComplete = Boolean(documentDate && totalAmount !== null && litres !== null && litres > 0 && fuelType);
+  const manualMissing = captureMode === 'manual' && !coreComplete;
 
   if (captureMode === 'automatic' && !uploadId && !documentFileUrl) {
     throw new Error('Upload the fuel slip photo or PDF before saving an automatic fuel slip.');
@@ -2995,11 +2990,21 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
     throw new Error('Choose the storage tank for this fuel slip.');
   }
 
+  if (manualMissing) {
+    if (!documentDate) throw new Error('Enter the fuel slip date.');
+    if (litres === null || litres <= 0) throw new Error('Enter litres greater than 0.');
+    if (!fuelType) throw new Error('Enter the fuel type from the fuel slip.');
+    if (totalAmount === null) throw new Error('Enter the total amount from the fuel slip.');
+  }
+
   try {
     await client.query('BEGIN');
 
     let asset: FuelLedgerAsset | null = null;
     let storage: FuelLedgerStorage | null = null;
+    let usageComplete = true;
+    let usageMetric: 'km' | 'hours' | 'none' = 'none';
+    let usageReading: number | null = null;
 
     if (targetType === 'asset') {
       const assetResult = await client.query<FuelSlipAssetRow>(
@@ -3046,15 +3051,25 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
       if (!assetRow) throw new Error('Asset not found.');
       asset = mapFuelAssetRow(assetRow);
 
-      if ((asset.usageMetric === 'km' || asset.usageMetric === 'both') && odometerReading === null) {
-        throw new Error('Enter the current km/odometer reading for this asset.');
+      if (asset.usageMetric === 'km') {
+        usageMetric = 'km';
+        usageReading = odometerReading;
+        usageComplete = odometerReading !== null;
+      } else if (asset.usageMetric === 'hours') {
+        usageMetric = 'hours';
+        usageReading = hourMeterReading;
+        usageComplete = hourMeterReading !== null;
+      } else if (asset.usageMetric === 'both') {
+        usageMetric = hourMeterReading !== null ? 'hours' : odometerReading !== null ? 'km' : 'none';
+        usageReading = usageMetric === 'hours' ? hourMeterReading : usageMetric === 'km' ? odometerReading : null;
+        usageComplete = usageReading !== null;
       }
 
-      if ((asset.usageMetric === 'hours' || asset.usageMetric === 'both') && hourMeterReading === null) {
-        throw new Error('Enter the current hour-meter reading for this asset.');
+      if (coreComplete && !usageComplete) {
+        extractionWarnings.push('Fuel slip saved for review. Enter the required odometer or hour-meter reading before posting fuel usage.');
       }
 
-      const relevantUsageReading = asset.usageMetric === 'km' ? odometerReading : hourMeterReading ?? odometerReading;
+      const relevantUsageReading = usageReading ?? (asset.usageMetric === 'km' ? odometerReading : hourMeterReading ?? odometerReading);
       const currentUsageReading = normalizeUsageReading(assetRow.hours);
       if (relevantUsageReading !== null && currentUsageReading !== null && relevantUsageReading < currentUsageReading) {
         throw new Error('The usage reading cannot be lower than the reading already saved on this asset.');
@@ -3073,11 +3088,37 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
       storage = storageResult.rows[0] ? mapStorageRow(storageResult.rows[0]) : null;
       if (!storage) throw new Error('Fuel storage tank not found.');
 
-      const storageAfter = roundLitres(storage.currentLitres + litres);
-      if (storage.capacityLitres !== null && storageAfter > storage.capacityLitres + 0.001) {
-        throw new Error(`Storage refill exceeds tank capacity. Capacity is ${storage.capacityLitres.toLocaleString('en-ZA', { maximumFractionDigits: 3 })} L.`);
+      if (coreComplete && litres !== null) {
+        const storageAfter = roundLitres(storage.currentLitres + litres);
+        if (storage.capacityLitres !== null && storageAfter > storage.capacityLitres + 0.001) {
+          throw new Error(`Storage refill exceeds tank capacity. Capacity is ${storage.capacityLitres.toLocaleString('en-ZA', { maximumFractionDigits: 3 })} L.`);
+        }
       }
     }
+
+    const isComplete = targetType === 'asset' ? coreComplete && usageComplete : coreComplete;
+    const pendingReview = !isComplete;
+
+    if (captureMode === 'manual' && pendingReview) {
+      if (!coreComplete) throw new Error('Complete the fuel slip date, fuel type, litres and total amount before saving.');
+      if (targetType === 'asset' && !usageComplete) throw new Error('Enter the required odometer or hour-meter reading for this asset.');
+    }
+
+    if (pendingReview) {
+      if (litres === null || !fuelType) extractionWarnings.push('Fuel slip saved for review. Litres or fuel type missing.');
+      if (!documentDate || totalAmount === null) extractionWarnings.push('Fuel slip saved for review. Complete the missing date or total amount before posting fuel usage.');
+    }
+
+    extractionWarnings = [...new Set(extractionWarnings.map((warning) => maskStoredFuelSlipRawText(asText(warning))).filter(Boolean))].slice(0, 12);
+    const finalReviewRequired = pendingReview || reconciledNumbers.mismatch || (normalizeBoolean(input.reviewRequired) ?? false) || requestedExtractionStatus === 'needs_review';
+    const finalExtractionStatus: FuelSlipExtractionStatus = pendingReview
+      ? 'needs_review'
+      : captureMode === 'manual'
+        ? 'manual'
+        : finalReviewRequired
+          ? 'needs_review'
+          : 'extracted';
+    const description = buildFuelSlipDescription({ fuelType, litres, pricePerLitre, totalAmount });
 
     const insertedSlip = await client.query<{ id: string }>(
       `
@@ -3155,9 +3196,9 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
         siteNumber || null,
         odometerReading,
         hourMeterReading,
-        extractionStatus,
+        finalExtractionStatus,
         ocrConfidence,
-        reviewRequired,
+        finalReviewRequired,
         rawExtractedText || null,
         JSON.stringify(extractionWarnings),
       ],
@@ -3168,9 +3209,11 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
 
     let event: FuelLedgerEvent | null = null;
 
-    if (targetType === 'storage_tank' && storage) {
+    if (!pendingReview && targetType === 'storage_tank' && storage) {
+      const completedLitres = litres as number;
+      const completedTotalAmount = totalAmount as number;
       const storageBefore = storage.currentLitres;
-      const storageAfter = roundLitres(storageBefore + litres);
+      const storageAfter = roundLitres(storageBefore + completedLitres);
 
       await client.query(
         `
@@ -3188,12 +3231,12 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
         sourceType: 'fuel_slip',
         sourceLabel: 'Fuel Slip',
         fuelSlipId,
-        totalAmount,
+        totalAmount: completedTotalAmount,
         documentFileUrl: documentFileUrl || null,
         paymentMethod: paymentMethod || null,
         cardNumberMasked: card.masked || null,
         assetId: null,
-        litres,
+        litres: completedLitres,
         storageLevelBefore: storageBefore,
         storageLevelAfter: storageAfter,
         assetFuelPercentBefore: null,
@@ -3214,9 +3257,10 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
       );
     }
 
-    if (targetType === 'asset' && asset) {
-      const usageMetric = asset.usageMetric === 'km' ? 'km' : asset.usageMetric === 'hours' ? 'hours' : asset.usageMetric === 'both' ? (hourMeterReading !== null ? 'hours' : 'km') : 'none';
-      const usageReading = usageMetric === 'km' ? odometerReading : usageMetric === 'hours' ? hourMeterReading : null;
+    if (!pendingReview && targetType === 'asset' && asset) {
+      const completedLitres = litres as number;
+      const completedTotalAmount = totalAmount as number;
+      const completedDocumentDate = documentDate as string;
       let invoiceDocumentId: string | null = null;
       let assetInvoiceId: string | null = null;
 
@@ -3247,14 +3291,14 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
             contentType || 'application/octet-stream',
             byteSize === null ? null : Math.max(0, Math.round(byteSize)),
             rawExtractedText || null,
-            extractionStatus === 'needs_review' ? 'extracted' : extractionStatus === 'extracted' ? 'extracted' : 'skipped',
+            finalExtractionStatus === 'needs_review' ? 'extracted' : finalExtractionStatus === 'extracted' ? 'extracted' : 'skipped',
             JSON.stringify(extractionWarnings),
           ],
         );
         invoiceDocumentId = documentResult.rows[0]?.id ?? null;
       }
 
-      const subtotalExVat = vatAmount !== null ? Math.max(0, Math.round((totalAmount - vatAmount) * 100) / 100) : null;
+      const subtotalExVat = vatAmount !== null ? Math.max(0, Math.round((completedTotalAmount - vatAmount) * 100) / 100) : null;
       const noteLines = [
         'Fuel Slip',
         supplierName ? `Supplier: ${supplierName}` : '',
@@ -3289,10 +3333,10 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
           invoiceDocumentId,
           supplierName || null,
           slipNumber || transactionNumber || null,
-          documentDate,
+          completedDocumentDate,
           subtotalExVat,
           vatAmount,
-          totalAmount,
+          completedTotalAmount,
           usageReading,
           usageMetric,
           noteLines.join('\n') || null,
@@ -3313,7 +3357,7 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
               sort_order
             ) values ($1::uuid, 'other', $2, $3::numeric, $4::numeric, $5::numeric, 0)
           `,
-          [assetInvoiceId, description, subtotalExVat, vatAmount, totalAmount],
+          [assetInvoiceId, description, subtotalExVat, vatAmount, completedTotalAmount],
         );
       }
 
@@ -3321,12 +3365,12 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
         ...(asset ? asRecord((await client.query<{ specs_json: unknown }>('select coalesce(specs_json, \'{}\'::jsonb) as specs_json from public.asset_register_items where user_id = $1 and id::text = $2 limit 1', [userId, assetId])).rows[0]?.specs_json) : {}),
         lastFuelSlipId: fuelSlipId,
         last_fuel_slip_id: fuelSlipId,
-        lastFuelSlipLitres: litres,
-        last_fuel_slip_litres: litres,
-        lastFuelSlipAmount: totalAmount,
-        last_fuel_slip_amount: totalAmount,
-        lastFuelSlipDate: documentDate,
-        last_fuel_slip_date: documentDate,
+        lastFuelSlipLitres: completedLitres,
+        last_fuel_slip_litres: completedLitres,
+        lastFuelSlipAmount: completedTotalAmount,
+        last_fuel_slip_amount: completedTotalAmount,
+        lastFuelSlipDate: completedDocumentDate,
+        last_fuel_slip_date: completedDocumentDate,
         lastFuelSlipOdometerReading: odometerReading,
         last_fuel_slip_odometer_reading: odometerReading,
         lastFuelSlipHourMeterReading: hourMeterReading,
@@ -3362,7 +3406,7 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
             created_at
           ) values ($1::uuid, 'owner_session', $2, 'Fuel Slip', null, $3::numeric, $4::numeric, null, null, $5, $6::jsonb, now())
         `,
-        [assetId, supplierName || 'Fuel Slip', usageReading, litres, description, JSON.stringify(documentFileUrl ? [documentFileUrl] : [])],
+        [assetId, supplierName || 'Fuel Slip', usageReading, completedLitres, description, JSON.stringify(documentFileUrl ? [documentFileUrl] : [])],
       );
 
       await client.query(
@@ -3395,6 +3439,8 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
       storage: updatedStorage,
       event,
       assets,
+      pendingReview,
+      message: pendingReview ? 'Fuel slip saved for review. Litres or fuel type missing.' : 'Fuel Slip saved to Fuel Ledger.',
     };
   } catch (error) {
     if (!committed) {
