@@ -699,8 +699,9 @@ function matchesSearch(storage: FuelLedgerStorage, searchTerm: string): boolean 
   return searchableText.includes(normalizedSearch);
 }
 
-function eventDateParts(event: FuelLedgerEvent): { year: string; month: string } | null {
-  const date = new Date(event.createdAtIso);
+function reportDateParts(entry: { createdAtIso?: string; documentDate?: string }): { year: string; month: string } | null {
+  const dateValue = entry.documentDate || entry.createdAtIso;
+  const date = new Date(entry.documentDate ? `${entry.documentDate}T00:00:00` : String(dateValue ?? ''));
   if (Number.isNaN(date.getTime())) return null;
 
   return {
@@ -710,11 +711,11 @@ function eventDateParts(event: FuelLedgerEvent): { year: string; month: string }
 }
 
 
-function getMonthOptions(events: FuelLedgerEvent[], year: string): string[] {
+function getMonthOptions(entries: Array<{ createdAtIso?: string; documentDate?: string }>, year: string): string[] {
   const months = new Set<string>();
 
-  for (const event of events) {
-    const parts = eventDateParts(event);
+  for (const entry of entries) {
+    const parts = reportDateParts(entry);
     if (!parts) continue;
     if (year !== 'all' && parts.year !== year) continue;
     months.add(parts.month);
@@ -723,11 +724,11 @@ function getMonthOptions(events: FuelLedgerEvent[], year: string): string[] {
   return Array.from(months).sort((a, b) => Number(a) - Number(b));
 }
 
-function getYearOptions(events: FuelLedgerEvent[]): string[] {
+function getYearOptions(entries: Array<{ createdAtIso?: string; documentDate?: string }>): string[] {
   const years = new Set<string>();
 
-  for (const event of events) {
-    const parts = eventDateParts(event);
+  for (const entry of entries) {
+    const parts = reportDateParts(entry);
     if (parts) years.add(parts.year);
   }
 
@@ -855,8 +856,12 @@ export default function FuelClient() {
     [searchText, storages],
   );
 
-  const yearOptions = useMemo(() => getYearOptions(recentEvents), [recentEvents]);
-  const reportMonthOptions = useMemo(() => getMonthOptions(recentEvents, reportYear), [recentEvents, reportYear]);
+  const reportDateEntries = useMemo(
+    () => [...recentEvents, ...recentFuelSlips.map((slip) => ({ createdAtIso: slip.createdAtIso, documentDate: slip.documentDate }))],
+    [recentEvents, recentFuelSlips],
+  );
+  const yearOptions = useMemo(() => getYearOptions(reportDateEntries), [reportDateEntries]);
+  const reportMonthOptions = useMemo(() => getMonthOptions(reportDateEntries, reportYear), [reportDateEntries, reportYear]);
   const reportStorageOptions = useMemo<ReportSelectOption[]>(
     () => [
       { value: 'all', label: 'All storage units' },
