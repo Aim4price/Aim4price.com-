@@ -1183,7 +1183,7 @@ export default function AssetRegistersClient() {
   const exportTitle = exportStep === "choice"
     ? "Download Asset Registers"
     : exportStep === "single-picker"
-      ? "Choose Asset Register"
+      ? "Choose specific Asset Register"
       : exportStep === "combined-picker"
         ? "Combine Asset Registers"
         : exportScope === "all"
@@ -2311,7 +2311,7 @@ export default function AssetRegistersClient() {
                         <DownloadIcon className={styles.exportChoiceIcon} />
                       </span>
                       <span className={styles.exportChoiceTitleBlock}>
-                        <strong>Download All Asset Registers</strong>
+                        <strong>Download all Asset Registers</strong>
                         <small>Export every asset register saved on this owner account.</small>
                       </span>
                     </button>
@@ -2593,7 +2593,7 @@ export default function AssetRegistersClient() {
                   </button>
                   <button
                     type="button"
-                    className={styles.primaryButton}
+                    className={`${styles.primaryButton} ${styles.exportConfirmButton}`}
                     onClick={() => void handleExportDownload()}
                     disabled={isExporting}
                   >
@@ -2603,7 +2603,7 @@ export default function AssetRegistersClient() {
                         ? "Preparing export..."
                         : exportFormat === "pdf"
                           ? "Open PDF report"
-                          : "Download XLSX"}
+                          : "Download Excel"}
                     </span>
                   </button>
                 </div>
