@@ -192,6 +192,7 @@ const SOURCE_FILTER_OPTIONS: FilterSelectOption[] = [
   { value: 'all', label: 'All cost sources' },
   { value: 'manual', label: 'Manual cost records' },
   { value: 'automatic', label: 'Uploaded invoice/photo records' },
+  { value: 'fuel_slip', label: 'Fuel Slip costs' },
 ];
 
 const USAGE_METRIC_OPTIONS: Array<{ value: UsageMetric; label: string }> = [
@@ -545,11 +546,13 @@ function buildInvoiceAssetMeta(invoice: InvoiceRecord): string {
 }
 
 function sourceLabel(source: InvoiceSource): string {
+  if (source === 'fuel_slip') return 'Fuel Slip';
   return source === 'automatic' ? 'Automatic' : 'Manual';
 }
 
 
 function captureMethodLabel(source: InvoiceSource): string {
+  if (source === 'fuel_slip') return 'Fuel Slip';
   return source === 'automatic' ? 'Automatic capture' : 'Manual entry';
 }
 
@@ -650,8 +653,8 @@ function buildInvoiceListUrl(filters: InvoiceFilterState): string {
   return query ? `/api/my-invoices?${query}` : '/api/my-invoices';
 }
 
-function buildReportUrl(filters: InvoiceFilterState, format: ReportFormat): string {
-  const params = new URLSearchParams({ format });
+function buildReportUrl(filters: InvoiceFilterState, format: ReportFormat, includeFuelSlipCosts: boolean): string {
+  const params = new URLSearchParams({ format, includeFuelSlipCosts: includeFuelSlipCosts ? 'true' : 'false' });
 
   if (filters.assetId !== 'all') params.set('assetId', filters.assetId);
   if (filters.year !== 'all') params.set('year', filters.year);
@@ -678,7 +681,7 @@ export default function MyInvoicesClient() {
   const [usageMetricDropdownOpen, setUsageMetricDropdownOpen] = useState(false);
   const [filterAssetSearch, setFilterAssetSearch] = useState('');
   const [downloadOpen, setDownloadOpen] = useState(false);
-  const [reportFormat, setReportFormat] = useState<ReportFormat>('pdf');
+  const [includeFuelSlipCosts, setIncludeFuelSlipCosts] = useState(true);
   const [draft, setDraft] = useState<InvoiceDraft>(buildEmptyDraft('manual'));
   const [editingInvoiceId, setEditingInvoiceId] = useState<string | null>(null);
   const [manualUploadFile, setManualUploadFile] = useState<File | null>(null);
@@ -1012,8 +1015,13 @@ export default function MyInvoicesClient() {
     setFilterAssetSearch('');
   }
 
+  function openDownloadModal() {
+    setIncludeFuelSlipCosts(true);
+    setDownloadOpen(true);
+  }
+
   function handleDownloadReport(format: ReportFormat) {
-    const url = buildReportUrl(activeFilters, format);
+    const url = buildReportUrl(activeFilters, format, includeFuelSlipCosts);
 
     if (format === 'xlsx') {
       const link = document.createElement('a');
@@ -1257,7 +1265,7 @@ export default function MyInvoicesClient() {
               <span>Filter</span>
               {activeFilterCount ? <strong>{activeFilterCount}</strong> : null}
             </button>
-            <button type="button" className={`${styles.primaryButton} ${styles.toolbarButton} ${styles.toolbarDownloadButton}`} onClick={() => setDownloadOpen(true)}>
+            <button type="button" className={`${styles.primaryButton} ${styles.toolbarButton} ${styles.toolbarDownloadButton}`} onClick={openDownloadModal}>
               <DownloadIcon className={styles.buttonIcon} />
               <span>Download</span>
             </button>
@@ -1283,6 +1291,7 @@ export default function MyInvoicesClient() {
                       <p className={styles.invoiceAsset}>{buildInvoiceAssetMeta(invoice)}</p>
                       <div className={styles.invoiceMetaList}>
                         <span className={styles.invoiceValueMethodLabel}>{invoice.invoiceNumber || 'No invoice number'}</span>
+                        <span className={styles.invoiceSavedDateLabel}>{sourceLabel(invoice.source)}</span>
                         {updatedLabel ? <span className={styles.invoiceSavedDateLabel}>{updatedLabel}</span> : null}
                       </div>
                     </div>
@@ -1447,12 +1456,12 @@ export default function MyInvoicesClient() {
       ) : null}
 
       {downloadOpen ? (
-        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label="Export Cost of Ownership report">
+        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label="External fuel costs included?">
           <div className={`${styles.downloadModal} ${styles.reportModal}`}>
             <div className={styles.modalHeader}>
               <div>
-                <h2>Export Cost of Ownership report</h2>
-                <p>Download the Cost of Ownership report using the active asset, year and month filters.</p>
+                <h2>External fuel costs included?</h2>
+                <p>Choose whether Fuel Slip costs saved against assets must be included in the exported Cost of Ownership report.</p>
               </div>
               <button type="button" className={styles.closeButton} onClick={() => setDownloadOpen(false)} aria-label="Close download"><CloseIcon /></button>
             </div>
@@ -1460,38 +1469,42 @@ export default function MyInvoicesClient() {
             <div className={styles.reportChoiceGrid}>
               <button
                 type="button"
-                className={`${styles.reportOption} ${reportFormat === 'pdf' ? styles.reportOptionActive : ''}`}
-                onClick={() => setReportFormat('pdf')}
-                aria-pressed={reportFormat === 'pdf'}
+                className={`${styles.reportOption} ${includeFuelSlipCosts ? styles.reportOptionActive : ''}`}
+                onClick={() => setIncludeFuelSlipCosts(true)}
+                aria-pressed={includeFuelSlipCosts}
               >
                 <span className={styles.reportGraphic}>
-                  <img className={styles.reportGraphicImage} src="/brand/pdf.png" alt="" />
+                  <ManualInvoiceIcon />
                 </span>
                 <span className={styles.reportTitleBlock}>
-                  <strong>PDF report</strong>
-                  <small>Open the printable Cost of Ownership report for the current filters.</small>
+                  <strong>Yes, include fuel slip costs</strong>
+                  <small>Fuel Slip rows stay in the exported report and are included in totals.</small>
                 </span>
               </button>
               <button
                 type="button"
-                className={`${styles.reportOption} ${reportFormat === 'xlsx' ? styles.reportOptionActive : ''}`}
-                onClick={() => setReportFormat('xlsx')}
-                aria-pressed={reportFormat === 'xlsx'}
+                className={`${styles.reportOption} ${!includeFuelSlipCosts ? styles.reportOptionActive : ''}`}
+                onClick={() => setIncludeFuelSlipCosts(false)}
+                aria-pressed={!includeFuelSlipCosts}
               >
                 <span className={styles.reportGraphic}>
-                  <img className={styles.reportGraphicImage} src="/brand/sheet.png" alt="" />
+                  <AutomaticInvoiceIcon />
                 </span>
                 <span className={styles.reportTitleBlock}>
-                  <strong>XLSX workbook</strong>
-                  <small>Download the filtered cost record data as an Excel-ready workbook.</small>
+                  <strong>No, exclude fuel slip costs</strong>
+                  <small>Fuel Slip rows are removed from the exported report rows and totals.</small>
                 </span>
               </button>
             </div>
             <div className={styles.modalFooter}>
               <button type="button" className={styles.secondaryButton} onClick={() => setDownloadOpen(false)}>Cancel</button>
-              <button type="button" className={styles.primaryButton} onClick={() => handleDownloadReport(reportFormat)}>
+              <button type="button" className={styles.primaryButton} onClick={() => handleDownloadReport('pdf')}>
                 <DownloadIcon className={styles.buttonIcon} />
-                <span>{reportFormat === 'pdf' ? 'Open PDF report' : 'Download XLSX'}</span>
+                <span>Download PDF</span>
+              </button>
+              <button type="button" className={styles.primaryButton} onClick={() => handleDownloadReport('xlsx')}>
+                <DownloadIcon className={styles.buttonIcon} />
+                <span>Download Excel</span>
               </button>
             </div>
           </div>

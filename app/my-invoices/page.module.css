@@ -968,7 +968,8 @@
   box-shadow: 0 9px 18px rgba(16, 31, 28, 0.035), inset 0 1px 0 rgba(255, 255, 255, 0.98);
 }
 
-.choiceGraphic svg {
+.choiceGraphic svg,
+.reportGraphic svg {
   width: 2rem;
   height: 2rem;
   color: var(--brand-mid);
