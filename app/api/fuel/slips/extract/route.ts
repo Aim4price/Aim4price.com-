@@ -1,1 +1,101 @@
+import { NextResponse } from 'next/server';
+import { getServerSession } from '../../../../../lib/auth-session';
+import {
+  ALLOWED_ASSET_REGISTER_IMAGE_TYPES,
+  MAX_ASSET_REGISTER_DOCUMENT_UPLOAD_BYTES,
+  createAssetRegisterUpload,
+} from '../../../../../lib/asset-register-uploads';
+import { extractFuelSlipFromUpload } from '../../../../../lib/fuel-slip-extraction';
 
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+const FUEL_SLIP_UPLOAD_MIME_TYPES = new Set<string>([
+  'application/pdf',
+  'text/plain',
+  ...ALLOWED_ASSET_REGISTER_IMAGE_TYPES,
+]);
+
+type FormFile = File & {
+  size: number;
+  type: string;
+  name: string;
+};
+
+function isUploadFile(value: FormDataEntryValue | null): value is FormFile {
+  return Boolean(value && typeof value !== 'string' && typeof value.arrayBuffer === 'function');
+}
+
+function pickUploadFile(formData: FormData): FormFile | null {
+  const primary = formData.get('file');
+  if (isUploadFile(primary)) return primary;
+
+  for (const value of formData.values()) {
+    if (isUploadFile(value)) return value;
+  }
+
+  return null;
+}
+
+async function currentUserId() {
+  const session = await getServerSession({ requireActive: true });
+  return session?.user?.id ?? '';
+}
+
+export async function POST(request: Request) {
+  const userId = await currentUserId();
+
+  if (!userId) {
+    return NextResponse.json({ ok: false, error: 'You must be signed in to upload fuel slips.' }, { status: 401 });
+  }
+
+  let formData: FormData;
+
+  try {
+    formData = await request.formData();
+  } catch {
+    return NextResponse.json({ ok: false, error: 'Invalid fuel slip upload form data.' }, { status: 400 });
+  }
+
+  const file = pickUploadFile(formData);
+
+  if (!file) {
+    return NextResponse.json({ ok: false, error: 'Choose a fuel slip PDF or photo to upload.' }, { status: 400 });
+  }
+
+  if (!FUEL_SLIP_UPLOAD_MIME_TYPES.has(file.type)) {
+    return NextResponse.json({ ok: false, error: 'Upload a PDF, TXT, JPG, PNG or WEBP fuel slip.' }, { status: 400 });
+  }
+
+  if (file.size > MAX_ASSET_REGISTER_DOCUMENT_UPLOAD_BYTES) {
+    return NextResponse.json({ ok: false, error: 'The fuel slip file is too large for this upload.' }, { status: 400 });
+  }
+
+  try {
+    const upload = await createAssetRegisterUpload({ userId, file });
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const extraction = extractFuelSlipFromUpload({
+      data: buffer,
+      contentType: upload.contentType || file.type,
+      fileName: upload.fileName || file.name,
+    });
+
+    return NextResponse.json({
+      ok: true,
+      upload: {
+        uploadId: upload.id,
+        documentFileUrl: upload.url,
+        originalFilename: upload.fileName,
+        contentType: upload.contentType,
+        byteSize: upload.byteSize,
+      },
+      extraction,
+    });
+  } catch (error) {
+    console.error('Aim4price fuel slip extraction failed.', error);
+    return NextResponse.json(
+      { ok: false, error: 'Aim4price could not save or read this fuel slip. Try another file or use manual capture.' },
+      { status: 500 },
+    );
+  }
+}
