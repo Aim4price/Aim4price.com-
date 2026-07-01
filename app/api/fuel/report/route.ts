@@ -65,6 +65,17 @@ function normalizeSpaces(value: unknown): string {
   return String(value ?? '').replace(/\s+/g, ' ').trim();
 }
 
+function safeCardMask(last4: string): string {
+  return /^\d{4}$/.test(last4) ? `************${last4}` : '';
+}
+
+function maskReportCardLikeText(value: unknown): string {
+  return String(value ?? '')
+    .replace(/\b\d{4,6}[\s-]*(?:[*xX]{2,}[\s-]*){1,3}\d{4}\b/g, (match) => safeCardMask(cardLast4FromValue(match)) || match)
+    .replace(/\b(?:[*xX]{2,}[\s-]*){1,4}\d{4}\b/g, (match) => safeCardMask(cardLast4FromValue(match)) || match)
+    .replace(/\b(?:\d[\s-]?){13,19}\b/g, (match) => safeCardMask(cardLast4FromValue(match)) || match);
+}
+
 function roundLitres(value: number): number {
   return Math.round(value * 1000) / 1000;
 }
@@ -84,6 +95,10 @@ function cardLast4FromValue(value: unknown): string {
 function formatCardEnding(value: unknown): string {
   const last4 = cardLast4FromValue(value);
   return /^\d{4}$/.test(last4) ? `Card ending ${last4}` : '';
+}
+
+function safeReportText(value: unknown): string {
+  return maskReportCardLikeText(normalizeSpaces(value));
 }
 
 function formatDate(value = new Date()): string {
@@ -241,7 +256,7 @@ function eventWorkAreaLabel(event: FuelLedgerEvent): string {
 
 function eventNoteLabel(event: FuelLedgerEvent): string {
   if (event.sourceType !== 'fuel_slip') {
-    return normalizeSpaces(event.note) || '-';
+    return safeReportText(event.note) || '-';
   }
 
   const parts = [
@@ -253,7 +268,7 @@ function eventNoteLabel(event: FuelLedgerEvent): string {
     asText(event.fuelSlipReviewStatus) ? `Review: ${asText(event.fuelSlipReviewStatus)}` : '',
   ].filter(Boolean);
 
-  return parts.join(' · ') || 'Fuel Slip';
+  return safeReportText(parts.join(' · ') || 'Fuel Slip');
 }
 
 function slugifyFileSegment(value: string): string {
