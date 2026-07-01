@@ -34,6 +34,8 @@ export async function POST(request: Request) {
       fuelSlip: result.fuelSlip,
       storage: result.storage,
       event: result.event,
+      pendingReview: result.pendingReview,
+      message: result.message,
       ...ledger,
       assets: result.assets,
     });
