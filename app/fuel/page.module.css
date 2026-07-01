@@ -3470,6 +3470,29 @@
   box-shadow: none;
 }
 
+.fuelSlipFlowBackdrop .fuelSlipMoreDetails {
+  border: 1px solid rgba(216, 226, 236, 0.92);
+  border-radius: 1.18rem;
+  background: rgba(255, 255, 255, 0.74);
+  overflow: hidden;
+}
+
+.fuelSlipFlowBackdrop .fuelSlipMoreDetails summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 3rem;
+  padding: 0 1rem;
+  cursor: pointer;
+  color: #263845;
+  font-size: 0.94rem;
+  font-weight: 850;
+}
+
+.fuelSlipFlowBackdrop .fuelSlipMoreDetails .formGrid {
+  padding: 0 1rem 1rem;
+}
+
 .fuelSlipFlowBackdrop .warningBox {
   display: grid;
   gap: 0.25rem;

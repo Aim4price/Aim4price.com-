@@ -638,7 +638,7 @@ function AutomaticFuelSlipIcon(props: SVGProps<SVGSVGElement>) {
 
 function formatLitres(value: number | null | undefined): string {
   if (value === null || typeof value === 'undefined' || !Number.isFinite(value)) return '—';
-  return `${value.toLocaleString('en-ZA', { maximumFractionDigits: 2 })} L`;
+  return `${value.toLocaleString('en-ZA', { maximumFractionDigits: 3 })} L`;
 }
 
 function formatPercent(value: number | null | undefined): string {
@@ -738,7 +738,7 @@ function fuelSlipSearchText(slip: FuelSlipRecord): string {
     slip.transactionNumber,
     slip.fuelType,
     slip.paymentMethod,
-    slip.cardNumberMasked,
+    slip.cardLast4 || cardLast4FromValue(slip.cardNumberMasked),
     slip.assetTitle,
     slip.storageName,
     slip.originalFilename,
@@ -796,7 +796,7 @@ function buildFuelSlipCsv(slips: FuelSlipRecord[]): string {
     'VAT rate',
     'Payment method',
     'Card type',
-    'Card number',
+    'Card last 4',
     'Merchant number',
     'Terminal number',
     'Site number',
@@ -827,7 +827,7 @@ function buildFuelSlipCsv(slips: FuelSlipRecord[]): string {
     csvNumber(slip.vatRate),
     slip.paymentMethod,
     slip.cardType,
-    slip.cardNumberMasked,
+    slip.cardLast4 || cardLast4FromValue(slip.cardNumberMasked),
     slip.merchantNumber,
     slip.terminalNumber,
     slip.siteNumber,
@@ -866,20 +866,43 @@ function numberInputToValue(value: string): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function normalizeFuelSlipCard(value: string): { masked: string; last4: string } {
-  const text = value.trim().slice(0, 80);
+function safeFuelSlipCardMask(last4: string): string {
+  return /^\d{4}$/.test(last4) ? `************${last4}` : '';
+}
+
+function cardLast4FromValue(value: unknown): string {
+  const text = String(value ?? '').trim().slice(0, 160);
+  if (!text) return '';
+
+  const masked = /(?:\b\d{4,6}[\s-]*)?(?:[*xX]{2,}[\s-]*){1,4}(\d{4})\b/.exec(text);
+  if (masked) return masked[1];
+
+  const firstMasked = /\b\d{4,6}[\s-]*(?:[*xX]{2,}[\s-]*){1,3}(\d{4})\b/.exec(text);
+  if (firstMasked) return firstMasked[1];
+
   const digits = text.replace(/\D/g, '');
-  const last4 = digits.length >= 4 ? digits.slice(-4) : '';
+  if (digits.length >= 13 && digits.length <= 19) return digits.slice(-4);
+  if (/^\d{4}$/.test(digits)) return digits;
 
-  if (digits.length >= 13 && digits.length <= 19) {
-    return { masked: `${'*'.repeat(Math.max(0, digits.length - 4))}${last4}`, last4 };
-  }
+  return '';
+}
 
-  if (/[xX*]{2,}/.test(text)) {
-    return { masked: text.replace(/[0-9](?=(?:\D*\d){4})/g, '*'), last4 };
-  }
+function normalizeFuelSlipCard(value: unknown, fallbackLast4?: unknown): { masked: string; last4: string } {
+  const fallbackDigits = String(fallbackLast4 ?? '').replace(/\D/g, '').slice(-4);
+  const last4 = cardLast4FromValue(value) || (/^\d{4}$/.test(fallbackDigits) ? fallbackDigits : '');
+  return { masked: safeFuelSlipCardMask(last4), last4 };
+}
 
-  return { masked: text, last4 };
+function sanitizeFuelSlipSensitiveText(value: unknown): string {
+  return String(value ?? '')
+    .replace(/\b\d{4,6}[\s-]*(?:[*xX]{2,}[\s-]*){1,3}\d{4}\b/g, (match) => normalizeFuelSlipCard(match).masked || match)
+    .replace(/\b(?:[*xX]{2,}[\s-]*){1,4}\d{4}\b/g, (match) => normalizeFuelSlipCard(match).masked || match)
+    .replace(/\b(?:\d[\s-]?){13,19}\b/g, (match) => normalizeFuelSlipCard(match).masked || match);
+}
+
+function formatCardEnding(value: unknown, fallbackLast4?: unknown): string {
+  const card = normalizeFuelSlipCard(value, fallbackLast4);
+  return card.last4 ? `Card ending ${card.last4}` : '';
 }
 
 function applyExtractionToFuelSlipDraft(current: FuelSlipDraft, response: FuelSlipExtractResponse): FuelSlipDraft {
@@ -909,15 +932,15 @@ function applyExtractionToFuelSlipDraft(current: FuelSlipDraft, response: FuelSl
     vatRate: '',
     paymentMethod: extracted.paymentMethod ?? current.paymentMethod,
     cardType: extracted.cardType ?? current.cardType,
-    cardNumberMasked: normalizeFuelSlipCard(extracted.cardNumberMasked ?? current.cardNumberMasked).masked,
-    cardLast4: extracted.cardLast4 ?? normalizeFuelSlipCard(extracted.cardNumberMasked ?? current.cardNumberMasked).last4 ?? current.cardLast4,
+    cardNumberMasked: normalizeFuelSlipCard(extracted.cardLast4 || extracted.cardNumberMasked || current.cardLast4 || current.cardNumberMasked, current.cardLast4).masked,
+    cardLast4: normalizeFuelSlipCard(extracted.cardLast4 || extracted.cardNumberMasked || current.cardLast4 || current.cardNumberMasked, current.cardLast4).last4,
     merchantNumber: extracted.merchantNumber ?? current.merchantNumber,
     terminalNumber: extracted.terminalNumber ?? current.terminalNumber,
     siteNumber: extracted.siteNumber ?? current.siteNumber,
     extractionStatus: extracted.extractionStatus ?? 'needs_review',
     ocrConfidence: typeof extracted.ocrConfidence === 'number' ? extracted.ocrConfidence : current.ocrConfidence,
     reviewRequired: Boolean(extracted.reviewRequired ?? response.extraction?.warnings?.length),
-    rawExtractedText: response.extraction?.rawText ?? current.rawExtractedText,
+    rawExtractedText: sanitizeFuelSlipSensitiveText(response.extraction?.rawText ?? current.rawExtractedText),
     extractionWarnings: response.extraction?.warnings ?? current.extractionWarnings,
   };
 }
@@ -1565,12 +1588,13 @@ export default function FuelClient() {
     setFuelSlipDraft((current) => ({ ...current, [field]: value }));
   }
 
-  function handleFuelSlipCardNumberChange(value: string) {
-    const card = normalizeFuelSlipCard(value);
+  function handleFuelSlipCardLast4Change(value: string) {
+    const last4 = value.replace(/\D/g, '').slice(0, 4);
+    const masked = safeFuelSlipCardMask(last4);
     setFuelSlipDraft((current) => ({
       ...current,
-      cardNumberMasked: card.masked,
-      cardLast4: card.last4 || current.cardLast4,
+      cardNumberMasked: masked,
+      cardLast4: last4,
     }));
   }
 
@@ -1664,7 +1688,7 @@ export default function FuelClient() {
   async function handleFuelSlipSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const [targetType, targetId] = fuelSlipDraft.targetKey.split(':');
-    const card = normalizeFuelSlipCard(fuelSlipDraft.cardNumberMasked);
+    const card = normalizeFuelSlipCard(fuelSlipDraft.cardLast4 || fuelSlipDraft.cardNumberMasked);
 
     if (targetType !== 'asset' && targetType !== 'storage_tank') {
       setNotice({ tone: 'error', message: 'Choose asset or storage tank.' });
@@ -1706,7 +1730,7 @@ export default function FuelClient() {
           paymentMethod: fuelSlipDraft.paymentMethod,
           cardType: fuelSlipDraft.cardType,
           cardNumberMasked: card.masked,
-          cardLast4: fuelSlipDraft.cardLast4 || card.last4,
+          cardLast4: card.last4,
           merchantNumber: fuelSlipDraft.merchantNumber,
           terminalNumber: fuelSlipDraft.terminalNumber,
           siteNumber: fuelSlipDraft.siteNumber,
@@ -1715,7 +1739,7 @@ export default function FuelClient() {
           extractionStatus: fuelSlipDraft.extractionStatus,
           ocrConfidence: fuelSlipDraft.ocrConfidence,
           reviewRequired: fuelSlipDraft.reviewRequired,
-          rawExtractedText: fuelSlipDraft.rawExtractedText,
+          rawExtractedText: sanitizeFuelSlipSensitiveText(fuelSlipDraft.rawExtractedText),
           extractionWarnings: fuelSlipDraft.extractionWarnings,
         }),
       });
@@ -1996,20 +2020,8 @@ export default function FuelClient() {
             <input value={fuelSlipDraft.supplierName} onChange={(event) => setFuelSlipField('supplierName', event.target.value)} placeholder="Supplier name" />
           </label>
           <label>
-            <span>Slip / invoice number</span>
-            <input value={fuelSlipDraft.slipNumber} onChange={(event) => setFuelSlipField('slipNumber', event.target.value)} placeholder="Slip number" />
-          </label>
-          <label>
-            <span>Transaction number</span>
-            <input value={fuelSlipDraft.transactionNumber} onChange={(event) => setFuelSlipField('transactionNumber', event.target.value)} placeholder="Transaction number" />
-          </label>
-          <label>
             <span>Slip date</span>
             <input type="date" value={fuelSlipDraft.documentDate} onChange={(event) => setFuelSlipField('documentDate', event.target.value)} required />
-          </label>
-          <label>
-            <span>Slip time</span>
-            <input value={fuelSlipDraft.documentTime} onChange={(event) => setFuelSlipField('documentTime', event.target.value)} placeholder="07:40:43" />
           </label>
           <label>
             <span>Fuel type</span>
@@ -2017,7 +2029,7 @@ export default function FuelClient() {
           </label>
           <label>
             <span>Litres</span>
-            <input type="number" step="0.01" min="0" value={fuelSlipDraft.litres} onChange={(event) => setFuelSlipField('litres', event.target.value)} required />
+            <input type="number" step="0.001" min="0" value={fuelSlipDraft.litres} onChange={(event) => setFuelSlipField('litres', event.target.value)} required />
           </label>
           <label className={styles.invoiceCurrencyField}>
             <span>Price per litre</span>
@@ -2034,28 +2046,8 @@ export default function FuelClient() {
             </div>
           </label>
           <label>
-            <span>Payment method</span>
-            <input value={fuelSlipDraft.paymentMethod} onChange={(event) => setFuelSlipField('paymentMethod', event.target.value)} placeholder="Card / Cash / Account" />
-          </label>
-          <label>
-            <span>Card type</span>
-            <input value={fuelSlipDraft.cardType} onChange={(event) => setFuelSlipField('cardType', event.target.value)} placeholder="Visa / Mastercard" />
-          </label>
-          <label>
-            <span>Masked card number</span>
-            <input value={fuelSlipDraft.cardNumberMasked} onChange={(event) => handleFuelSlipCardNumberChange(event.target.value)} placeholder="**** **** **** 1234" />
-          </label>
-          <label>
-            <span>Merchant/site number</span>
-            <input value={fuelSlipDraft.merchantNumber} onChange={(event) => setFuelSlipField('merchantNumber', event.target.value)} placeholder="Merchant number" />
-          </label>
-          <label>
-            <span>Terminal number</span>
-            <input value={fuelSlipDraft.terminalNumber} onChange={(event) => setFuelSlipField('terminalNumber', event.target.value)} placeholder="Terminal number" />
-          </label>
-          <label>
-            <span>Site number</span>
-            <input value={fuelSlipDraft.siteNumber} onChange={(event) => setFuelSlipField('siteNumber', event.target.value)} placeholder="Site number" />
+            <span>Card last 4</span>
+            <input value={fuelSlipDraft.cardLast4} onChange={(event) => handleFuelSlipCardLast4Change(event.target.value)} inputMode="numeric" maxLength={4} pattern="[0-9]{4}" placeholder="5732" />
           </label>
           {selectedFuelSlipTarget?.type === 'asset' && showFuelSlipOdometer ? (
             <label>
@@ -2070,6 +2062,44 @@ export default function FuelClient() {
             </label>
           ) : null}
         </div>
+
+        <details className={styles.fuelSlipMoreDetails}>
+          <summary>More details</summary>
+          <div className={styles.formGrid}>
+            <label>
+              <span>Slip / invoice number</span>
+              <input value={fuelSlipDraft.slipNumber} onChange={(event) => setFuelSlipField('slipNumber', event.target.value)} placeholder="Slip number" />
+            </label>
+            <label>
+              <span>Transaction number</span>
+              <input value={fuelSlipDraft.transactionNumber} onChange={(event) => setFuelSlipField('transactionNumber', event.target.value)} placeholder="Transaction number" />
+            </label>
+            <label>
+              <span>Slip time</span>
+              <input value={fuelSlipDraft.documentTime} onChange={(event) => setFuelSlipField('documentTime', event.target.value)} placeholder="07:40:43" />
+            </label>
+            <label>
+              <span>Payment method</span>
+              <input value={fuelSlipDraft.paymentMethod} onChange={(event) => setFuelSlipField('paymentMethod', event.target.value)} placeholder="Card / Cash / Account" />
+            </label>
+            <label>
+              <span>Card type</span>
+              <input value={fuelSlipDraft.cardType} onChange={(event) => setFuelSlipField('cardType', event.target.value)} placeholder="Visa / Mastercard" />
+            </label>
+            <label>
+              <span>Merchant/site number</span>
+              <input value={fuelSlipDraft.merchantNumber} onChange={(event) => setFuelSlipField('merchantNumber', event.target.value)} placeholder="Merchant number" />
+            </label>
+            <label>
+              <span>Terminal number</span>
+              <input value={fuelSlipDraft.terminalNumber} onChange={(event) => setFuelSlipField('terminalNumber', event.target.value)} placeholder="Terminal number" />
+            </label>
+            <label>
+              <span>Site number</span>
+              <input value={fuelSlipDraft.siteNumber} onChange={(event) => setFuelSlipField('siteNumber', event.target.value)} placeholder="Site number" />
+            </label>
+          </div>
+        </details>
       </section>
     );
   }
@@ -2355,6 +2385,7 @@ export default function FuelClient() {
                 {!isLoading ? paginatedFuelSlipManagerSlips.map((slip) => {
                   const updatedLabel = slip.updatedAtIso ? `Updated ${formatFuelSlipDateTime(slip.updatedAtIso)}` : '';
                   const referenceLabel = slip.slipNumber || slip.transactionNumber || 'No slip number';
+                  const cardEndingLabel = formatCardEnding(slip.cardLast4 || slip.cardNumberMasked);
 
                   return (
                     <article className={styles.fuelSlipManagerRow} key={slip.id}>
@@ -2366,6 +2397,7 @@ export default function FuelClient() {
                             <span className={styles.fuelSlipManagerReferenceLabel}>{referenceLabel}</span>
                             <span>{fuelSlipStatusLabel(slip)}</span>
                             <span>{formatFuelSlipDate(slip.documentDate)}</span>
+                            {cardEndingLabel ? <span>{cardEndingLabel}</span> : null}
                             {updatedLabel ? <span>{updatedLabel}</span> : null}
                           </div>
                         </div>
@@ -2503,7 +2535,7 @@ export default function FuelClient() {
                 </span>
                 <span className={styles.choiceTitleBlock}>
                   <strong>Enter slip manually</strong>
-                  <small>Type the supplier, slip date, litres, payment and card details yourself.</small>
+                  <small>Type the supplier, slip date, litres, amount and optional garage details yourself.</small>
                 </span>
               </button>
               <button type="button" className={styles.sourceChoiceOption} onClick={() => startFuelSlipFlow('automatic')}>
@@ -2678,7 +2710,7 @@ export default function FuelClient() {
               {fuelSlipDraft.rawExtractedText ? (
                 <details className={styles.rawPreview}>
                   <summary>Raw extraction preview</summary>
-                  <pre>{fuelSlipDraft.rawExtractedText}</pre>
+                  <pre>{sanitizeFuelSlipSensitiveText(fuelSlipDraft.rawExtractedText)}</pre>
                 </details>
               ) : null}
             </div>
