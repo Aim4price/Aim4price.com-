@@ -3103,3 +3103,850 @@
     width: 100%;
   }
 }
+
+/* === Fuel Slip OCR modal flow: aligned to My Invoices / Cost Ledger === */
+.fuelSlipFlowBackdrop {
+  --line: #e5ebf1;
+  --line-strong: #d8e1ea;
+  --text: #17362c;
+  --text-muted: #677586;
+  --brand-dark: #10382f;
+  --brand-mid: #165340;
+  position: fixed;
+  inset: 0;
+  z-index: 190;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(1rem, 3vw, 2rem);
+  background: rgba(12, 22, 25, 0.44);
+  backdrop-filter: blur(10px);
+  overflow: hidden;
+}
+
+.fuelSlipFlowBackdrop .assetModal,
+.fuelSlipFlowBackdrop .formModal,
+.fuelSlipFlowBackdrop .downloadModal {
+  width: min(100%, 1120px);
+  max-height: min(90vh, calc(100dvh - 2.5rem));
+  overflow: hidden;
+  border: 1px solid rgba(207, 224, 234, 0.95);
+  border-radius: clamp(1.45rem, 2.2vw, 2rem);
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.06), transparent 34%),
+    linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
+  box-shadow:
+    0 30px 80px rgba(16, 28, 45, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.94);
+}
+
+.fuelSlipFlowBackdrop .assetModal {
+  display: flex;
+  flex-direction: column;
+}
+
+.fuelSlipFlowBackdrop .formModal {
+  width: min(100%, 1060px);
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+}
+
+.fuelSlipFlowBackdrop .downloadModal {
+  width: min(100%, 720px);
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+}
+
+.fuelSlipFlowBackdrop .modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: clamp(1.25rem, 2.2vw, 1.75rem) clamp(1.25rem, 2.4vw, 2rem) 0;
+  border-bottom: 0;
+}
+
+.fuelSlipFlowBackdrop .modalHeader > div {
+  display: grid;
+  gap: 0.38rem;
+  min-width: 0;
+}
+
+.fuelSlipFlowBackdrop .modalHeader h2 {
+  margin: 0;
+  color: var(--brand-dark);
+  font-size: clamp(1.8rem, 3vw, 2.55rem);
+  font-weight: 760;
+  line-height: 1.02;
+  letter-spacing: -0.052em;
+}
+
+.fuelSlipFlowBackdrop .modalHeader p {
+  margin: 0;
+  color: #607286;
+  font-size: 1.04rem;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.fuelSlipFlowBackdrop .closeButton {
+  width: 3.6rem;
+  min-width: 3.6rem;
+  height: 3.6rem;
+  min-height: 3.6rem;
+  padding: 0;
+  border-radius: 999px;
+  color: #16314a;
+  background: #f5f9fd;
+  border-color: var(--line-strong);
+  box-shadow: none;
+}
+
+.fuelSlipFlowBackdrop .closeButton svg {
+  width: 1.16rem;
+  height: 1.16rem;
+}
+
+.fuelSlipFlowBackdrop .modalDivider {
+  height: 1px;
+  margin: 1.15rem clamp(1.25rem, 2.4vw, 2rem);
+  background: var(--line);
+}
+
+.fuelSlipFlowBackdrop .formModalScrollBody {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(22, 83, 64, 0.52) rgba(239, 244, 247, 0.98);
+  display: grid;
+  align-content: start;
+  gap: 1rem;
+  padding: 0 clamp(1.25rem, 2.4vw, 2rem) 1rem;
+}
+
+.fuelSlipFlowBackdrop .assetList {
+  flex: 1 1 20rem;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(22, 83, 64, 0.52) rgba(239, 244, 247, 0.98);
+  display: grid;
+  align-content: start;
+  gap: 0.75rem;
+  margin: 0 clamp(1.25rem, 2.4vw, 2rem);
+  padding: 0 0.6rem 0 0;
+}
+
+.fuelSlipFlowBackdrop .formModalScrollBody::-webkit-scrollbar,
+.fuelSlipFlowBackdrop .assetList::-webkit-scrollbar {
+  width: 0.9rem;
+}
+
+.fuelSlipFlowBackdrop .formModalScrollBody::-webkit-scrollbar-track,
+.fuelSlipFlowBackdrop .assetList::-webkit-scrollbar-track {
+  margin: 0.3rem 0 0.5rem;
+  border-radius: 999px;
+  background: rgba(239, 244, 247, 0.98);
+  border-left: 0.24rem solid transparent;
+  border-right: 0.24rem solid transparent;
+  background-clip: padding-box;
+}
+
+.fuelSlipFlowBackdrop .formModalScrollBody::-webkit-scrollbar-thumb,
+.fuelSlipFlowBackdrop .assetList::-webkit-scrollbar-thumb {
+  border: 0.24rem solid transparent;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(26, 90, 69, 0.64) 0%, rgba(18, 66, 51, 0.82) 100%);
+  background-clip: padding-box;
+}
+
+.fuelSlipFlowBackdrop .pickerToolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.8rem;
+  padding: 0 clamp(1.25rem, 2.4vw, 2rem) 1rem;
+}
+
+.fuelSlipFlowBackdrop .pickerToolbar input,
+.fuelSlipFlowBackdrop .formGrid input,
+.fuelSlipFlowBackdrop .formGrid select {
+  width: 100%;
+  min-height: 3.25rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 1.05rem;
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--text);
+  font: inherit;
+  font-weight: 750;
+  padding: 0 1rem;
+  outline: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.fuelSlipFlowBackdrop .pickerToolbar input:focus,
+.fuelSlipFlowBackdrop .formGrid input:focus,
+.fuelSlipFlowBackdrop .formGrid select:focus {
+  border-color: rgba(22, 83, 64, 0.38);
+  box-shadow:
+    0 0 0 4px rgba(22, 83, 64, 0.09),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.fuelSlipFlowBackdrop .assetRow {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.95rem 1rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 1rem;
+  background: #ffffff;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.fuelSlipFlowBackdrop .assetRow:hover {
+  transform: translateY(-1px);
+  border-color: rgba(25, 116, 84, 0.38);
+  box-shadow: 0 12px 26px rgba(18, 35, 39, 0.07);
+}
+
+.fuelSlipFlowBackdrop .assetInfo {
+  min-width: 0;
+  display: grid;
+  gap: 0.18rem;
+}
+
+.fuelSlipFlowBackdrop .assetInfo strong,
+.fuelSlipFlowBackdrop .assetValue strong {
+  color: var(--brand-dark);
+  font-size: 1.04rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.fuelSlipFlowBackdrop .assetInfo small,
+.fuelSlipFlowBackdrop .assetValue small {
+  color: var(--text-muted);
+  font-size: 0.87rem;
+  font-weight: 800;
+  line-height: 1.28;
+}
+
+.fuelSlipFlowBackdrop .assetValue {
+  display: grid;
+  justify-items: end;
+  text-align: right;
+}
+
+.fuelSlipFlowBackdrop .storageTargetRow .assetValue strong {
+  color: #124635;
+}
+
+.fuelSlipFlowBackdrop .invoiceFormCard,
+.fuelSlipFlowBackdrop .uploadPanel {
+  display: grid;
+  gap: 1rem;
+  padding: clamp(1rem, 2vw, 1.35rem);
+  border: 1px solid rgba(221, 229, 237, 0.96);
+  border-radius: 1.35rem;
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.04), transparent 36%),
+    linear-gradient(180deg, #ffffff 0%, #f7fafb 100%);
+  box-shadow:
+    0 10px 24px rgba(16, 28, 45, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.94);
+}
+
+.fuelSlipFlowBackdrop .formGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.fuelSlipFlowBackdrop .formGrid label {
+  min-width: 0;
+  display: grid;
+  gap: 0.5rem;
+  padding: 1rem;
+  border: 1px solid rgba(216, 226, 236, 0.96);
+  border-radius: 1.18rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
+  box-shadow:
+    0 10px 22px rgba(16, 31, 28, 0.028),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.fuelSlipFlowBackdrop .formGrid label > span,
+.fuelSlipFlowBackdrop .uploadInline > span {
+  color: #263845;
+  font-size: 0.96rem;
+  font-weight: 700;
+  letter-spacing: -0.006em;
+  line-height: 1.2;
+  text-transform: none;
+}
+
+.fuelSlipFlowBackdrop .formGrid input,
+.fuelSlipFlowBackdrop .formGrid select {
+  min-height: 3.75rem;
+  border-radius: 1.08rem;
+  color: #20313b;
+  font-size: 1.12rem;
+  font-weight: 560;
+}
+
+.fuelSlipFlowBackdrop .formGrid input::placeholder,
+.fuelSlipFlowBackdrop .invoiceCurrencyInput input::placeholder {
+  color: #708094;
+  opacity: 1;
+  font-weight: 560;
+}
+
+.fuelSlipFlowBackdrop .invoiceCurrencyField {
+  border-color: rgba(190, 224, 206, 0.98);
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.06), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #f3fbf6 100%);
+}
+
+.fuelSlipFlowBackdrop .invoiceCurrencyInput {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.48rem;
+  min-height: 3.75rem;
+  padding: 0 0.95rem;
+  border: 1px solid rgba(190, 224, 206, 0.98);
+  border-radius: 1.08rem;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.fuelSlipFlowBackdrop .invoiceCurrencyInput:focus-within {
+  border-color: rgba(22, 83, 64, 0.44);
+  box-shadow:
+    0 0 0 4px rgba(22, 83, 64, 0.09),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.fuelSlipFlowBackdrop .invoiceCurrencyInput > span {
+  color: #124635;
+  font-size: 1.15rem;
+  font-weight: 780;
+  letter-spacing: -0.02em;
+}
+
+.fuelSlipFlowBackdrop .invoiceCurrencyInput input {
+  width: 100%;
+  min-height: 3.45rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #20313b;
+  font-size: 1.12rem;
+  font-weight: 560;
+}
+
+.fuelSlipFlowBackdrop .invoiceCurrencyInput input:focus {
+  outline: none;
+  border: 0;
+  box-shadow: none;
+}
+
+.fuelSlipFlowBackdrop .warningBox {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0.9rem 1rem;
+  border: 1px solid #ead9a9;
+  border-radius: 1.12rem;
+  background: #fff8e7;
+  color: #73510c;
+  font-weight: 800;
+}
+
+.fuelSlipFlowBackdrop .warningBox p {
+  margin: 0;
+}
+
+.fuelSlipFlowBackdrop .fileLink {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 2.65rem;
+  padding: 0 0.9rem;
+  border: 1px solid rgba(190, 224, 206, 0.98);
+  border-radius: 0.9rem;
+  background: linear-gradient(180deg, #ffffff 0%, #edf8f2 100%);
+  color: #124635;
+  font-size: 0.92rem;
+  font-weight: 760;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.fuelSlipFlowBackdrop .rawPreview {
+  border: 1px solid var(--line);
+  border-radius: 1.12rem;
+  background: #fbfdfe;
+  overflow: hidden;
+}
+
+.fuelSlipFlowBackdrop .rawPreview summary {
+  padding: 0.85rem 1rem;
+  cursor: pointer;
+  color: var(--text);
+  font-weight: 900;
+}
+
+.fuelSlipFlowBackdrop .rawPreview pre {
+  max-height: 13rem;
+  margin: 0;
+  overflow: auto;
+  padding: 1rem;
+  border-top: 1px solid var(--line);
+  color: #405164;
+  white-space: pre-wrap;
+}
+
+.fuelSlipFlowBackdrop .sourceChoiceModal {
+  width: min(100%, 960px);
+  max-height: none;
+  overflow: visible;
+  display: grid;
+  grid-template-rows: auto auto auto;
+  gap: 1.12rem;
+  padding: clamp(1.5rem, 2.35vw, 1.95rem);
+  border-radius: 2rem;
+}
+
+.fuelSlipFlowBackdrop .sourceChoiceModal .modalHeader {
+  align-items: flex-start;
+  gap: 1.15rem;
+  margin: 0;
+  padding: 0 0 1.18rem;
+  border-bottom: 1px solid rgba(216, 226, 236, 0.9);
+}
+
+.fuelSlipFlowBackdrop .sourceChoiceModal .modalHeader h2 {
+  color: #0f3329;
+  font-size: clamp(1.86rem, 2.65vw, 2.38rem);
+  font-weight: 760;
+  line-height: 1.03;
+  letter-spacing: -0.052em;
+}
+
+.fuelSlipFlowBackdrop .sourceChoiceModal .modalHeader p {
+  color: #627386;
+  font-size: 0.98rem;
+  font-weight: 720;
+  line-height: 1.38;
+}
+
+.fuelSlipFlowBackdrop .sourceChoiceModal .closeButton,
+.fuelSlipFlowBackdrop .costFormModal .closeButton,
+.fuelSlipFlowBackdrop .costUploadModal .closeButton {
+  width: 3.15rem;
+  min-width: 3.15rem;
+  height: 3.15rem;
+  min-height: 3.15rem;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #f7fbff 0%, #eef5fb 100%);
+  border-color: rgba(210, 222, 237, 0.98);
+}
+
+.fuelSlipFlowBackdrop .sourceChoiceModal .modalDivider {
+  display: none;
+}
+
+.fuelSlipFlowBackdrop .sourceChoiceGrid {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  padding: 0;
+}
+
+.fuelSlipFlowBackdrop .sourceChoiceOption {
+  min-height: 5.9rem;
+  display: grid;
+  grid-template-columns: 3.8rem minmax(0, 1fr);
+  align-items: center;
+  gap: 1rem;
+  padding: 1.12rem 1.18rem;
+  border: 1px solid rgba(216, 226, 236, 0.98);
+  border-radius: 1.24rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f5f8fb 100%);
+  color: #1d3b62;
+  box-shadow:
+    0 10px 22px rgba(16, 31, 28, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.fuelSlipFlowBackdrop .sourceChoiceOption:hover,
+.fuelSlipFlowBackdrop .sourceChoiceOption:focus-visible {
+  transform: translateY(-1px);
+  border-color: rgba(184, 202, 218, 0.98);
+  background: linear-gradient(180deg, #ffffff 0%, #eef5fb 100%);
+  box-shadow:
+    0 16px 30px rgba(16, 31, 28, 0.065),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  outline: none;
+}
+
+.fuelSlipFlowBackdrop .choiceGraphic {
+  width: 3.8rem;
+  min-width: 3.8rem;
+  height: 3.8rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(210, 222, 237, 0.98);
+  border-radius: 1rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f5f8fb 100%);
+  color: var(--brand-mid);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.fuelSlipFlowBackdrop .choiceGraphic svg {
+  width: 1.85rem;
+  height: 1.85rem;
+}
+
+.fuelSlipFlowBackdrop .choiceTitleBlock {
+  min-width: 0;
+  display: grid;
+  gap: 0.3rem;
+}
+
+.fuelSlipFlowBackdrop .choiceTitleBlock strong {
+  color: #10352b;
+  font-size: 1.08rem;
+  line-height: 1.2;
+  font-weight: 900;
+}
+
+.fuelSlipFlowBackdrop .choiceTitleBlock small {
+  color: #617286;
+  font-size: 0.93rem;
+  line-height: 1.45;
+  font-weight: 720;
+}
+
+.fuelSlipFlowBackdrop .sourceChoiceModal .modalFooter {
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.8rem;
+  margin: 0.12rem 0 0;
+  padding: 0;
+  border-top: 0;
+  background: transparent;
+}
+
+.fuelSlipFlowBackdrop .costFormModal,
+.fuelSlipFlowBackdrop .costUploadModal {
+  width: min(100%, 1120px);
+  max-height: min(92vh, calc(100dvh - 1rem));
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 0;
+  padding: clamp(1.35rem, 2.2vw, 1.85rem);
+  border-radius: 2rem;
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.055), transparent 34%),
+    linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
+}
+
+.fuelSlipFlowBackdrop .costUploadModal {
+  width: min(100%, 860px);
+  max-height: none;
+  overflow: visible;
+}
+
+.fuelSlipFlowBackdrop .costFormModal .modalHeader,
+.fuelSlipFlowBackdrop .costUploadModal .modalHeader {
+  align-items: flex-start;
+  gap: 1rem;
+  margin: 0 0 1rem;
+  padding: 0 0 1rem;
+  border-bottom: 1px solid rgba(216, 226, 236, 0.9);
+}
+
+.fuelSlipFlowBackdrop .costFormModal .modalHeader h2,
+.fuelSlipFlowBackdrop .costUploadModal .modalHeader h2 {
+  color: #0f3329;
+  font-size: clamp(1.85rem, 2.45vw, 2.35rem);
+  font-weight: 720;
+  line-height: 1.04;
+  letter-spacing: -0.04em;
+  text-transform: none;
+}
+
+.fuelSlipFlowBackdrop .costFormModal .modalHeader p,
+.fuelSlipFlowBackdrop .costUploadModal .modalHeader p {
+  max-width: 46rem;
+  margin: 0.38rem 0 0;
+  color: #607286;
+  font-size: 1.04rem;
+  font-weight: 590;
+  line-height: 1.4;
+}
+
+.fuelSlipFlowBackdrop .costFormModal .modalDivider,
+.fuelSlipFlowBackdrop .costUploadModal .modalDivider {
+  display: none;
+}
+
+.fuelSlipFlowBackdrop .costFormModal .formModalScrollBody,
+.fuelSlipFlowBackdrop .costUploadModal .formModalScrollBody {
+  display: grid;
+  align-content: start;
+  gap: 1rem;
+  min-height: 0;
+  margin-right: -0.2rem;
+  padding: 0 0.68rem 0 0;
+}
+
+.fuelSlipFlowBackdrop .costFormModal .invoiceFormCard {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.fuelSlipFlowBackdrop .costFormModal .modalFooter,
+.fuelSlipFlowBackdrop .costUploadModal .modalFooter,
+.fuelSlipFlowBackdrop .assetModal .modalFooter {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.72rem;
+  margin-top: 1rem;
+  padding: 1rem 0 0;
+  border-top: 1px solid rgba(216, 226, 236, 0.88);
+  background: transparent;
+}
+
+.fuelSlipFlowBackdrop .assetModal .modalFooter {
+  margin: 0 clamp(1.25rem, 2.4vw, 2rem);
+  padding-bottom: clamp(1.25rem, 2.2vw, 1.75rem);
+}
+
+.fuelSlipFlowBackdrop .costFormModal .modalFooter .primaryButton,
+.fuelSlipFlowBackdrop .costFormModal .modalFooter .secondaryButton,
+.fuelSlipFlowBackdrop .costUploadModal .modalFooter .primaryButton,
+.fuelSlipFlowBackdrop .costUploadModal .modalFooter .secondaryButton,
+.fuelSlipFlowBackdrop .assetModal .modalFooter .primaryButton,
+.fuelSlipFlowBackdrop .assetModal .modalFooter .secondaryButton,
+.fuelSlipFlowBackdrop .sourceChoiceModal .modalFooter .secondaryButton {
+  min-height: 3.35rem;
+  border-radius: 1rem;
+  padding-inline: 1.3rem;
+  font-size: 1.02rem;
+  font-weight: 760;
+}
+
+.fuelSlipFlowBackdrop .costFormModal .modalFooter .primaryButton,
+.fuelSlipFlowBackdrop .costUploadModal .modalFooter .primaryButton {
+  min-width: 12rem;
+}
+
+.fuelSlipFlowBackdrop .costUploadModal .uploadPanel {
+  gap: 1rem;
+  padding: clamp(1.2rem, 2vw, 1.55rem);
+  border-radius: 1.48rem;
+}
+
+.fuelSlipFlowBackdrop .costUploadModal .uploadPanel h3 {
+  margin: 0;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--line);
+  color: #10352b;
+  font-size: clamp(1.38rem, 1.85vw, 1.68rem);
+  font-weight: 720;
+  letter-spacing: -0.028em;
+  line-height: 1.15;
+}
+
+.fuelSlipFlowBackdrop .costUploadModal .uploadBox {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 5.55rem;
+  align-items: stretch;
+  justify-content: center;
+  gap: 0.9rem;
+  min-height: 7.8rem;
+  max-width: 24rem;
+  width: 100%;
+  margin: 0 auto;
+  padding: 1.2rem;
+  border: 1px dashed rgba(210, 222, 237, 0.98);
+  border-radius: 1.16rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f7fafb 100%);
+}
+
+.fuelSlipFlowBackdrop .costUploadModal .uploadBoxReady {
+  border-style: solid;
+  border-color: rgba(190, 224, 206, 0.98);
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.07), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #effaf4 100%);
+}
+
+.fuelSlipFlowBackdrop .costUploadModal .uploadButton,
+.fuelSlipFlowBackdrop .costUploadModal .uploadCounter {
+  width: 100%;
+  min-width: 0;
+  min-height: 3.5rem;
+  height: 3.5rem;
+  border-radius: 1.05rem;
+}
+
+.fuelSlipFlowBackdrop .costUploadModal .uploadButton {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  padding: 0 1rem;
+  border: 1px solid rgba(210, 222, 237, 0.98);
+  background: linear-gradient(180deg, #ffffff 0%, #f5f8fb 100%);
+  color: #183143;
+  font-size: 0.96rem;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow:
+    0 10px 20px rgba(16, 31, 28, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.fuelSlipFlowBackdrop .costUploadModal .uploadButton input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.fuelSlipFlowBackdrop .costUploadModal .uploadButton svg {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.fuelSlipFlowBackdrop .costUploadModal .uploadBoxReady .uploadButton {
+  color: #124635;
+  border-color: rgba(190, 224, 206, 0.98);
+  background: linear-gradient(180deg, #ffffff 0%, #edf8f2 100%);
+}
+
+.fuelSlipFlowBackdrop .costUploadModal .uploadCounter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #21394a;
+  background: linear-gradient(180deg, #f7fbff 0%, #edf4fb 100%);
+  border: 1px solid rgba(210, 222, 237, 0.98);
+  font-size: 0.98rem;
+  font-weight: 820;
+}
+
+.fuelSlipFlowBackdrop .costUploadModal .uploadBoxReady .uploadCounter {
+  color: #124635;
+  background: linear-gradient(180deg, #ffffff 0%, #edf8f2 100%);
+  border-color: rgba(190, 224, 206, 0.98);
+}
+
+.fuelSlipFlowBackdrop .costUploadModal .uploadBox p {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #124635;
+  font-size: 0.92rem;
+  font-weight: 760;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+
+.fuelSlipFlowBackdrop .costUploadModal .helperText {
+  margin: 0;
+  color: #617286;
+  font-size: 0.92rem;
+  font-weight: 560;
+  line-height: 1.45;
+  text-align: center;
+}
+
+@media (max-width: 900px) {
+  .fuelSlipFlowBackdrop {
+    padding: 0.5rem;
+  }
+
+  .fuelSlipFlowBackdrop .sourceChoiceModal,
+  .fuelSlipFlowBackdrop .costFormModal,
+  .fuelSlipFlowBackdrop .costUploadModal,
+  .fuelSlipFlowBackdrop .assetModal {
+    width: min(100%, calc(100vw - 1rem));
+    max-height: min(92vh, calc(100dvh - 1rem));
+    padding: 1.08rem;
+    border-radius: 1.35rem;
+  }
+
+  .fuelSlipFlowBackdrop .assetModal {
+    padding: 0;
+  }
+
+  .fuelSlipFlowBackdrop .sourceChoiceGrid,
+  .fuelSlipFlowBackdrop .formGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .fuelSlipFlowBackdrop .assetRow {
+    grid-template-columns: 1fr;
+  }
+
+  .fuelSlipFlowBackdrop .assetValue {
+    justify-items: start;
+    text-align: left;
+  }
+
+  .fuelSlipFlowBackdrop .costFormModal .modalFooter,
+  .fuelSlipFlowBackdrop .costUploadModal .modalFooter,
+  .fuelSlipFlowBackdrop .assetModal .modalFooter,
+  .fuelSlipFlowBackdrop .sourceChoiceModal .modalFooter {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .fuelSlipFlowBackdrop .modalFooter .primaryButton,
+  .fuelSlipFlowBackdrop .modalFooter .secondaryButton {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 520px) {
+  .fuelSlipFlowBackdrop .costUploadModal .uploadBox,
+  .fuelSlipFlowBackdrop .pickerToolbar {
+    grid-template-columns: 1fr;
+  }
+}
+
+.fuelSlipCostFormModal {
+  /* CSS-module marker for the fuel slip manual/review Cost Ledger form shell. */
+}
