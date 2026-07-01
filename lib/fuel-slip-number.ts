@@ -17,6 +17,43 @@ function cleanNumericText(value: unknown): string {
     .trim();
 }
 
+const FUEL_SLIP_DECIMAL_TOKEN = /-?\d(?:[\d ]*\d)?(?:\s*[,.:]\s*\d{1,4})*/g;
+
+function extractDecimalTokens(value: string): string[] {
+  return [...value.matchAll(FUEL_SLIP_DECIMAL_TOKEN)]
+    .map((match) => cleanNumericText(match[0]))
+    .filter((token) => /\d/.test(token));
+}
+
+function preferredDecimalToken(value: string): string {
+  const text = cleanNumericText(value);
+  if (!text) return '';
+
+  if (/^T\s*[:=]\s*\d{1,2}:\d{2}(?::\d{2})?$/i.test(text) || /^\d{1,2}:\d{2}:\d{2}$/.test(text)) {
+    return '';
+  }
+
+  const afterAt = /@\s*((?:ZAR\s*)?(?:R\s*)?-?\d[\d ,.:]*\d?)/i.exec(text);
+  if (afterAt) {
+    const atTokens = extractDecimalTokens(afterAt[1]);
+    if (atTokens.length) return atTokens[0];
+  }
+
+  const currencyMatches = [...text.matchAll(/(?:ZAR\s*)?R\s*(-?\d[\d ,.:]*\d?)/gi)]
+    .map((match) => extractDecimalTokens(match[1])[0])
+    .filter((token): token is string => Boolean(token));
+  if (currencyMatches.length) return currencyMatches[currencyMatches.length - 1];
+
+  const labelled = /\b(?:litres?|liters?|ltrs?|qty|quantity|amount|amnt|total|purchase|sale|price|rate)\b[^0-9-]{0,16}(-?\d[\d ,.:]*\d?)/i.exec(text);
+  if (labelled) {
+    const labelledTokens = extractDecimalTokens(labelled[1]);
+    if (labelledTokens.length) return labelledTokens[0];
+  }
+
+  const tokens = extractDecimalTokens(text);
+  return tokens.length <= 1 ? (tokens[0] ?? text) : tokens[tokens.length - 1];
+}
+
 export function roundFuelSlipDecimal(value: number, decimals: number): number {
   if (!Number.isFinite(value)) return 0;
   const factor = 10 ** decimals;
@@ -36,7 +73,7 @@ export function roundFuelSlipAmount(value: number): number {
 }
 
 export function parseFuelSlipDecimal(value: unknown, decimals = 2): number | null {
-  let text = cleanNumericText(value)
+  let text = preferredDecimalToken(cleanNumericText(value))
     .replace(/(\d)\s*:\s*(\d)/g, '$1.$2')
     .replace(/(?:zar|rand)/gi, '')
     .replace(/litres?|liters?|ltrs?/gi, '')

@@ -180,13 +180,13 @@ function scoreFuelSlipOcrText(text: string, confidence: number | null): number {
   let score = Math.min(25, Math.floor(normalized.length / 40));
   if (confidence !== null && Number.isFinite(confidence)) score += Math.max(0, Math.min(20, confidence / 5));
   if (/\b(?:litres?|liters?|ltrs?)\s*[:=]?\s*\d|\b\d[\d,.]*\s*(?:l|litres?|liters?|ltrs?)\b/.test(normalized)) score += 22;
-  if (/\b(?:diesel|petrol|unleaded|ulp|excellium|dynamic\s+diesel|v[- ]?power|fuel\s*save|quartech|turbo\s*diesel|ultimate\s+diesel|d\s*50|d\s*[- ]?50|50\s*ppm|500\s*ppm)\b/.test(normalized)) score += 16;
+  if (/\b(?:diesel|petrol|unleaded|ulp|excellium|dynamic\s+diesel|v[- ]?power|fuel\s*save|quartech|turbo\s*diesel|turbodiesel|ultimate\s+diesel|bp\s+ultimate|shell\s+fuel\s*save|engen\s+dynamic|d\s*50|d\s*[- ]?50|50\s*ppm|500\s*ppm)\b/.test(normalized)) score += 18;
   if (/@\s*(?:zar\s*)?(?:r\s*)?\d|@\s*r|per\s*(?:litre|liter|l)|rate\s*\/\s*l|price\s*per/.test(normalized)) score += 12;
-  if (/\b(?:total\s+amount|amount\s+due|total|amnt|amount|purchase|sale|card\s+tender)\b/.test(normalized)) score += 12;
+  if (/\b(?:total\s+amount|amount\s+due|total|amnt|amount|purchase|sale|card\s+tender|tender|paid)\b/.test(normalized)) score += 12;
   if (/(?:zar\s*)?r\s*\d[\d\s,.:]*(?:[,. :]\d{2})/.test(normalized)) score += 8;
   if (/\b(?:20\d{2}[-/.]\d{1,2}[-/.]\d{1,2}|\d{1,2}[-/.]\d{1,2}[-/.](?:20)?\d{2}|d\s*:\s*\d{1,2}[-/.]\d{1,2}[-/.]\d{2})\b/i.test(text)) score += 12;
   if (/\b(?:engen|shell|bp|totalenergies|total|astron|caltex|sasol|puma|gulf|motors?|garage|service\s+station|filling\s+station|truck\s+stop|fuel)\b/.test(normalized)) score += 10;
-  if (/(?:\d{4,6}\s*)?(?:[*x]{2,}\s*){1,4}\d{4}\b|\*{4,}\d{4}\b|\bcard\b|\bpan\b/.test(normalized)) score += 6;
+  if (/(?:\d{4,6}\s*)?(?:[*x]{2,}\s*){1,4}\d{4}\b|(?:[*x]{4,}\s*){1,4}\d{4}\b|\bcard\b|\bpan\b/.test(normalized)) score += 8;
   return score;
 }
 
