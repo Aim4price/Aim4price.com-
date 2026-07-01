@@ -161,12 +161,9 @@ export function normalizeAdvancedAssumptions(
       throw new Error('Expected lifetime usage must be a valid number.');
     }
 
-    const usesKilometres = usageMetricType === 'km';
-    const min = usesKilometres ? ADVANCED_LIFETIME_KM_MIN : ADVANCED_LIFETIME_HOURS_MIN;
-    const max = usesKilometres ? ADVANCED_LIFETIME_KM_MAX : ADVANCED_LIFETIME_HOURS_MAX;
-    const unitLabel = usesKilometres ? 'kilometres' : 'hours';
-    if (lifetime < min || lifetime > max) {
-      throw new Error(`Expected lifetime ${unitLabel} must be between ${min.toLocaleString('en-ZA')} and ${max.toLocaleString('en-ZA')}.`);
+    const unitLabel = usageMetricType === 'km' ? 'kilometres' : 'hours';
+    if (lifetime <= 0) {
+      throw new Error(`Expected lifetime ${unitLabel} must be greater than 0.`);
     }
 
     normalized.maxLifetimeUsage = Math.round(lifetime);
