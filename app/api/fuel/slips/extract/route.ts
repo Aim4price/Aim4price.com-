@@ -13,8 +13,11 @@ export const dynamic = 'force-dynamic';
 const FUEL_SLIP_UPLOAD_MIME_TYPES = new Set<string>([
   'application/pdf',
   'text/plain',
+  'image/jpg',
   ...ALLOWED_ASSET_REGISTER_IMAGE_TYPES,
 ]);
+
+const FUEL_SLIP_UPLOAD_EXTENSIONS = new Set(['.pdf', '.txt', '.jpg', '.jpeg', '.png', '.webp']);
 
 type FormFile = File & {
   size: number;
@@ -35,6 +38,17 @@ function pickUploadFile(formData: FormData): FormFile | null {
   }
 
   return null;
+}
+
+function fuelSlipFileExtension(fileName: string): string {
+  const normalized = String(fileName ?? '').trim().toLowerCase();
+  const dotIndex = normalized.lastIndexOf('.');
+  return dotIndex >= 0 ? normalized.slice(dotIndex) : '';
+}
+
+function isAllowedFuelSlipUpload(file: FormFile): boolean {
+  const contentType = String(file.type ?? '').trim().toLowerCase();
+  return FUEL_SLIP_UPLOAD_MIME_TYPES.has(contentType) || FUEL_SLIP_UPLOAD_EXTENSIONS.has(fuelSlipFileExtension(file.name));
 }
 
 async function currentUserId() {
@@ -63,7 +77,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: 'Choose a fuel slip PDF or photo to upload.' }, { status: 400 });
   }
 
-  if (!FUEL_SLIP_UPLOAD_MIME_TYPES.has(file.type)) {
+  if (!isAllowedFuelSlipUpload(file)) {
     return NextResponse.json({ ok: false, error: 'Upload a PDF, TXT, JPG, PNG or WEBP fuel slip.' }, { status: 400 });
   }
 
@@ -74,7 +88,7 @@ export async function POST(request: Request) {
   try {
     const upload = await createAssetRegisterUpload({ userId, file });
     const buffer = Buffer.from(await file.arrayBuffer());
-    const extraction = extractFuelSlipFromUpload({
+    const extraction = await extractFuelSlipFromUpload({
       data: buffer,
       contentType: upload.contentType || file.type,
       fileName: upload.fileName || file.name,
