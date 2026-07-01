@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '../../../../lib/auth-session';
 import { getAccountProfile } from '../../../../lib/account-profile';
 import { listAssetRegisterItems, type AssetRegisterItem } from '../../../../lib/asset-register-db';
-import { getAssetRegisterForUser, getSelectedAssetRegister, getVisibleAssetRegisterLogoUrl } from '../../../../lib/asset-registers';
+import { getAssetRegisterForUser, getSelectedAssetRegister, getVisibleAssetRegisterLogoUrl, listAssetRegisters, type AssetRegisterSummary } from '../../../../lib/asset-registers';
 import { createXlsxWorkbook, type XlsxCellStyle, type XlsxCellValue, type XlsxSheet } from '../../../../lib/simple-xlsx';
 
 export const runtime = 'nodejs';
@@ -17,6 +17,18 @@ type SheetDefinition = {
   description: string;
   items: AssetRegisterItem[];
   tabColor: string;
+};
+
+type RegisterExportScope = 'all' | 'single' | 'combined';
+
+type RegisterExportBundle = {
+  register: AssetRegisterSummary;
+  items: AssetRegisterItem[];
+};
+
+type SourceAssetRow = {
+  register: AssetRegisterSummary;
+  item: AssetRegisterItem;
 };
 
 type UsageDisplay = {
@@ -846,13 +858,18 @@ function currentPdfPage(state: PdfBuildState): string[] {
   return state.pages[state.pages.length - 1];
 }
 
-function addPdfPage(state: PdfBuildState, continued = false) {
+function addPdfPage(
+  state: PdfBuildState,
+  continued = false,
+  continuedTitle = 'Full Asset Register continued',
+  continuedSubtitle = 'Aim4price asset register PDF',
+) {
   state.pages.push([]);
   state.y = PDF_PAGE_HEIGHT - PDF_MARGIN;
 
   if (continued) {
-    drawPdfText(state, 'Full Asset Register continued', PDF_MARGIN, state.y, 12, 'F2');
-    drawPdfText(state, 'Aim4price asset register PDF', PDF_PAGE_WIDTH - PDF_MARGIN - 160, state.y, 9, 'F1');
+    drawPdfText(state, continuedTitle, PDF_MARGIN, state.y, 12, 'F2');
+    drawPdfText(state, continuedSubtitle, PDF_PAGE_WIDTH - PDF_MARGIN - 176, state.y, 9, 'F1');
     state.y -= 22;
     drawPdfRule(state, state.y);
     state.y -= 18;
@@ -872,9 +889,14 @@ function drawPdfRect(state: PdfBuildState, x: number, y: number, width: number, 
   currentPdfPage(state).push(`q 0.80 0.87 0.83 RG 0.6 w ${pdfNumber(x)} ${pdfNumber(y)} ${pdfNumber(width)} ${pdfNumber(height)} re S Q`);
 }
 
-function ensurePdfSpace(state: PdfBuildState, requiredHeight: number) {
+function ensurePdfSpace(
+  state: PdfBuildState,
+  requiredHeight: number,
+  continuedTitle = 'Full Asset Register continued',
+  continuedSubtitle = 'Aim4price asset register PDF',
+) {
   if (state.y - requiredHeight < PDF_BOTTOM_MARGIN) {
-    addPdfPage(state, true);
+    addPdfPage(state, true, continuedTitle, continuedSubtitle);
   }
 }
 
@@ -1124,6 +1146,411 @@ function buildFullRegisterPdf(items: AssetRegisterItem[], profile: AccountProfil
   return createPdfBuffer(state.pages.map((commands) => commands.join('\n')));
 }
 
+
+function parseRegisterIds(params: URLSearchParams): string[] {
+  const combinedIds = cleanText(params.get('registerIds'));
+  const legacyId = cleanText(params.get('registerId'));
+  const rawValue = combinedIds || legacyId;
+
+  if (!rawValue) return [];
+
+  const seen = new Set<string>();
+  const ids: string[] = [];
+
+  rawValue.split(',').forEach((entry) => {
+    const id = cleanText(entry);
+    if (!id || seen.has(id)) return;
+    seen.add(id);
+    ids.push(id);
+  });
+
+  return ids;
+}
+
+function registerContactLine(register: AssetRegisterSummary): string {
+  return [register.phone, register.email, register.addressLine1]
+    .map((part) => cleanText(part))
+    .filter(Boolean)
+    .join(' • ') || 'No contact details saved';
+}
+
+function registerSummaryAssets(register: AssetRegisterSummary, items: AssetRegisterItem[]): AssetRegisterItem[] {
+  const uniqueItems = dedupeAssetItems(items);
+  return uniqueItems.length || !register.assetCount ? uniqueItems : items;
+}
+
+function buildScopedExportProfile(
+  profile: AccountProfileResult,
+  scope: RegisterExportScope,
+  registers: AssetRegisterSummary[],
+  entityName: string,
+): AccountProfileResult {
+  const selectedRegister = scope === 'single' ? registers[0] ?? null : null;
+  const selectedRegisterLogoUrl = selectedRegister ? getVisibleAssetRegisterLogoUrl(selectedRegister) : '';
+  const exportEmail = selectedRegister?.email || profile.marketplaceEmail || profile.email || '';
+
+  return {
+    ...profile,
+    businessName: entityName || selectedRegister?.businessName || profile.businessName,
+    phone: selectedRegister?.phone || profile.phone,
+    email: exportEmail,
+    marketplaceEmail: exportEmail,
+    logoUrl: selectedRegisterLogoUrl || profile.logoUrl,
+    addressLine1: selectedRegister?.addressLine1 || profile.addressLine1,
+    addressLine2: selectedRegister ? '' : profile.addressLine2,
+  };
+}
+
+function buildDefaultScopedEntityName(scope: RegisterExportScope, registers: AssetRegisterSummary[]): string {
+  if (scope === 'single' && registers[0]) return registers[0].businessName || 'Asset Register';
+  if (scope === 'combined') return 'Combined Asset Registers';
+  return 'All Asset Registers';
+}
+
+function buildScopedDescription(scope: RegisterExportScope, registers: AssetRegisterSummary[]): string {
+  if (scope === 'single' && registers[0]) {
+    return `Asset register export for ${registers[0].businessName}.`;
+  }
+
+  if (scope === 'combined') {
+    return `Combined export for ${registers.length} selected asset registers.`;
+  }
+
+  return `Full export across ${registers.length} saved asset registers.`;
+}
+
+function flattenSourceAssetRows(bundles: RegisterExportBundle[]): SourceAssetRow[] {
+  return bundles.flatMap((bundle) =>
+    dedupeAssetItems(bundle.items).map((item) => ({ register: bundle.register, item })),
+  );
+}
+
+function buildSourceAssetHeaderRow(): XlsxCellValue[] {
+  return [
+    textCell('Source asset register', 'tableHeader'),
+    ...TABLE_HEADERS.map((header) => textCell(header, 'tableHeader')),
+  ];
+}
+
+function buildSourceAssetRow(row: SourceAssetRow, index: number): XlsxCellValue[] {
+  const item = row.item;
+  const usage = usageDisplay(item);
+  const financeStatus = readFinanceStatusChoice(item);
+  const insuranceStatus = readInsuranceStatusChoice(item);
+  const licenseStatus = readLicenseStatusChoice(item);
+  const insuredValue = insuredValueExVat(item);
+  const replacementPrice = replacementPriceExVat(item);
+  const isProperty = item.kind === 'property';
+  const registerValue = numericValue(item.value);
+
+  return [
+    textOrNaCell(row.register.businessName),
+    textOrNaCell(item.title),
+    isProperty ? naCell() : textOrNaCell(item.serialNumber),
+    numberCell(index + 1),
+    textOrNaCell(kindLabel(item)),
+    isProperty ? naCell() : textOrNaCell(item.brandName),
+    isProperty ? textOrNaCell(`Size: ${propertySizeDisplay(item)}`) : textOrNaCell(item.modelName || item.typedModelName),
+    item.yearModel ? numberCell(item.yearModel) : naCell(),
+    isProperty ? naCell() : textOrNaCell(buildPlateOrQrCode(item)),
+    isProperty ? naCell() : textOrNaCell(formatDrive(item.drive)),
+    usage.value === null ? naCell() : numberCell(usage.value),
+    textOrNaCell(usage.unit),
+    textOrNaCell(conditionLabel(item.condition)),
+    moneyCell(item.value),
+    registerValue === null ? naCell() : moneyCell(moneyInclVatTotal(registerValue)),
+    statusCellForChoice(financeStatus, 'Financed', 'Not financed'),
+    textOrNaCell(item.financeNote, 'note'),
+    statusCellForChoice(insuranceStatus, 'Insured', 'Not insured'),
+    textOrNaCell(readInsuranceNote(item), 'note'),
+    insuredValue === null ? naCell() : moneyCell(insuredValue),
+    insuredValue === null ? naCell() : moneyCell(moneyInclVatTotal(insuredValue)),
+    isProperty ? naCell() : statusCellForChoice(licenseStatus, 'Licensed', 'Not licensed'),
+    !isProperty && licenseStatus === 'yes' ? textOrNaCell(readLicenseRegistrationNumber(item)) : naCell(),
+    replacementPrice === null ? naCell() : moneyCell(replacementPrice),
+    replacementPrice === null ? naCell() : moneyCell(moneyInclVatTotal(replacementPrice)),
+  ];
+}
+
+function buildRegisterCollectionSummarySheet(
+  bundles: RegisterExportBundle[],
+  profile: AccountProfileResult,
+  scope: RegisterExportScope,
+  entityName: string,
+  generatedAt: Date,
+): XlsxSheet {
+  const sourceRows = flattenSourceAssetRows(bundles);
+  const allItems = sourceRows.map((row) => row.item);
+  const registerValue = registerValueTotal(allItems);
+  const registerValueInclVat = registerValueInclVatTotal(allItems);
+  const replacementValue = replacementValueTotal(allItems);
+  const replacementValueInclVat = replacementValueInclVatTotal(allItems);
+  const summaryHeader = [
+    textCell('Asset register', 'tableHeader'),
+    textCell('Contact', 'tableHeader'),
+    textCell('Assets', 'tableHeader'),
+    textCell('Register value ex VAT', 'tableHeader'),
+    textCell('Register value incl VAT', 'tableHeader'),
+    textCell('Replacement value ex VAT', 'tableHeader'),
+    textCell('Replacement value incl VAT', 'tableHeader'),
+  ];
+  const registerRows = bundles.map((bundle) => {
+    const items = registerSummaryAssets(bundle.register, bundle.items);
+
+    return [
+      textOrNaCell(bundle.register.businessName),
+      textOrNaCell(registerContactLine(bundle.register), 'metaValue'),
+      numberCell(dedupeAssetItems(bundle.items).length || bundle.register.assetCount),
+      moneyCell(registerValueTotal(items)),
+      moneyCell(registerValueInclVatTotal(items)),
+      moneyCell(replacementValueTotal(items)),
+      moneyCell(replacementValueInclVatTotal(items)),
+    ];
+  });
+
+  return {
+    name: 'Register Summary',
+    tabColor: '10382F',
+    columns: [32, 44, 12, 22, 22, 26, 26],
+    rows: [
+      [textCell('Aim4price Asset Registers Export', 'title')],
+      [textCell(entityName, 'section')],
+      [textCell(buildScopedDescription(scope, bundles.map((bundle) => bundle.register)), 'subtitle')],
+      [],
+      [textCell('Export details', 'section')],
+      [textCell('Generated', 'metaLabel'), { value: generatedAt, style: 'date' }],
+      [textCell('Report name', 'metaLabel'), textOrNaCell(entityName, 'metaValue')],
+      [textCell('Owner', 'metaLabel'), textOrNaCell(buildOwnerName(profile), 'metaValue')],
+      [textCell('Included registers', 'metaLabel'), numberCell(bundles.length)],
+      [textCell('Total assets', 'metaLabel'), numberCell(sourceRows.length)],
+      [textCell('Register value ex VAT', 'metaLabel'), moneyCell(registerValue)],
+      [textCell('Register value incl VAT', 'metaLabel'), moneyCell(registerValueInclVat)],
+      [textCell('Replacement value ex VAT', 'metaLabel'), moneyCell(replacementValue)],
+      [textCell('Replacement value incl VAT', 'metaLabel'), moneyCell(replacementValueInclVat)],
+      [],
+      [textCell('Included asset registers', 'section')],
+      summaryHeader,
+      ...registerRows,
+      [],
+      [textCell('Export note', 'section')],
+      [
+        textCell(
+          'Values and replacement prices are shown both excluding VAT and including VAT at 15%. Each asset row in the Assets sheet includes its source asset register.',
+          'subtitle',
+        ),
+      ],
+      [
+        textCell(
+          'Indicative estimates only. Not a certified valuation, inspection report or guarantee of selling price.',
+          'subtitle',
+        ),
+      ],
+    ],
+  };
+}
+
+function buildRegisterCollectionAssetsSheet(
+  bundles: RegisterExportBundle[],
+  scope: RegisterExportScope,
+  entityName: string,
+  generatedAt: Date,
+): XlsxSheet {
+  const sourceRows = flattenSourceAssetRows(bundles);
+  const headerRow = 10;
+
+  return {
+    name: 'Assets',
+    tabColor: '0F6A46',
+    columns: [32, ...WORKBOOK_COLUMN_WIDTHS],
+    freezeRow: headerRow,
+    autoFilter: sourceRows.length
+      ? {
+          fromRow: headerRow,
+          fromColumn: 1,
+          toRow: headerRow + sourceRows.length,
+          toColumn: TABLE_HEADERS.length + 1,
+        }
+      : undefined,
+    rows: [
+      [textCell('Aim4price Asset Registers Export', 'title')],
+      [textCell(entityName, 'section')],
+      [textCell(buildScopedDescription(scope, bundles.map((bundle) => bundle.register)), 'subtitle')],
+      [],
+      [textCell('Generated', 'metaLabel'), { value: generatedAt, style: 'date' }],
+      [textCell('Included registers', 'metaLabel'), numberCell(bundles.length)],
+      [textCell('Total assets', 'metaLabel'), numberCell(sourceRows.length)],
+      [],
+      [textCell('Asset rows', 'section')],
+      buildSourceAssetHeaderRow(),
+      ...sourceRows.map(buildSourceAssetRow),
+    ],
+  };
+}
+
+function buildRegisterCollectionWorkbookSheets(
+  bundles: RegisterExportBundle[],
+  profile: AccountProfileResult,
+  scope: RegisterExportScope,
+  entityName: string,
+  generatedAt: Date,
+): XlsxSheet[] {
+  return [
+    buildRegisterCollectionSummarySheet(bundles, profile, scope, entityName, generatedAt),
+    buildRegisterCollectionAssetsSheet(bundles, scope, entityName, generatedAt),
+  ];
+}
+
+function drawPdfSourceAssetBlock(state: PdfBuildState, register: AssetRegisterSummary, item: AssetRegisterItem, index: number) {
+  const contentWidth = PDF_PAGE_WIDTH - PDF_MARGIN * 2 - 22;
+  const rawLines = [
+    { text: `Source register: ${register.businessName}`, font: 'F2' as const, size: 8.8 },
+    ...buildPdfAssetLines(item, index),
+  ];
+  const measuredLineCount = rawLines.reduce((count, line) => {
+    const maxChars = Math.max(18, Math.floor(contentWidth / (line.size * 0.54)));
+    return count + wrapPdfText(line.text, maxChars).length;
+  }, 0);
+  const blockHeight = 24 + measuredLineCount * 12.2;
+
+  ensurePdfSpace(state, blockHeight + 10, 'Asset Registers export continued', 'Aim4price asset registers PDF');
+
+  const topY = state.y;
+  drawPdfRect(state, PDF_MARGIN, topY - blockHeight, PDF_PAGE_WIDTH - PDF_MARGIN * 2, blockHeight, index % 2 === 0 ? '0.985 0.992 0.988' : '0.965 0.981 0.974');
+  state.y -= 17;
+
+  rawLines.forEach((line) => {
+    drawPdfWrappedText(state, line.text, PDF_MARGIN + 12, contentWidth, line.size, line.font, 12.2);
+  });
+
+  state.y = topY - blockHeight - 9;
+}
+
+function drawRegisterSummaryPdfRow(state: PdfBuildState, bundle: RegisterExportBundle) {
+  const items = dedupeAssetItems(bundle.items);
+  const height = 60;
+
+  ensurePdfSpace(state, height + 8, 'Asset Registers export continued', 'Aim4price asset registers PDF');
+
+  const topY = state.y;
+  drawPdfRect(state, PDF_MARGIN, topY - height, PDF_PAGE_WIDTH - PDF_MARGIN * 2, height, '0.975 0.990 0.982');
+  drawPdfWrappedTextAt(state, bundle.register.businessName, PDF_MARGIN + 12, topY - 17, 190, 11.2, 'F2', 13);
+  drawPdfWrappedTextAt(state, registerContactLine(bundle.register), PDF_MARGIN + 12, topY - 34, 260, 8.2, 'F1', 10);
+  drawPdfKeyValue(state, 'Assets', String(items.length || bundle.register.assetCount), PDF_MARGIN + 300, topY - 16, 60);
+  drawPdfKeyValue(state, 'Register value', formatPdfMoney(registerValueTotal(items)), PDF_MARGIN + 372, topY - 16, 88);
+  drawPdfKeyValue(state, 'Replacement', formatPdfMoney(replacementValueTotal(items)), PDF_MARGIN + 468, topY - 16, 78);
+  state.y = topY - height - 8;
+}
+
+function buildAssetRegistersPdf(
+  bundles: RegisterExportBundle[],
+  profile: AccountProfileResult,
+  scope: RegisterExportScope,
+  entityName: string,
+  generatedAt = new Date(),
+): Buffer {
+  const state: PdfBuildState = { pages: [], y: 0 };
+  const sourceRows = flattenSourceAssetRows(bundles);
+  const allItems = sourceRows.map((row) => row.item);
+  const ownerName = buildOwnerName(profile);
+  const ownerAddress = buildOwnerAddress(profile) || 'N/A';
+  const registerValue = registerValueTotal(allItems);
+  const registerValueInclVat = registerValueInclVatTotal(allItems);
+  const replacementValue = replacementValueTotal(allItems);
+  const replacementValueInclVat = replacementValueInclVatTotal(allItems);
+
+  addPdfPage(state, false);
+
+  drawPdfText(state, 'Aim4price', PDF_MARGIN, state.y, 13, 'F2');
+  drawPdfText(state, 'Asset Registers Export', PDF_MARGIN, state.y - 28, 24, 'F2');
+  drawPdfText(state, `Generated ${formatPdfDate(generatedAt)}`, PDF_PAGE_WIDTH - PDF_MARGIN - 145, state.y, 9, 'F1');
+  state.y -= 56;
+  drawPdfRule(state, state.y);
+  state.y -= 24;
+
+  const heroTop = state.y;
+  drawPdfRect(state, PDF_MARGIN, heroTop - 96, PDF_PAGE_WIDTH - PDF_MARGIN * 2, 96, '0.955 0.980 0.970');
+  drawPdfText(state, 'REPORT NAME', PDF_MARGIN + 14, heroTop - 22, 8, 'F2');
+  const entityLineCount = drawPdfWrappedTextAt(state, entityName || ownerName, PDF_MARGIN + 14, heroTop - 43, 300, 17, 'F2', 19);
+  drawPdfWrappedTextAt(state, ownerAddress, PDF_MARGIN + 14, heroTop - 45 - entityLineCount * 18, 300, 8.8, 'F1', 11);
+  drawPdfText(state, 'REGISTER VALUE', PDF_PAGE_WIDTH - PDF_MARGIN - 166, heroTop - 22, 8, 'F2');
+  drawPdfText(state, `${formatPdfMoney(registerValue)} excl. VAT`, PDF_PAGE_WIDTH - PDF_MARGIN - 166, heroTop - 43, 12, 'F2');
+  drawPdfText(state, `${formatPdfMoney(registerValueInclVat)} incl. VAT`, PDF_PAGE_WIDTH - PDF_MARGIN - 166, heroTop - 57, 8.5, 'F1');
+  drawPdfText(state, 'REPLACEMENT VALUE', PDF_PAGE_WIDTH - PDF_MARGIN - 166, heroTop - 75, 8, 'F2');
+  drawPdfText(state, `${formatPdfMoney(replacementValue)} excl. VAT`, PDF_PAGE_WIDTH - PDF_MARGIN - 166, heroTop - 89, 9.2, 'F2');
+  drawPdfText(state, `${formatPdfMoney(replacementValueInclVat)} incl. VAT`, PDF_PAGE_WIDTH - PDF_MARGIN - 166, heroTop - 101, 7.8, 'F1');
+  state.y = heroTop - 118;
+
+  const cardGap = 8;
+  const cardWidth = (PDF_PAGE_WIDTH - PDF_MARGIN * 2 - cardGap * 3) / 4;
+  drawPdfSummaryCard(state, 'Registers', String(bundles.length), PDF_MARGIN, state.y, cardWidth);
+  drawPdfSummaryCard(state, 'Assets', String(sourceRows.length), PDF_MARGIN + cardWidth + cardGap, state.y, cardWidth);
+  drawPdfSummaryCard(state, 'Register value', formatPdfMoney(registerValue), PDF_MARGIN + (cardWidth + cardGap) * 2, state.y, cardWidth);
+  drawPdfSummaryCard(state, 'Replacement', formatPdfMoney(replacementValue), PDF_MARGIN + (cardWidth + cardGap) * 3, state.y, cardWidth);
+  state.y -= 66;
+
+  drawPdfText(state, 'Included asset registers', PDF_MARGIN, state.y, 14, 'F2');
+  state.y -= 18;
+  bundles.forEach((bundle) => drawRegisterSummaryPdfRow(state, bundle));
+
+  ensurePdfSpace(state, 46, 'Asset Registers export continued', 'Aim4price asset registers PDF');
+  drawPdfText(state, 'Asset list by source register', PDF_MARGIN, state.y, 14, 'F2');
+  state.y -= 18;
+
+  if (sourceRows.length) {
+    let globalIndex = 0;
+
+    bundles.forEach((bundle) => {
+      const items = dedupeAssetItems(bundle.items);
+      ensurePdfSpace(state, 48, 'Asset Registers export continued', 'Aim4price asset registers PDF');
+      const sourceTop = state.y;
+      drawPdfRect(state, PDF_MARGIN, sourceTop - 38, PDF_PAGE_WIDTH - PDF_MARGIN * 2, 38, '0.925 0.970 0.950');
+      drawPdfText(state, bundle.register.businessName, PDF_MARGIN + 12, sourceTop - 15, 11.5, 'F2');
+      drawPdfText(
+        state,
+        `${items.length} assets | Register value ${formatPdfMoney(registerValueTotal(items))} excl. VAT | Replacement ${formatPdfMoney(replacementValueTotal(items))} excl. VAT`,
+        PDF_MARGIN + 12,
+        sourceTop - 29,
+        8.2,
+        'F1',
+      );
+      state.y = sourceTop - 48;
+
+      if (items.length) {
+        items.forEach((item) => {
+          drawPdfSourceAssetBlock(state, bundle.register, item, globalIndex);
+          globalIndex += 1;
+        });
+      } else {
+        drawPdfText(state, 'No assets were saved in this register at export time.', PDF_MARGIN + 12, state.y, 9, 'F1');
+        state.y -= 18;
+      }
+    });
+  } else {
+    drawPdfText(state, 'No assets were saved in the selected asset register(s) at export time.', PDF_MARGIN, state.y, 10, 'F1');
+    state.y -= 18;
+  }
+
+  ensurePdfSpace(state, 72, 'Asset Registers export continued', 'Aim4price asset registers PDF');
+  drawPdfRule(state, state.y);
+  state.y -= 18;
+  drawPdfWrappedText(
+    state,
+    'Values are indicative Aim4price estimates based on replacement price, saved asset information, age, usage, condition and available asset inputs. Values exclude VAT unless stated otherwise. This is not a certified valuation, inspection report or guarantee of selling price.',
+    PDF_MARGIN,
+    PDF_PAGE_WIDTH - PDF_MARGIN * 2,
+    8.2,
+    'F1',
+    10.8,
+  );
+
+  state.pages.forEach((page, index) => {
+    page.push(`BT /F1 8 Tf ${pdfNumber(PDF_MARGIN)} ${pdfNumber(24)} Td (${escapePdfText('Powered by Aim4price.com')}) Tj ET`);
+    page.push(`BT /F1 8 Tf ${pdfNumber(PDF_PAGE_WIDTH - PDF_MARGIN - 62)} ${pdfNumber(24)} Td (${escapePdfText(`Page ${index + 1} of ${state.pages.length}`)}) Tj ET`);
+  });
+
+  return createPdfBuffer(state.pages.map((commands) => commands.join('\n')));
+}
+
 function createPdfBuffer(pageContents: string[]): Buffer {
   const objects: string[] = [];
   const addObject = (body: string) => {
@@ -1193,6 +1620,89 @@ export async function GET(request: NextRequest) {
 
     if (profile.accountType !== 'owner') {
       return NextResponse.json({ ok: false, error: 'Asset Register export is only available to owner accounts.' }, { status: 403 });
+    }
+
+    const scopeParam = cleanText(params.get('scope')).toLowerCase();
+    const isScopedExport = scopeParam === 'all' || scopeParam === 'single' || scopeParam === 'combined';
+
+    if (scopeParam && !isScopedExport) {
+      return NextResponse.json({ ok: false, error: 'Invalid asset register export scope.' }, { status: 400 });
+    }
+
+    if (isScopedExport) {
+      const scope = scopeParam as RegisterExportScope;
+      const allRegisters = await listAssetRegisters(session.user.id);
+      const registerIds = parseRegisterIds(params);
+      const registerById = new Map(allRegisters.map((register) => [register.id, register]));
+      let selectedRegisters: AssetRegisterSummary[] = [];
+
+      if (scope === 'all') {
+        selectedRegisters = allRegisters;
+      } else {
+        if (scope === 'single' && registerIds.length !== 1) {
+          return NextResponse.json({ ok: false, error: 'Choose one asset register to export.' }, { status: 400 });
+        }
+
+        if (scope === 'combined' && registerIds.length < 2) {
+          return NextResponse.json({ ok: false, error: 'Choose at least two asset registers to combine.' }, { status: 400 });
+        }
+
+        const missingRegisterIds = registerIds.filter((registerId) => !registerById.has(registerId));
+        if (missingRegisterIds.length) {
+          return NextResponse.json({ ok: false, error: 'One or more requested asset registers could not be found for this account.' }, { status: 404 });
+        }
+
+        selectedRegisters = registerIds
+          .map((registerId) => registerById.get(registerId))
+          .filter((register): register is AssetRegisterSummary => Boolean(register));
+      }
+
+      if (!selectedRegisters.length) {
+        return NextResponse.json({ ok: false, error: 'No asset registers were found to export.' }, { status: 404 });
+      }
+
+      const defaultEntityName = buildDefaultScopedEntityName(scope, selectedRegisters);
+      const entityName = cleanText(params.get('entityName')).slice(0, 160) || defaultEntityName;
+      const generatedAt = new Date();
+      const filenameDate = generatedAt.toISOString().slice(0, 10);
+      const exportProfile = buildScopedExportProfile(profile, scope, selectedRegisters, entityName);
+      const bundles: RegisterExportBundle[] = await Promise.all(
+        selectedRegisters.map(async (register) => ({
+          register,
+          items: await listAssetRegisterItems(session.user.id, register.id),
+        })),
+      );
+      const ownerSlug = pdfFileSlug(entityName || buildOwnerName(exportProfile));
+
+      if (format === 'pdf') {
+        const pdf = buildAssetRegistersPdf(bundles, exportProfile, scope, entityName, generatedAt);
+        const fileName = `aim4price-asset-registers-${ownerSlug}-${filenameDate}.pdf`;
+
+        return new NextResponse(pdf, {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': `attachment; filename="${fileName}"`,
+            'Content-Length': String(pdf.length),
+            'Cache-Control': 'no-store',
+          },
+        });
+      }
+
+      const workbook = createXlsxWorkbook(
+        buildRegisterCollectionWorkbookSheets(bundles, exportProfile, scope, entityName, generatedAt),
+      );
+      const fileName = `aim4price-asset-registers-${ownerSlug}-${filenameDate}.xlsx`;
+
+      return new NextResponse(workbook, {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'Content-Disposition': `attachment; filename="${fileName}"`,
+          'Content-Length': String(workbook.length),
+          'Cache-Control': 'no-store',
+        },
+      });
     }
 
     const requestedRegisterId = String(params.get('registerId') ?? '').trim();
