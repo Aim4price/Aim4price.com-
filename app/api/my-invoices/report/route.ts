@@ -48,6 +48,11 @@ function parseFormat(value: string | null): ReportFormat {
   return String(value ?? '').toLowerCase() === 'xlsx' ? 'xlsx' : 'pdf';
 }
 
+function parseIncludeFuelSlipCosts(value: string | null): boolean {
+  const normalized = String(value ?? '').trim().toLowerCase();
+  return normalized !== 'false' && normalized !== '0' && normalized !== 'no';
+}
+
 function parseFilters(request: NextRequest): MyInvoiceListFilters {
   const searchParams = request.nextUrl.searchParams;
   const assetId = searchParams.get('assetId');
@@ -56,6 +61,7 @@ function parseFilters(request: NextRequest): MyInvoiceListFilters {
     assetId: assetId && assetId !== 'all' ? assetId : null,
     year: parseYear(searchParams.get('year')),
     month: parseMonth(searchParams.get('month')),
+    includeFuelSlipCosts: parseIncludeFuelSlipCosts(searchParams.get('includeFuelSlipCosts')),
   };
 }
 
@@ -133,6 +139,7 @@ export async function GET(request: NextRequest) {
       selectedAsset,
       summary: data.summary,
       invoices: data.invoices,
+      includeFuelSlipCosts: filters.includeFuelSlipCosts !== false,
       xlsxUrl: buildFormatUrl(request, 'xlsx'),
     };
 
