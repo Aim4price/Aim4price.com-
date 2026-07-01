@@ -177,6 +177,7 @@ function formatLocation(event: FuelLedgerEvent): string {
 }
 
 function eventActivityLabel(event: FuelLedgerEvent): string {
+  if (event.sourceType === 'fuel_slip') return 'Fuel Slip';
   if (event.eventType === 'opening_balance') return 'Opening balance';
   if (event.eventType === 'stock_in') return 'Fuel In / Storage Refill';
   if (event.eventType === 'asset_issue') return 'Asset filled';
