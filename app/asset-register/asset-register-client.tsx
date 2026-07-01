@@ -10,12 +10,6 @@ import {
   type ReportKeyValue,
   type ReportMethodCard,
 } from '../../lib/report-print';
-import {
-  ADVANCED_LIFETIME_HOURS_MAX,
-  ADVANCED_LIFETIME_HOURS_MIN,
-  ADVANCED_LIFETIME_KM_MAX,
-  ADVANCED_LIFETIME_KM_MIN,
-} from '../../lib/valuation/shared';
 import styles from './page.module.css';
 
 type NoticeTone = 'success' | 'error';
@@ -7564,9 +7558,6 @@ export default function AssetRegisterClient() {
 
     const usageMetric = getAssetUsageMetric(asset);
     const lifetimeUnitLabel = getLifetimeUnitLabel(usageMetric);
-    const lifetimeShortUnit = getLifetimeShortUnit(usageMetric);
-    const lifetimeMin = usageMetric === 'km' ? ADVANCED_LIFETIME_KM_MIN : ADVANCED_LIFETIME_HOURS_MIN;
-    const lifetimeMax = usageMetric === 'km' ? ADVANCED_LIFETIME_KM_MAX : ADVANCED_LIFETIME_HOURS_MAX;
     const lifetime = parseMoneyInput(revalueLifetimeUsageInput);
 
     if (lifetime === null) {
@@ -7574,10 +7565,8 @@ export default function AssetRegisterClient() {
       return undefined;
     }
 
-    if (lifetime < lifetimeMin || lifetime > lifetimeMax) {
-      setRevalueAdvancedError(
-        `Expected lifetime ${lifetimeUnitLabel} must be between ${formatPlainNumber(lifetimeMin)} and ${formatPlainNumber(lifetimeMax)} ${lifetimeShortUnit}.`,
-      );
+    if (lifetime <= 0) {
+      setRevalueAdvancedError(`Expected lifetime ${lifetimeUnitLabel} must be greater than 0.`);
       return undefined;
     }
 
@@ -9228,10 +9217,7 @@ export default function AssetRegisterClient() {
     }
 
     const usageMetric = getAssetUsageMetric(asset);
-    const lifetimeUnitLabel = getLifetimeUnitLabel(usageMetric);
     const lifetimeShortUnit = getLifetimeShortUnit(usageMetric);
-    const lifetimeMin = usageMetric === 'km' ? ADVANCED_LIFETIME_KM_MIN : ADVANCED_LIFETIME_HOURS_MIN;
-    const lifetimeMax = usageMetric === 'km' ? ADVANCED_LIFETIME_KM_MAX : ADVANCED_LIFETIME_HOURS_MAX;
 
     return (
       <div className={styles.revalueCustomReplacementCard}>
@@ -9246,10 +9232,6 @@ export default function AssetRegisterClient() {
             disabled={isLoadingPricingPreview || isSavingPricingPreview}
           />
         </label>
-
-        <p className={styles.revalueReplacementHelper}>
-          Adjust the expected lifetime {lifetimeUnitLabel} used by the depreciation calculation. Allowed range: {formatPlainNumber(lifetimeMin)}–{formatPlainNumber(lifetimeMax)} {lifetimeShortUnit}.
-        </p>
       </div>
     );
   }
