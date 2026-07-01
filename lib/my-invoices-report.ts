@@ -21,6 +21,7 @@ export type MyInvoicesReportOptions = {
   selectedAsset: MyInvoiceAssetOption | null;
   summary: MyInvoiceSummary;
   invoices: MyInvoiceRecord[];
+  includeFuelSlipCosts: boolean;
   xlsxUrl: string;
 };
 
@@ -202,6 +203,12 @@ function invoiceBlockText(invoice: MyInvoiceRecord, blockType: 'maintenance' | '
   return normalizeSpaces(block?.description) || '-';
 }
 
+function invoiceSourceLabel(invoice: MyInvoiceRecord): string {
+  if (invoice.source === 'fuel_slip') return 'Fuel Slip';
+  if (invoice.source === 'automatic') return 'Automatic';
+  return 'Manual';
+}
+
 function renderInvoiceRecords(invoices: MyInvoiceRecord[]): string {
   if (!invoices.length) {
     return '<div class="assetReportEmpty">No invoices have been saved for this report period.</div>';
@@ -259,6 +266,10 @@ function renderInvoiceRecords(invoices: MyInvoiceRecord[]): string {
                   <span>Attached Document / Photo</span>
                   <strong>${escapeHtml(attachmentLabel)}</strong>
                 </div>
+                <div class="assetReportMaintenanceDetail assetReportMaintenanceDetailWide">
+                  <span>Source</span>
+                  <strong>${escapeHtml(invoiceSourceLabel(invoice))}</strong>
+                </div>
               </div>
             </article>
           `;
@@ -272,6 +283,7 @@ function buildSummaryRows(options: MyInvoicesReportOptions): KeyValueRow[] {
   return [
     { label: 'Report Period', value: options.dateRangeLabel },
     { label: 'Asset Filter', value: options.assetLabel },
+    { label: 'External Fuel Costs', value: options.includeFuelSlipCosts ? 'Included' : 'Excluded' },
     { label: 'Invoices', value: options.summary.invoiceCount.toLocaleString('en-ZA') },
     { label: 'Total Spend', value: formatMoneyWithCents(options.summary.totalSpent) },
     { label: 'Maintenance Spend', value: formatMoneyWithCents(options.summary.maintenanceSpend) },
@@ -1111,10 +1123,6 @@ function invoiceDateForExcel(value: string | null): string {
   return value ?? '';
 }
 
-function invoiceSourceLabel(invoice: MyInvoiceRecord): string {
-  return invoice.source === 'automatic' ? 'Automatic' : 'Manual';
-}
-
 function blockRows(invoices: MyInvoiceRecord[], blockType: 'maintenance' | 'parts' | 'repair'): XlsxCellValue[][] {
   const rows: XlsxCellValue[][] = [
     ['Invoice Date', 'Asset', 'Supplier', 'Invoice Number', 'Description', 'Total Incl. VAT'],
@@ -1173,6 +1181,7 @@ export function buildMyInvoicesWorkbook(options: MyInvoicesReportOptions): XlsxS
     [styled('Generated', 'metaLabel'), styled(options.generatedAt, 'metaValue')],
     [styled('Period', 'metaLabel'), styled(options.dateRangeLabel, 'metaValue')],
     [styled('Asset Filter', 'metaLabel'), styled(options.assetLabel, 'metaValue')],
+    [styled('External fuel costs', 'metaLabel'), styled(options.includeFuelSlipCosts ? 'Included' : 'Excluded', 'metaValue')],
     [styled('Business name', 'metaLabel'), styled(options.ownerDetails.businessName, 'metaValue')],
     [styled('Contact details', 'metaLabel'), styled(options.ownerDetails.contactDetails, 'metaValue')],
     [styled('Business email', 'metaLabel'), styled(options.ownerDetails.businessEmail, 'metaValue')],

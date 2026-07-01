@@ -46,6 +46,14 @@ export type FuelLedgerEvent = {
   sourceType: string;
   sourceLabel: string;
   fuelSlipId: string;
+  fuelSlipTargetType: string;
+  fuelSlipSupplierName: string;
+  fuelSlipFuelType: string;
+  fuelSlipDocumentDate: string;
+  fuelSlipDocumentTime: string;
+  fuelSlipExtractionStatus: string;
+  fuelSlipReviewRequired: boolean;
+  fuelSlipReviewStatus: string;
   totalAmount: number | null;
   documentFileUrl: string;
   paymentMethod: string;
@@ -198,6 +206,16 @@ type FuelEventRow = {
   source_type: string | null;
   source_label: string | null;
   fuel_slip_id: string | null;
+  fs_target_type: string | null;
+  fs_supplier_name: string | null;
+  fs_fuel_type: string | null;
+  fs_document_date: string | null;
+  fs_document_time: string | null;
+  fs_document_file_url: string | null;
+  fs_payment_method: string | null;
+  fs_card_number_masked: string | null;
+  fs_extraction_status: string | null;
+  fs_review_required: boolean | null;
   total_amount: string | number | null;
   document_file_url: string | null;
   payment_method: string | null;
@@ -463,6 +481,14 @@ function normalizeFuelSlipExtractionStatus(value: unknown): FuelSlipExtractionSt
   const normalized = asText(value).toLowerCase();
   if (normalized === 'manual' || normalized === 'extracted' || normalized === 'needs_review') return normalized;
   return 'manual';
+}
+
+function fuelSlipReviewStatusLabel(status: unknown, reviewRequired: unknown): string {
+  const normalizedStatus = normalizeFuelSlipExtractionStatus(status);
+
+  if (Boolean(reviewRequired) || normalizedStatus === 'needs_review') return 'Needs review';
+  if (normalizedStatus === 'extracted') return 'Extracted';
+  return 'Manual';
 }
 
 function maskPotentialCardNumber(value: unknown): { masked: string; last4: string } {
@@ -738,19 +764,32 @@ function mapStorageRow(row: FuelStorageRow): FuelLedgerStorage {
 }
 
 function mapFuelEventRow(row: FuelEventRow): FuelLedgerEvent {
+  const sourceType = asText(row.source_type);
+  const isFuelSlip = sourceType === 'fuel_slip';
+  const extractionStatus = isFuelSlip ? asText(row.fs_extraction_status) : '';
+  const reviewRequired = isFuelSlip ? Boolean(row.fs_review_required) : false;
+
   return {
     id: asText(row.id),
     storageId: asText(row.storage_id),
     storageName: asText(row.storage_name) || 'Fuel storage',
     storagePublicCode: normalizeFuelStorageCode(row.storage_public_code),
     eventType: normalizeEventType(row.event_type),
-    sourceType: asText(row.source_type),
-    sourceLabel: asText(row.source_label),
+    sourceType,
+    sourceLabel: isFuelSlip ? 'Fuel Slip' : asText(row.source_label),
     fuelSlipId: asText(row.fuel_slip_id),
-    totalAmount: normalizeMoneyValue(row.total_amount),
-    documentFileUrl: asText(row.document_file_url),
-    paymentMethod: asText(row.payment_method),
-    cardNumberMasked: asText(row.card_number_masked),
+    fuelSlipTargetType: asText(row.fs_target_type),
+    fuelSlipSupplierName: asText(row.fs_supplier_name),
+    fuelSlipFuelType: asText(row.fs_fuel_type),
+    fuelSlipDocumentDate: toDateOnly(row.fs_document_date) ?? '',
+    fuelSlipDocumentTime: asText(row.fs_document_time),
+    fuelSlipExtractionStatus: extractionStatus,
+    fuelSlipReviewRequired: reviewRequired,
+    fuelSlipReviewStatus: isFuelSlip ? fuelSlipReviewStatusLabel(extractionStatus, reviewRequired) : '',
+    totalAmount: isFuelSlip ? null : normalizeMoneyValue(row.total_amount),
+    documentFileUrl: isFuelSlip ? asText(row.fs_document_file_url) || asText(row.document_file_url) : asText(row.document_file_url),
+    paymentMethod: isFuelSlip ? asText(row.fs_payment_method) || asText(row.payment_method) : asText(row.payment_method),
+    cardNumberMasked: isFuelSlip ? asText(row.fs_card_number_masked) || asText(row.card_number_masked) : asText(row.card_number_masked),
     assetId: asText(row.asset_register_item_id),
     assetTitle: asText(row.asset_title),
     assetPlateLabel: asText(row.asset_plate_label),
@@ -936,6 +975,16 @@ function fuelEventSelectSql(): string {
     e.source_type,
     e.source_label,
     e.fuel_slip_id::text as fuel_slip_id,
+    fs.target_type as fs_target_type,
+    fs.supplier_name as fs_supplier_name,
+    fs.fuel_type as fs_fuel_type,
+    fs.document_date as fs_document_date,
+    fs.document_time as fs_document_time,
+    fs.document_file_url as fs_document_file_url,
+    fs.payment_method as fs_payment_method,
+    fs.card_number_masked as fs_card_number_masked,
+    fs.extraction_status as fs_extraction_status,
+    fs.review_required as fs_review_required,
     e.total_amount,
     e.document_file_url,
     e.payment_method,
@@ -1523,7 +1572,7 @@ export async function listFuelAssetsForUser(userId: string): Promise<FuelLedgerA
 async function listFuelEvents(userId: string, options: { storageId?: string; limit?: number; fromIso?: string; toIso?: string } = {}): Promise<FuelLedgerEvent[]> {
   await ensureFuelLedgerTables();
   const db = getDb();
-  const limit = Math.max(1, Math.min(500, Math.round(options.limit ?? 80)));
+  const limit = Math.max(1, Math.min(2000, Math.round(options.limit ?? 80)));
   const params: unknown[] = [userId];
   let filter = 'e.user_id = $1';
 
@@ -1548,6 +1597,7 @@ async function listFuelEvents(userId: string, options: { storageId?: string; lim
       from public.fuel_storage_events e
       left join public.fuel_storage_units s on s.id = e.storage_id
       left join public.asset_register_items a on a.id::text = e.asset_register_item_id
+      left join public.fuel_slips fs on fs.id = e.fuel_slip_id
       where ${filter}
       order by e.created_at desc, e.id desc
       limit ${limit}
@@ -1558,6 +1608,124 @@ async function listFuelEvents(userId: string, options: { storageId?: string; lim
   return result.rows.map(mapFuelEventRow);
 }
 
+
+
+function fuelSlipReportDateIso(slip: FuelSlipTransaction): string {
+  if (slip.documentDate) {
+    const rawTime = /^\d{2}:\d{2}(?::\d{2})?$/.test(slip.documentTime) ? slip.documentTime : '00:00:00';
+    const time = rawTime.length === 5 ? `${rawTime}:00` : rawTime;
+    const parsed = new Date(`${slip.documentDate}T${time}+02:00`);
+
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed.toISOString();
+    }
+  }
+
+  return slip.createdAtIso;
+}
+
+function fuelSlipReportNote(slip: FuelSlipTransaction): string {
+  const parts = [
+    slip.supplierName ? `Supplier: ${slip.supplierName}` : '',
+    slip.fuelType ? `Fuel type: ${slip.fuelType}` : '',
+    slip.slipNumber ? `Slip: ${slip.slipNumber}` : '',
+    slip.transactionNumber ? `Transaction: ${slip.transactionNumber}` : '',
+    slip.paymentMethod ? `Payment: ${slip.paymentMethod}` : '',
+    slip.cardNumberMasked ? `Card: ${slip.cardNumberMasked}` : '',
+    slip.documentFileUrl ? `Document: ${slip.documentFileUrl}` : '',
+    `Review: ${fuelSlipReviewStatusLabel(slip.extractionStatus, slip.reviewRequired)}`,
+  ].filter(Boolean);
+
+  return parts.join(' · ') || 'Fuel Slip';
+}
+
+function mapFuelSlipToReportEvent(slip: FuelSlipTransaction): FuelLedgerEvent {
+  const isStorageTarget = slip.targetType === 'storage_tank';
+  const usageReading = slip.odometerReading ?? slip.hourMeterReading;
+  const reviewStatus = fuelSlipReviewStatusLabel(slip.extractionStatus, slip.reviewRequired);
+
+  return {
+    id: `fuel-slip-${slip.id}`,
+    storageId: isStorageTarget ? slip.storageId : '',
+    storageName: isStorageTarget ? slip.storageName || 'Fuel storage' : 'External fuel purchase',
+    storagePublicCode: '',
+    eventType: isStorageTarget ? 'stock_in' : 'asset_issue',
+    sourceType: 'fuel_slip',
+    sourceLabel: 'Fuel Slip',
+    fuelSlipId: slip.id,
+    fuelSlipTargetType: slip.targetType,
+    fuelSlipSupplierName: slip.supplierName,
+    fuelSlipFuelType: slip.fuelType,
+    fuelSlipDocumentDate: slip.documentDate,
+    fuelSlipDocumentTime: slip.documentTime,
+    fuelSlipExtractionStatus: slip.extractionStatus,
+    fuelSlipReviewRequired: slip.reviewRequired,
+    fuelSlipReviewStatus: reviewStatus,
+    totalAmount: null,
+    documentFileUrl: slip.documentFileUrl,
+    paymentMethod: slip.paymentMethod,
+    cardNumberMasked: slip.cardNumberMasked,
+    assetId: slip.assetId,
+    assetTitle: slip.assetTitle,
+    assetPlateLabel: '',
+    litres: slip.litres,
+    storageLevelBefore: null,
+    storageLevelAfter: null,
+    assetFuelPercentBefore: null,
+    assetFuelPercentAfter: null,
+    assetUsageReading: usageReading,
+    operatorName: slip.supplierName || 'Fuel Slip',
+    activityText: 'Fuel Slip',
+    workAreaText: isStorageTarget ? 'Storage tank' : 'External fuel purchase',
+    note: fuelSlipReportNote(slip),
+    latitude: null,
+    longitude: null,
+    locationText: '',
+    createdAtIso: fuelSlipReportDateIso(slip),
+  };
+}
+
+async function listFuelSlipEventsForReport(
+  userId: string,
+  options: { storageId?: string; limit?: number; fromIso?: string; toIso?: string } = {},
+): Promise<FuelLedgerEvent[]> {
+  await ensureFuelLedgerTables();
+  const db = getDb();
+  const limit = Math.max(1, Math.min(2000, Math.round(options.limit ?? 2000)));
+  const params: unknown[] = [userId];
+  const dateExpression = `coalesce(fs.document_date::timestamptz, fs.created_at)`;
+  let filter = `fs.user_id = $1 and (fs.target_type = 'asset' or fs.fuel_storage_event_id is null)`;
+
+  if (options.storageId) {
+    params.push(options.storageId);
+    filter += ` and fs.target_type = 'storage_tank' and fs.storage_id::text = $${params.length}`;
+  }
+
+  if (options.fromIso) {
+    params.push(options.fromIso);
+    filter += ` and ${dateExpression} >= $${params.length}::timestamptz`;
+  }
+
+  if (options.toIso) {
+    params.push(options.toIso);
+    filter += ` and ${dateExpression} < $${params.length}::timestamptz`;
+  }
+
+  const result = await db.query<FuelSlipRow>(
+    `
+      select ${fuelSlipSelectSql()}
+      from public.fuel_slips fs
+      left join public.asset_register_items a on a.id = fs.asset_register_item_id
+      left join public.fuel_storage_units s on s.id = fs.storage_id
+      where ${filter}
+      order by ${dateExpression} desc, fs.created_at desc, fs.id desc
+      limit ${limit}
+    `,
+    params,
+  );
+
+  return result.rows.map(mapFuelSlipRow).map(mapFuelSlipToReportEvent);
+}
 
 async function listFuelSlips(userId: string, options: { limit?: number } = {}): Promise<FuelSlipTransaction[]> {
   await ensureFuelLedgerTables();
@@ -3294,11 +3462,32 @@ export async function listFuelEventsForReport(
   storageIdOrOptions?: string | { storageId?: string; fromIso?: string; toIso?: string; limit?: number },
 ): Promise<FuelLedgerEvent[]> {
   const options = typeof storageIdOrOptions === 'string' ? { storageId: storageIdOrOptions } : storageIdOrOptions ?? {};
+  const limit = Math.max(1, Math.min(2000, Math.round(options.limit ?? 2000)));
+  const [events, fuelSlipEvents] = await Promise.all([
+    listFuelEvents(userId, {
+      storageId: options.storageId,
+      fromIso: options.fromIso,
+      toIso: options.toIso,
+      limit,
+    }),
+    listFuelSlipEventsForReport(userId, {
+      storageId: options.storageId,
+      fromIso: options.fromIso,
+      toIso: options.toIso,
+      limit,
+    }),
+  ]);
 
-  return listFuelEvents(userId, {
-    storageId: options.storageId,
-    fromIso: options.fromIso,
-    toIso: options.toIso,
-    limit: options.limit ?? 2000,
-  });
+  return [...events, ...fuelSlipEvents]
+    .sort((left, right) => {
+      const leftDate = new Date(left.createdAtIso).getTime();
+      const rightDate = new Date(right.createdAtIso).getTime();
+
+      if (Number.isFinite(leftDate) && Number.isFinite(rightDate) && leftDate !== rightDate) {
+        return rightDate - leftDate;
+      }
+
+      return right.id.localeCompare(left.id);
+    })
+    .slice(0, limit);
 }

@@ -98,6 +98,7 @@ export type MyInvoiceListFilters = {
   assetId?: string | null;
   year?: number | null;
   month?: number | null;
+  includeFuelSlipCosts?: boolean;
 };
 
 export type MyInvoiceListResult = {
@@ -627,6 +628,10 @@ function buildInvoiceFilterClause(filters: MyInvoiceListFilters, values: unknown
   if (filters.month) {
     values.push(filters.month);
     clauses.push(`extract(month from i.invoice_date)::integer = $${values.length}`);
+  }
+
+  if (filters.includeFuelSlipCosts === false) {
+    clauses.push(`coalesce(i.source, 'manual') <> 'fuel_slip'`);
   }
 
   return clauses.join(' and ');
