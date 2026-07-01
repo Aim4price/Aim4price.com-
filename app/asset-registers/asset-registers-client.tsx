@@ -421,7 +421,7 @@ function buildDefaultEntityName(scope: ExportScope, selectedRegisters: AssetRegi
   }
 
   if (scope === "combined") {
-    return "Combined Asset Registers";
+    return "Merged Asset Registers";
   }
 
   return selectedRegisters.length === 1 && selectedRegisters[0]?.businessName
@@ -898,12 +898,12 @@ function buildExportReportRows(bundles: ExportRegisterBundle[], scope: ExportSco
 }
 
 function buildExportReportTitle(scope: ExportScope): string {
-  if (scope === "combined") return "Combined Asset Register Report";
+  if (scope === "combined") return "Merged Asset Register Report";
   return "Full Asset Register Report";
 }
 
 function buildExportAssetSectionTitle(scope: ExportScope): string {
-  if (scope === "combined") return "Combined Asset Register";
+  if (scope === "combined") return "Merged Asset Register";
   return "Asset Register";
 }
 
@@ -1185,18 +1185,18 @@ export default function AssetRegistersClient() {
     : exportStep === "single-picker"
       ? "Choose specific Asset Register"
       : exportStep === "combined-picker"
-        ? "Combine Asset Registers"
+        ? "Merge Asset Registers"
         : exportScope === "all"
           ? "Export All Asset Registers"
           : exportScope === "combined"
-            ? "Export Combined Asset Registers"
+            ? "Export Merged Asset Registers"
             : "Export Asset Register";
   const exportIntro = exportStep === "choice"
-    ? "Choose whether to export all registers, one register, or a selected combined set."
+    ? "Choose whether to export all registers, one register, or a selected merged set."
     : exportStep === "single-picker"
       ? "Select the saved asset register to download."
       : exportStep === "combined-picker"
-        ? "Select at least two asset registers to combine into one export."
+        ? "Select at least two asset registers to merge into one export."
         : "Confirm the report name and choose the export format.";
   const deleteMoveTargets = useMemo(
     () =>
@@ -1483,7 +1483,7 @@ export default function AssetRegistersClient() {
 
   function continueCombinedExport() {
     if (!isCombinedSelectionValid) {
-      setNotice({ tone: "error", message: "Select at least two asset registers to combine." });
+      setNotice({ tone: "error", message: "Select at least two asset registers to merge." });
       return;
     }
 
@@ -1552,7 +1552,7 @@ export default function AssetRegistersClient() {
     }
 
     if (exportScope === "combined" && targetRegisters.length < 2) {
-      throw new Error("Select at least two asset registers to combine.");
+      throw new Error("Select at least two asset registers to merge.");
     }
 
     if (!targetRegisters.length) {
@@ -1580,7 +1580,7 @@ export default function AssetRegistersClient() {
       generatedAt: formatReportDate(new Date()),
       reportTitle,
       reportSubtitle: "Aim4price asset register",
-      valueLabel: exportScope === "combined" ? "Combined Register Value" : "Register Value",
+      valueLabel: exportScope === "combined" ? "Merged Register Value" : "Register Value",
       assetSectionTitle: buildExportAssetSectionTitle(exportScope),
       emptyStateMessage: "No saved assets are currently available for this report.",
       ownerName: reportName,
@@ -1596,7 +1596,7 @@ export default function AssetRegistersClient() {
         {
           label: "Assets",
           value: String(rows.length),
-          note: exportScope === "single" ? "Saved register items." : "Combined saved register items.",
+          note: exportScope === "single" ? "Saved register items." : "Merged saved register items.",
         },
         { label: "Value ex VAT", value: money(reportValue), note: "Filtered report total excluding VAT." },
         { label: "Value incl VAT", value: money(reportValueInclVat), note: "Filtered report total including 15% VAT." },
@@ -1629,7 +1629,7 @@ export default function AssetRegistersClient() {
     }
 
     if (exportScope === "combined" && selectedIds.length < 2) {
-      setNotice({ tone: "error", message: "Select at least two asset registers to combine." });
+      setNotice({ tone: "error", message: "Select at least two asset registers to merge." });
       return;
     }
 
@@ -2341,8 +2341,8 @@ export default function AssetRegistersClient() {
                         <PlusIcon className={styles.exportChoiceIcon} />
                       </span>
                       <span className={styles.exportChoiceTitleBlock}>
-                        <strong>Combine specific Asset Registers</strong>
-                        <small>Select two or more registers and combine them into one export.</small>
+                        <strong>Merge specific Asset Registers</strong>
+                        <small>Select two or more registers and merge them into one export.</small>
                       </span>
                     </button>
                   </div>

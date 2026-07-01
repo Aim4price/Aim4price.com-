@@ -2745,6 +2745,11 @@
 }
 
 .exportFlowOverlay {
+  --action-primary: #197454;
+  --action-primary-deep: #0f5840;
+  --action-primary-hover: #0b4b37;
+  --action-primary-border: #0f6248;
+  --action-primary-shadow: rgba(25, 116, 84, 0.2);
   z-index: 1200;
   padding: clamp(1rem, 2vw, 1.75rem);
   background: rgba(8, 19, 23, 0.58);
@@ -3307,15 +3312,20 @@
 
 .exportModalFooter {
   min-height: 0;
-  padding-top: 0.9rem;
-  padding-bottom: 1rem;
+  padding-top: clamp(1rem, 1.5vw, 1.15rem);
+  padding-bottom: clamp(1.45rem, 2.4vw, 1.9rem);
 }
 
 .exportModalFooter .primaryButton {
   min-width: 14rem;
 }
 
-.exportConfirmButton:not(:disabled) {
+.exportNextButton {
+  min-width: 8rem;
+}
+
+.exportModalFooter .exportConfirmButton:not(:disabled),
+.exportModalFooter .exportNextButton:not(:disabled) {
   color: #ffffff !important;
   background: linear-gradient(180deg, #197454 0%, #0f5840 100%) !important;
   border-color: #0f6248 !important;
@@ -3325,37 +3335,14 @@
   opacity: 1 !important;
 }
 
-.exportConfirmButton:hover:not(:disabled) {
+.exportModalFooter .exportConfirmButton:hover:not(:disabled),
+.exportModalFooter .exportNextButton:hover:not(:disabled) {
   color: #ffffff !important;
   background: linear-gradient(180deg, #218462 0%, #0b4b37 100%) !important;
   border-color: #0b4b37 !important;
   box-shadow:
     0 18px 32px rgba(25, 116, 84, 0.28),
     inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
-  transform: translateY(-1px);
-}
-
-.exportNextButton {
-  min-width: 8rem;
-}
-
-.exportNextButton:not(:disabled) {
-  color: #ffffff;
-  background: linear-gradient(180deg, #197454 0%, #0f5840 100%);
-  border-color: #0f6248;
-  box-shadow:
-    0 14px 26px rgba(25, 116, 84, 0.22),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18);
-  opacity: 1;
-}
-
-.exportNextButton:hover:not(:disabled) {
-  color: #ffffff;
-  background: linear-gradient(180deg, #218462 0%, #0b4b37 100%);
-  border-color: #0b4b37;
-  box-shadow:
-    0 18px 32px rgba(25, 116, 84, 0.28),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
   transform: translateY(-1px);
 }
 
