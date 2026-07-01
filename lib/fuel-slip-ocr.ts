@@ -13,8 +13,6 @@ export type FuelSlipOcrResult = {
 
 type TesseractModule = typeof import('tesseract.js');
 type TesseractWorker = Awaited<ReturnType<TesseractModule['createWorker']>>;
-type SharpModule = typeof import('sharp');
-
 type OcrCandidate = {
   label: string;
   data: Buffer;
@@ -24,7 +22,6 @@ const SUPPORTED_IMAGE_TYPES = new Set(['image/jpeg', 'image/jpg', 'image/png', '
 const SUPPORTED_IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
 const MAX_OCR_TEXT_LENGTH = 20000;
 const TESSERACT_LANGUAGE = 'eng';
-const ROTATION_ANGLES = [0, 90, 180, 270] as const;
 
 function cleanText(value: unknown): string {
   return String(value ?? '')
@@ -133,38 +130,11 @@ async function createLocalTesseractWorker(tesseract: TesseractModule): Promise<T
   return worker;
 }
 
-async function buildPreprocessedOcrCandidates(input: FuelSlipOcrInput): Promise<OcrCandidate[]> {
-  let sharp: SharpModule;
-
-  try {
-    sharp = await import('sharp');
-  } catch {
-    return [{ label: 'original', data: input.data }];
-  }
-
-  const candidates: OcrCandidate[] = [];
-
-  try {
-    const base = sharp.default(input.data, { failOn: 'none', limitInputPixels: false })
-      .rotate()
-      .grayscale()
-      .normalize()
-      .sharpen({ sigma: 1.1 });
-
-    for (const angle of ROTATION_ANGLES) {
-      const data = await base
-        .clone()
-        .rotate(angle)
-        .png({ compressionLevel: 9 })
-        .toBuffer();
-
-      candidates.push({ label: `preprocessed-${angle}`, data });
-    }
-  } catch {
-    return [{ label: 'original', data: input.data }];
-  }
-
-  return candidates.length ? candidates : [{ label: 'original', data: input.data }];
+async function buildOcrCandidates(input: FuelSlipOcrInput): Promise<OcrCandidate[]> {
+  // Keep fuel-slip OCR dependency-free beyond the existing local Tesseract.js stack.
+  // This avoids adding native image-processing packages that can break `npm ci` on Railway
+  // when the package proxy is slow or unavailable.
+  return [{ label: 'original', data: input.data }];
 }
 
 function scoreFuelSlipOcrText(text: string, confidence: number | null): number {
@@ -205,7 +175,7 @@ export async function extractFuelSlipImageText(input: FuelSlipOcrInput): Promise
 
   try {
     const tesseract = await import('tesseract.js');
-    const candidates = await buildPreprocessedOcrCandidates(input);
+    const candidates = await buildOcrCandidates(input);
     worker = await createLocalTesseractWorker(tesseract);
 
     let bestText = '';
@@ -225,7 +195,7 @@ export async function extractFuelSlipImageText(input: FuelSlipOcrInput): Promise
           bestScore = score;
         }
       } catch {
-        // Continue with the remaining local rotations if one candidate fails.
+        // Continue gracefully if local OCR fails on this candidate.
       }
     }
 
