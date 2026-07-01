@@ -4,7 +4,7 @@ import { getAssetRegisterItemById, listAssetRegisterItems, type AssetRegisterIte
 import { listAssetRegisters } from './asset-registers';
 import { buildAssetRegisterUploadUrl, getLegacyAssetRegisterUploadResponse } from './asset-register-uploads';
 
-export type MyInvoiceSource = 'manual' | 'automatic';
+export type MyInvoiceSource = 'manual' | 'automatic' | 'fuel_slip';
 export type MyInvoiceUsageMetric = 'none' | 'hours' | 'km';
 export type MyInvoiceBlockType = 'maintenance' | 'parts' | 'repair' | 'other';
 export type MyInvoiceExtractionStatus = 'not_extracted' | 'extracted' | 'failed' | 'skipped';
@@ -257,7 +257,10 @@ function normalizeUsageMetric(value: unknown): MyInvoiceUsageMetric {
 }
 
 function normalizeSource(value: unknown): MyInvoiceSource {
-  return asText(value).toLowerCase() === 'automatic' ? 'automatic' : 'manual';
+  const normalized = asText(value).toLowerCase();
+  if (normalized === 'automatic') return 'automatic';
+  if (normalized === 'fuel_slip' || normalized === 'fuel-slip') return 'fuel_slip';
+  return 'manual';
 }
 
 function normalizeBlockType(value: unknown): MyInvoiceBlockType {

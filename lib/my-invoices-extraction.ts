@@ -845,7 +845,7 @@ function extractPrintablePdfFallback(buffer: Buffer): string {
   return hasInvoiceSignals(sanitized) ? sanitized : '';
 }
 
-function extractDigitalPdfText(buffer: Buffer): string {
+export function extractDigitalPdfText(buffer: Buffer): string {
   const streamText = extractPdfStreamText(buffer);
   if (collapseText(streamText).length >= 30) {
     return streamText;
