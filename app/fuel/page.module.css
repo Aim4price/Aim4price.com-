@@ -2773,3 +2773,333 @@
   }
 }
 
+
+/* Fuel Slip capture */
+.topActionButtons {
+  width: min(100%, 42rem);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.topFuelSlipButton {
+  color: var(--action-blue-text);
+  background: linear-gradient(180deg, #ffffff 0%, var(--action-blue-bg) 100%);
+  border-color: var(--action-blue-border);
+}
+
+.topFuelSlipButton:hover:not(:disabled) {
+  color: var(--action-blue-text);
+  background: linear-gradient(180deg, #ffffff 0%, var(--action-blue-bg-hover) 100%);
+  border-color: var(--action-blue-border-hover);
+}
+
+.fuelSlipPanel {
+  display: grid;
+  gap: 0.85rem;
+  padding: clamp(1rem, 1.4vw, 1.2rem);
+  border: 1px solid rgba(202, 214, 225, 0.96);
+  border-radius: 1.35rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f7fbfc 100%);
+  box-shadow: 0 14px 30px rgba(16, 31, 28, 0.035);
+}
+
+.fuelSlipPanelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(216, 226, 236, 0.78);
+}
+
+.fuelSlipPanelHeader h2 {
+  margin: 0.18rem 0 0;
+  color: #10352b;
+  font-size: clamp(1.3rem, 1.8vw, 1.7rem);
+  font-weight: 850;
+  letter-spacing: -0.04em;
+}
+
+.fuelSlipEyebrow,
+.fuelSlipStepLabel {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 1.55rem;
+  align-items: center;
+  padding: 0 0.62rem;
+  border: 1px solid rgba(216, 232, 223, 0.98);
+  border-radius: 999px;
+  color: #446054;
+  background: rgba(237, 246, 241, 0.92);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
+}
+
+.fuelSlipHeaderButton {
+  min-height: 2.8rem;
+}
+
+.fuelSlipList {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.fuelSlipCard {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(216, 226, 236, 0.9);
+  border-radius: 1rem;
+  background: #ffffff;
+}
+
+.fuelSlipCardMain,
+.fuelSlipAmountBlock {
+  min-width: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.fuelSlipTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.fuelSlipTitleRow strong,
+.fuelSlipAmountBlock strong {
+  color: #10352b;
+  font-size: 1rem;
+  font-weight: 880;
+  letter-spacing: -0.02em;
+}
+
+.fuelSlipMetaRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.42rem;
+  color: #617184;
+  font-size: 0.84rem;
+  font-weight: 720;
+}
+
+.fuelSlipMetaRow span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.55rem;
+  padding: 0 0.55rem;
+  border-radius: 999px;
+  background: #f1f5f8;
+}
+
+.fuelSlipStatus,
+.fuelSlipStatusWarning {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.55rem;
+  padding: 0 0.6rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.fuelSlipStatus {
+  color: #116343;
+  background: #eaf7f1;
+}
+
+.fuelSlipStatusWarning {
+  color: #8a4b0b;
+  background: #fff3e8;
+}
+
+.fuelSlipAmountBlock {
+  justify-items: end;
+  text-align: right;
+}
+
+.fuelSlipAmountBlock span,
+.fuelSlipAmountBlock a {
+  color: #627286;
+  font-size: 0.84rem;
+  font-weight: 760;
+}
+
+.fuelSlipAmountBlock a {
+  color: #0f5e46;
+  text-decoration: none;
+}
+
+.fuelSlipEmptyState {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.95rem 1rem;
+  border: 1px dashed rgba(194, 211, 224, 0.96);
+  border-radius: 1rem;
+  color: #647587;
+  background: #fbfdfe;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.fuelSlipEmptyState strong {
+  color: #10352b;
+  font-size: 1rem;
+}
+
+.fuelSlipModal {
+  width: min(100%, 1120px);
+  max-height: min(94vh, 860px);
+}
+
+.fuelSlipSteps {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.fuelSlipStepCard {
+  display: grid;
+  gap: 0.72rem;
+  padding: 0.95rem;
+  border: 1px solid rgba(216, 226, 236, 0.92);
+  border-radius: 1.15rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
+}
+
+.fuelSlipStepCard h3 {
+  margin: 0;
+  color: #10352b;
+  font-size: 1.12rem;
+  font-weight: 850;
+  letter-spacing: -0.03em;
+}
+
+.fuelSlipModeGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.72rem;
+}
+
+.fuelSlipModeButton {
+  appearance: none;
+  -webkit-appearance: none;
+  display: grid;
+  gap: 0.28rem;
+  min-height: 5rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(194, 211, 224, 0.96);
+  border-radius: 1rem;
+  background: #ffffff;
+  color: #19352d;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.fuelSlipModeButton strong {
+  font-size: 1rem;
+  font-weight: 880;
+}
+
+.fuelSlipModeButton span,
+.fuelSlipHelper,
+.fuelSlipUploadBox > span {
+  color: #657586;
+  font-size: 0.84rem;
+  font-weight: 720;
+  line-height: 1.35;
+}
+
+.fuelSlipModeButtonActive {
+  border-color: rgba(25, 116, 84, 0.45);
+  background: #edf8f3;
+  box-shadow: 0 0 0 4px rgba(25, 116, 84, 0.08);
+}
+
+.fuelSlipStepCard > label,
+.fuelSlipUploadBox label {
+  min-width: 0;
+  display: grid;
+  gap: 0.34rem;
+  color: #253b34;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.fuelSlipStepCard > label select,
+.fuelSlipUploadBox input {
+  width: 100%;
+  min-height: 3.05rem;
+  padding: 0.82rem 0.95rem;
+  border: 1px solid rgba(18, 45, 37, 0.11);
+  border-radius: 1rem;
+  background: #fbfdfc;
+  color: #19352d;
+  font: inherit;
+  font-size: 0.98rem;
+  font-weight: 650;
+  outline: none;
+}
+
+.fuelSlipStepCard > label select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 3.25rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%2319352d' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1.1rem center;
+  background-size: 1.05rem;
+}
+
+.fuelSlipUploadBox {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.85rem;
+  border: 1px dashed rgba(194, 211, 224, 0.96);
+  border-radius: 1rem;
+  background: #fbfdfe;
+}
+
+.fuelSlipWarningList {
+  margin: 0;
+  padding-left: 1.15rem;
+  color: #8a4b0b;
+  font-size: 0.83rem;
+  font-weight: 720;
+  line-height: 1.4;
+}
+
+@media (max-width: 960px) {
+  .topActionButtons {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .fuelSlipCard {
+    grid-template-columns: 1fr;
+  }
+
+  .fuelSlipAmountBlock {
+    justify-items: start;
+    text-align: left;
+  }
+}
+
+@media (max-width: 760px) {
+  .topActionButtons,
+  .fuelSlipModeGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .fuelSlipPanelHeader {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .fuelSlipHeaderButton {
+    width: 100%;
+  }
+}
