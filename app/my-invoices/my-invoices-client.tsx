@@ -1583,7 +1583,6 @@ export default function MyInvoicesClient() {
                   <span className={styles.uploadCounter}>{automaticUploadFile ? '1 / 1' : '0 / 1'}</span>
                   {automaticUploadFile ? <p>{automaticUploadFile.name}</p> : null}
                 </div>
-                <p className={styles.helperText}>Digital PDFs are read with free text extraction. Images and scanned PDFs remain editable if extraction is weak.</p>
               </section>
             </div>
             <div className={styles.modalFooter}>
