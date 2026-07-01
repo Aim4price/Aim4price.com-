@@ -562,7 +562,7 @@
 .storageHeadingRow {
   min-width: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr);
   align-items: start;
   gap: clamp(0.9rem, 1.6vw, 1.35rem);
 }
@@ -659,35 +659,8 @@
   justify-items: stretch;
 }
 
-.storageValueBlock {
-  width: max-content;
-  min-width: 7.25rem;
-  display: grid;
-  align-content: start;
-  justify-items: end;
-  gap: 0.16rem;
-  padding-left: 0.75rem;
-  text-align: right;
-}
 
-.storageValueBlock strong {
-  display: block;
-  margin: 0;
-  color: #073b30;
-  font-size: clamp(1.42rem, 1.9vw, 1.72rem);
-  font-weight: 760;
-  line-height: 1.08;
-  letter-spacing: -0.032em;
-  white-space: nowrap;
-}
 
-.storageValueBlock span {
-  display: block;
-  margin: 0;
-  color: #647486;
-  font-size: 0.9rem;
-  font-weight: 780;
-}
 
 .unitActions {
   width: 100%;
@@ -1560,13 +1533,6 @@
     gap: 0.55rem;
   }
 
-  .storageValueBlock {
-    width: 100%;
-    min-width: 0;
-    justify-items: start;
-    padding-left: 0;
-    text-align: left;
-  }
 
   .storageDetails {
     display: grid;
@@ -1720,13 +1686,6 @@
     font-size: 0.92rem;
   }
 
-  .storageValueBlock {
-    width: 100%;
-    min-width: 0;
-    justify-items: start;
-    padding-left: 0;
-    text-align: left;
-  }
 
   .storageHeaderAside {
     width: 100%;
@@ -1734,12 +1693,6 @@
     gap: 0.7rem;
   }
 
-  .storageValueBlock strong {
-    font-size: clamp(1.25rem, 6vw, 1.48rem);
-    font-weight: 740;
-    line-height: 1.08;
-    letter-spacing: -0.026em;
-  }
 
   .unitActions {
     gap: 0.55rem;
@@ -4007,10 +3960,6 @@
 
 
 /* Fuel slip manager */
-.fuelSlipFlowBackdrop .fuelSlipMenuModal {
-  width: min(100%, 50rem);
-}
-
 .fuelSlipManagerModal {
   width: min(100%, 76rem);
   max-height: min(92vh, calc(100dvh - 2rem));
@@ -4473,3 +4422,177 @@
     align-items: stretch;
   }
 }
+
+/* Fuel slips choice modal: match the compact Add Asset choice modal layout. */
+.fuelSlipFlowBackdrop .fuelSlipMenuModal {
+  width: min(100%, 740px);
+  max-height: min(86vh, calc(100dvh - 2rem));
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: clamp(1.2rem, 1.85vw, 1.5rem);
+  border-radius: 1.75rem;
+}
+
+.fuelSlipFlowBackdrop .fuelSlipMenuModal .modalHeader {
+  position: relative;
+  justify-content: flex-start;
+  align-items: flex-start;
+  gap: 1rem;
+  margin: 0 0 clamp(1rem, 1.8vw, 1.2rem);
+  padding: 0 3.6rem clamp(1rem, 1.6vw, 1.16rem) 0;
+  text-align: left;
+  border-bottom: 1px solid rgba(216, 226, 236, 0.88);
+}
+
+.fuelSlipFlowBackdrop .fuelSlipMenuModal .modalHeader > div {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  display: grid;
+  justify-items: start;
+  gap: 0.52rem;
+  text-align: left;
+}
+
+.fuelSlipFlowBackdrop .fuelSlipMenuModal .modalHeader h2 {
+  max-width: 36rem;
+  margin: 0;
+  text-align: left;
+  line-height: 1.04;
+}
+
+.fuelSlipFlowBackdrop .fuelSlipMenuModal .modalHeader p {
+  max-width: 38rem;
+  margin: 0;
+  color: #5f7186;
+  font-size: clamp(0.96rem, 1.45vw, 1.04rem);
+  font-weight: 620;
+  line-height: 1.55;
+  text-align: left;
+}
+
+.fuelSlipFlowBackdrop .fuelSlipMenuModal .closeButton {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 2;
+  width: 2.55rem;
+  min-width: 2.55rem;
+  height: 2.55rem;
+  min-height: 2.55rem;
+}
+
+.fuelSlipFlowBackdrop .fuelSlipMenuModal .closeButton svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.fuelSlipFlowBackdrop .fuelSlipMenuModal .sourceChoiceGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(0.85rem, 1.6vw, 1.05rem);
+}
+
+.fuelSlipFlowBackdrop .fuelSlipMenuModal .sourceChoiceOption {
+  min-height: clamp(8.25rem, 16vw, 9.35rem);
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto auto;
+  align-content: center;
+  align-items: center;
+  justify-items: center;
+  gap: 0.78rem;
+  padding: clamp(1.1rem, 1.8vw, 1.35rem);
+  border-radius: 1.4rem;
+  text-align: center;
+}
+
+.fuelSlipFlowBackdrop .fuelSlipMenuModal .choiceGraphic {
+  grid-column: 1;
+  grid-row: 1;
+  justify-self: center;
+  width: 3.2rem;
+  min-width: 3.2rem;
+  height: 3.2rem;
+  padding: 0.82rem;
+}
+
+.fuelSlipFlowBackdrop .fuelSlipMenuModal .choiceGraphic svg {
+  width: 1.55rem;
+  height: 1.55rem;
+}
+
+.fuelSlipFlowBackdrop .fuelSlipMenuModal .sourceChoiceOption:first-child {
+  color: #124635;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(22, 83, 64, 0.16), transparent 45%),
+    linear-gradient(180deg, #ffffff 0%, #edf8f2 100%);
+  border-color: rgba(184, 221, 202, 0.98);
+}
+
+.fuelSlipFlowBackdrop .fuelSlipMenuModal .sourceChoiceOption:first-child .choiceGraphic {
+  color: #124635;
+  background: linear-gradient(180deg, #effaf4 0%, #dff2e7 100%);
+  border-color: rgba(184, 221, 202, 0.98);
+}
+
+.fuelSlipFlowBackdrop .fuelSlipMenuModal .sourceChoiceOption:first-child .choiceTitleBlock strong {
+  color: #124635;
+}
+
+
+.fuelSlipFlowBackdrop .fuelSlipMenuModal .choiceTitleBlock {
+  grid-column: 1;
+  grid-row: 2;
+  width: 100%;
+  display: grid;
+  justify-items: center;
+  gap: 0;
+  text-align: center;
+}
+
+.fuelSlipFlowBackdrop .fuelSlipMenuModal .choiceTitleBlock strong {
+  max-width: 14rem;
+  text-align: center;
+  text-wrap: balance;
+}
+
+.fuelSlipFlowBackdrop .fuelSlipMenuModal .choiceTitleBlock small {
+  display: none;
+}
+
+.fuelSlipFlowBackdrop .fuelSlipMenuModal .modalFooter {
+  display: none;
+}
+
+@media (max-width: 700px) {
+  .fuelSlipFlowBackdrop .fuelSlipMenuModal {
+    width: min(100%, calc(100vw - 1rem));
+    padding: 1rem;
+    border-radius: 1.35rem;
+  }
+
+  .fuelSlipFlowBackdrop .fuelSlipMenuModal .modalHeader {
+    margin-bottom: 0.95rem;
+    padding: 0 3.05rem 0.9rem 0;
+  }
+
+  .fuelSlipFlowBackdrop .fuelSlipMenuModal .modalHeader h2 {
+    font-size: clamp(1.34rem, 6.8vw, 1.68rem);
+  }
+
+  .fuelSlipFlowBackdrop .fuelSlipMenuModal .modalHeader p {
+    max-width: 100%;
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+
+  .fuelSlipFlowBackdrop .fuelSlipMenuModal .sourceChoiceGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .fuelSlipFlowBackdrop .fuelSlipMenuModal .sourceChoiceOption {
+    min-height: 7.35rem;
+  }
+}
+

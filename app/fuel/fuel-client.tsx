@@ -895,7 +895,7 @@ function applyExtractionToFuelSlipDraft(current: FuelSlipDraft, response: FuelSl
     contentType: upload?.contentType ?? current.contentType,
     byteSize: typeof upload?.byteSize === 'number' ? upload.byteSize : current.byteSize,
     supplierName: extracted.supplierName ?? current.supplierName,
-    supplierVatNumber: extracted.supplierVatNumber ?? current.supplierVatNumber,
+    supplierVatNumber: '',
     slipNumber: extracted.slipNumber ?? current.slipNumber,
     transactionNumber: extracted.transactionNumber ?? current.transactionNumber,
     documentDate: extracted.documentDate ?? current.documentDate,
@@ -904,9 +904,9 @@ function applyExtractionToFuelSlipDraft(current: FuelSlipDraft, response: FuelSl
     litres: numberToInput(extracted.litres) || current.litres,
     pricePerLitre: numberToInput(extracted.pricePerLitre) || current.pricePerLitre,
     totalAmount: numberToInput(extracted.totalAmount) || current.totalAmount,
-    vatAmount: numberToInput(extracted.vatAmount) || current.vatAmount,
-    vatIncluded: booleanToInput(extracted.vatIncluded) || current.vatIncluded,
-    vatRate: numberToInput(extracted.vatRate) || current.vatRate,
+    vatAmount: '',
+    vatIncluded: '',
+    vatRate: '',
     paymentMethod: extracted.paymentMethod ?? current.paymentMethod,
     cardType: extracted.cardType ?? current.cardType,
     cardNumberMasked: normalizeFuelSlipCard(extracted.cardNumberMasked ?? current.cardNumberMasked).masked,
@@ -1691,7 +1691,7 @@ export default function FuelClient() {
           contentType: fuelSlipDraft.contentType || null,
           byteSize: fuelSlipDraft.byteSize,
           supplierName: fuelSlipDraft.supplierName,
-          supplierVatNumber: fuelSlipDraft.supplierVatNumber,
+          supplierVatNumber: '',
           slipNumber: fuelSlipDraft.slipNumber,
           transactionNumber: fuelSlipDraft.transactionNumber,
           documentDate: fuelSlipDraft.documentDate,
@@ -1700,9 +1700,9 @@ export default function FuelClient() {
           litres: numberInputToValue(fuelSlipDraft.litres),
           pricePerLitre: numberInputToValue(fuelSlipDraft.pricePerLitre),
           totalAmount: numberInputToValue(fuelSlipDraft.totalAmount),
-          vatAmount: numberInputToValue(fuelSlipDraft.vatAmount),
-          vatIncluded: fuelSlipDraft.vatIncluded === '' ? null : fuelSlipDraft.vatIncluded === 'true',
-          vatRate: numberInputToValue(fuelSlipDraft.vatRate),
+          vatAmount: null,
+          vatIncluded: null,
+          vatRate: null,
           paymentMethod: fuelSlipDraft.paymentMethod,
           cardType: fuelSlipDraft.cardType,
           cardNumberMasked: card.masked,
@@ -1996,10 +1996,6 @@ export default function FuelClient() {
             <input value={fuelSlipDraft.supplierName} onChange={(event) => setFuelSlipField('supplierName', event.target.value)} placeholder="Supplier name" />
           </label>
           <label>
-            <span>Supplier VAT number</span>
-            <input value={fuelSlipDraft.supplierVatNumber} onChange={(event) => setFuelSlipField('supplierVatNumber', event.target.value)} placeholder="VAT number" />
-          </label>
-          <label>
             <span>Slip / invoice number</span>
             <input value={fuelSlipDraft.slipNumber} onChange={(event) => setFuelSlipField('slipNumber', event.target.value)} placeholder="Slip number" />
           </label>
@@ -2036,25 +2032,6 @@ export default function FuelClient() {
               <span aria-hidden="true">R</span>
               <input type="text" inputMode="decimal" value={fuelSlipDraft.totalAmount} onChange={(event) => setFuelSlipField('totalAmount', event.target.value)} placeholder="Required" required />
             </div>
-          </label>
-          <label className={styles.invoiceCurrencyField}>
-            <span>VAT amount</span>
-            <div className={styles.invoiceCurrencyInput}>
-              <span aria-hidden="true">R</span>
-              <input type="text" inputMode="decimal" value={fuelSlipDraft.vatAmount} onChange={(event) => setFuelSlipField('vatAmount', event.target.value)} placeholder="0" />
-            </div>
-          </label>
-          <label>
-            <span>VAT included</span>
-            <select value={fuelSlipDraft.vatIncluded} onChange={(event) => setFuelSlipField('vatIncluded', event.target.value)}>
-              <option value="">Not sure</option>
-              <option value="true">Yes</option>
-              <option value="false">No</option>
-            </select>
-          </label>
-          <label>
-            <span>VAT rate</span>
-            <input type="number" step="0.01" min="0" value={fuelSlipDraft.vatRate} onChange={(event) => setFuelSlipField('vatRate', event.target.value)} placeholder="15" />
           </label>
           <label>
             <span>Payment method</span>
@@ -2197,10 +2174,6 @@ export default function FuelClient() {
                             <span>{storage.locationLabel || storage.publicFuelStorageCode}</span>
                           </div>
                         </div>
-
-                        <div className={styles.storageValueBlock}>
-                          <strong>{formatLitres(storage.currentLitres)}</strong>
-                        </div>
                       </div>
 
                       <div className={styles.storageProgressBlock}>
@@ -2294,6 +2267,7 @@ export default function FuelClient() {
             <div className={styles.modalHeader}>
               <div>
                 <h2>Fuel slips</h2>
+                <p>Manage saved fuel slips, or add a new slip to a saved asset or storage tank.</p>
               </div>
               <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close fuel slips"><CloseIcon /></button>
             </div>
@@ -2312,7 +2286,7 @@ export default function FuelClient() {
                   <PlusIcon />
                 </span>
                 <span className={styles.choiceTitleBlock}>
-                  <strong>Add Fuel Slips</strong>
+                  <strong>Add Fuel Slip</strong>
                 </span>
               </button>
             </div>
@@ -2529,7 +2503,7 @@ export default function FuelClient() {
                 </span>
                 <span className={styles.choiceTitleBlock}>
                   <strong>Enter slip manually</strong>
-                  <small>Type the supplier, slip date, litres, VAT, payment and card details yourself.</small>
+                  <small>Type the supplier, slip date, litres, payment and card details yourself.</small>
                 </span>
               </button>
               <button type="button" className={styles.sourceChoiceOption} onClick={() => startFuelSlipFlow('automatic')}>
@@ -2538,7 +2512,7 @@ export default function FuelClient() {
                 </span>
                 <span className={styles.choiceTitleBlock}>
                   <strong>Upload fuel slip/photo</strong>
-                  <small>Upload a photo or PDF, then review the extracted slip details.</small>
+                  <small>Upload a PDF or photo, then review the extracted slip details.</small>
                 </span>
               </button>
             </div>
