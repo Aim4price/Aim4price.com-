@@ -2187,13 +2187,20 @@ export default function FuelClient() {
                 return (
                   <article key={storage.id} className={`${styles.storageCard} ${hasStorageWarning ? styles.storageCardLow : ''}`}>
                     <div className={styles.storageInfo}>
-                      <div className={styles.storageTitleBlock}>
-                        <h2>{storage.name}</h2>
-                        <div className={styles.storageDetails}>
-                          <span>{formatFuelType(storage.fuelType)}</span>
-                          <span>{formatLitres(storage.currentLitres)} available</span>
-                          <span>{storage.capacityLitres === null ? 'Capacity not set' : `${formatLitres(storage.capacityLitres)} capacity`}</span>
-                          <span>{storage.locationLabel || storage.publicFuelStorageCode}</span>
+                      <div className={styles.storageHeadingRow}>
+                        <div className={styles.storageTitleBlock}>
+                          <h2>{storage.name}</h2>
+                          <div className={styles.storageDetails}>
+                            <span>{formatFuelType(storage.fuelType)}</span>
+                            <span>{formatLitres(storage.currentLitres)} available</span>
+                            <span>{storage.capacityLitres === null ? 'Capacity not set' : `${formatLitres(storage.capacityLitres)} capacity`}</span>
+                            <span>{storage.locationLabel || storage.publicFuelStorageCode}</span>
+                          </div>
+                        </div>
+
+                        <div className={styles.storageValueBlock}>
+                          <strong>{formatLitres(storage.currentLitres)}</strong>
+                          <span>{formatPercent(storage.stockPercent)} full</span>
                         </div>
                       </div>
 
@@ -2209,11 +2216,6 @@ export default function FuelClient() {
                     </div>
 
                     <div className={styles.storageHeaderAside}>
-                      <div className={styles.storageValueBlock}>
-                        <strong>{formatLitres(storage.currentLitres)}</strong>
-                        <span>{formatPercent(storage.stockPercent)} full</span>
-                      </div>
-
                       <div className={styles.unitActions}>
                         <button type="button" className={styles.unitButton} onClick={() => openEditStorage(storage)} disabled={isSaving}>
                           <GearIcon className={styles.buttonIcon} />
