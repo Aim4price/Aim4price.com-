@@ -66,7 +66,24 @@ function normalizeSpaces(value: unknown): string {
 }
 
 function roundLitres(value: number): number {
-  return Math.round(value * 100) / 100;
+  return Math.round(value * 1000) / 1000;
+}
+
+function cardLast4FromValue(value: unknown): string {
+  const text = asText(value);
+  if (!text) return '';
+
+  const masked = /(?:\b\d{4,6}[\s-]*)?(?:[*xX]{2,}[\s-]*){1,4}(\d{4})\b/.exec(text);
+  if (masked) return masked[1];
+
+  const digits = text.replace(/\D/g, '');
+  if (digits.length >= 4) return digits.slice(-4);
+  return '';
+}
+
+function formatCardEnding(value: unknown): string {
+  const last4 = cardLast4FromValue(value);
+  return /^\d{4}$/.test(last4) ? `Card ending ${last4}` : '';
 }
 
 function formatDate(value = new Date()): string {
@@ -115,7 +132,7 @@ function formatExcelDateTime(value?: string | null): string {
 
 function formatLitres(value: number | null | undefined): string {
   if (typeof value !== 'number' || !Number.isFinite(value)) return '-';
-  return `${value.toLocaleString('en-ZA', { maximumFractionDigits: 2 })} L`;
+  return `${value.toLocaleString('en-ZA', { maximumFractionDigits: 3 })} L`;
 }
 
 function formatNumber(value: number | null | undefined): string {
@@ -162,7 +179,7 @@ function calculateAssetDieselBeforeFill(event: FuelLedgerEvent): number | null {
 }
 
 function assetDieselBeforeFillFormula(rowNumber: number): string {
-  return `IF(AND(F${rowNumber}>0,J${rowNumber}<>"",K${rowNumber}<>"",K${rowNumber}>J${rowNumber}),ROUND(F${rowNumber}*J${rowNumber}/(K${rowNumber}-J${rowNumber}),2),"")`;
+  return `IF(AND(F${rowNumber}>0,J${rowNumber}<>"",K${rowNumber}<>"",K${rowNumber}>J${rowNumber}),ROUND(F${rowNumber}*J${rowNumber}/(K${rowNumber}-J${rowNumber}),3),"")`;
 }
 
 function formatLocation(event: FuelLedgerEvent): string {
@@ -231,7 +248,7 @@ function eventNoteLabel(event: FuelLedgerEvent): string {
     asText(event.fuelSlipSupplierName) ? `Supplier: ${asText(event.fuelSlipSupplierName)}` : '',
     asText(event.fuelSlipFuelType) ? `Fuel type: ${asText(event.fuelSlipFuelType)}` : '',
     asText(event.paymentMethod) ? `Payment: ${asText(event.paymentMethod)}` : '',
-    asText(event.cardNumberMasked) ? `Card: ${asText(event.cardNumberMasked)}` : '',
+    formatCardEnding(event.cardNumberMasked),
     asText(event.documentFileUrl) ? `Document: ${asText(event.documentFileUrl)}` : '',
     asText(event.fuelSlipReviewStatus) ? `Review: ${asText(event.fuelSlipReviewStatus)}` : '',
   ].filter(Boolean);
