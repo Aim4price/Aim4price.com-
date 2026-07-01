@@ -2294,7 +2294,6 @@ export default function FuelClient() {
             <div className={styles.modalHeader}>
               <div>
                 <h2>Fuel slips</h2>
-                <p>Manage saved fuel slip data or add a new manual/uploaded fuel slip.</p>
               </div>
               <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close fuel slips"><CloseIcon /></button>
             </div>
@@ -2306,7 +2305,6 @@ export default function FuelClient() {
                 </span>
                 <span className={styles.choiceTitleBlock}>
                   <strong>Manage Fuel Slips</strong>
-                  <small>Open saved fuel slip data with search, filters and a bulk CSV download.</small>
                 </span>
               </button>
               <button type="button" className={styles.sourceChoiceOption} onClick={openFuelSlipModal}>
@@ -2315,7 +2313,6 @@ export default function FuelClient() {
                 </span>
                 <span className={styles.choiceTitleBlock}>
                   <strong>Add Fuel Slips</strong>
-                  <small>Continue through the existing manual or uploaded fuel slip capture flow.</small>
                 </span>
               </button>
             </div>
@@ -2646,7 +2643,6 @@ export default function FuelClient() {
                   <span className={styles.uploadCounter}>{fuelSlipUploadReady ? '1 / 1' : '0 / 1'}</span>
                   {fuelSlipUploadFileName ? <p>{fuelSlipUploadFileName}</p> : null}
                 </div>
-                <p className={styles.helperText}>Fuel slip photos are read with OCR. Digital PDFs are read with text extraction. Review the fields before saving.</p>
               </section>
             </div>
             <div className={styles.modalFooter}>
