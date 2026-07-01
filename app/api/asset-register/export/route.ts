@@ -1387,6 +1387,37 @@ function buildRegisterCollectionAssetsSheet(
   };
 }
 
+function safeSheetNameFragment(value: string, fallback: string): string {
+  const cleaned = value
+    .replace(/[\\/?*\[\]:]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  return (cleaned || fallback).slice(0, 31);
+}
+
+function buildRegisterSpecificCollectionSheet(
+  bundle: RegisterExportBundle,
+  profile: AccountProfileResult,
+  generatedAt: Date,
+  index: number,
+): XlsxSheet {
+  const registerName = cleanText(bundle.register.businessName) || `Asset Register ${index + 1}`;
+  const sheetName = safeSheetNameFragment(`${index + 1}. ${registerName}`, `Register ${index + 1}`);
+  const registerProfile = buildScopedExportProfile(profile, 'single', [bundle.register], registerName);
+
+  return buildWorkbookSheet(
+    {
+      name: sheetName,
+      description: `Complete editable asset register export for ${registerName}.`,
+      items: dedupeAssetItems(bundle.items),
+      tabColor: '10382F',
+    },
+    registerProfile,
+    generatedAt,
+  );
+}
+
 function buildRegisterCollectionWorkbookSheets(
   bundles: RegisterExportBundle[],
   profile: AccountProfileResult,
@@ -1397,6 +1428,7 @@ function buildRegisterCollectionWorkbookSheets(
   return [
     buildRegisterCollectionSummarySheet(bundles, profile, scope, entityName, generatedAt),
     buildRegisterCollectionAssetsSheet(bundles, scope, entityName, generatedAt),
+    ...bundles.map((bundle, index) => buildRegisterSpecificCollectionSheet(bundle, profile, generatedAt, index)),
   ];
 }
 
@@ -1689,9 +1721,10 @@ export async function GET(request: NextRequest) {
         });
       }
 
-      const workbook = createXlsxWorkbook(
-        buildRegisterCollectionWorkbookSheets(bundles, exportProfile, scope, entityName, generatedAt),
-      );
+      const workbookSheets = scope === 'single'
+        ? buildWorkbookSheets(dedupeAssetItems(bundles[0]?.items ?? []), exportProfile, generatedAt)
+        : buildRegisterCollectionWorkbookSheets(bundles, exportProfile, scope, entityName, generatedAt);
+      const workbook = createXlsxWorkbook(workbookSheets);
       const fileName = `aim4price-asset-registers-${ownerSlug}-${filenameDate}.xlsx`;
 
       return new NextResponse(workbook, {
