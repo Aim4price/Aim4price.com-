@@ -26006,10 +26006,10 @@ button.documentOpenLink {
 .assetSettingsBody {
   display: grid !important;
   flex: 1 1 auto !important;
-  gap: 1rem !important;
+  gap: 1.05rem !important;
   min-height: 0 !important;
   min-width: 0 !important;
-  padding: 1rem !important;
+  padding: 1.15rem 1.35rem 1.25rem !important;
   overflow-y: auto !important;
   overflow-x: hidden !important;
   overscroll-behavior: contain !important;
@@ -26020,7 +26020,7 @@ button.documentOpenLink {
 }
 
 .assetSettingsLocationModal {
-  width: min(95vw, 54rem) !important;
+  width: min(96vw, 64rem) !important;
 }
 
 .assetSettingsMapModal {
@@ -26194,8 +26194,8 @@ button.documentOpenLink {
 
 .assetSettingsSection {
   display: grid !important;
-  gap: 0.9rem !important;
-  padding: 1rem !important;
+  gap: 1.05rem !important;
+  padding: 1.15rem !important;
   border-radius: 1.18rem !important;
   border: 1px solid rgba(205, 220, 231, 0.96) !important;
   background: linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%) !important;
@@ -26279,16 +26279,16 @@ button.documentOpenLink {
 
 .assetSettingsStaticGrid {
   display: grid !important;
-  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)) !important;
-  gap: 0.75rem !important;
+  grid-template-columns: repeat(auto-fit, minmax(12.5rem, 1fr)) !important;
+  gap: 0.82rem !important;
 }
 
 .assetSettingsStaticGrid > div,
 .assetSettingsDisabledNote {
   display: grid !important;
-  gap: 0.2rem !important;
-  min-height: 4.1rem !important;
-  padding: 0.85rem 0.95rem !important;
+  gap: 0.22rem !important;
+  min-height: 4.25rem !important;
+  padding: 0.9rem 1.05rem !important;
   border-radius: 1rem !important;
   border: 1px solid rgba(205, 220, 231, 0.9) !important;
   background: rgba(247, 250, 252, 0.96) !important;
@@ -26325,7 +26325,7 @@ button.documentOpenLink {
 
 .assetSettingsLocationSummary {
   display: grid !important;
-  gap: 0.55rem !important;
+  gap: 0.7rem !important;
 }
 
 .assetSettingsStaticGridWide {
@@ -26336,6 +26336,10 @@ button.documentOpenLink {
   font-size: 0.98rem !important;
   line-height: 1.25 !important;
   overflow-wrap: anywhere !important;
+}
+
+.assetSettingsMapTile {
+  grid-column: 1 / -1 !important;
 }
 
 .assetSettingsLocationMethods {
@@ -28852,3 +28856,75 @@ button.documentOpenLink {
     width: 100%;
   }
 }
+
+/* === Asset settings location modal spacing and no-wrap polish === */
+.assetSettingsLocationModal .assetSettingsBody {
+  gap: 1.1rem !important;
+  padding: 1.2rem 1.45rem 1.35rem !important;
+}
+
+.assetSettingsLocationModal .assetSettingsSection {
+  gap: 1.15rem !important;
+  padding: 1.28rem !important;
+}
+
+.assetSettingsLocationModal .assetSettingsSectionCopy {
+  gap: 0.18rem !important;
+}
+
+.assetSettingsLocationModal .assetSettingsSectionCopy h4,
+.assetSettingsLocationModal .assetSettingsSectionCopy p,
+.assetSettingsLocationModal .assetSettingsStaticGrid span,
+.assetSettingsLocationModal .assetSettingsStaticGrid strong,
+.assetSettingsLocationModal .assetSettingsMapLink,
+.assetSettingsLocationModal .assetSettingsLocationChoiceGrid .assetSettingsOptionButton strong,
+.assetSettingsMapModal .assetSettingsMapSelectedGrid span,
+.assetSettingsMapModal .assetSettingsMapSelectedGrid strong {
+  max-width: 100% !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.assetSettingsLocationModal .assetSettingsStaticGrid {
+  grid-template-columns: repeat(2, minmax(18rem, 1fr)) !important;
+  gap: 0.9rem !important;
+}
+
+.assetSettingsLocationModal .assetSettingsStaticGrid > div {
+  align-content: center !important;
+  min-height: 4.55rem !important;
+  padding: 0.95rem 1.15rem !important;
+}
+
+.assetSettingsLocationModal .assetSettingsStaticGridWide,
+.assetSettingsLocationModal .assetSettingsMapTile {
+  grid-column: 1 / -1 !important;
+}
+
+.assetSettingsLocationModal .assetSettingsStaticGridWide strong,
+.assetSettingsLocationModal .assetSettingsMapTile strong,
+.assetSettingsLocationModal .assetSettingsMapLink {
+  overflow-wrap: normal !important;
+}
+
+.assetSettingsLocationModal .assetSettingsLocationChoiceGrid {
+  gap: 0.9rem !important;
+}
+
+.assetSettingsLocationModal .assetSettingsLocationChoiceGrid .assetSettingsOptionButton {
+  min-height: 6.35rem !important;
+  padding: 1rem !important;
+}
+
+.assetSettingsMapModal .assetSettingsMapSelectedGrid > div {
+  align-content: center !important;
+  min-height: 4rem !important;
+}
+
+@media (max-width: 760px) {
+  .assetSettingsLocationModal .assetSettingsStaticGrid {
+    grid-template-columns: 1fr !important;
+  }
+}
+

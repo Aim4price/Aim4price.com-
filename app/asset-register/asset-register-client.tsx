@@ -12883,13 +12883,12 @@ export default function AssetRegisterClient() {
                   <div className={styles.assetSettingsSectionCopy}>
                     <span>Location</span>
                     <h4>Update GPS Position</h4>
-                    <p>Save the asset’s latest known position without changing its value, usage, serial number, brand, model, finance, insurance or licence details.</p>
                   </div>
 
                   <div className={styles.assetSettingsLocationSummary}>
                     <div className={styles.assetSettingsStaticGrid}>
                       <div>
-                        <span>Last scanned</span>
+                        <span>Last Saved</span>
                         <strong>{formatAssetSettingsLastScanned(editingAsset)}</strong>
                       </div>
                       <div>
@@ -12903,7 +12902,7 @@ export default function AssetRegisterClient() {
                         </div>
                       ) : null}
                       {assetSettingsMapsUrl ? (
-                        <div>
+                        <div className={styles.assetSettingsMapTile}>
                           <span>Map</span>
                           <a className={styles.assetSettingsMapLink} href={assetSettingsMapsUrl} target="_blank" rel="noreferrer">
                             Open in Google Maps
