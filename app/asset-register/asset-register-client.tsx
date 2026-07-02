@@ -3616,7 +3616,11 @@ function hasAssetMapCoordinates(asset: Pick<RegisterAsset, 'lastKnownLat' | 'las
   const latitude = Number(asset.lastKnownLat);
   const longitude = Number(asset.lastKnownLng);
 
-  return Number.isFinite(latitude) && Number.isFinite(longitude);
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return false;
+  if (Math.abs(latitude) > 90 || Math.abs(longitude) > 180) return false;
+  if (latitude === 0 && longitude === 0) return false;
+
+  return true;
 }
 
 function getRegisterSummaryAssetType(asset: RegisterAsset): RegisterSummaryAssetTypeKey {
@@ -10516,6 +10520,9 @@ export default function AssetRegisterClient() {
                               const canOpenPhotoViewer = hasRealPhotos && Boolean(detailPhoto);
                               const canInteractWithPhotoStage = canOpenPhotoViewer || canUseOwnerOnlyAssetActions;
                               const manualAssetNote = getManualAssetNote(asset.note);
+                              const licenseStatus = readLicenseStatusChoice(asset);
+                              const registrationNumber = asset.kind !== 'property' && licenseStatus === 'yes' ? readLicenseRegistrationNumber(asset) : '';
+                              const mappedStatus: AssetStatusChoice = hasAssetMapCoordinates(asset) ? 'yes' : 'no';
 
                               return (
                                 <>
@@ -10663,6 +10670,21 @@ export default function AssetRegisterClient() {
                                       disabled={isDetailDocumentUploading}
                                     />
 
+                                    {canUseOwnerOnlyAssetActions ? (
+                                      <button
+                                        type="button"
+                                        className={`${styles.previewUploadPill} ${styles.assetDocumentsUploadPill}`}
+                                        disabled={isDetailDocumentUploading}
+                                        onClick={(event) => {
+                                          event.stopPropagation();
+                                          triggerDetailMediaInput(asset.id, 'document');
+                                        }}
+                                      >
+                                        <PlusIcon className={styles.buttonIcon} />
+                                        <span>{isDetailDocumentUploading ? 'Uploading...' : 'Add documents'}</span>
+                                      </button>
+                                    ) : null}
+
                                     <button
                                       type="button"
                                       className={`${styles.assetDocumentsCard} ${styles.assetDocumentsUploadCard} ${isDetailDocumentUploading ? styles.assetMediaBusy : ''}`}
@@ -10744,14 +10766,13 @@ export default function AssetRegisterClient() {
                                         {asset.kind !== 'property' ? (
                                           <div className={styles.assetStatusRow}>
                                             <span>Licensed</span>
-                                            {renderAssetStatusMark(readLicenseStatusChoice(asset))}
+                                            {renderAssetStatusMark(licenseStatus)}
                                           </div>
                                         ) : null}
-                                        {asset.kind !== 'property' && readLicenseStatusChoice(asset) === 'yes' && readLicenseRegistrationNumber(asset) ? (
-                                          <div className={`${styles.assetStatusRow} ${styles.assetRegistrationRow}`}>
-                                            <strong>{readLicenseRegistrationNumber(asset)}</strong>
-                                          </div>
-                                        ) : null}
+                                        <div className={styles.assetStatusRow}>
+                                          <span>Mapped</span>
+                                          {renderAssetStatusMark(mappedStatus)}
+                                        </div>
                                       </div>
                                     </div>
 
@@ -10767,6 +10788,13 @@ export default function AssetRegisterClient() {
                                           <span>Insured For</span>
                                           <strong>{money(insuredValueExVat)}</strong>
                                           <small>Excl. VAT</small>
+                                        </div>
+                                      ) : null}
+
+                                      {registrationNumber ? (
+                                        <div className={styles.assetRegistrationNumberBubble}>
+                                          <span>Registration No</span>
+                                          <strong>{registrationNumber}</strong>
                                         </div>
                                       ) : null}
                                     </div>
@@ -13218,7 +13246,7 @@ export default function AssetRegisterClient() {
                 </>
               ) : (
                 <div className={styles.assetReportOptionsGrid}>
-                  <button type="button" className={`${styles.assetReportOptionButton} ${styles.assetReportPrimaryOption}`} onClick={() => handlePrintAssetSheet(activeAsset)}>
+                  <button type="button" className={styles.assetReportOptionButton} onClick={() => handlePrintAssetSheet(activeAsset)}>
                     <PdfIcon className={styles.buttonIcon} />
                     <span>
                       <strong>Download asset valuation</strong>
@@ -13228,19 +13256,19 @@ export default function AssetRegisterClient() {
 
                   {canUseOwnerOnlyAssetActions ? (
                     <>
-                      <button type="button" className={styles.assetReportOptionButton} onClick={openAssetFuelReportFilter}>
-                        <DocumentIcon className={styles.buttonIcon} />
-                        <span>
-                          <strong>Download fuel report</strong>
-                          <small>PDF or Excel fuel costs by month.</small>
-                        </span>
-                      </button>
-
                       <button type="button" className={styles.assetReportOptionButton} onClick={openAssetMaintenanceReportFilter}>
                         <DocumentIcon className={styles.buttonIcon} />
                         <span>
                           <strong>Download maintenance report</strong>
                           <small>PDF or Excel service and repair costs.</small>
+                        </span>
+                      </button>
+
+                      <button type="button" className={styles.assetReportOptionButton} onClick={openAssetFuelReportFilter}>
+                        <DocumentIcon className={styles.buttonIcon} />
+                        <span>
+                          <strong>Download fuel report</strong>
+                          <small>PDF or Excel fuel costs by month.</small>
                         </span>
                       </button>
 

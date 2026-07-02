@@ -11335,7 +11335,7 @@
 }
 
 .assetReportPrimaryOption {
-  grid-column: 1 / -1 !important;
+  grid-column: auto !important;
 }
 
 .assetReportOptionButton {
@@ -20505,7 +20505,7 @@
 }
 
 .assetReportPrimaryOption {
-  grid-column: 1 / -1 !important;
+  grid-column: auto !important;
 }
 
 .assetReportOptionButton {
@@ -27319,7 +27319,7 @@ button.documentOpenLink {
 }
 
 .assetReportPrimaryOption {
-  grid-column: 1 / -1 !important;
+  grid-column: auto !important;
   width: 100% !important;
   justify-self: stretch !important;
   justify-content: flex-start !important;
@@ -27327,7 +27327,7 @@ button.documentOpenLink {
 }
 
 .assetReportPrimaryOption > span {
-  flex: 0 1 auto !important;
+  flex: 1 1 auto !important;
 }
 
 .assetReportOptionButton {
@@ -28558,5 +28558,73 @@ button.documentOpenLink {
     width: 2.55rem !important;
     height: 2.55rem !important;
     margin-left: 0.25rem !important;
+  }
+}
+
+/* === Asset Register report/document/status refinements: July 2026 === */
+.assetBody .assetDocumentsPanel {
+  position: relative !important;
+}
+
+.assetDocumentsUploadPill {
+  left: 1.35rem !important;
+  top: 1.35rem !important;
+}
+
+.assetRegistrationNumberBubble {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  grid-template-areas: "label registration" !important;
+  align-items: center !important;
+  column-gap: 1rem !important;
+  min-height: 3.65rem !important;
+  padding: 0.72rem 0.88rem 0.72rem 1rem !important;
+  border-radius: 0.96rem !important;
+  border: 1px solid rgba(207, 220, 231, 0.98) !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(29, 59, 98, 0.055), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #f7fafc 100%) !important;
+  box-shadow:
+    0 8px 16px rgba(16, 31, 28, 0.03),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.assetRegistrationNumberBubble span {
+  grid-area: label !important;
+  min-width: 0 !important;
+  color: #33495b !important;
+  font-size: 0.78rem !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.052em !important;
+  line-height: 1.15 !important;
+  text-transform: uppercase !important;
+}
+
+.assetRegistrationNumberBubble strong {
+  grid-area: registration !important;
+  min-width: 0 !important;
+  color: #062f27 !important;
+  font-size: clamp(1.02rem, 1.2vw, 1.24rem) !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.015em !important;
+  line-height: 1.05 !important;
+  text-align: right !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
+}
+
+@media (max-width: 760px) {
+  .assetRegistrationNumberBubble {
+    grid-template-columns: 1fr !important;
+    grid-template-areas:
+      "label"
+      "registration" !important;
+    justify-items: start !important;
+    row-gap: 0.24rem !important;
+  }
+
+  .assetRegistrationNumberBubble strong {
+    text-align: left !important;
+    white-space: normal !important;
   }
 }
