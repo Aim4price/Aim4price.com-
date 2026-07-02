@@ -28144,6 +28144,11 @@ button.documentOpenLink {
   padding: 0.54rem 0.75rem;
 }
 
+.summarySimpleTableCountOnly .summarySimpleTableHeader,
+.summarySimpleTableCountOnly .summarySimpleTableRow {
+  grid-template-columns: minmax(9rem, 1fr) minmax(4rem, auto);
+}
+
 .summarySimpleTableHeader {
   background: #f3f8fb;
 }

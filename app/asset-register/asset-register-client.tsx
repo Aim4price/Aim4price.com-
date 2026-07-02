@@ -70,6 +70,7 @@ declare global {
 
 const REGISTER_SUMMARY_VISIBLE_CARD_COUNT = 3;
 const REGISTER_SUMMARY_TOTAL_CARD_COUNT = 8;
+const ASSET_REGISTER_SUMMARY_VAT_MULTIPLIER = 1.15;
 
 function getRegisterSummaryCardsPerView(): number {
   if (typeof window === 'undefined') return REGISTER_SUMMARY_VISIBLE_CARD_COUNT;
@@ -361,8 +362,11 @@ type RegisterBasicSummary = {
   totalAssets: number;
   currentValueExVat: number;
   replacementValueExVat: number;
+  replacementPricedAssets: number;
   insuredValueExVat: number;
+  insuredAssetsValueExVat: number;
   financedValueExVat: number;
+  licensedValueExVat: number;
   assetsInsured: number;
   assetsLicensed: number;
   assetsFinanced: number;
@@ -384,6 +388,7 @@ type RegisterSummaryDisplaySection = {
   title: string;
   description: string;
   rows: RegisterSummaryDisplayRow[];
+  hasValueColumn?: boolean;
 };
 
 type AssetRegisterSummary = {
@@ -3566,6 +3571,46 @@ function addToRegisterSummaryCountValue(stats: RegisterSummaryCountValue, valueE
   stats.valueExVat += valueExVat;
 }
 
+function summaryValueInclVat(valueExVat: number): number {
+  return Math.round(valueExVat * ASSET_REGISTER_SUMMARY_VAT_MULTIPLIER);
+}
+
+function registerAssetDedupeKey(asset: RegisterAsset, index: number): string {
+  const id = String(asset.id ?? '').trim();
+  if (id) return `id:${id}`;
+
+  const publicAssetCode = String(asset.publicAssetCode ?? '').trim();
+  if (publicAssetCode) return `code:${publicAssetCode}`;
+
+  const fallback = [
+    asset.title,
+    asset.serialNumber,
+    asset.createdAtIso,
+    asset.updatedAtIso,
+    asset.value,
+  ]
+    .map((part) => String(part ?? '').trim().toLowerCase())
+    .filter(Boolean)
+    .join('|');
+
+  return fallback ? `asset:${fallback}` : `index:${index}`;
+}
+
+function dedupeRegisterAssets(assets: RegisterAsset[]): RegisterAsset[] {
+  const seen = new Set<string>();
+  const uniqueAssets: RegisterAsset[] = [];
+
+  assets.forEach((asset, index) => {
+    const key = registerAssetDedupeKey(asset, index);
+    if (seen.has(key)) return;
+
+    seen.add(key);
+    uniqueAssets.push(asset);
+  });
+
+  return uniqueAssets;
+}
+
 function hasAssetMapCoordinates(asset: Pick<RegisterAsset, 'lastKnownLat' | 'lastKnownLng'>): boolean {
   const latitude = Number(asset.lastKnownLat);
   const longitude = Number(asset.lastKnownLng);
@@ -3644,13 +3689,17 @@ function getRegisterSummaryAssetType(asset: RegisterAsset): RegisterSummaryAsset
 }
 
 function buildRegisterBasicSummary(assets: RegisterAsset[]): RegisterBasicSummary {
+  const uniqueAssets = dedupeRegisterAssets(assets);
   const assetTypes = createRegisterSummaryAssetTypes();
   const aim4priceAssets = createRegisterSummaryCountValue();
   const manualAssets = createRegisterSummaryCountValue();
   let currentValueExVat = 0;
   let replacementValueExVat = 0;
+  let replacementPricedAssets = 0;
   let insuredValueExVat = 0;
+  let insuredAssetsValueExVat = 0;
   let financedValueExVat = 0;
+  let licensedValueExVat = 0;
   let assetsInsured = 0;
   let assetsLicensed = 0;
   let assetsFinanced = 0;
@@ -3658,10 +3707,13 @@ function buildRegisterBasicSummary(assets: RegisterAsset[]): RegisterBasicSummar
   let assetsWithPhotos = 0;
   let assetsWithDocuments = 0;
 
-  assets.forEach((asset) => {
+  uniqueAssets.forEach((asset) => {
     const valueExVat = Math.round(Number(asset.value || 0));
     const replacementPrice = readAssetReplacementPriceExVat(asset);
     const insuredValue = readAssetInsuredValueExVat(asset);
+    const isInsured = readInsuranceStatusChoice(asset) === 'yes';
+    const isFinanced = readFinanceStatusChoice(asset) === 'yes';
+    const isLicensed = readLicenseStatusChoice(asset) === 'yes';
     const assetType = getRegisterSummaryAssetType(asset);
 
     currentValueExVat += valueExVat;
@@ -3674,6 +3726,7 @@ function buildRegisterBasicSummary(assets: RegisterAsset[]): RegisterBasicSummar
     }
 
     if (replacementPrice !== null) {
+      replacementPricedAssets += 1;
       replacementValueExVat += replacementPrice;
     }
 
@@ -3681,17 +3734,19 @@ function buildRegisterBasicSummary(assets: RegisterAsset[]): RegisterBasicSummar
       insuredValueExVat += insuredValue;
     }
 
-    if (readFinanceStatusChoice(asset) === 'yes') {
+    if (isFinanced) {
       assetsFinanced += 1;
       financedValueExVat += valueExVat;
     }
 
-    if (readInsuranceStatusChoice(asset) === 'yes') {
+    if (isInsured) {
       assetsInsured += 1;
+      insuredAssetsValueExVat += insuredValue ?? 0;
     }
 
-    if (readLicenseStatusChoice(asset) === 'yes') {
+    if (isLicensed) {
       assetsLicensed += 1;
+      licensedValueExVat += valueExVat;
     }
 
     if (hasAssetMapCoordinates(asset)) {
@@ -3708,11 +3763,14 @@ function buildRegisterBasicSummary(assets: RegisterAsset[]): RegisterBasicSummar
   });
 
   return {
-    totalAssets: assets.length,
+    totalAssets: uniqueAssets.length,
     currentValueExVat,
     replacementValueExVat,
+    replacementPricedAssets,
     insuredValueExVat,
+    insuredAssetsValueExVat,
     financedValueExVat,
+    licensedValueExVat,
     assetsInsured,
     assetsLicensed,
     assetsFinanced,
@@ -5741,22 +5799,49 @@ export default function AssetRegisterClient() {
     () => [
       {
         title: 'Register Values',
-        description: 'Saved totals for the selected asset register. Values exclude VAT.',
+        description: 'Saved totals for the selected asset register. Values include VAT.',
         rows: [
-          { label: 'Total assets', count: registerBasicSummary.totalAssets.toLocaleString('en-ZA') },
-          { label: 'Current value', value: money(registerBasicSummary.currentValueExVat) },
-          { label: 'Replacement value', value: money(registerBasicSummary.replacementValueExVat) },
-          { label: 'Insured value', value: money(registerBasicSummary.insuredValueExVat) },
-          { label: 'Financed value', value: money(registerBasicSummary.financedValueExVat) },
+          {
+            label: 'Total assets',
+            count: registerBasicSummary.totalAssets.toLocaleString('en-ZA'),
+            value: money(summaryValueInclVat(registerBasicSummary.currentValueExVat)),
+          },
+          {
+            label: 'Replacement value',
+            count: registerBasicSummary.replacementPricedAssets.toLocaleString('en-ZA'),
+            value: money(summaryValueInclVat(registerBasicSummary.replacementValueExVat)),
+          },
+          {
+            label: 'Insured value',
+            count: registerBasicSummary.assetsInsured.toLocaleString('en-ZA'),
+            value: money(summaryValueInclVat(registerBasicSummary.insuredAssetsValueExVat)),
+          },
+          {
+            label: 'Financed value',
+            count: registerBasicSummary.assetsFinanced.toLocaleString('en-ZA'),
+            value: money(summaryValueInclVat(registerBasicSummary.financedValueExVat)),
+          },
         ],
       },
       {
         title: 'Register Status Counts',
-        description: 'Main saved status counts only.',
+        description: 'Main saved status counts with matching VAT-inclusive values.',
         rows: [
-          { label: 'Assets insured', count: registerBasicSummary.assetsInsured.toLocaleString('en-ZA') },
-          { label: 'Assets licensed', count: registerBasicSummary.assetsLicensed.toLocaleString('en-ZA') },
-          { label: 'Assets financed', count: registerBasicSummary.assetsFinanced.toLocaleString('en-ZA') },
+          {
+            label: 'Assets insured',
+            count: registerBasicSummary.assetsInsured.toLocaleString('en-ZA'),
+            value: money(summaryValueInclVat(registerBasicSummary.insuredAssetsValueExVat)),
+          },
+          {
+            label: 'Assets licensed',
+            count: registerBasicSummary.assetsLicensed.toLocaleString('en-ZA'),
+            value: money(summaryValueInclVat(registerBasicSummary.licensedValueExVat)),
+          },
+          {
+            label: 'Assets financed',
+            count: registerBasicSummary.assetsFinanced.toLocaleString('en-ZA'),
+            value: money(summaryValueInclVat(registerBasicSummary.financedValueExVat)),
+          },
         ],
       },
       {
@@ -5766,12 +5851,12 @@ export default function AssetRegisterClient() {
           {
             label: 'Aim4price assets',
             count: registerBasicSummary.aim4priceAssets.count.toLocaleString('en-ZA'),
-            value: money(registerBasicSummary.aim4priceAssets.valueExVat),
+            value: money(summaryValueInclVat(registerBasicSummary.aim4priceAssets.valueExVat)),
           },
           {
             label: 'Manual assets',
             count: registerBasicSummary.manualAssets.count.toLocaleString('en-ZA'),
-            value: money(registerBasicSummary.manualAssets.valueExVat),
+            value: money(summaryValueInclVat(registerBasicSummary.manualAssets.valueExVat)),
           },
         ],
       },
@@ -5782,22 +5867,22 @@ export default function AssetRegisterClient() {
           {
             label: 'Property',
             count: registerBasicSummary.assetTypes.property.count.toLocaleString('en-ZA'),
-            value: money(registerBasicSummary.assetTypes.property.valueExVat),
+            value: money(summaryValueInclVat(registerBasicSummary.assetTypes.property.valueExVat)),
           },
           {
             label: 'Equipment',
             count: registerBasicSummary.assetTypes.equipment.count.toLocaleString('en-ZA'),
-            value: money(registerBasicSummary.assetTypes.equipment.valueExVat),
+            value: money(summaryValueInclVat(registerBasicSummary.assetTypes.equipment.valueExVat)),
           },
           {
             label: 'Tools',
             count: registerBasicSummary.assetTypes.tools.count.toLocaleString('en-ZA'),
-            value: money(registerBasicSummary.assetTypes.tools.valueExVat),
+            value: money(summaryValueInclVat(registerBasicSummary.assetTypes.tools.valueExVat)),
           },
           {
             label: 'Vehicles',
             count: registerBasicSummary.assetTypes.vehicles.count.toLocaleString('en-ZA'),
-            value: money(registerBasicSummary.assetTypes.vehicles.valueExVat),
+            value: money(summaryValueInclVat(registerBasicSummary.assetTypes.vehicles.valueExVat)),
           },
         ],
       },
@@ -5809,6 +5894,7 @@ export default function AssetRegisterClient() {
           { label: 'Assets with photos', count: registerBasicSummary.assetsWithPhotos.toLocaleString('en-ZA') },
           { label: 'Assets with documents', count: registerBasicSummary.assetsWithDocuments.toLocaleString('en-ZA') },
         ],
+        hasValueColumn: false,
       },
     ],
     [registerBasicSummary],
@@ -10967,7 +11053,7 @@ export default function AssetRegisterClient() {
             <div className={`${styles.modalHeader} ${styles.summaryModalHeader}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="asset-register-summary-title">Register summary</h3>
-                <p>Basic overview of the selected asset register. Values exclude VAT unless stated otherwise.</p>
+                <p>Basic overview of the selected asset register. Values include VAT.</p>
               </div>
 
               <div className={styles.summaryHeaderActions}>
@@ -11012,19 +11098,19 @@ export default function AssetRegisterClient() {
                     </div>
                   </div>
 
-                  <div className={styles.summarySimpleTable}>
+                  <div className={`${styles.summarySimpleTable} ${section.hasValueColumn === false ? styles.summarySimpleTableCountOnly : ''}`}>
                     <div className={styles.summarySimpleTableHeader} aria-hidden="true">
                       <span>Metric</span>
                       <span>Count</span>
-                      <span>Value excl. VAT</span>
+                      {section.hasValueColumn === false ? null : <span>Value incl. VAT</span>}
                     </div>
 
                     <div className={styles.summarySimpleTableRows}>
                       {section.rows.map((row) => (
                         <div key={row.label} className={styles.summarySimpleTableRow}>
                           <span>{row.label}</span>
-                          <strong>{row.count ?? '—'}</strong>
-                          <small>{row.value ?? '—'}</small>
+                          <strong>{row.count ?? ''}</strong>
+                          {section.hasValueColumn === false ? null : <small>{row.value ?? ''}</small>}
                         </div>
                       ))}
                     </div>
