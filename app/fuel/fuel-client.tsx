@@ -2200,7 +2200,6 @@ export default function FuelClient() {
                             <span>{formatFuelType(storage.fuelType)}</span>
                             <span>{formatLitres(storage.currentLitres)} available</span>
                             <span>{storage.capacityLitres === null ? 'Capacity not set' : `${formatLitres(storage.capacityLitres)} capacity`}</span>
-                            <span>{storage.locationLabel || storage.publicFuelStorageCode}</span>
                           </div>
                         </div>
                       </div>
