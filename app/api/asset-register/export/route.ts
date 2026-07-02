@@ -72,10 +72,12 @@ type RegisterSummaryXlsxSection = {
 type RegisterSummaryPdfSection = {
   title: string;
   hasValueColumn?: boolean;
-  rows: Array<{ label: string; count?: string; value?: string }>;
+  rows: Array<{ label: string; count?: string; valueExVat?: string; valueInclVat?: string }>;
 };
 
 const NA_VALUE = 'N/A';
+const AIM4PRICE_REPORT_EMAIL = 'aim4price@gmail.com';
+const FALLBACK_REPORT_LOGO_PATH = '/brand/aim4price-mark-black.png';
 const VAT_RATE = 0.15;
 const VAT_MULTIPLIER = 1 + VAT_RATE;
 const PROPERTY_ASSET_LABEL = 'Property / Land / Building';
@@ -160,6 +162,34 @@ function unauthorized() {
 
 function cleanText(value: unknown): string {
   return String(value ?? '').trim();
+}
+
+function escapeHtml(value: unknown): string {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function resolveReportLogoUrl(profile: AccountProfileResult | null, requestUrl: string): string {
+  const fallbackLogoUrl = new URL(FALLBACK_REPORT_LOGO_PATH, requestUrl).toString();
+  const rawLogoUrl = cleanText(profile?.logoUrl);
+
+  if (!rawLogoUrl) {
+    return fallbackLogoUrl;
+  }
+
+  if (rawLogoUrl.startsWith('data:') || rawLogoUrl.startsWith('http://') || rawLogoUrl.startsWith('https://') || rawLogoUrl.startsWith('//')) {
+    return rawLogoUrl;
+  }
+
+  if (rawLogoUrl.startsWith('/')) {
+    return new URL(rawLogoUrl, requestUrl).toString();
+  }
+
+  return rawLogoUrl;
 }
 
 function textOrNa(value: unknown): string {
@@ -827,34 +857,34 @@ function buildRegisterSummaryXlsxSections(summary: RegisterBasicExportSummary): 
     {
       title: 'Register Values',
       rows: [
-        [textCell('Total assets', 'metaLabel'), numberCell(summary.totalAssets), moneyCell(moneyInclVatTotal(summary.currentValueExVat))],
-        [textCell('Replacement value', 'metaLabel'), numberCell(summary.replacementPricedAssets), moneyCell(moneyInclVatTotal(summary.replacementValueExVat))],
-        [textCell('Insured value', 'metaLabel'), numberCell(summary.assetsInsured), moneyCell(moneyInclVatTotal(summary.insuredAssetsValueExVat))],
-        [textCell('Financed value', 'metaLabel'), numberCell(summary.assetsFinanced), moneyCell(moneyInclVatTotal(summary.financedValueExVat))],
+        [textCell('Total assets', 'metaLabel'), numberCell(summary.totalAssets), moneyCell(summary.currentValueExVat), moneyCell(moneyInclVatTotal(summary.currentValueExVat))],
+        [textCell('Replacement value', 'metaLabel'), numberCell(summary.replacementPricedAssets), moneyCell(summary.replacementValueExVat), moneyCell(moneyInclVatTotal(summary.replacementValueExVat))],
+        [textCell('Insured value', 'metaLabel'), numberCell(summary.assetsInsured), moneyCell(summary.insuredAssetsValueExVat), moneyCell(moneyInclVatTotal(summary.insuredAssetsValueExVat))],
+        [textCell('Financed value', 'metaLabel'), numberCell(summary.assetsFinanced), moneyCell(summary.financedValueExVat), moneyCell(moneyInclVatTotal(summary.financedValueExVat))],
       ],
     },
     {
       title: 'Register Status Counts',
       rows: [
-        [textCell('Assets insured', 'metaLabel'), numberCell(summary.assetsInsured), moneyCell(moneyInclVatTotal(summary.insuredAssetsValueExVat))],
-        [textCell('Assets licensed', 'metaLabel'), numberCell(summary.assetsLicensed), moneyCell(moneyInclVatTotal(summary.licensedValueExVat))],
-        [textCell('Assets financed', 'metaLabel'), numberCell(summary.assetsFinanced), moneyCell(moneyInclVatTotal(summary.financedValueExVat))],
+        [textCell('Assets insured', 'metaLabel'), numberCell(summary.assetsInsured), moneyCell(summary.insuredAssetsValueExVat), moneyCell(moneyInclVatTotal(summary.insuredAssetsValueExVat))],
+        [textCell('Assets licensed', 'metaLabel'), numberCell(summary.assetsLicensed), moneyCell(summary.licensedValueExVat), moneyCell(moneyInclVatTotal(summary.licensedValueExVat))],
+        [textCell('Assets financed', 'metaLabel'), numberCell(summary.assetsFinanced), moneyCell(summary.financedValueExVat), moneyCell(moneyInclVatTotal(summary.financedValueExVat))],
       ],
     },
     {
       title: 'Valuation Source',
       rows: [
-        [textCell('Aim4price assets', 'metaLabel'), numberCell(summary.aim4priceAssets.count), moneyCell(moneyInclVatTotal(summary.aim4priceAssets.valueExVat))],
-        [textCell('Manual assets', 'metaLabel'), numberCell(summary.manualAssets.count), moneyCell(moneyInclVatTotal(summary.manualAssets.valueExVat))],
+        [textCell('Aim4price assets', 'metaLabel'), numberCell(summary.aim4priceAssets.count), moneyCell(summary.aim4priceAssets.valueExVat), moneyCell(moneyInclVatTotal(summary.aim4priceAssets.valueExVat))],
+        [textCell('Manual assets', 'metaLabel'), numberCell(summary.manualAssets.count), moneyCell(summary.manualAssets.valueExVat), moneyCell(moneyInclVatTotal(summary.manualAssets.valueExVat))],
       ],
     },
     {
       title: 'Asset Type Split',
       rows: [
-        [textCell('Property', 'metaLabel'), numberCell(summary.assetTypes.property.count), moneyCell(moneyInclVatTotal(summary.assetTypes.property.valueExVat))],
-        [textCell('Equipment', 'metaLabel'), numberCell(summary.assetTypes.equipment.count), moneyCell(moneyInclVatTotal(summary.assetTypes.equipment.valueExVat))],
-        [textCell('Tools', 'metaLabel'), numberCell(summary.assetTypes.tools.count), moneyCell(moneyInclVatTotal(summary.assetTypes.tools.valueExVat))],
-        [textCell('Vehicles', 'metaLabel'), numberCell(summary.assetTypes.vehicles.count), moneyCell(moneyInclVatTotal(summary.assetTypes.vehicles.valueExVat))],
+        [textCell('Property', 'metaLabel'), numberCell(summary.assetTypes.property.count), moneyCell(summary.assetTypes.property.valueExVat), moneyCell(moneyInclVatTotal(summary.assetTypes.property.valueExVat))],
+        [textCell('Equipment', 'metaLabel'), numberCell(summary.assetTypes.equipment.count), moneyCell(summary.assetTypes.equipment.valueExVat), moneyCell(moneyInclVatTotal(summary.assetTypes.equipment.valueExVat))],
+        [textCell('Tools', 'metaLabel'), numberCell(summary.assetTypes.tools.count), moneyCell(summary.assetTypes.tools.valueExVat), moneyCell(moneyInclVatTotal(summary.assetTypes.tools.valueExVat))],
+        [textCell('Vehicles', 'metaLabel'), numberCell(summary.assetTypes.vehicles.count), moneyCell(summary.assetTypes.vehicles.valueExVat), moneyCell(moneyInclVatTotal(summary.assetTypes.vehicles.valueExVat))],
       ],
     },
     {
@@ -880,13 +910,13 @@ function buildRegisterSummaryWorkbookSheets(items: AssetRegisterItem[], profile:
     [textCell(section.title, 'section')],
     section.hasValueColumn === false
       ? [textCell('Metric', 'tableHeader'), textCell('Count', 'tableHeader')]
-      : [textCell('Metric', 'tableHeader'), textCell('Count', 'tableHeader'), textCell('Value incl. VAT', 'tableHeader')],
+      : [textCell('Metric', 'tableHeader'), textCell('Count', 'tableHeader'), textCell('Value excl. VAT', 'tableHeader'), textCell('Value incl. VAT', 'tableHeader')],
     ...section.rows,
   ]);
   const summaryRows: XlsxCellValue[][] = [
     [textCell('Asset Register Summary', 'title')],
     [textCell(ownerName, 'section')],
-    [textCell('Basic overview of the selected asset register. Values include VAT. No individual asset rows are included.', 'subtitle')],
+    [textCell('Basic overview of the selected asset register. Values are shown excluding and including VAT. No individual asset rows are included.', 'subtitle')],
     [],
     [textCell('Export details', 'section')],
     [textCell('Generated', 'metaLabel'), { value: generatedAt, style: 'date' }],
@@ -901,11 +931,11 @@ function buildRegisterSummaryWorkbookSheets(items: AssetRegisterItem[], profile:
     {
       name: 'Register Summary',
       tabColor: '10382F',
-      columns: [32, 16, 20],
+      columns: [32, 16, 20, 20],
       merges: [
-        { fromRow: 1, fromColumn: 1, toRow: 1, toColumn: 3 },
-        { fromRow: 2, fromColumn: 1, toRow: 2, toColumn: 3 },
-        { fromRow: 3, fromColumn: 1, toRow: 3, toColumn: 3 },
+        { fromRow: 1, fromColumn: 1, toRow: 1, toColumn: 4 },
+        { fromRow: 2, fromColumn: 1, toRow: 2, toColumn: 4 },
+        { fromRow: 3, fromColumn: 1, toRow: 3, toColumn: 4 },
       ],
       rows: summaryRows,
     },
@@ -1498,38 +1528,45 @@ function buildFullRegisterPdf(items: AssetRegisterItem[], profile: AccountProfil
 }
 
 function buildRegisterSummaryPdfSections(summary: RegisterBasicExportSummary): RegisterSummaryPdfSection[] {
+  const row = (label: string, count: number, valueExVat: number) => ({
+    label,
+    count: String(count),
+    valueExVat: formatPdfMoney(valueExVat),
+    valueInclVat: formatPdfMoney(moneyInclVatTotal(valueExVat)),
+  });
+
   return [
     {
       title: 'Register Values',
       rows: [
-        { label: 'Total assets', count: String(summary.totalAssets), value: formatPdfMoney(moneyInclVatTotal(summary.currentValueExVat)) },
-        { label: 'Replacement value', count: String(summary.replacementPricedAssets), value: formatPdfMoney(moneyInclVatTotal(summary.replacementValueExVat)) },
-        { label: 'Insured value', count: String(summary.assetsInsured), value: formatPdfMoney(moneyInclVatTotal(summary.insuredAssetsValueExVat)) },
-        { label: 'Financed value', count: String(summary.assetsFinanced), value: formatPdfMoney(moneyInclVatTotal(summary.financedValueExVat)) },
+        row('Total assets', summary.totalAssets, summary.currentValueExVat),
+        row('Replacement value', summary.replacementPricedAssets, summary.replacementValueExVat),
+        row('Insured value', summary.assetsInsured, summary.insuredAssetsValueExVat),
+        row('Financed value', summary.assetsFinanced, summary.financedValueExVat),
       ],
     },
     {
       title: 'Register Status Counts',
       rows: [
-        { label: 'Assets insured', count: String(summary.assetsInsured), value: formatPdfMoney(moneyInclVatTotal(summary.insuredAssetsValueExVat)) },
-        { label: 'Assets licensed', count: String(summary.assetsLicensed), value: formatPdfMoney(moneyInclVatTotal(summary.licensedValueExVat)) },
-        { label: 'Assets financed', count: String(summary.assetsFinanced), value: formatPdfMoney(moneyInclVatTotal(summary.financedValueExVat)) },
+        row('Assets insured', summary.assetsInsured, summary.insuredAssetsValueExVat),
+        row('Assets licensed', summary.assetsLicensed, summary.licensedValueExVat),
+        row('Assets financed', summary.assetsFinanced, summary.financedValueExVat),
       ],
     },
     {
       title: 'Valuation Source',
       rows: [
-        { label: 'Aim4price assets', count: String(summary.aim4priceAssets.count), value: formatPdfMoney(moneyInclVatTotal(summary.aim4priceAssets.valueExVat)) },
-        { label: 'Manual assets', count: String(summary.manualAssets.count), value: formatPdfMoney(moneyInclVatTotal(summary.manualAssets.valueExVat)) },
+        row('Aim4price assets', summary.aim4priceAssets.count, summary.aim4priceAssets.valueExVat),
+        row('Manual assets', summary.manualAssets.count, summary.manualAssets.valueExVat),
       ],
     },
     {
       title: 'Asset Type Split',
       rows: [
-        { label: 'Property', count: String(summary.assetTypes.property.count), value: formatPdfMoney(moneyInclVatTotal(summary.assetTypes.property.valueExVat)) },
-        { label: 'Equipment', count: String(summary.assetTypes.equipment.count), value: formatPdfMoney(moneyInclVatTotal(summary.assetTypes.equipment.valueExVat)) },
-        { label: 'Tools', count: String(summary.assetTypes.tools.count), value: formatPdfMoney(moneyInclVatTotal(summary.assetTypes.tools.valueExVat)) },
-        { label: 'Vehicles', count: String(summary.assetTypes.vehicles.count), value: formatPdfMoney(moneyInclVatTotal(summary.assetTypes.vehicles.valueExVat)) },
+        row('Property', summary.assetTypes.property.count, summary.assetTypes.property.valueExVat),
+        row('Equipment', summary.assetTypes.equipment.count, summary.assetTypes.equipment.valueExVat),
+        row('Tools', summary.assetTypes.tools.count, summary.assetTypes.tools.valueExVat),
+        row('Vehicles', summary.assetTypes.vehicles.count, summary.assetTypes.vehicles.valueExVat),
       ],
     },
     {
@@ -1544,112 +1581,708 @@ function buildRegisterSummaryPdfSections(summary: RegisterBasicExportSummary): R
   ];
 }
 
-function drawRegisterSummaryPdfSection(state: PdfBuildState, section: RegisterSummaryPdfSection): void {
-  const rowHeight = 13;
-  const tableHeaderHeight = 14;
-  const blockHeight = 15 + tableHeaderHeight + section.rows.length * rowHeight + 6;
+
+function renderRegisterSummaryReportSection(section: RegisterSummaryPdfSection): string {
   const hasValueColumn = section.hasValueColumn !== false;
+  const rows = section.rows.length
+    ? section.rows
+        .map((row) => {
+          if (!hasValueColumn) {
+            return `
+              <div class="assetReportSummaryRow">
+                <span>${escapeHtml(row.label)}</span>
+                <strong>${escapeHtml(row.count ?? '')}</strong>
+              </div>
+            `;
+          }
 
-  ensurePdfSpace(state, blockHeight + 6, 'Asset Register Summary continued', 'Aim4price register summary PDF');
-  drawPdfText(state, section.title, PDF_MARGIN, state.y, 10.8, 'F2');
-  state.y -= 14;
+          return `
+            <div class="assetReportSummaryRow">
+              <span>${escapeHtml(row.label)}</span>
+              <strong>${escapeHtml(row.count ?? '')}</strong>
+              <small>${escapeHtml(row.valueExVat ?? '')}</small>
+              <b>${escapeHtml(row.valueInclVat ?? '')}</b>
+            </div>
+          `;
+        })
+        .join('')
+    : `<div class="assetReportEmpty">No summary rows available.</div>`;
 
-  const tableTop = state.y;
-  drawPdfRect(state, PDF_MARGIN, tableTop - tableHeaderHeight, PDF_PAGE_WIDTH - PDF_MARGIN * 2, tableHeaderHeight, '0.950 0.970 0.982');
-  drawPdfText(state, 'METRIC', PDF_MARGIN + 10, tableTop - 9.2, 6.6, 'F2');
-  drawPdfText(state, 'COUNT', PDF_MARGIN + 292, tableTop - 9.2, 6.6, 'F2');
-  if (hasValueColumn) {
-    drawPdfText(state, 'VALUE INCL. VAT', PDF_PAGE_WIDTH - PDF_MARGIN - 122, tableTop - 9.2, 6.6, 'F2');
-  }
-  state.y -= tableHeaderHeight;
-
-  section.rows.forEach((row, index) => {
-    const y = state.y;
-    drawPdfRect(state, PDF_MARGIN, y - rowHeight, PDF_PAGE_WIDTH - PDF_MARGIN * 2, rowHeight, index % 2 === 0 ? '0.992 0.996 0.994' : '0.972 0.986 0.980');
-    drawPdfText(state, row.label, PDF_MARGIN + 10, y - 8.8, 7.6, 'F1');
-    drawPdfText(state, row.count ?? '', PDF_MARGIN + 292, y - 8.8, 7.9, 'F2');
-    if (hasValueColumn) {
-      drawPdfText(state, row.value ?? '', PDF_PAGE_WIDTH - PDF_MARGIN - 122, y - 8.8, 7.9, 'F2');
-    }
-    state.y -= rowHeight;
-  });
-
-  state.y -= 6;
+  return `
+    <section class="assetReportSection assetReportSummarySection">
+      <h2>${escapeHtml(section.title)}</h2>
+      <div class="assetReportSummaryTable${hasValueColumn ? '' : ' assetReportSummaryTableCountOnly'}">
+        <div class="assetReportSummaryHeader">
+          <span>Metric</span>
+          <span>Count</span>
+          ${hasValueColumn ? '<span>Value excl. VAT</span><span>Value incl. VAT</span>' : ''}
+        </div>
+        ${rows}
+      </div>
+    </section>
+  `;
 }
 
-function buildRegisterSummaryPdf(items: AssetRegisterItem[], profile: AccountProfileResult | null, generatedAt = new Date()): Buffer {
-  const state: PdfBuildState = { pages: [], y: 0 };
+function renderRegisterSummaryReportHtml(
+  items: AssetRegisterItem[],
+  profile: AccountProfileResult | null,
+  generatedAt: Date,
+  requestUrl: string,
+): string {
   const summary = buildRegisterBasicExportSummary(items);
   const ownerName = buildOwnerName(profile);
-  const ownerAddress = buildOwnerAddress(profile) || 'N/A';
-  const ownerEmail = cleanText(profile?.email) || 'N/A';
-  const ownerPhone = cleanText(profile?.phone) || 'N/A';
+  const ownerAddress = buildOwnerAddress(profile);
+  const ownerEmail = cleanText(profile?.email || profile?.marketplaceEmail) || AIM4PRICE_REPORT_EMAIL;
+  const logoUrl = resolveReportLogoUrl(profile, requestUrl);
   const sections = buildRegisterSummaryPdfSections(summary);
-  const currentValueInclVat = moneyInclVatTotal(summary.currentValueExVat);
-  const replacementValueInclVat = moneyInclVatTotal(summary.replacementValueExVat);
+  const generatedLabel = formatPdfDate(generatedAt);
+  const registerValueExVat = formatPdfMoney(summary.currentValueExVat);
+  const registerValueInclVat = formatPdfMoney(moneyInclVatTotal(summary.currentValueExVat));
+  const safeTitle = escapeHtml(`${ownerName} - Asset Register Summary`);
+  const heroMeta = ownerAddress || 'Selected Aim4price asset register';
+  const footerDisclaimer =
+    'This summary is calculated from grouped asset-register data saved in Aim4price at export time. It excludes individual asset rows, photos and asset-level valuation details. Values are shown excluding VAT and including VAT at 15%. This is not a certified valuation, inspection report or guarantee of selling price.';
 
-  addPdfPage(state, false);
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>${safeTitle}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #111827;
+        --strong: #070b12;
+        --muted: #5f6b7a;
+        --faint: #8b95a3;
+        --paper: #ffffff;
+        --soft: #f5f6f8;
+        --soft-2: #fafbfc;
+        --line: #d7dde5;
+        --line-strong: #b9c2ce;
+      }
 
-  const headerTop = state.y;
-  drawPdfReportMark(state, PDF_MARGIN, headerTop);
-  drawPdfText(state, 'Asset Register Summary', PDF_MARGIN + 64, headerTop - 14, 18, 'F2');
-  drawPdfText(state, 'Aim4price asset register', PDF_MARGIN + 64, headerTop - 32, 9.2, 'F1');
-  drawPdfText(state, 'Generated', PDF_PAGE_WIDTH - PDF_MARGIN - 166, headerTop - 14, 8, 'F1');
-  drawPdfText(state, formatPdfDate(generatedAt), PDF_PAGE_WIDTH - PDF_MARGIN - 68, headerTop - 14, 8.4, 'F2');
-  drawPdfText(state, 'Email', PDF_PAGE_WIDTH - PDF_MARGIN - 166, headerTop - 31, 8, 'F1');
-  drawPdfWrappedTextAt(state, ownerEmail, PDF_PAGE_WIDTH - PDF_MARGIN - 102, headerTop - 31, 100, 8, 'F2', 9.5);
-  state.y -= 62;
-  drawPdfRule(state, state.y);
-  state.y -= 21;
+      * {
+        box-sizing: border-box;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
 
-  const heroTop = state.y;
-  const heroWidth = PDF_PAGE_WIDTH - PDF_MARGIN * 2;
-  const heroLeftWidth = heroWidth * 0.68;
-  const heroRightX = PDF_MARGIN + heroLeftWidth;
-  drawPdfRect(state, PDF_MARGIN, heroTop - 92, heroWidth, 92, '1 1 1');
-  drawPdfRect(state, PDF_MARGIN, heroTop - 92, heroLeftWidth, 92, '0.990 0.995 0.995');
-  drawPdfText(state, 'ASSET REGISTER SUMMARY', PDF_MARGIN + 14, heroTop - 20, 7.8, 'F2');
-  const ownerLineCount = drawPdfWrappedTextAt(state, ownerName, PDF_MARGIN + 14, heroTop - 42, heroLeftWidth - 26, 18, 'F2', 19.5);
-  drawPdfWrappedTextAt(state, ownerAddress, PDF_MARGIN + 14, heroTop - 44 - ownerLineCount * 18, heroLeftWidth - 28, 8.2, 'F1', 10);
-  drawPdfText(state, 'REGISTER VALUE', heroRightX + 14, heroTop - 20, 7.8, 'F2');
-  drawPdfText(state, formatPdfMoney(currentValueInclVat), heroRightX + 14, heroTop - 44, 22, 'F2');
-  drawPdfText(state, 'VAT included', heroRightX + 14, heroTop - 60, 8.4, 'F1');
-  drawPdfRule(state, heroTop - 70);
-  drawPdfText(state, 'Total assets', heroRightX + 14, heroTop - 82, 8.2, 'F1');
-  drawPdfText(state, String(summary.totalAssets), PDF_PAGE_WIDTH - PDF_MARGIN - 34, heroTop - 82, 9.4, 'F2');
-  state.y = heroTop - 110;
+      @page {
+        size: A4;
+        margin: 8mm 9mm 8mm;
+      }
 
-  drawPdfText(state, 'Owner details', PDF_MARGIN, state.y, 11.2, 'F2');
-  state.y -= 16;
-  const detailsTop = state.y;
-  drawPdfRect(state, PDF_MARGIN, detailsTop - 48, PDF_PAGE_WIDTH - PDF_MARGIN * 2, 48, '0.98 0.99 1.00');
-  drawPdfKeyValue(state, 'Business email', ownerEmail, PDF_MARGIN + 10, detailsTop - 13, 178);
-  drawPdfKeyValue(state, 'Phone', ownerPhone, PDF_MARGIN + 200, detailsTop - 13, 112);
-  drawPdfKeyValue(state, 'Values', 'Incl. VAT', PDF_MARGIN + 326, detailsTop - 13, 80);
-  drawPdfKeyValue(state, 'Replacement', formatPdfMoney(replacementValueInclVat), PDF_MARGIN + 420, detailsTop - 13, 90);
-  state.y -= 64;
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: #eef1f4;
+        color: var(--ink);
+        font-family: "Montserrat", "Segoe UI", Arial, Helvetica, sans-serif;
+        font-size: 9.6px;
+        line-height: 1.35;
+      }
 
-  sections.forEach((section) => drawRegisterSummaryPdfSection(state, section));
+      .assetReportScreenBar {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 10px 16px;
+        padding: 12px 16px;
+        background: rgba(255, 255, 255, 0.96);
+        border-bottom: 1px solid #d7dce2;
+        box-shadow: 0 10px 26px rgba(17, 24, 39, 0.07);
+      }
 
-  ensurePdfSpace(state, 46, 'Asset Register Summary continued', 'Aim4price register summary PDF');
-  drawPdfRule(state, state.y);
-  state.y -= 15;
-  drawPdfWrappedText(
-    state,
-    'This summary is calculated from grouped asset-register data saved in Aim4price at export time. It excludes individual asset rows, photos and asset-level valuation details. Values include VAT at 15%. This is not a certified valuation, inspection report or guarantee of selling price.',
-    PDF_MARGIN,
-    PDF_PAGE_WIDTH - PDF_MARGIN * 2,
-    8,
-    'F1',
-    10.5,
-  );
+      .assetReportScreenText {
+        min-width: 0;
+        color: var(--muted);
+        font-size: 12.5px;
+        line-height: 1.4;
+      }
 
-  state.pages.forEach((page, index) => {
-    page.push(`BT /F1 8 Tf ${pdfNumber(PDF_MARGIN)} ${pdfNumber(24)} Td (${escapePdfText('Powered by Aim4price.com')}) Tj ET`);
-    page.push(`BT /F1 8 Tf ${pdfNumber(PDF_PAGE_WIDTH - PDF_MARGIN - 62)} ${pdfNumber(24)} Td (${escapePdfText(`Page ${index + 1} of ${state.pages.length}`)}) Tj ET`);
-  });
+      .assetReportScreenActions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 8px;
+        flex-wrap: nowrap;
+      }
 
-  return createPdfBuffer(state.pages.map((commands) => commands.join('\n')));
+      .assetReportButton {
+        appearance: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 auto;
+        min-height: 42px;
+        padding: 0 16px;
+        border: 1px solid #cfd5dd;
+        border-radius: 999px;
+        background: #ffffff;
+        color: var(--ink);
+        font: inherit;
+        font-size: 12.5px;
+        font-weight: 800;
+        line-height: 1;
+        white-space: nowrap;
+        cursor: pointer;
+      }
+
+      .assetReportButtonPrimary {
+        min-width: 150px;
+        border-color: var(--strong);
+        background: var(--strong);
+        color: #ffffff;
+        box-shadow: 0 12px 22px rgba(7, 11, 18, 0.18);
+      }
+
+      .assetReportButton:focus-visible {
+        outline: 3px solid rgba(17, 24, 39, 0.18);
+        outline-offset: 2px;
+      }
+
+      .assetReportPage {
+        width: min(100%, 210mm);
+        min-height: 297mm;
+        margin: 18px auto;
+        padding: 11mm 11mm 9mm;
+        background: var(--paper);
+        box-shadow: 0 16px 44px rgba(17, 24, 39, 0.13);
+      }
+
+      .assetReportInner {
+        position: relative;
+        min-height: calc(297mm - 20mm);
+        padding-bottom: 20mm;
+      }
+
+      .assetReportHeader {
+        display: grid;
+        grid-template-columns: 22mm minmax(0, 1fr) 62mm;
+        gap: 12px;
+        align-items: center;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--line-strong);
+      }
+
+      .assetReportLogoWrap {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        min-height: 18mm;
+      }
+
+      .assetReportLogo {
+        display: block;
+        width: 18mm;
+        height: auto;
+        max-height: 18mm;
+        object-fit: contain;
+      }
+
+      .assetReportDocumentTitle strong {
+        display: block;
+        color: var(--strong);
+        font-size: 16px;
+        line-height: 1.05;
+        font-weight: 800;
+        letter-spacing: -0.025em;
+      }
+
+      .assetReportDocumentTitle span {
+        display: block;
+        margin-top: 5px;
+        color: var(--muted);
+        font-size: 8.9px;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+      }
+
+      .assetReportHeaderMeta {
+        display: grid;
+        gap: 4px;
+        color: var(--muted);
+        font-size: 8.3px;
+      }
+
+      .assetReportMetaLine {
+        display: grid;
+        grid-template-columns: 21mm minmax(0, 1fr);
+        gap: 7px;
+        align-items: baseline;
+      }
+
+      .assetReportMetaLine span {
+        color: var(--muted);
+        font-weight: 600;
+      }
+
+      .assetReportMetaLine strong {
+        color: var(--strong);
+        font-weight: 700;
+        text-align: right;
+        word-break: break-word;
+      }
+
+      .assetReportOverview {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 62mm;
+        align-items: stretch;
+        margin-top: 11px;
+        border: 1px solid var(--line-strong);
+        background: #ffffff;
+      }
+
+      .assetReportIdentity {
+        min-width: 0;
+        padding: 11px 13px 12px;
+      }
+
+      .assetReportKicker {
+        margin: 0 0 6px;
+        color: var(--muted);
+        font-size: 8.1px;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .assetReportTitle {
+        margin: 0;
+        color: var(--strong);
+        font-size: 21.5px;
+        line-height: 1.05;
+        font-weight: 800;
+        letter-spacing: -0.045em;
+      }
+
+      .assetReportMeta {
+        margin: 7px 0 0;
+        color: #3f4652;
+        font-size: 9.2px;
+        line-height: 1.35;
+        font-weight: 600;
+      }
+
+      .assetReportValuationCard {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 11px 12px;
+        border-left: 1px solid var(--line-strong);
+        background: var(--soft-2);
+      }
+
+      .assetReportValuationCard h2 {
+        margin: 0 0 6px;
+        color: #2b313b;
+        font-size: 8.8px;
+        line-height: 1.1;
+        font-weight: 800;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+      }
+
+      .assetReportValue {
+        display: block;
+        margin: 0;
+        color: var(--strong);
+        font-size: 25px;
+        line-height: 0.98;
+        font-weight: 800;
+        letter-spacing: -0.055em;
+        white-space: nowrap;
+      }
+
+      .assetReportVat {
+        display: block;
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 8.5px;
+        font-weight: 600;
+      }
+
+      .assetReportValueMeta {
+        display: grid;
+        gap: 4px;
+        margin-top: 10px;
+        padding-top: 8px;
+        border-top: 1px solid var(--line);
+      }
+
+      .assetReportValueMeta div {
+        display: grid;
+        grid-template-columns: 22mm minmax(0, 1fr);
+        gap: 7px;
+        min-height: 17px;
+        align-items: baseline;
+      }
+
+      .assetReportValueMeta span {
+        color: var(--muted);
+        font-size: 8.2px;
+        font-weight: 700;
+      }
+
+      .assetReportValueMeta strong {
+        color: var(--strong);
+        font-size: 8.3px;
+        font-weight: 700;
+        text-align: right;
+        word-break: break-word;
+      }
+
+      .assetReportSummaryStack {
+        display: grid;
+        gap: 10px;
+        margin-top: 12px;
+      }
+
+      .assetReportSection {
+        break-inside: avoid;
+        padding: 10px 11px 11px;
+        border: 1px solid var(--line-strong);
+        background: #ffffff;
+      }
+
+      .assetReportSection h2 {
+        margin: 0 0 8px;
+        color: var(--strong);
+        font-size: 10.8px;
+        line-height: 1.1;
+        font-weight: 800;
+        letter-spacing: -0.01em;
+      }
+
+      .assetReportSummaryTable {
+        width: 100%;
+        border-top: 1px solid var(--line);
+      }
+
+      .assetReportSummaryHeader,
+      .assetReportSummaryRow {
+        display: grid;
+        grid-template-columns: minmax(0, 1.45fr) 17mm 35mm 35mm;
+        gap: 8px;
+        align-items: center;
+        min-height: 19px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .assetReportSummaryTableCountOnly .assetReportSummaryHeader,
+      .assetReportSummaryTableCountOnly .assetReportSummaryRow {
+        grid-template-columns: minmax(0, 1fr) 22mm;
+      }
+
+      .assetReportSummaryHeader {
+        min-height: 17px;
+        background: var(--soft-2);
+      }
+
+      .assetReportSummaryHeader span {
+        color: var(--muted);
+        font-size: 7.1px;
+        line-height: 1.2;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .assetReportSummaryHeader span:nth-child(2),
+      .assetReportSummaryRow strong {
+        text-align: center;
+      }
+
+      .assetReportSummaryHeader span:nth-child(3),
+      .assetReportSummaryHeader span:nth-child(4),
+      .assetReportSummaryRow small,
+      .assetReportSummaryRow b {
+        text-align: right;
+      }
+
+      .assetReportSummaryRow span {
+        color: #38404c;
+        font-size: 8.5px;
+        line-height: 1.3;
+        font-weight: 600;
+      }
+
+      .assetReportSummaryRow strong,
+      .assetReportSummaryRow small,
+      .assetReportSummaryRow b {
+        color: var(--strong);
+        font-size: 8.7px;
+        line-height: 1.3;
+        font-weight: 700;
+        word-break: break-word;
+      }
+
+      .assetReportSummaryRow small {
+        color: var(--muted);
+      }
+
+      .assetReportEmpty {
+        padding: 6px 0;
+        color: var(--muted);
+        font-size: 8.8px;
+      }
+
+      .assetReportFooter {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 10px;
+        align-items: end;
+        padding-top: 8px;
+        border-top: 1px solid var(--line-strong);
+      }
+
+      .assetReportPowered {
+        margin: 0 0 4px;
+        color: var(--strong);
+        font-size: 8.2px;
+        font-weight: 700;
+      }
+
+      .assetReportDisclaimer {
+        max-width: 166mm;
+        color: #323a45;
+        font-size: 7.35px;
+        line-height: 1.35;
+        font-style: italic;
+      }
+
+      .assetReportPageNumber {
+        color: var(--strong);
+        font-size: 8px;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+
+      @media screen and (max-width: 760px) {
+        .assetReportScreenBar {
+          grid-template-columns: 1fr;
+          padding: 10px 12px 12px;
+        }
+
+        .assetReportScreenText {
+          font-size: 12px;
+        }
+
+        .assetReportScreenActions {
+          display: grid;
+          grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.25fr);
+          width: 100%;
+          gap: 8px;
+        }
+
+        .assetReportButton {
+          width: 100%;
+          min-height: 44px;
+          padding: 0 10px;
+          font-size: 12px;
+        }
+
+        .assetReportButtonPrimary {
+          min-width: 0;
+        }
+
+        .assetReportPage {
+          padding: 24px;
+        }
+
+        .assetReportHeader,
+        .assetReportOverview {
+          grid-template-columns: 1fr;
+        }
+
+        .assetReportValuationCard {
+          border-left: 0;
+          border-top: 1px solid var(--line-strong);
+        }
+
+        .assetReportHeaderMeta,
+        .assetReportMetaLine strong,
+        .assetReportValueMeta strong {
+          text-align: left;
+        }
+
+        .assetReportSummaryHeader {
+          display: none;
+        }
+
+        .assetReportSummaryRow {
+          grid-template-columns: 1fr;
+          gap: 2px;
+          min-height: 0;
+          padding: 5px 0;
+        }
+
+        .assetReportSummaryRow strong,
+        .assetReportSummaryRow small,
+        .assetReportSummaryRow b {
+          text-align: left;
+        }
+      }
+
+      @media screen and (max-width: 380px) {
+        .assetReportScreenActions {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media print {
+        html,
+        body {
+          background: #ffffff;
+        }
+
+        .assetReportScreenBar {
+          display: none !important;
+        }
+
+        .assetReportPage {
+          width: auto;
+          height: 281mm;
+          min-height: 0;
+          margin: 0;
+          padding: 0;
+          box-shadow: none;
+          overflow: hidden;
+        }
+
+        .assetReportInner {
+          height: 281mm;
+          min-height: 0;
+          padding-bottom: 21mm;
+        }
+
+        .assetReportHeader {
+          grid-template-columns: 22mm minmax(0, 1fr) 62mm;
+        }
+
+        .assetReportOverview {
+          grid-template-columns: minmax(0, 1fr) 62mm;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="assetReportScreenBar">
+      <div class="assetReportScreenText">Save or print this asset register summary. In the print dialog, choose <strong>Save as PDF</strong>.</div>
+      <div class="assetReportScreenActions">
+        <button type="button" class="assetReportButton" onclick="window.close()">Close</button>
+        <button type="button" class="assetReportButton assetReportButtonPrimary" onclick="window.print()">Save PDF / Print</button>
+      </div>
+    </div>
+
+    <main class="assetReportPage">
+      <div class="assetReportInner">
+        <header class="assetReportHeader">
+          <div class="assetReportLogoWrap"><img class="assetReportLogo" src="${escapeHtml(logoUrl)}" alt="Aim4price logo" /></div>
+          <div class="assetReportDocumentTitle">
+            <strong>Asset Register Summary</strong>
+            <span>Aim4price asset register</span>
+          </div>
+          <div class="assetReportHeaderMeta">
+            <div class="assetReportMetaLine"><span>Generated</span><strong>${escapeHtml(generatedLabel)}</strong></div>
+            <div class="assetReportMetaLine"><span>Email</span><strong>${escapeHtml(ownerEmail)}</strong></div>
+          </div>
+        </header>
+
+        <section class="assetReportOverview">
+          <div class="assetReportIdentity">
+            <p class="assetReportKicker">Asset Register Summary</p>
+            <h1 class="assetReportTitle">${escapeHtml(ownerName)}</h1>
+            <p class="assetReportMeta">${escapeHtml(heroMeta)}</p>
+          </div>
+
+          <aside class="assetReportValuationCard">
+            <h2>Register Value</h2>
+            <strong class="assetReportValue">${escapeHtml(registerValueExVat)}</strong>
+            <span class="assetReportVat">VAT excluded</span>
+            <div class="assetReportValueMeta">
+              <div><span>Incl. VAT</span><strong>${escapeHtml(registerValueInclVat)}</strong></div>
+              <div><span>Total assets</span><strong>${escapeHtml(String(summary.totalAssets))}</strong></div>
+            </div>
+          </aside>
+        </section>
+
+        <div class="assetReportSummaryStack">
+          ${sections.map(renderRegisterSummaryReportSection).join('')}
+        </div>
+
+        <footer class="assetReportFooter">
+          <div>
+            <p class="assetReportPowered">Powered by Aim4price.com</p>
+            <div class="assetReportDisclaimer">${escapeHtml(footerDisclaimer)}</div>
+          </div>
+          <div class="assetReportPageNumber">Page 1 of 1</div>
+        </footer>
+      </div>
+    </main>
+
+    <script>
+      (function () {
+        function waitForImages() {
+          var images = Array.prototype.slice.call(document.images || []);
+          if (!images.length) {
+            return Promise.resolve();
+          }
+
+          return Promise.all(images.map(function (image) {
+            if (image.complete) {
+              return Promise.resolve();
+            }
+
+            return new Promise(function (resolve) {
+              image.addEventListener('load', resolve, { once: true });
+              image.addEventListener('error', resolve, { once: true });
+            });
+          }));
+        }
+
+        function waitForFonts() {
+          if (document.fonts && document.fonts.ready) {
+            return Promise.race([
+              document.fonts.ready.catch(function () { return undefined; }),
+              new Promise(function (resolve) { window.setTimeout(resolve, 900); }),
+            ]);
+          }
+
+          return Promise.resolve();
+        }
+
+        function openPrintDialog() {
+          Promise.all([waitForImages(), waitForFonts()]).then(function () {
+            window.setTimeout(function () {
+              window.focus();
+              window.print();
+            }, 250);
+          });
+        }
+
+        if (document.readyState === 'complete') {
+          openPrintDialog();
+        } else {
+          window.addEventListener('load', openPrintDialog, { once: true });
+        }
+      })();
+    </script>
+  </body>
+</html>`;
 }
 
 
@@ -2259,9 +2892,9 @@ export async function GET(request: NextRequest) {
       ...profile,
       businessName: register.businessName || profile.businessName,
       phone: register.phone || profile.phone,
-      email: register.email || profile.marketplaceEmail || '',
-      marketplaceEmail: register.email || profile.marketplaceEmail || '',
-      logoUrl: registerLogoUrl,
+      email: register.email || profile.marketplaceEmail || profile.email || '',
+      marketplaceEmail: register.email || profile.marketplaceEmail || profile.email || '',
+      logoUrl: registerLogoUrl || profile.logoUrl,
       addressLine1: register.addressLine1 || profile.addressLine1,
       addressLine2: '',
     };
@@ -2277,12 +2910,23 @@ export async function GET(request: NextRequest) {
 
     if (format === 'pdf') {
       const ownerSlug = pdfFileSlug(buildOwnerName(exportProfile));
-      const pdf = reportKind === 'summary'
-        ? buildRegisterSummaryPdf(items, exportProfile, generatedAt)
-        : buildFullRegisterPdf(items, exportProfile, generatedAt);
-      const fileName = reportKind === 'summary'
-        ? `aim4price-register-summary-${ownerSlug}-${filenameDate}.pdf`
-        : `aim4price-full-asset-register-${ownerSlug}-${filenameDate}.pdf`;
+
+      if (reportKind === 'summary') {
+        const html = renderRegisterSummaryReportHtml(items, exportProfile, generatedAt, request.url);
+        const fileName = `aim4price-register-summary-${ownerSlug}-${filenameDate}.html`;
+
+        return new NextResponse(html, {
+          status: 200,
+          headers: {
+            'Content-Type': 'text/html; charset=utf-8',
+            'Content-Disposition': `inline; filename="${fileName}"`,
+            'Cache-Control': 'no-store',
+          },
+        });
+      }
+
+      const pdf = buildFullRegisterPdf(items, exportProfile, generatedAt);
+      const fileName = `aim4price-full-asset-register-${ownerSlug}-${filenameDate}.pdf`;
 
       return new NextResponse(pdf, {
         status: 200,
