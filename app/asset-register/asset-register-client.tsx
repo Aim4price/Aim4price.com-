@@ -91,6 +91,9 @@ type AssetConditionValue = ConditionKey | '';
 type UsageMetric = 'hours' | 'km';
 type ProjectionUsageMetric = UsageMetric | 'percent';
 type AssetStatusChoice = 'yes' | 'no' | 'unknown' | 'not_applicable';
+type AssetStatusSection = 'finance' | 'insurance' | 'license';
+type AssetStatusEditView = 'hub' | AssetStatusSection;
+type AssetStatusQuickOrigin = 'detail-card' | null;
 type ManualAssetStep = 1 | 2 | 3 | 4;
 type ExportFormat = 'pdf' | 'xlsx';
 type ExportStep = 'format' | 'pdf-report' | 'pdf-assets';
@@ -613,6 +616,33 @@ type AssetDraft = {
   condition: AssetConditionValue;
 };
 
+type AssetStatusDraft = {
+  financeStatus: AssetStatusChoice;
+  financeType: string;
+  financeCurrentOutstandingExVat: string;
+  financierName: string;
+  financeNote: string;
+  financeBoughtWhen: string;
+  financeBoughtForExVat: string;
+  financeOriginalAmountExVat: string;
+  financeMonthlyPaymentExVat: string;
+  financeInterestRatePercent: string;
+  financeTermMonths: string;
+  financeBalloonPaymentExVat: string;
+  financeSettlementDate: string;
+  financeReferenceNumber: string;
+  insuranceStatus: AssetStatusChoice;
+  insuredValueExVat: string;
+  insuranceInsurerName: string;
+  insurancePolicyNumber: string;
+  insuranceRenewalDate: string;
+  insuranceNote: string;
+  licenseStatus: AssetStatusChoice;
+  licenseRegistrationNumber: string;
+  licenseRenewalDate: string;
+  licenseNote: string;
+};
+
 type PendingPhotoFile = {
   id: string;
   file: File;
@@ -738,6 +768,34 @@ const LICENSE_STATUS_OPTIONS: Array<{ value: AssetStatusChoice; label: string; d
   { value: 'no', label: 'Is not licensed', description: 'This asset is not currently licensed.' },
   { value: 'not_applicable', label: 'Not applicable', description: 'Licensing does not apply to this asset.' },
   { value: 'unknown', label: 'Not sure', description: 'You can confirm the licence status later.' },
+];
+
+const QUICK_FINANCE_STATUS_OPTIONS: Array<{ value: AssetStatusChoice; label: string; description: string }> = [
+  { value: 'yes', label: 'Financed', description: 'This asset has active finance or forms part of financed group debt.' },
+  { value: 'no', label: 'Not financed', description: 'This asset is not currently financed.' },
+  { value: 'unknown', label: 'Not sure', description: 'You can confirm the finance status later.' },
+  { value: 'not_applicable', label: 'Not applicable', description: 'Finance status does not apply to this asset.' },
+];
+
+const QUICK_INSURANCE_STATUS_OPTIONS: Array<{ value: AssetStatusChoice; label: string; description: string }> = [
+  { value: 'yes', label: 'Insured', description: 'This asset is covered on an insurance policy.' },
+  { value: 'no', label: 'Not insured', description: 'This asset is not currently insured.' },
+  { value: 'unknown', label: 'Not sure', description: 'You can confirm the insurance status later.' },
+  { value: 'not_applicable', label: 'Not applicable', description: 'Insurance status does not apply to this asset.' },
+];
+
+const QUICK_LICENSE_STATUS_OPTIONS: Array<{ value: AssetStatusChoice; label: string; description: string }> = [
+  { value: 'yes', label: 'Licensed', description: 'This asset has an active licence or registration.' },
+  { value: 'no', label: 'Not licensed', description: 'This asset is not currently licensed.' },
+  { value: 'unknown', label: 'Not sure', description: 'You can confirm the licence status later.' },
+  { value: 'not_applicable', label: 'Not applicable', description: 'Licensing does not apply to this asset.' },
+];
+
+const FINANCE_TYPE_OPTIONS: Array<{ value: string; label: string; description: string }> = [
+  { value: '', label: 'Select finance type', description: 'Optional.' },
+  { value: 'asset_specific', label: 'Asset-specific finance', description: 'Finance is linked to this specific asset.' },
+  { value: 'bulk_group', label: 'Bulk / group finance', description: 'Finance covers more than one asset.' },
+  { value: 'unknown', label: 'Not sure', description: 'Confirm the finance type later.' },
 ];
 
 const MANUAL_FORM_STEPS: Array<{ step: ManualAssetStep; label: string }> = [
@@ -882,6 +940,33 @@ const initialAssetDraft: AssetDraft = {
   usageMetric: 'hours',
   lifeWorkedPercent: '',
   condition: '',
+};
+
+const initialAssetStatusDraft: AssetStatusDraft = {
+  financeStatus: 'unknown',
+  financeType: '',
+  financeCurrentOutstandingExVat: '',
+  financierName: '',
+  financeNote: '',
+  financeBoughtWhen: '',
+  financeBoughtForExVat: '',
+  financeOriginalAmountExVat: '',
+  financeMonthlyPaymentExVat: '',
+  financeInterestRatePercent: '',
+  financeTermMonths: '',
+  financeBalloonPaymentExVat: '',
+  financeSettlementDate: '',
+  financeReferenceNumber: '',
+  insuranceStatus: 'unknown',
+  insuredValueExVat: '',
+  insuranceInsurerName: '',
+  insurancePolicyNumber: '',
+  insuranceRenewalDate: '',
+  insuranceNote: '',
+  licenseStatus: 'unknown',
+  licenseRegistrationNumber: '',
+  licenseRenewalDate: '',
+  licenseNote: '',
 };
 
 function createDefaultProjectionForm(asset?: RegisterAsset | null): ProjectionFormState {
@@ -2250,6 +2335,265 @@ function readInsuranceNote(asset: Pick<RegisterAsset, 'specsJson'>): string {
       specs.insured_note ??
       '',
   ).trim();
+}
+
+function readSpecsText(asset: Pick<RegisterAsset, 'specsJson'>, keys: string[]): string {
+  const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
+
+  for (const key of keys) {
+    const value = specs[key];
+    if (value === null || typeof value === 'undefined') continue;
+
+    const text = String(value).trim();
+    if (text) return text;
+  }
+
+  return '';
+}
+
+function readSpecsNumber(asset: Pick<RegisterAsset, 'specsJson'>, keys: string[]): number | null {
+  const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
+
+  return readNumberFromSpecs(specs, keys);
+}
+
+function readFinanceType(asset: Pick<RegisterAsset, 'specsJson'>): string {
+  const value = readSpecsText(asset, ['financeType', 'finance_type']);
+  const normalized = value.trim().toLowerCase().replace(/[\s-]+/g, '_');
+
+  if (normalized === 'asset_specific' || normalized === 'asset_specific_finance') return 'asset_specific';
+  if (normalized === 'bulk_group' || normalized === 'bulk' || normalized === 'group' || normalized === 'group_finance') return 'bulk_group';
+  if (normalized === 'unknown' || normalized === 'not_sure' || normalized === 'unsure') return 'unknown';
+  return '';
+}
+
+function readAssetFinanceNote(asset: Pick<RegisterAsset, 'financeNote' | 'specsJson'>): string {
+  const direct = String(asset.financeNote ?? '').trim();
+  if (direct) return direct;
+
+  return readSpecsText(asset, ['financeNote', 'finance_note']);
+}
+
+function readLicenseNote(asset: Pick<RegisterAsset, 'specsJson'>): string {
+  return readSpecsText(asset, ['licenseNote', 'license_note', 'licenceNote', 'licence_note']);
+}
+
+function formatStatusMoneyInput(value: number | null | undefined): string {
+  return value === null || typeof value === 'undefined' || !Number.isFinite(value) ? '' : formatRegisterValueInput(value);
+}
+
+function formatStatusNumberInput(value: unknown): string {
+  if (value === null || typeof value === 'undefined' || value === '') return '';
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? String(numeric) : String(value).trim();
+}
+
+function buildAssetStatusDraftFromAsset(asset: RegisterAsset): AssetStatusDraft {
+  const financeStatus = readFinanceStatusChoice(asset);
+  const insuranceStatus = readInsuranceStatusChoice(asset);
+  const licenseStatus = readLicenseStatusChoice(asset);
+
+  return {
+    financeStatus,
+    financeType: financeStatus === 'yes' ? readFinanceType(asset) : '',
+    financeCurrentOutstandingExVat: financeStatus === 'yes'
+      ? formatStatusMoneyInput(readSpecsNumber(asset, ['financeCurrentOutstandingExVat', 'finance_current_outstanding_ex_vat']))
+      : '',
+    financierName: financeStatus === 'yes' ? readSpecsText(asset, ['financierName', 'financier_name']) : '',
+    financeNote: financeStatus === 'yes' ? readAssetFinanceNote(asset) : '',
+    financeBoughtWhen: financeStatus === 'yes' ? readSpecsText(asset, ['financeBoughtWhen', 'finance_bought_when']) : '',
+    financeBoughtForExVat: financeStatus === 'yes'
+      ? formatStatusMoneyInput(readSpecsNumber(asset, ['financeBoughtForExVat', 'finance_bought_for_ex_vat']))
+      : '',
+    financeOriginalAmountExVat: financeStatus === 'yes'
+      ? formatStatusMoneyInput(readSpecsNumber(asset, ['financeOriginalAmountExVat', 'finance_original_amount_ex_vat']))
+      : '',
+    financeMonthlyPaymentExVat: financeStatus === 'yes'
+      ? formatStatusMoneyInput(readSpecsNumber(asset, ['financeMonthlyPaymentExVat', 'finance_monthly_payment_ex_vat']))
+      : '',
+    financeInterestRatePercent: financeStatus === 'yes'
+      ? formatStatusNumberInput(readSpecsNumber(asset, ['financeInterestRatePercent', 'finance_interest_rate_percent']))
+      : '',
+    financeTermMonths: financeStatus === 'yes'
+      ? formatStatusNumberInput(readSpecsNumber(asset, ['financeTermMonths', 'finance_term_months']))
+      : '',
+    financeBalloonPaymentExVat: financeStatus === 'yes'
+      ? formatStatusMoneyInput(readSpecsNumber(asset, ['financeBalloonPaymentExVat', 'finance_balloon_payment_ex_vat']))
+      : '',
+    financeSettlementDate: financeStatus === 'yes' ? readSpecsText(asset, ['financeSettlementDate', 'finance_settlement_date']) : '',
+    financeReferenceNumber: financeStatus === 'yes' ? readSpecsText(asset, ['financeReferenceNumber', 'finance_reference_number']) : '',
+    insuranceStatus,
+    insuredValueExVat: insuranceStatus === 'yes' ? formatStatusMoneyInput(readAssetInsuredValueExVat(asset)) : '',
+    insuranceInsurerName: insuranceStatus === 'yes' ? readSpecsText(asset, ['insuranceInsurerName', 'insurance_insurer_name']) : '',
+    insurancePolicyNumber: insuranceStatus === 'yes' ? readSpecsText(asset, ['insurancePolicyNumber', 'insurance_policy_number']) : '',
+    insuranceRenewalDate: insuranceStatus === 'yes' ? readSpecsText(asset, ['insuranceRenewalDate', 'insurance_renewal_date']) : '',
+    insuranceNote: insuranceStatus === 'yes' ? readInsuranceNote(asset) : '',
+    licenseStatus,
+    licenseRegistrationNumber: licenseStatus === 'yes' ? readLicenseRegistrationNumber(asset) : '',
+    licenseRenewalDate: licenseStatus === 'yes' ? readSpecsText(asset, ['licenseRenewalDate', 'license_renewal_date', 'licenceRenewalDate', 'licence_renewal_date']) : '',
+    licenseNote: licenseStatus === 'yes' ? readLicenseNote(asset) : '',
+  };
+}
+
+function statusChoiceSentenceLabel(value: AssetStatusChoice, labels: { yes: string; no: string; unknown: string; notApplicable: string }): string {
+  if (value === 'yes') return labels.yes;
+  if (value === 'no') return labels.no;
+  if (value === 'not_applicable') return labels.notApplicable;
+  return labels.unknown;
+}
+
+function financeStatusSummary(draft: AssetStatusDraft): string {
+  if (draft.financeStatus !== 'yes') {
+    return statusChoiceSentenceLabel(draft.financeStatus, {
+      yes: 'Financed',
+      no: 'Not financed',
+      unknown: 'Not sure',
+      notApplicable: 'Not applicable',
+    });
+  }
+
+  const parts = ['Financed'];
+  const outstanding = parseRegisterValueInput(draft.financeCurrentOutstandingExVat);
+  if (draft.financeCurrentOutstandingExVat.trim() && Number.isFinite(outstanding)) {
+    parts.push(`${money(outstanding)} outstanding excl. VAT`);
+  }
+  if (draft.financierName.trim()) parts.push(draft.financierName.trim());
+  return parts.join(' · ');
+}
+
+function insuranceStatusSummary(draft: AssetStatusDraft): string {
+  if (draft.insuranceStatus !== 'yes') {
+    return statusChoiceSentenceLabel(draft.insuranceStatus, {
+      yes: 'Insured',
+      no: 'Not insured',
+      unknown: 'Not sure',
+      notApplicable: 'Not applicable',
+    });
+  }
+
+  const insuredValue = parseRegisterValueInput(draft.insuredValueExVat);
+  if (draft.insuredValueExVat.trim() && insuredValue > 0) {
+    return `Insured for ${money(insuredValue)} excl. VAT`;
+  }
+
+  return 'Insured';
+}
+
+function licenseStatusSummary(draft: AssetStatusDraft): string {
+  if (draft.licenseStatus !== 'yes') {
+    return statusChoiceSentenceLabel(draft.licenseStatus, {
+      yes: 'Licensed',
+      no: 'Not licensed',
+      unknown: 'Not sure',
+      notApplicable: 'Not applicable',
+    });
+  }
+
+  const registrationNumber = normalizeLicenseRegistrationText(draft.licenseRegistrationNumber);
+  return registrationNumber ? `Licensed · ${registrationNumber}` : 'Licensed';
+}
+
+function optionalMoneyForStatusPayload(value: string): number | null {
+  return value.trim() ? parseRegisterValueInput(value) : null;
+}
+
+function optionalNumberForStatusPayload(value: string): number | null {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const parsed = Number(trimmed.replace(',', '.'));
+  return Number.isFinite(parsed) ? parsed : NaN;
+}
+
+function statusOptionalText(value: string): string {
+  return String(value ?? '').replace(/\s+/g, ' ').trim();
+}
+
+function buildStatusSpecsFragment(draft: AssetStatusDraft, isPropertyAsset: boolean): Record<string, unknown> {
+  const financeStatus = draft.financeStatus;
+  const insuranceStatus = draft.insuranceStatus;
+  const licenseStatus: AssetStatusChoice = isPropertyAsset ? 'not_applicable' : draft.licenseStatus;
+  const insuredValueExVat = insuranceStatus === 'yes' ? optionalMoneyForStatusPayload(draft.insuredValueExVat) : null;
+  const licenseRegistrationNumber = licenseStatus === 'yes' ? normalizeLicenseRegistrationText(draft.licenseRegistrationNumber) : '';
+  const financeCurrentOutstandingExVat = financeStatus === 'yes' ? optionalMoneyForStatusPayload(draft.financeCurrentOutstandingExVat) : null;
+  const financeBoughtForExVat = financeStatus === 'yes' ? optionalMoneyForStatusPayload(draft.financeBoughtForExVat) : null;
+  const financeOriginalAmountExVat = financeStatus === 'yes' ? optionalMoneyForStatusPayload(draft.financeOriginalAmountExVat) : null;
+  const financeMonthlyPaymentExVat = financeStatus === 'yes' ? optionalMoneyForStatusPayload(draft.financeMonthlyPaymentExVat) : null;
+  const financeInterestRatePercent = financeStatus === 'yes' ? optionalNumberForStatusPayload(draft.financeInterestRatePercent) : null;
+  const financeTermMonths = financeStatus === 'yes' ? optionalNumberForStatusPayload(draft.financeTermMonths) : null;
+  const financeBalloonPaymentExVat = financeStatus === 'yes' ? optionalMoneyForStatusPayload(draft.financeBalloonPaymentExVat) : null;
+
+  return {
+    financeStatus,
+    finance_status: financeStatus,
+    financeType: financeStatus === 'yes' ? draft.financeType || null : null,
+    finance_type: financeStatus === 'yes' ? draft.financeType || null : null,
+    financeCurrentOutstandingExVat,
+    finance_current_outstanding_ex_vat: financeCurrentOutstandingExVat,
+    financierName: financeStatus === 'yes' ? statusOptionalText(draft.financierName) : '',
+    financier_name: financeStatus === 'yes' ? statusOptionalText(draft.financierName) : '',
+    financeBoughtWhen: financeStatus === 'yes' ? statusOptionalText(draft.financeBoughtWhen) : '',
+    finance_bought_when: financeStatus === 'yes' ? statusOptionalText(draft.financeBoughtWhen) : '',
+    financeBoughtForExVat,
+    finance_bought_for_ex_vat: financeBoughtForExVat,
+    financeOriginalAmountExVat,
+    finance_original_amount_ex_vat: financeOriginalAmountExVat,
+    financeMonthlyPaymentExVat,
+    finance_monthly_payment_ex_vat: financeMonthlyPaymentExVat,
+    financeInterestRatePercent,
+    finance_interest_rate_percent: financeInterestRatePercent,
+    financeTermMonths,
+    finance_term_months: financeTermMonths,
+    financeBalloonPaymentExVat,
+    finance_balloon_payment_ex_vat: financeBalloonPaymentExVat,
+    financeSettlementDate: financeStatus === 'yes' ? statusOptionalText(draft.financeSettlementDate) : '',
+    finance_settlement_date: financeStatus === 'yes' ? statusOptionalText(draft.financeSettlementDate) : '',
+    financeReferenceNumber: financeStatus === 'yes' ? statusOptionalText(draft.financeReferenceNumber) : '',
+    finance_reference_number: financeStatus === 'yes' ? statusOptionalText(draft.financeReferenceNumber) : '',
+    insuranceStatus,
+    insurance_status: insuranceStatus,
+    insuredStatus: insuranceStatus,
+    insured_status: insuranceStatus,
+    insuredValueExVat,
+    insured_value_ex_vat: insuredValueExVat,
+    insuranceValueExVat: insuredValueExVat,
+    insurance_value_ex_vat: insuredValueExVat,
+    insuredValue: insuredValueExVat,
+    insured_value: insuredValueExVat,
+    insuranceValue: insuredValueExVat,
+    insurance_value: insuredValueExVat,
+    insuranceInsurerName: insuranceStatus === 'yes' ? statusOptionalText(draft.insuranceInsurerName) : '',
+    insurance_insurer_name: insuranceStatus === 'yes' ? statusOptionalText(draft.insuranceInsurerName) : '',
+    insurancePolicyNumber: insuranceStatus === 'yes' ? statusOptionalText(draft.insurancePolicyNumber) : '',
+    insurance_policy_number: insuranceStatus === 'yes' ? statusOptionalText(draft.insurancePolicyNumber) : '',
+    insuranceRenewalDate: insuranceStatus === 'yes' ? statusOptionalText(draft.insuranceRenewalDate) : '',
+    insurance_renewal_date: insuranceStatus === 'yes' ? statusOptionalText(draft.insuranceRenewalDate) : '',
+    insuranceNote: insuranceStatus === 'yes' ? statusOptionalText(draft.insuranceNote) : '',
+    insurance_note: insuranceStatus === 'yes' ? statusOptionalText(draft.insuranceNote) : '',
+    insuredNote: insuranceStatus === 'yes' ? statusOptionalText(draft.insuranceNote) : '',
+    insured_note: insuranceStatus === 'yes' ? statusOptionalText(draft.insuranceNote) : '',
+    licenseStatus,
+    license_status: licenseStatus,
+    licensedStatus: licenseStatus,
+    licensed_status: licenseStatus,
+    licenceStatus: licenseStatus,
+    licence_status: licenseStatus,
+    licencedStatus: licenseStatus,
+    licenced_status: licenseStatus,
+    licenseRegistrationNumber,
+    license_registration_number: licenseRegistrationNumber,
+    licenceRegistrationNumber: licenseRegistrationNumber,
+    licence_registration_number: licenseRegistrationNumber,
+    licenseRegistration: licenseRegistrationNumber,
+    license_registration: licenseRegistrationNumber,
+    registrationNumber: licenseRegistrationNumber,
+    registration_number: licenseRegistrationNumber,
+    numberPlate: licenseRegistrationNumber,
+    number_plate: licenseRegistrationNumber,
+    licenseRenewalDate: licenseStatus === 'yes' ? statusOptionalText(draft.licenseRenewalDate) : '',
+    license_renewal_date: licenseStatus === 'yes' ? statusOptionalText(draft.licenseRenewalDate) : '',
+    licenseNote: licenseStatus === 'yes' ? statusOptionalText(draft.licenseNote) : '',
+    license_note: licenseStatus === 'yes' ? statusOptionalText(draft.licenseNote) : '',
+  };
 }
 
 function statusChoiceLabel(value: AssetStatusChoice): string {
@@ -4544,6 +4888,12 @@ export default function AssetRegisterClient() {
   const [isChangeRegisterModalOpen, setIsChangeRegisterModalOpen] = useState(false);
   const [changingRegisterId, setChangingRegisterId] = useState('');
   const [assetDraft, setAssetDraft] = useState<AssetDraft>(initialAssetDraft);
+  const [assetStatusDraft, setAssetStatusDraft] = useState<AssetStatusDraft>(initialAssetStatusDraft);
+  const [assetStatusEditView, setAssetStatusEditView] = useState<AssetStatusEditView>('hub');
+  const [assetStatusQuickOrigin, setAssetStatusQuickOrigin] = useState<AssetStatusQuickOrigin>(null);
+  const [assetStatusAdvancedOpen, setAssetStatusAdvancedOpen] = useState(false);
+  const [assetStatusError, setAssetStatusError] = useState('');
+  const [isSavingAssetStatus, setIsSavingAssetStatus] = useState(false);
   const [editingAssetId, setEditingAssetId] = useState<string | null>(null);
   const [isAssetModalOpen, setIsAssetModalOpen] = useState(false);
   const [isAssetSettingsModalOpen, setIsAssetSettingsModalOpen] = useState(false);
@@ -6074,6 +6424,12 @@ export default function AssetRegisterClient() {
 
     setEditingAssetId(null);
     setAssetDraft(initialAssetDraft);
+    setAssetStatusDraft(initialAssetStatusDraft);
+    setAssetStatusEditView('hub');
+    setAssetStatusQuickOrigin(null);
+    setAssetStatusAdvancedOpen(false);
+    setAssetStatusError('');
+    setIsSavingAssetStatus(false);
     setManualAssetStep(1);
     setHasManualAssetKindSelection(false);
     setIsAssetSettingsModalOpen(false);
@@ -6140,6 +6496,12 @@ export default function AssetRegisterClient() {
     setMainPhotoSelection(null);
     setEditingAssetId(asset.id);
     setAssetDraft(buildDraftFromAsset(asset));
+    setAssetStatusDraft(buildAssetStatusDraftFromAsset(asset));
+    setAssetStatusEditView('hub');
+    setAssetStatusQuickOrigin(null);
+    setAssetStatusAdvancedOpen(false);
+    setAssetStatusError('');
+    setIsSavingAssetStatus(false);
     setManualAssetStep(2);
     setHasManualAssetKindSelection(true);
     setIsAssetSettingsModalOpen(false);
@@ -6238,24 +6600,31 @@ export default function AssetRegisterClient() {
     return true;
   }
 
-  function openAssetSettingsModal() {
-    if (!editingAsset) {
+  function openAssetSettingsModalForAsset(asset: RegisterAsset | null, startView: AssetSettingsView = 'menu') {
+    if (!asset) {
       setNotice({ tone: 'error', message: 'Open a saved asset before changing asset settings.' });
       return;
     }
 
-    const usageMode = getAssetSettingsUsageMode(editingAsset);
-    setAssetSettingsTypeDraft(getManualAssetOption(editingAsset.kind).value);
-    setAssetSettingsUsageInput(formatAssetSettingsUsageInput(editingAsset, usageMode));
+    const usageMode = getAssetSettingsUsageMode(asset);
+    setEditingAssetId(asset.id);
+    setAssetDraft(buildDraftFromAsset(asset));
+    setAssetStatusDraft(buildAssetStatusDraftFromAsset(asset));
+    setAssetSettingsTypeDraft(getManualAssetOption(asset.kind).value);
+    setAssetSettingsUsageInput(formatAssetSettingsUsageInput(asset, usageMode));
     setAssetSettingsError('');
     setAssetSettingsLocationState('idle');
     clearAssetSettingsLocationFeedback();
-    setAssetSettingsManualLocationInputsFromAsset(editingAsset);
-    setAssetSettingsMapLocationInputsFromAsset(editingAsset);
-    setAssetSettingsView('menu');
+    setAssetSettingsManualLocationInputsFromAsset(asset);
+    setAssetSettingsMapLocationInputsFromAsset(asset);
+    setAssetSettingsView(startView);
     setPendingUsageOverride(null);
     setIsManualConversionConfirmOpen(false);
     setIsAssetSettingsModalOpen(true);
+  }
+
+  function openAssetSettingsModal() {
+    openAssetSettingsModalForAsset(editingAsset, 'menu');
   }
 
   function closeAssetSettingsModal() {
@@ -6361,6 +6730,7 @@ export default function AssetRegisterClient() {
 
     syncSettingsUpdatedAsset(data.item);
     setAssetDraft(buildDraftFromAsset(data.item));
+    setAssetStatusDraft(buildAssetStatusDraftFromAsset(data.item));
     setAssetSettingsManualLocationInputsFromAsset(data.item);
     setAssetSettingsMapLocationInputsFromAsset(data.item);
 
@@ -6539,7 +6909,20 @@ export default function AssetRegisterClient() {
       usageMetric: nextKind === 'vehicle' ? normalizeUsageMetric(current.usageMetric, 'vehicle') : 'hours',
       lifeWorkedPercent: nextKind === 'property' || nextKind === 'vehicle' || nextKind === 'manual' ? '' : current.lifeWorkedPercent,
       propertySize: nextKind === 'property' ? current.propertySize : '',
+      licenseStatus: nextKind === 'property' ? 'not_applicable' : current.licenseStatus,
+      isLicensed: nextKind === 'property' ? false : current.isLicensed,
+      licenseRegistrationNumber: nextKind === 'property' ? '' : current.licenseRegistrationNumber,
     }));
+
+    if (nextKind === 'property') {
+      setAssetStatusDraft((current) => ({
+        ...current,
+        licenseStatus: 'not_applicable',
+        licenseRegistrationNumber: '',
+        licenseRenewalDate: '',
+        licenseNote: '',
+      }));
+    }
 
     if (shouldAdvance) {
       setManualAssetStep(2);
@@ -6717,55 +7100,292 @@ export default function AssetRegisterClient() {
     }
   }
 
+  function applyStatusDraftToAssetDraft(current: AssetDraft, nextStatusDraft: AssetStatusDraft, nextKind: AssetKind): AssetDraft {
+    const propertyAsset = nextKind === 'property';
+    const insuranceStatus = nextStatusDraft.insuranceStatus;
+    const licenseStatus: AssetStatusChoice = propertyAsset ? 'not_applicable' : nextStatusDraft.licenseStatus;
+
+    return {
+      ...current,
+      financeStatus: nextStatusDraft.financeStatus,
+      isFinanced: nextStatusDraft.financeStatus === 'yes',
+      financeNote: nextStatusDraft.financeStatus === 'yes' ? nextStatusDraft.financeNote : '',
+      insuranceStatus,
+      isInsured: insuranceStatus === 'yes',
+      insuredValue: insuranceStatus === 'yes' ? nextStatusDraft.insuredValueExVat : '',
+      insuranceNote: insuranceStatus === 'yes' ? nextStatusDraft.insuranceNote : '',
+      licenseStatus,
+      isLicensed: licenseStatus === 'yes',
+      licenseRegistrationNumber: licenseStatus === 'yes' ? normalizeLicenseRegistrationText(nextStatusDraft.licenseRegistrationNumber) : '',
+    };
+  }
+
+  function setAssetStatusDraftWithSync(updater: (current: AssetStatusDraft) => AssetStatusDraft) {
+    setAssetStatusDraft((current) => {
+      const nextStatusDraft = updater(current);
+      setAssetDraft((draft) => applyStatusDraftToAssetDraft(draft, nextStatusDraft, assetFormKind));
+      return nextStatusDraft;
+    });
+  }
+
   function setAssetFinanceStatus(nextStatus: AssetStatusChoice) {
-    setAssetDraft((current) => ({
+    setAssetStatusDraftWithSync((current) => ({
       ...current,
       financeStatus: nextStatus,
-      isFinanced: nextStatus === 'yes',
+      financeType: nextStatus === 'yes' ? current.financeType : '',
+      financeCurrentOutstandingExVat: nextStatus === 'yes' ? current.financeCurrentOutstandingExVat : '',
+      financierName: nextStatus === 'yes' ? current.financierName : '',
       financeNote: nextStatus === 'yes' ? current.financeNote : '',
+      financeBoughtWhen: nextStatus === 'yes' ? current.financeBoughtWhen : '',
+      financeBoughtForExVat: nextStatus === 'yes' ? current.financeBoughtForExVat : '',
+      financeOriginalAmountExVat: nextStatus === 'yes' ? current.financeOriginalAmountExVat : '',
+      financeMonthlyPaymentExVat: nextStatus === 'yes' ? current.financeMonthlyPaymentExVat : '',
+      financeInterestRatePercent: nextStatus === 'yes' ? current.financeInterestRatePercent : '',
+      financeTermMonths: nextStatus === 'yes' ? current.financeTermMonths : '',
+      financeBalloonPaymentExVat: nextStatus === 'yes' ? current.financeBalloonPaymentExVat : '',
+      financeSettlementDate: nextStatus === 'yes' ? current.financeSettlementDate : '',
+      financeReferenceNumber: nextStatus === 'yes' ? current.financeReferenceNumber : '',
     }));
   }
 
   function setAssetInsuranceStatus(nextStatus: AssetStatusChoice) {
-    setAssetDraft((current) => {
-      const isInsured = nextStatus === 'yes';
-
-      return {
-        ...current,
-        insuranceStatus: nextStatus,
-        isInsured,
-        insuredValue: isInsured ? current.insuredValue : '',
-        insuranceNote: isInsured ? current.insuranceNote : '',
-      };
-    });
+    setAssetStatusDraftWithSync((current) => ({
+      ...current,
+      insuranceStatus: nextStatus,
+      insuredValueExVat: nextStatus === 'yes' ? current.insuredValueExVat : '',
+      insuranceInsurerName: nextStatus === 'yes' ? current.insuranceInsurerName : '',
+      insurancePolicyNumber: nextStatus === 'yes' ? current.insurancePolicyNumber : '',
+      insuranceRenewalDate: nextStatus === 'yes' ? current.insuranceRenewalDate : '',
+      insuranceNote: nextStatus === 'yes' ? current.insuranceNote : '',
+    }));
   }
 
   function handleInsuredValueChange(value: string) {
     const formattedValue = formatRegisterValueInput(value);
     const insuredValue = parseRegisterValueInput(formattedValue);
-    const hasValidInsuredValue = insuredValue > 0;
+    const hasValidInsuredValue = formattedValue.trim() !== '' && insuredValue > 0;
 
-    setAssetDraft((current) => {
-      const nextInsuranceStatus: AssetStatusChoice = hasValidInsuredValue ? 'yes' : current.insuranceStatus;
-      const isInsured = nextInsuranceStatus === 'yes';
-
-      return {
-        ...current,
-        insuredValue: formattedValue,
-        insuranceStatus: nextInsuranceStatus,
-        isInsured,
-        insuranceNote: isInsured ? current.insuranceNote : '',
-      };
-    });
+    setAssetStatusDraftWithSync((current) => ({
+      ...current,
+      insuredValueExVat: formattedValue,
+      insuranceStatus: hasValidInsuredValue ? 'yes' : current.insuranceStatus,
+    }));
   }
 
   function setAssetLicenseStatus(nextStatus: AssetStatusChoice) {
-    setAssetDraft((current) => ({
+    setAssetStatusDraftWithSync((current) => ({
       ...current,
-      licenseStatus: nextStatus,
-      isLicensed: nextStatus === 'yes',
-      licenseRegistrationNumber: nextStatus === 'yes' ? current.licenseRegistrationNumber : '',
+      licenseStatus: assetFormKind === 'property' ? 'not_applicable' : nextStatus,
+      licenseRegistrationNumber: nextStatus === 'yes' ? normalizeLicenseRegistrationText(current.licenseRegistrationNumber) : '',
+      licenseRenewalDate: nextStatus === 'yes' ? current.licenseRenewalDate : '',
+      licenseNote: nextStatus === 'yes' ? current.licenseNote : '',
     }));
+  }
+
+  function updateAssetStatusDraftField<K extends keyof AssetStatusDraft>(field: K, value: AssetStatusDraft[K]) {
+    setAssetStatusDraftWithSync((current) => ({
+      ...current,
+      [field]: value,
+    }));
+  }
+
+  function openAssetStatusEditView(section: AssetStatusSection) {
+    if (section === 'license' && assetFormKind === 'property') return;
+    setAssetStatusEditView(section);
+    setAssetStatusAdvancedOpen(false);
+    setAssetStatusError('');
+  }
+
+  function openQuickAssetStatusEditor(asset: RegisterAsset, section: AssetStatusSection) {
+    if (!canUseOwnerOnlyAssetActions) return;
+    if (section === 'license' && asset.kind === 'property') return;
+
+    pendingPhotoFilesRef.current.forEach((entry) => revokePhotoPreviewUrl(entry.previewUrl));
+    pendingPhotoFilesRef.current = [];
+
+    setPendingPhotoFiles([]);
+    setPendingDocumentFiles([]);
+    setMainPhotoSelection(null);
+    setEditingAssetId(asset.id);
+    setAssetDraft(buildDraftFromAsset(asset));
+    setAssetStatusDraft(buildAssetStatusDraftFromAsset(asset));
+    setAssetStatusEditView(section);
+    setAssetStatusQuickOrigin('detail-card');
+    setAssetStatusAdvancedOpen(false);
+    setAssetStatusError('');
+    setIsSavingAssetStatus(false);
+    setManualAssetStep(3);
+    setHasManualAssetKindSelection(true);
+    setIsAssetSettingsModalOpen(false);
+    setIsManualConversionConfirmOpen(false);
+    setPendingUsageOverride(null);
+    setAssetSettingsError('');
+    setIsAssetModalOpen(true);
+  }
+
+  function openMappedStatusEditor(asset: RegisterAsset) {
+    if (!canUseOwnerOnlyAssetActions) return;
+    openAssetSettingsModalForAsset(asset, 'location');
+  }
+
+  function statusMoneyInputIsValid(value: string): boolean {
+    if (!value.trim()) return true;
+    const parsed = parseRegisterValueInput(value);
+    return parsed !== null && Number.isFinite(parsed) && parsed >= 0;
+  }
+
+  function statusNumberInputIsValid(value: string): boolean {
+    if (!value.trim()) return true;
+    const parsed = optionalNumberForStatusPayload(value);
+    return parsed !== null && Number.isFinite(parsed) && parsed >= 0;
+  }
+
+  function statusWholeNumberInputIsValid(value: string): boolean {
+    if (!value.trim()) return true;
+    const parsed = optionalNumberForStatusPayload(value);
+    return parsed !== null && Number.isFinite(parsed) && parsed >= 0 && Number.isInteger(parsed);
+  }
+
+  function validateAssetStatusDraft(section: AssetStatusSection): boolean {
+    if (section === 'finance') {
+      const moneyChecks: Array<[string, string]> = [
+        ['Current outstanding amount', assetStatusDraft.financeCurrentOutstandingExVat],
+        ['Bought for', assetStatusDraft.financeBoughtForExVat],
+        ['Original financed amount', assetStatusDraft.financeOriginalAmountExVat],
+        ['Monthly payment', assetStatusDraft.financeMonthlyPaymentExVat],
+        ['Balloon / residual amount', assetStatusDraft.financeBalloonPaymentExVat],
+      ];
+
+      const invalidMoney = moneyChecks.find(([, value]) => !statusMoneyInputIsValid(value));
+      if (invalidMoney) {
+        setAssetStatusError(`${invalidMoney[0]} must be a valid amount.`);
+        return false;
+      }
+
+      if (!statusNumberInputIsValid(assetStatusDraft.financeInterestRatePercent)) {
+        setAssetStatusError('Interest rate must be a valid percentage.');
+        return false;
+      }
+
+      if (!statusWholeNumberInputIsValid(assetStatusDraft.financeTermMonths)) {
+        setAssetStatusError('Finance term must be a valid whole number of months.');
+        return false;
+      }
+    }
+
+    if (section === 'insurance' && !statusMoneyInputIsValid(assetStatusDraft.insuredValueExVat)) {
+      setAssetStatusError('Insured amount must be a valid amount.');
+      return false;
+    }
+
+    setAssetStatusError('');
+    return true;
+  }
+
+  function buildAssetStatusPayload(section: AssetStatusSection, draft: AssetStatusDraft, asset: RegisterAsset) {
+    const isPropertyAsset = asset.kind === 'property';
+    const statusSpecsJson = buildStatusSpecsFragment(draft, isPropertyAsset);
+
+    if (section === 'finance') {
+      return {
+        assetId: asset.id,
+        section,
+        financeStatus: draft.financeStatus,
+        financeType: draft.financeStatus === 'yes' ? draft.financeType || null : null,
+        financeCurrentOutstandingExVat: draft.financeStatus === 'yes' ? optionalMoneyForStatusPayload(draft.financeCurrentOutstandingExVat) : null,
+        financierName: draft.financeStatus === 'yes' ? statusOptionalText(draft.financierName) : '',
+        financeNote: draft.financeStatus === 'yes' ? statusOptionalText(draft.financeNote) : '',
+        financeBoughtWhen: draft.financeStatus === 'yes' ? statusOptionalText(draft.financeBoughtWhen) : '',
+        financeBoughtForExVat: draft.financeStatus === 'yes' ? optionalMoneyForStatusPayload(draft.financeBoughtForExVat) : null,
+        financeOriginalAmountExVat: draft.financeStatus === 'yes' ? optionalMoneyForStatusPayload(draft.financeOriginalAmountExVat) : null,
+        financeMonthlyPaymentExVat: draft.financeStatus === 'yes' ? optionalMoneyForStatusPayload(draft.financeMonthlyPaymentExVat) : null,
+        financeInterestRatePercent: draft.financeStatus === 'yes' ? optionalNumberForStatusPayload(draft.financeInterestRatePercent) : null,
+        financeTermMonths: draft.financeStatus === 'yes' ? optionalNumberForStatusPayload(draft.financeTermMonths) : null,
+        financeBalloonPaymentExVat: draft.financeStatus === 'yes' ? optionalMoneyForStatusPayload(draft.financeBalloonPaymentExVat) : null,
+        financeSettlementDate: draft.financeStatus === 'yes' ? statusOptionalText(draft.financeSettlementDate) : '',
+        financeReferenceNumber: draft.financeStatus === 'yes' ? statusOptionalText(draft.financeReferenceNumber) : '',
+        specsJson: statusSpecsJson,
+      };
+    }
+
+    if (section === 'insurance') {
+      return {
+        assetId: asset.id,
+        section,
+        insuranceStatus: draft.insuranceStatus,
+        insuredValueExVat: draft.insuranceStatus === 'yes' ? optionalMoneyForStatusPayload(draft.insuredValueExVat) : null,
+        insuranceInsurerName: draft.insuranceStatus === 'yes' ? statusOptionalText(draft.insuranceInsurerName) : '',
+        insurancePolicyNumber: draft.insuranceStatus === 'yes' ? statusOptionalText(draft.insurancePolicyNumber) : '',
+        insuranceRenewalDate: draft.insuranceStatus === 'yes' ? statusOptionalText(draft.insuranceRenewalDate) : '',
+        insuranceNote: draft.insuranceStatus === 'yes' ? statusOptionalText(draft.insuranceNote) : '',
+        specsJson: statusSpecsJson,
+      };
+    }
+
+    return {
+      assetId: asset.id,
+      section,
+      licenseStatus: isPropertyAsset ? 'not_applicable' : draft.licenseStatus,
+      licenseRegistrationNumber: draft.licenseStatus === 'yes' && !isPropertyAsset ? normalizeLicenseRegistrationText(draft.licenseRegistrationNumber) : '',
+      licenseRenewalDate: draft.licenseStatus === 'yes' && !isPropertyAsset ? statusOptionalText(draft.licenseRenewalDate) : '',
+      licenseNote: draft.licenseStatus === 'yes' && !isPropertyAsset ? statusOptionalText(draft.licenseNote) : '',
+      specsJson: statusSpecsJson,
+    };
+  }
+
+  async function saveAssetStatusSection(section: AssetStatusSection) {
+    if (!validateAssetStatusDraft(section)) return;
+
+    const normalizedStatusDraft: AssetStatusDraft = {
+      ...assetStatusDraft,
+      licenseRegistrationNumber: normalizeLicenseRegistrationText(assetStatusDraft.licenseRegistrationNumber),
+      licenseStatus: assetFormKind === 'property' ? 'not_applicable' : assetStatusDraft.licenseStatus,
+    };
+
+    setAssetStatusDraft(normalizedStatusDraft);
+    setAssetDraft((current) => applyStatusDraftToAssetDraft(current, normalizedStatusDraft, assetFormKind));
+
+    if (!editingAsset) {
+      setAssetStatusEditView('hub');
+      setAssetStatusAdvancedOpen(false);
+      setAssetStatusError('');
+      return;
+    }
+
+    setIsSavingAssetStatus(true);
+    setAssetStatusError('');
+
+    try {
+      const response = await fetch('/api/asset-register/status', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(buildAssetStatusPayload(section, normalizedStatusDraft, editingAsset)),
+      });
+      const data = (await response.json().catch(() => null)) as AssetRegisterApiResponse | null;
+
+      if (!response.ok || !data?.ok || !data.item) {
+        throw new Error(data?.error ?? 'Failed to update asset status.');
+      }
+
+      syncSettingsUpdatedAsset(data.item);
+      setAssetDraft(buildDraftFromAsset(data.item));
+      setAssetStatusDraft(buildAssetStatusDraftFromAsset(data.item));
+      setExpandedAssetId(data.item.id);
+      setNotice({ tone: 'success', message: 'Asset status updated.' });
+
+      if (assetStatusQuickOrigin === 'detail-card') {
+        closeAssetModal();
+        scrollToAssetCard(data.item.id);
+      } else {
+        setAssetStatusEditView('hub');
+        setAssetStatusAdvancedOpen(false);
+      }
+    } catch (error) {
+      setAssetStatusError(error instanceof Error ? error.message : 'Failed to update asset status.');
+    } finally {
+      setIsSavingAssetStatus(false);
+    }
   }
 
   function validateAssetDetailsDraft(): boolean {
@@ -6777,8 +7397,8 @@ export default function AssetRegisterClient() {
     const hours = hasHours ? parseUsageAmountInput(assetDraft.hours) : null;
     const hasLifeWorkedPercent = (showPercentUsageField || showLifeWorkedPercentField) && assetDraft.lifeWorkedPercent.trim() !== '';
     const lifeWorkedPercent = hasLifeWorkedPercent ? Number(assetDraft.lifeWorkedPercent) : null;
-    const hasInsuredValue = assetDraft.insuredValue.trim() !== '';
-    const insuredValueExVat = hasInsuredValue ? parseRegisterValueInput(assetDraft.insuredValue) : null;
+    const hasInsuredValue = assetStatusDraft.insuredValueExVat.trim() !== '';
+    const insuredValueExVat = hasInsuredValue ? parseRegisterValueInput(assetStatusDraft.insuredValueExVat) : null;
     const usageErrorLabel = assetDraft.usageMetric === 'km' ? 'Kilometres' : 'Machine hours';
 
     if (!assetDraft.title.trim() || value <= 0) {
@@ -7567,9 +8187,15 @@ export default function AssetRegisterClient() {
     const brandName = isPropertyAsset ? '' : assetDraft.brandName.trim();
     const modelName = isPropertyAsset ? '' : assetDraft.modelName.trim();
     const propertySize = isPropertyAsset ? assetDraft.propertySize.trim().replace(/\s+/g, ' ') : '';
-    const nextLicenseStatus: AssetStatusChoice = isPropertyAsset ? 'not_applicable' : assetDraft.licenseStatus;
-    const nextInsuranceStatus: AssetStatusChoice = assetDraft.insuranceStatus;
+    const nextLicenseStatus: AssetStatusChoice = isPropertyAsset ? 'not_applicable' : assetStatusDraft.licenseStatus;
+    const nextInsuranceStatus: AssetStatusChoice = assetStatusDraft.insuranceStatus;
     const insuredValueForSave = nextInsuranceStatus === 'yes' && insuredValueExVat !== null && insuredValueExVat > 0 ? insuredValueExVat : null;
+
+    if (!validateAssetStatusDraft('finance') || !validateAssetStatusDraft('insurance') || (!isPropertyAsset && !validateAssetStatusDraft('license'))) {
+      setManualAssetStep(3);
+      setNotice({ tone: 'error', message: 'Please fix the finance, insurance or license details before saving.' });
+      return;
+    }
 
     if (!title || value <= 0) {
       setNotice({ tone: 'error', message: 'Asset title and current value are required.' });
@@ -7634,33 +8260,10 @@ export default function AssetRegisterClient() {
         ? savedUsageReading
         : null;
     const licenseRegistrationNumber = nextLicenseStatus === 'yes'
-      ? normalizeLicenseRegistrationText(assetDraft.licenseRegistrationNumber)
+      ? normalizeLicenseRegistrationText(assetStatusDraft.licenseRegistrationNumber)
       : '';
     const specsJson: Record<string, unknown> = {
-      financeStatus: assetDraft.financeStatus,
-      finance_status: assetDraft.financeStatus,
-      insuranceStatus: nextInsuranceStatus,
-      insurance_status: nextInsuranceStatus,
-      insuredStatus: nextInsuranceStatus,
-      insured_status: nextInsuranceStatus,
-      licenseStatus: nextLicenseStatus,
-      license_status: nextLicenseStatus,
-      licensedStatus: nextLicenseStatus,
-      licensed_status: nextLicenseStatus,
-      licenceStatus: nextLicenseStatus,
-      licence_status: nextLicenseStatus,
-      licencedStatus: nextLicenseStatus,
-      licenced_status: nextLicenseStatus,
-      licenseRegistrationNumber,
-      license_registration_number: licenseRegistrationNumber,
-      licenceRegistrationNumber: licenseRegistrationNumber,
-      licence_registration_number: licenseRegistrationNumber,
-      licenseRegistration: licenseRegistrationNumber,
-      license_registration: licenseRegistrationNumber,
-      registrationNumber: licenseRegistrationNumber,
-      registration_number: licenseRegistrationNumber,
-      numberPlate: licenseRegistrationNumber,
-      number_plate: licenseRegistrationNumber,
+      ...buildStatusSpecsFragment(assetStatusDraft, isPropertyAsset),
       replacementPriceExVat: replacementPrice,
       replacement_price_ex_vat: replacementPrice,
       replacementPrice: replacementPrice,
@@ -7673,10 +8276,6 @@ export default function AssetRegisterClient() {
       official_replacement_price_ex_vat: replacementPrice,
       replacementPriceBasis: 'user',
       replacement_price_basis: 'user',
-      insuranceNote: nextInsuranceStatus === 'yes' ? assetDraft.insuranceNote.trim() : '',
-      insurance_note: nextInsuranceStatus === 'yes' ? assetDraft.insuranceNote.trim() : '',
-      insuredNote: nextInsuranceStatus === 'yes' ? assetDraft.insuranceNote.trim() : '',
-      insured_note: nextInsuranceStatus === 'yes' ? assetDraft.insuranceNote.trim() : '',
     };
 
     if (brandName) {
@@ -7752,11 +8351,11 @@ export default function AssetRegisterClient() {
         serialNumber: isPropertyAsset ? '' : assetDraft.serialNumber.trim(),
         brandName,
         modelName,
-        isFinanced: assetDraft.financeStatus === 'yes',
+        isFinanced: assetStatusDraft.financeStatus === 'yes',
         isInsured: nextInsuranceStatus === 'yes',
         isLicensed: nextLicenseStatus === 'yes',
         licenseRegistrationNumber,
-        financeNote: assetDraft.financeStatus === 'yes' ? assetDraft.financeNote : '',
+        financeNote: assetStatusDraft.financeStatus === 'yes' ? assetStatusDraft.financeNote : '',
         photos,
         documents,
         yearModel: hasYearModel ? Math.round(Number(yearModel)) : null,
@@ -9639,7 +10238,9 @@ export default function AssetRegisterClient() {
       : manualAssetStep === 2
         ? 'Add the basic asset details.'
         : manualAssetStep === 3
-          ? 'Choose finance and insurance status.'
+          ? assetFormKind === 'property'
+            ? 'Choose finance and insurance status.'
+            : 'Choose finance, insurance and license status.'
           : 'Upload files if needed, then add the asset.';
   const selectedManualAssetType = getManualAssetOption(assetFormKind);
   const manualDraftDocumentCount = assetDraft.documents.length + pendingDocumentFiles.length;
@@ -9657,6 +10258,7 @@ export default function AssetRegisterClient() {
         : editingAsset
           ? 'Update asset'
           : 'Add asset';
+  const isAssetStatusFocusedView = manualAssetStep === 3 && assetStatusEditView !== 'hub';
   const settingsUsageMode = editingAsset ? getAssetSettingsUsageMode(editingAsset) : 'none';
   const settingsUsageCurrentValue = editingAsset ? getAssetSettingsUsageCurrentValue(editingAsset, settingsUsageMode) : null;
   const assetSettingsMapsUrl = editingAsset ? buildAssetSettingsGoogleMapsUrl(editingAsset) : null;
@@ -10755,24 +11357,75 @@ export default function AssetRegisterClient() {
                                       </div>
 
                                       <div className={styles.assetStatusDetails}>
-                                        <div className={styles.assetStatusRow}>
-                                          <span>Financed</span>
-                                          {renderAssetStatusMark(readFinanceStatusChoice(asset))}
-                                        </div>
-                                        <div className={styles.assetStatusRow}>
-                                          <span>Insured</span>
-                                          {renderAssetStatusMark(readInsuranceStatusChoice(asset))}
-                                        </div>
-                                        {asset.kind !== 'property' ? (
+                                        {canUseOwnerOnlyAssetActions ? (
+                                          <button
+                                            type="button"
+                                            className={`${styles.assetStatusRow} ${styles.assetStatusRowButton}`}
+                                            onClick={() => openQuickAssetStatusEditor(asset, 'finance')}
+                                            aria-label={`Update finance status for ${asset.title}`}
+                                          >
+                                            <span>Financed</span>
+                                            {renderAssetStatusMark(readFinanceStatusChoice(asset))}
+                                          </button>
+                                        ) : (
                                           <div className={styles.assetStatusRow}>
-                                            <span>Licensed</span>
-                                            {renderAssetStatusMark(licenseStatus)}
+                                            <span>Financed</span>
+                                            {renderAssetStatusMark(readFinanceStatusChoice(asset))}
                                           </div>
+                                        )}
+
+                                        {canUseOwnerOnlyAssetActions ? (
+                                          <button
+                                            type="button"
+                                            className={`${styles.assetStatusRow} ${styles.assetStatusRowButton}`}
+                                            onClick={() => openQuickAssetStatusEditor(asset, 'insurance')}
+                                            aria-label={`Update insurance status for ${asset.title}`}
+                                          >
+                                            <span>Insured</span>
+                                            {renderAssetStatusMark(readInsuranceStatusChoice(asset))}
+                                          </button>
+                                        ) : (
+                                          <div className={styles.assetStatusRow}>
+                                            <span>Insured</span>
+                                            {renderAssetStatusMark(readInsuranceStatusChoice(asset))}
+                                          </div>
+                                        )}
+
+                                        {asset.kind !== 'property' ? (
+                                          canUseOwnerOnlyAssetActions ? (
+                                            <button
+                                              type="button"
+                                              className={`${styles.assetStatusRow} ${styles.assetStatusRowButton}`}
+                                              onClick={() => openQuickAssetStatusEditor(asset, 'license')}
+                                              aria-label={`Update license status for ${asset.title}`}
+                                            >
+                                              <span>Licensed</span>
+                                              {renderAssetStatusMark(licenseStatus)}
+                                            </button>
+                                          ) : (
+                                            <div className={styles.assetStatusRow}>
+                                              <span>Licensed</span>
+                                              {renderAssetStatusMark(licenseStatus)}
+                                            </div>
+                                          )
                                         ) : null}
-                                        <div className={styles.assetStatusRow}>
-                                          <span>Mapped</span>
-                                          {renderAssetStatusMark(mappedStatus)}
-                                        </div>
+
+                                        {canUseOwnerOnlyAssetActions ? (
+                                          <button
+                                            type="button"
+                                            className={`${styles.assetStatusRow} ${styles.assetStatusRowButton}`}
+                                            onClick={() => openMappedStatusEditor(asset)}
+                                            aria-label={`Update mapped location status for ${asset.title}`}
+                                          >
+                                            <span>Mapped</span>
+                                            {renderAssetStatusMark(mappedStatus)}
+                                          </button>
+                                        ) : (
+                                          <div className={styles.assetStatusRow}>
+                                            <span>Mapped</span>
+                                            {renderAssetStatusMark(mappedStatus)}
+                                          </div>
+                                        )}
                                       </div>
                                     </div>
 
@@ -11507,89 +12160,425 @@ export default function AssetRegisterClient() {
                 ) : null}
 
                 {manualAssetStep === 3 ? (
-                  <section className={`${styles.manualStageCard} ${styles.manualSingleStageCard} ${styles.manualCompactStageCard} ${styles.fullWidth}`}>
+                  <section className={`${styles.manualStageCard} ${styles.manualSingleStageCard} ${styles.manualCompactStageCard} ${styles.fullWidth} ${styles.assetStatusStageCard}`}>
                     <div className={styles.manualStepIntro}>
                       <h4>{assetFormKind === 'property' ? 'Finance and insurance' : 'Finance, insurance and license'}</h4>
                     </div>
 
-                    <div className={styles.manualStageGrid}>
-                      <ModalSelect<AssetStatusChoice>
-                        label="Finance status"
-                        value={assetDraft.financeStatus}
-                        options={FINANCE_STATUS_OPTIONS}
-                        onChange={setAssetFinanceStatus}
-                        showDescriptions={false}
-                        usePortal
-                      />
+                    {assetStatusEditView === 'hub' ? (
+                      <div className={styles.assetStatusHubGrid}>
+                        <button
+                          type="button"
+                          className={styles.assetStatusHubCard}
+                          onClick={() => openAssetStatusEditView('finance')}
+                        >
+                          <strong>Finance</strong>
+                          <small>{financeStatusSummary(assetStatusDraft)}</small>
+                        </button>
 
-                      <ModalSelect<AssetStatusChoice>
-                        label="Insurance status"
-                        value={assetDraft.insuranceStatus}
-                        options={INSURANCE_STATUS_OPTIONS}
-                        onChange={setAssetInsuranceStatus}
-                        showDescriptions={false}
-                        usePortal
-                      />
+                        <button
+                          type="button"
+                          className={styles.assetStatusHubCard}
+                          onClick={() => openAssetStatusEditView('insurance')}
+                        >
+                          <strong>Insurance</strong>
+                          <small>{insuranceStatusSummary(assetStatusDraft)}</small>
+                        </button>
 
-                      {assetFormKind !== 'property' ? (
-                        <ModalSelect<AssetStatusChoice>
-                          label="License status"
-                          value={assetDraft.licenseStatus}
-                          options={LICENSE_STATUS_OPTIONS}
-                          onChange={setAssetLicenseStatus}
-                          showDescriptions={false}
-                          usePortal
-                        />
-                      ) : null}
+                        {assetFormKind !== 'property' ? (
+                          <button
+                            type="button"
+                            className={styles.assetStatusHubCard}
+                            onClick={() => openAssetStatusEditView('license')}
+                          >
+                            <strong>License</strong>
+                            <small>{licenseStatusSummary(assetStatusDraft)}</small>
+                          </button>
+                        ) : null}
+                      </div>
+                    ) : null}
 
-                      {assetFormKind !== 'property' && assetDraft.licenseStatus === 'yes' ? (
-                        <label className={`${styles.field} ${styles.manualStatusNoteField}`}>
-                          <span>Numberplate / registration</span>
-                          <input
-                            value={assetDraft.licenseRegistrationNumber}
-                            onChange={(event) =>
-                              setAssetDraft((current) => ({
-                                ...current,
-                                licenseRegistrationNumber: event.target.value.toUpperCase(),
-                              }))
-                            }
-                            placeholder="Example: CA 123-456"
+                    {assetStatusEditView === 'finance' ? (
+                      <div className={styles.assetStatusFocusedForm}>
+                        <div className={styles.assetStatusFocusedHeader}>
+                          <span>Finance</span>
+                          <strong>Finance details</strong>
+                          <small>Select the status now. Detailed finance fields can stay blank.</small>
+                        </div>
+
+                        <div className={styles.assetStatusEditGrid}>
+                          <ModalSelect<AssetStatusChoice>
+                            label="Finance status"
+                            value={assetStatusDraft.financeStatus}
+                            options={QUICK_FINANCE_STATUS_OPTIONS}
+                            onChange={setAssetFinanceStatus}
+                            showDescriptions={false}
+                            usePortal
                           />
-                        </label>
-                      ) : null}
 
-                      {assetDraft.financeStatus === 'yes' ? (
-                        <label className={`${styles.field} ${styles.manualStatusNoteField}`}>
-                          <span>Finance note</span>
-                          <input
-                            value={assetDraft.financeNote}
-                            onChange={(event) =>
-                              setAssetDraft((current) => ({
-                                ...current,
-                                financeNote: event.target.value,
-                              }))
-                            }
-                            placeholder="Optional"
-                          />
-                        </label>
-                      ) : null}
+                          {assetStatusDraft.financeStatus === 'yes' ? (
+                            <>
+                              <ModalSelect<string>
+                                label="Finance type"
+                                value={assetStatusDraft.financeType}
+                                options={FINANCE_TYPE_OPTIONS}
+                                onChange={(nextFinanceType) => updateAssetStatusDraftField('financeType', nextFinanceType)}
+                                placeholder="Select finance type"
+                                showDescriptions={false}
+                                usePortal
+                              />
 
-                      {assetDraft.insuranceStatus === 'yes' ? (
-                        <label className={`${styles.field} ${styles.manualStatusNoteField}`}>
-                          <span>Insurance note</span>
-                          <input
-                            value={assetDraft.insuranceNote}
-                            onChange={(event) =>
-                              setAssetDraft((current) => ({
-                                ...current,
-                                insuranceNote: event.target.value,
-                              }))
-                            }
-                            placeholder="Optional"
+                              <label className={styles.field}>
+                                <span>Current outstanding amount excl. VAT <small>(optional)</small></span>
+                                <input
+                                  type="text"
+                                  inputMode="numeric"
+                                  value={assetStatusDraft.financeCurrentOutstandingExVat}
+                                  onChange={(event) => updateAssetStatusDraftField('financeCurrentOutstandingExVat', formatRegisterValueInput(event.target.value))}
+                                  placeholder="Optional"
+                                />
+                              </label>
+
+                              <label className={styles.field}>
+                                <span>Financier <small>(optional)</small></span>
+                                <input
+                                  value={assetStatusDraft.financierName}
+                                  onChange={(event) => updateAssetStatusDraftField('financierName', event.target.value)}
+                                  placeholder="Example: Bank or finance house"
+                                />
+                              </label>
+
+                              <label className={`${styles.field} ${styles.assetStatusWideField}`}>
+                                <span>Finance note <small>(optional)</small></span>
+                                <textarea
+                                  value={assetStatusDraft.financeNote}
+                                  onChange={(event) => updateAssetStatusDraftField('financeNote', event.target.value)}
+                                  placeholder="Optional"
+                                  rows={3}
+                                />
+                              </label>
+                            </>
+                          ) : (
+                            <p className={styles.assetStatusHelpText}>No finance amounts are required for this status.</p>
+                          )}
+                        </div>
+
+                        {assetStatusDraft.financeStatus === 'yes' ? (
+                          <>
+                            <button
+                              type="button"
+                              className={styles.assetStatusAdvancedToggle}
+                              onClick={() => setAssetStatusAdvancedOpen((current) => !current)}
+                              aria-expanded={assetStatusAdvancedOpen}
+                            >
+                              <span>Advanced details</span>
+                              <strong>{assetStatusAdvancedOpen ? 'Hide' : 'Show'}</strong>
+                            </button>
+
+                            {assetStatusAdvancedOpen ? (
+                              <div className={styles.assetStatusAdvancedGrid}>
+                                <label className={styles.field}>
+                                  <span>Bought when <small>(optional)</small></span>
+                                  <input
+                                    type="date"
+                                    value={assetStatusDraft.financeBoughtWhen}
+                                    onChange={(event) => updateAssetStatusDraftField('financeBoughtWhen', event.target.value)}
+                                  />
+                                </label>
+
+                                <label className={styles.field}>
+                                  <span>Bought for excl. VAT <small>(optional)</small></span>
+                                  <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    value={assetStatusDraft.financeBoughtForExVat}
+                                    onChange={(event) => updateAssetStatusDraftField('financeBoughtForExVat', formatRegisterValueInput(event.target.value))}
+                                    placeholder="Optional"
+                                  />
+                                </label>
+
+                                <label className={styles.field}>
+                                  <span>Original financed amount excl. VAT <small>(optional)</small></span>
+                                  <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    value={assetStatusDraft.financeOriginalAmountExVat}
+                                    onChange={(event) => updateAssetStatusDraftField('financeOriginalAmountExVat', formatRegisterValueInput(event.target.value))}
+                                    placeholder="Optional"
+                                  />
+                                </label>
+
+                                <label className={styles.field}>
+                                  <span>Monthly payment <small>(optional)</small></span>
+                                  <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    value={assetStatusDraft.financeMonthlyPaymentExVat}
+                                    onChange={(event) => updateAssetStatusDraftField('financeMonthlyPaymentExVat', formatRegisterValueInput(event.target.value))}
+                                    placeholder="Optional"
+                                  />
+                                </label>
+
+                                <label className={styles.field}>
+                                  <span>Interest rate % <small>(optional)</small></span>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    value={assetStatusDraft.financeInterestRatePercent}
+                                    onChange={(event) => updateAssetStatusDraftField('financeInterestRatePercent', event.target.value)}
+                                    placeholder="Optional"
+                                  />
+                                </label>
+
+                                <label className={styles.field}>
+                                  <span>Finance term months <small>(optional)</small></span>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    step="1"
+                                    value={assetStatusDraft.financeTermMonths}
+                                    onChange={(event) => updateAssetStatusDraftField('financeTermMonths', event.target.value)}
+                                    placeholder="Optional"
+                                  />
+                                </label>
+
+                                <label className={styles.field}>
+                                  <span>Balloon / residual amount excl. VAT <small>(optional)</small></span>
+                                  <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    value={assetStatusDraft.financeBalloonPaymentExVat}
+                                    onChange={(event) => updateAssetStatusDraftField('financeBalloonPaymentExVat', formatRegisterValueInput(event.target.value))}
+                                    placeholder="Optional"
+                                  />
+                                </label>
+
+                                <label className={styles.field}>
+                                  <span>Settlement / expiry date <small>(optional)</small></span>
+                                  <input
+                                    type="date"
+                                    value={assetStatusDraft.financeSettlementDate}
+                                    onChange={(event) => updateAssetStatusDraftField('financeSettlementDate', event.target.value)}
+                                  />
+                                </label>
+
+                                <label className={styles.field}>
+                                  <span>Agreement / reference number <small>(optional)</small></span>
+                                  <input
+                                    value={assetStatusDraft.financeReferenceNumber}
+                                    onChange={(event) => updateAssetStatusDraftField('financeReferenceNumber', event.target.value)}
+                                    placeholder="Optional"
+                                  />
+                                </label>
+                              </div>
+                            ) : null}
+                          </>
+                        ) : null}
+
+                        {assetStatusError ? <p className={styles.assetStatusError}>{assetStatusError}</p> : null}
+
+                        <div className={styles.assetStatusSubActions}>
+                          <button
+                            type="button"
+                            className={styles.secondaryButton}
+                            onClick={() => {
+                              setAssetStatusEditView('hub');
+                              setAssetStatusError('');
+                            }}
+                            disabled={isSavingAssetStatus}
+                          >
+                            Back
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.primaryButton}
+                            onClick={() => void saveAssetStatusSection('finance')}
+                            disabled={isSavingAssetStatus}
+                          >
+                            {isSavingAssetStatus ? 'Saving...' : 'Done'}
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {assetStatusEditView === 'insurance' ? (
+                      <div className={styles.assetStatusFocusedForm}>
+                        <div className={styles.assetStatusFocusedHeader}>
+                          <span>Insurance</span>
+                          <strong>Insurance details</strong>
+                          <small>Select the status and add the insured amount only when known.</small>
+                        </div>
+
+                        <div className={styles.assetStatusEditGrid}>
+                          <ModalSelect<AssetStatusChoice>
+                            label="Insurance status"
+                            value={assetStatusDraft.insuranceStatus}
+                            options={QUICK_INSURANCE_STATUS_OPTIONS}
+                            onChange={setAssetInsuranceStatus}
+                            showDescriptions={false}
+                            usePortal
                           />
-                        </label>
-                      ) : null}
-                    </div>
+
+                          {assetStatusDraft.insuranceStatus === 'yes' ? (
+                            <>
+                              <label className={styles.field}>
+                                <span>Insured amount excl. VAT <small>(optional)</small></span>
+                                <input
+                                  type="text"
+                                  inputMode="numeric"
+                                  value={assetStatusDraft.insuredValueExVat}
+                                  onChange={(event) => handleInsuredValueChange(event.target.value)}
+                                  placeholder="Optional"
+                                />
+                              </label>
+
+                              <label className={styles.field}>
+                                <span>Insurer name <small>(optional)</small></span>
+                                <input
+                                  value={assetStatusDraft.insuranceInsurerName}
+                                  onChange={(event) => updateAssetStatusDraftField('insuranceInsurerName', event.target.value)}
+                                  placeholder="Optional"
+                                />
+                              </label>
+
+                              <label className={styles.field}>
+                                <span>Policy number <small>(optional)</small></span>
+                                <input
+                                  value={assetStatusDraft.insurancePolicyNumber}
+                                  onChange={(event) => updateAssetStatusDraftField('insurancePolicyNumber', event.target.value)}
+                                  placeholder="Optional"
+                                />
+                              </label>
+
+                              <label className={styles.field}>
+                                <span>Renewal / expiry date <small>(optional)</small></span>
+                                <input
+                                  type="date"
+                                  value={assetStatusDraft.insuranceRenewalDate}
+                                  onChange={(event) => updateAssetStatusDraftField('insuranceRenewalDate', event.target.value)}
+                                />
+                              </label>
+
+                              <label className={`${styles.field} ${styles.assetStatusWideField}`}>
+                                <span>Insurance note <small>(optional)</small></span>
+                                <textarea
+                                  value={assetStatusDraft.insuranceNote}
+                                  onChange={(event) => updateAssetStatusDraftField('insuranceNote', event.target.value)}
+                                  placeholder="Optional"
+                                  rows={3}
+                                />
+                              </label>
+                            </>
+                          ) : (
+                            <p className={styles.assetStatusHelpText}>No insured amount will be shown for this asset unless the status is insured.</p>
+                          )}
+                        </div>
+
+                        {assetStatusError ? <p className={styles.assetStatusError}>{assetStatusError}</p> : null}
+
+                        <div className={styles.assetStatusSubActions}>
+                          <button
+                            type="button"
+                            className={styles.secondaryButton}
+                            onClick={() => {
+                              setAssetStatusEditView('hub');
+                              setAssetStatusError('');
+                            }}
+                            disabled={isSavingAssetStatus}
+                          >
+                            Back
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.primaryButton}
+                            onClick={() => void saveAssetStatusSection('insurance')}
+                            disabled={isSavingAssetStatus}
+                          >
+                            {isSavingAssetStatus ? 'Saving...' : 'Done'}
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {assetStatusEditView === 'license' && assetFormKind !== 'property' ? (
+                      <div className={styles.assetStatusFocusedForm}>
+                        <div className={styles.assetStatusFocusedHeader}>
+                          <span>License</span>
+                          <strong>License details</strong>
+                          <small>Add registration details only when this asset is licensed.</small>
+                        </div>
+
+                        <div className={styles.assetStatusEditGrid}>
+                          <ModalSelect<AssetStatusChoice>
+                            label="License status"
+                            value={assetStatusDraft.licenseStatus}
+                            options={QUICK_LICENSE_STATUS_OPTIONS}
+                            onChange={setAssetLicenseStatus}
+                            showDescriptions={false}
+                            usePortal
+                          />
+
+                          {assetStatusDraft.licenseStatus === 'yes' ? (
+                            <>
+                              <label className={styles.field}>
+                                <span>Registration number <small>(optional)</small></span>
+                                <input
+                                  value={assetStatusDraft.licenseRegistrationNumber}
+                                  onChange={(event) => updateAssetStatusDraftField('licenseRegistrationNumber', event.target.value.toUpperCase())}
+                                  placeholder="Example: CAW 124120"
+                                />
+                              </label>
+
+                              <label className={styles.field}>
+                                <span>Renewal / expiry date <small>(optional)</small></span>
+                                <input
+                                  type="date"
+                                  value={assetStatusDraft.licenseRenewalDate}
+                                  onChange={(event) => updateAssetStatusDraftField('licenseRenewalDate', event.target.value)}
+                                />
+                              </label>
+
+                              <label className={`${styles.field} ${styles.assetStatusWideField}`}>
+                                <span>License note <small>(optional)</small></span>
+                                <textarea
+                                  value={assetStatusDraft.licenseNote}
+                                  onChange={(event) => updateAssetStatusDraftField('licenseNote', event.target.value)}
+                                  placeholder="Optional"
+                                  rows={3}
+                                />
+                              </label>
+                            </>
+                          ) : (
+                            <p className={styles.assetStatusHelpText}>Registration details are cleared when the asset is not licensed.</p>
+                          )}
+                        </div>
+
+                        {assetStatusError ? <p className={styles.assetStatusError}>{assetStatusError}</p> : null}
+
+                        <div className={styles.assetStatusSubActions}>
+                          <button
+                            type="button"
+                            className={styles.secondaryButton}
+                            onClick={() => {
+                              setAssetStatusEditView('hub');
+                              setAssetStatusError('');
+                            }}
+                            disabled={isSavingAssetStatus}
+                          >
+                            Back
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.primaryButton}
+                            onClick={() => void saveAssetStatusSection('license')}
+                            disabled={isSavingAssetStatus}
+                          >
+                            {isSavingAssetStatus ? 'Saving...' : 'Done'}
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
                   </section>
                 ) : null}
 
@@ -11755,7 +12744,7 @@ export default function AssetRegisterClient() {
                   </section>
                 ) : null}
 
-                {manualAssetStep > 1 || editingAsset?.valuationRunId ? (
+                {(manualAssetStep > 1 || editingAsset?.valuationRunId) && !isAssetStatusFocusedView ? (
                   <div className={`${styles.formActions} ${styles.assetFormActions} ${styles.manualStepFormActions}`}>
                     <div className={styles.assetFormActionRight}>
                       {manualAssetStep > 1 ? (

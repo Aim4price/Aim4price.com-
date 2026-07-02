@@ -28628,3 +28628,227 @@ button.documentOpenLink {
     white-space: normal !important;
   }
 }
+
+/* === Asset Register quick status edit flow: July 2026 === */
+.assetStatusRowButton {
+  width: 100%;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  appearance: none;
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease,
+    transform 0.16s ease;
+}
+
+.assetStatusRowButton:hover,
+.assetStatusRowButton:focus-visible {
+  border-color: rgba(17, 109, 82, 0.34) !important;
+  box-shadow:
+    0 12px 24px rgba(17, 109, 82, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.assetStatusStageCard {
+  overflow: visible !important;
+}
+
+.assetStatusHubGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(0.85rem, 1.4vw, 1.2rem);
+  align-items: stretch;
+}
+
+.assetStatusHubCard {
+  display: flex;
+  min-height: 7.25rem;
+  padding: clamp(1rem, 1.6vw, 1.25rem);
+  border: 1px solid rgba(207, 220, 231, 0.98);
+  border-radius: 1.15rem;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(17, 109, 82, 0.07), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
+  box-shadow:
+    0 10px 24px rgba(16, 31, 28, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  color: #0b342b;
+  cursor: pointer;
+  font-family: var(--font-body, 'Montserrat'), sans-serif;
+  text-align: left;
+  appearance: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.42rem;
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease,
+    transform 0.16s ease;
+}
+
+.assetStatusHubCard:hover,
+.assetStatusHubCard:focus-visible {
+  border-color: rgba(17, 109, 82, 0.36);
+  box-shadow:
+    0 16px 30px rgba(17, 109, 82, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.assetStatusHubCard strong {
+  color: #073b30;
+  font-family: var(--font-heading, 'Montserrat'), sans-serif;
+  font-size: clamp(1.18rem, 1.45vw, 1.45rem);
+  font-weight: 900;
+  line-height: 1.05;
+}
+
+.assetStatusHubCard small {
+  color: #5f7182;
+  font-size: 0.9rem;
+  font-weight: 760;
+  line-height: 1.3;
+}
+
+.assetStatusFocusedForm {
+  display: grid;
+  gap: 1rem;
+}
+
+.assetStatusFocusedHeader {
+  display: grid;
+  gap: 0.18rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid rgba(207, 220, 231, 0.92);
+  border-radius: 1rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
+}
+
+.assetStatusFocusedHeader span {
+  color: #167252;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
+}
+
+.assetStatusFocusedHeader strong {
+  color: #073b30;
+  font-family: var(--font-heading, 'Montserrat'), sans-serif;
+  font-size: clamp(1.18rem, 1.45vw, 1.5rem);
+  font-weight: 900;
+  line-height: 1.08;
+}
+
+.assetStatusFocusedHeader small {
+  color: #637587;
+  font-size: 0.9rem;
+  font-weight: 720;
+  line-height: 1.35;
+}
+
+.assetStatusEditGrid,
+.assetStatusAdvancedGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem 1rem;
+  align-items: start;
+}
+
+.assetStatusWideField {
+  grid-column: 1 / -1;
+}
+
+.assetStatusAdvancedToggle {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(207, 220, 231, 0.98);
+  border-radius: 1rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f6fafb 100%);
+  color: #073b30;
+  cursor: pointer;
+  font: inherit;
+  appearance: none;
+}
+
+.assetStatusAdvancedToggle span {
+  font-size: 0.9rem;
+  font-weight: 900;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+}
+
+.assetStatusAdvancedToggle strong {
+  color: #167252;
+  font-size: 0.9rem;
+  font-weight: 900;
+}
+
+.assetStatusAdvancedToggle:hover,
+.assetStatusAdvancedToggle:focus-visible {
+  border-color: rgba(17, 109, 82, 0.34);
+  outline: none;
+}
+
+.assetStatusHelpText {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 1rem;
+  border: 1px dashed rgba(190, 207, 219, 0.98);
+  border-radius: 0.95rem;
+  background: #f8fbfc;
+  color: #637587;
+  font-size: 0.92rem;
+  font-weight: 720;
+  line-height: 1.45;
+}
+
+.assetStatusError {
+  margin: 0;
+  padding: 0.85rem 1rem;
+  border: 1px solid rgba(180, 48, 48, 0.22);
+  border-radius: 0.9rem;
+  background: rgba(180, 48, 48, 0.07);
+  color: #8d2424;
+  font-size: 0.92rem;
+  font-weight: 800;
+}
+
+.assetStatusSubActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.7rem;
+  padding-top: 0.25rem;
+}
+
+.assetStatusSubActions .secondaryButton,
+.assetStatusSubActions .primaryButton {
+  min-width: 8.25rem;
+}
+
+@media (max-width: 860px) {
+  .assetStatusHubGrid,
+  .assetStatusEditGrid,
+  .assetStatusAdvancedGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .assetStatusSubActions {
+    flex-direction: column-reverse;
+  }
+
+  .assetStatusSubActions .secondaryButton,
+  .assetStatusSubActions .primaryButton {
+    width: 100%;
+  }
+}
