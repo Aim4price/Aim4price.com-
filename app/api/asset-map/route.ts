@@ -1,14 +1,35 @@
-import { NextResponse } from 'next/server';
-import { getServerSession } from '../../../lib/auth-session';
-import { listAssetRegisterItems, type AssetRegisterItem } from '../../../lib/asset-register-db';
+import { NextResponse } from "next/server";
+import { getServerSession } from "../../../lib/auth-session";
+import {
+  listAssetRegisterItems,
+  type AssetRegisterItem,
+} from "../../../lib/asset-register-db";
+import {
+  listAssetRegisters,
+  type AssetRegisterSummary,
+} from "../../../lib/asset-registers";
 
-export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
-type AssetStatusChoice = 'yes' | 'no' | 'unknown' | 'not_applicable';
+type AssetStatusChoice = "yes" | "no" | "unknown" | "not_applicable";
+
+type AssetMapRegisterContext = {
+  id: string;
+  label: string;
+};
+
+type AssetMapFilterOption = {
+  id: string;
+  label: string;
+  registerId: string | null;
+};
 
 type AssetMapItem = {
   id: string;
+  registerId: string;
+  registerName: string;
+  registerLabel: string;
   title: string;
   kind: string;
   assetTypeLabel: string;
@@ -39,7 +60,10 @@ type AssetMapItem = {
 };
 
 function unauthorized() {
-  return NextResponse.json({ ok: false, error: 'You must be signed in.' }, { status: 401 });
+  return NextResponse.json(
+    { ok: false, error: "You must be signed in." },
+    { status: 401 },
+  );
 }
 
 function hasCoordinates(lat: number | null, lng: number | null): boolean {
@@ -50,35 +74,87 @@ function hasCoordinates(lat: number | null, lng: number | null): boolean {
   return true;
 }
 
+function cleanText(value: unknown): string {
+  return String(value ?? "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function buildRegisterLabel(
+  register: AssetRegisterSummary,
+  index: number,
+): string {
+  return cleanText(register.businessName) || `Asset Register #${index + 1}`;
+}
+
 function titleCase(value: string): string {
   return value
     .split(/[_\s-]+/)
     .filter(Boolean)
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
-    .join(' ');
+    .join(" ");
 }
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function normalizeAssetStatusChoice(value: unknown, fallback: AssetStatusChoice = 'unknown'): AssetStatusChoice {
-  const normalized = String(value ?? '').trim().toLowerCase().replace(/[\s-]+/g, '_');
+function normalizeAssetStatusChoice(
+  value: unknown,
+  fallback: AssetStatusChoice = "unknown",
+): AssetStatusChoice {
+  const normalized = String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
 
-  if (['yes', 'y', 'true', 'financed', 'insured', 'licensed', 'licenced'].includes(normalized)) {
-    return 'yes';
+  if (
+    [
+      "yes",
+      "y",
+      "true",
+      "financed",
+      "insured",
+      "licensed",
+      "licenced",
+    ].includes(normalized)
+  ) {
+    return "yes";
   }
 
-  if (['no', 'n', 'false', 'not_financed', 'not_insured', 'not_licensed', 'not_licenced', 'unfinanced', 'uninsured', 'unlicensed', 'unlicenced'].includes(normalized)) {
-    return 'no';
+  if (
+    [
+      "no",
+      "n",
+      "false",
+      "not_financed",
+      "not_insured",
+      "not_licensed",
+      "not_licenced",
+      "unfinanced",
+      "uninsured",
+      "unlicensed",
+      "unlicenced",
+    ].includes(normalized)
+  ) {
+    return "no";
   }
 
-  if (['na', 'n_a', 'not_applicable', 'not_aplicable', 'not_relevant', 'does_not_apply'].includes(normalized)) {
-    return 'not_applicable';
+  if (
+    [
+      "na",
+      "n_a",
+      "not_applicable",
+      "not_aplicable",
+      "not_relevant",
+      "does_not_apply",
+    ].includes(normalized)
+  ) {
+    return "not_applicable";
   }
 
-  if (['unknown', 'not_sure', 'unsure', 'maybe', ''].includes(normalized)) {
-    return normalized ? 'unknown' : fallback;
+  if (["unknown", "not_sure", "unsure", "maybe", ""].includes(normalized)) {
+    return normalized ? "unknown" : fallback;
   }
 
   return fallback;
@@ -88,8 +164,11 @@ function readFinanceStatusChoice(item: AssetRegisterItem): AssetStatusChoice {
   const specs = isPlainRecord(item.specsJson) ? item.specsJson : {};
 
   return normalizeAssetStatusChoice(
-    specs.financeStatus ?? specs.finance_status ?? specs.financedStatus ?? specs.financed_status,
-    item.isFinanced ? 'yes' : 'no',
+    specs.financeStatus ??
+      specs.finance_status ??
+      specs.financedStatus ??
+      specs.financed_status,
+    item.isFinanced ? "yes" : "no",
   );
 }
 
@@ -97,8 +176,11 @@ function readInsuranceStatusChoice(item: AssetRegisterItem): AssetStatusChoice {
   const specs = isPlainRecord(item.specsJson) ? item.specsJson : {};
 
   return normalizeAssetStatusChoice(
-    specs.insuranceStatus ?? specs.insurance_status ?? specs.insuredStatus ?? specs.insured_status,
-    item.isInsured ? 'yes' : 'no',
+    specs.insuranceStatus ??
+      specs.insurance_status ??
+      specs.insuredStatus ??
+      specs.insured_status,
+    item.isInsured ? "yes" : "no",
   );
 }
 
@@ -114,12 +196,15 @@ function readLicenseStatusChoice(item: AssetRegisterItem): AssetStatusChoice {
       specs.licence_status ??
       specs.licencedStatus ??
       specs.licenced_status,
-    item.isLicensed ? 'yes' : 'no',
+    item.isLicensed ? "yes" : "no",
   );
 }
 
 function readLicenseRegistrationNumber(item: AssetRegisterItem): string {
-  const direct = String(item.licenseRegistrationNumber ?? '').replace(/\s+/g, ' ').trim().toUpperCase();
+  const direct = String(item.licenseRegistrationNumber ?? "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toUpperCase();
   if (direct) return direct;
 
   const specs = isPlainRecord(item.specsJson) ? item.specsJson : {};
@@ -138,26 +223,32 @@ function readLicenseRegistrationNumber(item: AssetRegisterItem): string {
       specs.numberPlate ??
       specs.number_plate ??
       specs.numberplate ??
-      '',
+      "",
   )
-    .replace(/\s+/g, ' ')
+    .replace(/\s+/g, " ")
     .trim()
     .toUpperCase();
 }
 
 function buildAssetTypeLabel(item: AssetRegisterItem): string {
-  const family = String(item.equipmentFamilyLabel ?? '').trim();
+  const family = String(item.equipmentFamilyLabel ?? "").trim();
   if (family) return family;
 
-  const kind = String(item.kind ?? '').trim();
+  const kind = String(item.kind ?? "").trim();
   if (kind) return titleCase(kind);
 
-  return 'Asset';
+  return "Asset";
 }
 
-function mapAssetForMap(item: AssetRegisterItem): AssetMapItem {
+function mapAssetForMap(
+  item: AssetRegisterItem,
+  register: AssetMapRegisterContext,
+): AssetMapItem {
   return {
     id: item.id,
+    registerId: register.id,
+    registerName: register.label,
+    registerLabel: register.label,
     title: item.title,
     kind: item.kind,
     assetTypeLabel: buildAssetTypeLabel(item),
@@ -184,7 +275,9 @@ function mapAssetForMap(item: AssetRegisterItem): AssetMapItem {
     lastKnownLng: item.lastKnownLng,
     lastKnownLocationText: item.lastKnownLocationText,
     updatedAtIso: item.updatedAtIso,
-    photos: Array.isArray(item.photos) ? item.photos.filter((photo) => typeof photo === 'string' && photo.trim()) : [],
+    photos: Array.isArray(item.photos)
+      ? item.photos.filter((photo) => typeof photo === "string" && photo.trim())
+      : [],
   };
 }
 
@@ -196,10 +289,30 @@ export async function GET() {
   }
 
   try {
-    const items = await listAssetRegisterItems(session.user.id);
-    const assets = items.map(mapAssetForMap);
-    const mappedAssets = assets.filter((asset) => hasCoordinates(asset.lastKnownLat, asset.lastKnownLng));
-    const activeMappedAssets = mappedAssets.filter((asset) => asset.qrStatus !== 'deleted');
+    const registers = await listAssetRegisters(session.user.id);
+    const registerContexts: AssetMapRegisterContext[] = registers.map(
+      (register, index) => ({
+        id: register.id,
+        label: buildRegisterLabel(register, index),
+      }),
+    );
+
+    const registerBundles = await Promise.all(
+      registerContexts.map(async (register) => ({
+        register,
+        items: await listAssetRegisterItems(session.user.id, register.id),
+      })),
+    );
+
+    const assets = registerBundles.flatMap(({ register, items }) =>
+      items.map((item) => mapAssetForMap(item, register)),
+    );
+    const mappedAssets = assets.filter((asset) =>
+      hasCoordinates(asset.lastKnownLat, asset.lastKnownLng),
+    );
+    const activeMappedAssets = mappedAssets.filter(
+      (asset) => asset.qrStatus !== "deleted",
+    );
     const recentlyScannedAssets = assets.filter((asset) => {
       if (!asset.lastScannedAtIso) return false;
       const scannedAt = new Date(asset.lastScannedAtIso).getTime();
@@ -207,9 +320,19 @@ export async function GET() {
       return Date.now() - scannedAt <= 1000 * 60 * 60 * 24 * 30;
     });
 
+    const registerFilters: AssetMapFilterOption[] = [
+      { id: "all", label: "All Assets", registerId: null },
+      ...registerContexts.map((register) => ({
+        id: register.id,
+        label: register.label,
+        registerId: register.id,
+      })),
+    ];
+
     return NextResponse.json({
       ok: true,
       assets,
+      registerFilters,
       summary: {
         totalAssets: assets.length,
         assetsWithLocation: mappedAssets.length,
@@ -219,9 +342,15 @@ export async function GET() {
       },
     });
   } catch (error) {
-    console.error('asset map GET failed', error);
+    console.error("asset map GET failed", error);
     return NextResponse.json(
-      { ok: false, error: error instanceof Error ? error.message : 'Failed to load the asset map.' },
+      {
+        ok: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to load the asset map.",
+      },
       { status: 500 },
     );
   }
