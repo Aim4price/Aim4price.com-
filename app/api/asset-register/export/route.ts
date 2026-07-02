@@ -729,7 +729,7 @@ function buildRegisterBasicExportSummary(items: AssetRegisterItem[]): RegisterBa
   const manualAssets = createRegisterSummaryCountValue();
   let currentValueExVat = 0;
   let replacementValueExVat = 0;
-  let insuredValueExVat = 0;
+  let insuredValueTotalExVat = 0;
   let financedValueExVat = 0;
   let assetsInsured = 0;
   let assetsLicensed = 0;
@@ -758,7 +758,7 @@ function buildRegisterBasicExportSummary(items: AssetRegisterItem[]): RegisterBa
     }
 
     if (insuredValue !== null) {
-      insuredValueExVat += insuredValue;
+      insuredValueTotalExVat += insuredValue;
     }
 
     if (readFinanceStatusChoice(item) === 'yes') {
@@ -791,7 +791,7 @@ function buildRegisterBasicExportSummary(items: AssetRegisterItem[]): RegisterBa
     totalAssets: uniqueItems.length,
     currentValueExVat,
     replacementValueExVat,
-    insuredValueExVat,
+    insuredValueExVat: insuredValueTotalExVat,
     financedValueExVat,
     assetsInsured,
     assetsLicensed,
