@@ -355,11 +355,6 @@ function formatCondition(value?: string | null): string {
   return normalized.charAt(0).toUpperCase() + normalized.slice(1);
 }
 
-function formatFuel(value: number | null): string {
-  if (value === null || !Number.isFinite(value)) return "—";
-  return `${Math.max(0, Math.min(100, Math.round(value)))}%`;
-}
-
 function formatHours(value: number | null): string {
   if (value === null || !Number.isFinite(value)) return "—";
   return new Intl.NumberFormat("en-ZA").format(Math.round(value));
@@ -560,7 +555,11 @@ export default function AssetMapClient() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
+  const [isExportScopeMenuOpen, setIsExportScopeMenuOpen] = useState(false);
 
+  const filterDropdownRef = useRef<HTMLDivElement | null>(null);
+  const exportScopeDropdownRef = useRef<HTMLDivElement | null>(null);
   const mapElementRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<any>(null);
   const leafletRef = useRef<any>(null);
@@ -653,19 +652,62 @@ export default function AssetMapClient() {
   }, [notice]);
 
   useEffect(() => {
-    if (!isExportModalOpen || typeof window === "undefined") {
+    if (!isExportModalOpen && isExportScopeMenuOpen) {
+      setIsExportScopeMenuOpen(false);
+    }
+  }, [isExportModalOpen, isExportScopeMenuOpen]);
+
+  useEffect(() => {
+    if (
+      typeof window === "undefined" ||
+      (!isFilterMenuOpen && !isExportScopeMenuOpen && !isExportModalOpen)
+    ) {
       return undefined;
     }
 
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+      if (!target) return;
+
+      if (
+        isFilterMenuOpen &&
+        filterDropdownRef.current &&
+        !filterDropdownRef.current.contains(target)
+      ) {
+        setIsFilterMenuOpen(false);
+      }
+
+      if (
+        isExportScopeMenuOpen &&
+        exportScopeDropdownRef.current &&
+        !exportScopeDropdownRef.current.contains(target)
+      ) {
+        setIsExportScopeMenuOpen(false);
+      }
+    };
+
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
+      if (event.key !== "Escape") return;
+
+      if (isFilterMenuOpen || isExportScopeMenuOpen) {
+        setIsFilterMenuOpen(false);
+        setIsExportScopeMenuOpen(false);
+        return;
+      }
+
+      if (isExportModalOpen) {
+        setIsExportScopeMenuOpen(false);
         setIsExportModalOpen(false);
       }
     };
 
+    window.addEventListener("pointerdown", handlePointerDown);
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isExportModalOpen]);
+    return () => {
+      window.removeEventListener("pointerdown", handlePointerDown);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isFilterMenuOpen, isExportScopeMenuOpen, isExportModalOpen]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -1034,7 +1076,19 @@ export default function AssetMapClient() {
 
   function openExportModal() {
     setExportRegisterId(selectedRegisterId);
+    setIsFilterMenuOpen(false);
+    setIsExportScopeMenuOpen(false);
     setIsExportModalOpen(true);
+  }
+
+  function selectPageRegisterFilter(registerId: RegisterFilterId) {
+    setSelectedRegisterId(registerId);
+    setIsFilterMenuOpen(false);
+  }
+
+  function selectExportRegisterFilter(registerId: RegisterFilterId) {
+    setExportRegisterId(registerId);
+    setIsExportScopeMenuOpen(false);
   }
 
   function buildGoogleMapsHref(asset: AssetMapItem): string | null {
@@ -1087,28 +1141,45 @@ export default function AssetMapClient() {
               </label>
 
               <div className={styles.topActionButtons}>
-                <label
-                  className={`${styles.filterControl} ${styles.topActionButton}`}
-                >
-                  <span className={styles.filterControlLabel}>Filter</span>
-                  <span className={styles.filterControlValue}>
-                    {selectedFilterLabel}
-                  </span>
-                  <select
-                    className={styles.filterSelect}
-                    value={selectedRegisterId}
-                    onChange={(event) =>
-                      setSelectedRegisterId(event.target.value)
-                    }
-                    aria-label="Filter mapped assets by asset register"
+                <div className={styles.filterDropdown} ref={filterDropdownRef}>
+                  <button
+                    type="button"
+                    className={`${styles.filterControl} ${styles.topActionButton} ${isFilterMenuOpen ? styles.filterControlOpen : ""}`}
+                    onClick={() => setIsFilterMenuOpen((current) => !current)}
+                    aria-haspopup="listbox"
+                    aria-expanded={isFilterMenuOpen}
                   >
-                    {registerFilters.map((filter) => (
-                      <option key={filter.id} value={filter.id}>
-                        {filter.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                    <span className={styles.filterControlLabel}>Filter</span>
+                    <span className={styles.filterChevron} aria-hidden="true">
+                      ⌄
+                    </span>
+                  </button>
+                  {isFilterMenuOpen ? (
+                    <div
+                      className={styles.filterMenu}
+                      role="listbox"
+                      aria-label="Filter mapped assets by asset register"
+                    >
+                      {registerFilters.map((filter) => {
+                        const isSelected = filter.id === selectedRegisterId;
+
+                        return (
+                          <button
+                            key={filter.id}
+                            type="button"
+                            role="option"
+                            aria-selected={isSelected}
+                            className={`${styles.filterMenuOption} ${isSelected ? styles.filterMenuOptionActive : ""}`}
+                            onClick={() => selectPageRegisterFilter(filter.id)}
+                          >
+                            <span>{filter.label}</span>
+                            {isSelected ? <strong>Selected</strong> : null}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : null}
+                </div>
                 <button
                   type="button"
                   className={`${styles.secondaryAction} ${styles.topActionButton} ${styles.topRefreshButton}`}
@@ -1389,12 +1460,6 @@ export default function AssetMapClient() {
 
                       <div className={styles.selectedDetailGrid}>
                         <span>
-                          <small>Fuel</small>
-                          <strong>
-                            {formatFuel(selectedAsset.fuelPercent)}
-                          </strong>
-                        </span>
-                        <span>
                           <small>Serial</small>
                           <strong>{selectedAsset.serialNumber || "—"}</strong>
                         </span>
@@ -1469,7 +1534,10 @@ export default function AssetMapClient() {
         <div
           className={styles.modalBackdrop}
           role="presentation"
-          onMouseDown={() => setIsExportModalOpen(false)}
+          onMouseDown={() => {
+            setIsExportScopeMenuOpen(false);
+            setIsExportModalOpen(false);
+          }}
         >
           <section
             className={styles.exportModal}
@@ -1486,26 +1554,63 @@ export default function AssetMapClient() {
               <button
                 type="button"
                 className={styles.modalCloseButton}
-                onClick={() => setIsExportModalOpen(false)}
+                onClick={() => {
+                  setIsExportScopeMenuOpen(false);
+                  setIsExportModalOpen(false);
+                }}
                 aria-label="Close download options"
               >
                 <CloseIcon className={styles.buttonIcon} />
               </button>
             </header>
 
-            <label className={styles.exportScopeField}>
+            <div className={styles.exportScopeField}>
               <span>Asset register scope</span>
-              <select
-                value={exportRegisterId}
-                onChange={(event) => setExportRegisterId(event.target.value)}
+              <div
+                className={styles.exportScopeDropdown}
+                ref={exportScopeDropdownRef}
               >
-                {registerFilters.map((filter) => (
-                  <option key={filter.id} value={filter.id}>
-                    {filter.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+                <button
+                  type="button"
+                  className={`${styles.exportScopeTrigger} ${isExportScopeMenuOpen ? styles.exportScopeTriggerOpen : ""}`}
+                  onClick={() =>
+                    setIsExportScopeMenuOpen((current) => !current)
+                  }
+                  aria-haspopup="listbox"
+                  aria-expanded={isExportScopeMenuOpen}
+                >
+                  <span>{exportFilterLabel}</span>
+                  <span className={styles.filterChevron} aria-hidden="true">
+                    ⌄
+                  </span>
+                </button>
+                {isExportScopeMenuOpen ? (
+                  <div
+                    className={`${styles.filterMenu} ${styles.exportScopeMenu}`}
+                    role="listbox"
+                    aria-label="Choose asset register export scope"
+                  >
+                    {registerFilters.map((filter) => {
+                      const isSelected = filter.id === exportRegisterId;
+
+                      return (
+                        <button
+                          key={filter.id}
+                          type="button"
+                          role="option"
+                          aria-selected={isSelected}
+                          className={`${styles.filterMenuOption} ${isSelected ? styles.filterMenuOptionActive : ""}`}
+                          onClick={() => selectExportRegisterFilter(filter.id)}
+                        >
+                          <span>{filter.label}</span>
+                          {isSelected ? <strong>Selected</strong> : null}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : null}
+              </div>
+            </div>
 
             <div className={styles.exportScopeSummary}>
               <strong>{exportFilterLabel}</strong>
