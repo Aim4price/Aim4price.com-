@@ -333,7 +333,7 @@
 .clearSearchButton {
   width: 2.4rem;
   min-width: 2.4rem;
-  min-height: 2.4rem;
+  min-height: 2.55rem;
   padding: 0;
   border-radius: 999px;
 }
@@ -18447,7 +18447,7 @@
 }
 
 .pricingResultHeader .modalHeaderText {
-  max-width: 42rem !important;
+  max-width: 50rem !important;
 }
 
 .pricingResultHeader h3 {
@@ -28084,7 +28084,7 @@ button.documentOpenLink {
 
 /* === Register summary modal: simple one-page overview === */
 .summaryModal {
-  width: min(100%, 62rem) !important;
+  width: min(100%, 72rem) !important;
   max-height: min(92dvh, 52rem) !important;
   padding: clamp(1rem, 1.8vw, 1.35rem) !important;
 }
@@ -28101,7 +28101,7 @@ button.documentOpenLink {
 }
 
 .summaryModalHeader p {
-  max-width: 42rem !important;
+  max-width: 50rem !important;
   margin-top: 0.38rem !important;
   font-size: 0.9rem !important;
   font-weight: 650 !important;
@@ -28138,15 +28138,15 @@ button.documentOpenLink {
 .summarySimpleTableHeader,
 .summarySimpleTableRow {
   display: grid;
-  grid-template-columns: minmax(9rem, 1.3fr) minmax(4rem, 0.35fr) minmax(8rem, 0.65fr);
+  grid-template-columns: minmax(12rem, 1.45fr) minmax(4.5rem, 0.42fr) minmax(9.5rem, 0.74fr) minmax(9.5rem, 0.74fr);
   align-items: center;
-  gap: 0.65rem;
-  padding: 0.54rem 0.75rem;
+  gap: 0.75rem;
+  padding: 0.58rem 0.82rem;
 }
 
 .summarySimpleTableCountOnly .summarySimpleTableHeader,
 .summarySimpleTableCountOnly .summarySimpleTableRow {
-  grid-template-columns: minmax(9rem, 1fr) minmax(4rem, auto);
+  grid-template-columns: minmax(12rem, 1fr) minmax(5rem, 7rem);
 }
 
 .summarySimpleTableHeader {
@@ -28167,7 +28167,7 @@ button.documentOpenLink {
 }
 
 .summarySimpleTableRow {
-  min-height: 2.4rem;
+  min-height: 2.55rem;
   border-top: 1px solid rgba(176, 196, 209, 0.3);
 }
 
@@ -28182,7 +28182,8 @@ button.documentOpenLink {
 }
 
 .summarySimpleTableRow strong,
-.summarySimpleTableRow small {
+.summarySimpleTableRow small,
+.summarySimpleTableRow b {
   min-width: 0;
   color: #10382f;
   font-size: 0.88rem;
@@ -28191,17 +28192,25 @@ button.documentOpenLink {
   overflow-wrap: anywhere;
 }
 
-.summarySimpleTableRow small {
+.summarySimpleTableRow small,
+.summarySimpleTableRow b {
   color: #5d6e83;
   text-align: right;
 }
 
-.summarySimpleTableHeader span:nth-child(2),
-.summarySimpleTableRow strong {
-  text-align: right;
+.summarySimpleTableRow b {
+  color: #10382f;
 }
 
-.summarySimpleTableHeader span:nth-child(3) {
+.summarySimpleTableHeader span:nth-child(2),
+.summarySimpleTableRow strong {
+  text-align: center;
+}
+
+.summarySimpleTableHeader span:nth-child(3),
+.summarySimpleTableHeader span:nth-child(4),
+.summarySimpleTableRow small,
+.summarySimpleTableRow b {
   text-align: right;
 }
 
@@ -28222,8 +28231,10 @@ button.documentOpenLink {
 
   .summarySimpleTableRow strong,
   .summarySimpleTableRow small,
+  .summarySimpleTableRow b,
   .summarySimpleTableHeader span:nth-child(2),
-  .summarySimpleTableHeader span:nth-child(3) {
+  .summarySimpleTableHeader span:nth-child(3),
+  .summarySimpleTableHeader span:nth-child(4) {
     text-align: left;
   }
 }

@@ -381,7 +381,8 @@ type RegisterBasicSummary = {
 type RegisterSummaryDisplayRow = {
   label: string;
   count?: string;
-  value?: string;
+  valueExVat?: string;
+  valueInclVat?: string;
 };
 
 type RegisterSummaryDisplaySection = {
@@ -5796,107 +5797,114 @@ export default function AssetRegisterClient() {
   const registerBasicSummary = useMemo(() => buildRegisterBasicSummary(assets), [assets]);
 
   const registerSummarySections = useMemo<RegisterSummaryDisplaySection[]>(
-    () => [
-      {
-        title: 'Register Values',
-        description: 'Saved totals for the selected asset register. Values include VAT.',
-        rows: [
-          {
-            label: 'Total assets',
-            count: registerBasicSummary.totalAssets.toLocaleString('en-ZA'),
-            value: money(summaryValueInclVat(registerBasicSummary.currentValueExVat)),
-          },
-          {
-            label: 'Replacement value',
-            count: registerBasicSummary.replacementPricedAssets.toLocaleString('en-ZA'),
-            value: money(summaryValueInclVat(registerBasicSummary.replacementValueExVat)),
-          },
-          {
-            label: 'Insured value',
-            count: registerBasicSummary.assetsInsured.toLocaleString('en-ZA'),
-            value: money(summaryValueInclVat(registerBasicSummary.insuredAssetsValueExVat)),
-          },
-          {
-            label: 'Financed value',
-            count: registerBasicSummary.assetsFinanced.toLocaleString('en-ZA'),
-            value: money(summaryValueInclVat(registerBasicSummary.financedValueExVat)),
-          },
-        ],
-      },
-      {
-        title: 'Register Status Counts',
-        description: 'Main saved status counts with matching VAT-inclusive values.',
-        rows: [
-          {
-            label: 'Assets insured',
-            count: registerBasicSummary.assetsInsured.toLocaleString('en-ZA'),
-            value: money(summaryValueInclVat(registerBasicSummary.insuredAssetsValueExVat)),
-          },
-          {
-            label: 'Assets licensed',
-            count: registerBasicSummary.assetsLicensed.toLocaleString('en-ZA'),
-            value: money(summaryValueInclVat(registerBasicSummary.licensedValueExVat)),
-          },
-          {
-            label: 'Assets financed',
-            count: registerBasicSummary.assetsFinanced.toLocaleString('en-ZA'),
-            value: money(summaryValueInclVat(registerBasicSummary.financedValueExVat)),
-          },
-        ],
-      },
-      {
-        title: 'Valuation Source',
-        description: 'Split between Aim4price-valued assets and manually added assets.',
-        rows: [
-          {
-            label: 'Aim4price assets',
-            count: registerBasicSummary.aim4priceAssets.count.toLocaleString('en-ZA'),
-            value: money(summaryValueInclVat(registerBasicSummary.aim4priceAssets.valueExVat)),
-          },
-          {
-            label: 'Manual assets',
-            count: registerBasicSummary.manualAssets.count.toLocaleString('en-ZA'),
-            value: money(summaryValueInclVat(registerBasicSummary.manualAssets.valueExVat)),
-          },
-        ],
-      },
-      {
-        title: 'Asset Type Split',
-        description: 'Basic split across property, equipment, tools and vehicles.',
-        rows: [
-          {
-            label: 'Property',
-            count: registerBasicSummary.assetTypes.property.count.toLocaleString('en-ZA'),
-            value: money(summaryValueInclVat(registerBasicSummary.assetTypes.property.valueExVat)),
-          },
-          {
-            label: 'Equipment',
-            count: registerBasicSummary.assetTypes.equipment.count.toLocaleString('en-ZA'),
-            value: money(summaryValueInclVat(registerBasicSummary.assetTypes.equipment.valueExVat)),
-          },
-          {
-            label: 'Tools',
-            count: registerBasicSummary.assetTypes.tools.count.toLocaleString('en-ZA'),
-            value: money(summaryValueInclVat(registerBasicSummary.assetTypes.tools.valueExVat)),
-          },
-          {
-            label: 'Vehicles',
-            count: registerBasicSummary.assetTypes.vehicles.count.toLocaleString('en-ZA'),
-            value: money(summaryValueInclVat(registerBasicSummary.assetTypes.vehicles.valueExVat)),
-          },
-        ],
-      },
-      {
-        title: 'Supporting Information',
-        description: 'Saved supporting information currently attached to assets.',
-        rows: [
-          { label: 'Assets mapped', count: registerBasicSummary.assetsMapped.toLocaleString('en-ZA') },
-          { label: 'Assets with photos', count: registerBasicSummary.assetsWithPhotos.toLocaleString('en-ZA') },
-          { label: 'Assets with documents', count: registerBasicSummary.assetsWithDocuments.toLocaleString('en-ZA') },
-        ],
-        hasValueColumn: false,
-      },
-    ],
+    () => {
+      const moneyPair = (valueExVat: number) => ({
+        valueExVat: money(valueExVat),
+        valueInclVat: money(summaryValueInclVat(valueExVat)),
+      });
+
+      return [
+        {
+          title: 'Register Values',
+          description: 'Saved totals for the selected asset register, shown excluding and including VAT.',
+          rows: [
+            {
+              label: 'Total assets',
+              count: registerBasicSummary.totalAssets.toLocaleString('en-ZA'),
+              ...moneyPair(registerBasicSummary.currentValueExVat),
+            },
+            {
+              label: 'Replacement value',
+              count: registerBasicSummary.replacementPricedAssets.toLocaleString('en-ZA'),
+              ...moneyPair(registerBasicSummary.replacementValueExVat),
+            },
+            {
+              label: 'Insured value',
+              count: registerBasicSummary.assetsInsured.toLocaleString('en-ZA'),
+              ...moneyPair(registerBasicSummary.insuredAssetsValueExVat),
+            },
+            {
+              label: 'Financed value',
+              count: registerBasicSummary.assetsFinanced.toLocaleString('en-ZA'),
+              ...moneyPair(registerBasicSummary.financedValueExVat),
+            },
+          ],
+        },
+        {
+          title: 'Register Status Counts',
+          description: 'Main saved status counts with matching values shown excluding and including VAT.',
+          rows: [
+            {
+              label: 'Assets insured',
+              count: registerBasicSummary.assetsInsured.toLocaleString('en-ZA'),
+              ...moneyPair(registerBasicSummary.insuredAssetsValueExVat),
+            },
+            {
+              label: 'Assets licensed',
+              count: registerBasicSummary.assetsLicensed.toLocaleString('en-ZA'),
+              ...moneyPair(registerBasicSummary.licensedValueExVat),
+            },
+            {
+              label: 'Assets financed',
+              count: registerBasicSummary.assetsFinanced.toLocaleString('en-ZA'),
+              ...moneyPair(registerBasicSummary.financedValueExVat),
+            },
+          ],
+        },
+        {
+          title: 'Valuation Source',
+          description: 'Split between Aim4price-valued assets and manually added assets.',
+          rows: [
+            {
+              label: 'Aim4price assets',
+              count: registerBasicSummary.aim4priceAssets.count.toLocaleString('en-ZA'),
+              ...moneyPair(registerBasicSummary.aim4priceAssets.valueExVat),
+            },
+            {
+              label: 'Manual assets',
+              count: registerBasicSummary.manualAssets.count.toLocaleString('en-ZA'),
+              ...moneyPair(registerBasicSummary.manualAssets.valueExVat),
+            },
+          ],
+        },
+        {
+          title: 'Asset Type Split',
+          description: 'Basic split across property, equipment, tools and vehicles.',
+          rows: [
+            {
+              label: 'Property',
+              count: registerBasicSummary.assetTypes.property.count.toLocaleString('en-ZA'),
+              ...moneyPair(registerBasicSummary.assetTypes.property.valueExVat),
+            },
+            {
+              label: 'Equipment',
+              count: registerBasicSummary.assetTypes.equipment.count.toLocaleString('en-ZA'),
+              ...moneyPair(registerBasicSummary.assetTypes.equipment.valueExVat),
+            },
+            {
+              label: 'Tools',
+              count: registerBasicSummary.assetTypes.tools.count.toLocaleString('en-ZA'),
+              ...moneyPair(registerBasicSummary.assetTypes.tools.valueExVat),
+            },
+            {
+              label: 'Vehicles',
+              count: registerBasicSummary.assetTypes.vehicles.count.toLocaleString('en-ZA'),
+              ...moneyPair(registerBasicSummary.assetTypes.vehicles.valueExVat),
+            },
+          ],
+        },
+        {
+          title: 'Supporting Information',
+          description: 'Saved supporting information currently attached to assets.',
+          rows: [
+            { label: 'Assets mapped', count: registerBasicSummary.assetsMapped.toLocaleString('en-ZA') },
+            { label: 'Assets with photos', count: registerBasicSummary.assetsWithPhotos.toLocaleString('en-ZA') },
+            { label: 'Assets with documents', count: registerBasicSummary.assetsWithDocuments.toLocaleString('en-ZA') },
+          ],
+          hasValueColumn: false,
+        },
+      ];
+    },
     [registerBasicSummary],
   );
 
@@ -9107,45 +9115,31 @@ export default function AssetRegisterClient() {
     setIsSummaryModalOpen(false);
   }
 
-  async function handleDownloadRegisterSummary(format: ExportFormat) {
+  function handleDownloadRegisterSummary() {
     if (isLoading || isExporting) {
       return;
     }
 
-    setExportFormat(format);
+    setExportFormat('pdf');
     setIsExporting(true);
 
     try {
-      const response = await fetch(buildAssetRegisterSummaryExportUrl(activeRegister?.id || activeRegisterId, format), {
-        credentials: 'include',
-        cache: 'no-store',
-      });
+      const url = buildAssetRegisterSummaryExportUrl(activeRegister?.id || activeRegisterId, 'pdf');
+      const targetName = `aim4price-register-summary-${Date.now()}`;
+      const reportWindow = window.open(url, targetName);
 
-      if (!response.ok) {
-        let errorMessage = `Failed to download the register summary ${format === 'pdf' ? 'PDF' : 'Excel'} file.`;
-
-        try {
-          const data = (await response.json()) as { error?: string };
-          errorMessage = data.error ?? errorMessage;
-        } catch {
-          // Keep the default download error message.
-        }
-
-        throw new Error(errorMessage);
+      if (!reportWindow) {
+        throw new Error('The register summary PDF window was blocked. Allow pop-ups for Aim4price, then try again.');
       }
 
-      const blob = await response.blob();
-      const fallbackName = `aim4price-register-summary-${new Date().toISOString().slice(0, 10)}.${format === 'pdf' ? 'pdf' : 'xlsx'}`;
-      const fileName = parseDownloadFileName(response, fallbackName);
-      downloadBlob(blob, fileName);
-      setNotice({ tone: 'success', message: `Register summary ${format === 'pdf' ? 'PDF' : 'Excel'} downloaded.` });
+      setNotice({ tone: 'success', message: 'Register summary PDF opened.' });
     } catch (error) {
       setNotice({
         tone: 'error',
-        message: error instanceof Error ? error.message : `Failed to download the register summary ${format === 'pdf' ? 'PDF' : 'Excel'} file.`,
+        message: error instanceof Error ? error.message : 'Failed to open the register summary PDF report.',
       });
     } finally {
-      setIsExporting(false);
+      window.setTimeout(() => setIsExporting(false), 700);
     }
   }
 
@@ -11053,28 +11047,18 @@ export default function AssetRegisterClient() {
             <div className={`${styles.modalHeader} ${styles.summaryModalHeader}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="asset-register-summary-title">Register summary</h3>
-                <p>Basic overview of the selected asset register. Values include VAT.</p>
+                <p>Basic overview of the selected asset register. Values shown excluding and including VAT.</p>
               </div>
 
               <div className={styles.summaryHeaderActions}>
                 <button
                   type="button"
                   className={`${styles.secondaryButton} ${styles.summaryDownloadButton}`}
-                  onClick={() => void handleDownloadRegisterSummary('pdf')}
+                  onClick={handleDownloadRegisterSummary}
                   disabled={isLoading || isExporting}
                 >
                   <PdfIcon className={styles.buttonIcon} />
                   <span>Download PDF</span>
-                </button>
-
-                <button
-                  type="button"
-                  className={`${styles.secondaryButton} ${styles.summaryDownloadButton}`}
-                  onClick={() => void handleDownloadRegisterSummary('xlsx')}
-                  disabled={isLoading || isExporting}
-                >
-                  <SpreadsheetIcon className={styles.buttonIcon} />
-                  <span>Download XLSX</span>
                 </button>
 
                 <button
@@ -11102,6 +11086,7 @@ export default function AssetRegisterClient() {
                     <div className={styles.summarySimpleTableHeader} aria-hidden="true">
                       <span>Metric</span>
                       <span>Count</span>
+                      {section.hasValueColumn === false ? null : <span>Value excl. VAT</span>}
                       {section.hasValueColumn === false ? null : <span>Value incl. VAT</span>}
                     </div>
 
@@ -11110,7 +11095,8 @@ export default function AssetRegisterClient() {
                         <div key={row.label} className={styles.summarySimpleTableRow}>
                           <span>{row.label}</span>
                           <strong>{row.count ?? ''}</strong>
-                          {section.hasValueColumn === false ? null : <small>{row.value ?? ''}</small>}
+                          {section.hasValueColumn === false ? null : <small>{row.valueExVat ?? ''}</small>}
+                          {section.hasValueColumn === false ? null : <b>{row.valueInclVat ?? ''}</b>}
                         </div>
                       ))}
                     </div>
