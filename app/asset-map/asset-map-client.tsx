@@ -7,6 +7,8 @@ import styles from "./page.module.css";
 
 type NoticeTone = "error";
 type BasemapMode = "road" | "satellite";
+type ExportFormat = "pdf" | "xlsx";
+type ExportStep = "format" | "scope";
 type RegisterFilterId = string;
 type AssetStatusChoice = "yes" | "no" | "unknown" | "not_applicable";
 type IconProps = { className?: string };
@@ -148,7 +150,7 @@ function DownloadIcon({ className }: IconProps) {
   );
 }
 
-function RefreshIcon({ className }: IconProps) {
+function FilterIcon({ className }: IconProps) {
   return (
     <svg
       className={className}
@@ -158,30 +160,40 @@ function RefreshIcon({ className }: IconProps) {
       xmlns="http://www.w3.org/2000/svg"
     >
       <path
-        d="M20 11a8 8 0 0 0-14.7-4.3L4 8"
+        d="M4 5h16"
         stroke="currentColor"
         strokeWidth="2"
         strokeLinecap="round"
-        strokeLinejoin="round"
       />
       <path
-        d="M4 4v4h4"
+        d="M7 12h10"
         stroke="currentColor"
         strokeWidth="2"
         strokeLinecap="round"
-        strokeLinejoin="round"
       />
       <path
-        d="M4 13a8 8 0 0 0 14.7 4.3L20 16"
+        d="M10 19h4"
         stroke="currentColor"
         strokeWidth="2"
         strokeLinecap="round"
-        strokeLinejoin="round"
       />
+    </svg>
+  );
+}
+
+function ChevronDownIcon({ className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
       <path
-        d="M20 20v-4h-4"
+        d="m6 9 6 6 6-6"
         stroke="currentColor"
-        strokeWidth="2"
+        strokeWidth="2.3"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -461,11 +473,12 @@ function normalizeRegisterFilters(
       filter.id ?? filter.value ?? filter.registerId ?? "",
     ).trim();
     const id = rawId || ALL_REGISTER_FILTER_ID;
+    const fallbackRegisterLabel = `Asset Register #${normalizedFilters.length}`;
     const label =
       String(filter.label ?? "")
         .replace(/\s+/g, " ")
         .trim() ||
-      (id === ALL_REGISTER_FILTER_ID ? "All Assets" : "Asset Register");
+      (id === ALL_REGISTER_FILTER_ID ? "All Assets" : fallbackRegisterLabel);
 
     if (id === ALL_REGISTER_FILTER_ID) {
       normalizedFilters[0] = {
@@ -543,6 +556,8 @@ export default function AssetMapClient() {
   const [exportRegisterId, setExportRegisterId] = useState<RegisterFilterId>(
     ALL_REGISTER_FILTER_ID,
   );
+  const [exportFormat, setExportFormat] = useState<ExportFormat>("pdf");
+  const [exportStep, setExportStep] = useState<ExportStep>("format");
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
@@ -553,7 +568,6 @@ export default function AssetMapClient() {
     message: string;
   } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
   const [isExportScopeMenuOpen, setIsExportScopeMenuOpen] = useState(false);
@@ -584,13 +598,11 @@ export default function AssetMapClient() {
   }, []);
 
   const fetchMapData = useCallback(
-    async (mode: "initial" | "refresh" = "initial") => {
+    async (mode: "initial" | "background" = "initial") => {
       const initialLoad = mode === "initial";
 
       if (initialLoad) {
         setIsLoading(true);
-      } else {
-        setIsRefreshing(true);
       }
 
       try {
@@ -632,8 +644,6 @@ export default function AssetMapClient() {
       } finally {
         if (initialLoad) {
           setIsLoading(false);
-        } else {
-          setIsRefreshing(false);
         }
       }
     },
@@ -716,7 +726,7 @@ export default function AssetMapClient() {
 
     const interval = window.setInterval(() => {
       if (document.visibilityState === "visible") {
-        void fetchMapData("refresh");
+        void fetchMapData("background");
       }
     }, 45000);
 
@@ -1024,6 +1034,14 @@ export default function AssetMapClient() {
     format: "xlsx",
     registerId: exportRegisterId,
   });
+  const selectedExportHref =
+    exportFormat === "pdf" ? exportPdfHref : exportXlsxHref;
+  const selectedExportLabel =
+    exportFormat === "pdf" ? "Download PDF" : "Download XLSX";
+  const selectedExportDescription =
+    exportFormat === "pdf"
+      ? "Printable Asset Map Tracking report for the selected scope."
+      : "Excel GPS sheet with the latest saved coordinates for the selected scope.";
 
   const selectedAssetReportHref = selectedAsset
     ? buildAssetMapReportHref({
@@ -1076,9 +1094,27 @@ export default function AssetMapClient() {
 
   function openExportModal() {
     setExportRegisterId(selectedRegisterId);
+    setExportFormat("pdf");
+    setExportStep("format");
     setIsFilterMenuOpen(false);
     setIsExportScopeMenuOpen(false);
     setIsExportModalOpen(true);
+  }
+
+  function closeExportModal() {
+    setIsExportScopeMenuOpen(false);
+    setIsExportModalOpen(false);
+  }
+
+  function chooseExportFormat(format: ExportFormat) {
+    setExportFormat(format);
+    setIsExportScopeMenuOpen(false);
+    setExportStep("scope");
+  }
+
+  function goBackToExportFormat() {
+    setIsExportScopeMenuOpen(false);
+    setExportStep("format");
   }
 
   function selectPageRegisterFilter(registerId: RegisterFilterId) {
@@ -1149,10 +1185,8 @@ export default function AssetMapClient() {
                     aria-haspopup="listbox"
                     aria-expanded={isFilterMenuOpen}
                   >
+                    <FilterIcon className={styles.buttonIcon} />
                     <span className={styles.filterControlLabel}>Filter</span>
-                    <span className={styles.filterChevron} aria-hidden="true">
-                      ⌄
-                    </span>
                   </button>
                   {isFilterMenuOpen ? (
                     <div
@@ -1180,15 +1214,6 @@ export default function AssetMapClient() {
                     </div>
                   ) : null}
                 </div>
-                <button
-                  type="button"
-                  className={`${styles.secondaryAction} ${styles.topActionButton} ${styles.topRefreshButton}`}
-                  onClick={() => void fetchMapData("refresh")}
-                  disabled={isRefreshing || isLoading}
-                >
-                  <RefreshIcon className={styles.buttonIcon} />
-                  <span>{isRefreshing ? "Refreshing…" : "Refresh"}</span>
-                </button>
                 <button
                   type="button"
                   className={`${styles.primaryAction} ${styles.topActionButton} ${styles.topReportButton} ${!mappedAssets.length ? styles.actionDisabled : ""}`}
@@ -1534,10 +1559,7 @@ export default function AssetMapClient() {
         <div
           className={styles.modalBackdrop}
           role="presentation"
-          onMouseDown={() => {
-            setIsExportScopeMenuOpen(false);
-            setIsExportModalOpen(false);
-          }}
+          onMouseDown={closeExportModal}
         >
           <section
             className={styles.exportModal}
@@ -1548,126 +1570,179 @@ export default function AssetMapClient() {
           >
             <header className={styles.exportModalHeader}>
               <div>
-                <h2 id="asset-map-export-title">Download Asset Map Tracking</h2>
-                <p>Choose the asset register scope and export format.</p>
+                <h2 id="asset-map-export-title">Export Asset Map Tracking</h2>
               </div>
               <button
                 type="button"
                 className={styles.modalCloseButton}
-                onClick={() => {
-                  setIsExportScopeMenuOpen(false);
-                  setIsExportModalOpen(false);
-                }}
+                onClick={closeExportModal}
                 aria-label="Close download options"
               >
                 <CloseIcon className={styles.buttonIcon} />
               </button>
             </header>
 
-            <div className={styles.exportScopeField}>
-              <span>Asset register scope</span>
-              <div
-                className={styles.exportScopeDropdown}
-                ref={exportScopeDropdownRef}
-              >
-                <button
-                  type="button"
-                  className={`${styles.exportScopeTrigger} ${isExportScopeMenuOpen ? styles.exportScopeTriggerOpen : ""}`}
-                  onClick={() =>
-                    setIsExportScopeMenuOpen((current) => !current)
-                  }
-                  aria-haspopup="listbox"
-                  aria-expanded={isExportScopeMenuOpen}
+            {exportStep === "format" ? (
+              <>
+                <div
+                  className={styles.exportChoices}
+                  aria-label="Choose Asset Map export format"
                 >
-                  <span>{exportFilterLabel}</span>
-                  <span className={styles.filterChevron} aria-hidden="true">
-                    ⌄
-                  </span>
-                </button>
-                {isExportScopeMenuOpen ? (
-                  <div
-                    className={`${styles.filterMenu} ${styles.exportScopeMenu}`}
-                    role="listbox"
-                    aria-label="Choose asset register export scope"
+                  <button
+                    type="button"
+                    className={`${styles.exportOption} ${exportFormat === "pdf" ? styles.exportOptionActive : ""}`}
+                    onClick={() => chooseExportFormat("pdf")}
+                    aria-pressed={exportFormat === "pdf"}
                   >
-                    {registerFilters.map((filter) => {
-                      const isSelected = filter.id === exportRegisterId;
+                    <span className={styles.exportGraphic}>
+                      <img
+                        src="/brand/pdf.png"
+                        alt="PDF map report"
+                        className={styles.exportGraphicImage}
+                      />
+                    </span>
+                    <span className={styles.exportOptionTitleBlock}>
+                      <strong>PDF map report</strong>
+                      <small>
+                        Download a clean printable Asset Map Tracking report.
+                      </small>
+                    </span>
+                  </button>
 
-                      return (
-                        <button
-                          key={filter.id}
-                          type="button"
-                          role="option"
-                          aria-selected={isSelected}
-                          className={`${styles.filterMenuOption} ${isSelected ? styles.filterMenuOptionActive : ""}`}
-                          onClick={() => selectExportRegisterFilter(filter.id)}
-                        >
-                          <span>{filter.label}</span>
-                          {isSelected ? <strong>Selected</strong> : null}
-                        </button>
-                      );
-                    })}
+                  <button
+                    type="button"
+                    className={`${styles.exportOption} ${exportFormat === "xlsx" ? styles.exportOptionActive : ""}`}
+                    onClick={() => chooseExportFormat("xlsx")}
+                    aria-pressed={exportFormat === "xlsx"}
+                  >
+                    <span className={styles.exportGraphic}>
+                      <img
+                        src="/brand/sheet.png"
+                        alt="XLSX GPS workbook"
+                        className={styles.exportGraphicImage}
+                      />
+                    </span>
+                    <span className={styles.exportOptionTitleBlock}>
+                      <strong>XLSX GPS workbook</strong>
+                      <small>
+                        Download the latest saved GPS coordinates in Excel
+                        format.
+                      </small>
+                    </span>
+                  </button>
+                </div>
+
+                <div className={styles.exportActions}>
+                  <button
+                    type="button"
+                    className={`${styles.secondaryAction} ${styles.exportSecondaryButton}`}
+                    onClick={closeExportModal}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className={styles.exportScopeBox}>
+                  <div
+                    className={`${styles.exportScopeField} ${isExportScopeMenuOpen ? styles.exportScopeFieldOpen : ""}`}
+                    ref={exportScopeDropdownRef}
+                    data-asset-map-export-select-root="true"
+                  >
+                    <span className={styles.exportScopeLabel}>
+                      Asset Register
+                    </span>
+                    <button
+                      type="button"
+                      className={`${styles.exportScopeTrigger} ${isExportScopeMenuOpen ? styles.exportScopeTriggerOpen : ""}`}
+                      onClick={() =>
+                        setIsExportScopeMenuOpen((current) => !current)
+                      }
+                      aria-haspopup="listbox"
+                      aria-expanded={isExportScopeMenuOpen}
+                    >
+                      <span>{exportFilterLabel}</span>
+                      <ChevronDownIcon className={styles.filterChevron} />
+                    </button>
+                    {isExportScopeMenuOpen ? (
+                      <div
+                        className={`${styles.filterMenu} ${styles.exportScopeMenu}`}
+                        role="listbox"
+                        aria-label="Choose asset register export scope"
+                      >
+                        {registerFilters.map((filter) => {
+                          const isSelected = filter.id === exportRegisterId;
+
+                          return (
+                            <button
+                              key={filter.id}
+                              type="button"
+                              role="option"
+                              aria-selected={isSelected}
+                              className={`${styles.filterMenuOption} ${isSelected ? styles.filterMenuOptionActive : ""}`}
+                              onClick={() =>
+                                selectExportRegisterFilter(filter.id)
+                              }
+                            >
+                              <span>{filter.label}</span>
+                              {isSelected ? <strong>Selected</strong> : null}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : null}
                   </div>
+                </div>
+
+                <div className={styles.exportScopeSummary}>
+                  <strong>{exportFilterLabel}</strong>
+                  <span>
+                    {selectedExportDescription} {exportScopedAssets.length}{" "}
+                    mapped GPS{" "}
+                    {exportScopedAssets.length === 1 ? "asset" : "assets"} in
+                    this scope.
+                  </span>
+                </div>
+
+                {!exportScopeHasMappedAssets ? (
+                  <p className={styles.exportEmptyNote}>
+                    No mapped GPS assets are available in the selected scope.
+                  </p>
                 ) : null}
-              </div>
-            </div>
 
-            <div className={styles.exportScopeSummary}>
-              <strong>{exportFilterLabel}</strong>
-              <span>
-                {exportScopedAssets.length} mapped GPS{" "}
-                {exportScopedAssets.length === 1 ? "asset" : "assets"} in this
-                scope.
-              </span>
-            </div>
-
-            <div
-              className={styles.exportFormatGrid}
-              aria-label="Download format options"
-            >
-              {exportScopeHasMappedAssets ? (
-                <a
-                  href={exportPdfHref}
-                  target="_blank"
-                  rel="noreferrer"
-                  className={styles.exportFormatButton}
-                >
-                  <DownloadIcon className={styles.buttonIcon} />
-                  <span>PDF map report</span>
-                </a>
-              ) : (
-                <button
-                  type="button"
-                  className={`${styles.exportFormatButton} ${styles.actionDisabled}`}
-                  disabled
-                >
-                  <DownloadIcon className={styles.buttonIcon} />
-                  <span>PDF map report</span>
-                </button>
-              )}
-
-              {exportScopeHasMappedAssets ? (
-                <a href={exportXlsxHref} className={styles.exportFormatButton}>
-                  <DownloadIcon className={styles.buttonIcon} />
-                  <span>Excel GPS sheet</span>
-                </a>
-              ) : (
-                <button
-                  type="button"
-                  className={`${styles.exportFormatButton} ${styles.actionDisabled}`}
-                  disabled
-                >
-                  <DownloadIcon className={styles.buttonIcon} />
-                  <span>Excel GPS sheet</span>
-                </button>
-              )}
-            </div>
-
-            {!exportScopeHasMappedAssets ? (
-              <p className={styles.exportEmptyNote}>
-                No mapped GPS assets are available in the selected scope.
-              </p>
-            ) : null}
+                <div className={styles.exportActions}>
+                  <button
+                    type="button"
+                    className={`${styles.secondaryAction} ${styles.exportSecondaryButton}`}
+                    onClick={goBackToExportFormat}
+                  >
+                    Back
+                  </button>
+                  {exportScopeHasMappedAssets ? (
+                    <a
+                      href={selectedExportHref}
+                      target={exportFormat === "pdf" ? "_blank" : undefined}
+                      rel={exportFormat === "pdf" ? "noreferrer" : undefined}
+                      className={`${styles.primaryAction} ${styles.exportPrimaryButton}`}
+                      onClick={closeExportModal}
+                    >
+                      <DownloadIcon className={styles.buttonIcon} />
+                      <span>{selectedExportLabel}</span>
+                    </a>
+                  ) : (
+                    <button
+                      type="button"
+                      className={`${styles.primaryAction} ${styles.exportPrimaryButton}`}
+                      disabled
+                    >
+                      <DownloadIcon className={styles.buttonIcon} />
+                      <span>{selectedExportLabel}</span>
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
           </section>
         </div>
       ) : null}

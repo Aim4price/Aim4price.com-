@@ -108,7 +108,7 @@
 .topActions {
   width: 100%;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(34rem, 39vw, 44rem);
+  grid-template-columns: minmax(0, 1fr) clamp(22rem, 28vw, 29rem);
   align-items: center;
   justify-content: stretch;
   gap: clamp(0.7rem, 1vw, 0.95rem);
@@ -174,7 +174,7 @@
 .topActionButtons {
   width: 100%;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: stretch;
   justify-content: end;
   gap: clamp(0.62rem, 0.9vw, 0.82rem);
@@ -262,27 +262,26 @@
   z-index: 24;
 }
 
-.filterControl,
-.exportScopeTrigger {
+.filterControl {
   appearance: none;
   width: 100%;
   min-height: clamp(3.25rem, 3.8vw, 3.72rem);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.48rem;
+  gap: 0.52rem;
   padding: 0 clamp(1rem, 1.55vw, 1.32rem);
-  border: 1.5px solid #b9d9c9;
+  border: 1px solid #bfe2ce;
   border-radius: clamp(0.95rem, 1.35vw, 1.14rem);
-  background: linear-gradient(180deg, #ffffff 0%, #edf7f1 100%);
-  color: #174438;
+  background: linear-gradient(180deg, #fbfffd 0%, #f0fbf5 100%);
+  color: #0f5840;
   font: inherit;
   font-size: clamp(0.96rem, 1.08vw, 1.04rem);
-  font-weight: 800;
+  font-weight: 860;
   line-height: 1;
   letter-spacing: -0.015em;
   box-shadow:
-    0 10px 22px rgba(13, 90, 66, 0.08),
+    0 10px 22px rgba(15, 98, 72, 0.07),
     inset 0 1px 0 rgba(255, 255, 255, 0.98);
   cursor: pointer;
   white-space: nowrap;
@@ -296,20 +295,17 @@
 
 .filterControl:hover,
 .filterControl:focus-visible,
-.filterControlOpen,
-.exportScopeTrigger:hover,
-.exportScopeTrigger:focus-visible,
-.exportScopeTriggerOpen {
-  border-color: #8fc3a8;
-  background: linear-gradient(180deg, #ffffff 0%, #dff1e7 100%);
+.filterControlOpen {
+  border-color: #9fd1b4;
+  background: linear-gradient(180deg, #ffffff 0%, #e4f5ec 100%);
   box-shadow:
-    0 14px 28px rgba(22, 83, 64, 0.105),
+    0 14px 28px rgba(15, 98, 72, 0.105),
+    0 0 0 4px rgba(25, 116, 84, 0.07),
     inset 0 1px 0 rgba(255, 255, 255, 1);
   outline: none;
 }
 
-.filterControl:hover,
-.exportScopeTrigger:hover {
+.filterControl:hover {
   transform: translateY(-1px);
 }
 
@@ -323,24 +319,23 @@
 }
 
 .filterChevron {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  margin-top: -0.1rem;
-  color: #2f6856;
-  font-size: 0.98rem;
-  font-weight: 850;
-  line-height: 1;
+  width: 1.08rem;
+  height: 1.08rem;
+  flex: 0 0 auto;
+  color: #19352d;
+  transition: transform 160ms ease;
 }
 
 .filterMenu {
   position: absolute;
   top: calc(100% + 0.52rem);
   left: 0;
+  right: auto;
   z-index: 90;
   width: min(22rem, calc(100vw - 2rem));
   max-height: min(21rem, 52vh);
   overflow: auto;
+  overscroll-behavior: contain;
   display: grid;
   gap: 0.32rem;
   padding: 0.45rem;
@@ -464,7 +459,6 @@
     inset 0 1px 0 rgba(255, 255, 255, 1);
 }
 
-.topRefreshButton,
 .selectedActionMap {
   color: var(--action-copper-soft-text);
   background: linear-gradient(
@@ -478,7 +472,6 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.98);
 }
 
-.topRefreshButton:hover:not(:disabled),
 .selectedActionMap:hover {
   color: var(--action-copper-soft-text);
   background: linear-gradient(
@@ -1357,30 +1350,27 @@
   display: grid;
   place-items: center;
   padding: clamp(1rem, 3vw, 2rem);
-  background: rgba(10, 27, 24, 0.38);
-  backdrop-filter: blur(6px);
+  background: rgba(9, 30, 24, 0.44);
+  backdrop-filter: blur(10px);
+  overflow: hidden;
 }
 
 .exportModal {
-  width: min(100%, 35rem);
-  max-height: min(86vh, 42rem);
+  width: min(100%, 58rem);
+  max-height: min(88vh, calc(100dvh - 2rem));
   overflow: visible;
   display: grid;
-  gap: 1rem;
-  padding: clamp(1.08rem, 2vw, 1.36rem);
-  border: 1px solid rgba(203, 221, 212, 0.96);
-  border-radius: 1.35rem;
+  gap: 1.14rem;
+  padding: clamp(1.5rem, 2.35vw, 1.95rem);
+  border: 1px solid rgba(216, 226, 236, 0.98);
+  border-radius: 2rem;
   background:
-    radial-gradient(
-      circle at top left,
-      rgba(25, 116, 84, 0.045),
-      transparent 38%
-    ),
-    linear-gradient(180deg, #ffffff 0%, #fbfdfc 100%);
+    radial-gradient(circle at 0% 0%, rgba(25, 116, 84, 0.06), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #f9fbfc 100%);
   box-shadow:
-    0 26px 70px rgba(9, 32, 27, 0.28),
-    0 8px 22px rgba(9, 32, 27, 0.16),
-    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    0 34px 86px rgba(11, 21, 34, 0.28),
+    0 14px 30px rgba(11, 21, 34, 0.13),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
   font-family:
     var(--font-heading, "Montserrat"), var(--font-body, "Inter"), sans-serif;
 }
@@ -1388,8 +1378,10 @@
 .exportModalHeader {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 1rem;
+  gap: 1.15rem;
   align-items: start;
+  padding-bottom: 1.18rem;
+  border-bottom: 1px solid rgba(216, 226, 236, 0.9);
 }
 
 .exportModalHeader h2 {
@@ -1397,10 +1389,10 @@
   color: #0f3329;
   font-family:
     var(--font-heading, "Montserrat"), var(--font-body, "Inter"), sans-serif;
-  font-size: clamp(1.32rem, 2.4vw, 1.7rem);
-  line-height: 1.05;
+  font-size: clamp(1.86rem, 2.65vw, 2.38rem);
+  line-height: 1.03;
   font-weight: 760;
-  letter-spacing: -0.044em;
+  letter-spacing: -0.052em;
 }
 
 .exportModalHeader p {
@@ -1416,35 +1408,209 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.45rem;
-  min-width: 2.45rem;
-  min-height: 2.45rem;
+  width: 3.15rem;
+  min-width: 3.15rem;
+  min-height: 3.15rem;
   padding: 0;
-  border: 1px solid #d8e8df;
+  border: 1px solid #d8e5f0;
   border-radius: 999px;
-  background: #edf6f1;
+  background: linear-gradient(180deg, #f7fbff 0%, #eef5fb 100%);
   color: #14372e;
   cursor: pointer;
+  box-shadow:
+    0 10px 22px rgba(30, 56, 66, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease;
+}
+
+.modalCloseButton:hover,
+.modalCloseButton:focus-visible {
+  border-color: #bed0df;
+  background: linear-gradient(180deg, #ffffff 0%, #e9f2f9 100%);
+  box-shadow:
+    0 14px 26px rgba(30, 56, 66, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.exportChoices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.exportOption {
+  appearance: none;
+  min-height: 5.9rem;
+  display: grid;
+  grid-template-columns: 3.8rem minmax(0, 1fr);
+  align-items: center;
+  gap: 1rem;
+  padding: 1.12rem 1.18rem;
+  border: 1px solid rgba(216, 226, 236, 0.98);
+  border-radius: 1.24rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f5f8fb 100%);
+  color: #1d3b62;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  box-shadow:
+    0 14px 28px rgba(16, 36, 40, 0.055),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.exportOption:hover,
+.exportOption:focus-visible {
+  border-color: rgba(190, 224, 206, 0.98);
+  background:
+    radial-gradient(
+      circle at top left,
+      rgba(25, 116, 84, 0.07),
+      transparent 44%
+    ),
+    linear-gradient(180deg, #ffffff 0%, #edf8f2 100%);
+  box-shadow:
+    0 18px 34px rgba(16, 36, 40, 0.085),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.exportOptionActive {
+  border-color: rgba(190, 224, 206, 0.98);
+  background:
+    radial-gradient(
+      circle at top left,
+      rgba(25, 116, 84, 0.08),
+      transparent 42%
+    ),
+    linear-gradient(180deg, #ffffff 0%, #edf8f2 100%);
+}
+
+.exportGraphic {
+  width: 3.8rem;
+  height: 3.8rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(216, 226, 236, 0.98);
+  border-radius: 1rem;
+  background: #ffffff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.exportGraphicImage {
+  width: 2.38rem;
+  height: 2.38rem;
+  object-fit: contain;
+}
+
+.exportOptionTitleBlock {
+  min-width: 0;
+  display: grid;
+  gap: 0.3rem;
+  align-content: center;
+}
+
+.exportOptionTitleBlock strong {
+  color: #10352b;
+  font-size: clamp(1rem, 1.3vw, 1.08rem);
+  font-weight: 850;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+}
+
+.exportOptionTitleBlock small {
+  color: #627386;
+  font-size: 0.93rem;
+  font-weight: 620;
+  line-height: 1.45;
+}
+
+.exportScopeBox {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.85rem;
+  padding: 1rem;
+  border: 1px solid rgba(216, 226, 236, 0.98);
+  border-radius: 1.25rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f6fafb 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.94);
 }
 
 .exportScopeField {
+  position: relative;
+  min-width: 0;
   display: grid;
-  gap: 0.45rem;
+  gap: 0.38rem;
 }
 
+.exportScopeFieldOpen {
+  z-index: 12;
+}
+
+.exportScopeLabel,
 .exportScopeField > span {
-  color: #51645f;
-  font-size: 0.84rem;
-  font-weight: 680;
+  color: #253b34;
+  font-size: 0.82rem;
+  font-weight: 850;
+  line-height: 1.2;
 }
 
 .exportScopeTrigger {
-  min-height: 3.28rem;
+  appearance: none;
+  width: 100%;
+  min-height: 3.35rem;
+  display: inline-flex;
+  align-items: center;
   justify-content: space-between;
+  gap: 0.75rem;
   padding: 0 1rem;
-  font-size: 0.96rem;
-  font-weight: 700;
+  border: 1px solid rgba(216, 226, 236, 0.98);
+  border-radius: 1rem;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(25, 116, 84, 0.03), transparent 46%),
+    linear-gradient(180deg, #ffffff 0%, #f7faf9 100%);
+  color: #19352d;
+  font: inherit;
+  font-size: 0.98rem;
+  font-weight: 720;
+  line-height: 1;
   letter-spacing: -0.015em;
+  box-shadow:
+    0 8px 18px rgba(30, 56, 66, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.exportScopeTrigger:hover,
+.exportScopeTrigger:focus-visible,
+.exportScopeTriggerOpen {
+  border-color: rgba(159, 209, 180, 0.98);
+  background: linear-gradient(180deg, #ffffff 0%, #eef8f3 100%);
+  box-shadow:
+    0 12px 24px rgba(15, 98, 72, 0.08),
+    0 0 0 4px rgba(25, 116, 84, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+  outline: none;
+}
+
+.exportScopeTriggerOpen .filterChevron {
+  transform: rotate(180deg);
 }
 
 .exportScopeTrigger > span:first-child {
@@ -1455,69 +1621,33 @@
 }
 
 .exportScopeMenu {
+  left: 0;
+  right: 0;
   width: 100%;
   max-height: min(16rem, 42vh);
 }
 
 .exportScopeSummary {
   display: grid;
-  gap: 0.24rem;
-  padding: 0.85rem 0.95rem;
+  gap: 0.28rem;
+  padding: 0.94rem 1rem;
   border: 1px solid #d8e8df;
-  border-radius: 0.95rem;
-  background: #f5faf7;
+  border-radius: 1rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f5faf7 100%);
 }
 
 .exportScopeSummary strong {
   color: #17362c;
-  font-size: 0.95rem;
-  font-weight: 700;
+  font-size: 0.98rem;
+  font-weight: 800;
+  letter-spacing: -0.015em;
 }
 
 .exportScopeSummary span {
   color: #60746d;
-  font-size: 0.84rem;
-  line-height: 1.35;
-  font-weight: 500;
-}
-
-.exportFormatGrid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem;
-}
-
-.exportFormatButton {
-  appearance: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.52rem;
-  min-height: 3.25rem;
-  padding: 0 1rem;
-  border: 1px solid var(--action-primary-border);
-  border-radius: 0.95rem;
-  background: linear-gradient(
-    180deg,
-    var(--action-primary) 0%,
-    var(--action-primary-deep) 100%
-  );
-  color: #ffffff;
-  font: inherit;
-  font-size: 0.96rem;
-  font-weight: 830;
-  letter-spacing: -0.018em;
-  text-decoration: none;
-  cursor: pointer;
-  box-shadow: 0 14px 26px rgba(25, 116, 84, 0.18);
-}
-
-.exportFormatButton:hover:not(:disabled) {
-  background: linear-gradient(
-    180deg,
-    #218462 0%,
-    var(--action-primary-hover) 100%
-  );
+  font-size: 0.86rem;
+  line-height: 1.42;
+  font-weight: 580;
 }
 
 .exportEmptyNote {
@@ -1525,7 +1655,55 @@
   color: #7a3f0c;
   font-size: 0.86rem;
   line-height: 1.42;
-  font-weight: 600;
+  font-weight: 650;
+}
+
+.exportActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.8rem;
+  margin-top: 0.12rem;
+}
+
+.exportPrimaryButton,
+.exportPrimaryButton:visited,
+.exportSecondaryButton {
+  min-height: 3.35rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.52rem;
+  padding: 0 1.28rem;
+  border-radius: 1rem;
+  font-size: 1rem;
+  font-weight: 850;
+  line-height: 1;
+  letter-spacing: -0.018em;
+  text-decoration: none;
+}
+
+.exportPrimaryButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+  transform: none;
+  box-shadow: none;
+}
+
+.exportSecondaryButton {
+  border-color: rgba(46, 66, 61, 0.32);
+  background: linear-gradient(180deg, #ffffff 0%, #f7faf9 100%);
+  color: #17362c;
+  box-shadow:
+    0 9px 18px rgba(16, 36, 40, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.exportSecondaryButton:hover,
+.exportSecondaryButton:focus-visible {
+  border-color: rgba(46, 66, 61, 0.48);
+  background: linear-gradient(180deg, #ffffff 0%, #eef4f2 100%);
+  outline: none;
 }
 
 @media (max-width: 1120px) {
@@ -1576,6 +1754,31 @@
 @media (max-width: 860px) {
   .shell {
     width: min(calc(100% - 1rem), 1360px);
+  }
+
+  .exportModal {
+    width: min(100%, calc(100vw - 1rem));
+    max-height: min(88vh, calc(100dvh - 1rem));
+    overflow: auto;
+    padding: clamp(1rem, 4vw, 1.28rem);
+    border-radius: 1.4rem;
+  }
+
+  .exportModalHeader {
+    padding-bottom: 1rem;
+  }
+
+  .exportChoices {
+    grid-template-columns: 1fr;
+  }
+
+  .exportActions {
+    align-items: stretch;
+    flex-direction: column-reverse;
+  }
+
+  .exportActions > * {
+    width: 100%;
   }
 
   .pageTitleBlock h1 {
@@ -1707,7 +1910,7 @@
     min-height: 2.5rem;
   }
 
-  .exportFormatGrid {
+  .exportChoices {
     grid-template-columns: 1fr;
   }
 }
@@ -1795,7 +1998,6 @@
   .secondaryAction,
   .filterControl,
   .topActionButton,
-  .topRefreshButton,
   .topReportButton,
   .selectedActionButton,
   .assetCardButton,
