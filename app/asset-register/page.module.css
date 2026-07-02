@@ -27684,3 +27684,501 @@ button.documentOpenLink {
     bottom: 0.7rem !important;
   }
 }
+
+/* Asset Register register-health summary modal refinement */
+.summaryModalOverlay {
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+  padding: clamp(0.75rem, 2vw, 1.5rem) !important;
+}
+
+.summaryModal {
+  width: min(100%, 74rem) !important;
+  max-height: min(92dvh, 58rem) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0 !important;
+  overflow: hidden !important;
+  padding: clamp(1.05rem, 2vw, 1.55rem) !important;
+  border-radius: 2rem !important;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.99), rgba(248, 252, 250, 0.98)) !important;
+}
+
+.summaryModalHeader {
+  flex: 0 0 auto !important;
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  gap: 1rem !important;
+  margin: 0 !important;
+  padding: 0 0 1rem !important;
+  border-bottom: 1px solid rgba(126, 151, 169, 0.22) !important;
+}
+
+.summaryModalHeader .modalHeaderText {
+  min-width: 0 !important;
+}
+
+.summaryModalEyebrow {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  margin-bottom: 0.42rem;
+  padding: 0.26rem 0.62rem;
+  border: 1px solid rgba(15, 106, 70, 0.15);
+  border-radius: 999px;
+  background: rgba(15, 106, 70, 0.07);
+  color: #0f6a46;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.summaryModalHeader h3 {
+  margin: 0 !important;
+  color: #10382f !important;
+  font-size: clamp(2rem, 3.4vw, 3.2rem) !important;
+  letter-spacing: -0.055em !important;
+  line-height: 0.95 !important;
+}
+
+.summaryModalHeader p {
+  max-width: 68rem !important;
+  margin: 0.62rem 0 0 !important;
+  color: #5d6e83 !important;
+  font-size: clamp(0.93rem, 1.15vw, 1.06rem) !important;
+  font-weight: 650 !important;
+  line-height: 1.45 !important;
+}
+
+.summaryHeaderActions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 0.55rem;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+}
+
+.summaryDownloadButton {
+  min-height: 2.55rem !important;
+  padding: 0.64rem 0.92rem !important;
+  border-radius: 999px !important;
+  font-size: 0.8rem !important;
+  font-weight: 800 !important;
+  white-space: nowrap !important;
+}
+
+.summaryModalBody {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  display: grid !important;
+  gap: clamp(0.9rem, 1.35vw, 1.15rem) !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  padding: 1rem 0.18rem 0.25rem 0.05rem !important;
+  scrollbar-gutter: stable !important;
+}
+
+.summaryHeroGrid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.summaryHeroCard,
+.summaryPanel,
+.summaryMetricCard,
+.summaryReplacementPrimaryMetric,
+.summaryStatusCard {
+  min-width: 0;
+  border: 1px solid rgba(152, 184, 202, 0.35);
+  border-radius: 1.2rem;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 18px 46px rgba(16, 56, 47, 0.06);
+}
+
+.summaryHeroCard {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.95rem;
+  background: linear-gradient(145deg, rgba(246, 251, 249, 0.98), rgba(255, 255, 255, 0.98));
+}
+
+.summaryHeroCard span,
+.summaryMetricCard span,
+.summaryReplacementPrimaryMetric span {
+  color: #687b90;
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.summaryHeroCard strong {
+  color: #10382f;
+  font-size: clamp(1.28rem, 2vw, 2rem);
+  font-weight: 900;
+  letter-spacing: -0.055em;
+  line-height: 1.02;
+  overflow-wrap: anywhere;
+}
+
+.summaryHeroCard small,
+.summaryMetricCard small {
+  color: #65768a;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.summaryPanel {
+  display: grid;
+  gap: 0.9rem;
+  padding: clamp(0.95rem, 1.4vw, 1.2rem) !important;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.summarySectionHeader {
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  gap: 0.75rem !important;
+  margin: 0 !important;
+}
+
+.summarySectionHeader span {
+  color: #10382f !important;
+  font-size: 0.82rem !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+}
+
+.summarySectionHeader p {
+  max-width: 58rem;
+  margin: 0.25rem 0 0 !important;
+  color: #5f7085 !important;
+  font-size: 0.86rem !important;
+  font-weight: 650 !important;
+  line-height: 1.4 !important;
+}
+
+.summaryValueTable {
+  overflow: hidden !important;
+  border: 1px solid rgba(152, 184, 202, 0.34) !important;
+  border-radius: 1.05rem !important;
+  background: #ffffff !important;
+}
+
+.summaryValueTableHeader,
+.summaryValueTableRow {
+  display: grid !important;
+  grid-template-columns: minmax(10rem, 1.55fr) minmax(4rem, 0.45fr) minmax(8rem, 0.85fr) minmax(8rem, 0.85fr) !important;
+  align-items: center !important;
+  gap: 0.75rem !important;
+  padding: 0.72rem 0.9rem !important;
+}
+
+.summaryValueTableHeader {
+  background: #f3f8fb !important;
+}
+
+.summaryValueTableHeader span {
+  color: #687b90 !important;
+  font-size: 0.72rem !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+}
+
+.summaryValueTableRows {
+  display: grid !important;
+}
+
+.summaryValueTableRow {
+  min-height: 0 !important;
+  border-top: 1px solid rgba(176, 196, 209, 0.32) !important;
+}
+
+.summaryValueTableRow span {
+  color: #5d6e83 !important;
+  font-size: 0.84rem !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.05em !important;
+  line-height: 1.25 !important;
+  text-transform: uppercase !important;
+}
+
+.summaryValueTableRow strong,
+.summaryValueTableRow small {
+  color: #10382f !important;
+  font-size: clamp(0.98rem, 1.35vw, 1.15rem) !important;
+  font-weight: 900 !important;
+  line-height: 1.2 !important;
+  overflow-wrap: anywhere !important;
+}
+
+.summaryValueTableRow small {
+  color: #5d6e83 !important;
+}
+
+.summaryReplacementCompactGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.summaryReplacementPrimaryMetric {
+  display: grid;
+  gap: 0.45rem;
+  padding: 1rem;
+  background: linear-gradient(145deg, rgba(228, 248, 239, 0.85), rgba(255, 255, 255, 0.95));
+  border-color: rgba(15, 106, 70, 0.22);
+}
+
+.summaryReplacementPrimaryMetric strong {
+  color: #10382f;
+  font-size: clamp(1.45rem, 2.5vw, 2.45rem);
+  font-weight: 900;
+  letter-spacing: -0.06em;
+  line-height: 1.02;
+  overflow-wrap: anywhere;
+}
+
+.summaryMetricGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.summaryMetricCard {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.9rem;
+}
+
+.summaryMetricCard strong {
+  color: #10382f;
+  font-size: clamp(1.15rem, 1.8vw, 1.58rem);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+
+.summaryStatusGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.summaryStatusCard {
+  display: grid;
+  gap: 0.72rem;
+  padding: 0.95rem;
+}
+
+.summaryStatusCard h4 {
+  margin: 0;
+  color: #10382f;
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.summaryStatusRows {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.summaryStatusRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.4rem 0.7rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid rgba(176, 196, 209, 0.28);
+  border-radius: 0.85rem;
+  background: #f8fbfc;
+}
+
+.summaryStatusRow span {
+  color: #5d6e83;
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.summaryStatusRow strong {
+  color: #10382f;
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.summaryStatusRow small {
+  grid-column: 1 / -1;
+  justify-self: end;
+  color: #65768a;
+  font-size: 0.74rem;
+  font-weight: 750;
+}
+
+.summaryAttentionList {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.summaryAttentionRow {
+  display: grid;
+  grid-template-columns: minmax(12rem, 0.85fr) minmax(0, 1.15fr);
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid rgba(176, 196, 209, 0.32);
+  border-radius: 1rem;
+  background: #fbfdfd;
+}
+
+.summaryAttentionAsset {
+  min-width: 0;
+  display: grid;
+  gap: 0.24rem;
+}
+
+.summaryAttentionAsset strong {
+  color: #10382f;
+  font-size: 0.92rem;
+  font-weight: 900;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.summaryAttentionAsset span {
+  color: #65768a;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.summaryIssueBadgeRow {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.summaryIssueBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.7rem;
+  padding: 0.24rem 0.55rem;
+  border: 1px solid rgba(163, 39, 27, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 247, 237, 0.95);
+  color: #8a3b12;
+  font-size: 0.72rem;
+  font-weight: 850;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.summaryAttentionMore {
+  margin: 0.12rem 0 0;
+  color: #65768a;
+  font-size: 0.82rem;
+  font-weight: 750;
+  line-height: 1.35;
+}
+
+.summaryEmptyState {
+  padding: 0.95rem;
+  border: 1px dashed rgba(15, 106, 70, 0.24);
+  border-radius: 1rem;
+  background: rgba(240, 253, 244, 0.64);
+  color: #0f6a46;
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+@media (max-width: 1100px) {
+  .summaryHeroGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .summaryReplacementCompactGrid,
+  .summaryMetricGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .summaryStatusGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .summaryModalOverlay {
+    padding: 0.65rem !important;
+  }
+
+  .summaryModal {
+    max-height: calc(100dvh - 1.3rem) !important;
+    padding: 0.9rem !important;
+    border-radius: 1.3rem !important;
+  }
+
+  .summaryModalHeader {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+  }
+
+  .summaryHeaderActions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .summaryDownloadButton {
+    flex: 1 1 10rem;
+    justify-content: center !important;
+  }
+
+  .summaryModalHeader .modalCloseButton {
+    position: absolute !important;
+    top: 0.75rem !important;
+    right: 0.75rem !important;
+  }
+
+  .summaryHeroGrid,
+  .summaryReplacementCompactGrid,
+  .summaryMetricGrid,
+  .summaryStatusGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .summaryValueTableHeader {
+    display: none !important;
+  }
+
+  .summaryValueTableRow {
+    grid-template-columns: 1fr !important;
+    gap: 0.35rem !important;
+    padding: 0.85rem !important;
+  }
+
+  .summaryAttentionRow {
+    grid-template-columns: 1fr;
+  }
+
+  .summaryIssueBadgeRow {
+    justify-content: flex-start;
+  }
+}
+
+.summaryReplacementCompactPanel {
+  border-color: rgba(15, 106, 70, 0.2) !important;
+  background: linear-gradient(145deg, rgba(248, 252, 250, 0.96), rgba(255, 255, 255, 0.94)) !important;
+}

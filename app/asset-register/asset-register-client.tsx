@@ -350,6 +350,54 @@ type ReplacementPriceRevaluePrompt = {
   newReplacementPriceExVat: number;
 };
 
+type RegisterSummaryMetric = {
+  label: string;
+  value: string;
+  note?: string;
+};
+
+type RegisterSummaryCurrentValueRow = {
+  label: string;
+  count: number;
+  valueExVat: number;
+  valueInclVat: number;
+};
+
+type RegisterSummaryStatusBreakdown = Record<AssetStatusChoice, number>;
+
+type RegisterSummaryStatusSection = {
+  title: string;
+  rows: RegisterSummaryMetric[];
+};
+
+type RegisterSummaryAttentionItem = {
+  id: string;
+  title: string;
+  valueExVat: number;
+  issues: string[];
+};
+
+type RegisterHealthSummary = {
+  totalAssets: number;
+  assetsWithPhotos: number;
+  totalPhotos: number;
+  assetsWithDocuments: number;
+  totalDocuments: number;
+  mappedAssets: number;
+  unmappedAssets: number;
+  replacementPricedAssets: number;
+  missingReplacementPriceAssets: number;
+  completenessScore: number;
+  insuredValueSavedAssets: number;
+  insuredValueSavedTotalExVat: number;
+  insuredButMissingValueAssets: number;
+  insuranceLicenseCheckAssets: number;
+  insuranceBreakdown: RegisterSummaryStatusBreakdown;
+  financeBreakdown: RegisterSummaryStatusBreakdown;
+  licenseBreakdown: RegisterSummaryStatusBreakdown;
+  needsAttentionItems: RegisterSummaryAttentionItem[];
+};
+
 type AssetRegisterSummary = {
   id: string;
   userId: string;
@@ -3491,6 +3539,171 @@ function buildExportDetail(asset: RegisterAsset): string {
   return parts.join(' • ');
 }
 
+function createRegisterSummaryStatusBreakdown(): RegisterSummaryStatusBreakdown {
+  return {
+    yes: 0,
+    no: 0,
+    unknown: 0,
+    not_applicable: 0,
+  };
+}
+
+function incrementRegisterSummaryStatusBreakdown(
+  breakdown: RegisterSummaryStatusBreakdown,
+  status: AssetStatusChoice,
+): void {
+  breakdown[status] += 1;
+}
+
+function hasAssetMapCoordinates(asset: Pick<RegisterAsset, 'lastKnownLat' | 'lastKnownLng'>): boolean {
+  const latitude = Number(asset.lastKnownLat);
+  const longitude = Number(asset.lastKnownLng);
+
+  return Number.isFinite(latitude) && Number.isFinite(longitude);
+}
+
+function buildRegisterHealthSummary(assets: RegisterAsset[]): RegisterHealthSummary {
+  const insuranceBreakdown = createRegisterSummaryStatusBreakdown();
+  const financeBreakdown = createRegisterSummaryStatusBreakdown();
+  const licenseBreakdown = createRegisterSummaryStatusBreakdown();
+
+  let assetsWithPhotos = 0;
+  let totalPhotos = 0;
+  let assetsWithDocuments = 0;
+  let totalDocuments = 0;
+  let mappedAssets = 0;
+  let replacementPricedAssets = 0;
+  let insuredValueSavedAssets = 0;
+  let insuredValueSavedTotalExVat = 0;
+  let insuredButMissingValueAssets = 0;
+  let insuranceLicenseCheckAssets = 0;
+  let completenessPoints = 0;
+
+  const needsAttentionItems: RegisterSummaryAttentionItem[] = [];
+
+  assets.forEach((asset) => {
+    const photoCount = normalizePhotos(asset.photos).length;
+    const documentCount = assetDocuments(asset).length;
+    const isMapped = hasAssetMapCoordinates(asset);
+    const replacementPrice = readAssetReplacementPriceExVat(asset);
+    const insuredValue = readAssetInsuredValueExVat(asset);
+    const financeStatus = readFinanceStatusChoice(asset);
+    const insuranceStatus = readInsuranceStatusChoice(asset);
+    const licenseStatus = readLicenseStatusChoice(asset);
+    const hasPhotos = photoCount > 0;
+    const hasDocuments = documentCount > 0;
+    const hasReplacementPrice = replacementPrice !== null && replacementPrice > 0;
+    const insuranceStatusKnown = insuranceStatus !== 'unknown';
+    const licenseStatusKnown = asset.kind === 'property' || licenseStatus !== 'unknown';
+    const issues: string[] = [];
+
+    incrementRegisterSummaryStatusBreakdown(financeBreakdown, financeStatus);
+    incrementRegisterSummaryStatusBreakdown(insuranceBreakdown, insuranceStatus);
+    incrementRegisterSummaryStatusBreakdown(licenseBreakdown, licenseStatus);
+
+    if (hasPhotos) {
+      assetsWithPhotos += 1;
+      completenessPoints += 1;
+    } else {
+      issues.push('No photo');
+    }
+
+    totalPhotos += photoCount;
+
+    if (hasDocuments) {
+      assetsWithDocuments += 1;
+      completenessPoints += 1;
+    } else {
+      issues.push('No files');
+    }
+
+    totalDocuments += documentCount;
+
+    if (isMapped) {
+      mappedAssets += 1;
+      completenessPoints += 1;
+    } else {
+      issues.push('Not mapped');
+    }
+
+    if (insuranceStatusKnown) {
+      completenessPoints += 1;
+    } else {
+      issues.push('Insurance check');
+    }
+
+    if (insuranceStatus === 'yes' && insuredValue === null) {
+      insuredButMissingValueAssets += 1;
+      issues.push('Missing insured value');
+    }
+
+    if (insuredValue !== null) {
+      insuredValueSavedAssets += 1;
+      insuredValueSavedTotalExVat += insuredValue;
+    }
+
+    if (licenseStatusKnown) {
+      completenessPoints += 1;
+    } else {
+      issues.push('License check');
+    }
+
+    if (hasReplacementPrice) {
+      replacementPricedAssets += 1;
+    } else {
+      issues.push('No replacement price');
+    }
+
+    if (
+      insuranceStatus === 'unknown' ||
+      (insuranceStatus === 'yes' && insuredValue === null) ||
+      (asset.kind !== 'property' && licenseStatus === 'unknown')
+    ) {
+      insuranceLicenseCheckAssets += 1;
+    }
+
+    if (issues.length) {
+      needsAttentionItems.push({
+        id: asset.id,
+        title: asset.title || assetKindLabel(asset),
+        valueExVat: Math.round(Number(asset.value || 0)),
+        issues,
+      });
+    }
+  });
+
+  const maxCompletenessPoints = assets.length * 5;
+
+  return {
+    totalAssets: assets.length,
+    assetsWithPhotos,
+    totalPhotos,
+    assetsWithDocuments,
+    totalDocuments,
+    mappedAssets,
+    unmappedAssets: Math.max(0, assets.length - mappedAssets),
+    replacementPricedAssets,
+    missingReplacementPriceAssets: Math.max(0, assets.length - replacementPricedAssets),
+    completenessScore: maxCompletenessPoints > 0 ? Math.round((completenessPoints / maxCompletenessPoints) * 100) : 0,
+    insuredValueSavedAssets,
+    insuredValueSavedTotalExVat,
+    insuredButMissingValueAssets,
+    insuranceLicenseCheckAssets,
+    insuranceBreakdown,
+    financeBreakdown,
+    licenseBreakdown,
+    needsAttentionItems,
+  };
+}
+
+function countWithVerb(count: number, singularVerb = 'has', pluralVerb = 'have'): string {
+  return `${count.toLocaleString('en-ZA')} ${count === 1 ? singularVerb : pluralVerb}`;
+}
+
+function assetCountLabel(count: number): string {
+  return `${count.toLocaleString('en-ZA')} ${count === 1 ? 'asset' : 'assets'}`;
+}
+
 function buildOwnerName(profile: AccountProfile | null): string {
   if (!profile) return 'Aim4price account';
   return profile.businessName || profile.name || 'Aim4price account';
@@ -3921,6 +4134,20 @@ function buildAssetRegisterApiUrl(registerId?: string | null): string {
 
 function buildAssetRegisterExportUrl(registerId?: string | null): string {
   const params = new URLSearchParams({ format: 'xlsx' });
+  const cleanedRegisterId = String(registerId ?? '').trim();
+
+  if (cleanedRegisterId) {
+    params.set('registerId', cleanedRegisterId);
+  }
+
+  return `/api/asset-register/export?${params.toString()}`;
+}
+
+function buildAssetRegisterSummaryExportUrl(registerId: string | null | undefined, format: ExportFormat): string {
+  const params = new URLSearchParams({
+    format,
+    reportKind: 'summary',
+  });
   const cleanedRegisterId = String(registerId ?? '').trim();
 
   if (cleanedRegisterId) {
@@ -5394,6 +5621,107 @@ export default function AssetRegisterClient() {
       { count: 0, value: 0 },
     );
   }, [assets]);
+
+  const registerHealthSummary = useMemo(() => buildRegisterHealthSummary(assets), [assets]);
+
+  const summaryPictureSentence = useMemo(() => {
+    return `This register currently holds ${assetCountLabel(assets.length)} worth ${money(totalValue)} excl. VAT. ${countWithVerb(
+      registerHealthSummary.assetsWithPhotos,
+    )} photos, ${countWithVerb(registerHealthSummary.mappedAssets, 'is', 'are')} mapped, ${countWithVerb(
+      registerHealthSummary.assetsWithDocuments,
+    )} files attached, and ${countWithVerb(registerHealthSummary.insuranceLicenseCheckAssets, 'needs', 'need')} insurance or license checks.`;
+  }, [assets.length, registerHealthSummary, totalValue]);
+
+  const summaryHeroMetrics = useMemo<RegisterSummaryMetric[]>(
+    () => [
+      { label: 'Total assets', value: assets.length.toLocaleString('en-ZA'), note: 'Saved in this register' },
+      { label: 'Current value', value: money(totalValue), note: 'Excl. VAT' },
+      { label: 'Replacement value', value: money(totalReplacementValue), note: `${registerHealthSummary.replacementPricedAssets.toLocaleString('en-ZA')} priced` },
+      { label: 'Insured value', value: money(registerHealthSummary.insuredValueSavedTotalExVat), note: 'Excl. VAT saved' },
+      {
+        label: 'Completeness',
+        value: `${registerHealthSummary.completenessScore}%`,
+        note: assets.length ? `${countWithVerb(registerHealthSummary.needsAttentionItems.length, 'needs', 'need')} attention` : 'Add assets to begin',
+      },
+    ],
+    [assets.length, registerHealthSummary, totalReplacementValue, totalValue],
+  );
+
+  const summaryCurrentValueRows = useMemo<RegisterSummaryCurrentValueRow[]>(
+    () => [
+      { label: 'Total assets', count: assets.length, valueExVat: totalValue, valueInclVat: totalValueInclVat },
+      { label: 'Aim4price assets', count: aim4priceValuedEquipmentCount, valueExVat: aim4priceValuedEquipmentValue, valueInclVat: Math.round(aim4priceValuedEquipmentValue * 1.15) },
+      { label: 'Manual assets', count: manualAssetStats.count, valueExVat: manualAssetStats.value, valueInclVat: Math.round(manualAssetStats.value * 1.15) },
+      { label: 'Assets financed', count: financedAssetStats.count, valueExVat: financedAssetStats.value, valueInclVat: Math.round(financedAssetStats.value * 1.15) },
+      { label: 'Assets insured', count: insuredAssetStats.count, valueExVat: insuredAssetStats.value, valueInclVat: Math.round(insuredAssetStats.value * 1.15) },
+      { label: 'Assets licensed', count: licensedAssetStats.count, valueExVat: licensedAssetStats.value, valueInclVat: Math.round(licensedAssetStats.value * 1.15) },
+    ],
+    [
+      aim4priceValuedEquipmentCount,
+      aim4priceValuedEquipmentValue,
+      assets.length,
+      financedAssetStats,
+      insuredAssetStats,
+      licensedAssetStats,
+      manualAssetStats,
+      totalValue,
+      totalValueInclVat,
+    ],
+  );
+
+  const summaryCompletenessMetrics = useMemo<RegisterSummaryMetric[]>(
+    () => [
+      { label: 'Assets with photos', value: registerHealthSummary.assetsWithPhotos.toLocaleString('en-ZA'), note: `${registerHealthSummary.totalPhotos.toLocaleString('en-ZA')} photos attached` },
+      { label: 'Total photos attached', value: registerHealthSummary.totalPhotos.toLocaleString('en-ZA'), note: 'Uploaded asset photos' },
+      { label: 'Assets with files', value: registerHealthSummary.assetsWithDocuments.toLocaleString('en-ZA'), note: `${registerHealthSummary.totalDocuments.toLocaleString('en-ZA')} files/documents attached` },
+      { label: 'Total files/documents', value: registerHealthSummary.totalDocuments.toLocaleString('en-ZA'), note: 'Saved supporting files' },
+      { label: 'Assets mapped', value: registerHealthSummary.mappedAssets.toLocaleString('en-ZA'), note: 'Valid GPS coordinates saved' },
+      { label: 'Missing GPS', value: registerHealthSummary.unmappedAssets.toLocaleString('en-ZA'), note: 'No saved coordinates' },
+      { label: 'Replacement prices', value: registerHealthSummary.replacementPricedAssets.toLocaleString('en-ZA'), note: 'Assets with saved prices' },
+      { label: 'Missing replacement', value: registerHealthSummary.missingReplacementPriceAssets.toLocaleString('en-ZA'), note: 'Assets needing price capture' },
+    ],
+    [registerHealthSummary],
+  );
+
+  const summaryStatusSections = useMemo<RegisterSummaryStatusSection[]>(
+    () => [
+      {
+        title: 'Insurance',
+        rows: [
+          { label: 'Insured', value: registerHealthSummary.insuranceBreakdown.yes.toLocaleString('en-ZA') },
+          { label: 'Not insured', value: registerHealthSummary.insuranceBreakdown.no.toLocaleString('en-ZA') },
+          { label: 'Not sure / unknown', value: registerHealthSummary.insuranceBreakdown.unknown.toLocaleString('en-ZA') },
+          { label: 'Not applicable', value: registerHealthSummary.insuranceBreakdown.not_applicable.toLocaleString('en-ZA') },
+          { label: 'Insured value saved', value: registerHealthSummary.insuredValueSavedAssets.toLocaleString('en-ZA'), note: money(registerHealthSummary.insuredValueSavedTotalExVat) },
+          { label: 'Insured but missing value', value: registerHealthSummary.insuredButMissingValueAssets.toLocaleString('en-ZA') },
+        ],
+      },
+      {
+        title: 'Finance',
+        rows: [
+          { label: 'Financed', value: registerHealthSummary.financeBreakdown.yes.toLocaleString('en-ZA') },
+          { label: 'Not financed', value: registerHealthSummary.financeBreakdown.no.toLocaleString('en-ZA') },
+          { label: 'Not sure / unknown', value: registerHealthSummary.financeBreakdown.unknown.toLocaleString('en-ZA') },
+          { label: 'Not applicable', value: registerHealthSummary.financeBreakdown.not_applicable.toLocaleString('en-ZA') },
+        ],
+      },
+      {
+        title: 'License',
+        rows: [
+          { label: 'Licensed', value: registerHealthSummary.licenseBreakdown.yes.toLocaleString('en-ZA') },
+          { label: 'Not licensed', value: registerHealthSummary.licenseBreakdown.no.toLocaleString('en-ZA') },
+          { label: 'Not sure / unknown', value: registerHealthSummary.licenseBreakdown.unknown.toLocaleString('en-ZA') },
+          { label: 'Not applicable', value: registerHealthSummary.licenseBreakdown.not_applicable.toLocaleString('en-ZA') },
+        ],
+      },
+    ],
+    [registerHealthSummary],
+  );
+
+  const visibleSummaryAttentionItems = useMemo(
+    () => registerHealthSummary.needsAttentionItems.slice(0, 8),
+    [registerHealthSummary.needsAttentionItems],
+  );
 
   const quickPdfReportOptions = useMemo(() => PDF_REPORT_OPTIONS.filter((option) => option.value !== 'full'), []);
   const fullPdfReportOption = PDF_REPORT_OPTIONS[0];
@@ -8599,6 +8927,48 @@ export default function AssetRegisterClient() {
     setIsSummaryModalOpen(false);
   }
 
+  async function handleDownloadRegisterSummary(format: ExportFormat) {
+    if (isLoading || isExporting) {
+      return;
+    }
+
+    setExportFormat(format);
+    setIsExporting(true);
+
+    try {
+      const response = await fetch(buildAssetRegisterSummaryExportUrl(activeRegister?.id || activeRegisterId, format), {
+        credentials: 'include',
+        cache: 'no-store',
+      });
+
+      if (!response.ok) {
+        let errorMessage = `Failed to download the register summary ${format === 'pdf' ? 'PDF' : 'Excel'} file.`;
+
+        try {
+          const data = (await response.json()) as { error?: string };
+          errorMessage = data.error ?? errorMessage;
+        } catch {
+          // Keep the default download error message.
+        }
+
+        throw new Error(errorMessage);
+      }
+
+      const blob = await response.blob();
+      const fallbackName = `aim4price-register-summary-${new Date().toISOString().slice(0, 10)}.${format === 'pdf' ? 'pdf' : 'xlsx'}`;
+      const fileName = parseDownloadFileName(response, fallbackName);
+      downloadBlob(blob, fileName);
+      setNotice({ tone: 'success', message: `Register summary ${format === 'pdf' ? 'PDF' : 'Excel'} downloaded.` });
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : `Failed to download the register summary ${format === 'pdf' ? 'PDF' : 'Excel'} file.`,
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  }
+
   function selectAssetFilter(nextFilter: AssetFilterKey) {
     setAssetFilter(nextFilter);
   }
@@ -10412,22 +10782,55 @@ export default function AssetRegisterClient() {
           <div className={`${styles.modalCard} ${styles.summaryModal}`} role="dialog" aria-modal="true" aria-labelledby="asset-register-summary-title">
             <div className={`${styles.modalHeader} ${styles.summaryModalHeader}`}>
               <div className={styles.modalHeaderText}>
+                <span className={styles.summaryModalEyebrow}>Register health</span>
                 <h3 id="asset-register-summary-title">Register summary</h3>
-                <p>Live totals calculated from the saved assets in this register. Financed, insured and licensed totals update when those asset statuses are changed.</p>
+                <p>{summaryPictureSentence}</p>
               </div>
 
-              <button
-                type="button"
-                className={styles.modalCloseButton}
-                onClick={closeSummaryModal}
-                aria-label="Close register summary"
-              >
-                <CloseIcon className={styles.buttonIcon} />
-              </button>
+              <div className={styles.summaryHeaderActions}>
+                <button
+                  type="button"
+                  className={`${styles.secondaryButton} ${styles.summaryDownloadButton}`}
+                  onClick={() => void handleDownloadRegisterSummary('pdf')}
+                  disabled={isLoading || isExporting}
+                >
+                  <PdfIcon className={styles.buttonIcon} />
+                  <span>Download PDF</span>
+                </button>
+
+                <button
+                  type="button"
+                  className={`${styles.secondaryButton} ${styles.summaryDownloadButton}`}
+                  onClick={() => void handleDownloadRegisterSummary('xlsx')}
+                  disabled={isLoading || isExporting}
+                >
+                  <SpreadsheetIcon className={styles.buttonIcon} />
+                  <span>Download XLSX</span>
+                </button>
+
+                <button
+                  type="button"
+                  className={styles.modalCloseButton}
+                  onClick={closeSummaryModal}
+                  aria-label="Close register summary"
+                >
+                  <CloseIcon className={styles.buttonIcon} />
+                </button>
+              </div>
             </div>
 
             <div className={styles.summaryModalBody}>
-              <section className={styles.summaryCurrentPanel} aria-label="Current register values">
+              <section className={styles.summaryHeroGrid} aria-label="Register summary headline metrics">
+                {summaryHeroMetrics.map((metric) => (
+                  <div key={metric.label} className={styles.summaryHeroCard}>
+                    <span>{metric.label}</span>
+                    <strong>{metric.value}</strong>
+                    {metric.note ? <small>{metric.note}</small> : null}
+                  </div>
+                ))}
+              </section>
+
+              <section className={styles.summaryPanel} aria-label="Current register values">
                 <div className={styles.summarySectionHeader}>
                   <div>
                     <span>Current register values</span>
@@ -10444,74 +10847,127 @@ export default function AssetRegisterClient() {
                   </div>
 
                   <div className={styles.summaryValueTableRows}>
-                    <div className={styles.summaryValueTableRow}>
-                      <span>Total assets</span>
-                      <strong>{assets.length}</strong>
-                      <small>{money(totalValue)}</small>
-                      <small>{money(totalValueInclVat)}</small>
-                    </div>
-
-                    <div className={styles.summaryValueTableRow}>
-                      <span>Aim4price assets</span>
-                      <strong>{aim4priceValuedEquipmentCount}</strong>
-                      <small>{money(aim4priceValuedEquipmentValue)}</small>
-                      <small>{money(Math.round(aim4priceValuedEquipmentValue * 1.15))}</small>
-                    </div>
-
-                    <div className={styles.summaryValueTableRow}>
-                      <span>Manual assets</span>
-                      <strong>{manualAssetStats.count}</strong>
-                      <small>{money(manualAssetStats.value)}</small>
-                      <small>{money(Math.round(manualAssetStats.value * 1.15))}</small>
-                    </div>
-
-                    <div className={styles.summaryValueTableRow}>
-                      <span>Assets financed</span>
-                      <strong>{financedAssetStats.count}</strong>
-                      <small>{money(financedAssetStats.value)}</small>
-                      <small>{money(Math.round(financedAssetStats.value * 1.15))}</small>
-                    </div>
-
-                    <div className={styles.summaryValueTableRow}>
-                      <span>Assets insured</span>
-                      <strong>{insuredAssetStats.count}</strong>
-                      <small>{money(insuredAssetStats.value)}</small>
-                      <small>{money(Math.round(insuredAssetStats.value * 1.15))}</small>
-                    </div>
-
-                    <div className={styles.summaryValueTableRow}>
-                      <span>Assets licensed</span>
-                      <strong>{licensedAssetStats.count}</strong>
-                      <small>{money(licensedAssetStats.value)}</small>
-                      <small>{money(Math.round(licensedAssetStats.value * 1.15))}</small>
-                    </div>
+                    {summaryCurrentValueRows.map((row) => (
+                      <div key={row.label} className={styles.summaryValueTableRow}>
+                        <span>{row.label}</span>
+                        <strong>{row.count.toLocaleString('en-ZA')}</strong>
+                        <small>{money(row.valueExVat)}</small>
+                        <small>{money(row.valueInclVat)}</small>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </section>
 
-              <section className={`${styles.summaryReplacementPanel} ${styles.summaryReplacementRegisterTile}`} aria-label="Replacement value summary">
-                <div className={styles.summaryReplacementTileHead}>
-                  <div className={styles.summaryReplacementCopy}>
+              <section className={`${styles.summaryPanel} ${styles.summaryReplacementCompactPanel}`} aria-label="Replacement value summary">
+                <div className={styles.summarySectionHeader}>
+                  <div>
                     <span>Replacement value</span>
-                    <p>Total replacement cost for assets with saved replacement prices. This is separate from the current register-value totals above.</p>
+                    <p>Total replacement cost for assets with saved replacement prices. This is separate from the current register totals.</p>
                   </div>
                 </div>
 
-                <div className={styles.summaryReplacementMainValue}>
-                  <strong>{money(totalReplacementValue)}</strong>
-                  <small>Excl. VAT</small>
-                </div>
-
-                <div className={styles.summaryReplacementTileFooter} aria-label="Replacement value supporting totals">
-                  <div className={styles.summaryReplacementFooterMetric}>
-                    <span>Incl. VAT</span>
+                <div className={styles.summaryReplacementCompactGrid}>
+                  <div className={styles.summaryReplacementPrimaryMetric}>
+                    <span>Replacement value excl. VAT</span>
+                    <strong>{money(totalReplacementValue)}</strong>
+                  </div>
+                  <div className={styles.summaryMetricCard}>
+                    <span>Replacement value incl. VAT</span>
                     <strong>{money(totalReplacementValueInclVat)}</strong>
                   </div>
-                  <div className={styles.summaryReplacementFooterMetric}>
+                  <div className={styles.summaryMetricCard}>
                     <span>Assets priced</span>
-                    <strong>{replacementPricedAssetCount}</strong>
+                    <strong>{replacementPricedAssetCount.toLocaleString('en-ZA')}</strong>
+                  </div>
+                  <div className={styles.summaryMetricCard}>
+                    <span>Assets missing replacement price</span>
+                    <strong>{registerHealthSummary.missingReplacementPriceAssets.toLocaleString('en-ZA')}</strong>
                   </div>
                 </div>
+              </section>
+
+              <section className={styles.summaryPanel} aria-label="Register completeness">
+                <div className={styles.summarySectionHeader}>
+                  <div>
+                    <span>Register completeness</span>
+                    <p>Photos, files, GPS coordinates and replacement-price coverage calculated from saved asset data.</p>
+                  </div>
+                </div>
+
+                <div className={styles.summaryMetricGrid}>
+                  {summaryCompletenessMetrics.map((metric) => (
+                    <div key={metric.label} className={styles.summaryMetricCard}>
+                      <span>{metric.label}</span>
+                      <strong>{metric.value}</strong>
+                      {metric.note ? <small>{metric.note}</small> : null}
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <section className={styles.summaryPanel} aria-label="Compliance and status breakdown">
+                <div className={styles.summarySectionHeader}>
+                  <div>
+                    <span>Compliance and status</span>
+                    <p>Insurance, finance and license statuses use the same saved choices as the asset register.</p>
+                  </div>
+                </div>
+
+                <div className={styles.summaryStatusGrid}>
+                  {summaryStatusSections.map((section) => (
+                    <div key={section.title} className={styles.summaryStatusCard}>
+                      <h4>{section.title}</h4>
+                      <div className={styles.summaryStatusRows}>
+                        {section.rows.map((row) => (
+                          <div key={row.label} className={styles.summaryStatusRow}>
+                            <span>{row.label}</span>
+                            <strong>{row.value}</strong>
+                            {row.note ? <small>{row.note}</small> : null}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <section className={styles.summaryPanel} aria-label="Assets needing attention">
+                <div className={styles.summarySectionHeader}>
+                  <div>
+                    <span>Needs attention</span>
+                    <p>Assets listed here have missing photos, files, GPS coordinates, status checks, insured values or replacement prices.</p>
+                  </div>
+                </div>
+
+                {visibleSummaryAttentionItems.length ? (
+                  <div className={styles.summaryAttentionList}>
+                    {visibleSummaryAttentionItems.map((item) => (
+                      <div key={item.id} className={styles.summaryAttentionRow}>
+                        <div className={styles.summaryAttentionAsset}>
+                          <strong>{item.title}</strong>
+                          <span>{money(item.valueExVat)} excl. VAT</span>
+                        </div>
+                        <div className={styles.summaryIssueBadgeRow}>
+                          {item.issues.slice(0, 5).map((issue) => (
+                            <span key={issue} className={styles.summaryIssueBadge}>{issue}</span>
+                          ))}
+                          {item.issues.length > 5 ? <span className={styles.summaryIssueBadge}>+{item.issues.length - 5} more</span> : null}
+                        </div>
+                      </div>
+                    ))}
+
+                    {registerHealthSummary.needsAttentionItems.length > visibleSummaryAttentionItems.length ? (
+                      <p className={styles.summaryAttentionMore}>
+                        Showing {visibleSummaryAttentionItems.length.toLocaleString('en-ZA')} of {registerHealthSummary.needsAttentionItems.length.toLocaleString('en-ZA')} assets needing attention. Download the summary for the full list.
+                      </p>
+                    ) : null}
+                  </div>
+                ) : (
+                  <div className={styles.summaryEmptyState}>
+                    No immediate register gaps found from the saved asset data.
+                  </div>
+                )}
               </section>
             </div>
           </div>
