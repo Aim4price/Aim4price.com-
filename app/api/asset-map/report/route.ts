@@ -1,12 +1,38 @@
-import { NextResponse } from 'next/server';
-import { getServerSession } from '../../../../lib/auth-session';
-import { listAssetRegisterItems, type AssetRegisterItem } from '../../../../lib/asset-register-db';
-import { getAssetRegisterReportLogoUrl } from '../../../../lib/asset-registers';
+import { NextResponse } from "next/server";
+import { getServerSession } from "../../../../lib/auth-session";
+import {
+  listAssetRegisterItems,
+  type AssetRegisterItem,
+} from "../../../../lib/asset-register-db";
+import {
+  getAssetRegisterReportLogoUrl,
+  listAssetRegisters,
+  type AssetRegisterSummary,
+} from "../../../../lib/asset-registers";
+import {
+  createXlsxWorkbook,
+  type XlsxCellStyle,
+  type XlsxCellValue,
+  type XlsxSheet,
+} from "../../../../lib/simple-xlsx";
 
-export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
-type AssetStatusChoice = 'yes' | 'no' | 'unknown' | 'not_applicable';
+type AssetStatusChoice = "yes" | "no" | "unknown" | "not_applicable";
+
+type AssetMapRegisterContext = {
+  id: string;
+  label: string;
+  index: number;
+};
+
+type SourcedAsset = {
+  item: AssetRegisterItem;
+  registerId: string;
+  registerName: string;
+  registerIndex: number;
+};
 
 type PrintableAsset = {
   number: number;
@@ -15,8 +41,15 @@ type PrintableAsset = {
   publicAssetCode: string;
   serialNumber: string;
   assetTypeLabel: string;
+  registerId: string;
+  registerName: string;
   yearModel: string;
+  currentValueRaw: number | null;
+  currentValue: string;
+  replacementValueRaw: number | null;
   replacementValue: string;
+  insuredValueRaw: number | null;
+  insuredValue: string;
   fuel: string;
   financed: string;
   insured: string;
@@ -30,18 +63,194 @@ type PrintableAsset = {
   latitude: number;
   longitude: number;
   latLngText: string;
+  googleMapsUrl: string;
 };
 
+type AssetReportSelection = {
+  codes: string[];
+  ids: string[];
+};
+
+type ScopedAssetResult = {
+  assets: SourcedAsset[];
+  scopeLabel: string;
+  scopeSegment: string;
+  selectedAssetMode: boolean;
+};
+
+const DEFAULT_CENTER: [number, number] = [-29.0, 24.0];
+const REPLACEMENT_PRICE_SPEC_KEYS = [
+  "replacementPriceExVat",
+  "replacement_price_ex_vat",
+  "replacementPriceUsedExVat",
+  "replacement_price_used_ex_vat",
+  "userReplacementPriceExVat",
+  "user_replacement_price_ex_vat",
+  "officialReplacementPriceExVat",
+  "official_replacement_price_ex_vat",
+  "replacementPrice",
+  "replacement_price",
+] as const;
+const INSURED_VALUE_SPEC_KEYS = [
+  "insuredValueExVat",
+  "insured_value_ex_vat",
+  "insuranceValueExVat",
+  "insurance_value_ex_vat",
+  "insuredValue",
+  "insured_value",
+  "insuranceValue",
+  "insurance_value",
+] as const;
+
 function unauthorized() {
-  return NextResponse.json({ ok: false, error: 'You must be signed in.' }, { status: 401 });
+  return NextResponse.json(
+    { ok: false, error: "You must be signed in." },
+    { status: 401 },
+  );
 }
 
 function asText(value: unknown): string {
-  return String(value ?? '').replace(/\s+/g, ' ').trim();
+  return String(value ?? "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function escapeHtml(value: unknown): string {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function safeScriptJson(value: unknown): string {
+  return JSON.stringify(value)
+    .replace(/</g, "\\u003c")
+    .replace(/>/g, "\\u003e")
+    .replace(/&/g, "\\u0026");
+}
+
+function formatDate(value = new Date()): string {
+  return new Intl.DateTimeFormat("en-ZA", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(value);
+}
+
+function formatTime(value = new Date()): string {
+  return new Intl.DateTimeFormat("en-ZA", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(value);
+}
+
+function formatDateTime(value?: string | null): string {
+  if (!value) return "Not scanned";
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "Not scanned";
+
+  return new Intl.DateTimeFormat("en-ZA", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(parsed);
+}
+
+function formatFileDate(value = new Date()): string {
+  return value.toISOString().slice(0, 10);
+}
+
+function formatFileSegment(value: string): string {
+  return (
+    asText(value)
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 70) || "assets"
+  );
+}
+
+function numericValue(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const parsed = Number(value.replace(/[^0-9.-]+/g, ""));
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  return null;
+}
+
+function positiveRoundedValue(value: unknown): number | null {
+  const numeric = numericValue(value);
+  return numeric !== null && numeric > 0 ? Math.round(numeric) : null;
+}
+
+function currentValueExVat(item: AssetRegisterItem): number | null {
+  return (
+    positiveRoundedValue(item.selectedValueExVat) ??
+    positiveRoundedValue(item.value)
+  );
+}
+
+function replacementPriceExVat(item: AssetRegisterItem): number | null {
+  const direct = positiveRoundedValue(item.replacementPriceExVat);
+  if (direct !== null) return direct;
+
+  const specs = isPlainRecord(item.specsJson) ? item.specsJson : {};
+
+  for (const key of REPLACEMENT_PRICE_SPEC_KEYS) {
+    const value = positiveRoundedValue(specs[key]);
+    if (value !== null) return value;
+  }
+
+  return null;
+}
+
+function insuredValueExVat(item: AssetRegisterItem): number | null {
+  const direct = positiveRoundedValue(item.insuredValueExVat);
+  if (direct !== null) return direct;
+
+  const specs = isPlainRecord(item.specsJson) ? item.specsJson : {};
+
+  for (const key of INSURED_VALUE_SPEC_KEYS) {
+    const value = positiveRoundedValue(specs[key]);
+    if (value !== null) return value;
+  }
+
+  return null;
+}
+
+function formatNumber(value: number | null): string {
+  if (value === null || !Number.isFinite(value)) return "";
+  return new Intl.NumberFormat("en-ZA").format(Math.round(value));
+}
+
+function formatMoney(value: number | null): string {
+  if (value === null || !Number.isFinite(value) || value <= 0)
+    return "Not saved";
+  return `R ${formatNumber(value)}`;
 }
 
 function normalizePhotoUrls(value: unknown): string[] {
-  const values = Array.isArray(value) ? value : typeof value === 'string' && value.trim() ? [value] : [];
+  const values = Array.isArray(value)
+    ? value
+    : typeof value === "string" && value.trim()
+      ? [value]
+      : [];
   const seen = new Set<string>();
   const photos: string[] = [];
 
@@ -54,10 +263,10 @@ function normalizePhotoUrls(value: unknown): string[] {
     }
 
     if (
-      !lowerUrl.startsWith('data:image/') &&
-      !lowerUrl.startsWith('https://') &&
-      !lowerUrl.startsWith('http://') &&
-      !lowerUrl.startsWith('/api/asset-register/uploads/')
+      !lowerUrl.startsWith("data:image/") &&
+      !lowerUrl.startsWith("https://") &&
+      !lowerUrl.startsWith("http://") &&
+      !lowerUrl.startsWith("/api/asset-register/uploads/")
     ) {
       continue;
     }
@@ -69,77 +278,19 @@ function normalizePhotoUrls(value: unknown): string[] {
   return photos;
 }
 
-function isPlainRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+function titleCase(value: string): string {
+  return value
+    .split(/[_\s-]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(" ");
 }
 
-function escapeHtml(value: unknown): string {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
-function safeScriptJson(value: unknown): string {
-  return JSON.stringify(value).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026');
-}
-
-function formatDate(value = new Date()): string {
-  return new Intl.DateTimeFormat('en-ZA', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  }).format(value);
-}
-
-function formatTime(value = new Date()): string {
-  return new Intl.DateTimeFormat('en-ZA', {
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(value);
-}
-
-function formatDateTime(value?: string | null): string {
-  if (!value) return 'Not scanned';
-
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return 'Not scanned';
-
-  return new Intl.DateTimeFormat('en-ZA', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(parsed);
-}
-
-function formatFileDate(value = new Date()): string {
-  return value.toISOString().slice(0, 10);
-}
-
-function formatFileSegment(value: string): string {
-  return (
-    asText(value)
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '')
-      .slice(0, 70) || 'asset'
-  );
-}
-
-function buildReportFilename(assets: PrintableAsset[], generatedAt = new Date()): string {
-  const dateSegment = formatFileDate(generatedAt);
-
-  if (assets.length === 1) {
-    const asset = assets[0];
-    const assetSegment = formatFileSegment(`${asset.title}-${asset.publicAssetCode}`);
-    return `aim4price-asset-map-${assetSegment}-${dateSegment}.html`;
-  }
-
-  return `aim4price-asset-map-${dateSegment}.html`;
+function buildRegisterLabel(
+  register: AssetRegisterSummary,
+  index: number,
+): string {
+  return asText(register.businessName) || `Asset Register #${index + 1}`;
 }
 
 function formatCondition(value: string): string {
@@ -147,88 +298,77 @@ function formatCondition(value: string): string {
 
   return (
     {
-      excellent: 'Excellent',
-      good: 'Good',
-      fair: 'Fair',
-      used: 'Used',
-      serious: 'Requires attention',
-    }[normalized] ?? (asText(value) || 'Not saved')
+      excellent: "Excellent",
+      good: "Good",
+      fair: "Fair",
+      used: "Used",
+      serious: "Requires attention",
+    }[normalized] ??
+    (asText(value) || "Not saved")
   );
 }
 
 function formatFuel(value: number | null): string {
-  if (value === null || !Number.isFinite(value)) return 'Not saved';
+  if (value === null || !Number.isFinite(value)) return "Not saved";
   return `${Math.max(0, Math.min(100, Math.round(value)))}%`;
 }
 
-function formatNumber(value: number | null): string {
-  if (value === null || !Number.isFinite(value)) return '';
-  return new Intl.NumberFormat('en-ZA').format(Math.round(value));
-}
+function normalizeAssetStatusChoice(
+  value: unknown,
+  fallback: AssetStatusChoice = "unknown",
+): AssetStatusChoice {
+  const normalized = String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
 
-function coercePositiveNumber(value: unknown): number | null {
-  if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
-    return value;
+  if (
+    [
+      "yes",
+      "y",
+      "true",
+      "financed",
+      "insured",
+      "licensed",
+      "licenced",
+    ].includes(normalized)
+  ) {
+    return "yes";
   }
 
-  if (typeof value === 'string') {
-    const parsed = Number(value.replace(/[^0-9.-]+/g, ''));
-    if (Number.isFinite(parsed) && parsed > 0) {
-      return parsed;
-    }
+  if (
+    [
+      "no",
+      "n",
+      "false",
+      "not_financed",
+      "not_insured",
+      "not_licensed",
+      "not_licenced",
+      "unfinanced",
+      "uninsured",
+      "unlicensed",
+      "unlicenced",
+    ].includes(normalized)
+  ) {
+    return "no";
   }
 
-  return null;
-}
-
-function readAssetReplacementPriceExVat(asset: AssetRegisterItem): number | null {
-  const direct = coercePositiveNumber(asset.replacementPriceExVat);
-  if (direct !== null) return direct;
-
-  const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
-
-  return coercePositiveNumber(
-    specs.replacementPriceExVat ??
-      specs.replacement_price_ex_vat ??
-      specs.replacementPrice ??
-      specs.replacement_price ??
-      specs.replacementPriceUsedExVat ??
-      specs.replacement_price_used_ex_vat ??
-      specs.userReplacementPriceExVat ??
-      specs.user_replacement_price_ex_vat,
-  );
-}
-
-function formatMoney(value: number | null): string {
-  if (value === null || !Number.isFinite(value) || value <= 0) return 'Not saved';
-  return `R ${formatNumber(value)}`;
-}
-
-function titleCase(value: string): string {
-  return value
-    .split(/[_\s-]+/)
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
-    .join(' ');
-}
-
-function normalizeAssetStatusChoice(value: unknown, fallback: AssetStatusChoice = 'unknown'): AssetStatusChoice {
-  const normalized = String(value ?? '').trim().toLowerCase().replace(/[\s-]+/g, '_');
-
-  if (['yes', 'y', 'true', 'financed', 'insured', 'licensed', 'licenced'].includes(normalized)) {
-    return 'yes';
+  if (
+    [
+      "na",
+      "n_a",
+      "not_applicable",
+      "not_aplicable",
+      "not_relevant",
+      "does_not_apply",
+    ].includes(normalized)
+  ) {
+    return "not_applicable";
   }
 
-  if (['no', 'n', 'false', 'not_financed', 'not_insured', 'not_licensed', 'not_licenced', 'unfinanced', 'uninsured', 'unlicensed', 'unlicenced'].includes(normalized)) {
-    return 'no';
-  }
-
-  if (['na', 'n_a', 'not_applicable', 'not_aplicable', 'not_relevant', 'does_not_apply'].includes(normalized)) {
-    return 'not_applicable';
-  }
-
-  if (['unknown', 'not_sure', 'unsure', 'maybe', ''].includes(normalized)) {
-    return normalized ? 'unknown' : fallback;
+  if (["unknown", "not_sure", "unsure", "maybe", ""].includes(normalized)) {
+    return normalized ? "unknown" : fallback;
   }
 
   return fallback;
@@ -238,17 +378,25 @@ function readFinanceStatusChoice(asset: AssetRegisterItem): AssetStatusChoice {
   const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
 
   return normalizeAssetStatusChoice(
-    specs.financeStatus ?? specs.finance_status ?? specs.financedStatus ?? specs.financed_status,
-    asset.isFinanced ? 'yes' : 'no',
+    specs.financeStatus ??
+      specs.finance_status ??
+      specs.financedStatus ??
+      specs.financed_status,
+    asset.isFinanced ? "yes" : "no",
   );
 }
 
-function readInsuranceStatusChoice(asset: AssetRegisterItem): AssetStatusChoice {
+function readInsuranceStatusChoice(
+  asset: AssetRegisterItem,
+): AssetStatusChoice {
   const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
 
   return normalizeAssetStatusChoice(
-    specs.insuranceStatus ?? specs.insurance_status ?? specs.insuredStatus ?? specs.insured_status,
-    asset.isInsured ? 'yes' : 'no',
+    specs.insuranceStatus ??
+      specs.insurance_status ??
+      specs.insuredStatus ??
+      specs.insured_status,
+    asset.isInsured ? "yes" : "no",
   );
 }
 
@@ -264,8 +412,15 @@ function readLicenseStatusChoice(asset: AssetRegisterItem): AssetStatusChoice {
       specs.licence_status ??
       specs.licencedStatus ??
       specs.licenced_status,
-    asset.isLicensed ? 'yes' : 'no',
+    asset.isLicensed ? "yes" : "no",
   );
+}
+
+function formatAssetStatusChoice(value: AssetStatusChoice): string {
+  if (value === "yes") return "Yes";
+  if (value === "no") return "No";
+  if (value === "not_applicable") return "Not applicable";
+  return "Not sure";
 }
 
 function readLicenseRegistrationNumber(asset: AssetRegisterItem): string {
@@ -291,37 +446,48 @@ function readLicenseRegistrationNumber(asset: AssetRegisterItem): string {
   ).toUpperCase();
 }
 
-function formatAssetStatusChoice(value: AssetStatusChoice): string {
-  if (value === 'yes') return 'Yes';
-  if (value === 'no') return 'No';
-  if (value === 'not_applicable') return 'Not applicable';
-  return 'Not sure';
-}
-
-function getUsageUnit(asset: AssetRegisterItem): 'hours' | 'km' {
+function getUsageUnit(asset: AssetRegisterItem): "hours" | "km" {
   const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
   const rawUsage = String(
-    specs.usageMetric ?? specs.usage_metric ?? specs.usageUnit ?? specs.usage_unit ?? specs.usageMetricType ?? specs.usage_metric_type ?? '',
+    specs.usageMetric ??
+      specs.usage_metric ??
+      specs.usageUnit ??
+      specs.usage_unit ??
+      specs.usageMetricType ??
+      specs.usage_metric_type ??
+      "",
   )
     .trim()
     .toLowerCase();
 
-  if (asset.kind === 'vehicle') return 'km';
-  if (rawUsage === 'km' || rawUsage === 'kms' || rawUsage === 'kilometres' || rawUsage === 'kilometers') return 'km';
-  return 'hours';
+  if (asset.kind === "vehicle") return "km";
+  if (
+    rawUsage === "km" ||
+    rawUsage === "kms" ||
+    rawUsage === "kilometres" ||
+    rawUsage === "kilometers"
+  )
+    return "km";
+  return "hours";
 }
 
 function formatUsage(asset: AssetRegisterItem): string {
-  if (typeof asset.hours === 'number' && Number.isFinite(asset.hours)) {
+  if (typeof asset.hours === "number" && Number.isFinite(asset.hours)) {
     return `${formatNumber(asset.hours)} ${getUsageUnit(asset)}`;
   }
 
-  if (typeof asset.lifeWorkedPercent === 'number' && Number.isFinite(asset.lifeWorkedPercent)) {
-    const percent = Math.max(0, Math.min(100, Math.round(asset.lifeWorkedPercent * 10) / 10));
+  if (
+    typeof asset.lifeWorkedPercent === "number" &&
+    Number.isFinite(asset.lifeWorkedPercent)
+  ) {
+    const percent = Math.max(
+      0,
+      Math.min(100, Math.round(asset.lifeWorkedPercent * 10) / 10),
+    );
     return `${Number.isInteger(percent) ? percent : percent.toFixed(1)}% worked`;
   }
 
-  return 'Not saved';
+  return "Not saved";
 }
 
 function assetTypeLabel(asset: AssetRegisterItem): string {
@@ -331,11 +497,11 @@ function assetTypeLabel(asset: AssetRegisterItem): string {
   const kind = asText(asset.kind);
   if (kind) return titleCase(kind);
 
-  return 'Asset';
+  return "Asset";
 }
 
 function formatYearModel(value: number | null): string {
-  if (typeof value !== 'number' || !Number.isFinite(value)) return 'Not saved';
+  if (typeof value !== "number" || !Number.isFinite(value)) return "Not saved";
   return String(Math.round(value));
 }
 
@@ -348,50 +514,28 @@ function hasCoordinates(asset: AssetRegisterItem): boolean {
   return true;
 }
 
-function sortByScanDate(left: AssetRegisterItem, right: AssetRegisterItem): number {
-  const leftTime = left.lastScannedAtIso ? new Date(left.lastScannedAtIso).getTime() : 0;
-  const rightTime = right.lastScannedAtIso ? new Date(right.lastScannedAtIso).getTime() : 0;
+function sortSourcedAssets(left: SourcedAsset, right: SourcedAsset): number {
+  const leftTime = left.item.lastScannedAtIso
+    ? new Date(left.item.lastScannedAtIso).getTime()
+    : 0;
+  const rightTime = right.item.lastScannedAtIso
+    ? new Date(right.item.lastScannedAtIso).getTime()
+    : 0;
 
   if (rightTime !== leftTime) {
     return rightTime - leftTime;
   }
 
-  return left.title.localeCompare(right.title, 'en', { sensitivity: 'base' });
+  const registerComparison = left.registerName.localeCompare(
+    right.registerName,
+    "en",
+    { sensitivity: "base" },
+  );
+  if (registerComparison !== 0) return registerComparison;
+  return left.item.title.localeCompare(right.item.title, "en", {
+    sensitivity: "base",
+  });
 }
-
-function toPrintableAsset(asset: AssetRegisterItem, index: number): PrintableAsset {
-  const latitude = typeof asset.lastKnownLat === 'number' ? asset.lastKnownLat : Number(asset.lastKnownLat);
-  const longitude = typeof asset.lastKnownLng === 'number' ? asset.lastKnownLng : Number(asset.lastKnownLng);
-
-  return {
-    number: index + 1,
-    title: asset.title || 'Saved asset',
-    plateLabel: asset.plateLabel || asset.publicAssetCode || 'No plate label',
-    publicAssetCode: asset.publicAssetCode,
-    serialNumber: asset.serialNumber || 'Not saved',
-    assetTypeLabel: assetTypeLabel(asset),
-    yearModel: formatYearModel(asset.yearModel),
-    replacementValue: formatMoney(readAssetReplacementPriceExVat(asset)),
-    fuel: formatFuel(asset.fuelPercent),
-    financed: formatAssetStatusChoice(readFinanceStatusChoice(asset)),
-    insured: formatAssetStatusChoice(readInsuranceStatusChoice(asset)),
-    licensed: formatAssetStatusChoice(readLicenseStatusChoice(asset)),
-    licenseRegistrationNumber: readLicenseStatusChoice(asset) === 'yes' ? readLicenseRegistrationNumber(asset) : '',
-    usage: formatUsage(asset),
-    condition: formatCondition(asset.condition),
-    lastScanned: formatDateTime(asset.lastScannedAtIso),
-    locationText: asset.lastKnownLocationText || 'No written location note saved',
-    photoUrls: normalizePhotoUrls(asset.photos),
-    latitude,
-    longitude,
-    latLngText: `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`,
-  };
-}
-
-type AssetReportSelection = {
-  codes: string[];
-  ids: string[];
-};
 
 function normalizeLookupKey(value: string): string {
   return asText(value).toLowerCase();
@@ -401,14 +545,19 @@ function appendUnique(target: string[], value: string | null): void {
   const normalized = asText(value);
   if (!normalized) return;
 
-  if (!target.some((existing) => normalizeLookupKey(existing) === normalizeLookupKey(normalized))) {
+  if (
+    !target.some(
+      (existing) =>
+        normalizeLookupKey(existing) === normalizeLookupKey(normalized),
+    )
+  ) {
     target.push(normalized);
   }
 }
 
 function splitListParam(value: string | null): string[] {
   return asText(value)
-    .split(',')
+    .split(",")
     .map((part) => part.trim())
     .filter(Boolean);
 }
@@ -417,48 +566,319 @@ function readAssetReportSelection(url: URL): AssetReportSelection {
   const codes: string[] = [];
   const ids: string[] = [];
 
-  splitListParam(url.searchParams.get('codes')).forEach((code) => appendUnique(codes, code));
-  appendUnique(codes, url.searchParams.get('assetCode'));
-  appendUnique(codes, url.searchParams.get('publicAssetCode'));
-  appendUnique(codes, url.searchParams.get('code'));
+  splitListParam(url.searchParams.get("codes")).forEach((code) =>
+    appendUnique(codes, code),
+  );
+  appendUnique(codes, url.searchParams.get("assetCode"));
+  appendUnique(codes, url.searchParams.get("publicAssetCode"));
+  appendUnique(codes, url.searchParams.get("code"));
 
-  splitListParam(url.searchParams.get('ids')).forEach((id) => appendUnique(ids, id));
-  appendUnique(ids, url.searchParams.get('assetId'));
-  appendUnique(ids, url.searchParams.get('id'));
+  splitListParam(url.searchParams.get("ids")).forEach((id) =>
+    appendUnique(ids, id),
+  );
+  appendUnique(ids, url.searchParams.get("assetId"));
+  appendUnique(ids, url.searchParams.get("id"));
 
   return { codes, ids };
 }
 
-function filterAssetsBySelection(assets: AssetRegisterItem[], selection: AssetReportSelection): AssetRegisterItem[] {
-  const sortedAssets = [...assets].sort(sortByScanDate);
+function filterSourcesBySelection(
+  assets: SourcedAsset[],
+  selection: AssetReportSelection,
+): SourcedAsset[] {
+  const sortedAssets = [...assets].sort(sortSourcedAssets);
 
   if (!selection.codes.length && !selection.ids.length) {
     return sortedAssets;
   }
 
-  const byCode = new Map(sortedAssets.map((asset) => [normalizeLookupKey(asset.publicAssetCode), asset]));
-  const byId = new Map(sortedAssets.map((asset) => [normalizeLookupKey(asset.id), asset]));
-  const selected: AssetRegisterItem[] = [];
+  const byCode = new Map(
+    sortedAssets.map((asset) => [
+      normalizeLookupKey(asset.item.publicAssetCode),
+      asset,
+    ]),
+  );
+  const byId = new Map(
+    sortedAssets.map((asset) => [normalizeLookupKey(asset.item.id), asset]),
+  );
+  const selected: SourcedAsset[] = [];
   const seenIds = new Set<string>();
 
-  const addAsset = (asset: AssetRegisterItem | undefined) => {
-    if (!asset || seenIds.has(asset.id)) return;
+  const addAsset = (asset: SourcedAsset | undefined) => {
+    if (!asset || seenIds.has(asset.item.id)) return;
     selected.push(asset);
-    seenIds.add(asset.id);
+    seenIds.add(asset.item.id);
   };
 
-  selection.codes.forEach((code) => addAsset(byCode.get(normalizeLookupKey(code))));
+  selection.codes.forEach((code) =>
+    addAsset(byCode.get(normalizeLookupKey(code))),
+  );
   selection.ids.forEach((id) => addAsset(byId.get(normalizeLookupKey(id))));
 
   return selected;
+}
+
+async function loadScopedMappedAssets(
+  userId: string,
+  url: URL,
+): Promise<ScopedAssetResult> {
+  const registers = await listAssetRegisters(userId);
+  const registerContexts: AssetMapRegisterContext[] = registers.map(
+    (register, index) => ({
+      id: register.id,
+      label: buildRegisterLabel(register, index),
+      index,
+    }),
+  );
+  const selection = readAssetReportSelection(url);
+  const selectedAssetMode =
+    selection.codes.length > 0 || selection.ids.length > 0;
+  const requestedRegisterId = asText(url.searchParams.get("registerId"));
+  const registerIdParam = requestedRegisterId.toLowerCase();
+
+  let selectedRegisters = registerContexts;
+  let scopeLabel = "All Assets";
+  let scopeSegment = "all-assets";
+
+  if (!selectedAssetMode && requestedRegisterId && registerIdParam !== "all") {
+    const register = registerContexts.find(
+      (candidate) => candidate.id === requestedRegisterId,
+    );
+
+    if (!register) {
+      throw new Error("ASSET_MAP_REGISTER_NOT_FOUND");
+    }
+
+    selectedRegisters = [register];
+    scopeLabel = register.label;
+    scopeSegment = formatFileSegment(
+      register.label || `asset-register-${register.index + 1}`,
+    );
+  }
+
+  const registerBundles = await Promise.all(
+    selectedRegisters.map(async (register) => ({
+      register,
+      items: await listAssetRegisterItems(userId, register.id),
+    })),
+  );
+
+  const sourcedAssets = registerBundles.flatMap(({ register, items }) =>
+    items.map((item) => ({
+      item,
+      registerId: register.id,
+      registerName: register.label,
+      registerIndex: register.index,
+    })),
+  );
+  const mappedAssets = sourcedAssets.filter(({ item }) => hasCoordinates(item));
+  const scopedAssets = selectedAssetMode
+    ? filterSourcesBySelection(mappedAssets, selection)
+    : [...mappedAssets].sort(sortSourcedAssets);
+
+  if (selectedAssetMode) {
+    scopeLabel =
+      scopedAssets.length === 1
+        ? scopedAssets[0].item.title || "Selected asset"
+        : "Selected Assets";
+    scopeSegment =
+      scopedAssets.length === 1
+        ? formatFileSegment(
+            `${scopedAssets[0].item.title}-${scopedAssets[0].item.publicAssetCode}`,
+          )
+        : "selected-assets";
+  }
+
+  return {
+    assets: scopedAssets,
+    scopeLabel,
+    scopeSegment,
+    selectedAssetMode,
+  };
+}
+
+function toPrintableAsset(source: SourcedAsset, index: number): PrintableAsset {
+  const item = source.item;
+  const latitude =
+    typeof item.lastKnownLat === "number"
+      ? item.lastKnownLat
+      : Number(item.lastKnownLat);
+  const longitude =
+    typeof item.lastKnownLng === "number"
+      ? item.lastKnownLng
+      : Number(item.lastKnownLng);
+  const currentRaw = currentValueExVat(item);
+  const replacementRaw = replacementPriceExVat(item);
+  const insuredRaw = insuredValueExVat(item);
+  const licenseStatus = readLicenseStatusChoice(item);
+  const latLngText = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+
+  return {
+    number: index + 1,
+    title: item.title || "Saved asset",
+    plateLabel: item.plateLabel || item.publicAssetCode || "No plate label",
+    publicAssetCode: item.publicAssetCode,
+    serialNumber: item.serialNumber || "Not saved",
+    assetTypeLabel: assetTypeLabel(item),
+    registerId: source.registerId,
+    registerName: source.registerName,
+    yearModel: formatYearModel(item.yearModel),
+    currentValueRaw: currentRaw,
+    currentValue: formatMoney(currentRaw),
+    replacementValueRaw: replacementRaw,
+    replacementValue: formatMoney(replacementRaw),
+    insuredValueRaw: insuredRaw,
+    insuredValue: formatMoney(insuredRaw),
+    fuel: formatFuel(item.fuelPercent),
+    financed: formatAssetStatusChoice(readFinanceStatusChoice(item)),
+    insured: formatAssetStatusChoice(readInsuranceStatusChoice(item)),
+    licensed: formatAssetStatusChoice(licenseStatus),
+    licenseRegistrationNumber:
+      licenseStatus === "yes" ? readLicenseRegistrationNumber(item) : "",
+    usage: formatUsage(item),
+    condition: formatCondition(item.condition),
+    lastScanned: formatDateTime(item.lastScannedAtIso),
+    locationText:
+      item.lastKnownLocationText || "No written location note saved",
+    photoUrls: normalizePhotoUrls(item.photos),
+    latitude,
+    longitude,
+    latLngText,
+    googleMapsUrl: `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`,
+  };
+}
+
+function sumAssetValues(
+  assets: PrintableAsset[],
+  selector: (asset: PrintableAsset) => number | null,
+): number {
+  return assets.reduce(
+    (sum, asset) => sum + Math.round(selector(asset) ?? 0),
+    0,
+  );
+}
+
+function buildReportFilename(
+  assets: PrintableAsset[],
+  scopeSegment: string,
+  generatedAt = new Date(),
+): string {
+  const dateSegment = formatFileDate(generatedAt);
+
+  if (assets.length === 1) {
+    const asset = assets[0];
+    const assetSegment = formatFileSegment(
+      `${asset.title}-${asset.publicAssetCode}`,
+    );
+    return `aim4price-asset-map-tracking-${assetSegment}-${dateSegment}.html`;
+  }
+
+  return `aim4price-asset-map-tracking-${formatFileSegment(scopeSegment || "all-assets")}-${dateSegment}.html`;
+}
+
+function buildXlsxFilename(
+  scopeSegment: string,
+  generatedAt = new Date(),
+): string {
+  return `aim4price-asset-map-tracking-${formatFileSegment(scopeSegment || "all-assets")}-${formatFileDate(generatedAt)}.xlsx`;
+}
+
+function textCell(value: string, style: XlsxCellStyle = "text"): XlsxCellValue {
+  return { value, style };
+}
+
+function numberCell(
+  value: number | null,
+  style: XlsxCellStyle = "integer",
+): XlsxCellValue {
+  return value === null ? textCell("Not saved", "muted") : { value, style };
+}
+
+function buildAssetGpsWorkbook(
+  assets: PrintableAsset[],
+  scopeLabel: string,
+  generatedAt: Date,
+): Buffer {
+  const headers = [
+    "Asset #",
+    "Asset title",
+    "Asset register",
+    "Asset type",
+    "Serial / VIN",
+    "Year",
+    "Condition",
+    "Value ex VAT",
+    "Replacement price ex VAT",
+    "Insured price ex VAT",
+    "Last scanned",
+    "Latitude",
+    "Longitude",
+    "Last GPS coordinate",
+    "Location note",
+    "Google Maps",
+  ];
+
+  const rows: XlsxCellValue[][] = [
+    [textCell("Asset Map Tracking GPS Export", "title")],
+    [textCell("Scope", "metaLabel"), textCell(scopeLabel, "metaValue")],
+    [
+      textCell("Generated", "metaLabel"),
+      textCell(
+        `${formatDate(generatedAt)} ${formatTime(generatedAt)}`,
+        "metaValue",
+      ),
+    ],
+    [textCell("Mapped GPS assets", "metaLabel"), numberCell(assets.length)],
+    [],
+    headers.map((header) => textCell(header, "tableHeader")),
+    ...assets.map((asset) => [
+      numberCell(asset.number),
+      textCell(asset.title),
+      textCell(asset.registerName),
+      textCell(asset.assetTypeLabel),
+      textCell(asset.serialNumber),
+      textCell(asset.yearModel),
+      textCell(asset.condition),
+      numberCell(asset.currentValueRaw, "currency"),
+      numberCell(asset.replacementValueRaw, "currency"),
+      numberCell(asset.insuredValueRaw, "currency"),
+      textCell(asset.lastScanned),
+      numberCell(asset.latitude, "decimal"),
+      numberCell(asset.longitude, "decimal"),
+      textCell(asset.latLngText),
+      textCell(asset.locationText),
+      textCell(asset.googleMapsUrl),
+    ]),
+  ];
+
+  const sheet: XlsxSheet = {
+    name: "Asset GPS",
+    rows,
+    columns: [10, 34, 28, 20, 20, 14, 18, 18, 24, 22, 26, 14, 14, 22, 34, 48],
+    merges: [
+      { fromRow: 1, fromColumn: 1, toRow: 1, toColumn: headers.length },
+      { fromRow: 2, fromColumn: 2, toRow: 2, toColumn: headers.length },
+      { fromRow: 3, fromColumn: 2, toRow: 3, toColumn: headers.length },
+    ],
+    freezeRow: 6,
+    autoFilter: {
+      fromRow: 6,
+      fromColumn: 1,
+      toRow: Math.max(6, rows.length),
+      toColumn: headers.length,
+    },
+    tabColor: "197454",
+  };
+
+  return createXlsxWorkbook([sheet]);
 }
 
 function renderKeyRows(assets: PrintableAsset[]): string {
   if (!assets.length) {
     return `
       <div class="assetMapReportEmpty">
-        <strong>No mapped assets in this report.</strong>
-        <span>Go back to the asset map and choose at least one scanned asset with saved GPS coordinates.</span>
+        <strong>No mapped GPS assets in this report.</strong>
+        <span>Go back to Asset Map Tracking and choose a scope with saved GPS coordinates.</span>
       </div>
     `;
   }
@@ -470,31 +890,30 @@ function renderKeyRows(assets: PrintableAsset[]): string {
           <div class="assetMapReportMarkerNumber">${asset.number}</div>
           <div class="assetMapReportAssetCell">
             <strong>${escapeHtml(asset.title)}</strong>
-            <span>${escapeHtml(asset.plateLabel)} · ${escapeHtml(asset.assetTypeLabel)}</span>
+            <span>${escapeHtml(asset.assetTypeLabel)} · ${escapeHtml(asset.registerName)}</span>
           </div>
           <div class="assetMapReportCell">
-            <span>Year model</span>
-            <strong>${escapeHtml(asset.yearModel)}</strong>
+            <span>Current value</span>
+            <strong>${escapeHtml(asset.currentValue)}</strong>
           </div>
           <div class="assetMapReportCell">
             <span>Replacement</span>
             <strong>${escapeHtml(asset.replacementValue)}</strong>
           </div>
           <div class="assetMapReportCell">
-            <span>Serial</span>
+            <span>Insured</span>
+            <strong>${escapeHtml(asset.insuredValue)}</strong>
+          </div>
+          <div class="assetMapReportCell">
+            <span>Serial / VIN</span>
             <strong>${escapeHtml(asset.serialNumber)}</strong>
           </div>
           <div class="assetMapReportCell">
-            <span>Fuel</span>
-            <strong>${escapeHtml(asset.fuel)}</strong>
-          </div>
-          <div class="assetMapReportCell">
-            <span>Licensed</span>
-            <strong>${escapeHtml(asset.licensed)}</strong>
-            ${asset.licenseRegistrationNumber ? `<small>Reg: ${escapeHtml(asset.licenseRegistrationNumber)}</small>` : ''}
+            <span>Year / condition</span>
+            <strong>${escapeHtml(asset.yearModel)} · ${escapeHtml(asset.condition)}</strong>
           </div>
           <div class="assetMapReportCell assetMapReportGpsCell">
-            <span>GPS</span>
+            <span>Last GPS coordinate</span>
             <strong>${escapeHtml(asset.latLngText)}</strong>
           </div>
           <div class="assetMapReportCell assetMapReportLastScannedCell">
@@ -504,25 +923,31 @@ function renderKeyRows(assets: PrintableAsset[]): string {
         </article>
       `,
     )
-    .join('');
+    .join("");
 }
 
 function renderSelectedAssetRows(asset: PrintableAsset): string {
   const rows: Array<[string, string]> = [
-    ['Asset type', asset.assetTypeLabel],
-    ['Plate label', asset.plateLabel],
-    ['Serial number', asset.serialNumber],
-    ['Year model', asset.yearModel],
-    ['Replacement price', asset.replacementValue],
-    ['Usage', asset.usage],
-    ['Fuel', asset.fuel],
-    ['Condition', asset.condition],
-    ['Financed', asset.financed],
-    ['Insured', asset.insured],
-    ['Licensed', asset.licensed],
-    ...(asset.licenseRegistrationNumber ? [['Registration', asset.licenseRegistrationNumber] as [string, string]] : []),
-    ['GPS location', asset.latLngText],
-    ['Last scanned', asset.lastScanned],
+    ["Asset register", asset.registerName],
+    ["Asset type", asset.assetTypeLabel],
+    ["Plate label", asset.plateLabel],
+    ["Serial / VIN", asset.serialNumber],
+    ["Year model", asset.yearModel],
+    ["Condition", asset.condition],
+    ["Usage", asset.usage],
+    ["Fuel", asset.fuel],
+    ["Current value ex VAT", asset.currentValue],
+    ["Replacement price ex VAT", asset.replacementValue],
+    ["Insured price ex VAT", asset.insuredValue],
+    ["Financed", asset.financed],
+    ["Insured", asset.insured],
+    ["Licensed", asset.licensed],
+    ...(asset.licenseRegistrationNumber
+      ? [["Registration", asset.licenseRegistrationNumber] as [string, string]]
+      : []),
+    ["Last GPS coordinate", asset.latLngText],
+    ["Location note", asset.locationText],
+    ["Last scanned", asset.lastScanned],
   ];
 
   return rows
@@ -534,12 +959,12 @@ function renderSelectedAssetRows(asset: PrintableAsset): string {
         </div>
       `,
     )
-    .join('');
+    .join("");
 }
 
 function renderAssetPhotoSection(asset: PrintableAsset | null): string {
   if (!asset?.photoUrls.length) {
-    return '';
+    return "";
   }
 
   const maxReportPhotos = 12;
@@ -551,7 +976,7 @@ function renderAssetPhotoSection(asset: PrintableAsset | null): string {
     <section class="assetMapReportSection assetMapReportPhotoSection">
       <div class="assetMapReportSectionTitleRow">
         <h2>Asset Photos</h2>
-        <span>${photos.length} photo${photos.length === 1 ? '' : 's'} shown</span>
+        <span>${photos.length} photo${photos.length === 1 ? "" : "s"} shown</span>
       </div>
       <div class="${gridClass}">
         ${photos
@@ -563,36 +988,74 @@ function renderAssetPhotoSection(asset: PrintableAsset | null): string {
               </figure>
             `,
           )
-          .join('')}
+          .join("")}
       </div>
       ${
         extraPhotoCount
-          ? `<p class="assetMapReportPhotoNote">${extraPhotoCount} additional photo${extraPhotoCount === 1 ? '' : 's'} saved in the asset register.</p>`
-          : ''
+          ? `<p class="assetMapReportPhotoNote">${extraPhotoCount} additional photo${extraPhotoCount === 1 ? "" : "s"} saved in the asset register.</p>`
+          : ""
       }
     </section>
   `;
 }
 
-function buildReportHtml(assets: PrintableAsset[], generatedDate: string, generatedTime: string, ownerEmail: string, logoUrl: string): string {
+function buildReportHtml(
+  assets: PrintableAsset[],
+  options: {
+    generatedDate: string;
+    generatedTime: string;
+    ownerEmail: string;
+    logoUrl: string;
+    scopeLabel: string;
+  },
+): string {
   const singleAsset = assets.length === 1 ? assets[0] : null;
-  const documentTitle = 'Asset Map Report';
-  const heroTitle = singleAsset ? singleAsset.title : 'Fleet Location Map';
-  const heroBadge = singleAsset ? singleAsset.assetTypeLabel : 'Mapped Assets';
+  const documentTitle = "Asset Map Tracking Report";
+  const heroTitle = singleAsset ? singleAsset.title : options.scopeLabel;
+  const heroBadge = singleAsset
+    ? singleAsset.assetTypeLabel
+    : "Asset Map Tracking";
   const heroMeta = singleAsset
-    ? `${singleAsset.plateLabel} · Year model ${singleAsset.yearModel} · GPS ${singleAsset.latLngText}`
-    : `${assets.length} mapped assets shown and numbered. Markers match the location key below.`;
-  const mapData = safeScriptJson(assets);
+    ? `${singleAsset.registerName} · ${singleAsset.plateLabel} · Last GPS coordinate ${singleAsset.latLngText}`
+    : `${assets.length} mapped GPS assets shown and numbered. Markers match the location key below.`;
+  const currentValueTotal = sumAssetValues(
+    assets,
+    (asset) => asset.currentValueRaw,
+  );
+  const replacementValueTotal = sumAssetValues(
+    assets,
+    (asset) => asset.replacementValueRaw,
+  );
+  const insuredValueTotal = sumAssetValues(
+    assets,
+    (asset) => asset.insuredValueRaw,
+  );
+  const mapData = safeScriptJson(
+    assets.map((asset) => ({
+      number: asset.number,
+      title: asset.title,
+      plateLabel: asset.plateLabel,
+      registerName: asset.registerName,
+      latitude: asset.latitude,
+      longitude: asset.longitude,
+      latLngText: asset.latLngText,
+    })),
+  );
   const rowsHtml = renderKeyRows(assets);
-  const selectedAssetRows = singleAsset ? renderSelectedAssetRows(singleAsset) : '';
+  const selectedAssetRows = singleAsset
+    ? renderSelectedAssetRows(singleAsset)
+    : "";
   const photoSectionHtml = renderAssetPhotoSection(singleAsset);
+  const sideMapHtml = singleAsset
+    ? '<section class="assetMapReportSideCard"><h2>Overview Map</h2><div id="overviewMap" aria-label="Selected asset overview map"></div></section>'
+    : "";
 
   return `<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>${escapeHtml(singleAsset ? `${singleAsset.title} - Aim4price asset map` : 'Aim4price Asset Map Report')}</title>
+    <title>${escapeHtml(singleAsset ? `${singleAsset.title} - Aim4price Asset Map Tracking` : "Aim4price Asset Map Tracking Report")}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -610,6 +1073,7 @@ function buildReportHtml(assets: PrintableAsset[], generatedDate: string, genera
         --line: #d7dde5;
         --line-strong: #b9c2ce;
         --brand: #103f35;
+        --brand-soft: #eaf5ef;
       }
 
       * {
@@ -630,7 +1094,7 @@ function buildReportHtml(assets: PrintableAsset[], generatedDate: string, genera
         background: #eef1f4;
         color: var(--ink);
         font-family: "Montserrat", "Segoe UI", Arial, Helvetica, sans-serif;
-        font-size: 9.6px;
+        font-size: 9.5px;
         line-height: 1.35;
       }
 
@@ -677,7 +1141,7 @@ function buildReportHtml(assets: PrintableAsset[], generatedDate: string, genera
         color: var(--ink);
         font: inherit;
         font-size: 12.5px;
-        font-weight: 800;
+        font-weight: 700;
         line-height: 1;
         white-space: nowrap;
         cursor: pointer;
@@ -685,15 +1149,10 @@ function buildReportHtml(assets: PrintableAsset[], generatedDate: string, genera
 
       .assetMapReportButtonPrimary {
         min-width: 150px;
-        border-color: var(--strong);
-        background: var(--strong);
+        border-color: var(--brand);
+        background: var(--brand);
         color: #ffffff;
-        box-shadow: 0 12px 22px rgba(7, 11, 18, 0.18);
-      }
-
-      .assetMapReportButton:focus-visible {
-        outline: 3px solid rgba(17, 24, 39, 0.18);
-        outline-offset: 2px;
+        box-shadow: 0 12px 22px rgba(16, 63, 53, 0.18);
       }
 
       .assetMapReportPage {
@@ -739,7 +1198,7 @@ function buildReportHtml(assets: PrintableAsset[], generatedDate: string, genera
         color: var(--strong);
         font-size: 16px;
         line-height: 1.05;
-        font-weight: 800;
+        font-weight: 700;
         letter-spacing: -0.025em;
       }
 
@@ -749,7 +1208,6 @@ function buildReportHtml(assets: PrintableAsset[], generatedDate: string, genera
         color: var(--muted);
         font-size: 8.9px;
         font-weight: 600;
-        letter-spacing: 0.01em;
       }
 
       .assetMapReportHeaderMeta {
@@ -780,7 +1238,7 @@ function buildReportHtml(assets: PrintableAsset[], generatedDate: string, genera
 
       .assetMapReportOverview {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) 74mm;
+        grid-template-columns: minmax(0, 1fr) 92mm;
         align-items: stretch;
         border: 1px solid var(--line-strong);
         background: #ffffff;
@@ -795,18 +1253,18 @@ function buildReportHtml(assets: PrintableAsset[], generatedDate: string, genera
         margin: 0 0 6px;
         color: var(--muted);
         font-size: 8.1px;
-        font-weight: 800;
-        letter-spacing: 0.12em;
+        font-weight: 700;
+        letter-spacing: 0.08em;
         text-transform: uppercase;
       }
 
       .assetMapReportTitle {
         margin: 0;
         color: var(--strong);
-        font-size: 21.5px;
-        line-height: 1.05;
-        font-weight: 800;
-        letter-spacing: -0.045em;
+        font-size: 21px;
+        line-height: 1.08;
+        font-weight: 700;
+        letter-spacing: -0.035em;
       }
 
       .assetMapReportHeroMeta {
@@ -818,77 +1276,42 @@ function buildReportHtml(assets: PrintableAsset[], generatedDate: string, genera
       }
 
       .assetMapReportSummaryCard {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        padding: 10px 12px;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 7px;
+        padding: 9px 10px;
         border-left: 1px solid var(--line-strong);
         background: var(--soft-2);
       }
 
-      .assetMapReportSummaryCard h2 {
-        margin: 0 0 6px;
-        color: #2b313b;
-        font-size: 8.8px;
-        line-height: 1.1;
-        font-weight: 800;
-        letter-spacing: 0.07em;
-        text-transform: uppercase;
+      .assetMapReportSummaryMetric {
+        min-width: 0;
+        display: grid;
+        gap: 2px;
+        padding: 6px 7px;
+        border: 1px solid var(--line);
+        background: #ffffff;
       }
 
-      .assetMapReportCount {
-        display: block;
-        margin: 0;
-        color: var(--strong);
-        font-size: 30px;
-        line-height: 0.96;
-        font-weight: 800;
-        letter-spacing: -0.055em;
-        white-space: nowrap;
-      }
-
-      .assetMapReportCountLabel {
-        display: block;
-        margin-top: 4px;
+      .assetMapReportSummaryMetric span {
         color: var(--muted);
-        font-size: 8.5px;
+        font-size: 7.5px;
+        line-height: 1.2;
         font-weight: 600;
       }
 
-      .assetMapReportValueMeta {
-        display: grid;
-        gap: 4px;
-        margin-top: 10px;
-        padding-top: 8px;
-        border-top: 1px solid var(--line);
-      }
-
-      .assetMapReportValueMeta div {
-        display: grid;
-        grid-template-columns: 22mm minmax(0, 1fr);
-        gap: 7px;
-        min-height: 17px;
-        align-items: baseline;
-      }
-
-      .assetMapReportValueMeta span {
-        color: var(--muted);
-        font-size: 8.2px;
-        font-weight: 700;
-      }
-
-      .assetMapReportValueMeta strong {
+      .assetMapReportSummaryMetric strong {
         color: var(--strong);
-        font-size: 8.3px;
+        font-size: 11px;
+        line-height: 1.1;
         font-weight: 700;
-        text-align: right;
         word-break: break-word;
       }
 
       .assetMapReportContentGrid {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) ${singleAsset ? '74mm' : '0'};
-        gap: ${singleAsset ? '12px' : '0'};
+        grid-template-columns: minmax(0, 1fr) ${singleAsset ? "76mm" : "0"};
+        gap: ${singleAsset ? "12px" : "0"};
         align-items: stretch;
       }
 
@@ -920,27 +1343,34 @@ function buildReportHtml(assets: PrintableAsset[], generatedDate: string, genera
         color: var(--strong);
         font-size: 10.8px;
         line-height: 1.1;
-        font-weight: 800;
-        letter-spacing: -0.01em;
+        font-weight: 700;
       }
 
       .assetMapReportSectionHeader span {
         color: var(--muted);
         font-size: 8px;
         line-height: 1.2;
-        font-weight: 700;
+        font-weight: 600;
         text-align: right;
       }
 
       #map {
         width: 100%;
-        height: 86mm;
-        min-height: 86mm;
+        height: ${singleAsset ? "92mm" : "94mm"};
+        min-height: ${singleAsset ? "92mm" : "94mm"};
+        background: #dfe8e2;
+      }
+
+      #overviewMap {
+        width: 100%;
+        height: 38mm;
+        min-height: 38mm;
+        border: 1px solid var(--line);
         background: #dfe8e2;
       }
 
       .assetMapReportSide {
-        display: ${singleAsset ? 'grid' : 'none'};
+        display: ${singleAsset ? "grid" : "none"};
         gap: 8px;
       }
 
@@ -954,8 +1384,7 @@ function buildReportHtml(assets: PrintableAsset[], generatedDate: string, genera
         color: var(--strong);
         font-size: 10.8px;
         line-height: 1.1;
-        font-weight: 800;
-        letter-spacing: -0.01em;
+        font-weight: 700;
       }
 
       .assetMapReportDetailRows {
@@ -965,22 +1394,22 @@ function buildReportHtml(assets: PrintableAsset[], generatedDate: string, genera
 
       .assetMapReportDetailRow {
         display: grid;
-        grid-template-columns: 23mm minmax(0, 1fr);
-        min-height: 18px;
+        grid-template-columns: 27mm minmax(0, 1fr);
+        min-height: 17px;
         align-items: center;
         border-bottom: 1px solid var(--line);
       }
 
       .assetMapReportDetailRow span {
         color: #38404c;
-        font-size: 8.1px;
+        font-size: 7.8px;
         line-height: 1.3;
         font-weight: 600;
       }
 
       .assetMapReportDetailRow strong {
         color: var(--strong);
-        font-size: 8.2px;
+        font-size: 7.8px;
         line-height: 1.3;
         font-weight: 700;
         text-align: right;
@@ -989,24 +1418,24 @@ function buildReportHtml(assets: PrintableAsset[], generatedDate: string, genera
 
       .assetMapReportSection {
         display: grid;
-        gap: 10px;
+        gap: 9px;
         padding: 10px 11px 12px;
         break-inside: avoid;
       }
 
       .assetMapReportKeyRows {
         display: grid;
-        gap: 7px;
+        gap: 6px;
         border-top: 0;
       }
 
       .assetMapReportKeyRow {
         display: grid;
-        grid-template-columns: 10mm minmax(34mm, 1.2fr) minmax(17mm, 0.48fr) minmax(22mm, 0.6fr) minmax(21mm, 0.58fr) minmax(16mm, 0.42fr) minmax(25mm, 0.62fr) minmax(32mm, 0.78fr) minmax(29mm, 0.72fr);
-        gap: 7px;
+        grid-template-columns: 9mm minmax(35mm, 1.1fr) minmax(22mm, 0.58fr) minmax(23mm, 0.58fr) minmax(22mm, 0.54fr) minmax(25mm, 0.62fr) minmax(28mm, 0.68fr) minmax(34mm, 0.78fr) minmax(30mm, 0.7fr);
+        gap: 6px;
         min-height: 34px;
         align-items: center;
-        padding: 7px 9px;
+        padding: 7px 8px;
         border: 1px solid var(--line);
         background: var(--soft-2);
         break-inside: avoid;
@@ -1015,12 +1444,12 @@ function buildReportHtml(assets: PrintableAsset[], generatedDate: string, genera
       .assetMapReportMarkerNumber {
         display: grid;
         place-items: center;
-        width: 24px;
-        height: 24px;
+        width: 23px;
+        height: 23px;
         border-radius: 999px;
         color: #ffffff;
         background: var(--brand);
-        font-size: 8.7px;
+        font-size: 8.5px;
         font-weight: 800;
       }
 
@@ -1036,7 +1465,7 @@ function buildReportHtml(assets: PrintableAsset[], generatedDate: string, genera
         min-width: 0;
         overflow-wrap: anywhere;
         color: var(--strong);
-        font-size: 8.4px;
+        font-size: 8px;
         line-height: 1.25;
         font-weight: 700;
       }
@@ -1046,26 +1475,17 @@ function buildReportHtml(assets: PrintableAsset[], generatedDate: string, genera
         min-width: 0;
         overflow-wrap: anywhere;
         color: #38404c;
-        font-size: 7.7px;
+        font-size: 7.4px;
         line-height: 1.25;
         font-weight: 600;
       }
 
-      .assetMapReportCell small {
-        min-width: 0;
-        overflow-wrap: anywhere;
-        color: #5f7370;
-        font-size: 7.2px;
-        line-height: 1.25;
-        font-weight: 700;
-      }
-
       .assetMapReportGpsCell strong {
-        font-size: 7.9px;
+        font-size: 7.6px;
       }
 
       .assetMapReportLastScannedCell strong {
-        font-size: 7.55px;
+        font-size: 7.2px;
         line-height: 1.18;
       }
 
@@ -1084,7 +1504,7 @@ function buildReportHtml(assets: PrintableAsset[], generatedDate: string, genera
         color: var(--muted);
         font-size: 8px;
         line-height: 1.2;
-        font-weight: 700;
+        font-weight: 600;
         text-align: right;
       }
 
@@ -1144,7 +1564,7 @@ function buildReportHtml(assets: PrintableAsset[], generatedDate: string, genera
         border-top: 1px solid var(--line);
         color: #3f4652;
         font-size: 7.5px;
-        font-weight: 700;
+        font-weight: 600;
       }
 
       .assetMapReportPhotoNote {
@@ -1205,12 +1625,6 @@ function buildReportHtml(assets: PrintableAsset[], generatedDate: string, genera
 
       .leaflet-control-attribution {
         font-size: 7px;
-      }
-
-      .leaflet-popup-content-wrapper,
-      .leaflet-popup-tip {
-        border-radius: 0;
-        box-shadow: none;
       }
 
       .reportMarker {
@@ -1297,7 +1711,6 @@ function buildReportHtml(assets: PrintableAsset[], generatedDate: string, genera
 
         .assetMapReportHeaderMeta,
         .assetMapReportMetaLine strong,
-        .assetMapReportValueMeta strong,
         .assetMapReportDetailRow strong {
           text-align: left;
         }
@@ -1337,17 +1750,17 @@ function buildReportHtml(assets: PrintableAsset[], generatedDate: string, genera
         }
 
         .assetMapReportOverview {
-          grid-template-columns: minmax(0, 1fr) 74mm;
+          grid-template-columns: minmax(0, 1fr) 92mm;
         }
 
         .assetMapReportContentGrid {
-          grid-template-columns: minmax(0, 1fr) ${singleAsset ? '74mm' : '0'};
-          gap: ${singleAsset ? '12px' : '0'};
+          grid-template-columns: minmax(0, 1fr) ${singleAsset ? "76mm" : "0"};
+          gap: ${singleAsset ? "12px" : "0"};
         }
 
         #map {
-          height: ${singleAsset ? '89mm' : '94mm'};
-          min-height: ${singleAsset ? '89mm' : '94mm'};
+          height: ${singleAsset ? "93mm" : "96mm"};
+          min-height: ${singleAsset ? "93mm" : "96mm"};
         }
 
         .assetMapReportSection {
@@ -1388,7 +1801,7 @@ function buildReportHtml(assets: PrintableAsset[], generatedDate: string, genera
   </head>
   <body>
     <div class="assetMapReportScreenBar">
-      <div class="assetMapReportScreenText">Save or print this asset map report. In the print dialog, choose <strong>Save as PDF</strong>.</div>
+      <div class="assetMapReportScreenText">Save or print this Asset Map Tracking report. In the print dialog, choose <strong>Save as PDF</strong>.</div>
       <div class="assetMapReportScreenActions">
         <button type="button" class="assetMapReportButton" onclick="window.close()">Close</button>
         <button type="button" class="assetMapReportButton assetMapReportButtonPrimary" onclick="window.print()">Save PDF / Print</button>
@@ -1398,15 +1811,16 @@ function buildReportHtml(assets: PrintableAsset[], generatedDate: string, genera
     <main class="assetMapReportPage">
       <div class="assetMapReportInner">
         <header class="assetMapReportHeader">
-          <div class="assetMapReportLogoWrap">${logoUrl ? `<img class="assetMapReportLogo" src="${escapeHtml(logoUrl)}" alt="Logo" />` : ''}</div>
+          <div class="assetMapReportLogoWrap">${options.logoUrl ? `<img class="assetMapReportLogo" src="${escapeHtml(options.logoUrl)}" alt="Logo" />` : ""}</div>
           <div class="assetMapReportDocumentTitle">
             <strong>${escapeHtml(documentTitle)}</strong>
-            <span>Aim4price fleet visibility</span>
+            <span>Aim4price saved GPS location report</span>
           </div>
           <div class="assetMapReportHeaderMeta">
-            <div class="assetMapReportMetaLine"><span>Generated</span><strong>${escapeHtml(generatedDate)}</strong></div>
-            <div class="assetMapReportMetaLine"><span>Time</span><strong>${escapeHtml(generatedTime)}</strong></div>
-            ${ownerEmail ? `<div class="assetMapReportMetaLine"><span>Email</span><strong>${escapeHtml(ownerEmail)}</strong></div>` : ''}
+            <div class="assetMapReportMetaLine"><span>Generated</span><strong>${escapeHtml(options.generatedDate)}</strong></div>
+            <div class="assetMapReportMetaLine"><span>Time</span><strong>${escapeHtml(options.generatedTime)}</strong></div>
+            <div class="assetMapReportMetaLine"><span>Scope</span><strong>${escapeHtml(options.scopeLabel)}</strong></div>
+            ${options.ownerEmail ? `<div class="assetMapReportMetaLine"><span>Email</span><strong>${escapeHtml(options.ownerEmail)}</strong></div>` : ""}
           </div>
         </header>
 
@@ -1417,27 +1831,25 @@ function buildReportHtml(assets: PrintableAsset[], generatedDate: string, genera
             <p class="assetMapReportHeroMeta">${escapeHtml(heroMeta)}</p>
           </div>
 
-          <aside class="assetMapReportSummaryCard">
-            <h2>Mapped assets</h2>
-            <strong class="assetMapReportCount">${assets.length}</strong>
-            <span class="assetMapReportCountLabel">${assets.length === 1 ? 'Selected mapped asset' : 'Visible mapped assets'}</span>
-            <div class="assetMapReportValueMeta">
-              <div><span>Report basis</span><strong>${assets.length === 1 ? 'Selected asset' : 'Current map view'}</strong></div>
-              <div><span>Marker key</span><strong>${assets.length ? 'Numbered' : 'No markers'}</strong></div>
-            </div>
+          <aside class="assetMapReportSummaryCard" aria-label="Asset Map Tracking summary">
+            <div class="assetMapReportSummaryMetric"><span>Mapped assets</span><strong>${assets.length}</strong></div>
+            <div class="assetMapReportSummaryMetric"><span>Current value</span><strong>${escapeHtml(formatMoney(currentValueTotal))}</strong></div>
+            <div class="assetMapReportSummaryMetric"><span>Replacement price</span><strong>${escapeHtml(formatMoney(replacementValueTotal))}</strong></div>
+            <div class="assetMapReportSummaryMetric"><span>Insured price</span><strong>${escapeHtml(formatMoney(insuredValueTotal))}</strong></div>
           </aside>
         </section>
 
         <div class="assetMapReportContentGrid">
           <section class="assetMapReportMapSection">
             <div class="assetMapReportSectionHeader">
-              <h2>Asset Location Map</h2>
-              <span>${assets.length === 1 ? 'One GPS marker shown' : 'Markers are numbered to match the location key'}</span>
+              <h2>${singleAsset ? "Close-up Asset Map" : "Asset Location Map"}</h2>
+              <span>${assets.length === 1 ? "Close-up GPS marker shown" : "Markers are numbered to match the location key"}</span>
             </div>
-            <div id="map" aria-label="Asset map report"></div>
+            <div id="map" aria-label="Asset map tracking report map"></div>
           </section>
 
           <aside class="assetMapReportSide">
+            ${sideMapHtml}
             <section class="assetMapReportSideCard">
               <h2>Selected Asset Details</h2>
               <div class="assetMapReportDetailRows">${selectedAssetRows}</div>
@@ -1455,7 +1867,7 @@ function buildReportHtml(assets: PrintableAsset[], generatedDate: string, genera
         <footer class="assetMapReportFooter">
           <div>
             <p class="assetMapReportPowered">Powered by Aim4price.com</p>
-            <div class="assetMapReportDisclaimer">This report reflects the latest saved QR scan GPS position for each mapped asset at the time it was generated. Use the coordinates and marker numbers as a location aid, not as a legal survey record.</div>
+            <div class="assetMapReportDisclaimer">This report reflects the latest saved GPS position for each mapped asset at the time it was generated. Use the coordinates and marker numbers as a location aid, not as a legal survey record.</div>
           </div>
           <div class="assetMapReportPageNumber">Page 1</div>
         </footer>
@@ -1466,14 +1878,29 @@ function buildReportHtml(assets: PrintableAsset[], generatedDate: string, genera
     <script>
       (function () {
         var assets = ${mapData};
+        var defaultCenter = [${DEFAULT_CENTER[0]}, ${DEFAULT_CENTER[1]}];
 
-        function initMap() {
-          var mapEl = document.getElementById('map');
-          if (!mapEl || !window.L) {
-            return;
-          }
+        function addHybridLayers(map) {
+          var imagery = L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            maxZoom: 19,
+            attribution: 'Tiles &copy; Esri',
+          }).addTo(map);
+          var labels = L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+            maxZoom: 19,
+            attribution: 'Labels &copy; Esri',
+          }).addTo(map);
+          return { primary: imagery, labels: labels };
+        }
 
-          var map = L.map(mapEl, {
+        function addRoadLayer(map) {
+          return L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap contributors',
+          }).addTo(map);
+        }
+
+        function buildStaticMap(mapEl) {
+          return L.map(mapEl, {
             zoomControl: false,
             attributionControl: true,
             scrollWheelZoom: false,
@@ -1483,49 +1910,75 @@ function buildReportHtml(assets: PrintableAsset[], generatedDate: string, genera
             keyboard: false,
             tap: false,
           });
+        }
 
-          var tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '&copy; OpenStreetMap contributors',
-          }).addTo(map);
+        function escapePopup(value) {
+          return String(value == null ? '' : value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+        }
 
-          if (!assets.length) {
-            map.setView([-29.0, 24.0], 5);
-            schedulePrint(tiles);
-            return;
-          }
+        function markerIcon(asset) {
+          return L.divIcon({
+            className: 'reportMarker',
+            html: '<span class="reportMarkerPin"><b>' + asset.number + '</b></span>',
+            iconSize: [34, 40],
+            iconAnchor: [17, 36],
+            popupAnchor: [0, -31],
+          });
+        }
 
+        function addMarkers(map, markerAssets) {
           var bounds = [];
-          var escapePopup = function (value) {
-            return String(value == null ? '' : value)
-              .replace(/&/g, '&amp;')
-              .replace(/</g, '&lt;')
-              .replace(/>/g, '&gt;')
-              .replace(/"/g, '&quot;')
-              .replace(/'/g, '&#39;');
-          };
 
-          assets.forEach(function (asset) {
-            var icon = L.divIcon({
-              className: 'reportMarker',
-              html: '<span class="reportMarkerPin"><b>' + asset.number + '</b></span>',
-              iconSize: [34, 40],
-              iconAnchor: [17, 36],
-              popupAnchor: [0, -31],
-            });
-
-            var marker = L.marker([asset.latitude, asset.longitude], { icon: icon }).addTo(map);
-            marker.bindPopup('<strong>' + escapePopup(asset.title) + '</strong><br />' + escapePopup(asset.plateLabel) + '<br />GPS ' + escapePopup(asset.latLngText));
+          markerAssets.forEach(function (asset) {
+            var marker = L.marker([asset.latitude, asset.longitude], { icon: markerIcon(asset) }).addTo(map);
+            marker.bindPopup('<strong>' + escapePopup(asset.title) + '</strong><br />' + escapePopup(asset.registerName) + '<br />GPS ' + escapePopup(asset.latLngText));
             bounds.push([asset.latitude, asset.longitude]);
           });
 
-          if (bounds.length === 1) {
-            map.setView(bounds[0], 13);
-          } else {
-            map.fitBounds(bounds, { padding: [44, 44], maxZoom: 13 });
+          return bounds;
+        }
+
+        function initOverviewMap(asset) {
+          var overviewEl = document.getElementById('overviewMap');
+          if (!overviewEl || !asset) return null;
+
+          var overviewMap = buildStaticMap(overviewEl);
+          var overviewTiles = addRoadLayer(overviewMap);
+          L.marker([asset.latitude, asset.longitude], { icon: markerIcon(asset) }).addTo(overviewMap);
+          overviewMap.setView([asset.latitude, asset.longitude], 13);
+          return overviewTiles;
+        }
+
+        function initMap() {
+          var mapEl = document.getElementById('map');
+          if (!mapEl || !window.L) {
+            return;
           }
 
-          schedulePrint(tiles);
+          var map = buildStaticMap(mapEl);
+          var layers = addHybridLayers(map);
+
+          if (!assets.length) {
+            map.setView(defaultCenter, 5);
+            schedulePrint(layers.primary);
+            return;
+          }
+
+          var bounds = addMarkers(map, assets);
+
+          if (bounds.length === 1) {
+            map.setView(bounds[0], 17);
+            initOverviewMap(assets[0]);
+          } else {
+            map.fitBounds(bounds, { padding: [44, 44], maxZoom: 14 });
+          }
+
+          schedulePrint(layers.primary);
         }
 
         function waitForFonts() {
@@ -1600,29 +2053,93 @@ export async function GET(request: Request) {
 
   try {
     const url = new URL(request.url);
-    const selection = readAssetReportSelection(url);
+    const rawFormat = asText(url.searchParams.get("format")).toLowerCase();
+    const format = rawFormat || "pdf";
 
-    const items = await listAssetRegisterItems(session.user.id);
-    const mappedItems = items.filter(hasCoordinates);
-    const reportItems = filterAssetsBySelection(mappedItems, selection);
-    const printableAssets = reportItems.map(toPrintableAsset);
+    if (format !== "pdf" && format !== "xlsx") {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            "Only PDF and XLSX exports are available for Asset Map Tracking.",
+        },
+        { status: 400 },
+      );
+    }
+
+    const scopedResult = await loadScopedMappedAssets(session.user.id, url);
+    const printableAssets = scopedResult.assets.map(toPrintableAsset);
     const now = new Date();
-    const logoUrl = await getAssetRegisterReportLogoUrl(session.user.id).catch(() => '');
-    const html = buildReportHtml(printableAssets, formatDate(now), formatTime(now), asText(session.user.email), logoUrl);
-    const filename = buildReportFilename(printableAssets, now);
+
+    if (format === "xlsx") {
+      const workbook = buildAssetGpsWorkbook(
+        printableAssets,
+        scopedResult.scopeLabel,
+        now,
+      );
+      const filename = buildXlsxFilename(scopedResult.scopeSegment, now);
+
+      return new NextResponse(workbook, {
+        status: 200,
+        headers: {
+          "Content-Type":
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          "Content-Disposition": `attachment; filename="${filename}"`,
+          "Content-Length": String(workbook.length),
+          "Cache-Control": "no-store",
+        },
+      });
+    }
+
+    const logoUrl = await getAssetRegisterReportLogoUrl(session.user.id).catch(
+      () => "",
+    );
+    const html = buildReportHtml(printableAssets, {
+      generatedDate: formatDate(now),
+      generatedTime: formatTime(now),
+      ownerEmail: asText(session.user.email),
+      logoUrl,
+      scopeLabel: scopedResult.scopeLabel,
+    });
+    const filename = buildReportFilename(
+      printableAssets,
+      scopedResult.scopeSegment,
+      now,
+    );
 
     return new NextResponse(html, {
       status: 200,
       headers: {
-        'Content-Type': 'text/html; charset=utf-8',
-        'Content-Disposition': `inline; filename="${filename}"`,
-        'Cache-Control': 'no-store',
+        "Content-Type": "text/html; charset=utf-8",
+        "Content-Disposition": `inline; filename="${filename}"`,
+        "Cache-Control": "no-store",
       },
     });
   } catch (error) {
-    console.error('asset map report failed', error);
+    console.error("asset map report failed", error);
+
+    if (
+      error instanceof Error &&
+      error.message === "ASSET_MAP_REGISTER_NOT_FOUND"
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            "The selected asset register could not be found for this account.",
+        },
+        { status: 404 },
+      );
+    }
+
     return NextResponse.json(
-      { ok: false, error: error instanceof Error ? error.message : 'Failed to build the asset map report.' },
+      {
+        ok: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to build the Asset Map Tracking report.",
+      },
       { status: 500 },
     );
   }
