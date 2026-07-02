@@ -916,16 +916,16 @@ function ChangeRegisterIcon({ className }: IconProps) {
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="2"
+      strokeWidth="2.2"
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
       aria-hidden="true"
     >
-      <path d="M16 3h5v5" />
-      <path d="M4 11V9a6 6 0 0 1 6-6h11" />
-      <path d="M8 21H3v-5" />
-      <path d="M20 13v2a6 6 0 0 1-6 6H3" />
+      <path d="M7 7h10" />
+      <path d="m14 4 3 3-3 3" />
+      <path d="M17 17H7" />
+      <path d="m10 14-3 3 3 3" />
     </svg>
   );
 }
@@ -9714,19 +9714,21 @@ export default function AssetRegisterClient() {
         <section className={styles.registerPanel}>
           <div className={styles.registerHeader}>
             <div className={`${styles.registerTitleBlock} ${styles.businessRegisterTitleBlock}`}>
-              <h1>{isLoading ? 'Loading...' : activeRegister?.businessName || buildOwnerName(reportProfile)}</h1>
-              {canOpenRegisterSwitcher ? (
-                <button
-                  type="button"
-                  className={styles.registerChangeButton}
-                  onClick={openChangeRegisterModal}
-                  disabled={isLoading || Boolean(changingRegisterId)}
-                  aria-label="Change asset register"
-                  title="Change asset register"
-                >
-                  <ChangeRegisterIcon className={styles.registerChangeIcon} />
-                </button>
-              ) : null}
+              <div className={styles.businessRegisterTitleCard}>
+                <h1>{isLoading ? 'Loading...' : activeRegister?.businessName || buildOwnerName(reportProfile)}</h1>
+                {canOpenRegisterSwitcher ? (
+                  <button
+                    type="button"
+                    className={styles.registerChangeButton}
+                    onClick={openChangeRegisterModal}
+                    disabled={isLoading || Boolean(changingRegisterId)}
+                    aria-label="Change asset register"
+                    title="Change asset register"
+                  >
+                    <ChangeRegisterIcon className={styles.registerChangeIcon} />
+                  </button>
+                ) : null}
+              </div>
             </div>
 
             <div className={`${styles.headerActions} ${canUseOwnerOnlyAssetActions ? styles.ownerRegisterHeaderActions : styles.sharedRegisterHeaderActions}`}>

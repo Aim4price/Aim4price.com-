@@ -28454,3 +28454,93 @@ button.documentOpenLink {
     width: 100%;
   }
 }
+
+/* === Asset Register title-card switcher placement fix === */
+.businessRegisterTitleBlock {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  display: block !important;
+}
+
+.businessRegisterTitleCard {
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: clamp(5.1rem, 7vw, 6.1rem) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: clamp(0.75rem, 1.35vw, 1.15rem) !important;
+  margin: 0 !important;
+  padding: clamp(1.15rem, 2vw, 1.55rem) clamp(1.25rem, 2.6vw, 2rem) !important;
+  border: 1.5px solid rgba(193, 211, 218, 0.98) !important;
+  border-radius: clamp(1.25rem, 2vw, 1.7rem) !important;
+  background:
+    radial-gradient(circle at 3% 0%, rgba(25, 116, 84, 0.08) 0%, rgba(25, 116, 84, 0) 38%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(248, 252, 253, 0.98) 100%) !important;
+  box-shadow:
+    0 18px 38px rgba(16, 36, 40, 0.06),
+    0 6px 16px rgba(16, 36, 40, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.businessRegisterTitleBlock .businessRegisterTitleCard h1 {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  width: auto !important;
+  max-width: none !important;
+  min-height: 0 !important;
+  display: block !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #073b30 !important;
+  text-shadow: none !important;
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif !important;
+  font-size: clamp(2.35rem, 4.15vw, 3.55rem) !important;
+  font-weight: 900 !important;
+  line-height: 0.98 !important;
+  letter-spacing: -0.062em !important;
+  text-transform: uppercase !important;
+  overflow-wrap: anywhere !important;
+  word-break: normal !important;
+  text-wrap: balance;
+}
+
+.businessRegisterTitleCard .registerChangeButton {
+  flex: 0 0 2.85rem !important;
+  width: 2.85rem !important;
+  height: 2.85rem !important;
+  margin-left: clamp(0.35rem, 0.8vw, 0.75rem) !important;
+  align-self: center !important;
+  border-radius: 999px !important;
+}
+
+.businessRegisterTitleCard .registerChangeIcon {
+  width: 1.08rem !important;
+  height: 1.08rem !important;
+}
+
+@media (max-width: 640px) {
+  .businessRegisterTitleCard {
+    min-height: 4.35rem !important;
+    gap: 0.7rem !important;
+    padding: 1rem 1.05rem !important;
+    border-radius: 1.15rem !important;
+  }
+
+  .businessRegisterTitleBlock .businessRegisterTitleCard h1 {
+    font-size: clamp(1.75rem, 9vw, 2.2rem) !important;
+    letter-spacing: -0.045em !important;
+  }
+
+  .businessRegisterTitleCard .registerChangeButton {
+    flex-basis: 2.55rem !important;
+    width: 2.55rem !important;
+    height: 2.55rem !important;
+    margin-left: 0.25rem !important;
+  }
+}
