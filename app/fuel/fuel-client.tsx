@@ -873,14 +873,23 @@ function safeFuelSlipCardMask(last4: string): string {
 }
 
 function cardLast4FromValue(value: unknown): string {
-  const text = String(value ?? '').trim().slice(0, 160);
+  const text = String(value ?? '').trim().slice(0, 240);
   if (!text) return '';
 
-  const masked = /(?:\b\d{4,6}[\s-]*)?(?:[*xX]{2,}[\s-]*){1,4}(\d{4})\b/.exec(text);
+  const maskClass = String.raw`[*xX#•·●∙]`;
+  const masked = new RegExp(String.raw`(?:\b\d{4,6}[\s-]*)?(?:${maskClass}{1,}[\s-]*){1,8}(\d{4})\b`).exec(text);
   if (masked) return masked[1];
 
-  const firstMasked = /\b\d{4,6}[\s-]*(?:[*xX]{2,}[\s-]*){1,3}(\d{4})\b/.exec(text);
+  const firstMasked = new RegExp(String.raw`\b\d{4,6}[\s-]*(?:${maskClass}{1,}[\s-]*){1,6}(\d{4})\b`).exec(text);
   if (firstMasked) return firstMasked[1];
+
+  if ((text.match(new RegExp(maskClass, 'g')) ?? []).length >= 2) {
+    const maskedTail = new RegExp(String.raw`(?:${maskClass}\s*){2,}.{0,48}?(\d{4})\b`).exec(text);
+    if (maskedTail) return maskedTail[1];
+  }
+
+  const contextTail = /(?:ending|last\s*4|last\s*four|card|kaart|pan|acc(?:ount)?)[^\d]{0,32}(\d{4})\b/i.exec(text);
+  if (contextTail) return contextTail[1];
 
   const digits = text.replace(/\D/g, '');
   if (digits.length >= 13 && digits.length <= 19) return digits.slice(-4);
@@ -896,9 +905,10 @@ function normalizeFuelSlipCard(value: unknown, fallbackLast4?: unknown): { maske
 }
 
 function sanitizeFuelSlipSensitiveText(value: unknown): string {
+  const maskClass = String.raw`[*xX#•·●∙]`;
   return String(value ?? '')
-    .replace(/\b\d{4,6}[\s-]*(?:[*xX]{2,}[\s-]*){1,3}\d{4}\b/g, (match) => normalizeFuelSlipCard(match).masked || match)
-    .replace(/\b(?:[*xX]{2,}[\s-]*){1,4}\d{4}\b/g, (match) => normalizeFuelSlipCard(match).masked || match)
+    .replace(new RegExp(String.raw`\b\d{4,6}[\s-]*(?:${maskClass}{1,}[\s-]*){1,6}\d{4}\b`, 'g'), (match) => normalizeFuelSlipCard(match).masked || match)
+    .replace(new RegExp(String.raw`\b(?:${maskClass}{1,}[\s-]*){1,8}\d{4}\b`, 'g'), (match) => normalizeFuelSlipCard(match).masked || match)
     .replace(/\b(?:\d[\s-]?){13,19}\b/g, (match) => normalizeFuelSlipCard(match).masked || match);
 }
 
@@ -2706,8 +2716,8 @@ export default function FuelClient() {
               ) : null}
 
               {fuelSlipDraft.rawExtractedText ? (
-                <details className={styles.rawPreview}>
-                  <summary>Raw extraction preview</summary>
+                <details className={styles.rawPreview} open>
+                  <summary>Raw OCR and parser debug</summary>
                   <pre>{sanitizeFuelSlipSensitiveText(fuelSlipDraft.rawExtractedText)}</pre>
                 </details>
               ) : null}

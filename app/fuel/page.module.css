@@ -3529,26 +3529,34 @@
 }
 
 .fuelSlipFlowBackdrop .rawPreview {
-  border: 1px solid var(--line);
+  border: 1px solid rgba(199, 211, 224, 0.96);
   border-radius: 1.12rem;
-  background: #fbfdfe;
+  background: linear-gradient(180deg, #ffffff 0%, #f7fbfd 100%);
   overflow: hidden;
 }
 
 .fuelSlipFlowBackdrop .rawPreview summary {
-  padding: 0.85rem 1rem;
+  display: flex;
+  align-items: center;
+  min-height: 3rem;
+  padding: 0 1rem;
   cursor: pointer;
   color: var(--text);
+  font-size: 0.92rem;
   font-weight: 900;
 }
 
 .fuelSlipFlowBackdrop .rawPreview pre {
-  max-height: 13rem;
+  max-height: 18rem;
   margin: 0;
   overflow: auto;
   padding: 1rem;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid rgba(199, 211, 224, 0.96);
+  background: #f8fbfd;
   color: #405164;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.8rem;
+  line-height: 1.48;
   white-space: pre-wrap;
 }
 
