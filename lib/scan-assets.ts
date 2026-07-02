@@ -1,7 +1,10 @@
 import { getDb } from './db';
 import { MAX_ASSET_REGISTER_PHOTOS } from './asset-register-uploads';
 import { ensureFuelLedgerTables } from './fuel-ledger';
-import { captureAssetDepreciationSnapshotForAssetId } from './asset-depreciation-timeline';
+import {
+  captureAssetDepreciationLogEntryForAssetId,
+  type DepreciationLogAssetInput,
+} from './asset-depreciation-timeline';
 
 export type ScanAssetQrStatus = 'active' | 'transferred' | 'retired' | 'deleted' | '';
 export type ScanAssetUsageMode = 'hours' | 'percent' | 'km' | 'none';
@@ -113,6 +116,17 @@ export type SaveScanAssetEventInput = {
 type ScanAccessRow = {
   id: string | number;
   user_id: string | null;
+  register_id?: string | null;
+  sector_id?: string | number | null;
+  equipment_family_id?: string | number | null;
+  brand_name?: string | null;
+  model_name?: string | null;
+  typed_model_name?: string | null;
+  year_model?: string | number | null;
+  value?: string | number | null;
+  selected_value_ex_vat?: string | number | null;
+  replacement_price_used_ex_vat?: string | number | null;
+  user_replacement_price_ex_vat?: string | number | null;
   public_asset_code: string | null;
   plate_label: string | null;
   qr_status: string | null;
@@ -556,6 +570,36 @@ function mapScanSafeAsset(row: ScanAccessRow): ScanSafeAsset {
   };
 }
 
+
+function mapScanAccessRowToDepreciationAsset(row: ScanAccessRow): DepreciationLogAssetInput {
+  return {
+    id: asId(row.id),
+    userId: asText(row.user_id),
+    registerId: asText(row.register_id) || null,
+    valuationRunId: asNumber(row.valuation_run_id),
+    title: asText(row.title),
+    kind: asText(row.kind),
+    sectorId: asNumber(row.sector_id),
+    equipmentFamilyId: asNumber(row.equipment_family_id),
+    equipmentFamilyKey: asText(row.equipment_family_key),
+    equipmentFamilyLabel: asText(row.equipment_family_label),
+    brandName: asText(row.brand_name),
+    modelName: asText(row.model_name),
+    typedModelName: asText(row.typed_model_name),
+    yearModel: asNumber(row.year_model),
+    hours: asNumber(row.hours),
+    lifeWorkedPercent: asNumber(row.life_worked_percent),
+    condition: normalizeCondition(row.condition),
+    replacementPriceUsedExVat: asNumber(row.replacement_price_used_ex_vat),
+    userReplacementPriceExVat: asNumber(row.user_replacement_price_ex_vat),
+    value: asNumber(row.value),
+    selectedValueExVat: asNumber(row.selected_value_ex_vat),
+    selectedMethod: asText(row.selected_method),
+    depreciationMethodUsed: asText(row.depreciation_method_used),
+    specsJson: asRecord(row.specs_json),
+  };
+}
+
 function mapScanEventRow(row: ScanEventRow): ScanEventRecord {
   const fuelLedgerLitres = asNumber(row.fuel_ledger_litres);
   const assetFuelPercentAfter = asNumber(row.asset_fuel_percent_after) ?? asNumber(row.fuel_percent);
@@ -719,6 +763,17 @@ export async function getScanAssetAccessContext(publicAssetCode: string): Promis
       select
         a.id,
         a.user_id,
+        a.register_id,
+        a.sector_id,
+        coalesce(a.equipment_family_id, vr.equipment_family_id) as equipment_family_id,
+        a.brand_name,
+        a.model_name,
+        a.typed_model_name,
+        a.year_model,
+        a.value,
+        a.selected_value_ex_vat,
+        a.replacement_price_used_ex_vat,
+        a.user_replacement_price_ex_vat,
         a.public_asset_code,
         a.plate_label,
         a.qr_status,
@@ -1060,6 +1115,17 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
         select
           a.id,
           a.user_id,
+          a.register_id,
+          a.sector_id,
+          coalesce(a.equipment_family_id, vr.equipment_family_id) as equipment_family_id,
+          a.brand_name,
+          a.model_name,
+          a.typed_model_name,
+          a.year_model,
+          a.value,
+          a.selected_value_ex_vat,
+          a.replacement_price_used_ex_vat,
+          a.user_replacement_price_ex_vat,
           a.public_asset_code,
           a.plate_label,
           a.qr_status,
@@ -1231,7 +1297,7 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
       }
     }
 
-    const shouldCaptureDepreciationSnapshot = valuationStaleReasons.length > 0;
+    const shouldCaptureDepreciationLogEntry = valuationStaleReasons.length > 0;
 
     const baseSpecsJson = nextLifeWorkedPercent !== null
       ? applyLifeWorkedPercent(asRecord(existingRow.specs_json), nextLifeWorkedPercent)
@@ -1400,10 +1466,11 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
     const asset = mapScanSafeAsset(assetRow);
     const event = mapScanEventRow(eventRow);
 
-    if (shouldCaptureDepreciationSnapshot) {
-      await captureAssetDepreciationSnapshotForAssetId({
+    if (shouldCaptureDepreciationLogEntry) {
+      await captureAssetDepreciationLogEntryForAssetId({
         userId: currentAsset.userId,
         assetId: currentAsset.id,
+        previousAsset: mapScanAccessRowToDepreciationAsset(existingRow),
         eventType: 'qr_scan_update',
         eventSource: 'asset-register-qr-scan',
         capturedAt: event.createdAtIso,
@@ -1413,6 +1480,7 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
           valuationNeedsUpdate: valuationStaleReasons.length > 0,
           valuationStaleReasons,
           valuationRelevantReasons: valuationStaleReasons,
+          logEventReasons: valuationStaleReasons,
           timelineEventReasons: valuationStaleReasons,
           usageMode: currentUsageMode,
         },

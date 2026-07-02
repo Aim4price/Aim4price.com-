@@ -1,6 +1,6 @@
 import { getDb } from './db';
 
-export type AssetDepreciationSnapshot = {
+export type AssetDepreciationLogEntry = {
   id: string;
   userId: string;
   registerId: string | null;
@@ -24,23 +24,36 @@ export type AssetDepreciationSnapshot = {
   lifeRemainingPercent: number | null;
   condition: string;
   replacementPriceExVat: number | null;
-  estimatedValueExVat: number;
+  previousValueExVat: number | null;
+  newValueExVat: number;
+  differenceValueExVat: number | null;
+  differencePercent: number | null;
   selectedMethod: string;
   depreciationMethodUsed: string;
+  metadataJson: Record<string, unknown>;
+  createdAtIso: string;
+
+  // Compatibility aliases for existing report/export code and the existing database column names.
+  estimatedValueExVat: number;
   previousEstimatedValueExVat: number | null;
   depreciationSincePreviousExVat: number | null;
   depreciationSincePreviousPercent: number | null;
-  metadataJson: Record<string, unknown>;
-  createdAtIso: string;
 };
 
-export type DepreciationTimelineSummary = {
+export type AssetDepreciationSnapshot = AssetDepreciationLogEntry;
+
+export type DepreciationLogSummary = {
+  openingLogValueExVat: number | null;
   openingTimelineValueExVat: number | null;
   currentValueExVat: number | null;
+  totalDifferenceExVat: number | null;
   totalMarketDepreciationExVat: number | null;
   totalMovementPercent: number | null;
+  firstLogEntryDateIso: string | null;
   firstSnapshotDateIso: string | null;
+  latestLogEntryDateIso: string | null;
   latestSnapshotDateIso: string | null;
+  logEntryCount: number;
   snapshotCount: number;
   latestUsageAmount: number | null;
   latestUsageMetric: string;
@@ -48,19 +61,23 @@ export type DepreciationTimelineSummary = {
   replacementPriceUsedExVat: number | null;
 };
 
+export type DepreciationTimelineSummary = DepreciationLogSummary;
+
 export type DepreciationAnnualSummary = {
   year: number;
   openingValueExVat: number | null;
   closingValueExVat: number | null;
+  yearlyDifferenceExVat: number | null;
   yearlyDepreciationExVat: number | null;
   yearlyMovementPercent: number | null;
+  logEntryCount: number;
   snapshotCount: number;
   latestUsageAmount: number | null;
   latestUsageMetric: string;
   latestCondition: string;
 };
 
-type DepreciationSnapshotAssetInput = {
+export type DepreciationLogAssetInput = {
   id?: string;
   userId?: string;
   registerId?: string | null;
@@ -91,8 +108,9 @@ type DepreciationSnapshotAssetInput = {
   specsJson?: Record<string, unknown> | null;
 };
 
-type CaptureAssetDepreciationSnapshotInput = {
-  asset: DepreciationSnapshotAssetInput;
+type CaptureAssetDepreciationLogEntryInput = {
+  asset: DepreciationLogAssetInput;
+  previousAsset?: DepreciationLogAssetInput | null;
   eventType: string;
   eventSource?: string | null;
   capturedAt?: string | Date | null;
@@ -161,6 +179,8 @@ type AssetDepreciationSnapshotRow = {
   created_at: string | Date | null;
 };
 
+type DepreciationLogValues = ReturnType<typeof buildLogValues>;
+
 function asText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
 }
@@ -213,10 +233,20 @@ function nullableIsoString(value: unknown): string | null {
   return toIsoString(value);
 }
 
+function roundMoney(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
 function normalizeMoney(value: unknown): number | null {
   const parsed = asNumber(value);
   if (parsed === null || !Number.isFinite(parsed) || parsed <= 0) return null;
-  return Math.round(parsed * 100) / 100;
+  return roundMoney(parsed);
+}
+
+function normalizeSavedValue(value: unknown): number | null {
+  const parsed = asNumber(value);
+  if (parsed === null || !Number.isFinite(parsed) || parsed < 0) return null;
+  return roundMoney(parsed);
 }
 
 function normalizePercent(value: unknown): number | null {
@@ -250,7 +280,7 @@ function readReplacementPriceFromSpecs(specs: Record<string, unknown>): number |
   );
 }
 
-function readUsageMetric(asset: DepreciationSnapshotAssetInput, specs: Record<string, unknown>): string {
+function readUsageMetric(asset: DepreciationLogAssetInput, specs: Record<string, unknown>): string {
   const raw = String(
     asset.usageMetric ??
       specs.usageMetric ??
@@ -265,16 +295,16 @@ function readUsageMetric(asset: DepreciationSnapshotAssetInput, specs: Record<st
     .toLowerCase();
 
   if (raw === 'km' || raw === 'kms' || raw === 'kilometres' || raw === 'kilometers') return 'km';
-  if (raw === 'percent' || raw === 'percentage' || raw === 'percent_used' || raw === 'wear_class') return 'percent';
+  if (raw === 'percent' || raw === 'percentage' || raw === 'percentage_depreciation' || raw === 'percent_used' || raw === 'wear_class') return 'percent';
   if (String(asset.kind ?? '').trim().toLowerCase() === 'vehicle') return 'km';
   return 'hours';
 }
 
-function readUsageAmount(asset: DepreciationSnapshotAssetInput, specs: Record<string, unknown>): number | null {
+function readUsageAmount(asset: DepreciationLogAssetInput, specs: Record<string, unknown>): number | null {
   return asNumber(asset.usageAmount) ?? asNumber(asset.hours) ?? readNumberFromSpecs(specs, ['usageAmount', 'usage_amount', 'hours', 'engine_hours', 'km', 'kilometres', 'kilometers']);
 }
 
-function readLifeWorkedPercent(asset: DepreciationSnapshotAssetInput, specs: Record<string, unknown>): number | null {
+function readLifeWorkedPercent(asset: DepreciationLogAssetInput, specs: Record<string, unknown>): number | null {
   return (
     normalizePercent(asset.lifeWorkedPercent) ??
     normalizePercent(specs.lifeWorkedPercent) ??
@@ -286,9 +316,9 @@ function readLifeWorkedPercent(asset: DepreciationSnapshotAssetInput, specs: Rec
   );
 }
 
-function buildSnapshotValues(asset: DepreciationSnapshotAssetInput) {
+function buildLogValues(asset: DepreciationLogAssetInput) {
   const specs = asRecord(asset.specsJson);
-  const estimatedValueExVat = normalizeMoney(asset.selectedValueExVat) ?? normalizeMoney(asset.value);
+  const newValueExVat = normalizeSavedValue(asset.selectedValueExVat) ?? normalizeSavedValue(asset.value);
   const replacementPriceExVat =
     normalizeMoney(asset.replacementPriceExVat) ??
     normalizeMoney(asset.replacementPriceUsedExVat) ??
@@ -320,13 +350,13 @@ function buildSnapshotValues(asset: DepreciationSnapshotAssetInput) {
     lifeRemainingPercent,
     condition: asText(asset.condition),
     replacementPriceExVat,
-    estimatedValueExVat,
+    newValueExVat,
     selectedMethod: asText(asset.selectedMethod),
     depreciationMethodUsed: asText(asset.depreciationMethodUsed),
   };
 }
 
-function rowToSourceAsset(row: AssetSnapshotSourceRow): DepreciationSnapshotAssetInput {
+function rowToSourceAsset(row: AssetSnapshotSourceRow): DepreciationLogAssetInput {
   return {
     id: asIdText(row.id),
     userId: asText(row.user_id),
@@ -356,7 +386,44 @@ function rowToSourceAsset(row: AssetSnapshotSourceRow): DepreciationSnapshotAsse
   };
 }
 
-function mapSnapshotRow(row: AssetDepreciationSnapshotRow): AssetDepreciationSnapshot {
+function normalizeStoredDifference(value: unknown, metadata: Record<string, unknown>): number | null {
+  const raw = asNumber(value);
+  if (raw === null) return null;
+
+  const formula = asText(metadata.differenceFormula).toLowerCase();
+  if (formula === 'previous_minus_new') return roundMoney(-raw);
+  if (formula === 'new_minus_previous') return roundMoney(raw);
+
+  // Rows captured by the old timeline helper stored previous - new. The log/report now displays new - previous.
+  if (asText(metadata.capturedBy).toLowerCase() === 'asset-depreciation-timeline') {
+    return roundMoney(-raw);
+  }
+
+  return roundMoney(raw);
+}
+
+function normalizeStoredDifferencePercent(value: unknown, metadata: Record<string, unknown>): number | null {
+  const raw = asNumber(value);
+  if (raw === null) return null;
+
+  const formula = asText(metadata.differenceFormula).toLowerCase();
+  if (formula === 'previous_minus_new') return Math.round(-raw * 10000) / 10000;
+  if (formula === 'new_minus_previous') return Math.round(raw * 10000) / 10000;
+
+  if (asText(metadata.capturedBy).toLowerCase() === 'asset-depreciation-timeline') {
+    return Math.round(-raw * 10000) / 10000;
+  }
+
+  return Math.round(raw * 10000) / 10000;
+}
+
+function mapSnapshotRow(row: AssetDepreciationSnapshotRow): AssetDepreciationLogEntry {
+  const metadataJson = asRecord(row.metadata_json);
+  const newValueExVat = normalizeSavedValue(row.estimated_value_ex_vat) ?? 0;
+  const previousValueExVat = normalizeSavedValue(row.previous_estimated_value_ex_vat);
+  const differenceValueExVat = normalizeStoredDifference(row.depreciation_since_previous_ex_vat, metadataJson);
+  const differencePercent = normalizeStoredDifferencePercent(row.depreciation_since_previous_percent, metadataJson);
+
   return {
     id: asIdText(row.id),
     userId: asText(row.user_id),
@@ -381,14 +448,18 @@ function mapSnapshotRow(row: AssetDepreciationSnapshotRow): AssetDepreciationSna
     lifeRemainingPercent: asNumber(row.life_remaining_percent),
     condition: asText(row.condition),
     replacementPriceExVat: asNumber(row.replacement_price_ex_vat),
-    estimatedValueExVat: Math.round((asNumber(row.estimated_value_ex_vat) ?? 0) * 100) / 100,
+    previousValueExVat,
+    newValueExVat,
+    differenceValueExVat,
+    differencePercent,
     selectedMethod: asText(row.selected_method),
     depreciationMethodUsed: asText(row.depreciation_method_used),
-    previousEstimatedValueExVat: asNumber(row.previous_estimated_value_ex_vat),
-    depreciationSincePreviousExVat: asNumber(row.depreciation_since_previous_ex_vat),
-    depreciationSincePreviousPercent: asNumber(row.depreciation_since_previous_percent),
-    metadataJson: asRecord(row.metadata_json),
+    metadataJson,
     createdAtIso: toIsoString(row.created_at),
+    estimatedValueExVat: newValueExVat,
+    previousEstimatedValueExVat: previousValueExVat,
+    depreciationSincePreviousExVat: differenceValueExVat,
+    depreciationSincePreviousPercent: differencePercent,
   };
 }
 
@@ -402,132 +473,119 @@ function textMatches(left: string | null | undefined, right: string | null | und
   return String(left ?? '').trim() === String(right ?? '').trim();
 }
 
-const BASELINE_TIMELINE_EVENT_TYPES = new Set([
-  'backfill_current_asset_state',
-  'manual_asset_created',
-  'valuation_asset_saved',
-]);
-
-const SAVED_REVALUATION_TIMELINE_EVENT_TYPES = new Set([
-  'automatic_revaluation_saved',
-]);
-
-const VALUATION_RELEVANT_UPDATE_EVENT_TYPES = new Set([
-  'manual_asset_updated',
-  'qr_scan_update',
-]);
-
-const DEPRECIATION_REASON_MARKERS = [
-  'usage',
-  'hour',
-  'km',
-  'kilometre',
-  'kilometer',
-  'life worked',
-  'percent',
-  'condition',
-  'year',
-  'age',
-  'staged depreciation',
-  'value unchanged',
-];
-
-function collectReasonText(value: unknown, reasons: string[]): void {
-  if (Array.isArray(value)) {
-    value.forEach((item) => collectReasonText(item, reasons));
-    return;
-  }
-
-  if (typeof value === 'string' && value.trim()) {
-    reasons.push(value.trim());
-  }
+function pushNumberChange(reasons: string[], label: string, previous: number | null, next: number | null): void {
+  if (!numbersMatch(previous, next)) reasons.push(`${label} changed`);
 }
 
-function readTimelineReasonText(metadata: Record<string, unknown>): string[] {
+function pushTextChange(reasons: string[], label: string, previous: string | null | undefined, next: string | null | undefined): void {
+  if (!textMatches(previous, next)) reasons.push(`${label} changed`);
+}
+
+function buildDepreciationRelevantChangeReasons(previous: DepreciationLogValues, next: DepreciationLogValues): string[] {
   const reasons: string[] = [];
 
-  collectReasonText(metadata.valuationRelevantReasons, reasons);
-  collectReasonText(metadata.timelineEventReasons, reasons);
-  collectReasonText(metadata.valuationStaleReasons, reasons);
-  collectReasonText(metadata.depreciationReasons, reasons);
-  collectReasonText(metadata.depreciationReason, reasons);
-  collectReasonText(metadata.reason, reasons);
+  pushNumberChange(reasons, 'saved value', previous.newValueExVat, next.newValueExVat);
+  pushNumberChange(reasons, 'replacement price', previous.replacementPriceExVat, next.replacementPriceExVat);
+  pushNumberChange(reasons, 'year', previous.yearModel, next.yearModel);
+  pushNumberChange(reasons, 'usage', previous.usageAmount, next.usageAmount);
+  pushTextChange(reasons, 'usage metric', previous.usageMetric, next.usageMetric);
+  pushNumberChange(reasons, 'life worked', previous.lifeWorkedPercent, next.lifeWorkedPercent);
+  pushTextChange(reasons, 'condition', previous.condition, next.condition);
+  pushNumberChange(reasons, 'valuation run', previous.valuationRunId, next.valuationRunId);
+  pushTextChange(reasons, 'selected valuation method', previous.selectedMethod, next.selectedMethod);
+  pushTextChange(reasons, 'depreciation method', previous.depreciationMethodUsed, next.depreciationMethodUsed);
+  pushTextChange(reasons, 'brand', previous.brandName, next.brandName);
+  pushTextChange(reasons, 'model', previous.modelName, next.modelName);
+  pushNumberChange(reasons, 'equipment family', previous.equipmentFamilyId, next.equipmentFamilyId);
 
-  return reasons;
+  return Array.from(new Set(reasons));
 }
 
-function hasDepreciationReason(metadata: Record<string, unknown>): boolean {
-  return readTimelineReasonText(metadata).some((reason) => {
-    const normalized = reason.toLowerCase();
-    return DEPRECIATION_REASON_MARKERS.some((marker) => normalized.includes(marker));
-  });
+function isOpeningLogEvent(eventType: string): boolean {
+  const normalized = eventType.trim().toLowerCase();
+  return normalized === 'manual_asset_created' || normalized === 'valuation_asset_saved' || normalized === 'opening_value';
 }
 
-function isDepreciationTimelineEntry(snapshot: AssetDepreciationSnapshot): boolean {
-  const eventType = snapshot.eventType.trim().toLowerCase();
+const VALID_DEPRECIATION_LOG_EVENT_TYPES = new Set([
+  'backfill_current_asset_state',
+  'manual_asset_created',
+  'manual_asset_updated',
+  'valuation_asset_saved',
+  'automatic_revaluation_saved',
+  'qr_scan_update',
+  'asset_update_log_entry',
+  'opening_value',
+]);
 
-  if (BASELINE_TIMELINE_EVENT_TYPES.has(eventType) || SAVED_REVALUATION_TIMELINE_EVENT_TYPES.has(eventType)) {
-    return true;
-  }
+function isDepreciationLogEntry(entry: AssetDepreciationLogEntry): boolean {
+  const eventType = entry.eventType.trim().toLowerCase();
+  if (VALID_DEPRECIATION_LOG_EVENT_TYPES.has(eventType)) return true;
 
-  if (!VALUATION_RELEVANT_UPDATE_EVENT_TYPES.has(eventType)) {
-    return false;
-  }
-
-  return snapshot.metadataJson.valuationNeedsUpdate === true || hasDepreciationReason(snapshot.metadataJson);
+  return entry.metadataJson.updateLog === true || asText(entry.metadataJson.capturedBy).toLowerCase() === 'asset-depreciation-log';
 }
 
-function isDuplicateSnapshot(latest: AssetDepreciationSnapshot | null, next: ReturnType<typeof buildSnapshotValues>): boolean {
-  if (!latest) return false;
-
-  return (
-    numbersMatch(latest.estimatedValueExVat, next.estimatedValueExVat) &&
-    numbersMatch(latest.yearModel, next.yearModel) &&
-    numbersMatch(latest.usageAmount, next.usageAmount) &&
-    textMatches(latest.usageMetric, next.usageMetric) &&
-    numbersMatch(latest.lifeWorkedPercent, next.lifeWorkedPercent) &&
-    textMatches(latest.condition, next.condition) &&
-    numbersMatch(latest.replacementPriceExVat, next.replacementPriceExVat) &&
-    numbersMatch(latest.valuationRunId, next.valuationRunId)
+async function assetAlreadyHasDepreciationLogEntry(userId: string, assetRegisterItemId: string): Promise<boolean> {
+  const db = getDb();
+  const result = await db.query<{ exists: number }>(
+    `
+      select 1 as exists
+      from public.asset_depreciation_snapshots
+      where user_id = $1
+        and asset_register_item_id = $2::uuid
+      limit 1
+    `,
+    [userId, assetRegisterItemId],
   );
+
+  return result.rows.length > 0;
 }
 
-export async function captureAssetDepreciationSnapshot(input: CaptureAssetDepreciationSnapshotInput): Promise<AssetDepreciationSnapshot | null> {
+export async function captureAssetDepreciationLogEntry(input: CaptureAssetDepreciationLogEntryInput): Promise<AssetDepreciationLogEntry | null> {
   try {
-    const values = buildSnapshotValues(input.asset);
+    const nextValues = buildLogValues(input.asset);
 
-    if (!values.userId || !values.assetRegisterItemId || values.estimatedValueExVat === null || values.estimatedValueExVat <= 0) {
+    if (!nextValues.userId || !nextValues.assetRegisterItemId || nextValues.newValueExVat === null) {
       return null;
     }
 
-    const db = getDb();
-    const latestResult = await db.query<AssetDepreciationSnapshotRow>(
-      `
-        select *
-        from public.asset_depreciation_snapshots
-        where user_id = $1
-          and asset_register_item_id = $2::uuid
-        order by captured_at desc, created_at desc, id desc
-        limit 1
-      `,
-      [values.userId, values.assetRegisterItemId],
-    );
-    const latestSnapshot = latestResult.rows[0] ? mapSnapshotRow(latestResult.rows[0]) : null;
+    const eventType = asText(input.eventType) || 'asset_update_log_entry';
+    const previousValues = input.previousAsset ? buildLogValues(input.previousAsset) : null;
+    const depreciationRelevantReasons = previousValues
+      ? buildDepreciationRelevantChangeReasons(previousValues, nextValues)
+      : ['opening value'];
 
-    if (isDuplicateSnapshot(latestSnapshot, values)) {
+    if (!previousValues) {
+      if (!isOpeningLogEvent(eventType)) {
+        return null;
+      }
+
+      if (await assetAlreadyHasDepreciationLogEntry(nextValues.userId, nextValues.assetRegisterItemId)) {
+        return null;
+      }
+    } else if (depreciationRelevantReasons.length === 0) {
       return null;
     }
 
-    const previousValue = latestSnapshot?.estimatedValueExVat ?? null;
-    const depreciationSincePrevious = previousValue === null ? null : Math.round((previousValue - values.estimatedValueExVat) * 100) / 100;
-    const depreciationSincePreviousPercent = previousValue && previousValue > 0 && depreciationSincePrevious !== null
-      ? Math.round((depreciationSincePrevious / previousValue) * 10000) / 100
+    const previousValue = previousValues?.newValueExVat ?? null;
+    const differenceValue = previousValue === null ? null : roundMoney(nextValues.newValueExVat - previousValue);
+    const differencePercent = previousValue && previousValue > 0 && differenceValue !== null
+      ? Math.round((differenceValue / previousValue) * 10000) / 100
       : null;
     const metadata = {
       ...(input.metadata ?? {}),
-      capturedBy: 'asset-depreciation-timeline',
+      capturedBy: 'asset-depreciation-log',
+      updateLog: true,
+      logVersion: 2,
+      differenceFormula: 'new_minus_previous',
+      previousValueExVat: previousValue,
+      newValueExVat: nextValues.newValueExVat,
+      differenceValueExVat: differenceValue,
+      differencePercent,
+      depreciationRelevantReasons,
+      logEventReasons: depreciationRelevantReasons,
     };
 
+    const db = getDb();
     const inserted = await db.query<AssetDepreciationSnapshotRow>(
       `
         insert into public.asset_depreciation_snapshots (
@@ -595,53 +653,54 @@ export async function captureAssetDepreciationSnapshot(input: CaptureAssetDeprec
         returning *
       `,
       [
-        values.userId,
-        values.registerId,
-        values.assetRegisterItemId,
-        values.valuationRunId,
+        nextValues.userId,
+        nextValues.registerId,
+        nextValues.assetRegisterItemId,
+        nextValues.valuationRunId,
         nullableIsoString(input.capturedAt),
-        asText(input.eventType) || 'asset_snapshot',
+        eventType,
         asText(input.eventSource),
-        values.assetTitle,
-        values.assetKind,
-        values.sectorId,
-        values.equipmentFamilyId,
-        values.equipmentFamilyKey,
-        values.equipmentFamilyLabel,
-        values.brandName,
-        values.modelName,
-        values.yearModel,
-        values.usageAmount,
-        values.usageMetric,
-        values.lifeWorkedPercent,
-        values.lifeRemainingPercent,
-        values.condition,
-        values.replacementPriceExVat,
-        values.estimatedValueExVat,
-        values.selectedMethod,
-        values.depreciationMethodUsed,
+        nextValues.assetTitle,
+        nextValues.assetKind,
+        nextValues.sectorId,
+        nextValues.equipmentFamilyId,
+        nextValues.equipmentFamilyKey,
+        nextValues.equipmentFamilyLabel,
+        nextValues.brandName,
+        nextValues.modelName,
+        nextValues.yearModel,
+        nextValues.usageAmount,
+        nextValues.usageMetric,
+        nextValues.lifeWorkedPercent,
+        nextValues.lifeRemainingPercent,
+        nextValues.condition,
+        nextValues.replacementPriceExVat,
+        nextValues.newValueExVat,
+        nextValues.selectedMethod,
+        nextValues.depreciationMethodUsed,
         previousValue,
-        depreciationSincePrevious,
-        depreciationSincePreviousPercent,
+        differenceValue,
+        differencePercent,
         JSON.stringify(metadata),
       ],
     );
 
     return inserted.rows[0] ? mapSnapshotRow(inserted.rows[0]) : null;
   } catch (error) {
-    console.error('asset depreciation snapshot capture failed', error);
+    console.error('asset depreciation log capture failed', error);
     return null;
   }
 }
 
-export async function captureAssetDepreciationSnapshotForAssetId(input: {
+export async function captureAssetDepreciationLogEntryForAssetId(input: {
   userId: string;
   assetId: string;
+  previousAsset?: DepreciationLogAssetInput | null;
   eventType: string;
   eventSource?: string | null;
   capturedAt?: string | Date | null;
   metadata?: Record<string, unknown>;
-}): Promise<AssetDepreciationSnapshot | null> {
+}): Promise<AssetDepreciationLogEntry | null> {
   try {
     const db = getDb();
     const result = await db.query<AssetSnapshotSourceRow>(
@@ -708,25 +767,26 @@ export async function captureAssetDepreciationSnapshotForAssetId(input: {
     const row = result.rows[0];
     if (!row) return null;
 
-    return captureAssetDepreciationSnapshot({
+    return captureAssetDepreciationLogEntry({
       asset: rowToSourceAsset(row),
+      previousAsset: input.previousAsset,
       eventType: input.eventType,
       eventSource: input.eventSource,
       capturedAt: input.capturedAt,
       metadata: input.metadata,
     });
   } catch (error) {
-    console.error('asset depreciation snapshot lookup failed', error);
+    console.error('asset depreciation log lookup failed', error);
     return null;
   }
 }
 
-export async function listAssetDepreciationSnapshotsForAsset(input: {
+export async function listAssetDepreciationLogEntriesForAsset(input: {
   userId: string;
   assetId: string;
   fromIso?: string | null;
   toIso?: string | null;
-}): Promise<AssetDepreciationSnapshot[]> {
+}): Promise<AssetDepreciationLogEntry[]> {
   const db = getDb();
   const filters: string[] = ['user_id = $1', 'asset_register_item_id = $2::uuid'];
   const values: unknown[] = [input.userId, input.assetId];
@@ -751,33 +811,38 @@ export async function listAssetDepreciationSnapshotsForAsset(input: {
     values,
   );
 
-  return result.rows.map(mapSnapshotRow).filter(isDepreciationTimelineEntry);
+  return result.rows.map(mapSnapshotRow).filter(isDepreciationLogEntry);
 }
 
-export function buildDepreciationTimelineSummary(
-  snapshots: AssetDepreciationSnapshot[],
-  fallbackAsset?: Pick<DepreciationSnapshotAssetInput, 'value' | 'selectedValueExVat' | 'hours' | 'usageMetric' | 'lifeWorkedPercent' | 'condition' | 'replacementPriceExVat' | 'specsJson'>,
-): DepreciationTimelineSummary {
-  const first = snapshots[0] ?? null;
-  const latest = snapshots[snapshots.length - 1] ?? null;
+export function buildDepreciationLogSummary(
+  entries: AssetDepreciationLogEntry[],
+  fallbackAsset?: Pick<DepreciationLogAssetInput, 'value' | 'selectedValueExVat' | 'hours' | 'usageMetric' | 'lifeWorkedPercent' | 'condition' | 'replacementPriceExVat' | 'specsJson'>,
+): DepreciationLogSummary {
+  const first = entries[0] ?? null;
+  const latest = entries[entries.length - 1] ?? null;
   const fallbackSpecs = asRecord(fallbackAsset?.specsJson);
-  const fallbackValue = normalizeMoney(fallbackAsset?.selectedValueExVat) ?? normalizeMoney(fallbackAsset?.value);
-  const openingValue = first?.estimatedValueExVat ?? fallbackValue;
-  const currentValue = latest?.estimatedValueExVat ?? fallbackValue;
-  const totalDepreciation = openingValue !== null && currentValue !== null ? Math.round((openingValue - currentValue) * 100) / 100 : null;
-  const totalMovementPercent = openingValue && openingValue > 0 && totalDepreciation !== null
-    ? Math.round((totalDepreciation / openingValue) * 10000) / 100
+  const fallbackValue = normalizeSavedValue(fallbackAsset?.selectedValueExVat) ?? normalizeSavedValue(fallbackAsset?.value);
+  const openingValue = first?.previousValueExVat ?? first?.newValueExVat ?? fallbackValue;
+  const currentValue = latest?.newValueExVat ?? fallbackValue;
+  const totalDifference = openingValue !== null && currentValue !== null ? roundMoney(currentValue - openingValue) : null;
+  const totalMovementPercent = openingValue && openingValue > 0 && totalDifference !== null
+    ? Math.round((totalDifference / openingValue) * 10000) / 100
     : null;
   const fallbackUsageMetric = fallbackAsset ? readUsageMetric(fallbackAsset, fallbackSpecs) : '';
 
   return {
+    openingLogValueExVat: openingValue,
     openingTimelineValueExVat: openingValue,
     currentValueExVat: currentValue,
-    totalMarketDepreciationExVat: totalDepreciation,
+    totalDifferenceExVat: totalDifference,
+    totalMarketDepreciationExVat: totalDifference,
     totalMovementPercent,
+    firstLogEntryDateIso: first?.capturedAtIso ?? null,
     firstSnapshotDateIso: first?.capturedAtIso ?? null,
+    latestLogEntryDateIso: latest?.capturedAtIso ?? null,
     latestSnapshotDateIso: latest?.capturedAtIso ?? null,
-    snapshotCount: snapshots.length,
+    logEntryCount: entries.length,
+    snapshotCount: entries.length,
     latestUsageAmount: latest?.usageAmount ?? asNumber(fallbackAsset?.hours),
     latestUsageMetric: latest?.usageMetric || fallbackUsageMetric,
     latestCondition: latest?.condition || asText(fallbackAsset?.condition),
@@ -785,37 +850,39 @@ export function buildDepreciationTimelineSummary(
   };
 }
 
-export function buildDepreciationAnnualSummary(snapshots: AssetDepreciationSnapshot[]): DepreciationAnnualSummary[] {
-  const grouped = new Map<number, AssetDepreciationSnapshot[]>();
+export function buildDepreciationAnnualSummary(entries: AssetDepreciationLogEntry[]): DepreciationAnnualSummary[] {
+  const grouped = new Map<number, AssetDepreciationLogEntry[]>();
 
-  snapshots.forEach((snapshot) => {
-    const parsed = new Date(snapshot.capturedAtIso);
+  entries.forEach((entry) => {
+    const parsed = new Date(entry.capturedAtIso);
     if (Number.isNaN(parsed.getTime())) return;
     const year = parsed.getFullYear();
     const group = grouped.get(year) ?? [];
-    group.push(snapshot);
+    group.push(entry);
     grouped.set(year, group);
   });
 
   return Array.from(grouped.entries())
     .sort(([leftYear], [rightYear]) => leftYear - rightYear)
-    .map(([year, yearSnapshots]) => {
-      const ordered = yearSnapshots.slice().sort((left, right) => new Date(left.capturedAtIso).getTime() - new Date(right.capturedAtIso).getTime());
+    .map(([year, yearEntries]) => {
+      const ordered = yearEntries.slice().sort((left, right) => new Date(left.capturedAtIso).getTime() - new Date(right.capturedAtIso).getTime());
       const first = ordered[0] ?? null;
       const latest = ordered[ordered.length - 1] ?? null;
-      const openingValue = first?.estimatedValueExVat ?? null;
-      const closingValue = latest?.estimatedValueExVat ?? null;
-      const depreciation = openingValue !== null && closingValue !== null ? Math.round((openingValue - closingValue) * 100) / 100 : null;
-      const movementPercent = openingValue && openingValue > 0 && depreciation !== null
-        ? Math.round((depreciation / openingValue) * 10000) / 100
+      const openingValue = first?.previousValueExVat ?? first?.newValueExVat ?? null;
+      const closingValue = latest?.newValueExVat ?? null;
+      const yearlyDifference = openingValue !== null && closingValue !== null ? roundMoney(closingValue - openingValue) : null;
+      const movementPercent = openingValue && openingValue > 0 && yearlyDifference !== null
+        ? Math.round((yearlyDifference / openingValue) * 10000) / 100
         : null;
 
       return {
         year,
         openingValueExVat: openingValue,
         closingValueExVat: closingValue,
-        yearlyDepreciationExVat: depreciation,
+        yearlyDifferenceExVat: yearlyDifference,
+        yearlyDepreciationExVat: yearlyDifference,
         yearlyMovementPercent: movementPercent,
+        logEntryCount: ordered.length,
         snapshotCount: ordered.length,
         latestUsageAmount: latest?.usageAmount ?? null,
         latestUsageMetric: latest?.usageMetric ?? '',
@@ -823,3 +890,9 @@ export function buildDepreciationAnnualSummary(snapshots: AssetDepreciationSnaps
       };
     });
 }
+
+// Compatibility exports for existing imports. The table name remains unchanged for production safety.
+export const captureAssetDepreciationSnapshot = captureAssetDepreciationLogEntry;
+export const captureAssetDepreciationSnapshotForAssetId = captureAssetDepreciationLogEntryForAssetId;
+export const listAssetDepreciationSnapshotsForAsset = listAssetDepreciationLogEntriesForAsset;
+export const buildDepreciationTimelineSummary = buildDepreciationLogSummary;

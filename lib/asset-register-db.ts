@@ -8,7 +8,7 @@ import type { CabType, ConditionKey, DriveType, TractorType } from './tractor-da
 import type { MethodKey } from './valuation-runs';
 import type { Result } from './tractor-logic';
 import type { GenericSelectedMethod, GenericValuationResult } from './generic-valuation';
-import { captureAssetDepreciationSnapshot } from './asset-depreciation-timeline';
+import { captureAssetDepreciationLogEntry } from './asset-depreciation-timeline';
 import { ensureFuelLedgerTables } from './fuel-ledger';
 
 export type AssetRegisterItemKind = 'tractor' | 'equipment' | 'manual' | 'property' | 'vehicle' | 'tools';
@@ -730,7 +730,7 @@ function buildValuationStaleReasons(input: {
   return reasons;
 }
 
-function buildSavedRevaluationTimelineMetadata(input: {
+function buildSavedRevaluationLogMetadata(input: {
   existing: AssetRegisterItem;
   selectedValueExVat: number;
   staleReasons: string[];
@@ -756,6 +756,7 @@ function buildSavedRevaluationTimelineMetadata(input: {
     selectedMethod: input.selectedMethod,
     saveReplacementPrice: input.saveReplacementPrice === true,
     valuationRelevantReasons: reasons,
+    logEventReasons: reasons,
     timelineEventReasons: reasons,
     valueChanged,
     stagedDepreciation: !valueChanged,
@@ -1922,11 +1923,14 @@ export async function createManualAssetRegisterItem(
   }
 
   const item = mapAssetRegisterRow(row);
-  await captureAssetDepreciationSnapshot({
+  await captureAssetDepreciationLogEntry({
     asset: item,
     eventType: 'manual_asset_created',
     eventSource: 'asset-register-manual-create',
-    metadata: { registerId: activeRegister.id },
+    metadata: {
+      registerId: activeRegister.id,
+      reason: 'Opening value',
+    },
   });
 
   return item;
@@ -2232,8 +2236,6 @@ export async function updateAssetRegisterItem(
     nextCondition,
   });
   const nextSpecsJson = markValuationNeedsUpdate(usagePreservedSpecsJson, staleReasons, now);
-  const shouldCaptureDepreciationSnapshot = staleReasons.length > 0;
-
   pushField(fields, schema, ['kind', 'equipment_type', 'asset_type', 'item_type'], nextKind);
   pushField(fields, schema, ['title', 'name', 'asset_name'], asText(input.title));
   pushField(fields, schema, ['brand_name', 'brand'], asText(input.brandName) || null);
@@ -2284,19 +2286,19 @@ export async function updateAssetRegisterItem(
   }
 
   const item = mapAssetRegisterRow(row);
-  if (shouldCaptureDepreciationSnapshot) {
-    await captureAssetDepreciationSnapshot({
-      asset: item,
-      eventType: 'manual_asset_updated',
-      eventSource: 'asset-register-manual-update',
-      metadata: {
-        valuationNeedsUpdate: staleReasons.length > 0,
-        valuationStaleReasons: staleReasons,
-        valuationRelevantReasons: staleReasons,
-        timelineEventReasons: staleReasons,
-      },
-    });
-  }
+  await captureAssetDepreciationLogEntry({
+    previousAsset: existing,
+    asset: item,
+    eventType: 'manual_asset_updated',
+    eventSource: 'asset-register-manual-update',
+    metadata: {
+      valuationNeedsUpdate: staleReasons.length > 0,
+      valuationStaleReasons: staleReasons,
+      valuationRelevantReasons: staleReasons,
+      logEventReasons: staleReasons,
+      timelineEventReasons: staleReasons,
+    },
+  });
 
   return item;
 }
@@ -2421,11 +2423,12 @@ export async function updateAssetRegisterItemFromValuation(input: {
   }
 
   const item = mapAssetRegisterRow(row);
-  await captureAssetDepreciationSnapshot({
+  await captureAssetDepreciationLogEntry({
+    previousAsset: existing,
     asset: item,
     eventType: 'automatic_revaluation_saved',
     eventSource: 'asset-register-revalue-tractor',
-    metadata: buildSavedRevaluationTimelineMetadata({
+    metadata: buildSavedRevaluationLogMetadata({
       existing,
       selectedValueExVat,
       staleReasons: buildValuationStaleReasons({
@@ -2584,11 +2587,12 @@ export async function updateAssetRegisterItemFromGenericValuation(input: {
   }
 
   const item = mapAssetRegisterRow(row);
-  await captureAssetDepreciationSnapshot({
+  await captureAssetDepreciationLogEntry({
+    previousAsset: existing,
     asset: item,
     eventType: 'automatic_revaluation_saved',
     eventSource: 'asset-register-revalue-generic',
-    metadata: buildSavedRevaluationTimelineMetadata({
+    metadata: buildSavedRevaluationLogMetadata({
       existing,
       selectedValueExVat,
       staleReasons: buildValuationStaleReasons({
@@ -2746,7 +2750,7 @@ export async function createAssetRegisterItemFromValuation(input: {
   }
 
   const item = mapAssetRegisterRow(row);
-  await captureAssetDepreciationSnapshot({
+  await captureAssetDepreciationLogEntry({
     asset: item,
     eventType: 'valuation_asset_saved',
     eventSource: 'tractor-valuation-save',
@@ -2893,7 +2897,7 @@ export async function createAssetRegisterItemFromGenericValuation(input: {
   }
 
   const item = mapAssetRegisterRow(row);
-  await captureAssetDepreciationSnapshot({
+  await captureAssetDepreciationLogEntry({
     asset: item,
     eventType: 'valuation_asset_saved',
     eventSource: 'generic-valuation-save',
