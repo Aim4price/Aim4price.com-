@@ -643,7 +643,8 @@ type IconProps = {
 const MAX_PHOTOS = 12;
 const MAX_DOCUMENTS = 20;
 const PAGE_SIZE_OPTIONS = [6, 12, 18] as const;
-type PageSize = (typeof PAGE_SIZE_OPTIONS)[number];
+type StandardPageSize = (typeof PAGE_SIZE_OPTIONS)[number];
+type PageSize = StandardPageSize | 'all';
 const DEFAULT_PAGE_SIZE: PageSize = 6;
 const FALLBACK_ASSET_IMAGE = '/brand/Tractor.png';
 const PROPERTY_ASSET_LABEL = 'Property / Land / Building';
@@ -905,6 +906,26 @@ function RefreshIcon({ className }: IconProps) {
       <path d="M4 4v4h4" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M4 13a8 8 0 0 0 14.7 4.3L20 16" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M20 20v-4h-4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function ChangeRegisterIcon({ className }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M16 3h5v5" />
+      <path d="M4 11V9a6 6 0 0 1 6-6h11" />
+      <path d="M8 21H3v-5" />
+      <path d="M20 13v2a6 6 0 0 1-6 6H3" />
     </svg>
   );
 }
@@ -4457,6 +4478,8 @@ export default function AssetRegisterClient() {
   const [assetRegisters, setAssetRegisters] = useState<AssetRegisterSummary[]>([]);
   const [activeRegister, setActiveRegister] = useState<AssetRegisterSummary | null>(null);
   const [activeRegisterId, setActiveRegisterId] = useState('');
+  const [isChangeRegisterModalOpen, setIsChangeRegisterModalOpen] = useState(false);
+  const [changingRegisterId, setChangingRegisterId] = useState('');
   const [assetDraft, setAssetDraft] = useState<AssetDraft>(initialAssetDraft);
   const [editingAssetId, setEditingAssetId] = useState<string | null>(null);
   const [isAssetModalOpen, setIsAssetModalOpen] = useState(false);
@@ -4859,6 +4882,26 @@ export default function AssetRegisterClient() {
     () => mergeProfileWithRegister(accountProfile, activeRegister),
     [accountProfile, activeRegister],
   );
+  const registerSwitcherOptions = useMemo(() => {
+    const registersById = new Map<string, AssetRegisterSummary>();
+
+    assetRegisters.forEach((register) => {
+      if (register.id) registersById.set(register.id, register);
+    });
+
+    if (activeRegister?.id && !registersById.has(activeRegister.id)) {
+      registersById.set(activeRegister.id, activeRegister);
+    }
+
+    return Array.from(registersById.values()).sort((left, right) => {
+      if (left.id === activeRegister?.id) return -1;
+      if (right.id === activeRegister?.id) return 1;
+      if (left.isSelected && !right.isSelected) return -1;
+      if (!left.isSelected && right.isSelected) return 1;
+      return left.businessName.localeCompare(right.businessName);
+    });
+  }, [activeRegister, assetRegisters]);
+  const canOpenRegisterSwitcher = registerSwitcherOptions.length > 1;
   const canUseOwnerOnlyAssetActions = true;
   const canUseMarketplaceActions = true;
   const isQuoteModalOpen = Boolean(quoteAsset);
@@ -5122,6 +5165,62 @@ export default function AssetRegisterClient() {
     }
   }
 
+  function openChangeRegisterModal() {
+    if (!canOpenRegisterSwitcher) {
+      window.location.href = '/asset-registers';
+      return;
+    }
+
+    setNotice(null);
+    setIsChangeRegisterModalOpen(true);
+  }
+
+  function closeChangeRegisterModal() {
+    if (changingRegisterId) return;
+    setIsChangeRegisterModalOpen(false);
+  }
+
+  async function handleChangeRegisterSelect(register: AssetRegisterSummary) {
+    const nextRegisterId = String(register.id ?? '').trim();
+
+    if (!nextRegisterId || changingRegisterId) return;
+
+    if (nextRegisterId === activeRegister?.id || nextRegisterId === activeRegisterId) {
+      closeChangeRegisterModal();
+      return;
+    }
+
+    setChangingRegisterId(nextRegisterId);
+    setNotice(null);
+
+    try {
+      const response = await fetch('/api/asset-registers', {
+        method: 'PUT',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'select', registerId: nextRegisterId }),
+      });
+
+      const payload = (await response.json().catch(() => null)) as AssetRegisterApiResponse | null;
+
+      if (!response.ok || !payload?.ok || !payload.register) {
+        throw new Error(extractApiError(payload, 'Failed to change asset register.'));
+      }
+
+      if (Array.isArray(payload.registers)) {
+        setAssetRegisters(payload.registers);
+      }
+
+      window.location.assign(`/asset-register?registerId=${encodeURIComponent(payload.register.id)}`);
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Failed to change asset register.',
+      });
+      setChangingRegisterId('');
+    }
+  }
+
   useEffect(() => {
     if (assetMapActionHandledRef.current || isLoading || typeof window === 'undefined') return;
 
@@ -5192,6 +5291,7 @@ export default function AssetRegisterClient() {
     Boolean(deleteCandidateAsset) ||
     isAssetReportModalOpen ||
     isAssetFilterOpen ||
+    isChangeRegisterModalOpen ||
     isPricingModalOpen ||
     Boolean(pricingPreview) ||
     isQrModalOpen ||
@@ -5256,6 +5356,11 @@ export default function AssetRegisterClient() {
 
       if (isAssetFilterOpen) {
         setIsAssetFilterOpen(false);
+        return;
+      }
+
+      if (isChangeRegisterModalOpen) {
+        closeChangeRegisterModal();
         return;
       }
 
@@ -5340,7 +5445,7 @@ export default function AssetRegisterClient() {
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [activeAsset, anyModalOpen, deleteCandidateAsset, isAddChoiceModalOpen, isAssetFilterOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isPricingModalOpen, pricingPreview, isQrModalOpen, isRegisterShareModalOpen, isSummaryModalOpen, marketplaceAsset, projectionAsset, isQuoteModalOpen, quoteLeadStep, isAssetSettingsModalOpen, pendingUsageOverride, isManualConversionConfirmOpen, isSavingAssetSettings, replacementPriceRevaluePrompt, photoViewer]);
+  }, [activeAsset, anyModalOpen, deleteCandidateAsset, isAddChoiceModalOpen, isAssetFilterOpen, isChangeRegisterModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isPricingModalOpen, pricingPreview, isQrModalOpen, isRegisterShareModalOpen, isSummaryModalOpen, marketplaceAsset, projectionAsset, isQuoteModalOpen, quoteLeadStep, isAssetSettingsModalOpen, pendingUsageOverride, isManualConversionConfirmOpen, isSavingAssetSettings, replacementPriceRevaluePrompt, photoViewer]);
 
   useEffect(() => {
     if (!isQuoteModalOpen || !selectedQuoteLeadType) return;
@@ -5813,11 +5918,14 @@ export default function AssetRegisterClient() {
     return sortAssetsByRegisterPriority(filterAssetsByRegisterFilter(searchMatchedAssets, assetFilter), assetFilter);
   }, [assetFilter, searchMatchedAssets]);
 
-  const pageCount = Math.max(1, Math.ceil(filteredAssets.length / pageSize));
-  const pageStart = (currentPage - 1) * pageSize;
-  const pageEnd = Math.min(filteredAssets.length, pageStart + pageSize);
-  const visibleAssets = filteredAssets.slice(pageStart, pageStart + pageSize);
-  const paginationItems = useMemo(() => buildPaginationItems(currentPage, pageCount), [currentPage, pageCount]);
+  const isShowingAllAssets = pageSize === 'all';
+  const numericPageSize: number = pageSize === 'all' ? Math.max(1, filteredAssets.length) : pageSize;
+  const pageCount = isShowingAllAssets ? 1 : Math.max(1, Math.ceil(filteredAssets.length / numericPageSize));
+  const safeCurrentPage = Math.min(currentPage, pageCount);
+  const pageStart = isShowingAllAssets ? 0 : (safeCurrentPage - 1) * numericPageSize;
+  const pageEnd = isShowingAllAssets ? filteredAssets.length : Math.min(filteredAssets.length, pageStart + numericPageSize);
+  const visibleAssets = isShowingAllAssets ? filteredAssets : filteredAssets.slice(pageStart, pageStart + numericPageSize);
+  const paginationItems = useMemo(() => buildPaginationItems(safeCurrentPage, pageCount), [safeCurrentPage, pageCount]);
 
   useEffect(() => {
     if (currentPage > pageCount) {
@@ -5828,12 +5936,12 @@ export default function AssetRegisterClient() {
   useEffect(() => {
     if (!expandedAssetId) return;
 
-    const currentPageAssets = filteredAssets.slice(pageStart, pageStart + pageSize);
+    const currentPageAssets = isShowingAllAssets ? filteredAssets : filteredAssets.slice(pageStart, pageStart + numericPageSize);
 
     if (!currentPageAssets.some((asset) => asset.id === expandedAssetId)) {
       setExpandedAssetId(null);
     }
-  }, [expandedAssetId, filteredAssets, pageSize, pageStart]);
+  }, [expandedAssetId, filteredAssets, isShowingAllAssets, numericPageSize, pageStart]);
 
   useEffect(() => {
     if (assetFocusActionHandledRef.current || typeof window === 'undefined' || !assets.length) return;
@@ -5850,7 +5958,7 @@ export default function AssetRegisterClient() {
     setSearchTerm('');
     setAssetFilter('all');
     setExpandedAssetId(focusAssetId);
-    setCurrentPage(Math.floor(matchingAssetIndex / pageSize) + 1);
+    setCurrentPage(isShowingAllAssets ? 1 : Math.floor(matchingAssetIndex / numericPageSize) + 1);
     scrollToAssetCard(focusAssetId);
 
     params.delete('convertedAssetId');
@@ -5860,7 +5968,7 @@ export default function AssetRegisterClient() {
     const nextSearch = params.toString();
     const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ''}${window.location.hash}`;
     window.history.replaceState(null, '', nextUrl);
-  }, [assets, pageSize]);
+  }, [assets, isShowingAllAssets, numericPageSize]);
 
   function resetEditor() {
     pendingPhotoFilesRef.current.forEach((entry) => revokePhotoPreviewUrl(entry.previewUrl));
@@ -9607,6 +9715,18 @@ export default function AssetRegisterClient() {
           <div className={styles.registerHeader}>
             <div className={`${styles.registerTitleBlock} ${styles.businessRegisterTitleBlock}`}>
               <h1>{isLoading ? 'Loading...' : activeRegister?.businessName || buildOwnerName(reportProfile)}</h1>
+              {canOpenRegisterSwitcher ? (
+                <button
+                  type="button"
+                  className={styles.registerChangeButton}
+                  onClick={openChangeRegisterModal}
+                  disabled={isLoading || Boolean(changingRegisterId)}
+                  aria-label="Change asset register"
+                  title="Change asset register"
+                >
+                  <ChangeRegisterIcon className={styles.registerChangeIcon} />
+                </button>
+              ) : null}
             </div>
 
             <div className={`${styles.headerActions} ${canUseOwnerOnlyAssetActions ? styles.ownerRegisterHeaderActions : styles.sharedRegisterHeaderActions}`}>
@@ -9734,6 +9854,74 @@ export default function AssetRegisterClient() {
                     Clear filter
                   </button>
                   <button type="button" className={styles.primaryButton} onClick={() => setIsAssetFilterOpen(false)}>
+                    Done
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          {isChangeRegisterModalOpen ? (
+            <div className={`${styles.modalOverlay} ${styles.changeRegisterModalOverlay}`}>
+              <div className={styles.modalBackdrop} onClick={closeChangeRegisterModal} />
+
+              <div
+                className={`${styles.modalCard} ${styles.changeRegisterModal}`}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="asset-register-change-title"
+              >
+                <div className={`${styles.modalHeader} ${styles.changeRegisterModalHeader}`}>
+                  <div className={styles.modalHeaderText}>
+                    <h3 id="asset-register-change-title">Change Asset Register</h3>
+                    <p>Choose a saved asset register to open, or manage your registers.</p>
+                  </div>
+
+                  <button
+                    type="button"
+                    className={styles.modalCloseButton}
+                    onClick={closeChangeRegisterModal}
+                    aria-label="Close change asset register modal"
+                    disabled={Boolean(changingRegisterId)}
+                  >
+                    <CloseIcon className={styles.buttonIcon} />
+                  </button>
+                </div>
+
+                <div className={styles.changeRegisterList}>
+                  {registerSwitcherOptions.map((register) => {
+                    const isCurrentRegister = register.id === activeRegister?.id || register.id === activeRegisterId;
+                    const isChangingThisRegister = changingRegisterId === register.id;
+                    const registerAssetCount = Math.max(0, Math.round(Number(register.assetCount) || 0));
+                    const assetCountLabel = `${registerAssetCount.toLocaleString('en-ZA')} ${registerAssetCount === 1 ? 'asset' : 'assets'}`;
+
+                    return (
+                      <button
+                        type="button"
+                        key={register.id}
+                        className={`${styles.changeRegisterCard} ${isCurrentRegister ? styles.changeRegisterCardActive : ''}`}
+                        onClick={() => void handleChangeRegisterSelect(register)}
+                        disabled={Boolean(changingRegisterId)}
+                        aria-current={isCurrentRegister ? 'page' : undefined}
+                      >
+                        <span className={styles.changeRegisterCardText}>
+                          <strong>{register.businessName || 'Asset Register'}</strong>
+                          <small>{assetCountLabel} · {money(Number(register.totalValue) || 0)} current value</small>
+                        </span>
+                        <span className={styles.changeRegisterCardAction}>
+                          {isChangingThisRegister ? 'Opening...' : isCurrentRegister ? 'Current' : 'Open'}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className={styles.changeRegisterModalFooter}>
+                  <Link href="/asset-registers" className={styles.secondaryButton} onClick={closeChangeRegisterModal}>
+                    <ManageIcon className={styles.buttonIcon} />
+                    <span>Manage</span>
+                  </Link>
+                  <button type="button" className={styles.primaryButton} onClick={closeChangeRegisterModal} disabled={Boolean(changingRegisterId)}>
                     Done
                   </button>
                 </div>
@@ -10532,7 +10720,7 @@ export default function AssetRegisterClient() {
                   <div className={styles.paginationBar}>
                     <div className={styles.paginationInfo}>
                       <div className={styles.paginationMeta}>
-                        Page {currentPage} of {pageCount}
+                        Page {safeCurrentPage} of {pageCount}
                       </div>
 
                       <div className={styles.pageSizeControls} aria-label="Assets per page">
@@ -10549,6 +10737,14 @@ export default function AssetRegisterClient() {
                               {option}
                             </button>
                           ))}
+                          <button
+                            type="button"
+                            className={`${styles.paginationButton} ${styles.pageSizeButton} ${pageSize === 'all' ? styles.pageSizeButtonActive : ''}`}
+                            onClick={() => handlePageSizeChange('all')}
+                            aria-pressed={pageSize === 'all'}
+                          >
+                            All
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -10559,7 +10755,7 @@ export default function AssetRegisterClient() {
                           type="button"
                           className={styles.paginationButton}
                           onClick={() => setCurrentPage((current) => Math.max(1, current - 1))}
-                          disabled={currentPage === 1}
+                          disabled={safeCurrentPage === 1}
                         >
                           <ChevronLeftIcon className={styles.buttonIcon} />
                           <span>Previous</span>
@@ -10574,7 +10770,7 @@ export default function AssetRegisterClient() {
                             <button
                               type="button"
                               key={item}
-                              className={`${styles.paginationButton} ${item === currentPage ? styles.paginationButtonActive : ''}`}
+                              className={`${styles.paginationButton} ${item === safeCurrentPage ? styles.paginationButtonActive : ''}`}
                               onClick={() => setCurrentPage(item)}
                             >
                               {item}
@@ -10586,7 +10782,7 @@ export default function AssetRegisterClient() {
                           type="button"
                           className={styles.paginationButton}
                           onClick={() => setCurrentPage((current) => Math.min(pageCount, current + 1))}
-                          disabled={currentPage === pageCount}
+                          disabled={safeCurrentPage === pageCount}
                         >
                           <span>Next</span>
                           <ChevronRightIcon className={styles.buttonIcon} />
