@@ -67,13 +67,15 @@ const EMPTY_DRAFT: FuelSlipExtractionDraft = {
 const MAX_EXTRACTED_TEXT_LENGTH = 20000;
 const TECHNICAL_NUMBER_LINE = /\b(?:UTI|AID|IAD|CTQ|TVR|AC|RRN|TSN|terminal\s*(?:id|number|no|nr)?|merchant\s*(?:id|number|no|nr)?|batch\s*(?:number|no|nr)?|auth(?:orisation|orization)?\s*(?:code|number|no|nr)?|trace\s*(?:number|no|nr)?|card\s*(?:number|no|nr)?)\b/i;
 const TECHNICAL_CARD_AMOUNT_LINE = /\b(?:UTI|AID|IAD|CTQ|TVR|AC|RRN|TSN|terminal|merchant|batch|auth|trace)\b/i;
-const CARD_CONTEXT = /\b(?:card|pan|account|visa|master\s*card|mastercard|debit|credit|kaart)\b/i;
+const CARD_CONTEXT = /\b(?:card|pan|account|acc|visa|master\s*card|mastercard|debit|credit|kaart|eft|ending|last\s*4|last\s*four)\b/i;
 const CARD_EXCLUDED_CONTEXT = /\b(?:UTI|AID|IAD|CTQ|TVR|RRN|TSN|terminal|merchant|batch|auth|trace)\b/i;
 const BANK_OR_ACQUIRER_LINE = /\b(?:fnb|first\s+national\s+bank|firstrand|nedbank|absa|standard\s+bank|capitec|discovery\s+bank|investec|african\s+bank|bidvest\s+bank|tyme\s*bank|bank\s+zero|visa|master\s*card|mastercard|card\s+division|acquirer|payment\s+terminal|forecourt\s+eft)\b/i;
 const NON_SUPPLIER_LINE = /\b(?:south\s+africa|customer\s+copy|merchant\s+copy|approved|authorised|authorized|declined|receipt|tax\s+invoice|invoice|cashier|attendant|pump|thank\s+you|welcome|call\s+centre|balance|change|date|time|trace|uti|aid|iad|ctq|tvr|rrn|tsn|terminal|merchant|batch|auth|approval|card|pan|debit|credit|amount|amnt|purchase|sale|subtotal|total\s+(?:amount|due)|litres?|ltrs?|price\s*per|per\s*litre)\b/i;
 const ADDRESS_LINE = /\b(?:street|straat|road|rd|avenue|ave|drive|dr|singel|lane|ln|crescent|cresc|close|park|industrial|province)\b/i;
 const FUEL_MERCHANT_WORDS = /\b(?:engen|shell|bp|totalenergies|total|astron|caltex|sasol|puma|gulf|fuel|motors?|garage|service\s+station|filling\s+station|truck\s+stop|stop|depot|energy|petroleum)\b/i;
+const FUEL_PRODUCT_LINE = /\b(?:diesel|unleaded|ulp|petrol|excellium|ad\s*blue|paraffin|primax|dynamic\s+diesel|v[- ]?power|fuel\s*save|quartech|turbo\s*diesel|turbodiesel|ultimate\s+diesel|d\s*[- ]?50|50\s*ppm|500\s*ppm|(?:ulp|unleaded|petrol)\s*9[35])\b/i;
 const FUEL_SLIP_NUMBER_PATTERN = String.raw`\d(?:[\d ,.:]*\d)?`;
+const CARD_MASK_CLASS = String.raw`[*xX#•·●∙]`;
 
 type Candidate<T> = {
   raw: string;
@@ -81,6 +83,13 @@ type Candidate<T> = {
   score: number;
   lineIndex: number;
   reason: string;
+};
+
+type NumericLineToken = {
+  raw: string;
+  value: number;
+  start: number;
+  end: number;
 };
 
 type FuelSlipCandidateSet = {
@@ -91,6 +100,13 @@ type FuelSlipCandidateSet = {
   pricePerLitre: Candidate<number>[];
   totalAmount: Candidate<number>[];
   card: Candidate<{ masked: string; last4: string }>[];
+};
+
+type NumericSelection = {
+  litres: Candidate<number> | null;
+  pricePerLitre: Candidate<number> | null;
+  totalAmount: Candidate<number> | null;
+  reason: string;
 };
 
 type FuelTypeRule = {
@@ -133,6 +149,8 @@ function cloneEmptyDraft(): FuelSlipExtractionDraft {
 function cleanText(value: unknown): string {
   return String(value ?? '')
     .replace(/\u00a0/g, ' ')
+    .replace(/[，]/g, ',')
+    .replace(/[‐‑‒–—]/g, '-')
     .replace(/[\t\f\v]+/g, ' ')
     .replace(/[ ]{2,}/g, ' ')
     .trim();
@@ -142,9 +160,11 @@ function normalizeTextForExtraction(rawText: string): string {
   return String(rawText ?? '')
     .replace(/\r/g, '\n')
     .replace(/\u00a0/g, ' ')
+    .replace(/[，]/g, ',')
+    .replace(/[‐‑‒–—]/g, '-')
     .split('\n')
     .map((line) => cleanText(line)
-      .replace(/(\d)\s*([.,])\s*(\d)/g, '$1$2$3')
+      .replace(/(\d)\s*([.,:])\s*(\d)/g, '$1$2$3')
       .replace(/\s{2,}/g, ' '))
     .filter(Boolean)
     .join('\n')
@@ -157,7 +177,7 @@ function normalizeLines(rawText: string): string[] {
     .split(/\n+/)
     .map((line) => cleanText(line))
     .filter(Boolean)
-    .slice(0, 300);
+    .slice(0, 420);
 }
 
 function compact(rawText: string): string {
@@ -168,23 +188,32 @@ function safeCardMask(last4: string): string {
   return /^\d{4}$/.test(last4) ? `************${last4}` : '';
 }
 
+function hasCardMask(text: string): boolean {
+  return (text.match(new RegExp(CARD_MASK_CLASS, 'g')) ?? []).length >= 2;
+}
+
 function extractLast4FromCardLikeValue(value: unknown, options: { requireContext?: boolean } = {}): string {
   const text = cleanText(value);
   if (!text) return '';
 
   const hasContext = CARD_CONTEXT.test(text);
-  const hasMask = /[*xX]{2,}/.test(text);
+  const hasMask = hasCardMask(text);
   if (options.requireContext && !hasContext) return '';
   if (CARD_EXCLUDED_CONTEXT.test(text) && !hasContext && !hasMask) return '';
 
-  const masked = /(?:\b\d{4,6}[\s-]*)?(?:[*xX]{2,}[\s-]*){1,4}(\d{4})\b/.exec(text);
+  const masked = new RegExp(String.raw`(?:\b\d{4,6}[\s-]*)?(?:${CARD_MASK_CLASS}{1,}[\s-]*){1,8}(\d{4})\b`).exec(text);
   if (masked) return masked[1];
 
-  const firstMasked = /\b\d{4,6}[\s-]*(?:[*xX]{2,}[\s-]*){1,3}(\d{4})\b/.exec(text);
+  const firstMasked = new RegExp(String.raw`\b\d{4,6}[\s-]*(?:${CARD_MASK_CLASS}{1,}[\s-]*){1,6}(\d{4})\b`).exec(text);
   if (firstMasked) return firstMasked[1];
 
+  if (hasMask) {
+    const maskedTail = new RegExp(String.raw`(?:${CARD_MASK_CLASS}\s*){2,}.{0,48}?(\d{4})\b`).exec(text);
+    if (maskedTail) return maskedTail[1];
+  }
+
   if (hasContext) {
-    const tailDigits = /(?:ending|last\s*4|last\s*four|card|pan)[^\d]{0,24}(\d{4})\b/i.exec(text);
+    const tailDigits = /(?:ending|last\s*4|last\s*four|card|kaart|pan|acc(?:ount)?)[^\d]{0,32}(\d{4})\b/i.exec(text);
     if (tailDigits) return tailDigits[1];
   }
 
@@ -203,13 +232,19 @@ function maskCardLikeMatch(value: string): string {
 
 export function maskFuelSlipSensitiveText(value: string): string {
   return String(value ?? '')
-    .replace(/\b\d{4,6}[\s-]*(?:[*xX]{2,}[\s-]*){1,3}\d{4}\b/g, (match) => maskCardLikeMatch(match))
-    .replace(/\b(?:[*xX]{2,}[\s-]*){1,4}\d{4}\b/g, (match) => maskCardLikeMatch(match))
+    .replace(new RegExp(String.raw`\b\d{4,6}[\s-]*(?:${CARD_MASK_CLASS}{1,}[\s-]*){1,6}\d{4}\b`, 'g'), (match) => maskCardLikeMatch(match))
+    .replace(new RegExp(String.raw`\b(?:${CARD_MASK_CLASS}{1,}[\s-]*){1,8}\d{4}\b`, 'g'), (match) => maskCardLikeMatch(match))
     .replace(/\b(?:\d[\s-]?){13,19}\b/g, (match) => maskCardLikeMatch(match));
 }
 
 function parseDecimal(value: unknown, decimals = 2): number | null {
   return parseFuelSlipDecimal(value, decimals);
+}
+
+function roundDecimal(value: number, decimals: number): number {
+  if (!Number.isFinite(value)) return 0;
+  const factor = 10 ** decimals;
+  return Math.round((value + Number.EPSILON) * factor) / factor;
 }
 
 function moneyPattern(): string {
@@ -251,10 +286,20 @@ function isBankOrAcquirerLine(line: string): boolean {
   return BANK_OR_ACQUIRER_LINE.test(compactLine);
 }
 
+function normalizeDateSearchLine(line: string): string {
+  return cleanText(line)
+    .replace(/[\\|]/g, '/')
+    .replace(/[oO](?=\d)|(?<=\d)[oO]/g, '0')
+    .replace(/[lI](?=\d)|(?<=\d)[lI]/g, '1')
+    .replace(/(\d)\s*([-/.])\s*(\d)/g, '$1$2$3')
+    .replace(/\s+/g, ' ');
+}
+
 function isDateLikeLine(line: string): boolean {
-  return /\b(?:20\d{2}|19\d{2})[-/.]\d{1,2}[-/.]\d{1,2}\b/.test(line)
-    || /\b(?:D\s*[:=]\s*)?\d{1,2}[-/.]\d{1,2}[-/.](?:\d{2}|20\d{2}|19\d{2})\b/i.test(line)
-    || /^\s*(?:T\s*[:=]\s*)?\d{1,2}:\d{2}(?::\d{2})?\s*$/i.test(line);
+  const normalized = normalizeDateSearchLine(line);
+  return /\b(?:20\d{2}|19\d{2})[-/.]\d{1,2}[-/.]\d{1,2}\b/.test(normalized)
+    || /\b(?:D\s*[:=]\s*)?\d{1,2}[-/.]\d{1,2}[-/.](?:\d{2}|20\d{2}|19\d{2})\b/i.test(normalized)
+    || /^\s*(?:T\s*[:=]\s*)?\d{1,2}:\d{2}(?::\d{2})?\s*$/i.test(normalized);
 }
 
 function supplierLineScore(line: string, index: number): number {
@@ -275,7 +320,7 @@ function supplierLineScore(line: string, index: number): number {
   if (/\b(?:pty|ltd|cc|co\.?|inc)\b/i.test(text)) score += 2;
   if (/^[A-Z0-9 .&'/-]{3,}$/.test(text) && /[A-Z]{2}/.test(text)) score += 2;
   if (text.split(/\s+/).length >= 2) score += 3;
-  if (index <= 12) score += Math.max(0, 6 - Math.floor(index / 2));
+  if (index <= 14) score += Math.max(0, 7 - Math.floor(index / 2));
   if (/\d{4,}/.test(text)) score -= 5;
 
   return score;
@@ -321,31 +366,39 @@ function validDateValue(year: string, month: string, day: string): string {
   return normalized;
 }
 
+function dateCandidateScore(line: string, base: number): number {
+  let score = base;
+  if (/\b(?:date|datum|trans(?:action)?\s*date|purchase\s*date)\b/i.test(line)) score += 12;
+  if (/\b(?:time|terminal|merchant|trace|rrn|batch|auth)\b/i.test(line)) score -= 4;
+  return score;
+}
+
 function collectDateCandidates(text: string): Candidate<string>[] {
   const candidates: Candidate<string>[] = [];
   const lines = normalizeLines(text);
 
-  for (const [lineIndex, line] of lines.entries()) {
+  for (const [lineIndex, originalLine] of lines.entries()) {
+    const line = normalizeDateSearchLine(originalLine);
+
     for (const match of line.matchAll(/\b((?:20|19)\d{2})[-/.](\d{1,2})[-/.](\d{1,2})\b/g)) {
       const value = validDateValue(match[1], match[2], match[3]);
-      if (value) {
-        candidates.push({ raw: match[0], value, score: 120, lineIndex, reason: 'yyyy-mm-dd' });
-      }
+      if (value) candidates.push({ raw: match[0], value, score: dateCandidateScore(originalLine, 122), lineIndex, reason: 'yyyy-mm-dd' });
     }
 
     for (const match of line.matchAll(/\bD\s*[:=]\s*(\d{1,2})[-/.](\d{1,2})[-/.](\d{2})\b/gi)) {
       const value = validDateValue(toFourDigitYear(match[3]), match[2], match[1]);
-      if (value) {
-        candidates.push({ raw: match[0], value, score: 116, lineIndex, reason: 'd-prefix-dd-mm-yy' });
-      }
+      if (value) candidates.push({ raw: match[0], value, score: dateCandidateScore(originalLine, 118), lineIndex, reason: 'd-prefix-dd-mm-yy' });
+    }
+
+    for (const match of line.matchAll(/\b(?:date|datum|purchase\s*date|trans(?:action)?\s*date)\s*[:#-]?\s*(\d{1,2})[-/.](\d{1,2})[-/.]((?:20|19)?\d{2})\b/gi)) {
+      const value = validDateValue(toFourDigitYear(match[3]), match[2], match[1]);
+      if (value) candidates.push({ raw: match[0], value, score: 118, lineIndex, reason: 'labelled-dd-mm-yyyy' });
     }
 
     for (const match of line.matchAll(/\b(\d{1,2})[-/.](\d{1,2})[-/.]((?:20|19)?\d{2})\b/g)) {
       if (/^(?:20|19)\d{2}/.test(match[0])) continue;
       const value = validDateValue(toFourDigitYear(match[3]), match[2], match[1]);
-      if (value) {
-        candidates.push({ raw: match[0], value, score: 96, lineIndex, reason: 'dd-mm-yy' });
-      }
+      if (value) candidates.push({ raw: match[0], value, score: dateCandidateScore(originalLine, 98), lineIndex, reason: 'dd-mm-yy' });
     }
   }
 
@@ -375,7 +428,7 @@ function collectFuelTypeCandidates(lines: string[]): Candidate<string>[] {
       candidates.push({
         raw: match[0],
         value: normaliseFuelType(match[0]),
-        score: rule.score + (/@/.test(line) ? 8 : 0) + (lineIndex <= 40 ? Math.max(0, 4 - Math.floor(lineIndex / 10)) : 0),
+        score: rule.score + (/@|\b(?:qty|litres?|volume|rate|price)\b/i.test(line) ? 8 : 0) + (lineIndex <= 40 ? Math.max(0, 4 - Math.floor(lineIndex / 10)) : 0),
         lineIndex,
         reason: 'fuel-type',
       });
@@ -393,25 +446,176 @@ function addNumericCandidate(candidates: Candidate<number>[], raw: string, decim
   }
 }
 
+function addRateCandidate(candidates: Candidate<number>[], raw: string, line: string, score: number, lineIndex: number, reason: string): void {
+  const parsed = parseDecimal(raw, 4);
+  if (parsed === null || parsed <= 0) return;
+
+  let value = parsed;
+  if ((/\b(?:c\s*\/\s*l|cents?\s*(?:per|\/)?\s*l(?:itre)?)\b/i.test(line) && value >= 100) || (value >= 100 && value < 10000 && !/(?:R\s*\d|ZAR)/i.test(raw))) {
+    value = roundDecimal(value / 100, 4);
+  }
+
+  if (value > 0 && value < 1000) {
+    candidates.push({ raw: cleanText(raw), value, score, lineIndex, reason });
+  }
+}
+
+function normalizeNumberSearchLine(line: string): string {
+  return cleanText(line)
+    .replace(/[Oo](?=\d)|(?<=\d)[Oo]/g, '0')
+    .replace(/[lI](?=\d)|(?<=\d)[lI]/g, '1')
+    .replace(/(\d)\s*([,.:])\s*(\d)/g, '$1$2$3')
+    .replace(/\s+/g, ' ');
+}
+
+function isLikelyProductNumber(line: string, token: NumericLineToken): boolean {
+  const window = line.slice(Math.max(0, token.start - 18), Math.min(line.length, token.end + 18));
+  const rounded = Math.round(token.value);
+  if ((rounded === 50 || rounded === 500) && /\bppm\b|\bd\s*[- ]?50\b/i.test(window)) return true;
+  if ((rounded === 93 || rounded === 95) && /\b(?:ulp|unleaded|petrol)\b/i.test(window)) return true;
+  if (/\b(?:pump|hose|nozzle)\b/i.test(window) && token.value < 100) return true;
+  return false;
+}
+
+function numericTokensFromLine(line: string, decimals = 4): NumericLineToken[] {
+  const normalized = normalizeNumberSearchLine(line);
+  const pattern = /(?:ZAR\s*)?R\s*(?:\d{1,3}(?: \d{3})+(?:[,.:]\d{1,4}|\s\d{2})?|\d{1,3}(?:\.\d{3})+(?:,\d{1,4})?|\d{1,3}(?:,\d{3})+(?:\.\d{1,4})?|\d+(?:[,.:]\d{1,4}|\s\d{2})?)|\d{1,3}(?: \d{3})+(?:[,.:]\d{1,4})?|\d{1,3}(?:\.\d{3})+(?:,\d{1,4})?|\d{1,3}(?:,\d{3})+(?:\.\d{1,4})?|\d+(?:[,.:]\d{1,4})?/gi;
+  const tokens: NumericLineToken[] = [];
+
+  for (const match of normalized.matchAll(pattern)) {
+    const raw = cleanText(match[0]);
+    const start = match.index ?? 0;
+    const end = start + raw.length;
+    if (!/\d/.test(raw)) continue;
+    if (/^\d{4}$/.test(raw) && Number(raw) >= 1900 && Number(raw) <= 2100) continue;
+
+    const value = parseDecimal(raw, decimals);
+    if (value === null || value <= 0 || !Number.isFinite(value)) continue;
+
+    const token = { raw, value, start, end };
+    if (isLikelyProductNumber(normalized, token)) continue;
+    tokens.push(token);
+  }
+
+  return tokens;
+}
+
+function isPlausibleLitres(value: number): boolean {
+  return Number.isFinite(value) && value > 0.02 && value < 100000;
+}
+
+function isPlausibleRate(value: number): boolean {
+  return Number.isFinite(value) && value > 0.1 && value < 1000;
+}
+
+function isPlausibleTotal(value: number): boolean {
+  return Number.isFinite(value) && value > 0.5 && value < 10000000;
+}
+
+function normalizedRateFromToken(token: NumericLineToken, line: string): number {
+  let value = token.value;
+  const tokenHasCurrency = /(?:R\s*\d|ZAR)/i.test(token.raw);
+  if ((/\b(?:c\s*\/\s*l|cents?\s*(?:per|\/)?\s*l(?:itre)?)\b/i.test(line) && value >= 100) || (value >= 100 && value < 10000 && !tokenHasCurrency)) {
+    value = value / 100;
+  }
+  return roundDecimal(value, 4);
+}
+
+function tokenDistanceScore(line: string, a: NumericLineToken, b: NumericLineToken, c?: NumericLineToken): number {
+  const start = Math.min(a.start, b.start, c?.start ?? b.start);
+  const end = Math.max(a.end, b.end, c?.end ?? b.end);
+  const span = Math.max(1, end - start);
+  return Math.max(0, 14 - Math.floor(span / 18)) + (FUEL_PRODUCT_LINE.test(line) ? 12 : 0) + (/@/.test(line) ? 8 : 0);
+}
+
+function collectFuelRowNumericCandidates(lines: string[]): Pick<FuelSlipCandidateSet, 'litres' | 'pricePerLitre' | 'totalAmount'> {
+  const litres: Candidate<number>[] = [];
+  const pricePerLitre: Candidate<number>[] = [];
+  const totalAmount: Candidate<number>[] = [];
+
+  for (const [lineIndex, originalLine] of lines.entries()) {
+    const line = normalizeNumberSearchLine(originalLine);
+    if (TECHNICAL_CARD_AMOUNT_LINE.test(line) || CARD_CONTEXT.test(line) || isDateLikeLine(line)) continue;
+
+    const hasFuelContext = FUEL_PRODUCT_LINE.test(line) || /@\s*(?:ZAR\s*)?(?:R\s*)?\d/i.test(line) || /\b(?:qty|quantity|volume|litres?|ltrs?)\b/i.test(line);
+    if (!hasFuelContext) continue;
+
+    const tokens = numericTokensFromLine(line, 4);
+    if (tokens.length < 2) continue;
+
+    const atIndex = line.indexOf('@');
+    if (atIndex >= 0) {
+      const beforeAt = tokens.filter((token) => token.end <= atIndex + 1 && isPlausibleLitres(token.value));
+      const afterAt = tokens.filter((token) => token.start >= atIndex);
+      const litreToken = beforeAt.slice().reverse().find((token) => !isLikelyProductNumber(line, token));
+      const rateToken = afterAt.find((token) => isPlausibleRate(normalizedRateFromToken(token, line)));
+      const totalToken = afterAt.find((token) => rateToken && token.start !== rateToken.start && isPlausibleTotal(token.value) && token.value > normalizedRateFromToken(rateToken, line));
+
+      if (litreToken) litres.push({ raw: litreToken.raw, value: roundDecimal(litreToken.value, 3), score: 132, lineIndex, reason: 'fuel-row-before-at' });
+      if (rateToken) pricePerLitre.push({ raw: rateToken.raw, value: normalizedRateFromToken(rateToken, line), score: 138, lineIndex, reason: 'fuel-row-after-at' });
+      if (totalToken) totalAmount.push({ raw: totalToken.raw, value: roundDecimal(totalToken.value, 2), score: 126, lineIndex, reason: 'fuel-row-after-rate-total' });
+    }
+
+    let bestLineCombo: { litreToken: NumericLineToken; rateToken: NumericLineToken; totalToken: NumericLineToken; rate: number; total: number; score: number } | null = null;
+
+    for (const litreToken of tokens) {
+      if (!isPlausibleLitres(litreToken.value)) continue;
+
+      for (const rateToken of tokens) {
+        if (rateToken.start === litreToken.start || rateToken.end === litreToken.end) continue;
+        const rate = normalizedRateFromToken(rateToken, line);
+        if (!isPlausibleRate(rate)) continue;
+
+        for (const totalToken of tokens) {
+          if (totalToken.start === litreToken.start || totalToken.start === rateToken.start) continue;
+          const total = roundDecimal(totalToken.value, 2);
+          if (!isPlausibleTotal(total)) continue;
+
+          const expectedTotal = roundDecimal(litreToken.value * rate, 2);
+          const difference = Math.abs(expectedTotal - total);
+          const tolerance = Math.max(1.25, Math.abs(total) * 0.035);
+          if (difference > tolerance) continue;
+
+          const fitScore = Math.max(0, 52 - Math.round((difference / tolerance) * 22));
+          const contextScore = tokenDistanceScore(line, litreToken, rateToken, totalToken);
+          const score = 126 + fitScore + contextScore;
+          if (!bestLineCombo || score > bestLineCombo.score) {
+            bestLineCombo = { litreToken, rateToken, totalToken, rate, total, score };
+          }
+        }
+      }
+    }
+
+    if (bestLineCombo) {
+      litres.push({ raw: bestLineCombo.litreToken.raw, value: roundDecimal(bestLineCombo.litreToken.value, 3), score: bestLineCombo.score, lineIndex, reason: 'fuel-row-matched-litres' });
+      pricePerLitre.push({ raw: bestLineCombo.rateToken.raw, value: bestLineCombo.rate, score: bestLineCombo.score, lineIndex, reason: 'fuel-row-matched-rate' });
+      totalAmount.push({ raw: bestLineCombo.totalToken.raw, value: bestLineCombo.total, score: bestLineCombo.score, lineIndex, reason: 'fuel-row-matched-total' });
+    }
+  }
+
+  return { litres, pricePerLitre, totalAmount };
+}
+
 function collectLitresCandidates(lines: string[]): Candidate<number>[] {
   const candidates: Candidate<number>[] = [];
 
   for (const [lineIndex, line] of lines.entries()) {
     if (TECHNICAL_CARD_AMOUNT_LINE.test(line) || CARD_CONTEXT.test(line) || isDateLikeLine(line)) continue;
+    if (/\b(?:price|rate|unit\s*price|per\s*(?:litre|liter|l)|r\s*\/\s*l|c\s*\/\s*l)\b/i.test(line)) continue;
 
-    const labelled = new RegExp(String.raw`\b(?:litres?|liters?|ltrs?|qty|quantity)\s*[:=]?\s*(${FUEL_SLIP_NUMBER_PATTERN})\b`, 'ig');
+    const labelled = new RegExp(String.raw`\b(?:litres?|liters?|ltrs?|qty|quantity|volume|vol)\s*[:=]?\s*(${FUEL_SLIP_NUMBER_PATTERN})\b`, 'ig');
     for (const match of line.matchAll(labelled)) {
-      addNumericCandidate(candidates, match[1], 3, 120, lineIndex, 'litres-label-before-number', 100000);
+      addNumericCandidate(candidates, match[1], 3, 122, lineIndex, 'litres-label-before-number', 100000);
     }
 
     const trailing = new RegExp(String.raw`\b(${FUEL_SLIP_NUMBER_PATTERN})\s*(?:l|litres?|liters?|ltrs?)\b`, 'ig');
     for (const match of line.matchAll(trailing)) {
-      addNumericCandidate(candidates, match[1], 3, 95, lineIndex, 'litres-number-before-label', 100000);
+      addNumericCandidate(candidates, match[1], 3, 98, lineIndex, 'litres-number-before-label', 100000);
     }
 
-    const fuelLine = new RegExp(String.raw`\b(?:diesel|unleaded|petrol|excellium|ad\s*blue|paraffin)[^\n]{0,80}?(${FUEL_SLIP_NUMBER_PATTERN})\s*(?:l|litres?|liters?|ltrs?)\b`, 'ig');
+    const fuelLine = new RegExp(String.raw`\b(?:diesel|unleaded|petrol|excellium|ad\s*blue|paraffin)[^\n]{0,90}?(${FUEL_SLIP_NUMBER_PATTERN})\s*(?:l|litres?|liters?|ltrs?)\b`, 'ig');
     for (const match of line.matchAll(fuelLine)) {
-      addNumericCandidate(candidates, match[1], 3, 85, lineIndex, 'fuel-line-litres', 100000);
+      addNumericCandidate(candidates, match[1], 3, 92, lineIndex, 'fuel-line-litres', 100000);
     }
   }
 
@@ -425,19 +629,24 @@ function collectPricePerLitreCandidates(lines: string[]): Candidate<number>[] {
   for (const [lineIndex, line] of lines.entries()) {
     if (TECHNICAL_CARD_AMOUNT_LINE.test(line) || isDateLikeLine(line)) continue;
 
-    const atPattern = new RegExp(String.raw`@\s*(${amountPattern})\s*(?:per\s*(?:litre|liter|l))?`, 'ig');
+    const atPattern = new RegExp(String.raw`@\s*(${amountPattern})\s*(?:per\s*(?:litre|liter|l)|/\s*l|r\s*/\s*l|c\s*/\s*l)?`, 'ig');
     for (const match of line.matchAll(atPattern)) {
-      addNumericCandidate(candidates, match[1], 4, 130, lineIndex, 'at-price-per-litre', 1000);
+      addRateCandidate(candidates, match[1], line, 134, lineIndex, 'at-price-per-litre');
     }
 
-    const labelled = new RegExp(String.raw`(?:price|rate)\s*(?:per|/)?\s*(?:litre|liter|l)\s*[:=]?\s*(${amountPattern})`, 'ig');
+    const labelled = new RegExp(String.raw`(?:price|rate|unit\s*price|ppu)\s*(?:per|/)?\s*(?:litre|liter|l)?\s*[:=]?\s*(${amountPattern})`, 'ig');
     for (const match of line.matchAll(labelled)) {
-      addNumericCandidate(candidates, match[1], 4, 116, lineIndex, 'price-label', 1000);
+      addRateCandidate(candidates, match[1], line, 118, lineIndex, 'price-label');
     }
 
-    const perLitre = new RegExp(String.raw`\b(?:per\s*(?:litre|liter|l))\s*[:=]?\s*(${amountPattern})`, 'ig');
+    const perLitre = new RegExp(String.raw`\b(?:per\s*(?:litre|liter|l)|/\s*l|r\s*/\s*l)\s*[:=]?\s*(${amountPattern})`, 'ig');
     for (const match of line.matchAll(perLitre)) {
-      addNumericCandidate(candidates, match[1], 4, 100, lineIndex, 'per-litre-label', 1000);
+      addRateCandidate(candidates, match[1], line, 106, lineIndex, 'per-litre-label');
+    }
+
+    const trailingRate = new RegExp(String.raw`\b(${amountPattern})\s*(?:/\s*l|r\s*/\s*l|c\s*/\s*l|cents?\s*(?:per|/)?\s*l)\b`, 'ig');
+    for (const match of line.matchAll(trailingRate)) {
+      addRateCandidate(candidates, match[1], line, 108, lineIndex, 'price-before-per-litre-label');
     }
   }
 
@@ -451,24 +660,23 @@ function hasCurrencyMarker(line: string): boolean {
 function moneyValuesFromLine(line: string, allowUnmarkedAmount: boolean): Array<{ raw: string; value: number }> {
   if (TECHNICAL_NUMBER_LINE.test(line) && !hasCurrencyMarker(line)) return [];
 
-  const money = new RegExp(`(${moneyPattern()})`, 'ig');
-  return [...line.matchAll(money)]
-    .filter((match) => allowUnmarkedAmount || /(?:ZAR|R\s*\d)/i.test(match[1]))
-    .map((match) => ({ raw: cleanText(match[1]), value: parseDecimal(match[1], 2) }))
+  return numericTokensFromLine(line, 2)
+    .filter((token) => allowUnmarkedAmount || /(?:ZAR|R\s*\d)/i.test(token.raw))
+    .map((token) => ({ raw: cleanText(token.raw), value: token.value }))
     .filter((entry): entry is { raw: string; value: number } => entry.value !== null && entry.value > 0 && entry.value < 10000000);
 }
 
 function collectTotalCandidates(lines: string[]): Candidate<number>[] {
-  const amountLinePattern = /\b(?:grand\s+total|total\s+amount|amount\s+due|total\s+due|card\s+tender|amnt|amount|purchase|sale|total)\b/i;
+  const amountLinePattern = /\b(?:grand\s+total|total\s+amount|amount\s+due|total\s+due|amount\s+paid|paid|card\s+tender|bank\s*card|amnt|amount|purchase|sale|total|tendered)\b/i;
   const excludedTotalLine = /@|\b(?:subtotal|sub\s+total|vat\s*(?:no|number|reg)|change|balance|litres?|ltrs?|price\s*per|per\s*litre|rate\s*\/\s*l|pump|uti|aid|rrn|tsn|trace|tvr|terminal|merchant)\b/i;
   const candidates: Candidate<number>[] = [];
 
   for (const [lineIndex, line] of lines.entries()) {
     if (!amountLinePattern.test(line) || excludedTotalLine.test(line)) continue;
 
-    let score = 95;
-    if (/\b(?:grand\s+total|total\s+amount|amount\s+due|total\s+due|total|amnt)\b/i.test(line)) score += 25;
-    if (/\b(?:purchase|sale|card\s+tender)\b/i.test(line)) score += 12;
+    let score = 96;
+    if (/\b(?:grand\s+total|total\s+amount|amount\s+due|total\s+due|total|amnt)\b/i.test(line)) score += 27;
+    if (/\b(?:purchase|sale|card\s+tender|amount\s+paid|paid|tendered)\b/i.test(line)) score += 12;
     if (hasCurrencyMarker(line)) score += 8;
 
     for (const entry of moneyValuesFromLine(line, true)) {
@@ -480,7 +688,7 @@ function collectTotalCandidates(lines: string[]): Candidate<number>[] {
     if (/@|\b(?:litres?|ltrs?|price\s*per|per\s*litre|rate\s*\/\s*l|vat\s*(?:no|number|reg)|uti|aid|rrn|tsn|trace|tvr|terminal|merchant)\b/i.test(line)) continue;
 
     for (const entry of moneyValuesFromLine(line, false)) {
-      candidates.push({ raw: entry.raw, value: entry.value, score: 45 + (hasCurrencyMarker(line) ? 10 : 0), lineIndex, reason: 'fallback-currency' });
+      candidates.push({ raw: entry.raw, value: entry.value, score: 46 + (hasCurrencyMarker(line) ? 10 : 0), lineIndex, reason: 'fallback-currency' });
     }
   }
 
@@ -494,14 +702,14 @@ function collectCardCandidates(lines: string[]): Candidate<{ masked: string; las
     const last4 = extractLast4FromCardLikeValue(line, { requireContext: false });
     if (!last4) continue;
 
-    const hasMask = /[*xX]{2,}/.test(line);
+    const hasMask = hasCardMask(line);
     const hasContext = CARD_CONTEXT.test(line);
     if (!hasMask && !hasContext) continue;
 
     candidates.push({
       raw: line,
       value: { masked: safeCardMask(last4), last4 },
-      score: (hasMask ? 120 : 90) + (hasContext ? 10 : 0),
+      score: (hasMask ? 124 : 92) + (hasContext ? 12 : 0) - (CARD_EXCLUDED_CONTEXT.test(line) && !hasContext ? 10 : 0),
       lineIndex,
       reason: hasMask ? 'masked-card' : 'card-context',
     });
@@ -511,14 +719,79 @@ function collectCardCandidates(lines: string[]): Candidate<{ masked: string; las
 }
 
 function collectFuelSlipCandidates(text: string, lines: string[]): FuelSlipCandidateSet {
+  const fuelRow = collectFuelRowNumericCandidates(lines);
+
   return {
     supplier: collectSupplierCandidates(lines),
     documentDate: collectDateCandidates(text),
     fuelType: collectFuelTypeCandidates(lines),
-    litres: collectLitresCandidates(lines),
-    pricePerLitre: collectPricePerLitreCandidates(lines),
-    totalAmount: collectTotalCandidates(lines),
+    litres: [...fuelRow.litres, ...collectLitresCandidates(lines)],
+    pricePerLitre: [...fuelRow.pricePerLitre, ...collectPricePerLitreCandidates(lines)],
+    totalAmount: [...fuelRow.totalAmount, ...collectTotalCandidates(lines)],
     card: collectCardCandidates(lines),
+  };
+}
+
+function uniqueNumberCandidates(candidates: Candidate<number>[], decimals: number, limit = 12): Candidate<number>[] {
+  const seen = new Set<string>();
+  const unique: Candidate<number>[] = [];
+
+  for (const candidate of candidates.slice().sort((a, b) => b.score - a.score || a.lineIndex - b.lineIndex)) {
+    const key = roundDecimal(candidate.value, decimals).toFixed(decimals);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    unique.push(candidate);
+    if (unique.length >= limit) break;
+  }
+
+  return unique;
+}
+
+function selectBestNumericCandidates(candidates: FuelSlipCandidateSet): NumericSelection {
+  const litres = uniqueNumberCandidates(candidates.litres, 3);
+  const rates = uniqueNumberCandidates(candidates.pricePerLitre, 4);
+  const totals = uniqueNumberCandidates(candidates.totalAmount, 2);
+
+  let bestMatched: { litres: Candidate<number>; pricePerLitre: Candidate<number>; totalAmount: Candidate<number>; score: number } | null = null;
+
+  for (const litre of litres) {
+    if (!isPlausibleLitres(litre.value)) continue;
+
+    for (const rate of rates) {
+      if (!isPlausibleRate(rate.value)) continue;
+
+      for (const total of totals) {
+        if (!isPlausibleTotal(total.value)) continue;
+
+        const expectedTotal = roundDecimal(litre.value * rate.value, 2);
+        const difference = Math.abs(expectedTotal - total.value);
+        const tolerance = Math.max(1.25, Math.abs(total.value) * 0.035);
+        if (difference > tolerance) continue;
+
+        const sameLineBonus = litre.lineIndex === rate.lineIndex && rate.lineIndex === total.lineIndex ? 35 : 0;
+        const fitBonus = Math.max(0, 70 - Math.round((difference / tolerance) * 35));
+        const score = litre.score + rate.score + total.score + sameLineBonus + fitBonus;
+        if (!bestMatched || score > bestMatched.score) {
+          bestMatched = { litres: litre, pricePerLitre: rate, totalAmount: total, score };
+        }
+      }
+    }
+  }
+
+  if (bestMatched) {
+    return {
+      litres: bestMatched.litres,
+      pricePerLitre: bestMatched.pricePerLitre,
+      totalAmount: bestMatched.totalAmount,
+      reason: 'matched-litres-rate-total',
+    };
+  }
+
+  return {
+    litres: bestCandidate(candidates.litres),
+    pricePerLitre: bestCandidate(candidates.pricePerLitre),
+    totalAmount: bestCandidate(candidates.totalAmount),
+    reason: 'best-individual-candidates',
   };
 }
 
@@ -532,18 +805,6 @@ function extractDate(text: string): string {
 
 function extractFuelType(lines: string[]): string {
   return bestCandidate(collectFuelTypeCandidates(lines))?.value ?? '';
-}
-
-function extractLitres(lines: string[]): number | null {
-  return bestCandidate(collectLitresCandidates(lines))?.value ?? null;
-}
-
-function extractPricePerLitre(lines: string[]): number | null {
-  return bestCandidate(collectPricePerLitreCandidates(lines))?.value ?? null;
-}
-
-function extractTotal(lines: string[]): number | null {
-  return bestCandidate(collectTotalCandidates(lines))?.value ?? null;
 }
 
 function extractVatAmount(lines: string[]): number | null {
@@ -571,7 +832,7 @@ function extractNumberByLabel(text: string, labels: string): string {
 }
 
 function detectPaymentMethod(text: string): string {
-  if (/\bcard\s+tender|\bcard\b|\bcredit\b|\bdebit\b|\bvisa\b|\bmaster\s*card|\bmastercard\b/i.test(text)) return 'card';
+  if (/\bcard\s+tender|\bcard\b|\bcredit\b|\bdebit\b|\bvisa\b|\bmaster\s*card|\bmastercard\b|\bkaart\b|\beft\b/i.test(text)) return 'card';
   if (/\bcash\b/i.test(text)) return 'cash';
   if (/\baccount\b/i.test(text)) return 'account';
   return '';
@@ -607,6 +868,74 @@ function confidenceForDraft(draft: FuelSlipExtractionDraft): number {
   return Math.round(score * 100) / 100;
 }
 
+function formatDebugValue(value: unknown): string {
+  if (typeof value === 'number') return Number.isFinite(value) ? String(value) : '';
+  if (typeof value === 'boolean') return value ? 'yes' : 'no';
+  return cleanText(value);
+}
+
+function candidateDebugLine<T>(candidate: Candidate<T> | null, formatter: (value: T) => string): string {
+  if (!candidate) return 'not found';
+  const raw = maskFuelSlipSensitiveText(cleanText(candidate.raw));
+  return `${formatter(candidate.value)} | ${candidate.reason}, line ${candidate.lineIndex + 1}, score ${Math.round(candidate.score)} | ${raw}`;
+}
+
+function topCandidateDebug<T>(label: string, candidates: Candidate<T>[], formatter: (value: T) => string, limit = 4): string[] {
+  const lines = [`${label}:`];
+  const top = candidates.slice().sort((a, b) => b.score - a.score || a.lineIndex - b.lineIndex).slice(0, limit);
+  if (!top.length) return [...lines, '  - none'];
+
+  for (const candidate of top) {
+    lines.push(`  - ${candidateDebugLine(candidate, formatter)}`);
+  }
+
+  return lines;
+}
+
+function buildExtractionDebugPreview(sourceText: string, draft: FuelSlipExtractionDraft, warnings: string[], candidates: FuelSlipCandidateSet, numericSelection: NumericSelection): string {
+  const cardCandidate = bestCandidate(candidates.card);
+  const supplierCandidate = bestCandidate(candidates.supplier);
+  const dateCandidate = bestCandidate(candidates.documentDate);
+  const fuelTypeCandidate = bestCandidate(candidates.fuelType);
+
+  const lines = [
+    'Aim4price fuel slip extraction debug',
+    '',
+    'Selected fields:',
+    `Supplier: ${formatDebugValue(draft.supplierName) || 'not found'}`,
+    `Date: ${formatDebugValue(draft.documentDate) || 'not found'}`,
+    `Fuel type: ${formatDebugValue(draft.fuelType) || 'not found'}`,
+    `Litres: ${formatDebugValue(draft.litres) || 'not found'}`,
+    `Price per litre: ${formatDebugValue(draft.pricePerLitre) || 'not found'}`,
+    `Total amount: ${formatDebugValue(draft.totalAmount) || 'not found'}`,
+    `Card last 4: ${formatDebugValue(draft.cardLast4) || 'not found'}`,
+    `Numeric selection: ${numericSelection.reason}`,
+    '',
+    'Selected candidate evidence:',
+    `Supplier: ${candidateDebugLine(supplierCandidate, (value) => value)}`,
+    `Date: ${candidateDebugLine(dateCandidate, (value) => value)}`,
+    `Fuel type: ${candidateDebugLine(fuelTypeCandidate, (value) => value)}`,
+    `Litres: ${candidateDebugLine(numericSelection.litres, (value) => String(value))}`,
+    `Price per litre: ${candidateDebugLine(numericSelection.pricePerLitre, (value) => String(value))}`,
+    `Total amount: ${candidateDebugLine(numericSelection.totalAmount, (value) => String(value))}`,
+    `Card: ${candidateDebugLine(cardCandidate, (value) => value.last4 ? `ending ${value.last4}` : 'not found')}`,
+    '',
+    'Top alternate candidates:',
+    ...topCandidateDebug('Litres', candidates.litres, (value) => String(value)),
+    ...topCandidateDebug('Price per litre', candidates.pricePerLitre, (value) => String(value)),
+    ...topCandidateDebug('Total amount', candidates.totalAmount, (value) => String(value)),
+    ...topCandidateDebug('Dates', candidates.documentDate, (value) => value, 3),
+    ...topCandidateDebug('Cards', candidates.card, (value) => value.last4 ? `ending ${value.last4}` : 'not found', 3),
+    '',
+    warnings.length ? `Warnings: ${warnings.join(' | ')}` : 'Warnings: none',
+    '',
+    'Raw OCR / PDF text:',
+    sourceText,
+  ];
+
+  return maskFuelSlipSensitiveText(lines.join('\n')).slice(0, MAX_EXTRACTED_TEXT_LENGTH);
+}
+
 export function parseFuelSlipText(rawText: string): FuelSlipExtractionResult {
   const warnings: string[] = [];
   const rawTranscript = compact(rawText);
@@ -625,6 +954,7 @@ export function parseFuelSlipText(rawText: string): FuelSlipExtractionResult {
   }
 
   const candidates = collectFuelSlipCandidates(text, lines);
+  const numericSelection = selectBestNumericCandidates(candidates);
 
   draft.supplierName = maskFuelSlipSensitiveText(bestCandidate(candidates.supplier)?.value ?? extractSupplier(lines));
   draft.supplierVatNumber = extractVatNumber(text);
@@ -633,9 +963,9 @@ export function parseFuelSlipText(rawText: string): FuelSlipExtractionResult {
   draft.documentDate = bestCandidate(candidates.documentDate)?.value ?? extractDate(text);
   draft.documentTime = '';
   draft.fuelType = bestCandidate(candidates.fuelType)?.value ?? extractFuelType(lines);
-  draft.litres = bestCandidate(candidates.litres)?.value ?? extractLitres(lines);
-  draft.pricePerLitre = bestCandidate(candidates.pricePerLitre)?.value ?? extractPricePerLitre(lines);
-  draft.totalAmount = bestCandidate(candidates.totalAmount)?.value ?? extractTotal(lines);
+  draft.litres = numericSelection.litres?.value ?? null;
+  draft.pricePerLitre = numericSelection.pricePerLitre?.value ?? null;
+  draft.totalAmount = numericSelection.totalAmount?.value ?? null;
 
   const reconciledNumbers = reconcileFuelSlipNumbers({
     litres: draft.litres,
@@ -664,7 +994,7 @@ export function parseFuelSlipText(rawText: string): FuelSlipExtractionResult {
   if (draft.pricePerLitre === null) warnings.push('Price per litre could not be read confidently.');
   if (draft.totalAmount === null) warnings.push('Total amount could not be read confidently.');
   if (!draft.documentDate) warnings.push('Slip date could not be read confidently.');
-  if (!draft.cardLast4 && /\bcard|visa|master|credit|debit/i.test(text)) warnings.push('Card payment was detected, but the last 4 card digits could not be read confidently.');
+  if (!draft.cardLast4 && /\bcard|visa|master|credit|debit|kaart|eft/i.test(text)) warnings.push('Card payment was detected, but the last 4 card digits could not be read confidently.');
 
   const confidence = confidenceForDraft(draft);
   const completeFuelDetails = Boolean(draft.documentDate && draft.fuelType && draft.litres !== null && draft.litres > 0 && draft.totalAmount !== null);
@@ -679,7 +1009,7 @@ export function parseFuelSlipText(rawText: string): FuelSlipExtractionResult {
 
   return {
     draft,
-    rawText: maskFuelSlipSensitiveText(text).slice(0, MAX_EXTRACTED_TEXT_LENGTH),
+    rawText: buildExtractionDebugPreview(text, draft, uniqueWarnings, candidates, numericSelection),
     warnings: uniqueWarnings.slice(0, 12),
     quality: completeFuelDetails && confidence >= 0.72 && !reconciledNumbers.mismatch ? 'good' : 'weak',
   };

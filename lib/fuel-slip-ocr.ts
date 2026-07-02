@@ -23,10 +23,19 @@ type OcrAttempt = OcrCandidate & {
   pageSegMode: TesseractPageSegMode;
 };
 
+type OcrAttemptResult = {
+  label: string;
+  rawText: string;
+  confidence: number | null;
+  score: number;
+};
+
 const SUPPORTED_IMAGE_TYPES = new Set(['image/jpeg', 'image/jpg', 'image/png', 'image/webp']);
 const SUPPORTED_IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
 const MAX_OCR_TEXT_LENGTH = 20000;
 const TESSERACT_LANGUAGE = 'eng';
+const CARD_MASK_CHARS = '*xX#•·●∙';
+const CARD_MASK_CLASS = `[*xX#•·●∙]`;
 
 function cleanText(value: unknown): string {
   return String(value ?? '')
@@ -57,15 +66,25 @@ function safeCardMask(last4: string): string {
   return /^\d{4}$/.test(last4) ? `************${last4}` : '';
 }
 
+function hasCardMask(value: string): boolean {
+  return [...value].filter((character) => CARD_MASK_CHARS.includes(character)).length >= 2;
+}
+
 function extractLast4FromCardLikeValue(value: string): string {
   const text = cleanText(value);
   if (!text) return '';
 
-  const masked = /(?:\b\d{4,6}[\s-]*)?(?:[*xX]{2,}[\s-]*){1,4}(\d{4})\b/.exec(text);
+  const maskClass = CARD_MASK_CLASS;
+  const masked = new RegExp(String.raw`(?:\b\d{4,6}[\s-]*)?(?:${maskClass}{1,}[\s-]*){1,8}(\d{4})\b`).exec(text);
   if (masked) return masked[1];
 
-  const firstMasked = /\b\d{4,6}[\s-]*(?:[*xX]{2,}[\s-]*){1,3}(\d{4})\b/.exec(text);
+  const firstMasked = new RegExp(String.raw`\b\d{4,6}[\s-]*(?:${maskClass}{1,}[\s-]*){1,6}(\d{4})\b`).exec(text);
   if (firstMasked) return firstMasked[1];
+
+  if (hasCardMask(text)) {
+    const maskedTail = /(?:[*xX#•·●∙]\s*){2,}.{0,40}?(\d{4})\b/.exec(text);
+    if (maskedTail) return maskedTail[1];
+  }
 
   const digits = text.replace(/\D/g, '');
   return digits.length >= 13 && digits.length <= 19 ? digits.slice(-4) : '';
@@ -77,9 +96,10 @@ function maskCardLikeMatch(value: string): string {
 }
 
 function maskSensitiveOcrText(value: string): string {
+  const maskClass = CARD_MASK_CLASS;
   return String(value ?? '')
-    .replace(/\b\d{4,6}[\s-]*(?:[*xX]{2,}[\s-]*){1,3}\d{4}\b/g, (match) => maskCardLikeMatch(match))
-    .replace(/\b(?:[*xX]{2,}[\s-]*){1,4}\d{4}\b/g, (match) => maskCardLikeMatch(match))
+    .replace(new RegExp(String.raw`\b\d{4,6}[\s-]*(?:${maskClass}{1,}[\s-]*){1,6}\d{4}\b`, 'g'), (match) => maskCardLikeMatch(match))
+    .replace(new RegExp(String.raw`\b(?:${maskClass}{1,}[\s-]*){1,8}\d{4}\b`, 'g'), (match) => maskCardLikeMatch(match))
     .replace(/\b(?:\d[\s-]?){13,19}\b/g, (match) => maskCardLikeMatch(match));
 }
 
@@ -88,6 +108,8 @@ function normalizeOcrText(value: unknown): string {
     String(value ?? '')
       .replace(/\r/g, '\n')
       .replace(/\u00a0/g, ' ')
+      .replace(/[，]/g, ',')
+      .replace(/[‐‑‒–—]/g, '-')
       .split('\n')
       .map((line) => line.replace(/[\t\f\v]+/g, ' ').replace(/[ ]{2,}/g, ' ').trim())
       .filter(Boolean)
@@ -152,6 +174,8 @@ function buildOcrAttempts(candidates: OcrCandidate[], tesseract: TesseractModule
     { label: 'sparse-text-osd', value: psmValue(tesseract, 'SPARSE_TEXT_OSD') },
     { label: 'auto-osd', value: psmValue(tesseract, 'AUTO_OSD') },
     { label: 'auto', value: psmValue(tesseract, 'AUTO') },
+    { label: 'single-column', value: psmValue(tesseract, 'SINGLE_COLUMN') },
+    { label: 'single-block', value: psmValue(tesseract, 'SINGLE_BLOCK') },
   ];
   const attempts: OcrAttempt[] = [];
   const seen = new Set<string>();
@@ -179,15 +203,56 @@ function scoreFuelSlipOcrText(text: string, confidence: number | null): number {
 
   let score = Math.min(25, Math.floor(normalized.length / 40));
   if (confidence !== null && Number.isFinite(confidence)) score += Math.max(0, Math.min(20, confidence / 5));
-  if (/\b(?:litres?|liters?|ltrs?)\s*[:=]?\s*\d|\b\d[\d,.]*\s*(?:l|litres?|liters?|ltrs?)\b/.test(normalized)) score += 22;
+  if (/\b(?:litres?|liters?|ltrs?|volume|qty|quantity)\s*[:=]?\s*\d|\b\d[\d,.]*\s*(?:l|litres?|liters?|ltrs?)\b/.test(normalized)) score += 24;
   if (/\b(?:diesel|petrol|unleaded|ulp|excellium|dynamic\s+diesel|v[- ]?power|fuel\s*save|quartech|turbo\s*diesel|turbodiesel|ultimate\s+diesel|bp\s+ultimate|shell\s+fuel\s*save|engen\s+dynamic|d\s*50|d\s*[- ]?50|50\s*ppm|500\s*ppm)\b/.test(normalized)) score += 18;
-  if (/@\s*(?:zar\s*)?(?:r\s*)?\d|@\s*r|per\s*(?:litre|liter|l)|rate\s*\/\s*l|price\s*per/.test(normalized)) score += 12;
+  if (/@\s*(?:zar\s*)?(?:r\s*)?\d|@\s*r|per\s*(?:litre|liter|l)|rate\s*\/\s*l|price\s*per|r\s*\/\s*l|c\s*\/\s*l/.test(normalized)) score += 14;
   if (/\b(?:total\s+amount|amount\s+due|total|amnt|amount|purchase|sale|card\s+tender|tender|paid)\b/.test(normalized)) score += 12;
   if (/(?:zar\s*)?r\s*\d[\d\s,.:]*(?:[,. :]\d{2})/.test(normalized)) score += 8;
   if (/\b(?:20\d{2}[-/.]\d{1,2}[-/.]\d{1,2}|\d{1,2}[-/.]\d{1,2}[-/.](?:20)?\d{2}|d\s*:\s*\d{1,2}[-/.]\d{1,2}[-/.]\d{2})\b/i.test(text)) score += 12;
   if (/\b(?:engen|shell|bp|totalenergies|total|astron|caltex|sasol|puma|gulf|motors?|garage|service\s+station|filling\s+station|truck\s+stop|fuel)\b/.test(normalized)) score += 10;
-  if (/(?:\d{4,6}\s*)?(?:[*x]{2,}\s*){1,4}\d{4}\b|(?:[*x]{4,}\s*){1,4}\d{4}\b|\bcard\b|\bpan\b/.test(normalized)) score += 8;
+  if (/(?:\d{4,6}\s*)?(?:[*x#•·●∙]{1,}\s*){1,8}\d{4}\b|(?:[*x#•·●∙]{2,}\s*){1,8}\d{4}\b|\bcard\b|\bpan\b/.test(normalized)) score += 8;
   return score;
+}
+
+function uniqueLines(text: string): string[] {
+  const seen = new Set<string>();
+  const lines: string[] = [];
+
+  for (const line of normalizeOcrText(text).split('\n')) {
+    const key = line.toLowerCase().replace(/\s+/g, ' ').trim();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    lines.push(line);
+  }
+
+  return lines;
+}
+
+function buildCombinedOcrText(best: OcrAttemptResult, attempts: OcrAttemptResult[]): string {
+  const bestLines = uniqueLines(best.rawText);
+  const seen = new Set(bestLines.map((line) => line.toLowerCase().replace(/\s+/g, ' ').trim()));
+  const alternateLines: string[] = [];
+
+  for (const attempt of attempts.slice().sort((a, b) => b.score - a.score)) {
+    if (attempt.label === best.label) continue;
+
+    for (const line of uniqueLines(attempt.rawText)) {
+      const key = line.toLowerCase().replace(/\s+/g, ' ').trim();
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      alternateLines.push(line);
+      if (alternateLines.length >= 80) break;
+    }
+
+    if (alternateLines.length >= 80) break;
+  }
+
+  const sections = [...bestLines];
+  if (alternateLines.length) {
+    sections.push(...alternateLines);
+  }
+
+  return normalizeOcrText(sections.join('\n'));
 }
 
 export async function extractFuelSlipImageText(input: FuelSlipOcrInput): Promise<FuelSlipOcrResult> {
@@ -215,8 +280,7 @@ export async function extractFuelSlipImageText(input: FuelSlipOcrInput): Promise
     const attempts = buildOcrAttempts(candidates, tesseract);
     worker = await createLocalTesseractWorker(tesseract);
 
-    let bestText = '';
-    let bestScore = -1;
+    const results: OcrAttemptResult[] = [];
     let successfulAttempts = 0;
 
     for (const attempt of attempts) {
@@ -231,17 +295,17 @@ export async function extractFuelSlipImageText(input: FuelSlipOcrInput): Promise
         const confidence = typeof result.data.confidence === 'number' ? result.data.confidence : null;
         const score = scoreFuelSlipOcrText(rawText, confidence);
         successfulAttempts += 1;
-
-        if (score > bestScore) {
-          bestText = rawText;
-          bestScore = score;
-        }
+        results.push({ label: attempt.label, rawText, confidence, score });
       } catch {
         // Continue gracefully if local OCR fails on this OCR mode.
       }
     }
 
-    if (!bestText.trim()) {
+    const readableResults = results
+      .filter((result) => result.rawText.trim())
+      .sort((a, b) => b.score - a.score || (b.confidence ?? 0) - (a.confidence ?? 0));
+
+    if (!readableResults.length) {
       return {
         rawText: '',
         warnings: ['Fuel slip photo saved, but local OCR did not return readable text. Complete the fields manually before saving.'],
@@ -249,7 +313,7 @@ export async function extractFuelSlipImageText(input: FuelSlipOcrInput): Promise
     }
 
     return {
-      rawText: bestText,
+      rawText: buildCombinedOcrText(readableResults[0], readableResults),
       warnings: successfulAttempts > 0 ? [] : ['Fuel slip photo saved, but local OCR had trouble reading the photo. Review and complete the fields before saving.'],
     };
   } catch {

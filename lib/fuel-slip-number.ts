@@ -86,8 +86,24 @@ export function parseFuelSlipDecimal(value: unknown, decimals = 2): number | nul
 
   if (!/[0-9]/.test(text)) return null;
 
-  text = text.replace(/\s+(?=\d{3}(?:\D|$))/g, '');
-  text = text.replace(/\s+/g, '');
+  const spaceDecimalGroups = text.split(/\s+/).filter(Boolean);
+  const hasCommaOrDot = /[,.]/.test(text);
+  const hasColon = /:/.test(text);
+
+  if (!hasCommaOrDot && !hasColon && spaceDecimalGroups.length >= 2) {
+    const lastGroup = spaceDecimalGroups[spaceDecimalGroups.length - 1];
+    const integerGroups = spaceDecimalGroups.slice(0, -1);
+    const canUseSpaceAsDecimal = lastGroup.length === 2 || (decimals >= 3 && lastGroup.length >= 1 && lastGroup.length <= 4 && (lastGroup.length !== 3 || spaceDecimalGroups.length === 2));
+
+    if (canUseSpaceAsDecimal && integerGroups.every((group, index) => index === 0 ? /^-?\d{1,3}$/.test(group) : /^\d{3}$/.test(group))) {
+      text = `${integerGroups.join('')}.${lastGroup}`;
+    } else {
+      text = text.replace(/\s+(?=\d{3}(?:\D|$))/g, '').replace(/\s+/g, '');
+    }
+  } else {
+    text = text.replace(/\s+(?=\d{3}(?:\D|$))/g, '');
+    text = text.replace(/\s+/g, '');
+  }
 
   const sign = text.startsWith('-') ? '-' : '';
   text = text.replace(/-/g, '');
