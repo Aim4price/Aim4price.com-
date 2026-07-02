@@ -36,6 +36,58 @@ type UsageDisplay = {
   unit: 'hours' | 'km' | 'percentage' | null;
 };
 
+type RegisterSummaryStatusBreakdown = Record<AssetStatusChoice, number>;
+
+type RegisterSummaryAttentionRow = {
+  item: AssetRegisterItem;
+  title: string;
+  currentValueExVat: number;
+  photoCount: number;
+  documentCount: number;
+  mapped: boolean;
+  insuranceStatus: AssetStatusChoice;
+  insuredValueExVat: number | null;
+  financeStatus: AssetStatusChoice;
+  licenseStatus: AssetStatusChoice;
+  replacementPriceExVat: number | null;
+  issues: string[];
+};
+
+type RegisterHealthExportSummary = {
+  totalAssets: number;
+  currentValueExVat: number;
+  currentValueInclVat: number;
+  aim4priceAssetCount: number;
+  aim4priceValueExVat: number;
+  manualAssetCount: number;
+  manualValueExVat: number;
+  financedAssetCount: number;
+  financedValueExVat: number;
+  insuredAssetCount: number;
+  insuredAssetValueExVat: number;
+  licensedAssetCount: number;
+  licensedValueExVat: number;
+  replacementValueExVat: number;
+  replacementValueInclVat: number;
+  replacementPricedAssets: number;
+  missingReplacementPriceAssets: number;
+  assetsWithPhotos: number;
+  totalPhotos: number;
+  assetsWithDocuments: number;
+  totalDocuments: number;
+  mappedAssets: number;
+  unmappedAssets: number;
+  completenessScore: number;
+  insuredValueSavedAssets: number;
+  insuredValueSavedTotalExVat: number;
+  insuredButMissingValueAssets: number;
+  insuranceLicenseCheckAssets: number;
+  insuranceBreakdown: RegisterSummaryStatusBreakdown;
+  financeBreakdown: RegisterSummaryStatusBreakdown;
+  licenseBreakdown: RegisterSummaryStatusBreakdown;
+  needsAttentionRows: RegisterSummaryAttentionRow[];
+};
+
 const NA_VALUE = 'N/A';
 const VAT_RATE = 0.15;
 const VAT_MULTIPLIER = 1 + VAT_RATE;
@@ -565,6 +617,370 @@ function dedupeAssetItems(items: AssetRegisterItem[]): AssetRegisterItem[] {
     seen.add(key);
     return true;
   });
+}
+
+function createStatusBreakdown(): RegisterSummaryStatusBreakdown {
+  return {
+    yes: 0,
+    no: 0,
+    unknown: 0,
+    not_applicable: 0,
+  };
+}
+
+function incrementStatusBreakdown(breakdown: RegisterSummaryStatusBreakdown, status: AssetStatusChoice) {
+  breakdown[status] += 1;
+}
+
+function exportPhotoCount(item: AssetRegisterItem): number {
+  return Array.isArray(item.photos)
+    ? item.photos.map((photo) => cleanText(photo)).filter(Boolean).length
+    : 0;
+}
+
+function exportDocumentCount(item: AssetRegisterItem): number {
+  return Array.isArray(item.documents)
+    ? item.documents.filter((document) => Boolean(cleanText(document.fileName) || cleanText(document.url) || cleanText(document.id))).length
+    : 0;
+}
+
+function isItemMapped(item: AssetRegisterItem): boolean {
+  const latitude = Number(item.lastKnownLat);
+  const longitude = Number(item.lastKnownLng);
+
+  return Number.isFinite(latitude) && Number.isFinite(longitude);
+}
+
+function isAim4priceExportAsset(item: AssetRegisterItem): boolean {
+  return String(item.selectedMethod ?? '').trim().toLowerCase() !== 'manual';
+}
+
+function buildRegisterHealthExportSummary(items: AssetRegisterItem[]): RegisterHealthExportSummary {
+  const uniqueItems = dedupeAssetItems(items);
+  const financeBreakdown = createStatusBreakdown();
+  const insuranceBreakdown = createStatusBreakdown();
+  const licenseBreakdown = createStatusBreakdown();
+  const needsAttentionRows: RegisterSummaryAttentionRow[] = [];
+  let assetsWithPhotos = 0;
+  let totalPhotos = 0;
+  let assetsWithDocuments = 0;
+  let totalDocuments = 0;
+  let mappedAssets = 0;
+  let replacementPricedAssets = 0;
+  let insuredValueSavedAssets = 0;
+  let insuredValueSavedTotalExVat = 0;
+  let insuredButMissingValueAssets = 0;
+  let insuranceLicenseCheckAssets = 0;
+  let completenessPoints = 0;
+  let completenessPossiblePoints = 0;
+  let currentValueExVat = 0;
+  let aim4priceAssetCount = 0;
+  let aim4priceValueExVat = 0;
+  let manualAssetCount = 0;
+  let manualValueExVat = 0;
+  let financedAssetCount = 0;
+  let financedValueExVat = 0;
+  let insuredAssetCount = 0;
+  let insuredAssetValueExVat = 0;
+  let licensedAssetCount = 0;
+  let licensedValueExVat = 0;
+  let replacementValueExVat = 0;
+
+  uniqueItems.forEach((item) => {
+    const valueExVat = Math.round(numericValue(item.value) ?? 0);
+    const photoCount = exportPhotoCount(item);
+    const documentCount = exportDocumentCount(item);
+    const mapped = isItemMapped(item);
+    const replacementPrice = replacementPriceExVat(item);
+    const insuredValue = insuredValueExVat(item);
+    const financeStatus = readFinanceStatusChoice(item);
+    const insuranceStatus = readInsuranceStatusChoice(item);
+    const licenseStatus = readLicenseStatusChoice(item);
+    const isProperty = item.kind === 'property';
+    const issues: string[] = [];
+
+    currentValueExVat += valueExVat;
+
+    if (isAim4priceExportAsset(item)) {
+      aim4priceAssetCount += 1;
+      aim4priceValueExVat += valueExVat;
+    } else {
+      manualAssetCount += 1;
+      manualValueExVat += valueExVat;
+    }
+
+    incrementStatusBreakdown(financeBreakdown, financeStatus);
+    incrementStatusBreakdown(insuranceBreakdown, insuranceStatus);
+    incrementStatusBreakdown(licenseBreakdown, licenseStatus);
+
+    if (photoCount > 0) {
+      assetsWithPhotos += 1;
+      totalPhotos += photoCount;
+    } else {
+      issues.push('No photo');
+    }
+
+    if (documentCount > 0) {
+      assetsWithDocuments += 1;
+      totalDocuments += documentCount;
+    } else {
+      issues.push('No files');
+    }
+
+    if (mapped) {
+      mappedAssets += 1;
+    } else {
+      issues.push('Not mapped');
+    }
+
+    if (replacementPrice !== null && replacementPrice > 0) {
+      replacementPricedAssets += 1;
+      replacementValueExVat += replacementPrice;
+    } else {
+      issues.push('No replacement price');
+    }
+
+    if (financeStatus === 'yes') {
+      financedAssetCount += 1;
+      financedValueExVat += valueExVat;
+    }
+
+    if (insuredValue !== null && insuredValue > 0) {
+      insuredValueSavedAssets += 1;
+      insuredValueSavedTotalExVat += insuredValue;
+    }
+
+    if (insuranceStatus === 'yes') {
+      insuredAssetCount += 1;
+      insuredAssetValueExVat += insuredValue ?? valueExVat;
+
+      if (!(insuredValue !== null && insuredValue > 0)) {
+        insuredButMissingValueAssets += 1;
+        issues.push('Missing insured value');
+      }
+    } else if (insuranceStatus === 'unknown') {
+      issues.push('Insurance check');
+    }
+
+    if (licenseStatus === 'yes') {
+      licensedAssetCount += 1;
+      licensedValueExVat += valueExVat;
+    } else if (licenseStatus === 'unknown' && !isProperty) {
+      issues.push('License check');
+    }
+
+    if (insuranceStatus === 'unknown' || (insuranceStatus === 'yes' && !(insuredValue !== null && insuredValue > 0)) || (licenseStatus === 'unknown' && !isProperty)) {
+      insuranceLicenseCheckAssets += 1;
+    }
+
+    const completenessChecks = [
+      photoCount > 0,
+      documentCount > 0,
+      mapped,
+      insuranceStatus !== 'unknown',
+      isProperty || licenseStatus !== 'unknown',
+    ];
+    completenessPossiblePoints += completenessChecks.length;
+    completenessPoints += completenessChecks.filter(Boolean).length;
+
+    if (issues.length) {
+      needsAttentionRows.push({
+        item,
+        title: cleanText(item.title) || 'Untitled asset',
+        currentValueExVat: valueExVat,
+        photoCount,
+        documentCount,
+        mapped,
+        insuranceStatus,
+        insuredValueExVat: insuredValue,
+        financeStatus,
+        licenseStatus,
+        replacementPriceExVat: replacementPrice,
+        issues,
+      });
+    }
+  });
+
+  return {
+    totalAssets: uniqueItems.length,
+    currentValueExVat,
+    currentValueInclVat: Math.round(currentValueExVat * VAT_MULTIPLIER),
+    aim4priceAssetCount,
+    aim4priceValueExVat,
+    manualAssetCount,
+    manualValueExVat,
+    financedAssetCount,
+    financedValueExVat,
+    insuredAssetCount,
+    insuredAssetValueExVat,
+    licensedAssetCount,
+    licensedValueExVat,
+    replacementValueExVat,
+    replacementValueInclVat: Math.round(replacementValueExVat * VAT_MULTIPLIER),
+    replacementPricedAssets,
+    missingReplacementPriceAssets: Math.max(0, uniqueItems.length - replacementPricedAssets),
+    assetsWithPhotos,
+    totalPhotos,
+    assetsWithDocuments,
+    totalDocuments,
+    mappedAssets,
+    unmappedAssets: Math.max(0, uniqueItems.length - mappedAssets),
+    completenessScore: completenessPossiblePoints ? Math.round((completenessPoints / completenessPossiblePoints) * 100) : 0,
+    insuredValueSavedAssets,
+    insuredValueSavedTotalExVat,
+    insuredButMissingValueAssets,
+    insuranceLicenseCheckAssets,
+    insuranceBreakdown,
+    financeBreakdown,
+    licenseBreakdown,
+    needsAttentionRows,
+  };
+}
+
+function statusSummaryCell(status: AssetStatusChoice, positiveLabel: string, negativeLabel: string): XlsxCellValue {
+  return textCell(statusPdfLabel(status, positiveLabel, negativeLabel), status === 'yes' ? 'statusGood' : status === 'no' ? 'statusBad' : status === 'not_applicable' ? 'statusInfo' : 'statusWarn');
+}
+
+function yesNoCell(value: boolean): XlsxCellValue {
+  return textCell(value ? 'Yes' : 'No', value ? 'statusGood' : 'statusBad');
+}
+
+function buildSummaryMetricRows(summary: RegisterHealthExportSummary): XlsxCellValue[][] {
+  return [
+    [textCell('Total assets', 'metaLabel'), numberCell(summary.totalAssets)],
+    [textCell('Current register value excl. VAT', 'metaLabel'), moneyCell(summary.currentValueExVat)],
+    [textCell('Current register value incl. VAT', 'metaLabel'), moneyCell(summary.currentValueInclVat)],
+    [textCell('Aim4price assets', 'metaLabel'), numberCell(summary.aim4priceAssetCount), moneyCell(summary.aim4priceValueExVat), moneyCell(Math.round(summary.aim4priceValueExVat * VAT_MULTIPLIER))],
+    [textCell('Manual assets', 'metaLabel'), numberCell(summary.manualAssetCount), moneyCell(summary.manualValueExVat), moneyCell(Math.round(summary.manualValueExVat * VAT_MULTIPLIER))],
+    [textCell('Assets financed', 'metaLabel'), numberCell(summary.financedAssetCount), moneyCell(summary.financedValueExVat), moneyCell(Math.round(summary.financedValueExVat * VAT_MULTIPLIER))],
+    [textCell('Assets insured', 'metaLabel'), numberCell(summary.insuredAssetCount), moneyCell(summary.insuredAssetValueExVat), moneyCell(Math.round(summary.insuredAssetValueExVat * VAT_MULTIPLIER))],
+    [textCell('Assets licensed', 'metaLabel'), numberCell(summary.licensedAssetCount), moneyCell(summary.licensedValueExVat), moneyCell(Math.round(summary.licensedValueExVat * VAT_MULTIPLIER))],
+  ];
+}
+
+function buildRegisterSummaryWorkbookSheets(items: AssetRegisterItem[], profile: AccountProfileResult | null, generatedAt = new Date()): XlsxSheet[] {
+  const summary = buildRegisterHealthExportSummary(items);
+  const ownerName = buildOwnerName(profile);
+  const ownerAddress = buildOwnerAddress(profile);
+  const ownerEmail = cleanText(profile?.email);
+  const ownerPhone = cleanText(profile?.phone);
+  const summaryRows: XlsxCellValue[][] = [
+    [textCell('Aim4price Register Summary', 'title')],
+    [textCell(ownerName, 'section')],
+    [textCell('Health summary of the selected asset register, calculated from saved asset data.', 'subtitle')],
+    [],
+    [textCell('Export details', 'section')],
+    [textCell('Generated', 'metaLabel'), { value: generatedAt, style: 'date' }],
+    [textCell('Owner / register', 'metaLabel'), textOrNaCell(ownerName, 'metaValue')],
+    [textCell('Address', 'metaLabel'), textOrNaCell(ownerAddress, 'metaValue')],
+    [textCell('Business email', 'metaLabel'), textOrNaCell(ownerEmail, 'metaValue')],
+    [textCell('Phone', 'metaLabel'), textOrNaCell(ownerPhone, 'metaValue')],
+    [],
+    [textCell('Current register values', 'section')],
+    [textCell('Metric', 'tableHeader'), textCell('Value', 'tableHeader'), textCell('Excl. VAT', 'tableHeader'), textCell('Incl. VAT', 'tableHeader')],
+    ...buildSummaryMetricRows(summary),
+    [textCell('Register completeness score', 'metaLabel'), numberCell(summary.completenessScore), textCell('%', 'muted')],
+    [],
+    [textCell('Replacement values', 'section')],
+    [textCell('Replacement value excl. VAT', 'metaLabel'), moneyCell(summary.replacementValueExVat)],
+    [textCell('Replacement value incl. VAT', 'metaLabel'), moneyCell(summary.replacementValueInclVat)],
+    [textCell('Assets priced', 'metaLabel'), numberCell(summary.replacementPricedAssets)],
+    [textCell('Assets missing replacement price', 'metaLabel'), numberCell(summary.missingReplacementPriceAssets)],
+    [],
+    [textCell('Photo, file and GPS completeness', 'section')],
+    [textCell('Assets with photos', 'metaLabel'), numberCell(summary.assetsWithPhotos)],
+    [textCell('Total photos attached', 'metaLabel'), numberCell(summary.totalPhotos)],
+    [textCell('Assets with files/documents', 'metaLabel'), numberCell(summary.assetsWithDocuments)],
+    [textCell('Total files/documents attached', 'metaLabel'), numberCell(summary.totalDocuments)],
+    [textCell('Assets mapped with GPS coordinates', 'metaLabel'), numberCell(summary.mappedAssets)],
+    [textCell('Assets missing GPS coordinates', 'metaLabel'), numberCell(summary.unmappedAssets)],
+    [textCell('Assets with replacement prices', 'metaLabel'), numberCell(summary.replacementPricedAssets)],
+    [textCell('Assets missing replacement prices', 'metaLabel'), numberCell(summary.missingReplacementPriceAssets)],
+    [],
+    [textCell('Insurance breakdown', 'section')],
+    [textCell('Insured', 'metaLabel'), numberCell(summary.insuranceBreakdown.yes)],
+    [textCell('Not insured', 'metaLabel'), numberCell(summary.insuranceBreakdown.no)],
+    [textCell('Not sure / unknown', 'metaLabel'), numberCell(summary.insuranceBreakdown.unknown)],
+    [textCell('Not applicable', 'metaLabel'), numberCell(summary.insuranceBreakdown.not_applicable)],
+    [textCell('Insured value saved', 'metaLabel'), numberCell(summary.insuredValueSavedAssets), moneyCell(summary.insuredValueSavedTotalExVat)],
+    [textCell('Insured but missing insured value', 'metaLabel'), numberCell(summary.insuredButMissingValueAssets)],
+    [],
+    [textCell('Finance breakdown', 'section')],
+    [textCell('Financed', 'metaLabel'), numberCell(summary.financeBreakdown.yes)],
+    [textCell('Not financed', 'metaLabel'), numberCell(summary.financeBreakdown.no)],
+    [textCell('Not sure / unknown', 'metaLabel'), numberCell(summary.financeBreakdown.unknown)],
+    [textCell('Not applicable', 'metaLabel'), numberCell(summary.financeBreakdown.not_applicable)],
+    [],
+    [textCell('License breakdown', 'section')],
+    [textCell('Licensed', 'metaLabel'), numberCell(summary.licenseBreakdown.yes)],
+    [textCell('Not licensed', 'metaLabel'), numberCell(summary.licenseBreakdown.no)],
+    [textCell('Not sure / unknown', 'metaLabel'), numberCell(summary.licenseBreakdown.unknown)],
+    [textCell('Not applicable', 'metaLabel'), numberCell(summary.licenseBreakdown.not_applicable)],
+  ];
+  const needsAttentionHeaderRow = 7;
+  const needsAttentionRows = summary.needsAttentionRows.map((row) => [
+    textOrNaCell(row.title),
+    moneyCell(row.currentValueExVat),
+    numberCell(row.photoCount),
+    numberCell(row.documentCount),
+    yesNoCell(row.mapped),
+    statusSummaryCell(row.insuranceStatus, 'Insured', 'Not insured'),
+    row.insuredValueExVat === null ? naCell() : moneyCell(row.insuredValueExVat),
+    statusSummaryCell(row.financeStatus, 'Financed', 'Not financed'),
+    statusSummaryCell(row.licenseStatus, 'Licensed', 'Not licensed'),
+    row.replacementPriceExVat === null ? naCell() : moneyCell(row.replacementPriceExVat),
+    textCell(row.issues.join(', '), 'note'),
+  ]);
+
+  return [
+    {
+      name: 'Register Summary',
+      tabColor: '10382F',
+      columns: [34, 18, 18, 18, 18],
+      merges: [
+        { fromRow: 1, fromColumn: 1, toRow: 1, toColumn: 5 },
+        { fromRow: 2, fromColumn: 1, toRow: 2, toColumn: 5 },
+        { fromRow: 3, fromColumn: 1, toRow: 3, toColumn: 5 },
+      ],
+      rows: summaryRows,
+    },
+    {
+      name: 'Needs Attention',
+      tabColor: 'BA3B1D',
+      columns: [34, 20, 14, 12, 14, 18, 20, 18, 18, 22, 46],
+      freezeRow: needsAttentionHeaderRow,
+      autoFilter: needsAttentionRows.length
+        ? {
+            fromRow: needsAttentionHeaderRow,
+            fromColumn: 1,
+            toRow: needsAttentionHeaderRow + needsAttentionRows.length,
+            toColumn: 11,
+          }
+        : undefined,
+      rows: [
+        [textCell('Aim4price Register Summary', 'title')],
+        [textCell('Needs Attention', 'section')],
+        [textCell('Full list of assets with missing photos, files, GPS coordinates, status checks, insured values or replacement prices.', 'subtitle')],
+        [],
+        [textCell('Generated', 'metaLabel'), { value: generatedAt, style: 'date' }],
+        [textCell('Assets needing attention', 'metaLabel'), numberCell(summary.needsAttentionRows.length)],
+        [
+          textCell('Asset title', 'tableHeader'),
+          textCell('Current value excl. VAT', 'tableHeader'),
+          textCell('Photos count', 'tableHeader'),
+          textCell('Files count', 'tableHeader'),
+          textCell('Mapped', 'tableHeader'),
+          textCell('Insurance status', 'tableHeader'),
+          textCell('Insured value', 'tableHeader'),
+          textCell('Finance status', 'tableHeader'),
+          textCell('License status', 'tableHeader'),
+          textCell('Replacement price', 'tableHeader'),
+          textCell('Issues', 'tableHeader'),
+        ],
+        ...needsAttentionRows,
+      ],
+    },
+  ];
 }
 
 function buildSheetMerges(): XlsxSheet['merges'] {
@@ -1131,6 +1547,167 @@ function buildFullRegisterPdf(items: AssetRegisterItem[], profile: AccountProfil
   drawPdfWrappedText(
     state,
     'Values are indicative Aim4price estimates based on replacement price, saved asset information, age, usage, condition and available asset inputs. Values exclude VAT unless stated otherwise. This is not a certified valuation, inspection report or guarantee of selling price.',
+    PDF_MARGIN,
+    PDF_PAGE_WIDTH - PDF_MARGIN * 2,
+    8.2,
+    'F1',
+    10.8,
+  );
+
+  state.pages.forEach((page, index) => {
+    page.push(`BT /F1 8 Tf ${pdfNumber(PDF_MARGIN)} ${pdfNumber(24)} Td (${escapePdfText('Powered by Aim4price.com')}) Tj ET`);
+    page.push(`BT /F1 8 Tf ${pdfNumber(PDF_PAGE_WIDTH - PDF_MARGIN - 62)} ${pdfNumber(24)} Td (${escapePdfText(`Page ${index + 1} of ${state.pages.length}`)}) Tj ET`);
+  });
+
+  return createPdfBuffer(state.pages.map((commands) => commands.join('\n')));
+}
+
+type RegisterSummaryPdfRow = {
+  label: string;
+  value: string;
+  note?: string;
+};
+
+function drawRegisterSummaryPdfRows(state: PdfBuildState, title: string, rows: RegisterSummaryPdfRow[]) {
+  const rowHeight = 18;
+  const blockHeight = 28 + rows.length * rowHeight;
+
+  ensurePdfSpace(state, blockHeight + 10, 'Register Summary continued', 'Aim4price register summary PDF');
+  drawPdfText(state, title, PDF_MARGIN, state.y, 13, 'F2');
+  state.y -= 18;
+
+  rows.forEach((row, index) => {
+    const y = state.y;
+    drawPdfRect(state, PDF_MARGIN, y - rowHeight + 2, PDF_PAGE_WIDTH - PDF_MARGIN * 2, rowHeight, index % 2 === 0 ? '0.988 0.994 0.990' : '0.972 0.986 0.980');
+    drawPdfText(state, row.label, PDF_MARGIN + 10, y - 10, 8.8, 'F1');
+    drawPdfText(state, row.value, PDF_PAGE_WIDTH - PDF_MARGIN - 190, y - 10, 9.2, 'F2');
+    if (row.note) {
+      drawPdfText(state, row.note, PDF_PAGE_WIDTH - PDF_MARGIN - 82, y - 10, 8, 'F1');
+    }
+    state.y -= rowHeight;
+  });
+
+  state.y -= 12;
+}
+
+function drawRegisterSummaryAttentionPdfRow(state: PdfBuildState, row: RegisterSummaryAttentionRow, index: number) {
+  const contentWidth = PDF_PAGE_WIDTH - PDF_MARGIN * 2 - 22;
+  const issueText = row.issues.join(', ');
+  const rawLines = [
+    { text: `${index + 1}. ${row.title}`, font: 'F2' as const, size: 10.8 },
+    { text: `Current value: ${formatPdfMoney(row.currentValueExVat)} excl. VAT | Photos: ${row.photoCount} | Files: ${row.documentCount} | Mapped: ${row.mapped ? 'Yes' : 'No'}`, font: 'F1' as const, size: 8.8 },
+    { text: `Insurance: ${statusPdfLabel(row.insuranceStatus, 'Insured', 'Not insured')} | Finance: ${statusPdfLabel(row.financeStatus, 'Financed', 'Not financed')} | License: ${statusPdfLabel(row.licenseStatus, 'Licensed', 'Not licensed')}`, font: 'F1' as const, size: 8.8 },
+    { text: `Insured value: ${row.insuredValueExVat === null ? 'N/A' : formatPdfMoney(row.insuredValueExVat)} | Replacement: ${row.replacementPriceExVat === null ? 'N/A' : formatPdfMoney(row.replacementPriceExVat)} | Issues: ${issueText}`, font: 'F2' as const, size: 8.8 },
+  ];
+  const measuredLineCount = rawLines.reduce((count, line) => {
+    const maxChars = Math.max(18, Math.floor(contentWidth / (line.size * 0.54)));
+    return count + wrapPdfText(line.text, maxChars).length;
+  }, 0);
+  const blockHeight = 20 + measuredLineCount * 11.5;
+
+  ensurePdfSpace(state, blockHeight + 8, 'Register Summary continued', 'Aim4price register summary PDF');
+
+  const topY = state.y;
+  drawPdfRect(state, PDF_MARGIN, topY - blockHeight, PDF_PAGE_WIDTH - PDF_MARGIN * 2, blockHeight, index % 2 === 0 ? '0.985 0.992 0.988' : '0.965 0.981 0.974');
+  state.y -= 15;
+
+  rawLines.forEach((line) => {
+    drawPdfWrappedText(state, line.text, PDF_MARGIN + 12, contentWidth, line.size, line.font, 11.5);
+  });
+
+  state.y = topY - blockHeight - 8;
+}
+
+function buildRegisterSummaryPdf(items: AssetRegisterItem[], profile: AccountProfileResult | null, generatedAt = new Date()): Buffer {
+  const state: PdfBuildState = { pages: [], y: 0 };
+  const summary = buildRegisterHealthExportSummary(items);
+  const ownerName = buildOwnerName(profile);
+  const ownerAddress = buildOwnerAddress(profile) || 'N/A';
+  const ownerEmail = cleanText(profile?.email) || 'N/A';
+  const ownerPhone = cleanText(profile?.phone) || 'N/A';
+
+  addPdfPage(state, false);
+
+  drawPdfText(state, 'Aim4price', PDF_MARGIN, state.y, 13, 'F2');
+  drawPdfText(state, 'Register Summary PDF', PDF_MARGIN, state.y - 28, 24, 'F2');
+  drawPdfText(state, `Generated ${formatPdfDate(generatedAt)}`, PDF_PAGE_WIDTH - PDF_MARGIN - 145, state.y, 9, 'F1');
+  state.y -= 56;
+  drawPdfRule(state, state.y);
+  state.y -= 24;
+
+  const heroTop = state.y;
+  drawPdfRect(state, PDF_MARGIN, heroTop - 96, PDF_PAGE_WIDTH - PDF_MARGIN * 2, 96, '0.955 0.980 0.970');
+  drawPdfText(state, 'ASSET REGISTER', PDF_MARGIN + 14, heroTop - 22, 8, 'F2');
+  const ownerLineCount = drawPdfWrappedTextAt(state, ownerName, PDF_MARGIN + 14, heroTop - 43, 300, 17, 'F2', 19);
+  drawPdfWrappedTextAt(state, ownerAddress, PDF_MARGIN + 14, heroTop - 45 - ownerLineCount * 18, 300, 8.8, 'F1', 11);
+  drawPdfText(state, 'CURRENT VALUE', PDF_PAGE_WIDTH - PDF_MARGIN - 166, heroTop - 22, 8, 'F2');
+  drawPdfText(state, `${formatPdfMoney(summary.currentValueExVat)} excl. VAT`, PDF_PAGE_WIDTH - PDF_MARGIN - 166, heroTop - 43, 12, 'F2');
+  drawPdfText(state, `${formatPdfMoney(summary.currentValueInclVat)} incl. VAT`, PDF_PAGE_WIDTH - PDF_MARGIN - 166, heroTop - 57, 8.5, 'F1');
+  drawPdfText(state, 'COMPLETENESS', PDF_PAGE_WIDTH - PDF_MARGIN - 166, heroTop - 75, 8, 'F2');
+  drawPdfText(state, `${summary.completenessScore}%`, PDF_PAGE_WIDTH - PDF_MARGIN - 166, heroTop - 90, 12, 'F2');
+  state.y = heroTop - 118;
+
+  const cardGap = 8;
+  const cardWidth = (PDF_PAGE_WIDTH - PDF_MARGIN * 2 - cardGap * 3) / 4;
+  drawPdfSummaryCard(state, 'Assets', String(summary.totalAssets), PDF_MARGIN, state.y, cardWidth);
+  drawPdfSummaryCard(state, 'Replacement', formatPdfMoney(summary.replacementValueExVat), PDF_MARGIN + cardWidth + cardGap, state.y, cardWidth);
+  drawPdfSummaryCard(state, 'Insured value', formatPdfMoney(summary.insuredValueSavedTotalExVat), PDF_MARGIN + (cardWidth + cardGap) * 2, state.y, cardWidth);
+  drawPdfSummaryCard(state, 'Needs attention', String(summary.needsAttentionRows.length), PDF_MARGIN + (cardWidth + cardGap) * 3, state.y, cardWidth);
+  state.y -= 66;
+
+  drawRegisterSummaryPdfRows(state, 'Owner/register details', [
+    { label: 'Owner / register', value: ownerName },
+    { label: 'Address', value: ownerAddress },
+    { label: 'Business email', value: ownerEmail },
+    { label: 'Phone', value: ownerPhone },
+  ]);
+
+  drawRegisterSummaryPdfRows(state, 'Current register values', [
+    { label: 'Total assets', value: String(summary.totalAssets), note: `${formatPdfMoney(summary.currentValueExVat)} excl. VAT` },
+    { label: 'Current value incl. VAT', value: formatPdfMoney(summary.currentValueInclVat) },
+    { label: 'Aim4price assets', value: String(summary.aim4priceAssetCount), note: formatPdfMoney(summary.aim4priceValueExVat) },
+    { label: 'Manual assets', value: String(summary.manualAssetCount), note: formatPdfMoney(summary.manualValueExVat) },
+    { label: 'Financed assets', value: String(summary.financedAssetCount), note: formatPdfMoney(summary.financedValueExVat) },
+    { label: 'Insured assets', value: String(summary.insuredAssetCount), note: formatPdfMoney(summary.insuredAssetValueExVat) },
+    { label: 'Licensed assets', value: String(summary.licensedAssetCount), note: formatPdfMoney(summary.licensedValueExVat) },
+  ]);
+
+  drawRegisterSummaryPdfRows(state, 'Replacement and completeness', [
+    { label: 'Replacement value excl. VAT', value: formatPdfMoney(summary.replacementValueExVat) },
+    { label: 'Replacement value incl. VAT', value: formatPdfMoney(summary.replacementValueInclVat) },
+    { label: 'Assets priced', value: String(summary.replacementPricedAssets) },
+    { label: 'Assets missing replacement price', value: String(summary.missingReplacementPriceAssets) },
+    { label: 'Assets with photos', value: String(summary.assetsWithPhotos), note: `${summary.totalPhotos} photos` },
+    { label: 'Assets with files/documents', value: String(summary.assetsWithDocuments), note: `${summary.totalDocuments} files` },
+    { label: 'Assets mapped with GPS', value: String(summary.mappedAssets) },
+    { label: 'Assets missing GPS', value: String(summary.unmappedAssets) },
+  ]);
+
+  drawRegisterSummaryPdfRows(state, 'Insurance, finance and license breakdown', [
+    { label: 'Insurance: insured / not insured / unknown / N/A', value: `${summary.insuranceBreakdown.yes} / ${summary.insuranceBreakdown.no} / ${summary.insuranceBreakdown.unknown} / ${summary.insuranceBreakdown.not_applicable}` },
+    { label: 'Insured value saved', value: String(summary.insuredValueSavedAssets), note: formatPdfMoney(summary.insuredValueSavedTotalExVat) },
+    { label: 'Insured but missing value', value: String(summary.insuredButMissingValueAssets) },
+    { label: 'Finance: financed / not financed / unknown / N/A', value: `${summary.financeBreakdown.yes} / ${summary.financeBreakdown.no} / ${summary.financeBreakdown.unknown} / ${summary.financeBreakdown.not_applicable}` },
+    { label: 'License: licensed / not licensed / unknown / N/A', value: `${summary.licenseBreakdown.yes} / ${summary.licenseBreakdown.no} / ${summary.licenseBreakdown.unknown} / ${summary.licenseBreakdown.not_applicable}` },
+  ]);
+
+  ensurePdfSpace(state, 38, 'Register Summary continued', 'Aim4price register summary PDF');
+  drawPdfText(state, 'Needs attention', PDF_MARGIN, state.y, 14, 'F2');
+  state.y -= 18;
+
+  if (summary.needsAttentionRows.length) {
+    summary.needsAttentionRows.forEach((row, index) => drawRegisterSummaryAttentionPdfRow(state, row, index));
+  } else {
+    drawPdfText(state, 'No immediate register gaps found from the saved asset data.', PDF_MARGIN, state.y, 10, 'F1');
+    state.y -= 18;
+  }
+
+  ensurePdfSpace(state, 72, 'Register Summary continued', 'Aim4price register summary PDF');
+  drawPdfRule(state, state.y);
+  state.y -= 18;
+  drawPdfWrappedText(
+    state,
+    'This summary is calculated from the asset data saved in Aim4price at export time. Values exclude VAT unless stated otherwise. This is a management summary, not a certified valuation, inspection report or guarantee of selling price.',
     PDF_MARGIN,
     PDF_PAGE_WIDTH - PDF_MARGIN * 2,
     8.2,
@@ -1763,16 +2340,20 @@ export async function GET(request: NextRequest) {
     const items = await listAssetRegisterItems(session.user.id, register.id);
     const generatedAt = new Date();
     const filenameDate = generatedAt.toISOString().slice(0, 10);
+    const reportKind = cleanText(params.get('reportKind')).toLowerCase() || 'full';
+
+    if (reportKind !== 'full' && reportKind !== 'summary') {
+      return NextResponse.json({ ok: false, error: 'Invalid asset register export type.' }, { status: 400 });
+    }
 
     if (format === 'pdf') {
-      const reportKind = params.get('reportKind') || 'full';
-      if (reportKind !== 'full') {
-        return NextResponse.json({ ok: false, error: 'Only the full Asset Register PDF is available from this endpoint.' }, { status: 400 });
-      }
-
-      const pdf = buildFullRegisterPdf(items, exportProfile, generatedAt);
       const ownerSlug = pdfFileSlug(buildOwnerName(exportProfile));
-      const fileName = `aim4price-full-asset-register-${ownerSlug}-${filenameDate}.pdf`;
+      const pdf = reportKind === 'summary'
+        ? buildRegisterSummaryPdf(items, exportProfile, generatedAt)
+        : buildFullRegisterPdf(items, exportProfile, generatedAt);
+      const fileName = reportKind === 'summary'
+        ? `aim4price-register-summary-${ownerSlug}-${filenameDate}.pdf`
+        : `aim4price-full-asset-register-${ownerSlug}-${filenameDate}.pdf`;
 
       return new NextResponse(pdf, {
         status: 200,
@@ -1785,9 +2366,14 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const workbook = createXlsxWorkbook(buildWorkbookSheets(items, exportProfile, generatedAt));
+    const workbookSheets = reportKind === 'summary'
+      ? buildRegisterSummaryWorkbookSheets(items, exportProfile, generatedAt)
+      : buildWorkbookSheets(items, exportProfile, generatedAt);
+    const workbook = createXlsxWorkbook(workbookSheets);
     const ownerSlug = pdfFileSlug(buildOwnerName(exportProfile));
-    const fileName = `aim4price-full-asset-register-${ownerSlug}-${filenameDate}.xlsx`;
+    const fileName = reportKind === 'summary'
+      ? `aim4price-register-summary-${ownerSlug}-${filenameDate}.xlsx`
+      : `aim4price-full-asset-register-${ownerSlug}-${filenameDate}.xlsx`;
 
     return new NextResponse(workbook, {
       status: 200,
