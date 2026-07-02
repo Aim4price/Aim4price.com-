@@ -149,6 +149,17 @@ export type UpdateAssetRegisterItemLocationInput = {
   source?: 'manual' | 'device' | string | null;
 };
 
+export type UpdateAssetRegisterItemStatusDetailsInput = {
+  assetId: string;
+  isFinanced?: boolean;
+  financeNote?: string | null;
+  isInsured?: boolean;
+  insuredValueExVat?: number | null;
+  isLicensed?: boolean;
+  licenseRegistrationNumber?: string | null;
+  specsJson?: Record<string, unknown>;
+};
+
 type AssetRegisterRow = {
   id: string | number;
   user_id: string | null;
@@ -2160,6 +2171,94 @@ export async function updateAssetRegisterItemLocation(
   } finally {
     client.release();
   }
+}
+
+
+export async function updateAssetRegisterItemStatusDetails(
+  userId: string,
+  input: UpdateAssetRegisterItemStatusDetailsInput,
+): Promise<AssetRegisterItem> {
+  const assetId = asText(input.assetId);
+
+  if (!assetId) {
+    throw new Error('ASSET_ID_REQUIRED');
+  }
+
+  const db = getDb();
+  const schema = await getAssetRegisterSchema();
+  const existing = await getAssetRegisterItemById(userId, assetId);
+
+  if (!existing) {
+    throw new Error('ASSET_NOT_FOUND');
+  }
+
+  const now = new Date();
+  const nextSpecsJson = {
+    ...(isRecord(existing.specsJson) ? existing.specsJson : {}),
+    ...(isRecord(input.specsJson) ? input.specsJson : {}),
+  };
+  const fields: SqlField[] = [];
+
+  if (Object.prototype.hasOwnProperty.call(input, 'isFinanced')) {
+    pushField(fields, schema, ['is_financed', 'financed'], Boolean(input.isFinanced));
+  }
+
+  if (Object.prototype.hasOwnProperty.call(input, 'financeNote')) {
+    pushField(fields, schema, ['finance_note', 'finance_notes', 'finance_status'], asText(input.financeNote) || null);
+  }
+
+  if (Object.prototype.hasOwnProperty.call(input, 'isInsured')) {
+    pushField(fields, schema, ['is_insured', 'insured'], Boolean(input.isInsured));
+  }
+
+  if (Object.prototype.hasOwnProperty.call(input, 'insuredValueExVat')) {
+    pushField(
+      fields,
+      schema,
+      ['insured_value_ex_vat', 'insurance_value_ex_vat', 'insured_value', 'insurance_value'],
+      normalizeInsuredValueExVat(input.insuredValueExVat),
+    );
+  }
+
+  if (Object.prototype.hasOwnProperty.call(input, 'isLicensed')) {
+    pushField(fields, schema, ['is_licensed', 'licensed', 'licenced'], Boolean(input.isLicensed));
+  }
+
+  if (Object.prototype.hasOwnProperty.call(input, 'licenseRegistrationNumber')) {
+    pushField(
+      fields,
+      schema,
+      ['license_registration_number', 'licence_registration_number', 'registration_number', 'number_plate', 'numberplate'],
+      normalizeLicenseRegistrationNumber(input.licenseRegistrationNumber) || null,
+    );
+  }
+
+  pushField(fields, schema, ['specs_json'], nextSpecsJson, '::jsonb');
+  pushField(fields, schema, ['updated_at', 'modified_at', 'updatedon'], now);
+
+  if (!fields.length) {
+    return existing;
+  }
+
+  const update = buildUpdateSetClause(fields);
+  const result = await db.query<AssetRegisterRow>(
+    `
+      update asset_register_items
+      set
+        ${update.clause}
+      where user_id = $1 and id = $2
+      returning
+        ${buildSelectList(schema)}
+    `,
+    [userId, assetId, ...update.values],
+  );
+
+  const row = result.rows[0];
+  if (!row) {
+    throw new Error('ASSET_UPDATE_FAILED');
+  }
+
+  return mapAssetRegisterRow(row);
 }
 
 
