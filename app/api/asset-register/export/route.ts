@@ -47,8 +47,11 @@ type RegisterBasicExportSummary = {
   totalAssets: number;
   currentValueExVat: number;
   replacementValueExVat: number;
+  replacementPricedAssets: number;
   insuredValueExVat: number;
+  insuredAssetsValueExVat: number;
   financedValueExVat: number;
+  licensedValueExVat: number;
   assetsInsured: number;
   assetsLicensed: number;
   assetsFinanced: number;
@@ -62,11 +65,13 @@ type RegisterBasicExportSummary = {
 
 type RegisterSummaryXlsxSection = {
   title: string;
+  hasValueColumn?: boolean;
   rows: XlsxCellValue[][];
 };
 
 type RegisterSummaryPdfSection = {
   title: string;
+  hasValueColumn?: boolean;
   rows: Array<{ label: string; count?: string; value?: string }>;
 };
 
@@ -729,8 +734,11 @@ function buildRegisterBasicExportSummary(items: AssetRegisterItem[]): RegisterBa
   const manualAssets = createRegisterSummaryCountValue();
   let currentValueExVat = 0;
   let replacementValueExVat = 0;
+  let replacementPricedAssets = 0;
   let insuredValueTotalExVat = 0;
+  let insuredAssetsValueExVat = 0;
   let financedValueExVat = 0;
+  let licensedValueExVat = 0;
   let assetsInsured = 0;
   let assetsLicensed = 0;
   let assetsFinanced = 0;
@@ -742,6 +750,9 @@ function buildRegisterBasicExportSummary(items: AssetRegisterItem[]): RegisterBa
     const valueExVat = Math.round(numericValue(item.value) ?? 0);
     const replacementPrice = replacementPriceExVat(item);
     const insuredValue = insuredValueExVat(item);
+    const isInsured = readInsuranceStatusChoice(item) === 'yes';
+    const isFinanced = readFinanceStatusChoice(item) === 'yes';
+    const isLicensed = readLicenseStatusChoice(item) === 'yes';
     const assetType = getRegisterSummaryAssetType(item);
 
     currentValueExVat += valueExVat;
@@ -754,6 +765,7 @@ function buildRegisterBasicExportSummary(items: AssetRegisterItem[]): RegisterBa
     }
 
     if (replacementPrice !== null) {
+      replacementPricedAssets += 1;
       replacementValueExVat += replacementPrice;
     }
 
@@ -761,17 +773,19 @@ function buildRegisterBasicExportSummary(items: AssetRegisterItem[]): RegisterBa
       insuredValueTotalExVat += insuredValue;
     }
 
-    if (readFinanceStatusChoice(item) === 'yes') {
+    if (isFinanced) {
       assetsFinanced += 1;
       financedValueExVat += valueExVat;
     }
 
-    if (readInsuranceStatusChoice(item) === 'yes') {
+    if (isInsured) {
       assetsInsured += 1;
+      insuredAssetsValueExVat += insuredValue ?? 0;
     }
 
-    if (readLicenseStatusChoice(item) === 'yes') {
+    if (isLicensed) {
       assetsLicensed += 1;
+      licensedValueExVat += valueExVat;
     }
 
     if (isItemMapped(item)) {
@@ -791,8 +805,11 @@ function buildRegisterBasicExportSummary(items: AssetRegisterItem[]): RegisterBa
     totalAssets: uniqueItems.length,
     currentValueExVat,
     replacementValueExVat,
+    replacementPricedAssets,
     insuredValueExVat: insuredValueTotalExVat,
+    insuredAssetsValueExVat,
     financedValueExVat,
+    licensedValueExVat,
     assetsInsured,
     assetsLicensed,
     assetsFinanced,
@@ -810,43 +827,43 @@ function buildRegisterSummaryXlsxSections(summary: RegisterBasicExportSummary): 
     {
       title: 'Register Values',
       rows: [
-        [textCell('Total assets', 'metaLabel'), numberCell(summary.totalAssets), textCell('', 'muted')],
-        [textCell('Current value', 'metaLabel'), textCell('', 'muted'), moneyCell(summary.currentValueExVat)],
-        [textCell('Replacement value', 'metaLabel'), textCell('', 'muted'), moneyCell(summary.replacementValueExVat)],
-        [textCell('Insured value', 'metaLabel'), textCell('', 'muted'), moneyCell(summary.insuredValueExVat)],
-        [textCell('Financed value', 'metaLabel'), textCell('', 'muted'), moneyCell(summary.financedValueExVat)],
+        [textCell('Total assets', 'metaLabel'), numberCell(summary.totalAssets), moneyCell(moneyInclVatTotal(summary.currentValueExVat))],
+        [textCell('Replacement value', 'metaLabel'), numberCell(summary.replacementPricedAssets), moneyCell(moneyInclVatTotal(summary.replacementValueExVat))],
+        [textCell('Insured value', 'metaLabel'), numberCell(summary.assetsInsured), moneyCell(moneyInclVatTotal(summary.insuredAssetsValueExVat))],
+        [textCell('Financed value', 'metaLabel'), numberCell(summary.assetsFinanced), moneyCell(moneyInclVatTotal(summary.financedValueExVat))],
       ],
     },
     {
       title: 'Register Status Counts',
       rows: [
-        [textCell('Assets insured', 'metaLabel'), numberCell(summary.assetsInsured), textCell('', 'muted')],
-        [textCell('Assets licensed', 'metaLabel'), numberCell(summary.assetsLicensed), textCell('', 'muted')],
-        [textCell('Assets financed', 'metaLabel'), numberCell(summary.assetsFinanced), textCell('', 'muted')],
+        [textCell('Assets insured', 'metaLabel'), numberCell(summary.assetsInsured), moneyCell(moneyInclVatTotal(summary.insuredAssetsValueExVat))],
+        [textCell('Assets licensed', 'metaLabel'), numberCell(summary.assetsLicensed), moneyCell(moneyInclVatTotal(summary.licensedValueExVat))],
+        [textCell('Assets financed', 'metaLabel'), numberCell(summary.assetsFinanced), moneyCell(moneyInclVatTotal(summary.financedValueExVat))],
       ],
     },
     {
       title: 'Valuation Source',
       rows: [
-        [textCell('Aim4price assets', 'metaLabel'), numberCell(summary.aim4priceAssets.count), moneyCell(summary.aim4priceAssets.valueExVat)],
-        [textCell('Manual assets', 'metaLabel'), numberCell(summary.manualAssets.count), moneyCell(summary.manualAssets.valueExVat)],
+        [textCell('Aim4price assets', 'metaLabel'), numberCell(summary.aim4priceAssets.count), moneyCell(moneyInclVatTotal(summary.aim4priceAssets.valueExVat))],
+        [textCell('Manual assets', 'metaLabel'), numberCell(summary.manualAssets.count), moneyCell(moneyInclVatTotal(summary.manualAssets.valueExVat))],
       ],
     },
     {
       title: 'Asset Type Split',
       rows: [
-        [textCell('Property', 'metaLabel'), numberCell(summary.assetTypes.property.count), moneyCell(summary.assetTypes.property.valueExVat)],
-        [textCell('Equipment', 'metaLabel'), numberCell(summary.assetTypes.equipment.count), moneyCell(summary.assetTypes.equipment.valueExVat)],
-        [textCell('Tools', 'metaLabel'), numberCell(summary.assetTypes.tools.count), moneyCell(summary.assetTypes.tools.valueExVat)],
-        [textCell('Vehicles', 'metaLabel'), numberCell(summary.assetTypes.vehicles.count), moneyCell(summary.assetTypes.vehicles.valueExVat)],
+        [textCell('Property', 'metaLabel'), numberCell(summary.assetTypes.property.count), moneyCell(moneyInclVatTotal(summary.assetTypes.property.valueExVat))],
+        [textCell('Equipment', 'metaLabel'), numberCell(summary.assetTypes.equipment.count), moneyCell(moneyInclVatTotal(summary.assetTypes.equipment.valueExVat))],
+        [textCell('Tools', 'metaLabel'), numberCell(summary.assetTypes.tools.count), moneyCell(moneyInclVatTotal(summary.assetTypes.tools.valueExVat))],
+        [textCell('Vehicles', 'metaLabel'), numberCell(summary.assetTypes.vehicles.count), moneyCell(moneyInclVatTotal(summary.assetTypes.vehicles.valueExVat))],
       ],
     },
     {
       title: 'Supporting Information',
+      hasValueColumn: false,
       rows: [
-        [textCell('Assets mapped', 'metaLabel'), numberCell(summary.assetsMapped), textCell('', 'muted')],
-        [textCell('Assets with photos', 'metaLabel'), numberCell(summary.assetsWithPhotos), textCell('', 'muted')],
-        [textCell('Assets with documents', 'metaLabel'), numberCell(summary.assetsWithDocuments), textCell('', 'muted')],
+        [textCell('Assets mapped', 'metaLabel'), numberCell(summary.assetsMapped)],
+        [textCell('Assets with photos', 'metaLabel'), numberCell(summary.assetsWithPhotos)],
+        [textCell('Assets with documents', 'metaLabel'), numberCell(summary.assetsWithDocuments)],
       ],
     },
   ];
@@ -861,13 +878,15 @@ function buildRegisterSummaryWorkbookSheets(items: AssetRegisterItem[], profile:
   const sectionRows = buildRegisterSummaryXlsxSections(summary).flatMap((section) => [
     [],
     [textCell(section.title, 'section')],
-    [textCell('Metric', 'tableHeader'), textCell('Count', 'tableHeader'), textCell('Value excl. VAT', 'tableHeader')],
+    section.hasValueColumn === false
+      ? [textCell('Metric', 'tableHeader'), textCell('Count', 'tableHeader')]
+      : [textCell('Metric', 'tableHeader'), textCell('Count', 'tableHeader'), textCell('Value incl. VAT', 'tableHeader')],
     ...section.rows,
   ]);
   const summaryRows: XlsxCellValue[][] = [
     [textCell('Asset Register Summary', 'title')],
     [textCell(ownerName, 'section')],
-    [textCell('Basic overview of the selected asset register. No individual asset rows are included.', 'subtitle')],
+    [textCell('Basic overview of the selected asset register. Values include VAT. No individual asset rows are included.', 'subtitle')],
     [],
     [textCell('Export details', 'section')],
     [textCell('Generated', 'metaLabel'), { value: generatedAt, style: 'date' }],
@@ -1331,6 +1350,12 @@ function drawPdfSummaryCard(state: PdfBuildState, label: string, value: string, 
   drawPdfText(state, value, x + 11, y - 34, 13, 'F2');
 }
 
+function drawPdfReportMark(state: PdfBuildState, x: number, y: number): void {
+  drawPdfRect(state, x, y - 46, 46, 46, '1 1 1');
+  drawPdfText(state, 'A4P', x + 10, y - 24, 12, 'F2');
+  drawPdfText(state, 'REPORT', x + 8, y - 36, 5.4, 'F1');
+}
+
 function buildPdfAssetLines(item: AssetRegisterItem, index: number): Array<{ text: string; font: PdfFontKey; size: number }> {
   const financeStatus = statusPdfLabel(readFinanceStatusChoice(item), 'Financed', 'Not financed');
   const insuranceStatus = statusPdfLabel(readInsuranceStatusChoice(item), 'Insured', 'Not insured');
@@ -1477,39 +1502,39 @@ function buildRegisterSummaryPdfSections(summary: RegisterBasicExportSummary): R
     {
       title: 'Register Values',
       rows: [
-        { label: 'Total assets', count: String(summary.totalAssets) },
-        { label: 'Current value', value: formatPdfMoney(summary.currentValueExVat) },
-        { label: 'Replacement value', value: formatPdfMoney(summary.replacementValueExVat) },
-        { label: 'Insured value', value: formatPdfMoney(summary.insuredValueExVat) },
-        { label: 'Financed value', value: formatPdfMoney(summary.financedValueExVat) },
+        { label: 'Total assets', count: String(summary.totalAssets), value: formatPdfMoney(moneyInclVatTotal(summary.currentValueExVat)) },
+        { label: 'Replacement value', count: String(summary.replacementPricedAssets), value: formatPdfMoney(moneyInclVatTotal(summary.replacementValueExVat)) },
+        { label: 'Insured value', count: String(summary.assetsInsured), value: formatPdfMoney(moneyInclVatTotal(summary.insuredAssetsValueExVat)) },
+        { label: 'Financed value', count: String(summary.assetsFinanced), value: formatPdfMoney(moneyInclVatTotal(summary.financedValueExVat)) },
       ],
     },
     {
       title: 'Register Status Counts',
       rows: [
-        { label: 'Assets insured', count: String(summary.assetsInsured) },
-        { label: 'Assets licensed', count: String(summary.assetsLicensed) },
-        { label: 'Assets financed', count: String(summary.assetsFinanced) },
+        { label: 'Assets insured', count: String(summary.assetsInsured), value: formatPdfMoney(moneyInclVatTotal(summary.insuredAssetsValueExVat)) },
+        { label: 'Assets licensed', count: String(summary.assetsLicensed), value: formatPdfMoney(moneyInclVatTotal(summary.licensedValueExVat)) },
+        { label: 'Assets financed', count: String(summary.assetsFinanced), value: formatPdfMoney(moneyInclVatTotal(summary.financedValueExVat)) },
       ],
     },
     {
       title: 'Valuation Source',
       rows: [
-        { label: 'Aim4price assets', count: String(summary.aim4priceAssets.count), value: formatPdfMoney(summary.aim4priceAssets.valueExVat) },
-        { label: 'Manual assets', count: String(summary.manualAssets.count), value: formatPdfMoney(summary.manualAssets.valueExVat) },
+        { label: 'Aim4price assets', count: String(summary.aim4priceAssets.count), value: formatPdfMoney(moneyInclVatTotal(summary.aim4priceAssets.valueExVat)) },
+        { label: 'Manual assets', count: String(summary.manualAssets.count), value: formatPdfMoney(moneyInclVatTotal(summary.manualAssets.valueExVat)) },
       ],
     },
     {
       title: 'Asset Type Split',
       rows: [
-        { label: 'Property', count: String(summary.assetTypes.property.count), value: formatPdfMoney(summary.assetTypes.property.valueExVat) },
-        { label: 'Equipment', count: String(summary.assetTypes.equipment.count), value: formatPdfMoney(summary.assetTypes.equipment.valueExVat) },
-        { label: 'Tools', count: String(summary.assetTypes.tools.count), value: formatPdfMoney(summary.assetTypes.tools.valueExVat) },
-        { label: 'Vehicles', count: String(summary.assetTypes.vehicles.count), value: formatPdfMoney(summary.assetTypes.vehicles.valueExVat) },
+        { label: 'Property', count: String(summary.assetTypes.property.count), value: formatPdfMoney(moneyInclVatTotal(summary.assetTypes.property.valueExVat)) },
+        { label: 'Equipment', count: String(summary.assetTypes.equipment.count), value: formatPdfMoney(moneyInclVatTotal(summary.assetTypes.equipment.valueExVat)) },
+        { label: 'Tools', count: String(summary.assetTypes.tools.count), value: formatPdfMoney(moneyInclVatTotal(summary.assetTypes.tools.valueExVat)) },
+        { label: 'Vehicles', count: String(summary.assetTypes.vehicles.count), value: formatPdfMoney(moneyInclVatTotal(summary.assetTypes.vehicles.valueExVat)) },
       ],
     },
     {
       title: 'Supporting Information',
+      hasValueColumn: false,
       rows: [
         { label: 'Assets mapped', count: String(summary.assetsMapped) },
         { label: 'Assets with photos', count: String(summary.assetsWithPhotos) },
@@ -1523,6 +1548,7 @@ function drawRegisterSummaryPdfSection(state: PdfBuildState, section: RegisterSu
   const rowHeight = 13;
   const tableHeaderHeight = 14;
   const blockHeight = 15 + tableHeaderHeight + section.rows.length * rowHeight + 6;
+  const hasValueColumn = section.hasValueColumn !== false;
 
   ensurePdfSpace(state, blockHeight + 6, 'Asset Register Summary continued', 'Aim4price register summary PDF');
   drawPdfText(state, section.title, PDF_MARGIN, state.y, 10.8, 'F2');
@@ -1532,15 +1558,19 @@ function drawRegisterSummaryPdfSection(state: PdfBuildState, section: RegisterSu
   drawPdfRect(state, PDF_MARGIN, tableTop - tableHeaderHeight, PDF_PAGE_WIDTH - PDF_MARGIN * 2, tableHeaderHeight, '0.950 0.970 0.982');
   drawPdfText(state, 'METRIC', PDF_MARGIN + 10, tableTop - 9.2, 6.6, 'F2');
   drawPdfText(state, 'COUNT', PDF_MARGIN + 292, tableTop - 9.2, 6.6, 'F2');
-  drawPdfText(state, 'VALUE EXCL. VAT', PDF_PAGE_WIDTH - PDF_MARGIN - 122, tableTop - 9.2, 6.6, 'F2');
+  if (hasValueColumn) {
+    drawPdfText(state, 'VALUE INCL. VAT', PDF_PAGE_WIDTH - PDF_MARGIN - 122, tableTop - 9.2, 6.6, 'F2');
+  }
   state.y -= tableHeaderHeight;
 
   section.rows.forEach((row, index) => {
     const y = state.y;
     drawPdfRect(state, PDF_MARGIN, y - rowHeight, PDF_PAGE_WIDTH - PDF_MARGIN * 2, rowHeight, index % 2 === 0 ? '0.992 0.996 0.994' : '0.972 0.986 0.980');
     drawPdfText(state, row.label, PDF_MARGIN + 10, y - 8.8, 7.6, 'F1');
-    drawPdfText(state, row.count ?? '-', PDF_MARGIN + 292, y - 8.8, 7.9, 'F2');
-    drawPdfText(state, row.value ?? '-', PDF_PAGE_WIDTH - PDF_MARGIN - 122, y - 8.8, 7.9, 'F2');
+    drawPdfText(state, row.count ?? '', PDF_MARGIN + 292, y - 8.8, 7.9, 'F2');
+    if (hasValueColumn) {
+      drawPdfText(state, row.value ?? '', PDF_PAGE_WIDTH - PDF_MARGIN - 122, y - 8.8, 7.9, 'F2');
+    }
     state.y -= rowHeight;
   });
 
@@ -1555,36 +1585,49 @@ function buildRegisterSummaryPdf(items: AssetRegisterItem[], profile: AccountPro
   const ownerEmail = cleanText(profile?.email) || 'N/A';
   const ownerPhone = cleanText(profile?.phone) || 'N/A';
   const sections = buildRegisterSummaryPdfSections(summary);
+  const currentValueInclVat = moneyInclVatTotal(summary.currentValueExVat);
+  const replacementValueInclVat = moneyInclVatTotal(summary.replacementValueExVat);
 
   addPdfPage(state, false);
 
-  drawPdfText(state, 'Aim4price', PDF_MARGIN, state.y, 13, 'F2');
-  drawPdfText(state, `Generated ${formatPdfDate(generatedAt)}`, PDF_PAGE_WIDTH - PDF_MARGIN - 145, state.y, 9, 'F1');
-  drawPdfText(state, 'Asset Register Summary', PDF_MARGIN, state.y - 30, 24, 'F2');
-  drawPdfText(state, 'Basic overview of the selected asset register.', PDF_MARGIN, state.y - 48, 9.2, 'F1');
-  state.y -= 64;
+  const headerTop = state.y;
+  drawPdfReportMark(state, PDF_MARGIN, headerTop);
+  drawPdfText(state, 'Asset Register Summary', PDF_MARGIN + 64, headerTop - 14, 18, 'F2');
+  drawPdfText(state, 'Aim4price asset register', PDF_MARGIN + 64, headerTop - 32, 9.2, 'F1');
+  drawPdfText(state, 'Generated', PDF_PAGE_WIDTH - PDF_MARGIN - 166, headerTop - 14, 8, 'F1');
+  drawPdfText(state, formatPdfDate(generatedAt), PDF_PAGE_WIDTH - PDF_MARGIN - 68, headerTop - 14, 8.4, 'F2');
+  drawPdfText(state, 'Email', PDF_PAGE_WIDTH - PDF_MARGIN - 166, headerTop - 31, 8, 'F1');
+  drawPdfWrappedTextAt(state, ownerEmail, PDF_PAGE_WIDTH - PDF_MARGIN - 102, headerTop - 31, 100, 8, 'F2', 9.5);
+  state.y -= 62;
   drawPdfRule(state, state.y);
   state.y -= 21;
 
   const heroTop = state.y;
-  drawPdfRect(state, PDF_MARGIN, heroTop - 70, PDF_PAGE_WIDTH - PDF_MARGIN * 2, 70, '0.955 0.980 0.970');
-  drawPdfText(state, 'OWNER / REGISTER', PDF_MARGIN + 14, heroTop - 18, 7.6, 'F2');
-  const ownerLineCount = drawPdfWrappedTextAt(state, ownerName, PDF_MARGIN + 14, heroTop - 36, 280, 14.2, 'F2', 15.5);
-  drawPdfWrappedTextAt(state, ownerAddress, PDF_MARGIN + 14, heroTop - 38 - ownerLineCount * 15, 280, 8, 'F1', 9.5);
-  drawPdfText(state, 'CURRENT VALUE', PDF_PAGE_WIDTH - PDF_MARGIN - 168, heroTop - 18, 7.6, 'F2');
-  drawPdfText(state, `${formatPdfMoney(summary.currentValueExVat)} excl. VAT`, PDF_PAGE_WIDTH - PDF_MARGIN - 168, heroTop - 37, 11.5, 'F2');
-  drawPdfText(state, 'TOTAL ASSETS', PDF_PAGE_WIDTH - PDF_MARGIN - 168, heroTop - 52, 7.2, 'F2');
-  drawPdfText(state, String(summary.totalAssets), PDF_PAGE_WIDTH - PDF_MARGIN - 80, heroTop - 52, 10, 'F2');
-  state.y = heroTop - 88;
+  const heroWidth = PDF_PAGE_WIDTH - PDF_MARGIN * 2;
+  const heroLeftWidth = heroWidth * 0.68;
+  const heroRightX = PDF_MARGIN + heroLeftWidth;
+  drawPdfRect(state, PDF_MARGIN, heroTop - 92, heroWidth, 92, '1 1 1');
+  drawPdfRect(state, PDF_MARGIN, heroTop - 92, heroLeftWidth, 92, '0.990 0.995 0.995');
+  drawPdfText(state, 'ASSET REGISTER SUMMARY', PDF_MARGIN + 14, heroTop - 20, 7.8, 'F2');
+  const ownerLineCount = drawPdfWrappedTextAt(state, ownerName, PDF_MARGIN + 14, heroTop - 42, heroLeftWidth - 26, 18, 'F2', 19.5);
+  drawPdfWrappedTextAt(state, ownerAddress, PDF_MARGIN + 14, heroTop - 44 - ownerLineCount * 18, heroLeftWidth - 28, 8.2, 'F1', 10);
+  drawPdfText(state, 'REGISTER VALUE', heroRightX + 14, heroTop - 20, 7.8, 'F2');
+  drawPdfText(state, formatPdfMoney(currentValueInclVat), heroRightX + 14, heroTop - 44, 22, 'F2');
+  drawPdfText(state, 'VAT included', heroRightX + 14, heroTop - 60, 8.4, 'F1');
+  drawPdfRule(state, heroTop - 70);
+  drawPdfText(state, 'Total assets', heroRightX + 14, heroTop - 82, 8.2, 'F1');
+  drawPdfText(state, String(summary.totalAssets), PDF_PAGE_WIDTH - PDF_MARGIN - 34, heroTop - 82, 9.4, 'F2');
+  state.y = heroTop - 110;
 
   drawPdfText(state, 'Owner details', PDF_MARGIN, state.y, 11.2, 'F2');
   state.y -= 16;
   const detailsTop = state.y;
-  drawPdfRect(state, PDF_MARGIN, detailsTop - 34, PDF_PAGE_WIDTH - PDF_MARGIN * 2, 34, '0.98 0.99 1.00');
-  drawPdfKeyValue(state, 'Business email', ownerEmail, PDF_MARGIN + 10, detailsTop - 10, 182);
-  drawPdfKeyValue(state, 'Phone', ownerPhone, PDF_MARGIN + 207, detailsTop - 10, 124);
-  drawPdfKeyValue(state, 'Values', 'Excl. VAT', PDF_MARGIN + 348, detailsTop - 10, 120);
-  state.y -= 50;
+  drawPdfRect(state, PDF_MARGIN, detailsTop - 48, PDF_PAGE_WIDTH - PDF_MARGIN * 2, 48, '0.98 0.99 1.00');
+  drawPdfKeyValue(state, 'Business email', ownerEmail, PDF_MARGIN + 10, detailsTop - 13, 178);
+  drawPdfKeyValue(state, 'Phone', ownerPhone, PDF_MARGIN + 200, detailsTop - 13, 112);
+  drawPdfKeyValue(state, 'Values', 'Incl. VAT', PDF_MARGIN + 326, detailsTop - 13, 80);
+  drawPdfKeyValue(state, 'Replacement', formatPdfMoney(replacementValueInclVat), PDF_MARGIN + 420, detailsTop - 13, 90);
+  state.y -= 64;
 
   sections.forEach((section) => drawRegisterSummaryPdfSection(state, section));
 
@@ -1593,7 +1636,7 @@ function buildRegisterSummaryPdf(items: AssetRegisterItem[], profile: AccountPro
   state.y -= 15;
   drawPdfWrappedText(
     state,
-    'This summary is calculated from grouped asset-register data saved in Aim4price at export time. It excludes individual asset rows, photos and asset-level valuation details. Values exclude VAT unless stated otherwise.',
+    'This summary is calculated from grouped asset-register data saved in Aim4price at export time. It excludes individual asset rows, photos and asset-level valuation details. Values include VAT at 15%. This is not a certified valuation, inspection report or guarantee of selling price.',
     PDF_MARGIN,
     PDF_PAGE_WIDTH - PDF_MARGIN * 2,
     8,
