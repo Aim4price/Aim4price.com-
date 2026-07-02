@@ -12,9 +12,6 @@
   --brand-mid: #165340;
   --brand-soft: #edf6f1;
   --brand-soft-border: #d8e8df;
-  --blue-soft: #eef3fb;
-  --blue-soft-border: #d8e1f0;
-  --blue-text: #29456b;
   --action-primary: #197454;
   --action-primary-deep: #0f5840;
   --action-primary-hover: #0b4b37;
@@ -32,13 +29,15 @@
   --action-copper-soft-border: #dc8c4a;
   --action-copper-soft-border-hover: #c97834;
   --action-copper-soft-shadow: rgba(180, 107, 43, 0.08);
-  --action-blue-bg: #eaf5ff;
-  --action-blue-bg-hover: #daecff;
-  --action-blue-text: #0f3b64;
-  --action-blue-border: #7eb4df;
-  --action-blue-border-hover: #558fc6;
+  --action-soft-bg: #edf7f1;
+  --action-soft-bg-hover: #e1f0e8;
+  --action-soft-text: #174438;
+  --action-soft-border: #b9d9c9;
+  --action-soft-border-hover: #8fc3a8;
   min-height: 100vh;
   background: linear-gradient(180deg, #f5f8f8 0%, #edf3f4 100%);
+  font-family:
+    var(--font-heading, "Montserrat"), var(--font-body, "Inter"), sans-serif;
 }
 
 .shell {
@@ -81,19 +80,28 @@
   border: 1.5px solid rgba(193, 211, 218, 0.98);
   border-radius: clamp(1.25rem, 2vw, 1.7rem);
   background:
-    radial-gradient(circle at 3% 0%, rgba(25, 116, 84, 0.08) 0%, rgba(25, 116, 84, 0) 38%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(248, 252, 253, 0.98) 100%);
+    radial-gradient(
+      circle at 3% 0%,
+      rgba(25, 116, 84, 0.08) 0%,
+      rgba(25, 116, 84, 0) 38%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.99) 0%,
+      rgba(248, 252, 253, 0.98) 100%
+    );
   box-shadow:
     0 18px 38px rgba(16, 36, 40, 0.06),
     0 6px 16px rgba(16, 36, 40, 0.035),
     inset 0 1px 0 rgba(255, 255, 255, 0.98);
   color: #073b30;
-  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: clamp(2.35rem, 4.15vw, 3.55rem);
-  font-weight: 900;
-  line-height: 0.98;
-  letter-spacing: -0.062em;
-  text-transform: uppercase;
+  font-family:
+    var(--font-heading, "Montserrat"), var(--font-body, "Inter"), sans-serif;
+  font-size: clamp(2.05rem, 3.3vw, 3rem);
+  font-weight: 700;
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+  text-transform: none;
   text-shadow: none;
   overflow-wrap: anywhere;
   text-wrap: balance;
@@ -166,9 +174,9 @@
 }
 
 .topActionButtons {
-  width: min(100%, 30rem);
+  width: min(100%, 44rem);
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: stretch;
   justify-content: end;
   gap: clamp(0.62rem, 0.9vw, 0.82rem);
@@ -189,7 +197,7 @@
   gap: 0.55rem;
   border: 1px solid transparent;
   font: inherit;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1;
   cursor: pointer;
   text-decoration: none;
@@ -240,14 +248,85 @@
   padding-inline: clamp(1rem, 1.55vw, 1.32rem);
   border-radius: clamp(0.95rem, 1.35vw, 1.14rem);
   font-size: clamp(0.96rem, 1.08vw, 1.04rem);
-  font-weight: 860;
+  font-weight: 700;
+}
+
+.filterControl {
+  position: relative;
+  min-height: clamp(3.25rem, 3.8vw, 3.72rem);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: 0.42rem;
+  padding: 0 2.15rem 0 1rem;
+  border: 1px solid #b9d9c9;
+  border-radius: clamp(0.95rem, 1.35vw, 1.14rem);
+  background: linear-gradient(180deg, #f8fffb 0%, #e8f6ee 100%);
+  color: #174438;
+  box-shadow:
+    0 10px 22px rgba(22, 83, 64, 0.075),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  cursor: pointer;
+  font-size: clamp(0.88rem, 0.98vw, 0.96rem);
+  overflow: hidden;
+}
+
+.filterControl::after {
+  content: "⌄";
+  position: absolute;
+  right: 0.88rem;
+  top: 50%;
+  transform: translateY(-54%);
+  color: #2f6856;
+  font-size: 1rem;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.filterControl:hover,
+.filterControl:focus-within {
+  border-color: #8fc3a8;
+  background: linear-gradient(180deg, #ffffff 0%, #dff1e7 100%);
+  box-shadow:
+    0 14px 28px rgba(22, 83, 64, 0.105),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+}
+
+.filterControlLabel {
+  color: #1f4e41;
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+
+.filterControlValue {
+  min-width: 0;
+  overflow: hidden;
+  color: #17362c;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.filterSelect {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  opacity: 0;
+  cursor: pointer;
 }
 
 .primaryAction,
 .selectedActionDownload,
 .topReportButton {
   color: #ffffff;
-  background: linear-gradient(180deg, var(--action-primary) 0%, var(--action-primary-deep) 100%);
+  background: linear-gradient(
+    180deg,
+    var(--action-primary) 0%,
+    var(--action-primary-deep) 100%
+  );
   border-color: var(--action-primary-border);
   box-shadow:
     0 14px 26px var(--action-primary-shadow),
@@ -258,7 +337,11 @@
 .selectedActionDownload:hover,
 .topReportButton:hover:not(:disabled) {
   color: #ffffff;
-  background: linear-gradient(180deg, #218462 0%, var(--action-primary-hover) 100%);
+  background: linear-gradient(
+    180deg,
+    #218462 0%,
+    var(--action-primary-hover) 100%
+  );
   border-color: var(--action-primary-hover);
   box-shadow:
     0 18px 32px rgba(25, 116, 84, 0.25),
@@ -269,9 +352,9 @@
 .layerButton,
 .selectedActionRegister,
 .clearSearchButton {
-  color: var(--action-blue-text);
-  background: linear-gradient(180deg, #ffffff 0%, var(--action-blue-bg) 100%);
-  border-color: var(--action-blue-border);
+  color: var(--action-soft-text);
+  background: linear-gradient(180deg, #ffffff 0%, var(--action-soft-bg) 100%);
+  border-color: var(--action-soft-border);
   box-shadow:
     0 10px 22px rgba(15, 59, 100, 0.085),
     inset 0 1px 0 rgba(255, 255, 255, 0.98);
@@ -281,9 +364,13 @@
 .layerButton:hover,
 .selectedActionRegister:hover,
 .clearSearchButton:hover {
-  color: var(--action-blue-text);
-  background: linear-gradient(180deg, #ffffff 0%, var(--action-blue-bg-hover) 100%);
-  border-color: var(--action-blue-border-hover);
+  color: var(--action-soft-text);
+  background: linear-gradient(
+    180deg,
+    #ffffff 0%,
+    var(--action-soft-bg-hover) 100%
+  );
+  border-color: var(--action-soft-border-hover);
   box-shadow:
     0 14px 28px rgba(15, 59, 100, 0.115),
     inset 0 1px 0 rgba(255, 255, 255, 1);
@@ -292,7 +379,11 @@
 .topRefreshButton,
 .selectedActionMap {
   color: var(--action-copper-soft-text);
-  background: linear-gradient(180deg, #fffaf6 0%, var(--action-copper-soft-bg) 100%);
+  background: linear-gradient(
+    180deg,
+    #fffaf6 0%,
+    var(--action-copper-soft-bg) 100%
+  );
   border-color: var(--action-copper-soft-border);
   box-shadow:
     0 10px 22px var(--action-copper-soft-shadow),
@@ -302,7 +393,11 @@
 .topRefreshButton:hover:not(:disabled),
 .selectedActionMap:hover {
   color: var(--action-copper-soft-text);
-  background: linear-gradient(180deg, #ffffff 0%, var(--action-copper-soft-bg-hover) 100%);
+  background: linear-gradient(
+    180deg,
+    #ffffff 0%,
+    var(--action-copper-soft-bg-hover) 100%
+  );
   border-color: var(--action-copper-soft-border-hover);
   box-shadow:
     0 14px 28px rgba(180, 107, 43, 0.12),
@@ -340,7 +435,7 @@
   background: #fff0f0;
   border: 1px solid #f1d2d2;
   font-size: 0.95rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .mapStage {
@@ -375,7 +470,11 @@
   overflow: hidden;
   border: 1px solid rgba(204, 219, 232, 0.96);
   border-radius: 1.18rem;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(247, 250, 252, 0.96) 100%);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.98) 0%,
+    rgba(247, 250, 252, 0.96) 100%
+  );
   box-shadow:
     0 12px 26px rgba(16, 31, 28, 0.035),
     inset 0 1px 0 rgba(255, 255, 255, 0.92);
@@ -419,9 +518,10 @@
   box-shadow:
     0 10px 22px rgba(18, 49, 48, 0.08),
     inset 0 1px 0 rgba(255, 255, 255, 0.98);
-  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
+  font-family:
+    var(--font-heading, "Montserrat"), var(--font-body, "Inter"), sans-serif;
   font-size: 1.15rem;
-  font-weight: 950;
+  font-weight: 700;
 }
 
 .sidebarToggleButton:hover {
@@ -445,7 +545,7 @@
 .assetSidebarTitle strong {
   color: #073b30;
   font-size: 1.05rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .assetList {
@@ -480,7 +580,7 @@
   background: rgba(255, 255, 255, 0.72);
   color: #667581;
   line-height: 1.5;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .assetCard {
@@ -491,8 +591,16 @@
   border-radius: 1.2rem;
   border: 1px solid rgba(198, 216, 223, 0.98);
   background:
-    radial-gradient(circle at 0% 0%, rgba(25, 116, 84, 0.04) 0%, rgba(25, 116, 84, 0) 34%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(248, 252, 253, 0.99) 100%);
+    radial-gradient(
+      circle at 0% 0%,
+      rgba(25, 116, 84, 0.04) 0%,
+      rgba(25, 116, 84, 0) 34%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.99) 0%,
+      rgba(248, 252, 253, 0.99) 100%
+    );
   color: #17362c;
   box-shadow:
     0 14px 28px rgba(20, 43, 43, 0.04),
@@ -508,7 +616,11 @@
 .assetCardActive {
   border-color: rgba(151, 205, 181, 0.9);
   background:
-    radial-gradient(circle at top left, rgba(22, 83, 64, 0.075), transparent 38%),
+    radial-gradient(
+      circle at top left,
+      rgba(22, 83, 64, 0.075),
+      transparent 38%
+    ),
     linear-gradient(180deg, #ffffff 0%, #edf8f2 100%);
   box-shadow:
     0 18px 34px rgba(20, 43, 43, 0.07),
@@ -543,9 +655,10 @@
   border-radius: 999px;
   color: #ffffff;
   background: #103f35;
-  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
+  font-family:
+    var(--font-heading, "Montserrat"), var(--font-body, "Inter"), sans-serif;
   font-size: 0.84rem;
-  font-weight: 900;
+  font-weight: 800;
   box-shadow: 0 10px 20px rgba(16, 63, 53, 0.2);
 }
 
@@ -565,30 +678,38 @@
 .assetCardHeader strong {
   overflow-wrap: anywhere;
   color: #0b3328;
-  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
+  font-family:
+    var(--font-heading, "Montserrat"), var(--font-body, "Inter"), sans-serif;
   font-size: 1rem;
-  line-height: 1.12;
-  letter-spacing: -0.032em;
-  font-weight: 900;
+  line-height: 1.16;
+  letter-spacing: -0.018em;
+  font-weight: 700;
 }
 
 .assetCardHeader small {
   justify-self: start;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 1.32rem;
-  padding: 0 0.58rem;
-  border-radius: 999px;
-  border: 1px solid rgba(23, 68, 118, 0.14);
-  background: rgba(40, 99, 160, 0.08);
-  color: #173f61;
-  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: 0.66rem;
-  line-height: 1;
-  font-weight: 900;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  display: block;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #2f6856;
+  font-family:
+    var(--font-heading, "Montserrat"), var(--font-body, "Inter"), sans-serif;
+  font-size: 0.76rem;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.assetRegisterLabel {
+  display: block;
+  color: #7b8a86;
+  font-size: 0.74rem;
+  line-height: 1.25;
+  font-weight: 500;
 }
 
 .assetCardMeta {
@@ -598,11 +719,11 @@
   color: #637386;
   font-size: 0.8rem;
   line-height: 1.36;
-  font-weight: 760;
+  font-weight: 600;
 }
 
 .assetCardMeta span:not(:last-child)::after {
-  content: '•';
+  content: "•";
   margin-left: 0.32rem;
   color: rgba(98, 113, 131, 0.45);
 }
@@ -616,7 +737,11 @@
   border: 1px solid rgba(204, 219, 232, 0.96);
   border-radius: 1.18rem;
   background:
-    radial-gradient(circle at 25% 20%, rgba(31, 108, 83, 0.12), transparent 18rem),
+    radial-gradient(
+      circle at 25% 20%,
+      rgba(31, 108, 83, 0.12),
+      transparent 18rem
+    ),
     #e3ece7;
   box-shadow:
     0 12px 26px rgba(16, 31, 28, 0.04),
@@ -633,7 +758,7 @@
 }
 
 .assetMapShell::after {
-  content: '';
+  content: "";
   pointer-events: none;
   position: absolute;
   inset: 0;
@@ -693,7 +818,11 @@
 .layerButtonActive,
 .layerButtonActive:hover {
   color: #ffffff;
-  background: linear-gradient(180deg, var(--action-primary) 0%, var(--action-primary-deep) 100%);
+  background: linear-gradient(
+    180deg,
+    var(--action-primary) 0%,
+    var(--action-primary-deep) 100%
+  );
   border-color: var(--action-primary-border);
   box-shadow:
     0 13px 24px rgba(18, 70, 53, 0.18),
@@ -706,7 +835,10 @@
   left: 50%;
   right: auto;
   bottom: clamp(0.95rem, 1.5vw, 1.25rem);
-  width: min(calc(100% - clamp(1.5rem, 2.4vw, 2.4rem)), clamp(700px, 84%, 920px));
+  width: min(
+    calc(100% - clamp(1.5rem, 2.4vw, 2.4rem)),
+    clamp(700px, 84%, 920px)
+  );
   max-height: calc(100% - 6.2rem);
   overflow: auto;
   overscroll-behavior: contain;
@@ -723,7 +855,10 @@
 }
 
 .mapStageCollapsed .selectedAssetCard {
-  width: min(calc(100% - clamp(1.5rem, 2.4vw, 2.4rem)), clamp(740px, 82%, 980px));
+  width: min(
+    calc(100% - clamp(1.5rem, 2.4vw, 2.4rem)),
+    clamp(740px, 82%, 980px)
+  );
 }
 
 .selectedCardCloseButton {
@@ -737,10 +872,10 @@
   min-height: 2.18rem;
   padding: 0;
   border-radius: 999px;
-  color: var(--action-blue-text);
-  background: var(--blue-soft);
-  border-color: var(--blue-soft-border);
-  box-shadow: 0 10px 22px rgba(15, 59, 100, 0.08);
+  color: #14372e;
+  background: #edf6f1;
+  border-color: #d8e8df;
+  box-shadow: 0 10px 22px rgba(20, 55, 46, 0.08);
 }
 
 .selectedCardCloseButton .buttonIcon {
@@ -825,7 +960,7 @@
   box-shadow: 0 8px 16px rgba(17, 24, 39, 0.18);
   font: inherit;
   font-size: clamp(1.05rem, 1.5vw, 1.22rem);
-  font-weight: 900;
+  font-weight: 700;
   line-height: 1;
   cursor: pointer;
   transform: translateY(-50%);
@@ -938,10 +1073,19 @@
   color: #5f6c78;
   line-height: 1.34;
   font-size: clamp(0.82rem, 0.9vw, 0.9rem);
-  font-weight: 760;
+  font-weight: 600;
   white-space: nowrap;
   overflow: visible;
   text-overflow: clip;
+}
+
+.selectedRegisterLabel {
+  grid-column: 1 / -1;
+  grid-row: 3;
+  color: #6f817b;
+  font-size: 0.78rem;
+  line-height: 1.25;
+  font-weight: 500;
 }
 
 .selectedValueBlock {
@@ -956,7 +1100,7 @@
   display: block;
   color: #6b7789;
   font-size: 0.65rem;
-  font-weight: 820;
+  font-weight: 700;
   letter-spacing: 0.058em;
   text-transform: uppercase;
 }
@@ -999,7 +1143,7 @@
 .selectedDetailGrid small {
   color: #6e7a87;
   font-size: 0.62rem;
-  font-weight: 850;
+  font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -1010,7 +1154,7 @@
   color: var(--text);
   font-size: 0.84rem;
   line-height: 1.22;
-  font-weight: 850;
+  font-weight: 700;
 }
 
 .selectedActionRow {
@@ -1052,7 +1196,7 @@
 }
 
 .assetMapShell :global(.aim4priceMapMarkerPin::after) {
-  content: '';
+  content: "";
   position: absolute;
   left: 50%;
   bottom: -6px;
@@ -1068,7 +1212,8 @@
 .assetMapShell :global(.aim4priceMapMarkerPin b) {
   position: relative;
   z-index: 2;
-  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
+  font-family:
+    var(--font-heading, "Montserrat"), var(--font-body, "Inter"), sans-serif;
   font-size: 0.8rem;
   font-weight: 900;
   letter-spacing: -0.02em;
@@ -1082,7 +1227,8 @@
 }
 
 .assetMapShell :global(.leaflet-container) {
-  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
+  font-family:
+    var(--font-heading, "Montserrat"), var(--font-body, "Inter"), sans-serif;
   background: #dfe8e2;
 }
 
@@ -1097,7 +1243,7 @@
   border: 0;
   color: #123130;
   background: rgba(255, 255, 255, 0.94);
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .assetMapShell :global(.leaflet-tooltip) {
@@ -1107,7 +1253,7 @@
   color: #123130;
   box-shadow: 0 13px 24px rgba(19, 39, 54, 0.14);
   font-size: 0.78rem;
-  font-weight: 850;
+  font-weight: 700;
 }
 
 .assetMapShell :global(.leaflet-control-attribution) {
@@ -1116,6 +1262,163 @@
   color: rgba(48, 64, 69, 0.72);
   font-size: 0.62rem;
   line-height: 1.25;
+}
+
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: clamp(1rem, 3vw, 2rem);
+  background: rgba(10, 27, 24, 0.38);
+  backdrop-filter: blur(6px);
+}
+
+.exportModal {
+  width: min(100%, 35rem);
+  max-height: min(86vh, 42rem);
+  overflow: auto;
+  display: grid;
+  gap: 1rem;
+  padding: clamp(1rem, 2vw, 1.3rem);
+  border: 1px solid rgba(203, 221, 212, 0.96);
+  border-radius: 1.35rem;
+  background: #ffffff;
+  box-shadow:
+    0 26px 70px rgba(9, 32, 27, 0.28),
+    0 8px 22px rgba(9, 32, 27, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.exportModalHeader {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: start;
+}
+
+.exportModalHeader h2 {
+  margin: 0;
+  color: var(--text);
+  font-size: clamp(1.24rem, 2.5vw, 1.62rem);
+  line-height: 1.12;
+  font-weight: 700;
+  letter-spacing: -0.024em;
+}
+
+.exportModalHeader p {
+  margin: 0.34rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  line-height: 1.45;
+  font-weight: 500;
+}
+
+.modalCloseButton {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.45rem;
+  min-width: 2.45rem;
+  min-height: 2.45rem;
+  padding: 0;
+  border: 1px solid #d8e8df;
+  border-radius: 999px;
+  background: #edf6f1;
+  color: #14372e;
+  cursor: pointer;
+}
+
+.exportScopeField {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.exportScopeField span {
+  color: #51645f;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.exportScopeField select {
+  width: 100%;
+  min-height: 3.2rem;
+  padding: 0 1rem;
+  border: 1px solid #b9d9c9;
+  border-radius: 0.95rem;
+  background: linear-gradient(180deg, #ffffff 0%, #edf7f1 100%);
+  color: #17362c;
+  font: inherit;
+  font-weight: 600;
+}
+
+.exportScopeSummary {
+  display: grid;
+  gap: 0.24rem;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid #d8e8df;
+  border-radius: 0.95rem;
+  background: #f5faf7;
+}
+
+.exportScopeSummary strong {
+  color: #17362c;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.exportScopeSummary span {
+  color: #60746d;
+  font-size: 0.84rem;
+  line-height: 1.35;
+  font-weight: 500;
+}
+
+.exportFormatGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.exportFormatButton {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.52rem;
+  min-height: 3.25rem;
+  padding: 0 1rem;
+  border: 1px solid var(--action-primary-border);
+  border-radius: 0.95rem;
+  background: linear-gradient(
+    180deg,
+    var(--action-primary) 0%,
+    var(--action-primary-deep) 100%
+  );
+  color: #ffffff;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: 0 14px 26px rgba(25, 116, 84, 0.18);
+}
+
+.exportFormatButton:hover:not(:disabled) {
+  background: linear-gradient(
+    180deg,
+    #218462 0%,
+    var(--action-primary-hover) 100%
+  );
+}
+
+.exportEmptyNote {
+  margin: -0.2rem 0 0;
+  color: #7a3f0c;
+  font-size: 0.86rem;
+  line-height: 1.42;
+  font-weight: 600;
 }
 
 @media (max-width: 1120px) {
@@ -1296,6 +1599,10 @@
   .selectedActionButton {
     min-height: 2.5rem;
   }
+
+  .exportFormatGrid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* === Asset Map responsive consolidation pass === */
@@ -1379,6 +1686,7 @@
 
   .primaryAction,
   .secondaryAction,
+  .filterControl,
   .topActionButton,
   .topRefreshButton,
   .topReportButton,
@@ -1390,4 +1698,3 @@
     min-height: var(--tap-target-min, 44px) !important;
   }
 }
-
