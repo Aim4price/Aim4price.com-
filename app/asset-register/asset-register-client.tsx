@@ -8669,7 +8669,7 @@ export default function AssetRegisterClient() {
 
   function assetReportLabel(reportKind: AssetPdfReportKind): string {
     if (reportKind === 'fuel') return 'Fuel report';
-    if (reportKind === 'depreciation') return 'Market depreciation timeline';
+    if (reportKind === 'depreciation') return 'Depreciation log';
     return 'Maintenance report';
   }
 
@@ -13247,8 +13247,8 @@ export default function AssetRegisterClient() {
                       <button type="button" className={styles.assetReportOptionButton} onClick={openAssetDepreciationReportFilter}>
                         <DocumentIcon className={styles.buttonIcon} />
                         <span>
-                          <strong>Download depreciation timeline</strong>
-                          <small>PDF or Excel value movement over time.</small>
+                          <strong>Download depreciation log</strong>
+                          <small>PDF or Excel log of saved value changes.</small>
                         </span>
                       </button>
 
