@@ -227,6 +227,9 @@ type AssetFilterKey =
   | 'not-financed'
   | 'licensed'
   | 'not-licensed'
+  | 'license-not-applicable'
+  | 'mapped'
+  | 'not-mapped'
   | 'highest-value'
   | 'lowest-value'
   | 'highest-replacement-price'
@@ -822,6 +825,9 @@ const ASSET_FILTER_OPTIONS: AssetFilterOption[] = [
   { value: 'not-financed', label: 'Not financed' },
   { value: 'licensed', label: 'Licensed' },
   { value: 'not-licensed', label: 'Not licensed' },
+  { value: 'license-not-applicable', label: 'N/A Licensed' },
+  { value: 'mapped', label: 'Mapped' },
+  { value: 'not-mapped', label: 'Not Mapped' },
   { value: 'highest-value', label: 'Highest current value' },
   { value: 'lowest-value', label: 'Lowest current value' },
   { value: 'highest-replacement-price', label: 'Highest replacement price' },
@@ -3072,6 +3078,12 @@ function filterAssetsByRegisterFilter(assetList: RegisterAsset[], assetFilter: A
       return assetList.filter((asset) => readLicenseStatusChoice(asset) === 'yes');
     case 'not-licensed':
       return assetList.filter((asset) => readLicenseStatusChoice(asset) === 'no');
+    case 'license-not-applicable':
+      return assetList.filter((asset) => readLicenseStatusChoice(asset) === 'not_applicable');
+    case 'mapped':
+      return assetList.filter((asset) => hasAssetMapCoordinates(asset));
+    case 'not-mapped':
+      return assetList.filter((asset) => !hasAssetMapCoordinates(asset));
     case 'aim4price-value':
       return assetList.filter((asset) => isAim4priceValuedAsset(asset));
     case 'manual-value':
