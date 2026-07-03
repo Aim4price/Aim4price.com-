@@ -80,8 +80,14 @@ type FuelSlipRecord = {
   assetTitle: string;
   storageId: string;
   storageName: string;
+  fuelStorageEventId: string;
+  assetInvoiceId: string;
+  invoiceDocumentId: string;
+  uploadId: string;
   documentFileUrl: string;
   originalFilename: string;
+  contentType: string;
+  byteSize: number | null;
   supplierName: string;
   supplierVatNumber: string;
   slipNumber: string;
@@ -107,6 +113,8 @@ type FuelSlipRecord = {
   extractionStatus: 'manual' | 'extracted' | 'needs_review';
   ocrConfidence: number | null;
   reviewRequired: boolean;
+  rawExtractedText: string;
+  extractionWarnings: string[];
   createdAtIso: string;
   updatedAtIso: string;
 };
@@ -146,6 +154,7 @@ type StorageDraft = {
 };
 
 type FuelSlipDraft = {
+  id: string;
   mode: 'manual' | 'automatic';
   targetKey: string;
   uploadId: string;
@@ -281,6 +290,7 @@ const emptyStorageDraft: StorageDraft = {
 
 
 const emptyFuelSlipDraft: FuelSlipDraft = {
+  id: '',
   mode: 'manual',
   targetKey: '',
   uploadId: '',
@@ -729,10 +739,69 @@ function fuelSlipTargetKey(slip: FuelSlipRecord): string {
   return slip.assetId ? `asset:${slip.assetId}` : 'asset';
 }
 
+function fuelSlipNeedsReview(slip: FuelSlipRecord): boolean {
+  return Boolean(slip.reviewRequired || slip.extractionStatus === 'needs_review');
+}
+
 function fuelSlipCaptureKey(slip: FuelSlipRecord): FuelSlipCaptureFilter {
-  if (slip.reviewRequired || slip.extractionStatus === 'needs_review') return 'needs_review';
+  if (fuelSlipNeedsReview(slip)) return 'needs_review';
   if (slip.extractionStatus === 'extracted') return 'automatic';
   return 'manual';
+}
+
+function fuelSlipTargetTypeLabel(slip: FuelSlipRecord): string {
+  return slip.targetType === 'storage_tank' ? 'Storage tank' : 'Asset';
+}
+
+function fuelSlipReferenceLabel(slip: FuelSlipRecord): string {
+  return slip.slipNumber || slip.transactionNumber || slip.originalFilename || '—';
+}
+
+function buildFuelSlipDraftFromRecord(slip: FuelSlipRecord): FuelSlipDraft {
+  const needsReview = fuelSlipNeedsReview(slip);
+
+  return {
+    ...emptyFuelSlipDraft,
+    id: slip.id,
+    mode: slip.extractionStatus === 'manual' ? 'manual' : 'automatic',
+    targetKey: fuelSlipTargetKey(slip),
+    uploadId: slip.uploadId || '',
+    documentFileUrl: slip.documentFileUrl || '',
+    originalFilename: slip.originalFilename || '',
+    contentType: slip.contentType || '',
+    byteSize: slip.byteSize,
+    supplierName: slip.supplierName || '',
+    supplierVatNumber: slip.supplierVatNumber || '',
+    slipNumber: slip.slipNumber || '',
+    transactionNumber: slip.transactionNumber || '',
+    documentDate: slip.documentDate || '',
+    documentTime: slip.documentTime || '',
+    fuelType: slip.fuelType || '',
+    litres: numberToInput(slip.litres, 3),
+    pricePerLitre: numberToInput(slip.pricePerLitre, 4),
+    totalAmount: numberToInput(slip.totalAmount, 2),
+    vatAmount: numberToInput(slip.vatAmount, 2),
+    vatIncluded: slip.vatIncluded === null ? '' : String(slip.vatIncluded),
+    vatRate: numberToInput(slip.vatRate, 4),
+    paymentMethod: slip.paymentMethod || '',
+    cardType: slip.cardType || '',
+    cardNumberMasked: slip.cardNumberMasked || '',
+    cardLast4: cardLast4FromValue(slip.cardLast4 || slip.cardNumberMasked),
+    merchantNumber: slip.merchantNumber || '',
+    terminalNumber: slip.terminalNumber || '',
+    siteNumber: slip.siteNumber || '',
+    odometerReading: numberToInput(slip.odometerReading, 2),
+    hourMeterReading: numberToInput(slip.hourMeterReading, 2),
+    extractionStatus: slip.extractionStatus,
+    ocrConfidence: slip.ocrConfidence,
+    reviewRequired: needsReview,
+    rawExtractedText: slip.rawExtractedText || '',
+    extractionWarnings: slip.extractionWarnings?.length
+      ? slip.extractionWarnings
+      : needsReview
+        ? ['Complete the missing fuel slip fields before posting fuel usage.']
+        : [],
+  };
 }
 
 function fuelSlipSearchText(slip: FuelSlipRecord): string {
@@ -1258,6 +1327,9 @@ export default function FuelClient() {
   const [fuelSlipManagerFilterOpen, setFuelSlipManagerFilterOpen] = useState(false);
   const [openFuelSlipManagerFilterSelect, setOpenFuelSlipManagerFilterSelect] = useState<FuelSlipManagerFilterKey | null>(null);
   const [currentFuelSlipManagerPage, setCurrentFuelSlipManagerPage] = useState(1);
+  const [isDownloadingFuelSlips, setIsDownloadingFuelSlips] = useState(false);
+  const [deleteCandidateFuelSlip, setDeleteCandidateFuelSlip] = useState<FuelSlipRecord | null>(null);
+  const [busyFuelSlipDeleteId, setBusyFuelSlipDeleteId] = useState<string | null>(null);
 
   const selectedStorage = useMemo(
     () => storages.find((storage) => storage.id === selectedStorageId) ?? null,
@@ -1339,7 +1411,12 @@ export default function FuelClient() {
     ? 'Choose asset or storage tank for manual fuel slip'
     : 'Choose asset or storage tank for uploaded fuel slip';
   const fuelSlipFormTitle = fuelSlipFlow === 'review' ? 'Review fuel slip details' : 'Enter fuel slip manually';
-  const fuelSlipFormSubtitle = `${selectedFuelSlipTargetName} · ${fuelSlipFlow === 'review' ? 'Automatic capture' : 'Manual entry'}`;
+  const fuelSlipFormModeLabel = fuelSlipDraft.id
+    ? 'Saved slip review'
+    : fuelSlipFlow === 'review'
+      ? 'Automatic capture'
+      : 'Manual entry';
+  const fuelSlipFormSubtitle = `${selectedFuelSlipTargetName} · ${fuelSlipFormModeLabel}`;
   const fuelSlipUploadReady = Boolean(fuelSlipUploadFile);
   const fuelSlipManagerSearchTerm = fuelSlipManagerSearch.trim().toLowerCase();
 
@@ -1532,10 +1609,32 @@ export default function FuelClient() {
     setDraftFuelSlipManagerFilters(fuelSlipManagerFilters);
     setFuelSlipManagerFilterOpen(false);
     setOpenFuelSlipManagerFilterSelect(null);
+    setDeleteCandidateFuelSlip(null);
     setFuelSlipFlow(null);
     setIsStorageFuelSelectOpen(false);
     setNotice(null);
     setModalMode('fuel-slip-manager');
+  }
+
+  function openFuelSlipReview(slip: FuelSlipRecord) {
+    setFuelSlipDraft(buildFuelSlipDraftFromRecord(slip));
+    setFuelSlipFlow('review');
+    setFuelSlipPickerSearch('');
+    setFuelSlipUploadFile(null);
+    setFuelSlipUploadFileName('');
+    setFuelSlipManagerFilterOpen(false);
+    setOpenFuelSlipManagerFilterSelect(null);
+    setDeleteCandidateFuelSlip(null);
+    setIsStorageFuelSelectOpen(false);
+    setNotice(null);
+    setModalMode('fuel-slip');
+  }
+
+  function openFuelSlipDeleteConfirm(slip: FuelSlipRecord) {
+    setFuelSlipManagerFilterOpen(false);
+    setOpenFuelSlipManagerFilterSelect(null);
+    setDeleteCandidateFuelSlip(slip);
+    setNotice(null);
   }
 
   function openReportModal() {
@@ -1569,6 +1668,9 @@ export default function FuelClient() {
     setIsExtractingFuelSlip(false);
     setFuelSlipManagerFilterOpen(false);
     setOpenFuelSlipManagerFilterSelect(null);
+    setDeleteCandidateFuelSlip(null);
+    setBusyFuelSlipDeleteId(null);
+    setIsDownloadingFuelSlips(false);
   }
 
   function clearSearch() {
@@ -1734,58 +1836,98 @@ export default function FuelClient() {
     setNotice(null);
 
     try {
-      const response = await fetch('/api/fuel/slips', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          mode: fuelSlipDraft.mode,
-          targetType,
-          targetId,
-          assetId: targetType === 'asset' ? targetId : null,
-          storageId: targetType === 'storage_tank' ? targetId : null,
-          uploadId: fuelSlipDraft.uploadId || null,
-          documentFileUrl: fuelSlipDraft.documentFileUrl || null,
-          originalFilename: fuelSlipDraft.originalFilename || null,
-          contentType: fuelSlipDraft.contentType || null,
-          byteSize: fuelSlipDraft.byteSize,
-          supplierName: fuelSlipDraft.supplierName,
-          supplierVatNumber: fuelSlipDraft.supplierVatNumber,
-          slipNumber: fuelSlipDraft.slipNumber,
-          transactionNumber: fuelSlipDraft.transactionNumber,
-          documentDate: fuelSlipDraft.documentDate,
-          documentTime: fuelSlipDraft.documentTime,
-          fuelType: fuelSlipDraft.fuelType,
-          litres: numberInputToValue(fuelSlipDraft.litres, 3),
-          pricePerLitre: numberInputToValue(fuelSlipDraft.pricePerLitre, 4),
-          totalAmount: numberInputToValue(fuelSlipDraft.totalAmount, 2),
-          vatAmount: numberInputToValue(fuelSlipDraft.vatAmount, 2),
-          vatIncluded: fuelSlipDraft.vatIncluded === '' ? null : fuelSlipDraft.vatIncluded === 'true',
-          vatRate: numberInputToValue(fuelSlipDraft.vatRate, 4),
-          paymentMethod: fuelSlipDraft.paymentMethod,
-          cardType: fuelSlipDraft.cardType,
-          cardNumberMasked: card.masked,
-          cardLast4: card.last4,
-          merchantNumber: fuelSlipDraft.merchantNumber,
-          terminalNumber: fuelSlipDraft.terminalNumber,
-          siteNumber: fuelSlipDraft.siteNumber,
-          odometerReading: numberInputToValue(fuelSlipDraft.odometerReading, 2),
-          hourMeterReading: numberInputToValue(fuelSlipDraft.hourMeterReading, 2),
-          extractionStatus: fuelSlipDraft.extractionStatus,
-          ocrConfidence: fuelSlipDraft.ocrConfidence,
-          reviewRequired: fuelSlipDraft.reviewRequired,
-          rawExtractedText: sanitizeFuelSlipSensitiveText(fuelSlipDraft.rawExtractedText),
-          extractionWarnings: fuelSlipDraft.extractionWarnings,
-        }),
-      });
+      const reviewingExistingSlip = Boolean(fuelSlipDraft.id);
+      const payload = {
+        id: fuelSlipDraft.id || undefined,
+        fuelSlipId: fuelSlipDraft.id || undefined,
+        mode: fuelSlipDraft.mode,
+        targetType,
+        targetId,
+        assetId: targetType === 'asset' ? targetId : null,
+        storageId: targetType === 'storage_tank' ? targetId : null,
+        uploadId: fuelSlipDraft.uploadId || null,
+        documentFileUrl: fuelSlipDraft.documentFileUrl || null,
+        originalFilename: fuelSlipDraft.originalFilename || null,
+        contentType: fuelSlipDraft.contentType || null,
+        byteSize: fuelSlipDraft.byteSize,
+        supplierName: fuelSlipDraft.supplierName,
+        supplierVatNumber: fuelSlipDraft.supplierVatNumber,
+        slipNumber: fuelSlipDraft.slipNumber,
+        transactionNumber: fuelSlipDraft.transactionNumber,
+        documentDate: fuelSlipDraft.documentDate,
+        documentTime: fuelSlipDraft.documentTime,
+        fuelType: fuelSlipDraft.fuelType,
+        litres: numberInputToValue(fuelSlipDraft.litres, 3),
+        pricePerLitre: numberInputToValue(fuelSlipDraft.pricePerLitre, 4),
+        totalAmount: numberInputToValue(fuelSlipDraft.totalAmount, 2),
+        vatAmount: numberInputToValue(fuelSlipDraft.vatAmount, 2),
+        vatIncluded: fuelSlipDraft.vatIncluded === '' ? null : fuelSlipDraft.vatIncluded === 'true',
+        vatRate: numberInputToValue(fuelSlipDraft.vatRate, 4),
+        paymentMethod: fuelSlipDraft.paymentMethod,
+        cardType: fuelSlipDraft.cardType,
+        cardNumberMasked: card.masked,
+        cardLast4: card.last4,
+        merchantNumber: fuelSlipDraft.merchantNumber,
+        terminalNumber: fuelSlipDraft.terminalNumber,
+        siteNumber: fuelSlipDraft.siteNumber,
+        odometerReading: numberInputToValue(fuelSlipDraft.odometerReading, 2),
+        hourMeterReading: numberInputToValue(fuelSlipDraft.hourMeterReading, 2),
+        extractionStatus: fuelSlipDraft.extractionStatus,
+        ocrConfidence: fuelSlipDraft.ocrConfidence,
+        reviewRequired: fuelSlipDraft.reviewRequired,
+        rawExtractedText: sanitizeFuelSlipSensitiveText(fuelSlipDraft.rawExtractedText),
+        extractionWarnings: fuelSlipDraft.extractionWarnings,
+      };
+
+      const response = await fetch(
+        reviewingExistingSlip ? `/api/fuel/slips/${encodeURIComponent(fuelSlipDraft.id)}` : '/api/fuel/slips',
+        {
+          method: reviewingExistingSlip ? 'PATCH' : 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        },
+      );
 
       const data = await applyLedgerResponse(response);
       setNotice({ tone: 'success', message: data.message || (data.pendingReview ? 'Fuel slip saved for review. Litres or fuel type missing.' : 'Fuel Slip saved to Fuel Ledger.') });
-      closeModal();
+
+      if (reviewingExistingSlip) {
+        setFuelSlipDraft(emptyFuelSlipDraft);
+        setFuelSlipFlow(null);
+        setFuelSlipUploadFile(null);
+        setFuelSlipUploadFileName('');
+        setDraftFuelSlipManagerFilters(fuelSlipManagerFilters);
+        setModalMode('fuel-slip-manager');
+      } else {
+        closeModal();
+      }
     } catch (error) {
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to save fuel slip.' });
     } finally {
       setIsSaving(false);
+    }
+  }
+
+  async function confirmDeleteFuelSlip() {
+    if (!deleteCandidateFuelSlip || busyFuelSlipDeleteId) return;
+
+    setBusyFuelSlipDeleteId(deleteCandidateFuelSlip.id);
+    setNotice(null);
+
+    try {
+      const response = await fetch(`/api/fuel/slips/${encodeURIComponent(deleteCandidateFuelSlip.id)}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+
+      await applyLedgerResponse(response);
+      setNotice({ tone: 'success', message: 'Fuel slip deleted.' });
+      setDeleteCandidateFuelSlip(null);
+    } catch (error) {
+      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to delete fuel slip.' });
+    } finally {
+      setBusyFuelSlipDeleteId(null);
     }
   }
 
@@ -1913,12 +2055,14 @@ export default function FuelClient() {
   function clearFuelSlipManagerFilters() {
     setDraftFuelSlipManagerFilters(DEFAULT_FUEL_SLIP_MANAGER_FILTERS);
     setFuelSlipManagerFilters(DEFAULT_FUEL_SLIP_MANAGER_FILTERS);
+    setCurrentFuelSlipManagerPage(1);
     setOpenFuelSlipManagerFilterSelect(null);
     setFuelSlipManagerFilterOpen(false);
   }
 
   function applyFuelSlipManagerFilters() {
     setFuelSlipManagerFilters(draftFuelSlipManagerFilters);
+    setCurrentFuelSlipManagerPage(1);
     setOpenFuelSlipManagerFilterSelect(null);
     setFuelSlipManagerFilterOpen(false);
   }
@@ -1928,13 +2072,22 @@ export default function FuelClient() {
   }
 
   function handleFuelSlipBulkDownload() {
+    if (isDownloadingFuelSlips) return;
+
     if (!visibleFuelSlipManagerSlips.length) {
       setNotice({ tone: 'error', message: 'No fuel slips match the current filters.' });
       return;
     }
 
-    downloadBlob(new Blob([buildFuelSlipCsv(visibleFuelSlipManagerSlips)], { type: 'text/csv;charset=utf-8' }), fuelSlipDownloadFileName());
-    setNotice({ tone: 'success', message: 'Fuel slip CSV downloaded.' });
+    setIsDownloadingFuelSlips(true);
+    try {
+      downloadBlob(new Blob([buildFuelSlipCsv(visibleFuelSlipManagerSlips)], { type: 'text/csv;charset=utf-8' }), fuelSlipDownloadFileName());
+      setNotice({ tone: 'success', message: 'Fuel slip CSV downloaded.' });
+      window.setTimeout(() => setIsDownloadingFuelSlips(false), 350);
+    } catch (error) {
+      setIsDownloadingFuelSlips(false);
+      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Fuel slip CSV could not be downloaded.' });
+    }
   }
 
   async function handleClearDipstickNote(storage: FuelLedgerStorage) {
@@ -2373,9 +2526,14 @@ export default function FuelClient() {
                   <span>Filter</span>
                   {activeFuelSlipManagerFilterCount ? <strong>{activeFuelSlipManagerFilterCount}</strong> : null}
                 </button>
-                <button type="button" className={`${styles.primaryButton} ${styles.fuelSlipManagerToolbarButton} ${styles.fuelSlipManagerDownloadButton}`} onClick={handleFuelSlipBulkDownload} disabled={!visibleFuelSlipManagerSlips.length}>
+                <button
+                  type="button"
+                  className={`${styles.primaryButton} ${styles.fuelSlipManagerToolbarButton} ${styles.fuelSlipManagerDownloadButton}`}
+                  onClick={handleFuelSlipBulkDownload}
+                  disabled={!visibleFuelSlipManagerSlips.length || isDownloadingFuelSlips}
+                >
                   <DownloadIcon className={styles.buttonIcon} />
-                  <span>Download</span>
+                  <span>{isDownloadingFuelSlips ? 'Preparing CSV...' : 'Download CSV'}</span>
                 </button>
               </div>
             </section>
@@ -2390,40 +2548,90 @@ export default function FuelClient() {
 
                 {!isLoading ? paginatedFuelSlipManagerSlips.map((slip) => {
                   const updatedLabel = slip.updatedAtIso ? `Updated ${formatFuelSlipDateTime(slip.updatedAtIso)}` : '';
-                  const referenceLabel = slip.slipNumber || slip.transactionNumber || 'No slip number';
+                  const referenceLabel = fuelSlipReferenceLabel(slip);
                   const cardEndingLabel = formatCardEnding(slip.cardLast4 || slip.cardNumberMasked);
+                  const needsReview = fuelSlipNeedsReview(slip);
+                  const deletingThisSlip = busyFuelSlipDeleteId === slip.id;
 
                   return (
                     <article className={styles.fuelSlipManagerRow} key={slip.id}>
-                      <div className={styles.fuelSlipManagerRowHeader}>
+                      <div className={styles.fuelSlipManagerRowTop}>
                         <div className={styles.fuelSlipManagerTitleBlock}>
                           <h3 className={styles.fuelSlipManagerTitle}>{slip.supplierName || 'Unknown supplier'}</h3>
-                          <p className={styles.fuelSlipManagerTarget}>{fuelSlipTargetLabel(slip)} · {slip.targetType === 'storage_tank' ? 'Storage tank' : 'Asset'}{slip.fuelType ? ` · ${slip.fuelType}` : ''}</p>
-                          <div className={styles.fuelSlipManagerMetaList}>
-                            <span className={styles.fuelSlipManagerReferenceLabel}>{referenceLabel}</span>
-                            <span>{fuelSlipStatusLabel(slip)}</span>
-                            <span>{formatFuelSlipDate(slip.documentDate)}</span>
-                            {cardEndingLabel ? <span>{cardEndingLabel}</span> : null}
-                            {updatedLabel ? <span>{updatedLabel}</span> : null}
-                          </div>
+                          <p className={styles.fuelSlipManagerTarget}>{fuelSlipTargetLabel(slip)}</p>
                         </div>
+                        <span className={`${styles.fuelSlipManagerStatusBadge} ${needsReview ? styles.fuelSlipManagerStatusReview : ''}`}>
+                          {fuelSlipStatusLabel(slip)}
+                        </span>
+                      </div>
 
-                        <div className={styles.fuelSlipManagerRowAside}>
-                          <div className={styles.fuelSlipManagerValueBlock}>
-                            <strong>{formatCurrency(slip.totalAmount)}</strong>
-                            <span>{formatLitres(slip.litres)}{slip.pricePerLitre !== null ? ` · ${formatCurrency(slip.pricePerLitre)}/L` : ''}</span>
-                          </div>
+                      <div className={styles.fuelSlipManagerDetailGrid}>
+                        <span>
+                          <small>Target</small>
+                          <strong>{fuelSlipTargetLabel(slip)}</strong>
+                        </span>
+                        <span>
+                          <small>Type</small>
+                          <strong>{fuelSlipTargetTypeLabel(slip)}</strong>
+                        </span>
+                        <span>
+                          <small>Slip date</small>
+                          <strong>{formatFuelSlipDate(slip.documentDate)}</strong>
+                        </span>
+                        <span>
+                          <small>Fuel type</small>
+                          <strong>{slip.fuelType || '—'}</strong>
+                        </span>
+                        <span>
+                          <small>Litres</small>
+                          <strong>{formatLitres(slip.litres)}</strong>
+                        </span>
+                        <span>
+                          <small>Price / litre</small>
+                          <strong>{slip.pricePerLitre !== null ? `${formatCurrency(slip.pricePerLitre)}/L` : '—'}</strong>
+                        </span>
+                        <span>
+                          <small>Total amount</small>
+                          <strong>{formatCurrency(slip.totalAmount)}</strong>
+                        </span>
+                        <span>
+                          <small>Card</small>
+                          <strong>{cardEndingLabel || '—'}</strong>
+                        </span>
+                        <span>
+                          <small>Slip / transaction</small>
+                          <strong>{referenceLabel}</strong>
+                        </span>
+                      </div>
 
-                          <div className={styles.fuelSlipManagerRowActions}>
-                            {slip.documentFileUrl ? (
-                              <a className={`${styles.secondaryButton} ${styles.fuelSlipManagerOpenButton}`} href={slip.documentFileUrl} target="_blank" rel="noreferrer">
-                                <OpenFileIcon className={styles.buttonIcon} />
-                                <span>Open file</span>
-                              </a>
-                            ) : (
-                              <span className={styles.fuelSlipManagerNoFile}>No file attached</span>
-                            )}
-                          </div>
+                      <div className={styles.fuelSlipManagerRowFooter}>
+                        <span className={styles.fuelSlipManagerRowUpdated}>{updatedLabel || 'Saved fuel slip'}</span>
+                        <div className={styles.fuelSlipManagerRowActions}>
+                          {needsReview ? (
+                            <button
+                              type="button"
+                              className={`${styles.secondaryButton} ${styles.fuelSlipManagerReviewButton}`}
+                              onClick={() => openFuelSlipReview(slip)}
+                            >
+                              <FuelSlipsIcon className={styles.buttonIcon} />
+                              <span>Review / Complete</span>
+                            </button>
+                          ) : null}
+                          {slip.documentFileUrl ? (
+                            <a className={`${styles.secondaryButton} ${styles.fuelSlipManagerOpenButton}`} href={slip.documentFileUrl} target="_blank" rel="noreferrer">
+                              <OpenFileIcon className={styles.buttonIcon} />
+                              <span>Open file</span>
+                            </a>
+                          ) : null}
+                          <button
+                            type="button"
+                            className={`${styles.secondaryButton} ${styles.fuelSlipManagerDeleteButton}`}
+                            onClick={() => openFuelSlipDeleteConfirm(slip)}
+                            disabled={deletingThisSlip}
+                          >
+                            <TrashIcon className={styles.buttonIcon} />
+                            <span>{deletingThisSlip ? 'Deleting...' : 'Delete'}</span>
+                          </button>
                         </div>
                       </div>
                     </article>
@@ -2468,56 +2676,102 @@ export default function FuelClient() {
             </div>
             <div className={styles.modalDivider} />
             <div className={styles.fuelSlipFilterGrid}>
-              <ReportSelect
-                label="Target"
-                value={draftFuelSlipManagerFilters.targetKey}
-                options={fuelSlipManagerTargetOptions}
-                isOpen={openFuelSlipManagerFilterSelect === 'target'}
-                onToggle={() => toggleFuelSlipManagerFilterSelect('target')}
-                onChange={(value) => {
-                  setDraftFuelSlipManagerFilters((current) => ({ ...current, targetKey: value }));
-                  setOpenFuelSlipManagerFilterSelect(null);
-                }}
-              />
-              <ReportSelect
-                label="Source"
-                value={draftFuelSlipManagerFilters.capture}
-                options={FUEL_SLIP_CAPTURE_FILTER_OPTIONS}
-                isOpen={openFuelSlipManagerFilterSelect === 'capture'}
-                onToggle={() => toggleFuelSlipManagerFilterSelect('capture')}
-                onChange={(value) => {
-                  setDraftFuelSlipManagerFilters((current) => ({ ...current, capture: value as FuelSlipCaptureFilter }));
-                  setOpenFuelSlipManagerFilterSelect(null);
-                }}
-              />
-              <ReportSelect
-                label="Year"
-                value={draftFuelSlipManagerFilters.year}
-                options={fuelSlipManagerYearOptions}
-                isOpen={openFuelSlipManagerFilterSelect === 'year'}
-                onToggle={() => toggleFuelSlipManagerFilterSelect('year')}
-                onChange={(value) => {
-                  setDraftFuelSlipManagerFilters((current) => ({ ...current, year: value, month: value === 'all' ? 'all' : current.month }));
-                  setOpenFuelSlipManagerFilterSelect(null);
-                }}
-              />
-              <ReportSelect
-                label="Month"
-                value={draftFuelSlipManagerFilters.month}
-                options={fuelSlipManagerMonthOptions}
-                isOpen={openFuelSlipManagerFilterSelect === 'month'}
-                disabled={draftFuelSlipManagerFilters.year === 'all'}
-                onToggle={() => toggleFuelSlipManagerFilterSelect('month')}
-                onChange={(value) => {
-                  setDraftFuelSlipManagerFilters((current) => ({ ...current, month: value }));
-                  setOpenFuelSlipManagerFilterSelect(null);
-                }}
-              />
+              <label className={styles.fuelSlipNativeSelectField}>
+                <span>Target</span>
+                <select
+                  className={styles.fuelSlipNativeSelect}
+                  value={draftFuelSlipManagerFilters.targetKey}
+                  onChange={(event) => setDraftFuelSlipManagerFilters((current) => ({ ...current, targetKey: event.target.value }))}
+                >
+                  {fuelSlipManagerTargetOptions.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              </label>
+
+              <label className={styles.fuelSlipNativeSelectField}>
+                <span>Source</span>
+                <select
+                  className={styles.fuelSlipNativeSelect}
+                  value={draftFuelSlipManagerFilters.capture}
+                  onChange={(event) => setDraftFuelSlipManagerFilters((current) => ({ ...current, capture: event.target.value as FuelSlipCaptureFilter }))}
+                >
+                  {FUEL_SLIP_CAPTURE_FILTER_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              </label>
+
+              <label className={styles.fuelSlipNativeSelectField}>
+                <span>Year</span>
+                <select
+                  className={styles.fuelSlipNativeSelect}
+                  value={draftFuelSlipManagerFilters.year}
+                  onChange={(event) => setDraftFuelSlipManagerFilters((current) => ({ ...current, year: event.target.value, month: event.target.value === 'all' ? 'all' : current.month }))}
+                >
+                  {fuelSlipManagerYearOptions.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              </label>
+
+              <label className={styles.fuelSlipNativeSelectField}>
+                <span>Month</span>
+                <select
+                  className={styles.fuelSlipNativeSelect}
+                  value={draftFuelSlipManagerFilters.month}
+                  disabled={draftFuelSlipManagerFilters.year === 'all'}
+                  onChange={(event) => setDraftFuelSlipManagerFilters((current) => ({ ...current, month: event.target.value }))}
+                >
+                  {fuelSlipManagerMonthOptions.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              </label>
             </div>
             <div className={styles.modalFooter}>
               <button type="button" className={styles.secondaryButton} onClick={closeFuelSlipManagerFilterPanel}>Close</button>
               <button type="button" className={styles.secondaryButton} onClick={clearFuelSlipManagerFilters}>Clear filters</button>
               <button type="button" className={styles.primaryButton} onClick={applyFuelSlipManagerFilters}>Apply filters</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {modalMode === 'fuel-slip-manager' && deleteCandidateFuelSlip ? (
+        <div className={styles.fuelSlipSubModalBackdrop} role="dialog" aria-modal="true" aria-label="Delete fuel slip">
+          <div className={`${styles.fuelSlipFilterModal} ${styles.fuelSlipDeleteModal}`}>
+            <div className={styles.modalHeader}>
+              <div>
+                <h2>Delete Fuel Slip</h2>
+                <p>This removes the saved slip and safely reverses linked fuel posting records where they were created by this slip.</p>
+              </div>
+              <button type="button" className={styles.closeButton} onClick={() => setDeleteCandidateFuelSlip(null)} aria-label="Close delete fuel slip" disabled={busyFuelSlipDeleteId === deleteCandidateFuelSlip.id}><CloseIcon /></button>
+            </div>
+            <div className={styles.modalDivider} />
+            <div className={styles.fuelSlipDeleteSummary}>
+              <span>
+                <small>Supplier</small>
+                <strong>{deleteCandidateFuelSlip.supplierName || 'Unknown supplier'}</strong>
+              </span>
+              <span>
+                <small>Date</small>
+                <strong>{formatFuelSlipDate(deleteCandidateFuelSlip.documentDate)}</strong>
+              </span>
+              <span>
+                <small>Target</small>
+                <strong>{fuelSlipTargetLabel(deleteCandidateFuelSlip)}</strong>
+              </span>
+              <span>
+                <small>Total amount</small>
+                <strong>{formatCurrency(deleteCandidateFuelSlip.totalAmount)}</strong>
+              </span>
+            </div>
+            <div className={styles.modalFooter}>
+              <button type="button" className={styles.secondaryButton} onClick={() => setDeleteCandidateFuelSlip(null)} disabled={busyFuelSlipDeleteId === deleteCandidateFuelSlip.id}>Cancel</button>
+              <button type="button" className={`${styles.primaryButton} ${styles.fuelSlipConfirmDeleteButton}`} onClick={confirmDeleteFuelSlip} disabled={busyFuelSlipDeleteId === deleteCandidateFuelSlip.id}>
+                {busyFuelSlipDeleteId === deleteCandidateFuelSlip.id ? 'Deleting...' : 'Delete Fuel Slip'}
+              </button>
             </div>
           </div>
         </div>
@@ -2694,7 +2948,7 @@ export default function FuelClient() {
           <form className={`${styles.formModal} ${styles.costFormModal} ${styles.fuelSlipCostFormModal}`} onSubmit={handleFuelSlipSubmit}>
             <div className={styles.modalHeader}>
               <div>
-                <h2>Review fuel slip details</h2>
+                <h2>{fuelSlipDraft.id ? 'Review / Complete fuel slip' : 'Review fuel slip details'}</h2>
                 <p>{fuelSlipFormSubtitle}</p>
               </div>
               <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close"><CloseIcon /></button>
@@ -2721,8 +2975,21 @@ export default function FuelClient() {
               ) : null}
             </div>
             <div className={styles.modalFooter}>
-              <button type="button" className={styles.secondaryButton} onClick={() => setFuelSlipFlow('upload')} disabled={isSaving}>Back</button>
-              <button type="submit" className={styles.primaryButton} disabled={isSaving}>{isSaving ? 'Saving...' : 'Save Fuel Slip'}</button>
+              <button
+                type="button"
+                className={styles.secondaryButton}
+                onClick={() => {
+                  if (fuelSlipDraft.id) {
+                    openFuelSlipManager();
+                  } else {
+                    setFuelSlipFlow('upload');
+                  }
+                }}
+                disabled={isSaving}
+              >
+                {fuelSlipDraft.id ? 'Back to Manage Fuel Slips' : 'Back'}
+              </button>
+              <button type="submit" className={styles.primaryButton} disabled={isSaving}>{isSaving ? 'Saving...' : fuelSlipDraft.id ? 'Save Review' : 'Save Fuel Slip'}</button>
             </div>
           </form>
         </div>
