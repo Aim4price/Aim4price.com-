@@ -6,7 +6,6 @@ import {
   applyCondition,
   applyFloor,
   calculateEngineHoursValue,
-  calculatePercentUsedValue,
   clamp,
   currentBaseYear,
   getAdvancedConditionFactorOverride,
@@ -531,8 +530,11 @@ type AgeAwarePercentValueResult = {
 };
 
 function shouldBlendAgeIntoPercentageDepreciation(input: DepreciationInput): boolean {
-  if (input.yearModelUnknown) return false;
-  return input.isPropelled || isUsageAmountMetric(input.usageMetricType);
+  // Percentage-basis valuations must stay percentage-based, but a saved year
+  // model should still move the preview value. Blend age depreciation with the
+  // saved worked percentage instead of stacking both in full. This mirrors the
+  // existing engine-hours convention of averaging age and usage depreciation.
+  return !input.yearModelUnknown;
 }
 
 function calculateAgeAwarePercentValue(input: {
@@ -684,9 +686,11 @@ function resolveDepreciation(input: DepreciationInput): {
   }
 
   const lifeWorkedPercent = resolveLifeWorkedPercent(input, 50);
-  const calculated = calculatePercentUsedValue({
+  const calculated = calculateAgeAwarePercentValue({
     replacementPriceExVat: input.replacementPrice,
     percentUsed: lifeWorkedPercent,
+    yearModel: yearForDepreciation,
+    includeAgeDepreciation: shouldBlendAgeIntoPercentageDepreciation(input),
     condition: input.condition,
     floorPercent: resolveResidualFloorPercent(input, DEFAULT_NON_PROPELLED_FLOOR_PERCENT),
     conditionFactorOverride: getAdvancedConditionFactorOverride(input.advancedAssumptions),
@@ -699,9 +703,9 @@ function resolveDepreciation(input: DepreciationInput): {
     lifeRemainingPercent: calculated.remainingPercent,
     estimatedHours: null,
     maxLifetimeHours: null,
-    ageDepPct: null,
-    usageDepPct: calculated.percentUsed,
-    averageDepPct: calculated.percentUsed,
+    ageDepPct: calculated.ageDepPct,
+    usageDepPct: calculated.usageDepPct,
+    averageDepPct: calculated.averageDepPct,
   };
 }
 

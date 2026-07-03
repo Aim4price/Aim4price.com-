@@ -342,35 +342,15 @@ function resolveYearModelForRevaluation(input: {
     return { year: savedYearFromAssetSpecs, yearModelUnknown: false };
   }
 
-  const savedUnknownFlag = asBoolean(
-    input.assetSpecs.yearModelUnknown ??
-      input.assetSpecs.year_model_unknown ??
-      input.rowSpecs.yearModelUnknown ??
-      input.rowSpecs.year_model_unknown ??
-      input.payloadInput.yearModelUnknown ??
-      input.payloadInput.year_model_unknown,
-  );
-
-  if (savedUnknownFlag) {
-    return {
-      year:
-        asSupportedYearModel(input.payloadInput.year) ??
-        asSupportedYearModel(input.payloadInput.calculationYear) ??
-        new Date().getFullYear(),
-      yearModelUnknown: true,
-    };
-  }
-
-  const fallbackYear =
-    asSupportedYearModel(input.row.year_model) ??
+  const unknownCalculationYear =
     asSupportedYearModel(input.payloadInput.year) ??
-    asSupportedYearModel(input.payloadInput.calculationYear);
+    asSupportedYearModel(input.payloadInput.calculationYear) ??
+    new Date().getFullYear();
 
-  if (fallbackYear !== null) {
-    return { year: fallbackYear, yearModelUnknown: false };
-  }
-
-  throw new Error(input.missingKnownYearMessage);
+  // The Asset Register row is the source of truth. If the current saved item
+  // has no year model, stale valuation-run year values must not make it known
+  // again. Use a neutral calculation year and keep the unknown-year flag true.
+  return { year: unknownCalculationYear, yearModelUnknown: true };
 }
 
 function readLifeWorkedPercentFromRecord(record: Record<string, unknown>): number | null {
