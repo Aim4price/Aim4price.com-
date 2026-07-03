@@ -11740,7 +11740,6 @@ export default function AssetRegisterClient() {
             <div className={`${styles.modalHeader} ${styles.summaryModalHeader}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="asset-register-summary-title">Register summary</h3>
-                <p>Basic overview of the selected asset register. Values shown excluding and including VAT.</p>
               </div>
 
               <div className={styles.summaryHeaderActions}>
