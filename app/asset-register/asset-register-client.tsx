@@ -6304,23 +6304,6 @@ export default function AssetRegisterClient() {
   );
 
   const quickPdfReportOptions = useMemo(() => PDF_REPORT_OPTIONS.filter((option) => option.value !== 'full'), []);
-  const pdfReportOptionMetrics = useMemo(() => {
-    const entries = PDF_REPORT_OPTIONS.map((option) => {
-      const optionAssets = filterAssetsByPdfReportKind(assets, option.value);
-      const optionValue = sumAssetValues(optionAssets);
-
-      return [
-        option.value,
-        {
-          count: optionAssets.length,
-          countLabel: optionAssets.length.toLocaleString('en-ZA'),
-          valueLabel: money(optionValue),
-        },
-      ] as const;
-    });
-
-    return Object.fromEntries(entries) as Record<PdfReportKind, { count: number; countLabel: string; valueLabel: string }>;
-  }, [assets]);
   const fullPdfReportOption = PDF_REPORT_OPTIONS[0];
   const normalizedPdfAssetSearch = useMemo(() => normalizeRegisterSearchText(pdfAssetSearchTerm), [pdfAssetSearchTerm]);
   const compactPdfAssetSearch = useMemo(() => normalizeCompactSearchText(pdfAssetSearchTerm), [pdfAssetSearchTerm]);
@@ -14478,11 +14461,6 @@ export default function AssetRegisterClient() {
                             >
                               <span className={styles.pdfReportOptionMain}>
                                 <strong>{fullPdfReportOption.label}</strong>
-                                <small>{fullPdfReportOption.description}</small>
-                              </span>
-                              <span className={styles.pdfReportOptionMeta} aria-hidden="true">
-                                <strong>{pdfReportOptionMetrics[fullPdfReportOption.value].countLabel}</strong>
-                                <small>{pdfReportOptionMetrics[fullPdfReportOption.value].valueLabel}</small>
                               </span>
                             </button>
 
@@ -14494,39 +14472,25 @@ export default function AssetRegisterClient() {
                             >
                               <span className={styles.pdfReportOptionMain}>
                                 <strong>Choose Specific Assets</strong>
-                                <small>Select individual assets from a searchable list.</small>
-                              </span>
-                              <span className={styles.pdfReportOptionMeta} aria-hidden="true">
-                                <strong>{assets.length.toLocaleString('en-ZA')}</strong>
-                                <small>available</small>
                               </span>
                             </button>
                           </div>
 
                           <div className={styles.pdfReportChoices}>
-                            {quickPdfReportOptions.map((option) => {
-                              const optionMetric = pdfReportOptionMetrics[option.value];
-
-                              return (
-                                <button
-                                  key={option.value}
-                                  type="button"
-                                  className={`${styles.pdfReportOption} ${pdfReportSelection === option.value ? styles.pdfReportOptionActive : ''}`}
-                                  onClick={() => handlePdfReportChoice(option.value)}
-                                  disabled={isExporting}
-                                  aria-pressed={pdfReportSelection === option.value}
-                                >
-                                  <span className={styles.pdfReportOptionMain}>
-                                    <strong>{option.label}</strong>
-                                    <small>{option.description}</small>
-                                  </span>
-                                  <span className={styles.pdfReportOptionMeta} aria-hidden="true">
-                                    <strong>{optionMetric.countLabel}</strong>
-                                    <small>{optionMetric.valueLabel}</small>
-                                  </span>
-                                </button>
-                              );
-                            })}
+                            {quickPdfReportOptions.map((option) => (
+                              <button
+                                key={option.value}
+                                type="button"
+                                className={`${styles.pdfReportOption} ${pdfReportSelection === option.value ? styles.pdfReportOptionActive : ''}`}
+                                onClick={() => handlePdfReportChoice(option.value)}
+                                disabled={isExporting}
+                                aria-pressed={pdfReportSelection === option.value}
+                              >
+                                <span className={styles.pdfReportOptionMain}>
+                                  <strong>{option.label}</strong>
+                                </span>
+                              </button>
+                            ))}
                           </div>
                         </div>
 

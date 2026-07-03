@@ -29315,3 +29315,86 @@ button.documentOpenLink {
     min-width: 0 !important;
   }
 }
+
+/* === Export asset register modal: wording-only report cards === */
+.exportModal:not(.exportAssetPickerModal) {
+  width: min(94vw, 60rem) !important;
+}
+
+.exportModal:not(.exportAssetPickerModal) .exportModalScrollBody {
+  padding-right: 0.25rem !important;
+  margin-right: -0.12rem !important;
+}
+
+.exportModal:not(.exportAssetPickerModal) .exportModalBody,
+.exportModal:not(.exportAssetPickerModal) .pdfReportSelector {
+  gap: 0.82rem !important;
+}
+
+.exportModal .pdfReportTopChoices,
+.exportModal .pdfReportChoices {
+  gap: 0.72rem !important;
+}
+
+.exportModal .pdfReportTopChoices + .pdfReportChoices {
+  margin-top: 0 !important;
+}
+
+.exportModal .pdfReportOption,
+.exportModal .pdfReportPrimaryOption {
+  grid-template-columns: minmax(0, 1fr) !important;
+  min-height: 3.85rem !important;
+  padding: 0.82rem 1.05rem !important;
+  border-radius: 1rem !important;
+}
+
+.exportModal .pdfReportPrimaryOption {
+  min-height: 4rem !important;
+  padding-inline: 1.12rem !important;
+}
+
+.exportModal .pdfReportOptionMain {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 0 !important;
+  min-width: 0 !important;
+  text-align: left !important;
+}
+
+.exportModal .pdfReportOptionMain strong,
+.exportModal .pdfReportPrimaryOption .pdfReportOptionMain strong {
+  display: block !important;
+  color: #10352b !important;
+  font-size: clamp(1.02rem, 1.08vw, 1.14rem) !important;
+  font-weight: 900 !important;
+  line-height: 1.12 !important;
+  letter-spacing: -0.035em !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.exportModal .pdfReportOptionMain small,
+.exportModal .pdfReportOptionMeta {
+  display: none !important;
+}
+
+@media (max-width: 900px) {
+  .exportModal:not(.exportAssetPickerModal) {
+    width: min(100%, calc(100vw - 1rem)) !important;
+  }
+
+  .exportModal .pdfReportOption,
+  .exportModal .pdfReportPrimaryOption {
+    min-height: 3.65rem !important;
+    padding: 0.85rem 0.95rem !important;
+  }
+
+  .exportModal .pdfReportOptionMain strong,
+  .exportModal .pdfReportPrimaryOption .pdfReportOptionMain strong {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+  }
+}
