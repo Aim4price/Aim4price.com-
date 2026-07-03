@@ -28958,3 +28958,360 @@ button.documentOpenLink {
   }
 }
 
+
+/* === Export asset register: stronger report picker with mapped/not-mapped scopes === */
+.exportModal {
+  display: flex !important;
+  flex-direction: column !important;
+  width: min(96vw, 72rem) !important;
+  max-height: min(91vh, calc(100dvh - 1.5rem)) !important;
+  overflow: hidden !important;
+  padding: clamp(1.55rem, 2.4vw, 2.1rem) !important;
+  border-radius: 1.95rem !important;
+  background:
+    radial-gradient(circle at top right, rgba(19, 81, 63, 0.055), transparent 36%),
+    linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%) !important;
+  border: 1px solid rgba(203, 217, 227, 0.96) !important;
+  box-shadow: 0 30px 70px rgba(15, 31, 42, 0.2) !important;
+}
+
+.exportModalHeader {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: start !important;
+  gap: 1.2rem !important;
+  flex: 0 0 auto !important;
+  margin: 0 0 1.25rem !important;
+  padding: 0 0 1.25rem !important;
+  border-bottom: 1px solid rgba(205, 218, 228, 0.92) !important;
+}
+
+.exportModalHeader .modalHeaderText {
+  min-width: 0 !important;
+}
+
+.exportModalHeader h3 {
+  margin: 0 !important;
+  color: #10382f !important;
+  font-size: clamp(2rem, 3vw, 2.75rem) !important;
+  font-weight: 900 !important;
+  line-height: 1.02 !important;
+  letter-spacing: -0.065em !important;
+}
+
+.exportModalHeader .modalCloseButton {
+  width: 3.35rem !important;
+  height: 3.35rem !important;
+  min-width: 3.35rem !important;
+  border-radius: 999px !important;
+  border: 1px solid rgba(188, 210, 228, 0.96) !important;
+  background: linear-gradient(180deg, #f8fbff 0%, #eef6ff 100%) !important;
+  color: #173b57 !important;
+  box-shadow:
+    0 10px 20px rgba(15, 41, 61, 0.055),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.exportModalHeader .modalCloseButton .buttonIcon {
+  width: 1.18rem !important;
+  height: 1.18rem !important;
+}
+
+.exportModalScrollBody {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: 0 0.35rem 0 0 !important;
+  margin: 0 -0.2rem 0 0 !important;
+  scrollbar-gutter: stable !important;
+}
+
+.exportModalScrollBody::-webkit-scrollbar {
+  width: 0.75rem !important;
+}
+
+.exportModalScrollBody::-webkit-scrollbar-track {
+  border-radius: 999px !important;
+  background: rgba(238, 244, 247, 0.95) !important;
+  border-left: 0.22rem solid transparent !important;
+  border-right: 0.22rem solid transparent !important;
+  background-clip: padding-box !important;
+}
+
+.exportModalScrollBody::-webkit-scrollbar-thumb {
+  border: 0.22rem solid transparent !important;
+  border-radius: 999px !important;
+  background: linear-gradient(180deg, rgba(29, 96, 72, 0.7), rgba(18, 70, 53, 0.9)) !important;
+  background-clip: padding-box !important;
+}
+
+.exportModalBody {
+  display: grid !important;
+  gap: 1.05rem !important;
+  min-width: 0 !important;
+}
+
+.exportModal .exportChoices,
+.exportModal .pdfReportTopChoices,
+.exportModal .pdfReportChoices {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 1rem !important;
+}
+
+.exportModal .pdfReportSelector {
+  display: grid !important;
+  gap: 1rem !important;
+}
+
+.exportModal .pdfReportTopChoices + .pdfReportChoices {
+  margin-top: 0 !important;
+}
+
+.exportModal .exportOption,
+.exportModal .pdfReportOption {
+  appearance: none !important;
+  display: grid !important;
+  align-items: center !important;
+  justify-content: stretch !important;
+  gap: 1rem !important;
+  min-width: 0 !important;
+  min-height: 5.55rem !important;
+  padding: 1.05rem 1.15rem !important;
+  border-radius: 1.22rem !important;
+  text-align: left !important;
+  color: #10352b !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f6f9fb 100%) !important;
+  border: 1px solid rgba(208, 221, 231, 0.98) !important;
+  box-shadow:
+    0 12px 26px rgba(16, 31, 28, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease,
+    opacity 160ms ease !important;
+}
+
+.exportModal .exportOption {
+  grid-template-columns: 3.75rem minmax(0, 1fr) !important;
+}
+
+.exportModal .pdfReportOption {
+  grid-template-columns: minmax(0, 1fr) auto !important;
+}
+
+.exportModal .pdfReportPrimaryOption {
+  min-height: 6.1rem !important;
+  padding: 1.14rem 1.25rem !important;
+  border-radius: 1.28rem !important;
+}
+
+.exportModal .exportOption:hover,
+.exportModal .pdfReportOption:hover {
+  transform: translateY(-1px) !important;
+  border-color: rgba(168, 196, 210, 0.98) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #eef6f4 100%) !important;
+  box-shadow:
+    0 16px 34px rgba(16, 31, 28, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.exportModal .exportOptionActive,
+.exportModal .pdfReportOptionActive,
+.exportModal .pdfReportSpecificOption {
+  background:
+    radial-gradient(circle at top left, rgba(26, 103, 76, 0.12), transparent 44%),
+    linear-gradient(180deg, #ffffff 0%, #eef9f4 100%) !important;
+  border-color: rgba(171, 219, 196, 0.98) !important;
+}
+
+.exportModal .exportGraphic {
+  width: 3.75rem !important;
+  min-width: 3.75rem !important;
+  height: 3.75rem !important;
+  border-radius: 1rem !important;
+}
+
+.exportModal .exportGraphicImage,
+.exportModal .exportGraphicFallback,
+.exportModal .exportOptionIcon {
+  width: 2.32rem !important;
+  height: 2.32rem !important;
+}
+
+.exportModal .exportOptionTitleBlock,
+.exportModal .pdfReportOptionMain {
+  display: grid !important;
+  align-content: center !important;
+  justify-items: start !important;
+  gap: 0.32rem !important;
+  min-width: 0 !important;
+}
+
+.exportModal .exportOptionTitleBlock strong,
+.exportModal .pdfReportOptionMain strong {
+  display: block !important;
+  max-width: 100% !important;
+  color: #10352b !important;
+  font-size: clamp(1.05rem, 1.16vw, 1.16rem) !important;
+  font-weight: 900 !important;
+  line-height: 1.14 !important;
+  letter-spacing: -0.035em !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.exportModal .pdfReportPrimaryOption .pdfReportOptionMain strong {
+  font-size: clamp(1.18rem, 1.42vw, 1.36rem) !important;
+}
+
+.exportModal .exportOptionTitleBlock small,
+.exportModal .pdfReportOptionMain small {
+  display: block !important;
+  max-width: 34rem !important;
+  color: #627386 !important;
+  font-size: clamp(0.82rem, 0.92vw, 0.92rem) !important;
+  font-weight: 680 !important;
+  line-height: 1.32 !important;
+}
+
+.exportModal .pdfReportOptionMeta {
+  display: grid !important;
+  align-content: center !important;
+  justify-items: center !important;
+  gap: 0.22rem !important;
+  min-width: 5.8rem !important;
+  max-width: 8.2rem !important;
+  padding: 0.58rem 0.7rem !important;
+  border-radius: 1rem !important;
+  white-space: nowrap !important;
+  background: rgba(240, 246, 242, 0.98) !important;
+  border: 1px solid rgba(210, 226, 217, 0.98) !important;
+}
+
+.exportModal .pdfReportOptionMeta strong {
+  display: block !important;
+  color: #10352b !important;
+  font-size: clamp(1.02rem, 1.18vw, 1.18rem) !important;
+  font-weight: 950 !important;
+  line-height: 1 !important;
+  letter-spacing: -0.035em !important;
+}
+
+.exportModal .pdfReportOptionMeta small {
+  display: block !important;
+  max-width: 6.8rem !important;
+  overflow: hidden !important;
+  color: #5d7283 !important;
+  font-size: 0.72rem !important;
+  font-weight: 850 !important;
+  line-height: 1.08 !important;
+  text-align: center !important;
+  text-overflow: ellipsis !important;
+}
+
+.exportModal .pdfReportOptionActive .pdfReportOptionMeta {
+  background: linear-gradient(180deg, #1d6048 0%, #124635 100%) !important;
+  border-color: rgba(18, 70, 53, 0.16) !important;
+  box-shadow: 0 10px 20px rgba(18, 70, 53, 0.16) !important;
+}
+
+.exportModal .pdfReportOptionActive .pdfReportOptionMeta strong,
+.exportModal .pdfReportOptionActive .pdfReportOptionMeta small {
+  color: #ffffff !important;
+}
+
+.exportModal .exportActions {
+  display: flex !important;
+  justify-content: flex-end !important;
+  align-items: center !important;
+  flex: 0 0 auto !important;
+  gap: 0.75rem !important;
+  margin: 0 !important;
+  padding-top: 1.05rem !important;
+  border-top: 1px solid rgba(216, 226, 236, 0.84) !important;
+  background: transparent !important;
+}
+
+.exportModal .exportActions .primaryButton,
+.exportModal .exportActions .secondaryButton {
+  min-height: 3.35rem !important;
+  padding-inline: 1.3rem !important;
+  border-radius: 1rem !important;
+  font-size: 0.98rem !important;
+  font-weight: 880 !important;
+}
+
+.exportModal .exportActions .primaryButton {
+  min-width: 13.5rem !important;
+}
+
+@media (max-width: 900px) {
+  .exportModal {
+    width: min(100%, calc(100vw - 1rem)) !important;
+    max-height: min(92vh, calc(100dvh - 1rem)) !important;
+    padding: 1rem !important;
+    border-radius: 1.3rem !important;
+  }
+
+  .exportModalHeader {
+    margin-bottom: 1rem !important;
+    padding-bottom: 1rem !important;
+  }
+
+  .exportModalHeader h3 {
+    font-size: 1.62rem !important;
+    letter-spacing: -0.045em !important;
+  }
+
+  .exportModalHeader .modalCloseButton {
+    width: 3rem !important;
+    height: 3rem !important;
+    min-width: 3rem !important;
+  }
+
+  .exportModal .exportChoices,
+  .exportModal .pdfReportTopChoices,
+  .exportModal .pdfReportChoices {
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem !important;
+  }
+
+  .exportModal .exportOption,
+  .exportModal .pdfReportOption,
+  .exportModal .pdfReportPrimaryOption {
+    min-height: auto !important;
+    padding: 0.95rem !important;
+    border-radius: 1.08rem !important;
+  }
+
+  .exportModal .pdfReportOption {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .exportModal .pdfReportOptionMeta {
+    display: none !important;
+  }
+
+  .exportModal .exportOptionTitleBlock strong,
+  .exportModal .pdfReportOptionMain strong {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+  }
+
+  .exportModal .exportActions {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .exportModal .exportActions .primaryButton,
+  .exportModal .exportActions .secondaryButton {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+}

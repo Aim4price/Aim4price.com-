@@ -97,7 +97,16 @@ type AssetStatusQuickOrigin = 'detail-card' | null;
 type ManualAssetStep = 1 | 2 | 3 | 4;
 type ExportFormat = 'pdf' | 'xlsx';
 type ExportStep = 'format' | 'pdf-report' | 'pdf-assets';
-type PdfReportKind = 'full' | 'financed' | 'insured' | 'licensed' | 'not-financed' | 'not-insured' | 'not-licensed';
+type PdfReportKind =
+  | 'full'
+  | 'financed'
+  | 'insured'
+  | 'licensed'
+  | 'mapped'
+  | 'not-financed'
+  | 'not-insured'
+  | 'not-licensed'
+  | 'not-mapped';
 type AssetPdfReportKind = 'fuel' | 'maintenance' | 'depreciation';
 type AssetReportFormat = 'pdf' | 'xlsx';
 type AssetReportSelectKey = 'type' | 'year' | 'month';
@@ -207,6 +216,22 @@ const PDF_REPORT_OPTIONS: PdfReportOption[] = [
     intro: 'Filtered asset register snapshot showing only assets not marked as licensed.',
     sectionTitle: 'Not Licensed Assets',
     emptyLabel: 'No assets without licensing are currently saved in this register.',
+  },
+  {
+    value: 'mapped',
+    label: 'Mapped',
+    description: 'Only assets with saved map coordinates.',
+    intro: 'Filtered asset register snapshot showing only assets with saved map locations.',
+    sectionTitle: 'Mapped Assets',
+    emptyLabel: 'No mapped assets are currently saved in this register.',
+  },
+  {
+    value: 'not-mapped',
+    label: 'Not Mapped',
+    description: 'Only assets without saved map coordinates.',
+    intro: 'Filtered asset register snapshot showing only assets without saved map locations.',
+    sectionTitle: 'Not Mapped Assets',
+    emptyLabel: 'All saved assets currently have map coordinates.',
   },
 ];
 
@@ -1700,6 +1725,10 @@ function filterAssetsByPdfReportKind(assetList: RegisterAsset[], reportKind: Pdf
       return assetList.filter((asset) => readInsuranceStatusChoice(asset) === 'no');
     case 'not-licensed':
       return assetList.filter((asset) => readLicenseStatusChoice(asset) === 'no');
+    case 'mapped':
+      return assetList.filter((asset) => hasAssetMapCoordinates(asset));
+    case 'not-mapped':
+      return assetList.filter((asset) => !hasAssetMapCoordinates(asset));
     case 'full':
     default:
       return assetList;
@@ -6275,6 +6304,23 @@ export default function AssetRegisterClient() {
   );
 
   const quickPdfReportOptions = useMemo(() => PDF_REPORT_OPTIONS.filter((option) => option.value !== 'full'), []);
+  const pdfReportOptionMetrics = useMemo(() => {
+    const entries = PDF_REPORT_OPTIONS.map((option) => {
+      const optionAssets = filterAssetsByPdfReportKind(assets, option.value);
+      const optionValue = sumAssetValues(optionAssets);
+
+      return [
+        option.value,
+        {
+          count: optionAssets.length,
+          countLabel: optionAssets.length.toLocaleString('en-ZA'),
+          valueLabel: money(optionValue),
+        },
+      ] as const;
+    });
+
+    return Object.fromEntries(entries) as Record<PdfReportKind, { count: number; countLabel: string; valueLabel: string }>;
+  }, [assets]);
   const fullPdfReportOption = PDF_REPORT_OPTIONS[0];
   const normalizedPdfAssetSearch = useMemo(() => normalizeRegisterSearchText(pdfAssetSearchTerm), [pdfAssetSearchTerm]);
   const compactPdfAssetSearch = useMemo(() => normalizeCompactSearchText(pdfAssetSearchTerm), [pdfAssetSearchTerm]);
@@ -14432,6 +14478,11 @@ export default function AssetRegisterClient() {
                             >
                               <span className={styles.pdfReportOptionMain}>
                                 <strong>{fullPdfReportOption.label}</strong>
+                                <small>{fullPdfReportOption.description}</small>
+                              </span>
+                              <span className={styles.pdfReportOptionMeta} aria-hidden="true">
+                                <strong>{pdfReportOptionMetrics[fullPdfReportOption.value].countLabel}</strong>
+                                <small>{pdfReportOptionMetrics[fullPdfReportOption.value].valueLabel}</small>
                               </span>
                             </button>
 
@@ -14443,25 +14494,39 @@ export default function AssetRegisterClient() {
                             >
                               <span className={styles.pdfReportOptionMain}>
                                 <strong>Choose Specific Assets</strong>
+                                <small>Select individual assets from a searchable list.</small>
+                              </span>
+                              <span className={styles.pdfReportOptionMeta} aria-hidden="true">
+                                <strong>{assets.length.toLocaleString('en-ZA')}</strong>
+                                <small>available</small>
                               </span>
                             </button>
                           </div>
 
                           <div className={styles.pdfReportChoices}>
-                            {quickPdfReportOptions.map((option) => (
-                              <button
-                                key={option.value}
-                                type="button"
-                                className={`${styles.pdfReportOption} ${pdfReportSelection === option.value ? styles.pdfReportOptionActive : ''}`}
-                                onClick={() => handlePdfReportChoice(option.value)}
-                                disabled={isExporting}
-                                aria-pressed={pdfReportSelection === option.value}
-                              >
-                                <span className={styles.pdfReportOptionMain}>
-                                  <strong>{option.label}</strong>
-                                </span>
-                              </button>
-                            ))}
+                            {quickPdfReportOptions.map((option) => {
+                              const optionMetric = pdfReportOptionMetrics[option.value];
+
+                              return (
+                                <button
+                                  key={option.value}
+                                  type="button"
+                                  className={`${styles.pdfReportOption} ${pdfReportSelection === option.value ? styles.pdfReportOptionActive : ''}`}
+                                  onClick={() => handlePdfReportChoice(option.value)}
+                                  disabled={isExporting}
+                                  aria-pressed={pdfReportSelection === option.value}
+                                >
+                                  <span className={styles.pdfReportOptionMain}>
+                                    <strong>{option.label}</strong>
+                                    <small>{option.description}</small>
+                                  </span>
+                                  <span className={styles.pdfReportOptionMeta} aria-hidden="true">
+                                    <strong>{optionMetric.countLabel}</strong>
+                                    <small>{optionMetric.valueLabel}</small>
+                                  </span>
+                                </button>
+                              );
+                            })}
                           </div>
                         </div>
 
