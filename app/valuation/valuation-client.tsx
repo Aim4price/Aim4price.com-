@@ -852,18 +852,68 @@ function getAdvancedConditionQuestionLabel(value: ConditionKey): string {
   return value;
 }
 
+function isPercentUsageModeValue(value: unknown): boolean {
+  const normalized = normalizeText(value).toLowerCase();
+  return (
+    normalized === 'percent' ||
+    normalized === 'percentage' ||
+    normalized === 'percent_used' ||
+    normalized === 'percentage_used' ||
+    normalized === 'percentage_depreciation' ||
+    normalized === 'life_worked_percent' ||
+    normalized === 'worked_percent' ||
+    normalized === 'lifetime_percent' ||
+    normalized === 'wear_class'
+  );
+}
+
+function recordHasPercentUsageMode(record?: Record<string, unknown> | null): boolean {
+  if (!record) return false;
+
+  return [
+    record.usageMode,
+    record.usage_mode,
+    record.usageBasis,
+    record.usage_basis,
+    record.usageMetricType,
+    record.usage_metric_type,
+    record.valuationMode,
+    record.valuation_mode,
+    record.selectedUsageMode,
+    record.selected_usage_mode,
+    record.selectedUsageBasis,
+    record.selected_usage_basis,
+    record.depreciationMethodUsed,
+    record.depreciation_method_used,
+    record.selectedDepreciationMethod,
+    record.selected_depreciation_method,
+  ].some(isPercentUsageModeValue);
+}
+
+function resultStateUsesPercentBasis(
+  state: ValuationResultState | null,
+  tractorUsageAmount: number | null,
+  tractorLifeWorkedPercent: number | null,
+): boolean {
+  if (!state) return false;
+
+  if (state.kind === 'generic') {
+    return (
+      recordHasPercentUsageMode(state.result.specsJson) ||
+      isPercentUsageModeValue(state.result.depreciationMethodUsed) ||
+      (state.result.usageAmount === null && state.result.lifeWorkedPercent !== null)
+    );
+  }
+
+  return tractorUsageAmount === null && tractorLifeWorkedPercent !== null;
+}
+
 function shouldShowAdvancedLifetimeInput(
   state: ValuationResultState | null,
   tractorUsageAmount: number | null,
   tractorLifeWorkedPercent: number | null,
 ): boolean {
-  if (!state) return true;
-
-  if (state.kind === 'generic') {
-    return !(state.result.usageAmount === null && state.result.lifeWorkedPercent !== null);
-  }
-
-  return !(tractorUsageAmount === null && tractorLifeWorkedPercent !== null);
+  return !resultStateUsesPercentBasis(state, tractorUsageAmount, tractorLifeWorkedPercent);
 }
 
 function parseFlexibleNumber(value: unknown): number | null {
@@ -1886,6 +1936,11 @@ export default function ValuationClient() {
   const specsJson = useMemo(() => buildSpecPayload(effectiveSpecQuestions, specAnswers), [effectiveSpecQuestions, specAnswers]);
   const enrichedSpecsJson = useMemo(() => {
     const typedUnlistedBrandName = selectedBrandIsUnknown ? normalizeText(unlistedBrandName) : '';
+    const savedYearModel = !yearModelUnknown && Number.isInteger(yearNumber) && yearNumber >= 1800 && yearNumber <= CURRENT_YEAR + 1
+      ? Math.round(yearNumber)
+      : null;
+    const usesPercentageBasis = usageNumber === null && lifeWorkedPercentNumber !== null;
+    const readingUsageMode = selectedFamily?.usageMetricType === 'km' ? 'km' : 'hours';
 
     return {
       ...(genericValuationPath && selectedGenericModel ? normalizeGenericSpecsRecord(selectedGenericModel.specsJson) : {}),
@@ -1912,10 +1967,70 @@ export default function ValuationClient() {
             [TYPED_BRAND_NAME_SPEC_KEY]: typedUnlistedBrandName,
           }
         : {}),
-      ...(lifeWorkedPercentNumber !== null ? { life_worked_percent: lifeWorkedPercentNumber } : {}),
-      ...(yearModelUnknown ? { year_model_unknown: true } : {}),
+      ...(usesPercentageBasis
+        ? {
+            usageMode: 'percent',
+            usage_mode: 'percent',
+            usageBasis: 'percent',
+            usage_basis: 'percent',
+          }
+        : {
+            usageMode: readingUsageMode,
+            usage_mode: readingUsageMode,
+            usageBasis: 'reading',
+            usage_basis: 'reading',
+          }),
+      ...(lifeWorkedPercentNumber !== null
+        ? {
+            lifeWorkedPercent: lifeWorkedPercentNumber,
+            life_worked_percent: lifeWorkedPercentNumber,
+            workedPercent: lifeWorkedPercentNumber,
+            worked_percent: lifeWorkedPercentNumber,
+            percentWorked: lifeWorkedPercentNumber,
+            percent_worked: lifeWorkedPercentNumber,
+            lifetimeWorkedPercent: lifeWorkedPercentNumber,
+            lifetime_worked_percent: lifeWorkedPercentNumber,
+            lifetimeUsedPercent: lifeWorkedPercentNumber,
+            lifetime_used_percent: lifeWorkedPercentNumber,
+          }
+        : {}),
+      ...(yearModelUnknown
+        ? { yearModelUnknown: true, year_model_unknown: true }
+        : {
+            yearModelUnknown: false,
+            year_model_unknown: false,
+            ...(savedYearModel !== null
+              ? {
+                  yearModel: savedYearModel,
+                  year_model: savedYearModel,
+                  displayYearModel: savedYearModel,
+                  display_year_model: savedYearModel,
+                  assetYearModel: savedYearModel,
+                  asset_year_model: savedYearModel,
+                  currentYearModel: savedYearModel,
+                  current_year_model: savedYearModel,
+                }
+              : {}),
+          }),
     };
-  }, [genericValuationPath, selectedGenericModel, specsJson, selectedMotorSubtypeSpecs, selectedBrandIsUnknown, unlistedBrandName, lifeWorkedPercentNumber, yearModelUnknown]);
+  }, [
+    genericValuationPath,
+    selectedGenericModel,
+    specsJson,
+    selectedMotorSubtypeSpecs,
+    selectedBrandIsUnknown,
+    unlistedBrandName,
+    lifeWorkedPercentNumber,
+    yearModelUnknown,
+    yearNumber,
+    usageNumber,
+    selectedFamily?.usageMetricType,
+    selectedFamily?.familyKey,
+    selectedSector,
+    selectedMotorTypeOption,
+    selectedMotorCanonicalModel,
+    motorTypeRequiredForSelectedModel,
+  ]);
   const headlineValue = getHeadlineValue(resultState, selectedMethod, replacementPriceBasis);
   const headlineDisplayValue = getVatDisplayValue(headlineValue, vatDisplayMode);
   const headlineVatLabel = getVatDisplayLabel(vatDisplayMode);
