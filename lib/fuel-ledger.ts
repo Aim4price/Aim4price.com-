@@ -121,6 +121,8 @@ export type FuelSlipTransaction = {
   extractionStatus: FuelSlipExtractionStatus;
   ocrConfidence: number | null;
   reviewRequired: boolean;
+  rawExtractedText: string;
+  extractionWarnings: string[];
   createdAtIso: string;
   updatedAtIso: string;
 };
@@ -309,6 +311,8 @@ type FuelSlipRow = {
   extraction_status: string | null;
   ocr_confidence: string | number | null;
   review_required: boolean | null;
+  raw_extracted_text: string | null;
+  extraction_warnings: unknown;
   created_at: string | null;
   updated_at: string | null;
 };
@@ -821,6 +825,24 @@ function mapFuelEventRow(row: FuelEventRow): FuelLedgerEvent {
   };
 }
 
+
+function normalizeExtractionWarningsFromDb(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    if (typeof value === 'string' && value.trim()) {
+      try {
+        const parsed = JSON.parse(value) as unknown;
+        return normalizeExtractionWarningsFromDb(parsed);
+      } catch {
+        return [maskStoredFuelSlipRawText(value)].filter(Boolean).slice(0, 12);
+      }
+    }
+
+    return [];
+  }
+
+  return value.map((entry) => maskStoredFuelSlipRawText(asText(entry))).filter(Boolean).slice(0, 12);
+}
+
 function mapFuelSlipRow(row: FuelSlipRow): FuelSlipTransaction {
   const card = normalizeMaskedCard(row.card_number_masked, row.card_last4);
 
@@ -867,6 +889,8 @@ function mapFuelSlipRow(row: FuelSlipRow): FuelSlipTransaction {
     extractionStatus: normalizeFuelSlipExtractionStatus(row.extraction_status),
     ocrConfidence: normalizeRateValue(row.ocr_confidence),
     reviewRequired: Boolean(row.review_required),
+    rawExtractedText: maskStoredFuelSlipRawText(asText(row.raw_extracted_text)),
+    extractionWarnings: normalizeExtractionWarningsFromDb(row.extraction_warnings),
     createdAtIso: row.created_at ?? new Date().toISOString(),
     updatedAtIso: row.updated_at ?? row.created_at ?? new Date().toISOString(),
   };
@@ -1073,6 +1097,8 @@ function fuelSlipSelectSql(): string {
     fs.extraction_status,
     fs.ocr_confidence,
     fs.review_required,
+    fs.raw_extracted_text,
+    fs.extraction_warnings,
     fs.created_at,
     fs.updated_at
   `;
@@ -1130,6 +1156,7 @@ export async function ensureFuelLedgerTables(): Promise<void> {
       add column if not exists fuel_litres numeric(12,3),
       add column if not exists fuel_storage_id uuid,
       add column if not exists fuel_storage_event_id uuid,
+      add column if not exists fuel_slip_id uuid,
       add column if not exists condition text,
       add column if not exists note text,
       add column if not exists photo_urls jsonb not null default '[]'::jsonb,
@@ -1146,6 +1173,10 @@ export async function ensureFuelLedgerTables(): Promise<void> {
     create unique index if not exists idx_asset_scan_events_client_event_id
       on public.asset_scan_events(client_event_id)
       where client_event_id is not null;
+
+    create index if not exists idx_asset_scan_events_fuel_slip
+      on public.asset_scan_events(fuel_slip_id)
+      where fuel_slip_id is not null;
 
     create table if not exists public.asset_invoice_documents (
       id uuid primary key default gen_random_uuid(),
@@ -2842,6 +2873,9 @@ export async function recordFuelAssetIssue(
 
 
 type SaveFuelSlipInput = {
+  id?: unknown;
+  slipId?: unknown;
+  fuelSlipId?: unknown;
   mode?: unknown;
   targetType?: unknown;
   targetId?: unknown;
@@ -2927,11 +2961,267 @@ async function loadFuelSlipById(client: PoolClient, fuelSlipId: string): Promise
   return mapFuelSlipRow(row);
 }
 
+
+function fuelSlipDirectSelectSql(): string {
+  return `
+    fs.id::text as id,
+    fs.user_id,
+    fs.source_type,
+    fs.source_label,
+    fs.target_type,
+    fs.asset_register_item_id::text as asset_register_item_id,
+    ''::text as asset_title,
+    fs.storage_id::text as storage_id,
+    ''::text as storage_name,
+    fs.fuel_storage_event_id::text as fuel_storage_event_id,
+    fs.asset_invoice_id::text as asset_invoice_id,
+    fs.invoice_document_id::text as invoice_document_id,
+    fs.upload_id,
+    fs.document_file_url,
+    fs.original_filename,
+    fs.content_type,
+    fs.byte_size,
+    fs.supplier_name,
+    fs.supplier_vat_number,
+    fs.slip_number,
+    fs.transaction_number,
+    fs.document_date,
+    fs.document_time,
+    fs.fuel_type,
+    fs.litres,
+    fs.price_per_litre,
+    fs.total_amount,
+    fs.vat_amount,
+    fs.vat_included,
+    fs.vat_rate,
+    fs.payment_method,
+    fs.card_type,
+    fs.card_number_masked,
+    fs.card_last4,
+    fs.merchant_number,
+    fs.terminal_number,
+    fs.site_number,
+    fs.odometer_reading,
+    fs.hour_meter_reading,
+    fs.extraction_status,
+    fs.ocr_confidence,
+    fs.review_required,
+    fs.raw_extracted_text,
+    fs.extraction_warnings,
+    fs.created_at,
+    fs.updated_at
+  `;
+}
+
+async function loadFuelSlipRowForUpdate(client: PoolClient, userId: string, fuelSlipId: string): Promise<FuelSlipRow> {
+  const result = await client.query<FuelSlipRow>(
+    `
+      select ${fuelSlipDirectSelectSql()}
+      from public.fuel_slips fs
+      where fs.user_id = $1 and fs.id::text = $2
+      for update
+    `,
+    [userId, fuelSlipId],
+  );
+
+  const row = result.rows[0];
+  if (!row) throw new Error('Fuel slip not found.');
+  return row;
+}
+
+function normalizedFuelSlipIdFromInput(input: SaveFuelSlipInput): string {
+  return trimText(input.fuelSlipId ?? input.slipId ?? input.id, 80);
+}
+
+async function clearFuelSlipAssetLastFields(client: PoolClient, userId: string, assetId: string, fuelSlipId: string): Promise<void> {
+  if (!assetId || !fuelSlipId) return;
+
+  await client.query(
+    `
+      update public.asset_register_items
+      set
+        specs_json = (
+          coalesce(specs_json, '{}'::jsonb)
+            - 'lastFuelSlipId'
+            - 'last_fuel_slip_id'
+            - 'lastFuelSlipLitres'
+            - 'last_fuel_slip_litres'
+            - 'lastFuelSlipAmount'
+            - 'last_fuel_slip_amount'
+            - 'lastFuelSlipDate'
+            - 'last_fuel_slip_date'
+            - 'lastFuelSlipOdometerReading'
+            - 'last_fuel_slip_odometer_reading'
+            - 'lastFuelSlipHourMeterReading'
+            - 'last_fuel_slip_hour_meter_reading'
+        ),
+        updated_at = now()
+      where user_id = $1
+        and id::text = $2
+        and (
+          coalesce(specs_json, '{}'::jsonb)->>'lastFuelSlipId' = $3
+          or coalesce(specs_json, '{}'::jsonb)->>'last_fuel_slip_id' = $3
+        )
+    `,
+    [userId, assetId, fuelSlipId],
+  );
+}
+
+async function removeFuelSlipSideEffects(client: PoolClient, userId: string, slip: FuelSlipRow): Promise<void> {
+  const fuelSlipId = asText(slip.id);
+  if (!fuelSlipId) return;
+
+  await client.query(
+    `
+      update public.fuel_slips
+      set
+        fuel_storage_event_id = null,
+        asset_invoice_id = null,
+        invoice_document_id = null,
+        updated_at = now()
+      where user_id = $1 and id::text = $2
+    `,
+    [userId, fuelSlipId],
+  );
+
+  const eventResult = await client.query<{ id: string; storage_id: string | null; litres: string | number | null; event_type: string | null }>(
+    `
+      select id::text, storage_id::text, litres, event_type
+      from public.fuel_storage_events
+      where user_id = $1
+        and (fuel_slip_id::text = $2 or ($3 <> '' and id::text = $3))
+      for update
+    `,
+    [userId, fuelSlipId, asText(slip.fuel_storage_event_id)],
+  );
+
+  for (const eventRow of eventResult.rows) {
+    const eventId = asText(eventRow.id);
+    const storageId = asText(eventRow.storage_id);
+    const litres = normalizeOptionalLitres(eventRow.litres) ?? 0;
+    const eventType = normalizeEventType(eventRow.event_type);
+
+    if (storageId && litres > 0 && (eventType === 'stock_in' || eventType === 'opening_balance')) {
+      const storageResult = await client.query<FuelStorageRow>(
+        `
+          select ${fuelStorageSelectSql()}
+          from public.fuel_storage_units
+          where user_id = $1 and id::text = $2
+          for update
+        `,
+        [userId, storageId],
+      );
+      const storage = storageResult.rows[0] ? mapStorageRow(storageResult.rows[0]) : null;
+
+      if (storage) {
+        const nextLitres = Math.max(0, roundLitres(storage.currentLitres - litres));
+        await client.query(
+          `
+            update public.fuel_storage_units
+            set current_litres = $3::numeric, updated_at = now()
+            where user_id = $1 and id::text = $2
+          `,
+          [userId, storageId, nextLitres],
+        );
+      }
+    }
+
+    if (eventId) {
+      await client.query(
+        `delete from public.fuel_storage_events where user_id = $1 and id::text = $2`,
+        [userId, eventId],
+      );
+    }
+  }
+
+  await client.query(
+    `
+      delete from public.asset_scan_events e
+      using public.asset_register_items a
+      where e.asset_id = a.id
+        and a.user_id = $1
+        and e.fuel_slip_id::text = $2
+    `,
+    [userId, fuelSlipId],
+  );
+
+  const invoiceId = asText(slip.asset_invoice_id);
+  let invoiceDocumentId = asText(slip.invoice_document_id);
+
+  if (invoiceId) {
+    const invoiceResult = await client.query<{ invoice_document_id: string | null }>(
+      `
+        select invoice_document_id::text as invoice_document_id
+        from public.asset_invoices
+        where user_id = $1 and id::text = $2 and source = 'fuel_slip'
+        limit 1
+      `,
+      [userId, invoiceId],
+    );
+
+    invoiceDocumentId = invoiceDocumentId || asText(invoiceResult.rows[0]?.invoice_document_id);
+
+    await client.query(
+      `delete from public.asset_invoices where user_id = $1 and id::text = $2 and source = 'fuel_slip'`,
+      [userId, invoiceId],
+    );
+  }
+
+  if (invoiceDocumentId) {
+    await client.query(
+      `
+        delete from public.asset_invoice_documents d
+        where d.user_id = $1
+          and d.id::text = $2
+          and d.source = 'fuel_slip'
+          and not exists (
+            select 1
+            from public.asset_invoices i
+            where i.invoice_document_id = d.id
+          )
+      `,
+      [userId, invoiceDocumentId],
+    );
+  }
+
+  await clearFuelSlipAssetLastFields(client, userId, asText(slip.asset_register_item_id), fuelSlipId);
+}
+
+export async function deleteFuelSlipTransaction(userId: string, fuelSlipId: string): Promise<void> {
+  await ensureFuelLedgerTables();
+  const db = getDb();
+  const client = await db.connect();
+  let committed = false;
+
+  try {
+    await client.query('BEGIN');
+
+    const slip = await loadFuelSlipRowForUpdate(client, userId, fuelSlipId);
+    await removeFuelSlipSideEffects(client, userId, slip);
+
+    await client.query(
+      `delete from public.fuel_slips where user_id = $1 and id::text = $2`,
+      [userId, fuelSlipId],
+    );
+
+    await client.query('COMMIT');
+    committed = true;
+  } catch (error) {
+    if (!committed) {
+      await client.query('ROLLBACK').catch(() => null);
+    }
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSlipInput): Promise<FuelSlipSaveResult> {
   await ensureFuelLedgerTables();
 
   const db = getDb();
   const client = await db.connect();
+  const existingFuelSlipId = normalizedFuelSlipIdFromInput(input);
   const targetType = normalizeFuelSlipTargetType(input.targetType);
   const rawTargetId = trimText(input.targetId, 120);
   const targetId = rawTargetId.includes(':') ? rawTargetId.split(':').pop() ?? rawTargetId : rawTargetId;
@@ -2965,7 +3255,6 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
   const siteNumber = sanitizeFuelSlipTextField(input.siteNumber, 80);
   const odometerReading = normalizeUsageReading(input.odometerReading);
   const hourMeterReading = normalizeUsageReading(input.hourMeterReading);
-  const requestedExtractionStatus = captureMode === 'manual' ? 'manual' : normalizeFuelSlipExtractionStatus(input.extractionStatus);
   const ocrConfidence = normalizeRateValue(input.ocrConfidence);
   const rawExtractedText = maskStoredFuelSlipRawText(trimText(input.rawExtractedText, 20000));
   let extractionWarnings = normalizeExtractionWarnings(input.extractionWarnings);
@@ -2995,6 +3284,11 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
 
   try {
     await client.query('BEGIN');
+
+    const existingSlip = existingFuelSlipId ? await loadFuelSlipRowForUpdate(client, userId, existingFuelSlipId) : null;
+    if (existingSlip) {
+      await removeFuelSlipSideEffects(client, userId, existingSlip);
+    }
 
     let asset: FuelLedgerAsset | null = null;
     let storage: FuelLedgerStorage | null = null;
@@ -3108,102 +3402,150 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
     }
 
     extractionWarnings = [...new Set(extractionWarnings.map((warning) => maskStoredFuelSlipRawText(asText(warning))).filter(Boolean))].slice(0, 12);
-    const finalReviewRequired = pendingReview || (normalizeBoolean(input.reviewRequired) ?? false) || requestedExtractionStatus === 'needs_review';
+    const finalReviewRequired = pendingReview;
     const finalExtractionStatus: FuelSlipExtractionStatus = pendingReview
       ? 'needs_review'
       : captureMode === 'manual'
         ? 'manual'
-        : finalReviewRequired
-          ? 'needs_review'
-          : 'extracted';
+        : 'extracted';
     const description = buildFuelSlipDescription({ fuelType, litres, pricePerLitre, totalAmount });
 
-    const insertedSlip = await client.query<{ id: string }>(
-      `
-        insert into public.fuel_slips (
-          user_id,
-          source_type,
-          source_label,
-          target_type,
-          asset_register_item_id,
-          storage_id,
-          upload_id,
-          document_file_url,
-          original_filename,
-          content_type,
-          byte_size,
-          supplier_name,
-          supplier_vat_number,
-          slip_number,
-          transaction_number,
-          document_date,
-          document_time,
-          fuel_type,
-          litres,
-          price_per_litre,
-          total_amount,
-          vat_amount,
-          vat_included,
-          vat_rate,
-          payment_method,
-          card_type,
-          card_number_masked,
-          card_last4,
-          merchant_number,
-          terminal_number,
-          site_number,
-          odometer_reading,
-          hour_meter_reading,
-          extraction_status,
-          ocr_confidence,
-          review_required,
-          raw_extracted_text,
-          extraction_warnings
-        ) values ($1, 'fuel_slip', 'Fuel Slip', $2, $3::uuid, $4::uuid, $5, $6, $7, $8, $9::integer, $10, $11, $12, $13, $14::date, $15, $16, $17::numeric, $18::numeric, $19::numeric, $20::numeric, $21::boolean, $22::numeric, $23, $24, $25, $26, $27, $28, $29, $30::numeric, $31::numeric, $32, $33::numeric, $34::boolean, $35, $36::jsonb)
-        returning id::text
-      `,
-      [
-        userId,
-        targetType,
-        targetType === 'asset' ? assetId : null,
-        targetType === 'storage_tank' ? storageId : null,
-        uploadId || null,
-        documentFileUrl || null,
-        originalFilename || null,
-        contentType || null,
-        byteSize === null ? null : Math.max(0, Math.round(byteSize)),
-        supplierName || null,
-        supplierVatNumber || null,
-        slipNumber || null,
-        transactionNumber || null,
-        documentDate,
-        documentTime,
-        fuelType || null,
-        litres,
-        pricePerLitre,
-        totalAmount,
-        vatAmount,
-        vatIncluded,
-        vatRate,
-        paymentMethod || null,
-        cardType || null,
-        card.masked || null,
-        card.last4 || null,
-        merchantNumber || null,
-        terminalNumber || null,
-        siteNumber || null,
-        odometerReading,
-        hourMeterReading,
-        finalExtractionStatus,
-        ocrConfidence,
-        finalReviewRequired,
-        rawExtractedText || null,
-        JSON.stringify(extractionWarnings),
-      ],
-    );
+    const fuelSlipValues = [
+      userId,
+      targetType,
+      targetType === 'asset' ? assetId : null,
+      targetType === 'storage_tank' ? storageId : null,
+      uploadId || null,
+      documentFileUrl || null,
+      originalFilename || null,
+      contentType || null,
+      byteSize === null ? null : Math.max(0, Math.round(byteSize)),
+      supplierName || null,
+      supplierVatNumber || null,
+      slipNumber || null,
+      transactionNumber || null,
+      documentDate,
+      documentTime,
+      fuelType || null,
+      litres,
+      pricePerLitre,
+      totalAmount,
+      vatAmount,
+      vatIncluded,
+      vatRate,
+      paymentMethod || null,
+      cardType || null,
+      card.masked || null,
+      card.last4 || null,
+      merchantNumber || null,
+      terminalNumber || null,
+      siteNumber || null,
+      odometerReading,
+      hourMeterReading,
+      finalExtractionStatus,
+      ocrConfidence,
+      finalReviewRequired,
+      rawExtractedText || null,
+      JSON.stringify(extractionWarnings),
+    ];
 
-    const fuelSlipId = insertedSlip.rows[0]?.id;
-    if (!fuelSlipId) throw new Error('Fuel slip could not be saved.');
+    const savedSlip = existingFuelSlipId
+      ? await client.query<{ id: string }>(
+          `
+            update public.fuel_slips
+            set
+              source_type = 'fuel_slip',
+              source_label = 'Fuel Slip',
+              target_type = $2,
+              asset_register_item_id = $3::uuid,
+              storage_id = $4::uuid,
+              upload_id = $5,
+              document_file_url = $6,
+              original_filename = $7,
+              content_type = $8,
+              byte_size = $9::integer,
+              supplier_name = $10,
+              supplier_vat_number = $11,
+              slip_number = $12,
+              transaction_number = $13,
+              document_date = $14::date,
+              document_time = $15,
+              fuel_type = $16,
+              litres = $17::numeric,
+              price_per_litre = $18::numeric,
+              total_amount = $19::numeric,
+              vat_amount = $20::numeric,
+              vat_included = $21::boolean,
+              vat_rate = $22::numeric,
+              payment_method = $23,
+              card_type = $24,
+              card_number_masked = $25,
+              card_last4 = $26,
+              merchant_number = $27,
+              terminal_number = $28,
+              site_number = $29,
+              odometer_reading = $30::numeric,
+              hour_meter_reading = $31::numeric,
+              extraction_status = $32,
+              ocr_confidence = $33::numeric,
+              review_required = $34::boolean,
+              raw_extracted_text = $35,
+              extraction_warnings = $36::jsonb,
+              updated_at = now()
+            where user_id = $1 and id::text = $37
+            returning id::text
+          `,
+          [...fuelSlipValues, existingFuelSlipId],
+        )
+      : await client.query<{ id: string }>(
+          `
+            insert into public.fuel_slips (
+              user_id,
+              source_type,
+              source_label,
+              target_type,
+              asset_register_item_id,
+              storage_id,
+              upload_id,
+              document_file_url,
+              original_filename,
+              content_type,
+              byte_size,
+              supplier_name,
+              supplier_vat_number,
+              slip_number,
+              transaction_number,
+              document_date,
+              document_time,
+              fuel_type,
+              litres,
+              price_per_litre,
+              total_amount,
+              vat_amount,
+              vat_included,
+              vat_rate,
+              payment_method,
+              card_type,
+              card_number_masked,
+              card_last4,
+              merchant_number,
+              terminal_number,
+              site_number,
+              odometer_reading,
+              hour_meter_reading,
+              extraction_status,
+              ocr_confidence,
+              review_required,
+              raw_extracted_text,
+              extraction_warnings
+            ) values ($1, 'fuel_slip', 'Fuel Slip', $2, $3::uuid, $4::uuid, $5, $6, $7, $8, $9::integer, $10, $11, $12, $13, $14::date, $15, $16, $17::numeric, $18::numeric, $19::numeric, $20::numeric, $21::boolean, $22::numeric, $23, $24, $25, $26, $27, $28, $29, $30::numeric, $31::numeric, $32, $33::numeric, $34::boolean, $35, $36::jsonb)
+            returning id::text
+          `,
+          fuelSlipValues,
+        );
+
+    const fuelSlipId = savedSlip.rows[0]?.id;
+    if (!fuelSlipId) throw new Error(existingFuelSlipId ? 'Fuel slip not found.' : 'Fuel slip could not be saved.');
 
     let event: FuelLedgerEvent | null = null;
 
@@ -3399,12 +3741,13 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
             fuel_litres,
             fuel_storage_id,
             fuel_storage_event_id,
+            fuel_slip_id,
             note,
             photo_urls,
             created_at
-          ) values ($1::uuid, 'owner_session', $2, 'Fuel Slip', null, $3::numeric, $4::numeric, null, null, $5, $6::jsonb, now())
+          ) values ($1::uuid, 'owner_session', $2, 'Fuel Slip', null, $3::numeric, $4::numeric, null, null, $7::uuid, $5, $6::jsonb, now())
         `,
-        [assetId, supplierName || 'Fuel Slip', usageReading, completedLitres, description, JSON.stringify(documentFileUrl ? [documentFileUrl] : [])],
+        [assetId, supplierName || 'Fuel Slip', usageReading, completedLitres, description, JSON.stringify(documentFileUrl ? [documentFileUrl] : []), fuelSlipId],
       );
 
       await client.query(
@@ -3435,7 +3778,9 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
       ? targetType === 'asset' && coreComplete && !usageComplete
         ? 'Fuel slip saved for review. Add the required odometer or hour-meter reading before posting fuel usage.'
         : 'Fuel slip saved for review. Complete the missing date, fuel type, litres or total amount before posting fuel usage.'
-      : 'Fuel Slip saved to Fuel Ledger.';
+      : existingFuelSlipId
+        ? 'Fuel slip reviewed and completed.'
+        : 'Fuel Slip saved to Fuel Ledger.';
 
     return {
       fuelSlip,
