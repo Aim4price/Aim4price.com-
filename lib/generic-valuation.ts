@@ -413,6 +413,38 @@ function resolveLifeWorkedPercent(input: DepreciationInput, fallbackPercent: num
   return clamp(fallbackPercent, 0, 100);
 }
 
+function isPercentageBasisValue(value: unknown): boolean {
+  const normalized = cleanText(value).toLowerCase();
+  return (
+    normalized === 'percent' ||
+    normalized === 'percentage' ||
+    normalized === 'percent_used' ||
+    normalized === 'percentage_used' ||
+    normalized === 'percentage_depreciation' ||
+    normalized === 'life_worked_percent' ||
+    normalized === 'worked_percent' ||
+    normalized === 'lifetime_percent' ||
+    normalized === 'wear_class'
+  );
+}
+
+function specsUseExplicitPercentageBasis(specs: Record<string, unknown>): boolean {
+  return (
+    isPercentageBasisValue(specs.usageMode) ||
+    isPercentageBasisValue(specs.usage_mode) ||
+    isPercentageBasisValue(specs.usageBasis) ||
+    isPercentageBasisValue(specs.usage_basis) ||
+    isPercentageBasisValue(specs.valuationMode) ||
+    isPercentageBasisValue(specs.valuation_mode) ||
+    isPercentageBasisValue(specs.depreciationMethodUsed) ||
+    isPercentageBasisValue(specs.depreciation_method_used) ||
+    isPercentageBasisValue(specs.selectedDepreciationMethod) ||
+    isPercentageBasisValue(specs.selected_depreciation_method) ||
+    isPercentageBasisValue(specs.selectedUsageMode) ||
+    isPercentageBasisValue(specs.selected_usage_mode)
+  );
+}
+
 function resolveMaxLifetimeHours(input: DepreciationInput): number {
   const advancedLifetime = positiveUsageAmount(input.advancedAssumptions?.maxLifetimeUsage);
   if (advancedLifetime !== null) return advancedLifetime;
@@ -513,6 +545,31 @@ function resolveDepreciation(input: DepreciationInput): {
   }
 
   const yearForDepreciation = input.yearModelUnknown ? currentBaseYear() : Math.round(input.year);
+  const explicitPercentageBasis =
+    specsUseExplicitPercentageBasis(input.specsJson) || input.usageMetricType === 'wear_class';
+
+  if (explicitPercentageBasis) {
+    const lifeWorkedPercent = resolveLifeWorkedPercent(input, 50);
+    const calculated = calculatePercentUsedValue({
+      replacementPriceExVat: input.replacementPrice,
+      percentUsed: lifeWorkedPercent,
+      condition: input.condition,
+      floorPercent: resolveResidualFloorPercent(input, DEFAULT_NON_PROPELLED_FLOOR_PERCENT),
+      conditionFactorOverride: getAdvancedConditionFactorOverride(input.advancedAssumptions),
+    });
+
+    return {
+      method: 'percentage_depreciation',
+      depreciationBaseValueExVat: calculated.finalValueExVat,
+      lifeWorkedPercent: calculated.percentUsed,
+      lifeRemainingPercent: calculated.remainingPercent,
+      estimatedHours: null,
+      maxLifetimeHours: null,
+      ageDepPct: null,
+      usageDepPct: calculated.percentUsed,
+      averageDepPct: calculated.percentUsed,
+    };
+  }
 
   if (input.isPropelled || isUsageAmountMetric(input.usageMetricType)) {
     const maxLifetimeHours = resolveMaxLifetimeHours(input);

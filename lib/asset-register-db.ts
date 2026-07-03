@@ -702,8 +702,8 @@ function buildCurrentValuationSpecs(
 ): Record<string, unknown> {
   const merged = buildYearModelSpecsJson(
     stripValuationMetadata({
-      ...existingSpecs,
       ...valuationSpecs,
+      ...existingSpecs,
     }),
     context.yearModel ?? null,
     Boolean(context.yearModelUnknown),

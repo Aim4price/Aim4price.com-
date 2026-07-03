@@ -118,6 +118,47 @@ function readYearModelFromSpecs(specs: Record<string, unknown>): number | null {
   );
 }
 
+const YEAR_MODEL_METADATA_KEYS = [
+  'yearModel',
+  'year_model',
+  'displayYearModel',
+  'display_year_model',
+  'assetYearModel',
+  'asset_year_model',
+  'currentYearModel',
+  'current_year_model',
+  'yearModelUnknown',
+  'year_model_unknown',
+] as const;
+
+function applyResolvedYearModelToSpecs(
+  specs: Record<string, unknown>,
+  resolved: { year: number; yearModelUnknown: boolean },
+): Record<string, unknown> {
+  const next: Record<string, unknown> = { ...specs };
+
+  for (const key of YEAR_MODEL_METADATA_KEYS) {
+    delete next[key];
+  }
+
+  next.yearModelUnknown = resolved.yearModelUnknown;
+  next.year_model_unknown = resolved.yearModelUnknown;
+
+  if (!resolved.yearModelUnknown) {
+    const year = Math.round(resolved.year);
+    next.yearModel = year;
+    next.year_model = year;
+    next.displayYearModel = year;
+    next.display_year_model = year;
+    next.assetYearModel = year;
+    next.asset_year_model = year;
+    next.currentYearModel = year;
+    next.current_year_model = year;
+  }
+
+  return next;
+}
+
 function roundMoneyValue(value: unknown): number | null {
   const parsed = asNumber(value);
   return parsed === null ? null : Math.round(parsed);
@@ -380,6 +421,24 @@ function isPercentUsageMode(value: unknown): boolean {
   );
 }
 
+function isReadingUsageMode(value: unknown): boolean {
+  const normalized = asText(value).toLowerCase();
+  return (
+    normalized === 'hours' ||
+    normalized === 'hour' ||
+    normalized === 'engine_hours' ||
+    normalized === 'engine-hours' ||
+    normalized === 'km' ||
+    normalized === 'kms' ||
+    normalized === 'kilometres' ||
+    normalized === 'kilometers' ||
+    normalized === 'odometer' ||
+    normalized === 'usage_reading' ||
+    normalized === 'reading' ||
+    normalized === 'full_depreciation'
+  );
+}
+
 function recordUsesPercentUsage(record: Record<string, unknown>): boolean {
   return (
     isPercentUsageMode(record.usageMode) ||
@@ -397,6 +456,23 @@ function recordUsesPercentUsage(record: Record<string, unknown>): boolean {
   );
 }
 
+function recordUsesReadingUsage(record: Record<string, unknown>): boolean {
+  return (
+    isReadingUsageMode(record.usageMode) ||
+    isReadingUsageMode(record.usage_mode) ||
+    isReadingUsageMode(record.usageBasis) ||
+    isReadingUsageMode(record.usage_basis) ||
+    isReadingUsageMode(record.valuationMode) ||
+    isReadingUsageMode(record.valuation_mode) ||
+    isReadingUsageMode(record.depreciationMethodUsed) ||
+    isReadingUsageMode(record.depreciation_method_used) ||
+    isReadingUsageMode(record.selectedDepreciationMethod) ||
+    isReadingUsageMode(record.selected_depreciation_method) ||
+    isReadingUsageMode(record.selectedUsageMode) ||
+    isReadingUsageMode(record.selected_usage_mode)
+  );
+}
+
 function recordUsageReading(record: Record<string, unknown>): number | null {
   return (
     asNumber(record.usageAmount) ??
@@ -410,25 +486,32 @@ function recordUsageReading(record: Record<string, unknown>): number | null {
 
 function assetUsesPercentUsageForRevaluation(asset: AssetRegisterItem, ...extraSources: Record<string, unknown>[]): boolean {
   const specs = asset.specsJson ?? {};
-  const sources = [specs, ...extraSources];
   const depreciationMethod = asText(asset.depreciationMethodUsed).toLowerCase();
   const percent = readLifeWorkedPercent(asset, {}, ...extraSources);
-  const usageReading = asNumber(asset.hours) ?? sources.reduce<number | null>((found, source) => found ?? recordUsageReading(source), null);
+  const usageReading = asNumber(asset.hours) ?? recordUsageReading(specs);
   const hasPositiveUsageReading = usageReading !== null && usageReading > 0;
 
-  if (sources.some(recordUsesPercentUsage)) {
+  if (recordUsesPercentUsage(specs) || depreciationMethod === 'percentage_depreciation') {
     return true;
   }
 
-  if (depreciationMethod === 'percentage_depreciation') {
-    return true;
+  if (recordUsesReadingUsage(specs) || depreciationMethod === 'full_depreciation') {
+    return false;
+  }
+
+  if (hasPositiveUsageReading && depreciationMethod !== 'semi_depreciation') {
+    return false;
   }
 
   if (asset.kind === 'vehicle') {
     return false;
   }
 
-  return percent !== null && (!hasPositiveUsageReading || depreciationMethod === 'semi_depreciation');
+  if (percent !== null && (!hasPositiveUsageReading || depreciationMethod === 'semi_depreciation')) {
+    return true;
+  }
+
+  return extraSources.some(recordUsesPercentUsage);
 }
 
 function buildPreviewAssetFromTractorValuation(input: {
@@ -464,6 +547,10 @@ function buildPreviewAssetFromTractorValuation(input: {
     maxLifetimeHours: roundFiniteValue(input.result.maxLifetimeHours),
     aim4priceValueExVat: roundMoneyValue(input.result.aim4priceValueExVat),
     marketMidExVat: null,
+    specsJson: applyResolvedYearModelToSpecs(input.asset.specsJson ?? {}, {
+      year: input.year,
+      yearModelUnknown: input.yearModelUnknown,
+    }),
     updatedAtIso: new Date().toISOString(),
   };
 }
@@ -485,10 +572,13 @@ function buildPreviewAssetFromGenericValuation(input: {
     equipmentModelId: null,
     typedModelName: input.result.typedModelName ?? '',
     normalizedTypedModelName: input.result.normalizedTypedModelName ?? '',
-    specsJson: {
-      ...(input.asset.specsJson ?? {}),
-      ...(input.result.specsJson ?? {}),
-    },
+    specsJson: applyResolvedYearModelToSpecs(
+      {
+        ...(input.asset.specsJson ?? {}),
+        ...(input.result.specsJson ?? {}),
+      },
+      { year: input.result.year, yearModelUnknown: Boolean(input.result.yearModelUnknown) },
+    ),
     depreciationMethodUsed: input.result.depreciationMethodUsed,
     lifeWorkedPercent: input.result.lifeWorkedPercent,
     lifeRemainingPercent: input.result.lifeRemainingPercent,
@@ -771,7 +861,7 @@ async function revalueGenericAsset(input: {
   const assetSpecs = cleanSpecsForValuation(input.asset.specsJson ?? {});
   const rowSpecs = cleanSpecsForValuation(asRecord(input.row.specs_json));
   const payloadSpecs = cleanSpecsForValuation(asRecord(payloadInput.specsJson));
-  const specsJson = {
+  const mergedSpecsJson = {
     ...payloadSpecs,
     ...rowSpecs,
     ...assetSpecs,
@@ -786,6 +876,7 @@ async function revalueGenericAsset(input: {
   });
   const yearModelUnknown = resolvedYearModel.yearModelUnknown;
   const year = resolvedYearModel.year;
+  const specsJson = applyResolvedYearModelToSpecs(mergedSpecsJson, resolvedYearModel);
   const condition = normalizeGenericCondition(input.asset.condition || payloadInput.condition || input.row.condition);
 
   if (!condition) {
