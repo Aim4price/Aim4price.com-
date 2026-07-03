@@ -36,6 +36,8 @@ const MAX_OCR_TEXT_LENGTH = 20000;
 const TESSERACT_LANGUAGE = 'eng';
 const CARD_MASK_CHARS = '*xX#•·●∙';
 const CARD_MASK_CLASS = `[*xX#•·●∙]`;
+const TECHNICAL_NUMBER_LINE = /\b(?:UTI|UTL|UIL|URL|UTIL|AID|IAD|CTQ|TVR|AC|RRN|TSN|terminal\s*(?:id|number|no|nr)?|merchant\s*(?:id|number|no|nr)?|batch\s*(?:number|no|nr)?|auth(?:orisation|orization)?\s*(?:code|number|no|nr)?|trace\s*(?:number|no|nr)?)\b/i;
+const CARD_CONTEXT = /\b(?:card|pan|account|acc|visa|master\s*card|mastercard|debit|credit|kaart|eft|ending|last\s*4|last\s*four)\b/i;
 
 function cleanText(value: unknown): string {
   return String(value ?? '')
@@ -95,12 +97,26 @@ function maskCardLikeMatch(value: string): string {
   return last4 ? safeCardMask(last4) : value;
 }
 
-function maskSensitiveOcrText(value: string): string {
+function isTechnicalOnlyNumberLine(line: string): boolean {
+  const text = cleanText(line);
+  return TECHNICAL_NUMBER_LINE.test(text) && !CARD_CONTEXT.test(text);
+}
+
+function maskSensitiveOcrLine(line: string): string {
+  if (isTechnicalOnlyNumberLine(line)) return line;
+
   const maskClass = CARD_MASK_CLASS;
-  return String(value ?? '')
+  return line
     .replace(new RegExp(String.raw`\b\d{4,6}[\s-]*(?:${maskClass}{1,}[\s-]*){1,6}\d{4}\b`, 'g'), (match) => maskCardLikeMatch(match))
     .replace(new RegExp(String.raw`\b(?:${maskClass}{1,}[\s-]*){1,8}\d{4}\b`, 'g'), (match) => maskCardLikeMatch(match))
-    .replace(/\b(?:\d[\s-]?){13,19}\b/g, (match) => maskCardLikeMatch(match));
+    .replace(/\b(?:\d[ \t-]?){13,19}\b/g, (match) => maskCardLikeMatch(match));
+}
+
+function maskSensitiveOcrText(value: string): string {
+  return String(value ?? '')
+    .split(/(\r?\n)/)
+    .map((part) => (/^\r?\n$/.test(part) ? part : maskSensitiveOcrLine(part)))
+    .join('');
 }
 
 function normalizeOcrText(value: unknown): string {

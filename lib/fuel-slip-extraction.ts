@@ -65,17 +65,20 @@ const EMPTY_DRAFT: FuelSlipExtractionDraft = {
 };
 
 const MAX_EXTRACTED_TEXT_LENGTH = 20000;
-const TECHNICAL_NUMBER_LINE = /\b(?:UTI|AID|IAD|CTQ|TVR|AC|RRN|TSN|terminal\s*(?:id|number|no|nr)?|merchant\s*(?:id|number|no|nr)?|batch\s*(?:number|no|nr)?|auth(?:orisation|orization)?\s*(?:code|number|no|nr)?|trace\s*(?:number|no|nr)?|card\s*(?:number|no|nr)?)\b/i;
-const TECHNICAL_CARD_AMOUNT_LINE = /\b(?:UTI|AID|IAD|CTQ|TVR|AC|RRN|TSN|terminal|merchant|batch|auth|trace)\b/i;
+const TECHNICAL_NUMBER_LINE = /\b(?:UTI|UTL|UIL|URL|UTIL|AID|IAD|CTQ|TVR|AC|RRN|TSN|terminal\s*(?:id|number|no|nr)?|merchant\s*(?:id|number|no|nr)?|batch\s*(?:number|no|nr)?|auth(?:orisation|orization)?\s*(?:code|number|no|nr)?|trace\s*(?:number|no|nr)?|card\s*(?:number|no|nr)?)\b/i;
+const TECHNICAL_CARD_AMOUNT_LINE = /\b(?:UTI|UTL|UIL|URL|UTIL|AID|IAD|CTQ|TVR|AC|RRN|TSN|terminal|merchant|batch|auth|trace)\b/i;
 const CARD_CONTEXT = /\b(?:card|pan|account|acc|visa|master\s*card|mastercard|debit|credit|kaart|eft|ending|last\s*4|last\s*four)\b/i;
-const CARD_EXCLUDED_CONTEXT = /\b(?:UTI|AID|IAD|CTQ|TVR|RRN|TSN|terminal|merchant|batch|auth|trace)\b/i;
+const CARD_EXCLUDED_CONTEXT = /\b(?:UTI|UTL|UIL|URL|UTIL|AID|IAD|CTQ|TVR|RRN|TSN|terminal|merchant|batch|auth|trace)\b/i;
 const BANK_OR_ACQUIRER_LINE = /\b(?:fnb|first\s+national\s+bank|firstrand|nedbank|absa|standard\s+bank|capitec|discovery\s+bank|investec|african\s+bank|bidvest\s+bank|tyme\s*bank|bank\s+zero|visa|master\s*card|mastercard|card\s+division|acquirer|payment\s+terminal|forecourt\s+eft)\b/i;
-const NON_SUPPLIER_LINE = /\b(?:south\s+africa|customer\s+copy|merchant\s+copy|approved|authorised|authorized|declined|receipt|tax\s+invoice|invoice|cashier|attendant|pump|thank\s+you|welcome|call\s+centre|balance|change|date|time|trace|uti|aid|iad|ctq|tvr|rrn|tsn|terminal|merchant|batch|auth|approval|card|pan|debit|credit|amount|amnt|purchase|sale|subtotal|total\s+(?:amount|due)|litres?|ltrs?|price\s*per|per\s*litre)\b/i;
+const NON_SUPPLIER_LINE = /\b(?:south\s+africa|customer\s+copy|merchant\s+copy|approved|authorised|authorized|declined|receipt|tax\s+invoice|invoice|cashier|attendant|pump|thank\s+you|welcome|call\s+centre|balance|change|date|time|trace|uti|utl|uil|url|util|aid|iad|ctq|tvr|rrn|tsn|terminal|merchant|batch|auth|approval|card|pan|debit|credit|amount|amnt|purchase|sale|subtotal|total\s+(?:amount|due)|litres?|ltrs?|price\s*per|per\s*litre)\b/i;
 const ADDRESS_LINE = /\b(?:street|straat|road|rd|avenue|ave|drive|dr|singel|lane|ln|crescent|cresc|close|park|industrial|province)\b/i;
 const FUEL_MERCHANT_WORDS = /\b(?:engen|shell|bp|totalenergies|total|astron|caltex|sasol|puma|gulf|fuel|motors?|garage|service\s+station|filling\s+station|truck\s+stop|stop|depot|energy|petroleum)\b/i;
-const FUEL_PRODUCT_LINE = /\b(?:diesel|unleaded|ulp|petrol|excellium|ad\s*blue|paraffin|primax|dynamic\s+diesel|v[- ]?power|fuel\s*save|quartech|turbo\s*diesel|turbodiesel|ultimate\s+diesel|d\s*[- ]?50|50\s*ppm|500\s*ppm|(?:ulp|unleaded|petrol)\s*9[35])\b/i;
+const FUEL_PRODUCT_LINE = /\b(?:diesel|d[i1l|]e[s5]el|unleaded|ulp|petrol|excellium|ad\s*blue|paraffin|primax|dynamic\s+(?:diesel|d[i1l|]e[s5]el)|v[- ]?power|fuel\s*save|quartech|turbo\s*(?:diesel|d[i1l|]e[s5]el)|turbodiesel|ultimate\s+(?:diesel|d[i1l|]e[s5]el)|d\s*[- ]?50|50\s*ppm|500\s*ppm|(?:ulp|unleaded|petrol)\s*9[35])\b/i;
 const FUEL_SLIP_NUMBER_PATTERN = String.raw`\d(?:[\d ,.:]*\d)?`;
 const CARD_MASK_CLASS = String.raw`[*xX#•·●∙]`;
+const LOOKAHEAD_LABEL_LINES = 2;
+const LITRES_LABEL_OCR = /\b(?:l\s*[i1|]\s*t\s*r\s*e\s*s+|l\s*[i1|]{2}\s*r\s*e\s*s+|l\s*[i1|]{2}\s*k\s*e\s*s+|c\s*[i1|]\s*l\s*[i1|]\s*r\s*e\s*s+|e\s*[i1|]\s*t\s*r?\s*e\s*s+|e\s*l\s*[i1|]\s*r?\s*e\s*s+|litre5|l1tres|liires|lires|litres?|llikes|lliikes|cilires)\b\s*[:;|]?/i;
+const AMOUNT_LABEL_OCR = /\b(?:amnt|amn[ti1|]?|amin[ti1|]?|amount|amt)\b\s*[:;|]?/i;
 
 type Candidate<T> = {
   raw: string;
@@ -116,8 +119,8 @@ type FuelTypeRule = {
 };
 
 const FUEL_TYPE_RULES: FuelTypeRule[] = [
-  { label: 'Diesel 50ppm', pattern: /\b(?:diesel\s*50\s*ppm|50\s*ppm\s*diesel|d\s*[- ]?50|diesel\s*0[,.]005\s*%)\b/i, score: 110 },
-  { label: 'Diesel 500ppm', pattern: /\b(?:diesel\s*500\s*ppm|500\s*ppm\s*diesel|diesel\s*0[,.]05\s*%)\b/i, score: 108 },
+  { label: 'Diesel 50ppm', pattern: /\b(?:(?:diesel|d[i1l|]e[s5]el)\s*50\s*ppm|50\s*ppm\s*(?:diesel|d[i1l|]e[s5]el)|d\s*[- ]?50|(?:diesel|d[i1l|]e[s5]el)\s*0[,.]005\s*%)\b/i, score: 110 },
+  { label: 'Diesel 500ppm', pattern: /\b(?:(?:diesel|d[i1l|]e[s5]el)\s*500\s*ppm|500\s*ppm\s*(?:diesel|d[i1l|]e[s5]el)|(?:diesel|d[i1l|]e[s5]el)\s*0[,.]05\s*%)\b/i, score: 108 },
   { label: 'Excellium Diesel', pattern: /\bexcellium\s+diesel\b/i, score: 105 },
   { label: 'Excellium D10', pattern: /\bexcellium\s*d\s*10\b/i, score: 105 },
   { label: 'Shell V-Power Diesel', pattern: /\bshell\s+v[- ]?power\s+diesel\b/i, score: 104 },
@@ -128,7 +131,7 @@ const FUEL_TYPE_RULES: FuelTypeRule[] = [
   { label: 'Sasol Turbodiesel', pattern: /\bsasol\s+turbo\s*diesel\b/i, score: 102 },
   { label: 'bp Ultimate Diesel', pattern: /\bbp\s+ultimate\s+diesel\b/i, score: 102 },
   { label: 'Ultimate Diesel', pattern: /\bultimate\s+diesel\b/i, score: 101 },
-  { label: 'Diesel', pattern: /\bdiesel\b/i, score: 80 },
+  { label: 'Diesel', pattern: /\b(?:diesel|d[i1l|]e[s5]el)\b/i, score: 80 },
   { label: 'Unleaded 93', pattern: /\b(?:unleaded|ulp|petrol)\s*93\b/i, score: 100 },
   { label: 'Unleaded 95', pattern: /\b(?:unleaded|ulp|petrol)\s*95\b/i, score: 100 },
   { label: 'Shell V-Power', pattern: /\bshell\s+v[- ]?power\b/i, score: 95 },
@@ -156,6 +159,29 @@ function cleanText(value: unknown): string {
     .trim();
 }
 
+function repairFuelSlipOcrLine(line: string): string {
+  let text = cleanText(line)
+    .replace(/\bR\s*[kK](?=\s*\d)/g, 'R ')
+    .replace(/\b(?:UTI|UTL|UIL|URL|UTIL|U\s*[TtI1l|]{1,3})\b\s*[:;|]/gi, 'UTI:')
+    .replace(/\bTRAC[EF]\b/gi, 'TRACE');
+
+  text = text.replace(LITRES_LABEL_OCR, 'LITRES: ');
+  text = text.replace(AMOUNT_LABEL_OCR, 'AMNT ');
+
+  return cleanText(text)
+    .replace(/\s+:/g, ':')
+    .replace(/\s{2,}/g, ' ');
+}
+
+function repairFuelSlipNumericOcrText(value: string): string {
+  return repairFuelSlipOcrLine(value)
+    .replace(/(\d)\s*[;；]\s*(?=[\doOlI|!sSgGqQbBcCkKzZ])/g, '$1.')
+    .replace(/([,.:])\s*[cC]\s*(?=\d)/g, '$1')
+    .replace(/([,.:]\d{1,3})[kK]\b/g, (_match, prefix: string) => `${prefix}1`)
+    .replace(/([,.:])\s*[oO]\s*(?=\d)/g, (_match, prefix: string) => `${prefix}0`)
+    .replace(/([,.:])\s*[lI|!]\s*(?=\d)/g, (_match, prefix: string) => `${prefix}1`);
+}
+
 function normalizeTextForExtraction(rawText: string): string {
   return String(rawText ?? '')
     .replace(/\r/g, '\n')
@@ -163,7 +189,7 @@ function normalizeTextForExtraction(rawText: string): string {
     .replace(/[，]/g, ',')
     .replace(/[‐‑‒–—]/g, '-')
     .split('\n')
-    .map((line) => cleanText(line)
+    .map((line) => repairFuelSlipOcrLine(line)
       .replace(/(\d)\s*([.,:])\s*(\d)/g, '$1$2$3')
       .replace(/\s{2,}/g, ' '))
     .filter(Boolean)
@@ -175,7 +201,7 @@ function normalizeLines(rawText: string): string[] {
   return String(rawText ?? '')
     .replace(/\r/g, '\n')
     .split(/\n+/)
-    .map((line) => cleanText(line))
+    .map((line) => repairFuelSlipOcrLine(line))
     .filter(Boolean)
     .slice(0, 420);
 }
@@ -230,11 +256,25 @@ function maskCardLikeMatch(value: string): string {
   return last4 ? safeCardMask(last4) : value;
 }
 
-export function maskFuelSlipSensitiveText(value: string): string {
-  return String(value ?? '')
+function isTechnicalOnlyNumberLine(line: string): boolean {
+  const text = cleanText(line);
+  return TECHNICAL_NUMBER_LINE.test(text) && !CARD_CONTEXT.test(text);
+}
+
+function maskFuelSlipSensitiveLine(line: string): string {
+  if (isTechnicalOnlyNumberLine(line)) return line;
+
+  return line
     .replace(new RegExp(String.raw`\b\d{4,6}[\s-]*(?:${CARD_MASK_CLASS}{1,}[\s-]*){1,6}\d{4}\b`, 'g'), (match) => maskCardLikeMatch(match))
     .replace(new RegExp(String.raw`\b(?:${CARD_MASK_CLASS}{1,}[\s-]*){1,8}\d{4}\b`, 'g'), (match) => maskCardLikeMatch(match))
-    .replace(/\b(?:\d[\s-]?){13,19}\b/g, (match) => maskCardLikeMatch(match));
+    .replace(/\b(?:\d[ \t-]?){13,19}\b/g, (match) => maskCardLikeMatch(match));
+}
+
+export function maskFuelSlipSensitiveText(value: string): string {
+  return String(value ?? '')
+    .split(/(\r?\n)/)
+    .map((part) => (/^\r?\n$/.test(part) ? part : maskFuelSlipSensitiveLine(part)))
+    .join('');
 }
 
 function parseDecimal(value: unknown, decimals = 2): number | null {
@@ -461,7 +501,7 @@ function addRateCandidate(candidates: Candidate<number>[], raw: string, line: st
 }
 
 function normalizeNumberSearchLine(line: string): string {
-  return cleanText(line)
+  return repairFuelSlipNumericOcrText(line)
     .replace(/[Oo](?=\d)|(?<=\d)[Oo]/g, '0')
     .replace(/[lI](?=\d)|(?<=\d)[lI]/g, '1')
     .replace(/(\d)\s*([,.:])\s*(\d)/g, '$1$2$3')
@@ -471,7 +511,7 @@ function normalizeNumberSearchLine(line: string): string {
 function isLikelyProductNumber(line: string, token: NumericLineToken): boolean {
   const window = line.slice(Math.max(0, token.start - 18), Math.min(line.length, token.end + 18));
   const rounded = Math.round(token.value);
-  if ((rounded === 50 || rounded === 500) && /\bppm\b|\bd\s*[- ]?50\b/i.test(window)) return true;
+  if ((rounded === 50 || rounded === 500) && /ppm\b|\bd\s*[- ]?50\b/i.test(window)) return true;
   if ((rounded === 93 || rounded === 95) && /\b(?:ulp|unleaded|petrol)\b/i.test(window)) return true;
   if (/\b(?:pump|hose|nozzle)\b/i.test(window) && token.value < 100) return true;
   return false;
@@ -498,6 +538,25 @@ function numericTokensFromLine(line: string, decimals = 4): NumericLineToken[] {
   }
 
   return tokens;
+}
+
+function firstFollowingNumericToken(
+  lines: string[],
+  lineIndex: number,
+  decimals: number,
+  predicate: (token: NumericLineToken, line: string) => boolean,
+): { token: NumericLineToken; line: string; lineIndex: number } | null {
+  for (let offset = 1; offset <= LOOKAHEAD_LABEL_LINES; offset += 1) {
+    const nextLineIndex = lineIndex + offset;
+    const nextLine = lines[nextLineIndex] ?? '';
+    if (!nextLine) continue;
+    if (TECHNICAL_CARD_AMOUNT_LINE.test(nextLine) || CARD_CONTEXT.test(nextLine) || isDateLikeLine(nextLine)) continue;
+
+    const token = numericTokensFromLine(nextLine, decimals).find((entry) => predicate(entry, nextLine));
+    if (token) return { token, line: nextLine, lineIndex: nextLineIndex };
+  }
+
+  return null;
 }
 
 function isPlausibleLitres(value: number): boolean {
@@ -617,6 +676,30 @@ function collectLitresCandidates(lines: string[]): Candidate<number>[] {
     for (const match of line.matchAll(fuelLine)) {
       addNumericCandidate(candidates, match[1], 3, 92, lineIndex, 'fuel-line-litres', 100000);
     }
+
+    if (/\b(?:litres?|liters?|ltrs?)\b/i.test(line)) {
+      const inlineToken = numericTokensFromLine(line, 3).find((token) => isPlausibleLitres(token.value));
+      if (inlineToken) {
+        candidates.push({
+          raw: inlineToken.raw,
+          value: roundDecimal(inlineToken.value, 3),
+          score: 118,
+          lineIndex,
+          reason: 'litres-label-inline-ocr',
+        });
+      } else {
+        const following = firstFollowingNumericToken(lines, lineIndex, 3, (token) => isPlausibleLitres(token.value));
+        if (following) {
+          candidates.push({
+            raw: following.token.raw,
+            value: roundDecimal(following.token.value, 3),
+            score: 116 - Math.max(0, following.lineIndex - lineIndex - 1) * 8,
+            lineIndex: following.lineIndex,
+            reason: 'litres-label-next-line',
+          });
+        }
+      }
+    }
   }
 
   return candidates;
@@ -647,6 +730,26 @@ function collectPricePerLitreCandidates(lines: string[]): Candidate<number>[] {
     const trailingRate = new RegExp(String.raw`\b(${amountPattern})\s*(?:/\s*l|r\s*/\s*l|c\s*/\s*l|cents?\s*(?:per|/)?\s*l)\b`, 'ig');
     for (const match of line.matchAll(trailingRate)) {
       addRateCandidate(candidates, match[1], line, 108, lineIndex, 'price-before-per-litre-label');
+    }
+
+    const nextLine = lines[lineIndex + 1] ?? '';
+    const splitRateCue = /@\s*$/i.test(line) || (FUEL_PRODUCT_LINE.test(line) && /^@\s*$/i.test(nextLine));
+    if (splitRateCue) {
+      const following = firstFollowingNumericToken(
+        lines,
+        lineIndex,
+        4,
+        (token, candidateLine) => !/\b(?:litres?|ltrs?|total|amount|amnt|vat|trace|auth)\b/i.test(candidateLine) && isPlausibleRate(normalizedRateFromToken(token, candidateLine)),
+      );
+      if (following) {
+        candidates.push({
+          raw: following.token.raw,
+          value: normalizedRateFromToken(following.token, following.line),
+          score: 116 - Math.max(0, following.lineIndex - lineIndex - 1) * 6,
+          lineIndex: following.lineIndex,
+          reason: 'split-at-price-per-litre',
+        });
+      }
     }
   }
 
@@ -679,8 +782,28 @@ function collectTotalCandidates(lines: string[]): Candidate<number>[] {
     if (/\b(?:purchase|sale|card\s+tender|amount\s+paid|paid|tendered)\b/i.test(line)) score += 12;
     if (hasCurrencyMarker(line)) score += 8;
 
-    for (const entry of moneyValuesFromLine(line, true)) {
+    const moneyEntries = moneyValuesFromLine(line, true);
+    for (const entry of moneyEntries) {
       candidates.push({ raw: entry.raw, value: entry.value, score, lineIndex, reason: 'labelled-total' });
+    }
+
+    if (!moneyEntries.length) {
+      const following = firstFollowingNumericToken(
+        lines,
+        lineIndex,
+        2,
+        (token, candidateLine) => !/@|\b(?:litres?|ltrs?|price\s*per|per\s*litre|rate\s*\/\s*l|vat\s*(?:no|number|reg)|uti|aid|rrn|tsn|trace|tvr|terminal|merchant)\b/i.test(candidateLine)
+          && isPlausibleTotal(token.value),
+      );
+      if (following) {
+        candidates.push({
+          raw: following.token.raw,
+          value: roundDecimal(following.token.value, 2),
+          score: score - Math.max(0, following.lineIndex - lineIndex - 1) * 8,
+          lineIndex: following.lineIndex,
+          reason: 'total-label-next-line',
+        });
+      }
     }
   }
 
@@ -699,19 +822,42 @@ function collectCardCandidates(lines: string[]): Candidate<{ masked: string; las
   const candidates: Candidate<{ masked: string; last4: string }>[] = [];
 
   for (const [lineIndex, line] of lines.entries()) {
+    const hasContext = CARD_CONTEXT.test(line);
+    if (isDateLikeLine(line) && !hasContext) continue;
+
     const last4 = extractLast4FromCardLikeValue(line, { requireContext: false });
     if (!last4) continue;
 
     const hasMask = hasCardMask(line);
-    const hasContext = CARD_CONTEXT.test(line);
-    if (!hasMask && !hasContext) continue;
+    const hasAnyMask = new RegExp(CARD_MASK_CLASS).test(line);
+    if (isTechnicalOnlyNumberLine(line)) continue;
+
+    const previousLine = lines[lineIndex - 1] ?? '';
+    const nextLine = lines[lineIndex + 1] ?? '';
+    const nearbyContext = CARD_CONTEXT.test(lines[lineIndex - 1] ?? '')
+      || CARD_CONTEXT.test(lines[lineIndex + 1] ?? '')
+      || /\bsingle\s+product\b/i.test(previousLine)
+      || /\bsingle\s+product\b/i.test(nextLine);
+    const technicalNearby = CARD_EXCLUDED_CONTEXT.test(line) || CARD_EXCLUDED_CONTEXT.test(previousLine) || CARD_EXCLUDED_CONTEXT.test(nextLine);
+    const compactDigits = line.replace(/\D/g, '');
+    const loosePanLine = compactDigits.length >= 13
+      && compactDigits.length <= 19
+      && !TECHNICAL_NUMBER_LINE.test(line)
+      && !isDateLikeLine(line)
+      && !FUEL_PRODUCT_LINE.test(line)
+      && !/\b(?:total|amount|amnt|litres?|ltrs?|price|rate|trace|auth|terminal|merchant|uti|rrn|tsn|vat|reg\s*no)\b/i.test(line);
+    if (!hasMask && !hasAnyMask && !hasContext && !nearbyContext && !loosePanLine) continue;
+    if (technicalNearby && !hasContext && !nearbyContext && !loosePanLine) continue;
 
     candidates.push({
       raw: line,
       value: { masked: safeCardMask(last4), last4 },
-      score: (hasMask ? 124 : 92) + (hasContext ? 12 : 0) - (CARD_EXCLUDED_CONTEXT.test(line) && !hasContext ? 10 : 0),
+      score: (hasMask ? 124 : hasAnyMask ? 116 : loosePanLine ? 108 : 92)
+        + (hasContext ? 12 : 0)
+        + (nearbyContext ? 8 : 0)
+        - (technicalNearby && !hasContext ? 35 : 0),
       lineIndex,
-      reason: hasMask ? 'masked-card' : 'card-context',
+      reason: hasMask || hasAnyMask ? 'masked-card' : loosePanLine ? 'card-pan-line' : 'card-context',
     });
   }
 

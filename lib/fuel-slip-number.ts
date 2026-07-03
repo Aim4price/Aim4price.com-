@@ -18,15 +18,62 @@ function cleanNumericText(value: unknown): string {
 }
 
 const FUEL_SLIP_DECIMAL_TOKEN = /-?\d(?:[\d ]*\d)?(?:\s*[,.:]\s*\d{1,4})*/g;
+const FUEL_SLIP_NUMBERISH_FRAGMENT = /-?[0-9oOlI|!sSgGqQbBzZ](?:[0-9oOlI|!sSgGqQbBcCkKzZ\s,.:;；]*[0-9oOlI|!sSgGqQbBcCkKzZ])?/g;
+
+function ocrDigitReplacement(character: string): string | null {
+  if (/\d/.test(character)) return character;
+  if (/[oO]/.test(character)) return '0';
+  if (/[lI|!kK]/.test(character)) return '1';
+  if (/[zZ]/.test(character)) return '2';
+  if (/[sS]/.test(character)) return '5';
+  if (/[bB]/.test(character)) return '6';
+  if (/[gGqQ]/.test(character)) return '9';
+  if (/[cC]/.test(character)) return '0';
+  return null;
+}
+
+function repairNumberishFragment(value: string): string {
+  const characters = [...value.replace(/[;；]/g, '.').replace(/[·•]/g, '.')];
+  let output = '';
+
+  for (let index = 0; index < characters.length; index += 1) {
+    const character = characters[index];
+
+    if (/[-\s,.:]/.test(character)) {
+      output += character;
+      continue;
+    }
+
+    if (/[cC]/.test(character)) {
+      const previous = output.trimEnd().slice(-1);
+      const next = ocrDigitReplacement(characters[index + 1] ?? '');
+      if (/[,.:]/.test(previous) && next !== null) {
+        continue;
+      }
+    }
+
+    const replacement = ocrDigitReplacement(character);
+    output += replacement ?? character;
+  }
+
+  return output;
+}
+
+function repairFuelSlipNumberishText(value: string): string {
+  return cleanNumericText(value)
+    .replace(/\bR\s*[kK](?=\s*\d)/g, 'R ')
+    .replace(/(\d)\s*[;；]\s*(?=[\doOlI|!sSgGqQbBcCkKzZ])/g, '$1.')
+    .replace(FUEL_SLIP_NUMBERISH_FRAGMENT, (fragment) => (/\d/.test(fragment) ? repairNumberishFragment(fragment) : fragment));
+}
 
 function extractDecimalTokens(value: string): string[] {
-  return [...value.matchAll(FUEL_SLIP_DECIMAL_TOKEN)]
+  return [...repairFuelSlipNumberishText(value).matchAll(FUEL_SLIP_DECIMAL_TOKEN)]
     .map((match) => cleanNumericText(match[0]))
     .filter((token) => /\d/.test(token));
 }
 
 function preferredDecimalToken(value: string): string {
-  const text = cleanNumericText(value);
+  const text = repairFuelSlipNumberishText(value);
   if (!text) return '';
 
   if (/^T\s*[:=]\s*\d{1,2}:\d{2}(?::\d{2})?$/i.test(text) || /^\d{1,2}:\d{2}:\d{2}$/.test(text)) {
@@ -74,7 +121,7 @@ export function roundFuelSlipAmount(value: number): number {
 
 export function parseFuelSlipDecimal(value: unknown, decimals = 2): number | null {
   let text = preferredDecimalToken(cleanNumericText(value))
-    .replace(/(\d)\s*:\s*(\d)/g, '$1.$2')
+    .replace(/(\d)\s*[:;]\s*(\d)/g, '$1.$2')
     .replace(/(?:zar|rand)/gi, '')
     .replace(/litres?|liters?|ltrs?/gi, '')
     .replace(/\bper\b/gi, '')
