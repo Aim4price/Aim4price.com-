@@ -1990,40 +1990,66 @@ function getAssetUsageMetric(asset: Pick<RegisterAsset, 'kind' | 'specsJson'>): 
   );
 }
 
+function isPercentUsageModeValue(value: unknown): boolean {
+  const normalized = String(value ?? '').trim().toLowerCase();
+  return (
+    normalized === 'percent' ||
+    normalized === 'percentage' ||
+    normalized === 'percent_used' ||
+    normalized === 'percentage_used' ||
+    normalized === 'percentage_depreciation' ||
+    normalized === 'life_worked_percent' ||
+    normalized === 'worked_percent' ||
+    normalized === 'lifetime_percent' ||
+    normalized === 'wear_class'
+  );
+}
+
 function assetUsesPercentUsage(asset: RegisterAsset): boolean {
   const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
   const percent = getAssetLifeWorkedPercent(asset);
   const hours = Number(asset.hours);
   const hasPositiveHours = Number.isFinite(hours) && hours > 0;
-  const depreciationMethod = String(asset.depreciationMethodUsed ?? '').trim().toLowerCase();
-  const rawUsageMode = String(
-    specs.usageMode ??
-      specs.usage_mode ??
-      specs.usageMetricType ??
-      specs.usage_metric_type ??
-      specs.valuationMode ??
-      specs.valuation_mode ??
+  const depreciationMethod = String(
+    asset.depreciationMethodUsed ??
+      specs.depreciationMethodUsed ??
+      specs.depreciation_method_used ??
+      specs.selectedDepreciationMethod ??
+      specs.selected_depreciation_method ??
       '',
   )
     .trim()
     .toLowerCase();
 
-  if (asset.kind === 'vehicle') {
-    return false;
-  }
+  const usageModeValues = [
+    specs.usageMode,
+    specs.usage_mode,
+    specs.usageBasis,
+    specs.usage_basis,
+    specs.usageMetricType,
+    specs.usage_metric_type,
+    specs.valuationMode,
+    specs.valuation_mode,
+    specs.selectedUsageMode,
+    specs.selected_usage_mode,
+    specs.selectedUsageBasis,
+    specs.selected_usage_basis,
+    specs.depreciationMethodUsed,
+    specs.depreciation_method_used,
+    specs.selectedDepreciationMethod,
+    specs.selected_depreciation_method,
+  ];
 
-  if (
-    rawUsageMode === 'percent' ||
-    rawUsageMode === 'percentage' ||
-    rawUsageMode === 'percent_used' ||
-    rawUsageMode === 'percentage_depreciation' ||
-    rawUsageMode === 'wear_class'
-  ) {
+  if (usageModeValues.some(isPercentUsageModeValue)) {
     return true;
   }
 
   if (depreciationMethod === 'percentage_depreciation') {
     return true;
+  }
+
+  if (asset.kind === 'vehicle') {
+    return false;
   }
 
   return percent !== null && (!hasPositiveHours || depreciationMethod === 'semi_depreciation');
@@ -2228,16 +2254,43 @@ function buildAssetSettingsSpecsJson(asset: RegisterAsset, nextKind: AssetKind, 
   specs.usage_metric = usageMetric;
 
   if (lifeWorkedPercent === null) {
+    delete specs.lifeWorkedPercent;
     delete specs.life_worked_percent;
+    delete specs.workedPercent;
     delete specs.worked_percent;
+    delete specs.percentWorked;
     delete specs.percent_worked;
+    delete specs.lifetimeWorkedPercent;
     delete specs.lifetime_worked_percent;
+    delete specs.lifetimeUsedPercent;
     delete specs.lifetime_used_percent;
+
+    if (usageMetric) {
+      specs.usageMode = usageMetric;
+      specs.usage_mode = usageMetric;
+      specs.usageBasis = 'reading';
+      specs.usage_basis = 'reading';
+    } else {
+      delete specs.usageMode;
+      delete specs.usage_mode;
+      delete specs.usageBasis;
+      delete specs.usage_basis;
+    }
   } else {
+    specs.usageMode = 'percent';
+    specs.usage_mode = 'percent';
+    specs.usageBasis = 'percent';
+    specs.usage_basis = 'percent';
+    specs.lifeWorkedPercent = lifeWorkedPercent;
     specs.life_worked_percent = lifeWorkedPercent;
+    specs.workedPercent = lifeWorkedPercent;
     specs.worked_percent = lifeWorkedPercent;
+    specs.percentWorked = lifeWorkedPercent;
     specs.percent_worked = lifeWorkedPercent;
+    specs.lifetimeWorkedPercent = lifeWorkedPercent;
     specs.lifetime_worked_percent = lifeWorkedPercent;
+    specs.lifetimeUsedPercent = lifeWorkedPercent;
+    specs.lifetime_used_percent = lifeWorkedPercent;
   }
 
   if (nextKind === 'property') {
@@ -8749,7 +8802,7 @@ export default function AssetRegisterClient() {
     setIsSavingPricingPreview(false);
     setRevalueReplacementPriceInput('');
     setRevalueReplacementPriceError(null);
-    setRevalueLifetimeUsageInput(formatRegisterValueInput(readAssetMaxLifetimeUsage(asset) ?? ''));
+    setRevalueLifetimeUsageInput(shouldShowRevalueLifetimeInput(asset) ? formatRegisterValueInput(readAssetMaxLifetimeUsage(asset) ?? '') : '');
     setRevalueAdvancedError(null);
     setSaveReplacementPriceWithRevalue(false);
   }
@@ -8816,7 +8869,7 @@ export default function AssetRegisterClient() {
     setIsSavingPricingPreview(false);
     setRevalueReplacementPriceInput(formatRegisterValueInput(newReplacementPriceExVat));
     setRevalueReplacementPriceError(null);
-    setRevalueLifetimeUsageInput(formatRegisterValueInput(readAssetMaxLifetimeUsage(asset) ?? ''));
+    setRevalueLifetimeUsageInput(shouldShowRevalueLifetimeInput(asset) ? formatRegisterValueInput(readAssetMaxLifetimeUsage(asset) ?? '') : '');
     setRevalueAdvancedError(null);
     setSaveReplacementPriceWithRevalue(true);
   }
@@ -10350,12 +10403,18 @@ export default function AssetRegisterClient() {
         : 'New price used for preview only'
       : 'Using saved price'
     : null;
+  const pricingPreviewUsesPercentUsage = pricingPreview ? assetUsesPercentUsage(pricingPreview.asset) : false;
   const pricingPreviewUsageMetric = pricingPreview ? getAssetUsageMetric(pricingPreview.asset) : 'hours';
   const pricingPreviewLifetimeShortUnit = getLifetimeShortUnit(pricingPreviewUsageMetric);
-  const pricingPreviewLifetimeValue = pricingPreview
+  const pricingPreviewLifetimeValue = pricingPreview && !pricingPreviewUsesPercentUsage
     ? pricingPreview.advancedAssumptions?.maxLifetimeUsage ??
       (pricingPreview.result?.item ? readAssetMaxLifetimeUsage(pricingPreview.result.item) : readAssetMaxLifetimeUsage(pricingPreview.asset))
     : null;
+  const pricingPreviewSavedStepTitle = pricingPreviewUsesPercentUsage ? 'Use saved replacement price?' : 'Use saved replacement price and lifetime?';
+  const pricingPreviewCustomStepTitle = pricingPreviewUsesPercentUsage ? 'Enter a different price' : 'Enter a different price and lifetime';
+  const pricingPreviewCustomStepCopy = pricingPreviewUsesPercentUsage
+    ? 'Type the replacement price excluding VAT before calculating the new value.'
+    : 'Type the replacement price excluding VAT and adjust expected lifetime before calculating the new value.';
   const projectionUsesPercentUsage = Boolean(
     projectionResult?.usageMetric === 'percent' ||
     (projectionAsset && assetUsesPercentUsage(projectionAsset)),
@@ -13880,7 +13939,7 @@ export default function AssetRegisterClient() {
                       <div className={styles.revalueReplacementHeader}>
                         <div>
                           <span>Step 1 of 3</span>
-                          <h4>Use saved replacement price and lifetime?</h4>
+                          <h4>{pricingPreviewSavedStepTitle}</h4>
                         </div>
                       </div>
 
@@ -13922,8 +13981,8 @@ export default function AssetRegisterClient() {
                       <div className={styles.revalueReplacementHeader}>
                         <div>
                           <span>Step 2 of 3</span>
-                          <h4>Enter a different price and lifetime</h4>
-                          <p className={styles.revalueStepCopy}>Type the replacement price excluding VAT and adjust expected lifetime before calculating the new value.</p>
+                          <h4>{pricingPreviewCustomStepTitle}</h4>
+                          <p className={styles.revalueStepCopy}>{pricingPreviewCustomStepCopy}</p>
                         </div>
                       </div>
 
@@ -14008,10 +14067,12 @@ export default function AssetRegisterClient() {
                               <span>Replacement price action:</span>
                               <strong>{pricingPreviewReplacementActionLabel}</strong>
                             </div>
-                            <div>
-                              <span>Expected lifetime used:</span>
-                              <strong>{pricingPreviewLifetimeValue !== null ? `${formatPlainNumber(pricingPreviewLifetimeValue)} ${pricingPreviewLifetimeShortUnit}` : 'Not set'}</strong>
-                            </div>
+                            {!pricingPreviewUsesPercentUsage ? (
+                              <div>
+                                <span>Expected lifetime used:</span>
+                                <strong>{pricingPreviewLifetimeValue !== null ? `${formatPlainNumber(pricingPreviewLifetimeValue)} ${pricingPreviewLifetimeShortUnit}` : 'Not set'}</strong>
+                              </div>
+                            ) : null}
                           </div>
                         </section>
 
