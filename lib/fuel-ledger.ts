@@ -3038,7 +3038,9 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
           left join public.valuation_runs vr on vr.id = a.valuation_run_id
           left join public.equipment_families ef on ef.id = coalesce(a.equipment_family_id, vr.equipment_family_id)
           where a.user_id = $1 and a.id::text = $2
-          for update
+          -- Only lock the saved asset row. The LEFT JOIN tables are enrichment-only and
+          -- PostgreSQL must not try to lock the nullable side of these joins.
+          for update of a
         `,
         [userId, assetId],
       );
