@@ -509,6 +509,8 @@ type AccountProfile = {
   marketplacePhone?: string;
   marketplaceEmail?: string;
   marketplaceLocation?: string;
+  partnerLatitude?: number | null;
+  partnerLongitude?: number | null;
   createdAtIso: string | null;
   updatedAtIso: string | null;
 };
@@ -871,6 +873,149 @@ const LEAFLET_SCRIPT_ID = 'aim4price-leaflet-script';
 const LEAFLET_CSS_ID = 'aim4price-leaflet-css';
 const DEFAULT_PARTNER_MAP_CENTER: [number, number] = [-29, 24];
 const DEFAULT_PARTNER_MAP_ZOOM = 5;
+const ASSET_SETTINGS_SAVED_ASSET_ZOOM = 13;
+const ASSET_SETTINGS_PROFILE_PIN_ZOOM = 12;
+const ASSET_SETTINGS_TOWN_ZOOM = 11;
+const ASSET_SETTINGS_PROVINCE_ZOOM = 7;
+
+type AssetSettingsApproximateMapLocation = { center: [number, number]; zoom: number };
+type AssetSettingsMapLookupLocation = { keys: string[]; center: [number, number]; zoom?: number };
+
+const ASSET_SETTINGS_SA_TOWN_MAP_LOCATIONS: AssetSettingsMapLookupLocation[] = [
+  { keys: ['cape town', 'city of cape town', 'bellville', 'brackenfell', 'durbanville', 'milnerton'], center: [-33.9249, 18.4241] },
+  { keys: ['stellenbosch'], center: [-33.9321, 18.8602] },
+  { keys: ['paarl'], center: [-33.7342, 18.9621] },
+  { keys: ['worcester'], center: [-33.6465, 19.4485] },
+  { keys: ['malmesbury'], center: [-33.4608, 18.7271] },
+  { keys: ['swellendam'], center: [-34.0226, 20.4417] },
+  { keys: ['hermanus'], center: [-34.4187, 19.2345] },
+  { keys: ['beaufort west'], center: [-32.3567, 22.5829] },
+  { keys: ['george', 'platrug', 'platrug george'], center: [-33.9644, 22.4597] },
+  { keys: ['mossel bay', 'mosselbaai'], center: [-34.1831, 22.1460] },
+  { keys: ['oudtshoorn'], center: [-33.5907, 22.2014] },
+  { keys: ['knysna'], center: [-34.0351, 23.0465] },
+  { keys: ['plettenberg bay', 'plettenbergbaai', 'plett'], center: [-34.0527, 23.3716] },
+  { keys: ['johannesburg', 'joburg', 'egoli', 'sandton', 'randburg', 'roodepoort'], center: [-26.2041, 28.0473] },
+  { keys: ['pretoria', 'tshwane', 'centurion'], center: [-25.7479, 28.2293] },
+  { keys: ['midrand'], center: [-25.9992, 28.1263] },
+  { keys: ['krugersdorp'], center: [-26.0963, 27.8077] },
+  { keys: ['vereeniging', 'vanderbijlpark', 'sasolburg'], center: [-26.6731, 27.9261] },
+  { keys: ['durban', 'ethekwini', 'umhlanga', 'pinetown'], center: [-29.8587, 31.0218] },
+  { keys: ['pietermaritzburg', 'maritzburg'], center: [-29.6006, 30.3794] },
+  { keys: ['richards bay', 'empangeni'], center: [-28.7807, 32.0383] },
+  { keys: ['newcastle'], center: [-27.7574, 29.9318] },
+  { keys: ['bloemfontein', 'mangaung'], center: [-29.0852, 26.1596] },
+  { keys: ['welkom'], center: [-27.9777, 26.7351] },
+  { keys: ['bethlehem'], center: [-28.2308, 28.3071] },
+  { keys: ['kimberley'], center: [-28.7282, 24.7499] },
+  { keys: ['upington'], center: [-28.4478, 21.2561] },
+  { keys: ['springbok'], center: [-29.6643, 17.8865] },
+  { keys: ['gqeberha', 'port elizabeth'], center: [-33.9608, 25.6022] },
+  { keys: ['east london'], center: [-33.0192, 27.8999] },
+  { keys: ['mthatha', 'umtata'], center: [-31.5889, 28.7844] },
+  { keys: ['graaff reinet'], center: [-32.2522, 24.5308] },
+  { keys: ['queenstown', 'komani'], center: [-31.8976, 26.8753] },
+  { keys: ['mbombela', 'nelspruit'], center: [-25.4658, 30.9853] },
+  { keys: ['emalahleni', 'witbank'], center: [-25.8713, 29.2332] },
+  { keys: ['middelburg mpumalanga'], center: [-25.7751, 29.4648] },
+  { keys: ['secunda'], center: [-26.5166, 29.1899] },
+  { keys: ['polokwane', 'pietersburg'], center: [-23.9045, 29.4689] },
+  { keys: ['tzaneen'], center: [-23.8332, 30.1635] },
+  { keys: ['thohoyandou'], center: [-22.9456, 30.4840] },
+  { keys: ['rustenburg'], center: [-25.6676, 27.2421] },
+  { keys: ['mahikeng', 'mafikeng'], center: [-25.8652, 25.6442] },
+  { keys: ['klerksdorp'], center: [-26.8521, 26.6667] },
+  { keys: ['potchefstroom'], center: [-26.7145, 27.0970] },
+];
+
+const ASSET_SETTINGS_SA_PROVINCE_MAP_LOCATIONS: AssetSettingsMapLookupLocation[] = [
+  { keys: ['western cape'], center: [-33.2278, 21.8569] },
+  { keys: ['eastern cape'], center: [-32.2968, 26.4194] },
+  { keys: ['northern cape'], center: [-29.0467, 21.8569] },
+  { keys: ['free state'], center: [-28.4541, 26.7968] },
+  { keys: ['gauteng'], center: [-26.2708, 28.1123] },
+  { keys: ['kwazulu natal', 'kwa zulu natal', 'kzn'], center: [-28.5306, 30.8958] },
+  { keys: ['limpopo'], center: [-23.4013, 29.4179] },
+  { keys: ['mpumalanga'], center: [-25.5653, 30.5279] },
+  { keys: ['north west', 'northwest'], center: [-26.6639, 25.2838] },
+];
+
+function normalizeAssetSettingsMapLookupText(value: unknown): string {
+  return String(value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function readAssetSettingsMapCoordinate(value: unknown, limit: number): number | null {
+  if (value === null || typeof value === 'undefined') {
+    return null;
+  }
+
+  if (typeof value === 'string' && !value.trim()) {
+    return null;
+  }
+
+  const numeric = typeof value === 'number' ? value : Number(value);
+
+  return Number.isFinite(numeric) && Math.abs(numeric) <= limit ? numeric : null;
+}
+
+function findAssetSettingsLookupLocation(
+  lookupText: string,
+  locations: AssetSettingsMapLookupLocation[],
+  fallbackZoom: number,
+): AssetSettingsApproximateMapLocation | null {
+  if (!lookupText) return null;
+
+  const paddedLookupText = ` ${lookupText} `;
+
+  for (const location of locations) {
+    if (location.keys.some((key) => paddedLookupText.includes(` ${normalizeAssetSettingsMapLookupText(key)} `))) {
+      return { center: location.center, zoom: location.zoom ?? fallbackZoom };
+    }
+  }
+
+  return null;
+}
+
+function resolveAssetSettingsProfileMapLocation(profile: AccountProfile | null): AssetSettingsApproximateMapLocation | null {
+  if (!profile) return null;
+
+  const profileLatitude = readAssetSettingsMapCoordinate(profile.partnerLatitude, 90);
+  const profileLongitude = readAssetSettingsMapCoordinate(profile.partnerLongitude, 180);
+
+  if (profileLatitude !== null && profileLongitude !== null) {
+    return { center: [profileLatitude, profileLongitude], zoom: ASSET_SETTINGS_PROFILE_PIN_ZOOM };
+  }
+
+  const townLookupText = normalizeAssetSettingsMapLookupText(
+    [profile.addressLine1, profile.townCity, profile.marketplaceLocation, profile.province].filter(Boolean).join(' '),
+  );
+  const townLocation = findAssetSettingsLookupLocation(
+    townLookupText,
+    ASSET_SETTINGS_SA_TOWN_MAP_LOCATIONS,
+    ASSET_SETTINGS_TOWN_ZOOM,
+  );
+
+  if (townLocation) {
+    return townLocation;
+  }
+
+  return findAssetSettingsLookupLocation(
+    normalizeAssetSettingsMapLookupText(profile.province),
+    ASSET_SETTINGS_SA_PROVINCE_MAP_LOCATIONS,
+    ASSET_SETTINGS_PROVINCE_ZOOM,
+  );
+}
+
+function getAssetSettingsInitialMapLocation(profile: AccountProfile | null): AssetSettingsApproximateMapLocation {
+  return resolveAssetSettingsProfileMapLocation(profile) ?? { center: DEFAULT_PARTNER_MAP_CENTER, zoom: DEFAULT_PARTNER_MAP_ZOOM };
+}
 
 let leafletLoaderPromise: Promise<any> | null = null;
 
@@ -6103,16 +6248,22 @@ export default function AssetRegisterClient() {
         const savedLatitude = parseAssetSettingsCoordinate(assetSettingsMapLatInput);
         const savedLongitude = parseAssetSettingsCoordinate(assetSettingsMapLngInput);
         const hasSavedCoordinates = savedLatitude !== null && savedLongitude !== null;
+        const profileMapLocation = getAssetSettingsInitialMapLocation(accountProfile);
         const center: [number, number] = hasSavedCoordinates
           ? [savedLatitude, savedLongitude]
-          : DEFAULT_PARTNER_MAP_CENTER;
-        const zoom = hasSavedCoordinates ? 13 : DEFAULT_PARTNER_MAP_ZOOM;
+          : profileMapLocation.center;
+        const zoom = hasSavedCoordinates ? ASSET_SETTINGS_SAVED_ASSET_ZOOM : profileMapLocation.zoom;
 
         if (!assetSettingsLeafletMapRef.current) {
           assetSettingsLeafletMapRef.current = L.map(assetSettingsMapElementRef.current, { zoomControl: true }).setView(center, zoom);
 
           L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
             attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community',
+            maxZoom: 19,
+          }).addTo(assetSettingsLeafletMapRef.current);
+
+          L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Labels &copy; Esri',
             maxZoom: 19,
           }).addTo(assetSettingsLeafletMapRef.current);
 
@@ -6145,7 +6296,7 @@ export default function AssetRegisterClient() {
     return () => {
       cancelled = true;
     };
-  }, [isAssetSettingsModalOpen, assetSettingsView]);
+  }, [isAssetSettingsModalOpen, assetSettingsView, accountProfile]);
 
   useEffect(() => {
     if (isAssetSettingsModalOpen && assetSettingsView === 'locationMap') {
