@@ -27722,6 +27722,8 @@ button.documentOpenLink {
 
 .summaryModalHeader .modalHeaderText {
   min-width: 0 !important;
+  display: grid !important;
+  gap: 0.24rem !important;
 }
 
 .summaryModalHeader h3 {
@@ -27734,29 +27736,39 @@ button.documentOpenLink {
 
 .summaryModalHeader p {
   max-width: 68rem !important;
-  margin: 0.62rem 0 0 !important;
+  margin: 0 !important;
   color: #5d6e83 !important;
   font-size: clamp(0.93rem, 1.15vw, 1.06rem) !important;
   font-weight: 650 !important;
-  line-height: 1.45 !important;
+  line-height: 1.42 !important;
 }
 
 .summaryHeaderActions {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: flex-end;
   gap: 0.55rem;
   flex: 0 0 auto;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  padding-top: 0.08rem;
 }
 
 .summaryDownloadButton {
   min-height: 2.55rem !important;
-  padding: 0.64rem 0.92rem !important;
+  height: 2.55rem !important;
+  padding: 0 0.92rem !important;
   border-radius: 999px !important;
   font-size: 0.8rem !important;
   font-weight: 800 !important;
   white-space: nowrap !important;
+}
+
+.summaryModalHeader .modalCloseButton {
+  width: 2.55rem !important;
+  min-width: 2.55rem !important;
+  height: 2.55rem !important;
+  min-height: 2.55rem !important;
+  margin-left: 0 !important;
 }
 
 .summaryModalBody {
