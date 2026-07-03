@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent, type ReactNode, type SVGProps } from 'react';
 import AppHeader from '../../components/AppHeader';
 import styles from './page.module.css';
-import { fuelSlipDecimalToInput, parseFuelSlipDecimal, reconcileFuelSlipNumbers } from '../../lib/fuel-slip-number';
+import { fuelSlipDecimalToInput, parseFuelSlipDecimal } from '../../lib/fuel-slip-number';
 
 type FuelStorageStatus = 'active' | 'archived';
 type ModalMode = 'create-storage' | 'edit-storage' | 'pin' | 'report' | 'qr' | 'fuel-slip' | 'fuel-slip-menu' | 'fuel-slip-manager' | null;
@@ -947,18 +947,18 @@ function applyExtractionToFuelSlipDraft(current: FuelSlipDraft, response: FuelSl
     contentType: upload?.contentType ?? current.contentType,
     byteSize: typeof upload?.byteSize === 'number' ? upload.byteSize : current.byteSize,
     supplierName: extracted.supplierName ?? current.supplierName,
-    supplierVatNumber: '',
+    supplierVatNumber: extracted.supplierVatNumber ?? current.supplierVatNumber,
     slipNumber: extracted.slipNumber ?? current.slipNumber,
     transactionNumber: extracted.transactionNumber ?? current.transactionNumber,
     documentDate: extracted.documentDate ?? current.documentDate,
-    documentTime: '',
+    documentTime: extracted.documentTime ?? current.documentTime,
     fuelType: extracted.fuelType ?? current.fuelType,
     litres: numberToInput(extracted.litres, 3) || current.litres,
     pricePerLitre: numberToInput(extracted.pricePerLitre, 4) || current.pricePerLitre,
     totalAmount: numberToInput(extracted.totalAmount, 2) || current.totalAmount,
-    vatAmount: '',
-    vatIncluded: '',
-    vatRate: '',
+    vatAmount: numberToInput(extracted.vatAmount, 2) || current.vatAmount,
+    vatIncluded: booleanToInput(extracted.vatIncluded) || current.vatIncluded,
+    vatRate: numberToInput(extracted.vatRate, 4) || current.vatRate,
     paymentMethod: extracted.paymentMethod ?? current.paymentMethod,
     cardType: extracted.cardType ?? current.cardType,
     cardNumberMasked: normalizeFuelSlipCard(extracted.cardLast4 || extracted.cardNumberMasked || current.cardLast4 || current.cardNumberMasked, current.cardLast4).masked,
@@ -1619,26 +1619,7 @@ export default function FuelClient() {
   }
 
   function setFuelSlipNumericField(field: 'litres' | 'pricePerLitre' | 'totalAmount', value: string) {
-    setFuelSlipDraft((current) => {
-      const next: FuelSlipDraft = { ...current, [field]: value };
-      const reconciled = reconcileFuelSlipNumbers({
-        litres: numberInputToValue(next.litres, 3),
-        pricePerLitre: numberInputToValue(next.pricePerLitre, 4),
-        totalAmount: numberInputToValue(next.totalAmount, 2),
-      });
-
-      if (!next.totalAmount.trim() && reconciled.fields.totalAmount !== null) {
-        next.totalAmount = numberToInput(reconciled.fields.totalAmount, 2);
-      }
-      if (!next.litres.trim() && reconciled.fields.litres !== null) {
-        next.litres = numberToInput(reconciled.fields.litres, 3);
-      }
-      if (!next.pricePerLitre.trim() && reconciled.fields.pricePerLitre !== null) {
-        next.pricePerLitre = numberToInput(reconciled.fields.pricePerLitre, 4);
-      }
-
-      return next;
-    });
+    setFuelSlipDraft((current) => ({ ...current, [field]: value }));
   }
 
   function handleFuelSlipCardLast4Change(value: string) {
@@ -1769,25 +1750,25 @@ export default function FuelClient() {
           contentType: fuelSlipDraft.contentType || null,
           byteSize: fuelSlipDraft.byteSize,
           supplierName: fuelSlipDraft.supplierName,
-          supplierVatNumber: '',
+          supplierVatNumber: fuelSlipDraft.supplierVatNumber,
           slipNumber: fuelSlipDraft.slipNumber,
           transactionNumber: fuelSlipDraft.transactionNumber,
           documentDate: fuelSlipDraft.documentDate,
-          documentTime: '',
+          documentTime: fuelSlipDraft.documentTime,
           fuelType: fuelSlipDraft.fuelType,
           litres: numberInputToValue(fuelSlipDraft.litres, 3),
           pricePerLitre: numberInputToValue(fuelSlipDraft.pricePerLitre, 4),
           totalAmount: numberInputToValue(fuelSlipDraft.totalAmount, 2),
-          vatAmount: null,
-          vatIncluded: null,
-          vatRate: null,
-          paymentMethod: '',
-          cardType: '',
+          vatAmount: numberInputToValue(fuelSlipDraft.vatAmount, 2),
+          vatIncluded: fuelSlipDraft.vatIncluded === '' ? null : fuelSlipDraft.vatIncluded === 'true',
+          vatRate: numberInputToValue(fuelSlipDraft.vatRate, 4),
+          paymentMethod: fuelSlipDraft.paymentMethod,
+          cardType: fuelSlipDraft.cardType,
           cardNumberMasked: card.masked,
           cardLast4: card.last4,
-          merchantNumber: '',
-          terminalNumber: '',
-          siteNumber: '',
+          merchantNumber: fuelSlipDraft.merchantNumber,
+          terminalNumber: fuelSlipDraft.terminalNumber,
+          siteNumber: fuelSlipDraft.siteNumber,
           odometerReading: numberInputToValue(fuelSlipDraft.odometerReading, 2),
           hourMeterReading: numberInputToValue(fuelSlipDraft.hourMeterReading, 2),
           extractionStatus: fuelSlipDraft.extractionStatus,
