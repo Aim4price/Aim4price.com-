@@ -1,6 +1,6 @@
 import { extractDigitalPdfText } from './my-invoices-extraction';
 import { extractFuelSlipImageText, isSupportedFuelSlipImage } from './fuel-slip-ocr';
-import { parseFuelSlipDecimal, reconcileFuelSlipNumbers } from './fuel-slip-number';
+import { parseFuelSlipDecimal } from './fuel-slip-number';
 
 export type FuelSlipExtractionStatus = 'manual' | 'extracted' | 'needs_review';
 export type FuelSlipExtractionQuality = 'none' | 'weak' | 'good';
@@ -878,6 +878,36 @@ function collectFuelSlipCandidates(text: string, lines: string[]): FuelSlipCandi
   };
 }
 
+function hasExplicitDecimalMarker(raw: string): boolean {
+  return /[,.:]|\d\s+\d{1,4}\b/.test(raw);
+}
+
+function decimalRestoredLitresCandidates(candidates: Candidate<number>[]): Candidate<number>[] {
+  const restored: Candidate<number>[] = [];
+
+  for (const candidate of candidates) {
+    const digitText = cleanText(candidate.raw).replace(/\D/g, '');
+    if (hasExplicitDecimalMarker(candidate.raw) || !/^\d{3,6}$/.test(digitText)) continue;
+    if (candidate.value < 100 || candidate.value >= 100000) continue;
+
+    const decimalPlaces = digitText.length <= 4 ? [2, 1, 3] : [2, 3, 1];
+    for (const places of decimalPlaces) {
+      if (digitText.length <= places) continue;
+      const value = roundDecimal(Number(digitText) / (10 ** places), 3);
+      if (!isPlausibleLitres(value) || value === candidate.value) continue;
+      restored.push({
+        raw: candidate.raw,
+        value,
+        score: candidate.score - (places === 2 ? 2 : 10),
+        lineIndex: candidate.lineIndex,
+        reason: `${candidate.reason}-decimal-restored-${places}`,
+      });
+    }
+  }
+
+  return restored;
+}
+
 function uniqueNumberCandidates(candidates: Candidate<number>[], decimals: number, limit = 12): Candidate<number>[] {
   const seen = new Set<string>();
   const unique: Candidate<number>[] = [];
@@ -894,7 +924,7 @@ function uniqueNumberCandidates(candidates: Candidate<number>[], decimals: numbe
 }
 
 function selectBestNumericCandidates(candidates: FuelSlipCandidateSet): NumericSelection {
-  const litres = uniqueNumberCandidates(candidates.litres, 3);
+  const litres = uniqueNumberCandidates([...candidates.litres, ...decimalRestoredLitresCandidates(candidates.litres)], 3);
   const rates = uniqueNumberCandidates(candidates.pricePerLitre, 4);
   const totals = uniqueNumberCandidates(candidates.totalAmount, 2);
 
@@ -1113,16 +1143,6 @@ export function parseFuelSlipText(rawText: string): FuelSlipExtractionResult {
   draft.pricePerLitre = numericSelection.pricePerLitre?.value ?? null;
   draft.totalAmount = numericSelection.totalAmount?.value ?? null;
 
-  const reconciledNumbers = reconcileFuelSlipNumbers({
-    litres: draft.litres,
-    pricePerLitre: draft.pricePerLitre,
-    totalAmount: draft.totalAmount,
-  });
-  draft.litres = reconciledNumbers.fields.litres;
-  draft.pricePerLitre = reconciledNumbers.fields.pricePerLitre;
-  draft.totalAmount = reconciledNumbers.fields.totalAmount;
-  warnings.push(...reconciledNumbers.warnings);
-
   draft.vatAmount = extractVatAmount(lines);
   draft.vatIncluded = draft.vatAmount !== null || /\bvat\s*(?:inclusive|incl|included)|tax\s*(?:inclusive|incl|included)\b/i.test(text) ? true : null;
   draft.vatRate = /\b15\s*%|vat\s*@\s*15/i.test(text) ? 15 : null;
@@ -1150,14 +1170,14 @@ export function parseFuelSlipText(rawText: string): FuelSlipExtractionResult {
 
   const uniqueWarnings = [...new Set(warnings.map((warning) => cleanText(warning)).filter(Boolean))];
   draft.ocrConfidence = confidence;
-  draft.reviewRequired = !completeFuelDetails || reconciledNumbers.mismatch || confidence < 0.72 || uniqueWarnings.length > 0;
+  draft.reviewRequired = !completeFuelDetails || confidence < 0.72 || uniqueWarnings.length > 0;
   draft.extractionStatus = draft.reviewRequired ? 'needs_review' : 'extracted';
 
   return {
     draft,
     rawText: buildExtractionDebugPreview(text, draft, uniqueWarnings, candidates, numericSelection),
     warnings: uniqueWarnings.slice(0, 12),
-    quality: completeFuelDetails && confidence >= 0.72 && !reconciledNumbers.mismatch ? 'good' : 'weak',
+    quality: completeFuelDetails && confidence >= 0.72 ? 'good' : 'weak',
   };
 }
 

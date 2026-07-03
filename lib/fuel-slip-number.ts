@@ -18,7 +18,7 @@ function cleanNumericText(value: unknown): string {
 }
 
 const FUEL_SLIP_DECIMAL_TOKEN = /-?\d(?:[\d ]*\d)?(?:\s*[,.:]\s*\d{1,4})*/g;
-const FUEL_SLIP_NUMBERISH_FRAGMENT = /-?[0-9oOlI|!sSgGqQbBzZ](?:[0-9oOlI|!sSgGqQbBcCkKzZ\s,.:;；]*[0-9oOlI|!sSgGqQbBcCkKzZ])?/g;
+const FUEL_SLIP_NUMBERISH_FRAGMENT = /-?(?:\d|[oOlI|!sSgGqQbBzZ](?=[0-9oOlI|!sSgGqQbBzZ]))(?:[0-9oOlI|!sSgGqQbBcCkKzZ\s,.:;；]*[0-9oOlI|!sSgGqQbBcCkKzZ])?/g;
 
 function ocrDigitReplacement(character: string): string | null {
   if (/\d/.test(character)) return character;
@@ -189,45 +189,22 @@ export function fuelSlipDecimalToInput(value: number | null | undefined, decimal
   return String(value);
 }
 
+function finiteFuelSlipNumber(value: number | null): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
 export function reconcileFuelSlipNumbers(input: FuelSlipNumericFields): FuelSlipReconciliationResult {
-  let litres = input.litres;
-  let pricePerLitre = input.pricePerLitre;
-  let totalAmount = input.totalAmount;
-  const warnings: string[] = [];
-  let mismatch = false;
-
-  if ((totalAmount === null || !Number.isFinite(totalAmount)) && litres !== null && pricePerLitre !== null && litres > 0 && pricePerLitre > 0) {
-    totalAmount = roundFuelSlipAmount(litres * pricePerLitre);
-  }
-
-  if ((litres === null || !Number.isFinite(litres)) && totalAmount !== null && pricePerLitre !== null && totalAmount > 0 && pricePerLitre > 0) {
-    litres = roundFuelSlipLitres(totalAmount / pricePerLitre);
-  }
-
-  if ((pricePerLitre === null || !Number.isFinite(pricePerLitre)) && totalAmount !== null && litres !== null && totalAmount > 0 && litres > 0) {
-    pricePerLitre = roundFuelSlipRate(totalAmount / litres);
-  }
-
-  if (litres !== null && pricePerLitre !== null && totalAmount !== null && litres > 0 && pricePerLitre > 0 && totalAmount > 0) {
-    const expectedTotal = roundFuelSlipAmount(litres * pricePerLitre);
-    const difference = Math.abs(expectedTotal - totalAmount);
-    const tolerance = Math.max(1, Math.abs(totalAmount) * 0.01);
-
-    if (difference > tolerance) {
-      mismatch = true;
-      warnings.push(
-        `Litres × price per litre does not match the printed total. Expected R${expectedTotal.toFixed(2)}, printed R${totalAmount.toFixed(2)}.`,
-      );
-    }
-  }
+  const litres = finiteFuelSlipNumber(input.litres) ? roundFuelSlipLitres(input.litres) : null;
+  const pricePerLitre = finiteFuelSlipNumber(input.pricePerLitre) ? roundFuelSlipRate(input.pricePerLitre) : null;
+  const totalAmount = finiteFuelSlipNumber(input.totalAmount) ? roundFuelSlipAmount(input.totalAmount) : null;
 
   return {
     fields: {
-      litres: litres === null || !Number.isFinite(litres) ? null : roundFuelSlipLitres(litres),
-      pricePerLitre: pricePerLitre === null || !Number.isFinite(pricePerLitre) ? null : roundFuelSlipRate(pricePerLitre),
-      totalAmount: totalAmount === null || !Number.isFinite(totalAmount) ? null : roundFuelSlipAmount(totalAmount),
+      litres,
+      pricePerLitre,
+      totalAmount,
     },
-    warnings,
-    mismatch,
+    warnings: [],
+    mismatch: false,
   };
 }

@@ -5,7 +5,7 @@ import { getDb } from './db';
 import { hashScanPin, verifyScanPin } from './scan-pin';
 import { ensureAccountProfileColumns } from './account-profile';
 import { buildAssetRegisterUploadUrl } from './asset-register-uploads';
-import { parseFuelSlipDecimal, reconcileFuelSlipNumbers } from './fuel-slip-number';
+import { parseFuelSlipDecimal } from './fuel-slip-number';
 
 export const FUEL_SCAN_COOKIE_NAME = 'aim4price_fuel_scan';
 export const FUEL_SCAN_SESSION_MAX_AGE_SECONDS = 60 * 60 * 12;
@@ -2938,14 +2938,10 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
   const assetId = targetType === 'asset' ? trimText(input.assetId, 80) || targetId : '';
   const storageId = targetType === 'storage_tank' ? trimText(input.storageId, 80) || targetId : '';
   const captureMode = trimText(input.mode, 20).toLowerCase() === 'automatic' ? 'automatic' : 'manual';
-  const reconciledNumbers = reconcileFuelSlipNumbers({
-    litres: normalizeOptionalLitres(input.litres),
-    pricePerLitre: normalizeRateValue(input.pricePerLitre),
-    totalAmount: normalizeMoneyValue(input.totalAmount),
-  });
-  const litres = reconciledNumbers.fields.litres !== null && reconciledNumbers.fields.litres > 0 ? reconciledNumbers.fields.litres : null;
-  const pricePerLitre = reconciledNumbers.fields.pricePerLitre;
-  const totalAmount = reconciledNumbers.fields.totalAmount;
+  const parsedLitres = normalizeOptionalLitres(input.litres);
+  const litres = parsedLitres !== null && parsedLitres > 0 ? parsedLitres : null;
+  const pricePerLitre = normalizeRateValue(input.pricePerLitre);
+  const totalAmount = normalizeMoneyValue(input.totalAmount);
   const documentDate = normalizeDateOnly(input.documentDate);
   const documentTime = normalizeTimeText(input.documentTime);
   const uploadId = trimText(input.uploadId, 160);
@@ -2972,7 +2968,7 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
   const requestedExtractionStatus = captureMode === 'manual' ? 'manual' : normalizeFuelSlipExtractionStatus(input.extractionStatus);
   const ocrConfidence = normalizeRateValue(input.ocrConfidence);
   const rawExtractedText = maskStoredFuelSlipRawText(trimText(input.rawExtractedText, 20000));
-  let extractionWarnings = [...normalizeExtractionWarnings(input.extractionWarnings), ...reconciledNumbers.warnings];
+  let extractionWarnings = normalizeExtractionWarnings(input.extractionWarnings);
   let committed = false;
 
   const coreComplete = Boolean(documentDate && totalAmount !== null && litres !== null && litres > 0 && fuelType);
@@ -3110,7 +3106,7 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
     }
 
     extractionWarnings = [...new Set(extractionWarnings.map((warning) => maskStoredFuelSlipRawText(asText(warning))).filter(Boolean))].slice(0, 12);
-    const finalReviewRequired = pendingReview || reconciledNumbers.mismatch || (normalizeBoolean(input.reviewRequired) ?? false) || requestedExtractionStatus === 'needs_review';
+    const finalReviewRequired = pendingReview || (normalizeBoolean(input.reviewRequired) ?? false) || requestedExtractionStatus === 'needs_review';
     const finalExtractionStatus: FuelSlipExtractionStatus = pendingReview
       ? 'needs_review'
       : captureMode === 'manual'
@@ -3433,6 +3429,11 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
     committed = true;
 
     const assets = await listFuelAssetsForUser(userId);
+    const message = pendingReview
+      ? targetType === 'asset' && coreComplete && !usageComplete
+        ? 'Fuel slip saved for review. Add the required odometer or hour-meter reading before posting fuel usage.'
+        : 'Fuel slip saved for review. Complete the missing date, fuel type, litres or total amount before posting fuel usage.'
+      : 'Fuel Slip saved to Fuel Ledger.';
 
     return {
       fuelSlip,
@@ -3440,7 +3441,7 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
       event,
       assets,
       pendingReview,
-      message: pendingReview ? 'Fuel slip saved for review. Litres or fuel type missing.' : 'Fuel Slip saved to Fuel Ledger.',
+      message,
     };
   } catch (error) {
     if (!committed) {
