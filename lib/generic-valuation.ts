@@ -3,12 +3,15 @@ import {
   DEFAULT_ENGINE_FLOOR_PERCENT,
   DEFAULT_FALLBACK_LIFETIME_USED_PERCENT,
   DEFAULT_NON_PROPELLED_FLOOR_PERCENT,
+  applyCondition,
+  applyFloor,
   calculateEngineHoursValue,
   calculatePercentUsedValue,
   clamp,
   currentBaseYear,
   getAdvancedConditionFactorOverride,
   normalizeAdvancedAssumptions,
+  tractorAgeDepPct,
   tractorLifetimeHours,
   type AdvancedAssumptionsInput,
   type NormalizedAdvancedAssumptions,
@@ -515,6 +518,59 @@ function resolveResidualFloorPercent(input: DepreciationInput, fallbackPercent: 
   return normalizeResidualFloorFactor(input.specsJson.residual_floor_pct, fallbackPercent);
 }
 
+
+type AgeAwarePercentValueResult = {
+  percentUsed: number;
+  remainingPercent: number;
+  ageDepPct: number | null;
+  usageDepPct: number;
+  averageDepPct: number;
+  baseValueExVat: number;
+  conditionAdjustedValueExVat: number;
+  finalValueExVat: number;
+};
+
+function shouldBlendAgeIntoPercentageDepreciation(input: DepreciationInput): boolean {
+  if (input.yearModelUnknown) return false;
+  return input.isPropelled || isUsageAmountMetric(input.usageMetricType);
+}
+
+function calculateAgeAwarePercentValue(input: {
+  replacementPriceExVat: number;
+  percentUsed: number;
+  yearModel: number;
+  includeAgeDepreciation: boolean;
+  condition: GenericCondition;
+  floorPercent?: number;
+  conditionFactorOverride?: number | null;
+}): AgeAwarePercentValueResult {
+  const replacementPriceExVat = Math.max(0, Number(input.replacementPriceExVat) || 0);
+  const usageDepPct = clamp(Math.round(Number(input.percentUsed) || 0), 0, 100);
+  const remainingPercent = 100 - usageDepPct;
+  const ageDepPct = input.includeAgeDepreciation ? tractorAgeDepPct(input.yearModel) : null;
+  const averageDepPct = ageDepPct === null ? usageDepPct : Math.round((ageDepPct + usageDepPct) / 2);
+  const baseValueExVat = replacementPriceExVat * (1 - averageDepPct / 100);
+  const conditionAdjustedValueExVat = applyCondition(baseValueExVat, input.condition, input.conditionFactorOverride);
+  const finalValueExVat = Math.round(
+    applyFloor(
+      conditionAdjustedValueExVat,
+      replacementPriceExVat,
+      input.floorPercent ?? DEFAULT_NON_PROPELLED_FLOOR_PERCENT,
+    ),
+  );
+
+  return {
+    percentUsed: usageDepPct,
+    remainingPercent,
+    ageDepPct,
+    usageDepPct,
+    averageDepPct,
+    baseValueExVat: Math.round(baseValueExVat),
+    conditionAdjustedValueExVat: Math.round(conditionAdjustedValueExVat),
+    finalValueExVat,
+  };
+}
+
 function resolveDepreciation(input: DepreciationInput): {
   method: DepreciationMethodUsed;
   depreciationBaseValueExVat: number | null;
@@ -550,9 +606,11 @@ function resolveDepreciation(input: DepreciationInput): {
 
   if (explicitPercentageBasis) {
     const lifeWorkedPercent = resolveLifeWorkedPercent(input, 50);
-    const calculated = calculatePercentUsedValue({
+    const calculated = calculateAgeAwarePercentValue({
       replacementPriceExVat: input.replacementPrice,
       percentUsed: lifeWorkedPercent,
+      yearModel: yearForDepreciation,
+      includeAgeDepreciation: shouldBlendAgeIntoPercentageDepreciation(input),
       condition: input.condition,
       floorPercent: resolveResidualFloorPercent(input, DEFAULT_NON_PROPELLED_FLOOR_PERCENT),
       conditionFactorOverride: getAdvancedConditionFactorOverride(input.advancedAssumptions),
@@ -565,9 +623,9 @@ function resolveDepreciation(input: DepreciationInput): {
       lifeRemainingPercent: calculated.remainingPercent,
       estimatedHours: null,
       maxLifetimeHours: null,
-      ageDepPct: null,
-      usageDepPct: calculated.percentUsed,
-      averageDepPct: calculated.percentUsed,
+      ageDepPct: calculated.ageDepPct,
+      usageDepPct: calculated.usageDepPct,
+      averageDepPct: calculated.averageDepPct,
     };
   }
 
@@ -1790,7 +1848,11 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
       `Semi depreciation used: ${usageSentenceLabel} were estimated from ${selectedCalculation.lifeWorkedPercent ?? 0}% worked of ${selectedCalculation.maxLifetimeHours ?? 0} lifetime ${usageSentenceLabel}.`,
     );
   } else {
-    notes.push('Percentage depreciation used: valuation is based on how much the equipment has worked, then adjusted for condition.');
+    if (selectedCalculation.ageDepPct !== null) {
+      notes.push('Age-aware percentage depreciation used: year model, worked percentage and condition were applied.');
+    } else {
+      notes.push('Percentage depreciation used: valuation is based on how much the equipment has worked, then adjusted for condition.');
+    }
   }
 
   if (input.yearModelUnknown) {
