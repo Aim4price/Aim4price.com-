@@ -904,12 +904,29 @@ function normalizeFuelSlipCard(value: unknown, fallbackLast4?: unknown): { maske
   return { masked: safeFuelSlipCardMask(last4), last4 };
 }
 
-function sanitizeFuelSlipSensitiveText(value: unknown): string {
+const FUEL_SLIP_TECHNICAL_NUMBER_LINE = /\b(?:UTI|UTL|UIL|URL|UTIL|AID|IAD|CTQ|TVR|AC|RRN|TSN|terminal\s*(?:id|number|no|nr)?|merchant\s*(?:id|number|no|nr)?|batch\s*(?:number|no|nr)?|auth(?:orisation|orization)?\s*(?:code|number|no|nr)?|trace\s*(?:number|no|nr)?)\b/i;
+const FUEL_SLIP_CARD_CONTEXT = /\b(?:card|pan|account|acc|visa|master\s*card|mastercard|debit|credit|kaart|eft|ending|last\s*4|last\s*four)\b/i;
+
+function isFuelSlipTechnicalOnlyNumberLine(line: string): boolean {
+  const text = String(line ?? '').replace(/\u00a0/g, ' ').trim();
+  return FUEL_SLIP_TECHNICAL_NUMBER_LINE.test(text) && !FUEL_SLIP_CARD_CONTEXT.test(text);
+}
+
+function sanitizeFuelSlipSensitiveLine(line: string): string {
+  if (isFuelSlipTechnicalOnlyNumberLine(line)) return line;
+
   const maskClass = String.raw`[*xX#•·●∙]`;
-  return String(value ?? '')
+  return line
     .replace(new RegExp(String.raw`\b\d{4,6}[\s-]*(?:${maskClass}{1,}[\s-]*){1,6}\d{4}\b`, 'g'), (match) => normalizeFuelSlipCard(match).masked || match)
     .replace(new RegExp(String.raw`\b(?:${maskClass}{1,}[\s-]*){1,8}\d{4}\b`, 'g'), (match) => normalizeFuelSlipCard(match).masked || match)
-    .replace(/\b(?:\d[\s-]?){13,19}\b/g, (match) => normalizeFuelSlipCard(match).masked || match);
+    .replace(/\b(?:\d[ \t-]?){13,19}\b/g, (match) => normalizeFuelSlipCard(match).masked || match);
+}
+
+function sanitizeFuelSlipSensitiveText(value: unknown): string {
+  return String(value ?? '')
+    .split(/(\r?\n)/)
+    .map((part) => (/^\r?\n$/.test(part) ? part : sanitizeFuelSlipSensitiveLine(part)))
+    .join('');
 }
 
 function formatCardEnding(value: unknown, fallbackLast4?: unknown): string {
