@@ -116,7 +116,11 @@ function buildValuationPayload(input: SaveValuationRunInput, result: Result, sel
     input: {
       modelId: String(input.modelId),
       year: Math.round(input.year),
+      displayYearModel: input.yearModelUnknown ? null : Math.round(input.year),
       yearModelUnknown: Boolean(input.yearModelUnknown),
+      year_model_unknown: Boolean(input.yearModelUnknown),
+      usageMode: 'hours',
+      usage_mode: 'hours',
       hours: Math.max(0, Number(input.hours) || 0),
       condition: input.condition,
       frontPto: Boolean(input.frontPto),
@@ -269,6 +273,17 @@ function getGenericMarketListingIds(_result: GenericValuationResult): number[] {
   return [];
 }
 
+function getGenericUsageMode(result: GenericValuationResult): 'percent' | 'hours' | 'km' {
+  if (
+    result.depreciationMethodUsed === 'percentage_depreciation' ||
+    (result.usageAmount === null && result.lifeWorkedPercent !== null)
+  ) {
+    return 'percent';
+  }
+
+  return result.sector.key === 'motor' || result.family.usageMetricType === 'km' ? 'km' : 'hours';
+}
+
 export async function saveGenericValuationRunFromResult(
   input: SaveGenericValuationRunInput,
 ): Promise<SaveGenericValuationRunResult> {
@@ -286,6 +301,7 @@ export async function saveGenericValuationRunFromResult(
   const replacementPriceBandId = getPersistableReplacementPriceBandId(result);
   const yearModelUnknown = Boolean(result.yearModelUnknown ?? result.specsJson.year_model_unknown);
   const savedYearModel = yearModelUnknown ? null : result.year;
+  const usageMode = getGenericUsageMode(result);
 
   const valuationPayload = {
     input: {
@@ -296,10 +312,18 @@ export async function saveGenericValuationRunFromResult(
       normalizedTypedModelName: result.normalizedTypedModelName,
       specsJson: result.specsJson,
       year: result.year,
+      yearModel: savedYearModel,
+      year_model: savedYearModel,
       displayYearModel: savedYearModel,
+      display_year_model: savedYearModel,
+      usageMode,
+      usage_mode: usageMode,
       usageAmount: result.usageAmount,
+      usage_amount: result.usageAmount,
       lifeWorkedPercent: result.lifeWorkedPercent,
+      life_worked_percent: result.lifeWorkedPercent,
       yearModelUnknown,
+      year_model_unknown: yearModelUnknown,
       condition: result.condition,
       userReplacementPriceExVat: result.userReplacementPriceExVat,
       userReplacementPriceYear: result.userReplacementPriceYear,
@@ -309,7 +333,11 @@ export async function saveGenericValuationRunFromResult(
     selectedMethod,
     selectedReplacementPriceBasis: result.replacementPriceBasis,
     selectedDepreciationMethod: result.depreciationMethodUsed,
+    selected_depreciation_method: result.depreciationMethodUsed,
+    selectedUsageMode: usageMode,
+    selected_usage_mode: usageMode,
     selectedLifeWorkedPercent: result.lifeWorkedPercent,
+    selected_life_worked_percent: result.lifeWorkedPercent,
     selectedEstimatedHours: result.estimatedHours,
     selectedValueExVat: selectedValue,
   };

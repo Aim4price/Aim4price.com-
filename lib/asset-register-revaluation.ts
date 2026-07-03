@@ -99,6 +99,25 @@ function asInteger(value: unknown): number | null {
   return parsed === null ? null : Math.round(parsed);
 }
 
+function asSupportedYearModel(value: unknown): number | null {
+  const year = asInteger(value);
+  if (year === null) return null;
+  return year >= 1800 && year <= new Date().getFullYear() + 1 ? year : null;
+}
+
+function readYearModelFromSpecs(specs: Record<string, unknown>): number | null {
+  return (
+    asSupportedYearModel(specs.yearModel) ??
+    asSupportedYearModel(specs.year_model) ??
+    asSupportedYearModel(specs.displayYearModel) ??
+    asSupportedYearModel(specs.display_year_model) ??
+    asSupportedYearModel(specs.assetYearModel) ??
+    asSupportedYearModel(specs.asset_year_model) ??
+    asSupportedYearModel(specs.currentYearModel) ??
+    asSupportedYearModel(specs.current_year_model)
+  );
+}
+
 function roundMoneyValue(value: unknown): number | null {
   const parsed = asNumber(value);
   return parsed === null ? null : Math.round(parsed);
@@ -261,46 +280,147 @@ function cleanSpecsForValuation(specs: Record<string, unknown>): Record<string, 
   return cleaned;
 }
 
-function readLifeWorkedPercent(asset: AssetRegisterItem, payloadInput: Record<string, unknown>): number | null {
+function resolveYearModelForRevaluation(input: {
+  asset: AssetRegisterItem;
+  row: ValuationRunRow;
+  payloadInput: Record<string, unknown>;
+  assetSpecs: Record<string, unknown>;
+  rowSpecs: Record<string, unknown>;
+  missingKnownYearMessage: string;
+}): { year: number; yearModelUnknown: boolean } {
+  const currentSavedYear = asSupportedYearModel(input.asset.yearModel);
+
+  if (currentSavedYear !== null) {
+    return { year: currentSavedYear, yearModelUnknown: false };
+  }
+
+  const assetSpecsUnknownFlag = asBoolean(input.assetSpecs.yearModelUnknown ?? input.assetSpecs.year_model_unknown);
+  const savedYearFromAssetSpecs = assetSpecsUnknownFlag ? null : readYearModelFromSpecs(input.assetSpecs);
+
+  if (savedYearFromAssetSpecs !== null) {
+    return { year: savedYearFromAssetSpecs, yearModelUnknown: false };
+  }
+
+  const savedUnknownFlag = asBoolean(
+    input.assetSpecs.yearModelUnknown ??
+      input.assetSpecs.year_model_unknown ??
+      input.rowSpecs.yearModelUnknown ??
+      input.rowSpecs.year_model_unknown ??
+      input.payloadInput.yearModelUnknown ??
+      input.payloadInput.year_model_unknown,
+  );
+
+  if (savedUnknownFlag) {
+    return {
+      year:
+        asSupportedYearModel(input.payloadInput.year) ??
+        asSupportedYearModel(input.payloadInput.calculationYear) ??
+        new Date().getFullYear(),
+      yearModelUnknown: true,
+    };
+  }
+
+  const fallbackYear =
+    asSupportedYearModel(input.row.year_model) ??
+    asSupportedYearModel(input.payloadInput.year) ??
+    asSupportedYearModel(input.payloadInput.calculationYear);
+
+  if (fallbackYear !== null) {
+    return { year: fallbackYear, yearModelUnknown: false };
+  }
+
+  throw new Error(input.missingKnownYearMessage);
+}
+
+function readLifeWorkedPercentFromRecord(record: Record<string, unknown>): number | null {
+  const value =
+    asNumber(record.lifeWorkedPercent) ??
+    asNumber(record.life_worked_percent) ??
+    asNumber(record.workedPercent) ??
+    asNumber(record.worked_percent) ??
+    asNumber(record.lifetimeWorkedPercent) ??
+    asNumber(record.lifetime_worked_percent) ??
+    asNumber(record.percentWorked) ??
+    asNumber(record.percent_worked) ??
+    asNumber(record.lifetimeUsedPercent) ??
+    asNumber(record.lifetime_used_percent) ??
+    asNumber(record.selectedLifeWorkedPercent) ??
+    asNumber(record.selected_life_worked_percent) ??
+    asNumber(record.percentageExpectancy) ??
+    asNumber(record.percentage_expectancy);
+
+  return value === null ? null : Math.max(0, Math.min(100, value));
+}
+
+function readLifeWorkedPercent(asset: AssetRegisterItem, payloadInput: Record<string, unknown>, ...extraSources: Record<string, unknown>[]): number | null {
   const direct = asNumber(asset.lifeWorkedPercent);
   if (direct !== null) return Math.max(0, Math.min(100, direct));
 
   const specs = asset.specsJson ?? {};
-  const fromSpecs =
-    asNumber(specs.life_worked_percent) ??
-    asNumber(specs.worked_percent) ??
-    asNumber(specs.lifetime_worked_percent) ??
-    asNumber(specs.percent_worked) ??
-    asNumber(specs.lifetime_used_percent);
+  for (const source of [specs, payloadInput, ...extraSources]) {
+    const percent = readLifeWorkedPercentFromRecord(source);
+    if (percent !== null) return percent;
+  }
 
-  if (fromSpecs !== null) return Math.max(0, Math.min(100, fromSpecs));
-
-  const fromPayload = asNumber(payloadInput.lifeWorkedPercent);
-  return fromPayload === null ? null : Math.max(0, Math.min(100, fromPayload));
+  return null;
 }
 
-function assetUsesPercentUsageForRevaluation(asset: AssetRegisterItem): boolean {
-  const specs = asset.specsJson ?? {};
-  const rawUsageMode = asText(
-    specs.usageMode ??
-      specs.usage_mode ??
-      specs.usageMetricType ??
-      specs.usage_metric_type ??
-      specs.valuationMode ??
-      specs.valuation_mode,
-  )
-    .toLowerCase();
-  const depreciationMethod = asText(asset.depreciationMethodUsed).toLowerCase();
-  const percent = readLifeWorkedPercent(asset, {});
-  const hours = asNumber(asset.hours);
+function isPercentUsageMode(value: unknown): boolean {
+  const normalized = asText(value).toLowerCase();
+  return (
+    normalized === 'percent' ||
+    normalized === 'percentage' ||
+    normalized === 'percent_used' ||
+    normalized === 'percentage_used' ||
+    normalized === 'percentage_depreciation' ||
+    normalized === 'life_worked_percent' ||
+    normalized === 'worked_percent' ||
+    normalized === 'lifetime_percent' ||
+    normalized === 'wear_class'
+  );
+}
 
-  if (
-    rawUsageMode === 'percent' ||
-    rawUsageMode === 'percentage' ||
-    rawUsageMode === 'percent_used' ||
-    rawUsageMode === 'percentage_depreciation' ||
-    rawUsageMode === 'wear_class'
-  ) {
+function recordUsesPercentUsage(record: Record<string, unknown>): boolean {
+  return (
+    isPercentUsageMode(record.usageMode) ||
+    isPercentUsageMode(record.usage_mode) ||
+    isPercentUsageMode(record.usageBasis) ||
+    isPercentUsageMode(record.usage_basis) ||
+    isPercentUsageMode(record.valuationMode) ||
+    isPercentUsageMode(record.valuation_mode) ||
+    isPercentUsageMode(record.depreciationMethodUsed) ||
+    isPercentUsageMode(record.depreciation_method_used) ||
+    isPercentUsageMode(record.selectedDepreciationMethod) ||
+    isPercentUsageMode(record.selected_depreciation_method) ||
+    isPercentUsageMode(record.selectedUsageMode) ||
+    isPercentUsageMode(record.selected_usage_mode)
+  );
+}
+
+function recordUsageReading(record: Record<string, unknown>): number | null {
+  return (
+    asNumber(record.usageAmount) ??
+    asNumber(record.usage_amount) ??
+    asNumber(record.hours) ??
+    asNumber(record.engine_hours) ??
+    asNumber(record.odometer) ??
+    asNumber(record.odometer_reading)
+  );
+}
+
+function assetUsesPercentUsageForRevaluation(asset: AssetRegisterItem, ...extraSources: Record<string, unknown>[]): boolean {
+  const specs = asset.specsJson ?? {};
+  const sources = [specs, ...extraSources];
+  const depreciationMethod = asText(asset.depreciationMethodUsed).toLowerCase();
+  const percent = readLifeWorkedPercent(asset, {}, ...extraSources);
+  const usageReading = asNumber(asset.hours) ?? sources.reduce<number | null>((found, source) => found ?? recordUsageReading(source), null);
+  const hasPositiveUsageReading = usageReading !== null && usageReading > 0;
+
+  if (sources.some(recordUsesPercentUsage)) {
+    return true;
+  }
+
+  if (depreciationMethod === 'percentage_depreciation') {
     return true;
   }
 
@@ -308,11 +428,7 @@ function assetUsesPercentUsageForRevaluation(asset: AssetRegisterItem): boolean 
     return false;
   }
 
-  if (depreciationMethod === 'percentage_depreciation') {
-    return true;
-  }
-
-  return percent !== null && ((!hours || hours <= 0) || depreciationMethod === 'semi_depreciation');
+  return percent !== null && (!hasPositiveUsageReading || depreciationMethod === 'semi_depreciation');
 }
 
 function buildPreviewAssetFromTractorValuation(input: {
@@ -323,6 +439,7 @@ function buildPreviewAssetFromTractorValuation(input: {
   year: number;
   hours: number;
   condition: ConditionKey;
+  yearModelUnknown: boolean;
 }): AssetRegisterItem {
   const model = input.result.model;
   const replacementPriceExVat = resolveReplacementPrice(input.result.replacementPriceUsedExVat);
@@ -340,7 +457,7 @@ function buildPreviewAssetFromTractorValuation(input: {
     tractorType: model.tractorType,
     cab: model.cab,
     powerKw: model.powerKw,
-    yearModel: Math.round(input.year),
+    yearModel: input.yearModelUnknown ? null : Math.round(input.year),
     hours: Math.max(0, Math.round(input.hours)),
     condition: input.condition,
     estimatedHours: Math.max(0, Math.round(input.hours)),
@@ -384,7 +501,7 @@ function buildPreviewAssetFromGenericValuation(input: {
     replacementPriceExVat,
     brandName: input.result.brand.name,
     modelName: input.result.typedModelName || 'Specs-based valuation',
-    yearModel: input.result.year,
+    yearModel: input.result.yearModelUnknown ? null : input.result.year,
     hours: input.result.usageAmount ?? null,
     condition: input.result.condition,
     aim4priceValueExVat: roundMoneyValue(input.result.aim4priceValueExVat),
@@ -485,22 +602,16 @@ async function revalueTractorAsset(input: {
   );
   const assetSpecs = asRecord(input.asset.specsJson);
   const rowSpecs = asRecord(input.row.specs_json);
-  const yearModelUnknown = asBoolean(
-    payloadInput.yearModelUnknown ??
-      payloadInput.year_model_unknown ??
-      assetSpecs.year_model_unknown ??
-      assetSpecs.yearModelUnknown ??
-      rowSpecs.year_model_unknown ??
-      rowSpecs.yearModelUnknown,
-  );
-  const year = Math.round(
-    yearModelUnknown
-      ? asNumber(payloadInput.year) ?? asNumber(payloadInput.calculationYear) ?? asNumber(input.row.year_model) ?? new Date().getFullYear()
-      : requireNumber(
-          input.asset.yearModel ?? payloadInput.year ?? input.row.year_model,
-          'This tractor is missing its year model, so Aim4price cannot re-run the estimate yet.',
-        ),
-  );
+  const resolvedYearModel = resolveYearModelForRevaluation({
+    asset: input.asset,
+    row: input.row,
+    payloadInput,
+    assetSpecs,
+    rowSpecs,
+    missingKnownYearMessage: 'This tractor is missing its year model, so Aim4price cannot re-run the estimate yet.',
+  });
+  const yearModelUnknown = resolvedYearModel.yearModelUnknown;
+  const year = resolvedYearModel.year;
   const savedHours = asNumber(input.asset.hours) ?? asNumber(payloadInput.hours) ?? asNumber(input.row.hours);
   const usageAmountOverride = input.usageAmountOverride;
   const hasUsageAmountOverride = typeof usageAmountOverride !== 'undefined';
@@ -568,6 +679,7 @@ async function revalueTractorAsset(input: {
         year,
         hours,
         condition,
+        yearModelUnknown,
       }),
       valuationRunId: input.asset.valuationRunId ?? Number(input.row.id),
       selectedMethod,
@@ -664,27 +776,23 @@ async function revalueGenericAsset(input: {
     ...rowSpecs,
     ...assetSpecs,
   };
-  const yearModelUnknown = asBoolean(
-    payloadInput.yearModelUnknown ??
-      payloadInput.year_model_unknown ??
-      specsJson.year_model_unknown ??
-      specsJson.yearModelUnknown,
-  );
-  const year = Math.round(
-    yearModelUnknown
-      ? asNumber(payloadInput.year) ?? asNumber(payloadInput.calculationYear) ?? asNumber(input.row.year_model) ?? new Date().getFullYear()
-      : requireNumber(
-          input.asset.yearModel ?? payloadInput.year ?? input.row.year_model,
-          'This asset is missing its year model, so Aim4price cannot re-run the estimate yet.',
-        ),
-  );
+  const resolvedYearModel = resolveYearModelForRevaluation({
+    asset: input.asset,
+    row: input.row,
+    payloadInput,
+    assetSpecs,
+    rowSpecs,
+    missingKnownYearMessage: 'This asset is missing its year model, so Aim4price cannot re-run the estimate yet.',
+  });
+  const yearModelUnknown = resolvedYearModel.yearModelUnknown;
+  const year = resolvedYearModel.year;
   const condition = normalizeGenericCondition(input.asset.condition || payloadInput.condition || input.row.condition);
 
   if (!condition) {
     throw new Error('This asset is missing its condition, so Aim4price cannot re-run the estimate yet.');
   }
-  const savedLifeWorkedPercent = readLifeWorkedPercent(input.asset, payloadInput);
-  const usePercentUsage = assetUsesPercentUsageForRevaluation(input.asset);
+  const savedLifeWorkedPercent = readLifeWorkedPercent(input.asset, payloadInput, payloadOutput, specsJson, rowSpecs);
+  const usePercentUsage = assetUsesPercentUsageForRevaluation(input.asset, specsJson, payloadInput, payloadOutput, rowSpecs);
   const lifeWorkedPercentOverride = input.lifeWorkedPercentOverride;
   const hasLifeWorkedPercentOverride = typeof lifeWorkedPercentOverride !== 'undefined';
 
@@ -837,9 +945,13 @@ export async function revalueAssetRegisterItem(input: {
   const preferredMethod = resolvePreferredMethod(asset, row, input.selectedMethod);
   const familyKey = asText(row.family_key || asset.equipmentFamilyKey).toLowerCase();
   const equipmentType = asText(row.equipment_type).toLowerCase();
+  const rowPayload = asRecord(row.valuation_payload);
+  const rowPayloadInput = readNestedRecord(rowPayload, 'input');
+  const rowPayloadOutput = readNestedRecord(rowPayload, 'output');
+  const rowSpecsForUsage = asRecord(row.specs_json);
   const hasLifeWorkedPercentOverride = typeof input.lifeWorkedPercentOverride !== 'undefined';
 
-  if (hasLifeWorkedPercentOverride && !assetUsesPercentUsageForRevaluation(asset)) {
+  if (hasLifeWorkedPercentOverride && !assetUsesPercentUsageForRevaluation(asset, rowSpecsForUsage, rowPayloadInput, rowPayloadOutput)) {
     throw new Error('ASSET_DOES_NOT_USE_LIFE_WORKED_PERCENT');
   }
 

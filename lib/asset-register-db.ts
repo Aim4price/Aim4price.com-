@@ -139,6 +139,11 @@ export type UpdateAssetRegisterItemInput = {
   allowUsageDecrease?: boolean;
 };
 
+export type UpdateAssetRegisterItemYearModelInput = {
+  assetId: string;
+  yearModel: number | null;
+};
+
 export type UpdateAssetRegisterItemLocationInput = {
   assetId: string;
   latitude: number;
@@ -361,6 +366,88 @@ function normalizeUsageMetric(value: unknown, kind?: AssetRegisterItemKind): 'ho
 
 const LIFE_WORKED_PERCENT_DECREASE_TOLERANCE = 0.05;
 
+const YEAR_MODEL_SPEC_KEYS = [
+  'yearModel',
+  'year_model',
+  'displayYearModel',
+  'display_year_model',
+  'assetYearModel',
+  'asset_year_model',
+  'currentYearModel',
+  'current_year_model',
+] as const;
+
+function normalizePersistedYearModel(value: unknown): number | null {
+  const numeric = asNumber(value);
+  if (numeric === null) return null;
+
+  const year = Math.round(numeric);
+  if (year < 1800 || year > new Date().getFullYear() + 1) return null;
+
+  return year;
+}
+
+function buildYearModelSpecsJson(
+  specs: Record<string, unknown>,
+  yearModel: unknown,
+  yearModelUnknown: boolean,
+): Record<string, unknown> {
+  const nextSpecs = { ...specs };
+  const normalizedYearModel = normalizePersistedYearModel(yearModel);
+
+  for (const key of YEAR_MODEL_SPEC_KEYS) {
+    delete nextSpecs[key];
+  }
+
+  if (normalizedYearModel !== null && !yearModelUnknown) {
+    nextSpecs.yearModel = normalizedYearModel;
+    nextSpecs.year_model = normalizedYearModel;
+    nextSpecs.displayYearModel = normalizedYearModel;
+    nextSpecs.display_year_model = normalizedYearModel;
+    nextSpecs.assetYearModel = normalizedYearModel;
+    nextSpecs.asset_year_model = normalizedYearModel;
+    nextSpecs.currentYearModel = normalizedYearModel;
+    nextSpecs.current_year_model = normalizedYearModel;
+    nextSpecs.yearModelUnknown = false;
+    nextSpecs.year_model_unknown = false;
+    return nextSpecs;
+  }
+
+  nextSpecs.yearModelUnknown = Boolean(yearModelUnknown);
+  nextSpecs.year_model_unknown = Boolean(yearModelUnknown);
+  return nextSpecs;
+}
+
+function buildPercentUsageSpecsJson(specs: Record<string, unknown>, lifeWorkedPercent: number): Record<string, unknown> {
+  return {
+    ...specs,
+    usageMode: 'percent',
+    usage_mode: 'percent',
+    usageBasis: 'percent',
+    usage_basis: 'percent',
+    lifeWorkedPercent,
+    life_worked_percent: lifeWorkedPercent,
+    workedPercent: lifeWorkedPercent,
+    worked_percent: lifeWorkedPercent,
+    percentWorked: lifeWorkedPercent,
+    percent_worked: lifeWorkedPercent,
+    lifetimeWorkedPercent: lifeWorkedPercent,
+    lifetime_worked_percent: lifeWorkedPercent,
+    lifetimeUsedPercent: lifeWorkedPercent,
+    lifetime_used_percent: lifeWorkedPercent,
+  };
+}
+
+function buildReadingUsageSpecsJson(specs: Record<string, unknown>, usageMetric: 'hours' | 'km'): Record<string, unknown> {
+  return {
+    ...specs,
+    usageMode: usageMetric,
+    usage_mode: usageMetric,
+    usageBasis: 'reading',
+    usage_basis: 'reading',
+  };
+}
+
 function buildManualSpecsJson(
   input: CreateManualAssetInput | UpdateAssetRegisterItemInput,
   kind: AssetRegisterItemKind,
@@ -404,6 +491,16 @@ function buildManualSpecsJson(
     ? asText(input.modelName)
     : asText(specs.modelName) || asText(specs.model_name) || asText(specs.model) || asText(specs.typedModelName) || asText(specs.typed_model_name) || '';
   const hasIncomingYearModel = Object.prototype.hasOwnProperty.call(input, 'yearModel');
+  const incomingYearModelUnknown = hasIncomingYearModel && (input.yearModel === null || typeof input.yearModel === 'undefined');
+  const incomingYearModelSpecs = hasIncomingYearModel
+    ? buildYearModelSpecsJson({}, input.yearModel ?? null, incomingYearModelUnknown)
+    : {};
+  const hasUsageReading = Object.prototype.hasOwnProperty.call(input, 'hours')
+    ? asNumber(input.hours) !== null
+    : asNumber(specs.usageAmount ?? specs.usage_amount ?? specs.hours ?? specs.engine_hours) !== null;
+  const usageBasisSpecs = lifeWorkedPercent !== null && !hasUsageReading
+    ? buildPercentUsageSpecsJson({}, lifeWorkedPercent)
+    : buildReadingUsageSpecsJson({}, usageMetric);
 
   if (insuredValueForSave === null) {
     for (const key of INSURED_VALUE_SPEC_KEYS) {
@@ -424,8 +521,6 @@ function buildManualSpecsJson(
     delete specs.typedModelName;
     delete specs.typed_model_name;
   }
-  const incomingYearModelUnknown = hasIncomingYearModel && (input.yearModel === null || typeof input.yearModel === 'undefined');
-
   return {
     ...specs,
     insuranceStatus,
@@ -487,12 +582,8 @@ function buildManualSpecsJson(
     usageMetric,
     usage_metric: usageMetric,
     usage_unit: usageMetric,
-    ...(hasIncomingYearModel
-      ? {
-          yearModelUnknown: incomingYearModelUnknown,
-          year_model_unknown: incomingYearModelUnknown,
-        }
-      : {}),
+    ...usageBasisSpecs,
+    ...incomingYearModelSpecs,
     licenseRegistrationNumber,
     license_registration_number: licenseRegistrationNumber,
     licenceRegistrationNumber: licenseRegistrationNumber,
@@ -605,13 +696,18 @@ function buildCurrentValuationSpecs(
     lifeWorkedPercent?: number | null;
     condition?: string | null;
     yearModelUnknown?: boolean | null;
+    yearModel?: number | null;
     now: Date;
   },
 ): Record<string, unknown> {
-  const merged = stripValuationMetadata({
-    ...existingSpecs,
-    ...valuationSpecs,
-  });
+  const merged = buildYearModelSpecsJson(
+    stripValuationMetadata({
+      ...existingSpecs,
+      ...valuationSpecs,
+    }),
+    context.yearModel ?? null,
+    Boolean(context.yearModelUnknown),
+  );
 
   return {
     ...merged,
@@ -646,20 +742,34 @@ function isGenericYearModelUnknown(result: GenericValuationResult): boolean {
   return Boolean(result.yearModelUnknown ?? result.specsJson?.year_model_unknown ?? result.specsJson?.yearModelUnknown);
 }
 
+function genericValuationResultUsesPercentBasis(result: GenericValuationResult): boolean {
+  return (
+    result.depreciationMethodUsed === 'percentage_depreciation' ||
+    (asNumber(result.usageAmount) === null && asNumber(result.lifeWorkedPercent) !== null)
+  );
+}
+
 function withGenericUsageMetadata(
   specs: Record<string, unknown>,
   result: GenericValuationResult,
 ): Record<string, unknown> {
   const usageMetric = result.sector.key === 'motor' || result.family.usageMetricType === 'km' ? 'km' : 'hours';
+  const lifeWorkedPercent = asNumber(result.lifeWorkedPercent);
+  const usageSpecs = genericValuationResultUsesPercentBasis(result) && lifeWorkedPercent !== null
+    ? buildPercentUsageSpecsJson({}, lifeWorkedPercent)
+    : buildReadingUsageSpecsJson({}, usageMetric);
 
   return {
     ...specs,
+    ...usageSpecs,
     usageMetric,
     usage_metric: usageMetric,
     usageUnit: usageMetric,
     usage_unit: usageMetric,
     usageMetricType: result.family.usageMetricType,
     usage_metric_type: result.family.usageMetricType,
+    depreciationMethodUsed: result.depreciationMethodUsed,
+    depreciation_method_used: result.depreciationMethodUsed,
     sectorKey: result.sector.key,
     sector_key: result.sector.key,
     familyKey: result.family.key,
@@ -722,7 +832,7 @@ function buildValuationStaleReasons(input: {
   }
 
   if (hasValueChanged(input.existing.yearModel, input.nextYearModel)) {
-    reasons.push('year changed');
+    reasons.push('year model changed');
   }
 
   if (hasValueChanged(input.existing.hours, input.nextHours)) {
@@ -2045,6 +2155,79 @@ export async function updateAssetRegisterItemFlag(
 }
 
 
+export async function updateAssetRegisterItemYearModel(
+  userId: string,
+  input: UpdateAssetRegisterItemYearModelInput,
+): Promise<AssetRegisterItem> {
+  const db = getDb();
+  const schema = await getAssetRegisterSchema();
+  const existing = await getAssetRegisterItemById(userId, input.assetId);
+
+  if (!existing) {
+    throw new Error('ASSET_NOT_FOUND');
+  }
+
+  const now = new Date();
+  const nextYearModel = normalizePersistedYearModel(input.yearModel);
+  const nextSpecsBeforeStaleCheck = buildYearModelSpecsJson(
+    existing.specsJson ?? {},
+    nextYearModel,
+    nextYearModel === null,
+  );
+  const staleReasons = buildValuationStaleReasons({
+    existing,
+    nextYearModel,
+    nextHours: existing.hours,
+    nextLifeWorkedPercent: existing.lifeWorkedPercent ?? percentFromSpecs(existing.specsJson),
+    nextCondition: normalizeConditionForDb(existing.condition),
+  });
+  const nextSpecsJson = markValuationNeedsUpdate(nextSpecsBeforeStaleCheck, staleReasons, now);
+  const fields: SqlField[] = [];
+
+  pushField(fields, schema, ['year_model', 'year'], nextYearModel);
+  pushField(fields, schema, ['specs_json'], nextSpecsJson, '::jsonb');
+  pushField(fields, schema, ['updated_at', 'modified_at', 'updatedon'], now);
+
+  const update = buildUpdateSetClause(fields);
+  const result = await db.query<AssetRegisterRow>(
+    `
+      update asset_register_items
+      set
+        ${update.clause}
+      where user_id = $1 and id = $2
+      returning
+        ${buildSelectList(schema)}
+    `,
+    [userId, input.assetId, ...update.values],
+  );
+
+  const row = result.rows[0];
+  if (!row) {
+    throw new Error('ASSET_UPDATE_FAILED');
+  }
+
+  const item = mapAssetRegisterRow(row);
+  await captureAssetDepreciationLogEntry({
+    previousAsset: existing,
+    asset: item,
+    eventType: 'manual_asset_updated',
+    eventSource: 'asset-register-year-model-update',
+    metadata: {
+      valuationNeedsUpdate: staleReasons.length > 0,
+      valuationStaleReasons: staleReasons,
+      valuationRelevantReasons: staleReasons,
+      logEventReasons: staleReasons,
+      timelineEventReasons: staleReasons,
+      yearModel: nextYearModel,
+      yearModelUnknown: nextYearModel === null,
+    },
+  });
+
+  return item;
+}
+
+
+
 export async function updateAssetRegisterItemLocation(
   userId: string,
   input: UpdateAssetRegisterItemLocationInput,
@@ -2496,6 +2679,7 @@ export async function updateAssetRegisterItemFromValuation(input: {
         lifeWorkedPercent: null,
         condition: input.condition,
         yearModelUnknown: input.yearModelUnknown,
+        yearModel: savedYearModel,
         now,
       }),
     ),
@@ -2643,6 +2827,7 @@ export async function updateAssetRegisterItemFromGenericValuation(input: {
           lifeWorkedPercent: valuationResult.lifeWorkedPercent,
           condition: valuationResult.condition,
           yearModelUnknown,
+          yearModel: savedYearModel,
           now,
         }),
         valuationResult,
@@ -2809,6 +2994,7 @@ export async function createAssetRegisterItemFromValuation(input: {
         lifeWorkedPercent: null,
         condition: typeof valuationRow.condition === 'string' ? valuationRow.condition : 'good',
         yearModelUnknown: input.yearModelUnknown,
+        yearModel: savedYearModel,
         now,
       }),
     ),
@@ -2945,6 +3131,7 @@ export async function createAssetRegisterItemFromGenericValuation(input: {
           lifeWorkedPercent: valuationResult.lifeWorkedPercent,
           condition: valuationResult.condition,
           yearModelUnknown,
+          yearModel: savedYearModel,
           now,
         }),
         valuationResult,

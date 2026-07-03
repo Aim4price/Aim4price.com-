@@ -1484,10 +1484,37 @@ async function collectTypedModelKeys(input: {
 export async function runGenericValuation(input: GenericValuationInput): Promise<GenericValuationResult> {
   const rawSpecsJson = normalizeSpecsJson(input.specsJson);
   const lifeWorkedPercent = positivePercent(input.lifeWorkedPercent);
+  const inputYear = Math.round(input.year);
   let specsJson: Record<string, unknown> = {
     ...rawSpecsJson,
-    ...(lifeWorkedPercent !== null ? { life_worked_percent: lifeWorkedPercent } : {}),
-    ...(input.yearModelUnknown ? { year_model_unknown: true } : {}),
+    yearModelUnknown: Boolean(input.yearModelUnknown),
+    year_model_unknown: Boolean(input.yearModelUnknown),
+    ...(input.yearModelUnknown
+      ? {}
+      : {
+          yearModel: inputYear,
+          year_model: inputYear,
+          displayYearModel: inputYear,
+          display_year_model: inputYear,
+          assetYearModel: inputYear,
+          asset_year_model: inputYear,
+          currentYearModel: inputYear,
+          current_year_model: inputYear,
+        }),
+    ...(lifeWorkedPercent !== null
+      ? {
+          lifeWorkedPercent,
+          life_worked_percent: lifeWorkedPercent,
+          workedPercent: lifeWorkedPercent,
+          worked_percent: lifeWorkedPercent,
+          percentWorked: lifeWorkedPercent,
+          percent_worked: lifeWorkedPercent,
+          lifetimeWorkedPercent: lifeWorkedPercent,
+          lifetime_worked_percent: lifeWorkedPercent,
+          lifetimeUsedPercent: lifeWorkedPercent,
+          lifetime_used_percent: lifeWorkedPercent,
+        }
+      : {}),
   };
 
   const family = await fetchFamilyContext(input.sectorKey, input.familyKey);
@@ -1579,7 +1606,7 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
   const marketSources: MarketMatch[] = [];
 
   const commonCalculationInput = {
-    year: input.year,
+    year: inputYear,
     yearModelUnknown: input.yearModelUnknown,
     usageAmount: toNumber(input.usageAmount),
     lifeWorkedPercent,
@@ -1612,6 +1639,74 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
   const valuationLowExVat = selectedCalculation.valuationLowExVat;
   const valuationMidExVat = selectedCalculation.valuationMidExVat;
   const valuationHighExVat = selectedCalculation.valuationHighExVat;
+  const usageAmountUsed = toNumber(input.usageAmount);
+  const selectedLifeWorkedPercent = selectedCalculation.lifeWorkedPercent;
+  const usesPercentageBasis =
+    selectedCalculation.depreciationMethodUsed === 'percentage_depreciation' ||
+    (usageAmountUsed === null && selectedLifeWorkedPercent !== null);
+  const persistedUsageMode = usesPercentageBasis
+    ? 'percent'
+    : family.usageMetricType === 'km'
+      ? 'km'
+      : 'hours';
+
+  specsJson = {
+    ...specsJson,
+    yearModelUnknown: Boolean(input.yearModelUnknown),
+    year_model_unknown: Boolean(input.yearModelUnknown),
+    ...(input.yearModelUnknown
+      ? {
+          yearModel: undefined,
+          year_model: undefined,
+          displayYearModel: undefined,
+          display_year_model: undefined,
+          assetYearModel: undefined,
+          asset_year_model: undefined,
+          currentYearModel: undefined,
+          current_year_model: undefined,
+        }
+      : {
+          yearModel: inputYear,
+          year_model: inputYear,
+          displayYearModel: inputYear,
+          display_year_model: inputYear,
+          assetYearModel: inputYear,
+          asset_year_model: inputYear,
+          currentYearModel: inputYear,
+          current_year_model: inputYear,
+        }),
+    usageMode: persistedUsageMode,
+    usage_mode: persistedUsageMode,
+    usageBasis: usesPercentageBasis ? 'percent' : 'reading',
+    usage_basis: usesPercentageBasis ? 'percent' : 'reading',
+    depreciationMethodUsed: selectedCalculation.depreciationMethodUsed,
+    depreciation_method_used: selectedCalculation.depreciationMethodUsed,
+    ...(selectedLifeWorkedPercent !== null
+      ? {
+          lifeWorkedPercent: selectedLifeWorkedPercent,
+          life_worked_percent: selectedLifeWorkedPercent,
+          workedPercent: selectedLifeWorkedPercent,
+          worked_percent: selectedLifeWorkedPercent,
+          percentWorked: selectedLifeWorkedPercent,
+          percent_worked: selectedLifeWorkedPercent,
+          lifetimeWorkedPercent: selectedLifeWorkedPercent,
+          lifetime_worked_percent: selectedLifeWorkedPercent,
+          lifetimeUsedPercent: selectedLifeWorkedPercent,
+          lifetime_used_percent: selectedLifeWorkedPercent,
+        }
+      : {}),
+  };
+
+  if (input.yearModelUnknown) {
+    delete specsJson.yearModel;
+    delete specsJson.year_model;
+    delete specsJson.displayYearModel;
+    delete specsJson.display_year_model;
+    delete specsJson.assetYearModel;
+    delete specsJson.asset_year_model;
+    delete specsJson.currentYearModel;
+    delete specsJson.current_year_model;
+  }
 
   const confidenceScore = aim4priceValueExVat !== null
     ? clamp(motorPricingRow?.confidenceScore ?? replacementBand?.confidence ?? 0.58, 0.18, 0.95)
@@ -1677,7 +1772,7 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
     typedModelName,
     normalizedTypedModelName,
     specsJson,
-    year: Math.round(input.year),
+    year: inputYear,
     yearModelUnknown: input.yearModelUnknown,
     usageAmount: toNumber(input.usageAmount),
     condition: normalizeCondition(input.condition),
