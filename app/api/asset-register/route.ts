@@ -23,6 +23,7 @@ import {
   updateAssetRegisterItem,
   updateAssetRegisterItemFlag,
   updateAssetRegisterItemMedia,
+  updateAssetRegisterItemYearModel,
   type AssetRegisterDocument,
   type AssetRegisterItemKind,
   type CreateManualAssetInput,
@@ -151,6 +152,38 @@ function normalizeYearModel(value: unknown): number | null {
   }
 
   return year;
+}
+
+type YearModelPatchParseResult =
+  | { ok: true; yearModel: number | null }
+  | { ok: false; error: string };
+
+function parseYearModelPatchValue(value: unknown, yearModelUnknownValue: unknown): YearModelPatchParseResult {
+  if (normalizeBooleanFlag(yearModelUnknownValue)) {
+    return { ok: true, yearModel: null };
+  }
+
+  if (value === null || typeof value === 'undefined') {
+    return { ok: true, yearModel: null };
+  }
+
+  const text = String(value).trim();
+  if (!text) {
+    return { ok: true, yearModel: null };
+  }
+
+  const numeric = Number(text);
+  if (!Number.isFinite(numeric)) {
+    return { ok: false, error: 'Enter a valid year model.' };
+  }
+
+  const year = Math.round(numeric);
+  const maxYear = new Date().getFullYear() + 1;
+  if (year < 1800 || year > maxYear) {
+    return { ok: false, error: `Year model must be between 1800 and ${maxYear}.` };
+  }
+
+  return { ok: true, yearModel: year };
 }
 
 function normalizeUsageMetric(value: unknown): 'hours' | 'km' | null {
@@ -676,7 +709,15 @@ export async function PUT(request: NextRequest) {
     );
   }
 
-  if (replacementPriceExVat === null) {
+  const existing = await getAssetRegisterItemById(session.user.id, assetId);
+
+  if (!existing) {
+    return NextResponse.json({ ok: false, error: 'Asset not found.' }, { status: 404 });
+  }
+
+  const effectiveReplacementPriceExVat = replacementPriceExVat ?? normalizeReplacementPrice(existing.replacementPriceExVat);
+
+  if (effectiveReplacementPriceExVat === null) {
     return NextResponse.json(
       {
         ok: false,
@@ -684,12 +725,6 @@ export async function PUT(request: NextRequest) {
       },
       { status: 400 },
     );
-  }
-
-  const existing = await getAssetRegisterItemById(session.user.id, assetId);
-
-  if (!existing) {
-    return NextResponse.json({ ok: false, error: 'Asset not found.' }, { status: 404 });
   }
 
   const nextPhotos = normalizePhotos(body.photos);
@@ -722,8 +757,8 @@ export async function PUT(request: NextRequest) {
       hours: normalizeHours(body.hours),
       usageMetric,
       lifeWorkedPercent,
-      replacementPriceExVat,
-      specsJson: buildManualSpecsJson(specsJsonWithInsuranceStatus, usageMetric, lifeWorkedPercent, replacementPriceExVat, insuredValueForSave, brandName, modelName),
+      replacementPriceExVat: effectiveReplacementPriceExVat,
+      specsJson: buildManualSpecsJson(specsJsonWithInsuranceStatus, usageMetric, lifeWorkedPercent, effectiveReplacementPriceExVat, insuredValueForSave, brandName, modelName),
       condition: normalizeCondition(body.condition),
     });
 
@@ -791,6 +826,9 @@ export async function PATCH(request: NextRequest) {
     flagged?: unknown;
     photos?: unknown;
     documents?: unknown;
+    yearModel?: unknown;
+    yearModelUnknown?: unknown;
+    year_model_unknown?: unknown;
   };
   const assetId = String(body.assetId ?? '').trim();
 
@@ -802,6 +840,58 @@ export async function PATCH(request: NextRequest) {
 
   if (!existing) {
     return NextResponse.json({ ok: false, error: 'Asset not found.' }, { status: 404 });
+  }
+
+  const hasYearModelRequest =
+    Object.prototype.hasOwnProperty.call(body, 'yearModel') ||
+    Object.prototype.hasOwnProperty.call(body, 'yearModelUnknown') ||
+    Object.prototype.hasOwnProperty.call(body, 'year_model_unknown');
+
+  if (hasYearModelRequest) {
+    const parsedYearModel = parseYearModelPatchValue(
+      body.yearModel,
+      Object.prototype.hasOwnProperty.call(body, 'yearModelUnknown') ? body.yearModelUnknown : body.year_model_unknown,
+    );
+
+    if (!parsedYearModel.ok) {
+      return NextResponse.json({ ok: false, error: parsedYearModel.error }, { status: 400 });
+    }
+
+    try {
+      const item = await updateAssetRegisterItemYearModel(session.user.id, {
+        assetId,
+        yearModel: parsedYearModel.yearModel,
+      });
+
+      const [itemWithPartnerNote] = await attachOpenPartnerNotesToAssets(session.user.id, [item]);
+      const [itemWithMaintenanceStatus] = await attachLatestMaintenanceStatusToAssets(itemWithPartnerNote ? [itemWithPartnerNote] : [item]);
+
+      const usageUserId = getUsageUserId(session);
+      if (usageUserId) {
+        await recordAdminUsageEventSafely({
+          userId: usageUserId,
+          eventType: 'asset_updated',
+          eventSource: 'asset-register-year-model',
+          metadata: {
+            assetId: item.id,
+            yearModel: parsedYearModel.yearModel,
+            yearModelUnknown: parsedYearModel.yearModel === null,
+          },
+        });
+      }
+
+      return NextResponse.json({ ok: true, item: itemWithMaintenanceStatus ?? itemWithPartnerNote ?? item });
+    } catch (error) {
+      if (error instanceof Error && error.message === 'ASSET_NOT_FOUND') {
+        return NextResponse.json({ ok: false, error: 'Asset not found.' }, { status: 404 });
+      }
+
+      console.error('asset register year-model PATCH failed', error);
+      return NextResponse.json(
+        { ok: false, error: formatUnknownError(error, 'Failed to update year model.') },
+        { status: 500 },
+      );
+    }
   }
 
   const hasFlagRequest =
