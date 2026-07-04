@@ -142,6 +142,7 @@ type FuelLedgerResponse = {
   storages?: FuelLedgerStorage[];
   recentEvents?: FuelLedgerEvent[];
   recentFuelSlips?: FuelSlipRecord[];
+  fuelSlip?: FuelSlipRecord;
   assets?: FuelLedgerAsset[];
   summary?: FuelLedgerSummary;
   error?: string;
@@ -203,6 +204,20 @@ type FuelSlipDraft = {
   rawExtractedText: string;
   extractionWarnings: string[];
 };
+
+type FuelSlipMissingFieldKey =
+  | 'documentDate'
+  | 'fuelType'
+  | 'litres'
+  | 'totalAmount'
+  | 'odometerReading'
+  | 'hourMeterReading'
+  | 'operatorName'
+  | 'activityText'
+  | 'workAreaText';
+
+type FuelSlipValidationTargetType = 'asset' | 'storage_tank' | null;
+type FuelSlipValidationUsageMetric = FuelLedgerAsset['usageMetric'] | null;
 
 type FuelSlipExtractionDraft = {
   supplierName?: string;
@@ -370,6 +385,93 @@ const DEFAULT_FUEL_SLIP_MANAGER_FILTERS: FuelSlipManagerFilterState = {
   year: 'all',
   month: 'all',
 };
+
+const FUEL_SLIP_REQUIRED_NOTICE = 'Complete the red fields before this fuel slip can post to the Fuel Ledger.';
+
+function normalizeFuelSlipWarningText(value: unknown): string {
+  return String(value ?? '').replace(/\s+/g, ' ').trim();
+}
+
+function isGenericFuelSlipCompletionWarning(value: unknown): boolean {
+  const normalized = normalizeFuelSlipWarningText(value).toLowerCase();
+
+  if (!normalized) return false;
+  if (normalized.startsWith('fuel slip saved as not completed')) return true;
+  if (normalized.startsWith('fuel slip saved for review')) return true;
+  if (normalized === 'complete the missing fuel slip fields before posting fuel usage.') return true;
+  if (normalized.includes('before it can post to the fuel ledger')) return true;
+  if (normalized.includes('enter the required odometer or hour-meter reading before posting fuel usage')) return true;
+
+  return false;
+}
+
+function getVisibleFuelSlipExtractionWarnings(warnings: unknown): string[] {
+  if (!Array.isArray(warnings)) return [];
+
+  return warnings
+    .map((warning) => normalizeFuelSlipWarningText(warning))
+    .filter((warning) => warning && !isGenericFuelSlipCompletionWarning(warning))
+    .slice(0, 12);
+}
+
+function fuelSlipTargetTypeFromKey(targetKey: string): FuelSlipValidationTargetType {
+  const [targetType] = targetKey.split(':');
+  if (targetType === 'asset' || targetType === 'storage_tank') return targetType;
+  return null;
+}
+
+function hasFuelSlipPositiveNumber(value: string, decimals: number): boolean {
+  const parsed = parseFuelSlipDecimal(value, decimals);
+  return parsed !== null && parsed > 0;
+}
+
+function hasFuelSlipNonNegativeNumber(value: string, decimals: number): boolean {
+  const parsed = parseFuelSlipDecimal(value, decimals);
+  return parsed !== null && parsed >= 0;
+}
+
+function getFuelSlipMissingFields(
+  draft: FuelSlipDraft,
+  targetType: FuelSlipValidationTargetType,
+  usageMetric: FuelSlipValidationUsageMetric,
+  assetResolved: boolean,
+): FuelSlipMissingFieldKey[] {
+  const missing: FuelSlipMissingFieldKey[] = [];
+
+  if (!draft.documentDate.trim()) missing.push('documentDate');
+  if (!draft.fuelType.trim()) missing.push('fuelType');
+  if (!hasFuelSlipPositiveNumber(draft.litres, 3)) missing.push('litres');
+  if (!hasFuelSlipNonNegativeNumber(draft.totalAmount, 2)) missing.push('totalAmount');
+
+  if (targetType === 'asset') {
+    const effectiveUsageMetric: FuelSlipValidationUsageMetric = assetResolved ? usageMetric : 'both';
+
+    if (effectiveUsageMetric === 'km') {
+      if (!hasFuelSlipNonNegativeNumber(draft.odometerReading, 2)) missing.push('odometerReading');
+    } else if (effectiveUsageMetric === 'hours') {
+      if (!hasFuelSlipNonNegativeNumber(draft.hourMeterReading, 2)) missing.push('hourMeterReading');
+    } else if (effectiveUsageMetric === 'both') {
+      const hasOdometer = hasFuelSlipNonNegativeNumber(draft.odometerReading, 2);
+      const hasHours = hasFuelSlipNonNegativeNumber(draft.hourMeterReading, 2);
+
+      if (!hasOdometer && !hasHours) {
+        missing.push('odometerReading', 'hourMeterReading');
+      }
+    }
+
+    if (!draft.operatorName.trim()) missing.push('operatorName');
+    if (!draft.activityText.trim()) missing.push('activityText');
+    if (!draft.workAreaText.trim()) missing.push('workAreaText');
+  }
+
+  return missing;
+}
+
+function getFuelSlipMissingFieldPage(field: FuelSlipMissingFieldKey): FuelSlipFormPage {
+  return field === 'documentDate' || field === 'fuelType' || field === 'litres' || field === 'totalAmount'
+    ? 'details'
+    : 'extra';
+}
 
 const FUEL_SLIP_MANAGER_PAGE_SIZE = 10;
 
@@ -817,11 +919,7 @@ function buildFuelSlipDraftFromRecord(slip: FuelSlipRecord): FuelSlipDraft {
     ocrConfidence: slip.ocrConfidence,
     reviewRequired: needsReview,
     rawExtractedText: slip.rawExtractedText || '',
-    extractionWarnings: slip.extractionWarnings?.length
-      ? slip.extractionWarnings
-      : needsReview
-        ? ['Complete the missing fuel slip fields before posting fuel usage.']
-        : [],
+    extractionWarnings: getVisibleFuelSlipExtractionWarnings(slip.extractionWarnings),
   };
 }
 
@@ -1082,7 +1180,7 @@ function applyExtractionToFuelSlipDraft(current: FuelSlipDraft, response: FuelSl
     ocrConfidence: typeof extracted.ocrConfidence === 'number' ? extracted.ocrConfidence : current.ocrConfidence,
     reviewRequired: Boolean(extracted.reviewRequired ?? response.extraction?.warnings?.length),
     rawExtractedText: sanitizeFuelSlipSensitiveText(response.extraction?.rawText ?? current.rawExtractedText),
-    extractionWarnings: response.extraction?.warnings ?? current.extractionWarnings,
+    extractionWarnings: getVisibleFuelSlipExtractionWarnings(response.extraction?.warnings ?? current.extractionWarnings),
   };
 }
 
@@ -1374,6 +1472,9 @@ export default function FuelClient() {
   const [isDownloadingFuelSlips, setIsDownloadingFuelSlips] = useState(false);
   const [deleteCandidateFuelSlip, setDeleteCandidateFuelSlip] = useState<FuelSlipRecord | null>(null);
   const [busyFuelSlipDeleteId, setBusyFuelSlipDeleteId] = useState<string | null>(null);
+  const [fuelSlipAttemptedSubmit, setFuelSlipAttemptedSubmit] = useState(false);
+  const [fuelSlipValidationNotice, setFuelSlipValidationNotice] = useState('');
+  const [fuelSlipFocusField, setFuelSlipFocusField] = useState<FuelSlipMissingFieldKey | null>(null);
 
   const selectedStorage = useMemo(
     () => storages.find((storage) => storage.id === selectedStorageId) ?? null,
@@ -1437,8 +1538,13 @@ export default function FuelClient() {
   }, [assets, fuelSlipDraft.targetKey, storages]);
 
   const selectedFuelSlipAsset = selectedFuelSlipTarget?.type === 'asset' ? selectedFuelSlipTarget.asset : null;
-  const showFuelSlipOdometer = selectedFuelSlipAsset?.usageMetric === 'km' || selectedFuelSlipAsset?.usageMetric === 'both';
-  const showFuelSlipHours = selectedFuelSlipAsset?.usageMetric === 'hours' || selectedFuelSlipAsset?.usageMetric === 'both';
+  const selectedFuelSlipTargetType = selectedFuelSlipTarget?.type ?? fuelSlipTargetTypeFromKey(fuelSlipDraft.targetKey);
+  const selectedFuelSlipAssetResolved = selectedFuelSlipTargetType === 'asset' ? Boolean(selectedFuelSlipAsset) : true;
+  const selectedFuelSlipUsageMetric: FuelSlipValidationUsageMetric = selectedFuelSlipTargetType === 'asset'
+    ? selectedFuelSlipAsset?.usageMetric ?? (selectedFuelSlipAssetResolved ? 'none' : 'both')
+    : null;
+  const showFuelSlipOdometer = selectedFuelSlipTargetType === 'asset' && (!selectedFuelSlipAssetResolved || selectedFuelSlipUsageMetric === 'km' || selectedFuelSlipUsageMetric === 'both');
+  const showFuelSlipHours = selectedFuelSlipTargetType === 'asset' && (!selectedFuelSlipAssetResolved || selectedFuelSlipUsageMetric === 'hours' || selectedFuelSlipUsageMetric === 'both');
   const fuelSlipSearchTerm = fuelSlipPickerSearch.trim().toLowerCase();
   const filteredFuelSlipAssets = useMemo(
     () => assets.filter((asset) => matchesFuelSlipAsset(asset, fuelSlipSearchTerm)),
@@ -1461,6 +1567,19 @@ export default function FuelClient() {
       ? 'Automatic capture'
       : 'Manual entry';
   const fuelSlipFormSubtitle = `${selectedFuelSlipTargetName} · ${fuelSlipFormModeLabel}`;
+  const fuelSlipMissingFields = useMemo(
+    () => getFuelSlipMissingFields(fuelSlipDraft, selectedFuelSlipTargetType, selectedFuelSlipUsageMetric, selectedFuelSlipAssetResolved),
+    [fuelSlipDraft, selectedFuelSlipAssetResolved, selectedFuelSlipTargetType, selectedFuelSlipUsageMetric],
+  );
+  const shouldShowFuelSlipMissingFields = Boolean(fuelSlipAttemptedSubmit || fuelSlipDraft.reviewRequired || fuelSlipDraft.extractionStatus === 'needs_review');
+  const visibleFuelSlipMissingFields = useMemo(
+    () => shouldShowFuelSlipMissingFields ? new Set(fuelSlipMissingFields) : new Set<FuelSlipMissingFieldKey>(),
+    [fuelSlipMissingFields, shouldShowFuelSlipMissingFields],
+  );
+  const visibleFuelSlipExtractionWarnings = useMemo(
+    () => getVisibleFuelSlipExtractionWarnings(fuelSlipDraft.extractionWarnings),
+    [fuelSlipDraft.extractionWarnings],
+  );
   const fuelSlipUploadReady = Boolean(fuelSlipUploadFile);
   const fuelSlipManagerSearchTerm = fuelSlipManagerSearch.trim().toLowerCase();
 
@@ -1592,6 +1711,27 @@ export default function FuelClient() {
     return () => document.removeEventListener('mousedown', handlePointerDown);
   }, [fuelSlipManagerFilterOpen, openFuelSlipManagerFilterSelect]);
 
+  useEffect(() => {
+    if (!fuelSlipFocusField) return undefined;
+
+    const timer = window.setTimeout(() => {
+      const element = document.querySelector<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(`[data-fuel-slip-field="${fuelSlipFocusField}"]`);
+      if (element) {
+        element.focus({ preventScroll: false });
+        element.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      }
+      setFuelSlipFocusField(null);
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [fuelSlipFocusField, fuelSlipFormPage]);
+
+  useEffect(() => {
+    if (fuelSlipValidationNotice && fuelSlipMissingFields.length === 0) {
+      setFuelSlipValidationNotice('');
+    }
+  }, [fuelSlipMissingFields.length, fuelSlipValidationNotice]);
+
   function openCreateStorage() {
     setSelectedStorageId(null);
     setStorageDraft(emptyStorageDraft);
@@ -1625,6 +1765,7 @@ export default function FuelClient() {
   }
 
   function openFuelSlipMenu() {
+    resetFuelSlipValidationState();
     setFuelSlipFlow(null);
     setFuelSlipFormPage('details');
     setFuelSlipPickerSearch('');
@@ -1638,6 +1779,7 @@ export default function FuelClient() {
   }
 
   function openFuelSlipModal() {
+    resetFuelSlipValidationState();
     setFuelSlipDraft(emptyFuelSlipDraft);
     setFuelSlipFlow('source-choice');
     setFuelSlipFormPage('details');
@@ -1652,6 +1794,7 @@ export default function FuelClient() {
   }
 
   function openFuelSlipManager() {
+    resetFuelSlipValidationState();
     setDraftFuelSlipManagerFilters(fuelSlipManagerFilters);
     setFuelSlipManagerFilterOpen(false);
     setOpenFuelSlipManagerFilterSelect(null);
@@ -1664,6 +1807,7 @@ export default function FuelClient() {
   }
 
   function openFuelSlipReview(slip: FuelSlipRecord) {
+    resetFuelSlipValidationState();
     setFuelSlipDraft(buildFuelSlipDraftFromRecord(slip));
     setFuelSlipFlow('review');
     setFuelSlipFormPage('details');
@@ -1720,6 +1864,15 @@ export default function FuelClient() {
     setDeleteCandidateFuelSlip(null);
     setBusyFuelSlipDeleteId(null);
     setIsDownloadingFuelSlips(false);
+    setFuelSlipAttemptedSubmit(false);
+    setFuelSlipValidationNotice('');
+    setFuelSlipFocusField(null);
+  }
+
+  function resetFuelSlipValidationState() {
+    setFuelSlipAttemptedSubmit(false);
+    setFuelSlipValidationNotice('');
+    setFuelSlipFocusField(null);
   }
 
   function clearSearch() {
@@ -1785,6 +1938,7 @@ export default function FuelClient() {
   }
 
   function startFuelSlipFlow(mode: 'manual' | 'automatic') {
+    resetFuelSlipValidationState();
     setFuelSlipDraft({
       ...emptyFuelSlipDraft,
       mode,
@@ -1799,6 +1953,7 @@ export default function FuelClient() {
   }
 
   function handleFuelSlipTargetChange(value: string) {
+    resetFuelSlipValidationState();
     setFuelSlipDraft((current) => ({
       ...current,
       targetKey: value,
@@ -1822,6 +1977,7 @@ export default function FuelClient() {
 
   function handleFuelSlipUploadChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0] ?? null;
+    resetFuelSlipValidationState();
     setFuelSlipUploadFile(file);
     setFuelSlipUploadFileName(file?.name ?? '');
     setFuelSlipDraft((current) => ({
@@ -1864,6 +2020,7 @@ export default function FuelClient() {
         throw new Error(data.error || 'Fuel slip extraction failed.');
       }
 
+      resetFuelSlipValidationState();
       setFuelSlipDraft((current) => applyExtractionToFuelSlipDraft(current, data));
       setFuelSlipFlow('review');
       setFuelSlipFormPage('details');
@@ -1890,8 +2047,25 @@ export default function FuelClient() {
       return;
     }
 
+    const missingFields = getFuelSlipMissingFields(
+      fuelSlipDraft,
+      targetType,
+      selectedFuelSlipUsageMetric,
+      selectedFuelSlipAssetResolved,
+    );
+
+    if (missingFields.length) {
+      const firstMissingField = missingFields[0];
+      setFuelSlipAttemptedSubmit(true);
+      setFuelSlipValidationNotice(FUEL_SLIP_REQUIRED_NOTICE);
+      setFuelSlipFormPage(getFuelSlipMissingFieldPage(firstMissingField));
+      setFuelSlipFocusField(firstMissingField);
+      return;
+    }
+
     setIsSaving(true);
     setNotice(null);
+    setFuelSlipValidationNotice('');
 
     try {
       const reviewingExistingSlip = Boolean(fuelSlipDraft.id);
@@ -1954,7 +2128,31 @@ export default function FuelClient() {
       );
 
       const data = await applyLedgerResponse(response);
-      setNotice({ tone: 'success', message: data.message || (data.pendingReview ? 'Fuel slip saved as Not completed. Complete the missing details before it can post to the Fuel Ledger.' : 'Fuel Slip saved to Fuel Ledger.') });
+
+      if (data.pendingReview) {
+        const returnedSlip = data.fuelSlip ?? data.recentFuelSlips?.find((slip) => slip.id === (fuelSlipDraft.id || data.fuelSlip?.id));
+        if (returnedSlip) {
+          setFuelSlipDraft(buildFuelSlipDraftFromRecord(returnedSlip));
+        }
+        const followUpMissingFields = returnedSlip
+          ? getFuelSlipMissingFields(
+            buildFuelSlipDraftFromRecord(returnedSlip),
+            fuelSlipTargetTypeFromKey(fuelSlipTargetKey(returnedSlip)),
+            selectedFuelSlipUsageMetric,
+            selectedFuelSlipAssetResolved,
+          )
+          : missingFields;
+        const firstMissingField = followUpMissingFields[0] ?? 'operatorName';
+        setFuelSlipAttemptedSubmit(true);
+        setFuelSlipValidationNotice(FUEL_SLIP_REQUIRED_NOTICE);
+        setFuelSlipFormPage(getFuelSlipMissingFieldPage(firstMissingField));
+        setFuelSlipFocusField(firstMissingField);
+        return;
+      }
+
+      setFuelSlipAttemptedSubmit(false);
+      setFuelSlipValidationNotice('');
+      setNotice({ tone: 'success', message: data.message || 'Fuel Slip saved to Fuel Ledger.' });
 
       if (reviewingExistingSlip) {
         setFuelSlipDraft(emptyFuelSlipDraft);
@@ -2282,6 +2480,27 @@ export default function FuelClient() {
     setFuelSlipFlow('upload');
   }
 
+  function isFuelSlipFieldMissing(field: FuelSlipMissingFieldKey): boolean {
+    return visibleFuelSlipMissingFields.has(field);
+  }
+
+  function fuelSlipFieldClassName(field: FuelSlipMissingFieldKey, baseClassName?: string): string | undefined {
+    const classNames = [baseClassName, isFuelSlipFieldMissing(field) ? styles.fuelSlipFieldMissing : ''].filter(Boolean);
+    return classNames.length ? classNames.join(' ') : undefined;
+  }
+
+  function fuelSlipRequiredHint(field: FuelSlipMissingFieldKey, message = 'Required'): ReactNode {
+    return isFuelSlipFieldMissing(field) ? <small className={styles.fuelSlipRequiredHint}>{message}</small> : null;
+  }
+
+  function fuelSlipAriaInvalid(field: FuelSlipMissingFieldKey): true | undefined {
+    return isFuelSlipFieldMissing(field) ? true : undefined;
+  }
+
+  function renderFuelSlipValidationNotice() {
+    return fuelSlipValidationNotice ? <p className={styles.fuelSlipValidationNotice} role="alert">{fuelSlipValidationNotice}</p> : null;
+  }
+
   function renderFuelSlipDetailsFields() {
     return (
       <section className={styles.invoiceFormCard}>
@@ -2294,17 +2513,20 @@ export default function FuelClient() {
             <span>Supplier / garage</span>
             <input value={fuelSlipDraft.supplierName} onChange={(event) => setFuelSlipField('supplierName', event.target.value)} placeholder="Supplier name" />
           </label>
-          <label>
+          <label className={fuelSlipFieldClassName('documentDate')}>
             <span>Slip date</span>
-            <input type="date" value={fuelSlipDraft.documentDate} onChange={(event) => setFuelSlipField('documentDate', event.target.value)} />
+            <input type="date" value={fuelSlipDraft.documentDate} onChange={(event) => setFuelSlipField('documentDate', event.target.value)} aria-invalid={fuelSlipAriaInvalid('documentDate')} data-fuel-slip-field="documentDate" />
+            {fuelSlipRequiredHint('documentDate')}
           </label>
-          <label>
+          <label className={fuelSlipFieldClassName('fuelType')}>
             <span>Fuel type</span>
-            <input value={fuelSlipDraft.fuelType} onChange={(event) => setFuelSlipField('fuelType', event.target.value)} placeholder="Diesel 50ppm, Unleaded 95" />
+            <input value={fuelSlipDraft.fuelType} onChange={(event) => setFuelSlipField('fuelType', event.target.value)} placeholder="Diesel 50ppm, Unleaded 95" aria-invalid={fuelSlipAriaInvalid('fuelType')} data-fuel-slip-field="fuelType" />
+            {fuelSlipRequiredHint('fuelType')}
           </label>
-          <label>
+          <label className={fuelSlipFieldClassName('litres')}>
             <span>Litres</span>
-            <input type="text" inputMode="decimal" value={fuelSlipDraft.litres} onChange={(event) => setFuelSlipNumericField('litres', event.target.value)} placeholder="25.21" />
+            <input type="text" inputMode="decimal" value={fuelSlipDraft.litres} onChange={(event) => setFuelSlipNumericField('litres', event.target.value)} placeholder="25.21" aria-invalid={fuelSlipAriaInvalid('litres')} data-fuel-slip-field="litres" />
+            {fuelSlipRequiredHint('litres', 'Required: must be greater than 0')}
           </label>
           <label className={styles.invoiceCurrencyField}>
             <span>Price per litre</span>
@@ -2313,12 +2535,13 @@ export default function FuelClient() {
               <input type="text" inputMode="decimal" value={fuelSlipDraft.pricePerLitre} onChange={(event) => setFuelSlipNumericField('pricePerLitre', event.target.value)} placeholder="19.83" />
             </div>
           </label>
-          <label className={styles.invoiceCurrencyField}>
+          <label className={fuelSlipFieldClassName('totalAmount', styles.invoiceCurrencyField)}>
             <span>Total amount</span>
             <div className={styles.invoiceCurrencyInput}>
               <span aria-hidden="true">R</span>
-              <input type="text" inputMode="decimal" value={fuelSlipDraft.totalAmount} onChange={(event) => setFuelSlipNumericField('totalAmount', event.target.value)} placeholder="500.00" />
+              <input type="text" inputMode="decimal" value={fuelSlipDraft.totalAmount} onChange={(event) => setFuelSlipNumericField('totalAmount', event.target.value)} placeholder="500.00" aria-invalid={fuelSlipAriaInvalid('totalAmount')} data-fuel-slip-field="totalAmount" />
             </div>
+            {fuelSlipRequiredHint('totalAmount')}
           </label>
           <label>
             <span>Card last 4</span>
@@ -2388,15 +2611,17 @@ export default function FuelClient() {
   }
 
   function renderFuelSlipExtraFields() {
-    const isAssetSlip = selectedFuelSlipTarget?.type === 'asset';
-    const isStorageSlip = selectedFuelSlipTarget?.type === 'storage_tank';
-    const usageHelp = selectedFuelSlipAsset?.usageMetric === 'both'
-      ? 'This asset accepts km and hours. Enter at least one valid reading before the slip can post.'
-      : selectedFuelSlipAsset?.usageMetric === 'km'
-        ? 'Current km / odometer is required before this slip can post.'
-        : selectedFuelSlipAsset?.usageMetric === 'hours'
-          ? 'Current hours are required before this slip can post.'
-          : '';
+    const isAssetSlip = selectedFuelSlipTargetType === 'asset';
+    const isStorageSlip = selectedFuelSlipTargetType === 'storage_tank';
+    const usageHelp = isAssetSlip && !selectedFuelSlipAssetResolved
+      ? 'The linked asset usage metric could not be resolved. Enter current km / odometer or current hours before this slip can post.'
+      : selectedFuelSlipUsageMetric === 'both'
+        ? 'This asset accepts km and hours. Enter at least one valid reading before the slip can post.'
+        : selectedFuelSlipUsageMetric === 'km'
+          ? 'Current km / odometer is required before this slip can post.'
+          : selectedFuelSlipUsageMetric === 'hours'
+            ? 'Current hours are required before this slip can post.'
+            : '';
 
     return (
       <section className={styles.invoiceFormCard}>
@@ -2409,30 +2634,35 @@ export default function FuelClient() {
 
         <div className={styles.formGrid}>
           {isAssetSlip && showFuelSlipOdometer ? (
-            <label>
+            <label className={fuelSlipFieldClassName('odometerReading')}>
               <span>Current km / odometer</span>
-              <input type="text" inputMode="numeric" value={fuelSlipDraft.odometerReading} onChange={(event) => setFuelSlipField('odometerReading', event.target.value)} placeholder="Current km" />
+              <input type="text" inputMode="numeric" value={fuelSlipDraft.odometerReading} onChange={(event) => setFuelSlipField('odometerReading', event.target.value)} placeholder="Current km" aria-invalid={fuelSlipAriaInvalid('odometerReading')} data-fuel-slip-field="odometerReading" />
+              {fuelSlipRequiredHint('odometerReading', selectedFuelSlipUsageMetric === 'both' ? 'Required: enter km or hours' : 'Required')}
             </label>
           ) : null}
           {isAssetSlip && showFuelSlipHours ? (
-            <label>
+            <label className={fuelSlipFieldClassName('hourMeterReading')}>
               <span>Current hours</span>
-              <input type="text" inputMode="decimal" value={fuelSlipDraft.hourMeterReading} onChange={(event) => setFuelSlipField('hourMeterReading', event.target.value)} placeholder="Current hours" />
+              <input type="text" inputMode="decimal" value={fuelSlipDraft.hourMeterReading} onChange={(event) => setFuelSlipField('hourMeterReading', event.target.value)} placeholder="Current hours" aria-invalid={fuelSlipAriaInvalid('hourMeterReading')} data-fuel-slip-field="hourMeterReading" />
+              {fuelSlipRequiredHint('hourMeterReading', selectedFuelSlipUsageMetric === 'both' ? 'Required: enter km or hours' : 'Required')}
             </label>
           ) : null}
-          <label>
+          <label className={isAssetSlip ? fuelSlipFieldClassName('operatorName') : undefined}>
             <span>Operator / manager name</span>
-            <input value={fuelSlipDraft.operatorName} onChange={(event) => setFuelSlipField('operatorName', event.target.value)} placeholder="Who captured or approved this slip" />
+            <input value={fuelSlipDraft.operatorName} onChange={(event) => setFuelSlipField('operatorName', event.target.value)} placeholder="Who captured or approved this slip" aria-invalid={isAssetSlip ? fuelSlipAriaInvalid('operatorName') : undefined} data-fuel-slip-field="operatorName" />
+            {isAssetSlip ? fuelSlipRequiredHint('operatorName') : null}
           </label>
           {isAssetSlip ? (
             <>
-              <label>
+              <label className={fuelSlipFieldClassName('activityText')}>
                 <span>Activity / reason for fuel</span>
-                <input value={fuelSlipDraft.activityText} onChange={(event) => setFuelSlipField('activityText', event.target.value)} placeholder="Work reason or activity" />
+                <input value={fuelSlipDraft.activityText} onChange={(event) => setFuelSlipField('activityText', event.target.value)} placeholder="Work reason or activity" aria-invalid={fuelSlipAriaInvalid('activityText')} data-fuel-slip-field="activityText" />
+                {fuelSlipRequiredHint('activityText')}
               </label>
-              <label>
+              <label className={fuelSlipFieldClassName('workAreaText')}>
                 <span>Where / direction / work area</span>
-                <input value={fuelSlipDraft.workAreaText} onChange={(event) => setFuelSlipField('workAreaText', event.target.value)} placeholder="Location, route or work area" />
+                <input value={fuelSlipDraft.workAreaText} onChange={(event) => setFuelSlipField('workAreaText', event.target.value)} placeholder="Location, route or work area" aria-invalid={fuelSlipAriaInvalid('workAreaText')} data-fuel-slip-field="workAreaText" />
+                {fuelSlipRequiredHint('workAreaText')}
               </label>
               <label>
                 <span>Asset fuel percentage after fill</span>
@@ -3117,6 +3347,7 @@ export default function FuelClient() {
             </div>
             <div className={styles.modalDivider} />
             <div className={styles.formModalScrollBody}>
+              {renderFuelSlipValidationNotice()}
               {fuelSlipFormPage === 'details' ? renderFuelSlipDetailsFields() : renderFuelSlipExtraFields()}
             </div>
             <div className={styles.modalFooter}>
@@ -3144,9 +3375,11 @@ export default function FuelClient() {
             </div>
             <div className={styles.modalDivider} />
             <div className={styles.formModalScrollBody}>
-              {fuelSlipDraft.extractionWarnings.length ? (
+              {renderFuelSlipValidationNotice()}
+
+              {visibleFuelSlipExtractionWarnings.length ? (
                 <div className={styles.warningBox}>
-                  {fuelSlipDraft.extractionWarnings.map((warning) => <p key={warning}>{warning}</p>)}
+                  {visibleFuelSlipExtractionWarnings.map((warning) => <p key={warning}>{warning}</p>)}
                 </div>
               ) : null}
 

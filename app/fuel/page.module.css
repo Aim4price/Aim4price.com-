@@ -5096,3 +5096,175 @@
     min-width: 11.7rem;
   }
 }
+
+/* Fuel slip required-field validation and final manager colour overrides. */
+.fuelSlipFlowBackdrop .fuelSlipValidationNotice {
+  width: fit-content;
+  max-width: 100%;
+  margin: 0;
+  padding: 0.62rem 0.8rem;
+  border: 1px solid rgba(224, 111, 111, 0.48);
+  border-radius: 0.9rem;
+  background: linear-gradient(180deg, #fffafa 0%, #fff1f1 100%);
+  color: #9b2f2f;
+  font-size: 0.9rem;
+  font-weight: 820;
+  line-height: 1.35;
+}
+
+.fuelSlipFlowBackdrop .formGrid label.fuelSlipFieldMissing {
+  border-color: rgba(220, 73, 73, 0.9) !important;
+  background:
+    radial-gradient(circle at top left, rgba(220, 73, 73, 0.07), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #fff5f5 100%) !important;
+  box-shadow:
+    0 10px 22px rgba(151, 42, 42, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+}
+
+.fuelSlipFlowBackdrop .formGrid label.fuelSlipFieldMissing > span,
+.fuelSlipFlowBackdrop .formGrid label.fuelSlipFieldMissing .fuelSlipRequiredHint {
+  color: #b13434 !important;
+}
+
+.fuelSlipFlowBackdrop .formGrid label.fuelSlipFieldMissing input,
+.fuelSlipFlowBackdrop .formGrid label.fuelSlipFieldMissing select,
+.fuelSlipFlowBackdrop .formGrid label.fuelSlipFieldMissing textarea,
+.fuelSlipFlowBackdrop .formGrid label.fuelSlipFieldMissing .invoiceCurrencyInput {
+  border-color: rgba(220, 73, 73, 0.88) !important;
+  background: #fffafa !important;
+  box-shadow:
+    0 0 0 3px rgba(220, 73, 73, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+}
+
+.fuelSlipFlowBackdrop .formGrid label.fuelSlipFieldMissing input:focus,
+.fuelSlipFlowBackdrop .formGrid label.fuelSlipFieldMissing select:focus,
+.fuelSlipFlowBackdrop .formGrid label.fuelSlipFieldMissing textarea:focus,
+.fuelSlipFlowBackdrop .formGrid label.fuelSlipFieldMissing .invoiceCurrencyInput:focus-within {
+  border-color: rgba(190, 46, 46, 0.98) !important;
+  box-shadow:
+    0 0 0 4px rgba(220, 73, 73, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+}
+
+.fuelSlipRequiredHint {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 0.28rem;
+  margin-top: -0.1rem;
+  font-size: 0.78rem;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.fuelSlipFlowBackdrop .fuelSlipCostFormModal .formModalScrollBody {
+  overflow-y: auto;
+  pointer-events: auto;
+  padding-bottom: 0.72rem;
+}
+
+.fuelSlipFlowBackdrop .fuelSlipCostFormModal .formGrid input,
+.fuelSlipFlowBackdrop .fuelSlipCostFormModal .formGrid select,
+.fuelSlipFlowBackdrop .fuelSlipCostFormModal .formGrid textarea {
+  position: relative;
+  z-index: 1;
+  pointer-events: auto;
+}
+
+.fuelSlipFlowBackdrop .fuelSlipCostFormModal .modalFooter {
+  position: relative;
+  z-index: 2;
+  flex: 0 0 auto;
+}
+
+.fuelSlipManagerModal button.fuelSlipManagerAddButton {
+  color: #723b0d !important;
+  background: linear-gradient(180deg, #fffaf5 0%, #fff0e3 100%) !important;
+  border: 1.5px solid #c87534 !important;
+  box-shadow:
+    0 10px 22px rgba(114, 59, 13, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.fuelSlipManagerModal button.fuelSlipManagerAddButton:hover:not(:disabled) {
+  color: #723b0d !important;
+  background: linear-gradient(180deg, #fff7f0 0%, #ffe2ca 100%) !important;
+  border-color: #a95b1d !important;
+  box-shadow:
+    0 14px 28px rgba(114, 59, 13, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+}
+
+.fuelSlipManagerModal button.fuelSlipManagerFilterButton,
+.fuelSlipManagerModal button.fuelSlipManagerReviewButton {
+  color: #0d5a42 !important;
+  background: linear-gradient(180deg, #ffffff 0%, #ecf9f1 100%) !important;
+  border: 1.5px solid #75c79a !important;
+  box-shadow:
+    0 10px 22px rgba(13, 90, 66, 0.085),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.fuelSlipManagerModal button.fuelSlipManagerFilterButton:hover:not(:disabled),
+.fuelSlipManagerModal button.fuelSlipManagerReviewButton:hover:not(:disabled) {
+  color: #0d5a42 !important;
+  background: linear-gradient(180deg, #ffffff 0%, #ddf3e6 100%) !important;
+  border-color: #4daf78 !important;
+  box-shadow:
+    0 14px 28px rgba(13, 90, 66, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+}
+
+.fuelSlipManagerModal button.fuelSlipManagerFilterButton strong {
+  color: #ffffff !important;
+  background: #0d5a42 !important;
+  border: 1px solid rgba(255, 255, 255, 0.62) !important;
+}
+
+.fuelSlipManagerModal a.fuelSlipManagerOpenButton {
+  color: #0f3b64 !important;
+  background: linear-gradient(180deg, #ffffff 0%, #eaf5ff 100%) !important;
+  border: 1.5px solid #7eb4df !important;
+  box-shadow:
+    0 10px 22px rgba(15, 59, 100, 0.085),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.fuelSlipManagerModal a.fuelSlipManagerOpenButton:hover:not(:disabled) {
+  color: #0f3b64 !important;
+  background: linear-gradient(180deg, #ffffff 0%, #daecff 100%) !important;
+  border-color: #558fc6 !important;
+  box-shadow:
+    0 14px 28px rgba(15, 59, 100, 0.115),
+    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+}
+
+.fuelSlipManagerModal button.fuelSlipManagerDownloadButton {
+  color: #ffffff !important;
+  background: linear-gradient(180deg, #1d7255 0%, #10533e 100%) !important;
+  border: 1.5px solid #0f6248 !important;
+  box-shadow:
+    0 15px 28px rgba(25, 116, 84, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+  text-shadow: none !important;
+}
+
+.fuelSlipManagerModal button.fuelSlipManagerDownloadButton:hover:not(:disabled) {
+  color: #ffffff !important;
+  background: linear-gradient(180deg, #218462 0%, #0d4937 100%) !important;
+  border-color: #0d4937 !important;
+  box-shadow:
+    0 18px 34px rgba(25, 116, 84, 0.26),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+}
+
+.fuelSlipManagerModal button.fuelSlipManagerToolbarButton:focus-visible,
+.fuelSlipManagerModal .fuelSlipManagerRowActions button:focus-visible,
+.fuelSlipManagerModal .fuelSlipManagerRowActions a:focus-visible,
+.fuelSlipFlowBackdrop .fuelSlipCostFormModal .formGrid input:focus-visible,
+.fuelSlipFlowBackdrop .fuelSlipCostFormModal .formGrid textarea:focus-visible {
+  outline: 3px solid rgba(33, 132, 98, 0.26);
+  outline-offset: 3px;
+}
