@@ -16,7 +16,7 @@ function unauthorized() {
 }
 
 function forbidden() {
-  return NextResponse.json({ ok: false, error: 'Asset Discovery is available to active dealer accounts only.' }, { status: 403 });
+  return NextResponse.json({ ok: false, error: 'Discovery is available to active dealer accounts only.' }, { status: 403 });
 }
 
 function asText(value: unknown): string {
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: true, ...result });
   } catch (error) {
     console.error('asset-discovery GET failed', error);
-    return NextResponse.json({ ok: false, error: errorMessage(error, 'Failed to load Asset Discovery.') }, { status: 500 });
+    return NextResponse.json({ ok: false, error: errorMessage(error, 'Failed to load Discovery.') }, { status: 500 });
   }
 }
 
