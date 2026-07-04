@@ -137,6 +137,8 @@ type AssetOwnerRow = AssetDiscoveryRow & {
 };
 
 const ASSET_DISCOVERY_STATUSES = new Set<AssetDiscoveryEnquiryStatus>(['pending', 'approved', 'temporarily_denied']);
+const RESOLVED_ASSET_TYPE_SQL = "coalesce(nullif(trim(family.family_label), ''), nullif(trim(asset.kind), ''), 'Asset')";
+const PROPERTY_LIKE_ASSET_PATTERN = '(property|building|land|house|office|shed|storage|warehouse)';
 let assetDiscoveryTablesEnsured = false;
 
 function asText(value: unknown): string {
@@ -411,11 +413,9 @@ function baseAssetWhere(input: { dealerUserId: string; search?: string; province
     "owner.account_type = 'owner'",
     "owner.account_status = 'active'",
     'asset.user_id <> $1',
-    "coalesce(asset.kind, '') <> 'property'",
-    "coalesce(asset.kind, '') <> 'building'",
-    "coalesce(asset.kind, '') <> 'land'",
-    "coalesce(asset.equipment_family_label, '') !~* '(property|building|land|house|office|shed|storage|warehouse)'",
-    "coalesce(asset.title, '') !~* '(property|building|land|house|office|shed|storage|warehouse)'",
+    "lower(coalesce(asset.kind, '')) not in ('property', 'building', 'land')",
+    `${RESOLVED_ASSET_TYPE_SQL} !~* '${PROPERTY_LIKE_ASSET_PATTERN}'`,
+    `coalesce(asset.title, '') !~* '${PROPERTY_LIKE_ASSET_PATTERN}'`,
   ];
 
   const search = asText(input.search);
@@ -423,7 +423,7 @@ function baseAssetWhere(input: { dealerUserId: string; search?: string; province
     params.push(`%${escapeLike(search)}%`);
     const p = `$${params.length}`;
     where.push(`(
-      coalesce(asset.equipment_family_label, asset.kind, '') ilike ${p} escape '\\'
+      ${RESOLVED_ASSET_TYPE_SQL} ilike ${p} escape '\\'
       or coalesce(asset.brand_name, '') ilike ${p} escape '\\'
       or coalesce(asset.model_name, asset.typed_model_name, '') ilike ${p} escape '\\'
       or coalesce(asset.year_model::text, 'Unknown') ilike ${p} escape '\\'
@@ -443,7 +443,7 @@ function baseAssetWhere(input: { dealerUserId: string; search?: string; province
   const type = asText(input.type);
   if (type && type !== 'all') {
     params.push(type.toLowerCase());
-    where.push(`lower(coalesce(nullif(asset.equipment_family_label, ''), nullif(asset.kind, ''), 'asset')) = $${params.length}`);
+    where.push(`lower(${RESOLVED_ASSET_TYPE_SQL}) = $${params.length}`);
   }
 
   return { params, whereClause: `where ${where.join(' and ')}` };
@@ -457,7 +457,7 @@ export async function listAssetDiscoveryAssets(input: { dealerUserId: string; se
   const listSql = `
     select
       asset.id::text,
-      asset.equipment_family_label as type_label,
+      ${RESOLVED_ASSET_TYPE_SQL} as type_label,
       asset.kind,
       asset.brand_name,
       asset.model_name,
@@ -474,6 +474,7 @@ export async function listAssetDiscoveryAssets(input: { dealerUserId: string; se
       enquiry.approved_at::text
     from public.asset_register_items asset
     join public.account_profiles owner on owner.user_id = asset.user_id
+    left join public.equipment_families family on family.id = asset.equipment_family_id
     left join lateral (
       select e.id, e.status, e.request_again_at, e.approved_at, e.created_at
       from public.asset_discovery_enquiries e
@@ -494,6 +495,7 @@ export async function listAssetDiscoveryAssets(input: { dealerUserId: string; se
         select nullif(trim(owner.province), '') as value, count(*)::int as count
         from public.asset_register_items asset
         join public.account_profiles owner on owner.user_id = asset.user_id
+        left join public.equipment_families family on family.id = asset.equipment_family_id
         ${baseAssetWhere({ dealerUserId: input.dealerUserId }).whereClause}
         group by nullif(trim(owner.province), '')
         order by nullif(trim(owner.province), '') asc nulls last
@@ -502,12 +504,13 @@ export async function listAssetDiscoveryAssets(input: { dealerUserId: string; se
     ),
     db.query<OptionRow>(
       `
-        select coalesce(nullif(asset.equipment_family_label, ''), nullif(asset.kind, ''), 'Asset') as value, count(*)::int as count
+        select ${RESOLVED_ASSET_TYPE_SQL} as value, count(*)::int as count
         from public.asset_register_items asset
         join public.account_profiles owner on owner.user_id = asset.user_id
+        left join public.equipment_families family on family.id = asset.equipment_family_id
         ${baseAssetWhere({ dealerUserId: input.dealerUserId }).whereClause}
-        group by coalesce(nullif(asset.equipment_family_label, ''), nullif(asset.kind, ''), 'Asset')
-        order by coalesce(nullif(asset.equipment_family_label, ''), nullif(asset.kind, ''), 'Asset') asc
+        group by ${RESOLVED_ASSET_TYPE_SQL}
+        order by ${RESOLVED_ASSET_TYPE_SQL} asc
       `,
       [input.dealerUserId],
     ),
@@ -535,7 +538,7 @@ async function findSafeAssetForEnquiry(assetId: string, dealerUserId: string): P
       select
         asset.id::text,
         asset.user_id as owner_user_id,
-        asset.equipment_family_label as type_label,
+        ${RESOLVED_ASSET_TYPE_SQL} as type_label,
         asset.kind,
         asset.brand_name,
         asset.model_name,
@@ -552,13 +555,14 @@ async function findSafeAssetForEnquiry(assetId: string, dealerUserId: string): P
         null::text as approved_at
       from public.asset_register_items asset
       join public.account_profiles owner on owner.user_id = asset.user_id
+      left join public.equipment_families family on family.id = asset.equipment_family_id
       where asset.id = $1::uuid
         and asset.user_id <> $2
         and owner.account_type = 'owner'
         and owner.account_status = 'active'
-        and coalesce(asset.kind, '') not in ('property', 'building', 'land')
-        and coalesce(asset.equipment_family_label, '') !~* '(property|building|land|house|office|shed|storage|warehouse)'
-        and coalesce(asset.title, '') !~* '(property|building|land|house|office|shed|storage|warehouse)'
+        and lower(coalesce(asset.kind, '')) not in ('property', 'building', 'land')
+        and ${RESOLVED_ASSET_TYPE_SQL} !~* '${PROPERTY_LIKE_ASSET_PATTERN}'
+        and coalesce(asset.title, '') !~* '${PROPERTY_LIKE_ASSET_PATTERN}'
       limit 1
     `,
     [assetId, dealerUserId],
@@ -637,7 +641,7 @@ function enquirySelectSql(whereClause: string): string {
       enquiry.denied_at::text,
       enquiry.request_again_at::text,
       enquiry.updated_at::text,
-      asset.equipment_family_label as type_label,
+      ${RESOLVED_ASSET_TYPE_SQL} as type_label,
       asset.kind,
       asset.brand_name,
       asset.model_name,
@@ -663,6 +667,7 @@ function enquirySelectSql(whereClause: string): string {
       dealer.town_city as dealer_town_city
     from public.asset_discovery_enquiries enquiry
     join public.asset_register_items asset on asset.id = enquiry.asset_register_item_id
+    left join public.equipment_families family on family.id = asset.equipment_family_id
     join public.account_profiles owner on owner.user_id = enquiry.owner_user_id
     join public.account_profiles dealer on dealer.user_id = enquiry.dealer_user_id
     left join public."user" ownerUser on ownerUser.id = enquiry.owner_user_id
