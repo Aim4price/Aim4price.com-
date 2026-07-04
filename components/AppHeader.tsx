@@ -29,6 +29,7 @@ type AccountMenuItem = {
   href: string;
   label: string;
   mobileOnly?: boolean;
+  accountTypes?: AccountType[];
 };
 
 type AccountLogoFields = {
@@ -245,14 +246,23 @@ const BASE_NAV_ITEMS: NavItem[] = [
 const ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
   { href: '/', label: 'Home', mobileOnly: true },
   { href: '/account', label: 'Account Details' },
+  { href: '/users', label: 'Users', accountTypes: ['dealer'] },
   { href: '/asset-register', label: 'Asset Register', mobileOnly: true },
-  { href: '/asset-discovery', label: 'Asset Discovery', mobileOnly: true },
+  { href: '/asset-discovery', label: 'Asset Discovery', mobileOnly: true, accountTypes: ['dealer'] },
   { href: '/valuation', label: 'Get Estimate', mobileOnly: true },
   { href: '/marketplace', label: 'Marketplace', mobileOnly: true },
   { href: '/asset-map', label: 'My Asset Map' },
   { href: '/fuel', label: 'My Fuel Ledger' },
   { href: '/my-invoices', label: 'My Cost Ledger' },
 ];
+
+function isAccountMenuItemVisible(item: AccountMenuItem, accountType: AccountType | undefined): boolean {
+  if (!item.accountTypes?.length) {
+    return true;
+  }
+
+  return Boolean(accountType && item.accountTypes.includes(accountType));
+}
 
 function buildNavItems(accountType: AccountType | 'public' | null): NavItem[] {
   if (accountType === null) {
@@ -1546,7 +1556,7 @@ export default function AppHeader({
 
         <nav className={styles.mobileMenuNav} aria-label={session ? 'Account mobile navigation' : 'Mobile navigation'}>
           {session
-            ? ACCOUNT_MENU_ITEMS.filter((item) => item.href !== '/asset-discovery' || session?.accountType === 'dealer').map((item) => {
+            ? ACCOUNT_MENU_ITEMS.filter((item) => isAccountMenuItemVisible(item, session?.accountType)).map((item) => {
                 const isActive = isAccountMenuLinkActive(item.href);
 
                 return (
@@ -1866,7 +1876,7 @@ export default function AppHeader({
 
                     {menuOpen ? (
                       <div id="header-account-menu" className={styles.accountPopover} role="menu">
-                        {ACCOUNT_MENU_ITEMS.filter((item) => item.href !== '/asset-discovery' || session?.accountType === 'dealer').map((item) => {
+                        {ACCOUNT_MENU_ITEMS.filter((item) => isAccountMenuItemVisible(item, session?.accountType)).map((item) => {
                           const isActive = isAccountMenuLinkActive(item.href);
                           const menuLinkClassName = [
                             styles.menuLink,
