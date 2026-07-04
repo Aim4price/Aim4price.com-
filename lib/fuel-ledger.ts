@@ -508,6 +508,26 @@ function fuelSlipReviewStatusLabel(status: unknown, reviewRequired: unknown): st
   return 'Manual';
 }
 
+function isGenericFuelSlipCompletionWarning(value: unknown): boolean {
+  const normalized = asText(value).replace(/\s+/g, ' ').trim().toLowerCase();
+
+  if (!normalized) return false;
+  if (normalized.startsWith('fuel slip saved as not completed')) return true;
+  if (normalized.startsWith('fuel slip saved for review')) return true;
+  if (normalized === 'complete the missing fuel slip fields before posting fuel usage.') return true;
+  if (normalized.includes('before it can post to the fuel ledger')) return true;
+  if (normalized.includes('enter the required odometer or hour-meter reading before posting fuel usage')) return true;
+
+  return false;
+}
+
+function normalizeFuelSlipWarningList(values: unknown[]): string[] {
+  return values
+    .map((entry) => maskStoredFuelSlipRawText(asText(entry)))
+    .filter((warning) => warning && !isGenericFuelSlipCompletionWarning(warning))
+    .slice(0, 12);
+}
+
 function safeCardMask(last4: string): string {
   return /^\d{4}$/.test(last4) ? `************${last4}` : '';
 }
@@ -845,14 +865,14 @@ function normalizeExtractionWarningsFromDb(value: unknown): string[] {
         const parsed = JSON.parse(value) as unknown;
         return normalizeExtractionWarningsFromDb(parsed);
       } catch {
-        return [maskStoredFuelSlipRawText(value)].filter(Boolean).slice(0, 12);
+        return normalizeFuelSlipWarningList([value]);
       }
     }
 
     return [];
   }
 
-  return value.map((entry) => maskStoredFuelSlipRawText(asText(entry))).filter(Boolean).slice(0, 12);
+  return normalizeFuelSlipWarningList(value);
 }
 
 function mapFuelSlipRow(row: FuelSlipRow): FuelSlipTransaction {
@@ -2986,7 +3006,7 @@ type FuelSlipAssetRow = FuelAssetRow & {
 
 function normalizeExtractionWarnings(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
-  return value.map((entry) => maskStoredFuelSlipRawText(asText(entry))).filter(Boolean).slice(0, 12);
+  return normalizeFuelSlipWarningList(value);
 }
 
 function buildFuelSlipDescription(input: { fuelType: string; litres: number | null; pricePerLitre: number | null; totalAmount: number | null }): string {
@@ -2998,15 +3018,8 @@ function buildFuelSlipDescription(input: { fuelType: string; litres: number | nu
   return parts.join(' · ');
 }
 
-function buildFuelSlipNotCompletedMessage(missingReasons: string[]): string {
-  const uniqueReasons = [...new Set(missingReasons.map((reason) => asText(reason)).filter(Boolean))];
-  if (!uniqueReasons.length) {
-    return 'Fuel slip saved as Not completed. Complete the missing details before it can post to the Fuel Ledger.';
-  }
-
-  const subject = uniqueReasons.length === 1 ? uniqueReasons[0] : uniqueReasons.join(', ');
-  const verb = uniqueReasons.length === 1 ? 'is' : 'are';
-  return `Fuel slip saved as Not completed. ${subject} ${verb} required before it can post to the Fuel Ledger.`;
+function buildFuelSlipNotCompletedMessage(_missingReasons: string[]): string {
+  return 'Complete the missing required fields before this fuel slip can post to the Fuel Ledger.';
 }
 
 async function loadFuelSlipById(client: PoolClient, fuelSlipId: string): Promise<FuelSlipTransaction> {
@@ -3490,11 +3503,7 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
     const isComplete = completionMissingReasons.length === 0;
     const pendingReview = !isComplete;
 
-    if (pendingReview) {
-      extractionWarnings.push(buildFuelSlipNotCompletedMessage(completionMissingReasons));
-    }
-
-    extractionWarnings = [...new Set(extractionWarnings.map((warning) => maskStoredFuelSlipRawText(asText(warning))).filter(Boolean))].slice(0, 12);
+    extractionWarnings = [...new Set(normalizeFuelSlipWarningList(extractionWarnings))].slice(0, 12);
     const finalReviewRequired = pendingReview;
     const finalExtractionStatus: FuelSlipExtractionStatus = pendingReview
       ? 'needs_review'
