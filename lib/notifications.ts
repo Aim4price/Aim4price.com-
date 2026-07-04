@@ -6,6 +6,10 @@ import {
 } from './contact-requests';
 import { listAssetRegisterItems } from './asset-register-db';
 import { listFuelLedger, type FuelLedgerEvent } from './fuel-ledger';
+import {
+  listPendingAssetDiscoveryEnquiriesForOwner,
+  listRecentAssetDiscoveryEnquiriesForDealer,
+} from './asset-discovery';
 import { listUnreadUserMessagesForOwner, userMessageSenderName } from './user-messages';
 import {
   ensurePartnerAccessTables,
@@ -22,6 +26,7 @@ export type HeaderNotificationCategory =
   | 'qr_scan'
   | 'fuel'
   | 'contact_request'
+  | 'asset_discovery'
   | 'account';
 
 export type HeaderNotificationTone = 'neutral' | 'success' | 'warning' | 'info';
@@ -35,6 +40,7 @@ export type HeaderNotificationItem = {
   href: string;
   createdAtIso: string;
   contactRequestId?: string;
+  assetDiscoveryEnquiryId?: string;
   messageId?: string;
   messageType?: 'message' | 'ad';
 };
@@ -350,6 +356,56 @@ async function listOwnerUserMessageNotifications(userId: string): Promise<Header
   }
 }
 
+
+async function listOwnerAssetDiscoveryNotifications(userId: string): Promise<HeaderNotificationItem[]> {
+  try {
+    const enquiries = await listPendingAssetDiscoveryEnquiriesForOwner(userId);
+
+    return enquiries.map((enquiry) => ({
+      id: `asset-discovery-owner:${enquiry.id}:${enquiry.updatedAtIso}`,
+      category: 'asset_discovery',
+      tone: 'info',
+      title: 'Asset Discovery enquiry',
+      body: `A dealer is interested in your ${enquiry.asset.brand} ${enquiry.asset.model}. Are you interested in selling?`,
+      href: '',
+      createdAtIso: isoFallback(enquiry.createdAtIso || enquiry.updatedAtIso),
+      assetDiscoveryEnquiryId: enquiry.id,
+    } satisfies HeaderNotificationItem));
+  } catch (error) {
+    console.error('Failed to load owner Asset Discovery notifications', error);
+    return [];
+  }
+}
+
+async function listDealerAssetDiscoveryNotifications(userId: string): Promise<HeaderNotificationItem[]> {
+  try {
+    const enquiries = await listRecentAssetDiscoveryEnquiriesForDealer(userId);
+
+    return enquiries.map((enquiry) => {
+      const approved = enquiry.status === 'approved';
+      const retryDate = enquiry.status === 'temporarily_denied'
+        ? new Intl.DateTimeFormat('en-ZA', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(enquiry.updatedAtIso))
+        : '';
+
+      return {
+        id: `asset-discovery-dealer:${enquiry.id}:${enquiry.status}:${enquiry.updatedAtIso}`,
+        category: 'asset_discovery',
+        tone: approved ? 'success' : 'warning',
+        title: approved ? 'Asset enquiry approved' : 'Asset enquiry temporarily denied',
+        body: approved
+          ? `Your enquiry for ${enquiry.asset.brand} ${enquiry.asset.model} was approved.`
+          : `Your enquiry for ${enquiry.asset.brand} ${enquiry.asset.model} was temporarily denied.${retryDate ? ` Updated: ${retryDate}.` : ''}`,
+        href: '',
+        createdAtIso: isoFallback(enquiry.updatedAtIso),
+        assetDiscoveryEnquiryId: enquiry.id,
+      } satisfies HeaderNotificationItem;
+    });
+  } catch (error) {
+    console.error('Failed to load dealer Asset Discovery notifications', error);
+    return [];
+  }
+}
+
 async function listPartnerContactRequestNotifications(userId: string): Promise<HeaderNotificationItem[]> {
   try {
     const requests = await listContactRequestsForRequester(userId);
@@ -447,6 +503,7 @@ export async function listHeaderNotifications(input: ListHeaderNotificationsInpu
         listOpenPartnerNoteNotifications(input.userId),
         listOwnerLeadNotifications(input.userId),
         listOwnerContactRequestNotifications(input.userId),
+        listOwnerAssetDiscoveryNotifications(input.userId),
         listOwnerUserMessageNotifications(input.userId),
         listQrScanNotifications(input.userId),
         listFuelNotifications(input.userId),
@@ -454,6 +511,7 @@ export async function listHeaderNotifications(input: ListHeaderNotificationsInpu
     : await Promise.all([
         listPartnerLeadNotifications(input.userId),
         listPartnerContactRequestNotifications(input.userId),
+        accountType === 'dealer' ? listDealerAssetDiscoveryNotifications(input.userId) : Promise.resolve([]),
       ]);
 
   return notificationGroups
