@@ -613,6 +613,15 @@ function OpenFileIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+function EditIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" />
+    </IconBase>
+  );
+}
+
 function FuelSlipsIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <IconBase {...props}>
@@ -3221,7 +3230,17 @@ export default function FuelClient() {
                               <FuelSlipsIcon className={styles.buttonIcon} />
                               <span>Review / Complete</span>
                             </button>
-                          ) : null}
+                          ) : (
+                            <button
+                              type="button"
+                              className={`${styles.secondaryButton} ${styles.fuelSlipManagerEditButton}`}
+                              onClick={() => openFuelSlipReview(slip)}
+                              disabled={deletingThisSlip}
+                            >
+                              <EditIcon className={styles.buttonIcon} />
+                              <span>Edit</span>
+                            </button>
+                          )}
                           {slip.documentFileUrl ? (
                             <a className={`${styles.secondaryButton} ${styles.fuelSlipManagerOpenButton}`} href={slip.documentFileUrl} target="_blank" rel="noreferrer">
                               <OpenFileIcon className={styles.buttonIcon} />
@@ -3416,43 +3435,41 @@ export default function FuelClient() {
       ) : null}
 
       {modalMode === 'fuel-slip-manager' && deleteCandidateFuelSlip ? (
-        <div className={styles.fuelSlipSubModalBackdrop} role="alertdialog" aria-modal="true" aria-labelledby="fuel-slip-delete-title">
-          <div className={`${styles.fuelSlipFilterModal} ${styles.fuelSlipDeleteModal}`}>
-            <div className={styles.modalHeader}>
-              <div>
-                <h2 id="fuel-slip-delete-title">Are you sure you want to delete this fuel slip?</h2>
-                <p>This removes the saved slip and reverses linked Fuel Ledger posting records created by this slip where applicable.</p>
+        <div className={`${styles.modalOverlay} ${styles.confirmDeleteOverlay} ${styles.fuelSlipDeleteOverlay}`} role="alertdialog" aria-modal="true" aria-labelledby="fuel-slip-delete-title" aria-describedby="fuel-slip-delete-copy">
+          <div className={styles.deleteConfirmModal}>
+            <button
+              type="button"
+              className={styles.deleteConfirmCloseButton}
+              onClick={() => setDeleteCandidateFuelSlip(null)}
+              aria-label="Close delete fuel slip confirmation"
+              disabled={busyFuelSlipDeleteId === deleteCandidateFuelSlip.id}
+            >
+              ×
+            </button>
+
+            <div className={styles.deleteConfirmContent}>
+              <h3 id="fuel-slip-delete-title">Are you sure you want to delete this?</h3>
+              <p id="fuel-slip-delete-copy">
+                This permanently removes this fuel slip from your Fuel Ledger and reverses linked posting records where applicable.
+              </p>
+
+              <div className={styles.deleteConfirmAsset}>
+                <span>Selected fuel slip</span>
+                <strong>Supplier: {deleteCandidateFuelSlip.supplierName || 'Unknown supplier'}</strong>
+                <small>
+                  Target: {fuelSlipTargetLabel(deleteCandidateFuelSlip)} · Date: {formatFuelSlipDate(deleteCandidateFuelSlip.documentDate)} · Litres: {formatLitres(deleteCandidateFuelSlip.litres)} · Total amount: {formatCurrency(deleteCandidateFuelSlip.totalAmount)}
+                </small>
               </div>
-              <button type="button" className={styles.closeButton} onClick={() => setDeleteCandidateFuelSlip(null)} aria-label="Close delete fuel slip" disabled={busyFuelSlipDeleteId === deleteCandidateFuelSlip.id}><CloseIcon /></button>
-            </div>
-            <div className={styles.modalDivider} />
-            <div className={styles.fuelSlipDeleteSummary}>
-              <span>
-                <small>Supplier</small>
-                <strong>{deleteCandidateFuelSlip.supplierName || 'Unknown supplier'}</strong>
-              </span>
-              <span>
-                <small>Date</small>
-                <strong>{formatFuelSlipDate(deleteCandidateFuelSlip.documentDate)}</strong>
-              </span>
-              <span>
-                <small>Target</small>
-                <strong>{fuelSlipTargetLabel(deleteCandidateFuelSlip)}</strong>
-              </span>
-              <span>
-                <small>Litres</small>
-                <strong>{formatLitres(deleteCandidateFuelSlip.litres)}</strong>
-              </span>
-              <span>
-                <small>Total amount</small>
-                <strong>{formatCurrency(deleteCandidateFuelSlip.totalAmount)}</strong>
-              </span>
-            </div>
-            <div className={styles.modalFooter}>
-              <button type="button" className={styles.secondaryButton} onClick={() => setDeleteCandidateFuelSlip(null)} disabled={busyFuelSlipDeleteId === deleteCandidateFuelSlip.id}>Cancel</button>
-              <button type="button" className={`${styles.primaryButton} ${styles.fuelSlipConfirmDeleteButton}`} onClick={confirmDeleteFuelSlip} disabled={busyFuelSlipDeleteId === deleteCandidateFuelSlip.id}>
-                {busyFuelSlipDeleteId === deleteCandidateFuelSlip.id ? 'Deleting...' : 'Yes, delete slip'}
-              </button>
+
+              <div className={styles.deleteConfirmActions}>
+                <button type="button" className={styles.secondaryButton} onClick={() => setDeleteCandidateFuelSlip(null)} disabled={busyFuelSlipDeleteId === deleteCandidateFuelSlip.id}>
+                  Cancel
+                </button>
+
+                <button type="button" className={`${styles.primaryButton} ${styles.deleteConfirmButton}`} onClick={confirmDeleteFuelSlip} disabled={busyFuelSlipDeleteId === deleteCandidateFuelSlip.id}>
+                  <span>{busyFuelSlipDeleteId === deleteCandidateFuelSlip.id ? 'Deleting...' : 'Yes, delete slip'}</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>

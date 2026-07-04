@@ -5564,3 +5564,279 @@
   outline-offset: 3px;
 }
 
+
+/* Fuel Slip Manager edit action: same clean blue family as Open file. */
+.fuelSlipManagerEditButton {
+  min-height: 3rem;
+  min-width: 8.6rem;
+  border-radius: 0.92rem;
+  padding-inline: 0.92rem;
+}
+
+.fuelSlipManagerModal button.fuelSlipManagerEditButton {
+  color: #0f3b64 !important;
+  background: linear-gradient(180deg, #ffffff 0%, #eaf5ff 100%) !important;
+  border: 1.5px solid #7eb4df !important;
+  box-shadow:
+    0 10px 22px rgba(15, 59, 100, 0.085),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.fuelSlipManagerModal button.fuelSlipManagerEditButton:hover:not(:disabled) {
+  color: #0f3b64 !important;
+  background: linear-gradient(180deg, #ffffff 0%, #daecff 100%) !important;
+  border-color: #558fc6 !important;
+  box-shadow:
+    0 14px 28px rgba(15, 59, 100, 0.115),
+    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+}
+
+@media (max-width: 720px) {
+  .fuelSlipManagerEditButton {
+    width: 100%;
+  }
+}
+
+/* Fuel slip delete confirmation: mirror the Asset Register standard white delete modal. */
+.fuelSlipDeleteOverlay {
+  z-index: 240 !important;
+  background: rgba(9, 30, 24, 0.44) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+.fuelSlipDeleteOverlay .deleteConfirmModal {
+  position: relative !important;
+  width: min(96vw, 54rem) !important;
+  display: block !important;
+  grid-template-columns: unset !important;
+  align-items: unset !important;
+  gap: 0 !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  padding: clamp(1.55rem, 2.4vw, 2.1rem) !important;
+  border: 1px solid rgba(203, 218, 230, 0.98) !important;
+  border-radius: 1.8rem !important;
+  background: rgba(255, 255, 255, 0.98) !important;
+  box-shadow: 0 26px 70px rgba(8, 27, 34, 0.22) !important;
+}
+
+.fuelSlipDeleteOverlay .deleteConfirmContent {
+  display: grid !important;
+  gap: 1.15rem !important;
+  max-height: none !important;
+  overflow: visible !important;
+  padding: 0 !important;
+}
+
+.fuelSlipDeleteOverlay .deleteConfirmContent h3 {
+  margin: 0 !important;
+  padding: 0 3.6rem 1.1rem 0 !important;
+  border-bottom: 1px solid rgba(211, 224, 234, 0.98) !important;
+  color: #0c382f !important;
+  font-size: clamp(1.65rem, 3vw, 2.25rem) !important;
+  font-weight: 760 !important;
+  line-height: 1.02 !important;
+  letter-spacing: -0.05em !important;
+}
+
+.fuelSlipDeleteOverlay .deleteConfirmContent p {
+  max-width: 100% !important;
+  margin: 0 !important;
+  color: #647382 !important;
+  font-size: 1rem !important;
+  font-weight: 560 !important;
+  line-height: 1.45 !important;
+}
+
+.fuelSlipDeleteOverlay .deleteConfirmContent p strong {
+  color: #0c382f !important;
+  font-weight: 760 !important;
+}
+
+.fuelSlipDeleteOverlay .deleteConfirmAsset {
+  display: grid !important;
+  gap: 0.35rem !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 1.05rem 1.15rem !important;
+  border: 1px solid rgba(207, 220, 231, 0.98) !important;
+  border-radius: 1.2rem !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbfd 100%) !important;
+  overflow-wrap: anywhere !important;
+}
+
+.fuelSlipDeleteOverlay .deleteConfirmAsset span {
+  color: #68798b !important;
+  font-size: 0.78rem !important;
+  font-weight: 820 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+}
+
+.fuelSlipDeleteOverlay .deleteConfirmAsset strong {
+  color: #0c382f !important;
+  font-size: 1.2rem !important;
+  font-weight: 780 !important;
+  line-height: 1.1 !important;
+}
+
+.fuelSlipDeleteOverlay .deleteConfirmAsset small {
+  color: #607084 !important;
+  font-size: 0.98rem !important;
+  font-weight: 650 !important;
+  line-height: 1.35 !important;
+}
+
+.fuelSlipDeleteOverlay .deleteConfirmActions {
+  display: flex !important;
+  justify-content: flex-end !important;
+  align-items: center !important;
+  gap: 0.75rem !important;
+  width: auto !important;
+  margin-top: 0.2rem !important;
+}
+
+.fuelSlipDeleteOverlay .deleteConfirmActions .secondaryButton,
+.fuelSlipDeleteOverlay .deleteConfirmActions .deleteConfirmButton {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: auto !important;
+  min-height: 3.25rem !important;
+  min-width: 0 !important;
+  padding: 0 1.3rem !important;
+  border-radius: 1.05rem !important;
+  font-size: 0.98rem !important;
+  font-weight: 760 !important;
+  box-shadow: none !important;
+}
+
+.fuelSlipDeleteOverlay .deleteConfirmActions .secondaryButton {
+  border: 1px solid rgba(197, 214, 228, 0.98) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f5f9fd 100%) !important;
+  color: #11335a !important;
+}
+
+.fuelSlipDeleteOverlay .deleteConfirmButton,
+.fuelSlipDeleteOverlay .deleteConfirmActions .deleteConfirmButton,
+.fuelSlipDeleteOverlay .deleteConfirmActions .deleteConfirmButton:disabled {
+  color: #a13a3a !important;
+  background: #fff5f4 !important;
+  border: 1px solid #efcaca !important;
+  text-shadow: none !important;
+  opacity: 1 !important;
+}
+
+.fuelSlipDeleteOverlay .deleteConfirmButton:hover:not(:disabled),
+.fuelSlipDeleteOverlay .deleteConfirmActions .deleteConfirmButton:hover:not(:disabled) {
+  color: #a13a3a !important;
+  background: #ffecec !important;
+  border-color: #e8c7c7 !important;
+  box-shadow: none !important;
+}
+
+.fuelSlipDeleteOverlay .deleteConfirmCloseButton {
+  position: absolute !important;
+  top: clamp(1rem, 1.6vw, 1.25rem) !important;
+  right: clamp(1rem, 1.6vw, 1.25rem) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 3rem !important;
+  height: 3rem !important;
+  border: 1px solid rgba(207, 223, 236, 0.98) !important;
+  border-radius: 999px !important;
+  background: #f7fbff !important;
+  color: #13395d !important;
+  font: inherit !important;
+  font-size: 1.35rem !important;
+  line-height: 1 !important;
+  cursor: pointer !important;
+}
+
+.fuelSlipDeleteOverlay .deleteConfirmCloseButton:disabled {
+  cursor: not-allowed !important;
+  opacity: 0.58 !important;
+}
+
+@media (max-width: 760px) {
+  .fuelSlipDeleteOverlay .deleteConfirmModal {
+    width: min(100%, calc(100vw - 1.25rem)) !important;
+    padding: 1.15rem !important;
+    border-radius: 1.4rem !important;
+  }
+
+  .fuelSlipDeleteOverlay .deleteConfirmContent {
+    max-height: calc(100dvh - 10rem) !important;
+    overflow-y: auto !important;
+  }
+
+  .fuelSlipDeleteOverlay .deleteConfirmContent h3 {
+    padding-right: 3rem !important;
+  }
+
+  .fuelSlipDeleteOverlay .deleteConfirmActions {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    width: 100% !important;
+  }
+
+  .fuelSlipDeleteOverlay .deleteConfirmActions .secondaryButton,
+  .fuelSlipDeleteOverlay .deleteConfirmActions .deleteConfirmButton {
+    width: 100% !important;
+  }
+
+  .fuelSlipDeleteOverlay .deleteConfirmCloseButton {
+    top: 0.85rem !important;
+    right: 0.85rem !important;
+    width: 2.65rem !important;
+    height: 2.65rem !important;
+  }
+}
+
+/* Neutralise the old fuel-slip delete tint if the legacy class is reused anywhere. */
+.fuelSlipFilterModal.fuelSlipDeleteModal {
+  border-color: rgba(203, 218, 230, 0.98) !important;
+  background: rgba(255, 255, 255, 0.98) !important;
+  box-shadow: 0 26px 70px rgba(8, 27, 34, 0.22) !important;
+}
+
+.fuelSlipFilterModal.fuelSlipDeleteModal::before {
+  display: none !important;
+}
+
+.fuelSlipFilterModal.fuelSlipDeleteModal .modalHeader h2 {
+  color: #0c382f !important;
+}
+
+.fuelSlipFilterModal.fuelSlipDeleteModal .modalHeader p {
+  color: #647382 !important;
+}
+
+.fuelSlipFilterModal.fuelSlipDeleteModal .modalDivider {
+  background: rgba(211, 224, 234, 0.98) !important;
+}
+
+.fuelSlipFilterModal.fuelSlipDeleteModal .modalFooter {
+  background: transparent !important;
+  border-top-color: rgba(216, 226, 236, 0.88) !important;
+}
+
+.fuelSlipFilterModal.fuelSlipDeleteModal .modalFooter button.fuelSlipConfirmDeleteButton,
+.fuelSlipFilterModal .modalFooter button.fuelSlipConfirmDeleteButton,
+.fuelSlipDeleteModal .modalFooter button.fuelSlipConfirmDeleteButton {
+  color: #a13a3a !important;
+  background: #fff5f4 !important;
+  border: 1px solid #efcaca !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+.fuelSlipFilterModal.fuelSlipDeleteModal .modalFooter button.fuelSlipConfirmDeleteButton:hover:not(:disabled),
+.fuelSlipFilterModal .modalFooter button.fuelSlipConfirmDeleteButton:hover:not(:disabled),
+.fuelSlipDeleteModal .modalFooter button.fuelSlipConfirmDeleteButton:hover:not(:disabled) {
+  color: #a13a3a !important;
+  background: #ffecec !important;
+  border-color: #e8c7c7 !important;
+  box-shadow: none !important;
+}
