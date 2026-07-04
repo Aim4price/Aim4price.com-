@@ -46,6 +46,26 @@ type EnquiryResponse = {
 
 const SEARCH_DEBOUNCE_MS = 250;
 
+const PROVINCE_ABBREVIATIONS: Record<string, string> = {
+  'western cape': 'WC',
+  gauteng: 'GP',
+  'kwazulu-natal': 'KZN',
+  'kwazulu natal': 'KZN',
+  'eastern cape': 'EC',
+  'free state': 'FS',
+  limpopo: 'LP',
+  mpumalanga: 'MP',
+  'northern cape': 'NC',
+  'north west': 'NW',
+};
+
+function provinceTableLabel(value: string): string {
+  const cleaned = value.trim();
+  if (!cleaned || cleaned === 'Province not saved') return '—';
+
+  return PROVINCE_ABBREVIATIONS[cleaned.toLowerCase()] ?? cleaned;
+}
+
 function formatDate(value: string | null | undefined): string {
   if (!value) return '';
   const time = Date.parse(value);
@@ -119,7 +139,7 @@ export default function AssetDiscoveryClient() {
         const data = (await response.json()) as ListResponse;
 
         if (!response.ok || !data.ok) {
-          throw new Error(data.error || 'Failed to load Asset Discovery.');
+          throw new Error(data.error || 'Failed to load Discovery.');
         }
 
         if (!mounted) return;
@@ -129,7 +149,7 @@ export default function AssetDiscoveryClient() {
       } catch (loadError) {
         if (!mounted) return;
         setAssets([]);
-        setError(loadError instanceof Error ? loadError.message : 'Failed to load Asset Discovery.');
+        setError(loadError instanceof Error ? loadError.message : 'Failed to load Discovery.');
       } finally {
         if (mounted) setLoading(false);
       }
@@ -230,10 +250,10 @@ export default function AssetDiscoveryClient() {
     <>
       <section className={styles.shell}>
         <div className={styles.heroPanel}>
-          <h1>Asset Discovery</h1>
+          <h1>Discovery</h1>
         </div>
 
-        <section className={styles.controlsPanel} aria-label="Asset Discovery controls">
+        <section className={styles.controlsPanel} aria-label="Discovery controls">
           <div className={styles.summaryGrid}>
             <div className={styles.summaryCard}>
               <span>Available assets</span>
@@ -281,13 +301,23 @@ export default function AssetDiscoveryClient() {
         </section>
 
         {error ? <div className={styles.errorPanel}>{error}</div> : null}
-        {loading ? <div className={styles.statePanel}>Loading Asset Discovery...</div> : null}
+        {loading ? <div className={styles.statePanel}>Loading Discovery...</div> : null}
 
         {!loading && !error ? (
           assets.length ? (
-            <section className={styles.tableCard} aria-label="Asset Discovery assets">
+            <section className={styles.tableCard} aria-label="Discovery assets">
               <div className={styles.tableScroll}>
                 <table className={styles.assetTable}>
+                  <colgroup>
+                    <col className={styles.typeColumn} />
+                    <col className={styles.brandColumn} />
+                    <col className={styles.modelColumn} />
+                    <col className={styles.yearColumn} />
+                    <col className={styles.usageColumn} />
+                    <col className={styles.conditionColumn} />
+                    <col className={styles.provinceColumn} />
+                    <col className={styles.enquireColumn} />
+                  </colgroup>
                   <thead>
                     <tr>
                       <th>Type</th>
@@ -305,15 +335,31 @@ export default function AssetDiscoveryClient() {
                       const disabled = isEnquireDisabled(asset);
                       const currentStatus = statusLabel(asset);
 
+                      const provinceLabel = provinceTableLabel(asset.province);
+
                       return (
                         <tr key={asset.id}>
-                          <td data-label="Type">{asset.type}</td>
-                          <td data-label="Brand">{asset.brand}</td>
-                          <td data-label="Model">{asset.model}</td>
-                          <td data-label="Year">{asset.year}</td>
-                          <td data-label="Usage">{asset.usage}</td>
-                          <td data-label="Condition">{asset.condition}</td>
-                          <td data-label="Province">{asset.province}</td>
+                          <td data-label="Type" className={styles.typeCell}>
+                            <span className={styles.cellClamp} title={asset.type}>{asset.type}</span>
+                          </td>
+                          <td data-label="Brand" className={styles.brandCell}>
+                            <span className={styles.cellClamp} title={asset.brand}>{asset.brand}</span>
+                          </td>
+                          <td data-label="Model" className={styles.modelCell}>
+                            <span className={styles.cellClamp} title={asset.model}>{asset.model}</span>
+                          </td>
+                          <td data-label="Year" className={styles.yearCell}>
+                            <span className={styles.compactValue} title={asset.year}>{asset.year}</span>
+                          </td>
+                          <td data-label="Usage" className={styles.usageCell}>
+                            <span className={styles.compactValue} title={asset.usage}>{asset.usage}</span>
+                          </td>
+                          <td data-label="Condition" className={styles.conditionCell}>
+                            <span className={styles.compactValue} title={asset.condition}>{asset.condition}</span>
+                          </td>
+                          <td data-label="Province" className={styles.provinceCell}>
+                            <span className={styles.provinceBadge} title={asset.province}>{provinceLabel}</span>
+                          </td>
                           <td data-label="Enquire" className={styles.actionCell}>
                             <button
                               type="button"
@@ -342,7 +388,7 @@ export default function AssetDiscoveryClient() {
           <section className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="asset-discovery-modal-title" onMouseDown={(event) => event.stopPropagation()}>
             <div className={styles.modalHeader}>
               <div>
-                <span>Asset Discovery</span>
+                <span>Discovery</span>
                 <h2 id="asset-discovery-modal-title">Enquire about this machine</h2>
               </div>
               <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close enquiry">
