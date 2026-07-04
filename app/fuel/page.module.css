@@ -6010,3 +6010,79 @@
     0 18px 32px rgba(180, 35, 24, 0.28),
     inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
 }
+
+/* Fuel slip review/complete modal: final spacing and clickable step controls. */
+.fuelSlipFlowBackdrop .fuelSlipReviewFormModal {
+  grid-template-rows: auto auto minmax(0, 1fr) auto !important;
+}
+
+.fuelSlipFlowBackdrop .fuelSlipReviewFormModal .modalHeader {
+  margin: 0;
+  padding: 0 0 1.05rem;
+  border-bottom: 1px solid rgba(216, 226, 236, 0.9);
+}
+
+.fuelSlipFlowBackdrop .fuelSlipReviewFormModal .modalHeader > div {
+  gap: 0.28rem;
+}
+
+.fuelSlipFlowBackdrop .fuelSlipReviewFormModal .modalHeader p {
+  margin: 0;
+}
+
+.fuelSlipFlowBackdrop .fuelSlipReviewFormModal .fuelSlipReviewStepProgress {
+  margin: 1rem 0 0.95rem;
+}
+
+.fuelSlipFlowBackdrop button.fuelSlipReviewStepItem {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  border: 1px solid transparent;
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+}
+
+.fuelSlipFlowBackdrop button.fuelSlipReviewStepItem:hover {
+  color: #0f5840;
+  border-color: rgba(111, 197, 150, 0.62);
+  background: linear-gradient(180deg, #ffffff 0%, #effaf4 100%);
+  box-shadow:
+    0 8px 18px rgba(25, 116, 84, 0.075),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.fuelSlipFlowBackdrop button.fuelSlipReviewStepItem:focus-visible {
+  outline: 3px solid rgba(33, 132, 98, 0.24);
+  outline-offset: 3px;
+}
+
+.fuelSlipFlowBackdrop button.fuelSlipReviewStepActive,
+.fuelSlipFlowBackdrop button.fuelSlipReviewStepActive:hover {
+  color: #0f5840;
+  border-color: rgba(111, 197, 150, 0.88);
+  background: linear-gradient(180deg, #ffffff 0%, #e6f8ef 100%);
+  box-shadow:
+    0 10px 22px rgba(25, 116, 84, 0.09),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.fuelSlipFlowBackdrop .fuelSlipReviewFormModal .formModalScrollBody {
+  gap: 0.95rem;
+  padding-top: 0;
+}
+
+.fuelSlipFlowBackdrop .fuelSlipReviewFormModal .invoiceFormCard {
+  margin-top: 0;
+}
+
+@media (max-width: 900px) {
+  .fuelSlipFlowBackdrop .fuelSlipReviewFormModal .modalHeader {
+    padding-bottom: 0.9rem;
+  }
+
+  .fuelSlipFlowBackdrop .fuelSlipReviewFormModal .fuelSlipReviewStepProgress {
+    margin: 0.85rem 0;
+  }
+}

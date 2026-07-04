@@ -2687,9 +2687,7 @@ export default function FuelClient() {
     setFuelSlipFlow('upload');
   }
 
-  function handleFuelSlipNextPage() {
-    setFuelSlipFormPage('extra');
-
+  function focusFuelSlipFirstEditableField() {
     window.requestAnimationFrame(() => {
       const scrollBody = document.querySelector<HTMLElement>('[data-fuel-slip-scroll-body="true"]');
       scrollBody?.scrollTo({ top: 0, left: 0, behavior: 'auto' });
@@ -2699,6 +2697,15 @@ export default function FuelClient() {
       );
       firstEditableField?.focus({ preventScroll: true });
     });
+  }
+
+  function handleFuelSlipStepSelect(page: 'details' | 'extra') {
+    setFuelSlipFormPage(page);
+    focusFuelSlipFirstEditableField();
+  }
+
+  function handleFuelSlipNextPage() {
+    handleFuelSlipStepSelect('extra');
   }
 
   function isFuelSlipFieldMissing(field: FuelSlipMissingFieldKey): boolean {
@@ -2725,10 +2732,6 @@ export default function FuelClient() {
   function renderFuelSlipDetailsFields() {
     return (
       <section className={styles.invoiceFormCard}>
-        <div className={styles.fuelSlipFormIntro}>
-          <strong>Slip details</strong>
-          <span>Capture the values printed on the slip. Missing required posting details can still be completed on the next page.</span>
-        </div>
         <div className={styles.formGrid}>
           <label>
             <span>Supplier / garage</span>
@@ -2833,22 +2836,33 @@ export default function FuelClient() {
 
   function renderFuelSlipReviewStepProgress() {
     return (
-      <div className={styles.fuelSlipReviewStepProgress} aria-label="Fuel slip review progress">
-        <div className={`${styles.fuelSlipReviewStepItem} ${fuelSlipFormPage === 'details' ? styles.fuelSlipReviewStepActive : ''}`} aria-current={fuelSlipFormPage === 'details' ? 'step' : undefined}>
+      <div className={styles.fuelSlipReviewStepProgress} role="tablist" aria-label="Fuel slip review progress">
+        <button
+          type="button"
+          className={`${styles.fuelSlipReviewStepItem} ${fuelSlipFormPage === 'details' ? styles.fuelSlipReviewStepActive : ''}`}
+          onClick={() => handleFuelSlipStepSelect('details')}
+          role="tab"
+          aria-selected={fuelSlipFormPage === 'details'}
+        >
           <strong>Step 1</strong>
           <span>Slip details</span>
-        </div>
-        <div className={`${styles.fuelSlipReviewStepItem} ${fuelSlipFormPage === 'extra' ? styles.fuelSlipReviewStepActive : ''}`} aria-current={fuelSlipFormPage === 'extra' ? 'step' : undefined}>
+        </button>
+        <button
+          type="button"
+          className={`${styles.fuelSlipReviewStepItem} ${fuelSlipFormPage === 'extra' ? styles.fuelSlipReviewStepActive : ''}`}
+          onClick={() => handleFuelSlipStepSelect('extra')}
+          role="tab"
+          aria-selected={fuelSlipFormPage === 'extra'}
+        >
           <strong>Step 2</strong>
           <span>Extra information</span>
-        </div>
+        </button>
       </div>
     );
   }
 
   function renderFuelSlipExtraFields() {
     const isAssetSlip = selectedFuelSlipTargetType === 'asset';
-    const isStorageSlip = selectedFuelSlipTargetType === 'storage_tank';
     const usageHelp = isAssetSlip && !selectedFuelSlipAssetResolved
       ? 'The linked asset usage metric could not be resolved. Enter current km / odometer or current hours before this slip can post.'
       : selectedFuelSlipUsageMetric === 'both'
@@ -2859,11 +2873,6 @@ export default function FuelClient() {
 
     return (
       <section className={styles.invoiceFormCard}>
-        <div className={styles.fuelSlipFormIntro}>
-          <strong>Extra information / posting details</strong>
-          <span>{isStorageSlip ? 'Storage tank slips do not need odometer or hour readings.' : 'These details are used when the slip posts to the Fuel Ledger.'}</span>
-        </div>
-
         {usageHelp ? <p className={styles.fuelSlipHelperText}>{usageHelp}</p> : null}
 
         <div className={styles.formGrid}>
