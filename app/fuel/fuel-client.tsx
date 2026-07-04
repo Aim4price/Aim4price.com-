@@ -2197,8 +2197,11 @@ export default function FuelClient() {
     }
   }
 
-  async function handleFuelSlipSubmit(event: FormEvent<HTMLFormElement>) {
+  function preventFuelSlipImplicitSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+  }
+
+  async function handleFuelSlipSaveClick() {
     const [targetType, targetId] = fuelSlipDraft.targetKey.split(':');
     const card = normalizeFuelSlipCard(fuelSlipDraft.cardLast4 || fuelSlipDraft.cardNumberMasked);
 
@@ -3636,7 +3639,7 @@ export default function FuelClient() {
 
       {modalMode === 'fuel-slip' && fuelSlipFlow === 'manual-form' ? (
         <div className={styles.fuelSlipFlowBackdrop} role="dialog" aria-modal="true" aria-label="Enter fuel slip manually">
-          <form className={`${styles.formModal} ${styles.costFormModal} ${styles.fuelSlipCostFormModal}`} onSubmit={handleFuelSlipSubmit}>
+          <form className={`${styles.formModal} ${styles.costFormModal} ${styles.fuelSlipCostFormModal}`} onSubmit={preventFuelSlipImplicitSubmit}>
             <div className={styles.modalHeader}>
               <div>
                 <h2>Enter fuel slip manually</h2>
@@ -3655,7 +3658,7 @@ export default function FuelClient() {
               {fuelSlipFormPage === 'details' ? (
                 <button type="button" className={styles.primaryButton} onClick={handleFuelSlipNextPage} disabled={isSaving}>Next</button>
               ) : (
-                <button type="submit" className={styles.primaryButton} disabled={isSaving}>{isSaving ? 'Saving...' : 'Save Fuel Slip'}</button>
+                <button type="button" className={styles.primaryButton} onClick={handleFuelSlipSaveClick} disabled={isSaving}>{isSaving ? 'Saving...' : 'Save Fuel Slip'}</button>
               )}
             </div>
           </form>
@@ -3664,7 +3667,7 @@ export default function FuelClient() {
 
       {modalMode === 'fuel-slip' && fuelSlipFlow === 'review' ? (
         <div className={styles.fuelSlipFlowBackdrop} role="dialog" aria-modal="true" aria-label={fuelSlipFormTitle}>
-          <form className={`${styles.formModal} ${styles.costFormModal} ${styles.fuelSlipCostFormModal}`} onSubmit={handleFuelSlipSubmit}>
+          <form className={`${styles.formModal} ${styles.costFormModal} ${styles.fuelSlipCostFormModal}`} onSubmit={preventFuelSlipImplicitSubmit}>
             <div className={styles.modalHeader}>
               <div>
                 <h2>{fuelSlipDraft.id ? 'Review / Complete fuel slip' : 'Review fuel slip details'}</h2>
@@ -3708,7 +3711,7 @@ export default function FuelClient() {
               {fuelSlipFormPage === 'details' ? (
                 <button type="button" className={styles.primaryButton} onClick={handleFuelSlipNextPage} disabled={isSaving}>Next</button>
               ) : (
-                <button type="submit" className={styles.primaryButton} disabled={isSaving}>{isSaving ? 'Saving...' : fuelSlipDraft.id ? 'Save Review' : 'Save Fuel Slip'}</button>
+                <button type="button" className={styles.primaryButton} onClick={handleFuelSlipSaveClick} disabled={isSaving}>{isSaving ? 'Saving...' : fuelSlipDraft.id ? 'Save Changes' : 'Save Fuel Slip'}</button>
               )}
             </div>
           </form>
