@@ -2831,6 +2831,21 @@ export default function FuelClient() {
     );
   }
 
+  function renderFuelSlipReviewStepProgress() {
+    return (
+      <div className={styles.fuelSlipReviewStepProgress} aria-label="Fuel slip review progress">
+        <div className={`${styles.fuelSlipReviewStepItem} ${fuelSlipFormPage === 'details' ? styles.fuelSlipReviewStepActive : ''}`} aria-current={fuelSlipFormPage === 'details' ? 'step' : undefined}>
+          <strong>Step 1</strong>
+          <span>Slip details</span>
+        </div>
+        <div className={`${styles.fuelSlipReviewStepItem} ${fuelSlipFormPage === 'extra' ? styles.fuelSlipReviewStepActive : ''}`} aria-current={fuelSlipFormPage === 'extra' ? 'step' : undefined}>
+          <strong>Step 2</strong>
+          <span>Extra information</span>
+        </div>
+      </div>
+    );
+  }
+
   function renderFuelSlipExtraFields() {
     const isAssetSlip = selectedFuelSlipTargetType === 'asset';
     const isStorageSlip = selectedFuelSlipTargetType === 'storage_tank';
@@ -2838,11 +2853,9 @@ export default function FuelClient() {
       ? 'The linked asset usage metric could not be resolved. Enter current km / odometer or current hours before this slip can post.'
       : selectedFuelSlipUsageMetric === 'both'
         ? 'This asset accepts km and hours. Enter at least one valid reading before the slip can post.'
-        : selectedFuelSlipUsageMetric === 'km'
-          ? 'Current km / odometer is required before this slip can post.'
-          : selectedFuelSlipUsageMetric === 'hours'
-            ? 'Current hours are required before this slip can post.'
-            : '';
+        : selectedFuelSlipUsageMetric === 'hours'
+          ? 'Current hours are required before this slip can post.'
+          : '';
 
     return (
       <section className={styles.invoiceFormCard}>
@@ -3667,15 +3680,15 @@ export default function FuelClient() {
 
       {modalMode === 'fuel-slip' && fuelSlipFlow === 'review' ? (
         <div className={styles.fuelSlipFlowBackdrop} role="dialog" aria-modal="true" aria-label={fuelSlipFormTitle}>
-          <form className={`${styles.formModal} ${styles.costFormModal} ${styles.fuelSlipCostFormModal}`} onSubmit={preventFuelSlipImplicitSubmit}>
+          <form className={`${styles.formModal} ${styles.costFormModal} ${styles.fuelSlipCostFormModal} ${styles.fuelSlipReviewFormModal}`} onSubmit={preventFuelSlipImplicitSubmit}>
             <div className={styles.modalHeader}>
               <div>
                 <h2>{fuelSlipDraft.id ? 'Review / Complete fuel slip' : 'Review fuel slip details'}</h2>
                 <p>{fuelSlipFormSubtitle}</p>
-                <span className={styles.fuelSlipStepPill}>{fuelSlipFormPage === 'details' ? 'Step 1 of 2 · Slip details' : 'Step 2 of 2 · Extra information'}</span>
               </div>
               <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close"><CloseIcon /></button>
             </div>
+            {renderFuelSlipReviewStepProgress()}
             <div className={styles.modalDivider} />
             <div key={fuelSlipFormPage} className={styles.formModalScrollBody} data-fuel-slip-scroll-body="true">
               {renderFuelSlipValidationNotice()}

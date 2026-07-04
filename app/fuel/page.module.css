@@ -3458,6 +3458,70 @@
   letter-spacing: 0.01em;
 }
 
+.fuelSlipReviewFormModal {
+  grid-template-rows: auto auto minmax(0, 1fr) auto !important;
+}
+
+.fuelSlipFlowBackdrop .fuelSlipReviewFormModal .modalHeader {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.fuelSlipReviewStepProgress {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+  margin: 1rem 0;
+  padding: 0.44rem;
+  border: 1px solid rgba(207, 219, 229, 0.98);
+  border-radius: 1.22rem;
+  background: linear-gradient(180deg, #f8fbfc 0%, #eef5f2 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.fuelSlipReviewStepItem {
+  min-width: 0;
+  min-height: 3.05rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.66rem 0.9rem;
+  border: 1px solid transparent;
+  border-radius: 0.92rem;
+  color: #617286;
+  background: transparent;
+  font-weight: 820;
+  line-height: 1.15;
+}
+
+.fuelSlipReviewStepItem strong {
+  color: inherit;
+  font-size: 0.9rem;
+  font-weight: 930;
+  white-space: nowrap;
+}
+
+.fuelSlipReviewStepItem span {
+  min-width: 0;
+  overflow: hidden;
+  color: inherit;
+  font-size: 0.9rem;
+  font-weight: 760;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fuelSlipReviewStepActive {
+  color: #0f5840;
+  border-color: rgba(111, 197, 150, 0.88);
+  background: linear-gradient(180deg, #ffffff 0%, #e6f8ef 100%);
+  box-shadow:
+    0 10px 22px rgba(25, 116, 84, 0.09),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
 .fuelSlipFlowBackdrop .formGrid label > span,
 .fuelSlipFlowBackdrop .uploadInline > span {
   color: #263845;
@@ -4051,6 +4115,16 @@
   .fuelSlipFlowBackdrop .costUploadModal .uploadBox,
   .fuelSlipFlowBackdrop .pickerToolbar {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .fuelSlipReviewStepProgress {
+    grid-template-columns: 1fr;
+  }
+
+  .fuelSlipReviewStepItem {
+    justify-content: flex-start;
   }
 }
 
