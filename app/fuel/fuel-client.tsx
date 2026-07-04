@@ -1683,9 +1683,7 @@ export default function FuelClient() {
   const selectedFuelSlipTargetName = selectedFuelSlipTarget?.type === 'storage_tank'
     ? selectedFuelSlipTarget.storage?.name ?? 'Selected storage tank'
     : selectedFuelSlipTarget?.asset?.title ?? 'Selected asset or storage tank';
-  const fuelSlipTargetPickerTitle = fuelSlipFlow === 'target-manual'
-    ? 'Choose asset or storage tank for manual fuel slip'
-    : 'Choose asset or storage tank for uploaded fuel slip';
+  const fuelSlipTargetPickerTitle = 'Choose Saved Asset';
   const fuelSlipFormTitle = fuelSlipFlow === 'review' ? 'Review fuel slip details' : 'Enter fuel slip manually';
   const fuelSlipFormModeLabel = fuelSlipDraft.id
     ? 'Saved slip review'
