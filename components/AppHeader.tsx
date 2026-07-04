@@ -251,9 +251,9 @@ const ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
   { href: '/asset-discovery', label: 'Discovery', mobileOnly: true, accountTypes: ['dealer'] },
   { href: '/valuation', label: 'Get Estimate', mobileOnly: true },
   { href: '/marketplace', label: 'Marketplace', mobileOnly: true },
-  { href: '/asset-map', label: 'My Asset Map' },
-  { href: '/fuel', label: 'My Fuel Ledger' },
-  { href: '/my-invoices', label: 'My Cost Ledger' },
+  { href: '/asset-map', label: 'My Asset Map', accountTypes: ['owner'] },
+  { href: '/fuel', label: 'My Fuel Ledger', accountTypes: ['owner'] },
+  { href: '/my-invoices', label: 'My Cost Ledger', accountTypes: ['owner'] },
 ];
 
 function isAccountMenuItemVisible(item: AccountMenuItem, accountType: AccountType | undefined): boolean {
