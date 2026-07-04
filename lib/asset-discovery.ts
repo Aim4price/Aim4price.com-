@@ -1,8 +1,10 @@
-import { ensureAccountProfileColumns } from './account-profile';
-import { getDb } from './db';
+import { ensureAccountProfileColumns } from "./account-profile";
+import { getDb } from "./db";
 
-export type AssetDiscoveryEnquiryStatus = 'pending' | 'approved' | 'temporarily_denied';
-export type AssetDiscoveryAccountType = 'owner' | 'dealer' | 'finance' | 'insurance' | string;
+export type AssetDiscoveryEnquiryStatus =
+  "pending" | "approved" | "temporarily_denied";
+export type AssetDiscoveryAccountType =
+  "owner" | "dealer" | "finance" | "insurance" | string;
 
 export type SafeAssetSummary = {
   type: string;
@@ -28,10 +30,29 @@ export type AssetDiscoveryOption = {
   count: number;
 };
 
+export type AssetDiscoveryPagination = {
+  page: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+  rangeStart: number;
+  rangeEnd: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
+};
+
+export type AssetDiscoverySummary = {
+  totalAssets: number;
+  typeCount: number;
+  provinceCount: number;
+};
+
 export type AssetDiscoveryListResult = {
   assets: AssetDiscoveryAsset[];
   provinceOptions: AssetDiscoveryOption[];
   typeOptions: AssetDiscoveryOption[];
+  summary: AssetDiscoverySummary;
+  pagination: AssetDiscoveryPagination;
 };
 
 export type AssetDiscoveryContactDetails = {
@@ -138,13 +159,24 @@ type OptionRow = {
   count: number | string | null;
 };
 
+type AssetDiscoverySummaryRow = {
+  total_assets: number | string | null;
+  type_count: number | string | null;
+  province_count: number | string | null;
+};
+
 type AssetOwnerRow = AssetDiscoveryRow & {
   owner_user_id: string;
 };
 
-const ASSET_DISCOVERY_STATUSES = new Set<AssetDiscoveryEnquiryStatus>(['pending', 'approved', 'temporarily_denied']);
+const ASSET_DISCOVERY_STATUSES = new Set<AssetDiscoveryEnquiryStatus>([
+  "pending",
+  "approved",
+  "temporarily_denied",
+]);
 const ASSET_SPECS_JSON_SQL = "coalesce(asset.specs_json, '{}'::jsonb)";
-const RESOLVED_ASSET_TYPE_SQL = "coalesce(nullif(trim(family.family_label), ''), nullif(trim(asset.kind), ''), 'Asset')";
+const RESOLVED_ASSET_TYPE_SQL =
+  "coalesce(nullif(trim(family.family_label), ''), nullif(trim(asset.kind), ''), 'Asset')";
 const RESOLVED_ASSET_BRAND_SQL = `coalesce(
   nullif(trim(asset.brand_name), ''),
   nullif(trim(brand.name), ''),
@@ -210,11 +242,14 @@ const DISCOVERY_ELIGIBLE_ASSET_SQL = `
     or lower(coalesce(asset.selected_method, '')) = 'aim4price'
   )
 `;
-const PROPERTY_LIKE_ASSET_PATTERN = '(property|building|land|house|office|shed|storage|warehouse)';
+const PROPERTY_LIKE_ASSET_PATTERN =
+  "(property|building|land|house|office|shed|storage|warehouse)";
+const ASSET_DISCOVERY_DEFAULT_PAGE_SIZE = 10;
+const ASSET_DISCOVERY_PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
 let assetDiscoveryTablesEnsured = false;
 
 function asText(value: unknown): string {
-  return typeof value === 'string' ? value.trim() : '';
+  return typeof value === "string" ? value.trim() : "";
 }
 
 function asInt(value: unknown): number {
@@ -222,8 +257,21 @@ function asInt(value: unknown): number {
   return Number.isFinite(numeric) ? Math.trunc(numeric) : 0;
 }
 
+function positiveInt(value: unknown, fallback: number): number {
+  const numeric = asInt(value);
+  return numeric > 0 ? numeric : fallback;
+}
+
+function normalizeDiscoveryPageSize(value: unknown): number {
+  const numeric = positiveInt(value, ASSET_DISCOVERY_DEFAULT_PAGE_SIZE);
+  return (
+    ASSET_DISCOVERY_PAGE_SIZE_OPTIONS.find((option) => option === numeric) ??
+    ASSET_DISCOVERY_DEFAULT_PAGE_SIZE
+  );
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function escapeLike(value: string): string {
@@ -234,25 +282,29 @@ function normalizeStatus(value: unknown): AssetDiscoveryEnquiryStatus {
   const normalized = asText(value).toLowerCase();
   return ASSET_DISCOVERY_STATUSES.has(normalized as AssetDiscoveryEnquiryStatus)
     ? (normalized as AssetDiscoveryEnquiryStatus)
-    : 'pending';
+    : "pending";
 }
 
 function titleCase(value: string): string {
   return value
-    .replace(/[-_]+/g, ' ')
-    .replace(/\s+/g, ' ')
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ")
     .trim()
     .replace(/\b\w/g, (match) => match.toUpperCase());
 }
 
 function numericValue(value: unknown): number | null {
-  if (value === null || typeof value === 'undefined' || value === '') return null;
+  if (value === null || typeof value === "undefined" || value === "")
+    return null;
 
   const numeric = Number(value);
   return Number.isFinite(numeric) && numeric >= 0 ? numeric : null;
 }
 
-function pickSpecsNumber(specs: Record<string, unknown>, keys: string[]): number | null {
+function pickSpecsNumber(
+  specs: Record<string, unknown>,
+  keys: string[],
+): number | null {
   for (const key of keys) {
     const numeric = numericValue(specs[key]);
     if (numeric !== null) return numeric;
@@ -267,47 +319,59 @@ function readFirstText(values: unknown[]): string {
     if (text) return text;
   }
 
-  return '';
+  return "";
 }
 
 function isPercentUsageValue(value: unknown): boolean {
-  const normalized = asText(value).toLowerCase().replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim();
+  const normalized = asText(value)
+    .toLowerCase()
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 
   return [
-    'percent',
-    'percentage',
-    '%',
-    'percent used',
-    'percentage used',
-    'percentage depreciation',
-    'life worked percent',
-    'life worked percentage',
-    'worked percent',
-    'lifetime percent',
-    'lifetime worked percent',
-    'lifetime used percent',
-    'wear class',
-    'semi depreciation',
+    "percent",
+    "percentage",
+    "%",
+    "percent used",
+    "percentage used",
+    "percentage depreciation",
+    "life worked percent",
+    "life worked percentage",
+    "worked percent",
+    "lifetime percent",
+    "lifetime worked percent",
+    "lifetime used percent",
+    "wear class",
+    "semi depreciation",
   ].includes(normalized);
 }
 
 function isKilometreUsageValue(value: unknown): boolean {
-  const normalized = asText(value).toLowerCase().replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim();
+  const normalized = asText(value)
+    .toLowerCase()
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 
   return [
-    'km',
-    'kms',
-    'kilometre',
-    'kilometres',
-    'kilometer',
-    'kilometers',
-    'odometer',
-    'mileage',
-    'vehicle',
+    "km",
+    "kms",
+    "kilometre",
+    "kilometres",
+    "kilometer",
+    "kilometers",
+    "odometer",
+    "mileage",
+    "vehicle",
   ].includes(normalized);
 }
 
-function isVehicleLikeAsset(kind: string, typeLabel: string, specs: Record<string, unknown>): boolean {
+function isVehicleLikeAsset(
+  kind: string,
+  typeLabel: string,
+  specs: Record<string, unknown>,
+): boolean {
   const haystack = [
     kind,
     typeLabel,
@@ -321,15 +385,24 @@ function isVehicleLikeAsset(kind: string, typeLabel: string, specs: Record<strin
     asText(specs.equipment_family_label),
   ]
     .filter(Boolean)
-    .join(' ')
+    .join(" ")
     .toLowerCase();
 
-  return /\b(vehicle|motor|car|cars|suv|sedan|hatch|hatchback|bakkie|ldv|truck|trucks|bus|buses|trailer|trailers|motorcycle|motorcycles|quad|quadbike|quadbikes|side[ -]?by[ -]?side|sxs|utv)\b/.test(haystack);
+  return /\b(vehicle|motor|car|cars|suv|sedan|hatch|hatchback|bakkie|ldv|truck|trucks|bus|buses|trailer|trailers|motorcycle|motorcycles|quad|quadbike|quadbikes|side[ -]?by[ -]?side|sxs|utv)\b/.test(
+    haystack,
+  );
 }
 
 function readUsageMetric(
-  row: Pick<AssetDiscoveryRow, 'kind' | 'type_label' | 'specs_json' | 'depreciation_method_used' | 'family_usage_metric_type'>,
-): 'km' | 'hours' | 'percent' {
+  row: Pick<
+    AssetDiscoveryRow,
+    | "kind"
+    | "type_label"
+    | "specs_json"
+    | "depreciation_method_used"
+    | "family_usage_metric_type"
+  >,
+): "km" | "hours" | "percent" {
   const specs = isRecord(row.specs_json) ? row.specs_json : {};
   const kind = asText(row.kind).toLowerCase();
   const typeLabel = asText(row.type_label);
@@ -363,26 +436,39 @@ function readUsageMetric(
     row.family_usage_metric_type,
   ]);
 
-  if (isPercentUsageValue(usageMode) || isPercentUsageValue(usageMetric)) return 'percent';
-  if (isKilometreUsageValue(usageMetric) || isVehicleLikeAsset(kind, typeLabel, specs)) return 'km';
+  if (isPercentUsageValue(usageMode) || isPercentUsageValue(usageMetric))
+    return "percent";
+  if (
+    isKilometreUsageValue(usageMetric) ||
+    isVehicleLikeAsset(kind, typeLabel, specs)
+  )
+    return "km";
 
-  return 'hours';
+  return "hours";
 }
 
 function formatWholeNumber(value: number): string {
-  return Math.round(value).toLocaleString('en-ZA');
+  return Math.round(value).toLocaleString("en-ZA");
 }
 
 function formatPercent(value: number): string {
   const rounded = Math.round(value * 10) / 10;
-  const formatted = Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+  const formatted = Number.isInteger(rounded)
+    ? String(rounded)
+    : rounded.toFixed(1);
   return `${formatted}% worked`;
 }
 
 function buildUsage(
   row: Pick<
     AssetDiscoveryRow,
-    'hours' | 'life_worked_percent' | 'specs_json' | 'kind' | 'type_label' | 'depreciation_method_used' | 'family_usage_metric_type'
+    | "hours"
+    | "life_worked_percent"
+    | "specs_json"
+    | "kind"
+    | "type_label"
+    | "depreciation_method_used"
+    | "family_usage_metric_type"
   >,
 ): string {
   const specs = isRecord(row.specs_json) ? row.specs_json : {};
@@ -390,71 +476,96 @@ function buildUsage(
   const savedReading = numericValue(row.hours);
   const storedPercent = numericValue(row.life_worked_percent);
   const kmReading = pickSpecsNumber(specs, [
-    'km',
-    'kms',
-    'kilometres',
-    'kilometers',
-    'odometer',
-    'odometerKm',
-    'odometer_km',
-    'mileage',
-    'usageAmount',
-    'usage_amount',
-    'savedUsage',
-    'saved_usage',
-    'currentUsage',
-    'current_usage',
+    "km",
+    "kms",
+    "kilometres",
+    "kilometers",
+    "odometer",
+    "odometerKm",
+    "odometer_km",
+    "mileage",
+    "usageAmount",
+    "usage_amount",
+    "savedUsage",
+    "saved_usage",
+    "currentUsage",
+    "current_usage",
   ]);
-  const hoursReading = savedReading ?? pickSpecsNumber(specs, [
-    'hours',
-    'engineHours',
-    'engine_hours',
-    'machineHours',
-    'machine_hours',
-    'usageAmount',
-    'usage_amount',
-    'savedUsage',
-    'saved_usage',
-    'currentUsage',
-    'current_usage',
-  ]);
-  const percent = storedPercent ?? pickSpecsNumber(specs, [
-    'lifeWorkedPercent',
-    'life_worked_percent',
-    'workedPercent',
-    'worked_percent',
-    'percentWorked',
-    'percent_worked',
-    'lifetimeWorkedPercent',
-    'lifetime_worked_percent',
-    'lifetimeUsedPercent',
-    'lifetime_used_percent',
-  ]);
+  const hoursReading =
+    savedReading ??
+    pickSpecsNumber(specs, [
+      "hours",
+      "engineHours",
+      "engine_hours",
+      "machineHours",
+      "machine_hours",
+      "usageAmount",
+      "usage_amount",
+      "savedUsage",
+      "saved_usage",
+      "currentUsage",
+      "current_usage",
+    ]);
+  const percent =
+    storedPercent ??
+    pickSpecsNumber(specs, [
+      "lifeWorkedPercent",
+      "life_worked_percent",
+      "workedPercent",
+      "worked_percent",
+      "percentWorked",
+      "percent_worked",
+      "lifetimeWorkedPercent",
+      "lifetime_worked_percent",
+      "lifetimeUsedPercent",
+      "lifetime_used_percent",
+    ]);
 
-  if (metric === 'percent') {
-    return percent !== null ? formatPercent(percent) : 'Unknown';
+  if (metric === "percent") {
+    return percent !== null ? formatPercent(percent) : "Unknown";
   }
 
-  if (metric === 'km') {
+  if (metric === "km") {
     const value = savedReading ?? kmReading;
     if (value !== null) return `${formatWholeNumber(value)} km`;
-    return percent !== null ? formatPercent(percent) : 'Unknown';
+    return percent !== null ? formatPercent(percent) : "Unknown";
   }
 
   if (hoursReading !== null) return `${formatWholeNumber(hoursReading)} hours`;
   if (percent !== null) return formatPercent(percent);
   if (kmReading !== null) return `${formatWholeNumber(kmReading)} km`;
 
-  return 'Unknown';
+  return "Unknown";
 }
 
-function safeSummary(row: Pick<AssetDiscoveryRow, 'type_label' | 'kind' | 'brand_name' | 'model_name' | 'typed_model_name' | 'year_model' | 'hours' | 'life_worked_percent' | 'specs_json' | 'condition' | 'province' | 'depreciation_method_used' | 'family_usage_metric_type'>): SafeAssetSummary {
-  const type = asText(row.type_label) || titleCase(asText(row.kind) || 'Asset');
-  const brand = asText(row.brand_name) || 'Unknown';
-  const model = asText(row.model_name) || asText(row.typed_model_name) || 'Unknown';
-  const year = asInt(row.year_model) > 0 ? String(asInt(row.year_model)) : 'Unknown';
-  const condition = asText(row.condition) ? titleCase(asText(row.condition)) : 'Unknown';
-  const province = asText(row.province) || 'Province not saved';
+function safeSummary(
+  row: Pick<
+    AssetDiscoveryRow,
+    | "type_label"
+    | "kind"
+    | "brand_name"
+    | "model_name"
+    | "typed_model_name"
+    | "year_model"
+    | "hours"
+    | "life_worked_percent"
+    | "specs_json"
+    | "condition"
+    | "province"
+    | "depreciation_method_used"
+    | "family_usage_metric_type"
+  >,
+): SafeAssetSummary {
+  const type = asText(row.type_label) || titleCase(asText(row.kind) || "Asset");
+  const brand = asText(row.brand_name) || "Unknown";
+  const model =
+    asText(row.model_name) || asText(row.typed_model_name) || "Unknown";
+  const year =
+    asInt(row.year_model) > 0 ? String(asInt(row.year_model)) : "Unknown";
+  const condition = asText(row.condition)
+    ? titleCase(asText(row.condition))
+    : "Unknown";
+  const province = asText(row.province) || "Province not saved";
 
   return {
     type,
@@ -472,7 +583,9 @@ function mapAsset(row: AssetDiscoveryRow): AssetDiscoveryAsset {
     id: row.id,
     ...safeSummary(row),
     enquiryId: row.enquiry_id,
-    enquiryStatus: row.enquiry_status ? normalizeStatus(row.enquiry_status) : null,
+    enquiryStatus: row.enquiry_status
+      ? normalizeStatus(row.enquiry_status)
+      : null,
     requestAgainAtIso: row.request_again_at,
     approvedAtIso: row.approved_at,
   };
@@ -488,9 +601,11 @@ function contactDetails(input: {
   townCity?: string | null;
 }): AssetDiscoveryContactDetails {
   const businessName = asText(input.businessName);
-  const name = businessName || asText(input.displayName) || 'Aim4price account';
+  const name = businessName || asText(input.displayName) || "Aim4price account";
   const email = asText(input.profileEmail) || asText(input.accountEmail);
-  const location = [asText(input.townCity), asText(input.province)].filter(Boolean).join(', ');
+  const location = [asText(input.townCity), asText(input.province)]
+    .filter(Boolean)
+    .join(", ");
 
   return {
     name,
@@ -501,9 +616,12 @@ function contactDetails(input: {
   };
 }
 
-function mapEnquiryForAudience(row: EnquiryRow, audience: 'owner' | 'dealer'): AssetDiscoveryEnquiryDetail {
+function mapEnquiryForAudience(
+  row: EnquiryRow,
+  audience: "owner" | "dealer",
+): AssetDiscoveryEnquiryDetail {
   const status = normalizeStatus(row.status);
-  const isApproved = status === 'approved';
+  const isApproved = status === "approved";
 
   return {
     id: row.id,
@@ -514,9 +632,9 @@ function mapEnquiryForAudience(row: EnquiryRow, audience: 'owner' | 'dealer'): A
     deniedAtIso: row.denied_at,
     requestAgainAtIso: row.request_again_at,
     asset: safeSummary({ ...row, province: row.owner_province }),
-    dealerMessage: isApproved ? asText(row.dealer_message) : '',
+    dealerMessage: isApproved ? asText(row.dealer_message) : "",
     dealerContact:
-      audience === 'owner' && isApproved
+      audience === "owner" && isApproved
         ? contactDetails({
             businessName: row.dealer_business_name,
             displayName: row.dealer_display_name,
@@ -528,7 +646,7 @@ function mapEnquiryForAudience(row: EnquiryRow, audience: 'owner' | 'dealer'): A
           })
         : null,
     ownerContact:
-      audience === 'dealer' && isApproved
+      audience === "dealer" && isApproved
         ? contactDetails({
             businessName: row.owner_business_name,
             displayName: row.owner_display_name,
@@ -557,7 +675,7 @@ export async function ensureAssetDiscoveryTables(): Promise<void> {
 
   await ensureAccountProfileColumns();
   const db = getDb();
-  await db.query('create extension if not exists pgcrypto');
+  await db.query("create extension if not exists pgcrypto");
 
   await db.query(`
     create table if not exists public.asset_discovery_enquiries (
@@ -635,12 +753,17 @@ export async function ensureAssetDiscoveryTables(): Promise<void> {
   assetDiscoveryTablesEnsured = true;
 }
 
-function baseAssetWhere(input: { dealerUserId: string; search?: string; province?: string; type?: string }) {
+function baseAssetWhere(input: {
+  dealerUserId: string;
+  search?: string;
+  province?: string;
+  type?: string;
+}) {
   const params: unknown[] = [input.dealerUserId];
   const where = [
     "owner.account_type = 'owner'",
     "owner.account_status = 'active'",
-    'asset.user_id <> $1',
+    "asset.user_id <> $1",
     `(${DISCOVERY_ELIGIBLE_ASSET_SQL})`,
     `${RESOLVED_ASSET_TYPE_SQL} !~* '${PROPERTY_LIKE_ASSET_PATTERN}'`,
     `coalesce(asset.title, '') !~* '${PROPERTY_LIKE_ASSET_PATTERN}'`,
@@ -657,7 +780,10 @@ function baseAssetWhere(input: { dealerUserId: string; search?: string; province
       or coalesce(asset.typed_model_name, '') ilike ${p} escape '\\'
       or coalesce(asset.year_model::text, 'Unknown') ilike ${p} escape '\\'
       or coalesce(asset.hours::text, '') ilike ${p} escape '\\'
+      or concat_ws(' ', nullif(asset.hours::text, ''), 'hours') ilike ${p} escape '\\'
+      or concat_ws(' ', nullif(asset.hours::text, ''), 'km') ilike ${p} escape '\\'
       or coalesce(asset.life_worked_percent::text, '') ilike ${p} escape '\\'
+      or concat_ws(' ', nullif(asset.life_worked_percent::text, ''), '% worked') ilike ${p} escape '\\'
       or coalesce(asset.condition, '') ilike ${p} escape '\\'
       or coalesce(owner.province, '') ilike ${p} escape '\\'
       or ${PROVINCE_ABBREVIATION_SQL} ilike ${p} escape '\\'
@@ -665,26 +791,91 @@ function baseAssetWhere(input: { dealerUserId: string; search?: string; province
   }
 
   const province = asText(input.province);
-  if (province === '__province_not_saved__') {
+  if (province === "__province_not_saved__") {
     where.push("coalesce(nullif(trim(owner.province), ''), '') = ''");
-  } else if (province && province !== 'all') {
+  } else if (province && province !== "all") {
     params.push(province.toLowerCase());
     where.push(`lower(coalesce(owner.province, '')) = $${params.length}`);
   }
 
   const type = asText(input.type);
-  if (type && type !== 'all') {
+  if (type && type !== "all") {
     params.push(type.toLowerCase());
     where.push(`lower(${RESOLVED_ASSET_TYPE_SQL}) = $${params.length}`);
   }
 
-  return { params, whereClause: `where ${where.join(' and ')}` };
+  return { params, whereClause: `where ${where.join(" and ")}` };
 }
 
-export async function listAssetDiscoveryAssets(input: { dealerUserId: string; search?: string; province?: string; type?: string }): Promise<AssetDiscoveryListResult> {
+export async function listAssetDiscoveryAssets(input: {
+  dealerUserId: string;
+  search?: string;
+  province?: string;
+  type?: string;
+  page?: number;
+  pageSize?: number;
+}): Promise<AssetDiscoveryListResult> {
   await ensureAssetDiscoveryTables();
   const db = getDb();
   const { params, whereClause } = baseAssetWhere(input);
+  const requestedPage = positiveInt(input.page, 1);
+  const pageSize = normalizeDiscoveryPageSize(input.pageSize);
+
+  const summarySql = `
+    select
+      count(*)::int as total_assets,
+      count(distinct ${RESOLVED_ASSET_TYPE_SQL})::int as type_count,
+      count(distinct nullif(trim(owner.province), ''))::int as province_count
+    from public.asset_register_items asset
+    join public.account_profiles owner on owner.user_id = asset.user_id
+    left join public.equipment_families family on family.id = asset.equipment_family_id
+    left join public.equipment_models model on model.id = asset.equipment_model_id
+    left join public.brands brand on brand.id = model.brand_id
+    ${whereClause}
+  `;
+
+  const optionWhere = baseAssetWhere({ dealerUserId: input.dealerUserId });
+  const [summaryRows, provinceRows, typeRows] = await Promise.all([
+    db.query<AssetDiscoverySummaryRow>(summarySql, params),
+    db.query<OptionRow>(
+      `
+        select nullif(trim(owner.province), '') as value, count(*)::int as count
+        from public.asset_register_items asset
+        join public.account_profiles owner on owner.user_id = asset.user_id
+        left join public.equipment_families family on family.id = asset.equipment_family_id
+        left join public.equipment_models model on model.id = asset.equipment_model_id
+        left join public.brands brand on brand.id = model.brand_id
+        ${optionWhere.whereClause}
+        group by nullif(trim(owner.province), '')
+        order by nullif(trim(owner.province), '') asc nulls last
+      `,
+      optionWhere.params,
+    ),
+    db.query<OptionRow>(
+      `
+        select ${RESOLVED_ASSET_TYPE_SQL} as value, count(*)::int as count
+        from public.asset_register_items asset
+        join public.account_profiles owner on owner.user_id = asset.user_id
+        left join public.equipment_families family on family.id = asset.equipment_family_id
+        left join public.equipment_models model on model.id = asset.equipment_model_id
+        left join public.brands brand on brand.id = model.brand_id
+        ${optionWhere.whereClause}
+        group by ${RESOLVED_ASSET_TYPE_SQL}
+        order by ${RESOLVED_ASSET_TYPE_SQL} asc
+      `,
+      optionWhere.params,
+    ),
+  ]);
+
+  const summaryRow = summaryRows.rows[0];
+  const totalItems = Math.max(0, asInt(summaryRow?.total_assets));
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const page = Math.min(Math.max(1, requestedPage), totalPages);
+  const offset = (page - 1) * pageSize;
+
+  const listParams = [...params, pageSize, offset];
+  const limitParam = `$${listParams.length - 1}`;
+  const offsetParam = `$${listParams.length}`;
 
   const listSql = `
     select
@@ -722,57 +913,52 @@ export async function listAssetDiscoveryAssets(input: { dealerUserId: string; se
     ) enquiry on true
     ${whereClause}
     order by asset.updated_at desc nulls last, asset.created_at desc nulls last, asset.id desc
-    limit 250
+    limit ${limitParam}
+    offset ${offsetParam}
   `;
 
-  const [assetRows, provinceRows, typeRows] = await Promise.all([
-    db.query<AssetDiscoveryRow>(listSql, params),
-    db.query<OptionRow>(
-      `
-        select nullif(trim(owner.province), '') as value, count(*)::int as count
-        from public.asset_register_items asset
-        join public.account_profiles owner on owner.user_id = asset.user_id
-        left join public.equipment_families family on family.id = asset.equipment_family_id
-        left join public.equipment_models model on model.id = asset.equipment_model_id
-        left join public.brands brand on brand.id = model.brand_id
-        ${baseAssetWhere({ dealerUserId: input.dealerUserId }).whereClause}
-        group by nullif(trim(owner.province), '')
-        order by nullif(trim(owner.province), '') asc nulls last
-      `,
-      [input.dealerUserId],
-    ),
-    db.query<OptionRow>(
-      `
-        select ${RESOLVED_ASSET_TYPE_SQL} as value, count(*)::int as count
-        from public.asset_register_items asset
-        join public.account_profiles owner on owner.user_id = asset.user_id
-        left join public.equipment_families family on family.id = asset.equipment_family_id
-        left join public.equipment_models model on model.id = asset.equipment_model_id
-        left join public.brands brand on brand.id = model.brand_id
-        ${baseAssetWhere({ dealerUserId: input.dealerUserId }).whereClause}
-        group by ${RESOLVED_ASSET_TYPE_SQL}
-        order by ${RESOLVED_ASSET_TYPE_SQL} asc
-      `,
-      [input.dealerUserId],
-    ),
-  ]);
+  const assetRows = await db.query<AssetDiscoveryRow>(listSql, listParams);
+  const rangeStart = totalItems ? offset + 1 : 0;
+  const rangeEnd = totalItems ? Math.min(offset + pageSize, totalItems) : 0;
 
   return {
     assets: assetRows.rows.map(mapAsset),
     provinceOptions: provinceRows.rows
       .map((row) => ({
-        value: asText(row.value) || '__province_not_saved__',
-        label: asText(row.value) || 'Province not saved',
+        value: asText(row.value) || "__province_not_saved__",
+        label: asText(row.value) || "Province not saved",
         count: asInt(row.count),
       }))
       .filter((row) => row.count > 0),
     typeOptions: typeRows.rows
-      .map((row) => ({ value: asText(row.value), label: asText(row.value), count: asInt(row.count) }))
+      .map((row) => ({
+        value: asText(row.value),
+        label: asText(row.value),
+        count: asInt(row.count),
+      }))
       .filter((row) => row.value && row.count > 0),
+    summary: {
+      totalAssets: totalItems,
+      typeCount: Math.max(0, asInt(summaryRow?.type_count)),
+      provinceCount: Math.max(0, asInt(summaryRow?.province_count)),
+    },
+    pagination: {
+      page,
+      pageSize,
+      totalItems,
+      totalPages,
+      rangeStart,
+      rangeEnd,
+      hasPreviousPage: page > 1,
+      hasNextPage: page < totalPages,
+    },
   };
 }
 
-async function findSafeAssetForEnquiry(assetId: string, dealerUserId: string): Promise<AssetOwnerRow | null> {
+async function findSafeAssetForEnquiry(
+  assetId: string,
+  dealerUserId: string,
+): Promise<AssetOwnerRow | null> {
   const db = getDb();
   const result = await db.query<AssetOwnerRow>(
     `
@@ -817,14 +1003,18 @@ async function findSafeAssetForEnquiry(assetId: string, dealerUserId: string): P
   return result.rows[0] ?? null;
 }
 
-export async function createAssetDiscoveryEnquiry(input: { dealerUserId: string; assetId: string; message: string }): Promise<AssetDiscoveryEnquiryDetail> {
+export async function createAssetDiscoveryEnquiry(input: {
+  dealerUserId: string;
+  assetId: string;
+  message: string;
+}): Promise<AssetDiscoveryEnquiryDetail> {
   await ensureAssetDiscoveryTables();
 
   const assetId = asText(input.assetId);
-  if (!assetId) throw new Error('Asset is required.');
+  if (!assetId) throw new Error("Asset is required.");
 
   const asset = await findSafeAssetForEnquiry(assetId, input.dealerUserId);
-  if (!asset) throw new Error('Asset is not available for Discovery.');
+  if (!asset) throw new Error("Asset is not available for Discovery.");
 
   const db = getDb();
   const existing = await db.query<ExistingEnquiryRow>(
@@ -840,12 +1030,18 @@ export async function createAssetDiscoveryEnquiry(input: { dealerUserId: string;
   );
   const current = existing.rows[0];
 
-  if (current?.status === 'pending') {
-    throw new Error('You already have a pending enquiry for this asset.');
+  if (current?.status === "pending") {
+    throw new Error("You already have a pending enquiry for this asset.");
   }
 
-  if (current?.status === 'temporarily_denied' && current.request_again_at && Date.parse(current.request_again_at) > Date.now()) {
-    throw new Error(`This enquiry was temporarily denied. You can enquire again after ${new Intl.DateTimeFormat('en-ZA', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Africa/Johannesburg' }).format(new Date(current.request_again_at))}.`);
+  if (
+    current?.status === "temporarily_denied" &&
+    current.request_again_at &&
+    Date.parse(current.request_again_at) > Date.now()
+  ) {
+    throw new Error(
+      `This enquiry was temporarily denied. You can enquire again after ${new Intl.DateTimeFormat("en-ZA", { day: "2-digit", month: "short", year: "numeric", timeZone: "Africa/Johannesburg" }).format(new Date(current.request_again_at))}.`,
+    );
   }
 
   const message = asText(input.message).slice(0, 600);
@@ -867,9 +1063,9 @@ export async function createAssetDiscoveryEnquiry(input: { dealerUserId: string;
   );
 
   return getAssetDiscoveryEnquiryForUser({
-    enquiryId: result.rows[0]?.id ?? '',
+    enquiryId: result.rows[0]?.id ?? "",
     userId: input.dealerUserId,
-    accountType: 'dealer',
+    accountType: "dealer",
   });
 }
 
@@ -927,31 +1123,51 @@ function enquirySelectSql(whereClause: string): string {
   `;
 }
 
-export async function getAssetDiscoveryEnquiryForUser(input: { enquiryId: string; userId: string; accountType: AssetDiscoveryAccountType }): Promise<AssetDiscoveryEnquiryDetail> {
+export async function getAssetDiscoveryEnquiryForUser(input: {
+  enquiryId: string;
+  userId: string;
+  accountType: AssetDiscoveryAccountType;
+}): Promise<AssetDiscoveryEnquiryDetail> {
   await ensureAssetDiscoveryTables();
   const db = getDb();
   const accountType = asText(input.accountType).toLowerCase();
-  const audience = accountType === 'owner' ? 'owner' : accountType === 'dealer' ? 'dealer' : null;
+  const audience =
+    accountType === "owner"
+      ? "owner"
+      : accountType === "dealer"
+        ? "dealer"
+        : null;
 
-  if (!audience) throw new Error('Discovery enquiry not found.');
+  if (!audience) throw new Error("Discovery enquiry not found.");
 
   const result = await db.query<EnquiryRow>(
-    enquirySelectSql(`where enquiry.id = $1::uuid and enquiry.${audience === 'owner' ? 'owner_user_id' : 'dealer_user_id'} = $2 limit 1`),
+    enquirySelectSql(
+      `where enquiry.id = $1::uuid and enquiry.${audience === "owner" ? "owner_user_id" : "dealer_user_id"} = $2 limit 1`,
+    ),
     [input.enquiryId, input.userId],
   );
 
   const row = result.rows[0];
-  if (!row) throw new Error('Discovery enquiry not found.');
+  if (!row) throw new Error("Discovery enquiry not found.");
 
   return mapEnquiryForAudience(row, audience);
 }
 
-export async function updateAssetDiscoveryOwnerDecision(input: { enquiryId: string; ownerUserId: string; decision: string }): Promise<AssetDiscoveryEnquiryDetail> {
+export async function updateAssetDiscoveryOwnerDecision(input: {
+  enquiryId: string;
+  ownerUserId: string;
+  decision: string;
+}): Promise<AssetDiscoveryEnquiryDetail> {
   await ensureAssetDiscoveryTables();
   const decision = asText(input.decision).toLowerCase();
-  const nextStatus = decision === 'yes' || decision === 'approved' || decision === 'approve' ? 'approved' : decision === 'no' || decision === 'denied' || decision === 'deny' ? 'temporarily_denied' : null;
+  const nextStatus =
+    decision === "yes" || decision === "approved" || decision === "approve"
+      ? "approved"
+      : decision === "no" || decision === "denied" || decision === "deny"
+        ? "temporarily_denied"
+        : null;
 
-  if (!nextStatus) throw new Error('Choose Yes or No.');
+  if (!nextStatus) throw new Error("Choose Yes or No.");
 
   const db = getDb();
   const result = await db.query<{ id: string }>(
@@ -971,27 +1187,34 @@ export async function updateAssetDiscoveryOwnerDecision(input: { enquiryId: stri
     [input.enquiryId, input.ownerUserId, nextStatus],
   );
 
-  if (!result.rows[0]?.id) throw new Error('Discovery enquiry not found or already decided.');
+  if (!result.rows[0]?.id)
+    throw new Error("Discovery enquiry not found or already decided.");
 
   return getAssetDiscoveryEnquiryForUser({
     enquiryId: result.rows[0].id,
     userId: input.ownerUserId,
-    accountType: 'owner',
+    accountType: "owner",
   });
 }
 
-export async function listPendingAssetDiscoveryEnquiriesForOwner(ownerUserId: string): Promise<AssetDiscoveryNotification[]> {
+export async function listPendingAssetDiscoveryEnquiriesForOwner(
+  ownerUserId: string,
+): Promise<AssetDiscoveryNotification[]> {
   await ensureAssetDiscoveryTables();
   const db = getDb();
   const result = await db.query<EnquiryRow>(
-    enquirySelectSql(`where enquiry.owner_user_id = $1 and enquiry.status = 'pending' order by enquiry.created_at desc limit 10`),
+    enquirySelectSql(
+      `where enquiry.owner_user_id = $1 and enquiry.status = 'pending' order by enquiry.created_at desc limit 10`,
+    ),
     [ownerUserId],
   );
 
   return result.rows.map(mapNotification);
 }
 
-export async function listRecentAssetDiscoveryEnquiriesForDealer(dealerUserId: string): Promise<AssetDiscoveryNotification[]> {
+export async function listRecentAssetDiscoveryEnquiriesForDealer(
+  dealerUserId: string,
+): Promise<AssetDiscoveryNotification[]> {
   await ensureAssetDiscoveryTables();
   const db = getDb();
   const result = await db.query<EnquiryRow>(
