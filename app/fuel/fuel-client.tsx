@@ -2684,6 +2684,20 @@ export default function FuelClient() {
     setFuelSlipFlow('upload');
   }
 
+  function handleFuelSlipNextPage() {
+    setFuelSlipFormPage('extra');
+
+    window.requestAnimationFrame(() => {
+      const scrollBody = document.querySelector<HTMLElement>('[data-fuel-slip-scroll-body="true"]');
+      scrollBody?.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+
+      const firstEditableField = scrollBody?.querySelector<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(
+        'input:not([disabled]), textarea:not([disabled]), select:not([disabled])',
+      );
+      firstEditableField?.focus({ preventScroll: true });
+    });
+  }
+
   function isFuelSlipFieldMissing(field: FuelSlipMissingFieldKey): boolean {
     return visibleFuelSlipMissingFields.has(field);
   }
@@ -3221,11 +3235,18 @@ export default function FuelClient() {
                       <div className={styles.fuelSlipManagerRowFooter}>
                         <span className={styles.fuelSlipManagerRowUpdated}>{updatedLabel || 'Saved fuel slip'}</span>
                         <div className={styles.fuelSlipManagerRowActions}>
+                          {slip.documentFileUrl ? (
+                            <a className={`${styles.secondaryButton} ${styles.fuelSlipManagerOpenButton}`} href={slip.documentFileUrl} target="_blank" rel="noreferrer">
+                              <OpenFileIcon className={styles.buttonIcon} />
+                              <span>Open file</span>
+                            </a>
+                          ) : null}
                           {needsReview ? (
                             <button
                               type="button"
                               className={`${styles.secondaryButton} ${styles.fuelSlipManagerReviewButton}`}
                               onClick={() => openFuelSlipReview(slip)}
+                              disabled={deletingThisSlip}
                             >
                               <FuelSlipsIcon className={styles.buttonIcon} />
                               <span>Review / Complete</span>
@@ -3241,12 +3262,6 @@ export default function FuelClient() {
                               <span>Edit</span>
                             </button>
                           )}
-                          {slip.documentFileUrl ? (
-                            <a className={`${styles.secondaryButton} ${styles.fuelSlipManagerOpenButton}`} href={slip.documentFileUrl} target="_blank" rel="noreferrer">
-                              <OpenFileIcon className={styles.buttonIcon} />
-                              <span>Open file</span>
-                            </a>
-                          ) : null}
                           <button
                             type="button"
                             className={`${styles.secondaryButton} ${styles.fuelSlipManagerDeleteButton}`}
@@ -3631,14 +3646,14 @@ export default function FuelClient() {
               <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close"><CloseIcon /></button>
             </div>
             <div className={styles.modalDivider} />
-            <div className={styles.formModalScrollBody}>
+            <div key={fuelSlipFormPage} className={styles.formModalScrollBody} data-fuel-slip-scroll-body="true">
               {renderFuelSlipValidationNotice()}
               {fuelSlipFormPage === 'details' ? renderFuelSlipDetailsFields() : renderFuelSlipExtraFields()}
             </div>
             <div className={styles.modalFooter}>
               <button type="button" className={styles.secondaryButton} onClick={handleFuelSlipFormBack} disabled={isSaving}>Back</button>
               {fuelSlipFormPage === 'details' ? (
-                <button type="button" className={styles.primaryButton} onClick={() => setFuelSlipFormPage('extra')} disabled={isSaving}>Next</button>
+                <button type="button" className={styles.primaryButton} onClick={handleFuelSlipNextPage} disabled={isSaving}>Next</button>
               ) : (
                 <button type="submit" className={styles.primaryButton} disabled={isSaving}>{isSaving ? 'Saving...' : 'Save Fuel Slip'}</button>
               )}
@@ -3659,7 +3674,7 @@ export default function FuelClient() {
               <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close"><CloseIcon /></button>
             </div>
             <div className={styles.modalDivider} />
-            <div className={styles.formModalScrollBody}>
+            <div key={fuelSlipFormPage} className={styles.formModalScrollBody} data-fuel-slip-scroll-body="true">
               {renderFuelSlipValidationNotice()}
 
               {visibleFuelSlipExtractionWarnings.length ? (
@@ -3691,7 +3706,7 @@ export default function FuelClient() {
                 Back
               </button>
               {fuelSlipFormPage === 'details' ? (
-                <button type="button" className={styles.primaryButton} onClick={() => setFuelSlipFormPage('extra')} disabled={isSaving}>Next</button>
+                <button type="button" className={styles.primaryButton} onClick={handleFuelSlipNextPage} disabled={isSaving}>Next</button>
               ) : (
                 <button type="submit" className={styles.primaryButton} disabled={isSaving}>{isSaving ? 'Saving...' : fuelSlipDraft.id ? 'Save Review' : 'Save Fuel Slip'}</button>
               )}
