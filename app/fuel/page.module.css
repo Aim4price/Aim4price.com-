@@ -4543,7 +4543,7 @@
   padding: 0 clamp(1.25rem, 2.4vw, 2rem) 1.2rem;
 }
 
-.fuelSlipNativeSelectField {
+.filterField {
   min-width: 0;
   display: grid;
   gap: 0.48rem;
@@ -4552,7 +4552,7 @@
   font-weight: 850;
 }
 
-.fuelSlipNativeSelectField span {
+.filterField > span {
   color: #526475;
   font-size: 0.82rem;
   font-weight: 900;
@@ -4560,29 +4560,228 @@
   letter-spacing: 0.06em;
 }
 
-.fuelSlipNativeSelect {
+.customFilterSelect {
+  position: relative;
+  min-width: 0;
+}
+
+.customFilterSelectOpen {
+  z-index: 80;
+}
+
+.customFilterSelectDisabled {
+  opacity: 1;
+}
+
+.customFilterSelectButton {
   width: 100%;
   min-height: 3.35rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0 1rem;
   border: 1px solid rgba(203, 215, 226, 0.98);
   border-radius: 1rem;
-  background:
-    linear-gradient(45deg, transparent 50%, #375063 50%) calc(100% - 1.12rem) 50% / 0.42rem 0.42rem no-repeat,
-    linear-gradient(135deg, #375063 50%, transparent 50%) calc(100% - 0.82rem) 50% / 0.42rem 0.42rem no-repeat,
-    linear-gradient(180deg, #ffffff 0%, #f7fafb 100%);
+  background: linear-gradient(180deg, #ffffff 0%, #f7fafb 100%);
   color: #102a3d;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95);
   font: inherit;
   font-size: 1rem;
   font-weight: 800;
-  line-height: 1.2;
-  padding: 0 2.05rem 0 0.95rem;
-  appearance: none;
-  -webkit-appearance: none;
+  line-height: 1;
+  text-align: left;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
 }
 
-.fuelSlipNativeSelect:disabled {
-  color: #8290a0;
-  background: #f1f5f7;
+.customFilterSelectButton:hover,
+.customFilterSelectButtonOpen,
+.customFilterSelectButton:focus-visible {
+  border-color: rgba(22, 83, 64, 0.38);
+  background: linear-gradient(180deg, #ffffff 0%, #f5fbf8 100%);
+  box-shadow:
+    0 0 0 4px rgba(22, 83, 64, 0.09),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.customFilterSelectButton:disabled {
+  background: #f4f6f8;
+  color: #7c8794;
   cursor: not-allowed;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.customFilterSelectButtonText {
+  min-width: 0;
+  overflow: hidden;
+  color: inherit;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: normal;
+  text-overflow: ellipsis;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+.customFilterSelectChevron {
+  width: 1.05rem;
+  height: 1.05rem;
+  flex: 0 0 auto;
+  color: #17364b;
+  transition: transform 160ms ease, color 160ms ease;
+}
+
+.customFilterSelectButtonOpen .customFilterSelectChevron {
+  transform: rotate(180deg);
+}
+
+.customFilterSelectButton:disabled .customFilterSelectChevron {
+  color: #a2adb9;
+}
+
+.customFilterSelectMenu {
+  position: absolute;
+  top: calc(100% + 0.45rem);
+  right: 0;
+  left: 0;
+  z-index: 240;
+  max-height: min(18rem, 44vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0.35rem;
+  border: 1px solid rgba(187, 211, 224, 0.98);
+  border-radius: 1rem;
+  background: #ffffff;
+  box-shadow:
+    0 18px 36px rgba(20, 36, 33, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(22, 83, 64, 0.52) rgba(239, 244, 247, 0.98);
+}
+
+.customFilterSelectMenu::-webkit-scrollbar {
+  width: 0.75rem;
+}
+
+.customFilterSelectMenu::-webkit-scrollbar-track {
+  margin: 0.3rem 0;
+  border-radius: 999px;
+  background: rgba(239, 244, 247, 0.98);
+}
+
+.customFilterSelectMenu::-webkit-scrollbar-thumb {
+  border: 0.2rem solid transparent;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(26, 90, 69, 0.64) 0%, rgba(18, 66, 51, 0.82) 100%);
+  background-clip: padding-box;
+}
+
+.customFilterSearchRow {
+  position: sticky;
+  top: -0.35rem;
+  z-index: 2;
+  margin: -0.35rem -0.35rem 0.25rem;
+  padding: 0.35rem;
+  border-bottom: 1px solid rgba(227, 235, 241, 0.96);
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdfe 100%);
+}
+
+.customFilterSearchInput {
+  width: 100%;
+  min-height: 2.8rem;
+  padding: 0 0.85rem;
+  border: 1px solid rgba(203, 215, 226, 0.98);
+  border-radius: 0.82rem;
+  background: #ffffff;
+  color: #102a3d;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 760;
+  outline: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.customFilterSearchInput:focus {
+  border-color: rgba(22, 83, 64, 0.38);
+  background: #ffffff;
+  box-shadow:
+    0 0 0 4px rgba(22, 83, 64, 0.09),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.customFilterSearchInput::placeholder {
+  color: #7c8997;
+  opacity: 1;
+  font-weight: 650;
+}
+
+.customFilterSelectOption {
+  width: 100%;
+  min-height: 2.65rem;
+  display: flex;
+  align-items: center;
+  padding: 0.68rem 0.85rem;
+  border: 1px solid transparent;
+  border-radius: 0.78rem;
+  background: transparent;
+  color: #18382f;
+  font: inherit;
+  font-size: 0.98rem;
+  font-weight: 760;
+  line-height: 1.18;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 140ms ease, background 140ms ease, color 140ms ease;
+}
+
+.customFilterSelectOption:hover,
+.customFilterSelectOption:focus-visible {
+  border-color: rgba(207, 223, 236, 0.9);
+  background: #f3f8fb;
+  outline: none;
+}
+
+.customFilterSelectOptionActive {
+  border-color: rgba(90, 188, 130, 0.45);
+  background: #eaf8f1;
+  color: #0d5a42;
+}
+
+.customFilterSelectEmptyOption,
+.customFilterSelectEmptyOption:hover,
+.customFilterSelectEmptyOption:focus-visible {
+  border-color: transparent;
+  background: #f7fafc;
+  color: #738191;
+  cursor: default;
+  outline: none;
+}
+
+.customFilterSelectOptionLabel {
+  min-width: 0;
+  overflow: hidden;
+  color: inherit;
+  font-size: 0.98rem;
+  font-weight: 760;
+  letter-spacing: normal;
+  text-overflow: ellipsis;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+.fuelSlipDownloadError {
+  margin: -0.2rem clamp(1.25rem, 2.4vw, 2rem) 1rem;
+  padding: 0.72rem 0.85rem;
+  border: 1px solid rgba(220, 73, 73, 0.42);
+  border-radius: 0.9rem;
+  background: linear-gradient(180deg, #fffafa 0%, #fff1f1 100%);
+  color: #9b2f2f;
+  font-size: 0.92rem;
+  font-weight: 820;
+  line-height: 1.35;
 }
 
 .fuelSlipFilterModal .modalFooter {
@@ -4604,7 +4803,14 @@
 }
 
 .fuelSlipDeleteModal {
-  width: min(100%, 44rem);
+  width: min(96vw, 58rem);
+  border-color: rgba(205, 72, 54, 0.5);
+  background:
+    radial-gradient(circle at top left, rgba(205, 72, 54, 0.09), transparent 36%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.995) 0%, rgba(255, 248, 247, 0.995) 100%);
+  box-shadow:
+    0 30px 96px rgba(68, 24, 18, 0.27),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
 }
 
 .fuelSlipDeleteSummary {
@@ -5268,3 +5474,93 @@
   outline: 3px solid rgba(33, 132, 98, 0.26);
   outline-offset: 3px;
 }
+
+/* Fuel slip delete confirmation: final destructive overrides. */
+.fuelSlipFilterModal.fuelSlipDeleteModal {
+  position: relative;
+  width: min(96vw, 58rem);
+  border-color: rgba(205, 72, 54, 0.54) !important;
+  background:
+    radial-gradient(circle at top left, rgba(205, 72, 54, 0.1), transparent 38%),
+    linear-gradient(180deg, #ffffff 0%, #fff8f7 100%) !important;
+  box-shadow:
+    0 30px 96px rgba(68, 24, 18, 0.27),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+  overflow: visible;
+}
+
+.fuelSlipFilterModal.fuelSlipDeleteModal::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: clamp(1.35rem, 2.1vw, 1.8rem);
+  left: clamp(1.35rem, 2.1vw, 1.8rem);
+  height: 0.38rem;
+  border-radius: 0 0 999px 999px;
+  background: linear-gradient(90deg, #b43a2b 0%, #e05743 52%, #8f281c 100%);
+  box-shadow: 0 12px 26px rgba(180, 58, 43, 0.2);
+}
+
+.fuelSlipFilterModal.fuelSlipDeleteModal .modalHeader h2 {
+  color: #78291f;
+}
+
+.fuelSlipFilterModal.fuelSlipDeleteModal .modalHeader p {
+  color: #7a4d48;
+}
+
+.fuelSlipFilterModal.fuelSlipDeleteModal .modalDivider {
+  background: rgba(232, 196, 190, 0.9);
+}
+
+.fuelSlipFilterModal.fuelSlipDeleteModal .fuelSlipDeleteSummary span {
+  border-color: rgba(232, 196, 190, 0.92);
+  background:
+    radial-gradient(circle at top left, rgba(205, 72, 54, 0.035), transparent 42%),
+    rgba(255, 255, 255, 0.86);
+}
+
+.fuelSlipFilterModal.fuelSlipDeleteModal .fuelSlipDeleteSummary small {
+  color: #8f5b55;
+}
+
+.fuelSlipFilterModal.fuelSlipDeleteModal .fuelSlipDeleteSummary strong {
+  color: #2d3a46;
+}
+
+.fuelSlipFilterModal.fuelSlipDeleteModal .modalFooter {
+  background:
+    linear-gradient(180deg, rgba(255, 248, 247, 0) 0%, rgba(255, 248, 247, 0.96) 35%, #fff8f7 100%);
+  border-top-color: rgba(232, 196, 190, 0.9);
+}
+
+.fuelSlipFilterModal.fuelSlipDeleteModal .modalFooter button.fuelSlipConfirmDeleteButton,
+.fuelSlipFilterModal .modalFooter button.fuelSlipConfirmDeleteButton,
+.fuelSlipDeleteModal .modalFooter button.fuelSlipConfirmDeleteButton {
+  color: #ffffff !important;
+  background: linear-gradient(180deg, #d94b38 0%, #8f281c 100%) !important;
+  border-color: #8f281c !important;
+  box-shadow:
+    0 16px 30px rgba(159, 43, 31, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
+  text-shadow: none !important;
+}
+
+.fuelSlipFilterModal.fuelSlipDeleteModal .modalFooter button.fuelSlipConfirmDeleteButton:hover:not(:disabled),
+.fuelSlipFilterModal .modalFooter button.fuelSlipConfirmDeleteButton:hover:not(:disabled),
+.fuelSlipDeleteModal .modalFooter button.fuelSlipConfirmDeleteButton:hover:not(:disabled) {
+  color: #ffffff !important;
+  background: linear-gradient(180deg, #e45743 0%, #792116 100%) !important;
+  border-color: #792116 !important;
+  box-shadow:
+    0 20px 38px rgba(159, 43, 31, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.24) !important;
+}
+
+.fuelSlipFilterModal.fuelSlipDeleteModal .modalFooter button.fuelSlipConfirmDeleteButton:focus-visible,
+.fuelSlipFilterModal .modalFooter button.fuelSlipConfirmDeleteButton:focus-visible,
+.fuelSlipDeleteModal .modalFooter button.fuelSlipConfirmDeleteButton:focus-visible {
+  outline: 3px solid rgba(217, 75, 56, 0.28) !important;
+  outline-offset: 3px;
+}
+

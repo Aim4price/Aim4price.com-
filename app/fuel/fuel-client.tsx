@@ -291,6 +291,22 @@ type ReportSelectProps = {
   onChange: (value: string) => void;
 };
 
+type FuelSlipFilterDropdownProps = {
+  label: string;
+  dropdownKey: FuelSlipManagerFilterKey;
+  value: string;
+  options: ReportSelectOption[];
+  openDropdown: FuelSlipManagerFilterKey | null;
+  disabled?: boolean;
+  searchable?: boolean;
+  searchValue?: string;
+  searchPlaceholder?: string;
+  noMatchesLabel?: string;
+  onOpenChange: (key: FuelSlipManagerFilterKey | null) => void;
+  onChange: (value: string) => void;
+  onSearchChange?: (value: string) => void;
+};
+
 type StorageFuelTypeSelectProps = {
   value: string;
   isOpen: boolean;
@@ -473,10 +489,10 @@ function getFuelSlipMissingFieldPage(field: FuelSlipMissingFieldKey): FuelSlipFo
     : 'extra';
 }
 
-const FUEL_SLIP_MANAGER_PAGE_SIZE = 10;
+const FUEL_SLIP_MANAGER_PAGE_SIZE = 5;
 
 const FUEL_SLIP_CAPTURE_FILTER_OPTIONS: ReportSelectOption[] = [
-  { value: 'all', label: 'All fuel slip sources' },
+  { value: 'all', label: 'All fuel slips' },
   { value: 'manual', label: 'Manual fuel slips' },
   { value: 'automatic', label: 'Uploaded fuel slips' },
   { value: 'needs_review', label: 'Not completed' },
@@ -693,6 +709,100 @@ function ReportSelect({ label, value, options, isOpen, disabled = false, onToggl
           ))}
         </div>
       ) : null}
+    </div>
+  );
+}
+
+function FuelSlipFilterDropdown({
+  label,
+  dropdownKey,
+  value,
+  options,
+  openDropdown,
+  disabled = false,
+  searchable = false,
+  searchValue = '',
+  searchPlaceholder = 'Search options',
+  noMatchesLabel = 'No options found',
+  onOpenChange,
+  onChange,
+  onSearchChange,
+}: FuelSlipFilterDropdownProps) {
+  const selectedOption = options.find((option) => option.value === value) ?? options[0];
+  const isOpen = openDropdown === dropdownKey && !disabled;
+  const searchQuery = searchValue.trim().toLowerCase();
+  const fixedOption = searchable ? options[0] : null;
+  const searchableOptions = searchable ? options.slice(1) : options;
+  const visibleOptions = searchable && searchQuery
+    ? searchableOptions.filter((option) => option.label.toLowerCase().includes(searchQuery))
+    : searchableOptions;
+  const menuOptions = searchable && fixedOption ? [fixedOption, ...visibleOptions] : visibleOptions;
+  const noSearchMatches = searchable && Boolean(searchQuery) && visibleOptions.length === 0;
+
+  return (
+    <div className={styles.filterField}>
+      <span>{label}</span>
+      <div
+        className={`${styles.customFilterSelect} ${isOpen ? styles.customFilterSelectOpen : ''} ${disabled ? styles.customFilterSelectDisabled : ''}`}
+        data-fuel-slip-custom-select-root="true"
+      >
+        <button
+          type="button"
+          className={`${styles.customFilterSelectButton} ${isOpen ? styles.customFilterSelectButtonOpen : ''}`}
+          onClick={() => onOpenChange(isOpen ? null : dropdownKey)}
+          disabled={disabled}
+          aria-haspopup="listbox"
+          aria-expanded={isOpen}
+          aria-label={label}
+        >
+          <span className={styles.customFilterSelectButtonText}>{selectedOption?.label ?? 'Choose option'}</span>
+          <ChevronDownIcon className={styles.customFilterSelectChevron} />
+        </button>
+
+        {isOpen ? (
+          <div className={styles.customFilterSelectMenu} role="listbox" aria-label={label}>
+            {searchable ? (
+              <div className={styles.customFilterSearchRow}>
+                <input
+                  type="search"
+                  className={styles.customFilterSearchInput}
+                  value={searchValue}
+                  onChange={(event) => onSearchChange?.(event.target.value)}
+                  placeholder={searchPlaceholder}
+                  aria-label={searchPlaceholder}
+                  autoComplete="off"
+                />
+              </div>
+            ) : null}
+
+            {menuOptions.map((option) => {
+              const isSelected = option.value === value;
+
+              return (
+                <button
+                  type="button"
+                  key={`${dropdownKey}-${option.value}`}
+                  className={`${styles.customFilterSelectOption} ${isSelected ? styles.customFilterSelectOptionActive : ''}`}
+                  onClick={() => {
+                    onChange(option.value);
+                    onOpenChange(null);
+                  }}
+                  role="option"
+                  aria-selected={isSelected}
+                >
+                  <span className={styles.customFilterSelectOptionLabel}>{option.label}</span>
+                </button>
+              );
+            })}
+
+            {noSearchMatches ? (
+              <div className={`${styles.customFilterSelectOption} ${styles.customFilterSelectEmptyOption}`} role="option" aria-disabled="true">
+                <span className={styles.customFilterSelectOptionLabel}>{noMatchesLabel}</span>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -1468,6 +1578,13 @@ export default function FuelClient() {
   const [draftFuelSlipManagerFilters, setDraftFuelSlipManagerFilters] = useState<FuelSlipManagerFilterState>(DEFAULT_FUEL_SLIP_MANAGER_FILTERS);
   const [fuelSlipManagerFilterOpen, setFuelSlipManagerFilterOpen] = useState(false);
   const [openFuelSlipManagerFilterSelect, setOpenFuelSlipManagerFilterSelect] = useState<FuelSlipManagerFilterKey | null>(null);
+  const [fuelSlipManagerTargetSearch, setFuelSlipManagerTargetSearch] = useState('');
+  const [fuelSlipDownloadOpen, setFuelSlipDownloadOpen] = useState(false);
+  const [fuelSlipDownloadFilters, setFuelSlipDownloadFilters] = useState<FuelSlipManagerFilterState>(DEFAULT_FUEL_SLIP_MANAGER_FILTERS);
+  const [draftFuelSlipDownloadFilters, setDraftFuelSlipDownloadFilters] = useState<FuelSlipManagerFilterState>(DEFAULT_FUEL_SLIP_MANAGER_FILTERS);
+  const [openFuelSlipDownloadSelect, setOpenFuelSlipDownloadSelect] = useState<FuelSlipManagerFilterKey | null>(null);
+  const [fuelSlipDownloadTargetSearch, setFuelSlipDownloadTargetSearch] = useState('');
+  const [fuelSlipDownloadError, setFuelSlipDownloadError] = useState('');
   const [currentFuelSlipManagerPage, setCurrentFuelSlipManagerPage] = useState(1);
   const [isDownloadingFuelSlips, setIsDownloadingFuelSlips] = useState(false);
   const [deleteCandidateFuelSlip, setDeleteCandidateFuelSlip] = useState<FuelSlipRecord | null>(null);
@@ -1698,18 +1815,22 @@ export default function FuelClient() {
   }, [totalFuelSlipManagerPages]);
 
   useEffect(() => {
-    if (!fuelSlipManagerFilterOpen || !openFuelSlipManagerFilterSelect) return undefined;
+    const managerDropdownOpen = fuelSlipManagerFilterOpen && Boolean(openFuelSlipManagerFilterSelect);
+    const downloadDropdownOpen = fuelSlipDownloadOpen && Boolean(openFuelSlipDownloadSelect);
+
+    if (!managerDropdownOpen && !downloadDropdownOpen) return undefined;
 
     function handlePointerDown(event: MouseEvent) {
       const target = event.target as HTMLElement | null;
-      if (!target?.closest('[data-report-select-root="true"]')) {
+      if (!target?.closest('[data-fuel-slip-custom-select-root="true"]')) {
         setOpenFuelSlipManagerFilterSelect(null);
+        setOpenFuelSlipDownloadSelect(null);
       }
     }
 
     document.addEventListener('mousedown', handlePointerDown);
     return () => document.removeEventListener('mousedown', handlePointerDown);
-  }, [fuelSlipManagerFilterOpen, openFuelSlipManagerFilterSelect]);
+  }, [fuelSlipDownloadOpen, fuelSlipManagerFilterOpen, openFuelSlipDownloadSelect, openFuelSlipManagerFilterSelect]);
 
   useEffect(() => {
     if (!fuelSlipFocusField) return undefined;
@@ -1773,6 +1894,11 @@ export default function FuelClient() {
     setFuelSlipUploadFileName('');
     setFuelSlipManagerFilterOpen(false);
     setOpenFuelSlipManagerFilterSelect(null);
+    setFuelSlipManagerTargetSearch('');
+    setFuelSlipDownloadOpen(false);
+    setOpenFuelSlipDownloadSelect(null);
+    setFuelSlipDownloadTargetSearch('');
+    setFuelSlipDownloadError('');
     setIsStorageFuelSelectOpen(false);
     setNotice(null);
     setModalMode('fuel-slip-menu');
@@ -1788,6 +1914,11 @@ export default function FuelClient() {
     setFuelSlipUploadFileName('');
     setFuelSlipManagerFilterOpen(false);
     setOpenFuelSlipManagerFilterSelect(null);
+    setFuelSlipManagerTargetSearch('');
+    setFuelSlipDownloadOpen(false);
+    setOpenFuelSlipDownloadSelect(null);
+    setFuelSlipDownloadTargetSearch('');
+    setFuelSlipDownloadError('');
     setIsStorageFuelSelectOpen(false);
     setNotice(null);
     setModalMode('fuel-slip');
@@ -1798,6 +1929,11 @@ export default function FuelClient() {
     setDraftFuelSlipManagerFilters(fuelSlipManagerFilters);
     setFuelSlipManagerFilterOpen(false);
     setOpenFuelSlipManagerFilterSelect(null);
+    setFuelSlipManagerTargetSearch('');
+    setFuelSlipDownloadOpen(false);
+    setOpenFuelSlipDownloadSelect(null);
+    setFuelSlipDownloadTargetSearch('');
+    setFuelSlipDownloadError('');
     setDeleteCandidateFuelSlip(null);
     setFuelSlipFlow(null);
     setFuelSlipFormPage('details');
@@ -1816,6 +1952,11 @@ export default function FuelClient() {
     setFuelSlipUploadFileName('');
     setFuelSlipManagerFilterOpen(false);
     setOpenFuelSlipManagerFilterSelect(null);
+    setFuelSlipManagerTargetSearch('');
+    setFuelSlipDownloadOpen(false);
+    setOpenFuelSlipDownloadSelect(null);
+    setFuelSlipDownloadTargetSearch('');
+    setFuelSlipDownloadError('');
     setDeleteCandidateFuelSlip(null);
     setIsStorageFuelSelectOpen(false);
     setNotice(null);
@@ -1825,6 +1966,11 @@ export default function FuelClient() {
   function openFuelSlipDeleteConfirm(slip: FuelSlipRecord) {
     setFuelSlipManagerFilterOpen(false);
     setOpenFuelSlipManagerFilterSelect(null);
+    setFuelSlipManagerTargetSearch('');
+    setFuelSlipDownloadOpen(false);
+    setOpenFuelSlipDownloadSelect(null);
+    setFuelSlipDownloadTargetSearch('');
+    setFuelSlipDownloadError('');
     setDeleteCandidateFuelSlip(slip);
     setNotice(null);
   }
@@ -1861,6 +2007,11 @@ export default function FuelClient() {
     setIsExtractingFuelSlip(false);
     setFuelSlipManagerFilterOpen(false);
     setOpenFuelSlipManagerFilterSelect(null);
+    setFuelSlipManagerTargetSearch('');
+    setFuelSlipDownloadOpen(false);
+    setOpenFuelSlipDownloadSelect(null);
+    setFuelSlipDownloadTargetSearch('');
+    setFuelSlipDownloadError('');
     setDeleteCandidateFuelSlip(null);
     setBusyFuelSlipDeleteId(null);
     setIsDownloadingFuelSlips(false);
@@ -2154,16 +2305,24 @@ export default function FuelClient() {
       setFuelSlipValidationNotice('');
       setNotice({ tone: 'success', message: data.message || 'Fuel Slip saved to Fuel Ledger.' });
 
-      if (reviewingExistingSlip) {
-        setFuelSlipDraft(emptyFuelSlipDraft);
-        setFuelSlipFlow(null);
-        setFuelSlipUploadFile(null);
-        setFuelSlipUploadFileName('');
-        setDraftFuelSlipManagerFilters(fuelSlipManagerFilters);
-        setModalMode('fuel-slip-manager');
-      } else {
-        closeModal();
-      }
+      setFuelSlipDraft(emptyFuelSlipDraft);
+      setFuelSlipFlow(null);
+      setFuelSlipFormPage('details');
+      setFuelSlipPickerSearch('');
+      setFuelSlipUploadFile(null);
+      setFuelSlipUploadFileName('');
+      setFuelSlipManagerSearch('');
+      setFuelSlipManagerFilters(DEFAULT_FUEL_SLIP_MANAGER_FILTERS);
+      setDraftFuelSlipManagerFilters(DEFAULT_FUEL_SLIP_MANAGER_FILTERS);
+      setFuelSlipManagerTargetSearch('');
+      setFuelSlipManagerFilterOpen(false);
+      setOpenFuelSlipManagerFilterSelect(null);
+      setFuelSlipDownloadOpen(false);
+      setOpenFuelSlipDownloadSelect(null);
+      setFuelSlipDownloadTargetSearch('');
+      setFuelSlipDownloadError('');
+      setCurrentFuelSlipManagerPage(1);
+      setModalMode('fuel-slip-manager');
     } catch (error) {
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to save fuel slip.' });
     } finally {
@@ -2306,11 +2465,17 @@ export default function FuelClient() {
   function openFuelSlipManagerFilterPanel() {
     setDraftFuelSlipManagerFilters(fuelSlipManagerFilters);
     setOpenFuelSlipManagerFilterSelect(null);
+    setFuelSlipManagerTargetSearch('');
+    setFuelSlipDownloadOpen(false);
+    setOpenFuelSlipDownloadSelect(null);
+    setFuelSlipDownloadTargetSearch('');
+    setFuelSlipDownloadError('');
     setFuelSlipManagerFilterOpen(true);
   }
 
   function closeFuelSlipManagerFilterPanel() {
     setOpenFuelSlipManagerFilterSelect(null);
+    setFuelSlipManagerTargetSearch('');
     setFuelSlipManagerFilterOpen(false);
   }
 
@@ -2319,6 +2484,7 @@ export default function FuelClient() {
     setFuelSlipManagerFilters(DEFAULT_FUEL_SLIP_MANAGER_FILTERS);
     setCurrentFuelSlipManagerPage(1);
     setOpenFuelSlipManagerFilterSelect(null);
+    setFuelSlipManagerTargetSearch('');
     setFuelSlipManagerFilterOpen(false);
   }
 
@@ -2326,29 +2492,58 @@ export default function FuelClient() {
     setFuelSlipManagerFilters(draftFuelSlipManagerFilters);
     setCurrentFuelSlipManagerPage(1);
     setOpenFuelSlipManagerFilterSelect(null);
+    setFuelSlipManagerTargetSearch('');
     setFuelSlipManagerFilterOpen(false);
   }
 
-  function toggleFuelSlipManagerFilterSelect(key: FuelSlipManagerFilterKey) {
-    setOpenFuelSlipManagerFilterSelect((current) => (current === key ? null : key));
+  function openFuelSlipDownloadPanel() {
+    setDraftFuelSlipDownloadFilters(fuelSlipDownloadFilters);
+    setOpenFuelSlipDownloadSelect(null);
+    setFuelSlipDownloadTargetSearch('');
+    setFuelSlipDownloadError('');
+    setFuelSlipManagerFilterOpen(false);
+    setOpenFuelSlipManagerFilterSelect(null);
+    setFuelSlipManagerTargetSearch('');
+    setFuelSlipDownloadOpen(true);
   }
 
-  function handleFuelSlipBulkDownload() {
+  function closeFuelSlipDownloadPanel() {
+    setOpenFuelSlipDownloadSelect(null);
+    setFuelSlipDownloadTargetSearch('');
+    setFuelSlipDownloadError('');
+    setFuelSlipDownloadOpen(false);
+  }
+
+  function clearFuelSlipDownloadFilters() {
+    setDraftFuelSlipDownloadFilters(DEFAULT_FUEL_SLIP_MANAGER_FILTERS);
+    setFuelSlipDownloadFilters(DEFAULT_FUEL_SLIP_MANAGER_FILTERS);
+    setOpenFuelSlipDownloadSelect(null);
+    setFuelSlipDownloadTargetSearch('');
+    setFuelSlipDownloadError('');
+  }
+
+  function handleFuelSlipDownload() {
     if (isDownloadingFuelSlips) return;
 
-    if (!visibleFuelSlipManagerSlips.length) {
-      setNotice({ tone: 'error', message: 'No fuel slips match the current filters.' });
+    const downloadableSlips = recentFuelSlips.filter((slip) => matchesFuelSlipManagerFilters(slip, draftFuelSlipDownloadFilters, ''));
+
+    if (!downloadableSlips.length) {
+      setFuelSlipDownloadError('No fuel slips match the selected download filters.');
       return;
     }
 
     setIsDownloadingFuelSlips(true);
+    setFuelSlipDownloadError('');
+
     try {
-      downloadBlob(new Blob([buildFuelSlipCsv(visibleFuelSlipManagerSlips)], { type: 'text/csv;charset=utf-8' }), fuelSlipDownloadFileName());
+      downloadBlob(new Blob([buildFuelSlipCsv(downloadableSlips)], { type: 'text/csv;charset=utf-8' }), fuelSlipDownloadFileName());
+      setFuelSlipDownloadFilters(draftFuelSlipDownloadFilters);
       setNotice({ tone: 'success', message: 'Fuel slip CSV downloaded.' });
-      window.setTimeout(() => setIsDownloadingFuelSlips(false), 350);
+      closeFuelSlipDownloadPanel();
     } catch (error) {
-      setIsDownloadingFuelSlips(false);
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Fuel slip CSV could not be downloaded.' });
+    } finally {
+      setIsDownloadingFuelSlips(false);
     }
   }
 
@@ -2944,11 +3139,11 @@ export default function FuelClient() {
                 <button
                   type="button"
                   className={`${styles.primaryButton} ${styles.fuelSlipManagerToolbarButton} ${styles.fuelSlipManagerDownloadButton}`}
-                  onClick={handleFuelSlipBulkDownload}
-                  disabled={!visibleFuelSlipManagerSlips.length || isDownloadingFuelSlips}
+                  onClick={openFuelSlipDownloadPanel}
+                  disabled={!recentFuelSlips.length || isDownloadingFuelSlips}
                 >
                   <DownloadIcon className={styles.buttonIcon} />
-                  <span>{isDownloadingFuelSlips ? 'Preparing CSV...' : 'Download CSV'}</span>
+                  <span>Download</span>
                 </button>
               </div>
             </section>
@@ -3086,62 +3281,135 @@ export default function FuelClient() {
             </div>
             <div className={styles.modalDivider} />
             <div className={styles.fuelSlipFilterGrid}>
-              <label className={styles.fuelSlipNativeSelectField}>
-                <span>Target</span>
-                <select
-                  className={styles.fuelSlipNativeSelect}
-                  value={draftFuelSlipManagerFilters.targetKey}
-                  onChange={(event) => setDraftFuelSlipManagerFilters((current) => ({ ...current, targetKey: event.target.value }))}
-                >
-                  {fuelSlipManagerTargetOptions.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                  ))}
-                </select>
-              </label>
+              <FuelSlipFilterDropdown
+                label="Target"
+                dropdownKey="target"
+                value={draftFuelSlipManagerFilters.targetKey}
+                options={fuelSlipManagerTargetOptions}
+                openDropdown={openFuelSlipManagerFilterSelect}
+                searchable
+                searchValue={fuelSlipManagerTargetSearch}
+                searchPlaceholder="Search saved assets or storage tanks"
+                noMatchesLabel="No matching targets found"
+                onOpenChange={setOpenFuelSlipManagerFilterSelect}
+                onSearchChange={setFuelSlipManagerTargetSearch}
+                onChange={(value) => setDraftFuelSlipManagerFilters((current) => ({ ...current, targetKey: value }))}
+              />
 
-              <label className={styles.fuelSlipNativeSelectField}>
-                <span>Source</span>
-                <select
-                  className={styles.fuelSlipNativeSelect}
-                  value={draftFuelSlipManagerFilters.capture}
-                  onChange={(event) => setDraftFuelSlipManagerFilters((current) => ({ ...current, capture: event.target.value as FuelSlipCaptureFilter }))}
-                >
-                  {FUEL_SLIP_CAPTURE_FILTER_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                  ))}
-                </select>
-              </label>
+              <FuelSlipFilterDropdown
+                label="Source"
+                dropdownKey="capture"
+                value={draftFuelSlipManagerFilters.capture}
+                options={FUEL_SLIP_CAPTURE_FILTER_OPTIONS}
+                openDropdown={openFuelSlipManagerFilterSelect}
+                onOpenChange={setOpenFuelSlipManagerFilterSelect}
+                onChange={(value) => setDraftFuelSlipManagerFilters((current) => ({ ...current, capture: value as FuelSlipCaptureFilter }))}
+              />
 
-              <label className={styles.fuelSlipNativeSelectField}>
-                <span>Year</span>
-                <select
-                  className={styles.fuelSlipNativeSelect}
-                  value={draftFuelSlipManagerFilters.year}
-                  onChange={(event) => setDraftFuelSlipManagerFilters((current) => ({ ...current, year: event.target.value }))}
-                >
-                  {fuelSlipManagerYearOptions.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                  ))}
-                </select>
-              </label>
+              <FuelSlipFilterDropdown
+                label="Year"
+                dropdownKey="year"
+                value={draftFuelSlipManagerFilters.year}
+                options={fuelSlipManagerYearOptions}
+                openDropdown={openFuelSlipManagerFilterSelect}
+                onOpenChange={setOpenFuelSlipManagerFilterSelect}
+                onChange={(value) => setDraftFuelSlipManagerFilters((current) => ({ ...current, year: value }))}
+              />
 
-              <label className={styles.fuelSlipNativeSelectField}>
-                <span>Month</span>
-                <select
-                  className={styles.fuelSlipNativeSelect}
-                  value={draftFuelSlipManagerFilters.month}
-                  onChange={(event) => setDraftFuelSlipManagerFilters((current) => ({ ...current, month: event.target.value }))}
-                >
-                  {fuelSlipManagerMonthOptions.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                  ))}
-                </select>
-              </label>
+              <FuelSlipFilterDropdown
+                label="Month"
+                dropdownKey="month"
+                value={draftFuelSlipManagerFilters.month}
+                options={fuelSlipManagerMonthOptions}
+                openDropdown={openFuelSlipManagerFilterSelect}
+                onOpenChange={setOpenFuelSlipManagerFilterSelect}
+                onChange={(value) => setDraftFuelSlipManagerFilters((current) => ({ ...current, month: value }))}
+              />
             </div>
             <div className={styles.modalFooter}>
               <button type="button" className={styles.secondaryButton} onClick={closeFuelSlipManagerFilterPanel}>Close</button>
               <button type="button" className={styles.secondaryButton} onClick={clearFuelSlipManagerFilters}>Clear filters</button>
               <button type="button" className={styles.primaryButton} onClick={applyFuelSlipManagerFilters}>Apply filters</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {modalMode === 'fuel-slip-manager' && fuelSlipDownloadOpen ? (
+        <div className={styles.fuelSlipSubModalBackdrop} role="dialog" aria-modal="true" aria-label="Download fuel slips">
+          <div className={styles.fuelSlipFilterModal}>
+            <div className={styles.modalHeader}>
+              <div>
+                <h2>Download Fuel Slips</h2>
+              </div>
+              <button type="button" className={styles.closeButton} onClick={closeFuelSlipDownloadPanel} aria-label="Close fuel slip download"><CloseIcon /></button>
+            </div>
+            <div className={styles.modalDivider} />
+            <div className={styles.fuelSlipFilterGrid}>
+              <FuelSlipFilterDropdown
+                label="Target"
+                dropdownKey="target"
+                value={draftFuelSlipDownloadFilters.targetKey}
+                options={fuelSlipManagerTargetOptions}
+                openDropdown={openFuelSlipDownloadSelect}
+                searchable
+                searchValue={fuelSlipDownloadTargetSearch}
+                searchPlaceholder="Search saved assets or storage tanks"
+                noMatchesLabel="No matching targets found"
+                onOpenChange={setOpenFuelSlipDownloadSelect}
+                onSearchChange={setFuelSlipDownloadTargetSearch}
+                onChange={(value) => {
+                  setFuelSlipDownloadError('');
+                  setDraftFuelSlipDownloadFilters((current) => ({ ...current, targetKey: value }));
+                }}
+              />
+
+              <FuelSlipFilterDropdown
+                label="Source / status"
+                dropdownKey="capture"
+                value={draftFuelSlipDownloadFilters.capture}
+                options={FUEL_SLIP_CAPTURE_FILTER_OPTIONS}
+                openDropdown={openFuelSlipDownloadSelect}
+                onOpenChange={setOpenFuelSlipDownloadSelect}
+                onChange={(value) => {
+                  setFuelSlipDownloadError('');
+                  setDraftFuelSlipDownloadFilters((current) => ({ ...current, capture: value as FuelSlipCaptureFilter }));
+                }}
+              />
+
+              <FuelSlipFilterDropdown
+                label="Year"
+                dropdownKey="year"
+                value={draftFuelSlipDownloadFilters.year}
+                options={fuelSlipManagerYearOptions}
+                openDropdown={openFuelSlipDownloadSelect}
+                onOpenChange={setOpenFuelSlipDownloadSelect}
+                onChange={(value) => {
+                  setFuelSlipDownloadError('');
+                  setDraftFuelSlipDownloadFilters((current) => ({ ...current, year: value }));
+                }}
+              />
+
+              <FuelSlipFilterDropdown
+                label="Month"
+                dropdownKey="month"
+                value={draftFuelSlipDownloadFilters.month}
+                options={fuelSlipManagerMonthOptions}
+                openDropdown={openFuelSlipDownloadSelect}
+                onOpenChange={setOpenFuelSlipDownloadSelect}
+                onChange={(value) => {
+                  setFuelSlipDownloadError('');
+                  setDraftFuelSlipDownloadFilters((current) => ({ ...current, month: value }));
+                }}
+              />
+            </div>
+            {fuelSlipDownloadError ? (
+              <p className={styles.fuelSlipDownloadError}>{fuelSlipDownloadError}</p>
+            ) : null}
+            <div className={styles.modalFooter}>
+              <button type="button" className={styles.secondaryButton} onClick={closeFuelSlipDownloadPanel}>Close</button>
+              <button type="button" className={styles.secondaryButton} onClick={clearFuelSlipDownloadFilters}>Clear filters</button>
+              <button type="button" className={styles.primaryButton} onClick={handleFuelSlipDownload} disabled={isDownloadingFuelSlips}>Download</button>
             </div>
           </div>
         </div>
