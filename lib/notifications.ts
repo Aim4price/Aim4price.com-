@@ -365,14 +365,14 @@ async function listOwnerAssetDiscoveryNotifications(userId: string): Promise<Hea
       id: `asset-discovery-owner:${enquiry.id}:${enquiry.updatedAtIso}`,
       category: 'asset_discovery',
       tone: 'info',
-      title: 'Asset Discovery enquiry',
+      title: 'Discovery enquiry',
       body: `A dealer is interested in your ${enquiry.asset.brand} ${enquiry.asset.model}. Are you interested in selling?`,
       href: '',
       createdAtIso: isoFallback(enquiry.createdAtIso || enquiry.updatedAtIso),
       assetDiscoveryEnquiryId: enquiry.id,
     } satisfies HeaderNotificationItem));
   } catch (error) {
-    console.error('Failed to load owner Asset Discovery notifications', error);
+    console.error('Failed to load owner Discovery notifications', error);
     return [];
   }
 }
@@ -401,7 +401,7 @@ async function listDealerAssetDiscoveryNotifications(userId: string): Promise<He
       } satisfies HeaderNotificationItem;
     });
   } catch (error) {
-    console.error('Failed to load dealer Asset Discovery notifications', error);
+    console.error('Failed to load dealer Discovery notifications', error);
     return [];
   }
 }

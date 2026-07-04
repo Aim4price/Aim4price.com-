@@ -77,6 +77,9 @@ type AssetDiscoveryRow = {
   specs_json: unknown;
   condition: string | null;
   province: string | null;
+  selected_method: string | null;
+  depreciation_method_used: string | null;
+  family_usage_metric_type: string | null;
   enquiry_id: string | null;
   enquiry_status: string | null;
   request_again_at: string | null;
@@ -105,6 +108,9 @@ type EnquiryRow = {
   life_worked_percent: number | string | null;
   specs_json: unknown;
   condition: string | null;
+  selected_method: string | null;
+  depreciation_method_used: string | null;
+  family_usage_metric_type: string | null;
   owner_province: string | null;
   owner_business_name: string | null;
   owner_display_name: string | null;
@@ -137,7 +143,73 @@ type AssetOwnerRow = AssetDiscoveryRow & {
 };
 
 const ASSET_DISCOVERY_STATUSES = new Set<AssetDiscoveryEnquiryStatus>(['pending', 'approved', 'temporarily_denied']);
+const ASSET_SPECS_JSON_SQL = "coalesce(asset.specs_json, '{}'::jsonb)";
 const RESOLVED_ASSET_TYPE_SQL = "coalesce(nullif(trim(family.family_label), ''), nullif(trim(asset.kind), ''), 'Asset')";
+const RESOLVED_ASSET_BRAND_SQL = `coalesce(
+  nullif(trim(asset.brand_name), ''),
+  nullif(trim(brand.name), ''),
+  nullif(trim((${ASSET_SPECS_JSON_SQL}->>'brandName')), ''),
+  nullif(trim((${ASSET_SPECS_JSON_SQL}->>'brand_name')), ''),
+  nullif(trim((${ASSET_SPECS_JSON_SQL}->>'brand')), '')
+)`;
+const RESOLVED_ASSET_MODEL_SQL = `coalesce(
+  nullif(trim(asset.model_name), ''),
+  nullif(trim(model.model_name), ''),
+  nullif(trim(model.display_name), ''),
+  nullif(trim(asset.typed_model_name), ''),
+  nullif(trim((${ASSET_SPECS_JSON_SQL}->>'modelName')), ''),
+  nullif(trim((${ASSET_SPECS_JSON_SQL}->>'model_name')), ''),
+  nullif(trim((${ASSET_SPECS_JSON_SQL}->>'model')), '')
+)`;
+const PROVINCE_ABBREVIATION_SQL = `case lower(nullif(trim(owner.province), ''))
+  when 'western cape' then 'WC'
+  when 'gauteng' then 'GP'
+  when 'kwazulu-natal' then 'KZN'
+  when 'kwazulu natal' then 'KZN'
+  when 'eastern cape' then 'EC'
+  when 'free state' then 'FS'
+  when 'limpopo' then 'LP'
+  when 'mpumalanga' then 'MP'
+  when 'northern cape' then 'NC'
+  when 'north west' then 'NW'
+  else coalesce(owner.province, '')
+end`;
+const DISCOVERY_ELIGIBLE_ASSET_SQL = `
+  (
+    lower(coalesce(asset.selected_method, '')) = 'aim4price'
+    or asset.valuation_run_id is not null
+    or asset.equipment_family_id is not null
+    or asset.equipment_model_id is not null
+  )
+  and lower(coalesce(asset.selected_method, '')) <> 'manual'
+  and lower(coalesce(asset.kind, '')) not in ('manual', 'other', 'tools', 'tool', 'property', 'building', 'land')
+  and lower(${RESOLVED_ASSET_TYPE_SQL}) not in ('manual', 'other', 'tools', 'tool', 'property', 'building', 'land')
+  and (
+    asset.equipment_family_id is not null
+    or asset.equipment_model_id is not null
+    or nullif(trim(family.family_label), '') is not null
+    or (
+      lower(coalesce(asset.selected_method, '')) = 'aim4price'
+      and (
+        nullif(trim(coalesce(asset.brand_name, '')), '') is not null
+        or nullif(trim(coalesce(asset.model_name, '')), '') is not null
+        or nullif(trim(coalesce(asset.typed_model_name, '')), '') is not null
+        or nullif(trim((${ASSET_SPECS_JSON_SQL}->>'brandName')), '') is not null
+        or nullif(trim((${ASSET_SPECS_JSON_SQL}->>'brand_name')), '') is not null
+        or nullif(trim((${ASSET_SPECS_JSON_SQL}->>'brand')), '') is not null
+        or nullif(trim((${ASSET_SPECS_JSON_SQL}->>'modelName')), '') is not null
+        or nullif(trim((${ASSET_SPECS_JSON_SQL}->>'model_name')), '') is not null
+        or nullif(trim((${ASSET_SPECS_JSON_SQL}->>'model')), '') is not null
+      )
+    )
+  )
+  and (
+    lower(${RESOLVED_ASSET_TYPE_SQL}) <> 'equipment'
+    or asset.equipment_family_id is not null
+    or asset.equipment_model_id is not null
+    or lower(coalesce(asset.selected_method, '')) = 'aim4price'
+  )
+`;
 const PROPERTY_LIKE_ASSET_PATTERN = '(property|building|land|house|office|shed|storage|warehouse)';
 let assetDiscoveryTablesEnsured = false;
 
@@ -173,54 +245,210 @@ function titleCase(value: string): string {
     .replace(/\b\w/g, (match) => match.toUpperCase());
 }
 
+function numericValue(value: unknown): number | null {
+  if (value === null || typeof value === 'undefined' || value === '') return null;
+
+  const numeric = Number(value);
+  return Number.isFinite(numeric) && numeric >= 0 ? numeric : null;
+}
+
 function pickSpecsNumber(specs: Record<string, unknown>, keys: string[]): number | null {
   for (const key of keys) {
-    const value = specs[key];
-    const numeric = Number(value);
-    if (Number.isFinite(numeric) && numeric >= 0) return numeric;
+    const numeric = numericValue(specs[key]);
+    if (numeric !== null) return numeric;
   }
 
   return null;
 }
 
-function readUsageMetric(specs: Record<string, unknown>, kind: string): 'km' | 'hours' | 'percent' {
-  const raw = asText(
-    specs.usageMetric ??
-      specs.usage_metric ??
-      specs.usageUnit ??
-      specs.usage_unit ??
-      specs.usageMode ??
-      specs.usage_mode ??
-      specs.usageBasis ??
-      specs.usage_basis,
-  ).toLowerCase();
+function readFirstText(values: unknown[]): string {
+  for (const value of values) {
+    const text = asText(value);
+    if (text) return text;
+  }
 
-  if (['km', 'kms', 'kilometres', 'kilometers', 'vehicle'].includes(raw)) return 'km';
-  if (['percent', 'percentage', 'life_worked_percent', 'life worked percentage'].includes(raw)) return 'percent';
-  return kind === 'vehicle' ? 'km' : 'hours';
+  return '';
 }
 
-function buildUsage(row: Pick<AssetDiscoveryRow, 'hours' | 'life_worked_percent' | 'specs_json' | 'kind'>): string {
+function isPercentUsageValue(value: unknown): boolean {
+  const normalized = asText(value).toLowerCase().replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim();
+
+  return [
+    'percent',
+    'percentage',
+    '%',
+    'percent used',
+    'percentage used',
+    'percentage depreciation',
+    'life worked percent',
+    'life worked percentage',
+    'worked percent',
+    'lifetime percent',
+    'lifetime worked percent',
+    'lifetime used percent',
+    'wear class',
+    'semi depreciation',
+  ].includes(normalized);
+}
+
+function isKilometreUsageValue(value: unknown): boolean {
+  const normalized = asText(value).toLowerCase().replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim();
+
+  return [
+    'km',
+    'kms',
+    'kilometre',
+    'kilometres',
+    'kilometer',
+    'kilometers',
+    'odometer',
+    'mileage',
+    'vehicle',
+  ].includes(normalized);
+}
+
+function isVehicleLikeAsset(kind: string, typeLabel: string, specs: Record<string, unknown>): boolean {
+  const haystack = [
+    kind,
+    typeLabel,
+    asText(specs.sectorKey),
+    asText(specs.sector_key),
+    asText(specs.familyKey),
+    asText(specs.family_key),
+    asText(specs.familyLabel),
+    asText(specs.family_label),
+    asText(specs.equipmentFamilyLabel),
+    asText(specs.equipment_family_label),
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+
+  return /\b(vehicle|motor|car|cars|suv|sedan|hatch|hatchback|bakkie|ldv|truck|trucks|bus|buses|trailer|trailers|motorcycle|motorcycles|quad|quadbike|quadbikes|side[ -]?by[ -]?side|sxs|utv)\b/.test(haystack);
+}
+
+function readUsageMetric(
+  row: Pick<AssetDiscoveryRow, 'kind' | 'type_label' | 'specs_json' | 'depreciation_method_used' | 'family_usage_metric_type'>,
+): 'km' | 'hours' | 'percent' {
   const specs = isRecord(row.specs_json) ? row.specs_json : {};
   const kind = asText(row.kind).toLowerCase();
-  const metric = readUsageMetric(specs, kind);
-  const hours = Number(row.hours);
-  const storedPercent = Number(row.life_worked_percent);
-  const kmReading = pickSpecsNumber(specs, ['km', 'kms', 'kilometres', 'kilometers', 'odometer', 'odometerKm', 'odometer_km']);
-  const hoursReading = Number.isFinite(hours) && hours >= 0 ? hours : pickSpecsNumber(specs, ['hours', 'engineHours', 'engine_hours']);
-  const percent = Number.isFinite(storedPercent) && storedPercent >= 0
-    ? storedPercent
-    : pickSpecsNumber(specs, ['lifeWorkedPercent', 'life_worked_percent', 'workedPercent', 'worked_percent']);
+  const typeLabel = asText(row.type_label);
+  const depreciationMethod = readFirstText([
+    row.depreciation_method_used,
+    specs.depreciationMethodUsed,
+    specs.depreciation_method_used,
+    specs.selectedDepreciationMethod,
+    specs.selected_depreciation_method,
+  ]);
+  const usageMode = readFirstText([
+    specs.usageMode,
+    specs.usage_mode,
+    specs.usageBasis,
+    specs.usage_basis,
+    specs.selectedUsageMode,
+    specs.selected_usage_mode,
+    specs.selectedUsageBasis,
+    specs.selected_usage_basis,
+    specs.valuationMode,
+    specs.valuation_mode,
+    depreciationMethod,
+  ]);
+  const usageMetric = readFirstText([
+    specs.usageMetric,
+    specs.usage_metric,
+    specs.usageUnit,
+    specs.usage_unit,
+    specs.usageMetricType,
+    specs.usage_metric_type,
+    row.family_usage_metric_type,
+  ]);
 
-  if (metric === 'km' && kmReading !== null) return `${Math.round(kmReading).toLocaleString('en-ZA')} km`;
-  if (metric === 'percent' && percent !== null) return `${Math.round(percent)}% worked`;
-  if (hoursReading !== null) return `${Math.round(hoursReading).toLocaleString('en-ZA')} hours`;
-  if (kmReading !== null) return `${Math.round(kmReading).toLocaleString('en-ZA')} km`;
-  if (percent !== null) return `${Math.round(percent)}% worked`;
+  if (isPercentUsageValue(usageMode) || isPercentUsageValue(usageMetric)) return 'percent';
+  if (isKilometreUsageValue(usageMetric) || isVehicleLikeAsset(kind, typeLabel, specs)) return 'km';
+
+  return 'hours';
+}
+
+function formatWholeNumber(value: number): string {
+  return Math.round(value).toLocaleString('en-ZA');
+}
+
+function formatPercent(value: number): string {
+  const rounded = Math.round(value * 10) / 10;
+  const formatted = Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+  return `${formatted}% worked`;
+}
+
+function buildUsage(
+  row: Pick<
+    AssetDiscoveryRow,
+    'hours' | 'life_worked_percent' | 'specs_json' | 'kind' | 'type_label' | 'depreciation_method_used' | 'family_usage_metric_type'
+  >,
+): string {
+  const specs = isRecord(row.specs_json) ? row.specs_json : {};
+  const metric = readUsageMetric(row);
+  const savedReading = numericValue(row.hours);
+  const storedPercent = numericValue(row.life_worked_percent);
+  const kmReading = pickSpecsNumber(specs, [
+    'km',
+    'kms',
+    'kilometres',
+    'kilometers',
+    'odometer',
+    'odometerKm',
+    'odometer_km',
+    'mileage',
+    'usageAmount',
+    'usage_amount',
+    'savedUsage',
+    'saved_usage',
+    'currentUsage',
+    'current_usage',
+  ]);
+  const hoursReading = savedReading ?? pickSpecsNumber(specs, [
+    'hours',
+    'engineHours',
+    'engine_hours',
+    'machineHours',
+    'machine_hours',
+    'usageAmount',
+    'usage_amount',
+    'savedUsage',
+    'saved_usage',
+    'currentUsage',
+    'current_usage',
+  ]);
+  const percent = storedPercent ?? pickSpecsNumber(specs, [
+    'lifeWorkedPercent',
+    'life_worked_percent',
+    'workedPercent',
+    'worked_percent',
+    'percentWorked',
+    'percent_worked',
+    'lifetimeWorkedPercent',
+    'lifetime_worked_percent',
+    'lifetimeUsedPercent',
+    'lifetime_used_percent',
+  ]);
+
+  if (metric === 'percent') {
+    return percent !== null ? formatPercent(percent) : 'Unknown';
+  }
+
+  if (metric === 'km') {
+    const value = savedReading ?? kmReading;
+    if (value !== null) return `${formatWholeNumber(value)} km`;
+    return percent !== null ? formatPercent(percent) : 'Unknown';
+  }
+
+  if (hoursReading !== null) return `${formatWholeNumber(hoursReading)} hours`;
+  if (percent !== null) return formatPercent(percent);
+  if (kmReading !== null) return `${formatWholeNumber(kmReading)} km`;
+
   return 'Unknown';
 }
 
-function safeSummary(row: Pick<AssetDiscoveryRow, 'type_label' | 'kind' | 'brand_name' | 'model_name' | 'typed_model_name' | 'year_model' | 'hours' | 'life_worked_percent' | 'specs_json' | 'condition' | 'province'>): SafeAssetSummary {
+function safeSummary(row: Pick<AssetDiscoveryRow, 'type_label' | 'kind' | 'brand_name' | 'model_name' | 'typed_model_name' | 'year_model' | 'hours' | 'life_worked_percent' | 'specs_json' | 'condition' | 'province' | 'depreciation_method_used' | 'family_usage_metric_type'>): SafeAssetSummary {
   const type = asText(row.type_label) || titleCase(asText(row.kind) || 'Asset');
   const brand = asText(row.brand_name) || 'Unknown';
   const model = asText(row.model_name) || asText(row.typed_model_name) || 'Unknown';
@@ -413,7 +641,7 @@ function baseAssetWhere(input: { dealerUserId: string; search?: string; province
     "owner.account_type = 'owner'",
     "owner.account_status = 'active'",
     'asset.user_id <> $1',
-    "lower(coalesce(asset.kind, '')) not in ('property', 'building', 'land')",
+    `(${DISCOVERY_ELIGIBLE_ASSET_SQL})`,
     `${RESOLVED_ASSET_TYPE_SQL} !~* '${PROPERTY_LIKE_ASSET_PATTERN}'`,
     `coalesce(asset.title, '') !~* '${PROPERTY_LIKE_ASSET_PATTERN}'`,
   ];
@@ -424,11 +652,15 @@ function baseAssetWhere(input: { dealerUserId: string; search?: string; province
     const p = `$${params.length}`;
     where.push(`(
       ${RESOLVED_ASSET_TYPE_SQL} ilike ${p} escape '\\'
-      or coalesce(asset.brand_name, '') ilike ${p} escape '\\'
-      or coalesce(asset.model_name, asset.typed_model_name, '') ilike ${p} escape '\\'
+      or ${RESOLVED_ASSET_BRAND_SQL} ilike ${p} escape '\\'
+      or ${RESOLVED_ASSET_MODEL_SQL} ilike ${p} escape '\\'
+      or coalesce(asset.typed_model_name, '') ilike ${p} escape '\\'
       or coalesce(asset.year_model::text, 'Unknown') ilike ${p} escape '\\'
+      or coalesce(asset.hours::text, '') ilike ${p} escape '\\'
+      or coalesce(asset.life_worked_percent::text, '') ilike ${p} escape '\\'
       or coalesce(asset.condition, '') ilike ${p} escape '\\'
       or coalesce(owner.province, '') ilike ${p} escape '\\'
+      or ${PROVINCE_ABBREVIATION_SQL} ilike ${p} escape '\\'
     )`);
   }
 
@@ -459,15 +691,18 @@ export async function listAssetDiscoveryAssets(input: { dealerUserId: string; se
       asset.id::text,
       ${RESOLVED_ASSET_TYPE_SQL} as type_label,
       asset.kind,
-      asset.brand_name,
-      asset.model_name,
+      ${RESOLVED_ASSET_BRAND_SQL} as brand_name,
+      ${RESOLVED_ASSET_MODEL_SQL} as model_name,
       asset.typed_model_name,
       asset.year_model,
       asset.hours,
       asset.life_worked_percent,
-      asset.specs_json,
+      ${ASSET_SPECS_JSON_SQL} as specs_json,
       asset.condition,
       owner.province,
+      asset.selected_method,
+      asset.depreciation_method_used,
+      family.usage_metric_type as family_usage_metric_type,
       enquiry.id::text as enquiry_id,
       enquiry.status as enquiry_status,
       enquiry.request_again_at::text,
@@ -475,6 +710,8 @@ export async function listAssetDiscoveryAssets(input: { dealerUserId: string; se
     from public.asset_register_items asset
     join public.account_profiles owner on owner.user_id = asset.user_id
     left join public.equipment_families family on family.id = asset.equipment_family_id
+    left join public.equipment_models model on model.id = asset.equipment_model_id
+    left join public.brands brand on brand.id = model.brand_id
     left join lateral (
       select e.id, e.status, e.request_again_at, e.approved_at, e.created_at
       from public.asset_discovery_enquiries e
@@ -496,6 +733,8 @@ export async function listAssetDiscoveryAssets(input: { dealerUserId: string; se
         from public.asset_register_items asset
         join public.account_profiles owner on owner.user_id = asset.user_id
         left join public.equipment_families family on family.id = asset.equipment_family_id
+        left join public.equipment_models model on model.id = asset.equipment_model_id
+        left join public.brands brand on brand.id = model.brand_id
         ${baseAssetWhere({ dealerUserId: input.dealerUserId }).whereClause}
         group by nullif(trim(owner.province), '')
         order by nullif(trim(owner.province), '') asc nulls last
@@ -508,6 +747,8 @@ export async function listAssetDiscoveryAssets(input: { dealerUserId: string; se
         from public.asset_register_items asset
         join public.account_profiles owner on owner.user_id = asset.user_id
         left join public.equipment_families family on family.id = asset.equipment_family_id
+        left join public.equipment_models model on model.id = asset.equipment_model_id
+        left join public.brands brand on brand.id = model.brand_id
         ${baseAssetWhere({ dealerUserId: input.dealerUserId }).whereClause}
         group by ${RESOLVED_ASSET_TYPE_SQL}
         order by ${RESOLVED_ASSET_TYPE_SQL} asc
@@ -540,15 +781,18 @@ async function findSafeAssetForEnquiry(assetId: string, dealerUserId: string): P
         asset.user_id as owner_user_id,
         ${RESOLVED_ASSET_TYPE_SQL} as type_label,
         asset.kind,
-        asset.brand_name,
-        asset.model_name,
+        ${RESOLVED_ASSET_BRAND_SQL} as brand_name,
+        ${RESOLVED_ASSET_MODEL_SQL} as model_name,
         asset.typed_model_name,
         asset.year_model,
         asset.hours,
         asset.life_worked_percent,
-        asset.specs_json,
+        ${ASSET_SPECS_JSON_SQL} as specs_json,
         asset.condition,
         owner.province,
+        asset.selected_method,
+        asset.depreciation_method_used,
+        family.usage_metric_type as family_usage_metric_type,
         null::text as enquiry_id,
         null::text as enquiry_status,
         null::text as request_again_at,
@@ -556,11 +800,13 @@ async function findSafeAssetForEnquiry(assetId: string, dealerUserId: string): P
       from public.asset_register_items asset
       join public.account_profiles owner on owner.user_id = asset.user_id
       left join public.equipment_families family on family.id = asset.equipment_family_id
+      left join public.equipment_models model on model.id = asset.equipment_model_id
+      left join public.brands brand on brand.id = model.brand_id
       where asset.id = $1::uuid
         and asset.user_id <> $2
         and owner.account_type = 'owner'
         and owner.account_status = 'active'
-        and lower(coalesce(asset.kind, '')) not in ('property', 'building', 'land')
+        and (${DISCOVERY_ELIGIBLE_ASSET_SQL})
         and ${RESOLVED_ASSET_TYPE_SQL} !~* '${PROPERTY_LIKE_ASSET_PATTERN}'
         and coalesce(asset.title, '') !~* '${PROPERTY_LIKE_ASSET_PATTERN}'
       limit 1
@@ -578,7 +824,7 @@ export async function createAssetDiscoveryEnquiry(input: { dealerUserId: string;
   if (!assetId) throw new Error('Asset is required.');
 
   const asset = await findSafeAssetForEnquiry(assetId, input.dealerUserId);
-  if (!asset) throw new Error('Asset is not available for Asset Discovery.');
+  if (!asset) throw new Error('Asset is not available for Discovery.');
 
   const db = getDb();
   const existing = await db.query<ExistingEnquiryRow>(
@@ -643,14 +889,17 @@ function enquirySelectSql(whereClause: string): string {
       enquiry.updated_at::text,
       ${RESOLVED_ASSET_TYPE_SQL} as type_label,
       asset.kind,
-      asset.brand_name,
-      asset.model_name,
+      ${RESOLVED_ASSET_BRAND_SQL} as brand_name,
+      ${RESOLVED_ASSET_MODEL_SQL} as model_name,
       asset.typed_model_name,
       asset.year_model,
       asset.hours,
       asset.life_worked_percent,
-      asset.specs_json,
+      ${ASSET_SPECS_JSON_SQL} as specs_json,
       asset.condition,
+      asset.selected_method,
+      asset.depreciation_method_used,
+      family.usage_metric_type as family_usage_metric_type,
       owner.province as owner_province,
       owner.business_name as owner_business_name,
       owner.display_name as owner_display_name,
@@ -668,6 +917,8 @@ function enquirySelectSql(whereClause: string): string {
     from public.asset_discovery_enquiries enquiry
     join public.asset_register_items asset on asset.id = enquiry.asset_register_item_id
     left join public.equipment_families family on family.id = asset.equipment_family_id
+    left join public.equipment_models model on model.id = asset.equipment_model_id
+    left join public.brands brand on brand.id = model.brand_id
     join public.account_profiles owner on owner.user_id = enquiry.owner_user_id
     join public.account_profiles dealer on dealer.user_id = enquiry.dealer_user_id
     left join public."user" ownerUser on ownerUser.id = enquiry.owner_user_id
@@ -682,7 +933,7 @@ export async function getAssetDiscoveryEnquiryForUser(input: { enquiryId: string
   const accountType = asText(input.accountType).toLowerCase();
   const audience = accountType === 'owner' ? 'owner' : accountType === 'dealer' ? 'dealer' : null;
 
-  if (!audience) throw new Error('Asset Discovery enquiry not found.');
+  if (!audience) throw new Error('Discovery enquiry not found.');
 
   const result = await db.query<EnquiryRow>(
     enquirySelectSql(`where enquiry.id = $1::uuid and enquiry.${audience === 'owner' ? 'owner_user_id' : 'dealer_user_id'} = $2 limit 1`),
@@ -690,7 +941,7 @@ export async function getAssetDiscoveryEnquiryForUser(input: { enquiryId: string
   );
 
   const row = result.rows[0];
-  if (!row) throw new Error('Asset Discovery enquiry not found.');
+  if (!row) throw new Error('Discovery enquiry not found.');
 
   return mapEnquiryForAudience(row, audience);
 }
@@ -720,7 +971,7 @@ export async function updateAssetDiscoveryOwnerDecision(input: { enquiryId: stri
     [input.enquiryId, input.ownerUserId, nextStatus],
   );
 
-  if (!result.rows[0]?.id) throw new Error('Asset Discovery enquiry not found or already decided.');
+  if (!result.rows[0]?.id) throw new Error('Discovery enquiry not found or already decided.');
 
   return getAssetDiscoveryEnquiryForUser({
     enquiryId: result.rows[0].id,
