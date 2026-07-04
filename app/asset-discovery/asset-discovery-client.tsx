@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useEffect, useMemo, useState } from 'react';
-import styles from './page.module.css';
+import { useEffect, useMemo, useState } from "react";
+import styles from "./page.module.css";
 
-type EnquiryStatus = 'pending' | 'approved' | 'temporarily_denied';
+type EnquiryStatus = "pending" | "approved" | "temporarily_denied";
 
 type AssetDiscoveryAsset = {
   id: string;
@@ -26,11 +26,30 @@ type Option = {
   count: number;
 };
 
+type DiscoverySummary = {
+  totalAssets: number;
+  typeCount: number;
+  provinceCount: number;
+};
+
+type DiscoveryPagination = {
+  page: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+  rangeStart: number;
+  rangeEnd: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
+};
+
 type ListResponse = {
   ok: boolean;
   assets?: AssetDiscoveryAsset[];
   provinceOptions?: Option[];
   typeOptions?: Option[];
+  summary?: DiscoverySummary;
+  pagination?: DiscoveryPagination;
   error?: string;
 };
 
@@ -40,116 +59,272 @@ type EnquiryResponse = {
     id: string;
     status: EnquiryStatus;
     requestAgainAtIso: string | null;
+    approvedAtIso?: string | null;
   };
   error?: string;
 };
 
-const SEARCH_DEBOUNCE_MS = 250;
-
-const PROVINCE_ABBREVIATIONS: Record<string, string> = {
-  'western cape': 'WC',
-  gauteng: 'GP',
-  'kwazulu-natal': 'KZN',
-  'kwazulu natal': 'KZN',
-  'eastern cape': 'EC',
-  'free state': 'FS',
-  limpopo: 'LP',
-  mpumalanga: 'MP',
-  'northern cape': 'NC',
-  'north west': 'NW',
+type Notice = {
+  tone: "success" | "error";
+  message: string;
 };
 
-function provinceTableLabel(value: string): string {
-  const cleaned = value.trim();
-  if (!cleaned || cleaned === 'Province not saved') return '—';
+type IconProps = {
+  className?: string;
+};
 
-  return PROVINCE_ABBREVIATIONS[cleaned.toLowerCase()] ?? cleaned;
+const SEARCH_DEBOUNCE_MS = 250;
+const DISCOVERY_PAGE_SIZE = 10;
+const DISCOVERY_PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
+type DiscoveryPageSize = (typeof DISCOVERY_PAGE_SIZE_OPTIONS)[number];
+
+const EMPTY_SUMMARY: DiscoverySummary = {
+  totalAssets: 0,
+  typeCount: 0,
+  provinceCount: 0,
+};
+
+const EMPTY_PAGINATION: DiscoveryPagination = {
+  page: 1,
+  pageSize: DISCOVERY_PAGE_SIZE,
+  totalItems: 0,
+  totalPages: 1,
+  rangeStart: 0,
+  rangeEnd: 0,
+  hasPreviousPage: false,
+  hasNextPage: false,
+};
+
+function SearchIcon({ className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      aria-hidden="true"
+    >
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-3.5-3.5" />
+    </svg>
+  );
+}
+
+function CloseIcon({ className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      aria-hidden="true"
+    >
+      <path d="M18 6 6 18" />
+      <path d="M6 6l12 12" />
+    </svg>
+  );
+}
+
+function cleanText(value: string | null | undefined): string {
+  return typeof value === "string" ? value.trim() : "";
 }
 
 function formatDate(value: string | null | undefined): string {
-  if (!value) return '';
+  if (!value) return "";
   const time = Date.parse(value);
-  if (!Number.isFinite(time)) return '';
+  if (!Number.isFinite(time)) return "";
 
-  return new Intl.DateTimeFormat('en-ZA', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    timeZone: 'Africa/Johannesburg',
+  return new Intl.DateTimeFormat("en-ZA", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    timeZone: "Africa/Johannesburg",
   }).format(new Date(time));
 }
 
-function statusLabel(asset: AssetDiscoveryAsset): string {
-  if (asset.enquiryStatus === 'pending') return 'Pending owner decision';
-  if (asset.enquiryStatus === 'approved') return 'Approved';
-  if (asset.enquiryStatus === 'temporarily_denied') {
-    const retryDate = formatDate(asset.requestAgainAtIso);
-    return retryDate ? `Temporarily denied. Available again after ${retryDate}.` : 'Temporarily denied.';
-  }
-
-  return '';
+function normalizeDiscoveryPageSize(value: string): DiscoveryPageSize {
+  const numeric = Number(value);
+  return (
+    DISCOVERY_PAGE_SIZE_OPTIONS.find((option) => option === numeric) ??
+    DISCOVERY_PAGE_SIZE
+  );
 }
 
-function isEnquireDisabled(asset: AssetDiscoveryAsset): boolean {
-  if (asset.enquiryStatus === 'pending' || asset.enquiryStatus === 'approved') return true;
-  if (asset.enquiryStatus === 'temporarily_denied' && asset.requestAgainAtIso) {
-    const retryTime = Date.parse(asset.requestAgainAtIso);
-    return Number.isFinite(retryTime) && retryTime > Date.now();
+function paginationPages(page: number, totalPages: number): number[] {
+  const maxButtons = 5;
+  const safeTotal = Math.max(1, totalPages);
+
+  if (safeTotal <= maxButtons) {
+    return Array.from({ length: safeTotal }, (_, index) => index + 1);
   }
 
-  return false;
+  const start = Math.max(1, Math.min(page - 2, safeTotal - maxButtons + 1));
+  return Array.from({ length: maxButtons }, (_, index) => start + index);
+}
+
+function isUnknown(value: string): boolean {
+  const normalized = value.trim().toLowerCase();
+  return !normalized || normalized === "unknown" || normalized === "not saved";
+}
+
+function assetDisplayName(asset: AssetDiscoveryAsset): string {
+  const brand = cleanText(asset.brand);
+  const model = cleanText(asset.model);
+  const brandUnknown = isUnknown(brand);
+  const modelUnknown = isUnknown(model);
+
+  if (!brandUnknown && !modelUnknown) {
+    return brand.toLowerCase() === model.toLowerCase()
+      ? brand
+      : `${brand} ${model}`;
+  }
+
+  if (!brandUnknown) return brand;
+  if (!modelUnknown) return `Unknown ${model}`;
+  return "Unknown asset";
+}
+
+function provinceKicker(asset: AssetDiscoveryAsset): string {
+  const province = cleanText(asset.province);
+  return province && province !== "Province not saved"
+    ? `Province saved: ${province}`
+    : "Province not saved";
+}
+
+function temporaryDenialExpired(asset: AssetDiscoveryAsset): boolean {
+  if (asset.enquiryStatus !== "temporarily_denied" || !asset.requestAgainAtIso)
+    return false;
+  const retryTime = Date.parse(asset.requestAgainAtIso);
+  return Number.isFinite(retryTime) && retryTime <= Date.now();
+}
+
+function statusPillLabel(asset: AssetDiscoveryAsset): string {
+  if (asset.enquiryStatus === "approved") return "Unlocked";
+  if (asset.enquiryStatus === "pending") return "Pending request";
+  if (
+    asset.enquiryStatus === "temporarily_denied" &&
+    !temporaryDenialExpired(asset)
+  )
+    return "Temporarily denied";
+  return "";
+}
+
+function statusDescription(asset: AssetDiscoveryAsset): string {
+  if (asset.enquiryStatus === "approved") return "Approved by owner.";
+  if (asset.enquiryStatus === "pending") return "Waiting for owner approval.";
+  if (
+    asset.enquiryStatus === "temporarily_denied" &&
+    !temporaryDenialExpired(asset)
+  ) {
+    const retryDate = formatDate(asset.requestAgainAtIso);
+    return retryDate
+      ? `Temporarily denied. Available again after ${retryDate}.`
+      : "Temporarily denied.";
+  }
+
+  return "";
+}
+
+function statusClassName(asset: AssetDiscoveryAsset): string {
+  if (asset.enquiryStatus === "pending")
+    return `${styles.statusPill} ${styles.statusPillWarning}`;
+  if (
+    asset.enquiryStatus === "temporarily_denied" &&
+    !temporaryDenialExpired(asset)
+  )
+    return `${styles.statusPill} ${styles.statusPillDanger}`;
+  return `${styles.statusPill} ${styles.unlockedPill}`;
+}
+
+function canEnquire(asset: AssetDiscoveryAsset): boolean {
+  if (!asset.enquiryStatus) return true;
+  return (
+    asset.enquiryStatus === "temporarily_denied" &&
+    temporaryDenialExpired(asset)
+  );
 }
 
 export default function AssetDiscoveryClient() {
   const [assets, setAssets] = useState<AssetDiscoveryAsset[]>([]);
   const [provinceOptions, setProvinceOptions] = useState<Option[]>([]);
   const [typeOptions, setTypeOptions] = useState<Option[]>([]);
-  const [searchInput, setSearchInput] = useState('');
-  const [search, setSearch] = useState('');
-  const [province, setProvince] = useState('all');
-  const [type, setType] = useState('all');
+  const [summary, setSummary] = useState<DiscoverySummary>(EMPTY_SUMMARY);
+  const [pagination, setPagination] =
+    useState<DiscoveryPagination>(EMPTY_PAGINATION);
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
+  const [province, setProvince] = useState("all");
+  const [type, setType] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] =
+    useState<DiscoveryPageSize>(DISCOVERY_PAGE_SIZE);
+  const [openAssetId, setOpenAssetId] = useState<string | null>(null);
+  const [processingAssetIds, setProcessingAssetIds] = useState<Set<string>>(
+    () => new Set(),
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedAsset, setSelectedAsset] = useState<AssetDiscoveryAsset | null>(null);
-  const [message, setMessage] = useState('');
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [notice, setNotice] = useState<Notice | null>(null);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setSearch(searchInput.trim()), SEARCH_DEBOUNCE_MS);
+    const timer = window.setTimeout(() => {
+      setSearch(searchInput.trim());
+      setCurrentPage(1);
+    }, SEARCH_DEBOUNCE_MS);
+
     return () => window.clearTimeout(timer);
   }, [searchInput]);
 
   useEffect(() => {
     let mounted = true;
     const params = new URLSearchParams();
-    if (search) params.set('search', search);
-    if (province !== 'all') params.set('province', province);
-    if (type !== 'all') params.set('type', type);
+    if (search) params.set("search", search);
+    if (province !== "all") params.set("province", province);
+    if (type !== "all") params.set("type", type);
+    params.set("page", String(currentPage));
+    params.set("pageSize", String(pageSize));
 
     async function loadAssets() {
       try {
         setLoading(true);
         setError(null);
-        const response = await fetch(`/api/asset-discovery?${params.toString()}`, {
-          credentials: 'include',
-          cache: 'no-store',
-        });
+        const response = await fetch(
+          `/api/asset-discovery?${params.toString()}`,
+          {
+            credentials: "include",
+            cache: "no-store",
+          },
+        );
         const data = (await response.json()) as ListResponse;
 
         if (!response.ok || !data.ok) {
-          throw new Error(data.error || 'Failed to load Discovery.');
+          throw new Error(data.error || "Failed to load Asset Discovery.");
         }
 
         if (!mounted) return;
         setAssets(Array.isArray(data.assets) ? data.assets : []);
-        setProvinceOptions(Array.isArray(data.provinceOptions) ? data.provinceOptions : []);
+        setProvinceOptions(
+          Array.isArray(data.provinceOptions) ? data.provinceOptions : [],
+        );
         setTypeOptions(Array.isArray(data.typeOptions) ? data.typeOptions : []);
+        setSummary(data.summary ?? EMPTY_SUMMARY);
+        setPagination(data.pagination ?? EMPTY_PAGINATION);
+        if (data.pagination && data.pagination.page !== currentPage) {
+          setCurrentPage(data.pagination.page);
+        }
       } catch (loadError) {
         if (!mounted) return;
         setAssets([]);
-        setError(loadError instanceof Error ? loadError.message : 'Failed to load Discovery.');
+        setSummary(EMPTY_SUMMARY);
+        setPagination(EMPTY_PAGINATION);
+        setError(
+          loadError instanceof Error
+            ? loadError.message
+            : "Failed to load Asset Discovery.",
+        );
       } finally {
         if (mounted) setLoading(false);
       }
@@ -160,284 +335,373 @@ export default function AssetDiscoveryClient() {
     return () => {
       mounted = false;
     };
-  }, [search, province, type]);
+  }, [currentPage, pageSize, province, search, type]);
 
-  const filteredSummary = useMemo(() => {
-    const provinces = new Set(assets.map((asset) => asset.province).filter(Boolean));
-    const types = new Set(assets.map((asset) => asset.type).filter(Boolean));
-    return {
-      total: assets.length,
-      provinceCount: provinces.size,
-      typeCount: types.size,
-    };
-  }, [assets]);
+  const visiblePaginationPages = useMemo(
+    () => paginationPages(pagination.page, pagination.totalPages),
+    [pagination.page, pagination.totalPages],
+  );
 
-  function openEnquiry(asset: AssetDiscoveryAsset) {
-    setSelectedAsset(asset);
-    setMessage('');
-    setSubmitError(null);
-    setSuccessMessage(null);
+  function handleSearchChange(value: string) {
+    setSearchInput(value);
   }
 
-  function closeModal() {
-    if (submitting) return;
-    setSelectedAsset(null);
-    setMessage('');
-    setSubmitError(null);
-    setSuccessMessage(null);
+  function handleTypeChange(value: string) {
+    setType(value);
+    setCurrentPage(1);
   }
 
-  async function submitEnquiry() {
-    if (!selectedAsset || submitting) return;
+  function handleProvinceChange(value: string) {
+    setProvince(value);
+    setCurrentPage(1);
+  }
+
+  function handlePageSizeChange(value: string) {
+    setPageSize(normalizeDiscoveryPageSize(value));
+    setCurrentPage(1);
+  }
+
+  function goToPage(nextPage: number) {
+    const safePage = Math.min(Math.max(1, nextPage), pagination.totalPages);
+    setCurrentPage(safePage);
+  }
+
+  function toggleDetails(assetId: string) {
+    setOpenAssetId((current) => (current === assetId ? null : assetId));
+  }
+
+  async function handleEnquire(asset: AssetDiscoveryAsset) {
+    if (!canEnquire(asset) || processingAssetIds.has(asset.id)) return;
+
+    setNotice(null);
+    setProcessingAssetIds((current) => new Set(current).add(asset.id));
 
     try {
-      setSubmitting(true);
-      setSubmitError(null);
-      setSuccessMessage(null);
-      const response = await fetch('/api/asset-discovery', {
-        method: 'POST',
-        credentials: 'include',
+      const response = await fetch("/api/asset-discovery", {
+        method: "POST",
+        credentials: "include",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          assetId: selectedAsset.id,
-          message,
+          assetId: asset.id,
+          message: "",
         }),
       });
       const data = (await response.json()) as EnquiryResponse;
 
       if (!response.ok || !data.ok || !data.enquiry) {
-        throw new Error(data.error || 'Failed to send enquiry.');
+        throw new Error(data.error || "Failed to send enquiry.");
       }
 
-      const nextStatus = data.enquiry.status;
-      const nextRequestAgainAtIso = data.enquiry.requestAgainAtIso;
       setAssets((current) =>
-        current.map((asset) =>
-          asset.id === selectedAsset.id
+        current.map((item) =>
+          item.id === asset.id
             ? {
-                ...asset,
-                enquiryId: data.enquiry?.id ?? asset.enquiryId,
-                enquiryStatus: nextStatus,
-                requestAgainAtIso: nextRequestAgainAtIso,
+                ...item,
+                enquiryId: data.enquiry?.id ?? item.enquiryId,
+                enquiryStatus: data.enquiry?.status ?? item.enquiryStatus,
+                requestAgainAtIso:
+                  data.enquiry?.requestAgainAtIso ?? item.requestAgainAtIso,
+                approvedAtIso:
+                  data.enquiry?.approvedAtIso ?? item.approvedAtIso,
               }
-            : asset,
+            : item,
         ),
       );
-      setSelectedAsset((current) =>
-        current
-          ? {
-              ...current,
-              enquiryId: data.enquiry?.id ?? current.enquiryId,
-              enquiryStatus: nextStatus,
-              requestAgainAtIso: nextRequestAgainAtIso,
-            }
-          : current,
-      );
-      setSuccessMessage('Enquiry sent. The owner will only see your message if they choose Yes.');
-    } catch (submitErrorValue) {
-      setSubmitError(submitErrorValue instanceof Error ? submitErrorValue.message : 'Failed to send enquiry.');
+      setNotice({
+        tone: "success",
+        message: "Enquiry sent. Waiting for owner approval.",
+      });
+    } catch (submitError) {
+      setNotice({
+        tone: "error",
+        message:
+          submitError instanceof Error
+            ? submitError.message
+            : "Failed to send enquiry.",
+      });
     } finally {
-      setSubmitting(false);
+      setProcessingAssetIds((current) => {
+        const next = new Set(current);
+        next.delete(asset.id);
+        return next;
+      });
     }
   }
 
-  const selectedStatus = selectedAsset ? statusLabel(selectedAsset) : '';
-  const selectedDisabled = selectedAsset ? isEnquireDisabled(selectedAsset) : false;
+  function renderEnquiryControl(asset: AssetDiscoveryAsset) {
+    const pillLabel = statusPillLabel(asset);
+    const isProcessing = processingAssetIds.has(asset.id);
 
-  return (
-    <>
-      <section className={styles.shell}>
-        <div className={styles.heroPanel}>
-          <h1>Discovery</h1>
+    if (pillLabel) {
+      return (
+        <span
+          className={statusClassName(asset)}
+          title={statusDescription(asset)}
+        >
+          {pillLabel}
+        </span>
+      );
+    }
+
+    return (
+      <button
+        type="button"
+        className={`${styles.primaryButton} ${styles.enquireButton}`}
+        onClick={() => handleEnquire(asset)}
+        disabled={isProcessing}
+      >
+        {isProcessing ? "Sending..." : "Enquire"}
+      </button>
+    );
+  }
+
+  function renderPagination() {
+    if (!pagination.totalItems) return null;
+
+    const hasMultiplePages = pagination.totalPages > 1;
+    const shouldShowPageSizeSelector =
+      pagination.totalItems > DISCOVERY_PAGE_SIZE_OPTIONS[0];
+
+    if (!hasMultiplePages && !shouldShowPageSizeSelector) return null;
+
+    return (
+      <nav
+        className={styles.discoveryPagination}
+        aria-label="Asset Discovery pagination"
+      >
+        <div className={styles.discoveryPaginationInfo}>
+          <div className={styles.discoveryPaginationSummary}>
+            Showing <strong>{pagination.rangeStart}</strong>-
+            <strong>{pagination.rangeEnd}</strong> of{" "}
+            <strong>{pagination.totalItems}</strong> assets
+            {hasMultiplePages ? (
+              <>
+                <span className={styles.discoveryPaginationDivider}>·</span>
+                Page <strong>{pagination.page}</strong> of{" "}
+                <strong>{pagination.totalPages}</strong>
+              </>
+            ) : null}
+          </div>
+
+          {shouldShowPageSizeSelector ? (
+            <label className={styles.discoveryPageSizeField}>
+              <span>Show</span>
+              <select
+                value={pageSize}
+                onChange={(event) => handlePageSizeChange(event.target.value)}
+                disabled={loading}
+                aria-label="Assets per page"
+              >
+                {DISCOVERY_PAGE_SIZE_OPTIONS.map((option) => (
+                  <option
+                    key={`asset-discovery-page-size-${option}`}
+                    value={option}
+                  >
+                    {option}
+                  </option>
+                ))}
+              </select>
+              <span>per page</span>
+            </label>
+          ) : null}
         </div>
 
-        <section className={styles.controlsPanel} aria-label="Discovery controls">
-          <div className={styles.summaryGrid}>
-            <div className={styles.summaryCard}>
-              <span>Available assets</span>
-              <strong>{filteredSummary.total}</strong>
-            </div>
-            <div className={styles.summaryCard}>
-              <span>Types</span>
-              <strong>{filteredSummary.typeCount}</strong>
-            </div>
-            <div className={styles.summaryCard}>
-              <span>Provinces</span>
-              <strong>{filteredSummary.provinceCount}</strong>
-            </div>
-          </div>
-
-          <div className={styles.toolbar}>
-            <label className={styles.searchBox}>
-              <span aria-hidden="true">⌕</span>
-              <input
-                type="search"
-                value={searchInput}
-                onChange={(event) => setSearchInput(event.target.value)}
-                placeholder="Search by type, brand, model, year, usage, condition or province"
-              />
-            </label>
-
-            <select className={styles.selectBox} value={type} onChange={(event) => setType(event.target.value)} aria-label="Filter by type">
-              <option value="all">All types</option>
-              {typeOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label} ({option.count})
-                </option>
+        {hasMultiplePages ? (
+          <div className={styles.discoveryPaginationControls}>
+            <button
+              type="button"
+              className={styles.discoveryPaginationButton}
+              onClick={() => goToPage(pagination.page - 1)}
+              disabled={!pagination.hasPreviousPage || loading}
+            >
+              Previous
+            </button>
+            <div className={styles.discoveryPaginationPages}>
+              {visiblePaginationPages.map((page) => (
+                <button
+                  type="button"
+                  key={`asset-discovery-page-${page}`}
+                  className={`${styles.discoveryPaginationPageButton} ${page === pagination.page ? styles.discoveryPaginationPageButtonActive : ""}`}
+                  onClick={() => goToPage(page)}
+                  disabled={loading}
+                  aria-current={page === pagination.page ? "page" : undefined}
+                >
+                  {page}
+                </button>
               ))}
-            </select>
-
-            <select className={styles.selectBox} value={province} onChange={(event) => setProvince(event.target.value)} aria-label="Filter by province">
-              <option value="all">All provinces</option>
-              {provinceOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label} ({option.count})
-                </option>
-              ))}
-            </select>
+            </div>
+            <button
+              type="button"
+              className={styles.discoveryPaginationButton}
+              onClick={() => goToPage(pagination.page + 1)}
+              disabled={!pagination.hasNextPage || loading}
+            >
+              Next
+            </button>
           </div>
+        ) : null}
+      </nav>
+    );
+  }
+
+  return (
+    <section className={styles.shell}>
+      <div className={styles.heroPanel}>
+        <h1>ASSET DISCOVERY</h1>
+      </div>
+
+      <section
+        className={styles.controlsPanel}
+        aria-label="Asset Discovery controls"
+      >
+        <div
+          className={styles.summaryGrid}
+          aria-label="Asset Discovery summary"
+        >
+          <article className={styles.summaryCard}>
+            <span>Available assets</span>
+            <strong>{summary.totalAssets}</strong>
+            <small>Assets matching current filters.</small>
+          </article>
+          <article className={styles.summaryCard}>
+            <span>Types</span>
+            <strong>{summary.typeCount}</strong>
+            <small>Asset types matching current filters.</small>
+          </article>
+          <article className={styles.summaryCard}>
+            <span>Provinces</span>
+            <strong>{summary.provinceCount}</strong>
+            <small>Saved provinces represented.</small>
+          </article>
+        </div>
+
+        <section
+          className={styles.toolbar}
+          aria-label="Search and filter Asset Discovery"
+        >
+          <label className={styles.searchBox}>
+            <SearchIcon className={styles.searchIcon} />
+            <input
+              type="search"
+              value={searchInput}
+              onChange={(event) => handleSearchChange(event.target.value)}
+              placeholder="Search by type, brand, model, year, usage, condition or province"
+              aria-label="Search Asset Discovery"
+            />
+            {searchInput ? (
+              <button
+                type="button"
+                className={styles.clearSearchButton}
+                onClick={() => handleSearchChange("")}
+                aria-label="Clear Discovery search"
+              >
+                <CloseIcon className={styles.buttonIcon} />
+              </button>
+            ) : null}
+          </label>
+
+          <select
+            className={styles.selectBox}
+            value={type}
+            onChange={(event) => handleTypeChange(event.target.value)}
+            aria-label="Filter by asset type"
+          >
+            <option value="all">All types</option>
+            {typeOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label} ({option.count})
+              </option>
+            ))}
+          </select>
+
+          <select
+            className={styles.selectBox}
+            value={province}
+            onChange={(event) => handleProvinceChange(event.target.value)}
+            aria-label="Filter by province"
+          >
+            <option value="all">All provinces</option>
+            {provinceOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label} ({option.count})
+              </option>
+            ))}
+          </select>
         </section>
+      </section>
 
-        {error ? <div className={styles.errorPanel}>{error}</div> : null}
-        {loading ? <div className={styles.statePanel}>Loading Discovery...</div> : null}
+      {notice ? (
+        <div
+          className={`${styles.notice} ${notice.tone === "success" ? styles.noticeSuccess : styles.noticeError}`}
+        >
+          {notice.message}
+        </div>
+      ) : null}
+      {error ? <div className={styles.errorPanel}>{error}</div> : null}
 
-        {!loading && !error ? (
-          assets.length ? (
-            <section className={styles.tableCard} aria-label="Discovery assets">
-              <div className={styles.tableScroll}>
-                <table className={styles.assetTable}>
-                  <colgroup>
-                    <col className={styles.typeColumn} />
-                    <col className={styles.brandColumn} />
-                    <col className={styles.modelColumn} />
-                    <col className={styles.yearColumn} />
-                    <col className={styles.usageColumn} />
-                    <col className={styles.conditionColumn} />
-                    <col className={styles.provinceColumn} />
-                    <col className={styles.enquireColumn} />
-                  </colgroup>
-                  <thead>
-                    <tr>
-                      <th>Type</th>
-                      <th>Brand</th>
-                      <th>Model</th>
-                      <th>Year</th>
-                      <th>Usage</th>
-                      <th>Condition</th>
-                      <th>Province</th>
-                      <th>Enquire</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {assets.map((asset) => {
-                      const disabled = isEnquireDisabled(asset);
-                      const currentStatus = statusLabel(asset);
+      <section className={styles.cardStack} aria-label="Asset Discovery assets">
+        {loading ? (
+          <div className={styles.emptyState}>Loading Asset Discovery...</div>
+        ) : !error && assets.length ? (
+          assets.map((asset) => {
+            const isOpen = openAssetId === asset.id;
 
-                      const provinceLabel = provinceTableLabel(asset.province);
+            return (
+              <article
+                key={asset.id}
+                className={`${styles.assetCard} ${isOpen ? styles.assetCardOpen : ""}`}
+              >
+                <div className={styles.assetCardHeader}>
+                  <div className={styles.assetIdentity}>
+                    <span className={styles.assetKicker}>
+                      {provinceKicker(asset)}
+                    </span>
+                    <h2>{assetDisplayName(asset)}</h2>
+                  </div>
 
-                      return (
-                        <tr key={asset.id}>
-                          <td data-label="Type" className={styles.typeCell}>
-                            <span className={styles.cellClamp} title={asset.type}>{asset.type}</span>
-                          </td>
-                          <td data-label="Brand" className={styles.brandCell}>
-                            <span className={styles.cellClamp} title={asset.brand}>{asset.brand}</span>
-                          </td>
-                          <td data-label="Model" className={styles.modelCell}>
-                            <span className={styles.cellClamp} title={asset.model}>{asset.model}</span>
-                          </td>
-                          <td data-label="Year" className={styles.yearCell}>
-                            <span className={styles.compactValue} title={asset.year}>{asset.year}</span>
-                          </td>
-                          <td data-label="Usage" className={styles.usageCell}>
-                            <span className={styles.compactValue} title={asset.usage}>{asset.usage}</span>
-                          </td>
-                          <td data-label="Condition" className={styles.conditionCell}>
-                            <span className={styles.compactValue} title={asset.condition}>{asset.condition}</span>
-                          </td>
-                          <td data-label="Province" className={styles.provinceCell}>
-                            <span className={styles.provinceBadge} title={asset.province}>{provinceLabel}</span>
-                          </td>
-                          <td data-label="Enquire" className={styles.actionCell}>
-                            <button
-                              type="button"
-                              className={disabled ? styles.secondaryButton : styles.primaryButton}
-                              onClick={() => openEnquiry(asset)}
-                            >
-                              {disabled ? 'View status' : 'Enquire'}
-                            </button>
-                            {currentStatus ? <small>{currentStatus}</small> : null}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-          ) : (
-            <div className={styles.statePanel}>No assets available.</div>
-          )
+                  <div className={styles.assetActionRow}>
+                    <button
+                      type="button"
+                      className={`${styles.outlineButton} ${styles.detailsButton}`}
+                      onClick={() => toggleDetails(asset.id)}
+                    >
+                      {isOpen ? "Close" : "View Details"}
+                    </button>
+                    {renderEnquiryControl(asset)}
+                  </div>
+                </div>
+
+                {isOpen ? (
+                  <div className={styles.assetDetails}>
+                    <div className={styles.detailGrid}>
+                      <article className={styles.detailPanel}>
+                        <span>Year</span>
+                        <strong>{asset.year || "Unknown"}</strong>
+                      </article>
+                      <article className={styles.detailPanel}>
+                        <span>Usage</span>
+                        <strong>{asset.usage || "Unknown"}</strong>
+                      </article>
+                      <article className={styles.detailPanel}>
+                        <span>Condition</span>
+                        <strong>{asset.condition || "Unknown"}</strong>
+                      </article>
+                    </div>
+                  </div>
+                ) : null}
+              </article>
+            );
+          })
+        ) : !error ? (
+          <div className={styles.emptyState}>
+            No assets match this search or filter.
+          </div>
         ) : null}
       </section>
 
-      {selectedAsset ? (
-        <div className={styles.modalBackdrop} role="presentation" onMouseDown={closeModal}>
-          <section className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="asset-discovery-modal-title" onMouseDown={(event) => event.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <div>
-                <span>Discovery</span>
-                <h2 id="asset-discovery-modal-title">Enquire about this machine</h2>
-              </div>
-              <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close enquiry">
-                ×
-              </button>
-            </div>
-
-            <div className={styles.assetSummaryGrid}>
-              <div><span>Type</span><strong>{selectedAsset.type}</strong></div>
-              <div><span>Brand</span><strong>{selectedAsset.brand}</strong></div>
-              <div><span>Model</span><strong>{selectedAsset.model}</strong></div>
-              <div><span>Year</span><strong>{selectedAsset.year}</strong></div>
-              <div><span>Usage</span><strong>{selectedAsset.usage}</strong></div>
-              <div><span>Condition</span><strong>{selectedAsset.condition}</strong></div>
-              <div><span>Province</span><strong>{selectedAsset.province}</strong></div>
-            </div>
-
-            {selectedStatus ? <div className={styles.statusBox}>{selectedStatus}</div> : null}
-
-            {!selectedDisabled ? (
-              <label className={styles.messageBox}>
-                <span>Short message</span>
-                <textarea
-                  value={message}
-                  onChange={(event) => setMessage(event.target.value.slice(0, 600))}
-                  maxLength={600}
-                  rows={4}
-                  placeholder="Write a short message for the owner. They will only see this if they choose Yes."
-                />
-                <small>{message.length}/600</small>
-              </label>
-            ) : null}
-
-            {submitError ? <div className={styles.errorPanel}>{submitError}</div> : null}
-            {successMessage ? <div className={styles.successPanel}>{successMessage}</div> : null}
-
-            <div className={styles.modalActions}>
-              <button type="button" className={styles.secondaryButton} onClick={closeModal} disabled={submitting}>
-                Close
-              </button>
-              {!selectedDisabled && !successMessage ? (
-                <button type="button" className={styles.primaryButton} onClick={submitEnquiry} disabled={submitting}>
-                  {submitting ? 'Sending...' : 'Send enquiry'}
-                </button>
-              ) : null}
-            </div>
-          </section>
-        </div>
-      ) : null}
-    </>
+      {renderPagination()}
+    </section>
   );
 }
