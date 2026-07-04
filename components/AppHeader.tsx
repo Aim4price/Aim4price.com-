@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import styles from './AppHeader.module.css';
 
-type ActivePage = 'home' | 'valuation' | 'asset-register' | 'leads' | 'users' | 'marketplace' | 'none';
+type ActivePage = 'home' | 'valuation' | 'asset-register' | 'asset-discovery' | 'leads' | 'users' | 'marketplace' | 'none';
 
 type AppHeaderProps = {
   active: ActivePage;
@@ -82,7 +82,7 @@ type AccountProfileLogoState = {
   logoUrl: string | null;
 };
 
-type HeaderNotificationCategory = 'partner_note' | 'lead' | 'qr_scan' | 'fuel' | 'contact_request' | 'account';
+type HeaderNotificationCategory = 'partner_note' | 'lead' | 'qr_scan' | 'fuel' | 'contact_request' | 'asset_discovery' | 'account';
 
 type HeaderNotificationTone = 'neutral' | 'success' | 'warning' | 'info';
 
@@ -95,12 +95,14 @@ type HeaderNotificationItem = {
   href: string;
   createdAtIso: string;
   contactRequestId?: string;
+  assetDiscoveryEnquiryId?: string;
   messageId?: string;
   messageType?: 'message' | 'ad';
 };
 
 type ContactRequestStatus = 'pending' | 'approved' | 'temporarily_denied' | 'permanently_denied';
 type ContactDecisionStatus = 'approved' | 'denied';
+type AssetDiscoveryDecisionStatus = 'approved' | 'denied';
 
 type ContactDetailRequest = {
   id: string;
@@ -128,6 +130,45 @@ type ContactDetailRequest = {
   requestAgainAtIso: string | null;
   permanentlyDeniedAtIso: string | null;
   popiaAcknowledgedAtIso: string | null;
+};
+
+
+type AssetDiscoverySafeSummary = {
+  type: string;
+  brand: string;
+  model: string;
+  year: string;
+  usage: string;
+  condition: string;
+  province: string;
+};
+
+type AssetDiscoveryContactDetails = {
+  name: string;
+  businessName: string;
+  phone: string;
+  email: string;
+  location: string;
+};
+
+type AssetDiscoveryEnquiry = {
+  id: string;
+  assetId: string;
+  status: 'pending' | 'approved' | 'temporarily_denied';
+  createdAtIso: string;
+  approvedAtIso: string | null;
+  deniedAtIso: string | null;
+  requestAgainAtIso: string | null;
+  asset: AssetDiscoverySafeSummary;
+  dealerMessage: string;
+  dealerContact: AssetDiscoveryContactDetails | null;
+  ownerContact: AssetDiscoveryContactDetails | null;
+};
+
+type AssetDiscoveryEnquiryResponse = {
+  ok?: boolean;
+  enquiry?: AssetDiscoveryEnquiry;
+  error?: string;
 };
 
 type UserMessage = {
@@ -205,6 +246,7 @@ const ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
   { href: '/', label: 'Home', mobileOnly: true },
   { href: '/account', label: 'Account Details' },
   { href: '/asset-register', label: 'Asset Register', mobileOnly: true },
+  { href: '/asset-discovery', label: 'Asset Discovery', mobileOnly: true },
   { href: '/valuation', label: 'Get Estimate', mobileOnly: true },
   { href: '/marketplace', label: 'Marketplace', mobileOnly: true },
   { href: '/asset-map', label: 'My Asset Map' },
@@ -229,7 +271,7 @@ function buildNavItems(accountType: AccountType | 'public' | null): NavItem[] {
     return [
       ...BASE_NAV_ITEMS,
       { key: 'leads', href: '/leads', label: 'My Leads' },
-      { key: 'users', href: '/users', label: 'Users' },
+      { key: 'asset-discovery', href: '/asset-discovery', label: 'Asset Discovery' },
       { key: 'marketplace', href: '/marketplace', label: 'Marketplace' },
     ];
   }
@@ -544,7 +586,9 @@ export default function AppHeader({
   const [notificationsSeenAt, setNotificationsSeenAt] = useState<string | null>(null);
   const [notificationPage, setNotificationPage] = useState(1);
   const [processingContactRequestIds, setProcessingContactRequestIds] = useState<Set<string>>(() => new Set());
+  const [processingAssetDiscoveryEnquiryIds, setProcessingAssetDiscoveryEnquiryIds] = useState<Set<string>>(() => new Set());
   const [activeContactRequest, setActiveContactRequest] = useState<ContactDetailRequest | null>(null);
+  const [activeAssetDiscoveryEnquiry, setActiveAssetDiscoveryEnquiry] = useState<AssetDiscoveryEnquiry | null>(null);
   const [activeUserMessage, setActiveUserMessage] = useState<UserMessage | null>(null);
   const [activeMessageAttachmentIndex, setActiveMessageAttachmentIndex] = useState(0);
   const [notificationDetailError, setNotificationDetailError] = useState<string | null>(null);
@@ -639,6 +683,7 @@ export default function AppHeader({
         setMobileMenuOpen(false);
         setNotificationOpen(false);
         setActiveContactRequest(null);
+        setActiveAssetDiscoveryEnquiry(null);
         setActiveUserMessage(null);
         setActiveMessageAttachmentIndex(0);
         setNotificationDetailError(null);
@@ -660,7 +705,7 @@ export default function AppHeader({
   }, [pathname]);
 
   const hasBlockingModal =
-    mobileMenuOpen || notificationOpen || Boolean(activeContactRequest) || Boolean(activeUserMessage) || Boolean(notificationDetailError);
+    mobileMenuOpen || notificationOpen || Boolean(activeContactRequest) || Boolean(activeAssetDiscoveryEnquiry) || Boolean(activeUserMessage) || Boolean(notificationDetailError);
 
   useEffect(() => {
     if (!hasBlockingModal || typeof document === 'undefined') return;
@@ -818,6 +863,7 @@ export default function AppHeader({
 
   function closeNotificationDetailModal() {
     setActiveContactRequest(null);
+    setActiveAssetDiscoveryEnquiry(null);
     setActiveUserMessage(null);
     setActiveMessageAttachmentIndex(0);
     setNotificationDetailError(null);
@@ -902,10 +948,39 @@ export default function AppHeader({
       }
 
       setActiveUserMessage(null);
+      setActiveAssetDiscoveryEnquiry(null);
       setActiveContactRequest(data.contactRequest);
       markNotificationsSeen();
     } catch (error) {
       setNotificationDetailError(error instanceof Error ? error.message : 'Failed to load contact request.');
+    } finally {
+      setLoadingNotificationActionId(null);
+    }
+  }
+
+  async function handleOpenAssetDiscoveryNotification(enquiryId: string) {
+    setNotificationOpen(false);
+    setNotificationDetailError(null);
+    setLoadingNotificationActionId(`asset-discovery:${enquiryId}`);
+
+    try {
+      const response = await fetch(`/api/asset-discovery/enquiries/${encodeURIComponent(enquiryId)}`, {
+        credentials: 'include',
+        cache: 'no-store',
+      });
+      const data = (await response.json()) as AssetDiscoveryEnquiryResponse;
+
+      if (!response.ok || !data.ok || !data.enquiry) {
+        throw new Error(data.error || 'Failed to load Asset Discovery enquiry.');
+      }
+
+      setActiveContactRequest(null);
+      setActiveUserMessage(null);
+      setActiveMessageAttachmentIndex(0);
+      setActiveAssetDiscoveryEnquiry(data.enquiry);
+      markNotificationsSeen();
+    } catch (error) {
+      setNotificationDetailError(error instanceof Error ? error.message : 'Failed to load Asset Discovery enquiry.');
     } finally {
       setLoadingNotificationActionId(null);
     }
@@ -928,6 +1003,7 @@ export default function AppHeader({
       }
 
       setActiveContactRequest(null);
+      setActiveAssetDiscoveryEnquiry(null);
       setActiveMessageAttachmentIndex(0);
       setActiveUserMessage(data.message);
       setNotifications((current) => current.filter((item) => item.messageId !== messageId));
@@ -968,6 +1044,40 @@ export default function AppHeader({
       setProcessingContactRequestIds((current) => {
         const next = new Set(current);
         next.delete(contactRequestId);
+        return next;
+      });
+    }
+  }
+
+  async function handleAssetDiscoveryDecision(enquiryId: string, status: AssetDiscoveryDecisionStatus) {
+    setProcessingAssetDiscoveryEnquiryIds((current) => new Set(current).add(enquiryId));
+    setNotificationDetailError(null);
+
+    try {
+      const response = await fetch(`/api/asset-discovery/enquiries/${encodeURIComponent(enquiryId)}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ decision: status === 'approved' ? 'yes' : 'no' }),
+      });
+      const data = (await response.json()) as AssetDiscoveryEnquiryResponse;
+
+      if (!response.ok || !data.ok || !data.enquiry) {
+        throw new Error(data.error || 'Failed to update Asset Discovery enquiry.');
+      }
+
+      setActiveAssetDiscoveryEnquiry(data.enquiry);
+      setNotifications((current) => current.filter((item) => item.assetDiscoveryEnquiryId !== enquiryId));
+      markNotificationsSeen();
+    } catch (error) {
+      console.error('Failed to update Asset Discovery enquiry notification', error);
+      setNotificationDetailError(error instanceof Error ? error.message : 'Failed to update Asset Discovery enquiry.');
+    } finally {
+      setProcessingAssetDiscoveryEnquiryIds((current) => {
+        const next = new Set(current);
+        next.delete(enquiryId);
         return next;
       });
     }
@@ -1038,6 +1148,22 @@ export default function AppHeader({
           disabled={loading}
         >
           {renderNotificationCopy(notification, loading ? 'Opening request...' : 'Open request')}
+        </button>
+      );
+    }
+
+    if (notification.assetDiscoveryEnquiryId) {
+      const loading = loadingNotificationActionId === `asset-discovery:${notification.assetDiscoveryEnquiryId}`;
+
+      return (
+        <button
+          type="button"
+          key={notification.id}
+          className={`${baseClassName} ${styles.notificationItemButton}`}
+          onClick={() => handleOpenAssetDiscoveryNotification(notification.assetDiscoveryEnquiryId as string)}
+          disabled={loading}
+        >
+          {renderNotificationCopy(notification, loading ? 'Opening enquiry...' : 'Open enquiry')}
         </button>
       );
     }
@@ -1148,6 +1274,118 @@ export default function AppHeader({
               disabled={isProcessing}
             >
               {isProcessing ? 'Saving...' : 'Accept request'}
+            </button>
+          </div>
+        ) : (
+          <div className={styles.notificationDetailActions}>
+            <button type="button" className={styles.notificationSecondaryButton} onClick={closeNotificationDetailModal}>
+              Close
+            </button>
+          </div>
+        )}
+      </section>
+    );
+  }
+
+  function renderAssetDiscoveryDetailModal(enquiry: AssetDiscoveryEnquiry) {
+    const isProcessing = processingAssetDiscoveryEnquiryIds.has(enquiry.id);
+    const isPending = enquiry.status === 'pending';
+    const isApproved = enquiry.status === 'approved';
+    const retryDate = formatDateTime(enquiry.requestAgainAtIso);
+    const contact = enquiry.dealerContact || enquiry.ownerContact;
+
+    return (
+      <section className={styles.notificationDetailModal} role="dialog" aria-modal="true" aria-labelledby="notification-asset-discovery-title">
+        <div className={styles.notificationDetailHeader}>
+          <div className={styles.notificationDetailHeaderText}>
+            <h2 id="notification-asset-discovery-title">Asset Discovery enquiry</h2>
+            <p>{isPending ? 'A dealer is interested in this machine. Are you interested in selling?' : 'Asset-specific enquiry status.'}</p>
+          </div>
+          <button type="button" className={styles.notificationDetailCloseButton} onClick={closeNotificationDetailModal} aria-label="Close Asset Discovery enquiry">
+            ×
+          </button>
+        </div>
+
+        <div className={styles.notificationDetailBody}>
+          <div className={styles.notificationDetailMetaGrid}>
+            <div className={styles.notificationDetailMetaCard}>
+              <span>Type</span>
+              <strong>{enquiry.asset.type}</strong>
+            </div>
+            <div className={styles.notificationDetailMetaCard}>
+              <span>Brand / model</span>
+              <strong>{[enquiry.asset.brand, enquiry.asset.model].filter(Boolean).join(' ')}</strong>
+            </div>
+            <div className={styles.notificationDetailMetaCard}>
+              <span>Year / usage</span>
+              <strong>{enquiry.asset.year} · {enquiry.asset.usage}</strong>
+            </div>
+            <div className={styles.notificationDetailMetaCard}>
+              <span>Province</span>
+              <strong>{enquiry.asset.province}</strong>
+            </div>
+          </div>
+
+          {isPending ? (
+            <div className={styles.notificationDetailMessageBox}>
+              <strong>Owner decision required</strong>
+              <p>A dealer is interested in this machine. The dealer message and contact details are hidden until you choose Yes.</p>
+            </div>
+          ) : null}
+
+          {!isPending ? (
+            <div className={styles.notificationDetailStatusBox}>
+              <strong>Decision saved</strong>
+              <p>{isApproved ? 'Approved. Contact details and the dealer message are now visible.' : retryDate ? `Temporarily denied. The dealer can enquire again after ${retryDate}.` : 'Temporarily denied.'}</p>
+            </div>
+          ) : null}
+
+          {isApproved && enquiry.dealerMessage ? (
+            <div className={styles.notificationDetailMessageBox}>
+              <strong>Dealer message</strong>
+              <p>{enquiry.dealerMessage}</p>
+            </div>
+          ) : null}
+
+          {isApproved && contact ? (
+            <div className={styles.notificationDetailMetaGrid}>
+              <div className={styles.notificationDetailMetaCard}>
+                <span>Business / account</span>
+                <strong>{contact.businessName || contact.name || 'Not supplied'}</strong>
+              </div>
+              <div className={styles.notificationDetailMetaCard}>
+                <span>Phone</span>
+                <strong>{contact.phone || 'Not supplied'}</strong>
+              </div>
+              <div className={styles.notificationDetailMetaCard}>
+                <span>Email</span>
+                <strong>{contact.email || 'Not supplied'}</strong>
+              </div>
+              <div className={styles.notificationDetailMetaCard}>
+                <span>Location</span>
+                <strong>{contact.location || 'Not supplied'}</strong>
+              </div>
+            </div>
+          ) : null}
+        </div>
+
+        {isPending ? (
+          <div className={styles.notificationDetailActions}>
+            <button
+              type="button"
+              className={styles.notificationSoftDangerButton}
+              onClick={() => handleAssetDiscoveryDecision(enquiry.id, 'denied')}
+              disabled={isProcessing}
+            >
+              {isProcessing ? 'Saving...' : 'No'}
+            </button>
+            <button
+              type="button"
+              className={styles.notificationPrimaryButton}
+              onClick={() => handleAssetDiscoveryDecision(enquiry.id, 'approved')}
+              disabled={isProcessing}
+            >
+              {isProcessing ? 'Saving...' : 'Yes'}
             </button>
           </div>
         ) : (
@@ -1308,7 +1546,7 @@ export default function AppHeader({
 
         <nav className={styles.mobileMenuNav} aria-label={session ? 'Account mobile navigation' : 'Mobile navigation'}>
           {session
-            ? ACCOUNT_MENU_ITEMS.map((item) => {
+            ? ACCOUNT_MENU_ITEMS.filter((item) => item.href !== '/asset-discovery' || session?.accountType === 'dealer').map((item) => {
                 const isActive = isAccountMenuLinkActive(item.href);
 
                 return (
@@ -1502,7 +1740,7 @@ export default function AppHeader({
       : null;
 
   const notificationDetailPortal =
-    canUseNotificationPortal && (activeContactRequest || activeUserMessage || notificationDetailError)
+    canUseNotificationPortal && (activeContactRequest || activeAssetDiscoveryEnquiry || activeUserMessage || notificationDetailError)
       ? createPortal(
           <div
             className={styles.notificationDetailBackdrop}
@@ -1514,8 +1752,9 @@ export default function AppHeader({
             }}
           >
             {activeContactRequest ? renderContactRequestDetailModal(activeContactRequest) : null}
+            {activeAssetDiscoveryEnquiry ? renderAssetDiscoveryDetailModal(activeAssetDiscoveryEnquiry) : null}
             {activeUserMessage ? renderUserMessageDetailModal(activeUserMessage) : null}
-            {!activeContactRequest && !activeUserMessage && notificationDetailError ? (
+            {!activeContactRequest && !activeAssetDiscoveryEnquiry && !activeUserMessage && notificationDetailError ? (
               <section className={styles.notificationDetailModal} role="dialog" aria-modal="true" aria-labelledby="notification-error-title">
                 <div className={styles.notificationDetailHeader}>
                   <div className={styles.notificationDetailHeaderText}>
@@ -1627,7 +1866,7 @@ export default function AppHeader({
 
                     {menuOpen ? (
                       <div id="header-account-menu" className={styles.accountPopover} role="menu">
-                        {ACCOUNT_MENU_ITEMS.map((item) => {
+                        {ACCOUNT_MENU_ITEMS.filter((item) => item.href !== '/asset-discovery' || session?.accountType === 'dealer').map((item) => {
                           const isActive = isAccountMenuLinkActive(item.href);
                           const menuLinkClassName = [
                             styles.menuLink,
