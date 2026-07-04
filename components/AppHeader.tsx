@@ -248,7 +248,7 @@ const ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
   { href: '/account', label: 'Account Details' },
   { href: '/users', label: 'Users', accountTypes: ['dealer'] },
   { href: '/asset-register', label: 'Asset Register', mobileOnly: true },
-  { href: '/asset-discovery', label: 'Asset Discovery', mobileOnly: true, accountTypes: ['dealer'] },
+  { href: '/asset-discovery', label: 'Discovery', mobileOnly: true, accountTypes: ['dealer'] },
   { href: '/valuation', label: 'Get Estimate', mobileOnly: true },
   { href: '/marketplace', label: 'Marketplace', mobileOnly: true },
   { href: '/asset-map', label: 'My Asset Map' },
@@ -281,7 +281,7 @@ function buildNavItems(accountType: AccountType | 'public' | null): NavItem[] {
     return [
       ...BASE_NAV_ITEMS,
       { key: 'leads', href: '/leads', label: 'My Leads' },
-      { key: 'asset-discovery', href: '/asset-discovery', label: 'Asset Discovery' },
+      { key: 'asset-discovery', href: '/asset-discovery', label: 'Discovery' },
       { key: 'marketplace', href: '/marketplace', label: 'Marketplace' },
     ];
   }
@@ -981,7 +981,7 @@ export default function AppHeader({
       const data = (await response.json()) as AssetDiscoveryEnquiryResponse;
 
       if (!response.ok || !data.ok || !data.enquiry) {
-        throw new Error(data.error || 'Failed to load Asset Discovery enquiry.');
+        throw new Error(data.error || 'Failed to load Discovery enquiry.');
       }
 
       setActiveContactRequest(null);
@@ -990,7 +990,7 @@ export default function AppHeader({
       setActiveAssetDiscoveryEnquiry(data.enquiry);
       markNotificationsSeen();
     } catch (error) {
-      setNotificationDetailError(error instanceof Error ? error.message : 'Failed to load Asset Discovery enquiry.');
+      setNotificationDetailError(error instanceof Error ? error.message : 'Failed to load Discovery enquiry.');
     } finally {
       setLoadingNotificationActionId(null);
     }
@@ -1075,15 +1075,15 @@ export default function AppHeader({
       const data = (await response.json()) as AssetDiscoveryEnquiryResponse;
 
       if (!response.ok || !data.ok || !data.enquiry) {
-        throw new Error(data.error || 'Failed to update Asset Discovery enquiry.');
+        throw new Error(data.error || 'Failed to update Discovery enquiry.');
       }
 
       setActiveAssetDiscoveryEnquiry(data.enquiry);
       setNotifications((current) => current.filter((item) => item.assetDiscoveryEnquiryId !== enquiryId));
       markNotificationsSeen();
     } catch (error) {
-      console.error('Failed to update Asset Discovery enquiry notification', error);
-      setNotificationDetailError(error instanceof Error ? error.message : 'Failed to update Asset Discovery enquiry.');
+      console.error('Failed to update Discovery enquiry notification', error);
+      setNotificationDetailError(error instanceof Error ? error.message : 'Failed to update Discovery enquiry.');
     } finally {
       setProcessingAssetDiscoveryEnquiryIds((current) => {
         const next = new Set(current);
@@ -1308,10 +1308,10 @@ export default function AppHeader({
       <section className={styles.notificationDetailModal} role="dialog" aria-modal="true" aria-labelledby="notification-asset-discovery-title">
         <div className={styles.notificationDetailHeader}>
           <div className={styles.notificationDetailHeaderText}>
-            <h2 id="notification-asset-discovery-title">Asset Discovery enquiry</h2>
+            <h2 id="notification-asset-discovery-title">Discovery enquiry</h2>
             <p>{isPending ? 'A dealer is interested in this machine. Are you interested in selling?' : 'Asset-specific enquiry status.'}</p>
           </div>
-          <button type="button" className={styles.notificationDetailCloseButton} onClick={closeNotificationDetailModal} aria-label="Close Asset Discovery enquiry">
+          <button type="button" className={styles.notificationDetailCloseButton} onClick={closeNotificationDetailModal} aria-label="Close Discovery enquiry">
             ×
           </button>
         </div>
