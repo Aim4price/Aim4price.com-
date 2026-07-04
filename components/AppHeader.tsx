@@ -245,7 +245,7 @@ const BASE_NAV_ITEMS: NavItem[] = [
 
 const ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
   { href: '/', label: 'Home', mobileOnly: true },
-  { href: '/account', label: 'Account Details' },
+  { href: '/account', label: 'Manage Account' },
   { href: '/users', label: 'Users', accountTypes: ['dealer'] },
   { href: '/asset-register', label: 'Asset Register', mobileOnly: true },
   { href: '/asset-discovery', label: 'Discovery', mobileOnly: true, accountTypes: ['dealer'] },
