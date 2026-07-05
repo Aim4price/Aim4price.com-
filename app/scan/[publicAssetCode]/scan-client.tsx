@@ -1938,7 +1938,12 @@ export default function ScanClient({
       }
 
       if (response.status === 401) {
-        throw new Error(data?.error ?? "Enter the farm scan PIN again.");
+        const message = data?.error ?? "Enter the farm scan PIN again.";
+        setAsset(null);
+        setIsUnavailable(false);
+        setAssetOpenError(null);
+        setNotice({ tone: "error", message });
+        return false;
       }
 
       if (
