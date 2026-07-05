@@ -1490,13 +1490,19 @@ function CloseIcon({ className }: IconProps) {
 export default function ScanClient({
   publicAssetCode,
   fieldManagerMode = false,
+  fieldManagerAssetId = null,
 }: {
   publicAssetCode: string;
   fieldManagerMode?: boolean;
+  fieldManagerAssetId?: string | null;
 }) {
   const normalizedCode = useMemo(
     () => normalizePublicAssetCode(publicAssetCode),
     [publicAssetCode],
+  );
+  const normalizedFieldManagerAssetId = useMemo(
+    () => String(fieldManagerAssetId ?? "").trim(),
+    [fieldManagerAssetId],
   );
 
   const [asset, setAsset] = useState<ScanSafeAsset | null>(null);
@@ -1648,7 +1654,8 @@ export default function ScanClient({
       shareMarkersByPartnerRef.current.clear();
     }
     autoLocationKeyRef.current = "";
-  }, [fieldManagerMode, normalizedCode]);
+    autoFieldManagerOpenKeyRef.current = "";
+  }, [fieldManagerMode, normalizedCode, normalizedFieldManagerAssetId]);
 
   useEffect(() => {
     let isMounted = true;
@@ -1675,9 +1682,8 @@ export default function ScanClient({
           return;
         }
 
-        if (response.status === 403 || response.status === 404) {
-          setIsUnavailable(true);
-        }
+        // Preview is only a convenience for showing the asset title before unlock.
+        // It must never block the public QR PIN/name form or Field Manager auto-open flow.
       } catch {
         // Keep the PIN page usable even if preview data cannot be loaded.
       }
@@ -1694,14 +1700,14 @@ export default function ScanClient({
     if (
       !fieldManagerMode ||
       !normalizedCode ||
-      autoFieldManagerOpenKeyRef.current === normalizedCode
+      autoFieldManagerOpenKeyRef.current === `${normalizedCode}:${normalizedFieldManagerAssetId}`
     )
       return;
 
-    autoFieldManagerOpenKeyRef.current = normalizedCode;
+    autoFieldManagerOpenKeyRef.current = `${normalizedCode}:${normalizedFieldManagerAssetId}`;
     void loadUnlockedAsset();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fieldManagerMode, normalizedCode]);
+  }, [fieldManagerMode, normalizedCode, normalizedFieldManagerAssetId]);
 
   useEffect(() => {
     if (!notice) return undefined;
@@ -1909,13 +1915,24 @@ export default function ScanClient({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [asset?.id]);
 
+  function fieldManagerQueryString(): string {
+    if (!fieldManagerMode) return "";
+
+    const params = new URLSearchParams({ fieldManager: "1" });
+    if (normalizedFieldManagerAssetId) {
+      params.set("assetId", normalizedFieldManagerAssetId);
+    }
+
+    return `?${params.toString()}`;
+  }
+
   async function loadUnlockedAsset(): Promise<boolean> {
     setIsLoadingAsset(true);
     setIsUnavailable(false);
     setAssetOpenError(null);
 
     try {
-      const query = fieldManagerMode ? "?fieldManager=1" : "";
+      const query = fieldManagerQueryString();
       const response = await fetch(
         `/api/scan/assets/${encodeURIComponent(normalizedCode)}${query}`,
         {
@@ -2154,7 +2171,8 @@ export default function ScanClient({
     formData.set("publicAssetCode", normalizedCode);
     compressedFiles.forEach((file) => formData.append("files", file));
 
-    const response = await fetch("/api/scan/uploads", {
+    const uploadEndpoint = `/api/scan/uploads${fieldManagerQueryString()}`;
+    const response = await fetch(uploadEndpoint, {
       method: "POST",
       credentials: "include",
       body: formData,
@@ -3070,7 +3088,7 @@ export default function ScanClient({
       return null;
     }
 
-    const endpoint = `/api/scan/assets/${encodeURIComponent(normalizedCode)}/event`;
+    const endpoint = `/api/scan/assets/${encodeURIComponent(normalizedCode)}/event${fieldManagerQueryString()}`;
     const payload = {
       operatorName: operatorNameForSave,
       hours: sessionHours,
