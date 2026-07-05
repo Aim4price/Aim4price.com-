@@ -19,7 +19,7 @@ import {
 
 type NoticeTone = "success" | "error";
 type PendingSyncKind = "asset-scan-update";
-type EditorKey = "usage" | "service" | "photos";
+type EditorKey = "usage" | "service" | "photos" | "notes";
 type LocationState = "idle" | "capturing" | "ready" | "error";
 type ScanAssetUsageMode = "hours" | "percent" | "km" | "none";
 type ScanAssetStatusChoice = "yes" | "no" | "unknown" | "not_applicable";
@@ -158,6 +158,7 @@ type PendingScanUpdate = {
   hasUsage: boolean;
   hasService: boolean;
   hasPhotos: boolean;
+  hasNotes: boolean;
 };
 
 const MAX_QR_PHOTOS = 12;
@@ -313,6 +314,7 @@ const initialPendingUpdate: PendingScanUpdate = {
   hasUsage: false,
   hasService: false,
   hasPhotos: false,
+  hasNotes: false,
 };
 
 const DEFAULT_LOCATION_REQUIRED_MESSAGE = "Location must be enabled before this asset QR can continue.";
@@ -818,6 +820,8 @@ function buildEditorSummary(editor: EditorKey, asset: ScanSafeAsset | null): str
 
   if (editor === "service") return "Check Service Repair";
 
+  if (editor === "notes") return "Notes / Problems";
+
   if (asset?.photos.length) {
     return `${asset.photos.length} photo${asset.photos.length === 1 ? "" : "s"} stored`;
   }
@@ -880,7 +884,7 @@ function mergeUniqueStrings(values: string[], limit?: number): string[] {
 }
 
 function hasPendingScanUpdate(update: PendingScanUpdate): boolean {
-  return update.hasUsage || update.hasService || update.hasPhotos;
+  return update.hasUsage || update.hasService || update.hasPhotos || update.hasNotes;
 }
 
 function keepCurrentLocation(current: DraftState, session: QrScanSessionState | null = null): DraftState {
@@ -1122,6 +1126,17 @@ function RepairIcon({ className }: IconProps) {
   );
 }
 
+function NoteIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <path d="M6 3.8h9.2L19 7.6v12.6H6z" />
+      <path d="M15 3.8v4h4" />
+      <path d="M9 12h6" />
+      <path d="M9 15.5h5" />
+    </svg>
+  );
+}
+
 function UploadIcon({ className }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
@@ -1354,16 +1369,8 @@ export default function ScanClient({
   }, [normalizedCode]);
 
   useEffect(() => {
-    if (!normalizedCode || autoFieldManagerOpenKeyRef.current === normalizedCode) return;
+    if (!fieldManagerMode || !normalizedCode || autoFieldManagerOpenKeyRef.current === normalizedCode) return;
 
-    let shouldAutoOpen = false;
-    try {
-      shouldAutoOpen = fieldManagerMode || new URLSearchParams(window.location.search).get("fieldManager") === "1";
-    } catch {
-      shouldAutoOpen = fieldManagerMode;
-    }
-
-    if (!shouldAutoOpen) return;
     autoFieldManagerOpenKeyRef.current = normalizedCode;
     void loadUnlockedAsset();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1597,10 +1604,11 @@ export default function ScanClient({
       }
 
       const openedAsset = data.asset;
+      const isFieldManagerAccess = fieldManagerMode || data.accessMode === "field_manager";
       const seededSession = seedQrSessionFromAsset(normalizedCode, openedAsset) ?? readQrScanSession(normalizedCode);
       const sessionUsage = sessionUsageForAsset(openedAsset, seededSession);
       const openedAssetWithSessionUsage = applySessionUsageToAsset(openedAsset, seededSession);
-      const requiresInitialUsageUpdate = isMeterUsageMode(openedAsset) && !sessionUsage.hasUsage;
+      const requiresInitialUsageUpdate = !isFieldManagerAccess && isMeterUsageMode(openedAsset) && !sessionUsage.hasUsage;
       const restoredLatitude = seededSession?.latitude || draft.latitude;
       const restoredLongitude = seededSession?.longitude || draft.longitude;
       const nextDraftBase = {
@@ -1817,7 +1825,8 @@ export default function ScanClient({
   }
 
   function openEditor(nextEditor: EditorKey) {
-    const enforcedEditor = nextEditor !== "usage" && needsUsageUpdateBeforeActions(asset, pendingUpdate, hasCompletedRequiredUsageUpdate)
+    const isFieldManagerAccess = fieldManagerMode || scanAccessMode === "field_manager";
+    const enforcedEditor = !isFieldManagerAccess && nextEditor !== "usage" && needsUsageUpdateBeforeActions(asset, pendingUpdate, hasCompletedRequiredUsageUpdate)
       ? "usage"
       : nextEditor;
 
@@ -1846,6 +1855,10 @@ export default function ScanClient({
 
       if (enforcedEditor === "photos") {
         return { ...nextDraft, photoUrls: pendingUpdate.photoUrls };
+      }
+
+      if (enforcedEditor === "notes") {
+        return { ...nextDraft, note: "" };
       }
 
       return nextDraft;
@@ -2239,6 +2252,11 @@ export default function ScanClient({
       return { ok: true };
     }
 
+    if (activeEditor === "notes") {
+      if (!draft.note.trim()) return { ok: false, message: "Enter a note or problem." };
+      return { ok: true };
+    }
+
     return { ok: false, message: "Choose an update first." };
   }
 
@@ -2340,6 +2358,20 @@ export default function ScanClient({
       );
     }
 
+    if (activeEditor === "notes") {
+      const noteText = draft.note.trim();
+
+      setPendingUpdate((current) => ({
+        ...current,
+        notes: mergeUniqueStrings([...current.notes, `Notes/Problems: ${noteText}`]),
+        latitude: savedLatitude || current.latitude,
+        longitude: savedLongitude || current.longitude,
+        gpsAccuracyMeters: savedGpsAccuracyMeters || current.gpsAccuracyMeters,
+        clientCapturedAt: savedClientCapturedAt || current.clientCapturedAt,
+        hasNotes: true,
+      }));
+    }
+
     setDraft({ ...initialDraft, latitude: savedLatitude, longitude: savedLongitude });
     setActiveEditor(null);
     setShowServiceDetailsStep(false);
@@ -2384,7 +2416,11 @@ export default function ScanClient({
     const sessionHours = asset.usageMode === "hours" || asset.usageMode === "km"
       ? pendingUpdate.hours || storedSessionUsage.hours || (sessionUsageAsset.hours !== null && Number.isFinite(sessionUsageAsset.hours) ? String(Math.round(sessionUsageAsset.hours)) : "")
       : "";
-    if (operatorName.trim().length < 2) {
+    const operatorNameForSave = isFieldManagerMode
+      ? operatorName.trim() || "Field Manager"
+      : operatorName.trim();
+
+    if (!isFieldManagerMode && operatorNameForSave.length < 2) {
       setNotice({ tone: "error", message: "Enter your name before saving." });
       return null;
     }
@@ -2397,7 +2433,7 @@ export default function ScanClient({
 
     const endpoint = `/api/scan/assets/${encodeURIComponent(normalizedCode)}/event`;
     const payload = {
-      operatorName: operatorName.trim(),
+      operatorName: operatorNameForSave,
       hours: sessionHours,
       note: pendingUpdate.notes.join("\n\n---\n\n"),
       photoUrls: pendingUpdate.photoUrls,
@@ -2514,7 +2550,9 @@ export default function ScanClient({
   }
 
   const locationReady = hasLocationCaptured(draft) || sessionHasLocation(readQrScanSession(normalizedCode));
-  const usageUpdateRequired = needsUsageUpdateBeforeActions(asset, pendingUpdate, hasCompletedRequiredUsageUpdate);
+  const isFieldManagerMode = fieldManagerMode || scanAccessMode === "field_manager";
+  const usageUpdateRequired = !isFieldManagerMode && needsUsageUpdateBeforeActions(asset, pendingUpdate, hasCompletedRequiredUsageUpdate);
+  const showFieldManagerUsageAction = isFieldManagerMode && isMeterUsageMode(asset);
   const serviceProfile = useMemo(() => resolveAssetServiceProfile(asset), [asset]);
   const checkedOptions = useMemo(() => checkedOptionsForProfile(serviceProfile), [serviceProfile]);
   const servicedOptions = useMemo(() => servicedOptionsForProfile(serviceProfile), [serviceProfile]);
@@ -2533,9 +2571,11 @@ export default function ScanClient({
   const isServicePhotoStep = activeEditor === "service" && showServicePhotoStep;
   const saveBlockedByEmptyDraft = activeEditor === "photos"
     ? draft.photoUrls.length === 0
-    : activeEditor === "service"
-      ? !draft.serviceMode || !hasServiceSelection || serviceDetailsMissing
-      : false;
+    : activeEditor === "notes"
+      ? !draft.note.trim()
+      : activeEditor === "service"
+        ? !draft.serviceMode || !hasServiceSelection || serviceDetailsMissing
+        : false;
   const canPressSave = isServicePhotoStep
     ? !isSaving && !isUploading
     : !isSaving && !isUploading && !saveBlockedByEmptyDraft;
@@ -2545,7 +2585,9 @@ export default function ScanClient({
       ? "Done"
       : activeEditor === "photos" && !draft.photoUrls.length
         ? "Add photos"
-        : activeEditor === "service" && !draft.serviceMode
+        : activeEditor === "notes" && !draft.note.trim()
+          ? "Add note"
+          : activeEditor === "service" && !draft.serviceMode
           ? "Choose type"
           : activeEditor === "service" && !hasServiceSelection
             ? draft.serviceMode === "checked"
@@ -2564,7 +2606,6 @@ export default function ScanClient({
     () => sharePartners.find((partner) => partner.userId === selectedSharePartnerId) ?? null,
     [sharePartners, selectedSharePartnerId],
   );
-  const isFieldManagerMode = fieldManagerMode || scanAccessMode === "field_manager";
   const pageClassName = `${styles.page} ${isFieldManagerMode ? styles.fieldManagerMobileSurface : ""}`;
   const canUseDealerShare = !isFieldManagerMode;
   const selectedSharePartnerPhoneHref = selectedSharePartner ? normalizePhoneHref(selectedSharePartner.phone) : "";
@@ -2750,6 +2791,16 @@ export default function ScanClient({
                     </button>
                   ) : null}
 
+                  {showFieldManagerUsageAction ? (
+                    <button type="button" className={styles.actionCard} onClick={() => openEditor("usage")}>
+                      <span className={styles.actionIconWrap}><MeterIcon className={styles.actionIcon} /></span>
+                      <span className={styles.actionTextBlock}>
+                        <strong>Usage</strong>
+                        <small>{asset.usageMode === "km" ? "Update kilometres" : "Update hours"}</small>
+                      </span>
+                    </button>
+                  ) : null}
+
                   <button type="button" className={styles.actionCard} onClick={() => openEditor("service")}>
                     <span className={styles.actionIconWrap}><WrenchIcon className={styles.actionIcon} /></span>
                     <span className={styles.actionTextBlock}>
@@ -2765,6 +2816,16 @@ export default function ScanClient({
                       <small>{buildEditorSummary("photos", asset)}</small>
                     </span>
                   </button>
+
+                  {isFieldManagerMode ? (
+                    <button type="button" className={styles.actionCard} onClick={() => openEditor("notes")}>
+                      <span className={styles.actionIconWrap}><NoteIcon className={styles.actionIcon} /></span>
+                      <span className={styles.actionTextBlock}>
+                        <strong>Notes / Problems</strong>
+                        <small>{buildEditorSummary("notes", asset)}</small>
+                      </span>
+                    </button>
+                  ) : null}
                 </section>
 
                 <button type="button" className={styles.doneButton} onClick={() => void handleDone()} disabled={isSaving || isUploading}>
@@ -2999,7 +3060,9 @@ export default function ScanClient({
                                 ? "Repairer details"
                                 : serviceCopy.repairedTitle
                               : "Maintenance"
-                      : "Photos"}
+                      : activeEditor === "notes"
+                        ? "Notes / Problems"
+                        : "Photos"}
                 </h3>
                 <p>
                   {activeEditor === "usage"
@@ -3018,7 +3081,9 @@ export default function ScanClient({
                                 ? serviceCopy.detailsSubheader
                                 : serviceCopy.repairedPrompt
                               : "Choose update type."
-                      : "Add clear photos."}
+                      : activeEditor === "notes"
+                        ? "Capture a note, defect or problem for this asset."
+                        : "Add clear photos."}
                 </p>
               </div>
 
@@ -3535,6 +3600,20 @@ export default function ScanClient({
                     ) : null}
                   </div>
                 )
+              ) : null}
+
+              {activeEditor === "notes" ? (
+                <div className={styles.modalStack}>
+                  <label className={styles.field}>
+                    <span>Notes / Problems</span>
+                    <textarea
+                      value={draft.note}
+                      onChange={(event) => setDraft((current) => ({ ...current, note: event.target.value.slice(0, 1600) }))}
+                      placeholder="Example: hydraulic leak noticed, tyre damaged, warning light showing, or follow-up needed."
+                      disabled={isSaving}
+                    />
+                  </label>
+                </div>
               ) : null}
 
               {activeEditor === "photos" ? (
