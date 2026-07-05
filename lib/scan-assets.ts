@@ -9,7 +9,7 @@ import {
 export type ScanAssetQrStatus = 'active' | 'transferred' | 'retired' | 'deleted' | '';
 export type ScanAssetUsageMode = 'hours' | 'percent' | 'km' | 'none';
 export type ScanAssetStatusChoice = 'yes' | 'no' | 'unknown' | 'not_applicable';
-export type ScanAccessMode = 'owner_session' | 'scan_pin';
+export type ScanAccessMode = 'owner_session' | 'scan_pin' | 'field_manager';
 export type ScanEventActorType = ScanAccessMode | 'admin_session';
 
 export type ScanSafeAsset = {
@@ -111,6 +111,9 @@ export type SaveScanAssetEventInput = {
   clientEventId?: string | null;
   clientCapturedAt?: string | null;
   gpsAccuracyMeters?: number | null;
+  fieldManagerId?: string | null;
+  fieldManagerDisplayName?: string | null;
+  fieldManagerSessionId?: string | null;
 };
 
 type ScanAccessRow = {
@@ -511,6 +514,7 @@ function normalizeActorType(value: unknown): ScanEventActorType {
 
   if (normalized === 'owner_session') return 'owner_session';
   if (normalized === 'admin_session') return 'admin_session';
+  if (normalized === 'field_manager') return 'field_manager';
   return 'scan_pin';
 }
 
@@ -1207,6 +1211,9 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
     const clientEventId = normalizeClientEventId(input.clientEventId);
     const clientCapturedAt = normalizeClientCapturedAt(input.clientCapturedAt);
     const gpsAccuracyMeters = normalizeGpsAccuracyMeters(input.gpsAccuracyMeters);
+    const fieldManagerId = asText(input.fieldManagerId) || null;
+    const fieldManagerDisplayName = asText(input.fieldManagerDisplayName) || null;
+    const fieldManagerSessionId = asText(input.fieldManagerSessionId) || null;
 
     if (clientEventId) {
       const existingEvent = await client.query<ScanEventRow>(
@@ -1322,6 +1329,9 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
           client_captured_at,
           synced_at,
           gps_accuracy_meters,
+          field_manager_id,
+          field_manager_display_name,
+          field_manager_session_id,
           created_at
         )
         values (
@@ -1340,6 +1350,9 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
           $13::timestamptz,
           now(),
           $14::double precision,
+          $15::uuid,
+          $16::text,
+          $17::text,
           coalesce($13::timestamptz, now())
         )
         returning
@@ -1371,6 +1384,9 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
         clientEventId,
         clientCapturedAt,
         gpsAccuracyMeters,
+        fieldManagerId,
+        fieldManagerDisplayName,
+        fieldManagerSessionId,
       ],
     );
 

@@ -1212,6 +1212,9 @@ export async function ensureFuelLedgerTables(): Promise<void> {
       add column if not exists client_captured_at timestamptz,
       add column if not exists synced_at timestamptz,
       add column if not exists gps_accuracy_meters double precision,
+      add column if not exists field_manager_id uuid,
+      add column if not exists field_manager_display_name text,
+      add column if not exists field_manager_session_id text,
       add column if not exists created_at timestamptz not null default now();
 
     create unique index if not exists idx_asset_scan_events_client_event_id
@@ -1434,6 +1437,9 @@ export async function ensureFuelLedgerTables(): Promise<void> {
       add column if not exists client_captured_at timestamptz,
       add column if not exists synced_at timestamptz,
       add column if not exists gps_accuracy_meters double precision,
+      add column if not exists field_manager_id uuid,
+      add column if not exists field_manager_display_name text,
+      add column if not exists field_manager_session_id text,
       add column if not exists created_at timestamptz not null default now();
 
     alter table if exists public.fuel_storage_events drop constraint if exists fuel_storage_events_event_type_check;

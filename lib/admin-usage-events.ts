@@ -11,6 +11,7 @@ export const ADMIN_USAGE_EVENT_TYPES = [
   'message_sent_qr_share',
   'message_sent_leave_note',
   'qr_asset_updated',
+  'field_manager_asset_updated',
   'asset_updated',
   'maintenance_note_left',
   'user_activity_ping',

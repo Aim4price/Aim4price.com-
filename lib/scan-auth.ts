@@ -3,6 +3,7 @@ import type { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from './auth-session';
 import { getScanAssetAccessContext, normalizePublicAssetCode, type ScanAccessMode, type ScanSafeAsset } from './scan-assets';
 import { getDb } from './db';
+import { getActiveFieldManagerScanSessionFromRequest } from './field-manager-session';
 import { verifyScanPin } from './scan-pin';
 
 export const SCAN_SESSION_COOKIE_NAME = 'aim4price_scan';
@@ -21,6 +22,9 @@ export type AuthorizedScanAccess = {
   accessMode: ScanAccessMode;
   asset: ScanSafeAsset;
   ownerUserId: string;
+  fieldManagerId?: string;
+  fieldManagerDisplayName?: string;
+  fieldManagerSessionId?: string;
 };
 
 export type UnauthorizedScanAccess = {
@@ -213,6 +217,21 @@ export async function authorizeScanAccess(
   if (context.asset.qrStatus === 'deleted') {
     return { ok: false, status: 404, error: 'This asset QR code is inactive.', pinRequired: false };
   }
+
+  const fieldManagerScanSession = await getActiveFieldManagerScanSessionFromRequest(request, normalizedCode);
+
+  if (fieldManagerScanSession && fieldManagerScanSession.ownerUserId === context.asset.userId) {
+    return {
+      ok: true,
+      accessMode: 'field_manager',
+      asset: context.asset,
+      ownerUserId: context.asset.userId,
+      fieldManagerId: fieldManagerScanSession.managerId,
+      fieldManagerDisplayName: fieldManagerScanSession.displayName,
+      fieldManagerSessionId: fieldManagerScanSession.scanSessionId,
+    };
+  }
+
   const claims = getScanSessionFromRequest(request, normalizedCode);
 
   if (!claims) {
@@ -260,6 +279,12 @@ export async function hasOwnerOrValidScanSession(request: NextRequest): Promise<
   const session = await getServerSession();
 
   if (session?.user?.id) {
+    return true;
+  }
+
+  const fieldManagerScanSession = await getActiveFieldManagerScanSessionFromRequest(request);
+
+  if (fieldManagerScanSession) {
     return true;
   }
 
