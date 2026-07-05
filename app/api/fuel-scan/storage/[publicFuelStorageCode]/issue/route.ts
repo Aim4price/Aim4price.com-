@@ -72,6 +72,10 @@ export async function POST(request: NextRequest, context: RouteContext) {
   }
 
   try {
+    const operatorName = access.accessMode === 'field_manager'
+      ? access.fieldManagerDisplayName ?? ''
+      : body.operatorName;
+
     const saved = await recordFuelAssetIssue({
       userId: access.ownerUserId,
       storageId: access.storage.id,
@@ -80,7 +84,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       assetFuelPercentBefore: body.assetFuelPercentBefore,
       assetFuelPercentAfter: body.assetFuelPercentAfter,
       assetUsageReading: body.assetUsageReading,
-      operatorName: body.operatorName,
+      operatorName,
       activityText: body.activityText,
       workAreaText: body.workAreaText,
       note: body.note,
@@ -90,7 +94,10 @@ export async function POST(request: NextRequest, context: RouteContext) {
       clientEventId: body.clientEventId,
       clientCapturedAt: body.clientCapturedAt,
       gpsAccuracyMeters: body.gpsAccuracyMeters,
-      actorType: 'scan_pin',
+      actorType: access.accessMode,
+      fieldManagerId: access.fieldManagerId ?? null,
+      fieldManagerDisplayName: access.fieldManagerDisplayName ?? null,
+      fieldManagerSessionId: access.fieldManagerSessionId ?? null,
     });
 
     const recentEvents = await listFuelEventsForReport(access.ownerUserId, access.storage.id);
