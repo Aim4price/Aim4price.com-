@@ -32,6 +32,38 @@ type ApiResponse = {
   redirectUrl?: string;
 };
 
+type QrLabelLayout = "full-labels-10-per-page" | "small-qr-25mm";
+
+type QrLabelAsset = {
+  id: string;
+  title: string;
+  plateLabel: string;
+  publicAssetCode: string;
+  kind: string;
+  registerName: string;
+  hasQr: boolean;
+  createdAtIso: string | null;
+  updatedAtIso: string | null;
+};
+
+type QrLabelsResponse = {
+  ok: boolean;
+  userEmail?: string;
+  assets?: QrLabelAsset[];
+  error?: string;
+};
+
+type QrModalState = {
+  user: AdminUserRow;
+  assets: QrLabelAsset[];
+  selectedAssetIds: string[];
+  layout: QrLabelLayout;
+  assetSearchTerm: string;
+  isLoading: boolean;
+  isGenerating: boolean;
+  error: string;
+} | null;
+
 type AdminAction =
   | "activate"
   | "pending"
@@ -62,6 +94,23 @@ type ProvinceName = (typeof SOUTH_AFRICAN_PROVINCES)[number];
 type ProvinceFilter = "all" | "__unknown__" | ProvinceName;
 
 const ADMIN_PAGE_SIZE = 10;
+
+const QR_LAYOUT_OPTIONS: Array<{
+  value: QrLabelLayout;
+  title: string;
+  description: string;
+}> = [
+  {
+    value: "full-labels-10-per-page",
+    title: "10 full labels per page",
+    description: "Larger Aim4price plate labels for normal asset stickers.",
+  },
+  {
+    value: "small-qr-25mm",
+    title: "Small 25mm QR labels",
+    description: "Compact 25mm x 25mm QR stickers with the asset name above.",
+  },
+];
 
 const SIGNUP_DATE_FILTER_LABELS: Record<SignupDateFilter, string> = {
   all: "All signups",
@@ -289,6 +338,57 @@ function getBusyText(action: AdminAction): string {
   return "Deleting...";
 }
 
+function matchesQrAssetSearch(asset: QrLabelAsset, searchTerm: string): boolean {
+  const query = normalizeSearchValue(searchTerm);
+
+  if (!query) {
+    return true;
+  }
+
+  return [
+    asset.title,
+    asset.plateLabel,
+    asset.publicAssetCode,
+    asset.kind,
+    asset.registerName,
+  ]
+    .join(" ")
+    .toLowerCase()
+    .includes(query);
+}
+
+function safeDownloadFileName(value: string): string {
+  const safe = value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  return safe || "aim4price-qr-labels.pdf";
+}
+
+function readContentDispositionFileName(
+  contentDisposition: string | null,
+  fallback: string,
+): string {
+  if (!contentDisposition) {
+    return fallback;
+  }
+
+  const utf8Match = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
+
+  if (utf8Match?.[1]) {
+    try {
+      return decodeURIComponent(utf8Match[1].replace(/["']/g, ""));
+    } catch {
+      return utf8Match[1].replace(/["']/g, "");
+    }
+  }
+
+  const filenameMatch = contentDisposition.match(/filename="?([^";]+)"?/i);
+  return filenameMatch?.[1] || fallback;
+}
+
 export default function AdminClient({
   initialUsers,
 }: {
@@ -303,6 +403,7 @@ export default function AdminClient({
   const [busyUserAction, setBusyUserAction] = useState<string | null>(null);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [qrModal, setQrModal] = useState<QrModalState>(null);
 
   const visibleUsers = useMemo(
     () =>
@@ -344,6 +445,25 @@ export default function AdminClient({
       : `Showing ${pageStartIndex + 1}-${pageEndIndex} of ${visibleUsers.length} ${visibleAccountLabel}${
           hasActiveFilters ? ` (${users.length} total)` : ""
         }`;
+
+  const filteredQrAssets = useMemo(() => {
+    if (!qrModal) {
+      return [] as QrLabelAsset[];
+    }
+
+    return qrModal.assets.filter((asset) =>
+      matchesQrAssetSearch(asset, qrModal.assetSearchTerm),
+    );
+  }, [qrModal]);
+
+  const selectedQrAssetCount = qrModal
+    ? qrModal.selectedAssetIds.filter((assetId) =>
+        qrModal.assets.some((asset) => asset.id === assetId && asset.hasQr),
+      ).length
+    : 0;
+  const availableQrAssetCount = qrModal
+    ? qrModal.assets.filter((asset) => asset.hasQr).length
+    : 0;
 
   async function handleSignOut() {
     try {
@@ -422,6 +542,182 @@ export default function AdminClient({
       });
     } finally {
       setBusyUserAction(null);
+    }
+  }
+
+  function updateQrModal(update: Partial<NonNullable<QrModalState>>) {
+    setQrModal((current) => (current ? { ...current, ...update } : current));
+  }
+
+  async function openQrModal(user: AdminUserRow) {
+    setNotice(null);
+    setQrModal({
+      user,
+      assets: [],
+      selectedAssetIds: [],
+      layout: "full-labels-10-per-page",
+      assetSearchTerm: "",
+      isLoading: true,
+      isGenerating: false,
+      error: "",
+    });
+
+    try {
+      const response = await fetch(
+        `/api/admin/users/${encodeURIComponent(user.userId)}/qr-labels`,
+        {
+          method: "GET",
+          credentials: "include",
+          cache: "no-store",
+        },
+      );
+      const data = (await response.json()) as QrLabelsResponse;
+
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error || "Failed to load QR labels.");
+      }
+
+      const assets = data.assets ?? [];
+
+      setQrModal((current) =>
+        current?.user.userId === user.userId
+          ? {
+              ...current,
+              assets,
+              selectedAssetIds: assets
+                .filter((asset) => asset.hasQr)
+                .map((asset) => asset.id),
+              isLoading: false,
+              error: "",
+            }
+          : current,
+      );
+    } catch (error) {
+      setQrModal((current) =>
+        current?.user.userId === user.userId
+          ? {
+              ...current,
+              isLoading: false,
+              error:
+                error instanceof Error
+                  ? error.message
+                  : "Failed to load QR labels.",
+            }
+          : current,
+      );
+    }
+  }
+
+  function toggleQrAsset(assetId: string, isSelected: boolean) {
+    setQrModal((current) => {
+      if (!current) {
+        return current;
+      }
+
+      const selected = new Set(current.selectedAssetIds);
+
+      if (isSelected) {
+        selected.add(assetId);
+      } else {
+        selected.delete(assetId);
+      }
+
+      return { ...current, selectedAssetIds: Array.from(selected) };
+    });
+  }
+
+  function selectAllQrAssets() {
+    setQrModal((current) =>
+      current
+        ? {
+            ...current,
+            selectedAssetIds: current.assets
+              .filter((asset) => asset.hasQr)
+              .map((asset) => asset.id),
+          }
+        : current,
+    );
+  }
+
+  function clearQrAssets() {
+    updateQrModal({ selectedAssetIds: [] });
+  }
+
+  async function generateQrPdf() {
+    if (!qrModal || qrModal.isGenerating) {
+      return;
+    }
+
+    const selectedIds = qrModal.selectedAssetIds.filter((assetId) =>
+      qrModal.assets.some((asset) => asset.id === assetId && asset.hasQr),
+    );
+
+    if (selectedIds.length === 0) {
+      updateQrModal({ error: "Select at least one asset with a QR code." });
+      return;
+    }
+
+    updateQrModal({ isGenerating: true, error: "" });
+
+    try {
+      const response = await fetch(
+        `/api/admin/users/${encodeURIComponent(qrModal.user.userId)}/qr-labels`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            layout: qrModal.layout,
+            assetIds: selectedIds,
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        let message = "Failed to generate QR label PDF.";
+
+        try {
+          const data = (await response.json()) as QrLabelsResponse;
+          message = data.error || message;
+        } catch {
+          // Keep the fallback message.
+        }
+
+        throw new Error(message);
+      }
+
+      const blob = await response.blob();
+      const fallbackFileName = safeDownloadFileName(
+        `aim4price-${qrModal.user.email || qrModal.user.name}-qr-labels.pdf`,
+      );
+      const fileName = readContentDispositionFileName(
+        response.headers.get("content-disposition"),
+        fallbackFileName,
+      );
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = downloadUrl;
+      anchor.download = fileName;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+
+      setNotice({
+        tone: "success",
+        message: `QR label PDF generated for ${selectedIds.length} asset${
+          selectedIds.length === 1 ? "" : "s"
+        }.`,
+      });
+      updateQrModal({ isGenerating: false });
+    } catch (error) {
+      updateQrModal({
+        isGenerating: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to generate QR label PDF.",
+      });
     }
   }
 
@@ -648,6 +944,15 @@ export default function AdminClient({
 
                           <button
                             type="button"
+                            className={styles.qrButton}
+                            onClick={() => openQrModal(user)}
+                            disabled={busyUserAction !== null}
+                          >
+                            QR
+                          </button>
+
+                          <button
+                            type="button"
                             className={styles.deleteButton}
                             onClick={() => runAction(user, "delete_user")}
                             disabled={busyUserAction !== null || isProtectedAdmin}
@@ -706,6 +1011,164 @@ export default function AdminClient({
           </div>
         </div>
       </section>
+
+      {qrModal ? (
+        <div className={styles.modalBackdrop}>
+          <section
+            className={styles.qrModal}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="admin-qr-modal-title"
+          >
+            <header className={styles.qrModalHeader}>
+              <div>
+                <p className={styles.qrModalEyebrow}>Admin QR print</p>
+                <h2 id="admin-qr-modal-title">Print QR labels</h2>
+                <span>
+                  {qrModal.user.name} · {qrModal.user.email || "No email saved"}
+                </span>
+              </div>
+
+              <button
+                type="button"
+                className={styles.modalCloseButton}
+                onClick={() => setQrModal(null)}
+                disabled={qrModal.isGenerating}
+                aria-label="Close QR label modal"
+              >
+                ×
+              </button>
+            </header>
+
+            <div className={styles.qrLayoutGrid} aria-label="QR label layout">
+              {QR_LAYOUT_OPTIONS.map((option) => (
+                <label
+                  key={option.value}
+                  className={`${styles.qrLayoutOption} ${
+                    qrModal.layout === option.value ? styles.qrLayoutOptionActive : ""
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="qr-label-layout"
+                    checked={qrModal.layout === option.value}
+                    onChange={() => updateQrModal({ layout: option.value })}
+                    disabled={qrModal.isGenerating}
+                  />
+                  <span>
+                    <strong>{option.title}</strong>
+                    <small>{option.description}</small>
+                  </span>
+                </label>
+              ))}
+            </div>
+
+            <div className={styles.qrAssetControls}>
+              <label className={styles.qrAssetSearch}>
+                <span>Choose assets</span>
+                <input
+                  type="search"
+                  value={qrModal.assetSearchTerm}
+                  onChange={(event) =>
+                    updateQrModal({ assetSearchTerm: event.target.value })
+                  }
+                  placeholder="Search asset, plate label, QR code or register"
+                  disabled={qrModal.isLoading || qrModal.isGenerating}
+                />
+              </label>
+
+              <div className={styles.qrAssetControlButtons}>
+                <button
+                  type="button"
+                  onClick={selectAllQrAssets}
+                  disabled={
+                    qrModal.isLoading ||
+                    qrModal.isGenerating ||
+                    availableQrAssetCount === 0
+                  }
+                >
+                  Select all
+                </button>
+                <button
+                  type="button"
+                  onClick={clearQrAssets}
+                  disabled={qrModal.isLoading || qrModal.isGenerating || selectedQrAssetCount === 0}
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+
+            <div className={styles.qrAssetList}>
+              {qrModal.isLoading ? (
+                <div className={styles.qrAssetEmpty}>Loading asset QR labels...</div>
+              ) : qrModal.assets.length === 0 ? (
+                <div className={styles.qrAssetEmpty}>No assets found for this account.</div>
+              ) : filteredQrAssets.length === 0 ? (
+                <div className={styles.qrAssetEmpty}>No matching assets found.</div>
+              ) : (
+                filteredQrAssets.map((asset) => {
+                  const isSelected = qrModal.selectedAssetIds.includes(asset.id);
+
+                  return (
+                    <label
+                      key={asset.id}
+                      className={`${styles.qrAssetRow} ${
+                        !asset.hasQr ? styles.qrAssetRowDisabled : ""
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={(event) =>
+                          toggleQrAsset(asset.id, event.target.checked)
+                        }
+                        disabled={!asset.hasQr || qrModal.isGenerating}
+                      />
+
+                      <span className={styles.qrAssetMain}>
+                        <strong>{asset.title}</strong>
+                        <small>
+                          {asset.registerName}
+                          {asset.plateLabel ? ` · ${asset.plateLabel}` : ""}
+                        </small>
+                      </span>
+
+                      <span className={styles.qrAssetCode}>
+                        {asset.hasQr ? asset.publicAssetCode : "No QR"}
+                      </span>
+                    </label>
+                  );
+                })
+              )}
+            </div>
+
+            {qrModal.error ? (
+              <div className={styles.qrModalError} role="alert">
+                {qrModal.error}
+              </div>
+            ) : null}
+
+            <footer className={styles.qrModalFooter}>
+              <span>
+                {selectedQrAssetCount} selected · {availableQrAssetCount} QR-ready
+              </span>
+              <button
+                type="button"
+                className={styles.generateQrButton}
+                onClick={generateQrPdf}
+                disabled={
+                  qrModal.isLoading ||
+                  qrModal.isGenerating ||
+                  selectedQrAssetCount === 0
+                }
+              >
+                {qrModal.isGenerating ? "Generating PDF..." : "Generate PDF"}
+              </button>
+            </footer>
+          </section>
+        </div>
+      ) : null}
     </section>
   );
 }
