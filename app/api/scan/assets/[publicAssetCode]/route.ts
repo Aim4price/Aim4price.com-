@@ -36,6 +36,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
   const isPreviewRequest = request.nextUrl.searchParams.get("preview") === "1";
   const isFieldManagerHint =
     request.nextUrl.searchParams.get("fieldManager") === "1";
+  const fieldManagerAssetId = request.nextUrl.searchParams.get("assetId");
 
   if (isPreviewRequest) {
     let previewContext: ScanAssetAccessContext | null;
@@ -85,6 +86,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
   const access = await authorizeScanAccess(request, publicAssetCode, {
     fieldManagerHint: isFieldManagerHint,
+    fieldManagerAssetId,
   });
 
   if (!access.ok) {
