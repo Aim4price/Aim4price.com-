@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { authorizeScanUpload } from '../../../../lib/scan-auth';
+import { authorizeScanAccess } from '../../../../lib/scan-auth';
 import {
   ALLOWED_ASSET_REGISTER_IMAGE_TYPES,
   MAX_ASSET_REGISTER_PHOTOS,
@@ -48,7 +48,12 @@ function validateImageFile(file: File): PreparedUploadFile | { error: string; st
 export async function POST(request: NextRequest) {
   const formData = await request.formData();
   const publicAssetCode = normalizePublicAssetCode(formData.get('publicAssetCode'));
-  const access = await authorizeScanUpload(request, publicAssetCode);
+  const isFieldManagerHint = request.nextUrl.searchParams.get('fieldManager') === '1';
+  const fieldManagerAssetId = request.nextUrl.searchParams.get('assetId');
+  const access = await authorizeScanAccess(request, publicAssetCode, {
+    fieldManagerHint: isFieldManagerHint,
+    fieldManagerAssetId,
+  });
 
   if (!access.ok) {
     return NextResponse.json(
