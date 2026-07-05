@@ -500,9 +500,18 @@ export async function getActiveFieldManagerScanSessionFromRequest(
     return null;
   }
 
+  const activeSession = await getActiveFieldManagerSessionFromRequest(request);
+  if (
+    !activeSession ||
+    activeSession.managerId !== claims.managerId ||
+    activeSession.ownerUserId !== claims.ownerUserId
+  ) {
+    return null;
+  }
+
   const manager = await validateFieldManagerScanAsset({
-    managerId: claims.managerId,
-    ownerUserId: claims.ownerUserId,
+    managerId: activeSession.managerId,
+    ownerUserId: activeSession.ownerUserId,
     publicAssetCode: claims.publicAssetCode,
     assetId: claims.assetId,
   });
@@ -546,9 +555,18 @@ export async function getActiveFieldManagerFuelScanSessionFromRequest(
     return null;
   }
 
+  const activeSession = await getActiveFieldManagerSessionFromRequest(request);
+  if (
+    !activeSession ||
+    activeSession.managerId !== claims.managerId ||
+    activeSession.ownerUserId !== claims.ownerUserId
+  ) {
+    return null;
+  }
+
   const manager = await validateFieldManagerFuelStorage({
-    managerId: claims.managerId,
-    ownerUserId: claims.ownerUserId,
+    managerId: activeSession.managerId,
+    ownerUserId: activeSession.ownerUserId,
     publicFuelStorageCode: claims.publicFuelStorageCode,
   });
 

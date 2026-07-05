@@ -2271,6 +2271,7 @@ export async function saveFuelStorageDipstickNote(
           from public.fuel_storage_events e
           left join public.fuel_storage_units s on s.id = e.storage_id
           left join public.asset_register_items a on a.id::text = e.asset_register_item_id
+          left join public.fuel_slips fs on fs.id = e.fuel_slip_id
           where e.storage_id::text = $1 and e.client_event_id = $2
           order by e.created_at desc, e.id desc
           limit 1
@@ -2472,6 +2473,7 @@ export async function recordFuelStorageStock(
           from public.fuel_storage_events e
           left join public.fuel_storage_units s on s.id = e.storage_id
           left join public.asset_register_items a on a.id::text = e.asset_register_item_id
+          left join public.fuel_slips fs on fs.id = e.fuel_slip_id
           where e.storage_id::text = $1 and e.client_event_id = $2
           order by e.created_at desc, e.id desc
           limit 1
@@ -2670,6 +2672,7 @@ async function insertFuelStorageEvent(
       from public.fuel_storage_events e
       left join public.fuel_storage_units s on s.id = e.storage_id
       left join public.asset_register_items a on a.id::text = e.asset_register_item_id
+      left join public.fuel_slips fs on fs.id = e.fuel_slip_id
       where e.id::text = $1
       limit 1
     `,
@@ -2781,6 +2784,7 @@ export async function recordFuelAssetIssue(
           from public.fuel_storage_events e
           left join public.fuel_storage_units s on s.id = e.storage_id
           left join public.asset_register_items a on a.id::text = e.asset_register_item_id
+          left join public.fuel_slips fs on fs.id = e.fuel_slip_id
           where e.storage_id::text = $1 and e.client_event_id = $2
           order by e.created_at desc, e.id desc
           limit 1

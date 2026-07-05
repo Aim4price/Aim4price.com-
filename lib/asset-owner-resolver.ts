@@ -79,14 +79,46 @@ export function normalizePublicAssetCode(value: unknown): string {
     .toUpperCase();
 }
 
-function normalizedOwnerIds(input: AssetOwnerSourceIds): string[] {
-  return [input.assetItemUserId, input.registerUserId, input.valuationRunUserId]
-    .map(normalizeOwnerId)
-    .filter(Boolean);
-}
-
 function uniqueOwnerIds(ids: string[]): string[] {
   return Array.from(new Set(ids));
+}
+
+function canonicalOwnerIdFromSources(input: AssetOwnerSourceIds): string {
+  return (
+    normalizeOwnerId(input.assetItemUserId) ||
+    normalizeOwnerId(input.registerUserId) ||
+    normalizeOwnerId(input.valuationRunUserId)
+  );
+}
+
+function logOwnerSourceMismatch(
+  resolution: CanonicalAssetOwnerResolution,
+  purpose: string,
+): void {
+  const canonicalOwnerUserId = normalizeOwnerId(resolution.ownerUserId);
+  const sourceIds = {
+    assetItemUserId: normalizeOwnerId(resolution.assetItemUserId),
+    registerUserId: normalizeOwnerId(resolution.registerUserId),
+    valuationRunUserId: normalizeOwnerId(resolution.valuationRunUserId),
+  };
+  const mismatchedSources = Object.entries(sourceIds)
+    .filter(([, value]) => value && value !== canonicalOwnerUserId)
+    .map(([key]) => key);
+
+  if (!mismatchedSources.length) {
+    return;
+  }
+
+  console.warn("[asset-owner-resolver] Owner source mismatch ignored", {
+    purpose,
+    assetId: resolution.assetId,
+    publicAssetCode: resolution.publicAssetCode,
+    canonicalOwnerUserId,
+    assetItemUserId: sourceIds.assetItemUserId || null,
+    registerUserId: sourceIds.registerUserId || null,
+    valuationRunUserId: sourceIds.valuationRunUserId || null,
+    mismatchedSources,
+  });
 }
 
 function logResolutionIssue(
@@ -141,9 +173,11 @@ function resolveOwnerFromRow(
   const assetItemUserId = normalizeOwnerId(row.asset_item_user_id);
   const registerUserId = normalizeOwnerId(row.register_user_id);
   const valuationRunUserId = normalizeOwnerId(row.valuation_run_user_id);
-  const ownerIds = uniqueOwnerIds(
-    normalizedOwnerIds({ assetItemUserId, registerUserId, valuationRunUserId }),
-  );
+  const canonicalOwnerUserId = canonicalOwnerIdFromSources({
+    assetItemUserId,
+    registerUserId,
+    valuationRunUserId,
+  });
 
   if (!assetId) {
     throw makeResolutionError("ASSET_NOT_FOUND", "Asset not found.", 404, {
@@ -152,7 +186,7 @@ function resolveOwnerFromRow(
     });
   }
 
-  if (!ownerIds.length) {
+  if (!canonicalOwnerUserId) {
     throw makeResolutionError(
       "ASSET_OWNER_UNRESOLVED",
       "This asset is missing owner details and cannot be opened safely.",
@@ -168,26 +202,10 @@ function resolveOwnerFromRow(
     );
   }
 
-  if (ownerIds.length > 1) {
-    throw makeResolutionError(
-      "ASSET_OWNER_CONFLICT",
-      "This asset has conflicting owner details and cannot be opened safely.",
-      409,
-      {
-        purpose,
-        assetId,
-        publicAssetCode,
-        assetItemUserId: assetItemUserId || null,
-        registerUserId: registerUserId || null,
-        valuationRunUserId: valuationRunUserId || null,
-      },
-    );
-  }
-
-  return {
+  const resolution: CanonicalAssetOwnerResolution = {
     assetId,
     publicAssetCode,
-    ownerUserId: ownerIds[0],
+    ownerUserId: canonicalOwnerUserId,
     assetItemUserId: assetItemUserId || null,
     registerUserId: registerUserId || null,
     valuationRunUserId: valuationRunUserId || null,
@@ -196,6 +214,10 @@ function resolveOwnerFromRow(
     qrStatus: asText(row.qr_status) || "active",
     title: asText(row.title),
   };
+
+  logOwnerSourceMismatch(resolution, purpose);
+
+  return resolution;
 }
 
 function assertPublicCodeMatches(
