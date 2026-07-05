@@ -10,7 +10,12 @@ import {
   type ScanSafeAsset,
 } from "./scan-assets";
 import { getDb } from "./db";
-import { getActiveFieldManagerScanSessionFromRequest } from "./field-manager-session";
+import { validateFieldManagerScanAsset } from "./field-manager";
+import {
+  getActiveFieldManagerScanSessionFromRequest,
+  getActiveFieldManagerSessionFromRequest,
+  type ActiveFieldManagerSession,
+} from "./field-manager-session";
 import { verifyScanPin } from "./scan-pin";
 
 export const SCAN_SESSION_COOKIE_NAME = "aim4price_scan";
@@ -46,6 +51,7 @@ export type UnauthorizedScanAccess = {
 
 type AuthorizeScanAccessOptions = {
   fieldManagerHint?: boolean;
+  fieldManagerAssetId?: string | null;
 };
 
 function asText(value: unknown): string {
@@ -316,6 +322,100 @@ export async function verifyScanPinForAsset(
   };
 }
 
+
+async function authorizeFieldManagerAccessFromSession(
+  normalizedCode: string,
+  session: ActiveFieldManagerSession,
+  assetId?: string | null,
+): Promise<AuthorizedScanAccess | UnauthorizedScanAccess> {
+  const normalizedAssetId = asText(assetId);
+
+  const manager = await validateFieldManagerScanAsset({
+    managerId: session.managerId,
+    ownerUserId: session.ownerUserId,
+    publicAssetCode: normalizedCode,
+    assetId: normalizedAssetId || null,
+  });
+
+  if (!manager || !manager.isActive) {
+    console.error("[scan-auth] Field Manager session failed asset validation", {
+      publicAssetCode: normalizedCode,
+      assetId: normalizedAssetId || null,
+      fieldManagerOwnerId: session.ownerUserId,
+      fieldManagerId: session.managerId,
+      route: "authorize-field-manager-session",
+    });
+    return {
+      ok: false,
+      status: 403,
+      error: FIELD_MANAGER_OPEN_ERROR,
+      pinRequired: false,
+    };
+  }
+
+  let context: ScanAssetAccessContext | null;
+
+  try {
+    context = await getScanAssetAccessContext(normalizedCode, {
+      assetId: normalizedAssetId || null,
+      expectedOwnerUserId: session.ownerUserId,
+    });
+  } catch (error) {
+    const safe = safeAssetOwnerError(error, FIELD_MANAGER_OPEN_ERROR);
+    return {
+      ok: false,
+      status: safe?.status ?? 403,
+      error: safe?.error ?? FIELD_MANAGER_OPEN_ERROR,
+      pinRequired: false,
+    };
+  }
+
+  if (!context || !context.asset.id) {
+    return {
+      ok: false,
+      status: 404,
+      error: "Asset not found.",
+      pinRequired: false,
+    };
+  }
+
+  if (context.asset.qrStatus === "deleted") {
+    return {
+      ok: false,
+      status: 404,
+      error: "This asset QR code is inactive.",
+      pinRequired: false,
+    };
+  }
+
+  if (session.ownerUserId !== context.asset.userId) {
+    console.error("[scan-auth] Field Manager session owner mismatch", {
+      publicAssetCode: normalizedCode,
+      assetId: context.asset.id,
+      resolvedAssetOwnerId: context.asset.userId,
+      fieldManagerOwnerId: session.ownerUserId,
+      fieldManagerId: session.managerId,
+      route: "authorize-field-manager-session",
+    });
+    return {
+      ok: false,
+      status: 403,
+      error: FIELD_MANAGER_OPEN_ERROR,
+      pinRequired: false,
+    };
+  }
+
+  return {
+    ok: true,
+    accessMode: "field_manager",
+    asset: context.asset,
+    ownerUserId: context.asset.userId,
+    fieldManagerId: session.managerId,
+    fieldManagerDisplayName: session.displayName,
+    fieldManagerSessionId: session.sessionId,
+  };
+}
+
 export async function authorizeScanAccess(
   request: NextRequest,
   publicAssetCode: string,
@@ -398,12 +498,23 @@ export async function authorizeScanAccess(
   }
 
   if (options.fieldManagerHint) {
-    return {
-      ok: false,
-      status: 401,
-      error: FIELD_MANAGER_OPEN_ERROR,
-      pinRequired: false,
-    };
+    const activeFieldManagerSession =
+      await getActiveFieldManagerSessionFromRequest(request);
+
+    if (!activeFieldManagerSession) {
+      return {
+        ok: false,
+        status: 401,
+        error: FIELD_MANAGER_OPEN_ERROR,
+        pinRequired: false,
+      };
+    }
+
+    return authorizeFieldManagerAccessFromSession(
+      normalizedCode,
+      activeFieldManagerSession,
+      options.fieldManagerAssetId ?? null,
+    );
   }
 
   let context: ScanAssetAccessContext | null;
