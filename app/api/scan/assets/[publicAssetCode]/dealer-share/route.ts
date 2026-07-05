@@ -97,6 +97,13 @@ export async function GET(request: NextRequest, context: RouteContext) {
     );
   }
 
+  if (access.accessMode === 'field_manager') {
+    return NextResponse.json(
+      { ok: false, error: 'Dealer sharing is not available in Field Manager mode.' },
+      { status: 403 },
+    );
+  }
+
   const search = request.nextUrl.searchParams.get('search');
 
   try {
@@ -128,6 +135,13 @@ export async function POST(request: NextRequest, context: RouteContext) {
         pinRequired: access.pinRequired,
       },
       { status: access.status },
+    );
+  }
+
+  if (access.accessMode === 'field_manager') {
+    return NextResponse.json(
+      { ok: false, error: 'Dealer sharing is not available in Field Manager mode.' },
+      { status: 403 },
     );
   }
 
