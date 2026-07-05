@@ -183,56 +183,149 @@ type AssetServiceProfile = "propelled" | "implement";
 
 const PROPELLED_CHECKED_OPTIONS: readonly ServiceOption[] = [
   { label: "Oil level", description: "Dipstick / sight glass checked." },
-  { label: "Tyres", description: "Pressure, tread and visible damage checked." },
-  { label: "Safety", description: "Guards, warning lights and obvious risks checked." },
+  {
+    label: "Tyres",
+    description: "Pressure, tread and visible damage checked.",
+  },
+  {
+    label: "Safety",
+    description: "Guards, warning lights and obvious risks checked.",
+  },
   { label: "Lights", description: "Working lights and indicators checked." },
   { label: "Brakes", description: "Brake response and pedal feel checked." },
   { label: "Hydraulics", description: "Hoses, rams and leaks checked." },
   { label: "Battery", description: "Terminals, charge and mounting checked." },
   { label: "Coolant", description: "Level and visible leaks checked." },
   { label: "Belts", description: "Wear, cracks and tension checked." },
-  { label: "Leaks", description: "Oil, diesel, coolant and hydraulic leaks checked." },
+  {
+    label: "Leaks",
+    description: "Oil, diesel, coolant and hydraulic leaks checked.",
+  },
 ] as const;
 
 const PROPELLED_SERVICED_OPTIONS: readonly ServiceOption[] = [
-  { label: "Changed engine oil", description: "Engine oil drained and replaced." },
-  { label: "Changed hydraulic oil", description: "Hydraulic oil serviced or replaced." },
-  { label: "Changed air filters", description: "Air filter elements cleaned or replaced." },
+  {
+    label: "Changed engine oil",
+    description: "Engine oil drained and replaced.",
+  },
+  {
+    label: "Changed hydraulic oil",
+    description: "Hydraulic oil serviced or replaced.",
+  },
+  {
+    label: "Changed air filters",
+    description: "Air filter elements cleaned or replaced.",
+  },
   { label: "Changed oil filters", description: "Engine oil filters replaced." },
-  { label: "Changed diesel filters", description: "Fuel / diesel filters replaced." },
+  {
+    label: "Changed diesel filters",
+    description: "Fuel / diesel filters replaced.",
+  },
   { label: "Greased machine", description: "Grease points completed." },
   { label: "Coolant top-up", description: "Coolant topped up or replaced." },
   { label: "Replaced belts", description: "Worn belts replaced or adjusted." },
-  { label: "Tyre repair", description: "Tyre puncture, valve or pressure repair." },
-  { label: "Battery service", description: "Battery serviced, replaced or terminals cleaned." },
+  {
+    label: "Tyre repair",
+    description: "Tyre puncture, valve or pressure repair.",
+  },
+  {
+    label: "Battery service",
+    description: "Battery serviced, replaced or terminals cleaned.",
+  },
 ] as const;
 
 const IMPLEMENT_CHECKED_OPTIONS: readonly ServiceOption[] = [
-  { label: "Nuts and bolts", description: "Loose, missing or damaged bolts checked." },
-  { label: "Pins and bushes", description: "Wear, play and locking clips checked." },
-  { label: "Frame and welds", description: "Cracks, bent sections and welds checked." },
-  { label: "Hitch / drawbar", description: "Hitch points, hooks and drawbar checked." },
-  { label: "Hydraulic hoses", description: "Hoses, couplers, rams and leaks checked." },
-  { label: "Bearings", description: "Noise, heat, play and visible wear checked." },
-  { label: "Wear parts", description: "Blades, points, discs, tines or shoes checked." },
-  { label: "PTO / guards", description: "PTO shaft, covers and safety guards checked." },
-  { label: "Wheels / hubs", description: "Wheel nuts, hubs, bearings and tyres checked." },
-  { label: "Grease points", description: "Grease nipples and moving joints checked." },
-  { label: "Safety decals", description: "Warnings, reflectors and visible markings checked." },
+  {
+    label: "Nuts and bolts",
+    description: "Loose, missing or damaged bolts checked.",
+  },
+  {
+    label: "Pins and bushes",
+    description: "Wear, play and locking clips checked.",
+  },
+  {
+    label: "Frame and welds",
+    description: "Cracks, bent sections and welds checked.",
+  },
+  {
+    label: "Hitch / drawbar",
+    description: "Hitch points, hooks and drawbar checked.",
+  },
+  {
+    label: "Hydraulic hoses",
+    description: "Hoses, couplers, rams and leaks checked.",
+  },
+  {
+    label: "Bearings",
+    description: "Noise, heat, play and visible wear checked.",
+  },
+  {
+    label: "Wear parts",
+    description: "Blades, points, discs, tines or shoes checked.",
+  },
+  {
+    label: "PTO / guards",
+    description: "PTO shaft, covers and safety guards checked.",
+  },
+  {
+    label: "Wheels / hubs",
+    description: "Wheel nuts, hubs, bearings and tyres checked.",
+  },
+  {
+    label: "Grease points",
+    description: "Grease nipples and moving joints checked.",
+  },
+  {
+    label: "Safety decals",
+    description: "Warnings, reflectors and visible markings checked.",
+  },
 ] as const;
 
 const IMPLEMENT_SERVICED_OPTIONS: readonly ServiceOption[] = [
-  { label: "Tightened bolts", description: "Loose fasteners tightened or replaced." },
-  { label: "Replaced pins / bushes", description: "Worn pins, bushes or clips replaced." },
-  { label: "Repaired frame / welds", description: "Cracks, bends or welds repaired." },
-  { label: "Replaced wear parts", description: "Blades, points, discs, tines or shoes replaced." },
-  { label: "Serviced hydraulics", description: "Hydraulic hoses, couplers or cylinders repaired." },
-  { label: "Replaced bearings", description: "Bearings, seals or hubs replaced." },
-  { label: "Greased implement", description: "Grease points and moving joints serviced." },
-  { label: "Serviced PTO / guards", description: "PTO shaft, covers or guards repaired." },
-  { label: "Adjusted setup", description: "Depth, angle, calibration or working setup adjusted." },
-  { label: "Wheel / hub service", description: "Wheel nuts, tyres, hubs or axles serviced." },
-  { label: "Cleaned implement", description: "Mud, crop material or residue removed." },
+  {
+    label: "Tightened bolts",
+    description: "Loose fasteners tightened or replaced.",
+  },
+  {
+    label: "Replaced pins / bushes",
+    description: "Worn pins, bushes or clips replaced.",
+  },
+  {
+    label: "Repaired frame / welds",
+    description: "Cracks, bends or welds repaired.",
+  },
+  {
+    label: "Replaced wear parts",
+    description: "Blades, points, discs, tines or shoes replaced.",
+  },
+  {
+    label: "Serviced hydraulics",
+    description: "Hydraulic hoses, couplers or cylinders repaired.",
+  },
+  {
+    label: "Replaced bearings",
+    description: "Bearings, seals or hubs replaced.",
+  },
+  {
+    label: "Greased implement",
+    description: "Grease points and moving joints serviced.",
+  },
+  {
+    label: "Serviced PTO / guards",
+    description: "PTO shaft, covers or guards repaired.",
+  },
+  {
+    label: "Adjusted setup",
+    description: "Depth, angle, calibration or working setup adjusted.",
+  },
+  {
+    label: "Wheel / hub service",
+    description: "Wheel nuts, tyres, hubs or axles serviced.",
+  },
+  {
+    label: "Cleaned implement",
+    description: "Mud, crop material or residue removed.",
+  },
 ] as const;
 
 const IMPLEMENT_HINTS = [
@@ -317,7 +410,8 @@ const initialPendingUpdate: PendingScanUpdate = {
   hasNotes: false,
 };
 
-const DEFAULT_LOCATION_REQUIRED_MESSAGE = "Location must be enabled before this asset QR can continue.";
+const DEFAULT_LOCATION_REQUIRED_MESSAGE =
+  "Location must be enabled before this asset QR can continue.";
 const GPS_READY_SESSION_MESSAGE = "GPS ready for this QR scan session.";
 const QR_SCAN_SESSION_STORAGE_PREFIX = "aim4price_qr_scan_session_v1:";
 
@@ -374,8 +468,16 @@ function normalizeSessionString(value: unknown, maxLength = 2000): string {
   return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
 }
 
-function normalizeSessionUsageMode(value: unknown): ScanAssetUsageMode | undefined {
-  if (value === "hours" || value === "percent" || value === "km" || value === "none") return value;
+function normalizeSessionUsageMode(
+  value: unknown,
+): ScanAssetUsageMode | undefined {
+  if (
+    value === "hours" ||
+    value === "percent" ||
+    value === "km" ||
+    value === "none"
+  )
+    return value;
   return undefined;
 }
 
@@ -386,13 +488,17 @@ function readQrScanSession(publicAssetCode: string): QrScanSessionState | null {
   if (!normalizedCode) return null;
 
   try {
-    const raw = window.sessionStorage.getItem(qrScanSessionStorageKey(normalizedCode));
+    const raw = window.sessionStorage.getItem(
+      qrScanSessionStorageKey(normalizedCode),
+    );
     if (!raw) return null;
 
     const parsed: unknown = JSON.parse(raw);
     if (!isRecord(parsed)) return null;
 
-    const storedCode = normalizePublicAssetCode(normalizeSessionString(parsed.publicAssetCode));
+    const storedCode = normalizePublicAssetCode(
+      normalizeSessionString(parsed.publicAssetCode),
+    );
     if (storedCode !== normalizedCode) return null;
 
     const session: QrScanSessionState = {
@@ -400,13 +506,17 @@ function readQrScanSession(publicAssetCode: string): QrScanSessionState | null {
       assetId: normalizeSessionString(parsed.assetId, 80) || undefined,
       latitude: normalizeSessionString(parsed.latitude, 64) || undefined,
       longitude: normalizeSessionString(parsed.longitude, 64) || undefined,
-      gpsAccuracyMeters: normalizeSessionString(parsed.gpsAccuracyMeters, 64) || undefined,
-      locationMessage: normalizeSessionString(parsed.locationMessage, 240) || undefined,
-      locationCapturedAtIso: normalizeSessionString(parsed.locationCapturedAtIso, 80) || undefined,
+      gpsAccuracyMeters:
+        normalizeSessionString(parsed.gpsAccuracyMeters, 64) || undefined,
+      locationMessage:
+        normalizeSessionString(parsed.locationMessage, 240) || undefined,
+      locationCapturedAtIso:
+        normalizeSessionString(parsed.locationCapturedAtIso, 80) || undefined,
       usageMode: normalizeSessionUsageMode(parsed.usageMode),
       hours: normalizeSessionString(parsed.hours, 32) || undefined,
       hasUsage: parsed.hasUsage === true,
-      updatedAtIso: normalizeSessionString(parsed.updatedAtIso, 80) || undefined,
+      updatedAtIso:
+        normalizeSessionString(parsed.updatedAtIso, 80) || undefined,
     };
 
     return session;
@@ -415,7 +525,10 @@ function readQrScanSession(publicAssetCode: string): QrScanSessionState | null {
   }
 }
 
-function writeQrScanSession(publicAssetCode: string, session: QrScanSessionState): QrScanSessionState | null {
+function writeQrScanSession(
+  publicAssetCode: string,
+  session: QrScanSessionState,
+): QrScanSessionState | null {
   if (typeof window === "undefined") return null;
 
   const normalizedCode = normalizePublicAssetCode(publicAssetCode);
@@ -428,7 +541,10 @@ function writeQrScanSession(publicAssetCode: string, session: QrScanSessionState
   };
 
   try {
-    window.sessionStorage.setItem(qrScanSessionStorageKey(normalizedCode), JSON.stringify(nextSession));
+    window.sessionStorage.setItem(
+      qrScanSessionStorageKey(normalizedCode),
+      JSON.stringify(nextSession),
+    );
     return nextSession;
   } catch {
     return nextSession;
@@ -442,7 +558,9 @@ function updateQrScanSession(
   const normalizedCode = normalizePublicAssetCode(publicAssetCode);
   if (!normalizedCode) return null;
 
-  const current = readQrScanSession(normalizedCode) ?? { publicAssetCode: normalizedCode };
+  const current = readQrScanSession(normalizedCode) ?? {
+    publicAssetCode: normalizedCode,
+  };
   return writeQrScanSession(normalizedCode, updater(current));
 }
 
@@ -467,7 +585,10 @@ function sessionLocationMessage(session: QrScanSessionState | null): string {
   return session?.locationMessage?.trim() || GPS_READY_SESSION_MESSAGE;
 }
 
-function applySessionLocationToDraft(draft: DraftState, session: QrScanSessionState | null): DraftState {
+function applySessionLocationToDraft(
+  draft: DraftState,
+  session: QrScanSessionState | null,
+): DraftState {
   if (!sessionHasLocation(session)) return draft;
 
   return {
@@ -477,7 +598,9 @@ function applySessionLocationToDraft(draft: DraftState, session: QrScanSessionSt
   };
 }
 
-function pendingLocationMetadata(session: QrScanSessionState | null): Pick<PendingScanUpdate, "gpsAccuracyMeters" | "clientCapturedAt"> {
+function pendingLocationMetadata(
+  session: QrScanSessionState | null,
+): Pick<PendingScanUpdate, "gpsAccuracyMeters" | "clientCapturedAt"> {
   return {
     gpsAccuracyMeters: session?.gpsAccuracyMeters || "",
     clientCapturedAt: session?.locationCapturedAtIso || "",
@@ -488,12 +611,15 @@ function scanLocationPayloadText(value: string | undefined): string {
   return String(value ?? "").trim();
 }
 
-
 function sessionUsageForAsset(
   asset: ScanSafeAsset,
   session: QrScanSessionState | null,
 ): { hasUsage: boolean; hours: string } {
-  if (!session || normalizePublicAssetCode(session.publicAssetCode) !== normalizePublicAssetCode(asset.publicAssetCode)) {
+  if (
+    !session ||
+    normalizePublicAssetCode(session.publicAssetCode) !==
+      normalizePublicAssetCode(asset.publicAssetCode)
+  ) {
     return { hasUsage: false, hours: "" };
   }
 
@@ -516,12 +642,18 @@ function sessionUsageForAsset(
   return { hasUsage: false, hours: "" };
 }
 
-function applySessionUsageToAsset(asset: ScanSafeAsset, session: QrScanSessionState | null): ScanSafeAsset {
+function applySessionUsageToAsset(
+  asset: ScanSafeAsset,
+  session: QrScanSessionState | null,
+): ScanSafeAsset {
   const usage = sessionUsageForAsset(asset, session);
 
   if (!usage.hasUsage) return asset;
 
-  if ((asset.usageMode === "hours" || asset.usageMode === "km") && usage.hours) {
+  if (
+    (asset.usageMode === "hours" || asset.usageMode === "km") &&
+    usage.hours
+  ) {
     const parsed = Number(usage.hours);
     return Number.isFinite(parsed) ? { ...asset, hours: parsed } : asset;
   }
@@ -529,7 +661,10 @@ function applySessionUsageToAsset(asset: ScanSafeAsset, session: QrScanSessionSt
   return asset;
 }
 
-function seedQrSessionFromAsset(publicAssetCode: string, asset: ScanSafeAsset): QrScanSessionState | null {
+function seedQrSessionFromAsset(
+  publicAssetCode: string,
+  asset: ScanSafeAsset,
+): QrScanSessionState | null {
   return updateQrScanSession(publicAssetCode, (current) => ({
     ...current,
     publicAssetCode: normalizePublicAssetCode(asset.publicAssetCode),
@@ -574,9 +709,14 @@ function loadImageElement(file: File): Promise<HTMLImageElement> {
 }
 
 async function compressQrPhoto(file: File): Promise<File> {
-  if (typeof window === "undefined" || typeof document === "undefined") return file;
+  if (typeof window === "undefined" || typeof document === "undefined")
+    return file;
   if (!file.type.toLowerCase().startsWith("image/")) return file;
-  if (file.size <= QR_PHOTO_SKIP_COMPRESSION_BYTES && file.type.toLowerCase() === "image/jpeg") return file;
+  if (
+    file.size <= QR_PHOTO_SKIP_COMPRESSION_BYTES &&
+    file.type.toLowerCase() === "image/jpeg"
+  )
+    return file;
 
   try {
     const image = await loadImageElement(file);
@@ -585,7 +725,10 @@ async function compressQrPhoto(file: File): Promise<File> {
 
     if (!sourceWidth || !sourceHeight) return file;
 
-    const scale = Math.min(1, QR_PHOTO_MAX_DIMENSION / Math.max(sourceWidth, sourceHeight));
+    const scale = Math.min(
+      1,
+      QR_PHOTO_MAX_DIMENSION / Math.max(sourceWidth, sourceHeight),
+    );
     const targetWidth = Math.max(1, Math.round(sourceWidth * scale));
     const targetHeight = Math.max(1, Math.round(sourceHeight * scale));
     const canvas = document.createElement("canvas");
@@ -703,30 +846,35 @@ function assetPlaceholderLabel(asset: ScanSafeAsset): string {
 }
 
 function normalizeClassifierText(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/[_-]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  return value.toLowerCase().replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
 }
 
 function assetClassifierText(asset: ScanSafeAsset): string {
-  return normalizeClassifierText([
-    asset.kind,
-    asset.equipmentFamilyKey,
-    asset.equipmentFamilyLabel,
-    asset.title,
-  ].join(" "));
+  return normalizeClassifierText(
+    [
+      asset.kind,
+      asset.equipmentFamilyKey,
+      asset.equipmentFamilyLabel,
+      asset.title,
+    ].join(" "),
+  );
 }
 
 function containsAnyHint(text: string, hints: readonly string[]): boolean {
   return hints.some((hint) => text.includes(hint));
 }
 
-function resolveAssetServiceProfile(asset: ScanSafeAsset | null): AssetServiceProfile {
+function resolveAssetServiceProfile(
+  asset: ScanSafeAsset | null,
+): AssetServiceProfile {
   if (!asset) return "propelled";
 
-  if (asset.isPropelled || asset.canUpdateFuel || asset.kind === "vehicle" || asset.kind === "tractor") {
+  if (
+    asset.isPropelled ||
+    asset.canUpdateFuel ||
+    asset.kind === "vehicle" ||
+    asset.kind === "tractor"
+  ) {
     return "propelled";
   }
 
@@ -740,19 +888,31 @@ function resolveAssetServiceProfile(asset: ScanSafeAsset | null): AssetServicePr
     return "implement";
   }
 
-  if (containsAnyHint(classifierText, PROPELLED_HINTS) || asset.usageMode === "km" || asset.usageMode === "hours") {
+  if (
+    containsAnyHint(classifierText, PROPELLED_HINTS) ||
+    asset.usageMode === "km" ||
+    asset.usageMode === "hours"
+  ) {
     return "propelled";
   }
 
   return "implement";
 }
 
-function checkedOptionsForProfile(profile: AssetServiceProfile): readonly ServiceOption[] {
-  return profile === "implement" ? IMPLEMENT_CHECKED_OPTIONS : PROPELLED_CHECKED_OPTIONS;
+function checkedOptionsForProfile(
+  profile: AssetServiceProfile,
+): readonly ServiceOption[] {
+  return profile === "implement"
+    ? IMPLEMENT_CHECKED_OPTIONS
+    : PROPELLED_CHECKED_OPTIONS;
 }
 
-function servicedOptionsForProfile(profile: AssetServiceProfile): readonly ServiceOption[] {
-  return profile === "implement" ? IMPLEMENT_SERVICED_OPTIONS : PROPELLED_SERVICED_OPTIONS;
+function servicedOptionsForProfile(
+  profile: AssetServiceProfile,
+): readonly ServiceOption[] {
+  return profile === "implement"
+    ? IMPLEMENT_SERVICED_OPTIONS
+    : PROPELLED_SERVICED_OPTIONS;
 }
 
 function serviceCopyForProfile(profile: AssetServiceProfile) {
@@ -779,9 +939,12 @@ function serviceCopyForProfile(profile: AssetServiceProfile) {
       companyPlaceholder: "Company or workshop name",
       mechanicLabel: "Technician name",
       mechanicPlaceholder: "Technician name",
-      checkedNotePlaceholder: "Example: bolts checked, pins checked, no visible cracks.",
-      servicedNotePlaceholder: "Example: replaced points, tightened bolts and greased pins.",
-      repairedNotePlaceholder: "Example: cracked bracket repaired; two bushes replaced; welds checked.",
+      checkedNotePlaceholder:
+        "Example: bolts checked, pins checked, no visible cracks.",
+      servicedNotePlaceholder:
+        "Example: replaced points, tightened bolts and greased pins.",
+      repairedNotePlaceholder:
+        "Example: cracked bracket repaired; two bushes replaced; welds checked.",
       repairedExtraNotePlaceholder: "Optional: parts used or follow-up needed.",
     };
   }
@@ -808,14 +971,20 @@ function serviceCopyForProfile(profile: AssetServiceProfile) {
     companyPlaceholder: "Company or dealer name",
     mechanicLabel: "Mechanic name",
     mechanicPlaceholder: "Mechanic name",
-    checkedNotePlaceholder: "Example: oil checked, tyres checked, no visible leaks.",
-    servicedNotePlaceholder: "Example: full service completed; oil and filters replaced.",
-    repairedNotePlaceholder: "Example: hydraulic leak repaired; hose replaced; pressure tested.",
+    checkedNotePlaceholder:
+      "Example: oil checked, tyres checked, no visible leaks.",
+    servicedNotePlaceholder:
+      "Example: full service completed; oil and filters replaced.",
+    repairedNotePlaceholder:
+      "Example: hydraulic leak repaired; hose replaced; pressure tested.",
     repairedExtraNotePlaceholder: "Optional: parts used or follow-up needed.",
   };
 }
 
-function buildEditorSummary(editor: EditorKey, asset: ScanSafeAsset | null): string {
+function buildEditorSummary(
+  editor: EditorKey,
+  asset: ScanSafeAsset | null,
+): string {
   if (editor === "usage") return formatUsage(asset);
 
   if (editor === "service") return "Check Service Repair";
@@ -840,8 +1009,8 @@ function needsUsageUpdateBeforeActions(
 ): boolean {
   return Boolean(
     isMeterUsageMode(asset) &&
-      !update.hasUsage &&
-      !hasCompletedRequiredUsageUpdate,
+    !update.hasUsage &&
+    !hasCompletedRequiredUsageUpdate,
   );
 }
 
@@ -884,10 +1053,15 @@ function mergeUniqueStrings(values: string[], limit?: number): string[] {
 }
 
 function hasPendingScanUpdate(update: PendingScanUpdate): boolean {
-  return update.hasUsage || update.hasService || update.hasPhotos || update.hasNotes;
+  return (
+    update.hasUsage || update.hasService || update.hasPhotos || update.hasNotes
+  );
 }
 
-function keepCurrentLocation(current: DraftState, session: QrScanSessionState | null = null): DraftState {
+function keepCurrentLocation(
+  current: DraftState,
+  session: QrScanSessionState | null = null,
+): DraftState {
   return {
     ...initialDraft,
     latitude: current.latitude || session?.latitude || "",
@@ -901,7 +1075,9 @@ function buildServiceNote(draft: DraftState): string {
   if (draft.serviceMode === "checked") {
     return [
       "Checked",
-      draft.checkedItems.length ? `Checked items: ${draft.checkedItems.join(", ")}` : "",
+      draft.checkedItems.length
+        ? `Checked items: ${draft.checkedItems.join(", ")}`
+        : "",
       note ? `Notes/Problems: ${note}` : "",
     ]
       .filter(Boolean)
@@ -911,8 +1087,12 @@ function buildServiceNote(draft: DraftState): string {
   if (draft.serviceMode === "serviced") {
     return [
       "Serviced",
-      draft.servicedItems.length ? `Work done: ${draft.servicedItems.join(", ")}` : "",
-      draft.serviceCompany.trim() ? `Company: ${draft.serviceCompany.trim()}` : "",
+      draft.servicedItems.length
+        ? `Work done: ${draft.servicedItems.join(", ")}`
+        : "",
+      draft.serviceCompany.trim()
+        ? `Company: ${draft.serviceCompany.trim()}`
+        : "",
       draft.mechanicName.trim() ? `Mechanic: ${draft.mechanicName.trim()}` : "",
       note ? `Notes/Problems: ${note}` : "",
     ]
@@ -923,8 +1103,12 @@ function buildServiceNote(draft: DraftState): string {
   if (draft.serviceMode === "repaired") {
     return [
       "Repaired",
-      draft.repairDetails.trim() ? `Repair details: ${draft.repairDetails.trim()}` : "",
-      draft.serviceCompany.trim() ? `Company: ${draft.serviceCompany.trim()}` : "",
+      draft.repairDetails.trim()
+        ? `Repair details: ${draft.repairDetails.trim()}`
+        : "",
+      draft.serviceCompany.trim()
+        ? `Company: ${draft.serviceCompany.trim()}`
+        : "",
       draft.mechanicName.trim() ? `Mechanic: ${draft.mechanicName.trim()}` : "",
       note ? `Notes/Problems: ${note}` : "",
     ]
@@ -963,7 +1147,9 @@ function loadScanLeaflet(): Promise<any> {
       document.head.appendChild(link);
     }
 
-    const existingScript = document.getElementById(SCAN_LEAFLET_SCRIPT_ID) as HTMLScriptElement | null;
+    const existingScript = document.getElementById(
+      SCAN_LEAFLET_SCRIPT_ID,
+    ) as HTMLScriptElement | null;
 
     const resolveWhenReady = () => {
       if (window.L) {
@@ -975,7 +1161,11 @@ function loadScanLeaflet(): Promise<any> {
 
     if (existingScript) {
       existingScript.addEventListener("load", resolveWhenReady, { once: true });
-      existingScript.addEventListener("error", () => reject(new Error("Map could not be loaded.")), { once: true });
+      existingScript.addEventListener(
+        "error",
+        () => reject(new Error("Map could not be loaded.")),
+        { once: true },
+      );
       return;
     }
 
@@ -984,7 +1174,11 @@ function loadScanLeaflet(): Promise<any> {
     script.src = SCAN_LEAFLET_JS_URL;
     script.async = true;
     script.addEventListener("load", resolveWhenReady, { once: true });
-    script.addEventListener("error", () => reject(new Error("Map could not be loaded.")), { once: true });
+    script.addEventListener(
+      "error",
+      () => reject(new Error("Map could not be loaded.")),
+      { once: true },
+    );
     document.body.appendChild(script);
   });
 
@@ -996,7 +1190,10 @@ function dealerPartnerName(partner: PartnerDirectoryEntry): string {
 }
 
 function dealerPartnerLocation(partner: PartnerDirectoryEntry): string {
-  return [partner.townCity, partner.province].filter(Boolean).join(", ") || "Location not saved";
+  return (
+    [partner.townCity, partner.province].filter(Boolean).join(", ") ||
+    "Location not saved"
+  );
 }
 
 function dealerPartnerInitial(partner: PartnerDirectoryEntry): string {
@@ -1005,7 +1202,9 @@ function dealerPartnerInitial(partner: PartnerDirectoryEntry): string {
 }
 
 function dealerPartnerAddress(partner: PartnerDirectoryEntry): string {
-  return [partner.addressLine1, partner.townCity, partner.province].filter(Boolean).join(", ");
+  return [partner.addressLine1, partner.townCity, partner.province]
+    .filter(Boolean)
+    .join(", ");
 }
 
 function dealerPartnerServicesDisplay(partner: PartnerDirectoryEntry): string {
@@ -1013,10 +1212,12 @@ function dealerPartnerServicesDisplay(partner: PartnerDirectoryEntry): string {
 }
 
 function hasDealerPartnerCoordinates(partner: PartnerDirectoryEntry): boolean {
-  return typeof partner.latitude === "number"
-    && Number.isFinite(partner.latitude)
-    && typeof partner.longitude === "number"
-    && Number.isFinite(partner.longitude);
+  return (
+    typeof partner.latitude === "number" &&
+    Number.isFinite(partner.latitude) &&
+    typeof partner.longitude === "number" &&
+    Number.isFinite(partner.longitude)
+  );
 }
 
 function normalizeWebsiteHref(value: string): string {
@@ -1065,7 +1266,10 @@ function buildDealerPartnerPopupHtml(partner: PartnerDirectoryEntry): string {
   `;
 }
 
-function apiErrorMessage(payload: { error?: string } | null | undefined, fallback: string): string {
+function apiErrorMessage(
+  payload: { error?: string } | null | undefined,
+  fallback: string,
+): string {
   return payload?.error || fallback;
 }
 
@@ -1073,7 +1277,16 @@ type IconProps = { className?: string };
 
 function MeterIcon({ className }: IconProps) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
       <path d="M4 17a8 8 0 1 1 16 0" />
       <path d="M7 17h10" />
       <path d="M12 17l4.2-5.2" />
@@ -1086,7 +1299,16 @@ function MeterIcon({ className }: IconProps) {
 
 function ServiceIcon({ className }: IconProps) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
       <circle cx="12" cy="12" r="3.2" />
       <path d="M12 2.8v2.1" />
       <path d="M12 19.1v2.1" />
@@ -1102,7 +1324,16 @@ function ServiceIcon({ className }: IconProps) {
 
 function CheckCircleIcon({ className }: IconProps) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
       <circle cx="12" cy="12" r="9" />
       <path d="m8.4 12.3 2.3 2.3 5-5.2" />
     </svg>
@@ -1111,7 +1342,16 @@ function CheckCircleIcon({ className }: IconProps) {
 
 function WrenchIcon({ className }: IconProps) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
       <path d="M14.7 6.2a4.5 4.5 0 0 0-5.4 5.6L4.4 16.7a1.6 1.6 0 0 0 0 2.2l.7.7a1.6 1.6 0 0 0 2.2 0l4.9-4.9a4.5 4.5 0 0 0 5.6-5.4l-3 3-3.1-3.1z" />
       <path d="M5.8 18.2h.01" />
     </svg>
@@ -1120,7 +1360,12 @@ function WrenchIcon({ className }: IconProps) {
 
 function RepairIcon({ className }: IconProps) {
   return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
+    <svg
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className={className}
+      aria-hidden="true"
+    >
       <path d="M13.4 2.8 4.8 13.3c-.5.6-.1 1.5.7 1.5h5.1l-1.2 6.1c-.2 1 .9 1.6 1.6.8l8.6-10.8c.5-.6 0-1.5-.7-1.5h-5.1l1.2-5.8c.2-1-.9-1.6-1.6-.8z" />
     </svg>
   );
@@ -1128,7 +1373,16 @@ function RepairIcon({ className }: IconProps) {
 
 function NoteIcon({ className }: IconProps) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
       <path d="M6 3.8h9.2L19 7.6v12.6H6z" />
       <path d="M15 3.8v4h4" />
       <path d="M9 12h6" />
@@ -1139,7 +1393,16 @@ function NoteIcon({ className }: IconProps) {
 
 function UploadIcon({ className }: IconProps) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
       <path d="M12 15.5V4.5" />
       <path d="m7.2 9.2 4.8-4.8 4.8 4.8" />
       <path d="M5 19.5h14" />
@@ -1150,7 +1413,16 @@ function UploadIcon({ className }: IconProps) {
 
 function CameraIcon({ className }: IconProps) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
       <path d="M4 8a2 2 0 0 1 2-2h2.6l1.4-2h4l1.4 2H18a2 2 0 0 1 2 2v9.5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z" />
       <circle cx="12" cy="13" r="4" />
       <path d="M17 9h.01" />
@@ -1160,7 +1432,16 @@ function CameraIcon({ className }: IconProps) {
 
 function ShareIcon({ className }: IconProps) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
       <circle cx="18" cy="5" r="3" />
       <circle cx="6" cy="12" r="3" />
       <circle cx="18" cy="19" r="3" />
@@ -1172,7 +1453,16 @@ function ShareIcon({ className }: IconProps) {
 
 function LocationIcon({ className }: IconProps) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
       <path d="M12 21s-6.5-4.4-6.5-10.2a6.5 6.5 0 1 1 13 0C18.5 16.6 12 21 12 21z" />
       <circle cx="12" cy="10.8" r="2.4" />
     </svg>
@@ -1181,7 +1471,16 @@ function LocationIcon({ className }: IconProps) {
 
 function CloseIcon({ className }: IconProps) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
       <path d="M6 6l12 12" />
       <path d="M18 6 6 18" />
     </svg>
@@ -1204,28 +1503,41 @@ export default function ScanClient({
   const [savedAsset, setSavedAsset] = useState<ScanSafeAsset | null>(null);
   const [assetPreview, setAssetPreview] = useState<ScanSafeAsset | null>(null);
   const [draft, setDraft] = useState<DraftState>(initialDraft);
-  const [pendingUpdate, setPendingUpdate] = useState<PendingScanUpdate>(initialPendingUpdate);
+  const [pendingUpdate, setPendingUpdate] =
+    useState<PendingScanUpdate>(initialPendingUpdate);
   const [pin, setPin] = useState("");
   const [operatorName, setOperatorName] = useState("");
-  const [scanAccessMode, setScanAccessMode] = useState<ScanAccessResponseMode | null>(null);
-  const [notice, setNotice] = useState<{ tone: NoticeTone; message: string } | null>(null);
+  const [scanAccessMode, setScanAccessMode] =
+    useState<ScanAccessResponseMode | null>(null);
+  const [notice, setNotice] = useState<{
+    tone: NoticeTone;
+    message: string;
+  } | null>(null);
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
-  const [doneMessage, setDoneMessage] = useState("The QR update session is closed.");
+  const [doneMessage, setDoneMessage] = useState(
+    "The QR update session is closed.",
+  );
   const [isSubmittingPin, setIsSubmittingPin] = useState(false);
   const [isLoadingAsset, setIsLoadingAsset] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [locationState, setLocationState] = useState<LocationState>("idle");
-  const [locationMessage, setLocationMessage] = useState(DEFAULT_LOCATION_REQUIRED_MESSAGE);
+  const [locationMessage, setLocationMessage] = useState(
+    DEFAULT_LOCATION_REQUIRED_MESSAGE,
+  );
   const [isUnavailable, setIsUnavailable] = useState(false);
+  const [assetOpenError, setAssetOpenError] = useState<string | null>(null);
   const [activeEditor, setActiveEditor] = useState<EditorKey | null>(null);
   const [showLocationReminder, setShowLocationReminder] = useState(false);
   const [isDone, setIsDone] = useState(false);
-  const [hasCompletedRequiredUsageUpdate, setHasCompletedRequiredUsageUpdate] = useState(false);
+  const [hasCompletedRequiredUsageUpdate, setHasCompletedRequiredUsageUpdate] =
+    useState(false);
   const [showServiceDetailsStep, setShowServiceDetailsStep] = useState(false);
   const [showServicePhotoStep, setShowServicePhotoStep] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-  const [sharePartners, setSharePartners] = useState<PartnerDirectoryEntry[]>([]);
+  const [sharePartners, setSharePartners] = useState<PartnerDirectoryEntry[]>(
+    [],
+  );
   const [sharePartnerSearch, setSharePartnerSearch] = useState("");
   const [selectedSharePartnerId, setSelectedSharePartnerId] = useState("");
   const [shareOwnerMessage, setShareOwnerMessage] = useState("");
@@ -1248,7 +1560,9 @@ export default function ScanClient({
 
   useEffect(() => {
     const previousBodyBackground = document.body.style.background;
-    const footerElements = Array.from(document.querySelectorAll<HTMLElement>("footer"));
+    const footerElements = Array.from(
+      document.querySelectorAll<HTMLElement>("footer"),
+    );
     const previousFooterDisplays = footerElements.map((element) => ({
       element,
       display: element.style.display,
@@ -1261,7 +1575,9 @@ export default function ScanClient({
 
     if (!fieldManagerMode) {
       try {
-        const savedName = window.localStorage.getItem("aim4price_scan_operator_name");
+        const savedName = window.localStorage.getItem(
+          "aim4price_scan_operator_name",
+        );
         if (savedName) setOperatorName(savedName);
       } catch {
         // Local storage is optional for this screen.
@@ -1282,7 +1598,10 @@ export default function ScanClient({
     setAssetPreview(null);
     setScanAccessMode(null);
     const restoredSession = readQrScanSession(normalizedCode);
-    const restoredDraft = applySessionLocationToDraft(initialDraft, restoredSession);
+    const restoredDraft = applySessionLocationToDraft(
+      initialDraft,
+      restoredSession,
+    );
     setDraft(restoredDraft);
     setPendingUpdate({
       ...initialPendingUpdate,
@@ -1292,6 +1611,7 @@ export default function ScanClient({
     });
     setPin("");
     setIsUnavailable(false);
+    setAssetOpenError(null);
     setIsSubmittingPin(false);
     setIsLoadingAsset(false);
     setIsSaving(false);
@@ -1344,7 +1664,9 @@ export default function ScanClient({
             cache: "no-store",
           },
         );
-        const data = (await response.json().catch(() => null)) as ScanAssetResponse | null;
+        const data = (await response
+          .json()
+          .catch(() => null)) as ScanAssetResponse | null;
 
         if (!isMounted) return;
 
@@ -1369,7 +1691,12 @@ export default function ScanClient({
   }, [normalizedCode]);
 
   useEffect(() => {
-    if (!fieldManagerMode || !normalizedCode || autoFieldManagerOpenKeyRef.current === normalizedCode) return;
+    if (
+      !fieldManagerMode ||
+      !normalizedCode ||
+      autoFieldManagerOpenKeyRef.current === normalizedCode
+    )
+      return;
 
     autoFieldManagerOpenKeyRef.current = normalizedCode;
     void loadUnlockedAsset();
@@ -1398,7 +1725,10 @@ export default function ScanClient({
       if (result.syncedCount > 0) {
         setNotice({
           tone: "success",
-          message: result.syncedCount === 1 ? "Saved phone update synced." : `${result.syncedCount} saved phone updates synced.`,
+          message:
+            result.syncedCount === 1
+              ? "Saved phone update synced."
+              : `${result.syncedCount} saved phone updates synced.`,
         });
       }
     }
@@ -1440,9 +1770,12 @@ export default function ScanClient({
   }, [isShareModalOpen, asset?.id]);
 
   useEffect(() => {
-    if (!isShareModalOpen || shareLeadStep || !shareMapElementRef.current) return undefined;
+    if (!isShareModalOpen || shareLeadStep || !shareMapElementRef.current)
+      return undefined;
 
-    const partnersWithCoordinates = sharePartners.filter(hasDealerPartnerCoordinates);
+    const partnersWithCoordinates = sharePartners.filter(
+      hasDealerPartnerCoordinates,
+    );
     let isCancelled = false;
 
     if (!partnersWithCoordinates.length) {
@@ -1470,7 +1803,9 @@ export default function ScanClient({
             })
             .addTo(shareLeafletMapRef.current);
 
-          shareMarkerLayerRef.current = leaflet.layerGroup().addTo(shareLeafletMapRef.current);
+          shareMarkerLayerRef.current = leaflet
+            .layerGroup()
+            .addTo(shareLeafletMapRef.current);
         }
 
         const map = shareLeafletMapRef.current;
@@ -1498,8 +1833,14 @@ export default function ScanClient({
           marker.on("popupopen", () => {
             window.setTimeout(() => {
               const popupElement = marker.getPopup?.()?.getElement?.();
-              const button = popupElement?.querySelector?.("button[data-scan-share-partner-id]") as HTMLButtonElement | null;
-              button?.addEventListener("click", () => openShareLeadMessage(partner), { once: true });
+              const button = popupElement?.querySelector?.(
+                "button[data-scan-share-partner-id]",
+              ) as HTMLButtonElement | null;
+              button?.addEventListener(
+                "click",
+                () => openShareLeadMessage(partner),
+                { once: true },
+              );
             }, 0);
           });
 
@@ -1528,15 +1869,22 @@ export default function ScanClient({
 
   useEffect(() => {
     if (!isShareModalOpen || shareLeadStep || !selectedSharePartnerId) return;
-    const selectedPartner = sharePartners.find((partner) => partner.userId === selectedSharePartnerId);
-    if (!selectedPartner || !hasDealerPartnerCoordinates(selectedPartner)) return;
+    const selectedPartner = sharePartners.find(
+      (partner) => partner.userId === selectedSharePartnerId,
+    );
+    if (!selectedPartner || !hasDealerPartnerCoordinates(selectedPartner))
+      return;
 
     const map = shareLeafletMapRef.current;
     const marker = shareMarkersByPartnerRef.current.get(selectedPartner.userId);
 
     if (!map || !marker) return;
 
-    map.setView([selectedPartner.latitude, selectedPartner.longitude], Math.max(map.getZoom?.() ?? DEFAULT_DEALER_MAP_ZOOM, 8), { animate: true });
+    map.setView(
+      [selectedPartner.latitude, selectedPartner.longitude],
+      Math.max(map.getZoom?.() ?? DEFAULT_DEALER_MAP_ZOOM, 8),
+      { animate: true },
+    );
     marker.openPopup();
   }, [isShareModalOpen, shareLeadStep, selectedSharePartnerId, sharePartners]);
 
@@ -1548,7 +1896,9 @@ export default function ScanClient({
     const storedSession = readQrScanSession(normalizedCode);
     if (hasLocationCaptured(draft) || sessionHasLocation(storedSession)) {
       if (!hasLocationCaptured(draft) && sessionHasLocation(storedSession)) {
-        setDraft((current) => applySessionLocationToDraft(current, storedSession));
+        setDraft((current) =>
+          applySessionLocationToDraft(current, storedSession),
+        );
       }
       setLocationState("ready");
       setLocationMessage(sessionLocationMessage(storedSession));
@@ -1559,56 +1909,91 @@ export default function ScanClient({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [asset?.id]);
 
-  async function loadUnlockedAsset() {
+  async function loadUnlockedAsset(): Promise<boolean> {
     setIsLoadingAsset(true);
     setIsUnavailable(false);
+    setAssetOpenError(null);
 
     try {
+      const query = fieldManagerMode ? "?fieldManager=1" : "";
       const response = await fetch(
-        `/api/scan/assets/${encodeURIComponent(normalizedCode)}`,
+        `/api/scan/assets/${encodeURIComponent(normalizedCode)}${query}`,
         {
           credentials: "include",
           cache: "no-store",
         },
       );
-      const data = (await response.json().catch(() => null)) as ScanAssetResponse | null;
+      const data = (await response
+        .json()
+        .catch(() => null)) as ScanAssetResponse | null;
+
+      if (response.status === 401 && fieldManagerMode) {
+        setAsset(null);
+        setIsUnavailable(true);
+        setAssetOpenError(
+          data?.error ??
+            "Could not open this asset. Your Field Manager session may not have access to this asset. Please go back and try again.",
+        );
+        return false;
+      }
 
       if (response.status === 401) {
-        if (fieldManagerMode) {
-          window.location.replace('/field-manager/login');
-          return;
-        }
         throw new Error(data?.error ?? "Enter the farm scan PIN again.");
       }
 
-      if (response.status === 403 || response.status === 404) {
+      if (
+        response.status === 403 ||
+        response.status === 404 ||
+        response.status === 409
+      ) {
+        const message =
+          data?.error ??
+          (response.status === 404
+            ? "Asset not found."
+            : fieldManagerMode
+              ? "Could not open this asset. Your Field Manager session may not have access to this asset. Please go back and try again."
+              : "Scan access is not enabled yet.");
         setAsset(null);
         setIsUnavailable(true);
-        throw new Error(
-          data?.error ??
-            (response.status === 404
-              ? "Asset not found."
-              : "Scan access is not enabled yet."),
-        );
+        setAssetOpenError(message);
+        return false;
       }
 
       if (!response.ok || !data?.ok || !data.asset) {
-        throw new Error(data?.error ?? "Failed to open this asset.");
+        const message = data?.error ?? "Failed to open this asset.";
+        setAsset(null);
+        setIsUnavailable(true);
+        setAssetOpenError(message);
+        return false;
       }
 
       setScanAccessMode(data.accessMode ?? null);
 
-      if (data.accessMode === "field_manager" && data.fieldManagerDisplayName?.trim()) {
-        const managerOperatorName = normalizeOperatorName(data.fieldManagerDisplayName);
+      if (
+        data.accessMode === "field_manager" &&
+        data.fieldManagerDisplayName?.trim()
+      ) {
+        const managerOperatorName = normalizeOperatorName(
+          data.fieldManagerDisplayName,
+        );
         if (managerOperatorName) setOperatorName(managerOperatorName);
       }
 
       const openedAsset = data.asset;
-      const isFieldManagerAccess = fieldManagerMode || data.accessMode === "field_manager";
-      const seededSession = seedQrSessionFromAsset(normalizedCode, openedAsset) ?? readQrScanSession(normalizedCode);
+      const isFieldManagerAccess =
+        fieldManagerMode || data.accessMode === "field_manager";
+      const seededSession =
+        seedQrSessionFromAsset(normalizedCode, openedAsset) ??
+        readQrScanSession(normalizedCode);
       const sessionUsage = sessionUsageForAsset(openedAsset, seededSession);
-      const openedAssetWithSessionUsage = applySessionUsageToAsset(openedAsset, seededSession);
-      const requiresInitialUsageUpdate = !isFieldManagerAccess && isMeterUsageMode(openedAsset) && !sessionUsage.hasUsage;
+      const openedAssetWithSessionUsage = applySessionUsageToAsset(
+        openedAsset,
+        seededSession,
+      );
+      const requiresInitialUsageUpdate =
+        !isFieldManagerAccess &&
+        isMeterUsageMode(openedAsset) &&
+        !sessionUsage.hasUsage;
       const restoredLatitude = seededSession?.latitude || draft.latitude;
       const restoredLongitude = seededSession?.longitude || draft.longitude;
       const nextDraftBase = {
@@ -1616,12 +2001,17 @@ export default function ScanClient({
         latitude: restoredLatitude,
         longitude: restoredLongitude,
       };
-      const nextDraft = openedAsset.usageMode === "hours" || openedAsset.usageMode === "km"
-        ? {
-            ...nextDraftBase,
-            hours: sessionUsage.hours || (openedAsset.hours !== null ? String(Math.round(openedAsset.hours)) : ""),
-          }
-        : nextDraftBase;
+      const nextDraft =
+        openedAsset.usageMode === "hours" || openedAsset.usageMode === "km"
+          ? {
+              ...nextDraftBase,
+              hours:
+                sessionUsage.hours ||
+                (openedAsset.hours !== null
+                  ? String(Math.round(openedAsset.hours))
+                  : ""),
+            }
+          : nextDraftBase;
 
       setAsset(openedAssetWithSessionUsage);
       setSavedAsset(openedAsset);
@@ -1638,13 +2028,34 @@ export default function ScanClient({
       setHasCompletedRequiredUsageUpdate(!requiresInitialUsageUpdate);
       setShowLocationReminder(false);
       setActiveEditor(requiresInitialUsageUpdate ? "usage" : null);
+      setAssetOpenError(null);
+      setIsUnavailable(false);
       if (restoredLatitude && restoredLongitude) {
         setLocationState("ready");
         setLocationMessage(sessionLocationMessage(seededSession));
       }
+      return true;
+    } catch (error) {
+      const message =
+        error instanceof Error && error.message.trim()
+          ? error.message
+          : "Failed to open this asset.";
+      setAsset(null);
+      setIsUnavailable(true);
+      setAssetOpenError(message);
+      return false;
     } finally {
       setIsLoadingAsset(false);
     }
+  }
+
+  function goBackFromAssetError() {
+    if (fieldManagerMode) {
+      window.location.assign("/field-manager/assets");
+      return;
+    }
+
+    window.history.back();
   }
 
   async function handlePinSubmit(event: FormEvent<HTMLFormElement>) {
@@ -1658,27 +2069,38 @@ export default function ScanClient({
     }
 
     if (cleanOperatorName.length < 2) {
-      setNotice({ tone: "error", message: "Enter your name before opening the asset." });
+      setNotice({
+        tone: "error",
+        message: "Enter your name before opening the asset.",
+      });
       return;
     }
 
     const storedSession = readQrScanSession(normalizedCode);
-    const hasSessionLocation = hasLocationCaptured(draft) || sessionHasLocation(storedSession);
+    const hasSessionLocation =
+      hasLocationCaptured(draft) || sessionHasLocation(storedSession);
 
     if (!hasSessionLocation) {
-      setNotice({ tone: "error", message: "Capture GPS first. Location must be enabled before this asset QR can continue." });
+      setNotice({
+        tone: "error",
+        message:
+          "Capture GPS first. Location must be enabled before this asset QR can continue.",
+      });
       void captureLocation(false);
       return;
     }
 
     if (!hasLocationCaptured(draft) && sessionHasLocation(storedSession)) {
-      setDraft((current) => applySessionLocationToDraft(current, storedSession));
+      setDraft((current) =>
+        applySessionLocationToDraft(current, storedSession),
+      );
       setLocationState("ready");
       setLocationMessage(sessionLocationMessage(storedSession));
     }
 
     setIsSubmittingPin(true);
     setIsUnavailable(false);
+    setAssetOpenError(null);
 
     try {
       const response = await fetch("/api/scan/auth", {
@@ -1687,14 +2109,19 @@ export default function ScanClient({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ publicAssetCode: normalizedCode, pin }),
       });
-      const data = (await response.json().catch(() => null)) as ScanAuthResponse | null;
+      const data = (await response
+        .json()
+        .catch(() => null)) as ScanAuthResponse | null;
 
       if (!response.ok || !data?.ok) {
         throw new Error(data?.error ?? "Incorrect scan PIN.");
       }
 
       try {
-        window.localStorage.setItem("aim4price_scan_operator_name", cleanOperatorName);
+        window.localStorage.setItem(
+          "aim4price_scan_operator_name",
+          cleanOperatorName,
+        );
       } catch {
         // Ignore local storage errors.
       }
@@ -1712,8 +2139,12 @@ export default function ScanClient({
     }
   }
 
-  async function uploadScanPhotoFiles(files: File[]): Promise<ScanUploadedPhoto[]> {
-    const compressedFiles = await Promise.all(files.map((file) => compressQrPhoto(file)));
+  async function uploadScanPhotoFiles(
+    files: File[],
+  ): Promise<ScanUploadedPhoto[]> {
+    const compressedFiles = await Promise.all(
+      files.map((file) => compressQrPhoto(file)),
+    );
     const formData = new FormData();
     formData.set("publicAssetCode", normalizedCode);
     compressedFiles.forEach((file) => formData.append("files", file));
@@ -1723,7 +2154,9 @@ export default function ScanClient({
       credentials: "include",
       body: formData,
     });
-    const data = (await response.json().catch(() => null)) as ScanUploadResponse | null;
+    const data = (await response
+      .json()
+      .catch(() => null)) as ScanUploadResponse | null;
 
     if (!response.ok || !data?.ok || !data.uploads?.length) {
       throw new Error(data?.error ?? "Failed to upload photos.");
@@ -1738,7 +2171,10 @@ export default function ScanClient({
 
     const remainingSlots = MAX_QR_PHOTOS - draft.photoUrls.length;
     if (remainingSlots <= 0) {
-      setNotice({ tone: "error", message: `You can add up to ${MAX_QR_PHOTOS} photos per update.` });
+      setNotice({
+        tone: "error",
+        message: `You can add up to ${MAX_QR_PHOTOS} photos per update.`,
+      });
       event.target.value = "";
       return;
     }
@@ -1753,10 +2189,7 @@ export default function ScanClient({
       setDraft((current) => ({
         ...current,
         photoUrls: Array.from(
-          new Set([
-            ...current.photoUrls,
-            ...uploadedUrls,
-          ]),
+          new Set([...current.photoUrls, ...uploadedUrls]),
         ).slice(0, MAX_QR_PHOTOS),
       }));
 
@@ -1767,7 +2200,8 @@ export default function ScanClient({
     } catch (error) {
       setNotice({
         tone: "error",
-        message: error instanceof Error ? error.message : "Failed to upload photos.",
+        message:
+          error instanceof Error ? error.message : "Failed to upload photos.",
       });
     } finally {
       event.target.value = "";
@@ -1781,7 +2215,10 @@ export default function ScanClient({
 
     const remainingSlots = MAX_SHARE_PHOTOS - sharePhotoUrls.length;
     if (remainingSlots <= 0) {
-      setNotice({ tone: "error", message: `You can attach up to ${MAX_SHARE_PHOTOS} photos to this dealer message.` });
+      setNotice({
+        tone: "error",
+        message: `You can attach up to ${MAX_SHARE_PHOTOS} photos to this dealer message.`,
+      });
       event.target.value = "";
       return;
     }
@@ -1791,13 +2228,25 @@ export default function ScanClient({
 
     try {
       const uploads = await uploadScanPhotoFiles(files);
-      const uploadedUrls = uploads.map((entry) => entry.url).filter(Boolean).slice(0, remainingSlots);
-      setSharePhotoUrls((current) => mergeUniqueStrings([...current, ...uploadedUrls], MAX_SHARE_PHOTOS));
-      setNotice({ tone: "success", message: uploadedUrls.length === 1 ? "Photo attached." : `${uploadedUrls.length} photos attached.` });
+      const uploadedUrls = uploads
+        .map((entry) => entry.url)
+        .filter(Boolean)
+        .slice(0, remainingSlots);
+      setSharePhotoUrls((current) =>
+        mergeUniqueStrings([...current, ...uploadedUrls], MAX_SHARE_PHOTOS),
+      );
+      setNotice({
+        tone: "success",
+        message:
+          uploadedUrls.length === 1
+            ? "Photo attached."
+            : `${uploadedUrls.length} photos attached.`,
+      });
     } catch (error) {
       setNotice({
         tone: "error",
-        message: error instanceof Error ? error.message : "Failed to attach photo.",
+        message:
+          error instanceof Error ? error.message : "Failed to attach photo.",
       });
     } finally {
       event.target.value = "";
@@ -1825,26 +2274,41 @@ export default function ScanClient({
   }
 
   function openEditor(nextEditor: EditorKey) {
-    const isFieldManagerAccess = fieldManagerMode || scanAccessMode === "field_manager";
-    const enforcedEditor = !isFieldManagerAccess && nextEditor !== "usage" && needsUsageUpdateBeforeActions(asset, pendingUpdate, hasCompletedRequiredUsageUpdate)
-      ? "usage"
-      : nextEditor;
+    const isFieldManagerAccess =
+      fieldManagerMode || scanAccessMode === "field_manager";
+    const enforcedEditor =
+      !isFieldManagerAccess &&
+      nextEditor !== "usage" &&
+      needsUsageUpdateBeforeActions(
+        asset,
+        pendingUpdate,
+        hasCompletedRequiredUsageUpdate,
+      )
+        ? "usage"
+        : nextEditor;
 
     if (enforcedEditor !== nextEditor && asset) {
       setNotice({ tone: "error", message: requiredUsageCopy(asset) });
     }
 
     setDraft((current) => {
-      const nextDraft = keepCurrentLocation(current, readQrScanSession(normalizedCode));
+      const nextDraft = keepCurrentLocation(
+        current,
+        readQrScanSession(normalizedCode),
+      );
 
       if (!asset) return nextDraft;
 
-      if (enforcedEditor === "usage" && (asset.usageMode === "hours" || asset.usageMode === "km")) {
-        const stagedHours = pendingUpdate.hasUsage && pendingUpdate.hours
-          ? pendingUpdate.hours
-          : asset.hours !== null
-            ? String(Math.round(asset.hours))
-            : "";
+      if (
+        enforcedEditor === "usage" &&
+        (asset.usageMode === "hours" || asset.usageMode === "km")
+      ) {
+        const stagedHours =
+          pendingUpdate.hasUsage && pendingUpdate.hours
+            ? pendingUpdate.hours
+            : asset.hours !== null
+              ? String(Math.round(asset.hours))
+              : "";
 
         return { ...nextDraft, hours: stagedHours };
       }
@@ -1870,14 +2334,18 @@ export default function ScanClient({
   }
 
   function closeEditor() {
-    setDraft((current) => keepCurrentLocation(current, readQrScanSession(normalizedCode)));
+    setDraft((current) =>
+      keepCurrentLocation(current, readQrScanSession(normalizedCode)),
+    );
     setShowServiceDetailsStep(false);
     setShowServicePhotoStep(false);
     setActiveEditor(null);
   }
 
   function skipRequiredUsageUpdate() {
-    setDraft((current) => keepCurrentLocation(current, readQrScanSession(normalizedCode)));
+    setDraft((current) =>
+      keepCurrentLocation(current, readQrScanSession(normalizedCode)),
+    );
     setHasCompletedRequiredUsageUpdate(true);
     setShowServiceDetailsStep(false);
     setShowServicePhotoStep(false);
@@ -1916,7 +2384,9 @@ export default function ScanClient({
     setIsLoadingSharePartners(true);
 
     try {
-      const query = searchValue.trim() ? `?search=${encodeURIComponent(searchValue.trim())}` : "";
+      const query = searchValue.trim()
+        ? `?search=${encodeURIComponent(searchValue.trim())}`
+        : "";
       const response = await fetch(
         `/api/scan/assets/${encodeURIComponent(normalizedCode)}/dealer-share${query}`,
         {
@@ -1924,7 +2394,9 @@ export default function ScanClient({
           cache: "no-store",
         },
       );
-      const data = (await response.json().catch(() => null)) as PartnerDirectoryApiResponse | null;
+      const data = (await response
+        .json()
+        .catch(() => null)) as PartnerDirectoryApiResponse | null;
 
       if (!response.ok || !data?.ok) {
         throw new Error(apiErrorMessage(data, "Failed to load local dealers."));
@@ -1934,13 +2406,18 @@ export default function ScanClient({
       setSharePartners(nextPartners);
       setSelectedSharePartnerId((current) => {
         if (!current) return current;
-        return nextPartners.some((partner) => partner.userId === current) ? current : "";
+        return nextPartners.some((partner) => partner.userId === current)
+          ? current
+          : "";
       });
     } catch (error) {
       setSharePartners([]);
       setNotice({
         tone: "error",
-        message: error instanceof Error ? error.message : "Failed to load local dealers.",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Failed to load local dealers.",
       });
     } finally {
       setIsLoadingSharePartners(false);
@@ -1956,27 +2433,42 @@ export default function ScanClient({
     if (!asset) return;
 
     if (scanAccessMode === "field_manager") {
-      setNotice({ tone: "error", message: "Dealer sharing is not available in Field Manager mode." });
+      setNotice({
+        tone: "error",
+        message: "Dealer sharing is not available in Field Manager mode.",
+      });
       return;
     }
 
-    if (needsUsageUpdateBeforeActions(asset, pendingUpdate, hasCompletedRequiredUsageUpdate)) {
+    if (
+      needsUsageUpdateBeforeActions(
+        asset,
+        pendingUpdate,
+        hasCompletedRequiredUsageUpdate,
+      )
+    ) {
       setNotice({ tone: "error", message: requiredUsageCopy(asset) });
       openEditor("usage");
       return;
     }
 
     const storedSession = readQrScanSession(normalizedCode);
-    const hasSessionLocation = hasLocationCaptured(draft) || sessionHasLocation(storedSession);
+    const hasSessionLocation =
+      hasLocationCaptured(draft) || sessionHasLocation(storedSession);
 
     if (!hasSessionLocation) {
-      setNotice({ tone: "error", message: "GPS is required before sending this asset to a dealer." });
+      setNotice({
+        tone: "error",
+        message: "GPS is required before sending this asset to a dealer.",
+      });
       void captureLocation(false);
       return;
     }
 
     if (!hasLocationCaptured(draft) && sessionHasLocation(storedSession)) {
-      setDraft((current) => applySessionLocationToDraft(current, storedSession));
+      setDraft((current) =>
+        applySessionLocationToDraft(current, storedSession),
+      );
       setLocationState("ready");
       setLocationMessage(sessionLocationMessage(storedSession));
     }
@@ -2009,7 +2501,10 @@ export default function ScanClient({
     }
 
     if (isUploadingSharePhoto) {
-      setNotice({ tone: "error", message: "Wait for the photo upload to finish." });
+      setNotice({
+        tone: "error",
+        message: "Wait for the photo upload to finish.",
+      });
       return;
     }
 
@@ -2020,7 +2515,9 @@ export default function ScanClient({
   async function handleSendDealerShareLead() {
     if (!asset) return;
 
-    const selectedPartner = sharePartners.find((partner) => partner.userId === selectedSharePartnerId);
+    const selectedPartner = sharePartners.find(
+      (partner) => partner.userId === selectedSharePartnerId,
+    );
 
     if (!selectedPartner) {
       setNotice({ tone: "error", message: "Choose a dealer before sending." });
@@ -2028,26 +2525,43 @@ export default function ScanClient({
     }
 
     if (!shareConsentAccepted) {
-      setNotice({ tone: "error", message: "Confirm that the asset may be sent to the dealer." });
+      setNotice({
+        tone: "error",
+        message: "Confirm that the asset may be sent to the dealer.",
+      });
       return;
     }
 
     if (isUploadingSharePhoto) {
-      setNotice({ tone: "error", message: "Wait for the photo upload to finish." });
+      setNotice({
+        tone: "error",
+        message: "Wait for the photo upload to finish.",
+      });
       return;
     }
 
     if (operatorName.trim().length < 2) {
-      setNotice({ tone: "error", message: "Enter your name before sending to a dealer." });
+      setNotice({
+        tone: "error",
+        message: "Enter your name before sending to a dealer.",
+      });
       return;
     }
 
     const storedSession = readQrScanSession(normalizedCode);
-    const shareLatitude = pendingUpdate.latitude || draft.latitude || storedSession?.latitude || "";
-    const shareLongitude = pendingUpdate.longitude || draft.longitude || storedSession?.longitude || "";
+    const shareLatitude =
+      pendingUpdate.latitude || draft.latitude || storedSession?.latitude || "";
+    const shareLongitude =
+      pendingUpdate.longitude ||
+      draft.longitude ||
+      storedSession?.longitude ||
+      "";
 
     if (!shareLatitude.trim() || !shareLongitude.trim()) {
-      setNotice({ tone: "error", message: "GPS is required before sending this asset to a dealer." });
+      setNotice({
+        tone: "error",
+        message: "GPS is required before sending this asset to a dealer.",
+      });
       void captureLocation(false);
       return;
     }
@@ -2074,10 +2588,14 @@ export default function ScanClient({
           }),
         },
       );
-      const data = (await response.json().catch(() => null)) as DealerShareLeadResponse | null;
+      const data = (await response
+        .json()
+        .catch(() => null)) as DealerShareLeadResponse | null;
 
       if (!response.ok || !data?.ok) {
-        throw new Error(apiErrorMessage(data, "Failed to send the asset to the dealer."));
+        throw new Error(
+          apiErrorMessage(data, "Failed to send the asset to the dealer."),
+        );
       }
 
       setIsShareModalOpen(false);
@@ -2097,7 +2615,10 @@ export default function ScanClient({
     } catch (error) {
       setNotice({
         tone: "error",
-        message: error instanceof Error ? error.message : "Failed to send the asset to the dealer.",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Failed to send the asset to the dealer.",
       });
     } finally {
       setIsSendingShareLead(false);
@@ -2108,7 +2629,9 @@ export default function ScanClient({
     const storedSession = readQrScanSession(normalizedCode);
 
     if (isAutomatic && sessionHasLocation(storedSession)) {
-      setDraft((current) => applySessionLocationToDraft(current, storedSession));
+      setDraft((current) =>
+        applySessionLocationToDraft(current, storedSession),
+      );
       setLocationState("ready");
       setLocationMessage(sessionLocationMessage(storedSession));
       return;
@@ -2116,7 +2639,9 @@ export default function ScanClient({
 
     if (typeof window === "undefined" || !window.isSecureContext) {
       setLocationState("error");
-      setLocationMessage("Location can only be captured on a secure HTTPS page.");
+      setLocationMessage(
+        "Location can only be captured on a secure HTTPS page.",
+      );
       return;
     }
 
@@ -2128,9 +2653,7 @@ export default function ScanClient({
 
     setLocationState("capturing");
     setLocationMessage(
-      isAutomatic
-        ? "Checking GPS session…"
-        : "Getting GPS location...",
+      isAutomatic ? "Checking GPS session…" : "Getting GPS location...",
     );
 
     await new Promise<void>((resolve) => {
@@ -2138,32 +2661,49 @@ export default function ScanClient({
         (position) => {
           const latitude = String(position.coords.latitude);
           const longitude = String(position.coords.longitude);
-          const gpsAccuracyMeters = Number.isFinite(position.coords.accuracy) ? String(position.coords.accuracy) : "";
-          const locationCapturedAtIso = new Date(position.timestamp || Date.now()).toISOString();
+          const gpsAccuracyMeters = Number.isFinite(position.coords.accuracy)
+            ? String(position.coords.accuracy)
+            : "";
+          const locationCapturedAtIso = new Date(
+            position.timestamp || Date.now(),
+          ).toISOString();
           const locationText = GPS_READY_SESSION_MESSAGE;
-          const savedSession = updateQrScanSession(normalizedCode, (current) => ({
+          const savedSession = updateQrScanSession(
+            normalizedCode,
+            (current) => ({
+              ...current,
+              assetId: asset?.id || current.assetId,
+              latitude,
+              longitude,
+              gpsAccuracyMeters,
+              locationMessage: locationText,
+              locationCapturedAtIso,
+            }),
+          );
+          setDraft((current) => ({ ...current, latitude, longitude }));
+          setPendingUpdate((current) => ({
             ...current,
-            assetId: asset?.id || current.assetId,
             latitude,
             longitude,
             gpsAccuracyMeters,
-            locationMessage: locationText,
-            locationCapturedAtIso,
+            clientCapturedAt: locationCapturedAtIso,
           }));
-          setDraft((current) => ({ ...current, latitude, longitude }));
-          setPendingUpdate((current) => ({ ...current, latitude, longitude, gpsAccuracyMeters, clientCapturedAt: locationCapturedAtIso }));
           setLocationState("ready");
           setLocationMessage(sessionLocationMessage(savedSession));
-          if (!isAutomatic && asset) setNotice({ tone: "success", message: "Location captured." });
+          if (!isAutomatic && asset)
+            setNotice({ tone: "success", message: "Location captured." });
           resolve();
         },
         () => {
           setLocationState("error");
-          setLocationMessage("GPS permission is required. Enable location access and capture GPS again.");
+          setLocationMessage(
+            "GPS permission is required. Enable location access and capture GPS again.",
+          );
           if (!isAutomatic && asset) {
             setNotice({
               tone: "error",
-              message: "GPS permission is required. Enable location access and capture GPS again.",
+              message:
+                "GPS permission is required. Enable location access and capture GPS again.",
             });
           }
           resolve();
@@ -2174,7 +2714,8 @@ export default function ScanClient({
   }
 
   function validateDraftForSave(): { ok: boolean; message?: string } {
-    if (!asset || !activeEditor) return { ok: false, message: "Choose an update first." };
+    if (!asset || !activeEditor)
+      return { ok: false, message: "Choose an update first." };
 
     const persistedAsset = savedAsset ?? asset;
 
@@ -2182,19 +2723,27 @@ export default function ScanClient({
       return { ok: false, message: "Enter your name before saving." };
     }
 
-    if (!hasLocationCaptured(draft) && !sessionHasLocation(readQrScanSession(normalizedCode))) {
+    if (
+      !hasLocationCaptured(draft) &&
+      !sessionHasLocation(readQrScanSession(normalizedCode))
+    ) {
       return {
         ok: false,
-        message: "Location is required for every QR update. Allow GPS and try again.",
+        message:
+          "Location is required for every QR update. Allow GPS and try again.",
       };
     }
 
     if (activeEditor === "usage") {
       if (!isMeterUsageMode(asset)) {
-        return { ok: false, message: "This asset does not accept QR usage updates." };
+        return {
+          ok: false,
+          message: "This asset does not accept QR usage updates.",
+        };
       }
 
-      if (!draft.hours.trim()) return { ok: false, message: "Enter the current reading." };
+      if (!draft.hours.trim())
+        return { ok: false, message: "Enter the current reading." };
       const nextHours = Number(draft.hours);
       if (persistedAsset.hours !== null && nextHours < persistedAsset.hours) {
         return {
@@ -2211,18 +2760,26 @@ export default function ScanClient({
     if (activeEditor === "service") {
       if (!draft.serviceMode) return { ok: false, message: "Choose a type." };
 
-      const validationServiceCopy = serviceCopyForProfile(resolveAssetServiceProfile(asset));
+      const validationServiceCopy = serviceCopyForProfile(
+        resolveAssetServiceProfile(asset),
+      );
 
       if (draft.serviceMode === "checked") {
         if (!draft.checkedItems.length && !draft.note.trim()) {
-          return { ok: false, message: "Select what was checked or add notes/problems." };
+          return {
+            ok: false,
+            message: "Select what was checked or add notes/problems.",
+          };
         }
         return { ok: true };
       }
 
       if (draft.serviceMode === "serviced") {
         if (!draft.servicedItems.length && !draft.note.trim()) {
-          return { ok: false, message: "Select what was serviced or add notes/problems." };
+          return {
+            ok: false,
+            message: "Select what was serviced or add notes/problems.",
+          };
         }
       }
 
@@ -2232,28 +2789,39 @@ export default function ScanClient({
         }
       }
 
-      if (!showServiceDetailsStep && (!draft.serviceCompany.trim() || !draft.mechanicName.trim())) {
+      if (
+        !showServiceDetailsStep &&
+        (!draft.serviceCompany.trim() || !draft.mechanicName.trim())
+      ) {
         setShowServicePhotoStep(false);
         setShowServiceDetailsStep(true);
         return { ok: false };
       }
 
       if (!draft.serviceCompany.trim()) {
-        return { ok: false, message: `Enter the ${validationServiceCopy.companyLabel.toLowerCase()}.` };
+        return {
+          ok: false,
+          message: `Enter the ${validationServiceCopy.companyLabel.toLowerCase()}.`,
+        };
       }
       if (!draft.mechanicName.trim()) {
-        return { ok: false, message: `Enter the ${validationServiceCopy.mechanicLabel.toLowerCase()}.` };
+        return {
+          ok: false,
+          message: `Enter the ${validationServiceCopy.mechanicLabel.toLowerCase()}.`,
+        };
       }
       return { ok: true };
     }
 
     if (activeEditor === "photos") {
-      if (!draft.photoUrls.length) return { ok: false, message: "Upload or take at least one photo." };
+      if (!draft.photoUrls.length)
+        return { ok: false, message: "Upload or take at least one photo." };
       return { ok: true };
     }
 
     if (activeEditor === "notes") {
-      if (!draft.note.trim()) return { ok: false, message: "Enter a note or problem." };
+      if (!draft.note.trim())
+        return { ok: false, message: "Enter a note or problem." };
       return { ok: true };
     }
 
@@ -2265,15 +2833,20 @@ export default function ScanClient({
 
     const validation = validateDraftForSave();
     if (!validation.ok) {
-      if (validation.message) setNotice({ tone: "error", message: validation.message });
+      if (validation.message)
+        setNotice({ tone: "error", message: validation.message });
       return;
     }
 
     const storedSession = readQrScanSession(normalizedCode);
     const savedLatitude = draft.latitude || storedSession?.latitude || "";
     const savedLongitude = draft.longitude || storedSession?.longitude || "";
-    const savedGpsAccuracyMeters = storedSession?.gpsAccuracyMeters || pendingUpdate.gpsAccuracyMeters || "";
-    const savedClientCapturedAt = storedSession?.locationCapturedAtIso || pendingUpdate.clientCapturedAt || "";
+    const savedGpsAccuracyMeters =
+      storedSession?.gpsAccuracyMeters || pendingUpdate.gpsAccuracyMeters || "";
+    const savedClientCapturedAt =
+      storedSession?.locationCapturedAtIso ||
+      pendingUpdate.clientCapturedAt ||
+      "";
 
     if (savedLatitude && savedLongitude) {
       updateQrScanSession(normalizedCode, (current) => ({
@@ -2282,12 +2855,16 @@ export default function ScanClient({
         latitude: savedLatitude,
         longitude: savedLongitude,
         gpsAccuracyMeters: savedGpsAccuracyMeters || current.gpsAccuracyMeters,
-        locationCapturedAtIso: savedClientCapturedAt || current.locationCapturedAtIso,
+        locationCapturedAtIso:
+          savedClientCapturedAt || current.locationCapturedAtIso,
         locationMessage: current.locationMessage || GPS_READY_SESSION_MESSAGE,
       }));
     }
 
-    if (activeEditor === "usage" && (asset.usageMode === "hours" || asset.usageMode === "km")) {
+    if (
+      activeEditor === "usage" &&
+      (asset.usageMode === "hours" || asset.usageMode === "km")
+    ) {
       const stagedHours = draft.hours.trim();
       const parsedHours = Number(stagedHours);
 
@@ -2309,10 +2886,13 @@ export default function ScanClient({
         latitude: savedLatitude || current.latitude,
         longitude: savedLongitude || current.longitude,
         gpsAccuracyMeters: savedGpsAccuracyMeters || current.gpsAccuracyMeters,
-        locationCapturedAtIso: savedClientCapturedAt || current.locationCapturedAtIso,
+        locationCapturedAtIso:
+          savedClientCapturedAt || current.locationCapturedAtIso,
         locationMessage: current.locationMessage || GPS_READY_SESSION_MESSAGE,
       }));
-      setAsset((current) => current ? { ...current, hours: parsedHours } : current);
+      setAsset((current) =>
+        current ? { ...current, hours: parsedHours } : current,
+      );
       setHasCompletedRequiredUsageUpdate(true);
     }
 
@@ -2323,7 +2903,10 @@ export default function ScanClient({
       setPendingUpdate((current) => ({
         ...current,
         notes: mergeUniqueStrings([...current.notes, serviceNote]),
-        photoUrls: mergeUniqueStrings([...current.photoUrls, ...stagedPhotos], MAX_QR_PHOTOS),
+        photoUrls: mergeUniqueStrings(
+          [...current.photoUrls, ...stagedPhotos],
+          MAX_QR_PHOTOS,
+        ),
         latitude: savedLatitude || current.latitude,
         longitude: savedLongitude || current.longitude,
         gpsAccuracyMeters: savedGpsAccuracyMeters || current.gpsAccuracyMeters,
@@ -2333,9 +2916,16 @@ export default function ScanClient({
       }));
 
       if (stagedPhotos.length) {
-        setAsset((current) => current
-          ? { ...current, photos: mergeUniqueStrings([...current.photos, ...stagedPhotos], MAX_QR_PHOTOS) }
-          : current,
+        setAsset((current) =>
+          current
+            ? {
+                ...current,
+                photos: mergeUniqueStrings(
+                  [...current.photos, ...stagedPhotos],
+                  MAX_QR_PHOTOS,
+                ),
+              }
+            : current,
         );
       }
     }
@@ -2345,16 +2935,26 @@ export default function ScanClient({
 
       setPendingUpdate((current) => ({
         ...current,
-        photoUrls: mergeUniqueStrings([...current.photoUrls, ...stagedPhotos], MAX_QR_PHOTOS),
+        photoUrls: mergeUniqueStrings(
+          [...current.photoUrls, ...stagedPhotos],
+          MAX_QR_PHOTOS,
+        ),
         latitude: savedLatitude || current.latitude,
         longitude: savedLongitude || current.longitude,
         gpsAccuracyMeters: savedGpsAccuracyMeters || current.gpsAccuracyMeters,
         clientCapturedAt: savedClientCapturedAt || current.clientCapturedAt,
         hasPhotos: stagedPhotos.length > 0 || current.hasPhotos,
       }));
-      setAsset((current) => current
-        ? { ...current, photos: mergeUniqueStrings([...current.photos, ...stagedPhotos], MAX_QR_PHOTOS) }
-        : current,
+      setAsset((current) =>
+        current
+          ? {
+              ...current,
+              photos: mergeUniqueStrings(
+                [...current.photos, ...stagedPhotos],
+                MAX_QR_PHOTOS,
+              ),
+            }
+          : current,
       );
     }
 
@@ -2363,7 +2963,10 @@ export default function ScanClient({
 
       setPendingUpdate((current) => ({
         ...current,
-        notes: mergeUniqueStrings([...current.notes, `Notes/Problems: ${noteText}`]),
+        notes: mergeUniqueStrings([
+          ...current.notes,
+          `Notes/Problems: ${noteText}`,
+        ]),
         latitude: savedLatitude || current.latitude,
         longitude: savedLongitude || current.longitude,
         gpsAccuracyMeters: savedGpsAccuracyMeters || current.gpsAccuracyMeters,
@@ -2372,11 +2975,18 @@ export default function ScanClient({
       }));
     }
 
-    setDraft({ ...initialDraft, latitude: savedLatitude, longitude: savedLongitude });
+    setDraft({
+      ...initialDraft,
+      latitude: savedLatitude,
+      longitude: savedLongitude,
+    });
     setActiveEditor(null);
     setShowServiceDetailsStep(false);
     setShowServicePhotoStep(false);
-    setNotice({ tone: "success", message: "Update added. Tap Done to save it to the asset register." });
+    setNotice({
+      tone: "success",
+      message: "Update added. Tap Done to save it to the asset register.",
+    });
     setLocationState("ready");
     setLocationMessage(GPS_READY_SESSION_MESSAGE);
   }
@@ -2388,7 +2998,11 @@ export default function ScanClient({
     clearQrScanSession(normalizedCode);
 
     try {
-      window.history.replaceState({ aim4priceQrDone: true }, "", window.location.href);
+      window.history.replaceState(
+        { aim4priceQrDone: true },
+        "",
+        window.location.href,
+      );
     } catch {
       // Ignore history replacement errors.
     }
@@ -2407,15 +3021,32 @@ export default function ScanClient({
 
     const storedSession = readQrScanSession(normalizedCode);
     const storedSessionUsage = sessionUsageForAsset(asset, storedSession);
-    const finalLatitude = pendingUpdate.latitude || draft.latitude || storedSession?.latitude || "";
-    const finalLongitude = pendingUpdate.longitude || draft.longitude || storedSession?.longitude || "";
-    const finalGpsAccuracyMeters = pendingUpdate.gpsAccuracyMeters || storedSession?.gpsAccuracyMeters || "";
-    const finalClientCapturedAt = pendingUpdate.clientCapturedAt || storedSession?.locationCapturedAtIso || new Date().toISOString();
-    const finalClientEventId = pendingUpdate.clientEventId || createOfflineClientEventId("asset-scan-update");
+    const finalLatitude =
+      pendingUpdate.latitude || draft.latitude || storedSession?.latitude || "";
+    const finalLongitude =
+      pendingUpdate.longitude ||
+      draft.longitude ||
+      storedSession?.longitude ||
+      "";
+    const finalGpsAccuracyMeters =
+      pendingUpdate.gpsAccuracyMeters || storedSession?.gpsAccuracyMeters || "";
+    const finalClientCapturedAt =
+      pendingUpdate.clientCapturedAt ||
+      storedSession?.locationCapturedAtIso ||
+      new Date().toISOString();
+    const finalClientEventId =
+      pendingUpdate.clientEventId ||
+      createOfflineClientEventId("asset-scan-update");
     const sessionUsageAsset = savedAsset ?? asset;
-    const sessionHours = asset.usageMode === "hours" || asset.usageMode === "km"
-      ? pendingUpdate.hours || storedSessionUsage.hours || (sessionUsageAsset.hours !== null && Number.isFinite(sessionUsageAsset.hours) ? String(Math.round(sessionUsageAsset.hours)) : "")
-      : "";
+    const sessionHours =
+      asset.usageMode === "hours" || asset.usageMode === "km"
+        ? pendingUpdate.hours ||
+          storedSessionUsage.hours ||
+          (sessionUsageAsset.hours !== null &&
+          Number.isFinite(sessionUsageAsset.hours)
+            ? String(Math.round(sessionUsageAsset.hours))
+            : "")
+        : "";
     const operatorNameForSave = isFieldManagerMode
       ? operatorName.trim() || "Field Manager"
       : operatorName.trim();
@@ -2426,7 +3057,10 @@ export default function ScanClient({
     }
 
     if (!finalLatitude.trim() || !finalLongitude.trim()) {
-      setNotice({ tone: "error", message: "Location is required. Allow GPS before saving." });
+      setNotice({
+        tone: "error",
+        message: "Location is required. Allow GPS before saving.",
+      });
       void captureLocation(false);
       return null;
     }
@@ -2454,16 +3088,15 @@ export default function ScanClient({
     setIsSaving(true);
 
     try {
-      const response = await fetch(
-        endpoint,
-        {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        },
-      );
-      const data = (await response.json().catch(() => null)) as SaveScanEventResponse | null;
+      const response = await fetch(endpoint, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = (await response
+        .json()
+        .catch(() => null)) as SaveScanEventResponse | null;
 
       if (!response.ok || !data?.ok || !data.asset) {
         throw new Error(data?.error ?? "Failed to save the QR update.");
@@ -2474,12 +3107,20 @@ export default function ScanClient({
         ...current,
         assetId: savedAssetFromResponse.id,
         usageMode: savedAssetFromResponse.usageMode,
-        hours: savedAssetFromResponse.hours !== null && Number.isFinite(savedAssetFromResponse.hours) ? String(Math.round(savedAssetFromResponse.hours)) : current.hours,
-        hasUsage: current.hasUsage || pendingUpdate.hasUsage || storedSessionUsage.hasUsage,
+        hours:
+          savedAssetFromResponse.hours !== null &&
+          Number.isFinite(savedAssetFromResponse.hours)
+            ? String(Math.round(savedAssetFromResponse.hours))
+            : current.hours,
+        hasUsage:
+          current.hasUsage ||
+          pendingUpdate.hasUsage ||
+          storedSessionUsage.hasUsage,
         latitude: finalLatitude || current.latitude,
         longitude: finalLongitude || current.longitude,
         gpsAccuracyMeters: finalGpsAccuracyMeters || current.gpsAccuracyMeters,
-        locationCapturedAtIso: finalClientCapturedAt || current.locationCapturedAtIso,
+        locationCapturedAtIso:
+          finalClientCapturedAt || current.locationCapturedAtIso,
         locationMessage: current.locationMessage || GPS_READY_SESSION_MESSAGE,
       }));
       setAsset(savedAssetFromResponse);
@@ -2495,7 +3136,16 @@ export default function ScanClient({
         gpsAccuracyMeters: finalGpsAccuracyMeters,
         clientCapturedAt: finalClientCapturedAt,
       });
-      setDraft(applySessionLocationToDraft({ ...initialDraft, latitude: finalLatitude, longitude: finalLongitude }, savedSession));
+      setDraft(
+        applySessionLocationToDraft(
+          {
+            ...initialDraft,
+            latitude: finalLatitude,
+            longitude: finalLongitude,
+          },
+          savedSession,
+        ),
+      );
       if (finalLatitude && finalLongitude) {
         setLocationState("ready");
         setLocationMessage(sessionLocationMessage(savedSession));
@@ -2518,17 +3168,29 @@ export default function ScanClient({
           gpsAccuracyMeters: finalGpsAccuracyMeters,
           clientCapturedAt: finalClientCapturedAt,
         });
-        setDraft({ ...initialDraft, latitude: finalLatitude, longitude: finalLongitude });
+        setDraft({
+          ...initialDraft,
+          latitude: finalLatitude,
+          longitude: finalLongitude,
+        });
         setLocationState("ready");
         setLocationMessage(GPS_READY_SESSION_MESSAGE);
-        setDoneMessage("Saved on this phone. It will sync when signal returns.");
-        setNotice({ tone: "success", message: "Saved on this phone. It will sync when signal returns." });
+        setDoneMessage(
+          "Saved on this phone. It will sync when signal returns.",
+        );
+        setNotice({
+          tone: "success",
+          message: "Saved on this phone. It will sync when signal returns.",
+        });
         return asset;
       }
 
       setNotice({
         tone: "error",
-        message: error instanceof Error ? error.message : "Failed to save the QR update.",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Failed to save the QR update.",
       });
       return null;
     } finally {
@@ -2549,33 +3211,58 @@ export default function ScanClient({
     }
   }
 
-  const locationReady = hasLocationCaptured(draft) || sessionHasLocation(readQrScanSession(normalizedCode));
-  const isFieldManagerMode = fieldManagerMode || scanAccessMode === "field_manager";
-  const usageUpdateRequired = !isFieldManagerMode && needsUsageUpdateBeforeActions(asset, pendingUpdate, hasCompletedRequiredUsageUpdate);
-  const showFieldManagerUsageAction = isFieldManagerMode && isMeterUsageMode(asset);
-  const serviceProfile = useMemo(() => resolveAssetServiceProfile(asset), [asset]);
-  const checkedOptions = useMemo(() => checkedOptionsForProfile(serviceProfile), [serviceProfile]);
-  const servicedOptions = useMemo(() => servicedOptionsForProfile(serviceProfile), [serviceProfile]);
-  const serviceCopy = useMemo(() => serviceCopyForProfile(serviceProfile), [serviceProfile]);
+  const locationReady =
+    hasLocationCaptured(draft) ||
+    sessionHasLocation(readQrScanSession(normalizedCode));
+  const isFieldManagerMode =
+    fieldManagerMode || scanAccessMode === "field_manager";
+  const usageUpdateRequired =
+    !isFieldManagerMode &&
+    needsUsageUpdateBeforeActions(
+      asset,
+      pendingUpdate,
+      hasCompletedRequiredUsageUpdate,
+    );
+  const showFieldManagerUsageAction =
+    isFieldManagerMode && isMeterUsageMode(asset);
+  const serviceProfile = useMemo(
+    () => resolveAssetServiceProfile(asset),
+    [asset],
+  );
+  const checkedOptions = useMemo(
+    () => checkedOptionsForProfile(serviceProfile),
+    [serviceProfile],
+  );
+  const servicedOptions = useMemo(
+    () => servicedOptionsForProfile(serviceProfile),
+    [serviceProfile],
+  );
+  const serviceCopy = useMemo(
+    () => serviceCopyForProfile(serviceProfile),
+    [serviceProfile],
+  );
   const prePinAsset = assetPreview;
-  const hasServiceSelection = draft.serviceMode === "checked"
-    ? draft.checkedItems.length > 0 || Boolean(draft.note.trim())
-    : draft.serviceMode === "serviced"
-      ? draft.servicedItems.length > 0 || Boolean(draft.note.trim())
-      : draft.serviceMode === "repaired"
-        ? Boolean(draft.repairDetails.trim())
-        : false;
-  const serviceDetailsMissing = (draft.serviceMode === "serviced" || draft.serviceMode === "repaired")
-    && showServiceDetailsStep
-    && (!draft.serviceCompany.trim() || !draft.mechanicName.trim());
+  const hasServiceSelection =
+    draft.serviceMode === "checked"
+      ? draft.checkedItems.length > 0 || Boolean(draft.note.trim())
+      : draft.serviceMode === "serviced"
+        ? draft.servicedItems.length > 0 || Boolean(draft.note.trim())
+        : draft.serviceMode === "repaired"
+          ? Boolean(draft.repairDetails.trim())
+          : false;
+  const serviceDetailsMissing =
+    (draft.serviceMode === "serviced" || draft.serviceMode === "repaired") &&
+    showServiceDetailsStep &&
+    (!draft.serviceCompany.trim() || !draft.mechanicName.trim());
   const isServicePhotoStep = activeEditor === "service" && showServicePhotoStep;
-  const saveBlockedByEmptyDraft = activeEditor === "photos"
-    ? draft.photoUrls.length === 0
-    : activeEditor === "notes"
-      ? !draft.note.trim()
-      : activeEditor === "service"
-        ? !draft.serviceMode || !hasServiceSelection || serviceDetailsMissing
-        : false;
+  const saveBlockedByEmptyDraft =
+    activeEditor === "photos"
+      ? draft.photoUrls.length === 0
+      : activeEditor === "notes"
+        ? !draft.note.trim()
+        : activeEditor === "service"
+          ? !draft.serviceMode || !hasServiceSelection || serviceDetailsMissing
+          : false;
   const canPressSave = isServicePhotoStep
     ? !isSaving && !isUploading
     : !isSaving && !isUploading && !saveBlockedByEmptyDraft;
@@ -2588,29 +3275,41 @@ export default function ScanClient({
         : activeEditor === "notes" && !draft.note.trim()
           ? "Add note"
           : activeEditor === "service" && !draft.serviceMode
-          ? "Choose type"
-          : activeEditor === "service" && !hasServiceSelection
-            ? draft.serviceMode === "checked"
-              ? "Select items"
-              : draft.serviceMode === "repaired"
-                ? "Explain repair"
-                : "Select items"
-            : serviceDetailsMissing
-              ? "Complete details"
-              : activeEditor === "service" && (draft.serviceMode === "serviced" || draft.serviceMode === "repaired") && !showServiceDetailsStep
-                ? "Next"
-                : activeEditor === "usage" && usageUpdateRequired
-                  ? "Continue"
-                  : "Add update";
+            ? "Choose type"
+            : activeEditor === "service" && !hasServiceSelection
+              ? draft.serviceMode === "checked"
+                ? "Select items"
+                : draft.serviceMode === "repaired"
+                  ? "Explain repair"
+                  : "Select items"
+              : serviceDetailsMissing
+                ? "Complete details"
+                : activeEditor === "service" &&
+                    (draft.serviceMode === "serviced" ||
+                      draft.serviceMode === "repaired") &&
+                    !showServiceDetailsStep
+                  ? "Next"
+                  : activeEditor === "usage" && usageUpdateRequired
+                    ? "Continue"
+                    : "Add update";
   const selectedSharePartner = useMemo(
-    () => sharePartners.find((partner) => partner.userId === selectedSharePartnerId) ?? null,
+    () =>
+      sharePartners.find(
+        (partner) => partner.userId === selectedSharePartnerId,
+      ) ?? null,
     [sharePartners, selectedSharePartnerId],
   );
   const pageClassName = `${styles.page} ${isFieldManagerMode ? styles.fieldManagerMobileSurface : ""}`;
   const canUseDealerShare = !isFieldManagerMode;
-  const selectedSharePartnerPhoneHref = selectedSharePartner ? normalizePhoneHref(selectedSharePartner.phone) : "";
-  const selectedSharePartnerEmailHref = selectedSharePartner ? normalizeEmailHref(selectedSharePartner.email) : "";
-  const selectedSharePartnerWebsiteHref = selectedSharePartner ? normalizeWebsiteHref(selectedSharePartner.websiteUrl) : "";
+  const selectedSharePartnerPhoneHref = selectedSharePartner
+    ? normalizePhoneHref(selectedSharePartner.phone)
+    : "";
+  const selectedSharePartnerEmailHref = selectedSharePartner
+    ? normalizeEmailHref(selectedSharePartner.email)
+    : "";
+  const selectedSharePartnerWebsiteHref = selectedSharePartner
+    ? normalizeWebsiteHref(selectedSharePartner.websiteUrl)
+    : "";
   const sharePartnersWithCoordinates = useMemo(
     () => sharePartners.filter(hasDealerPartnerCoordinates),
     [sharePartners],
@@ -2631,7 +3330,9 @@ export default function ScanClient({
     <main className={pageClassName}>
       <div className={styles.shell}>
         {notice ? (
-          <div className={`${styles.notice} ${notice.tone === "success" ? styles.noticeSuccess : styles.noticeError}`}>
+          <div
+            className={`${styles.notice} ${notice.tone === "success" ? styles.noticeSuccess : styles.noticeError}`}
+          >
             {notice.message}
           </div>
         ) : null}
@@ -2644,18 +3345,23 @@ export default function ScanClient({
           </div>
         ) : null}
 
-        {!asset && !isUnavailable && isFieldManagerMode ? (
+        {!asset && !isUnavailable && !assetOpenError && isFieldManagerMode ? (
           <section className={styles.assetOpenedCard}>
             <div className={styles.assetScanTitleBlock}>
               <span>Field Manager asset</span>
               <h1>{prePinAsset?.title || "Opening asset"}</h1>
-              <p>Checking your Field Manager access. No farm PIN or scanner name is required.</p>
+              <p>
+                Checking your Field Manager access. No farm PIN or scanner name
+                is required.
+              </p>
             </div>
           </section>
         ) : null}
 
-        {!asset && !isUnavailable && !isFieldManagerMode ? (
-          <section className={`${styles.pinCard} ${!locationReady ? styles.pinCardBlocked : ""}`}>
+        {!asset && !isUnavailable && !assetOpenError && !isFieldManagerMode ? (
+          <section
+            className={`${styles.pinCard} ${!locationReady ? styles.pinCardBlocked : ""}`}
+          >
             <div className={styles.assetScanTitleBlock}>
               <span>Asset QR for</span>
               <h1>{prePinAsset?.title || "Asset scan"}</h1>
@@ -2670,7 +3376,9 @@ export default function ScanClient({
                   autoComplete="one-time-code"
                   placeholder="4 to 8 digits"
                   value={pin}
-                  onChange={(event) => setPin(normalizePinInput(event.target.value))}
+                  onChange={(event) =>
+                    setPin(normalizePinInput(event.target.value))
+                  }
                   disabled={isSubmittingPin || isLoadingAsset || !locationReady}
                 />
               </label>
@@ -2681,19 +3389,29 @@ export default function ScanClient({
                   autoComplete="name"
                   placeholder="Name of person scanning"
                   value={operatorName}
-                  onChange={(event) => setOperatorName(normalizeOperatorName(event.target.value))}
+                  onChange={(event) =>
+                    setOperatorName(normalizeOperatorName(event.target.value))
+                  }
                   disabled={isSubmittingPin || isLoadingAsset || !locationReady}
                 />
               </label>
 
               {locationReady ? (
-                <div className={`${styles.locationGate} ${styles.locationGateReady}`}>
+                <div
+                  className={`${styles.locationGate} ${styles.locationGateReady}`}
+                >
                   <div>
                     <strong>Location ready</strong>
                     <span>{locationMessage}</span>
                   </div>
-                  <button type="button" onClick={() => void captureLocation(false)} disabled={locationState === "capturing"}>
-                    {locationState === "capturing" ? "Capturing..." : "Recapture GPS"}
+                  <button
+                    type="button"
+                    onClick={() => void captureLocation(false)}
+                    disabled={locationState === "capturing"}
+                  >
+                    {locationState === "capturing"
+                      ? "Capturing..."
+                      : "Recapture GPS"}
                   </button>
                 </div>
               ) : null}
@@ -2709,19 +3427,38 @@ export default function ScanClient({
                   operatorName.trim().length < 2
                 }
               >
-                {isSubmittingPin || isLoadingAsset ? "Opening…" : "Unlock asset"}
+                {isSubmittingPin || isLoadingAsset
+                  ? "Opening…"
+                  : "Unlock asset"}
               </button>
             </form>
 
             {!locationReady ? (
-              <div className={styles.locationPromptBackdrop} role="dialog" aria-modal="true" aria-labelledby="asset-location-title">
+              <div
+                className={styles.locationPromptBackdrop}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="asset-location-title"
+              >
                 <div className={styles.locationPromptCard}>
-                  <div className={styles.locationPromptIcon} aria-hidden="true">⌖</div>
+                  <div className={styles.locationPromptIcon} aria-hidden="true">
+                    ⌖
+                  </div>
                   <h2 id="asset-location-title">Keep location on</h2>
-                  <p>Every QR save stores a GPS point automatically. Allow location access on this phone before saving updates.</p>
+                  <p>
+                    Every QR save stores a GPS point automatically. Allow
+                    location access on this phone before saving updates.
+                  </p>
                   <span>{locationMessage}</span>
-                  <button type="button" className={styles.primaryButton} onClick={() => void captureLocation(false)} disabled={locationState === "capturing"}>
-                    {locationState === "capturing" ? "Capturing..." : "Continue"}
+                  <button
+                    type="button"
+                    className={styles.primaryButton}
+                    onClick={() => void captureLocation(false)}
+                    disabled={locationState === "capturing"}
+                  >
+                    {locationState === "capturing"
+                      ? "Capturing..."
+                      : "Continue"}
                   </button>
                 </div>
               </div>
@@ -2729,12 +3466,34 @@ export default function ScanClient({
           </section>
         ) : null}
 
-        {isUnavailable ? (
+        {isUnavailable || assetOpenError ? (
           <section className={styles.unavailableCard}>
             <h2>This asset could not be opened</h2>
             <p>
-              Check the QR code, or ask the owner to confirm that the farm scan PIN is enabled for this account.
+              {assetOpenError ||
+                (isFieldManagerMode
+                  ? "Could not open this asset. Your Field Manager session may not have access to this asset. Please go back and try again."
+                  : "Check the QR code, or ask the owner to confirm that the farm scan PIN is enabled for this account.")}
             </p>
+            <div className={styles.centerStack}>
+              <button
+                type="button"
+                className={styles.secondaryButton}
+                onClick={goBackFromAssetError}
+              >
+                Back
+              </button>
+              {isFieldManagerMode ? (
+                <button
+                  type="button"
+                  className={styles.primaryButton}
+                  onClick={() => void loadUnlockedAsset()}
+                  disabled={isLoadingAsset}
+                >
+                  {isLoadingAsset ? "Trying…" : "Try again"}
+                </button>
+              ) : null}
+            </div>
           </section>
         ) : null}
 
@@ -2774,7 +3533,12 @@ export default function ScanClient({
                   <span>Last recorded</span>
                   <strong>{formatUsage(savedAsset ?? asset)}</strong>
                 </div>
-                <button type="button" className={styles.primaryButton} onClick={() => openEditor("usage")} disabled={isSaving || isUploading}>
+                <button
+                  type="button"
+                  className={styles.primaryButton}
+                  onClick={() => openEditor("usage")}
+                  disabled={isSaving || isUploading}
+                >
                   {requiredUsageButtonLabel(asset)}
                 </button>
               </section>
@@ -2782,8 +3546,14 @@ export default function ScanClient({
               <>
                 <section className={styles.actionGrid}>
                   {canUseDealerShare ? (
-                    <button type="button" className={styles.actionCard} onClick={handleShareTap}>
-                      <span className={styles.actionIconWrap}><ShareIcon className={styles.actionIcon} /></span>
+                    <button
+                      type="button"
+                      className={styles.actionCard}
+                      onClick={handleShareTap}
+                    >
+                      <span className={styles.actionIconWrap}>
+                        <ShareIcon className={styles.actionIcon} />
+                      </span>
                       <span className={styles.actionTextBlock}>
                         <strong>Share</strong>
                         <small>Dealer help</small>
@@ -2792,25 +3562,49 @@ export default function ScanClient({
                   ) : null}
 
                   {showFieldManagerUsageAction ? (
-                    <button type="button" className={styles.actionCard} onClick={() => openEditor("usage")}>
-                      <span className={styles.actionIconWrap}><MeterIcon className={styles.actionIcon} /></span>
+                    <button
+                      type="button"
+                      className={styles.actionCard}
+                      onClick={() => openEditor("usage")}
+                    >
+                      <span className={styles.actionIconWrap}>
+                        <MeterIcon className={styles.actionIcon} />
+                      </span>
                       <span className={styles.actionTextBlock}>
                         <strong>Usage</strong>
-                        <small>{asset.usageMode === "km" ? "Update kilometres" : "Update hours"}</small>
+                        <small>
+                          {asset.usageMode === "km"
+                            ? "Update kilometres"
+                            : "Update hours"}
+                        </small>
                       </span>
                     </button>
                   ) : null}
 
-                  <button type="button" className={styles.actionCard} onClick={() => openEditor("service")}>
-                    <span className={styles.actionIconWrap}><WrenchIcon className={styles.actionIcon} /></span>
+                  <button
+                    type="button"
+                    className={styles.actionCard}
+                    onClick={() => openEditor("service")}
+                  >
+                    <span className={styles.actionIconWrap}>
+                      <WrenchIcon className={styles.actionIcon} />
+                    </span>
                     <span className={styles.actionTextBlock}>
                       <strong>Maintenance</strong>
-                      <small className={styles.actionSubtitleNoWrap}>{buildEditorSummary("service", asset)}</small>
+                      <small className={styles.actionSubtitleNoWrap}>
+                        {buildEditorSummary("service", asset)}
+                      </small>
                     </span>
                   </button>
 
-                  <button type="button" className={styles.actionCard} onClick={() => openEditor("photos")}>
-                    <span className={styles.actionIconWrap}><CameraIcon className={styles.actionIcon} /></span>
+                  <button
+                    type="button"
+                    className={styles.actionCard}
+                    onClick={() => openEditor("photos")}
+                  >
+                    <span className={styles.actionIconWrap}>
+                      <CameraIcon className={styles.actionIcon} />
+                    </span>
                     <span className={styles.actionTextBlock}>
                       <strong>Photos</strong>
                       <small>{buildEditorSummary("photos", asset)}</small>
@@ -2818,8 +3612,14 @@ export default function ScanClient({
                   </button>
 
                   {isFieldManagerMode ? (
-                    <button type="button" className={styles.actionCard} onClick={() => openEditor("notes")}>
-                      <span className={styles.actionIconWrap}><NoteIcon className={styles.actionIcon} /></span>
+                    <button
+                      type="button"
+                      className={styles.actionCard}
+                      onClick={() => openEditor("notes")}
+                    >
+                      <span className={styles.actionIconWrap}>
+                        <NoteIcon className={styles.actionIcon} />
+                      </span>
                       <span className={styles.actionTextBlock}>
                         <strong>Notes / Problems</strong>
                         <small>{buildEditorSummary("notes", asset)}</small>
@@ -2828,8 +3628,15 @@ export default function ScanClient({
                   ) : null}
                 </section>
 
-                <button type="button" className={styles.doneButton} onClick={() => void handleDone()} disabled={isSaving || isUploading}>
-                  {isSaving && hasPendingScanUpdate(pendingUpdate) ? "Saving…" : "Done"}
+                <button
+                  type="button"
+                  className={styles.doneButton}
+                  onClick={() => void handleDone()}
+                  disabled={isSaving || isUploading}
+                >
+                  {isSaving && hasPendingScanUpdate(pendingUpdate)
+                    ? "Saving…"
+                    : "Done"}
                 </button>
               </>
             )}
@@ -2840,15 +3647,25 @@ export default function ScanClient({
       {asset && showLocationReminder && !activeEditor ? (
         <div className={styles.locationReminderOverlay}>
           <div className={styles.modalBackdrop} />
-          <div className={styles.locationReminderModal} role="dialog" aria-modal="true" aria-labelledby="location-reminder-title">
+          <div
+            className={styles.locationReminderModal}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="location-reminder-title"
+          >
             <div className={styles.locationReminderIcon}>
               <LocationIcon className={styles.locationReminderSvg} />
             </div>
             <h3 id="location-reminder-title">Keep location on</h3>
             <p>
-              Every QR save stores a GPS point automatically. Allow location access on this phone before saving updates.
+              Every QR save stores a GPS point automatically. Allow location
+              access on this phone before saving updates.
             </p>
-            <button type="button" className={styles.primaryButton} onClick={() => setShowLocationReminder(false)}>
+            <button
+              type="button"
+              className={styles.primaryButton}
+              onClick={() => setShowLocationReminder(false)}
+            >
               Continue
             </button>
           </div>
@@ -2858,7 +3675,12 @@ export default function ScanClient({
       {asset && isShareModalOpen && canUseDealerShare ? (
         <div className={styles.shareOverlay}>
           <div className={styles.modalBackdrop} onClick={closeShareModal} />
-          <section className={styles.shareModal} role="dialog" aria-modal="true" aria-labelledby="share-modal-title">
+          <section
+            className={styles.shareModal}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="share-modal-title"
+          >
             <header className={styles.shareHeader}>
               <div className={styles.shareTitleBlock}>
                 <span>Dealer help</span>
@@ -2871,31 +3693,52 @@ export default function ScanClient({
                 </h3>
                 <p>Get parts quotes, repair help or dealer support.</p>
               </div>
-              <button type="button" className={styles.iconButton} onClick={closeShareModal} aria-label="Close dealer share">
+              <button
+                type="button"
+                className={styles.iconButton}
+                onClick={closeShareModal}
+                aria-label="Close dealer share"
+              >
                 <CloseIcon className={styles.closeIcon} />
               </button>
             </header>
 
             {!shareLeadStep ? (
               <div className={styles.shareBody}>
-                <form className={styles.shareSearchBar} onSubmit={handleShareSearchSubmit}>
+                <form
+                  className={styles.shareSearchBar}
+                  onSubmit={handleShareSearchSubmit}
+                >
                   <input
                     type="search"
                     placeholder="Search dealer, town, province or brand"
                     value={sharePartnerSearch}
-                    onChange={(event) => setSharePartnerSearch(event.target.value)}
+                    onChange={(event) =>
+                      setSharePartnerSearch(event.target.value)
+                    }
                   />
-                  <button type="submit" className={styles.secondaryButton} disabled={isLoadingSharePartners}>
+                  <button
+                    type="submit"
+                    className={styles.secondaryButton}
+                    disabled={isLoadingSharePartners}
+                  >
                     {isLoadingSharePartners ? "Loading…" : "Search"}
                   </button>
                 </form>
 
                 <div className={styles.shareMapStage}>
                   <div className={styles.shareMapShell}>
-                    {isLoadingSharePartners && !sharePartnersWithCoordinates.length ? (
-                      <div className={styles.shareMapFallback}>Loading approved dealers…</div>
+                    {isLoadingSharePartners &&
+                    !sharePartnersWithCoordinates.length ? (
+                      <div className={styles.shareMapFallback}>
+                        Loading approved dealers…
+                      </div>
                     ) : sharePartnersWithCoordinates.length ? (
-                      <div ref={shareMapElementRef} className={styles.shareMapCanvas} aria-label="Dealer map" />
+                      <div
+                        ref={shareMapElementRef}
+                        className={styles.shareMapCanvas}
+                        aria-label="Dealer map"
+                      />
                     ) : (
                       <div className={styles.shareMapFallback}>
                         {!sharePartners.length
@@ -2913,25 +3756,47 @@ export default function ScanClient({
                     <div>
                       <span>Dealer selected</span>
                       <strong>{dealerPartnerName(selectedSharePartner)}</strong>
-                      <small>{dealerPartnerAddress(selectedSharePartner) || dealerPartnerLocation(selectedSharePartner)}</small>
+                      <small>
+                        {dealerPartnerAddress(selectedSharePartner) ||
+                          dealerPartnerLocation(selectedSharePartner)}
+                      </small>
                     </div>
                   </div>
 
                   <div className={styles.shareContactList}>
-                    {selectedSharePartner.phone && selectedSharePartnerPhoneHref ? <a href={selectedSharePartnerPhoneHref}>Call {selectedSharePartner.phone}</a> : null}
-                    {selectedSharePartner.email && selectedSharePartnerEmailHref ? <a href={selectedSharePartnerEmailHref}>Email {selectedSharePartner.email}</a> : null}
-                    {selectedSharePartner.websiteUrl && selectedSharePartnerWebsiteHref ? (
-                      <a href={selectedSharePartnerWebsiteHref} target="_blank" rel="noreferrer">
+                    {selectedSharePartner.phone &&
+                    selectedSharePartnerPhoneHref ? (
+                      <a href={selectedSharePartnerPhoneHref}>
+                        Call {selectedSharePartner.phone}
+                      </a>
+                    ) : null}
+                    {selectedSharePartner.email &&
+                    selectedSharePartnerEmailHref ? (
+                      <a href={selectedSharePartnerEmailHref}>
+                        Email {selectedSharePartner.email}
+                      </a>
+                    ) : null}
+                    {selectedSharePartner.websiteUrl &&
+                    selectedSharePartnerWebsiteHref ? (
+                      <a
+                        href={selectedSharePartnerWebsiteHref}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
                         {formatWebsiteDisplay(selectedSharePartner.websiteUrl)}
                       </a>
                     ) : null}
                   </div>
 
-                  <label className={`${styles.field} ${styles.shareMessageField}`}>
+                  <label
+                    className={`${styles.field} ${styles.shareMessageField}`}
+                  >
                     <span>Message to dealer</span>
                     <textarea
                       value={shareOwnerMessage}
-                      onChange={(event) => setShareOwnerMessage(event.target.value.slice(0, 1600))}
+                      onChange={(event) =>
+                        setShareOwnerMessage(event.target.value.slice(0, 1600))
+                      }
                       placeholder="Example: Please quote repair help or replacement parts for this asset."
                     />
                   </label>
@@ -2941,14 +3806,24 @@ export default function ScanClient({
                       type="button"
                       className={styles.sharePhotoButton}
                       onClick={() => sharePhotoInputRef.current?.click()}
-                      disabled={isSaving || isSendingShareLead || isUploadingSharePhoto}
+                      disabled={
+                        isSaving || isSendingShareLead || isUploadingSharePhoto
+                      }
                     >
                       <span className={styles.sharePhotoButtonIcon}>
                         <CameraIcon className={styles.sharePhotoButtonSvg} />
                       </span>
                       <span>
-                        <strong>{sharePhotoUrls.length ? "Add photos" : "Attach photos"}</strong>
-                        <small>{isUploadingSharePhoto ? "Uploading…" : `${sharePhotoUrls.length} / ${MAX_SHARE_PHOTOS}`}</small>
+                        <strong>
+                          {sharePhotoUrls.length
+                            ? "Add photos"
+                            : "Attach photos"}
+                        </strong>
+                        <small>
+                          {isUploadingSharePhoto
+                            ? "Uploading…"
+                            : `${sharePhotoUrls.length} / ${MAX_SHARE_PHOTOS}`}
+                        </small>
                       </span>
                     </button>
                     <input
@@ -2958,19 +3833,35 @@ export default function ScanClient({
                       multiple
                       className={styles.hiddenFileInput}
                       onChange={handleSharePhotoChange}
-                      disabled={isSaving || isSendingShareLead || isUploadingSharePhoto}
+                      disabled={
+                        isSaving || isSendingShareLead || isUploadingSharePhoto
+                      }
                     />
 
                     {sharePhotoUrls.length ? (
                       <div className={styles.sharePhotoPreviewGrid}>
                         {sharePhotoUrls.map((url, index) => (
-                          <article key={`${url}-${index}`} className={styles.sharePhotoPreviewCard}>
-                            <img src={url} alt={`Attached dealer photo ${index + 1}`} />
+                          <article
+                            key={`${url}-${index}`}
+                            className={styles.sharePhotoPreviewCard}
+                          >
+                            <img
+                              src={url}
+                              alt={`Attached dealer photo ${index + 1}`}
+                            />
                             <div>
                               <strong>Photo attached</strong>
                               <span>Saved under this message.</span>
                             </div>
-                            <button type="button" onClick={() => handleRemoveSharePhoto(url)} disabled={isSaving || isSendingShareLead || isUploadingSharePhoto}>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveSharePhoto(url)}
+                              disabled={
+                                isSaving ||
+                                isSendingShareLead ||
+                                isUploadingSharePhoto
+                              }
+                            >
                               Remove
                             </button>
                           </article>
@@ -2980,10 +3871,24 @@ export default function ScanClient({
                   </div>
                 </div>
                 <footer className={styles.shareFooter}>
-                  <button type="button" className={styles.secondaryButton} onClick={goBackToShareMap} disabled={isSendingShareLead || isSaving || isUploadingSharePhoto}>
+                  <button
+                    type="button"
+                    className={styles.secondaryButton}
+                    onClick={goBackToShareMap}
+                    disabled={
+                      isSendingShareLead || isSaving || isUploadingSharePhoto
+                    }
+                  >
                     Back
                   </button>
-                  <button type="button" className={styles.primaryButton} onClick={goToShareConsent} disabled={isSendingShareLead || isSaving || isUploadingSharePhoto}>
+                  <button
+                    type="button"
+                    className={styles.primaryButton}
+                    onClick={goToShareConsent}
+                    disabled={
+                      isSendingShareLead || isSaving || isUploadingSharePhoto
+                    }
+                  >
                     Next
                   </button>
                 </footer>
@@ -2993,41 +3898,76 @@ export default function ScanClient({
                 <div className={styles.shareBody}>
                   <div className={styles.shareStepHeader}>
                     <strong>{dealerPartnerName(selectedSharePartner)}</strong>
-                    <span>The asset will be sent as a replacement quote / dealer help lead.</span>
+                    <span>
+                      The asset will be sent as a replacement quote / dealer
+                      help lead.
+                    </span>
                   </div>
 
                   <div className={styles.sharePopiaBox}>
                     <strong>Information included</strong>
-                    <p>Asset details, latest QR update, serial number, valuation summary, main photos{sharePhotoUrls.length ? ", attached photos" : ""} and relevant documents will be shared with this dealer.</p>
+                    <p>
+                      Asset details, latest QR update, serial number, valuation
+                      summary, main photos
+                      {sharePhotoUrls.length ? ", attached photos" : ""} and
+                      relevant documents will be shared with this dealer.
+                    </p>
                   </div>
 
                   <label className={styles.shareConsentCheck}>
                     <input
                       type="checkbox"
                       checked={shareConsentAccepted}
-                      onChange={(event) => setShareConsentAccepted(event.target.checked)}
+                      onChange={(event) =>
+                        setShareConsentAccepted(event.target.checked)
+                      }
                     />
-                    <span>I confirm this asset may be sent to the selected dealer for help.</span>
+                    <span>
+                      I confirm this asset may be sent to the selected dealer
+                      for help.
+                    </span>
                   </label>
                 </div>
                 <footer className={styles.shareFooter}>
-                  <button type="button" className={styles.secondaryButton} onClick={() => setShareLeadStep("message")} disabled={isSendingShareLead || isSaving || isUploadingSharePhoto}>
+                  <button
+                    type="button"
+                    className={styles.secondaryButton}
+                    onClick={() => setShareLeadStep("message")}
+                    disabled={
+                      isSendingShareLead || isSaving || isUploadingSharePhoto
+                    }
+                  >
                     Back
                   </button>
                   <button
                     type="button"
                     className={styles.primaryButton}
                     onClick={() => void handleSendDealerShareLead()}
-                    disabled={isSendingShareLead || isSaving || isUploadingSharePhoto || !shareConsentAccepted}
+                    disabled={
+                      isSendingShareLead ||
+                      isSaving ||
+                      isUploadingSharePhoto ||
+                      !shareConsentAccepted
+                    }
                   >
-                    {isSendingShareLead || isSaving ? "Sending…" : isUploadingSharePhoto ? "Uploading…" : "Send to dealer"}
+                    {isSendingShareLead || isSaving
+                      ? "Sending…"
+                      : isUploadingSharePhoto
+                        ? "Uploading…"
+                        : "Send to dealer"}
                   </button>
                 </footer>
               </>
             ) : (
               <div className={styles.shareBody}>
-                <div className={styles.shareEmptyState}>Choose a dealer again before sending.</div>
-                <button type="button" className={styles.secondaryButton} onClick={goBackToShareMap}>
+                <div className={styles.shareEmptyState}>
+                  Choose a dealer again before sending.
+                </div>
+                <button
+                  type="button"
+                  className={styles.secondaryButton}
+                  onClick={goBackToShareMap}
+                >
                   Back to dealers
                 </button>
               </div>
@@ -3038,7 +3978,12 @@ export default function ScanClient({
 
       {asset && activeEditor ? (
         <div className={styles.editorOverlay}>
-          <div className={`${styles.editorCard} ${activeEditor && activeEditor !== "usage" ? styles.actionEditorCard : ""}`} role="dialog" aria-modal="true" aria-labelledby="scan-editor-title">
+          <div
+            className={`${styles.editorCard} ${activeEditor && activeEditor !== "usage" ? styles.actionEditorCard : ""}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="scan-editor-title"
+          >
             <div className={styles.editorHeader}>
               <div className={styles.editorTitleBlock}>
                 <h3 id="scan-editor-title">
@@ -3087,7 +4032,12 @@ export default function ScanClient({
                 </p>
               </div>
 
-              <button type="button" className={styles.iconButton} onClick={closeEditor} aria-label="Close editor">
+              <button
+                type="button"
+                className={styles.iconButton}
+                onClick={closeEditor}
+                aria-label="Close editor"
+              >
                 <CloseIcon className={styles.closeIcon} />
               </button>
             </div>
@@ -3119,7 +4069,9 @@ export default function ScanClient({
 
               {activeEditor === "service" ? (
                 showServicePhotoStep ? (
-                  <div className={`${styles.modalStack} ${styles.servicePhotoStep}`}>
+                  <div
+                    className={`${styles.modalStack} ${styles.servicePhotoStep}`}
+                  >
                     <div className={styles.servicePanel}>
                       <div className={styles.serviceSectionHeader}>
                         <strong>Photos</strong>
@@ -3131,7 +4083,11 @@ export default function ScanClient({
                           type="button"
                           className={styles.mediaButton}
                           onClick={() => galleryInputRef.current?.click()}
-                          disabled={isUploading || isSaving || draft.photoUrls.length >= MAX_QR_PHOTOS}
+                          disabled={
+                            isUploading ||
+                            isSaving ||
+                            draft.photoUrls.length >= MAX_QR_PHOTOS
+                          }
                         >
                           <span className={styles.mediaButtonIcon}>
                             <UploadIcon className={styles.mediaButtonSvg} />
@@ -3144,7 +4100,11 @@ export default function ScanClient({
                           type="button"
                           className={styles.mediaButton}
                           onClick={() => cameraInputRef.current?.click()}
-                          disabled={isUploading || isSaving || draft.photoUrls.length >= MAX_QR_PHOTOS}
+                          disabled={
+                            isUploading ||
+                            isSaving ||
+                            draft.photoUrls.length >= MAX_QR_PHOTOS
+                          }
                         >
                           <span className={styles.mediaButtonIcon}>
                             <CameraIcon className={styles.mediaButtonSvg} />
@@ -3183,9 +4143,21 @@ export default function ScanClient({
                       {draft.photoUrls.length ? (
                         <div className={styles.photoGrid}>
                           {draft.photoUrls.map((url, index) => (
-                            <article key={`${url}-${index}`} className={styles.photoCard}>
-                              <img src={url} alt={`Maintenance photo ${index + 1}`} className={styles.photoImage} />
-                              <button type="button" className={styles.removePhotoButton} onClick={() => handleRemovePhoto(url)} disabled={isSaving}>
+                            <article
+                              key={`${url}-${index}`}
+                              className={styles.photoCard}
+                            >
+                              <img
+                                src={url}
+                                alt={`Maintenance photo ${index + 1}`}
+                                className={styles.photoImage}
+                              />
+                              <button
+                                type="button"
+                                className={styles.removePhotoButton}
+                                onClick={() => handleRemovePhoto(url)}
+                                disabled={isSaving}
+                              >
                                 Remove
                               </button>
                             </article>
@@ -3193,20 +4165,31 @@ export default function ScanClient({
                         </div>
                       ) : (
                         <div className={styles.servicePhotoEmptyState}>
-                          <CameraIcon className={styles.servicePhotoEmptyIcon} />
+                          <CameraIcon
+                            className={styles.servicePhotoEmptyIcon}
+                          />
                           <strong>No photos yet.</strong>
                           <span>Add photos above.</span>
                         </div>
                       )}
 
-                      <button type="button" className={styles.secondaryButton} onClick={closeServicePhotoStep} disabled={isSaving || isUploading}>
-                        {showServiceDetailsStep ? "Back to details" : "Back to maintenance"}
+                      <button
+                        type="button"
+                        className={styles.secondaryButton}
+                        onClick={closeServicePhotoStep}
+                        disabled={isSaving || isUploading}
+                      >
+                        {showServiceDetailsStep
+                          ? "Back to details"
+                          : "Back to maintenance"}
                       </button>
                     </div>
                   </div>
                 ) : (
                   <div className={styles.modalStack}>
-                    <div className={`${styles.serviceModeGrid} ${draft.serviceMode ? styles.serviceModeGridLocked : ""}`}>
+                    <div
+                      className={`${styles.serviceModeGrid} ${draft.serviceMode ? styles.serviceModeGridLocked : ""}`}
+                    >
                       {!draft.serviceMode ? (
                         <>
                           <button
@@ -3227,7 +4210,9 @@ export default function ScanClient({
                             disabled={isSaving}
                           >
                             <span className={styles.serviceModeIcon}>
-                              <CheckCircleIcon className={styles.serviceModeSvg} />
+                              <CheckCircleIcon
+                                className={styles.serviceModeSvg}
+                              />
                             </span>
                             <span className={styles.serviceModeText}>
                               <strong>Checked</strong>
@@ -3284,10 +4269,14 @@ export default function ScanClient({
                           </button>
                         </>
                       ) : (
-                        <div className={`${styles.serviceModeCard} ${styles.serviceModeCardActive} ${styles.serviceModeCardLocked}`}>
+                        <div
+                          className={`${styles.serviceModeCard} ${styles.serviceModeCardActive} ${styles.serviceModeCardLocked}`}
+                        >
                           <span className={styles.serviceModeIcon}>
                             {draft.serviceMode === "checked" ? (
-                              <CheckCircleIcon className={styles.serviceModeSvg} />
+                              <CheckCircleIcon
+                                className={styles.serviceModeSvg}
+                              />
                             ) : draft.serviceMode === "repaired" ? (
                               <RepairIcon className={styles.serviceModeSvg} />
                             ) : (
@@ -3323,7 +4312,9 @@ export default function ScanClient({
 
                         <div className={styles.optionList}>
                           {checkedOptions.map((option) => {
-                            const selected = draft.checkedItems.includes(option.label);
+                            const selected = draft.checkedItems.includes(
+                              option.label,
+                            );
 
                             return (
                               <button
@@ -3333,7 +4324,10 @@ export default function ScanClient({
                                 onClick={() =>
                                   setDraft((current) => ({
                                     ...current,
-                                    checkedItems: toggleValue(current.checkedItems, option.label),
+                                    checkedItems: toggleValue(
+                                      current.checkedItems,
+                                      option.label,
+                                    ),
                                   }))
                                 }
                                 disabled={isSaving}
@@ -3342,7 +4336,9 @@ export default function ScanClient({
                                   <strong>{option.label}</strong>
                                   <small>{option.description}</small>
                                 </span>
-                                <span className={styles.listOptionCheck}>{selected ? "✓" : ""}</span>
+                                <span className={styles.listOptionCheck}>
+                                  {selected ? "✓" : ""}
+                                </span>
                               </button>
                             );
                           })}
@@ -3350,7 +4346,9 @@ export default function ScanClient({
 
                         {draft.checkedItems.length ? (
                           <p className={styles.selectedSummary}>
-                            {draft.checkedItems.length} checked item{draft.checkedItems.length === 1 ? "" : "s"} selected.
+                            {draft.checkedItems.length} checked item
+                            {draft.checkedItems.length === 1 ? "" : "s"}{" "}
+                            selected.
                           </p>
                         ) : null}
 
@@ -3359,17 +4357,31 @@ export default function ScanClient({
                           <textarea
                             placeholder={serviceCopy.checkedNotePlaceholder}
                             value={draft.note}
-                            onChange={(event) => setDraft((current) => ({ ...current, note: event.target.value.slice(0, 1600) }))}
+                            onChange={(event) =>
+                              setDraft((current) => ({
+                                ...current,
+                                note: event.target.value.slice(0, 1600),
+                              }))
+                            }
                             disabled={isSaving}
                           />
                         </label>
 
-                        <button type="button" className={styles.maintenancePhotoButton} onClick={openServicePhotoStep} disabled={isSaving || isUploading}>
+                        <button
+                          type="button"
+                          className={styles.maintenancePhotoButton}
+                          onClick={openServicePhotoStep}
+                          disabled={isSaving || isUploading}
+                        >
                           <span className={styles.maintenancePhotoIcon}>
-                            <CameraIcon className={styles.maintenancePhotoIconSvg} />
+                            <CameraIcon
+                              className={styles.maintenancePhotoIconSvg}
+                            />
                           </span>
                           <span className={styles.maintenancePhotoText}>
-                            <strong>{draft.photoUrls.length ? "Photos" : "Add photos"}</strong>
+                            <strong>
+                              {draft.photoUrls.length ? "Photos" : "Add photos"}
+                            </strong>
                             <small>
                               {draft.photoUrls.length
                                 ? `${draft.photoUrls.length} photo${draft.photoUrls.length === 1 ? "" : "s"} ready for this record.`
@@ -3391,7 +4403,9 @@ export default function ScanClient({
 
                             <div className={styles.optionList}>
                               {servicedOptions.map((option) => {
-                                const selected = draft.servicedItems.includes(option.label);
+                                const selected = draft.servicedItems.includes(
+                                  option.label,
+                                );
 
                                 return (
                                   <button
@@ -3401,7 +4415,10 @@ export default function ScanClient({
                                     onClick={() =>
                                       setDraft((current) => ({
                                         ...current,
-                                        servicedItems: toggleValue(current.servicedItems, option.label),
+                                        servicedItems: toggleValue(
+                                          current.servicedItems,
+                                          option.label,
+                                        ),
                                       }))
                                     }
                                     disabled={isSaving}
@@ -3410,7 +4427,9 @@ export default function ScanClient({
                                       <strong>{option.label}</strong>
                                       <small>{option.description}</small>
                                     </span>
-                                    <span className={styles.listOptionCheck}>{selected ? "✓" : ""}</span>
+                                    <span className={styles.listOptionCheck}>
+                                      {selected ? "✓" : ""}
+                                    </span>
                                   </button>
                                 );
                               })}
@@ -3418,26 +4437,46 @@ export default function ScanClient({
 
                             {draft.servicedItems.length ? (
                               <p className={styles.selectedSummary}>
-                                {draft.servicedItems.length} serviced item{draft.servicedItems.length === 1 ? "" : "s"} selected.
+                                {draft.servicedItems.length} serviced item
+                                {draft.servicedItems.length === 1 ? "" : "s"}{" "}
+                                selected.
                               </p>
                             ) : null}
 
                             <label className={styles.field}>
                               <span>Notes/Problems</span>
                               <textarea
-                                placeholder={serviceCopy.servicedNotePlaceholder}
+                                placeholder={
+                                  serviceCopy.servicedNotePlaceholder
+                                }
                                 value={draft.note}
-                                onChange={(event) => setDraft((current) => ({ ...current, note: event.target.value.slice(0, 1600) }))}
+                                onChange={(event) =>
+                                  setDraft((current) => ({
+                                    ...current,
+                                    note: event.target.value.slice(0, 1600),
+                                  }))
+                                }
                                 disabled={isSaving}
                               />
                             </label>
 
-                            <button type="button" className={styles.maintenancePhotoButton} onClick={openServicePhotoStep} disabled={isSaving || isUploading}>
+                            <button
+                              type="button"
+                              className={styles.maintenancePhotoButton}
+                              onClick={openServicePhotoStep}
+                              disabled={isSaving || isUploading}
+                            >
                               <span className={styles.maintenancePhotoIcon}>
-                                <CameraIcon className={styles.maintenancePhotoIconSvg} />
+                                <CameraIcon
+                                  className={styles.maintenancePhotoIconSvg}
+                                />
                               </span>
                               <span className={styles.maintenancePhotoText}>
-                                <strong>{draft.photoUrls.length ? "Photos" : "Add photos"}</strong>
+                                <strong>
+                                  {draft.photoUrls.length
+                                    ? "Photos"
+                                    : "Add photos"}
+                                </strong>
                                 <small>
                                   {draft.photoUrls.length
                                     ? `${draft.photoUrls.length} photo${draft.photoUrls.length === 1 ? "" : "s"} ready for this record.`
@@ -3464,7 +4503,15 @@ export default function ScanClient({
                               <input
                                 placeholder={serviceCopy.companyPlaceholder}
                                 value={draft.serviceCompany}
-                                onChange={(event) => setDraft((current) => ({ ...current, serviceCompany: event.target.value.slice(0, 120) }))}
+                                onChange={(event) =>
+                                  setDraft((current) => ({
+                                    ...current,
+                                    serviceCompany: event.target.value.slice(
+                                      0,
+                                      120,
+                                    ),
+                                  }))
+                                }
                                 disabled={isSaving}
                               />
                             </label>
@@ -3473,17 +4520,36 @@ export default function ScanClient({
                               <input
                                 placeholder={serviceCopy.mechanicPlaceholder}
                                 value={draft.mechanicName}
-                                onChange={(event) => setDraft((current) => ({ ...current, mechanicName: event.target.value.slice(0, 120) }))}
+                                onChange={(event) =>
+                                  setDraft((current) => ({
+                                    ...current,
+                                    mechanicName: event.target.value.slice(
+                                      0,
+                                      120,
+                                    ),
+                                  }))
+                                }
                                 disabled={isSaving}
                               />
                             </label>
 
-                            <button type="button" className={styles.maintenancePhotoButton} onClick={openServicePhotoStep} disabled={isSaving || isUploading}>
+                            <button
+                              type="button"
+                              className={styles.maintenancePhotoButton}
+                              onClick={openServicePhotoStep}
+                              disabled={isSaving || isUploading}
+                            >
                               <span className={styles.maintenancePhotoIcon}>
-                                <CameraIcon className={styles.maintenancePhotoIconSvg} />
+                                <CameraIcon
+                                  className={styles.maintenancePhotoIconSvg}
+                                />
                               </span>
                               <span className={styles.maintenancePhotoText}>
-                                <strong>{draft.photoUrls.length ? "Photos" : "Add photos"}</strong>
+                                <strong>
+                                  {draft.photoUrls.length
+                                    ? "Photos"
+                                    : "Add photos"}
+                                </strong>
                                 <small>
                                   {draft.photoUrls.length
                                     ? `${draft.photoUrls.length} photo${draft.photoUrls.length === 1 ? "" : "s"} ready for this record.`
@@ -3492,7 +4558,12 @@ export default function ScanClient({
                               </span>
                             </button>
 
-                            <button type="button" className={styles.secondaryButton} onClick={() => setShowServiceDetailsStep(false)} disabled={isSaving}>
+                            <button
+                              type="button"
+                              className={styles.secondaryButton}
+                              onClick={() => setShowServiceDetailsStep(false)}
+                              disabled={isSaving}
+                            >
                               Back to service items
                             </button>
                           </div>
@@ -3513,9 +4584,19 @@ export default function ScanClient({
                               <span>Repair details</span>
                               <textarea
                                 className={styles.mainNoteInput}
-                                placeholder={serviceCopy.repairedNotePlaceholder}
+                                placeholder={
+                                  serviceCopy.repairedNotePlaceholder
+                                }
                                 value={draft.repairDetails}
-                                onChange={(event) => setDraft((current) => ({ ...current, repairDetails: event.target.value.slice(0, 1600) }))}
+                                onChange={(event) =>
+                                  setDraft((current) => ({
+                                    ...current,
+                                    repairDetails: event.target.value.slice(
+                                      0,
+                                      1600,
+                                    ),
+                                  }))
+                                }
                                 disabled={isSaving}
                               />
                             </label>
@@ -3524,19 +4605,37 @@ export default function ScanClient({
                               <span>Notes/Problems</span>
                               <textarea
                                 className={styles.compactTextarea}
-                                placeholder={serviceCopy.repairedExtraNotePlaceholder}
+                                placeholder={
+                                  serviceCopy.repairedExtraNotePlaceholder
+                                }
                                 value={draft.note}
-                                onChange={(event) => setDraft((current) => ({ ...current, note: event.target.value.slice(0, 1600) }))}
+                                onChange={(event) =>
+                                  setDraft((current) => ({
+                                    ...current,
+                                    note: event.target.value.slice(0, 1600),
+                                  }))
+                                }
                                 disabled={isSaving}
                               />
                             </label>
 
-                            <button type="button" className={styles.maintenancePhotoButton} onClick={openServicePhotoStep} disabled={isSaving || isUploading}>
+                            <button
+                              type="button"
+                              className={styles.maintenancePhotoButton}
+                              onClick={openServicePhotoStep}
+                              disabled={isSaving || isUploading}
+                            >
                               <span className={styles.maintenancePhotoIcon}>
-                                <CameraIcon className={styles.maintenancePhotoIconSvg} />
+                                <CameraIcon
+                                  className={styles.maintenancePhotoIconSvg}
+                                />
                               </span>
                               <span className={styles.maintenancePhotoText}>
-                                <strong>{draft.photoUrls.length ? "Photos" : "Add photos"}</strong>
+                                <strong>
+                                  {draft.photoUrls.length
+                                    ? "Photos"
+                                    : "Add photos"}
+                                </strong>
                                 <small>
                                   {draft.photoUrls.length
                                     ? `${draft.photoUrls.length} photo${draft.photoUrls.length === 1 ? "" : "s"} ready for this record.`
@@ -3563,7 +4662,15 @@ export default function ScanClient({
                               <input
                                 placeholder={serviceCopy.companyPlaceholder}
                                 value={draft.serviceCompany}
-                                onChange={(event) => setDraft((current) => ({ ...current, serviceCompany: event.target.value.slice(0, 120) }))}
+                                onChange={(event) =>
+                                  setDraft((current) => ({
+                                    ...current,
+                                    serviceCompany: event.target.value.slice(
+                                      0,
+                                      120,
+                                    ),
+                                  }))
+                                }
                                 disabled={isSaving}
                               />
                             </label>
@@ -3572,17 +4679,36 @@ export default function ScanClient({
                               <input
                                 placeholder={serviceCopy.mechanicPlaceholder}
                                 value={draft.mechanicName}
-                                onChange={(event) => setDraft((current) => ({ ...current, mechanicName: event.target.value.slice(0, 120) }))}
+                                onChange={(event) =>
+                                  setDraft((current) => ({
+                                    ...current,
+                                    mechanicName: event.target.value.slice(
+                                      0,
+                                      120,
+                                    ),
+                                  }))
+                                }
                                 disabled={isSaving}
                               />
                             </label>
 
-                            <button type="button" className={styles.maintenancePhotoButton} onClick={openServicePhotoStep} disabled={isSaving || isUploading}>
+                            <button
+                              type="button"
+                              className={styles.maintenancePhotoButton}
+                              onClick={openServicePhotoStep}
+                              disabled={isSaving || isUploading}
+                            >
                               <span className={styles.maintenancePhotoIcon}>
-                                <CameraIcon className={styles.maintenancePhotoIconSvg} />
+                                <CameraIcon
+                                  className={styles.maintenancePhotoIconSvg}
+                                />
                               </span>
                               <span className={styles.maintenancePhotoText}>
-                                <strong>{draft.photoUrls.length ? "Photos" : "Add photos"}</strong>
+                                <strong>
+                                  {draft.photoUrls.length
+                                    ? "Photos"
+                                    : "Add photos"}
+                                </strong>
                                 <small>
                                   {draft.photoUrls.length
                                     ? `${draft.photoUrls.length} photo${draft.photoUrls.length === 1 ? "" : "s"} ready for this record.`
@@ -3591,7 +4717,12 @@ export default function ScanClient({
                               </span>
                             </button>
 
-                            <button type="button" className={styles.secondaryButton} onClick={() => setShowServiceDetailsStep(false)} disabled={isSaving}>
+                            <button
+                              type="button"
+                              className={styles.secondaryButton}
+                              onClick={() => setShowServiceDetailsStep(false)}
+                              disabled={isSaving}
+                            >
                               Back to repair details
                             </button>
                           </div>
@@ -3608,7 +4739,12 @@ export default function ScanClient({
                     <span>Notes / Problems</span>
                     <textarea
                       value={draft.note}
-                      onChange={(event) => setDraft((current) => ({ ...current, note: event.target.value.slice(0, 1600) }))}
+                      onChange={(event) =>
+                        setDraft((current) => ({
+                          ...current,
+                          note: event.target.value.slice(0, 1600),
+                        }))
+                      }
                       placeholder="Example: hydraulic leak noticed, tyre damaged, warning light showing, or follow-up needed."
                       disabled={isSaving}
                     />
@@ -3623,7 +4759,11 @@ export default function ScanClient({
                       type="button"
                       className={styles.mediaButton}
                       onClick={() => galleryInputRef.current?.click()}
-                      disabled={isUploading || isSaving || draft.photoUrls.length >= MAX_QR_PHOTOS}
+                      disabled={
+                        isUploading ||
+                        isSaving ||
+                        draft.photoUrls.length >= MAX_QR_PHOTOS
+                      }
                     >
                       <span className={styles.mediaButtonIcon}>
                         <UploadIcon className={styles.mediaButtonSvg} />
@@ -3636,7 +4776,11 @@ export default function ScanClient({
                       type="button"
                       className={styles.mediaButton}
                       onClick={() => cameraInputRef.current?.click()}
-                      disabled={isUploading || isSaving || draft.photoUrls.length >= MAX_QR_PHOTOS}
+                      disabled={
+                        isUploading ||
+                        isSaving ||
+                        draft.photoUrls.length >= MAX_QR_PHOTOS
+                      }
                     >
                       <span className={styles.mediaButtonIcon}>
                         <CameraIcon className={styles.mediaButtonSvg} />
@@ -3675,9 +4819,21 @@ export default function ScanClient({
                   {draft.photoUrls.length ? (
                     <div className={styles.photoGrid}>
                       {draft.photoUrls.map((url, index) => (
-                        <article key={`${url}-${index}`} className={styles.photoCard}>
-                          <img src={url} alt={`QR update photo ${index + 1}`} className={styles.photoImage} />
-                          <button type="button" className={styles.removePhotoButton} onClick={() => handleRemovePhoto(url)} disabled={isSaving}>
+                        <article
+                          key={`${url}-${index}`}
+                          className={styles.photoCard}
+                        >
+                          <img
+                            src={url}
+                            alt={`QR update photo ${index + 1}`}
+                            className={styles.photoImage}
+                          />
+                          <button
+                            type="button"
+                            className={styles.removePhotoButton}
+                            onClick={() => handleRemovePhoto(url)}
+                            disabled={isSaving}
+                          >
                             Remove
                           </button>
                         </article>
@@ -3698,10 +4854,16 @@ export default function ScanClient({
               <button
                 type="button"
                 className={styles.secondaryButton}
-                onClick={activeEditor === "usage" && usageUpdateRequired ? skipRequiredUsageUpdate : closeEditor}
+                onClick={
+                  activeEditor === "usage" && usageUpdateRequired
+                    ? skipRequiredUsageUpdate
+                    : closeEditor
+                }
                 disabled={isSaving}
               >
-                {activeEditor === "usage" && usageUpdateRequired ? "Skip for now" : "Cancel"}
+                {activeEditor === "usage" && usageUpdateRequired
+                  ? "Skip for now"
+                  : "Cancel"}
               </button>
               <button
                 type="button"
