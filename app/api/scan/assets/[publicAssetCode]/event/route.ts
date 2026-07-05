@@ -164,6 +164,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       publicAssetCode,
       actorType: access.accessMode,
       operatorName: payload.operatorName,
+      ownerUserId: access.ownerUserId,
       hours: payload.hours,
       lifeWorkedPercent: payload.lifeWorkedPercent,
       condition: null,
