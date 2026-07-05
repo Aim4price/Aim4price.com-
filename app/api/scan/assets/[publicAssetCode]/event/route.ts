@@ -117,7 +117,14 @@ export async function POST(request: NextRequest, context: RouteContext) {
   const publicAssetCode = normalizePublicAssetCode(
     context.params?.publicAssetCode,
   );
-  const access = await authorizeScanAccess(request, publicAssetCode);
+  const isFieldManagerHint =
+    request.nextUrl.searchParams.get("fieldManager") === "1";
+  const fieldManagerAssetId = request.nextUrl.searchParams.get("assetId");
+
+  const access = await authorizeScanAccess(request, publicAssetCode, {
+    fieldManagerHint: isFieldManagerHint,
+    fieldManagerAssetId,
+  });
 
   if (!access.ok) {
     return NextResponse.json(
