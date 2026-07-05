@@ -1,7 +1,14 @@
-import { randomBytes, scrypt, timingSafeEqual } from 'node:crypto';
-import { promisify } from 'node:util';
-import { ensureAssetRegisterTables } from './asset-registers';
-import { getDb } from './db';
+import { randomBytes, scrypt, timingSafeEqual } from "node:crypto";
+import { promisify } from "node:util";
+import { ensureAssetRegisterTables } from "./asset-registers";
+import { getDb } from "./db";
+import {
+  type CanonicalAssetOwnerResolution,
+  normalizePublicAssetCode,
+  resolveAssetOwnerByAssetId,
+  resolveAssetOwnerByPublicAssetCode,
+  resolveAssetOwnerFromSourceIds,
+} from "./asset-owner-resolver";
 
 const scryptAsync = promisify(scrypt);
 const FIELD_MANAGER_PASSWORD_MIN_LENGTH = 8;
@@ -24,7 +31,10 @@ type FieldManagerRow = {
 
 type FieldManagerAssetRow = {
   id: string | number | null;
-  user_id: string | null;
+  owner_user_id?: string | null;
+  asset_item_user_id: string | null;
+  register_user_id: string | null;
+  valuation_run_user_id: string | null;
   public_asset_code: string | null;
   plate_label: string | null;
   qr_status: string | null;
@@ -49,7 +59,7 @@ export type FieldManagerRecord = {
   displayName: string;
   username: string;
   isActive: boolean;
-  status: 'active' | 'inactive';
+  status: "active" | "inactive";
   lastLoginAtIso: string | null;
   createdAtIso: string;
   updatedAtIso: string;
@@ -98,7 +108,7 @@ export type UpdateFieldManagerInput = {
 let fieldManagerTablesPromise: Promise<void> | null = null;
 
 function asText(value: unknown): string {
-  return typeof value === 'string' ? value.trim() : '';
+  return typeof value === "string" ? value.trim() : "";
 }
 
 function asDateIso(value: unknown): string | null {
@@ -106,7 +116,7 @@ function asDateIso(value: unknown): string | null {
     return value.toISOString();
   }
 
-  if (typeof value === 'string' && value.trim()) {
+  if (typeof value === "string" && value.trim()) {
     const parsed = new Date(value);
     return Number.isNaN(parsed.getTime()) ? value : parsed.toISOString();
   }
@@ -115,7 +125,7 @@ function asDateIso(value: unknown): string | null {
 }
 
 function asNumber(value: unknown): number | null {
-  if (value === null || typeof value === 'undefined' || value === '') {
+  if (value === null || typeof value === "undefined" || value === "") {
     return null;
   }
 
@@ -124,14 +134,14 @@ function asNumber(value: unknown): number | null {
 }
 
 function asRecord(value: unknown): Record<string, unknown> {
-  if (value && typeof value === 'object' && !Array.isArray(value)) {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
     return value as Record<string, unknown>;
   }
 
-  if (typeof value === 'string' && value.trim()) {
+  if (typeof value === "string" && value.trim()) {
     try {
       const parsed = JSON.parse(value) as unknown;
-      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
         return parsed as Record<string, unknown>;
       }
     } catch {
@@ -143,41 +153,49 @@ function asRecord(value: unknown): Record<string, unknown> {
 }
 
 function normalizeBoolean(value: unknown, fallback: boolean): boolean {
-  if (typeof value === 'boolean') return value;
-  if (typeof value === 'number') return value !== 0;
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value !== 0;
 
-  const normalized = String(value ?? '').trim().toLowerCase();
-  if (['true', '1', 'yes', 'active', 'enabled', 'on'].includes(normalized)) return true;
-  if (['false', '0', 'no', 'inactive', 'disabled', 'off'].includes(normalized)) return false;
+  const normalized = String(value ?? "")
+    .trim()
+    .toLowerCase();
+  if (["true", "1", "yes", "active", "enabled", "on"].includes(normalized))
+    return true;
+  if (["false", "0", "no", "inactive", "disabled", "off"].includes(normalized))
+    return false;
   return fallback;
 }
 
 function cleanDisplayName(value: unknown): string {
-  return asText(value).replace(/\s+/g, ' ').slice(0, MAX_DISPLAY_NAME_LENGTH);
+  return asText(value).replace(/\s+/g, " ").slice(0, MAX_DISPLAY_NAME_LENGTH);
 }
 
 export function normalizeFieldManagerUsername(value: unknown): string {
-  return String(value ?? '')
+  return String(value ?? "")
     .trim()
     .toLowerCase()
-    .replace(/\s+/g, '')
-    .replace(/[^a-z0-9._@-]/g, '')
+    .replace(/\s+/g, "")
+    .replace(/[^a-z0-9._@-]/g, "")
     .slice(0, MAX_USERNAME_LENGTH);
 }
 
 function validateFieldManagerPassword(value: unknown): string {
-  const password = typeof value === 'string' ? value : '';
+  const password = typeof value === "string" ? value : "";
 
   if (!password) {
-    throw new Error('Enter a Field Manager password.');
+    throw new Error("Enter a Field Manager password.");
   }
 
   if (password.length < FIELD_MANAGER_PASSWORD_MIN_LENGTH) {
-    throw new Error(`Field Manager password must be at least ${FIELD_MANAGER_PASSWORD_MIN_LENGTH} characters.`);
+    throw new Error(
+      `Field Manager password must be at least ${FIELD_MANAGER_PASSWORD_MIN_LENGTH} characters.`,
+    );
   }
 
   if (password.length > MAX_PASSWORD_LENGTH) {
-    throw new Error(`Field Manager password must be ${MAX_PASSWORD_LENGTH} characters or shorter.`);
+    throw new Error(
+      `Field Manager password must be ${MAX_PASSWORD_LENGTH} characters or shorter.`,
+    );
   }
 
   return password;
@@ -194,11 +212,13 @@ function validateFieldManagerCore(input: CreateFieldManagerInput): {
   const password = validateFieldManagerPassword(input.password);
 
   if (!displayName) {
-    throw new Error('Enter the manager display name.');
+    throw new Error("Enter the manager display name.");
   }
 
   if (username.length < 3) {
-    throw new Error('Enter a Field Manager username with at least 3 characters.');
+    throw new Error(
+      "Enter a Field Manager username with at least 3 characters.",
+    );
   }
 
   return {
@@ -224,31 +244,34 @@ function normalizeUpdateInput(input: UpdateFieldManagerInput): {
     isActive?: boolean;
   } = {};
 
-  if (Object.prototype.hasOwnProperty.call(input, 'displayName')) {
+  if (Object.prototype.hasOwnProperty.call(input, "displayName")) {
     const displayName = cleanDisplayName(input.displayName);
     if (!displayName) {
-      throw new Error('Enter the manager display name.');
+      throw new Error("Enter the manager display name.");
     }
     normalized.displayName = displayName;
   }
 
-  if (Object.prototype.hasOwnProperty.call(input, 'username')) {
+  if (Object.prototype.hasOwnProperty.call(input, "username")) {
     const username = normalizeFieldManagerUsername(input.username);
     if (username.length < 3) {
-      throw new Error('Enter a Field Manager username with at least 3 characters.');
+      throw new Error(
+        "Enter a Field Manager username with at least 3 characters.",
+      );
     }
     normalized.username = username;
     normalized.usernameNormalized = username;
   }
 
-  if (Object.prototype.hasOwnProperty.call(input, 'password')) {
-    const passwordText = typeof input.password === 'string' ? input.password : '';
+  if (Object.prototype.hasOwnProperty.call(input, "password")) {
+    const passwordText =
+      typeof input.password === "string" ? input.password : "";
     if (passwordText.trim()) {
       normalized.password = validateFieldManagerPassword(passwordText);
     }
   }
 
-  if (Object.prototype.hasOwnProperty.call(input, 'isActive')) {
+  if (Object.prototype.hasOwnProperty.call(input, "isActive")) {
     normalized.isActive = normalizeBoolean(input.isActive, true);
   }
 
@@ -256,8 +279,8 @@ function normalizeUpdateInput(input: UpdateFieldManagerInput): {
 }
 
 function mapFieldManagerRow(row: FieldManagerRow): FieldManagerRecord {
-  const id = String(row.id ?? '').trim();
-  const ownerUserId = String(row.owner_user_id ?? '').trim();
+  const id = String(row.id ?? "").trim();
+  const ownerUserId = String(row.owner_user_id ?? "").trim();
   const isActive = Boolean(row.is_active);
   const createdAtIso = asDateIso(row.created_at) ?? new Date().toISOString();
   const updatedAtIso = asDateIso(row.updated_at) ?? createdAtIso;
@@ -268,14 +291,16 @@ function mapFieldManagerRow(row: FieldManagerRow): FieldManagerRecord {
     displayName: asText(row.display_name),
     username: asText(row.username),
     isActive,
-    status: isActive ? 'active' : 'inactive',
+    status: isActive ? "active" : "inactive",
     lastLoginAtIso: asDateIso(row.last_login_at),
     createdAtIso,
     updatedAtIso,
   };
 }
 
-function mapFieldManagerPrivateRow(row: FieldManagerRow): FieldManagerPrivateRecord {
+function mapFieldManagerPrivateRow(
+  row: FieldManagerRow,
+): FieldManagerPrivateRecord {
   return {
     ...mapFieldManagerRow(row),
     passwordHash: asText(row.password_hash),
@@ -288,21 +313,32 @@ function readSpecText(specs: Record<string, unknown>, keys: string[]): string {
     if (value) return value.slice(0, 120);
   }
 
-  return '';
+  return "";
 }
 
-function normalizeUsageLabel(row: FieldManagerAssetRow): { usageReading: number | null; usageLabel: string } {
+function normalizeUsageLabel(row: FieldManagerAssetRow): {
+  usageReading: number | null;
+  usageLabel: string;
+} {
   const specs = asRecord(row.specs_json);
-  const usageMetric = asText(specs.usageMetric ?? specs.usage_metric ?? specs.usageUnit ?? specs.usage_unit).toLowerCase();
+  const usageMetric = asText(
+    specs.usageMetric ??
+      specs.usage_metric ??
+      specs.usageUnit ??
+      specs.usage_unit,
+  ).toLowerCase();
   const hours = asNumber(row.hours);
   const percent = asNumber(row.life_worked_percent);
   const kind = asText(row.kind).toLowerCase();
-  const unit = kind === 'vehicle' || usageMetric === 'km' || usageMetric === 'kms' ? 'km' : 'hours';
+  const unit =
+    kind === "vehicle" || usageMetric === "km" || usageMetric === "kms"
+      ? "km"
+      : "hours";
 
   if (hours !== null) {
     return {
       usageReading: hours,
-      usageLabel: `${Math.round(hours).toLocaleString('en-ZA')} ${unit}`,
+      usageLabel: `${Math.round(hours).toLocaleString("en-ZA")} ${unit}`,
     };
   }
 
@@ -315,29 +351,34 @@ function normalizeUsageLabel(row: FieldManagerAssetRow): { usageReading: number 
 
   return {
     usageReading: null,
-    usageLabel: 'No reading saved',
+    usageLabel: "No reading saved",
   };
 }
 
-function mapFieldManagerAssetRow(row: FieldManagerAssetRow): FieldManagerAssetSummary {
+function mapFieldManagerAssetRow(
+  row: FieldManagerAssetRow,
+  ownerUserId?: string,
+): FieldManagerAssetSummary {
   const specs = asRecord(row.specs_json);
   const usage = normalizeUsageLabel(row);
-  const registrationNumber = asText(row.license_registration_number) || readSpecText(specs, [
-    'registrationNumber',
-    'registration_number',
-    'licenseRegistrationNumber',
-    'license_registration_number',
-    'numberPlate',
-    'number_plate',
-  ]);
+  const registrationNumber =
+    asText(row.license_registration_number) ||
+    readSpecText(specs, [
+      "registrationNumber",
+      "registration_number",
+      "licenseRegistrationNumber",
+      "license_registration_number",
+      "numberPlate",
+      "number_plate",
+    ]);
 
   return {
-    id: String(row.id ?? '').trim(),
-    ownerUserId: asText(row.user_id),
-    publicAssetCode: asText(row.public_asset_code).toUpperCase(),
+    id: String(row.id ?? "").trim(),
+    ownerUserId: asText(ownerUserId) || asText(row.owner_user_id),
+    publicAssetCode: normalizePublicAssetCode(row.public_asset_code),
     plateLabel: asText(row.plate_label),
-    qrStatus: asText(row.qr_status) || 'active',
-    title: asText(row.title) || 'Untitled asset',
+    qrStatus: asText(row.qr_status) || "active",
+    title: asText(row.title) || "Untitled asset",
     kind: asText(row.kind),
     equipmentFamilyLabel: asText(row.equipment_family_label),
     brandName: asText(row.brand_name),
@@ -345,8 +386,21 @@ function mapFieldManagerAssetRow(row: FieldManagerAssetRow): FieldManagerAssetSu
     typedModelName: asText(row.typed_model_name),
     serialNumber: asText(row.serial_number),
     registrationNumber,
-    vinNumber: readSpecText(specs, ['vin', 'vinNumber', 'vin_number', 'chassisNumber', 'chassis_number']),
-    internalReference: readSpecText(specs, ['internalReference', 'internal_reference', 'assetReference', 'asset_reference', 'fleetNumber', 'fleet_number']),
+    vinNumber: readSpecText(specs, [
+      "vin",
+      "vinNumber",
+      "vin_number",
+      "chassisNumber",
+      "chassis_number",
+    ]),
+    internalReference: readSpecText(specs, [
+      "internalReference",
+      "internal_reference",
+      "assetReference",
+      "asset_reference",
+      "fleetNumber",
+      "fleet_number",
+    ]),
     usageReading: usage.usageReading,
     usageLabel: usage.usageLabel,
     lifeWorkedPercent: asNumber(row.life_worked_percent),
@@ -418,45 +472,58 @@ async function ensureFieldManagerTablesOnce(): Promise<void> {
       on public.field_manager_asset_access(asset_id)
   `);
 
-  await db.query(`
+  await db
+    .query(
+      `
     alter table if exists public.asset_scan_events
       add column if not exists field_manager_id uuid,
       add column if not exists field_manager_display_name text,
       add column if not exists field_manager_session_id text
-  `).catch(() => undefined);
+  `,
+    )
+    .catch(() => undefined);
 }
 
 export async function ensureFieldManagerTables(): Promise<void> {
   if (!fieldManagerTablesPromise) {
-    fieldManagerTablesPromise = ensureFieldManagerTablesOnce().catch((error) => {
-      fieldManagerTablesPromise = null;
-      throw error;
-    });
+    fieldManagerTablesPromise = ensureFieldManagerTablesOnce().catch(
+      (error) => {
+        fieldManagerTablesPromise = null;
+        throw error;
+      },
+    );
   }
 
   return fieldManagerTablesPromise;
 }
 
-export async function hashFieldManagerPassword(password: string): Promise<string> {
-  const salt = randomBytes(16).toString('base64url');
+export async function hashFieldManagerPassword(
+  password: string,
+): Promise<string> {
+  const salt = randomBytes(16).toString("base64url");
   const derivedKey = (await scryptAsync(password, salt, 64)) as Buffer;
-  return `scrypt$${salt}$${derivedKey.toString('base64url')}`;
+  return `scrypt$${salt}$${derivedKey.toString("base64url")}`;
 }
 
-export async function verifyFieldManagerPassword(password: string, storedHash: string): Promise<boolean> {
-  const [scheme, salt, key] = storedHash.split('$');
+export async function verifyFieldManagerPassword(
+  password: string,
+  storedHash: string,
+): Promise<boolean> {
+  const [scheme, salt, key] = storedHash.split("$");
 
-  if (scheme !== 'scrypt' || !salt || !key) {
+  if (scheme !== "scrypt" || !salt || !key) {
     return false;
   }
 
-  const expected = Buffer.from(key, 'base64url');
+  const expected = Buffer.from(key, "base64url");
   const actual = (await scryptAsync(password, salt, expected.length)) as Buffer;
 
   return expected.length === actual.length && timingSafeEqual(expected, actual);
 }
 
-export async function listFieldManagers(ownerUserId: string): Promise<FieldManagerRecord[]> {
+export async function listFieldManagers(
+  ownerUserId: string,
+): Promise<FieldManagerRecord[]> {
   await ensureFieldManagerTables();
   const db = getDb();
   const result = await db.query<FieldManagerRow>(
@@ -482,7 +549,10 @@ export async function listFieldManagers(ownerUserId: string): Promise<FieldManag
   return result.rows.map(mapFieldManagerRow);
 }
 
-export async function createFieldManager(ownerUserId: string, input: CreateFieldManagerInput): Promise<FieldManagerRecord> {
+export async function createFieldManager(
+  ownerUserId: string,
+  input: CreateFieldManagerInput,
+): Promise<FieldManagerRecord> {
   await ensureFieldManagerTables();
   const db = getDb();
   const normalized = validateFieldManagerCore(input);
@@ -514,15 +584,28 @@ export async function createFieldManager(ownerUserId: string, input: CreateField
           created_at,
           updated_at
       `,
-      [ownerUserId, normalized.displayName, normalized.username, normalized.usernameNormalized, passwordHash],
+      [
+        ownerUserId,
+        normalized.displayName,
+        normalized.username,
+        normalized.usernameNormalized,
+        passwordHash,
+      ],
     );
 
     const row = result.rows[0];
-    if (!row) throw new Error('Failed to create Field Manager login.');
+    if (!row) throw new Error("Failed to create Field Manager login.");
     return mapFieldManagerRow(row);
   } catch (error) {
-    if (typeof error === 'object' && error && 'code' in error && (error as { code?: unknown }).code === '23505') {
-      throw new Error('That Field Manager username is already in use. Choose another username.');
+    if (
+      typeof error === "object" &&
+      error &&
+      "code" in error &&
+      (error as { code?: unknown }).code === "23505"
+    ) {
+      throw new Error(
+        "That Field Manager username is already in use. Choose another username.",
+      );
     }
 
     throw error;
@@ -537,7 +620,9 @@ export async function updateFieldManager(
   await ensureFieldManagerTables();
   const db = getDb();
   const normalized = normalizeUpdateInput(input);
-  const passwordHash = normalized.password ? await hashFieldManagerPassword(normalized.password) : null;
+  const passwordHash = normalized.password
+    ? await hashFieldManagerPassword(normalized.password)
+    : null;
 
   try {
     const result = await db.query<FieldManagerRow>(
@@ -571,23 +656,32 @@ export async function updateFieldManager(
         normalized.username ?? null,
         normalized.usernameNormalized ?? null,
         passwordHash,
-        typeof normalized.isActive === 'boolean' ? normalized.isActive : null,
+        typeof normalized.isActive === "boolean" ? normalized.isActive : null,
       ],
     );
 
     const row = result.rows[0];
-    if (!row) throw new Error('Field Manager login was not found.');
+    if (!row) throw new Error("Field Manager login was not found.");
     return mapFieldManagerRow(row);
   } catch (error) {
-    if (typeof error === 'object' && error && 'code' in error && (error as { code?: unknown }).code === '23505') {
-      throw new Error('That Field Manager username is already in use. Choose another username.');
+    if (
+      typeof error === "object" &&
+      error &&
+      "code" in error &&
+      (error as { code?: unknown }).code === "23505"
+    ) {
+      throw new Error(
+        "That Field Manager username is already in use. Choose another username.",
+      );
     }
 
     throw error;
   }
 }
 
-export async function getFieldManagerById(managerId: string): Promise<FieldManagerPrivateRecord | null> {
+export async function getFieldManagerById(
+  managerId: string,
+): Promise<FieldManagerPrivateRecord | null> {
   await ensureFieldManagerTables();
   const db = getDb();
   const result = await db.query<FieldManagerRow>(
@@ -614,7 +708,9 @@ export async function getFieldManagerById(managerId: string): Promise<FieldManag
   return row ? mapFieldManagerPrivateRow(row) : null;
 }
 
-export async function getFieldManagerByUsername(username: string): Promise<FieldManagerPrivateRecord | null> {
+export async function getFieldManagerByUsername(
+  username: string,
+): Promise<FieldManagerPrivateRecord | null> {
   await ensureFieldManagerTables();
   const db = getDb();
   const usernameNormalized = normalizeFieldManagerUsername(username);
@@ -647,7 +743,9 @@ export async function getFieldManagerByUsername(username: string): Promise<Field
   return row ? mapFieldManagerPrivateRow(row) : null;
 }
 
-export async function markFieldManagerLastLogin(managerId: string): Promise<void> {
+export async function markFieldManagerLastLogin(
+  managerId: string,
+): Promise<void> {
   await ensureFieldManagerTables();
   const db = getDb();
   await db.query(
@@ -664,7 +762,10 @@ function fieldManagerAssetSelect(whereSql: string): string {
   return `
     select
       a.id::text as id,
-      coalesce(nullif(trim(coalesce(a.user_id, '')), ''), nullif(trim(coalesce(ar.user_id, '')), ''), nullif(trim(coalesce(vr.user_id, '')), '')) as user_id,
+      null::text as owner_user_id,
+      nullif(trim(coalesce(a.user_id, '')), '') as asset_item_user_id,
+      nullif(trim(coalesce(ar.user_id, '')), '') as register_user_id,
+      nullif(trim(coalesce(vr.user_id, '')), '') as valuation_run_user_id,
       a.public_asset_code,
       a.plate_label,
       a.qr_status,
@@ -692,6 +793,22 @@ function fieldManagerAssetSelect(whereSql: string): string {
   `;
 }
 
+function fieldManagerAssetOwnerFromRow(
+  row: FieldManagerAssetRow,
+  purpose: string,
+): string | null {
+  const resolved = resolveAssetOwnerFromSourceIds({
+    assetId: String(row.id ?? "").trim(),
+    publicAssetCode: row.public_asset_code,
+    assetItemUserId: row.asset_item_user_id,
+    registerUserId: row.register_user_id,
+    valuationRunUserId: row.valuation_run_user_id,
+    purpose,
+  });
+
+  return resolved.ok ? resolved.ownerUserId : null;
+}
+
 export async function listFieldManagerAssets(
   ownerUserId: string,
   managerId: string,
@@ -710,7 +827,11 @@ export async function listFieldManagerAssets(
         select exists(select 1 from restricted_access) as has_restrictions
       )
       ${fieldManagerAssetSelect(`
-        where coalesce(nullif(trim(coalesce(a.user_id, '')), ''), nullif(trim(coalesce(ar.user_id, '')), ''), nullif(trim(coalesce(vr.user_id, '')), '')) = $1
+        where (
+            nullif(trim(coalesce(a.user_id, '')), '') = $1
+            or nullif(trim(coalesce(ar.user_id, '')), '') = $1
+            or nullif(trim(coalesce(vr.user_id, '')), '') = $1
+          )
           and nullif(trim(coalesce(a.public_asset_code, '')), '') is not null
           and lower(coalesce(a.qr_status, 'active')) <> 'deleted'
           and (
@@ -728,7 +849,16 @@ export async function listFieldManagerAssets(
     [ownerUserId, managerId],
   );
 
-  return result.rows.map(mapFieldManagerAssetRow);
+  return result.rows
+    .map((row) => {
+      const resolvedOwnerUserId = fieldManagerAssetOwnerFromRow(
+        row,
+        "field-manager-asset-list",
+      );
+      if (resolvedOwnerUserId !== ownerUserId) return null;
+      return mapFieldManagerAssetRow(row, resolvedOwnerUserId);
+    })
+    .filter((entry): entry is FieldManagerAssetSummary => Boolean(entry));
 }
 
 export async function getFieldManagerAssetForOpen(input: {
@@ -738,6 +868,15 @@ export async function getFieldManagerAssetForOpen(input: {
 }): Promise<FieldManagerAssetSummary | null> {
   await ensureAssetRegisterTables();
   await ensureFieldManagerTables();
+
+  const resolvedOwner = await resolveAssetOwnerByAssetId(input.assetId, {
+    expectedOwnerUserId: input.ownerUserId,
+    purpose: "field-manager-asset-open",
+  });
+
+  if (resolvedOwner.qrStatus.toLowerCase() === "deleted") {
+    return null;
+  }
 
   const db = getDb();
   const result = await db.query<FieldManagerAssetRow>(
@@ -750,8 +889,7 @@ export async function getFieldManagerAssetForOpen(input: {
         select exists(select 1 from restricted_access) as has_restrictions
       )
       ${fieldManagerAssetSelect(`
-        where coalesce(nullif(trim(coalesce(a.user_id, '')), ''), nullif(trim(coalesce(ar.user_id, '')), ''), nullif(trim(coalesce(vr.user_id, '')), '')) = $1
-          and a.id = $3::uuid
+        where a.id::text = $1
           and nullif(trim(coalesce(a.public_asset_code, '')), '') is not null
           and lower(coalesce(a.qr_status, 'active')) <> 'deleted'
           and (
@@ -765,67 +903,112 @@ export async function getFieldManagerAssetForOpen(input: {
       `)}
       limit 1
     `,
-    [input.ownerUserId, input.managerId, input.assetId],
+    [resolvedOwner.assetId, input.managerId],
   );
 
   const row = result.rows[0];
-  return row ? mapFieldManagerAssetRow(row) : null;
+  if (!row) return null;
+
+  const rowOwnerUserId = fieldManagerAssetOwnerFromRow(
+    row,
+    "field-manager-asset-open-row",
+  );
+  if (rowOwnerUserId !== resolvedOwner.ownerUserId) return null;
+
+  return mapFieldManagerAssetRow(row, resolvedOwner.ownerUserId);
 }
 
 export async function validateFieldManagerScanAsset(input: {
   managerId: string;
   ownerUserId: string;
   publicAssetCode: string;
+  assetId?: string | null;
 }): Promise<FieldManagerRecord | null> {
+  await ensureAssetRegisterTables();
   await ensureFieldManagerTables();
   const db = getDb();
 
-  const result = await db.query<FieldManagerRow>(
+  const managerResult = await db.query<FieldManagerRow>(
     `
       select
-        fm.id::text as id,
-        fm.owner_user_id,
-        fm.display_name,
-        fm.username,
-        fm.username_normalized,
-        fm.password_hash,
-        fm.is_active,
-        fm.last_login_at,
-        fm.created_at,
-        fm.updated_at
-      from public.field_managers fm
-      inner join public.asset_register_items a
-        on true
-      left join public.asset_registers ar
-        on ar.id = a.register_id
-      left join public.valuation_runs vr
-        on vr.id = a.valuation_run_id
-      where fm.id = $1::uuid
-        and fm.owner_user_id = $2
-        and fm.is_active = true
-        and coalesce(nullif(trim(coalesce(a.user_id, '')), ''), nullif(trim(coalesce(ar.user_id, '')), ''), nullif(trim(coalesce(vr.user_id, '')), '')) = fm.owner_user_id
-        and upper(regexp_replace(coalesce(a.public_asset_code, ''), '\\s+', '', 'g')) = upper(regexp_replace($3::text, '\\s+', '', 'g'))
-        and lower(coalesce(a.qr_status, 'active')) <> 'deleted'
-        and (
-          not exists (
-            select 1
-            from public.field_manager_asset_access access_check
-            where access_check.field_manager_id = fm.id
-          )
-          or exists (
-            select 1
-            from public.field_manager_asset_access allowed
-            where allowed.field_manager_id = fm.id
-              and allowed.asset_id = a.id
-          )
-        )
+        id::text as id,
+        owner_user_id,
+        display_name,
+        username,
+        username_normalized,
+        password_hash,
+        is_active,
+        last_login_at,
+        created_at,
+        updated_at
+      from public.field_managers
+      where id = $1::uuid
+        and owner_user_id = $2
+        and is_active = true
       limit 1
     `,
-    [input.managerId, input.ownerUserId, input.publicAssetCode],
+    [input.managerId, input.ownerUserId],
   );
 
-  const row = result.rows[0];
-  return row ? mapFieldManagerRow(row) : null;
+  const managerRow = managerResult.rows[0];
+  if (!managerRow) return null;
+
+  let resolvedOwner: CanonicalAssetOwnerResolution;
+
+  try {
+    resolvedOwner = input.assetId
+      ? await resolveAssetOwnerByAssetId(input.assetId, {
+          expectedOwnerUserId: input.ownerUserId,
+          publicAssetCode: input.publicAssetCode,
+          purpose: "field-manager-scan-session-validation",
+        })
+      : await resolveAssetOwnerByPublicAssetCode(input.publicAssetCode, {
+          expectedOwnerUserId: input.ownerUserId,
+          purpose: "field-manager-scan-session-validation",
+        });
+  } catch {
+    return null;
+  }
+
+  if (resolvedOwner.qrStatus.toLowerCase() === "deleted") {
+    return null;
+  }
+
+  const accessResult = await db.query<{ allowed: boolean | null }>(
+    `
+      select (
+        not exists (
+          select 1
+          from public.field_manager_asset_access access_check
+          where access_check.field_manager_id = $1::uuid
+        )
+        or exists (
+          select 1
+          from public.field_manager_asset_access allowed
+          where allowed.field_manager_id = $1::uuid
+            and allowed.asset_id = $2::uuid
+        )
+      ) as allowed
+    `,
+    [input.managerId, resolvedOwner.assetId],
+  );
+
+  if (!Boolean(accessResult.rows[0]?.allowed)) {
+    console.error(
+      "[field-manager] Asset not allowed for Field Manager scan session",
+      {
+        publicAssetCode: resolvedOwner.publicAssetCode,
+        assetId: resolvedOwner.assetId,
+        resolvedAssetOwnerId: resolvedOwner.ownerUserId,
+        fieldManagerOwnerId: input.ownerUserId,
+        fieldManagerId: input.managerId,
+        route: "validate-field-manager-scan-asset",
+      },
+    );
+    return null;
+  }
+
+  return mapFieldManagerRow(managerRow);
 }
 
 type FieldManagerFuelStorageRow = {
@@ -855,32 +1038,39 @@ export type FieldManagerFuelStorageSummary = {
 };
 
 function normalizeFieldManagerFuelStorageCode(value: unknown): string {
-  return String(value ?? '')
+  return String(value ?? "")
     .trim()
-    .replace(/\s+/g, '')
+    .replace(/\s+/g, "")
     .toUpperCase();
 }
 
 function normalizeFieldManagerFuelType(value: unknown): string {
-  const text = asText(value).replace(/[_-]+/g, ' ').replace(/\s+/g, ' ');
-  return text || 'Diesel';
+  const text = asText(value).replace(/[_-]+/g, " ").replace(/\s+/g, " ");
+  return text || "Diesel";
 }
 
-function fuelStorageStockPercent(currentLitres: number, capacityLitres: number | null): number | null {
+function fuelStorageStockPercent(
+  currentLitres: number,
+  capacityLitres: number | null,
+): number | null {
   if (capacityLitres === null || capacityLitres <= 0) return null;
   return Math.max(0, Math.min(100, (currentLitres / capacityLitres) * 100));
 }
 
-function mapFieldManagerFuelStorageRow(row: FieldManagerFuelStorageRow): FieldManagerFuelStorageSummary {
+function mapFieldManagerFuelStorageRow(
+  row: FieldManagerFuelStorageRow,
+): FieldManagerFuelStorageSummary {
   const capacityLitres = asNumber(row.capacity_litres);
   const currentLitres = asNumber(row.current_litres) ?? 0;
 
   return {
-    id: String(row.id ?? '').trim(),
+    id: String(row.id ?? "").trim(),
     ownerUserId: asText(row.user_id),
-    name: asText(row.name) || 'Diesel tank',
+    name: asText(row.name) || "Diesel tank",
     fuelType: normalizeFieldManagerFuelType(row.fuel_type),
-    publicFuelStorageCode: normalizeFieldManagerFuelStorageCode(row.public_fuel_storage_code),
+    publicFuelStorageCode: normalizeFieldManagerFuelStorageCode(
+      row.public_fuel_storage_code,
+    ),
     capacityLitres,
     currentLitres,
     stockPercent: fuelStorageStockPercent(currentLitres, capacityLitres),
@@ -915,7 +1105,9 @@ function fieldManagerFuelStorageSelect(whereSql: string): string {
   `;
 }
 
-export async function listFieldManagerFuelStorages(ownerUserId: string): Promise<FieldManagerFuelStorageSummary[]> {
+export async function listFieldManagerFuelStorages(
+  ownerUserId: string,
+): Promise<FieldManagerFuelStorageSummary[]> {
   await ensureFieldManagerTables();
 
   if (!(await fieldManagerFuelStorageUnitsTableExists())) {
@@ -1002,7 +1194,11 @@ export async function validateFieldManagerFuelStorage(input: {
         and lower(coalesce(s.status, 'active')) = 'active'
       limit 1
     `,
-    [input.managerId, input.ownerUserId, normalizeFieldManagerFuelStorageCode(input.publicFuelStorageCode)],
+    [
+      input.managerId,
+      input.ownerUserId,
+      normalizeFieldManagerFuelStorageCode(input.publicFuelStorageCode),
+    ],
   );
 
   const row = result.rows[0];

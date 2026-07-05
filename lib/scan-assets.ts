@@ -1,16 +1,23 @@
-import { getDb } from './db';
-import { MAX_ASSET_REGISTER_PHOTOS } from './asset-register-uploads';
-import { ensureFuelLedgerTables } from './fuel-ledger';
+import { getDb } from "./db";
+import {
+  normalizePublicAssetCode,
+  resolveAssetOwnerByPublicAssetCode,
+} from "./asset-owner-resolver";
+import { MAX_ASSET_REGISTER_PHOTOS } from "./asset-register-uploads";
+import { ensureFuelLedgerTables } from "./fuel-ledger";
 import {
   captureAssetDepreciationLogEntryForAssetId,
   type DepreciationLogAssetInput,
-} from './asset-depreciation-timeline';
+} from "./asset-depreciation-timeline";
 
-export type ScanAssetQrStatus = 'active' | 'transferred' | 'retired' | 'deleted' | '';
-export type ScanAssetUsageMode = 'hours' | 'percent' | 'km' | 'none';
-export type ScanAssetStatusChoice = 'yes' | 'no' | 'unknown' | 'not_applicable';
-export type ScanAccessMode = 'owner_session' | 'scan_pin' | 'field_manager';
-export type ScanEventActorType = ScanAccessMode | 'admin_session';
+export { normalizePublicAssetCode } from "./asset-owner-resolver";
+
+export type ScanAssetQrStatus =
+  "active" | "transferred" | "retired" | "deleted" | "";
+export type ScanAssetUsageMode = "hours" | "percent" | "km" | "none";
+export type ScanAssetStatusChoice = "yes" | "no" | "unknown" | "not_applicable";
+export type ScanAccessMode = "owner_session" | "scan_pin" | "field_manager";
+export type ScanEventActorType = ScanAccessMode | "admin_session";
 
 export type ScanSafeAsset = {
   id: string;
@@ -29,7 +36,7 @@ export type ScanSafeAsset = {
   licenseRegistrationNumber: string;
   hours: number | null;
   usageMode: ScanAssetUsageMode;
-  usageMetric: 'hours' | 'km';
+  usageMetric: "hours" | "km";
   lifeWorkedPercent: number | null;
   isPropelled: boolean;
   canUpdateFuel: boolean;
@@ -80,7 +87,7 @@ export type ScanEventRecord = {
   createdAtIso: string;
 };
 
-export type AssetMaintenanceStatusKind = 'checked' | 'serviced' | 'repaired';
+export type AssetMaintenanceStatusKind = "checked" | "serviced" | "repaired";
 
 export type AssetMaintenanceStatus = {
   id: string;
@@ -97,6 +104,7 @@ export type AssetMaintenanceStatus = {
 
 export type SaveScanAssetEventInput = {
   publicAssetCode: string;
+  assetId?: string | null;
   actorType: ScanEventActorType;
   operatorName?: string | null;
   ownerUserId?: string | null;
@@ -201,18 +209,21 @@ type ScanEventRow = {
 };
 
 function asText(value: unknown): string {
-  return typeof value === 'string' ? value.trim() : '';
+  return typeof value === "string" ? value.trim() : "";
 }
 
 function normalizeLicenseRegistrationNumber(value: unknown): string {
-  return String(value ?? '').replace(/\s+/g, ' ').trim().toUpperCase();
+  return String(value ?? "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toUpperCase();
 }
 
 function asId(value: unknown): string {
-  if (typeof value === 'string') return value.trim();
-  if (typeof value === 'number' && Number.isFinite(value)) return String(value);
-  if (typeof value === 'bigint') return value.toString();
-  return '';
+  if (typeof value === "string") return value.trim();
+  if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  if (typeof value === "bigint") return value.toString();
+  return "";
 }
 
 function asNumber(value: unknown): number | null {
@@ -222,7 +233,7 @@ function asNumber(value: unknown): number | null {
 
 function normalizeClientEventId(value: unknown): string | null {
   const normalized = asText(value)
-    .replace(/[^a-zA-Z0-9:._-]/g, '')
+    .replace(/[^a-zA-Z0-9:._-]/g, "")
     .slice(0, 140);
   return normalized || null;
 }
@@ -236,19 +247,32 @@ function normalizeClientCapturedAt(value: unknown): string | null {
 }
 
 function normalizeGpsAccuracyMeters(value: unknown): number | null {
-  if (value === null || typeof value === 'undefined' || value === '') return null;
+  if (value === null || typeof value === "undefined" || value === "")
+    return null;
   const parsed = Number(value);
   if (!Number.isFinite(parsed) || parsed < 0 || parsed > 50000) return null;
   return Math.round(parsed * 100) / 100;
 }
 
 function asBoolean(value: unknown): boolean | null {
-  if (typeof value === 'boolean') return value;
-  if (typeof value === 'number') return value === 1;
-  if (typeof value === 'string') {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value === 1;
+  if (typeof value === "string") {
     const normalized = value.trim().toLowerCase();
-    if (normalized === 'true' || normalized === '1' || normalized === 'yes' || normalized === 'y') return true;
-    if (normalized === 'false' || normalized === '0' || normalized === 'no' || normalized === 'n') return false;
+    if (
+      normalized === "true" ||
+      normalized === "1" ||
+      normalized === "yes" ||
+      normalized === "y"
+    )
+      return true;
+    if (
+      normalized === "false" ||
+      normalized === "0" ||
+      normalized === "no" ||
+      normalized === "n"
+    )
+      return false;
   }
 
   return null;
@@ -260,7 +284,9 @@ function clampPercent(value: number): number {
 
 function asPercent(value: unknown): number | null {
   const parsed = asNumber(value);
-  return parsed === null || parsed < 0 || parsed > 100 ? null : clampPercent(parsed);
+  return parsed === null || parsed < 0 || parsed > 100
+    ? null
+    : clampPercent(parsed);
 }
 
 function asStringArray(value: unknown): string[] {
@@ -268,10 +294,12 @@ function asStringArray(value: unknown): string[] {
     return value.map((entry) => asText(entry)).filter(Boolean);
   }
 
-  if (typeof value === 'string' && value.trim()) {
+  if (typeof value === "string" && value.trim()) {
     try {
       const parsed = JSON.parse(value) as unknown;
-      return Array.isArray(parsed) ? parsed.map((entry) => asText(entry)).filter(Boolean) : [];
+      return Array.isArray(parsed)
+        ? parsed.map((entry) => asText(entry)).filter(Boolean)
+        : [];
     } catch {
       return [];
     }
@@ -296,14 +324,14 @@ function normalizePhotos(value: unknown): string[] {
 }
 
 function asRecord(value: unknown): Record<string, unknown> {
-  if (value && typeof value === 'object' && !Array.isArray(value)) {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
     return value as Record<string, unknown>;
   }
 
-  if (typeof value === 'string' && value.trim()) {
+  if (typeof value === "string" && value.trim()) {
     try {
       const parsed = JSON.parse(value) as unknown;
-      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
         return parsed as Record<string, unknown>;
       }
     } catch {
@@ -314,23 +342,62 @@ function asRecord(value: unknown): Record<string, unknown> {
   return {};
 }
 
-function normalizeAssetStatusChoice(value: unknown, fallback: ScanAssetStatusChoice = 'unknown'): ScanAssetStatusChoice {
-  const normalized = String(value ?? '').trim().toLowerCase().replace(/[\s-]+/g, '_');
+function normalizeAssetStatusChoice(
+  value: unknown,
+  fallback: ScanAssetStatusChoice = "unknown",
+): ScanAssetStatusChoice {
+  const normalized = String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
 
-  if (['yes', 'y', 'true', 'financed', 'insured', 'licensed', 'licenced'].includes(normalized)) {
-    return 'yes';
+  if (
+    [
+      "yes",
+      "y",
+      "true",
+      "financed",
+      "insured",
+      "licensed",
+      "licenced",
+    ].includes(normalized)
+  ) {
+    return "yes";
   }
 
-  if (['no', 'n', 'false', 'not_financed', 'not_insured', 'not_licensed', 'not_licenced', 'unfinanced', 'uninsured', 'unlicensed', 'unlicenced'].includes(normalized)) {
-    return 'no';
+  if (
+    [
+      "no",
+      "n",
+      "false",
+      "not_financed",
+      "not_insured",
+      "not_licensed",
+      "not_licenced",
+      "unfinanced",
+      "uninsured",
+      "unlicensed",
+      "unlicenced",
+    ].includes(normalized)
+  ) {
+    return "no";
   }
 
-  if (['na', 'n_a', 'not_applicable', 'not_aplicable', 'not_relevant', 'does_not_apply'].includes(normalized)) {
-    return 'not_applicable';
+  if (
+    [
+      "na",
+      "n_a",
+      "not_applicable",
+      "not_aplicable",
+      "not_relevant",
+      "does_not_apply",
+    ].includes(normalized)
+  ) {
+    return "not_applicable";
   }
 
-  if (['unknown', 'not_sure', 'unsure', 'maybe', ''].includes(normalized)) {
-    return normalized ? 'unknown' : fallback;
+  if (["unknown", "not_sure", "unsure", "maybe", ""].includes(normalized)) {
+    return normalized ? "unknown" : fallback;
   }
 
   return fallback;
@@ -338,8 +405,8 @@ function normalizeAssetStatusChoice(value: unknown, fallback: ScanAssetStatusCho
 
 function statusFallbackFromBoolean(value: unknown): ScanAssetStatusChoice {
   const parsed = asBoolean(value);
-  if (parsed === null) return 'unknown';
-  return parsed ? 'yes' : 'no';
+  if (parsed === null) return "unknown";
+  return parsed ? "yes" : "no";
 }
 
 function readStatusFromSpecs(
@@ -356,7 +423,9 @@ function readStatusFromSpecs(
   return fallback;
 }
 
-function readLicenseRegistrationFromSpecs(specs: Record<string, unknown>): string {
+function readLicenseRegistrationFromSpecs(
+  specs: Record<string, unknown>,
+): string {
   return normalizeLicenseRegistrationNumber(
     specs.licenseRegistrationNumber ??
       specs.license_registration_number ??
@@ -384,7 +453,10 @@ function percentFromSpecs(specs: Record<string, unknown>): number | null {
   );
 }
 
-function applyLifeWorkedPercent(specs: Record<string, unknown>, lifeWorkedPercent: number): Record<string, unknown> {
+function applyLifeWorkedPercent(
+  specs: Record<string, unknown>,
+  lifeWorkedPercent: number,
+): Record<string, unknown> {
   const nextPercent = clampPercent(lifeWorkedPercent);
 
   return {
@@ -397,58 +469,114 @@ function applyLifeWorkedPercent(specs: Record<string, unknown>, lifeWorkedPercen
   };
 }
 
-function normalizeUsageMetric(value: unknown, kind = ''): 'hours' | 'km' {
-  const normalized = String(value ?? '').trim().toLowerCase();
-  if (normalized === 'km' || normalized === 'kms' || normalized === 'kilometres' || normalized === 'kilometers') return 'km';
-  return kind === 'vehicle' ? 'km' : 'hours';
+function normalizeUsageMetric(value: unknown, kind = ""): "hours" | "km" {
+  const normalized = String(value ?? "")
+    .trim()
+    .toLowerCase();
+  if (
+    normalized === "km" ||
+    normalized === "kms" ||
+    normalized === "kilometres" ||
+    normalized === "kilometers"
+  )
+    return "km";
+  return kind === "vehicle" ? "km" : "hours";
 }
 
-function readSpecUsageMode(specs: Record<string, unknown>): ScanAssetUsageMode | null {
+function readSpecUsageMode(
+  specs: Record<string, unknown>,
+): ScanAssetUsageMode | null {
   const raw = String(
-    specs.usageMode ?? specs.usage_mode ?? specs.usageMetricType ?? specs.usage_metric_type ?? specs.valuation_mode ?? '',
+    specs.usageMode ??
+      specs.usage_mode ??
+      specs.usageMetricType ??
+      specs.usage_metric_type ??
+      specs.valuation_mode ??
+      "",
   )
     .trim()
     .toLowerCase();
 
-  if (raw === 'percent' || raw === 'percentage' || raw === 'percentage_depreciation' || raw === 'percent_used' || raw === 'wear_class') return 'percent';
-  if (raw === 'km' || raw === 'kms' || raw === 'kilometres' || raw === 'kilometers') return 'km';
-  if (raw === 'hours' || raw === 'engine_hours' || raw === 'hour_meter') return 'hours';
+  if (
+    raw === "percent" ||
+    raw === "percentage" ||
+    raw === "percentage_depreciation" ||
+    raw === "percent_used" ||
+    raw === "wear_class"
+  )
+    return "percent";
+  if (
+    raw === "km" ||
+    raw === "kms" ||
+    raw === "kilometres" ||
+    raw === "kilometers"
+  )
+    return "km";
+  if (raw === "hours" || raw === "engine_hours" || raw === "hour_meter")
+    return "hours";
   return null;
 }
 
-function scanLifeWorkedPercent(row: Pick<ScanAccessRow, 'life_worked_percent' | 'specs_json'>): number | null {
-  return asPercent(row.life_worked_percent) ?? percentFromSpecs(asRecord(row.specs_json));
+function scanLifeWorkedPercent(
+  row: Pick<ScanAccessRow, "life_worked_percent" | "specs_json">,
+): number | null {
+  return (
+    asPercent(row.life_worked_percent) ??
+    percentFromSpecs(asRecord(row.specs_json))
+  );
 }
 
 function inferScanUsageMode(row: ScanAccessRow): ScanAssetUsageMode {
   const specs = asRecord(row.specs_json);
   const specUsageMode = readSpecUsageMode(specs);
   const kind = asText(row.kind).toLowerCase();
-  const familyUsageMetricType = asText(row.family_usage_metric_type).toLowerCase();
+  const familyUsageMetricType = asText(
+    row.family_usage_metric_type,
+  ).toLowerCase();
   const depreciationMethod = asText(row.depreciation_method_used).toLowerCase();
-  const usageMetric = normalizeUsageMetric(specs.usageMetric ?? specs.usage_metric ?? specs.usageUnit ?? specs.usage_unit, kind);
+  const usageMetric = normalizeUsageMetric(
+    specs.usageMetric ??
+      specs.usage_metric ??
+      specs.usageUnit ??
+      specs.usage_unit,
+    kind,
+  );
   const lifeWorkedPercent = scanLifeWorkedPercent(row);
   const hours = asNumber(row.hours);
 
-  if (kind === 'property') return 'none';
-  if (kind === 'vehicle') return usageMetric === 'km' ? 'km' : 'hours';
+  if (kind === "property") return "none";
+  if (kind === "vehicle") return usageMetric === "km" ? "km" : "hours";
   if (specUsageMode) return specUsageMode;
-  if (familyUsageMetricType === 'wear_class' || familyUsageMetricType === 'percent_used' || familyUsageMetricType === 'percentage') return 'percent';
-  if (depreciationMethod === 'percentage_depreciation') return 'percent';
-  if (lifeWorkedPercent !== null && (!hours || hours <= 0 || depreciationMethod === 'semi_depreciation')) return 'percent';
-  if (hours !== null && hours > 0) return 'hours';
-  if (kind === 'tractor' || familyUsageMetricType === 'hours') return 'hours';
-  if (lifeWorkedPercent !== null) return 'percent';
-  return 'none';
+  if (
+    familyUsageMetricType === "wear_class" ||
+    familyUsageMetricType === "percent_used" ||
+    familyUsageMetricType === "percentage"
+  )
+    return "percent";
+  if (depreciationMethod === "percentage_depreciation") return "percent";
+  if (
+    lifeWorkedPercent !== null &&
+    (!hours || hours <= 0 || depreciationMethod === "semi_depreciation")
+  )
+    return "percent";
+  if (hours !== null && hours > 0) return "hours";
+  if (kind === "tractor" || familyUsageMetricType === "hours") return "hours";
+  if (lifeWorkedPercent !== null) return "percent";
+  return "none";
 }
 
 function inferIsPropelled(row: ScanAccessRow): boolean {
   const specs = asRecord(row.specs_json);
   const kind = asText(row.kind).toLowerCase();
-  const specValue = asBoolean(specs.is_propelled ?? specs.isPropelled ?? specs.self_propelled ?? specs.selfPropelled);
+  const specValue = asBoolean(
+    specs.is_propelled ??
+      specs.isPropelled ??
+      specs.self_propelled ??
+      specs.selfPropelled,
+  );
   const familyValue = asBoolean(row.family_is_propelled);
 
-  if (kind === 'tractor' || kind === 'vehicle') return true;
+  if (kind === "tractor" || kind === "vehicle") return true;
   if (specValue !== null) return specValue;
   if (familyValue !== null) return familyValue;
   return false;
@@ -456,18 +584,26 @@ function inferIsPropelled(row: ScanAccessRow): boolean {
 
 function hasSavedValuation(row: ScanAccessRow): boolean {
   const selectedMethod = asText(row.selected_method).toLowerCase();
-  return Boolean(row.valuation_run_id && selectedMethod !== 'manual');
+  return Boolean(row.valuation_run_id && selectedMethod !== "manual");
 }
 
-function markValuationNeedsUpdate(specs: Record<string, unknown>, reasons: string[]): Record<string, unknown> {
-  const uniqueReasons = Array.from(new Set(reasons.map((reason) => reason.trim()).filter(Boolean)));
+function markValuationNeedsUpdate(
+  specs: Record<string, unknown>,
+  reasons: string[],
+): Record<string, unknown> {
+  const uniqueReasons = Array.from(
+    new Set(reasons.map((reason) => reason.trim()).filter(Boolean)),
+  );
 
   if (!uniqueReasons.length) {
     return specs;
   }
 
   const nowIso = new Date().toISOString();
-  const existingSince = asText(specs.valuation_stale_since) || asText(specs.valuationStaleSince) || nowIso;
+  const existingSince =
+    asText(specs.valuation_stale_since) ||
+    asText(specs.valuationStaleSince) ||
+    nowIso;
 
   return {
     ...specs,
@@ -475,49 +611,59 @@ function markValuationNeedsUpdate(specs: Record<string, unknown>, reasons: strin
     valuation_needs_update: true,
     valuationStaleSince: existingSince,
     valuation_stale_since: existingSince,
-    valuationStaleReason: uniqueReasons.join(', '),
-    valuation_stale_reason: uniqueReasons.join(', '),
+    valuationStaleReason: uniqueReasons.join(", "),
+    valuation_stale_reason: uniqueReasons.join(", "),
     valuationStaleReasons: uniqueReasons,
     valuation_stale_reasons: uniqueReasons,
   };
 }
 
 function normalizeQrStatus(value: unknown): ScanAssetQrStatus {
-  const normalized = String(value ?? '').trim().toLowerCase();
+  const normalized = String(value ?? "")
+    .trim()
+    .toLowerCase();
 
   if (
-    normalized === 'active' ||
-    normalized === 'transferred' ||
-    normalized === 'retired' ||
-    normalized === 'deleted'
+    normalized === "active" ||
+    normalized === "transferred" ||
+    normalized === "retired" ||
+    normalized === "deleted"
   ) {
     return normalized;
   }
 
-  return '';
+  return "";
 }
 
 function normalizeCondition(value: unknown): string {
-  const normalized = String(value ?? '').trim().toLowerCase();
+  const normalized = String(value ?? "")
+    .trim()
+    .toLowerCase();
 
-  if (normalized === 'excellent') return 'excellent';
-  if (normalized === 'good') return 'good';
-  if (normalized === 'fair') return 'fair';
-  if (normalized === 'used') return 'used';
-  if (normalized === 'serious' || normalized === 'requires attention' || normalized === 'requires serious attention') {
-    return 'serious';
+  if (normalized === "excellent") return "excellent";
+  if (normalized === "good") return "good";
+  if (normalized === "fair") return "fair";
+  if (normalized === "used") return "used";
+  if (
+    normalized === "serious" ||
+    normalized === "requires attention" ||
+    normalized === "requires serious attention"
+  ) {
+    return "serious";
   }
 
-  return '';
+  return "";
 }
 
 function normalizeActorType(value: unknown): ScanEventActorType {
-  const normalized = String(value ?? '').trim().toLowerCase();
+  const normalized = String(value ?? "")
+    .trim()
+    .toLowerCase();
 
-  if (normalized === 'owner_session') return 'owner_session';
-  if (normalized === 'admin_session') return 'admin_session';
-  if (normalized === 'field_manager') return 'field_manager';
-  return 'scan_pin';
+  if (normalized === "owner_session") return "owner_session";
+  if (normalized === "admin_session") return "admin_session";
+  if (normalized === "field_manager") return "field_manager";
+  return "scan_pin";
 }
 
 function mergePhotos(existing: string[], next: string[]): string[] {
@@ -539,7 +685,13 @@ function mergePhotos(existing: string[], next: string[]): string[] {
 function mapScanSafeAsset(row: ScanAccessRow): ScanSafeAsset {
   const kind = asText(row.kind).toLowerCase();
   const specs = asRecord(row.specs_json);
-  const usageMetric = normalizeUsageMetric(specs.usageMetric ?? specs.usage_metric ?? specs.usageUnit ?? specs.usage_unit, kind);
+  const usageMetric = normalizeUsageMetric(
+    specs.usageMetric ??
+      specs.usage_metric ??
+      specs.usageUnit ??
+      specs.usage_unit,
+    kind,
+  );
   const isPropelled = inferIsPropelled(row);
 
   return {
@@ -553,10 +705,38 @@ function mapScanSafeAsset(row: ScanAccessRow): ScanSafeAsset {
     equipmentFamilyKey: asText(row.equipment_family_key),
     equipmentFamilyLabel: asText(row.equipment_family_label),
     serialNumber: asText(row.serial_number),
-    financeStatus: readStatusFromSpecs(specs, ['financeStatus', 'finance_status', 'financedStatus', 'financed_status'], statusFallbackFromBoolean(row.is_financed)),
-    insuranceStatus: readStatusFromSpecs(specs, ['insuranceStatus', 'insurance_status', 'insuredStatus', 'insured_status'], statusFallbackFromBoolean(row.is_insured)),
-    licenseStatus: readStatusFromSpecs(specs, ['licenseStatus', 'license_status', 'licensedStatus', 'licensed_status', 'licenceStatus', 'licence_status', 'licencedStatus', 'licenced_status'], statusFallbackFromBoolean(row.is_licensed)),
-    licenseRegistrationNumber: normalizeLicenseRegistrationNumber(row.license_registration_number) || readLicenseRegistrationFromSpecs(specs),
+    financeStatus: readStatusFromSpecs(
+      specs,
+      ["financeStatus", "finance_status", "financedStatus", "financed_status"],
+      statusFallbackFromBoolean(row.is_financed),
+    ),
+    insuranceStatus: readStatusFromSpecs(
+      specs,
+      [
+        "insuranceStatus",
+        "insurance_status",
+        "insuredStatus",
+        "insured_status",
+      ],
+      statusFallbackFromBoolean(row.is_insured),
+    ),
+    licenseStatus: readStatusFromSpecs(
+      specs,
+      [
+        "licenseStatus",
+        "license_status",
+        "licensedStatus",
+        "licensed_status",
+        "licenceStatus",
+        "licence_status",
+        "licencedStatus",
+        "licenced_status",
+      ],
+      statusFallbackFromBoolean(row.is_licensed),
+    ),
+    licenseRegistrationNumber:
+      normalizeLicenseRegistrationNumber(row.license_registration_number) ||
+      readLicenseRegistrationFromSpecs(specs),
     hours: asNumber(row.hours),
     usageMode: inferScanUsageMode(row),
     usageMetric,
@@ -576,8 +756,9 @@ function mapScanSafeAsset(row: ScanAccessRow): ScanSafeAsset {
   };
 }
 
-
-function mapScanAccessRowToDepreciationAsset(row: ScanAccessRow): DepreciationLogAssetInput {
+function mapScanAccessRowToDepreciationAsset(
+  row: ScanAccessRow,
+): DepreciationLogAssetInput {
   return {
     id: asId(row.id),
     userId: asText(row.owner_user_id) || asText(row.user_id),
@@ -608,8 +789,10 @@ function mapScanAccessRowToDepreciationAsset(row: ScanAccessRow): DepreciationLo
 
 function mapScanEventRow(row: ScanEventRow): ScanEventRecord {
   const fuelLedgerLitres = asNumber(row.fuel_ledger_litres);
-  const assetFuelPercentAfter = asNumber(row.asset_fuel_percent_after) ?? asNumber(row.fuel_percent);
-  const assetUsageReading = asNumber(row.asset_usage_reading) ?? asNumber(row.hours);
+  const assetFuelPercentAfter =
+    asNumber(row.asset_fuel_percent_after) ?? asNumber(row.fuel_percent);
+  const assetUsageReading =
+    asNumber(row.asset_usage_reading) ?? asNumber(row.hours);
 
   return {
     id: asId(row.id),
@@ -620,7 +803,8 @@ function mapScanEventRow(row: ScanEventRow): ScanEventRecord {
     hours: asNumber(row.hours),
     fuelPercent: assetFuelPercentAfter,
     fuelLitres: asNumber(row.fuel_litres) ?? fuelLedgerLitres,
-    fuelStorageId: asId(row.fuel_storage_id) || asId(row.fuel_ledger_storage_id),
+    fuelStorageId:
+      asId(row.fuel_storage_id) || asId(row.fuel_ledger_storage_id),
     fuelStorageEventId: asId(row.fuel_storage_event_id),
     fuelStorageName: asText(row.fuel_storage_name),
     fuelStoragePublicCode: asText(row.fuel_storage_public_code),
@@ -640,19 +824,20 @@ function mapScanEventRow(row: ScanEventRow): ScanEventRecord {
   };
 }
 
-
 function splitMaintenanceNoteLines(note: string): string[] {
-  return String(note ?? '')
+  return String(note ?? "")
     .split(/\r?\n+/)
-    .map((line) => line.replace(/\s+/g, ' ').trim())
+    .map((line) => line.replace(/\s+/g, " ").trim())
     .filter(Boolean);
 }
 
 function maintenanceLabelPrefixes(label: string): string[] {
-  const normalized = String(label ?? '').trim().toLowerCase();
+  const normalized = String(label ?? "")
+    .trim()
+    .toLowerCase();
 
-  if (normalized === 'notes' || normalized === 'notes/problems') {
-    return ['notes/problems:', 'notes:'];
+  if (normalized === "notes" || normalized === "notes/problems") {
+    return ["notes/problems:", "notes:"];
   }
 
   return [`${normalized}:`];
@@ -666,65 +851,86 @@ function extractMaintenanceNoteValue(note: string, label: string): string {
   });
 
   if (!line) {
-    return '';
+    return "";
   }
 
   const lowerLine = line.toLowerCase();
-  const matchedPrefix = prefixes.find((prefix) => lowerLine.startsWith(prefix)) ?? '';
-  return line.slice(matchedPrefix.length).replace(/\s+/g, ' ').trim();
+  const matchedPrefix =
+    prefixes.find((prefix) => lowerLine.startsWith(prefix)) ?? "";
+  return line.slice(matchedPrefix.length).replace(/\s+/g, " ").trim();
 }
 
-function resolveMaintenanceStatusKind(note: string): AssetMaintenanceStatusKind | null {
+function resolveMaintenanceStatusKind(
+  note: string,
+): AssetMaintenanceStatusKind | null {
   const lines = splitMaintenanceNoteLines(note);
-  const firstLine = (lines[0] ?? '').toLowerCase();
-  const compactNote = lines.join(' ').toLowerCase();
+  const firstLine = (lines[0] ?? "").toLowerCase();
+  const compactNote = lines.join(" ").toLowerCase();
 
-  if (/^repaired(?:\b|$)/.test(firstLine) || compactNote.includes('repair details:')) {
-    return 'repaired';
+  if (
+    /^repaired(?:\b|$)/.test(firstLine) ||
+    compactNote.includes("repair details:")
+  ) {
+    return "repaired";
   }
 
   if (
     /^serviced(?:\b|$)/.test(firstLine) ||
-    compactNote.includes('work done:') ||
-    compactNote.includes('service items:') ||
-    compactNote.includes('serviced items:')
+    compactNote.includes("work done:") ||
+    compactNote.includes("service items:") ||
+    compactNote.includes("serviced items:")
   ) {
-    return 'serviced';
+    return "serviced";
   }
 
-  if (/^checked(?:\b|$)/.test(firstLine) || compactNote.includes('checked items:')) {
-    return 'checked';
+  if (
+    /^checked(?:\b|$)/.test(firstLine) ||
+    compactNote.includes("checked items:")
+  ) {
+    return "checked";
   }
 
   return null;
 }
 
-function summarizeMaintenanceStatus(note: string, kind: AssetMaintenanceStatusKind): { summary: string; note: string } {
-  const actionLabel = kind === 'checked' ? 'Checked' : kind === 'repaired' ? 'Repaired' : 'Serviced';
+function summarizeMaintenanceStatus(
+  note: string,
+  kind: AssetMaintenanceStatusKind,
+): { summary: string; note: string } {
+  const actionLabel =
+    kind === "checked"
+      ? "Checked"
+      : kind === "repaired"
+        ? "Repaired"
+        : "Serviced";
   const detail =
-    kind === 'checked'
-      ? extractMaintenanceNoteValue(note, 'Checked items')
-      : kind === 'repaired'
-        ? extractMaintenanceNoteValue(note, 'Repair details')
-        : extractMaintenanceNoteValue(note, 'Work done') ||
-          extractMaintenanceNoteValue(note, 'Service items') ||
-          extractMaintenanceNoteValue(note, 'Serviced items');
-  const company = extractMaintenanceNoteValue(note, 'Company');
-  const mechanic = extractMaintenanceNoteValue(note, 'Mechanic');
-  const noteText = extractMaintenanceNoteValue(note, 'Notes/Problems');
-  const providerText = [company, mechanic].filter(Boolean).join(' · ');
+    kind === "checked"
+      ? extractMaintenanceNoteValue(note, "Checked items")
+      : kind === "repaired"
+        ? extractMaintenanceNoteValue(note, "Repair details")
+        : extractMaintenanceNoteValue(note, "Work done") ||
+          extractMaintenanceNoteValue(note, "Service items") ||
+          extractMaintenanceNoteValue(note, "Serviced items");
+  const company = extractMaintenanceNoteValue(note, "Company");
+  const mechanic = extractMaintenanceNoteValue(note, "Mechanic");
+  const noteText = extractMaintenanceNoteValue(note, "Notes/Problems");
+  const providerText = [company, mechanic].filter(Boolean).join(" · ");
   const summaryParts = [
-    detail ? `${actionLabel}: ${detail}` : `${actionLabel} maintenance has been recorded.`,
-    providerText ? `By ${providerText}` : '',
+    detail
+      ? `${actionLabel}: ${detail}`
+      : `${actionLabel} maintenance has been recorded.`,
+    providerText ? `By ${providerText}` : "",
   ].filter(Boolean);
 
   return {
-    summary: summaryParts.join(' • '),
+    summary: summaryParts.join(" • "),
     note: noteText,
   };
 }
 
-function mapMaintenanceStatusFromScanEvent(row: ScanEventRow & { asset_id?: string | number | null }): AssetMaintenanceStatus | null {
+function mapMaintenanceStatusFromScanEvent(
+  row: ScanEventRow & { asset_id?: string | number | null },
+): AssetMaintenanceStatus | null {
   const note = asText(row.note);
   const kind = resolveMaintenanceStatusKind(note);
 
@@ -749,14 +955,13 @@ function mapMaintenanceStatusFromScanEvent(row: ScanEventRow & { asset_id?: stri
   };
 }
 
-export function normalizePublicAssetCode(value: unknown): string {
-  return String(value ?? '')
-    .trim()
-    .replace(/\s+/g, '')
-    .toUpperCase();
-}
-
-export async function getScanAssetAccessContext(publicAssetCode: string): Promise<ScanAssetAccessContext | null> {
+export async function getScanAssetAccessContext(
+  publicAssetCode: string,
+  options: {
+    assetId?: string | null;
+    expectedOwnerUserId?: string | null;
+  } = {},
+): Promise<ScanAssetAccessContext | null> {
   const db = getDb();
   const normalizedCode = normalizePublicAssetCode(publicAssetCode);
 
@@ -764,12 +969,21 @@ export async function getScanAssetAccessContext(publicAssetCode: string): Promis
     return null;
   }
 
+  const resolvedOwner = await resolveAssetOwnerByPublicAssetCode(
+    normalizedCode,
+    {
+      assetId: options.assetId ?? null,
+      expectedOwnerUserId: options.expectedOwnerUserId ?? null,
+      purpose: "scan-asset-access-context",
+    },
+  );
+
   const result = await db.query<ScanAccessRow>(
     `
       select
         a.id,
         a.user_id,
-        coalesce(nullif(trim(coalesce(a.user_id, '')), ''), nullif(trim(coalesce(ar.user_id, '')), ''), nullif(trim(coalesce(vr.user_id, '')), '')) as owner_user_id,
+        $2::text as owner_user_id,
         a.register_id,
         a.sector_id,
         coalesce(a.equipment_family_id, vr.equipment_family_id) as equipment_family_id,
@@ -817,19 +1031,16 @@ export async function getScanAssetAccessContext(publicAssetCode: string): Promis
         coalesce(p.scan_pin_enabled, false) as scan_pin_enabled,
         p.scan_pin_updated_at
       from asset_register_items a
-      left join asset_registers ar
-        on ar.id = a.register_id
       left join valuation_runs vr
         on vr.id = a.valuation_run_id
       left join equipment_families ef
         on ef.id = coalesce(a.equipment_family_id, vr.equipment_family_id)
       left join account_profiles p
-        on p.user_id = coalesce(nullif(trim(coalesce(a.user_id, '')), ''), nullif(trim(coalesce(ar.user_id, '')), ''), nullif(trim(coalesce(vr.user_id, '')), ''))
-      where upper(regexp_replace(coalesce(a.public_asset_code, ''), '\\s+', '', 'g')) = $1
-      order by a.updated_at desc nulls last, a.created_at desc nulls last, a.id desc
+        on p.user_id = $2::text
+      where a.id::text = $1
       limit 1
     `,
-    [normalizedCode],
+    [resolvedOwner.assetId, resolvedOwner.ownerUserId],
   );
 
   const row = result.rows[0];
@@ -841,7 +1052,8 @@ export async function getScanAssetAccessContext(publicAssetCode: string): Promis
   return {
     asset: mapScanSafeAsset(row),
     scanPinHash: asText(row.scan_pin_hash),
-    scanPinEnabled: Boolean(row.scan_pin_enabled) && Boolean(asText(row.scan_pin_hash)),
+    scanPinEnabled:
+      Boolean(row.scan_pin_enabled) && Boolean(asText(row.scan_pin_hash)),
     scanPinUpdatedAtIso: row.scan_pin_updated_at ?? null,
   };
 }
@@ -852,13 +1064,17 @@ export type ScanEventListFilters = {
   onlyFuel?: boolean;
 };
 
-export async function listScanEventsForAsset(assetId: string, limit = 250, filters?: ScanEventListFilters): Promise<ScanEventRecord[]> {
+export async function listScanEventsForAsset(
+  assetId: string,
+  limit = 250,
+  filters?: ScanEventListFilters,
+): Promise<ScanEventRecord[]> {
   await ensureFuelLedgerTables();
 
   const db = getDb();
   const safeLimit = Math.max(1, Math.min(500, Math.round(limit || 250)));
   const queryParams: unknown[] = [assetId];
-  const whereClauses = ['e.asset_id = $1'];
+  const whereClauses = ["e.asset_id = $1"];
 
   if (filters?.fromIso) {
     queryParams.push(filters.fromIso);
@@ -914,7 +1130,7 @@ export async function listScanEventsForAsset(assetId: string, limit = 250, filte
         on fse.id::text = nullif(to_jsonb(e)->>'fuel_storage_event_id', '')
       left join public.fuel_storage_units fsu
         on fsu.id = fse.storage_id
-      where ${whereClauses.join('\n        and ')}
+      where ${whereClauses.join("\n        and ")}
       order by e.created_at desc, e.id desc
       limit ${safeLimit}
     `,
@@ -924,14 +1140,23 @@ export async function listScanEventsForAsset(assetId: string, limit = 250, filte
   return result.rows.map(mapScanEventRow);
 }
 
-export async function listRecentScanEvents(assetId: string, limit = 10): Promise<ScanEventRecord[]> {
-  return listScanEventsForAsset(assetId, Math.max(1, Math.min(25, Math.round(limit || 10))));
+export async function listRecentScanEvents(
+  assetId: string,
+  limit = 10,
+): Promise<ScanEventRecord[]> {
+  return listScanEventsForAsset(
+    assetId,
+    Math.max(1, Math.min(25, Math.round(limit || 10))),
+  );
 }
 
-
-export async function attachLatestMaintenanceStatusToAssets<T extends { id: string }>(
+export async function attachLatestMaintenanceStatusToAssets<
+  T extends { id: string },
+>(
   assets: T[],
-): Promise<Array<T & { latestMaintenanceStatus: AssetMaintenanceStatus | null }>> {
+): Promise<
+  Array<T & { latestMaintenanceStatus: AssetMaintenanceStatus | null }>
+> {
   if (!assets.length) {
     return [];
   }
@@ -945,7 +1170,9 @@ export async function attachLatestMaintenanceStatusToAssets<T extends { id: stri
     return assets.map((asset) => ({ ...asset, latestMaintenanceStatus: null }));
   }
 
-  const result = await db.query<ScanEventRow & { asset_id: string | number | null }>(
+  const result = await db.query<
+    ScanEventRow & { asset_id: string | number | null }
+  >(
     `
       select
         e.id,
@@ -997,27 +1224,32 @@ export async function attachLatestMaintenanceStatusToAssets<T extends { id: stri
   const latestByAssetId = new Map<string, AssetMaintenanceStatus>();
   const latestMaintenanceSeenAssetIds = new Set<string>();
 
-  result.rows.forEach((row: ScanEventRow & { asset_id: string | number | null }) => {
-    const maintenanceStatus = mapMaintenanceStatusFromScanEvent(row);
-    const assetId = maintenanceStatus?.assetRegisterItemId ?? '';
+  result.rows.forEach(
+    (row: ScanEventRow & { asset_id: string | number | null }) => {
+      const maintenanceStatus = mapMaintenanceStatusFromScanEvent(row);
+      const assetId = maintenanceStatus?.assetRegisterItemId ?? "";
 
-    if (!maintenanceStatus || !assetId || latestMaintenanceSeenAssetIds.has(assetId)) {
-      return;
-    }
+      if (
+        !maintenanceStatus ||
+        !assetId ||
+        latestMaintenanceSeenAssetIds.has(assetId)
+      ) {
+        return;
+      }
 
-    latestMaintenanceSeenAssetIds.add(assetId);
+      latestMaintenanceSeenAssetIds.add(assetId);
 
-    if (!maintenanceStatus.notedAtIso) {
-      latestByAssetId.set(assetId, maintenanceStatus);
-    }
-  });
+      if (!maintenanceStatus.notedAtIso) {
+        latestByAssetId.set(assetId, maintenanceStatus);
+      }
+    },
+  );
 
   return assets.map((asset) => ({
     ...asset,
     latestMaintenanceStatus: latestByAssetId.get(asset.id) ?? null,
   }));
 }
-
 
 function assetMaintenanceStatusSelectSql(whereClause: string): string {
   return `
@@ -1066,19 +1298,25 @@ export async function markAssetMaintenanceStatusNoted(input: {
   await ensureFuelLedgerTables();
 
   const db = getDb();
-  const current = await db.query<ScanEventRow & { asset_id: string | number | null; asset_owner_user_id: string | null }>(
-    `${assetMaintenanceStatusSelectSql('where e.id = $1::uuid')} limit 1`,
-    [input.maintenanceStatusId],
-  );
+  const current = await db.query<
+    ScanEventRow & {
+      asset_id: string | number | null;
+      asset_owner_user_id: string | null;
+    }
+  >(`${assetMaintenanceStatusSelectSql("where e.id = $1::uuid")} limit 1`, [
+    input.maintenanceStatusId,
+  ]);
   const currentRow = current.rows[0] ?? null;
-  const currentStatus = currentRow ? mapMaintenanceStatusFromScanEvent(currentRow) : null;
+  const currentStatus = currentRow
+    ? mapMaintenanceStatusFromScanEvent(currentRow)
+    : null;
 
   if (!currentRow || !currentStatus || !currentStatus.assetRegisterItemId) {
-    throw new Error('MAINTENANCE_STATUS_NOT_FOUND');
+    throw new Error("MAINTENANCE_STATUS_NOT_FOUND");
   }
 
   if (asText(currentRow.asset_owner_user_id) !== input.currentUserId) {
-    throw new Error('MAINTENANCE_STATUS_FORBIDDEN');
+    throw new Error("MAINTENANCE_STATUS_FORBIDDEN");
   }
 
   await db.query(
@@ -1090,20 +1328,28 @@ export async function markAssetMaintenanceStatusNoted(input: {
     [input.maintenanceStatusId],
   );
 
-  const updated = await db.query<ScanEventRow & { asset_id: string | number | null; asset_owner_user_id: string | null }>(
-    `${assetMaintenanceStatusSelectSql('where e.id = $1::uuid')} limit 1`,
-    [input.maintenanceStatusId],
-  );
-  const updatedStatus = updated.rows[0] ? mapMaintenanceStatusFromScanEvent(updated.rows[0]) : null;
+  const updated = await db.query<
+    ScanEventRow & {
+      asset_id: string | number | null;
+      asset_owner_user_id: string | null;
+    }
+  >(`${assetMaintenanceStatusSelectSql("where e.id = $1::uuid")} limit 1`, [
+    input.maintenanceStatusId,
+  ]);
+  const updatedStatus = updated.rows[0]
+    ? mapMaintenanceStatusFromScanEvent(updated.rows[0])
+    : null;
 
   if (!updatedStatus) {
-    throw new Error('MAINTENANCE_STATUS_NOT_FOUND');
+    throw new Error("MAINTENANCE_STATUS_NOT_FOUND");
   }
 
   return updatedStatus;
 }
 
-export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promise<{
+export async function saveScanAssetEvent(
+  input: SaveScanAssetEventInput,
+): Promise<{
   asset: ScanSafeAsset;
   event: ScanEventRecord;
 }> {
@@ -1112,21 +1358,30 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
   const normalizedCode = normalizePublicAssetCode(input.publicAssetCode);
 
   if (!normalizedCode) {
-    throw new Error('Asset code is required.');
+    throw new Error("Asset code is required.");
   }
 
-  const scopedOwnerUserId = asText(input.ownerUserId) || null;
+  const expectedOwnerUserId = asText(input.ownerUserId) || null;
+  const resolvedOwner = await resolveAssetOwnerByPublicAssetCode(
+    normalizedCode,
+    {
+      assetId: asText(input.assetId) || null,
+      expectedOwnerUserId,
+      purpose: "save-scan-asset-event",
+    },
+  );
+  const scopedOwnerUserId = resolvedOwner.ownerUserId;
   const client = await db.connect();
 
   try {
-    await client.query('BEGIN');
+    await client.query("BEGIN");
 
     const assetLookup = await client.query<ScanAccessRow>(
       `
         select
           a.id,
           a.user_id,
-          coalesce(nullif(trim(coalesce(a.user_id, '')), ''), nullif(trim(coalesce(ar.user_id, '')), ''), nullif(trim(coalesce(vr.user_id, '')), '')) as owner_user_id,
+          $2::text as owner_user_id,
           a.register_id,
           a.sector_id,
           coalesce(a.equipment_family_id, vr.equipment_family_id) as equipment_family_id,
@@ -1174,57 +1429,70 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
           false as scan_pin_enabled,
           null::timestamptz as scan_pin_updated_at
         from asset_register_items a
-        left join asset_registers ar
-          on ar.id = a.register_id
         left join valuation_runs vr
           on vr.id = a.valuation_run_id
         left join equipment_families ef
           on ef.id = coalesce(a.equipment_family_id, vr.equipment_family_id)
-        where upper(regexp_replace(coalesce(a.public_asset_code, ''), '\\s+', '', 'g')) = $1
-          and ($2::text is null or coalesce(nullif(trim(coalesce(a.user_id, '')), ''), nullif(trim(coalesce(ar.user_id, '')), ''), nullif(trim(coalesce(vr.user_id, '')), '')) = $2::text)
-        order by a.updated_at desc nulls last, a.created_at desc nulls last, a.id desc
+        where a.id::text = $1
+          and upper(regexp_replace(coalesce(a.public_asset_code, ''), '\\s+', '', 'g')) = $3
         limit 1
       `,
-      [normalizedCode, scopedOwnerUserId],
+      [resolvedOwner.assetId, scopedOwnerUserId, normalizedCode],
     );
 
     const existingRow = assetLookup.rows[0];
 
     if (!existingRow) {
-      throw new Error('Asset not found.');
+      throw new Error("Asset not found.");
     }
 
     const currentAsset = mapScanSafeAsset(existingRow);
     const currentUsageMode = currentAsset.usageMode;
     const currentLifeWorkedPercent = currentAsset.lifeWorkedPercent;
     const nextOperatorName = asText(input.operatorName) || null;
-    const nextHours = typeof input.hours === 'number' && Number.isFinite(input.hours) ? Math.max(0, Math.round(input.hours)) : null;
-    const nextLifeWorkedPercent = typeof input.lifeWorkedPercent === 'number' && Number.isFinite(input.lifeWorkedPercent)
-      ? clampPercent(input.lifeWorkedPercent)
-      : null;
+    const nextHours =
+      typeof input.hours === "number" && Number.isFinite(input.hours)
+        ? Math.max(0, Math.round(input.hours))
+        : null;
+    const nextLifeWorkedPercent =
+      typeof input.lifeWorkedPercent === "number" &&
+      Number.isFinite(input.lifeWorkedPercent)
+        ? clampPercent(input.lifeWorkedPercent)
+        : null;
     const nextFuelPercent =
-      typeof input.fuelPercent === 'number' && Number.isFinite(input.fuelPercent)
+      typeof input.fuelPercent === "number" &&
+      Number.isFinite(input.fuelPercent)
         ? Math.max(0, Math.min(100, Math.round(input.fuelPercent)))
         : null;
     const nextCondition = normalizeCondition(input.condition) || null;
     const rawNote = asText(input.note);
-    const usageNote = nextLifeWorkedPercent !== null ? `Lifetime worked updated to ${nextLifeWorkedPercent}%.` : '';
-    const nextNote = [usageNote, rawNote].filter(Boolean).join('\n\n') || null;
+    const usageNote =
+      nextLifeWorkedPercent !== null
+        ? `Lifetime worked updated to ${nextLifeWorkedPercent}%.`
+        : "";
+    const nextNote = [usageNote, rawNote].filter(Boolean).join("\n\n") || null;
     const nextPhotoUrls = normalizePhotos(input.photoUrls ?? []);
     const nextLatitude =
-      typeof input.latitude === 'number' && Number.isFinite(input.latitude) && Math.abs(input.latitude) <= 90
+      typeof input.latitude === "number" &&
+      Number.isFinite(input.latitude) &&
+      Math.abs(input.latitude) <= 90
         ? input.latitude
         : null;
     const nextLongitude =
-      typeof input.longitude === 'number' && Number.isFinite(input.longitude) && Math.abs(input.longitude) <= 180
+      typeof input.longitude === "number" &&
+      Number.isFinite(input.longitude) &&
+      Math.abs(input.longitude) <= 180
         ? input.longitude
         : null;
     const nextLocationText = asText(input.locationText) || null;
     const clientEventId = normalizeClientEventId(input.clientEventId);
     const clientCapturedAt = normalizeClientCapturedAt(input.clientCapturedAt);
-    const gpsAccuracyMeters = normalizeGpsAccuracyMeters(input.gpsAccuracyMeters);
+    const gpsAccuracyMeters = normalizeGpsAccuracyMeters(
+      input.gpsAccuracyMeters,
+    );
     const fieldManagerId = asText(input.fieldManagerId) || null;
-    const fieldManagerDisplayName = asText(input.fieldManagerDisplayName) || null;
+    const fieldManagerDisplayName =
+      asText(input.fieldManagerDisplayName) || null;
     const fieldManagerSessionId = asText(input.fieldManagerSessionId) || null;
 
     if (clientEventId) {
@@ -1269,7 +1537,7 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
 
       const duplicateEvent = existingEvent.rows[0];
       if (duplicateEvent) {
-        await client.query('COMMIT');
+        await client.query("COMMIT");
         return {
           asset: currentAsset,
           event: mapScanEventRow(duplicateEvent),
@@ -1277,20 +1545,24 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
       }
     }
 
-    if (nextHours !== null && currentUsageMode === 'percent') {
-      throw new Error('USAGE_MODE_PERCENT_CANNOT_ACCEPT_HOURS');
+    if (nextHours !== null && currentUsageMode === "percent") {
+      throw new Error("USAGE_MODE_PERCENT_CANNOT_ACCEPT_HOURS");
     }
 
-    if (nextLifeWorkedPercent !== null && currentUsageMode !== 'percent') {
-      throw new Error('USAGE_MODE_HOURS_CANNOT_ACCEPT_PERCENT');
+    if (nextLifeWorkedPercent !== null && currentUsageMode !== "percent") {
+      throw new Error("USAGE_MODE_HOURS_CANNOT_ACCEPT_PERCENT");
     }
 
     if (nextFuelPercent !== null && !currentAsset.canUpdateFuel) {
-      throw new Error('ASSET_DOES_NOT_ACCEPT_FUEL');
+      throw new Error("ASSET_DOES_NOT_ACCEPT_FUEL");
     }
 
-    if (nextHours !== null && currentAsset.hours !== null && nextHours < currentAsset.hours) {
-      throw new Error('USAGE_READING_CANNOT_DECREASE');
+    if (
+      nextHours !== null &&
+      currentAsset.hours !== null &&
+      nextHours < currentAsset.hours
+    ) {
+      throw new Error("USAGE_READING_CANNOT_DECREASE");
     }
 
     if (
@@ -1298,30 +1570,44 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
       currentLifeWorkedPercent !== null &&
       nextLifeWorkedPercent < currentLifeWorkedPercent
     ) {
-      throw new Error('LIFE_WORKED_PERCENT_CANNOT_DECREASE');
+      throw new Error("LIFE_WORKED_PERCENT_CANNOT_DECREASE");
     }
 
     const valuationStaleReasons: string[] = [];
     if (hasSavedValuation(existingRow)) {
       if (nextHours !== null && nextHours !== currentAsset.hours) {
-        valuationStaleReasons.push('usage changed');
+        valuationStaleReasons.push("usage changed");
       }
 
-      if (nextLifeWorkedPercent !== null && nextLifeWorkedPercent !== currentLifeWorkedPercent) {
-        valuationStaleReasons.push('life worked changed');
+      if (
+        nextLifeWorkedPercent !== null &&
+        nextLifeWorkedPercent !== currentLifeWorkedPercent
+      ) {
+        valuationStaleReasons.push("life worked changed");
       }
 
-      if (nextCondition && currentAsset.condition && nextCondition !== currentAsset.condition) {
-        valuationStaleReasons.push('condition changed');
+      if (
+        nextCondition &&
+        currentAsset.condition &&
+        nextCondition !== currentAsset.condition
+      ) {
+        valuationStaleReasons.push("condition changed");
       }
     }
 
     const shouldCaptureDepreciationLogEntry = valuationStaleReasons.length > 0;
 
-    const baseSpecsJson = nextLifeWorkedPercent !== null
-      ? applyLifeWorkedPercent(asRecord(existingRow.specs_json), nextLifeWorkedPercent)
-      : asRecord(existingRow.specs_json);
-    const nextSpecsJson = markValuationNeedsUpdate(baseSpecsJson, valuationStaleReasons);
+    const baseSpecsJson =
+      nextLifeWorkedPercent !== null
+        ? applyLifeWorkedPercent(
+            asRecord(existingRow.specs_json),
+            nextLifeWorkedPercent,
+          )
+        : asRecord(existingRow.specs_json);
+    const nextSpecsJson = markValuationNeedsUpdate(
+      baseSpecsJson,
+      valuationStaleReasons,
+    );
 
     const insertedEvent = await client.query<ScanEventRow>(
       `
@@ -1426,7 +1712,7 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
         select
           u.id,
           u.user_id,
-          coalesce(nullif(trim(coalesce(u.user_id, '')), ''), nullif(trim(coalesce(ar.user_id, '')), ''), nullif(trim(coalesce(vr.user_id, '')), '')) as owner_user_id,
+          $12::text as owner_user_id,
           u.public_asset_code,
           u.plate_label,
           u.qr_status,
@@ -1463,8 +1749,6 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
           false as scan_pin_enabled,
           null::timestamptz as scan_pin_updated_at
         from updated u
-        left join asset_registers ar
-          on ar.id = u.register_id
         left join valuation_runs vr
           on vr.id = u.valuation_run_id
         left join equipment_families ef
@@ -1482,16 +1766,17 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
         JSON.stringify(nextSpecsJson),
         nextLifeWorkedPercent,
         clientCapturedAt,
+        scopedOwnerUserId,
       ],
     );
 
-    await client.query('COMMIT');
+    await client.query("COMMIT");
 
     const assetRow = updatedAsset.rows[0];
     const eventRow = insertedEvent.rows[0];
 
     if (!assetRow || !eventRow) {
-      throw new Error('Failed to save scan update.');
+      throw new Error("Failed to save scan update.");
     }
 
     const asset = mapScanSafeAsset(assetRow);
@@ -1502,8 +1787,8 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
         userId: currentAsset.userId,
         assetId: currentAsset.id,
         previousAsset: mapScanAccessRowToDepreciationAsset(existingRow),
-        eventType: 'qr_scan_update',
-        eventSource: 'asset-register-qr-scan',
+        eventType: "qr_scan_update",
+        eventSource: "asset-register-qr-scan",
         capturedAt: event.createdAtIso,
         metadata: {
           scanEventId: event.id,
@@ -1523,7 +1808,7 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
       event,
     };
   } catch (error) {
-    await client.query('ROLLBACK');
+    await client.query("ROLLBACK");
     throw error;
   } finally {
     client.release();
