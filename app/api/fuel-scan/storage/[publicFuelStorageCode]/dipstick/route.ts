@@ -55,7 +55,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
     return NextResponse.json({ ok: false, error: 'Enter the dipstick note before saving.' }, { status: 400 });
   }
 
-  const operatorName = asText(body.operatorName);
+  const operatorName = access.accessMode === 'field_manager'
+    ? access.fieldManagerDisplayName ?? ''
+    : asText(body.operatorName);
   if (operatorName.length < 2) {
     return NextResponse.json({ ok: false, error: 'Enter your name before saving the dipstick note.' }, { status: 400 });
   }
@@ -77,6 +79,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
       clientCapturedAt: body.clientCapturedAt,
       gpsAccuracyMeters: body.gpsAccuracyMeters,
       createEvent: true,
+      fieldManagerId: access.fieldManagerId ?? null,
+      fieldManagerDisplayName: access.fieldManagerDisplayName ?? null,
+      fieldManagerSessionId: access.fieldManagerSessionId ?? null,
     });
     const payload = await getFuelScanPayload(access.ownerUserId, access.storage.id);
     return NextResponse.json({ ok: true, ...payload });
