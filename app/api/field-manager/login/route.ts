@@ -6,6 +6,7 @@ import {
 } from '../../../../lib/field-manager';
 import {
   applyFieldManagerSessionCookie,
+  clearFieldManagerFuelScanCookie,
   clearFieldManagerScanCookie,
   clearFieldManagerSessionCookie,
 } from '../../../../lib/field-manager-session';
@@ -68,11 +69,12 @@ export async function POST(request: NextRequest) {
         displayName: manager.displayName,
         username: manager.username,
       },
-      redirectTo: '/field-manager/assets',
+      redirectTo: '/field-manager',
     });
 
     applyFieldManagerSessionCookie(response, manager);
     clearFieldManagerScanCookie(response);
+    clearFieldManagerFuelScanCookie(response);
     return response;
   } catch (error) {
     return NextResponse.json(
@@ -86,5 +88,6 @@ export async function DELETE() {
   const response = NextResponse.json({ ok: true });
   clearFieldManagerSessionCookie(response);
   clearFieldManagerScanCookie(response);
+  clearFieldManagerFuelScanCookie(response);
   return response;
 }
