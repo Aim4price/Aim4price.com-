@@ -52,7 +52,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
     return NextResponse.json({ ok: false, error: 'Enter valid storage refill details.' }, { status: 400 });
   }
 
-  const operatorName = asText(body.operatorName);
+  const operatorName = access.accessMode === 'field_manager'
+    ? access.fieldManagerDisplayName ?? ''
+    : asText(body.operatorName);
   if (operatorName.length < 2) {
     return NextResponse.json({ ok: false, error: 'Enter your name before saving the storage refill.' }, { status: 400 });
   }
@@ -75,6 +77,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
       clientEventId: body.clientEventId,
       clientCapturedAt: body.clientCapturedAt,
       gpsAccuracyMeters: body.gpsAccuracyMeters,
+      fieldManagerId: access.fieldManagerId ?? null,
+      fieldManagerDisplayName: access.fieldManagerDisplayName ?? null,
+      fieldManagerSessionId: access.fieldManagerSessionId ?? null,
     });
 
     const payload = await getFuelScanPayload(access.ownerUserId, access.storage.id);
