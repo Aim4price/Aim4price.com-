@@ -69,6 +69,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
   return NextResponse.json({
     ok: true,
     accessMode: access.accessMode,
+    fieldManagerDisplayName: access.fieldManagerDisplayName ?? null,
     asset: access.asset,
     recentEvents,
   });
