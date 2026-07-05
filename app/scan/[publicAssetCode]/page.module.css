@@ -2665,3 +2665,42 @@
     grid-column: 1 / -1;
   }
 }
+
+.fieldManagerMobileSurface {
+  --bg: #edf4f0;
+  --text: #12352d;
+  --text-soft: rgba(18, 53, 45, 0.66);
+  --green: #236851;
+  --green-strong: #174637;
+  min-height: 100dvh;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(78, 138, 108, 0.22), transparent 20rem),
+    linear-gradient(180deg, #eff5f1 0%, #f7faf7 42%, #edf4f0 100%);
+  color: #12352d;
+  font-family: var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif;
+}
+
+.fieldManagerMobileSurface h1,
+.fieldManagerMobileSurface h2,
+.fieldManagerMobileSurface h3,
+.fieldManagerMobileSurface button,
+.fieldManagerMobileSurface input,
+.fieldManagerMobileSurface textarea {
+  font-family: inherit;
+}
+
+.fieldManagerMobileSurface .assetScanTitleBlock span,
+.fieldManagerMobileSurface .stepTitleBlock span,
+.fieldManagerMobileSurface .field span {
+  color: #236851;
+}
+
+.fieldManagerMobileSurface .assetOpenedCard,
+.fieldManagerMobileSurface .pinCard,
+.fieldManagerMobileSurface .editorCard,
+.fieldManagerMobileSurface .actionCard,
+.fieldManagerMobileSurface .notice,
+.fieldManagerMobileSurface .thankYouScreen {
+  border-color: rgba(18, 53, 45, 0.12);
+  box-shadow: 0 20px 48px rgba(18, 53, 45, 0.1);
+}

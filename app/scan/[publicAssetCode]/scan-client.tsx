@@ -1175,8 +1175,10 @@ function CloseIcon({ className }: IconProps) {
 
 export default function ScanClient({
   publicAssetCode,
+  fieldManagerMode = false,
 }: {
   publicAssetCode: string;
+  fieldManagerMode?: boolean;
 }) {
   const normalizedCode = useMemo(
     () => normalizePublicAssetCode(publicAssetCode),
@@ -1242,11 +1244,13 @@ export default function ScanClient({
       element.style.display = "none";
     });
 
-    try {
-      const savedName = window.localStorage.getItem("aim4price_scan_operator_name");
-      if (savedName) setOperatorName(savedName);
-    } catch {
-      // Local storage is optional for this screen.
+    if (!fieldManagerMode) {
+      try {
+        const savedName = window.localStorage.getItem("aim4price_scan_operator_name");
+        if (savedName) setOperatorName(savedName);
+      } catch {
+        // Local storage is optional for this screen.
+      }
     }
 
     return () => {
@@ -1255,7 +1259,7 @@ export default function ScanClient({
         element.style.display = display;
       });
     };
-  }, []);
+  }, [fieldManagerMode]);
 
   useEffect(() => {
     setAsset(null);
@@ -1309,7 +1313,7 @@ export default function ScanClient({
       shareMarkersByPartnerRef.current.clear();
     }
     autoLocationKeyRef.current = "";
-  }, [normalizedCode]);
+  }, [fieldManagerMode, normalizedCode]);
 
   useEffect(() => {
     let isMounted = true;
@@ -1354,16 +1358,16 @@ export default function ScanClient({
 
     let shouldAutoOpen = false;
     try {
-      shouldAutoOpen = new URLSearchParams(window.location.search).get("fieldManager") === "1";
+      shouldAutoOpen = fieldManagerMode || new URLSearchParams(window.location.search).get("fieldManager") === "1";
     } catch {
-      shouldAutoOpen = false;
+      shouldAutoOpen = fieldManagerMode;
     }
 
     if (!shouldAutoOpen) return;
     autoFieldManagerOpenKeyRef.current = normalizedCode;
     void loadUnlockedAsset();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [normalizedCode]);
+  }, [fieldManagerMode, normalizedCode]);
 
   useEffect(() => {
     if (!notice) return undefined;
@@ -1563,6 +1567,10 @@ export default function ScanClient({
       const data = (await response.json().catch(() => null)) as ScanAssetResponse | null;
 
       if (response.status === 401) {
+        if (fieldManagerMode) {
+          window.location.replace('/field-manager/login');
+          return;
+        }
         throw new Error(data?.error ?? "Enter the farm scan PIN again.");
       }
 
@@ -2556,7 +2564,9 @@ export default function ScanClient({
     () => sharePartners.find((partner) => partner.userId === selectedSharePartnerId) ?? null,
     [sharePartners, selectedSharePartnerId],
   );
-  const canUseDealerShare = scanAccessMode !== "field_manager";
+  const isFieldManagerMode = fieldManagerMode || scanAccessMode === "field_manager";
+  const pageClassName = `${styles.page} ${isFieldManagerMode ? styles.fieldManagerMobileSurface : ""}`;
+  const canUseDealerShare = !isFieldManagerMode;
   const selectedSharePartnerPhoneHref = selectedSharePartner ? normalizePhoneHref(selectedSharePartner.phone) : "";
   const selectedSharePartnerEmailHref = selectedSharePartner ? normalizeEmailHref(selectedSharePartner.email) : "";
   const selectedSharePartnerWebsiteHref = selectedSharePartner ? normalizeWebsiteHref(selectedSharePartner.websiteUrl) : "";
@@ -2567,7 +2577,7 @@ export default function ScanClient({
 
   if (isDone) {
     return (
-      <main className={styles.page}>
+      <main className={pageClassName}>
         <section className={styles.thankYouScreen}>
           <h1>Thank you.</h1>
           <p>{doneMessage}</p>
@@ -2577,7 +2587,7 @@ export default function ScanClient({
   }
 
   return (
-    <main className={styles.page}>
+    <main className={pageClassName}>
       <div className={styles.shell}>
         {notice ? (
           <div className={`${styles.notice} ${notice.tone === "success" ? styles.noticeSuccess : styles.noticeError}`}>
@@ -2593,7 +2603,17 @@ export default function ScanClient({
           </div>
         ) : null}
 
-        {!asset && !isUnavailable ? (
+        {!asset && !isUnavailable && isFieldManagerMode ? (
+          <section className={styles.assetOpenedCard}>
+            <div className={styles.assetScanTitleBlock}>
+              <span>Field Manager asset</span>
+              <h1>{prePinAsset?.title || "Opening asset"}</h1>
+              <p>Checking your Field Manager access. No farm PIN or scanner name is required.</p>
+            </div>
+          </section>
+        ) : null}
+
+        {!asset && !isUnavailable && !isFieldManagerMode ? (
           <section className={`${styles.pinCard} ${!locationReady ? styles.pinCardBlocked : ""}`}>
             <div className={styles.assetScanTitleBlock}>
               <span>Asset QR for</span>
