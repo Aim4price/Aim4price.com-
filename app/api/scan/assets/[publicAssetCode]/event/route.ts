@@ -118,11 +118,12 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
   const triedLifeWorkedPercentUpdate = hasSubmittedValue(body.lifeWorkedPercent);
 
+  const fallbackOperatorName = access.accessMode === 'field_manager' ? access.fieldManagerDisplayName ?? '' : '';
   const payload = {
     hours: normalizeHours(body.hours),
     lifeWorkedPercent: null,
     note: asText(body.note),
-    operatorName: asText(body.operatorName).slice(0, 80),
+    operatorName: (asText(body.operatorName) || fallbackOperatorName).slice(0, 80),
     photoUrls: normalizePhotoUrls(body.photoUrls),
     latitude: normalizeCoordinates(body.latitude, 90),
     longitude: normalizeCoordinates(body.longitude, 180),
@@ -132,7 +133,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
   };
 
   if (payload.operatorName.length < 2) {
-    return NextResponse.json({ ok: false, error: 'Enter the name of the person scanning this asset.' }, { status: 400 });
+    return NextResponse.json({ ok: false, error: 'Enter the name of the person updating this asset.' }, { status: 400 });
   }
 
   if (triedLifeWorkedPercentUpdate && !hasMeaningfulUpdate(payload)) {
@@ -171,6 +172,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
       clientEventId: payload.clientEventId,
       clientCapturedAt: payload.clientCapturedAt,
       gpsAccuracyMeters: payload.gpsAccuracyMeters,
+      fieldManagerId: access.fieldManagerId ?? null,
+      fieldManagerDisplayName: access.fieldManagerDisplayName ?? null,
+      fieldManagerSessionId: access.fieldManagerSessionId ?? null,
     });
 
     const recentEvents = await listRecentScanEvents(saved.asset.id, 8);
@@ -179,13 +183,15 @@ export async function POST(request: NextRequest, context: RouteContext) {
       eventId: saved.event.id,
       actorType: access.accessMode,
       publicAssetCode,
+      fieldManagerId: access.fieldManagerId ?? null,
+      fieldManagerDisplayName: access.fieldManagerDisplayName ?? null,
       hasNote: Boolean(payload.note),
       photoCount: payload.photoUrls.length,
     };
     const usageEvents: AdminUsageEventInput[] = [
       {
         userId: access.ownerUserId,
-        eventType: 'qr_asset_updated',
+        eventType: access.accessMode === 'field_manager' ? 'field_manager_asset_updated' : 'qr_asset_updated',
         eventSource: 'scan-asset-event',
         metadata,
       },
