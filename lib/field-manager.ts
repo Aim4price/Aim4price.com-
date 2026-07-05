@@ -820,3 +820,184 @@ export async function validateFieldManagerScanAsset(input: {
   const row = result.rows[0];
   return row ? mapFieldManagerRow(row) : null;
 }
+
+type FieldManagerFuelStorageRow = {
+  id: string | number | null;
+  user_id: string | null;
+  name: string | null;
+  fuel_type: string | null;
+  capacity_litres: string | number | null;
+  current_litres: string | number | null;
+  location_label: string | null;
+  status: string | null;
+  public_fuel_storage_code: string | null;
+  updated_at: string | Date | null;
+};
+
+export type FieldManagerFuelStorageSummary = {
+  id: string;
+  ownerUserId: string;
+  name: string;
+  fuelType: string;
+  publicFuelStorageCode: string;
+  capacityLitres: number | null;
+  currentLitres: number;
+  stockPercent: number | null;
+  locationLabel: string;
+  updatedAtIso: string | null;
+};
+
+function normalizeFieldManagerFuelStorageCode(value: unknown): string {
+  return String(value ?? '')
+    .trim()
+    .replace(/\s+/g, '')
+    .toUpperCase();
+}
+
+function normalizeFieldManagerFuelType(value: unknown): string {
+  const text = asText(value).replace(/[_-]+/g, ' ').replace(/\s+/g, ' ');
+  return text || 'Diesel';
+}
+
+function fuelStorageStockPercent(currentLitres: number, capacityLitres: number | null): number | null {
+  if (capacityLitres === null || capacityLitres <= 0) return null;
+  return Math.max(0, Math.min(100, (currentLitres / capacityLitres) * 100));
+}
+
+function mapFieldManagerFuelStorageRow(row: FieldManagerFuelStorageRow): FieldManagerFuelStorageSummary {
+  const capacityLitres = asNumber(row.capacity_litres);
+  const currentLitres = asNumber(row.current_litres) ?? 0;
+
+  return {
+    id: String(row.id ?? '').trim(),
+    ownerUserId: asText(row.user_id),
+    name: asText(row.name) || 'Diesel tank',
+    fuelType: normalizeFieldManagerFuelType(row.fuel_type),
+    publicFuelStorageCode: normalizeFieldManagerFuelStorageCode(row.public_fuel_storage_code),
+    capacityLitres,
+    currentLitres,
+    stockPercent: fuelStorageStockPercent(currentLitres, capacityLitres),
+    locationLabel: asText(row.location_label),
+    updatedAtIso: asDateIso(row.updated_at),
+  };
+}
+
+async function fieldManagerFuelStorageUnitsTableExists(): Promise<boolean> {
+  const db = getDb();
+  const result = await db.query<{ exists: boolean }>(
+    `select to_regclass('public.fuel_storage_units') is not null as exists`,
+  );
+  return Boolean(result.rows[0]?.exists);
+}
+
+function fieldManagerFuelStorageSelect(whereSql: string): string {
+  return `
+    select
+      id::text as id,
+      user_id,
+      name,
+      fuel_type,
+      capacity_litres,
+      current_litres,
+      location_label,
+      status,
+      public_fuel_storage_code,
+      updated_at
+    from public.fuel_storage_units
+    ${whereSql}
+  `;
+}
+
+export async function listFieldManagerFuelStorages(ownerUserId: string): Promise<FieldManagerFuelStorageSummary[]> {
+  await ensureFieldManagerTables();
+
+  if (!(await fieldManagerFuelStorageUnitsTableExists())) {
+    return [];
+  }
+
+  const db = getDb();
+  const result = await db.query<FieldManagerFuelStorageRow>(
+    `
+      ${fieldManagerFuelStorageSelect(`
+        where user_id = $1
+          and lower(coalesce(status, 'active')) = 'active'
+          and nullif(trim(coalesce(public_fuel_storage_code, '')), '') is not null
+      `)}
+      order by updated_at desc nulls last, name asc, id desc
+      limit 500
+    `,
+    [ownerUserId],
+  );
+
+  return result.rows.map(mapFieldManagerFuelStorageRow);
+}
+
+export async function getFieldManagerFuelStorageForOpen(input: {
+  ownerUserId: string;
+  storageId: string;
+}): Promise<FieldManagerFuelStorageSummary | null> {
+  await ensureFieldManagerTables();
+
+  if (!(await fieldManagerFuelStorageUnitsTableExists())) {
+    return null;
+  }
+
+  const db = getDb();
+  const result = await db.query<FieldManagerFuelStorageRow>(
+    `
+      ${fieldManagerFuelStorageSelect(`
+        where user_id = $1
+          and id::text = $2
+          and lower(coalesce(status, 'active')) = 'active'
+          and nullif(trim(coalesce(public_fuel_storage_code, '')), '') is not null
+      `)}
+      limit 1
+    `,
+    [input.ownerUserId, input.storageId],
+  );
+
+  const row = result.rows[0];
+  return row ? mapFieldManagerFuelStorageRow(row) : null;
+}
+
+export async function validateFieldManagerFuelStorage(input: {
+  managerId: string;
+  ownerUserId: string;
+  publicFuelStorageCode: string;
+}): Promise<FieldManagerRecord | null> {
+  await ensureFieldManagerTables();
+
+  if (!(await fieldManagerFuelStorageUnitsTableExists())) {
+    return null;
+  }
+
+  const db = getDb();
+  const result = await db.query<FieldManagerRow>(
+    `
+      select
+        fm.id::text as id,
+        fm.owner_user_id,
+        fm.display_name,
+        fm.username,
+        fm.username_normalized,
+        fm.password_hash,
+        fm.is_active,
+        fm.last_login_at,
+        fm.created_at,
+        fm.updated_at
+      from public.field_managers fm
+      inner join public.fuel_storage_units s
+        on s.user_id = fm.owner_user_id
+      where fm.id = $1::uuid
+        and fm.owner_user_id = $2
+        and fm.is_active = true
+        and upper(coalesce(s.public_fuel_storage_code, '')) = $3
+        and lower(coalesce(s.status, 'active')) = 'active'
+      limit 1
+    `,
+    [input.managerId, input.ownerUserId, normalizeFieldManagerFuelStorageCode(input.publicFuelStorageCode)],
+  );
+
+  const row = result.rows[0];
+  return row ? mapFieldManagerRow(row) : null;
+}

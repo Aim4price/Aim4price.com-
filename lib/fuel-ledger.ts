@@ -6,13 +6,14 @@ import { hashScanPin, verifyScanPin } from './scan-pin';
 import { ensureAccountProfileColumns } from './account-profile';
 import { buildAssetRegisterUploadUrl } from './asset-register-uploads';
 import { parseFuelSlipDecimal } from './fuel-slip-number';
+import { getActiveFieldManagerFuelScanSessionFromRequest } from './field-manager-session';
 
 export const FUEL_SCAN_COOKIE_NAME = 'aim4price_fuel_scan';
 export const FUEL_SCAN_SESSION_MAX_AGE_SECONDS = 60 * 60 * 12;
 
 export type FuelStorageStatus = 'active' | 'archived';
 export type FuelStorageEventType = 'opening_balance' | 'stock_in' | 'asset_issue' | 'dip' | 'adjustment';
-export type FuelScanActorType = 'owner_session' | 'scan_pin';
+export type FuelScanActorType = 'owner_session' | 'scan_pin' | 'field_manager';
 export type FuelSlipTargetType = 'asset' | 'storage_tank';
 export type FuelSlipExtractionStatus = 'manual' | 'extracted' | 'needs_review';
 
@@ -2223,6 +2224,9 @@ export async function saveFuelStorageDipstickNote(
     clientCapturedAt?: unknown;
     gpsAccuracyMeters?: unknown;
     createEvent?: boolean;
+    fieldManagerId?: unknown;
+    fieldManagerDisplayName?: unknown;
+    fieldManagerSessionId?: unknown;
   },
 ): Promise<FuelLedgerStorage> {
   await ensureFuelLedgerTables();
@@ -2238,6 +2242,9 @@ export async function saveFuelStorageDipstickNote(
   const clientEventId = normalizeClientEventId(input.clientEventId);
   const clientCapturedAt = normalizeClientCapturedAt(input.clientCapturedAt);
   const gpsAccuracyMeters = normalizeGpsAccuracyMeters(input.gpsAccuracyMeters);
+  const fieldManagerId = asText(input.fieldManagerId) || null;
+  const fieldManagerDisplayName = asText(input.fieldManagerDisplayName) || null;
+  const fieldManagerSessionId = asText(input.fieldManagerSessionId) || null;
 
   try {
     await client.query('BEGIN');
@@ -2317,6 +2324,9 @@ export async function saveFuelStorageDipstickNote(
         clientEventId,
         clientCapturedAt,
         gpsAccuracyMeters,
+        fieldManagerId,
+        fieldManagerDisplayName,
+        fieldManagerSessionId,
       });
     }
 
@@ -2415,6 +2425,9 @@ export async function recordFuelStorageStock(
     clientEventId?: unknown;
     clientCapturedAt?: unknown;
     gpsAccuracyMeters?: unknown;
+    fieldManagerId?: unknown;
+    fieldManagerDisplayName?: unknown;
+    fieldManagerSessionId?: unknown;
   },
 ): Promise<{ storage: FuelLedgerStorage; event: FuelLedgerEvent }> {
   await ensureFuelLedgerTables();
@@ -2430,6 +2443,9 @@ export async function recordFuelStorageStock(
   const clientEventId = normalizeClientEventId(input.clientEventId);
   const clientCapturedAt = normalizeClientCapturedAt(input.clientCapturedAt);
   const gpsAccuracyMeters = normalizeGpsAccuracyMeters(input.gpsAccuracyMeters);
+  const fieldManagerId = asText(input.fieldManagerId) || null;
+  const fieldManagerDisplayName = asText(input.fieldManagerDisplayName) || null;
+  const fieldManagerSessionId = asText(input.fieldManagerSessionId) || null;
 
   try {
     await client.query('BEGIN');
@@ -2514,6 +2530,9 @@ export async function recordFuelStorageStock(
       clientEventId,
       clientCapturedAt,
       gpsAccuracyMeters,
+      fieldManagerId,
+      fieldManagerDisplayName,
+      fieldManagerSessionId,
     });
 
     await client.query('COMMIT');
@@ -2560,6 +2579,9 @@ async function insertFuelStorageEvent(
     documentFileUrl?: string | null;
     paymentMethod?: string | null;
     cardNumberMasked?: string | null;
+    fieldManagerId?: string | null;
+    fieldManagerDisplayName?: string | null;
+    fieldManagerSessionId?: string | null;
   },
 ): Promise<FuelLedgerEvent> {
   const card = normalizeMaskedCard(input.cardNumberMasked, null);
@@ -2595,9 +2617,12 @@ async function insertFuelStorageEvent(
         client_captured_at,
         synced_at,
         gps_accuracy_meters,
+        field_manager_id,
+        field_manager_display_name,
+        field_manager_session_id,
         created_at
       )
-      values ($1::uuid, $2, $3, $4, $5, $6::uuid, $7::numeric, $8, $9, $10, $11, $12::numeric, $13::numeric, $14::numeric, $15::integer, $16::integer, $17::numeric, $18, $19, $20, $21, $22::double precision, $23::double precision, $24, $25::text, $26::timestamptz, now(), $27::double precision, coalesce($26::timestamptz, now()))
+      values ($1::uuid, $2, $3, $4, $5, $6::uuid, $7::numeric, $8, $9, $10, $11, $12::numeric, $13::numeric, $14::numeric, $15::integer, $16::integer, $17::numeric, $18, $19, $20, $21, $22::double precision, $23::double precision, $24, $25::text, $26::timestamptz, now(), $27::double precision, $28::uuid, $29::text, $30::text, coalesce($26::timestamptz, now()))
       returning id::text
     `,
     [
@@ -2628,6 +2653,9 @@ async function insertFuelStorageEvent(
       input.clientEventId ?? null,
       input.clientCapturedAt ?? null,
       input.gpsAccuracyMeters ?? null,
+      input.fieldManagerId ?? null,
+      input.fieldManagerDisplayName ?? null,
+      input.fieldManagerSessionId ?? null,
     ],
   );
 
@@ -2676,6 +2704,9 @@ export async function recordFuelAssetIssue(
     clientCapturedAt?: unknown;
     gpsAccuracyMeters?: unknown;
     actorType?: FuelScanActorType;
+    fieldManagerId?: unknown;
+    fieldManagerDisplayName?: unknown;
+    fieldManagerSessionId?: unknown;
   },
 ): Promise<{ storage: FuelLedgerStorage; event: FuelLedgerEvent; assets: FuelLedgerAsset[] }> {
   await ensureFuelLedgerTables();
@@ -2690,6 +2721,14 @@ export async function recordFuelAssetIssue(
   const operatorName = asText(input.operatorName).slice(0, 80);
   const activityText = asText(input.activityText).slice(0, 120);
   const workAreaText = asText(input.workAreaText).slice(0, 120);
+  const actorType: FuelScanActorType = input.actorType === 'owner_session'
+    ? 'owner_session'
+    : input.actorType === 'field_manager'
+      ? 'field_manager'
+      : 'scan_pin';
+  const fieldManagerId = actorType === 'field_manager' ? asText(input.fieldManagerId) || null : null;
+  const fieldManagerDisplayName = actorType === 'field_manager' ? asText(input.fieldManagerDisplayName) || null : null;
+  const fieldManagerSessionId = actorType === 'field_manager' ? asText(input.fieldManagerSessionId) || null : null;
   let committed = false;
 
   if (assetFuelPercentAfter === null) {
@@ -2700,11 +2739,11 @@ export async function recordFuelAssetIssue(
     throw new Error('Enter the operator or manager name.');
   }
 
-  if (input.actorType === 'scan_pin' && activityText.length < 2) {
+  if (actorType === 'scan_pin' && activityText.length < 2) {
     throw new Error('Enter what activity the asset will do.');
   }
 
-  if (input.actorType === 'scan_pin' && workAreaText.length < 2) {
+  if (actorType === 'scan_pin' && workAreaText.length < 2) {
     throw new Error('Enter where the asset will work.');
   }
 
@@ -2848,6 +2887,9 @@ export async function recordFuelAssetIssue(
       clientEventId,
       clientCapturedAt,
       gpsAccuracyMeters,
+      fieldManagerId,
+      fieldManagerDisplayName,
+      fieldManagerSessionId,
     });
 
     await client.query(
@@ -2890,13 +2932,16 @@ export async function recordFuelAssetIssue(
           client_captured_at,
           synced_at,
           gps_accuracy_meters,
+          field_manager_id,
+          field_manager_display_name,
+          field_manager_session_id,
           created_at
         )
-        values ($1::uuid, $2, $3, $4, $5, $6::numeric, $7::integer, $8::numeric, $9::uuid, $10::uuid, null, $11, '[]'::jsonb, $12::double precision, $13::double precision, $14, $15::text, $16::timestamptz, now(), $17::double precision, coalesce($16::timestamptz, now()))
+        values ($1::uuid, $2, $3, $4, $5, $6::numeric, $7::integer, $8::numeric, $9::uuid, $10::uuid, null, $11, '[]'::jsonb, $12::double precision, $13::double precision, $14, $15::text, $16::timestamptz, now(), $17::double precision, $18::uuid, $19::text, $20::text, coalesce($16::timestamptz, now()))
       `,
       [
         input.assetId,
-        input.actorType === 'owner_session' ? 'owner_session' : 'scan_pin',
+        actorType,
         operatorName,
         activityText || null,
         workAreaText || null,
@@ -2912,6 +2957,9 @@ export async function recordFuelAssetIssue(
         clientEventId,
         clientCapturedAt,
         gpsAccuracyMeters,
+        fieldManagerId,
+        fieldManagerDisplayName,
+        fieldManagerSessionId,
       ],
     );
 
@@ -4030,7 +4078,15 @@ export async function authorizeFuelStorageScanAccess(
   request: NextRequest,
   publicFuelStorageCode: string,
 ): Promise<
-  | { ok: true; storage: FuelLedgerStorage; ownerUserId: string }
+  | {
+      ok: true;
+      storage: FuelLedgerStorage;
+      ownerUserId: string;
+      accessMode: FuelScanActorType;
+      fieldManagerId?: string;
+      fieldManagerDisplayName?: string;
+      fieldManagerSessionId?: string;
+    }
   | { ok: false; status: number; error: string; pinRequired: boolean }
 > {
   const storage = await getFuelStorageByPublicCode(publicFuelStorageCode);
@@ -4041,6 +4097,23 @@ export async function authorizeFuelStorageScanAccess(
 
   if (storage.status !== 'active') {
     return { ok: false, status: 404, error: 'This fuel storage QR code is archived.', pinRequired: false };
+  }
+
+  const fieldManagerSession = await getActiveFieldManagerFuelScanSessionFromRequest(
+    request,
+    storage.publicFuelStorageCode,
+  );
+
+  if (fieldManagerSession && fieldManagerSession.ownerUserId === storage.userId) {
+    return {
+      ok: true,
+      storage,
+      ownerUserId: storage.userId,
+      accessMode: 'field_manager',
+      fieldManagerId: fieldManagerSession.managerId,
+      fieldManagerDisplayName: fieldManagerSession.displayName,
+      fieldManagerSessionId: fieldManagerSession.fuelScanSessionId,
+    };
   }
 
   const claims = getFuelScanSessionFromRequest(request, publicFuelStorageCode);
@@ -4071,6 +4144,7 @@ export async function authorizeFuelStorageScanAccess(
     ok: true,
     storage,
     ownerUserId: storage.userId,
+    accessMode: 'scan_pin',
   };
 }
 

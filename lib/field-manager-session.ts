@@ -2,6 +2,7 @@ import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
 import type { NextRequest, NextResponse } from 'next/server';
 import {
   getFieldManagerById,
+  validateFieldManagerFuelStorage,
   validateFieldManagerScanAsset,
   type FieldManagerRecord,
 } from './field-manager';
@@ -9,6 +10,7 @@ import { normalizePublicAssetCode } from './scan-assets';
 
 export const FIELD_MANAGER_SESSION_COOKIE_NAME = 'aim4price_field_manager';
 export const FIELD_MANAGER_SCAN_COOKIE_NAME = 'aim4price_field_manager_scan';
+export const FIELD_MANAGER_FUEL_SCAN_COOKIE_NAME = 'aim4price_field_manager_fuel_scan';
 export const FIELD_MANAGER_SESSION_MAX_AGE_SECONDS = 60 * 60 * 12;
 export const FIELD_MANAGER_SCAN_MAX_AGE_SECONDS = 60 * 45;
 
@@ -32,6 +34,16 @@ type FieldManagerScanClaims = {
   expiresAtMs: number;
 };
 
+type FieldManagerFuelScanClaims = {
+  managerId: string;
+  ownerUserId: string;
+  displayName: string;
+  publicFuelStorageCode: string;
+  fuelScanSessionId: string;
+  issuedAtMs: number;
+  expiresAtMs: number;
+};
+
 export type ActiveFieldManagerSession = {
   managerId: string;
   ownerUserId: string;
@@ -50,8 +62,24 @@ export type ActiveFieldManagerScanSession = {
   expiresAtMs: number;
 };
 
+export type ActiveFieldManagerFuelScanSession = {
+  managerId: string;
+  ownerUserId: string;
+  displayName: string;
+  publicFuelStorageCode: string;
+  fuelScanSessionId: string;
+  expiresAtMs: number;
+};
+
 function asText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
+}
+
+function normalizePublicFuelStorageCode(value: unknown): string {
+  return String(value ?? '')
+    .trim()
+    .replace(/\s+/g, '')
+    .toUpperCase();
 }
 
 function getFieldManagerCookieSecret(): string {
@@ -81,7 +109,7 @@ function signPayload(payloadBase64Url: string): string {
   return toBase64Url(createHmac('sha256', getFieldManagerCookieSecret()).update(payloadBase64Url).digest());
 }
 
-function buildToken(claims: FieldManagerSessionClaims | FieldManagerScanClaims): string {
+function buildToken(claims: FieldManagerSessionClaims | FieldManagerScanClaims | FieldManagerFuelScanClaims): string {
   const payloadBase64Url = toBase64Url(JSON.stringify(claims));
   return `${payloadBase64Url}.${signPayload(payloadBase64Url)}`;
 }
@@ -168,6 +196,37 @@ function readScanClaims(token: string): FieldManagerScanClaims | null {
     displayName,
     publicAssetCode,
     scanSessionId,
+    issuedAtMs,
+    expiresAtMs,
+  };
+}
+
+function readFuelScanClaims(token: string): FieldManagerFuelScanClaims | null {
+  const parsed = readTokenPayload(token);
+  if (!parsed) return null;
+
+  const managerId = asText(parsed.managerId);
+  const ownerUserId = asText(parsed.ownerUserId);
+  const displayName = asText(parsed.displayName);
+  const publicFuelStorageCode = normalizePublicFuelStorageCode(parsed.publicFuelStorageCode);
+  const fuelScanSessionId = asText(parsed.fuelScanSessionId);
+  const issuedAtMs = Number(parsed.issuedAtMs);
+  const expiresAtMs = Number(parsed.expiresAtMs);
+
+  if (!managerId || !ownerUserId || !displayName || !publicFuelStorageCode || !fuelScanSessionId) {
+    return null;
+  }
+
+  if (!Number.isFinite(issuedAtMs) || !Number.isFinite(expiresAtMs)) {
+    return null;
+  }
+
+  return {
+    managerId,
+    ownerUserId,
+    displayName,
+    publicFuelStorageCode,
+    fuelScanSessionId,
     issuedAtMs,
     expiresAtMs,
   };
@@ -283,6 +342,58 @@ export function clearFieldManagerScanCookie(response: NextResponse): void {
   });
 }
 
+export function applyFieldManagerFuelScanCookie(
+  response: NextResponse,
+  input: {
+    managerId: string;
+    ownerUserId: string;
+    displayName: string;
+    publicFuelStorageCode: string;
+  },
+): ActiveFieldManagerFuelScanSession {
+  const now = Date.now();
+  const claims: FieldManagerFuelScanClaims = {
+    managerId: input.managerId,
+    ownerUserId: input.ownerUserId,
+    displayName: input.displayName,
+    publicFuelStorageCode: normalizePublicFuelStorageCode(input.publicFuelStorageCode),
+    fuelScanSessionId: randomUUID(),
+    issuedAtMs: now,
+    expiresAtMs: now + FIELD_MANAGER_SCAN_MAX_AGE_SECONDS * 1000,
+  };
+
+  response.cookies.set({
+    name: FIELD_MANAGER_FUEL_SCAN_COOKIE_NAME,
+    value: buildToken(claims),
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: FIELD_MANAGER_SCAN_MAX_AGE_SECONDS,
+  });
+
+  return {
+    managerId: claims.managerId,
+    ownerUserId: claims.ownerUserId,
+    displayName: claims.displayName,
+    publicFuelStorageCode: claims.publicFuelStorageCode,
+    fuelScanSessionId: claims.fuelScanSessionId,
+    expiresAtMs: claims.expiresAtMs,
+  };
+}
+
+export function clearFieldManagerFuelScanCookie(response: NextResponse): void {
+  response.cookies.set({
+    name: FIELD_MANAGER_FUEL_SCAN_COOKIE_NAME,
+    value: '',
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 0,
+  });
+}
+
 export async function getActiveFieldManagerSessionFromRequest(
   request: NextRequest,
 ): Promise<ActiveFieldManagerSession | null> {
@@ -353,6 +464,45 @@ export async function getActiveFieldManagerScanSessionFromRequest(
     displayName: manager.displayName,
     publicAssetCode: claims.publicAssetCode,
     scanSessionId: claims.scanSessionId,
+    expiresAtMs: claims.expiresAtMs,
+  };
+}
+
+export async function getActiveFieldManagerFuelScanSessionFromRequest(
+  request: NextRequest,
+  expectedPublicFuelStorageCode?: string,
+): Promise<ActiveFieldManagerFuelScanSession | null> {
+  const rawCookie = request.cookies.get(FIELD_MANAGER_FUEL_SCAN_COOKIE_NAME)?.value;
+  const claims = rawCookie ? readFuelScanClaims(rawCookie) : null;
+
+  if (!claims || claims.expiresAtMs <= Date.now()) {
+    return null;
+  }
+
+  const normalizedExpectedCode = expectedPublicFuelStorageCode
+    ? normalizePublicFuelStorageCode(expectedPublicFuelStorageCode)
+    : '';
+
+  if (normalizedExpectedCode && claims.publicFuelStorageCode !== normalizedExpectedCode) {
+    return null;
+  }
+
+  const manager = await validateFieldManagerFuelStorage({
+    managerId: claims.managerId,
+    ownerUserId: claims.ownerUserId,
+    publicFuelStorageCode: claims.publicFuelStorageCode,
+  });
+
+  if (!manager || !manager.isActive) {
+    return null;
+  }
+
+  return {
+    managerId: manager.id,
+    ownerUserId: manager.ownerUserId,
+    displayName: manager.displayName,
+    publicFuelStorageCode: claims.publicFuelStorageCode,
+    fuelScanSessionId: claims.fuelScanSessionId,
     expiresAtMs: claims.expiresAtMs,
   };
 }
