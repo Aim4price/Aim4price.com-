@@ -1603,6 +1603,10 @@ export default function AccountClient() {
     openActionModal("scanPin");
   }
 
+  function openFieldManagerPage() {
+    window.location.assign("/account/field-manager");
+  }
+
   function openPartnerDirectory() {
     openActionModal("partnerDirectory");
   }
@@ -1911,6 +1915,18 @@ export default function AccountClient() {
                 >
                   <QuickActionIcon name="pin" />
                   <strong>Update QR PIN</strong>
+                  <span className={styles.quickActionChevron}>›</span>
+                </button>
+              ) : null}
+
+              {isOwnerAccount ? (
+                <button
+                  type="button"
+                  className={styles.quickActionButton}
+                  onClick={openFieldManagerPage}
+                >
+                  <QuickActionIcon name="pin" />
+                  <strong>Field Manager access</strong>
                   <span className={styles.quickActionChevron}>›</span>
                 </button>
               ) : null}
