@@ -561,7 +561,7 @@ export default function AssetDiscoveryClient() {
           aria-label="Asset Discovery summary"
         >
           <article className={styles.summaryCard}>
-            <span>Available assets</span>
+            <span>Available Assets</span>
             <strong>{summary.totalAssets}</strong>
             <small>Assets matching current filters.</small>
           </article>
