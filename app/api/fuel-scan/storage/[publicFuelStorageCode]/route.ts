@@ -56,5 +56,10 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
   const payload = await getFuelScanPayload(access.ownerUserId, access.storage.id);
 
-  return NextResponse.json({ ok: true, ...payload });
+  return NextResponse.json({
+    ok: true,
+    ...payload,
+    accessMode: access.accessMode,
+    fieldManagerDisplayName: access.fieldManagerDisplayName ?? null,
+  });
 }
