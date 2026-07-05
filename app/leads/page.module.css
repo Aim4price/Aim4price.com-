@@ -63,7 +63,14 @@
 }
 
 .leadSummaryRow {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  align-items: stretch !important;
   margin-bottom: 1.05rem !important;
+}
+
+.leadSummaryRow > * {
+  grid-column: auto !important;
+  min-width: 0;
 }
 
 .leadSearchToolbar {
