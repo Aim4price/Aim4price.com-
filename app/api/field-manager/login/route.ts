@@ -1,1 +1,90 @@
+import { NextRequest, NextResponse } from 'next/server';
+import {
+  getFieldManagerByUsername,
+  markFieldManagerLastLogin,
+  verifyFieldManagerPassword,
+} from '../../../../lib/field-manager';
+import {
+  applyFieldManagerSessionCookie,
+  clearFieldManagerScanCookie,
+  clearFieldManagerSessionCookie,
+} from '../../../../lib/field-manager-session';
 
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+type LoginRequest = {
+  username?: unknown;
+  password?: unknown;
+};
+
+function asText(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function extractErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error && error.message.trim() ? error.message : fallback;
+}
+
+export async function POST(request: NextRequest) {
+  let body: LoginRequest;
+
+  try {
+    body = (await request.json()) as LoginRequest;
+  } catch {
+    return NextResponse.json({ ok: false, error: 'Enter a valid Field Manager username and password.' }, { status: 400 });
+  }
+
+  const username = asText(body.username);
+  const password = typeof body.password === 'string' ? body.password : '';
+
+  if (!username || !password) {
+    return NextResponse.json({ ok: false, error: 'Enter your Field Manager username and password.' }, { status: 400 });
+  }
+
+  try {
+    const manager = await getFieldManagerByUsername(username);
+
+    if (!manager || !manager.passwordHash) {
+      return NextResponse.json({ ok: false, error: 'Incorrect Field Manager username or password.' }, { status: 401 });
+    }
+
+    const passwordMatches = await verifyFieldManagerPassword(password, manager.passwordHash);
+
+    if (!passwordMatches) {
+      return NextResponse.json({ ok: false, error: 'Incorrect Field Manager username or password.' }, { status: 401 });
+    }
+
+    if (!manager.isActive) {
+      return NextResponse.json({ ok: false, error: 'This Field Manager login is inactive.' }, { status: 403 });
+    }
+
+    await markFieldManagerLastLogin(manager.id);
+
+    const response = NextResponse.json({
+      ok: true,
+      manager: {
+        id: manager.id,
+        displayName: manager.displayName,
+        username: manager.username,
+      },
+      redirectTo: '/field-manager/assets',
+    });
+
+    applyFieldManagerSessionCookie(response, manager);
+    clearFieldManagerScanCookie(response);
+    return response;
+  } catch (error) {
+    return NextResponse.json(
+      { ok: false, error: extractErrorMessage(error, 'Failed to sign in to Field Manager.') },
+      { status: 500 },
+    );
+  }
+}
+
+export async function DELETE() {
+  const response = NextResponse.json({ ok: true });
+  clearFieldManagerSessionCookie(response);
+  clearFieldManagerScanCookie(response);
+  return response;
+}
