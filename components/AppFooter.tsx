@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useRef, useState } from 'react';
 import styles from './AppFooter.module.css';
 
@@ -57,9 +58,14 @@ function ChevronIcon() {
 }
 
 export default function AppFooter() {
+  const pathname = usePathname();
   const footerRef = useRef<HTMLElement | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const currentYear = new Date().getFullYear();
+
+  if (pathname?.startsWith('/field-manager') || pathname?.startsWith('/scan')) {
+    return null;
+  }
 
   function handleFooterToggle() {
     const nextExpanded = !isExpanded;
