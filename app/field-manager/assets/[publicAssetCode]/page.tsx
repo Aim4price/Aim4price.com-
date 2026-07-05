@@ -7,8 +7,17 @@ type PageProps = {
   params: {
     publicAssetCode: string;
   };
+  searchParams?: {
+    assetId?: string;
+  };
 };
 
-export default function FieldManagerAssetUpdatePage({ params }: PageProps) {
-  return <ScanClient publicAssetCode={params.publicAssetCode ?? ''} fieldManagerMode />;
+export default function FieldManagerAssetUpdatePage({ params, searchParams }: PageProps) {
+  return (
+    <ScanClient
+      publicAssetCode={params.publicAssetCode ?? ''}
+      fieldManagerMode
+      fieldManagerAssetId={searchParams?.assetId ?? null}
+    />
+  );
 }
