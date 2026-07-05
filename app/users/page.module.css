@@ -3560,3 +3560,22 @@
   }
 }
 
+
+/* === Targeted user directory action typography: match My Leads buttons === */
+.sendOwnerButton,
+.ownerDetailsButton,
+.ownerRequestButton {
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif !important;
+  font-size: clamp(0.96rem, 1.04vw, 1rem) !important;
+  font-weight: 760 !important;
+  line-height: 1 !important;
+  letter-spacing: -0.012em !important;
+}
+
+.ownerActionRow > :is(button, span) {
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif !important;
+  font-size: clamp(0.96rem, 1.04vw, 1rem) !important;
+  font-weight: 760 !important;
+  line-height: 1 !important;
+  letter-spacing: -0.012em !important;
+}
