@@ -1,0 +1,346 @@
+.mobilePage {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(78, 138, 108, 0.22), transparent 20rem),
+    linear-gradient(180deg, #eff5f1 0%, #f7faf7 42%, #edf4f0 100%);
+  color: #12352d;
+  font-family: inherit;
+}
+
+.loginShell,
+.assetsShell {
+  width: min(100% - 24px, 560px);
+  margin: 0 auto;
+  padding: max(18px, env(safe-area-inset-top)) 0 max(24px, env(safe-area-inset-bottom));
+}
+
+.loginShell {
+  display: flex;
+  min-height: 100vh;
+  min-height: 100dvh;
+  flex-direction: column;
+  justify-content: center;
+  gap: 18px;
+}
+
+.brandBlock {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 4px 2px;
+}
+
+.brandMark {
+  display: inline-flex;
+  width: 54px;
+  height: 54px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #12352d, #236851);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 950;
+  box-shadow: 0 14px 30px rgba(18, 53, 45, 0.22);
+}
+
+.brandBlock span:not(.brandMark),
+.assetsHeader span,
+.loginHeader span,
+.searchField span,
+.assetKind,
+.assetMetaGrid span {
+  color: #236851;
+  font-size: 0.72rem;
+  font-weight: 950;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.brandBlock h1,
+.loginHeader h2,
+.assetsHeader h1,
+.assetCard h2 {
+  margin: 0;
+  color: #12352d;
+  letter-spacing: -0.04em;
+}
+
+.brandBlock h1 {
+  font-size: 2.05rem;
+  line-height: 0.95;
+}
+
+.loginCard,
+.searchCard,
+.assetCard,
+.mobileEmpty,
+.errorNotice {
+  border: 1px solid rgba(18, 53, 45, 0.12);
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 20px 48px rgba(18, 53, 45, 0.1);
+}
+
+.loginCard {
+  border-radius: 30px;
+  padding: 22px;
+}
+
+.loginHeader {
+  padding-bottom: 18px;
+  border-bottom: 1px solid rgba(18, 53, 45, 0.09);
+}
+
+.loginHeader h2 {
+  margin-top: 7px;
+  font-size: 2.1rem;
+}
+
+.loginHeader p {
+  margin: 8px 0 0;
+  color: rgba(18, 53, 45, 0.67);
+  font-weight: 720;
+  line-height: 1.48;
+}
+
+.loginForm {
+  display: grid;
+  gap: 15px;
+  margin-top: 18px;
+}
+
+.mobileField,
+.searchField {
+  display: grid;
+  gap: 9px;
+}
+
+.mobileField span,
+.searchField span {
+  color: rgba(18, 53, 45, 0.76);
+  font-size: 0.82rem;
+  font-weight: 920;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.mobileField input,
+.searchField input {
+  width: 100%;
+  min-height: 58px;
+  border: 1px solid rgba(18, 53, 45, 0.16);
+  border-radius: 18px;
+  background: #fbfdfb;
+  color: #12352d;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 820;
+  outline: none;
+  padding: 0 15px;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.mobileField input:focus,
+.searchField input:focus {
+  border-color: rgba(35, 104, 81, 0.6);
+  box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.11);
+}
+
+.mobilePrimaryButton,
+.logoutButton {
+  min-height: 56px;
+  border: 0;
+  border-radius: 18px;
+  padding: 0 18px;
+  font: inherit;
+  font-weight: 950;
+  cursor: pointer;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, opacity 0.16s ease;
+}
+
+.mobilePrimaryButton {
+  width: 100%;
+  background: linear-gradient(135deg, #236851, #174637);
+  color: #fff;
+  box-shadow: 0 16px 30px rgba(35, 104, 81, 0.24);
+}
+
+.logoutButton {
+  min-height: 44px;
+  border: 1px solid rgba(18, 53, 45, 0.13);
+  background: rgba(255, 255, 255, 0.9);
+  color: #174637;
+  box-shadow: 0 12px 26px rgba(18, 53, 45, 0.08);
+}
+
+.mobilePrimaryButton:active,
+.logoutButton:active {
+  transform: translateY(1px);
+}
+
+.mobilePrimaryButton:disabled,
+.logoutButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.64;
+  transform: none;
+  box-shadow: none;
+}
+
+.errorNotice {
+  border-radius: 18px;
+  border-color: rgba(155, 44, 44, 0.16);
+  background: rgba(155, 44, 44, 0.09);
+  color: #8a2424;
+  padding: 14px 15px;
+  font-weight: 860;
+  line-height: 1.42;
+}
+
+.installNote {
+  margin: 0;
+  color: rgba(18, 53, 45, 0.58);
+  font-size: 0.9rem;
+  font-weight: 740;
+  text-align: center;
+}
+
+.assetsShell {
+  padding-top: max(16px, env(safe-area-inset-top));
+}
+
+.assetsHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 6px 2px 14px;
+}
+
+.assetsHeader h1 {
+  margin-top: 6px;
+  font-size: clamp(2rem, 10vw, 3.1rem);
+  line-height: 0.94;
+}
+
+.assetsHeader p {
+  margin: 8px 0 0;
+  color: rgba(18, 53, 45, 0.64);
+  font-weight: 820;
+}
+
+.searchCard {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  border-radius: 24px;
+  padding: 14px;
+  backdrop-filter: blur(12px);
+}
+
+.assetList {
+  display: grid;
+  gap: 14px;
+  margin-top: 14px;
+  padding-bottom: 22px;
+}
+
+.assetCard {
+  border-radius: 24px;
+  padding: 16px;
+}
+
+.assetTopRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.assetTopRow h2 {
+  margin-top: 6px;
+  font-size: 1.35rem;
+  line-height: 1.06;
+}
+
+.assetTopRow p {
+  margin: 7px 0 0;
+  color: rgba(18, 53, 45, 0.65);
+  font-weight: 760;
+  line-height: 1.38;
+}
+
+.assetCode {
+  flex: 0 0 auto;
+  max-width: 116px;
+  overflow-wrap: anywhere;
+  border-radius: 16px;
+  background: rgba(35, 104, 81, 0.1);
+  color: #236851;
+  padding: 8px 10px;
+  font-size: 0.75rem;
+  font-weight: 950;
+  text-align: right;
+}
+
+.assetMetaGrid {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0;
+}
+
+.assetMetaGrid div {
+  border-radius: 18px;
+  background: #f4f8f5;
+  padding: 12px;
+}
+
+.assetMetaGrid span {
+  display: block;
+  margin-bottom: 5px;
+  color: rgba(18, 53, 45, 0.52);
+}
+
+.assetMetaGrid strong {
+  display: block;
+  color: #12352d;
+  font-size: 0.92rem;
+  line-height: 1.38;
+}
+
+.mobileEmpty {
+  margin: 14px 0 0;
+  border-radius: 22px;
+  padding: 18px;
+  color: rgba(18, 53, 45, 0.68);
+  font-weight: 820;
+  line-height: 1.45;
+}
+
+@media (min-width: 640px) {
+  .assetMetaGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 390px) {
+  .loginShell,
+  .assetsShell {
+    width: min(100% - 18px, 560px);
+  }
+
+  .loginCard,
+  .assetCard {
+    border-radius: 22px;
+    padding: 14px;
+  }
+
+  .brandBlock h1,
+  .loginHeader h2 {
+    font-size: 1.78rem;
+  }
+
+  .assetsHeader {
+    align-items: center;
+  }
+}
