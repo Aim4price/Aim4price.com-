@@ -118,12 +118,15 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
   const triedLifeWorkedPercentUpdate = hasSubmittedValue(body.lifeWorkedPercent);
 
-  const fallbackOperatorName = access.accessMode === 'field_manager' ? access.fieldManagerDisplayName ?? '' : '';
+  const operatorName = access.accessMode === 'field_manager'
+    ? access.fieldManagerDisplayName ?? ''
+    : asText(body.operatorName);
+
   const payload = {
     hours: normalizeHours(body.hours),
     lifeWorkedPercent: null,
     note: asText(body.note),
-    operatorName: (asText(body.operatorName) || fallbackOperatorName).slice(0, 80),
+    operatorName: operatorName.slice(0, 80),
     photoUrls: normalizePhotoUrls(body.photoUrls),
     latitude: normalizeCoordinates(body.latitude, 90),
     longitude: normalizeCoordinates(body.longitude, 180),
