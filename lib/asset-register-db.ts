@@ -258,6 +258,368 @@ function asText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
 }
 
+
+const UNKNOWN_ASSET_PART = 'Unknown';
+const UNKNOWN_ASSET_PART_KEYS = new Set([
+  'unknown',
+  'unknownbrand',
+  'brandunknown',
+  'brandnotlisted',
+  'notlistedbrand',
+  'unknownmodel',
+  'modelunknown',
+  'modelnotlisted',
+  'notlistedmodel',
+  'notlisted',
+  'n/a',
+  'na',
+  'none',
+  'notapplicable',
+  'specsbasedvaluation',
+  'specificationbasedvaluation',
+]);
+
+const GENERIC_ENTERED_BRAND_SPEC_KEYS = [
+  'unlisted_brand_name',
+  'typed_brand_name',
+  'manual_brand_name',
+  'manualBrandName',
+  'entered_brand_name',
+  'enteredBrandName',
+  'user_brand_name',
+  'userBrandName',
+];
+
+const GENERIC_MANUAL_BRAND_SPEC_KEYS = [
+  ...GENERIC_ENTERED_BRAND_SPEC_KEYS,
+  'brandName',
+  'brand_name',
+  'brand',
+];
+
+const GENERIC_MODEL_SPEC_KEYS = [
+  'manual_model_name',
+  'manualModelName',
+  'typedModelName',
+  'typed_model_name',
+  'entered_model_name',
+  'enteredModelName',
+  'user_model_name',
+  'userModelName',
+  'canonical_model_label',
+  'modelName',
+  'model_name',
+  'model',
+];
+
+const GENERIC_TYPE_LABEL_SPEC_KEYS = [
+  'type_label',
+  'typeLabel',
+  'selected_type_label',
+  'selectedTypeLabel',
+  'body_type_label',
+  'bodyTypeLabel',
+  'cab_type_label',
+  'cabTypeLabel',
+  'truck_type_label',
+  'truckTypeLabel',
+  'trailer_type_label',
+  'trailerTypeLabel',
+  'bus_type_label',
+  'busTypeLabel',
+  'motorcycle_type_label',
+  'motorcycleTypeLabel',
+  'quadbike_type_label',
+  'quadbikeTypeLabel',
+  'side_by_side_type_label',
+  'sideBySideTypeLabel',
+];
+
+const GENERIC_TYPE_VALUE_SPEC_KEYS = [
+  'type_key',
+  'typeKey',
+  'motor_type',
+  'motorType',
+  'body_type',
+  'bodyType',
+  'cab_type',
+  'cabType',
+  'vehicle_type',
+  'vehicleType',
+  'vehicle_segment',
+  'vehicleSegment',
+  'truck_type',
+  'truckType',
+  'trailer_type',
+  'trailerType',
+  'bus_type',
+  'busType',
+  'motorcycle_type',
+  'motorcycleType',
+  'quadbike_type',
+  'quadbikeType',
+  'side_by_side_type',
+  'sideBySideType',
+  'equipment_type',
+  'equipmentType',
+  'asset_type',
+  'assetType',
+];
+
+type PersistedAssetIdentity = {
+  brandName: string;
+  modelName: string;
+  typeLabel: string;
+  title: string;
+};
+
+function cleanAssetIdentityText(value: unknown): string {
+  return String(value ?? '')
+    .replace(/[\u0000-\u001f\u007f]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function normalizeAssetIdentityKey(value: unknown): string {
+  return cleanAssetIdentityText(value)
+    .toLowerCase()
+    .replace(/&/g, 'and')
+    .replace(/[^a-z0-9/]+/g, '')
+    .trim();
+}
+
+function isUnknownAssetIdentityText(value: unknown): boolean {
+  const clean = cleanAssetIdentityText(value);
+  if (!clean) return true;
+
+  return UNKNOWN_ASSET_PART_KEYS.has(normalizeAssetIdentityKey(clean));
+}
+
+function normalizeUnknownAssetPart(value: unknown): string {
+  const clean = cleanAssetIdentityText(value);
+  if (!clean) return '';
+
+  return isUnknownAssetIdentityText(clean) ? UNKNOWN_ASSET_PART : clean;
+}
+
+function readFirstCleanText(record: Record<string, unknown>, keys: readonly string[]): string {
+  for (const key of keys) {
+    const clean = cleanAssetIdentityText(record[key]);
+    if (clean) return clean;
+  }
+
+  return '';
+}
+
+function readFirstKnownText(record: Record<string, unknown>, keys: readonly string[]): string {
+  for (const key of keys) {
+    const clean = cleanAssetIdentityText(record[key]);
+    if (clean && !isUnknownAssetIdentityText(clean)) return clean;
+  }
+
+  return '';
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function stripLeadingBrandFromModel(modelName: unknown, brandName: unknown): string {
+  let model = cleanAssetIdentityText(modelName);
+  const brand = cleanAssetIdentityText(brandName);
+
+  if (!model || !brand || isUnknownAssetIdentityText(brand)) {
+    return model;
+  }
+
+  const escapedBrand = escapeRegExp(brand).replace(/\s+/g, '\\s+');
+  const leadingBrandPattern = new RegExp(`^${escapedBrand}(?:\\s+|[-_/]+)+`, 'i');
+
+  while (leadingBrandPattern.test(model)) {
+    model = model.replace(leadingBrandPattern, '').trim();
+  }
+
+  return model;
+}
+
+function normalizeKnownModelName(modelName: unknown, brandName: unknown): string {
+  const stripped = stripLeadingBrandFromModel(modelName, brandName);
+  if (!stripped || isUnknownAssetIdentityText(stripped)) return UNKNOWN_ASSET_PART;
+  return stripped;
+}
+
+function humanizeAssetTypeLabel(value: unknown): string {
+  const clean = cleanAssetIdentityText(value)
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s*\/\s*/g, ' / ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (!clean || isUnknownAssetIdentityText(clean)) return '';
+
+  const acronymMap: Record<string, string> = {
+    lcv: 'LCV',
+    ldv: 'LDV',
+    suv: 'SUV',
+    mpv: 'MPV',
+    tlb: 'TLB',
+    gps: 'GPS',
+    pto: 'PTO',
+    kw: 'kW',
+    '2wd': '2WD',
+    '4wd': '4WD',
+  };
+
+  return clean
+    .split(' ')
+    .map((word) => {
+      if (word === '/') return word;
+      const key = word.toLowerCase();
+      if (acronymMap[key]) return acronymMap[key];
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    })
+    .join(' ')
+    .replace(/\s+\/\s+/g, ' / ')
+    .trim();
+}
+
+function appendUniqueTitlePart(parts: string[], value: unknown): void {
+  const clean = cleanAssetIdentityText(value);
+  if (!clean) return;
+
+  const key = normalizeAssetIdentityKey(clean);
+  if (!key) return;
+
+  if (parts.some((part) => normalizeAssetIdentityKey(part) === key)) return;
+
+  const existingKey = normalizeAssetIdentityKey(parts.join(' '));
+  if (
+    key !== normalizeAssetIdentityKey(UNKNOWN_ASSET_PART) &&
+    key.length >= 4 &&
+    existingKey.includes(key)
+  ) {
+    return;
+  }
+
+  parts.push(clean);
+}
+
+function buildAssetIdentityTitle(input: {
+  yearModel: number | null;
+  yearModelUnknown?: boolean | null;
+  brandName: string;
+  modelName: string;
+  typeLabel?: string | null;
+}): string {
+  const parts: string[] = [];
+  const savedYear = input.yearModelUnknown ? null : input.yearModel;
+  const brandUnknown = isUnknownAssetIdentityText(input.brandName);
+  const modelUnknown = isUnknownAssetIdentityText(input.modelName);
+  const brandName = brandUnknown ? UNKNOWN_ASSET_PART : cleanAssetIdentityText(input.brandName);
+  const modelName = modelUnknown ? UNKNOWN_ASSET_PART : cleanAssetIdentityText(input.modelName);
+  const typeLabel = humanizeAssetTypeLabel(input.typeLabel);
+
+  if (savedYear !== null && Number.isInteger(savedYear) && savedYear >= 1800) {
+    parts.push(String(savedYear));
+  }
+
+  if (brandUnknown && modelUnknown) {
+    parts.push(UNKNOWN_ASSET_PART);
+  } else {
+    parts.push(brandName || UNKNOWN_ASSET_PART);
+    appendUniqueTitlePart(parts, modelName || UNKNOWN_ASSET_PART);
+  }
+
+  appendUniqueTitlePart(parts, typeLabel);
+
+  return parts.join(' ').replace(/\s+/g, ' ').trim() || [UNKNOWN_ASSET_PART, typeLabel].filter(Boolean).join(' ');
+}
+
+function withPersistedAssetIdentitySpecs(
+  specs: Record<string, unknown>,
+  identity: PersistedAssetIdentity,
+): Record<string, unknown> {
+  return {
+    ...specs,
+    brandName: identity.brandName,
+    brand_name: identity.brandName,
+    brand: identity.brandName,
+    modelName: identity.modelName,
+    model_name: identity.modelName,
+    model: identity.modelName,
+    typedModelName: identity.modelName,
+    typed_model_name: identity.modelName,
+    assetTitle: identity.title,
+    asset_title: identity.title,
+    title: identity.title,
+    ...(identity.typeLabel
+      ? {
+          typeLabel: identity.typeLabel,
+          type_label: identity.typeLabel,
+          assetTypeLabel: identity.typeLabel,
+          asset_type_label: identity.typeLabel,
+        }
+      : {}),
+  };
+}
+
+function buildTractorAssetIdentity(input: {
+  result: Result;
+  yearModel: number | null;
+  yearModelUnknown?: boolean | null;
+}): PersistedAssetIdentity {
+  const model = input.result.model;
+  const brandName = normalizeUnknownAssetPart(model.brandName) || UNKNOWN_ASSET_PART;
+  const modelName = normalizeKnownModelName(model.modelName, brandName);
+  const typeLabel = humanizeAssetTypeLabel(model.tractorType) || 'Tractor';
+  const title = buildAssetIdentityTitle({
+    yearModel: input.yearModel,
+    yearModelUnknown: input.yearModelUnknown,
+    brandName,
+    modelName,
+    typeLabel,
+  });
+
+  return { brandName, modelName, typeLabel, title };
+}
+
+function readGenericAssetTypeLabel(result: GenericValuationResult): string {
+  const specs = isRecord(result.specsJson) ? result.specsJson : {};
+  const explicitLabel = readFirstKnownText(specs, GENERIC_TYPE_LABEL_SPEC_KEYS);
+  if (explicitLabel) return humanizeAssetTypeLabel(explicitLabel);
+
+  const explicitValue = readFirstKnownText(specs, GENERIC_TYPE_VALUE_SPEC_KEYS);
+  if (explicitValue) return humanizeAssetTypeLabel(explicitValue);
+
+  return humanizeAssetTypeLabel(result.family.label);
+}
+
+function buildGenericAssetIdentity(input: {
+  result: GenericValuationResult;
+  yearModel: number | null;
+  yearModelUnknown?: boolean | null;
+}): PersistedAssetIdentity {
+  const result = input.result;
+  const specs = isRecord(result.specsJson) ? result.specsJson : {};
+  const enteredBrandName = readFirstKnownText(specs, GENERIC_ENTERED_BRAND_SPEC_KEYS);
+  const rawBrandName = enteredBrandName || result.brand.name;
+  const brandName = normalizeUnknownAssetPart(rawBrandName) || UNKNOWN_ASSET_PART;
+  const rawModelName =
+    cleanAssetIdentityText(result.typedModelName) ||
+    readFirstCleanText(specs, GENERIC_MODEL_SPEC_KEYS);
+  const modelName = normalizeKnownModelName(rawModelName, brandName);
+  const typeLabel = readGenericAssetTypeLabel(result);
+  const title = buildAssetIdentityTitle({
+    yearModel: input.yearModel,
+    yearModelUnknown: input.yearModelUnknown,
+    brandName,
+    modelName,
+    typeLabel,
+  });
+
+  return { brandName, modelName, typeLabel, title };
+}
+
 function normalizeAssetLocationText(value: unknown): string {
   return asText(value)
     .replace(/[\u0000-\u001f\u007f]+/g, ' ')
@@ -1213,16 +1575,15 @@ function mapAssetRegisterRow(row: AssetRegisterRow): AssetRegisterItem {
     replacementPriceFromSpecs(specsJson);
   const lifeWorkedPercent = asNumber(row.life_worked_percent) ?? percentFromSpecs(specsJson);
   const insuredValueExVat = normalizeInsuredValueExVat(row.insured_value_ex_vat) ?? insuredValueFromSpecs(specsJson);
-  const brandName =
-    asText(specsJson.brandName) ||
-    asText(specsJson.brand_name) ||
-    asText(specsJson.brand) ||
+  const rawBrandName =
+    readFirstKnownText(specsJson, GENERIC_MANUAL_BRAND_SPEC_KEYS) ||
+    readFirstCleanText(specsJson, ['brandName', 'brand_name', 'brand']) ||
     asText(row.brand_name);
-  const modelName =
-    asText(specsJson.modelName) ||
-    asText(specsJson.model_name) ||
-    asText(specsJson.model) ||
+  const brandName = rawBrandName ? normalizeUnknownAssetPart(rawBrandName) : '';
+  const rawModelName =
+    readFirstCleanText(specsJson, GENERIC_MODEL_SPEC_KEYS) ||
     asText(row.model_name);
+  const modelName = rawModelName ? normalizeUnknownAssetPart(stripLeadingBrandFromModel(rawModelName, brandName)) : '';
   const estimatedHours = asNumber(row.estimated_hours) ?? hoursFromSpecs(specsJson);
   const maxLifetimeHours = asNumber(row.max_lifetime_hours) ?? lifetimeHoursFromSpecs(specsJson);
 
@@ -2622,6 +2983,11 @@ export async function updateAssetRegisterItemFromValuation(input: {
   const model = input.result.model;
   const selectedValueExVat = Math.round(Number(input.selectedValueExVat) || 0);
   const savedYearModel = input.yearModelUnknown ? null : Math.round(input.year);
+  const assetIdentity = buildTractorAssetIdentity({
+    result: input.result,
+    yearModel: savedYearModel,
+    yearModelUnknown: input.yearModelUnknown,
+  });
   const marketValueExVat: number | null = null;
   const replacementPriceUsedExVat = normalizeReplacementPriceExVat(input.result.replacementPriceUsedExVat);
   const userReplacementPriceExVat = normalizeReplacementPriceExVat(input.result.userReplacementPriceExVat);
@@ -2645,12 +3011,13 @@ export async function updateAssetRegisterItemFromValuation(input: {
 
   pushField(fields, schema, ['valuation_run_id', 'run_id'], input.valuationRunId);
   pushField(fields, schema, ['kind', 'equipment_type', 'asset_type', 'item_type'], 'tractor');
+  pushField(fields, schema, ['title', 'name', 'asset_name'], assetIdentity.title);
   pushField(fields, schema, ['value', 'selected_value_ex_vat', 'selected_value', 'saved_value_ex_vat'], selectedValueExVat);
   pushField(fields, schema, ['selected_method', 'method', 'valuation_method'], input.selectedMethod);
   pushField(fields, schema, ['selected_value_ex_vat', 'selected_value', 'value', 'saved_value_ex_vat'], selectedValueExVat);
   pushField(fields, schema, ['source_type', 'source', 'origin', 'entry_source'], 'valuation');
-  pushField(fields, schema, ['brand_name', 'brand'], model.brandName);
-  pushField(fields, schema, ['model_name', 'model'], model.modelName);
+  pushField(fields, schema, ['brand_name', 'brand'], assetIdentity.brandName);
+  pushField(fields, schema, ['model_name', 'model'], assetIdentity.modelName);
   pushField(fields, schema, ['drive_type', 'drive', 'drivetrain'], model.drive);
   pushField(fields, schema, ['tractor_type', 'tractor_category'], model.tractorType);
   pushField(fields, schema, ['cab_type', 'cab'], model.cab);
@@ -2672,16 +3039,19 @@ export async function updateAssetRegisterItemFromValuation(input: {
     schema,
     ['specs_json'],
     stripMarketValuationSpecs(
-      buildCurrentValuationSpecs(existing.specsJson, valuationSpecsJson, {
-        valuationRunId: input.valuationRunId,
-        selectedValueExVat,
-        hours: input.hours,
-        lifeWorkedPercent: null,
-        condition: input.condition,
-        yearModelUnknown: input.yearModelUnknown,
-        yearModel: savedYearModel,
-        now,
-      }),
+      withPersistedAssetIdentitySpecs(
+        buildCurrentValuationSpecs(existing.specsJson, valuationSpecsJson, {
+          valuationRunId: input.valuationRunId,
+          selectedValueExVat,
+          hours: input.hours,
+          lifeWorkedPercent: null,
+          condition: input.condition,
+          yearModelUnknown: input.yearModelUnknown,
+          yearModel: savedYearModel,
+          now,
+        }),
+        assetIdentity,
+      ),
     ),
     '::jsonb',
   );
@@ -2765,6 +3135,11 @@ export async function updateAssetRegisterItemFromGenericValuation(input: {
   const selectedValueExVat = Math.round(Number(input.selectedValueExVat) || 0);
   const yearModelUnknown = isGenericYearModelUnknown(valuationResult);
   const savedYearModel = yearModelUnknown ? null : valuationResult.year;
+  const assetIdentity = buildGenericAssetIdentity({
+    result: valuationResult,
+    yearModel: savedYearModel,
+    yearModelUnknown,
+  });
   const marketValueExVat: number | null = null;
   const replacementPriceUsedExVat = normalizeReplacementPriceExVat(valuationResult.replacementPriceUsedExVat);
   const userReplacementPriceExVat = normalizeReplacementPriceExVat(valuationResult.userReplacementPriceExVat);
@@ -2806,12 +3181,13 @@ export async function updateAssetRegisterItemFromGenericValuation(input: {
   pushField(fields, schema, ['equipment_family_id'], valuationResult.family.id);
   pushField(fields, schema, ['equipment_model_id'], equipmentModelId);
   pushField(fields, schema, ['kind', 'equipment_type', 'asset_type', 'item_type'], nextKind);
+  pushField(fields, schema, ['title', 'name', 'asset_name'], assetIdentity.title);
   pushField(fields, schema, ['value', 'selected_value_ex_vat', 'selected_value', 'saved_value_ex_vat'], selectedValueExVat);
   pushField(fields, schema, ['selected_method', 'method', 'valuation_method'], input.selectedMethod);
   pushField(fields, schema, ['selected_value_ex_vat', 'selected_value', 'value', 'saved_value_ex_vat'], selectedValueExVat);
   pushField(fields, schema, ['source_type', 'source', 'origin', 'entry_source'], 'valuation');
-  pushField(fields, schema, ['brand_name', 'brand'], valuationResult.brand.name);
-  pushField(fields, schema, ['model_name', 'model'], valuationResult.typedModelName || 'Specs-based valuation');
+  pushField(fields, schema, ['brand_name', 'brand'], assetIdentity.brandName);
+  pushField(fields, schema, ['model_name', 'model'], assetIdentity.modelName);
   pushField(fields, schema, ['typed_model_name'], valuationResult.typedModelName || null);
   pushField(fields, schema, ['normalized_typed_model_name'], valuationResult.normalizedTypedModelName || null);
   pushField(
@@ -2819,18 +3195,21 @@ export async function updateAssetRegisterItemFromGenericValuation(input: {
     schema,
     ['specs_json'],
     stripMarketValuationSpecs(
-      withGenericUsageMetadata(
-        buildCurrentValuationSpecs(existing.specsJson, valuationResult.specsJson ?? {}, {
-          valuationRunId: input.valuationRunId,
-          selectedValueExVat,
-          hours: valuationResult.usageAmount ?? null,
-          lifeWorkedPercent: valuationResult.lifeWorkedPercent,
-          condition: valuationResult.condition,
-          yearModelUnknown,
-          yearModel: savedYearModel,
-          now,
-        }),
-        valuationResult,
+      withPersistedAssetIdentitySpecs(
+        withGenericUsageMetadata(
+          buildCurrentValuationSpecs(existing.specsJson, valuationResult.specsJson ?? {}, {
+            valuationRunId: input.valuationRunId,
+            selectedValueExVat,
+            hours: valuationResult.usageAmount ?? null,
+            lifeWorkedPercent: valuationResult.lifeWorkedPercent,
+            condition: valuationResult.condition,
+            yearModelUnknown,
+            yearModel: savedYearModel,
+            now,
+          }),
+          valuationResult,
+        ),
+        assetIdentity,
       ),
     ),
     '::jsonb',
@@ -2942,10 +3321,15 @@ export async function createAssetRegisterItemFromValuation(input: {
 
   const valuationResult = input.result;
   const model = valuationResult.model;
-  const title = `${model.brandName} ${model.modelName}`.trim();
   const now = new Date();
   const selectedValueExVat = Math.round(Number(input.selectedValueExVat) || 0);
   const savedYearModel = input.yearModelUnknown ? null : Math.round(input.year);
+  const assetIdentity = buildTractorAssetIdentity({
+    result: valuationResult,
+    yearModel: savedYearModel,
+    yearModelUnknown: input.yearModelUnknown,
+  });
+  const title = assetIdentity.title;
   const marketValueExVat: number | null = null;
   const replacementPriceUsedExVat = normalizeReplacementPriceExVat(valuationResult.replacementPriceUsedExVat);
   const userReplacementPriceExVat = normalizeReplacementPriceExVat(valuationResult.userReplacementPriceExVat);
@@ -2967,8 +3351,8 @@ export async function createAssetRegisterItemFromValuation(input: {
   pushField(fields, schema, ['selected_method', 'method', 'valuation_method'], input.selectedMethod);
   pushField(fields, schema, ['selected_value_ex_vat', 'selected_value', 'value', 'saved_value_ex_vat'], selectedValueExVat);
   pushField(fields, schema, ['source_type', 'source', 'origin', 'entry_source'], 'valuation');
-  pushField(fields, schema, ['brand_name', 'brand'], model.brandName);
-  pushField(fields, schema, ['model_name', 'model'], model.modelName);
+  pushField(fields, schema, ['brand_name', 'brand'], assetIdentity.brandName);
+  pushField(fields, schema, ['model_name', 'model'], assetIdentity.modelName);
   pushField(fields, schema, ['drive_type', 'drive', 'drivetrain'], model.drive);
   pushField(fields, schema, ['tractor_type', 'tractor_category'], model.tractorType);
   pushField(fields, schema, ['cab_type', 'cab'], model.cab);
@@ -2987,16 +3371,19 @@ export async function createAssetRegisterItemFromValuation(input: {
     schema,
     ['specs_json'],
     stripMarketValuationSpecs(
-      buildCurrentValuationSpecs({}, isRecord(valuationRow.specs_json) ? valuationRow.specs_json : {}, {
-        valuationRunId: input.valuationRunId,
-        selectedValueExVat,
-        hours: input.hours,
-        lifeWorkedPercent: null,
-        condition: typeof valuationRow.condition === 'string' ? valuationRow.condition : 'good',
-        yearModelUnknown: input.yearModelUnknown,
-        yearModel: savedYearModel,
-        now,
-      }),
+      withPersistedAssetIdentitySpecs(
+        buildCurrentValuationSpecs({}, isRecord(valuationRow.specs_json) ? valuationRow.specs_json : {}, {
+          valuationRunId: input.valuationRunId,
+          selectedValueExVat,
+          hours: input.hours,
+          lifeWorkedPercent: null,
+          condition: typeof valuationRow.condition === 'string' ? valuationRow.condition : 'good',
+          yearModelUnknown: input.yearModelUnknown,
+          yearModel: savedYearModel,
+          now,
+        }),
+        assetIdentity,
+      ),
     ),
     '::jsonb',
   );
@@ -3014,8 +3401,8 @@ export async function createAssetRegisterItemFromValuation(input: {
     selectedMethod: input.selectedMethod,
     selectedValueExVat,
     note: cleanAssetRegisterNote(input.note) || null,
-    brandName: model.brandName,
-    modelName: model.modelName,
+    brandName: assetIdentity.brandName,
+    modelName: assetIdentity.modelName,
     drive: model.drive,
     tractorType: model.tractorType,
     cab: model.cab,
@@ -3081,15 +3468,16 @@ export async function createAssetRegisterItemFromGenericValuation(input: {
   const valuationResult = input.result;
   const nextKind = getGenericAssetRegisterKind(valuationResult);
   const equipmentModelId = getGenericEquipmentModelId(valuationResult);
-  const title = [valuationResult.brand.name, valuationResult.typedModelName || valuationResult.family.label]
-    .map((part) => asText(part))
-    .filter(Boolean)
-    .join(' ')
-    .trim();
   const now = new Date();
   const selectedValueExVat = Math.round(Number(input.selectedValueExVat) || 0);
   const yearModelUnknown = isGenericYearModelUnknown(valuationResult);
   const savedYearModel = yearModelUnknown ? null : valuationResult.year;
+  const assetIdentity = buildGenericAssetIdentity({
+    result: valuationResult,
+    yearModel: savedYearModel,
+    yearModelUnknown,
+  });
+  const title = assetIdentity.title;
   const marketValueExVat: number | null = null;
   const replacementPriceUsedExVat = normalizeReplacementPriceExVat(valuationResult.replacementPriceUsedExVat);
   const userReplacementPriceExVat = normalizeReplacementPriceExVat(valuationResult.userReplacementPriceExVat);
@@ -3114,8 +3502,8 @@ export async function createAssetRegisterItemFromGenericValuation(input: {
   pushField(fields, schema, ['selected_method', 'method', 'valuation_method'], input.selectedMethod);
   pushField(fields, schema, ['selected_value_ex_vat', 'selected_value', 'value', 'saved_value_ex_vat'], selectedValueExVat);
   pushField(fields, schema, ['source_type', 'source', 'origin', 'entry_source'], 'valuation');
-  pushField(fields, schema, ['brand_name', 'brand'], valuationResult.brand.name);
-  pushField(fields, schema, ['model_name', 'model'], valuationResult.typedModelName || 'Specs-based valuation');
+  pushField(fields, schema, ['brand_name', 'brand'], assetIdentity.brandName);
+  pushField(fields, schema, ['model_name', 'model'], assetIdentity.modelName);
   pushField(fields, schema, ['typed_model_name'], valuationResult.typedModelName || null);
   pushField(fields, schema, ['normalized_typed_model_name'], valuationResult.normalizedTypedModelName || null);
   pushField(
@@ -3123,18 +3511,21 @@ export async function createAssetRegisterItemFromGenericValuation(input: {
     schema,
     ['specs_json'],
     stripMarketValuationSpecs(
-      withGenericUsageMetadata(
-        buildCurrentValuationSpecs({}, valuationResult.specsJson ?? {}, {
-          valuationRunId: input.valuationRunId,
-          selectedValueExVat,
-          hours: valuationResult.usageAmount ?? null,
-          lifeWorkedPercent: valuationResult.lifeWorkedPercent,
-          condition: valuationResult.condition,
-          yearModelUnknown,
-          yearModel: savedYearModel,
-          now,
-        }),
-        valuationResult,
+      withPersistedAssetIdentitySpecs(
+        withGenericUsageMetadata(
+          buildCurrentValuationSpecs({}, valuationResult.specsJson ?? {}, {
+            valuationRunId: input.valuationRunId,
+            selectedValueExVat,
+            hours: valuationResult.usageAmount ?? null,
+            lifeWorkedPercent: valuationResult.lifeWorkedPercent,
+            condition: valuationResult.condition,
+            yearModelUnknown,
+            yearModel: savedYearModel,
+            now,
+          }),
+          valuationResult,
+        ),
+        assetIdentity,
       ),
     ),
     '::jsonb',
@@ -3166,8 +3557,8 @@ export async function createAssetRegisterItemFromGenericValuation(input: {
     selectedMethod: input.selectedMethod,
     selectedValueExVat,
     note: cleanAssetRegisterNote(input.note) || null,
-    brandName: valuationResult.brand.name,
-    modelName: valuationResult.typedModelName || 'Specs-based valuation',
+    brandName: assetIdentity.brandName,
+    modelName: assetIdentity.modelName,
     year: savedYearModel,
     hours: valuationResult.usageAmount ?? null,
     condition: valuationResult.condition,
