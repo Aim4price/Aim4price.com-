@@ -5,7 +5,7 @@
     radial-gradient(circle at 12% 0%, rgba(78, 138, 108, 0.22), transparent 20rem),
     linear-gradient(180deg, #eff5f1 0%, #f7faf7 42%, #edf4f0 100%);
   color: #12352d;
-  font-family: inherit;
+  font-family: var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif;
 }
 
 .loginShell,
@@ -50,7 +50,8 @@
 .loginHeader span,
 .searchField span,
 .assetKind,
-.assetMetaGrid span {
+.assetMetaGrid span,
+.homeActionCard span {
   color: #236851;
   font-size: 0.72rem;
   font-weight: 950;
@@ -61,7 +62,9 @@
 .brandBlock h1,
 .loginHeader h2,
 .assetsHeader h1,
-.assetCard h2 {
+.assetCard h2,
+.homeCard h2,
+.homeActionCard strong {
   margin: 0;
   color: #12352d;
   letter-spacing: -0.04em;
@@ -75,6 +78,8 @@
 .loginCard,
 .searchCard,
 .assetCard,
+.homeCard,
+.homeActionCard,
 .mobileEmpty,
 .errorNotice {
   border: 1px solid rgba(18, 53, 45, 0.12);
@@ -85,6 +90,59 @@
 .loginCard {
   border-radius: 30px;
   padding: 22px;
+}
+
+.homeCard {
+  border-radius: 30px;
+  padding: 22px;
+}
+
+.homeCard h2 {
+  margin-top: 8px;
+  font-size: clamp(2rem, 11vw, 3.25rem);
+  line-height: 0.92;
+}
+
+.homeCard p {
+  margin: 10px 0 0;
+  color: rgba(18, 53, 45, 0.66);
+  font-weight: 760;
+  line-height: 1.48;
+}
+
+.homeActionGrid {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.homeActionCard {
+  width: 100%;
+  display: grid;
+  gap: 8px;
+  border-radius: 24px;
+  padding: 18px;
+  color: #12352d;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+}
+
+.homeActionCard:active {
+  transform: translateY(1px);
+}
+
+.homeActionCard strong {
+  font-size: clamp(2.2rem, 11vw, 3.4rem);
+  line-height: 0.9;
+}
+
+.homeActionCard small {
+  color: rgba(18, 53, 45, 0.64);
+  font-size: 0.94rem;
+  font-weight: 780;
+  line-height: 1.42;
 }
 
 .loginHeader {
@@ -295,7 +353,8 @@
   padding: 12px;
 }
 
-.assetMetaGrid span {
+.assetMetaGrid span,
+.homeActionCard span {
   display: block;
   margin-bottom: 5px;
   color: rgba(18, 53, 45, 0.52);
@@ -330,13 +389,17 @@
   }
 
   .loginCard,
+  .homeCard,
+  .homeActionCard,
   .assetCard {
     border-radius: 22px;
     padding: 14px;
   }
 
   .brandBlock h1,
-  .loginHeader h2 {
+  .loginHeader h2,
+  .homeCard h2,
+  .homeActionCard strong {
     font-size: 1.78rem;
   }
 

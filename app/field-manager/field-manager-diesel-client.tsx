@@ -1,0 +1,272 @@
+'use client';
+
+import { useEffect, useMemo, useState } from 'react';
+import styles from './page.module.css';
+
+type FieldManagerSession = {
+  id: string;
+  displayName: string;
+  username: string;
+};
+
+type FieldManagerFuelStorageSummary = {
+  id: string;
+  ownerUserId: string;
+  name: string;
+  fuelType: string;
+  publicFuelStorageCode: string;
+  capacityLitres: number | null;
+  currentLitres: number;
+  stockPercent: number | null;
+  locationLabel: string;
+  updatedAtIso: string | null;
+};
+
+type SessionApiResponse = {
+  ok: boolean;
+  manager?: FieldManagerSession;
+  error?: string;
+};
+
+type DieselApiResponse = {
+  ok: boolean;
+  storages?: FieldManagerFuelStorageSummary[];
+  error?: string;
+};
+
+type OpenDieselApiResponse = {
+  ok: boolean;
+  redirectTo?: string;
+  error?: string;
+};
+
+function extractError(payload: { error?: string } | null, fallback: string): string {
+  return payload?.error?.trim() || fallback;
+}
+
+function normalizeSearchText(storage: FieldManagerFuelStorageSummary): string {
+  return [storage.name, storage.fuelType, storage.locationLabel, storage.publicFuelStorageCode]
+    .join(' ')
+    .toLowerCase();
+}
+
+function formatLitres(value: number | null | undefined): string {
+  if (value === null || typeof value === 'undefined' || !Number.isFinite(value)) return '—';
+  return `${value.toLocaleString('en-ZA', { maximumFractionDigits: 2 })} L`;
+}
+
+function formatStock(storage: FieldManagerFuelStorageSummary): string {
+  if (storage.stockPercent !== null && Number.isFinite(storage.stockPercent)) {
+    return `${Math.round(storage.stockPercent)}% full`;
+  }
+
+  if (storage.capacityLitres !== null && storage.capacityLitres > 0) {
+    return `${formatLitres(storage.currentLitres)} of ${formatLitres(storage.capacityLitres)}`;
+  }
+
+  return `${formatLitres(storage.currentLitres)} available`;
+}
+
+function formatDate(value: string | null): string {
+  if (!value) return 'No update yet';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return 'No update yet';
+  return new Intl.DateTimeFormat('en-ZA', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(parsed);
+}
+
+export default function FieldManagerDieselClient() {
+  const [manager, setManager] = useState<FieldManagerSession | null>(null);
+  const [storages, setStorages] = useState<FieldManagerFuelStorageSummary[]>([]);
+  const [search, setSearch] = useState('');
+  const [notice, setNotice] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [openingStorageId, setOpeningStorageId] = useState<string | null>(null);
+
+  const filteredStorages = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return storages;
+    return storages.filter((storage) => normalizeSearchText(storage).includes(query));
+  }, [search, storages]);
+
+  useEffect(() => {
+    void loadDieselStorages();
+  }, []);
+
+  useEffect(() => {
+    if (!notice) return undefined;
+    const timeout = window.setTimeout(() => setNotice(null), 4200);
+    return () => window.clearTimeout(timeout);
+  }, [notice]);
+
+  async function loadDieselStorages() {
+    setIsLoading(true);
+    setNotice(null);
+
+    try {
+      const sessionResponse = await fetch('/api/field-manager/session', {
+        credentials: 'include',
+        cache: 'no-store',
+      });
+      const sessionPayload = (await sessionResponse.json().catch(() => null)) as SessionApiResponse | null;
+
+      if (sessionResponse.status === 401) {
+        window.location.replace('/field-manager/login');
+        return;
+      }
+
+      if (!sessionResponse.ok || !sessionPayload?.ok || !sessionPayload.manager) {
+        throw new Error(extractError(sessionPayload, 'Field Manager login is required.'));
+      }
+
+      const dieselResponse = await fetch('/api/field-manager/diesel', {
+        credentials: 'include',
+        cache: 'no-store',
+      });
+      const dieselPayload = (await dieselResponse.json().catch(() => null)) as DieselApiResponse | null;
+
+      if (dieselResponse.status === 401) {
+        window.location.replace('/field-manager/login');
+        return;
+      }
+
+      if (!dieselResponse.ok || !dieselPayload?.ok) {
+        throw new Error(extractError(dieselPayload, 'Failed to load diesel storage units.'));
+      }
+
+      setManager(sessionPayload.manager);
+      setStorages(dieselPayload.storages ?? []);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Failed to load diesel storage units.');
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function handleLogout() {
+    await fetch('/api/field-manager/login', {
+      method: 'DELETE',
+      credentials: 'include',
+      cache: 'no-store',
+    }).catch(() => undefined);
+    window.location.replace('/field-manager/login');
+  }
+
+  async function handleOpenStorage(storage: FieldManagerFuelStorageSummary) {
+    setOpeningStorageId(storage.id);
+    setNotice(null);
+
+    try {
+      const response = await fetch(`/api/field-manager/diesel/${encodeURIComponent(storage.id)}/open`, {
+        method: 'POST',
+        credentials: 'include',
+        cache: 'no-store',
+      });
+      const payload = (await response.json().catch(() => null)) as OpenDieselApiResponse | null;
+
+      if (response.status === 401) {
+        window.location.replace('/field-manager/login');
+        return;
+      }
+
+      if (!response.ok || !payload?.ok || !payload.redirectTo) {
+        throw new Error(extractError(payload, 'This diesel tank cannot be opened.'));
+      }
+
+      window.location.assign(payload.redirectTo);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'This diesel tank cannot be opened.');
+      setOpeningStorageId(null);
+    }
+  }
+
+  return (
+    <main className={styles.mobilePage}>
+      <section className={styles.assetsShell}>
+        <header className={styles.assetsHeader}>
+          <div>
+            <span>Aim4price</span>
+            <h1>Diesel</h1>
+            <p>{manager ? `Signed in as ${manager.displayName}` : 'Mobile fuel access'}</p>
+          </div>
+          <button type="button" className={styles.logoutButton} onClick={() => void handleLogout()}>
+            Logout
+          </button>
+        </header>
+
+        {notice ? <div className={styles.errorNotice}>{notice}</div> : null}
+
+        <section className={styles.searchCard}>
+          <label className={styles.searchField}>
+            <span>Choose diesel tank</span>
+            <input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search tank, fuel type, location or code"
+              autoComplete="off"
+            />
+          </label>
+        </section>
+
+        {isLoading ? <p className={styles.mobileEmpty}>Loading available diesel tanks…</p> : null}
+
+        {!isLoading && !storages.length ? (
+          <p className={styles.mobileEmpty}>No diesel or fuel storage units are available for this Field Manager login.</p>
+        ) : null}
+
+        {!isLoading && storages.length > 0 && !filteredStorages.length ? (
+          <p className={styles.mobileEmpty}>No diesel tanks match this search.</p>
+        ) : null}
+
+        <section className={styles.assetList} aria-label="Field Manager diesel tanks">
+          {filteredStorages.map((storage) => {
+            const isOpening = openingStorageId === storage.id;
+
+            return (
+              <article key={storage.id} className={styles.assetCard}>
+                <div className={styles.assetTopRow}>
+                  <div>
+                    <span className={styles.assetKind}>{storage.fuelType || 'Diesel'}</span>
+                    <h2>{storage.name}</h2>
+                    <p>{storage.locationLabel || 'No location saved'}</p>
+                  </div>
+                  <span className={styles.assetCode}>{storage.publicFuelStorageCode}</span>
+                </div>
+
+                <div className={styles.assetMetaGrid}>
+                  <div>
+                    <span>Current level</span>
+                    <strong>{formatLitres(storage.currentLitres)}</strong>
+                  </div>
+                  <div>
+                    <span>Capacity</span>
+                    <strong>{formatLitres(storage.capacityLitres)}</strong>
+                  </div>
+                  <div>
+                    <span>Stock</span>
+                    <strong>{formatStock(storage)}</strong>
+                  </div>
+                  <div>
+                    <span>Last update</span>
+                    <strong>{formatDate(storage.updatedAtIso)}</strong>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  className={styles.mobilePrimaryButton}
+                  onClick={() => void handleOpenStorage(storage)}
+                  disabled={Boolean(openingStorageId)}
+                >
+                  {isOpening ? 'Opening…' : 'Open Diesel Update'}
+                </button>
+              </article>
+            );
+          })}
+        </section>
+      </section>
+    </main>
+  );
+}

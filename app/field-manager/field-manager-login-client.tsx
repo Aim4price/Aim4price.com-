@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import styles from './page.module.css';
 
 type LoginApiResponse = {
   ok: boolean;
+  redirectTo?: string;
   error?: string;
 };
 
@@ -26,14 +27,6 @@ export default function FieldManagerLoginClient() {
   const [password, setPassword] = useState('');
   const [notice, setNotice] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  useEffect(() => {
-    void fetch('/api/field-manager/login', {
-      method: 'DELETE',
-      credentials: 'include',
-      cache: 'no-store',
-    }).catch(() => undefined);
-  }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -66,7 +59,7 @@ export default function FieldManagerLoginClient() {
         throw new Error(extractError(payload, 'Field Manager login failed.'));
       }
 
-      window.location.replace('/field-manager/assets');
+      window.location.replace(payload.redirectTo || '/field-manager');
     } catch (error) {
       setNotice(error instanceof Error ? error.message : 'Field Manager login failed.');
     } finally {
