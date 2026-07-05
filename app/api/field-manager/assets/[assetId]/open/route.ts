@@ -36,7 +36,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ ok: false, error: 'This asset is not available to this Field Manager login.' }, { status: 403 });
     }
 
-    const redirectTo = `/field-manager/asset/${encodeURIComponent(asset.publicAssetCode)}`;
+    const redirectTo = `/field-manager/assets/${encodeURIComponent(asset.publicAssetCode)}`;
     const response = NextResponse.json({ ok: true, redirectTo });
 
     applyFieldManagerScanCookie(response, {
