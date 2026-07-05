@@ -99,6 +99,7 @@ export type SaveScanAssetEventInput = {
   publicAssetCode: string;
   actorType: ScanEventActorType;
   operatorName?: string | null;
+  ownerUserId?: string | null;
   hours?: number | null;
   lifeWorkedPercent?: number | null;
   fuelPercent?: number | null;
@@ -119,6 +120,7 @@ export type SaveScanAssetEventInput = {
 type ScanAccessRow = {
   id: string | number;
   user_id: string | null;
+  owner_user_id?: string | null;
   register_id?: string | null;
   sector_id?: string | number | null;
   equipment_family_id?: string | number | null;
@@ -542,7 +544,7 @@ function mapScanSafeAsset(row: ScanAccessRow): ScanSafeAsset {
 
   return {
     id: asId(row.id),
-    userId: asText(row.user_id),
+    userId: asText(row.owner_user_id) || asText(row.user_id),
     publicAssetCode: asText(row.public_asset_code),
     plateLabel: asText(row.plate_label),
     qrStatus: normalizeQrStatus(row.qr_status),
@@ -578,7 +580,7 @@ function mapScanSafeAsset(row: ScanAccessRow): ScanSafeAsset {
 function mapScanAccessRowToDepreciationAsset(row: ScanAccessRow): DepreciationLogAssetInput {
   return {
     id: asId(row.id),
-    userId: asText(row.user_id),
+    userId: asText(row.owner_user_id) || asText(row.user_id),
     registerId: asText(row.register_id) || null,
     valuationRunId: asNumber(row.valuation_run_id),
     title: asText(row.title),
@@ -767,6 +769,7 @@ export async function getScanAssetAccessContext(publicAssetCode: string): Promis
       select
         a.id,
         a.user_id,
+        coalesce(nullif(trim(coalesce(a.user_id, '')), ''), nullif(trim(coalesce(ar.user_id, '')), ''), nullif(trim(coalesce(vr.user_id, '')), '')) as owner_user_id,
         a.register_id,
         a.sector_id,
         coalesce(a.equipment_family_id, vr.equipment_family_id) as equipment_family_id,
@@ -814,13 +817,16 @@ export async function getScanAssetAccessContext(publicAssetCode: string): Promis
         coalesce(p.scan_pin_enabled, false) as scan_pin_enabled,
         p.scan_pin_updated_at
       from asset_register_items a
+      left join asset_registers ar
+        on ar.id = a.register_id
       left join valuation_runs vr
         on vr.id = a.valuation_run_id
       left join equipment_families ef
         on ef.id = coalesce(a.equipment_family_id, vr.equipment_family_id)
       left join account_profiles p
-        on p.user_id = a.user_id
-      where upper(a.public_asset_code) = $1
+        on p.user_id = coalesce(nullif(trim(coalesce(a.user_id, '')), ''), nullif(trim(coalesce(ar.user_id, '')), ''), nullif(trim(coalesce(vr.user_id, '')), ''))
+      where upper(regexp_replace(coalesce(a.public_asset_code, ''), '\\s+', '', 'g')) = $1
+      order by a.updated_at desc nulls last, a.created_at desc nulls last, a.id desc
       limit 1
     `,
     [normalizedCode],
@@ -1109,6 +1115,7 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
     throw new Error('Asset code is required.');
   }
 
+  const scopedOwnerUserId = asText(input.ownerUserId) || null;
   const client = await db.connect();
 
   try {
@@ -1119,6 +1126,7 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
         select
           a.id,
           a.user_id,
+          coalesce(nullif(trim(coalesce(a.user_id, '')), ''), nullif(trim(coalesce(ar.user_id, '')), ''), nullif(trim(coalesce(vr.user_id, '')), '')) as owner_user_id,
           a.register_id,
           a.sector_id,
           coalesce(a.equipment_family_id, vr.equipment_family_id) as equipment_family_id,
@@ -1166,14 +1174,18 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
           false as scan_pin_enabled,
           null::timestamptz as scan_pin_updated_at
         from asset_register_items a
+        left join asset_registers ar
+          on ar.id = a.register_id
         left join valuation_runs vr
           on vr.id = a.valuation_run_id
         left join equipment_families ef
           on ef.id = coalesce(a.equipment_family_id, vr.equipment_family_id)
-        where upper(a.public_asset_code) = $1
+        where upper(regexp_replace(coalesce(a.public_asset_code, ''), '\\s+', '', 'g')) = $1
+          and ($2::text is null or coalesce(nullif(trim(coalesce(a.user_id, '')), ''), nullif(trim(coalesce(ar.user_id, '')), ''), nullif(trim(coalesce(vr.user_id, '')), '')) = $2::text)
+        order by a.updated_at desc nulls last, a.created_at desc nulls last, a.id desc
         limit 1
       `,
-      [normalizedCode],
+      [normalizedCode, scopedOwnerUserId],
     );
 
     const existingRow = assetLookup.rows[0];
@@ -1414,6 +1426,7 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
         select
           u.id,
           u.user_id,
+          coalesce(nullif(trim(coalesce(u.user_id, '')), ''), nullif(trim(coalesce(ar.user_id, '')), ''), nullif(trim(coalesce(vr.user_id, '')), '')) as owner_user_id,
           u.public_asset_code,
           u.plate_label,
           u.qr_status,
@@ -1450,6 +1463,8 @@ export async function saveScanAssetEvent(input: SaveScanAssetEventInput): Promis
           false as scan_pin_enabled,
           null::timestamptz as scan_pin_updated_at
         from updated u
+        left join asset_registers ar
+          on ar.id = u.register_id
         left join valuation_runs vr
           on vr.id = u.valuation_run_id
         left join equipment_families ef

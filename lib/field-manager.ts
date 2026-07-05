@@ -664,7 +664,7 @@ function fieldManagerAssetSelect(whereSql: string): string {
   return `
     select
       a.id::text as id,
-      a.user_id,
+      coalesce(nullif(trim(coalesce(a.user_id, '')), ''), nullif(trim(coalesce(ar.user_id, '')), ''), nullif(trim(coalesce(vr.user_id, '')), '')) as user_id,
       a.public_asset_code,
       a.plate_label,
       a.qr_status,
@@ -682,6 +682,8 @@ function fieldManagerAssetSelect(whereSql: string): string {
       a.last_scanned_at,
       a.updated_at
     from public.asset_register_items a
+    left join public.asset_registers ar
+      on ar.id = a.register_id
     left join public.valuation_runs vr
       on vr.id = a.valuation_run_id
     left join public.equipment_families ef
@@ -708,7 +710,7 @@ export async function listFieldManagerAssets(
         select exists(select 1 from restricted_access) as has_restrictions
       )
       ${fieldManagerAssetSelect(`
-        where a.user_id = $1
+        where coalesce(nullif(trim(coalesce(a.user_id, '')), ''), nullif(trim(coalesce(ar.user_id, '')), ''), nullif(trim(coalesce(vr.user_id, '')), '')) = $1
           and nullif(trim(coalesce(a.public_asset_code, '')), '') is not null
           and lower(coalesce(a.qr_status, 'active')) <> 'deleted'
           and (
@@ -748,7 +750,7 @@ export async function getFieldManagerAssetForOpen(input: {
         select exists(select 1 from restricted_access) as has_restrictions
       )
       ${fieldManagerAssetSelect(`
-        where a.user_id = $1
+        where coalesce(nullif(trim(coalesce(a.user_id, '')), ''), nullif(trim(coalesce(ar.user_id, '')), ''), nullif(trim(coalesce(vr.user_id, '')), '')) = $1
           and a.id = $3::uuid
           and nullif(trim(coalesce(a.public_asset_code, '')), '') is not null
           and lower(coalesce(a.qr_status, 'active')) <> 'deleted'
@@ -793,11 +795,16 @@ export async function validateFieldManagerScanAsset(input: {
         fm.updated_at
       from public.field_managers fm
       inner join public.asset_register_items a
-        on a.user_id = fm.owner_user_id
+        on true
+      left join public.asset_registers ar
+        on ar.id = a.register_id
+      left join public.valuation_runs vr
+        on vr.id = a.valuation_run_id
       where fm.id = $1::uuid
         and fm.owner_user_id = $2
         and fm.is_active = true
-        and upper(coalesce(a.public_asset_code, '')) = upper($3)
+        and coalesce(nullif(trim(coalesce(a.user_id, '')), ''), nullif(trim(coalesce(ar.user_id, '')), ''), nullif(trim(coalesce(vr.user_id, '')), '')) = fm.owner_user_id
+        and upper(regexp_replace(coalesce(a.public_asset_code, ''), '\\s+', '', 'g')) = upper(regexp_replace($3::text, '\\s+', '', 'g'))
         and lower(coalesce(a.qr_status, 'active')) <> 'deleted'
         and (
           not exists (
