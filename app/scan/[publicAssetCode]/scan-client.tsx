@@ -26,6 +26,7 @@ type ScanAssetStatusChoice = "yes" | "no" | "unknown" | "not_applicable";
 type ServiceMode = "" | "checked" | "serviced" | "repaired";
 type PartnerType = "dealer" | "finance" | "insurance";
 type ShareLeadStep = "message" | "consent" | null;
+type ScanAccessResponseMode = "owner_session" | "scan_pin" | "field_manager";
 
 type PartnerDirectoryEntry = {
   userId: string;
@@ -83,6 +84,8 @@ type ScanSafeAsset = {
 type ScanAssetResponse = {
   ok: boolean;
   asset?: ScanSafeAsset;
+  accessMode?: ScanAccessResponseMode;
+  fieldManagerDisplayName?: string | null;
   pinRequired?: boolean;
   preview?: boolean;
   error?: string;
@@ -1187,6 +1190,7 @@ export default function ScanClient({
   const [pendingUpdate, setPendingUpdate] = useState<PendingScanUpdate>(initialPendingUpdate);
   const [pin, setPin] = useState("");
   const [operatorName, setOperatorName] = useState("");
+  const [scanAccessMode, setScanAccessMode] = useState<ScanAccessResponseMode | null>(null);
   const [notice, setNotice] = useState<{ tone: NoticeTone; message: string } | null>(null);
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
   const [doneMessage, setDoneMessage] = useState("The QR update session is closed.");
@@ -1223,6 +1227,7 @@ export default function ScanClient({
   const shareLeafletMapRef = useRef<any>(null);
   const shareMarkerLayerRef = useRef<any>(null);
   const shareMarkersByPartnerRef = useRef<Map<string, any>>(new Map());
+  const autoFieldManagerOpenKeyRef = useRef<string>("");
 
   useEffect(() => {
     const previousBodyBackground = document.body.style.background;
@@ -1256,6 +1261,7 @@ export default function ScanClient({
     setAsset(null);
     setSavedAsset(null);
     setAssetPreview(null);
+    setScanAccessMode(null);
     const restoredSession = readQrScanSession(normalizedCode);
     const restoredDraft = applySessionLocationToDraft(initialDraft, restoredSession);
     setDraft(restoredDraft);
@@ -1341,6 +1347,22 @@ export default function ScanClient({
     return () => {
       isMounted = false;
     };
+  }, [normalizedCode]);
+
+  useEffect(() => {
+    if (!normalizedCode || autoFieldManagerOpenKeyRef.current === normalizedCode) return;
+
+    let shouldAutoOpen = false;
+    try {
+      shouldAutoOpen = new URLSearchParams(window.location.search).get("fieldManager") === "1";
+    } catch {
+      shouldAutoOpen = false;
+    }
+
+    if (!shouldAutoOpen) return;
+    autoFieldManagerOpenKeyRef.current = normalizedCode;
+    void loadUnlockedAsset();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [normalizedCode]);
 
   useEffect(() => {
@@ -1557,6 +1579,13 @@ export default function ScanClient({
 
       if (!response.ok || !data?.ok || !data.asset) {
         throw new Error(data?.error ?? "Failed to open this asset.");
+      }
+
+      setScanAccessMode(data.accessMode ?? null);
+
+      if (data.accessMode === "field_manager" && data.fieldManagerDisplayName?.trim()) {
+        const managerOperatorName = normalizeOperatorName(data.fieldManagerDisplayName);
+        if (managerOperatorName) setOperatorName(managerOperatorName);
       }
 
       const openedAsset = data.asset;
@@ -1904,6 +1933,11 @@ export default function ScanClient({
 
   function handleShareTap() {
     if (!asset) return;
+
+    if (scanAccessMode === "field_manager") {
+      setNotice({ tone: "error", message: "Dealer sharing is not available in Field Manager mode." });
+      return;
+    }
 
     if (needsUsageUpdateBeforeActions(asset, pendingUpdate, hasCompletedRequiredUsageUpdate)) {
       setNotice({ tone: "error", message: requiredUsageCopy(asset) });
@@ -2522,6 +2556,7 @@ export default function ScanClient({
     () => sharePartners.find((partner) => partner.userId === selectedSharePartnerId) ?? null,
     [sharePartners, selectedSharePartnerId],
   );
+  const canUseDealerShare = scanAccessMode !== "field_manager";
   const selectedSharePartnerPhoneHref = selectedSharePartner ? normalizePhoneHref(selectedSharePartner.phone) : "";
   const selectedSharePartnerEmailHref = selectedSharePartner ? normalizeEmailHref(selectedSharePartner.email) : "";
   const selectedSharePartnerWebsiteHref = selectedSharePartner ? normalizeWebsiteHref(selectedSharePartner.websiteUrl) : "";
@@ -2685,13 +2720,15 @@ export default function ScanClient({
             ) : (
               <>
                 <section className={styles.actionGrid}>
-                  <button type="button" className={styles.actionCard} onClick={handleShareTap}>
-                    <span className={styles.actionIconWrap}><ShareIcon className={styles.actionIcon} /></span>
-                    <span className={styles.actionTextBlock}>
-                      <strong>Share</strong>
-                      <small>Dealer help</small>
-                    </span>
-                  </button>
+                  {canUseDealerShare ? (
+                    <button type="button" className={styles.actionCard} onClick={handleShareTap}>
+                      <span className={styles.actionIconWrap}><ShareIcon className={styles.actionIcon} /></span>
+                      <span className={styles.actionTextBlock}>
+                        <strong>Share</strong>
+                        <small>Dealer help</small>
+                      </span>
+                    </button>
+                  ) : null}
 
                   <button type="button" className={styles.actionCard} onClick={() => openEditor("service")}>
                     <span className={styles.actionIconWrap}><WrenchIcon className={styles.actionIcon} /></span>
@@ -2737,7 +2774,7 @@ export default function ScanClient({
         </div>
       ) : null}
 
-      {asset && isShareModalOpen ? (
+      {asset && isShareModalOpen && canUseDealerShare ? (
         <div className={styles.shareOverlay}>
           <div className={styles.modalBackdrop} onClick={closeShareModal} />
           <section className={styles.shareModal} role="dialog" aria-modal="true" aria-labelledby="share-modal-title">
