@@ -13,6 +13,7 @@ import {
 
 type FuelStorageStatus = 'active' | 'archived';
 type FuelStorageEventType = 'opening_balance' | 'stock_in' | 'asset_issue' | 'dip' | 'adjustment';
+type FuelScanAccessMode = 'owner_session' | 'scan_pin' | 'field_manager';
 type IssueStep = 'asset' | 'usage' | 'beforeFuel' | 'litres' | 'filledFuel' | 'work' | 'notes';
 type ScanMode = 'action-choice' | 'fuel-assets' | 'storage-refill' | 'dipstick-note';
 type DoneAction = 'asset_issue' | 'storage_refill' | 'dipstick_note';
@@ -97,6 +98,8 @@ type PayloadResponse = {
   accountBusinessName?: string;
   assets?: FuelLedgerAsset[];
   recentEvents?: FuelLedgerEvent[];
+  accessMode?: FuelScanAccessMode;
+  fieldManagerDisplayName?: string | null;
   error?: string;
   pinRequired?: boolean;
 };
@@ -115,6 +118,7 @@ type Coordinates = {
 
 type FuelScanClientProps = {
   publicFuelStorageCode: string;
+  fieldManagerMode?: boolean;
 };
 
 const QUICK_FUEL_OPTIONS = [25, 50, 75, 100] as const;
@@ -206,7 +210,7 @@ function gpsAccuracyPayload(coordinates: Coordinates): number | '' {
   return coordinates.accuracyMeters !== null && Number.isFinite(coordinates.accuracyMeters) ? coordinates.accuracyMeters : '';
 }
 
-export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClientProps) {
+export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode = false }: FuelScanClientProps) {
   const normalizedCode = normalizeFuelCode(publicFuelStorageCode);
   const [preview, setPreview] = useState<FuelStoragePublicPreview | null>(null);
   const [storage, setStorage] = useState<FuelLedgerStorage | null>(null);
@@ -214,6 +218,7 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
   const [assets, setAssets] = useState<FuelLedgerAsset[]>([]);
   const [pin, setPin] = useState('');
   const [operatorName, setOperatorName] = useState('');
+  const [scanAccessMode, setScanAccessMode] = useState<FuelScanAccessMode | null>(null);
   const [assetId, setAssetId] = useState('');
   const [assetSearch, setAssetSearch] = useState('');
   const [litres, setLitres] = useState('');
@@ -248,6 +253,8 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
   const visibleStorageName = storage?.name || preview?.name || 'Fuel storage';
   const visibleFuelType = storage?.fuelType || preview?.fuelType || 'Diesel';
   const unauthenticated = !storage;
+  const isFieldManagerMode = fieldManagerMode || scanAccessMode === 'field_manager';
+  const scanPageClassName = `${styles.scanPage} ${isFieldManagerMode ? styles.fieldManagerMobileSurface : ''}`;
   const issueStepIndex = ISSUE_STEPS.indexOf(issueStep);
   const issueStepNumber = issueStepIndex + 3;
   const issueStepProgress = (issueStepNumber / TOTAL_SCAN_PAGES) * 100;
@@ -320,8 +327,19 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
     });
     const data = (await response.json()) as PayloadResponse;
 
+    if (response.status === 401 && fieldManagerMode) {
+      window.location.replace('/field-manager/login');
+      return;
+    }
+
     if (!response.ok || !data.ok || !data.storage) {
       throw new Error(data.error || 'Enter the fuel storage PIN to continue.');
+    }
+
+    setScanAccessMode(data.accessMode ?? null);
+    if (data.accessMode === 'field_manager' && data.fieldManagerDisplayName?.trim()) {
+      const managerOperatorName = normalizeOperatorName(data.fieldManagerDisplayName);
+      if (managerOperatorName) setOperatorName(managerOperatorName);
     }
 
     setStorage(data.storage);
@@ -343,11 +361,13 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
       element.style.display = 'none';
     });
 
-    try {
-      const savedName = window.localStorage.getItem('aim4price_fuel_operator_name');
-      if (savedName) setOperatorName(savedName);
-    } catch {
-      // Local storage is optional for this scan screen.
+    if (!fieldManagerMode) {
+      try {
+        const savedName = window.localStorage.getItem('aim4price_fuel_operator_name');
+        if (savedName) setOperatorName(savedName);
+      } catch {
+        // Local storage is optional for this scan screen.
+      }
     }
 
     return () => {
@@ -356,12 +376,13 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
         element.style.display = display;
       });
     };
-  }, []);
+  }, [fieldManagerMode]);
 
   useEffect(() => {
     setIsDone(false);
     setDoneOverrideMessage('');
     setStorage(null);
+    setScanAccessMode(null);
     setAssets([]);
     setAssetId('');
     setAssetSearch('');
@@ -387,6 +408,14 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
   }, [normalizedCode]);
 
   useEffect(() => {
+    if (!fieldManagerMode || !normalizedCode) return;
+    void loadPayload().catch((error) => {
+      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Field Manager diesel access is not available.' });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fieldManagerMode, normalizedCode]);
+
+  useEffect(() => {
     if (!assetId) {
       setAssetFuelPercentBefore('');
       setAssetFuelPercentAfter('');
@@ -406,13 +435,13 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
   }, [assetId, assets]);
 
   useEffect(() => {
-    if (!operatorName.trim()) return;
+    if (isFieldManagerMode || !operatorName.trim()) return;
     try {
       window.localStorage.setItem('aim4price_fuel_operator_name', operatorName.trim());
     } catch {
       // Local storage is optional for this scan screen.
     }
-  }, [operatorName]);
+  }, [isFieldManagerMode, operatorName]);
 
   useEffect(() => {
     let isMounted = true;
@@ -952,6 +981,17 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
           <h1>Choose fuel action</h1>
           <p>{visibleStorageName} · {formatLitres(storage?.currentLitres)} available</p>
         </div>
+
+        <div className={`${styles.locationGate} ${coordinates ? styles.locationGateReady : ''}`}>
+          <div>
+            <strong>{coordinates ? 'Location ready' : 'Location required'}</strong>
+            <span>{locationStatus}</span>
+          </div>
+          <button type="button" onClick={captureLocation} disabled={isCapturingLocation}>
+            {isCapturingLocation ? 'Capturing...' : coordinates ? 'Recapture GPS' : 'Capture GPS'}
+          </button>
+        </div>
+
         <div className={styles.actionChoiceList}>
           <button type="button" className={`${styles.actionChoiceButton} ${styles.actionChoiceButtonRefill}`} onClick={startStorageRefill} disabled={isSaving}>
             <strong>Storage Refill</strong>
@@ -1305,7 +1345,7 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
     };
 
     return (
-      <main className={styles.scanPage}>
+      <main className={scanPageClassName}>
         <section className={styles.thankYouScreen}>
           <h1>{doneCopy[doneAction].title}</h1>
           <p>{doneOverrideMessage || doneCopy[doneAction].message}</p>
@@ -1315,7 +1355,7 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
   }
 
   return (
-    <main className={styles.scanPage}>
+    <main className={scanPageClassName}>
       <div className={styles.scanShell}>
         {notice ? <div className={`${styles.notice} ${notice.tone === 'error' ? styles.noticeError : styles.noticeSuccess}`}>{notice.message}</div> : null}
         {pendingSyncCount > 0 ? (
@@ -1324,7 +1364,15 @@ export default function FuelScanClient({ publicFuelStorageCode }: FuelScanClient
           </div>
         ) : null}
 
-        {unauthenticated ? (
+        {unauthenticated && isFieldManagerMode ? (
+          <section className={styles.pinStepCard}>
+            <div className={styles.qrTitleBlock}>
+              <span>Field Manager diesel</span>
+              <h1>{visibleStorageName}</h1>
+              <p>Checking your Field Manager access. No fuel PIN or scanner name is required.</p>
+            </div>
+          </section>
+        ) : unauthenticated ? (
           <section className={`${styles.pinStepCard} ${!coordinates ? styles.pinStepCardBlocked : ''}`}>
             <div className={styles.qrTitleBlock}>
               <span>Fuel QR for</span>
