@@ -20,6 +20,7 @@ function normalizeFuelCode(value: unknown): string {
 export async function GET(request: NextRequest, context: RouteContext) {
   const publicFuelStorageCode = normalizeFuelCode(context.params.publicFuelStorageCode);
   const isPreviewRequest = request.nextUrl.searchParams.get('preview') === '1';
+  const isFieldManagerHint = request.nextUrl.searchParams.get('fieldManager') === '1';
 
   if (isPreviewRequest) {
     const preview = await getFuelStoragePublicPreview(publicFuelStorageCode);
@@ -41,7 +42,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
     return NextResponse.json({ ok: true, preview: true, storage: preview, pinRequired: preview.pinRequired });
   }
 
-  const access = await authorizeFuelStorageScanAccess(request, publicFuelStorageCode);
+  const access = await authorizeFuelStorageScanAccess(request, publicFuelStorageCode, {
+    fieldManagerHint: isFieldManagerHint,
+  });
 
   if (!access.ok) {
     return NextResponse.json(
