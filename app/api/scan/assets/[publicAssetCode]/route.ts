@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { safeAssetOwnerError } from "../../../../../lib/asset-owner-resolver";
-import { authorizeScanAccess } from "../../../../../lib/scan-auth";
+import { authorizeFieldManagerScanAccess, authorizePublicQrScanAccess } from "../../../../../lib/scan-auth";
 import {
   getScanAssetAccessContext,
   listRecentScanEvents,
@@ -46,23 +46,28 @@ export async function GET(request: NextRequest, context: RouteContext) {
     } catch (error) {
       const safe = safeAssetOwnerError(
         error,
-        "Could not open this asset safely.",
+        "Could not load this asset preview.",
       );
-      return NextResponse.json(
-        {
-          ok: false,
-          error: safe?.error ?? "Asset not found.",
-          pinRequired: false,
-        },
-        { status: safe?.status ?? 404 },
-      );
+      console.warn("[scan-assets] Public QR preview skipped", {
+        publicAssetCode,
+        status: safe?.status ?? null,
+        error: safe?.error ?? "Asset preview unavailable.",
+      });
+      return NextResponse.json({
+        ok: false,
+        preview: true,
+        error: "Asset preview unavailable.",
+        pinRequired: true,
+      });
     }
 
     if (!previewContext || !previewContext.asset.id) {
-      return NextResponse.json(
-        { ok: false, error: "Asset not found.", pinRequired: false },
-        { status: 404 },
-      );
+      return NextResponse.json({
+        ok: false,
+        preview: true,
+        error: "Asset preview unavailable.",
+        pinRequired: true,
+      });
     }
 
     if (previewContext.asset.qrStatus === "deleted") {
@@ -84,10 +89,13 @@ export async function GET(request: NextRequest, context: RouteContext) {
     });
   }
 
-  const access = await authorizeScanAccess(request, publicAssetCode, {
-    fieldManagerHint: isFieldManagerHint,
-    fieldManagerAssetId,
-  });
+  const access = isFieldManagerHint
+    ? await authorizeFieldManagerScanAccess(
+        request,
+        publicAssetCode,
+        fieldManagerAssetId,
+      )
+    : await authorizePublicQrScanAccess(request, publicAssetCode);
 
   if (!access.ok) {
     return NextResponse.json(
