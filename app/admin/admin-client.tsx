@@ -65,11 +65,7 @@ type QrModalState = {
 } | null;
 
 type AssetNamePreviewStatus =
-  | "changed"
-  | "unchanged"
-  | "warning"
-  | "error"
-  | "committed";
+  "changed" | "unchanged" | "warning" | "error" | "committed";
 
 type AssetNamePreviewRow = {
   rowNumber: number;
@@ -77,6 +73,9 @@ type AssetNamePreviewRow = {
   registerId: string;
   registerName: string;
   publicAssetCode: string;
+  equipment: string;
+  yearModel: string;
+  usage: string;
   currentAssetTitle: string;
   newAssetTitle: string;
   currentBrand: string;
@@ -181,14 +180,15 @@ const SIGNUP_DATE_FILTER_LABELS: Record<SignupDateFilter, string> = {
   year: "This year",
 };
 
-const PROVINCE_FILTER_OPTIONS: Array<{ value: ProvinceFilter; label: string }> = [
-  { value: "all", label: "All provinces" },
-  ...SOUTH_AFRICAN_PROVINCES.map((province) => ({
-    value: province,
-    label: province,
-  })),
-  { value: "__unknown__", label: "Unknown / not saved" },
-];
+const PROVINCE_FILTER_OPTIONS: Array<{ value: ProvinceFilter; label: string }> =
+  [
+    { value: "all", label: "All provinces" },
+    ...SOUTH_AFRICAN_PROVINCES.map((province) => ({
+      value: province,
+      label: province,
+    })),
+    { value: "__unknown__", label: "Unknown / not saved" },
+  ];
 
 function formatDate(value: string | null): string {
   if (!value) return "Unknown";
@@ -210,7 +210,11 @@ function formatLastActive(value: string | null): string {
   if (Number.isNaN(parsed.getTime())) return "Never";
 
   const now = new Date();
-  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfToday = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+  );
   const startOfParsedDay = new Date(
     parsed.getFullYear(),
     parsed.getMonth(),
@@ -234,11 +238,7 @@ function formatAccountValue(value: string): string {
 }
 
 function normalizeProvinceSearchValue(value: string): string {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/[-_]+/g, " ")
-    .replace(/\s+/g, " ");
+  return value.trim().toLowerCase().replace(/[-_]+/g, " ").replace(/\s+/g, " ");
 }
 
 function getCanonicalProvince(value: string): ProvinceName | "" {
@@ -400,7 +400,10 @@ function getBusyText(action: AdminAction): string {
   return "Deleting...";
 }
 
-function matchesQrAssetSearch(asset: QrLabelAsset, searchTerm: string): boolean {
+function matchesQrAssetSearch(
+  asset: QrLabelAsset,
+  searchTerm: string,
+): boolean {
   const query = normalizeSearchValue(searchTerm);
 
   if (!query) {
@@ -451,7 +454,6 @@ function readContentDispositionFileName(
   return filenameMatch?.[1] || fallback;
 }
 
-
 function getAssetNameStatusLabel(status: AssetNamePreviewStatus): string {
   if (status === "changed") return "Changed";
   if (status === "committed") return "Committed";
@@ -495,7 +497,8 @@ export default function AdminClient({
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [qrModal, setQrModal] = useState<QrModalState>(null);
-  const [assetNameModal, setAssetNameModal] = useState<AssetNameModalState>(null);
+  const [assetNameModal, setAssetNameModal] =
+    useState<AssetNameModalState>(null);
 
   const visibleUsers = useMemo(
     () =>
@@ -518,15 +521,14 @@ export default function AdminClient({
   );
   const currentPageNumber = Math.min(currentPage, pageCount);
   const pageStartIndex =
-    visibleUsers.length === 0
-      ? 0
-      : (currentPageNumber - 1) * ADMIN_PAGE_SIZE;
+    visibleUsers.length === 0 ? 0 : (currentPageNumber - 1) * ADMIN_PAGE_SIZE;
   const pageEndIndex =
     visibleUsers.length === 0
       ? 0
       : Math.min(pageStartIndex + ADMIN_PAGE_SIZE, visibleUsers.length);
   const paginatedUsers = visibleUsers.slice(pageStartIndex, pageEndIndex);
-  const visibleAccountLabel = visibleUsers.length === 1 ? "account" : "accounts";
+  const visibleAccountLabel =
+    visibleUsers.length === 1 ? "account" : "accounts";
   const hasActiveFilters =
     searchTerm.trim().length > 0 ||
     signupDateFilter !== "all" ||
@@ -557,7 +559,8 @@ export default function AdminClient({
     ? qrModal.assets.filter((asset) => asset.hasQr).length
     : 0;
   const validAssetNameChangeCount = assetNameModal?.preview
-    ? assetNameModal.preview.rows.filter((row) => row.status === "changed").length
+    ? assetNameModal.preview.rows.filter((row) => row.status === "changed")
+        .length
     : 0;
 
   async function handleSignOut() {
@@ -626,7 +629,11 @@ export default function AdminClient({
         message: data.message || getActionText(action, user),
       });
 
-      if (action === "open_account" && data.redirectUrl && typeof window !== "undefined") {
+      if (
+        action === "open_account" &&
+        data.redirectUrl &&
+        typeof window !== "undefined"
+      ) {
         window.location.assign(data.redirectUrl);
       }
     } catch (error) {
@@ -816,8 +823,9 @@ export default function AdminClient({
     }
   }
 
-
-  function updateAssetNameModal(update: Partial<NonNullable<AssetNameModalState>>) {
+  function updateAssetNameModal(
+    update: Partial<NonNullable<AssetNameModalState>>,
+  ) {
     setAssetNameModal((current) =>
       current ? { ...current, ...update } : current,
     );
@@ -857,7 +865,7 @@ export default function AdminClient({
       );
 
       if (!response.ok) {
-        let message = "Failed to download rename XLSX.";
+        let message = "Failed to download rename CSV.";
 
         try {
           const data = (await response.json()) as AssetNamePreviewResponse;
@@ -871,7 +879,7 @@ export default function AdminClient({
 
       const blob = await response.blob();
       const fallbackFileName = safeDownloadFileName(
-        `aim4price-${modalUser.email || modalUser.name}-asset-name-template.xlsx`,
+        `aim4price-${modalUser.email || modalUser.name}-asset-name-template.csv`,
       );
       const fileName = readContentDispositionFileName(
         response.headers.get("content-disposition"),
@@ -891,7 +899,8 @@ export default function AdminClient({
           ? {
               ...current,
               isDownloading: false,
-              success: "Rename XLSX template downloaded. Edit the new columns, save as CSV, then upload it here.",
+              success:
+                "Rename CSV template downloaded. Edit only the new columns, then upload it here for preview.",
             }
           : current,
       );
@@ -904,7 +913,7 @@ export default function AdminClient({
               error:
                 error instanceof Error
                   ? error.message
-                  : "Failed to download rename XLSX.",
+                  : "Failed to download rename CSV.",
             }
           : current,
       );
@@ -971,7 +980,11 @@ export default function AdminClient({
   }
 
   async function commitAssetNameChanges() {
-    if (!assetNameModal || assetNameModal.isCommitting || !assetNameModal.preview) {
+    if (
+      !assetNameModal ||
+      assetNameModal.isCommitting ||
+      !assetNameModal.preview
+    ) {
       return;
     }
 
@@ -987,7 +1000,9 @@ export default function AdminClient({
       }));
 
     if (!changes.length) {
-      updateAssetNameModal({ error: "There are no valid changed rows to commit." });
+      updateAssetNameModal({
+        error: "There are no valid changed rows to commit.",
+      });
       return;
     }
 
@@ -1205,7 +1220,9 @@ export default function AdminClient({
                             type="button"
                             className={styles.openButton}
                             onClick={() => runAction(user, "open_account")}
-                            disabled={busyUserAction !== null || isProtectedAdmin}
+                            disabled={
+                              busyUserAction !== null || isProtectedAdmin
+                            }
                           >
                             {busyUserAction === `${user.userId}:open_account`
                               ? getBusyText("open_account")
@@ -1286,7 +1303,9 @@ export default function AdminClient({
                             type="button"
                             className={styles.deleteButton}
                             onClick={() => runAction(user, "delete_user")}
-                            disabled={busyUserAction !== null || isProtectedAdmin}
+                            disabled={
+                              busyUserAction !== null || isProtectedAdmin
+                            }
                           >
                             {busyUserAction === `${user.userId}:delete_user`
                               ? getBusyText("delete_user")
@@ -1302,7 +1321,10 @@ export default function AdminClient({
           </table>
         </div>
 
-        <div className={styles.paginationBar} aria-label="Admin users pagination">
+        <div
+          className={styles.paginationBar}
+          aria-label="Admin users pagination"
+        >
           <span>
             Page {currentPageNumber} of {pageCount}
           </span>
@@ -1316,9 +1338,7 @@ export default function AdminClient({
             </button>
             <button
               type="button"
-              onClick={() =>
-                setCurrentPage((page) => Math.max(1, page - 1))
-              }
+              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
               disabled={currentPageNumber === 1}
             >
               Previous
@@ -1376,7 +1396,9 @@ export default function AdminClient({
                 <label
                   key={option.value}
                   className={`${styles.qrLayoutOption} ${
-                    qrModal.layout === option.value ? styles.qrLayoutOptionActive : ""
+                    qrModal.layout === option.value
+                      ? styles.qrLayoutOptionActive
+                      : ""
                   }`}
                 >
                   <input
@@ -1423,7 +1445,11 @@ export default function AdminClient({
                 <button
                   type="button"
                   onClick={clearQrAssets}
-                  disabled={qrModal.isLoading || qrModal.isGenerating || selectedQrAssetCount === 0}
+                  disabled={
+                    qrModal.isLoading ||
+                    qrModal.isGenerating ||
+                    selectedQrAssetCount === 0
+                  }
                 >
                   Clear
                 </button>
@@ -1432,14 +1458,22 @@ export default function AdminClient({
 
             <div className={styles.qrAssetList}>
               {qrModal.isLoading ? (
-                <div className={styles.qrAssetEmpty}>Loading asset QR labels...</div>
+                <div className={styles.qrAssetEmpty}>
+                  Loading asset QR labels...
+                </div>
               ) : qrModal.assets.length === 0 ? (
-                <div className={styles.qrAssetEmpty}>No assets found for this account.</div>
+                <div className={styles.qrAssetEmpty}>
+                  No assets found for this account.
+                </div>
               ) : filteredQrAssets.length === 0 ? (
-                <div className={styles.qrAssetEmpty}>No matching assets found.</div>
+                <div className={styles.qrAssetEmpty}>
+                  No matching assets found.
+                </div>
               ) : (
                 filteredQrAssets.map((asset) => {
-                  const isSelected = qrModal.selectedAssetIds.includes(asset.id);
+                  const isSelected = qrModal.selectedAssetIds.includes(
+                    asset.id,
+                  );
 
                   return (
                     <label
@@ -1482,7 +1516,8 @@ export default function AdminClient({
 
             <footer className={styles.qrModalFooter}>
               <span>
-                {selectedQrAssetCount} selected · {availableQrAssetCount} QR-ready
+                {selectedQrAssetCount} selected · {availableQrAssetCount}{" "}
+                QR-ready
               </span>
               <button
                 type="button"
@@ -1514,7 +1549,8 @@ export default function AdminClient({
                 <p className={styles.qrModalEyebrow}>Admin asset rename</p>
                 <h2 id="admin-asset-name-modal-title">Asset Name Manager</h2>
                 <span>
-                  {assetNameModal.user.name} · {assetNameModal.user.email || "No email saved"}
+                  {assetNameModal.user.name} ·{" "}
+                  {assetNameModal.user.email || "No email saved"}
                 </span>
               </div>
 
@@ -1536,9 +1572,11 @@ export default function AdminClient({
             <div className={styles.nameManagerIntro}>
               <strong>Bulk rename only</strong>
               <span>
-                Download the XLSX, edit only the new title, new brand and new model columns,
-                save it as CSV, then upload it for preview. Values, finance, insurance, license,
-                valuation and QR data are not editable here.
+                Download the simple CSV, paste or upload it into ChatGPT if
+                needed, edit only new_asset_title, new_brand and new_model, then
+                upload the edited CSV here. Equipment, year_model and usage are
+                context only. Values, finance, insurance, license, valuation and
+                QR data are not editable here.
               </span>
             </div>
 
@@ -1554,17 +1592,21 @@ export default function AdminClient({
                 }
               >
                 {assetNameModal.isDownloading
-                  ? "Downloading XLSX..."
-                  : "Download Rename XLSX"}
+                  ? "Downloading CSV..."
+                  : "Download Rename CSV"}
               </button>
 
               <label
                 className={`${styles.uploadCsvButton} ${
-                  assetNameModal.isUploading ? styles.uploadCsvButtonDisabled : ""
+                  assetNameModal.isUploading
+                    ? styles.uploadCsvButtonDisabled
+                    : ""
                 }`}
               >
                 <span>
-                  {assetNameModal.isUploading ? "Uploading CSV..." : "Upload Edited CSV"}
+                  {assetNameModal.isUploading
+                    ? "Uploading CSV..."
+                    : "Upload Edited CSV"}
                 </span>
                 <input
                   type="file"
@@ -1594,30 +1636,60 @@ export default function AdminClient({
 
             {assetNameModal.preview ? (
               <div className={styles.namePreviewSummary}>
-                <span>Uploaded <strong>{assetNameModal.preview.summary.uploadedRows}</strong></span>
-                <span>Matched <strong>{assetNameModal.preview.summary.matchedRows}</strong></span>
-                <span>Changed <strong>{assetNameModal.preview.summary.changedRows}</strong></span>
-                <span>Unchanged <strong>{assetNameModal.preview.summary.unchangedRows}</strong></span>
-                <span>Skipped <strong>{assetNameModal.preview.summary.skippedRows}</strong></span>
-                <span>Errors <strong>{assetNameModal.preview.summary.errorRows}</strong></span>
-                <span>Committed <strong>{assetNameModal.preview.summary.committedRows}</strong></span>
+                <span>
+                  Uploaded{" "}
+                  <strong>{assetNameModal.preview.summary.uploadedRows}</strong>
+                </span>
+                <span>
+                  Matched{" "}
+                  <strong>{assetNameModal.preview.summary.matchedRows}</strong>
+                </span>
+                <span>
+                  Changed{" "}
+                  <strong>{assetNameModal.preview.summary.changedRows}</strong>
+                </span>
+                <span>
+                  Unchanged{" "}
+                  <strong>
+                    {assetNameModal.preview.summary.unchangedRows}
+                  </strong>
+                </span>
+                <span>
+                  Skipped{" "}
+                  <strong>{assetNameModal.preview.summary.skippedRows}</strong>
+                </span>
+                <span>
+                  Errors{" "}
+                  <strong>{assetNameModal.preview.summary.errorRows}</strong>
+                </span>
+                <span>
+                  Committed{" "}
+                  <strong>
+                    {assetNameModal.preview.summary.committedRows}
+                  </strong>
+                </span>
               </div>
             ) : null}
 
             <div className={styles.namePreviewTableWrap}>
               {!assetNameModal.preview ? (
                 <div className={styles.nameManagerEmpty}>
-                  No CSV preview loaded yet. Download the XLSX template first, edit the new columns,
-                  export it as CSV, then upload it here.
+                  No CSV preview loaded yet. Download the CSV template first,
+                  edit only the new columns, then upload it here.
                 </div>
               ) : assetNameModal.preview.rows.length === 0 ? (
-                <div className={styles.nameManagerEmpty}>The uploaded CSV did not contain any data rows.</div>
+                <div className={styles.nameManagerEmpty}>
+                  The uploaded CSV did not contain any data rows.
+                </div>
               ) : (
                 <table className={styles.namePreviewTable}>
                   <thead>
                     <tr>
                       <th>Register</th>
                       <th>QR/public code</th>
+                      <th>Equipment</th>
+                      <th>Year</th>
+                      <th>Usage</th>
                       <th>Current title</th>
                       <th>New title</th>
                       <th>Current brand</th>
@@ -1637,6 +1709,9 @@ export default function AdminClient({
                             {row.publicAssetCode || "Not saved"}
                           </span>
                         </td>
+                        <td>{row.equipment || "Not saved"}</td>
+                        <td>{row.yearModel || "Unknown"}</td>
+                        <td>{row.usage || "Unknown"}</td>
                         <td>{row.currentAssetTitle || "Not saved"}</td>
                         <td>{row.newAssetTitle || "No change"}</td>
                         <td>{row.currentBrand || "Not saved"}</td>
@@ -1644,7 +1719,9 @@ export default function AdminClient({
                         <td>{row.currentModel || "Not saved"}</td>
                         <td>{row.newModel || "No change"}</td>
                         <td>
-                          <span className={getAssetNameStatusClassName(row.status)}>
+                          <span
+                            className={getAssetNameStatusClassName(row.status)}
+                          >
                             {getAssetNameStatusLabel(row.status)}
                           </span>
                         </td>
@@ -1668,7 +1745,9 @@ export default function AdminClient({
               </div>
             ) : null}
 
-            <footer className={`${styles.qrModalFooter} ${styles.nameModalFooter}`}>
+            <footer
+              className={`${styles.qrModalFooter} ${styles.nameModalFooter}`}
+            >
               <span>
                 {validAssetNameChangeCount} valid changed row
                 {validAssetNameChangeCount === 1 ? "" : "s"} ready to commit

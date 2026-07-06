@@ -550,7 +550,6 @@
   cursor: not-allowed;
 }
 
-
 .namesButton,
 .qrButton {
   border-color: rgba(23, 77, 62, 0.2) !important;
@@ -1056,7 +1055,7 @@
 
 .namePreviewTable {
   width: 100%;
-  min-width: 1180px;
+  min-width: 1420px;
   border-collapse: separate;
   border-spacing: 0;
 }
