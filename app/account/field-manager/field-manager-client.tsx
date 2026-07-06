@@ -306,27 +306,30 @@ export default function FieldManagerOwnerClient() {
 
       <section className={styles.shell}>
         <button type="button" className={styles.backButton} onClick={() => window.location.assign('/account')}>
-          ‹ Back to account
+          ← Back to account
         </button>
 
         <section className={styles.heroCard}>
-          <div>
-            <span className={styles.kicker}>Aim4price</span>
+          <div className={styles.heroCopy}>
             <h1>Field Manager</h1>
             <p>
-              Create mobile-only manager access for machinery that cannot carry QR stickers. Managers can log in,
-              choose an allowed asset, and open the existing field update scanner without entering the normal app.
+              Create mobile-only access for managers who need to update machinery in the field without entering the
+              full Aim4price account area.
             </p>
           </div>
+
           <div className={styles.linkPanel}>
-            <span>Manager login link</span>
+            <div className={styles.linkPanelHeader}>
+              <h2>Manager login link</h2>
+              <p>Send this link to approved managers after creating their login details.</p>
+            </div>
             <code>{loginLink}</code>
             <div className={styles.shareRow}>
               <button type="button" className={styles.secondaryButton} onClick={handleCopyLink}>
-                Copy Link
+                Copy link
               </button>
               <button type="button" className={styles.primaryButton} onClick={handleShareLink}>
-                Share Field Manager Link
+                Share link
               </button>
             </div>
           </div>
@@ -341,8 +344,8 @@ export default function FieldManagerOwnerClient() {
         <section className={styles.grid}>
           <section className={styles.card}>
             <div className={styles.cardHeader}>
-              <span>Create access</span>
               <h2>New Field Manager login</h2>
+              <p>Create a dedicated username and password for one field manager.</p>
             </div>
 
             <form className={styles.form} onSubmit={handleCreateManager}>
@@ -378,15 +381,15 @@ export default function FieldManagerOwnerClient() {
               </label>
 
               <button type="submit" className={styles.primaryButton} disabled={isCreating}>
-                {isCreating ? 'Creating…' : 'Create Field Manager'}
+                {isCreating ? 'Creating…' : 'Create login'}
               </button>
             </form>
           </section>
 
           <section className={`${styles.card} ${styles.managerListCard}`}>
             <div className={styles.cardHeader}>
-              <span>Access list</span>
               <h2>Field Manager logins</h2>
+              <p>Edit details, reset passwords or deactivate manager access.</p>
             </div>
 
             {isLoading ? <p className={styles.emptyState}>Loading Field Manager logins…</p> : null}
@@ -407,11 +410,11 @@ export default function FieldManagerOwnerClient() {
                 return (
                   <article key={manager.id} className={styles.managerCard}>
                     <div className={styles.managerTopRow}>
-                      <div>
+                      <div className={styles.managerIdentity}>
                         <strong>{manager.displayName}</strong>
                         <span>@{manager.username}</span>
                       </div>
-                      <span className={`${styles.statusBadge} ${manager.isActive ? styles.statusActive : styles.statusInactive}`}>
+                      <span className={`${styles.statusText} ${manager.isActive ? styles.statusActive : styles.statusInactive}`}>
                         {manager.isActive ? 'Active' : 'Inactive'}
                       </span>
                     </div>
@@ -457,7 +460,7 @@ export default function FieldManagerOwnerClient() {
 
                       <div className={styles.managerActions}>
                         <button type="submit" className={styles.secondaryButton} disabled={isSavingThisManager}>
-                          {isSavingThisManager ? 'Saving…' : 'Save Changes'}
+                          {isSavingThisManager ? 'Saving…' : 'Save changes'}
                         </button>
                         <button
                           type="button"
