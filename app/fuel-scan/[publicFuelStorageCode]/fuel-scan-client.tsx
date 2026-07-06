@@ -251,7 +251,7 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
   const selectedAssetName = selectedAsset ? assetDisplayName(selectedAsset) : '';
   const visibleAccountName = accountBusinessName || preview?.accountBusinessName || storage?.accountBusinessName || 'Aim4price account';
   const visibleStorageName = storage?.name || preview?.name || 'Fuel storage';
-  const visibleFuelType = storage?.fuelType || preview?.fuelType || 'Diesel';
+  const visibleFuelType = storage?.fuelType || preview?.fuelType || (fieldManagerMode ? 'Fuel' : 'Diesel');
   const unauthenticated = !storage;
   const isFieldManagerMode = fieldManagerMode || scanAccessMode === 'field_manager';
   const scanPageClassName = `${styles.scanPage} ${isFieldManagerMode ? styles.fieldManagerMobileSurface : ''}`;
@@ -411,7 +411,7 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
   useEffect(() => {
     if (!fieldManagerMode || !normalizedCode) return;
     void loadPayload().catch((error) => {
-      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Field Manager diesel access is not available.' });
+      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Field Manager fuel access is not available.' });
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fieldManagerMode, normalizedCode]);
@@ -1380,7 +1380,7 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
         {unauthenticated && isFieldManagerMode ? (
           <section className={styles.pinStepCard}>
             <div className={styles.qrTitleBlock}>
-              <span>Field Manager diesel</span>
+              <span>Field Manager fuel</span>
               <h1>{visibleStorageName}</h1>
               <p>Checking your Field Manager access. No fuel PIN or scanner name is required.</p>
             </div>
