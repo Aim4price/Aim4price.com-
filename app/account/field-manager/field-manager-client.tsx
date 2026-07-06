@@ -92,6 +92,8 @@ export default function FieldManagerOwnerClient() {
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [savingManagerId, setSavingManagerId] = useState<string | null>(null);
+  const [deletingManagerId, setDeletingManagerId] = useState<string | null>(null);
+  const [expandedManagerId, setExpandedManagerId] = useState<string | null>(null);
 
   const loginLink = useMemo(() => getFieldManagerLoginLink(), []);
   const shareText = useMemo(() => `Open Field Manager for Aim4price here: ${loginLink}`, [loginLink]);
@@ -273,6 +275,43 @@ export default function FieldManagerOwnerClient() {
     );
   }
 
+  async function handleDeleteManager(manager: FieldManagerRecord) {
+    const confirmed = window.confirm(
+      `Delete Field Manager login for ${manager.displayName}? This cannot be undone.`,
+    );
+
+    if (!confirmed) return;
+
+    setDeletingManagerId(manager.id);
+
+    try {
+      const response = await fetch(`/api/field-managers/${encodeURIComponent(manager.id)}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      const payload = (await response.json().catch(() => null)) as FieldManagerApiResponse | null;
+
+      if (!response.ok || !payload?.ok) {
+        throw new Error(extractError(payload, 'Failed to delete Field Manager login.'));
+      }
+
+      setManagers((current) => current.filter((existingManager) => existingManager.id !== manager.id));
+      setEditDrafts((current) => {
+        const { [manager.id]: _removedManager, ...remainingDrafts } = current;
+        return remainingDrafts;
+      });
+      setExpandedManagerId((current) => (current === manager.id ? null : current));
+      setNotice({ tone: 'success', message: 'Field Manager login deleted.' });
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Failed to delete Field Manager login.',
+      });
+    } finally {
+      setDeletingManagerId(null);
+    }
+  }
+
   async function handleCopyLink() {
     const copied = await copyToClipboard(loginLink);
     setNotice({
@@ -389,7 +428,7 @@ export default function FieldManagerOwnerClient() {
           <section className={`${styles.card} ${styles.managerListCard}`}>
             <div className={styles.cardHeader}>
               <h2>Field Manager logins</h2>
-              <p>Edit details, reset passwords or deactivate manager access.</p>
+              <p>Manage details, reset passwords, deactivate or delete manager access.</p>
             </div>
 
             {isLoading ? <p className={styles.emptyState}>Loading Field Manager logins…</p> : null}
@@ -405,73 +444,105 @@ export default function FieldManagerOwnerClient() {
                   username: manager.username,
                   password: '',
                 };
+                const isExpanded = expandedManagerId === manager.id;
                 const isSavingThisManager = savingManagerId === manager.id;
+                const isDeletingThisManager = deletingManagerId === manager.id;
+                const isBusyThisManager = isSavingThisManager || isDeletingThisManager;
+                const managerPanelId = `field-manager-panel-${manager.id}`;
 
                 return (
-                  <article key={manager.id} className={styles.managerCard}>
-                    <div className={styles.managerTopRow}>
+                  <article
+                    key={manager.id}
+                    className={`${styles.managerCard} ${isExpanded ? styles.managerCardExpanded : ''}`}
+                  >
+                    <div className={styles.managerSummary}>
                       <div className={styles.managerIdentity}>
                         <strong>{manager.displayName}</strong>
-                        <span>@{manager.username}</span>
+                        <span>{manager.username}</span>
                       </div>
+
+                      <div className={styles.managerSummaryMeta} aria-label="Field Manager dates">
+                        <span>
+                          <b>Last login</b>
+                          {formatDateTime(manager.lastLoginAtIso)}
+                        </span>
+                        <span>
+                          <b>Updated</b>
+                          {formatDateTime(manager.updatedAtIso)}
+                        </span>
+                      </div>
+
                       <span className={`${styles.statusText} ${manager.isActive ? styles.statusActive : styles.statusInactive}`}>
                         {manager.isActive ? 'Active' : 'Inactive'}
                       </span>
+
+                      <button
+                        type="button"
+                        className={styles.manageButton}
+                        onClick={() => setExpandedManagerId((current) => (current === manager.id ? null : manager.id))}
+                        aria-expanded={isExpanded}
+                        aria-controls={managerPanelId}
+                      >
+                        {isExpanded ? 'Close' : 'Manage'}
+                      </button>
                     </div>
 
-                    <dl className={styles.managerMeta}>
-                      <div>
-                        <dt>Last login</dt>
-                        <dd>{formatDateTime(manager.lastLoginAtIso)}</dd>
+                    {isExpanded ? (
+                      <div id={managerPanelId} className={styles.managerDropdown}>
+                        <form className={styles.inlineForm} onSubmit={(event) => void handleSaveManager(event, manager)}>
+                          <label className={styles.compactField}>
+                            <span>Display name</span>
+                            <input
+                              value={editDraft.displayName}
+                              onChange={(event) => updateEditDraft(manager.id, { displayName: event.target.value })}
+                            />
+                          </label>
+
+                          <label className={styles.compactField}>
+                            <span>Username</span>
+                            <input
+                              value={editDraft.username}
+                              onChange={(event) =>
+                                updateEditDraft(manager.id, { username: normalizeUsername(event.target.value) })
+                              }
+                            />
+                          </label>
+
+                          <label className={styles.compactField}>
+                            <span>New password</span>
+                            <input
+                              type="password"
+                              value={editDraft.password}
+                              onChange={(event) => updateEditDraft(manager.id, { password: event.target.value })}
+                              placeholder="Leave blank to keep current"
+                              autoComplete="new-password"
+                            />
+                          </label>
+
+                          <div className={styles.managerActions}>
+                            <button type="submit" className={styles.secondaryButton} disabled={isBusyThisManager}>
+                              {isSavingThisManager ? 'Saving…' : 'Save changes'}
+                            </button>
+                            <button
+                              type="button"
+                              className={manager.isActive ? styles.dangerButton : styles.primaryButton}
+                              onClick={() => void handleToggleManager(manager)}
+                              disabled={isBusyThisManager}
+                            >
+                              {manager.isActive ? 'Deactivate' : 'Activate'}
+                            </button>
+                            <button
+                              type="button"
+                              className={styles.deleteButton}
+                              onClick={() => void handleDeleteManager(manager)}
+                              disabled={isBusyThisManager}
+                            >
+                              {isDeletingThisManager ? 'Deleting…' : 'Delete'}
+                            </button>
+                          </div>
+                        </form>
                       </div>
-                      <div>
-                        <dt>Updated</dt>
-                        <dd>{formatDateTime(manager.updatedAtIso)}</dd>
-                      </div>
-                    </dl>
-
-                    <form className={styles.inlineForm} onSubmit={(event) => void handleSaveManager(event, manager)}>
-                      <label className={styles.compactField}>
-                        <span>Display name</span>
-                        <input
-                          value={editDraft.displayName}
-                          onChange={(event) => updateEditDraft(manager.id, { displayName: event.target.value })}
-                        />
-                      </label>
-
-                      <label className={styles.compactField}>
-                        <span>Username</span>
-                        <input
-                          value={editDraft.username}
-                          onChange={(event) => updateEditDraft(manager.id, { username: normalizeUsername(event.target.value) })}
-                        />
-                      </label>
-
-                      <label className={styles.compactField}>
-                        <span>New password</span>
-                        <input
-                          type="password"
-                          value={editDraft.password}
-                          onChange={(event) => updateEditDraft(manager.id, { password: event.target.value })}
-                          placeholder="Leave blank to keep current"
-                          autoComplete="new-password"
-                        />
-                      </label>
-
-                      <div className={styles.managerActions}>
-                        <button type="submit" className={styles.secondaryButton} disabled={isSavingThisManager}>
-                          {isSavingThisManager ? 'Saving…' : 'Save changes'}
-                        </button>
-                        <button
-                          type="button"
-                          className={manager.isActive ? styles.dangerButton : styles.primaryButton}
-                          onClick={() => void handleToggleManager(manager)}
-                          disabled={isSavingThisManager}
-                        >
-                          {manager.isActive ? 'Deactivate' : 'Activate'}
-                        </button>
-                      </div>
-                    </form>
+                    ) : null}
                   </article>
                 );
               })}
