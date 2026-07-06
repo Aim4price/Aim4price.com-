@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { safeAssetOwnerError } from "../../../../../lib/asset-owner-resolver";
-import { authorizeFieldManagerScanAccess, authorizePublicQrScanAccess } from "../../../../../lib/scan-auth";
+import {
+  authorizeFieldManagerScanAccess,
+  authorizePublicQrScanAccess,
+} from "../../../../../lib/scan-auth";
 import {
   getScanAssetAccessContext,
   listRecentScanEvents,
@@ -18,14 +21,36 @@ type RouteContext = {
   };
 };
 
+function normalizedQrStatus(value: unknown): string {
+  return String(value ?? "").trim().toLowerCase() || "active";
+}
+
+function isActiveQrStatus(value: unknown): boolean {
+  return normalizedQrStatus(value) === "active";
+}
+
 function buildPreviewAsset(asset: ScanSafeAsset): ScanSafeAsset {
   return {
     ...asset,
+    id: "",
+    userId: "",
+    serialNumber: "",
+    licenseRegistrationNumber: "",
+    financeStatus: "unknown",
+    insuranceStatus: "unknown",
+    licenseStatus: "unknown",
+    hours: null,
+    lifeWorkedPercent: null,
+    fuelPercent: null,
+    condition: "",
     note: "",
     photos: [],
     lastKnownLat: null,
     lastKnownLng: null,
     lastKnownLocationText: "",
+    lastScannedAtIso: null,
+    createdAtIso: null,
+    updatedAtIso: null,
   };
 }
 
@@ -70,11 +95,11 @@ export async function GET(request: NextRequest, context: RouteContext) {
       });
     }
 
-    if (previewContext.asset.qrStatus === "deleted") {
+    if (!isActiveQrStatus(previewContext.asset.qrStatus)) {
       return NextResponse.json(
         {
           ok: false,
-          error: "This asset QR code is inactive.",
+          error: "This QR code is inactive.",
           pinRequired: false,
         },
         { status: 404 },
