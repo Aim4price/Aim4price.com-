@@ -3,7 +3,7 @@ import {
   recordAdminUsageEventsSafely,
   type AdminUsageEventInput,
 } from "../../../../../../lib/admin-usage-events";
-import { authorizeScanAccess } from "../../../../../../lib/scan-auth";
+import { authorizeFieldManagerScanAccess, authorizePublicQrScanAccess } from "../../../../../../lib/scan-auth";
 import {
   listRecentScanEvents,
   normalizePublicAssetCode,
@@ -84,6 +84,18 @@ function normalizeGpsAccuracyMeters(value: unknown): number | null {
   return Math.round(parsed * 100) / 100;
 }
 
+
+function safeUnexpectedErrorMessage(error: unknown, fallback: string): string {
+  const message = error instanceof Error && error.message.trim() ? error.message : fallback;
+
+  if (/missing FROM-clause|syntax error|relation .* does not exist|column .* does not exist|SQLSTATE|Postgres|PostgreSQL/i.test(message)) {
+    console.error("[scan-event] Unexpected database error", { error: message });
+    return fallback;
+  }
+
+  return message;
+}
+
 function normalizePhotoUrls(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   const seen = new Set<string>();
@@ -121,10 +133,13 @@ export async function POST(request: NextRequest, context: RouteContext) {
     request.nextUrl.searchParams.get("fieldManager") === "1";
   const fieldManagerAssetId = request.nextUrl.searchParams.get("assetId");
 
-  const access = await authorizeScanAccess(request, publicAssetCode, {
-    fieldManagerHint: isFieldManagerHint,
-    fieldManagerAssetId,
-  });
+  const access = isFieldManagerHint
+    ? await authorizeFieldManagerScanAccess(
+        request,
+        publicAssetCode,
+        fieldManagerAssetId,
+      )
+    : await authorizePublicQrScanAccess(request, publicAssetCode);
 
   if (!access.ok) {
     return NextResponse.json(
@@ -340,10 +355,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     return NextResponse.json(
       {
         ok: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "Failed to save scan update.",
+        error: safeUnexpectedErrorMessage(error, "Failed to save scan update."),
       },
       { status: 500 },
     );
