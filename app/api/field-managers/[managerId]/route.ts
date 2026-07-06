@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAccountProfile } from '../../../../lib/account-profile';
 import { getServerSession } from '../../../../lib/auth-session';
-import { updateFieldManager } from '../../../../lib/field-manager';
+import { deleteFieldManager, updateFieldManager } from '../../../../lib/field-manager';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -72,3 +72,22 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     );
   }
 }
+
+export async function DELETE(_request: NextRequest, context: RouteContext) {
+  const access = await requireOwnerSession();
+
+  if (!access.ok) {
+    return access.response;
+  }
+
+  try {
+    await deleteFieldManager(access.userId, String(context.params?.managerId ?? ''));
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    return NextResponse.json(
+      { ok: false, error: extractErrorMessage(error, 'Failed to delete Field Manager login.') },
+      { status: 400 },
+    );
+  }
+}
+
