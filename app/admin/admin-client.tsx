@@ -64,6 +64,68 @@ type QrModalState = {
   error: string;
 } | null;
 
+type AssetNamePreviewStatus =
+  | "changed"
+  | "unchanged"
+  | "warning"
+  | "error"
+  | "committed";
+
+type AssetNamePreviewRow = {
+  rowNumber: number;
+  assetId: string;
+  registerId: string;
+  registerName: string;
+  publicAssetCode: string;
+  currentAssetTitle: string;
+  newAssetTitle: string;
+  currentBrand: string;
+  newBrand: string;
+  currentModel: string;
+  newModel: string;
+  status: AssetNamePreviewStatus;
+  message: string;
+};
+
+type AssetNamePreviewSummary = {
+  uploadedRows: number;
+  matchedRows: number;
+  changedRows: number;
+  unchangedRows: number;
+  skippedRows: number;
+  errorRows: number;
+  committedRows: number;
+};
+
+type AssetNamePreview = {
+  summary: AssetNamePreviewSummary;
+  rows: AssetNamePreviewRow[];
+};
+
+type AssetNamePreviewResponse = {
+  ok: boolean;
+  preview?: AssetNamePreview;
+  error?: string;
+};
+
+type AssetNameCommitResponse = {
+  ok: boolean;
+  result?: AssetNamePreview;
+  error?: string;
+};
+
+type AssetNameModalState = {
+  user: AdminUserRow;
+  preview: AssetNamePreview | null;
+  uploadedFileName: string;
+  isDownloading: boolean;
+  isUploading: boolean;
+  isCommitting: boolean;
+  didCommit: boolean;
+  error: string;
+  success: string;
+} | null;
+
 type AdminAction =
   | "activate"
   | "pending"
@@ -389,6 +451,35 @@ function readContentDispositionFileName(
   return filenameMatch?.[1] || fallback;
 }
 
+
+function getAssetNameStatusLabel(status: AssetNamePreviewStatus): string {
+  if (status === "changed") return "Changed";
+  if (status === "committed") return "Committed";
+  if (status === "warning") return "Skipped";
+  if (status === "error") return "Error";
+  return "Unchanged";
+}
+
+function getAssetNameStatusClassName(status: AssetNamePreviewStatus): string {
+  if (status === "changed") {
+    return `${styles.nameStatusPill} ${styles.nameStatusChanged}`;
+  }
+
+  if (status === "committed") {
+    return `${styles.nameStatusPill} ${styles.nameStatusCommitted}`;
+  }
+
+  if (status === "warning") {
+    return `${styles.nameStatusPill} ${styles.nameStatusWarning}`;
+  }
+
+  if (status === "error") {
+    return `${styles.nameStatusPill} ${styles.nameStatusError}`;
+  }
+
+  return `${styles.nameStatusPill} ${styles.nameStatusUnchanged}`;
+}
+
 export default function AdminClient({
   initialUsers,
 }: {
@@ -404,6 +495,7 @@ export default function AdminClient({
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [qrModal, setQrModal] = useState<QrModalState>(null);
+  const [assetNameModal, setAssetNameModal] = useState<AssetNameModalState>(null);
 
   const visibleUsers = useMemo(
     () =>
@@ -463,6 +555,9 @@ export default function AdminClient({
     : 0;
   const availableQrAssetCount = qrModal
     ? qrModal.assets.filter((asset) => asset.hasQr).length
+    : 0;
+  const validAssetNameChangeCount = assetNameModal?.preview
+    ? assetNameModal.preview.rows.filter((row) => row.status === "changed").length
     : 0;
 
   async function handleSignOut() {
@@ -721,6 +816,233 @@ export default function AdminClient({
     }
   }
 
+
+  function updateAssetNameModal(update: Partial<NonNullable<AssetNameModalState>>) {
+    setAssetNameModal((current) =>
+      current ? { ...current, ...update } : current,
+    );
+  }
+
+  function openAssetNameModal(user: AdminUserRow) {
+    setNotice(null);
+    setAssetNameModal({
+      user,
+      preview: null,
+      uploadedFileName: "",
+      isDownloading: false,
+      isUploading: false,
+      isCommitting: false,
+      didCommit: false,
+      error: "",
+      success: "",
+    });
+  }
+
+  async function downloadAssetNameTemplate() {
+    if (!assetNameModal || assetNameModal.isDownloading) {
+      return;
+    }
+
+    const modalUser = assetNameModal.user;
+    updateAssetNameModal({ isDownloading: true, error: "", success: "" });
+
+    try {
+      const response = await fetch(
+        `/api/admin/users/${encodeURIComponent(modalUser.userId)}/asset-name-manager/export`,
+        {
+          method: "GET",
+          credentials: "include",
+          cache: "no-store",
+        },
+      );
+
+      if (!response.ok) {
+        let message = "Failed to download rename XLSX.";
+
+        try {
+          const data = (await response.json()) as AssetNamePreviewResponse;
+          message = data.error || message;
+        } catch {
+          // Keep the fallback message.
+        }
+
+        throw new Error(message);
+      }
+
+      const blob = await response.blob();
+      const fallbackFileName = safeDownloadFileName(
+        `aim4price-${modalUser.email || modalUser.name}-asset-name-template.xlsx`,
+      );
+      const fileName = readContentDispositionFileName(
+        response.headers.get("content-disposition"),
+        fallbackFileName,
+      );
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = downloadUrl;
+      anchor.download = fileName;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+
+      setAssetNameModal((current) =>
+        current?.user.userId === modalUser.userId
+          ? {
+              ...current,
+              isDownloading: false,
+              success: "Rename XLSX template downloaded. Edit the new columns, save as CSV, then upload it here.",
+            }
+          : current,
+      );
+    } catch (error) {
+      setAssetNameModal((current) =>
+        current?.user.userId === modalUser.userId
+          ? {
+              ...current,
+              isDownloading: false,
+              error:
+                error instanceof Error
+                  ? error.message
+                  : "Failed to download rename XLSX.",
+            }
+          : current,
+      );
+    }
+  }
+
+  async function previewAssetNameCsv(file: File) {
+    if (!assetNameModal || assetNameModal.isUploading) {
+      return;
+    }
+
+    const modalUser = assetNameModal.user;
+    const formData = new FormData();
+    formData.append("file", file);
+
+    updateAssetNameModal({
+      uploadedFileName: file.name,
+      isUploading: true,
+      didCommit: false,
+      error: "",
+      success: "",
+    });
+
+    try {
+      const response = await fetch(
+        `/api/admin/users/${encodeURIComponent(modalUser.userId)}/asset-name-manager/preview`,
+        {
+          method: "POST",
+          credentials: "include",
+          body: formData,
+        },
+      );
+      const data = (await response.json()) as AssetNamePreviewResponse;
+
+      if (!response.ok || !data.ok || !data.preview) {
+        throw new Error(data.error || "Failed to preview CSV.");
+      }
+
+      setAssetNameModal((current) =>
+        current?.user.userId === modalUser.userId
+          ? {
+              ...current,
+              preview: data.preview ?? null,
+              isUploading: false,
+              success: "CSV preview loaded. Review the rows before committing.",
+              error: "",
+            }
+          : current,
+      );
+    } catch (error) {
+      setAssetNameModal((current) =>
+        current?.user.userId === modalUser.userId
+          ? {
+              ...current,
+              isUploading: false,
+              error:
+                error instanceof Error
+                  ? error.message
+                  : "Failed to preview CSV.",
+            }
+          : current,
+      );
+    }
+  }
+
+  async function commitAssetNameChanges() {
+    if (!assetNameModal || assetNameModal.isCommitting || !assetNameModal.preview) {
+      return;
+    }
+
+    const modalUser = assetNameModal.user;
+    const changes = assetNameModal.preview.rows
+      .filter((row) => row.status === "changed")
+      .map((row) => ({
+        assetId: row.assetId,
+        registerId: row.registerId,
+        newAssetTitle: row.newAssetTitle,
+        newBrand: row.newBrand,
+        newModel: row.newModel,
+      }));
+
+    if (!changes.length) {
+      updateAssetNameModal({ error: "There are no valid changed rows to commit." });
+      return;
+    }
+
+    updateAssetNameModal({ isCommitting: true, error: "", success: "" });
+
+    try {
+      const response = await fetch(
+        `/api/admin/users/${encodeURIComponent(modalUser.userId)}/asset-name-manager/commit`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ changes }),
+        },
+      );
+      const data = (await response.json()) as AssetNameCommitResponse;
+
+      if (!response.ok || !data.ok || !data.result) {
+        throw new Error(data.error || "Failed to commit name changes.");
+      }
+
+      const committedCount = data.result.summary.committedRows;
+
+      setAssetNameModal((current) =>
+        current?.user.userId === modalUser.userId
+          ? {
+              ...current,
+              preview: data.result ?? current.preview,
+              isCommitting: false,
+              didCommit: true,
+              success: `${committedCount} asset name change${committedCount === 1 ? "" : "s"} committed.`,
+              error: "",
+            }
+          : current,
+      );
+      setNotice({
+        tone: "success",
+        message: `${committedCount} asset name change${committedCount === 1 ? "" : "s"} committed for ${modalUser.email}.`,
+      });
+    } catch (error) {
+      setAssetNameModal((current) =>
+        current?.user.userId === modalUser.userId
+          ? {
+              ...current,
+              isCommitting: false,
+              error:
+                error instanceof Error
+                  ? error.message
+                  : "Failed to commit name changes.",
+            }
+          : current,
+      );
+    }
+  }
+
   return (
     <section className={styles.shell}>
       <section className={styles.topBar}>
@@ -940,6 +1262,15 @@ export default function AdminClient({
                             {busyUserAction === `${user.userId}:send_reset`
                               ? getBusyText("send_reset")
                               : "Reset"}
+                          </button>
+
+                          <button
+                            type="button"
+                            className={styles.namesButton}
+                            onClick={() => openAssetNameModal(user)}
+                            disabled={busyUserAction !== null}
+                          >
+                            Names
                           </button>
 
                           <button
@@ -1165,6 +1496,214 @@ export default function AdminClient({
               >
                 {qrModal.isGenerating ? "Generating PDF..." : "Generate PDF"}
               </button>
+            </footer>
+          </section>
+        </div>
+      ) : null}
+
+      {assetNameModal ? (
+        <div className={styles.modalBackdrop}>
+          <section
+            className={`${styles.qrModal} ${styles.nameModal}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="admin-asset-name-modal-title"
+          >
+            <header className={styles.qrModalHeader}>
+              <div>
+                <p className={styles.qrModalEyebrow}>Admin asset rename</p>
+                <h2 id="admin-asset-name-modal-title">Asset Name Manager</h2>
+                <span>
+                  {assetNameModal.user.name} · {assetNameModal.user.email || "No email saved"}
+                </span>
+              </div>
+
+              <button
+                type="button"
+                className={styles.modalCloseButton}
+                onClick={() => setAssetNameModal(null)}
+                disabled={
+                  assetNameModal.isDownloading ||
+                  assetNameModal.isUploading ||
+                  assetNameModal.isCommitting
+                }
+                aria-label="Close Asset Name Manager modal"
+              >
+                ×
+              </button>
+            </header>
+
+            <div className={styles.nameManagerIntro}>
+              <strong>Bulk rename only</strong>
+              <span>
+                Download the XLSX, edit only the new title, new brand and new model columns,
+                save it as CSV, then upload it for preview. Values, finance, insurance, license,
+                valuation and QR data are not editable here.
+              </span>
+            </div>
+
+            <div className={styles.nameManagerActions}>
+              <button
+                type="button"
+                className={styles.generateQrButton}
+                onClick={downloadAssetNameTemplate}
+                disabled={
+                  assetNameModal.isDownloading ||
+                  assetNameModal.isUploading ||
+                  assetNameModal.isCommitting
+                }
+              >
+                {assetNameModal.isDownloading
+                  ? "Downloading XLSX..."
+                  : "Download Rename XLSX"}
+              </button>
+
+              <label
+                className={`${styles.uploadCsvButton} ${
+                  assetNameModal.isUploading ? styles.uploadCsvButtonDisabled : ""
+                }`}
+              >
+                <span>
+                  {assetNameModal.isUploading ? "Uploading CSV..." : "Upload Edited CSV"}
+                </span>
+                <input
+                  type="file"
+                  accept=".csv,text/csv"
+                  disabled={
+                    assetNameModal.isDownloading ||
+                    assetNameModal.isUploading ||
+                    assetNameModal.isCommitting
+                  }
+                  onChange={(event) => {
+                    const file = event.currentTarget.files?.[0] ?? null;
+                    event.currentTarget.value = "";
+
+                    if (file) {
+                      void previewAssetNameCsv(file);
+                    }
+                  }}
+                />
+              </label>
+
+              {assetNameModal.uploadedFileName ? (
+                <span className={styles.nameManagerFileName}>
+                  {assetNameModal.uploadedFileName}
+                </span>
+              ) : null}
+            </div>
+
+            {assetNameModal.preview ? (
+              <div className={styles.namePreviewSummary}>
+                <span>Uploaded <strong>{assetNameModal.preview.summary.uploadedRows}</strong></span>
+                <span>Matched <strong>{assetNameModal.preview.summary.matchedRows}</strong></span>
+                <span>Changed <strong>{assetNameModal.preview.summary.changedRows}</strong></span>
+                <span>Unchanged <strong>{assetNameModal.preview.summary.unchangedRows}</strong></span>
+                <span>Skipped <strong>{assetNameModal.preview.summary.skippedRows}</strong></span>
+                <span>Errors <strong>{assetNameModal.preview.summary.errorRows}</strong></span>
+                <span>Committed <strong>{assetNameModal.preview.summary.committedRows}</strong></span>
+              </div>
+            ) : null}
+
+            <div className={styles.namePreviewTableWrap}>
+              {!assetNameModal.preview ? (
+                <div className={styles.nameManagerEmpty}>
+                  No CSV preview loaded yet. Download the XLSX template first, edit the new columns,
+                  export it as CSV, then upload it here.
+                </div>
+              ) : assetNameModal.preview.rows.length === 0 ? (
+                <div className={styles.nameManagerEmpty}>The uploaded CSV did not contain any data rows.</div>
+              ) : (
+                <table className={styles.namePreviewTable}>
+                  <thead>
+                    <tr>
+                      <th>Register</th>
+                      <th>QR/public code</th>
+                      <th>Current title</th>
+                      <th>New title</th>
+                      <th>Current brand</th>
+                      <th>New brand</th>
+                      <th>Current model</th>
+                      <th>New model</th>
+                      <th>Status</th>
+                      <th>Message</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {assetNameModal.preview.rows.map((row) => (
+                      <tr key={`${row.rowNumber}:${row.assetId || "missing"}`}>
+                        <td>{row.registerName || "Not matched"}</td>
+                        <td>
+                          <span className={styles.namePreviewCode}>
+                            {row.publicAssetCode || "Not saved"}
+                          </span>
+                        </td>
+                        <td>{row.currentAssetTitle || "Not saved"}</td>
+                        <td>{row.newAssetTitle || "No change"}</td>
+                        <td>{row.currentBrand || "Not saved"}</td>
+                        <td>{row.newBrand || "No change"}</td>
+                        <td>{row.currentModel || "Not saved"}</td>
+                        <td>{row.newModel || "No change"}</td>
+                        <td>
+                          <span className={getAssetNameStatusClassName(row.status)}>
+                            {getAssetNameStatusLabel(row.status)}
+                          </span>
+                        </td>
+                        <td>{row.message || "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+
+            {assetNameModal.error ? (
+              <div className={styles.qrModalError} role="alert">
+                {assetNameModal.error}
+              </div>
+            ) : null}
+
+            {assetNameModal.success ? (
+              <div className={styles.nameModalSuccess} role="status">
+                {assetNameModal.success}
+              </div>
+            ) : null}
+
+            <footer className={`${styles.qrModalFooter} ${styles.nameModalFooter}`}>
+              <span>
+                {validAssetNameChangeCount} valid changed row
+                {validAssetNameChangeCount === 1 ? "" : "s"} ready to commit
+              </span>
+
+              <div className={styles.nameModalFooterButtons}>
+                <button
+                  type="button"
+                  className={styles.nameSecondaryButton}
+                  onClick={() => setAssetNameModal(null)}
+                  disabled={
+                    assetNameModal.isDownloading ||
+                    assetNameModal.isUploading ||
+                    assetNameModal.isCommitting
+                  }
+                >
+                  Close
+                </button>
+
+                <button
+                  type="button"
+                  className={styles.generateQrButton}
+                  onClick={commitAssetNameChanges}
+                  disabled={
+                    assetNameModal.isDownloading ||
+                    assetNameModal.isUploading ||
+                    assetNameModal.isCommitting ||
+                    validAssetNameChangeCount === 0
+                  }
+                >
+                  {assetNameModal.isCommitting
+                    ? "Committing..."
+                    : "Commit Name Changes"}
+                </button>
+              </div>
             </footer>
           </section>
         </div>

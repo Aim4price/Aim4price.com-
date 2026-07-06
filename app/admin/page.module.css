@@ -249,7 +249,7 @@
 
 .userTable {
   width: 100%;
-  min-width: 2180px;
+  min-width: 2260px;
   table-layout: auto;
   border-collapse: separate;
   border-spacing: 0;
@@ -338,7 +338,7 @@
 
 .userTable th:nth-child(12),
 .userTable td:nth-child(12) {
-  min-width: 585px;
+  min-width: 665px;
 }
 
 .userTable tbody tr {
@@ -551,12 +551,14 @@
 }
 
 
+.namesButton,
 .qrButton {
   border-color: rgba(23, 77, 62, 0.2) !important;
   color: #174d3e !important;
   background: rgba(23, 77, 62, 0.08) !important;
 }
 
+.namesButton:hover:not(:disabled),
 .qrButton:hover:not(:disabled) {
   background: rgba(23, 77, 62, 0.14) !important;
 }
@@ -919,6 +921,248 @@
   border-color: #10392f;
 }
 
+.nameModal {
+  width: min(100%, 88rem);
+  max-height: min(92vh, 62rem);
+  grid-template-rows: auto auto auto auto minmax(12rem, 1fr) auto auto auto;
+}
+
+.nameManagerIntro {
+  display: grid;
+  gap: 0.28rem;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid #dfe8e3;
+  border-radius: 1rem;
+  background: #ffffff;
+}
+
+.nameManagerIntro strong {
+  color: #17362c;
+  font-size: 0.9rem;
+  font-weight: 920;
+}
+
+.nameManagerIntro span {
+  color: #65756f;
+  font-size: 0.8rem;
+  font-weight: 720;
+  line-height: 1.45;
+}
+
+.nameManagerActions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.uploadCsvButton,
+.nameSecondaryButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.7rem;
+  padding: 0 1rem;
+  border: 1px solid #d7e1dc;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #17362c;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 880;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    opacity 160ms ease;
+}
+
+.uploadCsvButton:hover,
+.nameSecondaryButton:hover:not(:disabled) {
+  background: #f4f7f5;
+  border-color: #c6d5cd;
+}
+
+.uploadCsvButton input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  border: 0;
+}
+
+.uploadCsvButtonDisabled,
+.nameSecondaryButton:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+
+.nameManagerFileName {
+  color: #60716a;
+  font-size: 0.8rem;
+  font-weight: 820;
+}
+
+.namePreviewSummary {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.namePreviewSummary span {
+  display: grid;
+  gap: 0.18rem;
+  min-height: 3.15rem;
+  padding: 0.58rem 0.7rem;
+  border: 1px solid #dfe8e3;
+  border-radius: 0.85rem;
+  background: #ffffff;
+  color: #6a7a74;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.namePreviewSummary strong {
+  color: #17362c;
+  font-size: 0.98rem;
+  font-weight: 950;
+  letter-spacing: -0.025em;
+}
+
+.namePreviewTableWrap {
+  min-height: 12rem;
+  overflow: auto;
+  border: 1px solid #dfe8e3;
+  border-radius: 1rem;
+  background: #ffffff;
+}
+
+.namePreviewTableWrap::-webkit-scrollbar {
+  width: 0.72rem;
+  height: 0.72rem;
+}
+
+.namePreviewTableWrap::-webkit-scrollbar-thumb {
+  border: 3px solid #ffffff;
+  border-radius: 999px;
+  background: #b8c8c0;
+}
+
+.namePreviewTable {
+  width: 100%;
+  min-width: 1180px;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.namePreviewTable th,
+.namePreviewTable td {
+  padding: 0.72rem 0.78rem;
+  border-bottom: 1px solid #edf2ef;
+  text-align: left;
+  vertical-align: top;
+  color: #17362c;
+  font-size: 0.76rem;
+  font-weight: 720;
+  line-height: 1.28;
+}
+
+.namePreviewTable th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  color: #52645d;
+  background: #f6f9f7;
+  font-size: 0.66rem;
+  font-weight: 950;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+  box-shadow: inset 0 -1px 0 #e1eae5;
+}
+
+.namePreviewTable tr:last-child td {
+  border-bottom: 0;
+}
+
+.namePreviewCode {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: #60716a;
+  font-size: 0.7rem;
+  font-weight: 780;
+}
+
+.nameStatusPill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.6rem;
+  padding: 0 0.58rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+.nameStatusChanged {
+  color: #176047;
+  background: rgba(44, 173, 126, 0.13);
+}
+
+.nameStatusCommitted {
+  color: #ffffff;
+  background: #174d3e;
+}
+
+.nameStatusWarning {
+  color: #8a6125;
+  background: rgba(230, 166, 63, 0.16);
+}
+
+.nameStatusError {
+  color: #8f3333;
+  background: rgba(198, 75, 75, 0.12);
+}
+
+.nameStatusUnchanged {
+  color: #60716a;
+  background: #edf3ef;
+}
+
+.nameManagerEmpty {
+  display: grid;
+  place-items: center;
+  min-height: 12rem;
+  padding: 1rem;
+  color: #72817b;
+  font-size: 0.88rem;
+  font-weight: 780;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.nameModalSuccess {
+  padding: 0.76rem 0.9rem;
+  border: 1px solid rgba(44, 173, 126, 0.22);
+  border-radius: 0.9rem;
+  background: rgba(44, 173, 126, 0.12);
+  color: #176047;
+  font-size: 0.84rem;
+  font-weight: 820;
+}
+
+.nameModalFooterButtons {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
 @media (max-width: 980px) {
   .topBar {
     align-items: stretch;
@@ -942,6 +1186,14 @@
 
   .qrModal {
     width: min(100%, 48rem);
+  }
+
+  .nameModal {
+    width: min(100%, 56rem);
+  }
+
+  .namePreviewSummary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .qrLayoutGrid,
@@ -1023,7 +1275,19 @@
     max-width: 100%;
   }
 
-  .generateQrButton {
+  .generateQrButton,
+  .nameSecondaryButton,
+  .uploadCsvButton {
     width: 100%;
+  }
+
+  .nameManagerActions,
+  .nameModalFooterButtons {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .namePreviewSummary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
