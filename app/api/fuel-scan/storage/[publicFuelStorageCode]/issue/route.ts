@@ -40,7 +40,14 @@ function asText(value: unknown): string {
 }
 
 function errorMessage(error: unknown, fallback: string): string {
-  return error instanceof Error && error.message ? error.message : fallback;
+  const message = error instanceof Error && error.message ? error.message : fallback;
+
+  if (/missing FROM-clause|syntax error|relation .* does not exist|column .* does not exist|violates .* constraint|SQLSTATE|Postgres|PostgreSQL/i.test(message)) {
+    console.error('[fuel-scan] Failed to save fuel issue', { error: message });
+    return fallback;
+  }
+
+  return message;
 }
 
 export async function POST(request: NextRequest, context: RouteContext) {
