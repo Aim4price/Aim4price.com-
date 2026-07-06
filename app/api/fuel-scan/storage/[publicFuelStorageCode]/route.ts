@@ -57,12 +57,26 @@ export async function GET(request: NextRequest, context: RouteContext) {
     );
   }
 
-  const payload = await getFuelScanPayload(access.ownerUserId, access.storage.id);
+  try {
+    const payload = await getFuelScanPayload(access.ownerUserId, access.storage.id);
 
-  return NextResponse.json({
-    ok: true,
-    ...payload,
-    accessMode: access.accessMode,
-    fieldManagerDisplayName: access.fieldManagerDisplayName ?? null,
-  });
+    return NextResponse.json({
+      ok: true,
+      ...payload,
+      accessMode: access.accessMode,
+      fieldManagerDisplayName: access.fieldManagerDisplayName ?? null,
+    });
+  } catch (error) {
+    console.error('[fuel-scan] Failed to load fuel scan payload', {
+      publicFuelStorageCode,
+      storageId: access.storage.id,
+      accessMode: access.accessMode,
+      error: error instanceof Error ? error.message : String(error),
+    });
+
+    return NextResponse.json(
+      { ok: false, error: 'Failed to load fuel update details.', pinRequired: false },
+      { status: 500 },
+    );
+  }
 }
