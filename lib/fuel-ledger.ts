@@ -6,7 +6,8 @@ import { hashScanPin, verifyScanPin } from './scan-pin';
 import { ensureAccountProfileColumns } from './account-profile';
 import { buildAssetRegisterUploadUrl } from './asset-register-uploads';
 import { parseFuelSlipDecimal } from './fuel-slip-number';
-import { getActiveFieldManagerFuelScanSessionFromRequest } from './field-manager-session';
+import { getActiveFieldManagerSessionFromRequest } from './field-manager-session';
+import { validateFieldManagerFuelStorage } from './field-manager';
 
 export const FUEL_SCAN_COOKIE_NAME = 'aim4price_fuel_scan';
 export const FUEL_SCAN_SESSION_MAX_AGE_SECONDS = 60 * 60 * 12;
@@ -4078,9 +4079,14 @@ export async function verifyFuelStoragePin(publicFuelStorageCode: string, pin: u
   };
 }
 
+type AuthorizeFuelStorageScanAccessOptions = {
+  fieldManagerHint?: boolean;
+};
+
 export async function authorizeFuelStorageScanAccess(
   request: NextRequest,
   publicFuelStorageCode: string,
+  options: AuthorizeFuelStorageScanAccessOptions = {},
 ): Promise<
   | {
       ok: true;
@@ -4103,12 +4109,28 @@ export async function authorizeFuelStorageScanAccess(
     return { ok: false, status: 404, error: 'This fuel storage QR code is archived.', pinRequired: false };
   }
 
-  const fieldManagerSession = await getActiveFieldManagerFuelScanSessionFromRequest(
-    request,
-    storage.publicFuelStorageCode,
-  );
+  if (options.fieldManagerHint === true) {
+    const fieldManagerSession = await getActiveFieldManagerSessionFromRequest(request);
 
-  if (fieldManagerSession && fieldManagerSession.ownerUserId === storage.userId) {
+    if (!fieldManagerSession) {
+      return { ok: false, status: 401, error: 'Field Manager login is required.', pinRequired: false };
+    }
+
+    const manager = await validateFieldManagerFuelStorage({
+      managerId: fieldManagerSession.managerId,
+      ownerUserId: fieldManagerSession.ownerUserId,
+      publicFuelStorageCode: storage.publicFuelStorageCode,
+    });
+
+    if (!manager || !manager.isActive || fieldManagerSession.ownerUserId !== storage.userId) {
+      return {
+        ok: false,
+        status: 403,
+        error: 'This diesel tank is not available to this Field Manager login.',
+        pinRequired: false,
+      };
+    }
+
     return {
       ok: true,
       storage,
@@ -4116,7 +4138,7 @@ export async function authorizeFuelStorageScanAccess(
       accessMode: 'field_manager',
       fieldManagerId: fieldManagerSession.managerId,
       fieldManagerDisplayName: fieldManagerSession.displayName,
-      fieldManagerSessionId: fieldManagerSession.fuelScanSessionId,
+      fieldManagerSessionId: fieldManagerSession.sessionId,
     };
   }
 

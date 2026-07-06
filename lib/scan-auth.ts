@@ -12,7 +12,6 @@ import {
 import { getDb } from "./db";
 import { validateFieldManagerScanAsset } from "./field-manager";
 import {
-  getActiveFieldManagerScanSessionFromRequest,
   getActiveFieldManagerSessionFromRequest,
   type ActiveFieldManagerSession,
 } from "./field-manager-session";
@@ -330,6 +329,21 @@ async function authorizeFieldManagerAccessFromSession(
 ): Promise<AuthorizedScanAccess | UnauthorizedScanAccess> {
   const normalizedAssetId = asText(assetId);
 
+  if (!normalizedAssetId) {
+    console.error("[scan-auth] Field Manager asset open missing selected asset id", {
+      publicAssetCode: normalizedCode,
+      fieldManagerOwnerId: session.ownerUserId,
+      fieldManagerId: session.managerId,
+      route: "authorize-field-manager-session",
+    });
+    return {
+      ok: false,
+      status: 400,
+      error: FIELD_MANAGER_OPEN_ERROR,
+      pinRequired: false,
+    };
+  }
+
   const manager = await validateFieldManagerScanAsset({
     managerId: session.managerId,
     ownerUserId: session.ownerUserId,
@@ -432,72 +446,7 @@ export async function authorizeScanAccess(
     };
   }
 
-  const fieldManagerScanSession =
-    await getActiveFieldManagerScanSessionFromRequest(request, normalizedCode);
-
-  if (fieldManagerScanSession) {
-    try {
-      const context = await getScanAssetAccessContext(normalizedCode, {
-        assetId: fieldManagerScanSession.assetId ?? null,
-        expectedOwnerUserId: fieldManagerScanSession.ownerUserId,
-      });
-
-      if (!context || !context.asset.id) {
-        return {
-          ok: false,
-          status: 404,
-          error: "Asset not found.",
-          pinRequired: false,
-        };
-      }
-
-      if (context.asset.qrStatus === "deleted") {
-        return {
-          ok: false,
-          status: 404,
-          error: "This asset QR code is inactive.",
-          pinRequired: false,
-        };
-      }
-
-      if (fieldManagerScanSession.ownerUserId !== context.asset.userId) {
-        console.error("[scan-auth] Field Manager scan session owner mismatch", {
-          publicAssetCode: normalizedCode,
-          assetId: context.asset.id,
-          resolvedAssetOwnerId: context.asset.userId,
-          fieldManagerOwnerId: fieldManagerScanSession.ownerUserId,
-          fieldManagerId: fieldManagerScanSession.managerId,
-          route: "authorize-scan-access",
-        });
-        return {
-          ok: false,
-          status: 403,
-          error: FIELD_MANAGER_OPEN_ERROR,
-          pinRequired: false,
-        };
-      }
-
-      return {
-        ok: true,
-        accessMode: "field_manager",
-        asset: context.asset,
-        ownerUserId: context.asset.userId,
-        fieldManagerId: fieldManagerScanSession.managerId,
-        fieldManagerDisplayName: fieldManagerScanSession.displayName,
-        fieldManagerSessionId: fieldManagerScanSession.scanSessionId,
-      };
-    } catch (error) {
-      const safe = safeAssetOwnerError(error, FIELD_MANAGER_OPEN_ERROR);
-      return {
-        ok: false,
-        status: safe?.status ?? 403,
-        error: safe?.error ?? FIELD_MANAGER_OPEN_ERROR,
-        pinRequired: false,
-      };
-    }
-  }
-
-  if (options.fieldManagerHint) {
+  if (options.fieldManagerHint === true) {
     const activeFieldManagerSession =
       await getActiveFieldManagerSessionFromRequest(request);
 
@@ -604,13 +553,6 @@ export async function hasOwnerOrValidScanSession(
   const session = await getServerSession();
 
   if (session?.user?.id) {
-    return true;
-  }
-
-  const fieldManagerScanSession =
-    await getActiveFieldManagerScanSessionFromRequest(request);
-
-  if (fieldManagerScanSession) {
     return true;
   }
 
