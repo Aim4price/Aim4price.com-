@@ -33,7 +33,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
     if (!storage) {
       return NextResponse.json(
-        { ok: false, error: 'This diesel tank is not available to this Field Manager login.' },
+        { ok: false, error: 'This fuel storage unit is not available to this Field Manager login.' },
         { status: 403 },
       );
     }
@@ -41,14 +41,14 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const redirectTo = `/field-manager/diesel/${encodeURIComponent(storage.publicFuelStorageCode)}`;
     const response = NextResponse.json({ ok: true, redirectTo });
 
-    // Field Manager Diesel mode is authorized from the main Field Manager
+    // Field Manager Fuel mode is authorized from the main Field Manager
     // session cookie. Do not mint a separate fuel scan-cookie authority.
     clearFieldManagerFuelScanCookie(response);
 
     return response;
   } catch (error) {
     return NextResponse.json(
-      { ok: false, error: extractErrorMessage(error, 'Failed to open Field Manager diesel update.') },
+      { ok: false, error: extractErrorMessage(error, 'Failed to open Field Manager fuel update.') },
       { status: 500 },
     );
   }
