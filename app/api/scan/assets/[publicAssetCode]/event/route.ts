@@ -244,7 +244,18 @@ export async function POST(request: NextRequest, context: RouteContext) {
       fieldManagerSessionId: access.fieldManagerSessionId ?? null,
     });
 
-    const recentEvents = await listRecentScanEvents(saved.asset.id, 8);
+    let recentEvents = [saved.event];
+
+    try {
+      recentEvents = await listRecentScanEvents(saved.asset.id, 8);
+    } catch (recentEventsError) {
+      console.warn("[scan-event] QR update saved, but recent scan events could not be reloaded", {
+        publicAssetCode,
+        assetId: saved.asset.id,
+        error: recentEventsError,
+      });
+    }
+
     const metadata = {
       assetId: saved.asset.id,
       eventId: saved.event.id,
@@ -285,6 +296,13 @@ export async function POST(request: NextRequest, context: RouteContext) {
       recentEvents,
     });
   } catch (error) {
+    console.error("[scan-event] Failed to save QR scan update", {
+      publicAssetCode,
+      assetId: access.asset.id,
+      accessMode: access.accessMode,
+      error,
+    });
+
     const safeOwnerError = safeAssetOwnerError(
       error,
       "Could not save this asset update safely.",
