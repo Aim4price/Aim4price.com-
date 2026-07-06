@@ -161,6 +161,11 @@ type PendingScanUpdate = {
   hasNotes: boolean;
 };
 
+type PersistPendingScanUpdateResult = {
+  asset: ScanSafeAsset;
+  syncedToServer: boolean;
+};
+
 const MAX_QR_PHOTOS = 12;
 const MAX_SHARE_PHOTOS = 3;
 const QR_PHOTO_MAX_DIMENSION = 1400;
@@ -1926,6 +1931,26 @@ export default function ScanClient({
     return `?${params.toString()}`;
   }
 
+  async function redirectAfterFieldManagerServerSave() {
+    clearQrScanSession(normalizedCode);
+
+    try {
+      const response = await fetch("/api/field-manager/session", {
+        credentials: "include",
+        cache: "no-store",
+      });
+
+      if (!response.ok) {
+        window.location.replace("/field-manager/login");
+        return;
+      }
+
+      window.location.replace("/field-manager");
+    } catch {
+      window.location.replace("/field-manager/login");
+    }
+  }
+
   async function loadUnlockedAsset(): Promise<boolean> {
     setIsLoadingAsset(true);
     setIsUnavailable(false);
@@ -3035,11 +3060,11 @@ export default function ScanClient({
     }, 80);
   }
 
-  async function persistPendingScanUpdate(): Promise<ScanSafeAsset | null> {
+  async function persistPendingScanUpdate(): Promise<PersistPendingScanUpdateResult | null> {
     if (!asset) return null;
 
     if (!hasPendingScanUpdate(pendingUpdate)) {
-      return asset;
+      return { asset, syncedToServer: false };
     }
 
     const storedSession = readQrScanSession(normalizedCode);
@@ -3169,7 +3194,7 @@ export default function ScanClient({
         setLocationState("ready");
         setLocationMessage(sessionLocationMessage(savedSession));
       }
-      return savedAssetFromResponse;
+      return { asset: savedAssetFromResponse, syncedToServer: true };
     } catch (error) {
       if (isOfflineNetworkError(error)) {
         await enqueueOfflineMutation({
@@ -3201,7 +3226,7 @@ export default function ScanClient({
           tone: "success",
           message: "Saved on this phone. It will sync when signal returns.",
         });
-        return asset;
+        return { asset, syncedToServer: false };
       }
 
       setNotice({
@@ -3223,11 +3248,16 @@ export default function ScanClient({
       return;
     }
 
-    const saved = await persistPendingScanUpdate();
+    const result = await persistPendingScanUpdate();
 
-    if (saved) {
-      closeDoneSession();
+    if (!result) return;
+
+    if (isFieldManagerMode && result.syncedToServer) {
+      await redirectAfterFieldManagerServerSave();
+      return;
     }
+
+    closeDoneSession();
   }
 
   const locationReady =
