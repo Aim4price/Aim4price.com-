@@ -152,7 +152,11 @@ function parseScanPinUpdatedAtMs(value: string | null): number | null {
 }
 
 function normalizedQrStatus(value: unknown): string {
-  return String(value ?? "").trim().toLowerCase() || "active";
+  return (
+    String(value ?? "")
+      .trim()
+      .toLowerCase() || "active"
+  );
 }
 
 function isActiveQrStatus(value: unknown): boolean {
@@ -238,6 +242,18 @@ function getScanSessionFromRequest(
   return claims;
 }
 
+function logUnexpectedScanContextError(
+  route: string,
+  publicAssetCode: string,
+  error: unknown,
+): void {
+  console.error("[scan-auth] Failed to load public QR scan asset context", {
+    route,
+    publicAssetCode: normalizePublicAssetCode(publicAssetCode),
+    error,
+  });
+}
+
 function safeScanContextError(error: unknown): UnauthorizedScanAccess | null {
   const safe = safeAssetOwnerError(error, "Could not open this asset.");
   if (!safe) return null;
@@ -266,14 +282,21 @@ export async function verifyScanPinForAsset(
   try {
     context = await getScanAssetAccessContext(publicAssetCode);
   } catch (error) {
-    return (
-      safeScanContextError(error) ?? {
-        ok: false,
-        status: 500,
-        error: "Could not open this asset right now.",
-        pinRequired: false,
-      }
-    );
+    const safe = safeScanContextError(error);
+
+    if (safe) {
+      return safe;
+    }
+
+    logUnexpectedScanContextError("verify-scan-pin", publicAssetCode, error);
+
+    return {
+      ok: false,
+      status: 500,
+      error:
+        "Asset could not load. Ask the owner to confirm this QR code is active and the scan PIN is enabled.",
+      pinRequired: false,
+    };
   }
 
   if (!context || !context.asset.id) {
@@ -334,7 +357,6 @@ export async function verifyScanPinForAsset(
   };
 }
 
-
 async function authorizeFieldManagerAccessFromSession(
   normalizedCode: string,
   session: ActiveFieldManagerSession,
@@ -343,12 +365,15 @@ async function authorizeFieldManagerAccessFromSession(
   const normalizedAssetId = asText(assetId);
 
   if (!normalizedAssetId) {
-    console.error("[scan-auth] Field Manager asset open missing selected asset id", {
-      publicAssetCode: normalizedCode,
-      fieldManagerOwnerId: session.ownerUserId,
-      fieldManagerId: session.managerId,
-      route: "authorize-field-manager-session",
-    });
+    console.error(
+      "[scan-auth] Field Manager asset open missing selected asset id",
+      {
+        publicAssetCode: normalizedCode,
+        fieldManagerOwnerId: session.ownerUserId,
+        fieldManagerId: session.managerId,
+        route: "authorize-field-manager-session",
+      },
+    );
     return {
       ok: false,
       status: 400,
@@ -493,14 +518,25 @@ export async function authorizePublicQrScanAccess(
   try {
     context = await getScanAssetAccessContext(normalizedCode);
   } catch (error) {
-    return (
-      safeScanContextError(error) ?? {
-        ok: false,
-        status: 500,
-        error: "Could not open this asset right now.",
-        pinRequired: false,
-      }
+    const safe = safeScanContextError(error);
+
+    if (safe) {
+      return safe;
+    }
+
+    logUnexpectedScanContextError(
+      "authorize-public-qr-scan",
+      normalizedCode,
+      error,
     );
+
+    return {
+      ok: false,
+      status: 500,
+      error:
+        "Asset could not load. Ask the owner to confirm this QR code is active and the scan PIN is enabled.",
+      pinRequired: false,
+    };
   }
 
   if (!context || !context.asset.id) {

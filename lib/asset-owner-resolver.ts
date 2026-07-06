@@ -87,7 +87,11 @@ function canonicalOwnerIdFromSources(input: AssetOwnerSourceIds): string {
   const assetItemUserId = normalizeOwnerId(input.assetItemUserId);
   const registerUserId = normalizeOwnerId(input.registerUserId);
   const valuationRunUserId = normalizeOwnerId(input.valuationRunUserId);
-  const sourceIds = [registerUserId, assetItemUserId, valuationRunUserId].filter(Boolean);
+  const sourceIds = [
+    registerUserId,
+    assetItemUserId,
+    valuationRunUserId,
+  ].filter(Boolean);
   const uniqueSourceIds = uniqueOwnerIds(sourceIds);
 
   if (!uniqueSourceIds.length) {
@@ -290,12 +294,15 @@ function assertNoAmbiguousPublicCodeRows(
   );
 
   if (uniqueCanonicalOwners.length === 1) {
-    console.warn("[asset-owner-resolver] Duplicate public QR rows for same owner; newest active row will be used", {
-      purpose,
-      publicAssetCode: normalizedCode,
-      canonicalOwnerUserId: uniqueCanonicalOwners[0],
-      assetIds: uniqueAssetIds.join(","),
-    });
+    console.warn(
+      "[asset-owner-resolver] Duplicate public QR rows for same owner; newest active row will be used",
+      {
+        purpose,
+        publicAssetCode: normalizedCode,
+        canonicalOwnerUserId: uniqueCanonicalOwners[0],
+        assetIds: uniqueAssetIds.join(","),
+      },
+    );
     return;
   }
 
@@ -315,19 +322,19 @@ function assertNoAmbiguousPublicCodeRows(
 const assetOwnerSelectSql = `
   select
     a.id::text as asset_id,
-    a.public_asset_code,
-    nullif(trim(coalesce(a.user_id, '')), '') as asset_item_user_id,
-    nullif(trim(coalesce(ar.user_id, '')), '') as register_user_id,
-    nullif(trim(coalesce(vr.user_id, '')), '') as valuation_run_user_id,
-    a.register_id::text as register_id,
-    a.valuation_run_id::text as valuation_run_id,
-    coalesce(a.qr_status, 'active') as qr_status,
-    coalesce(a.title, '') as title
+    to_jsonb(a)->>'public_asset_code' as public_asset_code,
+    nullif(trim(coalesce(to_jsonb(a)->>'user_id', '')), '') as asset_item_user_id,
+    nullif(trim(coalesce(to_jsonb(ar)->>'user_id', '')), '') as register_user_id,
+    nullif(trim(coalesce(to_jsonb(vr)->>'user_id', '')), '') as valuation_run_user_id,
+    nullif(trim(coalesce(to_jsonb(a)->>'register_id', '')), '') as register_id,
+    nullif(trim(coalesce(to_jsonb(a)->>'valuation_run_id', '')), '') as valuation_run_id,
+    coalesce(nullif(trim(to_jsonb(a)->>'qr_status'), ''), 'active') as qr_status,
+    coalesce(to_jsonb(a)->>'title', '') as title
   from public.asset_register_items a
   left join public.asset_registers ar
-    on ar.id = a.register_id
+    on ar.id::text = nullif(trim(coalesce(to_jsonb(a)->>'register_id', '')), '')
   left join public.valuation_runs vr
-    on vr.id = a.valuation_run_id
+    on vr.id::text = nullif(trim(coalesce(to_jsonb(a)->>'valuation_run_id', '')), '')
 `;
 
 export async function resolveAssetOwnerByPublicAssetCode(
@@ -357,12 +364,12 @@ export async function resolveAssetOwnerByPublicAssetCode(
   const result = await db.query<AssetOwnerRow>(
     `
       ${assetOwnerSelectSql}
-      where upper(regexp_replace(coalesce(a.public_asset_code, ''), '\\s+', '', 'g')) = $1
+      where upper(regexp_replace(coalesce(to_jsonb(a)->>'public_asset_code', ''), '\\s+', '', 'g')) = $1
         ${assetIdFilter}
       order by
-        case when lower(coalesce(a.qr_status, 'active')) = 'active' then 0 else 1 end,
-        a.updated_at desc nulls last,
-        a.created_at desc nulls last,
+        case when lower(coalesce(nullif(trim(to_jsonb(a)->>'qr_status'), ''), 'active')) = 'active' then 0 else 1 end,
+        nullif(trim(coalesce(to_jsonb(a)->>'updated_at', '')), '') desc nulls last,
+        nullif(trim(coalesce(to_jsonb(a)->>'created_at', '')), '') desc nulls last,
         a.id desc
       limit 20
     `,
@@ -383,7 +390,9 @@ export async function resolveAssetOwnerByPublicAssetCode(
 
   const row =
     result.rows.find((entry) => isActiveQrStatus(entry.qr_status)) ??
-    result.rows.find((entry) => normalizedQrStatus(entry.qr_status) !== "deleted") ??
+    result.rows.find(
+      (entry) => normalizedQrStatus(entry.qr_status) !== "deleted",
+    ) ??
     result.rows[0];
   const resolution = resolveOwnerFromRow(row, purpose);
 

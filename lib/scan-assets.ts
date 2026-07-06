@@ -7,6 +7,7 @@ import {
 } from "./asset-owner-resolver";
 import { MAX_ASSET_REGISTER_PHOTOS } from "./asset-register-uploads";
 import { ensureFuelLedgerTables } from "./fuel-ledger";
+import { ensureAccountProfileColumns } from "./account-profile";
 import {
   captureAssetDepreciationLogEntryForAssetId,
   type DepreciationLogAssetInput,
@@ -961,63 +962,77 @@ async function getScanAssetAccessContextForResolvedOwner(
   resolvedOwner: CanonicalAssetOwnerResolution,
 ): Promise<ScanAssetAccessContext | null> {
   const db = getDb();
+  await ensureAccountProfileColumns();
+
   const result = await db.query<ScanAccessRow>(
     `
       select
         a.id,
-        a.user_id,
+        to_jsonb(a)->>'user_id' as user_id,
         $2::text as owner_user_id,
-        a.register_id,
-        a.sector_id,
-        coalesce(a.equipment_family_id, vr.equipment_family_id) as equipment_family_id,
-        a.brand_name,
-        a.model_name,
-        a.typed_model_name,
-        a.year_model,
-        a.value,
-        a.selected_value_ex_vat,
-        a.replacement_price_used_ex_vat,
-        a.user_replacement_price_ex_vat,
-        a.public_asset_code,
-        a.plate_label,
-        a.qr_status,
-        a.title,
-        a.kind,
-        coalesce(ef.family_key, '') as equipment_family_key,
-        coalesce(ef.family_label, '') as equipment_family_label,
-        a.depreciation_method_used,
-        a.life_worked_percent,
-        a.estimated_hours,
-        a.max_lifetime_hours,
-        coalesce(a.specs_json, '{}'::jsonb) as specs_json,
-        ef.is_propelled as family_is_propelled,
-        ef.usage_metric_type as family_usage_metric_type,
-        a.serial_number,
+        nullif(trim(coalesce(to_jsonb(a)->>'register_id', '')), '') as register_id,
+        nullif(trim(coalesce(to_jsonb(a)->>'sector_id', '')), '') as sector_id,
+        coalesce(
+          nullif(trim(coalesce(to_jsonb(a)->>'equipment_family_id', '')), ''),
+          nullif(trim(coalesce(to_jsonb(vr)->>'equipment_family_id', '')), '')
+        ) as equipment_family_id,
+        coalesce(to_jsonb(a)->>'brand_name', to_jsonb(a)->>'brand', '') as brand_name,
+        coalesce(to_jsonb(a)->>'model_name', to_jsonb(a)->>'model', '') as model_name,
+        coalesce(to_jsonb(a)->>'typed_model_name', to_jsonb(vr)->>'typed_model_name', '') as typed_model_name,
+        nullif(trim(coalesce(to_jsonb(a)->>'year_model', to_jsonb(a)->>'year', '')), '') as year_model,
+        nullif(trim(coalesce(to_jsonb(a)->>'value', to_jsonb(a)->>'selected_value_ex_vat', to_jsonb(a)->>'selected_value', '')), '') as value,
+        nullif(trim(coalesce(to_jsonb(a)->>'selected_value_ex_vat', to_jsonb(a)->>'selected_value', to_jsonb(a)->>'value', '')), '') as selected_value_ex_vat,
+        nullif(trim(coalesce(to_jsonb(a)->>'replacement_price_used_ex_vat', to_jsonb(a)->>'replacement_price_ex_vat', '')), '') as replacement_price_used_ex_vat,
+        nullif(trim(coalesce(to_jsonb(a)->>'user_replacement_price_ex_vat', '')), '') as user_replacement_price_ex_vat,
+        to_jsonb(a)->>'public_asset_code' as public_asset_code,
+        coalesce(to_jsonb(a)->>'plate_label', '') as plate_label,
+        coalesce(nullif(trim(to_jsonb(a)->>'qr_status'), ''), 'active') as qr_status,
+        coalesce(to_jsonb(a)->>'title', to_jsonb(a)->>'name', '') as title,
+        coalesce(to_jsonb(a)->>'kind', to_jsonb(a)->>'equipment_type', to_jsonb(a)->>'asset_type', 'manual') as kind,
+        coalesce(to_jsonb(ef)->>'family_key', '') as equipment_family_key,
+        coalesce(to_jsonb(ef)->>'family_label', '') as equipment_family_label,
+        coalesce(to_jsonb(a)->>'depreciation_method_used', '') as depreciation_method_used,
+        nullif(trim(coalesce(to_jsonb(a)->>'life_worked_percent', '')), '') as life_worked_percent,
+        nullif(trim(coalesce(to_jsonb(a)->>'estimated_hours', '')), '') as estimated_hours,
+        nullif(trim(coalesce(to_jsonb(a)->>'max_lifetime_hours', '')), '') as max_lifetime_hours,
+        coalesce(to_jsonb(a)->'specs_json', to_jsonb(vr)->'specs_json', '{}'::jsonb) as specs_json,
+        to_jsonb(ef)->>'is_propelled' as family_is_propelled,
+        to_jsonb(ef)->>'usage_metric_type' as family_usage_metric_type,
+        coalesce(to_jsonb(a)->>'serial_number', to_jsonb(a)->>'serial', to_jsonb(a)->>'vin', '') as serial_number,
         to_jsonb(a)->>'is_financed' as is_financed,
         to_jsonb(a)->>'is_insured' as is_insured,
         to_jsonb(a)->>'is_licensed' as is_licensed,
-        to_jsonb(a)->>'license_registration_number' as license_registration_number,
-        a.hours,
-        a.fuel_percent,
-        a.condition,
-        a.note,
-        a.photo_urls,
-        a.last_scanned_at,
-        a.last_known_lat,
-        a.last_known_lng,
-        a.last_known_location_text,
-        a.created_at,
-        a.updated_at,
-        a.valuation_run_id,
-        a.selected_method,
+        coalesce(
+          to_jsonb(a)->>'license_registration_number',
+          to_jsonb(a)->>'licence_registration_number',
+          to_jsonb(a)->>'registration_number',
+          to_jsonb(a)->>'number_plate',
+          to_jsonb(a)->>'numberplate'
+        ) as license_registration_number,
+        nullif(trim(coalesce(to_jsonb(a)->>'hours', to_jsonb(a)->>'engine_hours', '')), '') as hours,
+        nullif(trim(coalesce(to_jsonb(a)->>'fuel_percent', '')), '') as fuel_percent,
+        coalesce(to_jsonb(a)->>'condition', '') as condition,
+        coalesce(to_jsonb(a)->>'note', to_jsonb(a)->>'notes', to_jsonb(a)->>'description', '') as note,
+        coalesce(to_jsonb(a)->'photo_urls', to_jsonb(a)->'photos', to_jsonb(a)->'image_urls', '[]'::jsonb) as photo_urls,
+        nullif(trim(coalesce(to_jsonb(a)->>'last_scanned_at', '')), '') as last_scanned_at,
+        nullif(trim(coalesce(to_jsonb(a)->>'last_known_lat', '')), '') as last_known_lat,
+        nullif(trim(coalesce(to_jsonb(a)->>'last_known_lng', '')), '') as last_known_lng,
+        coalesce(to_jsonb(a)->>'last_known_location_text', '') as last_known_location_text,
+        nullif(trim(coalesce(to_jsonb(a)->>'created_at', '')), '') as created_at,
+        nullif(trim(coalesce(to_jsonb(a)->>'updated_at', '')), '') as updated_at,
+        nullif(trim(coalesce(to_jsonb(a)->>'valuation_run_id', to_jsonb(a)->>'run_id', '')), '') as valuation_run_id,
+        coalesce(to_jsonb(a)->>'selected_method', to_jsonb(a)->>'method', to_jsonb(a)->>'valuation_method', 'manual') as selected_method,
         coalesce(p.scan_pin_hash, '') as scan_pin_hash,
         coalesce(p.scan_pin_enabled, false) as scan_pin_enabled,
         p.scan_pin_updated_at
       from asset_register_items a
       left join valuation_runs vr
-        on vr.id = a.valuation_run_id
+        on vr.id::text = nullif(trim(coalesce(to_jsonb(a)->>'valuation_run_id', to_jsonb(a)->>'run_id', '')), '')
       left join equipment_families ef
-        on ef.id = coalesce(a.equipment_family_id, vr.equipment_family_id)
+        on ef.id::text = coalesce(
+          nullif(trim(coalesce(to_jsonb(a)->>'equipment_family_id', '')), ''),
+          nullif(trim(coalesce(to_jsonb(vr)->>'equipment_family_id', '')), '')
+        )
       left join account_profiles p
         on p.user_id = $2::text
       where a.id::text = $1
