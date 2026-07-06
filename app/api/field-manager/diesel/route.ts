@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: true, storages });
   } catch (error) {
     return NextResponse.json(
-      { ok: false, error: extractErrorMessage(error, 'Failed to load Field Manager diesel tanks.') },
+      { ok: false, error: extractErrorMessage(error, 'Failed to load Field Manager fuel storage units.') },
       { status: 500 },
     );
   }
