@@ -45,7 +45,10 @@ function errorMessage(error: unknown, fallback: string): string {
 
 export async function POST(request: NextRequest, context: RouteContext) {
   const publicFuelStorageCode = normalizeFuelCode(context.params.publicFuelStorageCode);
-  const access = await authorizeFuelStorageScanAccess(request, publicFuelStorageCode);
+  const isFieldManagerHint = request.nextUrl.searchParams.get('fieldManager') === '1';
+  const access = await authorizeFuelStorageScanAccess(request, publicFuelStorageCode, {
+    fieldManagerHint: isFieldManagerHint,
+  });
 
   if (!access.ok) {
     return NextResponse.json(
@@ -73,7 +76,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
   try {
     const operatorName = access.accessMode === 'field_manager'
-      ? access.fieldManagerDisplayName ?? ''
+      ? access.fieldManagerDisplayName ?? 'Field Manager'
       : body.operatorName;
 
     const saved = await recordFuelAssetIssue({
