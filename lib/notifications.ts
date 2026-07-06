@@ -4,8 +4,7 @@ import {
   listContactRequestsForRequester,
   listPendingContactRequestsForOwner,
 } from './contact-requests';
-import { listAssetRegisterItems } from './asset-register-db';
-import { listFuelLedger, type FuelLedgerEvent } from './fuel-ledger';
+import { ensureFuelLedgerTables, listFuelLedger, type FuelLedgerEvent } from './fuel-ledger';
 import {
   listPendingAssetDiscoveryEnquiriesForOwner,
   listRecentAssetDiscoveryEnquiriesForDealer,
@@ -54,6 +53,25 @@ type OpenPartnerNoteRow = {
   asset_title: string | null;
   created_at: string | null;
   updated_at: string | null;
+};
+
+type AssetScanNotificationRow = {
+  id: string;
+  asset_id: string | null;
+  actor_type: string | null;
+  operator_name: string | null;
+  field_manager_display_name: string | null;
+  hours: string | number | null;
+  note: string | null;
+  photo_urls: unknown;
+  latitude: string | number | null;
+  longitude: string | number | null;
+  location_text: string | null;
+  asset_title: string | null;
+  asset_brand_name: string | null;
+  asset_model_name: string | null;
+  asset_typed_model_name: string | null;
+  created_at: string | null;
 };
 
 type ListHeaderNotificationsInput = {
@@ -107,6 +125,70 @@ function truncateText(value: unknown, maxLength = 112): string {
   if (text.length <= maxLength) return text;
 
   return `${text.slice(0, Math.max(0, maxLength - 1)).trim()}…`;
+}
+
+function hasNumericValue(value: unknown): boolean {
+  if (value === null || typeof value === 'undefined' || value === '') return false;
+  return Number.isFinite(Number(value));
+}
+
+function jsonArrayLength(value: unknown): number {
+  if (Array.isArray(value)) return value.length;
+
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value) as unknown;
+      return Array.isArray(parsed) ? parsed.length : 0;
+    } catch {
+      return 0;
+    }
+  }
+
+  return 0;
+}
+
+function scanNotificationAssetTitle(row: AssetScanNotificationRow): string {
+  const title = asText(row.asset_title);
+  if (title) return title;
+
+  const brand = asText(row.asset_brand_name);
+  const model = asText(row.asset_model_name) || asText(row.asset_typed_model_name);
+  const combined = [brand, model].filter(Boolean).join(' ').trim();
+
+  return combined || 'an asset';
+}
+
+function scanNotificationUpdaterName(row: AssetScanNotificationRow): string {
+  return asText(row.field_manager_display_name) || asText(row.operator_name) || 'A manager';
+}
+
+function scanNotificationDetailText(row: AssetScanNotificationRow): string {
+  const details: string[] = [];
+  const noteText = asText(row.note);
+  const photoCount = jsonArrayLength(row.photo_urls);
+
+  if (hasNumericValue(row.hours)) {
+    details.push('Usage reading saved');
+  }
+
+  if (noteText) {
+    const serviceLike = /service|serviced|repair|repaired|checked|work done|notes\/problems/i.test(noteText);
+    details.push(serviceLike ? 'Notes/service update saved' : 'Notes update saved');
+  }
+
+  if (photoCount > 0) {
+    details.push(photoCount === 1 ? 'Photo added' : 'Photos added');
+  }
+
+  if (asText(row.location_text) || hasNumericValue(row.latitude) || hasNumericValue(row.longitude)) {
+    details.push('GPS/location captured');
+  }
+
+  if (!details.length) {
+    details.push('Asset details saved');
+  }
+
+  return `${details.slice(0, 4).join('. ')}.`;
 }
 
 function partnerDisplayName(row: OpenPartnerNoteRow): string {
@@ -446,28 +528,62 @@ async function listPartnerContactRequestNotifications(userId: string): Promise<H
 
 async function listQrScanNotifications(userId: string): Promise<HeaderNotificationItem[]> {
   try {
-    const assets = await listAssetRegisterItems(userId);
+    await ensureFuelLedgerTables();
+    const db = getDb();
+    const result = await db.query<AssetScanNotificationRow>(
+      `
+        select
+          e.id::text,
+          e.asset_id::text,
+          e.actor_type,
+          e.operator_name,
+          to_jsonb(e)->>'field_manager_display_name' as field_manager_display_name,
+          e.hours,
+          e.note,
+          e.photo_urls,
+          e.latitude,
+          e.longitude,
+          e.location_text,
+          coalesce(nullif(trim(coalesce(to_jsonb(asset)->>'title', to_jsonb(asset)->>'name', '')), ''), '') as asset_title,
+          coalesce(to_jsonb(asset)->>'brand_name', to_jsonb(asset)->>'brand', '') as asset_brand_name,
+          coalesce(to_jsonb(asset)->>'model_name', to_jsonb(asset)->>'model', '') as asset_model_name,
+          coalesce(to_jsonb(asset)->>'typed_model_name', '') as asset_typed_model_name,
+          e.created_at::text
+        from public.asset_scan_events e
+        inner join public.asset_register_items asset on asset.id = e.asset_id
+        where to_jsonb(asset)->>'user_id' = $1
+          and e.actor_type in ('scan_pin', 'field_manager')
+          and e.created_at >= now() - ($2::int * interval '1 day')
+          and nullif(coalesce(to_jsonb(e)->>'fuel_storage_event_id', ''), '') is null
+          and nullif(coalesce(to_jsonb(e)->>'fuel_storage_id', ''), '') is null
+          and nullif(coalesce(to_jsonb(e)->>'fuel_slip_id', ''), '') is null
+        order by e.created_at desc, e.id desc
+        limit 15
+      `,
+      [userId, RECENT_SCAN_DAYS],
+    );
 
-    return assets
-      .filter((asset) => isWithinDays(asset.lastScannedAtIso, RECENT_SCAN_DAYS))
-      .map((asset) => {
-        const locationText = asset.lastKnownLocationText ? ` Location: ${asset.lastKnownLocationText}.` : '';
+    return result.rows.map((row) => {
+      const createdAtIso = isoFallback(row.created_at);
+      const assetTitle = scanNotificationAssetTitle(row);
+      const updaterName = scanNotificationUpdaterName(row);
 
-        return {
-          id: `qr-scan:${asset.id}:${asset.lastScannedAtIso}`,
-          category: 'qr_scan',
-          tone: 'neutral',
-          title: 'QR code scanned',
-          body: `${asset.title || 'An asset'} was scanned from its asset QR code.${locationText}`,
-          href: '/asset-register',
-          createdAtIso: isoFallback(asset.lastScannedAtIso),
-        } satisfies HeaderNotificationItem;
-      });
+      return {
+        id: `asset-update:${row.id}:${createdAtIso}`,
+        category: 'qr_scan',
+        tone: 'neutral',
+        title: 'Asset updated',
+        body: `${updaterName} updated ${assetTitle}. ${scanNotificationDetailText(row)}`,
+        href: '/asset-register',
+        createdAtIso,
+      } satisfies HeaderNotificationItem;
+    });
   } catch (error) {
-    console.error('Failed to load QR scan notifications', error);
+    console.error('Failed to load QR asset update notifications', error);
     return [];
   }
 }
+
 
 async function listFuelNotifications(userId: string): Promise<HeaderNotificationItem[]> {
   try {
