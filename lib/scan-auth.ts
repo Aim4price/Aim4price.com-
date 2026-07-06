@@ -4,6 +4,7 @@ import { getServerSession } from "./auth-session";
 import { safeAssetOwnerError } from "./asset-owner-resolver";
 import {
   getScanAssetAccessContext,
+  getScanAssetAccessContextByAssetId,
   normalizePublicAssetCode,
   type ScanAccessMode,
   type ScanAssetAccessContext,
@@ -370,8 +371,8 @@ async function authorizeFieldManagerAccessFromSession(
   let context: ScanAssetAccessContext | null;
 
   try {
-    context = await getScanAssetAccessContext(normalizedCode, {
-      assetId: normalizedAssetId || null,
+    context = await getScanAssetAccessContextByAssetId(normalizedAssetId, {
+      publicAssetCode: normalizedCode,
       expectedOwnerUserId: session.ownerUserId,
     });
   } catch (error) {
@@ -430,10 +431,10 @@ async function authorizeFieldManagerAccessFromSession(
   };
 }
 
-export async function authorizeScanAccess(
+export async function authorizeFieldManagerScanAccess(
   request: NextRequest,
   publicAssetCode: string,
-  options: AuthorizeScanAccessOptions = {},
+  fieldManagerAssetId?: string | null,
 ): Promise<AuthorizedScanAccess | UnauthorizedScanAccess> {
   const normalizedCode = normalizePublicAssetCode(publicAssetCode);
 
@@ -446,24 +447,38 @@ export async function authorizeScanAccess(
     };
   }
 
-  if (options.fieldManagerHint === true) {
-    const activeFieldManagerSession =
-      await getActiveFieldManagerSessionFromRequest(request);
+  const activeFieldManagerSession =
+    await getActiveFieldManagerSessionFromRequest(request);
 
-    if (!activeFieldManagerSession) {
-      return {
-        ok: false,
-        status: 401,
-        error: FIELD_MANAGER_OPEN_ERROR,
-        pinRequired: false,
-      };
-    }
+  if (!activeFieldManagerSession) {
+    return {
+      ok: false,
+      status: 401,
+      error: FIELD_MANAGER_OPEN_ERROR,
+      pinRequired: false,
+    };
+  }
 
-    return authorizeFieldManagerAccessFromSession(
-      normalizedCode,
-      activeFieldManagerSession,
-      options.fieldManagerAssetId ?? null,
-    );
+  return authorizeFieldManagerAccessFromSession(
+    normalizedCode,
+    activeFieldManagerSession,
+    fieldManagerAssetId ?? null,
+  );
+}
+
+export async function authorizePublicQrScanAccess(
+  request: NextRequest,
+  publicAssetCode: string,
+): Promise<AuthorizedScanAccess | UnauthorizedScanAccess> {
+  const normalizedCode = normalizePublicAssetCode(publicAssetCode);
+
+  if (!normalizedCode) {
+    return {
+      ok: false,
+      status: 404,
+      error: "Asset not found.",
+      pinRequired: false,
+    };
   }
 
   let context: ScanAssetAccessContext | null;
@@ -538,6 +553,22 @@ export async function authorizeScanAccess(
     asset: context.asset,
     ownerUserId: context.asset.userId,
   };
+}
+
+export async function authorizeScanAccess(
+  request: NextRequest,
+  publicAssetCode: string,
+  options: AuthorizeScanAccessOptions = {},
+): Promise<AuthorizedScanAccess | UnauthorizedScanAccess> {
+  if (options.fieldManagerHint === true) {
+    return authorizeFieldManagerScanAccess(
+      request,
+      publicAssetCode,
+      options.fieldManagerAssetId ?? null,
+    );
+  }
+
+  return authorizePublicQrScanAccess(request, publicAssetCode);
 }
 
 export async function authorizeScanUpload(

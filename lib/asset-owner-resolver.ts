@@ -261,6 +261,28 @@ function assertNoAmbiguousPublicCodeRows(
     return;
   }
 
+  const uniqueCanonicalOwners = uniqueOwnerIds(
+    activeRows
+      .map((row) =>
+        canonicalOwnerIdFromSources({
+          assetItemUserId: row.asset_item_user_id,
+          registerUserId: row.register_user_id,
+          valuationRunUserId: row.valuation_run_user_id,
+        }),
+      )
+      .filter(Boolean),
+  );
+
+  if (uniqueCanonicalOwners.length === 1) {
+    console.warn("[asset-owner-resolver] Duplicate public QR rows for same owner; newest active row will be used", {
+      purpose,
+      publicAssetCode: normalizedCode,
+      canonicalOwnerUserId: uniqueCanonicalOwners[0],
+      assetIds: uniqueAssetIds.join(","),
+    });
+    return;
+  }
+
   throw makeResolutionError(
     "ASSET_CODE_CONFLICT",
     "This QR code is linked to more than one active asset and cannot be opened safely.",
@@ -269,6 +291,7 @@ function assertNoAmbiguousPublicCodeRows(
       purpose,
       publicAssetCode: normalizedCode,
       assetIds: uniqueAssetIds.join(","),
+      ownerUserIds: uniqueCanonicalOwners.join(",") || null,
     },
   );
 }

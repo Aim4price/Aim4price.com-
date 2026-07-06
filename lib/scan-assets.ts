@@ -1,7 +1,9 @@
 import { getDb } from "./db";
 import {
   normalizePublicAssetCode,
+  resolveAssetOwnerByAssetId,
   resolveAssetOwnerByPublicAssetCode,
+  type CanonicalAssetOwnerResolution,
 } from "./asset-owner-resolver";
 import { MAX_ASSET_REGISTER_PHOTOS } from "./asset-register-uploads";
 import { ensureFuelLedgerTables } from "./fuel-ledger";
@@ -955,29 +957,10 @@ function mapMaintenanceStatusFromScanEvent(
   };
 }
 
-export async function getScanAssetAccessContext(
-  publicAssetCode: string,
-  options: {
-    assetId?: string | null;
-    expectedOwnerUserId?: string | null;
-  } = {},
+async function getScanAssetAccessContextForResolvedOwner(
+  resolvedOwner: CanonicalAssetOwnerResolution,
 ): Promise<ScanAssetAccessContext | null> {
   const db = getDb();
-  const normalizedCode = normalizePublicAssetCode(publicAssetCode);
-
-  if (!normalizedCode) {
-    return null;
-  }
-
-  const resolvedOwner = await resolveAssetOwnerByPublicAssetCode(
-    normalizedCode,
-    {
-      assetId: options.assetId ?? null,
-      expectedOwnerUserId: options.expectedOwnerUserId ?? null,
-      purpose: "scan-asset-access-context",
-    },
-  );
-
   const result = await db.query<ScanAccessRow>(
     `
       select
@@ -1056,6 +1039,53 @@ export async function getScanAssetAccessContext(
       Boolean(row.scan_pin_enabled) && Boolean(asText(row.scan_pin_hash)),
     scanPinUpdatedAtIso: row.scan_pin_updated_at ?? null,
   };
+}
+
+export async function getScanAssetAccessContext(
+  publicAssetCode: string,
+  options: {
+    assetId?: string | null;
+    expectedOwnerUserId?: string | null;
+  } = {},
+): Promise<ScanAssetAccessContext | null> {
+  const normalizedCode = normalizePublicAssetCode(publicAssetCode);
+
+  if (!normalizedCode) {
+    return null;
+  }
+
+  const resolvedOwner = await resolveAssetOwnerByPublicAssetCode(
+    normalizedCode,
+    {
+      assetId: options.assetId ?? null,
+      expectedOwnerUserId: options.expectedOwnerUserId ?? null,
+      purpose: "scan-asset-access-context",
+    },
+  );
+
+  return getScanAssetAccessContextForResolvedOwner(resolvedOwner);
+}
+
+export async function getScanAssetAccessContextByAssetId(
+  assetId: string,
+  options: {
+    publicAssetCode?: string | null;
+    expectedOwnerUserId?: string | null;
+  } = {},
+): Promise<ScanAssetAccessContext | null> {
+  const normalizedAssetId = asId(assetId);
+
+  if (!normalizedAssetId) {
+    return null;
+  }
+
+  const resolvedOwner = await resolveAssetOwnerByAssetId(normalizedAssetId, {
+    publicAssetCode: options.publicAssetCode ?? null,
+    expectedOwnerUserId: options.expectedOwnerUserId ?? null,
+    purpose: "field-manager-scan-asset-context",
+  });
+
+  return getScanAssetAccessContextForResolvedOwner(resolvedOwner);
 }
 
 export type ScanEventListFilters = {
