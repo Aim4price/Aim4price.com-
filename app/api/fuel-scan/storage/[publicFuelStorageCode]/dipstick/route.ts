@@ -37,7 +37,10 @@ function errorMessage(error: unknown, fallback: string): string {
 
 export async function POST(request: NextRequest, context: RouteContext) {
   const publicFuelStorageCode = normalizeFuelCode(context.params.publicFuelStorageCode);
-  const access = await authorizeFuelStorageScanAccess(request, publicFuelStorageCode);
+  const isFieldManagerHint = request.nextUrl.searchParams.get('fieldManager') === '1';
+  const access = await authorizeFuelStorageScanAccess(request, publicFuelStorageCode, {
+    fieldManagerHint: isFieldManagerHint,
+  });
 
   if (!access.ok) {
     return NextResponse.json({ ok: false, error: access.error, pinRequired: access.pinRequired }, { status: access.status });
@@ -56,7 +59,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
   }
 
   const operatorName = access.accessMode === 'field_manager'
-    ? access.fieldManagerDisplayName ?? ''
+    ? access.fieldManagerDisplayName ?? 'Field Manager'
     : asText(body.operatorName);
   if (operatorName.length < 2) {
     return NextResponse.json({ ok: false, error: 'Enter your name before saving the dipstick note.' }, { status: 400 });
