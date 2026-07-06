@@ -612,6 +612,33 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
     }, 80);
   }
 
+  async function redirectAfterFieldManagerServerSave() {
+    try {
+      const response = await fetch('/api/field-manager/session', {
+        credentials: 'include',
+        cache: 'no-store',
+      });
+
+      if (!response.ok) {
+        window.location.replace('/field-manager/login');
+        return;
+      }
+
+      window.location.replace('/field-manager');
+    } catch {
+      window.location.replace('/field-manager/login');
+    }
+  }
+
+  async function finishServerScan(action: DoneAction) {
+    if (isFieldManagerMode) {
+      await redirectAfterFieldManagerServerSave();
+      return;
+    }
+
+    finishScan(action);
+  }
+
   async function handleIssueSubmit() {
     setIsSaving(true);
     setNotice(null);
@@ -684,7 +711,7 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
         setPreview(data.storage);
         setAccountBusinessName(data.accountBusinessName || data.storage.accountBusinessName || accountBusinessName);
         setAssets(data.assets ?? []);
-        finishScan('asset_issue');
+        await finishServerScan('asset_issue');
       } catch (error) {
         if (isOfflineNetworkError(error)) {
           await enqueueOfflineMutation({
@@ -811,7 +838,7 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
         setPreview(data.storage);
         setAccountBusinessName(data.accountBusinessName || data.storage.accountBusinessName || accountBusinessName);
         setAssets(data.assets ?? []);
-        finishScan('storage_refill');
+        await finishServerScan('storage_refill');
       } catch (error) {
         if (isOfflineNetworkError(error)) {
           await enqueueOfflineMutation({
@@ -890,7 +917,7 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
         setPreview(data.storage);
         setAccountBusinessName(data.accountBusinessName || data.storage.accountBusinessName || accountBusinessName);
         setAssets(data.assets ?? []);
-        finishScan('dipstick_note');
+        await finishServerScan('dipstick_note');
       } catch (error) {
         if (isOfflineNetworkError(error)) {
           await enqueueOfflineMutation({
