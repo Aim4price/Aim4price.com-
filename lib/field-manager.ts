@@ -809,12 +809,52 @@ function fieldManagerAssetOwnerFromRow(
   return resolved.ok ? resolved.ownerUserId : null;
 }
 
+async function ensureFieldManagerAssetPublicCodes(
+  ownerUserId: string,
+): Promise<void> {
+  const normalizedOwnerUserId = asText(ownerUserId);
+  if (!normalizedOwnerUserId) return;
+
+  const db = getDb();
+  await db.query(
+    `
+      update public.asset_register_items a
+      set
+        public_asset_code = 'FM-' || upper(substr(md5(a.id::text), 1, 12)),
+        plate_label = coalesce(
+          nullif(trim(coalesce(a.plate_label, '')), ''),
+          'FM-' || upper(substr(md5(a.id::text), 1, 6))
+        ),
+        qr_status = coalesce(nullif(trim(coalesce(a.qr_status, '')), ''), 'active')
+      where (
+          nullif(trim(coalesce(to_jsonb(a)->>'user_id', '')), '') = $1
+          or exists (
+            select 1
+            from public.asset_registers ar
+            where ar.id::text = nullif(trim(coalesce(to_jsonb(a)->>'register_id', '')), '')
+              and nullif(trim(coalesce(to_jsonb(ar)->>'user_id', '')), '') = $1
+          )
+          or exists (
+            select 1
+            from public.valuation_runs vr
+            where vr.id::text = nullif(trim(coalesce(to_jsonb(a)->>'valuation_run_id', '')), '')
+              and nullif(trim(coalesce(to_jsonb(vr)->>'user_id', '')), '') = $1
+          )
+        )
+        and lower(coalesce(a.qr_status, 'active')) <> 'deleted'
+        and nullif(trim(coalesce(a.public_asset_code, '')), '') is null
+    `,
+    [normalizedOwnerUserId],
+  );
+}
+
 export async function listFieldManagerAssets(
   ownerUserId: string,
   managerId: string,
 ): Promise<FieldManagerAssetSummary[]> {
   await ensureAssetRegisterTables();
   await ensureFieldManagerTables();
+  await ensureFieldManagerAssetPublicCodes(ownerUserId);
 
   const db = getDb();
   const result = await db.query<FieldManagerAssetRow>(
@@ -868,6 +908,7 @@ export async function getFieldManagerAssetForOpen(input: {
 }): Promise<FieldManagerAssetSummary | null> {
   await ensureAssetRegisterTables();
   await ensureFieldManagerTables();
+  await ensureFieldManagerAssetPublicCodes(input.ownerUserId);
 
   const resolvedOwner = await resolveAssetOwnerByAssetId(input.assetId, {
     expectedOwnerUserId: input.ownerUserId,
@@ -926,6 +967,7 @@ export async function validateFieldManagerScanAsset(input: {
 }): Promise<FieldManagerRecord | null> {
   await ensureAssetRegisterTables();
   await ensureFieldManagerTables();
+  await ensureFieldManagerAssetPublicCodes(input.ownerUserId);
   const db = getDb();
 
   const managerResult = await db.query<FieldManagerRow>(
@@ -1046,7 +1088,7 @@ function normalizeFieldManagerFuelStorageCode(value: unknown): string {
 
 function normalizeFieldManagerFuelType(value: unknown): string {
   const text = asText(value).replace(/[_-]+/g, " ").replace(/\s+/g, " ");
-  return text || "Diesel";
+  return text || "Fuel";
 }
 
 function fuelStorageStockPercent(
@@ -1066,7 +1108,7 @@ function mapFieldManagerFuelStorageRow(
   return {
     id: String(row.id ?? "").trim(),
     ownerUserId: asText(row.user_id),
-    name: asText(row.name) || "Diesel tank",
+    name: asText(row.name) || "Fuel storage",
     fuelType: normalizeFieldManagerFuelType(row.fuel_type),
     publicFuelStorageCode: normalizeFieldManagerFuelStorageCode(
       row.public_fuel_storage_code,
@@ -1085,6 +1127,25 @@ async function fieldManagerFuelStorageUnitsTableExists(): Promise<boolean> {
     `select to_regclass('public.fuel_storage_units') is not null as exists`,
   );
   return Boolean(result.rows[0]?.exists);
+}
+
+async function ensureFieldManagerFuelStoragePublicCodes(
+  ownerUserId: string,
+): Promise<void> {
+  const normalizedOwnerUserId = asText(ownerUserId);
+  if (!normalizedOwnerUserId) return;
+
+  const db = getDb();
+  await db.query(
+    `
+      update public.fuel_storage_units
+      set public_fuel_storage_code = 'FMFUEL-' || upper(substr(md5(id::text), 1, 12))
+      where user_id = $1
+        and lower(coalesce(status, 'active')) = 'active'
+        and nullif(trim(coalesce(public_fuel_storage_code, '')), '') is null
+    `,
+    [normalizedOwnerUserId],
+  );
 }
 
 function fieldManagerFuelStorageSelect(whereSql: string): string {
@@ -1114,6 +1175,8 @@ export async function listFieldManagerFuelStorages(
     return [];
   }
 
+  await ensureFieldManagerFuelStoragePublicCodes(ownerUserId);
+
   const db = getDb();
   const result = await db.query<FieldManagerFuelStorageRow>(
     `
@@ -1140,6 +1203,8 @@ export async function getFieldManagerFuelStorageForOpen(input: {
   if (!(await fieldManagerFuelStorageUnitsTableExists())) {
     return null;
   }
+
+  await ensureFieldManagerFuelStoragePublicCodes(input.ownerUserId);
 
   const db = getDb();
   const result = await db.query<FieldManagerFuelStorageRow>(
@@ -1169,6 +1234,8 @@ export async function validateFieldManagerFuelStorage(input: {
   if (!(await fieldManagerFuelStorageUnitsTableExists())) {
     return null;
   }
+
+  await ensureFieldManagerFuelStoragePublicCodes(input.ownerUserId);
 
   const db = getDb();
   const result = await db.query<FieldManagerRow>(

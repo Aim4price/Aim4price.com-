@@ -4126,7 +4126,7 @@ export async function authorizeFuelStorageScanAccess(
       return {
         ok: false,
         status: 403,
-        error: 'This diesel tank is not available to this Field Manager login.',
+        error: 'This fuel storage unit is not available to this Field Manager login.',
         pinRequired: false,
       };
     }
