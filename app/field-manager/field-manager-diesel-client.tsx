@@ -133,13 +133,13 @@ export default function FieldManagerDieselClient() {
       }
 
       if (!dieselResponse.ok || !dieselPayload?.ok) {
-        throw new Error(extractError(dieselPayload, 'Failed to load diesel storage units.'));
+        throw new Error(extractError(dieselPayload, 'Failed to load fuel storage units.'));
       }
 
       setManager(sessionPayload.manager);
       setStorages(dieselPayload.storages ?? []);
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : 'Failed to load diesel storage units.');
+      setNotice(error instanceof Error ? error.message : 'Failed to load fuel storage units.');
     } finally {
       setIsLoading(false);
     }
@@ -172,12 +172,12 @@ export default function FieldManagerDieselClient() {
       }
 
       if (!response.ok || !payload?.ok || !payload.redirectTo) {
-        throw new Error(extractError(payload, 'This diesel tank cannot be opened.'));
+        throw new Error(extractError(payload, 'This fuel storage unit cannot be opened.'));
       }
 
       window.location.assign(payload.redirectTo);
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : 'This diesel tank cannot be opened.');
+      setNotice(error instanceof Error ? error.message : 'This fuel storage unit cannot be opened.');
       setOpeningStorageId(null);
     }
   }
@@ -188,7 +188,7 @@ export default function FieldManagerDieselClient() {
         <header className={styles.assetsHeader}>
           <div>
             <span>Aim4price</span>
-            <h1>Diesel</h1>
+            <h1>Fuel</h1>
             <p>{manager ? `Signed in as ${manager.displayName}` : 'Mobile fuel access'}</p>
           </div>
           <button type="button" className={styles.logoutButton} onClick={() => void handleLogout()}>
@@ -200,7 +200,7 @@ export default function FieldManagerDieselClient() {
 
         <section className={styles.searchCard}>
           <label className={styles.searchField}>
-            <span>Choose diesel tank</span>
+            <span>Choose fuel storage</span>
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
@@ -210,17 +210,17 @@ export default function FieldManagerDieselClient() {
           </label>
         </section>
 
-        {isLoading ? <p className={styles.mobileEmpty}>Loading available diesel tanks…</p> : null}
+        {isLoading ? <p className={styles.mobileEmpty}>Loading available fuel storage units…</p> : null}
 
         {!isLoading && !storages.length ? (
-          <p className={styles.mobileEmpty}>No diesel or fuel storage units are available for this Field Manager login.</p>
+          <p className={styles.mobileEmpty}>No fuel storage units are available for this Field Manager login.</p>
         ) : null}
 
         {!isLoading && storages.length > 0 && !filteredStorages.length ? (
-          <p className={styles.mobileEmpty}>No diesel tanks match this search.</p>
+          <p className={styles.mobileEmpty}>No fuel storage units match this search.</p>
         ) : null}
 
-        <section className={styles.assetList} aria-label="Field Manager diesel tanks">
+        <section className={styles.assetList} aria-label="Field Manager fuel storage units">
           {filteredStorages.map((storage) => {
             const isOpening = openingStorageId === storage.id;
 
@@ -228,7 +228,7 @@ export default function FieldManagerDieselClient() {
               <article key={storage.id} className={styles.assetCard}>
                 <div className={styles.assetTopRow}>
                   <div>
-                    <span className={styles.assetKind}>{storage.fuelType || 'Diesel'}</span>
+                    <span className={styles.assetKind}>{storage.fuelType || 'Fuel'}</span>
                     <h2>{storage.name}</h2>
                     <p>{storage.locationLabel || 'No location saved'}</p>
                   </div>
@@ -260,7 +260,7 @@ export default function FieldManagerDieselClient() {
                   onClick={() => void handleOpenStorage(storage)}
                   disabled={Boolean(openingStorageId)}
                 >
-                  {isOpening ? 'Opening…' : 'Open Diesel Update'}
+                  {isOpening ? 'Opening…' : 'Open Fuel Update'}
                 </button>
               </article>
             );

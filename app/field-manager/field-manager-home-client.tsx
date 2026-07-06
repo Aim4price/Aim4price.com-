@@ -87,7 +87,7 @@ export default function FieldManagerHomeClient() {
             <div className={styles.loginHeader}>
               <span>Mobile home</span>
               <h2>Choose what to update</h2>
-              <p>Use Manage for equipment updates, or Diesel for fuel storage and fuel issue updates.</p>
+              <p>Use Manage for equipment updates, or Fuel for fuel storage and fuel issue updates.</p>
             </div>
 
             <div className={styles.homeActionGrid}>
@@ -107,8 +107,8 @@ export default function FieldManagerHomeClient() {
                 onClick={() => window.location.assign('/field-manager/diesel')}
               >
                 <span>Fuel storage</span>
-                <strong>Diesel</strong>
-                <small>Open diesel tanks and capture fuel updates without entering a fuel PIN.</small>
+                <strong>Fuel</strong>
+                <small>Open fuel storage units and capture fuel updates without entering a fuel PIN.</small>
               </button>
             </div>
           </section>
