@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getFieldManagerAssetForOpen } from "../../../../../../lib/field-manager";
 import {
-  applyFieldManagerScanCookie,
+  clearFieldManagerScanCookie,
   requireActiveFieldManagerSession,
 } from "../../../../../../lib/field-manager-session";
 import { safeAssetOwnerError } from "../../../../../../lib/asset-owner-resolver";
@@ -51,13 +51,10 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const redirectTo = `/field-manager/assets/${encodeURIComponent(asset.publicAssetCode)}?assetId=${encodeURIComponent(asset.id)}`;
     const response = NextResponse.json({ ok: true, redirectTo });
 
-    applyFieldManagerScanCookie(response, {
-      managerId: access.session.managerId,
-      ownerUserId: access.session.ownerUserId,
-      displayName: access.session.displayName,
-      publicAssetCode: asset.publicAssetCode,
-      assetId: asset.id,
-    });
+    // Field Manager Manage mode is authorized from the main Field Manager
+    // session cookie plus the selected assetId. Do not mint a separate
+    // scan-cookie authority for opening the shared mobile update UI.
+    clearFieldManagerScanCookie(response);
 
     return response;
   } catch (error) {
