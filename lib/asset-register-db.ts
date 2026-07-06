@@ -139,6 +139,14 @@ export type UpdateAssetRegisterItemInput = {
   allowUsageDecrease?: boolean;
 };
 
+export type UpdateAssetRegisterItemNamesInput = {
+  assetId: string;
+  registerId: string;
+  title?: string | null;
+  brandName?: string | null;
+  modelName?: string | null;
+};
+
 export type UpdateAssetRegisterItemYearModelInput = {
   assetId: string;
   yearModel: number | null;
@@ -957,6 +965,40 @@ function buildManualSpecsJson(
     numberPlate: licenseRegistrationNumber,
     number_plate: licenseRegistrationNumber,
   };
+}
+
+function buildAssetNameSpecs(
+  specs: Record<string, unknown>,
+  brandName: string,
+  modelName: string,
+): Record<string, unknown> {
+  const nextSpecs = { ...specs };
+  const cleanBrandName = asText(brandName);
+  const cleanModelName = asText(modelName);
+
+  for (const key of ['brandName', 'brand_name', 'brand']) {
+    if (cleanBrandName) {
+      nextSpecs[key] = cleanBrandName;
+    } else {
+      delete nextSpecs[key];
+    }
+  }
+
+  for (const key of [
+    'modelName',
+    'model_name',
+    'model',
+    'typedModelName',
+    'typed_model_name',
+  ]) {
+    if (cleanModelName) {
+      nextSpecs[key] = cleanModelName;
+    } else {
+      delete nextSpecs[key];
+    }
+  }
+
+  return nextSpecs;
 }
 
 function buildAssetFlagSpecs(
@@ -2416,6 +2458,75 @@ export async function createManualAssetRegisterItem(
   });
 
   return item;
+}
+
+
+export async function updateAssetRegisterItemNames(
+  userId: string,
+  input: UpdateAssetRegisterItemNamesInput,
+): Promise<AssetRegisterItem> {
+  const db = getDb();
+  const schema = await getAssetRegisterSchema();
+  const existing = await getAssetRegisterItemById(userId, input.assetId);
+
+  if (!existing) {
+    throw new Error('ASSET_NOT_FOUND');
+  }
+
+  if (asText(existing.registerId) !== asText(input.registerId)) {
+    throw new Error('ASSET_REGISTER_MISMATCH');
+  }
+
+  const nextTitle = asText(input.title) || existing.title;
+  const nextBrandName = asText(input.brandName) || existing.brandName;
+  const nextModelName = asText(input.modelName) || existing.modelName;
+  const nextSpecsJson = buildAssetNameSpecs(
+    existing.specsJson ?? {},
+    nextBrandName,
+    nextModelName,
+  );
+  const fields: SqlField[] = [];
+  const now = new Date();
+
+  pushField(fields, schema, ['title', 'name', 'asset_name'], nextTitle);
+  pushField(fields, schema, ['brand_name', 'brand'], nextBrandName || null);
+  pushField(fields, schema, ['model_name', 'model'], nextModelName || null);
+  pushField(fields, schema, ['specs_json'], nextSpecsJson, '::jsonb');
+  pushField(fields, schema, ['updated_at', 'modified_at', 'updatedon'], now);
+
+  if (!fields.length) {
+    return {
+      ...existing,
+      title: nextTitle,
+      brandName: nextBrandName,
+      modelName: nextModelName,
+      specsJson: nextSpecsJson,
+      updatedAtIso: now.toISOString(),
+    };
+  }
+
+  const update = buildUpdateSetClause(fields);
+  const registerPlaceholder = `$${update.values.length + 3}`;
+  const result = await db.query<AssetRegisterRow>(
+    `
+      update asset_register_items
+      set
+        ${update.clause}
+      where user_id = $1
+        and id = $2
+        and register_id::text = ${registerPlaceholder}
+      returning
+        ${buildSelectList(schema)}
+    `,
+    [userId, input.assetId, ...update.values, asText(input.registerId)],
+  );
+
+  const row = result.rows[0];
+  if (!row) {
+    throw new Error('ASSET_UPDATE_FAILED');
+  }
+
+  return mapAssetRegisterRow(row);
 }
 
 
