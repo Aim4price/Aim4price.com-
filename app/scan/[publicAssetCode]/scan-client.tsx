@@ -3060,16 +3060,12 @@ export default function ScanClient({
     const finalClientEventId =
       pendingUpdate.clientEventId ||
       createOfflineClientEventId("asset-scan-update");
-    const sessionUsageAsset = savedAsset ?? asset;
-    const sessionHours =
-      asset.usageMode === "hours" || asset.usageMode === "km"
-        ? pendingUpdate.hours ||
-          storedSessionUsage.hours ||
-          (sessionUsageAsset.hours !== null &&
-          Number.isFinite(sessionUsageAsset.hours)
-            ? String(Math.round(sessionUsageAsset.hours))
-            : "")
-        : "";
+    const shouldSendUsageReading =
+      (asset.usageMode === "hours" || asset.usageMode === "km") &&
+      (pendingUpdate.hasUsage || storedSessionUsage.hasUsage);
+    const sessionHours = shouldSendUsageReading
+      ? pendingUpdate.hours || storedSessionUsage.hours || ""
+      : "";
     const operatorNameForSave = isFieldManagerMode
       ? operatorName.trim() || "Field Manager"
       : operatorName.trim();
