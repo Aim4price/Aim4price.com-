@@ -679,6 +679,26 @@ export async function updateFieldManager(
   }
 }
 
+export async function deleteFieldManager(
+  ownerUserId: string,
+  managerId: string,
+): Promise<void> {
+  await ensureFieldManagerTables();
+  const db = getDb();
+  const result = await db.query(
+    `
+      delete from public.field_managers
+      where owner_user_id = $1
+        and id::text = $2
+    `,
+    [ownerUserId, String(managerId ?? "").trim()],
+  );
+
+  if (!result.rowCount) {
+    throw new Error("Field Manager login was not found.");
+  }
+}
+
 export async function getFieldManagerById(
   managerId: string,
 ): Promise<FieldManagerPrivateRecord | null> {
