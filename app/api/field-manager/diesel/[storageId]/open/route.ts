@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getFieldManagerFuelStorageForOpen } from '../../../../../../lib/field-manager';
 import {
-  applyFieldManagerFuelScanCookie,
+  clearFieldManagerFuelScanCookie,
   requireActiveFieldManagerSession,
 } from '../../../../../../lib/field-manager-session';
 
@@ -41,12 +41,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const redirectTo = `/field-manager/diesel/${encodeURIComponent(storage.publicFuelStorageCode)}`;
     const response = NextResponse.json({ ok: true, redirectTo });
 
-    applyFieldManagerFuelScanCookie(response, {
-      managerId: access.session.managerId,
-      ownerUserId: access.session.ownerUserId,
-      displayName: access.session.displayName,
-      publicFuelStorageCode: storage.publicFuelStorageCode,
-    });
+    // Field Manager Diesel mode is authorized from the main Field Manager
+    // session cookie. Do not mint a separate fuel scan-cookie authority.
+    clearFieldManagerFuelScanCookie(response);
 
     return response;
   } catch (error) {
