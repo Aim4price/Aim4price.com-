@@ -84,11 +84,29 @@ function uniqueOwnerIds(ids: string[]): string[] {
 }
 
 function canonicalOwnerIdFromSources(input: AssetOwnerSourceIds): string {
-  return (
-    normalizeOwnerId(input.assetItemUserId) ||
-    normalizeOwnerId(input.registerUserId) ||
-    normalizeOwnerId(input.valuationRunUserId)
-  );
+  const assetItemUserId = normalizeOwnerId(input.assetItemUserId);
+  const registerUserId = normalizeOwnerId(input.registerUserId);
+  const valuationRunUserId = normalizeOwnerId(input.valuationRunUserId);
+  const sourceIds = [registerUserId, assetItemUserId, valuationRunUserId].filter(Boolean);
+  const uniqueSourceIds = uniqueOwnerIds(sourceIds);
+
+  if (!uniqueSourceIds.length) {
+    return "";
+  }
+
+  if (uniqueSourceIds.length === 1) {
+    return uniqueSourceIds[0];
+  }
+
+  return registerUserId || assetItemUserId || valuationRunUserId;
+}
+
+function normalizedQrStatus(value: unknown): string {
+  return asText(value).toLowerCase() || "active";
+}
+
+function isActiveQrStatus(value: unknown): boolean {
+  return normalizedQrStatus(value) === "active";
 }
 
 function logOwnerSourceMismatch(
@@ -250,9 +268,7 @@ function assertNoAmbiguousPublicCodeRows(
   normalizedCode: string,
   purpose: string,
 ): void {
-  const activeRows = rows.filter(
-    (row) => asText(row.qr_status).toLowerCase() !== "deleted",
-  );
+  const activeRows = rows.filter((row) => isActiveQrStatus(row.qr_status));
   const uniqueAssetIds = uniqueOwnerIds(
     activeRows.map((row) => asText(row.asset_id)).filter(Boolean),
   );
@@ -344,7 +360,7 @@ export async function resolveAssetOwnerByPublicAssetCode(
       where upper(regexp_replace(coalesce(a.public_asset_code, ''), '\\s+', '', 'g')) = $1
         ${assetIdFilter}
       order by
-        case when lower(coalesce(a.qr_status, 'active')) = 'deleted' then 1 else 0 end,
+        case when lower(coalesce(a.qr_status, 'active')) = 'active' then 0 else 1 end,
         a.updated_at desc nulls last,
         a.created_at desc nulls last,
         a.id desc
@@ -366,9 +382,9 @@ export async function resolveAssetOwnerByPublicAssetCode(
   }
 
   const row =
-    result.rows.find(
-      (entry) => asText(entry.qr_status).toLowerCase() !== "deleted",
-    ) ?? result.rows[0];
+    result.rows.find((entry) => isActiveQrStatus(entry.qr_status)) ??
+    result.rows.find((entry) => normalizedQrStatus(entry.qr_status) !== "deleted") ??
+    result.rows[0];
   const resolution = resolveOwnerFromRow(row, purpose);
 
   assertPublicCodeMatches(resolution, normalizedCode, purpose);
@@ -456,7 +472,7 @@ export function resolveAssetOwnerFromSourceIds(
 
 export function safeAssetOwnerError(
   error: unknown,
-  fallback = "Could not open this asset safely.",
+  fallback = "Could not open this asset.",
 ): { status: number; error: string } | null {
   if (!(error instanceof AssetOwnerResolutionError)) {
     return null;

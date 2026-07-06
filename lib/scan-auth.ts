@@ -151,6 +151,23 @@ function parseScanPinUpdatedAtMs(value: string | null): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function normalizedQrStatus(value: unknown): string {
+  return String(value ?? "").trim().toLowerCase() || "active";
+}
+
+function isActiveQrStatus(value: unknown): boolean {
+  return normalizedQrStatus(value) === "active";
+}
+
+function inactiveQrAccess(): UnauthorizedScanAccess {
+  return {
+    ok: false,
+    status: 404,
+    error: "This QR code is inactive.",
+    pinRequired: false,
+  };
+}
+
 export function applyScanSessionCookie(
   response: NextResponse,
   claims: {
@@ -222,7 +239,7 @@ function getScanSessionFromRequest(
 }
 
 function safeScanContextError(error: unknown): UnauthorizedScanAccess | null {
-  const safe = safeAssetOwnerError(error, "Could not open this asset safely.");
+  const safe = safeAssetOwnerError(error, "Could not open this asset.");
   if (!safe) return null;
   return {
     ok: false,
@@ -253,7 +270,7 @@ export async function verifyScanPinForAsset(
       safeScanContextError(error) ?? {
         ok: false,
         status: 500,
-        error: "Failed to open this asset safely.",
+        error: "Could not open this asset right now.",
         pinRequired: false,
       }
     );
@@ -268,13 +285,8 @@ export async function verifyScanPinForAsset(
     };
   }
 
-  if (context.asset.qrStatus === "deleted") {
-    return {
-      ok: false,
-      status: 404,
-      error: "This asset QR code is inactive.",
-      pinRequired: false,
-    };
+  if (!isActiveQrStatus(context.asset.qrStatus)) {
+    return inactiveQrAccess();
   }
 
   if (
@@ -285,7 +297,7 @@ export async function verifyScanPinForAsset(
     return {
       ok: false,
       status: 403,
-      error: "Scan PIN access is not enabled for this account yet.",
+      error: "Ask the owner to confirm that the QR scan PIN is enabled.",
       pinRequired: false,
     };
   }
@@ -394,13 +406,8 @@ async function authorizeFieldManagerAccessFromSession(
     };
   }
 
-  if (context.asset.qrStatus === "deleted") {
-    return {
-      ok: false,
-      status: 404,
-      error: "This asset QR code is inactive.",
-      pinRequired: false,
-    };
+  if (!isActiveQrStatus(context.asset.qrStatus)) {
+    return inactiveQrAccess();
   }
 
   if (session.ownerUserId !== context.asset.userId) {
@@ -490,7 +497,7 @@ export async function authorizePublicQrScanAccess(
       safeScanContextError(error) ?? {
         ok: false,
         status: 500,
-        error: "Failed to open this asset safely.",
+        error: "Could not open this asset right now.",
         pinRequired: false,
       }
     );
@@ -505,13 +512,8 @@ export async function authorizePublicQrScanAccess(
     };
   }
 
-  if (context.asset.qrStatus === "deleted") {
-    return {
-      ok: false,
-      status: 404,
-      error: "This asset QR code is inactive.",
-      pinRequired: false,
-    };
+  if (!isActiveQrStatus(context.asset.qrStatus)) {
+    return inactiveQrAccess();
   }
 
   const claims = getScanSessionFromRequest(request, normalizedCode);
@@ -522,7 +524,7 @@ export async function authorizePublicQrScanAccess(
       status: context.scanPinEnabled ? 401 : 403,
       error: context.scanPinEnabled
         ? "Enter the farm scan PIN to open this asset."
-        : "Scan PIN access is not enabled for this account yet.",
+        : "Ask the owner to confirm that the QR scan PIN is enabled.",
       pinRequired: context.scanPinEnabled,
     };
   }
