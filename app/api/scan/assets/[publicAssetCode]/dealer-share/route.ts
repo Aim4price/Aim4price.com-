@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { recordAdminUsageEventSafely } from '../../../../../../lib/admin-usage-events';
-import { authorizeScanAccess } from '../../../../../../lib/scan-auth';
+import { authorizePublicQrScanAccess } from '../../../../../../lib/scan-auth';
 import { normalizePublicAssetCode } from '../../../../../../lib/scan-assets';
 import { createAssetLead, listPartnerDirectory } from '../../../../../../lib/partner-access';
 
@@ -84,7 +84,7 @@ function errorMessage(error: unknown, fallback: string): string {
 
 export async function GET(request: NextRequest, context: RouteContext) {
   const publicAssetCode = normalizePublicAssetCode(context.params?.publicAssetCode);
-  const access = await authorizeScanAccess(request, publicAssetCode);
+  const access = await authorizePublicQrScanAccess(request, publicAssetCode);
 
   if (!access.ok) {
     return NextResponse.json(
@@ -125,7 +125,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
 export async function POST(request: NextRequest, context: RouteContext) {
   const publicAssetCode = normalizePublicAssetCode(context.params?.publicAssetCode);
-  const access = await authorizeScanAccess(request, publicAssetCode);
+  const access = await authorizePublicQrScanAccess(request, publicAssetCode);
 
   if (!access.ok) {
     return NextResponse.json(
@@ -166,7 +166,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
   }
 
   if (operatorName.length < 2) {
-    return NextResponse.json({ ok: false, error: 'Enter the manager name before sending to a dealer.' }, { status: 400 });
+    return NextResponse.json({ ok: false, error: 'Enter your name before sending to a dealer.' }, { status: 400 });
   }
 
   try {
