@@ -259,6 +259,7 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
   const issueStepNumber = issueStepIndex + 3;
   const issueStepProgress = (issueStepNumber / TOTAL_SCAN_PAGES) * 100;
   const choiceStepProgress = (2 / TOTAL_SCAN_PAGES) * 100;
+  const fieldManagerQueryString = fieldManagerMode ? '?fieldManager=1' : '';
 
   const filteredAssets = useMemo(() => {
     const query = assetSearch.trim().toLowerCase();
@@ -321,7 +322,7 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
   }
 
   async function loadPayload() {
-    const response = await fetch(`/api/fuel-scan/storage/${encodeURIComponent(normalizedCode)}`, {
+    const response = await fetch(`/api/fuel-scan/storage/${encodeURIComponent(normalizedCode)}${fieldManagerQueryString}`, {
       credentials: 'include',
       cache: 'no-store',
     });
@@ -630,7 +631,11 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
         throw new Error('The fuel level after filling cannot be lower than the level before filling.');
       }
 
-      if (operatorName.trim().length < 2) {
+      const operatorNameForSave = isFieldManagerMode
+        ? operatorName.trim() || 'Field Manager'
+        : operatorName.trim();
+
+      if (!isFieldManagerMode && operatorNameForSave.length < 2) {
         throw new Error('Enter your name on the first page before saving.');
       }
 
@@ -642,7 +647,7 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
         throw new Error('GPS location is required. Enable location and capture GPS again.');
       }
 
-      const endpoint = `/api/fuel-scan/storage/${encodeURIComponent(normalizedCode)}/issue`;
+      const endpoint = `/api/fuel-scan/storage/${encodeURIComponent(normalizedCode)}/issue${fieldManagerQueryString}`;
       const clientEventId = createOfflineClientEventId('fuel-ledger-issue');
       const payload = {
         assetId,
@@ -650,7 +655,7 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
         assetFuelPercentBefore: Number(fuelPercentText(assetFuelPercentBefore)),
         assetFuelPercentAfter: Number(fuelPercentText(assetFuelPercentAfter)),
         assetUsageReading: usageNotApplicable ? null : Number(assetUsageReading),
-        operatorName,
+        operatorName: operatorNameForSave,
         activityText,
         workAreaText,
         note,
@@ -763,7 +768,11 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
         throw new Error(`Storage refill exceeds tank capacity. ${formatLitres(storage.currentLitres)} is currently in the tank and capacity is ${formatLitres(storage.capacityLitres)}.`);
       }
 
-      if (operatorName.trim().length < 2) {
+      const operatorNameForSave = isFieldManagerMode
+        ? operatorName.trim() || 'Field Manager'
+        : operatorName.trim();
+
+      if (!isFieldManagerMode && operatorNameForSave.length < 2) {
         throw new Error('Enter your name before saving the storage refill.');
       }
 
@@ -771,11 +780,11 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
         throw new Error('GPS location is required. Enable location and capture GPS again.');
       }
 
-      const endpoint = `/api/fuel-scan/storage/${encodeURIComponent(normalizedCode)}/refill`;
+      const endpoint = `/api/fuel-scan/storage/${encodeURIComponent(normalizedCode)}/refill${fieldManagerQueryString}`;
       const clientEventId = createOfflineClientEventId('fuel-ledger-refill');
       const payload = {
         litres: litresNumber,
-        operatorName,
+        operatorName: operatorNameForSave,
         note: refillNote,
         latitude: coordinates.latitude,
         longitude: coordinates.longitude,
@@ -839,7 +848,11 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
         throw new Error('Enter the dipstick note before saving.');
       }
 
-      if (operatorName.trim().length < 2) {
+      const operatorNameForSave = isFieldManagerMode
+        ? operatorName.trim() || 'Field Manager'
+        : operatorName.trim();
+
+      if (!isFieldManagerMode && operatorNameForSave.length < 2) {
         throw new Error('Enter your name before saving the dipstick note.');
       }
 
@@ -847,11 +860,11 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
         throw new Error('GPS location is required. Enable location and capture GPS again.');
       }
 
-      const endpoint = `/api/fuel-scan/storage/${encodeURIComponent(normalizedCode)}/dipstick`;
+      const endpoint = `/api/fuel-scan/storage/${encodeURIComponent(normalizedCode)}/dipstick${fieldManagerQueryString}`;
       const clientEventId = createOfflineClientEventId('fuel-ledger-dipstick');
       const payload = {
         dipstickNote: noteText,
-        operatorName,
+        operatorName: operatorNameForSave,
         latitude: coordinates.latitude,
         longitude: coordinates.longitude,
         locationText: locationTextForCoordinates(coordinates),
