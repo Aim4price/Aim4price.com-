@@ -128,6 +128,7 @@ const TOTAL_SCAN_PAGES = 9;
 const ISSUE_STEPS: IssueStep[] = ['asset', 'usage', 'beforeFuel', 'litres', 'filledFuel', 'work', 'notes'];
 const FUEL_OFFLINE_KINDS: OfflineMutationKind[] = ['fuel-ledger-issue', 'fuel-ledger-refill', 'fuel-ledger-dipstick'];
 const LOCAL_SAVE_MESSAGE = 'Saved on this phone. It will sync when signal returns.';
+const FIELD_MANAGER_RETURN_DELAY_MS = 1100;
 const STEP_LABELS: Record<IssueStep, string> = {
   asset: 'Choose asset',
   usage: 'New recorded',
@@ -257,6 +258,7 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
   const [notice, setNotice] = useState<Notice | null>(null);
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
   const [doneOverrideMessage, setDoneOverrideMessage] = useState('');
+  const [isFieldManagerDoneRedirect, setIsFieldManagerDoneRedirect] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -400,6 +402,7 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
   useEffect(() => {
     setIsDone(false);
     setDoneOverrideMessage('');
+    setIsFieldManagerDoneRedirect(false);
     setStorage(null);
     setScanAccessMode(null);
     setAssets([]);
@@ -628,8 +631,14 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
   }
 
   function finishScan(action: DoneAction, overrideMessage = '') {
+    if (isFieldManagerMode) {
+      finishFieldManagerScanAndReturn();
+      return;
+    }
+
     setDoneAction(action);
     setDoneOverrideMessage(overrideMessage);
+    setIsFieldManagerDoneRedirect(false);
     setNotice(null);
     setIsDone(true);
 
@@ -644,6 +653,28 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
     }, 80);
   }
 
+  function finishFieldManagerScanAndReturn() {
+    setDoneAction('asset_issue');
+    setDoneOverrideMessage('');
+    setIsFieldManagerDoneRedirect(true);
+    setNotice(null);
+    setIsDone(true);
+
+    try {
+      window.history.replaceState({ aim4priceFuelQrDone: true }, '', window.location.href);
+    } catch {
+      // Ignore history replacement errors.
+    }
+
+    window.setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 80);
+
+    window.setTimeout(() => {
+      window.location.replace('/field-manager');
+    }, FIELD_MANAGER_RETURN_DELAY_MS);
+  }
+
   async function redirectAfterFieldManagerServerSave() {
     try {
       const response = await fetch('/api/field-manager/session', {
@@ -656,7 +687,7 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
         return;
       }
 
-      window.location.replace('/field-manager');
+      finishFieldManagerScanAndReturn();
     } catch {
       window.location.replace('/field-manager/login');
     }
@@ -1430,11 +1461,14 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
       },
     };
 
+    const doneTitle = isFieldManagerDoneRedirect ? 'Thank you.' : doneCopy[doneAction].title;
+    const doneMessage = isFieldManagerDoneRedirect ? '' : doneOverrideMessage || doneCopy[doneAction].message;
+
     return (
       <main className={scanPageClassName}>
         <section className={styles.thankYouScreen}>
-          <h1>{doneCopy[doneAction].title}</h1>
-          <p>{doneOverrideMessage || doneCopy[doneAction].message}</p>
+          <h1>{doneTitle}</h1>
+          {doneMessage ? <p>{doneMessage}</p> : null}
         </section>
       </main>
     );
