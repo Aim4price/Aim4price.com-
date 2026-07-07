@@ -77,6 +77,20 @@ function formatDate(value: string | null): string {
   }).format(parsed);
 }
 
+function formatLocationLabel(value: string): string {
+  const cleaned = value.replace(/\s+/g, ' ').trim();
+  if (!cleaned) return 'No location saved';
+
+  const parts = cleaned.split(/,\s*/).filter(Boolean);
+  if (parts.length >= 3) {
+    const head = parts.slice(0, 2).join(', ');
+    const tail = parts.slice(2).join(', ').replace(/\s+/g, '\u00a0');
+    return `${head}, ${tail}`;
+  }
+
+  return cleaned.replace(/\s+(\S+)$/, '\u00a0$1');
+}
+
 export default function FieldManagerDieselClient() {
   const [storages, setStorages] = useState<FieldManagerFuelStorageSummary[]>([]);
   const [search, setSearch] = useState('');
@@ -222,7 +236,7 @@ export default function FieldManagerDieselClient() {
                 <div className={styles.assetTopRow}>
                   <div>
                     <h2>{storage.name}</h2>
-                    <p>{storage.locationLabel || 'No location saved'}</p>
+                    <p>{formatLocationLabel(storage.locationLabel)}</p>
                   </div>
                 </div>
 
@@ -251,7 +265,7 @@ export default function FieldManagerDieselClient() {
                   onClick={() => void handleOpenStorage(storage)}
                   disabled={Boolean(openingStorageId)}
                 >
-                  {isOpening ? 'Opening…' : 'Open Fuel Update'}
+                  {isOpening ? 'Opening…' : 'Open'}
                 </button>
               </article>
             );

@@ -406,11 +406,15 @@
 }
 
 .assetTopRow p {
-  margin: 8px 0 0;
+  max-width: min(100%, 32ch);
+  margin: 8px auto 0;
   color: rgba(18, 53, 45, 0.65);
   font-weight: 760;
   line-height: 1.38;
   text-align: center;
+  text-wrap: balance;
+  overflow-wrap: normal;
+  word-break: normal;
 }
 
 .assetMetaGrid {
