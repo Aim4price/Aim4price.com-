@@ -50,6 +50,7 @@ type FieldManagerAssetRow = {
   note: string | null;
   specs_json: unknown;
   hours: string | number | null;
+  year_model: string | number | null;
   life_worked_percent: string | number | null;
   last_scanned_at: string | Date | null;
   updated_at: string | Date | null;
@@ -91,6 +92,7 @@ export type FieldManagerAssetSummary = {
   note: string;
   usageReading: number | null;
   usageLabel: string;
+  yearModel: number | null;
   lifeWorkedPercent: number | null;
   lastScannedAtIso: string | null;
   updatedAtIso: string | null;
@@ -364,6 +366,23 @@ function normalizeUsageLabel(row: FieldManagerAssetRow): {
   };
 }
 
+function normalizeYearModel(row: FieldManagerAssetRow): number | null {
+  const specs = asRecord(row.specs_json);
+  const year =
+    asNumber(row.year_model) ??
+    asNumber(specs.yearModel) ??
+    asNumber(specs.year_model) ??
+    asNumber(specs.displayYearModel) ??
+    asNumber(specs.display_year_model) ??
+    asNumber(specs.assetYearModel) ??
+    asNumber(specs.asset_year_model);
+
+  if (year === null) return null;
+
+  const rounded = Math.round(year);
+  return rounded > 0 ? rounded : null;
+}
+
 function mapFieldManagerAssetRow(
   row: FieldManagerAssetRow,
   ownerUserId?: string,
@@ -413,6 +432,7 @@ function mapFieldManagerAssetRow(
     note: asText(row.note) || readSpecText(specs, ["note", "notes", "description"]),
     usageReading: usage.usageReading,
     usageLabel: usage.usageLabel,
+    yearModel: normalizeYearModel(row),
     lifeWorkedPercent: asNumber(row.life_worked_percent),
     lastScannedAtIso: asDateIso(row.last_scanned_at),
     updatedAtIso: asDateIso(row.updated_at),
@@ -830,6 +850,16 @@ function fieldManagerAssetSelect(whereSql: string): string {
       ) as note,
       coalesce(a.specs_json, '{}'::jsonb) as specs_json,
       a.hours,
+      coalesce(
+        to_jsonb(a)->>'year_model',
+        to_jsonb(a)->>'year',
+        coalesce(a.specs_json, '{}'::jsonb)->>'yearModel',
+        coalesce(a.specs_json, '{}'::jsonb)->>'year_model',
+        coalesce(a.specs_json, '{}'::jsonb)->>'displayYearModel',
+        coalesce(a.specs_json, '{}'::jsonb)->>'display_year_model',
+        coalesce(a.specs_json, '{}'::jsonb)->>'assetYearModel',
+        coalesce(a.specs_json, '{}'::jsonb)->>'asset_year_model'
+      ) as year_model,
       a.life_worked_percent,
       a.last_scanned_at,
       a.updated_at
