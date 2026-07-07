@@ -43,6 +43,8 @@ const initialDraft: DraftState = {
   password: '',
 };
 
+const FIELD_MANAGER_PASSWORD_MIN_LENGTH = 4;
+
 function extractError(payload: FieldManagerApiResponse | null, fallback: string): string {
   return payload?.error?.trim() || fallback;
 }
@@ -158,8 +160,11 @@ export default function FieldManagerOwnerClient() {
       return;
     }
 
-    if (draft.password.length < 8) {
-      setNotice({ tone: 'error', message: 'Enter a password with at least 8 characters.' });
+    if (draft.password.length < FIELD_MANAGER_PASSWORD_MIN_LENGTH) {
+      setNotice({
+        tone: 'error',
+        message: `Enter a password with at least ${FIELD_MANAGER_PASSWORD_MIN_LENGTH} characters.`,
+      });
       return;
     }
 
@@ -261,6 +266,14 @@ export default function FieldManagerOwnerClient() {
     };
 
     if (editDraft.password.trim()) {
+      if (editDraft.password.length < FIELD_MANAGER_PASSWORD_MIN_LENGTH) {
+        setNotice({
+          tone: 'error',
+          message: `Enter a password with at least ${FIELD_MANAGER_PASSWORD_MIN_LENGTH} characters.`,
+        });
+        return;
+      }
+
       body.password = editDraft.password;
     }
 
@@ -414,7 +427,7 @@ export default function FieldManagerOwnerClient() {
                   type="password"
                   value={draft.password}
                   onChange={(event) => setDraft((current) => ({ ...current, password: event.target.value }))}
-                  placeholder="Minimum 8 characters"
+                  placeholder={`Minimum ${FIELD_MANAGER_PASSWORD_MIN_LENGTH} characters`}
                   autoComplete="new-password"
                 />
               </label>
