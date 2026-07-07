@@ -1051,7 +1051,7 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
         <div className={styles.stepTitleBlock}>
           <span>Step 2 of {TOTAL_SCAN_PAGES}</span>
           <h1>Fuel action</h1>
-          <p>{visibleStorageName} · {formatLitres(storage?.currentLitres)} available</p>
+          {!isFieldManagerMode ? <p>{visibleStorageName} · {formatLitres(storage?.currentLitres)} available</p> : null}
         </div>
 
         <div className={`${styles.locationGate} ${coordinates ? styles.locationGateReady : ''}`}>
@@ -1306,7 +1306,7 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
               setAssetUsageReading('');
             }}
           >
-            No hour / km meter on this asset
+            No meter
           </button>
           {renderStepControls()}
         </section>

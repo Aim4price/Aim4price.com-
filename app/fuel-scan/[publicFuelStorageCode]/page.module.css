@@ -1208,6 +1208,10 @@
   padding: 0.82rem 0.95rem;
 }
 
+.compactMetaGrid > div:only-child {
+  grid-column: 1 / -1;
+}
+
 .compactMetaGrid strong {
   color: var(--text);
   font-size: 1.2rem;
