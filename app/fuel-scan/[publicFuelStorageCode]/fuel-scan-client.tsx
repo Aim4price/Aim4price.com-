@@ -155,6 +155,15 @@ function normalizeShortText(value: string, maxLength = 120): string {
   return value.replace(/\s+/g, ' ').slice(0, maxLength);
 }
 
+function keepLastTwoWordsTogether(value: string): string {
+  const words = value.trim().split(/\s+/).filter(Boolean);
+
+  if (words.length <= 1) return value.trim();
+  if (words.length === 2) return words.join('\u00a0');
+
+  return `${words.slice(0, -2).join(' ')} ${words.slice(-2).join('\u00a0')}`;
+}
+
 function formatLitres(value: number | null | undefined): string {
   if (value === null || typeof value === 'undefined' || !Number.isFinite(value)) return '—';
   return `${value.toLocaleString('en-ZA', { maximumFractionDigits: 2 })} L`;
@@ -269,9 +278,8 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
 
   const selectedAsset = useMemo(() => assets.find((asset) => asset.id === assetId) ?? null, [assetId, assets]);
   const selectedAssetName = selectedAsset ? assetDisplayName(selectedAsset) : '';
-  const visibleAccountName = accountBusinessName || preview?.accountBusinessName || storage?.accountBusinessName || 'Aim4price account';
   const visibleStorageName = storage?.name || preview?.name || 'Fuel storage';
-  const visibleFuelType = storage?.fuelType || preview?.fuelType || (fieldManagerMode ? 'Fuel' : 'Diesel');
+  const visibleStorageTitle = keepLastTwoWordsTogether(visibleStorageName);
   const unauthenticated = !storage;
   const isFieldManagerMode = fieldManagerMode || scanAccessMode === 'field_manager';
   const scanPageClassName = `${styles.scanPage} ${isFieldManagerMode ? styles.fieldManagerMobileSurface : ''}`;
@@ -1082,7 +1090,6 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
         <div className={styles.stepTitleBlock}>
           <span>Step 2 of {TOTAL_SCAN_PAGES}</span>
           <h1>Fuel action</h1>
-          {!isFieldManagerMode ? <p>{visibleStorageName} · {formatLitres(storage?.currentLitres)} available</p> : null}
         </div>
 
         <div className={`${styles.locationGate} ${coordinates ? styles.locationGateReady : ''}`}>
@@ -1217,10 +1224,12 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
   }
 
   function renderScanProgress(label: string, title: string, stepText: string, width: number) {
+    const progressLabel = label.trim();
+
     return (
-      <div className={styles.stepProgress} aria-label={`${label}: ${title}`}>
+      <div className={styles.stepProgress} aria-label={progressLabel ? `${progressLabel}: ${title}` : title}>
         <div>
-          <span>{label}</span>
+          {progressLabel ? <span>{progressLabel}</span> : null}
           <strong>{title}</strong>
         </div>
         <small>{stepText}</small>
@@ -1494,12 +1503,10 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
           </section>
         ) : unauthenticated ? (
           <section className={`${styles.pinStepCard} ${!coordinates ? styles.pinStepCardBlocked : ''}`}>
-            <div className={styles.qrTitleBlock}>
-              <span>Fuel QR for</span>
-              <h1>{visibleAccountName}</h1>
-              <p>{visibleStorageName} · {visibleFuelType}</p>
+            <div className={`${styles.qrTitleBlock} ${styles.publicQrTitleBlock}`}>
+              <h1>{visibleStorageTitle}</h1>
             </div>
-            <form className={styles.pinForm} onSubmit={handlePinSubmit}>
+            <form className={`${styles.pinForm} ${styles.centeredPinForm}`} onSubmit={handlePinSubmit}>
               <label className={styles.field}>
                 <span>Fuel PIN</span>
                 <input
@@ -1545,7 +1552,7 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
               <div className={styles.locationPromptBackdrop} role="dialog" aria-modal="true" aria-labelledby="fuel-location-title">
                 <div className={styles.locationPromptCard}>
                   <div className={styles.locationPromptIcon} aria-hidden="true">⌖</div>
-                  <h2 id="fuel-location-title">Keep location on</h2>
+                  <h2 id="fuel-location-title">Location on</h2>
                   <p>Every fuel issue saves a GPS point automatically. Allow location access on this phone before continuing.</p>
                   <span>{locationStatus}</span>
                   <button type="button" className={styles.primaryButton} onClick={captureLocation} disabled={isCapturingLocation}>
@@ -1557,7 +1564,7 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
           </section>
         ) : scanMode === 'action-choice' ? (
           <>
-            {renderScanProgress('Fuel QR', 'Fuel action', `2/${TOTAL_SCAN_PAGES}`, choiceStepProgress)}
+            {renderScanProgress('', 'Fuel action', `2/${TOTAL_SCAN_PAGES}`, choiceStepProgress)}
             {renderActionChoice()}
             {renderStorageRefillWarning()}
           </>

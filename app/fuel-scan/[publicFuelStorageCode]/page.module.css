@@ -261,6 +261,33 @@
   font-size: clamp(2.25rem, 10vw, 3.5rem);
 }
 
+.publicQrTitleBlock {
+  justify-items: center;
+  text-align: center;
+}
+
+.publicQrTitleBlock h1 {
+  max-width: 100%;
+  text-align: center;
+  text-wrap: balance;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+.centeredPinForm .field {
+  justify-items: center;
+  text-align: center;
+}
+
+.centeredPinForm .field span {
+  width: 100%;
+  text-align: center;
+}
+
+.centeredPinForm .field input {
+  text-align: center;
+}
+
 .stepTitleBlock h1,
 .thankYouScreen h1 {
   font-size: clamp(2.25rem, 10vw, 3.25rem);
@@ -452,7 +479,9 @@
 
 .locationGate div {
   display: grid;
+  justify-items: center;
   gap: 0.3rem;
+  text-align: center;
 }
 
 .locationGate strong {
