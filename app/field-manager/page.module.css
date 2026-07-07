@@ -175,6 +175,7 @@
 }
 
 .mobileField span,
+.mobileField label,
 .searchField span {
   color: rgba(18, 53, 45, 0.76);
   font-size: 0.82rem;
@@ -202,6 +203,44 @@
 .mobileField input:focus,
 .searchField input:focus {
   border-color: rgba(35, 104, 81, 0.6);
+  box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.11);
+}
+
+.mobilePasswordInputWrap {
+  position: relative;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.mobilePasswordInputWrap input {
+  padding-right: 84px;
+}
+
+.mobilePasswordToggleButton {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  min-width: 64px;
+  min-height: 42px;
+  transform: translateY(-50%);
+  border: 1px solid rgba(35, 104, 81, 0.14);
+  border-radius: 14px;
+  background: rgba(35, 104, 81, 0.08);
+  color: #174637;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 920;
+  cursor: pointer;
+  transition: background 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.mobilePasswordToggleButton:active {
+  background: rgba(35, 104, 81, 0.14);
+}
+
+.mobilePasswordToggleButton:focus-visible {
+  outline: none;
   box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.11);
 }
 

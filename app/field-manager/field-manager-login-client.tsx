@@ -25,6 +25,7 @@ function extractError(payload: LoginApiResponse | null, fallback: string): strin
 export default function FieldManagerLoginClient() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -101,16 +102,28 @@ export default function FieldManagerLoginClient() {
               />
             </label>
 
-            <label className={styles.mobileField}>
-              <span>Password</span>
-              <input
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                placeholder="Password"
-                autoComplete="current-password"
-              />
-            </label>
+            <div className={styles.mobileField}>
+              <label htmlFor="field-manager-login-password">Password</label>
+              <div className={styles.mobilePasswordInputWrap}>
+                <input
+                  id="field-manager-login-password"
+                  type={isPasswordVisible ? 'text' : 'password'}
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  placeholder="Password"
+                  autoComplete="current-password"
+                />
+                <button
+                  type="button"
+                  className={styles.mobilePasswordToggleButton}
+                  onClick={() => setIsPasswordVisible((current) => !current)}
+                  aria-label={isPasswordVisible ? 'Hide Field Manager password' : 'Show Field Manager password'}
+                  aria-pressed={isPasswordVisible}
+                >
+                  {isPasswordVisible ? 'Hide' : 'Show'}
+                </button>
+              </div>
+            </div>
 
             <button type="submit" className={styles.mobilePrimaryButton} disabled={isSubmitting}>
               {isSubmitting ? 'Opening…' : 'Login to Field Manager'}
