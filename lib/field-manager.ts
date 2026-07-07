@@ -47,6 +47,7 @@ type FieldManagerAssetRow = {
   typed_model_name: string | null;
   serial_number: string | null;
   license_registration_number: string | null;
+  note: string | null;
   specs_json: unknown;
   hours: string | number | null;
   life_worked_percent: string | number | null;
@@ -87,6 +88,7 @@ export type FieldManagerAssetSummary = {
   registrationNumber: string;
   vinNumber: string;
   internalReference: string;
+  note: string;
   usageReading: number | null;
   usageLabel: string;
   lifeWorkedPercent: number | null;
@@ -408,6 +410,7 @@ function mapFieldManagerAssetRow(
       "fleetNumber",
       "fleet_number",
     ]),
+    note: asText(row.note) || readSpecText(specs, ["note", "notes", "description"]),
     usageReading: usage.usageReading,
     usageLabel: usage.usageLabel,
     lifeWorkedPercent: asNumber(row.life_worked_percent),
@@ -816,6 +819,15 @@ function fieldManagerAssetSelect(whereSql: string): string {
       a.typed_model_name,
       a.serial_number,
       to_jsonb(a)->>'license_registration_number' as license_registration_number,
+      coalesce(
+        to_jsonb(a)->>'note',
+        to_jsonb(a)->>'notes',
+        to_jsonb(a)->>'description',
+        coalesce(a.specs_json, '{}'::jsonb)->>'note',
+        coalesce(a.specs_json, '{}'::jsonb)->>'notes',
+        coalesce(a.specs_json, '{}'::jsonb)->>'description',
+        ''
+      ) as note,
       coalesce(a.specs_json, '{}'::jsonb) as specs_json,
       a.hours,
       a.life_worked_percent,
