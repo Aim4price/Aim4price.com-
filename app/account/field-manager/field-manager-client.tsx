@@ -96,6 +96,8 @@ export default function FieldManagerOwnerClient() {
   const [savingManagerId, setSavingManagerId] = useState<string | null>(null);
   const [deletingManagerId, setDeletingManagerId] = useState<string | null>(null);
   const [expandedManagerId, setExpandedManagerId] = useState<string | null>(null);
+  const [isCreatePasswordVisible, setIsCreatePasswordVisible] = useState(false);
+  const [visibleEditPasswordIds, setVisibleEditPasswordIds] = useState<Record<string, boolean>>({});
 
   const loginLink = useMemo(() => getFieldManagerLoginLink(), []);
   const shareText = useMemo(() => `Open Field Manager for Aim4price here: ${loginLink}`, [loginLink]);
@@ -197,6 +199,7 @@ export default function FieldManagerOwnerClient() {
         },
       }));
       setDraft(initialDraft);
+      setIsCreatePasswordVisible(false);
       setNotice({ tone: 'success', message: 'Field Manager login created.' });
     } catch (error) {
       setNotice({
@@ -233,6 +236,7 @@ export default function FieldManagerOwnerClient() {
           password: '',
         },
       }));
+      setVisibleEditPasswordIds((current) => ({ ...current, [managerId]: false }));
       setNotice({ tone: 'success', message: successMessage });
     } catch (error) {
       setNotice({
@@ -251,6 +255,13 @@ export default function FieldManagerOwnerClient() {
         ...(current[managerId] ?? { displayName: '', username: '', password: '' }),
         ...updates,
       },
+    }));
+  }
+
+  function toggleEditPasswordVisibility(managerId: string) {
+    setVisibleEditPasswordIds((current) => ({
+      ...current,
+      [managerId]: !current[managerId],
     }));
   }
 
@@ -312,6 +323,10 @@ export default function FieldManagerOwnerClient() {
       setEditDrafts((current) => {
         const { [manager.id]: _removedManager, ...remainingDrafts } = current;
         return remainingDrafts;
+      });
+      setVisibleEditPasswordIds((current) => {
+        const { [manager.id]: _removedManager, ...remainingVisibility } = current;
+        return remainingVisibility;
       });
       setExpandedManagerId((current) => (current === manager.id ? null : current));
       setNotice({ tone: 'success', message: 'Field Manager login deleted.' });
@@ -421,16 +436,30 @@ export default function FieldManagerOwnerClient() {
                 />
               </label>
 
-              <label className={styles.field}>
-                <span>Password</span>
-                <input
-                  type="password"
-                  value={draft.password}
-                  onChange={(event) => setDraft((current) => ({ ...current, password: event.target.value }))}
-                  placeholder={`Minimum ${FIELD_MANAGER_PASSWORD_MIN_LENGTH} characters`}
-                  autoComplete="new-password"
-                />
-              </label>
+              <div className={styles.field}>
+                <label className={styles.fieldLabel} htmlFor="field-manager-create-password">
+                  Password
+                </label>
+                <div className={styles.passwordInputWrap}>
+                  <input
+                    id="field-manager-create-password"
+                    type={isCreatePasswordVisible ? 'text' : 'password'}
+                    value={draft.password}
+                    onChange={(event) => setDraft((current) => ({ ...current, password: event.target.value }))}
+                    placeholder={`Minimum ${FIELD_MANAGER_PASSWORD_MIN_LENGTH} characters`}
+                    autoComplete="new-password"
+                  />
+                  <button
+                    type="button"
+                    className={styles.passwordToggleButton}
+                    onClick={() => setIsCreatePasswordVisible((current) => !current)}
+                    aria-label={isCreatePasswordVisible ? 'Hide Field Manager password' : 'Show Field Manager password'}
+                    aria-pressed={isCreatePasswordVisible}
+                  >
+                    {isCreatePasswordVisible ? 'Hide' : 'Show'}
+                  </button>
+                </div>
+              </div>
 
               <button type="submit" className={styles.primaryButton} disabled={isCreating}>
                 {isCreating ? 'Creating…' : 'Create login'}
@@ -462,6 +491,8 @@ export default function FieldManagerOwnerClient() {
                 const isDeletingThisManager = deletingManagerId === manager.id;
                 const isBusyThisManager = isSavingThisManager || isDeletingThisManager;
                 const managerPanelId = `field-manager-panel-${manager.id}`;
+                const passwordInputId = `field-manager-password-${manager.id}`;
+                const isEditPasswordVisible = Boolean(visibleEditPasswordIds[manager.id]);
 
                 return (
                   <article
@@ -521,16 +552,30 @@ export default function FieldManagerOwnerClient() {
                             />
                           </label>
 
-                          <label className={styles.compactField}>
-                            <span>New password</span>
-                            <input
-                              type="password"
-                              value={editDraft.password}
-                              onChange={(event) => updateEditDraft(manager.id, { password: event.target.value })}
-                              placeholder="Leave blank to keep current"
-                              autoComplete="new-password"
-                            />
-                          </label>
+                          <div className={styles.compactField}>
+                            <label className={styles.fieldLabel} htmlFor={passwordInputId}>
+                              New password
+                            </label>
+                            <div className={styles.passwordInputWrap}>
+                              <input
+                                id={passwordInputId}
+                                type={isEditPasswordVisible ? 'text' : 'password'}
+                                value={editDraft.password}
+                                onChange={(event) => updateEditDraft(manager.id, { password: event.target.value })}
+                                placeholder="Leave blank to keep current"
+                                autoComplete="new-password"
+                              />
+                              <button
+                                type="button"
+                                className={styles.passwordToggleButton}
+                                onClick={() => toggleEditPasswordVisibility(manager.id)}
+                                aria-label={isEditPasswordVisible ? 'Hide new Field Manager password' : 'Show new Field Manager password'}
+                                aria-pressed={isEditPasswordVisible}
+                              >
+                                {isEditPasswordVisible ? 'Hide' : 'Show'}
+                              </button>
+                            </div>
+                          </div>
 
                           <div className={styles.managerActions}>
                             <button type="submit" className={styles.secondaryButton} disabled={isBusyThisManager}>
