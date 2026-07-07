@@ -3673,21 +3673,19 @@ export default function ScanClient({
                     </span>
                   </button>
 
-                  {isFieldManagerMode ? (
-                    <button
-                      type="button"
-                      className={styles.actionCard}
-                      onClick={() => openEditor("notes")}
-                    >
-                      <span className={styles.actionIconWrap}>
-                        <NoteIcon className={styles.actionIcon} />
-                      </span>
-                      <span className={styles.actionTextBlock}>
-                        <strong>Notes</strong>
-                        <small>{buildEditorSummary("notes", asset)}</small>
-                      </span>
-                    </button>
-                  ) : null}
+                  <button
+                    type="button"
+                    className={styles.actionCard}
+                    onClick={() => openEditor("notes")}
+                  >
+                    <span className={styles.actionIconWrap}>
+                      <NoteIcon className={styles.actionIcon} />
+                    </span>
+                    <span className={styles.actionTextBlock}>
+                      <strong>Notes</strong>
+                      <small>{buildEditorSummary("notes", asset)}</small>
+                    </span>
+                  </button>
                 </section>
 
                 <button
