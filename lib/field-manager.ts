@@ -23,6 +23,7 @@ type FieldManagerRow = {
   username: string | null;
   username_normalized: string | null;
   password_hash: string | null;
+  password_display: string | null;
   is_active: boolean | null;
   last_login_at: string | Date | null;
   created_at: string | Date | null;
@@ -58,6 +59,7 @@ export type FieldManagerRecord = {
   ownerUserId: string;
   displayName: string;
   username: string;
+  savedPassword: string | null;
   isActive: boolean;
   status: "active" | "inactive";
   lastLoginAtIso: string | null;
@@ -109,6 +111,10 @@ let fieldManagerTablesPromise: Promise<void> | null = null;
 
 function asText(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function asSavedPassword(value: unknown): string | null {
+  return typeof value === "string" && value.length ? value : null;
 }
 
 function asDateIso(value: unknown): string | null {
@@ -290,6 +296,7 @@ function mapFieldManagerRow(row: FieldManagerRow): FieldManagerRecord {
     ownerUserId,
     displayName: asText(row.display_name),
     username: asText(row.username),
+    savedPassword: asSavedPassword(row.password_display),
     isActive,
     status: isActive ? "active" : "inactive",
     lastLoginAtIso: asDateIso(row.last_login_at),
@@ -422,6 +429,7 @@ async function ensureFieldManagerTablesOnce(): Promise<void> {
       username text not null,
       username_normalized text not null,
       password_hash text not null,
+      password_display text,
       is_active boolean not null default true,
       last_login_at timestamptz,
       created_at timestamptz not null default now(),
@@ -436,6 +444,7 @@ async function ensureFieldManagerTablesOnce(): Promise<void> {
       add column if not exists username text,
       add column if not exists username_normalized text,
       add column if not exists password_hash text,
+      add column if not exists password_display text,
       add column if not exists is_active boolean not null default true,
       add column if not exists last_login_at timestamptz,
       add column if not exists created_at timestamptz not null default now(),
@@ -535,6 +544,7 @@ export async function listFieldManagers(
         username,
         username_normalized,
         password_hash,
+        password_display,
         is_active,
         last_login_at,
         created_at,
@@ -567,11 +577,12 @@ export async function createFieldManager(
           username,
           username_normalized,
           password_hash,
+          password_display,
           is_active,
           created_at,
           updated_at
         )
-        values ($1, $2, $3, $4, $5, true, now(), now())
+        values ($1, $2, $3, $4, $5, $6, true, now(), now())
         returning
           id::text as id,
           owner_user_id,
@@ -579,6 +590,7 @@ export async function createFieldManager(
           username,
           username_normalized,
           password_hash,
+          password_display,
           is_active,
           last_login_at,
           created_at,
@@ -590,6 +602,7 @@ export async function createFieldManager(
         normalized.username,
         normalized.usernameNormalized,
         passwordHash,
+        normalized.password,
       ],
     );
 
@@ -623,6 +636,7 @@ export async function updateFieldManager(
   const passwordHash = normalized.password
     ? await hashFieldManagerPassword(normalized.password)
     : null;
+  const savedPassword = typeof normalized.password === "string" ? normalized.password : null;
 
   try {
     const result = await db.query<FieldManagerRow>(
@@ -633,7 +647,8 @@ export async function updateFieldManager(
           username = coalesce($4::text, username),
           username_normalized = coalesce($5::text, username_normalized),
           password_hash = coalesce($6::text, password_hash),
-          is_active = coalesce($7::boolean, is_active),
+          password_display = coalesce($7::text, password_display),
+          is_active = coalesce($8::boolean, is_active),
           updated_at = now()
         where owner_user_id = $1
           and id = $2::uuid
@@ -644,6 +659,7 @@ export async function updateFieldManager(
           username,
           username_normalized,
           password_hash,
+          password_display,
           is_active,
           last_login_at,
           created_at,
@@ -656,6 +672,7 @@ export async function updateFieldManager(
         normalized.username ?? null,
         normalized.usernameNormalized ?? null,
         passwordHash,
+        savedPassword,
         typeof normalized.isActive === "boolean" ? normalized.isActive : null,
       ],
     );
@@ -713,6 +730,7 @@ export async function getFieldManagerById(
         username,
         username_normalized,
         password_hash,
+        password_display,
         is_active,
         last_login_at,
         created_at,
@@ -748,6 +766,7 @@ export async function getFieldManagerByUsername(
         username,
         username_normalized,
         password_hash,
+        password_display,
         is_active,
         last_login_at,
         created_at,
@@ -999,6 +1018,7 @@ export async function validateFieldManagerScanAsset(input: {
         username,
         username_normalized,
         password_hash,
+        password_display,
         is_active,
         last_login_at,
         created_at,
