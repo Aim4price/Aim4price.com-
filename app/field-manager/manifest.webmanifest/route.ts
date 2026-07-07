@@ -18,13 +18,13 @@ export async function GET() {
       theme_color: '#12352d',
       icons: [
         {
-          src: '/icon.png',
-          sizes: 'any',
+          src: '/field-manager-icon.png',
+          sizes: '512x512',
           type: 'image/png',
           purpose: 'any maskable',
         },
         {
-          src: '/apple-icon.png',
+          src: '/field-manager-apple-icon.png',
           sizes: '180x180',
           type: 'image/png',
         },
