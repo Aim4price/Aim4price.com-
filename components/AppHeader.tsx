@@ -803,10 +803,11 @@ export default function AppHeader({
     () => notifications.reduce((latest, item) => Math.max(latest, parseTime(item.createdAtIso)), 0),
     [notifications],
   );
-  const unreadNotificationCount = useMemo(() => {
-    const seenTime = parseTime(notificationsSeenAt);
-    return notifications.filter((item) => item.messageId || parseTime(item.createdAtIso) > seenTime).length;
-  }, [notifications, notificationsSeenAt]);
+  const notificationsSeenTime = useMemo(() => parseTime(notificationsSeenAt), [notificationsSeenAt]);
+  const unreadNotificationCount = useMemo(
+    () => notifications.filter((item) => parseTime(item.createdAtIso) > notificationsSeenTime).length,
+    [notifications, notificationsSeenTime],
+  );
   const notificationBadgeText = unreadNotificationCount > 9 ? '9+' : String(unreadNotificationCount);
   const notificationPageCount = Math.max(1, Math.ceil(notifications.length / NOTIFICATIONS_PER_PAGE));
   const activeNotificationPage = Math.min(notificationPage, notificationPageCount);
@@ -912,7 +913,6 @@ export default function AppHeader({
         setMenuOpen(false);
         setMobileMenuOpen(false);
         closeNotificationDetailModal();
-        markNotificationsSeen();
       }
       return nextOpen;
     });
@@ -1141,10 +1141,15 @@ export default function AppHeader({
     );
   }
 
+  function isNotificationNew(notification: HeaderNotificationItem): boolean {
+    return parseTime(notification.createdAtIso) > notificationsSeenTime;
+  }
+
   function renderNotificationItem(notification: HeaderNotificationItem) {
     const toneClass = styles[`notificationTone${notification.tone.charAt(0).toUpperCase()}${notification.tone.slice(1)}`];
     const messageClass = notification.messageId ? styles.notificationItemMessage : '';
-    const baseClassName = `${styles.notificationItem} ${toneClass} ${messageClass}`;
+    const newClass = isNotificationNew(notification) ? styles.notificationItemNew : '';
+    const baseClassName = `${styles.notificationItem} ${toneClass} ${messageClass} ${newClass}`;
 
     if (notification.contactRequestId) {
       const loading = loadingNotificationActionId === `contact:${notification.contactRequestId}`;
@@ -1674,9 +1679,9 @@ export default function AppHeader({
                 <div className={styles.notificationHeaderActions}>
                   <button
                     type="button"
-                    className={styles.notificationClearButton}
+                    className={`${styles.notificationClearButton} ${unreadNotificationCount ? styles.notificationClearButtonNew : ''}`}
                     onClick={markNotificationsSeen}
-                    aria-label="Mark all notifications checked"
+                    aria-label={unreadNotificationCount ? `Mark ${unreadNotificationCount} new notifications checked` : 'Mark all notifications checked'}
                   >
                     Mark checked
                   </button>

@@ -498,6 +498,20 @@
   box-shadow: 0 12px 22px rgba(18, 45, 37, 0.07);
 }
 
+.notificationClearButtonNew {
+  color: #6f1f1f;
+  background: #ffe4e4;
+  border-color: rgba(204, 58, 58, 0.3);
+  box-shadow: 0 10px 22px rgba(204, 58, 58, 0.12);
+}
+
+.notificationClearButtonNew:hover {
+  color: #5f1717;
+  background: #ffd9d9;
+  border-color: rgba(204, 58, 58, 0.42);
+  box-shadow: 0 13px 26px rgba(204, 58, 58, 0.16);
+}
+
 .notificationListHeader {
   display: flex;
   align-items: center;
@@ -635,6 +649,43 @@
     radial-gradient(circle at 0 0, rgba(25, 116, 84, 0.13), transparent 34%),
     linear-gradient(180deg, #ffffff 0%, #effaf5 100%);
   border-color: rgba(30, 133, 91, 0.36);
+}
+
+.notificationItemNew {
+  border-color: rgba(204, 58, 58, 0.24);
+  background:
+    radial-gradient(circle at 0 0, rgba(204, 58, 58, 0.11), transparent 34%),
+    linear-gradient(180deg, #fff2f2 0%, #ffe7e7 100%);
+  box-shadow:
+    0 16px 36px rgba(157, 42, 42, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.88);
+}
+
+.notificationItemNew:hover {
+  background:
+    radial-gradient(circle at 0 0, rgba(204, 58, 58, 0.15), transparent 34%),
+    linear-gradient(180deg, #fff7f7 0%, #ffe2e2 100%);
+  border-color: rgba(204, 58, 58, 0.34);
+  box-shadow:
+    0 18px 38px rgba(157, 42, 42, 0.11),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.notificationItemNew .notificationDot {
+  background: #c93a3a;
+  box-shadow: 0 0 0 5px rgba(201, 58, 58, 0.13);
+}
+
+.notificationItemNew .notificationCopy strong {
+  color: #17362c;
+}
+
+.notificationItemNew .notificationCopy span {
+  color: #52615c;
+}
+
+.notificationItemNew .notificationCopy small {
+  color: #7d8a85;
 }
 .notificationDot {
   width: 0.74rem;
