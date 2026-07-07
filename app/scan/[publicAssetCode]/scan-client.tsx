@@ -418,6 +418,7 @@ const initialPendingUpdate: PendingScanUpdate = {
 const DEFAULT_LOCATION_REQUIRED_MESSAGE =
   "Location must be enabled before this asset QR can continue.";
 const GPS_READY_SESSION_MESSAGE = "GPS ready for this QR scan session.";
+const FIELD_MANAGER_RETURN_DELAY_MS = 1100;
 const QR_SCAN_SESSION_STORAGE_PREFIX = "aim4price_qr_scan_session_v1:";
 
 type QrScanSessionState = {
@@ -994,7 +995,7 @@ function buildEditorSummary(
 
   if (editor === "service") return "Check Service Repair";
 
-  if (editor === "notes") return "Notes / Problems";
+  if (editor === "notes") return "Issues & Problems";
 
   if (asset?.photos.length) {
     return `${asset.photos.length} photo${asset.photos.length === 1 ? "" : "s"} stored`;
@@ -1933,7 +1934,29 @@ export default function ScanClient({
 
   async function redirectAfterFieldManagerServerSave() {
     clearQrScanSession(normalizedCode);
-    window.location.replace("/field-manager");
+    setActiveEditor(null);
+    setShowLocationReminder(false);
+    setNotice(null);
+    setDoneMessage("");
+    setIsDone(true);
+
+    try {
+      window.history.replaceState(
+        { aim4priceQrDone: true },
+        "",
+        window.location.href,
+      );
+    } catch {
+      // Ignore history replacement errors.
+    }
+
+    window.setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }, 80);
+
+    window.setTimeout(() => {
+      window.location.replace("/field-manager");
+    }, FIELD_MANAGER_RETURN_DELAY_MS);
   }
 
   async function loadUnlockedAsset(): Promise<boolean> {
@@ -3359,7 +3382,7 @@ export default function ScanClient({
       <main className={pageClassName}>
         <section className={styles.thankYouScreen}>
           <h1>Thank you.</h1>
-          <p>{doneMessage}</p>
+          {doneMessage ? <p>{doneMessage}</p> : null}
         </section>
       </main>
     );
@@ -3664,7 +3687,7 @@ export default function ScanClient({
                         <NoteIcon className={styles.actionIcon} />
                       </span>
                       <span className={styles.actionTextBlock}>
-                        <strong>Notes / Problems</strong>
+                        <strong>Notes</strong>
                         <small>{buildEditorSummary("notes", asset)}</small>
                       </span>
                     </button>
@@ -4050,7 +4073,7 @@ export default function ScanClient({
                                 : serviceCopy.repairedTitle
                               : "Maintenance"
                       : activeEditor === "notes"
-                        ? "Notes / Problems"
+                        ? "Notes"
                         : "Photos"}
                 </h3>
                 <p>
@@ -4071,7 +4094,7 @@ export default function ScanClient({
                                 : serviceCopy.repairedPrompt
                               : "Choose update type."
                       : activeEditor === "notes"
-                        ? "Capture a note, defect or problem for this asset."
+                        ? "Issues & Problems"
                         : "Add clear photos."}
                 </p>
               </div>
@@ -4780,7 +4803,7 @@ export default function ScanClient({
               {activeEditor === "notes" ? (
                 <div className={styles.modalStack}>
                   <label className={styles.field}>
-                    <span>Notes / Problems</span>
+                    <span>Notes</span>
                     <textarea
                       value={draft.note}
                       onChange={(event) =>
