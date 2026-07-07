@@ -11,7 +11,7 @@ import {
 } from "./asset-owner-resolver";
 
 const scryptAsync = promisify(scrypt);
-const FIELD_MANAGER_PASSWORD_MIN_LENGTH = 8;
+const FIELD_MANAGER_PASSWORD_MIN_LENGTH = 4;
 const MAX_DISPLAY_NAME_LENGTH = 120;
 const MAX_USERNAME_LENGTH = 80;
 const MAX_PASSWORD_LENGTH = 160;
