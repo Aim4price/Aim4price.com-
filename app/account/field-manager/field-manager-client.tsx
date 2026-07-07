@@ -11,6 +11,7 @@ type FieldManagerRecord = {
   ownerUserId: string;
   displayName: string;
   username: string;
+  savedPassword: string | null;
   isActive: boolean;
   status: 'active' | 'inactive';
   lastLoginAtIso: string | null;
@@ -134,7 +135,7 @@ export default function FieldManagerOwnerClient() {
           next[manager.id] = current[manager.id] ?? {
             displayName: manager.displayName,
             username: manager.username,
-            password: '',
+            password: manager.savedPassword ?? '',
           };
         });
         return next;
@@ -195,7 +196,7 @@ export default function FieldManagerOwnerClient() {
         [payload.manager!.id]: {
           displayName: payload.manager!.displayName,
           username: payload.manager!.username,
-          password: '',
+          password: payload.manager!.savedPassword ?? '',
         },
       }));
       setDraft(initialDraft);
@@ -233,7 +234,7 @@ export default function FieldManagerOwnerClient() {
         [managerId]: {
           displayName: payload.manager!.displayName,
           username: payload.manager!.username,
-          password: '',
+          password: payload.manager!.savedPassword ?? '',
         },
       }));
       setVisibleEditPasswordIds((current) => ({ ...current, [managerId]: false }));
@@ -276,7 +277,7 @@ export default function FieldManagerOwnerClient() {
       username: normalizeUsername(editDraft.username),
     };
 
-    if (editDraft.password.trim()) {
+    if (editDraft.password.trim() && editDraft.password !== (manager.savedPassword ?? '')) {
       if (editDraft.password.length < FIELD_MANAGER_PASSWORD_MIN_LENGTH) {
         setNotice({
           tone: 'error',
@@ -484,7 +485,7 @@ export default function FieldManagerOwnerClient() {
                 const editDraft = editDrafts[manager.id] ?? {
                   displayName: manager.displayName,
                   username: manager.username,
-                  password: '',
+                  password: manager.savedPassword ?? '',
                 };
                 const isExpanded = expandedManagerId === manager.id;
                 const isSavingThisManager = savingManagerId === manager.id;
@@ -554,7 +555,7 @@ export default function FieldManagerOwnerClient() {
 
                           <div className={styles.compactField}>
                             <label className={styles.fieldLabel} htmlFor={passwordInputId}>
-                              New password
+                              Password
                             </label>
                             <div className={styles.passwordInputWrap}>
                               <input
@@ -562,19 +563,25 @@ export default function FieldManagerOwnerClient() {
                                 type={isEditPasswordVisible ? 'text' : 'password'}
                                 value={editDraft.password}
                                 onChange={(event) => updateEditDraft(manager.id, { password: event.target.value })}
-                                placeholder="Leave blank to keep current"
-                                autoComplete="new-password"
+                                placeholder={manager.savedPassword ? 'Saved password' : 'Enter new password to save here'}
+                                autoComplete="off"
                               />
                               <button
                                 type="button"
                                 className={styles.passwordToggleButton}
                                 onClick={() => toggleEditPasswordVisibility(manager.id)}
-                                aria-label={isEditPasswordVisible ? 'Hide new Field Manager password' : 'Show new Field Manager password'}
+                                aria-label={isEditPasswordVisible ? 'Hide saved Field Manager password' : 'Show saved Field Manager password'}
                                 aria-pressed={isEditPasswordVisible}
                               >
                                 {isEditPasswordVisible ? 'Hide' : 'Show'}
                               </button>
                             </div>
+                            {!manager.savedPassword ? (
+                              <p className={styles.fieldHint}>
+                                Existing passwords created before this update cannot be shown. Save a new password once to
+                                make it visible here.
+                              </p>
+                            ) : null}
                           </div>
 
                           <div className={styles.managerActions}>

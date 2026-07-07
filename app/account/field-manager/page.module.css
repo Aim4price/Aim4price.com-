@@ -298,6 +298,15 @@
   font-weight: 650;
 }
 
+
+.fieldHint {
+  margin: -0.16rem 0 0;
+  color: #6a7a74;
+  font-size: 0.72rem;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
 .field input:focus,
 .compactField input:focus {
   border-color: rgba(31, 138, 102, 0.38);
