@@ -1933,22 +1933,7 @@ export default function ScanClient({
 
   async function redirectAfterFieldManagerServerSave() {
     clearQrScanSession(normalizedCode);
-
-    try {
-      const response = await fetch("/api/field-manager/session", {
-        credentials: "include",
-        cache: "no-store",
-      });
-
-      if (!response.ok) {
-        window.location.replace("/field-manager/login");
-        return;
-      }
-
-      window.location.replace("/field-manager");
-    } catch {
-      window.location.replace("/field-manager/login");
-    }
+    window.location.replace("/field-manager");
   }
 
   async function loadUnlockedAsset(): Promise<boolean> {
@@ -2767,7 +2752,7 @@ export default function ScanClient({
 
     const persistedAsset = savedAsset ?? asset;
 
-    if (operatorName.trim().length < 2) {
+    if (!isFieldManagerMode && operatorName.trim().length < 2) {
       return { ok: false, message: "Enter your name before saving." };
     }
 
@@ -2876,7 +2861,7 @@ export default function ScanClient({
     return { ok: false, message: "Choose an update first." };
   }
 
-  function handleSaveUpdate() {
+  async function handleSaveUpdate() {
     if (!asset || !activeEditor) return;
 
     const validation = validateDraftForSave();
@@ -2895,6 +2880,16 @@ export default function ScanClient({
       storedSession?.locationCapturedAtIso ||
       pendingUpdate.clientCapturedAt ||
       "";
+
+    const withSavedLocation = (update: PendingScanUpdate): PendingScanUpdate => ({
+      ...update,
+      latitude: savedLatitude || update.latitude,
+      longitude: savedLongitude || update.longitude,
+      gpsAccuracyMeters: savedGpsAccuracyMeters || update.gpsAccuracyMeters,
+      clientCapturedAt: savedClientCapturedAt || update.clientCapturedAt,
+    });
+
+    let nextPendingUpdate = withSavedLocation(pendingUpdate);
 
     if (savedLatitude && savedLongitude) {
       updateQrScanSession(normalizedCode, (current) => ({
@@ -2916,15 +2911,11 @@ export default function ScanClient({
       const stagedHours = draft.hours.trim();
       const parsedHours = Number(stagedHours);
 
-      setPendingUpdate((current) => ({
-        ...current,
+      nextPendingUpdate = withSavedLocation({
+        ...nextPendingUpdate,
         hours: stagedHours,
-        latitude: savedLatitude || current.latitude,
-        longitude: savedLongitude || current.longitude,
-        gpsAccuracyMeters: savedGpsAccuracyMeters || current.gpsAccuracyMeters,
-        clientCapturedAt: savedClientCapturedAt || current.clientCapturedAt,
         hasUsage: true,
-      }));
+      });
       updateQrScanSession(normalizedCode, (current) => ({
         ...current,
         assetId: asset.id,
@@ -2948,20 +2939,16 @@ export default function ScanClient({
       const serviceNote = buildServiceNote(draft);
       const stagedPhotos = mergeUniqueStrings(draft.photoUrls, MAX_QR_PHOTOS);
 
-      setPendingUpdate((current) => ({
-        ...current,
-        notes: mergeUniqueStrings([...current.notes, serviceNote]),
+      nextPendingUpdate = withSavedLocation({
+        ...nextPendingUpdate,
+        notes: mergeUniqueStrings([...nextPendingUpdate.notes, serviceNote]),
         photoUrls: mergeUniqueStrings(
-          [...current.photoUrls, ...stagedPhotos],
+          [...nextPendingUpdate.photoUrls, ...stagedPhotos],
           MAX_QR_PHOTOS,
         ),
-        latitude: savedLatitude || current.latitude,
-        longitude: savedLongitude || current.longitude,
-        gpsAccuracyMeters: savedGpsAccuracyMeters || current.gpsAccuracyMeters,
-        clientCapturedAt: savedClientCapturedAt || current.clientCapturedAt,
         hasService: true,
-        hasPhotos: stagedPhotos.length > 0 || current.hasPhotos,
-      }));
+        hasPhotos: stagedPhotos.length > 0 || nextPendingUpdate.hasPhotos,
+      });
 
       if (stagedPhotos.length) {
         setAsset((current) =>
@@ -2981,18 +2968,14 @@ export default function ScanClient({
     if (activeEditor === "photos") {
       const stagedPhotos = mergeUniqueStrings(draft.photoUrls, MAX_QR_PHOTOS);
 
-      setPendingUpdate((current) => ({
-        ...current,
+      nextPendingUpdate = withSavedLocation({
+        ...nextPendingUpdate,
         photoUrls: mergeUniqueStrings(
-          [...current.photoUrls, ...stagedPhotos],
+          [...nextPendingUpdate.photoUrls, ...stagedPhotos],
           MAX_QR_PHOTOS,
         ),
-        latitude: savedLatitude || current.latitude,
-        longitude: savedLongitude || current.longitude,
-        gpsAccuracyMeters: savedGpsAccuracyMeters || current.gpsAccuracyMeters,
-        clientCapturedAt: savedClientCapturedAt || current.clientCapturedAt,
-        hasPhotos: stagedPhotos.length > 0 || current.hasPhotos,
-      }));
+        hasPhotos: stagedPhotos.length > 0 || nextPendingUpdate.hasPhotos,
+      });
       setAsset((current) =>
         current
           ? {
@@ -3009,18 +2992,23 @@ export default function ScanClient({
     if (activeEditor === "notes") {
       const noteText = draft.note.trim();
 
-      setPendingUpdate((current) => ({
-        ...current,
+      nextPendingUpdate = withSavedLocation({
+        ...nextPendingUpdate,
         notes: mergeUniqueStrings([
-          ...current.notes,
+          ...nextPendingUpdate.notes,
           `Notes/Problems: ${noteText}`,
         ]),
-        latitude: savedLatitude || current.latitude,
-        longitude: savedLongitude || current.longitude,
-        gpsAccuracyMeters: savedGpsAccuracyMeters || current.gpsAccuracyMeters,
-        clientCapturedAt: savedClientCapturedAt || current.clientCapturedAt,
         hasNotes: true,
-      }));
+      });
+    }
+
+    setPendingUpdate(nextPendingUpdate);
+
+    if (isFieldManagerMode) {
+      const result = await persistPendingScanUpdate(nextPendingUpdate);
+      if (!result) return;
+      await redirectAfterFieldManagerServerSave();
+      return;
     }
 
     setDraft({
@@ -3060,36 +3048,38 @@ export default function ScanClient({
     }, 80);
   }
 
-  async function persistPendingScanUpdate(): Promise<PersistPendingScanUpdateResult | null> {
+  async function persistPendingScanUpdate(
+    updateToPersist: PendingScanUpdate = pendingUpdate,
+  ): Promise<PersistPendingScanUpdateResult | null> {
     if (!asset) return null;
 
-    if (!hasPendingScanUpdate(pendingUpdate)) {
+    if (!hasPendingScanUpdate(updateToPersist)) {
       return { asset, syncedToServer: false };
     }
 
     const storedSession = readQrScanSession(normalizedCode);
     const storedSessionUsage = sessionUsageForAsset(asset, storedSession);
     const finalLatitude =
-      pendingUpdate.latitude || draft.latitude || storedSession?.latitude || "";
+      updateToPersist.latitude || draft.latitude || storedSession?.latitude || "";
     const finalLongitude =
-      pendingUpdate.longitude ||
+      updateToPersist.longitude ||
       draft.longitude ||
       storedSession?.longitude ||
       "";
     const finalGpsAccuracyMeters =
-      pendingUpdate.gpsAccuracyMeters || storedSession?.gpsAccuracyMeters || "";
+      updateToPersist.gpsAccuracyMeters || storedSession?.gpsAccuracyMeters || "";
     const finalClientCapturedAt =
-      pendingUpdate.clientCapturedAt ||
+      updateToPersist.clientCapturedAt ||
       storedSession?.locationCapturedAtIso ||
       new Date().toISOString();
     const finalClientEventId =
-      pendingUpdate.clientEventId ||
+      updateToPersist.clientEventId ||
       createOfflineClientEventId("asset-scan-update");
     const shouldSendUsageReading =
       (asset.usageMode === "hours" || asset.usageMode === "km") &&
-      (pendingUpdate.hasUsage || storedSessionUsage.hasUsage);
+      (updateToPersist.hasUsage || storedSessionUsage.hasUsage);
     const sessionHours = shouldSendUsageReading
-      ? pendingUpdate.hours || storedSessionUsage.hours || ""
+      ? updateToPersist.hours || storedSessionUsage.hours || ""
       : "";
     const operatorNameForSave = isFieldManagerMode
       ? operatorName.trim() || "Field Manager"
@@ -3113,8 +3103,8 @@ export default function ScanClient({
     const payload = {
       operatorName: operatorNameForSave,
       hours: sessionHours,
-      note: pendingUpdate.notes.join("\n\n---\n\n"),
-      photoUrls: pendingUpdate.photoUrls,
+      note: updateToPersist.notes.join("\n\n---\n\n"),
+      photoUrls: updateToPersist.photoUrls,
       latitude: scanLocationPayloadText(finalLatitude),
       longitude: scanLocationPayloadText(finalLongitude),
       clientCapturedAt: finalClientCapturedAt,
@@ -3158,7 +3148,7 @@ export default function ScanClient({
             : current.hours,
         hasUsage:
           current.hasUsage ||
-          pendingUpdate.hasUsage ||
+          updateToPersist.hasUsage ||
           storedSessionUsage.hasUsage,
         latitude: finalLatitude || current.latitude,
         longitude: finalLongitude || current.longitude,
@@ -3170,7 +3160,7 @@ export default function ScanClient({
       setAsset(savedAssetFromResponse);
       setSavedAsset(savedAssetFromResponse);
       setAssetPreview(savedAssetFromResponse);
-      if (pendingUpdate.hasUsage || storedSessionUsage.hasUsage) {
+      if (updateToPersist.hasUsage || storedSessionUsage.hasUsage) {
         setHasCompletedRequiredUsageUpdate(true);
       }
       setPendingUpdate({
@@ -3252,7 +3242,7 @@ export default function ScanClient({
 
     if (!result) return;
 
-    if (isFieldManagerMode && result.syncedToServer) {
+    if (isFieldManagerMode) {
       await redirectAfterFieldManagerServerSave();
       return;
     }
