@@ -628,6 +628,11 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
   }
 
   function finishScan(action: DoneAction, overrideMessage = '') {
+    if (isFieldManagerMode) {
+      window.location.replace('/field-manager');
+      return;
+    }
+
     setDoneAction(action);
     setDoneOverrideMessage(overrideMessage);
     setNotice(null);
@@ -645,21 +650,7 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
   }
 
   async function redirectAfterFieldManagerServerSave() {
-    try {
-      const response = await fetch('/api/field-manager/session', {
-        credentials: 'include',
-        cache: 'no-store',
-      });
-
-      if (!response.ok) {
-        window.location.replace('/field-manager/login');
-        return;
-      }
-
-      window.location.replace('/field-manager');
-    } catch {
-      window.location.replace('/field-manager/login');
-    }
+    window.location.replace('/field-manager');
   }
 
   async function finishServerScan(action: DoneAction) {
@@ -1049,7 +1040,7 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
     return (
       <section className={`${styles.stepCard} ${styles.choiceCard}`}>
         <div className={styles.stepTitleBlock}>
-          <span>Step 2 of {TOTAL_SCAN_PAGES}</span>
+          {!isFieldManagerMode ? <span>Step 2 of {TOTAL_SCAN_PAGES}</span> : null}
           <h1>Fuel action</h1>
           {!isFieldManagerMode ? <p>{visibleStorageName} · {formatLitres(storage?.currentLitres)} available</p> : null}
         </div>
@@ -1218,14 +1209,16 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
             </label>
           </section>
 
-          <div className={styles.assetSearchSummary}>
-            <span>{filteredAssets.length} {filteredAssets.length === 1 ? 'asset' : 'assets'} available</span>
-            {assetSearch.trim() ? (
-              <button type="button" onClick={() => setAssetSearch('')}>
-                Clear search
-              </button>
-            ) : null}
-          </div>
+          {!isFieldManagerMode ? (
+            <div className={styles.assetSearchSummary}>
+              <span>{filteredAssets.length} {filteredAssets.length === 1 ? 'asset' : 'assets'} available</span>
+              {assetSearch.trim() ? (
+                <button type="button" onClick={() => setAssetSearch('')}>
+                  Clear search
+                </button>
+              ) : null}
+            </div>
+          ) : null}
 
           <div className={styles.fieldManagerAssetList}>
             {filteredAssets.map((asset) => {
@@ -1523,23 +1516,23 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
           </section>
         ) : scanMode === 'action-choice' ? (
           <>
-            {renderScanProgress('Fuel QR', 'Fuel action', `2/${TOTAL_SCAN_PAGES}`, choiceStepProgress)}
+            {!isFieldManagerMode ? renderScanProgress('Fuel QR', 'Fuel action', `2/${TOTAL_SCAN_PAGES}`, choiceStepProgress) : null}
             {renderActionChoice()}
             {renderStorageRefillWarning()}
           </>
         ) : scanMode === 'storage-refill' ? (
           <>
-            {renderScanProgress('Storage refill', 'Add fuel to tank', 'Fuel In', 100)}
+            {!isFieldManagerMode ? renderScanProgress('Storage refill', 'Add fuel to tank', 'Fuel In', 100) : null}
             {renderStorageRefillStep()}
           </>
         ) : scanMode === 'dipstick-note' ? (
           <>
-            {renderScanProgress('Dipstick note', 'Internal note', 'No export', 100)}
+            {!isFieldManagerMode ? renderScanProgress('Dipstick note', 'Internal note', 'No export', 100) : null}
             {renderDipstickNoteStep()}
           </>
         ) : (
           <>
-            {renderScanProgress('Fuel Assets', STEP_LABELS[issueStep], `${issueStepNumber}/${TOTAL_SCAN_PAGES}`, issueStepProgress)}
+            {!isFieldManagerMode ? renderScanProgress('Fuel Assets', STEP_LABELS[issueStep], `${issueStepNumber}/${TOTAL_SCAN_PAGES}`, issueStepProgress) : null}
             {renderIssueStep()}
           </>
         )}

@@ -1376,3 +1376,418 @@
   border-color: rgba(18, 53, 45, 0.12);
   box-shadow: 0 20px 48px rgba(18, 53, 45, 0.1);
 }
+
+/* Field Manager-mode fuel scanner: scoped overrides so the public fuel QR scanner keeps its existing layout. */
+.fieldManagerMobileSurface {
+  --bg: #edf4f0;
+  --surface: rgba(255, 255, 255, 0.95);
+  --surface-soft: #fbfdfb;
+  --line: rgba(18, 53, 45, 0.16);
+  --line-strong: rgba(18, 53, 45, 0.12);
+  --text: #12352d;
+  --text-soft: rgba(18, 53, 45, 0.66);
+  --green: #236851;
+  --green-strong: #174637;
+  --green-soft: #e8f8ef;
+  --green-line: rgba(35, 104, 81, 0.2);
+  --red: #9b3030;
+  --red-soft: #fff0f0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(78, 138, 108, 0.22), transparent 20rem),
+    linear-gradient(180deg, #eff5f1 0%, #f7faf7 42%, #edf4f0 100%);
+  color: #12352d;
+  font-family: 'Montserrat', var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif;
+}
+
+.fieldManagerMobileSurface .scanShell {
+  width: min(100% - 24px, 560px);
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: max(16px, env(safe-area-inset-top)) 0 max(24px, env(safe-area-inset-bottom));
+  gap: 14px;
+}
+
+.fieldManagerMobileSurface .pinStepCard,
+.fieldManagerMobileSurface .stepCard,
+.fieldManagerMobileSurface .notice,
+.fieldManagerMobileSurface .stepProgress,
+.fieldManagerMobileSurface .thankYouScreen,
+.fieldManagerMobileSurface .readingCard,
+.fieldManagerMobileSurface .compactMetaGrid > div,
+.fieldManagerMobileSurface .reviewBox,
+.fieldManagerMobileSurface .fuelSliderBlock,
+.fieldManagerMobileSurface .storageNoticeBox,
+.fieldManagerMobileSurface .confirmationCard {
+  border: 1px solid rgba(18, 53, 45, 0.12);
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 20px 48px rgba(18, 53, 45, 0.1);
+}
+
+.fieldManagerMobileSurface .pinStepCard,
+.fieldManagerMobileSurface .stepCard {
+  min-height: 0;
+  border-radius: 24px;
+  padding: 18px 16px 16px;
+  gap: 14px;
+  align-content: start;
+}
+
+.fieldManagerMobileSurface .pinStepCard {
+  align-content: center;
+}
+
+.fieldManagerMobileSurface .choiceCard,
+.fieldManagerMobileSurface .assetStepCard,
+.fieldManagerMobileSurface .fieldManagerAssetPickerCard {
+  min-height: 0;
+  height: auto;
+}
+
+.fieldManagerMobileSurface .fieldManagerAssetPickerCard {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+
+.fieldManagerMobileSurface .notice {
+  min-height: 0;
+  border-radius: 18px;
+  padding: 14px 15px;
+  font-size: 0.98rem;
+  font-weight: 860;
+  line-height: 1.42;
+}
+
+.fieldManagerMobileSurface .noticeSuccess {
+  border-color: rgba(35, 104, 81, 0.18);
+  background: rgba(35, 104, 81, 0.09);
+  color: #174637;
+}
+
+.fieldManagerMobileSurface .noticeError {
+  border-color: rgba(155, 44, 44, 0.16);
+  background: rgba(155, 44, 44, 0.09);
+  color: #8a2424;
+}
+
+.fieldManagerMobileSurface .stepTitleBlock,
+.fieldManagerMobileSurface .qrTitleBlock {
+  width: 100%;
+  display: grid;
+  justify-items: center;
+  gap: 0;
+  text-align: center;
+}
+
+.fieldManagerMobileSurface .stepTitleBlock span,
+.fieldManagerMobileSurface .qrTitleBlock span {
+  display: none;
+}
+
+.fieldManagerMobileSurface .stepTitleBlock h1,
+.fieldManagerMobileSurface .qrTitleBlock h1,
+.fieldManagerMobileSurface .thankYouScreen h1,
+.fieldManagerMobileSurface .confirmationCard h2 {
+  max-width: 100%;
+  margin: 0 auto;
+  color: #12352d;
+  font-size: clamp(1.55rem, 7vw, 2.2rem);
+  font-weight: 950;
+  line-height: 1.02;
+  letter-spacing: -0.045em;
+  text-align: center;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+
+.fieldManagerMobileSurface .stepTitleBlock p,
+.fieldManagerMobileSurface .qrTitleBlock p,
+.fieldManagerMobileSurface .thankYouScreen p,
+.fieldManagerMobileSurface .emptyText,
+.fieldManagerMobileSurface .confirmationCard p {
+  max-width: min(100%, 34ch);
+  margin: 8px auto 0;
+  color: rgba(18, 53, 45, 0.65);
+  font-size: 0.96rem;
+  font-weight: 760;
+  line-height: 1.38;
+  text-align: center;
+  text-wrap: balance;
+}
+
+.fieldManagerMobileSurface .field span,
+.fieldManagerMobileSurface .searchField span,
+.fieldManagerMobileSurface .readingCard span,
+.fieldManagerMobileSurface .compactMetaGrid span,
+.fieldManagerMobileSurface .reviewBox span,
+.fieldManagerMobileSurface .fuelValueRow span,
+.fieldManagerMobileSurface .fieldManagerAssetSearchField span,
+.fieldManagerMobileSurface .fieldManagerAssetMetaGrid span {
+  color: rgba(18, 53, 45, 0.52);
+  font-size: 0.72rem;
+  font-weight: 950;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.fieldManagerMobileSurface .field input,
+.fieldManagerMobileSurface .field textarea,
+.fieldManagerMobileSurface .searchField input,
+.fieldManagerMobileSurface .fieldManagerAssetSearchField input {
+  width: 100%;
+  border: 1px solid rgba(18, 53, 45, 0.16);
+  border-radius: 18px;
+  background: #fbfdfb;
+  color: #12352d;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 820;
+  outline: none;
+  box-shadow: none;
+}
+
+.fieldManagerMobileSurface .field input,
+.fieldManagerMobileSurface .searchField input,
+.fieldManagerMobileSurface .fieldManagerAssetSearchField input {
+  min-height: 58px;
+  padding: 0 15px;
+}
+
+.fieldManagerMobileSurface .field textarea {
+  padding: 15px;
+}
+
+.fieldManagerMobileSurface .field input:focus,
+.fieldManagerMobileSurface .field textarea:focus,
+.fieldManagerMobileSurface .searchField input:focus,
+.fieldManagerMobileSurface .fieldManagerAssetSearchField input:focus {
+  border-color: rgba(35, 104, 81, 0.6);
+  box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.11);
+}
+
+.fieldManagerMobileSurface .primaryButton,
+.fieldManagerMobileSurface .fieldManagerAssetOpenButton {
+  width: 100%;
+  min-height: 56px;
+  border: 0;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #236851, #174637);
+  color: #ffffff;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 950;
+  box-shadow: 0 16px 30px rgba(35, 104, 81, 0.24);
+}
+
+.fieldManagerMobileSurface .secondaryButton,
+.fieldManagerMobileSurface .optionButton,
+.fieldManagerMobileSurface .locationGate button,
+.fieldManagerMobileSurface .quickFuelButton,
+.fieldManagerMobileSurface .assetBackButton {
+  min-height: 56px;
+  border: 1px solid rgba(18, 53, 45, 0.12);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #174637;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 950;
+  box-shadow: 0 12px 26px rgba(18, 53, 45, 0.08);
+}
+
+.fieldManagerMobileSurface .primaryButton:active,
+.fieldManagerMobileSurface .secondaryButton:active,
+.fieldManagerMobileSurface .optionButton:active,
+.fieldManagerMobileSurface .locationGate button:active,
+.fieldManagerMobileSurface .quickFuelButton:active,
+.fieldManagerMobileSurface .fieldManagerAssetOpenButton:active,
+.fieldManagerMobileSurface .assetBackButton:active,
+.fieldManagerMobileSurface .actionChoiceButton:active {
+  transform: translateY(1px);
+}
+
+.fieldManagerMobileSurface .locationGate {
+  border: 1px solid rgba(198, 55, 55, 0.24);
+  border-radius: 18px;
+  background: linear-gradient(180deg, #fff8f8 0%, #fde8e8 100%);
+  box-shadow: 0 12px 26px rgba(155, 48, 48, 0.1);
+}
+
+.fieldManagerMobileSurface .locationGateReady {
+  border-color: rgba(35, 104, 81, 0.2);
+  background: linear-gradient(180deg, #f7fffb 0%, #e8f8ef 100%);
+  box-shadow: 0 12px 26px rgba(35, 104, 81, 0.09);
+}
+
+.fieldManagerMobileSurface .locationGate strong {
+  color: #12352d;
+  font-weight: 950;
+}
+
+.fieldManagerMobileSurface .locationGate span {
+  color: rgba(18, 53, 45, 0.66);
+  font-weight: 760;
+}
+
+.fieldManagerMobileSurface .actionChoiceList {
+  display: grid;
+  gap: 14px;
+}
+
+.fieldManagerMobileSurface .actionChoiceButton {
+  width: 100%;
+  min-height: 96px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(18, 53, 45, 0.12);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #12352d;
+  padding: 18px 20px;
+  text-align: center;
+  box-shadow: 0 20px 48px rgba(18, 53, 45, 0.1);
+}
+
+.fieldManagerMobileSurface .actionChoiceButton strong {
+  margin: 0;
+  color: #12352d;
+  font-size: clamp(2rem, 10vw, 3rem);
+  font-weight: 950;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  text-align: center;
+}
+
+.fieldManagerMobileSurface .actionChoiceButton span {
+  display: none;
+}
+
+.fieldManagerMobileSurface .fieldManagerAssetSearchCard {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  border: 1px solid rgba(18, 53, 45, 0.12);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 20px 48px rgba(18, 53, 45, 0.1);
+  padding: 14px;
+  backdrop-filter: blur(12px);
+}
+
+.fieldManagerMobileSurface .fieldManagerAssetList {
+  display: grid;
+  gap: 14px;
+  margin-top: 0;
+  padding-bottom: 22px;
+}
+
+.fieldManagerMobileSurface .fieldManagerAssetCard {
+  border: 1px solid rgba(18, 53, 45, 0.12);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 20px 48px rgba(18, 53, 45, 0.1);
+  padding: 18px 16px 16px;
+}
+
+.fieldManagerMobileSurface .fieldManagerAssetTopRow {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.fieldManagerMobileSurface .fieldManagerAssetTopRow h2 {
+  max-width: 100%;
+  margin: 0 auto;
+  color: #12352d;
+  font-size: clamp(1.28rem, 5.3vw, 1.55rem);
+  font-weight: 900;
+  line-height: 1.08;
+  letter-spacing: -0.04em;
+  text-align: center;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+
+.fieldManagerMobileSurface .fieldManagerAssetMetaGrid {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0;
+}
+
+.fieldManagerMobileSurface .fieldManagerAssetMetaGrid div,
+.fieldManagerMobileSurface .compactMetaGrid > div,
+.fieldManagerMobileSurface .reviewBox,
+.fieldManagerMobileSurface .readingCard {
+  border: 1px solid rgba(18, 53, 45, 0.1);
+  border-radius: 18px;
+  background: #fbfdfb;
+  box-shadow: none;
+}
+
+.fieldManagerMobileSurface .fieldManagerAssetMetaGrid div {
+  min-height: 62px;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  padding: 12px 10px;
+  text-align: center;
+}
+
+.fieldManagerMobileSurface .fieldManagerAssetMetaGrid strong,
+.fieldManagerMobileSurface .compactMetaGrid strong,
+.fieldManagerMobileSurface .reviewBox strong,
+.fieldManagerMobileSurface .readingCard strong {
+  color: #12352d;
+  font-weight: 900;
+}
+
+.fieldManagerMobileSurface .fuelSliderBlock {
+  border-radius: 24px;
+  padding: 16px;
+}
+
+.fieldManagerMobileSurface .fuelValueRow strong {
+  color: #12352d;
+}
+
+.fieldManagerMobileSurface .quickFuelButtonActive,
+.fieldManagerMobileSurface .optionButtonActive {
+  border-color: rgba(35, 104, 81, 0.34);
+  background: linear-gradient(135deg, #236851, #174637);
+  color: #ffffff;
+  box-shadow: 0 16px 30px rgba(35, 104, 81, 0.24);
+}
+
+.fieldManagerMobileSurface .stepControls {
+  gap: 10px;
+}
+
+@media (min-width: 640px) {
+  .fieldManagerMobileSurface .fieldManagerAssetMetaGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 390px) {
+  .fieldManagerMobileSurface .scanShell {
+    width: min(100% - 18px, 560px);
+  }
+
+  .fieldManagerMobileSurface .pinStepCard,
+  .fieldManagerMobileSurface .stepCard,
+  .fieldManagerMobileSurface .fieldManagerAssetSearchCard,
+  .fieldManagerMobileSurface .fieldManagerAssetCard,
+  .fieldManagerMobileSurface .actionChoiceButton {
+    border-radius: 22px;
+    padding: 14px;
+  }
+
+  .fieldManagerMobileSurface .actionChoiceButton strong {
+    font-size: 2rem;
+  }
+}
