@@ -2748,3 +2748,54 @@
   border-color: rgba(155, 48, 48, 0.22);
   background: linear-gradient(180deg, #fffafa 0%, #fff0f0 100%);
 }
+
+.fieldManagerMobileSurface .actionGrid {
+  grid-template-columns: 1fr;
+  gap: 1.05rem;
+}
+
+.fieldManagerMobileSurface .actionCard {
+  width: 100%;
+  min-height: clamp(12.6rem, 36vw, 14.9rem);
+  gap: 0.82rem;
+  padding: clamp(1.05rem, 4.3vw, 1.42rem) 1rem;
+  border-radius: 1.55rem;
+}
+
+.fieldManagerMobileSurface .actionTextBlock {
+  gap: 0.34rem;
+}
+
+.fieldManagerMobileSurface .actionCard strong,
+.fieldManagerMobileSurface .actionCard small {
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  overflow-wrap: normal;
+  word-break: keep-all;
+}
+
+.fieldManagerMobileSurface .actionCard strong {
+  font-size: clamp(1.9rem, 7.6vw, 2.5rem);
+  line-height: 1;
+}
+
+.fieldManagerMobileSurface .actionCard small,
+.fieldManagerMobileSurface .actionCard small.actionSubtitleNoWrap {
+  width: 100%;
+  display: block;
+  -webkit-line-clamp: unset;
+  -webkit-box-orient: initial;
+  color: rgba(18, 53, 45, 0.62);
+  font-size: clamp(0.98rem, 3.8vw, 1.15rem);
+  font-weight: 790;
+  line-height: 1.16;
+  letter-spacing: -0.012em;
+}
+
+.fieldManagerMobileSurface .actionIconWrap {
+  width: clamp(4.6rem, 18vw, 5.45rem);
+  height: clamp(4.6rem, 18vw, 5.45rem);
+  border-radius: 1.55rem;
+}
