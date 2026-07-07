@@ -8,6 +8,12 @@
   font-family: 'Montserrat', var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif;
 }
 
+.mobilePage button,
+.mobilePage input,
+.mobilePage textarea {
+  font-family: inherit;
+}
+
 .loginShell,
 .assetsShell {
   width: min(100% - 24px, 560px);
@@ -24,10 +30,8 @@
   gap: 18px;
 }
 
-.assetsHeader span,
 .loginHeader span,
 .searchField span,
-.assetKind,
 .assetMetaGrid span,
 .homeActionCard span {
   color: #236851;
@@ -272,15 +276,26 @@
 .logoutButton {
   flex: 0 0 auto;
   min-height: 48px;
-  border: 1px solid rgba(18, 53, 45, 0.13);
+  border: 1px solid rgba(198, 55, 55, 0.24);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.92);
-  color: #174637;
+  background: linear-gradient(180deg, #fff8f8 0%, #fde8e8 100%);
+  color: #9b3030;
   font-size: 0.96rem;
   line-height: 1;
   white-space: nowrap;
   word-break: keep-all;
-  box-shadow: 0 12px 26px rgba(18, 53, 45, 0.08);
+  box-shadow: 0 12px 26px rgba(155, 48, 48, 0.1);
+}
+
+.logoutButton:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(155, 48, 48, 0.1), 0 12px 26px rgba(155, 48, 48, 0.1);
+}
+
+.mobilePrimaryButton:focus-visible,
+.homeActionCard:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.12), 0 16px 30px rgba(35, 104, 81, 0.18);
 }
 
 .mobilePrimaryButton:active,
@@ -321,8 +336,9 @@
 .assetsHeader {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 14px;
+  min-height: 58px;
   padding: 4px 2px 14px;
 }
 
@@ -361,45 +377,40 @@
 
 .assetCard {
   border-radius: 24px;
-  padding: 16px;
+  padding: 18px 16px 16px;
 }
 
 .assetTopRow {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  align-items: flex-start;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  text-align: center;
 }
 
 .assetTopRow > div {
   min-width: 0;
-  flex: 1 1 auto;
+  width: 100%;
+  display: grid;
+  justify-items: center;
+  text-align: center;
 }
 
 .assetTopRow h2 {
-  margin-top: 6px;
-  font-size: 1.35rem;
-  line-height: 1.06;
+  max-width: 100%;
+  margin: 0 auto;
+  font-size: clamp(1.28rem, 5.3vw, 1.55rem);
+  line-height: 1.08;
+  text-align: center;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
 }
 
 .assetTopRow p {
-  margin: 7px 0 0;
+  margin: 8px 0 0;
   color: rgba(18, 53, 45, 0.65);
   font-weight: 760;
   line-height: 1.38;
-}
-
-.assetCode {
-  flex: 0 0 auto;
-  max-width: 116px;
-  overflow-wrap: anywhere;
-  border-radius: 16px;
-  background: rgba(35, 104, 81, 0.1);
-  color: #236851;
-  padding: 8px 10px;
-  font-size: 0.75rem;
-  font-weight: 950;
-  text-align: right;
+  text-align: center;
 }
 
 .assetMetaGrid {

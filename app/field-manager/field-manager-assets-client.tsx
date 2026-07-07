@@ -89,7 +89,6 @@ function searchHaystack(asset: FieldManagerAssetSummary): string {
 }
 
 export default function FieldManagerAssetsClient() {
-  const [manager, setManager] = useState<FieldManagerSession | null>(null);
   const [assets, setAssets] = useState<FieldManagerAssetSummary[]>([]);
   const [search, setSearch] = useState('');
   const [notice, setNotice] = useState<string | null>(null);
@@ -146,7 +145,6 @@ export default function FieldManagerAssetsClient() {
         throw new Error(extractError(assetsPayload, 'Failed to load assets.'));
       }
 
-      setManager(sessionPayload.manager);
       setAssets(assetsPayload.assets ?? []);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : 'Failed to load assets.');
@@ -195,8 +193,7 @@ export default function FieldManagerAssetsClient() {
   return (
     <main className={styles.mobilePage}>
       <section className={styles.assetsShell}>
-        <header className={styles.assetsHeader}>
-          <p>{manager ? `Signed in as ${manager.displayName}` : 'Checking manager access…'}</p>
+        <header className={styles.assetsHeader} aria-label="Field Manager account controls">
           <button type="button" className={styles.logoutButton} onClick={() => void handleLogout()}>
             Sign out
           </button>
@@ -234,7 +231,6 @@ export default function FieldManagerAssetsClient() {
               <article key={asset.id} className={styles.assetCard}>
                 <div className={styles.assetTopRow}>
                   <div>
-                    <span className={styles.assetKind}>{asset.equipmentFamilyLabel || asset.kind || 'Asset'}</span>
                     <h2>{asset.title}</h2>
                   </div>
                 </div>

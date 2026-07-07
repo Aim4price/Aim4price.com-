@@ -20,7 +20,7 @@ function extractError(payload: { error?: string } | null, fallback: string): str
 }
 
 export default function FieldManagerHomeClient() {
-  const [manager, setManager] = useState<FieldManagerSession | null>(null);
+  const [hasManagerAccess, setHasManagerAccess] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -30,6 +30,7 @@ export default function FieldManagerHomeClient() {
 
   async function loadSession() {
     setIsLoading(true);
+    setHasManagerAccess(false);
     setNotice(null);
 
     try {
@@ -48,7 +49,7 @@ export default function FieldManagerHomeClient() {
         throw new Error(extractError(payload, 'Field Manager login is required.'));
       }
 
-      setManager(payload.manager);
+      setHasManagerAccess(true);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : 'Field Manager login is required.');
     } finally {
@@ -68,8 +69,7 @@ export default function FieldManagerHomeClient() {
   return (
     <main className={styles.mobilePage}>
       <section className={`${styles.assetsShell} ${styles.homeShell}`}>
-        <header className={styles.assetsHeader}>
-          <p>{manager ? `Signed in as ${manager.displayName}` : 'Checking manager access…'}</p>
+        <header className={styles.assetsHeader} aria-label="Field Manager account controls">
           <button type="button" className={styles.logoutButton} onClick={() => void handleLogout()}>
             Sign out
           </button>
@@ -78,7 +78,7 @@ export default function FieldManagerHomeClient() {
         {notice ? <div className={styles.errorNotice}>{notice}</div> : null}
         {isLoading ? <p className={styles.mobileEmpty}>Opening Field Manager…</p> : null}
 
-        {!isLoading && manager ? (
+        {!isLoading && hasManagerAccess ? (
           <section className={styles.homeCard} aria-label="Field Manager actions">
             <div className={styles.homeActionGrid}>
               <button

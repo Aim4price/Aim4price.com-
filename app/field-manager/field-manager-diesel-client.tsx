@@ -78,7 +78,6 @@ function formatDate(value: string | null): string {
 }
 
 export default function FieldManagerDieselClient() {
-  const [manager, setManager] = useState<FieldManagerSession | null>(null);
   const [storages, setStorages] = useState<FieldManagerFuelStorageSummary[]>([]);
   const [search, setSearch] = useState('');
   const [notice, setNotice] = useState<string | null>(null);
@@ -136,7 +135,6 @@ export default function FieldManagerDieselClient() {
         throw new Error(extractError(dieselPayload, 'Failed to load fuel storage units.'));
       }
 
-      setManager(sessionPayload.manager);
       setStorages(dieselPayload.storages ?? []);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : 'Failed to load fuel storage units.');
@@ -185,8 +183,7 @@ export default function FieldManagerDieselClient() {
   return (
     <main className={styles.mobilePage}>
       <section className={styles.assetsShell}>
-        <header className={styles.assetsHeader}>
-          <p>{manager ? `Signed in as ${manager.displayName}` : 'Checking manager access…'}</p>
+        <header className={styles.assetsHeader} aria-label="Field Manager account controls">
           <button type="button" className={styles.logoutButton} onClick={() => void handleLogout()}>
             Sign out
           </button>
@@ -224,11 +221,9 @@ export default function FieldManagerDieselClient() {
               <article key={storage.id} className={styles.assetCard}>
                 <div className={styles.assetTopRow}>
                   <div>
-                    <span className={styles.assetKind}>{storage.fuelType || 'Fuel'}</span>
                     <h2>{storage.name}</h2>
                     <p>{storage.locationLabel || 'No location saved'}</p>
                   </div>
-                  <span className={styles.assetCode}>{storage.publicFuelStorageCode}</span>
                 </div>
 
                 <div className={styles.assetMetaGrid}>
