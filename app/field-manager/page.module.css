@@ -64,9 +64,22 @@
   padding: 22px;
 }
 
+.homeShell {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
 .homeCard {
-  border-radius: 30px;
-  padding: 16px;
+  flex: 1 1 auto;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0 0 24px;
 }
 
 .homeCard h2 {
@@ -83,22 +96,28 @@
 }
 
 .homeActionGrid {
+  width: min(100%, 390px);
   display: grid;
   gap: 14px;
-  margin-top: 0;
+  margin: 0 auto;
+  padding: 14px;
+  border: 1px solid rgba(18, 53, 45, 0.12);
+  border-radius: 30px;
+  background: rgba(255, 255, 255, 0.42);
+  box-shadow: 0 20px 48px rgba(18, 53, 45, 0.08);
 }
 
 .homeActionCard {
   width: 100%;
-  min-height: 112px;
-  display: grid;
-  align-content: center;
-  gap: 8px;
+  min-height: 96px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 24px;
-  padding: 22px 20px;
+  padding: 18px 20px;
   color: #12352d;
   font: inherit;
-  text-align: left;
+  text-align: center;
   cursor: pointer;
   transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
 }
@@ -108,8 +127,9 @@
 }
 
 .homeActionCard strong {
-  font-size: clamp(2.2rem, 11vw, 3.4rem);
-  line-height: 0.9;
+  font-size: clamp(2rem, 10vw, 3rem);
+  line-height: 1;
+  text-align: center;
 }
 
 .homeActionCard small {
@@ -250,12 +270,16 @@
 }
 
 .logoutButton {
+  flex: 0 0 auto;
   min-height: 48px;
   border: 1px solid rgba(18, 53, 45, 0.13);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.92);
   color: #174637;
   font-size: 0.96rem;
+  line-height: 1;
+  white-space: nowrap;
+  word-break: keep-all;
   box-shadow: 0 12px 26px rgba(18, 53, 45, 0.08);
 }
 
@@ -309,11 +333,14 @@
 }
 
 .assetsHeader p {
+  flex: 1 1 auto;
+  min-width: 0;
   margin: 0;
   color: rgba(18, 53, 45, 0.66);
   font-size: clamp(0.98rem, 4.4vw, 1.2rem);
   font-weight: 880;
   line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 
 .searchCard {
@@ -382,9 +409,15 @@
 }
 
 .assetMetaGrid div {
+  min-height: 62px;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  border: 1px solid rgba(18, 53, 45, 0.1);
   border-radius: 18px;
-  background: #f4f8f5;
-  padding: 13px 14px;
+  background: #fbfdfb;
+  padding: 12px 10px;
+  text-align: center;
 }
 
 .assetMetaGrid span,
@@ -397,8 +430,9 @@
 .assetMetaGrid strong {
   display: block;
   color: #12352d;
-  font-size: 0.98rem;
-  line-height: 1.28;
+  font-size: clamp(0.98rem, 3.7vw, 1.15rem);
+  font-weight: 900;
+  line-height: 1.18;
   overflow-wrap: anywhere;
 }
 
@@ -424,14 +458,13 @@
   }
 
   .loginCard,
-  .homeCard,
   .homeActionCard,
   .assetCard {
     border-radius: 22px;
     padding: 14px;
   }
 
-    .loginHeader h2,
+  .loginHeader h2,
   .homeCard h2 {
     font-size: 1.78rem;
   }

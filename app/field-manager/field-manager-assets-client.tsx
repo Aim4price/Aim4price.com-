@@ -28,6 +28,7 @@ type FieldManagerAssetSummary = {
   note: string;
   usageReading: number | null;
   usageLabel: string;
+  yearModel: number | null;
   lifeWorkedPercent: number | null;
   lastScannedAtIso: string | null;
   updatedAtIso: string | null;
@@ -55,35 +56,15 @@ function extractError(payload: { error?: string } | null, fallback: string): str
   return payload?.error?.trim() || fallback;
 }
 
-function formatDate(value: string | null): string {
-  if (!value) return 'No update yet';
-
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return 'No update yet';
-
-  return new Intl.DateTimeFormat('en-ZA', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(parsed);
+function serialDisplayText(asset: FieldManagerAssetSummary): string {
+  return asset.serialNumber || 'Not captured';
 }
 
-function assetIdentityText(asset: FieldManagerAssetSummary): string {
-  return [asset.brandName, asset.modelName || asset.typedModelName, asset.equipmentFamilyLabel || asset.kind]
-    .map((entry) => entry.trim())
-    .filter(Boolean)
-    .join(' • ');
-}
+function formatYearModel(asset: FieldManagerAssetSummary): string {
+  if (asset.yearModel) return String(asset.yearModel);
 
-function secondaryIdentityText(asset: FieldManagerAssetSummary): string {
-  const entries = [
-    asset.registrationNumber ? `Reg ${asset.registrationNumber}` : '',
-    asset.serialNumber ? `Serial ${asset.serialNumber}` : '',
-    asset.vinNumber ? `VIN ${asset.vinNumber}` : '',
-    asset.internalReference ? `Ref ${asset.internalReference}` : '',
-    asset.plateLabel ? `Code ${asset.plateLabel}` : '',
-  ].filter(Boolean);
-
-  return entries.length ? entries.join(' • ') : 'No registration, serial or internal reference saved';
+  const titleYear = asset.title.match(/\b(?:19|20)\d{2}\b/);
+  return titleYear?.[0] || 'Not captured';
 }
 
 function searchHaystack(asset: FieldManagerAssetSummary): string {
@@ -99,6 +80,7 @@ function searchHaystack(asset: FieldManagerAssetSummary): string {
     asset.vinNumber,
     asset.internalReference,
     asset.note,
+    asset.yearModel ? String(asset.yearModel) : '',
     asset.plateLabel,
     asset.publicAssetCode,
   ]
@@ -254,22 +236,21 @@ export default function FieldManagerAssetsClient() {
                   <div>
                     <span className={styles.assetKind}>{asset.equipmentFamilyLabel || asset.kind || 'Asset'}</span>
                     <h2>{asset.title}</h2>
-                    <p>{assetIdentityText(asset) || 'Asset identity not fully saved'}</p>
                   </div>
                 </div>
 
                 <div className={styles.assetMetaGrid}>
                   <div>
-                    <span>Identity</span>
-                    <strong>{secondaryIdentityText(asset)}</strong>
+                    <span>Serial</span>
+                    <strong>{serialDisplayText(asset)}</strong>
+                  </div>
+                  <div>
+                    <span>Year</span>
+                    <strong>{formatYearModel(asset)}</strong>
                   </div>
                   <div>
                     <span>Usage</span>
                     <strong>{asset.usageLabel}</strong>
-                  </div>
-                  <div>
-                    <span>Last field update</span>
-                    <strong>{formatDate(asset.lastScannedAtIso)}</strong>
                   </div>
                 </div>
 
@@ -279,7 +260,7 @@ export default function FieldManagerAssetsClient() {
                   onClick={() => void handleOpenAsset(asset)}
                   disabled={Boolean(openingAssetId)}
                 >
-                  {isOpening ? 'Opening…' : 'Open Field Update'}
+                  {isOpening ? 'Opening…' : 'Open'}
                 </button>
               </article>
             );

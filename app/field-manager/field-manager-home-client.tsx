@@ -67,7 +67,7 @@ export default function FieldManagerHomeClient() {
 
   return (
     <main className={styles.mobilePage}>
-      <section className={styles.assetsShell}>
+      <section className={`${styles.assetsShell} ${styles.homeShell}`}>
         <header className={styles.assetsHeader}>
           <p>{manager ? `Signed in as ${manager.displayName}` : 'Checking manager access…'}</p>
           <button type="button" className={styles.logoutButton} onClick={() => void handleLogout()}>
