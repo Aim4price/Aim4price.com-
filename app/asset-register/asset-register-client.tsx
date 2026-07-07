@@ -297,6 +297,17 @@ type LatestMaintenanceStatus = {
   notedAtIso: string | null;
 };
 
+type LatestIssueNoteStatus = {
+  id: string;
+  assetRegisterItemId: string;
+  summary: string;
+  note: string;
+  operatorName: string;
+  actorType: string;
+  createdAtIso: string;
+  notedAtIso: string | null;
+};
+
 type OpenPartnerNote = {
   id: string;
   ownerUserId: string;
@@ -374,6 +385,7 @@ type RegisterAsset = {
   openPartnerNote?: OpenPartnerNote | null;
   partnerNotes?: OpenPartnerNote[];
   latestMaintenanceStatus?: LatestMaintenanceStatus | null;
+  latestIssueNoteStatus?: LatestIssueNoteStatus | null;
 };
 
 type ReplacementPriceRevaluePrompt = {
@@ -3429,6 +3441,7 @@ function assetNeedsEstimateAttention(asset: RegisterAsset): boolean {
 }
 
 function assetAttentionRank(asset: RegisterAsset): number {
+  if (asset.latestIssueNoteStatus) return 5;
   if (isAssetFlagged(asset)) return 4;
   if (asset.openPartnerNote) return 3;
   if (asset.latestMaintenanceStatus) return 2;
@@ -3440,6 +3453,15 @@ function assetAttentionRank(asset: RegisterAsset): number {
 function assetAttentionTimestamp(asset: RegisterAsset): number {
   const openPartnerNote = asset.openPartnerNote ?? null;
   const latestMaintenanceStatus = asset.latestMaintenanceStatus ?? null;
+  const latestIssueNoteStatus = asset.latestIssueNoteStatus ?? null;
+
+  if (latestIssueNoteStatus) {
+    return (
+      timestampFromIso(latestIssueNoteStatus.createdAtIso) ||
+      timestampFromIso(asset.updatedAtIso) ||
+      timestampFromIso(asset.createdAtIso)
+    );
+  }
 
   if (isAssetFlagged(asset)) {
     return (
@@ -5221,6 +5243,7 @@ export default function AssetRegisterClient() {
   const [busyFlagAssetId, setBusyFlagAssetId] = useState<string | null>(null);
   const [busyRevalueAssetId, setBusyRevalueAssetId] = useState<string | null>(null);
   const [busyMaintenanceStatusId, setBusyMaintenanceStatusId] = useState<string | null>(null);
+  const [busyIssueNoteStatusId, setBusyIssueNoteStatusId] = useState<string | null>(null);
   const [busyRevalueAction, setBusyRevalueAction] = useState<RevalueMethod | null>(null);
   const [replacementPriceRevaluePrompt, setReplacementPriceRevaluePrompt] = useState<ReplacementPriceRevaluePrompt | null>(null);
   const [pricingPreview, setPricingPreview] = useState<PricingRevaluePreview | null>(null);
@@ -9365,6 +9388,37 @@ export default function AssetRegisterClient() {
     }
   }
 
+  async function handleMarkIssueNoteStatusNoted(issueNoteStatusId: string, assetId: string) {
+    setBusyIssueNoteStatusId(issueNoteStatusId);
+
+    try {
+      const response = await fetch(`/api/asset-issue-notes/${encodeURIComponent(issueNoteStatusId)}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'noted' }),
+      });
+      const data = (await response.json()) as { ok: boolean; error?: string };
+
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error ?? 'Failed to mark issue note as noted.');
+      }
+
+      setAssets((current) => current.map((entry) => (entry.id === assetId ? { ...entry, latestIssueNoteStatus: null } : entry)));
+      setActiveAsset((current) => (current?.id === assetId ? { ...current, latestIssueNoteStatus: null } : current));
+      setMarketplaceAsset((current) => (current?.id === assetId ? { ...current, latestIssueNoteStatus: null } : current));
+      setProjectionAsset((current) => (current?.id === assetId ? { ...current, latestIssueNoteStatus: null } : current));
+      setNotice({ tone: 'success', message: 'Issue note marked as noted.' });
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Failed to mark issue note as noted.',
+      });
+    } finally {
+      setBusyIssueNoteStatusId((current) => (current === issueNoteStatusId ? null : current));
+    }
+  }
+
   async function handlePrintAssetSheet(asset: RegisterAsset) {
     const [reportLogoUrl, assetPhotoUrls] = await Promise.all([
       preparePrintableImageUrl(getRegisterReportLogoUrl(activeRegister), {
@@ -11159,6 +11213,7 @@ export default function AssetRegisterClient() {
                     const partnerNoteToneClass = openPartnerNote ? quoteToneClassForPartnerType(openPartnerNote.partnerType) : '';
                     const partnerNoteLabel = openPartnerNote?.partnerType ? `${formatQuotePartnerType(openPartnerNote.partnerType)} note` : 'Partner note';
                     const latestMaintenanceStatus = asset.latestMaintenanceStatus ?? null;
+                    const latestIssueNoteStatus = asset.latestIssueNoteStatus ?? null;
                     const isManualValueAsset = asset.selectedMethod === 'manual';
                     const assetValueVatMode = assetValueVatModes[asset.id] ?? 'excluded';
                     const displayedAssetValue = assetValueVatMode === 'included' ? Math.round(Number(asset.value || 0) * 1.15) : asset.value;
@@ -11189,6 +11244,17 @@ export default function AssetRegisterClient() {
                     const isMarkingMaintenanceNoted = latestMaintenanceStatus
                       ? busyMaintenanceStatusId === latestMaintenanceStatus.id
                       : false;
+                    const issueNoteMeta = latestIssueNoteStatus
+                      ? [
+                          latestIssueNoteStatus.operatorName ? `By ${latestIssueNoteStatus.operatorName}` : '',
+                          latestIssueNoteStatus.createdAtIso ? formatDate(latestIssueNoteStatus.createdAtIso) : '',
+                        ]
+                          .filter(Boolean)
+                          .join(' · ')
+                      : '';
+                    const isMarkingIssueNoteNoted = latestIssueNoteStatus
+                      ? busyIssueNoteStatusId === latestIssueNoteStatus.id
+                      : false;
 
                     return (
                       <div className={styles.assetCardRow} key={asset.id}>
@@ -11206,11 +11272,11 @@ export default function AssetRegisterClient() {
 
                         <article
                           id={`asset-card-${asset.id}`}
-                          className={`${styles.assetCard} ${isExpanded ? styles.assetCardExpanded : ''} ${isFlagged ? styles.assetCardFlagged : ''} ${estimateNeedsUpdate ? styles.assetCardEstimateStale : ''} ${openPartnerNote ? `${styles.assetCardPartnerNote} ${partnerNoteToneClass}` : ''} ${latestMaintenanceStatus ? styles.assetCardMaintenanceDone : ''}`}
+                          className={`${styles.assetCard} ${isExpanded ? styles.assetCardExpanded : ''} ${isFlagged ? styles.assetCardFlagged : ''} ${estimateNeedsUpdate ? styles.assetCardEstimateStale : ''} ${openPartnerNote ? `${styles.assetCardPartnerNote} ${partnerNoteToneClass}` : ''} ${latestMaintenanceStatus ? styles.assetCardMaintenanceDone : ''} ${latestIssueNoteStatus ? styles.assetCardIssueNote : ''}`}
                         >
                         <div className={styles.assetHeader}>
                           <div className={styles.assetTitleBlock}>
-                            {isFlagged || isLive || estimateNeedsUpdate || openPartnerNote || latestMaintenanceStatus ? (
+                            {isFlagged || isLive || estimateNeedsUpdate || openPartnerNote || latestMaintenanceStatus || latestIssueNoteStatus ? (
                               <div className={styles.badgeRow}>
                                 {isFlagged ? <span className={`${styles.badge} ${styles.badgeDanger}`}>Flagged</span> : null}
                                 {isLive ? <span className={`${styles.badge} ${styles.badgeSuccess}`}>Live on marketplace</span> : null}
@@ -11219,6 +11285,7 @@ export default function AssetRegisterClient() {
                                 ) : null}
                                 {openPartnerNote ? <span className={`${styles.badge} ${styles.badgeInfo} ${partnerNoteToneClass}`}>{partnerNoteLabel}</span> : null}
                                 {latestMaintenanceStatus ? <span className={`${styles.badge} ${styles.badgeMaintenanceDone}`}>{maintenanceDoneLabel}</span> : null}
+                                {latestIssueNoteStatus ? <span className={`${styles.badge} ${styles.badgeIssueNote}`}>Open issue</span> : null}
                               </div>
                             ) : null}
                             <h2>{asset.title}</h2>
@@ -11314,6 +11381,24 @@ export default function AssetRegisterClient() {
                                 onClick={() => void handleMarkPartnerNoteNoted(openPartnerNote.id, asset.id)}
                               >
                                 Noted
+                              </button>
+                            </div>
+                          ) : null}
+
+                          {latestIssueNoteStatus ? (
+                            <div className={`${styles.partnerNoteBanner} ${styles.issueNoteBanner}`}>
+                              <div className={styles.partnerNoteText}>
+                                <strong>Open issue reported</strong>
+                                <p>{latestIssueNoteStatus.note}</p>
+                                {issueNoteMeta ? <small className={styles.issueNoteMeta}>{issueNoteMeta}</small> : null}
+                              </div>
+                              <button
+                                type="button"
+                                className={styles.partnerNoteButton}
+                                disabled={isMarkingIssueNoteNoted}
+                                onClick={() => void handleMarkIssueNoteStatusNoted(latestIssueNoteStatus.id, asset.id)}
+                              >
+                                {isMarkingIssueNoteNoted ? 'Noting...' : 'Noted'}
                               </button>
                             </div>
                           ) : null}
