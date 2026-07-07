@@ -831,19 +831,19 @@ function usagePlaceholder(asset: ScanSafeAsset): string {
     : "Enter current hours";
 }
 
-function assetScanMeta(asset: ScanSafeAsset | null): string {
-  if (!asset) return "Enter the farm PIN to open this asset.";
+function scanTitleText(value: string | null | undefined, fallback: string): string {
+  const cleaned = (value || fallback).replace(/\s+/g, " ").trim() || fallback;
+  const words = cleaned.split(" ").filter(Boolean);
 
-  const serialText = asset.serialNumber
-    ? `Serial ${asset.serialNumber}`
-    : "Serial not captured";
-  const usageText = formatUsage(asset);
-
-  if (!usageText || usageText === "—" || usageText === "Not tracked") {
-    return serialText;
+  if (words.length === 2) {
+    return words.join("\u00a0");
   }
 
-  return `${serialText} · ${usageText}`;
+  if (words.length > 2) {
+    return `${words.slice(0, -2).join(" ")} ${words.slice(-2).join("\u00a0")}`;
+  }
+
+  return cleaned;
 }
 
 function assetPlaceholderLabel(asset: ScanSafeAsset): string {
@@ -3411,7 +3411,7 @@ export default function ScanClient({
           <section className={styles.assetOpenedCard}>
             <div className={styles.assetScanTitleBlock}>
               <span>Field Manager asset</span>
-              <h1>{prePinAsset?.title || "Opening asset"}</h1>
+              <h1>{scanTitleText(prePinAsset?.title, "Opening asset")}</h1>
               <p>
                 Checking your Field Manager access. No farm PIN or scanner name
                 is required.
@@ -3425,9 +3425,7 @@ export default function ScanClient({
             className={`${styles.pinCard} ${!locationReady ? styles.pinCardBlocked : ""}`}
           >
             <div className={styles.assetScanTitleBlock}>
-              <span>Asset QR for</span>
-              <h1>{prePinAsset?.title || "Asset scan"}</h1>
-              <p>{assetScanMeta(prePinAsset)}</p>
+              <h1>{scanTitleText(prePinAsset?.title, "Asset scan")}</h1>
             </div>
 
             <form className={styles.pinForm} onSubmit={handlePinSubmit}>
@@ -3506,7 +3504,7 @@ export default function ScanClient({
                   <div className={styles.locationPromptIcon} aria-hidden="true">
                     ⌖
                   </div>
-                  <h2 id="asset-location-title">Keep location on</h2>
+                  <h2 id="asset-location-title">Location{"\u00a0"}on</h2>
                   <p>
                     Every QR save stores a GPS point automatically. Allow
                     location access on this phone before saving updates.
@@ -3567,9 +3565,7 @@ export default function ScanClient({
                   isFieldManagerMode ? styles.fieldManagerAssetTitleBlock : ""
                 }`}
               >
-                {isFieldManagerMode ? null : <span>Asset QR update</span>}
-                <h1>{asset.title}</h1>
-                {isFieldManagerMode ? null : <p>{assetScanMeta(asset)}</p>}
+                <h1>{scanTitleText(asset.title, "Asset")}</h1>
               </div>
               <button
                 type="button"
@@ -3722,7 +3718,7 @@ export default function ScanClient({
             <div className={styles.locationReminderIcon}>
               <LocationIcon className={styles.locationReminderSvg} />
             </div>
-            <h3 id="location-reminder-title">Keep location on</h3>
+            <h3 id="location-reminder-title">Location{"\u00a0"}on</h3>
             <p>
               {isFieldManagerMode
                 ? "Every field update stores a GPS point automatically. Allow location access on this phone before saving updates."
