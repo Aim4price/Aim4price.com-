@@ -3,6 +3,7 @@ import { recordAdminUsageEventSafely } from '../../../lib/admin-usage-events';
 import { getServerSession, isAdminSupportSession } from '../../../lib/auth-session';
 import { getAccountProfile } from '../../../lib/account-profile';
 import { attachOpenPartnerNotesToAssets } from '../../../lib/partner-access';
+import { attachOpenIssueNoteStatusToAssets } from '../../../lib/asset-issue-notes';
 import { attachLatestMaintenanceStatusToAssets } from '../../../lib/scan-assets';
 import {
   getAssetRegisterForUser,
@@ -62,6 +63,15 @@ function getUsageUserId(session: Awaited<ReturnType<typeof getServerSession>>): 
   return session.user.id;
 }
 
+
+async function attachOpenAssetAlerts<T extends { id: string }>(
+  ownerUserId: string,
+  items: T[],
+): Promise<Array<T & { openPartnerNote: unknown; latestMaintenanceStatus: unknown; latestIssueNoteStatus: unknown }>> {
+  const itemsWithPartnerNotes = await attachOpenPartnerNotesToAssets(ownerUserId, items);
+  const itemsWithMaintenanceStatus = await attachLatestMaintenanceStatusToAssets(itemsWithPartnerNotes);
+  return attachOpenIssueNoteStatusToAssets(itemsWithMaintenanceStatus);
+}
 
 async function requireOwnerAccount(user: { id: string; name?: string | null; email?: string | null }) {
   const profile = await getAccountProfile(user);
@@ -512,8 +522,7 @@ export async function GET(request: NextRequest) {
     }
 
     const baseItems = await listAssetRegisterItems(session.user.id, register.id);
-    const itemsWithPartnerNotes = await attachOpenPartnerNotesToAssets(session.user.id, baseItems);
-    const items = await attachLatestMaintenanceStatusToAssets(itemsWithPartnerNotes);
+    const items = await attachOpenAssetAlerts(session.user.id, baseItems);
     const registers = await listAssetRegisters(session.user.id);
 
     return NextResponse.json({
@@ -768,8 +777,7 @@ export async function PUT(request: NextRequest) {
       excludeAssetId: assetId,
     });
 
-    const [itemWithPartnerNote] = await attachOpenPartnerNotesToAssets(session.user.id, [item]);
-    const [itemWithMaintenanceStatus] = await attachLatestMaintenanceStatusToAssets(itemWithPartnerNote ? [itemWithPartnerNote] : [item]);
+    const [itemWithAlertStatus] = await attachOpenAssetAlerts(session.user.id, [item]);
 
     const usageUserId = getUsageUserId(session);
     if (usageUserId) {
@@ -782,7 +790,7 @@ export async function PUT(request: NextRequest) {
     }
 
 
-    return NextResponse.json({ ok: true, item: itemWithMaintenanceStatus ?? itemWithPartnerNote ?? item });
+    return NextResponse.json({ ok: true, item: itemWithAlertStatus ?? item });
   } catch (error) {
     if (error instanceof Error && error.message === 'ASSET_NOT_FOUND') {
       return NextResponse.json({ ok: false, error: 'Asset not found.' }, { status: 404 });
@@ -863,8 +871,7 @@ export async function PATCH(request: NextRequest) {
         yearModel: parsedYearModel.yearModel,
       });
 
-      const [itemWithPartnerNote] = await attachOpenPartnerNotesToAssets(session.user.id, [item]);
-      const [itemWithMaintenanceStatus] = await attachLatestMaintenanceStatusToAssets(itemWithPartnerNote ? [itemWithPartnerNote] : [item]);
+      const [itemWithAlertStatus] = await attachOpenAssetAlerts(session.user.id, [item]);
 
       const usageUserId = getUsageUserId(session);
       if (usageUserId) {
@@ -880,7 +887,7 @@ export async function PATCH(request: NextRequest) {
         });
       }
 
-      return NextResponse.json({ ok: true, item: itemWithMaintenanceStatus ?? itemWithPartnerNote ?? item });
+      return NextResponse.json({ ok: true, item: itemWithAlertStatus ?? item });
     } catch (error) {
       if (error instanceof Error && error.message === 'ASSET_NOT_FOUND') {
         return NextResponse.json({ ok: false, error: 'Asset not found.' }, { status: 404 });
@@ -912,8 +919,7 @@ export async function PATCH(request: NextRequest) {
         isFlagged: normalizeBooleanFlag(flagValue),
       });
 
-      const [itemWithPartnerNote] = await attachOpenPartnerNotesToAssets(session.user.id, [item]);
-      const [itemWithMaintenanceStatus] = await attachLatestMaintenanceStatusToAssets(itemWithPartnerNote ? [itemWithPartnerNote] : [item]);
+      const [itemWithAlertStatus] = await attachOpenAssetAlerts(session.user.id, [item]);
 
       const usageUserId = getUsageUserId(session);
       if (usageUserId) {
@@ -925,7 +931,7 @@ export async function PATCH(request: NextRequest) {
         });
       }
 
-      return NextResponse.json({ ok: true, item: itemWithMaintenanceStatus ?? itemWithPartnerNote ?? item });
+      return NextResponse.json({ ok: true, item: itemWithAlertStatus ?? item });
     } catch (error) {
       if (error instanceof Error && error.message === 'ASSET_NOT_FOUND') {
         return NextResponse.json({ ok: false, error: 'Asset not found.' }, { status: 404 });
@@ -960,8 +966,7 @@ export async function PATCH(request: NextRequest) {
       excludeAssetId: assetId,
     });
 
-    const [itemWithPartnerNote] = await attachOpenPartnerNotesToAssets(session.user.id, [item]);
-    const [itemWithMaintenanceStatus] = await attachLatestMaintenanceStatusToAssets(itemWithPartnerNote ? [itemWithPartnerNote] : [item]);
+    const [itemWithAlertStatus] = await attachOpenAssetAlerts(session.user.id, [item]);
 
     const usageUserId = getUsageUserId(session);
     if (usageUserId) {
@@ -973,7 +978,7 @@ export async function PATCH(request: NextRequest) {
       });
     }
 
-    return NextResponse.json({ ok: true, item: itemWithMaintenanceStatus ?? itemWithPartnerNote ?? item });
+    return NextResponse.json({ ok: true, item: itemWithAlertStatus ?? item });
   } catch (error) {
     if (error instanceof Error && error.message === 'ASSET_NOT_FOUND') {
       return NextResponse.json({ ok: false, error: 'Asset not found.' }, { status: 404 });
