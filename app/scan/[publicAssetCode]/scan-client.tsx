@@ -3539,10 +3539,14 @@ export default function ScanClient({
         {asset ? (
           <>
             <section className={styles.assetOpenedCard}>
-              <div className={styles.assetScanTitleBlock}>
-                <span>Asset QR update</span>
+              <div
+                className={`${styles.assetScanTitleBlock} ${
+                  isFieldManagerMode ? styles.fieldManagerAssetTitleBlock : ""
+                }`}
+              >
+                {isFieldManagerMode ? null : <span>Asset QR update</span>}
                 <h1>{asset.title}</h1>
-                <p>{assetScanMeta(asset)}</p>
+                {isFieldManagerMode ? null : <p>{assetScanMeta(asset)}</p>}
               </div>
               <button
                 type="button"
@@ -3697,8 +3701,9 @@ export default function ScanClient({
             </div>
             <h3 id="location-reminder-title">Keep location on</h3>
             <p>
-              Every QR save stores a GPS point automatically. Allow location
-              access on this phone before saving updates.
+              {isFieldManagerMode
+                ? "Every field update stores a GPS point automatically. Allow location access on this phone before saving updates."
+                : "Every QR save stores a GPS point automatically. Allow location access on this phone before saving updates."}
             </p>
             <button
               type="button"
