@@ -643,6 +643,199 @@
   padding-bottom: max(1.05rem, env(safe-area-inset-bottom));
 }
 
+.fieldManagerAssetPickerCard {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+
+.assetBackButton {
+  width: 100%;
+  min-height: 3.35rem;
+  border: 1px solid rgba(18, 53, 45, 0.12);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--green-strong);
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 900;
+  cursor: pointer;
+  touch-action: manipulation;
+  box-shadow: 0 12px 24px rgba(18, 53, 45, 0.07);
+  transition: transform 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
+}
+
+.assetBackButton:active {
+  transform: translateY(1px);
+}
+
+.assetBackButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+  transform: none;
+  box-shadow: none;
+}
+
+.assetBackButton:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.11), 0 12px 24px rgba(18, 53, 45, 0.07);
+}
+
+.fieldManagerAssetSearchCard {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  border: 1px solid rgba(18, 53, 45, 0.12);
+  border-radius: 1.5rem;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 20px 48px rgba(18, 53, 45, 0.1);
+  padding: 0.875rem;
+  backdrop-filter: blur(12px);
+}
+
+.fieldManagerAssetSearchField {
+  display: grid;
+  gap: 0.56rem;
+}
+
+.fieldManagerAssetSearchField span {
+  color: rgba(18, 53, 45, 0.76);
+  font-size: 0.82rem;
+  font-weight: 920;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.fieldManagerAssetSearchField input {
+  width: 100%;
+  min-height: 3.625rem;
+  border: 1px solid rgba(18, 53, 45, 0.16);
+  border-radius: 1.125rem;
+  background: #fbfdfb;
+  color: #12352d;
+  font: inherit;
+  font-size: clamp(0.88rem, 3.9vw, 1rem);
+  font-weight: 820;
+  outline: none;
+  padding: 0 0.94rem;
+  transition: border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.fieldManagerAssetSearchField input:focus {
+  border-color: rgba(35, 104, 81, 0.6);
+  box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.11);
+}
+
+.fieldManagerAssetSearchField input::placeholder {
+  color: #777d79;
+  font-weight: 780;
+}
+
+.fieldManagerAssetList {
+  display: grid;
+  gap: 0.875rem;
+  padding-bottom: 1.375rem;
+}
+
+.fieldManagerAssetCard {
+  border: 1px solid rgba(18, 53, 45, 0.12);
+  border-radius: 1.5rem;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 20px 48px rgba(18, 53, 45, 0.1);
+  padding: 1.125rem 1rem 1rem;
+}
+
+.fieldManagerAssetTopRow {
+  display: grid;
+  justify-items: center;
+  gap: 0.5rem;
+  text-align: center;
+}
+
+.fieldManagerAssetTopRow h2 {
+  max-width: 100%;
+  margin: 0 auto;
+  color: #12352d;
+  font-size: clamp(1.28rem, 5.3vw, 1.55rem);
+  font-weight: 900;
+  line-height: 1.08;
+  letter-spacing: -0.04em;
+  text-align: center;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+
+.fieldManagerAssetMetaGrid {
+  display: grid;
+  gap: 0.625rem;
+  margin: 0.875rem 0;
+}
+
+.fieldManagerAssetMetaGrid div {
+  min-height: 3.875rem;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  border: 1px solid rgba(18, 53, 45, 0.1);
+  border-radius: 1.125rem;
+  background: #fbfdfb;
+  padding: 0.75rem 0.625rem;
+  text-align: center;
+}
+
+.fieldManagerAssetMetaGrid span {
+  display: block;
+  margin-bottom: 0.3125rem;
+  color: rgba(18, 53, 45, 0.52);
+  font-size: 0.72rem;
+  font-weight: 950;
+  letter-spacing: 0.12em;
+  line-height: 1.15;
+  text-transform: uppercase;
+}
+
+.fieldManagerAssetMetaGrid strong {
+  display: block;
+  color: #12352d;
+  font-size: clamp(0.98rem, 3.7vw, 1.15rem);
+  font-weight: 900;
+  line-height: 1.18;
+  overflow-wrap: anywhere;
+}
+
+.fieldManagerAssetOpenButton {
+  width: 100%;
+  min-height: 3.5rem;
+  border: 0;
+  border-radius: 1.125rem;
+  background: linear-gradient(135deg, #236851, #174637);
+  color: #ffffff;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 950;
+  cursor: pointer;
+  touch-action: manipulation;
+  box-shadow: 0 16px 30px rgba(35, 104, 81, 0.24);
+  transition: transform 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
+}
+
+.fieldManagerAssetOpenButton:active {
+  transform: translateY(1px);
+}
+
+.fieldManagerAssetOpenButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.64;
+  transform: none;
+  box-shadow: none;
+}
+
+.fieldManagerAssetOpenButton:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.12), 0 16px 30px rgba(35, 104, 81, 0.18);
+}
+
 .assetSearchWrap {
   display: grid;
   gap: 0.56rem;
@@ -1077,6 +1270,12 @@
   }
 }
 
+@media (min-width: 640px) {
+  .fieldManagerAssetMetaGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 640px) {
   .scanShell {
     width: min(calc(100% - 0.8rem), 520px);
@@ -1100,9 +1299,18 @@
     height: auto;
   }
 
+  .fieldManagerAssetPickerCard {
+    padding: 0;
+  }
+
   .assetChoiceButton {
     border-radius: 1.12rem;
     padding: 0.86rem;
+  }
+
+  .fieldManagerAssetSearchCard,
+  .fieldManagerAssetCard {
+    border-radius: 1.375rem;
   }
 
   .assetDetailRows {

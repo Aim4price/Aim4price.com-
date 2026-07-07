@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import styles from './page.module.css';
 import {
   createOfflineClientEventId,
@@ -56,6 +56,8 @@ type FuelLedgerAsset = {
   publicAssetCode: string;
   hours: number | null;
   fuelPercent: number | null;
+  yearModel: number | null;
+  usageMetric: 'hours' | 'km' | 'both' | 'none';
   canReceiveFuel: boolean;
 };
 
@@ -171,6 +173,21 @@ function assetSerialText(asset: FuelLedgerAsset): string {
   return asset.serialNumber || 'Not captured';
 }
 
+function assetYearText(asset: FuelLedgerAsset): string {
+  if (asset.yearModel) return String(asset.yearModel);
+
+  const titleYear = asset.title.match(/\b(?:19|20)\d{2}\b/);
+  return titleYear?.[0] || 'Not captured';
+}
+
+function assetUsageText(asset: FuelLedgerAsset): string {
+  if (asset.hours === null || typeof asset.hours === 'undefined' || !Number.isFinite(asset.hours)) return 'Not captured';
+
+  const reading = new Intl.NumberFormat('en-ZA').format(Math.round(asset.hours));
+  if (asset.usageMetric === 'km') return `${reading} km`;
+  if (asset.usageMetric === 'none') return 'Not captured';
+  return `${reading} h`;
+}
 
 function assetSearchText(asset: FuelLedgerAsset): string {
   return [
@@ -246,6 +263,7 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
   const [isCapturingLocation, setIsCapturingLocation] = useState(false);
   const [isDone, setIsDone] = useState(false);
   const [issueStep, setIssueStep] = useState<IssueStep>('asset');
+  const autoLocationRequestedRef = useRef(false);
 
   const selectedAsset = useMemo(() => assets.find((asset) => asset.id === assetId) ?? null, [assetId, assets]);
   const selectedAssetName = selectedAsset ? assetDisplayName(selectedAsset) : '';
@@ -403,6 +421,7 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
     setDoneAction('asset_issue');
     setCoordinates(null);
     setLocationStatus('Location must be enabled before this fuel QR can continue.');
+    autoLocationRequestedRef.current = false;
     setIssueStep('asset');
     void loadPreview();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -415,6 +434,19 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fieldManagerMode, normalizedCode]);
+
+  useEffect(() => {
+    if (isLoading || coordinates || isCapturingLocation || autoLocationRequestedRef.current) return;
+    if (!preview && !storage) return;
+
+    autoLocationRequestedRef.current = true;
+    const timeout = window.setTimeout(() => {
+      captureLocation();
+    }, 150);
+
+    return () => window.clearTimeout(timeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading, preview, storage, coordinates, isCapturingLocation, normalizedCode]);
 
   useEffect(() => {
     if (!assetId) {
@@ -1018,7 +1050,7 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
       <section className={`${styles.stepCard} ${styles.choiceCard}`}>
         <div className={styles.stepTitleBlock}>
           <span>Step 2 of {TOTAL_SCAN_PAGES}</span>
-          <h1>Choose fuel action</h1>
+          <h1>Fuel action</h1>
           <p>{visibleStorageName} · {formatLitres(storage?.currentLitres)} available</p>
         </div>
 
@@ -1169,52 +1201,67 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
   function renderIssueStep() {
     if (issueStep === 'asset') {
       return (
-        <section className={`${styles.stepCard} ${styles.assetStepCard}`}>
-          <div className={styles.stepTitleBlock}>
-            <span>Step {issueStepNumber} of {TOTAL_SCAN_PAGES}</span>
-            <h1>Choose asset</h1>
-            <p>Tap the asset that received fuel.</p>
-          </div>
-          <button type="button" className={styles.secondaryButton} onClick={returnToChoice} disabled={isSaving}>
+        <section className={`${styles.stepCard} ${styles.assetStepCard} ${styles.fieldManagerAssetPickerCard}`}>
+          <button type="button" className={styles.assetBackButton} onClick={returnToChoice} disabled={isSaving}>
             Back to fuel actions
           </button>
-          <div className={styles.assetSearchWrap}>
-            <label className={styles.searchField}>
-              <span>Search</span>
-              <input value={assetSearch} onChange={(event) => setAssetSearch(event.target.value)} placeholder="Search asset title or serial" autoFocus />
+
+          <section className={styles.fieldManagerAssetSearchCard}>
+            <label className={styles.fieldManagerAssetSearchField}>
+              <span>Choose asset</span>
+              <input
+                value={assetSearch}
+                onChange={(event) => setAssetSearch(event.target.value)}
+                placeholder="Search asset, model, reg, serial or notes"
+                autoFocus
+              />
             </label>
-            <div className={styles.assetSearchSummary}>
-              <span>{filteredAssets.length} {filteredAssets.length === 1 ? 'asset' : 'assets'} available</span>
-              {assetSearch.trim() ? (
-                <button type="button" onClick={() => setAssetSearch('')}>
-                  Clear search
-                </button>
-              ) : null}
-            </div>
+          </section>
+
+          <div className={styles.assetSearchSummary}>
+            <span>{filteredAssets.length} {filteredAssets.length === 1 ? 'asset' : 'assets'} available</span>
+            {assetSearch.trim() ? (
+              <button type="button" onClick={() => setAssetSearch('')}>
+                Clear search
+              </button>
+            ) : null}
           </div>
-          <div className={styles.assetChoiceList}>
+
+          <div className={styles.fieldManagerAssetList}>
             {filteredAssets.map((asset) => {
               const displayName = assetDisplayName(asset);
-              const typeText = asset.assetTypeLabel || asset.kind || 'Asset';
 
               return (
-                <button
-                  type="button"
-                  key={asset.id}
-                  className={`${styles.assetChoiceButton} ${asset.id === assetId ? styles.assetChoiceButtonActive : ''}`}
-                  onClick={() => chooseAsset(asset.id)}
-                  aria-label={`Choose ${displayName}`}
-                >
-                  <div className={styles.assetChoiceTopline}>
-                    <span>{typeText}</span>
-                    <i aria-hidden="true">Tap</i>
+                <article key={asset.id} className={styles.fieldManagerAssetCard}>
+                  <div className={styles.fieldManagerAssetTopRow}>
+                    <h2>{displayName}</h2>
                   </div>
-                  <strong>{displayName}</strong>
-                  <div className={styles.assetDetailRows}>
-                    <span><b>Serial</b><em>{assetSerialText(asset)}</em></span>
-                    <span><b>Last recorded</b><em>{formatHours(asset.hours)}</em></span>
+
+                  <div className={styles.fieldManagerAssetMetaGrid}>
+                    <div>
+                      <span>Serial</span>
+                      <strong>{assetSerialText(asset)}</strong>
+                    </div>
+                    <div>
+                      <span>Year</span>
+                      <strong>{assetYearText(asset)}</strong>
+                    </div>
+                    <div>
+                      <span>Usage</span>
+                      <strong>{assetUsageText(asset)}</strong>
+                    </div>
                   </div>
-                </button>
+
+                  <button
+                    type="button"
+                    className={styles.fieldManagerAssetOpenButton}
+                    onClick={() => chooseAsset(asset.id)}
+                    disabled={isSaving}
+                    aria-label={`Open ${displayName}`}
+                  >
+                    Open
+                  </button>
+                </article>
               );
             })}
             {!filteredAssets.length ? <p className={styles.emptyText}>No assets found.</p> : null}
@@ -1293,7 +1340,6 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
             <input type="number" min="0" step="0.01" value={litres} onChange={(event) => setLitres(event.target.value)} placeholder="Litres issued" autoFocus />
           </label>
           <div className={styles.compactMetaGrid}>
-            <div><span>Asset</span><strong>{selectedAssetName || '—'}</strong></div>
             <div><span>Fuel before</span><strong>{fuelPercentText(assetFuelPercentBefore)}%</strong></div>
           </div>
           {renderStepControls()}
@@ -1477,7 +1523,7 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
           </section>
         ) : scanMode === 'action-choice' ? (
           <>
-            {renderScanProgress('Fuel QR', 'Choose action', `2/${TOTAL_SCAN_PAGES}`, choiceStepProgress)}
+            {renderScanProgress('Fuel QR', 'Fuel action', `2/${TOTAL_SCAN_PAGES}`, choiceStepProgress)}
             {renderActionChoice()}
             {renderStorageRefillWarning()}
           </>
