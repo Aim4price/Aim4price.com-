@@ -5,7 +5,7 @@
     radial-gradient(circle at 12% 0%, rgba(78, 138, 108, 0.22), transparent 20rem),
     linear-gradient(180deg, #eff5f1 0%, #f7faf7 42%, #edf4f0 100%);
   color: #12352d;
-  font-family: var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif;
+  font-family: 'Montserrat', var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif;
 }
 
 .loginShell,
@@ -27,22 +27,24 @@
 .brandBlock {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 4px 2px;
+  justify-content: center;
+  gap: 0;
+  padding: 0 2px 2px;
 }
 
 .brandMark {
   display: inline-flex;
-  width: 54px;
-  height: 54px;
+  width: 44px;
+  height: 44px;
   align-items: center;
   justify-content: center;
-  border-radius: 20px;
+  border-radius: 16px;
   background: linear-gradient(135deg, #12352d, #236851);
   color: #fff;
-  font-size: 1rem;
+  font-size: 0.86rem;
   font-weight: 950;
-  box-shadow: 0 14px 30px rgba(18, 53, 45, 0.22);
+  letter-spacing: -0.04em;
+  box-shadow: 0 12px 24px rgba(18, 53, 45, 0.16);
 }
 
 .brandBlock span:not(.brandMark),
@@ -94,7 +96,7 @@
 
 .homeCard {
   border-radius: 30px;
-  padding: 22px;
+  padding: 16px;
 }
 
 .homeCard h2 {
@@ -113,15 +115,17 @@
 .homeActionGrid {
   display: grid;
   gap: 14px;
-  margin-top: 18px;
+  margin-top: 0;
 }
 
 .homeActionCard {
   width: 100%;
+  min-height: 112px;
   display: grid;
+  align-content: center;
   gap: 8px;
   border-radius: 24px;
-  padding: 18px;
+  padding: 22px 20px;
   color: #12352d;
   font: inherit;
   text-align: left;
@@ -150,9 +154,17 @@
   border-bottom: 1px solid rgba(18, 53, 45, 0.09);
 }
 
+.loginHeaderCompact {
+  padding-bottom: 14px;
+}
+
 .loginHeader h2 {
   margin-top: 7px;
   font-size: 2.1rem;
+}
+
+.loginHeaderCompact h2 {
+  margin-top: 0;
 }
 
 .loginHeader p {
@@ -198,6 +210,10 @@
   outline: none;
   padding: 0 15px;
   transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.searchField input {
+  font-size: clamp(0.88rem, 3.9vw, 1rem);
 }
 
 .mobileField input:focus,
@@ -264,10 +280,12 @@
 }
 
 .logoutButton {
-  min-height: 44px;
+  min-height: 48px;
   border: 1px solid rgba(18, 53, 45, 0.13);
-  background: rgba(255, 255, 255, 0.9);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
   color: #174637;
+  font-size: 0.96rem;
   box-shadow: 0 12px 26px rgba(18, 53, 45, 0.08);
 }
 
@@ -308,10 +326,10 @@
 
 .assetsHeader {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 14px;
-  padding: 6px 2px 14px;
+  padding: 4px 2px 14px;
 }
 
 .assetsHeader h1 {
@@ -321,9 +339,11 @@
 }
 
 .assetsHeader p {
-  margin: 8px 0 0;
-  color: rgba(18, 53, 45, 0.64);
-  font-weight: 820;
+  margin: 0;
+  color: rgba(18, 53, 45, 0.66);
+  font-size: clamp(0.98rem, 4.4vw, 1.2rem);
+  font-weight: 880;
+  line-height: 1.25;
 }
 
 .searchCard {
@@ -352,6 +372,11 @@
   justify-content: space-between;
   gap: 12px;
   align-items: flex-start;
+}
+
+.assetTopRow > div {
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .assetTopRow h2 {
@@ -389,7 +414,7 @@
 .assetMetaGrid div {
   border-radius: 18px;
   background: #f4f8f5;
-  padding: 12px;
+  padding: 13px 14px;
 }
 
 .assetMetaGrid span,
@@ -402,8 +427,9 @@
 .assetMetaGrid strong {
   display: block;
   color: #12352d;
-  font-size: 0.92rem;
-  line-height: 1.38;
+  font-size: 0.98rem;
+  line-height: 1.28;
+  overflow-wrap: anywhere;
 }
 
 .mobileEmpty {
@@ -437,9 +463,12 @@
 
   .brandBlock h1,
   .loginHeader h2,
-  .homeCard h2,
-  .homeActionCard strong {
+  .homeCard h2 {
     font-size: 1.78rem;
+  }
+
+  .homeActionCard strong {
+    font-size: 2rem;
   }
 
   .assetsHeader {

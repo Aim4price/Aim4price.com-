@@ -25,6 +25,7 @@ type FieldManagerAssetSummary = {
   registrationNumber: string;
   vinNumber: string;
   internalReference: string;
+  note: string;
   usageReading: number | null;
   usageLabel: string;
   lifeWorkedPercent: number | null;
@@ -97,6 +98,7 @@ function searchHaystack(asset: FieldManagerAssetSummary): string {
     asset.serialNumber,
     asset.vinNumber,
     asset.internalReference,
+    asset.note,
     asset.plateLabel,
     asset.publicAssetCode,
   ]
@@ -212,13 +214,9 @@ export default function FieldManagerAssetsClient() {
     <main className={styles.mobilePage}>
       <section className={styles.assetsShell}>
         <header className={styles.assetsHeader}>
-          <div>
-            <span>Aim4price</span>
-            <h1>Field Manager</h1>
-            <p>{manager ? `Signed in as ${manager.displayName}` : 'Mobile asset access'}</p>
-          </div>
+          <p>{manager ? `Signed in as ${manager.displayName}` : 'Checking manager access…'}</p>
           <button type="button" className={styles.logoutButton} onClick={() => void handleLogout()}>
-            Logout
+            Sign out
           </button>
         </header>
 
@@ -230,7 +228,7 @@ export default function FieldManagerAssetsClient() {
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search asset, model, reg, serial or reference"
+              placeholder="Search asset, model, reg, serial or notes"
               autoComplete="off"
             />
           </label>
@@ -258,7 +256,6 @@ export default function FieldManagerAssetsClient() {
                     <h2>{asset.title}</h2>
                     <p>{assetIdentityText(asset) || 'Asset identity not fully saved'}</p>
                   </div>
-                  <span className={styles.assetCode}>{asset.plateLabel || asset.publicAssetCode}</span>
                 </div>
 
                 <div className={styles.assetMetaGrid}>

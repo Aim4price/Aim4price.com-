@@ -69,13 +69,9 @@ export default function FieldManagerHomeClient() {
     <main className={styles.mobilePage}>
       <section className={styles.assetsShell}>
         <header className={styles.assetsHeader}>
-          <div>
-            <span>Aim4price</span>
-            <h1>Field Manager</h1>
-            <p>{manager ? `Signed in as ${manager.displayName}` : 'Mobile manager access'}</p>
-          </div>
+          <p>{manager ? `Signed in as ${manager.displayName}` : 'Checking manager access…'}</p>
           <button type="button" className={styles.logoutButton} onClick={() => void handleLogout()}>
-            Logout
+            Sign out
           </button>
         </header>
 
@@ -84,21 +80,13 @@ export default function FieldManagerHomeClient() {
 
         {!isLoading && manager ? (
           <section className={styles.homeCard} aria-label="Field Manager actions">
-            <div className={styles.loginHeader}>
-              <span>Mobile home</span>
-              <h2>Choose what to update</h2>
-              <p>Use Manage for equipment updates, or Fuel for fuel storage and fuel issue updates.</p>
-            </div>
-
             <div className={styles.homeActionGrid}>
               <button
                 type="button"
                 className={styles.homeActionCard}
                 onClick={() => window.location.assign('/field-manager/assets')}
               >
-                <span>Equipment</span>
                 <strong>Manage</strong>
-                <small>Open the asset list and update equipment from the saved manager login.</small>
               </button>
 
               <button
@@ -106,9 +94,7 @@ export default function FieldManagerHomeClient() {
                 className={styles.homeActionCard}
                 onClick={() => window.location.assign('/field-manager/diesel')}
               >
-                <span>Fuel storage</span>
                 <strong>Fuel</strong>
-                <small>Open fuel storage units and capture fuel updates without entering a fuel PIN.</small>
               </button>
             </div>
           </section>

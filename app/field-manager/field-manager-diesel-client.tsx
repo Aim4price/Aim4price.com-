@@ -186,13 +186,9 @@ export default function FieldManagerDieselClient() {
     <main className={styles.mobilePage}>
       <section className={styles.assetsShell}>
         <header className={styles.assetsHeader}>
-          <div>
-            <span>Aim4price</span>
-            <h1>Fuel</h1>
-            <p>{manager ? `Signed in as ${manager.displayName}` : 'Mobile fuel access'}</p>
-          </div>
+          <p>{manager ? `Signed in as ${manager.displayName}` : 'Checking manager access…'}</p>
           <button type="button" className={styles.logoutButton} onClick={() => void handleLogout()}>
-            Logout
+            Sign out
           </button>
         </header>
 

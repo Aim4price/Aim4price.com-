@@ -5,6 +5,10 @@ export const metadata: Metadata = {
   title: 'Field Manager | Aim4price',
   description: 'Mobile Field Manager access for Aim4price asset updates.',
   manifest: '/field-manager/manifest.webmanifest',
+  icons: {
+    icon: [{ url: '/field-manager-icon.png?v=1', sizes: '512x512', type: 'image/png' }],
+    apple: [{ url: '/field-manager-apple-icon.png?v=1', sizes: '180x180', type: 'image/png' }],
+  },
   appleWebApp: {
     capable: true,
     title: 'Field Manager',

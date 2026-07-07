@@ -71,19 +71,13 @@ export default function FieldManagerLoginClient() {
   return (
     <main className={styles.mobilePage}>
       <section className={styles.loginShell}>
-        <div className={styles.brandBlock}>
+        <div className={styles.brandBlock} aria-label="Aim4price">
           <span className={styles.brandMark}>A4</span>
-          <div>
-            <span>Aim4price</span>
-            <h1>Field Manager</h1>
-          </div>
         </div>
 
         <section className={styles.loginCard}>
-          <div className={styles.loginHeader}>
-            <span>Mobile access</span>
+          <div className={`${styles.loginHeader} ${styles.loginHeaderCompact}`}>
             <h2>Sign in</h2>
-            <p>Use the username and password supplied by the asset owner.</p>
           </div>
 
           {notice ? <div className={styles.errorNotice}>{notice}</div> : null}
@@ -130,8 +124,6 @@ export default function FieldManagerLoginClient() {
             </button>
           </form>
         </section>
-
-        <p className={styles.installNote}>Save this page to your phone home screen to open Field Manager directly.</p>
       </section>
     </main>
   );
