@@ -71,10 +71,6 @@ export default function FieldManagerLoginClient() {
   return (
     <main className={styles.mobilePage}>
       <section className={styles.loginShell}>
-        <div className={styles.brandBlock} aria-label="Aim4price">
-          <span className={styles.brandMark}>A4</span>
-        </div>
-
         <section className={styles.loginCard}>
           <div className={`${styles.loginHeader} ${styles.loginHeaderCompact}`}>
             <h2>Sign in</h2>
