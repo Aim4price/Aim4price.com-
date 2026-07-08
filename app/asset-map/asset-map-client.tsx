@@ -11,6 +11,7 @@ type ExportFormat = "pdf" | "xlsx";
 type ExportStep = "format" | "scope";
 type RegisterFilterId = string;
 type AssetStatusChoice = "yes" | "no" | "unknown" | "not_applicable";
+type AssetMapUsageMetric = "hours" | "km" | "percentage" | null;
 type IconProps = { className?: string };
 
 type AssetMapItem = {
@@ -33,6 +34,9 @@ type AssetMapItem = {
   selectedMethod: string;
   replacementPriceExVat: number | null;
   hours: number | null;
+  lifeWorkedPercent: number | null;
+  usageMetric: AssetMapUsageMetric;
+  usageDisplay: string;
   fuelPercent: number | null;
   serialNumber: string;
   brandName: string;
@@ -367,7 +371,7 @@ function formatCondition(value?: string | null): string {
   return normalized.charAt(0).toUpperCase() + normalized.slice(1);
 }
 
-function formatHours(value: number | null): string {
+function formatNumber(value: number | null): string {
   if (value === null || !Number.isFinite(value)) return "—";
   return new Intl.NumberFormat("en-ZA").format(Math.round(value));
 }
@@ -404,11 +408,43 @@ function normalizePhotos(photos?: string[] | null): string[] {
   return photos.map((photo) => String(photo ?? "").trim()).filter(Boolean);
 }
 
-function buildAssetMeta(asset: AssetMapItem): string {
-  const usageText =
-    asset.hours === null
+function formatPercent(value: number): string {
+  const clamped = Math.max(0, Math.min(100, value));
+  const rounded = Math.round(clamped * 10) / 10;
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+}
+
+function buildUsageDisplay(asset: AssetMapItem): string {
+  const apiUsageDisplay = String(asset.usageDisplay ?? "").trim();
+  if (apiUsageDisplay) return apiUsageDisplay;
+
+  if (asset.usageMetric === "percentage") {
+    return asset.lifeWorkedPercent === null || !Number.isFinite(asset.lifeWorkedPercent)
       ? "Usage not saved"
-      : `Usage: ${formatHours(asset.hours)} hours`;
+      : `${formatPercent(asset.lifeWorkedPercent)}% worked`;
+  }
+
+  if (asset.hours !== null && Number.isFinite(asset.hours)) {
+    const unit = asset.usageMetric === "km" ? "km" : "hours";
+    return `${formatNumber(asset.hours)} ${unit}`;
+  }
+
+  if (asset.lifeWorkedPercent !== null && Number.isFinite(asset.lifeWorkedPercent)) {
+    return `${formatPercent(asset.lifeWorkedPercent)}% worked`;
+  }
+
+  return "Usage not saved";
+}
+
+function buildUsageMeta(asset: AssetMapItem): string {
+  const usageDisplay = buildUsageDisplay(asset);
+  return usageDisplay === "Usage not saved"
+    ? usageDisplay
+    : `Usage: ${usageDisplay}`;
+}
+
+function buildAssetMeta(asset: AssetMapItem): string {
+  const usageText = buildUsageMeta(asset);
 
   return [
     asset.yearModel
@@ -452,6 +488,7 @@ function matchesSearch(asset: AssetMapItem, search: string): boolean {
     asset.registerName,
     asset.registerLabel,
     asset.lastKnownLocationText,
+    asset.usageDisplay,
     formatCondition(asset.condition),
     asset.yearModel ? String(asset.yearModel) : "",
   ]
@@ -1288,10 +1325,7 @@ export default function AssetMapClient() {
                   ) : !isLoading ? (
                     visibleAssets.map((asset, index) => {
                       const isActive = selectedCode === asset.publicAssetCode;
-                      const usageText =
-                        asset.hours === null
-                          ? "Usage not saved"
-                          : `${formatHours(asset.hours)} hours`;
+                      const usageText = buildUsageDisplay(asset);
 
                       return (
                         <article
