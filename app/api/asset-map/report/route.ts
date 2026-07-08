@@ -15,6 +15,7 @@ import {
   type XlsxCellValue,
   type XlsxSheet,
 } from "../../../../lib/simple-xlsx";
+import { resolveReportLogoUrlForHtml } from "../../../../lib/report-logo";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -1190,6 +1191,7 @@ function buildReportHtml(
         display: block;
         width: 18mm;
         height: auto;
+        max-height: 18mm;
         object-fit: contain;
       }
 
@@ -2091,9 +2093,10 @@ export async function GET(request: Request) {
       });
     }
 
-    const logoUrl = await getAssetRegisterReportLogoUrl(session.user.id).catch(
+    const rawLogoUrl = await getAssetRegisterReportLogoUrl(session.user.id).catch(
       () => "",
     );
+    const logoUrl = await resolveReportLogoUrlForHtml(rawLogoUrl, request.url);
     const html = buildReportHtml(printableAssets, {
       generatedDate: formatDate(now),
       generatedTime: formatTime(now),
