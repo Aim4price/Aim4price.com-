@@ -530,17 +530,36 @@ function getListingWorkedPercent(listing: MarketplaceListing): number | null {
   return null;
 }
 
+function getResolvedUsageUnit(listing: MarketplaceListing): MarketplaceListing['usageUnit'] {
+  const unit = listing.usageUnit;
+
+  if (unit === 'percent' || unit === 'km') {
+    return unit;
+  }
+
+  const amount = Number(listing.hours || 0);
+  const percent = getListingWorkedPercent(listing);
+
+  if (percent !== null && (!Number.isFinite(amount) || amount <= 0)) {
+    return 'percent';
+  }
+
+  return 'hours';
+}
+
 function formatUsage(listing: MarketplaceListing): string {
-  if (listing.usageUnit === 'percent') {
+  const usageUnit = getResolvedUsageUnit(listing);
+
+  if (usageUnit === 'percent') {
     const percent = getListingWorkedPercent(listing);
     return percent === null ? 'Percentage not set' : `${formatPercent(percent)}% worked`;
   }
 
   const amount = Number(listing.hours || 0);
-  const suffix = listing.usageUnit === 'km' ? 'km' : 'hours';
+  const suffix = usageUnit === 'km' ? 'km' : 'hours';
 
   if (!Number.isFinite(amount) || amount <= 0) {
-    return listing.usageUnit === 'km' ? 'km not set' : 'hours not set';
+    return usageUnit === 'km' ? 'km not set' : 'hours not set';
   }
 
   return `${Math.round(amount).toLocaleString('en-ZA')} ${suffix}`;
