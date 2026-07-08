@@ -410,46 +410,59 @@ function readFirstSpecNumber(specs: Record<string, unknown>, keys: string[]): nu
   return null;
 }
 
+const MARKETPLACE_USAGE_READING_KEYS = [
+  'hours',
+  'engine_hours',
+  'engineHours',
+  'machine_hours',
+  'machineHours',
+  'usage_amount',
+  'usageAmount',
+  'usage_reading',
+  'usageReading',
+  'current_usage',
+  'currentUsage',
+  'odometer',
+  'odometer_km',
+  'odometerKm',
+  'kilometres',
+  'kilometers',
+  'mileage',
+  'km',
+] as const;
+
+const MARKETPLACE_LIFE_WORKED_PERCENT_KEYS = [
+  'lifeWorkedPercent',
+  'life_worked_percent',
+  'valuationLastLifeWorkedPercent',
+  'valuation_last_life_worked_percent',
+  'selectedLifeWorkedPercent',
+  'selected_life_worked_percent',
+  'workedPercent',
+  'worked_percent',
+  'percentWorked',
+  'percent_worked',
+  'lifetimeWorkedPercent',
+  'lifetime_worked_percent',
+  'lifetimeUsedPercent',
+  'lifetime_used_percent',
+  'percentUsed',
+  'percent_used',
+  'percentageUsed',
+  'percentage_used',
+] as const;
+
+function preferSavedUsageReading(rowValue: number | null, specsValue: number | null): number {
+  const positiveReading = [rowValue, specsValue].find((value) => value !== null && value > 0);
+  const fallbackReading = rowValue ?? specsValue ?? 0;
+  return Math.max(0, Math.round(positiveReading ?? fallbackReading));
+}
 
 function readMarketplaceUsageAmount(row: MarketplaceAssetRow, specs: Record<string, unknown>): number {
-  const fromRow = readFirstNumber(row, [
-    'hours',
-    'engine_hours',
-    'usage_amount',
-    'usageAmount',
-    'usage_reading',
-    'usageReading',
-    'current_usage',
-    'currentUsage',
-    'odometer',
-    'odometer_km',
-    'odometerKm',
-    'kilometres',
-    'kilometers',
-    'mileage',
-    'km',
-  ]);
-
-  const fromSpecs = readFirstSpecNumber(specs, [
-    'usageAmount',
-    'usage_amount',
-    'usageReading',
-    'usage_reading',
-    'currentUsage',
-    'current_usage',
-    'hours',
-    'engine_hours',
-    'engineHours',
-    'odometer',
-    'odometer_km',
-    'odometerKm',
-    'kilometres',
-    'kilometers',
-    'mileage',
-    'km',
-  ]);
-
-  return Math.max(0, Math.round(fromRow ?? fromSpecs ?? 0));
+  return preferSavedUsageReading(
+    readFirstNumber(row, [...MARKETPLACE_USAGE_READING_KEYS]),
+    readFirstSpecNumber(specs, [...MARKETPLACE_USAGE_READING_KEYS]),
+  );
 }
 
 function listingWorkedPercent(
@@ -457,47 +470,68 @@ function listingWorkedPercent(
   specs: Record<string, unknown>,
 ): number | null {
   return clampPercent(
-    readFirstNumber(row, [
-      'life_worked_percent',
-      'worked_percent',
-      'percent_worked',
-      'lifetime_worked_percent',
-      'lifetime_used_percent',
-    ]) ??
-      readFirstSpecNumber(specs, [
-        'life_worked_percent',
-        'worked_percent',
-        'percent_worked',
-        'lifetime_worked_percent',
-        'lifetime_used_percent',
-      ]),
+    readFirstNumber(row, [...MARKETPLACE_LIFE_WORKED_PERCENT_KEYS]) ??
+      readFirstSpecNumber(specs, [...MARKETPLACE_LIFE_WORKED_PERCENT_KEYS]),
   );
 }
 
 function normalizeUsageMode(value: unknown): string {
-  return asText(value).toLowerCase().replace(/[\s-]+/g, '_');
+  return asText(value)
+    .replace(/([a-z])([A-Z])/g, '$1_$2')
+    .toLowerCase()
+    .replace(/[^a-z0-9%]+/g, '_')
+    .replace(/^_+|_+$/g, '');
 }
 
 function isPercentUsageMode(value: unknown): boolean {
   const normalized = normalizeUsageMode(value);
 
   return (
+    normalized === '%' ||
     normalized === 'percent' ||
     normalized === 'percentage' ||
     normalized === 'percent_used' ||
+    normalized === 'percentage_used' ||
     normalized === 'percentage_depreciation' ||
+    normalized === 'life_worked_percent' ||
+    normalized === 'worked_percent' ||
+    normalized === 'percent_worked' ||
+    normalized === 'lifetime_percent' ||
+    normalized === 'lifetime_worked_percent' ||
+    normalized === 'lifetime_used_percent' ||
+    normalized === 'semi_depreciation' ||
     normalized === 'wear_class'
   );
 }
 
 function isKilometreUsageMode(value: unknown): boolean {
   const normalized = normalizeUsageMode(value);
-  return normalized === 'km' || normalized === 'kms' || normalized === 'kilometres' || normalized === 'kilometers';
+  return (
+    normalized === 'km' ||
+    normalized === 'kms' ||
+    normalized === 'kilometres' ||
+    normalized === 'kilometers' ||
+    normalized === 'kilometre' ||
+    normalized === 'kilometer' ||
+    normalized === 'odometer' ||
+    normalized === 'odometer_km' ||
+    normalized === 'mileage'
+  );
 }
 
 function isHourUsageMode(value: unknown): boolean {
   const normalized = normalizeUsageMode(value);
-  return normalized === 'hours' || normalized === 'hour' || normalized === 'hrs' || normalized === 'engine_hours';
+  return (
+    normalized === 'hours' ||
+    normalized === 'hour' ||
+    normalized === 'hrs' ||
+    normalized === 'engine_hours' ||
+    normalized === 'machine_hours' ||
+    normalized === 'hour_meter' ||
+    normalized === 'usage_reading' ||
+    normalized === 'reading' ||
+    normalized === 'full_depreciation'
+  );
 }
 
 function listingUsageUnit(
@@ -506,46 +540,59 @@ function listingUsageUnit(
   lifeWorkedPercent: number | null,
   usageAmount: number,
 ): MarketplaceUsageUnit {
-  const explicitUsageMetric =
-    specs.usageMetric ??
-    specs.usage_metric ??
-    specs.usageUnit ??
-    specs.usage_unit ??
-    specs.usage_measure ??
-    pick(row, ['usage_metric', 'usage_metric_type', 'equipment_family_usage_metric_type']);
-  const explicitUsageMode =
-    specs.usageMode ??
-    specs.usage_mode ??
-    specs.usageMetricType ??
-    specs.usage_metric_type ??
-    specs.valuationMode ??
-    specs.valuation_mode ??
-    pick(row, ['valuation_mode', 'equipment_family_valuation_mode']);
+  const metricCandidates = [
+    specs.usageMetric,
+    specs.usage_metric,
+    specs.usageUnit,
+    specs.usage_unit,
+    specs.usageType,
+    specs.usage_type,
+    specs.usageMeasure,
+    specs.usage_measure,
+    specs.usageMetricType,
+    specs.usage_metric_type,
+    row.usage_metric,
+    row.usage_metric_type,
+    row.equipment_family_usage_metric_type,
+  ];
+  const modeCandidates = [
+    specs.usageMode,
+    specs.usage_mode,
+    specs.usageBasis,
+    specs.usage_basis,
+    specs.valuationMode,
+    specs.valuation_mode,
+    specs.depreciationMethodUsed,
+    specs.depreciation_method_used,
+    specs.selectedDepreciationMethod,
+    specs.selected_depreciation_method,
+    specs.selectedUsageMode,
+    specs.selected_usage_mode,
+    row.valuation_mode,
+    row.equipment_family_valuation_mode,
+    row.depreciation_method_used,
+    row.valuation_last_depreciation_method_used,
+  ];
   const kind = readAssetKind(row);
-  const depreciationMethod = asText(pick(row, ['depreciation_method_used'])).toLowerCase();
 
-  if (isPercentUsageMode(explicitUsageMetric) || isPercentUsageMode(explicitUsageMode)) {
+  if ([...metricCandidates, ...modeCandidates].some(isPercentUsageMode)) {
     return 'percent';
-  }
-
-  if (isKilometreUsageMode(explicitUsageMetric)) {
-    return 'km';
-  }
-
-  if (isHourUsageMode(explicitUsageMetric)) {
-    return 'hours';
   }
 
   if (kind === 'vehicle') {
     return 'km';
   }
 
-  if (depreciationMethod === 'semi_depreciation' || depreciationMethod === 'percentage_depreciation') {
-    return 'percent';
+  if ([...metricCandidates, ...modeCandidates].some(isKilometreUsageMode)) {
+    return 'km';
   }
 
   if (lifeWorkedPercent !== null && usageAmount <= 0) {
     return 'percent';
+  }
+
+  if ([...metricCandidates, ...modeCandidates].some(isHourUsageMode)) {
+    return 'hours';
   }
 
   return 'hours';
