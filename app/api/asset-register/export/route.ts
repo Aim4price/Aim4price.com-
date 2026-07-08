@@ -4,6 +4,7 @@ import { getAccountProfile } from '../../../../lib/account-profile';
 import { listAssetRegisterItems, type AssetRegisterItem } from '../../../../lib/asset-register-db';
 import { getAssetRegisterForUser, getSelectedAssetRegister, getVisibleAssetRegisterLogoUrl, listAssetRegisters, type AssetRegisterSummary } from '../../../../lib/asset-registers';
 import { createXlsxWorkbook, type XlsxCellStyle, type XlsxCellValue, type XlsxSheet } from '../../../../lib/simple-xlsx';
+import { resolveReportLogoUrlForHtml } from '../../../../lib/report-logo';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -77,7 +78,6 @@ type RegisterSummaryPdfSection = {
 
 const NA_VALUE = 'N/A';
 const AIM4PRICE_REPORT_EMAIL = 'aim4price@gmail.com';
-const FALLBACK_REPORT_LOGO_PATH = '/brand/aim4price-mark-black.png';
 const VAT_RATE = 0.15;
 const VAT_MULTIPLIER = 1 + VAT_RATE;
 const PROPERTY_ASSET_LABEL = 'Property / Land / Building';
@@ -173,23 +173,8 @@ function escapeHtml(value: unknown): string {
     .replace(/'/g, '&#39;');
 }
 
-function resolveReportLogoUrl(profile: AccountProfileResult | null, requestUrl: string): string {
-  const fallbackLogoUrl = new URL(FALLBACK_REPORT_LOGO_PATH, requestUrl).toString();
-  const rawLogoUrl = cleanText(profile?.logoUrl);
-
-  if (!rawLogoUrl) {
-    return fallbackLogoUrl;
-  }
-
-  if (rawLogoUrl.startsWith('data:') || rawLogoUrl.startsWith('http://') || rawLogoUrl.startsWith('https://') || rawLogoUrl.startsWith('//')) {
-    return rawLogoUrl;
-  }
-
-  if (rawLogoUrl.startsWith('/')) {
-    return new URL(rawLogoUrl, requestUrl).toString();
-  }
-
-  return rawLogoUrl;
+async function resolveReportLogoUrl(profile: AccountProfileResult | null, requestUrl: string): Promise<string> {
+  return resolveReportLogoUrlForHtml(profile?.logoUrl, requestUrl);
 }
 
 function textOrNa(value: unknown): string {
@@ -1623,17 +1608,17 @@ function renderRegisterSummaryReportSection(section: RegisterSummaryPdfSection):
   `;
 }
 
-function renderRegisterSummaryReportHtml(
+async function renderRegisterSummaryReportHtml(
   items: AssetRegisterItem[],
   profile: AccountProfileResult | null,
   generatedAt: Date,
   requestUrl: string,
-): string {
+): Promise<string> {
   const summary = buildRegisterBasicExportSummary(items);
   const ownerName = buildOwnerName(profile);
   const ownerAddress = buildOwnerAddress(profile);
   const ownerEmail = cleanText(profile?.email || profile?.marketplaceEmail) || AIM4PRICE_REPORT_EMAIL;
-  const logoUrl = resolveReportLogoUrl(profile, requestUrl);
+  const logoUrl = await resolveReportLogoUrl(profile, requestUrl);
   const sections = buildRegisterSummaryPdfSections(summary);
   const generatedLabel = formatPdfDate(generatedAt);
   const registerValueExVat = formatPdfMoney(summary.currentValueExVat);
@@ -2191,7 +2176,7 @@ function renderRegisterSummaryReportHtml(
     <main class="assetReportPage">
       <div class="assetReportInner">
         <header class="assetReportHeader">
-          <div class="assetReportLogoWrap"><img class="assetReportLogo" src="${escapeHtml(logoUrl)}" alt="Aim4price logo" /></div>
+          <div class="assetReportLogoWrap">${logoUrl ? `<img class="assetReportLogo" src="${escapeHtml(logoUrl)}" alt="Aim4price logo" />` : ''}</div>
           <div class="assetReportDocumentTitle">
             <strong>Asset Register Summary</strong>
             <span>Aim4price asset register</span>
@@ -2912,7 +2897,7 @@ export async function GET(request: NextRequest) {
       const ownerSlug = pdfFileSlug(buildOwnerName(exportProfile));
 
       if (reportKind === 'summary') {
-        const html = renderRegisterSummaryReportHtml(items, exportProfile, generatedAt, request.url);
+        const html = await renderRegisterSummaryReportHtml(items, exportProfile, generatedAt, request.url);
         const fileName = `aim4price-register-summary-${ownerSlug}-${filenameDate}.html`;
 
         return new NextResponse(html, {
