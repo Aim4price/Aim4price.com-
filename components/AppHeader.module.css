@@ -99,8 +99,8 @@
 
 .navWindowButton {
   appearance: none;
-  width: 2rem;
-  min-width: 2rem;
+  width: 1.42rem;
+  min-width: 1.42rem;
   height: 3.28rem;
   min-height: 3.28rem;
   padding: 0;
@@ -110,13 +110,13 @@
   flex: 0 0 auto;
   border: 0;
   background: transparent;
-  color: rgba(7, 59, 48, 0.78);
+  color: rgba(7, 59, 48, 0.32);
   font: inherit;
-  font-size: clamp(2.18rem, 2.7vw, 2.72rem);
-  font-weight: 900;
+  font-size: clamp(1.56rem, 1.92vw, 1.96rem);
+  font-weight: 820;
   line-height: 1;
   cursor: pointer;
-  opacity: 0.92;
+  opacity: 0.58;
   transition:
     color 160ms ease,
     opacity 160ms ease,
@@ -132,21 +132,21 @@
 }
 
 .navWindowButton:hover:not(:disabled) {
-  color: #073b30;
-  opacity: 1;
+  color: rgba(7, 59, 48, 0.58);
+  opacity: 0.86;
 }
 
 .navWindowButtonPrevious:hover:not(:disabled) {
-  transform: translateX(-0.16rem);
+  transform: translateX(-0.07rem);
 }
 
 .navWindowButtonNext:hover:not(:disabled) {
-  transform: translateX(0.16rem);
+  transform: translateX(0.07rem);
 }
 
 .navWindowButton:disabled {
   cursor: default;
-  opacity: 0.28;
+  opacity: 0.13;
 }
 
 .actions {
@@ -2819,10 +2819,10 @@
   }
 
   .navWindowButton {
-    width: 1.65rem;
-    min-width: 1.65rem;
+    width: 1.22rem;
+    min-width: 1.22rem;
     height: 2.85rem;
     min-height: 2.85rem;
-    font-size: 2.28rem;
+    font-size: 1.72rem;
   }
 }

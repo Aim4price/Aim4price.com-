@@ -264,9 +264,9 @@ const DEFAULT_NAV_ITEMS: NavItem[] = [
 
 const OWNER_NAV_ITEMS: NavItem[] = [
   ...DEFAULT_NAV_ITEMS,
-  { key: 'asset-map', href: '/asset-map', label: 'Map' },
-  { key: 'cost', href: '/my-invoices', label: 'Cost' },
-  { key: 'fuel', href: '/fuel', label: 'Fuel' },
+  { key: 'asset-map', href: '/asset-map', label: 'Asset Map' },
+  { key: 'cost', href: '/my-invoices', label: 'Cost Ledger' },
+  { key: 'fuel', href: '/fuel', label: 'Fuel Ledger' },
   { key: 'account', href: '/account', label: 'Account' },
 ];
 
