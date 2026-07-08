@@ -13,7 +13,9 @@ import AppHeader from '../../components/AppHeader';
 import styles from './page.module.css';
 import {
   FALLBACK_MARKETPLACE_IMAGE,
+  calculateMarketplaceDealRating,
   seedMarketplaceListings,
+  type MarketplaceDealRating,
   type MarketplaceListing,
 } from '../../lib/marketplace';
 import { money } from '../../lib/tractor-logic';
@@ -57,6 +59,7 @@ type EquipmentFamiliesApiResponse = {
 type SectorKey = 'agricultural' | 'construction' | 'industrial' | 'motor';
 type DistanceFilterValue = 'all' | '50' | '100' | '250' | '500';
 type ConditionFilterValue = '' | 'excellent' | 'good' | 'fair' | 'used' | 'serious';
+type DealRatingFilterValue = 'any' | MarketplaceDealRating;
 
 type SectorOption = {
   key: SectorKey;
@@ -138,6 +141,18 @@ const DISTANCE_OPTIONS: Array<{ value: DistanceFilterValue; label: string }> = [
   { value: '100', label: 'Within 100 km' },
   { value: '250', label: 'Within 250 km' },
   { value: '500', label: 'Within 500 km' },
+];
+
+const DEAL_RATING_OPTIONS: Array<{
+  value: MarketplaceDealRating;
+  label: string;
+  shortLabel: string;
+}> = [
+  { value: 'low', label: 'Low Price', shortLabel: 'Low' },
+  { value: 'great', label: 'Great Price', shortLabel: 'Great' },
+  { value: 'fair', label: 'Fair Price', shortLabel: 'Fair' },
+  { value: 'high', label: 'High Price', shortLabel: 'High' },
+  { value: 'none', label: 'No Rating', shortLabel: 'No Rating' },
 ];
 
 const PROVINCES = [
@@ -640,6 +655,72 @@ function getListingConditionKey(listing: MarketplaceListing): ConditionFilterVal
   return 'not-set';
 }
 
+function isDealRatingKey(value: unknown): value is MarketplaceDealRating {
+  return value === 'low' || value === 'great' || value === 'fair' || value === 'high' || value === 'none';
+}
+
+function isManualMarketplaceListing(listing: MarketplaceListing): boolean {
+  const assetKind = normalize(listing.assetKind).replace(/[_\s-]+/g, '-');
+
+  return assetKind === 'manual';
+}
+
+function getListingDealRating(listing: MarketplaceListing): MarketplaceDealRating {
+  if (isDealRatingKey(listing.dealRating)) {
+    return listing.dealRating;
+  }
+
+  return calculateMarketplaceDealRating({
+    askingPriceExVat: listing.askingPriceExVat,
+    aim4priceValueExVat: listing.aim4priceValueExVat,
+    isManualEquipment: isManualMarketplaceListing(listing),
+  }).rating;
+}
+
+function getDealRatingOption(value: MarketplaceDealRating) {
+  return (
+    DEAL_RATING_OPTIONS.find((option) => option.value === value) ??
+    ({ value: 'none', label: 'No Rating', shortLabel: 'No Rating' } satisfies (typeof DEAL_RATING_OPTIONS)[number])
+  );
+}
+
+function getDealRatingLabel(value: MarketplaceDealRating): string {
+  return getDealRatingOption(value).label;
+}
+
+function getDealRatingShortLabel(value: MarketplaceDealRating): string {
+  return getDealRatingOption(value).shortLabel;
+}
+
+function getDealRatingToneClass(value: MarketplaceDealRating): string {
+  if (value === 'low') return styles.dealRatingBadgeLow;
+  if (value === 'great') return styles.dealRatingBadgeGreat;
+  if (value === 'fair') return styles.dealRatingBadgeFair;
+  if (value === 'high') return styles.dealRatingBadgeHigh;
+  return styles.dealRatingBadgeNone;
+}
+
+function DealRatingBadge({
+  listing,
+  variant = 'card',
+}: {
+  listing: MarketplaceListing;
+  variant?: 'card' | 'modal';
+}) {
+  const rating = getListingDealRating(listing);
+  const label = variant === 'card' ? getDealRatingShortLabel(rating) : getDealRatingLabel(rating);
+
+  return (
+    <span
+      className={`${styles.dealRatingBadge} ${getDealRatingToneClass(rating)} ${
+        variant === 'modal' ? styles.modalDealRatingBadge : styles.cardDealRatingBadge
+      }`}
+    >
+      {label}
+    </span>
+  );
+}
+
 function buildListingSpecLine(listing: MarketplaceListing): string {
   const familyLabel = getListingPrimaryFamilyLabel(listing);
   const powerKw = Number(listing.powerKw || 0);
@@ -697,6 +778,7 @@ function buildSearchText(listing: MarketplaceListing): string {
     listing.familyLabel,
     listing.conditionKey,
     listing.conditionLabel,
+    getDealRatingLabel(getListingDealRating(listing)),
   ]
     .join(' ')
     .toLowerCase();
@@ -1677,6 +1759,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
   const [listingQueryId, setListingQueryId] = useState('');
   const [sectorFilter, setSectorFilter] = useState<SectorKey | ''>('');
   const [familyFilter, setFamilyFilter] = useState('');
+  const [dealRatingFilter, setDealRatingFilter] = useState<DealRatingFilterValue>('any');
   const [conditionFilter, setConditionFilter] = useState<ConditionFilterValue>('');
   const [locationFilter, setLocationFilter] = useState('south-africa');
   const [distanceFilter, setDistanceFilter] = useState<DistanceFilterValue>('all');
@@ -1817,6 +1900,16 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
     );
   }, [items]);
 
+  const listingCountsByDealRating = useMemo(() => {
+    return items.reduce<Record<MarketplaceDealRating, number>>(
+      (accumulator, listing) => {
+        accumulator[getListingDealRating(listing)] += 1;
+        return accumulator;
+      },
+      { low: 0, great: 0, fair: 0, high: 0, none: 0 },
+    );
+  }, [items]);
+
   const availableProvinces = useMemo(() => {
     const provinces = Array.from(new Set(items.map((item) => String(item.province ?? '').trim()).filter(Boolean)));
     const merged = Array.from(new Set([...PROVINCES, ...provinces]));
@@ -1839,6 +1932,10 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
         return false;
       }
 
+      if (dealRatingFilter !== 'any' && getListingDealRating(listing) !== dealRatingFilter) {
+        return false;
+      }
+
       if (!isListingInsideDistance(listing, locationFilter, distanceFilter)) {
         return false;
       }
@@ -1849,7 +1946,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
 
       return buildSearchText(listing).includes(search);
     });
-  }, [conditionFilter, distanceFilter, familyFilter, items, locationFilter, query, sectorFilter]);
+  }, [conditionFilter, dealRatingFilter, distanceFilter, familyFilter, items, locationFilter, query, sectorFilter]);
 
   const visible = useMemo(() => sortListings(filtered), [filtered]);
   const totalPages = Math.max(1, Math.ceil(visible.length / LISTINGS_PER_PAGE));
@@ -1902,6 +1999,13 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
             families.find((family) => family.familyKey === familyFilter)?.familyLabel ??
             titleCase(familyFilter.replace(/_/g, ' ')),
           onRemove: () => setFamilyFilter(''),
+        }
+      : null,
+    dealRatingFilter !== 'any'
+      ? {
+          id: 'deal-rating',
+          label: `Deal rating: ${getDealRatingLabel(dealRatingFilter)}`,
+          onRemove: () => setDealRatingFilter('any'),
         }
       : null,
     conditionFilter
@@ -1978,7 +2082,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [conditionFilter, distanceFilter, familyFilter, locationFilter, query, sectorFilter]);
+  }, [conditionFilter, dealRatingFilter, distanceFilter, familyFilter, locationFilter, query, sectorFilter]);
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -2086,6 +2190,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
     setQuery('');
     setSectorFilter('');
     setFamilyFilter('');
+    setDealRatingFilter('any');
     setConditionFilter('');
     setLocationFilter('south-africa');
     setDistanceFilter('all');
@@ -2435,6 +2540,44 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
 
           <section className={styles.sidebarSection}>
             <div className={styles.sidebarSectionHead}>
+              <h2>Deal rating</h2>
+            </div>
+
+            <div className={styles.ratingFilterList}>
+              <button
+                type="button"
+                className={`${styles.ratingFilterButton} ${dealRatingFilter === 'any' ? styles.ratingFilterButtonActive : ''}`}
+                onClick={() => setDealRatingFilter('any')}
+                aria-pressed={dealRatingFilter === 'any'}
+              >
+                <span className={styles.ratingFilterCheck} aria-hidden="true" />
+                <strong className={styles.ratingFilterAnyLabel}>Any</strong>
+              </button>
+
+              {DEAL_RATING_OPTIONS.map((option) => {
+                const isActive = dealRatingFilter === option.value;
+
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    className={`${styles.ratingFilterButton} ${isActive ? styles.ratingFilterButtonActive : ''}`}
+                    onClick={() => setDealRatingFilter(option.value)}
+                    aria-pressed={isActive}
+                  >
+                    <span className={styles.ratingFilterCheck} aria-hidden="true" />
+                    <span className={`${styles.ratingFilterPill} ${getDealRatingToneClass(option.value)}`}>
+                      {option.label}
+                    </span>
+                    <small className={styles.ratingFilterCount}>{listingCountsByDealRating[option.value].toLocaleString('en-ZA')}</small>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+
+          <section className={styles.sidebarSection}>
+            <div className={styles.sidebarSectionHead}>
               <h2>Sort by</h2>
             </div>
 
@@ -2538,6 +2681,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
                         className={styles.cardImage}
                         variant="card"
                       />
+                      <DealRatingBadge listing={listing} />
                       {images.length > 1 ? <span className={styles.photoPill}>{images.length} photos</span> : null}
                       <button
                         type="button"
@@ -2774,6 +2918,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
             <aside ref={modalDetailsRef} className={styles.modalDetails} onScroll={updateModalScrollRail}>
               <div className={styles.modalTitleArea}>
                 <PriceWithVat value={activeListing.askingPriceExVat} className={styles.modalPrice} />
+                <DealRatingBadge listing={activeListing} variant="modal" />
                 <h2 id="marketplace-listing-title">{listingDisplayTitle(activeListing)}</h2>
                 <p>{formatLocation(activeListing)}</p>
               </div>

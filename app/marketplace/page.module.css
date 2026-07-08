@@ -296,6 +296,136 @@
   color: #165340;
 }
 
+.ratingFilterList {
+  display: grid;
+  gap: 0.48rem;
+}
+
+.ratingFilterButton {
+  width: 100%;
+  min-height: 2.28rem;
+  display: grid;
+  grid-template-columns: 1.5rem minmax(0, auto) minmax(2.65rem, max-content);
+  align-items: center;
+  justify-content: start;
+  gap: 0.7rem;
+  padding: 0.18rem 0.22rem;
+  border: 0;
+  border-radius: 0.68rem;
+  background: transparent;
+  color: #050505;
+  text-align: left;
+}
+
+.ratingFilterButton:hover {
+  background: #f6f7f8;
+}
+
+.ratingFilterButtonActive {
+  background: #ffffff;
+}
+
+.ratingFilterCheck {
+  width: 1.38rem;
+  height: 1.38rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid #8fa0b5;
+  border-radius: 0.18rem;
+  background: #ffffff;
+  color: #ffffff;
+  font-size: 0.92rem;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.ratingFilterButtonActive .ratingFilterCheck {
+  border-color: #1589e8;
+  background: #1589e8;
+}
+
+.ratingFilterButtonActive .ratingFilterCheck::after {
+  content: '✓';
+}
+
+.ratingFilterAnyLabel {
+  color: #050505;
+  font-size: 1rem;
+  font-weight: 750;
+  line-height: 1.1;
+}
+
+.ratingFilterPill,
+.dealRatingBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  border-radius: 0.32rem;
+  color: #ffffff;
+  font-weight: 850;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.ratingFilterPill {
+  min-height: 1.48rem;
+  padding: 0.3rem 0.44rem;
+  font-size: 0.82rem;
+}
+
+.ratingFilterCount {
+  min-width: 2.45rem;
+  padding: 0.26rem 0.5rem;
+  border-radius: 999px;
+  background: #f1f5ff;
+  color: #0066d9;
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1;
+  text-align: center;
+}
+
+.dealRatingBadge {
+  min-height: 2.1rem;
+  padding: 0.48rem 0.94rem;
+  font-size: 1rem;
+  box-shadow: 0 12px 22px rgba(5, 5, 5, 0.12);
+}
+
+.cardDealRatingBadge {
+  position: absolute;
+  z-index: 2;
+  top: 0.7rem;
+  left: 0.7rem;
+}
+
+.modalDealRatingBadge {
+  margin-top: 0.76rem;
+  box-shadow: none;
+}
+
+.dealRatingBadgeLow {
+  background: #f97316;
+}
+
+.dealRatingBadgeGreat {
+  background: #22b24b;
+}
+
+.dealRatingBadgeFair {
+  background: #1e9bb3;
+}
+
+.dealRatingBadgeHigh {
+  background: #ef4444;
+}
+
+.dealRatingBadgeNone {
+  background: #69788a;
+}
+
 .selectField {
   display: block;
   margin-top: 0.52rem;
