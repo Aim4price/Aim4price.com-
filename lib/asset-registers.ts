@@ -14,6 +14,7 @@ export type AssetRegisterSummary = {
   assetCount: number;
   totalValue: number;
   totalReplacementPrice: number;
+  unnotedAlertCount: number;
   createdAtIso: string;
   updatedAtIso: string;
 };
@@ -50,6 +51,7 @@ type AssetRegisterRow = {
   asset_count?: string | number | null;
   total_value?: string | number | null;
   total_replacement_price?: string | number | null;
+  unnoted_alert_count?: string | number | null;
 };
 
 type AccountProfileRow = {
@@ -206,6 +208,7 @@ function mapAssetRegisterRow(row: AssetRegisterRow): AssetRegisterSummary {
     assetCount: Math.max(0, Math.round(numberValue(row.asset_count))),
     totalValue: Math.round(numberValue(row.total_value)),
     totalReplacementPrice: Math.round(numberValue(row.total_replacement_price)),
+    unnotedAlertCount: Math.max(0, Math.round(numberValue(row.unnoted_alert_count))),
     createdAtIso: isoDate(row.created_at),
     updatedAtIso: isoDate(row.updated_at ?? row.created_at),
   };
@@ -271,6 +274,155 @@ async function buildAssetRegisterTotalsSql(): Promise<{
     totalValueSql: `coalesce(sum(${currentValueExpression}), 0)::numeric as total_value`,
     totalReplacementPriceSql: `coalesce(sum(${replacementPriceExpression}), 0)::numeric as total_replacement_price`,
   };
+}
+
+
+type AssetRegisterOpenAlertCountRow = {
+  register_id: string | null;
+  alert_count: string | number | null;
+};
+
+type TableExistsRow = {
+  table_name: string | null;
+};
+
+async function publicTableExists(tableName: string): Promise<boolean> {
+  const db = getDb();
+  const result = await db.query<TableExistsRow>(
+    `select to_regclass($1)::text as table_name`,
+    [`public.${tableName}`],
+  );
+
+  return Boolean(result.rows[0]?.table_name);
+}
+
+async function attachAssetRegisterOpenAlertCounts(
+  userId: string,
+  registers: AssetRegisterSummary[],
+): Promise<AssetRegisterSummary[]> {
+  if (!registers.length) {
+    return registers;
+  }
+
+  const registerIds = registers.map((register) => String(register.id ?? '').trim()).filter(Boolean);
+
+  if (!registerIds.length) {
+    return registers.map((register) => ({ ...register, unnotedAlertCount: 0 }));
+  }
+
+  try {
+    const hasPartnerNotes = await publicTableExists('asset_partner_notes');
+    const hasScanEvents = await publicTableExists('asset_scan_events');
+    const alertSources: string[] = [
+      `
+        select
+          register_id,
+          count(*)::integer as alert_count
+        from register_assets
+        where valuation_run_id is not null
+          and coalesce(selected_method, '') <> 'manual'
+          and lower(coalesce(
+            nullif(specs_json ->> 'valuationNeedsUpdate', ''),
+            nullif(specs_json ->> 'valuation_needs_update', ''),
+            ''
+          )) in ('true', '1', 'yes', 'on')
+        group by register_id
+      `,
+    ];
+
+    if (hasPartnerNotes) {
+      alertSources.push(`
+        select
+          a.register_id,
+          count(distinct n.asset_register_item_id)::integer as alert_count
+        from register_assets a
+        inner join public.asset_partner_notes n
+          on n.asset_register_item_id::text = a.asset_id
+        where n.owner_user_id = $1
+          and lower(coalesce(n.status, 'open')) = 'open'
+        group by a.register_id
+      `);
+    }
+
+    if (hasScanEvents) {
+      alertSources.push(`
+        select
+          latest_maintenance.register_id,
+          count(*)::integer as alert_count
+        from (
+          select distinct on (e.asset_id::text)
+            a.register_id,
+            nullif(coalesce(to_jsonb(e)->>'maintenance_noted_at', ''), '') as maintenance_noted_at
+          from register_assets a
+          inner join public.asset_scan_events e
+            on e.asset_id::text = a.asset_id
+          where nullif(trim(coalesce(e.note, '')), '') is not null
+            and (
+              lower(coalesce(e.note, '')) like 'checked%'
+              or lower(coalesce(e.note, '')) like 'serviced%'
+              or lower(coalesce(e.note, '')) like 'repaired%'
+              or lower(coalesce(e.note, '')) like '%checked items:%'
+              or lower(coalesce(e.note, '')) like '%work done:%'
+              or lower(coalesce(e.note, '')) like '%service items:%'
+              or lower(coalesce(e.note, '')) like '%serviced items:%'
+              or lower(coalesce(e.note, '')) like '%repair details:%'
+            )
+          order by e.asset_id::text, e.created_at desc, e.id desc
+        ) latest_maintenance
+        where latest_maintenance.maintenance_noted_at is null
+        group by latest_maintenance.register_id
+      `);
+
+      alertSources.push(`
+        select
+          a.register_id,
+          count(distinct e.asset_id)::integer as alert_count
+        from register_assets a
+        inner join public.asset_scan_events e
+          on e.asset_id::text = a.asset_id
+        where nullif(trim(coalesce(e.note, '')), '') is not null
+          and lower(coalesce(e.note, '')) like '%notes%problems:%'
+          and nullif(coalesce(to_jsonb(e)->>'issue_noted_at', ''), '') is null
+        group by a.register_id
+      `);
+    }
+
+    const result = await getDb().query<AssetRegisterOpenAlertCountRow>(
+      `
+        with register_assets as (
+          select
+            ai.id::text as asset_id,
+            ai.register_id::text as register_id,
+            coalesce(ai.specs_json, '{}'::jsonb) as specs_json,
+            ai.valuation_run_id,
+            ai.selected_method
+          from public.asset_register_items ai
+          where ai.user_id = $1
+            and ai.register_id::text = any($2::text[])
+        ), alert_counts as (
+          ${alertSources.join('\n          union all\n')}
+        )
+        select
+          register_id,
+          coalesce(sum(alert_count), 0)::integer as alert_count
+        from alert_counts
+        group by register_id
+      `,
+      [userId, registerIds],
+    );
+
+    const countByRegisterId = new Map(
+      result.rows.map((row) => [String(row.register_id ?? ''), Math.max(0, Math.round(numberValue(row.alert_count)))])
+    );
+
+    return registers.map((register) => ({
+      ...register,
+      unnotedAlertCount: countByRegisterId.get(register.id) ?? 0,
+    }));
+  } catch (error) {
+    console.error('Failed to load asset register open alert counts', error);
+    return registers.map((register) => ({ ...register, unnotedAlertCount: 0 }));
+  }
 }
 
 async function ensureAssetRegisterTablesOnce(): Promise<void> {
@@ -739,7 +891,7 @@ export async function listAssetRegisters(userId: string): Promise<AssetRegisterS
     [userId],
   );
 
-  return result.rows.map(mapAssetRegisterRow);
+  return attachAssetRegisterOpenAlertCounts(userId, result.rows.map(mapAssetRegisterRow));
 }
 
 export async function createAssetRegister(userId: string, input: AssetRegisterInput): Promise<AssetRegisterSummary> {
