@@ -2307,7 +2307,7 @@ export default function AssetRegistersClient() {
           <section className={styles.managementPanel}>
             <div className={styles.panelHeader}>
               <div className={styles.pageTitleBlock}>
-                <h1>MANAGE OR ADD MORE ASSET REGISTERS</h1>
+                <h1>MANAGE ASSET REGISTERS</h1>
               </div>
 
               <div className={styles.toolbar}>
