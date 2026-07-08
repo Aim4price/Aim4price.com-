@@ -9,6 +9,7 @@ import {
   buildMyInvoicesWorkbook,
 } from '../../../../lib/my-invoices-report';
 import { createXlsxWorkbook } from '../../../../lib/simple-xlsx';
+import { resolveReportLogoUrlForHtml } from '../../../../lib/report-logo';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -119,11 +120,12 @@ export async function GET(request: NextRequest) {
   try {
     const filters = parseFilters(request);
     const format = parseFormat(request.nextUrl.searchParams.get('format'));
-    const [data, profile, logoUrl] = await Promise.all([
+    const [data, profile, rawLogoUrl] = await Promise.all([
       listMyInvoicesData(userId, filters),
       getAccountProfile({ id: userId, name: session.user.name, email: session.user.email }),
       getAssetRegisterReportLogoUrl(userId),
     ]);
+    const logoUrl = await resolveReportLogoUrlForHtml(rawLogoUrl, request.url);
 
     const selectedAsset = findSelectedAsset(data.assets, filters);
     const ownerDetails = buildMyInvoicesOwnerDetails(profile, session.user);
