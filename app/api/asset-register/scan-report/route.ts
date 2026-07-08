@@ -252,6 +252,14 @@ function parseReportFormat(value: unknown): ReportFormat {
   return String(value ?? '').trim().toLowerCase() === 'xlsx' ? 'xlsx' : 'pdf';
 }
 
+function isPropertyLikeAsset(asset: Pick<AssetRegisterItem, 'kind'> | null | undefined): boolean {
+  return asText(asset?.kind).toLowerCase() === 'property';
+}
+
+function isPropertyBlockedReportKind(reportKind: PdfReportKind): boolean {
+  return reportKind === 'fuel' || reportKind === 'depreciation';
+}
+
 type ReportDateRange = {
   fromIso?: string;
   toIso?: string;
@@ -3040,6 +3048,13 @@ export async function GET(request: NextRequest) {
 
   if (!asset) {
     return NextResponse.json({ ok: false, error: 'Asset not found.' }, { status: 404 });
+  }
+
+  if (isPropertyLikeAsset(asset) && isPropertyBlockedReportKind(reportKind)) {
+    return NextResponse.json(
+      { ok: false, error: 'Fuel and depreciation reports are not available for property, land or building assets.' },
+      { status: 400 },
+    );
   }
 
   const ownerProfile = await getAccountProfile({
