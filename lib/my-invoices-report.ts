@@ -444,6 +444,7 @@ export function buildMyInvoicesReportHtml(options: MyInvoicesReportOptions): str
         display: block;
         width: 18mm;
         height: auto;
+        max-height: 18mm;
         object-fit: contain;
       }
 
