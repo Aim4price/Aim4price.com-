@@ -2785,6 +2785,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ ok: false, error: 'Invalid asset register export scope.' }, { status: 400 });
     }
 
+    const reportKind = cleanText(params.get('reportKind')).toLowerCase() || 'full';
+
+    if (reportKind !== 'full' && reportKind !== 'summary') {
+      return NextResponse.json({ ok: false, error: 'Invalid asset register export type.' }, { status: 400 });
+    }
+
     if (isScopedExport) {
       const scope = scopeParam as RegisterExportScope;
       const allRegisters = await listAssetRegisters(session.user.id);
@@ -2831,6 +2837,21 @@ export async function GET(request: NextRequest) {
       const ownerSlug = pdfFileSlug(entityName || buildOwnerName(exportProfile));
 
       if (format === 'pdf') {
+        if (reportKind === 'summary') {
+          const summaryItems = bundles.flatMap((bundle) => registerSummaryAssets(bundle.register, bundle.items));
+          const html = await renderRegisterSummaryReportHtml(summaryItems, exportProfile, generatedAt, request.url);
+          const fileName = `aim4price-register-summary-${ownerSlug}-${filenameDate}.html`;
+
+          return new NextResponse(html, {
+            status: 200,
+            headers: {
+              'Content-Type': 'text/html; charset=utf-8',
+              'Content-Disposition': `inline; filename="${fileName}"`,
+              'Cache-Control': 'no-store',
+            },
+          });
+        }
+
         const pdf = buildAssetRegistersPdf(bundles, exportProfile, scope, entityName, generatedAt);
         const fileName = `aim4price-asset-registers-${ownerSlug}-${filenameDate}.pdf`;
 
@@ -2845,11 +2866,19 @@ export async function GET(request: NextRequest) {
         });
       }
 
-      const workbookSheets = scope === 'single'
-        ? buildWorkbookSheets(dedupeAssetItems(bundles[0]?.items ?? []), exportProfile, generatedAt)
-        : buildRegisterCollectionWorkbookSheets(bundles, exportProfile, scope, entityName, generatedAt);
+      const workbookSheets = reportKind === 'summary'
+        ? buildRegisterSummaryWorkbookSheets(
+            bundles.flatMap((bundle) => registerSummaryAssets(bundle.register, bundle.items)),
+            exportProfile,
+            generatedAt,
+          )
+        : scope === 'single'
+          ? buildWorkbookSheets(dedupeAssetItems(bundles[0]?.items ?? []), exportProfile, generatedAt)
+          : buildRegisterCollectionWorkbookSheets(bundles, exportProfile, scope, entityName, generatedAt);
       const workbook = createXlsxWorkbook(workbookSheets);
-      const fileName = `aim4price-asset-registers-${ownerSlug}-${filenameDate}.xlsx`;
+      const fileName = reportKind === 'summary'
+        ? `aim4price-register-summary-${ownerSlug}-${filenameDate}.xlsx`
+        : `aim4price-asset-registers-${ownerSlug}-${filenameDate}.xlsx`;
 
       return new NextResponse(workbook, {
         status: 200,
@@ -2887,12 +2916,6 @@ export async function GET(request: NextRequest) {
     const items = await listAssetRegisterItems(session.user.id, register.id);
     const generatedAt = new Date();
     const filenameDate = generatedAt.toISOString().slice(0, 10);
-    const reportKind = cleanText(params.get('reportKind')).toLowerCase() || 'full';
-
-    if (reportKind !== 'full' && reportKind !== 'summary') {
-      return NextResponse.json({ ok: false, error: 'Invalid asset register export type.' }, { status: 400 });
-    }
-
     if (format === 'pdf') {
       const ownerSlug = pdfFileSlug(buildOwnerName(exportProfile));
 
