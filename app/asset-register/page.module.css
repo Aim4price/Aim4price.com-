@@ -29514,3 +29514,90 @@ button.documentOpenLink {
   font-weight: 800;
   letter-spacing: 0.01em;
 }
+
+/* === Asset register manage modal section tabs === */
+.assetFormModalChromeHeader {
+  justify-content: flex-end !important;
+  align-items: center !important;
+  min-height: auto !important;
+  margin-bottom: 0.45rem !important;
+  padding-bottom: 0 !important;
+  border-bottom: 0 !important;
+}
+
+.assetFormModalChromeHeader .modalCloseButton {
+  margin-left: auto !important;
+}
+
+.assetFormSectionTabs {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: clamp(0.45rem, 0.8vw, 0.7rem) !important;
+  margin: 0 0 0.95rem !important;
+  padding: 0 0 0.86rem !important;
+  border-bottom: 1px solid rgba(216, 226, 236, 0.88) !important;
+}
+
+.assetFormSectionTab {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  min-height: clamp(2.95rem, 4.6vw, 3.75rem) !important;
+  padding: 0.68rem 0.95rem !important;
+  border: 1px solid rgba(203, 218, 230, 0.98) !important;
+  border-radius: 1.06rem !important;
+  color: #10352b !important;
+  background: #ffffff !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+  font: inherit !important;
+  font-size: clamp(1.02rem, 1.55vw, 1.42rem) !important;
+  font-weight: 920 !important;
+  line-height: 1 !important;
+  letter-spacing: -0.035em !important;
+  text-align: center !important;
+  cursor: pointer !important;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease !important;
+}
+
+.assetFormSectionTab:hover {
+  transform: translateY(-1px) !important;
+  border-color: rgba(152, 188, 173, 0.98) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f1f8f4 100%) !important;
+  box-shadow: 0 10px 22px rgba(16, 31, 28, 0.07) !important;
+}
+
+.assetFormSectionTab:focus-visible {
+  outline: 3px solid rgba(71, 139, 108, 0.26) !important;
+  outline-offset: 3px !important;
+}
+
+.assetFormSectionTabActive,
+.assetFormSectionTabActive:hover {
+  color: #0d3529 !important;
+  background: linear-gradient(180deg, #c8f0bf 0%, #b8e9b0 100%) !important;
+  border-color: rgba(104, 177, 120, 0.95) !important;
+  box-shadow:
+    0 12px 26px rgba(39, 111, 74, 0.11),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72) !important;
+  transform: none !important;
+}
+
+@media (max-width: 680px) {
+  .assetFormSectionTabs {
+    gap: 0.38rem !important;
+    padding-bottom: 0.72rem !important;
+  }
+
+  .assetFormSectionTab {
+    min-height: 2.78rem !important;
+    padding-inline: 0.44rem !important;
+    border-radius: 0.88rem !important;
+    font-size: 0.92rem !important;
+    letter-spacing: -0.02em !important;
+  }
+}

@@ -854,6 +854,12 @@ const MANUAL_FORM_STEPS: Array<{ step: ManualAssetStep; label: string }> = [
   { step: 4, label: 'Documents' },
 ];
 
+const ASSET_FORM_SECTION_TABS: Array<{ step: ManualAssetStep; label: string }> = [
+  { step: 2, label: 'Details' },
+  { step: 3, label: 'Paperwork' },
+  { step: 4, label: 'Documents' },
+];
+
 const CONDITION_OPTIONS: Array<{ value: AssetConditionValue; label: string }> = [
   { value: '', label: 'Select condition' },
   { value: 'excellent', label: 'Excellent' },
@@ -7829,6 +7835,16 @@ export default function AssetRegisterClient() {
     });
   }
 
+  function openAssetFormSection(step: ManualAssetStep) {
+    if (step === 1 || manualAssetStep === step) {
+      return;
+    }
+
+    setAssetStatusEditView('hub');
+    setAssetStatusError('');
+    setManualAssetStep(step);
+  }
+
   function goToNextManualAssetStep() {
     if (manualAssetStep === 2 && !validateAssetDetailsDraft()) {
       return;
@@ -10654,16 +10670,6 @@ export default function AssetRegisterClient() {
     : searchTerm.trim() || hasActiveAssetFilter
       ? 'No assets match the current search or filter.'
       : 'No saved assets yet.';
-  const assetFormStepDescription =
-    manualAssetStep === 1
-      ? 'Select the asset type.'
-      : manualAssetStep === 2
-        ? 'Add the basic asset details.'
-        : manualAssetStep === 3
-          ? assetFormKind === 'property'
-            ? 'Choose finance and insurance status.'
-            : 'Choose finance, insurance and license status.'
-          : 'Upload files if needed, then add the asset.';
   const selectedManualAssetType = getManualAssetOption(assetFormKind);
   const manualDraftDocumentCount = assetDraft.documents.length + pendingDocumentFiles.length;
   const manualDraftRawPhotoCount = assetDraft.photos.length + pendingPhotoFiles.length;
@@ -12319,14 +12325,9 @@ export default function AssetRegisterClient() {
             className={`${styles.modalCard} ${styles.assetFormModal} ${manualAssetStep === 1 ? styles.assetFormModalStepOne : ''}`}
             role="dialog"
             aria-modal="true"
-            aria-labelledby="asset-form-title"
+            aria-label={editingAsset ? 'Update asset' : 'Add asset'}
           >
-            <div className={`${styles.modalHeader} ${styles.assetFormModalHeader} ${styles.manualWizardHeader}`}>
-              <div className={styles.modalHeaderText}>
-                <h3 id="asset-form-title">{editingAsset ? 'Update asset' : 'Add asset'}</h3>
-                <p>{assetFormStepDescription}</p>
-              </div>
-
+            <div className={`${styles.modalHeader} ${styles.assetFormModalHeader} ${styles.manualWizardHeader} ${styles.assetFormModalChromeHeader}`}>
               <button
                 type="button"
                 className={styles.modalCloseButton}
@@ -12338,6 +12339,26 @@ export default function AssetRegisterClient() {
             </div>
 
             <div className={`${styles.modalScrollBody} ${styles.manualStepScrollBody} ${manualAssetStep === 1 ? styles.manualStepScrollBodyNoScroll : ''}`}>
+              {manualAssetStep > 1 ? (
+                <nav className={styles.assetFormSectionTabs} aria-label="Asset form sections">
+                  {ASSET_FORM_SECTION_TABS.map((section) => {
+                    const isActive = manualAssetStep === section.step;
+
+                    return (
+                      <button
+                        type="button"
+                        key={section.step}
+                        className={`${styles.assetFormSectionTab} ${isActive ? styles.assetFormSectionTabActive : ''}`}
+                        onClick={() => openAssetFormSection(section.step)}
+                        aria-current={isActive ? 'step' : undefined}
+                      >
+                        {section.label}
+                      </button>
+                    );
+                  })}
+                </nav>
+              ) : null}
+
               <form className={`${styles.modalForm} ${styles.manualAssetForm} ${styles.manualStepForm}`} onSubmit={(event) => event.preventDefault()}>
                 {manualAssetStep === 1 ? (
                   <section className={`${styles.manualStageCard} ${styles.manualSingleStageCard} ${styles.manualCompactStageCard} ${styles.manualStepOneCard} ${styles.fullWidth}`}>
