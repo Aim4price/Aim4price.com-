@@ -2832,3 +2832,54 @@
     font-size: 1.72rem;
   }
 }
+
+/* === Header manage dropdown final alignment === */
+.accountMenu {
+  position: relative;
+}
+
+.accountButton {
+  justify-content: center;
+  text-align: center;
+}
+
+.accountButtonText {
+  flex: 0 0 auto;
+  justify-content: center;
+  text-align: center;
+}
+
+.accountPopover {
+  left: 0;
+  right: 0;
+  width: 100%;
+  min-width: 100%;
+  max-width: 100%;
+  overflow-x: visible;
+}
+
+@media (min-width: 901px) {
+  .accountMenu {
+    width: 12.25rem;
+    min-width: 12.25rem;
+    max-width: 12.25rem;
+    flex: 0 0 12.25rem;
+  }
+
+  .accountButton {
+    width: 100%;
+    min-width: 0;
+    justify-content: center;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .accountPopover {
+    left: 0;
+    right: 0;
+    width: 100%;
+    min-width: 100%;
+    max-width: 100%;
+    overflow-x: visible;
+  }
+}
