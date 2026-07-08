@@ -3296,6 +3296,18 @@ function isMarketplaceEligible(asset: RegisterAsset): boolean {
   return asset.kind !== 'property' && asset.value > 0;
 }
 
+function isPropertyLikeAsset(asset: Pick<RegisterAsset, 'kind'> | null | undefined): boolean {
+  return asset?.kind === 'property';
+}
+
+function canDownloadAssetFuelReport(asset: RegisterAsset | null | undefined): boolean {
+  return !isPropertyLikeAsset(asset);
+}
+
+function canDownloadAssetDepreciationReport(asset: RegisterAsset | null | undefined): boolean {
+  return !isPropertyLikeAsset(asset);
+}
+
 function isLiveOnMarketplace(asset: RegisterAsset): boolean {
   return String(asset.marketplaceStatus ?? 'draft').toLowerCase() === 'live';
 }
@@ -9688,6 +9700,11 @@ export default function AssetRegisterClient() {
   }
 
   function openAssetFuelReportFilter() {
+    if (!canDownloadAssetFuelReport(activeAsset)) {
+      setNotice({ tone: 'error', message: 'Fuel reports are not available for property, land or building assets.' });
+      return;
+    }
+
     setAssetReportStep('fuel-filter');
     setAssetFuelReportYear('all');
     setAssetFuelReportMonth('all');
@@ -9703,6 +9720,11 @@ export default function AssetRegisterClient() {
   }
 
   function openAssetDepreciationReportFilter() {
+    if (!canDownloadAssetDepreciationReport(activeAsset)) {
+      setNotice({ tone: 'error', message: 'Depreciation logs are not available for property, land or building assets.' });
+      return;
+    }
+
     setAssetReportStep('depreciation-filter');
     setAssetDepreciationReportYear('all');
     setAssetDepreciationReportMonth('all');
@@ -9775,6 +9797,11 @@ export default function AssetRegisterClient() {
   }
 
   async function handleDownloadFilteredFuelReport(asset: RegisterAsset, format: AssetReportFormat = 'pdf') {
+    if (!canDownloadAssetFuelReport(asset)) {
+      setNotice({ tone: 'error', message: 'Fuel reports are not available for property, land or building assets.' });
+      return;
+    }
+
     const filters: AssetPdfReportFilters = {
       year: assetFuelReportYear,
       month: assetFuelReportYear === 'all' ? 'all' : assetFuelReportMonth,
@@ -9812,6 +9839,11 @@ export default function AssetRegisterClient() {
   }
 
   async function handleDownloadFilteredDepreciationReport(asset: RegisterAsset, format: AssetReportFormat = 'pdf') {
+    if (!canDownloadAssetDepreciationReport(asset)) {
+      setNotice({ tone: 'error', message: 'Depreciation logs are not available for property, land or building assets.' });
+      return;
+    }
+
     const filters: AssetPdfReportFilters = {
       year: assetDepreciationReportYear,
       month: assetDepreciationReportYear === 'all' ? 'all' : assetDepreciationReportMonth,
@@ -14664,21 +14696,25 @@ export default function AssetRegisterClient() {
                         </span>
                       </button>
 
-                      <button type="button" className={styles.assetReportOptionButton} onClick={openAssetFuelReportFilter}>
-                        <DocumentIcon className={styles.buttonIcon} />
-                        <span>
-                          <strong>Download fuel report</strong>
-                          <small>PDF or Excel fuel costs by month.</small>
-                        </span>
-                      </button>
+                      {canDownloadAssetFuelReport(activeAsset) ? (
+                        <button type="button" className={styles.assetReportOptionButton} onClick={openAssetFuelReportFilter}>
+                          <DocumentIcon className={styles.buttonIcon} />
+                          <span>
+                            <strong>Download fuel report</strong>
+                            <small>PDF or Excel fuel costs by month.</small>
+                          </span>
+                        </button>
+                      ) : null}
 
-                      <button type="button" className={styles.assetReportOptionButton} onClick={openAssetDepreciationReportFilter}>
-                        <DocumentIcon className={styles.buttonIcon} />
-                        <span>
-                          <strong>Download depreciation log</strong>
-                          <small>PDF or Excel log of saved value changes.</small>
-                        </span>
-                      </button>
+                      {canDownloadAssetDepreciationReport(activeAsset) ? (
+                        <button type="button" className={styles.assetReportOptionButton} onClick={openAssetDepreciationReportFilter}>
+                          <DocumentIcon className={styles.buttonIcon} />
+                          <span>
+                            <strong>Download depreciation log</strong>
+                            <small>PDF or Excel log of saved value changes.</small>
+                          </span>
+                        </button>
+                      ) : null}
 
                       <button type="button" className={styles.assetReportOptionButton} onClick={openAssetOwnershipReportFilter}>
                         <DocumentIcon className={styles.buttonIcon} />
