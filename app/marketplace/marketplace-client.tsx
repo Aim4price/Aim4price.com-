@@ -270,6 +270,24 @@ function IconTrash() {
   );
 }
 
+function IconAssetRegister() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M6 4h12a2 2 0 0 1 2 2v14H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z" />
+      <path d="M8 8h8M8 12h8M8 16h5" />
+    </svg>
+  );
+}
+
+function IconEstimate() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 3v18" />
+      <path d="M17 7.5c0-1.7-1.8-3-4.3-3S8.4 5.6 8.4 7.2c0 4.4 8.2 2.1 8.2 6.6 0 1.7-1.8 3-4.3 3s-4.5-1.2-4.5-3" />
+    </svg>
+  );
+}
+
 function BrandIcon({ src }: { src: string }) {
   return <img src={src} alt="" aria-hidden="true" className={styles.brandIcon} />;
 }
@@ -493,16 +511,8 @@ function formatLocation(listing: MarketplaceListing): string {
   return area || province || 'South Africa';
 }
 
-function listingUsageLabel(listing: MarketplaceListing): string {
-  if (listing.usageUnit === 'km') {
-    return 'Kilometres';
-  }
-
-  if (listing.usageUnit === 'percent') {
-    return 'Usage';
-  }
-
-  return normalize(listing.assetKind) === 'vehicle' ? 'Vehicle hours' : 'Engine hours';
+function listingUsageLabel(_listing: MarketplaceListing): string {
+  return 'Usage';
 }
 
 function formatPercent(value: number): string {
@@ -527,13 +537,13 @@ function formatUsage(listing: MarketplaceListing): string {
   }
 
   const amount = Number(listing.hours || 0);
-  const suffix = listing.usageUnit === 'km' ? 'km' : 'hrs';
+  const suffix = listing.usageUnit === 'km' ? 'km' : 'hours';
 
   if (!Number.isFinite(amount) || amount <= 0) {
     return listing.usageUnit === 'km' ? 'km not set' : 'hours not set';
   }
 
-  return `${amount.toLocaleString('en-ZA')} ${suffix}`;
+  return `${Math.round(amount).toLocaleString('en-ZA')} ${suffix}`;
 }
 
 function normalizeSectorKey(value: unknown): SectorKey | '' {
@@ -632,14 +642,6 @@ function isTractorListing(listing: MarketplaceListing): boolean {
 }
 
 function getListingPrimaryFamilyLabel(listing: MarketplaceListing): string {
-  const assetKind = getListingAssetKind(listing);
-
-  if (assetKind === 'vehicle') return 'Bakkies / LDVs';
-  if (assetKind === 'tools' || assetKind === 'tool') return 'Tools';
-  if (assetKind === 'equipment') return 'Equipment';
-  if (assetKind === 'manual' || assetKind === 'other') return 'Other';
-  if (assetKind === 'property') return 'Property/Buildings';
-
   return getListingFamilyLabel(listing);
 }
 
@@ -2793,7 +2795,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
             {!isSignedIn ? (
               <>
                 <div className={styles.createListingHeader}>
-                  <h2 id="create-listing-title">Create an account before listing on Marketplace.</h2>
+                  <h2 id="create-listing-title">Create marketplace listing</h2>
                   <p>
                     Marketplace listings must be tied to a seller profile. You can browse listings as a guest, but you need
                     an account before you can create or publish a listing.
@@ -2820,21 +2822,21 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
             ) : (
               <>
                 <div className={styles.createListingHeader}>
-                  <h2 id="create-listing-title">Choose how this listing must be created.</h2>
-                  <p>
-                    Aim4price only allows marketplace uploads after a machine has an Aim4price value. This keeps every
-                    listing linked to a valuation instead of a loose advert.
-                  </p>
+                  <h2 id="create-listing-title">Create marketplace listing</h2>
                 </div>
 
                 <div className={styles.createListingChoiceGrid}>
                   <a href="/asset-register" className={styles.createListingChoiceCard}>
-                    <strong>From Asset Register</strong>
-                    <span>Use an existing saved asset and publish it from its Manage modal.</span>
+                    <span className={styles.createListingChoiceIcon} aria-hidden="true">
+                      <IconAssetRegister />
+                    </span>
+                    <strong>Asset Register</strong>
                   </a>
                   <button type="button" className={styles.createListingChoiceCard} onClick={goToMarketplaceEstimate}>
-                    <strong>Via Get Estimate</strong>
-                    <span>Run a fresh estimate, upload photos, then send it straight to marketplace.</span>
+                    <span className={styles.createListingChoiceIcon} aria-hidden="true">
+                      <IconEstimate />
+                    </span>
+                    <strong>Estimate</strong>
                   </button>
                 </div>
               </>
