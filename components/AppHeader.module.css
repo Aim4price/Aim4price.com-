@@ -40,14 +40,17 @@
 .nav {
   min-width: 0;
   display: flex;
+  align-items: center;
   justify-content: center;
   justify-self: center;
+  gap: clamp(0.18rem, 0.5vw, 0.46rem);
 }
 
 .navRail {
   min-width: 0;
   display: inline-flex;
   align-items: center;
+  flex: 0 1 auto;
   gap: 0.44rem;
   padding: 0.38rem;
   border-radius: 1.35rem;
@@ -92,6 +95,58 @@
   background: #ffffff;
   border-color: rgba(23, 77, 62, 0.1);
   box-shadow: 0 10px 22px rgba(18, 45, 37, 0.055);
+}
+
+.navWindowButton {
+  appearance: none;
+  width: 2rem;
+  min-width: 2rem;
+  height: 3.28rem;
+  min-height: 3.28rem;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  border: 0;
+  background: transparent;
+  color: rgba(7, 59, 48, 0.78);
+  font: inherit;
+  font-size: clamp(2.18rem, 2.7vw, 2.72rem);
+  font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.92;
+  transition:
+    color 160ms ease,
+    opacity 160ms ease,
+    transform 160ms ease;
+}
+
+.navWindowButton span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  transform: translateY(-0.02em);
+}
+
+.navWindowButton:hover:not(:disabled) {
+  color: #073b30;
+  opacity: 1;
+}
+
+.navWindowButtonPrevious:hover:not(:disabled) {
+  transform: translateX(-0.16rem);
+}
+
+.navWindowButtonNext:hover:not(:disabled) {
+  transform: translateX(0.16rem);
+}
+
+.navWindowButton:disabled {
+  cursor: default;
+  opacity: 0.28;
 }
 
 .actions {
@@ -862,6 +917,7 @@
 
 .brand:focus-visible,
 .navLink:focus-visible,
+.navWindowButton:focus-visible,
 .signupButton:focus-visible,
 .loginButton:focus-visible,
 .accountButton:focus-visible,
@@ -2748,5 +2804,25 @@
     white-space: nowrap;
     overflow: visible;
     text-overflow: clip;
+  }
+}
+
+/* === Primary navigation carousel refinement === */
+@media (max-width: 1180px) {
+  .nav {
+    gap: 0.26rem;
+  }
+
+  .navRail {
+    width: auto;
+    flex: 1 1 auto;
+  }
+
+  .navWindowButton {
+    width: 1.65rem;
+    min-width: 1.65rem;
+    height: 2.85rem;
+    min-height: 2.85rem;
+    font-size: 2.28rem;
   }
 }

@@ -7,7 +7,19 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import styles from './AppHeader.module.css';
 
-type ActivePage = 'home' | 'valuation' | 'asset-register' | 'asset-discovery' | 'leads' | 'users' | 'marketplace' | 'none';
+type ActivePage =
+  | 'home'
+  | 'valuation'
+  | 'asset-register'
+  | 'asset-map'
+  | 'cost'
+  | 'fuel'
+  | 'account'
+  | 'asset-discovery'
+  | 'leads'
+  | 'users'
+  | 'marketplace'
+  | 'none';
 
 type AppHeaderProps = {
   active: ActivePage;
@@ -236,6 +248,7 @@ type SmartLinkProps = {
 };
 
 const NOTIFICATIONS_PER_PAGE = 4;
+const NAV_WINDOW_SIZE = 4;
 const MOBILE_MENU_ID = 'app-header-mobile-menu';
 
 const BASE_NAV_ITEMS: NavItem[] = [
@@ -243,17 +256,26 @@ const BASE_NAV_ITEMS: NavItem[] = [
   { key: 'valuation', href: '/valuation', label: 'Get Estimate' },
 ];
 
+const DEFAULT_NAV_ITEMS: NavItem[] = [
+  ...BASE_NAV_ITEMS,
+  { key: 'asset-register', href: '/asset-register', label: 'Asset Register' },
+  { key: 'marketplace', href: '/marketplace', label: 'Marketplace' },
+];
+
+const OWNER_NAV_ITEMS: NavItem[] = [
+  ...DEFAULT_NAV_ITEMS,
+  { key: 'asset-map', href: '/asset-map', label: 'Map' },
+  { key: 'cost', href: '/my-invoices', label: 'Cost' },
+  { key: 'fuel', href: '/fuel', label: 'Fuel' },
+  { key: 'account', href: '/account', label: 'Account' },
+];
+
 const ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
-  { href: '/', label: 'Home', mobileOnly: true },
-  { href: '/account', label: 'Manage Account' },
+  { href: '/account', label: 'Account' },
   { href: '/users', label: 'Users', accountTypes: ['dealer'] },
-  { href: '/asset-register', label: 'Asset Register', mobileOnly: true },
-  { href: '/asset-discovery', label: 'Discovery', mobileOnly: true, accountTypes: ['dealer'] },
-  { href: '/valuation', label: 'Get Estimate', mobileOnly: true },
-  { href: '/marketplace', label: 'Marketplace', mobileOnly: true },
-  { href: '/asset-map', label: 'My Asset Map', accountTypes: ['owner'] },
-  { href: '/fuel', label: 'My Fuel Ledger', accountTypes: ['owner'] },
-  { href: '/my-invoices', label: 'My Cost Ledger', accountTypes: ['owner'] },
+  { href: '/asset-map', label: 'Asset Map', accountTypes: ['owner'] },
+  { href: '/my-invoices', label: 'Cost Ledger', accountTypes: ['owner'] },
+  { href: '/fuel', label: 'Fuel Ledger', accountTypes: ['owner'] },
 ];
 
 function isAccountMenuItemVisible(item: AccountMenuItem, accountType: AccountType | undefined): boolean {
@@ -286,11 +308,49 @@ function buildNavItems(accountType: AccountType | 'public' | null): NavItem[] {
     ];
   }
 
-  return [
-    ...BASE_NAV_ITEMS,
-    { key: 'asset-register', href: '/asset-register', label: 'Asset Register' },
-    { key: 'marketplace', href: '/marketplace', label: 'Marketplace' },
-  ];
+  if (accountType === 'owner') {
+    return OWNER_NAV_ITEMS;
+  }
+
+  return DEFAULT_NAV_ITEMS;
+}
+
+function buildMobileNavItems(accountType: AccountType): NavItem[] {
+  const items = buildNavItems(accountType);
+
+  if (items.some((item) => item.key === 'account')) {
+    return items;
+  }
+
+  return [...items, { key: 'account', href: '/account', label: 'Account' }];
+}
+
+function isPathMatchingHref(pathname: string, href: string): boolean {
+  if (href === '/') {
+    return pathname === '/';
+  }
+
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+function resolveActiveNavKey(pathname: string, items: NavItem[], active: ActivePage): ActivePage {
+  const normalizedPath = pathname || '/';
+
+  if (normalizedPath === '/asset-registers' || normalizedPath.startsWith('/asset-registers/')) {
+    return 'asset-register';
+  }
+
+  const pathMatchedItem = items.find((item) => isPathMatchingHref(normalizedPath, item.href));
+
+  if (pathMatchedItem) {
+    return pathMatchedItem.key;
+  }
+
+  if (active !== 'none' && items.some((item) => item.key === active)) {
+    return active;
+  }
+
+  return 'none';
 }
 
 function SmartLink({ href, className, children, onClick }: SmartLinkProps) {
@@ -799,6 +859,18 @@ export default function AppHeader({
   const isOwnerAccount = session?.accountType === 'owner';
   const navAccountType = isLoadingSession ? null : (session?.accountType ?? 'public');
   const navItems = useMemo(() => buildNavItems(navAccountType), [navAccountType]);
+  const mobileNavItems = useMemo(
+    () => (session?.accountType ? buildMobileNavItems(session.accountType) : navItems),
+    [navItems, session?.accountType],
+  );
+  const activeNavKey = useMemo(() => resolveActiveNavKey(pathname, navItems, active), [active, navItems, pathname]);
+  const [navWindowStart, setNavWindowStart] = useState(0);
+  const navMaxWindowStart = Math.max(0, navItems.length - NAV_WINDOW_SIZE);
+  const showNavWindowControls = navItems.length > NAV_WINDOW_SIZE;
+  const visibleNavItems = useMemo(
+    () => navItems.slice(navWindowStart, navWindowStart + NAV_WINDOW_SIZE),
+    [navItems, navWindowStart],
+  );
   const latestNotificationTime = useMemo(
     () => notifications.reduce((latest, item) => Math.max(latest, parseTime(item.createdAtIso)), 0),
     [notifications],
@@ -822,6 +894,32 @@ export default function AppHeader({
     ? Math.min(activeNotificationPage * NOTIFICATIONS_PER_PAGE, notifications.length)
     : 0;
   const hasNotificationPages = notifications.length > NOTIFICATIONS_PER_PAGE;
+
+  useEffect(() => {
+    if (!showNavWindowControls) {
+      setNavWindowStart(0);
+      return;
+    }
+
+    const activeIndex = navItems.findIndex((item) => item.key === activeNavKey);
+
+    if (activeIndex < 0) {
+      setNavWindowStart((current) => Math.min(current, navMaxWindowStart));
+      return;
+    }
+
+    setNavWindowStart((current) => {
+      if (activeIndex >= current && activeIndex < current + NAV_WINDOW_SIZE) {
+        return Math.min(current, navMaxWindowStart);
+      }
+
+      return Math.min(navMaxWindowStart, Math.max(0, activeIndex - NAV_WINDOW_SIZE + 1));
+    });
+  }, [activeNavKey, navItems, navMaxWindowStart, showNavWindowControls]);
+
+  function moveNavWindow(direction: -1 | 1) {
+    setNavWindowStart((current) => Math.min(navMaxWindowStart, Math.max(0, current + direction)));
+  }
 
   useEffect(() => {
     if (!session?.id) {
@@ -1560,44 +1658,21 @@ export default function AppHeader({
         </div>
 
         <nav className={styles.mobileMenuNav} aria-label={session ? 'Account mobile navigation' : 'Mobile navigation'}>
-          {session
-            ? ACCOUNT_MENU_ITEMS.filter((item) => isAccountMenuItemVisible(item, session?.accountType)).map((item) => {
-                const isActive = isAccountMenuLinkActive(item.href);
+          {(session ? mobileNavItems : navItems).map((item) => {
+            const isActive = activeNavKey === item.key;
 
-                return (
-                  <Link
-                    key={`mobile-account-${item.href}`}
-                    href={item.href}
-                    aria-current={isActive ? 'page' : undefined}
-                    className={`${styles.mobileMenuNavLink} ${isActive ? styles.mobileMenuNavLinkActive : ''}`}
-                    onClick={closeMobileMenu}
-                  >
-                    {item.href === '/account' ? (
-                      <AccountProfileIcon
-                        className={styles.menuLinkLogo}
-                        logoUrl={accountLogoUrl}
-                        fallbackLabel={accountName}
-                      />
-                    ) : null}
-                    <span>{item.label}</span>
-                  </Link>
-                );
-              })
-            : navItems.map((item) => {
-                const isActive = active === item.key;
-
-                return (
-                  <Link
-                    key={`mobile-${item.key}-${item.href}`}
-                    href={item.href}
-                    aria-current={isActive ? 'page' : undefined}
-                    className={`${styles.mobileMenuNavLink} ${isActive ? styles.mobileMenuNavLinkActive : ''}`}
-                    onClick={closeMobileMenu}
-                  >
-                    <span>{item.label}</span>
-                  </Link>
-                );
-              })}
+            return (
+              <Link
+                key={`mobile-${session ? 'account-' : ''}${item.key}-${item.href}`}
+                href={item.href}
+                aria-current={isActive ? 'page' : undefined}
+                className={`${styles.mobileMenuNavLink} ${isActive ? styles.mobileMenuNavLinkActive : ''}`}
+                onClick={closeMobileMenu}
+              >
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
         </nav>
 
         {session ? (
@@ -1809,9 +1884,21 @@ export default function AppHeader({
           </Link>
 
           <nav className={styles.nav} aria-label="Primary navigation">
+            {showNavWindowControls ? (
+              <button
+                type="button"
+                className={`${styles.navWindowButton} ${styles.navWindowButtonPrevious}`}
+                onClick={() => moveNavWindow(-1)}
+                disabled={navWindowStart <= 0}
+                aria-label="Show previous navigation items"
+              >
+                <span aria-hidden="true">‹</span>
+              </button>
+            ) : null}
+
             <div className={styles.navRail}>
-              {navItems.map((item) => {
-                const isActive = active === item.key;
+              {visibleNavItems.map((item) => {
+                const isActive = activeNavKey === item.key;
 
                 return (
                   <Link
@@ -1825,6 +1912,18 @@ export default function AppHeader({
                 );
               })}
             </div>
+
+            {showNavWindowControls ? (
+              <button
+                type="button"
+                className={`${styles.navWindowButton} ${styles.navWindowButtonNext}`}
+                onClick={() => moveNavWindow(1)}
+                disabled={navWindowStart >= navMaxWindowStart}
+                aria-label="Show next navigation items"
+              >
+                <span aria-hidden="true">›</span>
+              </button>
+            ) : null}
           </nav>
 
           <div className={styles.actions}>
@@ -1900,13 +1999,6 @@ export default function AppHeader({
                               className={menuLinkClassName}
                               onClick={closeAccountMenu}
                             >
-                              {item.href === '/account' ? (
-                                <AccountProfileIcon
-                                  className={styles.menuLinkLogo}
-                                  logoUrl={accountLogoUrl}
-                                  fallbackLabel={accountName}
-                                />
-                              ) : null}
                               <span>{item.label}</span>
                             </Link>
                           );
