@@ -2839,8 +2839,18 @@
 }
 
 .accountButton {
+  position: relative;
   justify-content: center;
+  gap: 0;
   text-align: center;
+}
+
+.accountButton > .accountAvatar {
+  position: absolute;
+  left: 0.95rem;
+  top: 50%;
+  margin: 0;
+  transform: translateY(-50%);
 }
 
 .accountButtonText {
@@ -2870,8 +2880,13 @@
     width: 100%;
     min-width: 0;
     justify-content: center;
+    gap: 0;
     padding-left: 1rem;
     padding-right: 1rem;
+  }
+
+  .accountButton > .accountAvatar {
+    left: 0.95rem;
   }
 
   .accountPopover {
