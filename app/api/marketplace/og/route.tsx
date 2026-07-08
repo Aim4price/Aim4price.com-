@@ -2,12 +2,14 @@ import { ImageResponse } from 'next/og';
 import type { NextRequest } from 'next/server';
 import {
   buildListingSpecLine,
+  buildMarketplaceListingImageUrl,
   findMarketplaceShareListing,
   formatListingLocation,
   formatListingPublishedDate,
   formatListingUsage,
   formatMarketplaceSharePrice,
   getListingConditionLabel,
+  getListingImages,
   getListingPrimaryFamilyLabel,
   getListingPrimaryImage,
   listingDisplayTitle,
@@ -96,7 +98,9 @@ export async function GET(request: NextRequest) {
   const title = listingDisplayTitle(listing);
   const price = formatMarketplaceSharePrice(listing);
   const location = formatListingLocation(listing);
-  const imageUrl = toAbsoluteMarketplaceUrl(getListingPrimaryImage(listing), origin);
+  const imageUrl = getListingImages(listing).length
+    ? buildMarketplaceListingImageUrl(origin, listing)
+    : toAbsoluteMarketplaceUrl(getListingPrimaryImage(listing), origin);
   const logoUrl = toAbsoluteMarketplaceUrl('/brand/Aim4price Logo.png', origin);
   const detailsLine = buildListingSpecLine(listing);
   const listedDate = formatListingPublishedDate(listing.dateAdvertised || listing.publishedAtIso);
