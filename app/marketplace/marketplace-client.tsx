@@ -884,11 +884,13 @@ function listingMatchesReference(listing: MarketplaceListing, value: string): bo
 
 function buildListingShareUrl(listing: MarketplaceListing): string {
   if (typeof window === 'undefined') {
-    return `/marketplace?listing=${encodeURIComponent(listing.id)}`;
+    const params = new URLSearchParams({ listing: listing.id, preview: 'photo' });
+    return `/marketplace?${params.toString()}`;
   }
 
   const url = new URL('/marketplace', window.location.origin);
   url.searchParams.set('listing', listing.id);
+  url.searchParams.set('preview', 'photo');
   return url.toString();
 }
 

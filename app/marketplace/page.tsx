@@ -5,12 +5,14 @@ import { redirectAdminToAdmin } from '../../lib/account-access';
 import { getAccountProfile } from '../../lib/account-profile';
 import { getServerSession } from '../../lib/auth-session';
 import {
+  buildMarketplaceListingImageUrl,
   buildMarketplaceListingUrl,
   buildMarketplaceOgImageUrl,
   buildMarketplaceShareDescription,
   DEFAULT_MARKETPLACE_ORIGIN,
   findMarketplaceShareListing,
   formatMarketplaceSharePrice,
+  getListingImages,
   listingDisplayTitle,
   normalizeMarketplaceOrigin,
 } from '../../lib/marketplace-share';
@@ -26,6 +28,7 @@ type MarketplacePageProps = {
     type?: SearchParamValue;
     query?: SearchParamValue;
     listing?: SearchParamValue;
+    preview?: SearchParamValue;
   };
 };
 
@@ -115,7 +118,40 @@ export async function generateMetadata({ searchParams }: MarketplacePageProps): 
   const title = `${listingTitle} - ${price}`;
   const description = buildMarketplaceShareDescription(listing);
   const listingUrl = buildMarketplaceListingUrl(origin, listing);
-  const imageUrl = buildMarketplaceOgImageUrl(origin, listing);
+  const requestedPreviewMode = pick(searchParams?.preview);
+  const socialListingUrl = requestedPreviewMode
+    ? (() => {
+        const url = new URL(listingUrl);
+        url.searchParams.set('preview', requestedPreviewMode);
+        return url.toString();
+      })()
+    : listingUrl;
+  const listingHasPhotos = getListingImages(listing).length > 0;
+  const generatedImageUrl = buildMarketplaceOgImageUrl(origin, listing);
+  const primaryImageUrl = listingHasPhotos ? buildMarketplaceListingImageUrl(origin, listing) : generatedImageUrl;
+  const openGraphImages = listingHasPhotos
+    ? [
+        {
+          url: primaryImageUrl,
+          width: 1200,
+          height: 630,
+          alt: `${listingTitle} photo`,
+        },
+        {
+          url: generatedImageUrl,
+          width: 1200,
+          height: 630,
+          alt: `${listingTitle} Aim4price marketplace advert`,
+        },
+      ]
+    : [
+        {
+          url: generatedImageUrl,
+          width: 1200,
+          height: 630,
+          alt: `${listingTitle} Aim4price marketplace advert`,
+        },
+      ];
 
   return {
     title,
@@ -126,23 +162,16 @@ export async function generateMetadata({ searchParams }: MarketplacePageProps): 
     openGraph: {
       title,
       description,
-      url: listingUrl,
+      url: socialListingUrl,
       siteName: 'Aim4price',
       type: 'website',
-      images: [
-        {
-          url: imageUrl,
-          width: 1200,
-          height: 630,
-          alt: `${listingTitle} Aim4price marketplace advert`,
-        },
-      ],
+      images: openGraphImages,
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
-      images: [imageUrl],
+      images: [primaryImageUrl],
     },
   };
 }
