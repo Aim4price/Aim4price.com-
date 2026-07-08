@@ -358,9 +358,34 @@ export function buildMarketplaceListingUrl(origin: string, listing: MarketplaceL
   return url.toString();
 }
 
+function marketplaceImageVersion(listing: MarketplaceListing): string {
+  const source = [
+    listing.publishedAtIso,
+    listing.dateAdvertised,
+    listing.imageSrc,
+    Array.isArray(listing.imageUrls) ? listing.imageUrls.join('|') : '',
+  ]
+    .join('|')
+    .trim();
+
+  const normalized = source.replace(/[^a-z0-9]+/gi, '').slice(0, 32);
+  return normalized || '1';
+}
+
+export function buildMarketplaceListingImageUrl(origin: string, listing: MarketplaceListing): string {
+  const url = new URL(
+    `/api/marketplace/images/${encodeURIComponent(listing.id)}.jpg`,
+    normalizeMarketplaceOrigin(origin),
+  );
+
+  url.searchParams.set('v', marketplaceImageVersion(listing));
+  return url.toString();
+}
+
 export function buildMarketplaceOgImageUrl(origin: string, listing: MarketplaceListing): string {
   const url = new URL('/api/marketplace/og', normalizeMarketplaceOrigin(origin));
   url.searchParams.set('listing', listing.id);
+  url.searchParams.set('v', marketplaceImageVersion(listing));
   return url.toString();
 }
 
