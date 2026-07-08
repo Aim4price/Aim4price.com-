@@ -4,6 +4,7 @@ import { getAccountProfile, type AccountProfile } from '../../../../lib/account-
 import { getAssetRegisterReportLogoUrl } from '../../../../lib/asset-registers';
 import { getFuelStorageById, listFuelEventsForReport, listFuelLedger, type FuelLedgerEvent } from '../../../../lib/fuel-ledger';
 import { createXlsxWorkbook, type XlsxCellStyle, type XlsxCellValue, type XlsxPrimitiveCellValue, type XlsxSheet } from '../../../../lib/simple-xlsx';
+import { resolveReportLogoUrlForHtml } from '../../../../lib/report-logo';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -1408,7 +1409,8 @@ export async function GET(request: NextRequest) {
       : includeFuelSlips
         ? `All fuel storage and fuel slip transactions for ${dateRange.label}.`
         : `All fuel storage transactions for ${dateRange.label}.`;
-    const logoUrl = await getAssetRegisterReportLogoUrl(session.user.id).catch(() => '');
+    const rawLogoUrl = await getAssetRegisterReportLogoUrl(session.user.id).catch(() => '');
+    const logoUrl = await resolveReportLogoUrlForHtml(rawLogoUrl, request.url);
     const reportOptions: FuelReportOptions = {
       title,
       subtitle,
