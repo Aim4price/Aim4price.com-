@@ -1658,14 +1658,19 @@ export default function AssetRegistersClient() {
     return bundles;
   }
 
-  async function handlePrintablePdfExport(entityName: string) {
-    const targetRegisters = selectedRegistersForExport();
+  async function handlePrintablePdfExport(
+    entityName: string,
+    targetRegistersOverride?: AssetRegisterSummary[],
+    exportScopeOverride?: ExportScope,
+  ) {
+    const activeExportScope = exportScopeOverride ?? exportScope;
+    const targetRegisters = targetRegistersOverride ?? selectedRegistersForExport();
 
-    if (exportScope === "single" && targetRegisters.length !== 1) {
+    if (activeExportScope === "single" && targetRegisters.length !== 1) {
       throw new Error("Choose one asset register to download.");
     }
 
-    if (exportScope === "combined" && targetRegisters.length < 2) {
+    if (activeExportScope === "combined" && targetRegisters.length < 2) {
       throw new Error("Select at least two asset registers to merge.");
     }
 
@@ -1686,31 +1691,31 @@ export default function AssetRegistersClient() {
     const reportInsuredStats = calculateAssetStats(allAssets, (asset) => readInsuranceStatusChoice(asset) === "yes");
     const reportFinancedStats = calculateAssetStats(allAssets, (asset) => readFinanceStatusChoice(asset) === "yes");
     const reportLicensedStats = calculateAssetStats(allAssets, (asset) => readLicenseStatusChoice(asset) === "yes");
-    const rows = buildExportReportRows(bundles, exportScope);
-    const reportName = entityName || buildDefaultEntityName(exportScope, targetRegisters);
-    const reportTitle = buildExportReportTitle(exportScope);
+    const rows = buildExportReportRows(bundles, activeExportScope);
+    const reportName = entityName || buildDefaultEntityName(activeExportScope, targetRegisters);
+    const reportTitle = buildExportReportTitle(activeExportScope);
     const didOpen = openAssetRegisterSummaryPrint({
       logoUrl: registerLogoForReport(targetRegisters),
       generatedAt: formatReportDate(new Date()),
       reportTitle,
       reportSubtitle: "Aim4price asset register",
-      valueLabel: exportScope === "combined" ? "Merged Register Value" : "Register Value",
-      assetSectionTitle: buildExportAssetSectionTitle(exportScope),
+      valueLabel: activeExportScope === "combined" ? "Merged Register Value" : "Register Value",
+      assetSectionTitle: buildExportAssetSectionTitle(activeExportScope),
       emptyStateMessage: "No saved assets are currently available for this report.",
       ownerName: reportName,
-      ownerMeta: buildReportOwnerMeta(exportScope, targetRegisters, bundles),
+      ownerMeta: buildReportOwnerMeta(activeExportScope, targetRegisters, bundles),
       intro:
-        exportScope === "single"
+        activeExportScope === "single"
           ? "Complete saved asset register snapshot."
           : `Complete saved asset register snapshot across ${targetRegisters.length} asset register${targetRegisters.length === 1 ? "" : "s"}.`,
       registerValue: money(reportValue),
       registerValueNote: `VAT excluded · ${money(reportValueInclVat)} incl. VAT · Replacement ${money(reportReplacementValue)} excl. VAT`,
-      ownerRows: buildReportOwnerRows(exportScope, targetRegisters, reportName),
+      ownerRows: buildReportOwnerRows(activeExportScope, targetRegisters, reportName),
       stats: [
         {
           label: "Assets",
           value: String(rows.length),
-          note: exportScope === "single" ? "Saved register items." : "Merged saved register items.",
+          note: activeExportScope === "single" ? "Saved register items." : "Merged saved register items.",
         },
         { label: "Value ex VAT", value: money(reportValue), note: "Filtered report total excluding VAT." },
         { label: "Value incl VAT", value: money(reportValueInclVat), note: "Filtered report total including 15% VAT." },
@@ -1727,6 +1732,25 @@ export default function AssetRegistersClient() {
 
     if (!didOpen) {
       throw new Error("Unable to open the asset register PDF. Please allow pop-ups and try again.");
+    }
+  }
+
+  async function handleManagedRegisterSummary(register: AssetRegisterSummary) {
+    if (isExporting || isLoadingManagedAssets) return;
+
+    setIsExporting(true);
+
+    try {
+      const entityName = buildDefaultEntityName("single", [register]);
+      await handlePrintablePdfExport(entityName, [register], "single");
+      setNotice({ tone: "success", message: "Asset register summary PDF opened." });
+    } catch (error) {
+      setNotice({
+        tone: "error",
+        message: error instanceof Error ? error.message : "Failed to open asset register summary.",
+      });
+    } finally {
+      setIsExporting(false);
     }
   }
 
@@ -2645,17 +2669,6 @@ export default function AssetRegistersClient() {
                     />
                   </label>
 
-                  <div className={styles.exportScopeSummary}>
-                    <strong>Included asset registers</strong>
-                    <span>
-                      {exportScope === "all"
-                        ? `${registers.length} saved asset register${registers.length === 1 ? "" : "s"}`
-                        : selectedExportRegisters
-                            .map((register) => register.businessName)
-                            .join(", ")}
-                    </span>
-                  </div>
-
                   <div className={`${styles.exportFormatGrid} ${isSummaryFlow ? styles.exportFormatGridSingle : ""}`}>
                     <button
                       type="button"
@@ -2794,7 +2807,7 @@ export default function AssetRegistersClient() {
                   <button
                     type="button"
                     className={`${styles.manageActionButton} ${styles.manageSummaryAction}`}
-                    onClick={() => openSpecificRegisterExportModal("summary", managedRegister)}
+                    onClick={() => void handleManagedRegisterSummary(managedRegister)}
                     disabled={isExporting || isLoadingManagedAssets}
                   >
                     <SummaryIcon className={styles.manageActionIcon} />
@@ -2834,13 +2847,6 @@ export default function AssetRegistersClient() {
               </div>
 
               <div className={styles.assetMovePanel}>
-                <div className={styles.subHeader}>
-                  <h3>Move assets</h3>
-                  <p>
-                    Move assets out of this register without duplicating them.
-                  </p>
-                </div>
-
                 {isLoadingManagedAssets ? (
                   <p className={styles.loading}>Loading assets...</p>
                 ) : managedAssets.length ? (
