@@ -235,6 +235,26 @@ function IconClose() {
   );
 }
 
+function IconPencil() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4 20h4l10.5-10.5a2.12 2.12 0 0 0-3-3L5 17v3Z" />
+      <path d="m14 7 3 3" />
+    </svg>
+  );
+}
+
+function IconTrash() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4 7h16" />
+      <path d="M10 11v6M14 11v6" />
+      <path d="M6 7l1 13h10l1-13" />
+      <path d="M9 7V4h6v3" />
+    </svg>
+  );
+}
+
 function BrandIcon({ src }: { src: string }) {
   return <img src={src} alt="" aria-hidden="true" className={styles.brandIcon} />;
 }
@@ -1645,6 +1665,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
   const [isLoadingListings, setIsLoadingListings] = useState(true);
   const [isLoadingFamilies, setIsLoadingFamilies] = useState(true);
   const [activeListing, setActiveListing] = useState<MarketplaceListing | null>(null);
+  const [manageListingTarget, setManageListingTarget] = useState<MarketplaceListing | null>(null);
   const [deleteListingTarget, setDeleteListingTarget] = useState<MarketplaceListing | null>(null);
   const [isDeletingListing, setIsDeletingListing] = useState(false);
   const [deleteListingError, setDeleteListingError] = useState('');
@@ -1902,7 +1923,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
       : null,
   ].filter(Boolean) as ActiveFilterChip[];
 
-  const canDeleteActiveListing = Boolean(activeListing?.canManage && activeListing?.sourceAssetId);
+  const canManageActiveListing = Boolean(activeListing?.canManage && activeListing?.sourceAssetId);
 
   const updateModalScrollRail = useCallback(() => {
     const node = modalDetailsRef.current;
@@ -1953,7 +1974,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
       window.clearTimeout(timeout);
       window.removeEventListener('resize', syncScrollRail);
     };
-  }, [activeImages.length, activeListing, canDeleteActiveListing, isSignedIn, updateModalScrollRail]);
+  }, [activeImages.length, activeListing, canManageActiveListing, isSignedIn, updateModalScrollRail]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -2128,6 +2149,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
 
   function closeListing() {
     setActiveListing(null);
+    setManageListingTarget(null);
     setDeleteListingTarget(null);
     setDeleteListingError('');
     setActiveImageIndex(0);
@@ -2218,12 +2240,45 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
     }
   }
 
-  function openDeleteListingModal() {
+  function openManageListingModal() {
     if (!activeListing?.sourceAssetId || !activeListing.canManage) {
       return;
     }
 
-    setDeleteListingTarget(activeListing);
+    setManageListingTarget(activeListing);
+    setDeleteListingError('');
+  }
+
+  function closeManageListingModal() {
+    if (isDeletingListing) {
+      return;
+    }
+
+    setManageListingTarget(null);
+  }
+
+  function handleEditManagedListing() {
+    const assetId = manageListingTarget?.sourceAssetId;
+
+    if (!assetId) {
+      return;
+    }
+
+    const url = new URL('/asset-register', window.location.origin);
+    url.searchParams.set('assetId', assetId);
+    url.searchParams.set('action', 'marketplace-edit');
+    window.location.assign(url.toString());
+  }
+
+  function openDeleteListingModal() {
+    const target = manageListingTarget ?? activeListing;
+
+    if (!target?.sourceAssetId || !target.canManage) {
+      return;
+    }
+
+    setDeleteListingTarget(target);
+    setManageListingTarget(null);
     setDeleteListingError('');
   }
 
@@ -2836,14 +2891,14 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
                 )}
               </section>
 
-              {canDeleteActiveListing ? (
+              {canManageActiveListing ? (
                 <section className={styles.ownerActions}>
                   <div>
                     <h3>Your listing</h3>
-                    <p>Remove this asset from the marketplace.</p>
+                    <p>Manage the marketplace listing linked to this saved asset.</p>
                   </div>
-                  <button type="button" onClick={openDeleteListingModal}>
-                    Delete listing
+                  <button type="button" onClick={openManageListingModal}>
+                    Manage
                   </button>
                 </section>
               ) : null}
@@ -2857,6 +2912,61 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
                 />
               </div>
             ) : null}
+          </div>
+        </div>
+      ) : null}
+
+      {manageListingTarget ? (
+        <div className={styles.marketplaceManageBackdrop} onClick={closeManageListingModal}>
+          <div
+            className={styles.marketplaceManageModal}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="marketplace-manage-title"
+            aria-describedby="marketplace-manage-copy"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              className={styles.marketplaceManageCloseButton}
+              onClick={closeManageListingModal}
+              aria-label="Close marketplace listing manager"
+            >
+              <IconClose />
+            </button>
+
+            <div className={styles.marketplaceManageHeader}>
+              <h3 id="marketplace-manage-title">Manage marketplace listing</h3>
+              <p id="marketplace-manage-copy">Choose whether to edit the saved asset details or remove the listing from the marketplace.</p>
+            </div>
+
+            <div className={styles.marketplaceManageSummary}>
+              <span>Selected listing</span>
+              <strong>{listingDisplayTitle(manageListingTarget)}</strong>
+              <small>{money(manageListingTarget.askingPriceExVat)} excl. VAT · {formatLocation(manageListingTarget)}</small>
+            </div>
+
+            <div className={styles.marketplaceManageChoiceGrid}>
+              <button type="button" className={styles.marketplaceManageChoiceCard} onClick={handleEditManagedListing}>
+                <span className={styles.marketplaceManageChoiceIcon} aria-hidden="true">
+                  <IconPencil />
+                </span>
+                <strong>Edit</strong>
+                <span>Open Update marketplace listing with the saved notes, price, photos and seller details.</span>
+              </button>
+
+              <button
+                type="button"
+                className={`${styles.marketplaceManageChoiceCard} ${styles.marketplaceManageDeleteChoice}`}
+                onClick={openDeleteListingModal}
+              >
+                <span className={styles.marketplaceManageChoiceIcon} aria-hidden="true">
+                  <IconTrash />
+                </span>
+                <strong>Delete</strong>
+                <span>Remove this listing from the marketplace. The asset stays saved in your Asset Register.</span>
+              </button>
+            </div>
           </div>
         </div>
       ) : null}
