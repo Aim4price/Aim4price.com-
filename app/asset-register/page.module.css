@@ -29578,12 +29578,12 @@ button.documentOpenLink {
 
 .assetFormSectionTabActive,
 .assetFormSectionTabActive:hover {
-  color: #0d3529 !important;
-  background: linear-gradient(180deg, #c8f0bf 0%, #b8e9b0 100%) !important;
-  border-color: rgba(104, 177, 120, 0.95) !important;
+  color: #ffffff !important;
+  background: linear-gradient(180deg, var(--action-primary, #1a7458) 0%, var(--action-primary-deep, #115b45) 100%) !important;
+  border-color: var(--action-primary-border, #17664d) !important;
   box-shadow:
-    0 12px 26px rgba(39, 111, 74, 0.11),
-    inset 0 1px 0 rgba(255, 255, 255, 0.72) !important;
+    0 14px 26px var(--action-primary-shadow, rgba(26, 116, 88, 0.18)),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
   transform: none !important;
 }
 
