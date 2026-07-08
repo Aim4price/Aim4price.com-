@@ -2895,7 +2895,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
                 <section className={styles.ownerActions}>
                   <div>
                     <h3>Your listing</h3>
-                    <p>Manage the marketplace listing linked to this saved asset.</p>
+                    <p>Manage this marketplace listing</p>
                   </div>
                   <button type="button" onClick={openManageListingModal}>
                     Manage
@@ -2923,7 +2923,6 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
             role="dialog"
             aria-modal="true"
             aria-labelledby="marketplace-manage-title"
-            aria-describedby="marketplace-manage-copy"
             onClick={(event) => event.stopPropagation()}
           >
             <button
@@ -2937,7 +2936,6 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
 
             <div className={styles.marketplaceManageHeader}>
               <h3 id="marketplace-manage-title">Manage marketplace listing</h3>
-              <p id="marketplace-manage-copy">Choose whether to edit the saved asset details or remove the listing from the marketplace.</p>
             </div>
 
             <div className={styles.marketplaceManageSummary}>
@@ -2952,7 +2950,6 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
                   <IconPencil />
                 </span>
                 <strong>Edit</strong>
-                <span>Open Update marketplace listing with the saved notes, price, photos and seller details.</span>
               </button>
 
               <button
@@ -2964,7 +2961,6 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
                   <IconTrash />
                 </span>
                 <strong>Delete</strong>
-                <span>Remove this listing from the marketplace. The asset stays saved in your Asset Register.</span>
               </button>
             </div>
           </div>
