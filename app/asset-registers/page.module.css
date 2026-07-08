@@ -3652,3 +3652,39 @@
     min-height: 4.45rem;
   }
 }
+
+/* === 2026-07-08 refinement: manage modal copper action + export-format spacing === */
+.modalOverlay {
+  --action-copper-soft-bg: #fff3e8;
+  --action-copper-soft-bg-hover: #ffe9d7;
+  --action-copper-soft-text: #7a3f0c;
+  --action-copper-soft-border: #dc8c4a;
+  --action-copper-soft-border-hover: #c97834;
+  --action-copper-soft-shadow: rgba(180, 107, 43, 0.08);
+}
+
+.manageEditAction {
+  border: 1.8px solid var(--action-copper-soft-border, #dc8c4a);
+  color: var(--action-copper-soft-text, #7a3f0c);
+  background:
+    radial-gradient(circle at 0% 0%, rgba(220, 140, 74, 0.14), rgba(220, 140, 74, 0) 48%),
+    linear-gradient(180deg, #fffaf6 0%, var(--action-copper-soft-bg, #fff3e8) 100%);
+  box-shadow:
+    0 10px 22px var(--action-copper-soft-shadow, rgba(180, 107, 43, 0.08)),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.manageEditAction:hover:not(:disabled) {
+  border-color: var(--action-copper-soft-border-hover, #c97834);
+  color: var(--action-copper-soft-text, #7a3f0c);
+  background:
+    radial-gradient(circle at 0% 0%, rgba(220, 140, 74, 0.18), rgba(220, 140, 74, 0) 48%),
+    linear-gradient(180deg, #ffffff 0%, var(--action-copper-soft-bg-hover, #ffe9d7) 100%);
+  box-shadow:
+    0 14px 28px rgba(180, 107, 43, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+}
+
+.exportNameField + .exportFormatGrid {
+  margin-top: clamp(1rem, 1.6vw, 1.35rem);
+}
