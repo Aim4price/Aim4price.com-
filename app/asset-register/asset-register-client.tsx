@@ -370,6 +370,12 @@ type RegisterAsset = {
   sellerPhone: string;
   marketplaceNotes: string;
   marketplaceStatus: string;
+  marketplacePriceExVat: number | null;
+  marketplaceSellerName: string;
+  marketplaceSellerCompany: string;
+  marketplaceSellerEmail: string;
+  marketplaceProvince: string;
+  marketplaceArea: string;
   photos: string[];
   documents: AssetDocument[];
   publicAssetCode: string;
@@ -3836,19 +3842,26 @@ function buildSavedItemFromAsset(asset: RegisterAsset) {
 }
 
 function createMarketplaceDraft(asset: RegisterAsset, profile: AccountProfile | null): MarketplacePublishDraft {
+  const savedMarketplacePrice =
+    typeof asset.marketplacePriceExVat === 'number' && Number.isFinite(asset.marketplacePriceExVat) && asset.marketplacePriceExVat > 0
+      ? asset.marketplacePriceExVat
+      : asset.value;
+  const savedListingNotes = asset.marketplaceNotes?.trim() || getManualAssetNote(asset.note);
+
   return {
     sellerName:
+      asset.marketplaceSellerName?.trim() ||
       profile?.marketplaceSellerName?.trim() ||
       profile?.name?.trim() ||
       profile?.businessName?.trim() ||
       'Aim4price seller',
-    sellerCompany: profile?.businessName?.trim() || '',
+    sellerCompany: asset.marketplaceSellerCompany?.trim() || profile?.businessName?.trim() || '',
     sellerPhone: asset.sellerPhone?.trim() || profile?.marketplacePhone?.trim() || profile?.phone?.trim() || '',
-    sellerEmail: profile?.marketplaceEmail?.trim() || '',
-    province: profile?.province?.trim() || '',
-    area: profile?.marketplaceLocation?.trim() || profile?.townCity?.trim() || '',
-    askingPriceExVat: '',
-    description: '',
+    sellerEmail: asset.marketplaceSellerEmail?.trim() || profile?.marketplaceEmail?.trim() || '',
+    province: asset.marketplaceProvince?.trim() || profile?.province?.trim() || '',
+    area: asset.marketplaceArea?.trim() || profile?.marketplaceLocation?.trim() || profile?.townCity?.trim() || '',
+    askingPriceExVat: savedMarketplacePrice > 0 ? formatRegisterValueInput(savedMarketplacePrice) : '',
+    description: savedListingNotes,
   };
 }
 
@@ -6732,11 +6745,17 @@ export default function AssetRegisterClient() {
 
     const params = new URLSearchParams(window.location.search);
     const focusAssetId = params.get('convertedAssetId') || params.get('assetId') || params.get('focusAssetId');
+    const focusAction = String(params.get('action') || params.get('assetAction') || '').trim().toLowerCase();
+    const shouldOpenMarketplaceModal =
+      focusAction === 'marketplace' || focusAction === 'marketplace-edit' || focusAction === 'listing-edit' || focusAction === 'update-listing';
+    const shouldOpenUpdateModal = focusAction === 'edit' || focusAction === 'update' || focusAction === 'update-asset';
 
     if (!focusAssetId) return;
 
     const matchingAssetIndex = assets.findIndex((asset) => asset.id === focusAssetId);
     if (matchingAssetIndex < 0) return;
+
+    const matchingAsset = assets[matchingAssetIndex];
 
     assetFocusActionHandledRef.current = true;
     setSearchTerm('');
@@ -6745,9 +6764,19 @@ export default function AssetRegisterClient() {
     setCurrentPage(isShowingAllAssets ? 1 : Math.floor(matchingAssetIndex / numericPageSize) + 1);
     scrollToAssetCard(focusAssetId);
 
+    if (shouldOpenMarketplaceModal && matchingAsset) {
+      window.setTimeout(() => {
+        void openMarketplaceModal(matchingAsset);
+      }, 0);
+    } else if (shouldOpenUpdateModal && matchingAsset) {
+      window.setTimeout(() => openUpdater(matchingAsset), 0);
+    }
+
     params.delete('convertedAssetId');
     params.delete('assetId');
     params.delete('focusAssetId');
+    params.delete('action');
+    params.delete('assetAction');
 
     const nextSearch = params.toString();
     const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ''}${window.location.hash}`;
@@ -8900,6 +8929,12 @@ export default function AssetRegisterClient() {
         sellerPhone: marketplaceDraft.sellerPhone.trim(),
         marketplaceNotes: marketplaceDraft.description.trim(),
         marketplaceStatus: data.marketplaceStatus ?? 'live',
+        marketplacePriceExVat: askingPriceExVat,
+        marketplaceSellerName: marketplaceDraft.sellerName.trim(),
+        marketplaceSellerCompany: marketplaceDraft.sellerCompany.trim(),
+        marketplaceSellerEmail: marketplaceDraft.sellerEmail.trim(),
+        marketplaceProvince: marketplaceDraft.province.trim(),
+        marketplaceArea: marketplaceDraft.area.trim(),
         openPartnerNote: data.note ?? marketplaceAsset.openPartnerNote ?? null,
         updatedAtIso: new Date().toISOString(),
       };
