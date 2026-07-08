@@ -12,6 +12,48 @@ import type { SavedItem } from './register';
 export const MARKETPLACE_STORAGE_KEY = 'aim4price-tractors-kit-marketplace';
 export const FALLBACK_MARKETPLACE_IMAGE = '/brand/Tractor.png';
 
+export type MarketplaceDealRating = 'low' | 'great' | 'fair' | 'high' | 'none';
+
+export type MarketplaceDealRatingResult = {
+  rating: MarketplaceDealRating;
+  percentDiff: number | null;
+};
+
+export function calculateMarketplaceDealRating(input: {
+  askingPriceExVat: unknown;
+  aim4priceValueExVat?: unknown;
+  isManualEquipment?: boolean;
+}): MarketplaceDealRatingResult {
+  const askingPrice = Number(input.askingPriceExVat);
+  const aim4priceValue = Number(input.aim4priceValueExVat);
+
+  if (
+    input.isManualEquipment ||
+    !Number.isFinite(askingPrice) ||
+    askingPrice <= 0 ||
+    !Number.isFinite(aim4priceValue) ||
+    aim4priceValue <= 0
+  ) {
+    return { rating: 'none', percentDiff: null };
+  }
+
+  const percentDiff = ((askingPrice - aim4priceValue) / aim4priceValue) * 100;
+
+  if (percentDiff <= -10) {
+    return { rating: 'low', percentDiff };
+  }
+
+  if (percentDiff < -5) {
+    return { rating: 'great', percentDiff };
+  }
+
+  if (percentDiff <= 5) {
+    return { rating: 'fair', percentDiff };
+  }
+
+  return { rating: 'high', percentDiff };
+}
+
 export type MarketplaceListing = {
   id: string;
   sourceAssetId?: string;
@@ -47,6 +89,9 @@ export type MarketplaceListing = {
   advertisedPriceExVat: number;
   priceExVat: number;
   price: number;
+  aim4priceValueExVat?: number;
+  dealRating?: MarketplaceDealRating;
+  dealRatingPercentDiff?: number | null;
   imageSrc: string;
   imageUrls: string[];
   publishedBy: 'seed' | 'asset-register';
@@ -245,6 +290,11 @@ function fromPrototypeMarketplaceListing(
 ): MarketplaceListing {
   const seller = createPrototypeSeller(listing.area, index);
   const imageSrc = safeImage(listing.imageSrc);
+  const aim4priceValueExVat = Math.round(cleanUnknownNumber(listing.priceExVat, 0));
+  const dealRating = calculateMarketplaceDealRating({
+    askingPriceExVat: listing.askingPriceExVat,
+    aim4priceValueExVat,
+  });
 
   return {
     id: `seed-${listing.id}`,
@@ -279,6 +329,9 @@ function fromPrototypeMarketplaceListing(
     advertisedPriceExVat: listing.advertisedPriceExVat,
     priceExVat: listing.priceExVat,
     price: listing.price,
+    aim4priceValueExVat: aim4priceValueExVat > 0 ? aim4priceValueExVat : undefined,
+    dealRating: dealRating.rating,
+    dealRatingPercentDiff: dealRating.percentDiff,
     imageSrc,
     imageUrls: imageSrc ? [imageSrc] : [],
     sectorKey: 'agricultural',
@@ -312,6 +365,30 @@ function normalizeStoredListing(value: unknown): MarketplaceListing | null {
 
   const publishedAtIso = cleanUnknownText(value.publishedAtIso, new Date().toISOString());
   const imageSrc = safeImage(cleanUnknownText(value.imageSrc));
+  const askingPriceExVat = Math.round(cleanUnknownNumber(value.askingPriceExVat ?? value.priceExVat ?? value.price, 0));
+  const aim4priceValueExVat = Math.round(
+    cleanUnknownNumber(
+      value.aim4priceValueExVat ??
+        value.aim4price_value_ex_vat ??
+        value.selectedValueExVat ??
+        value.selected_value_ex_vat ??
+        value.savedValueExVat ??
+        value.saved_value_ex_vat ??
+        value.valuationValueExVat ??
+        value.valuation_value_ex_vat,
+      0,
+    ),
+  );
+  const assetKind = cleanUnknownText(value.assetKind ?? value.asset_kind ?? value.kind) || undefined;
+  const normalizedAssetKind = cleanUnknownText(assetKind).toLowerCase().replace(/[_\s-]+/g, '-');
+  const valuationMethod = cleanUnknownText(value.selectedMethod ?? value.selected_method ?? value.valuationMethod ?? value.valuation_method)
+    .toLowerCase()
+    .replace(/[_\s-]+/g, '-');
+  const dealRating = calculateMarketplaceDealRating({
+    askingPriceExVat,
+    aim4priceValueExVat,
+    isManualEquipment: normalizedAssetKind === 'manual' || valuationMethod === 'manual',
+  });
 
   return {
     id,
@@ -355,13 +432,16 @@ function normalizeStoredListing(value: unknown): MarketplaceListing | null {
     sellerEmail: cleanUnknownText(value.sellerEmail) || undefined,
     dateAdvertised: cleanUnknownText(value.dateAdvertised, publishedAtIso.slice(0, 10)),
     publishedAtIso,
-    askingPriceExVat: Math.round(cleanUnknownNumber(value.askingPriceExVat ?? value.priceExVat ?? value.price, 0)),
+    askingPriceExVat,
     advertisedPriceExVat: Math.round(cleanUnknownNumber(value.advertisedPriceExVat ?? value.askingPriceExVat ?? value.priceExVat ?? value.price, 0)),
     priceExVat: Math.round(cleanUnknownNumber(value.priceExVat ?? value.askingPriceExVat ?? value.price, 0)),
     price: Math.round(cleanUnknownNumber(value.price ?? value.priceExVat ?? value.askingPriceExVat, 0)),
+    aim4priceValueExVat: aim4priceValueExVat > 0 ? aim4priceValueExVat : undefined,
+    dealRating: dealRating.rating,
+    dealRatingPercentDiff: dealRating.percentDiff,
     imageSrc,
     imageUrls: normalizeImageUrls(value.imageUrls, imageSrc),
-    assetKind: cleanUnknownText(value.assetKind ?? value.asset_kind ?? value.kind) || undefined,
+    assetKind,
     sectorKey: cleanUnknownText(value.sectorKey ?? value.sector_key) || undefined,
     sectorLabel: cleanUnknownText(value.sectorLabel ?? value.sector_label) || undefined,
     familyKey: cleanUnknownText(value.familyKey ?? value.family_key) || undefined,
@@ -459,6 +539,11 @@ export function publishRegisterItemToMarketplace(
   const area = titleCase(cleanText(input.area, 'Undisclosed'));
   const province = titleCase(cleanText(input.province, 'South Africa'));
   const askingPrice = Math.round(cleanNumber(input.askingPriceExVat, item.selectedValueExVat ?? item.value));
+  const aim4priceValueExVat = Math.round(cleanNumber(item.aim4priceValueExVat ?? item.selectedValueExVat ?? item.value, 0));
+  const dealRating = calculateMarketplaceDealRating({
+    askingPriceExVat: askingPrice,
+    aim4priceValueExVat,
+  });
 
   if (askingPrice <= 0) {
     throw new Error('Asking price must be greater than zero.');
@@ -509,6 +594,9 @@ export function publishRegisterItemToMarketplace(
     advertisedPriceExVat: askingPrice,
     priceExVat: askingPrice,
     price: askingPrice,
+    aim4priceValueExVat: aim4priceValueExVat > 0 ? aim4priceValueExVat : undefined,
+    dealRating: dealRating.rating,
+    dealRatingPercentDiff: dealRating.percentDiff,
     imageSrc: imageUrls[0] ?? '',
     imageUrls,
     sectorKey: 'agricultural',

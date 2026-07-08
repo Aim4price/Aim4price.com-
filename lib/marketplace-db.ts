@@ -1,6 +1,6 @@
 import { getDb } from './db';
 import { ensureAccountProfileColumns } from './account-profile';
-import type { MarketplaceListing } from './marketplace';
+import { calculateMarketplaceDealRating, type MarketplaceListing } from './marketplace';
 
 const FALLBACK_MARKETPLACE_IMAGE = '/brand/Tractor.png';
 const PUBLIC_MARKETPLACE_CONTACT_NAME = 'Kuyler';
@@ -103,6 +103,7 @@ function normalizeSectorKey(value: unknown): string {
   if (normalized === 'agriculture' || normalized === 'agricultural') return 'agricultural';
   if (normalized === 'construction') return 'construction';
   if (normalized === 'industrial' || normalized === 'industry') return 'industrial';
+  if (normalized === 'motor' || normalized === 'vehicle' || normalized === 'vehicles') return 'motor';
   return '';
 }
 
@@ -176,8 +177,34 @@ function readAssetKind(row: Record<string, unknown>): string {
 }
 
 function isManualAssetRow(row: Record<string, unknown>): boolean {
-  const method = asText(pick(row, ['selected_method', 'method', 'valuation_method'])).toLowerCase();
+  const specs = pickJsonObject(pick(row, ['specs_json']));
+  const method = (
+    asText(pick(row, ['selected_method', 'method', 'valuation_method'])) ||
+    asText(specs.selected_method) ||
+    asText(specs.method) ||
+    asText(specs.valuation_method)
+  ).toLowerCase();
+
   return method === 'manual';
+}
+
+function readAim4priceSavedValue(row: Record<string, unknown>): number {
+  return Math.round(
+    asNumber(
+      pick(row, [
+        'aim4price_value_ex_vat',
+        'selected_value_ex_vat',
+        'selected_value',
+        'saved_value_ex_vat',
+        'saved_value',
+        'valuation_value_ex_vat',
+        'valuation_value',
+        'value_ex_vat',
+        'value',
+      ]),
+      0,
+    ),
+  );
 }
 
 function buildPhotoList(row: Record<string, unknown>): string[] {
@@ -620,6 +647,7 @@ function buildMarketplaceListing(
       0,
     ),
   );
+  const aim4priceValueExVat = readAim4priceSavedValue(row);
   const explicitProfileLocation = asText(row.profile_location);
   const province = titleCase(asText(pick(row, ['marketplace_province'])) || asText(row.profile_province) || 'South Africa');
   const area = titleCase(
@@ -645,8 +673,19 @@ function buildMarketplaceListing(
     'agricultural';
   const sectorLabel =
     asText(pick(row, ['equipment_sector_label', 'sector_label'])) ||
-    (sectorKey === 'construction' ? 'Construction' : sectorKey === 'industrial' ? 'Industrial' : 'Agriculture');
+    (sectorKey === 'construction'
+      ? 'Construction'
+      : sectorKey === 'industrial'
+        ? 'Industrial'
+        : sectorKey === 'motor'
+          ? 'Motor'
+          : 'Agriculture');
   const assetKind = readAssetKind(row);
+  const dealRating = calculateMarketplaceDealRating({
+    askingPriceExVat,
+    aim4priceValueExVat,
+    isManualEquipment: isManualAssetRow(row) || assetKind === 'manual',
+  });
   const linkedFamilyLabel = asText(pick(row, ['equipment_family_label', 'family_label']));
   const linkedFamilyKey = asText(pick(row, ['equipment_family_key', 'family_key']));
   const assetKindFamilyLabel = familyLabelFromAssetKind(assetKind);
@@ -692,6 +731,9 @@ function buildMarketplaceListing(
     advertisedPriceExVat: askingPriceExVat,
     priceExVat: askingPriceExVat,
     price: askingPriceExVat,
+    aim4priceValueExVat: aim4priceValueExVat > 0 ? aim4priceValueExVat : undefined,
+    dealRating: dealRating.rating,
+    dealRatingPercentDiff: dealRating.percentDiff,
     imageSrc: imageUrls[0] ?? '',
     imageUrls,
     sectorKey,
