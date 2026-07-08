@@ -3688,3 +3688,55 @@
 .exportNameField + .exportFormatGrid {
   margin-top: clamp(1rem, 1.6vw, 1.35rem);
 }
+
+/* === 2026-07-08 refinement: equal top actions + filter-green open buttons === */
+.toolbar {
+  --asset-registers-top-action-width: clamp(12.85rem, 14vw, 14.7rem);
+  grid-template-columns: minmax(18rem, 1fr) repeat(3, var(--asset-registers-top-action-width));
+}
+
+.toolbarPrimaryButton,
+.topAddButton,
+.topSummaryButton,
+.topDownloadButton {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  align-self: stretch;
+}
+
+.openRegisterButton,
+.openRegisterButton:disabled {
+  color: #0d5a42;
+  background: linear-gradient(180deg, #ffffff 0%, #ecf9f1 100%);
+  border: 1.5px solid #75c79a;
+  box-shadow:
+    0 10px 22px rgba(13, 90, 66, 0.085),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.openRegisterButton:hover:not(:disabled) {
+  color: #0d5a42;
+  background: linear-gradient(180deg, #ffffff 0%, #ddf3e6 100%);
+  border-color: #4daf78;
+  box-shadow:
+    0 14px 28px rgba(13, 90, 66, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+}
+
+.openRegisterButton:disabled {
+  opacity: 0.74;
+}
+
+@media (max-width: 980px) {
+  .toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .toolbarPrimaryButton,
+  .topAddButton,
+  .topSummaryButton,
+  .topDownloadButton {
+    width: 100%;
+  }
+}

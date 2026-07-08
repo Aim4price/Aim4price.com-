@@ -496,6 +496,29 @@ function buildExportUrl(
   return `/api/asset-register/export?${params.toString()}`;
 }
 
+function buildScopedSummaryUrl(
+  scope: ExportScope,
+  selectedRegisterIds: string[],
+  entityName: string,
+): string {
+  const params = new URLSearchParams({
+    format: "pdf",
+    reportKind: "summary",
+    scope,
+  });
+  const cleanedEntityName = entityName.trim();
+
+  if (cleanedEntityName) {
+    params.set("entityName", cleanedEntityName);
+  }
+
+  if (scope !== "all") {
+    params.set("registerIds", selectedRegisterIds.join(","));
+  }
+
+  return `/api/asset-register/export?${params.toString()}`;
+}
+
 function registerExportSearchText(register: AssetRegisterSummary): string {
   return [
     register.businessName,
@@ -1241,7 +1264,7 @@ export default function AssetRegistersClient() {
   const isCombinedSelectionValid = exportScope === "combined" && selectedExportRegisterCount >= 2;
   const exportTitle = exportStep === "choice"
     ? isSummaryFlow
-      ? "Asset Register Summary"
+      ? "Summaries"
       : "Download Asset Registers"
     : exportStep === "single-picker"
       ? "Choose specific Asset Register"
@@ -1541,8 +1564,7 @@ export default function AssetRegistersClient() {
     setExportStep("format");
   }
 
-  function closeExportFlow() {
-    if (isExporting) return;
+  function resetExportFlowState() {
     setExportMode("download");
     setExportStep("closed");
     setExportScope("all");
@@ -1552,7 +1574,68 @@ export default function AssetRegistersClient() {
     setSelectedExportRegisterIds([]);
   }
 
+  function closeExportFlow() {
+    if (isExporting) return;
+    resetExportFlowState();
+  }
+
+  function handleSummaryPdfExport(
+    scope: ExportScope,
+    targetRegisters: AssetRegisterSummary[],
+    options: { closeFlowOnSuccess?: boolean } = {},
+  ) {
+    if (isExporting) return;
+
+    if (scope === "single" && targetRegisters.length !== 1) {
+      setNotice({ tone: "error", message: "Choose one asset register to summarise." });
+      return;
+    }
+
+    if (scope === "combined" && targetRegisters.length < 2) {
+      setNotice({ tone: "error", message: "Select at least two asset registers to merge." });
+      return;
+    }
+
+    if (!targetRegisters.length) {
+      setNotice({ tone: "error", message: "No asset registers were found to summarise." });
+      return;
+    }
+
+    const selectedIds = scope === "all" ? [] : targetRegisters.map((register) => register.id);
+    const entityName = buildDefaultEntityName(scope, targetRegisters);
+    const url = buildScopedSummaryUrl(scope, selectedIds, entityName);
+
+    setIsExporting(true);
+
+    try {
+      const targetName = `aim4price-register-summary-${Date.now()}`;
+      const reportWindow = window.open(url, targetName);
+
+      if (!reportWindow) {
+        throw new Error("The register summary PDF window was blocked. Allow pop-ups for Aim4price, then try again.");
+      }
+
+      setNotice({ tone: "success", message: "Register summary PDF opened." });
+
+      if (options.closeFlowOnSuccess !== false) {
+        resetExportFlowState();
+      }
+    } catch (error) {
+      setNotice({
+        tone: "error",
+        message: error instanceof Error ? error.message : "Failed to open the register summary PDF report.",
+      });
+    } finally {
+      window.setTimeout(() => setIsExporting(false), 700);
+    }
+  }
+
   function openAllRegistersExport() {
+    if (isSummaryFlow) {
+      handleSummaryPdfExport("all", registers);
+      return;
+    }
+
     setExportScope("all");
     setSelectedExportRegisterIds([]);
     setExportRegisterSearch("");
@@ -1575,6 +1658,11 @@ export default function AssetRegistersClient() {
   }
 
   function selectSingleRegisterForExport(register: AssetRegisterSummary) {
+    if (isSummaryFlow) {
+      handleSummaryPdfExport("single", [register]);
+      return;
+    }
+
     setExportScope("single");
     setSelectedExportRegisterIds([register.id]);
     setExportEntityName(buildDefaultEntityName("single", [register]));
@@ -1598,6 +1686,11 @@ export default function AssetRegistersClient() {
   function continueCombinedExport() {
     if (!isCombinedSelectionValid) {
       setNotice({ tone: "error", message: "Select at least two asset registers to merge." });
+      return;
+    }
+
+    if (isSummaryFlow) {
+      handleSummaryPdfExport("combined", selectedExportRegisters);
       return;
     }
 
@@ -1735,23 +1828,9 @@ export default function AssetRegistersClient() {
     }
   }
 
-  async function handleManagedRegisterSummary(register: AssetRegisterSummary) {
+  function handleManagedRegisterSummary(register: AssetRegisterSummary) {
     if (isExporting || isLoadingManagedAssets) return;
-
-    setIsExporting(true);
-
-    try {
-      const entityName = buildDefaultEntityName("single", [register]);
-      await handlePrintablePdfExport(entityName, [register], "single");
-      setNotice({ tone: "success", message: "Asset register summary PDF opened." });
-    } catch (error) {
-      setNotice({
-        tone: "error",
-        message: error instanceof Error ? error.message : "Failed to open asset register summary.",
-      });
-    } finally {
-      setIsExporting(false);
-    }
+    handleSummaryPdfExport("single", [register], { closeFlowOnSuccess: false });
   }
 
   async function handleExportDownload() {
@@ -1774,6 +1853,11 @@ export default function AssetRegistersClient() {
 
     if (!targetRegisters.length) {
       setNotice({ tone: "error", message: "No asset registers were found to export." });
+      return;
+    }
+
+    if (isSummaryFlow) {
+      handleSummaryPdfExport(exportScope, targetRegisters);
       return;
     }
 
@@ -1806,13 +1890,7 @@ export default function AssetRegistersClient() {
         setNotice({ tone: "success", message: "Asset registers XLSX downloaded." });
       }
 
-      setExportMode("download");
-      setExportStep("closed");
-      setExportScope("all");
-      setExportFormat("pdf");
-      setExportEntityName("");
-      setExportRegisterSearch("");
-      setSelectedExportRegisterIds([]);
+      resetExportFlowState();
     } catch (error) {
       setNotice({
         tone: "error",
@@ -2444,7 +2522,7 @@ export default function AssetRegistersClient() {
                 className={styles.closeButton}
                 onClick={closeExportFlow}
                 disabled={isExporting}
-                aria-label="Close download asset registers modal"
+                aria-label={isSummaryFlow ? "Close summaries modal" : "Close download asset registers modal"}
               >
                 ×
               </button>
@@ -2649,7 +2727,11 @@ export default function AssetRegistersClient() {
                       onClick={continueCombinedExport}
                       disabled={!isCombinedSelectionValid || isExporting}
                     >
-                      Next
+                      {isSummaryFlow
+                        ? isExporting
+                          ? "Preparing summary..."
+                          : "Open PDF summary"
+                        : "Next"}
                     </button>
                   ) : null}
                 </div>
