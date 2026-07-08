@@ -882,17 +882,23 @@
 
 .menuLink,
 .menuDangerButton {
-  justify-content: flex-start;
+  justify-content: center;
   gap: 0.62rem;
   width: 100%;
   min-height: 3.08rem;
   padding: 0 1rem;
-  text-align: left;
+  text-align: center;
   border-radius: 1rem;
   background: rgba(255, 255, 255, 0.94);
   color: #25342e;
   border-color: rgba(18, 45, 37, 0.085);
   box-shadow: 0 8px 18px rgba(18, 45, 37, 0.042);
+}
+
+.menuLink > span {
+  display: block;
+  width: 100%;
+  text-align: center;
 }
 
 .menuLinkActive {

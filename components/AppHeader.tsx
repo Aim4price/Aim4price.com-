@@ -1959,7 +1959,7 @@ export default function AppHeader({
                       aria-expanded={menuOpen}
                       aria-haspopup="menu"
                       aria-controls={menuOpen ? 'header-account-menu' : undefined}
-                      aria-label="Open account menu"
+                      aria-label="Open manage menu"
                       onClick={handleAccountMenuToggle}
                     >
                       <AccountProfileIcon
@@ -1968,8 +1968,8 @@ export default function AppHeader({
                         fallbackLabel={accountName}
                       />
                       <span className={styles.accountButtonText}>
-                        <span className={styles.accountButtonTextFull}>My Account</span>
-                        <span className={styles.accountButtonTextCompact}>Menu</span>
+                        <span className={styles.accountButtonTextFull}>Manage</span>
+                        <span className={styles.accountButtonTextCompact}>Manage</span>
                       </span>
                       <span className={styles.accountButtonMenuMark} aria-hidden="true">
                         <span className={styles.accountButtonMenuIcon}>
