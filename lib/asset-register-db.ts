@@ -72,6 +72,12 @@ export type AssetRegisterItem = {
   sellerPhone: string;
   marketplaceNotes: string;
   marketplaceStatus: string;
+  marketplacePriceExVat: number | null;
+  marketplaceSellerName: string;
+  marketplaceSellerCompany: string;
+  marketplaceSellerEmail: string;
+  marketplaceProvince: string;
+  marketplaceArea: string;
   photos: string[];
   documents: AssetRegisterDocument[];
   publicAssetCode: string;
@@ -221,6 +227,12 @@ type AssetRegisterRow = {
   seller_phone: string | null;
   marketplace_notes: string | null;
   marketplace_status: string | null;
+  marketplace_price_ex_vat: string | number | null;
+  marketplace_seller_name: string | null;
+  marketplace_seller_company: string | null;
+  marketplace_seller_email: string | null;
+  marketplace_province: string | null;
+  marketplace_area: string | null;
   photos: unknown;
   documents: unknown;
   public_asset_code: string | null;
@@ -1675,6 +1687,12 @@ function mapAssetRegisterRow(row: AssetRegisterRow): AssetRegisterItem {
     sellerPhone: asText(row.seller_phone),
     marketplaceNotes: asText(row.marketplace_notes),
     marketplaceStatus: asText(row.marketplace_status) || 'draft',
+    marketplacePriceExVat: asNumber(row.marketplace_price_ex_vat),
+    marketplaceSellerName: asText(row.marketplace_seller_name),
+    marketplaceSellerCompany: asText(row.marketplace_seller_company),
+    marketplaceSellerEmail: asText(row.marketplace_seller_email),
+    marketplaceProvince: asText(row.marketplace_province),
+    marketplaceArea: asText(row.marketplace_area),
     photos: normalizePhotoArray(row.photos),
     documents: normalizeDocumentArray(row.documents),
     publicAssetCode: asText(row.public_asset_code),
@@ -1824,6 +1842,12 @@ function buildSelectList(schema: TableSchema): string {
   const sellerPhoneColumn = resolveColumn(schema, 'seller_phone', 'phone', 'contact_phone');
   const marketplaceNotesColumn = resolveColumn(schema, 'marketplace_notes', 'listing_notes');
   const marketplaceStatusColumn = resolveColumn(schema, 'marketplace_status', 'listing_status', 'status');
+  const marketplacePriceColumn = resolveColumn(schema, 'marketplace_price_ex_vat', 'listing_price_ex_vat', 'asking_price_ex_vat');
+  const marketplaceSellerNameColumn = resolveColumn(schema, 'marketplace_seller_name', 'listing_seller_name');
+  const marketplaceSellerCompanyColumn = resolveColumn(schema, 'marketplace_seller_company', 'listing_seller_company');
+  const marketplaceSellerEmailColumn = resolveColumn(schema, 'marketplace_seller_email', 'listing_seller_email');
+  const marketplaceProvinceColumn = resolveColumn(schema, 'marketplace_province', 'listing_province');
+  const marketplaceAreaColumn = resolveColumn(schema, 'marketplace_area', 'listing_area', 'marketplace_location', 'listing_location');
   const photosColumn = resolveColumn(schema, 'photos', 'photo_urls', 'image_urls', 'images');
   const documentsColumn = resolveColumn(schema, 'documents', 'document_urls', 'document_files', 'attachments', 'files');
   const publicAssetCodeColumn = resolveColumn(schema, 'public_asset_code');
@@ -1906,6 +1930,12 @@ function buildSelectList(schema: TableSchema): string {
     sellerPhoneColumn ? `${sellerPhoneColumn} as seller_phone` : 'null::text as seller_phone',
     marketplaceNotesColumn ? `${marketplaceNotesColumn} as marketplace_notes` : 'null::text as marketplace_notes',
     marketplaceStatusColumn ? `${marketplaceStatusColumn} as marketplace_status` : `'draft'::text as marketplace_status`,
+    marketplacePriceColumn ? `${marketplacePriceColumn} as marketplace_price_ex_vat` : 'null::numeric as marketplace_price_ex_vat',
+    marketplaceSellerNameColumn ? `${marketplaceSellerNameColumn} as marketplace_seller_name` : 'null::text as marketplace_seller_name',
+    marketplaceSellerCompanyColumn ? `${marketplaceSellerCompanyColumn} as marketplace_seller_company` : 'null::text as marketplace_seller_company',
+    marketplaceSellerEmailColumn ? `${marketplaceSellerEmailColumn} as marketplace_seller_email` : 'null::text as marketplace_seller_email',
+    marketplaceProvinceColumn ? `${marketplaceProvinceColumn} as marketplace_province` : 'null::text as marketplace_province',
+    marketplaceAreaColumn ? `${marketplaceAreaColumn} as marketplace_area` : 'null::text as marketplace_area',
     photosColumn ? `${photosColumn} as photos` : `'[]'::jsonb as photos`,
     documentsColumn ? `${documentsColumn} as documents` : `'[]'::jsonb as documents`,
     publicAssetCodeColumn ? `${publicAssetCodeColumn} as public_asset_code` : `''::text as public_asset_code`,
@@ -2135,6 +2165,27 @@ function buildRequiredFallbackField(meta: ColumnMetaRow, context: RequiredFieldC
 
   if (column === 'marketplace_status' || column === 'listing_status' || column === 'status') {
     return buildFieldFromMeta(meta, 'draft');
+  }
+
+  if (column === 'marketplace_price_ex_vat' || column === 'listing_price_ex_vat' || column === 'asking_price_ex_vat') {
+    return buildFieldFromMeta(meta, 0);
+  }
+
+  if (
+    column === 'marketplace_seller_name' ||
+    column === 'listing_seller_name' ||
+    column === 'marketplace_seller_company' ||
+    column === 'listing_seller_company' ||
+    column === 'marketplace_seller_email' ||
+    column === 'listing_seller_email' ||
+    column === 'marketplace_province' ||
+    column === 'listing_province' ||
+    column === 'marketplace_area' ||
+    column === 'listing_area' ||
+    column === 'marketplace_location' ||
+    column === 'listing_location'
+  ) {
+    return buildFieldFromMeta(meta, '');
   }
 
   if (column === 'created_at' || column === 'createdon' || column === 'created') {
