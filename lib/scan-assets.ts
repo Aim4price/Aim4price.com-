@@ -311,19 +311,33 @@ function asStringArray(value: unknown): string[] {
   return [];
 }
 
-function normalizePhotos(value: unknown): string[] {
+function uniquePhotoUrls(value: unknown): string[] {
   const seen = new Set<string>();
 
-  return asStringArray(value)
-    .slice(0, MAX_ASSET_REGISTER_PHOTOS)
-    .filter((entry) => {
-      if (!entry || seen.has(entry)) {
-        return false;
-      }
+  return asStringArray(value).filter((entry) => {
+    if (!entry || seen.has(entry)) {
+      return false;
+    }
 
-      seen.add(entry);
-      return true;
-    });
+    seen.add(entry);
+    return true;
+  });
+}
+
+function normalizePhotos(value: unknown): string[] {
+  return uniquePhotoUrls(value).slice(0, MAX_ASSET_REGISTER_PHOTOS);
+}
+
+function collectScanManagedPhotoUrls(
+  rows: Array<{ photo_urls: unknown }>,
+): string[] {
+  const combined: string[] = [];
+
+  rows.forEach((row) => {
+    combined.push(...asStringArray(row.photo_urls));
+  });
+
+  return uniquePhotoUrls(combined);
 }
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -733,20 +747,45 @@ async function ensureScanAssetSaveColumns(): Promise<void> {
   scanAssetSaveColumnsEnsured = true;
 }
 
-function mergePhotos(existing: string[], next: string[]): string[] {
-  const seen = new Set<string>();
-  const merged = [...existing, ...next].filter((entry) => {
-    const normalized = asText(entry);
+function mergePhotos(
+  existing: string[],
+  next: string[],
+  scanManagedPhotos: string[] = [],
+): string[] {
+  const existingPhotos = uniquePhotoUrls(existing);
+  const incomingScanPhotos = uniquePhotoUrls(next);
+  const scanManagedPhotoSet = new Set(uniquePhotoUrls(scanManagedPhotos));
+  const protectedAssetRegisterPhotos = existingPhotos.filter(
+    (photo) => !scanManagedPhotoSet.has(photo),
+  );
 
-    if (!normalized || seen.has(normalized)) {
-      return false;
-    }
+  const availableScanSlots = Math.max(
+    0,
+    MAX_ASSET_REGISTER_PHOTOS - protectedAssetRegisterPhotos.length,
+  );
 
-    seen.add(normalized);
-    return true;
-  });
+  if (availableScanSlots <= 0) {
+    return protectedAssetRegisterPhotos.slice(0, MAX_ASSET_REGISTER_PHOTOS);
+  }
 
-  return merged.slice(0, MAX_ASSET_REGISTER_PHOTOS);
+  const retainedScanPhotos = uniquePhotoUrls([
+    ...existingPhotos.filter((photo) => scanManagedPhotoSet.has(photo)),
+    ...incomingScanPhotos,
+  ]).slice(-availableScanSlots);
+  const retainedScanPhotoSet = new Set(retainedScanPhotos);
+  const retainedExistingPhotos = existingPhotos.filter(
+    (photo) =>
+      !scanManagedPhotoSet.has(photo) || retainedScanPhotoSet.has(photo),
+  );
+  const retainedExistingPhotoSet = new Set(retainedExistingPhotos);
+  const newScanPhotos = retainedScanPhotos.filter(
+    (photo) => !retainedExistingPhotoSet.has(photo),
+  );
+
+  return [...retainedExistingPhotos, ...newScanPhotos].slice(
+    0,
+    MAX_ASSET_REGISTER_PHOTOS,
+  );
 }
 
 function mapScanSafeAsset(row: ScanAccessRow): ScanSafeAsset {
@@ -1810,7 +1849,23 @@ export async function saveScanAssetEvent(
       ],
     );
 
-    const mergedPhotos = mergePhotos(currentAsset.photos, nextPhotoUrls);
+    const existingScanPhotoRows = await client.query<{ photo_urls: unknown }>(
+      `
+        select e.photo_urls
+        from public.asset_scan_events e
+        where e.asset_id::text = $1
+        order by e.created_at asc, e.id asc
+      `,
+      [currentAsset.id],
+    );
+    const existingScanManagedPhotos = collectScanManagedPhotoUrls(
+      existingScanPhotoRows.rows,
+    );
+    const mergedPhotos = mergePhotos(
+      currentAsset.photos,
+      nextPhotoUrls,
+      existingScanManagedPhotos,
+    );
     const updatedAsset = await client.query<ScanAccessRow>(
       `
         with updated as (
