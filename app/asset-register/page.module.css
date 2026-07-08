@@ -28280,6 +28280,8 @@ button.documentOpenLink {
 }
 
 .registerChangeButton {
+  position: relative;
+  overflow: visible;
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
@@ -28330,6 +28332,32 @@ button.documentOpenLink {
 .registerChangeIcon {
   width: 1.24rem;
   height: 1.24rem;
+}
+
+
+.registerChangeAlertBadge {
+  position: absolute;
+  top: -0.38rem;
+  right: -0.38rem;
+  z-index: 2;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.28rem;
+  border: 1px solid #f7a6a6;
+  border-radius: 999px;
+  background: #fee2e2;
+  color: #991b1b;
+  box-shadow:
+    0 5px 11px rgba(153, 27, 27, 0.13),
+    inset 0 1px 0 rgba(255, 255, 255, 0.78);
+  font-size: 0.66rem;
+  font-weight: 920;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  pointer-events: none;
 }
 
 .changeRegisterModalOverlay {
@@ -28433,6 +28461,36 @@ button.documentOpenLink {
   line-height: 1.35;
 }
 
+
+.changeRegisterCardAside {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.58rem;
+  min-width: 0;
+}
+
+.changeRegisterCardAlertBadge {
+  min-width: 1.82rem;
+  height: 1.82rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.42rem;
+  border: 1px solid #f5a3a3;
+  border-radius: 999px;
+  background: #fee2e2;
+  color: #991b1b;
+  box-shadow:
+    0 7px 14px rgba(153, 27, 27, 0.11),
+    inset 0 1px 0 rgba(255, 255, 255, 0.76);
+  font-size: 0.78rem;
+  font-weight: 920;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
 .changeRegisterCardAction {
   display: inline-flex;
   align-items: center;
@@ -28490,7 +28548,13 @@ button.documentOpenLink {
     align-items: start;
   }
 
+  .changeRegisterCardAside {
+    width: 100%;
+    justify-content: space-between;
+  }
+
   .changeRegisterCardAction {
+    flex: 1 1 auto;
     width: 100%;
   }
 

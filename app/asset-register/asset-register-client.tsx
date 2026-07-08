@@ -449,6 +449,7 @@ type AssetRegisterSummary = {
   assetCount: number;
   totalValue: number;
   totalReplacementPrice: number;
+  unnotedAlertCount?: number;
   createdAtIso: string;
   updatedAtIso: string;
 };
@@ -3440,6 +3441,40 @@ function assetNeedsEstimateAttention(asset: RegisterAsset): boolean {
   return doesEstimateNeedUpdate(asset) && isValuationUpdateAvailable(asset);
 }
 
+function openPartnerNoteAlertCount(asset: RegisterAsset): number {
+  if (asset.openPartnerNote) return 1;
+
+  const hasOpenPartnerNote = Array.isArray(asset.partnerNotes)
+    ? asset.partnerNotes.some((note) => note.status !== 'noted' && !note.notedAtIso)
+    : false;
+
+  return hasOpenPartnerNote ? 1 : 0;
+}
+
+function assetUnnotedAlertCount(asset: RegisterAsset): number {
+  let count = 0;
+
+  if (assetNeedsEstimateAttention(asset)) count += 1;
+  if (asset.latestMaintenanceStatus) count += 1;
+  if (asset.latestIssueNoteStatus) count += 1;
+  count += openPartnerNoteAlertCount(asset);
+
+  return count;
+}
+
+function assetListUnnotedAlertCount(assetList: RegisterAsset[]): number {
+  return assetList.reduce((sum, asset) => sum + assetUnnotedAlertCount(asset), 0);
+}
+
+function registerSummaryUnnotedAlertCount(register: AssetRegisterSummary | null | undefined): number {
+  return Math.max(0, Math.round(Number(register?.unnotedAlertCount) || 0));
+}
+
+function formatAlertBadgeCount(count: number): string {
+  const normalized = Math.max(0, Math.round(Number(count) || 0));
+  return normalized > 99 ? '99+' : normalized.toLocaleString('en-ZA');
+}
+
 function assetAttentionRank(asset: RegisterAsset): number {
   if (asset.latestIssueNoteStatus) return 5;
   if (isAssetFlagged(asset)) return 4;
@@ -5577,6 +5612,27 @@ export default function AssetRegisterClient() {
     });
   }, [activeRegister, assetRegisters]);
   const canOpenRegisterSwitcher = registerSwitcherOptions.length > 1;
+  const activeRegisterUnnotedAlertCount = useMemo(() => assetListUnnotedAlertCount(assets), [assets]);
+  const registerUnnotedAlertCounts = useMemo(() => {
+    const countsByRegisterId = new Map<string, number>();
+
+    registerSwitcherOptions.forEach((register) => {
+      if (register.id) {
+        countsByRegisterId.set(register.id, registerSummaryUnnotedAlertCount(register));
+      }
+    });
+
+    const activeId = String(activeRegister?.id || activeRegisterId || '').trim();
+    if (activeId) {
+      countsByRegisterId.set(activeId, activeRegisterUnnotedAlertCount);
+    }
+
+    return countsByRegisterId;
+  }, [activeRegister?.id, activeRegisterId, activeRegisterUnnotedAlertCount, registerSwitcherOptions]);
+  const totalRegisterUnnotedAlertCount = useMemo(
+    () => Array.from(registerUnnotedAlertCounts.values()).reduce((sum, count) => sum + count, 0),
+    [registerUnnotedAlertCounts],
+  );
   const canUseOwnerOnlyAssetActions = true;
   const canUseMarketplaceActions = true;
   const isQuoteModalOpen = Boolean(quoteAsset);
@@ -10717,6 +10773,14 @@ export default function AssetRegisterClient() {
                     title="Change asset register"
                   >
                     <ChangeRegisterIcon className={styles.registerChangeIcon} />
+                    {totalRegisterUnnotedAlertCount > 0 ? (
+                      <span
+                        className={styles.registerChangeAlertBadge}
+                        aria-label={`${formatAlertBadgeCount(totalRegisterUnnotedAlertCount)} unnoted asset register alert${totalRegisterUnnotedAlertCount === 1 ? '' : 's'}`}
+                      >
+                        {formatAlertBadgeCount(totalRegisterUnnotedAlertCount)}
+                      </span>
+                    ) : null}
                   </button>
                 ) : null}
               </div>
@@ -10887,6 +10951,7 @@ export default function AssetRegisterClient() {
                     const isChangingThisRegister = changingRegisterId === register.id;
                     const registerAssetCount = Math.max(0, Math.round(Number(register.assetCount) || 0));
                     const assetCountLabel = `${registerAssetCount.toLocaleString('en-ZA')} ${registerAssetCount === 1 ? 'asset' : 'assets'}`;
+                    const registerUnnotedAlertCount = registerUnnotedAlertCounts.get(register.id) ?? registerSummaryUnnotedAlertCount(register);
 
                     return (
                       <button
@@ -10901,8 +10966,18 @@ export default function AssetRegisterClient() {
                           <strong>{register.businessName || 'Asset Register'}</strong>
                           <small>{assetCountLabel} · {money(Number(register.totalValue) || 0)} current value</small>
                         </span>
-                        <span className={styles.changeRegisterCardAction}>
-                          {isChangingThisRegister ? 'Opening...' : isCurrentRegister ? 'Current' : 'Open'}
+                        <span className={styles.changeRegisterCardAside}>
+                          {registerUnnotedAlertCount > 0 ? (
+                            <span
+                              className={styles.changeRegisterCardAlertBadge}
+                              aria-label={`${formatAlertBadgeCount(registerUnnotedAlertCount)} unnoted alert${registerUnnotedAlertCount === 1 ? '' : 's'} in this asset register`}
+                            >
+                              {formatAlertBadgeCount(registerUnnotedAlertCount)}
+                            </span>
+                          ) : null}
+                          <span className={styles.changeRegisterCardAction}>
+                            {isChangingThisRegister ? 'Opening...' : isCurrentRegister ? 'Current' : 'Open'}
+                          </span>
                         </span>
                       </button>
                     );
