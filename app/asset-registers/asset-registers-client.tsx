@@ -21,6 +21,7 @@ import styles from "./page.module.css";
 type NoticeTone = "success" | "error";
 type ExportFormat = "pdf" | "xlsx";
 type ExportScope = "all" | "single" | "combined";
+type ExportMode = "download" | "summary";
 type ExportFlowStep = "closed" | "choice" | "single-picker" | "combined-picker" | "format";
 
 
@@ -176,6 +177,28 @@ function DownloadIcon(props: SVGProps<SVGSVGElement>) {
       <path d="M12 3v12" />
       <path d="m7 10 5 5 5-5" />
       <path d="M5 21h14" />
+    </IconBase>
+  );
+}
+
+function SummaryIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M8 6h13" />
+      <path d="M8 12h13" />
+      <path d="M8 18h13" />
+      <path d="M3 6h.01" />
+      <path d="M3 12h.01" />
+      <path d="M3 18h.01" />
+    </IconBase>
+  );
+}
+
+function EditIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
     </IconBase>
   );
 }
@@ -336,6 +359,31 @@ function compactAssetMeta(asset: RegisterAsset): string {
   ].filter(Boolean);
 
   return parts.join(" • ") || "No asset details saved";
+}
+
+function matchesManagedAssetSearch(asset: RegisterAsset, searchTerm: string): boolean {
+  const normalizedSearch = searchTerm.trim().toLowerCase();
+
+  if (!normalizedSearch) {
+    return true;
+  }
+
+  const searchableText = [
+    asset.title,
+    compactAssetMeta(asset),
+    asset.kind,
+    asset.brandName,
+    asset.modelName,
+    asset.typedModelName,
+    asset.equipmentFamilyLabel,
+    asset.serialNumber,
+    asset.yearModel ? String(asset.yearModel) : "",
+    money(asset.value),
+  ]
+    .join(" ")
+    .toLowerCase();
+
+  return searchableText.includes(normalizedSearch);
 }
 
 function matchesRegisterSearch(
@@ -1109,6 +1157,8 @@ export default function AssetRegistersClient() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [managedRegisterId, setManagedRegisterId] = useState("");
   const [managedAssets, setManagedAssets] = useState<RegisterAsset[]>([]);
+  const [managedAssetSearchTerm, setManagedAssetSearchTerm] = useState("");
+  const [isEditDetailsModalOpen, setIsEditDetailsModalOpen] = useState(false);
   const [assetMoveTargets, setAssetMoveTargets] = useState<
     Record<string, string>
   >({});
@@ -1136,6 +1186,7 @@ export default function AssetRegistersClient() {
   const [removingRegisterId, setRemovingRegisterId] = useState<string | null>(
     null,
   );
+  const [exportMode, setExportMode] = useState<ExportMode>("download");
   const [exportStep, setExportStep] = useState<ExportFlowStep>("closed");
   const [exportScope, setExportScope] = useState<ExportScope>("all");
   const [exportFormat, setExportFormat] = useState<ExportFormat>("pdf");
@@ -1155,6 +1206,13 @@ export default function AssetRegistersClient() {
         ? registers.filter((register) => register.id !== managedRegister.id)
         : [],
     [managedRegister, registers],
+  );
+  const visibleManagedAssets = useMemo(
+    () =>
+      managedAssets.filter((asset) =>
+        matchesManagedAssetSearch(asset, managedAssetSearchTerm),
+      ),
+    [managedAssetSearchTerm, managedAssets],
   );
   const visibleRegisters = useMemo(
     () =>
@@ -1179,25 +1237,40 @@ export default function AssetRegistersClient() {
   );
   const selectedExportRegisterCount = selectedExportRegisterIds.length;
   const isExportFlowOpen = exportStep !== "closed";
+  const isSummaryFlow = exportMode === "summary";
   const isCombinedSelectionValid = exportScope === "combined" && selectedExportRegisterCount >= 2;
   const exportTitle = exportStep === "choice"
-    ? "Download Asset Registers"
+    ? isSummaryFlow
+      ? "Asset Register Summary"
+      : "Download Asset Registers"
     : exportStep === "single-picker"
       ? "Choose specific Asset Register"
       : exportStep === "combined-picker"
         ? "Merge Asset Registers"
-        : exportScope === "all"
-          ? "Export All Asset Registers"
-          : exportScope === "combined"
-            ? "Export Merged Asset Registers"
-            : "Export Asset Register";
+        : isSummaryFlow
+          ? exportScope === "combined"
+            ? "Merged Asset Register Summary"
+            : "Asset Register Summary"
+          : exportScope === "all"
+            ? "Export All Asset Registers"
+            : exportScope === "combined"
+              ? "Export Merged Asset Registers"
+              : "Export Asset Register";
   const exportIntro = exportStep === "choice"
-    ? "Choose whether to export all registers, one register, or a selected merged set."
+    ? isSummaryFlow
+      ? "Choose whether to summarise all registers, one register, or a selected merged set."
+      : "Choose whether to export all registers, one register, or a selected merged set."
     : exportStep === "single-picker"
-      ? "Select the saved asset register to download."
+      ? isSummaryFlow
+        ? "Select the saved asset register to summarise."
+        : "Select the saved asset register to download."
       : exportStep === "combined-picker"
-        ? "Select at least two asset registers to merge into one export."
-        : "Confirm the report name and choose the export format.";
+        ? isSummaryFlow
+          ? "Select at least two asset registers to merge into one summary."
+          : "Select at least two asset registers to merge into one export."
+        : isSummaryFlow
+          ? "Confirm the report name and open the PDF summary report."
+          : "Confirm the report name and choose the export format.";
   const deleteMoveTargets = useMemo(
     () =>
       deleteCandidateRegister
@@ -1210,6 +1283,7 @@ export default function AssetRegistersClient() {
   const isBlockingModalOpen =
     isCreateModalOpen ||
     Boolean(managedRegister) ||
+    isEditDetailsModalOpen ||
     Boolean(deleteCandidateRegister) ||
     isExportFlowOpen;
 
@@ -1275,19 +1349,28 @@ export default function AssetRegistersClient() {
           return;
         }
 
-        if (isCreateModalOpen && !isCreating) {
-          closeCreateModal();
+        if (isExportFlowOpen && !isExporting) {
+          closeExportFlow();
+          return;
         }
-        if (managedRegister && !isSavingDetails && !movingAssetId) {
-          closeManagePanel();
+
+        if (isEditDetailsModalOpen && !isSavingDetails) {
+          closeManagedEditModal();
+          return;
         }
 
         if (deleteCandidateRegister && !removingRegisterId) {
           closeDeleteRegisterDialog();
+          return;
         }
 
-        if (isExportFlowOpen && !isExporting) {
-          closeExportFlow();
+        if (isCreateModalOpen && !isCreating) {
+          closeCreateModal();
+          return;
+        }
+
+        if (managedRegister && !isSavingDetails && !movingAssetId) {
+          closeManagePanel();
         }
       }
     };
@@ -1304,6 +1387,7 @@ export default function AssetRegistersClient() {
     isBlockingModalOpen,
     isCreateModalOpen,
     isCreating,
+    isEditDetailsModalOpen,
     isExportFlowOpen,
     isExporting,
     isSavingDetails,
@@ -1316,6 +1400,7 @@ export default function AssetRegistersClient() {
   async function loadManagedAssets(register: AssetRegisterSummary) {
     setIsLoadingManagedAssets(true);
     setManagedAssets([]);
+    setManagedAssetSearchTerm("");
     setAssetMoveTargets({});
 
     try {
@@ -1379,7 +1464,23 @@ export default function AssetRegistersClient() {
     setEditDraft(emptyRegisterDraft);
     setManageSaveState("idle");
     setManagedAssets([]);
+    setManagedAssetSearchTerm("");
     setAssetMoveTargets({});
+    setIsEditDetailsModalOpen(false);
+    setOpenTargetDropdownId(null);
+  }
+
+  function openManagedEditModal() {
+    if (!managedRegister) return;
+    setEditDraft(draftFromRegister(managedRegister));
+    setManageSaveState("idle");
+    setIsEditDetailsModalOpen(true);
+  }
+
+  function closeManagedEditModal() {
+    if (isSavingDetails) return;
+    setIsEditDetailsModalOpen(false);
+    setManageSaveState("idle");
     setOpenTargetDropdownId(null);
   }
 
@@ -1418,8 +1519,9 @@ export default function AssetRegistersClient() {
     setOpenTargetDropdownId(null);
   }
 
-  function openExportChoiceModal() {
+  function openExportChoiceModal(mode: ExportMode = "download") {
     setOpenTargetDropdownId(null);
+    setExportMode(mode);
     setExportScope("all");
     setExportFormat("pdf");
     setExportEntityName(buildDefaultEntityName("all", registers));
@@ -1428,8 +1530,20 @@ export default function AssetRegistersClient() {
     setExportStep("choice");
   }
 
+  function openSpecificRegisterExportModal(mode: ExportMode, register: AssetRegisterSummary) {
+    setOpenTargetDropdownId(null);
+    setExportMode(mode);
+    setExportScope("single");
+    setExportFormat("pdf");
+    setSelectedExportRegisterIds([register.id]);
+    setExportRegisterSearch("");
+    setExportEntityName(buildDefaultEntityName("single", [register]));
+    setExportStep("format");
+  }
+
   function closeExportFlow() {
     if (isExporting) return;
+    setExportMode("download");
     setExportStep("closed");
     setExportScope("all");
     setExportFormat("pdf");
@@ -1622,6 +1736,7 @@ export default function AssetRegistersClient() {
     const selectedIds = exportScope === "all" ? [] : selectedExportRegisterIds;
     const targetRegisters = selectedRegistersForExport();
     const entityName = exportEntityName.trim() || buildDefaultEntityName(exportScope, targetRegisters);
+    const resolvedExportFormat: ExportFormat = isSummaryFlow ? "pdf" : exportFormat;
 
     if (exportScope === "single" && selectedIds.length !== 1) {
       setNotice({ tone: "error", message: "Choose one asset register to download." });
@@ -1641,11 +1756,14 @@ export default function AssetRegistersClient() {
     setIsExporting(true);
 
     try {
-      if (exportFormat === "pdf") {
+      if (resolvedExportFormat === "pdf") {
         await handlePrintablePdfExport(entityName);
-        setNotice({ tone: "success", message: "Asset registers PDF opened." });
+        setNotice({
+          tone: "success",
+          message: isSummaryFlow ? "Asset register summary PDF opened." : "Asset registers PDF opened.",
+        });
       } else {
-        const response = await fetch(buildExportUrl(exportFormat, exportScope, selectedIds, entityName), {
+        const response = await fetch(buildExportUrl(resolvedExportFormat, exportScope, selectedIds, entityName), {
           cache: "no-store",
           credentials: "include",
         });
@@ -1664,6 +1782,7 @@ export default function AssetRegistersClient() {
         setNotice({ tone: "success", message: "Asset registers XLSX downloaded." });
       }
 
+      setExportMode("download");
       setExportStep("closed");
       setExportScope("all");
       setExportFormat("pdf");
@@ -2123,8 +2242,18 @@ export default function AssetRegistersClient() {
 
                 <button
                   type="button"
+                  className={`${styles.secondaryButton} ${styles.toolbarPrimaryButton} ${styles.topSummaryButton}`}
+                  onClick={() => openExportChoiceModal("summary")}
+                  disabled={isLoading || !registers.length}
+                >
+                  <SummaryIcon className={styles.buttonIcon} />
+                  <span>Summary</span>
+                </button>
+
+                <button
+                  type="button"
                   className={`${styles.primaryButton} ${styles.toolbarPrimaryButton} ${styles.topDownloadButton}`}
-                  onClick={openExportChoiceModal}
+                  onClick={() => openExportChoiceModal("download")}
                   disabled={isLoading || !registers.length}
                 >
                   <DownloadIcon className={styles.buttonIcon} />
@@ -2311,8 +2440,8 @@ export default function AssetRegistersClient() {
                         <DownloadIcon className={styles.exportChoiceIcon} />
                       </span>
                       <span className={styles.exportChoiceTitleBlock}>
-                        <strong>Download all Asset Registers</strong>
-                        <small>Export every asset register saved on this owner account.</small>
+                        <strong>{isSummaryFlow ? "Summary of all Asset Registers" : "Download all Asset Registers"}</strong>
+                        <small>{isSummaryFlow ? "Open one PDF summary for every asset register saved on this owner account." : "Export every asset register saved on this owner account."}</small>
                       </span>
                     </button>
 
@@ -2326,8 +2455,8 @@ export default function AssetRegistersClient() {
                         <OpenIcon className={styles.exportChoiceIcon} />
                       </span>
                       <span className={styles.exportChoiceTitleBlock}>
-                        <strong>Download a specific Asset Register</strong>
-                        <small>Choose one register and export only its saved assets.</small>
+                        <strong>{isSummaryFlow ? "Summary of a specific Asset Register" : "Download a specific Asset Register"}</strong>
+                        <small>{isSummaryFlow ? "Choose one register and open only its PDF summary." : "Choose one register and export only its saved assets."}</small>
                       </span>
                     </button>
 
@@ -2342,7 +2471,7 @@ export default function AssetRegistersClient() {
                       </span>
                       <span className={styles.exportChoiceTitleBlock}>
                         <strong>Merge specific Asset Registers</strong>
-                        <small>Select two or more registers and merge them into one export.</small>
+                        <small>{isSummaryFlow ? "Select two or more registers and merge them into one PDF summary." : "Select two or more registers and merge them into one export."}</small>
                       </span>
                     </button>
                   </div>
@@ -2507,11 +2636,11 @@ export default function AssetRegistersClient() {
               <>
                 <div className={`${styles.modalBody} ${styles.exportSetupBody}`}>
                   <label className={`${styles.field} ${styles.exportNameField}`}>
-                    <span>Entity / report name</span>
+                    <span>{isSummaryFlow ? "Summary report name" : "Entity / report name"}</span>
                     <input
                       value={exportEntityName}
                       onChange={(event) => setExportEntityName(event.target.value)}
-                      placeholder="Enter the entity or report name"
+                      placeholder={isSummaryFlow ? "Enter the summary report name" : "Enter the entity or report name"}
                       disabled={isExporting}
                     />
                   </label>
@@ -2527,7 +2656,7 @@ export default function AssetRegistersClient() {
                     </span>
                   </div>
 
-                  <div className={styles.exportFormatGrid}>
+                  <div className={`${styles.exportFormatGrid} ${isSummaryFlow ? styles.exportFormatGridSingle : ""}`}>
                     <button
                       type="button"
                       className={`${styles.exportOption} ${
@@ -2544,33 +2673,37 @@ export default function AssetRegistersClient() {
                         />
                       </span>
                       <span className={styles.exportOptionTitleBlock}>
-                        <strong>PDF report</strong>
+                        <strong>{isSummaryFlow ? "PDF summary report" : "PDF report"}</strong>
                         <small>
-                          Choose a clear PDF report for clients, banks or insurance partners.
+                          {isSummaryFlow
+                            ? "Open a clear PDF summary for clients, banks or insurance partners."
+                            : "Choose a clear PDF report for clients, banks or insurance partners."}
                         </small>
                       </span>
                     </button>
 
-                    <button
-                      type="button"
-                      className={`${styles.exportOption} ${
-                        exportFormat === "xlsx" ? styles.exportOptionActive : ""
-                      }`}
-                      onClick={() => setExportFormat("xlsx")}
-                      disabled={isExporting}
-                    >
-                      <span className={styles.exportGraphic}>
-                        <img
-                          src="/brand/sheet.png"
-                          alt=""
-                          className={styles.exportGraphicImage}
-                        />
-                      </span>
-                      <span className={styles.exportOptionTitleBlock}>
-                        <strong>XLSX workbook</strong>
-                        <small>Download all register rows in an Excel-ready workbook.</small>
-                      </span>
-                    </button>
+                    {!isSummaryFlow ? (
+                      <button
+                        type="button"
+                        className={`${styles.exportOption} ${
+                          exportFormat === "xlsx" ? styles.exportOptionActive : ""
+                        }`}
+                        onClick={() => setExportFormat("xlsx")}
+                        disabled={isExporting}
+                      >
+                        <span className={styles.exportGraphic}>
+                          <img
+                            src="/brand/sheet.png"
+                            alt=""
+                            className={styles.exportGraphicImage}
+                          />
+                        </span>
+                        <span className={styles.exportOptionTitleBlock}>
+                          <strong>XLSX workbook</strong>
+                          <small>Download all register rows in an Excel-ready workbook.</small>
+                        </span>
+                      </button>
+                    ) : null}
                   </div>
                 </div>
 
@@ -2600,10 +2733,14 @@ export default function AssetRegistersClient() {
                     <DownloadIcon className={styles.buttonIcon} />
                     <span>
                       {isExporting
-                        ? "Preparing export..."
-                        : exportFormat === "pdf"
-                          ? "Open PDF report"
-                          : "Download Excel"}
+                        ? isSummaryFlow
+                          ? "Preparing summary..."
+                          : "Preparing export..."
+                        : isSummaryFlow
+                          ? "Open PDF summary"
+                          : exportFormat === "pdf"
+                            ? "Open PDF report"
+                            : "Download Excel"}
                     </span>
                   </button>
                 </div>
@@ -2642,75 +2779,59 @@ export default function AssetRegistersClient() {
             </div>
 
             <div className={styles.manageModalScrollArea}>
-              <form className={styles.editForm} onSubmit={handleUpdateRegister}>
-                <label className={styles.field}>
-                  <span>Business name</span>
-                  <input
-                    value={editDraft.businessName}
-                    onChange={(event) =>
-                      applyEditDraftChange((current) => ({
-                        ...current,
-                        businessName: event.target.value,
-                      }))
-                    }
-                    placeholder="Business name"
-                  />
-                </label>
-
-                <label className={styles.field}>
-                  <span>Email</span>
-                  <input
-                    type="email"
-                    value={editDraft.email}
-                    onChange={(event) =>
-                      applyEditDraftChange((current) => ({
-                        ...current,
-                        email: event.target.value,
-                      }))
-                    }
-                    placeholder="Email"
-                  />
-                </label>
-
-                <label className={styles.field}>
-                  <span>Phone</span>
-                  <input
-                    type="tel"
-                    value={editDraft.phone}
-                    onChange={(event) =>
-                      applyEditDraftChange((current) => ({
-                        ...current,
-                        phone: event.target.value,
-                      }))
-                    }
-                    placeholder="Phone"
-                  />
-                </label>
-
-                <label className={styles.field}>
-                  <span>Address</span>
-                  <textarea
-                    value={editDraft.addressLine1}
-                    onChange={(event) =>
-                      applyEditDraftChange((current) => ({
-                        ...current,
-                        addressLine1: event.target.value,
-                      }))
-                    }
-                    placeholder="Address"
-                  />
-                </label>
-
-                <div className={styles.formActions}>
+              <div className={styles.manageActionPanel}>
+                <div className={styles.manageActionGrid}>
                   <button
-                    type="submit"
-                    className={`${styles.primaryButton} ${styles.manageSaveButton} ${manageSaveState === "saved" ? styles.manageSaveButtonSaved : ""}`}
-                    disabled={isSavingDetails}
+                    type="button"
+                    className={`${styles.manageActionButton} ${styles.manageEditAction}`}
+                    onClick={openManagedEditModal}
+                    disabled={isSavingDetails || Boolean(movingAssetId)}
                   >
-                    {isSavingDetails ? "Saving..." : manageSaveState === "saved" ? "Saved" : "Save"}
+                    <EditIcon className={styles.manageActionIcon} />
+                    <span>Edit</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`${styles.manageActionButton} ${styles.manageSummaryAction}`}
+                    onClick={() => openSpecificRegisterExportModal("summary", managedRegister)}
+                    disabled={isExporting || isLoadingManagedAssets}
+                  >
+                    <SummaryIcon className={styles.manageActionIcon} />
+                    <span>Summary</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`${styles.manageActionButton} ${styles.manageDownloadAction}`}
+                    onClick={() => openSpecificRegisterExportModal("download", managedRegister)}
+                    disabled={isExporting || isLoadingManagedAssets}
+                  >
+                    <DownloadIcon className={styles.manageActionIcon} />
+                    <span>Download</span>
                   </button>
                 </div>
-              </form>
+
+                <label className={`${styles.searchWrap} ${styles.manageAssetSearchWrap}`}>
+                  <SearchIcon className={styles.searchIcon} />
+                  <input
+                    className={styles.searchInput}
+                    value={managedAssetSearchTerm}
+                    onChange={(event) => setManagedAssetSearchTerm(event.target.value)}
+                    placeholder="Search assets..."
+                  />
+                  {managedAssetSearchTerm.trim() ? (
+                    <button
+                      type="button"
+                      className={styles.clearSearchButton}
+                      onClick={() => setManagedAssetSearchTerm("")}
+                      aria-label="Clear asset search"
+                    >
+                      ×
+                    </button>
+                  ) : null}
+                </label>
+              </div>
 
               <div className={styles.assetMovePanel}>
                 <div className={styles.subHeader}>
@@ -2723,8 +2844,9 @@ export default function AssetRegistersClient() {
                 {isLoadingManagedAssets ? (
                   <p className={styles.loading}>Loading assets...</p>
                 ) : managedAssets.length ? (
-                  <div className={styles.assetMoveList}>
-                    {managedAssets.map((asset) => (
+                  visibleManagedAssets.length ? (
+                    <div className={styles.assetMoveList}>
+                      {visibleManagedAssets.map((asset) => (
                       <div key={asset.id} className={styles.assetMoveRow}>
                         <div className={styles.assetMoveCopy}>
                           <strong>{asset.title}</strong>
@@ -2770,7 +2892,12 @@ export default function AssetRegistersClient() {
                         </div>
                       </div>
                     ))}
-                  </div>
+                    </div>
+                  ) : (
+                    <p className={styles.loading}>
+                      No assets match the search in this register.
+                    </p>
+                  )
                 ) : (
                   <p className={styles.loading}>
                     No assets saved in this register yet.
@@ -2785,6 +2912,117 @@ export default function AssetRegistersClient() {
               </div>
             </div>
           </section>
+        </div>
+      ) : null}
+
+      {managedRegister && isEditDetailsModalOpen ? (
+        <div
+          className={`${styles.modalOverlay} ${styles.editDetailsOverlay}`}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="edit-register-title"
+        >
+          <form
+            className={`${styles.modalCard} ${styles.editDetailsModalCard}`}
+            onSubmit={handleUpdateRegister}
+          >
+            <div className={styles.modalHeader}>
+              <div>
+                <h2 id="edit-register-title">Edit asset register</h2>
+                <p className={styles.modalIntro}>
+                  Update the details shown on the register card and asset register reports.
+                </p>
+              </div>
+              <button
+                type="button"
+                className={styles.closeButton}
+                onClick={closeManagedEditModal}
+                disabled={isSavingDetails}
+                aria-label="Close edit asset register modal"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className={styles.formGrid}>
+              <label className={styles.field}>
+                <span>Business name</span>
+                <input
+                  value={editDraft.businessName}
+                  onChange={(event) =>
+                    applyEditDraftChange((current) => ({
+                      ...current,
+                      businessName: event.target.value,
+                    }))
+                  }
+                  placeholder="Business name"
+                  required
+                />
+              </label>
+
+              <label className={styles.field}>
+                <span>Email</span>
+                <input
+                  type="email"
+                  value={editDraft.email}
+                  onChange={(event) =>
+                    applyEditDraftChange((current) => ({
+                      ...current,
+                      email: event.target.value,
+                    }))
+                  }
+                  placeholder="Email"
+                />
+              </label>
+
+              <label className={styles.field}>
+                <span>Phone</span>
+                <input
+                  type="tel"
+                  value={editDraft.phone}
+                  onChange={(event) =>
+                    applyEditDraftChange((current) => ({
+                      ...current,
+                      phone: event.target.value,
+                    }))
+                  }
+                  placeholder="Phone"
+                />
+              </label>
+
+              <label className={`${styles.field} ${styles.fullField}`}>
+                <span>Address</span>
+                <textarea
+                  value={editDraft.addressLine1}
+                  onChange={(event) =>
+                    applyEditDraftChange((current) => ({
+                      ...current,
+                      addressLine1: event.target.value,
+                    }))
+                  }
+                  placeholder="Address"
+                />
+              </label>
+            </div>
+
+            <div className={styles.modalFooter}>
+              <button
+                type="button"
+                className={styles.modalCancelButton}
+                onClick={closeManagedEditModal}
+                disabled={isSavingDetails}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className={`${styles.modalPrimaryButton} ${manageSaveState === "saved" ? styles.manageSaveButtonSaved : ""}`}
+                disabled={isSavingDetails}
+              >
+                {isSavingDetails ? "Saving..." : manageSaveState === "saved" ? "Saved" : "Save changes"}
+              </button>
+            </div>
+          </form>
         </div>
       ) : null}
 

@@ -3467,3 +3467,158 @@
     width: 100%;
   }
 }
+
+/* === 2026-07-08 update: asset-register summary flow and manage modal actions === */
+.toolbar {
+  grid-template-columns: minmax(18rem, 1fr) auto auto auto;
+}
+
+.topSummaryButton {
+  color: #113a86;
+  background: linear-gradient(180deg, #eaf2ff 0%, #c7dcff 100%);
+  border-color: #6f9fe6;
+  box-shadow:
+    0 12px 24px rgba(34, 84, 173, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+}
+
+.topSummaryButton:hover:not(:disabled) {
+  color: #0e3275;
+  background: linear-gradient(180deg, #f4f8ff 0%, #bcd4ff 100%);
+  border-color: #558ad8;
+  box-shadow:
+    0 16px 30px rgba(34, 84, 173, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+}
+
+.manageActionPanel {
+  display: grid;
+  gap: clamp(1rem, 1.6vw, 1.4rem);
+  padding: clamp(1.15rem, 2.15vw, 1.7rem) clamp(1.25rem, 2.4vw, 1.9rem) clamp(1.2rem, 2vw, 1.6rem);
+  border-bottom: 1px solid rgba(216, 225, 234, 0.96);
+  background:
+    radial-gradient(circle at 0% 0%, rgba(25, 116, 84, 0.04) 0%, rgba(25, 116, 84, 0) 42%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.88) 0%, rgba(249, 252, 252, 0.96) 100%);
+}
+
+.manageActionGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(0.85rem, 1.25vw, 1.1rem);
+}
+
+.manageActionButton {
+  width: 100%;
+  min-height: clamp(5.2rem, 7vw, 6.45rem);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  padding: 1rem 1.25rem;
+  border: 1.8px solid rgba(17, 31, 35, 0.88);
+  border-radius: clamp(1.15rem, 2vw, 1.65rem);
+  background: linear-gradient(180deg, #ffffff 0%, #fbfcfd 100%);
+  color: #101820;
+  font: inherit;
+  font-size: clamp(1.2rem, 2vw, 1.62rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.035em;
+  cursor: pointer;
+  box-shadow:
+    0 12px 24px rgba(16, 36, 40, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease,
+    color 160ms ease,
+    opacity 160ms ease;
+}
+
+.manageActionButton:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: rgba(25, 116, 84, 0.58);
+  background:
+    radial-gradient(circle at 0% 0%, rgba(25, 116, 84, 0.08), rgba(25, 116, 84, 0) 48%),
+    linear-gradient(180deg, #ffffff 0%, #eef9f4 100%);
+  color: #073b30;
+  box-shadow:
+    0 18px 34px rgba(25, 116, 84, 0.11),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+}
+
+.manageActionButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+  transform: none;
+}
+
+.manageSummaryAction {
+  border-color: rgba(25, 64, 142, 0.78);
+  color: #0f2f77;
+  background: linear-gradient(180deg, #f8fbff 0%, #e3eeff 100%);
+}
+
+.manageDownloadAction {
+  border-color: rgba(15, 88, 64, 0.72);
+  color: #0f5840;
+  background: linear-gradient(180deg, #ffffff 0%, #eef9f4 100%);
+}
+
+.manageActionIcon {
+  width: 1.35rem;
+  height: 1.35rem;
+  flex: 0 0 auto;
+  stroke-width: 2.25;
+}
+
+.manageAssetSearchWrap {
+  min-height: clamp(4rem, 5.5vw, 4.85rem);
+  height: auto;
+  border-radius: clamp(1.05rem, 2vw, 1.5rem);
+}
+
+.manageAssetSearchWrap .searchInput {
+  min-height: clamp(3.65rem, 5vw, 4.45rem);
+  font-size: clamp(1.08rem, 1.45vw, 1.34rem);
+  font-weight: 760;
+}
+
+.editDetailsOverlay {
+  z-index: 1300;
+}
+
+.editDetailsModalCard {
+  width: min(900px, 100%);
+}
+
+.exportFormatGridSingle {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.exportFormatGridSingle .exportOption {
+  max-width: 34rem;
+}
+
+@media (max-width: 980px) {
+  .toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .toolbarPrimaryButton,
+  .topAddButton,
+  .topSummaryButton,
+  .topDownloadButton {
+    width: 100%;
+  }
+
+  .manageActionGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .manageActionButton {
+    min-height: 4.45rem;
+  }
+}
