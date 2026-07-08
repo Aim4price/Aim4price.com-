@@ -410,6 +410,48 @@ function readFirstSpecNumber(specs: Record<string, unknown>, keys: string[]): nu
   return null;
 }
 
+
+function readMarketplaceUsageAmount(row: MarketplaceAssetRow, specs: Record<string, unknown>): number {
+  const fromRow = readFirstNumber(row, [
+    'hours',
+    'engine_hours',
+    'usage_amount',
+    'usageAmount',
+    'usage_reading',
+    'usageReading',
+    'current_usage',
+    'currentUsage',
+    'odometer',
+    'odometer_km',
+    'odometerKm',
+    'kilometres',
+    'kilometers',
+    'mileage',
+    'km',
+  ]);
+
+  const fromSpecs = readFirstSpecNumber(specs, [
+    'usageAmount',
+    'usage_amount',
+    'usageReading',
+    'usage_reading',
+    'currentUsage',
+    'current_usage',
+    'hours',
+    'engine_hours',
+    'engineHours',
+    'odometer',
+    'odometer_km',
+    'odometerKm',
+    'kilometres',
+    'kilometers',
+    'mileage',
+    'km',
+  ]);
+
+  return Math.max(0, Math.round(fromRow ?? fromSpecs ?? 0));
+}
+
 function listingWorkedPercent(
   row: MarketplaceAssetRow,
   specs: Record<string, unknown>,
@@ -462,6 +504,7 @@ function listingUsageUnit(
   row: MarketplaceAssetRow,
   specs: Record<string, unknown>,
   lifeWorkedPercent: number | null,
+  usageAmount: number,
 ): MarketplaceUsageUnit {
   const explicitUsageMetric =
     specs.usageMetric ??
@@ -480,7 +523,6 @@ function listingUsageUnit(
     pick(row, ['valuation_mode', 'equipment_family_valuation_mode']);
   const kind = readAssetKind(row);
   const depreciationMethod = asText(pick(row, ['depreciation_method_used'])).toLowerCase();
-  const hours = Math.max(0, Math.round(asNumber(pick(row, ['hours', 'engine_hours']), 0)));
 
   if (isPercentUsageMode(explicitUsageMetric) || isPercentUsageMode(explicitUsageMode)) {
     return 'percent';
@@ -502,7 +544,7 @@ function listingUsageUnit(
     return 'percent';
   }
 
-  if (lifeWorkedPercent !== null && hours <= 0) {
+  if (lifeWorkedPercent !== null && usageAmount <= 0) {
     return 'percent';
   }
 
@@ -629,9 +671,10 @@ function buildMarketplaceListing(
   const powerHp = Math.round(powerKw * 1.341);
   const specs = pickJsonObject(pick(row, ['specs_json']));
   const lifeWorkedPercent = listingWorkedPercent(row, specs);
-  const usageUnit = listingUsageUnit(row, specs, lifeWorkedPercent);
+  const usageAmount = readMarketplaceUsageAmount(row, specs);
+  const usageUnit = listingUsageUnit(row, specs, lifeWorkedPercent, usageAmount);
   const yearModel = Math.round(asNumber(pick(row, ['year_model', 'year']), new Date().getFullYear()));
-  const hours = Math.max(0, Math.round(asNumber(pick(row, ['hours', 'engine_hours']), 0)));
+  const hours = usageAmount;
   const publishedAtIso =
     asText(pick(row, ['updated_at', 'published_at', 'created_at'])) || new Date().toISOString();
   const askingPriceExVat = Math.round(
@@ -689,12 +732,8 @@ function buildMarketplaceListing(
   const linkedFamilyLabel = asText(pick(row, ['equipment_family_label', 'family_label']));
   const linkedFamilyKey = asText(pick(row, ['equipment_family_key', 'family_key']));
   const assetKindFamilyLabel = familyLabelFromAssetKind(assetKind);
-  const shouldPreferAssetKindFamily =
-    Boolean(assetKind) &&
-    assetKind !== 'tractor' &&
-    (isManualAssetRow(row) || assetKind === 'vehicle' || assetKind === 'tools' || assetKind === 'property' || assetKind === 'manual');
-  const familyLabel = shouldPreferAssetKindFamily ? assetKindFamilyLabel : linkedFamilyLabel || assetKindFamilyLabel;
-  const familyKey = shouldPreferAssetKindFamily ? slugify(assetKindFamilyLabel) : linkedFamilyKey || slugify(familyLabel);
+  const familyLabel = linkedFamilyLabel || assetKindFamilyLabel;
+  const familyKey = linkedFamilyKey || slugify(familyLabel);
   const conditionKey = normalizeConditionKey(pick(row, ['condition', 'valuation_last_condition']));
 
   return {

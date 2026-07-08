@@ -185,16 +185,8 @@ export function formatListingPublishedDate(value: string): string {
   }).format(parsed);
 }
 
-export function listingUsageLabel(listing: MarketplaceListing): string {
-  if (listing.usageUnit === 'km') {
-    return 'Kilometres';
-  }
-
-  if (listing.usageUnit === 'percent') {
-    return 'Usage';
-  }
-
-  return getListingAssetKind(listing) === 'vehicle' ? 'Vehicle hours' : 'Engine hours';
+export function listingUsageLabel(_listing: MarketplaceListing): string {
+  return 'Usage';
 }
 
 function formatPercent(value: number): string {
@@ -219,13 +211,13 @@ export function formatListingUsage(listing: MarketplaceListing): string {
   }
 
   const amount = Number(listing.hours || 0);
-  const suffix = listing.usageUnit === 'km' ? 'km' : 'hrs';
+  const suffix = listing.usageUnit === 'km' ? 'km' : 'hours';
 
   if (!Number.isFinite(amount) || amount <= 0) {
     return listing.usageUnit === 'km' ? 'km not set' : 'hours not set';
   }
 
-  return `${amount.toLocaleString('en-ZA')} ${suffix}`;
+  return `${Math.round(amount).toLocaleString('en-ZA')} ${suffix}`;
 }
 
 export function getListingConditionLabel(listing: MarketplaceListing): string {
@@ -246,14 +238,6 @@ export function getListingConditionLabel(listing: MarketplaceListing): string {
 }
 
 export function getListingPrimaryFamilyLabel(listing: MarketplaceListing): string {
-  const assetKind = getListingAssetKind(listing);
-
-  if (assetKind === 'vehicle') return 'Vehicles';
-  if (assetKind === 'tools' || assetKind === 'tool') return 'Tools';
-  if (assetKind === 'equipment') return 'Equipment';
-  if (assetKind === 'manual' || assetKind === 'other') return 'Other';
-  if (assetKind === 'property') return 'Property/Buildings';
-
   return getListingFamilyLabel(listing);
 }
 
