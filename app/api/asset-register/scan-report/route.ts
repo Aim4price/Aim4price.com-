@@ -13,6 +13,7 @@ import {
   type DepreciationLogSummary,
 } from '../../../../lib/asset-depreciation-timeline';
 import { createXlsxWorkbook, type XlsxCellStyle, type XlsxCellValue, type XlsxPrimitiveCellValue, type XlsxSheet } from '../../../../lib/simple-xlsx';
+import { resolveReportLogoUrlForHtml } from '../../../../lib/report-logo';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -1616,6 +1617,7 @@ function buildReportHtml(options: {
         display: block;
         width: 18mm;
         height: auto;
+        max-height: 18mm;
         object-fit: contain;
       }
 
@@ -3064,7 +3066,8 @@ export async function GET(request: NextRequest) {
   });
   const ownerDetails = buildOwnerReportDetails(ownerProfile, session.user, asset);
   const generatedAt = formatDate(new Date().toISOString());
-  const logoUrl = await getAssetRegisterReportLogoUrl(session.user.id, asset.registerId).catch(() => '');
+  const rawLogoUrl = await getAssetRegisterReportLogoUrl(session.user.id, asset.registerId).catch(() => '');
+  const logoUrl = await resolveReportLogoUrlForHtml(rawLogoUrl, request.url);
 
   const baseFileName = `${slugifyFileSegment(asset.title)}-${slugifyFileSegment(asset.plateLabel || asset.publicAssetCode || asset.id)}-${slugifyFileSegment(REPORT_LABELS[reportKind])}`;
 
