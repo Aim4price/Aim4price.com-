@@ -1127,8 +1127,17 @@ export default function MaintenanceClient() {
             </header>
             <div className={styles.modalDivider} />
             <div className={styles.pickerToolbar}>
-              <input value={pickerSearch} onChange={(event) => setPickerSearch(event.target.value)} placeholder="Search assets..." />
-              <button className={styles.secondaryButton} type="button" onClick={() => setPickerSearch('')}>Clear</button>
+              <label className={styles.pickerSearchField}>
+                <SearchIcon />
+                <input
+                  type="search"
+                  value={pickerSearch}
+                  onChange={(event) => setPickerSearch(event.target.value)}
+                  placeholder="Search saved assets..."
+                  aria-label="Search saved assets"
+                />
+              </label>
+              <button className={`${styles.secondaryButton} ${styles.pickerClearButton}`} type="button" onClick={() => setPickerSearch('')} disabled={!pickerSearch}>Clear</button>
             </div>
             <div className={styles.assetList}>
               {filteredAssets.length ? (
@@ -1231,8 +1240,8 @@ export default function MaintenanceClient() {
           <section className={styles.formModal}>
             <header className={styles.modalHeader}>
               <div>
-                <h2 id="maintenance-form-title">{editingRecordId ? 'Edit maintenance' : `Schedule ${draft.maintenanceType}`}</h2>
-                <p>{editingRecordId ? selectedAssetLabel(selectedDraftAsset) : `${triggerLabel(draft.triggerType)} · ${selectedAssetLabel(selectedDraftAsset)}`}</p>
+                <h2 id="maintenance-form-title">{`Schedule ${draft.maintenanceType}`}</h2>
+                <p>{`${triggerLabel(draft.triggerType)} · ${selectedAssetLabel(selectedDraftAsset)}`}</p>
               </div>
               <button className={styles.closeButton} type="button" onClick={closeModal} aria-label="Close maintenance form">
                 <CloseIcon />
@@ -1240,40 +1249,6 @@ export default function MaintenanceClient() {
             </header>
             <div className={styles.modalDivider} />
             <div className={styles.formModalScrollBody}>
-              {editingRecordId ? (
-                <>
-                  <div className={styles.maintenanceSectionTitle}>Maintenance type</div>
-                  <div className={styles.maintenanceToggleGrid}>
-                    {(['service', 'checkup'] as MaintenanceType[]).map((type) => (
-                      <button
-                        key={type}
-                        className={`${styles.maintenanceToggleOption} ${draft.maintenanceType === type ? styles.maintenanceToggleActive : ''}`}
-                        type="button"
-                        onClick={() => updateDraft({ maintenanceType: type })}
-                      >
-                        <strong>{typeLabel(type)}</strong>
-                        <span>{type === 'service' ? 'Routine servicing or repairs.' : 'Inspection or condition check.'}</span>
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className={styles.maintenanceSectionTitle}>Trigger</div>
-                  <div className={styles.maintenanceToggleGrid}>
-                    {(['date', 'usage'] as TriggerType[]).map((trigger) => (
-                      <button
-                        key={trigger}
-                        className={`${styles.maintenanceToggleOption} ${draft.triggerType === trigger ? styles.maintenanceToggleActive : ''}`}
-                        type="button"
-                        onClick={() => updateDraft({ triggerType: trigger })}
-                      >
-                        <strong>{triggerLabel(trigger)}</strong>
-                        <span>{trigger === 'date' ? 'Due on a calendar date.' : `Due at a target ${usageUnitLabel(selectedDraftAsset?.usageMetric ?? draft.usageMetric)} reading.`}</span>
-                      </button>
-                    ))}
-                  </div>
-                </>
-              ) : null}
-
               <div className={styles.maintenanceSectionTitle}>{draft.triggerType === 'date' ? 'Specific date setup' : 'Usage setup'}</div>
               <div className={styles.maintenanceFieldGrid}>
                 {draft.triggerType === 'date' ? (
