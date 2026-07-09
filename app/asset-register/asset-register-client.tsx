@@ -308,6 +308,25 @@ type LatestIssueNoteStatus = {
   notedAtIso: string | null;
 };
 
+type MaintenanceUpcomingAlert = {
+  id: string;
+  assetRegisterItemId: string;
+  maintenanceType: 'service' | 'checkup';
+  triggerType: 'date' | 'usage';
+  computedStatus: 'upcoming' | 'due_soon' | 'due' | 'overdue' | 'done' | 'cancelled';
+  computedStatusLabel: string;
+  heading: string;
+  body: string;
+  dueDate: string | null;
+  dueUsage: number | null;
+  currentUsage: number | null;
+  usageMetric: 'hours' | 'km' | 'percentage' | null;
+  alertBeforeValue: number | null;
+  alertBeforeUnit: string | null;
+  updatedAtIso: string;
+  createdAtIso: string;
+};
+
 type OpenPartnerNote = {
   id: string;
   ownerUserId: string;
@@ -392,6 +411,7 @@ type RegisterAsset = {
   partnerNotes?: OpenPartnerNote[];
   latestMaintenanceStatus?: LatestMaintenanceStatus | null;
   latestIssueNoteStatus?: LatestIssueNoteStatus | null;
+  maintenanceAlert?: MaintenanceUpcomingAlert | null;
 };
 
 type ReplacementPriceRevaluePrompt = {
@@ -3479,6 +3499,7 @@ function assetUnnotedAlertCount(asset: RegisterAsset): number {
   let count = 0;
 
   if (assetNeedsEstimateAttention(asset)) count += 1;
+  if (asset.maintenanceAlert) count += 1;
   if (asset.latestMaintenanceStatus) count += 1;
   if (asset.latestIssueNoteStatus) count += 1;
   count += openPartnerNoteAlertCount(asset);
@@ -3500,7 +3521,8 @@ function formatAlertBadgeCount(count: number): string {
 }
 
 function assetAttentionRank(asset: RegisterAsset): number {
-  if (asset.latestIssueNoteStatus) return 5;
+  if (asset.latestIssueNoteStatus) return 6;
+  if (asset.maintenanceAlert) return 5;
   if (isAssetFlagged(asset)) return 4;
   if (asset.openPartnerNote) return 3;
   if (asset.latestMaintenanceStatus) return 2;
@@ -3511,12 +3533,22 @@ function assetAttentionRank(asset: RegisterAsset): number {
 
 function assetAttentionTimestamp(asset: RegisterAsset): number {
   const openPartnerNote = asset.openPartnerNote ?? null;
+  const maintenanceAlert = asset.maintenanceAlert ?? null;
   const latestMaintenanceStatus = asset.latestMaintenanceStatus ?? null;
   const latestIssueNoteStatus = asset.latestIssueNoteStatus ?? null;
 
   if (latestIssueNoteStatus) {
     return (
       timestampFromIso(latestIssueNoteStatus.createdAtIso) ||
+      timestampFromIso(asset.updatedAtIso) ||
+      timestampFromIso(asset.createdAtIso)
+    );
+  }
+
+  if (maintenanceAlert) {
+    return (
+      timestampFromIso(maintenanceAlert.updatedAtIso) ||
+      timestampFromIso(maintenanceAlert.createdAtIso) ||
       timestampFromIso(asset.updatedAtIso) ||
       timestampFromIso(asset.createdAtIso)
     );
@@ -5309,6 +5341,7 @@ export default function AssetRegisterClient() {
   const [busyFlagAssetId, setBusyFlagAssetId] = useState<string | null>(null);
   const [busyRevalueAssetId, setBusyRevalueAssetId] = useState<string | null>(null);
   const [busyMaintenanceStatusId, setBusyMaintenanceStatusId] = useState<string | null>(null);
+  const [busyMaintenanceAlertId, setBusyMaintenanceAlertId] = useState<string | null>(null);
   const [busyIssueNoteStatusId, setBusyIssueNoteStatusId] = useState<string | null>(null);
   const [busyRevalueAction, setBusyRevalueAction] = useState<RevalueMethod | null>(null);
   const [replacementPriceRevaluePrompt, setReplacementPriceRevaluePrompt] = useState<ReplacementPriceRevaluePrompt | null>(null);
@@ -9507,6 +9540,37 @@ export default function AssetRegisterClient() {
     }
   }
 
+  async function handleMarkMaintenanceAlertNoted(maintenanceAlertId: string, assetId: string) {
+    setBusyMaintenanceAlertId(maintenanceAlertId);
+
+    try {
+      const response = await fetch(`/api/maintenance/${encodeURIComponent(maintenanceAlertId)}/alert`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'noted' }),
+      });
+      const data = (await response.json()) as { ok: boolean; error?: string };
+
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error ?? 'Failed to mark maintenance alert as noted.');
+      }
+
+      setAssets((current) => current.map((entry) => (entry.id === assetId ? { ...entry, maintenanceAlert: null } : entry)));
+      setActiveAsset((current) => (current?.id === assetId ? { ...current, maintenanceAlert: null } : current));
+      setMarketplaceAsset((current) => (current?.id === assetId ? { ...current, maintenanceAlert: null } : current));
+      setProjectionAsset((current) => (current?.id === assetId ? { ...current, maintenanceAlert: null } : current));
+      setNotice({ tone: 'success', message: 'Maintenance alert marked as noted.' });
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Failed to mark maintenance alert as noted.',
+      });
+    } finally {
+      setBusyMaintenanceAlertId((current) => (current === maintenanceAlertId ? null : current));
+    }
+  }
+
   async function handleMarkIssueNoteStatusNoted(issueNoteStatusId: string, assetId: string) {
     setBusyIssueNoteStatusId(issueNoteStatusId);
 
@@ -11362,6 +11426,7 @@ export default function AssetRegisterClient() {
                     const partnerNoteLabel = openPartnerNote?.partnerType ? `${formatQuotePartnerType(openPartnerNote.partnerType)} note` : 'Partner note';
                     const latestMaintenanceStatus = asset.latestMaintenanceStatus ?? null;
                     const latestIssueNoteStatus = asset.latestIssueNoteStatus ?? null;
+                    const maintenanceAlert = asset.maintenanceAlert ?? null;
                     const isManualValueAsset = asset.selectedMethod === 'manual';
                     const assetValueVatMode = assetValueVatModes[asset.id] ?? 'excluded';
                     const displayedAssetValue = assetValueVatMode === 'included' ? Math.round(Number(asset.value || 0) * 1.15) : asset.value;
@@ -11403,6 +11468,9 @@ export default function AssetRegisterClient() {
                     const isMarkingIssueNoteNoted = latestIssueNoteStatus
                       ? busyIssueNoteStatusId === latestIssueNoteStatus.id
                       : false;
+                    const isMarkingMaintenanceAlertNoted = maintenanceAlert
+                      ? busyMaintenanceAlertId === maintenanceAlert.id
+                      : false;
 
                     return (
                       <div className={styles.assetCardRow} key={asset.id}>
@@ -11420,11 +11488,11 @@ export default function AssetRegisterClient() {
 
                         <article
                           id={`asset-card-${asset.id}`}
-                          className={`${styles.assetCard} ${isExpanded ? styles.assetCardExpanded : ''} ${isFlagged ? styles.assetCardFlagged : ''} ${estimateNeedsUpdate ? styles.assetCardEstimateStale : ''} ${openPartnerNote ? `${styles.assetCardPartnerNote} ${partnerNoteToneClass}` : ''} ${latestMaintenanceStatus ? styles.assetCardMaintenanceDone : ''} ${latestIssueNoteStatus ? styles.assetCardIssueNote : ''}`}
+                          className={`${styles.assetCard} ${isExpanded ? styles.assetCardExpanded : ''} ${isFlagged ? styles.assetCardFlagged : ''} ${estimateNeedsUpdate ? styles.assetCardEstimateStale : ''} ${openPartnerNote ? `${styles.assetCardPartnerNote} ${partnerNoteToneClass}` : ''} ${maintenanceAlert ? styles.assetCardMaintenanceUpcoming : ''} ${latestMaintenanceStatus ? styles.assetCardMaintenanceDone : ''} ${latestIssueNoteStatus ? styles.assetCardIssueNote : ''}`}
                         >
                         <div className={styles.assetHeader}>
                           <div className={styles.assetTitleBlock}>
-                            {isFlagged || isLive || estimateNeedsUpdate || openPartnerNote || latestMaintenanceStatus || latestIssueNoteStatus ? (
+                            {isFlagged || isLive || estimateNeedsUpdate || openPartnerNote || maintenanceAlert || latestMaintenanceStatus || latestIssueNoteStatus ? (
                               <div className={styles.badgeRow}>
                                 {isFlagged ? <span className={`${styles.badge} ${styles.badgeDanger}`}>Flagged</span> : null}
                                 {isLive ? <span className={`${styles.badge} ${styles.badgeSuccess}`}>Live on marketplace</span> : null}
@@ -11432,6 +11500,7 @@ export default function AssetRegisterClient() {
                                   <span className={`${styles.badge} ${styles.badgeWarning}`}>Estimate needs update</span>
                                 ) : null}
                                 {openPartnerNote ? <span className={`${styles.badge} ${styles.badgeInfo} ${partnerNoteToneClass}`}>{partnerNoteLabel}</span> : null}
+                                {maintenanceAlert ? <span className={`${styles.badge} ${styles.badgeMaintenanceUpcoming}`}>Maintenance upcoming</span> : null}
                                 {latestMaintenanceStatus ? <span className={`${styles.badge} ${styles.badgeMaintenanceDone}`}>{maintenanceDoneLabel}</span> : null}
                                 {latestIssueNoteStatus ? <span className={`${styles.badge} ${styles.badgeIssueNote}`}>Open issue</span> : null}
                               </div>
@@ -11529,6 +11598,24 @@ export default function AssetRegisterClient() {
                                 onClick={() => void handleMarkPartnerNoteNoted(openPartnerNote.id, asset.id)}
                               >
                                 Noted
+                              </button>
+                            </div>
+                          ) : null}
+
+                          {maintenanceAlert ? (
+                            <div className={`${styles.partnerNoteBanner} ${styles.maintenanceUpcomingBanner}`}>
+                              <div className={styles.partnerNoteText}>
+                                <strong>{maintenanceAlert.heading || 'Maintenance upcoming'}</strong>
+                                <p>{maintenanceAlert.body}</p>
+                                {maintenanceAlert.computedStatusLabel ? <small className={styles.maintenanceUpcomingMeta}>{maintenanceAlert.computedStatusLabel}</small> : null}
+                              </div>
+                              <button
+                                type="button"
+                                className={styles.partnerNoteButton}
+                                disabled={isMarkingMaintenanceAlertNoted}
+                                onClick={() => void handleMarkMaintenanceAlertNoted(maintenanceAlert.id, asset.id)}
+                              >
+                                {isMarkingMaintenanceAlertNoted ? 'Noting...' : 'Noted'}
                               </button>
                             </div>
                           ) : null}

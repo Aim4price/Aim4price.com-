@@ -29601,3 +29601,55 @@ button.documentOpenLink {
     letter-spacing: -0.02em !important;
   }
 }
+
+/* === Scheduled maintenance upcoming alert state === */
+.assetCardMaintenanceUpcoming {
+  border-color: rgba(190, 83, 83, 0.34) !important;
+  background: linear-gradient(180deg, #fffafa 0%, #fff6f6 58%, #ffffff 100%) !important;
+  box-shadow: 0 18px 42px rgba(160, 53, 53, 0.1) !important;
+}
+
+.assetCardMaintenanceUpcoming:hover {
+  border-color: rgba(160, 53, 53, 0.48) !important;
+}
+
+.badgeMaintenanceUpcoming {
+  color: #8f2f2f !important;
+  background: #fff1f1 !important;
+  border-color: rgba(190, 83, 83, 0.26) !important;
+}
+
+.maintenanceUpcomingBanner {
+  border-color: rgba(190, 83, 83, 0.34) !important;
+  background: linear-gradient(135deg, rgba(255, 247, 247, 0.98), rgba(255, 239, 239, 0.96)) !important;
+}
+
+.maintenanceUpcomingBanner .partnerNoteText strong,
+.maintenanceUpcomingBanner .partnerNoteText p {
+  color: #7f2d2d !important;
+}
+
+.maintenanceUpcomingBanner .partnerNoteButton {
+  align-self: center;
+  border-color: rgba(190, 83, 83, 0.28) !important;
+  background: #ffffff !important;
+  color: #8f2f2f !important;
+  box-shadow: 0 10px 22px rgba(160, 53, 53, 0.1);
+}
+
+.maintenanceUpcomingBanner .partnerNoteButton:hover:not(:disabled) {
+  border-color: rgba(160, 53, 53, 0.44) !important;
+  background: #fff9f9 !important;
+}
+
+.maintenanceUpcomingBanner .partnerNoteButton:disabled {
+  cursor: wait;
+  opacity: 0.68;
+}
+
+.maintenanceUpcomingMeta {
+  color: rgba(127, 45, 45, 0.72);
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
