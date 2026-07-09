@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import AppHeader from '../../components/AppHeader';
 import styles from './page.module.css';
 
@@ -127,6 +127,12 @@ type MaintenanceDraft = {
 type ModalMode = 'asset-picker' | 'form' | 'filter' | 'download' | 'complete' | null;
 
 type DownloadScope = 'total' | 'asset' | 'upcoming' | 'done';
+type DownloadFormat = 'pdf' | 'xlsx';
+
+type DropdownOption = {
+  value: string;
+  label: string;
+};
 
 const EMPTY_SUMMARY: MaintenanceSummary = {
   totalCount: 0,
@@ -205,9 +211,9 @@ function CloseIcon() {
   );
 }
 
-function ChevronDownIcon() {
+function ChevronDownIcon({ className }: { className?: string } = {}) {
   return (
-    <svg viewBox="0 0 20 20" aria-hidden="true">
+    <svg className={className} viewBox="0 0 20 20" aria-hidden="true">
       <path fill="currentColor" d="M5.2 7.5 10 12.3l4.8-4.8 1.1 1.1-5.3 5.3a.9.9 0 0 1-1.2 0L4.1 8.6l1.1-1.1Z" />
     </svg>
   );
@@ -263,7 +269,7 @@ function typeLabel(value: MaintenanceType | string): string {
 }
 
 function triggerLabel(value: TriggerType | string): string {
-  return value === 'date' ? 'Specific Date' : 'Usage';
+  return value === 'date' ? 'Specific date' : 'Usage';
 }
 
 function statusLabel(value: ComputedStatus | string): string {
@@ -402,6 +408,195 @@ function buildReportUrl(scope: DownloadScope, format: 'pdf' | 'xlsx', filters: M
   return `/api/maintenance/report?${params.toString()}`;
 }
 
+
+const DATE_UNIT_OPTIONS: DropdownOption[] = [
+  { value: 'days', label: 'days' },
+  { value: 'weeks', label: 'weeks' },
+  { value: 'months', label: 'months' },
+];
+
+const FILTER_TYPE_OPTIONS: DropdownOption[] = [
+  { value: 'all', label: 'All types' },
+  { value: 'service', label: 'Service' },
+  { value: 'checkup', label: 'Checkup' },
+];
+
+const FILTER_STATUS_OPTIONS: DropdownOption[] = [
+  { value: 'all', label: 'All statuses' },
+  { value: 'upcoming', label: 'Upcoming' },
+  { value: 'done', label: 'Done' },
+];
+
+const DOWNLOAD_FORMAT_OPTIONS: Array<{ value: DownloadFormat; title: string; description: string }> = [
+  { value: 'pdf', title: 'PDF report', description: 'Clean print-ready report for clients, banks or insurance partners.' },
+  { value: 'xlsx', title: 'XLSX workbook', description: 'Excel-ready maintenance data for sorting, filtering and record keeping.' },
+];
+
+const DOWNLOAD_SCOPE_OPTIONS: Array<{ value: DownloadScope; title: string; description: string }> = [
+  { value: 'total', title: 'Total maintenance report', description: 'All maintenance records matching the current filters.' },
+  { value: 'asset', title: 'Specific asset maintenance report', description: 'Full maintenance timeline for one saved asset.' },
+  { value: 'upcoming', title: 'Upcoming maintenance report', description: 'Open maintenance records, including due soon and overdue items.' },
+  { value: 'done', title: 'Done maintenance report', description: 'Completed services and checkups.' },
+];
+
+type MaintenanceDropdownProps = {
+  label: string;
+  value: string;
+  options: DropdownOption[];
+  onChange: (value: string) => void;
+  className?: string;
+  disabled?: boolean;
+  hideLabel?: boolean;
+  searchable?: boolean;
+  searchPlaceholder?: string;
+  noMatchesLabel?: string;
+};
+
+function MaintenanceDropdown({
+  label,
+  value,
+  options,
+  onChange,
+  className = '',
+  disabled = false,
+  hideLabel = false,
+  searchable = false,
+  searchPlaceholder = 'Search options',
+  noMatchesLabel = 'No options found',
+}: MaintenanceDropdownProps) {
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const selectedOption = options.find((option) => option.value === value) ?? options[0];
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const visibleOptions = searchable && normalizedQuery
+    ? options.filter((option) => option.label.toLowerCase().includes(normalizedQuery))
+    : options;
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    function handlePointerDown(event: MouseEvent | TouchEvent) {
+      const target = event.target;
+      if (rootRef.current && target instanceof Node && !rootRef.current.contains(target)) {
+        setIsOpen(false);
+      }
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('touchstart', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('touchstart', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) setSearchQuery('');
+  }, [isOpen]);
+
+  const fieldClassName = hideLabel ? styles.dropdownOnlyField : styles.filterField;
+
+  return (
+    <div className={`${fieldClassName} ${className}`.trim()}>
+      {hideLabel ? null : <span>{label}</span>}
+      <div
+        ref={rootRef}
+        className={`${styles.customFilterSelect} ${isOpen ? styles.customFilterSelectOpen : ''} ${disabled ? styles.customFilterSelectDisabled : ''}`}
+      >
+        <button
+          type="button"
+          className={`${styles.customFilterSelectButton} ${isOpen ? styles.customFilterSelectButtonOpen : ''}`}
+          onClick={() => setIsOpen((open) => !open)}
+          disabled={disabled}
+          aria-haspopup="listbox"
+          aria-expanded={isOpen}
+          aria-label={label}
+        >
+          <span className={styles.customFilterSelectButtonText}>{selectedOption?.label ?? 'Choose option'}</span>
+          <ChevronDownIcon className={styles.customFilterSelectChevron} />
+        </button>
+
+        {isOpen ? (
+          <div className={styles.customFilterSelectMenu} role="listbox" aria-label={label}>
+            {searchable ? (
+              <div className={styles.customFilterSearchRow}>
+                <input
+                  type="search"
+                  className={styles.customFilterSearchInput}
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder={searchPlaceholder}
+                  aria-label={searchPlaceholder}
+                  autoComplete="off"
+                />
+              </div>
+            ) : null}
+
+            {visibleOptions.length ? (
+              visibleOptions.map((option) => {
+                const isSelected = option.value === value;
+                return (
+                  <button
+                    key={`${label}-${option.value}`}
+                    type="button"
+                    className={`${styles.customFilterSelectOption} ${isSelected ? styles.customFilterSelectOptionActive : ''}`}
+                    onClick={() => {
+                      onChange(option.value);
+                      setIsOpen(false);
+                    }}
+                    role="option"
+                    aria-selected={isSelected}
+                  >
+                    <span className={styles.customFilterSelectOptionLabel}>{option.label}</span>
+                  </button>
+                );
+              })
+            ) : (
+              <div className={`${styles.customFilterSelectOption} ${styles.customFilterSelectEmptyOption}`} role="option" aria-disabled="true">
+                <span className={styles.customFilterSelectOptionLabel}>{noMatchesLabel}</span>
+              </div>
+            )}
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function SwitchField({ label, checked, onChange }: { label: string; checked: boolean; onChange: (checked: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      className={`${styles.switchField} ${checked ? styles.switchFieldActive : ''}`}
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
+    >
+      <span className={styles.switchTrack}><span /></span>
+      <strong>{label}</strong>
+    </button>
+  );
+}
+
+function ReadOnlyField({ label, value }: { label: string; value: string }) {
+  return (
+    <div className={styles.maintenanceCurrentUsage}>
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
 function recordSearchText(record: MaintenanceRecord): string {
   return [
     record.assetTitle,
@@ -444,6 +639,8 @@ export default function MaintenanceClient() {
   const [deletingRecordId, setDeletingRecordId] = useState<string | null>(null);
   const [busyCompleteId, setBusyCompleteId] = useState<string | null>(null);
   const [downloadAssetId, setDownloadAssetId] = useState('all');
+  const [downloadFormat, setDownloadFormat] = useState<DownloadFormat>('pdf');
+  const [downloadScope, setDownloadScope] = useState<DownloadScope>('total');
   const [page, setPage] = useState(1);
 
   const assetById = useMemo(() => new Map(assets.map((asset) => [asset.id, asset])), [assets]);
@@ -500,6 +697,39 @@ export default function MaintenanceClient() {
     if (!query) return assets;
     return assets.filter((asset) => [asset.title, asset.meta, asset.kind, asset.categoryLabel].join(' ').toLowerCase().includes(query));
   }, [assets, pickerSearch]);
+
+  const filterAssetOptions = useMemo<DropdownOption[]>(
+    () => [
+      { value: 'all', label: 'All saved assets' },
+      ...assets.map((asset) => ({ value: asset.id, label: asset.title })),
+    ],
+    [assets],
+  );
+
+  const downloadAssetOptions = useMemo<DropdownOption[]>(
+    () => [
+      { value: 'all', label: 'Choose saved asset' },
+      ...assets.map((asset) => ({ value: asset.id, label: asset.title })),
+    ],
+    [assets],
+  );
+
+  const filterAssigneeOptions = useMemo<DropdownOption[]>(
+    () => [
+      { value: 'all', label: 'All assignees' },
+      { value: 'unassigned', label: 'Unassigned' },
+      ...fieldManagers.map((manager) => ({ value: manager.id, label: manager.displayName })),
+    ],
+    [fieldManagers],
+  );
+
+  const formAssigneeOptions = useMemo<DropdownOption[]>(
+    () => [
+      { value: 'unassigned', label: 'Unassigned' },
+      ...fieldManagers.map((manager) => ({ value: manager.id, label: manager.displayName })),
+    ],
+    [fieldManagers],
+  );
 
   function closeModal() {
     setModalMode(null);
@@ -667,12 +897,14 @@ export default function MaintenanceClient() {
   }
 
   function openDownload() {
-    const defaultAssetId = activeFilters.assetId !== 'all' ? activeFilters.assetId : assets[0]?.id ?? 'all';
+    const defaultAssetId = activeFilters.assetId !== 'all' ? activeFilters.assetId : 'all';
     setDownloadAssetId(defaultAssetId);
+    setDownloadFormat('pdf');
+    setDownloadScope('total');
     setModalMode('download');
   }
 
-  function downloadReport(scope: DownloadScope, format: 'pdf' | 'xlsx') {
+  function downloadReport(scope: DownloadScope, format: DownloadFormat) {
     const assetId = scope === 'asset' ? downloadAssetId : undefined;
     const url = buildReportUrl(scope, format, activeFilters, assetId);
 
@@ -682,6 +914,15 @@ export default function MaintenanceClient() {
     }
 
     window.open(url, '_blank', 'noopener,noreferrer');
+  }
+
+  function submitDownload() {
+    if (downloadScope === 'asset' && downloadAssetId === 'all') {
+      setNotice({ type: 'error', text: 'Choose a saved asset before downloading a specific asset maintenance report.' });
+      return;
+    }
+
+    downloadReport(downloadScope, downloadFormat);
   }
 
   return (
@@ -757,17 +998,25 @@ export default function MaintenanceClient() {
                     </div>
                     <div className={styles.invoiceHeaderAside}>
                       <strong className={styles.invoicePrice}>{record.triggerType === 'date' ? dateOnly(record.dueDate) : formatUsage(record.dueUsage, record.usageMetric ?? record.assetUsageMetric)}</strong>
-                      <span className={styles.invoiceVatLabel}>{triggerLabel(record.triggerType)}</span>
+                      <span className={styles.invoiceVatLabel}>{record.triggerType === 'date' ? 'Due date' : 'Due usage'}</span>
                     </div>
                   </div>
 
                   <div className={styles.maintenanceDetailsGrid}>
+                    {record.triggerType === 'usage' ? (
+                      <>
+                        <div className={styles.maintenanceDetail}>
+                          <span>Current usage</span>
+                          <strong>{formatUsage(record.currentUsage, record.usageMetric ?? record.assetUsageMetric)}</strong>
+                        </div>
+                        <div className={styles.maintenanceDetail}>
+                          <span>Due usage</span>
+                          <strong>{formatUsage(record.dueUsage, record.usageMetric ?? record.assetUsageMetric)}</strong>
+                        </div>
+                      </>
+                    ) : null}
                     <div className={styles.maintenanceDetail}>
-                      <span>Current Usage</span>
-                      <strong>{formatUsage(record.currentUsage, record.usageMetric ?? record.assetUsageMetric)}</strong>
-                    </div>
-                    <div className={styles.maintenanceDetail}>
-                      <span>Alert Before</span>
+                      <span>Alert before</span>
                       <strong>{record.alertBeforeValue !== null && record.alertBeforeUnit ? `${numberText(record.alertBeforeValue)} ${intervalUnitLabel(record.alertBeforeUnit)}` : '-'}</strong>
                     </div>
                     <div className={styles.maintenanceDetail}>
@@ -775,8 +1024,8 @@ export default function MaintenanceClient() {
                       <strong>{record.recurringEnabled && record.recurringIntervalValue !== null && record.recurringIntervalUnit ? `Every ${numberText(record.recurringIntervalValue)} ${intervalUnitLabel(record.recurringIntervalUnit)}` : 'No'}</strong>
                     </div>
                     <div className={styles.maintenanceDetail}>
-                      <span>Assigned To</span>
-                      <strong>{record.assignedName || 'All / unassigned'}</strong>
+                      <span>Assigned to</span>
+                      <strong>{record.assignedName || 'Unassigned'}</strong>
                     </div>
                     <div className={styles.maintenanceDetail}>
                       <span>Updated</span>
@@ -788,14 +1037,18 @@ export default function MaintenanceClient() {
                           <span>Completed</span>
                           <strong>{dateOnly(record.completedAtIso)}</strong>
                         </div>
-                        <div className={styles.maintenanceDetail}>
-                          <span>Completed Usage</span>
-                          <strong>{formatUsage(record.completedUsage, record.usageMetric ?? record.assetUsageMetric)}</strong>
-                        </div>
-                        <div className={styles.maintenanceDetailWide}>
-                          <span>Completed Notes</span>
-                          <strong>{record.completedNotes || '-'}</strong>
-                        </div>
+                        {record.completedUsage !== null ? (
+                          <div className={styles.maintenanceDetail}>
+                            <span>Completed usage</span>
+                            <strong>{formatUsage(record.completedUsage, record.usageMetric ?? record.assetUsageMetric)}</strong>
+                          </div>
+                        ) : null}
+                        {record.completedNotes ? (
+                          <div className={styles.maintenanceDetailWide}>
+                            <span>Completed notes</span>
+                            <strong>{record.completedNotes}</strong>
+                          </div>
+                        ) : null}
                       </>
                     ) : null}
                     {record.notes ? (
@@ -911,12 +1164,12 @@ export default function MaintenanceClient() {
                     onClick={() => updateDraft({ maintenanceType: type })}
                   >
                     <strong>{typeLabel(type)}</strong>
-                    <span>{type === 'service' ? 'Scheduled maintenance, replacement parts, or service interval.' : 'Inspection, condition check, or preventative checkup.'}</span>
+                    <span>{type === 'service' ? 'Scheduled service, replacement parts or service interval.' : 'Inspection, condition check or preventative checkup.'}</span>
                   </button>
                 ))}
               </div>
 
-              <div className={styles.maintenanceSectionTitle}>Trigger type</div>
+              <div className={styles.maintenanceSectionTitle}>Trigger</div>
               <div className={styles.maintenanceToggleGrid}>
                 {(['date', 'usage'] as TriggerType[]).map((trigger) => (
                   <button
@@ -926,12 +1179,12 @@ export default function MaintenanceClient() {
                     onClick={() => updateDraft({ triggerType: trigger })}
                   >
                     <strong>{triggerLabel(trigger)}</strong>
-                    <span>{trigger === 'date' ? 'Due on a specific calendar date.' : `Due at a target ${usageUnitLabel(selectedDraftAsset?.usageMetric ?? draft.usageMetric)} reading.`}</span>
+                    <span>{trigger === 'date' ? 'Due on a calendar date.' : `Due at a target ${usageUnitLabel(selectedDraftAsset?.usageMetric ?? draft.usageMetric)} reading.`}</span>
                   </button>
                 ))}
               </div>
 
-              <div className={styles.maintenanceSectionTitle}>{draft.triggerType === 'date' ? 'Specific Date setup' : 'Usage setup'}</div>
+              <div className={styles.maintenanceSectionTitle}>{draft.triggerType === 'date' ? 'Specific date setup' : 'Usage setup'}</div>
               <div className={styles.maintenanceFieldGrid}>
                 {draft.triggerType === 'date' ? (
                   <>
@@ -939,85 +1192,77 @@ export default function MaintenanceClient() {
                       <span>Due date</span>
                       <input type="date" value={draft.dueDate} onChange={(event) => updateDraft({ dueDate: event.target.value })} />
                     </label>
-                    <label className={styles.maintenanceCheckboxRow}>
-                      <input type="checkbox" checked={draft.recurringEnabled} onChange={(event) => updateDraft({ recurringEnabled: event.target.checked })} />
-                      Recurring
+
+                    <label className={styles.filterField}>
+                      <span>Alert before</span>
+                      <div className={styles.maintenanceInlineFields}>
+                        <input type="number" min="0" step="1" value={draft.alertBeforeValue} onChange={(event) => updateDraft({ alertBeforeValue: event.target.value })} />
+                        <MaintenanceDropdown
+                          label="Alert unit"
+                          hideLabel
+                          value={draft.alertBeforeUnit}
+                          options={DATE_UNIT_OPTIONS}
+                          onChange={(value) => updateDraft({ alertBeforeUnit: value as DateIntervalUnit })}
+                        />
+                      </div>
                     </label>
+
+                    <SwitchField label="Recurring" checked={draft.recurringEnabled} onChange={(checked) => updateDraft({ recurringEnabled: checked })} />
+
                     {draft.recurringEnabled ? (
                       <label className={styles.filterField}>
                         <span>Recurring interval</span>
-                        <span className={styles.maintenanceInlineFields}>
+                        <div className={styles.maintenanceInlineFields}>
                           <input type="number" min="1" step="1" value={draft.recurringIntervalValue} onChange={(event) => updateDraft({ recurringIntervalValue: event.target.value })} />
-                          <select value={draft.recurringIntervalUnit} onChange={(event) => updateDraft({ recurringIntervalUnit: event.target.value as DateIntervalUnit })}>
-                            <option value="days">days</option>
-                            <option value="weeks">weeks</option>
-                            <option value="months">months</option>
-                          </select>
-                        </span>
+                          <MaintenanceDropdown
+                            label="Recurring unit"
+                            hideLabel
+                            value={draft.recurringIntervalUnit}
+                            options={DATE_UNIT_OPTIONS}
+                            onChange={(value) => updateDraft({ recurringIntervalUnit: value as DateIntervalUnit })}
+                          />
+                        </div>
                       </label>
                     ) : null}
-                    <label className={styles.filterField}>
-                      <span>Alert before</span>
-                      <span className={styles.maintenanceInlineFields}>
-                        <input type="number" min="0" step="1" value={draft.alertBeforeValue} onChange={(event) => updateDraft({ alertBeforeValue: event.target.value })} />
-                        <select value={draft.alertBeforeUnit} onChange={(event) => updateDraft({ alertBeforeUnit: event.target.value as DateIntervalUnit })}>
-                          <option value="days">days</option>
-                          <option value="weeks">weeks</option>
-                          <option value="months">months</option>
-                        </select>
-                      </span>
-                    </label>
                   </>
                 ) : (
                   <>
-                    <div className={styles.maintenanceCurrentUsage}>
-                      <span>Current usage reading</span>
-                      <strong>{formatUsage(selectedDraftAsset?.usageReading ?? null, selectedDraftAsset?.usageMetric ?? draft.usageMetric)}</strong>
-                    </div>
-                    <div className={styles.maintenanceCurrentUsage}>
-                      <span>Usage metric</span>
-                      <strong>{usageUnitLabel(selectedDraftAsset?.usageMetric ?? draft.usageMetric)}</strong>
-                    </div>
+                    <ReadOnlyField label="Current usage" value={formatUsage(selectedDraftAsset?.usageReading ?? null, selectedDraftAsset?.usageMetric ?? draft.usageMetric)} />
+                    <ReadOnlyField label="Usage metric" value={usageUnitLabel(selectedDraftAsset?.usageMetric ?? draft.usageMetric)} />
+
                     <label className={styles.filterField}>
-                      <span>Next {draft.maintenanceType} target</span>
+                      <span>Due usage</span>
                       <input type="number" min="0" step="0.01" value={draft.dueUsage} onChange={(event) => updateDraft({ dueUsage: event.target.value })} />
                     </label>
-                    <label className={styles.maintenanceCheckboxRow}>
-                      <input type="checkbox" checked={draft.recurringEnabled} onChange={(event) => updateDraft({ recurringEnabled: event.target.checked })} />
-                      Recurring
+
+                    <label className={styles.filterField}>
+                      <span>Alert before</span>
+                      <div className={styles.maintenanceInlineFields}>
+                        <input type="number" min="0" step="0.01" value={draft.alertBeforeValue} onChange={(event) => updateDraft({ alertBeforeValue: event.target.value })} />
+                        <ReadOnlyField label="Unit" value={usageUnitLabel(selectedDraftAsset?.usageMetric ?? draft.usageMetric)} />
+                      </div>
                     </label>
+
+                    <SwitchField label="Recurring" checked={draft.recurringEnabled} onChange={(checked) => updateDraft({ recurringEnabled: checked })} />
+
                     {draft.recurringEnabled ? (
                       <label className={styles.filterField}>
                         <span>Recurring interval</span>
-                        <span className={styles.maintenanceInlineFields}>
+                        <div className={styles.maintenanceInlineFields}>
                           <input type="number" min="0" step="0.01" value={draft.recurringIntervalValue} onChange={(event) => updateDraft({ recurringIntervalValue: event.target.value })} />
-                          <select value={draft.usageMetric} disabled>
-                            <option value={draft.usageMetric}>{usageUnitLabel(draft.usageMetric)}</option>
-                          </select>
-                        </span>
+                          <ReadOnlyField label="Unit" value={usageUnitLabel(selectedDraftAsset?.usageMetric ?? draft.usageMetric)} />
+                        </div>
                       </label>
                     ) : null}
-                    <label className={styles.filterField}>
-                      <span>Alert before</span>
-                      <span className={styles.maintenanceInlineFields}>
-                        <input type="number" min="0" step="0.01" value={draft.alertBeforeValue} onChange={(event) => updateDraft({ alertBeforeValue: event.target.value })} />
-                        <select value={draft.usageMetric} disabled>
-                          <option value={draft.usageMetric}>{usageUnitLabel(draft.usageMetric)}</option>
-                        </select>
-                      </span>
-                    </label>
                   </>
                 )}
 
-                <label className={styles.filterField}>
-                  <span>Assigned to</span>
-                  <select value={draft.assignedFieldManagerId} onChange={(event) => updateDraft({ assignedFieldManagerId: event.target.value })}>
-                    <option value="unassigned">All / unassigned</option>
-                    {fieldManagers.map((manager) => (
-                      <option key={manager.id} value={manager.id}>{manager.displayName}</option>
-                    ))}
-                  </select>
-                </label>
+                <MaintenanceDropdown
+                  label="Assigned to"
+                  value={draft.assignedFieldManagerId}
+                  options={formAssigneeOptions}
+                  onChange={(value) => updateDraft({ assignedFieldManagerId: value })}
+                />
 
                 <label className={`${styles.filterField} ${styles.maintenanceFieldFull}`}>
                   <span>Notes</span>
@@ -1028,7 +1273,7 @@ export default function MaintenanceClient() {
             <footer className={styles.modalFooter}>
               <button className={styles.secondaryButton} type="button" onClick={closeModal}>Cancel</button>
               <button className={styles.primaryButton} type="button" onClick={() => void submitDraft()} disabled={isSaving}>
-                {isSaving ? 'Saving...' : editingRecordId ? 'Save changes' : 'Add service'}
+                {isSaving ? 'Saving...' : editingRecordId ? 'Save changes' : `Add ${draft.maintenanceType}`}
               </button>
             </footer>
           </section>
@@ -1048,41 +1293,33 @@ export default function MaintenanceClient() {
             </header>
             <div className={styles.modalDivider} />
             <div className={styles.filterGrid}>
-              <label className={styles.filterField}>
-                <span>Asset</span>
-                <select value={draftFilters.assetId} onChange={(event) => setDraftFilters((current) => ({ ...current, assetId: event.target.value }))}>
-                  <option value="all">All saved assets</option>
-                  {assets.map((asset) => (
-                    <option key={asset.id} value={asset.id}>{asset.title}</option>
-                  ))}
-                </select>
-              </label>
-              <label className={styles.filterField}>
-                <span>Type</span>
-                <select value={draftFilters.type} onChange={(event) => setDraftFilters((current) => ({ ...current, type: event.target.value as MaintenanceFilters['type'] }))}>
-                  <option value="all">All</option>
-                  <option value="service">Service</option>
-                  <option value="checkup">Checkup</option>
-                </select>
-              </label>
-              <label className={styles.filterField}>
-                <span>Status</span>
-                <select value={draftFilters.status} onChange={(event) => setDraftFilters((current) => ({ ...current, status: event.target.value as MaintenanceFilters['status'] }))}>
-                  <option value="all">All</option>
-                  <option value="upcoming">Upcoming</option>
-                  <option value="done">Done</option>
-                </select>
-              </label>
-              <label className={styles.filterField}>
-                <span>Assigned to</span>
-                <select value={draftFilters.assignedTo} onChange={(event) => setDraftFilters((current) => ({ ...current, assignedTo: event.target.value }))}>
-                  <option value="all">All</option>
-                  <option value="unassigned">Unassigned</option>
-                  {fieldManagers.map((manager) => (
-                    <option key={manager.id} value={manager.id}>{manager.displayName}</option>
-                  ))}
-                </select>
-              </label>
+              <MaintenanceDropdown
+                label="Asset"
+                value={draftFilters.assetId}
+                options={filterAssetOptions}
+                searchable
+                searchPlaceholder="Search saved assets"
+                noMatchesLabel="No saved assets found"
+                onChange={(value) => setDraftFilters((current) => ({ ...current, assetId: value }))}
+              />
+              <MaintenanceDropdown
+                label="Type"
+                value={draftFilters.type}
+                options={FILTER_TYPE_OPTIONS}
+                onChange={(value) => setDraftFilters((current) => ({ ...current, type: value as MaintenanceFilters['type'] }))}
+              />
+              <MaintenanceDropdown
+                label="Status"
+                value={draftFilters.status}
+                options={FILTER_STATUS_OPTIONS}
+                onChange={(value) => setDraftFilters((current) => ({ ...current, status: value as MaintenanceFilters['status'] }))}
+              />
+              <MaintenanceDropdown
+                label="Assigned to"
+                value={draftFilters.assignedTo}
+                options={filterAssigneeOptions}
+                onChange={(value) => setDraftFilters((current) => ({ ...current, assignedTo: value }))}
+              />
             </div>
             <footer className={styles.modalFooter}>
               <button className={styles.secondaryButton} type="button" onClick={closeModal}>Close</button>
@@ -1107,43 +1344,55 @@ export default function MaintenanceClient() {
             </header>
             <div className={styles.modalDivider} />
             <div className={styles.formModalScrollBody}>
-              <div className={styles.maintenanceFieldGrid}>
-                <label className={`${styles.filterField} ${styles.maintenanceFieldFull}`}>
-                  <span>Specific asset report asset</span>
-                  <select value={downloadAssetId} onChange={(event) => setDownloadAssetId(event.target.value)}>
-                    <option value="all">Select asset...</option>
-                    {assets.map((asset) => (
-                      <option key={asset.id} value={asset.id}>{asset.title}</option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-
-              <div className={styles.maintenanceSectionTitle}>Report options</div>
-              <div className={styles.maintenanceDownloadGrid}>
-                {([
-                  ['total', 'Total maintenance report', 'All maintenance records matching the current filters.'],
-                  ['asset', 'Specific asset maintenance report', 'Full maintenance timeline for one saved asset.'],
-                  ['upcoming', 'Upcoming maintenance report', 'Open records including due soon, due and overdue.'],
-                  ['done', 'Done maintenance report', 'Completed services and checkups.'],
-                ] as Array<[DownloadScope, string, string]>).map(([scope, title, description]) => (
-                  <div key={scope} className={styles.maintenanceDownloadCard}>
-                    <h3>{title}</h3>
-                    <p>{description}</p>
-                    <div className={styles.maintenanceDownloadActions}>
-                      <button className={styles.secondaryButtonSmall} type="button" onClick={() => downloadReport(scope, 'pdf')} disabled={scope === 'asset' && downloadAssetId === 'all'}>
-                        PDF
-                      </button>
-                      <button className={styles.secondaryButtonSmall} type="button" onClick={() => downloadReport(scope, 'xlsx')} disabled={scope === 'asset' && downloadAssetId === 'all'}>
-                        Excel
-                      </button>
-                    </div>
-                  </div>
+              <div className={styles.maintenanceSectionTitle}>Step 1: Export format</div>
+              <div className={styles.downloadChoiceGrid}>
+                {DOWNLOAD_FORMAT_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    className={`${styles.maintenanceChoiceCard} ${downloadFormat === option.value ? styles.maintenanceChoiceCardActive : ''}`}
+                    onClick={() => setDownloadFormat(option.value)}
+                  >
+                    <strong>{option.title}</strong>
+                    <span>{option.description}</span>
+                  </button>
                 ))}
               </div>
+
+              <div className={styles.maintenanceSectionTitle}>Step 2: Report scope</div>
+              <div className={styles.maintenanceDownloadGrid}>
+                {DOWNLOAD_SCOPE_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    className={`${styles.maintenanceDownloadCard} ${downloadScope === option.value ? styles.maintenanceDownloadCardActive : ''}`}
+                    onClick={() => setDownloadScope(option.value)}
+                  >
+                    <h3>{option.title}</h3>
+                    <p>{option.description}</p>
+                  </button>
+                ))}
+              </div>
+
+              {downloadScope === 'asset' ? (
+                <div className={styles.downloadAssetPicker}>
+                  <MaintenanceDropdown
+                    label="Specific asset"
+                    value={downloadAssetId}
+                    options={downloadAssetOptions}
+                    searchable
+                    searchPlaceholder="Search saved assets"
+                    noMatchesLabel="No saved assets found"
+                    onChange={setDownloadAssetId}
+                  />
+                </div>
+              ) : null}
             </div>
             <footer className={styles.modalFooter}>
-              <button className={styles.secondaryButton} type="button" onClick={closeModal}>Close</button>
+              <button className={styles.secondaryButton} type="button" onClick={closeModal}>Cancel</button>
+              <button className={styles.primaryButton} type="button" onClick={submitDownload} disabled={downloadScope === 'asset' && downloadAssetId === 'all'}>
+                Download
+              </button>
             </footer>
           </section>
         </div>

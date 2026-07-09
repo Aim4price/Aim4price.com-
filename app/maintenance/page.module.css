@@ -2807,3 +2807,545 @@
   border-color: rgba(22, 83, 64, 0.38);
   box-shadow: 0 0 0 4px rgba(22, 83, 64, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.95);
 }
+
+/* === Desktop owner maintenance polish === */
+.page {
+  background: linear-gradient(180deg, #f8fbfa 0%, #eef5f5 100%);
+}
+
+.shell {
+  padding-top: clamp(1rem, 1.7vw, 1.35rem);
+}
+
+.pageTitleBlock {
+  margin-bottom: clamp(0.95rem, 1.45vw, 1.18rem);
+}
+
+.pageTitleBlock > div {
+  min-height: clamp(4.75rem, 7vw, 5.95rem);
+  padding: clamp(1rem, 1.75vw, 1.35rem) clamp(1.15rem, 2.3vw, 1.85rem);
+  border-width: 1px;
+  border-color: rgba(200, 217, 224, 0.9);
+  border-radius: clamp(1.15rem, 1.75vw, 1.52rem);
+  background:
+    radial-gradient(circle at 2% 0%, rgba(25, 116, 84, 0.055) 0%, rgba(25, 116, 84, 0) 36%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(249, 252, 253, 0.99) 100%);
+  box-shadow: 0 12px 28px rgba(16, 36, 40, 0.045), inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.pageTitleBlock h1 {
+  font-size: clamp(2.18rem, 3.9vw, 3.25rem);
+  letter-spacing: -0.066em;
+}
+
+.invoiceToolbar {
+  gap: 0.9rem;
+  margin-bottom: 1.05rem;
+}
+
+.searchWrap {
+  min-height: 3.45rem;
+  border-radius: 1.05rem;
+  box-shadow: 0 7px 16px rgba(30, 56, 66, 0.028), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.searchInput {
+  min-height: 3.25rem;
+  font-size: 0.98rem;
+  font-weight: 620;
+}
+
+.toolbarButtons {
+  grid-template-columns: repeat(3, minmax(9.2rem, auto));
+  gap: 0.78rem;
+}
+
+.toolbarButton {
+  min-height: 3.45rem;
+  border-radius: 1.02rem;
+  font-size: 0.98rem;
+}
+
+.invoiceList {
+  gap: 0.86rem;
+}
+
+.invoiceRow {
+  padding: 1.05rem 1.12rem;
+  border-radius: 1.32rem;
+  border-width: 1px;
+  box-shadow: 0 10px 22px rgba(20, 43, 43, 0.035), inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.invoiceRow:hover {
+  box-shadow: 0 14px 26px rgba(16, 31, 28, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.maintenanceCardOpen {
+  background:
+    radial-gradient(circle at 0% 0%, rgba(160, 53, 53, 0.025) 0%, rgba(160, 53, 53, 0) 34%),
+    linear-gradient(180deg, #ffffff 0%, #fffafa 100%);
+  border-color: rgba(239, 205, 205, 0.9);
+}
+
+.maintenanceCardDone {
+  background:
+    radial-gradient(circle at 0% 0%, rgba(25, 116, 84, 0.04) 0%, rgba(25, 116, 84, 0) 34%),
+    linear-gradient(180deg, #ffffff 0%, #f7fcf9 100%);
+  border-color: rgba(195, 230, 209, 0.92);
+}
+
+.invoiceHeader {
+  grid-template-columns: minmax(0, 1fr) minmax(210px, auto);
+  align-items: start;
+  gap: 1rem;
+}
+
+.invoiceTitleBlock {
+  gap: 0.42rem;
+}
+
+.invoiceTitle {
+  font-size: clamp(1.26rem, 1.55vw, 1.55rem);
+  font-weight: 790;
+  letter-spacing: -0.038em;
+}
+
+.maintenanceMetaLine {
+  color: #607286;
+  font-size: 0.93rem;
+  font-weight: 660;
+  line-height: 1.35;
+}
+
+.invoiceHeaderAside {
+  min-width: 210px;
+  gap: 0.28rem;
+}
+
+.invoicePrice {
+  font-size: clamp(1.38rem, 1.85vw, 1.78rem);
+  letter-spacing: -0.058em;
+}
+
+.invoiceVatLabel {
+  color: #607286;
+  font-size: 0.88rem;
+  font-weight: 760;
+}
+
+.maintenanceStatusPill {
+  min-height: 1.72rem;
+  padding: 0.32rem 0.66rem;
+  background: rgba(255, 255, 255, 0.9);
+  font-size: 0.7rem;
+  letter-spacing: 0.048em;
+}
+
+.maintenanceStatusDanger {
+  color: #8d2d2d;
+  border-color: rgba(228, 178, 178, 0.82);
+  background: rgba(255, 247, 247, 0.96);
+}
+
+.maintenanceStatusGood {
+  color: #0d5f43;
+  border-color: rgba(186, 222, 201, 0.92);
+  background: rgba(246, 252, 248, 0.96);
+}
+
+.maintenanceDetailsGrid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.58rem;
+  margin-top: 0.82rem;
+}
+
+.maintenanceDetail,
+.maintenanceDetailWide {
+  padding: 0.62rem 0.72rem;
+  border-color: rgba(207, 223, 233, 0.82);
+  border-radius: 0.86rem;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.maintenanceDetail span,
+.maintenanceDetailWide span {
+  margin-bottom: 0.28rem;
+  color: #647588;
+  font-size: 0.68rem;
+  letter-spacing: 0.05em;
+}
+
+.maintenanceDetail strong,
+.maintenanceDetailWide strong {
+  font-size: 0.88rem;
+  line-height: 1.25;
+}
+
+.rowActions {
+  margin-top: 0.82rem;
+  gap: 0.58rem;
+}
+
+.secondaryButtonSmall,
+.dangerButtonSmall {
+  min-width: 132px;
+  min-height: 2.7rem;
+  border-radius: 0.86rem;
+  font-size: 0.9rem;
+  font-weight: 760;
+  box-shadow: 0 7px 16px rgba(31, 51, 71, 0.045), inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.assetModal,
+.formModal,
+.filterModal,
+.downloadModal {
+  border-color: rgba(207, 224, 234, 0.9);
+  border-radius: clamp(1.32rem, 1.85vw, 1.72rem);
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.04), transparent 32%),
+    linear-gradient(180deg, #ffffff 0%, #f9fcfd 100%);
+  box-shadow: 0 26px 70px rgba(16, 28, 45, 0.21), inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.formModal {
+  width: min(100%, 1030px);
+  max-height: min(88vh, calc(100dvh - 2rem));
+}
+
+.downloadModal {
+  width: min(100%, 880px);
+}
+
+.modalHeader {
+  padding-top: clamp(1.18rem, 1.85vw, 1.55rem);
+}
+
+.modalHeader h2 {
+  font-size: clamp(1.72rem, 2.55vw, 2.28rem);
+  font-weight: 780;
+  letter-spacing: -0.052em;
+}
+
+.modalHeader p {
+  color: #607286;
+  font-size: 0.98rem;
+  font-weight: 640;
+}
+
+.closeButton {
+  width: 3.18rem;
+  min-width: 3.18rem;
+  height: 3.18rem;
+  min-height: 3.18rem;
+  border-radius: 999px;
+}
+
+.modalDivider {
+  margin-top: 0.96rem;
+  margin-bottom: 0.96rem;
+}
+
+.formModalScrollBody {
+  padding-bottom: 0.4rem;
+}
+
+.formModal .modalFooter,
+.downloadModal .modalFooter {
+  padding-top: 0.95rem;
+  padding-bottom: clamp(1.1rem, 1.8vw, 1.45rem);
+}
+
+.maintenanceSectionTitle {
+  margin: 0.88rem 0 0.52rem;
+  color: #0f4034;
+  font-size: 0.74rem;
+  letter-spacing: 0.068em;
+}
+
+.formModalScrollBody > .maintenanceSectionTitle:first-child {
+  margin-top: 0;
+}
+
+.maintenanceToggleGrid {
+  gap: 0.62rem;
+}
+
+.maintenanceToggleOption {
+  min-height: 3.72rem;
+  padding: 0.72rem 0.82rem;
+  border-radius: 0.95rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
+  font-weight: 820;
+}
+
+.maintenanceToggleOption span {
+  margin-top: 0.22rem;
+  font-size: 0.79rem;
+  font-weight: 610;
+  line-height: 1.28;
+}
+
+.maintenanceToggleActive {
+  border-color: rgba(116, 196, 149, 0.92);
+  background: linear-gradient(180deg, #ffffff 0%, #eef9f3 100%);
+  box-shadow: 0 0 0 3px rgba(25, 116, 84, 0.075);
+}
+
+.maintenanceFieldGrid {
+  gap: 0.72rem;
+}
+
+.maintenanceFieldGrid > .filterField,
+.maintenanceFieldGrid > .maintenanceCurrentUsage,
+.maintenanceFieldGrid > .switchField {
+  min-width: 0;
+  gap: 0.48rem;
+  padding: 0.82rem;
+  border: 1px solid rgba(216, 226, 236, 0.94);
+  border-radius: 1rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
+  box-shadow: 0 8px 18px rgba(16, 31, 28, 0.024), inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.maintenanceFieldGrid > .filterField > span,
+.maintenanceFieldGrid > .maintenanceCurrentUsage > span {
+  color: #263845;
+  font-size: 0.9rem;
+  font-weight: 720;
+  letter-spacing: -0.006em;
+  line-height: 1.2;
+  text-transform: none;
+}
+
+.maintenanceFieldGrid input,
+.maintenanceFieldGrid textarea {
+  min-height: 3.18rem;
+  border-radius: 0.92rem;
+  color: #20313b;
+  font-size: 1rem;
+  font-weight: 620;
+}
+
+.maintenanceFieldGrid textarea {
+  min-height: 5.6rem;
+}
+
+.maintenanceInlineFields {
+  grid-template-columns: minmax(0, 1fr) minmax(7.2rem, 0.52fr);
+  gap: 0.58rem;
+}
+
+.dropdownOnlyField {
+  min-width: 0;
+}
+
+.customFilterSelectButton {
+  min-height: 3.18rem;
+  border-radius: 0.92rem;
+  color: #113b31;
+  font-size: 1rem;
+  font-weight: 690;
+}
+
+.customFilterSelectButtonText,
+.filterGrid .customFilterSelectButtonText,
+.formGrid .customFilterSelectButtonText,
+.filterGrid .customFilterSelectOptionLabel,
+.formGrid .customFilterSelectOptionLabel {
+  color: inherit;
+  font-size: 1rem;
+  font-weight: 690;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.formModalScrollBody .customFilterSelectMenu {
+  position: static;
+  margin-top: 0.44rem;
+  max-height: min(12rem, 36vh);
+}
+
+.maintenanceInlineFields .maintenanceCurrentUsage {
+  min-height: 3.18rem;
+  padding: 0.58rem 0.72rem;
+  border-radius: 0.92rem;
+  background: rgba(247, 250, 252, 0.98);
+}
+
+.maintenanceCurrentUsage {
+  min-height: auto;
+  border-color: rgba(207, 223, 233, 0.86);
+  background: linear-gradient(180deg, #ffffff 0%, #f6fafb 100%);
+}
+
+.maintenanceCurrentUsage span {
+  color: #647588;
+  font-size: 0.7rem;
+  letter-spacing: 0.048em;
+}
+
+.maintenanceCurrentUsage strong {
+  font-size: 0.96rem;
+}
+
+.switchField {
+  min-height: 4.08rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.9rem;
+  color: #113b31;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease, transform 160ms ease;
+}
+
+.switchField:hover {
+  transform: translateY(-1px);
+  border-color: rgba(25, 116, 84, 0.3);
+  box-shadow: 0 10px 22px rgba(16, 31, 28, 0.042), inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.switchField strong {
+  font-size: 0.98rem;
+  font-weight: 820;
+}
+
+.switchTrack {
+  width: 2.78rem;
+  height: 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem;
+  border: 1px solid rgba(196, 211, 222, 0.98);
+  border-radius: 999px;
+  background: #eef3f6;
+  transition: background 160ms ease, border-color 160ms ease;
+}
+
+.switchTrack span {
+  width: 1.08rem;
+  height: 1.08rem;
+  display: block;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 3px 7px rgba(18, 35, 39, 0.18);
+  transition: transform 160ms ease;
+}
+
+.switchFieldActive {
+  border-color: rgba(165, 218, 187, 0.96) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #effaf4 100%) !important;
+}
+
+.switchFieldActive .switchTrack {
+  border-color: rgba(25, 116, 84, 0.52);
+  background: #197454;
+}
+
+.switchFieldActive .switchTrack span {
+  transform: translateX(1.25rem);
+}
+
+.downloadChoiceGrid {
+  overflow: visible;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.72rem;
+  padding: 0;
+}
+
+.maintenanceChoiceCard,
+.maintenanceDownloadCard {
+  display: grid;
+  align-content: start;
+  gap: 0.28rem;
+  min-height: 5.2rem;
+  padding: 0.92rem 1rem;
+  border: 1px solid rgba(216, 226, 236, 0.96);
+  border-radius: 1.08rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
+  color: #153b31;
+  box-shadow: 0 8px 18px rgba(16, 31, 28, 0.03), inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.maintenanceChoiceCard:hover,
+.maintenanceDownloadCard:hover {
+  transform: translateY(-1px);
+  border-color: rgba(25, 116, 84, 0.28);
+  box-shadow: 0 12px 24px rgba(16, 31, 28, 0.046), inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.maintenanceChoiceCard strong,
+.maintenanceDownloadCard h3 {
+  margin: 0;
+  color: #0f3329;
+  font-size: 1.02rem;
+  font-weight: 820;
+  line-height: 1.18;
+  letter-spacing: -0.026em;
+}
+
+.maintenanceChoiceCard span,
+.maintenanceDownloadCard p {
+  margin: 0;
+  color: #607286;
+  font-size: 0.88rem;
+  font-weight: 620;
+  line-height: 1.34;
+}
+
+.maintenanceChoiceCardActive,
+.maintenanceDownloadCardActive {
+  border-color: rgba(129, 203, 160, 0.96);
+  background: linear-gradient(180deg, #ffffff 0%, #effaf4 100%);
+  box-shadow: 0 0 0 3px rgba(25, 116, 84, 0.075), 0 10px 22px rgba(16, 31, 28, 0.034);
+}
+
+.downloadAssetPicker {
+  margin-top: 0.82rem;
+}
+
+.downloadAssetPicker .filterField {
+  gap: 0.48rem;
+}
+
+@media (max-width: 1180px) {
+  .maintenanceDetailsGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .invoiceHeader {
+    grid-template-columns: 1fr;
+  }
+
+  .invoiceHeaderAside {
+    min-width: 0;
+    justify-items: start;
+    text-align: left;
+  }
+
+  .invoicePrice,
+  .invoiceVatLabel {
+    text-align: left;
+  }
+
+  .downloadChoiceGrid,
+  .maintenanceDownloadGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .maintenanceFieldGrid > .filterField,
+  .maintenanceFieldGrid > .maintenanceCurrentUsage,
+  .maintenanceFieldGrid > .switchField {
+    padding: 0.74rem;
+  }
+}
