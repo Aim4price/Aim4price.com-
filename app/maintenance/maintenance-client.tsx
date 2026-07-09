@@ -290,7 +290,14 @@ function intervalUnitLabel(unit: IntervalUnit | string | null | undefined): stri
 
 function formatUsage(value: number | null | undefined, metric: UsageMetric | string | null | undefined): string {
   if (typeof value !== 'number' || !Number.isFinite(value)) return '-';
+  if (metric === 'percentage') return `${value.toLocaleString('en-ZA', { maximumFractionDigits: 2 })}%`;
   return `${value.toLocaleString('en-ZA', { maximumFractionDigits: 2 })} ${usageUnitLabel(metric)}`;
+}
+
+function formatAssetUsage(value: number | null | undefined, metric: UsageMetric | string | null | undefined): string {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return '';
+  if (metric !== 'percentage' && value <= 0) return '';
+  return formatUsage(value, metric);
 }
 
 function assetYearLabelFromCategory(categoryLabel: string | null | undefined): string {
@@ -299,13 +306,13 @@ function assetYearLabelFromCategory(categoryLabel: string | null | undefined): s
 }
 
 function buildMaintenanceAssetMeta(record: MaintenanceRecord): string {
-  const usageLabel = formatUsage(record.assetUsageReading, record.assetUsageMetric);
+  const usageLabel = formatAssetUsage(record.assetUsageReading, record.assetUsageMetric);
   const familyLabel = record.assetCategoryLabel || titleCase(record.assetKind || 'asset');
   const details = [
     typeof record.assetYearModel === 'number' && Number.isFinite(record.assetYearModel) && record.assetYearModel > 0
       ? `${assetYearLabelFromCategory(record.assetCategoryLabel)}: ${record.assetYearModel}`
       : '',
-    usageLabel !== '-' ? `Usage: ${usageLabel}` : '',
+    usageLabel ? `Usage: ${usageLabel}` : '',
     record.assetCondition ? `Condition: ${record.assetCondition}` : '',
     familyLabel ? `Family: ${familyLabel}` : '',
   ].filter(Boolean);
