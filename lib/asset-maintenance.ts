@@ -383,9 +383,11 @@ function assetUsageMetric(asset: AssetRegisterItem | AssetForAlert | { kind?: st
     'lifetimeUsedPercent',
     'lifetime_used_percent',
   ]);
+  const savedReading = asNumber(asset.hours);
+  const hasPositiveReading = savedReading !== null && savedReading > 0;
 
   if (explicitMetric === 'percentage') return 'percentage';
-  if ((asset.hours === null || typeof asset.hours === 'undefined') && lifeWorkedPercent !== null) return 'percentage';
+  if (lifeWorkedPercent !== null && !hasPositiveReading && explicitMetric === 'hours') return 'percentage';
 
   return explicitMetric;
 }
@@ -422,6 +424,12 @@ function formatUsage(value: number | null | undefined, metric: AssetMaintenanceU
   return `${Math.round(value).toLocaleString('en-ZA')} ${unit}`;
 }
 
+function formatAssetUsage(value: number | null | undefined, metric: AssetMaintenanceUsageMetric): string {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return '';
+  if (metric !== 'percentage' && value <= 0) return '';
+  return formatUsage(value, metric);
+}
+
 function formatDateLabel(value: string | null | undefined): string {
   if (!value) return '';
   const parsed = new Date(`${value}T00:00:00Z`);
@@ -441,9 +449,10 @@ function assetYearLabel(asset: Pick<AssetMaintenanceAssetOption, 'categoryLabel'
 }
 
 function buildAssetMeta(asset: Pick<AssetMaintenanceAssetOption, 'title' | 'categoryLabel' | 'yearModel' | 'usageReading' | 'usageMetric' | 'condition'>): string {
+  const usageLabel = formatAssetUsage(asset.usageReading, asset.usageMetric);
   const details = [
     typeof asset.yearModel === 'number' && Number.isFinite(asset.yearModel) && asset.yearModel > 0 ? `${assetYearLabel(asset)}: ${asset.yearModel}` : '',
-    formatUsage(asset.usageReading, asset.usageMetric) ? `Usage: ${formatUsage(asset.usageReading, asset.usageMetric)}` : '',
+    usageLabel ? `Usage: ${usageLabel}` : '',
     asset.condition ? `Condition: ${asset.condition}` : '',
     asset.categoryLabel || '',
   ].filter(Boolean);

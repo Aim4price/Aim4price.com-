@@ -152,7 +152,8 @@ export type FuelLedgerAsset = {
   selectedMethod: string;
   currentValue: number | null;
   canReceiveFuel: boolean;
-  usageMetric: 'hours' | 'km' | 'both' | 'none';
+  usageMetric: 'hours' | 'km' | 'both' | 'percentage' | 'none';
+  lifeWorkedPercent: number | null;
 };
 
 export type FuelLedgerSummary = {
@@ -267,6 +268,7 @@ type FuelAssetRow = {
   plate_label: string | null;
   public_asset_code: string | null;
   hours: string | number | null;
+  life_worked_percent: string | number | null;
   fuel_percent: string | number | null;
   year_model?: string | number | null;
   condition?: string | null;
@@ -981,11 +983,79 @@ function inferAssetCanReceiveFuel(row: FuelAssetRow): boolean {
   return false;
 }
 
-function inferAssetUsageMetric(row: FuelAssetRow): 'hours' | 'km' | 'both' | 'none' {
+const PERCENT_USAGE_SPEC_KEYS = [
+  'lifeWorkedPercent',
+  'life_worked_percent',
+  'workedPercent',
+  'worked_percent',
+  'percentWorked',
+  'percent_worked',
+  'lifetimeWorkedPercent',
+  'lifetime_worked_percent',
+  'lifetimeUsedPercent',
+  'lifetime_used_percent',
+];
+
+function numberFromSpecs(specs: Record<string, unknown>, keys: string[]): number | null {
+  for (const key of keys) {
+    const parsed = asNumber(specs[key]);
+    if (parsed !== null) return parsed;
+  }
+
+  return null;
+}
+
+function lifeWorkedPercentFromAssetRow(row: FuelAssetRow): number | null {
+  const specs = asRecord(row.specs_json);
+  const fromRow = asNumber(row.life_worked_percent);
+  if (fromRow !== null) return Math.max(0, Math.min(100, fromRow));
+
+  const fromSpecs = numberFromSpecs(specs, PERCENT_USAGE_SPEC_KEYS);
+  return fromSpecs === null ? null : Math.max(0, Math.min(100, fromSpecs));
+}
+
+function metricTextFromSpecs(specs: Record<string, unknown>): string {
+  return asText(
+    specs.usageMetric ??
+      specs.usage_metric ??
+      specs.usageUnit ??
+      specs.usage_unit ??
+      specs.usageMetricType ??
+      specs.usage_metric_type ??
+      specs.usageBasis ??
+      specs.usage_basis ??
+      specs.usageMode ??
+      specs.usage_mode ??
+      specs.meterType ??
+      specs.meter_type ??
+      specs.depreciationMetric ??
+      specs.depreciation_metric,
+  ).toLowerCase();
+}
+
+function metricTextIsPercentage(value: string): boolean {
+  return [
+    'percentage',
+    'percent',
+    '%',
+    'life_percentage',
+    'life_percent',
+    'percent_worked',
+    'worked_percent',
+    'semi_depreciation',
+    'percentage_depreciation',
+  ].includes(value);
+}
+
+function inferAssetUsageMetric(row: FuelAssetRow): FuelLedgerAsset['usageMetric'] {
   const kind = asText(row.kind).toLowerCase();
   const specs = asRecord(row.specs_json);
-  const rawMetric = asText(specs.usageMetric ?? specs.usage_metric ?? specs.meterType ?? specs.meter_type ?? specs.depreciationMetric ?? specs.depreciation_metric).toLowerCase();
+  const rawMetric = metricTextFromSpecs(specs);
+  const lifeWorkedPercent = lifeWorkedPercentFromAssetRow(row);
+  const savedReading = normalizeUsageReading(row.hours);
+  const hasPositiveReading = savedReading !== null && savedReading > 0;
 
+  if (metricTextIsPercentage(rawMetric)) return 'percentage';
   if (rawMetric === 'both' || rawMetric === 'km_hours' || rawMetric === 'hours_km') return 'both';
   if (['km', 'kms', 'kilometres', 'kilometers', 'odometer'].includes(rawMetric)) return 'km';
   if (['hours', 'hour', 'hrs', 'engine_hours', 'hour_meter'].includes(rawMetric)) return 'hours';
@@ -994,6 +1064,7 @@ function inferAssetUsageMetric(row: FuelAssetRow): 'hours' | 'km' | 'both' | 'no
     return 'km';
   }
 
+  if (lifeWorkedPercent !== null && !hasPositiveReading) return 'percentage';
   if (inferAssetCanReceiveFuel(row)) return 'hours';
   return 'none';
 }
@@ -1014,6 +1085,7 @@ function mapFuelAssetRow(row: FuelAssetRow): FuelLedgerAsset {
     plateLabel: asText(row.plate_label),
     publicAssetCode: asText(row.public_asset_code),
     hours: normalizeUsageReading(row.hours),
+    lifeWorkedPercent: lifeWorkedPercentFromAssetRow(row),
     fuelPercent: normalizeFuelPercent(row.fuel_percent),
     yearModel: normalizeUsageReading(row.year_model ?? specs.yearModel ?? specs.year_model),
     condition: asText(row.condition ?? specs.condition),
@@ -1706,6 +1778,7 @@ export async function listFuelAssetsForUser(userId: string): Promise<FuelLedgerA
         to_jsonb(a)->>'plate_label' as plate_label,
         to_jsonb(a)->>'public_asset_code' as public_asset_code,
         a.hours,
+        coalesce(to_jsonb(a)->>'life_worked_percent', to_jsonb(a)->'specs_json'->>'life_worked_percent', to_jsonb(a)->'specs_json'->>'lifeWorkedPercent') as life_worked_percent,
         to_jsonb(a)->>'fuel_percent' as fuel_percent,
         coalesce(to_jsonb(a)->>'year_model', to_jsonb(a)->>'yearModel', to_jsonb(a)->>'year') as year_model,
         coalesce(to_jsonb(a)->>'condition', '') as condition,
@@ -3474,6 +3547,7 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
             to_jsonb(a)->>'plate_label' as plate_label,
             to_jsonb(a)->>'public_asset_code' as public_asset_code,
             a.hours,
+            coalesce(to_jsonb(a)->>'life_worked_percent', to_jsonb(a)->'specs_json'->>'life_worked_percent', to_jsonb(a)->'specs_json'->>'lifeWorkedPercent') as life_worked_percent,
             to_jsonb(a)->>'fuel_percent' as fuel_percent,
             coalesce(to_jsonb(a)->>'year_model', to_jsonb(a)->>'yearModel', to_jsonb(a)->>'year') as year_model,
             coalesce(to_jsonb(a)->>'condition', '') as condition,

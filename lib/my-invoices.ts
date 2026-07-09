@@ -5,7 +5,7 @@ import { listAssetRegisters } from './asset-registers';
 import { buildAssetRegisterUploadUrl, getLegacyAssetRegisterUploadResponse } from './asset-register-uploads';
 
 export type MyInvoiceSource = 'manual' | 'automatic' | 'fuel_slip';
-export type MyInvoiceUsageMetric = 'none' | 'hours' | 'km';
+export type MyInvoiceUsageMetric = 'none' | 'hours' | 'km' | 'percentage';
 export type MyInvoiceBlockType = 'maintenance' | 'parts' | 'repair' | 'other';
 export type MyInvoiceExtractionStatus = 'not_extracted' | 'extracted' | 'failed' | 'skipped';
 
@@ -16,7 +16,7 @@ export type MyInvoiceAssetOption = {
   categoryLabel: string;
   yearModel: number | null;
   usageReading: number | null;
-  usageMetric: 'hours' | 'km';
+  usageMetric: 'hours' | 'km' | 'percentage';
   condition: string;
   value: number;
   selectedMethod: string;
@@ -60,7 +60,7 @@ export type MyInvoiceRecord = {
   assetCategoryLabel: string;
   assetYearModel: number | null;
   assetUsageReading: number | null;
-  assetUsageMetric: 'hours' | 'km';
+  assetUsageMetric: 'hours' | 'km' | 'percentage';
   assetCondition: string;
   assetValue: number;
   invoiceDocumentId: string | null;
@@ -164,6 +164,7 @@ type MyInvoiceRow = {
   asset_category_label: string | null;
   asset_year_model: string | number | null;
   asset_hours: string | number | null;
+  asset_life_worked_percent: string | number | null;
   asset_condition: string | null;
   asset_value: string | number | null;
   asset_selected_value: string | number | null;
@@ -252,8 +253,9 @@ function normalizeMoney(value: unknown): number | null {
 function normalizeUsageMetric(value: unknown): MyInvoiceUsageMetric {
   const normalized = asText(value).toLowerCase();
 
-  if (normalized === 'hours' || normalized === 'hour' || normalized === 'hrs') return 'hours';
-  if (normalized === 'km' || normalized === 'kms' || normalized === 'kilometres' || normalized === 'kilometers') return 'km';
+  if (normalized === 'hours' || normalized === 'hour' || normalized === 'hrs' || normalized === 'hr') return 'hours';
+  if (normalized === 'km' || normalized === 'kms' || normalized === 'kilometres' || normalized === 'kilometers' || normalized === 'odometer') return 'km';
+  if (normalized === 'percentage' || normalized === 'percent' || normalized === 'life_percentage' || normalized === 'life_percent' || normalized === '%' || normalized === 'percent_worked') return 'percentage';
   return 'none';
 }
 
@@ -328,17 +330,105 @@ function normalizeWarnings(value: unknown): string[] {
   return [];
 }
 
-function assetUsageMetric(asset: AssetRegisterItem): 'hours' | 'km' {
-  const specs = asset.specsJson && typeof asset.specsJson === 'object' ? asset.specsJson : {};
-  const metric = asText(
-    specs.usageMetric ?? specs.usage_metric ?? specs.usageUnit ?? specs.usage_unit ?? specs.usageMetricType ?? specs.usage_metric_type,
-  ).toLowerCase();
+type AssetUsageMetric = Exclude<MyInvoiceUsageMetric, 'none'>;
 
-  if (asset.kind === 'vehicle' || metric === 'km' || metric === 'kms' || metric === 'kilometres' || metric === 'kilometers') {
+const PERCENT_USAGE_SPEC_KEYS = [
+  'lifeWorkedPercent',
+  'life_worked_percent',
+  'workedPercent',
+  'worked_percent',
+  'percentWorked',
+  'percent_worked',
+  'lifetimeWorkedPercent',
+  'lifetime_worked_percent',
+  'lifetimeUsedPercent',
+  'lifetime_used_percent',
+];
+
+function numberFromSpecs(specs: Record<string, unknown>, keys: string[]): number | null {
+  for (const key of keys) {
+    const parsed = asNumber(specs[key]);
+    if (parsed !== null) return parsed;
+  }
+  return null;
+}
+
+function percentFromSpecs(specs: Record<string, unknown>): number | null {
+  return numberFromSpecs(specs, PERCENT_USAGE_SPEC_KEYS);
+}
+
+function metricTextFromSpecs(specs: Record<string, unknown>): string {
+  return asText(
+    specs.usageMetric ??
+      specs.usage_metric ??
+      specs.usageUnit ??
+      specs.usage_unit ??
+      specs.usageMetricType ??
+      specs.usage_metric_type ??
+      specs.usageBasis ??
+      specs.usage_basis ??
+      specs.usageMode ??
+      specs.usage_mode ??
+      specs.meterType ??
+      specs.meter_type ??
+      specs.depreciationMetric ??
+      specs.depreciation_metric,
+  ).toLowerCase();
+}
+
+function metricTextIsPercentage(value: string): boolean {
+  return [
+    'percentage',
+    'percent',
+    '%',
+    'life_percentage',
+    'life_percent',
+    'percent_worked',
+    'worked_percent',
+    'semi_depreciation',
+    'percentage_depreciation',
+  ].includes(value);
+}
+
+function assetUsageMetric(asset: AssetRegisterItem): AssetUsageMetric {
+  const specs = asset.specsJson && typeof asset.specsJson === 'object' ? asset.specsJson : {};
+  const metric = metricTextFromSpecs(specs);
+  const lifeWorkedPercent = asset.lifeWorkedPercent ?? percentFromSpecs(specs);
+  const savedReading = asNumber(asset.hours);
+  const hasPositiveReading = savedReading !== null && savedReading > 0;
+
+  if (metricTextIsPercentage(metric)) return 'percentage';
+
+  if (asset.kind === 'vehicle' || metric === 'km' || metric === 'kms' || metric === 'kilometres' || metric === 'kilometers' || metric === 'odometer') {
     return 'km';
   }
 
+  if (lifeWorkedPercent !== null && !hasPositiveReading) return 'percentage';
+
   return 'hours';
+}
+
+function assetUsageReading(asset: AssetRegisterItem, metric: AssetUsageMetric): number | null {
+  const specs = asset.specsJson && typeof asset.specsJson === 'object' ? asset.specsJson : {};
+
+  if (metric === 'percentage') {
+    return asset.lifeWorkedPercent ?? percentFromSpecs(specs);
+  }
+
+  return asNumber(asset.hours);
+}
+
+function formatAssetUsage(value: number | null | undefined, metric: AssetUsageMetric): string {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return '';
+
+  if (metric === 'percentage') {
+    return `${value.toLocaleString('en-ZA', { maximumFractionDigits: 1 })}%`;
+  }
+
+  if (value <= 0) return '';
+
+  const unit = metric === 'km' ? 'km' : 'hours';
+  return `${Math.round(value).toLocaleString('en-ZA')} ${unit}`;
 }
 
 function labelFromAssetKind(value: unknown): string {
@@ -370,8 +460,10 @@ function buildAssetMeta(asset: AssetRegisterItem): string {
   const parts: string[] = [];
 
   if (asset.yearModel) parts.push(`Year Model: ${asset.yearModel}`);
-  if (typeof asset.hours === 'number' && Number.isFinite(asset.hours)) {
-    parts.push(`Usage: ${asset.hours.toLocaleString('en-ZA')} ${assetUsageMetric(asset)}`);
+  const usageMetric = assetUsageMetric(asset);
+  const usageLabel = formatAssetUsage(assetUsageReading(asset, usageMetric), usageMetric);
+  if (usageLabel) {
+    parts.push(`Usage: ${usageLabel}`);
   }
 
   const condition = assetConditionLabel(asset.condition);
@@ -390,7 +482,7 @@ function mapAssetOption(asset: AssetRegisterItem): MyInvoiceAssetOption {
     kind: asset.kind,
     categoryLabel,
     yearModel: asset.yearModel,
-    usageReading: asset.hours,
+    usageReading: assetUsageReading(asset, usageMetric),
     usageMetric,
     condition: assetConditionLabel(asset.condition),
     value: Math.round(asset.selectedValueExVat || asset.value || 0),
@@ -416,12 +508,27 @@ function normalizeAssetSpecs(value: unknown): Record<string, unknown> {
   return {};
 }
 
-function assetUsageMetricFromRow(row: MyInvoiceRow): 'hours' | 'km' {
+function assetUsageMetricFromRow(row: MyInvoiceRow): AssetUsageMetric {
   const specs = normalizeAssetSpecs(row.asset_specs_json);
-  const metric = asText(specs.usageMetric ?? specs.usage_metric ?? specs.usageUnit ?? specs.usage_unit).toLowerCase();
+  const metric = metricTextFromSpecs(specs);
+  const lifeWorkedPercent = asNumber(row.asset_life_worked_percent) ?? percentFromSpecs(specs);
+  const savedReading = asNumber(row.asset_hours);
+  const hasPositiveReading = savedReading !== null && savedReading > 0;
 
-  if (asText(row.asset_kind).toLowerCase() === 'vehicle' || metric === 'km' || metric === 'kms') return 'km';
+  if (metricTextIsPercentage(metric)) return 'percentage';
+
+  if (asText(row.asset_kind).toLowerCase() === 'vehicle' || metric === 'km' || metric === 'kms' || metric === 'kilometres' || metric === 'kilometers' || metric === 'odometer') return 'km';
+  if (lifeWorkedPercent !== null && !hasPositiveReading) return 'percentage';
+
   return 'hours';
+}
+
+function assetUsageReadingFromRow(row: MyInvoiceRow, metric: AssetUsageMetric): number | null {
+  if (metric === 'percentage') {
+    return asNumber(row.asset_life_worked_percent) ?? percentFromSpecs(normalizeAssetSpecs(row.asset_specs_json));
+  }
+
+  return asNumber(row.asset_hours);
 }
 
 function assetCategoryLabelFromRow(row: MyInvoiceRow): string {
@@ -478,7 +585,7 @@ function mapInvoiceRow(row: MyInvoiceRow, document: MyInvoiceDocument | null, bl
     assetKind: asText(row.asset_kind) || 'asset',
     assetCategoryLabel: assetCategoryLabelFromRow(row),
     assetYearModel: asNumber(row.asset_year_model),
-    assetUsageReading: asNumber(row.asset_hours),
+    assetUsageReading: assetUsageReadingFromRow(row, assetUsageMetric),
     assetUsageMetric,
     assetCondition: assetConditionLabel(asText(row.asset_condition)),
     assetValue,
@@ -703,6 +810,7 @@ export async function listMyInvoices(userId: string, filters: MyInvoiceListFilte
         coalesce(nullif(ef.family_label, ''), nullif(to_jsonb(ai)->>'kind', ''), 'Asset') as asset_category_label,
         nullif(coalesce(to_jsonb(ai)->>'year_model', to_jsonb(ai)->>'year'), '') as asset_year_model,
         nullif(coalesce(to_jsonb(ai)->>'hours', to_jsonb(ai)->>'engine_hours'), '') as asset_hours,
+        nullif(coalesce(to_jsonb(ai)->>'life_worked_percent', to_jsonb(ai)->'specs_json'->>'life_worked_percent', to_jsonb(ai)->'specs_json'->>'lifeWorkedPercent'), '') as asset_life_worked_percent,
         nullif(to_jsonb(ai)->>'condition', '') as asset_condition,
         nullif(
           coalesce(
