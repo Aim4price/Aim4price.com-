@@ -69,7 +69,8 @@ type FuelLedgerAsset = {
   selectedMethod?: string;
   currentValue?: number | null;
   canReceiveFuel: boolean;
-  usageMetric: 'hours' | 'km' | 'both' | 'none';
+  usageMetric: 'hours' | 'km' | 'both' | 'percentage' | 'none';
+  lifeWorkedPercent: number | null;
 };
 
 type FuelSlipRecord = {
@@ -1369,7 +1370,13 @@ function titleCaseText(value: string): string {
 }
 
 function formatFuelSlipAssetUsage(asset: FuelLedgerAsset): string {
-  if (typeof asset.hours !== 'number' || !Number.isFinite(asset.hours)) return '';
+  if (asset.usageMetric === 'percentage') {
+    if (typeof asset.lifeWorkedPercent !== 'number' || !Number.isFinite(asset.lifeWorkedPercent)) return '';
+    return `Usage: ${asset.lifeWorkedPercent.toLocaleString('en-ZA', { maximumFractionDigits: 1 })}%`;
+  }
+
+  if (typeof asset.hours !== 'number' || !Number.isFinite(asset.hours) || asset.hours <= 0) return '';
+
   const value = asset.hours.toLocaleString('en-ZA', { maximumFractionDigits: 0 });
   if (asset.usageMetric === 'km') return `Usage: ${value} km`;
   if (asset.usageMetric === 'both') return `Usage: ${value}`;
