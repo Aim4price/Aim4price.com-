@@ -727,7 +727,8 @@ export default function MaintenanceClient() {
   const [downloadAssetId, setDownloadAssetId] = useState('all');
   const [downloadFormat, setDownloadFormat] = useState<DownloadFormat>('pdf');
   const [downloadScope, setDownloadScope] = useState<DownloadScope>('total');
-  const [downloadStep, setDownloadStep] = useState<'scope' | 'format'>('scope');
+  const [downloadStep, setDownloadStep] = useState<'scope' | 'asset' | 'format'>('scope');
+  const [downloadAssetSearch, setDownloadAssetSearch] = useState('');
   const [page, setPage] = useState(1);
 
   const assetById = useMemo(() => new Map(assets.map((asset) => [asset.id, asset])), [assets]);
@@ -793,13 +794,11 @@ export default function MaintenanceClient() {
     [assets],
   );
 
-  const downloadAssetOptions = useMemo<DropdownOption[]>(
-    () => [
-      { value: 'all', label: 'Choose saved asset' },
-      ...assets.map((asset) => ({ value: asset.id, label: asset.title })),
-    ],
-    [assets],
-  );
+  const filteredDownloadAssets = useMemo(() => {
+    const query = downloadAssetSearch.trim().toLowerCase();
+    if (!query) return assets;
+    return assets.filter((asset) => [asset.title, asset.meta, asset.kind, asset.categoryLabel].join(' ').toLowerCase().includes(query));
+  }, [assets, downloadAssetSearch]);
 
   const filterAssigneeOptions = useMemo<DropdownOption[]>(
     () => [
@@ -1013,6 +1012,7 @@ export default function MaintenanceClient() {
     setDownloadFormat('pdf');
     setDownloadScope('total');
     setDownloadStep('scope');
+    setDownloadAssetSearch('');
     setModalMode('download');
   }
 
@@ -1472,14 +1472,19 @@ export default function MaintenanceClient() {
             <header className={styles.modalHeader}>
               <div>
                 <h2 id="maintenance-download-title">
-                  {downloadStep === 'scope' ? 'Download maintenance reports' : 'Choose download format'}
+                  {downloadStep === 'scope'
+                    ? 'Download maintenance reports'
+                    : downloadStep === 'asset'
+                      ? 'Choose asset for maintenance report'
+                      : 'Choose download format'}
                 </h2>
                 <div className={styles.maintenanceExportHeadingRow}>
-                  <span className={styles.maintenanceExportBadge}>Step {downloadStep === 'scope' ? '1' : '2'} of 2</span>
                   <p>
                     {downloadStep === 'scope'
                       ? 'Choose which maintenance records should be included in the report.'
-                      : 'Choose a PDF report or an Excel-ready maintenance workbook.'}
+                      : downloadStep === 'asset'
+                        ? 'Select the saved asset whose maintenance history should be included.'
+                        : 'Choose a PDF report or an Excel-ready maintenance workbook.'}
                   </p>
                 </div>
               </div>
@@ -1513,31 +1518,71 @@ export default function MaintenanceClient() {
                       </button>
                     ))}
                   </div>
-
-                  {downloadScope === 'asset' ? (
-                    <div className={styles.downloadAssetPicker}>
-                      <MaintenanceDropdown
-                        label="Specific asset"
-                        value={downloadAssetId}
-                        options={downloadAssetOptions}
-                        searchable
-                        searchPlaceholder="Search saved assets"
-                        noMatchesLabel="No saved assets found"
-                        onChange={setDownloadAssetId}
-                      />
-                    </div>
-                  ) : null}
                 </div>
                 <footer className={`${styles.modalFooter} ${styles.maintenanceExportFooter}`}>
                   <button className={styles.secondaryButton} type="button" onClick={closeModal}>Cancel</button>
                   <button
                     className={styles.primaryButton}
                     type="button"
-                    onClick={() => setDownloadStep('format')}
-                    disabled={downloadScope === 'asset' && downloadAssetId === 'all'}
+                    onClick={() => setDownloadStep(downloadScope === 'asset' ? 'asset' : 'format')}
                   >
                     Next
                   </button>
+                </footer>
+              </>
+            ) : downloadStep === 'asset' ? (
+              <>
+                <div className={`${styles.formModalScrollBody} ${styles.maintenanceExportBody}`}>
+                  <div className={styles.pickerToolbar}>
+                    <label className={styles.pickerSearchField}>
+                      <SearchIcon />
+                      <input
+                        type="search"
+                        value={downloadAssetSearch}
+                        onChange={(event) => setDownloadAssetSearch(event.target.value)}
+                        placeholder="Search saved assets..."
+                        aria-label="Search saved assets for maintenance report"
+                      />
+                    </label>
+                    <button
+                      className={`${styles.secondaryButton} ${styles.pickerClearButton}`}
+                      type="button"
+                      onClick={() => setDownloadAssetSearch('')}
+                      disabled={!downloadAssetSearch}
+                    >
+                      Clear
+                    </button>
+                  </div>
+                  <div className={styles.assetList}>
+                    {filteredDownloadAssets.length ? (
+                      filteredDownloadAssets.map((asset) => (
+                        <button
+                          key={asset.id}
+                          className={`${styles.assetRow} ${downloadAssetId === asset.id ? styles.maintenanceScopeOptionActive : ''}`}
+                          type="button"
+                          onClick={() => {
+                            setDownloadAssetId(asset.id);
+                            setDownloadStep('format');
+                          }}
+                        >
+                          <span className={styles.assetInfo}>
+                            <strong>{asset.title}</strong>
+                            <small>{asset.meta}</small>
+                          </span>
+                          <span className={styles.assetValue}>
+                            <strong>{money(asset.value)}</strong>
+                            <small>current value</small>
+                          </span>
+                        </button>
+                      ))
+                    ) : (
+                      <div className={styles.emptyState}>No saved assets found.</div>
+                    )}
+                  </div>
+                </div>
+                <footer className={`${styles.modalFooter} ${styles.maintenanceExportFooter}`}>
+                  <button className={styles.secondaryButton} type="button" onClick={() => setDownloadStep('scope')}>Back</button>
+                  <button className={styles.secondaryButton} type="button" onClick={closeModal}>Cancel</button>
                 </footer>
               </>
             ) : (
@@ -1566,7 +1611,7 @@ export default function MaintenanceClient() {
                   </div>
                 </div>
                 <footer className={`${styles.modalFooter} ${styles.maintenanceExportFooter}`}>
-                  <button className={styles.secondaryButton} type="button" onClick={() => setDownloadStep('scope')}>Back</button>
+                  <button className={styles.secondaryButton} type="button" onClick={() => setDownloadStep(downloadScope === 'asset' ? 'asset' : 'scope')}>Back</button>
                   <button className={styles.secondaryButton} type="button" onClick={closeModal}>Cancel</button>
                   <button className={styles.primaryButton} type="button" onClick={submitDownload}>
                     {downloadFormat === 'pdf' ? 'Open PDF report' : 'Download Excel'}
