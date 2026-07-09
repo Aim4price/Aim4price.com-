@@ -13,6 +13,7 @@ type ActivePage =
   | 'asset-register'
   | 'asset-map'
   | 'cost'
+  | 'maintenance'
   | 'fuel'
   | 'account'
   | 'asset-discovery'
@@ -266,16 +267,20 @@ const OWNER_NAV_ITEMS: NavItem[] = [
   ...DEFAULT_NAV_ITEMS,
   { key: 'asset-map', href: '/asset-map', label: 'Asset Map' },
   { key: 'cost', href: '/my-invoices', label: 'Cost Ledger' },
+  { key: 'maintenance', href: '/maintenance', label: 'Maintenance' },
   { key: 'fuel', href: '/fuel', label: 'Fuel Ledger' },
   { key: 'account', href: '/account', label: 'Account' },
 ];
 
 const ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
-  { href: '/account', label: 'Account' },
-  { href: '/users', label: 'Users', accountTypes: ['dealer'] },
+  { href: '/asset-register', label: 'Asset Register', accountTypes: ['owner'] },
+  { href: '/marketplace', label: 'Marketplace', accountTypes: ['owner'] },
   { href: '/asset-map', label: 'Asset Map', accountTypes: ['owner'] },
   { href: '/my-invoices', label: 'Cost Ledger', accountTypes: ['owner'] },
+  { href: '/maintenance', label: 'Maintenance', accountTypes: ['owner'] },
   { href: '/fuel', label: 'Fuel Ledger', accountTypes: ['owner'] },
+  { href: '/users', label: 'Users', accountTypes: ['dealer'] },
+  { href: '/account', label: 'Account' },
 ];
 
 function isAccountMenuItemVisible(item: AccountMenuItem, accountType: AccountType | undefined): boolean {
