@@ -123,7 +123,7 @@ export async function GET(request: NextRequest) {
     const assetLabel = selectedAsset ? selectedAsset.title : 'All selected assets';
     const options = {
       title: 'Asset Maintenance Report',
-      subtitle: 'Aim4price maintenance timeline',
+      subtitle: 'Aim4price asset register',
       generatedAt: formatGeneratedDate(),
       ownerEmail: ownerDetails.businessEmail || session.user.email || '',
       ownerDetails,
