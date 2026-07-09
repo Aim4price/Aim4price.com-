@@ -5,6 +5,7 @@ import { getAccountProfile } from '../../../lib/account-profile';
 import { attachOpenPartnerNotesToAssets } from '../../../lib/partner-access';
 import { attachOpenIssueNoteStatusToAssets } from '../../../lib/asset-issue-notes';
 import { attachLatestMaintenanceStatusToAssets } from '../../../lib/scan-assets';
+import { attachUpcomingMaintenanceAlertsToAssets } from '../../../lib/asset-maintenance';
 import {
   getAssetRegisterForUser,
   getSelectedAssetRegister,
@@ -67,9 +68,10 @@ function getUsageUserId(session: Awaited<ReturnType<typeof getServerSession>>): 
 async function attachOpenAssetAlerts<T extends { id: string }>(
   ownerUserId: string,
   items: T[],
-): Promise<Array<T & { openPartnerNote: unknown; latestMaintenanceStatus: unknown; latestIssueNoteStatus: unknown }>> {
+): Promise<Array<T & { openPartnerNote: unknown; maintenanceAlert: unknown; latestMaintenanceStatus: unknown; latestIssueNoteStatus: unknown }>> {
   const itemsWithPartnerNotes = await attachOpenPartnerNotesToAssets(ownerUserId, items);
-  const itemsWithMaintenanceStatus = await attachLatestMaintenanceStatusToAssets(itemsWithPartnerNotes);
+  const itemsWithScheduledMaintenance = await attachUpcomingMaintenanceAlertsToAssets(ownerUserId, itemsWithPartnerNotes);
+  const itemsWithMaintenanceStatus = await attachLatestMaintenanceStatusToAssets(itemsWithScheduledMaintenance);
   return attachOpenIssueNoteStatusToAssets(itemsWithMaintenanceStatus);
 }
 
