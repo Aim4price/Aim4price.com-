@@ -64,14 +64,28 @@ type FuelAverageResult = {
   available: boolean;
   value: number | null;
   valueLabel: string;
+  basisLabel: string;
   statusText: string;
-  entriesUsed: number;
-  minimumEntries: number;
+  intervalsUsed: number;
+  minimumIntervals: number;
   totalLitres: number | null;
   usageDelta: number | null;
 };
 
-const MIN_FUEL_AVERAGE_ENTRIES = 5;
+type FuelFillEntry = {
+  event: ScanEventRecord;
+  litres: number;
+  usage: number;
+};
+
+type FuelFillInterval = {
+  previous: FuelFillEntry;
+  current: FuelFillEntry;
+  litres: number;
+  usageDelta: number;
+};
+
+const MIN_FUEL_AVERAGE_INTERVALS = 5;
 
 const REPORT_LABELS: Record<PdfReportKind, string> = {
   fuel: 'Fuel Report',
@@ -538,7 +552,8 @@ function readFuelAverageUsageMetric(asset: AssetRegisterItem): FuelAverageUsageM
       '',
   )
     .trim()
-    .toLowerCase();
+    .toLowerCase()
+    .replace(/\s+/g, '_');
 
   if (['km', 'kms', 'kilometre', 'kilometres', 'kilometer', 'kilometers', 'odometer'].includes(rawUsage)) {
     return 'km';
@@ -548,11 +563,7 @@ function readFuelAverageUsageMetric(asset: AssetRegisterItem): FuelAverageUsageM
     return 'hours';
   }
 
-  if (['percent', 'percentage', 'life_worked_percent', 'life-worked-percent', 'worked'].includes(rawUsage)) {
-    return null;
-  }
-
-  return getUsageUnit(asset);
+  return null;
 }
 
 function fuelAverageUsageReading(event: ScanEventRecord): number | null {
@@ -600,41 +611,93 @@ function filterFuelReportEvents(events: ScanEventRecord[]): ScanEventRecord[] {
   return events.filter(isFuelReportEvent);
 }
 
-function calculateFuelAverage(asset: AssetRegisterItem, fuelEvents: ScanEventRecord[]): FuelAverageResult {
-  const metric = readFuelAverageUsageMetric(asset);
-  const usableEvents = fuelEvents
-    .map((event) => {
+function isPositiveLitres(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value > 0;
+}
+
+function compareFuelFillEntries(left: FuelFillEntry, right: FuelFillEntry): number {
+  const leftTime = new Date(left.event.createdAtIso).getTime();
+  const rightTime = new Date(right.event.createdAtIso).getTime();
+
+  if (Number.isFinite(leftTime) && Number.isFinite(rightTime) && leftTime !== rightTime) {
+    return leftTime - rightTime;
+  }
+
+  return String(left.event.id).localeCompare(String(right.event.id));
+}
+
+function isRealFuelFillRecord(event: ScanEventRecord): boolean {
+  if (!isPositiveLitres(event.fuelLitres)) {
+    return false;
+  }
+
+  if (parseMaintenanceEvent(event)) {
+    return false;
+  }
+
+  const ledgerEventType = asText(event.fuelLedgerEventType).toLowerCase();
+
+  if (ledgerEventType && ledgerEventType !== 'asset_issue') {
+    return false;
+  }
+
+  return true;
+}
+
+function buildFuelFillIntervals(fuelEvents: ScanEventRecord[]): FuelFillInterval[] {
+  const fillEntries = fuelEvents
+    .map((event): FuelFillEntry | null => {
       const litres = event.fuelLitres;
+
+      if (!isRealFuelFillRecord(event) || !isPositiveLitres(litres)) {
+        return null;
+      }
+
       const usage = fuelAverageUsageReading(event);
+
+      if (usage === null) {
+        return null;
+      }
 
       return {
         event,
-        litres: typeof litres === 'number' && Number.isFinite(litres) && litres > 0 ? litres : null,
+        litres,
         usage,
       };
     })
-    .filter((entry): entry is { event: ScanEventRecord; litres: number; usage: number } => entry.litres !== null && entry.usage !== null)
-    .sort((left, right) => {
-      const leftTime = new Date(left.event.createdAtIso).getTime();
-      const rightTime = new Date(right.event.createdAtIso).getTime();
+    .filter((entry): entry is FuelFillEntry => entry !== null)
+    .sort(compareFuelFillEntries);
 
-      if (Number.isFinite(leftTime) && Number.isFinite(rightTime) && leftTime !== rightTime) {
-        return leftTime - rightTime;
-      }
+  const intervals: FuelFillInterval[] = [];
 
-      return String(left.event.id).localeCompare(String(right.event.id));
+  for (let index = 1; index < fillEntries.length; index += 1) {
+    const previous = fillEntries[index - 1];
+    const current = fillEntries[index];
+    const usageDelta = current.usage - previous.usage;
+
+    if (usageDelta <= 0 || !Number.isFinite(usageDelta)) {
+      continue;
+    }
+
+    intervals.push({
+      previous,
+      current,
+      litres: current.litres,
+      usageDelta,
     });
-  const entriesUsed = usableEvents.length;
-  const totalLitres = entriesUsed ? usableEvents.reduce((sum, entry) => sum + entry.litres, 0) : null;
-  const oldestUsage = usableEvents[0]?.usage ?? null;
-  const latestUsage = usableEvents[usableEvents.length - 1]?.usage ?? null;
-  const usageDelta =
-    typeof oldestUsage === 'number' &&
-    Number.isFinite(oldestUsage) &&
-    typeof latestUsage === 'number' &&
-    Number.isFinite(latestUsage)
-      ? latestUsage - oldestUsage
-      : null;
+  }
+
+  return intervals;
+}
+
+function calculateFuelAverage(asset: AssetRegisterItem, fuelEvents: ScanEventRecord[]): FuelAverageResult {
+  const metric = readFuelAverageUsageMetric(asset);
+  const intervals = buildFuelFillIntervals(fuelEvents);
+  const selectedIntervals = intervals.slice(-MIN_FUEL_AVERAGE_INTERVALS);
+  const intervalsUsed = selectedIntervals.length;
+  const totalLitres = intervalsUsed ? selectedIntervals.reduce((sum, interval) => sum + interval.litres, 0) : null;
+  const usageDelta = intervalsUsed ? selectedIntervals.reduce((sum, interval) => sum + interval.usageDelta, 0) : null;
+  const basisLabel = `Latest ${MIN_FUEL_AVERAGE_INTERVALS} valid fuel-fill intervals`;
 
   if (!metric) {
     return {
@@ -642,23 +705,25 @@ function calculateFuelAverage(asset: AssetRegisterItem, fuelEvents: ScanEventRec
       available: false,
       value: null,
       valueLabel: 'Pending',
+      basisLabel: 'Fuel average is only calculated for hours or kilometre usage.',
       statusText: 'Fuel average is only calculated for hours or kilometre usage.',
-      entriesUsed,
-      minimumEntries: MIN_FUEL_AVERAGE_ENTRIES,
+      intervalsUsed,
+      minimumIntervals: MIN_FUEL_AVERAGE_INTERVALS,
       totalLitres,
       usageDelta,
     };
   }
 
-  if (entriesUsed < MIN_FUEL_AVERAGE_ENTRIES) {
+  if (intervalsUsed < MIN_FUEL_AVERAGE_INTERVALS) {
     return {
       metric,
       available: false,
       value: null,
       valueLabel: 'Pending',
-      statusText: `Available after ${MIN_FUEL_AVERAGE_ENTRIES} usable fuel entries.`,
-      entriesUsed,
-      minimumEntries: MIN_FUEL_AVERAGE_ENTRIES,
+      basisLabel,
+      statusText: `Available after ${MIN_FUEL_AVERAGE_INTERVALS} valid fuel-fill intervals.`,
+      intervalsUsed,
+      minimumIntervals: MIN_FUEL_AVERAGE_INTERVALS,
       totalLitres,
       usageDelta,
     };
@@ -670,9 +735,10 @@ function calculateFuelAverage(asset: AssetRegisterItem, fuelEvents: ScanEventRec
       available: false,
       value: null,
       valueLabel: 'Pending',
-      statusText: 'Needs a positive usage movement between the oldest and newest fuel entries.',
-      entriesUsed,
-      minimumEntries: MIN_FUEL_AVERAGE_ENTRIES,
+      basisLabel,
+      statusText: 'Needs positive usage movement across the latest valid fuel-fill intervals.',
+      intervalsUsed,
+      minimumIntervals: MIN_FUEL_AVERAGE_INTERVALS,
       totalLitres,
       usageDelta,
     };
@@ -685,9 +751,10 @@ function calculateFuelAverage(asset: AssetRegisterItem, fuelEvents: ScanEventRec
     available: true,
     value,
     valueLabel: formatFuelAverageValue(value, metric),
-    statusText: 'Planning average from usable fuel entries in this report.',
-    entriesUsed,
-    minimumEntries: MIN_FUEL_AVERAGE_ENTRIES,
+    basisLabel,
+    statusText: basisLabel,
+    intervalsUsed,
+    minimumIntervals: MIN_FUEL_AVERAGE_INTERVALS,
     totalLitres,
     usageDelta,
   };
@@ -695,8 +762,8 @@ function calculateFuelAverage(asset: AssetRegisterItem, fuelEvents: ScanEventRec
 
 function buildFuelAverageRows(average: FuelAverageResult): KeyValueRow[] {
   return [
-    { label: 'Basis', value: average.available ? 'Planning average' : average.statusText },
-    { label: 'Records Used', value: `${formatNumber(average.entriesUsed)} / ${formatNumber(average.minimumEntries)} minimum` },
+    { label: 'Basis', value: average.basisLabel },
+    { label: 'Records Used', value: `${formatNumber(average.intervalsUsed)} / ${formatNumber(average.minimumIntervals)} valid intervals` },
     { label: 'Litres Filled', value: formatLitres(average.totalLitres) },
     { label: 'Usage Change', value: formatFuelAverageUsageDelta(average.usageDelta, average.metric) },
   ];
@@ -704,15 +771,14 @@ function buildFuelAverageRows(average: FuelAverageResult): KeyValueRow[] {
 
 function renderFuelAverageCard(asset: AssetRegisterItem, fuelEvents: ScanEventRecord[]): string {
   const average = calculateFuelAverage(asset, fuelEvents);
-  const unitLabel = average.metric === 'km' ? 'km per litre' : average.metric === 'hours' ? 'litres per hour' : 'fuel average';
+  const unitHeading = average.metric === 'km' ? 'KM PER LITRE' : average.metric === 'hours' ? 'LITRES PER HOUR' : 'FUEL AVERAGE';
 
   return `
     <section class="assetReportSideCard assetReportFuelAverageCard">
       <h2>Fuel Average</h2>
       <div class="assetReportFuelAverageHero ${average.available ? 'assetReportFuelAverageHeroReady' : 'assetReportFuelAverageHeroPending'}">
-        <span>${escapeHtml(unitLabel)}</span>
+        <span>${escapeHtml(unitHeading)}</span>
         <strong>${escapeHtml(average.valueLabel)}</strong>
-        <small>${escapeHtml(average.statusText)}</small>
       </div>
       ${renderRows(buildFuelAverageRows(average), 'No fuel average details available.', 'assetReportFuelAverageRows')}
     </section>
@@ -2930,7 +2996,7 @@ function buildFuelReportWorkbook(
   const recordRows = [
     ...buildFuelRecordRows(asset, fuelEvents, dateRangeLabel),
     { label: 'Fuel Average', value: fuelAverage.valueLabel },
-    { label: 'Fuel Average Basis', value: fuelAverage.statusText },
+    ...buildFuelAverageRows(fuelAverage),
   ];
   const headers = [
     'Date / Time',
