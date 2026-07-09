@@ -4004,3 +4004,23 @@
     width: 100%;
   }
 }
+
+/* Keep the asset search toolbar in its own opaque grid row so the scrollable
+   asset list can never render underneath it. */
+.assetModal.formModal {
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+  background: #ffffff;
+}
+
+.assetModal .pickerToolbar {
+  position: relative;
+  z-index: 2;
+  isolation: isolate;
+  background: #ffffff;
+}
+
+.assetModal .assetList {
+  position: relative;
+  z-index: 1;
+  overflow: auto;
+}
