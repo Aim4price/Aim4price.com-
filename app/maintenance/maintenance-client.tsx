@@ -689,6 +689,7 @@ export default function MaintenanceClient() {
   const [downloadAssetId, setDownloadAssetId] = useState('all');
   const [downloadFormat, setDownloadFormat] = useState<DownloadFormat>('pdf');
   const [downloadScope, setDownloadScope] = useState<DownloadScope>('total');
+  const [downloadStep, setDownloadStep] = useState<'scope' | 'format'>('scope');
   const [page, setPage] = useState(1);
 
   const assetById = useMemo(() => new Map(assets.map((asset) => [asset.id, asset])), [assets]);
@@ -973,6 +974,7 @@ export default function MaintenanceClient() {
     setDownloadAssetId(defaultAssetId);
     setDownloadFormat('pdf');
     setDownloadScope('total');
+    setDownloadStep('scope');
     setModalMode('download');
   }
 
@@ -1428,68 +1430,103 @@ export default function MaintenanceClient() {
 
       {modalMode === 'download' ? (
         <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-labelledby="maintenance-download-title">
-          <section className={styles.downloadModal}>
+          <section className={`${styles.downloadModal} ${styles.maintenanceExportModal}`}>
             <header className={styles.modalHeader}>
               <div>
-                <h2 id="maintenance-download-title">Download maintenance reports</h2>
-                <p>Export total, asset-specific, upcoming or done maintenance records.</p>
+                <h2 id="maintenance-download-title">
+                  {downloadStep === 'scope' ? 'Download maintenance reports' : 'Choose download format'}
+                </h2>
+                <p>
+                  {downloadStep === 'scope'
+                    ? 'Choose which maintenance records should be included in the report.'
+                    : 'Choose a PDF report or an Excel-ready maintenance workbook.'}
+                </p>
               </div>
               <button className={styles.closeButton} type="button" onClick={closeModal} aria-label="Close download reports">
                 <CloseIcon />
               </button>
             </header>
             <div className={styles.modalDivider} />
-            <div className={styles.formModalScrollBody}>
-              <div className={styles.maintenanceSectionTitle}>Step 1: Export format</div>
-              <div className={styles.downloadChoiceGrid}>
-                {DOWNLOAD_FORMAT_OPTIONS.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    className={`${styles.maintenanceChoiceCard} ${downloadFormat === option.value ? styles.maintenanceChoiceCardActive : ''}`}
-                    onClick={() => setDownloadFormat(option.value)}
-                  >
-                    <strong>{option.title}</strong>
-                    <span>{option.description}</span>
-                  </button>
-                ))}
-              </div>
 
-              <div className={styles.maintenanceSectionTitle}>Step 2: Report scope</div>
-              <div className={styles.maintenanceDownloadGrid}>
-                {DOWNLOAD_SCOPE_OPTIONS.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    className={`${styles.maintenanceDownloadCard} ${downloadScope === option.value ? styles.maintenanceDownloadCardActive : ''}`}
-                    onClick={() => setDownloadScope(option.value)}
-                  >
-                    <h3>{option.title}</h3>
-                    <p>{option.description}</p>
-                  </button>
-                ))}
-              </div>
+            {downloadStep === 'scope' ? (
+              <>
+                <div className={`${styles.formModalScrollBody} ${styles.maintenanceExportBody}`}>
+                  <div className={styles.maintenanceScopeList}>
+                    {DOWNLOAD_SCOPE_OPTIONS.map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        className={`${styles.maintenanceScopeOption} ${downloadScope === option.value ? styles.maintenanceScopeOptionActive : ''}`}
+                        onClick={() => setDownloadScope(option.value)}
+                      >
+                        <span className={styles.maintenanceScopeIcon} aria-hidden="true">
+                          {option.value === 'total' ? '↓' : option.value === 'asset' ? '↗' : option.value === 'upcoming' ? '⌁' : '✓'}
+                        </span>
+                        <span className={styles.maintenanceScopeCopy}>
+                          <strong>{option.title}</strong>
+                          <small>{option.description}</small>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
 
-              {downloadScope === 'asset' ? (
-                <div className={styles.downloadAssetPicker}>
-                  <MaintenanceDropdown
-                    label="Specific asset"
-                    value={downloadAssetId}
-                    options={downloadAssetOptions}
-                    searchable
-                    searchPlaceholder="Search saved assets"
-                    noMatchesLabel="No saved assets found"
-                    onChange={setDownloadAssetId}
-                  />
+                  {downloadScope === 'asset' ? (
+                    <div className={styles.downloadAssetPicker}>
+                      <MaintenanceDropdown
+                        label="Specific asset"
+                        value={downloadAssetId}
+                        options={downloadAssetOptions}
+                        searchable
+                        searchPlaceholder="Search saved assets"
+                        noMatchesLabel="No saved assets found"
+                        onChange={setDownloadAssetId}
+                      />
+                    </div>
+                  ) : null}
                 </div>
-              ) : null}
-            </div>
-            <footer className={styles.modalFooter}>
-              <button className={styles.secondaryButton} type="button" onClick={closeModal}>Cancel</button>
-              <button className={styles.primaryButton} type="button" onClick={submitDownload} disabled={downloadScope === 'asset' && downloadAssetId === 'all'}>
-                Download
-              </button>
-            </footer>
+                <footer className={`${styles.modalFooter} ${styles.maintenanceExportFooter}`}>
+                  <button className={styles.secondaryButton} type="button" onClick={closeModal}>Cancel</button>
+                  <button
+                    className={styles.primaryButton}
+                    type="button"
+                    onClick={() => setDownloadStep('format')}
+                    disabled={downloadScope === 'asset' && downloadAssetId === 'all'}
+                  >
+                    Next
+                  </button>
+                </footer>
+              </>
+            ) : (
+              <>
+                <div className={`${styles.formModalScrollBody} ${styles.maintenanceExportBody}`}>
+                  <div className={styles.maintenanceFormatGrid}>
+                    {DOWNLOAD_FORMAT_OPTIONS.map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        className={`${styles.maintenanceFormatOption} ${downloadFormat === option.value ? styles.maintenanceFormatOptionActive : ''}`}
+                        onClick={() => setDownloadFormat(option.value)}
+                      >
+                        <span className={styles.maintenanceFormatGraphic}>
+                          <img src={option.value === 'pdf' ? '/brand/pdf.png' : '/brand/sheet.png'} alt="" />
+                        </span>
+                        <span className={styles.maintenanceFormatCopy}>
+                          <strong>{option.title}</strong>
+                          <small>{option.description}</small>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <footer className={`${styles.modalFooter} ${styles.maintenanceExportFooter}`}>
+                  <button className={styles.secondaryButton} type="button" onClick={() => setDownloadStep('scope')}>Back</button>
+                  <button className={styles.secondaryButton} type="button" onClick={closeModal}>Cancel</button>
+                  <button className={styles.primaryButton} type="button" onClick={submitDownload}>
+                    {downloadFormat === 'pdf' ? 'Open PDF report' : 'Download Excel'}
+                  </button>
+                </footer>
+              </>
+            )}
           </section>
         </div>
       ) : null}

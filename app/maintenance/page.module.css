@@ -4044,3 +4044,198 @@
   z-index: 2;
   background: #ffffff;
 }
+
+/* === Maintenance export flow: match Asset Register download modal === */
+.maintenanceExportModal {
+  width: min(100%, 940px);
+  overflow: hidden;
+}
+
+.maintenanceExportBody {
+  padding-top: 0.2rem;
+  padding-bottom: 1.25rem;
+}
+
+.maintenanceScopeList {
+  display: grid;
+  gap: 0.72rem;
+}
+
+.maintenanceScopeOption {
+  width: 100%;
+  min-height: 6.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.92rem 1.08rem;
+  border: 1px solid rgba(185, 219, 202, 0.9);
+  border-radius: 1.16rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fcfa 100%);
+  color: #0e4637;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 9px 20px rgba(18, 55, 45, 0.035), inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.maintenanceScopeOption:hover {
+  transform: translateY(-1px);
+  border-color: rgba(25, 116, 84, 0.42);
+  box-shadow: 0 13px 26px rgba(18, 55, 45, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.maintenanceScopeOptionActive {
+  border-color: rgba(72, 176, 121, 0.72);
+  background: linear-gradient(180deg, #ffffff 0%, #eef9f3 100%);
+  box-shadow: 0 0 0 3px rgba(25, 116, 84, 0.065), 0 12px 24px rgba(18, 55, 45, 0.05);
+}
+
+.maintenanceScopeIcon {
+  width: 4.25rem;
+  min-width: 4.25rem;
+  height: 4.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(199, 217, 228, 0.95);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.92);
+  color: #16815e;
+  font-size: 2rem;
+  font-weight: 520;
+  line-height: 1;
+}
+
+.maintenanceScopeCopy {
+  min-width: 0;
+  display: grid;
+  gap: 0.22rem;
+}
+
+.maintenanceScopeCopy strong {
+  color: #0d4537;
+  font-size: 1.08rem;
+  font-weight: 820;
+  letter-spacing: -0.025em;
+  line-height: 1.18;
+}
+
+.maintenanceScopeCopy small {
+  color: #607286;
+  font-size: 0.94rem;
+  font-weight: 620;
+  line-height: 1.36;
+}
+
+.maintenanceFormatGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.maintenanceFormatOption {
+  min-height: 7.4rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.15rem;
+  border: 1px solid rgba(205, 220, 231, 0.96);
+  border-radius: 1.18rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
+  color: #0e4637;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 10px 22px rgba(18, 44, 52, 0.035), inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.maintenanceFormatOption:hover {
+  transform: translateY(-1px);
+  border-color: rgba(25, 116, 84, 0.34);
+  box-shadow: 0 14px 28px rgba(18, 44, 52, 0.055), inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.maintenanceFormatOptionActive {
+  border-color: rgba(72, 176, 121, 0.62);
+  background: linear-gradient(180deg, #ffffff 0%, #eef9f3 100%);
+  box-shadow: 0 0 0 3px rgba(25, 116, 84, 0.06), 0 12px 24px rgba(18, 55, 45, 0.045);
+}
+
+.maintenanceFormatGraphic {
+  width: 4.4rem;
+  min-width: 4.4rem;
+  height: 4.4rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(199, 217, 228, 0.95);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.maintenanceFormatGraphic img {
+  width: 2.65rem;
+  height: 2.65rem;
+  object-fit: contain;
+}
+
+.maintenanceFormatCopy {
+  min-width: 0;
+  display: grid;
+  gap: 0.28rem;
+}
+
+.maintenanceFormatCopy strong {
+  color: #0d4537;
+  font-size: 1.13rem;
+  font-weight: 840;
+  letter-spacing: -0.03em;
+  line-height: 1.18;
+}
+
+.maintenanceFormatCopy small {
+  color: #607286;
+  font-size: 0.93rem;
+  font-weight: 620;
+  line-height: 1.38;
+}
+
+.maintenanceExportFooter {
+  justify-content: flex-end;
+  gap: 0.72rem;
+}
+
+.maintenanceExportFooter .primaryButton,
+.maintenanceExportFooter .secondaryButton {
+  min-width: 8.2rem;
+}
+
+@media (max-width: 760px) {
+  .maintenanceFormatGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .maintenanceScopeOption,
+  .maintenanceFormatOption {
+    align-items: flex-start;
+  }
+
+  .maintenanceScopeIcon,
+  .maintenanceFormatGraphic {
+    width: 3.55rem;
+    min-width: 3.55rem;
+    height: 3.55rem;
+  }
+
+  .maintenanceExportFooter {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .maintenanceExportFooter .primaryButton,
+  .maintenanceExportFooter .secondaryButton {
+    width: 100%;
+  }
+}
