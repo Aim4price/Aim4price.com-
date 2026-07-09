@@ -273,14 +273,14 @@ const OWNER_NAV_ITEMS: NavItem[] = [
 ];
 
 const ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
-  { href: '/asset-register', label: 'Asset Register', accountTypes: ['owner'] },
-  { href: '/marketplace', label: 'Marketplace', accountTypes: ['owner'] },
-  { href: '/asset-map', label: 'Asset Map', accountTypes: ['owner'] },
-  { href: '/my-invoices', label: 'Cost Ledger', accountTypes: ['owner'] },
-  { href: '/maintenance', label: 'Maintenance', accountTypes: ['owner'] },
-  { href: '/fuel', label: 'Fuel Ledger', accountTypes: ['owner'] },
-  { href: '/users', label: 'Users', accountTypes: ['dealer'] },
   { href: '/account', label: 'Account' },
+  { href: '/asset-map', label: 'Asset Map', accountTypes: ['owner'] },
+  { href: '/asset-register', label: 'Asset Register', accountTypes: ['owner'] },
+  { href: '/my-invoices', label: 'Cost Ledger', accountTypes: ['owner'] },
+  { href: '/fuel', label: 'Fuel Ledger', accountTypes: ['owner'] },
+  { href: '/maintenance', label: 'Maintenance', accountTypes: ['owner'] },
+  { href: '/marketplace', label: 'Marketplace', accountTypes: ['owner'] },
+  { href: '/users', label: 'Users', accountTypes: ['dealer'] },
 ];
 
 function isAccountMenuItemVisible(item: AccountMenuItem, accountType: AccountType | undefined): boolean {
