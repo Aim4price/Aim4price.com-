@@ -179,6 +179,44 @@ function DownloadIcon() {
   );
 }
 
+
+function MaintenanceReportScopeIcon({ scope }: { scope: DownloadScope }) {
+  if (scope === 'asset') {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path fill="currentColor" d="M12 12a4.25 4.25 0 1 0 0-8.5 4.25 4.25 0 0 0 0 8.5Zm0 2c-4.5 0-8 2.2-8 5v1h16v-1c0-2.8-3.5-5-8-5Z" />
+      </svg>
+    );
+  }
+  if (scope === 'upcoming') {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path fill="currentColor" d="M7 2a1 1 0 0 1 1 1v1h8V3a1 1 0 1 1 2 0v1h1a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1V3a1 1 0 0 1 1-1Zm12 8H5v9h14v-9Zm-7 1.5a1 1 0 0 1 1 1v2.1l1.35.8a1 1 0 1 1-1 1.72l-1.85-1.08A1 1 0 0 1 11 15v-2.5a1 1 0 0 1 1-1Z" />
+      </svg>
+    );
+  }
+  if (scope === 'done') {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path fill="currentColor" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm4.7 7.7-5.4 5.6a1 1 0 0 1-1.43.01l-2.58-2.5a1 1 0 1 1 1.4-1.43l1.86 1.8 4.71-4.88a1 1 0 1 1 1.44 1.4Z" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="currentColor" d="M5 3h10a2 2 0 0 1 2 2v2h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Zm4 6v10h10V9H9Zm2 3h6v1.75h-6V12Zm0 3.25h4.5V17H11v-1.75ZM5 5v10h2V9a2 2 0 0 1 2-2h6V5H5Z" />
+    </svg>
+  );
+}
+
+function SelectedTickIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="currentColor" d="M9.2 16.6 4.9 12.3a1 1 0 1 1 1.4-1.4l2.9 2.9 8.5-8.5a1 1 0 0 1 1.4 1.4l-9.2 9.9a1 1 0 0 1-1.4 0Z" />
+    </svg>
+  );
+}
+
 function EditIcon() {
   return (
     <svg className={styles.buttonIcon} viewBox="0 0 24 24" aria-hidden="true">
@@ -1436,11 +1474,14 @@ export default function MaintenanceClient() {
                 <h2 id="maintenance-download-title">
                   {downloadStep === 'scope' ? 'Download maintenance reports' : 'Choose download format'}
                 </h2>
-                <p>
-                  {downloadStep === 'scope'
-                    ? 'Choose which maintenance records should be included in the report.'
-                    : 'Choose a PDF report or an Excel-ready maintenance workbook.'}
-                </p>
+                <div className={styles.maintenanceExportHeadingRow}>
+                  <span className={styles.maintenanceExportBadge}>Step {downloadStep === 'scope' ? '1' : '2'} of 2</span>
+                  <p>
+                    {downloadStep === 'scope'
+                      ? 'Choose which maintenance records should be included in the report.'
+                      : 'Choose a PDF report or an Excel-ready maintenance workbook.'}
+                  </p>
+                </div>
               </div>
               <button className={styles.closeButton} type="button" onClick={closeModal} aria-label="Close download reports">
                 <CloseIcon />
@@ -1460,11 +1501,14 @@ export default function MaintenanceClient() {
                         onClick={() => setDownloadScope(option.value)}
                       >
                         <span className={styles.maintenanceScopeIcon} aria-hidden="true">
-                          {option.value === 'total' ? '↓' : option.value === 'asset' ? '↗' : option.value === 'upcoming' ? '⌁' : '✓'}
+                          <MaintenanceReportScopeIcon scope={option.value} />
                         </span>
                         <span className={styles.maintenanceScopeCopy}>
                           <strong>{option.title}</strong>
                           <small>{option.description}</small>
+                        </span>
+                        <span className={styles.maintenanceSelectionMark} aria-hidden="true">
+                          <SelectedTickIcon />
                         </span>
                       </button>
                     ))}
@@ -1513,6 +1557,9 @@ export default function MaintenanceClient() {
                         <span className={styles.maintenanceFormatCopy}>
                           <strong>{option.title}</strong>
                           <small>{option.description}</small>
+                        </span>
+                        <span className={styles.maintenanceSelectionMark} aria-hidden="true">
+                          <SelectedTickIcon />
                         </span>
                       </button>
                     ))}
