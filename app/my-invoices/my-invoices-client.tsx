@@ -7,7 +7,7 @@ import styles from './page.module.css';
 type FlowMode = 'source-choice' | 'asset-manual' | 'asset-automatic' | 'manual-form' | 'upload' | 'review' | null;
 type InvoiceSource = 'manual' | 'automatic' | 'fuel_slip';
 type FilterSource = 'all' | InvoiceSource;
-type UsageMetric = 'none' | 'hours' | 'km';
+type UsageMetric = 'none' | 'hours' | 'km' | 'percentage';
 type NoticeTone = 'success' | 'error';
 
 type AssetOption = {
@@ -17,7 +17,7 @@ type AssetOption = {
   categoryLabel: string;
   yearModel: number | null;
   usageReading: number | null;
-  usageMetric: 'hours' | 'km';
+  usageMetric: 'hours' | 'km' | 'percentage';
   condition: string;
   value: number;
   selectedMethod: string;
@@ -51,7 +51,7 @@ type InvoiceRecord = {
   assetCategoryLabel: string;
   assetYearModel: number | null;
   assetUsageReading: number | null;
-  assetUsageMetric: 'hours' | 'km';
+  assetUsageMetric: 'hours' | 'km' | 'percentage';
   assetCondition: string;
   invoiceDocumentId: string | null;
   document: InvoiceDocument | null;
@@ -199,6 +199,7 @@ const USAGE_METRIC_OPTIONS: Array<{ value: UsageMetric; label: string }> = [
   { value: 'none', label: 'No usage reading' },
   { value: 'hours', label: 'Hours reading' },
   { value: 'km', label: 'Kilometre reading' },
+  { value: 'percentage', label: 'Percentage reading' },
 ];
 
 function IconBase(props: SVGProps<SVGSVGElement>) {
@@ -515,8 +516,14 @@ function conditionLabel(value: string | null | undefined): string {
   );
 }
 
-function formatAssetUsageReading(value: number | null | undefined, metric: 'hours' | 'km'): string {
-  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) return '';
+function formatAssetUsageReading(value: number | null | undefined, metric: Exclude<UsageMetric, 'none'>): string {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return '';
+
+  if (metric === 'percentage') {
+    return `${value.toLocaleString('en-ZA', { maximumFractionDigits: 1 })}%`;
+  }
+
+  if (value <= 0) return '';
 
   const rounded = Math.round(value);
   const unit = metric === 'km' ? 'km' : 'hours';
