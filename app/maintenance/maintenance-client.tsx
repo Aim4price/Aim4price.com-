@@ -124,7 +124,7 @@ type MaintenanceDraft = {
   recurringIntervalUnit: IntervalUnit;
 };
 
-type ModalMode = 'asset-picker' | 'form' | 'filter' | 'download' | 'complete' | null;
+type ModalMode = 'asset-picker' | 'maintenance-type' | 'trigger-type' | 'form' | 'filter' | 'download' | 'complete' | null;
 
 type DownloadScope = 'total' | 'asset' | 'upcoming' | 'done';
 type DownloadFormat = 'pdf' | 'xlsx';
@@ -790,7 +790,23 @@ export default function MaintenanceClient() {
 
   function selectAsset(asset: AssetOption) {
     setDraft(emptyDraftForAsset(asset));
+    setModalMode('maintenance-type');
+  }
+
+  function chooseMaintenanceType(type: MaintenanceType) {
+    updateDraft({ maintenanceType: type });
+    setModalMode('trigger-type');
+  }
+
+  function chooseTriggerType(triggerType: TriggerType) {
+    updateDraft({ triggerType });
     setModalMode('form');
+  }
+
+  function returnToAssetPicker() {
+    setDraft(null);
+    setPickerSearch('');
+    setModalMode('asset-picker');
   }
 
   function openEdit(record: MaintenanceRecord) {
@@ -1085,6 +1101,7 @@ export default function MaintenanceClient() {
           <section className={`${styles.assetModal} ${styles.formModal}`}>
             <header className={styles.modalHeader}>
               <div>
+                <div className={styles.maintenanceStepEyebrow}>Step 1 of 4</div>
                 <h2 id="asset-picker-title">Choose asset for maintenance</h2>
                 <p>Select the saved asset this service or checkup belongs to.</p>
               </div>
@@ -1122,13 +1139,87 @@ export default function MaintenanceClient() {
         </div>
       ) : null}
 
+
+      {modalMode === 'maintenance-type' && draft ? (
+        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-labelledby="maintenance-type-title">
+          <section className={`${styles.formModal} ${styles.maintenanceStepModal}`}>
+            <header className={styles.modalHeader}>
+              <div>
+                <div className={styles.maintenanceStepEyebrow}>Step 2 of 4</div>
+                <h2 id="maintenance-type-title">What are you scheduling?</h2>
+                <p>{selectedAssetLabel(selectedDraftAsset)}</p>
+              </div>
+              <button className={styles.closeButton} type="button" onClick={closeModal} aria-label="Close maintenance type selection">
+                <CloseIcon />
+              </button>
+            </header>
+            <div className={styles.modalDivider} />
+            <div className={styles.maintenanceChoiceBody}>
+              <div className={styles.maintenanceChoiceGrid}>
+                <button className={styles.maintenanceChoiceCard} type="button" onClick={() => chooseMaintenanceType('service')}>
+                  <span className={styles.maintenanceChoiceIcon} aria-hidden="true">S</span>
+                  <strong>Service</strong>
+                  <small>Schedule routine servicing, replacement parts or a service interval.</small>
+                </button>
+                <button className={styles.maintenanceChoiceCard} type="button" onClick={() => chooseMaintenanceType('checkup')}>
+                  <span className={styles.maintenanceChoiceIcon} aria-hidden="true">✓</span>
+                  <strong>Checkup</strong>
+                  <small>Schedule an inspection, condition review or preventative check.</small>
+                </button>
+              </div>
+            </div>
+            <footer className={styles.modalFooter}>
+              <button className={styles.secondaryButton} type="button" onClick={returnToAssetPicker}>Back</button>
+              <button className={styles.secondaryButton} type="button" onClick={closeModal}>Cancel</button>
+            </footer>
+          </section>
+        </div>
+      ) : null}
+
+      {modalMode === 'trigger-type' && draft ? (
+        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-labelledby="maintenance-trigger-title">
+          <section className={`${styles.formModal} ${styles.maintenanceStepModal}`}>
+            <header className={styles.modalHeader}>
+              <div>
+                <div className={styles.maintenanceStepEyebrow}>Step 3 of 4</div>
+                <h2 id="maintenance-trigger-title">When should it be due?</h2>
+                <p>{typeLabel(draft.maintenanceType)} · {selectedAssetLabel(selectedDraftAsset)}</p>
+              </div>
+              <button className={styles.closeButton} type="button" onClick={closeModal} aria-label="Close maintenance trigger selection">
+                <CloseIcon />
+              </button>
+            </header>
+            <div className={styles.modalDivider} />
+            <div className={styles.maintenanceChoiceBody}>
+              <div className={styles.maintenanceChoiceGrid}>
+                <button className={styles.maintenanceChoiceCard} type="button" onClick={() => chooseTriggerType('date')}>
+                  <span className={styles.maintenanceChoiceIcon} aria-hidden="true">31</span>
+                  <strong>Specific date</strong>
+                  <small>Set a calendar date and choose how far in advance to be alerted.</small>
+                </button>
+                <button className={styles.maintenanceChoiceCard} type="button" onClick={() => chooseTriggerType('usage')}>
+                  <span className={styles.maintenanceChoiceIcon} aria-hidden="true">↗</span>
+                  <strong>Usage</strong>
+                  <small>Set a target {usageUnitLabel(selectedDraftAsset?.usageMetric ?? draft.usageMetric)} reading for this asset.</small>
+                </button>
+              </div>
+            </div>
+            <footer className={styles.modalFooter}>
+              <button className={styles.secondaryButton} type="button" onClick={() => setModalMode('maintenance-type')}>Back</button>
+              <button className={styles.secondaryButton} type="button" onClick={closeModal}>Cancel</button>
+            </footer>
+          </section>
+        </div>
+      ) : null}
+
       {modalMode === 'form' && draft ? (
         <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-labelledby="maintenance-form-title">
           <section className={styles.formModal}>
             <header className={styles.modalHeader}>
               <div>
-                <h2 id="maintenance-form-title">{editingRecordId ? 'Edit maintenance' : 'Schedule maintenance'}</h2>
-                <p>{selectedAssetLabel(selectedDraftAsset)}</p>
+                {!editingRecordId ? <div className={styles.maintenanceStepEyebrow}>Step 4 of 4</div> : null}
+                <h2 id="maintenance-form-title">{editingRecordId ? 'Edit maintenance' : `Schedule ${draft.maintenanceType}`}</h2>
+                <p>{editingRecordId ? selectedAssetLabel(selectedDraftAsset) : `${triggerLabel(draft.triggerType)} · ${selectedAssetLabel(selectedDraftAsset)}`}</p>
               </div>
               <button className={styles.closeButton} type="button" onClick={closeModal} aria-label="Close maintenance form">
                 <CloseIcon />
@@ -1136,35 +1227,39 @@ export default function MaintenanceClient() {
             </header>
             <div className={styles.modalDivider} />
             <div className={styles.formModalScrollBody}>
-              <div className={styles.maintenanceSectionTitle}>Maintenance type</div>
-              <div className={styles.maintenanceToggleGrid}>
-                {(['service', 'checkup'] as MaintenanceType[]).map((type) => (
-                  <button
-                    key={type}
-                    className={`${styles.maintenanceToggleOption} ${draft.maintenanceType === type ? styles.maintenanceToggleActive : ''}`}
-                    type="button"
-                    onClick={() => updateDraft({ maintenanceType: type })}
-                  >
-                    <strong>{typeLabel(type)}</strong>
-                    <span>{type === 'service' ? 'Scheduled service, replacement parts or service interval.' : 'Inspection, condition check or preventative checkup.'}</span>
-                  </button>
-                ))}
-              </div>
+              {editingRecordId ? (
+                <>
+                  <div className={styles.maintenanceSectionTitle}>Maintenance type</div>
+                  <div className={styles.maintenanceToggleGrid}>
+                    {(['service', 'checkup'] as MaintenanceType[]).map((type) => (
+                      <button
+                        key={type}
+                        className={`${styles.maintenanceToggleOption} ${draft.maintenanceType === type ? styles.maintenanceToggleActive : ''}`}
+                        type="button"
+                        onClick={() => updateDraft({ maintenanceType: type })}
+                      >
+                        <strong>{typeLabel(type)}</strong>
+                        <span>{type === 'service' ? 'Scheduled service, replacement parts or service interval.' : 'Inspection, condition check or preventative checkup.'}</span>
+                      </button>
+                    ))}
+                  </div>
 
-              <div className={styles.maintenanceSectionTitle}>Trigger</div>
-              <div className={styles.maintenanceToggleGrid}>
-                {(['date', 'usage'] as TriggerType[]).map((trigger) => (
-                  <button
-                    key={trigger}
-                    className={`${styles.maintenanceToggleOption} ${draft.triggerType === trigger ? styles.maintenanceToggleActive : ''}`}
-                    type="button"
-                    onClick={() => updateDraft({ triggerType: trigger })}
-                  >
-                    <strong>{triggerLabel(trigger)}</strong>
-                    <span>{trigger === 'date' ? 'Due on a calendar date.' : `Due at a target ${usageUnitLabel(selectedDraftAsset?.usageMetric ?? draft.usageMetric)} reading.`}</span>
-                  </button>
-                ))}
-              </div>
+                  <div className={styles.maintenanceSectionTitle}>Trigger</div>
+                  <div className={styles.maintenanceToggleGrid}>
+                    {(['date', 'usage'] as TriggerType[]).map((trigger) => (
+                      <button
+                        key={trigger}
+                        className={`${styles.maintenanceToggleOption} ${draft.triggerType === trigger ? styles.maintenanceToggleActive : ''}`}
+                        type="button"
+                        onClick={() => updateDraft({ triggerType: trigger })}
+                      >
+                        <strong>{triggerLabel(trigger)}</strong>
+                        <span>{trigger === 'date' ? 'Due on a calendar date.' : `Due at a target ${usageUnitLabel(selectedDraftAsset?.usageMetric ?? draft.usageMetric)} reading.`}</span>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              ) : null}
 
               <div className={styles.maintenanceSectionTitle}>{draft.triggerType === 'date' ? 'Specific date setup' : 'Usage setup'}</div>
               <div className={styles.maintenanceFieldGrid}>
@@ -1253,6 +1348,7 @@ export default function MaintenanceClient() {
               </div>
             </div>
             <footer className={styles.modalFooter}>
+              {!editingRecordId ? <button className={styles.secondaryButton} type="button" onClick={() => setModalMode('trigger-type')}>Back</button> : null}
               <button className={styles.secondaryButton} type="button" onClick={closeModal}>Cancel</button>
               <button className={styles.primaryButton} type="button" onClick={() => void submitDraft()} disabled={isSaving}>
                 {isSaving ? 'Saving...' : editingRecordId ? 'Save changes' : `Add ${draft.maintenanceType}`}

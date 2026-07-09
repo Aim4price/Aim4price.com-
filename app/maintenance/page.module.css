@@ -3649,3 +3649,134 @@
     min-width: 0;
   }
 }
+
+
+/* === Maintenance guided scheduling flow === */
+.maintenanceStepModal {
+  width: min(62rem, calc(100vw - 2rem));
+}
+
+.maintenanceStepEyebrow {
+  margin-bottom: 0.38rem;
+  color: #197454;
+  font-size: 0.76rem;
+  font-weight: 950;
+  letter-spacing: 0.095em;
+  text-transform: uppercase;
+}
+
+.maintenanceChoiceBody {
+  padding: clamp(1.4rem, 3vw, 2.35rem);
+  background:
+    radial-gradient(circle at 12% 8%, rgba(25, 116, 84, 0.07), transparent 31%),
+    linear-gradient(180deg, #ffffff 0%, #f8fbfa 100%);
+}
+
+.maintenanceChoiceGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.maintenanceChoiceCard {
+  min-height: 14.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.72rem;
+  padding: 1.6rem;
+  border: 1px solid #cfdee3;
+  border-radius: 1.55rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f7faf9 100%);
+  color: var(--brand-dark);
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(19, 39, 43, 0.045);
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.maintenanceChoiceCard:hover,
+.maintenanceChoiceCard:focus-visible {
+  transform: translateY(-3px);
+  border-color: #79bf98;
+  background: linear-gradient(180deg, #f4fcf7 0%, #eaf7f0 100%);
+  box-shadow: 0 18px 36px rgba(16, 91, 68, 0.13), 0 0 0 4px rgba(25, 116, 84, 0.08);
+  outline: none;
+}
+
+.maintenanceChoiceIcon {
+  width: 4rem;
+  height: 4rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #bfd9cd;
+  border-radius: 1.2rem;
+  background: #edf8f2;
+  color: #0e6549;
+  font-size: 1.15rem;
+  font-weight: 950;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.75);
+}
+
+.maintenanceChoiceCard strong {
+  display: block;
+  color: var(--brand-dark);
+  font-size: clamp(1.45rem, 2.2vw, 2rem);
+  font-weight: 950;
+  letter-spacing: -0.035em;
+}
+
+.maintenanceChoiceCard small {
+  display: block;
+  max-width: 25rem;
+  color: var(--text-muted);
+  font-size: 0.94rem;
+  font-weight: 720;
+  line-height: 1.48;
+}
+
+.assetModal .pickerToolbar {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  padding-top: 1rem;
+  background: rgba(255, 255, 255, 0.97);
+  backdrop-filter: blur(10px);
+}
+
+.assetModal .pickerToolbar input {
+  min-height: 3.65rem;
+  padding-left: 1.05rem;
+  border-color: #b9d1c7;
+  box-shadow: 0 0 0 4px rgba(25, 116, 84, 0.07);
+}
+
+.assetModal .assetRow {
+  transition: transform 150ms ease, border-color 150ms ease, box-shadow 150ms ease, background 150ms ease;
+}
+
+.assetModal .assetRow:hover,
+.assetModal .assetRow:focus-visible {
+  transform: translateY(-1px);
+  border-color: #80c19c;
+  background: #f3fbf6;
+  box-shadow: 0 10px 22px rgba(15, 88, 64, 0.08);
+  outline: none;
+}
+
+@media (max-width: 760px) {
+  .maintenanceChoiceGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .maintenanceChoiceCard {
+    min-height: 10.5rem;
+  }
+
+  .maintenanceStepModal {
+    width: min(100%, calc(100vw - 1rem));
+  }
+}
