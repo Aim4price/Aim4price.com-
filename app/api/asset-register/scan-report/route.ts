@@ -57,6 +57,22 @@ type MaintenanceEntry = {
   event: ScanEventRecord;
 };
 
+type FuelAverageUsageMetric = 'hours' | 'km';
+
+type FuelAverageResult = {
+  metric: FuelAverageUsageMetric | null;
+  available: boolean;
+  value: number | null;
+  valueLabel: string;
+  statusText: string;
+  entriesUsed: number;
+  minimumEntries: number;
+  totalLitres: number | null;
+  usageDelta: number | null;
+};
+
+const MIN_FUEL_AVERAGE_ENTRIES = 5;
+
 const REPORT_LABELS: Record<PdfReportKind, string> = {
   fuel: 'Fuel Report',
   maintenance: 'Maintenance Report',
@@ -506,6 +522,201 @@ function formatLitres(value: number | null | undefined): string {
 
 function roundLitres(value: number): number {
   return Math.round(value * 100) / 100;
+}
+
+function readFuelAverageUsageMetric(asset: AssetRegisterItem): FuelAverageUsageMetric | null {
+  const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
+  const rawUsage = String(
+    specs.usageMetric ??
+      specs.usage_metric ??
+      specs.usageUnit ??
+      specs.usage_unit ??
+      specs.usageMetricType ??
+      specs.usage_metric_type ??
+      specs.selectedUsageMetric ??
+      specs.selected_usage_metric ??
+      '',
+  )
+    .trim()
+    .toLowerCase();
+
+  if (['km', 'kms', 'kilometre', 'kilometres', 'kilometer', 'kilometers', 'odometer'].includes(rawUsage)) {
+    return 'km';
+  }
+
+  if (['hour', 'hours', 'hr', 'hrs', 'engine_hours', 'engine-hours'].includes(rawUsage)) {
+    return 'hours';
+  }
+
+  if (['percent', 'percentage', 'life_worked_percent', 'life-worked-percent', 'worked'].includes(rawUsage)) {
+    return null;
+  }
+
+  return getUsageUnit(asset);
+}
+
+function fuelAverageUsageReading(event: ScanEventRecord): number | null {
+  const reading = event.assetUsageReading ?? event.hours;
+
+  if (typeof reading !== 'number' || !Number.isFinite(reading) || reading < 0) {
+    return null;
+  }
+
+  return reading;
+}
+
+function formatFuelAverageUsageDelta(value: number | null | undefined, metric: FuelAverageUsageMetric | null): string {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0 || !metric) {
+    return '-';
+  }
+
+  return metric === 'km' ? `${formatNumber(value)} km` : `${formatNumber(value)} hours`;
+}
+
+function formatFuelAverageNumber(value: number): string {
+  if (value >= 100) return formatNumber(value, 1);
+  if (value >= 10) return formatNumber(value, 2);
+  return formatNumber(value, 2);
+}
+
+function formatFuelAverageValue(value: number | null | undefined, metric: FuelAverageUsageMetric | null): string {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0 || !metric) {
+    return 'Pending';
+  }
+
+  return metric === 'km'
+    ? `${formatFuelAverageNumber(value)} km/L`
+    : `${formatFuelAverageNumber(value)} L/hour`;
+}
+
+function isFuelReportEvent(event: ScanEventRecord): boolean {
+  const hasFuelPercent = typeof event.fuelPercent === 'number' && Number.isFinite(event.fuelPercent);
+  const hasFuelLitres = typeof event.fuelLitres === 'number' && Number.isFinite(event.fuelLitres) && event.fuelLitres > 0;
+
+  return hasFuelPercent || hasFuelLitres || Boolean(asText(event.fuelStorageEventId));
+}
+
+function filterFuelReportEvents(events: ScanEventRecord[]): ScanEventRecord[] {
+  return events.filter(isFuelReportEvent);
+}
+
+function calculateFuelAverage(asset: AssetRegisterItem, fuelEvents: ScanEventRecord[]): FuelAverageResult {
+  const metric = readFuelAverageUsageMetric(asset);
+  const usableEvents = fuelEvents
+    .map((event) => {
+      const litres = event.fuelLitres;
+      const usage = fuelAverageUsageReading(event);
+
+      return {
+        event,
+        litres: typeof litres === 'number' && Number.isFinite(litres) && litres > 0 ? litres : null,
+        usage,
+      };
+    })
+    .filter((entry): entry is { event: ScanEventRecord; litres: number; usage: number } => entry.litres !== null && entry.usage !== null)
+    .sort((left, right) => {
+      const leftTime = new Date(left.event.createdAtIso).getTime();
+      const rightTime = new Date(right.event.createdAtIso).getTime();
+
+      if (Number.isFinite(leftTime) && Number.isFinite(rightTime) && leftTime !== rightTime) {
+        return leftTime - rightTime;
+      }
+
+      return String(left.event.id).localeCompare(String(right.event.id));
+    });
+  const entriesUsed = usableEvents.length;
+  const totalLitres = entriesUsed ? usableEvents.reduce((sum, entry) => sum + entry.litres, 0) : null;
+  const oldestUsage = usableEvents[0]?.usage ?? null;
+  const latestUsage = usableEvents[usableEvents.length - 1]?.usage ?? null;
+  const usageDelta =
+    typeof oldestUsage === 'number' &&
+    Number.isFinite(oldestUsage) &&
+    typeof latestUsage === 'number' &&
+    Number.isFinite(latestUsage)
+      ? latestUsage - oldestUsage
+      : null;
+
+  if (!metric) {
+    return {
+      metric,
+      available: false,
+      value: null,
+      valueLabel: 'Pending',
+      statusText: 'Fuel average is only calculated for hours or kilometre usage.',
+      entriesUsed,
+      minimumEntries: MIN_FUEL_AVERAGE_ENTRIES,
+      totalLitres,
+      usageDelta,
+    };
+  }
+
+  if (entriesUsed < MIN_FUEL_AVERAGE_ENTRIES) {
+    return {
+      metric,
+      available: false,
+      value: null,
+      valueLabel: 'Pending',
+      statusText: `Available after ${MIN_FUEL_AVERAGE_ENTRIES} usable fuel entries.`,
+      entriesUsed,
+      minimumEntries: MIN_FUEL_AVERAGE_ENTRIES,
+      totalLitres,
+      usageDelta,
+    };
+  }
+
+  if (typeof usageDelta !== 'number' || !Number.isFinite(usageDelta) || usageDelta <= 0 || !totalLitres || totalLitres <= 0) {
+    return {
+      metric,
+      available: false,
+      value: null,
+      valueLabel: 'Pending',
+      statusText: 'Needs a positive usage movement between the oldest and newest fuel entries.',
+      entriesUsed,
+      minimumEntries: MIN_FUEL_AVERAGE_ENTRIES,
+      totalLitres,
+      usageDelta,
+    };
+  }
+
+  const value = metric === 'km' ? usageDelta / totalLitres : totalLitres / usageDelta;
+
+  return {
+    metric,
+    available: true,
+    value,
+    valueLabel: formatFuelAverageValue(value, metric),
+    statusText: 'Planning average from usable fuel entries in this report.',
+    entriesUsed,
+    minimumEntries: MIN_FUEL_AVERAGE_ENTRIES,
+    totalLitres,
+    usageDelta,
+  };
+}
+
+function buildFuelAverageRows(average: FuelAverageResult): KeyValueRow[] {
+  return [
+    { label: 'Basis', value: average.available ? 'Planning average' : average.statusText },
+    { label: 'Records Used', value: `${formatNumber(average.entriesUsed)} / ${formatNumber(average.minimumEntries)} minimum` },
+    { label: 'Litres Filled', value: formatLitres(average.totalLitres) },
+    { label: 'Usage Change', value: formatFuelAverageUsageDelta(average.usageDelta, average.metric) },
+  ];
+}
+
+function renderFuelAverageCard(asset: AssetRegisterItem, fuelEvents: ScanEventRecord[]): string {
+  const average = calculateFuelAverage(asset, fuelEvents);
+  const unitLabel = average.metric === 'km' ? 'km per litre' : average.metric === 'hours' ? 'litres per hour' : 'fuel average';
+
+  return `
+    <section class="assetReportSideCard assetReportFuelAverageCard">
+      <h2>Fuel Average</h2>
+      <div class="assetReportFuelAverageHero ${average.available ? 'assetReportFuelAverageHeroReady' : 'assetReportFuelAverageHeroPending'}">
+        <span>${escapeHtml(unitLabel)}</span>
+        <strong>${escapeHtml(average.valueLabel)}</strong>
+        <small>${escapeHtml(average.statusText)}</small>
+      </div>
+      ${renderRows(buildFuelAverageRows(average), 'No fuel average details available.', 'assetReportFuelAverageRows')}
+    </section>
+  `;
 }
 
 function numberForExcel(value: number | null | undefined, digits = 2): number | null {
@@ -1456,6 +1667,7 @@ function buildReportHtml(options: {
   summary: ReportSummary;
   recordRows: KeyValueRow[];
   bodyHtml: string;
+  sideExtraHtml?: string;
 }): string {
   const reportTitle = REPORT_LABELS[options.reportKind];
   const asset = options.asset;
@@ -1912,6 +2124,65 @@ function buildReportHtml(options: {
 
       .assetReportSideCard .assetReportRow strong {
         font-size: 8.2px;
+      }
+
+      .assetReportFuelAverageCard {
+        min-height: 38mm;
+      }
+
+      .assetReportFuelAverageHero {
+        display: grid;
+        gap: 5px;
+        align-items: center;
+        justify-items: center;
+        margin-bottom: 8px;
+        padding: 10px 8px;
+        border: 1px solid var(--line);
+        background: var(--soft-2);
+        text-align: center;
+      }
+
+      .assetReportFuelAverageHero span {
+        color: var(--muted);
+        font-size: 7.4px;
+        line-height: 1.15;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .assetReportFuelAverageHero strong {
+        color: var(--strong);
+        font-size: 16.5px;
+        line-height: 1;
+        font-weight: 800;
+        letter-spacing: -0.04em;
+      }
+
+      .assetReportFuelAverageHero small {
+        max-width: 44mm;
+        color: var(--muted);
+        font-size: 7.1px;
+        line-height: 1.3;
+        font-weight: 600;
+      }
+
+      .assetReportFuelAverageHeroReady {
+        border-color: var(--line-strong);
+        background: #fbfdfc;
+      }
+
+      .assetReportFuelAverageRows .assetReportRow {
+        grid-template-columns: 21mm minmax(0, 1fr);
+        min-height: 16.5px;
+      }
+
+      .assetReportFuelAverageRows .assetReportRow span {
+        font-size: 7.8px;
+      }
+
+      .assetReportFuelAverageRows .assetReportRow strong {
+        font-size: 7.9px;
       }
 
       .assetReportRecordRows .assetReportRows {
@@ -2470,6 +2741,8 @@ function buildReportHtml(options: {
               <h2>Latest Location</h2>
               ${renderRows(buildLocationRows(asset), 'No location captured yet.')}
             </section>
+
+            ${options.sideExtraHtml ?? ''}
           </aside>
         </div>
 
@@ -2546,7 +2819,7 @@ function buildFuelReport(
   logoUrl: string,
   dateRangeLabel = 'All available entries',
 ): string {
-  const fuelEvents = events.filter((event) => typeof event.fuelPercent === 'number' && Number.isFinite(event.fuelPercent));
+  const fuelEvents = filterFuelReportEvents(events);
 
   return buildReportHtml({
     reportKind: 'fuel',
@@ -2557,6 +2830,7 @@ function buildFuelReport(
     summary: buildFuelReportSummary(asset, fuelEvents),
     recordRows: buildFuelRecordRows(asset, fuelEvents, dateRangeLabel),
     bodyHtml: buildFuelBody(asset, fuelEvents),
+    sideExtraHtml: renderFuelAverageCard(asset, fuelEvents),
   });
 }
 
@@ -2651,8 +2925,13 @@ function buildFuelReportWorkbook(
   generatedAt: string,
   dateRangeLabel = 'All available entries',
 ): XlsxSheet[] {
-  const fuelEvents = events.filter((event) => typeof event.fuelPercent === 'number' && Number.isFinite(event.fuelPercent));
-  const recordRows = buildFuelRecordRows(asset, fuelEvents, dateRangeLabel);
+  const fuelEvents = filterFuelReportEvents(events);
+  const fuelAverage = calculateFuelAverage(asset, fuelEvents);
+  const recordRows = [
+    ...buildFuelRecordRows(asset, fuelEvents, dateRangeLabel),
+    { label: 'Fuel Average', value: fuelAverage.valueLabel },
+    { label: 'Fuel Average Basis', value: fuelAverage.statusText },
+  ];
   const headers = [
     'Date / Time',
     'Ledger Activity',
