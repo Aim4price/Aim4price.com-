@@ -272,11 +272,6 @@ function triggerLabel(value: TriggerType | string): string {
   return value === 'date' ? 'Specific date' : 'Usage';
 }
 
-function statusLabel(value: ComputedStatus | string): string {
-  if (value === 'due_soon') return 'Due soon';
-  return titleCase(value || 'upcoming');
-}
-
 function usageUnitLabel(metric: UsageMetric | string | null | undefined): string {
   if (metric === 'km') return 'km';
   if (metric === 'percentage') return '%';
@@ -296,6 +291,43 @@ function intervalUnitLabel(unit: IntervalUnit | string | null | undefined): stri
 function formatUsage(value: number | null | undefined, metric: UsageMetric | string | null | undefined): string {
   if (typeof value !== 'number' || !Number.isFinite(value)) return '-';
   return `${value.toLocaleString('en-ZA', { maximumFractionDigits: 2 })} ${usageUnitLabel(metric)}`;
+}
+
+function assetYearLabelFromCategory(categoryLabel: string | null | undefined): string {
+  const category = String(categoryLabel ?? '').toLowerCase();
+  return category.includes('property') || category.includes('building') ? 'Year Built' : 'Year Model';
+}
+
+function buildMaintenanceAssetMeta(record: MaintenanceRecord): string {
+  const usageLabel = formatUsage(record.assetUsageReading, record.assetUsageMetric);
+  const familyLabel = record.assetCategoryLabel || titleCase(record.assetKind || 'asset');
+  const details = [
+    typeof record.assetYearModel === 'number' && Number.isFinite(record.assetYearModel) && record.assetYearModel > 0
+      ? `${assetYearLabelFromCategory(record.assetCategoryLabel)}: ${record.assetYearModel}`
+      : '',
+    usageLabel !== '-' ? `Usage: ${usageLabel}` : '',
+    record.assetCondition ? `Condition: ${record.assetCondition}` : '',
+    familyLabel ? `Family: ${familyLabel}` : '',
+  ].filter(Boolean);
+
+  return details.length ? details.join(' • ') : record.assetMeta || record.assetTitle;
+}
+
+function maintenanceDueValue(record: MaintenanceRecord): string {
+  if (record.triggerType === 'date') return dateOnly(record.dueDate);
+  return formatUsage(record.dueUsage, record.usageMetric ?? record.assetUsageMetric);
+}
+
+function maintenanceDueCaption(record: MaintenanceRecord): string {
+  return record.triggerType === 'date' ? 'Due Date' : 'Due Usage';
+}
+
+function maintenanceAlertLabel(record: MaintenanceRecord): string {
+  if (record.alertBeforeValue !== null && record.alertBeforeUnit) {
+    return `Alert before ${numberText(record.alertBeforeValue)} ${intervalUnitLabel(record.alertBeforeUnit)}`;
+  }
+
+  return 'Alert before -';
 }
 
 function defaultUsageInterval(metric: UsageMetric): number {
@@ -857,7 +889,7 @@ export default function MaintenanceClient() {
   }
 
   async function deleteRecord(record: MaintenanceRecord) {
-    const confirmed = window.confirm(`Delete/cancel this ${typeLabel(record.maintenanceType).toLowerCase()} record for ${record.assetTitle}?`);
+    const confirmed = window.confirm(`Delete this maintenance record for ${record.assetTitle}?`);
     if (!confirmed) return;
 
     setDeletingRecordId(record.id);
@@ -976,106 +1008,49 @@ export default function MaintenanceClient() {
           ) : pagedRecords.length ? (
             <div className={styles.invoiceList}>
               {pagedRecords.map((record) => (
-                <article
-                  className={`${styles.invoiceRow} ${record.status === 'done' ? styles.maintenanceCardDone : styles.maintenanceCardOpen}`}
-                  key={record.id}
-                >
+                <article className={styles.invoiceRow} key={record.id}>
                   <div className={styles.invoiceHeader}>
                     <div className={styles.invoiceTitleBlock}>
-                      <span
-                        className={`${styles.maintenanceStatusPill} ${
-                          record.status === 'done'
-                            ? styles.maintenanceStatusGood
-                            : record.computedStatus === 'overdue' || record.computedStatus === 'due'
-                              ? styles.maintenanceStatusDanger
-                              : ''
-                        }`}
-                      >
-                        {statusLabel(record.computedStatus)}
-                      </span>
-                      <h2 className={styles.invoiceTitle}>{typeLabel(record.maintenanceType)}: {record.assetTitle}</h2>
-                      <p className={styles.maintenanceMetaLine}>{record.assetMeta || `${record.assetCategoryLabel} • ${record.assetCondition}`}</p>
-                    </div>
-                    <div className={styles.invoiceHeaderAside}>
-                      <strong className={styles.invoicePrice}>{record.triggerType === 'date' ? dateOnly(record.dueDate) : formatUsage(record.dueUsage, record.usageMetric ?? record.assetUsageMetric)}</strong>
-                      <span className={styles.invoiceVatLabel}>{record.triggerType === 'date' ? 'Due date' : 'Due usage'}</span>
-                    </div>
-                  </div>
-
-                  <div className={styles.maintenanceDetailsGrid}>
-                    {record.triggerType === 'usage' ? (
-                      <>
-                        <div className={styles.maintenanceDetail}>
-                          <span>Current usage</span>
-                          <strong>{formatUsage(record.currentUsage, record.usageMetric ?? record.assetUsageMetric)}</strong>
-                        </div>
-                        <div className={styles.maintenanceDetail}>
-                          <span>Due usage</span>
-                          <strong>{formatUsage(record.dueUsage, record.usageMetric ?? record.assetUsageMetric)}</strong>
-                        </div>
-                      </>
-                    ) : null}
-                    <div className={styles.maintenanceDetail}>
-                      <span>Alert before</span>
-                      <strong>{record.alertBeforeValue !== null && record.alertBeforeUnit ? `${numberText(record.alertBeforeValue)} ${intervalUnitLabel(record.alertBeforeUnit)}` : '-'}</strong>
-                    </div>
-                    <div className={styles.maintenanceDetail}>
-                      <span>Recurring</span>
-                      <strong>{record.recurringEnabled && record.recurringIntervalValue !== null && record.recurringIntervalUnit ? `Every ${numberText(record.recurringIntervalValue)} ${intervalUnitLabel(record.recurringIntervalUnit)}` : 'No'}</strong>
-                    </div>
-                    <div className={styles.maintenanceDetail}>
-                      <span>Assigned to</span>
-                      <strong>{record.assignedName || 'Unassigned'}</strong>
-                    </div>
-                    <div className={styles.maintenanceDetail}>
-                      <span>Updated</span>
-                      <strong>{dateOnly(record.updatedAtIso)}</strong>
-                    </div>
-                    {record.status === 'done' ? (
-                      <>
-                        <div className={styles.maintenanceDetail}>
-                          <span>Completed</span>
-                          <strong>{dateOnly(record.completedAtIso)}</strong>
-                        </div>
-                        {record.completedUsage !== null ? (
-                          <div className={styles.maintenanceDetail}>
-                            <span>Completed usage</span>
-                            <strong>{formatUsage(record.completedUsage, record.usageMetric ?? record.assetUsageMetric)}</strong>
-                          </div>
-                        ) : null}
-                        {record.completedNotes ? (
-                          <div className={styles.maintenanceDetailWide}>
-                            <span>Completed notes</span>
-                            <strong>{record.completedNotes}</strong>
-                          </div>
-                        ) : null}
-                      </>
-                    ) : null}
-                    {record.notes ? (
-                      <div className={styles.maintenanceDetailWide}>
-                        <span>Notes</span>
-                        <strong>{record.notes}</strong>
+                      <h2 className={styles.invoiceTitle}>{record.assetTitle}</h2>
+                      <p className={styles.invoiceAsset}>{buildMaintenanceAssetMeta(record)}</p>
+                      <div className={styles.invoiceMetaList}>
+                        <span className={styles.invoiceValueMethodLabel}>Assigned to {record.assignedName || 'Unassigned'}</span>
+                        <span className={styles.invoiceSavedDateLabel}>{maintenanceAlertLabel(record)}</span>
+                        <span className={styles.invoiceSavedDateLabel}>Updated {dateOnly(record.updatedAtIso)}</span>
                       </div>
-                    ) : null}
-                  </div>
+                    </div>
 
-                  <div className={styles.rowActions}>
-                    {record.status !== 'done' ? (
-                      <button className={styles.secondaryButtonSmall} type="button" onClick={() => openEdit(record)}>
-                        <EditIcon />
-                        Edit
-                      </button>
-                    ) : null}
-                    {record.status !== 'done' ? (
-                      <button className={styles.secondaryButtonSmall} type="button" onClick={() => openComplete(record)} disabled={busyCompleteId === record.id}>
-                        <CheckIcon />
-                        Mark Done
-                      </button>
-                    ) : null}
-                    <button className={styles.dangerButtonSmall} type="button" onClick={() => void deleteRecord(record)} disabled={deletingRecordId === record.id}>
-                      <TrashIcon />
-                      {record.status === 'done' ? 'Delete' : 'Cancel'}
-                    </button>
+                    <div className={styles.invoiceHeaderAside}>
+                      <div className={styles.invoiceValueBlock}>
+                        <strong className={styles.invoicePrice}>{maintenanceDueValue(record)}</strong>
+                        <span className={styles.invoiceVatLabel}>{maintenanceDueCaption(record)}</span>
+                      </div>
+
+                      <div className={styles.rowActions}>
+                        <button
+                          className={`${styles.secondaryButtonSmall} ${styles.invoiceOpenButton}`}
+                          type="button"
+                          onClick={() => openComplete(record)}
+                          disabled={record.status === 'done' || busyCompleteId === record.id}
+                        >
+                          <CheckIcon />
+                          <span>{busyCompleteId === record.id ? 'Saving...' : 'Done'}</span>
+                        </button>
+                        <button className={`${styles.secondaryButtonSmall} ${styles.invoiceEditButton}`} type="button" onClick={() => openEdit(record)}>
+                          <EditIcon />
+                          <span>Edit</span>
+                        </button>
+                        <button
+                          className={`${styles.dangerButtonSmall} ${styles.invoiceDeleteButton}`}
+                          type="button"
+                          onClick={() => void deleteRecord(record)}
+                          disabled={deletingRecordId === record.id}
+                        >
+                          <TrashIcon />
+                          <span>{deletingRecordId === record.id ? 'Deleting...' : 'Delete'}</span>
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </article>
               ))}
