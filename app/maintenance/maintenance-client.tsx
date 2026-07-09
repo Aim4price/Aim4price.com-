@@ -1115,7 +1115,7 @@ export default function MaintenanceClient() {
 
       {modalMode === 'asset-picker' ? (
         <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-labelledby="asset-picker-title">
-          <section className={`${styles.assetModal} ${styles.formModal}`}>
+          <section className={styles.assetModal}>
             <header className={styles.modalHeader}>
               <div>
                 <h2 id="asset-picker-title">Choose asset for maintenance</h2>
