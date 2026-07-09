@@ -1,0 +1,1451 @@
+import { getDb } from './db';
+import { getAssetRegisterItemById, listAssetRegisterItems, type AssetRegisterItem } from './asset-register-db';
+import { listAssetRegisters } from './asset-registers';
+import { ensureFieldManagerTables, listFieldManagers } from './field-manager';
+
+export type AssetMaintenanceType = 'service' | 'checkup';
+export type AssetMaintenanceTriggerType = 'date' | 'usage';
+export type AssetMaintenanceStatus = 'upcoming' | 'done' | 'cancelled';
+export type AssetMaintenanceUsageMetric = 'hours' | 'km' | 'percentage';
+export type AssetMaintenanceComputedStatus = 'upcoming' | 'due_soon' | 'due' | 'overdue' | 'done' | 'cancelled';
+export type AssetMaintenanceDateIntervalUnit = 'days' | 'weeks' | 'months';
+export type AssetMaintenanceUsageIntervalUnit = 'hours' | 'km' | 'percentage';
+export type AssetMaintenanceIntervalUnit = AssetMaintenanceDateIntervalUnit | AssetMaintenanceUsageIntervalUnit;
+
+export type AssetMaintenanceAssetOption = {
+  id: string;
+  title: string;
+  kind: string;
+  categoryLabel: string;
+  yearModel: number | null;
+  usageReading: number | null;
+  usageMetric: AssetMaintenanceUsageMetric;
+  condition: string;
+  value: number;
+  selectedMethod: string;
+  meta: string;
+};
+
+export type AssetMaintenanceFieldManagerOption = {
+  id: string;
+  displayName: string;
+  username: string;
+  isActive: boolean;
+};
+
+export type AssetMaintenanceRecord = {
+  id: string;
+  userId: string;
+  assetId: string;
+  assetTitle: string;
+  assetKind: string;
+  assetCategoryLabel: string;
+  assetYearModel: number | null;
+  assetUsageReading: number | null;
+  assetUsageMetric: AssetMaintenanceUsageMetric;
+  assetCondition: string;
+  assetValue: number;
+  assetMeta: string;
+  maintenanceType: AssetMaintenanceType;
+  triggerType: AssetMaintenanceTriggerType;
+  status: AssetMaintenanceStatus;
+  computedStatus: AssetMaintenanceComputedStatus;
+  computedStatusLabel: string;
+  title: string;
+  notes: string;
+  assignedFieldManagerId: string | null;
+  assignedName: string;
+  dueDate: string | null;
+  dueUsage: number | null;
+  usageMetric: AssetMaintenanceUsageMetric | null;
+  currentUsage: number | null;
+  remainingUsage: number | null;
+  daysUntilDue: number | null;
+  alertBeforeValue: number | null;
+  alertBeforeUnit: AssetMaintenanceIntervalUnit | null;
+  recurringEnabled: boolean;
+  recurringIntervalValue: number | null;
+  recurringIntervalUnit: AssetMaintenanceIntervalUnit | null;
+  completedAtIso: string | null;
+  completedUsage: number | null;
+  completedNotes: string;
+  completedBy: string;
+  alertNotedAtIso: string | null;
+  createdAtIso: string;
+  updatedAtIso: string;
+};
+
+export type AssetMaintenanceSummary = {
+  totalCount: number;
+  openCount: number;
+  doneCount: number;
+  dueSoonCount: number;
+  dueCount: number;
+  overdueCount: number;
+};
+
+export type AssetMaintenanceListFilters = {
+  assetId?: string | null;
+  type?: AssetMaintenanceType | 'all' | null;
+  status?: 'all' | 'upcoming' | 'done' | null;
+  assignedTo?: string | null;
+};
+
+export type AssetMaintenanceListResult = {
+  assets: AssetMaintenanceAssetOption[];
+  fieldManagers: AssetMaintenanceFieldManagerOption[];
+  records: AssetMaintenanceRecord[];
+  summary: AssetMaintenanceSummary;
+};
+
+export type AssetMaintenanceDraftInput = {
+  assetId?: unknown;
+  maintenanceType?: unknown;
+  triggerType?: unknown;
+  status?: unknown;
+  title?: unknown;
+  notes?: unknown;
+  assignedFieldManagerId?: unknown;
+  assignedName?: unknown;
+  dueDate?: unknown;
+  dueUsage?: unknown;
+  usageMetric?: unknown;
+  alertBeforeValue?: unknown;
+  alertBeforeUnit?: unknown;
+  recurringEnabled?: unknown;
+  recurringIntervalValue?: unknown;
+  recurringIntervalUnit?: unknown;
+};
+
+export type AssetMaintenanceCompleteInput = {
+  completedUsage?: unknown;
+  completedNotes?: unknown;
+  completedBy?: unknown;
+};
+
+export type AssetMaintenanceAlert = {
+  id: string;
+  assetRegisterItemId: string;
+  maintenanceType: AssetMaintenanceType;
+  triggerType: AssetMaintenanceTriggerType;
+  computedStatus: AssetMaintenanceComputedStatus;
+  computedStatusLabel: string;
+  heading: string;
+  body: string;
+  dueDate: string | null;
+  dueUsage: number | null;
+  currentUsage: number | null;
+  usageMetric: AssetMaintenanceUsageMetric | null;
+  alertBeforeValue: number | null;
+  alertBeforeUnit: AssetMaintenanceIntervalUnit | null;
+  updatedAtIso: string;
+  createdAtIso: string;
+};
+
+type MaintenanceRow = {
+  id: string;
+  user_id: string;
+  asset_register_item_id: string;
+  maintenance_type: string | null;
+  trigger_type: string | null;
+  status: string | null;
+  title: string | null;
+  notes: string | null;
+  assigned_field_manager_id: string | null;
+  assigned_name: string | null;
+  due_date: string | Date | null;
+  due_usage: string | number | null;
+  usage_metric: string | null;
+  alert_before_value: string | number | null;
+  alert_before_unit: string | null;
+  recurring_enabled: boolean | null;
+  recurring_interval_value: string | number | null;
+  recurring_interval_unit: string | null;
+  completed_at: string | Date | null;
+  completed_usage: string | number | null;
+  completed_notes: string | null;
+  completed_by: string | null;
+  alert_noted_at: string | Date | null;
+  created_at: string | Date | null;
+  updated_at: string | Date | null;
+  asset_title: string | null;
+  asset_kind: string | null;
+  asset_category_label: string | null;
+  asset_year_model: string | number | null;
+  asset_hours: string | number | null;
+  asset_life_worked_percent: string | number | null;
+  asset_condition: string | null;
+  asset_value: string | number | null;
+  asset_selected_value: string | number | null;
+  asset_selected_method: string | null;
+  asset_specs_json: unknown;
+  field_manager_display_name?: string | null;
+};
+
+type MaintenanceOwnerRow = MaintenanceRow & {
+  asset_owner_user_id?: string | null;
+};
+
+type AssetForAlert = {
+  id: string;
+  title?: string;
+  kind?: string;
+  hours?: number | null;
+  lifeWorkedPercent?: number | null;
+  specsJson?: Record<string, unknown>;
+};
+
+let assetMaintenanceTablesPromise: Promise<void> | null = null;
+
+function asText(value: unknown): string {
+  return String(value ?? '').replace(/\s+/g, ' ').trim();
+}
+
+function asLongText(value: unknown, maxLength = 5000): string {
+  return String(value ?? '')
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .trim()
+    .slice(0, maxLength);
+}
+
+function asNumber(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return Math.round(value * 100) / 100;
+  }
+
+  const raw = String(value ?? '').trim();
+  if (!raw) return null;
+
+  const normalized = raw
+    .replace(/%/g, '')
+    .replace(/hours?|hrs?/gi, '')
+    .replace(/kilomet(er|re)s?|kms?/gi, '')
+    .replace(/,/g, '.')
+    .replace(/[^0-9.-]/g, '');
+
+  if (!normalized || !/[0-9]/.test(normalized)) return null;
+
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? Math.round(parsed * 100) / 100 : null;
+}
+
+function nonNegativeNumber(value: unknown): number | null {
+  const parsed = asNumber(value);
+  return parsed === null ? null : Math.max(0, parsed);
+}
+
+function positiveNumber(value: unknown): number | null {
+  const parsed = asNumber(value);
+  return parsed === null || parsed <= 0 ? null : parsed;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function toIsoString(value: unknown): string {
+  if (value instanceof Date && Number.isFinite(value.getTime())) return value.toISOString();
+  if (typeof value === 'string' && value.trim()) {
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? value : parsed.toISOString();
+  }
+  return new Date().toISOString();
+}
+
+function toNullableIsoString(value: unknown): string | null {
+  if (value === null || typeof value === 'undefined' || value === '') return null;
+  return toIsoString(value);
+}
+
+function toDateOnly(value: unknown): string | null {
+  if (value instanceof Date && Number.isFinite(value.getTime())) return value.toISOString().slice(0, 10);
+
+  const text = asText(value);
+  if (!text) return null;
+
+  const iso = text.match(/^(\d{4})-(\d{2})-(\d{2})/)?.[0];
+  if (iso) return iso;
+
+  const parsed = new Date(text);
+  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString().slice(0, 10);
+}
+
+function normalizeMaintenanceType(value: unknown): AssetMaintenanceType {
+  return asText(value).toLowerCase() === 'checkup' ? 'checkup' : 'service';
+}
+
+function normalizeTriggerType(value: unknown): AssetMaintenanceTriggerType {
+  return asText(value).toLowerCase() === 'usage' ? 'usage' : 'date';
+}
+
+function normalizeStatus(value: unknown): AssetMaintenanceStatus {
+  const normalized = asText(value).toLowerCase();
+  if (normalized === 'done') return 'done';
+  if (normalized === 'cancelled' || normalized === 'canceled') return 'cancelled';
+  return 'upcoming';
+}
+
+function normalizeUsageMetric(value: unknown, fallback: AssetMaintenanceUsageMetric = 'hours'): AssetMaintenanceUsageMetric {
+  const normalized = asText(value).toLowerCase().replace(/[\s_-]+/g, '');
+
+  if (normalized === 'km' || normalized === 'kms' || normalized === 'kilometres' || normalized === 'kilometers' || normalized === 'kilometre' || normalized === 'kilometer') {
+    return 'km';
+  }
+
+  if (normalized === 'percentage' || normalized === 'percent' || normalized === '%' || normalized === 'lifepercent' || normalized === 'lifeworkedpercent') {
+    return 'percentage';
+  }
+
+  if (normalized === 'hours' || normalized === 'hour' || normalized === 'hrs' || normalized === 'hr') {
+    return 'hours';
+  }
+
+  return fallback;
+}
+
+function normalizeIntervalUnit(value: unknown, fallback: AssetMaintenanceIntervalUnit): AssetMaintenanceIntervalUnit {
+  const normalized = asText(value).toLowerCase().replace(/[\s_-]+/g, '');
+
+  if (normalized === 'day' || normalized === 'days') return 'days';
+  if (normalized === 'week' || normalized === 'weeks') return 'weeks';
+  if (normalized === 'month' || normalized === 'months') return 'months';
+  if (normalized === 'km' || normalized === 'kms' || normalized === 'kilometres' || normalized === 'kilometers') return 'km';
+  if (normalized === 'percentage' || normalized === 'percent' || normalized === '%') return 'percentage';
+  if (normalized === 'hour' || normalized === 'hours' || normalized === 'hr' || normalized === 'hrs') return 'hours';
+
+  return fallback;
+}
+
+function normalizeBoolean(value: unknown): boolean {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return value !== 0;
+  const normalized = asText(value).toLowerCase();
+  return normalized === 'true' || normalized === '1' || normalized === 'yes' || normalized === 'on';
+}
+
+function conditionLabel(value: unknown): string {
+  const normalized = asText(value).toLowerCase();
+  if (!normalized) return '';
+
+  return (
+    {
+      excellent: 'Excellent',
+      good: 'Good',
+      fair: 'Fair',
+      used: 'Used',
+      serious: 'Requires attention',
+    }[normalized] ??
+    normalized
+      .replace(/[_-]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .split(' ')
+      .map((part) => (part ? `${part[0].toUpperCase()}${part.slice(1)}` : ''))
+      .join(' ')
+  );
+}
+
+function numberFromSpecs(specs: Record<string, unknown>, keys: string[]): number | null {
+  for (const key of keys) {
+    const parsed = asNumber(specs[key]);
+    if (parsed !== null) return parsed;
+  }
+  return null;
+}
+
+function usageMetricFromSpecs(specs: Record<string, unknown>, fallback: AssetMaintenanceUsageMetric): AssetMaintenanceUsageMetric {
+  return normalizeUsageMetric(
+    specs.usageMetric ??
+      specs.usage_metric ??
+      specs.usageUnit ??
+      specs.usage_unit ??
+      specs.usageMetricType ??
+      specs.usage_metric_type ??
+      specs.usage_basis ??
+      specs.usageBasis,
+    fallback,
+  );
+}
+
+function assetUsageMetric(asset: AssetRegisterItem | AssetForAlert | { kind?: string; specsJson?: Record<string, unknown>; lifeWorkedPercent?: number | null; hours?: number | null }): AssetMaintenanceUsageMetric {
+  const specs = isRecord(asset.specsJson) ? asset.specsJson : {};
+  const defaultMetric = asText(asset.kind).toLowerCase() === 'vehicle' ? 'km' : 'hours';
+  const explicitMetric = usageMetricFromSpecs(specs, defaultMetric);
+  const lifeWorkedPercent = asNumber(asset.lifeWorkedPercent) ?? numberFromSpecs(specs, [
+    'lifeWorkedPercent',
+    'life_worked_percent',
+    'workedPercent',
+    'worked_percent',
+    'percentWorked',
+    'percent_worked',
+    'lifetimeWorkedPercent',
+    'lifetime_worked_percent',
+    'lifetimeUsedPercent',
+    'lifetime_used_percent',
+  ]);
+
+  if (explicitMetric === 'percentage') return 'percentage';
+  if ((asset.hours === null || typeof asset.hours === 'undefined') && lifeWorkedPercent !== null) return 'percentage';
+
+  return explicitMetric;
+}
+
+function assetUsageReading(asset: AssetRegisterItem | AssetForAlert | { specsJson?: Record<string, unknown>; lifeWorkedPercent?: number | null; hours?: number | null }, metric: AssetMaintenanceUsageMetric): number | null {
+  const specs = isRecord(asset.specsJson) ? asset.specsJson : {};
+
+  if (metric === 'percentage') {
+    return asNumber(asset.lifeWorkedPercent) ?? numberFromSpecs(specs, [
+      'lifeWorkedPercent',
+      'life_worked_percent',
+      'workedPercent',
+      'worked_percent',
+      'percentWorked',
+      'percent_worked',
+      'lifetimeWorkedPercent',
+      'lifetime_worked_percent',
+      'lifetimeUsedPercent',
+      'lifetime_used_percent',
+    ]);
+  }
+
+  return asNumber(asset.hours) ?? numberFromSpecs(specs, ['usageAmount', 'usage_amount', 'hours', 'engine_hours', 'km', 'kilometres', 'kilometers']);
+}
+
+function formatUsage(value: number | null | undefined, metric: AssetMaintenanceUsageMetric): string {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return '';
+
+  if (metric === 'percentage') {
+    return `${value.toLocaleString('en-ZA', { maximumFractionDigits: 1 })}%`;
+  }
+
+  const unit = metric === 'km' ? 'km' : 'hours';
+  return `${Math.round(value).toLocaleString('en-ZA')} ${unit}`;
+}
+
+function formatDateLabel(value: string | null | undefined): string {
+  if (!value) return '';
+  const parsed = new Date(`${value}T00:00:00Z`);
+  if (Number.isNaN(parsed.getTime())) return value;
+
+  return new Intl.DateTimeFormat('en-ZA', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(parsed);
+}
+
+function assetYearLabel(asset: Pick<AssetMaintenanceAssetOption, 'categoryLabel'>): string {
+  const category = asText(asset.categoryLabel).toLowerCase();
+  return category.includes('property') || category.includes('building') ? 'Year Built' : 'Year Model';
+}
+
+function buildAssetMeta(asset: Pick<AssetMaintenanceAssetOption, 'title' | 'categoryLabel' | 'yearModel' | 'usageReading' | 'usageMetric' | 'condition'>): string {
+  const details = [
+    typeof asset.yearModel === 'number' && Number.isFinite(asset.yearModel) && asset.yearModel > 0 ? `${assetYearLabel(asset)}: ${asset.yearModel}` : '',
+    formatUsage(asset.usageReading, asset.usageMetric) ? `Usage: ${formatUsage(asset.usageReading, asset.usageMetric)}` : '',
+    asset.condition ? `Condition: ${asset.condition}` : '',
+    asset.categoryLabel || '',
+  ].filter(Boolean);
+
+  return details.length ? details.join(' • ') : asset.title;
+}
+
+function mapAssetOption(asset: AssetRegisterItem): AssetMaintenanceAssetOption {
+  const usageMetric = assetUsageMetric(asset);
+  const usageReading = assetUsageReading(asset, usageMetric);
+  const categoryLabel = asText(asset.equipmentFamilyLabel) || asText(asset.kind) || 'Asset';
+  const value = Math.round(Number(asset.selectedValueExVat || asset.value || 0));
+  const condition = conditionLabel(asset.condition);
+  const option: AssetMaintenanceAssetOption = {
+    id: asset.id,
+    title: asText(asset.title) || 'Saved asset',
+    kind: asText(asset.kind) || 'asset',
+    categoryLabel,
+    yearModel: asNumber(asset.yearModel),
+    usageReading,
+    usageMetric,
+    condition,
+    value,
+    selectedMethod: asText(asset.selectedMethod) || 'aim4price',
+    meta: '',
+  };
+
+  return {
+    ...option,
+    meta: buildAssetMeta(option),
+  };
+}
+
+function assetOptionFromMaintenanceRow(row: MaintenanceRow): AssetMaintenanceAssetOption {
+  const specs = isRecord(row.asset_specs_json) ? row.asset_specs_json : {};
+  const kind = asText(row.asset_kind) || 'asset';
+  const explicitMetric = normalizeUsageMetric(row.usage_metric, usageMetricFromSpecs(specs, kind === 'vehicle' ? 'km' : 'hours'));
+  const assetMetric = row.usage_metric ? explicitMetric : assetUsageMetric({
+    id: asText(row.asset_register_item_id),
+    kind,
+    hours: asNumber(row.asset_hours),
+    lifeWorkedPercent: asNumber(row.asset_life_worked_percent),
+    specsJson: specs,
+  });
+  const usageReading = assetUsageReading(
+    {
+      id: asText(row.asset_register_item_id),
+      kind,
+      hours: asNumber(row.asset_hours),
+      lifeWorkedPercent: asNumber(row.asset_life_worked_percent),
+      specsJson: specs,
+    },
+    assetMetric,
+  );
+  const option: AssetMaintenanceAssetOption = {
+    id: asText(row.asset_register_item_id),
+    title: asText(row.asset_title) || 'Saved asset',
+    kind,
+    categoryLabel: asText(row.asset_category_label) || kind || 'Asset',
+    yearModel: asNumber(row.asset_year_model),
+    usageReading,
+    usageMetric: assetMetric,
+    condition: conditionLabel(row.asset_condition),
+    value: Math.round(asNumber(row.asset_selected_value) ?? asNumber(row.asset_value) ?? 0),
+    selectedMethod: asText(row.asset_selected_method) || 'aim4price',
+    meta: '',
+  };
+
+  return { ...option, meta: buildAssetMeta(option) };
+}
+
+function statusLabel(status: AssetMaintenanceComputedStatus): string {
+  if (status === 'done') return 'Done';
+  if (status === 'cancelled') return 'Cancelled';
+  if (status === 'overdue') return 'Overdue';
+  if (status === 'due') return 'Due';
+  if (status === 'due_soon') return 'Due soon';
+  return 'Upcoming';
+}
+
+function todayUtcDateOnly(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function daysBetweenDateOnly(left: string, right: string): number {
+  const leftDate = new Date(`${left}T00:00:00Z`);
+  const rightDate = new Date(`${right}T00:00:00Z`);
+  return Math.round((leftDate.getTime() - rightDate.getTime()) / 86_400_000);
+}
+
+function defaultAlertBefore(metricOrUnit: AssetMaintenanceUsageMetric | 'date'): { value: number; unit: AssetMaintenanceIntervalUnit } {
+  if (metricOrUnit === 'date') return { value: 7, unit: 'days' };
+  if (metricOrUnit === 'km') return { value: 1000, unit: 'km' };
+  if (metricOrUnit === 'percentage') return { value: 5, unit: 'percentage' };
+  return { value: 20, unit: 'hours' };
+}
+
+function computeRecordStatus(input: {
+  status: AssetMaintenanceStatus;
+  triggerType: AssetMaintenanceTriggerType;
+  dueDate: string | null;
+  dueUsage: number | null;
+  currentUsage: number | null;
+  alertBeforeValue: number | null;
+  alertBeforeUnit: AssetMaintenanceIntervalUnit | null;
+  usageMetric: AssetMaintenanceUsageMetric | null;
+}): { computedStatus: AssetMaintenanceComputedStatus; daysUntilDue: number | null; remainingUsage: number | null } {
+  if (input.status === 'done') return { computedStatus: 'done', daysUntilDue: null, remainingUsage: null };
+  if (input.status === 'cancelled') return { computedStatus: 'cancelled', daysUntilDue: null, remainingUsage: null };
+
+  if (input.triggerType === 'date') {
+    if (!input.dueDate) return { computedStatus: 'upcoming', daysUntilDue: null, remainingUsage: null };
+    const daysUntilDue = daysBetweenDateOnly(input.dueDate, todayUtcDateOnly());
+    const alertValue = input.alertBeforeValue ?? defaultAlertBefore('date').value;
+
+    if (daysUntilDue < 0) return { computedStatus: 'overdue', daysUntilDue, remainingUsage: null };
+    if (daysUntilDue === 0) return { computedStatus: 'due', daysUntilDue, remainingUsage: null };
+    if (daysUntilDue <= alertValue) return { computedStatus: 'due_soon', daysUntilDue, remainingUsage: null };
+
+    return { computedStatus: 'upcoming', daysUntilDue, remainingUsage: null };
+  }
+
+  if (typeof input.dueUsage !== 'number' || !Number.isFinite(input.dueUsage) || typeof input.currentUsage !== 'number' || !Number.isFinite(input.currentUsage)) {
+    return { computedStatus: 'upcoming', daysUntilDue: null, remainingUsage: null };
+  }
+
+  const remainingUsage = Math.round((input.dueUsage - input.currentUsage) * 100) / 100;
+  const alertValue = input.alertBeforeValue ?? defaultAlertBefore(input.usageMetric ?? 'hours').value;
+
+  if (remainingUsage < 0) return { computedStatus: 'overdue', daysUntilDue: null, remainingUsage };
+  if (remainingUsage === 0) return { computedStatus: 'due', daysUntilDue: null, remainingUsage };
+  if (remainingUsage <= alertValue) return { computedStatus: 'due_soon', daysUntilDue: null, remainingUsage };
+
+  return { computedStatus: 'upcoming', daysUntilDue: null, remainingUsage };
+}
+
+function mapMaintenanceRow(row: MaintenanceRow): AssetMaintenanceRecord {
+  const asset = assetOptionFromMaintenanceRow(row);
+  const maintenanceType = normalizeMaintenanceType(row.maintenance_type);
+  const triggerType = normalizeTriggerType(row.trigger_type);
+  const status = normalizeStatus(row.status);
+  const dueDate = toDateOnly(row.due_date);
+  const dueUsage = asNumber(row.due_usage);
+  const usageMetric = triggerType === 'usage' ? normalizeUsageMetric(row.usage_metric, asset.usageMetric) : null;
+  const currentUsage = triggerType === 'usage' ? asset.usageReading : null;
+  const alertBeforeValue = asNumber(row.alert_before_value);
+  const alertBeforeUnit = row.alert_before_unit ? normalizeIntervalUnit(row.alert_before_unit, triggerType === 'date' ? 'days' : usageMetric ?? 'hours') : null;
+  const statusInfo = computeRecordStatus({
+    status,
+    triggerType,
+    dueDate,
+    dueUsage,
+    currentUsage,
+    alertBeforeValue,
+    alertBeforeUnit,
+    usageMetric,
+  });
+
+  return {
+    id: asText(row.id),
+    userId: asText(row.user_id),
+    assetId: asset.id,
+    assetTitle: asset.title,
+    assetKind: asset.kind,
+    assetCategoryLabel: asset.categoryLabel,
+    assetYearModel: asset.yearModel,
+    assetUsageReading: asset.usageReading,
+    assetUsageMetric: asset.usageMetric,
+    assetCondition: asset.condition,
+    assetValue: asset.value,
+    assetMeta: asset.meta,
+    maintenanceType,
+    triggerType,
+    status,
+    computedStatus: statusInfo.computedStatus,
+    computedStatusLabel: statusLabel(statusInfo.computedStatus),
+    title: asText(row.title),
+    notes: asLongText(row.notes),
+    assignedFieldManagerId: asText(row.assigned_field_manager_id) || null,
+    assignedName: asText(row.assigned_name) || asText(row.field_manager_display_name),
+    dueDate,
+    dueUsage,
+    usageMetric,
+    currentUsage,
+    remainingUsage: statusInfo.remainingUsage,
+    daysUntilDue: statusInfo.daysUntilDue,
+    alertBeforeValue,
+    alertBeforeUnit,
+    recurringEnabled: Boolean(row.recurring_enabled),
+    recurringIntervalValue: asNumber(row.recurring_interval_value),
+    recurringIntervalUnit: row.recurring_interval_unit ? normalizeIntervalUnit(row.recurring_interval_unit, triggerType === 'date' ? 'months' : usageMetric ?? 'hours') : null,
+    completedAtIso: toNullableIsoString(row.completed_at),
+    completedUsage: asNumber(row.completed_usage),
+    completedNotes: asLongText(row.completed_notes),
+    completedBy: asText(row.completed_by),
+    alertNotedAtIso: toNullableIsoString(row.alert_noted_at),
+    createdAtIso: toIsoString(row.created_at),
+    updatedAtIso: toIsoString(row.updated_at ?? row.created_at),
+  };
+}
+
+function sortMaintenanceRecords(records: AssetMaintenanceRecord[]): AssetMaintenanceRecord[] {
+  const openPriority: Record<AssetMaintenanceComputedStatus, number> = {
+    overdue: 0,
+    due: 1,
+    due_soon: 2,
+    upcoming: 3,
+    done: 9,
+    cancelled: 10,
+  };
+
+  return [...records].sort((left, right) => {
+    const leftOpen = left.status === 'upcoming';
+    const rightOpen = right.status === 'upcoming';
+
+    if (leftOpen !== rightOpen) return leftOpen ? -1 : 1;
+
+    if (leftOpen && rightOpen) {
+      const priorityDiff = openPriority[left.computedStatus] - openPriority[right.computedStatus];
+      if (priorityDiff !== 0) return priorityDiff;
+
+      if (left.triggerType === 'date' || right.triggerType === 'date') {
+        const leftDate = left.dueDate ? new Date(`${left.dueDate}T00:00:00Z`).getTime() : Number.POSITIVE_INFINITY;
+        const rightDate = right.dueDate ? new Date(`${right.dueDate}T00:00:00Z`).getTime() : Number.POSITIVE_INFINITY;
+        if (leftDate !== rightDate) return leftDate - rightDate;
+      }
+
+      const leftRemaining = typeof left.remainingUsage === 'number' ? left.remainingUsage : Number.POSITIVE_INFINITY;
+      const rightRemaining = typeof right.remainingUsage === 'number' ? right.remainingUsage : Number.POSITIVE_INFINITY;
+      if (leftRemaining !== rightRemaining) return leftRemaining - rightRemaining;
+
+      return new Date(right.updatedAtIso).getTime() - new Date(left.updatedAtIso).getTime();
+    }
+
+    const leftDoneTime = new Date(left.completedAtIso ?? left.updatedAtIso).getTime();
+    const rightDoneTime = new Date(right.completedAtIso ?? right.updatedAtIso).getTime();
+    if (leftDoneTime !== rightDoneTime) return rightDoneTime - leftDoneTime;
+
+    return right.id.localeCompare(left.id);
+  });
+}
+
+async function ensureAssetMaintenanceTablesOnce(): Promise<void> {
+  const db = getDb();
+
+  await ensureFieldManagerTables();
+  await db.query(`create extension if not exists pgcrypto`);
+
+  await db.query(`
+    create table if not exists public.asset_maintenance_records (
+      id uuid primary key default gen_random_uuid(),
+      user_id text not null,
+      asset_register_item_id uuid not null references public.asset_register_items(id) on delete cascade,
+      maintenance_type text not null default 'service',
+      trigger_type text not null,
+      status text not null default 'upcoming',
+      title text,
+      notes text,
+      assigned_field_manager_id uuid null references public.field_managers(id) on delete set null,
+      assigned_name text,
+      due_date date,
+      due_usage numeric(14,2),
+      usage_metric text,
+      alert_before_value numeric(14,2),
+      alert_before_unit text,
+      recurring_enabled boolean not null default false,
+      recurring_interval_value numeric(14,2),
+      recurring_interval_unit text,
+      completed_at timestamptz,
+      completed_usage numeric(14,2),
+      completed_notes text,
+      completed_by text,
+      alert_noted_at timestamptz,
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now()
+    )
+  `);
+
+  await db.query(`alter table public.asset_maintenance_records add column if not exists title text`);
+  await db.query(`alter table public.asset_maintenance_records add column if not exists assigned_name text`);
+  await db.query(`alter table public.asset_maintenance_records add column if not exists completed_notes text`);
+  await db.query(`alter table public.asset_maintenance_records add column if not exists completed_by text`);
+  await db.query(`alter table public.asset_maintenance_records add column if not exists alert_noted_at timestamptz`);
+
+  await db.query(`create index if not exists asset_maintenance_records_user_id_idx on public.asset_maintenance_records (user_id)`);
+  await db.query(`create index if not exists asset_maintenance_records_asset_register_item_id_idx on public.asset_maintenance_records (asset_register_item_id)`);
+  await db.query(`create index if not exists asset_maintenance_records_status_idx on public.asset_maintenance_records (status)`);
+  await db.query(`create index if not exists asset_maintenance_records_due_date_idx on public.asset_maintenance_records (due_date)`);
+  await db.query(`create index if not exists asset_maintenance_records_due_usage_idx on public.asset_maintenance_records (due_usage)`);
+  await db.query(`create index if not exists asset_maintenance_records_assigned_field_manager_id_idx on public.asset_maintenance_records (assigned_field_manager_id)`);
+  await db.query(`create index if not exists asset_maintenance_records_created_at_idx on public.asset_maintenance_records (created_at)`);
+}
+
+export async function ensureAssetMaintenanceTables(): Promise<void> {
+  if (!assetMaintenanceTablesPromise) {
+    assetMaintenanceTablesPromise = ensureAssetMaintenanceTablesOnce().catch((error) => {
+      assetMaintenanceTablesPromise = null;
+      throw error;
+    });
+  }
+
+  return assetMaintenanceTablesPromise;
+}
+
+export async function listAssetMaintenanceAssets(userId: string): Promise<AssetMaintenanceAssetOption[]> {
+  try {
+    const registers = await listAssetRegisters(userId);
+    const assetGroups = await Promise.all(
+      registers.map(async (register) => {
+        try {
+          return await listAssetRegisterItems(userId, register.id);
+        } catch (error) {
+          if (error instanceof Error && error.message === 'ASSET_REGISTER_NOT_FOUND') return [];
+          throw error;
+        }
+      }),
+    );
+
+    const assetOptionsById = new Map<string, AssetMaintenanceAssetOption>();
+
+    for (const asset of assetGroups.flat()) {
+      if (!assetOptionsById.has(asset.id)) {
+        assetOptionsById.set(asset.id, mapAssetOption(asset));
+      }
+    }
+
+    return Array.from(assetOptionsById.values()).sort((left, right) => left.title.localeCompare(right.title));
+  } catch (error) {
+    if (error instanceof Error && error.message === 'ASSET_REGISTER_NOT_FOUND') return [];
+    throw error;
+  }
+}
+
+export async function listAssetMaintenanceFieldManagers(userId: string): Promise<AssetMaintenanceFieldManagerOption[]> {
+  try {
+    const managers = await listFieldManagers(userId);
+    return managers
+      .map((manager) => ({
+        id: manager.id,
+        displayName: manager.displayName || manager.username || 'Field Manager',
+        username: manager.username,
+        isActive: manager.isActive,
+      }))
+      .sort((left, right) => Number(right.isActive) - Number(left.isActive) || left.displayName.localeCompare(right.displayName));
+  } catch {
+    return [];
+  }
+}
+
+function buildMaintenanceFilterClause(filters: AssetMaintenanceListFilters, values: unknown[]): string {
+  const clauses = [`m.user_id = $1`, `coalesce(m.status, 'upcoming') <> 'cancelled'`];
+
+  if (filters.assetId) {
+    values.push(filters.assetId);
+    clauses.push(`m.asset_register_item_id = $${values.length}::uuid`);
+  }
+
+  if (filters.type && filters.type !== 'all') {
+    values.push(filters.type);
+    clauses.push(`lower(coalesce(m.maintenance_type, 'service')) = $${values.length}`);
+  }
+
+  if (filters.status && filters.status !== 'all') {
+    values.push(filters.status === 'done' ? 'done' : 'upcoming');
+    clauses.push(`lower(coalesce(m.status, 'upcoming')) = $${values.length}`);
+  }
+
+  if (filters.assignedTo) {
+    if (filters.assignedTo === 'unassigned') {
+      clauses.push(`m.assigned_field_manager_id is null and nullif(trim(coalesce(m.assigned_name, '')), '') is null`);
+    } else if (filters.assignedTo !== 'all') {
+      values.push(filters.assignedTo);
+      clauses.push(`m.assigned_field_manager_id = $${values.length}::uuid`);
+    }
+  }
+
+  return clauses.join(' and ');
+}
+
+function maintenanceSelectSql(whereClause: string): string {
+  return `
+    select
+      m.*,
+      coalesce(
+        nullif(to_jsonb(ai)->>'title', ''),
+        nullif(to_jsonb(ai)->>'asset_name', ''),
+        nullif(to_jsonb(ai)->>'model_name', ''),
+        nullif(to_jsonb(ai)->>'typed_model_name', ''),
+        'Saved asset'
+      ) as asset_title,
+      coalesce(nullif(to_jsonb(ai)->>'kind', ''), nullif(to_jsonb(ai)->>'asset_type', ''), 'asset') as asset_kind,
+      coalesce(nullif(ef.family_label, ''), nullif(to_jsonb(ai)->>'kind', ''), 'Asset') as asset_category_label,
+      nullif(coalesce(to_jsonb(ai)->>'year_model', to_jsonb(ai)->>'year'), '') as asset_year_model,
+      nullif(coalesce(to_jsonb(ai)->>'hours', to_jsonb(ai)->>'engine_hours'), '') as asset_hours,
+      nullif(coalesce(to_jsonb(ai)->>'life_worked_percent', to_jsonb(ai)->'specs_json'->>'life_worked_percent', to_jsonb(ai)->'specs_json'->>'lifeWorkedPercent'), '') as asset_life_worked_percent,
+      nullif(to_jsonb(ai)->>'condition', '') as asset_condition,
+      nullif(
+        coalesce(
+          to_jsonb(ai)->>'value',
+          to_jsonb(ai)->>'selected_value_ex_vat',
+          to_jsonb(ai)->>'selected_value',
+          to_jsonb(ai)->>'saved_value_ex_vat',
+          to_jsonb(ai)->>'aim4price_value_ex_vat',
+          to_jsonb(ai)->>'aim4price_value',
+          to_jsonb(ai)->>'market_mid_ex_vat',
+          to_jsonb(ai)->>'market_value_ex_vat',
+          to_jsonb(ai)->>'market_value',
+          to_jsonb(ai)->>'valuation_amount',
+          to_jsonb(ai)->>'manual_value'
+        ),
+        ''
+      ) as asset_value,
+      nullif(
+        coalesce(
+          to_jsonb(ai)->>'selected_value_ex_vat',
+          to_jsonb(ai)->>'selected_value',
+          to_jsonb(ai)->>'saved_value_ex_vat',
+          to_jsonb(ai)->>'value',
+          to_jsonb(ai)->>'aim4price_value_ex_vat',
+          to_jsonb(ai)->>'aim4price_value',
+          to_jsonb(ai)->>'market_mid_ex_vat',
+          to_jsonb(ai)->>'market_value_ex_vat',
+          to_jsonb(ai)->>'market_value',
+          to_jsonb(ai)->>'valuation_amount',
+          to_jsonb(ai)->>'manual_value'
+        ),
+        ''
+      ) as asset_selected_value,
+      nullif(coalesce(to_jsonb(ai)->>'selected_method', to_jsonb(ai)->>'method', to_jsonb(ai)->>'valuation_method'), '') as asset_selected_method,
+      coalesce(to_jsonb(ai)->'specs_json', '{}'::jsonb) as asset_specs_json,
+      fm.display_name as field_manager_display_name,
+      ai.user_id::text as asset_owner_user_id
+    from public.asset_maintenance_records m
+    join public.asset_register_items ai
+      on ai.id = m.asset_register_item_id
+     and ai.user_id = m.user_id
+    left join public.valuation_runs vr
+      on vr.id::text = nullif(to_jsonb(ai)->>'valuation_run_id', '')
+    left join public.equipment_models em
+      on em.id::text = nullif(to_jsonb(ai)->>'equipment_model_id', '')
+    left join public.equipment_families ef
+      on ef.id::text = coalesce(
+        nullif(to_jsonb(ai)->>'equipment_family_id', ''),
+        nullif(to_jsonb(vr)->>'equipment_family_id', ''),
+        nullif(to_jsonb(em)->>'equipment_family_id', '')
+      )
+    left join public.field_managers fm
+      on fm.id = m.assigned_field_manager_id
+    ${whereClause}
+  `;
+}
+
+export async function listAssetMaintenanceRecords(userId: string, filters: AssetMaintenanceListFilters = {}): Promise<AssetMaintenanceRecord[]> {
+  await ensureAssetMaintenanceTables();
+
+  const values: unknown[] = [userId];
+  const filterClause = buildMaintenanceFilterClause(filters, values);
+  const result = await getDb().query<MaintenanceRow>(
+    `
+      ${maintenanceSelectSql(`where ${filterClause}`)}
+      order by m.created_at desc, m.id desc
+    `,
+    values,
+  );
+
+  return sortMaintenanceRecords(result.rows.map(mapMaintenanceRow));
+}
+
+export function calculateAssetMaintenanceSummary(records: AssetMaintenanceRecord[]): AssetMaintenanceSummary {
+  return {
+    totalCount: records.length,
+    openCount: records.filter((record) => record.status === 'upcoming').length,
+    doneCount: records.filter((record) => record.status === 'done').length,
+    dueSoonCount: records.filter((record) => record.computedStatus === 'due_soon').length,
+    dueCount: records.filter((record) => record.computedStatus === 'due').length,
+    overdueCount: records.filter((record) => record.computedStatus === 'overdue').length,
+  };
+}
+
+export async function listAssetMaintenanceData(userId: string, filters: AssetMaintenanceListFilters = {}): Promise<AssetMaintenanceListResult> {
+  const [assets, fieldManagers, records] = await Promise.all([
+    listAssetMaintenanceAssets(userId),
+    listAssetMaintenanceFieldManagers(userId),
+    listAssetMaintenanceRecords(userId, filters),
+  ]);
+
+  return {
+    assets,
+    fieldManagers,
+    records,
+    summary: calculateAssetMaintenanceSummary(records),
+  };
+}
+
+export async function getAssetMaintenanceRecordById(userId: string, maintenanceId: string): Promise<AssetMaintenanceRecord | null> {
+  await ensureAssetMaintenanceTables();
+
+  const result = await getDb().query<MaintenanceRow>(
+    `
+      ${maintenanceSelectSql(`where m.user_id = $1 and m.id = $2::uuid`)}
+      limit 1
+    `,
+    [userId, maintenanceId],
+  );
+
+  return result.rows[0] ? mapMaintenanceRow(result.rows[0]) : null;
+}
+
+async function verifyAssetBelongsToUser(userId: string, assetId: string): Promise<AssetRegisterItem> {
+  const asset = await getAssetRegisterItemById(userId, assetId);
+
+  if (!asset) {
+    throw new Error('ASSET_NOT_FOUND');
+  }
+
+  return asset;
+}
+
+async function resolveAssignedManager(userId: string, managerIdInput: unknown, assignedNameInput: unknown): Promise<{ id: string | null; name: string }> {
+  const managerId = asText(managerIdInput);
+
+  if (!managerId || managerId === 'all' || managerId === 'unassigned') {
+    return { id: null, name: asText(assignedNameInput) };
+  }
+
+  const managers = await listAssetMaintenanceFieldManagers(userId);
+  const manager = managers.find((entry) => entry.id === managerId);
+
+  if (!manager) {
+    throw new Error('FIELD_MANAGER_NOT_FOUND');
+  }
+
+  return { id: manager.id, name: manager.displayName };
+}
+
+function normalizeDraftForSave(userId: string, input: AssetMaintenanceDraftInput, asset: AssetRegisterItem, existing?: AssetMaintenanceRecord) {
+  const triggerType = normalizeTriggerType(input.triggerType ?? existing?.triggerType ?? 'date');
+  const maintenanceType = normalizeMaintenanceType(input.maintenanceType ?? existing?.maintenanceType ?? 'service');
+  const assetMetric = assetUsageMetric(asset);
+  const usageMetric = triggerType === 'usage' ? normalizeUsageMetric(input.usageMetric ?? existing?.usageMetric ?? assetMetric, assetMetric) : null;
+  const dueDate = triggerType === 'date' ? toDateOnly(input.dueDate ?? existing?.dueDate) : null;
+  const dueUsage = triggerType === 'usage' ? nonNegativeNumber(input.dueUsage ?? existing?.dueUsage) : null;
+  const defaultAlert = defaultAlertBefore(triggerType === 'date' ? 'date' : usageMetric ?? assetMetric);
+  const alertBeforeValue = nonNegativeNumber(input.alertBeforeValue ?? existing?.alertBeforeValue ?? defaultAlert.value);
+  const alertBeforeUnit = normalizeIntervalUnit(input.alertBeforeUnit ?? existing?.alertBeforeUnit ?? defaultAlert.unit, defaultAlert.unit);
+  const recurringEnabled = normalizeBoolean(input.recurringEnabled ?? existing?.recurringEnabled ?? false);
+  const recurringFallbackUnit = triggerType === 'date' ? 'months' : usageMetric ?? assetMetric;
+  const recurringIntervalValue = recurringEnabled ? positiveNumber(input.recurringIntervalValue ?? existing?.recurringIntervalValue) : null;
+  const recurringIntervalUnit = recurringEnabled ? normalizeIntervalUnit(input.recurringIntervalUnit ?? existing?.recurringIntervalUnit ?? recurringFallbackUnit, recurringFallbackUnit) : null;
+
+  if (triggerType === 'date' && !dueDate) {
+    throw new Error('DUE_DATE_REQUIRED');
+  }
+
+  if (triggerType === 'usage' && dueUsage === null) {
+    throw new Error('DUE_USAGE_REQUIRED');
+  }
+
+  if (recurringEnabled && recurringIntervalValue === null) {
+    throw new Error('RECURRING_INTERVAL_REQUIRED');
+  }
+
+  return {
+    userId,
+    assetId: asset.id,
+    maintenanceType,
+    triggerType,
+    title: asText(input.title ?? existing?.title).slice(0, 180),
+    notes: asLongText(input.notes ?? existing?.notes),
+    dueDate,
+    dueUsage,
+    usageMetric,
+    alertBeforeValue,
+    alertBeforeUnit,
+    recurringEnabled,
+    recurringIntervalValue,
+    recurringIntervalUnit,
+  };
+}
+
+export async function createAssetMaintenanceRecord(userId: string, input: AssetMaintenanceDraftInput): Promise<AssetMaintenanceRecord> {
+  await ensureAssetMaintenanceTables();
+
+  const assetId = asText(input.assetId);
+  if (!assetId) throw new Error('ASSET_NOT_FOUND');
+
+  const asset = await verifyAssetBelongsToUser(userId, assetId);
+  const assigned = await resolveAssignedManager(userId, input.assignedFieldManagerId, input.assignedName);
+  const draft = normalizeDraftForSave(userId, input, asset);
+  const db = getDb();
+  const result = await db.query<{ id: string }>(
+    `
+      insert into public.asset_maintenance_records (
+        user_id,
+        asset_register_item_id,
+        maintenance_type,
+        trigger_type,
+        status,
+        title,
+        notes,
+        assigned_field_manager_id,
+        assigned_name,
+        due_date,
+        due_usage,
+        usage_metric,
+        alert_before_value,
+        alert_before_unit,
+        recurring_enabled,
+        recurring_interval_value,
+        recurring_interval_unit,
+        created_at,
+        updated_at
+      )
+      values (
+        $1,
+        $2::uuid,
+        $3,
+        $4,
+        'upcoming',
+        $5,
+        $6,
+        $7::uuid,
+        $8,
+        $9::date,
+        $10,
+        $11,
+        $12,
+        $13,
+        $14,
+        $15,
+        $16,
+        now(),
+        now()
+      )
+      returning id::text as id
+    `,
+    [
+      userId,
+      draft.assetId,
+      draft.maintenanceType,
+      draft.triggerType,
+      draft.title,
+      draft.notes,
+      assigned.id,
+      assigned.name,
+      draft.dueDate,
+      draft.dueUsage,
+      draft.usageMetric,
+      draft.alertBeforeValue,
+      draft.alertBeforeUnit,
+      draft.recurringEnabled,
+      draft.recurringIntervalValue,
+      draft.recurringIntervalUnit,
+    ],
+  );
+
+  const created = await getAssetMaintenanceRecordById(userId, result.rows[0]?.id ?? '');
+  if (!created) throw new Error('MAINTENANCE_NOT_FOUND');
+  return created;
+}
+
+export async function updateAssetMaintenanceRecord(userId: string, maintenanceId: string, input: AssetMaintenanceDraftInput): Promise<AssetMaintenanceRecord> {
+  await ensureAssetMaintenanceTables();
+
+  const existing = await getAssetMaintenanceRecordById(userId, maintenanceId);
+  if (!existing || existing.status === 'cancelled') throw new Error('MAINTENANCE_NOT_FOUND');
+
+  const assetId = asText(input.assetId) || existing.assetId;
+  const asset = await verifyAssetBelongsToUser(userId, assetId);
+  const assigned = await resolveAssignedManager(userId, input.assignedFieldManagerId ?? existing.assignedFieldManagerId, input.assignedName ?? existing.assignedName);
+  const draft = normalizeDraftForSave(userId, { ...input, assetId }, asset, existing);
+  const db = getDb();
+
+  await db.query(
+    `
+      update public.asset_maintenance_records
+      set
+        asset_register_item_id = $3::uuid,
+        maintenance_type = $4,
+        trigger_type = $5,
+        title = $6,
+        notes = $7,
+        assigned_field_manager_id = $8::uuid,
+        assigned_name = $9,
+        due_date = $10::date,
+        due_usage = $11,
+        usage_metric = $12,
+        alert_before_value = $13,
+        alert_before_unit = $14,
+        recurring_enabled = $15,
+        recurring_interval_value = $16,
+        recurring_interval_unit = $17,
+        alert_noted_at = null,
+        updated_at = now()
+      where user_id = $1
+        and id = $2::uuid
+    `,
+    [
+      userId,
+      maintenanceId,
+      draft.assetId,
+      draft.maintenanceType,
+      draft.triggerType,
+      draft.title,
+      draft.notes,
+      assigned.id,
+      assigned.name,
+      draft.dueDate,
+      draft.dueUsage,
+      draft.usageMetric,
+      draft.alertBeforeValue,
+      draft.alertBeforeUnit,
+      draft.recurringEnabled,
+      draft.recurringIntervalValue,
+      draft.recurringIntervalUnit,
+    ],
+  );
+
+  const updated = await getAssetMaintenanceRecordById(userId, maintenanceId);
+  if (!updated) throw new Error('MAINTENANCE_NOT_FOUND');
+  return updated;
+}
+
+export async function cancelAssetMaintenanceRecord(userId: string, maintenanceId: string): Promise<AssetMaintenanceRecord> {
+  await ensureAssetMaintenanceTables();
+
+  const existing = await getAssetMaintenanceRecordById(userId, maintenanceId);
+  if (!existing || existing.status === 'cancelled') throw new Error('MAINTENANCE_NOT_FOUND');
+
+  await getDb().query(
+    `
+      update public.asset_maintenance_records
+      set status = 'cancelled', updated_at = now()
+      where user_id = $1
+        and id = $2::uuid
+        and coalesce(status, 'upcoming') <> 'cancelled'
+    `,
+    [userId, maintenanceId],
+  );
+
+  return { ...existing, status: 'cancelled', computedStatus: 'cancelled', computedStatusLabel: 'Cancelled', updatedAtIso: new Date().toISOString() };
+}
+
+function addDateInterval(dateIso: string, value: number, unit: AssetMaintenanceIntervalUnit | null): string {
+  const date = new Date(`${dateIso.slice(0, 10)}T00:00:00Z`);
+  const interval = Math.max(1, Math.round(value));
+
+  if (unit === 'weeks') date.setUTCDate(date.getUTCDate() + interval * 7);
+  else if (unit === 'months') date.setUTCMonth(date.getUTCMonth() + interval);
+  else date.setUTCDate(date.getUTCDate() + interval);
+
+  return date.toISOString().slice(0, 10);
+}
+
+async function createNextRecurringRecord(userId: string, completedRecord: AssetMaintenanceRecord): Promise<AssetMaintenanceRecord | null> {
+  if (!completedRecord.recurringEnabled || !completedRecord.recurringIntervalValue || !completedRecord.recurringIntervalUnit) {
+    return null;
+  }
+
+  const asset = await verifyAssetBelongsToUser(userId, completedRecord.assetId);
+  const assetMetric = assetUsageMetric(asset);
+  const currentUsage = assetUsageReading(asset, completedRecord.usageMetric ?? assetMetric);
+  let nextDueDate: string | null = null;
+  let nextDueUsage: number | null = null;
+
+  if (completedRecord.triggerType === 'date') {
+    const completedDate = (completedRecord.completedAtIso ?? new Date().toISOString()).slice(0, 10);
+    nextDueDate = addDateInterval(completedDate, completedRecord.recurringIntervalValue, completedRecord.recurringIntervalUnit);
+  } else {
+    const baseUsage = completedRecord.completedUsage ?? currentUsage ?? completedRecord.dueUsage ?? 0;
+    nextDueUsage = Math.round((baseUsage + completedRecord.recurringIntervalValue) * 100) / 100;
+  }
+
+  const result = await getDb().query<{ id: string }>(
+    `
+      insert into public.asset_maintenance_records (
+        user_id,
+        asset_register_item_id,
+        maintenance_type,
+        trigger_type,
+        status,
+        title,
+        notes,
+        assigned_field_manager_id,
+        assigned_name,
+        due_date,
+        due_usage,
+        usage_metric,
+        alert_before_value,
+        alert_before_unit,
+        recurring_enabled,
+        recurring_interval_value,
+        recurring_interval_unit,
+        created_at,
+        updated_at
+      )
+      values (
+        $1,
+        $2::uuid,
+        $3,
+        $4,
+        'upcoming',
+        $5,
+        $6,
+        $7::uuid,
+        $8,
+        $9::date,
+        $10,
+        $11,
+        $12,
+        $13,
+        $14,
+        $15,
+        $16,
+        now(),
+        now()
+      )
+      returning id::text as id
+    `,
+    [
+      userId,
+      completedRecord.assetId,
+      completedRecord.maintenanceType,
+      completedRecord.triggerType,
+      completedRecord.title,
+      completedRecord.notes,
+      completedRecord.assignedFieldManagerId,
+      completedRecord.assignedName,
+      nextDueDate,
+      nextDueUsage,
+      completedRecord.usageMetric,
+      completedRecord.alertBeforeValue,
+      completedRecord.alertBeforeUnit,
+      completedRecord.recurringEnabled,
+      completedRecord.recurringIntervalValue,
+      completedRecord.recurringIntervalUnit,
+    ],
+  );
+
+  return getAssetMaintenanceRecordById(userId, result.rows[0]?.id ?? '');
+}
+
+export async function completeAssetMaintenanceRecord(userId: string, maintenanceId: string, input: AssetMaintenanceCompleteInput = {}): Promise<{ completed: AssetMaintenanceRecord; nextRecord: AssetMaintenanceRecord | null }> {
+  await ensureAssetMaintenanceTables();
+
+  const existing = await getAssetMaintenanceRecordById(userId, maintenanceId);
+  if (!existing || existing.status !== 'upcoming') throw new Error('MAINTENANCE_NOT_FOUND');
+
+  const completedUsage = existing.triggerType === 'usage'
+    ? nonNegativeNumber(input.completedUsage) ?? existing.currentUsage ?? existing.dueUsage
+    : nonNegativeNumber(input.completedUsage);
+  const completedNotes = asLongText(input.completedNotes);
+  const completedBy = asText(input.completedBy);
+
+  await getDb().query(
+    `
+      update public.asset_maintenance_records
+      set
+        status = 'done',
+        completed_at = now(),
+        completed_usage = $3,
+        completed_notes = $4,
+        completed_by = $5,
+        alert_noted_at = now(),
+        updated_at = now()
+      where user_id = $1
+        and id = $2::uuid
+        and coalesce(status, 'upcoming') = 'upcoming'
+    `,
+    [userId, maintenanceId, completedUsage, completedNotes, completedBy],
+  );
+
+  const completed = await getAssetMaintenanceRecordById(userId, maintenanceId);
+  if (!completed) throw new Error('MAINTENANCE_NOT_FOUND');
+
+  const nextRecord = await createNextRecurringRecord(userId, completed);
+  return { completed, nextRecord };
+}
+
+export async function markAssetMaintenanceAlertNoted(userId: string, maintenanceId: string): Promise<AssetMaintenanceRecord> {
+  await ensureAssetMaintenanceTables();
+
+  await getDb().query(
+    `
+      update public.asset_maintenance_records
+      set alert_noted_at = now(), updated_at = now()
+      where user_id = $1
+        and id = $2::uuid
+        and coalesce(status, 'upcoming') = 'upcoming'
+    `,
+    [userId, maintenanceId],
+  );
+
+  const record = await getAssetMaintenanceRecordById(userId, maintenanceId);
+  if (!record) throw new Error('MAINTENANCE_NOT_FOUND');
+  return record;
+}
+
+function alertPriority(alert: AssetMaintenanceAlert): number {
+  if (alert.computedStatus === 'overdue') return 0;
+  if (alert.computedStatus === 'due') return 1;
+  if (alert.computedStatus === 'due_soon') return 2;
+  return 3;
+}
+
+function buildAlertBody(record: AssetMaintenanceRecord): string {
+  const typeLabel = record.maintenanceType === 'checkup' ? 'Checkup' : 'Service';
+  const metric = record.usageMetric ?? record.assetUsageMetric;
+
+  if (record.triggerType === 'date') {
+    if (!record.dueDate) return `${typeLabel} is upcoming.`;
+    if (record.computedStatus === 'overdue' && typeof record.daysUntilDue === 'number') {
+      const days = Math.abs(record.daysUntilDue);
+      return `${typeLabel} overdue by ${days.toLocaleString('en-ZA')} day${days === 1 ? '' : 's'}.`;
+    }
+    return `${typeLabel} due on ${formatDateLabel(record.dueDate)}.`;
+  }
+
+  if (record.computedStatus === 'overdue' && typeof record.remainingUsage === 'number') {
+    const overdue = Math.abs(record.remainingUsage);
+    return `${typeLabel} overdue by ${formatUsage(overdue, metric)}.`;
+  }
+
+  const due = formatUsage(record.dueUsage, metric) || '-';
+  const current = formatUsage(record.currentUsage, metric) || '-';
+  return `${typeLabel} due at ${due}. Current reading: ${current}.`;
+}
+
+export async function attachUpcomingMaintenanceAlertsToAssets<T extends AssetForAlert>(
+  ownerUserId: string,
+  assets: T[],
+): Promise<Array<T & { maintenanceAlert: AssetMaintenanceAlert | null }>> {
+  if (!assets.length) return [];
+
+  await ensureAssetMaintenanceTables();
+
+  const assetIds = assets.map((asset) => asText(asset.id)).filter(Boolean);
+  if (!assetIds.length) return assets.map((asset) => ({ ...asset, maintenanceAlert: null }));
+
+  const result = await getDb().query<MaintenanceRow>(
+    `
+      ${maintenanceSelectSql(`where m.user_id = $1 and m.asset_register_item_id = any($2::uuid[]) and coalesce(m.status, 'upcoming') = 'upcoming' and m.alert_noted_at is null`)}
+      order by m.created_at desc, m.id desc
+    `,
+    [ownerUserId, assetIds],
+  );
+
+  const records = result.rows.map(mapMaintenanceRow).filter((record) => {
+    if (record.status !== 'upcoming') return false;
+    return record.computedStatus === 'overdue' || record.computedStatus === 'due' || record.computedStatus === 'due_soon';
+  });
+
+  const alertsByAssetId = new Map<string, AssetMaintenanceAlert>();
+
+  records.forEach((record) => {
+    const alert: AssetMaintenanceAlert = {
+      id: record.id,
+      assetRegisterItemId: record.assetId,
+      maintenanceType: record.maintenanceType,
+      triggerType: record.triggerType,
+      computedStatus: record.computedStatus,
+      computedStatusLabel: record.computedStatusLabel,
+      heading: 'Maintenance upcoming',
+      body: buildAlertBody(record),
+      dueDate: record.dueDate,
+      dueUsage: record.dueUsage,
+      currentUsage: record.currentUsage,
+      usageMetric: record.usageMetric,
+      alertBeforeValue: record.alertBeforeValue,
+      alertBeforeUnit: record.alertBeforeUnit,
+      updatedAtIso: record.updatedAtIso,
+      createdAtIso: record.createdAtIso,
+    };
+
+    const current = alertsByAssetId.get(record.assetId);
+    if (!current || alertPriority(alert) < alertPriority(current)) {
+      alertsByAssetId.set(record.assetId, alert);
+      return;
+    }
+
+    if (alertPriority(alert) === alertPriority(current)) {
+      const currentRecord = records.find((entry) => entry.id === current.id);
+      if (!currentRecord) {
+        alertsByAssetId.set(record.assetId, alert);
+        return;
+      }
+
+      if (record.triggerType === 'date' && currentRecord.triggerType === 'date') {
+        const currentDate = currentRecord.dueDate ? new Date(`${currentRecord.dueDate}T00:00:00Z`).getTime() : Number.POSITIVE_INFINITY;
+        const nextDate = record.dueDate ? new Date(`${record.dueDate}T00:00:00Z`).getTime() : Number.POSITIVE_INFINITY;
+        if (nextDate < currentDate) alertsByAssetId.set(record.assetId, alert);
+        return;
+      }
+
+      const currentRemaining = typeof currentRecord.remainingUsage === 'number' ? currentRecord.remainingUsage : Number.POSITIVE_INFINITY;
+      const nextRemaining = typeof record.remainingUsage === 'number' ? record.remainingUsage : Number.POSITIVE_INFINITY;
+      if (nextRemaining < currentRemaining) alertsByAssetId.set(record.assetId, alert);
+    }
+  });
+
+  return assets.map((asset) => ({
+    ...asset,
+    maintenanceAlert: alertsByAssetId.get(asset.id) ?? null,
+  }));
+}
