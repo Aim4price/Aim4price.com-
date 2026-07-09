@@ -124,7 +124,7 @@ type MaintenanceDraft = {
   recurringIntervalUnit: IntervalUnit;
 };
 
-type ModalMode = 'asset-picker' | 'maintenance-type' | 'trigger-type' | 'form' | 'filter' | 'download' | 'complete' | null;
+type ModalMode = 'asset-picker' | 'maintenance-type' | 'trigger-type' | 'form' | 'filter' | 'download' | 'complete' | 'delete' | null;
 
 type DownloadScope = 'total' | 'asset' | 'upcoming' | 'done';
 type DownloadFormat = 'pdf' | 'xlsx';
@@ -191,6 +191,14 @@ function CheckIcon() {
   return (
     <svg className={styles.buttonIcon} viewBox="0 0 24 24" aria-hidden="true">
       <path fill="currentColor" d="M9.2 16.6 4.9 12.3a1 1 0 1 1 1.4-1.4l2.9 2.9 8.5-8.5a1 1 0 0 1 1.4 1.4l-9.2 9.9a1 1 0 0 1-1.4 0Z" />
+    </svg>
+  );
+}
+
+function ServiceGearIcon() {
+  return (
+    <svg className={styles.maintenanceChoiceSvg} viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="currentColor" d="M19.4 13a7.7 7.7 0 0 0 .1-1 7.7 7.7 0 0 0-.1-1l2.1-1.6-2-3.4-2.5 1a8.2 8.2 0 0 0-1.7-1L15 3.3h-4L10.6 6a8.2 8.2 0 0 0-1.7 1L6.4 6 4.4 9.4 6.5 11a7.7 7.7 0 0 0-.1 1c0 .3 0 .7.1 1l-2.1 1.6 2 3.4 2.5-1a8.2 8.2 0 0 0 1.7 1l.4 2.7h4l.4-2.7a8.2 8.2 0 0 0 1.7-1l2.5 1 2-3.4-2.2-1.6ZM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z" />
     </svg>
   );
 }
@@ -673,6 +681,7 @@ export default function MaintenanceClient() {
   const [draft, setDraft] = useState<MaintenanceDraft | null>(null);
   const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
   const [completingRecord, setCompletingRecord] = useState<MaintenanceRecord | null>(null);
+  const [recordPendingDelete, setRecordPendingDelete] = useState<MaintenanceRecord | null>(null);
   const [completeUsage, setCompleteUsage] = useState('');
   const [completeNotes, setCompleteNotes] = useState('');
   const [deletingRecordId, setDeletingRecordId] = useState<string | null>(null);
@@ -775,6 +784,7 @@ export default function MaintenanceClient() {
     setPickerSearch('');
     setEditingRecordId(null);
     setCompletingRecord(null);
+    setRecordPendingDelete(null);
     setCompleteUsage('');
     setCompleteNotes('');
     setDraft(null);
@@ -911,9 +921,15 @@ export default function MaintenanceClient() {
     }
   }
 
-  async function deleteRecord(record: MaintenanceRecord) {
-    const confirmed = window.confirm(`Delete this maintenance record for ${record.assetTitle}?`);
-    if (!confirmed) return;
+  function openDelete(record: MaintenanceRecord) {
+    setNotice(null);
+    setRecordPendingDelete(record);
+    setModalMode('delete');
+  }
+
+  async function deleteRecord() {
+    if (!recordPendingDelete) return;
+    const record = recordPendingDelete;
 
     setDeletingRecordId(record.id);
     setNotice(null);
@@ -928,6 +944,7 @@ export default function MaintenanceClient() {
 
       applyPayload(payload);
       setNotice({ type: 'success', text: 'Maintenance record deleted.' });
+      closeModal();
     } catch (error) {
       setNotice({ type: 'error', text: error instanceof Error ? error.message : 'Maintenance record could not be deleted.' });
     } finally {
@@ -1066,7 +1083,7 @@ export default function MaintenanceClient() {
                         <button
                           className={`${styles.dangerButtonSmall} ${styles.invoiceDeleteButton}`}
                           type="button"
-                          onClick={() => void deleteRecord(record)}
+                          onClick={() => openDelete(record)}
                           disabled={deletingRecordId === record.id}
                         >
                           <TrashIcon />
@@ -1101,9 +1118,8 @@ export default function MaintenanceClient() {
           <section className={`${styles.assetModal} ${styles.formModal}`}>
             <header className={styles.modalHeader}>
               <div>
-                <div className={styles.maintenanceStepEyebrow}>Step 1 of 4</div>
                 <h2 id="asset-picker-title">Choose asset for maintenance</h2>
-                <p>Select the saved asset this service or checkup belongs to.</p>
+                <p>Choose a saved asset.</p>
               </div>
               <button className={styles.closeButton} type="button" onClick={closeModal} aria-label="Close asset picker">
                 <CloseIcon />
@@ -1145,7 +1161,6 @@ export default function MaintenanceClient() {
           <section className={`${styles.formModal} ${styles.maintenanceStepModal}`}>
             <header className={styles.modalHeader}>
               <div>
-                <div className={styles.maintenanceStepEyebrow}>Step 2 of 4</div>
                 <h2 id="maintenance-type-title">What are you scheduling?</h2>
                 <p>{selectedAssetLabel(selectedDraftAsset)}</p>
               </div>
@@ -1157,14 +1172,14 @@ export default function MaintenanceClient() {
             <div className={styles.maintenanceChoiceBody}>
               <div className={styles.maintenanceChoiceGrid}>
                 <button className={styles.maintenanceChoiceCard} type="button" onClick={() => chooseMaintenanceType('service')}>
-                  <span className={styles.maintenanceChoiceIcon} aria-hidden="true">S</span>
+                  <span className={styles.maintenanceChoiceIcon} aria-hidden="true"><ServiceGearIcon /></span>
                   <strong>Service</strong>
-                  <small>Schedule routine servicing, replacement parts or a service interval.</small>
+                  <small>Routine servicing or repairs.</small>
                 </button>
                 <button className={styles.maintenanceChoiceCard} type="button" onClick={() => chooseMaintenanceType('checkup')}>
                   <span className={styles.maintenanceChoiceIcon} aria-hidden="true">✓</span>
                   <strong>Checkup</strong>
-                  <small>Schedule an inspection, condition review or preventative check.</small>
+                  <small>Inspection or condition check.</small>
                 </button>
               </div>
             </div>
@@ -1181,7 +1196,6 @@ export default function MaintenanceClient() {
           <section className={`${styles.formModal} ${styles.maintenanceStepModal}`}>
             <header className={styles.modalHeader}>
               <div>
-                <div className={styles.maintenanceStepEyebrow}>Step 3 of 4</div>
                 <h2 id="maintenance-trigger-title">When should it be due?</h2>
                 <p>{typeLabel(draft.maintenanceType)} · {selectedAssetLabel(selectedDraftAsset)}</p>
               </div>
@@ -1195,12 +1209,12 @@ export default function MaintenanceClient() {
                 <button className={styles.maintenanceChoiceCard} type="button" onClick={() => chooseTriggerType('date')}>
                   <span className={styles.maintenanceChoiceIcon} aria-hidden="true">31</span>
                   <strong>Specific date</strong>
-                  <small>Set a calendar date and choose how far in advance to be alerted.</small>
+                  <small>Choose a due date.</small>
                 </button>
                 <button className={styles.maintenanceChoiceCard} type="button" onClick={() => chooseTriggerType('usage')}>
                   <span className={styles.maintenanceChoiceIcon} aria-hidden="true">↗</span>
                   <strong>Usage</strong>
-                  <small>Set a target {usageUnitLabel(selectedDraftAsset?.usageMetric ?? draft.usageMetric)} reading for this asset.</small>
+                  <small>Choose a target {usageUnitLabel(selectedDraftAsset?.usageMetric ?? draft.usageMetric)} reading.</small>
                 </button>
               </div>
             </div>
@@ -1217,7 +1231,6 @@ export default function MaintenanceClient() {
           <section className={styles.formModal}>
             <header className={styles.modalHeader}>
               <div>
-                {!editingRecordId ? <div className={styles.maintenanceStepEyebrow}>Step 4 of 4</div> : null}
                 <h2 id="maintenance-form-title">{editingRecordId ? 'Edit maintenance' : `Schedule ${draft.maintenanceType}`}</h2>
                 <p>{editingRecordId ? selectedAssetLabel(selectedDraftAsset) : `${triggerLabel(draft.triggerType)} · ${selectedAssetLabel(selectedDraftAsset)}`}</p>
               </div>
@@ -1239,7 +1252,7 @@ export default function MaintenanceClient() {
                         onClick={() => updateDraft({ maintenanceType: type })}
                       >
                         <strong>{typeLabel(type)}</strong>
-                        <span>{type === 'service' ? 'Scheduled service, replacement parts or service interval.' : 'Inspection, condition check or preventative checkup.'}</span>
+                        <span>{type === 'service' ? 'Routine servicing or repairs.' : 'Inspection or condition check.'}</span>
                       </button>
                     ))}
                   </div>
@@ -1352,6 +1365,36 @@ export default function MaintenanceClient() {
               <button className={styles.secondaryButton} type="button" onClick={closeModal}>Cancel</button>
               <button className={styles.primaryButton} type="button" onClick={() => void submitDraft()} disabled={isSaving}>
                 {isSaving ? 'Saving...' : editingRecordId ? 'Save changes' : `Add ${draft.maintenanceType}`}
+              </button>
+            </footer>
+          </section>
+        </div>
+      ) : null}
+
+      {modalMode === 'delete' && recordPendingDelete ? (
+        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-labelledby="maintenance-delete-title">
+          <section className={styles.deleteConfirmModal}>
+            <header className={styles.modalHeader}>
+              <div>
+                <h2 id="maintenance-delete-title">Are you sure you want to delete this?</h2>
+              </div>
+              <button className={styles.closeButton} type="button" onClick={closeModal} aria-label="Close delete confirmation">
+                <CloseIcon />
+              </button>
+            </header>
+            <div className={styles.modalDivider} />
+            <div className={styles.deleteConfirmBody}>
+              <p>This maintenance record will be permanently removed, including its saved schedule, assignment and notes.</p>
+              <div className={styles.deleteRecordSummary}>
+                <span>Selected maintenance record</span>
+                <strong>{recordPendingDelete.assetTitle}</strong>
+                <small>{typeLabel(recordPendingDelete.maintenanceType)} · {triggerLabel(recordPendingDelete.triggerType)} · {maintenanceDueValue(recordPendingDelete)} · {recordPendingDelete.assignedName || 'Unassigned'}</small>
+              </div>
+            </div>
+            <footer className={styles.modalFooter}>
+              <button className={styles.secondaryButton} type="button" onClick={closeModal}>Cancel</button>
+              <button className={styles.deleteConfirmButton} type="button" onClick={() => void deleteRecord()} disabled={deletingRecordId === recordPendingDelete.id}>
+                {deletingRecordId === recordPendingDelete.id ? 'Deleting...' : 'Yes, delete maintenance record'}
               </button>
             </footer>
           </section>

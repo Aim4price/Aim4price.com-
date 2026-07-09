@@ -3780,3 +3780,151 @@
     width: min(100%, calc(100vw - 1rem));
   }
 }
+
+/* Maintenance modal refinements */
+.maintenanceChoiceSvg {
+  width: 1.7rem;
+  height: 1.7rem;
+}
+
+.assetModal .pickerToolbar {
+  padding-bottom: 1.35rem;
+}
+
+.assetModal .assetList {
+  padding-top: 0.15rem;
+}
+
+.switchField {
+  min-height: 5rem;
+  padding: 0.95rem 1rem !important;
+  border-width: 1.5px !important;
+}
+
+.switchField strong {
+  position: relative;
+  padding-right: 1.7rem;
+  font-size: 1rem;
+}
+
+.switchField strong::after {
+  content: 'Repeat automatically';
+  display: block;
+  margin-top: 0.22rem;
+  color: #6b7c88;
+  font-size: 0.76rem;
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+.switchTrack {
+  width: 3.25rem;
+  height: 1.82rem;
+  padding: 0.18rem;
+  flex: 0 0 auto;
+  border-width: 1.5px;
+}
+
+.switchTrack span {
+  width: 1.3rem;
+  height: 1.3rem;
+}
+
+.switchFieldActive {
+  border-color: rgba(25, 116, 84, 0.48) !important;
+  background: linear-gradient(180deg, #f8fffb 0%, #eaf8f0 100%) !important;
+  box-shadow: 0 0 0 3px rgba(25, 116, 84, 0.075), 0 10px 22px rgba(16, 91, 68, 0.065) !important;
+}
+
+.switchFieldActive strong::after {
+  content: 'Automatic repeat enabled';
+  color: #197454;
+}
+
+.switchFieldActive .switchTrack span {
+  transform: translateX(1.42rem);
+}
+
+.deleteConfirmModal {
+  width: min(62rem, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgba(201, 216, 225, 0.98);
+  border-radius: 1.65rem;
+  background: #ffffff;
+  box-shadow: 0 28px 72px rgba(10, 31, 35, 0.24);
+}
+
+.deleteConfirmBody {
+  display: grid;
+  gap: 1.25rem;
+  padding: 0 clamp(1.25rem, 2.4vw, 2rem) 1.35rem;
+}
+
+.deleteConfirmBody > p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 1rem;
+  font-weight: 680;
+  line-height: 1.5;
+}
+
+.deleteRecordSummary {
+  display: grid;
+  gap: 0.3rem;
+  padding: 1.05rem 1.15rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 1.15rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
+}
+
+.deleteRecordSummary span {
+  color: #687a8c;
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.deleteRecordSummary strong {
+  color: var(--brand-dark);
+  font-size: 1.08rem;
+  font-weight: 920;
+}
+
+.deleteRecordSummary small {
+  color: #63758a;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.deleteConfirmButton {
+  min-height: 3rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 1.25rem;
+  border: 1px solid #c92d2d;
+  border-radius: 0.95rem;
+  background: linear-gradient(180deg, #df3d3d 0%, #c92929 100%);
+  color: #ffffff;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 900;
+  box-shadow: 0 12px 26px rgba(201, 41, 41, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  cursor: pointer;
+  transition: transform 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
+}
+
+.deleteConfirmButton:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 30px rgba(201, 41, 41, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.deleteConfirmButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
