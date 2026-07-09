@@ -1,0 +1,2809 @@
+.page {
+  --surface: #ffffff;
+  --surface-soft: #f7fafc;
+  --surface-muted: #f2f6f7;
+  --line: #e3ebf1;
+  --line-strong: #cfe0ea;
+  --text: #14362e;
+  --text-muted: #667789;
+  --brand-dark: #073b30;
+  --brand-mid: #197454;
+  --brand-deep: #0f5840;
+  --brand-soft: #eaf7f1;
+  --brand-light: #f0fbf5;
+  --brand-light-border: #bfe2ce;
+  --danger: #a03535;
+  --danger-soft: #fff1f1;
+  --copper-text: #6d350f;
+  --copper-bg: #fff3e6;
+  --copper-border: #e8a56a;
+  --shadow: 0 22px 54px rgba(18, 35, 39, 0.1);
+  min-height: 100vh;
+  background: linear-gradient(180deg, #f7faf9 0%, #edf4f5 100%);
+  color: var(--text);
+}
+
+.shell {
+  width: min(calc(100% - 2rem), 1320px);
+  margin: 0 auto;
+  padding: clamp(1.1rem, 2vw, 1.6rem) 0 3rem;
+}
+
+.notice {
+  margin-bottom: 1rem;
+  padding: 0.95rem 1rem;
+  border: 1px solid transparent;
+  border-radius: 1rem;
+  font-weight: 850;
+}
+
+.noticeSuccess {
+  color: #116343;
+  background: #eaf7f1;
+  border-color: #d1ebdf;
+}
+
+.noticeError {
+  color: #9b2f2f;
+  background: #fff0f0;
+  border-color: #f1d2d2;
+}
+
+.pageTitleBlock {
+  margin-bottom: clamp(1rem, 1.8vw, 1.4rem);
+}
+
+.pageTitleBlock > div {
+  min-height: clamp(5.25rem, 8vw, 6.6rem);
+  padding: clamp(1.1rem, 2vw, 1.55rem) clamp(1.25rem, 2.6vw, 2.05rem);
+  border: 1.5px solid rgba(193, 211, 218, 0.98);
+  border-radius: clamp(1.25rem, 2vw, 1.7rem);
+  background:
+    radial-gradient(circle at 3% 0%, rgba(25, 116, 84, 0.08) 0%, rgba(25, 116, 84, 0) 38%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(248, 252, 253, 0.98) 100%);
+  box-shadow: 0 18px 38px rgba(16, 36, 40, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.pageTitleBlock h1 {
+  margin: 0;
+  color: var(--brand-dark);
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
+  font-size: clamp(2.35rem, 4.15vw, 3.55rem);
+  font-weight: 900;
+  line-height: 0.98;
+  letter-spacing: -0.062em;
+  text-transform: uppercase;
+}
+
+.optionGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(1rem, 2vw, 1.5rem);
+  margin-bottom: clamp(1rem, 2vw, 1.5rem);
+}
+
+.optionCard {
+  min-height: clamp(12rem, 18vw, 15rem);
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 0.75rem;
+  padding: clamp(1.5rem, 3vw, 2.5rem);
+  border: 2px solid rgba(193, 211, 218, 0.95);
+  border-radius: clamp(1.5rem, 2.5vw, 2.25rem);
+  background:
+    radial-gradient(circle at 50% 0%, rgba(25, 116, 84, 0.08), transparent 55%),
+    #ffffff;
+  box-shadow: 0 18px 42px rgba(18, 35, 39, 0.08);
+  color: var(--brand-dark);
+  text-align: center;
+  cursor: pointer;
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.optionCard:hover {
+  transform: translateY(-2px);
+  border-color: rgba(25, 116, 84, 0.38);
+  box-shadow: 0 26px 56px rgba(18, 35, 39, 0.13);
+}
+
+.optionCard span {
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
+  font-size: clamp(2.1rem, 4vw, 3.25rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.06em;
+  text-transform: uppercase;
+}
+
+.invoiceToolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: clamp(0.9rem, 1.2vw, 1.1rem);
+  margin-bottom: clamp(1rem, 1.8vw, 1.3rem);
+}
+
+.searchWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 3.75rem;
+  padding: 0 0.78rem 0 1rem;
+  border: 1px solid rgba(194, 211, 224, 0.98);
+  border-radius: 1.18rem;
+  background: #ffffff;
+  box-shadow:
+    0 8px 18px rgba(30, 56, 66, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.searchWrap:focus-within {
+  border-color: rgba(25, 116, 84, 0.42);
+  box-shadow:
+    0 0 0 4px rgba(25, 116, 84, 0.12),
+    0 10px 22px rgba(30, 56, 66, 0.055);
+}
+
+.searchIcon {
+  width: 1.08rem;
+  height: 1.08rem;
+  flex: 0 0 auto;
+  color: #7b8a99;
+}
+
+.searchInput {
+  width: 100%;
+  min-width: 0;
+  min-height: 3.45rem;
+  padding: 0 0.72rem;
+  border: 0;
+  background: transparent;
+  color: #1d303a;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+.searchInput:focus {
+  outline: none;
+}
+
+.searchInput::placeholder {
+  color: #8594a4;
+  opacity: 1;
+  font-weight: 560;
+}
+
+.toolbarButtons {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(9.5rem, auto));
+  gap: clamp(0.8rem, 1vw, 0.95rem);
+}
+
+.primaryButton,
+.secondaryButton,
+.closeButton,
+.clearSearchButton,
+.secondaryButtonSmall,
+.dangerButtonSmall,
+.toolbarButton,
+.downloadChoiceButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.52rem;
+  min-height: 3rem;
+  border: 1px solid transparent;
+  border-radius: 0.95rem;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 900;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease, border-color 160ms ease, opacity 160ms ease;
+}
+
+.primaryButton:hover:not(:disabled),
+.secondaryButton:hover:not(:disabled),
+.closeButton:hover:not(:disabled),
+.clearSearchButton:hover:not(:disabled),
+.secondaryButtonSmall:hover:not(:disabled),
+.dangerButtonSmall:hover:not(:disabled),
+.toolbarButton:hover:not(:disabled),
+.downloadChoiceButton:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled,
+.closeButton:disabled,
+.clearSearchButton:disabled,
+.secondaryButtonSmall:disabled,
+.dangerButtonSmall:disabled,
+.toolbarButton:disabled,
+.downloadChoiceButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.primaryButton {
+  padding: 0 1.15rem;
+  color: #ffffff;
+  background: linear-gradient(180deg, var(--brand-mid) 0%, var(--brand-deep) 100%);
+  border-color: #0f6248;
+  box-shadow: 0 14px 26px rgba(25, 116, 84, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.primaryButton:hover:not(:disabled) {
+  background: linear-gradient(180deg, #218462 0%, #0c4a37 100%);
+  box-shadow: 0 18px 32px rgba(25, 116, 84, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.secondaryButton {
+  padding: 0 1.05rem;
+  color: #183143;
+  background: linear-gradient(180deg, #ffffff 0%, #f4f8fc 100%);
+  border-color: var(--line-strong);
+  box-shadow: 0 10px 20px rgba(18, 35, 39, 0.045), inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.secondaryButton:hover:not(:disabled) {
+  border-color: rgba(160, 184, 202, 0.96);
+  box-shadow: 0 14px 28px rgba(18, 35, 39, 0.07), inset 0 1px 0 rgba(255, 255, 255, 1);
+}
+
+.clearSearchButton {
+  width: 2.4rem;
+  min-width: 2.4rem;
+  min-height: 2.4rem;
+  padding: 0;
+  border-radius: 999px;
+  color: #16314a;
+  background: linear-gradient(180deg, #ffffff 0%, #f4f8fc 100%);
+  border-color: var(--line-strong);
+  box-shadow: 0 10px 22px rgba(15, 59, 100, 0.085), inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  font-size: 1.35rem;
+}
+
+.toolbarButton {
+  min-height: 3.75rem;
+  padding-inline: clamp(1rem, 1.55vw, 1.32rem);
+  border-radius: 1.14rem;
+  font-size: clamp(0.96rem, 1.08vw, 1.04rem);
+  font-weight: 860;
+}
+
+.toolbarButton strong {
+  min-width: 1.35rem;
+  min-height: 1.35rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  color: currentColor;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.toolbarAddButton {
+  color: var(--copper-text);
+  background: linear-gradient(180deg, #fffaf6 0%, var(--copper-bg) 100%);
+  border-color: var(--copper-border);
+  box-shadow: 0 10px 22px rgba(180, 107, 43, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.toolbarAddButton:hover:not(:disabled) {
+  background: linear-gradient(180deg, #ffffff 0%, #ffead7 100%);
+  border-color: #dc8b48;
+  box-shadow: 0 14px 28px rgba(180, 107, 43, 0.12), inset 0 1px 0 rgba(255, 255, 255, 1);
+}
+
+.toolbarFilterButton {
+  color: var(--brand-deep);
+  background: linear-gradient(180deg, #fbfffd 0%, var(--brand-light) 100%);
+  border-color: var(--brand-light-border);
+  box-shadow: 0 10px 22px rgba(25, 116, 84, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.toolbarFilterButton:hover:not(:disabled) {
+  background: linear-gradient(180deg, #ffffff 0%, #e6f7ed 100%);
+  border-color: #9fd1b4;
+  box-shadow: 0 14px 28px rgba(25, 116, 84, 0.12), inset 0 1px 0 rgba(255, 255, 255, 1);
+}
+
+.toolbarDownloadButton {
+  color: #ffffff;
+}
+
+.plusMark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.38rem;
+  font-weight: 950;
+  line-height: 0.8;
+  transform: translateY(-0.04rem);
+}
+
+.buttonIcon,
+.primaryButton svg,
+.secondaryButton svg,
+.secondaryButtonSmall svg,
+.dangerButtonSmall svg,
+.closeButton svg,
+.downloadChoiceButton svg,
+.uploadButton svg,
+.uploadButtonSmall svg {
+  width: 1.05rem;
+  height: 1.05rem;
+  flex: 0 0 auto;
+}
+
+.invoicePanel {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.modalHeader h2,
+.uploadPanel h3 {
+  margin: 0;
+  color: var(--brand-dark);
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
+  font-weight: 900;
+  letter-spacing: -0.045em;
+}
+
+.modalHeader p,
+.helperText {
+  margin: 0.35rem 0 0;
+  color: var(--text-muted);
+  font-weight: 750;
+}
+
+.invoiceList {
+  display: grid;
+  gap: 1.02rem;
+}
+
+.emptyState {
+  padding: 1.25rem;
+  border: 1px dashed var(--line-strong);
+  border-radius: 1rem;
+  background: var(--surface-soft);
+  color: var(--text-muted);
+  font-weight: 850;
+  text-align: center;
+}
+
+.paginationRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.72rem;
+  margin-top: 1.05rem;
+}
+
+.paginationButton {
+  min-height: 2.66rem;
+  min-width: 7.1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 1.02rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 0.88rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f5f8fb 100%);
+  color: #2f4150;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 850;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
+}
+
+.paginationButton:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: rgba(160, 184, 202, 0.96);
+  box-shadow: 0 10px 22px rgba(18, 35, 39, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.paginationButton:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+
+.paginationButton:focus-visible {
+  outline: 2px solid rgba(20, 112, 82, 0.22);
+  outline-offset: 0.2rem;
+}
+
+.paginationStatus {
+  color: #6d7d8d;
+  font-size: 0.88rem;
+  font-weight: 790;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(1rem, 3vw, 2rem);
+  background: rgba(12, 22, 25, 0.44);
+  backdrop-filter: blur(10px);
+  overflow: hidden;
+}
+
+.assetModal,
+.formModal,
+.filterModal,
+.downloadModal {
+  width: min(100%, 1120px);
+  max-height: min(90vh, calc(100dvh - 2.5rem));
+  overflow: hidden;
+  border: 1px solid rgba(207, 224, 234, 0.95);
+  border-radius: clamp(1.45rem, 2.2vw, 2rem);
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.06), transparent 34%),
+    linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
+  box-shadow: 0 30px 80px rgba(16, 28, 45, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.94);
+}
+
+.assetModal {
+  display: flex;
+  flex-direction: column;
+}
+
+.formModal {
+  width: min(100%, 1060px);
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+}
+
+.filterModal,
+.downloadModal {
+  width: min(100%, 720px);
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+}
+
+.closeButton {
+  width: 3.6rem;
+  height: 3.6rem;
+  padding: 0;
+  color: #16314a;
+  background: #f5f9fd;
+  border-color: var(--line-strong);
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: clamp(1.25rem, 2.2vw, 1.75rem) clamp(1.25rem, 2.4vw, 2rem) 0;
+}
+
+.modalHeader h2 {
+  font-size: clamp(1.8rem, 3vw, 2.55rem);
+  line-height: 1.02;
+}
+
+.modalDivider {
+  height: 1px;
+  margin: 1.15rem clamp(1.25rem, 2.4vw, 2rem);
+  background: var(--line);
+}
+
+.formModalScrollBody {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(22, 83, 64, 0.52) rgba(239, 244, 247, 0.98);
+  padding: 0 clamp(1.25rem, 2.4vw, 2rem) 1rem;
+}
+
+.assetList {
+  flex: 1 1 20rem;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(22, 83, 64, 0.52) rgba(239, 244, 247, 0.98);
+  display: grid;
+  align-content: start;
+  gap: 0.75rem;
+  margin: 0 clamp(1.25rem, 2.4vw, 2rem);
+  padding: 0 0.6rem 0 0;
+}
+
+.formModalScrollBody::-webkit-scrollbar,
+.assetList::-webkit-scrollbar {
+  width: 0.9rem;
+}
+
+.formModalScrollBody::-webkit-scrollbar-track,
+.assetList::-webkit-scrollbar-track {
+  margin: 0.3rem 0 0.5rem;
+  border-radius: 999px;
+  background: rgba(239, 244, 247, 0.98);
+  border-left: 0.24rem solid transparent;
+  border-right: 0.24rem solid transparent;
+  background-clip: padding-box;
+}
+
+.formModalScrollBody::-webkit-scrollbar-thumb,
+.assetList::-webkit-scrollbar-thumb {
+  border: 0.24rem solid transparent;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(26, 90, 69, 0.64) 0%, rgba(18, 66, 51, 0.82) 100%);
+  background-clip: padding-box;
+}
+
+.formModalScrollBody::-webkit-scrollbar-thumb:hover,
+.assetList::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(26, 90, 69, 0.8) 0%, rgba(18, 66, 51, 0.94) 100%);
+  background-clip: padding-box;
+}
+
+.pickerToolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.8rem;
+  padding: 0 clamp(1.25rem, 2.4vw, 2rem) 1rem;
+}
+
+.pickerToolbar input,
+.formGrid input,
+.formGrid select,
+.textAreaGrid textarea,
+.filterGrid select {
+  width: 100%;
+  min-height: 3.25rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 1.05rem;
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--text);
+  font: inherit;
+  font-weight: 750;
+  padding: 0 1rem;
+  outline: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.textAreaGrid textarea {
+  min-height: 7rem;
+  padding: 0.9rem 1rem;
+  line-height: 1.55;
+  resize: vertical;
+}
+
+.pickerToolbar input:focus,
+.formGrid input:focus,
+.formGrid select:focus,
+.textAreaGrid textarea:focus,
+.filterGrid select:focus {
+  border-color: rgba(22, 83, 64, 0.38);
+  box-shadow: 0 0 0 4px rgba(22, 83, 64, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.formGrid input:disabled,
+.formGrid select:disabled,
+.filterGrid select:disabled {
+  background: #f4f6f8;
+  color: #7c8794;
+}
+
+.assetRow {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.95rem 1rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 1rem;
+  background: #ffffff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.assetRow:hover {
+  border-color: rgba(25, 116, 84, 0.38);
+  box-shadow: 0 12px 26px rgba(18, 35, 39, 0.07);
+}
+
+.assetInfo {
+  min-width: 0;
+  display: grid;
+  gap: 0.18rem;
+}
+
+.assetInfo strong,
+.assetValue strong {
+  color: var(--brand-dark);
+  font-size: 1.04rem;
+  font-weight: 900;
+}
+
+.assetInfo small,
+.assetValue small {
+  color: var(--text-muted);
+  font-weight: 800;
+}
+
+.assetValue {
+  display: grid;
+  justify-items: end;
+  text-align: right;
+}
+
+.invoiceFormCard,
+.uploadPanel {
+  display: grid;
+  gap: 1rem;
+  padding: clamp(1rem, 2vw, 1.35rem);
+  border: 1px solid rgba(221, 229, 237, 0.96);
+  border-radius: 1.35rem;
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.04), transparent 36%),
+    linear-gradient(180deg, #ffffff 0%, #f7fafb 100%);
+  box-shadow: 0 10px 24px rgba(16, 28, 45, 0.035), inset 0 1px 0 rgba(255, 255, 255, 0.94);
+}
+
+.uploadPanel h3 {
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--line);
+  font-size: clamp(1.35rem, 2.2vw, 1.8rem);
+}
+
+.warningBox {
+  margin-bottom: 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid #ead9a9;
+  border-radius: 1rem;
+  background: #fff8e7;
+  color: #73510c;
+  font-weight: 800;
+}
+
+.warningBox p {
+  margin: 0.25rem 0;
+}
+
+.formGrid,
+.textAreaGrid,
+.filterGrid {
+  display: grid;
+  gap: 0.95rem;
+}
+
+.formGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.textAreaGrid {
+  grid-template-columns: 1fr;
+}
+
+.filterGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  min-height: 0;
+  overflow: visible;
+  padding: 0 clamp(1.25rem, 2.4vw, 2rem) 1rem;
+}
+
+.formGrid label,
+.formGrid .costUsageMetricField,
+.textAreaGrid label,
+.filterGrid label,
+.filterField {
+  display: grid;
+  gap: 0.52rem;
+  color: var(--text);
+  font-weight: 900;
+}
+
+.formGrid span,
+.costUsageMetricField > span,
+.textAreaGrid span,
+.filterGrid span,
+.uploadInline span {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.035em;
+}
+
+.uploadBox {
+  min-height: 11rem;
+  display: grid;
+  grid-template-columns: auto auto;
+  align-content: center;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem;
+  border: 1px dashed var(--line-strong);
+  border-radius: 1rem;
+  background: #ffffff;
+}
+
+.uploadBox p {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--text-muted);
+  font-weight: 800;
+  text-align: center;
+}
+
+.uploadButton,
+.uploadButtonSmall {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  min-height: 3.75rem;
+  padding: 0 1.6rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 1rem;
+  background: #ffffff;
+  color: #183143;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 14px 24px rgba(18, 35, 39, 0.06);
+}
+
+.uploadButtonSmall {
+  min-height: 2.8rem;
+  padding: 0 1rem;
+  border-radius: 0.85rem;
+}
+
+.uploadButton input,
+.uploadButtonSmall input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.uploadCounter {
+  min-width: 5.4rem;
+  min-height: 3.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line-strong);
+  border-radius: 1rem;
+  background: #f4f8fc;
+  color: #183143;
+  font-size: 1.2rem;
+  font-weight: 900;
+}
+
+.helperText {
+  font-size: 0.9rem;
+}
+
+.uploadInline {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.95rem;
+  border: 1px dashed var(--line-strong);
+  border-radius: 1rem;
+  background: var(--surface-soft);
+}
+
+.uploadInline strong {
+  min-width: 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fileLink {
+  color: var(--brand-mid);
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.rawPreview {
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: #fbfdfe;
+  overflow: hidden;
+}
+
+.rawPreview summary {
+  padding: 0.85rem 1rem;
+  cursor: pointer;
+  color: var(--text);
+  font-weight: 900;
+}
+
+.rawPreview pre {
+  max-height: 13rem;
+  margin: 0;
+  overflow: auto;
+  padding: 1rem;
+  border-top: 1px solid var(--line);
+  color: #405164;
+  white-space: pre-wrap;
+}
+
+.downloadChoiceGrid {
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+  padding: 0 clamp(1.25rem, 2.4vw, 2rem) 1rem;
+}
+
+.downloadChoiceButton {
+  min-height: 8.5rem;
+  align-items: flex-start;
+  flex-direction: column;
+  white-space: normal;
+  text-align: left;
+  padding: 1rem;
+  border-color: var(--line-strong);
+  background: linear-gradient(180deg, #ffffff 0%, #f5f9fb 100%);
+  color: var(--text);
+  box-shadow: 0 12px 26px rgba(18, 35, 39, 0.055);
+}
+
+.downloadChoiceButton svg {
+  color: var(--brand-mid);
+}
+
+.downloadChoiceButton strong {
+  color: var(--brand-dark);
+  font-size: 1.05rem;
+  font-weight: 900;
+}
+
+.downloadChoiceButton span {
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  font-weight: 760;
+  line-height: 1.35;
+}
+
+.filterModal {
+  width: min(100%, 800px);
+  overflow: visible;
+}
+
+.downloadModal,
+.sourceChoiceModal,
+.reportModal {
+  width: min(100%, 900px);
+}
+
+.sourceChoiceGrid,
+.reportChoiceGrid {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.86rem;
+  padding: 0 clamp(1.25rem, 2.4vw, 2rem) 1rem;
+}
+
+.sourceChoiceOption,
+.reportOption {
+  min-height: 5.35rem;
+  display: grid;
+  grid-template-columns: 3.55rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.9rem;
+  padding: 1rem 1.05rem;
+  border: 1px solid rgba(216, 226, 236, 0.98);
+  border-radius: 1.18rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f5f8fb 100%);
+  color: #1d3b62;
+  box-shadow: 0 10px 22px rgba(16, 31, 28, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.sourceChoiceOption:hover,
+.reportOption:hover {
+  transform: translateY(-1px);
+  border-color: rgba(184, 202, 218, 0.98);
+  background: linear-gradient(180deg, #ffffff 0%, #eef5fb 100%);
+  box-shadow: 0 16px 30px rgba(16, 31, 28, 0.065), inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.sourceChoiceOption:focus-visible,
+.reportOption:focus-visible {
+  outline: none;
+  border-color: rgba(25, 116, 84, 0.45);
+  box-shadow: 0 0 0 4px rgba(25, 116, 84, 0.12), 0 16px 30px rgba(16, 31, 28, 0.065);
+}
+
+.reportOptionActive {
+  background: radial-gradient(circle at top left, rgba(22, 83, 64, 0.1), transparent 42%), linear-gradient(180deg, #ffffff 0%, #edf8f2 100%);
+  border-color: rgba(190, 224, 206, 0.98);
+}
+
+.choiceGraphic,
+.reportGraphic {
+  width: 3.55rem;
+  min-width: 3.55rem;
+  height: 3.55rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(216, 226, 236, 0.98);
+  border-radius: 1rem;
+  background: #ffffff;
+  box-shadow: 0 9px 18px rgba(16, 31, 28, 0.035), inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.choiceGraphic svg,
+.reportGraphic svg {
+  width: 2rem;
+  height: 2rem;
+  color: var(--brand-mid);
+}
+
+.reportGraphicImage {
+  width: 2.25rem;
+  height: 2.25rem;
+  object-fit: contain;
+}
+
+.choiceTitleBlock,
+.reportTitleBlock {
+  min-width: 0;
+  display: grid;
+  align-content: center;
+  gap: 0.22rem;
+}
+
+.choiceTitleBlock strong,
+.reportTitleBlock strong {
+  color: #10352b;
+  font-size: 1rem;
+  font-weight: 850;
+  line-height: 1.18;
+  letter-spacing: -0.025em;
+}
+
+.choiceTitleBlock small,
+.reportTitleBlock small {
+  color: #627386;
+  font-size: 0.83rem;
+  font-weight: 620;
+  line-height: 1.32;
+}
+
+.sourceChoiceModal .modalFooter,
+.reportModal .modalFooter {
+  padding-top: 0.2rem;
+  border-top: 0;
+  background: transparent;
+}
+
+.customFilterSelect {
+  position: relative;
+  min-width: 0;
+}
+
+.customFilterSelectOpen {
+  z-index: 45;
+}
+
+.customFilterSelectDisabled {
+  opacity: 1;
+}
+
+.customFilterSelectButton {
+  width: 100%;
+  min-height: 3.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0 1rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 1.05rem;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdfe 100%);
+  color: var(--text);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 780;
+  line-height: 1;
+  text-align: left;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease, transform 160ms ease;
+}
+
+.customFilterSelectButton:hover,
+.customFilterSelectButtonOpen,
+.customFilterSelectButton:focus-visible {
+  border-color: rgba(22, 83, 64, 0.38);
+  background: linear-gradient(180deg, #ffffff 0%, #f5fbf8 100%);
+  box-shadow: 0 0 0 4px rgba(22, 83, 64, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.customFilterSelectButton:disabled {
+  background: #f4f6f8;
+  color: #7c8794;
+  cursor: not-allowed;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.filterGrid .customFilterSelectButtonText,
+.formGrid .customFilterSelectButtonText {
+  min-width: 0;
+  overflow: hidden;
+  color: inherit;
+  font-size: 1rem;
+  font-weight: 780;
+  letter-spacing: normal;
+  text-overflow: ellipsis;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+.customFilterSelectChevron {
+  width: 1.05rem;
+  height: 1.05rem;
+  flex: 0 0 auto;
+  color: #17364b;
+  transition: transform 160ms ease, color 160ms ease;
+}
+
+.customFilterSelectButtonOpen .customFilterSelectChevron {
+  transform: rotate(180deg);
+}
+
+.customFilterSelectButton:disabled .customFilterSelectChevron {
+  color: #a2adb9;
+}
+
+.customFilterSelectMenu {
+  position: absolute;
+  top: calc(100% + 0.45rem);
+  right: 0;
+  left: 0;
+  z-index: 80;
+  max-height: min(18rem, 44vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0.35rem;
+  border: 1px solid rgba(187, 211, 224, 0.98);
+  border-radius: 1rem;
+  background: #ffffff;
+  box-shadow: 0 18px 36px rgba(20, 36, 33, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(22, 83, 64, 0.52) rgba(239, 244, 247, 0.98);
+}
+
+.customFilterSelectMenu::-webkit-scrollbar {
+  width: 0.75rem;
+}
+
+.customFilterSelectMenu::-webkit-scrollbar-track {
+  margin: 0.3rem 0;
+  border-radius: 999px;
+  background: rgba(239, 244, 247, 0.98);
+}
+
+.customFilterSelectMenu::-webkit-scrollbar-thumb {
+  border: 0.2rem solid transparent;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(26, 90, 69, 0.64) 0%, rgba(18, 66, 51, 0.82) 100%);
+  background-clip: padding-box;
+}
+
+.customFilterSearchRow {
+  position: sticky;
+  top: -0.35rem;
+  z-index: 2;
+  margin: -0.35rem -0.35rem 0.25rem;
+  padding: 0.35rem;
+  border-bottom: 1px solid rgba(227, 235, 241, 0.96);
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdfe 100%);
+}
+
+.customFilterSearchInput {
+  width: 100%;
+  min-height: 2.8rem;
+  padding: 0 0.85rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 0.82rem;
+  background: #ffffff;
+  color: var(--text);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 760;
+  outline: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.customFilterSearchInput:focus {
+  border-color: rgba(22, 83, 64, 0.38);
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(22, 83, 64, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.customFilterSearchInput::placeholder {
+  color: #7c8997;
+  opacity: 1;
+  font-weight: 650;
+}
+
+.customFilterSelectOption {
+  width: 100%;
+  min-height: 2.65rem;
+  display: flex;
+  align-items: center;
+  padding: 0.68rem 0.85rem;
+  border: 1px solid transparent;
+  border-radius: 0.78rem;
+  background: transparent;
+  color: #18382f;
+  font: inherit;
+  font-size: 0.98rem;
+  font-weight: 760;
+  line-height: 1.18;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 140ms ease, background 140ms ease, color 140ms ease;
+}
+
+.customFilterSelectOption:hover,
+.customFilterSelectOption:focus-visible {
+  border-color: rgba(207, 223, 236, 0.9);
+  background: #f3f8fb;
+  outline: none;
+}
+
+.customFilterSelectOptionActive {
+  border-color: rgba(90, 188, 130, 0.45);
+  background: #eaf8f1;
+  color: #0d5a42;
+}
+
+.customFilterSelectEmptyOption,
+.customFilterSelectEmptyOption:hover,
+.customFilterSelectEmptyOption:focus-visible {
+  border-color: transparent;
+  background: #f7fafc;
+  color: #738191;
+  cursor: default;
+  outline: none;
+}
+
+.filterGrid .customFilterSelectOptionLabel,
+.formGrid .customFilterSelectOptionLabel {
+  min-width: 0;
+  overflow: hidden;
+  color: inherit;
+  font-size: 0.98rem;
+  font-weight: 760;
+  letter-spacing: normal;
+  text-overflow: ellipsis;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+.modalFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.8rem;
+  margin-top: auto;
+  padding: 1.15rem clamp(1.25rem, 2.4vw, 2rem) clamp(1.25rem, 2.4vw, 2rem);
+  border-top: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(248, 251, 252, 0) 0%, rgba(248, 251, 252, 0.98) 34%, rgba(248, 251, 252, 1) 100%);
+}
+
+@media (max-width: 1100px) {
+  .invoiceToolbar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .toolbarButtons {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+}
+
+@media (max-width: 760px) {
+  .shell {
+    width: min(calc(100% - 1rem), 1320px);
+  }
+
+  .optionGrid,
+  .formGrid,
+  .filterGrid,
+  .sourceChoiceGrid,
+  .reportChoiceGrid,
+  .downloadChoiceGrid,
+  .toolbarButtons,
+  .pickerToolbar,
+  .uploadBox,
+  .uploadInline {
+    grid-template-columns: 1fr;
+  }
+
+  .assetRow {
+    grid-template-columns: 1fr;
+  }
+
+  .assetValue {
+    grid-column: 1;
+    justify-items: start;
+    text-align: left;
+  }
+
+  .modalBackdrop {
+    align-items: stretch;
+    padding: 0.5rem;
+  }
+
+  .assetModal,
+  .formModal,
+  .filterModal,
+  .downloadModal {
+    max-height: calc(100dvh - 1rem);
+    border-radius: 1.25rem;
+  }
+
+  .modalHeader {
+    align-items: flex-start;
+  }
+
+  .modalFooter {
+    flex-direction: column-reverse;
+  }
+
+  .paginationRow {
+    display: grid;
+    grid-template-columns: 1fr;
+    justify-items: stretch;
+  }
+
+  .paginationStatus {
+    text-align: center;
+  }
+
+  .paginationButton,
+  .modalFooter button,
+  .modalFooter a,
+  .toolbarButtons button,
+  .toolbarButtons a {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+/* === Shared Cost of Ownership modal system === */
+.filterModal,
+.sourceChoiceModal,
+.reportModal {
+  width: min(100%, 960px);
+  max-height: none;
+  overflow: visible;
+  display: grid;
+  grid-template-rows: auto auto auto;
+  gap: 1.12rem;
+  padding: clamp(1.5rem, 2.35vw, 1.95rem);
+  border-radius: 2rem;
+}
+
+.filterModal .modalHeader,
+.sourceChoiceModal .modalHeader,
+.reportModal .modalHeader {
+  align-items: flex-start;
+  gap: 1.15rem;
+  margin: 0;
+  padding: 0 0 1.18rem;
+  border-bottom: 1px solid rgba(216, 226, 236, 0.9);
+}
+
+.filterModal .modalHeader > div,
+.sourceChoiceModal .modalHeader > div,
+.reportModal .modalHeader > div {
+  min-width: 0;
+  display: grid;
+  gap: 0.48rem;
+}
+
+.filterModal .modalHeader h2,
+.sourceChoiceModal .modalHeader h2,
+.reportModal .modalHeader h2 {
+  margin: 0;
+  color: #0f3329;
+  font-size: clamp(1.86rem, 2.65vw, 2.38rem);
+  font-weight: 760;
+  line-height: 1.03;
+  letter-spacing: -0.052em;
+}
+
+.reportModal .modalHeader p {
+  display: none;
+}
+
+.sourceChoiceModal .modalHeader p {
+  margin: 0;
+  color: #627386;
+  font-size: 0.98rem;
+  font-weight: 720;
+  line-height: 1.38;
+}
+
+.filterModal .closeButton,
+.sourceChoiceModal .closeButton,
+.reportModal .closeButton {
+  width: 3.15rem;
+  min-width: 3.15rem;
+  height: 3.15rem;
+  min-height: 3.15rem;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #f7fbff 0%, #eef5fb 100%);
+  border-color: rgba(210, 222, 237, 0.98);
+}
+
+.filterModal .modalDivider,
+.sourceChoiceModal .modalDivider,
+.reportModal .modalDivider {
+  display: none;
+}
+
+.filterModal .filterGrid,
+.sourceChoiceGrid,
+.reportChoiceGrid {
+  gap: 1rem;
+  padding: 0;
+}
+
+.filterModal .filterGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.filterModal .filterField {
+  gap: 0.58rem;
+}
+
+.filterModal .customFilterSelectButton {
+  min-height: 3.48rem;
+  border-radius: 1.08rem;
+  font-size: 1rem;
+}
+
+.sourceChoiceOption,
+.reportOption {
+  min-height: 5.9rem;
+  grid-template-columns: 3.8rem minmax(0, 1fr);
+  gap: 1rem;
+  padding: 1.12rem 1.18rem;
+  border-radius: 1.24rem;
+}
+
+.choiceGraphic,
+.reportGraphic {
+  width: 3.8rem;
+  min-width: 3.8rem;
+  height: 3.8rem;
+}
+
+.reportGraphicImage {
+  width: 2.38rem;
+  height: 2.38rem;
+}
+
+.choiceTitleBlock,
+.reportTitleBlock {
+  gap: 0.3rem;
+}
+
+.choiceTitleBlock strong,
+.reportTitleBlock strong {
+  font-size: 1.08rem;
+  line-height: 1.2;
+}
+
+.choiceTitleBlock small,
+.reportTitleBlock small {
+  font-size: 0.93rem;
+  line-height: 1.45;
+}
+
+.filterModal .modalFooter,
+.sourceChoiceModal .modalFooter,
+.reportModal .modalFooter {
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.8rem;
+  margin: 0.12rem 0 0;
+  padding: 0;
+  border-top: 0;
+  background: transparent;
+}
+
+.filterModal .modalFooter .primaryButton,
+.filterModal .modalFooter .secondaryButton,
+.sourceChoiceModal .modalFooter .primaryButton,
+.sourceChoiceModal .modalFooter .secondaryButton,
+.reportModal .modalFooter .primaryButton,
+.reportModal .modalFooter .secondaryButton {
+  min-height: 3.35rem;
+  border-radius: 1rem;
+  padding-inline: 1.28rem;
+  font-size: 1rem;
+  font-weight: 850;
+}
+
+.filterModal .modalFooter .primaryButton,
+.reportModal .modalFooter .primaryButton {
+  min-width: 13.5rem;
+}
+
+@media (max-width: 900px) {
+  .filterModal,
+  .sourceChoiceModal,
+  .reportModal {
+    width: min(100%, calc(100vw - 1rem));
+    max-height: min(88vh, calc(100dvh - 1rem));
+    overflow-y: auto;
+    padding: 1rem;
+    border-radius: 1.35rem;
+  }
+
+  .filterModal .modalHeader,
+  .sourceChoiceModal .modalHeader,
+  .reportModal .modalHeader {
+    margin-bottom: 0;
+    padding-bottom: 1rem;
+  }
+
+  .filterModal .modalHeader h2,
+  .sourceChoiceModal .modalHeader h2,
+  .reportModal .modalHeader h2 {
+    font-size: 1.58rem;
+  }
+
+  .filterModal .filterGrid,
+  .sourceChoiceGrid,
+  .reportChoiceGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .sourceChoiceOption,
+  .reportOption {
+    min-height: auto;
+    padding: 1rem;
+    border-radius: 1.12rem;
+  }
+
+  .filterModal .modalFooter,
+  .sourceChoiceModal .modalFooter,
+  .reportModal .modalFooter {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filterModal .modalFooter .primaryButton,
+  .filterModal .modalFooter .secondaryButton,
+  .sourceChoiceModal .modalFooter .primaryButton,
+  .sourceChoiceModal .modalFooter .secondaryButton,
+  .reportModal .modalFooter .primaryButton,
+  .reportModal .modalFooter .secondaryButton {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+/* === My Invoices: match Asset Register update modal styling === */
+.costFormModal,
+.costUploadModal {
+  width: min(100%, 1120px);
+  max-height: min(92vh, calc(100dvh - 1rem));
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 0;
+  padding: clamp(1.35rem, 2.2vw, 1.85rem);
+  border-radius: 2rem;
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.055), transparent 34%),
+    linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
+}
+
+.costUploadModal {
+  width: min(100%, 860px);
+  max-height: none;
+  overflow: visible;
+}
+
+.costFormModal .modalHeader,
+.costUploadModal .modalHeader {
+  align-items: flex-start;
+  gap: 1rem;
+  margin: 0 0 1rem;
+  padding: 0 0 1rem;
+  border-bottom: 1px solid rgba(216, 226, 236, 0.9);
+}
+
+.costFormModal .modalHeader h2,
+.costUploadModal .modalHeader h2 {
+  margin: 0;
+  color: #0f3329;
+  font-size: clamp(1.85rem, 2.45vw, 2.35rem);
+  font-weight: 720;
+  line-height: 1.04;
+  letter-spacing: -0.04em;
+  text-transform: none;
+}
+
+.costFormModal .modalHeader p,
+.costUploadModal .modalHeader p {
+  max-width: 46rem;
+  margin: 0.38rem 0 0;
+  color: #607286;
+  font-size: 1.04rem;
+  font-weight: 590;
+  line-height: 1.4;
+}
+
+.costFormModal .closeButton,
+.costUploadModal .closeButton {
+  width: 3.25rem;
+  min-width: 3.25rem;
+  height: 3.25rem;
+  min-height: 3.25rem;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #f7fbff 0%, #eef5fb 100%);
+  border-color: rgba(210, 222, 237, 0.98);
+}
+
+.costFormModal .modalDivider,
+.costUploadModal .modalDivider {
+  display: none;
+}
+
+.costFormModal .formModalScrollBody,
+.costUploadModal .formModalScrollBody {
+  display: grid;
+  align-content: start;
+  gap: 1rem;
+  min-height: 0;
+  margin-right: -0.2rem;
+  padding: 0 0.68rem 0 0;
+}
+
+.costFormModal .invoiceFormCard {
+  display: grid;
+  gap: 1rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.costFormModal .formGrid,
+.costFormModal .textAreaGrid {
+  gap: 1rem;
+}
+
+.costFormModal .formGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.costFormModal .textAreaGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.costFormModal .formGrid label,
+.costFormModal .formGrid .costUsageMetricField,
+.costFormModal .textAreaGrid label {
+  min-width: 0;
+  gap: 0.5rem;
+  padding: 1rem;
+  border: 1px solid rgba(216, 226, 236, 0.96);
+  border-radius: 1.18rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
+  box-shadow:
+    0 10px 22px rgba(16, 31, 28, 0.028),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.costFormModal .formGrid label > span,
+.costFormModal .formGrid .costUsageMetricField > span,
+.costFormModal .textAreaGrid label > span,
+.costFormModal .uploadInline > span {
+  color: #263845;
+  font-size: 0.96rem;
+  font-weight: 700;
+  letter-spacing: -0.006em;
+  line-height: 1.2;
+  text-transform: none;
+}
+
+.costFormModal .formGrid input,
+.costFormModal .formGrid select,
+.costFormModal .textAreaGrid textarea {
+  min-height: 3.75rem;
+  border-radius: 1.08rem;
+  color: #20313b;
+  font-size: 1.12rem;
+  font-weight: 560;
+}
+
+.costFormModal .formGrid .customFilterSelectButton {
+  min-height: 3.75rem;
+  border-radius: 1.08rem;
+  color: #20313b;
+  font-size: 1.12rem;
+  font-weight: 560;
+}
+
+.costFormModal .formGrid .customFilterSelectButtonText {
+  font-size: 1.12rem;
+  font-weight: 560;
+}
+
+.costFormModal .formGrid .customFilterSelectMenu {
+  z-index: 120;
+  max-height: min(14rem, 46vh);
+}
+
+.costFormModal .formGrid input::placeholder,
+.costFormModal .textAreaGrid textarea::placeholder,
+.costFormModal .invoiceCurrencyInput input::placeholder {
+  color: #708094;
+  opacity: 1;
+  font-weight: 560;
+}
+
+.costFormModal .formGrid input:disabled,
+.costFormModal .formGrid select:disabled {
+  color: #798695;
+  background: #f4f6f8;
+}
+
+.costFormModal .textAreaGrid textarea {
+  min-height: 6.4rem;
+  padding: 0.95rem 1rem;
+  resize: vertical;
+}
+
+.costFormModal .invoiceCurrencyField {
+  border-color: rgba(190, 224, 206, 0.98);
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.06), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #f3fbf6 100%);
+}
+
+.costFormModal .invoiceCurrencyInput {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.48rem;
+  min-height: 3.75rem;
+  padding: 0 0.95rem;
+  border: 1px solid rgba(190, 224, 206, 0.98);
+  border-radius: 1.08rem;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.costFormModal .invoiceCurrencyInput:focus-within {
+  border-color: rgba(22, 83, 64, 0.44);
+  box-shadow:
+    0 0 0 4px rgba(22, 83, 64, 0.09),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.costFormModal .invoiceCurrencyInput > span {
+  color: #124635;
+  font-size: 1.15rem;
+  font-weight: 780;
+  letter-spacing: -0.02em;
+  text-transform: none;
+}
+
+.costFormModal .invoiceCurrencyInput input {
+  width: 100%;
+  min-height: 3.45rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #20313b;
+  font-size: 1.12rem;
+  font-weight: 560;
+}
+
+.costFormModal .invoiceCurrencyInput input:focus {
+  outline: none;
+  border: 0;
+  box-shadow: none;
+}
+
+.costFormModal .uploadInline {
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 1rem;
+  min-height: 5.7rem;
+  padding: 1rem 1.1rem;
+  border: 1px dashed rgba(210, 222, 237, 0.98);
+  border-radius: 1.18rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f7fafb 100%);
+  box-shadow:
+    0 8px 18px rgba(16, 31, 28, 0.028),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.costFormModal .uploadInlineReady {
+  border-style: solid;
+  border-color: rgba(190, 224, 206, 0.98);
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.07), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #effaf4 100%);
+}
+
+.costFormModal .uploadButtonSmall,
+.costUploadModal .uploadButton {
+  border-color: rgba(210, 222, 237, 0.98);
+  background: linear-gradient(180deg, #ffffff 0%, #f5f8fb 100%);
+  box-shadow:
+    0 10px 20px rgba(16, 31, 28, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.costFormModal .uploadInlineReady .uploadButtonSmall,
+.costUploadModal .uploadBoxReady .uploadButton {
+  color: #124635;
+  border-color: rgba(190, 224, 206, 0.98);
+  background: linear-gradient(180deg, #ffffff 0%, #edf8f2 100%);
+}
+
+.costFormModal .uploadInline strong {
+  min-width: 0;
+  color: #617286;
+  font-size: 0.95rem;
+  font-weight: 660;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.costFormModal .uploadInlineReady strong {
+  color: #124635;
+  font-weight: 760;
+}
+
+.costFormModal .fileLink {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 2.65rem;
+  padding: 0 0.9rem;
+  border: 1px solid rgba(190, 224, 206, 0.98);
+  border-radius: 0.9rem;
+  background: linear-gradient(180deg, #ffffff 0%, #edf8f2 100%);
+  color: #124635;
+  font-size: 0.92rem;
+  font-weight: 760;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.costFormModal .rawPreview,
+.costFormModal .warningBox {
+  border-radius: 1.12rem;
+}
+
+.costFormModal .modalFooter,
+.costUploadModal .modalFooter {
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.72rem;
+  margin-top: 1rem;
+  padding: 1rem 0 0;
+  border-top: 1px solid rgba(216, 226, 236, 0.88);
+  background: transparent;
+}
+
+.costFormModal .modalFooter .primaryButton,
+.costFormModal .modalFooter .secondaryButton,
+.costUploadModal .modalFooter .primaryButton,
+.costUploadModal .modalFooter .secondaryButton {
+  min-height: 3.35rem;
+  border-radius: 1rem;
+  padding-inline: 1.3rem;
+  font-size: 1.02rem;
+  font-weight: 760;
+}
+
+.costFormModal .modalFooter .primaryButton,
+.costUploadModal .modalFooter .primaryButton {
+  min-width: 12rem;
+}
+
+.costUploadModal .uploadPanel {
+  gap: 1rem;
+  padding: clamp(1.2rem, 2vw, 1.55rem);
+  border-radius: 1.48rem;
+}
+
+.costUploadModal .uploadPanel h3 {
+  margin: 0;
+  padding-bottom: 0.85rem;
+  color: #10352b;
+  font-size: clamp(1.38rem, 1.85vw, 1.68rem);
+  font-weight: 720;
+  letter-spacing: -0.028em;
+  line-height: 1.15;
+}
+
+.costUploadModal .uploadBox {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 5.55rem;
+  align-items: stretch;
+  justify-content: center;
+  gap: 0.9rem;
+  min-height: 7.8rem;
+  max-width: 24rem;
+  width: 100%;
+  margin: 0 auto;
+  padding: 1.2rem;
+  border: 1px dashed rgba(210, 222, 237, 0.98);
+  border-radius: 1.16rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f7fafb 100%);
+}
+
+.costUploadModal .uploadBoxReady {
+  border-style: solid;
+  border-color: rgba(190, 224, 206, 0.98);
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.07), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #effaf4 100%);
+}
+
+.costUploadModal .uploadButton,
+.costUploadModal .uploadCounter {
+  width: 100%;
+  min-width: 0;
+  min-height: 3.5rem;
+  height: 3.5rem;
+  border-radius: 1.05rem;
+}
+
+.costUploadModal .uploadCounter {
+  color: #21394a;
+  background: linear-gradient(180deg, #f7fbff 0%, #edf4fb 100%);
+  border-color: rgba(210, 222, 237, 0.98);
+  font-size: 0.98rem;
+  font-weight: 820;
+}
+
+.costUploadModal .uploadBoxReady .uploadCounter {
+  color: #124635;
+  background: linear-gradient(180deg, #ffffff 0%, #edf8f2 100%);
+  border-color: rgba(190, 224, 206, 0.98);
+}
+
+.costUploadModal .uploadBox p {
+  grid-column: 1 / -1;
+  color: #124635;
+  font-size: 0.92rem;
+  font-weight: 760;
+  overflow-wrap: anywhere;
+}
+
+.costUploadModal .helperText {
+  margin: 0;
+  color: #617286;
+  font-size: 0.92rem;
+  font-weight: 560;
+  line-height: 1.45;
+  text-align: center;
+}
+
+@media (max-width: 900px) {
+  .costFormModal,
+  .costUploadModal {
+    width: min(100%, calc(100vw - 1rem));
+    max-height: min(92vh, calc(100dvh - 1rem));
+    padding: 1.08rem;
+    border-radius: 1.35rem;
+  }
+
+  .costUploadModal {
+    overflow: hidden;
+  }
+
+  .costFormModal .formGrid,
+  .costFormModal .textAreaGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .costFormModal .uploadInline {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .costFormModal .uploadInline strong {
+    white-space: normal;
+  }
+
+  .costFormModal .modalFooter,
+  .costUploadModal .modalFooter {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .costFormModal .modalFooter .primaryButton,
+  .costFormModal .modalFooter .secondaryButton,
+  .costUploadModal .modalFooter .primaryButton,
+  .costUploadModal .modalFooter .secondaryButton {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 520px) {
+  .costUploadModal .uploadBox {
+    grid-template-columns: 1fr;
+    max-width: 100%;
+  }
+}
+
+/* === My Invoices card + delete modal alignment with Asset Register === */
+.invoiceRow {
+  display: block;
+  min-height: auto;
+  padding: 1.3rem 1.38rem;
+  border-radius: 1.58rem;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(25, 116, 84, 0.04) 0%, rgba(25, 116, 84, 0) 34%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(248, 252, 253, 0.99) 100%);
+  border: 1px solid rgba(198, 216, 223, 0.98);
+  box-shadow:
+    0 14px 28px rgba(20, 43, 43, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.invoiceRow:hover {
+  transform: translateY(-1px);
+  border-color: rgba(197, 211, 223, 0.98);
+  box-shadow:
+    0 18px 34px rgba(16, 31, 28, 0.055),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.invoiceHeader {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(270px, auto);
+  align-items: center;
+  gap: 1.3rem;
+}
+
+.invoiceTitleBlock {
+  min-width: 0;
+  display: grid;
+  align-content: center;
+  gap: 0.6rem;
+  padding: 0;
+}
+
+.invoiceTitle,
+.invoiceAsset,
+.invoiceMetaList,
+.invoicePrice,
+.invoiceVatLabel,
+.invoiceUsage {
+  grid-area: auto;
+}
+
+.invoiceTitle {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: #073b30;
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
+  font-size: clamp(1.42rem, 1.9vw, 1.72rem);
+  font-weight: 760;
+  line-height: 1.08;
+  letter-spacing: -0.032em;
+  text-transform: none;
+}
+
+.invoiceAsset {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: #5d6d7c;
+  font-size: 0.96rem;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.invoiceMetaList {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.22rem;
+  margin-top: 0.02rem;
+  color: #5d6d7c;
+  font-size: 0.92rem;
+  font-weight: 760;
+  line-height: 1.3;
+}
+
+.invoiceMetaList span {
+  display: block;
+  min-width: 0;
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  overflow-wrap: anywhere;
+}
+
+.invoiceMetaList span + span::before {
+  content: none;
+}
+
+.invoiceValueMethodLabel {
+  color: #3e4d61 !important;
+  font-weight: 880 !important;
+}
+
+.invoiceSavedDateLabel {
+  color: #68798a !important;
+  font-size: 0.9rem !important;
+  font-weight: 720 !important;
+}
+
+.invoiceHeaderAside {
+  min-width: min(100%, 320px);
+  display: grid;
+  align-content: center;
+  justify-items: end;
+  gap: 0.85rem;
+}
+
+.invoiceValueBlock {
+  display: grid;
+  justify-items: end;
+  align-content: center;
+  gap: 0.16rem;
+  min-width: 242px;
+  width: 100%;
+  padding-left: 0.7rem;
+  text-align: right;
+}
+
+.invoicePrice {
+  display: block;
+  margin: 0;
+  color: #073b30;
+  font-family: inherit;
+  font-size: clamp(1.5rem, 2.05vw, 1.9rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.055em;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.invoiceVatLabel {
+  display: block;
+  margin: 0;
+  color: #5d6d7c;
+  font-size: 0.9rem;
+  font-weight: 780;
+  line-height: 1.15;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.invoiceUsage {
+  display: none !important;
+}
+
+.rowActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.72rem;
+  margin-top: 0;
+}
+
+.secondaryButtonSmall,
+.dangerButtonSmall {
+  min-width: 154px;
+  min-height: 3.1rem;
+  padding: 0 1rem;
+  border-radius: 1rem;
+  border-width: 1.5px;
+  gap: 0.55rem;
+  font-size: 0.96rem;
+  font-weight: 700;
+  box-shadow:
+    0 10px 22px rgba(31, 51, 71, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.rowActions .buttonIcon,
+.rowActions svg {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.invoiceOpenButton {
+  color: #0b4635;
+  background: linear-gradient(180deg, #ffffff 0%, #eaf8f1 100%);
+  border-color: rgba(91, 196, 139, 0.88);
+  box-shadow:
+    0 10px 22px rgba(15, 90, 67, 0.085),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.invoiceOpenButton:hover:not(:disabled) {
+  color: #0b4635;
+  background: linear-gradient(180deg, #ffffff 0%, #dff3ea 100%);
+  border-color: rgba(66, 177, 116, 0.94);
+  box-shadow:
+    0 14px 28px rgba(15, 90, 67, 0.115),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+}
+
+.invoiceEditButton {
+  color: #0f3b64;
+  background: linear-gradient(180deg, #ffffff 0%, #eaf5ff 100%);
+  border-color: #7eb4df;
+  box-shadow:
+    0 9px 20px rgba(18, 61, 102, 0.075),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.invoiceEditButton:hover:not(:disabled) {
+  color: #0f3b64;
+  background: linear-gradient(180deg, #ffffff 0%, #daecff 100%);
+  border-color: #558fc6;
+  box-shadow:
+    0 13px 26px rgba(18, 61, 102, 0.095),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+}
+
+.invoiceDeleteButton {
+  color: #b42318;
+  background: linear-gradient(180deg, #ffffff 0%, #fff1f1 100%);
+  border-color: #f2b8b5;
+  box-shadow:
+    0 10px 22px rgba(154, 51, 51, 0.075),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.invoiceDeleteButton:hover:not(:disabled) {
+  color: #981b12;
+  background: linear-gradient(180deg, #ffffff 0%, #ffe7e7 100%);
+  border-color: #ee9e99;
+  box-shadow:
+    0 14px 28px rgba(154, 51, 51, 0.105),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+}
+
+.confirmDeleteBackdrop {
+  z-index: 220;
+  background: rgba(12, 22, 25, 0.56);
+  backdrop-filter: blur(12px);
+}
+
+.deleteConfirmModal {
+  position: relative;
+  width: min(96vw, 58rem);
+  display: block;
+  padding: clamp(1.75rem, 2.55vw, 2.35rem);
+  border: 1px solid rgba(203, 218, 230, 0.98);
+  border-radius: 1.8rem;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 26px 70px rgba(8, 27, 34, 0.22);
+}
+
+.deleteConfirmCloseButton {
+  position: absolute;
+  top: clamp(1rem, 1.6vw, 1.25rem);
+  right: clamp(1rem, 1.6vw, 1.25rem);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  padding: 0;
+  border: 1px solid rgba(207, 223, 236, 0.98);
+  border-radius: 999px;
+  background: #f7fbff;
+  color: #13395d;
+  cursor: pointer;
+}
+
+.deleteConfirmCloseButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.deleteConfirmContent {
+  display: grid;
+  gap: 1.15rem;
+  padding: 0;
+}
+
+.deleteConfirmContent h3 {
+  margin: 0;
+  padding: 0 3.35rem 1.1rem 0;
+  border-bottom: 1px solid rgba(211, 224, 234, 0.98);
+  color: #0c382f;
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
+  font-size: clamp(1.65rem, 3vw, 2.25rem);
+  font-weight: 760;
+  line-height: 1.02;
+  letter-spacing: -0.05em;
+}
+
+.deleteConfirmContent p {
+  max-width: 100%;
+  margin: 0;
+  color: #647382;
+  font-size: 1rem;
+  font-weight: 560;
+  line-height: 1.45;
+}
+
+.deleteConfirmContent p strong {
+  color: #0c382f;
+  font-weight: 760;
+}
+
+.deleteConfirmAsset {
+  display: grid;
+  gap: 0.35rem;
+  width: 100%;
+  margin: 0;
+  padding: 1.05rem 1.15rem;
+  border: 1px solid rgba(207, 220, 231, 0.98);
+  border-radius: 1.2rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbfd 100%);
+}
+
+.deleteConfirmAsset span {
+  color: #68798b;
+  font-size: 0.78rem;
+  font-weight: 820;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.deleteConfirmAsset strong {
+  overflow-wrap: anywhere;
+  color: #0c382f;
+  font-size: 1.2rem;
+  font-weight: 780;
+  line-height: 1.1;
+}
+
+.deleteConfirmAsset small {
+  overflow-wrap: anywhere;
+  color: #607084;
+  font-size: 0.98rem;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.deleteConfirmActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 0.2rem;
+}
+
+.deleteConfirmActions .secondaryButton,
+.deleteConfirmActions .deleteConfirmButton {
+  min-height: 3.25rem;
+  padding: 0 1.3rem;
+  border-radius: 1.05rem;
+  font-size: 0.98rem;
+  font-weight: 760;
+  box-shadow: none;
+}
+
+.deleteConfirmActions .secondaryButton {
+  border: 1px solid rgba(197, 214, 228, 0.98);
+  background: linear-gradient(180deg, #ffffff 0%, #f5f9fd 100%);
+  color: #11335a;
+}
+
+.deleteConfirmButton,
+.deleteConfirmActions .deleteConfirmButton,
+.deleteConfirmActions .deleteConfirmButton:disabled {
+  min-width: 0;
+  color: #ffffff;
+  background: linear-gradient(180deg, #dc3f3f 0%, #b42318 100%);
+  border: 1px solid rgba(180, 35, 24, 0.78);
+  box-shadow:
+    0 14px 26px rgba(180, 35, 24, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.deleteConfirmButton:hover:not(:disabled),
+.deleteConfirmActions .deleteConfirmButton:hover:not(:disabled) {
+  color: #ffffff;
+  background: linear-gradient(180deg, #e34f4f 0%, #a91f16 100%);
+  border-color: rgba(169, 31, 22, 0.86);
+  box-shadow:
+    0 18px 32px rgba(180, 35, 24, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+@media (max-width: 960px) {
+  .invoiceHeader {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .invoiceHeaderAside {
+    width: 100%;
+    min-width: 0;
+    justify-items: stretch;
+  }
+
+  .invoiceValueBlock {
+    min-width: 0;
+    padding-left: 0;
+    justify-items: start;
+    text-align: left;
+  }
+
+  .invoicePrice,
+  .invoiceVatLabel {
+    text-align: left;
+  }
+
+  .rowActions {
+    justify-content: stretch;
+  }
+
+  .rowActions .secondaryButtonSmall,
+  .rowActions .dangerButtonSmall {
+    flex: 1 1 180px;
+  }
+}
+
+@media (max-width: 760px) {
+  .invoiceRow {
+    padding: 1.05rem;
+    border-radius: 1.25rem;
+  }
+
+  .invoiceTitle {
+    font-size: 1.35rem;
+    font-weight: 740;
+    letter-spacing: -0.026em;
+  }
+
+  .invoicePrice {
+    font-size: 1.45rem;
+    white-space: nowrap;
+  }
+
+  .rowActions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .secondaryButtonSmall,
+  .dangerButtonSmall {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .deleteConfirmModal {
+    width: min(100%, calc(100vw - 1.25rem));
+    padding: 1.15rem;
+    border-radius: 1.4rem;
+  }
+
+  .deleteConfirmCloseButton {
+    top: 0.85rem;
+    right: 0.85rem;
+    width: 2.65rem;
+    height: 2.65rem;
+  }
+
+  .deleteConfirmContent h3 {
+    padding-right: 3rem;
+  }
+
+  .deleteConfirmActions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .deleteConfirmActions .secondaryButton,
+  .deleteConfirmActions .deleteConfirmButton {
+    width: 100%;
+  }
+}
+
+/* Asset Maintenance additions */
+.maintenanceCardOpen {
+  background:
+    radial-gradient(circle at 3% 0%, rgba(160, 53, 53, 0.06) 0%, rgba(160, 53, 53, 0) 40%),
+    linear-gradient(180deg, #fffafa 0%, #fff4f4 100%);
+  border-color: #efcfd0;
+}
+
+.maintenanceCardDone {
+  background:
+    radial-gradient(circle at 3% 0%, rgba(25, 116, 84, 0.08) 0%, rgba(25, 116, 84, 0) 38%),
+    linear-gradient(180deg, #f7fff9 0%, #ecfaf2 100%);
+  border-color: #c4e9d3;
+}
+
+.maintenanceStatusPill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  min-height: 2rem;
+  padding: 0.42rem 0.75rem;
+  border-radius: 999px;
+  color: var(--brand-dark);
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(7, 59, 48, 0.12);
+  font-size: 0.76rem;
+  font-weight: 950;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.maintenanceStatusDanger {
+  color: #9a2d2d;
+  border-color: #efc1c1;
+  background: #fff6f6;
+}
+
+.maintenanceStatusGood {
+  color: #0f5840;
+  border-color: #bfe2ce;
+  background: #f3fbf6;
+}
+
+.maintenanceMetaLine {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  color: var(--text-muted);
+  font-weight: 760;
+}
+
+.maintenanceDetailsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.72rem;
+  margin-top: 1rem;
+}
+
+.maintenanceDetail,
+.maintenanceDetailWide {
+  min-width: 0;
+  padding: 0.78rem 0.86rem;
+  border: 1px solid rgba(203, 219, 228, 0.88);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.maintenanceDetailWide {
+  grid-column: span 2;
+}
+
+.maintenanceDetail span,
+.maintenanceDetailWide span {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.maintenanceDetail strong,
+.maintenanceDetailWide strong {
+  display: block;
+  color: var(--brand-dark);
+  font-size: 0.92rem;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+.maintenanceSectionTitle {
+  margin: 1rem 0 0.65rem;
+  color: var(--brand-dark);
+  font-size: 0.78rem;
+  font-weight: 950;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.maintenanceToggleGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.72rem;
+}
+
+.maintenanceToggleOption {
+  min-height: 4.45rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 1.05rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f6fafb 100%);
+  color: var(--brand-dark);
+  font: inherit;
+  font-weight: 900;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.maintenanceToggleOption:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: rgba(25, 116, 84, 0.34);
+  box-shadow: 0 12px 24px rgba(18, 35, 39, 0.065);
+}
+
+.maintenanceToggleOption strong,
+.maintenanceToggleOption span {
+  display: block;
+}
+
+.maintenanceToggleOption span {
+  margin-top: 0.3rem;
+  color: var(--text-muted);
+  font-size: 0.84rem;
+  font-weight: 700;
+  line-height: 1.32;
+}
+
+.maintenanceToggleActive {
+  border-color: #84c9a0;
+  background: linear-gradient(180deg, #f1fbf5 0%, #e5f6ed 100%);
+  box-shadow: 0 0 0 4px rgba(25, 116, 84, 0.1);
+}
+
+.maintenanceFieldGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.82rem;
+}
+
+.maintenanceFieldFull {
+  grid-column: 1 / -1;
+}
+
+.maintenanceInlineFields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(8.5rem, 0.55fr);
+  gap: 0.72rem;
+}
+
+.maintenanceCheckboxRow {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-height: 3.35rem;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 1rem;
+  background: #ffffff;
+  color: var(--brand-dark);
+  font-weight: 900;
+}
+
+.maintenanceCheckboxRow input {
+  width: 1.05rem;
+  height: 1.05rem;
+  accent-color: var(--brand-mid);
+}
+
+.maintenanceCurrentUsage {
+  display: grid;
+  gap: 0.28rem;
+  min-height: 3.55rem;
+  padding: 0.82rem 0.95rem;
+  border: 1px solid rgba(190, 210, 222, 0.88);
+  border-radius: 1rem;
+  background: #f7fafc;
+}
+
+.maintenanceCurrentUsage span {
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.maintenanceCurrentUsage strong {
+  color: var(--brand-dark);
+  font-size: 1rem;
+  font-weight: 950;
+}
+
+.maintenanceDownloadGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.78rem;
+}
+
+.maintenanceDownloadCard {
+  display: grid;
+  gap: 0.65rem;
+  padding: 1rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 1.15rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f7fafb 100%);
+}
+
+.maintenanceDownloadCard h3 {
+  margin: 0;
+  color: var(--brand-dark);
+  font-size: 1.02rem;
+  font-weight: 950;
+}
+
+.maintenanceDownloadCard p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.maintenanceDownloadActions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.maintenanceCompleteBox {
+  padding: 0.95rem 1rem;
+  border: 1px solid rgba(203, 219, 228, 0.88);
+  border-radius: 1rem;
+  background: #f7fafc;
+}
+
+.maintenanceCompleteBox strong,
+.maintenanceCompleteBox span {
+  display: block;
+}
+
+.maintenanceCompleteBox strong {
+  color: var(--brand-dark);
+  font-weight: 950;
+}
+
+.maintenanceCompleteBox span {
+  margin-top: 0.28rem;
+  color: var(--text-muted);
+  font-weight: 760;
+}
+
+@media (max-width: 1120px) {
+  .maintenanceDetailsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .maintenanceDetailsGrid,
+  .maintenanceFieldGrid,
+  .maintenanceToggleGrid,
+  .maintenanceDownloadGrid,
+  .maintenanceDownloadActions,
+  .maintenanceInlineFields {
+    grid-template-columns: 1fr;
+  }
+
+  .maintenanceDetailWide {
+    grid-column: auto;
+  }
+}
+
+.filterGrid input,
+.filterGrid textarea {
+  width: 100%;
+  min-height: 3.25rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 1.05rem;
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--text);
+  font: inherit;
+  font-weight: 750;
+  padding: 0 1rem;
+  outline: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.filterGrid textarea {
+  min-height: 7rem;
+  padding: 0.9rem 1rem;
+  line-height: 1.55;
+  resize: vertical;
+}
+
+.maintenanceFieldGrid input,
+.maintenanceFieldGrid select,
+.maintenanceFieldGrid textarea {
+  width: 100%;
+  min-height: 3.25rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 1.05rem;
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--text);
+  font: inherit;
+  font-weight: 750;
+  padding: 0 1rem;
+  outline: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.maintenanceFieldGrid textarea {
+  min-height: 7rem;
+  padding: 0.9rem 1rem;
+  line-height: 1.55;
+  resize: vertical;
+}
+
+.maintenanceFieldGrid input:focus,
+.maintenanceFieldGrid select:focus,
+.maintenanceFieldGrid textarea:focus {
+  border-color: rgba(22, 83, 64, 0.38);
+  box-shadow: 0 0 0 4px rgba(22, 83, 64, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
