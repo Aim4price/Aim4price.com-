@@ -3664,7 +3664,7 @@ export async function recordMissingFuelAssetIssue(
   const fuelPercentAfter = normalizeRequiredLateEntryFuelPercent(input.assetFuelPercentAfter, 'after');
   const operatorName = asText(input.operatorName).replace(/\s+/g, ' ').slice(0, 100);
   const activityText = validateLateEntryActivity(input.activityText);
-  const workAreaText = asText(input.workAreaText).replace(/\s+/g, ' ').slice(0, 180);
+  const requestedWorkAreaText = asText(input.workAreaText).replace(/\s+/g, ' ').slice(0, 180);
   const lateEntryReason = asText(input.lateEntryReason).replace(/\s+/g, ' ').slice(0, 500);
   const note = asText(input.note).slice(0, 2000);
   const evidenceType = normalizeLateEntryEvidenceType(input.evidenceType);
@@ -3684,8 +3684,6 @@ export async function recordMissingFuelAssetIssue(
   if (!idempotencyKey) throw new Error('A valid idempotency key is required. Refresh the page and try again.');
   if (fuelPercentAfter < fuelPercentBefore) throw new Error('Fuel percentage after cannot be lower than fuel percentage before.');
   if (operatorName.length < 2) throw new Error('Enter the operator or manager name.');
-  if (workAreaText.length < 2) throw new Error('Enter the historical work area or location.');
-  if (lateEntryReason.length < 5) throw new Error('Explain why this fuel entry was entered late.');
   if (evidenceType === 'no_supporting_record' && (evidenceFile || evidenceReference)) {
     throw new Error('Choose the correct evidence type for the supporting file or reference.');
   }
@@ -3703,6 +3701,7 @@ export async function recordMissingFuelAssetIssue(
     );
     const storage = storageResult.rows[0] ? mapStorageRow(storageResult.rows[0]) : null;
     if (!storage) throw new Error('Fuel storage not found.');
+    const workAreaText = requestedWorkAreaText || 'Main diesel tank';
 
     const duplicate = await client.query<{ id: string }>(
       `select id::text from public.fuel_storage_events where user_id = $1 and idempotency_key = $2 limit 1`,
@@ -3791,7 +3790,7 @@ export async function recordMissingFuelAssetIssue(
       [
         storageId, userId, assetId, litres, fuelPercentBefore, fuelPercentAfter, usageReading, usageMetric,
         operatorName, activityText, workAreaText, note || null, idempotencyKey, issueDate, issueTime.time,
-        issueTime.recorded, issueAtIso, addedByName || null, addedByEmail || null, lateEntryReason,
+        issueTime.recorded, issueAtIso, addedByName || null, addedByEmail || null, lateEntryReason || null,
         evidenceType, evidenceReference || null, evidenceStatus, tankBalanceTreatment,
       ],
     );
