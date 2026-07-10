@@ -676,6 +676,22 @@ function readLicenseRegistrationFromSpecs(specs: Record<string, unknown>): strin
   );
 }
 
+function readLicenseRenewalDateFromSpecs(specs: Record<string, unknown>): string {
+  const candidates = [
+    specs.licenseRenewalDate,
+    specs.license_renewal_date,
+    specs.licenceRenewalDate,
+    specs.licence_renewal_date,
+  ];
+
+  for (const candidate of candidates) {
+    const value = asText(candidate);
+    if (value) return value;
+  }
+
+  return '';
+}
+
 function normalizeAssetStatusChoice(value: unknown, fallback: AssetStatusChoice = 'unknown'): AssetStatusChoice {
   const normalized = String(value ?? '').trim().toLowerCase().replace(/[\s-]+/g, '_');
 
@@ -2903,6 +2919,8 @@ export async function updateAssetRegisterItemStatusDetails(
     ...(isRecord(existing.specsJson) ? existing.specsJson : {}),
     ...(isRecord(input.specsJson) ? input.specsJson : {}),
   };
+  const licenseRenewalDateChanged =
+    readLicenseRenewalDateFromSpecs(existing.specsJson) !== readLicenseRenewalDateFromSpecs(nextSpecsJson);
   const fields: SqlField[] = [];
 
   if (Object.prototype.hasOwnProperty.call(input, 'isFinanced')) {
@@ -2940,6 +2958,10 @@ export async function updateAssetRegisterItemStatusDetails(
   }
 
   pushField(fields, schema, ['specs_json'], nextSpecsJson, '::jsonb');
+  if (licenseRenewalDateChanged) {
+    pushField(fields, schema, ['license_renewal_alert_noted_for_date'], null);
+    pushField(fields, schema, ['license_renewal_alert_noted_at'], null);
+  }
   pushField(fields, schema, ['updated_at', 'modified_at', 'updatedon'], now);
 
   if (!fields.length) {
@@ -3041,6 +3063,8 @@ export async function updateAssetRegisterItem(
     nextCondition,
   });
   const nextSpecsJson = markValuationNeedsUpdate(usagePreservedSpecsJson, staleReasons, now);
+  const licenseRenewalDateChanged =
+    readLicenseRenewalDateFromSpecs(existing.specsJson) !== readLicenseRenewalDateFromSpecs(nextSpecsJson);
   pushField(fields, schema, ['kind', 'equipment_type', 'asset_type', 'item_type'], nextKind);
   pushField(fields, schema, ['title', 'name', 'asset_name'], asText(input.title));
   pushField(fields, schema, ['brand_name', 'brand'], asText(input.brandName) || null);
@@ -3060,6 +3084,10 @@ export async function updateAssetRegisterItem(
   pushField(fields, schema, ['finance_note', 'finance_notes', 'finance_status'], asText(input.financeNote) || null);
   pushField(fields, schema, ['year_model', 'year'], nextYearModel);
   pushField(fields, schema, ['specs_json'], nextSpecsJson, '::jsonb');
+  if (licenseRenewalDateChanged) {
+    pushField(fields, schema, ['license_renewal_alert_noted_for_date'], null);
+    pushField(fields, schema, ['license_renewal_alert_noted_at'], null);
+  }
   pushField(fields, schema, ['life_worked_percent'], nextLifeWorkedPercent);
   pushField(fields, schema, ['life_remaining_percent'], nextLifeWorkedPercent === null ? null : Math.max(0, 100 - nextLifeWorkedPercent));
   pushField(fields, schema, ['hours', 'engine_hours'], nextHours);

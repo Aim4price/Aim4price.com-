@@ -330,6 +330,63 @@ async function attachAssetRegisterOpenAlertCounts(
       `,
     ];
 
+    alertSources.push(`
+      select
+        pending_license.register_id,
+        count(*)::integer as alert_count
+      from (
+        select
+          license_candidate.*,
+          lower(regexp_replace(license_candidate.license_status_text, '[[:space:]-]+', '_', 'g')) as normalized_license_status,
+          case
+            when license_candidate.renewal_date_text ~ '^[1-9][0-9]{3}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$'
+              then to_date(license_candidate.renewal_date_text, 'YYYY-MM-DD')
+            else null
+          end as renewal_date
+        from (
+          select
+            register_id,
+            kind,
+            is_licensed,
+            license_renewal_alert_noted_for_date,
+            coalesce(
+              nullif(trim(specs_json ->> 'licenseRenewalDate'), ''),
+              nullif(trim(specs_json ->> 'license_renewal_date'), ''),
+              nullif(trim(specs_json ->> 'licenceRenewalDate'), ''),
+              nullif(trim(specs_json ->> 'licence_renewal_date'), ''),
+              ''
+            ) as renewal_date_text,
+            coalesce(
+              nullif(trim(specs_json ->> 'licenseStatus'), ''),
+              nullif(trim(specs_json ->> 'license_status'), ''),
+              nullif(trim(specs_json ->> 'licensedStatus'), ''),
+              nullif(trim(specs_json ->> 'licensed_status'), ''),
+              nullif(trim(specs_json ->> 'licenceStatus'), ''),
+              nullif(trim(specs_json ->> 'licence_status'), ''),
+              nullif(trim(specs_json ->> 'licencedStatus'), ''),
+              nullif(trim(specs_json ->> 'licenced_status'), ''),
+              ''
+            ) as license_status_text
+          from register_assets
+        ) license_candidate
+      ) pending_license
+      where case
+          when pending_license.normalized_license_status in ('yes', 'y', 'true', 'licensed', 'licenced', 'is_licensed') then true
+          when pending_license.normalized_license_status in (
+            'no', 'n', 'false', 'not_licensed', 'not_licenced', 'unlicensed', 'unlicenced',
+            'na', 'n_a', 'not_applicable', 'does_not_apply', 'unknown', 'not_sure', 'unsure'
+          ) then false
+          else pending_license.is_licensed = true
+        end
+        and lower(trim(coalesce(pending_license.kind, ''))) <> 'property'
+        and pending_license.renewal_date is not null
+        and to_char(pending_license.renewal_date, 'YYYY-MM-DD') = pending_license.renewal_date_text
+        and (current_timestamp at time zone 'Africa/Johannesburg')::date >=
+          (pending_license.renewal_date - interval '1 month')::date
+        and pending_license.license_renewal_alert_noted_for_date is distinct from pending_license.renewal_date
+      group by pending_license.register_id
+    `);
+
     if (hasPartnerNotes) {
       alertSources.push(`
         select
@@ -394,6 +451,9 @@ async function attachAssetRegisterOpenAlertCounts(
             ai.id::text as asset_id,
             ai.register_id::text as register_id,
             coalesce(ai.specs_json, '{}'::jsonb) as specs_json,
+            ai.kind,
+            ai.is_licensed,
+            ai.license_renewal_alert_noted_for_date,
             ai.valuation_run_id,
             ai.selected_method
           from public.asset_register_items ai
@@ -464,7 +524,9 @@ async function ensureAssetRegisterTablesOnce(): Promise<void> {
 
   await db.query(`
     alter table if exists public.asset_register_items
-      add column if not exists register_id uuid
+      add column if not exists register_id uuid,
+      add column if not exists license_renewal_alert_noted_for_date date,
+      add column if not exists license_renewal_alert_noted_at timestamptz
   `);
 
   await db.query(`
