@@ -25,7 +25,15 @@ export type AssetIssueNoteStatus = {
   notedAtIso: string | null;
 };
 
+export type AssetIssueNoteGroup = {
+  assetRegisterItemId: string;
+  latest: AssetIssueNoteStatus;
+  earlierCount: number;
+  totalCount: number;
+};
+
 const ISSUE_NOTE_PREFIX_PATTERN = /^notes\s*\/\s*problems\s*:\s*(.*)$/i;
+const MAINTENANCE_METADATA_LINE_PATTERN = /^(?:checked|serviced|repaired|checked\s+items|work\s+done|company|mechanic|repair\s+details)\s*(?::|$)/i;
 
 function asText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
@@ -71,18 +79,39 @@ function extractStandaloneIssueNoteText(note: string): string {
   return splitScanNoteSections(note)
     .map((section) => {
       const lines = splitIssueNoteLines(section);
-      const firstLine = lines[0] ?? '';
-      const match = firstLine.match(ISSUE_NOTE_PREFIX_PATTERN);
+      const issueNotes: string[] = [];
 
-      if (!match) {
-        return '';
-      }
+      lines.forEach((line, lineIndex) => {
+        const match = line.match(ISSUE_NOTE_PREFIX_PATTERN);
+        if (!match) return;
 
-      return [match[1] ?? '', ...lines.slice(1)]
-        .map((line) => line.trim())
-        .filter(Boolean)
-        .join('\n')
-        .trim();
+        const noteLines = [match[1] ?? ''];
+
+        for (let index = lineIndex + 1; index < lines.length; index += 1) {
+          const continuationLine = lines[index] ?? '';
+
+          if (
+            ISSUE_NOTE_PREFIX_PATTERN.test(continuationLine)
+            || MAINTENANCE_METADATA_LINE_PATTERN.test(continuationLine)
+          ) {
+            break;
+          }
+
+          noteLines.push(continuationLine);
+        }
+
+        const issueNote = noteLines
+          .map((noteLine) => noteLine.trim())
+          .filter(Boolean)
+          .join('\n')
+          .trim();
+
+        if (issueNote) {
+          issueNotes.push(issueNote);
+        }
+      });
+
+      return issueNotes.join('\n\n').trim();
     })
     .filter(Boolean)
     .join('\n\n')
@@ -139,27 +168,22 @@ async function ensureAssetIssueNoteStorage(): Promise<boolean> {
   return true;
 }
 
-export async function attachOpenIssueNoteStatusToAssets<T extends { id: string }>(
-  assets: T[],
-): Promise<Array<T & { latestIssueNoteStatus: AssetIssueNoteStatus | null }>> {
-  if (!assets.length) {
-    return [];
-  }
-
-  const assetIds = assets.map((asset) => asId(asset.id)).filter(Boolean);
+export async function listOpenIssueNoteGroupsForAssets(
+  assetIdsInput: string[],
+): Promise<AssetIssueNoteGroup[]> {
+  const assetIds = [...new Set(assetIdsInput.map((assetId) => asId(assetId)).filter(Boolean))];
 
   if (!assetIds.length) {
-    return assets.map((asset) => ({ ...asset, latestIssueNoteStatus: null }));
+    return [];
   }
 
   const hasStorage = await ensureAssetIssueNoteStorage();
 
   if (!hasStorage) {
-    return assets.map((asset) => ({ ...asset, latestIssueNoteStatus: null }));
+    return [];
   }
 
-  const db = getDb();
-  const result = await db.query<AssetIssueNoteRow>(
+  const result = await getDb().query<AssetIssueNoteRow>(
     `
       select
         e.id,
@@ -179,18 +203,50 @@ export async function attachOpenIssueNoteStatusToAssets<T extends { id: string }
     [assetIds],
   );
 
-  const latestByAssetId = new Map<string, AssetIssueNoteStatus>();
+  const groupedByAssetId = new Map<string, AssetIssueNoteStatus[]>();
 
   result.rows.forEach((row) => {
     const issueStatus = mapIssueNoteStatusFromScanEvent(row);
-    const assetId = issueStatus?.assetRegisterItemId ?? '';
 
-    if (!issueStatus || !assetId || latestByAssetId.has(assetId)) {
+    if (!issueStatus) {
       return;
     }
 
-    latestByAssetId.set(assetId, issueStatus);
+    const current = groupedByAssetId.get(issueStatus.assetRegisterItemId) ?? [];
+    current.push(issueStatus);
+    groupedByAssetId.set(issueStatus.assetRegisterItemId, current);
   });
+
+  return [...groupedByAssetId.entries()].flatMap(([assetRegisterItemId, statuses]) => {
+    const latest = statuses[0];
+    if (!latest) return [];
+
+    return [{
+      assetRegisterItemId,
+      latest,
+      earlierCount: Math.max(0, statuses.length - 1),
+      totalCount: statuses.length,
+    }];
+  });
+}
+
+export async function attachOpenIssueNoteStatusToAssets<T extends { id: string }>(
+  assets: T[],
+): Promise<Array<T & { latestIssueNoteStatus: AssetIssueNoteStatus | null }>> {
+  if (!assets.length) {
+    return [];
+  }
+
+  const assetIds = assets.map((asset) => asId(asset.id)).filter(Boolean);
+
+  if (!assetIds.length) {
+    return assets.map((asset) => ({ ...asset, latestIssueNoteStatus: null }));
+  }
+
+  const groups = await listOpenIssueNoteGroupsForAssets(assetIds);
+  const latestByAssetId = new Map(
+    groups.map((group) => [group.assetRegisterItemId, group.latest]),
+  );
 
   return assets.map((asset) => ({
     ...asset,
