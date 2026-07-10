@@ -4419,3 +4419,41 @@
     padding-right: 1.7rem;
   }
 }
+
+/* Maintenance timeline status states */
+.invoiceRow.maintenanceCardOpen {
+  border-color: rgba(190, 83, 83, 0.34);
+  background: linear-gradient(180deg, #fffafa 0%, #fff6f6 58%, #ffffff 100%);
+  box-shadow:
+    0 18px 42px rgba(160, 53, 53, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.invoiceRow.maintenanceCardOpen:hover {
+  border-color: rgba(160, 53, 53, 0.48);
+  box-shadow:
+    0 20px 44px rgba(160, 53, 53, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.invoiceRow.maintenanceCardDone {
+  border-color: rgba(71, 139, 108, 0.34);
+  background: linear-gradient(180deg, #f9fdfb 0%, #eff9f3 58%, #ffffff 100%);
+  box-shadow:
+    0 18px 42px rgba(25, 116, 84, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.invoiceRow.maintenanceCardDone:hover {
+  border-color: rgba(45, 126, 88, 0.48);
+  box-shadow:
+    0 20px 44px rgba(25, 116, 84, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.invoiceCompletedButton,
+.invoiceCompletedButton:hover:not(:disabled) {
+  color: #0b543d;
+  border-color: rgba(71, 164, 113, 0.74);
+  background: linear-gradient(180deg, #f8fdf9 0%, #dff3e8 100%);
+}
