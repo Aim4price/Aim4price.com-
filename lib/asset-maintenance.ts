@@ -533,8 +533,15 @@ function statusLabel(status: AssetMaintenanceComputedStatus): string {
   return 'Upcoming';
 }
 
-function todayUtcDateOnly(): string {
-  return new Date().toISOString().slice(0, 10);
+function todayJohannesburgDateOnly(): string {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Africa/Johannesburg',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date());
+  const valueByType = new Map(parts.map((part) => [part.type, part.value]));
+  return `${valueByType.get('year')}-${valueByType.get('month')}-${valueByType.get('day')}`;
 }
 
 function daysBetweenDateOnly(left: string, right: string): number {
@@ -565,7 +572,7 @@ function computeRecordStatus(input: {
 
   if (input.triggerType === 'date') {
     if (!input.dueDate) return { computedStatus: 'upcoming', daysUntilDue: null, remainingUsage: null };
-    const daysUntilDue = daysBetweenDateOnly(input.dueDate, todayUtcDateOnly());
+    const daysUntilDue = daysBetweenDateOnly(input.dueDate, todayJohannesburgDateOnly());
     const alertValue = input.alertBeforeValue ?? defaultAlertBefore('date').value;
 
     if (daysUntilDue < 0) return { computedStatus: 'overdue', daysUntilDue, remainingUsage: null };
@@ -655,15 +662,6 @@ function mapMaintenanceRow(row: MaintenanceRow): AssetMaintenanceRecord {
 }
 
 function sortMaintenanceRecords(records: AssetMaintenanceRecord[]): AssetMaintenanceRecord[] {
-  const openPriority: Record<AssetMaintenanceComputedStatus, number> = {
-    overdue: 0,
-    due: 1,
-    due_soon: 2,
-    upcoming: 3,
-    done: 9,
-    cancelled: 10,
-  };
-
   return [...records].sort((left, right) => {
     const leftOpen = left.status === 'upcoming';
     const rightOpen = right.status === 'upcoming';
@@ -671,20 +669,31 @@ function sortMaintenanceRecords(records: AssetMaintenanceRecord[]): AssetMainten
     if (leftOpen !== rightOpen) return leftOpen ? -1 : 1;
 
     if (leftOpen && rightOpen) {
-      const priorityDiff = openPriority[left.computedStatus] - openPriority[right.computedStatus];
-      if (priorityDiff !== 0) return priorityDiff;
+      const urgency = (record: AssetMaintenanceRecord) => {
+        if (record.computedStatus === 'overdue') return 0;
+        if (record.computedStatus === 'due') return 1;
+        return 2;
+      };
+      const urgencyDiff = urgency(left) - urgency(right);
+      if (urgencyDiff !== 0) return urgencyDiff;
 
-      if (left.triggerType === 'date' || right.triggerType === 'date') {
+      if (left.triggerType === 'date' && right.triggerType === 'date') {
         const leftDate = left.dueDate ? new Date(`${left.dueDate}T00:00:00Z`).getTime() : Number.POSITIVE_INFINITY;
         const rightDate = right.dueDate ? new Date(`${right.dueDate}T00:00:00Z`).getTime() : Number.POSITIVE_INFINITY;
         if (leftDate !== rightDate) return leftDate - rightDate;
       }
 
-      const leftRemaining = typeof left.remainingUsage === 'number' ? left.remainingUsage : Number.POSITIVE_INFINITY;
-      const rightRemaining = typeof right.remainingUsage === 'number' ? right.remainingUsage : Number.POSITIVE_INFINITY;
-      if (leftRemaining !== rightRemaining) return leftRemaining - rightRemaining;
+      if (left.triggerType === 'usage' && right.triggerType === 'usage') {
+        const leftRemaining = typeof left.remainingUsage === 'number' ? left.remainingUsage : Number.POSITIVE_INFINITY;
+        const rightRemaining = typeof right.remainingUsage === 'number' ? right.remainingUsage : Number.POSITIVE_INFINITY;
+        if (leftRemaining !== rightRemaining) return leftRemaining - rightRemaining;
+      }
 
-      return new Date(right.updatedAtIso).getTime() - new Date(left.updatedAtIso).getTime();
+      if (left.triggerType !== right.triggerType) return left.triggerType === 'date' ? -1 : 1;
+
+      const updatedDiff = new Date(right.updatedAtIso).getTime() - new Date(left.updatedAtIso).getTime();
+      if (updatedDiff !== 0) return updatedDiff;
+      return right.id.localeCompare(left.id);
     }
 
     const leftDoneTime = new Date(left.completedAtIso ?? left.updatedAtIso).getTime();
@@ -721,6 +730,7 @@ async function ensureAssetMaintenanceTablesOnce(): Promise<void> {
       recurring_enabled boolean not null default false,
       recurring_interval_value numeric(14,2),
       recurring_interval_unit text,
+      generated_from_maintenance_id uuid,
       completed_at timestamptz,
       completed_usage numeric(14,2),
       completed_notes text,
@@ -736,6 +746,7 @@ async function ensureAssetMaintenanceTablesOnce(): Promise<void> {
   await db.query(`alter table public.asset_maintenance_records add column if not exists completed_notes text`);
   await db.query(`alter table public.asset_maintenance_records add column if not exists completed_by text`);
   await db.query(`alter table public.asset_maintenance_records add column if not exists alert_noted_at timestamptz`);
+  await db.query(`alter table public.asset_maintenance_records add column if not exists generated_from_maintenance_id uuid`);
 
   await db.query(`create index if not exists asset_maintenance_records_user_id_idx on public.asset_maintenance_records (user_id)`);
   await db.query(`create index if not exists asset_maintenance_records_asset_register_item_id_idx on public.asset_maintenance_records (asset_register_item_id)`);
@@ -744,6 +755,11 @@ async function ensureAssetMaintenanceTablesOnce(): Promise<void> {
   await db.query(`create index if not exists asset_maintenance_records_due_usage_idx on public.asset_maintenance_records (due_usage)`);
   await db.query(`create index if not exists asset_maintenance_records_assigned_field_manager_id_idx on public.asset_maintenance_records (assigned_field_manager_id)`);
   await db.query(`create index if not exists asset_maintenance_records_created_at_idx on public.asset_maintenance_records (created_at)`);
+  await db.query(`
+    create unique index if not exists asset_maintenance_records_generated_from_active_idx
+    on public.asset_maintenance_records (generated_from_maintenance_id)
+    where generated_from_maintenance_id is not null and status <> 'cancelled'
+  `);
 }
 
 export async function ensureAssetMaintenanceTables(): Promise<void> {
@@ -1207,10 +1223,31 @@ function addDateInterval(dateIso: string, value: number, unit: AssetMaintenanceI
   return date.toISOString().slice(0, 10);
 }
 
+async function getActiveRecurringChild(userId: string, maintenanceId: string): Promise<AssetMaintenanceRecord | null> {
+  const result = await getDb().query<{ id: string }>(
+    `
+      select id::text as id
+      from public.asset_maintenance_records
+      where user_id = $1
+        and generated_from_maintenance_id = $2::uuid
+        and status <> 'cancelled'
+      order by created_at desc, id desc
+      limit 1
+    `,
+    [userId, maintenanceId],
+  );
+
+  const childId = result.rows[0]?.id;
+  return childId ? getAssetMaintenanceRecordById(userId, childId) : null;
+}
+
 async function createNextRecurringRecord(userId: string, completedRecord: AssetMaintenanceRecord): Promise<AssetMaintenanceRecord | null> {
   if (!completedRecord.recurringEnabled || !completedRecord.recurringIntervalValue || !completedRecord.recurringIntervalUnit) {
     return null;
   }
+
+  const existingChild = await getActiveRecurringChild(userId, completedRecord.id);
+  if (existingChild) return existingChild;
 
   const asset = await verifyAssetBelongsToUser(userId, completedRecord.assetId);
   const assetMetric = assetUsageMetric(asset);
@@ -1228,6 +1265,14 @@ async function createNextRecurringRecord(userId: string, completedRecord: AssetM
 
   const result = await getDb().query<{ id: string }>(
     `
+      with locked_parent as (
+        select id
+        from public.asset_maintenance_records
+        where user_id = $1
+          and id = $17::uuid
+          and status = 'done'
+        for update
+      )
       insert into public.asset_maintenance_records (
         user_id,
         asset_register_item_id,
@@ -1246,10 +1291,11 @@ async function createNextRecurringRecord(userId: string, completedRecord: AssetM
         recurring_enabled,
         recurring_interval_value,
         recurring_interval_unit,
+        generated_from_maintenance_id,
         created_at,
         updated_at
       )
-      values (
+      select
         $1,
         $2::uuid,
         $3,
@@ -1267,9 +1313,11 @@ async function createNextRecurringRecord(userId: string, completedRecord: AssetM
         $14,
         $15,
         $16,
+        $17::uuid,
         now(),
         now()
-      )
+      from locked_parent
+      on conflict do nothing
       returning id::text as id
     `,
     [
@@ -1289,17 +1337,24 @@ async function createNextRecurringRecord(userId: string, completedRecord: AssetM
       completedRecord.recurringEnabled,
       completedRecord.recurringIntervalValue,
       completedRecord.recurringIntervalUnit,
+      completedRecord.id,
     ],
   );
 
-  return getAssetMaintenanceRecordById(userId, result.rows[0]?.id ?? '');
+  const createdId = result.rows[0]?.id;
+  return createdId ? getAssetMaintenanceRecordById(userId, createdId) : getActiveRecurringChild(userId, completedRecord.id);
 }
 
 export async function completeAssetMaintenanceRecord(userId: string, maintenanceId: string, input: AssetMaintenanceCompleteInput = {}): Promise<{ completed: AssetMaintenanceRecord; nextRecord: AssetMaintenanceRecord | null }> {
   await ensureAssetMaintenanceTables();
 
   const existing = await getAssetMaintenanceRecordById(userId, maintenanceId);
-  if (!existing || existing.status !== 'upcoming') throw new Error('MAINTENANCE_NOT_FOUND');
+  if (!existing || existing.status === 'cancelled') throw new Error('MAINTENANCE_NOT_FOUND');
+
+  if (existing.status === 'done') {
+    const nextRecord = await createNextRecurringRecord(userId, existing);
+    return { completed: existing, nextRecord };
+  }
 
   const completedUsage = existing.triggerType === 'usage'
     ? nonNegativeNumber(input.completedUsage) ?? existing.currentUsage ?? existing.dueUsage
@@ -1326,10 +1381,99 @@ export async function completeAssetMaintenanceRecord(userId: string, maintenance
   );
 
   const completed = await getAssetMaintenanceRecordById(userId, maintenanceId);
-  if (!completed) throw new Error('MAINTENANCE_NOT_FOUND');
+  if (!completed || completed.status !== 'done') throw new Error('MAINTENANCE_NOT_FOUND');
 
   const nextRecord = await createNextRecurringRecord(userId, completed);
   return { completed, nextRecord };
+}
+
+export async function reopenAssetMaintenanceRecord(userId: string, maintenanceId: string): Promise<AssetMaintenanceRecord> {
+  await ensureAssetMaintenanceTables();
+
+  const db = getDb();
+  const client = await db.connect();
+
+  try {
+    await client.query('begin');
+
+    const recordResult = await client.query<{ status: string }>(
+      `
+        select coalesce(status, 'upcoming') as status
+        from public.asset_maintenance_records
+        where user_id = $1
+          and id = $2::uuid
+          and coalesce(status, 'upcoming') <> 'cancelled'
+        for update
+      `,
+      [userId, maintenanceId],
+    );
+    const status = normalizeStatus(recordResult.rows[0]?.status);
+
+    if (!recordResult.rows[0]) throw new Error('MAINTENANCE_NOT_FOUND');
+
+    if (status === 'done') {
+      const childResult = await client.query<{ id: string; status: string }>(
+        `
+          select id::text as id, coalesce(status, 'upcoming') as status
+          from public.asset_maintenance_records
+          where user_id = $1
+            and generated_from_maintenance_id = $2::uuid
+            and status <> 'cancelled'
+          order by created_at desc, id desc
+          limit 1
+          for update
+        `,
+        [userId, maintenanceId],
+      );
+      const child = childResult.rows[0];
+
+      if (child && normalizeStatus(child.status) === 'done') {
+        throw new Error('RECURRING_FOLLOWUP_ALREADY_COMPLETED');
+      }
+
+      if (child) {
+        await client.query(
+          `
+            update public.asset_maintenance_records
+            set status = 'cancelled', updated_at = now()
+            where user_id = $1
+              and id = $2::uuid
+              and coalesce(status, 'upcoming') = 'upcoming'
+          `,
+          [userId, child.id],
+        );
+      }
+
+      await client.query(
+        `
+          update public.asset_maintenance_records
+          set
+            status = 'upcoming',
+            completed_at = null,
+            completed_usage = null,
+            completed_notes = null,
+            completed_by = null,
+            alert_noted_at = null,
+            updated_at = now()
+          where user_id = $1
+            and id = $2::uuid
+            and status = 'done'
+        `,
+        [userId, maintenanceId],
+      );
+    }
+
+    await client.query('commit');
+  } catch (error) {
+    await client.query('rollback');
+    throw error;
+  } finally {
+    client.release();
+  }
+
+  const reopened = await getAssetMaintenanceRecordById(userId, maintenanceId);
+  if (!reopened || reopened.status !== 'upcoming') throw new Error('MAINTENANCE_NOT_FOUND');
+  return reopened;
 }
 
 export async function markAssetMaintenanceAlertNoted(userId: string, maintenanceId: string): Promise<AssetMaintenanceRecord> {
