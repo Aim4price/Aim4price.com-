@@ -111,12 +111,6 @@ function johannesburgDate(): string {
   return `${values.year}-${values.month}-${values.day}`;
 }
 
-function johannesburgDateTimeLabel(date = new Date()): string {
-  return new Intl.DateTimeFormat('en-ZA', {
-    timeZone: 'Africa/Johannesburg', dateStyle: 'medium', timeStyle: 'short',
-  }).format(date);
-}
-
 function formatNumber(value: number | null | undefined, maximumFractionDigits = 1): string {
   if (value === null || value === undefined || !Number.isFinite(value)) return 'Not recorded';
   return value.toLocaleString('en-ZA', { maximumFractionDigits });
@@ -250,9 +244,7 @@ export function MissingFuelEntryModal({ storage, assets, addedByLabel, onClose, 
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
-  const [savedNeedsReconcile, setSavedNeedsReconcile] = useState(false);
-  const [entryAddedLabel, setEntryAddedLabel] = useState(johannesburgDateTimeLabel());
-  const [idempotencyKey, setIdempotencyKey] = useState(() => createIdempotencyKey('missing-fuel'));
+  const [idempotencyKey] = useState(() => createIdempotencyKey('missing-fuel'));
 
   const selectedAsset = useMemo(() => eligibleAssets.find((asset) => asset.id === assetId) ?? null, [assetId, eligibleAssets]);
   const filteredAssets = useMemo(() => {
@@ -279,7 +271,7 @@ export function MissingFuelEntryModal({ storage, assets, addedByLabel, onClose, 
   function validateDetails(): string {
     if (!selectedAsset) return 'Choose the asset that received the fuel.';
     if (!draft.issueDate || draft.issueDate > johannesburgDate()) return 'Fuel issue date must be today or earlier.';
-    if (draft.issueTimeRecorded && !draft.issueTime) return 'Enter the historical fuel issue time or select Time not recorded.';
+    if (draft.issueTimeRecorded && !draft.issueTime) return 'Enter the historical fuel issue time or keep Time not recorded selected.';
     const usage = parseNumber(draft.usageReading);
     if (draft.usageMetric !== 'none' && usage === null) return `Enter the historical ${usageLabel(draft.usageMetric).toLowerCase()} reading or choose No meter / Not recorded.`;
     if (draft.usageMetric === 'percentage' && usage !== null && (usage < 0 || usage > 100)) return 'Percentage usage must be between 0 and 100.';
@@ -298,7 +290,6 @@ export function MissingFuelEntryModal({ storage, assets, addedByLabel, onClose, 
     const validationError = validateDetails();
     if (validationError) { setError(validationError); return; }
     setError('');
-    setEntryAddedLabel(johannesburgDateTimeLabel());
     setStep('review');
   }
 
@@ -336,19 +327,12 @@ export function MissingFuelEntryModal({ storage, assets, addedByLabel, onClose, 
       const data = await response.json() as MissingFuelLedgerPayload;
       if (!response.ok || !data.ok) throw new Error(data.error || 'Failed to save the missing fuel entry.');
       onLedgerUpdated(data);
-      setEntryAddedLabel(data.event?.entryAddedAtIso ? johannesburgDateTimeLabel(new Date(data.event.entryAddedAtIso)) : johannesburgDateTimeLabel());
-      setSavedNeedsReconcile(treatment === 'not_sure');
       setSaved(true);
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : 'Failed to save the missing fuel entry.');
     } finally {
       setIsSaving(false);
     }
-  }
-
-  function addAnother() {
-    setStep('asset'); setAssetId(''); setSearch(''); setDraft(emptyDraft()); setTreatment('');
-    setSaved(false); setSavedNeedsReconcile(false); setError(''); setIdempotencyKey(createIdempotencyKey('missing-fuel'));
   }
 
   const footer = saved ? null : (
@@ -375,13 +359,6 @@ export function MissingFuelEntryModal({ storage, assets, addedByLabel, onClose, 
               <span className={styles.successIcon}><CheckIcon /></span>
               <h3>Fuel entry saved</h3>
               <p>The earlier fuel issue has been added to the ledger.</p>
-              <div className={styles.reviewSummaryCard}><div><span>Storage tank</span><strong>{storage.name}</strong></div><div><span>Entry added on</span><strong>{entryAddedLabel}</strong></div><div><span>Source</span><strong>Back Track</strong></div></div>
-              {savedNeedsReconcile ? <div className={styles.balanceWarningBox}><WarningIcon /><div><strong>Balance needs checking</strong><span>The tank level was not changed. Complete a physical reconciliation before clearing this warning.</span></div></div> : null}
-              <div className={styles.successActions}>
-                <button type="button" className={styles.secondaryButton} onClick={addAnother}>Add another entry</button>
-                {savedNeedsReconcile ? <button type="button" className={styles.secondaryButton} onClick={onReconcile}>Reconcile Balance</button> : null}
-                <button type="button" className={`${styles.primaryButton} ${styles.backtrackPrimaryButton}`} onClick={onClose}>Done</button>
-              </div>
             </section>
           ) : (
             <>
@@ -416,9 +393,17 @@ export function MissingFuelEntryModal({ storage, assets, addedByLabel, onClose, 
                 <section className={styles.missingDetailsStep}>
                   <div className={styles.missingFormGrid}>
                     <label><span>Fuel issue date *</span><input type="date" value={draft.issueDate} max={johannesburgDate()} onChange={(event) => setDraft({ ...draft, issueDate: event.target.value })} /></label>
-                    <label><span>Fuel issue time</span><input type="time" value={draft.issueTime} disabled={!draft.issueTimeRecorded} onChange={(event) => setDraft({ ...draft, issueTime: event.target.value })} /></label>
-                    <label className={styles.missingCheckLabel}><input type="checkbox" checked={!draft.issueTimeRecorded} onChange={(event) => setDraft({ ...draft, issueTimeRecorded: !event.target.checked, issueTime: event.target.checked ? '' : draft.issueTime })} /><span>Time not recorded</span></label>
-                    <label><span>Usage metric</span><select value={draft.usageMetric} onChange={(event) => setDraft({ ...draft, usageMetric: event.target.value as UsageMetric, usageReading: '' })}>
+                    <div className={`${styles.missingFormCard} ${styles.missingTimeField}`}>
+                      <div className={styles.missingTimeHeader}>
+                        <span>Fuel issue time</span>
+                        <label className={styles.missingInlineCheck}><input type="checkbox" checked={!draft.issueTimeRecorded} onChange={(event) => setDraft({ ...draft, issueTimeRecorded: !event.target.checked, issueTime: event.target.checked ? '' : draft.issueTime })} /><span>Time not recorded</span></label>
+                      </div>
+                      <div className={styles.missingTimeInputSlot}>
+                        {draft.issueTimeRecorded ? <input type="time" aria-label="Fuel issue time" value={draft.issueTime} onChange={(event) => setDraft({ ...draft, issueTime: event.target.value })} /> : null}
+                      </div>
+                    </div>
+                    <div className={styles.missingStaticField}><span>Asset</span><strong>{selectedAsset.title}</strong></div>
+                    <label><span>Usage</span><select value={draft.usageMetric} onChange={(event) => setDraft({ ...draft, usageMetric: event.target.value as UsageMetric, usageReading: '' })}>
                       {selectedAsset.usageMetric === 'both' ? <><option value="hours">Hours</option><option value="km">Kilometres</option></> : selectedAsset.usageMetric !== 'none' ? <option value={selectedAsset.usageMetric}>{usageLabel(selectedAsset.usageMetric)}</option> : null}
                       <option value="none">No meter / Not recorded</option>
                     </select></label>

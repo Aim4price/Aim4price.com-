@@ -6303,8 +6303,7 @@
   box-shadow: 0 -10px 28px rgba(12, 48, 42, 0.04);
 }
 
-.missingEntryFooter button,
-.successActions button {
+.missingEntryFooter button {
   min-width: 150px;
 }
 
@@ -6395,7 +6394,9 @@
   margin-top: 18px;
 }
 
-.missingFormGrid label {
+.missingFormGrid > label,
+.missingFormCard,
+.missingStaticField {
   min-width: 0;
   display: grid;
   align-content: start;
@@ -6403,9 +6404,6 @@
   color: #183d36;
   font-size: 0.88rem;
   font-weight: 780;
-}
-
-.missingFormGrid > label:not(.missingCheckLabel) {
   padding: 1rem;
   border: 1px solid rgba(216, 226, 236, 0.96);
   border-radius: 1.18rem;
@@ -6455,26 +6453,60 @@
   font-weight: 600;
 }
 
+.missingTimeHeader {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.missingInlineCheck {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-left: auto;
+  color: #526b63;
+  font-size: 0.76rem;
+  font-weight: 720;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.missingFormGrid .missingInlineCheck input {
+  width: 17px;
+  min-width: 17px;
+  min-height: 17px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  accent-color: #0d6a50;
+  cursor: pointer;
+}
+
+.missingTimeInputSlot {
+  min-height: 48px;
+}
+
+.missingStaticField strong {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  padding: 0 13px;
+  overflow-wrap: anywhere;
+  border: 1px solid #cfdcdf;
+  border-radius: 12px;
+  color: #173c36;
+  background: #ffffff;
+  font-size: 0.88rem;
+  font-weight: 620;
+}
+
 .fullWidthField {
   grid-column: 1 / -1;
-}
-
-.missingCheckLabel {
-  display: flex !important;
-  align-items: center !important;
-  align-self: end;
-  min-height: 48px;
-  padding: 0 1rem;
-  border: 1px solid rgba(216, 226, 236, 0.96);
-  border-radius: 1.18rem;
-  background: linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
-  box-shadow: 0 10px 22px rgba(16, 31, 28, 0.028), inset 0 1px 0 rgba(255, 255, 255, 0.98);
-}
-
-.missingCheckLabel input {
-  width: 19px;
-  min-height: 19px;
-  accent-color: #0d6a50;
 }
 
 .inputWithSuffix {
@@ -6585,44 +6617,6 @@
   font-weight: 750;
 }
 
-.reviewSummaryCard {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1px;
-  margin-top: 18px;
-  overflow: hidden;
-  border: 1px solid #d7e2e2;
-  border-radius: 16px;
-  background: #d7e2e2;
-}
-
-.reviewSummaryCard > div {
-  min-width: 0;
-  display: grid;
-  gap: 4px;
-  padding: 13px 15px;
-  background: #fff;
-}
-
-.reviewSummaryCard span {
-  color: #6d7d8e;
-  font-size: 0.74rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.reviewSummaryCard strong {
-  overflow-wrap: anywhere;
-  color: #153d35;
-  font-size: 0.9rem;
-  line-height: 1.4;
-}
-
-.reviewSummaryCard .reviewWideRow {
-  grid-column: 1 / -1;
-}
-
 .lateEntryAuditNotice {
   display: grid;
   gap: 4px;
@@ -6700,14 +6694,6 @@
   line-height: 1.5;
 }
 
-.successActions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 11px;
-  margin-top: 22px;
-}
-
 .balanceCheckWarning {
   border-color: #e6c678 !important;
   background: #fff8e7 !important;
@@ -6750,8 +6736,14 @@
     grid-column: auto;
   }
 
-  .missingCheckLabel {
-    align-self: auto;
+  .missingTimeHeader {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .missingInlineCheck {
+    margin-left: 0;
   }
 }
 
@@ -6782,18 +6774,12 @@
     padding-right: 18px;
   }
 
-  .reviewSummaryCard,
   .balanceDeductionPreview,
   .balanceDeductionError {
     grid-template-columns: 1fr;
   }
 
-  .reviewSummaryCard .reviewWideRow {
-    grid-column: auto;
-  }
-
-  .missingEntryFooter,
-  .successActions {
+  .missingEntryFooter {
     flex-direction: column-reverse;
   }
 
@@ -6806,8 +6792,7 @@
     display: none !important;
   }
 
-  .missingEntryFooter button,
-  .successActions button {
+  .missingEntryFooter button {
     width: 100%;
   }
 }
