@@ -319,28 +319,29 @@ function monthYearLabel(year: number, month: number): string {
   return new Intl.DateTimeFormat('en-ZA', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(Date.UTC(year, month - 1, 1)));
 }
 
+function johannesburgMonthBoundaryIso(year: number, zeroBasedMonth: number): string {
+  const boundary = new Date(Date.UTC(year, zeroBasedMonth, 1));
+  const boundaryYear = boundary.getUTCFullYear();
+  const boundaryMonth = String(boundary.getUTCMonth() + 1).padStart(2, '0');
+  return new Date(`${boundaryYear}-${boundaryMonth}-01T00:00:00+02:00`).toISOString();
+}
+
 function buildReportDateRange(year: number | null, month: number | null): ReportDateRange {
   if (!year) {
     return { label: 'All available entries' };
   }
 
   if (month) {
-    const from = new Date(Date.UTC(year, month - 1, 1));
-    const to = new Date(Date.UTC(year, month, 1));
-
     return {
-      fromIso: from.toISOString(),
-      toIso: to.toISOString(),
+      fromIso: johannesburgMonthBoundaryIso(year, month - 1),
+      toIso: johannesburgMonthBoundaryIso(year, month),
       label: monthYearLabel(year, month),
     };
   }
 
-  const from = new Date(Date.UTC(year, 0, 1));
-  const to = new Date(Date.UTC(year + 1, 0, 1));
-
   return {
-    fromIso: from.toISOString(),
-    toIso: to.toISOString(),
+    fromIso: johannesburgMonthBoundaryIso(year, 0),
+    toIso: johannesburgMonthBoundaryIso(year + 1, 0),
     label: String(year),
   };
 }
@@ -566,13 +567,13 @@ function readFuelAverageUsageMetric(asset: AssetRegisterItem): FuelAverageUsageM
   return null;
 }
 
-function fuelAverageUsageReading(event: ScanEventRecord): number | null {
+function fuelAverageUsageReading(event: ScanEventRecord, metric: FuelAverageUsageMetric | null): number | null {
+  if (!metric) return null;
+  if (event.assetUsageMetric === 'percentage' || event.assetUsageMetric === 'none') return null;
+  if (event.assetUsageMetric && event.assetUsageMetric !== metric) return null;
+
   const reading = event.assetUsageReading ?? event.hours;
-
-  if (typeof reading !== 'number' || !Number.isFinite(reading) || reading < 0) {
-    return null;
-  }
-
+  if (typeof reading !== 'number' || !Number.isFinite(reading) || reading < 0) return null;
   return reading;
 }
 
@@ -644,7 +645,7 @@ function isRealFuelFillRecord(event: ScanEventRecord): boolean {
   return true;
 }
 
-function buildFuelFillIntervals(fuelEvents: ScanEventRecord[]): FuelFillInterval[] {
+function buildFuelFillIntervals(fuelEvents: ScanEventRecord[], metric: FuelAverageUsageMetric | null): FuelFillInterval[] {
   const fillEntries = fuelEvents
     .map((event): FuelFillEntry | null => {
       const litres = event.fuelLitres;
@@ -653,7 +654,7 @@ function buildFuelFillIntervals(fuelEvents: ScanEventRecord[]): FuelFillInterval
         return null;
       }
 
-      const usage = fuelAverageUsageReading(event);
+      const usage = fuelAverageUsageReading(event, metric);
 
       if (usage === null) {
         return null;
@@ -692,7 +693,7 @@ function buildFuelFillIntervals(fuelEvents: ScanEventRecord[]): FuelFillInterval
 
 function calculateFuelAverage(asset: AssetRegisterItem, fuelEvents: ScanEventRecord[]): FuelAverageResult {
   const metric = readFuelAverageUsageMetric(asset);
-  const intervals = buildFuelFillIntervals(fuelEvents);
+  const intervals = buildFuelFillIntervals(fuelEvents, metric);
   const selectedIntervals = intervals.slice(-MIN_FUEL_AVERAGE_INTERVALS);
   const intervalsUsed = selectedIntervals.length;
   const totalLitres = intervalsUsed ? selectedIntervals.reduce((sum, interval) => sum + interval.litres, 0) : null;
@@ -832,6 +833,7 @@ function calculateAssetDieselBeforeFill(event: ScanEventRecord): number | null {
 }
 
 function fuelLedgerActivityLabel(event: ScanEventRecord): string {
+  if (event.isLateEntry) return 'Late Entry · Asset filled';
   const normalized = asText(event.fuelLedgerEventType).toLowerCase();
 
   if (normalized === 'asset_issue') return 'Asset filled';
@@ -896,6 +898,55 @@ function formatEventActivity(event: ScanEventRecord): string {
 
 function formatEventWorkArea(event: ScanEventRecord): string {
   return asText(event.workAreaText) || '-';
+}
+
+function fuelIssueDateTimeLabel(event: ScanEventRecord): string {
+  if (!event.isLateEntry) return formatDateTime(event.createdAtIso);
+  const date = asText(event.issueDate) || formatDate(event.createdAtIso);
+  return event.issueTimeRecorded && asText(event.issueTime) ? `${date} ${asText(event.issueTime).slice(0, 5)}` : `${date} · Time not recorded`;
+}
+
+function fuelEntryAddedLabel(event: ScanEventRecord): string {
+  return event.isLateEntry ? formatDateTime(event.entryAddedAtIso) : '-';
+}
+
+function fuelAddedByLabel(event: ScanEventRecord): string {
+  return event.isLateEntry ? asText(event.addedByName) || asText(event.addedByEmail) || '-' : '-';
+}
+
+function fuelEvidenceStatusLabel(event: ScanEventRecord): string {
+  if (!event.isLateEntry) return '-';
+  return event.evidenceStatus === 'evidence_supplied_review_required'
+    ? 'Evidence supplied — review required'
+    : 'Internal record only — supporting evidence not supplied';
+}
+
+function fuelBalanceTreatmentLabel(event: ScanEventRecord): string {
+  if (!event.isLateEntry) return '-';
+  if (event.tankBalanceTreatment === 'already_reflected') return 'Already reflected';
+  if (event.tankBalanceTreatment === 'not_yet_reflected') return 'Not yet reflected — current correction recorded separately';
+  if (event.tankBalanceTreatment === 'not_sure') return 'Not sure — reconciliation required';
+  return '-';
+}
+
+function fuelHistoricalStorageLabel(event: ScanEventRecord, value: number | null): string {
+  return event.isLateEntry ? 'Not recorded' : formatLitres(value);
+}
+
+function fuelGpsLabel(event: ScanEventRecord): string {
+  if (event.isLateEntry) return 'GPS not captured — desktop late entry';
+  return formatLocationText(event.locationText, event.latitude, event.longitude);
+}
+
+function fuelUsageMetricLabel(asset: AssetRegisterItem, event: ScanEventRecord): string {
+  if (event.assetUsageMetric === 'km') return 'Kilometres';
+  if (event.assetUsageMetric === 'percentage') return 'Percentage';
+  if (event.assetUsageMetric === 'none') return 'No meter / Not recorded';
+  if (event.assetUsageMetric === 'hours') return 'Hours';
+  const inferredMetric = readFuelAverageUsageMetric(asset);
+  if (inferredMetric === 'km') return 'Kilometres';
+  if (inferredMetric === 'hours') return 'Hours';
+  return 'Unspecified';
 }
 
 function formatPhotoCount(event: ScanEventRecord): string {
@@ -993,6 +1044,24 @@ function formatEventUsage(
   event: ScanEventRecord,
   options: { fallbackToLatest?: boolean } = {},
 ): string {
+  if (typeof event.assetUsageReading === 'number' && Number.isFinite(event.assetUsageReading)) {
+    if (event.assetUsageMetric === 'km') {
+      return `${formatNumber(event.assetUsageReading)} km`;
+    }
+
+    if (event.assetUsageMetric === 'percentage') {
+      return `${formatNumber(event.assetUsageReading)}% worked`;
+    }
+
+    if (event.assetUsageMetric === 'hours') {
+      return `${formatNumber(event.assetUsageReading)} hours`;
+    }
+  }
+
+  if (event.assetUsageMetric === 'none') {
+    return 'Not recorded';
+  }
+
   const latestHours = typeof asset.hours === 'number' && Number.isFinite(asset.hours) ? asset.hours : null;
 
   if (typeof event.hours === 'number' && Number.isFinite(event.hours)) {
@@ -1328,28 +1397,40 @@ function buildMaintenanceReportSummary(asset: AssetRegisterItem, entries: Mainte
 
 function buildFuelBody(asset: AssetRegisterItem, events: ScanEventRecord[]): string {
   const totalLitres = events
+    .filter(isRealFuelFillRecord)
     .map((event) => event.fuelLitres)
     .filter((value): value is number => typeof value === 'number' && Number.isFinite(value) && value > 0)
     .reduce((sum, value) => sum + value, 0);
   const rows = events.map((event) => {
-    const note = normalizeSpaces(event.note) || '-';
+    const noteParts = [
+      normalizeSpaces(event.note),
+      event.isLateEntry && event.evidenceFileName ? `Evidence: ${event.evidenceFileName}` : '',
+      event.isLateEntry && event.evidenceReference ? `Reference: ${event.evidenceReference}` : '',
+    ].filter(Boolean);
+    const note = noteParts.join(' · ') || '-';
 
     return [
-      escapeHtml(formatDateTime(event.createdAtIso)),
-      escapeHtml(fuelLedgerActivityLabel(event)),
+      escapeHtml(fuelIssueDateTimeLabel(event)),
+      event.isLateEntry ? '<span class="assetReportLateBadge">Late Entry</span><br/>Asset filled' : escapeHtml(fuelLedgerActivityLabel(event)),
       escapeHtml(fuelStorageLabel(event)),
       `<strong>${escapeHtml(formatLitres(event.fuelLitres))}</strong>`,
       `<strong>${escapeHtml(formatLitres(calculateAssetDieselBeforeFill(event)))}</strong>`,
-      escapeHtml(formatLitres(event.fuelStorageLevelBefore)),
-      `<strong>${escapeHtml(formatLitres(event.fuelStorageLevelAfter))}</strong>`,
+      escapeHtml(formatEventUsage(asset, event)),
+      escapeHtml(fuelUsageMetricLabel(asset, event)),
+      escapeHtml(fuelHistoricalStorageLabel(event, event.fuelStorageLevelBefore)),
+      `<strong>${escapeHtml(fuelHistoricalStorageLabel(event, event.fuelStorageLevelAfter))}</strong>`,
       escapeHtml(formatFuel(event.assetFuelPercentBefore)),
       `<strong>${escapeHtml(formatFuel(event.assetFuelPercentAfter ?? event.fuelPercent))}</strong>`,
-      escapeHtml(formatEventUsage(asset, event)),
       escapeHtml(formatOperatorLabel(event)),
-      escapeHtml(formatLocationText(event.locationText, event.latitude, event.longitude)),
       escapeHtml(formatEventActivity(event)),
       escapeHtml(formatEventWorkArea(event)),
-      escapeHtml(note.length > 150 ? `${note.slice(0, 147)}...` : note),
+      escapeHtml(fuelGpsLabel(event)),
+      escapeHtml(fuelEntryAddedLabel(event)),
+      escapeHtml(fuelAddedByLabel(event)),
+      escapeHtml(fuelEvidenceStatusLabel(event)),
+      escapeHtml(fuelBalanceTreatmentLabel(event)),
+      escapeHtml(event.isLateEntry ? event.lateEntryReason || '-' : '-'),
+      escapeHtml(note.length > 180 ? `${note.slice(0, 177)}...` : note),
     ];
   });
 
@@ -1358,28 +1439,17 @@ function buildFuelBody(asset: AssetRegisterItem, events: ScanEventRecord[]): str
       <div class="assetReportSectionHeading">
         <div>
           <h2>Fuel Movement Records</h2>
-          <p>Each line mirrors the Fuel Ledger as closely as possible: storage unit, litres filled, before-fill litres, storage balances, fuel percentages, odometer, operator and GPS record.</p>
+          <p>Late entries preserve the historical issue date separately from the real date added. Historical tank levels remain Not recorded and GPS remains Not captured.</p>
         </div>
         <strong>${escapeHtml(formatNumber(events.length))} ${events.length === 1 ? 'entry' : 'entries'}${totalLitres > 0 ? ` • ${escapeHtml(formatLitres(totalLitres))}` : ''}</strong>
       </div>
       ${renderTable({
         className: 'assetReportFuelTable',
         headers: [
-          'Date / Time',
-          'Ledger Activity',
-          'Storage Unit',
-          'Litres Filled',
-          'Before Fill',
-          'Storage Before',
-          'Storage After',
-          '% Before',
-          '% After',
-          'Odometer',
-          'Operator',
-          'GPS Location',
-          'Work Activity',
-          'Work Area',
-          'Notes',
+          'Fuel Issued On', 'Source / Activity', 'Storage Unit', 'Litres Issued', 'Before Fill', 'Usage Reading', 'Usage Metric',
+          'Historical Storage Before', 'Historical Storage After', '% Before', '% After', 'Operator', 'Activity',
+          'Work Area', 'GPS', 'Entry Added On', 'Added By', 'Evidence / Review Status', 'Tank Balance Treatment',
+          'Late-entry Reason', 'Notes / Evidence',
         ],
         rows,
         emptyText: 'No fuel readings have been recorded for this asset yet.',
@@ -1484,6 +1554,7 @@ function renderMaintenanceCards(asset: AssetRegisterItem, entries: MaintenanceEn
     </div>
   `;
 }
+
 
 function buildMaintenanceBody(asset: AssetRegisterItem, entries: MaintenanceEntry[]): string {
   return `
@@ -2342,6 +2413,23 @@ function buildReportHtml(options: {
         font-weight: 800;
       }
 
+      .assetReportLateBadge {
+        display: inline-flex;
+        align-items: center;
+        width: fit-content;
+        margin: 0 0 3px;
+        padding: 2px 5px;
+        border: 1px solid #d6a239;
+        border-radius: 999px;
+        background: #fff7df;
+        color: #7a4b00;
+        font-size: 5px;
+        line-height: 1;
+        font-weight: 800;
+        letter-spacing: 0.035em;
+        text-transform: uppercase;
+      }
+
       .assetReportFuelTable th,
       .assetReportFuelTable td {
         padding: 6px 4.5px 6px 0;
@@ -2999,59 +3087,52 @@ function buildFuelReportWorkbook(
     ...buildFuelAverageRows(fuelAverage),
   ];
   const headers = [
-    'Date / Time',
-    'Ledger Activity',
-    'Storage Unit',
-    'Litres Filled',
-    'Before Fill Litres',
-    'Storage Before',
-    'Storage After',
-    'Fuel % Before',
-    'Fuel % After',
-    'Usage Reading',
-    'Usage Display',
-    'Operator',
-    'GPS Location',
-    'Latitude',
-    'Longitude',
-    'Work Activity',
-    'Work Area',
-    'Notes',
+    'Fuel Issued On', 'Source / Activity', 'Storage Unit', 'Litres Issued', 'Before Fill Litres', 'Usage Reading', 'Usage Metric', 'Usage Display',
+    'Historical Storage Before', 'Historical Storage After', 'Fuel % Before', 'Fuel % After', 'Operator',
+    'Activity', 'Work Area', 'GPS', 'Latitude', 'Longitude', 'Entry Added On', 'Added By',
+    'Evidence / Review Status', 'Evidence Type', 'Evidence Reference', 'Evidence File', 'Tank Balance Treatment',
+    'Late-entry Reason', 'Notes',
   ];
   const headerRow = 7;
   const recordSheetRows: XlsxCellValue[][] = [
     fullWidthRow(`${asset.title || 'Asset'} - Fuel Report`, 'title', headers.length),
     fullWidthRow(`Filtered report: ${dateRangeLabel}`, 'subtitle', headers.length),
-    fullWidthRow('Editable fuel records exported from the asset QR fuel report.', 'note', headers.length),
+    fullWidthRow('Late entries preserve the historical issue date, the real date added, evidence status and tank-balance treatment. Historical tank levels are never inferred from today’s stock.', 'note', headers.length),
     [],
     [
-      styled('Asset', 'metaLabel'),
-      styled(asset.title || '', 'metaValue'),
-      styled('Serial number', 'metaLabel'),
-      styled(asset.serialNumber || '', 'metaValue'),
-      styled('Plate / QR', 'metaLabel'),
-      styled(asset.plateLabel || asset.publicAssetCode || '', 'metaValue'),
+      styled('Asset', 'metaLabel'), styled(asset.title || '', 'metaValue'),
+      styled('Serial number', 'metaLabel'), styled(asset.serialNumber || '', 'metaValue'),
+      styled('Plate / QR', 'metaLabel'), styled(asset.plateLabel || asset.publicAssetCode || '', 'metaValue'),
     ],
     [],
     headers.map((header) => styled(header, 'tableHeader')),
     ...fuelEvents.map((event) => [
-      styled(formatExcelDateTime(event.createdAtIso), 'text'),
-      styled(fuelLedgerActivityLabel(event), 'text'),
+      styled(fuelIssueDateTimeLabel(event), 'text'),
+      styled(fuelLedgerActivityLabel(event), event.isLateEntry ? 'statusInfo' : 'text'),
       styled(excelText(fuelStorageLabel(event)), 'text'),
       styled(numberForExcel(event.fuelLitres), 'decimal'),
       styled(numberForExcel(calculateAssetDieselBeforeFill(event)), 'decimal'),
-      styled(numberForExcel(event.fuelStorageLevelBefore), 'decimal'),
-      styled(numberForExcel(event.fuelStorageLevelAfter), 'decimal'),
+      styled(numberForExcel(event.assetUsageReading ?? event.hours), 'decimal'),
+      styled(fuelUsageMetricLabel(asset, event), 'text'),
+      styled(formatEventUsage(asset, event), 'text'),
+      styled(event.isLateEntry ? 'Not recorded' : numberForExcel(event.fuelStorageLevelBefore), event.isLateEntry ? 'text' : 'decimal'),
+      styled(event.isLateEntry ? 'Not recorded' : numberForExcel(event.fuelStorageLevelAfter), event.isLateEntry ? 'text' : 'decimal'),
       styled(percentForExcel(event.assetFuelPercentBefore), 'percent'),
       styled(percentForExcel(event.assetFuelPercentAfter ?? event.fuelPercent), 'percent'),
-      styled(numberForExcel(event.assetUsageReading ?? event.hours), 'decimal'),
-      styled(formatEventUsage(asset, event), 'text'),
       styled(formatOperatorLabel(event), 'text'),
-      styled(excelText(formatLocationText(event.locationText, event.latitude, event.longitude)), 'text'),
-      styled(numberForExcel(event.latitude, 6), 'decimal'),
-      styled(numberForExcel(event.longitude, 6), 'decimal'),
       styled(excelText(formatEventActivity(event)), 'text'),
       styled(excelText(formatEventWorkArea(event)), 'text'),
+      styled(excelText(fuelGpsLabel(event)), 'text'),
+      styled(event.isLateEntry ? null : numberForExcel(event.latitude, 6), 'decimal'),
+      styled(event.isLateEntry ? null : numberForExcel(event.longitude, 6), 'decimal'),
+      styled(event.isLateEntry ? formatExcelDateTime(event.entryAddedAtIso) : '', 'text'),
+      styled(fuelAddedByLabel(event), 'text'),
+      styled(fuelEvidenceStatusLabel(event), 'text'),
+      styled(event.evidenceType || '', 'text'),
+      styled(event.evidenceReference || '', 'text'),
+      styled(event.evidenceFileName || '', 'text'),
+      styled(fuelBalanceTreatmentLabel(event), 'text'),
+      styled(event.isLateEntry ? event.lateEntryReason || '' : '', 'note'),
       styled(normalizeSpaces(event.note), 'note'),
     ]),
   ];
@@ -3068,7 +3149,7 @@ function buildFuelReportWorkbook(
     {
       name: 'Fuel Records',
       rows: recordSheetRows,
-      columns: [20, 22, 24, 16, 18, 18, 18, 14, 14, 16, 20, 22, 34, 14, 14, 24, 24, 42],
+      columns: [22, 24, 24, 16, 18, 18, 16, 22, 23, 23, 14, 14, 22, 24, 24, 36, 14, 14, 22, 24, 36, 24, 26, 26, 36, 42, 42],
       merges: [
         { fromRow: 1, fromColumn: 1, toRow: 1, toColumn: headers.length },
         { fromRow: 2, fromColumn: 1, toRow: 2, toColumn: headers.length },
