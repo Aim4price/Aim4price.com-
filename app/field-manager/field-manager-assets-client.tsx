@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import FieldManagerNavLink from './field-manager-nav-link';
 import styles from './page.module.css';
 
 type FieldManagerSession = {
@@ -194,6 +195,7 @@ export default function FieldManagerAssetsClient() {
     <main className={styles.mobilePage}>
       <section className={styles.assetsShell}>
         <header className={styles.assetsHeader} aria-label="Field Manager account controls">
+          <FieldManagerNavLink href="/field-manager" label="Home" />
           <button type="button" className={styles.logoutButton} onClick={() => void handleLogout()}>
             Sign out
           </button>

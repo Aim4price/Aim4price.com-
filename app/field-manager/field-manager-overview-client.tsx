@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import FieldManagerNavLink from './field-manager-nav-link';
 import styles from './page.module.css';
 
 type OverviewRange = 'week' | 'month';
@@ -81,13 +82,18 @@ function statusText(item: OverviewItem): string {
   return item.statusLabel.trim() || STATUS_LABELS[item.status];
 }
 
-export default function FieldManagerOverviewClient() {
-  const [range, setRange] = useState<OverviewRange>('week');
+export default function FieldManagerOverviewClient({
+  initialRange = 'week',
+}: {
+  initialRange?: OverviewRange;
+}) {
+  const [range, setRange] = useState<OverviewRange>(initialRange);
   const [items, setItems] = useState<OverviewItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [openingItemId, setOpeningItemId] = useState<string | null>(null);
+  const [clearingItemId, setClearingItemId] = useState<string | null>(null);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [reloadToken, setReloadToken] = useState(0);
   const requestIdRef = useRef(0);
@@ -167,8 +173,14 @@ export default function FieldManagerOverviewClient() {
         `/api/field-manager/assets/${encodeURIComponent(item.assetId)}/open`,
         {
           method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
           cache: 'no-store',
+          body: JSON.stringify({
+            overviewItemId: item.id,
+            sourceId: item.sourceId,
+            overviewRange: range,
+          }),
         },
       );
       const payload = (await response.json().catch(() => null)) as OpenAssetApiResponse | null;
@@ -189,11 +201,50 @@ export default function FieldManagerOverviewClient() {
     }
   }
 
+  async function handleClearItem(item: OverviewItem) {
+    setClearingItemId(item.id);
+    setActionError(null);
+
+    try {
+      const response = await fetch('/api/field-manager/overview/dismiss', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        cache: 'no-store',
+        body: JSON.stringify({
+          range,
+          itemId: item.id,
+          sourceId: item.sourceId,
+        }),
+      });
+      const payload = (await response.json().catch(() => null)) as OverviewApiResponse | null;
+
+      if (response.status === 401) {
+        window.location.replace('/field-manager/login');
+        return;
+      }
+
+      if (!response.ok || !payload?.ok) {
+        throw new Error(extractError(payload, 'This item could not be cleared.'));
+      }
+
+      setItems((current) => current.filter(
+        (candidate) => candidate.id !== item.id || candidate.sourceId !== item.sourceId,
+      ));
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : 'This item could not be cleared.');
+    } finally {
+      setClearingItemId(null);
+    }
+  }
+
   function renderOverviewCard(item: OverviewItem) {
     const isOpening = openingItemId === item.id;
+    const isClearing = clearingItemId === item.id;
+    const hasPendingCardAction = Boolean(openingItemId) || Boolean(clearingItemId);
 
     return (
-      <article key={item.id} className={styles.overviewCard}>
+      <article key={`${item.id}:${item.sourceId}`} className={styles.overviewCard}>
         <div className={styles.overviewCardLabels}>
           <span className={styles.overviewType}>{TYPE_LABELS[item.type]}</span>
           <span className={statusClassName(item)}>{statusText(item)}</span>
@@ -204,15 +255,27 @@ export default function FieldManagerOverviewClient() {
         {item.detail.trim() ? <p className={styles.overviewDetail}>{item.detail}</p> : null}
         {item.notes.trim() ? <p className={styles.overviewNotes}>{item.notes}</p> : null}
 
-        <button
-          type="button"
-          className={`${styles.mobilePrimaryButton} ${styles.overviewOpenButton}`}
-          onClick={() => void handleOpenAsset(item)}
-          disabled={Boolean(openingItemId) || !item.openAsset}
-          aria-busy={isOpening}
-        >
-          {isOpening ? 'Opening…' : 'Open asset'}
-        </button>
+        <div className={styles.overviewCardActions}>
+          <button
+            type="button"
+            className={styles.overviewClearButton}
+            onClick={() => void handleClearItem(item)}
+            disabled={hasPendingCardAction}
+            aria-busy={isClearing}
+            aria-label={`Clear ${TYPE_LABELS[item.type].toLowerCase()} for ${item.assetTitle} from your Overview`}
+          >
+            {isClearing ? 'Clearing…' : 'Clear'}
+          </button>
+          <button
+            type="button"
+            className={`${styles.mobilePrimaryButton} ${styles.overviewOpenButton}`}
+            onClick={() => void handleOpenAsset(item)}
+            disabled={hasPendingCardAction || !item.openAsset}
+            aria-busy={isOpening}
+          >
+            {isOpening ? 'Opening…' : 'Open asset'}
+          </button>
+        </div>
       </article>
     );
   }
@@ -221,14 +284,7 @@ export default function FieldManagerOverviewClient() {
     <main className={styles.mobilePage}>
       <section className={`${styles.assetsShell} ${styles.overviewShell}`}>
         <header className={styles.overviewHeader} aria-label="Overview controls">
-          <button
-            type="button"
-            className={styles.overviewHomeButton}
-            onClick={() => window.location.assign('/field-manager')}
-          >
-            <span aria-hidden="true">←</span>
-            Home
-          </button>
+          <FieldManagerNavLink href="/field-manager" label="Home" />
           <button
             type="button"
             className={styles.logoutButton}

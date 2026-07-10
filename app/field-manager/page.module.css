@@ -10,7 +10,8 @@
 
 .mobilePage button,
 .mobilePage input,
-.mobilePage textarea {
+.mobilePage textarea,
+.mobilePage select {
   font-family: inherit;
 }
 
@@ -282,16 +283,22 @@
   border-radius: 18px;
   padding: 0 18px;
   font: inherit;
-  font-weight: 950;
+  font-weight: 900;
   cursor: pointer;
   transition: transform 0.16s ease, box-shadow 0.16s ease, opacity 0.16s ease;
 }
 
 .mobilePrimaryButton {
   width: 100%;
-  background: linear-gradient(135deg, #236851, #174637);
+  border: 1px solid #254733;
+  background: #254733;
   color: #fff;
-  box-shadow: 0 16px 30px rgba(35, 104, 81, 0.24);
+  box-shadow: 0 16px 30px rgba(37, 71, 51, 0.24);
+}
+
+.mobilePrimaryButton:hover:not(:disabled) {
+  border-color: #1d3929;
+  background: #1d3929;
 }
 
 .logoutButton {
@@ -357,7 +364,7 @@
 .assetsHeader {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   gap: 14px;
   min-height: 58px;
   padding: 4px 2px 14px;
@@ -495,34 +502,6 @@
   padding: 4px 2px 12px;
 }
 
-.overviewHomeButton {
-  min-height: 48px;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  border: 1px solid rgba(18, 53, 45, 0.14);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.92);
-  color: #174637;
-  padding: 0 16px;
-  font: inherit;
-  font-size: 0.94rem;
-  font-weight: 920;
-  cursor: pointer;
-  box-shadow: 0 10px 24px rgba(18, 53, 45, 0.08);
-  transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
-}
-
-.overviewHomeButton span {
-  font-size: 1.15rem;
-  line-height: 1;
-}
-
-.overviewHomeButton:active {
-  transform: translateY(1px);
-}
-
-.overviewHomeButton:focus-visible,
 .overviewRange button:focus-visible,
 .overviewError button:focus-visible {
   outline: none;
@@ -768,6 +747,49 @@
   box-shadow: 0 12px 24px rgba(35, 104, 81, 0.2);
 }
 
+.overviewCardActions {
+  display: grid;
+  grid-template-columns: minmax(0, 0.78fr) minmax(0, 1.22fr);
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.overviewCardActions .overviewOpenButton {
+  margin-top: 0;
+}
+
+.overviewClearButton {
+  min-height: 50px;
+  border: 1px solid rgba(18, 53, 45, 0.16);
+  border-radius: 15px;
+  background: #fff;
+  color: #174637;
+  padding: 0 14px;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 10px 22px rgba(18, 53, 45, 0.08);
+  transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease, opacity 0.16s ease;
+}
+
+.overviewClearButton:focus-visible {
+  outline: none;
+  border-color: rgba(35, 104, 81, 0.4);
+  box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.11);
+}
+
+.overviewClearButton:active {
+  transform: translateY(1px);
+}
+
+.overviewClearButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+  transform: none;
+  box-shadow: none;
+}
+
 .overviewEmpty {
   margin: 0;
   border: 1px dashed rgba(18, 53, 45, 0.15);
@@ -821,7 +843,6 @@
     padding-right: 0;
   }
 
-  .overviewHomeButton,
   .overviewHeader .logoutButton {
     min-height: 44px;
     padding-left: 14px;
