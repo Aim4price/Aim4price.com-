@@ -4,9 +4,10 @@ import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent, type Re
 import AppHeader from '../../components/AppHeader';
 import styles from './page.module.css';
 import { fuelSlipDecimalToInput, parseFuelSlipDecimal } from '../../lib/fuel-slip-number';
+import { ManageFuelStorageChoiceModal, MissingFuelEntryModal, ReconcileFuelBalanceModal, type MissingFuelLedgerPayload } from './missing-fuel-entry-modal';
 
 type FuelStorageStatus = 'active' | 'archived';
-type ModalMode = 'create-storage' | 'edit-storage' | 'pin' | 'report' | 'qr' | 'fuel-slip' | 'fuel-slip-menu' | 'fuel-slip-manager' | null;
+type ModalMode = 'create-storage' | 'edit-storage' | 'manage-storage-choice' | 'missing-entry' | 'reconcile-balance' | 'pin' | 'report' | 'qr' | 'fuel-slip' | 'fuel-slip-menu' | 'fuel-slip-manager' | null;
 type FuelSlipFlowStep = 'source-choice' | 'target-manual' | 'target-automatic' | 'manual-form' | 'upload' | 'review' | null;
 type FuelSlipFormPage = 'details' | 'extra';
 type ReportFormat = 'pdf' | 'xlsx';
@@ -34,6 +35,11 @@ type FuelLedgerStorage = {
   pinUpdatedAtIso: string | null;
   createdAtIso: string;
   updatedAtIso: string;
+  balanceVerificationStatus?: 'verified' | 'needs_check';
+  balanceNeedsChecking?: boolean;
+  balanceCheckReason?: string;
+  balanceCheckSourceEventId?: string;
+  balanceCheckMarkedAtIso?: string | null;
 };
 
 type FuelLedgerEvent = {
@@ -69,6 +75,7 @@ type FuelLedgerAsset = {
   selectedMethod?: string;
   currentValue?: number | null;
   canReceiveFuel: boolean;
+  isActive?: boolean;
   usageMetric: 'hours' | 'km' | 'both' | 'percentage' | 'none';
   lifeWorkedPercent: number | null;
 };
@@ -1559,7 +1566,7 @@ function downloadBlob(blob: Blob, fileName: string) {
   window.URL.revokeObjectURL(objectUrl);
 }
 
-export default function FuelClient() {
+export default function FuelClient({ addedByLabel }: { addedByLabel: string }) {
   const [storages, setStorages] = useState<FuelLedgerStorage[]>([]);
   const [recentEvents, setRecentEvents] = useState<FuelLedgerEvent[]>([]);
   const [assets, setAssets] = useState<FuelLedgerAsset[]>([]);
@@ -1875,12 +1882,31 @@ export default function FuelClient() {
     setModalMode('create-storage');
   }
 
+  function openManageStorageChoice(storage: FuelLedgerStorage) {
+    setSelectedStorageId(storage.id);
+    setIsStorageFuelSelectOpen(false);
+    setNotice(null);
+    setModalMode('manage-storage-choice');
+  }
+
   function openEditStorage(storage: FuelLedgerStorage) {
     setSelectedStorageId(storage.id);
     setStorageDraft(buildStorageDraft(storage));
     setIsStorageFuelSelectOpen(false);
     setNotice(null);
     setModalMode('edit-storage');
+  }
+
+  function openMissingFuelEntry(storage: FuelLedgerStorage) {
+    setSelectedStorageId(storage.id);
+    setNotice(null);
+    setModalMode('missing-entry');
+  }
+
+  function openReconcileBalance(storage: FuelLedgerStorage) {
+    setSelectedStorageId(storage.id);
+    setNotice(null);
+    setModalMode('reconcile-balance');
   }
 
   function openPin(storage: FuelLedgerStorage) {
@@ -2044,6 +2070,13 @@ export default function FuelClient() {
     setSearchText('');
   }
 
+  function applyLedgerData(data: FuelLedgerResponse | MissingFuelLedgerPayload) {
+    if (data.storages) setStorages(data.storages as FuelLedgerStorage[]);
+    if (data.recentEvents) setRecentEvents(data.recentEvents as FuelLedgerEvent[]);
+    if (data.assets) setAssets(data.assets as FuelLedgerAsset[]);
+    if (data.recentFuelSlips) setRecentFuelSlips(data.recentFuelSlips as FuelSlipRecord[]);
+  }
+
   async function applyLedgerResponse(response: Response): Promise<FuelLedgerResponse> {
     const data = (await response.json()) as FuelLedgerResponse;
 
@@ -2051,10 +2084,7 @@ export default function FuelClient() {
       throw new Error(data.error || 'Fuel Ledger action failed.');
     }
 
-    if (data.storages) setStorages(data.storages);
-    if (data.recentEvents) setRecentEvents(data.recentEvents);
-    if (data.assets) setAssets(data.assets);
-    if (data.recentFuelSlips) setRecentFuelSlips(data.recentFuelSlips);
+    applyLedgerData(data);
     return data;
   }
 
@@ -3012,7 +3042,8 @@ export default function FuelClient() {
                 const progress = getProgressPercent(storage);
                 const storageIsLow = isLowStorage(storage);
                 const dipstickNoteText = getDipstickNote(storage);
-                const hasStorageWarning = storageIsLow || Boolean(dipstickNoteText);
+                const balanceNeedsChecking = Boolean(storage.balanceNeedsChecking || storage.balanceVerificationStatus === 'needs_check');
+                const hasStorageWarning = storageIsLow || Boolean(dipstickNoteText) || balanceNeedsChecking;
 
                 return (
                   <article key={storage.id} className={`${styles.storageCard} ${hasStorageWarning ? styles.storageCardLow : ''}`}>
@@ -3041,7 +3072,7 @@ export default function FuelClient() {
 
                     <div className={styles.storageHeaderAside}>
                       <div className={styles.unitActions}>
-                        <button type="button" className={styles.unitButton} onClick={() => openEditStorage(storage)} disabled={isSaving}>
+                        <button type="button" className={styles.unitButton} onClick={() => openManageStorageChoice(storage)} disabled={isSaving}>
                           <GearIcon className={styles.buttonIcon} />
                           <span>Manage</span>
                         </button>
@@ -3073,6 +3104,18 @@ export default function FuelClient() {
                               <strong>Storage below reorder level</strong>
                               <span>{formatLitres(storage.currentLitres)} remaining. Reorder at {formatLitres(storage.reorderLevelLitres)}.</span>
                             </div>
+                          </div>
+                        ) : null}
+
+                        {balanceNeedsChecking ? (
+                          <div className={`${styles.storageWarningNote} ${styles.balanceCheckWarning}`}>
+                            <div>
+                              <strong>Balance needs checking</strong>
+                              <span>{storage.balanceCheckReason || 'Measure the tank physically and reconcile the recorded current litres.'}</span>
+                            </div>
+                            <button type="button" className={styles.reconcileBalanceButton} onClick={() => openReconcileBalance(storage)} disabled={isSaving}>
+                              Reconcile Balance
+                            </button>
                           </div>
                         ) : null}
 
@@ -3112,6 +3155,37 @@ export default function FuelClient() {
           </button>
         </nav>
       </main>
+
+      {modalMode === 'manage-storage-choice' && selectedStorage ? (
+        <ManageFuelStorageChoiceModal
+          storage={selectedStorage}
+          onClose={closeModal}
+          onManage={() => openEditStorage(selectedStorage)}
+          onMissingEntry={() => openMissingFuelEntry(selectedStorage)}
+        />
+      ) : null}
+
+      {modalMode === 'missing-entry' && selectedStorage ? (
+        <MissingFuelEntryModal
+          storage={selectedStorage}
+          assets={assets}
+          addedByLabel={addedByLabel}
+          onClose={closeModal}
+          onLedgerUpdated={applyLedgerData}
+          onReconcile={() => openReconcileBalance(selectedStorage)}
+        />
+      ) : null}
+
+      {modalMode === 'reconcile-balance' && selectedStorage ? (
+        <ReconcileFuelBalanceModal
+          storage={selectedStorage}
+          onClose={closeModal}
+          onLedgerUpdated={(data) => {
+            applyLedgerData(data);
+            setNotice({ tone: 'success', message: 'Tank balance reconciled.' });
+          }}
+        />
+      ) : null}
 
       {modalMode === 'fuel-slip-menu' ? (
         <div className={styles.fuelSlipFlowBackdrop} role="dialog" aria-modal="true" aria-label="Fuel slips">

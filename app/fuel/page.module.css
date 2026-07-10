@@ -6086,3 +6086,729 @@
     margin: 0.85rem 0;
   }
 }
+
+/* Desktop owner late fuel entry and tank reconciliation */
+.manageStorageChoiceModal {
+  width: min(760px, calc(100vw - 32px));
+}
+
+.manageChoiceOption {
+  min-height: 168px;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.manageChoiceOption .choiceTitleBlock {
+  align-items: flex-start;
+}
+
+.manageChoiceOption .choiceTitleBlock small {
+  display: block;
+  margin-top: 7px;
+  color: #607286;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.missingEntryModal,
+.reconcileBalanceModal {
+  width: min(1120px, calc(100vw - 40px));
+  max-height: min(880px, calc(100vh - 40px));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgba(15, 67, 54, 0.18);
+  border-radius: 28px;
+  background: #fff;
+  box-shadow: 0 30px 80px rgba(8, 35, 31, 0.26);
+}
+
+.reconcileBalanceModal {
+  width: min(760px, calc(100vw - 40px));
+}
+
+.missingEntryHeader {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 26px 30px 22px;
+  border-bottom: 1px solid #dce7e5;
+  background: #fff;
+}
+
+.missingEntryHeader h2 {
+  margin: 3px 0 0;
+  color: #073f34;
+  font-size: clamp(1.55rem, 2.4vw, 2.2rem);
+  line-height: 1.08;
+}
+
+.missingEntryHeader p {
+  margin: 7px 0 0;
+  color: #64758a;
+  font-weight: 650;
+}
+
+.missingEntryEyebrow {
+  color: #16805f;
+  font-size: 0.76rem;
+  font-weight: 850;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.missingEntryScrollBody {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 24px 30px 30px;
+  overscroll-behavior: contain;
+}
+
+.missingEntryFooter {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 18px 30px 22px;
+  border-top: 1px solid #dce7e5;
+  background: #fff;
+  box-shadow: 0 -10px 28px rgba(12, 48, 42, 0.04);
+}
+
+.missingEntryFooter button,
+.successActions button {
+  min-width: 150px;
+}
+
+.missingEntryFooterSecondary {
+  display: flex;
+  gap: 12px;
+  margin-right: auto;
+}
+
+.missingEntryTankBanner,
+.selectedMissingAsset,
+.reconcileCurrentCard {
+  display: grid;
+  gap: 3px;
+  padding: 15px 18px;
+  border: 1px solid #cfe2dc;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #f2faf7, #f9fcfb);
+}
+
+.missingEntryTankBanner span,
+.selectedMissingAsset span,
+.reconcileCurrentCard span {
+  color: #607286;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.missingEntryTankBanner strong,
+.selectedMissingAsset strong,
+.reconcileCurrentCard strong {
+  color: #073f34;
+  font-size: 1.08rem;
+}
+
+.missingEntryTankBanner small,
+.selectedMissingAsset small,
+.reconcileCurrentCard small {
+  color: #65768a;
+  font-weight: 650;
+}
+
+.missingEntryProgress {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin: 18px 0 22px;
+  padding: 0 2px 12px;
+  border-bottom: 1px solid #dce7e5;
+}
+
+.missingEntryProgress span {
+  position: relative;
+  padding: 0;
+  color: #718093;
+  font-size: 0.82rem;
+  font-weight: 780;
+}
+
+.missingEntryProgress .progressCurrent {
+  color: #0d664e;
+}
+
+.missingEntryProgress .progressComplete {
+  color: #0c5e48;
+}
+
+.missingEntryProgress .progressCurrent::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -13px;
+  height: 3px;
+  border-radius: 999px;
+  background: #0d664e;
+}
+
+.missingStepIntro {
+  margin-bottom: 15px;
+}
+
+.missingStepIntro h3 {
+  margin: 0;
+  color: #073f34;
+  font-size: 1.25rem;
+}
+
+.missingStepIntro p {
+  margin: 6px 0 0;
+  color: #68798c;
+  line-height: 1.45;
+}
+
+.missingEntryError {
+  margin: 0 0 18px;
+  padding: 12px 15px;
+  border: 1px solid #e7abab;
+  border-radius: 12px;
+  color: #952c2c;
+  background: #fff2f2;
+  font-weight: 700;
+}
+
+.missingAssetSearch {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  margin-bottom: 14px;
+  padding: 0 14px;
+  border: 1px solid #cfdde2;
+  border-radius: 15px;
+  background: #fff;
+}
+
+.missingAssetSearch > svg {
+  width: 20px;
+  color: #6f8294;
+}
+
+.missingAssetSearch input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  color: #173c36;
+  background: transparent;
+  font: inherit;
+  font-weight: 650;
+}
+
+.missingAssetSearch button {
+  border: 0;
+  color: #0b624b;
+  background: transparent;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.missingAssetList {
+  max-height: 420px;
+  overflow-y: auto;
+  display: grid;
+  gap: 10px;
+  padding-right: 5px;
+}
+
+.missingAssetCard {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 22px;
+  padding: 16px 17px;
+  border: 1px solid #d5e1e5;
+  border-radius: 15px;
+  color: inherit;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 150ms ease, background 150ms ease, transform 150ms ease;
+}
+
+.missingAssetCard:hover,
+.missingAssetCard:focus-visible {
+  border-color: #58aa89;
+  background: #f7fcfa;
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.missingAssetCard > span:first-child {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.missingAssetCard strong {
+  color: #073f34;
+  font-size: 1.02rem;
+}
+
+.missingAssetCard small {
+  overflow-wrap: anywhere;
+  color: #64758a;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.missingAssetMetrics {
+  flex: 0 0 auto;
+  display: grid;
+  gap: 4px;
+  text-align: right;
+}
+
+.missingAssetMetrics strong {
+  font-size: 0.95rem;
+}
+
+.missingAssetEmpty {
+  padding: 35px 18px;
+  border: 1px dashed #cbd9dc;
+  border-radius: 14px;
+  color: #64758a;
+  text-align: center;
+  font-weight: 700;
+}
+
+.missingFormGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 17px 18px;
+  margin-top: 18px;
+}
+
+.missingFormGrid label {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  color: #183d36;
+  font-size: 0.88rem;
+  font-weight: 780;
+}
+
+.missingFormGrid input,
+.missingFormGrid select,
+.missingFormGrid textarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #cfdcdf;
+  border-radius: 12px;
+  color: #173c36;
+  background: #fff;
+  font: inherit;
+  font-weight: 620;
+}
+
+.missingFormGrid input,
+.missingFormGrid select {
+  min-height: 48px;
+  padding: 0 13px;
+}
+
+.missingFormGrid textarea {
+  padding: 12px 13px;
+  resize: vertical;
+}
+
+.missingFormGrid input:focus,
+.missingFormGrid select:focus,
+.missingFormGrid textarea:focus {
+  border-color: #16805f;
+  outline: 3px solid rgba(22, 128, 95, 0.12);
+}
+
+.missingFormGrid input:disabled {
+  color: #85929f;
+  background: #f2f5f5;
+}
+
+.missingFormGrid label > small {
+  color: #718093;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.fullWidthField {
+  grid-column: 1 / -1;
+}
+
+.missingCheckLabel {
+  display: flex !important;
+  align-items: center !important;
+  align-self: end;
+  min-height: 48px;
+  padding: 0 5px;
+}
+
+.missingCheckLabel input {
+  width: 19px;
+  min-height: 19px;
+  accent-color: #0d6a50;
+}
+
+.inputWithSuffix {
+  position: relative;
+}
+
+.inputWithSuffix input {
+  padding-right: 55px;
+}
+
+.inputWithSuffix em {
+  position: absolute;
+  right: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #617487;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.balanceTreatmentGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.balanceTreatmentGrid button {
+  min-height: 150px;
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  padding: 18px;
+  border: 1px solid #cfdde0;
+  border-radius: 16px;
+  color: #173c36;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.balanceTreatmentGrid button:hover,
+.balanceTreatmentGrid button:focus-visible {
+  border-color: #62ac8d;
+  outline: none;
+}
+
+.balanceTreatmentGrid button strong {
+  color: #073f34;
+  font-size: 1rem;
+}
+
+.balanceTreatmentGrid button span {
+  color: #66788b;
+  line-height: 1.45;
+}
+
+.balanceTreatmentGrid .balanceTreatmentSelected {
+  border-color: #0e7458;
+  box-shadow: inset 0 0 0 1px #0e7458;
+  background: #eef9f4;
+}
+
+.balanceDeductionPreview,
+.balanceDeductionError {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid #b9dfcf;
+  border-radius: 14px;
+  background: #f1faf6;
+}
+
+.balanceDeductionPreview div,
+.balanceDeductionError div {
+  display: grid;
+  gap: 3px;
+}
+
+.balanceDeductionPreview span,
+.balanceDeductionError span {
+  color: #64758a;
+  font-size: 0.76rem;
+  font-weight: 750;
+}
+
+.balanceDeductionPreview strong,
+.balanceDeductionError strong {
+  color: #073f34;
+}
+
+.balanceDeductionError {
+  border-color: #e4a6a6;
+  background: #fff2f2;
+}
+
+.balanceDeductionError p {
+  grid-column: 1 / -1;
+  margin: 3px 0 0;
+  color: #922f2f;
+  font-weight: 750;
+}
+
+.reviewSummaryCard {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  margin-top: 18px;
+  overflow: hidden;
+  border: 1px solid #d7e2e2;
+  border-radius: 16px;
+  background: #d7e2e2;
+}
+
+.reviewSummaryCard > div {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+  padding: 13px 15px;
+  background: #fff;
+}
+
+.reviewSummaryCard span {
+  color: #6d7d8e;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.reviewSummaryCard strong {
+  overflow-wrap: anywhere;
+  color: #153d35;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.reviewSummaryCard .reviewWideRow {
+  grid-column: 1 / -1;
+}
+
+.lateEntryAuditNotice {
+  display: grid;
+  gap: 4px;
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-left: 4px solid #1b7b60;
+  border-radius: 10px;
+  color: #506579;
+  background: #f2f7f6;
+  line-height: 1.45;
+}
+
+.lateEntryAuditNotice strong {
+  color: #0b5542;
+}
+
+.balanceWarningBox {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 18px;
+  padding: 14px 16px;
+  border: 1px solid #e5c37d;
+  border-radius: 14px;
+  color: #71531a;
+  background: #fff8e8;
+}
+
+.balanceWarningBox > svg {
+  flex: 0 0 auto;
+  width: 22px;
+  margin-top: 1px;
+}
+
+.balanceWarningBox > div {
+  display: grid;
+  gap: 4px;
+}
+
+.balanceWarningBox span {
+  line-height: 1.4;
+}
+
+.missingEntrySuccess {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 15px 0 4px;
+  text-align: center;
+}
+
+.successIcon {
+  width: 64px;
+  height: 64px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: #fff;
+  background: #0d6a50;
+}
+
+.successIcon svg {
+  width: 32px;
+}
+
+.missingEntrySuccess h3 {
+  margin: 16px 0 7px;
+  color: #073f34;
+  font-size: 1.55rem;
+}
+
+.missingEntrySuccess > p {
+  margin: 0 auto;
+  color: #637589;
+  line-height: 1.5;
+}
+
+.successActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 11px;
+  margin-top: 22px;
+}
+
+.balanceCheckWarning {
+  border-color: #e6c678 !important;
+  background: #fff8e7 !important;
+}
+
+.reconcileBalanceButton,
+.clearDipstickButton.reconcileBalanceButton {
+  flex: 0 0 auto;
+  padding: 8px 12px;
+  border: 1px solid #a8781d;
+  border-radius: 9px;
+  color: #744f0b;
+  background: #fff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.reconcileBalanceButton:hover {
+  background: #fff4d4;
+}
+
+.reconcileCurrentCard {
+  margin-bottom: 6px;
+}
+
+@media (max-width: 900px) {
+  .balanceTreatmentGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .balanceTreatmentGrid button {
+    min-height: auto;
+  }
+
+  .missingFormGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .fullWidthField {
+    grid-column: auto;
+  }
+
+  .missingCheckLabel {
+    align-self: auto;
+  }
+}
+
+@media (max-width: 700px) {
+  .desktopMissingEntryChoice {
+    display: none !important;
+  }
+
+  .manageStorageChoiceModal .sourceChoiceGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .desktopMissingEntryModal {
+    display: none !important;
+  }
+
+  .missingEntryModal,
+  .reconcileBalanceModal {
+    width: calc(100vw - 18px);
+    max-height: calc(100vh - 18px);
+    border-radius: 20px;
+  }
+
+  .missingEntryHeader,
+  .missingEntryScrollBody,
+  .missingEntryFooter {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .missingEntryProgress,
+  .reviewSummaryCard,
+  .balanceDeductionPreview,
+  .balanceDeductionError {
+    grid-template-columns: 1fr;
+  }
+
+  .missingEntryProgress {
+    display: grid;
+    gap: 8px;
+  }
+
+  .reviewSummaryCard .reviewWideRow {
+    grid-column: auto;
+  }
+
+  .missingAssetCard {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .missingAssetMetrics {
+    text-align: left;
+  }
+
+  .missingEntryFooter,
+  .successActions {
+    flex-direction: column-reverse;
+  }
+
+  .missingEntryFooterSecondary {
+    width: 100%;
+    flex-direction: column-reverse;
+  }
+
+  .reconcileBalanceButton {
+    display: none !important;
+  }
+
+  .missingEntryFooter button,
+  .successActions button {
+    width: 100%;
+  }
+}

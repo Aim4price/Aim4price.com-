@@ -19,5 +19,5 @@ export default async function FuelPage() {
     redirect("/account");
   }
 
-  return <FuelClient />;
+  return <FuelClient addedByLabel={session.user.name || session.user.email || "Signed-in owner account"} />;
 }
