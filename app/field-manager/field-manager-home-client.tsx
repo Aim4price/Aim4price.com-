@@ -15,12 +15,23 @@ type SessionApiResponse = {
   error?: string;
 };
 
+type OverviewCountApiResponse = {
+  ok: boolean;
+  summary?: {
+    totalCount: number;
+    needsAttentionCount: number;
+    comingUpCount: number;
+  };
+  error?: string;
+};
+
 function extractError(payload: { error?: string } | null, fallback: string): string {
   return payload?.error?.trim() || fallback;
 }
 
 export default function FieldManagerHomeClient() {
   const [hasManagerAccess, setHasManagerAccess] = useState(false);
+  const [overviewCount, setOverviewCount] = useState<number | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -50,10 +61,30 @@ export default function FieldManagerHomeClient() {
       }
 
       setHasManagerAccess(true);
+      void loadOverviewCount();
     } catch (error) {
       setNotice(error instanceof Error ? error.message : 'Field Manager login is required.');
     } finally {
       setIsLoading(false);
+    }
+  }
+
+  async function loadOverviewCount() {
+    try {
+      const response = await fetch('/api/field-manager/overview?range=week', {
+        credentials: 'include',
+        cache: 'no-store',
+      });
+      const payload = (await response.json().catch(() => null)) as OverviewCountApiResponse | null;
+
+      if (!response.ok || !payload?.ok || !payload.summary) return;
+
+      const count = Number(payload.summary.totalCount);
+      if (Number.isFinite(count) && count >= 0) {
+        setOverviewCount(Math.floor(count));
+      }
+    } catch {
+      // The Overview count is optional; the home actions remain available if it cannot load.
     }
   }
 
@@ -81,6 +112,24 @@ export default function FieldManagerHomeClient() {
         {!isLoading && hasManagerAccess ? (
           <section className={styles.homeCard} aria-label="Field Manager actions">
             <div className={styles.homeActionGrid}>
+              <button
+                type="button"
+                className={styles.homeActionCard}
+                aria-label={
+                  overviewCount && overviewCount > 0
+                    ? `Overview, ${overviewCount} ${overviewCount === 1 ? 'item' : 'items'}`
+                    : 'Overview'
+                }
+                onClick={() => window.location.assign('/field-manager/overview')}
+              >
+                <strong>Overview</strong>
+                {overviewCount && overviewCount > 0 ? (
+                  <span className={styles.homeActionBadge} aria-hidden="true">
+                    {overviewCount > 99 ? '99+' : overviewCount}
+                  </span>
+                ) : null}
+              </button>
+
               <button
                 type="button"
                 className={styles.homeActionCard}
