@@ -3,6 +3,9 @@ import { recordAdminUsageEventSafely } from '../../../../lib/admin-usage-events'
 import { getServerSession, isAdminSupportSession } from '../../../../lib/auth-session';
 import { getAccountProfile } from '../../../../lib/account-profile';
 import { attachOpenPartnerNotesToAssets } from '../../../../lib/partner-access';
+import { attachOpenIssueNoteStatusToAssets } from '../../../../lib/asset-issue-notes';
+import { attachUpcomingMaintenanceAlertsToAssets } from '../../../../lib/asset-maintenance';
+import { attachUpcomingLicenseRenewalAlertsToAssets } from '../../../../lib/asset-license-renewal';
 import { attachLatestMaintenanceStatusToAssets } from '../../../../lib/scan-assets';
 import {
   getAssetRegisterItemById,
@@ -116,15 +119,27 @@ function normalizeOptionalText(value: unknown, maxLength = 240): string {
     .slice(0, maxLength);
 }
 
-function normalizeOptionalDate(value: unknown): string {
+function normalizeOptionalDate(value: unknown, label = 'Date'): string {
   const text = String(value ?? '').trim();
   if (!text) return '';
 
-  const match = text.match(/^(\d{4}-\d{2}-\d{2})/);
-  if (!match) return '';
+  const match = text.match(/^(\d{4}-\d{2}-\d{2})$/);
+  if (!match) throw new Error(`${label} must be a valid date.`);
 
-  const date = new Date(`${match[1]}T00:00:00.000Z`);
-  return Number.isFinite(date.getTime()) ? match[1] : '';
+  const [year, month, day] = match[1].split('-').map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+
+  if (
+    year < 1000 ||
+    year > 9999 ||
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month - 1 ||
+    date.getUTCDate() !== day
+  ) {
+    throw new Error(`${label} must be a valid date.`);
+  }
+
+  return match[1];
 }
 
 function normalizeOptionalMoney(value: unknown, label: string): number | null {
@@ -202,8 +217,8 @@ function buildFinanceSpecsUpdate(body: StatusRequestBody, financeStatus: AssetSt
   const termMonths = isFinanced ? normalizeOptionalWholeNumber(body.financeTermMonths, 'Finance term months') : null;
   const financierName = isFinanced ? normalizeOptionalText(body.financierName) : '';
   const financeNote = isFinanced ? normalizeOptionalText(body.financeNote, 1000) : '';
-  const boughtWhen = isFinanced ? normalizeOptionalDate(body.financeBoughtWhen) : '';
-  const settlementDate = isFinanced ? normalizeOptionalDate(body.financeSettlementDate) : '';
+  const boughtWhen = isFinanced ? normalizeOptionalDate(body.financeBoughtWhen, 'Purchase date') : '';
+  const settlementDate = isFinanced ? normalizeOptionalDate(body.financeSettlementDate, 'Settlement date') : '';
   const referenceNumber = isFinanced ? normalizeOptionalText(body.financeReferenceNumber) : '';
 
   const specs: Record<string, unknown> = {};
@@ -231,7 +246,7 @@ function buildInsuranceSpecsUpdate(body: StatusRequestBody, insuranceStatus: Ass
   const insuredValue = isInsured ? normalizeOptionalMoney(body.insuredValueExVat, 'Insured amount') : null;
   const insurerName = isInsured ? normalizeOptionalText(body.insuranceInsurerName) : '';
   const policyNumber = isInsured ? normalizeOptionalText(body.insurancePolicyNumber) : '';
-  const renewalDate = isInsured ? normalizeOptionalDate(body.insuranceRenewalDate) : '';
+  const renewalDate = isInsured ? normalizeOptionalDate(body.insuranceRenewalDate, 'Insurance renewal date') : '';
   const insuranceNote = isInsured ? normalizeOptionalText(body.insuranceNote, 1000) : '';
   const specs: Record<string, unknown> = {};
 
@@ -254,7 +269,7 @@ function buildLicenseSpecsUpdate(body: StatusRequestBody, licenseStatus: AssetSt
   const resolvedStatus: AssetStatusChoice = isPropertyAsset ? 'not_applicable' : licenseStatus;
   const isLicensed = resolvedStatus === 'yes';
   const registrationNumber = isLicensed ? normalizeLicenseRegistrationNumber(body.licenseRegistrationNumber) : '';
-  const renewalDate = isLicensed ? normalizeOptionalDate(body.licenseRenewalDate) : '';
+  const renewalDate = isLicensed ? normalizeOptionalDate(body.licenseRenewalDate, 'License renewal date') : '';
   const licenseNote = isLicensed ? normalizeOptionalText(body.licenseNote, 1000) : '';
 
   const specs: Record<string, unknown> = {};
@@ -367,8 +382,12 @@ export async function PATCH(request: NextRequest) {
       statusMetadata = { ...statusMetadata, licenseStatus };
     }
 
-    const [itemWithPartnerNote] = await attachOpenPartnerNotesToAssets(session.user.id, [item]);
-    const [itemWithMaintenanceStatus] = await attachLatestMaintenanceStatusToAssets(itemWithPartnerNote ? [itemWithPartnerNote] : [item]);
+    const itemsWithPartnerNotes = await attachOpenPartnerNotesToAssets(session.user.id, [item]);
+    const itemsWithScheduledMaintenance = await attachUpcomingMaintenanceAlertsToAssets(session.user.id, itemsWithPartnerNotes);
+    const itemsWithLicenseRenewals = await attachUpcomingLicenseRenewalAlertsToAssets(session.user.id, itemsWithScheduledMaintenance);
+    const itemsWithMaintenanceStatus = await attachLatestMaintenanceStatusToAssets(itemsWithLicenseRenewals);
+    const itemsWithIssueNotes = await attachOpenIssueNoteStatusToAssets(itemsWithMaintenanceStatus);
+    const itemWithAlerts = itemsWithIssueNotes[0] ?? item;
 
     const usageUserId = getUsageUserId(session);
     if (usageUserId) {
@@ -380,7 +399,7 @@ export async function PATCH(request: NextRequest) {
       });
     }
 
-    return NextResponse.json({ ok: true, item: itemWithMaintenanceStatus ?? itemWithPartnerNote ?? item });
+    return NextResponse.json({ ok: true, item: itemWithAlerts });
   } catch (error) {
     if (error instanceof Error && error.message === 'ASSET_NOT_FOUND') {
       return NextResponse.json({ ok: false, error: 'Asset not found.' }, { status: 404 });
