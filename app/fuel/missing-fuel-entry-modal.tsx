@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, type SVGProps } from 'react';
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type SVGProps } from 'react';
 import styles from './page.module.css';
 
 export type MissingFuelStorage = {
@@ -92,6 +92,10 @@ function ArrowRightIcon(props: SVGProps<SVGSVGElement>) {
   return <IconBase {...props}><path d="M5 12h14M13 6l6 6-6 6" /></IconBase>;
 }
 
+function ChevronDownIcon(props: SVGProps<SVGSVGElement>) {
+  return <IconBase {...props}><path d="m6 9 6 6 6-6" /></IconBase>;
+}
+
 function CheckIcon(props: SVGProps<SVGSVGElement>) {
   return <IconBase {...props}><path d="m5 12 4 4L19 6" /></IconBase>;
 }
@@ -146,6 +150,65 @@ function usageUnit(metric: UsageMetric): string {
 function defaultMetric(asset: MissingFuelAsset): UsageMetric {
   if (asset.usageMetric === 'both') return 'none';
   return asset.usageMetric;
+}
+
+function savedUsageText(asset: MissingFuelAsset): string {
+  if (asset.usageMetric === 'percentage') {
+    return asset.lifeWorkedPercent === null || !Number.isFinite(asset.lifeWorkedPercent)
+      ? 'Not recorded'
+      : `${formatNumber(asset.lifeWorkedPercent, 1)}% worked`;
+  }
+
+  if (asset.hours === null || !Number.isFinite(asset.hours)) return 'Not recorded';
+  if (asset.usageMetric === 'km') return `${formatNumber(asset.hours, 0)} km`;
+  if (asset.usageMetric === 'hours') return `${formatNumber(asset.hours, 1)} hours`;
+  if (asset.usageMetric === 'both') return `${formatNumber(asset.hours, 1)} — unit not specified`;
+  return 'Not recorded';
+}
+
+type UsageOption = {
+  value: UsageMetric;
+  label: string;
+  description: string;
+};
+
+function usageOptionsForAsset(asset: MissingFuelAsset): UsageOption[] {
+  const noReadingOption: UsageOption = {
+    value: 'none',
+    label: 'No historical usage recorded',
+    description: 'Use this when the meter reading was not captured at the time.',
+  };
+
+  if (asset.usageMetric === 'both') {
+    return [
+      { value: 'hours', label: 'Hour meter (hours)', description: 'Record the historical engine-hour reading.' },
+      { value: 'km', label: 'Odometer (km)', description: 'Record the historical kilometre reading.' },
+      noReadingOption,
+    ];
+  }
+
+  if (asset.usageMetric === 'hours') {
+    return [
+      { value: 'hours', label: 'Engine hours', description: 'This is the saved usage type for this asset.' },
+      noReadingOption,
+    ];
+  }
+
+  if (asset.usageMetric === 'km') {
+    return [
+      { value: 'km', label: 'Kilometres / odometer', description: 'This is the saved usage type for this asset.' },
+      noReadingOption,
+    ];
+  }
+
+  if (asset.usageMetric === 'percentage') {
+    return [
+      { value: 'percentage', label: 'Life worked percentage', description: 'This is the saved usage type for this asset.' },
+      noReadingOption,
+    ];
+  }
+
+  return [noReadingOption];
 }
 
 function assetPickerUsage(asset: MissingFuelAsset): string {
@@ -244,6 +307,9 @@ export function MissingFuelEntryModal({ storage, assets, addedByLabel, onClose, 
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
+  const [usageMenuOpen, setUsageMenuOpen] = useState(false);
+  const usageButtonRef = useRef<HTMLButtonElement>(null);
+  const usageOptionRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const [idempotencyKey] = useState(() => createIdempotencyKey('missing-fuel'));
 
   const selectedAsset = useMemo(() => eligibleAssets.find((asset) => asset.id === assetId) ?? null, [assetId, eligibleAssets]);
@@ -252,20 +318,91 @@ export function MissingFuelEntryModal({ storage, assets, addedByLabel, onClose, 
     if (!term) return eligibleAssets;
     return eligibleAssets.filter((asset) => [asset.title, asset.brandName, asset.modelName, asset.assetTypeLabel, asset.kind, asset.plateLabel, asset.serialNumber, asset.publicAssetCode].join(' ').toLowerCase().includes(term));
   }, [eligibleAssets, search]);
+  const usageOptions = useMemo(() => selectedAsset ? usageOptionsForAsset(selectedAsset) : [], [selectedAsset]);
+  const selectedUsageOption = usageOptions.find((option) => option.value === draft.usageMetric) ?? usageOptions[0];
   const litres = parseNumber(draft.litres);
   const currentAfterDeduction = treatment === 'not_yet_reflected' && litres !== null ? storage.currentLitres - litres : storage.currentLitres;
 
   useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape' && !isSaving) onClose(); };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || isSaving) return;
+      if (usageMenuOpen) {
+        event.preventDefault();
+        setUsageMenuOpen(false);
+        return;
+      }
+      onClose();
+    };
+    const onPointerDown = (event: PointerEvent) => {
+      if (!usageMenuOpen) return;
+      const target = event.target instanceof Element ? event.target : null;
+      if (!target?.closest('[data-backtrack-usage-select="true"]')) setUsageMenuOpen(false);
+    };
     document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
-  }, [isSaving, onClose]);
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener('pointerdown', onPointerDown);
+    };
+  }, [isSaving, onClose, usageMenuOpen]);
 
   function chooseAsset(asset: MissingFuelAsset) {
     setAssetId(asset.id);
     setDraft((current) => ({ ...current, usageMetric: defaultMetric(asset), usageReading: '' }));
+    setUsageMenuOpen(false);
     setError('');
     setStep('details');
+  }
+
+  function focusUsageOption(index: number) {
+    if (!usageOptions.length) return;
+    const normalizedIndex = (index + usageOptions.length) % usageOptions.length;
+    window.requestAnimationFrame(() => usageOptionRefs.current[normalizedIndex]?.focus());
+  }
+
+  function openUsageMenuAt(index: number) {
+    if (usageOptions.length <= 1) return;
+    setUsageMenuOpen(true);
+    focusUsageOption(index);
+  }
+
+  function toggleUsageMenu() {
+    if (usageMenuOpen) {
+      setUsageMenuOpen(false);
+      return;
+    }
+    const selectedIndex = Math.max(0, usageOptions.findIndex((option) => option.value === draft.usageMetric));
+    openUsageMenuAt(selectedIndex);
+  }
+
+  function handleUsageButtonKeyDown(event: ReactKeyboardEvent<HTMLButtonElement>) {
+    if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+    event.preventDefault();
+    const selectedIndex = Math.max(0, usageOptions.findIndex((option) => option.value === draft.usageMetric));
+    if (event.key === 'Home') openUsageMenuAt(0);
+    else if (event.key === 'End') openUsageMenuAt(usageOptions.length - 1);
+    else openUsageMenuAt(selectedIndex);
+  }
+
+  function handleUsageOptionKeyDown(event: ReactKeyboardEvent<HTMLButtonElement>, index: number) {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      event.stopPropagation();
+      setUsageMenuOpen(false);
+      usageButtonRef.current?.focus();
+      return;
+    }
+    if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+    event.preventDefault();
+    if (event.key === 'Home') focusUsageOption(0);
+    else if (event.key === 'End') focusUsageOption(usageOptions.length - 1);
+    else focusUsageOption(index + (event.key === 'ArrowDown' ? 1 : -1));
+  }
+
+  function chooseUsageOption(option: UsageOption) {
+    setDraft({ ...draft, usageMetric: option.value, usageReading: option.value === draft.usageMetric ? draft.usageReading : '' });
+    setUsageMenuOpen(false);
+    window.requestAnimationFrame(() => usageButtonRef.current?.focus());
   }
 
   function validateDetails(): string {
@@ -335,10 +472,14 @@ export function MissingFuelEntryModal({ storage, assets, addedByLabel, onClose, 
     }
   }
 
-  const footer = saved ? null : (
+  const footer = saved ? (
+    <div className={`${styles.missingEntryFooter} ${styles.missingEntrySuccessFooter}`}>
+      <button type="button" className={`${styles.primaryButton} ${styles.backtrackPrimaryButton}`} onClick={onClose}>Done</button>
+    </div>
+  ) : (
     <div className={styles.missingEntryFooter}>
       <div className={styles.missingEntryFooterSecondary}>
-        {step !== 'asset' ? <button type="button" className={styles.secondaryButton} onClick={() => { setError(''); setStep(step === 'review' ? 'details' : 'asset'); }} disabled={isSaving}>Back</button> : null}
+        {step !== 'asset' ? <button type="button" className={styles.secondaryButton} onClick={() => { setError(''); setUsageMenuOpen(false); setStep(step === 'review' ? 'details' : 'asset'); }} disabled={isSaving}>Back</button> : null}
         <button type="button" className={styles.secondaryButton} onClick={onClose} disabled={isSaving}>Cancel</button>
       </div>
       {step === 'asset' ? null : step === 'details' ? <button type="button" className={`${styles.primaryButton} ${styles.backtrackPrimaryButton}`} onClick={reviewEntry}>Next</button> : <button type="button" className={`${styles.primaryButton} ${styles.backtrackPrimaryButton}`} onClick={() => void saveEntry()} disabled={isSaving}>{isSaving ? 'Saving...' : 'Done'}</button>}
@@ -347,9 +488,9 @@ export function MissingFuelEntryModal({ storage, assets, addedByLabel, onClose, 
 
   return (
     <div className={`${styles.fuelSlipFlowBackdrop} ${styles.desktopMissingEntryModal}`} role="dialog" aria-modal="true" aria-labelledby="missing-fuel-title">
-      <div className={styles.missingEntryModal}>
+      <div className={`${styles.missingEntryModal} ${saved ? styles.missingEntrySuccessModal : ''}`}>
         <header className={styles.missingEntryHeader}>
-          <div><h2 id="missing-fuel-title">{saved ? 'Fuel entry saved' : 'Back Track Fuel'}</h2>{!saved ? <p>{storage.name}</p> : null}</div>
+          <div><h2 id="missing-fuel-title">Back Track Fuel</h2><p>{selectedAsset?.title ?? 'Choose an asset'}</p></div>
           <button type="button" className={styles.closeButton} onClick={onClose} disabled={isSaving} aria-label="Close missing fuel entry"><CloseIcon /></button>
         </header>
 
@@ -396,17 +537,61 @@ export function MissingFuelEntryModal({ storage, assets, addedByLabel, onClose, 
                     <div className={`${styles.missingFormCard} ${styles.missingTimeField}`}>
                       <div className={styles.missingTimeHeader}>
                         <span>Fuel issue time</span>
-                        <label className={styles.missingInlineCheck}><input type="checkbox" checked={!draft.issueTimeRecorded} onChange={(event) => setDraft({ ...draft, issueTimeRecorded: !event.target.checked, issueTime: event.target.checked ? '' : draft.issueTime })} /><span>Time not recorded</span></label>
+                        <label className={`${styles.missingInlineCheck} ${!draft.issueTimeRecorded ? styles.missingInlineCheckActive : ''}`}><input type="checkbox" checked={!draft.issueTimeRecorded} onChange={(event) => setDraft({ ...draft, issueTimeRecorded: !event.target.checked, issueTime: event.target.checked ? '' : draft.issueTime })} /><span>Time not recorded</span></label>
                       </div>
                       <div className={styles.missingTimeInputSlot}>
                         {draft.issueTimeRecorded ? <input type="time" aria-label="Fuel issue time" value={draft.issueTime} onChange={(event) => setDraft({ ...draft, issueTime: event.target.value })} /> : null}
                       </div>
                     </div>
-                    <div className={styles.missingStaticField}><span>Asset</span><strong>{selectedAsset.title}</strong></div>
-                    <label><span>Usage</span><select value={draft.usageMetric} onChange={(event) => setDraft({ ...draft, usageMetric: event.target.value as UsageMetric, usageReading: '' })}>
-                      {selectedAsset.usageMetric === 'both' ? <><option value="hours">Hours</option><option value="km">Kilometres</option></> : selectedAsset.usageMetric !== 'none' ? <option value={selectedAsset.usageMetric}>{usageLabel(selectedAsset.usageMetric)}</option> : null}
-                      <option value="none">No meter / Not recorded</option>
-                    </select></label>
+                    <div className={`${styles.missingStaticField} ${styles.savedUsageField}`}><span>Saved usage</span><strong>{savedUsageText(selectedAsset)}</strong></div>
+                    <div className={`${styles.missingFormCard} ${styles.missingUsageField}`}>
+                      <span>Usage for this fuel issue</span>
+                      <div
+                        className={`${styles.backtrackUsageSelect} ${usageMenuOpen ? styles.backtrackUsageSelectOpen : ''}`}
+                        data-backtrack-usage-select="true"
+                        onBlur={(event) => {
+                          const nextTarget = event.relatedTarget instanceof Node ? event.relatedTarget : null;
+                          if (!nextTarget || !event.currentTarget.contains(nextTarget)) setUsageMenuOpen(false);
+                        }}
+                      >
+                        <button
+                          type="button"
+                          ref={usageButtonRef}
+                          className={`${styles.backtrackUsageSelectButton} ${usageMenuOpen ? styles.backtrackUsageSelectButtonOpen : ''}`}
+                          onClick={toggleUsageMenu}
+                          onKeyDown={handleUsageButtonKeyDown}
+                          disabled={usageOptions.length <= 1}
+                          aria-haspopup="listbox"
+                          aria-expanded={usageMenuOpen}
+                        >
+                          <span>{selectedUsageOption?.label ?? 'Choose the saved usage type'}</span>
+                          <ChevronDownIcon />
+                        </button>
+                        {usageMenuOpen ? (
+                          <div className={styles.backtrackUsageSelectMenu} role="listbox" aria-label="Usage for this fuel issue">
+                            {usageOptions.map((option, index) => {
+                              const isSelected = option.value === draft.usageMetric;
+                              return (
+                                <button
+                                  type="button"
+                                  key={option.value}
+                                  ref={(element) => { usageOptionRefs.current[index] = element; }}
+                                  className={`${styles.backtrackUsageOption} ${isSelected ? styles.backtrackUsageOptionActive : ''}`}
+                                  onClick={() => chooseUsageOption(option)}
+                                  onKeyDown={(event) => handleUsageOptionKeyDown(event, index)}
+                                  role="option"
+                                  aria-selected={isSelected}
+                                >
+                                  <span><strong>{option.label}</strong><small>{option.description}</small></span>
+                                  {isSelected ? <CheckIcon /> : null}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        ) : null}
+                      </div>
+                      <small>{selectedUsageOption?.description}</small>
+                    </div>
                     <label><span>{draft.usageMetric === 'none' ? 'Usage reading' : `${usageLabel(draft.usageMetric)} reading at the time *`}</span><div className={styles.inputWithSuffix}><input type="number" min="0" max={draft.usageMetric === 'percentage' ? '100' : undefined} step="0.01" value={draft.usageReading} disabled={draft.usageMetric === 'none'} onChange={(event) => setDraft({ ...draft, usageReading: event.target.value })} /><em>{usageUnit(draft.usageMetric)}</em></div></label>
                     <label><span>Fuel percentage before *</span><div className={styles.inputWithSuffix}><input type="number" min="0" max="100" step="1" value={draft.assetFuelPercentBefore} onChange={(event) => setDraft({ ...draft, assetFuelPercentBefore: event.target.value })} /><em>%</em></div></label>
                     <label><span>Litres issued *</span><div className={styles.inputWithSuffix}><input type="number" min="0.001" step="0.001" value={draft.litres} onChange={(event) => setDraft({ ...draft, litres: event.target.value })} /><em>L</em></div></label>
@@ -419,7 +604,7 @@ export function MissingFuelEntryModal({ storage, assets, addedByLabel, onClose, 
 
               {step === 'review' && selectedAsset ? (
                 <section className={styles.missingReviewStep}>
-                  <div className={styles.missingStepIntro}><h3>Reduce the main diesel tank?</h3><p>Should {formatLitres(litres)} be deducted from the current tank balance?</p></div>
+                  <div className={styles.missingStepIntro}><h3>Reduce {storage.name}?</h3><p>Should {formatLitres(litres)} be deducted from the current tank balance?</p></div>
                   <div className={styles.balanceTreatmentGrid}>
                     <button type="button" aria-pressed={treatment === 'not_yet_reflected'} className={treatment === 'not_yet_reflected' ? styles.balanceTreatmentSelected : ''} onClick={() => { setTreatment('not_yet_reflected'); setError(''); }}><strong>Yes, reduce it</strong><span>Deduct {formatLitres(litres)} now.</span></button>
                     <button type="button" aria-pressed={treatment === 'already_reflected'} className={treatment === 'already_reflected' ? styles.balanceTreatmentSelected : ''} onClick={() => { setTreatment('already_reflected'); setError(''); }}><strong>No, leave it</strong><span>The fuel is already reflected.</span></button>
@@ -488,7 +673,7 @@ export function ReconcileFuelBalanceModal({ storage, onClose, onLedgerUpdated }:
           </div>
           <div className={styles.lateEntryAuditNotice}><strong>Separate audit event</strong><span>Saving creates a present-day reconciliation record with the previous and new current litres. It does not create or count another fuel issue.</span></div>
         </div>
-        <div className={styles.missingEntryFooter}><button type="button" className={styles.secondaryButton} onClick={onClose} disabled={isSaving}>Cancel</button><button type="button" className={styles.primaryButton} onClick={() => void save()} disabled={isSaving}>{isSaving ? 'Saving...' : 'Save Reconciliation'}</button></div>
+        <div className={styles.missingEntryFooter}><button type="button" className={styles.secondaryButton} onClick={onClose} disabled={isSaving}>Cancel</button><button type="button" className={`${styles.primaryButton} ${styles.backtrackPrimaryButton}`} onClick={() => void save()} disabled={isSaving}>{isSaving ? 'Saving...' : 'Save Reconciliation'}</button></div>
       </div>
     </div>
   );
