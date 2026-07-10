@@ -327,6 +327,17 @@ type MaintenanceUpcomingAlert = {
   createdAtIso: string;
 };
 
+type LicenseRenewalAlert = {
+  id: string;
+  assetRegisterItemId: string;
+  renewalDate: string;
+  registrationNumber: string;
+  computedStatus: 'due_soon' | 'due' | 'overdue';
+  computedStatusLabel: 'Due soon' | 'Due' | 'Overdue';
+  heading: string;
+  body: string;
+};
+
 type OpenPartnerNote = {
   id: string;
   ownerUserId: string;
@@ -412,6 +423,7 @@ type RegisterAsset = {
   latestMaintenanceStatus?: LatestMaintenanceStatus | null;
   latestIssueNoteStatus?: LatestIssueNoteStatus | null;
   maintenanceAlert?: MaintenanceUpcomingAlert | null;
+  licenseRenewalAlert?: LicenseRenewalAlert | null;
 };
 
 type ReplacementPriceRevaluePrompt = {
@@ -3500,6 +3512,7 @@ function assetUnnotedAlertCount(asset: RegisterAsset): number {
 
   if (assetNeedsEstimateAttention(asset)) count += 1;
   if (asset.maintenanceAlert) count += 1;
+  if (asset.licenseRenewalAlert) count += 1;
   if (asset.latestMaintenanceStatus) count += 1;
   if (asset.latestIssueNoteStatus) count += 1;
   count += openPartnerNoteAlertCount(asset);
@@ -3521,8 +3534,9 @@ function formatAlertBadgeCount(count: number): string {
 }
 
 function assetAttentionRank(asset: RegisterAsset): number {
-  if (asset.latestIssueNoteStatus) return 6;
-  if (asset.maintenanceAlert) return 5;
+  if (asset.latestIssueNoteStatus) return 7;
+  if (asset.maintenanceAlert) return 6;
+  if (asset.licenseRenewalAlert) return 5;
   if (isAssetFlagged(asset)) return 4;
   if (asset.openPartnerNote) return 3;
   if (asset.latestMaintenanceStatus) return 2;
@@ -3534,6 +3548,7 @@ function assetAttentionRank(asset: RegisterAsset): number {
 function assetAttentionTimestamp(asset: RegisterAsset): number {
   const openPartnerNote = asset.openPartnerNote ?? null;
   const maintenanceAlert = asset.maintenanceAlert ?? null;
+  const licenseRenewalAlert = asset.licenseRenewalAlert ?? null;
   const latestMaintenanceStatus = asset.latestMaintenanceStatus ?? null;
   const latestIssueNoteStatus = asset.latestIssueNoteStatus ?? null;
 
@@ -3552,6 +3567,11 @@ function assetAttentionTimestamp(asset: RegisterAsset): number {
       timestampFromIso(asset.updatedAtIso) ||
       timestampFromIso(asset.createdAtIso)
     );
+  }
+
+  if (licenseRenewalAlert) {
+    const renewalTimestamp = timestampFromIso(`${licenseRenewalAlert.renewalDate}T00:00:00.000Z`);
+    return renewalTimestamp ? -renewalTimestamp : timestampFromIso(asset.updatedAtIso) || timestampFromIso(asset.createdAtIso);
   }
 
   if (isAssetFlagged(asset)) {
@@ -5342,6 +5362,7 @@ export default function AssetRegisterClient() {
   const [busyRevalueAssetId, setBusyRevalueAssetId] = useState<string | null>(null);
   const [busyMaintenanceStatusId, setBusyMaintenanceStatusId] = useState<string | null>(null);
   const [busyMaintenanceAlertId, setBusyMaintenanceAlertId] = useState<string | null>(null);
+  const [busyLicenseRenewalAssetId, setBusyLicenseRenewalAssetId] = useState<string | null>(null);
   const [busyIssueNoteStatusId, setBusyIssueNoteStatusId] = useState<string | null>(null);
   const [busyRevalueAction, setBusyRevalueAction] = useState<RevalueMethod | null>(null);
   const [replacementPriceRevaluePrompt, setReplacementPriceRevaluePrompt] = useState<ReplacementPriceRevaluePrompt | null>(null);
@@ -7911,27 +7932,39 @@ export default function AssetRegisterClient() {
     setActiveAsset(null);
   }
 
+  function preserveLicenseRenewalAlert(previous: RegisterAsset | null | undefined, nextAsset: RegisterAsset): RegisterAsset {
+    if (!previous || typeof nextAsset.licenseRenewalAlert !== 'undefined') return nextAsset;
+
+    return {
+      ...nextAsset,
+      licenseRenewalAlert: previous.licenseRenewalAlert ?? null,
+    };
+  }
+
   function syncUpdatedAsset(nextAsset: RegisterAsset) {
-    setAssets((current) => [nextAsset, ...current.filter((asset) => asset.id !== nextAsset.id)]);
+    setAssets((current) => {
+      const previous = current.find((asset) => asset.id === nextAsset.id);
+      return [preserveLicenseRenewalAlert(previous, nextAsset), ...current.filter((asset) => asset.id !== nextAsset.id)];
+    });
     setCurrentPage(1);
-    setActiveAsset((current) => (current?.id === nextAsset.id ? nextAsset : current));
-    setMarketplaceAsset((current) => (current?.id === nextAsset.id ? nextAsset : current));
-    setProjectionAsset((current) => (current?.id === nextAsset.id ? nextAsset : current));
+    setActiveAsset((current) => (current?.id === nextAsset.id ? preserveLicenseRenewalAlert(current, nextAsset) : current));
+    setMarketplaceAsset((current) => (current?.id === nextAsset.id ? preserveLicenseRenewalAlert(current, nextAsset) : current));
+    setProjectionAsset((current) => (current?.id === nextAsset.id ? preserveLicenseRenewalAlert(current, nextAsset) : current));
   }
 
   function syncSettingsUpdatedAsset(nextAsset: RegisterAsset) {
-    setAssets((current) => current.map((asset) => (asset.id === nextAsset.id ? nextAsset : asset)));
-    setActiveAsset((current) => (current?.id === nextAsset.id ? nextAsset : current));
-    setMarketplaceAsset((current) => (current?.id === nextAsset.id ? nextAsset : current));
-    setProjectionAsset((current) => (current?.id === nextAsset.id ? nextAsset : current));
-    setQuoteAsset((current) => (current?.id === nextAsset.id ? nextAsset : current));
+    setAssets((current) => current.map((asset) => (asset.id === nextAsset.id ? preserveLicenseRenewalAlert(asset, nextAsset) : asset)));
+    setActiveAsset((current) => (current?.id === nextAsset.id ? preserveLicenseRenewalAlert(current, nextAsset) : current));
+    setMarketplaceAsset((current) => (current?.id === nextAsset.id ? preserveLicenseRenewalAlert(current, nextAsset) : current));
+    setProjectionAsset((current) => (current?.id === nextAsset.id ? preserveLicenseRenewalAlert(current, nextAsset) : current));
+    setQuoteAsset((current) => (current?.id === nextAsset.id ? preserveLicenseRenewalAlert(current, nextAsset) : current));
   }
 
   function syncMediaUpdatedAsset(nextAsset: RegisterAsset) {
-    setAssets((current) => current.map((asset) => (asset.id === nextAsset.id ? nextAsset : asset)));
-    setActiveAsset((current) => (current?.id === nextAsset.id ? nextAsset : current));
-    setMarketplaceAsset((current) => (current?.id === nextAsset.id ? nextAsset : current));
-    setProjectionAsset((current) => (current?.id === nextAsset.id ? nextAsset : current));
+    setAssets((current) => current.map((asset) => (asset.id === nextAsset.id ? preserveLicenseRenewalAlert(asset, nextAsset) : asset)));
+    setActiveAsset((current) => (current?.id === nextAsset.id ? preserveLicenseRenewalAlert(current, nextAsset) : current));
+    setMarketplaceAsset((current) => (current?.id === nextAsset.id ? preserveLicenseRenewalAlert(current, nextAsset) : current));
+    setProjectionAsset((current) => (current?.id === nextAsset.id ? preserveLicenseRenewalAlert(current, nextAsset) : current));
   }
 
   function resetAssetQuoteState(nextScope: QuoteScope = 'asset') {
@@ -9568,6 +9601,43 @@ export default function AssetRegisterClient() {
       });
     } finally {
       setBusyMaintenanceAlertId((current) => (current === maintenanceAlertId ? null : current));
+    }
+  }
+
+  async function handleMarkLicenseRenewalAlertNoted(assetId: string, renewalDate: string) {
+    setBusyLicenseRenewalAssetId(assetId);
+
+    try {
+      const response = await fetch('/api/asset-register/license-alert', {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ assetId, renewalDate, status: 'noted' }),
+      });
+      const data = (await response.json()) as { ok: boolean; error?: string };
+
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error ?? 'Failed to mark the license renewal alert as noted.');
+      }
+
+      const withoutLicenseRenewalAlert = (entry: RegisterAsset): RegisterAsset => ({
+        ...entry,
+        licenseRenewalAlert: null,
+      });
+
+      setAssets((current) => current.map((entry) => (entry.id === assetId ? withoutLicenseRenewalAlert(entry) : entry)));
+      setActiveAsset((current) => (current?.id === assetId ? withoutLicenseRenewalAlert(current) : current));
+      setMarketplaceAsset((current) => (current?.id === assetId ? withoutLicenseRenewalAlert(current) : current));
+      setProjectionAsset((current) => (current?.id === assetId ? withoutLicenseRenewalAlert(current) : current));
+      setQuoteAsset((current) => (current?.id === assetId ? withoutLicenseRenewalAlert(current) : current));
+      setNotice({ tone: 'success', message: 'License renewal alert marked as noted.' });
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Failed to mark the license renewal alert as noted.',
+      });
+    } finally {
+      setBusyLicenseRenewalAssetId((current) => (current === assetId ? null : current));
     }
   }
 
@@ -11427,6 +11497,7 @@ export default function AssetRegisterClient() {
                     const latestMaintenanceStatus = asset.latestMaintenanceStatus ?? null;
                     const latestIssueNoteStatus = asset.latestIssueNoteStatus ?? null;
                     const maintenanceAlert = asset.maintenanceAlert ?? null;
+                    const licenseRenewalAlert = asset.licenseRenewalAlert ?? null;
                     const isManualValueAsset = asset.selectedMethod === 'manual';
                     const assetValueVatMode = assetValueVatModes[asset.id] ?? 'excluded';
                     const displayedAssetValue = assetValueVatMode === 'included' ? Math.round(Number(asset.value || 0) * 1.15) : asset.value;
@@ -11471,6 +11542,9 @@ export default function AssetRegisterClient() {
                     const isMarkingMaintenanceAlertNoted = maintenanceAlert
                       ? busyMaintenanceAlertId === maintenanceAlert.id
                       : false;
+                    const isMarkingLicenseRenewalAlertNoted = licenseRenewalAlert
+                      ? busyLicenseRenewalAssetId === asset.id
+                      : false;
 
                     return (
                       <div className={styles.assetCardRow} key={asset.id}>
@@ -11488,11 +11562,11 @@ export default function AssetRegisterClient() {
 
                         <article
                           id={`asset-card-${asset.id}`}
-                          className={`${styles.assetCard} ${isExpanded ? styles.assetCardExpanded : ''} ${isFlagged ? styles.assetCardFlagged : ''} ${estimateNeedsUpdate ? styles.assetCardEstimateStale : ''} ${openPartnerNote ? `${styles.assetCardPartnerNote} ${partnerNoteToneClass}` : ''} ${maintenanceAlert ? styles.assetCardMaintenanceUpcoming : ''} ${latestMaintenanceStatus ? styles.assetCardMaintenanceDone : ''} ${latestIssueNoteStatus ? styles.assetCardIssueNote : ''}`}
+                          className={`${styles.assetCard} ${isExpanded ? styles.assetCardExpanded : ''} ${isFlagged ? styles.assetCardFlagged : ''} ${estimateNeedsUpdate ? styles.assetCardEstimateStale : ''} ${openPartnerNote ? `${styles.assetCardPartnerNote} ${partnerNoteToneClass}` : ''} ${maintenanceAlert || licenseRenewalAlert ? styles.assetCardMaintenanceUpcoming : ''} ${latestMaintenanceStatus ? styles.assetCardMaintenanceDone : ''} ${latestIssueNoteStatus ? styles.assetCardIssueNote : ''}`}
                         >
                         <div className={styles.assetHeader}>
                           <div className={styles.assetTitleBlock}>
-                            {isFlagged || isLive || estimateNeedsUpdate || openPartnerNote || maintenanceAlert || latestMaintenanceStatus || latestIssueNoteStatus ? (
+                            {isFlagged || isLive || estimateNeedsUpdate || openPartnerNote || maintenanceAlert || licenseRenewalAlert || latestMaintenanceStatus || latestIssueNoteStatus ? (
                               <div className={styles.badgeRow}>
                                 {isFlagged ? <span className={`${styles.badge} ${styles.badgeDanger}`}>Flagged</span> : null}
                                 {isLive ? <span className={`${styles.badge} ${styles.badgeSuccess}`}>Live on marketplace</span> : null}
@@ -11501,6 +11575,7 @@ export default function AssetRegisterClient() {
                                 ) : null}
                                 {openPartnerNote ? <span className={`${styles.badge} ${styles.badgeInfo} ${partnerNoteToneClass}`}>{partnerNoteLabel}</span> : null}
                                 {maintenanceAlert ? <span className={`${styles.badge} ${styles.badgeMaintenanceUpcoming}`}>Maintenance upcoming</span> : null}
+                                {licenseRenewalAlert ? <span className={`${styles.badge} ${styles.badgeMaintenanceUpcoming}`}>License renewal upcoming</span> : null}
                                 {latestMaintenanceStatus ? <span className={`${styles.badge} ${styles.badgeMaintenanceDone}`}>{maintenanceDoneLabel}</span> : null}
                                 {latestIssueNoteStatus ? <span className={`${styles.badge} ${styles.badgeIssueNote}`}>Open issue</span> : null}
                               </div>
@@ -11616,6 +11691,24 @@ export default function AssetRegisterClient() {
                                 onClick={() => void handleMarkMaintenanceAlertNoted(maintenanceAlert.id, asset.id)}
                               >
                                 {isMarkingMaintenanceAlertNoted ? 'Noting...' : 'Noted'}
+                              </button>
+                            </div>
+                          ) : null}
+
+                          {licenseRenewalAlert ? (
+                            <div className={`${styles.partnerNoteBanner} ${styles.maintenanceUpcomingBanner}`}>
+                              <div className={styles.partnerNoteText}>
+                                <strong>{licenseRenewalAlert.heading || 'License renewal upcoming'}</strong>
+                                <p>{licenseRenewalAlert.body}</p>
+                                <small className={styles.maintenanceUpcomingMeta}>{licenseRenewalAlert.computedStatusLabel}</small>
+                              </div>
+                              <button
+                                type="button"
+                                className={styles.partnerNoteButton}
+                                disabled={isMarkingLicenseRenewalAlertNoted}
+                                onClick={() => void handleMarkLicenseRenewalAlertNoted(asset.id, licenseRenewalAlert.renewalDate)}
+                              >
+                                {isMarkingLicenseRenewalAlertNoted ? 'Noting...' : 'Noted'}
                               </button>
                             </div>
                           ) : null}
