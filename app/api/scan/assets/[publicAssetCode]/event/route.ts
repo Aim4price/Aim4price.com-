@@ -3,6 +3,14 @@ import {
   recordAdminUsageEventsSafely,
   type AdminUsageEventInput,
 } from "../../../../../../lib/admin-usage-events";
+import {
+  assetMaintenanceProcedureKindFromNote,
+  assetMaintenanceProcedureMatchesType,
+  completeAssetMaintenanceRecord,
+  getAssignedFieldManagerMaintenanceRecord,
+  isAssetMaintenanceRecordId,
+  type AssetMaintenanceRecord,
+} from "../../../../../../lib/asset-maintenance";
 import { authorizeFieldManagerScanAccess, authorizePublicQrScanAccess } from "../../../../../../lib/scan-auth";
 import {
   listRecentScanEvents,
@@ -32,6 +40,7 @@ type ScanEventRequest = {
   clientEventId?: unknown;
   clientCapturedAt?: unknown;
   gpsAccuracyMeters?: unknown;
+  scheduledMaintenanceId?: unknown;
 };
 
 function asText(value: unknown): string {
@@ -219,6 +228,84 @@ export async function POST(request: NextRequest, context: RouteContext) {
     );
   }
 
+  const scheduledMaintenanceId = asText(body.scheduledMaintenanceId);
+  let scheduledMaintenance: AssetMaintenanceRecord | null = null;
+
+  if (scheduledMaintenanceId) {
+    if (!isAssetMaintenanceRecordId(scheduledMaintenanceId)) {
+      return NextResponse.json(
+        { ok: false, error: "Scheduled maintenance id is invalid." },
+        { status: 400 },
+      );
+    }
+
+    if (
+      access.accessMode !== "field_manager"
+      || !access.fieldManagerId
+      || !access.asset.id
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "Field Manager access is required to complete scheduled maintenance.",
+        },
+        { status: 403 },
+      );
+    }
+
+    try {
+      scheduledMaintenance = await getAssignedFieldManagerMaintenanceRecord({
+        ownerUserId: access.ownerUserId,
+        managerId: access.fieldManagerId,
+        assetId: access.asset.id,
+        maintenanceId: scheduledMaintenanceId,
+        allowDone: true,
+      });
+    } catch (error) {
+      console.error("[scan-event] Failed to validate scheduled maintenance", {
+        scheduledMaintenanceId,
+        assetId: access.asset.id,
+        fieldManagerId: access.fieldManagerId,
+        error,
+      });
+      return NextResponse.json(
+        { ok: false, error: "Scheduled maintenance could not be validated." },
+        { status: 500 },
+      );
+    }
+
+    if (!scheduledMaintenance) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            "This scheduled maintenance item is no longer assigned to this Field Manager or asset.",
+        },
+        { status: 409 },
+      );
+    }
+
+    const procedureKind = assetMaintenanceProcedureKindFromNote(payload.note);
+    if (
+      !procedureKind
+      || !assetMaintenanceProcedureMatchesType(
+        scheduledMaintenance.maintenanceType,
+        procedureKind,
+      )
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            scheduledMaintenance.maintenanceType === "checkup"
+              ? "Complete the scheduled check before marking this checkup done."
+              : "Complete the scheduled service before marking this service done.",
+        },
+        { status: 400 },
+      );
+    }
+  }
+
   const locationText = `GPS ${payload.latitude.toFixed(6)}, ${payload.longitude.toFixed(6)}`;
 
   try {
@@ -244,6 +331,56 @@ export async function POST(request: NextRequest, context: RouteContext) {
       fieldManagerSessionId: access.fieldManagerSessionId ?? null,
     });
 
+    let scheduledMaintenanceCompletion: {
+      maintenanceId: string;
+      completed: boolean;
+      nextMaintenanceId: string | null;
+    } | null = null;
+
+    if (scheduledMaintenance && access.fieldManagerId) {
+      const currentScheduledMaintenance =
+        await getAssignedFieldManagerMaintenanceRecord({
+          ownerUserId: access.ownerUserId,
+          managerId: access.fieldManagerId,
+          assetId: saved.asset.id,
+          maintenanceId: scheduledMaintenance.id,
+          allowDone: true,
+        });
+
+      if (!currentScheduledMaintenance) {
+        throw new Error("FIELD_MANAGER_MAINTENANCE_NO_LONGER_AVAILABLE");
+      }
+
+      const completedUsage = currentScheduledMaintenance.triggerType === "usage"
+        ? currentScheduledMaintenance.usageMetric === "percentage"
+          ? saved.asset.lifeWorkedPercent
+          : saved.asset.hours
+        : null;
+      const completion = await completeAssetMaintenanceRecord(
+        access.ownerUserId,
+        currentScheduledMaintenance.id,
+        {
+          completedUsage,
+          completedNotes: saved.event.note || payload.note,
+          completedBy:
+            asText(access.fieldManagerDisplayName)
+            || asText(saved.event.operatorName)
+            || "Field Manager",
+        },
+        {
+          assetId: saved.asset.id,
+          assignedFieldManagerId: access.fieldManagerId,
+          maintenanceType: currentScheduledMaintenance.maintenanceType,
+        },
+      );
+
+      scheduledMaintenanceCompletion = {
+        maintenanceId: completion.completed.id,
+        completed: completion.completed.status === "done",
+        nextMaintenanceId: completion.nextRecord?.id ?? null,
+      };
+    }
+
     let recentEvents = [saved.event];
 
     try {
@@ -263,6 +400,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       publicAssetCode,
       fieldManagerId: access.fieldManagerId ?? null,
       fieldManagerDisplayName: access.fieldManagerDisplayName ?? null,
+      scheduledMaintenanceId: scheduledMaintenanceCompletion?.maintenanceId ?? null,
       hasNote: Boolean(payload.note),
       photoCount: payload.photoUrls.length,
     };
@@ -294,6 +432,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       asset: saved.asset,
       event: recentEvents[0] ?? saved.event,
       recentEvents,
+      scheduledMaintenanceCompletion,
     });
   } catch (error) {
     console.error("[scan-event] Failed to save QR scan update", {
@@ -311,6 +450,23 @@ export async function POST(request: NextRequest, context: RouteContext) {
       return NextResponse.json(
         { ok: false, error: safeOwnerError.error, pinRequired: false },
         { status: safeOwnerError.status },
+      );
+    }
+
+    if (
+      error instanceof Error
+      && (
+        error.message === "FIELD_MANAGER_MAINTENANCE_NO_LONGER_AVAILABLE"
+        || error.message === "MAINTENANCE_NOT_FOUND"
+      )
+    ) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            "The asset update was saved, but this scheduled maintenance item changed before it could be marked done. Return to Overview and try again.",
+        },
+        { status: 409 },
       );
     }
 
