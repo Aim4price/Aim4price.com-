@@ -17,6 +17,10 @@ export type FuelStorageEventType = 'opening_balance' | 'stock_in' | 'asset_issue
 export type FuelScanActorType = 'owner_session' | 'scan_pin' | 'field_manager';
 export type FuelSlipTargetType = 'asset' | 'storage_tank';
 export type FuelSlipExtractionStatus = 'manual' | 'extracted' | 'needs_review';
+export type FuelUsageMetric = 'hours' | 'km' | 'percentage' | 'none';
+export type FuelTankBalanceTreatment = 'already_reflected' | 'not_yet_reflected' | 'not_sure';
+export type FuelEvidenceStatus = 'internal_record_only' | 'evidence_supplied_review_required';
+export type FuelBalanceVerificationStatus = 'verified' | 'needs_check';
 
 export type FuelLedgerStorage = {
   id: string;
@@ -31,6 +35,11 @@ export type FuelLedgerStorage = {
   notes: string;
   dipstickNote: string;
   dipstickNoteUpdatedAtIso: string | null;
+  balanceVerificationStatus: FuelBalanceVerificationStatus;
+  balanceNeedsChecking: boolean;
+  balanceCheckReason: string;
+  balanceCheckSourceEventId: string;
+  balanceCheckMarkedAtIso: string | null;
   status: FuelStorageStatus;
   publicFuelStorageCode: string;
   pinEnabled: boolean;
@@ -77,6 +86,28 @@ export type FuelLedgerEvent = {
   latitude: number | null;
   longitude: number | null;
   locationText: string;
+  isLateEntry: boolean;
+  issueDate: string;
+  issueTime: string;
+  issueTimeRecorded: boolean;
+  issueAtIso: string;
+  entryAddedAtIso: string;
+  addedByUserId: string;
+  addedByName: string;
+  addedByEmail: string;
+  assetUsageMetric: FuelUsageMetric | '';
+  lateEntryReason: string;
+  evidenceType: string;
+  evidenceReference: string;
+  evidenceStatus: FuelEvidenceStatus | '';
+  evidenceFileName: string;
+  evidenceFileUrl: string;
+  tankBalanceTreatment: FuelTankBalanceTreatment | '';
+  linkedAdjustmentEventId: string;
+  linkedMissingEntryEventId: string;
+  adjustmentKind: string;
+  idempotencyKey: string;
+  gpsCaptureStatus: string;
   createdAtIso: string;
 };
 
@@ -152,6 +183,7 @@ export type FuelLedgerAsset = {
   selectedMethod: string;
   currentValue: number | null;
   canReceiveFuel: boolean;
+  isActive: boolean;
   usageMetric: 'hours' | 'km' | 'both' | 'percentage' | 'none';
   lifeWorkedPercent: number | null;
 };
@@ -204,6 +236,10 @@ type FuelStorageRow = {
   notes: string | null;
   dipstick_note: string | null;
   dipstick_note_updated_at: string | null;
+  balance_verification_status: string | null;
+  balance_check_reason: string | null;
+  balance_check_source_event_id: string | null;
+  balance_check_marked_at: string | null;
   status: string | null;
   public_fuel_storage_code: string | null;
   pin_hash: string | null;
@@ -253,6 +289,28 @@ type FuelEventRow = {
   latitude: string | number | null;
   longitude: string | number | null;
   location_text: string | null;
+  is_late_entry: boolean | null;
+  issue_date: string | null;
+  issue_time: string | null;
+  issue_time_recorded: boolean | null;
+  issue_at: string | null;
+  entry_added_at: string | null;
+  added_by_user_id: string | null;
+  added_by_name: string | null;
+  added_by_email: string | null;
+  asset_usage_metric: string | null;
+  late_entry_reason: string | null;
+  evidence_type: string | null;
+  evidence_reference: string | null;
+  evidence_status: string | null;
+  evidence_id: string | null;
+  evidence_file_name: string | null;
+  tank_balance_treatment: string | null;
+  linked_adjustment_event_id: string | null;
+  linked_missing_entry_event_id: string | null;
+  adjustment_kind: string | null;
+  idempotency_key: string | null;
+  gps_capture_status: string | null;
   created_at: string | null;
 };
 
@@ -267,6 +325,7 @@ type FuelAssetRow = {
   serial_number: string | null;
   plate_label: string | null;
   public_asset_code: string | null;
+  qr_status: string | null;
   hours: string | number | null;
   life_worked_percent: string | number | null;
   fuel_percent: string | number | null;
@@ -652,6 +711,93 @@ function normalizeEventType(value: unknown): FuelStorageEventType {
   return 'adjustment';
 }
 
+function normalizeBalanceVerificationStatus(value: unknown): FuelBalanceVerificationStatus {
+  return String(value ?? '').trim().toLowerCase() === 'needs_check' ? 'needs_check' : 'verified';
+}
+
+function normalizeFuelUsageMetric(value: unknown): FuelUsageMetric {
+  const normalized = String(value ?? '').trim().toLowerCase();
+  if (normalized === 'hours' || normalized === 'km' || normalized === 'percentage' || normalized === 'none') return normalized;
+  throw new Error('Choose a valid historical usage metric.');
+}
+
+function normalizeFuelTankBalanceTreatment(value: unknown): FuelTankBalanceTreatment {
+  const normalized = String(value ?? '').trim().toLowerCase();
+  if (normalized === 'already_reflected' || normalized === 'not_yet_reflected' || normalized === 'not_sure') return normalized;
+  throw new Error('Choose how the current tank balance should be handled.');
+}
+
+function normalizeFuelEvidenceStatus(value: unknown): FuelEvidenceStatus | '' {
+  const normalized = String(value ?? '').trim().toLowerCase();
+  if (normalized === 'internal_record_only' || normalized === 'evidence_supplied_review_required') return normalized;
+  return '';
+}
+
+function johannesburgDateParts(value = new Date()): { date: string; time: string } {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Africa/Johannesburg',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(value);
+  const read = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? '';
+  return {
+    date: `${read('year')}-${read('month')}-${read('day')}`,
+    time: `${read('hour')}:${read('minute')}:${read('second')}`,
+  };
+}
+
+function normalizeHistoricalIssueDate(value: unknown): string {
+  const date = asText(value);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    throw new Error('Choose a valid fuel issue date.');
+  }
+
+  const [year, month, day] = date.split('-').map((part) => Number(part));
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+  if (
+    !Number.isInteger(year)
+    || !Number.isInteger(month)
+    || !Number.isInteger(day)
+    || parsed.getUTCFullYear() !== year
+    || parsed.getUTCMonth() !== month - 1
+    || parsed.getUTCDate() !== day
+  ) {
+    throw new Error('Choose a valid fuel issue date.');
+  }
+
+  if (date > johannesburgDateParts().date) {
+    throw new Error('Fuel issue date cannot be in the future.');
+  }
+
+  return date;
+}
+
+function normalizeHistoricalIssueTime(value: unknown, recordedValue: unknown): { time: string | null; recorded: boolean } {
+  const explicitlyNotRecorded = recordedValue === false || String(recordedValue ?? '').trim().toLowerCase() === 'false';
+  const text = asText(value);
+
+  if (explicitlyNotRecorded || !text) {
+    return { time: null, recorded: false };
+  }
+
+  if (!/^([01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(text)) {
+    throw new Error('Enter a valid fuel issue time or choose Time not recorded.');
+  }
+
+  return { time: text.length === 5 ? `${text}:00` : text, recorded: true };
+}
+
+function buildJohannesburgIssueIso(date: string, time: string | null): string {
+  const parsed = new Date(`${date}T${time ?? '00:00:00'}+02:00`);
+  if (Number.isNaN(parsed.getTime())) throw new Error('Choose a valid fuel issue date and time.');
+  return parsed.toISOString();
+}
+
 function normalizeFuelStorageCode(value: unknown): string {
   return String(value ?? '')
     .trim()
@@ -803,6 +949,11 @@ function mapStorageRow(row: FuelStorageRow): FuelLedgerStorage {
     notes: asText(row.notes),
     dipstickNote: asText(row.dipstick_note),
     dipstickNoteUpdatedAtIso: row.dipstick_note_updated_at ?? null,
+    balanceVerificationStatus: normalizeBalanceVerificationStatus(row.balance_verification_status),
+    balanceNeedsChecking: normalizeBalanceVerificationStatus(row.balance_verification_status) === 'needs_check',
+    balanceCheckReason: asText(row.balance_check_reason),
+    balanceCheckSourceEventId: asText(row.balance_check_source_event_id),
+    balanceCheckMarkedAtIso: row.balance_check_marked_at ?? null,
     status: normalizeStorageStatus(row.status),
     publicFuelStorageCode: normalizeFuelStorageCode(row.public_fuel_storage_code),
     pinEnabled: Boolean(row.pin_enabled) && Boolean(pinHash),
@@ -857,7 +1008,33 @@ function mapFuelEventRow(row: FuelEventRow): FuelLedgerEvent {
     latitude: normalizeCoordinate(row.latitude, 90),
     longitude: normalizeCoordinate(row.longitude, 180),
     locationText: asText(row.location_text),
-    createdAtIso: row.created_at ?? new Date().toISOString(),
+    isLateEntry: Boolean(row.is_late_entry),
+    issueDate: toDateOnly(row.issue_date) || toDateOnly(row.created_at),
+    issueTime: asText(row.issue_time),
+    issueTimeRecorded: row.issue_time_recorded !== false,
+    issueAtIso: row.issue_at ?? row.created_at ?? new Date().toISOString(),
+    entryAddedAtIso: row.entry_added_at ?? row.created_at ?? new Date().toISOString(),
+    addedByUserId: asText(row.added_by_user_id),
+    addedByName: asText(row.added_by_name),
+    addedByEmail: asText(row.added_by_email),
+    assetUsageMetric: ['hours', 'km', 'percentage', 'none'].includes(asText(row.asset_usage_metric))
+      ? (asText(row.asset_usage_metric) as FuelUsageMetric)
+      : '',
+    lateEntryReason: asText(row.late_entry_reason),
+    evidenceType: asText(row.evidence_type),
+    evidenceReference: asText(row.evidence_reference),
+    evidenceStatus: normalizeFuelEvidenceStatus(row.evidence_status),
+    evidenceFileName: asText(row.evidence_file_name),
+    evidenceFileUrl: asText(row.evidence_id) ? `/api/fuel/missing-entry-evidence/${encodeURIComponent(asText(row.id))}` : '',
+    tankBalanceTreatment: ['already_reflected', 'not_yet_reflected', 'not_sure'].includes(asText(row.tank_balance_treatment))
+      ? (asText(row.tank_balance_treatment) as FuelTankBalanceTreatment)
+      : '',
+    linkedAdjustmentEventId: asText(row.linked_adjustment_event_id),
+    linkedMissingEntryEventId: asText(row.linked_missing_entry_event_id),
+    adjustmentKind: asText(row.adjustment_kind),
+    idempotencyKey: asText(row.idempotency_key),
+    gpsCaptureStatus: asText(row.gps_capture_status) || (row.latitude === null || row.longitude === null ? 'not_captured' : 'captured'),
+    createdAtIso: row.issue_at ?? row.created_at ?? new Date().toISOString(),
   };
 }
 
@@ -1092,6 +1269,7 @@ function mapFuelAssetRow(row: FuelAssetRow): FuelLedgerAsset {
     selectedMethod: asText(row.selected_method ?? specs.selectedMethod ?? specs.selected_method),
     currentValue: normalizeMoneyValue(row.current_value ?? specs.currentValue ?? specs.current_value ?? specs.valuationValue ?? specs.valuation_value),
     canReceiveFuel: inferAssetCanReceiveFuel(row),
+    isActive: (asText(row.qr_status) || 'active').toLowerCase() === 'active',
     usageMetric: inferAssetUsageMetric(row),
   };
 }
@@ -1109,6 +1287,10 @@ function fuelStorageSelectSql(): string {
     notes,
     dipstick_note,
     dipstick_note_updated_at,
+    balance_verification_status,
+    balance_check_reason,
+    balance_check_source_event_id::text as balance_check_source_event_id,
+    balance_check_marked_at,
     status,
     public_fuel_storage_code,
     pin_hash,
@@ -1160,6 +1342,28 @@ function fuelEventSelectSql(): string {
     e.latitude,
     e.longitude,
     e.location_text,
+    e.is_late_entry,
+    e.issue_date,
+    e.issue_time::text as issue_time,
+    e.issue_time_recorded,
+    e.issue_at,
+    e.entry_added_at,
+    e.added_by_user_id,
+    e.added_by_name,
+    e.added_by_email,
+    e.asset_usage_metric,
+    e.late_entry_reason,
+    e.evidence_type,
+    e.evidence_reference,
+    e.evidence_status,
+    e.evidence_id::text as evidence_id,
+    (select evidence.file_name from public.fuel_late_entry_evidence evidence where evidence.id = e.evidence_id limit 1) as evidence_file_name,
+    e.tank_balance_treatment,
+    e.linked_adjustment_event_id::text as linked_adjustment_event_id,
+    e.linked_missing_entry_event_id::text as linked_missing_entry_event_id,
+    e.adjustment_kind,
+    e.idempotency_key,
+    e.gps_capture_status,
     e.created_at
   `;
 }
@@ -1714,6 +1918,114 @@ export async function ensureFuelLedgerTables(): Promise<void> {
     create index if not exists idx_fuel_slips_storage_created
       on public.fuel_slips(storage_id, created_at desc)
       where storage_id is not null;
+
+    alter table if exists public.fuel_storage_units
+      add column if not exists balance_verification_status text not null default 'verified',
+      add column if not exists balance_check_reason text,
+      add column if not exists balance_check_source_event_id uuid,
+      add column if not exists balance_check_marked_at timestamptz;
+
+    update public.fuel_storage_units
+    set balance_verification_status = case
+      when lower(coalesce(balance_verification_status, '')) = 'needs_check' then 'needs_check'
+      else 'verified'
+    end;
+
+    alter table if exists public.fuel_storage_units drop constraint if exists fuel_storage_units_balance_verification_status_check;
+    alter table if exists public.fuel_storage_units
+      add constraint fuel_storage_units_balance_verification_status_check
+      check (balance_verification_status in ('verified', 'needs_check'));
+
+    alter table if exists public.fuel_storage_events
+      add column if not exists is_late_entry boolean not null default false,
+      add column if not exists issue_date date,
+      add column if not exists issue_time time without time zone,
+      add column if not exists issue_time_recorded boolean not null default true,
+      add column if not exists issue_at timestamptz,
+      add column if not exists entry_added_at timestamptz not null default now(),
+      add column if not exists added_by_user_id text,
+      add column if not exists added_by_name text,
+      add column if not exists added_by_email text,
+      add column if not exists asset_usage_metric text,
+      add column if not exists late_entry_reason text,
+      add column if not exists evidence_type text,
+      add column if not exists evidence_reference text,
+      add column if not exists evidence_status text,
+      add column if not exists evidence_id uuid,
+      add column if not exists tank_balance_treatment text,
+      add column if not exists linked_adjustment_event_id uuid,
+      add column if not exists linked_missing_entry_event_id uuid,
+      add column if not exists adjustment_kind text,
+      add column if not exists idempotency_key text,
+      add column if not exists gps_capture_status text;
+
+    update public.fuel_storage_events
+    set
+      issue_date = coalesce(issue_date, (created_at at time zone 'Africa/Johannesburg')::date),
+      issue_at = coalesce(issue_at, created_at),
+      entry_added_at = coalesce(entry_added_at, created_at),
+      gps_capture_status = coalesce(nullif(gps_capture_status, ''), case when latitude is null or longitude is null then 'not_captured' else 'captured' end)
+    where issue_date is null or issue_at is null or entry_added_at is null or gps_capture_status is null or gps_capture_status = '';
+
+    alter table if exists public.fuel_storage_events drop constraint if exists fuel_storage_events_asset_usage_metric_check;
+    alter table if exists public.fuel_storage_events
+      add constraint fuel_storage_events_asset_usage_metric_check
+      check (asset_usage_metric is null or asset_usage_metric in ('hours', 'km', 'percentage', 'none'));
+
+    alter table if exists public.fuel_storage_events drop constraint if exists fuel_storage_events_evidence_status_check;
+    alter table if exists public.fuel_storage_events
+      add constraint fuel_storage_events_evidence_status_check
+      check (evidence_status is null or evidence_status in ('internal_record_only', 'evidence_supplied_review_required'));
+
+    alter table if exists public.fuel_storage_events drop constraint if exists fuel_storage_events_tank_balance_treatment_check;
+    alter table if exists public.fuel_storage_events
+      add constraint fuel_storage_events_tank_balance_treatment_check
+      check (tank_balance_treatment is null or tank_balance_treatment in ('already_reflected', 'not_yet_reflected', 'not_sure'));
+
+    alter table if exists public.fuel_storage_events drop constraint if exists fuel_storage_events_adjustment_kind_check;
+    alter table if exists public.fuel_storage_events
+      add constraint fuel_storage_events_adjustment_kind_check
+      check (adjustment_kind is null or adjustment_kind in ('late_entry_balance_correction', 'balance_reconciliation'));
+
+    create unique index if not exists idx_fuel_storage_events_user_idempotency
+      on public.fuel_storage_events(user_id, idempotency_key)
+      where idempotency_key is not null;
+
+    create index if not exists idx_fuel_storage_events_user_issue_date
+      on public.fuel_storage_events(user_id, issue_date desc, issue_at desc, id desc);
+
+    alter table if exists public.asset_scan_events
+      add column if not exists source_type text,
+      add column if not exists source_label text,
+      add column if not exists issue_date date,
+      add column if not exists issue_time text,
+      add column if not exists issue_time_recorded boolean not null default true,
+      add column if not exists asset_usage_reading numeric(14,2),
+      add column if not exists asset_usage_metric text,
+      add column if not exists entry_added_at timestamptz,
+      add column if not exists added_by_user_id text;
+
+    alter table if exists public.asset_scan_events drop constraint if exists asset_scan_events_asset_usage_metric_check;
+    alter table if exists public.asset_scan_events
+      add constraint asset_scan_events_asset_usage_metric_check
+      check (asset_usage_metric is null or asset_usage_metric in ('hours', 'km', 'percentage', 'none'));
+
+    create table if not exists public.fuel_late_entry_evidence (
+      id uuid primary key default gen_random_uuid(),
+      user_id text not null,
+      fuel_storage_event_id uuid not null unique references public.fuel_storage_events(id) on delete restrict,
+      file_name text not null,
+      content_type text not null,
+      byte_size integer not null,
+      data bytea not null,
+      created_at timestamptz not null default now()
+    );
+
+    create unique index if not exists idx_fuel_late_entry_evidence_event
+      on public.fuel_late_entry_evidence(fuel_storage_event_id);
+
+    create index if not exists idx_fuel_late_entry_evidence_user_created
+      on public.fuel_late_entry_evidence(user_id, created_at desc);
   `);
 
   fuelLedgerTablesEnsured = true;
@@ -1777,6 +2089,7 @@ export async function listFuelAssetsForUser(userId: string): Promise<FuelLedgerA
         coalesce(to_jsonb(a)->>'serial_number', to_jsonb(a)->>'serialNumber', '') as serial_number,
         to_jsonb(a)->>'plate_label' as plate_label,
         to_jsonb(a)->>'public_asset_code' as public_asset_code,
+        coalesce(nullif(lower(to_jsonb(a)->>'qr_status'), ''), 'active') as qr_status,
         a.hours,
         coalesce(to_jsonb(a)->>'life_worked_percent', to_jsonb(a)->'specs_json'->>'life_worked_percent', to_jsonb(a)->'specs_json'->>'lifeWorkedPercent') as life_worked_percent,
         to_jsonb(a)->>'fuel_percent' as fuel_percent,
@@ -1930,6 +2243,28 @@ function mapFuelSlipToReportEvent(slip: FuelSlipTransaction): FuelLedgerEvent {
     latitude: null,
     longitude: null,
     locationText: '',
+    isLateEntry: false,
+    issueDate: slip.documentDate,
+    issueTime: slip.documentTime,
+    issueTimeRecorded: Boolean(slip.documentTime),
+    issueAtIso: fuelSlipReportDateIso(slip),
+    entryAddedAtIso: slip.createdAtIso,
+    addedByUserId: '',
+    addedByName: '',
+    addedByEmail: '',
+    assetUsageMetric: slip.odometerReading !== null ? 'km' : slip.hourMeterReading !== null ? 'hours' : '',
+    lateEntryReason: '',
+    evidenceType: '',
+    evidenceReference: '',
+    evidenceStatus: '',
+    evidenceFileName: '',
+    evidenceFileUrl: '',
+    tankBalanceTreatment: '',
+    linkedAdjustmentEventId: '',
+    linkedMissingEntryEventId: '',
+    adjustmentKind: '',
+    idempotencyKey: '',
+    gpsCaptureStatus: '',
     createdAtIso: fuelSlipReportDateIso(slip),
   };
 }
@@ -2454,6 +2789,21 @@ export async function deleteFuelStorage(userId: string, storageId: string): Prom
       throw new Error('Fuel storage not found.');
     }
 
+    const protectedAuditResult = await client.query<{ count: string | number }>(
+      `
+        select count(*)::text as count
+        from public.fuel_storage_events
+        where user_id = $1
+          and storage_id::text = $2
+          and (is_late_entry = true or linked_missing_entry_event_id is not null or linked_adjustment_event_id is not null)
+      `,
+      [userId, storageId],
+    );
+
+    if (Number(protectedAuditResult.rows[0]?.count || 0) > 0) {
+      throw new Error('This tank contains append-only late-entry audit records and cannot be hard deleted. Archive it instead.');
+    }
+
     await client.query(
       `
         delete from public.asset_scan_events
@@ -2902,6 +3252,7 @@ export async function recordFuelAssetIssue(
           a.title,
           to_jsonb(a)->>'plate_label' as plate_label,
           to_jsonb(a)->>'public_asset_code' as public_asset_code,
+          coalesce(nullif(lower(to_jsonb(a)->>'qr_status'), ''), 'active') as qr_status,
           a.hours,
           to_jsonb(a)->>'fuel_percent' as fuel_percent,
           a.valuation_run_id,
@@ -3072,6 +3423,644 @@ export async function recordFuelAssetIssue(
   } finally {
     client.release();
   }
+}
+
+const LATE_ENTRY_EVIDENCE_TYPES = new Set([
+  'handwritten_dispensing_sheet',
+  'pump_or_meter_record',
+  'supplier_slip_or_invoice',
+  'operator_confirmation',
+  'other_supporting_record',
+  'no_supporting_record',
+]);
+const LATE_ENTRY_EVIDENCE_MIME_TYPES = new Set(['application/pdf', 'image/jpeg', 'image/png', 'image/webp']);
+const LATE_ENTRY_EVIDENCE_EXTENSIONS = new Set(['.pdf', '.jpg', '.jpeg', '.png', '.webp']);
+const MAX_LATE_ENTRY_EVIDENCE_BYTES = 12 * 1024 * 1024;
+
+function normalizeLateEntryEvidenceType(value: unknown): string {
+  const normalized = asText(value).toLowerCase().replace(/[\s-]+/g, '_');
+  if (!normalized) return 'no_supporting_record';
+  if (!LATE_ENTRY_EVIDENCE_TYPES.has(normalized)) throw new Error('Choose a valid supporting-evidence type.');
+  return normalized;
+}
+
+function sanitizeLateEntryEvidenceFileName(value: unknown): string {
+  return (asText(value).replace(/[\\/\0\r\n]+/g, ' ').replace(/\s+/g, ' ') || 'fuel-entry-evidence').slice(0, 180);
+}
+
+function lateEntryEvidenceExtension(value: unknown): string {
+  const fileName = asText(value).toLowerCase();
+  const dotIndex = fileName.lastIndexOf('.');
+  return dotIndex >= 0 ? fileName.slice(dotIndex) : '';
+}
+
+async function normalizeLateEntryEvidenceFile(file: File | null | undefined): Promise<{
+  fileName: string;
+  contentType: string;
+  byteSize: number;
+  data: Buffer;
+} | null> {
+  if (!file) return null;
+
+  const fileName = sanitizeLateEntryEvidenceFileName(file.name);
+  const contentType = asText(file.type).toLowerCase();
+  const extension = lateEntryEvidenceExtension(fileName);
+  const byteSize = Number(file.size) || 0;
+
+  if (!LATE_ENTRY_EVIDENCE_EXTENSIONS.has(extension)) {
+    throw new Error('Supporting evidence must be a PDF, JPG, PNG or WEBP file.');
+  }
+  const expectedContentType = extension === '.pdf'
+    ? 'application/pdf'
+    : extension === '.png'
+      ? 'image/png'
+      : extension === '.webp'
+        ? 'image/webp'
+        : 'image/jpeg';
+  if (contentType && contentType !== 'application/octet-stream' && !LATE_ENTRY_EVIDENCE_MIME_TYPES.has(contentType)) {
+    throw new Error('Supporting evidence must be a PDF, JPG, PNG or WEBP file.');
+  }
+  if (contentType && contentType !== 'application/octet-stream' && contentType !== expectedContentType) {
+    throw new Error('The supporting-evidence file extension does not match its file type.');
+  }
+  if (!byteSize) throw new Error('The supporting evidence file is empty.');
+  if (byteSize > MAX_LATE_ENTRY_EVIDENCE_BYTES) throw new Error('Supporting evidence must be 12 MB or smaller.');
+
+  const data = Buffer.from(await file.arrayBuffer());
+  const hasExpectedSignature = expectedContentType === 'application/pdf'
+    ? data.subarray(0, 5).toString('ascii') === '%PDF-'
+    : expectedContentType === 'image/png'
+      ? data.length >= 8 && data.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))
+      : expectedContentType === 'image/webp'
+        ? data.length >= 12 && data.subarray(0, 4).toString('ascii') === 'RIFF' && data.subarray(8, 12).toString('ascii') === 'WEBP'
+        : data.length >= 3 && data[0] === 0xff && data[1] === 0xd8 && data[2] === 0xff;
+
+  if (!hasExpectedSignature) {
+    throw new Error('The supporting-evidence file content does not match its PDF or image format.');
+  }
+
+  return {
+    fileName,
+    contentType: expectedContentType,
+    byteSize,
+    data,
+  };
+}
+
+async function hydrateFuelStorageEvent(client: PoolClient, eventId: string): Promise<FuelLedgerEvent> {
+  const result = await client.query<FuelEventRow>(
+    `
+      select ${fuelEventSelectSql()}
+      from public.fuel_storage_events e
+      left join public.fuel_storage_units s on s.id = e.storage_id
+      left join public.asset_register_items a on a.id::text = e.asset_register_item_id
+      left join public.fuel_slips fs on fs.id = e.fuel_slip_id
+      where e.id::text = $1
+      limit 1
+    `,
+    [eventId],
+  );
+  if (!result.rows[0]) throw new Error('Failed to load the saved fuel event.');
+  return mapFuelEventRow(result.rows[0]);
+}
+
+function validateLateEntryActivity(value: unknown): string {
+  const activity = asText(value).replace(/\s+/g, ' ').slice(0, 160);
+  const vague = new Set(['work', 'other', 'general', 'fuel', 'activity', 'n/a', 'na', 'none']);
+  if (activity.length < 3 || vague.has(activity.toLowerCase())) {
+    throw new Error('Enter the specific activity the fuel was used for.');
+  }
+  return activity;
+}
+
+function usageMetricAllowedForAsset(assetMetric: FuelLedgerAsset['usageMetric'], selectedMetric: FuelUsageMetric): boolean {
+  if (selectedMetric === 'none') return true;
+  if (assetMetric === 'both') return selectedMetric === 'hours' || selectedMetric === 'km';
+  return assetMetric === selectedMetric;
+}
+
+function normalizeLateEntryUsageReading(metric: FuelUsageMetric, value: unknown): number | null {
+  if (metric === 'none') return null;
+  const reading = parseFuelSlipDecimal(value, 2);
+  if (reading === null || reading < 0) {
+    throw new Error(`Enter the historical ${metric === 'km' ? 'kilometre' : metric === 'hours' ? 'hour' : 'percentage'} reading or choose No meter / Not recorded.`);
+  }
+  if (metric === 'percentage' && reading > 100) throw new Error('Percentage usage must be between 0 and 100.');
+  return Math.round(reading * 100) / 100;
+}
+
+function normalizeRequiredLateEntryFuelPercent(value: unknown, label: 'before' | 'after'): number {
+  const parsed = parseFuelSlipDecimal(value, 2);
+  if (parsed === null || parsed < 0 || parsed > 100) {
+    throw new Error(`Fuel percentage ${label} must be between 0 and 100.`);
+  }
+  return Math.round(parsed);
+}
+
+function normalizeMeasuredCurrentLitres(value: unknown): number {
+  const parsed = asNumber(value);
+  if (parsed === null || parsed < 0) throw new Error('Enter the physically measured current litres.');
+  return roundLitres(parsed);
+}
+
+async function validateChronologicalLateEntryUsage(
+  client: PoolClient,
+  input: { userId: string; assetId: string; issueDate: string; issueAtIso: string; issueTimeRecorded: boolean; usageMetric: FuelUsageMetric; usageReading: number | null },
+): Promise<void> {
+  if (input.usageMetric === 'none' || input.usageMetric === 'percentage' || input.usageReading === null) return;
+
+  const result = await client.query<{ relation: 'previous' | 'next'; reading: string | number | null; event_date: string | null }>(
+    `
+      with readings as (
+        select
+          asset_usage_reading,
+          coalesce(issue_date, (created_at at time zone 'Africa/Johannesburg')::date) as event_date,
+          coalesce(issue_at, created_at) as event_at,
+          asset_usage_metric
+        from public.fuel_storage_events
+        where user_id = $1
+          and asset_register_item_id = $2
+          and event_type = 'asset_issue'
+          and asset_usage_reading is not null
+          and coalesce(asset_usage_metric, $4) = $4
+      ), previous_reading as (
+        select 'previous'::text as relation, asset_usage_reading as reading, event_date::text
+        from readings
+        where (event_date < $3::date)
+           or ($5::boolean and event_date = $3::date and event_at < $6::timestamptz)
+        order by event_date desc, event_at desc
+        limit 1
+      ), next_reading as (
+        select 'next'::text as relation, asset_usage_reading as reading, event_date::text
+        from readings
+        where (event_date > $3::date)
+           or ($5::boolean and event_date = $3::date and event_at > $6::timestamptz)
+        order by event_date asc, event_at asc
+        limit 1
+      )
+      select relation, reading, event_date from previous_reading
+      union all
+      select relation, reading, event_date from next_reading
+    `,
+    [input.userId, input.assetId, input.issueDate, input.usageMetric, input.issueTimeRecorded, input.issueAtIso],
+  );
+
+  for (const row of result.rows) {
+    const reading = normalizeUsageReading(row.reading);
+    if (reading === null) continue;
+    if (row.relation === 'previous' && input.usageReading < reading) {
+      throw new Error(`The historical usage reading is lower than the nearest earlier fuel reading (${reading.toLocaleString('en-ZA')}).`);
+    }
+    if (row.relation === 'next' && input.usageReading > reading) {
+      throw new Error(`The historical usage reading is higher than the nearest later fuel reading (${reading.toLocaleString('en-ZA')}).`);
+    }
+  }
+}
+
+export type RecordMissingFuelAssetIssueInput = {
+  userId: string;
+  addedByName?: unknown;
+  addedByEmail?: unknown;
+  storageId: string;
+  assetId?: unknown;
+  issueDate?: unknown;
+  issueTime?: unknown;
+  issueTimeRecorded?: unknown;
+  usageMetric?: unknown;
+  usageReading?: unknown;
+  assetFuelPercentBefore?: unknown;
+  assetFuelPercentAfter?: unknown;
+  litres?: unknown;
+  operatorName?: unknown;
+  activityText?: unknown;
+  workAreaText?: unknown;
+  lateEntryReason?: unknown;
+  note?: unknown;
+  evidenceType?: unknown;
+  evidenceReference?: unknown;
+  evidenceFile?: File | null;
+  tankBalanceTreatment?: unknown;
+  idempotencyKey?: unknown;
+};
+
+export async function recordMissingFuelAssetIssue(
+  input: RecordMissingFuelAssetIssueInput,
+): Promise<{ storage: FuelLedgerStorage; event: FuelLedgerEvent; adjustmentEvent: FuelLedgerEvent | null }> {
+  await ensureFuelLedgerTables();
+
+  const userId = asText(input.userId);
+  const storageId = asText(input.storageId);
+  const assetId = asText(input.assetId);
+  const issueDate = normalizeHistoricalIssueDate(input.issueDate);
+  const issueTime = normalizeHistoricalIssueTime(input.issueTime, input.issueTimeRecorded);
+  const issueAtIso = buildJohannesburgIssueIso(issueDate, issueTime.time);
+  if (issueTime.recorded && new Date(issueAtIso).getTime() > Date.now()) {
+    throw new Error('Fuel issue date and time cannot be in the future.');
+  }
+  const usageMetric = normalizeFuelUsageMetric(input.usageMetric);
+  const usageReading = normalizeLateEntryUsageReading(usageMetric, input.usageReading);
+  const litres = normalizePositiveLitres(input.litres);
+  const fuelPercentBefore = normalizeRequiredLateEntryFuelPercent(input.assetFuelPercentBefore, 'before');
+  const fuelPercentAfter = normalizeRequiredLateEntryFuelPercent(input.assetFuelPercentAfter, 'after');
+  const operatorName = asText(input.operatorName).replace(/\s+/g, ' ').slice(0, 100);
+  const activityText = validateLateEntryActivity(input.activityText);
+  const workAreaText = asText(input.workAreaText).replace(/\s+/g, ' ').slice(0, 180);
+  const lateEntryReason = asText(input.lateEntryReason).replace(/\s+/g, ' ').slice(0, 500);
+  const note = asText(input.note).slice(0, 2000);
+  const evidenceType = normalizeLateEntryEvidenceType(input.evidenceType);
+  const evidenceReference = asText(input.evidenceReference).slice(0, 240);
+  const evidenceFile = await normalizeLateEntryEvidenceFile(input.evidenceFile);
+  const evidenceStatus: FuelEvidenceStatus = evidenceFile || evidenceReference
+    ? 'evidence_supplied_review_required'
+    : 'internal_record_only';
+  const tankBalanceTreatment = normalizeFuelTankBalanceTreatment(input.tankBalanceTreatment);
+  const idempotencyKey = normalizeClientEventId(input.idempotencyKey);
+  const addedByName = asText(input.addedByName).slice(0, 160);
+  const addedByEmail = asText(input.addedByEmail).slice(0, 240);
+
+  if (!userId) throw new Error('A signed-in owner session is required.');
+  if (!storageId) throw new Error('Fuel storage is required.');
+  if (!assetId) throw new Error('Choose the asset that received the fuel.');
+  if (!idempotencyKey) throw new Error('A valid idempotency key is required. Refresh the page and try again.');
+  if (fuelPercentAfter < fuelPercentBefore) throw new Error('Fuel percentage after cannot be lower than fuel percentage before.');
+  if (operatorName.length < 2) throw new Error('Enter the operator or manager name.');
+  if (workAreaText.length < 2) throw new Error('Enter the historical work area or location.');
+  if (lateEntryReason.length < 5) throw new Error('Explain why this fuel entry was entered late.');
+  if (evidenceType === 'no_supporting_record' && (evidenceFile || evidenceReference)) {
+    throw new Error('Choose the correct evidence type for the supporting file or reference.');
+  }
+
+  const db = getDb();
+  const client = await db.connect();
+  let committed = false;
+
+  try {
+    await client.query('BEGIN');
+
+    const storageResult = await client.query<FuelStorageRow>(
+      `select ${fuelStorageSelectSql()} from public.fuel_storage_units where user_id = $1 and id::text = $2 and status = 'active' for update`,
+      [userId, storageId],
+    );
+    const storage = storageResult.rows[0] ? mapStorageRow(storageResult.rows[0]) : null;
+    if (!storage) throw new Error('Fuel storage not found.');
+
+    const duplicate = await client.query<{ id: string }>(
+      `select id::text from public.fuel_storage_events where user_id = $1 and idempotency_key = $2 limit 1`,
+      [userId, idempotencyKey],
+    );
+    if (duplicate.rows[0]?.id) {
+      const event = await hydrateFuelStorageEvent(client, duplicate.rows[0].id);
+      if (!event.isLateEntry || event.storageId !== storageId || event.assetId !== assetId) {
+        throw new Error('This idempotency key has already been used for a different fuel event. Refresh the page and try again.');
+      }
+      const adjustmentEvent = event.linkedAdjustmentEventId ? await hydrateFuelStorageEvent(client, event.linkedAdjustmentEventId) : null;
+      await client.query('COMMIT');
+      committed = true;
+      return { storage, event, adjustmentEvent };
+    }
+
+    const assetResult = await client.query<FuelAssetRow>(
+      `
+        select
+          a.id::text, a.title, a.kind, a.brand_name, a.model_name, a.typed_model_name,
+          coalesce(ef.family_label, '') as equipment_family_label,
+          coalesce(to_jsonb(a)->>'serial_number', to_jsonb(a)->>'serialNumber', '') as serial_number,
+          to_jsonb(a)->>'plate_label' as plate_label,
+          to_jsonb(a)->>'public_asset_code' as public_asset_code,
+          coalesce(nullif(lower(to_jsonb(a)->>'qr_status'), ''), 'active') as qr_status,
+          a.hours,
+          coalesce(to_jsonb(a)->>'life_worked_percent', to_jsonb(a)->'specs_json'->>'life_worked_percent', to_jsonb(a)->'specs_json'->>'lifeWorkedPercent') as life_worked_percent,
+          to_jsonb(a)->>'fuel_percent' as fuel_percent,
+          coalesce(to_jsonb(a)->>'year_model', to_jsonb(a)->>'yearModel', to_jsonb(a)->>'year') as year_model,
+          coalesce(to_jsonb(a)->>'condition', '') as condition,
+          coalesce(to_jsonb(a)->>'selected_method', to_jsonb(a)->>'selectedMethod', to_jsonb(a)->>'method', '') as selected_method,
+          coalesce(to_jsonb(a)->>'current_value', to_jsonb(a)->>'currentValue', to_jsonb(a)->>'selected_value_ex_vat', to_jsonb(a)->>'selectedValueExVat', to_jsonb(a)->>'selected_value', to_jsonb(a)->>'value', to_jsonb(a)->>'opening_value') as current_value,
+          ef.is_propelled as family_is_propelled,
+          coalesce(a.specs_json, '{}'::jsonb) as specs_json
+        from public.asset_register_items a
+        left join public.valuation_runs vr on vr.id = a.valuation_run_id
+        left join public.equipment_families ef on ef.id = coalesce(a.equipment_family_id, vr.equipment_family_id)
+        where a.user_id = $1
+          and a.id::text = $2
+          and coalesce(nullif(lower(to_jsonb(a)->>'qr_status'), ''), 'active') = 'active'
+        for update of a
+      `,
+      [userId, assetId],
+    );
+    const asset = assetResult.rows[0] ? mapFuelAssetRow(assetResult.rows[0]) : null;
+    if (!asset) throw new Error('Asset not found or is no longer active.');
+    if (!asset.canReceiveFuel) throw new Error('This asset is not eligible to receive fuel.');
+    if (!usageMetricAllowedForAsset(asset.usageMetric, usageMetric)) {
+      throw new Error(`The selected usage metric does not match this asset's saved usage metric (${asset.usageMetric}).`);
+    }
+
+    await validateChronologicalLateEntryUsage(client, {
+      userId,
+      assetId,
+      issueDate,
+      issueAtIso,
+      issueTimeRecorded: issueTime.recorded,
+      usageMetric,
+      usageReading,
+    });
+
+    if (tankBalanceTreatment === 'not_yet_reflected' && storage.currentLitres + 0.0001 < litres) {
+      throw new Error('The current recorded tank stock is not enough for this deduction. Choose I’m not sure and reconcile the tank physically.');
+    }
+
+    const eventInsert = await client.query<{ id: string }>(
+      `
+        insert into public.fuel_storage_events (
+          storage_id, user_id, event_type, source_type, source_label, asset_register_item_id, litres,
+          storage_level_before_litres, storage_level_after_litres,
+          asset_fuel_percent_before, asset_fuel_percent_after, asset_usage_reading, asset_usage_metric,
+          operator_name, activity_text, work_area_text, note, latitude, longitude, location_text,
+          client_event_id, idempotency_key, is_late_entry, issue_date, issue_time, issue_time_recorded, issue_at,
+          entry_added_at, added_by_user_id, added_by_name, added_by_email, late_entry_reason,
+          evidence_type, evidence_reference, evidence_status, tank_balance_treatment, gps_capture_status, created_at
+        )
+        values (
+          $1::uuid, $2, 'asset_issue', 'desktop_late_entry', 'Late Entry', $3, $4::numeric,
+          null, null, $5::integer, $6::integer, $7::numeric, $8,
+          $9, $10, $11, $12, null, null, $11,
+          $13, $13, true, $14::date, $15::time, $16::boolean, $17::timestamptz,
+          now(), $2, $18, $19, $20, $21, $22, $23, $24, 'not_captured_desktop_late_entry', $17::timestamptz
+        )
+        returning id::text
+      `,
+      [
+        storageId, userId, assetId, litres, fuelPercentBefore, fuelPercentAfter, usageReading, usageMetric,
+        operatorName, activityText, workAreaText, note || null, idempotencyKey, issueDate, issueTime.time,
+        issueTime.recorded, issueAtIso, addedByName || null, addedByEmail || null, lateEntryReason,
+        evidenceType, evidenceReference || null, evidenceStatus, tankBalanceTreatment,
+      ],
+    );
+    const eventId = eventInsert.rows[0]?.id;
+    if (!eventId) throw new Error('Failed to save the missing fuel entry.');
+
+    if (evidenceFile) {
+      const evidenceInsert = await client.query<{ id: string }>(
+        `
+          insert into public.fuel_late_entry_evidence (user_id, fuel_storage_event_id, file_name, content_type, byte_size, data)
+          values ($1, $2::uuid, $3, $4, $5::integer, $6::bytea)
+          returning id::text
+        `,
+        [userId, eventId, evidenceFile.fileName, evidenceFile.contentType, evidenceFile.byteSize, evidenceFile.data],
+      );
+      const evidenceId = evidenceInsert.rows[0]?.id;
+      if (!evidenceId) throw new Error('Failed to save the supporting evidence.');
+      await client.query(`update public.fuel_storage_events set evidence_id = $2::uuid where id::text = $1 and user_id = $3`, [eventId, evidenceId, userId]);
+    }
+
+    await client.query(
+      `
+        insert into public.asset_scan_events (
+          asset_id, actor_type, operator_name, activity_text, work_area_text, hours, fuel_percent,
+          fuel_litres, fuel_storage_id, fuel_storage_event_id, condition, note, photo_urls,
+          latitude, longitude, location_text, client_event_id, client_captured_at, synced_at,
+          source_type, source_label, issue_date, issue_time, issue_time_recorded,
+          asset_usage_reading, asset_usage_metric, entry_added_at, added_by_user_id, created_at
+        )
+        values (
+          $1::uuid, 'owner_session', $2, $3, $4,
+          case when $5 in ('hours', 'km') then $6::numeric else null end,
+          $7::integer, $8::numeric, $9::uuid, $10::uuid, null, $11, '[]'::jsonb,
+          null, null, $4, $12, $13::timestamptz, now(),
+          'desktop_late_entry', 'Late Entry', $14::date, $15, $16::boolean,
+          $6::numeric, $5, now(), $17, $13::timestamptz
+        )
+      `,
+      [
+        assetId, operatorName, activityText, workAreaText, usageMetric, usageReading, fuelPercentAfter,
+        litres, storageId, eventId, note || null, `late-entry:${idempotencyKey}`, issueAtIso,
+        issueDate, issueTime.time, issueTime.recorded, userId,
+      ],
+    );
+
+    let adjustmentEventId = '';
+    if (tankBalanceTreatment === 'not_yet_reflected') {
+      const storageAfter = roundLitres(storage.currentLitres - litres);
+      await client.query(`update public.fuel_storage_units set current_litres = $3::numeric, updated_at = now() where user_id = $1 and id::text = $2`, [userId, storageId, storageAfter]);
+      const adjustmentInsert = await client.query<{ id: string }>(
+        `
+          insert into public.fuel_storage_events (
+            storage_id, user_id, event_type, source_type, source_label, litres,
+            storage_level_before_litres, storage_level_after_litres, operator_name, note,
+            linked_missing_entry_event_id, adjustment_kind, idempotency_key,
+            issue_date, issue_time, issue_time_recorded, issue_at, entry_added_at,
+            added_by_user_id, added_by_name, added_by_email, gps_capture_status, created_at
+          )
+          values (
+            $1::uuid, $2, 'adjustment', 'late_entry_balance_adjustment', 'Late Entry Balance Adjustment', $3::numeric,
+            $4::numeric, $5::numeric, $6, $7, $8::uuid, 'late_entry_balance_correction', $9,
+            (now() at time zone 'Africa/Johannesburg')::date, (now() at time zone 'Africa/Johannesburg')::time,
+            true, now(), now(), $2, $10, $11, 'not_applicable', now()
+          )
+          returning id::text
+        `,
+        [
+          storageId, userId, litres, storage.currentLitres, storageAfter, addedByName || operatorName,
+          `Current book balance corrected for late fuel entry ${eventId}. This adjustment is not an additional fuel issue.`,
+          eventId, `${idempotencyKey}:balance-adjustment`, addedByName || null, addedByEmail || null,
+        ],
+      );
+      adjustmentEventId = adjustmentInsert.rows[0]?.id ?? '';
+      if (!adjustmentEventId) throw new Error('Failed to save the linked current-balance adjustment.');
+      await client.query(`update public.fuel_storage_events set linked_adjustment_event_id = $2::uuid where id::text = $1 and user_id = $3`, [eventId, adjustmentEventId, userId]);
+    } else if (tankBalanceTreatment === 'not_sure') {
+      await client.query(
+        `
+          update public.fuel_storage_units
+          set balance_verification_status = 'needs_check',
+              balance_check_reason = $3,
+              balance_check_source_event_id = $4::uuid,
+              balance_check_marked_at = now(),
+              updated_at = now()
+          where user_id = $1 and id::text = $2
+        `,
+        [userId, storageId, `Balance needs checking after late fuel entry for ${asset.title}.`, eventId],
+      );
+    }
+
+    const updatedStorageResult = await client.query<FuelStorageRow>(
+      `select ${fuelStorageSelectSql()} from public.fuel_storage_units where user_id = $1 and id::text = $2 limit 1`,
+      [userId, storageId],
+    );
+    const event = await hydrateFuelStorageEvent(client, eventId);
+    const adjustmentEvent = adjustmentEventId ? await hydrateFuelStorageEvent(client, adjustmentEventId) : null;
+
+    await client.query('COMMIT');
+    committed = true;
+
+    return {
+      storage: mapStorageRow(updatedStorageResult.rows[0]),
+      event,
+      adjustmentEvent,
+    };
+  } catch (error) {
+    if (!committed) await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export type ReconcileFuelStorageBalanceInput = {
+  userId: string;
+  storageId: string;
+  currentLitres?: unknown;
+  measurementDate?: unknown;
+  measurementTime?: unknown;
+  note?: unknown;
+  addedByName?: unknown;
+  addedByEmail?: unknown;
+  idempotencyKey?: unknown;
+};
+
+export async function reconcileFuelStorageBalance(
+  input: ReconcileFuelStorageBalanceInput,
+): Promise<{ storage: FuelLedgerStorage; event: FuelLedgerEvent }> {
+  await ensureFuelLedgerTables();
+  const userId = asText(input.userId);
+  const storageId = asText(input.storageId);
+  const currentLitres = normalizeMeasuredCurrentLitres(input.currentLitres);
+  const measurementDate = normalizeHistoricalIssueDate(input.measurementDate);
+  const measurementTimeText = asText(input.measurementTime);
+  const measurementTime = normalizeHistoricalIssueTime(measurementTimeText, true);
+  if (!measurementTime.recorded || !measurementTime.time) throw new Error('Enter the physical measurement time.');
+  const measuredAtIso = buildJohannesburgIssueIso(measurementDate, measurementTime.time);
+  if (new Date(measuredAtIso).getTime() > Date.now()) throw new Error('Measurement date and time cannot be in the future.');
+  const note = asText(input.note).slice(0, 1000);
+  const addedByName = asText(input.addedByName).slice(0, 160);
+  const addedByEmail = asText(input.addedByEmail).slice(0, 240);
+  const idempotencyKey = normalizeClientEventId(input.idempotencyKey);
+  if (!userId || !storageId || !idempotencyKey) throw new Error('A valid signed-in reconciliation request is required.');
+
+  const db = getDb();
+  const client = await db.connect();
+  let committed = false;
+  try {
+    await client.query('BEGIN');
+    const storageResult = await client.query<FuelStorageRow>(
+      `select ${fuelStorageSelectSql()} from public.fuel_storage_units where user_id = $1 and id::text = $2 and status = 'active' for update`,
+      [userId, storageId],
+    );
+    const storage = storageResult.rows[0] ? mapStorageRow(storageResult.rows[0]) : null;
+    if (!storage) throw new Error('Fuel storage not found.');
+
+    const duplicate = await client.query<{ id: string }>(`select id::text from public.fuel_storage_events where user_id = $1 and idempotency_key = $2 limit 1`, [userId, idempotencyKey]);
+    if (duplicate.rows[0]?.id) {
+      const event = await hydrateFuelStorageEvent(client, duplicate.rows[0].id);
+      if (event.storageId !== storageId || event.adjustmentKind !== 'balance_reconciliation') {
+        throw new Error('This idempotency key has already been used for a different fuel event. Refresh the page and try again.');
+      }
+      await client.query('COMMIT');
+      committed = true;
+      return { storage, event };
+    }
+
+    if (!storage.balanceNeedsChecking) throw new Error('This tank is not currently flagged for reconciliation.');
+    if (storage.capacityLitres !== null && currentLitres > storage.capacityLitres + 0.001) {
+      throw new Error(`Measured litres cannot exceed the fixed tank capacity of ${storage.capacityLitres.toLocaleString('en-ZA')} L.`);
+    }
+
+    const linkedMissingEventId = storage.balanceCheckSourceEventId || null;
+    const difference = roundLitres(Math.abs(currentLitres - storage.currentLitres));
+    const inserted = await client.query<{ id: string }>(
+      `
+        insert into public.fuel_storage_events (
+          storage_id, user_id, event_type, source_type, source_label, litres,
+          storage_level_before_litres, storage_level_after_litres, operator_name, note,
+          linked_missing_entry_event_id, adjustment_kind, idempotency_key,
+          issue_date, issue_time, issue_time_recorded, issue_at, entry_added_at,
+          added_by_user_id, added_by_name, added_by_email, gps_capture_status, created_at
+        )
+        values (
+          $1::uuid, $2, 'adjustment', 'balance_reconciliation', 'Balance Reconciliation', $3::numeric,
+          $4::numeric, $5::numeric, $6, $7, $8::uuid, 'balance_reconciliation', $9,
+          $10::date, $11::time, true, $12::timestamptz, now(), $2, $6, $13, 'not_applicable', $12::timestamptz
+        )
+        returning id::text
+      `,
+      [
+        storageId, userId, difference, storage.currentLitres, currentLitres, addedByName || 'Owner reconciliation',
+        note || 'Physical tank balance reconciliation.', linkedMissingEventId, idempotencyKey,
+        measurementDate, measurementTime.time, measuredAtIso, addedByEmail || null,
+      ],
+    );
+    const eventId = inserted.rows[0]?.id;
+    if (!eventId) throw new Error('Failed to save the tank reconciliation.');
+
+    await client.query(
+      `
+        update public.fuel_storage_units
+        set current_litres = $3::numeric,
+            balance_verification_status = 'verified',
+            balance_check_reason = null,
+            balance_check_source_event_id = null,
+            balance_check_marked_at = null,
+            updated_at = now()
+        where user_id = $1 and id::text = $2
+      `,
+      [userId, storageId, currentLitres],
+    );
+
+    const updatedStorageResult = await client.query<FuelStorageRow>(`select ${fuelStorageSelectSql()} from public.fuel_storage_units where user_id = $1 and id::text = $2 limit 1`, [userId, storageId]);
+    const event = await hydrateFuelStorageEvent(client, eventId);
+    await client.query('COMMIT');
+    committed = true;
+    return { storage: mapStorageRow(updatedStorageResult.rows[0]), event };
+  } catch (error) {
+    if (!committed) await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export type FuelLateEntryEvidenceFile = {
+  data: Buffer;
+  fileName: string;
+  contentType: string;
+  byteSize: number;
+};
+
+export async function getFuelLateEntryEvidence(userId: string, eventId: string): Promise<FuelLateEntryEvidenceFile | null> {
+  await ensureFuelLedgerTables();
+  const result = await getDb().query<{
+    data: Buffer | Uint8Array | string | null;
+    file_name: string | null;
+    content_type: string | null;
+    byte_size: string | number | null;
+  }>(
+    `
+      select evidence.data, evidence.file_name, evidence.content_type, evidence.byte_size
+      from public.fuel_late_entry_evidence evidence
+      join public.fuel_storage_events event on event.id = evidence.fuel_storage_event_id
+      where evidence.user_id = $1
+        and event.user_id = $1
+        and event.id::text = $2
+        and event.is_late_entry = true
+      limit 1
+    `,
+    [userId, eventId],
+  );
+  const row = result.rows[0];
+  if (!row?.data) return null;
+  const data = Buffer.isBuffer(row.data)
+    ? row.data
+    : row.data instanceof Uint8Array
+      ? Buffer.from(row.data)
+      : typeof row.data === 'string' && row.data.startsWith('\\x')
+        ? Buffer.from(row.data.slice(2), 'hex')
+        : Buffer.from(String(row.data), 'binary');
+  if (!data.length) return null;
+  return {
+    data,
+    fileName: sanitizeLateEntryEvidenceFileName(row.file_name),
+    contentType: asText(row.content_type) || 'application/octet-stream',
+    byteSize: Math.max(0, Math.round(Number(row.byte_size) || data.length)),
+  };
 }
 
 

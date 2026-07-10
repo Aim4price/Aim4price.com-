@@ -7,6 +7,7 @@ type Queryable = {
 
 const USER_ID_TABLES = [
   'asset_register_uploads',
+  'fuel_late_entry_evidence',
   'fuel_storage_events',
   'fuel_storage_units',
   'asset_register_items',

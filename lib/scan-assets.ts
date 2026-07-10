@@ -81,6 +81,24 @@ export type ScanEventRecord = {
   assetFuelPercentBefore: number | null;
   assetFuelPercentAfter: number | null;
   assetUsageReading: number | null;
+  assetUsageMetric: "hours" | "km" | "percentage" | "none" | "";
+  isLateEntry: boolean;
+  sourceType: string;
+  sourceLabel: string;
+  issueDate: string;
+  issueTime: string;
+  issueTimeRecorded: boolean;
+  entryAddedAtIso: string | null;
+  addedByName: string;
+  addedByEmail: string;
+  lateEntryReason: string;
+  evidenceType: string;
+  evidenceReference: string;
+  evidenceStatus: string;
+  evidenceFileName: string;
+  evidenceFileUrl: string;
+  tankBalanceTreatment: string;
+  gpsCaptureStatus: string;
   condition: string;
   note: string;
   photoUrls: string[];
@@ -201,6 +219,23 @@ type ScanEventRow = {
   asset_fuel_percent_before: string | number | null;
   asset_fuel_percent_after: string | number | null;
   asset_usage_reading: string | number | null;
+  asset_usage_metric?: string | null;
+  is_late_entry?: boolean | string | number | null;
+  source_type?: string | null;
+  source_label?: string | null;
+  issue_date?: string | null;
+  issue_time?: string | null;
+  issue_time_recorded?: boolean | string | number | null;
+  entry_added_at?: string | null;
+  added_by_name?: string | null;
+  added_by_email?: string | null;
+  late_entry_reason?: string | null;
+  evidence_type?: string | null;
+  evidence_reference?: string | null;
+  evidence_status?: string | null;
+  evidence_file_name?: string | null;
+  tank_balance_treatment?: string | null;
+  gps_capture_status?: string | null;
   condition: string | null;
   note: string | null;
   photo_urls: unknown;
@@ -920,6 +955,24 @@ function mapScanEventRow(row: ScanEventRow): ScanEventRecord {
     assetFuelPercentBefore: asNumber(row.asset_fuel_percent_before),
     assetFuelPercentAfter,
     assetUsageReading,
+    assetUsageMetric: row.asset_usage_metric === "hours" || row.asset_usage_metric === "km" || row.asset_usage_metric === "percentage" || row.asset_usage_metric === "none" ? row.asset_usage_metric : "",
+    isLateEntry: Boolean(asBoolean(row.is_late_entry)),
+    sourceType: asText(row.source_type),
+    sourceLabel: asText(row.source_label),
+    issueDate: asText(row.issue_date),
+    issueTime: asText(row.issue_time),
+    issueTimeRecorded: asBoolean(row.issue_time_recorded) !== false,
+    entryAddedAtIso: row.entry_added_at ?? null,
+    addedByName: asText(row.added_by_name),
+    addedByEmail: asText(row.added_by_email),
+    lateEntryReason: asText(row.late_entry_reason),
+    evidenceType: asText(row.evidence_type),
+    evidenceReference: asText(row.evidence_reference),
+    evidenceStatus: asText(row.evidence_status),
+    evidenceFileName: asText(row.evidence_file_name),
+    evidenceFileUrl: Boolean(asText(row.evidence_file_name)) && asId(row.fuel_storage_event_id) ? `/api/fuel/missing-entry-evidence/${encodeURIComponent(asId(row.fuel_storage_event_id))}` : "",
+    tankBalanceTreatment: asText(row.tank_balance_treatment),
+    gpsCaptureStatus: asText(row.gps_capture_status),
     condition: normalizeCondition(row.condition),
     note: asText(row.note),
     photoUrls: normalizePhotos(row.photo_urls),
@@ -1264,7 +1317,24 @@ export async function listScanEventsForAsset(
         fse.storage_level_after_litres as fuel_storage_level_after_litres,
         fse.asset_fuel_percent_before as asset_fuel_percent_before,
         fse.asset_fuel_percent_after as asset_fuel_percent_after,
-        fse.asset_usage_reading as asset_usage_reading,
+        coalesce(fse.asset_usage_reading, nullif(to_jsonb(e)->>'asset_usage_reading', '')::numeric) as asset_usage_reading,
+        coalesce(fse.asset_usage_metric, to_jsonb(e)->>'asset_usage_metric', '') as asset_usage_metric,
+        coalesce(fse.is_late_entry, false) as is_late_entry,
+        coalesce(fse.source_type, to_jsonb(e)->>'source_type', '') as source_type,
+        coalesce(fse.source_label, to_jsonb(e)->>'source_label', '') as source_label,
+        fse.issue_date::text as issue_date,
+        fse.issue_time::text as issue_time,
+        fse.issue_time_recorded as issue_time_recorded,
+        fse.entry_added_at::text as entry_added_at,
+        coalesce(fse.added_by_name, '') as added_by_name,
+        coalesce(fse.added_by_email, '') as added_by_email,
+        coalesce(fse.late_entry_reason, '') as late_entry_reason,
+        coalesce(fse.evidence_type, '') as evidence_type,
+        coalesce(fse.evidence_reference, '') as evidence_reference,
+        coalesce(fse.evidence_status, '') as evidence_status,
+        coalesce(evidence.file_name, '') as evidence_file_name,
+        coalesce(fse.tank_balance_treatment, '') as tank_balance_treatment,
+        coalesce(fse.gps_capture_status, '') as gps_capture_status,
         e.condition,
         e.note,
         e.photo_urls,
@@ -1278,6 +1348,8 @@ export async function listScanEventsForAsset(
         on fse.id::text = nullif(to_jsonb(e)->>'fuel_storage_event_id', '')
       left join public.fuel_storage_units fsu
         on fsu.id = fse.storage_id
+      left join public.fuel_late_entry_evidence evidence
+        on evidence.fuel_storage_event_id = fse.id and evidence.user_id = fse.user_id
       where ${whereClauses.join("\n        and ")}
       order by e.created_at desc, e.id desc
       limit ${safeLimit}
