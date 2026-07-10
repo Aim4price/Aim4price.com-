@@ -8,6 +8,7 @@ import {
   type ChangeEvent,
   type FormEvent,
 } from "react";
+import FieldManagerNavLink from "../../field-manager/field-manager-nav-link";
 import styles from "./page.module.css";
 import {
   createOfflineClientEventId,
@@ -27,6 +28,7 @@ type ServiceMode = "" | "checked" | "serviced" | "repaired";
 type PartnerType = "dealer" | "finance" | "insurance";
 type ShareLeadStep = "message" | "consent" | null;
 type ScanAccessResponseMode = "owner_session" | "scan_pin" | "field_manager";
+type ScheduledMaintenanceType = "service" | "checkup";
 
 type PartnerDirectoryEntry = {
   userId: string;
@@ -114,6 +116,11 @@ type ScanUploadResponse = {
 type SaveScanEventResponse = {
   ok: boolean;
   asset?: ScanSafeAsset;
+  scheduledMaintenanceCompletion?: {
+    maintenanceId: string;
+    completed: boolean;
+    nextMaintenanceId: string | null;
+  } | null;
   error?: string;
   pinRequired?: boolean;
 };
@@ -1497,10 +1504,16 @@ export default function ScanClient({
   publicAssetCode,
   fieldManagerMode = false,
   fieldManagerAssetId = null,
+  fieldManagerScheduledMaintenanceId = null,
+  fieldManagerScheduledMaintenanceType = null,
+  fieldManagerReturnTo = null,
 }: {
   publicAssetCode: string;
   fieldManagerMode?: boolean;
   fieldManagerAssetId?: string | null;
+  fieldManagerScheduledMaintenanceId?: string | null;
+  fieldManagerScheduledMaintenanceType?: string | null;
+  fieldManagerReturnTo?: string | null;
 }) {
   const normalizedCode = useMemo(
     () => normalizePublicAssetCode(publicAssetCode),
@@ -1510,6 +1523,27 @@ export default function ScanClient({
     () => String(fieldManagerAssetId ?? "").trim(),
     [fieldManagerAssetId],
   );
+  const normalizedScheduledMaintenanceId = useMemo(
+    () => String(fieldManagerScheduledMaintenanceId ?? "").trim(),
+    [fieldManagerScheduledMaintenanceId],
+  );
+  const normalizedScheduledMaintenanceType = useMemo<ScheduledMaintenanceType | null>(() => {
+    const normalized = String(fieldManagerScheduledMaintenanceType ?? "").trim().toLowerCase();
+    if (normalized === "checkup") return "checkup";
+    if (normalized === "service") return "service";
+    return null;
+  }, [fieldManagerScheduledMaintenanceType]);
+  const scheduledMaintenanceServiceMode: ServiceMode = normalizedScheduledMaintenanceType === "checkup"
+    ? "checked"
+    : normalizedScheduledMaintenanceType === "service"
+      ? "serviced"
+      : "";
+  const fieldManagerReturnHref = useMemo(() => {
+    const requested = String(fieldManagerReturnTo ?? "").trim();
+    return requested.startsWith("/field-manager/overview")
+      ? requested
+      : "/field-manager/assets";
+  }, [fieldManagerReturnTo]);
 
   const [asset, setAsset] = useState<ScanSafeAsset | null>(null);
   const [savedAsset, setSavedAsset] = useState<ScanSafeAsset | null>(null);
@@ -1661,7 +1695,13 @@ export default function ScanClient({
     }
     autoLocationKeyRef.current = "";
     autoFieldManagerOpenKeyRef.current = "";
-  }, [fieldManagerMode, normalizedCode, normalizedFieldManagerAssetId]);
+  }, [
+    fieldManagerMode,
+    normalizedCode,
+    normalizedFieldManagerAssetId,
+    normalizedScheduledMaintenanceId,
+    normalizedScheduledMaintenanceType,
+  ]);
 
   useEffect(() => {
     let isMounted = true;
@@ -1706,14 +1746,21 @@ export default function ScanClient({
     if (
       !fieldManagerMode ||
       !normalizedCode ||
-      autoFieldManagerOpenKeyRef.current === `${normalizedCode}:${normalizedFieldManagerAssetId}`
+      autoFieldManagerOpenKeyRef.current
+        === `${normalizedCode}:${normalizedFieldManagerAssetId}:${normalizedScheduledMaintenanceId}`
     )
       return;
 
-    autoFieldManagerOpenKeyRef.current = `${normalizedCode}:${normalizedFieldManagerAssetId}`;
+    autoFieldManagerOpenKeyRef.current
+      = `${normalizedCode}:${normalizedFieldManagerAssetId}:${normalizedScheduledMaintenanceId}`;
     void loadUnlockedAsset();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fieldManagerMode, normalizedCode, normalizedFieldManagerAssetId]);
+  }, [
+    fieldManagerMode,
+    normalizedCode,
+    normalizedFieldManagerAssetId,
+    normalizedScheduledMaintenanceId,
+  ]);
 
   useEffect(() => {
     if (!notice) return undefined;
@@ -1955,7 +2002,7 @@ export default function ScanClient({
     }, 80);
 
     window.setTimeout(() => {
-      window.location.replace("/field-manager");
+      window.location.replace(fieldManagerReturnHref);
     }, FIELD_MANAGER_RETURN_DELAY_MS);
   }
 
@@ -2049,6 +2096,11 @@ export default function ScanClient({
         !isFieldManagerAccess &&
         isMeterUsageMode(openedAsset) &&
         !sessionUsage.hasUsage;
+      const shouldOpenScheduledMaintenance = Boolean(
+        isFieldManagerAccess
+        && normalizedScheduledMaintenanceId
+        && scheduledMaintenanceServiceMode,
+      );
       const restoredLatitude = seededSession?.latitude || draft.latitude;
       const restoredLongitude = seededSession?.longitude || draft.longitude;
       const nextDraftBase = {
@@ -2056,7 +2108,7 @@ export default function ScanClient({
         latitude: restoredLatitude,
         longitude: restoredLongitude,
       };
-      const nextDraft =
+      const nextDraftWithUsage =
         openedAsset.usageMode === "hours" || openedAsset.usageMode === "km"
           ? {
               ...nextDraftBase,
@@ -2067,6 +2119,12 @@ export default function ScanClient({
                   : ""),
             }
           : nextDraftBase;
+      const nextDraft = shouldOpenScheduledMaintenance
+        ? {
+            ...nextDraftWithUsage,
+            serviceMode: scheduledMaintenanceServiceMode,
+          }
+        : nextDraftWithUsage;
 
       setAsset(openedAssetWithSessionUsage);
       setSavedAsset(openedAsset);
@@ -2082,7 +2140,13 @@ export default function ScanClient({
       setIsDone(false);
       setHasCompletedRequiredUsageUpdate(!requiresInitialUsageUpdate);
       setShowLocationReminder(false);
-      setActiveEditor(requiresInitialUsageUpdate ? "usage" : null);
+      setActiveEditor(
+        shouldOpenScheduledMaintenance
+          ? "service"
+          : requiresInitialUsageUpdate
+            ? "usage"
+            : null,
+      );
       setAssetOpenError(null);
       setIsUnavailable(false);
       if (restoredLatitude && restoredLongitude) {
@@ -2106,7 +2170,7 @@ export default function ScanClient({
 
   function goBackFromAssetError() {
     if (fieldManagerMode) {
-      window.location.assign("/field-manager/assets");
+      window.location.assign(fieldManagerReturnHref);
       return;
     }
 
@@ -2370,7 +2434,14 @@ export default function ScanClient({
       }
 
       if (enforcedEditor === "service") {
-        return { ...nextDraft, photoUrls: pendingUpdate.photoUrls };
+        return {
+          ...nextDraft,
+          photoUrls: pendingUpdate.photoUrls,
+          serviceMode:
+            normalizedScheduledMaintenanceId && scheduledMaintenanceServiceMode
+              ? scheduledMaintenanceServiceMode
+              : nextDraft.serviceMode,
+        };
       }
 
       if (enforcedEditor === "photos") {
@@ -3107,6 +3178,10 @@ export default function ScanClient({
     const operatorNameForSave = isFieldManagerMode
       ? operatorName.trim() || "Field Manager"
       : operatorName.trim();
+    const scheduledMaintenanceIdForSave =
+      isFieldManagerMode && updateToPersist.hasService
+        ? normalizedScheduledMaintenanceId
+        : "";
 
     if (!isFieldManagerMode && operatorNameForSave.length < 2) {
       setNotice({ tone: "error", message: "Enter your name before saving." });
@@ -3133,6 +3208,7 @@ export default function ScanClient({
       clientCapturedAt: finalClientCapturedAt,
       gpsAccuracyMeters: scanLocationPayloadText(finalGpsAccuracyMeters),
       clientEventId: finalClientEventId,
+      scheduledMaintenanceId: scheduledMaintenanceIdForSave || null,
     };
 
     setPendingUpdate((current) => ({
@@ -3157,6 +3233,19 @@ export default function ScanClient({
 
       if (!response.ok || !data?.ok || !data.asset) {
         throw new Error(data?.error ?? "Failed to save the QR update.");
+      }
+
+      if (
+        scheduledMaintenanceIdForSave
+        && (
+          !data.scheduledMaintenanceCompletion?.completed
+          || data.scheduledMaintenanceCompletion.maintenanceId
+            !== scheduledMaintenanceIdForSave
+        )
+      ) {
+        throw new Error(
+          "The asset update was saved, but scheduled maintenance could not be confirmed as done.",
+        );
       }
 
       const savedAssetFromResponse = data.asset;
@@ -3391,6 +3480,15 @@ export default function ScanClient({
   return (
     <main className={pageClassName}>
       <div className={styles.shell}>
+        {isFieldManagerMode ? (
+          <header
+            className={styles.fieldManagerDetailHeader}
+            aria-label="Field Manager asset navigation"
+          >
+            <FieldManagerNavLink href={fieldManagerReturnHref} label="Back" />
+          </header>
+        ) : null}
+
         {notice ? (
           <div
             className={`${styles.notice} ${notice.tone === "success" ? styles.noticeSuccess : styles.noticeError}`}
