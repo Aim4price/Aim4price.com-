@@ -18,7 +18,6 @@ type ActivePage =
   | 'account'
   | 'asset-discovery'
   | 'leads'
-  | 'users'
   | 'marketplace'
   | 'none';
 
@@ -96,7 +95,7 @@ type AccountProfileLogoState = {
   logoUrl: string | null;
 };
 
-type HeaderNotificationCategory = 'partner_note' | 'lead' | 'qr_scan' | 'fuel' | 'contact_request' | 'asset_discovery' | 'account';
+type HeaderNotificationCategory = 'partner_note' | 'lead' | 'qr_scan' | 'fuel' | 'asset_discovery';
 
 type HeaderNotificationTone = 'neutral' | 'success' | 'warning' | 'info';
 
@@ -108,44 +107,10 @@ type HeaderNotificationItem = {
   body: string;
   href: string;
   createdAtIso: string;
-  contactRequestId?: string;
   assetDiscoveryEnquiryId?: string;
-  messageId?: string;
-  messageType?: 'message' | 'ad';
 };
 
-type ContactRequestStatus = 'pending' | 'approved' | 'temporarily_denied' | 'permanently_denied';
-type ContactDecisionStatus = 'approved' | 'denied';
 type AssetDiscoveryDecisionStatus = 'approved' | 'denied';
-
-type ContactDetailRequest = {
-  id: string;
-  ownerUserId: string;
-  requesterUserId: string;
-  status: ContactRequestStatus;
-  requesterAccountType: string;
-  requesterDisplayName: string;
-  requesterBusinessName: string;
-  requesterPhone: string;
-  requesterEmail: string;
-  requesterLocation: string;
-  ownerCompanyName: string;
-  ownerContactName: string;
-  ownerContactPhone: string;
-  ownerContactEmail: string;
-  ownerContactLocation: string;
-  createdAtIso: string;
-  lastRequestedAtIso: string | null;
-  approvedAtIso: string | null;
-  deniedAtIso: string | null;
-  updatedAtIso: string;
-  deniedCount: number;
-  lastDeniedAtIso: string | null;
-  requestAgainAtIso: string | null;
-  permanentlyDeniedAtIso: string | null;
-  popiaAcknowledgedAtIso: string | null;
-};
-
 
 type AssetDiscoverySafeSummary = {
   type: string;
@@ -185,59 +150,9 @@ type AssetDiscoveryEnquiryResponse = {
   error?: string;
 };
 
-type UserMessage = {
-  id: string;
-  ownerUserId: string;
-  senderUserId: string;
-  messageType: 'message' | 'ad';
-  messageText: string;
-  adCaption: string;
-  senderAccountType: string;
-  senderDisplayName: string;
-  senderBusinessName: string;
-  senderPhone: string;
-  senderEmail: string;
-  senderLocation: string;
-  imageFileName: string;
-  imageMimeType: string;
-  imageSizeBytes: number;
-  imageUrl: string;
-  hasImage: boolean;
-  documentFileName: string;
-  documentMimeType: string;
-  documentSizeBytes: number;
-  documentUrl: string;
-  hasDocument: boolean;
-  readAtIso: string | null;
-  createdAtIso: string;
-  updatedAtIso: string;
-};
-
-type UserMessageAttachmentPreview = {
-  id: string;
-  kind: 'image' | 'document';
-  label: string;
-  fileName: string;
-  mimeType: string;
-  sizeBytes: number;
-  url: string;
-};
-
 type NotificationsResponse = {
   ok: boolean;
   notifications?: HeaderNotificationItem[];
-  error?: string;
-};
-
-type ContactRequestResponse = {
-  ok?: boolean;
-  contactRequest?: ContactDetailRequest;
-  error?: string;
-};
-
-type UserMessageResponse = {
-  ok?: boolean;
-  message?: UserMessage;
   error?: string;
 };
 
@@ -280,7 +195,6 @@ const ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
   { href: '/fuel', label: 'Fuel Ledger', accountTypes: ['owner'] },
   { href: '/maintenance', label: 'Maintenance', accountTypes: ['owner'] },
   { href: '/marketplace', label: 'Marketplace', accountTypes: ['owner'] },
-  { href: '/users', label: 'Users', accountTypes: ['dealer'] },
 ];
 
 function isAccountMenuItemVisible(item: AccountMenuItem, accountType: AccountType | undefined): boolean {
@@ -300,7 +214,6 @@ function buildNavItems(accountType: AccountType | 'public' | null): NavItem[] {
     return [
       ...BASE_NAV_ITEMS,
       { key: 'leads', href: '/leads', label: 'My Leads' },
-      { key: 'users', href: '/users', label: 'Users' },
     ];
   }
 
@@ -547,89 +460,6 @@ function formatDateTime(value: string | null | undefined): string {
   }).format(new Date(time));
 }
 
-function formatAccountTypeLabel(value: string | null | undefined): string {
-  const normalized = String(value ?? '').trim().toLowerCase();
-
-  if (normalized === 'finance') return 'Finance';
-  if (normalized === 'insurance') return 'Insurance';
-  if (normalized === 'dealer') return 'Dealer';
-  if (normalized === 'owner') return 'Owner';
-
-  return 'Aim4price';
-}
-
-function contactRequesterName(request: ContactDetailRequest): string {
-  return request.requesterBusinessName || request.requesterDisplayName || 'Aim4price user';
-}
-
-function messageSenderName(message: UserMessage): string {
-  return message.senderBusinessName || message.senderDisplayName || 'Aim4price user';
-}
-
-function byteSizeLabel(value: number): string {
-  if (!value) return '';
-  if (value < 1024 * 1024) return `${Math.max(1, Math.round(value / 1024))} KB`;
-  return `${(value / (1024 * 1024)).toFixed(value >= 10 * 1024 * 1024 ? 0 : 1)} MB`;
-}
-
-function fileNameHasExtension(fileName: string, extensions: string[]): boolean {
-  const extension = fileName.split('.').pop()?.trim().toLowerCase() ?? '';
-  return extensions.includes(extension);
-}
-
-function isImageAttachment(mimeType: string | undefined, fileName: string): boolean {
-  const normalizedMimeType = String(mimeType ?? '').trim().toLowerCase();
-  return normalizedMimeType.startsWith('image/') || fileNameHasExtension(fileName, ['jpg', 'jpeg', 'png', 'webp']);
-}
-
-function isPdfAttachment(mimeType: string | undefined, fileName: string): boolean {
-  const normalizedMimeType = String(mimeType ?? '').trim().toLowerCase();
-  return normalizedMimeType === 'application/pdf' || fileNameHasExtension(fileName, ['pdf']);
-}
-
-function buildUserMessageAttachments(message: UserMessage): UserMessageAttachmentPreview[] {
-  const attachments: UserMessageAttachmentPreview[] = [];
-
-  if (message.hasImage && message.imageUrl) {
-    attachments.push({
-      id: `${message.id}:image`,
-      kind: 'image',
-      label: message.messageType === 'ad' ? 'Ad photo' : 'Photo',
-      fileName: message.imageFileName || 'aim4price-photo',
-      mimeType: message.imageMimeType,
-      sizeBytes: message.imageSizeBytes,
-      url: message.imageUrl,
-    });
-  }
-
-  if (message.hasDocument && message.documentUrl) {
-    const documentIsImage = isImageAttachment(message.documentMimeType, message.documentFileName);
-
-    attachments.push({
-      id: `${message.id}:document`,
-      kind: documentIsImage ? 'image' : 'document',
-      label: documentIsImage ? 'Attached photo' : 'Attached document',
-      fileName: message.documentFileName || 'aim4price-document',
-      mimeType: message.documentMimeType,
-      sizeBytes: message.documentSizeBytes,
-      url: message.documentUrl,
-    });
-  }
-
-  return attachments;
-}
-
-function requestStatusText(request: ContactDetailRequest): string {
-  if (request.status === 'approved') return 'Contact details shared.';
-  if (request.status === 'permanently_denied') return 'This request has been permanently denied.';
-  if (request.status === 'temporarily_denied') {
-    const retryDate = formatDateTime(request.requestAgainAtIso);
-    return retryDate ? `This request has been temporarily denied. Try again after ${retryDate}.` : 'This request has been temporarily denied.';
-  }
-
-  return 'This account is requesting access to your saved owner contact details.';
-}
-
 export default function AppHeader({
   active,
   signupHref = '/auth#signup',
@@ -660,12 +490,8 @@ export default function AppHeader({
   const [notifications, setNotifications] = useState<HeaderNotificationItem[]>([]);
   const [notificationsSeenAt, setNotificationsSeenAt] = useState<string | null>(null);
   const [notificationPage, setNotificationPage] = useState(1);
-  const [processingContactRequestIds, setProcessingContactRequestIds] = useState<Set<string>>(() => new Set());
   const [processingAssetDiscoveryEnquiryIds, setProcessingAssetDiscoveryEnquiryIds] = useState<Set<string>>(() => new Set());
-  const [activeContactRequest, setActiveContactRequest] = useState<ContactDetailRequest | null>(null);
   const [activeAssetDiscoveryEnquiry, setActiveAssetDiscoveryEnquiry] = useState<AssetDiscoveryEnquiry | null>(null);
-  const [activeUserMessage, setActiveUserMessage] = useState<UserMessage | null>(null);
-  const [activeMessageAttachmentIndex, setActiveMessageAttachmentIndex] = useState(0);
   const [notificationDetailError, setNotificationDetailError] = useState<string | null>(null);
   const [loadingNotificationActionId, setLoadingNotificationActionId] = useState<string | null>(null);
   const [canUseNotificationPortal, setCanUseNotificationPortal] = useState(false);
@@ -757,10 +583,7 @@ export default function AppHeader({
         setMenuOpen(false);
         setMobileMenuOpen(false);
         setNotificationOpen(false);
-        setActiveContactRequest(null);
         setActiveAssetDiscoveryEnquiry(null);
-        setActiveUserMessage(null);
-        setActiveMessageAttachmentIndex(0);
         setNotificationDetailError(null);
       }
     }
@@ -780,7 +603,7 @@ export default function AppHeader({
   }, [pathname]);
 
   const hasBlockingModal =
-    mobileMenuOpen || notificationOpen || Boolean(activeContactRequest) || Boolean(activeAssetDiscoveryEnquiry) || Boolean(activeUserMessage) || Boolean(notificationDetailError);
+    mobileMenuOpen || notificationOpen || Boolean(activeAssetDiscoveryEnquiry) || Boolean(notificationDetailError);
 
   useEffect(() => {
     if (!hasBlockingModal || typeof document === 'undefined') return;
@@ -798,10 +621,6 @@ export default function AppHeader({
       setNotificationPage(1);
     }
   }, [notificationOpen]);
-
-  useEffect(() => {
-    setActiveMessageAttachmentIndex(0);
-  }, [activeUserMessage?.id]);
 
   useEffect(() => {
     if (!session?.id || typeof window === 'undefined') {
@@ -976,10 +795,7 @@ export default function AppHeader({
   }
 
   function closeNotificationDetailModal() {
-    setActiveContactRequest(null);
     setActiveAssetDiscoveryEnquiry(null);
-    setActiveUserMessage(null);
-    setActiveMessageAttachmentIndex(0);
     setNotificationDetailError(null);
   }
 
@@ -1044,33 +860,6 @@ export default function AppHeader({
     setMobileMenuOpen(false);
   }
 
-  async function handleOpenContactRequestNotification(contactRequestId: string) {
-    setNotificationOpen(false);
-    setNotificationDetailError(null);
-    setLoadingNotificationActionId(`contact:${contactRequestId}`);
-
-    try {
-      const response = await fetch(`/api/users/contact-requests/${encodeURIComponent(contactRequestId)}`, {
-        credentials: 'include',
-        cache: 'no-store',
-      });
-      const data = (await response.json()) as ContactRequestResponse;
-
-      if (!response.ok || !data.ok || !data.contactRequest) {
-        throw new Error(data.error || 'Failed to load contact request.');
-      }
-
-      setActiveUserMessage(null);
-      setActiveAssetDiscoveryEnquiry(null);
-      setActiveContactRequest(data.contactRequest);
-      markNotificationsSeen();
-    } catch (error) {
-      setNotificationDetailError(error instanceof Error ? error.message : 'Failed to load contact request.');
-    } finally {
-      setLoadingNotificationActionId(null);
-    }
-  }
-
   async function handleOpenAssetDiscoveryNotification(enquiryId: string) {
     setNotificationOpen(false);
     setNotificationDetailError(null);
@@ -1087,78 +876,12 @@ export default function AppHeader({
         throw new Error(data.error || 'Failed to load Discovery enquiry.');
       }
 
-      setActiveContactRequest(null);
-      setActiveUserMessage(null);
-      setActiveMessageAttachmentIndex(0);
       setActiveAssetDiscoveryEnquiry(data.enquiry);
       markNotificationsSeen();
     } catch (error) {
       setNotificationDetailError(error instanceof Error ? error.message : 'Failed to load Discovery enquiry.');
     } finally {
       setLoadingNotificationActionId(null);
-    }
-  }
-
-  async function handleOpenUserMessageNotification(messageId: string) {
-    setNotificationOpen(false);
-    setNotificationDetailError(null);
-    setLoadingNotificationActionId(`message:${messageId}`);
-
-    try {
-      const response = await fetch(`/api/users/messages/${encodeURIComponent(messageId)}`, {
-        method: 'PATCH',
-        credentials: 'include',
-      });
-      const data = (await response.json()) as UserMessageResponse;
-
-      if (!response.ok || !data.ok || !data.message) {
-        throw new Error(data.error || 'Failed to load message.');
-      }
-
-      setActiveContactRequest(null);
-      setActiveAssetDiscoveryEnquiry(null);
-      setActiveMessageAttachmentIndex(0);
-      setActiveUserMessage(data.message);
-      setNotifications((current) => current.filter((item) => item.messageId !== messageId));
-      markNotificationsSeen();
-    } catch (error) {
-      setNotificationDetailError(error instanceof Error ? error.message : 'Failed to load message.');
-    } finally {
-      setLoadingNotificationActionId(null);
-    }
-  }
-
-  async function handleContactRequestDecision(contactRequestId: string, status: ContactDecisionStatus) {
-    setProcessingContactRequestIds((current) => new Set(current).add(contactRequestId));
-    setNotificationDetailError(null);
-
-    try {
-      const response = await fetch(`/api/users/contact-requests/${encodeURIComponent(contactRequestId)}`, {
-        method: 'PATCH',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status }),
-      });
-      const data = (await response.json()) as ContactRequestResponse;
-
-      if (!response.ok || !data.ok || !data.contactRequest) {
-        throw new Error(data.error || 'Failed to update contact request.');
-      }
-
-      setActiveContactRequest(data.contactRequest);
-      setNotifications((current) => current.filter((item) => item.contactRequestId !== contactRequestId));
-      markNotificationsSeen();
-    } catch (error) {
-      console.error('Failed to update contact request notification', error);
-      setNotificationDetailError(error instanceof Error ? error.message : 'Failed to update contact request.');
-    } finally {
-      setProcessingContactRequestIds((current) => {
-        const next = new Set(current);
-        next.delete(contactRequestId);
-        return next;
-      });
     }
   }
 
@@ -1250,25 +973,8 @@ export default function AppHeader({
 
   function renderNotificationItem(notification: HeaderNotificationItem) {
     const toneClass = styles[`notificationTone${notification.tone.charAt(0).toUpperCase()}${notification.tone.slice(1)}`];
-    const messageClass = notification.messageId ? styles.notificationItemMessage : '';
     const newClass = isNotificationNew(notification) ? styles.notificationItemNew : '';
-    const baseClassName = `${styles.notificationItem} ${toneClass} ${messageClass} ${newClass}`;
-
-    if (notification.contactRequestId) {
-      const loading = loadingNotificationActionId === `contact:${notification.contactRequestId}`;
-
-      return (
-        <button
-          type="button"
-          key={notification.id}
-          className={`${baseClassName} ${styles.notificationItemButton}`}
-          onClick={() => handleOpenContactRequestNotification(notification.contactRequestId as string)}
-          disabled={loading}
-        >
-          {renderNotificationCopy(notification, loading ? 'Opening request...' : 'Open request')}
-        </button>
-      );
-    }
+    const baseClassName = `${styles.notificationItem} ${toneClass} ${newClass}`;
 
     if (notification.assetDiscoveryEnquiryId) {
       const loading = loadingNotificationActionId === `asset-discovery:${notification.assetDiscoveryEnquiryId}`;
@@ -1282,23 +988,6 @@ export default function AppHeader({
           disabled={loading}
         >
           {renderNotificationCopy(notification, loading ? 'Opening enquiry...' : 'Open enquiry')}
-        </button>
-      );
-    }
-
-    if (notification.messageId) {
-      const loading = loadingNotificationActionId === `message:${notification.messageId}`;
-      const actionLabel = notification.messageType === 'ad' ? 'Open ad' : 'Open message';
-
-      return (
-        <button
-          type="button"
-          key={notification.id}
-          className={`${baseClassName} ${styles.notificationItemButton}`}
-          onClick={() => handleOpenUserMessageNotification(notification.messageId as string)}
-          disabled={loading}
-        >
-          {renderNotificationCopy(notification, loading ? 'Opening...' : actionLabel)}
         </button>
       );
     }
@@ -1320,88 +1009,6 @@ export default function AppHeader({
       <div key={notification.id} className={baseClassName}>
         {renderNotificationCopy(notification)}
       </div>
-    );
-  }
-
-  function renderContactRequestDetailModal(request: ContactDetailRequest) {
-    const requesterName = contactRequesterName(request);
-    const isProcessing = processingContactRequestIds.has(request.id);
-    const isPending = request.status === 'pending';
-
-    return (
-      <section className={styles.notificationDetailModal} role="dialog" aria-modal="true" aria-labelledby="notification-contact-title">
-        <div className={styles.notificationDetailHeader}>
-          <div className={styles.notificationDetailHeaderText}>
-            <h2 id="notification-contact-title">{requesterName}</h2>
-            <p>{formatAccountTypeLabel(request.requesterAccountType)} account requesting access to your saved owner contact details.</p>
-          </div>
-          <button type="button" className={styles.notificationDetailCloseButton} onClick={closeNotificationDetailModal} aria-label="Close contact request">
-            ×
-          </button>
-        </div>
-
-        <div className={styles.notificationDetailBody}>
-          <div className={styles.notificationDetailMetaGrid}>
-            <div className={styles.notificationDetailMetaCard}>
-              <span>Business / account</span>
-              <strong>{request.requesterBusinessName || request.requesterDisplayName || 'Not supplied'}</strong>
-            </div>
-            <div className={styles.notificationDetailMetaCard}>
-              <span>Account type</span>
-              <strong>{formatAccountTypeLabel(request.requesterAccountType)}</strong>
-            </div>
-            <div className={styles.notificationDetailMetaCard}>
-              <span>Requested</span>
-              <strong>{formatDateTime(request.createdAtIso) || 'Just now'}</strong>
-            </div>
-            <div className={styles.notificationDetailMetaCard}>
-              <span>Requester location</span>
-              <strong>{request.requesterLocation || 'Not supplied'}</strong>
-            </div>
-          </div>
-
-          <div className={styles.notificationDetailMessageBox}>
-            <strong>What they are requesting</strong>
-            <p>
-              This account wants permission to view your saved phone and email contact details inside Aim4price so that messages/ads/documents can be sent via the Aim4price platform. Accept only if you are comfortable sharing those details with this account.
-            </p>
-          </div>
-
-          {!isPending ? (
-            <div className={styles.notificationDetailStatusBox}>
-              <strong>Decision saved</strong>
-              <p>{requestStatusText(request)}</p>
-            </div>
-          ) : null}
-        </div>
-
-        {isPending ? (
-          <div className={styles.notificationDetailActions}>
-            <button
-              type="button"
-              className={styles.notificationSoftDangerButton}
-              onClick={() => handleContactRequestDecision(request.id, 'denied')}
-              disabled={isProcessing}
-            >
-              {isProcessing ? 'Saving...' : 'Deny request'}
-            </button>
-            <button
-              type="button"
-              className={styles.notificationPrimaryButton}
-              onClick={() => handleContactRequestDecision(request.id, 'approved')}
-              disabled={isProcessing}
-            >
-              {isProcessing ? 'Saving...' : 'Accept request'}
-            </button>
-          </div>
-        ) : (
-          <div className={styles.notificationDetailActions}>
-            <button type="button" className={styles.notificationSecondaryButton} onClick={closeNotificationDetailModal}>
-              Close
-            </button>
-          </div>
-        )}
-      </section>
     );
   }
 
@@ -1513,125 +1120,6 @@ export default function AppHeader({
             </button>
           </div>
         )}
-      </section>
-    );
-  }
-
-  function renderUserMessageDetailModal(message: UserMessage) {
-    const senderName = messageSenderName(message);
-    const isAd = message.messageType === 'ad';
-    const messageCopy = isAd ? message.adCaption || message.messageText : message.messageText;
-    const attachments = buildUserMessageAttachments(message);
-    const boundedAttachmentIndex = attachments.length
-      ? Math.min(activeMessageAttachmentIndex, attachments.length - 1)
-      : 0;
-    const activeAttachment = attachments[boundedAttachmentIndex] ?? null;
-    const hasMultipleAttachments = attachments.length > 1;
-    const activeAttachmentIsImage = activeAttachment
-      ? activeAttachment.kind === 'image' || isImageAttachment(activeAttachment.mimeType, activeAttachment.fileName)
-      : false;
-    const activeAttachmentIsPdf = activeAttachment
-      ? isPdfAttachment(activeAttachment.mimeType, activeAttachment.fileName)
-      : false;
-
-    return (
-      <section className={styles.notificationDetailModal} role="dialog" aria-modal="true" aria-labelledby="notification-message-title">
-        <div className={styles.notificationDetailHeader}>
-          <div className={styles.notificationDetailHeaderText}>
-            <h2 id="notification-message-title">{isAd ? `Ad from ${senderName}` : `Message from ${senderName}`}</h2>
-            <p>{formatDateTime(message.createdAtIso) || 'Just now'}</p>
-          </div>
-          <button type="button" className={styles.notificationDetailCloseButton} onClick={closeNotificationDetailModal} aria-label="Close message">
-            ×
-          </button>
-        </div>
-
-        <div className={styles.notificationDetailBody}>
-          {activeAttachment ? (
-            <div className={styles.notificationMediaViewer}>
-              <div className={styles.notificationMediaStage}>
-                {hasMultipleAttachments ? (
-                  <button
-                    type="button"
-                    className={`${styles.notificationMediaNavButton} ${styles.notificationMediaNavPrevious}`}
-                    onClick={() => setActiveMessageAttachmentIndex((current) => (current <= 0 ? attachments.length - 1 : current - 1))}
-                    aria-label="Previous attachment"
-                  >
-                    &lt;
-                  </button>
-                ) : null}
-
-                <div className={styles.notificationMediaContent}>
-                  {activeAttachmentIsImage ? (
-                    <img
-                      src={activeAttachment.url}
-                      alt={activeAttachment.fileName || activeAttachment.label}
-                      className={styles.notificationDetailImage}
-                    />
-                  ) : activeAttachmentIsPdf ? (
-                    <iframe
-                      src={activeAttachment.url}
-                      title={activeAttachment.fileName || activeAttachment.label}
-                      className={styles.notificationDocumentFrame}
-                    />
-                  ) : (
-                    <div className={styles.notificationDocumentPlaceholder}>
-                      <strong>{activeAttachment.label}</strong>
-                      <span>{activeAttachment.fileName || 'Open attached file'}</span>
-                      <small>Preview may open in a new tab for this file type.</small>
-                    </div>
-                  )}
-                </div>
-
-                {hasMultipleAttachments ? (
-                  <button
-                    type="button"
-                    className={`${styles.notificationMediaNavButton} ${styles.notificationMediaNavNext}`}
-                    onClick={() => setActiveMessageAttachmentIndex((current) => (current >= attachments.length - 1 ? 0 : current + 1))}
-                    aria-label="Next attachment"
-                  >
-                    &gt;
-                  </button>
-                ) : null}
-              </div>
-
-              <div className={styles.notificationMediaToolbar}>
-                <div className={styles.notificationMediaMeta}>
-                  <strong>{activeAttachment.label}</strong>
-                  <span>
-                    {activeAttachment.fileName || 'Attached file'}
-                    {activeAttachment.sizeBytes ? ` · ${byteSizeLabel(activeAttachment.sizeBytes)}` : ''}
-                  </span>
-                  {hasMultipleAttachments ? <small>{boundedAttachmentIndex + 1} of {attachments.length}</small> : null}
-                </div>
-
-                <div className={styles.notificationMediaActions}>
-                  <a href={activeAttachment.url} className={styles.notificationMediaActionButton} target="_blank" rel="noreferrer">
-                    Open
-                  </a>
-                  <a
-                    href={activeAttachment.url}
-                    className={styles.notificationMediaActionButton}
-                    download={activeAttachment.fileName || undefined}
-                  >
-                    Download
-                  </a>
-                </div>
-              </div>
-            </div>
-          ) : null}
-
-          <div className={styles.notificationDetailMessageBox}>
-            <strong>{isAd ? 'Caption / note' : 'Message'}</strong>
-            <p>{messageCopy || (isAd ? 'No caption supplied.' : 'No message text supplied.')}</p>
-          </div>
-        </div>
-
-        <div className={styles.notificationDetailActions}>
-          <button type="button" className={styles.notificationSecondaryButton} onClick={closeNotificationDetailModal}>
-            Close
-          </button>
-        </div>
       </section>
     );
   }
@@ -1835,7 +1323,7 @@ export default function AppHeader({
       : null;
 
   const notificationDetailPortal =
-    canUseNotificationPortal && (activeContactRequest || activeAssetDiscoveryEnquiry || activeUserMessage || notificationDetailError)
+    canUseNotificationPortal && (activeAssetDiscoveryEnquiry || notificationDetailError)
       ? createPortal(
           <div
             className={styles.notificationDetailBackdrop}
@@ -1846,10 +1334,8 @@ export default function AppHeader({
               }
             }}
           >
-            {activeContactRequest ? renderContactRequestDetailModal(activeContactRequest) : null}
             {activeAssetDiscoveryEnquiry ? renderAssetDiscoveryDetailModal(activeAssetDiscoveryEnquiry) : null}
-            {activeUserMessage ? renderUserMessageDetailModal(activeUserMessage) : null}
-            {!activeContactRequest && !activeAssetDiscoveryEnquiry && !activeUserMessage && notificationDetailError ? (
+            {!activeAssetDiscoveryEnquiry && notificationDetailError ? (
               <section className={styles.notificationDetailModal} role="dialog" aria-modal="true" aria-labelledby="notification-error-title">
                 <div className={styles.notificationDetailHeader}>
                   <div className={styles.notificationDetailHeaderText}>
