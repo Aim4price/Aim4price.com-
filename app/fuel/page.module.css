@@ -6811,3 +6811,27 @@
     width: 100%;
   }
 }
+
+/* Back Track Fuel progression buttons must remain the solid Aim4price dark green. */
+.fuelSlipFlowBackdrop .missingEntryModal button.backtrackPrimaryButton {
+  color: #ffffff !important;
+  background: #254733 !important;
+  border-color: #254733 !important;
+}
+
+.fuelSlipFlowBackdrop .missingEntryModal button.backtrackPrimaryButton:hover:not(:disabled) {
+  color: #ffffff !important;
+  background: #1d3929 !important;
+  border-color: #1d3929 !important;
+}
+
+.fuelSlipFlowBackdrop .missingEntryModal button.backtrackPrimaryButton:focus-visible {
+  outline: 3px solid #254733;
+  outline-offset: 3px;
+}
+
+.fuelSlipFlowBackdrop .missingEntryModal button.backtrackPrimaryButton:disabled {
+  color: #ffffff !important;
+  background: #6f8d7b !important;
+  border-color: #6f8d7b !important;
+}
