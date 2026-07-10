@@ -154,14 +154,6 @@ function defaultMetric(asset: MissingFuelAsset): UsageMetric {
   return asset.usageMetric;
 }
 
-function assetCurrentUsage(asset: MissingFuelAsset): string {
-  if (asset.usageMetric === 'percentage') return asset.lifeWorkedPercent === null ? 'Usage not recorded' : `${formatNumber(asset.lifeWorkedPercent, 1)}% usage`;
-  if (asset.usageMetric === 'none') return 'No meter';
-  if (asset.usageMetric === 'km') return asset.hours === null ? 'Kilometres not recorded' : `${formatNumber(asset.hours, 2)} km`;
-  if (asset.usageMetric === 'both') return asset.hours === null ? 'Meter reading not recorded' : `${formatNumber(asset.hours, 2)} saved reading`;
-  return asset.hours === null ? 'Hours not recorded' : `${formatNumber(asset.hours, 2)} hours`;
-}
-
 function assetPickerUsage(asset: MissingFuelAsset): string {
   if (asset.usageMetric === 'percentage') {
     return asset.lifeWorkedPercent === null ? '' : `Usage: ${formatNumber(asset.lifeWorkedPercent, 1)}%`;
@@ -365,7 +357,7 @@ export function MissingFuelEntryModal({ storage, assets, addedByLabel, onClose, 
         {step !== 'asset' ? <button type="button" className={styles.secondaryButton} onClick={() => { setError(''); setStep(step === 'review' ? 'details' : 'asset'); }} disabled={isSaving}>Back</button> : null}
         <button type="button" className={styles.secondaryButton} onClick={onClose} disabled={isSaving}>Cancel</button>
       </div>
-      {step === 'asset' ? null : step === 'details' ? <button type="button" className={styles.primaryButton} onClick={reviewEntry}>Next</button> : <button type="button" className={styles.primaryButton} onClick={() => void saveEntry()} disabled={isSaving}>{isSaving ? 'Saving...' : 'Save Fuel Entry'}</button>}
+      {step === 'asset' ? null : step === 'details' ? <button type="button" className={`${styles.primaryButton} ${styles.backtrackPrimaryButton}`} onClick={reviewEntry}>Next</button> : <button type="button" className={`${styles.primaryButton} ${styles.backtrackPrimaryButton}`} onClick={() => void saveEntry()} disabled={isSaving}>{isSaving ? 'Saving...' : 'Done'}</button>}
     </div>
   );
 
@@ -388,17 +380,15 @@ export function MissingFuelEntryModal({ storage, assets, addedByLabel, onClose, 
               <div className={styles.successActions}>
                 <button type="button" className={styles.secondaryButton} onClick={addAnother}>Add another entry</button>
                 {savedNeedsReconcile ? <button type="button" className={styles.secondaryButton} onClick={onReconcile}>Reconcile Balance</button> : null}
-                <button type="button" className={styles.primaryButton} onClick={onClose}>Done</button>
+                <button type="button" className={`${styles.primaryButton} ${styles.backtrackPrimaryButton}`} onClick={onClose}>Done</button>
               </div>
             </section>
           ) : (
             <>
-              <div className={styles.missingEntryTankBanner}><span>Selected tank</span><strong>{storage.name}</strong><small>{formatLitres(storage.currentLitres)} currently recorded · Fixed capacity {formatLitres(storage.capacityLitres)}</small></div>
               {error ? <div className={styles.missingEntryError} role="alert">{error}</div> : null}
 
               {step === 'asset' ? (
                 <section className={styles.missingAssetStep}>
-                  <div className={styles.missingStepIntro}><h3>Choose Asset</h3><p>Only active assets eligible to receive fuel are shown. Storage tanks are excluded.</p></div>
                   <div className={`${styles.pickerToolbar} ${styles.backtrackPickerToolbar}`}>
                     <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search assets..." aria-label="Search eligible assets" />
                     <button type="button" className={styles.secondaryButton} onClick={() => setSearch('')}>Clear</button>
@@ -424,7 +414,6 @@ export function MissingFuelEntryModal({ storage, assets, addedByLabel, onClose, 
 
               {step === 'details' && selectedAsset ? (
                 <section className={styles.missingDetailsStep}>
-                  <div className={styles.selectedMissingAsset}><span>Selected asset</span><strong>{selectedAsset.title}</strong><small>{assetCurrentUsage(selectedAsset)} · {selectedAsset.fuelPercent === null ? 'Fuel % not recorded' : `${formatNumber(selectedAsset.fuelPercent, 0)}% current fuel`}</small></div>
                   <div className={styles.missingFormGrid}>
                     <label><span>Fuel issue date *</span><input type="date" value={draft.issueDate} max={johannesburgDate()} onChange={(event) => setDraft({ ...draft, issueDate: event.target.value })} /></label>
                     <label><span>Fuel issue time</span><input type="time" value={draft.issueTime} disabled={!draft.issueTimeRecorded} onChange={(event) => setDraft({ ...draft, issueTime: event.target.value })} /></label>
