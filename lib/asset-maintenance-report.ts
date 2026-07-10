@@ -309,6 +309,7 @@ function summaryRows(options: AssetMaintenanceReportOptions): KeyValueRow[] {
 }
 
 export function buildAssetMaintenanceReportHtml(options: AssetMaintenanceReportOptions): string {
+  const reportTitle = 'Maintenance Report';
   const heroTitle = options.selectedAsset?.title || options.assetLabel || 'All selected assets';
   const heroMeta = options.selectedAsset?.meta || `${formatCount(options.summary.totalCount)} maintenance records - ${options.reportScopeLabel}`;
   const logo = options.logoUrl
@@ -320,79 +321,88 @@ export function buildAssetMaintenanceReportHtml(options: AssetMaintenanceReportO
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>${escapeHtml(options.title)}</title>
+<title>${escapeHtml(reportTitle)}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet" />
 <style>
-  :root { color-scheme: light; --ink:#0b1116; --muted:#66717c; --line:#cfd6dc; --soft:#f5f7f8; --green:#0b4a3a; --green-soft:#eaf4f0; --amber:#815c12; --amber-soft:#fff7e3; --red:#8b2424; --red-soft:#fff0f0; }
-  * { box-sizing:border-box; }
-  body { margin:0; background:#fff; color:var(--ink); font-family:Arial,Helvetica,sans-serif; font-size:13px; }
-  .reportPage { width:min(1120px,calc(100% - 36px)); margin:18px auto; }
-  .topbar { min-height:82px; display:grid; grid-template-columns:1fr auto; gap:24px; align-items:start; padding:18px 20px 22px; border-bottom:1px solid #aeb7bf; }
-  .brand { display:flex; align-items:center; gap:24px; }
-  .assetReportLogo { width:74px; height:52px; object-fit:contain; }
-  .assetReportLogoFallback { width:52px; height:52px; display:grid; place-items:center; border:2px solid var(--ink); border-radius:50%; font-weight:900; }
-  .brand h1 { margin:0 0 8px; font-size:23px; line-height:1; letter-spacing:-.03em; }
-  .brand p { margin:0; color:var(--muted); font-weight:700; }
-  .meta { display:grid; grid-template-columns:auto auto; gap:9px 40px; min-width:320px; }
+  :root { color-scheme:light; --ink:#111827; --strong:#070b12; --muted:#5f6b7a; --line:#d7dde5; --line-strong:#b9c2ce; --soft:#f5f6f8; --green:#0b4a3a; --green-soft:#eaf4f0; --amber:#815c12; --amber-soft:#fff7e3; --red:#8b2424; --red-soft:#fff0f0; }
+  * { box-sizing:border-box; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  @page { size:A4; margin:8mm 9mm; }
+  html,body { margin:0; padding:0; background:#eef1f4; color:var(--ink); font-family:"Montserrat","Segoe UI",Arial,Helvetica,sans-serif; font-size:9.6px; line-height:1.35; }
+  .reportPage { width:min(100%,210mm); min-height:297mm; margin:18px auto; padding:11mm 11mm 9mm; background:#fff; box-shadow:0 16px 44px rgba(17,24,39,.13); }
+  .topbar { display:grid; grid-template-columns:22mm minmax(0,1fr) 62mm; gap:12px; align-items:center; min-height:18mm; padding:0 0 10px; border-bottom:1px solid var(--line-strong); }
+  .brand { display:contents; }
+  .assetReportLogo { display:block; width:18mm; max-height:18mm; object-fit:contain; }
+  .assetReportLogoFallback { width:18mm; height:18mm; display:grid; place-items:center; border:1.5px solid var(--strong); border-radius:50%; font-weight:800; }
+  .brand h1 { margin:0; font-size:16px; line-height:1.05; font-weight:800; letter-spacing:-.025em; }
+  .brand p { margin:5px 0 0; color:var(--muted); font-size:8.9px; font-weight:600; }
+  .meta { display:grid; grid-template-columns:21mm minmax(0,1fr); gap:4px 7px; min-width:0; font-size:8.3px; }
   .meta span { color:var(--muted); font-weight:700; }
-  .meta strong { text-align:right; }
-  .actions { display:flex; justify-content:flex-end; gap:8px; margin:12px 20px 0; }
-  .action { border:1px solid #bfc8ce; background:#fff; color:var(--ink); border-radius:6px; padding:8px 12px; text-decoration:none; font-weight:800; cursor:pointer; }
-  .hero { display:grid; grid-template-columns:minmax(0,2.1fr) minmax(280px,1fr); margin-top:16px; border:1px solid #bfc7cd; }
-  .heroMain { min-height:160px; padding:20px; border-right:1px solid #bfc7cd; }
-  .eyebrow { margin:0 0 12px; color:#4f5c66; font-size:12px; font-weight:900; letter-spacing:.12em; text-transform:uppercase; }
-  .heroTitle { margin:0; font-size:31px; line-height:1.05; letter-spacing:-.04em; }
-  .heroMeta { margin:12px 0 0; color:#39444d; font-weight:700; }
-  .heroStatus { padding:20px; background:#fafbfb; }
-  .heroStatus span { display:block; font-size:12px; font-weight:900; letter-spacing:.08em; text-transform:uppercase; }
-  .heroStatus strong { display:block; margin:8px 0 12px; font-size:31px; line-height:1.05; }
-  .heroStatus p { margin:0; color:var(--muted); font-weight:700; }
-  .detailsGrid { display:grid; grid-template-columns:minmax(0,2fr) minmax(280px,1fr); gap:16px; margin:16px 0; }
-  .stack { display:grid; gap:14px; }
-  .panel { border:1px solid #bfc7cd; padding:15px 16px; }
-  .panel h2 { margin:0 0 10px; font-size:16px; }
+  .meta strong { color:var(--strong); text-align:right; word-break:break-word; }
+  .actions { position:fixed; z-index:10; top:12px; right:16px; display:flex; justify-content:flex-end; gap:8px; }
+  .action { min-height:42px; display:inline-flex; align-items:center; border:1px solid #cfd5dd; background:#fff; color:var(--ink); border-radius:999px; padding:0 16px; text-decoration:none; font:inherit; font-size:12.5px; font-weight:800; cursor:pointer; }
+  .action:last-child { min-width:150px; justify-content:center; border-color:var(--strong); background:var(--strong); color:#fff; }
+  .hero { display:grid; grid-template-columns:minmax(0,1fr) 62mm; margin-top:11px; border:1px solid var(--line-strong); }
+  .heroMain { min-height:34mm; padding:11px 13px 12px; border-right:1px solid var(--line-strong); }
+  .eyebrow { margin:0 0 6px; color:var(--muted); font-size:8.1px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }
+  .heroTitle { margin:0; color:var(--strong); font-size:21.5px; line-height:1.05; font-weight:800; letter-spacing:-.045em; }
+  .heroMeta { margin:7px 0 0; color:#3f4652; font-size:9.2px; font-weight:600; }
+  .heroStatus { display:flex; flex-direction:column; justify-content:center; padding:11px 12px; background:#fafbfc; }
+  .heroStatus span { display:block; font-size:8.8px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; }
+  .heroStatus strong { display:block; margin:6px 0 4px; font-size:17px; line-height:1.05; }
+  .heroStatus p { margin:6px 0 0; padding-top:7px; border-top:1px solid var(--line); color:var(--muted); font-size:8.3px; font-weight:600; }
+  .detailsGrid { display:grid; grid-template-columns:minmax(0,1fr) 62mm; gap:12px; margin:12px 0 10px; align-items:start; }
+  .stack { display:grid; gap:10px; }
+  .panel { break-inside:avoid; border:1px solid var(--line-strong); padding:10px 11px 11px; }
+  .panel h2 { margin:0 0 8px; color:var(--strong); font-size:10.8px; }
   .assetReportRows { border-top:1px solid var(--line); }
-  .assetReportRow { display:grid; grid-template-columns:158px minmax(0,1fr); gap:16px; padding:7px 0; border-bottom:1px solid var(--line); }
-  .assetReportRow span { color:#596671; font-weight:700; }
-  .assetReportRow strong { overflow-wrap:anywhere; }
-  .statusGrid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); border:1px solid #bfc7cd; margin-bottom:16px; }
-  .statusGrid div { padding:13px 15px; border-right:1px solid var(--line); }
+  .assetReportRow { display:grid; grid-template-columns:31mm minmax(0,1fr); gap:7px; min-height:20px; align-items:center; border-bottom:1px solid var(--line); }
+  .assetReportRow span { color:#38404c; font-size:8.8px; font-weight:600; }
+  .assetReportRow strong { color:var(--strong); font-size:9px; overflow-wrap:anywhere; }
+  .detailsGrid > .panel .assetReportRow { grid-template-columns:21mm minmax(0,1fr); min-height:17.5px; }
+  .detailsGrid > .panel .assetReportRow strong { text-align:right; font-size:8.2px; }
+  .statusGrid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); border:1px solid var(--line-strong); margin-bottom:10px; }
+  .statusGrid div { padding:8px 10px; border-right:1px solid var(--line); }
   .statusGrid div:last-child { border-right:0; }
-  .statusGrid span { display:block; color:#5e6a74; font-size:11px; font-weight:900; text-transform:uppercase; letter-spacing:.06em; }
-  .statusGrid strong { display:block; margin-top:6px; font-size:22px; }
-  .recordsSection { margin-top:16px; border:1px solid #bfc7cd; padding:15px 16px 16px; break-inside:auto; }
+  .statusGrid span { display:block; color:var(--muted); font-size:7.3px; font-weight:800; text-transform:uppercase; letter-spacing:.045em; }
+  .statusGrid strong { display:block; margin-top:4px; font-size:14px; }
+  .recordsSection { margin-top:10px; border:1px solid var(--line-strong); padding:10px 11px 11px; break-inside:auto; }
   .sectionHeading { display:flex; justify-content:space-between; gap:20px; align-items:flex-start; margin-bottom:11px; }
-  .sectionHeading h2 { margin:0 0 4px; font-size:17px; }
-  .sectionHeading p { margin:0; color:var(--muted); font-weight:600; }
-  .sectionHeading > strong { padding:7px 14px; border:1px solid var(--line); white-space:nowrap; }
-  .maintenanceList { display:grid; gap:12px; }
+  .sectionHeading h2 { margin:0 0 4px; font-size:10.8px; }
+  .sectionHeading p { margin:0; color:var(--muted); font-size:8px; font-weight:600; }
+  .sectionHeading > strong { min-width:24mm; min-height:22px; display:inline-flex; align-items:center; justify-content:center; padding:3px 8px; border:1px solid var(--line); background:#fafbfc; font-size:8px; text-transform:uppercase; white-space:nowrap; }
+  .maintenanceList { display:grid; gap:8px; }
   .maintenanceCard { border:1px solid var(--line); break-inside:avoid; }
-  .maintenanceCardHead { display:grid; grid-template-columns:minmax(0,1fr) 150px; gap:18px; padding:13px 14px; background:var(--soft); border-bottom:1px solid var(--line); }
-  .maintenanceCardHead h3 { margin:7px 0 4px; font-size:16px; }
-  .maintenanceCardHead p { margin:0; color:#505d67; font-weight:700; }
-  .statusPill { display:inline-block; padding:4px 8px; border:1px solid #aeb9bf; border-radius:999px; background:#fff; color:#39444d; font-size:10px; font-weight:900; text-transform:uppercase; letter-spacing:.05em; }
+  .maintenanceCardHead { display:grid; grid-template-columns:minmax(0,1fr) 35mm; gap:0; padding:0; background:#fafbfc; border-bottom:1px solid var(--line); }
+  .maintenanceCardHead > div { padding:7px 8px; }
+  .maintenanceCardHead > div + div { border-left:1px solid var(--line); }
+  .maintenanceCardHead h3 { margin:5px 0 3px; font-size:9.4px; }
+  .maintenanceCardHead p { margin:0; color:#505d67; font-size:8px; font-weight:600; }
+  .statusPill { display:inline-block; padding:2px 6px; border:1px solid #aeb9bf; border-radius:999px; background:#fff; color:#39444d; font-size:6.8px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; }
   .status-overdue { color:var(--red); border-color:#e4baba; background:var(--red-soft); }
   .status-due,.status-due_soon { color:var(--amber); border-color:#ead69e; background:var(--amber-soft); }
   .status-done { color:var(--green); border-color:#b9d9cd; background:var(--green-soft); }
-  .maintenanceType { text-align:right; }
-  .maintenanceType span,.maintenanceType small { display:block; color:var(--muted); font-size:10px; font-weight:800; text-transform:uppercase; }
+  .maintenanceType { text-align:left; }
+  .maintenanceType span,.maintenanceType small { display:block; color:var(--muted); font-size:7.3px; font-weight:800; text-transform:uppercase; }
   .maintenanceType strong { display:block; margin:4px 0; }
   .maintenanceDetails { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
-  .maintenanceDetail { min-height:58px; padding:10px 13px; border-right:1px solid var(--line); border-bottom:1px solid var(--line); }
+  .maintenanceDetail { min-height:37px; padding:7px 8px; border-right:1px solid var(--line); border-bottom:1px solid var(--line); }
   .maintenanceDetail:nth-child(2n) { border-right:0; }
-  .maintenanceDetail span { display:block; color:#65717b; font-size:10px; font-weight:900; text-transform:uppercase; letter-spacing:.05em; }
-  .maintenanceDetail strong { display:block; margin-top:5px; overflow-wrap:anywhere; }
+  .maintenanceDetail span { display:block; color:var(--muted); font-size:7.3px; font-weight:800; text-transform:uppercase; letter-spacing:.045em; }
+  .maintenanceDetail strong { display:block; margin-top:3px; color:var(--strong); font-size:8.6px; line-height:1.35; overflow-wrap:anywhere; }
   .assetReportEmpty { padding:20px; border:1px dashed #bfc7cd; color:var(--muted); font-weight:700; }
-  .footer { display:grid; grid-template-columns:1fr auto; gap:24px; margin-top:18px; padding:12px 0 0; border-top:1px solid #aeb7bf; font-size:10px; color:#5f6971; }
-  .footer strong { display:block; margin-bottom:6px; color:var(--ink); font-size:11px; }
+  .footer { display:grid; grid-template-columns:1fr auto; gap:10px; margin-top:12px; padding-top:12px; border-top:1px solid var(--line-strong); font-size:7.35px; color:#323a45; }
+  .footer strong { display:block; margin-bottom:4px; color:var(--strong); font-size:8.2px; }
   .footer p { margin:0; font-style:italic; line-height:1.35; }
   @media(max-width:800px){ .topbar,.hero,.detailsGrid{grid-template-columns:1fr}.meta{min-width:0}.heroMain{border-right:0;border-bottom:1px solid #bfc7cd}.statusGrid{grid-template-columns:repeat(2,1fr)}.maintenanceCardHead{grid-template-columns:1fr}.maintenanceType{text-align:left}.maintenanceDetails{grid-template-columns:1fr}.maintenanceDetail{border-right:0}.actions{margin-left:0;margin-right:0}.reportPage{width:calc(100% - 20px)} }
-  @media print { @page{size:A4 landscape;margin:10mm} body{font-size:10px}.reportPage{width:auto;margin:0}.actions{display:none}.topbar{padding-top:0}.heroMain{min-height:125px}.recordsSection{margin-top:10px}.maintenanceCardHead{padding:9px 10px}.maintenanceDetail{min-height:44px;padding:7px 10px}.footer{position:relative}.footerPage:after{content:'Page ' counter(page)} }
+  @media print { html,body{background:#fff}.reportPage{width:auto;min-height:281mm;margin:0;padding:0;box-shadow:none}.actions{display:none}.footerPage:after{content:' - Page ' counter(page)} }
 </style>
 </head>
 <body>
 <main class="reportPage">
   <header class="topbar">
-    <div class="brand">${logo}<div><h1>${escapeHtml(options.title)}</h1><p>${escapeHtml(options.subtitle)}</p></div></div>
+    <div class="brand">${logo}<div><h1>${escapeHtml(reportTitle)}</h1><p>${escapeHtml(options.subtitle)}</p></div></div>
     <div class="meta"><span>Generated</span><strong>${escapeHtml(options.generatedAt)}</strong><span>Business Email</span><strong>${escapeHtml(options.ownerEmail || '-')}</strong></div>
   </header>
   <div class="actions"><a class="action" href="${escapeHtml(options.xlsxUrl)}">Download Excel</a><button class="action" onclick="window.print()">Print / Save PDF</button></div>
@@ -408,6 +418,43 @@ export function buildAssetMaintenanceReportHtml(options: AssetMaintenanceReportO
   ${renderMaintenanceGroups(options.records)}
   <footer class="footer"><div><strong>Powered by Aim4price.com</strong><p>Maintenance records are based on information captured by the account user. This operational report supports planning and record keeping; it is not a certified mechanical inspection, warranty, compliance or safety certificate.</p></div><strong class="footerPage">Maintenance Report</strong></footer>
 </main>
+<script>
+  (function () {
+    function waitForImages() {
+      var images = Array.prototype.slice.call(document.images || []);
+      if (!images.length) return Promise.resolve();
+      return Promise.all(images.map(function (image) {
+        if (image.complete) return Promise.resolve();
+        return new Promise(function (resolve) {
+          image.addEventListener('load', resolve, { once: true });
+          image.addEventListener('error', resolve, { once: true });
+        });
+      }));
+    }
+
+    function waitForFonts() {
+      if (document.fonts && document.fonts.ready) {
+        return Promise.race([
+          document.fonts.ready.catch(function () { return undefined; }),
+          new Promise(function (resolve) { window.setTimeout(resolve, 900); }),
+        ]);
+      }
+      return Promise.resolve();
+    }
+
+    function openPrintDialog() {
+      Promise.all([waitForImages(), waitForFonts()]).then(function () {
+        window.setTimeout(function () {
+          window.focus();
+          window.print();
+        }, 250);
+      });
+    }
+
+    if (document.readyState === 'complete') openPrintDialog();
+    else window.addEventListener('load', openPrintDialog, { once: true });
+  })();
+</script>
 </body>
 </html>`;
 }
