@@ -6,6 +6,7 @@ import { attachOpenPartnerNotesToAssets } from '../../../lib/partner-access';
 import { attachOpenIssueNoteStatusToAssets } from '../../../lib/asset-issue-notes';
 import { attachLatestMaintenanceStatusToAssets } from '../../../lib/scan-assets';
 import { attachUpcomingMaintenanceAlertsToAssets } from '../../../lib/asset-maintenance';
+import { attachUpcomingLicenseRenewalAlertsToAssets } from '../../../lib/asset-license-renewal';
 import {
   getAssetRegisterForUser,
   getSelectedAssetRegister,
@@ -68,10 +69,11 @@ function getUsageUserId(session: Awaited<ReturnType<typeof getServerSession>>): 
 async function attachOpenAssetAlerts<T extends { id: string }>(
   ownerUserId: string,
   items: T[],
-): Promise<Array<T & { openPartnerNote: unknown; maintenanceAlert: unknown; latestMaintenanceStatus: unknown; latestIssueNoteStatus: unknown }>> {
+): Promise<Array<T & { openPartnerNote: unknown; maintenanceAlert: unknown; licenseRenewalAlert: unknown; latestMaintenanceStatus: unknown; latestIssueNoteStatus: unknown }>> {
   const itemsWithPartnerNotes = await attachOpenPartnerNotesToAssets(ownerUserId, items);
   const itemsWithScheduledMaintenance = await attachUpcomingMaintenanceAlertsToAssets(ownerUserId, itemsWithPartnerNotes);
-  const itemsWithMaintenanceStatus = await attachLatestMaintenanceStatusToAssets(itemsWithScheduledMaintenance);
+  const itemsWithLicenseRenewals = await attachUpcomingLicenseRenewalAlertsToAssets(ownerUserId, itemsWithScheduledMaintenance);
+  const itemsWithMaintenanceStatus = await attachLatestMaintenanceStatusToAssets(itemsWithLicenseRenewals);
   return attachOpenIssueNoteStatusToAssets(itemsWithMaintenanceStatus);
 }
 
@@ -645,7 +647,8 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    return NextResponse.json({ ok: true, item });
+    const [itemWithAlertStatus] = await attachOpenAssetAlerts(session.user.id, [item]);
+    return NextResponse.json({ ok: true, item: itemWithAlertStatus ?? item });
   } catch (error) {
     if (error instanceof Error && error.message === 'ASSET_REGISTER_NOT_FOUND') {
       return NextResponse.json({ ok: false, error: 'Asset register not found.' }, { status: 404 });
