@@ -1,15 +1,9 @@
 import { getDb } from './db';
-import {
-  contactRequesterName,
-  listContactRequestsForRequester,
-  listPendingContactRequestsForOwner,
-} from './contact-requests';
 import { ensureFuelLedgerTables, listFuelLedger, type FuelLedgerEvent } from './fuel-ledger';
 import {
   listPendingAssetDiscoveryEnquiriesForOwner,
   listRecentAssetDiscoveryEnquiriesForDealer,
 } from './asset-discovery';
-import { listUnreadUserMessagesForOwner, userMessageSenderName } from './user-messages';
 import {
   ensurePartnerAccessTables,
   listAssetLeadsForUser,
@@ -24,9 +18,7 @@ export type HeaderNotificationCategory =
   | 'lead'
   | 'qr_scan'
   | 'fuel'
-  | 'contact_request'
-  | 'asset_discovery'
-  | 'account';
+  | 'asset_discovery';
 
 export type HeaderNotificationTone = 'neutral' | 'success' | 'warning' | 'info';
 
@@ -38,10 +30,7 @@ export type HeaderNotificationItem = {
   body: string;
   href: string;
   createdAtIso: string;
-  contactRequestId?: string;
   assetDiscoveryEnquiryId?: string;
-  messageId?: string;
-  messageType?: 'message' | 'ad';
 };
 
 type OpenPartnerNoteRow = {
@@ -83,7 +72,6 @@ const MAX_NOTIFICATIONS = 12;
 const RECENT_SCAN_DAYS = 14;
 const RECENT_FUEL_DAYS = 14;
 const RECENT_LEAD_DAYS = 45;
-const RECENT_USER_MESSAGE_DAYS = 45;
 
 function asText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
@@ -384,61 +372,6 @@ async function listPartnerLeadNotifications(userId: string): Promise<HeaderNotif
   }
 }
 
-
-async function listOwnerContactRequestNotifications(userId: string): Promise<HeaderNotificationItem[]> {
-  try {
-    const requests = await listPendingContactRequestsForOwner(userId);
-
-    return requests.map((request) => {
-      const requester = contactRequesterName(request);
-
-      return {
-        id: `contact-request-owner:${request.id}:${request.updatedAtIso}`,
-        category: 'contact_request',
-        tone: 'info',
-        title: 'Contact detail request',
-        body: `${requester} wants to be in contact with you. Share contact details or deny request.`,
-        href: '',
-        createdAtIso: isoFallback(request.createdAtIso || request.updatedAtIso),
-        contactRequestId: request.id,
-      } satisfies HeaderNotificationItem;
-    });
-  } catch (error) {
-    console.error('Failed to load owner contact request notifications', error);
-    return [];
-  }
-}
-
-async function listOwnerUserMessageNotifications(userId: string): Promise<HeaderNotificationItem[]> {
-  try {
-    const messages = await listUnreadUserMessagesForOwner(userId, 12);
-
-    return messages
-      .filter((message) => isWithinDays(message.createdAtIso, RECENT_USER_MESSAGE_DAYS))
-      .map((message) => {
-        const sender = userMessageSenderName(message);
-        const isAd = message.messageType === 'ad';
-        const preview = truncateText(isAd ? message.adCaption || message.messageText : message.messageText, 86);
-
-        return {
-          id: `user-message-owner:${message.id}:${message.createdAtIso}`,
-          category: 'account',
-          tone: 'success',
-          title: isAd ? 'New ad received' : 'New message received',
-          body: `${sender} sent you ${isAd ? 'an ad' : 'a message'}.${preview ? ` ${preview}` : ''}`,
-          href: '',
-          createdAtIso: isoFallback(message.createdAtIso),
-          messageId: message.id,
-          messageType: message.messageType,
-        } satisfies HeaderNotificationItem;
-      });
-  } catch (error) {
-    console.error('Failed to load owner user message notifications', error);
-    return [];
-  }
-}
-
-
 async function listOwnerAssetDiscoveryNotifications(userId: string): Promise<HeaderNotificationItem[]> {
   try {
     const enquiries = await listPendingAssetDiscoveryEnquiriesForOwner(userId);
@@ -484,44 +417,6 @@ async function listDealerAssetDiscoveryNotifications(userId: string): Promise<He
     });
   } catch (error) {
     console.error('Failed to load dealer Discovery notifications', error);
-    return [];
-  }
-}
-
-async function listPartnerContactRequestNotifications(userId: string): Promise<HeaderNotificationItem[]> {
-  try {
-    const requests = await listContactRequestsForRequester(userId);
-
-    return requests
-      .filter((request) => request.status === 'approved' || request.status === 'temporarily_denied' || request.status === 'permanently_denied')
-      .filter((request) => isWithinDays(request.updatedAtIso, RECENT_LEAD_DAYS))
-      .map((request) => {
-        const wasApproved = request.status === 'approved';
-        const wasPermanent = request.status === 'permanently_denied';
-        const retryDate = request.requestAgainAtIso
-          ? new Intl.DateTimeFormat('en-ZA', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(request.requestAgainAtIso))
-          : '';
-
-        return {
-          id: `contact-request-partner:${request.id}:${request.status}:${request.updatedAtIso}`,
-          category: 'contact_request',
-          tone: wasApproved ? 'success' : 'warning',
-          title: wasApproved
-            ? 'Contact details unlocked'
-            : wasPermanent
-              ? 'Contact request permanently denied'
-              : 'Contact request temporarily denied',
-          body: wasApproved
-            ? `${request.ownerCompanyName} shared contact details with you.`
-            : wasPermanent
-              ? `${request.ownerCompanyName} permanently denied contact access.`
-              : `${request.ownerCompanyName} temporarily denied contact access.${retryDate ? ` Available again: ${retryDate}.` : ''}`,
-          href: '/users',
-          createdAtIso: isoFallback(request.updatedAtIso),
-        } satisfies HeaderNotificationItem;
-      });
-  } catch (error) {
-    console.error('Failed to load partner contact request notifications', error);
     return [];
   }
 }
@@ -618,15 +513,12 @@ export async function listHeaderNotifications(input: ListHeaderNotificationsInpu
     ? await Promise.all([
         listOpenPartnerNoteNotifications(input.userId),
         listOwnerLeadNotifications(input.userId),
-        listOwnerContactRequestNotifications(input.userId),
         listOwnerAssetDiscoveryNotifications(input.userId),
-        listOwnerUserMessageNotifications(input.userId),
         listQrScanNotifications(input.userId),
         listFuelNotifications(input.userId),
       ])
     : await Promise.all([
         listPartnerLeadNotifications(input.userId),
-        listPartnerContactRequestNotifications(input.userId),
         accountType === 'dealer' ? listDealerAssetDiscoveryNotifications(input.userId) : Promise.resolve([]),
       ]);
 
