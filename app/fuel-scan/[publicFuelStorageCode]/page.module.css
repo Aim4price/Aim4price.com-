@@ -1387,8 +1387,42 @@
 .fieldManagerMobileSurface h3,
 .fieldManagerMobileSurface button,
 .fieldManagerMobileSurface input,
-.fieldManagerMobileSurface textarea {
+.fieldManagerMobileSurface textarea,
+.fieldManagerMobileSurface select,
+.fieldManagerMobileSurface a {
   font-family: inherit;
+}
+
+.fieldManagerMobileSurface .fieldManagerDetailHeader {
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 4px 2px 0;
+}
+
+.fieldManagerMobileSurface .fieldManagerDetailHeader ~ .pinStepCard,
+.fieldManagerMobileSurface .fieldManagerDetailHeader ~ .stepCard {
+  min-height: calc(100dvh - 6rem);
+}
+
+.fieldManagerMobileSurface .fieldManagerDetailHeader ~ .stepProgress + .stepCard {
+  min-height: calc(100dvh - 10.75rem);
+}
+
+.fieldManagerMobileSurface .primaryButton {
+  border-color: #254733;
+  background: #254733;
+  color: #ffffff;
+  font-weight: 900;
+  box-shadow:
+    0 16px 32px rgba(37, 71, 51, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+.fieldManagerMobileSurface .primaryButton:hover:not(:disabled) {
+  border-color: #1d3929;
+  background: #1d3929;
 }
 
 .fieldManagerMobileSurface .qrTitleBlock span,

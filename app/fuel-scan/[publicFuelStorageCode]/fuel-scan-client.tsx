@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import FieldManagerNavLink from '../../field-manager/field-manager-nav-link';
 import styles from './page.module.css';
 import {
   createOfflineClientEventId,
@@ -679,7 +680,7 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
     }, 80);
 
     window.setTimeout(() => {
-      window.location.replace('/field-manager');
+      window.location.replace('/field-manager/diesel');
     }, FIELD_MANAGER_RETURN_DELAY_MS);
   }
 
@@ -1486,6 +1487,12 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
   return (
     <main className={scanPageClassName}>
       <div className={styles.scanShell}>
+        {isFieldManagerMode ? (
+          <header className={styles.fieldManagerDetailHeader} aria-label="Field Manager fuel navigation">
+            <FieldManagerNavLink href="/field-manager/diesel" label="Back" />
+          </header>
+        ) : null}
+
         {notice ? <div className={`${styles.notice} ${notice.tone === 'error' ? styles.noticeError : styles.noticeSuccess}`}>{notice.message}</div> : null}
         {pendingSyncCount > 0 ? (
           <div className={`${styles.notice} ${styles.noticeSuccess}`}>
@@ -1570,12 +1577,10 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
           </>
         ) : scanMode === 'storage-refill' ? (
           <>
-            {renderScanProgress('Storage refill', 'Add fuel to tank', 'Fuel In', 100)}
             {renderStorageRefillStep()}
           </>
         ) : scanMode === 'dipstick-note' ? (
           <>
-            {renderScanProgress('Dipstick note', 'Internal note', 'No export', 100)}
             {renderDipstickNoteStep()}
           </>
         ) : (
