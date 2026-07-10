@@ -61,3 +61,19 @@
 --   34-unknown-brand-family-links.sql
 --   35-asset-depreciation-timeline.sql
 --   36-year-model-unknown-nullable.sql
+--   37-my-invoices.sql
+--   38-fuel-slips.sql
+--   39-fuel-slip-pending-review.sql
+--   40-fuel-slip-extra-details.sql
+--   41-asset-discovery.sql
+--   42-field-managers.sql
+--   43-field-manager-scan-event-actor-type.sql
+--   44-field-manager-password-display.sql
+--   45-asset-scan-issue-note-alerts.sql
+--   46-fuel-missing-late-entries.sql
+
+-- Fuel late-entry audit direction (migration 46):
+--   - historical issue date/time and real entry-added audit fields remain separate
+--   - historical tank-before/tank-after values remain NULL for desktop late entries
+--   - current balance corrections and reconciliations are separate adjustment events
+--   - supporting evidence is owner-scoped and append-only
