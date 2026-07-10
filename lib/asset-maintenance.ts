@@ -123,6 +123,14 @@ export type AssetMaintenanceCompleteInput = {
   completedBy?: unknown;
 };
 
+export type AssetMaintenanceCompletionGuard = {
+  assetId?: string | null;
+  assignedFieldManagerId?: string | null;
+  maintenanceType?: AssetMaintenanceType | null;
+};
+
+export type AssetMaintenanceProcedureKind = 'checked' | 'serviced' | 'repaired';
+
 export type AssetMaintenanceAlert = {
   id: string;
   assetRegisterItemId: string;
@@ -197,8 +205,54 @@ type AssetForAlert = {
 
 let assetMaintenanceTablesPromise: Promise<void> | null = null;
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 function asText(value: unknown): string {
   return String(value ?? '').replace(/\s+/g, ' ').trim();
+}
+
+export function isAssetMaintenanceRecordId(value: unknown): boolean {
+  return UUID_PATTERN.test(String(value ?? '').trim());
+}
+
+export function assetMaintenanceProcedureKindFromNote(value: unknown): AssetMaintenanceProcedureKind | null {
+  const note = String(value ?? '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
+  if (!note) return null;
+
+  const lines = note
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const firstLine = (lines[0] ?? '').toLowerCase();
+  const compactNote = lines.join(' ').toLowerCase();
+
+  if (/^repaired(?:\b|$)/.test(firstLine) || compactNote.includes('repair details:')) {
+    return 'repaired';
+  }
+
+  if (
+    /^serviced(?:\b|$)/.test(firstLine)
+    || compactNote.includes('work done:')
+    || compactNote.includes('service items:')
+    || compactNote.includes('serviced items:')
+  ) {
+    return 'serviced';
+  }
+
+  if (/^checked(?:\b|$)/.test(firstLine) || compactNote.includes('checked items:')) {
+    return 'checked';
+  }
+
+  return null;
+}
+
+export function assetMaintenanceProcedureMatchesType(
+  maintenanceType: AssetMaintenanceType,
+  procedureKind: AssetMaintenanceProcedureKind | null,
+): boolean {
+  return maintenanceType === 'checkup'
+    ? procedureKind === 'checked'
+    : procedureKind === 'serviced';
 }
 
 function asLongText(value: unknown, maxLength = 5000): string {
@@ -966,6 +1020,10 @@ export async function listAssetMaintenanceData(userId: string, filters: AssetMai
 export async function getAssetMaintenanceRecordById(userId: string, maintenanceId: string): Promise<AssetMaintenanceRecord | null> {
   await ensureAssetMaintenanceTables();
 
+  if (!isAssetMaintenanceRecordId(maintenanceId)) {
+    return null;
+  }
+
   const result = await getDb().query<MaintenanceRow>(
     `
       ${maintenanceSelectSql(`where m.user_id = $1 and m.id = $2::uuid`)}
@@ -975,6 +1033,43 @@ export async function getAssetMaintenanceRecordById(userId: string, maintenanceI
   );
 
   return result.rows[0] ? mapMaintenanceRow(result.rows[0]) : null;
+}
+
+export async function getAssignedFieldManagerMaintenanceRecord(input: {
+  ownerUserId: string;
+  managerId: string;
+  assetId: string;
+  maintenanceId: string;
+  allowDone?: boolean;
+}): Promise<AssetMaintenanceRecord | null> {
+  const ownerUserId = asText(input.ownerUserId);
+  const managerId = asText(input.managerId);
+  const assetId = asText(input.assetId);
+  const maintenanceId = asText(input.maintenanceId);
+
+  if (
+    !ownerUserId
+    || !isAssetMaintenanceRecordId(managerId)
+    || !isAssetMaintenanceRecordId(assetId)
+    || !isAssetMaintenanceRecordId(maintenanceId)
+  ) {
+    return null;
+  }
+
+  const record = await getAssetMaintenanceRecordById(ownerUserId, maintenanceId);
+
+  if (
+    !record
+    || record.userId !== ownerUserId
+    || record.assetId !== assetId
+    || record.assignedFieldManagerId !== managerId
+    || record.status === 'cancelled'
+    || (!input.allowDone && record.status !== 'upcoming')
+  ) {
+    return null;
+  }
+
+  return record;
 }
 
 async function verifyAssetBelongsToUser(userId: string, assetId: string): Promise<AssetRegisterItem> {
@@ -1345,11 +1440,28 @@ async function createNextRecurringRecord(userId: string, completedRecord: AssetM
   return createdId ? getAssetMaintenanceRecordById(userId, createdId) : getActiveRecurringChild(userId, completedRecord.id);
 }
 
-export async function completeAssetMaintenanceRecord(userId: string, maintenanceId: string, input: AssetMaintenanceCompleteInput = {}): Promise<{ completed: AssetMaintenanceRecord; nextRecord: AssetMaintenanceRecord | null }> {
+export async function completeAssetMaintenanceRecord(
+  userId: string,
+  maintenanceId: string,
+  input: AssetMaintenanceCompleteInput = {},
+  guard: AssetMaintenanceCompletionGuard = {},
+): Promise<{ completed: AssetMaintenanceRecord; nextRecord: AssetMaintenanceRecord | null }> {
   await ensureAssetMaintenanceTables();
 
   const existing = await getAssetMaintenanceRecordById(userId, maintenanceId);
   if (!existing || existing.status === 'cancelled') throw new Error('MAINTENANCE_NOT_FOUND');
+
+  const guardedAssetId = asText(guard.assetId) || null;
+  const guardedManagerId = asText(guard.assignedFieldManagerId) || null;
+  const guardedMaintenanceType = guard.maintenanceType ?? null;
+
+  if (
+    (guardedAssetId && existing.assetId !== guardedAssetId)
+    || (guardedManagerId && existing.assignedFieldManagerId !== guardedManagerId)
+    || (guardedMaintenanceType && existing.maintenanceType !== guardedMaintenanceType)
+  ) {
+    throw new Error('MAINTENANCE_NOT_FOUND');
+  }
 
   if (existing.status === 'done') {
     const nextRecord = await createNextRecurringRecord(userId, existing);
@@ -1376,8 +1488,20 @@ export async function completeAssetMaintenanceRecord(userId: string, maintenance
       where user_id = $1
         and id = $2::uuid
         and coalesce(status, 'upcoming') = 'upcoming'
+        and ($6::uuid is null or asset_register_item_id = $6::uuid)
+        and ($7::uuid is null or assigned_field_manager_id = $7::uuid)
+        and ($8::text is null or maintenance_type = $8::text)
     `,
-    [userId, maintenanceId, completedUsage, completedNotes, completedBy],
+    [
+      userId,
+      maintenanceId,
+      completedUsage,
+      completedNotes,
+      completedBy,
+      guardedAssetId,
+      guardedManagerId,
+      guardedMaintenanceType,
+    ],
   );
 
   const completed = await getAssetMaintenanceRecordById(userId, maintenanceId);

@@ -11,6 +11,7 @@ import {
 import { listOpenIssueNoteGroupsForAssets } from './asset-issue-notes';
 import { getDb } from './db';
 import {
+  ensureFieldManagerTables,
   listFieldManagerAssets,
   type FieldManagerAssetSummary,
 } from './field-manager';
@@ -29,6 +30,10 @@ export type FieldManagerOverviewStatus =
   | 'due_soon'
   | 'upcoming'
   | 'usage_needed';
+export type FieldManagerOverviewSourceKind =
+  | 'maintenance'
+  | 'problem'
+  | 'license';
 
 export type FieldManagerOverviewItem = {
   id: string;
@@ -67,7 +72,13 @@ type LicenseAssetRow = {
   license_renewal_alert_noted_for_date: string | null;
 };
 
+type FieldManagerOverviewDismissalRow = {
+  source_kind: string | null;
+  source_id: string | null;
+};
+
 const DAY_MS = 86_400_000;
+let overviewDismissalTablePromise: Promise<void> | null = null;
 
 function asText(value: unknown): string {
   return String(value ?? '').replace(/\s+/g, ' ').trim();
@@ -77,6 +88,84 @@ function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? value as Record<string, unknown>
     : {};
+}
+
+function overviewSourceKind(
+  item: FieldManagerOverviewItem,
+): FieldManagerOverviewSourceKind {
+  if (item.type === 'service' || item.type === 'checkup') {
+    return 'maintenance';
+  }
+
+  return item.type;
+}
+
+function overviewDismissalKey(
+  sourceKind: FieldManagerOverviewSourceKind,
+  sourceId: string,
+): string {
+  return `${sourceKind}\u0000${sourceId}`;
+}
+
+async function ensureFieldManagerOverviewDismissalTableOnce(): Promise<void> {
+  await ensureFieldManagerTables();
+
+  const db = getDb();
+  await db.query(`
+    create table if not exists public.field_manager_overview_dismissals (
+      field_manager_id uuid not null
+        references public.field_managers(id) on delete cascade,
+      source_kind text not null
+        check (source_kind in ('maintenance', 'problem', 'license')),
+      source_id text not null,
+      overview_item_id text not null,
+      asset_register_item_id uuid not null,
+      dismissed_at timestamptz not null default now(),
+      primary key (field_manager_id, source_kind, source_id)
+    )
+  `);
+  await db.query(`
+    create index if not exists idx_field_manager_overview_dismissals_asset
+      on public.field_manager_overview_dismissals(asset_register_item_id)
+  `);
+}
+
+async function ensureFieldManagerOverviewDismissalTable(): Promise<void> {
+  if (!overviewDismissalTablePromise) {
+    overviewDismissalTablePromise = ensureFieldManagerOverviewDismissalTableOnce()
+      .catch((error) => {
+        overviewDismissalTablePromise = null;
+        throw error;
+      });
+  }
+
+  return overviewDismissalTablePromise;
+}
+
+async function listFieldManagerOverviewDismissalKeys(
+  managerId: string,
+): Promise<Set<string>> {
+  await ensureFieldManagerOverviewDismissalTable();
+
+  const result = await getDb().query<FieldManagerOverviewDismissalRow>(
+    `
+      select source_kind, source_id
+      from public.field_manager_overview_dismissals
+      where field_manager_id = $1::uuid
+    `,
+    [managerId],
+  );
+
+  return new Set(
+    result.rows.flatMap((row) => {
+      const sourceKind = asText(row.source_kind) as FieldManagerOverviewSourceKind;
+      const sourceId = asText(row.source_id);
+
+      return sourceKind && sourceId
+        ? [overviewDismissalKey(sourceKind, sourceId)]
+        : [];
+    }),
+  );
 }
 
 function rangeDays(range: FieldManagerOverviewRange): number {
@@ -330,7 +419,7 @@ function sortOverviewItems(items: FieldManagerOverviewItem[]): FieldManagerOverv
   });
 }
 
-export async function listFieldManagerOverview(input: {
+async function buildFieldManagerOverview(input: {
   ownerUserId: string;
   managerId: string;
   range: FieldManagerOverviewRange;
@@ -462,4 +551,89 @@ export async function listFieldManagerOverview(input: {
     },
     items: sortedItems,
   };
+}
+
+export async function listFieldManagerOverview(input: {
+  ownerUserId: string;
+  managerId: string;
+  range: FieldManagerOverviewRange;
+}): Promise<FieldManagerOverviewResult> {
+  const [overview, dismissedKeys] = await Promise.all([
+    buildFieldManagerOverview(input),
+    listFieldManagerOverviewDismissalKeys(input.managerId),
+  ]);
+  const items = overview.items.filter((item) => {
+    const key = overviewDismissalKey(overviewSourceKind(item), item.sourceId);
+    return !dismissedKeys.has(key);
+  });
+  const needsAttentionCount = items.filter(
+    (item) => item.section === 'needs_attention',
+  ).length;
+
+  return {
+    ...overview,
+    summary: {
+      totalCount: items.length,
+      needsAttentionCount,
+      comingUpCount: items.length - needsAttentionCount,
+    },
+    items,
+  };
+}
+
+export async function dismissFieldManagerOverviewItem(input: {
+  ownerUserId: string;
+  managerId: string;
+  range: FieldManagerOverviewRange;
+  itemId: string;
+  sourceId: string;
+}): Promise<{ itemId: string; sourceId: string }> {
+  const itemId = asText(input.itemId);
+  const sourceId = asText(input.sourceId);
+
+  if (!itemId || !sourceId) {
+    throw new Error('OVERVIEW_ITEM_NOT_FOUND');
+  }
+
+  const overview = await buildFieldManagerOverview({
+    ownerUserId: input.ownerUserId,
+    managerId: input.managerId,
+    range: input.range,
+  });
+  const item = overview.items.find(
+    (candidate) => candidate.id === itemId && candidate.sourceId === sourceId,
+  );
+
+  if (!item) {
+    throw new Error('OVERVIEW_ITEM_NOT_FOUND');
+  }
+
+  await ensureFieldManagerOverviewDismissalTable();
+  await getDb().query(
+    `
+      insert into public.field_manager_overview_dismissals (
+        field_manager_id,
+        source_kind,
+        source_id,
+        overview_item_id,
+        asset_register_item_id,
+        dismissed_at
+      )
+      values ($1::uuid, $2, $3, $4, $5::uuid, now())
+      on conflict (field_manager_id, source_kind, source_id)
+      do update set
+        overview_item_id = excluded.overview_item_id,
+        asset_register_item_id = excluded.asset_register_item_id,
+        dismissed_at = now()
+    `,
+    [
+      input.managerId,
+      overviewSourceKind(item),
+      item.sourceId,
+      item.id,
+      item.assetId,
+    ],
+  );
+
+  return { itemId: item.id, sourceId: item.sourceId };
 }
