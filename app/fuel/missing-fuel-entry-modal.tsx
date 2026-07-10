@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, type ChangeEvent, type SVGProps } from 'react';
+import { useEffect, useMemo, useState, type SVGProps } from 'react';
 import styles from './page.module.css';
 
 export type MissingFuelStorage = {
@@ -28,6 +28,8 @@ export type MissingFuelAsset = {
   fuelPercent: number | null;
   yearModel?: number | null;
   condition?: string;
+  selectedMethod?: string;
+  currentValue?: number | null;
   canReceiveFuel: boolean;
   isActive?: boolean;
   usageMetric: 'hours' | 'km' | 'both' | 'percentage' | 'none';
@@ -61,11 +63,6 @@ type MissingEntryDraft = {
   assetFuelPercentAfter: string;
   operatorName: string;
   activityText: string;
-  workAreaText: string;
-  lateEntryReason: string;
-  note: string;
-  evidenceType: string;
-  evidenceReference: string;
 };
 
 type ReconcileDraft = {
@@ -91,8 +88,8 @@ function CloseIcon(props: SVGProps<SVGSVGElement>) {
   return <IconBase {...props}><path d="m6 6 12 12M18 6 6 18" /></IconBase>;
 }
 
-function SearchIcon(props: SVGProps<SVGSVGElement>) {
-  return <IconBase {...props}><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></IconBase>;
+function ArrowRightIcon(props: SVGProps<SVGSVGElement>) {
+  return <IconBase {...props}><path d="M5 12h14M13 6l6 6-6 6" /></IconBase>;
 }
 
 function CheckIcon(props: SVGProps<SVGSVGElement>) {
@@ -129,6 +126,15 @@ function formatLitres(value: number | null | undefined): string {
   return value === null || value === undefined ? 'Not recorded' : `${formatNumber(value, 3)} L`;
 }
 
+function formatCurrency(value: number | null | undefined): string {
+  if (value === null || value === undefined || !Number.isFinite(value)) return '—';
+  return `R${value.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function titleCaseText(value: string): string {
+  return value.replace(/[_-]+/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
 function usageLabel(metric: UsageMetric): string {
   if (metric === 'hours') return 'Hours';
   if (metric === 'km') return 'Kilometres';
@@ -156,12 +162,37 @@ function assetCurrentUsage(asset: MissingFuelAsset): string {
   return asset.hours === null ? 'Hours not recorded' : `${formatNumber(asset.hours, 2)} hours`;
 }
 
+function assetPickerUsage(asset: MissingFuelAsset): string {
+  if (asset.usageMetric === 'percentage') {
+    return asset.lifeWorkedPercent === null ? '' : `Usage: ${formatNumber(asset.lifeWorkedPercent, 1)}%`;
+  }
+  if (asset.hours === null || asset.hours <= 0) return '';
+  if (asset.usageMetric === 'km') return `Usage: ${formatNumber(asset.hours, 0)} km`;
+  if (asset.usageMetric === 'hours') return `Usage: ${formatNumber(asset.hours, 0)} hours`;
+  if (asset.usageMetric === 'both') return `Usage: ${formatNumber(asset.hours, 0)}`;
+  return '';
+}
+
+function assetPickerMeta(asset: MissingFuelAsset): string {
+  return [
+    typeof asset.yearModel === 'number' ? `Year Model: ${asset.yearModel}` : '',
+    assetPickerUsage(asset),
+    asset.condition ? `Condition: ${titleCaseText(asset.condition)}` : '',
+  ].filter(Boolean).join(' • ');
+}
+
+function assetPickerDetail(asset: MissingFuelAsset): string {
+  return [
+    asset.assetTypeLabel || 'Asset',
+    asset.selectedMethod === 'manual' ? 'Manual' : 'Aim4price',
+  ].filter(Boolean).join(' • ');
+}
+
 function emptyDraft(): MissingEntryDraft {
   return {
     issueDate: johannesburgDate(), issueTime: '', issueTimeRecorded: false,
     usageMetric: 'none', usageReading: '', assetFuelPercentBefore: '', litres: '', assetFuelPercentAfter: '',
-    operatorName: '', activityText: '', workAreaText: '', lateEntryReason: '', note: '',
-    evidenceType: 'no_supporting_record', evidenceReference: '',
+    operatorName: '', activityText: '',
   };
 }
 
@@ -170,19 +201,6 @@ function parseNumber(value: string): number | null {
   if (!normalized) return null;
   const parsed = Number(normalized);
   return Number.isFinite(parsed) ? parsed : null;
-}
-
-function evidenceStatus(draft: MissingEntryDraft, file: File | null): string {
-  return file || draft.evidenceReference.trim()
-    ? 'Evidence supplied — review required'
-    : 'Internal record only — supporting evidence not supplied';
-}
-
-function balanceTreatmentLabel(value: TankBalanceTreatment): string {
-  if (value === 'already_reflected') return 'Already reflected — no current stock change';
-  if (value === 'not_yet_reflected') return 'Not yet reflected — deduct from current stock';
-  if (value === 'not_sure') return 'I’m not sure — physical reconciliation required';
-  return 'Not selected';
 }
 
 export function ManageFuelStorageChoiceModal({ storage, onClose, onManage, onMissingEntry }: {
@@ -209,10 +227,12 @@ export function ManageFuelStorageChoiceModal({ storage, onClose, onManage, onMis
           <button type="button" className={`${styles.sourceChoiceOption} ${styles.manageChoiceOption}`} onClick={onManage}>
             <span className={styles.choiceGraphic}><GearIcon /></span>
             <span className={styles.choiceTitleBlock}><strong>Manage Storage</strong><small>Update the tank details and current balance.</small></span>
+            <span className={styles.manageChoiceArrow}><ArrowRightIcon /></span>
           </button>
           <button type="button" className={`${styles.sourceChoiceOption} ${styles.manageChoiceOption} ${styles.desktopMissingEntryChoice}`} onClick={onMissingEntry}>
             <span className={styles.choiceGraphic}><HistoryFuelIcon /></span>
-            <span className={styles.choiceTitleBlock}><strong>Add Missing Fuel Entry</strong><small>Record fuel issued earlier from this tank but not captured.</small></span>
+            <span className={styles.choiceTitleBlock}><strong>Back Track Fuel</strong><small>Add fuel that was issued earlier but not recorded.</small></span>
+            <span className={styles.manageChoiceArrow}><ArrowRightIcon /></span>
           </button>
         </div>
         <div className={styles.modalFooter}><button type="button" className={styles.secondaryButton} onClick={onClose}>Cancel</button></div>
@@ -235,7 +255,6 @@ export function MissingFuelEntryModal({ storage, assets, addedByLabel, onClose, 
   const [search, setSearch] = useState('');
   const [draft, setDraft] = useState<MissingEntryDraft>(() => emptyDraft());
   const [treatment, setTreatment] = useState<TankBalanceTreatment>('');
-  const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
@@ -280,10 +299,6 @@ export function MissingFuelEntryModal({ storage, assets, addedByLabel, onClose, 
     if (after < before) return 'Fuel percentage after cannot be lower than fuel percentage before.';
     if (draft.operatorName.trim().length < 2) return 'Enter the operator or manager.';
     if (draft.activityText.trim().length < 3) return 'Enter the specific activity the fuel was used for.';
-    if (draft.workAreaText.trim().length < 2) return 'Enter the historical work area or location.';
-    if (draft.lateEntryReason.trim().length < 5) return 'Explain why the entry was entered late.';
-    if (draft.evidenceType === 'no_supporting_record' && (evidenceFile || draft.evidenceReference.trim())) return 'Choose the correct supporting-evidence type for the file or reference.';
-    if (evidenceFile && evidenceFile.size > 12 * 1024 * 1024) return 'Supporting evidence must be 12 MB or smaller.';
     return '';
   }
 
@@ -320,18 +335,12 @@ export function MissingFuelEntryModal({ storage, assets, addedByLabel, onClose, 
         assetFuelPercentAfter: parseNumber(draft.assetFuelPercentAfter),
         operatorName: draft.operatorName,
         activityText: draft.activityText,
-        workAreaText: draft.workAreaText,
-        lateEntryReason: draft.lateEntryReason,
-        note: draft.note,
-        evidenceType: draft.evidenceType,
-        evidenceReference: draft.evidenceReference,
         tankBalanceTreatment: treatment,
         idempotencyKey,
       };
-      const formData = new FormData();
-      formData.set('payload', JSON.stringify(payload));
-      if (evidenceFile) formData.set('evidence', evidenceFile);
-      const response = await fetch(`/api/fuel/storage/${encodeURIComponent(storage.id)}/missing-entry`, { method: 'POST', credentials: 'include', body: formData });
+      const response = await fetch(`/api/fuel/storage/${encodeURIComponent(storage.id)}/missing-entry`, {
+        method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+      });
       const data = await response.json() as MissingFuelLedgerPayload;
       if (!response.ok || !data.ok) throw new Error(data.error || 'Failed to save the missing fuel entry.');
       onLedgerUpdated(data);
@@ -346,7 +355,7 @@ export function MissingFuelEntryModal({ storage, assets, addedByLabel, onClose, 
   }
 
   function addAnother() {
-    setStep('asset'); setAssetId(''); setSearch(''); setDraft(emptyDraft()); setTreatment(''); setEvidenceFile(null);
+    setStep('asset'); setAssetId(''); setSearch(''); setDraft(emptyDraft()); setTreatment('');
     setSaved(false); setSavedNeedsReconcile(false); setError(''); setIdempotencyKey(createIdempotencyKey('missing-fuel'));
   }
 
@@ -356,7 +365,7 @@ export function MissingFuelEntryModal({ storage, assets, addedByLabel, onClose, 
         {step !== 'asset' ? <button type="button" className={styles.secondaryButton} onClick={() => { setError(''); setStep(step === 'review' ? 'details' : 'asset'); }} disabled={isSaving}>Back</button> : null}
         <button type="button" className={styles.secondaryButton} onClick={onClose} disabled={isSaving}>Cancel</button>
       </div>
-      {step === 'asset' ? null : step === 'details' ? <button type="button" className={styles.primaryButton} onClick={reviewEntry}>Review</button> : <button type="button" className={styles.primaryButton} onClick={() => void saveEntry()} disabled={isSaving}>{isSaving ? 'Saving...' : 'Save Missing Entry'}</button>}
+      {step === 'asset' ? null : step === 'details' ? <button type="button" className={styles.primaryButton} onClick={reviewEntry}>Next</button> : <button type="button" className={styles.primaryButton} onClick={() => void saveEntry()} disabled={isSaving}>{isSaving ? 'Saving...' : 'Save Fuel Entry'}</button>}
     </div>
   );
 
@@ -364,7 +373,7 @@ export function MissingFuelEntryModal({ storage, assets, addedByLabel, onClose, 
     <div className={`${styles.fuelSlipFlowBackdrop} ${styles.desktopMissingEntryModal}`} role="dialog" aria-modal="true" aria-labelledby="missing-fuel-title">
       <div className={styles.missingEntryModal}>
         <header className={styles.missingEntryHeader}>
-          <div><span className={styles.missingEntryEyebrow}>Late fuel record</span><h2 id="missing-fuel-title">{saved ? 'Missing fuel entry saved' : 'Add Missing Fuel Entry'}</h2>{!saved ? <p>{storage.name} · Historical issue only</p> : null}</div>
+          <div><h2 id="missing-fuel-title">{saved ? 'Fuel entry saved' : 'Back Track Fuel'}</h2>{!saved ? <p>{storage.name}</p> : null}</div>
           <button type="button" className={styles.closeButton} onClick={onClose} disabled={isSaving} aria-label="Close missing fuel entry"><CloseIcon /></button>
         </header>
 
@@ -372,9 +381,9 @@ export function MissingFuelEntryModal({ storage, assets, addedByLabel, onClose, 
           {saved ? (
             <section className={styles.missingEntrySuccess}>
               <span className={styles.successIcon}><CheckIcon /></span>
-              <h3>Missing fuel entry saved</h3>
-              <p>The historical fuel issue was recorded without changing the asset’s current meter, fuel level, GPS or valuation state.</p>
-              <div className={styles.reviewSummaryCard}><div><span>Storage tank</span><strong>{storage.name}</strong></div><div><span>Entry added on</span><strong>{entryAddedLabel}</strong></div><div><span>Source</span><strong>Late Entry</strong></div></div>
+              <h3>Fuel entry saved</h3>
+              <p>The earlier fuel issue has been added to the ledger.</p>
+              <div className={styles.reviewSummaryCard}><div><span>Storage tank</span><strong>{storage.name}</strong></div><div><span>Entry added on</span><strong>{entryAddedLabel}</strong></div><div><span>Source</span><strong>Back Track</strong></div></div>
               {savedNeedsReconcile ? <div className={styles.balanceWarningBox}><WarningIcon /><div><strong>Balance needs checking</strong><span>The tank level was not changed. Complete a physical reconciliation before clearing this warning.</span></div></div> : null}
               <div className={styles.successActions}>
                 <button type="button" className={styles.secondaryButton} onClick={addAnother}>Add another entry</button>
@@ -385,25 +394,30 @@ export function MissingFuelEntryModal({ storage, assets, addedByLabel, onClose, 
           ) : (
             <>
               <div className={styles.missingEntryTankBanner}><span>Selected tank</span><strong>{storage.name}</strong><small>{formatLitres(storage.currentLitres)} currently recorded · Fixed capacity {formatLitres(storage.capacityLitres)}</small></div>
-              <div className={styles.missingEntryProgress} aria-label="Missing fuel entry progress">
-                <span className={step === 'asset' ? styles.progressCurrent : styles.progressComplete}>1. Choose Asset</span>
-                <span className={step === 'details' ? styles.progressCurrent : step === 'review' ? styles.progressComplete : ''}>2. Entry Details</span>
-                <span className={step === 'review' ? styles.progressCurrent : ''}>3. Tank Balance and Review</span>
-              </div>
               {error ? <div className={styles.missingEntryError} role="alert">{error}</div> : null}
 
               {step === 'asset' ? (
                 <section className={styles.missingAssetStep}>
                   <div className={styles.missingStepIntro}><h3>Choose Asset</h3><p>Only active assets eligible to receive fuel are shown. Storage tanks are excluded.</p></div>
-                  <div className={styles.missingAssetSearch}><SearchIcon /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search name, brand, model, category, registration, serial or asset code" aria-label="Search eligible assets" />{search ? <button type="button" onClick={() => setSearch('')}>Clear Search</button> : null}</div>
-                  <div className={styles.missingAssetList}>
+                  <div className={`${styles.pickerToolbar} ${styles.backtrackPickerToolbar}`}>
+                    <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search assets..." aria-label="Search eligible assets" />
+                    <button type="button" className={styles.secondaryButton} onClick={() => setSearch('')}>Clear</button>
+                  </div>
+                  <div className={`${styles.assetList} ${styles.backtrackAssetList}`}>
                     {filteredAssets.map((asset) => (
-                      <button key={asset.id} type="button" className={styles.missingAssetCard} onClick={() => chooseAsset(asset)}>
-                        <span><strong>{asset.title}</strong><small>{[asset.yearModel ? `Year Model: ${asset.yearModel}` : '', asset.condition ? `Condition: ${asset.condition}` : ''].filter(Boolean).join(' · ')}</small><small>{[asset.assetTypeLabel || asset.kind, asset.plateLabel ? `Reg: ${asset.plateLabel}` : '', asset.serialNumber ? `Serial: ${asset.serialNumber}` : '', asset.publicAssetCode ? `Code: ${asset.publicAssetCode}` : ''].filter(Boolean).join(' · ')}</small></span>
-                        <span className={styles.missingAssetMetrics}><strong>{assetCurrentUsage(asset)}</strong><small>{asset.fuelPercent === null ? 'Fuel % not recorded' : `${formatNumber(asset.fuelPercent, 0)}% fuel`}</small></span>
+                      <button key={asset.id} type="button" className={styles.assetRow} onClick={() => chooseAsset(asset)}>
+                        <span className={styles.assetInfo}>
+                          <strong>{asset.title}</strong>
+                          <small>{assetPickerMeta(asset) || 'Asset details not set'}</small>
+                          <small>{assetPickerDetail(asset)}</small>
+                        </span>
+                        <span className={styles.assetValue}>
+                          <strong>{formatCurrency(asset.currentValue)}</strong>
+                          <small>current value</small>
+                        </span>
                       </button>
                     ))}
-                    {!filteredAssets.length ? <div className={styles.missingAssetEmpty}>No eligible assets match this search.</div> : null}
+                    {!filteredAssets.length ? <div className={styles.emptyState}>No matching assets found.</div> : null}
                   </div>
                 </section>
               ) : null}
@@ -425,38 +439,19 @@ export function MissingFuelEntryModal({ storage, assets, addedByLabel, onClose, 
                     <label><span>Fuel percentage after *</span><div className={styles.inputWithSuffix}><input type="number" min="0" max="100" step="1" value={draft.assetFuelPercentAfter} onChange={(event) => setDraft({ ...draft, assetFuelPercentAfter: event.target.value })} /><em>%</em></div></label>
                     <label><span>Operator / manager *</span><input value={draft.operatorName} onChange={(event) => setDraft({ ...draft, operatorName: event.target.value })} placeholder="Name of operator or manager" /></label>
                     <label><span>Specific activity *</span><input value={draft.activityText} onChange={(event) => setDraft({ ...draft, activityText: event.target.value })} placeholder="e.g. Ploughing field 4" /></label>
-                    <label className={styles.fullWidthField}><span>Work area / historical location *</span><input value={draft.workAreaText} onChange={(event) => setDraft({ ...draft, workAreaText: event.target.value })} placeholder="Written location only — no desktop GPS is captured" /></label>
-                    <label className={styles.fullWidthField}><span>Reason entered late *</span><textarea rows={3} value={draft.lateEntryReason} onChange={(event) => setDraft({ ...draft, lateEntryReason: event.target.value })} placeholder="e.g. QR was not scanned; paper dispensing record captured later" /></label>
-                    <label className={styles.fullWidthField}><span>General note</span><textarea rows={2} value={draft.note} onChange={(event) => setDraft({ ...draft, note: event.target.value })} placeholder="Optional note" /></label>
-                    <label><span>Supporting-evidence type</span><select value={draft.evidenceType} onChange={(event) => setDraft({ ...draft, evidenceType: event.target.value })}>
-                      <option value="handwritten_dispensing_sheet">Handwritten dispensing sheet</option><option value="pump_or_meter_record">Pump or meter record</option><option value="supplier_slip_or_invoice">Supplier slip or invoice</option><option value="operator_confirmation">Operator confirmation</option><option value="other_supporting_record">Other supporting record</option><option value="no_supporting_record">No supporting record</option>
-                    </select></label>
-                    <label><span>Evidence reference</span><input value={draft.evidenceReference} onChange={(event) => setDraft({ ...draft, evidenceReference: event.target.value })} placeholder="Optional sheet, slip or invoice reference" /></label>
-                    <label className={styles.fullWidthField}><span>Supporting document or photograph</span><input type="file" accept="application/pdf,image/jpeg,image/png,image/webp" onChange={(event: ChangeEvent<HTMLInputElement>) => setEvidenceFile(event.target.files?.[0] ?? null)} /><small>One PDF, JPG, PNG or WEBP file. Maximum 12 MB.</small></label>
                   </div>
                 </section>
               ) : null}
 
               {step === 'review' && selectedAsset ? (
                 <section className={styles.missingReviewStep}>
-                  <div className={styles.missingStepIntro}><h3>How should the current tank balance be handled?</h3><p>No risky option is preselected. The fixed tank capacity never changes; only today’s recorded litres may change.</p></div>
+                  <div className={styles.missingStepIntro}><h3>Reduce the main diesel tank?</h3><p>Should {formatLitres(litres)} be deducted from the current tank balance?</p></div>
                   <div className={styles.balanceTreatmentGrid}>
-                    <button type="button" className={treatment === 'already_reflected' ? styles.balanceTreatmentSelected : ''} onClick={() => { setTreatment('already_reflected'); setError(''); }}><strong>Already reflected</strong><span>The current tank level is correct or was measured after this fuel issue. Do not change it.</span></button>
-                    <button type="button" className={treatment === 'not_yet_reflected' ? styles.balanceTreatmentSelected : ''} onClick={() => { setTreatment('not_yet_reflected'); setError(''); }}><strong>Not yet reflected</strong><span>Subtract the missing litres from today’s recorded tank level.</span></button>
-                    <button type="button" className={treatment === 'not_sure' ? styles.balanceTreatmentSelected : ''} onClick={() => { setTreatment('not_sure'); setError(''); }}><strong>I’m not sure</strong><span>Save without changing the tank level and flag it for physical reconciliation.</span></button>
+                    <button type="button" aria-pressed={treatment === 'not_yet_reflected'} className={treatment === 'not_yet_reflected' ? styles.balanceTreatmentSelected : ''} onClick={() => { setTreatment('not_yet_reflected'); setError(''); }}><strong>Yes, reduce it</strong><span>Deduct {formatLitres(litres)} now.</span></button>
+                    <button type="button" aria-pressed={treatment === 'already_reflected'} className={treatment === 'already_reflected' ? styles.balanceTreatmentSelected : ''} onClick={() => { setTreatment('already_reflected'); setError(''); }}><strong>No, leave it</strong><span>The fuel is already reflected.</span></button>
+                    <button type="button" aria-pressed={treatment === 'not_sure'} className={treatment === 'not_sure' ? styles.balanceTreatmentSelected : ''} onClick={() => { setTreatment('not_sure'); setError(''); }}><strong>I’m not sure</strong><span>Flag the tank for a balance check.</span></button>
                   </div>
                   {treatment === 'not_yet_reflected' ? <div className={currentAfterDeduction < 0 ? styles.balanceDeductionError : styles.balanceDeductionPreview}><div><span>Current recorded litres</span><strong>{formatLitres(storage.currentLitres)}</strong></div><div><span>Litres being deducted</span><strong>− {formatLitres(litres)}</strong></div><div><span>New recorded litres</span><strong>{formatLitres(currentAfterDeduction)}</strong></div>{currentAfterDeduction < 0 ? <p>Insufficient recorded stock. Select I’m not sure and reconcile physically.</p> : null}</div> : null}
-                  <div className={styles.reviewSummaryCard}>
-                    <div><span>Storage tank</span><strong>{storage.name}</strong></div><div><span>Asset</span><strong>{selectedAsset.title}</strong></div>
-                    <div><span>Fuel issued on</span><strong>{draft.issueDate}{draft.issueTimeRecorded && draft.issueTime ? ` at ${draft.issueTime}` : ' · Time not recorded'}</strong></div><div><span>Entry added on</span><strong>{entryAddedLabel} (server time finalised on save)</strong></div>
-                    <div><span>Added by</span><strong>{addedByLabel}</strong></div><div><span>Usage at the time</span><strong>{draft.usageMetric === 'none' ? 'No meter / Not recorded' : `${draft.usageReading} ${usageUnit(draft.usageMetric)}`}</strong></div><div><span>Fuel percentage</span><strong>{draft.assetFuelPercentBefore}% → {draft.assetFuelPercentAfter}%</strong></div>
-                    <div><span>Litres issued</span><strong>{formatLitres(litres)}</strong></div><div><span>Operator / manager</span><strong>{draft.operatorName}</strong></div>
-                    <div><span>Activity</span><strong>{draft.activityText}</strong></div><div><span>Work area / location</span><strong>{draft.workAreaText}</strong></div>
-                    <div className={styles.reviewWideRow}><span>Reason entered late</span><strong>{draft.lateEntryReason}</strong></div><div><span>Evidence status</span><strong>{evidenceStatus(draft, evidenceFile)}</strong></div>
-                    <div><span>Tank balance treatment</span><strong>{balanceTreatmentLabel(treatment)}</strong></div><div><span>Historical storage before</span><strong>Not recorded</strong></div><div><span>Historical storage after</span><strong>Not recorded</strong></div>
-                    <div><span>GPS</span><strong>Not captured</strong></div><div><span>Source</span><strong>Late Entry</strong></div>
-                  </div>
-                  <div className={styles.lateEntryAuditNotice}><strong>Audit handling</strong><span>This saves the historical issue and the real date it was added separately. It never rewrites the asset’s current usage, fuel percentage, GPS, location, last scan or valuation state.</span></div>
                 </section>
               ) : null}
             </>
