@@ -18,7 +18,7 @@ export default async function AssetDiscoveryPage() {
 
   if (profile.accountType !== 'dealer') {
     if (profile.accountType === 'owner') redirect('/asset-register');
-    redirect('/users');
+    redirect('/leads');
   }
 
   return (
