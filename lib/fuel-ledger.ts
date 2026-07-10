@@ -1215,12 +1215,37 @@ function metricTextIsPercentage(value: string): boolean {
     'percentage',
     'percent',
     '%',
+    'percent_used',
+    'percentage_used',
     'life_percentage',
     'life_percent',
+    'life_worked_percent',
+    'lifetime_percent',
     'percent_worked',
     'worked_percent',
+    'wear_class',
     'semi_depreciation',
     'percentage_depreciation',
+  ].includes(value);
+}
+
+function metricTextIsReading(value: string): boolean {
+  return [
+    'reading',
+    'meter',
+    'hours',
+    'hour',
+    'hrs',
+    'engine_hours',
+    'hour_meter',
+    'km',
+    'kms',
+    'kilometres',
+    'kilometers',
+    'odometer',
+    'both',
+    'km_hours',
+    'hours_km',
   ].includes(value);
 }
 
@@ -1231,17 +1256,64 @@ function inferAssetUsageMetric(row: FuelAssetRow): FuelLedgerAsset['usageMetric'
   const lifeWorkedPercent = lifeWorkedPercentFromAssetRow(row);
   const savedReading = normalizeUsageReading(row.hours);
   const hasPositiveReading = savedReading !== null && savedReading > 0;
+  const depreciationMethod = asText(
+    specs.depreciationMethodUsed ??
+      specs.depreciation_method_used ??
+      specs.selectedDepreciationMethod ??
+      specs.selected_depreciation_method,
+  ).toLowerCase();
+  const explicitUsageBasisValues = [
+    specs.usageMode,
+    specs.usage_mode,
+    specs.usageBasis,
+    specs.usage_basis,
+    specs.selectedUsageMode,
+    specs.selected_usage_mode,
+    specs.selectedUsageBasis,
+    specs.selected_usage_basis,
+  ].map((value) => asText(value).toLowerCase()).filter(Boolean);
+  const fallbackPercentageBasisValues = [
+    specs.usageMetricType,
+    specs.usage_metric_type,
+    specs.valuationMode,
+    specs.valuation_mode,
+    specs.depreciationMethodUsed,
+    specs.depreciation_method_used,
+    specs.selectedDepreciationMethod,
+    specs.selected_depreciation_method,
+  ];
+  const hasExplicitReadingBasis = explicitUsageBasisValues.some(metricTextIsReading);
+  const hasExplicitPercentageBasis = explicitUsageBasisValues.some(metricTextIsPercentage);
 
-  if (metricTextIsPercentage(rawMetric)) return 'percentage';
+  if (
+    kind !== 'vehicle' &&
+    !hasExplicitReadingBasis &&
+    (
+      hasExplicitPercentageBasis ||
+      fallbackPercentageBasisValues.some((value) => metricTextIsPercentage(asText(value).toLowerCase())) ||
+      depreciationMethod === 'percentage_depreciation' ||
+      (lifeWorkedPercent !== null && (!hasPositiveReading || depreciationMethod === 'semi_depreciation'))
+    )
+  ) {
+    return 'percentage';
+  }
+
+  if (!hasExplicitReadingBasis && metricTextIsPercentage(rawMetric)) return 'percentage';
   if (rawMetric === 'both' || rawMetric === 'km_hours' || rawMetric === 'hours_km') return 'both';
   if (['km', 'kms', 'kilometres', 'kilometers', 'odometer'].includes(rawMetric)) return 'km';
   if (['hours', 'hour', 'hrs', 'engine_hours', 'hour_meter'].includes(rawMetric)) return 'hours';
+
+  for (const explicitValue of explicitUsageBasisValues) {
+    if (explicitValue === 'both' || explicitValue === 'km_hours' || explicitValue === 'hours_km') return 'both';
+    if (['km', 'kms', 'kilometres', 'kilometers', 'odometer'].includes(explicitValue)) return 'km';
+    if (['hours', 'hour', 'hrs', 'engine_hours', 'hour_meter'].includes(explicitValue)) return 'hours';
+  }
 
   if (kind === 'vehicle' || /\b(?:vehicle|truck|bus|trailer|motorcycle|bakkie|sedan|suv|car)\b/i.test(asText(row.equipment_family_label))) {
     return 'km';
   }
 
-  if (lifeWorkedPercent !== null && !hasPositiveReading) return 'percentage';
+  if (!hasExplicitReadingBasis && lifeWorkedPercent !== null && !hasPositiveReading) return 'percentage';
   if (inferAssetCanReceiveFuel(row)) return 'hours';
   return 'none';
 }
