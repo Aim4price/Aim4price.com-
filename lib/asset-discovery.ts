@@ -82,6 +82,7 @@ export type AssetDiscoveryNotification = {
   status: AssetDiscoveryEnquiryStatus;
   createdAtIso: string;
   updatedAtIso: string;
+  requestAgainAtIso: string | null;
   asset: SafeAssetSummary;
 };
 
@@ -152,6 +153,7 @@ type ExistingEnquiryRow = {
   id: string;
   status: string | null;
   request_again_at: string | null;
+  approved_at: string | null;
 };
 
 type OptionRow = {
@@ -301,12 +303,29 @@ function numericValue(value: unknown): number | null {
   return Number.isFinite(numeric) && numeric >= 0 ? numeric : null;
 }
 
+function positiveNumericValue(value: unknown): number | null {
+  const numeric = numericValue(value);
+  return numeric !== null && numeric > 0 ? numeric : null;
+}
+
 function pickSpecsNumber(
   specs: Record<string, unknown>,
   keys: string[],
 ): number | null {
   for (const key of keys) {
     const numeric = numericValue(specs[key]);
+    if (numeric !== null) return numeric;
+  }
+
+  return null;
+}
+
+function pickSpecsPositiveNumber(
+  specs: Record<string, unknown>,
+  keys: string[],
+): number | null {
+  for (const key of keys) {
+    const numeric = positiveNumericValue(specs[key]);
     if (numeric !== null) return numeric;
   }
 
@@ -473,9 +492,11 @@ function buildUsage(
 ): string {
   const specs = isRecord(row.specs_json) ? row.specs_json : {};
   const metric = readUsageMetric(row);
-  const savedReading = numericValue(row.hours);
+  // A zero meter reading is normally the database default for an unsaved
+  // reading. Discovery must not present that default as real usage.
+  const savedReading = positiveNumericValue(row.hours);
   const storedPercent = numericValue(row.life_worked_percent);
-  const kmReading = pickSpecsNumber(specs, [
+  const kmReading = pickSpecsPositiveNumber(specs, [
     "km",
     "kms",
     "kilometres",
@@ -493,7 +514,7 @@ function buildUsage(
   ]);
   const hoursReading =
     savedReading ??
-    pickSpecsNumber(specs, [
+    pickSpecsPositiveNumber(specs, [
       "hours",
       "engineHours",
       "engine_hours",
@@ -520,6 +541,8 @@ function buildUsage(
       "lifetimeUsedPercent",
       "lifetime_used_percent",
     ]);
+  const fallbackPercent =
+    percent !== null && percent > 0 ? percent : null;
 
   if (metric === "percent") {
     return percent !== null ? formatPercent(percent) : "Unknown";
@@ -528,11 +551,11 @@ function buildUsage(
   if (metric === "km") {
     const value = savedReading ?? kmReading;
     if (value !== null) return `${formatWholeNumber(value)} km`;
-    return percent !== null ? formatPercent(percent) : "Unknown";
+    return fallbackPercent !== null ? formatPercent(fallbackPercent) : "Unknown";
   }
 
   if (hoursReading !== null) return `${formatWholeNumber(hoursReading)} hours`;
-  if (percent !== null) return formatPercent(percent);
+  if (fallbackPercent !== null) return formatPercent(fallbackPercent);
   if (kmReading !== null) return `${formatWholeNumber(kmReading)} km`;
 
   return "Unknown";
@@ -666,6 +689,7 @@ function mapNotification(row: EnquiryRow): AssetDiscoveryNotification {
     status: normalizeStatus(row.status),
     createdAtIso: row.created_at || new Date().toISOString(),
     updatedAtIso: row.updated_at || row.created_at || new Date().toISOString(),
+    requestAgainAtIso: row.request_again_at,
     asset: safeSummary({ ...row, province: row.owner_province }),
   };
 }
@@ -749,6 +773,16 @@ export async function ensureAssetDiscoveryTables(): Promise<void> {
       on public.asset_discovery_enquiries(asset_register_item_id, dealer_user_id)
       where status = 'pending'
   `);
+  await db.query(`
+    create index if not exists idx_asset_discovery_active_denial
+      on public.asset_discovery_enquiries(asset_register_item_id, request_again_at desc)
+      where status = 'temporarily_denied'
+  `);
+  await db.query(`
+    create index if not exists idx_asset_discovery_dealer_approval_expiry
+      on public.asset_discovery_enquiries(dealer_user_id, approved_at desc)
+      where status = 'approved'
+  `);
 
   assetDiscoveryTablesEnsured = true;
 }
@@ -767,6 +801,13 @@ function baseAssetWhere(input: {
     `(${DISCOVERY_ELIGIBLE_ASSET_SQL})`,
     `${RESOLVED_ASSET_TYPE_SQL} !~* '${PROPERTY_LIKE_ASSET_PATTERN}'`,
     `coalesce(asset.title, '') !~* '${PROPERTY_LIKE_ASSET_PATTERN}'`,
+    `not exists (
+      select 1
+      from public.asset_discovery_enquiries blocked_enquiry
+      where blocked_enquiry.asset_register_item_id = asset.id
+        and blocked_enquiry.status = 'temporarily_denied'
+        and blocked_enquiry.request_again_at > now()
+    )`,
   ];
 
   const search = asText(input.search);
@@ -894,17 +935,29 @@ export async function listAssetDiscoveryAssets(input: {
       asset.selected_method,
       asset.depreciation_method_used,
       family.usage_metric_type as family_usage_metric_type,
-      enquiry.id::text as enquiry_id,
-      enquiry.status as enquiry_status,
-      enquiry.request_again_at::text,
-      enquiry.approved_at::text
+      case when enquiry.is_active then enquiry.id::text else null end as enquiry_id,
+      case when enquiry.is_active then enquiry.status else null end as enquiry_status,
+      case when enquiry.is_active then enquiry.request_again_at::text else null end as request_again_at,
+      case when enquiry.is_active then enquiry.approved_at::text else null end as approved_at
     from public.asset_register_items asset
     join public.account_profiles owner on owner.user_id = asset.user_id
     left join public.equipment_families family on family.id = asset.equipment_family_id
     left join public.equipment_models model on model.id = asset.equipment_model_id
     left join public.brands brand on brand.id = model.brand_id
     left join lateral (
-      select e.id, e.status, e.request_again_at, e.approved_at, e.created_at
+      select
+        e.id,
+        e.status,
+        e.request_again_at,
+        e.approved_at,
+        e.created_at,
+        case
+          when e.status = 'approved' then
+            coalesce(e.approved_at, e.updated_at, e.created_at) > now() - interval '3 months'
+          when e.status = 'temporarily_denied' then
+            e.request_again_at > now()
+          else true
+        end as is_active
       from public.asset_discovery_enquiries e
       where e.asset_register_item_id = asset.id
         and e.dealer_user_id = $1
@@ -912,7 +965,16 @@ export async function listAssetDiscoveryAssets(input: {
       limit 1
     ) enquiry on true
     ${whereClause}
-    order by asset.updated_at desc nulls last, asset.created_at desc nulls last, asset.id desc
+    order by
+      case
+        when enquiry.is_active and enquiry.status = 'approved' then 0
+        when enquiry.is_active and enquiry.status = 'pending' then 1
+        else 2
+      end,
+      case when enquiry.is_active then enquiry.created_at end desc nulls last,
+      asset.updated_at desc nulls last,
+      asset.created_at desc nulls last,
+      asset.id desc
     limit ${limitParam}
     offset ${offsetParam}
   `;
@@ -995,6 +1057,13 @@ async function findSafeAssetForEnquiry(
         and (${DISCOVERY_ELIGIBLE_ASSET_SQL})
         and ${RESOLVED_ASSET_TYPE_SQL} !~* '${PROPERTY_LIKE_ASSET_PATTERN}'
         and coalesce(asset.title, '') !~* '${PROPERTY_LIKE_ASSET_PATTERN}'
+        and not exists (
+          select 1
+          from public.asset_discovery_enquiries blocked_enquiry
+          where blocked_enquiry.asset_register_item_id = asset.id
+            and blocked_enquiry.status = 'temporarily_denied'
+            and blocked_enquiry.request_again_at > now()
+        )
       limit 1
     `,
     [assetId, dealerUserId],
@@ -1019,7 +1088,7 @@ export async function createAssetDiscoveryEnquiry(input: {
   const db = getDb();
   const existing = await db.query<ExistingEnquiryRow>(
     `
-      select id::text, status, request_again_at::text
+      select id::text, status, request_again_at::text, approved_at::text
       from public.asset_discovery_enquiries
       where asset_register_item_id = $1::uuid
         and dealer_user_id = $2
@@ -1029,9 +1098,19 @@ export async function createAssetDiscoveryEnquiry(input: {
     [assetId, input.dealerUserId],
   );
   const current = existing.rows[0];
+  const approvalCutoff = new Date();
+  approvalCutoff.setMonth(approvalCutoff.getMonth() - 3);
 
   if (current?.status === "pending") {
     throw new Error("You already have a pending enquiry for this asset.");
+  }
+
+  if (
+    current?.status === "approved" &&
+    current.approved_at &&
+    Date.parse(current.approved_at) > approvalCutoff.getTime()
+  ) {
+    throw new Error("Contact access is already open for this asset.");
   }
 
   if (
@@ -1056,14 +1135,24 @@ export async function createAssetDiscoveryEnquiry(input: {
         created_at,
         updated_at
       )
-      values ($1::uuid, $2, $3, 'pending', $4, now(), now())
+      select $1::uuid, $2, $3, 'pending', $4, now(), now()
+      where not exists (
+        select 1
+        from public.asset_discovery_enquiries blocked_enquiry
+        where blocked_enquiry.asset_register_item_id = $1::uuid
+          and blocked_enquiry.status = 'temporarily_denied'
+          and blocked_enquiry.request_again_at > now()
+      )
       returning id::text
     `,
     [asset.id, asset.owner_user_id, input.dealerUserId, message],
   );
 
+  const enquiryId = result.rows[0]?.id;
+  if (!enquiryId) throw new Error("Asset is not available for Discovery.");
+
   return getAssetDiscoveryEnquiryForUser({
-    enquiryId: result.rows[0]?.id ?? "",
+    enquiryId,
     userId: input.dealerUserId,
     accountType: "dealer",
   });
@@ -1140,9 +1229,19 @@ export async function getAssetDiscoveryEnquiryForUser(input: {
 
   if (!audience) throw new Error("Discovery enquiry not found.");
 
+  const approvalAccessClause =
+    audience === "dealer"
+      ? `and (
+          enquiry.status <> 'approved'
+          or coalesce(enquiry.approved_at, enquiry.updated_at, enquiry.created_at) > now() - interval '3 months'
+        )`
+      : "";
   const result = await db.query<EnquiryRow>(
     enquirySelectSql(
-      `where enquiry.id = $1::uuid and enquiry.${audience === "owner" ? "owner_user_id" : "dealer_user_id"} = $2 limit 1`,
+      `where enquiry.id = $1::uuid
+        and enquiry.${audience === "owner" ? "owner_user_id" : "dealer_user_id"} = $2
+        ${approvalAccessClause}
+       limit 1`,
     ),
     [input.enquiryId, input.userId],
   );
@@ -1171,20 +1270,45 @@ export async function updateAssetDiscoveryOwnerDecision(input: {
 
   const db = getDb();
   const result = await db.query<{ id: string }>(
-    `
-      update public.asset_discovery_enquiries
-      set
-        status = $3,
-        approved_at = case when $3 = 'approved' then now() else approved_at end,
-        denied_at = case when $3 = 'temporarily_denied' then now() else denied_at end,
-        request_again_at = case when $3 = 'temporarily_denied' then now() + interval '90 days' else request_again_at end,
-        updated_at = now()
-      where id = $1::uuid
-        and owner_user_id = $2
-        and status = 'pending'
-      returning id::text
-    `,
-    [input.enquiryId, input.ownerUserId, nextStatus],
+    nextStatus === "temporarily_denied"
+      ? `
+        with target as (
+          select id, asset_register_item_id
+          from public.asset_discovery_enquiries
+          where id = $1::uuid
+            and owner_user_id = $2
+            and status = 'pending'
+          limit 1
+        ), denied as (
+          update public.asset_discovery_enquiries enquiry
+          set
+            status = 'temporarily_denied',
+            denied_at = now(),
+            request_again_at = now() + interval '90 days',
+            updated_at = now()
+          from target
+          where enquiry.asset_register_item_id = target.asset_register_item_id
+            and enquiry.owner_user_id = $2
+            and enquiry.status = 'pending'
+          returning enquiry.id
+        )
+        select target.id::text
+        from target
+      `
+      : `
+        update public.asset_discovery_enquiries
+        set
+          status = 'approved',
+          approved_at = now(),
+          denied_at = null,
+          request_again_at = null,
+          updated_at = now()
+        where id = $1::uuid
+          and owner_user_id = $2
+          and status = 'pending'
+        returning id::text
+      `,
+    [input.enquiryId, input.ownerUserId],
   );
 
   if (!result.rows[0]?.id)
@@ -1222,6 +1346,10 @@ export async function listRecentAssetDiscoveryEnquiriesForDealer(
       where enquiry.dealer_user_id = $1
         and enquiry.status in ('approved', 'temporarily_denied')
         and enquiry.updated_at >= now() - interval '45 days'
+        and (
+          enquiry.status <> 'approved'
+          or coalesce(enquiry.approved_at, enquiry.updated_at, enquiry.created_at) > now() - interval '3 months'
+        )
       order by enquiry.updated_at desc
       limit 10
     `),

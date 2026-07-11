@@ -31,6 +31,7 @@ export type HeaderNotificationItem = {
   href: string;
   createdAtIso: string;
   assetDiscoveryEnquiryId?: string;
+  priority?: boolean;
 };
 
 type OpenPartnerNoteRow = {
@@ -379,12 +380,13 @@ async function listOwnerAssetDiscoveryNotifications(userId: string): Promise<Hea
     return enquiries.map((enquiry) => ({
       id: `asset-discovery-owner:${enquiry.id}:${enquiry.updatedAtIso}`,
       category: 'asset_discovery',
-      tone: 'info',
-      title: 'Discovery enquiry',
-      body: `A dealer is interested in your ${enquiry.asset.brand} ${enquiry.asset.model}. Are you interested in selling?`,
+      tone: 'warning',
+      title: '#1 priority · Discovery enquiry',
+      body: `Another user is looking for a machine like your ${enquiry.asset.brand} ${enquiry.asset.model}. Interested in selling it?`,
       href: '',
       createdAtIso: isoFallback(enquiry.createdAtIso || enquiry.updatedAtIso),
       assetDiscoveryEnquiryId: enquiry.id,
+      priority: true,
     } satisfies HeaderNotificationItem));
   } catch (error) {
     console.error('Failed to load owner Discovery notifications', error);
@@ -399,17 +401,18 @@ async function listDealerAssetDiscoveryNotifications(userId: string): Promise<He
     return enquiries.map((enquiry) => {
       const approved = enquiry.status === 'approved';
       const retryDate = enquiry.status === 'temporarily_denied'
-        ? new Intl.DateTimeFormat('en-ZA', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(enquiry.updatedAtIso))
+        && enquiry.requestAgainAtIso
+        ? new Intl.DateTimeFormat('en-ZA', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(enquiry.requestAgainAtIso))
         : '';
 
       return {
         id: `asset-discovery-dealer:${enquiry.id}:${enquiry.status}:${enquiry.updatedAtIso}`,
         category: 'asset_discovery',
         tone: approved ? 'success' : 'warning',
-        title: approved ? 'Asset enquiry approved' : 'Asset enquiry temporarily denied',
+        title: approved ? 'Asset enquiry approved' : 'Asset unavailable for 90 days',
         body: approved
           ? `Your enquiry for ${enquiry.asset.brand} ${enquiry.asset.model} was approved.`
-          : `Your enquiry for ${enquiry.asset.brand} ${enquiry.asset.model} was temporarily denied.${retryDate ? ` Updated: ${retryDate}.` : ''}`,
+          : `The owner is not interested in selling ${enquiry.asset.brand} ${enquiry.asset.model} right now.${retryDate ? ` You can enquire again after ${retryDate}.` : ''}`,
         href: '',
         createdAtIso: isoFallback(enquiry.updatedAtIso),
         assetDiscoveryEnquiryId: enquiry.id,
@@ -524,6 +527,10 @@ export async function listHeaderNotifications(input: ListHeaderNotificationsInpu
 
   return notificationGroups
     .flat()
-    .sort((left, right) => toTime(right.createdAtIso) - toTime(left.createdAtIso))
+    .sort(
+      (left, right) =>
+        Number(Boolean(right.priority)) - Number(Boolean(left.priority)) ||
+        toTime(right.createdAtIso) - toTime(left.createdAtIso),
+    )
     .slice(0, MAX_NOTIFICATIONS);
 }
