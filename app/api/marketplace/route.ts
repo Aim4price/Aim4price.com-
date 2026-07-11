@@ -80,7 +80,7 @@ function formatUnknownError(error: unknown, fallback: string): string {
 
 async function getOptionalSession() {
   try {
-    return await getServerSession();
+    return await getServerSession({ allowDealerApp: true });
   } catch {
     return null;
   }
@@ -121,7 +121,7 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const session = await getServerSession();
+  const session = await getServerSession({ allowDealerApp: true });
 
   if (!session?.user?.id) {
     return unauthorized();
@@ -201,7 +201,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const session = await getServerSession();
+  const session = await getServerSession({ allowDealerApp: true });
 
   if (!session?.user?.id) {
     return unauthorized();
