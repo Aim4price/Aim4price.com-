@@ -905,7 +905,7 @@ export default function AppHeader({
         throw new Error(data.error || 'Failed to update Discovery enquiry.');
       }
 
-      setActiveAssetDiscoveryEnquiry(data.enquiry);
+      closeNotificationDetailModal();
       setNotifications((current) => current.filter((item) => item.assetDiscoveryEnquiryId !== enquiryId));
       markNotificationsSeen();
     } catch (error) {
@@ -1052,13 +1052,6 @@ export default function AppHeader({
               <strong>{enquiry.asset.province}</strong>
             </div>
           </div>
-
-          {isPending ? (
-            <div className={styles.notificationDetailMessageBox}>
-              <strong>Owner decision required</strong>
-              <p>Another user is looking for a machine like this. Choose Yes if you are interested in selling it, or No to hide this asset from Discovery for 90 days.</p>
-            </div>
-          ) : null}
 
           {!isPending ? (
             <div className={styles.notificationDetailStatusBox}>
