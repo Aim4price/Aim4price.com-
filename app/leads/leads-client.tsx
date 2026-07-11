@@ -5,6 +5,7 @@ import AppHeader from '../../components/AppHeader';
 import { openAssetRegisterSummaryPrint, openAssetSheetPrint, type ReportKeyValue, type ReportMethodCard } from '../../lib/report-print';
 import assetStyles from '../asset-register/page.module.css';
 import styles from './page.module.css';
+import dealerStyles from '../dealer/dealer.module.css';
 
 type LeadType = 'finance' | 'insurance' | 'replacement_quote';
 type LeadStatus = 'sent' | 'viewed' | 'accepted' | 'quoted' | 'declined' | 'closed';
@@ -1300,7 +1301,7 @@ function searchTextForLead(lead: AssetLead): string {
     .toLowerCase();
 }
 
-export default function LeadsClient() {
+export default function LeadsClient({ dealerAppMode = false }: { dealerAppMode?: boolean } = {}) {
   const [sessionUserId, setSessionUserId] = useState('');
   const [leads, setLeads] = useState<AssetLead[]>([]);
   const [accountInboxTitle, setAccountInboxTitle] = useState('LEADS INBOX LOADING...');
@@ -2329,8 +2330,8 @@ export default function LeadsClient() {
   const hasMultipleOwnerPreviewPhotos = Boolean(ownerPhotoPreview && ownerPhotoPreview.urls.length > 1);
 
   return (
-    <main className={`${assetStyles.page} ${styles.leadsPage}`}>
-      <AppHeader active="leads" />
+    <main className={`${assetStyles.page} ${styles.leadsPage} ${dealerAppMode ? dealerStyles.dealerLeadsSurface : ''}`}>
+      {!dealerAppMode ? <AppHeader active="leads" /> : null}
 
       <section className={assetStyles.shell}>
         {notice ? (
@@ -2342,11 +2343,11 @@ export default function LeadsClient() {
         <section className={`${assetStyles.registerPanel} ${styles.leadsRegisterPanel}`}>
           <div className={`${assetStyles.registerHeader} ${styles.leadsRegisterHeader}`}>
             <div className={`${assetStyles.registerTitleBlock} ${styles.leadsHeroTitleBlock}`}>
-              <h1>{accountInboxTitle}</h1>
+              <h1>{dealerAppMode ? 'LEADS' : accountInboxTitle}</h1>
             </div>
           </div>
 
-          <div className={`${assetStyles.summaryRow} ${assetStyles.heroSummaryRow} ${styles.leadSummaryRow}`}>
+          <div className={`${assetStyles.summaryRow} ${assetStyles.heroSummaryRow} ${styles.leadSummaryRow} ${dealerAppMode ? dealerStyles.dealerHidden : ''}`}>
             <div className={`${assetStyles.summaryTile} ${assetStyles.registerValueTile} ${assetStyles.heroSummaryTile} ${assetStyles.heroRegisterTile}`}>
               <div className={assetStyles.heroSummaryHead}>
                 <span className={assetStyles.heroSummaryTitle}>Lead overview</span>
