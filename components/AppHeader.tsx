@@ -193,9 +193,13 @@ const ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
   { href: '/asset-map', label: 'Asset Map', accountTypes: ['owner'] },
   { href: '/asset-register', label: 'Asset Register', accountTypes: ['owner'] },
   { href: '/my-invoices', label: 'Cost Ledger', accountTypes: ['owner'] },
+  { href: '/asset-discovery', label: 'Discovery', accountTypes: ['dealer'] },
   { href: '/fuel', label: 'Fuel Ledger', accountTypes: ['owner'] },
+  { href: '/valuation', label: 'Get Estimate', accountTypes: ['dealer'] },
+  { href: '/', label: 'Home', accountTypes: ['dealer'] },
   { href: '/maintenance', label: 'Maintenance', accountTypes: ['owner'] },
-  { href: '/marketplace', label: 'Marketplace', accountTypes: ['owner'] },
+  { href: '/marketplace', label: 'Marketplace', accountTypes: ['owner', 'dealer'] },
+  { href: '/leads', label: 'My Leads', accountTypes: ['dealer'] },
 ];
 
 function isAccountMenuItemVisible(item: AccountMenuItem, accountType: AccountType | undefined): boolean {
@@ -224,6 +228,7 @@ function buildNavItems(accountType: AccountType | 'public' | null): NavItem[] {
       { key: 'leads', href: '/leads', label: 'My Leads' },
       { key: 'asset-discovery', href: '/asset-discovery', label: 'Discovery' },
       { key: 'marketplace', href: '/marketplace', label: 'Marketplace' },
+      { key: 'account', href: '/account', label: 'Account' },
     ];
   }
 
