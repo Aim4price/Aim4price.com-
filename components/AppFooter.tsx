@@ -63,7 +63,12 @@ export default function AppFooter() {
   const [isExpanded, setIsExpanded] = useState(false);
   const currentYear = new Date().getFullYear();
 
-  if (pathname?.startsWith('/field-manager') || pathname?.startsWith('/scan')) {
+  if (
+    pathname?.startsWith('/field-manager') ||
+    pathname?.startsWith('/scan') ||
+    pathname?.startsWith('/dealer') ||
+    pathname?.startsWith('/account/dealer-app')
+  ) {
     return null;
   }
 
