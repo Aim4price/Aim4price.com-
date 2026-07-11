@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAccountProfile } from '../../../../../lib/account-profile';
 import { getServerSession } from '../../../../../lib/auth-session';
-import { getAssetDiscoveryEnquiryForUser, updateAssetDiscoveryOwnerDecision } from '../../../../../lib/asset-discovery';
+import {
+  getAssetDiscoveryEnquiryForUser,
+  retractAssetDiscoveryEnquiry,
+  updateAssetDiscoveryOwnerDecision,
+} from '../../../../../lib/asset-discovery';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -86,6 +90,34 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     return NextResponse.json({ ok: true, enquiry });
   } catch (error) {
     const message = errorMessage(error, 'Failed to save decision.');
+    return NextResponse.json({ ok: false, error: message }, { status: message.includes('not found') ? 404 : 400 });
+  }
+}
+
+export async function DELETE(_request: NextRequest, context: RouteContext) {
+  const session = await getServerSession({ allowDealerApp: true });
+
+  if (!session?.user?.id) return unauthorized();
+
+  try {
+    const profile = await getAccountProfile({
+      id: session.user.id,
+      name: session.user.name,
+      email: session.user.email,
+    });
+
+    if (profile.accountType !== 'dealer') {
+      return NextResponse.json({ ok: false, error: 'Only the dealer can retract this enquiry.' }, { status: 403 });
+    }
+
+    await retractAssetDiscoveryEnquiry({
+      enquiryId: context.params.enquiryId,
+      dealerUserId: session.user.id,
+    });
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    const message = errorMessage(error, 'Failed to retract enquiry.');
     return NextResponse.json({ ok: false, error: message }, { status: message.includes('not found') ? 404 : 400 });
   }
 }
