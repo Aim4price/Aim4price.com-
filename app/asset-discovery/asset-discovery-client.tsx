@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import styles from "./page.module.css";
+import dealerStyles from "../dealer/dealer.module.css";
 
 type EnquiryStatus = "pending" | "approved" | "temporarily_denied";
 
@@ -67,6 +68,26 @@ type EnquiryResponse = {
 type Notice = {
   tone: "success" | "error";
   message: string;
+};
+
+type DiscoveryContact = {
+  name: string;
+  businessName: string;
+  phone: string;
+  email: string;
+  location: string;
+};
+
+type DiscoveryEnquiryDetail = {
+  id: string;
+  ownerContact: DiscoveryContact | null;
+  asset: {
+    brand: string;
+    model: string;
+    year: string;
+    usage: string;
+    province: string;
+  };
 };
 
 type IconProps = {
@@ -247,7 +268,7 @@ function canEnquire(asset: AssetDiscoveryAsset): boolean {
   );
 }
 
-export default function AssetDiscoveryClient() {
+export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealerAppMode?: boolean } = {}) {
   const [assets, setAssets] = useState<AssetDiscoveryAsset[]>([]);
   const [provinceOptions, setProvinceOptions] = useState<Option[]>([]);
   const [typeOptions, setTypeOptions] = useState<Option[]>([]);
@@ -268,6 +289,9 @@ export default function AssetDiscoveryClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
+  const [activeEnquiry, setActiveEnquiry] =
+    useState<DiscoveryEnquiryDetail | null>(null);
+  const [loadingEnquiryId, setLoadingEnquiryId] = useState<string | null>(null);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -277,6 +301,22 @@ export default function AssetDiscoveryClient() {
 
     return () => window.clearTimeout(timer);
   }, [searchInput]);
+
+  useEffect(() => {
+    if (!activeEnquiry) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setActiveEnquiry(null);
+    };
+    window.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [activeEnquiry]);
 
   useEffect(() => {
     let mounted = true;
@@ -430,9 +470,56 @@ export default function AssetDiscoveryClient() {
     }
   }
 
+  async function openApprovedContact(asset: AssetDiscoveryAsset) {
+    if (!asset.enquiryId || loadingEnquiryId) return;
+    setLoadingEnquiryId(asset.enquiryId);
+    setNotice(null);
+
+    try {
+      const response = await fetch(
+        `/api/asset-discovery/enquiries/${encodeURIComponent(asset.enquiryId)}`,
+        { credentials: "include", cache: "no-store" },
+      );
+      const payload = (await response.json().catch(() => null)) as {
+        ok?: boolean;
+        enquiry?: DiscoveryEnquiryDetail;
+        error?: string;
+      } | null;
+
+      if (!response.ok || !payload?.ok || !payload.enquiry) {
+        throw new Error(payload?.error || "Failed to open the approved contact.");
+      }
+
+      setActiveEnquiry(payload.enquiry);
+    } catch (cause) {
+      setNotice({
+        tone: "error",
+        message:
+          cause instanceof Error
+            ? cause.message
+            : "Failed to open the approved contact.",
+      });
+    } finally {
+      setLoadingEnquiryId(null);
+    }
+  }
+
   function renderEnquiryControl(asset: AssetDiscoveryAsset) {
     const pillLabel = statusPillLabel(asset);
     const isProcessing = processingAssetIds.has(asset.id);
+
+    if (asset.enquiryStatus === "approved" && asset.enquiryId) {
+      return (
+        <button
+          type="button"
+          className={`${styles.primaryButton} ${styles.enquireButton}`}
+          onClick={() => void openApprovedContact(asset)}
+          disabled={loadingEnquiryId === asset.enquiryId}
+        >
+          {loadingEnquiryId === asset.enquiryId ? "Opening..." : "Open contact"}
+        </button>
+      );
+    }
 
     if (pillLabel) {
       return (
@@ -547,7 +634,7 @@ export default function AssetDiscoveryClient() {
   }
 
   return (
-    <section className={styles.shell}>
+    <section className={`${styles.shell} ${dealerAppMode ? dealerStyles.dealerDiscoverySurface : ""}`}>
       <div className={styles.heroPanel}>
         <h1>ASSET DISCOVERY</h1>
       </div>
@@ -556,10 +643,11 @@ export default function AssetDiscoveryClient() {
         className={styles.controlsPanel}
         aria-label="Asset Discovery controls"
       >
-        <div
-          className={styles.summaryGrid}
-          aria-label="Asset Discovery summary"
-        >
+        {!dealerAppMode ? (
+          <div
+            className={styles.summaryGrid}
+            aria-label="Asset Discovery summary"
+          >
           <article className={styles.summaryCard}>
             <span>Available Assets</span>
             <strong>{summary.totalAssets}</strong>
@@ -575,7 +663,8 @@ export default function AssetDiscoveryClient() {
             <strong>{summary.provinceCount}</strong>
             <small>Saved provinces represented.</small>
           </article>
-        </div>
+          </div>
+        ) : null}
 
         <section
           className={styles.toolbar}
@@ -656,7 +745,9 @@ export default function AssetDiscoveryClient() {
                 <div className={styles.assetCardHeader}>
                   <div className={styles.assetIdentity}>
                     <span className={styles.assetKicker}>
-                      {provinceKicker(asset)}
+                      {dealerAppMode
+                        ? cleanText(asset.province) || "Province not saved"
+                        : provinceKicker(asset)}
                     </span>
                     <h2>{assetDisplayName(asset)}</h2>
                   </div>
@@ -702,6 +793,83 @@ export default function AssetDiscoveryClient() {
       </section>
 
       {renderPagination()}
+
+      {activeEnquiry ? (
+        <div
+          className={dealerStyles.contactOverlay}
+          onMouseDown={() => setActiveEnquiry(null)}
+        >
+          <section
+            className={dealerStyles.contactModal}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="dealer-discovery-contact-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <header className={dealerStyles.contactHeader}>
+              <div>
+                <span>Approved contact</span>
+                <h2 id="dealer-discovery-contact-title">
+                  {[activeEnquiry.asset.brand, activeEnquiry.asset.model]
+                    .filter(Boolean)
+                    .join(" ") || "Asset owner"}
+                </h2>
+                <p>
+                  {[activeEnquiry.asset.year, activeEnquiry.asset.usage, activeEnquiry.asset.province]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveEnquiry(null)}
+                aria-label="Close approved contact"
+              >
+                ×
+              </button>
+            </header>
+
+            {activeEnquiry.ownerContact ? (
+              <div className={dealerStyles.contactGrid}>
+                <div>
+                  <span>Owner or business</span>
+                  <strong>
+                    {activeEnquiry.ownerContact.businessName ||
+                      activeEnquiry.ownerContact.name ||
+                      "Not supplied"}
+                  </strong>
+                </div>
+                <div>
+                  <span>Phone</span>
+                  <strong>{activeEnquiry.ownerContact.phone || "Not supplied"}</strong>
+                </div>
+                <div>
+                  <span>Email</span>
+                  <strong>{activeEnquiry.ownerContact.email || "Not supplied"}</strong>
+                </div>
+                <div>
+                  <span>Location</span>
+                  <strong>{activeEnquiry.ownerContact.location || "Not supplied"}</strong>
+                </div>
+              </div>
+            ) : (
+              <p className={dealerStyles.contactEmpty}>
+                The owner has approved the enquiry, but contact information has not been supplied.
+              </p>
+            )}
+
+            <div className={dealerStyles.contactActions}>
+              {activeEnquiry.ownerContact?.phone ? (
+                <a href={`tel:${activeEnquiry.ownerContact.phone}`}>Call owner</a>
+              ) : null}
+              {activeEnquiry.ownerContact?.email ? (
+                <a href={`mailto:${activeEnquiry.ownerContact.email}`}>Email owner</a>
+              ) : null}
+              <button type="button" onClick={() => setActiveEnquiry(null)}>Close</button>
+            </div>
+          </section>
+        </div>
+      ) : null}
     </section>
   );
 }
