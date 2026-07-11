@@ -2343,7 +2343,7 @@ export default function LeadsClient({ dealerAppMode = false }: { dealerAppMode?:
         <section className={`${assetStyles.registerPanel} ${styles.leadsRegisterPanel}`}>
           <div className={`${assetStyles.registerHeader} ${styles.leadsRegisterHeader}`}>
             <div className={`${assetStyles.registerTitleBlock} ${styles.leadsHeroTitleBlock}`}>
-              <h1>{dealerAppMode ? 'LEADS' : accountInboxTitle}</h1>
+              <h1>{dealerAppMode ? 'Leads' : accountInboxTitle}</h1>
             </div>
           </div>
 
@@ -2399,7 +2399,7 @@ export default function LeadsClient({ dealerAppMode = false }: { dealerAppMode?:
                 type="search"
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
-                placeholder="Search by business, asset or lead date"
+                placeholder={dealerAppMode ? 'Search leads' : 'Search by business, asset or lead date'}
                 aria-label="Search leads"
               />
 
