@@ -1252,6 +1252,28 @@ export async function getAssetDiscoveryEnquiryForUser(input: {
   return mapEnquiryForAudience(row, audience);
 }
 
+export async function retractAssetDiscoveryEnquiry(input: {
+  enquiryId: string;
+  dealerUserId: string;
+}): Promise<void> {
+  await ensureAssetDiscoveryTables();
+  const db = getDb();
+  const result = await db.query<{ id: string }>(
+    `
+      delete from public.asset_discovery_enquiries
+      where id = $1::uuid
+        and dealer_user_id = $2
+        and status = 'pending'
+      returning id::text
+    `,
+    [input.enquiryId, input.dealerUserId],
+  );
+
+  if (!result.rows[0]?.id) {
+    throw new Error("Discovery enquiry not found or already decided.");
+  }
+}
+
 export async function updateAssetDiscoveryOwnerDecision(input: {
   enquiryId: string;
   ownerUserId: string;
