@@ -22,7 +22,7 @@ export default async function AuthPage() {
 
     if (access.isActive) {
       const profile = await getAccountProfile({ id: session.user.id, name: session.user.name, email: session.user.email });
-      redirect(profile.accountType === "dealer" ? "/dealer" : "/asset-register");
+      redirect(profile.accountType === "dealer" ? "/leads" : "/asset-register");
     }
 
     redirect("/pending-payment");
