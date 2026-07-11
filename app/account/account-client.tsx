@@ -160,6 +160,7 @@ type QuickActionIconName =
   | "business"
   | "registers"
   | "pin"
+  | "dealer"
   | "marketplace"
   | "directory"
   | "delete";
@@ -238,6 +239,20 @@ function QuickActionIcon({ name }: { name: QuickActionIconName }) {
           <path {...strokeProps} d="M8.25 10V7.8a3.75 3.75 0 0 1 7.5 0V10" />
           <path {...strokeProps} d="M12 14.25v1.9" />
           <circle cx="12" cy="13.25" r="0.75" fill="currentColor" />
+        </svg>
+      ) : null}
+
+      {name === "dealer" ? (
+        <svg {...svgProps}>
+          <path
+            d="M4.75 19.25c.35-3.05 2.35-4.9 5.05-4.9s4.7 1.85 5.05 4.9H4.75Z"
+            fill="currentColor"
+            opacity="0.14"
+          />
+          <circle {...strokeProps} cx="9.8" cy="8.25" r="3.1" />
+          <path {...strokeProps} d="M4.75 19.25c.35-3.05 2.35-4.9 5.05-4.9s4.7 1.85 5.05 4.9" />
+          <path {...strokeProps} d="M15.6 9.25h3.65v7.25H15.6" />
+          <path {...strokeProps} d="M17.4 12.9h.02" />
         </svg>
       ) : null}
 
@@ -1607,6 +1622,10 @@ export default function AccountClient() {
     window.location.assign("/account/field-manager");
   }
 
+  function openDealerAppAccessPage() {
+    window.location.assign("/account/dealer-app");
+  }
+
   function openPartnerDirectory() {
     openActionModal("partnerDirectory");
   }
@@ -1927,6 +1946,18 @@ export default function AccountClient() {
                 >
                   <QuickActionIcon name="pin" />
                   <strong>Field Manager access</strong>
+                  <span className={styles.quickActionChevron}>›</span>
+                </button>
+              ) : null}
+
+              {isDealerAccount ? (
+                <button
+                  type="button"
+                  className={styles.quickActionButton}
+                  onClick={openDealerAppAccessPage}
+                >
+                  <QuickActionIcon name="dealer" />
+                  <strong>Manage Dealer App staff</strong>
                   <span className={styles.quickActionChevron}>›</span>
                 </button>
               ) : null}
