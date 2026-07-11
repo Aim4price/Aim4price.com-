@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getAccountAccess } from "../../lib/account-access";
+import { getAccountProfile } from "../../lib/account-profile";
 import { getAnyServerSession } from "../../lib/auth-session";
 import AuthClient from "./auth-client";
 
@@ -20,7 +21,8 @@ export default async function AuthPage() {
     }
 
     if (access.isActive) {
-      redirect("/asset-register");
+      const profile = await getAccountProfile({ id: session.user.id, name: session.user.name, email: session.user.email });
+      redirect(profile.accountType === "dealer" ? "/dealer" : "/asset-register");
     }
 
     redirect("/pending-payment");

@@ -392,9 +392,15 @@ function normalizeEmail(value: string) {
   return value.trim().toLowerCase();
 }
 
+function getSafeReturnTo(): string | null {
+  if (typeof window === "undefined") return null;
+  const value = new URLSearchParams(window.location.search).get("returnTo");
+  return value && value.startsWith("/") && !value.startsWith("//") ? value : null;
+}
+
 function getCallbackUrl(email?: string) {
   return getAbsoluteUrl(
-    email && normalizeEmail(email) === ADMIN_EMAIL ? "/admin" : POST_LOGIN_REDIRECT,
+    email && normalizeEmail(email) === ADMIN_EMAIL ? "/admin" : (getSafeReturnTo() ?? POST_LOGIN_REDIRECT),
   );
 }
 
