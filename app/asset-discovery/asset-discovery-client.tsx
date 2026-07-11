@@ -627,6 +627,71 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
     }
   }
 
+  async function handleRetractEnquiry(asset: AssetDiscoveryAsset) {
+    if (
+      asset.enquiryStatus !== "pending" ||
+      !asset.enquiryId ||
+      processingAssetIds.has(asset.id)
+    ) {
+      return;
+    }
+
+    setNotice(null);
+    setProcessingAssetIds((current) => new Set(current).add(asset.id));
+
+    try {
+      const response = await fetch(
+        `/api/asset-discovery/enquiries/${encodeURIComponent(asset.enquiryId)}`,
+        {
+          method: "DELETE",
+          credentials: "include",
+        },
+      );
+      const data = (await response.json().catch(() => null)) as {
+        ok?: boolean;
+        error?: string;
+      } | null;
+
+      if (!response.ok || !data?.ok) {
+        throw new Error(data?.error || "Failed to retract enquiry.");
+      }
+
+      setAssets((current) =>
+        sortAssetsByEnquiryPriority(
+          current.map((item) =>
+            item.id === asset.id
+              ? {
+                  ...item,
+                  enquiryId: null,
+                  enquiryStatus: null,
+                  requestAgainAtIso: null,
+                  approvedAtIso: null,
+                }
+              : item,
+          ),
+        ),
+      );
+      setNotice({
+        tone: "success",
+        message: "Enquiry retracted.",
+      });
+    } catch (retractError) {
+      setNotice({
+        tone: "error",
+        message:
+          retractError instanceof Error
+            ? retractError.message
+            : "Failed to retract enquiry.",
+      });
+    } finally {
+      setProcessingAssetIds((current) => {
+        const next = new Set(current);
+        next.delete(asset.id);
+        return next;
+      });
+    }
+  }
+
   async function openApprovedContact(asset: AssetDiscoveryAsset) {
     if (!asset.enquiryId || loadingEnquiryId) return;
     setLoadingEnquiryId(asset.enquiryId);
@@ -674,6 +739,21 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
           disabled={loadingEnquiryId === asset.enquiryId}
         >
           {loadingEnquiryId === asset.enquiryId ? "Opening..." : "Open contact"}
+        </button>
+      );
+    }
+
+    if (asset.enquiryStatus === "pending" && asset.enquiryId) {
+      return (
+        <button
+          type="button"
+          className={`${statusClassName(asset)} ${styles.retractEnquiryButton}`}
+          title="Retract this enquiry"
+          aria-label="Retract pending enquiry"
+          onClick={() => void handleRetractEnquiry(asset)}
+          disabled={isProcessing}
+        >
+          {isProcessing ? "Retracting..." : "Pending request"}
         </button>
       );
     }
