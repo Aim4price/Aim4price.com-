@@ -533,12 +533,6 @@
   gap: 9px !important;
 }
 
-.dealerDiscoverySurface [class*='assetCard'] {
-  border-color: rgba(37, 71, 51, 0.12) !important;
-  border-radius: 20px !important;
-  box-shadow: 0 12px 30px rgba(18, 53, 45, 0.065) !important;
-}
-
 .dealerLeadsSurface {
   min-height: auto !important;
   padding: 0 !important;
