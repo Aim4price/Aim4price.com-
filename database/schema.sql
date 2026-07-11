@@ -73,6 +73,7 @@
 --   46-fuel-missing-late-entries.sql
 --   47-asset-license-renewal-alerts.sql
 --   48-field-manager-overview-dismissals.sql
+--   49-dealer-app-staff.sql
 
 -- Fuel late-entry audit direction (migration 46):
 --   - historical issue date/time and real entry-added audit fields remain separate
