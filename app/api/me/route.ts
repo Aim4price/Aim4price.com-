@@ -1,34 +1,37 @@
 import { NextResponse } from 'next/server';
 import { getAccountProfile } from '../../../lib/account-profile';
-import { getServerSession } from '../../../lib/auth-session';
+import { getServerSession, isDealerAppSession } from '../../../lib/auth-session';
 
 export const runtime = 'nodejs';
 
 export async function GET() {
-  const session = await getServerSession();
+  const session = await getServerSession({ allowDealerApp: true });
 
   if (!session) {
-    return NextResponse.json({
-      ok: true,
-      signedIn: false,
-      user: null,
-    });
+    return NextResponse.json({ ok: true, signedIn: false, user: null });
   }
 
-  let displayName = session.user.name;
-  let accountType = 'owner';
+  const profile = await getAccountProfile({
+    id: session.user.id,
+    name: session.user.name,
+    email: session.user.email,
+  });
 
-  try {
-    const profile = await getAccountProfile({
-      id: session.user.id,
-      name: session.user.name,
-      email: session.user.email,
+  if (isDealerAppSession(session)) {
+    return NextResponse.json({
+      ok: true,
+      signedIn: true,
+      user: {
+        // Existing Dealer leads belong to the parent dealer account. Keep that
+        // effective id while exposing the staff identity separately.
+        id: session.dealerApp.parentDealerUserId,
+        name: session.dealerApp.displayName,
+        email: '',
+        accountType: 'dealer',
+        dealerAppStaff: true,
+        dealerAppStaffId: session.dealerApp.staffId,
+      },
     });
-
-    displayName = profile.name || displayName;
-    accountType = profile.accountType || 'owner';
-  } catch (error) {
-    console.error('Failed to load account profile for session menu', error);
   }
 
   return NextResponse.json({
@@ -36,9 +39,9 @@ export async function GET() {
     signedIn: true,
     user: {
       id: session.user.id,
-      name: displayName,
+      name: profile.name || session.user.name,
       email: session.user.email,
-      accountType,
+      accountType: profile.accountType,
     },
   });
 }
