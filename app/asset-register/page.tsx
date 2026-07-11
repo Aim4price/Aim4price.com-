@@ -15,7 +15,7 @@ export default async function AssetRegisterPage() {
   });
 
   if (profile.accountType === "dealer") {
-    redirect("/dealer");
+    redirect("/leads");
   }
 
   if (profile.accountType !== "owner") {
