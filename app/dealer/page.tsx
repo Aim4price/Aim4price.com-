@@ -33,12 +33,6 @@ export default async function DealerHome() {
     <main className={styles.shell}>
       <DealerNav showBack={false} />
       <div className={styles.content}>
-        <header className={styles.launcherIntro}>
-          <span className={styles.eyebrow}>Dealer App</span>
-          <h1 className={styles.brand}>Choose a tool</h1>
-          <p className={styles.helper}>Everything you need, in one simple place.</p>
-        </header>
-
         <nav className={styles.launcher} aria-label="Dealer tools">
           {DEALER_TOOLS.map((tool) => (
             <Link
