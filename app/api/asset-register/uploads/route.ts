@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from '../../../../lib/auth-session';
+import { getServerSession, isDealerAppSession } from '../../../../lib/auth-session';
 import {
   ALLOWED_ASSET_REGISTER_IMAGE_TYPES,
   MAX_ASSET_REGISTER_DOCUMENTS,
@@ -35,14 +35,8 @@ type UploadType = 'photo' | 'document' | 'register-logo';
 function normalizeUploadType(value: FormDataEntryValue | null): UploadType {
   const normalized = String(value ?? '').trim().toLowerCase();
 
-  if (normalized === 'document') {
-    return 'document';
-  }
-
-  if (normalized === 'register-logo' || normalized === 'logo') {
-    return 'register-logo';
-  }
-
+  if (normalized === 'document') return 'document';
+  if (normalized === 'register-logo' || normalized === 'logo') return 'register-logo';
   return 'photo';
 }
 
@@ -53,11 +47,9 @@ function uploadTypeNoun(uploadType: UploadType): string {
 }
 
 export async function POST(request: NextRequest) {
-  const session = await getServerSession();
+  const session = await getServerSession({ allowDealerApp: true });
 
-  if (!session?.user?.id) {
-    return unauthorized();
-  }
+  if (!session?.user?.id) return unauthorized();
 
   try {
     const formData = await request.formData();
@@ -65,13 +57,24 @@ export async function POST(request: NextRequest) {
     const files = formData.getAll('files').filter(isFile);
     const registerId = String(formData.get('registerId') ?? '').trim();
 
+    // Dealer App staff need photo uploads only for the valuation-to-Marketplace
+    // workflow. Account documents and register branding remain private.
+    if (isDealerAppSession(session) && uploadType !== 'photo') {
+      return NextResponse.json(
+        { ok: false, error: 'Dealer App staff can only upload Marketplace photos.' },
+        { status: 403 },
+      );
+    }
+
     if (uploadType === 'register-logo') {
       if (!registerId) {
-        return NextResponse.json({ ok: false, error: 'Asset register id is required before uploading a logo.' }, { status: 400 });
+        return NextResponse.json(
+          { ok: false, error: 'Asset register id is required before uploading a logo.' },
+          { status: 400 },
+        );
       }
 
       const register = await getAssetRegisterForUser(session.user.id, registerId);
-
       if (!register) {
         return NextResponse.json({ ok: false, error: 'Asset register not found.' }, { status: 404 });
       }
@@ -79,7 +82,12 @@ export async function POST(request: NextRequest) {
 
     if (!files.length) {
       return NextResponse.json(
-        { ok: false, error: uploadType === 'document' ? 'Select at least one document file.' : 'Select at least one image file.' },
+        {
+          ok: false,
+          error: uploadType === 'document'
+            ? 'Select at least one document file.'
+            : 'Select at least one image file.',
+        },
         { status: 400 },
       );
     }
@@ -115,19 +123,13 @@ export async function POST(request: NextRequest) {
       if (uploadType === 'document') {
         if (!isAllowedAssetRegisterDocument(file)) {
           return NextResponse.json(
-            {
-              ok: false,
-              error: `Only ${documentTypeLabel()} files are allowed.`,
-            },
+            { ok: false, error: `Only ${documentTypeLabel()} files are allowed.` },
             { status: 400 },
           );
         }
       } else if (!ALLOWED_ASSET_REGISTER_IMAGE_TYPES.has(contentType)) {
         return NextResponse.json(
-          {
-            ok: false,
-            error: `Only ${imageTypeLabel()} files are allowed.`,
-          },
+          { ok: false, error: `Only ${imageTypeLabel()} files are allowed.` },
           { status: 400 },
         );
       }
@@ -136,7 +138,9 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ ok: false, error: 'One of the files is empty.' }, { status: 400 });
       }
 
-      const maxBytes = uploadType === 'document' ? MAX_ASSET_REGISTER_DOCUMENT_UPLOAD_BYTES : MAX_ASSET_REGISTER_UPLOAD_BYTES;
+      const maxBytes = uploadType === 'document'
+        ? MAX_ASSET_REGISTER_DOCUMENT_UPLOAD_BYTES
+        : MAX_ASSET_REGISTER_UPLOAD_BYTES;
 
       if (file.size > maxBytes) {
         return NextResponse.json(
@@ -177,7 +181,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('asset register upload failed', error);
     return NextResponse.json(
-      { ok: false, error: error instanceof Error && error.message ? error.message : 'Failed to upload file.' },
+      {
+        ok: false,
+        error: error instanceof Error && error.message ? error.message : 'Failed to upload file.',
+      },
       { status: 500 },
     );
   }
