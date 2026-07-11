@@ -108,6 +108,7 @@ type HeaderNotificationItem = {
   href: string;
   createdAtIso: string;
   assetDiscoveryEnquiryId?: string;
+  priority?: boolean;
 };
 
 type AssetDiscoveryDecisionStatus = 'approved' | 'denied';
@@ -974,7 +975,8 @@ export default function AppHeader({
   function renderNotificationItem(notification: HeaderNotificationItem) {
     const toneClass = styles[`notificationTone${notification.tone.charAt(0).toUpperCase()}${notification.tone.slice(1)}`];
     const newClass = isNotificationNew(notification) ? styles.notificationItemNew : '';
-    const baseClassName = `${styles.notificationItem} ${toneClass} ${newClass}`;
+    const priorityClass = notification.priority ? styles.notificationItemPriority : '';
+    const baseClassName = `${styles.notificationItem} ${toneClass} ${newClass} ${priorityClass}`;
 
     if (notification.assetDiscoveryEnquiryId) {
       const loading = loadingNotificationActionId === `asset-discovery:${notification.assetDiscoveryEnquiryId}`;
@@ -1024,7 +1026,7 @@ export default function AppHeader({
         <div className={styles.notificationDetailHeader}>
           <div className={styles.notificationDetailHeaderText}>
             <h2 id="notification-asset-discovery-title">Discovery enquiry</h2>
-            <p>{isPending ? 'A dealer is interested in this machine. Are you interested in selling?' : 'Asset-specific enquiry status.'}</p>
+            <p>{isPending ? 'Another user is looking for a machine like this. Interested in selling it?' : 'Asset-specific enquiry status.'}</p>
           </div>
           <button type="button" className={styles.notificationDetailCloseButton} onClick={closeNotificationDetailModal} aria-label="Close Discovery enquiry">
             ×
@@ -1054,14 +1056,14 @@ export default function AppHeader({
           {isPending ? (
             <div className={styles.notificationDetailMessageBox}>
               <strong>Owner decision required</strong>
-              <p>A dealer is interested in this machine. The dealer message and contact details are hidden until you choose Yes.</p>
+              <p>Another user is looking for a machine like this. Choose Yes if you are interested in selling it, or No to hide this asset from Discovery for 90 days.</p>
             </div>
           ) : null}
 
           {!isPending ? (
             <div className={styles.notificationDetailStatusBox}>
               <strong>Decision saved</strong>
-              <p>{isApproved ? 'Approved. Contact details and the dealer message are now visible.' : retryDate ? `Temporarily denied. The dealer can enquire again after ${retryDate}.` : 'Temporarily denied.'}</p>
+              <p>{isApproved ? 'Approved. Your contact details are now visible to the interested user for three months.' : retryDate ? `Not interested right now. This asset is hidden from Discovery until ${retryDate}.` : 'Not interested right now. This asset is hidden from Discovery for 90 days.'}</p>
             </div>
           ) : null}
 
