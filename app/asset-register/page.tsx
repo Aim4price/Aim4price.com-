@@ -14,6 +14,10 @@ export default async function AssetRegisterPage() {
     email: session.user.email,
   });
 
+  if (profile.accountType === "dealer") {
+    redirect("/dealer");
+  }
+
   if (profile.accountType !== "owner") {
     redirect("/leads");
   }
