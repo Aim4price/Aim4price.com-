@@ -4,6 +4,7 @@ import { isAccountActive, markAccountLastActive } from "./account-profile";
 import { recordAdminUsageEventSafely } from "./admin-usage-events";
 import { auth } from "./auth";
 import { getDb } from "./db";
+import { getDealerAppSession } from "./dealer-app-session";
 
 export const ADMIN_SUPPORT_COOKIE_NAME = "aim4price_admin_support_user_id";
 export const ADMIN_SUPPORT_COOKIE_MAX_AGE_SECONDS = 60 * 60;
@@ -32,11 +33,16 @@ export type AdminSupportSession = NonNullServerSession & {
   adminSupport: AdminSupportContext;
 };
 
-type EffectiveServerSession = NonNullServerSession | AdminSupportSession | null;
+export type DealerAppSupportSession = NonNullServerSession & {
+  dealerApp: { kind: "dealer-staff"; staffId: string; parentDealerUserId: string; displayName: string; username: string };
+};
+
+type EffectiveServerSession = NonNullServerSession | AdminSupportSession | DealerAppSupportSession | null;
 
 type SessionOptions = {
   requireActive?: boolean;
   allowAdmin?: boolean;
+  allowDealerApp?: boolean;
 };
 
 function cleanCookieUserId(value: unknown): string {
@@ -141,6 +147,47 @@ async function applyAdminSupportSession(
   } as AdminSupportSession;
 }
 
+
+export function isDealerAppSession(
+  session: EffectiveServerSession,
+): session is DealerAppSupportSession {
+  return Boolean(session && "dealerApp" in session && session.dealerApp?.staffId);
+}
+
+async function readDealerAppSupportSession(): Promise<DealerAppSupportSession | null> {
+  const dealer = await getDealerAppSession();
+  if (!dealer) return null;
+  const now = new Date();
+  return {
+    user: {
+      id: dealer.dealerUserId,
+      name: dealer.displayName,
+      email: "",
+      emailVerified: false,
+      image: null,
+      createdAt: now,
+      updatedAt: now,
+    },
+    session: {
+      id: `dealer-app:${dealer.staffId}`,
+      userId: dealer.dealerUserId,
+      token: "",
+      expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+      createdAt: now,
+      updatedAt: now,
+      ipAddress: null,
+      userAgent: null,
+    },
+    dealerApp: {
+      kind: "dealer-staff",
+      staffId: dealer.staffId,
+      parentDealerUserId: dealer.dealerUserId,
+      displayName: dealer.displayName,
+      username: dealer.username,
+    },
+  } as DealerAppSupportSession;
+}
+
 export function isAdminSupportSession(
   session: EffectiveServerSession,
 ): session is AdminSupportSession {
@@ -182,7 +229,7 @@ export async function getServerSession(
   const session = await readAuthSession();
 
   if (!session?.user?.id) {
-    return session;
+    return options.allowDealerApp ? await readDealerAppSupportSession() : session;
   }
 
   const effectiveSession = await applyAdminSupportSession(session);

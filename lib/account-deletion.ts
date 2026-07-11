@@ -15,6 +15,8 @@ const USER_ID_TABLES = [
   'marketplace_listings',
   'asset_registers',
   'account_profiles',
+  'dealer_app_staff',
+  'asset_discovery_enquiries',
 ] as const;
 
 const PARTNER_ACCESS_TABLES = [
@@ -101,7 +103,16 @@ async function deleteUserWorkspaceDataInTransaction(
     await queryable.query('delete from account_user_messages where owner_user_id = $1 or sender_user_id = $1', [userId]);
   }
 
+  if (tableSet.has('dealer_app_staff')) {
+    await queryable.query('delete from dealer_app_staff where dealer_user_id = $1', [userId]);
+  }
+
+  if (tableSet.has('asset_discovery_enquiries')) {
+    await queryable.query('delete from asset_discovery_enquiries where dealer_user_id = $1 or owner_user_id = $1', [userId]);
+  }
+
   for (const tableName of USER_ID_TABLES) {
+    if (tableName === 'dealer_app_staff' || tableName === 'asset_discovery_enquiries') continue;
     await deleteByColumn(queryable, tableSet, tableName, 'user_id', userId);
   }
 }
