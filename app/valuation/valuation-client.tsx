@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSPropert
 import { useRouter } from 'next/navigation';
 import AppHeader from '../../components/AppHeader';
 import styles from './page.module.css';
+import dealerStyles from '../dealer/dealer.module.css';
 import {
   conditionOptions,
   type BrandRow,
@@ -1601,7 +1602,7 @@ function normalizeReportEmail(value: unknown): string {
   return cleaned && cleaned.includes('@') ? cleaned : '';
 }
 
-export default function ValuationClient() {
+export default function ValuationClient({ dealerAppMode = false }: { dealerAppMode?: boolean } = {}) {
   const router = useRouter();
   const [step, setStep] = useState<Step>(1);
   const [selectedSector, setSelectedSector] = useState<SectorKey | null>(null);
@@ -3960,7 +3961,9 @@ export default function ValuationClient() {
       clearMarketplacePhotoFiles();
       setMarketplaceDraft(null);
       setSavedMarketplaceAssetId(null);
-      router.push(`/marketplace?listing=${encodeURIComponent(String(listingReference))}`);
+      router.push(
+        `${dealerAppMode ? '/dealer/marketplace' : '/marketplace'}?listing=${encodeURIComponent(String(listingReference))}`,
+      );
     } catch (error) {
       console.error(error);
       setMarketplacePublishError(error instanceof Error ? error.message : 'Failed to publish this marketplace listing.');
@@ -4416,7 +4419,7 @@ export default function ValuationClient() {
         return;
       }
 
-      router.push('/');
+      router.push(dealerAppMode ? '/dealer' : '/');
       return;
     }
     if (isMotorSector(selectedSector) && step === 4) {
@@ -6204,7 +6207,9 @@ export default function ValuationClient() {
               <p>
                 {conversionAssetId
                   ? 'Save this estimate to update the existing manual asset. Marketplace, PDF and duplicate asset-register saves are hidden in conversion mode.'
-                  : 'Download the estimate PDF, send the asset to Marketplace, or save it to your Asset Register.'}
+                  : dealerAppMode
+                    ? 'Download the estimate PDF or use this valuation to create a Marketplace listing.'
+                    : 'Download the estimate PDF, send the asset to Marketplace, or save it to your Asset Register.'}
               </p>
             </div>
 
@@ -6244,14 +6249,16 @@ export default function ValuationClient() {
                       >
                         {saveLoading && finalSaveIntent === 'marketplace' ? 'Saving...' : isPublishingMarketplace ? 'Sending...' : 'Send to Marketplace'}
                       </button>
-                      <button
-                        type="button"
-                        className={styles.resultPrimaryActionButton}
-                        onClick={saveToAssetRegister}
-                        disabled={saveLoading || isPublishingMarketplace || replacementRecalculateLoading || advancedRecalculateLoading || !canSaveToAssetRegister || headlineValue === null}
-                      >
-                        {saveLoading && finalSaveIntent === 'asset-register' ? 'Saving...' : 'Save to Asset Register'}
-                      </button>
+                      {!dealerAppMode ? (
+                        <button
+                          type="button"
+                          className={styles.resultPrimaryActionButton}
+                          onClick={saveToAssetRegister}
+                          disabled={saveLoading || isPublishingMarketplace || replacementRecalculateLoading || advancedRecalculateLoading || !canSaveToAssetRegister || headlineValue === null}
+                        >
+                          {saveLoading && finalSaveIntent === 'asset-register' ? 'Saving...' : 'Save to Asset Register'}
+                        </button>
+                      ) : null}
                     </>
                   ) : (
                     <div className={styles.resultSignedOutNotice}>
@@ -6295,8 +6302,8 @@ export default function ValuationClient() {
   const isSectorIntroStep = step === 1 && !selectedSector;
 
   return (
-    <main className={styles.page}>
-      <AppHeader active="valuation" />
+    <main className={`${styles.page} ${dealerAppMode ? dealerStyles.dealerValuationSurface : ''}`}>
+      {!dealerAppMode ? <AppHeader active="valuation" /> : null}
       {completionToastVisible ? (
         <div className={styles.completionToast} role="status" aria-live="polite">
           Required questions completed. You can now get the estimate.
