@@ -80,6 +80,8 @@ type DiscoveryContact = {
 
 type DiscoveryEnquiryDetail = {
   id: string;
+  status: EnquiryStatus;
+  approvedAtIso: string | null;
   ownerContact: DiscoveryContact | null;
   asset: {
     brand: string;
@@ -94,7 +96,7 @@ type IconProps = {
   className?: string;
 };
 
-type DiscoveryFilterKey = "type" | "province";
+type DiscoveryFilterKey = "type" | "province" | "pageSize";
 
 const SEARCH_DEBOUNCE_MS = 250;
 const DISCOVERY_PAGE_SIZE = 10;
@@ -183,6 +185,14 @@ function formatDate(value: string | null | undefined): string {
     year: "numeric",
     timeZone: "Africa/Johannesburg",
   }).format(new Date(time));
+}
+
+function contactAccessExpiry(value: string | null | undefined): string {
+  if (!value) return "";
+  const approvedAt = new Date(value);
+  if (!Number.isFinite(approvedAt.getTime())) return "";
+  approvedAt.setMonth(approvedAt.getMonth() + 3);
+  return formatDate(approvedAt.toISOString());
 }
 
 function normalizeDiscoveryPageSize(value: string): DiscoveryPageSize {
@@ -295,6 +305,31 @@ function canEnquire(asset: AssetDiscoveryAsset): boolean {
     asset.enquiryStatus === "temporarily_denied" &&
     temporaryDenialExpired(asset)
   );
+}
+
+function enquiryPriority(asset: AssetDiscoveryAsset): number {
+  if (asset.enquiryStatus === "approved") return 0;
+  if (asset.enquiryStatus === "pending") return 1;
+  return 2;
+}
+
+function sortAssetsByEnquiryPriority(
+  assets: AssetDiscoveryAsset[],
+): AssetDiscoveryAsset[] {
+  return assets
+    .map((asset, index) => ({ asset, index }))
+    .sort(
+      (left, right) =>
+        enquiryPriority(left.asset) - enquiryPriority(right.asset) ||
+        left.index - right.index,
+    )
+    .map(({ asset }) => asset);
+}
+
+function assetCardStatusClass(asset: AssetDiscoveryAsset): string {
+  if (asset.enquiryStatus === "approved") return styles.dealerAssetCardOpen;
+  if (asset.enquiryStatus === "pending") return styles.dealerAssetCardPending;
+  return "";
 }
 
 export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealerAppMode?: boolean } = {}) {
@@ -555,18 +590,20 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
       }
 
       setAssets((current) =>
-        current.map((item) =>
-          item.id === asset.id
-            ? {
-                ...item,
-                enquiryId: data.enquiry?.id ?? item.enquiryId,
-                enquiryStatus: data.enquiry?.status ?? item.enquiryStatus,
-                requestAgainAtIso:
-                  data.enquiry?.requestAgainAtIso ?? item.requestAgainAtIso,
-                approvedAtIso:
-                  data.enquiry?.approvedAtIso ?? item.approvedAtIso,
-              }
-            : item,
+        sortAssetsByEnquiryPriority(
+          current.map((item) =>
+            item.id === asset.id
+              ? {
+                  ...item,
+                  enquiryId: data.enquiry?.id ?? item.enquiryId,
+                  enquiryStatus: data.enquiry?.status ?? item.enquiryStatus,
+                  requestAgainAtIso:
+                    data.enquiry?.requestAgainAtIso ?? item.requestAgainAtIso,
+                  approvedAtIso:
+                    data.enquiry?.approvedAtIso ?? item.approvedAtIso,
+                }
+              : item,
+          ),
         ),
       );
       setNotice({
@@ -693,25 +730,56 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
           </div>
 
           {shouldShowPageSizeSelector ? (
-            <label className={styles.discoveryPageSizeField}>
+            <div
+              className={styles.discoveryPageSizeField}
+              data-discovery-filter="true"
+            >
               <span>Show</span>
-              <select
-                value={pageSize}
-                onChange={(event) => handlePageSizeChange(event.target.value)}
-                disabled={loading}
-                aria-label="Assets per page"
-              >
-                {DISCOVERY_PAGE_SIZE_OPTIONS.map((option) => (
-                  <option
-                    key={`asset-discovery-page-size-${option}`}
-                    value={option}
+              <div className={styles.discoveryPageSizeSelect}>
+                <button
+                  type="button"
+                  className={styles.discoveryPageSizeButton}
+                  aria-label="Assets per page"
+                  aria-haspopup="listbox"
+                  aria-expanded={openFilter === "pageSize"}
+                  onClick={() =>
+                    setOpenFilter((current) =>
+                      current === "pageSize" ? null : "pageSize",
+                    )
+                  }
+                  disabled={loading}
+                >
+                  <strong>{pageSize}</strong>
+                  <ChevronDownIcon className={styles.discoveryPageSizeChevron} />
+                </button>
+
+                {openFilter === "pageSize" ? (
+                  <div
+                    className={styles.discoveryPageSizeMenu}
+                    role="listbox"
+                    aria-label="Assets per page"
                   >
-                    {option}
-                  </option>
-                ))}
-              </select>
+                    {DISCOVERY_PAGE_SIZE_OPTIONS.map((option) => (
+                      <button
+                        type="button"
+                        key={`asset-discovery-page-size-${option}`}
+                        className={`${styles.discoveryPageSizeOption} ${option === pageSize ? styles.discoveryPageSizeOptionSelected : ""}`}
+                        role="option"
+                        aria-selected={option === pageSize}
+                        onClick={() => {
+                          handlePageSizeChange(String(option));
+                          setOpenFilter(null);
+                        }}
+                      >
+                        <span>{option} assets</span>
+                        {option === pageSize ? <strong>✓</strong> : null}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
               <span>per page</span>
-            </label>
+            </div>
           ) : null}
         </div>
 
@@ -848,7 +916,7 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
             return (
               <article
                 key={asset.id}
-                className={`${styles.assetCard} ${styles.dealerAssetCard}`}
+                className={`${styles.assetCard} ${styles.dealerAssetCard} ${assetCardStatusClass(asset)}`}
               >
                 <div className={`${styles.assetCardHeader} ${styles.dealerAssetCardHeader}`}>
                   <div className={styles.assetIdentity}>
@@ -877,19 +945,19 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
 
       {activeEnquiry ? (
         <div
-          className={dealerStyles.contactOverlay}
+          className={styles.contactOverlay}
           onMouseDown={() => setActiveEnquiry(null)}
         >
           <section
-            className={dealerStyles.contactModal}
+            className={styles.contactModal}
             role="dialog"
             aria-modal="true"
             aria-labelledby="dealer-discovery-contact-title"
             onMouseDown={(event) => event.stopPropagation()}
           >
-            <header className={dealerStyles.contactHeader}>
-              <div>
-                <span>Approved contact</span>
+            <header className={styles.contactHeader}>
+              <div className={styles.contactHeaderCopy}>
+                <span className={styles.contactKicker}>Open contact</span>
                 <h2 id="dealer-discovery-contact-title">
                   {[activeEnquiry.asset.brand, activeEnquiry.asset.model]
                     .filter(Boolean)
@@ -903,6 +971,7 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
               </div>
               <button
                 type="button"
+                className={styles.contactCloseButton}
                 onClick={() => setActiveEnquiry(null)}
                 aria-label="Close approved contact"
               >
@@ -910,43 +979,87 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
               </button>
             </header>
 
-            {activeEnquiry.ownerContact ? (
-              <div className={dealerStyles.contactGrid}>
-                <div>
-                  <span>Owner or business</span>
-                  <strong>
-                    {activeEnquiry.ownerContact.businessName ||
-                      activeEnquiry.ownerContact.name ||
-                      "Not supplied"}
-                  </strong>
-                </div>
-                <div>
-                  <span>Phone</span>
-                  <strong>{activeEnquiry.ownerContact.phone || "Not supplied"}</strong>
-                </div>
-                <div>
-                  <span>Email</span>
-                  <strong>{activeEnquiry.ownerContact.email || "Not supplied"}</strong>
-                </div>
-                <div>
-                  <span>Location</span>
-                  <strong>{activeEnquiry.ownerContact.location || "Not supplied"}</strong>
-                </div>
+            <div className={styles.contactBody}>
+              <div className={styles.contactAccessNote}>
+                <span>Owner approved your enquiry</span>
+                <p>
+                  Contact access is open
+                  {contactAccessExpiry(activeEnquiry.approvedAtIso)
+                    ? ` until ${contactAccessExpiry(activeEnquiry.approvedAtIso)}`
+                    : " for three months"}
+                  .
+                </p>
               </div>
-            ) : (
-              <p className={dealerStyles.contactEmpty}>
-                The owner has approved the enquiry, but contact information has not been supplied.
-              </p>
-            )}
 
-            <div className={dealerStyles.contactActions}>
+              {activeEnquiry.ownerContact ? (
+                <div className={styles.contactGrid}>
+                  <div className={styles.contactPrimaryCard}>
+                    <span>Owner or business</span>
+                    <strong>
+                      {activeEnquiry.ownerContact.businessName ||
+                        activeEnquiry.ownerContact.name ||
+                        "Not supplied"}
+                    </strong>
+                  </div>
+                  <div>
+                    <span>Phone</span>
+                    {activeEnquiry.ownerContact.phone ? (
+                      <a href={`tel:${activeEnquiry.ownerContact.phone}`}>
+                        {activeEnquiry.ownerContact.phone}
+                      </a>
+                    ) : (
+                      <strong>Not supplied</strong>
+                    )}
+                  </div>
+                  <div>
+                    <span>Email</span>
+                    {activeEnquiry.ownerContact.email ? (
+                      <a href={`mailto:${activeEnquiry.ownerContact.email}`}>
+                        {activeEnquiry.ownerContact.email}
+                      </a>
+                    ) : (
+                      <strong>Not supplied</strong>
+                    )}
+                  </div>
+                  <div>
+                    <span>Location</span>
+                    <strong>
+                      {activeEnquiry.ownerContact.location || "Not supplied"}
+                    </strong>
+                  </div>
+                </div>
+              ) : (
+                <p className={styles.contactEmpty}>
+                  The owner approved the enquiry, but has not supplied contact
+                  information yet.
+                </p>
+              )}
+            </div>
+
+            <div className={styles.contactActions}>
               {activeEnquiry.ownerContact?.phone ? (
-                <a href={`tel:${activeEnquiry.ownerContact.phone}`}>Call owner</a>
+                <a
+                  className={styles.contactPrimaryAction}
+                  href={`tel:${activeEnquiry.ownerContact.phone}`}
+                >
+                  Call owner
+                </a>
               ) : null}
               {activeEnquiry.ownerContact?.email ? (
-                <a href={`mailto:${activeEnquiry.ownerContact.email}`}>Email owner</a>
+                <a
+                  className={styles.contactPrimaryAction}
+                  href={`mailto:${activeEnquiry.ownerContact.email}`}
+                >
+                  Email owner
+                </a>
               ) : null}
-              <button type="button" onClick={() => setActiveEnquiry(null)}>Close</button>
+              <button
+                type="button"
+                className={styles.contactSecondaryAction}
+                onClick={() => setActiveEnquiry(null)}
+              >
+                Close
+              </button>
             </div>
           </section>
         </div>
