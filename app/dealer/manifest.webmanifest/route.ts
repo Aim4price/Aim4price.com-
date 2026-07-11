@@ -1,1 +1,1 @@
-
+import { NextResponse } from 'next/server'; export function GET(){return NextResponse.json({name:'Aim4price Dealer',short_name:'Dealer',start_url:'/dealer',scope:'/dealer',display:'standalone',orientation:'portrait-primary',background_color:'#f3f8f4',theme_color:'#254733',icons:[{src:'/icon.png',sizes:'512x512',type:'image/png'},{src:'/apple-touch-icon.png',sizes:'180x180',type:'image/png'}]},{headers:{'content-type':'application/manifest+json'}})}
