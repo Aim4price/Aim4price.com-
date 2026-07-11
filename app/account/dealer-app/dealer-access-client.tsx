@@ -1,10 +1,12 @@
 'use client';
 
-import Link from 'next/link';
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import AppHeader from '../../../components/AppHeader';
 import styles from './page.module.css';
 
-type Staff = {
+type NoticeTone = 'success' | 'error';
+
+type FieldManagerRecord = {
   id: string;
   displayName: string;
   username: string;
@@ -14,18 +16,47 @@ type Staff = {
   updatedAtIso: string;
 };
 
-type Notice = {
-  tone: 'success' | 'error';
-  message: string;
+type FieldManagerApiResponse = {
+  ok: boolean;
+  staff?: FieldManagerRecord[] | FieldManagerRecord;
+  error?: string;
 };
 
-type StaffDraft = {
+type DraftState = {
   displayName: string;
   username: string;
   password: string;
 };
 
-const EMPTY_DRAFT: StaffDraft = { displayName: '', username: '', password: '' };
+type EditDraftState = {
+  displayName: string;
+  username: string;
+  password: string;
+};
+
+const initialDraft: DraftState = {
+  displayName: '',
+  username: '',
+  password: '',
+};
+
+const DEALER_STAFF_PASSWORD_MIN_LENGTH = 8;
+
+function extractError(payload: FieldManagerApiResponse | null, fallback: string): string {
+  return payload?.error?.trim() || fallback;
+}
+
+function formatDateTime(value: string | null): string {
+  if (!value) return 'Not yet';
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return 'Not yet';
+
+  return new Intl.DateTimeFormat('en-ZA', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(parsed);
+}
 
 function normalizeUsername(value: string): string {
   return value
@@ -36,712 +67,547 @@ function normalizeUsername(value: string): string {
     .slice(0, 80);
 }
 
-function formatDate(value: string | null): string {
-  if (!value) return 'Never';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return 'Never';
-  return new Intl.DateTimeFormat('en-ZA', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(date);
+function getDealerLoginLink(): string {
+  if (typeof window === 'undefined') return '/dealer/login';
+  return `${window.location.origin}/dealer/login`;
 }
 
-function readError(payload: { error?: string } | null, fallback: string): string {
-  return payload?.error?.trim() || fallback;
+async function copyToClipboard(text: string): Promise<boolean> {
+  if (!navigator.clipboard?.writeText) return false;
+
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export default function DealerAccessClient() {
-  const [staff, setStaff] = useState<Staff[]>([]);
-  const [draft, setDraft] = useState<StaffDraft>(EMPTY_DRAFT);
+  const [managers, setManagers] = useState<FieldManagerRecord[]>([]);
+  const [draft, setDraft] = useState<DraftState>(initialDraft);
+  const [editDrafts, setEditDrafts] = useState<Record<string, EditDraftState>>({});
+  const [notice, setNotice] = useState<{ tone: NoticeTone; message: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [hasLoadedStaff, setHasLoadedStaff] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [savingManagerId, setSavingManagerId] = useState<string | null>(null);
+  const [deletingManagerId, setDeletingManagerId] = useState<string | null>(null);
+  const [expandedManagerId, setExpandedManagerId] = useState<string | null>(null);
   const [isCreatePasswordVisible, setIsCreatePasswordVisible] = useState(false);
-  const [notice, setNotice] = useState<Notice | null>(null);
-  const [managedStaff, setManagedStaff] = useState<Staff | null>(null);
-  const [editDraft, setEditDraft] = useState<StaffDraft>(EMPTY_DRAFT);
-  const [isResetPasswordVisible, setIsResetPasswordVisible] = useState(false);
-  const [busyAction, setBusyAction] = useState<string | null>(null);
-  const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
-  const [loginLink, setLoginLink] = useState('/dealer/login');
-  const modalRef = useRef<HTMLElement | null>(null);
-  const modalCloseRef = useRef<HTMLButtonElement | null>(null);
-  const managerTriggerRef = useRef<HTMLButtonElement | null>(null);
-  const addStaffButtonRef = useRef<HTMLButtonElement | null>(null);
-  const deleteButtonRef = useRef<HTMLButtonElement | null>(null);
-  const deleteCancelRef = useRef<HTMLButtonElement | null>(null);
-  const busyActionRef = useRef<string | null>(null);
-  const isManagerOpen = Boolean(managedStaff);
+  const [visibleEditPasswordIds, setVisibleEditPasswordIds] = useState<Record<string, boolean>>({});
+
+  const loginLink = useMemo(() => getDealerLoginLink(), []);
+  const shareText = useMemo(() => `Open the Aim4price Dealer App here: ${loginLink}`, [loginLink]);
 
   useEffect(() => {
-    setLoginLink(`${window.location.origin}/dealer/login`);
-    void loadStaff();
+    void loadManagers();
   }, []);
 
   useEffect(() => {
     if (!notice) return undefined;
-    const timeout = window.setTimeout(() => setNotice(null), 5000);
+    const timeout = window.setTimeout(() => setNotice(null), 4200);
     return () => window.clearTimeout(timeout);
   }, [notice]);
 
-  useEffect(() => {
-    busyActionRef.current = busyAction;
-  }, [busyAction]);
+  async function loadManagers() {
+    setIsLoading(true);
 
-  useEffect(() => {
-    if (!isManagerOpen) return undefined;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-
-    const focusModal = window.requestAnimationFrame(() => {
-      (modalCloseRef.current || modalRef.current)?.focus();
-    });
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !busyActionRef.current) {
-        setManagedStaff(null);
-        setEditDraft(EMPTY_DRAFT);
-        setIsResetPasswordVisible(false);
-        setDeleteConfirmationOpen(false);
-        return;
-      }
-
-      if (event.key !== 'Tab') return;
-      const modal = modalRef.current;
-      if (!modal) return;
-      const focusable = Array.from(
-        modal.querySelectorAll<HTMLElement>(
-          'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])',
-        ),
-      ).filter((element) => element.getClientRects().length > 0);
-      if (focusable.length === 0) {
-        event.preventDefault();
-        modal.focus();
-        return;
-      }
-
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-    window.addEventListener('keydown', onKeyDown);
-
-    return () => {
-      window.cancelAnimationFrame(focusModal);
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener('keydown', onKeyDown);
-      window.requestAnimationFrame(() => {
-        const trigger = managerTriggerRef.current;
-        if (trigger?.isConnected) trigger.focus();
-        else addStaffButtonRef.current?.focus();
-      });
-    };
-  }, [isManagerOpen]);
-
-  useEffect(() => {
-    if (!deleteConfirmationOpen) return undefined;
-    const focusConfirmation = window.requestAnimationFrame(() => deleteCancelRef.current?.focus());
-    return () => window.cancelAnimationFrame(focusConfirmation);
-  }, [deleteConfirmationOpen]);
-
-  async function loadStaff(options: { background?: boolean } = {}) {
-    const background = options.background ?? hasLoadedStaff;
-    if (background) setIsRefreshing(true);
-    else setIsLoading(true);
-    setLoadError(null);
     try {
       const response = await fetch('/api/dealer/staff', {
         credentials: 'include',
         cache: 'no-store',
       });
-      const payload = (await response.json().catch(() => null)) as {
-        staff?: Staff[];
-        error?: string;
-      } | null;
+      const payload = (await response.json().catch(() => null)) as FieldManagerApiResponse | null;
 
-      if (!response.ok) throw new Error(readError(payload, 'Failed to load staff access.'));
-      setStaff(Array.isArray(payload?.staff) ? payload.staff : []);
-      setHasLoadedStaff(true);
-    } catch (cause) {
-      setLoadError(cause instanceof Error ? cause.message : 'Failed to load staff access.');
+      if (!response.ok || !payload?.ok) {
+        throw new Error(extractError(payload, 'Failed to load Dealer App staff logins.'));
+      }
+
+      const nextManagers = Array.isArray(payload.staff) ? payload.staff : [];
+      setManagers(nextManagers);
+      setEditDrafts((current) => {
+        const next: Record<string, EditDraftState> = {};
+        nextManagers.forEach((manager) => {
+          next[manager.id] = current[manager.id] ?? {
+            displayName: manager.displayName,
+            username: manager.username,
+            password: '',
+          };
+        });
+        return next;
+      });
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Failed to load Dealer App staff logins.',
+      });
     } finally {
-      if (background) setIsRefreshing(false);
-      else setIsLoading(false);
+      setIsLoading(false);
     }
   }
 
-  async function createStaff(event: FormEvent<HTMLFormElement>) {
+  async function handleCreateManager(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (isCreating) return;
 
-    const displayName = draft.displayName.trim();
-    const username = normalizeUsername(draft.username);
-    if (!displayName || username.length < 3 || draft.password.length < 8) {
+    if (!draft.displayName.trim()) {
+      setNotice({ tone: 'error', message: 'Enter the staff member display name.' });
+      return;
+    }
+
+    if (draft.username.trim().length < 3) {
+      setNotice({ tone: 'error', message: 'Enter a username with at least 3 characters.' });
+      return;
+    }
+
+    if (draft.password.length < DEALER_STAFF_PASSWORD_MIN_LENGTH) {
       setNotice({
         tone: 'error',
-        message: 'Enter a staff name, a username with at least 3 characters and an 8-character password.',
+        message: `Enter a password with at least ${DEALER_STAFF_PASSWORD_MIN_LENGTH} characters.`,
       });
       return;
     }
 
     setIsCreating(true);
+
     try {
       const response = await fetch('/api/dealer/staff', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ displayName, username, password: draft.password }),
+        body: JSON.stringify({
+          displayName: draft.displayName.trim(),
+          username: normalizeUsername(draft.username),
+          password: draft.password,
+        }),
       });
-      const payload = (await response.json().catch(() => null)) as {
-        staff?: Staff;
-        error?: string;
-      } | null;
+      const payload = (await response.json().catch(() => null)) as FieldManagerApiResponse | null;
 
-      if (!response.ok) throw new Error(readError(payload, 'Failed to create login.'));
-      setDraft(EMPTY_DRAFT);
-      setIsCreateOpen(false);
+      const createdStaff = payload?.staff && !Array.isArray(payload.staff) ? payload.staff : null;
+      if (!response.ok || !payload?.ok || !createdStaff) {
+        throw new Error(extractError(payload, 'Failed to create Dealer App staff login.'));
+      }
+
+      setManagers((current) => [createdStaff, ...current]);
+      setEditDrafts((current) => ({
+        ...current,
+        [createdStaff.id]: {
+          displayName: createdStaff.displayName,
+          username: createdStaff.username,
+          password: '',
+        },
+      }));
+      setDraft(initialDraft);
       setIsCreatePasswordVisible(false);
-      setNotice({
-        tone: 'success',
-        message: 'Staff login created. Share the password securely—it cannot be viewed again.',
-      });
-      await loadStaff({ background: true });
-    } catch (cause) {
+      setNotice({ tone: 'success', message: 'Dealer App staff login created.' });
+    } catch (error) {
       setNotice({
         tone: 'error',
-        message: cause instanceof Error ? cause.message : 'Failed to create login.',
+        message: error instanceof Error ? error.message : 'Failed to create Dealer App staff login.',
       });
     } finally {
       setIsCreating(false);
     }
   }
 
-  function toggleCreateForm() {
-    if (isCreating) return;
-    if (isCreateOpen) {
-      setDraft(EMPTY_DRAFT);
-      setIsCreatePasswordVisible(false);
-      setIsCreateOpen(false);
-      return;
-    }
-    setIsCreateOpen(true);
-  }
+  async function patchManager(managerId: string, body: Record<string, unknown>, successMessage: string) {
+    setSavingManagerId(managerId);
 
-  function cancelCreateForm() {
-    if (isCreating) return;
-    setDraft(EMPTY_DRAFT);
-    setIsCreatePasswordVisible(false);
-    setIsCreateOpen(false);
-  }
-
-  function openManager(member: Staff, trigger: HTMLButtonElement) {
-    managerTriggerRef.current = trigger;
-    setManagedStaff(member);
-    setEditDraft({ displayName: member.displayName, username: member.username, password: '' });
-    setIsResetPasswordVisible(false);
-    setDeleteConfirmationOpen(false);
-    setNotice(null);
-  }
-
-  function closeManager() {
-    if (busyAction) return;
-    setManagedStaff(null);
-    setEditDraft(EMPTY_DRAFT);
-    setIsResetPasswordVisible(false);
-    setDeleteConfirmationOpen(false);
-  }
-
-  function closeDeleteConfirmation() {
-    if (busyAction) return;
-    setDeleteConfirmationOpen(false);
-    window.requestAnimationFrame(() => deleteButtonRef.current?.focus());
-  }
-
-  async function patchStaff(
-    member: Staff,
-    body: Record<string, unknown>,
-    action: string,
-    successMessage: string,
-  ) {
-    setBusyAction(action);
     try {
-      const response = await fetch(`/api/dealer/staff/${encodeURIComponent(member.id)}`, {
+      const response = await fetch(`/api/dealer/staff/${encodeURIComponent(managerId)}`, {
         method: 'PATCH',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
-      const payload = (await response.json().catch(() => null)) as {
-        staff?: Staff;
-        error?: string;
-      } | null;
+      const payload = (await response.json().catch(() => null)) as FieldManagerApiResponse | null;
 
-      if (!response.ok) throw new Error(readError(payload, 'Failed to update login.'));
-      const updated = payload?.staff;
-      if (updated) {
-        setStaff((current) => current.map((item) => (item.id === updated.id ? updated : item)));
-        setManagedStaff(updated);
-        setEditDraft((current) => ({ ...current, displayName: updated.displayName, username: updated.username }));
-      } else {
-        await loadStaff({ background: true });
+      const updatedStaff = payload?.staff && !Array.isArray(payload.staff) ? payload.staff : null;
+      if (!response.ok || !payload?.ok || !updatedStaff) {
+        throw new Error(extractError(payload, 'Failed to update Dealer App staff login.'));
       }
+
+      setManagers((current) => current.map((manager) => (manager.id === managerId ? updatedStaff : manager)));
+      setEditDrafts((current) => ({
+        ...current,
+        [managerId]: {
+          displayName: updatedStaff.displayName,
+          username: updatedStaff.username,
+          password: '',
+        },
+      }));
+      setVisibleEditPasswordIds((current) => ({ ...current, [managerId]: false }));
       setNotice({ tone: 'success', message: successMessage });
-      return true;
-    } catch (cause) {
+    } catch (error) {
       setNotice({
         tone: 'error',
-        message: cause instanceof Error ? cause.message : 'Failed to update login.',
+        message: error instanceof Error ? error.message : 'Failed to update Dealer App staff login.',
       });
-      return false;
     } finally {
-      setBusyAction(null);
+      setSavingManagerId(null);
     }
   }
 
-  async function saveDetails(event: FormEvent<HTMLFormElement>) {
+  function updateEditDraft(managerId: string, updates: Partial<EditDraftState>) {
+    setEditDrafts((current) => ({
+      ...current,
+      [managerId]: {
+        ...(current[managerId] ?? { displayName: '', username: '', password: '' }),
+        ...updates,
+      },
+    }));
+  }
+
+  function toggleEditPasswordVisibility(managerId: string) {
+    setVisibleEditPasswordIds((current) => ({
+      ...current,
+      [managerId]: !current[managerId],
+    }));
+  }
+
+  async function handleSaveManager(event: FormEvent<HTMLFormElement>, manager: FieldManagerRecord) {
     event.preventDefault();
-    if (!managedStaff || busyAction) return;
+    const editDraft = editDrafts[manager.id];
 
-    const displayName = editDraft.displayName.trim();
-    const username = normalizeUsername(editDraft.username);
-    if (!displayName || username.length < 3) {
-      setNotice({ tone: 'error', message: 'Enter a valid staff name and username.' });
-      return;
+    if (!editDraft) return;
+
+    const body: Record<string, unknown> = {
+      displayName: editDraft.displayName.trim(),
+      username: normalizeUsername(editDraft.username),
+    };
+
+    if (editDraft.password.trim()) {
+      if (editDraft.password.length < DEALER_STAFF_PASSWORD_MIN_LENGTH) {
+        setNotice({
+          tone: 'error',
+          message: `Enter a password with at least ${DEALER_STAFF_PASSWORD_MIN_LENGTH} characters.`,
+        });
+        return;
+      }
+
+      body.password = editDraft.password;
     }
 
-    await patchStaff(
-      managedStaff,
-      { displayName, username },
-      'details',
-      'Staff login details updated.',
+    await patchManager(manager.id, body, 'Dealer App staff login updated.');
+  }
+
+  async function handleToggleManager(manager: FieldManagerRecord) {
+    await patchManager(
+      manager.id,
+      { isActive: !manager.isActive },
+      manager.isActive ? 'Dealer App staff login deactivated.' : 'Dealer App staff login activated.',
     );
   }
 
-  async function resetPassword() {
-    if (!managedStaff || busyAction) return;
-    if (editDraft.password.length < 8) {
-      setNotice({ tone: 'error', message: 'The new password must contain at least 8 characters.' });
-      return;
-    }
-
-    const updated = await patchStaff(
-      managedStaff,
-      { password: editDraft.password },
-      'password',
-      'Password reset. The staff member has been signed out of other Dealer App sessions.',
+  async function handleDeleteManager(manager: FieldManagerRecord) {
+    const confirmed = window.confirm(
+      `Delete Dealer App staff login for ${manager.displayName}? This cannot be undone.`,
     );
-    if (updated) {
-      setEditDraft((current) => ({ ...current, password: '' }));
-      setIsResetPasswordVisible(false);
-    }
-  }
 
-  async function toggleAccess() {
-    if (!managedStaff || busyAction) return;
-    const nextActive = !managedStaff.isActive;
-    await patchStaff(
-      managedStaff,
-      { isActive: nextActive },
-      'status',
-      nextActive ? 'Staff access activated.' : 'Staff access deactivated immediately.',
-    );
-  }
+    if (!confirmed) return;
 
-  async function deleteStaff() {
-    if (!managedStaff || busyAction) return;
-    setBusyAction('delete');
+    setDeletingManagerId(manager.id);
 
     try {
-      const response = await fetch(`/api/dealer/staff/${encodeURIComponent(managedStaff.id)}`, {
+      const response = await fetch(`/api/dealer/staff/${encodeURIComponent(manager.id)}`, {
         method: 'DELETE',
         credentials: 'include',
       });
-      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-      if (!response.ok) throw new Error(readError(payload, 'Failed to delete login.'));
+      const payload = (await response.json().catch(() => null)) as FieldManagerApiResponse | null;
 
-      setStaff((current) => current.filter((item) => item.id !== managedStaff.id));
-      setNotice({ tone: 'success', message: `${managedStaff.displayName}'s Dealer App login was deleted.` });
-      setManagedStaff(null);
-      setDeleteConfirmationOpen(false);
-    } catch (cause) {
+      if (!response.ok || !payload?.ok) {
+        throw new Error(extractError(payload, 'Failed to delete Dealer App staff login.'));
+      }
+
+      setManagers((current) => current.filter((existingManager) => existingManager.id !== manager.id));
+      setEditDrafts((current) => {
+        const { [manager.id]: _removedManager, ...remainingDrafts } = current;
+        return remainingDrafts;
+      });
+      setVisibleEditPasswordIds((current) => {
+        const { [manager.id]: _removedManager, ...remainingVisibility } = current;
+        return remainingVisibility;
+      });
+      setExpandedManagerId((current) => (current === manager.id ? null : current));
+      setNotice({ tone: 'success', message: 'Dealer App staff login deleted.' });
+    } catch (error) {
       setNotice({
         tone: 'error',
-        message: cause instanceof Error ? cause.message : 'Failed to delete login.',
+        message: error instanceof Error ? error.message : 'Failed to delete Dealer App staff login.',
       });
     } finally {
-      setBusyAction(null);
+      setDeletingManagerId(null);
     }
   }
 
-  async function copyLoginLink() {
-    try {
-      await navigator.clipboard.writeText(loginLink);
-      setNotice({ tone: 'success', message: 'Dealer App login link copied.' });
-    } catch {
-      setNotice({ tone: 'error', message: `Copy failed. Share this link: ${loginLink}` });
-    }
+  async function handleCopyLink() {
+    const copied = await copyToClipboard(loginLink);
+    setNotice({
+      tone: copied ? 'success' : 'error',
+      message: copied ? 'Dealer App login link copied.' : 'Copy failed. Use the link shown on this page.',
+    });
   }
 
-  async function shareLoginLink() {
-    if (!navigator.share) {
-      await copyLoginLink();
-      return;
+  async function handleShareLink() {
+    const sharePayload = {
+      title: 'Aim4price Dealer App',
+      text: shareText,
+      url: loginLink,
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(sharePayload);
+        return;
+      } catch {
+        // Fall back to clipboard below when sharing is cancelled or unavailable.
+      }
     }
 
-    try {
-      await navigator.share({
-        title: 'Aim4price Dealer App',
-        text: 'Open the Aim4price Dealer App staff login.',
-        url: loginLink,
-      });
-    } catch (cause) {
-      if (cause instanceof DOMException && cause.name === 'AbortError') return;
-      await copyLoginLink();
-    }
+    await handleCopyLink();
   }
 
   return (
     <main className={styles.page}>
-      <div className={styles.shell}>
-        <header className={styles.pageHeader}>
-          <Link className={styles.backButton} href="/account">← Account</Link>
-          <div>
-            <span>Access control</span>
-            <h1>Dealer App Access</h1>
-          </div>
-        </header>
+      <AppHeader active="none" />
 
-        <section className={styles.introCard}>
-          <div>
-            <span className={styles.eyebrow}>Simple staff access</span>
-            <h2>Keep account settings private</h2>
+      <section className={styles.shell}>
+        <button type="button" className={styles.backButton} onClick={() => window.location.assign('/account')}>
+          ← Back to account
+        </button>
+
+        <section className={styles.heroCard}>
+          <div className={styles.heroCopy}>
+            <h1>Dealer App Staff</h1>
             <p>
-              Staff can use Valuation, Discovery, Leads and Marketplace. They cannot open your
-              account settings, Fuel, Maintenance, Invoices or Asset Register.
+              Create dedicated access for staff who use Valuation, Discovery, Leads and Marketplace without entering
+              the full Aim4price account area.
             </p>
+          </div>
+
+          <div className={styles.linkPanel}>
+            <div className={styles.linkPanelHeader}>
+              <h2>Staff login link</h2>
+              <p>Send this link to approved staff after creating their login details.</p>
+            </div>
+            <code>{loginLink}</code>
+            <div className={styles.shareRow}>
+              <button type="button" className={styles.secondaryButton} onClick={handleCopyLink}>
+                Copy link
+              </button>
+              <button type="button" className={styles.primaryButton} onClick={handleShareLink}>
+                Share link
+              </button>
+            </div>
           </div>
         </section>
 
-        {notice && !managedStaff ? (
-          <div
-            className={`${styles.notice} ${notice.tone === 'success' ? styles.noticeSuccess : styles.noticeError}`}
-            role={notice.tone === 'error' ? 'alert' : 'status'}
-            aria-live={notice.tone === 'error' ? 'assertive' : 'polite'}
-          >
+        {notice ? (
+          <div className={`${styles.notice} ${notice.tone === 'success' ? styles.noticeSuccess : styles.noticeError}`}>
             {notice.message}
           </div>
         ) : null}
 
-        <section className={styles.linkCard}>
-          <div className={styles.sectionHeader}>
-            <div>
-              <span>Staff login link</span>
-              <h2>Share after creating a login</h2>
+        <section className={styles.grid}>
+          <section className={styles.card}>
+            <div className={styles.cardHeader}>
+              <h2>New Dealer App login</h2>
+              <p>Create a dedicated username and password for one staff member.</p>
             </div>
-          </div>
-          <code>{loginLink}</code>
-          <div className={styles.actionGrid}>
-            <button type="button" className={styles.secondaryButton} onClick={() => void copyLoginLink()}>
-              Copy link
-            </button>
-            <button type="button" className={styles.secondaryButton} onClick={() => void shareLoginLink()}>
-              Share link
-            </button>
-            <Link className={styles.primaryLink} href="/dealer" prefetch={false}>
-              Open Dealer App
-            </Link>
-          </div>
-        </section>
 
-        <section className={styles.staffSection}>
-          <div className={styles.staffSectionHeader}>
-            <div>
-              <span>Staff access</span>
-              <h2>
-                {isLoading
-                  ? 'Loading…'
-                  : !hasLoadedStaff && loadError
-                    ? 'Staff logins'
-                    : `${staff.length} ${staff.length === 1 ? 'login' : 'logins'}`}
-              </h2>
-            </div>
-            <button
-              ref={addStaffButtonRef}
-              type="button"
-              className={styles.addButton}
-              onClick={toggleCreateForm}
-              disabled={isCreating}
-              aria-expanded={isCreateOpen}
-              aria-controls="dealer-create-staff-form"
-            >
-              {isCreateOpen ? 'Close' : '+ Add staff member'}
-            </button>
-          </div>
+            <form className={styles.form} onSubmit={handleCreateManager}>
+              <label className={styles.field}>
+                <span>Staff member name</span>
+                <input
+                  value={draft.displayName}
+                  onChange={(event) => setDraft((current) => ({ ...current, displayName: event.target.value }))}
+                  placeholder="Example: Sales Manager"
+                  autoComplete="off"
+                />
+              </label>
 
-          {isCreateOpen ? (
-            <form id="dealer-create-staff-form" className={styles.createCard} onSubmit={createStaff} aria-busy={isCreating}>
-              <div className={styles.sectionHeader}>
-                <div>
-                  <span>New staff login</span>
-                  <h2>Create access</h2>
-                </div>
-              </div>
+              <label className={styles.field}>
+                <span>Username</span>
+                <input
+                  value={draft.username}
+                  onChange={(event) => setDraft((current) => ({ ...current, username: normalizeUsername(event.target.value) }))}
+                  placeholder="example: sales.manager"
+                  autoComplete="off"
+                />
+              </label>
 
-              <div className={styles.formGrid}>
-                <label className={styles.field}>
-                  <span>Staff member name</span>
+              <div className={styles.field}>
+                <label className={styles.fieldLabel} htmlFor="dealer-staff-create-password">
+                  Password
+                </label>
+                <div className={styles.passwordInputWrap}>
                   <input
-                    value={draft.displayName}
-                    onChange={(event) => setDraft((current) => ({ ...current, displayName: event.target.value }))}
-                    placeholder="Example: Sales Manager"
-                    maxLength={120}
-                    autoComplete="off"
-                    disabled={isCreating}
-                    required
+                    id="dealer-staff-create-password"
+                    type={isCreatePasswordVisible ? 'text' : 'password'}
+                    value={draft.password}
+                    onChange={(event) => setDraft((current) => ({ ...current, password: event.target.value }))}
+                    placeholder={`Minimum ${DEALER_STAFF_PASSWORD_MIN_LENGTH} characters`}
+                    autoComplete="new-password"
                   />
-                </label>
-                <label className={styles.field}>
-                  <span>Username</span>
-                  <input
-                    value={draft.username}
-                    onChange={(event) => setDraft((current) => ({ ...current, username: normalizeUsername(event.target.value) }))}
-                    placeholder="sales.manager"
-                    maxLength={80}
-                    autoComplete="off"
-                    autoCapitalize="none"
-                    autoCorrect="off"
-                    disabled={isCreating}
-                    required
-                  />
-                  <small>Lowercase letters, numbers, dots, dashes, underscores or @.</small>
-                </label>
-                <div className={styles.field}>
-                  <label className={styles.fieldLabel} htmlFor="dealer-create-password">Temporary password</label>
-                  <span className={styles.passwordInputWrap}>
-                    <input
-                      id="dealer-create-password"
-                      className={styles.passwordInputWithToggle}
-                      type={isCreatePasswordVisible ? 'text' : 'password'}
-                      value={draft.password}
-                      onChange={(event) => setDraft((current) => ({ ...current, password: event.target.value }))}
-                      placeholder="Minimum 8 characters"
-                      minLength={8}
-                      maxLength={200}
-                      autoComplete="new-password"
-                      disabled={isCreating}
-                      required
-                    />
-                    <button
-                      type="button"
-                      className={styles.passwordToggle}
-                      onClick={() => setIsCreatePasswordVisible((current) => !current)}
-                      disabled={isCreating}
-                      aria-label={isCreatePasswordVisible ? 'Hide temporary password' : 'Show temporary password'}
-                      aria-pressed={isCreatePasswordVisible}
-                    >
-                      {isCreatePasswordVisible ? 'Hide' : 'Show'}
-                    </button>
-                  </span>
-                  <small>Passwords cannot be viewed again after creation.</small>
-                </div>
-              </div>
-
-              <div className={styles.formActions}>
-                <button
-                  type="button"
-                  className={styles.secondaryButton}
-                  onClick={cancelCreateForm}
-                  disabled={isCreating}
-                >
-                  Cancel
-                </button>
-                <button type="submit" className={styles.primaryButton} disabled={isCreating}>
-                  {isCreating ? 'Creating…' : 'Create login'}
-                </button>
-              </div>
-            </form>
-          ) : null}
-
-          {loadError ? (
-            <div className={styles.loadErrorState} role="alert">
-              <strong>Staff access could not be loaded</strong>
-              <span>{loadError}</span>
-              <button
-                type="button"
-                className={styles.secondaryButton}
-                onClick={() => void loadStaff({ background: hasLoadedStaff })}
-                disabled={isLoading || isRefreshing}
-              >
-                {isLoading || isRefreshing ? 'Retrying…' : 'Retry'}
-              </button>
-            </div>
-          ) : null}
-          {isLoading ? <div className={styles.emptyState} role="status" aria-live="polite">Loading staff access…</div> : null}
-          {isRefreshing ? <div className={styles.refreshStatus} role="status" aria-live="polite">Refreshing staff access…</div> : null}
-          {!isLoading && !loadError && staff.length === 0 ? (
-            <div className={styles.emptyState}>
-              <strong>No staff logins yet</strong>
-              <span>Add a staff member when someone needs access to the Dealer App.</span>
-            </div>
-          ) : null}
-
-          <div className={styles.staffList}>
-            {staff.map((member) => (
-              <article className={styles.staffCard} key={member.id}>
-                <div className={styles.staffIdentity}>
-                  <strong>{member.displayName}</strong>
-                  <span>{member.username}</span>
-                </div>
-                <div className={styles.staffMeta}>
-                  <span>Last login</span>
-                  <strong>{formatDate(member.lastLoginAtIso)}</strong>
-                  <small>Created {formatDate(member.createdAtIso)}</small>
-                </div>
-                <span className={`${styles.statusPill} ${member.isActive ? styles.statusActive : styles.statusInactive}`}>
-                  {member.isActive ? 'Active' : 'Inactive'}
-                </span>
-                <button
-                  type="button"
-                  className={styles.manageButton}
-                  onClick={(event) => openManager(member, event.currentTarget)}
-                  aria-label={`Manage ${member.displayName}'s Dealer App login`}
-                >
-                  Manage
-                </button>
-              </article>
-            ))}
-          </div>
-        </section>
-      </div>
-
-      {managedStaff ? (
-        <div className={styles.modalOverlay} onMouseDown={closeManager}>
-          <section
-            ref={modalRef}
-            className={styles.manageModal}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="dealer-staff-manage-title"
-            tabIndex={-1}
-            onMouseDown={(event) => event.stopPropagation()}
-          >
-            <header className={styles.modalHeader}>
-              <div>
-                <span>Manage staff login</span>
-                <h2 id="dealer-staff-manage-title">{managedStaff.displayName}</h2>
-              </div>
-              <button ref={modalCloseRef} type="button" className={styles.closeButton} onClick={closeManager} disabled={Boolean(busyAction)} aria-label="Close staff login manager">
-                ×
-              </button>
-            </header>
-
-            <div className={styles.modalBody}>
-              {notice ? (
-                <div
-                  className={`${styles.notice} ${notice.tone === 'success' ? styles.noticeSuccess : styles.noticeError}`}
-                  role={notice.tone === 'error' ? 'alert' : 'status'}
-                  aria-live={notice.tone === 'error' ? 'assertive' : 'polite'}
-                >
-                  {notice.message}
-                </div>
-              ) : null}
-
-              <form className={styles.manageSection} onSubmit={saveDetails}>
-                <div className={styles.manageSectionHeader}>
-                  <h3>Login details</h3>
-                  <p>Changes are saved only when you press Save details.</p>
-                </div>
-                <label className={styles.field}>
-                  <span>Staff member name</span>
-                  <input value={editDraft.displayName} onChange={(event) => setEditDraft((current) => ({ ...current, displayName: event.target.value }))} maxLength={120} disabled={Boolean(busyAction)} required />
-                </label>
-                <label className={styles.field}>
-                  <span>Username</span>
-                  <input value={editDraft.username} onChange={(event) => setEditDraft((current) => ({ ...current, username: normalizeUsername(event.target.value) }))} maxLength={80} autoCapitalize="none" autoCorrect="off" disabled={Boolean(busyAction)} required />
-                </label>
-                <button type="submit" className={styles.primaryButton} disabled={Boolean(busyAction)}>
-                  {busyAction === 'details' ? 'Saving…' : 'Save details'}
-                </button>
-              </form>
-
-              <section className={styles.manageSection}>
-                <div className={styles.manageSectionHeader}>
-                  <h3>Reset password</h3>
-                  <p>Resetting the password signs this staff member out of other Dealer App sessions.</p>
-                </div>
-                <div className={styles.field}>
-                  <label className={styles.fieldLabel} htmlFor="dealer-reset-password">New temporary password</label>
-                  <span className={styles.passwordInputWrap}>
-                    <input
-                      id="dealer-reset-password"
-                      className={styles.passwordInputWithToggle}
-                      type={isResetPasswordVisible ? 'text' : 'password'}
-                      value={editDraft.password}
-                      onChange={(event) => setEditDraft((current) => ({ ...current, password: event.target.value }))}
-                      placeholder="Minimum 8 characters"
-                      minLength={8}
-                      maxLength={200}
-                      autoComplete="new-password"
-                      disabled={Boolean(busyAction)}
-                    />
-                    <button
-                      type="button"
-                      className={styles.passwordToggle}
-                      onClick={() => setIsResetPasswordVisible((current) => !current)}
-                      disabled={Boolean(busyAction)}
-                      aria-label={isResetPasswordVisible ? 'Hide new temporary password' : 'Show new temporary password'}
-                      aria-pressed={isResetPasswordVisible}
-                    >
-                      {isResetPasswordVisible ? 'Hide' : 'Show'}
-                    </button>
-                  </span>
-                </div>
-                <button type="button" className={styles.secondaryButton} onClick={() => void resetPassword()} disabled={Boolean(busyAction)}>
-                  {busyAction === 'password' ? 'Resetting…' : 'Reset password'}
-                </button>
-              </section>
-
-              <section className={styles.accessSection}>
-                <div>
-                  <h3>{managedStaff.isActive ? 'Deactivate access' : 'Activate access'}</h3>
-                  <p>{managedStaff.isActive ? 'The staff member will lose access immediately.' : 'The staff member will be able to sign in again.'}</p>
-                </div>
-                <button type="button" className={managedStaff.isActive ? styles.warningButton : styles.primaryButton} onClick={() => void toggleAccess()} disabled={Boolean(busyAction)}>
-                  {busyAction === 'status' ? 'Updating…' : managedStaff.isActive ? 'Deactivate' : 'Activate'}
-                </button>
-              </section>
-
-              <section className={styles.deleteSection}>
-                {!deleteConfirmationOpen ? (
-                  <button ref={deleteButtonRef} type="button" className={styles.deleteButton} onClick={() => setDeleteConfirmationOpen(true)} disabled={Boolean(busyAction)}>
-                    Delete staff login
+                  <button
+                    type="button"
+                    className={styles.passwordToggleButton}
+                    onClick={() => setIsCreatePasswordVisible((current) => !current)}
+                    aria-label={isCreatePasswordVisible ? 'Hide Dealer App password' : 'Show Dealer App password'}
+                    aria-pressed={isCreatePasswordVisible}
+                  >
+                    {isCreatePasswordVisible ? 'Hide' : 'Show'}
                   </button>
-                ) : (
-                  <div className={styles.deleteConfirmation}>
-                    <strong>Delete {managedStaff.displayName}'s login?</strong>
-                    <p>This cannot be undone.</p>
-                    <div>
-                      <button ref={deleteCancelRef} type="button" className={styles.secondaryButton} onClick={closeDeleteConfirmation} disabled={Boolean(busyAction)}>Cancel</button>
-                      <button type="button" className={styles.deletePrimaryButton} onClick={() => void deleteStaff()} disabled={Boolean(busyAction)}>
-                        {busyAction === 'delete' ? 'Deleting…' : 'Yes, delete'}
+                </div>
+              </div>
+
+              <button type="submit" className={styles.primaryButton} disabled={isCreating}>
+                {isCreating ? 'Creating…' : 'Create login'}
+              </button>
+            </form>
+          </section>
+
+          <section className={`${styles.card} ${styles.managerListCard}`}>
+            <div className={styles.cardHeader}>
+              <h2>Dealer App staff logins</h2>
+              <p>Manage details, reset passwords, deactivate or delete staff access.</p>
+            </div>
+
+            {isLoading ? <p className={styles.emptyState}>Loading Dealer App staff logins…</p> : null}
+
+            {!isLoading && !managers.length ? (
+              <p className={styles.emptyState}>No Dealer App staff logins created yet.</p>
+            ) : null}
+
+            <div className={styles.managerList}>
+              {managers.map((manager) => {
+                const editDraft = editDrafts[manager.id] ?? {
+                  displayName: manager.displayName,
+                  username: manager.username,
+                  password: '',
+                };
+                const isExpanded = expandedManagerId === manager.id;
+                const isSavingThisManager = savingManagerId === manager.id;
+                const isDeletingThisManager = deletingManagerId === manager.id;
+                const isBusyThisManager = isSavingThisManager || isDeletingThisManager;
+                const managerPanelId = `dealer-staff-panel-${manager.id}`;
+                const passwordInputId = `dealer-staff-password-${manager.id}`;
+                const isEditPasswordVisible = Boolean(visibleEditPasswordIds[manager.id]);
+
+                return (
+                  <article
+                    key={manager.id}
+                    className={`${styles.managerCard} ${isExpanded ? styles.managerCardExpanded : ''}`}
+                  >
+                    <div className={styles.managerSummary}>
+                      <div className={styles.managerIdentity}>
+                        <strong>{manager.displayName}</strong>
+                        <span>{manager.username}</span>
+                      </div>
+
+                      <div className={styles.managerSummaryMeta} aria-label="Dealer App staff dates">
+                        <span>
+                          <b>Last login</b>
+                          {formatDateTime(manager.lastLoginAtIso)}
+                        </span>
+                        <span>
+                          <b>Updated</b>
+                          {formatDateTime(manager.updatedAtIso)}
+                        </span>
+                      </div>
+
+                      <span className={`${styles.statusText} ${manager.isActive ? styles.statusActive : styles.statusInactive}`}>
+                        {manager.isActive ? 'Active' : 'Inactive'}
+                      </span>
+
+                      <button
+                        type="button"
+                        className={styles.manageButton}
+                        onClick={() => setExpandedManagerId((current) => (current === manager.id ? null : manager.id))}
+                        aria-expanded={isExpanded}
+                        aria-controls={managerPanelId}
+                      >
+                        {isExpanded ? 'Close' : 'Manage'}
                       </button>
                     </div>
-                  </div>
-                )}
-              </section>
+
+                    {isExpanded ? (
+                      <div id={managerPanelId} className={styles.managerDropdown}>
+                        <form className={styles.inlineForm} onSubmit={(event) => void handleSaveManager(event, manager)}>
+                          <label className={styles.compactField}>
+                            <span>Display name</span>
+                            <input
+                              value={editDraft.displayName}
+                              onChange={(event) => updateEditDraft(manager.id, { displayName: event.target.value })}
+                            />
+                          </label>
+
+                          <label className={styles.compactField}>
+                            <span>Username</span>
+                            <input
+                              value={editDraft.username}
+                              onChange={(event) =>
+                                updateEditDraft(manager.id, { username: normalizeUsername(event.target.value) })
+                              }
+                            />
+                          </label>
+
+                          <div className={styles.compactField}>
+                            <label className={styles.fieldLabel} htmlFor={passwordInputId}>
+                              Password
+                            </label>
+                            <div className={styles.passwordInputWrap}>
+                              <input
+                                id={passwordInputId}
+                                type={isEditPasswordVisible ? 'text' : 'password'}
+                                value={editDraft.password}
+                                onChange={(event) => updateEditDraft(manager.id, { password: event.target.value })}
+                                placeholder="Enter a new password to reset it"
+                                autoComplete="off"
+                              />
+                              <button
+                                type="button"
+                                className={styles.passwordToggleButton}
+                                onClick={() => toggleEditPasswordVisibility(manager.id)}
+                                aria-label={isEditPasswordVisible ? 'Hide new Dealer App password' : 'Show new Dealer App password'}
+                                aria-pressed={isEditPasswordVisible}
+                              >
+                                {isEditPasswordVisible ? 'Hide' : 'Show'}
+                              </button>
+                            </div>
+                            <p className={styles.fieldHint}>Leave blank to keep the current password.</p>
+                          </div>
+
+                          <div className={styles.managerActions}>
+                            <button type="submit" className={styles.secondaryButton} disabled={isBusyThisManager}>
+                              {isSavingThisManager ? 'Saving…' : 'Save changes'}
+                            </button>
+                            <button
+                              type="button"
+                              className={manager.isActive ? styles.dangerButton : styles.primaryButton}
+                              onClick={() => void handleToggleManager(manager)}
+                              disabled={isBusyThisManager}
+                            >
+                              {manager.isActive ? 'Deactivate' : 'Activate'}
+                            </button>
+                            <button
+                              type="button"
+                              className={styles.deleteButton}
+                              onClick={() => void handleDeleteManager(manager)}
+                              disabled={isBusyThisManager}
+                            >
+                              {isDeletingThisManager ? 'Deleting…' : 'Delete'}
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                    ) : null}
+                  </article>
+                );
+              })}
             </div>
           </section>
-        </div>
-      ) : null}
+        </section>
+      </section>
     </main>
   );
 }
