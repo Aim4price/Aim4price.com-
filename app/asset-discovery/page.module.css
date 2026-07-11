@@ -250,6 +250,154 @@
     0 10px 22px rgba(30, 56, 66, 0.055);
 }
 
+.customFilter {
+  position: relative;
+  z-index: 12;
+  min-width: 0;
+}
+
+.customFilterOpen {
+  z-index: 30;
+}
+
+.customFilterButton {
+  width: 100%;
+  min-width: 0;
+  min-height: clamp(3.55rem, 4.25vw, 3.95rem);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.85rem;
+  padding: 0 1rem 0 1.15rem;
+  border: 1.5px solid rgba(194, 211, 224, 0.98);
+  border-radius: clamp(1rem, 1.45vw, 1.18rem);
+  outline: 0;
+  background: linear-gradient(180deg, #ffffff 0%, #f9fcfb 100%);
+  color: #20313b;
+  box-shadow:
+    0 8px 18px rgba(30, 56, 66, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+  font: inherit;
+  font-size: clamp(0.98rem, 1.08vw, 1.08rem);
+  font-weight: 780;
+  line-height: 1;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease;
+}
+
+.customFilterButton > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.customFilterButton:hover,
+.customFilterOpen .customFilterButton {
+  border-color: rgba(37, 71, 51, 0.46);
+  background: #ffffff;
+  box-shadow:
+    0 0 0 4px rgba(37, 71, 51, 0.09),
+    0 12px 24px rgba(18, 53, 45, 0.07);
+}
+
+.customFilterChevron {
+  width: 1.05rem;
+  height: 1.05rem;
+  flex: 0 0 auto;
+  color: #254733;
+  transition: transform 160ms ease;
+}
+
+.customFilterOpen .customFilterChevron {
+  transform: rotate(180deg);
+}
+
+.customFilterMenu {
+  position: absolute;
+  top: calc(100% + 0.55rem);
+  right: 0;
+  left: 0;
+  max-height: min(22rem, 48vh);
+  overflow-y: auto;
+  display: grid;
+  gap: 0.28rem;
+  padding: 0.48rem;
+  border: 1px solid rgba(37, 71, 51, 0.16);
+  border-radius: 1.05rem;
+  background: rgba(255, 255, 255, 0.99);
+  box-shadow:
+    0 24px 52px rgba(18, 53, 45, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(37, 71, 51, 0.34) transparent;
+}
+
+.customFilterOption {
+  width: 100%;
+  min-height: 2.75rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.62rem 0.72rem;
+  border: 1px solid transparent;
+  border-radius: 0.78rem;
+  background: transparent;
+  color: #30453d;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 720;
+  line-height: 1.25;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease;
+}
+
+.customFilterOption:hover {
+  border-color: rgba(37, 71, 51, 0.1);
+  background: #f1f7f3;
+  color: #173a2f;
+}
+
+.customFilterOption span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.customFilterOption small {
+  min-width: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #eef4f0;
+  color: #52685e;
+  padding: 0.22rem 0.45rem;
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+.customFilterOption strong {
+  color: #197454;
+  font-size: 0.92rem;
+  font-weight: 900;
+}
+
+.customFilterOptionSelected {
+  border-color: rgba(72, 161, 112, 0.34);
+  background: linear-gradient(180deg, #f7fcf9 0%, #e8f6ee 100%);
+  color: #0b4f39;
+  font-weight: 820;
+}
+
 .clearSearchButton,
 .primaryButton,
 .outlineButton,
@@ -456,6 +604,85 @@
   line-height: 1.06;
   letter-spacing: -0.045em;
   overflow-wrap: anywhere;
+}
+
+.dealerAssetCard {
+  padding: 1.3rem 1.38rem;
+  border: 1px solid rgba(184, 211, 199, 0.9);
+  border-radius: 1.58rem;
+  background:
+    radial-gradient(circle at 3% 0%, rgba(25, 116, 84, 0.075) 0%, rgba(25, 116, 84, 0) 38%),
+    linear-gradient(180deg, #f9fdfb 0%, #eff9f3 58%, #ffffff 100%);
+  box-shadow:
+    0 18px 42px rgba(25, 116, 84, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.dealerAssetCard:hover {
+  border-color: rgba(71, 139, 108, 0.44);
+  box-shadow:
+    0 20px 44px rgba(25, 116, 84, 0.11),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.dealerAssetCardHeader {
+  min-height: 0;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1.3rem;
+}
+
+.dealerAssetCard .assetIdentity {
+  gap: 0.58rem;
+}
+
+.dealerAssetCard .assetIdentity h2 {
+  color: #073b30 !important;
+  font-size: clamp(1.42rem, 1.9vw, 1.72rem) !important;
+  font-weight: 760 !important;
+  line-height: 1.08 !important;
+  letter-spacing: -0.032em !important;
+}
+
+.dealerAssetMeta {
+  margin: 0;
+  color: #5d6d7c;
+  font-size: 0.96rem;
+  font-weight: 650;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.dealerAssetProvince {
+  display: block;
+  color: #68798a;
+  font-size: 0.9rem;
+  font-weight: 720;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.dealerAssetCard .assetActionRow > :is(button, span) {
+  min-width: 154px;
+}
+
+.dealerAssetCard .enquireButton {
+  min-height: 3.1rem;
+  color: #0b543d;
+  border-color: rgba(71, 164, 113, 0.74);
+  background: linear-gradient(180deg, #f8fdf9 0%, #dff3e8 100%);
+  box-shadow:
+    0 10px 22px rgba(15, 90, 67, 0.085),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.dealerAssetCard .enquireButton:hover:not(:disabled) {
+  color: #0b4635;
+  border-color: rgba(66, 177, 116, 0.94);
+  background: linear-gradient(180deg, #ffffff 0%, #d6f0e2 100%);
+  box-shadow:
+    0 14px 28px rgba(15, 90, 67, 0.115),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
 }
 
 .assetActionRow {
@@ -678,6 +905,8 @@
 .outlineButton:focus-visible,
 .clearSearchButton:focus-visible,
 .selectBox:focus-visible,
+.customFilterButton:focus-visible,
+.customFilterOption:focus-visible,
 .discoveryPaginationButton:focus-visible,
 .discoveryPaginationPageButton:focus-visible {
   outline: 3px solid rgba(20, 112, 82, 0.18);
@@ -698,6 +927,10 @@
 
   .assetActionRow {
     justify-content: flex-start;
+  }
+
+  .dealerAssetCard .assetActionRow > :is(button, span) {
+    width: 100%;
   }
 }
 
