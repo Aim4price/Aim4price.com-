@@ -2643,7 +2643,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
               onClick={() => selectDealerListingView('mine')}
               aria-pressed={dealerListingView === 'mine'}
             >
-              My Listings ({items.filter((item) => item.canManage).length})
+              My listings ({items.filter((item) => item.canManage).length})
             </button>
           </div>
 
@@ -2670,7 +2670,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
               {dealerFiltersOpen ? 'Close filters' : 'Filters'}
             </button>
             <button type="button" className={dealerStyles.marketplaceCreateButton} onClick={handleCreateListingClick}>
-              + Create listing
+              + New listing
             </button>
           </div>
         </section>
@@ -2682,7 +2682,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
           role={listingLoadError ? 'alert' : 'status'}
           aria-live={listingLoadError ? 'assertive' : 'polite'}
         >
-          {isLoadingListings ? 'Loading the latest Marketplace listings…' : listingLoadError}
+          {isLoadingListings ? 'Loading listings…' : listingLoadError}
         </div>
       ) : null}
 
@@ -2971,7 +2971,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
               <h2>{dealerAppMode && dealerListingView === 'mine' ? 'No live listings yet' : 'No listings found'}</h2>
               <p>
                 {dealerAppMode && dealerListingView === 'mine'
-                  ? 'Create a listing from Valuation when you are ready to advertise an asset.'
+                  ? 'Create a listing from Valuation.'
                   : 'Try another search, category, condition or location.'}
               </p>
               <button type="button" onClick={clearFilters}>
