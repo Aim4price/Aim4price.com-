@@ -824,7 +824,7 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
   return (
     <section className={`${styles.shell} ${dealerAppMode ? dealerStyles.dealerDiscoverySurface : ""}`}>
       <div className={styles.heroPanel}>
-        <h1>ASSET DISCOVERY</h1>
+        <h1>{dealerAppMode ? "Discovery" : "ASSET DISCOVERY"}</h1>
       </div>
 
       <section
@@ -864,7 +864,7 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
               type="search"
               value={searchInput}
               onChange={(event) => handleSearchChange(event.target.value)}
-              placeholder="Search by type, brand, model, year, usage, condition or province"
+              placeholder={dealerAppMode ? "Search assets" : "Search by type, brand, model, year, usage, condition or province"}
               aria-label="Search Asset Discovery"
             />
             {searchInput ? (
@@ -923,7 +923,7 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
                     <h2>{dealerAssetDisplayName(asset)}</h2>
                     <p className={styles.dealerAssetMeta}>{dealerAssetMeta(asset)}</p>
                     <span className={styles.dealerAssetProvince}>
-                      Province: {cleanText(asset.province) || "Not saved"}
+                      {dealerAppMode ? "" : "Province: "}{cleanText(asset.province) || "Not saved"}
                     </span>
                   </div>
 
