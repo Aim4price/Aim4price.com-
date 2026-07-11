@@ -244,13 +244,6 @@ function dealerAssetMeta(asset: AssetDiscoveryAsset): string {
   return details.join(" • ");
 }
 
-function provinceKicker(asset: AssetDiscoveryAsset): string {
-  const province = cleanText(asset.province);
-  return province && province !== "Province not saved"
-    ? `Province saved: ${province}`
-    : "Province not saved";
-}
-
 function temporaryDenialExpired(asset: AssetDiscoveryAsset): boolean {
   if (asset.enquiryStatus !== "temporarily_denied" || !asset.requestAgainAtIso)
     return false;
@@ -319,7 +312,6 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] =
     useState<DiscoveryPageSize>(DISCOVERY_PAGE_SIZE);
-  const [openAssetId, setOpenAssetId] = useState<string | null>(null);
   const [processingAssetIds, setProcessingAssetIds] = useState<Set<string>>(
     () => new Set(),
   );
@@ -536,10 +528,6 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
   function goToPage(nextPage: number) {
     const safePage = Math.min(Math.max(1, nextPage), pagination.totalPages);
     setCurrentPage(safePage);
-  }
-
-  function toggleDetails(assetId: string) {
-    setOpenAssetId((current) => (current === assetId ? null : assetId));
   }
 
   async function handleEnquire(asset: AssetDiscoveryAsset) {
@@ -823,54 +811,22 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
             ) : null}
           </label>
 
-          {dealerAppMode ? (
-            renderDealerFilter(
-              "type",
-              type,
-              typeOptions,
-              "All types",
-              "Filter by asset type",
-              handleTypeChange,
-            )
-          ) : (
-            <select
-              className={styles.selectBox}
-              value={type}
-              onChange={(event) => handleTypeChange(event.target.value)}
-              aria-label="Filter by asset type"
-            >
-              <option value="all">All types</option>
-              {typeOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label} ({option.count})
-                </option>
-              ))}
-            </select>
+          {renderDealerFilter(
+            "type",
+            type,
+            typeOptions,
+            "All types",
+            "Filter by asset type",
+            handleTypeChange,
           )}
 
-          {dealerAppMode ? (
-            renderDealerFilter(
-              "province",
-              province,
-              provinceOptions,
-              "All provinces",
-              "Filter by province",
-              handleProvinceChange,
-            )
-          ) : (
-            <select
-              className={styles.selectBox}
-              value={province}
-              onChange={(event) => handleProvinceChange(event.target.value)}
-              aria-label="Filter by province"
-            >
-              <option value="all">All provinces</option>
-              {provinceOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label} ({option.count})
-                </option>
-              ))}
-            </select>
+          {renderDealerFilter(
+            "province",
+            province,
+            provinceOptions,
+            "All provinces",
+            "Filter by province",
+            handleProvinceChange,
           )}
         </section>
       </section>
@@ -889,65 +845,24 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
           <div className={styles.emptyState}>Loading Asset Discovery...</div>
         ) : !error && assets.length ? (
           assets.map((asset) => {
-            const isOpen = openAssetId === asset.id;
-
             return (
               <article
                 key={asset.id}
-                className={`${styles.assetCard} ${dealerAppMode ? styles.dealerAssetCard : ""} ${isOpen ? styles.assetCardOpen : ""}`}
+                className={`${styles.assetCard} ${styles.dealerAssetCard}`}
               >
-                <div className={`${styles.assetCardHeader} ${dealerAppMode ? styles.dealerAssetCardHeader : ""}`}>
+                <div className={`${styles.assetCardHeader} ${styles.dealerAssetCardHeader}`}>
                   <div className={styles.assetIdentity}>
-                    {dealerAppMode ? null : (
-                      <span className={styles.assetKicker}>{provinceKicker(asset)}</span>
-                    )}
-                    <h2>
-                      {dealerAppMode
-                        ? dealerAssetDisplayName(asset)
-                        : assetDisplayName(asset)}
-                    </h2>
-                    {dealerAppMode ? (
-                      <>
-                        <p className={styles.dealerAssetMeta}>{dealerAssetMeta(asset)}</p>
-                        <span className={styles.dealerAssetProvince}>
-                          Province: {cleanText(asset.province) || "Not saved"}
-                        </span>
-                      </>
-                    ) : null}
+                    <h2>{dealerAssetDisplayName(asset)}</h2>
+                    <p className={styles.dealerAssetMeta}>{dealerAssetMeta(asset)}</p>
+                    <span className={styles.dealerAssetProvince}>
+                      Province: {cleanText(asset.province) || "Not saved"}
+                    </span>
                   </div>
 
                   <div className={styles.assetActionRow}>
-                    {!dealerAppMode ? (
-                      <button
-                        type="button"
-                        className={`${styles.outlineButton} ${styles.detailsButton}`}
-                        onClick={() => toggleDetails(asset.id)}
-                      >
-                        {isOpen ? "Close" : "View Details"}
-                      </button>
-                    ) : null}
                     {renderEnquiryControl(asset)}
                   </div>
                 </div>
-
-                {!dealerAppMode && isOpen ? (
-                  <div className={styles.assetDetails}>
-                    <div className={styles.detailGrid}>
-                      <article className={styles.detailPanel}>
-                        <span>Year</span>
-                        <strong>{asset.year || "Unknown"}</strong>
-                      </article>
-                      <article className={styles.detailPanel}>
-                        <span>Usage</span>
-                        <strong>{asset.usage || "Unknown"}</strong>
-                      </article>
-                      <article className={styles.detailPanel}>
-                        <span>Condition</span>
-                        <strong>{asset.condition || "Unknown"}</strong>
-                      </article>
-                    </div>
-                  </div>
-                ) : null}
               </article>
             );
           })
