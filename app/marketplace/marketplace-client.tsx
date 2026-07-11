@@ -11,6 +11,7 @@ import {
 } from 'react';
 import AppHeader from '../../components/AppHeader';
 import styles from './page.module.css';
+import dealerStyles from '../dealer/dealer.module.css';
 import {
   FALLBACK_MARKETPLACE_IMAGE,
   calculateMarketplaceDealRating,
@@ -81,6 +82,18 @@ type ActiveFilterChip = {
 };
 
 type PaginationItem = number | 'ellipsis-before' | 'ellipsis-after';
+type DealerListingView = 'browse' | 'mine';
+
+type MarketplaceEditDraft = {
+  askingPriceExVat: string;
+  description: string;
+  sellerName: string;
+  sellerCompany: string;
+  sellerPhone: string;
+  sellerEmail: string;
+  province: string;
+  area: string;
+};
 
 const LISTINGS_PER_PAGE = 24;
 const JPEG_AD_WIDTH = 1600;
@@ -1755,7 +1768,7 @@ function mergeFamilies(records: EquipmentFamilyRecord[]): FamilyOption[] {
   });
 }
 
-export default function MarketplaceClient({ initialFilters, isSignedIn, accountType = 'public' }: MarketplaceClientProps) {
+export default function MarketplaceClient({ initialFilters, isSignedIn, accountType = 'public', dealerAppMode = false }: MarketplaceClientProps & { dealerAppMode?: boolean }) {
   const initialSearch = [initialFilters.brand, initialFilters.model]
     .map((value) => String(value ?? '').trim())
     .filter(Boolean)
@@ -1768,9 +1781,14 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
   const [items, setItems] = useState<MarketplaceListing[]>(seedMarketplaceListings);
   const [families, setFamilies] = useState<FamilyOption[]>(FALLBACK_FAMILIES);
   const [isLoadingListings, setIsLoadingListings] = useState(true);
+  const [listingLoadError, setListingLoadError] = useState('');
   const [isLoadingFamilies, setIsLoadingFamilies] = useState(true);
   const [activeListing, setActiveListing] = useState<MarketplaceListing | null>(null);
   const [manageListingTarget, setManageListingTarget] = useState<MarketplaceListing | null>(null);
+  const [editListingTarget, setEditListingTarget] = useState<MarketplaceListing | null>(null);
+  const [editListingDraft, setEditListingDraft] = useState<MarketplaceEditDraft | null>(null);
+  const [isSavingListingEdit, setIsSavingListingEdit] = useState(false);
+  const [listingEditError, setListingEditError] = useState('');
   const [deleteListingTarget, setDeleteListingTarget] = useState<MarketplaceListing | null>(null);
   const [isDeletingListing, setIsDeletingListing] = useState(false);
   const [deleteListingError, setDeleteListingError] = useState('');
@@ -1787,6 +1805,8 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
   const [locationFilter, setLocationFilter] = useState('south-africa');
   const [distanceFilter, setDistanceFilter] = useState<DistanceFilterValue>('all');
   const [currentPage, setCurrentPage] = useState(1);
+  const [dealerListingView, setDealerListingView] = useState<DealerListingView>('browse');
+  const [dealerFiltersOpen, setDealerFiltersOpen] = useState(false);
   const modalDetailsRef = useRef<HTMLElement | null>(null);
   const resultsAreaRef = useRef<HTMLElement | null>(null);
   const [modalScrollState, setModalScrollState] = useState({ visible: false, top: 0, height: 100 });
@@ -1797,6 +1817,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
     async function refresh(options: { silent?: boolean } = {}) {
       if (!options.silent) {
         setIsLoadingListings(true);
+        setListingLoadError('');
       }
 
       try {
@@ -1817,9 +1838,13 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
 
         const publishedListings = Array.isArray(data.listings) ? data.listings : [];
         setItems([...publishedListings, ...seedMarketplaceListings]);
+        setListingLoadError('');
       } catch {
         if (mounted) {
-          setItems(seedMarketplaceListings);
+          if (!options.silent) {
+            setItems(seedMarketplaceListings);
+          }
+          setListingLoadError('Live listings could not be refreshed. Showing the available catalogue listings for now.');
         }
       } finally {
         if (mounted && !options.silent) {
@@ -1943,6 +1968,10 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
     const search = normalize(query);
 
     return items.filter((listing) => {
+      if (dealerAppMode && dealerListingView === 'mine' && !listing.canManage) {
+        return false;
+      }
+
       if (sectorFilter && inferSectorFromListing(listing) !== sectorFilter) {
         return false;
       }
@@ -1969,7 +1998,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
 
       return buildSearchText(listing).includes(search);
     });
-  }, [conditionFilter, dealRatingFilter, distanceFilter, familyFilter, items, locationFilter, query, sectorFilter]);
+  }, [conditionFilter, dealRatingFilter, dealerAppMode, dealerListingView, distanceFilter, familyFilter, items, locationFilter, query, sectorFilter]);
 
   const visible = useMemo(() => sortListings(filtered), [filtered]);
   const totalPages = Math.max(1, Math.ceil(visible.length / LISTINGS_PER_PAGE));
@@ -2105,7 +2134,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [conditionFilter, dealRatingFilter, distanceFilter, familyFilter, locationFilter, query, sectorFilter]);
+  }, [conditionFilter, dealRatingFilter, dealerListingView, distanceFilter, familyFilter, locationFilter, query, sectorFilter]);
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -2139,6 +2168,10 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
     document.body.style.overflow = 'hidden';
 
     const onKeyDown = (event: KeyboardEvent) => {
+      if (shareListing || manageListingTarget || editListingTarget || deleteListingTarget) {
+        return;
+      }
+
       if (event.key === 'Escape') {
         closeListing();
         return;
@@ -2163,7 +2196,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
       document.body.style.overflow = previousOverflow;
       window.removeEventListener('keydown', onKeyDown);
     };
-  }, [activeImages.length, activeListing]);
+  }, [activeImages.length, activeListing, deleteListingTarget, editListingTarget, manageListingTarget, shareListing]);
 
   useEffect(() => {
     if (!shareListing) {
@@ -2186,6 +2219,28 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
       window.removeEventListener('keydown', onKeyDown);
     };
   }, [shareListing]);
+
+  useEffect(() => {
+    if (!dealerAppMode || !editListingTarget) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !isSavingListingEdit) {
+        closeListingEditModal();
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [dealerAppMode, editListingTarget, isSavingListingEdit]);
 
   function updateListingUrl(nextListingId: string | null) {
     if (typeof window === 'undefined') {
@@ -2220,6 +2275,15 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
     setCurrentPage(1);
   }
 
+  function selectDealerListingView(nextView: DealerListingView) {
+    if (nextView === 'mine') {
+      clearFilters();
+    }
+
+    setDealerFiltersOpen(false);
+    setDealerListingView(nextView);
+  }
+
   function scrollResultsIntoView() {
     if (typeof window === 'undefined') {
       return;
@@ -2247,7 +2311,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
   }
 
   function goToMarketplaceEstimate() {
-    window.location.assign('/valuation?marketplace=1');
+    window.location.assign(`${dealerAppMode ? '/dealer/valuation' : '/valuation'}?marketplace=1`);
   }
 
   function handleCreateListingClick() {
@@ -2278,6 +2342,9 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
   function closeListing() {
     setActiveListing(null);
     setManageListingTarget(null);
+    setEditListingTarget(null);
+    setEditListingDraft(null);
+    setListingEditError('');
     setDeleteListingTarget(null);
     setDeleteListingError('');
     setActiveImageIndex(0);
@@ -2386,9 +2453,27 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
   }
 
   function handleEditManagedListing() {
-    const assetId = manageListingTarget?.sourceAssetId;
+    const listing = manageListingTarget;
+    const assetId = listing?.sourceAssetId;
 
-    if (!assetId) {
+    if (!listing || !assetId) {
+      return;
+    }
+
+    if (dealerAppMode) {
+      setEditListingTarget(listing);
+      setEditListingDraft({
+        askingPriceExVat: String(Math.round(listing.askingPriceExVat || 0)),
+        description: getListingNote(listing),
+        sellerName: listing.sellerName || '',
+        sellerCompany: listing.sellerCompany || '',
+        sellerPhone: listing.sellerPhone || '',
+        sellerEmail: listing.sellerEmail || '',
+        province: listing.province || '',
+        area: listing.area || '',
+      });
+      setListingEditError('');
+      setManageListingTarget(null);
       return;
     }
 
@@ -2396,6 +2481,80 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
     url.searchParams.set('assetId', assetId);
     url.searchParams.set('action', 'marketplace-edit');
     window.location.assign(url.toString());
+  }
+
+  function closeListingEditModal() {
+    if (isSavingListingEdit) return;
+    setEditListingTarget(null);
+    setEditListingDraft(null);
+    setListingEditError('');
+  }
+
+  function updateListingEditDraft(updates: Partial<MarketplaceEditDraft>) {
+    setEditListingDraft((current) => (current ? { ...current, ...updates } : current));
+  }
+
+  async function saveListingEdit() {
+    if (!editListingTarget?.sourceAssetId || !editListingDraft || isSavingListingEdit) return;
+
+    const askingPriceExVat = Math.round(
+      Number(editListingDraft.askingPriceExVat.replace(/[^0-9.-]/g, '')) || 0,
+    );
+    if (askingPriceExVat <= 0) {
+      setListingEditError('Enter a valid asking price excluding VAT.');
+      return;
+    }
+    if (!editListingDraft.sellerName.trim() || !editListingDraft.sellerPhone.trim()) {
+      setListingEditError('Enter the seller name and contact number.');
+      return;
+    }
+
+    setIsSavingListingEdit(true);
+    setListingEditError('');
+
+    try {
+      const response = await fetch('/api/marketplace', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          assetId: editListingTarget.sourceAssetId,
+          askingPriceExVat,
+          marketplaceNotes: editListingDraft.description.trim(),
+          sellerName: editListingDraft.sellerName.trim(),
+          sellerCompany: editListingDraft.sellerCompany.trim(),
+          sellerPhone: editListingDraft.sellerPhone.trim(),
+          sellerEmail: editListingDraft.sellerEmail.trim(),
+          province: editListingDraft.province.trim(),
+          area: editListingDraft.area.trim(),
+        }),
+      });
+      const payload = (await response.json().catch(() => null)) as {
+        ok?: boolean;
+        listing?: MarketplaceListing;
+        error?: string;
+      } | null;
+
+      if (!response.ok || !payload?.ok || !payload.listing) {
+        throw new Error(payload?.error || 'Failed to update listing.');
+      }
+
+      const updatedListing = payload.listing;
+      setItems((current) =>
+        current.map((item) =>
+          item.sourceAssetId === updatedListing.sourceAssetId ? updatedListing : item,
+        ),
+      );
+      setActiveListing((current) =>
+        current?.sourceAssetId === updatedListing.sourceAssetId ? updatedListing : current,
+      );
+      setEditListingTarget(null);
+      setEditListingDraft(null);
+    } catch (cause) {
+      setListingEditError(cause instanceof Error ? cause.message : 'Failed to update listing.');
+    } finally {
+      setIsSavingListingEdit(false);
+    }
   }
 
   function openDeleteListingModal() {
@@ -2460,42 +2619,117 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
 
 
   return (
-    <main className={styles.page}>
-      <div className={styles.topBand}>
-        <AppHeader active="marketplace" />
-      </div>
+    <main className={`${styles.page} ${dealerAppMode ? dealerStyles.dealerMarketplaceSurface : ''}`}>
+      {!dealerAppMode ? (
+        <div className={styles.topBand}>
+          <AppHeader active="marketplace" />
+        </div>
+      ) : null}
+
+      {dealerAppMode ? (
+        <section className={dealerStyles.marketplaceDealerToolbar} aria-label="Dealer Marketplace controls">
+          <div className={dealerStyles.marketplaceModeTabs} role="group" aria-label="Marketplace view">
+            <button
+              type="button"
+              className={dealerListingView === 'browse' ? dealerStyles.marketplaceModeActive : ''}
+              onClick={() => selectDealerListingView('browse')}
+              aria-pressed={dealerListingView === 'browse'}
+            >
+              Browse
+            </button>
+            <button
+              type="button"
+              className={dealerListingView === 'mine' ? dealerStyles.marketplaceModeActive : ''}
+              onClick={() => selectDealerListingView('mine')}
+              aria-pressed={dealerListingView === 'mine'}
+            >
+              My Listings ({items.filter((item) => item.canManage).length})
+            </button>
+          </div>
+
+          <div className={dealerStyles.marketplaceQuickActions}>
+            <div className={dealerStyles.marketplaceQuickSearch}>
+              <span className={styles.searchIcon} aria-hidden="true"><IconSearch /></span>
+              <input
+                value={query}
+                onChange={(event: ChangeEvent<HTMLInputElement>) => setQuery(event.target.value)}
+                placeholder="Search Marketplace"
+                aria-label="Search Marketplace"
+              />
+              {query ? (
+                <button type="button" onClick={() => setQuery('')} aria-label="Clear search"><IconClose /></button>
+              ) : null}
+            </div>
+            <button
+              type="button"
+              className={dealerStyles.marketplaceFilterButton}
+              onClick={() => setDealerFiltersOpen((current) => !current)}
+              aria-expanded={dealerFiltersOpen}
+              aria-controls="dealer-marketplace-filters"
+            >
+              {dealerFiltersOpen ? 'Close filters' : 'Filters'}
+            </button>
+            <button type="button" className={dealerStyles.marketplaceCreateButton} onClick={handleCreateListingClick}>
+              + Create listing
+            </button>
+          </div>
+        </section>
+      ) : null}
+
+      {dealerAppMode && (isLoadingListings || listingLoadError) ? (
+        <div
+          className={`${dealerStyles.marketplaceLoadStatus} ${listingLoadError ? dealerStyles.marketplaceLoadStatusError : ''}`}
+          role={listingLoadError ? 'alert' : 'status'}
+          aria-live={listingLoadError ? 'assertive' : 'polite'}
+        >
+          {isLoadingListings ? 'Loading the latest Marketplace listings…' : listingLoadError}
+        </div>
+      ) : null}
 
       <div className={styles.marketplaceShell}>
-        <aside className={styles.sidebar} aria-label="Marketplace filters">
-          <label className={styles.searchBox}>
-            <span className={styles.searchIcon} aria-hidden="true">
-              <IconSearch />
-            </span>
-            <input
-              value={query}
-              onChange={(event: ChangeEvent<HTMLInputElement>) => setQuery(event.target.value)}
-              placeholder="Search Marketplace"
-              aria-label="Search Marketplace"
-            />
-            {query ? (
-              <button
-                type="button"
-                className={styles.searchClearButton}
-                onClick={() => setQuery('')}
-                aria-label="Clear search"
-              >
-                <IconClose />
-              </button>
-            ) : null}
-          </label>
+        <aside
+          id={dealerAppMode ? 'dealer-marketplace-filters' : undefined}
+          className={`${styles.sidebar} ${dealerAppMode ? dealerStyles.dealerMarketplaceSidebar : ''} ${dealerFiltersOpen ? dealerStyles.dealerMarketplaceSidebarOpen : ''}`}
+          aria-label="Marketplace filters"
+        >
+          {dealerAppMode ? (
+            <button type="button" className={dealerStyles.marketplaceCloseFilters} onClick={() => setDealerFiltersOpen(false)}>
+              Close filters
+            </button>
+          ) : null}
+          {!dealerAppMode ? (
+            <>
+              <label className={styles.searchBox}>
+                <span className={styles.searchIcon} aria-hidden="true">
+                  <IconSearch />
+                </span>
+                <input
+                  value={query}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => setQuery(event.target.value)}
+                  placeholder="Search Marketplace"
+                  aria-label="Search Marketplace"
+                />
+                {query ? (
+                  <button
+                    type="button"
+                    className={styles.searchClearButton}
+                    onClick={() => setQuery('')}
+                    aria-label="Clear search"
+                  >
+                    <IconClose />
+                  </button>
+                ) : null}
+              </label>
 
-          <button type="button" className={styles.createButton} onClick={handleCreateListingClick}>
-            <span className={styles.createIcon} aria-hidden="true">
-              <IconPlus />
-            </span>
-            Create new listing
-          </button>
-          <div className={styles.sidebarDivider} />
+              <button type="button" className={styles.createButton} onClick={handleCreateListingClick}>
+                <span className={styles.createIcon} aria-hidden="true">
+                  <IconPlus />
+                </span>
+                Create new listing
+              </button>
+              <div className={styles.sidebarDivider} />
+            </>
+          ) : null}
 
           <section className={styles.sidebarSection}>
             <div className={styles.sidebarSectionHead}>
@@ -2734,8 +2968,12 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
             </div>
           ) : (
             <article className={styles.emptyState}>
-              <h2>No listings found</h2>
-              <p>Try another search, category, condition or location.</p>
+              <h2>{dealerAppMode && dealerListingView === 'mine' ? 'No live listings yet' : 'No listings found'}</h2>
+              <p>
+                {dealerAppMode && dealerListingView === 'mine'
+                  ? 'Create a listing from Valuation when you are ready to advertise an asset.'
+                  : 'Try another search, category, condition or location.'}
+              </p>
               <button type="button" onClick={clearFilters}>
                 Reset marketplace
               </button>
@@ -3135,6 +3373,71 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
         </div>
       ) : null}
 
+      {editListingTarget && editListingDraft ? (
+        <div className={dealerStyles.editListingOverlay} onMouseDown={closeListingEditModal}>
+          <section
+            className={dealerStyles.editListingModal}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="dealer-listing-edit-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <header className={dealerStyles.editListingHeader}>
+              <div>
+                <span>Edit listing</span>
+                <h2 id="dealer-listing-edit-title">{listingDisplayTitle(editListingTarget)}</h2>
+              </div>
+              <button type="button" onClick={closeListingEditModal} disabled={isSavingListingEdit} aria-label="Close listing editor">×</button>
+            </header>
+
+            <div className={dealerStyles.editListingBody}>
+              <label className={dealerStyles.editListingField}>
+                <span>Asking price excluding VAT</span>
+                <input inputMode="decimal" value={editListingDraft.askingPriceExVat} onChange={(event) => updateListingEditDraft({ askingPriceExVat: event.target.value })} />
+              </label>
+              <label className={dealerStyles.editListingField}>
+                <span>Description</span>
+                <textarea rows={4} value={editListingDraft.description} onChange={(event) => updateListingEditDraft({ description: event.target.value })} />
+              </label>
+              <div className={dealerStyles.editListingGrid}>
+                <label className={dealerStyles.editListingField}>
+                  <span>Contact name</span>
+                  <input value={editListingDraft.sellerName} onChange={(event) => updateListingEditDraft({ sellerName: event.target.value })} />
+                </label>
+                <label className={dealerStyles.editListingField}>
+                  <span>Contact number</span>
+                  <input value={editListingDraft.sellerPhone} onChange={(event) => updateListingEditDraft({ sellerPhone: event.target.value })} />
+                </label>
+                <label className={dealerStyles.editListingField}>
+                  <span>Business</span>
+                  <input value={editListingDraft.sellerCompany} onChange={(event) => updateListingEditDraft({ sellerCompany: event.target.value })} />
+                </label>
+                <label className={dealerStyles.editListingField}>
+                  <span>Email</span>
+                  <input type="email" value={editListingDraft.sellerEmail} onChange={(event) => updateListingEditDraft({ sellerEmail: event.target.value })} />
+                </label>
+                <label className={dealerStyles.editListingField}>
+                  <span>Province</span>
+                  <input value={editListingDraft.province} onChange={(event) => updateListingEditDraft({ province: event.target.value })} />
+                </label>
+                <label className={dealerStyles.editListingField}>
+                  <span>Area</span>
+                  <input value={editListingDraft.area} onChange={(event) => updateListingEditDraft({ area: event.target.value })} />
+                </label>
+              </div>
+              {listingEditError ? <p className={dealerStyles.editListingError} role="alert">{listingEditError}</p> : null}
+            </div>
+
+            <footer className={dealerStyles.editListingActions}>
+              <button type="button" onClick={closeListingEditModal} disabled={isSavingListingEdit}>Cancel</button>
+              <button type="button" className={dealerStyles.editListingSave} onClick={() => void saveListingEdit()} disabled={isSavingListingEdit}>
+                {isSavingListingEdit ? 'Saving…' : 'Save changes'}
+              </button>
+            </footer>
+          </section>
+        </div>
+      ) : null}
+
       {deleteListingTarget ? (
         <div className={styles.marketplaceDeleteBackdrop}>
           <div
@@ -3147,7 +3450,11 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
             <div className={styles.marketplaceDeleteHeader}>
               <div>
                 <h3 id="marketplace-delete-title">Delete marketplace listing?</h3>
-                <p id="marketplace-delete-copy">This removes the listing from the marketplace. The asset stays saved in your Asset Register.</p>
+                <p id="marketplace-delete-copy">
+                  {dealerAppMode
+                    ? 'This removes the listing from the Marketplace.'
+                    : 'This removes the listing from the marketplace. The asset stays saved in your Asset Register.'}
+                </p>
               </div>
               <button
                 type="button"
