@@ -710,6 +710,7 @@ function assetKindLabel(asset: RegisterAsset): string {
   if (asset.kind === "property") return "Property / Land / Building";
   if (asset.kind === "vehicle") return "Vehicle";
   if (asset.kind === "tools") return "Tools";
+  if (asset.kind === "stock") return "Stock";
   if (asset.kind === "equipment" || Boolean(asset.brandName && asset.modelName && asset.yearModel)) return "Equipment";
   return "Equipment";
 }
