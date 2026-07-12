@@ -31690,16 +31690,47 @@ button.documentOpenLink {
   }
 }
 
-/* === Guided update step bar: final balanced spacing and alignment === */
+/* === Asset update modal: final layout and alignment pass === */
+.assetUpdateModal {
+  width: min(94vw, 76rem) !important;
+  height: min(90dvh, 52rem) !important;
+  padding: clamp(1.2rem, 2vw, 1.65rem) !important;
+}
+
+.assetUpdateModal .assetFormModalChromeHeader {
+  display: flex !important;
+  align-items: center !important;
+  min-height: 4.45rem !important;
+  padding: 0 4.4rem 0.9rem 0 !important;
+}
+
+.assetUpdateModal .assetUpdateIdentity h3 {
+  overflow: hidden !important;
+  line-height: 1.15 !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.assetUpdateModal .assetFormModalChromeHeader .modalCloseButton {
+  top: 50% !important;
+  right: 0 !important;
+  transform: translateY(calc(-50% - 0.45rem)) !important;
+}
+
+.assetUpdateModal .manualStepScrollBody {
+  margin: 0 !important;
+  padding: 0.9rem 0.78rem 0.5rem 0 !important;
+}
+
 .assetUpdateModal .assetFormSectionTabs {
   box-sizing: border-box !important;
   display: grid !important;
   grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   align-items: stretch !important;
-  gap: 0.78rem !important;
-  width: calc(100% - 0.28rem) !important;
-  margin: 0 0.28rem 1.08rem 0 !important;
-  padding: 0.32rem 0 1.08rem !important;
+  gap: 0.72rem !important;
+  width: 100% !important;
+  margin: 0 0 1rem !important;
+  padding: 0.12rem 0 1rem !important;
   border: 0 !important;
   border-bottom: 1px solid rgba(211, 224, 231, 0.94) !important;
   border-radius: 0 !important;
@@ -31708,50 +31739,125 @@ button.documentOpenLink {
 
 .assetUpdateModal .assetFormSectionTab {
   box-sizing: border-box !important;
-  display: grid !important;
-  grid-template-columns: 2.2rem minmax(0, 1fr) !important;
+  display: flex !important;
   align-items: center !important;
-  justify-content: stretch !important;
-  gap: 0.9rem !important;
+  justify-content: center !important;
+  gap: 0.72rem !important;
   width: 100% !important;
-  min-height: 4.45rem !important;
-  padding: 0.72rem 1.08rem !important;
-  border-radius: 1rem !important;
+  min-width: 0 !important;
+  min-height: 4.05rem !important;
+  padding: 0.7rem 1rem !important;
+  border-radius: 0.95rem !important;
 }
 
 .assetUpdateModal .assetFormSectionTabNumber {
-  width: 2.2rem !important;
-  height: 2.2rem !important;
+  display: inline-flex !important;
+  flex: 0 0 2.05rem !important;
+  width: 2.05rem !important;
+  height: 2.05rem !important;
   margin: 0 !important;
+  border-radius: 0.65rem !important;
 }
 
 .assetUpdateModal .assetFormSectionTabCopy {
   display: flex !important;
+  flex: 0 1 auto !important;
   align-items: center !important;
-  justify-content: flex-start !important;
-  width: 100% !important;
+  justify-content: center !important;
+  width: auto !important;
   min-width: 0 !important;
 }
 
 .assetUpdateModal .assetFormSectionTabCopy strong {
-  line-height: 1.1 !important;
-  text-align: left !important;
+  line-height: 1.15 !important;
+  text-align: center !important;
   white-space: nowrap !important;
 }
 
-@media (max-width: 760px) {
+.assetUpdateModal .assetUpdateStageCard {
+  gap: 1rem !important;
+  padding: 0.72rem 0 0.65rem !important;
+}
+
+.assetUpdateModal .assetUpdateStageCard .manualUtilityRow {
+  min-height: 3.25rem !important;
+  margin: 0 0 0.1rem !important;
+  padding: 0 !important;
+}
+
+.assetUpdateModal .assetFormDetailsStack,
+.assetUpdateModal .assetTripleGrid,
+.assetUpdateModal .assetAuxiliaryGrid,
+.assetUpdateModal .assetValueBoxGrid,
+.assetUpdateModal .manualUploadGrid {
+  gap: 0.9rem !important;
+}
+
+.assetUpdateModal .assetTripleGrid > .field,
+.assetUpdateModal .assetTripleGrid > .customSelectField,
+.assetUpdateModal .assetAuxiliaryGrid > .field,
+.assetUpdateModal .assetValueBoxGrid > .field {
+  height: 100% !important;
+}
+
+.assetUpdateModal .assetUpdateStageCard .assetStatusHubGrid {
+  align-items: stretch !important;
+  gap: 0.9rem !important;
+}
+
+.assetUpdateModal .assetUpdateStageCard .assetStatusHubCard {
+  height: 100% !important;
+}
+
+.assetUpdateModal .assetUpdateStageCard .manualUploadGrid > .field {
+  height: 100% !important;
+}
+
+.assetUpdateFooter {
+  min-height: 5rem;
+  margin-top: 0.4rem;
+  padding-top: 0.78rem;
+}
+
+@media (max-width: 1000px) {
   .assetUpdateModal .assetFormSectionTabs {
-    gap: 0.3rem !important;
-    width: calc(100% - 0.15rem) !important;
-    margin-right: 0.15rem !important;
-    padding: 0.2rem 0 0.68rem !important;
+    gap: 0.5rem !important;
   }
 
   .assetUpdateModal .assetFormSectionTab {
-    grid-template-columns: 1fr !important;
-    min-height: 3.25rem !important;
+    gap: 0.55rem !important;
+    padding-inline: 0.7rem !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .assetUpdateModal {
+    padding: 0.9rem !important;
+  }
+
+  .assetUpdateModal .assetFormModalChromeHeader {
+    min-height: 3.75rem !important;
+    padding: 0 3.55rem 0.65rem 0 !important;
+  }
+
+  .assetUpdateModal .assetFormModalChromeHeader .modalCloseButton {
+    transform: translateY(calc(-50% - 0.325rem)) !important;
+  }
+
+  .assetUpdateModal .manualStepScrollBody {
+    padding: 0.58rem 0.4rem 0.35rem 0 !important;
+  }
+
+  .assetUpdateModal .assetFormSectionTabs {
+    gap: 0.32rem !important;
+    margin-bottom: 0.7rem !important;
+    padding: 0.08rem 0 0.7rem !important;
+  }
+
+  .assetUpdateModal .assetFormSectionTab {
+    min-height: 3.2rem !important;
     gap: 0 !important;
-    padding: 0.5rem 0.18rem !important;
+    padding: 0.5rem 0.2rem !important;
     border-radius: 0.72rem !important;
   }
 
@@ -31759,11 +31865,40 @@ button.documentOpenLink {
     display: none !important;
   }
 
-  .assetUpdateModal .assetFormSectionTabCopy {
-    justify-content: center !important;
+  .assetUpdateModal .assetFormSectionTabCopy strong {
+    font-size: clamp(0.7rem, 3.15vw, 0.82rem) !important;
+  }
+
+  .assetUpdateModal .assetUpdateStageCard {
+    gap: 0.78rem !important;
+    padding-top: 0.45rem !important;
+  }
+
+  .assetUpdateModal .assetFormDetailsStack,
+  .assetUpdateModal .assetTripleGrid,
+  .assetUpdateModal .assetAuxiliaryGrid,
+  .assetUpdateModal .assetValueBoxGrid,
+  .assetUpdateModal .manualUploadGrid {
+    gap: 0.72rem !important;
+  }
+
+  .assetUpdateFooter {
+    min-height: 4.4rem;
+    margin-top: 0.25rem;
+    padding-top: 0.6rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .assetUpdateModal .assetFormSectionTabs {
+    gap: 0.24rem !important;
   }
 
   .assetUpdateModal .assetFormSectionTabCopy strong {
-    text-align: center !important;
+    font-size: 0.7rem !important;
+  }
+
+  .assetUpdateSaveText {
+    max-width: 5.6rem;
   }
 }
