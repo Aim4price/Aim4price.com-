@@ -320,8 +320,6 @@ export default function SharedRegisterWorkspace({ share }: { share: SharedRegist
   const classifiedCount = assets.filter((asset, index) => reviewIsComplete(workspace.reviews[assetId(asset, index)])).length;
   const informationRequiredCount = Object.values(workspace.reviews).filter((review) => review.decision === 'information_required').length;
   const noteCount = Object.values(workspace.reviews).filter((review) => review.note.trim()).length;
-  const includedCount = Object.values(workspace.reviews).filter((review) => reviewIsComplete(review) && review.decision === 'included').length;
-  const excludedCount = Object.values(workspace.reviews).filter((review) => reviewIsComplete(review) && review.decision === 'excluded').length;
   const progress = assets.length ? Math.round((classifiedCount / assets.length) * 100) : 0;
 
   const visibleAssets = useMemo(() => {
@@ -496,24 +494,20 @@ export default function SharedRegisterWorkspace({ share }: { share: SharedRegist
       <AppHeader active="shared-registers" />
       <section className={styles.shell}>
         {notice ? <div className={`${styles.notice} ${noticeTone === 'error' ? styles.noticeError : ''}`}>{notice}</div> : null}
+        <div className={styles.workspaceBackRow}>
+          <Link href="/shared-registers" className={styles.backLink}>← Shared Registers</Link>
+        </div>
         <header className={styles.workspaceHeader}>
           <div className={styles.workspaceTitleBlock}>
-            <Link href="/shared-registers" className={styles.backLink}>← Shared Registers</Link>
-            <span className={styles.eyebrow}>{share.id === 'demo' ? 'Interactive prototype' : 'Insurance review'}</span>
             <h1>{share.ownerBusinessName || snapshot.ownerName}</h1>
-            <p>{snapshot.title} <b>·</b> Shared {dateLabel(snapshot.generatedAtIso)} <b>·</b> Read-only owner register</p>
-          </div>
-          <div className={styles.headerActions}>
-            <span className={styles.progressPill}>{progress}% reviewed</span>
-            <button type="button" className={styles.primaryButton} onClick={() => setTab('report')}>Preview report</button>
           </div>
         </header>
+        <p className={styles.workspaceMetaRow}>{snapshot.title} · Shared {dateLabel(snapshot.generatedAtIso)} · Read-only owner register</p>
 
         <nav className={styles.tabs} aria-label="Insurance workspace sections">
           {(['overview', 'review', 'report'] as Tab[]).map((item) => (
             <button key={item} type="button" className={tab === item ? styles.activeTab : ''} onClick={() => setTab(item)}>
-              {item === 'overview' ? 'Overview' : item === 'review' ? 'Review assets' : 'Report'}
-              {item === 'review' && informationRequiredCount ? <span>{informationRequiredCount}</span> : null}
+              {item === 'overview' ? 'Overview' : item === 'review' ? `Review assets${informationRequiredCount ? ` (${informationRequiredCount})` : ''}` : 'Report'}
             </button>
           ))}
         </nav>
@@ -523,20 +517,19 @@ export default function SharedRegisterWorkspace({ share }: { share: SharedRegist
             <section className={styles.summaryGrid}>
               <article className={styles.summaryTileActive}><span>Total assets</span><strong>{assets.length}</strong><small>{money(snapshot.totalValue)} register value</small></article>
               <article><span>Replacement value</span><strong>{money(snapshot.totalReplacementValue)}</strong><small>Excluding VAT</small></article>
-              <article><span>Reviewed</span><strong>{classifiedCount} of {assets.length}</strong><small>{includedCount} included · {excludedCount} excluded</small></article>
-              <article><span>Open requests</span><strong>{informationRequiredCount}</strong><small>{noteCount} broker notes</small></article>
+              <article><span>Review progress</span><strong>{classifiedCount} of {assets.length}</strong><small>{informationRequiredCount} open requests · {noteCount} notes</small></article>
             </section>
 
             <section className={styles.card}>
               <div className={styles.cardHeader}>
-                <div><span className={styles.kicker}>Review progress</span><h2>Only work the exceptions</h2></div>
+                <div><h2>Asset review</h2><p>Confirm the assets that need attention.</p></div>
                 <button className={styles.secondaryButton} type="button" onClick={openNextOutstandingReview}>Continue review</button>
               </div>
               <div className={styles.progressTrack}><span style={{ width: `${progress}%` }} /></div>
               <div className={styles.actionGrid}>
-                <article><strong>{assets.length - classifiedCount}</strong><span>Assets still need a decision</span></article>
-                <article><strong>{informationRequiredCount}</strong><span>Information requests to resolve</span></article>
-                <article><strong>{sectionRows.filter(([section]) => POLICY_SECTIONS.includes(section)).length}</strong><span>Policy sections currently used</span></article>
+                <article><strong>{assets.length - classifiedCount}</strong><span>Need a decision</span></article>
+                <article><strong>{informationRequiredCount}</strong><span>Information requests</span></article>
+                <article><strong>{sectionRows.filter(([section]) => POLICY_SECTIONS.includes(section)).length}</strong><span>Policy sections</span></article>
               </div>
             </section>
 
