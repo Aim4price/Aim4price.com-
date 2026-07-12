@@ -79,7 +79,7 @@ function getRegisterSummaryCardsPerView(): number {
   return REGISTER_SUMMARY_VISIBLE_CARD_COUNT;
 }
 
-type AssetKind = 'tractor' | 'equipment' | 'manual' | 'property' | 'vehicle' | 'tools';
+type AssetKind = 'tractor' | 'equipment' | 'manual' | 'property' | 'vehicle' | 'tools' | 'stock';
 type AssetMethod = 'aim4price' | 'manual';
 type RevalueMethod = 'aim4price';
 type RevalueReplacementMode = 'saved' | 'custom';
@@ -437,7 +437,7 @@ type RegisterSummaryCountValue = {
   valueExVat: number;
 };
 
-type RegisterSummaryAssetTypeKey = 'property' | 'equipment' | 'tools' | 'vehicles';
+type RegisterSummaryAssetTypeKey = 'property' | 'equipment' | 'tools' | 'stock' | 'vehicles';
 
 type RegisterBasicSummary = {
   totalAssets: number;
@@ -770,7 +770,7 @@ const PROPERTY_ASSET_TITLE_PLACEHOLDER = 'Example: Farm land, machinery shed or 
 const PROPERTY_YEAR_LABEL = 'Year';
 const PROPERTY_SIZE_SPEC_KEYS = ['propertySize', 'property_size', 'size', 'sizeText', 'size_text'] as const;
 const MANUAL_ASSET_TYPE_OPTIONS: Array<{
-  value: Extract<AssetKind, 'vehicle' | 'tools' | 'property' | 'equipment' | 'manual'>;
+  value: Extract<AssetKind, 'vehicle' | 'tools' | 'property' | 'equipment' | 'manual' | 'stock'>;
   label: string;
   description: string;
   titlePlaceholder: string;
@@ -798,6 +798,12 @@ const MANUAL_ASSET_TYPE_OPTIONS: Array<{
     label: 'Tools',
     description: 'Smaller tools, workshop items and handheld equipment.',
     titlePlaceholder: 'Example: Workshop tool set',
+  },
+  {
+    value: 'stock',
+    label: 'Stock',
+    description: 'Inventory, goods, livestock and other stock held by the business.',
+    titlePlaceholder: 'Example: Parts inventory, fertiliser stock or livestock',
   },
   {
     value: 'manual',
@@ -1672,6 +1678,7 @@ type ModalSelectProps<T extends string> = {
   onChange: (value: T) => void;
   placeholder?: string;
   className?: string;
+  menuClassName?: string;
   autoFocus?: boolean;
   showDescriptions?: boolean;
   usePortal?: boolean;
@@ -1684,6 +1691,7 @@ function ModalSelect<T extends string>({
   onChange,
   placeholder = 'Select option',
   className = '',
+  menuClassName = '',
   autoFocus = false,
   showDescriptions = true,
   usePortal = false,
@@ -1783,7 +1791,7 @@ function ModalSelect<T extends string>({
   const menu = (
     <div
       ref={menuRef}
-      className={`${styles.customSelectMenu} ${usePortal ? styles.customSelectMenuPortal : ''} ${!showDescriptions ? styles.customSelectMenuSingleLine : ''}`}
+      className={`${styles.customSelectMenu} ${usePortal ? styles.customSelectMenuPortal : ''} ${!showDescriptions ? styles.customSelectMenuSingleLine : ''} ${menuClassName}`}
       style={usePortal ? portalMenuStyle ?? undefined : undefined}
       role="listbox"
       aria-label={label}
@@ -1811,6 +1819,7 @@ function ModalSelect<T extends string>({
             ) : (
               <span className={styles.customSelectOptionLabel}>{option.label}</span>
             )}
+            {isSelected ? <b aria-hidden="true">&#10003;</b> : null}
           </button>
         );
       })}
@@ -2155,6 +2164,7 @@ function kindLabel(value: AssetKind): string {
       property: PROPERTY_ASSET_LABEL,
       vehicle: 'Vehicle',
       tools: 'Tools',
+      stock: 'Stock',
     }[value] ?? 'Manual asset'
   );
 }
@@ -3938,6 +3948,7 @@ function assetPreviewImage(asset: RegisterAsset): string | null {
 }
 
 function assetSectorLabel(asset: RegisterAsset): string {
+  if (asset.kind === 'stock') return 'Stock';
   if (isTractorAsset(asset) || isValuedEquipmentAsset(asset)) return 'Agricultural';
   if (asset.kind === 'property') return PROPERTY_ASSET_LABEL;
   if (asset.kind === 'vehicle') return 'Vehicle';
@@ -3952,6 +3963,7 @@ function assetFamilyLabel(asset: RegisterAsset): string {
   if (asset.kind === 'property') return PROPERTY_ASSET_LABEL;
   if (asset.kind === 'vehicle') return 'Vehicle';
   if (asset.kind === 'tools') return 'Tools';
+  if (asset.kind === 'stock') return 'Stock';
   if (isValuedEquipmentAsset(asset)) return 'Valued equipment';
   return 'Other';
 }
@@ -4286,6 +4298,7 @@ function createRegisterSummaryAssetTypes(): Record<RegisterSummaryAssetTypeKey, 
     property: createRegisterSummaryCountValue(),
     equipment: createRegisterSummaryCountValue(),
     tools: createRegisterSummaryCountValue(),
+    stock: createRegisterSummaryCountValue(),
     vehicles: createRegisterSummaryCountValue(),
   };
 }
@@ -4349,6 +4362,7 @@ function hasAssetMapCoordinates(asset: Pick<RegisterAsset, 'lastKnownLat' | 'las
 function getRegisterSummaryAssetType(asset: RegisterAsset): RegisterSummaryAssetTypeKey {
   if (asset.kind === 'property') return 'property';
   if (asset.kind === 'tools') return 'tools';
+  if (asset.kind === 'stock') return 'stock';
   if (asset.kind === 'vehicle') return 'vehicles';
 
   const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
@@ -6632,7 +6646,7 @@ export default function AssetRegisterClient() {
         },
         {
           title: 'Asset Type Split',
-          description: 'Basic split across property, equipment, tools and vehicles.',
+          description: 'Basic split across property, equipment, tools, stock and vehicles.',
           rows: [
             {
               label: 'Property',
@@ -6648,6 +6662,11 @@ export default function AssetRegisterClient() {
               label: 'Tools',
               count: registerBasicSummary.assetTypes.tools.count.toLocaleString('en-ZA'),
               ...moneyPair(registerBasicSummary.assetTypes.tools.valueExVat),
+            },
+            {
+              label: 'Stock',
+              count: registerBasicSummary.assetTypes.stock.count.toLocaleString('en-ZA'),
+              ...moneyPair(registerBasicSummary.assetTypes.stock.valueExVat),
             },
             {
               label: 'Vehicles',
@@ -7330,9 +7349,9 @@ export default function AssetRegisterClient() {
     setAssetDraft((current) => ({
       ...current,
       kind: nextKind,
-      hours: nextKind === 'property' || nextKind === 'tools' || nextKind === 'manual' ? '' : current.hours,
+      hours: nextKind === 'property' || nextKind === 'tools' || nextKind === 'manual' || nextKind === 'stock' ? '' : current.hours,
       usageMetric: nextKind === 'vehicle' ? normalizeUsageMetric(current.usageMetric, 'vehicle') : 'hours',
-      lifeWorkedPercent: nextKind === 'property' || nextKind === 'vehicle' || nextKind === 'manual' ? '' : current.lifeWorkedPercent,
+      lifeWorkedPercent: nextKind === 'property' || nextKind === 'vehicle' || nextKind === 'manual' || nextKind === 'stock' ? '' : current.lifeWorkedPercent,
       propertySize: nextKind === 'property' ? current.propertySize : '',
       licenseStatus: nextKind === 'property' ? 'not_applicable' : current.licenseStatus,
       isLicensed: nextKind === 'property' ? false : current.isLicensed,
@@ -12559,6 +12578,7 @@ export default function AssetRegisterClient() {
                         options={MANUAL_ASSET_TYPE_OPTIONS}
                         onChange={(nextKind) => selectManualAssetKind(nextKind, true)}
                         className={styles.manualCompactSelectField}
+                        menuClassName={styles.manualAssetTypeSelectMenu}
                         autoFocus
                         usePortal
                       />
