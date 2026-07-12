@@ -32355,3 +32355,37 @@ button.documentOpenLink {
     width: 100% !important;
   }
 }
+
+/* === Update modal follow-up: title alignment and equal usage values === */
+.assetUpdateModal .assetFormModalChromeHeader .modalCloseButton {
+  top: -0.25rem !important;
+}
+
+.assetSettingsUsageCurrent,
+.assetSettingsUsageField {
+  box-sizing: border-box !important;
+  height: 6.65rem !important;
+  min-height: 6.65rem !important;
+}
+
+.assetSettingsUsageField input {
+  height: 3.6rem !important;
+  min-height: 3.6rem !important;
+  color: #15372e !important;
+  font-size: clamp(1.45rem, 3vw, 1.85rem) !important;
+  font-weight: 880 !important;
+  line-height: 1.05 !important;
+  letter-spacing: -0.045em !important;
+}
+
+@media (max-width: 720px) {
+  .assetUpdateModal .assetFormModalChromeHeader .modalCloseButton {
+    top: -0.1rem !important;
+  }
+
+  .assetSettingsUsageCurrent,
+  .assetSettingsUsageField {
+    height: 5.9rem !important;
+    min-height: 5.9rem !important;
+  }
+}
