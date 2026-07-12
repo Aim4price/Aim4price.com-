@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import AppHeader from '../../../components/AppHeader';
 import { sharedRegisterSnapshot, type SharedRegisterAsset, type SharedRegisterLead } from '../../../lib/shared-register-prototype';
 import styles from './workspace.module.css';
@@ -18,6 +18,7 @@ type AssetReview = {
   proposedValue: string;
   note: string;
   noteVisibility: NoteVisibility;
+  lastReviewedAtIso?: string;
 };
 
 type WorkspaceState = {
@@ -27,31 +28,52 @@ type WorkspaceState = {
 };
 
 const ASSET_GROUPS = [
-  'Property',
+  'Buildings & property',
   'Vehicles',
-  'Mobile equipment',
-  'Fixed machinery',
-  'Irrigation',
-  'Solar & electrical',
-  'Dairy equipment',
-  'Stock & livestock',
+  'Mobile plant & equipment',
+  'Fixed plant & machinery',
+  'Electronic equipment',
+  'Irrigation & water systems',
+  'Renewable energy',
+  'Stock & materials',
+  'Livestock & biological assets',
   'Other',
 ];
 
 const POLICY_SECTIONS = [
-  'Fire & buildings',
-  'All Risks',
+  'Fire & allied perils',
+  'Buildings Combined',
+  'Office Contents',
+  'Business All Risks',
   'Machinery Breakdown',
   'Motor',
   'Electronic Equipment',
   'Goods in Transit',
-  'Business Interruption',
-  'Liability',
-  'Livestock & game',
+  'Theft',
+  'Glass',
+  'Accidental Damage',
+  'Deterioration of Stock',
+  'Livestock & Game',
   'Other / refer',
 ];
 
-const NON_ASSET_COVERS = ['Business Interruption', 'Liability', 'Goods in Transit', 'Money', 'Fidelity', 'Deterioration of stock'];
+const NON_ASSET_COVERS = [
+  'Business Interruption',
+  'Public Liability',
+  'Employers Liability',
+  'Goods in Transit',
+  'Money',
+  'Fidelity',
+  'Deterioration of Stock',
+  'Fire on Veld',
+];
+
+const DECISION_OPTIONS: Array<{ value: Decision; label: string; description: string }> = [
+  { value: 'included', label: 'Include', description: 'Add to the proposed insurance structure.' },
+  { value: 'information_required', label: 'Need information', description: 'Ask the client before deciding.' },
+  { value: 'excluded', label: 'Exclude', description: 'Leave out with a recorded decision.' },
+  { value: 'review', label: 'Review later', description: 'Keep this asset outstanding.' },
+];
 
 const EMPTY_REVIEW: AssetReview = {
   assetGroup: '',
@@ -133,24 +155,26 @@ function existingInsuranceStatus(asset: SharedRegisterAsset): 'Yes' | 'No' | 'No
 
 function inferAssetGroup(asset: SharedRegisterAsset): string {
   const value = `${assetKind(asset)} ${assetTitle(asset)}`.toLowerCase();
-  if (/building|shed|house|property|structure|store/.test(value)) return 'Property';
+  if (/building|shed|house|property|structure|store|warehouse|office/.test(value)) return 'Buildings & property';
   if (/vehicle|hilux|truck|bakkie|trailer/.test(value)) return 'Vehicles';
-  if (/pivot|irrigation|pump|borehole/.test(value)) return 'Irrigation';
-  if (/solar|battery|inverter|electrical/.test(value)) return 'Solar & electrical';
-  if (/dairy|milking|milk|effluent/.test(value)) return 'Dairy equipment';
-  if (/tractor|loader|excavator|harvester|equipment/.test(value)) return 'Mobile equipment';
-  if (/livestock|cattle|game|stock/.test(value)) return 'Stock & livestock';
-  return 'Fixed machinery';
+  if (/pivot|irrigation|pump|borehole|water system/.test(value)) return 'Irrigation & water systems';
+  if (/solar|battery|inverter|renewable/.test(value)) return 'Renewable energy';
+  if (/computer|server|electronic|camera|alarm/.test(value)) return 'Electronic equipment';
+  if (/tractor|loader|excavator|harvester|forklift|mobile equipment/.test(value)) return 'Mobile plant & equipment';
+  if (/livestock|cattle|game|animal/.test(value)) return 'Livestock & biological assets';
+  if (/stock|material|inventory|produce/.test(value)) return 'Stock & materials';
+  return 'Fixed plant & machinery';
 }
 
 function inferPolicySection(asset: SharedRegisterAsset): string {
   const group = inferAssetGroup(asset);
-  if (group === 'Property') return 'Fire & buildings';
+  if (group === 'Buildings & property') return 'Fire & allied perils';
   if (group === 'Vehicles') return 'Motor';
-  if (group === 'Solar & electrical') return 'Electronic Equipment';
-  if (group === 'Fixed machinery' || group === 'Dairy equipment') return 'Machinery Breakdown';
-  if (group === 'Stock & livestock') return 'Livestock & game';
-  return 'All Risks';
+  if (group === 'Electronic equipment') return 'Electronic Equipment';
+  if (group === 'Fixed plant & machinery' || group === 'Renewable energy') return 'Machinery Breakdown';
+  if (group === 'Livestock & biological assets') return 'Livestock & Game';
+  if (group === 'Stock & materials') return 'Fire & allied perils';
+  return 'Business All Risks';
 }
 
 function decisionLabel(decision: Decision): string {
@@ -166,6 +190,94 @@ function defaultState(): WorkspaceState {
   return { reviews: {}, nonAssetCovers: [], frozenAtIso: null };
 }
 
+function reviewIsComplete(review: AssetReview | undefined): boolean {
+  if (!review?.assetGroup) return false;
+  if (review.decision === 'included') return Boolean(review.policySection);
+  if (review.decision === 'excluded') return true;
+  return false;
+}
+
+function reviewSectionLabel(review: AssetReview | undefined): string {
+  if (review?.decision === 'excluded') return 'Excluded from proposal';
+  if (review?.decision === 'information_required') return 'Information required';
+  if (review?.decision === 'included' && review.policySection) return review.policySection;
+  return 'Unclassified';
+}
+
+type SelectOption = { value: string; label: string };
+
+function CustomSelect({
+  value,
+  options,
+  placeholder,
+  ariaLabel,
+  onChange,
+  compact = false,
+}: {
+  value: string;
+  options: SelectOption[];
+  placeholder: string;
+  ariaLabel: string;
+  onChange: (value: string) => void;
+  compact?: boolean;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const selected = options.find((option) => option.value === value);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const closeOnOutsideClick = (event: MouseEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) setIsOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsOpen(false);
+    };
+    document.addEventListener('mousedown', closeOnOutsideClick);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('mousedown', closeOnOutsideClick);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [isOpen]);
+
+  return (
+    <div ref={rootRef} className={`${styles.customSelect} ${compact ? styles.customSelectCompact : ''}`}>
+      <button
+        type="button"
+        className={`${styles.customSelectButton} ${isOpen ? styles.customSelectButtonOpen : ''}`}
+        aria-label={ariaLabel}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        onClick={() => setIsOpen((current) => !current)}
+      >
+        <span className={selected ? '' : styles.customSelectPlaceholder}>{selected?.label ?? placeholder}</span>
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 7.5 5 5 5-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
+      </button>
+      {isOpen ? (
+        <div className={styles.customSelectMenu} role="listbox" aria-label={ariaLabel}>
+          {options.map((option) => (
+            <button
+              type="button"
+              role="option"
+              aria-selected={option.value === value}
+              key={option.value}
+              className={`${styles.customSelectOption} ${option.value === value ? styles.customSelectOptionActive : ''}`}
+              onClick={() => {
+                onChange(option.value);
+                setIsOpen(false);
+              }}
+            >
+              <span>{option.label}</span>
+              {option.value === value ? <b>✓</b> : null}
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export default function SharedRegisterWorkspace({ share }: { share: SharedRegisterLead }) {
   const snapshot = sharedRegisterSnapshot(share);
   const assets = useMemo(() => snapshot?.assets ?? [], [snapshot]);
@@ -174,11 +286,13 @@ export default function SharedRegisterWorkspace({ share }: { share: SharedRegist
   const [hydrated, setHydrated] = useState(false);
   const [query, setQuery] = useState('');
   const [sectionFilter, setSectionFilter] = useState('all');
+  const [reviewFilter, setReviewFilter] = useState('outstanding');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkSection, setBulkSection] = useState('');
   const [editingAssetId, setEditingAssetId] = useState<string | null>(null);
   const [draft, setDraft] = useState<AssetReview>(EMPTY_REVIEW);
   const [notice, setNotice] = useState('');
+  const [noticeTone, setNoticeTone] = useState<'success' | 'error'>('success');
 
   const storageKey = `aim4price:insurance-workspace:${share.id}`;
 
@@ -203,12 +317,11 @@ export default function SharedRegisterWorkspace({ share }: { share: SharedRegist
     return () => window.clearTimeout(timer);
   }, [notice]);
 
-  const classifiedCount = assets.filter((asset, index) => {
-    const review = workspace.reviews[assetId(asset, index)];
-    return Boolean(review?.assetGroup && review.policySection && review.decision !== 'review');
-  }).length;
+  const classifiedCount = assets.filter((asset, index) => reviewIsComplete(workspace.reviews[assetId(asset, index)])).length;
   const informationRequiredCount = Object.values(workspace.reviews).filter((review) => review.decision === 'information_required').length;
   const noteCount = Object.values(workspace.reviews).filter((review) => review.note.trim()).length;
+  const includedCount = Object.values(workspace.reviews).filter((review) => reviewIsComplete(review) && review.decision === 'included').length;
+  const excludedCount = Object.values(workspace.reviews).filter((review) => reviewIsComplete(review) && review.decision === 'excluded').length;
   const progress = assets.length ? Math.round((classifiedCount / assets.length) * 100) : 0;
 
   const visibleAssets = useMemo(() => {
@@ -220,19 +333,31 @@ export default function SharedRegisterWorkspace({ share }: { share: SharedRegist
         .join(' ')
         .toLowerCase();
       const section = review?.policySection || 'Unclassified';
-      return (!normalizedQuery || searchable.includes(normalizedQuery)) && (sectionFilter === 'all' || section === sectionFilter);
+      const matchesReviewFilter =
+        reviewFilter === 'all' ||
+        (reviewFilter === 'outstanding' && !reviewIsComplete(review)) ||
+        (reviewFilter === 'information_required' && review?.decision === 'information_required') ||
+        (reviewFilter === 'included' && reviewIsComplete(review) && review?.decision === 'included') ||
+        (reviewFilter === 'excluded' && reviewIsComplete(review) && review?.decision === 'excluded');
+      return (
+        (!normalizedQuery || searchable.includes(normalizedQuery)) &&
+        (sectionFilter === 'all' || section === sectionFilter) &&
+        matchesReviewFilter
+      );
     });
-  }, [assets, query, sectionFilter, workspace.reviews]);
+  }, [assets, query, reviewFilter, sectionFilter, workspace.reviews]);
 
   const sectionRows = useMemo(() => {
     const rows = new Map<string, { count: number; replacement: number; proposed: number }>();
     assets.forEach((asset, index) => {
       const review = workspace.reviews[assetId(asset, index)];
-      const section = review?.policySection || 'Unclassified';
+      const section = reviewSectionLabel(review);
       const row = rows.get(section) ?? { count: 0, replacement: 0, proposed: 0 };
       row.count += 1;
       row.replacement += replacementValue(asset);
-      row.proposed += numberValue(review?.proposedValue) || replacementValue(asset);
+      if (review?.decision === 'included') {
+        row.proposed += numberValue(review.proposedValue) || replacementValue(asset);
+      }
       rows.set(section, row);
     });
     return Array.from(rows.entries()).sort(([a], [b]) => (a === 'Unclassified' ? 1 : b === 'Unclassified' ? -1 : a.localeCompare(b)));
@@ -252,11 +377,60 @@ export default function SharedRegisterWorkspace({ share }: { share: SharedRegist
     );
   }
 
-  function saveReview() {
+  function showNotice(message: string, tone: 'success' | 'error' = 'success') {
+    setNoticeTone(tone);
+    setNotice(message);
+  }
+
+  function nextOutstandingAssetId(currentAssetId: string): string | null {
+    const currentIndex = assets.findIndex((asset, index) => assetId(asset, index) === currentAssetId);
+    const orderedAssets = [...assets.slice(currentIndex + 1), ...assets.slice(0, currentIndex + 1)];
+    const nextAsset = orderedAssets.find((asset) => {
+      const index = assets.indexOf(asset);
+      const id = assetId(asset, index);
+      return id !== currentAssetId && !reviewIsComplete(workspace.reviews[id]);
+    });
+    if (!nextAsset) return null;
+    const index = assets.indexOf(nextAsset);
+    return assetId(nextAsset, index);
+  }
+
+  function openReviewById(id: string) {
+    const index = assets.findIndex((asset, assetIndex) => assetId(asset, assetIndex) === id);
+    if (index >= 0) openReview(assets[index], index);
+  }
+
+  function openNextOutstandingReview() {
+    setTab('review');
+    setReviewFilter('outstanding');
+    const next = assets.find((asset, index) => !reviewIsComplete(workspace.reviews[assetId(asset, index)]));
+    if (next) {
+      const index = assets.indexOf(next);
+      openReview(next, index);
+    }
+  }
+
+  function saveReview(openNext = false) {
     if (!editingAssetId) return;
-    setWorkspace((current) => ({ ...current, reviews: { ...current.reviews, [editingAssetId]: draft } }));
+    if (!draft.assetGroup) {
+      showNotice('Choose an asset group before saving.', 'error');
+      return;
+    }
+    if (draft.decision === 'included' && !draft.policySection) {
+      showNotice('Choose a policy section for an included asset.', 'error');
+      return;
+    }
+    if (draft.decision === 'information_required' && !draft.note.trim()) {
+      showNotice('Add the information needed from the client.', 'error');
+      return;
+    }
+
+    const savedReview = { ...draft, lastReviewedAtIso: new Date().toISOString() };
+    const nextId = openNext ? nextOutstandingAssetId(editingAssetId) : null;
+    setWorkspace((current) => ({ ...current, frozenAtIso: null, reviews: { ...current.reviews, [editingAssetId]: savedReview } }));
     setEditingAssetId(null);
-    setNotice('Insurance review saved separately from the owner asset record.');
+    showNotice(draft.decision === 'information_required' ? 'Information request saved.' : 'Asset review saved.');
+    if (nextId) window.setTimeout(() => openReviewById(nextId), 0);
   }
 
   function toggleSelected(id: string) {
@@ -279,16 +453,17 @@ export default function SharedRegisterWorkspace({ share }: { share: SharedRegist
           proposedValue: existing.proposedValue || (asset ? String(Math.round(replacementValue(asset))) : ''),
         };
       });
-      return { ...current, reviews };
+      return { ...current, frozenAtIso: null, reviews };
     });
     setSelectedIds([]);
     setBulkSection('');
-    setNotice('Selected assets classified.');
+    showNotice('Selected assets classified.');
   }
 
   function toggleNonAssetCover(cover: string) {
     setWorkspace((current) => ({
       ...current,
+      frozenAtIso: null,
       nonAssetCovers: current.nonAssetCovers.includes(cover)
         ? current.nonAssetCovers.filter((item) => item !== cover)
         : [...current.nonAssetCovers, cover],
@@ -296,8 +471,19 @@ export default function SharedRegisterWorkspace({ share }: { share: SharedRegist
   }
 
   function freezeSnapshot() {
+    if (classifiedCount !== assets.length || informationRequiredCount > 0) {
+      setTab('review');
+      setReviewFilter('outstanding');
+      showNotice(
+        informationRequiredCount > 0
+          ? `Resolve ${informationRequiredCount} information request${informationRequiredCount === 1 ? '' : 's'} before freezing the submission.`
+          : `Review the remaining ${assets.length - classifiedCount} asset${assets.length - classifiedCount === 1 ? '' : 's'} before freezing the submission.`,
+        'error',
+      );
+      return;
+    }
     setWorkspace((current) => ({ ...current, frozenAtIso: new Date().toISOString() }));
-    setNotice('Prototype submission snapshot frozen in this browser.');
+    showNotice('Submission snapshot frozen in this browser.');
   }
 
   if (!snapshot) return null;
@@ -309,13 +495,13 @@ export default function SharedRegisterWorkspace({ share }: { share: SharedRegist
     <main className={styles.page}>
       <AppHeader active="shared-registers" />
       <section className={styles.shell}>
-        {notice ? <div className={styles.notice}>{notice}</div> : null}
+        {notice ? <div className={`${styles.notice} ${noticeTone === 'error' ? styles.noticeError : ''}`}>{notice}</div> : null}
         <header className={styles.workspaceHeader}>
-          <div>
+          <div className={styles.workspaceTitleBlock}>
             <Link href="/shared-registers" className={styles.backLink}>← Shared Registers</Link>
             <span className={styles.eyebrow}>{share.id === 'demo' ? 'Interactive prototype' : 'Insurance review'}</span>
             <h1>{share.ownerBusinessName || snapshot.ownerName}</h1>
-            <p>{snapshot.title} · Shared {dateLabel(snapshot.generatedAtIso)} · Owner data is read-only</p>
+            <p>{snapshot.title} <b>·</b> Shared {dateLabel(snapshot.generatedAtIso)} <b>·</b> Read-only owner register</p>
           </div>
           <div className={styles.headerActions}>
             <span className={styles.progressPill}>{progress}% reviewed</span>
@@ -335,22 +521,22 @@ export default function SharedRegisterWorkspace({ share }: { share: SharedRegist
         {tab === 'overview' ? (
           <div className={styles.overviewLayout}>
             <section className={styles.summaryGrid}>
-              <article><span>Total assets</span><strong>{assets.length}</strong><small>{money(snapshot.totalValue)} register value</small></article>
+              <article className={styles.summaryTileActive}><span>Total assets</span><strong>{assets.length}</strong><small>{money(snapshot.totalValue)} register value</small></article>
               <article><span>Replacement value</span><strong>{money(snapshot.totalReplacementValue)}</strong><small>Excluding VAT</small></article>
-              <article><span>Classified</span><strong>{classifiedCount} of {assets.length}</strong><small>{progress}% review complete</small></article>
+              <article><span>Reviewed</span><strong>{classifiedCount} of {assets.length}</strong><small>{includedCount} included · {excludedCount} excluded</small></article>
               <article><span>Open requests</span><strong>{informationRequiredCount}</strong><small>{noteCount} broker notes</small></article>
             </section>
 
             <section className={styles.card}>
               <div className={styles.cardHeader}>
                 <div><span className={styles.kicker}>Review progress</span><h2>Only work the exceptions</h2></div>
-                <button className={styles.secondaryButton} type="button" onClick={() => setTab('review')}>Continue review</button>
+                <button className={styles.secondaryButton} type="button" onClick={openNextOutstandingReview}>Continue review</button>
               </div>
               <div className={styles.progressTrack}><span style={{ width: `${progress}%` }} /></div>
               <div className={styles.actionGrid}>
                 <article><strong>{assets.length - classifiedCount}</strong><span>Assets still need a decision</span></article>
                 <article><strong>{informationRequiredCount}</strong><span>Information requests to resolve</span></article>
-                <article><strong>{sectionRows.filter(([section]) => section !== 'Unclassified').length}</strong><span>Policy sections currently used</span></article>
+                <article><strong>{sectionRows.filter(([section]) => POLICY_SECTIONS.includes(section)).length}</strong><span>Policy sections currently used</span></article>
               </div>
             </section>
 
@@ -382,31 +568,71 @@ export default function SharedRegisterWorkspace({ share }: { share: SharedRegist
         {tab === 'review' ? (
           <section className={styles.reviewPanel}>
             <div className={styles.reviewToolbar}>
-              <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search assets, locations or schedule items" />
-              <select value={sectionFilter} onChange={(event) => setSectionFilter(event.target.value)}>
-                <option value="all">All policy sections</option>
-                <option value="Unclassified">Unclassified</option>
-                {POLICY_SECTIONS.map((section) => <option key={section} value={section}>{section}</option>)}
-              </select>
+              <label className={styles.reviewSearch}>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" strokeWidth="2" /><path d="m16.5 16.5 4 4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
+                <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search assets, locations or schedule items" />
+              </label>
+              <CustomSelect
+                value={reviewFilter}
+                ariaLabel="Filter review status"
+                placeholder="Review status"
+                onChange={setReviewFilter}
+                options={[
+                  { value: 'outstanding', label: 'Needs review' },
+                  { value: 'information_required', label: 'Information required' },
+                  { value: 'included', label: 'Included' },
+                  { value: 'excluded', label: 'Excluded' },
+                  { value: 'all', label: 'All review statuses' },
+                ]}
+              />
+              <CustomSelect
+                value={sectionFilter}
+                ariaLabel="Filter policy section"
+                placeholder="Policy section"
+                onChange={setSectionFilter}
+                options={[
+                  { value: 'all', label: 'All policy sections' },
+                  { value: 'Unclassified', label: 'Unclassified' },
+                  ...POLICY_SECTIONS.map((section) => ({ value: section, label: section })),
+                ]}
+              />
             </div>
 
             {selectedIds.length ? (
               <div className={styles.bulkBar}>
                 <strong>{selectedIds.length} selected</strong>
-                <select value={bulkSection} onChange={(event) => setBulkSection(event.target.value)}>
-                  <option value="">Choose policy section</option>
-                  {POLICY_SECTIONS.map((section) => <option key={section} value={section}>{section}</option>)}
-                </select>
+                <CustomSelect
+                  compact
+                  value={bulkSection}
+                  ariaLabel="Choose policy section for selected assets"
+                  placeholder="Choose policy section"
+                  onChange={setBulkSection}
+                  options={POLICY_SECTIONS.map((section) => ({ value: section, label: section }))}
+                />
                 <button type="button" onClick={applyBulkSection} disabled={!bulkSection}>Apply</button>
                 <button type="button" onClick={() => setSelectedIds([])}>Clear</button>
               </div>
             ) : null}
 
-            <div className={styles.assetTable}>
-              <div className={styles.assetTableHead}>
-                <span></span><span>Asset</span><span>Location</span><span>Existing status</span><span>Insurance classification</span><span>Value</span><span></span>
-              </div>
-              {visibleAssets.map((asset) => {
+            <div className={styles.assetTableScroll}>
+              <div className={styles.assetTable}>
+                <div className={styles.assetTableHead}>
+                <label className={styles.checkWrap}>
+                  <input
+                    type="checkbox"
+                    checked={Boolean(visibleAssets.length) && visibleAssets.every((asset) => selectedIds.includes(assetId(asset, assets.indexOf(asset))))}
+                    onChange={() => {
+                      const visibleIds = visibleAssets.map((asset) => assetId(asset, assets.indexOf(asset)));
+                      const allSelected = visibleIds.every((id) => selectedIds.includes(id));
+                      setSelectedIds((current) => allSelected ? current.filter((id) => !visibleIds.includes(id)) : Array.from(new Set([...current, ...visibleIds])));
+                    }}
+                    aria-label="Select all visible assets"
+                  />
+                  <span />
+                </label>
+                <span>Asset</span><span>Location</span><span>Current insurance</span><span>Review classification</span><span>Replacement</span><span></span>
+                </div>
+                {visibleAssets.map((asset) => {
                 const index = assets.indexOf(asset);
                 const id = assetId(asset, index);
                 const review = workspace.reviews[id];
@@ -423,13 +649,14 @@ export default function SharedRegisterWorkspace({ share }: { share: SharedRegist
                     <div className={styles.classificationCell}>
                       {review?.policySection ? <strong>{review.policySection}</strong> : <strong className={styles.unclassified}>Unclassified</strong>}
                       <small>{review?.assetGroup || `Suggested: ${suggestion}`}</small>
-                      {review ? <span className={styles.decisionTag}>{decisionLabel(review.decision)}</span> : null}
+                      {review ? <span className={`${styles.decisionTag} ${styles[`decision_${review.decision}`]}`}>{decisionLabel(review.decision)}</span> : null}
                     </div>
                     <span className={styles.valueCell}><strong>{money(replacementValue(asset))}</strong><small>Replacement</small></span>
                     <button type="button" className={styles.reviewButton} onClick={() => openReview(asset, index)}>{review ? 'Edit' : 'Review'}</button>
                   </article>
                 );
-              })}
+                })}
+              </div>
             </div>
             {!visibleAssets.length ? <div className={styles.emptyState}>No assets match these filters.</div> : null}
           </section>
@@ -441,7 +668,7 @@ export default function SharedRegisterWorkspace({ share }: { share: SharedRegist
               <div><span className={styles.kicker}>Underwriting preview</span><h2>Insurance classification report</h2><p>Prepared from a frozen owner snapshot and broker-side review.</p></div>
               <div>
                 <button type="button" className={styles.secondaryButton} onClick={() => window.print()}>Print / save PDF</button>
-                <button type="button" className={styles.primaryButton} onClick={freezeSnapshot}>Freeze snapshot</button>
+                <button type="button" className={styles.primaryButton} onClick={freezeSnapshot}>Freeze submission</button>
               </div>
             </div>
             {workspace.frozenAtIso ? <div className={styles.frozenBanner}>Frozen {dateLabel(workspace.frozenAtIso)} · Further browser changes create a new working version.</div> : null}
@@ -484,20 +711,46 @@ export default function SharedRegisterWorkspace({ share }: { share: SharedRegist
         <div className={styles.modalOverlay} role="presentation">
           <button type="button" className={styles.modalBackdrop} onClick={() => setEditingAssetId(null)} aria-label="Close review" />
           <section className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="asset-review-title">
-            <header><div><span className={styles.kicker}>Insurance overlay</span><h2 id="asset-review-title">{assetTitle(editingAsset)}</h2><p>{assetLocation(editingAsset)} · {money(replacementValue(editingAsset))} replacement value</p></div><button type="button" onClick={() => setEditingAssetId(null)} aria-label="Close">×</button></header>
+            <header><div><span className={styles.kicker}>Review asset</span><h2 id="asset-review-title">{assetTitle(editingAsset)}</h2><p>Insurance working record · Owner details remain read-only</p></div><button type="button" onClick={() => setEditingAssetId(null)} aria-label="Close">×</button></header>
             <div className={styles.modalBody}>
+              <div className={styles.assetFactGrid}>
+                <span><small>Location</small><strong>{assetLocation(editingAsset)}</strong></span>
+                <span><small>Replacement</small><strong>{money(replacementValue(editingAsset))}</strong></span>
+                <span><small>Register value</small><strong>{money(assetValue(editingAsset))}</strong></span>
+                <span><small>Current status</small><strong>{existingInsuranceStatus(editingAsset)}</strong></span>
+              </div>
               <div className={styles.suggestionBox}><span>Aim4price suggestion</span><strong>{inferAssetGroup(editingAsset)} → {inferPolicySection(editingAsset)}</strong><button type="button" onClick={() => setDraft((current) => ({ ...current, assetGroup: inferAssetGroup(editingAsset), policySection: inferPolicySection(editingAsset) }))}>Use suggestion</button></div>
               <div className={styles.formGrid}>
-                <label><span>Basic asset group</span><select value={draft.assetGroup} onChange={(event) => setDraft((current) => ({ ...current, assetGroup: event.target.value }))}><option value="">Choose group</option>{ASSET_GROUPS.map((group) => <option key={group}>{group}</option>)}</select></label>
-                <label><span>Policy section</span><select value={draft.policySection} onChange={(event) => setDraft((current) => ({ ...current, policySection: event.target.value }))}><option value="">Choose section</option>{POLICY_SECTIONS.map((section) => <option key={section}>{section}</option>)}</select></label>
+                <div className={styles.formField}><span>Asset group</span><CustomSelect value={draft.assetGroup} ariaLabel="Choose asset group" placeholder="Choose asset group" onChange={(value) => setDraft((current) => ({ ...current, assetGroup: value }))} options={ASSET_GROUPS.map((group) => ({ value: group, label: group }))} /></div>
+                <div className={styles.formField}><span>Policy section</span><CustomSelect value={draft.policySection} ariaLabel="Choose policy section" placeholder="Choose policy section" onChange={(value) => setDraft((current) => ({ ...current, policySection: value }))} options={POLICY_SECTIONS.map((section) => ({ value: section, label: section }))} /></div>
                 <label><span>Schedule item</span><input value={draft.scheduleItem} onChange={(event) => setDraft((current) => ({ ...current, scheduleItem: event.target.value }))} placeholder="e.g. Irrigation equipment at Spitskop" /></label>
                 <label><span>Proposed sum insured excl. VAT</span><input type="number" min="0" value={draft.proposedValue} onChange={(event) => setDraft((current) => ({ ...current, proposedValue: event.target.value }))} /></label>
-                <label className={styles.fullField}><span>Review decision</span><select value={draft.decision} onChange={(event) => setDraft((current) => ({ ...current, decision: event.target.value as Decision }))}><option value="review">Needs review</option><option value="included">Include</option><option value="excluded">Exclude</option><option value="information_required">Information required</option></select></label>
+                <fieldset className={`${styles.fullField} ${styles.decisionField}`}>
+                  <legend>Review decision</legend>
+                  <div className={styles.decisionGrid}>
+                    {DECISION_OPTIONS.map((option) => (
+                      <button type="button" key={option.value} className={draft.decision === option.value ? styles.decisionButtonActive : ''} onClick={() => setDraft((current) => ({ ...current, decision: option.value }))}>
+                        <span className={styles.decisionRadio}>{draft.decision === option.value ? '✓' : ''}</span>
+                        <span><strong>{option.label}</strong><small>{option.description}</small></span>
+                      </button>
+                    ))}
+                  </div>
+                </fieldset>
                 <label className={styles.fullField}><span>Broker or underwriter note</span><textarea value={draft.note} onChange={(event) => setDraft((current) => ({ ...current, note: event.target.value }))} placeholder="Add a concise note or question for the client." rows={4} /></label>
-                <label className={styles.fullField}><span>Note visibility</span><select value={draft.noteVisibility} onChange={(event) => setDraft((current) => ({ ...current, noteVisibility: event.target.value as NoteVisibility }))}><option value="shared">Shared with client</option><option value="private">Private broker note</option></select></label>
+                <fieldset className={`${styles.fullField} ${styles.visibilityField}`}>
+                  <legend>Note visibility</legend>
+                  <div>
+                    <button type="button" className={draft.noteVisibility === 'shared' ? styles.visibilityActive : ''} onClick={() => setDraft((current) => ({ ...current, noteVisibility: 'shared' }))}>Shared with client</button>
+                    <button type="button" className={draft.noteVisibility === 'private' ? styles.visibilityActive : ''} onClick={() => setDraft((current) => ({ ...current, noteVisibility: 'private' }))}>Private note</button>
+                  </div>
+                </fieldset>
               </div>
             </div>
-            <footer><button type="button" className={styles.secondaryButton} onClick={() => setEditingAssetId(null)}>Cancel</button><button type="button" className={styles.primaryButton} onClick={saveReview}>Save review</button></footer>
+            <footer>
+              <button type="button" className={styles.modalCancelButton} onClick={() => setEditingAssetId(null)}>Cancel</button>
+              <button type="button" className={styles.secondaryButton} onClick={() => saveReview(false)}>Save</button>
+              <button type="button" className={styles.primaryButton} onClick={() => saveReview(true)}>Save & next</button>
+            </footer>
           </section>
         </div>
       ) : null}
