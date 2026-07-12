@@ -1009,18 +1009,45 @@ function sumSnapshotAssetValues(assets: Record<string, unknown>[]): number {
   return assets.reduce((sum, asset) => sum + snapshotAssetValue(asset), 0);
 }
 
+function snapshotInsuranceStatusChoice(asset: Record<string, unknown>): AssetStatusChoice {
+  const specs = asRecord(asset.specsJson) ?? asRecord(asset.specs) ?? asRecord(asset.specAnswers);
+  const explicitStatus =
+    specs?.insuranceStatus ??
+    specs?.insurance_status ??
+    asset.insuranceStatus ??
+    asset.insurance_status;
+
+  if (explicitStatus !== undefined && explicitStatus !== null && String(explicitStatus).trim()) {
+    return normalizeAssetStatusChoice(explicitStatus);
+  }
+
+  // Older full-register snapshots reduced the four-state insurance field to a
+  // boolean. `true` is still conclusive, while `false` may mean No, Not sure or
+  // Not applicable and must therefore remain unknown.
+  return asset.isInsured === true ? 'yes' : 'unknown';
+}
+
+function snapshotInsuranceStatusLabel(asset: Record<string, unknown>): string {
+  return {
+    yes: 'Yes',
+    no: 'No',
+    unknown: 'Not sure',
+    not_applicable: 'N/A',
+  }[snapshotInsuranceStatusChoice(asset)];
+}
+
 function filterRegisterLeadAssetsByPdfReportKind(assets: Record<string, unknown>[], reportKind: PdfReportKind): Record<string, unknown>[] {
   switch (reportKind) {
     case 'financed':
       return assets.filter((asset) => asBoolean(asset.isFinanced));
     case 'insured':
-      return assets.filter((asset) => asBoolean(asset.isInsured));
+      return assets.filter((asset) => snapshotInsuranceStatusChoice(asset) === 'yes');
     case 'licensed':
       return assets.filter((asset) => asBoolean(asset.isLicensed));
     case 'not-financed':
       return assets.filter((asset) => !asBoolean(asset.isFinanced));
     case 'not-insured':
-      return assets.filter((asset) => !asBoolean(asset.isInsured));
+      return assets.filter((asset) => snapshotInsuranceStatusChoice(asset) === 'no');
     case 'not-licensed':
       return assets.filter((asset) => !asBoolean(asset.isLicensed));
     case 'full':
@@ -1138,7 +1165,7 @@ function downloadFullRegisterLead(lead: AssetLead, reportKind: PdfReportKind = '
   );
   const manualAssetStats = calculateRegisterLeadStats(reportAssets, (asset) => asText(asset.selectedMethod) === 'manual');
   const financedStats = calculateRegisterLeadStats(reportAssets, (asset) => asBoolean(asset.isFinanced));
-  const insuredStats = calculateRegisterLeadStats(reportAssets, (asset) => asBoolean(asset.isInsured));
+  const insuredStats = calculateRegisterLeadStats(reportAssets, (asset) => snapshotInsuranceStatusChoice(asset) === 'yes');
   const licensedStats = calculateRegisterLeadStats(reportAssets, (asset) => asBoolean(asset.isLicensed));
 
   const rows = reportAssets.map((asset) => {
@@ -1167,7 +1194,7 @@ function downloadFullRegisterLead(lead: AssetLead, reportKind: PdfReportKind = '
       usage,
       condition,
       serial,
-      insured: asBoolean(asset.isInsured) ? 'Yes' : 'No',
+      insured: snapshotInsuranceStatusLabel(asset),
       financed: asBoolean(asset.isFinanced) ? 'Yes' : 'No',
       licensed: asBoolean(asset.isLicensed) ? 'Yes' : 'No',
       licenseRegistrationNumber: asText(asset.licenseRegistrationNumber) || undefined,
@@ -2179,7 +2206,7 @@ export default function LeadsClient({
     const aim4priceCount = asNumber(snapshot?.aim4priceAssetCount) ?? registerAssets.filter((asset) => asText(asset.selectedMethod) === 'aim4price' || asNumber(asset.aim4priceValueExVat) !== null).length;
     const manualAssetCount = asNumber(snapshot?.manualAssetCount) ?? registerAssets.filter((asset) => asText(asset.selectedMethod) === 'manual').length;
     const financedCount = asNumber(snapshot?.financedAssetCount) ?? registerAssets.filter((asset) => asBoolean(asset.isFinanced)).length;
-    const insuredCount = asNumber(snapshot?.insuredAssetCount) ?? registerAssets.filter((asset) => asBoolean(asset.isInsured)).length;
+    const insuredCount = asNumber(snapshot?.insuredAssetCount) ?? registerAssets.filter((asset) => snapshotInsuranceStatusChoice(asset) === 'yes').length;
     const licensedCount = asNumber(snapshot?.licensedAssetCount) ?? registerAssets.filter((asset) => asBoolean(asset.isLicensed)).length;
     const replacementValue = asNumber(snapshot?.totalReplacementValue ?? snapshot?.replacementValue) ?? sumSnapshotReplacementValues(registerAssets);
 
