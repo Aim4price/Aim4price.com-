@@ -5806,7 +5806,11 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
                   <h3 className={styles.currentTitle}>Condition</h3>
                   <p className={styles.currentHint}>{dealerAppMode ? 'Choose one.' : 'Choose the closest current condition.'}</p>
                 </div>
-                {conditionStepComplete ? <span className={styles.selectedSummaryPill}>{conditionLabel(condition)}</span> : <span className={styles.selectedSummaryPill}>Choose one</span>}
+                {conditionStepComplete ? (
+                  <span className={styles.selectedSummaryPill} data-selection-status="selected">{conditionLabel(condition)}</span>
+                ) : (
+                  <span className={styles.selectedSummaryPill} data-selection-status="pending">Choose one</span>
+                )}
               </div>
 
               <div className={styles.conditionButtonGrid}>
@@ -5858,6 +5862,7 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
                       className={`${styles.equipmentDropdownTrigger} ${styles.specDropdownTrigger} ${gpsTypeDropdownOpen ? styles.equipmentDropdownTriggerOpen : ''}`}
                       onClick={() => setGpsTypeDropdownOpen((open) => !open)}
                       aria-expanded={gpsTypeDropdownOpen}
+                      data-selected={Boolean(gpsType)}
                     >
                       <span>{getGpsTypeLabel(gpsType)}</span>
                       <span className={styles.equipmentDropdownChevron} aria-hidden="true">
@@ -6360,12 +6365,21 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
               {message ? <div className={styles.message}>{message}</div> : null}
             </div>
 
-            <div className={`${styles.wizardFooter} ${step === 1 ? styles.wizardFooterSingle : ''}`}>
-              <button type="button" className={styles.secondaryButton} onClick={handleBack} disabled={valuationLoading || saveLoading}>
+            <div
+              className={`${styles.wizardFooter} ${step === 1 ? styles.wizardFooterSingle : ''}`}
+              data-has-disclaimer={step === 4}
+            >
+              <button
+                type="button"
+                className={styles.secondaryButton}
+                data-valuation-action="back"
+                onClick={handleBack}
+                disabled={valuationLoading || saveLoading}
+              >
                 Back
               </button>
               {step === 4 ? (
-                <p className={styles.preEstimateDisclaimer}>
+                <p className={styles.preEstimateDisclaimer} data-valuation-disclaimer="true">
                   {dealerAppMode
                     ? 'Indicative estimate only. Confirm condition, documents, location and market demand.'
                     : 'Aim4price provides an indicative estimate only. It is not a certified valuation or inspection report. Final value should still be checked against asset condition, documents, location and current market demand.'}
@@ -6375,6 +6389,7 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
                 <button
                   type="button"
                   className={styles.secondaryButton}
+                  data-valuation-action="next"
                   onClick={resetToSectorSelection}
                   disabled={saveLoading || isPublishingMarketplace || replacementRecalculateLoading || advancedRecalculateLoading}
                 >
@@ -6384,6 +6399,7 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
                 <button
                   type="button"
                   className={styles.primaryButton}
+                  data-valuation-action="next"
                   onClick={handleNext}
                   disabled={valuationLoading || (step === 2 && (isMotorSector(selectedSector) ? motorCanonicalLoading : brandsLoading || !selectedBrand))}
                 >
