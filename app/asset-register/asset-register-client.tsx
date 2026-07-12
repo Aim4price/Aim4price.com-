@@ -926,10 +926,10 @@ const MANUAL_FORM_STEPS: Array<{ step: ManualAssetStep; label: string }> = [
   { step: 4, label: 'Documents' },
 ];
 
-const ASSET_FORM_SECTION_TABS: Array<{ step: ManualAssetStep; label: string; description: string }> = [
-  { step: 2, label: 'Details', description: 'Asset information' },
-  { step: 3, label: 'Paperwork', description: 'Finance and cover' },
-  { step: 4, label: 'Documents', description: 'Files and photos' },
+const ASSET_FORM_SECTION_TABS: Array<{ step: ManualAssetStep; label: string }> = [
+  { step: 2, label: 'Details' },
+  { step: 3, label: 'Paperwork' },
+  { step: 4, label: 'Documents' },
 ];
 
 const CONDITION_OPTIONS: Array<{ value: AssetConditionValue; label: string }> = [
@@ -3175,6 +3175,18 @@ function shortDocumentName(value: string): string {
   const text = String(value ?? '').trim();
   if (!text) return 'Document';
   return text.length > 34 ? `${text.slice(0, 18)}…${text.slice(-10)}` : text;
+}
+
+function displayDocumentName(value: string, index: number): string {
+  const text = String(value ?? '').trim().split(/[\\/]/).pop() ?? '';
+  const extensionMatch = text.match(/(\.[a-z0-9]{2,8})$/i);
+  const extension = extensionMatch?.[1]?.toLowerCase() ?? '';
+  const stem = extension ? text.slice(0, -extension.length) : text;
+  const looksGenerated =
+    /^[0-9a-f]{8}-[0-9a-f-]{20,}$/i.test(stem) ||
+    /^[0-9a-f]{24,}$/i.test(stem);
+
+  return looksGenerated ? `Document ${index + 1}${extension}` : shortDocumentName(text);
 }
 
 const DOCUMENT_OBJECT_URL_TTL_MS = 5 * 60 * 1000;
@@ -11060,12 +11072,12 @@ export default function AssetRegisterClient() {
           : 'Add asset';
   const assetAutosaveLabel =
     assetAutosaveState === 'pending'
-      ? 'Changes pending'
+      ? 'Pending'
       : assetAutosaveState === 'saving'
-        ? 'Saving changes'
+        ? 'Saving'
         : assetAutosaveState === 'error'
-          ? 'Check required fields'
-          : 'All changes saved';
+          ? 'Check fields'
+          : 'Saved';
   const isAssetAutosaveBusy = Boolean(editingAsset) && (assetAutosaveState === 'pending' || assetAutosaveState === 'saving');
   const isAssetStatusFocusedView = manualAssetStep === 3 && assetStatusEditView !== 'hub';
   const settingsUsageMode = editingAsset ? getAssetSettingsUsageMode(editingAsset) : 'none';
@@ -12219,7 +12231,7 @@ export default function AssetRegisterClient() {
 
                                     {detailDocuments.length ? (
                                       <div className={styles.assetDocumentList}>
-                                        {detailDocuments.map((document) => (
+                                        {detailDocuments.map((document, documentIndex) => (
                                           <button
                                             type="button"
                                             className={styles.assetDocumentLink}
@@ -12228,7 +12240,7 @@ export default function AssetRegisterClient() {
                                             title={`Open ${document.fileName}`}
                                           >
                                             <DocumentIcon className={styles.buttonIcon} />
-                                            <span>{shortDocumentName(document.fileName)}</span>
+                                            <span>{displayDocumentName(document.fileName, documentIndex)}</span>
                                           </button>
                                         ))}
                                       </div>
@@ -12763,9 +12775,8 @@ export default function AssetRegisterClient() {
               ) : editingAsset ? (
                 <div className={styles.assetUpdateHeaderContent}>
                   <div className={styles.assetUpdateIdentity}>
-                    <span className={styles.assetUpdateEyebrow}>Update asset</span>
                     <h3>{assetDraft.title.trim() || editingAsset.title}</h3>
-                    <p>{selectedManualAssetType.label} · Changes save automatically</p>
+                    <span className={styles.assetUpdateType}>{selectedManualAssetType.label}</span>
                   </div>
 
                   <div
@@ -12807,9 +12818,7 @@ export default function AssetRegisterClient() {
                         <span className={styles.assetFormSectionTabNumber}>0{index + 1}</span>
                         <span className={styles.assetFormSectionTabCopy}>
                           <strong>{section.label}</strong>
-                          <small>{section.description}</small>
                         </span>
-                        <span className={styles.assetFormSectionTabMarker} aria-hidden="true" />
                       </button>
                     );
                   })}
@@ -12863,15 +12872,16 @@ export default function AssetRegisterClient() {
                 ) : null}
 
                 {manualAssetStep === 2 ? (
-                  <section className={`${styles.manualStageCard} ${styles.manualSingleStageCard} ${styles.manualCompactStageCard} ${styles.fullWidth}`}>
-                    <div className={styles.manualStepIntro}>
-                      <h4>Details</h4>
-                      {editingAsset ? <p>Keep the asset identity, usage and values accurate.</p> : null}
-                    </div>
+                  <section className={`${styles.manualStageCard} ${styles.manualSingleStageCard} ${styles.manualCompactStageCard} ${editingAsset ? styles.assetUpdateStageCard : ''} ${styles.fullWidth}`}>
+                    {!editingAsset ? (
+                      <div className={styles.manualStepIntro}>
+                        <h4>Details</h4>
+                      </div>
+                    ) : null}
 
                     <div className={styles.manualUtilityRow}>
                       <div className={styles.manualSelectedTypeStrip}>
-                        <span>Type of Asset:</span>
+                        <span>{editingAsset ? 'Type' : 'Type of Asset:'}</span>
                         <strong>{selectedManualAssetType.label}</strong>
                       </div>
 
@@ -13135,11 +13145,12 @@ export default function AssetRegisterClient() {
                 ) : null}
 
                 {manualAssetStep === 3 ? (
-                  <section className={`${styles.manualStageCard} ${styles.manualSingleStageCard} ${styles.manualCompactStageCard} ${styles.fullWidth} ${styles.assetStatusStageCard}`}>
-                    <div className={styles.manualStepIntro}>
-                      <h4>{assetFormKind === 'property' ? 'Finance and insurance' : 'Finance, insurance and license'}</h4>
-                      {editingAsset ? <p>Review the important ownership and cover information.</p> : null}
-                    </div>
+                  <section className={`${styles.manualStageCard} ${styles.manualSingleStageCard} ${styles.manualCompactStageCard} ${editingAsset ? styles.assetUpdateStageCard : ''} ${styles.fullWidth} ${styles.assetStatusStageCard}`}>
+                    {!editingAsset ? (
+                      <div className={styles.manualStepIntro}>
+                        <h4>{assetFormKind === 'property' ? 'Finance and insurance' : 'Finance, insurance and license'}</h4>
+                      </div>
+                    ) : null}
 
                     {assetStatusEditView === 'hub' ? (
                       <div className={styles.assetStatusHubGrid}>
@@ -13177,9 +13188,7 @@ export default function AssetRegisterClient() {
                     {assetStatusEditView === 'finance' ? (
                       <div className={styles.assetStatusFocusedForm}>
                         <div className={styles.assetStatusFocusedHeader}>
-                          <span>Finance</span>
-                          <strong>Finance details</strong>
-                          <small>Select the status now. Detailed finance fields can stay blank.</small>
+                          <strong>Finance</strong>
                         </div>
 
                         <div className={styles.assetStatusEditGrid}>
@@ -13234,9 +13243,7 @@ export default function AssetRegisterClient() {
                                 />
                               </label>
                             </>
-                          ) : (
-                            <p className={styles.assetStatusHelpText}>No finance amounts are required for this status.</p>
-                          )}
+                          ) : null}
                         </div>
 
                         {assetStatusDraft.financeStatus === 'yes' ? (
@@ -13357,17 +13364,6 @@ export default function AssetRegisterClient() {
                         <div className={styles.assetStatusSubActions}>
                           <button
                             type="button"
-                            className={styles.secondaryButton}
-                            onClick={() => {
-                              setAssetStatusEditView('hub');
-                              setAssetStatusError('');
-                            }}
-                            disabled={isSavingAssetStatus}
-                          >
-                            Back
-                          </button>
-                          <button
-                            type="button"
                             className={styles.primaryButton}
                             onClick={() => void finishAssetStatusSection('finance')}
                             disabled={isSavingAssetStatus}
@@ -13381,9 +13377,7 @@ export default function AssetRegisterClient() {
                     {assetStatusEditView === 'insurance' ? (
                       <div className={styles.assetStatusFocusedForm}>
                         <div className={styles.assetStatusFocusedHeader}>
-                          <span>Insurance</span>
-                          <strong>Insurance details</strong>
-                          <small>Select the status and add the insured amount only when known.</small>
+                          <strong>Insurance</strong>
                         </div>
 
                         <div className={styles.assetStatusEditGrid}>
@@ -13446,25 +13440,12 @@ export default function AssetRegisterClient() {
                                 />
                               </label>
                             </>
-                          ) : (
-                            <p className={styles.assetStatusHelpText}>No insured amount will be shown for this asset unless the status is insured.</p>
-                          )}
+                          ) : null}
                         </div>
 
                         {assetStatusError ? <p className={styles.assetStatusError}>{assetStatusError}</p> : null}
 
                         <div className={styles.assetStatusSubActions}>
-                          <button
-                            type="button"
-                            className={styles.secondaryButton}
-                            onClick={() => {
-                              setAssetStatusEditView('hub');
-                              setAssetStatusError('');
-                            }}
-                            disabled={isSavingAssetStatus}
-                          >
-                            Back
-                          </button>
                           <button
                             type="button"
                             className={styles.primaryButton}
@@ -13480,9 +13461,7 @@ export default function AssetRegisterClient() {
                     {assetStatusEditView === 'license' && assetFormKind !== 'property' ? (
                       <div className={styles.assetStatusFocusedForm}>
                         <div className={styles.assetStatusFocusedHeader}>
-                          <span>License</span>
-                          <strong>License details</strong>
-                          <small>Add registration details only when this asset is licensed.</small>
+                          <strong>License</strong>
                         </div>
 
                         <div className={styles.assetStatusEditGrid}>
@@ -13525,25 +13504,12 @@ export default function AssetRegisterClient() {
                                 />
                               </label>
                             </>
-                          ) : (
-                            <p className={styles.assetStatusHelpText}>Registration details are cleared when the asset is not licensed.</p>
-                          )}
+                          ) : null}
                         </div>
 
                         {assetStatusError ? <p className={styles.assetStatusError}>{assetStatusError}</p> : null}
 
                         <div className={styles.assetStatusSubActions}>
-                          <button
-                            type="button"
-                            className={styles.secondaryButton}
-                            onClick={() => {
-                              setAssetStatusEditView('hub');
-                              setAssetStatusError('');
-                            }}
-                            disabled={isSavingAssetStatus}
-                          >
-                            Back
-                          </button>
                           <button
                             type="button"
                             className={styles.primaryButton}
@@ -13559,15 +13525,16 @@ export default function AssetRegisterClient() {
                 ) : null}
 
                 {manualAssetStep === 4 ? (
-                  <section className={`${styles.manualStageCard} ${styles.manualSingleStageCard} ${styles.manualCompactStageCard} ${styles.fullWidth}`}>
-                    <div className={styles.manualStepIntro}>
-                      <h4>Documents and photos</h4>
-                      {editingAsset ? <p>Keep supporting files and the main asset photo together.</p> : null}
-                    </div>
+                  <section className={`${styles.manualStageCard} ${styles.manualSingleStageCard} ${styles.manualCompactStageCard} ${editingAsset ? styles.assetUpdateStageCard : ''} ${styles.fullWidth}`}>
+                    {!editingAsset ? (
+                      <div className={styles.manualStepIntro}>
+                        <h4>Documents and photos</h4>
+                      </div>
+                    ) : null}
 
                     <div className={`${styles.manualStageGrid} ${styles.manualUploadGrid}`}>
                       <div className={styles.field}>
-                        <span>Documents <small>(optional)</small></span>
+                        <span>Documents</span>
 
                         <div className={styles.documentUploadPanel}>
                           <div className={styles.uploadRow}>
@@ -13594,7 +13561,7 @@ export default function AssetRegisterClient() {
                       </div>
 
                       <div className={styles.field}>
-                        <span>Photos <small>(optional)</small></span>
+                        <span>Photos</span>
 
                         <div className={styles.uploadPanel}>
                           <div className={styles.uploadRow}>
@@ -13623,13 +13590,13 @@ export default function AssetRegisterClient() {
 
                     {assetDraft.documents.length ? (
                       <div className={styles.documentDraftList}>
-                        {assetDraft.documents.map((document) => (
+                        {assetDraft.documents.map((document, documentIndex) => (
                           <div className={styles.documentDraftRow} key={document.id}>
                             <span className={styles.documentDraftIcon}>
                               <DocumentIcon className={styles.buttonIcon} />
                             </span>
                             <div>
-                              <strong>{shortDocumentName(document.fileName)}</strong>
+                              <strong>{displayDocumentName(document.fileName, documentIndex)}</strong>
                               <small>{formatByteSize(document.byteSize)}</small>
                             </div>
                             <button
@@ -13721,7 +13688,7 @@ export default function AssetRegisterClient() {
                   </section>
                 ) : null}
 
-                {(manualAssetStep > 1 || editingAsset?.valuationRunId) && !isAssetStatusFocusedView ? (
+                {!editingAsset && manualAssetStep > 1 && !isAssetStatusFocusedView ? (
                   <div className={`${styles.formActions} ${styles.assetFormActions} ${styles.manualStepFormActions}`}>
                     <div className={styles.assetFormActionRight}>
                       {manualAssetStep > 1 ? (

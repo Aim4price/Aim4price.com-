@@ -31099,3 +31099,302 @@ button.documentOpenLink {
     animation: none;
   }
 }
+
+/* === Asset update modal: quieter, faster final refinement === */
+.assetFormModal:not(.assetFormModalStepOne) .assetFormModalChromeHeader {
+  min-height: 3.85rem !important;
+  margin-bottom: 0.45rem !important;
+  padding: 0 4.25rem 0.65rem 0 !important;
+}
+
+.assetUpdateHeaderContent {
+  gap: 0.8rem !important;
+}
+
+.assetUpdateIdentity {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.7rem !important;
+}
+
+.assetUpdateIdentity h3 {
+  font-size: clamp(1.18rem, 1.65vw, 1.52rem) !important;
+}
+
+.assetUpdateType {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  min-height: 1.72rem;
+  padding: 0.32rem 0.62rem;
+  border: 1px solid rgba(190, 215, 203, 0.86);
+  border-radius: 999px;
+  color: #426b5b;
+  background: #f4f9f6;
+  font-size: 0.68rem;
+  font-weight: 760;
+  line-height: 1;
+}
+
+.assetAutosaveStatus {
+  min-height: 2rem !important;
+  gap: 0.4rem !important;
+  padding: 0.42rem 0.65rem !important;
+  font-size: 0.69rem !important;
+  box-shadow: none !important;
+}
+
+.assetAutosaveDot {
+  width: 0.43rem !important;
+  height: 0.43rem !important;
+}
+
+.assetFormModal:not(.assetFormModalStepOne) .assetFormModalChromeHeader .modalCloseButton {
+  width: 2.8rem !important;
+  height: 2.8rem !important;
+  min-width: 2.8rem !important;
+  min-height: 2.8rem !important;
+}
+
+.assetFormModal:not(.assetFormModalStepOne) .assetFormSectionTabs {
+  gap: 0.42rem !important;
+  margin-bottom: 0.65rem !important;
+  padding-bottom: 0.65rem !important;
+}
+
+.assetFormModal:not(.assetFormModalStepOne) .assetFormSectionTab {
+  grid-template-columns: 1.72rem minmax(0, 1fr) !important;
+  gap: 0.52rem !important;
+  min-height: 3.25rem !important;
+  padding: 0.48rem 0.65rem !important;
+  border-radius: 0.82rem !important;
+  box-shadow: none !important;
+}
+
+.assetFormSectionTabNumber {
+  width: 1.72rem !important;
+  height: 1.72rem !important;
+  border-radius: 0.55rem !important;
+  font-size: 0.62rem !important;
+}
+
+.assetFormSectionTabCopy {
+  gap: 0 !important;
+}
+
+.assetFormSectionTabCopy strong {
+  font-size: 0.88rem !important;
+  font-weight: 760 !important;
+}
+
+.assetFormModal:not(.assetFormModalStepOne) .assetFormSectionTabActive,
+.assetFormModal:not(.assetFormModalStepOne) .assetFormSectionTabActive:hover {
+  box-shadow: 0 8px 18px rgba(20, 95, 70, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.14) !important;
+}
+
+.assetFormModal .assetUpdateStageCard {
+  gap: 0.85rem !important;
+  padding: 0.8rem 0.12rem 0.35rem !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.assetFormModal .assetUpdateStageCard .manualUtilityRow {
+  padding: 0 0.05rem 0.05rem !important;
+}
+
+.assetFormModal .assetUpdateStageCard .manualSelectedTypeStrip,
+.assetFormModal .assetUpdateStageCard .manualSettingsButton {
+  min-height: 2.72rem !important;
+  padding-inline: 0.82rem !important;
+}
+
+.assetFormModal .assetUpdateStageCard .manualSelectedTypeStrip span,
+.assetFormModal .assetUpdateStageCard .manualSelectedTypeStrip strong,
+.assetFormModal .assetUpdateStageCard .manualSettingsButton {
+  font-size: 0.78rem !important;
+}
+
+.assetFormModal .assetUpdateStageCard .assetStatusHubGrid {
+  gap: 0.62rem !important;
+}
+
+.assetFormModal .assetUpdateStageCard .assetStatusHubCard {
+  position: relative;
+  min-height: 5.05rem !important;
+  justify-content: center !important;
+  gap: 0.25rem !important;
+  padding: 0.82rem 2.65rem 0.82rem 0.95rem !important;
+  border-radius: 0.95rem !important;
+  box-shadow: none !important;
+}
+
+.assetFormModal .assetUpdateStageCard .assetStatusHubCard::after {
+  content: '›';
+  position: absolute;
+  top: 50%;
+  right: 1rem;
+  display: grid;
+  place-items: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  border: 1px solid rgba(190, 215, 203, 0.9);
+  border-radius: 999px;
+  color: #257055;
+  background: #f2f8f5;
+  font-size: 1.15rem;
+  font-weight: 600;
+  line-height: 1;
+  transform: translateY(-50%);
+}
+
+.assetFormModal .assetUpdateStageCard .assetStatusHubCard:hover::after,
+.assetFormModal .assetUpdateStageCard .assetStatusHubCard:focus-visible::after {
+  color: #ffffff;
+  border-color: #1b7659;
+  background: #1b7659;
+}
+
+.assetFormModal .assetUpdateStageCard .assetStatusHubCard strong {
+  font-size: 1rem !important;
+  font-weight: 780 !important;
+}
+
+.assetFormModal .assetUpdateStageCard .assetStatusHubCard small {
+  overflow: hidden;
+  font-size: 0.75rem !important;
+  font-weight: 650 !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.assetFormModal .assetUpdateStageCard .manualUploadGrid {
+  gap: 0.7rem !important;
+}
+
+.assetFormModal .assetUpdateStageCard .manualUploadGrid > .field {
+  grid-template-rows: auto auto !important;
+  gap: 0.42rem !important;
+}
+
+.assetFormModal .assetUpdateStageCard .manualUploadGrid .documentUploadPanel,
+.assetFormModal .assetUpdateStageCard .manualUploadGrid .uploadPanel {
+  min-height: 5.35rem !important;
+  height: auto !important;
+  padding: 0.78rem !important;
+  border-radius: 0.95rem !important;
+}
+
+.assetFormModal .assetUpdateStageCard .manualUploadGrid .documentUploadPanel .uploadRow,
+.assetFormModal .assetUpdateStageCard .manualUploadGrid .uploadPanel .uploadRow {
+  width: 100% !important;
+  max-width: none !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  gap: 0.55rem !important;
+}
+
+.assetFormModal .assetUpdateStageCard .manualUploadGrid .documentUploadPanel .filePickerButton,
+.assetFormModal .assetUpdateStageCard .manualUploadGrid .uploadPanel .filePickerButton,
+.assetFormModal .assetUpdateStageCard .manualUploadGrid .documentUploadPanel .uploadCount,
+.assetFormModal .assetUpdateStageCard .manualUploadGrid .uploadPanel .uploadCount {
+  min-height: 2.85rem !important;
+  height: 2.85rem !important;
+  border-radius: 0.78rem !important;
+  font-size: 0.78rem !important;
+}
+
+.assetFormModal .assetUpdateStageCard .manualUploadGrid .documentUploadPanel .uploadCount,
+.assetFormModal .assetUpdateStageCard .manualUploadGrid .uploadPanel .uploadCount {
+  min-width: 4rem !important;
+  padding-inline: 0.65rem !important;
+}
+
+@media (max-width: 760px) {
+  .assetFormModal:not(.assetFormModalStepOne) .assetFormModalChromeHeader {
+    min-height: 4.6rem !important;
+    padding: 0 3.6rem 0.58rem 0 !important;
+  }
+
+  .assetUpdateHeaderContent {
+    align-items: flex-start !important;
+    flex-direction: column !important;
+    gap: 0.4rem !important;
+  }
+
+  .assetUpdateIdentity {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    gap: 0.45rem !important;
+    width: 100%;
+  }
+
+  .assetUpdateIdentity h3 {
+    max-width: 100% !important;
+    font-size: 1.02rem !important;
+  }
+
+  .assetUpdateType {
+    min-height: 1.5rem;
+    padding: 0.27rem 0.5rem;
+    font-size: 0.6rem;
+  }
+
+  .assetAutosaveStatus {
+    min-height: 1.7rem !important;
+    padding: 0.32rem 0.52rem !important;
+    font-size: 0.61rem !important;
+  }
+
+  .assetFormModal:not(.assetFormModalStepOne) .assetFormSectionTab {
+    grid-template-columns: 1fr !important;
+    min-height: 2.85rem !important;
+    padding: 0.42rem 0.2rem !important;
+  }
+
+  .assetFormSectionTabNumber {
+    display: none !important;
+  }
+
+  .assetFormSectionTabCopy strong {
+    font-size: clamp(0.7rem, 3vw, 0.82rem) !important;
+  }
+
+  .assetFormModal .assetUpdateStageCard {
+    padding-top: 0.55rem !important;
+  }
+
+  .assetFormModal .assetUpdateStageCard .assetStatusHubGrid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .assetFormModal .assetUpdateStageCard .assetStatusHubCard {
+    min-height: 4.35rem !important;
+  }
+}
+
+.assetFormModal .assetUpdateStageCard .assetStatusFocusedHeader {
+  padding: 0 0 0.68rem !important;
+  border: 0 !important;
+  border-bottom: 1px solid rgba(211, 224, 231, 0.9) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+.assetFormModal .assetUpdateStageCard .assetStatusFocusedHeader strong {
+  font-size: 1.08rem !important;
+  font-weight: 780 !important;
+}
+
+.assetFormModal .assetUpdateStageCard .field > span small {
+  display: none !important;
+}
+
+.assetFormModal .assetUpdateStageCard .assetStatusSubActions {
+  padding-top: 0 !important;
+}
+
+.assetFormModal .assetUpdateStageCard .assetStatusSubActions .primaryButton {
+  min-width: 7rem !important;
+}
