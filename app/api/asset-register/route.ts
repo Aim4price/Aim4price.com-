@@ -100,6 +100,7 @@ function normalizeKind(value: unknown): AssetRegisterItemKind {
   if (normalized === 'property') return 'property';
   if (normalized === 'vehicle') return 'vehicle';
   if (normalized === 'tool' || normalized === 'tools') return 'tools';
+  if (normalized === 'stock' || normalized === 'inventory') return 'stock';
   return 'manual';
 }
 
