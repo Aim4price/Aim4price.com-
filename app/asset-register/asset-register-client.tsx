@@ -852,7 +852,7 @@ const LIFETIME_PERCENT_SETTINGS_ERROR =
 const USAGE_READING_SETTINGS_ERROR =
   'The new usage reading cannot be lower than the reading already saved on this asset. Please go to Settings to override this.';
 const ASSET_SETTINGS_USAGE_COPY =
-  'This is the only place where usage can be adjusted lower for this saved Aim4price asset.';
+  'Correct the saved usage only when the current reading is wrong.';
 const USAGE_OVERRIDE_CONFIRMATION_TEXT =
   'Are you sure you want to override the saved usage for this asset? This can lower the usage recorded for this saved Aim4price asset and may affect its valuation/depreciation history.';
 
@@ -2392,10 +2392,10 @@ function getAssetSettingsUsageCurrentValue(asset: RegisterAsset, mode: AssetSett
 }
 
 function assetSettingsUsageHeading(mode: AssetSettingsUsageMode): string {
-  if (mode === 'percent') return 'Override lifetime usage';
-  if (mode === 'hours') return 'Override Machine Hours';
-  if (mode === 'km') return 'Override Kilometres';
-  return 'Override Usage';
+  if (mode === 'percent') return 'Correct lifetime usage';
+  if (mode === 'hours') return 'Correct machine hours';
+  if (mode === 'km') return 'Correct kilometres';
+  return 'Correct usage';
 }
 
 function assetSettingsUsageInputLabel(mode: AssetSettingsUsageMode): string {
@@ -11090,6 +11090,12 @@ export default function AssetRegisterClient() {
   const assetSettingsMapGpsButtonLabel = isAssetSettingsMapLocationSaving
     ? 'Saving GPS...'
     : 'Save map position';
+  const assetSettingsDeviceGpsButtonLabel =
+    assetSettingsLocationState === 'capturing'
+      ? 'Finding location...'
+      : assetSettingsLocationState === 'savingDevice'
+        ? 'Saving location...'
+        : 'Use this device';
   const marketplacePhotoUrls = marketplaceAsset ? normalizePhotos(marketplaceAsset.photos) : [];
   const marketplaceListingTitle = marketplaceAsset ? buildMarketplaceListingTitle(marketplaceAsset, true) : '';
   const marketplaceModalTitle = marketplaceAsset
@@ -13860,37 +13866,57 @@ export default function AssetRegisterClient() {
                 <section className={`${styles.assetSettingsSection} ${styles.assetSettingsLocationSection}`}>
                   <div className={styles.assetSettingsSectionCopy}>
                     <span>Location</span>
-                    <h4>Update GPS Position</h4>
+                    <h4>Update asset location</h4>
+                    <p>Choose the easiest way to save where this asset is kept.</p>
                   </div>
 
-                  <div className={styles.assetSettingsLocationSummary}>
-                    <div className={styles.assetSettingsStaticGrid}>
+                  <div className={styles.assetSettingsLocationCurrent}>
+                    <div className={styles.assetSettingsLocationCurrentMain}>
+                      <span className={styles.assetSettingsLocationCurrentIcon} aria-hidden="true">
+                        <FlagIcon className={styles.buttonIcon} />
+                      </span>
+
+                      <div className={styles.assetSettingsLocationCurrentCopy}>
+                        <span>Current location</span>
+                        <strong>
+                          {assetSettingsLocationText || (hasAssetGpsCoordinates(editingAsset) ? formatAssetSettingsGpsPosition(editingAsset) : 'No location saved')}
+                        </strong>
+                      </div>
+
+                      {assetSettingsMapsUrl ? (
+                        <a className={styles.assetSettingsMapLink} href={assetSettingsMapsUrl} target="_blank" rel="noreferrer">
+                          View map
+                        </a>
+                      ) : null}
+                    </div>
+
+                    <div className={styles.assetSettingsLocationCurrentMeta}>
                       <div>
-                        <span>Last Saved</span>
+                        <span>Last updated</span>
                         <strong>{formatAssetSettingsLastScanned(editingAsset)}</strong>
                       </div>
                       <div>
                         <span>GPS position</span>
                         <strong>{formatAssetSettingsGpsPosition(editingAsset)}</strong>
                       </div>
-                      {assetSettingsLocationText ? (
-                        <div className={styles.assetSettingsStaticGridWide}>
-                          <span>Location text</span>
-                          <strong>{assetSettingsLocationText}</strong>
-                        </div>
-                      ) : null}
-                      {assetSettingsMapsUrl ? (
-                        <div className={styles.assetSettingsMapTile}>
-                          <span>Map</span>
-                          <a className={styles.assetSettingsMapLink} href={assetSettingsMapsUrl} target="_blank" rel="noreferrer">
-                            Open in Google Maps
-                          </a>
-                        </div>
-                      ) : null}
                     </div>
                   </div>
 
                   <div className={styles.assetSettingsLocationChoiceGrid}>
+                    <button
+                      type="button"
+                      className={`${styles.assetSettingsOptionButton} ${styles.assetSettingsLocationPrimaryChoice}`}
+                      onClick={() => void updateAssetSettingsGpsPosition()}
+                      disabled={isAssetSettingsBusy}
+                    >
+                      <RefreshIcon className={styles.assetSettingsOptionIcon} />
+                      <span>
+                        <span className={styles.assetSettingsRecommendedBadge}>Recommended</span>
+                        <strong>{assetSettingsDeviceGpsButtonLabel}</strong>
+                        <small>Save this device’s current GPS position.</small>
+                      </span>
+                    </button>
+
                     <button
                       type="button"
                       className={styles.assetSettingsOptionButton}
@@ -13899,19 +13925,8 @@ export default function AssetRegisterClient() {
                     >
                       <DocumentIcon className={styles.assetSettingsOptionIcon} />
                       <span>
-                        <strong>Manual</strong>
-                      </span>
-                    </button>
-
-                    <button
-                      type="button"
-                      className={styles.assetSettingsOptionButton}
-                      onClick={() => void updateAssetSettingsGpsPosition()}
-                      disabled={isAssetSettingsBusy}
-                    >
-                      <RefreshIcon className={styles.assetSettingsOptionIcon} />
-                      <span>
-                        <strong>Automatic</strong>
+                        <strong>Enter coordinates</strong>
+                        <small>Paste a saved GPS position.</small>
                       </span>
                     </button>
 
@@ -13923,7 +13938,8 @@ export default function AssetRegisterClient() {
                     >
                       <FlagIcon className={styles.assetSettingsOptionIcon} />
                       <span>
-                        <strong>Map</strong>
+                        <strong>Choose on map</strong>
+                        <small>Drop and adjust a map pin.</small>
                       </span>
                     </button>
                   </div>
@@ -14111,50 +14127,54 @@ export default function AssetRegisterClient() {
               ) : null}
 
               {assetSettingsView === 'usage' && isSavedAim4priceAsset(editingAsset) ? (
-                <section className={styles.assetSettingsSection}>
+                <section className={`${styles.assetSettingsSection} ${styles.assetSettingsUsageSection}`}>
                   <div className={styles.assetSettingsSectionCopy}>
-                    <span>Aim4price asset</span>
+                    <span>Lifetime expectancy</span>
                     <h4>{assetSettingsUsageHeading(settingsUsageMode)}</h4>
                     <p>{ASSET_SETTINGS_USAGE_COPY}</p>
                   </div>
 
                   {settingsUsageMode !== 'none' ? (
                     <>
-                      <div className={styles.assetSettingsStaticGrid}>
-                        <div>
+                      <div className={styles.assetSettingsUsageComparison}>
+                        <div className={styles.assetSettingsUsageCurrent}>
                           <span>Currently saved</span>
                           <strong>{formatAssetSettingsUsageDisplay(settingsUsageMode, settingsUsageCurrentValue)}</strong>
                         </div>
+
+                        <span className={styles.assetSettingsUsageArrow} aria-hidden="true">→</span>
+
+                        <label className={`${styles.assetSettingsField} ${styles.assetSettingsUsageField}`}>
+                          <span>{assetSettingsUsageInputLabel(settingsUsageMode)}</span>
+                          {settingsUsageMode === 'percent' ? (
+                            <input
+                              type="number"
+                              min="0"
+                              max="100"
+                              step="0.1"
+                              value={assetSettingsUsageInput}
+                              onChange={(event) => {
+                                setAssetSettingsUsageInput(event.target.value);
+                                setAssetSettingsError('');
+                              }}
+                              placeholder={assetSettingsUsagePlaceholder(settingsUsageMode, settingsUsageCurrentValue)}
+                            />
+                          ) : (
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              value={assetSettingsUsageInput}
+                              onChange={(event) => {
+                                setAssetSettingsUsageInput(formatUsageAmountInput(event.target.value));
+                                setAssetSettingsError('');
+                              }}
+                              placeholder={assetSettingsUsagePlaceholder(settingsUsageMode, settingsUsageCurrentValue)}
+                            />
+                          )}
+                        </label>
                       </div>
 
-                      <label className={styles.assetSettingsField}>
-                        <span>{assetSettingsUsageInputLabel(settingsUsageMode)}</span>
-                        {settingsUsageMode === 'percent' ? (
-                          <input
-                            type="number"
-                            min="0"
-                            max="100"
-                            step="0.1"
-                            value={assetSettingsUsageInput}
-                            onChange={(event) => {
-                              setAssetSettingsUsageInput(event.target.value);
-                              setAssetSettingsError('');
-                            }}
-                            placeholder={assetSettingsUsagePlaceholder(settingsUsageMode, settingsUsageCurrentValue)}
-                          />
-                        ) : (
-                          <input
-                            type="text"
-                            inputMode="numeric"
-                            value={assetSettingsUsageInput}
-                            onChange={(event) => {
-                              setAssetSettingsUsageInput(formatUsageAmountInput(event.target.value));
-                              setAssetSettingsError('');
-                            }}
-                            placeholder={assetSettingsUsagePlaceholder(settingsUsageMode, settingsUsageCurrentValue)}
-                          />
-                        )}
-                      </label>
+                      <p className={styles.assetSettingsUsageHint}>Changing this reading may affect the asset’s valuation history.</p>
 
                       <div className={styles.assetSettingsActions}>
                         <button
@@ -14163,7 +14183,7 @@ export default function AssetRegisterClient() {
                           onClick={requestAim4priceUsageOverrideSetting}
                           disabled={isAssetSettingsBusy}
                         >
-                          {isSavingAssetSettings ? 'Saving...' : 'Save override'}
+                          {isSavingAssetSettings ? 'Saving...' : 'Review change'}
                         </button>
                       </div>
                     </>

@@ -31951,3 +31951,407 @@ button.documentOpenLink {
     max-width: 5.6rem;
   }
 }
+
+/* === Update modal and settings: clear, guided controls === */
+.assetUpdateModal {
+  position: relative !important;
+}
+
+.assetUpdateModal .assetFormModalChromeHeader {
+  display: block !important;
+  padding-right: 4.85rem !important;
+}
+
+.assetUpdateModal .assetFormModalChromeHeader .modalCloseButton {
+  position: absolute !important;
+  top: clamp(0.95rem, 1.4vw, 1.2rem) !important;
+  right: clamp(0.75rem, 1.2vw, 1rem) !important;
+  margin: 0 !important;
+}
+
+.assetSettingsLocationModal {
+  width: min(94vw, 58rem) !important;
+}
+
+.assetSettingsLocationModal .assetSettingsSection {
+  gap: 1rem !important;
+  padding: 1.2rem !important;
+  border-color: rgba(200, 219, 210, 0.96) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbf9 100%) !important;
+}
+
+.assetSettingsLocationModal .assetSettingsSectionCopy p {
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+}
+
+.assetSettingsLocationCurrent {
+  overflow: hidden !important;
+  border: 1px solid rgba(197, 215, 226, 0.98) !important;
+  border-radius: 1.1rem !important;
+  background: #ffffff !important;
+  box-shadow:
+    0 9px 22px rgba(20, 49, 40, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.assetSettingsLocationCurrentMain {
+  display: grid !important;
+  grid-template-columns: 3rem minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 0.85rem !important;
+  min-height: 5.4rem !important;
+  padding: 0.9rem 1rem !important;
+}
+
+.assetSettingsLocationCurrentIcon {
+  display: grid !important;
+  place-items: center !important;
+  width: 3rem !important;
+  height: 3rem !important;
+  border: 1px solid rgba(176, 213, 196, 0.94) !important;
+  border-radius: 0.92rem !important;
+  color: #155a43 !important;
+  background: linear-gradient(180deg, #f2faf6 0%, #e7f4ec 100%) !important;
+}
+
+.assetSettingsLocationCurrentIcon .buttonIcon {
+  width: 1.3rem !important;
+  height: 1.3rem !important;
+}
+
+.assetSettingsLocationCurrentCopy {
+  display: grid !important;
+  gap: 0.24rem !important;
+  min-width: 0 !important;
+}
+
+.assetSettingsLocationCurrentCopy span,
+.assetSettingsLocationCurrentMeta span {
+  color: #6c7c8b !important;
+  font-size: 0.7rem !important;
+  font-weight: 840 !important;
+  letter-spacing: 0.065em !important;
+  line-height: 1 !important;
+  text-transform: uppercase !important;
+}
+
+.assetSettingsLocationCurrentCopy strong {
+  overflow: hidden !important;
+  color: #15372e !important;
+  font-size: 1.06rem !important;
+  font-weight: 850 !important;
+  line-height: 1.2 !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.assetSettingsLocationCurrent .assetSettingsMapLink {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 2.55rem !important;
+  padding: 0 0.85rem !important;
+  border: 1px solid rgba(190, 211, 224, 0.96) !important;
+  border-radius: 0.82rem !important;
+  background: #f8fbfc !important;
+  font-size: 0.82rem !important;
+  white-space: nowrap !important;
+}
+
+.assetSettingsLocationCurrentMeta {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  border-top: 1px solid rgba(215, 226, 233, 0.92) !important;
+  background: #f7fafb !important;
+}
+
+.assetSettingsLocationCurrentMeta > div {
+  display: grid !important;
+  gap: 0.28rem !important;
+  min-width: 0 !important;
+  padding: 0.78rem 1rem !important;
+}
+
+.assetSettingsLocationCurrentMeta > div + div {
+  border-left: 1px solid rgba(215, 226, 233, 0.92) !important;
+}
+
+.assetSettingsLocationCurrentMeta strong {
+  overflow: hidden !important;
+  color: #203944 !important;
+  font-size: 0.88rem !important;
+  font-weight: 770 !important;
+  line-height: 1.25 !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.assetSettingsLocationModal .assetSettingsLocationChoiceGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 0.75rem !important;
+}
+
+.assetSettingsLocationModal .assetSettingsLocationChoiceGrid .assetSettingsOptionButton {
+  grid-template-columns: 3.25rem minmax(0, 1fr) !important;
+  justify-items: stretch !important;
+  align-content: center !important;
+  min-height: 5.5rem !important;
+  gap: 0.85rem !important;
+  padding: 0.85rem 1rem !important;
+  border-radius: 1rem !important;
+  text-align: left !important;
+  box-shadow: none !important;
+}
+
+.assetSettingsLocationModal .assetSettingsLocationChoiceGrid .assetSettingsOptionButton > span {
+  justify-items: start !important;
+  gap: 0.2rem !important;
+}
+
+.assetSettingsLocationModal .assetSettingsLocationChoiceGrid .assetSettingsOptionButton strong,
+.assetSettingsLocationModal .assetSettingsLocationChoiceGrid .assetSettingsOptionButton small {
+  overflow: visible !important;
+  text-align: left !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+}
+
+.assetSettingsLocationModal .assetSettingsLocationChoiceGrid .assetSettingsOptionIcon {
+  width: 3.05rem !important;
+  height: 3.05rem !important;
+  padding: 0.74rem !important;
+}
+
+.assetSettingsLocationModal .assetSettingsLocationChoiceGrid .assetSettingsLocationPrimaryChoice {
+  grid-column: 1 / -1 !important;
+  min-height: 6rem !important;
+  border-color: #1c7658 !important;
+  background: linear-gradient(135deg, #1d7659 0%, #135b43 100%) !important;
+  box-shadow: 0 13px 25px rgba(20, 95, 70, 0.17) !important;
+}
+
+.assetSettingsLocationModal .assetSettingsLocationChoiceGrid .assetSettingsLocationPrimaryChoice:hover:not(:disabled) {
+  border-color: #155f46 !important;
+  background: linear-gradient(135deg, #1b6f54 0%, #104c39 100%) !important;
+  box-shadow: 0 16px 28px rgba(20, 95, 70, 0.21) !important;
+}
+
+.assetSettingsLocationModal .assetSettingsLocationChoiceGrid .assetSettingsLocationPrimaryChoice .assetSettingsOptionIcon {
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.24) !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+}
+
+.assetSettingsLocationModal .assetSettingsLocationChoiceGrid .assetSettingsLocationPrimaryChoice strong,
+.assetSettingsLocationModal .assetSettingsLocationChoiceGrid .assetSettingsLocationPrimaryChoice small {
+  color: #ffffff !important;
+}
+
+.assetSettingsLocationModal .assetSettingsLocationChoiceGrid .assetSettingsLocationPrimaryChoice small {
+  opacity: 0.8 !important;
+}
+
+.assetSettingsRecommendedBadge {
+  display: inline-flex !important;
+  align-items: center !important;
+  min-height: 1.28rem !important;
+  padding: 0.18rem 0.42rem !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  border-radius: 999px !important;
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+  font-size: 0.58rem !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.055em !important;
+  line-height: 1 !important;
+  text-transform: uppercase !important;
+}
+
+.assetSettingsUsageSection {
+  gap: 1.15rem !important;
+  padding: 1.3rem !important;
+  border-color: rgba(197, 217, 207, 0.96) !important;
+  background:
+    radial-gradient(circle at top right, rgba(24, 112, 82, 0.06), transparent 38%),
+    linear-gradient(180deg, #ffffff 0%, #f8fbf9 100%) !important;
+}
+
+.assetSettingsUsageComparison {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 2.4rem minmax(0, 1fr) !important;
+  align-items: stretch !important;
+  gap: 0.7rem !important;
+}
+
+.assetSettingsUsageCurrent,
+.assetSettingsUsageField {
+  display: grid !important;
+  align-content: center !important;
+  gap: 0.48rem !important;
+  min-width: 0 !important;
+  min-height: 6.65rem !important;
+  padding: 1rem !important;
+  border: 1px solid rgba(200, 217, 228, 0.98) !important;
+  border-radius: 1.05rem !important;
+  background: #ffffff !important;
+}
+
+.assetSettingsUsageCurrent span,
+.assetSettingsUsageField > span {
+  color: #6b7c8e !important;
+  font-size: 0.72rem !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.06em !important;
+  line-height: 1 !important;
+  text-transform: uppercase !important;
+}
+
+.assetSettingsUsageCurrent strong {
+  overflow: hidden !important;
+  color: #15372e !important;
+  font-size: clamp(1.45rem, 3vw, 1.85rem) !important;
+  font-weight: 880 !important;
+  line-height: 1.05 !important;
+  letter-spacing: -0.045em !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.assetSettingsUsageField input {
+  min-height: 3.25rem !important;
+  padding: 0 0.85rem !important;
+  border-color: rgba(176, 207, 192, 0.98) !important;
+  border-radius: 0.82rem !important;
+  color: #15372e !important;
+  background: #f9fcfa !important;
+  font-size: 1.12rem !important;
+  font-weight: 820 !important;
+}
+
+.assetSettingsUsageArrow {
+  display: grid !important;
+  place-items: center !important;
+  align-self: center !important;
+  width: 2.4rem !important;
+  height: 2.4rem !important;
+  border: 1px solid rgba(187, 213, 201, 0.96) !important;
+  border-radius: 999px !important;
+  color: #1c6a50 !important;
+  background: #edf7f1 !important;
+  font-size: 1.15rem !important;
+  font-weight: 760 !important;
+}
+
+.assetSettingsUsageHint {
+  margin: 0 !important;
+  padding: 0.75rem 0.9rem 0.75rem 2.35rem !important;
+  border: 1px solid rgba(215, 224, 230, 0.98) !important;
+  border-radius: 0.9rem !important;
+  color: #627383 !important;
+  background: #f7fafb !important;
+  font-size: 0.82rem !important;
+  font-weight: 650 !important;
+  line-height: 1.4 !important;
+  position: relative !important;
+}
+
+.assetSettingsUsageHint::before {
+  content: '!';
+  position: absolute !important;
+  top: 50% !important;
+  left: 0.85rem !important;
+  display: grid !important;
+  place-items: center !important;
+  width: 1rem !important;
+  height: 1rem !important;
+  border-radius: 999px !important;
+  color: #ffffff !important;
+  background: #728392 !important;
+  font-size: 0.64rem !important;
+  font-weight: 900 !important;
+  transform: translateY(-50%) !important;
+}
+
+.assetSettingsUsageSection .assetSettingsActions .primaryButton {
+  min-width: 10.5rem !important;
+  min-height: 3.25rem !important;
+  border-radius: 0.92rem !important;
+}
+
+@media (max-width: 720px) {
+  .assetUpdateModal .assetFormModalChromeHeader {
+    padding-right: 4rem !important;
+  }
+
+  .assetUpdateModal .assetFormModalChromeHeader .modalCloseButton {
+    top: 0.72rem !important;
+    right: 0.62rem !important;
+  }
+
+  .assetSettingsLocationModal .assetSettingsSection {
+    padding: 0.9rem !important;
+  }
+
+  .assetSettingsLocationCurrentMain {
+    grid-template-columns: 2.7rem minmax(0, 1fr) !important;
+    gap: 0.7rem !important;
+    padding: 0.8rem !important;
+  }
+
+  .assetSettingsLocationCurrentIcon {
+    width: 2.7rem !important;
+    height: 2.7rem !important;
+  }
+
+  .assetSettingsLocationCurrent .assetSettingsMapLink {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+  }
+
+  .assetSettingsLocationCurrentMeta {
+    grid-template-columns: 1fr !important;
+  }
+
+  .assetSettingsLocationCurrentMeta > div + div {
+    border-top: 1px solid rgba(215, 226, 233, 0.92) !important;
+    border-left: 0 !important;
+  }
+
+  .assetSettingsLocationModal .assetSettingsLocationChoiceGrid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .assetSettingsLocationModal .assetSettingsLocationChoiceGrid .assetSettingsLocationPrimaryChoice {
+    grid-column: auto !important;
+  }
+
+  .assetSettingsLocationModal .assetSettingsLocationChoiceGrid .assetSettingsOptionButton {
+    min-height: 5.2rem !important;
+  }
+
+  .assetSettingsUsageSection {
+    padding: 1rem !important;
+  }
+
+  .assetSettingsUsageComparison {
+    grid-template-columns: 1fr !important;
+    gap: 0.55rem !important;
+  }
+
+  .assetSettingsUsageArrow {
+    width: 2.15rem !important;
+    height: 2.15rem !important;
+    transform: rotate(90deg) !important;
+  }
+
+  .assetSettingsUsageCurrent,
+  .assetSettingsUsageField {
+    min-height: 5.7rem !important;
+  }
+
+  .assetSettingsUsageSection .assetSettingsActions .primaryButton {
+    width: 100% !important;
+  }
+}
