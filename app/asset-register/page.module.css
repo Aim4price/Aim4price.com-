@@ -30121,16 +30121,14 @@ button.documentOpenLink {
   }
 }
 
-/* === Register summary: clean, structured refinement === */
+/* === Register summary: premium clean refinement === */
 .summaryModal {
   width: min(94vw, 70rem) !important;
   max-height: min(90dvh, 56rem) !important;
   padding: clamp(1.25rem, 2vw, 1.65rem) !important;
   border: 1px solid rgba(151, 177, 188, 0.34) !important;
   border-radius: 1.65rem !important;
-  background:
-    radial-gradient(circle at 0 0, rgba(33, 111, 82, 0.045), transparent 24rem),
-    #fbfdfc !important;
+  background: #fbfdfc !important;
   box-shadow:
     0 32px 76px rgba(13, 37, 31, 0.2),
     0 8px 22px rgba(13, 37, 31, 0.07) !important;
@@ -30145,36 +30143,36 @@ button.documentOpenLink {
 }
 
 .summaryHeaderActions {
-  gap: 0.58rem;
-  padding-top: 0;
+  gap: 0.58rem !important;
+  padding-top: 0 !important;
 }
 
-.summaryDownloadButton {
+.summaryModal .summaryDownloadButton {
   min-height: 3.05rem !important;
   height: 3.05rem !important;
   padding-inline: 1.15rem !important;
   border: 1px solid #205f48 !important;
   border-radius: 0.82rem !important;
   color: #ffffff !important;
-  background: linear-gradient(180deg, #28785b 0%, #1b5a43 100%) !important;
-  box-shadow: 0 8px 18px rgba(24, 86, 63, 0.17) !important;
+  background: #205f48 !important;
+  box-shadow: 0 8px 18px rgba(24, 86, 63, 0.15) !important;
   transition:
     border-color 150ms ease,
-    background 150ms ease,
+    background-color 150ms ease,
     box-shadow 150ms ease,
     transform 150ms ease !important;
 }
 
-.summaryDownloadButton:hover:not(:disabled) {
-  transform: translateY(-1px);
+.summaryModal .summaryDownloadButton:hover:not(:disabled) {
+  transform: translateY(-1px) !important;
   border-color: #174c39 !important;
   color: #ffffff !important;
-  background: linear-gradient(180deg, #226b50 0%, #154a37 100%) !important;
-  box-shadow: 0 10px 22px rgba(24, 86, 63, 0.22) !important;
+  background: #174c39 !important;
+  box-shadow: 0 10px 22px rgba(24, 86, 63, 0.2) !important;
 }
 
-.summaryDownloadButton svg {
-  color: currentColor !important;
+.summaryModal .summaryDownloadButton svg {
+  color: #ffffff !important;
 }
 
 .summaryModalHeader .modalCloseButton {
@@ -30183,12 +30181,12 @@ button.documentOpenLink {
   box-shadow: 0 6px 16px rgba(20, 54, 45, 0.045) !important;
   transition:
     border-color 150ms ease,
-    background 150ms ease,
+    background-color 150ms ease,
     transform 150ms ease !important;
 }
 
 .summaryModalHeader .modalCloseButton:hover {
-  transform: translateY(-1px);
+  transform: translateY(-1px) !important;
   border-color: rgba(38, 105, 79, 0.38) !important;
   background: #f3f8f5 !important;
 }
@@ -30200,132 +30198,157 @@ button.documentOpenLink {
 }
 
 .summaryModalBody::-webkit-scrollbar {
-  width: 0.58rem;
+  width: 0.58rem !important;
 }
 
 .summaryModalBody::-webkit-scrollbar-track {
-  border-radius: 999px;
-  background: #edf2f0;
+  border-radius: 999px !important;
+  background: #edf2f0 !important;
 }
 
 .summaryModalBody::-webkit-scrollbar-thumb {
-  border: 2px solid #edf2f0;
-  border-radius: 999px;
-  background: #5f8b78;
+  border: 2px solid #edf2f0 !important;
+  border-radius: 999px !important;
+  background: #5f8b78 !important;
 }
 
-.summaryPanel {
-  position: relative;
-  gap: 0 !important;
-  overflow: hidden;
+.summaryModal .summaryPanel {
+  position: relative !important;
+  display: block !important;
+  overflow: visible !important;
   padding: 0 !important;
-  border: 1px solid rgba(174, 197, 207, 0.54) !important;
+  border: 1px solid rgba(174, 197, 207, 0.52) !important;
   border-radius: 1rem !important;
   background: #ffffff !important;
-  box-shadow: 0 6px 18px rgba(22, 52, 44, 0.035) !important;
+  box-shadow: 0 6px 16px rgba(22, 52, 44, 0.03) !important;
 }
 
-.summaryPanel::before {
+.summaryModal .summaryPanel::before {
   display: none !important;
 }
 
-.summaryPanel:first-child {
-  border-color: rgba(63, 128, 101, 0.36) !important;
-  box-shadow: 0 8px 22px rgba(22, 78, 58, 0.055) !important;
+.summaryModal .summaryPanel:first-child {
+  border-color: rgba(62, 127, 101, 0.38) !important;
 }
 
-.summarySectionHeader {
+.summaryModal .summarySectionHeader {
+  display: block !important;
+  margin: 0 !important;
   padding: 0.88rem 1rem 0.82rem !important;
-  border-bottom: 1px solid rgba(174, 197, 207, 0.32);
-  background: #f5f8f6;
+  border-bottom: 1px solid rgba(174, 197, 207, 0.3) !important;
+  border-radius: 1rem 1rem 0 0 !important;
+  background: #f6f9f7 !important;
 }
 
-.summaryPanel:first-child .summarySectionHeader {
-  background: linear-gradient(90deg, #edf6f1 0%, #f7faf8 58%, #ffffff 100%);
+.summaryModal .summaryPanel:first-child .summarySectionHeader {
+  background: #eef6f1 !important;
 }
 
-.summarySectionHeader p {
+.summaryModal .summarySectionHeader p {
   max-width: 100% !important;
 }
 
-.summarySimpleTable {
-  width: auto;
-  margin: 0.72rem;
-  overflow: hidden;
-  border: 1px solid rgba(174, 197, 207, 0.5) !important;
+.summaryModal .summarySimpleTable {
+  display: block !important;
+  width: calc(100% - 1.8rem) !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0.8rem 0.9rem 0.9rem !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(174, 197, 207, 0.48) !important;
   border-radius: 0.78rem !important;
   background: #ffffff !important;
   box-shadow: none !important;
 }
 
-.summarySimpleTableHeader {
-  background: #edf3f0 !important;
-  border-bottom: 1px solid rgba(174, 197, 207, 0.4);
+.summaryModal .summarySimpleTableHeader,
+.summaryModal .summarySimpleTableRow {
+  box-sizing: border-box !important;
+  display: grid !important;
+  grid-template-columns: minmax(12rem, 1.45fr) minmax(4.5rem, 0.42fr) minmax(9.5rem, 0.74fr) minmax(9.5rem, 0.74fr) !important;
+  align-items: center !important;
+  gap: 0.72rem !important;
+  width: 100% !important;
+  padding-inline: 0.92rem !important;
 }
 
-.summarySimpleTableHeader,
-.summarySimpleTableRow {
-  gap: 0.7rem;
-  padding-inline: 0.9rem;
+.summaryModal .summarySimpleTableCountOnly .summarySimpleTableHeader,
+.summaryModal .summarySimpleTableCountOnly .summarySimpleTableRow {
+  grid-template-columns: minmax(12rem, 1fr) minmax(5rem, 7rem) !important;
 }
 
-.summarySimpleTableRow {
-  min-height: 3.05rem;
-  border-top: 1px solid rgba(174, 197, 207, 0.28) !important;
-  background: #ffffff;
-  transition: background-color 150ms ease;
+.summaryModal .summarySimpleTableHeader {
+  min-height: 2.35rem !important;
+  padding-block: 0.62rem !important;
+  border-bottom: 1px solid rgba(174, 197, 207, 0.38) !important;
+  background: #eef3f1 !important;
 }
 
-.summarySimpleTableRows .summarySimpleTableRow:first-child {
+.summaryModal .summarySimpleTableRows {
+  display: block !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+}
+
+.summaryModal .summarySimpleTableRow {
+  min-height: 3.15rem !important;
+  padding-block: 0.7rem !important;
+  border-top: 1px solid rgba(174, 197, 207, 0.27) !important;
+  background: #ffffff !important;
+  transition: background-color 150ms ease !important;
+}
+
+.summaryModal .summarySimpleTableRows .summarySimpleTableRow:first-child {
   border-top: 0 !important;
 }
 
-.summarySimpleTableRow:nth-child(even) {
-  background: #f9fbfa;
+.summaryModal .summarySimpleTableRow:nth-child(even) {
+  background: #fafcfb !important;
 }
 
-.summarySimpleTableRow:hover {
-  background: #f2f8f5;
+.summaryModal .summarySimpleTableRow:hover {
+  background: #f3f8f5 !important;
 }
 
-.summarySimpleTableRow span {
-  color: #3f554d !important;
+.summaryModal .summarySimpleTableRow span {
+  color: #40554d !important;
   letter-spacing: 0 !important;
   text-transform: none !important;
 }
 
-.summarySimpleTableRow strong {
-  justify-self: center;
-  min-width: 2.65rem;
-  padding: 0.28rem 0.58rem;
-  border: 1px solid rgba(52, 116, 91, 0.18);
-  border-radius: 999px;
-  background: #edf6f1;
+.summaryModal .summarySimpleTableRow strong {
+  justify-self: center !important;
+  min-width: 2.7rem !important;
+  padding: 0.28rem 0.58rem !important;
+  border: 1px solid rgba(52, 116, 91, 0.18) !important;
+  border-radius: 999px !important;
   color: #174d3a !important;
-  text-align: center;
+  background: #edf6f1 !important;
+  text-align: center !important;
 }
 
-.summarySimpleTableRow small {
-  color: #607184 !important;
+.summaryModal .summarySimpleTableRow small {
+  color: #617184 !important;
 }
 
-.summarySimpleTableRow b {
-  justify-self: end;
-  min-width: 7rem;
-  padding: 0.32rem 0.58rem;
-  border: 1px solid rgba(52, 116, 91, 0.16);
-  border-radius: 0.6rem;
+.summaryModal .summarySimpleTableRow b {
+  justify-self: end !important;
+  min-width: 7.25rem !important;
+  padding: 0.32rem 0.58rem !important;
+  border: 1px solid rgba(52, 116, 91, 0.16) !important;
+  border-radius: 0.58rem !important;
   color: #124b37 !important;
-  background: #edf7f1;
-  text-align: right;
+  background: #edf7f1 !important;
+  text-align: right !important;
 }
 
-.summaryPanel:first-child .summarySimpleTableRows .summarySimpleTableRow:first-child {
-  background: linear-gradient(90deg, #f4faf7 0%, #ffffff 72%);
+.summaryModal .summaryPanel:first-child .summarySimpleTableRows .summarySimpleTableRow:first-child {
+  background: #f6faf8 !important;
 }
 
-.summarySimpleTableCountOnly .summarySimpleTableRow strong {
-  justify-self: end;
+.summaryModal .summarySimpleTableCountOnly .summarySimpleTableRow strong {
+  justify-self: end !important;
 }
 
 @media (max-width: 760px) {
@@ -30341,20 +30364,20 @@ button.documentOpenLink {
   }
 
   .summaryModalHeader {
-    position: relative;
+    position: relative !important;
     align-items: start !important;
-    padding: 0 0 0.82rem !important;
+    padding-bottom: 0.82rem !important;
   }
 
   .summaryModalHeader .modalHeaderText {
-    padding-right: 3.5rem;
+    padding-right: 3.5rem !important;
   }
 
   .summaryHeaderActions {
-    width: 100%;
+    width: 100% !important;
   }
 
-  .summaryDownloadButton {
+  .summaryModal .summaryDownloadButton {
     width: 100% !important;
     border-radius: 0.78rem !important;
   }
@@ -30365,65 +30388,75 @@ button.documentOpenLink {
     padding-right: 0.12rem !important;
   }
 
-  .summaryPanel {
+  .summaryModal .summaryPanel {
     border-radius: 0.86rem !important;
   }
 
-  .summarySectionHeader {
+  .summaryModal .summarySectionHeader {
     padding: 0.78rem 0.82rem 0.72rem !important;
+    border-radius: 0.86rem 0.86rem 0 0 !important;
   }
 
-  .summarySimpleTable {
-    margin: 0.55rem;
+  .summaryModal .summarySimpleTable {
+    width: calc(100% - 1rem) !important;
+    margin: 0.5rem !important;
     border-radius: 0.68rem !important;
   }
 
-  .summarySimpleTableRow {
+  .summaryModal .summarySimpleTableHeader {
+    display: none !important;
+  }
+
+  .summaryModal .summarySimpleTableRow,
+  .summaryModal .summarySimpleTableCountOnly .summarySimpleTableRow {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
     gap: 0 !important;
-    padding: 0.74rem 0.78rem !important;
+    min-height: 0 !important;
+    padding: 0.76rem 0.78rem !important;
   }
 
-  .summarySimpleTableRow > span {
-    padding-bottom: 0.58rem;
-    border-bottom: 1px solid rgba(174, 197, 207, 0.3);
+  .summaryModal .summarySimpleTableRow > span {
+    padding-bottom: 0.55rem !important;
+    border-bottom: 1px solid rgba(174, 197, 207, 0.28) !important;
   }
 
-  .summarySimpleTableRow strong,
-  .summarySimpleTableRow small,
-  .summarySimpleTableRow b {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    justify-self: stretch;
-    width: 100%;
-    min-width: 0;
-    padding: 0.48rem 0 0;
-    border: 0;
-    border-radius: 0;
-    background: transparent;
-    text-align: right;
+  .summaryModal .summarySimpleTableRow strong,
+  .summaryModal .summarySimpleTableRow small,
+  .summaryModal .summarySimpleTableRow b {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    justify-self: stretch !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 0.46rem 0 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    text-align: right !important;
   }
 
-  .summarySimpleTableRow strong::before {
+  .summaryModal .summarySimpleTableRow strong::before {
     content: 'Count';
     color: #718076;
   }
 
-  .summarySimpleTableRow small::before {
+  .summaryModal .summarySimpleTableRow small::before {
     content: 'Excl. VAT';
     color: #718076;
   }
 
-  .summarySimpleTableRow b::before {
+  .summaryModal .summarySimpleTableRow b::before {
     content: 'Incl. VAT';
     color: #4a725f;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .summaryDownloadButton,
+  .summaryModal .summaryDownloadButton,
   .summaryModalHeader .modalCloseButton,
-  .summarySimpleTableRow {
+  .summaryModal .summarySimpleTableRow {
     transition: none !important;
   }
 }
