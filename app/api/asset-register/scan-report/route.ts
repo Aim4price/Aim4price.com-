@@ -974,6 +974,7 @@ function formatAssetKind(asset: AssetRegisterItem): string {
   if (asset.kind === 'tractor') return 'Tractor';
   if (asset.kind === 'equipment') return displayValue(asset.equipmentFamilyLabel, 'Equipment');
   if (asset.kind === 'tools') return 'Tools / implements';
+  if (asset.kind === 'stock') return 'Stock';
   if (asset.kind === 'property') return 'Property / Land / Building';
   return 'Asset';
 }
