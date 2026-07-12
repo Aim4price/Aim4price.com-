@@ -5272,6 +5272,15 @@ function renderQuoteOptionIcon(leadType: AssetLeadType, className?: string) {
   return <ReplacementQuoteIcon className={className} />;
 }
 
+function renderManualAssetTypeIcon(assetKind: AssetKind, className?: string) {
+  if (assetKind === 'vehicle') return <QuoteMachineIcon className={className} />;
+  if (assetKind === 'property') return <StoreIcon className={className} />;
+  if (assetKind === 'tools') return <ManageIcon className={className} />;
+  if (assetKind === 'stock') return <CartIcon className={className} />;
+  if (assetKind === 'manual') return <DocumentIcon className={className} />;
+  return <UpdateAssetIcon className={className} />;
+}
+
 export default function AssetRegisterClient() {
   const [assets, setAssets] = useState<RegisterAsset[]>([]);
   const [accountProfile, setAccountProfile] = useState<AccountProfile | null>(null);
@@ -12527,6 +12536,13 @@ export default function AssetRegisterClient() {
             aria-label={editingAsset ? 'Update asset' : 'Add asset'}
           >
             <div className={`${styles.modalHeader} ${styles.assetFormModalHeader} ${styles.manualWizardHeader} ${styles.assetFormModalChromeHeader}`}>
+              {manualAssetStep === 1 ? (
+                <div className={styles.modalHeaderText}>
+                  <h3>{editingAsset ? 'Update asset' : 'Add an asset'}</h3>
+                  <p>Choose the asset type that best matches what you are adding.</p>
+                </div>
+              ) : null}
+
               <button
                 type="button"
                 className={styles.modalCloseButton}
@@ -12562,7 +12578,7 @@ export default function AssetRegisterClient() {
                 {manualAssetStep === 1 ? (
                   <section className={`${styles.manualStageCard} ${styles.manualSingleStageCard} ${styles.manualCompactStageCard} ${styles.manualStepOneCard} ${styles.fullWidth}`}>
                     <div className={styles.manualStepIntro}>
-                      <h4>Asset type</h4>
+                      <h4>Select an asset type</h4>
                     </div>
 
                     {editingAsset?.valuationRunId ? (
@@ -12571,17 +12587,35 @@ export default function AssetRegisterClient() {
                         <input value={kindLabel(editingAsset.kind)} disabled readOnly />
                       </label>
                     ) : (
-                      <ModalSelect<AssetKind>
-                        label="Choose type"
-                        value={hasManualAssetKindSelection ? assetFormKind : ''}
-                        placeholder="Select asset type"
-                        options={MANUAL_ASSET_TYPE_OPTIONS}
-                        onChange={(nextKind) => selectManualAssetKind(nextKind, true)}
-                        className={styles.manualCompactSelectField}
-                        menuClassName={styles.manualAssetTypeSelectMenu}
-                        autoFocus
-                        usePortal
-                      />
+                      <div className={styles.manualAssetTypeGrid} role="group" aria-label="Choose an asset type">
+                        {MANUAL_ASSET_TYPE_OPTIONS.map((option, index) => {
+                          const isSelected = hasManualAssetKindSelection && assetFormKind === option.value;
+
+                          return (
+                            <button
+                              type="button"
+                              key={option.value}
+                              className={`${styles.manualAssetTypeCard} ${isSelected ? styles.manualAssetTypeCardSelected : ''}`}
+                              onClick={() => selectManualAssetKind(option.value, true)}
+                              aria-pressed={isSelected}
+                              autoFocus={index === 0}
+                            >
+                              <span className={styles.manualAssetTypeIcon}>
+                                {renderManualAssetTypeIcon(option.value, styles.buttonIcon)}
+                              </span>
+
+                              <span className={styles.manualAssetTypeCopy}>
+                                <strong>{option.label}</strong>
+                                <small>{option.description}</small>
+                              </span>
+
+                              <span className={styles.manualAssetTypeArrow} aria-hidden="true">
+                                <ChevronRightIcon className={styles.buttonIcon} />
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
                     )}
                   </section>
                 ) : null}
