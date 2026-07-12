@@ -31689,3 +31689,67 @@ button.documentOpenLink {
     font-size: 0.9rem !important;
   }
 }
+
+/* === Guided update step bar: final balanced spacing and alignment === */
+.assetUpdateModal .assetFormSectionTabs {
+  box-sizing: border-box !important;
+  align-items: stretch !important;
+  gap: 0.72rem !important;
+  width: auto !important;
+  margin: 0 0.28rem 1.05rem 0 !important;
+  padding: 0.48rem !important;
+  border: 1px solid rgba(211, 224, 218, 0.92) !important;
+  border-radius: 1.18rem !important;
+  background: #f5f8f6 !important;
+}
+
+.assetUpdateModal .assetFormSectionTab {
+  box-sizing: border-box !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.82rem !important;
+  width: 100% !important;
+  min-height: 4.35rem !important;
+  padding: 0.72rem 1rem !important;
+  border-radius: 0.92rem !important;
+}
+
+.assetUpdateModal .assetFormSectionTabNumber {
+  flex: 0 0 2.18rem !important;
+  width: 2.18rem !important;
+  height: 2.18rem !important;
+}
+
+.assetUpdateModal .assetFormSectionTabCopy {
+  display: flex !important;
+  flex: 0 0 auto !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.assetUpdateModal .assetFormSectionTabCopy strong {
+  line-height: 1.1 !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+}
+
+@media (max-width: 760px) {
+  .assetUpdateModal .assetFormSectionTabs {
+    gap: 0.3rem !important;
+    margin-right: 0.15rem !important;
+    padding: 0.34rem !important;
+    border-radius: 0.95rem !important;
+  }
+
+  .assetUpdateModal .assetFormSectionTab {
+    min-height: 3.25rem !important;
+    gap: 0 !important;
+    padding: 0.5rem 0.18rem !important;
+    border-radius: 0.72rem !important;
+  }
+
+  .assetUpdateModal .assetFormSectionTabNumber {
+    display: none !important;
+  }
+}
