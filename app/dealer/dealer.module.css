@@ -1448,6 +1448,160 @@
   }
 }
 
+/* Dealer valuation alignment pass. */
+.dealerValuationSurface [class*='wizardHeader'] > [class*='stepper'] {
+  gap: 6px !important;
+}
+
+.dealerValuationSurface [class*='stepperItem'] {
+  justify-content: center !important;
+  padding-inline: 6px !important;
+  text-align: center;
+}
+
+.dealerValuationSurface [class*='selectedSummaryPill'] {
+  justify-content: center !important;
+  text-align: center !important;
+}
+
+.dealerValuationSurface [class*='selectedSummaryPill'][data-selection-status='pending'] {
+  border: 1px dashed rgba(37, 71, 51, 0.28) !important;
+  background: #ffffff !important;
+  color: var(--dealer-muted) !important;
+  box-shadow: none !important;
+}
+
+.dealerValuationSurface [class*='pathChoiceCard'] {
+  justify-items: center !important;
+  padding: 18px 56px !important;
+  text-align: center !important;
+}
+
+.dealerValuationSurface [class*='pathChoiceCard']::after,
+.dealerValuationSurface [class*='pathChoiceCard'][class*='choiceCardActive']::after {
+  top: 50% !important;
+  right: 17px !important;
+  transform: translateY(-50%) !important;
+}
+
+.dealerValuationSurface [class*='pathChoiceCard'] :is(strong, [class*='choiceCardNote']) {
+  max-width: 100% !important;
+  margin-inline: auto !important;
+  text-align: center !important;
+}
+
+.dealerValuationSurface [class*='inlineOptionButton'],
+.dealerValuationSurface [class*='conditionChoiceButton'] {
+  padding-inline: 36px !important;
+  text-align: center !important;
+}
+
+.dealerValuationSurface [class*='choiceCard'][aria-pressed]:not([class*='pathChoiceCard']) {
+  justify-items: center !important;
+  min-height: 104px !important;
+  padding: 16px 44px !important;
+  text-align: center !important;
+}
+
+.dealerValuationSurface [class*='choiceCard'][aria-pressed]:not([class*='pathChoiceCard']) :is(strong, [class*='choiceCardNote']) {
+  max-width: 100% !important;
+  margin-inline: auto !important;
+  text-align: center !important;
+}
+
+.dealerValuationSurface [class*='choiceCard'][aria-pressed='true']:not([class*='pathChoiceCard'])::after {
+  top: 12px !important;
+  right: 12px !important;
+}
+
+.dealerValuationSurface [class*='specStepAction'] {
+  align-self: center !important;
+  justify-self: end !important;
+  text-align: center !important;
+}
+
+.dealerValuationSurface [class*='wizardFooter'] {
+  display: grid !important;
+  grid-template-columns: minmax(128px, 0.72fr) minmax(210px, 1fr) !important;
+  align-items: stretch !important;
+  gap: 10px 12px !important;
+  padding: 14px !important;
+}
+
+.dealerValuationSurface [class*='wizardFooter'] > [data-valuation-action] {
+  width: 100% !important;
+  min-width: 0 !important;
+  justify-content: center !important;
+  text-align: center !important;
+}
+
+.dealerValuationSurface [class*='wizardFooter'] > [data-valuation-action='back'] {
+  grid-column: 1;
+}
+
+.dealerValuationSurface [class*='wizardFooter'] > [data-valuation-action='next'] {
+  grid-column: 2;
+}
+
+.dealerValuationSurface [class*='wizardFooter'][data-has-disclaimer='true'] > [data-valuation-disclaimer] {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  margin: 0 !important;
+  padding: 10px 12px;
+  border: 1px solid rgba(37, 71, 51, 0.1);
+  border-radius: 12px;
+  background: #f4f8f5;
+  text-align: center;
+}
+
+.dealerValuationSurface [class*='wizardFooter'][data-has-disclaimer='true'] > [data-valuation-action] {
+  grid-row: 2;
+}
+
+.dealerValuationSurface [class*='wizardFooterSingle'] {
+  grid-template-columns: 1fr !important;
+}
+
+.dealerValuationSurface [class*='wizardFooterSingle'] > [data-valuation-action='back'] {
+  grid-column: 1;
+  width: min(100%, 260px) !important;
+  justify-self: center;
+}
+
+.dealerValuationSurface [class*='primaryButton'],
+.dealerValuationSurface [class*='secondaryButton'],
+.dealerValuationSurface [class*='assetButton'],
+.dealerValuationSurface [class*='resultFinalActionsButtons'] > button,
+.dealerValuationSurface [class*='detailsModalActions'] > button,
+.dealerValuationSurface [class*='finalSaveActions'] > button,
+.dealerValuationSurface [class*='marketplacePublishActions'] > button {
+  justify-content: center !important;
+  text-align: center !important;
+}
+
+@media (max-width: 520px) {
+  .dealerValuationSurface [class*='wizardFooter'] {
+    grid-template-columns: minmax(94px, 0.7fr) minmax(0, 1.3fr) !important;
+  }
+
+  .dealerValuationSurface [class*='wizardFooterSingle'] {
+    grid-template-columns: 1fr !important;
+  }
+
+  .dealerValuationSurface [class*='pathChoiceCard'] {
+    padding-inline: 48px !important;
+  }
+
+  .dealerValuationSurface [class*='inlineOptionButton'],
+  .dealerValuationSurface [class*='conditionChoiceButton'] {
+    padding-inline: 32px !important;
+  }
+
+  .dealerValuationSurface [class*='choiceCard'][aria-pressed]:not([class*='pathChoiceCard']) {
+    padding-inline: 38px !important;
+  }
+}
+
 @media (max-height: 650px) {
   .loginPage {
     place-items: start center;
