@@ -31698,10 +31698,16 @@ button.documentOpenLink {
 }
 
 .assetUpdateModal .assetFormModalChromeHeader {
-  display: flex !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 3.75rem !important;
   align-items: center !important;
+  gap: 1.15rem !important;
   min-height: 4.45rem !important;
-  padding: 0 4.4rem 0.9rem 0 !important;
+  padding: 0 0 0.9rem !important;
+}
+
+.assetUpdateModal .assetUpdateHeaderContent {
+  min-width: 0 !important;
 }
 
 .assetUpdateModal .assetUpdateIdentity h3 {
@@ -31712,9 +31718,40 @@ button.documentOpenLink {
 }
 
 .assetUpdateModal .assetFormModalChromeHeader .modalCloseButton {
-  top: 50% !important;
-  right: 0 !important;
-  transform: translateY(calc(-50% - 0.45rem)) !important;
+  position: static !important;
+  top: auto !important;
+  right: auto !important;
+  width: 3.75rem !important;
+  height: 3.75rem !important;
+  min-width: 3.75rem !important;
+  min-height: 3.75rem !important;
+  margin: 0 !important;
+  transform: none !important;
+  border-color: rgba(183, 211, 198, 0.98) !important;
+  border-radius: 1.15rem !important;
+  color: #174c3c !important;
+  background: linear-gradient(180deg, #fbfefc 0%, #edf6f1 100%) !important;
+  box-shadow:
+    0 10px 22px rgba(20, 71, 53, 0.09),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.assetUpdateModal .assetFormModalChromeHeader .modalCloseButton .buttonIcon {
+  width: 1.3rem !important;
+  height: 1.3rem !important;
+}
+
+.assetUpdateModal .assetFormModalChromeHeader .modalCloseButton:hover:not(:disabled) {
+  transform: translateY(-1px) !important;
+  border-color: rgba(139, 184, 163, 0.98) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #e5f2eb 100%) !important;
+  box-shadow:
+    0 14px 26px rgba(20, 71, 53, 0.13),
+    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+}
+
+.assetUpdateModal .assetFormModalChromeHeader .modalCloseButton:disabled {
+  transform: none !important;
 }
 
 .assetUpdateModal .manualStepScrollBody {
@@ -31836,12 +31873,24 @@ button.documentOpenLink {
   }
 
   .assetUpdateModal .assetFormModalChromeHeader {
+    grid-template-columns: minmax(0, 1fr) 3.35rem !important;
+    gap: 0.75rem !important;
     min-height: 3.75rem !important;
-    padding: 0 3.55rem 0.65rem 0 !important;
+    padding: 0 0 0.65rem !important;
   }
 
   .assetUpdateModal .assetFormModalChromeHeader .modalCloseButton {
-    transform: translateY(calc(-50% - 0.325rem)) !important;
+    width: 3.35rem !important;
+    height: 3.35rem !important;
+    min-width: 3.35rem !important;
+    min-height: 3.35rem !important;
+    border-radius: 1rem !important;
+    transform: none !important;
+  }
+
+  .assetUpdateModal .assetFormModalChromeHeader .modalCloseButton .buttonIcon {
+    width: 1.16rem !important;
+    height: 1.16rem !important;
   }
 
   .assetUpdateModal .manualStepScrollBody {
