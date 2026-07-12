@@ -57,12 +57,7 @@ export default function SharedRegistersClient({ initialShares }: Props) {
       <section className={styles.shell}>
         <section className={styles.panel}>
           <header className={styles.hero}>
-            <div>
-              <span className={styles.eyebrow}>Insurance workspace</span>
-              <h1>Shared Registers</h1>
-              <p>Review client assets, organise insurance sections and prepare cleaner underwriting submissions.</p>
-            </div>
-            <span className={styles.prototypeBadge}>First prototype</span>
+            <h1>SHARED REGISTERS</h1>
           </header>
 
           <div className={styles.summaryGrid}>
@@ -85,9 +80,12 @@ export default function SharedRegistersClient({ initialShares }: Props) {
               return (
                 <article className={styles.registerCard} key={share.id}>
                   <div className={styles.clientIdentity}>
-                    <span className={styles.statusPill}>{share.status === 'sent' ? 'New' : 'In review'}</span>
                     <h2>{share.ownerBusinessName || share.ownerName || 'Aim4price client'}</h2>
-                    <p>{[share.ownerProvince, share.ownerTownCity].filter(Boolean).join(' · ') || 'Location not provided'}</p>
+                    <p>
+                      <strong>{share.status === 'sent' ? 'New register' : 'In review'}</strong>
+                      <span> · </span>
+                      {[share.ownerProvince, share.ownerTownCity].filter(Boolean).join(' · ') || 'Location not provided'}
+                    </p>
                   </div>
                   <div className={styles.cardMetrics}>
                     <span><small>Assets</small><strong>{snapshot.assetCount}</strong></span>
@@ -107,9 +105,8 @@ export default function SharedRegistersClient({ initialShares }: Props) {
             {!initialShares.length ? (
               <article className={`${styles.registerCard} ${styles.demoCard}`}>
                 <div className={styles.clientIdentity}>
-                  <span className={styles.demoPill}>Interactive demo</span>
                   <h2>Skimmelkrans Boerdery</h2>
-                  <p>Explore the proposed broker and underwriter workflow with sample assets.</p>
+                  <p><strong>Prototype example</strong> · Sample insurance review</p>
                 </div>
                 <div className={styles.demoCopy}>
                   A real register will appear here after an owner sends a full-register insurance share.
