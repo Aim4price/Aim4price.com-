@@ -18,6 +18,7 @@ type ActivePage =
   | 'account'
   | 'asset-discovery'
   | 'leads'
+  | 'shared-registers'
   | 'marketplace'
   | 'none';
 
@@ -200,6 +201,7 @@ const ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
   { href: '/maintenance', label: 'Maintenance', accountTypes: ['owner'] },
   { href: '/marketplace', label: 'Marketplace', accountTypes: ['owner', 'dealer'] },
   { href: '/leads', label: 'My Leads', accountTypes: ['dealer'] },
+  { href: '/shared-registers', label: 'Shared Registers', accountTypes: ['insurance'] },
 ];
 
 function isAccountMenuItemVisible(item: AccountMenuItem, accountType: AccountType | undefined): boolean {
@@ -216,10 +218,16 @@ function buildNavItems(accountType: AccountType | 'public' | null): NavItem[] {
   }
 
   if (accountType === 'finance' || accountType === 'insurance') {
-    return [
+    const partnerItems: NavItem[] = [
       ...BASE_NAV_ITEMS,
       { key: 'leads', href: '/leads', label: 'My Leads' },
     ];
+
+    if (accountType === 'insurance') {
+      partnerItems.push({ key: 'shared-registers', href: '/shared-registers', label: 'Shared Registers' });
+    }
+
+    return partnerItems;
   }
 
   if (accountType === 'dealer') {
