@@ -4536,6 +4536,7 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
               onClick={() => setEquipmentDropdownOpen((value) => !value)}
               disabled={familiesLoading || !filteredFamilies.length}
               aria-expanded={equipmentDropdownOpen}
+              data-selected={Boolean(selectedFamily)}
             >
               <span>{selectedFamily ? selectedFamily.familyLabel : familiesLoading ? `Loading ${getAssetTypeLabel(selectedSector)}s...` : `Select ${getAssetTypeLabel(selectedSector)}...`}</span>
               <span className={styles.equipmentDropdownChevron} aria-hidden="true">
@@ -4602,6 +4603,7 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
               className={`${styles.equipmentDropdownTrigger} ${motorSubtypeDropdownOpen ? styles.equipmentDropdownTriggerOpen : ''}`}
               onClick={() => setMotorSubtypeDropdownOpen((value) => !value)}
               aria-expanded={motorSubtypeDropdownOpen}
+              data-selected={Boolean(selectedMotorSubtypeOption)}
             >
               <span>{selectedMotorSubtypeOption ? selectedMotorSubtypeOption.label : `Select ${config.fieldLabel.toLowerCase()}...`}</span>
               <span className={styles.equipmentDropdownChevron} aria-hidden="true">
@@ -4685,6 +4687,7 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
               onClick={() => setMotorCanonicalDropdownOpen((value) => !value)}
               disabled={motorCanonicalLoading && !motorCanonicalResults.length}
               aria-expanded={motorCanonicalDropdownOpen}
+              data-selected={Boolean(selectedMotorCanonicalModel)}
             >
               <span>{selectedLabel}</span>
               <span className={styles.equipmentDropdownChevron} aria-hidden="true">
@@ -4732,6 +4735,7 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
                   className={`${styles.equipmentDropdownTrigger} ${motorTypeDropdownOpen ? styles.equipmentDropdownTriggerOpen : ''}`}
                   onClick={() => setMotorTypeDropdownOpen((value) => !value)}
                   aria-expanded={motorTypeDropdownOpen}
+                  data-selected={Boolean(selectedMotorTypeOption)}
                 >
                   <span>{selectedMotorTypeOption?.label ?? 'Select type...'}</span>
                   <span className={styles.equipmentDropdownChevron} aria-hidden="true">
@@ -4828,6 +4832,7 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
               onClick={() => setBrandDropdownOpen((value) => !value)}
               disabled={brandsLoading || !filteredBrands.length}
               aria-expanded={brandDropdownOpen}
+              data-selected={Boolean(selectedBrand)}
             >
               <span>{selectedBrand ? selectedBrand.name : brandsLoading ? 'Loading brands...' : 'Select brand...'}</span>
               <span className={styles.equipmentDropdownChevron} aria-hidden="true">
@@ -4890,6 +4895,7 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
             <button
               type="button"
               className={`${styles.choiceCard} ${styles.pathChoiceCard} ${exactModelSelectionLocked ? styles.pathChoiceCardLocked : ''} ${flowMode === 'exact_model' ? styles.choiceCardActive : ''}`}
+              aria-pressed={flowMode === 'exact_model'}
               onClick={() => {
                 if (exactModelSelectionLocked) return;
                 setFlowMode('exact_model');
@@ -4911,6 +4917,7 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
             <button
               type="button"
               className={`${styles.choiceCard} ${styles.pathChoiceCard} ${flowMode === 'generic_specs' ? styles.choiceCardActive : ''}`}
+              aria-pressed={flowMode === 'generic_specs'}
               onClick={() => {
                 setFlowMode('generic_specs');
                 setTractorType('');
@@ -4960,6 +4967,7 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
                   key={option.value}
                   type="button"
                   className={`${styles.inlineOptionButton} ${tractorType === option.value ? styles.inlineOptionButtonActive : ''}`}
+                  aria-pressed={tractorType === option.value}
                   onClick={() => handleTractorTypeSelection(option.value)}
                 >
                   {option.label}
@@ -4980,6 +4988,7 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
                     key={option.value}
                     type="button"
                     className={`${styles.inlineOptionButton} ${drive === option.value ? styles.inlineOptionButtonActive : ''}`}
+                    aria-pressed={drive === option.value}
                     onClick={() => handleDriveSelection(option.value)}
                   >
                     {option.label}
@@ -5001,6 +5010,7 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
                     key={option.value}
                     type="button"
                     className={`${styles.inlineOptionButton} ${cab === option.value ? styles.inlineOptionButtonActive : ''}`}
+                    aria-pressed={cab === option.value}
                     onClick={() => handleCabSelection(option.value)}
                   >
                     {option.label}
@@ -5038,6 +5048,8 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
                   className={`${styles.equipmentDropdownTrigger} ${modelDropdownOpen || modelQuery ? styles.equipmentDropdownTriggerOpen : ''}`}
                   onClick={() => setModelDropdownOpen((value) => !value)}
                   disabled={modelsLoading || !tractorModels.length}
+                  aria-expanded={modelDropdownOpen}
+                  data-selected={Boolean(selectedModel)}
                 >
                   <span>{formatTractorModelLabel(selectedModel)}</span>
                   <span className={styles.equipmentDropdownChevron} aria-hidden="true">
@@ -5130,6 +5142,7 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
                 onClick={() => setGenericModelDropdownOpen((value) => !value)}
                 disabled={genericModelsLoading}
                 aria-expanded={genericModelDropdownOpen}
+                data-selected={Boolean(selectedGenericModel)}
               >
                 <span>
                   {selectedGenericModel
@@ -5171,6 +5184,7 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
                 <button
                   type="button"
                   className={`${styles.inlineOptionButton} ${genericModelMode === 'manual' ? styles.inlineOptionButtonActive : ''}`}
+                  aria-pressed={genericModelMode === 'manual'}
                   onClick={handleGenericModelNotListed}
                 >
                   Model not listed
@@ -5240,6 +5254,7 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
           <button
             type="button"
             className={`${styles.inlineOptionButton} ${genericModelMode === 'manual' ? styles.inlineOptionButtonActive : ''}`}
+            aria-pressed={genericModelMode === 'manual'}
             onClick={handleGenericModelNotListed}
           >
             Enter model manually
@@ -5247,6 +5262,7 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
           <button
             type="button"
             className={`${styles.inlineOptionButton} ${genericModelMode === 'unknown' ? styles.inlineOptionButtonActive : ''}`}
+            aria-pressed={genericModelMode === 'unknown'}
             onClick={handleGenericModelUnknown}
           >
             Model unknown
@@ -5298,6 +5314,7 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
             className={`${styles.equipmentDropdownTrigger} ${styles.specDropdownTrigger} ${open ? styles.equipmentDropdownTriggerOpen : ''}`}
             onClick={() => setOpenSpecDropdownKey((current) => current === args.dropdownKey ? null : args.dropdownKey)}
             aria-expanded={open}
+            data-selected={Boolean(selectedOption)}
           >
             <span>{selectedOption?.label ?? args.placeholder}</span>
             <span className={styles.equipmentDropdownChevron} aria-hidden="true">
@@ -5798,6 +5815,7 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
                     key={option.key}
                     type="button"
                     className={`${styles.conditionChoiceButton} ${conditionStepComplete && condition === option.key ? styles.conditionChoiceButtonActive : ''}`}
+                    aria-pressed={conditionStepComplete && condition === option.key}
                     onClick={() => {
                       setCondition(option.key);
                       setConditionStepComplete(true);
@@ -5817,15 +5835,15 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
           <div className={styles.currentCard} style={{ marginTop: '1rem' }}>
             <h3 className={styles.currentTitle}>Tractor extras</h3>
             <div className={styles.choiceGrid}>
-              <button type="button" className={`${styles.choiceCard} ${frontPto ? styles.choiceCardActive : ''}`} onClick={() => setFrontPto((value) => !value)}>
+              <button type="button" className={`${styles.choiceCard} ${frontPto ? styles.choiceCardActive : ''}`} aria-pressed={frontPto} onClick={() => setFrontPto((value) => !value)}>
                 <strong>Front PTO</strong>
                 <span className={styles.choiceCardNote}>Front hitch / PTO fitted</span>
               </button>
-              <button type="button" className={`${styles.choiceCard} ${frontLoader ? styles.choiceCardActive : ''}`} onClick={() => setFrontLoader((value) => !value)}>
+              <button type="button" className={`${styles.choiceCard} ${frontLoader ? styles.choiceCardActive : ''}`} aria-pressed={frontLoader} onClick={() => setFrontLoader((value) => !value)}>
                 <strong>Front Loader</strong>
                 <span className={styles.choiceCardNote}>Loader fitted</span>
               </button>
-              <button type="button" className={`${styles.choiceCard} ${gpsEnabled ? styles.choiceCardActive : ''}`} onClick={() => setGpsEnabled((value) => !value)}>
+              <button type="button" className={`${styles.choiceCard} ${gpsEnabled ? styles.choiceCardActive : ''}`} aria-pressed={gpsEnabled} onClick={() => setGpsEnabled((value) => !value)}>
                 <strong>GPS</strong>
                 <span className={styles.choiceCardNote}>Guidance or autosteer</span>
               </button>
