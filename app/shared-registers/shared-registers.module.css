@@ -252,3 +252,206 @@
   .summaryGrid { grid-template-columns: 1fr; }
   .cardMetrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* === Shared register inbox: match the main Aim4price leads hierarchy === */
+.page,
+.page button,
+.page input {
+  font-family: var(--font-heading, 'Montserrat'), sans-serif;
+}
+
+.shell {
+  width: min(calc(100% - 2rem), 1635px);
+  padding-top: 2.25rem;
+}
+
+.panel {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.hero {
+  min-height: 8.3rem;
+  align-items: center;
+  padding: 1.7rem 2.2rem;
+  border: 1px solid #c6dbe6;
+  border-radius: 2rem;
+  background:
+    radial-gradient(circle at 5% 15%, rgba(216, 243, 233, 0.78), transparent 30%),
+    linear-gradient(135deg, #ffffff 0%, #f9fcfd 100%);
+  box-shadow: 0 22px 50px rgba(23, 62, 52, 0.08);
+}
+
+.hero h1 {
+  color: #063f34;
+  font-size: clamp(3rem, 5.5vw, 4.65rem);
+  font-weight: 850;
+  line-height: 0.96;
+  letter-spacing: -0.065em;
+}
+
+.hero p {
+  color: #64788e;
+  font-weight: 650;
+}
+
+.summaryGrid {
+  gap: 1.4rem;
+  margin: 1.7rem 0 1.35rem;
+}
+
+.summaryGrid article {
+  min-height: 10.6rem;
+  align-content: start;
+  padding: 1.35rem 1.55rem;
+  border-color: #c8dce7;
+  border-radius: 1.65rem;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fbfd 100%);
+  box-shadow: 0 14px 30px rgba(35, 70, 88, 0.04);
+}
+
+.summaryGrid article:first-child {
+  border-color: #83cdb0;
+  background:
+    radial-gradient(circle at 0 0, rgba(206, 242, 226, 0.75), transparent 48%),
+    linear-gradient(135deg, #ffffff 0%, #f0faf6 100%);
+}
+
+.summaryGrid span {
+  color: #60748a;
+  font-size: 0.88rem;
+  font-weight: 760;
+}
+
+.summaryGrid strong {
+  margin-top: 0.4rem;
+  color: #063f34;
+  font-size: clamp(1.9rem, 2.8vw, 2.35rem);
+  font-weight: 820;
+}
+
+.summaryGrid small {
+  align-self: end;
+  margin-top: auto;
+  padding-top: 0.85rem;
+  border-top: 1px solid #d9e5ec;
+  font-size: 0.82rem;
+}
+
+.toolbar {
+  margin-bottom: 1.2rem;
+}
+
+.searchBox {
+  width: 100%;
+  min-height: 4.25rem;
+  padding-inline: 1.25rem;
+  border-color: #c8dce8;
+  border-radius: 1.35rem;
+  box-shadow: 0 10px 24px rgba(30, 62, 78, 0.035);
+}
+
+.searchBox input {
+  font-size: 0.95rem;
+  font-weight: 650;
+}
+
+.registerStack {
+  gap: 1rem;
+}
+
+.registerCard {
+  min-height: 9rem;
+  grid-template-columns: minmax(17rem, 1.2fr) minmax(28rem, 2fr) auto;
+  padding: 1.3rem 1.4rem;
+  border-color: #c9dce7;
+  border-radius: 1.65rem;
+  background: #fff;
+  box-shadow: 0 15px 32px rgba(23, 57, 48, 0.045);
+}
+
+.clientIdentity h2 {
+  color: #063f34;
+  font-size: clamp(1.45rem, 2vw, 1.85rem);
+  font-weight: 820;
+}
+
+.clientIdentity p,
+.demoCopy {
+  font-weight: 650;
+}
+
+.cardMetrics span {
+  min-height: 4rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid #e0e8ed;
+  border-radius: 1rem;
+  background: #f3f6f8;
+}
+
+.cardMetrics strong {
+  color: #153d33;
+  font-weight: 800;
+}
+
+.openButton {
+  min-height: 3.55rem;
+  padding-inline: 1.2rem;
+  border: 1px solid #8fd1b3;
+  border-radius: 1.05rem;
+  color: #07553f;
+  background: #eaf8f1;
+  box-shadow: none;
+  font-weight: 820;
+}
+
+@media (max-width: 1080px) {
+  .registerCard {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .shell {
+    width: min(calc(100% - 1rem), 1635px);
+    padding-top: 0.85rem;
+  }
+
+  .panel {
+    padding: 0;
+  }
+
+  .hero {
+    min-height: 0;
+    padding: 1.25rem 1rem;
+    border-radius: 1.4rem;
+  }
+
+  .hero h1 {
+    font-size: clamp(2.35rem, 12vw, 3.1rem);
+  }
+
+  .summaryGrid {
+    gap: 0.8rem;
+    margin-block: 0.9rem;
+  }
+
+  .summaryGrid article {
+    min-height: 8.5rem;
+  }
+
+  .registerCard {
+    padding: 1rem;
+    border-radius: 1.35rem;
+  }
+
+  .cardMetrics {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .openButton {
+    width: 100%;
+  }
+}
