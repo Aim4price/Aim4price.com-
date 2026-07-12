@@ -734,6 +734,40 @@ type MainPhotoSelection =
   | { source: 'saved'; url: string }
   | { source: 'pending'; id: string };
 
+type AssetAutosaveState = 'idle' | 'pending' | 'saving' | 'saved' | 'error';
+
+type AssetSubmitOptions = {
+  autosave?: boolean;
+  keepOpen?: boolean;
+  silent?: boolean;
+  autosaveSignature?: string;
+};
+
+function buildAssetAutosaveSignature(
+  draft: AssetDraft,
+  statusDraft: AssetStatusDraft,
+  pendingPhotos: PendingPhotoFile[] = [],
+  pendingDocuments: File[] = [],
+  mainPhoto: MainPhotoSelection | null = null,
+): string {
+  return JSON.stringify({
+    draft,
+    statusDraft,
+    pendingPhotos: pendingPhotos.map((entry) => ({
+      id: entry.id,
+      name: entry.file.name,
+      size: entry.file.size,
+      lastModified: entry.file.lastModified,
+    })),
+    pendingDocuments: pendingDocuments.map((file) => ({
+      name: file.name,
+      size: file.size,
+      lastModified: file.lastModified,
+    })),
+    mainPhoto,
+  });
+}
+
 type DraftPhotoItem = {
   key: string;
   source: 'saved' | 'pending';
@@ -892,10 +926,10 @@ const MANUAL_FORM_STEPS: Array<{ step: ManualAssetStep; label: string }> = [
   { step: 4, label: 'Documents' },
 ];
 
-const ASSET_FORM_SECTION_TABS: Array<{ step: ManualAssetStep; label: string }> = [
-  { step: 2, label: 'Details' },
-  { step: 3, label: 'Paperwork' },
-  { step: 4, label: 'Documents' },
+const ASSET_FORM_SECTION_TABS: Array<{ step: ManualAssetStep; label: string; description: string }> = [
+  { step: 2, label: 'Details', description: 'Asset information' },
+  { step: 3, label: 'Paperwork', description: 'Finance and cover' },
+  { step: 4, label: 'Documents', description: 'Files and photos' },
 ];
 
 const CONDITION_OPTIONS: Array<{ value: AssetConditionValue; label: string }> = [
@@ -5363,6 +5397,7 @@ export default function AssetRegisterClient() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshingRegister, setIsRefreshingRegister] = useState(false);
   const [isSavingAsset, setIsSavingAsset] = useState(false);
+  const [assetAutosaveState, setAssetAutosaveState] = useState<AssetAutosaveState>('idle');
   const [isUploadingPhotos, setIsUploadingPhotos] = useState(false);
   const [isUploadingDocuments, setIsUploadingDocuments] = useState(false);
   const [detailMediaUpload, setDetailMediaUpload] = useState<DetailMediaUploadState>(null);
@@ -5434,6 +5469,10 @@ export default function AssetRegisterClient() {
   const documentObjectUrlsRef = useRef<Map<string, CachedDocumentObjectUrl>>(new Map());
   const assetMapActionHandledRef = useRef(false);
   const assetFocusActionHandledRef = useRef(false);
+  const assetAutosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const assetAutosaveBaselineRef = useRef('');
+  const assetAutosaveLatestSignatureRef = useRef('');
+  const assetAutosaveAttemptedSignatureRef = useRef('');
 
   useEffect(() => {
     return () => {
@@ -6738,6 +6777,12 @@ export default function AssetRegisterClient() {
     return editingAssetId === null ? null : assets.find((asset) => asset.id === editingAssetId) ?? null;
   }, [assets, editingAssetId]);
 
+  const currentAssetAutosaveSignature = useMemo(
+    () => buildAssetAutosaveSignature(assetDraft, assetStatusDraft, pendingPhotoFiles, pendingDocumentFiles, mainPhotoSelection),
+    [assetDraft, assetStatusDraft, mainPhotoSelection, pendingDocumentFiles, pendingPhotoFiles],
+  );
+  assetAutosaveLatestSignatureRef.current = currentAssetAutosaveSignature;
+
   const assetFormKind = useMemo<AssetKind>(() => {
     return editingAsset?.valuationRunId ? editingAsset.kind : normalizeDraftKind(assetDraft.kind);
   }, [assetDraft.kind, editingAsset]);
@@ -6763,6 +6808,75 @@ export default function AssetRegisterClient() {
     if (editingAsset) return false;
     return assetFormKind === 'tractor' || assetFormKind === 'equipment' || assetFormKind === 'tools';
   }, [assetFormKind, editingAsset]);
+
+  useEffect(() => {
+    if (!isAssetModalOpen || !editingAssetId) {
+      if (assetAutosaveTimerRef.current) {
+        clearTimeout(assetAutosaveTimerRef.current);
+        assetAutosaveTimerRef.current = null;
+      }
+      return;
+    }
+
+    if (!assetAutosaveBaselineRef.current) {
+      assetAutosaveBaselineRef.current = currentAssetAutosaveSignature;
+      setAssetAutosaveState('idle');
+      return;
+    }
+
+    if (currentAssetAutosaveSignature === assetAutosaveBaselineRef.current) {
+      if (assetAutosaveState === 'pending') setAssetAutosaveState('saved');
+      return;
+    }
+
+    if (
+      assetAutosaveState === 'error' &&
+      currentAssetAutosaveSignature === assetAutosaveAttemptedSignatureRef.current
+    ) {
+      return;
+    }
+
+    if (assetAutosaveTimerRef.current) {
+      clearTimeout(assetAutosaveTimerRef.current);
+    }
+
+    setAssetAutosaveState(isSavingAsset || isUploadingPhotos || isUploadingDocuments ? 'saving' : 'pending');
+
+    if (isSavingAsset || isUploadingPhotos || isUploadingDocuments) {
+      return;
+    }
+
+    const signatureToSave = currentAssetAutosaveSignature;
+    assetAutosaveTimerRef.current = setTimeout(() => {
+      assetAutosaveTimerRef.current = null;
+      assetAutosaveAttemptedSignatureRef.current = signatureToSave;
+      setAssetAutosaveState('saving');
+
+      void handleAssetSubmit(undefined, {
+        autosave: true,
+        keepOpen: true,
+        silent: true,
+        autosaveSignature: signatureToSave,
+      }).then((saved) => {
+        setAssetAutosaveState(saved ? 'saved' : 'error');
+      });
+    }, 650);
+
+    return () => {
+      if (assetAutosaveTimerRef.current) {
+        clearTimeout(assetAutosaveTimerRef.current);
+        assetAutosaveTimerRef.current = null;
+      }
+    };
+  }, [
+    assetAutosaveState,
+    currentAssetAutosaveSignature,
+    editingAssetId,
+    isAssetModalOpen,
+    isSavingAsset,
+    isUploadingDocuments,
+    isUploadingPhotos,
+  ]);
 
   const yearFieldLabel = draftYearLabel(assetFormKind);
   const usageFieldLabel = showPercentUsageField
@@ -6872,6 +6986,15 @@ export default function AssetRegisterClient() {
   }, [assets, isShowingAllAssets, numericPageSize]);
 
   function resetEditor() {
+    if (assetAutosaveTimerRef.current) {
+      clearTimeout(assetAutosaveTimerRef.current);
+      assetAutosaveTimerRef.current = null;
+    }
+    assetAutosaveBaselineRef.current = '';
+    assetAutosaveLatestSignatureRef.current = '';
+    assetAutosaveAttemptedSignatureRef.current = '';
+    setAssetAutosaveState('idle');
+
     pendingPhotoFilesRef.current.forEach((entry) => revokePhotoPreviewUrl(entry.previewUrl));
     pendingPhotoFilesRef.current = [];
 
@@ -6944,12 +7067,19 @@ export default function AssetRegisterClient() {
     pendingPhotoFilesRef.current.forEach((entry) => revokePhotoPreviewUrl(entry.previewUrl));
     pendingPhotoFilesRef.current = [];
 
+    const nextDraft = buildDraftFromAsset(asset);
+    const nextStatusDraft = buildAssetStatusDraftFromAsset(asset);
+
     setPendingPhotoFiles([]);
     setPendingDocumentFiles([]);
     setMainPhotoSelection(null);
     setEditingAssetId(asset.id);
-    setAssetDraft(buildDraftFromAsset(asset));
-    setAssetStatusDraft(buildAssetStatusDraftFromAsset(asset));
+    setAssetDraft(nextDraft);
+    setAssetStatusDraft(nextStatusDraft);
+    assetAutosaveBaselineRef.current = buildAssetAutosaveSignature(nextDraft, nextStatusDraft);
+    assetAutosaveLatestSignatureRef.current = assetAutosaveBaselineRef.current;
+    assetAutosaveAttemptedSignatureRef.current = '';
+    setAssetAutosaveState('idle');
     setAssetStatusEditView('hub');
     setAssetStatusQuickOrigin(null);
     setAssetStatusAdvancedOpen(false);
@@ -7699,7 +7829,7 @@ export default function AssetRegisterClient() {
     return parsed !== null && Number.isFinite(parsed) && parsed >= 0 && Number.isInteger(parsed);
   }
 
-  function validateAssetStatusDraft(section: AssetStatusSection): boolean {
+  function validateAssetStatusDraft(section: AssetStatusSection, showFeedback = true): boolean {
     if (section === 'finance') {
       const moneyChecks: Array<[string, string]> = [
         ['Current outstanding amount', assetStatusDraft.financeCurrentOutstandingExVat],
@@ -7711,27 +7841,27 @@ export default function AssetRegisterClient() {
 
       const invalidMoney = moneyChecks.find(([, value]) => !statusMoneyInputIsValid(value));
       if (invalidMoney) {
-        setAssetStatusError(`${invalidMoney[0]} must be a valid amount.`);
+        if (showFeedback) setAssetStatusError(`${invalidMoney[0]} must be a valid amount.`);
         return false;
       }
 
       if (!statusNumberInputIsValid(assetStatusDraft.financeInterestRatePercent)) {
-        setAssetStatusError('Interest rate must be a valid percentage.');
+        if (showFeedback) setAssetStatusError('Interest rate must be a valid percentage.');
         return false;
       }
 
       if (!statusWholeNumberInputIsValid(assetStatusDraft.financeTermMonths)) {
-        setAssetStatusError('Finance term must be a valid whole number of months.');
+        if (showFeedback) setAssetStatusError('Finance term must be a valid whole number of months.');
         return false;
       }
     }
 
     if (section === 'insurance' && !statusMoneyInputIsValid(assetStatusDraft.insuredValueExVat)) {
-      setAssetStatusError('Insured amount must be a valid amount.');
+      if (showFeedback) setAssetStatusError('Insured amount must be a valid amount.');
       return false;
     }
 
-    setAssetStatusError('');
+    if (showFeedback) setAssetStatusError('');
     return true;
   }
 
@@ -7841,7 +7971,19 @@ export default function AssetRegisterClient() {
     }
   }
 
-  function validateAssetDetailsDraft(): boolean {
+  async function finishAssetStatusSection(section: AssetStatusSection) {
+    if (editingAsset && assetStatusQuickOrigin !== 'detail-card') {
+      if (!validateAssetStatusDraft(section)) return;
+      setAssetStatusEditView('hub');
+      setAssetStatusAdvancedOpen(false);
+      setAssetStatusError('');
+      return;
+    }
+
+    await saveAssetStatusSection(section);
+  }
+
+  function validateAssetDetailsDraft(showFeedback = true): boolean {
     const value = parseRegisterValueInput(assetDraft.value);
     const replacementPrice = parseRegisterValueInput(assetDraft.replacementPrice);
     const hasYearModel = assetDraft.yearModel.trim() !== '';
@@ -7855,41 +7997,43 @@ export default function AssetRegisterClient() {
     const usageErrorLabel = assetDraft.usageMetric === 'km' ? 'Kilometres' : 'Machine hours';
 
     if (!assetDraft.title.trim() || value <= 0) {
-      setNotice({ tone: 'error', message: 'Asset title and current value are required before moving to the next step.' });
+      if (showFeedback) setNotice({ tone: 'error', message: 'Asset title and current value are required before moving to the next step.' });
       return false;
     }
 
     if (!replacementPrice || replacementPrice <= 0) {
-      setNotice({ tone: 'error', message: 'Replacement price is required and must be greater than zero.' });
+      if (showFeedback) setNotice({ tone: 'error', message: 'Replacement price is required and must be greater than zero.' });
       return false;
     }
 
     if (hasInsuredValue && (!insuredValueExVat || insuredValueExVat <= 0)) {
-      setNotice({ tone: 'error', message: 'Insured value must be greater than zero when entered.' });
+      if (showFeedback) setNotice({ tone: 'error', message: 'Insured value must be greater than zero when entered.' });
       return false;
     }
 
     if (hasYearModel && (!Number.isFinite(yearModel) || Number(yearModel) < 1800 || Number(yearModel) > new Date().getFullYear() + 1)) {
-      setNotice({ tone: 'error', message: `${yearFieldLabel} must be a valid year.` });
+      if (showFeedback) setNotice({ tone: 'error', message: `${yearFieldLabel} must be a valid year.` });
       return false;
     }
 
     if (hasHours && (!Number.isFinite(hours) || Number(hours) < 0)) {
-      setNotice({ tone: 'error', message: `${usageErrorLabel} must be zero or greater.` });
+      if (showFeedback) setNotice({ tone: 'error', message: `${usageErrorLabel} must be zero or greater.` });
       return false;
     }
 
     if (hasLifeWorkedPercent && (!Number.isFinite(lifeWorkedPercent) || Number(lifeWorkedPercent) < 0 || Number(lifeWorkedPercent) > 100)) {
-      setNotice({ tone: 'error', message: 'Lifetime worked must be between 0% and 100%.' });
+      if (showFeedback) setNotice({ tone: 'error', message: 'Lifetime worked must be between 0% and 100%.' });
       return false;
     }
 
     const savedUsageReading = getAssetSavedUsageReading(editingAsset);
     if (editingAsset && hasHours && savedUsageReading !== null && Math.round(Number(hours)) < savedUsageReading) {
-      setNotice({
-        tone: 'error',
-        message: USAGE_READING_SETTINGS_ERROR,
-      });
+      if (showFeedback) {
+        setNotice({
+          tone: 'error',
+          message: USAGE_READING_SETTINGS_ERROR,
+        });
+      }
       return false;
     }
 
@@ -7900,10 +8044,12 @@ export default function AssetRegisterClient() {
       currentLifeWorkedPercent !== null &&
       isLifeWorkedPercentDecrease(Number(lifeWorkedPercent), currentLifeWorkedPercent)
     ) {
-      setNotice({
-        tone: 'error',
-        message: LIFETIME_PERCENT_SETTINGS_ERROR,
-      });
+      if (showFeedback) {
+        setNotice({
+          tone: 'error',
+          message: LIFETIME_PERCENT_SETTINGS_ERROR,
+        });
+      }
       return false;
     }
 
@@ -8435,7 +8581,7 @@ export default function AssetRegisterClient() {
     setPendingDocumentFiles((current) => [...current, ...filesToQueue]);
     setNotice({
       tone: 'success',
-      message: `${filesToQueue.length} document${filesToQueue.length === 1 ? '' : 's'} ready. Click Add asset to upload.`,
+      message: `${filesToQueue.length} document${filesToQueue.length === 1 ? '' : 's'} ready.${editingAsset ? ' Uploading and saving automatically.' : ' Click Add asset to upload.'}`,
     });
   }
 
@@ -8634,16 +8780,17 @@ export default function AssetRegisterClient() {
     }
   }
 
-  async function handleAssetSubmit(event?: FormEvent<HTMLFormElement>) {
+  async function handleAssetSubmit(event?: FormEvent<HTMLFormElement>, options: AssetSubmitOptions = {}): Promise<boolean> {
     event?.preventDefault();
+    const showFeedback = !options.silent;
 
-    if (manualAssetStep !== 4) {
-      return;
+    if (manualAssetStep !== 4 && !options.autosave) {
+      return false;
     }
 
-    if (!validateAssetDetailsDraft()) {
-      setManualAssetStep(2);
-      return;
+    if (!validateAssetDetailsDraft(showFeedback)) {
+      if (showFeedback) setManualAssetStep(2);
+      return false;
     }
 
     const value = parseRegisterValueInput(assetDraft.value);
@@ -8666,49 +8813,57 @@ export default function AssetRegisterClient() {
     const nextInsuranceStatus: AssetStatusChoice = assetStatusDraft.insuranceStatus;
     const insuredValueForSave = nextInsuranceStatus === 'yes' && insuredValueExVat !== null && insuredValueExVat > 0 ? insuredValueExVat : null;
 
-    if (!validateAssetStatusDraft('finance') || !validateAssetStatusDraft('insurance') || (!isPropertyAsset && !validateAssetStatusDraft('license'))) {
-      setManualAssetStep(3);
-      setNotice({ tone: 'error', message: 'Please fix the finance, insurance or license details before saving.' });
-      return;
+    if (
+      !validateAssetStatusDraft('finance', showFeedback) ||
+      !validateAssetStatusDraft('insurance', showFeedback) ||
+      (!isPropertyAsset && !validateAssetStatusDraft('license', showFeedback))
+    ) {
+      if (showFeedback) {
+        setManualAssetStep(3);
+        setNotice({ tone: 'error', message: 'Please fix the finance, insurance or license details before saving.' });
+      }
+      return false;
     }
 
     if (!title || value <= 0) {
-      setNotice({ tone: 'error', message: 'Asset title and current value are required.' });
-      return;
+      if (showFeedback) setNotice({ tone: 'error', message: 'Asset title and current value are required.' });
+      return false;
     }
 
     if (!replacementPrice || replacementPrice <= 0) {
-      setNotice({ tone: 'error', message: 'Replacement price is required and must be greater than zero.' });
-      return;
+      if (showFeedback) setNotice({ tone: 'error', message: 'Replacement price is required and must be greater than zero.' });
+      return false;
     }
 
     if (hasInsuredValue && (!insuredValueExVat || insuredValueExVat <= 0)) {
-      setNotice({ tone: 'error', message: 'Insured value must be greater than zero when entered.' });
-      return;
+      if (showFeedback) setNotice({ tone: 'error', message: 'Insured value must be greater than zero when entered.' });
+      return false;
     }
 
     if (hasYearModel && (!Number.isFinite(yearModel) || Number(yearModel) < 1800 || Number(yearModel) > new Date().getFullYear() + 1)) {
-      setNotice({ tone: 'error', message: `${yearFieldLabel} must be a valid year.` });
-      return;
+      if (showFeedback) setNotice({ tone: 'error', message: `${yearFieldLabel} must be a valid year.` });
+      return false;
     }
 
     if (hasHours && (!Number.isFinite(hours) || Number(hours) < 0)) {
-      setNotice({ tone: 'error', message: `${usageErrorLabel} must be zero or greater.` });
-      return;
+      if (showFeedback) setNotice({ tone: 'error', message: `${usageErrorLabel} must be zero or greater.` });
+      return false;
     }
 
     if (hasLifeWorkedPercent && (!Number.isFinite(lifeWorkedPercent) || Number(lifeWorkedPercent) < 0 || Number(lifeWorkedPercent) > 100)) {
-      setNotice({ tone: 'error', message: 'Lifetime worked must be between 0% and 100%.' });
-      return;
+      if (showFeedback) setNotice({ tone: 'error', message: 'Lifetime worked must be between 0% and 100%.' });
+      return false;
     }
 
     const savedUsageReading = getAssetSavedUsageReading(editingAsset);
     if (editingAsset && hasHours && savedUsageReading !== null && Math.round(Number(hours)) < savedUsageReading) {
-      setNotice({
-        tone: 'error',
-        message: USAGE_READING_SETTINGS_ERROR,
-      });
-      return;
+      if (showFeedback) {
+        setNotice({
+          tone: 'error',
+          message: USAGE_READING_SETTINGS_ERROR,
+        });
+      }
+      return false;
     }
 
     const currentLifeWorkedPercent = editingAsset ? getAssetLifeWorkedPercent(editingAsset) : null;
@@ -8718,11 +8873,13 @@ export default function AssetRegisterClient() {
       currentLifeWorkedPercent !== null &&
       isLifeWorkedPercentDecrease(Number(lifeWorkedPercent), currentLifeWorkedPercent)
     ) {
-      setNotice({
-        tone: 'error',
-        message: LIFETIME_PERCENT_SETTINGS_ERROR,
-      });
-      return;
+      if (showFeedback) {
+        setNotice({
+          tone: 'error',
+          message: LIFETIME_PERCENT_SETTINGS_ERROR,
+        });
+      }
+      return false;
     }
 
     const draftLifeWorkedPercent = (showPercentUsageField || showLifeWorkedPercentField) && hasLifeWorkedPercent
@@ -8792,10 +8949,13 @@ export default function AssetRegisterClient() {
 
     setIsSavingAsset(true);
 
+    const pendingPhotosForSave = pendingPhotoFiles;
+    const pendingDocumentsForSave = pendingDocumentFiles;
+
     try {
-      const orderedDraftPhotos = buildDraftPhotoItems(assetDraft.photos, pendingPhotoFiles, mainPhotoSelection);
-      const uploadedPhotoUrlsById = await uploadQueuedPhotoFiles(pendingPhotoFiles);
-      const uploadedDocuments = await uploadQueuedDocumentFiles(pendingDocumentFiles);
+      const orderedDraftPhotos = buildDraftPhotoItems(assetDraft.photos, pendingPhotosForSave, mainPhotoSelection);
+      const uploadedPhotoUrlsById = await uploadQueuedPhotoFiles(pendingPhotosForSave);
+      const uploadedDocuments = await uploadQueuedDocumentFiles(pendingDocumentsForSave);
       const photoUrlsByKey = new Map<string, string>();
 
       assetDraft.photos.forEach((photo) => {
@@ -8850,6 +9010,7 @@ export default function AssetRegisterClient() {
       );
 
       let assetIdToFocus: string | null = null;
+      let savedAssetForEditor: RegisterAsset | null = null;
 
       if (editingAssetId !== null) {
         const response = await fetch('/api/asset-register', {
@@ -8870,14 +9031,21 @@ export default function AssetRegisterClient() {
           throw new Error(data.error ?? 'Failed to update asset.');
         }
 
-        syncUpdatedAsset(data.item);
+        if (options.keepOpen) {
+          syncSettingsUpdatedAsset(data.item);
+        } else {
+          syncUpdatedAsset(data.item);
+        }
 
+        savedAssetForEditor = data.item;
         assetIdToFocus = data.item.id;
         setExpandedAssetId(data.item.id);
-        setNotice({
-          tone: 'success',
-          message: 'Asset updated successfully.',
-        });
+        if (showFeedback) {
+          setNotice({
+            tone: 'success',
+            message: 'Asset updated successfully.',
+          });
+        }
 
         if (shouldPromptReplacementPriceRevalue) {
           setReplacementPriceRevaluePrompt({
@@ -8903,25 +9071,67 @@ export default function AssetRegisterClient() {
         }
 
         const savedAsset = data.item as RegisterAsset;
+        savedAssetForEditor = savedAsset;
         setAssets((current) => [savedAsset, ...current]);
         setSearchTerm('');
         setAssetFilter('all');
         setCurrentPage(1);
         setExpandedAssetId(savedAsset.id);
         assetIdToFocus = savedAsset.id;
-        setNotice({ tone: 'success', message: 'Asset added successfully.' });
+        if (showFeedback) setNotice({ tone: 'success', message: 'Asset added successfully.' });
       }
 
-      closeAssetModal();
+      if (options.keepOpen && savedAssetForEditor) {
+        const savedDraft = buildDraftFromAsset(savedAssetForEditor);
+        const savedStatusDraft = buildAssetStatusDraftFromAsset(savedAssetForEditor);
+        const requestIsStillLatest =
+          Boolean(options.autosaveSignature) &&
+          assetAutosaveLatestSignatureRef.current === options.autosaveSignature;
+        const savedPhotoIds = new Set(pendingPhotosForSave.map((entry) => entry.id));
+        const savedDocumentFiles = new Set(pendingDocumentsForSave);
 
-      if (assetIdToFocus) {
+        setPendingPhotoFiles((current) => {
+          const next = current.filter((entry) => !savedPhotoIds.has(entry.id));
+          current
+            .filter((entry) => savedPhotoIds.has(entry.id))
+            .forEach((entry) => revokePhotoPreviewUrl(entry.previewUrl));
+          pendingPhotoFilesRef.current = next;
+          return next;
+        });
+        setPendingDocumentFiles((current) => current.filter((file) => !savedDocumentFiles.has(file)));
+        setMainPhotoSelection(null);
+
+        if (requestIsStillLatest) {
+          setAssetDraft(savedDraft);
+          setAssetStatusDraft(savedStatusDraft);
+          assetAutosaveBaselineRef.current = buildAssetAutosaveSignature(savedDraft, savedStatusDraft);
+          assetAutosaveLatestSignatureRef.current = assetAutosaveBaselineRef.current;
+          assetAutosaveAttemptedSignatureRef.current = '';
+        } else {
+          setAssetDraft((current) => ({
+            ...current,
+            photos: savedDraft.photos,
+            documents: savedDraft.documents,
+          }));
+          assetAutosaveBaselineRef.current = options.autosaveSignature ?? assetAutosaveBaselineRef.current;
+        }
+      } else {
+        closeAssetModal();
+      }
+
+      if (!options.keepOpen && assetIdToFocus) {
         scrollToAssetCard(assetIdToFocus);
       }
+
+      return true;
     } catch (error) {
-      setNotice({
-        tone: 'error',
-        message: error instanceof Error ? error.message : 'Failed to save asset.',
-      });
+      if (showFeedback) {
+        setNotice({
+          tone: 'error',
+          message: error instanceof Error ? error.message : 'Failed to save asset.',
+        });
+      }
+      return false;
     } finally {
       setIsSavingAsset(false);
     }
@@ -10846,8 +11056,17 @@ export default function AssetRegisterClient() {
       : manualAssetStep === 3
         ? 'Next'
         : editingAsset
-          ? 'Update asset'
+          ? 'Done'
           : 'Add asset';
+  const assetAutosaveLabel =
+    assetAutosaveState === 'pending'
+      ? 'Changes pending'
+      : assetAutosaveState === 'saving'
+        ? 'Saving changes'
+        : assetAutosaveState === 'error'
+          ? 'Check required fields'
+          : 'All changes saved';
+  const isAssetAutosaveBusy = Boolean(editingAsset) && (assetAutosaveState === 'pending' || assetAutosaveState === 'saving');
   const isAssetStatusFocusedView = manualAssetStep === 3 && assetStatusEditView !== 'hub';
   const settingsUsageMode = editingAsset ? getAssetSettingsUsageMode(editingAsset) : 'none';
   const settingsUsageCurrentValue = editingAsset ? getAssetSettingsUsageCurrentValue(editingAsset, settingsUsageMode) : null;
@@ -12527,7 +12746,7 @@ export default function AssetRegisterClient() {
 
       {isAssetModalOpen ? (
         <div className={styles.modalOverlay}>
-          <div className={styles.modalBackdrop} onClick={closeAssetModal} />
+          <div className={styles.modalBackdrop} onClick={() => { if (!isAssetAutosaveBusy) closeAssetModal(); }} />
 
           <div
             className={`${styles.modalCard} ${styles.assetFormModal} ${manualAssetStep === 1 ? styles.assetFormModalStepOne : ''}`}
@@ -12541,6 +12760,23 @@ export default function AssetRegisterClient() {
                   <h3>{editingAsset ? 'Update asset' : 'Add an asset'}</h3>
                   <p>Choose the asset type that best matches what you are adding.</p>
                 </div>
+              ) : editingAsset ? (
+                <div className={styles.assetUpdateHeaderContent}>
+                  <div className={styles.assetUpdateIdentity}>
+                    <span className={styles.assetUpdateEyebrow}>Update asset</span>
+                    <h3>{assetDraft.title.trim() || editingAsset.title}</h3>
+                    <p>{selectedManualAssetType.label} · Changes save automatically</p>
+                  </div>
+
+                  <div
+                    className={`${styles.assetAutosaveStatus} ${styles[`assetAutosaveStatus_${assetAutosaveState}`]}`}
+                    role="status"
+                    aria-live="polite"
+                  >
+                    <span className={styles.assetAutosaveDot} aria-hidden="true" />
+                    <span>{assetAutosaveLabel}</span>
+                  </div>
+                </div>
               ) : null}
 
               <button
@@ -12548,6 +12784,7 @@ export default function AssetRegisterClient() {
                 className={styles.modalCloseButton}
                 onClick={closeAssetModal}
                 aria-label="Close asset form"
+                disabled={isAssetAutosaveBusy}
               >
                 <CloseIcon className={styles.buttonIcon} />
               </button>
@@ -12556,7 +12793,7 @@ export default function AssetRegisterClient() {
             <div className={`${styles.modalScrollBody} ${styles.manualStepScrollBody} ${manualAssetStep === 1 ? styles.manualStepScrollBodyNoScroll : ''}`}>
               {manualAssetStep > 1 ? (
                 <nav className={styles.assetFormSectionTabs} aria-label="Asset form sections">
-                  {ASSET_FORM_SECTION_TABS.map((section) => {
+                  {ASSET_FORM_SECTION_TABS.map((section, index) => {
                     const isActive = manualAssetStep === section.step;
 
                     return (
@@ -12567,7 +12804,12 @@ export default function AssetRegisterClient() {
                         onClick={() => openAssetFormSection(section.step)}
                         aria-current={isActive ? 'step' : undefined}
                       >
-                        {section.label}
+                        <span className={styles.assetFormSectionTabNumber}>0{index + 1}</span>
+                        <span className={styles.assetFormSectionTabCopy}>
+                          <strong>{section.label}</strong>
+                          <small>{section.description}</small>
+                        </span>
+                        <span className={styles.assetFormSectionTabMarker} aria-hidden="true" />
                       </button>
                     );
                   })}
@@ -12624,6 +12866,7 @@ export default function AssetRegisterClient() {
                   <section className={`${styles.manualStageCard} ${styles.manualSingleStageCard} ${styles.manualCompactStageCard} ${styles.fullWidth}`}>
                     <div className={styles.manualStepIntro}>
                       <h4>Details</h4>
+                      {editingAsset ? <p>Keep the asset identity, usage and values accurate.</p> : null}
                     </div>
 
                     <div className={styles.manualUtilityRow}>
@@ -12895,6 +13138,7 @@ export default function AssetRegisterClient() {
                   <section className={`${styles.manualStageCard} ${styles.manualSingleStageCard} ${styles.manualCompactStageCard} ${styles.fullWidth} ${styles.assetStatusStageCard}`}>
                     <div className={styles.manualStepIntro}>
                       <h4>{assetFormKind === 'property' ? 'Finance and insurance' : 'Finance, insurance and license'}</h4>
+                      {editingAsset ? <p>Review the important ownership and cover information.</p> : null}
                     </div>
 
                     {assetStatusEditView === 'hub' ? (
@@ -13125,7 +13369,7 @@ export default function AssetRegisterClient() {
                           <button
                             type="button"
                             className={styles.primaryButton}
-                            onClick={() => void saveAssetStatusSection('finance')}
+                            onClick={() => void finishAssetStatusSection('finance')}
                             disabled={isSavingAssetStatus}
                           >
                             {isSavingAssetStatus ? 'Saving...' : 'Done'}
@@ -13224,7 +13468,7 @@ export default function AssetRegisterClient() {
                           <button
                             type="button"
                             className={styles.primaryButton}
-                            onClick={() => void saveAssetStatusSection('insurance')}
+                            onClick={() => void finishAssetStatusSection('insurance')}
                             disabled={isSavingAssetStatus}
                           >
                             {isSavingAssetStatus ? 'Saving...' : 'Done'}
@@ -13303,7 +13547,7 @@ export default function AssetRegisterClient() {
                           <button
                             type="button"
                             className={styles.primaryButton}
-                            onClick={() => void saveAssetStatusSection('license')}
+                            onClick={() => void finishAssetStatusSection('license')}
                             disabled={isSavingAssetStatus}
                           >
                             {isSavingAssetStatus ? 'Saving...' : 'Done'}
@@ -13318,6 +13562,7 @@ export default function AssetRegisterClient() {
                   <section className={`${styles.manualStageCard} ${styles.manualSingleStageCard} ${styles.manualCompactStageCard} ${styles.fullWidth}`}>
                     <div className={styles.manualStepIntro}>
                       <h4>Documents and photos</h4>
+                      {editingAsset ? <p>Keep supporting files and the main asset photo together.</p> : null}
                     </div>
 
                     <div className={`${styles.manualStageGrid} ${styles.manualUploadGrid}`}>

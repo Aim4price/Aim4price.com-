@@ -30799,3 +30799,303 @@ button.documentOpenLink {
     transition: none !important;
   }
 }
+
+/* === Asset update modal: refined header, section navigation and autosave === */
+.assetFormModal:not(.assetFormModalStepOne) .assetFormModalChromeHeader {
+  position: relative !important;
+  display: flex !important;
+  width: 100% !important;
+  min-height: 5.35rem !important;
+  margin: 0 0 0.85rem !important;
+  padding: 0 4.7rem 0.95rem 0 !important;
+  border-bottom: 1px solid rgba(210, 224, 232, 0.9) !important;
+}
+
+.assetUpdateHeaderContent {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.2rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.assetUpdateIdentity {
+  display: grid;
+  gap: 0.18rem;
+  min-width: 0;
+}
+
+.assetUpdateEyebrow {
+  color: #5f7b70;
+  font-size: 0.69rem;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 0.115em;
+  text-transform: uppercase;
+}
+
+.assetUpdateIdentity h3 {
+  max-width: min(50vw, 42rem);
+  margin: 0 !important;
+  overflow: hidden;
+  color: #10352b !important;
+  font-size: clamp(1.25rem, 1.8vw, 1.65rem) !important;
+  font-weight: 760 !important;
+  line-height: 1.14 !important;
+  letter-spacing: -0.035em !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.assetUpdateIdentity p {
+  margin: 0 !important;
+  color: #667b89 !important;
+  font-size: 0.79rem !important;
+  font-weight: 590 !important;
+  line-height: 1.35 !important;
+}
+
+.assetAutosaveStatus {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.35rem;
+  padding: 0.54rem 0.78rem;
+  border: 1px solid rgba(187, 211, 200, 0.92);
+  border-radius: 999px;
+  color: #315e4d;
+  background: linear-gradient(180deg, #fbfefc 0%, #f2f8f5 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  font-size: 0.74rem;
+  font-weight: 760;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.assetAutosaveDot {
+  width: 0.52rem;
+  height: 0.52rem;
+  border: 2px solid #ffffff;
+  border-radius: 999px;
+  background: #2a8a64;
+  box-shadow: 0 0 0 2px rgba(42, 138, 100, 0.16);
+}
+
+.assetAutosaveStatus_idle,
+.assetAutosaveStatus_saved {
+  color: #315e4d;
+  border-color: rgba(187, 211, 200, 0.92);
+}
+
+.assetAutosaveStatus_pending {
+  color: #725d22;
+  border-color: rgba(213, 186, 106, 0.55);
+  background: #fffaf0;
+}
+
+.assetAutosaveStatus_pending .assetAutosaveDot {
+  background: #c89a2e;
+  box-shadow: 0 0 0 2px rgba(200, 154, 46, 0.16);
+}
+
+.assetAutosaveStatus_saving .assetAutosaveDot {
+  background: transparent;
+  border-color: rgba(42, 138, 100, 0.22);
+  border-top-color: #2a8a64;
+  box-shadow: none;
+  animation: assetAutosaveSpin 700ms linear infinite;
+}
+
+.assetAutosaveStatus_error {
+  color: #8a3d34;
+  border-color: rgba(185, 94, 80, 0.36);
+  background: #fff7f5;
+}
+
+.assetAutosaveStatus_error .assetAutosaveDot {
+  background: #b85b4c;
+  box-shadow: 0 0 0 2px rgba(184, 91, 76, 0.14);
+}
+
+@keyframes assetAutosaveSpin {
+  to { transform: rotate(360deg); }
+}
+
+.assetFormModal:not(.assetFormModalStepOne) .assetFormModalChromeHeader .modalCloseButton:disabled {
+  cursor: wait !important;
+  opacity: 0.46 !important;
+}
+
+.assetFormModal:not(.assetFormModalStepOne) .assetFormSectionTabs {
+  gap: 0.62rem !important;
+  margin: 0 0 0.92rem !important;
+  padding: 0 0 0.92rem !important;
+}
+
+.assetFormModal:not(.assetFormModalStepOne) .assetFormSectionTab {
+  position: relative !important;
+  display: grid !important;
+  grid-template-columns: 2.15rem minmax(0, 1fr) 0.48rem !important;
+  align-items: center !important;
+  justify-content: initial !important;
+  gap: 0.72rem !important;
+  min-height: 4.55rem !important;
+  padding: 0.68rem 0.8rem !important;
+  border-color: rgba(205, 220, 229, 0.96) !important;
+  border-radius: 1rem !important;
+  color: #24473c !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbfa 100%) !important;
+  box-shadow: 0 7px 20px rgba(16, 53, 43, 0.035), inset 0 1px 0 #ffffff !important;
+  letter-spacing: 0 !important;
+  text-align: left !important;
+}
+
+.assetFormSectionTabNumber {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.15rem;
+  height: 2.15rem;
+  border: 1px solid rgba(181, 207, 195, 0.86);
+  border-radius: 0.72rem;
+  color: #34715b;
+  background: #eef6f2;
+  font-size: 0.69rem;
+  font-weight: 820;
+  letter-spacing: 0.045em;
+}
+
+.assetFormSectionTabCopy {
+  display: grid;
+  gap: 0.18rem;
+  min-width: 0;
+}
+
+.assetFormSectionTabCopy strong {
+  color: inherit;
+  font-size: 0.98rem;
+  font-weight: 780;
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+}
+
+.assetFormSectionTabCopy small {
+  overflow: hidden;
+  color: #71828d;
+  font-size: 0.68rem;
+  font-weight: 590;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.assetFormSectionTabMarker {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 999px;
+  background: #dbe7e1;
+}
+
+.assetFormModal:not(.assetFormModalStepOne) .assetFormSectionTab:hover {
+  border-color: rgba(124, 169, 149, 0.76) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f0f7f3 100%) !important;
+}
+
+.assetFormModal:not(.assetFormModalStepOne) .assetFormSectionTabActive,
+.assetFormModal:not(.assetFormModalStepOne) .assetFormSectionTabActive:hover {
+  color: #ffffff !important;
+  border-color: #17664d !important;
+  background: linear-gradient(145deg, #1b785a 0%, #105740 100%) !important;
+  box-shadow: 0 12px 26px rgba(20, 95, 70, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+}
+
+.assetFormSectionTabActive .assetFormSectionTabNumber {
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.13);
+}
+
+.assetFormSectionTabActive .assetFormSectionTabCopy small {
+  color: rgba(255, 255, 255, 0.73);
+}
+
+.assetFormSectionTabActive .assetFormSectionTabMarker {
+  background: #b8efd4;
+  box-shadow: 0 0 0 3px rgba(184, 239, 212, 0.13);
+}
+
+.assetFormModal:not(.assetFormModalStepOne) .manualStepIntro {
+  display: grid !important;
+  gap: 0.25rem !important;
+}
+
+.assetFormModal:not(.assetFormModalStepOne) .manualStepIntro p {
+  max-width: 42rem;
+  margin: 0;
+  color: #70818c;
+  font-size: 0.78rem;
+  font-weight: 570;
+  line-height: 1.4;
+}
+
+@media (max-width: 760px) {
+  .assetFormModal:not(.assetFormModalStepOne) .assetFormModalChromeHeader {
+    min-height: 6.25rem !important;
+    padding: 0 3.8rem 0.8rem 0 !important;
+  }
+
+  .assetUpdateHeaderContent {
+    align-items: flex-start;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.55rem;
+  }
+
+  .assetUpdateIdentity h3 {
+    max-width: calc(100vw - 7.5rem);
+    font-size: 1.18rem !important;
+  }
+
+  .assetUpdateIdentity p {
+    font-size: 0.7rem !important;
+  }
+
+  .assetAutosaveStatus {
+    min-height: 1.92rem;
+    padding: 0.42rem 0.62rem;
+    font-size: 0.65rem;
+  }
+
+  .assetFormModal:not(.assetFormModalStepOne) .assetFormSectionTabs {
+    gap: 0.38rem !important;
+  }
+
+  .assetFormModal:not(.assetFormModalStepOne) .assetFormSectionTab {
+    grid-template-columns: 1fr !important;
+    justify-items: center !important;
+    gap: 0.22rem !important;
+    min-height: 3.6rem !important;
+    padding: 0.48rem 0.25rem !important;
+    text-align: center !important;
+  }
+
+  .assetFormSectionTabNumber,
+  .assetFormSectionTabMarker,
+  .assetFormSectionTabCopy small {
+    display: none;
+  }
+
+  .assetFormSectionTabCopy strong {
+    font-size: clamp(0.78rem, 3.2vw, 0.9rem);
+    line-height: 1.1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .assetAutosaveStatus_saving .assetAutosaveDot {
+    animation: none;
+  }
+}
