@@ -11072,12 +11072,12 @@ export default function AssetRegisterClient() {
           : 'Add asset';
   const assetAutosaveLabel =
     assetAutosaveState === 'pending'
-      ? 'Pending'
+      ? 'Saving...'
       : assetAutosaveState === 'saving'
-        ? 'Saving'
+        ? 'Saving...'
         : assetAutosaveState === 'error'
           ? 'Check fields'
-          : 'Saved';
+          : 'Saved automatically';
   const isAssetAutosaveBusy = Boolean(editingAsset) && (assetAutosaveState === 'pending' || assetAutosaveState === 'saving');
   const isAssetStatusFocusedView = manualAssetStep === 3 && assetStatusEditView !== 'hub';
   const settingsUsageMode = editingAsset ? getAssetSettingsUsageMode(editingAsset) : 'none';
@@ -12761,7 +12761,7 @@ export default function AssetRegisterClient() {
           <div className={styles.modalBackdrop} onClick={() => { if (!isAssetAutosaveBusy) closeAssetModal(); }} />
 
           <div
-            className={`${styles.modalCard} ${styles.assetFormModal} ${manualAssetStep === 1 ? styles.assetFormModalStepOne : ''}`}
+            className={`${styles.modalCard} ${styles.assetFormModal} ${editingAsset ? styles.assetUpdateModal : ''} ${manualAssetStep === 1 ? styles.assetFormModalStepOne : ''}`}
             role="dialog"
             aria-modal="true"
             aria-label={editingAsset ? 'Update asset' : 'Add asset'}
@@ -12776,16 +12776,6 @@ export default function AssetRegisterClient() {
                 <div className={styles.assetUpdateHeaderContent}>
                   <div className={styles.assetUpdateIdentity}>
                     <h3>{assetDraft.title.trim() || editingAsset.title}</h3>
-                    <span className={styles.assetUpdateType}>{selectedManualAssetType.label}</span>
-                  </div>
-
-                  <div
-                    className={`${styles.assetAutosaveStatus} ${styles[`assetAutosaveStatus_${assetAutosaveState}`]}`}
-                    role="status"
-                    aria-live="polite"
-                  >
-                    <span className={styles.assetAutosaveDot} aria-hidden="true" />
-                    <span>{assetAutosaveLabel}</span>
                   </div>
                 </div>
               ) : null}
@@ -12815,7 +12805,7 @@ export default function AssetRegisterClient() {
                         onClick={() => openAssetFormSection(section.step)}
                         aria-current={isActive ? 'step' : undefined}
                       >
-                        <span className={styles.assetFormSectionTabNumber}>0{index + 1}</span>
+                        <span className={styles.assetFormSectionTabNumber}>{index + 1}</span>
                         <span className={styles.assetFormSectionTabCopy}>
                           <strong>{section.label}</strong>
                         </span>
@@ -13716,6 +13706,50 @@ export default function AssetRegisterClient() {
                 ) : null}
               </form>
             </div>
+
+            {editingAsset && !isAssetStatusFocusedView ? (
+              <div className={styles.assetUpdateFooter}>
+                <span
+                  className={`${styles.assetUpdateSaveText} ${assetAutosaveState === 'error' ? styles.assetUpdateSaveTextError : ''}`}
+                  role="status"
+                  aria-live="polite"
+                >
+                  {assetAutosaveLabel}
+                </span>
+
+                <div className={styles.assetUpdateFooterActions}>
+                  {manualAssetStep > 2 ? (
+                    <button
+                      type="button"
+                      className={styles.secondaryButton}
+                      onClick={goToPreviousManualAssetStep}
+                      disabled={isAssetAutosaveBusy}
+                    >
+                      Back
+                    </button>
+                  ) : null}
+
+                  {manualAssetStep < 4 ? (
+                    <button
+                      type="button"
+                      className={styles.primaryButton}
+                      onClick={goToNextManualAssetStep}
+                    >
+                      Next
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className={styles.primaryButton}
+                      onClick={closeAssetModal}
+                      disabled={isAssetAutosaveBusy || assetAutosaveState === 'error'}
+                    >
+                      {isAssetAutosaveBusy ? 'Saving...' : 'Done'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
       ) : null}

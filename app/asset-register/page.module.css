@@ -31398,3 +31398,294 @@ button.documentOpenLink {
 .assetFormModal .assetUpdateStageCard .assetStatusSubActions .primaryButton {
   min-width: 7rem !important;
 }
+
+/* === Guided asset update flow: large steps and persistent navigation === */
+.assetUpdateModal {
+  display: flex !important;
+  flex-direction: column !important;
+  width: min(94vw, 74rem) !important;
+  height: min(90vh, 52rem) !important;
+  max-height: calc(100dvh - 1.5rem) !important;
+  overflow: hidden !important;
+  padding: clamp(1.15rem, 2vw, 1.55rem) !important;
+  border-radius: 1.85rem !important;
+  background: #ffffff !important;
+}
+
+.assetUpdateModal .assetFormModalChromeHeader {
+  flex: 0 0 auto !important;
+  min-height: 4.5rem !important;
+  margin: 0 !important;
+  padding: 0 4.3rem 0.9rem 0 !important;
+  border-bottom: 1px solid rgba(210, 223, 231, 0.92) !important;
+}
+
+.assetUpdateModal .assetUpdateHeaderContent,
+.assetUpdateModal .assetUpdateIdentity {
+  width: 100% !important;
+}
+
+.assetUpdateModal .assetUpdateIdentity {
+  display: block !important;
+}
+
+.assetUpdateModal .assetUpdateIdentity h3 {
+  max-width: min(70vw, 50rem) !important;
+  font-size: clamp(1.35rem, 2vw, 1.75rem) !important;
+  font-weight: 780 !important;
+  line-height: 1.12 !important;
+}
+
+.assetUpdateModal .assetFormModalChromeHeader .modalCloseButton {
+  top: 0 !important;
+  right: 0 !important;
+  width: 3.15rem !important;
+  height: 3.15rem !important;
+  min-width: 3.15rem !important;
+  min-height: 3.15rem !important;
+}
+
+.assetUpdateModal .manualStepScrollBody {
+  display: flex !important;
+  flex: 1 1 auto !important;
+  flex-direction: column !important;
+  min-height: 0 !important;
+  gap: 0 !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  padding: 0.72rem 0.78rem 0.35rem 0 !important;
+  margin: 0 -0.28rem 0 0 !important;
+  scrollbar-gutter: stable !important;
+}
+
+.assetUpdateModal .assetFormSectionTabs {
+  flex: 0 0 auto !important;
+  gap: 0.65rem !important;
+  margin: 0 0 1rem !important;
+  padding: 0 0 1rem !important;
+}
+
+.assetUpdateModal .assetFormSectionTab {
+  grid-template-columns: 2.15rem minmax(0, 1fr) !important;
+  gap: 0.68rem !important;
+  min-height: 4.15rem !important;
+  padding: 0.68rem 0.82rem !important;
+  border-radius: 1rem !important;
+  font-size: 1rem !important;
+}
+
+.assetUpdateModal .assetFormSectionTabNumber {
+  display: inline-flex !important;
+  width: 2.15rem !important;
+  height: 2.15rem !important;
+  border-radius: 0.68rem !important;
+  font-size: 0.7rem !important;
+}
+
+.assetUpdateModal .assetFormSectionTabCopy strong {
+  font-size: clamp(0.94rem, 1.2vw, 1.06rem) !important;
+  font-weight: 780 !important;
+}
+
+.assetUpdateModal .manualStepForm {
+  flex: 1 0 auto !important;
+  gap: 0 !important;
+}
+
+.assetUpdateModal .assetUpdateStageCard {
+  padding: 0.85rem 0.12rem 0.7rem !important;
+}
+
+.assetUpdateModal .assetUpdateStageCard .manualUtilityRow {
+  min-height: 3.35rem !important;
+  margin-bottom: 0.15rem !important;
+}
+
+.assetUpdateModal .assetUpdateStageCard .manualSelectedTypeStrip {
+  min-height: 2.75rem !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.assetUpdateModal .assetUpdateStageCard .manualSelectedTypeStrip span {
+  color: #71818c !important;
+  font-size: 0.76rem !important;
+  font-weight: 680 !important;
+}
+
+.assetUpdateModal .assetUpdateStageCard .manualSelectedTypeStrip strong {
+  color: #153f34 !important;
+  font-size: 0.86rem !important;
+  font-weight: 780 !important;
+}
+
+.assetUpdateModal .assetUpdateStageCard .manualSettingsButton {
+  min-height: 3rem !important;
+  padding-inline: 1rem !important;
+  border-radius: 0.9rem !important;
+  font-size: 0.82rem !important;
+}
+
+.assetUpdateModal .assetUpdateStageCard .assetStatusHubGrid {
+  gap: 0.82rem !important;
+  padding-top: 0.25rem !important;
+}
+
+.assetUpdateModal .assetUpdateStageCard .assetStatusHubCard {
+  min-height: 6.4rem !important;
+  padding: 1.05rem 3.25rem 1.05rem 1.15rem !important;
+  border-radius: 1.08rem !important;
+}
+
+.assetUpdateModal .assetUpdateStageCard .assetStatusHubCard strong {
+  font-size: 1.12rem !important;
+}
+
+.assetUpdateModal .assetUpdateStageCard .assetStatusHubCard small {
+  font-size: 0.82rem !important;
+}
+
+.assetUpdateModal .assetUpdateStageCard .assetStatusHubCard::after {
+  right: 1.15rem !important;
+  width: 2rem !important;
+  height: 2rem !important;
+}
+
+.assetUpdateModal .assetUpdateStageCard .photoMainHelp span {
+  display: none !important;
+}
+
+.assetUpdateModal .assetUpdateStageCard .photoMainHelp {
+  min-height: 3.25rem !important;
+  padding: 0.72rem 0.9rem !important;
+}
+
+.assetUpdateFooter {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 5.15rem;
+  margin-top: 0.55rem;
+  padding: 0.82rem 0 0;
+  border-top: 1px solid rgba(210, 223, 231, 0.94);
+  background: #ffffff;
+}
+
+.assetUpdateSaveText {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+  color: #71818c;
+  font-size: 0.74rem;
+  font-weight: 680;
+  line-height: 1.2;
+}
+
+.assetUpdateSaveText::before {
+  content: '';
+  width: 0.44rem;
+  height: 0.44rem;
+  border-radius: 999px;
+  background: #6d9e8a;
+}
+
+.assetUpdateSaveTextError {
+  color: #9c3f37;
+}
+
+.assetUpdateSaveTextError::before {
+  background: #b6574d;
+}
+
+.assetUpdateFooterActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.72rem;
+}
+
+.assetUpdateFooterActions .secondaryButton,
+.assetUpdateFooterActions .primaryButton {
+  min-width: 9rem !important;
+  min-height: 3.45rem !important;
+  padding: 0.82rem 1.35rem !important;
+  border-radius: 1rem !important;
+  font-size: 1rem !important;
+  font-weight: 780 !important;
+}
+
+.assetUpdateFooterActions .primaryButton {
+  box-shadow: 0 10px 22px rgba(20, 95, 70, 0.18) !important;
+}
+
+@media (max-width: 760px) {
+  .assetUpdateModal {
+    width: calc(100vw - 0.7rem) !important;
+    height: calc(100dvh - 0.7rem) !important;
+    max-height: calc(100dvh - 0.7rem) !important;
+    padding: 0.95rem !important;
+    border-radius: 1.35rem !important;
+  }
+
+  .assetUpdateModal .assetFormModalChromeHeader {
+    min-height: 3.9rem !important;
+    padding: 0 3.65rem 0.7rem 0 !important;
+  }
+
+  .assetUpdateModal .assetUpdateIdentity h3 {
+    font-size: 1.08rem !important;
+  }
+
+  .assetUpdateModal .manualStepScrollBody {
+    padding-top: 0.58rem !important;
+  }
+
+  .assetUpdateModal .assetFormSectionTabs {
+    gap: 0.38rem !important;
+    margin-bottom: 0.65rem !important;
+    padding-bottom: 0.65rem !important;
+  }
+
+  .assetUpdateModal .assetFormSectionTab {
+    grid-template-columns: 1fr !important;
+    min-height: 3.35rem !important;
+    padding: 0.52rem 0.2rem !important;
+  }
+
+  .assetUpdateModal .assetFormSectionTabNumber {
+    display: none !important;
+  }
+
+  .assetUpdateModal .assetFormSectionTabCopy strong {
+    font-size: clamp(0.68rem, 3.2vw, 0.82rem) !important;
+  }
+
+  .assetUpdateFooter {
+    min-height: 4.55rem;
+    gap: 0.55rem;
+    margin-top: 0.35rem;
+    padding-top: 0.65rem;
+  }
+
+  .assetUpdateSaveText {
+    font-size: 0.63rem;
+  }
+
+  .assetUpdateFooterActions {
+    flex: 1 1 auto;
+  }
+
+  .assetUpdateFooterActions .secondaryButton,
+  .assetUpdateFooterActions .primaryButton {
+    flex: 1 1 0;
+    min-width: 0 !important;
+    min-height: 3.15rem !important;
+    padding-inline: 0.8rem !important;
+    font-size: 0.9rem !important;
+  }
+}
