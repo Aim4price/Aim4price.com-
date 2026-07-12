@@ -29694,7 +29694,6 @@ button.documentOpenLink {
 
 .summaryPanel {
   position: relative;
-  overflow: hidden;
   border-color: rgba(133, 165, 180, 0.34) !important;
   background: rgba(255, 255, 255, 0.96) !important;
   box-shadow:
@@ -29707,8 +29706,10 @@ button.documentOpenLink {
   position: absolute;
   inset: 0 auto 0 0;
   width: 0.22rem;
+  border-radius: 1.2rem 0 0 1.2rem;
   background: linear-gradient(180deg, #2f8668 0%, #1b5b45 100%);
   opacity: 0.72;
+  pointer-events: none;
 }
 
 .summarySectionHeader {
@@ -29776,6 +29777,7 @@ button.documentOpenLink {
     inset: 0 0 auto;
     width: auto;
     height: 0.2rem;
+    border-radius: 1.2rem 1.2rem 0 0;
   }
 
   .summarySectionHeader {
