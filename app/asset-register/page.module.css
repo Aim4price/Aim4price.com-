@@ -30120,3 +30120,310 @@ button.documentOpenLink {
     transition: none !important;
   }
 }
+
+/* === Register summary: clean, structured refinement === */
+.summaryModal {
+  width: min(94vw, 70rem) !important;
+  max-height: min(90dvh, 56rem) !important;
+  padding: clamp(1.25rem, 2vw, 1.65rem) !important;
+  border: 1px solid rgba(151, 177, 188, 0.34) !important;
+  border-radius: 1.65rem !important;
+  background:
+    radial-gradient(circle at 0 0, rgba(33, 111, 82, 0.045), transparent 24rem),
+    #fbfdfc !important;
+  box-shadow:
+    0 32px 76px rgba(13, 37, 31, 0.2),
+    0 8px 22px rgba(13, 37, 31, 0.07) !important;
+}
+
+.summaryModalHeader {
+  align-items: center !important;
+  gap: 1rem !important;
+  margin: 0 !important;
+  padding: 0 0 1rem !important;
+  border-bottom: 1px solid rgba(150, 177, 188, 0.3) !important;
+}
+
+.summaryHeaderActions {
+  gap: 0.58rem;
+  padding-top: 0;
+}
+
+.summaryDownloadButton {
+  min-height: 3.05rem !important;
+  height: 3.05rem !important;
+  padding-inline: 1.15rem !important;
+  border: 1px solid #205f48 !important;
+  border-radius: 0.82rem !important;
+  color: #ffffff !important;
+  background: linear-gradient(180deg, #28785b 0%, #1b5a43 100%) !important;
+  box-shadow: 0 8px 18px rgba(24, 86, 63, 0.17) !important;
+  transition:
+    border-color 150ms ease,
+    background 150ms ease,
+    box-shadow 150ms ease,
+    transform 150ms ease !important;
+}
+
+.summaryDownloadButton:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: #174c39 !important;
+  color: #ffffff !important;
+  background: linear-gradient(180deg, #226b50 0%, #154a37 100%) !important;
+  box-shadow: 0 10px 22px rgba(24, 86, 63, 0.22) !important;
+}
+
+.summaryDownloadButton svg {
+  color: currentColor !important;
+}
+
+.summaryModalHeader .modalCloseButton {
+  border-color: rgba(151, 177, 188, 0.42) !important;
+  background: #ffffff !important;
+  box-shadow: 0 6px 16px rgba(20, 54, 45, 0.045) !important;
+  transition:
+    border-color 150ms ease,
+    background 150ms ease,
+    transform 150ms ease !important;
+}
+
+.summaryModalHeader .modalCloseButton:hover {
+  transform: translateY(-1px);
+  border-color: rgba(38, 105, 79, 0.38) !important;
+  background: #f3f8f5 !important;
+}
+
+.summaryModalBody {
+  gap: 0.72rem !important;
+  padding: 0.9rem 0.32rem 0.1rem 0 !important;
+  scrollbar-gutter: stable !important;
+}
+
+.summaryModalBody::-webkit-scrollbar {
+  width: 0.58rem;
+}
+
+.summaryModalBody::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: #edf2f0;
+}
+
+.summaryModalBody::-webkit-scrollbar-thumb {
+  border: 2px solid #edf2f0;
+  border-radius: 999px;
+  background: #5f8b78;
+}
+
+.summaryPanel {
+  position: relative;
+  gap: 0 !important;
+  overflow: hidden;
+  padding: 0 !important;
+  border: 1px solid rgba(174, 197, 207, 0.54) !important;
+  border-radius: 1rem !important;
+  background: #ffffff !important;
+  box-shadow: 0 6px 18px rgba(22, 52, 44, 0.035) !important;
+}
+
+.summaryPanel::before {
+  display: none !important;
+}
+
+.summaryPanel:first-child {
+  border-color: rgba(63, 128, 101, 0.36) !important;
+  box-shadow: 0 8px 22px rgba(22, 78, 58, 0.055) !important;
+}
+
+.summarySectionHeader {
+  padding: 0.88rem 1rem 0.82rem !important;
+  border-bottom: 1px solid rgba(174, 197, 207, 0.32);
+  background: #f5f8f6;
+}
+
+.summaryPanel:first-child .summarySectionHeader {
+  background: linear-gradient(90deg, #edf6f1 0%, #f7faf8 58%, #ffffff 100%);
+}
+
+.summarySectionHeader p {
+  max-width: 100% !important;
+}
+
+.summarySimpleTable {
+  width: auto;
+  margin: 0.72rem;
+  overflow: hidden;
+  border: 1px solid rgba(174, 197, 207, 0.5) !important;
+  border-radius: 0.78rem !important;
+  background: #ffffff !important;
+  box-shadow: none !important;
+}
+
+.summarySimpleTableHeader {
+  background: #edf3f0 !important;
+  border-bottom: 1px solid rgba(174, 197, 207, 0.4);
+}
+
+.summarySimpleTableHeader,
+.summarySimpleTableRow {
+  gap: 0.7rem;
+  padding-inline: 0.9rem;
+}
+
+.summarySimpleTableRow {
+  min-height: 3.05rem;
+  border-top: 1px solid rgba(174, 197, 207, 0.28) !important;
+  background: #ffffff;
+  transition: background-color 150ms ease;
+}
+
+.summarySimpleTableRows .summarySimpleTableRow:first-child {
+  border-top: 0 !important;
+}
+
+.summarySimpleTableRow:nth-child(even) {
+  background: #f9fbfa;
+}
+
+.summarySimpleTableRow:hover {
+  background: #f2f8f5;
+}
+
+.summarySimpleTableRow span {
+  color: #3f554d !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+
+.summarySimpleTableRow strong {
+  justify-self: center;
+  min-width: 2.65rem;
+  padding: 0.28rem 0.58rem;
+  border: 1px solid rgba(52, 116, 91, 0.18);
+  border-radius: 999px;
+  background: #edf6f1;
+  color: #174d3a !important;
+  text-align: center;
+}
+
+.summarySimpleTableRow small {
+  color: #607184 !important;
+}
+
+.summarySimpleTableRow b {
+  justify-self: end;
+  min-width: 7rem;
+  padding: 0.32rem 0.58rem;
+  border: 1px solid rgba(52, 116, 91, 0.16);
+  border-radius: 0.6rem;
+  color: #124b37 !important;
+  background: #edf7f1;
+  text-align: right;
+}
+
+.summaryPanel:first-child .summarySimpleTableRows .summarySimpleTableRow:first-child {
+  background: linear-gradient(90deg, #f4faf7 0%, #ffffff 72%);
+}
+
+.summarySimpleTableCountOnly .summarySimpleTableRow strong {
+  justify-self: end;
+}
+
+@media (max-width: 760px) {
+  .summaryModalOverlay {
+    padding: 0.5rem !important;
+  }
+
+  .summaryModal {
+    width: 100% !important;
+    max-height: calc(100dvh - 1rem) !important;
+    padding: 0.92rem !important;
+    border-radius: 1.15rem !important;
+  }
+
+  .summaryModalHeader {
+    position: relative;
+    align-items: start !important;
+    padding: 0 0 0.82rem !important;
+  }
+
+  .summaryModalHeader .modalHeaderText {
+    padding-right: 3.5rem;
+  }
+
+  .summaryHeaderActions {
+    width: 100%;
+  }
+
+  .summaryDownloadButton {
+    width: 100% !important;
+    border-radius: 0.78rem !important;
+  }
+
+  .summaryModalBody {
+    gap: 0.58rem !important;
+    padding-top: 0.7rem !important;
+    padding-right: 0.12rem !important;
+  }
+
+  .summaryPanel {
+    border-radius: 0.86rem !important;
+  }
+
+  .summarySectionHeader {
+    padding: 0.78rem 0.82rem 0.72rem !important;
+  }
+
+  .summarySimpleTable {
+    margin: 0.55rem;
+    border-radius: 0.68rem !important;
+  }
+
+  .summarySimpleTableRow {
+    gap: 0 !important;
+    padding: 0.74rem 0.78rem !important;
+  }
+
+  .summarySimpleTableRow > span {
+    padding-bottom: 0.58rem;
+    border-bottom: 1px solid rgba(174, 197, 207, 0.3);
+  }
+
+  .summarySimpleTableRow strong,
+  .summarySimpleTableRow small,
+  .summarySimpleTableRow b {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    justify-self: stretch;
+    width: 100%;
+    min-width: 0;
+    padding: 0.48rem 0 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    text-align: right;
+  }
+
+  .summarySimpleTableRow strong::before {
+    content: 'Count';
+    color: #718076;
+  }
+
+  .summarySimpleTableRow small::before {
+    content: 'Excl. VAT';
+    color: #718076;
+  }
+
+  .summarySimpleTableRow b::before {
+    content: 'Incl. VAT';
+    color: #4a725f;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .summaryDownloadButton,
+  .summaryModalHeader .modalCloseButton,
+  .summarySimpleTableRow {
+    transition: none !important;
+  }
+}
