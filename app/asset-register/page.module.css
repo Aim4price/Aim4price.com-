@@ -29653,3 +29653,146 @@ button.documentOpenLink {
   font-weight: 800;
   letter-spacing: 0.01em;
 }
+
+/* === Register summary: restrained visual polish === */
+.summaryModal {
+  border: 1px solid rgba(153, 177, 190, 0.34) !important;
+  background:
+    radial-gradient(circle at 8% 0%, rgba(32, 116, 86, 0.055), transparent 23rem),
+    linear-gradient(180deg, #ffffff 0%, #f8fbfa 100%) !important;
+  box-shadow:
+    0 34px 84px rgba(13, 39, 34, 0.2),
+    0 8px 24px rgba(13, 39, 34, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.summaryModalHeader {
+  border-bottom-color: rgba(95, 129, 117, 0.22) !important;
+}
+
+.summaryModalHeader h3 {
+  color: #123f32 !important;
+  text-wrap: balance;
+}
+
+.summaryDownloadButton {
+  border-color: rgba(38, 103, 79, 0.3) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f2f8f5 100%) !important;
+  color: #123f32 !important;
+  box-shadow:
+    0 9px 20px rgba(25, 78, 59, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+}
+
+.summaryDownloadButton:hover:not(:disabled) {
+  border-color: rgba(28, 92, 68, 0.5) !important;
+  background: #edf7f2 !important;
+  box-shadow:
+    0 11px 24px rgba(25, 78, 59, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+}
+
+.summaryPanel {
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(133, 165, 180, 0.34) !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  box-shadow:
+    0 14px 34px rgba(19, 63, 50, 0.055),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+}
+
+.summaryPanel::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0.22rem;
+  background: linear-gradient(180deg, #2f8668 0%, #1b5b45 100%);
+  opacity: 0.72;
+}
+
+.summarySectionHeader {
+  padding-left: 0.35rem;
+}
+
+.summarySectionHeader span {
+  color: #174b3b !important;
+  letter-spacing: 0.075em !important;
+}
+
+.summarySectionHeader p {
+  color: #647488 !important;
+  font-weight: 620 !important;
+}
+
+.summarySimpleTable {
+  border-color: rgba(143, 170, 184, 0.38) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92);
+}
+
+.summarySimpleTableHeader {
+  background: linear-gradient(180deg, #f3f8f6 0%, #edf4f3 100%) !important;
+}
+
+.summarySimpleTableHeader span {
+  color: #667b8c;
+  letter-spacing: 0.07em;
+}
+
+.summarySimpleTableRow {
+  border-top-color: rgba(156, 181, 192, 0.3) !important;
+  transition: background-color 150ms ease;
+}
+
+.summarySimpleTableRow:nth-child(even) {
+  background: rgba(246, 250, 249, 0.62);
+}
+
+.summarySimpleTableRow:hover {
+  background: rgba(235, 246, 241, 0.78);
+}
+
+.summarySimpleTableRow strong,
+.summarySimpleTableRow small,
+.summarySimpleTableRow b {
+  font-variant-numeric: tabular-nums;
+}
+
+.summarySimpleTableRow b {
+  color: #0e4b39 !important;
+}
+
+.summarySimpleTableCountOnly .summarySimpleTableRow strong {
+  justify-self: center;
+  min-width: 3.1rem;
+  padding: 0.28rem 0.65rem;
+  border: 1px solid rgba(42, 111, 84, 0.18);
+  border-radius: 999px;
+  background: rgba(231, 245, 238, 0.78);
+}
+
+@media (max-width: 760px) {
+  .summaryPanel::before {
+    inset: 0 0 auto;
+    width: auto;
+    height: 0.2rem;
+  }
+
+  .summarySectionHeader {
+    padding: 0.18rem 0 0;
+  }
+
+  .summarySimpleTableRow {
+    border-radius: 0;
+  }
+
+  .summarySimpleTableCountOnly .summarySimpleTableRow strong {
+    justify-self: start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .summarySimpleTableRow {
+    transition: none;
+  }
+}
