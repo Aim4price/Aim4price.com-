@@ -1301,10 +1301,24 @@ function searchTextForLead(lead: AssetLead): string {
     .toLowerCase();
 }
 
-export default function LeadsClient({ dealerAppMode = false }: { dealerAppMode?: boolean } = {}) {
-  const [sessionUserId, setSessionUserId] = useState('');
-  const [leads, setLeads] = useState<AssetLead[]>([]);
-  const [accountInboxTitle, setAccountInboxTitle] = useState('LEADS INBOX LOADING...');
+type LeadsClientProps = {
+  dealerAppMode?: boolean;
+  initialLeads?: AssetLead[];
+  initialSessionUserId?: string;
+  initialAccountTitle?: string;
+};
+
+export default function LeadsClient({
+  dealerAppMode = false,
+  initialLeads = [],
+  initialSessionUserId = '',
+  initialAccountTitle = '',
+}: LeadsClientProps = {}) {
+  const [sessionUserId, setSessionUserId] = useState(initialSessionUserId);
+  const [leads, setLeads] = useState<AssetLead[]>(initialLeads);
+  const [accountInboxTitle, setAccountInboxTitle] = useState(() =>
+    initialAccountTitle ? formatInboxTitle(initialAccountTitle) : 'LEADS INBOX LOADING...',
+  );
   const [statusFilter, setStatusFilter] = useState<LeadStatusFilter>('all');
   const [monthFilter, setMonthFilter] = useState('all');
   const [yearFilter, setYearFilter] = useState('all');
@@ -1332,7 +1346,7 @@ export default function LeadsClient({ dealerAppMode = false }: { dealerAppMode?:
   const [isSavingNote, setIsSavingNote] = useState(false);
   const [isDeletingLead, setIsDeletingLead] = useState(false);
   const [markingLeadDoneId, setMarkingLeadDoneId] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!initialSessionUserId);
   const [notice, setNotice] = useState<{ tone: NoticeTone; message: string } | null>(null);
 
   const receivedLeads = useMemo(
@@ -1415,10 +1429,22 @@ export default function LeadsClient({ dealerAppMode = false }: { dealerAppMode?:
     return `${labels.length} filters`;
   }, [monthFilter, statusFilter, yearFilter]);
 
-  const loadData = useCallback(async (): Promise<boolean> => {
+  const loadData = useCallback(async (includeIdentity = true): Promise<boolean> => {
     setIsLoading(true);
 
     try {
+      if (!includeIdentity) {
+        const response = await fetch('/api/asset-leads', { cache: 'no-store', credentials: 'include' });
+        const data = (await response.json()) as LeadsResponse;
+
+        if (!response.ok || !data.ok || !data.leads) {
+          throw new Error(data.error ?? 'Failed to load leads.');
+        }
+
+        setLeads(data.leads);
+        return true;
+      }
+
       const [sessionResponse, leadsResponse, profileResponse] = await Promise.all([
         fetch('/api/me', { cache: 'no-store', credentials: 'include' }),
         fetch('/api/asset-leads', { cache: 'no-store', credentials: 'include' }),
@@ -1453,8 +1479,9 @@ export default function LeadsClient({ dealerAppMode = false }: { dealerAppMode?:
   }, []);
 
   useEffect(() => {
-    void loadData();
-  }, [loadData]);
+    if (initialSessionUserId) return;
+    void loadData(true);
+  }, [initialSessionUserId, loadData]);
 
   useEffect(() => {
     if (!notice) return undefined;
@@ -1577,7 +1604,7 @@ export default function LeadsClient({ dealerAppMode = false }: { dealerAppMode?:
     if (isLoading) return;
 
     setNotice(null);
-    const didRefresh = await loadData();
+    const didRefresh = await loadData(false);
 
     if (didRefresh) {
       setNotice({ tone: 'success', message: 'Leads refreshed.' });
@@ -2457,12 +2484,12 @@ export default function LeadsClient({ dealerAppMode = false }: { dealerAppMode?:
                     <div className={styles.clientPanel}>
                       <div className={styles.clientPanelHeader}>
                         <div className={styles.clientIdentity}>
-                          <span className={styles.clientKicker}>Received {formatDate(lead.createdAtIso)}</span>
                           <div className={styles.leadCardTitleRow}>
                             <h3>{lead.ownerBusinessName || ownerDisplayName(lead)}</h3>
                             {isLeadNew ? <span className={`${styles.leadStatusBadge} ${styles.leadStatusBadgeNew}`}>New</span> : null}
                             {isLeadDone ? <span className={`${styles.leadStatusBadge} ${styles.leadStatusBadgeDone}`}>Done</span> : null}
                           </div>
+                          <span className={styles.clientKicker}>Received {formatDate(lead.createdAtIso)}</span>
                         </div>
 
                         <div className={styles.clientDecisionArea}>
