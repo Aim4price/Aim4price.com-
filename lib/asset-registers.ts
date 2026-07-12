@@ -530,6 +530,33 @@ async function ensureAssetRegisterTablesOnce(): Promise<void> {
   `);
 
   await db.query(`
+    do $$
+    declare
+      kind_constraint_definition text;
+    begin
+      if to_regclass('public.asset_register_items') is not null then
+        select pg_get_constraintdef(oid)
+        into kind_constraint_definition
+        from pg_constraint
+        where conrelid = 'public.asset_register_items'::regclass
+          and conname = 'asset_register_items_kind_check'
+        limit 1;
+
+        if kind_constraint_definition is null
+          or position('stock' in lower(kind_constraint_definition)) = 0 then
+          alter table public.asset_register_items
+            drop constraint if exists asset_register_items_kind_check;
+
+          alter table public.asset_register_items
+            add constraint asset_register_items_kind_check
+              check (kind in ('tractor', 'equipment', 'manual', 'property', 'vehicle', 'tools', 'stock'));
+        end if;
+      end if;
+    end
+    $$
+  `);
+
+  await db.query(`
     update public.asset_registers
     set logo_urls = '[]'::jsonb
     where logo_urls is null

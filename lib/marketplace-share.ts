@@ -108,6 +108,7 @@ function inferFamilyLabel(listing: MarketplaceListing): string {
   if (assetKind === 'vehicle') return 'Vehicles';
   if (assetKind === 'tools' || assetKind === 'tool') return 'Tools';
   if (assetKind === 'equipment') return 'Equipment';
+  if (assetKind === 'stock' || assetKind === 'inventory') return 'Stock';
   if (assetKind === 'manual' || assetKind === 'other') return 'Other';
   if (assetKind === 'property') return 'Property/Buildings';
 

@@ -134,6 +134,7 @@ function normalizeAssetKind(value: unknown): string {
   if (normalized === 'equipment') return 'equipment';
   if (normalized === 'vehicle') return 'vehicle';
   if (normalized === 'tools' || normalized === 'tool') return 'tools';
+  if (normalized === 'stock' || normalized === 'inventory') return 'stock';
   if (normalized === 'property' || normalized === 'property-buildings' || normalized === 'buildings') return 'property';
   if (normalized === 'manual' || normalized === 'other') return 'manual';
   return normalized;
@@ -146,6 +147,7 @@ function familyLabelFromAssetKind(value: unknown): string {
   if (kind === 'equipment') return 'Equipment';
   if (kind === 'vehicle') return 'Vehicles';
   if (kind === 'tools') return 'Tools';
+  if (kind === 'stock') return 'Stock';
   if (kind === 'property') return 'Property/Buildings';
   if (kind === 'manual') return 'Other';
   return 'Other';

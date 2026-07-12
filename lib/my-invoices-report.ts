@@ -87,6 +87,7 @@ function formatAssetKind(asset: MyInvoiceAssetOption | null): string {
   if (kind === 'vehicle') return 'Vehicle';
   if (kind === 'property') return 'Property';
   if (kind === 'tools') return 'Tools';
+  if (kind === 'stock') return 'Stock';
   if (kind === 'equipment') return 'Equipment';
   if (kind === 'manual') return 'Manual asset';
 

@@ -7,7 +7,7 @@ export type CatalogMode = 'generic_specs' | 'hybrid' | 'exact_model';
 // Keep this type as string so the app does not reject newly imported families.
 export type EquipmentFamilyKey = string;
 
-export type EquipmentKind = 'tractor' | 'equipment' | 'vehicle' | 'manual' | 'property' | 'tools';
+export type EquipmentKind = 'tractor' | 'equipment' | 'vehicle' | 'manual' | 'property' | 'tools' | 'stock';
 
 export type UsageDisplayUnit = 'hours' | 'km' | 'percent';
 

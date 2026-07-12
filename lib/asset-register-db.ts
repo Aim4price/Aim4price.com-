@@ -11,7 +11,7 @@ import type { GenericSelectedMethod, GenericValuationResult } from './generic-va
 import { captureAssetDepreciationLogEntry } from './asset-depreciation-timeline';
 import { ensureFuelLedgerTables } from './fuel-ledger';
 
-export type AssetRegisterItemKind = 'tractor' | 'equipment' | 'manual' | 'property' | 'vehicle' | 'tools';
+export type AssetRegisterItemKind = 'tractor' | 'equipment' | 'manual' | 'property' | 'vehicle' | 'tools' | 'stock';
 export type AssetRegisterItemMethod = MethodKey | 'manual';
 export type AssetRegisterItemCondition = ConditionKey | '';
 type AssetStatusChoice = 'yes' | 'no' | 'unknown' | 'not_applicable';
@@ -1540,6 +1540,7 @@ function normalizeKind(value: unknown): AssetRegisterItemKind {
   if (normalized === 'property') return 'property';
   if (normalized === 'vehicle') return 'vehicle';
   if (normalized === 'tool' || normalized === 'tools') return 'tools';
+  if (normalized === 'stock' || normalized === 'inventory') return 'stock';
   return 'manual';
 }
 

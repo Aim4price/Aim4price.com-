@@ -1,6 +1,6 @@
 import type { CabType, DriveType, TractorType } from './tractor-data';
 
-export type SavedItemKind = 'tractor' | 'manual' | 'property' | 'equipment' | 'vehicle' | 'tools';
+export type SavedItemKind = 'tractor' | 'manual' | 'property' | 'equipment' | 'vehicle' | 'tools' | 'stock';
 export type SavedItemMethod = 'aim4price' | 'manual';
 
 export type SavedItem = {
@@ -93,7 +93,7 @@ function asStringArray(value: unknown): string[] | undefined {
 }
 
 function asKind(value: unknown): SavedItemKind {
-  return value === 'tractor' || value === 'manual' || value === 'property' || value === 'equipment' || value === 'vehicle' || value === 'tools' ? value : 'manual';
+  return value === 'tractor' || value === 'manual' || value === 'property' || value === 'equipment' || value === 'vehicle' || value === 'tools' || value === 'stock' ? value : 'manual';
 }
 
 function asMethod(value: unknown): SavedItemMethod {
