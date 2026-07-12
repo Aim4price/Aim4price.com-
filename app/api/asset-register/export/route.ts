@@ -42,7 +42,7 @@ type RegisterSummaryCountValue = {
   valueExVat: number;
 };
 
-type RegisterSummaryAssetTypeKey = 'property' | 'equipment' | 'tools' | 'vehicles';
+type RegisterSummaryAssetTypeKey = 'property' | 'equipment' | 'tools' | 'stock' | 'vehicles';
 
 type RegisterBasicExportSummary = {
   totalAssets: number;
@@ -426,6 +426,7 @@ function methodLabel(value: AssetRegisterItem['selectedMethod'] | string | null 
 function kindLabel(asset: AssetRegisterItem): string {
   if (asset.equipmentFamilyLabel) return asset.equipmentFamilyLabel;
   if (asset.kind === 'tractor') return 'Tractor';
+  if (asset.kind === 'stock') return 'Stock';
   if (asset.kind === 'equipment' || Boolean(asset.brandName && asset.modelName && asset.yearModel)) return 'Equipment';
   if (asset.kind === 'property') return PROPERTY_ASSET_LABEL;
   if (asset.kind === 'vehicle') return 'Vehicle';
@@ -630,6 +631,7 @@ function createRegisterSummaryAssetTypes(): Record<RegisterSummaryAssetTypeKey, 
     property: createRegisterSummaryCountValue(),
     equipment: createRegisterSummaryCountValue(),
     tools: createRegisterSummaryCountValue(),
+    stock: createRegisterSummaryCountValue(),
     vehicles: createRegisterSummaryCountValue(),
   };
 }
@@ -675,6 +677,7 @@ function normalizeSummarySearchText(value: unknown): string {
 function getRegisterSummaryAssetType(item: AssetRegisterItem): RegisterSummaryAssetTypeKey {
   if (item.kind === 'property') return 'property';
   if (item.kind === 'tools') return 'tools';
+  if (item.kind === 'stock') return 'stock';
   if (item.kind === 'vehicle') return 'vehicles';
 
   const specs = isPlainRecord(item.specsJson) ? item.specsJson : {};
@@ -869,6 +872,7 @@ function buildRegisterSummaryXlsxSections(summary: RegisterBasicExportSummary): 
         [textCell('Property', 'metaLabel'), numberCell(summary.assetTypes.property.count), moneyCell(summary.assetTypes.property.valueExVat), moneyCell(moneyInclVatTotal(summary.assetTypes.property.valueExVat))],
         [textCell('Equipment', 'metaLabel'), numberCell(summary.assetTypes.equipment.count), moneyCell(summary.assetTypes.equipment.valueExVat), moneyCell(moneyInclVatTotal(summary.assetTypes.equipment.valueExVat))],
         [textCell('Tools', 'metaLabel'), numberCell(summary.assetTypes.tools.count), moneyCell(summary.assetTypes.tools.valueExVat), moneyCell(moneyInclVatTotal(summary.assetTypes.tools.valueExVat))],
+        [textCell('Stock', 'metaLabel'), numberCell(summary.assetTypes.stock.count), moneyCell(summary.assetTypes.stock.valueExVat), moneyCell(moneyInclVatTotal(summary.assetTypes.stock.valueExVat))],
         [textCell('Vehicles', 'metaLabel'), numberCell(summary.assetTypes.vehicles.count), moneyCell(summary.assetTypes.vehicles.valueExVat), moneyCell(moneyInclVatTotal(summary.assetTypes.vehicles.valueExVat))],
       ],
     },
@@ -1551,6 +1555,7 @@ function buildRegisterSummaryPdfSections(summary: RegisterBasicExportSummary): R
         row('Property', summary.assetTypes.property.count, summary.assetTypes.property.valueExVat),
         row('Equipment', summary.assetTypes.equipment.count, summary.assetTypes.equipment.valueExVat),
         row('Tools', summary.assetTypes.tools.count, summary.assetTypes.tools.valueExVat),
+        row('Stock', summary.assetTypes.stock.count, summary.assetTypes.stock.valueExVat),
         row('Vehicles', summary.assetTypes.vehicles.count, summary.assetTypes.vehicles.valueExVat),
       ],
     },
