@@ -1,7 +1,24 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import Image from 'next/image';
+import { useEffect, useState, type FormEvent } from 'react';
 import styles from './page.module.css';
+
+type InstallPlatform = 'ios' | 'other';
+type InstallView = 'checking' | 'install' | 'login';
+type InstallOutcome = 'idle' | 'instructions';
+
+type BeforeInstallPromptEvent = Event & {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{
+    outcome: 'accepted' | 'dismissed';
+    platform: string;
+  }>;
+};
+
+type StandaloneNavigator = Navigator & {
+  standalone?: boolean;
+};
 
 type LoginApiResponse = {
   ok: boolean;
@@ -22,12 +39,87 @@ function extractError(payload: LoginApiResponse | null, fallback: string): strin
   return payload?.error?.trim() || fallback;
 }
 
+function detectPlatform(): InstallPlatform {
+  const userAgent = window.navigator.userAgent.toLowerCase();
+  const isIPadOs = window.navigator.platform === 'MacIntel' && window.navigator.maxTouchPoints > 1;
+
+  return /iphone|ipad|ipod/.test(userAgent) || isIPadOs ? 'ios' : 'other';
+}
+
+function isStandaloneMode(): boolean {
+  const navigatorWithStandalone = window.navigator as StandaloneNavigator;
+  return window.matchMedia('(display-mode: standalone)').matches || navigatorWithStandalone.standalone === true;
+}
+
 export default function FieldManagerLoginClient() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [installView, setInstallView] = useState<InstallView>('checking');
+  const [installPlatform, setInstallPlatform] = useState<InstallPlatform>('other');
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [installOutcome, setInstallOutcome] = useState<InstallOutcome>('idle');
+  const [installBusy, setInstallBusy] = useState(false);
+
+  useEffect(() => {
+    setInstallPlatform(detectPlatform());
+    setInstallView(isStandaloneMode() ? 'login' : 'install');
+
+    if ('serviceWorker' in window.navigator) {
+      void window.navigator.serviceWorker
+        .register('/field-manager-sw.js', {
+          scope: '/field-manager/',
+          updateViaCache: 'none',
+        })
+        .catch(() => {
+          // Installation instructions remain available even if registration fails.
+        });
+    }
+
+    function handleBeforeInstallPrompt(event: Event) {
+      event.preventDefault();
+      setInstallPrompt(event as BeforeInstallPromptEvent);
+      setInstallOutcome('idle');
+    }
+
+    function handleAppInstalled() {
+      setInstallPrompt(null);
+      setInstallOutcome('idle');
+      setInstallView('login');
+    }
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+
+  async function requestInstall() {
+    if (installBusy) return;
+
+    if (!installPrompt) {
+      setInstallOutcome('instructions');
+      return;
+    }
+
+    setInstallBusy(true);
+
+    try {
+      await installPrompt.prompt();
+      await installPrompt.userChoice;
+      setInstallPrompt(null);
+      setInstallView('login');
+    } catch {
+      setInstallOutcome('instructions');
+    } finally {
+      setInstallBusy(false);
+    }
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -66,6 +158,76 @@ export default function FieldManagerLoginClient() {
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  if (installView === 'checking') {
+    return (
+      <main className={`${styles.mobilePage} ${styles.installPage}`}>
+        <section className={styles.installLoadingCard} aria-live="polite">
+          <span className={styles.loadingSpinner} aria-hidden="true" />
+          <strong>Opening Farm Manager App…</strong>
+        </section>
+      </main>
+    );
+  }
+
+  if (installView === 'install') {
+    const showInstructions = installOutcome === 'instructions';
+
+    return (
+      <main className={`${styles.mobilePage} ${styles.installPage}`}>
+        <section className={styles.installCard} aria-labelledby="field-manager-install-title">
+          <header className={styles.installHeader}>
+            <Image
+              className={styles.installLogo}
+              src="/icon.png"
+              alt="Aim4price Farm Manager App"
+              width={92}
+              height={92}
+              priority
+            />
+            <span className={styles.loginEyebrow}>Aim4price Farm Manager App</span>
+            <h1 id="field-manager-install-title">Do you have the app?</h1>
+          </header>
+
+          <div className={styles.installActions}>
+            <button
+              type="button"
+              className={styles.installSecondary}
+              onClick={() => setInstallView('login')}
+            >
+              Yes — Continue to login
+            </button>
+
+            <button
+              type="button"
+              className={styles.installPrimary}
+              onClick={() => void requestInstall()}
+              disabled={installBusy}
+            >
+              {installBusy ? 'Opening installer…' : 'No — Download app'}
+            </button>
+          </div>
+
+          {showInstructions ? (
+            <section className={styles.installInstructions} aria-live="polite">
+              <p>
+                {installPlatform === 'ios'
+                  ? 'Tap Share, then Add to Home Screen.'
+                  : 'Open the browser menu and select Install app.'}
+              </p>
+              <button
+                type="button"
+                className={styles.installContinue}
+                onClick={() => setInstallView('login')}
+              >
+                Continue to login
+              </button>
+            </section>
+          ) : null}
+        </section>
+      </main>
+    );
   }
 
   return (
