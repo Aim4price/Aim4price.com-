@@ -1,7 +1,6 @@
 'use client';
 
 import Image from 'next/image';
-import Link from 'next/link';
 import { useEffect, useState, type FormEvent } from 'react';
 import styles from '../dealer.module.css';
 
@@ -257,7 +256,7 @@ export default function DealerLoginClient({ hasAccountSession = false }: { hasAc
       <section className={styles.loginCard} aria-labelledby="dealer-login-title">
         <header className={styles.loginHeader}>
           <span className={styles.loginEyebrow}>Aim4price Dealer App</span>
-          <h1 id="dealer-login-title">Staff sign in</h1>
+          <h1 id="dealer-login-title">Sign In</h1>
           <p className={styles.loginIntro}>
             Use the username and password supplied by your dealership.
           </p>
@@ -331,26 +330,6 @@ export default function DealerLoginClient({ hasAccountSession = false }: { hasAc
           </form>
         )}
 
-        <div className={styles.accountArea}>
-          {accountSessionActive ? (
-            <>
-              <span className={styles.accountLabel}>Want to keep using the account already open?</span>
-              <Link className={styles.accountLink} href="/auth" prefetch={false}>
-                Return to current Aim4price account
-              </Link>
-            </>
-          ) : (
-            <>
-              <span className={styles.accountLabel}>Dealer account holder?</span>
-              <Link className={styles.accountLink} href="/auth?returnTo=%2Fdealer#login" prefetch={false}>
-                Sign in with main dealer account
-              </Link>
-              <span className={styles.helpText}>
-                Forgot a staff password? Ask the dealer account holder to reset it.
-              </span>
-            </>
-          )}
-        </div>
       </section>
     </main>
   );
