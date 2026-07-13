@@ -4936,7 +4936,7 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
               }}
             >
               <strong>Use {getSpecsLabel(selectedSector)}</strong>
-              <span className={styles.choiceCardNote}>{dealerAppMode ? 'When the model is uncertain.' : 'Use when exact model data is unavailable or the model is uncertain.'}</span>
+              <span className={styles.choiceCardNote}>{dealerAppMode ? 'Uncertain model' : 'Use when exact model data is unavailable or the model is uncertain.'}</span>
             </button>
           ) : null}
         </div>
@@ -5651,7 +5651,7 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
                   setUsageModalMode('percent');
                 }}
               >
-                {getUnknownUsageButtonLabel(selectedSector, selectedFamily?.usageMetricType)}
+                {dealerAppMode ? 'I do not know' : getUnknownUsageButtonLabel(selectedSector, selectedFamily?.usageMetricType)}
               </button>
             </>
           ) : (
