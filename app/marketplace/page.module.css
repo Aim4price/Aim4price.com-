@@ -2720,3 +2720,46 @@
     overflow: visible;
   }
 }
+
+/* Keep the listing details as the only vertical scroll area on phones. This
+   prevents the final seller rows from sitting behind the browser/app controls. */
+@media (max-width: 720px) {
+  .modalOverlay {
+    box-sizing: border-box;
+    padding:
+      max(0.75rem, env(safe-area-inset-top))
+      max(0.75rem, env(safe-area-inset-right))
+      max(0.75rem, env(safe-area-inset-bottom))
+      max(0.75rem, env(safe-area-inset-left));
+    overflow: hidden;
+  }
+
+  .listingModal,
+  .listingModalNoMedia {
+    height: calc(100dvh - 1.5rem - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    max-height: calc(100dvh - 1.5rem - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    grid-template-rows: minmax(11rem, min(38dvh, 19rem)) minmax(0, 1fr);
+    overflow: hidden;
+  }
+
+  .listingModalNoMedia {
+    grid-template-rows: minmax(9rem, min(28dvh, 14rem)) minmax(0, 1fr);
+  }
+
+  .modalGallery,
+  .listingModalNoMedia .modalGallery {
+    min-height: 0;
+  }
+
+  .modalDetails,
+  .listingModalNoMedia .modalDetails {
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scroll-padding-bottom: max(2rem, calc(1rem + env(safe-area-inset-bottom)));
+    padding-bottom: max(2rem, calc(1rem + env(safe-area-inset-bottom)));
+    -webkit-overflow-scrolling: touch;
+  }
+}
