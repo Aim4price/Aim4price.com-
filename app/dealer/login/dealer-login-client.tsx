@@ -5,9 +5,9 @@ import Link from 'next/link';
 import { useEffect, useState, type FormEvent } from 'react';
 import styles from '../dealer.module.css';
 
-type InstallPlatform = 'android' | 'ios' | 'desktop' | 'other';
+type InstallPlatform = 'ios' | 'other';
 type InstallView = 'checking' | 'install' | 'login';
-type InstallOutcome = 'idle' | 'instructions' | 'installed' | 'dismissed';
+type InstallOutcome = 'idle' | 'instructions';
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -34,39 +34,12 @@ function detectPlatform(): InstallPlatform {
   const userAgent = window.navigator.userAgent.toLowerCase();
   const isIPadOs = window.navigator.platform === 'MacIntel' && window.navigator.maxTouchPoints > 1;
 
-  if (/iphone|ipad|ipod/.test(userAgent) || isIPadOs) return 'ios';
-  if (/android/.test(userAgent)) return 'android';
-  if (!/mobile/.test(userAgent)) return 'desktop';
-  return 'other';
+  return /iphone|ipad|ipod/.test(userAgent) || isIPadOs ? 'ios' : 'other';
 }
 
 function isStandaloneMode(): boolean {
   const navigatorWithStandalone = window.navigator as StandaloneNavigator;
   return window.matchMedia('(display-mode: standalone)').matches || navigatorWithStandalone.standalone === true;
-}
-
-function DownloadIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M12 3v11m0 0 4-4m-4 4-4-4M5 17v2h14v-2" />
-    </svg>
-  );
-}
-
-function ShareIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M12 16V4m0 0L8 8m4-4 4 4M5 12v7h14v-7" />
-    </svg>
-  );
-}
-
-function HomeScreenIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M4 10.5 12 4l8 6.5V20H4v-9.5ZM9 20v-6h6v6" />
-    </svg>
-  );
 }
 
 export default function DealerLoginClient({ hasAccountSession = false }: { hasAccountSession?: boolean }) {
@@ -106,7 +79,8 @@ export default function DealerLoginClient({ hasAccountSession = false }: { hasAc
 
     function handleAppInstalled() {
       setInstallPrompt(null);
-      setInstallOutcome('installed');
+      setInstallOutcome('idle');
+      setInstallView('login');
     }
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -130,9 +104,9 @@ export default function DealerLoginClient({ hasAccountSession = false }: { hasAc
 
     try {
       await installPrompt.prompt();
-      const choice = await installPrompt.userChoice;
+      await installPrompt.userChoice;
       setInstallPrompt(null);
-      setInstallOutcome(choice.outcome === 'accepted' ? 'installed' : 'dismissed');
+      setInstallView('login');
     } catch {
       setInstallOutcome('instructions');
     } finally {
@@ -220,83 +194,59 @@ export default function DealerLoginClient({ hasAccountSession = false }: { hasAc
   }
 
   if (installView === 'install') {
-    const isInstalled = installOutcome === 'installed';
     const showInstructions = installOutcome === 'instructions';
 
     return (
       <main className={styles.loginPage}>
         <section className={styles.installCard} aria-labelledby="dealer-install-title">
           <header className={styles.installHeader}>
-            <span className={styles.installAppIcon} aria-hidden="true">
-              <Image src="/icon.png" alt="" width={88} height={88} priority />
-            </span>
+            <Image
+              className={styles.installLogo}
+              src="/icon.png"
+              alt="Aim4price Dealer App"
+              width={92}
+              height={92}
+              priority
+            />
             <span className={styles.loginEyebrow}>Aim4price Dealer App</span>
-            <h1 id="dealer-install-title">Install the app first</h1>
-            <p className={styles.installIntro}>
-              Add the Dealer App to this phone for a cleaner, full-screen experience and faster access from the Home screen.
-            </p>
+            <h1 id="dealer-install-title">Do you have the app?</h1>
           </header>
 
-          <div className={styles.installBenefits} aria-label="Dealer App benefits">
-            <span><HomeScreenIcon />Home-screen access</span>
-            <span><DownloadIcon />Full-screen app view</span>
-          </div>
-
-          {isInstalled ? (
-            <div className={styles.installSuccess} role="status">
-              <strong>Dealer App installed</strong>
-              <span>Open it from your phone’s Home screen. You may also continue to staff sign in here.</span>
-            </div>
-          ) : null}
-
-          {installOutcome === 'dismissed' ? (
-            <p className={styles.installNotice} role="status">
-              Installation was cancelled. Tap the download button whenever you are ready, or continue to sign in below.
-            </p>
-          ) : null}
-
-          {showInstructions ? (
-            <section className={styles.installInstructions} aria-live="polite">
-              <h2>{installPlatform === 'ios' ? 'Install on iPhone or iPad' : 'Install from your browser'}</h2>
-              {installPlatform === 'ios' ? (
-                <ol>
-                  <li><span className={styles.instructionIcon}><ShareIcon /></span><span>Tap the <strong>Share</strong> button in Safari.</span></li>
-                  <li><span className={styles.instructionNumber}>2</span><span>Choose <strong>Add to Home Screen</strong>.</span></li>
-                  <li><span className={styles.instructionNumber}>3</span><span>Tap <strong>Add</strong>, then open Dealer from the Home screen.</span></li>
-                </ol>
-              ) : (
-                <ol>
-                  <li><span className={styles.instructionNumber}>1</span><span>Open this page in Chrome or your main browser.</span></li>
-                  <li><span className={styles.instructionNumber}>2</span><span>Open the browser menu and choose <strong>Install app</strong> or <strong>Add to Home screen</strong>.</span></li>
-                  <li><span className={styles.instructionNumber}>3</span><span>Confirm the installation, then open Dealer from your apps or Home screen.</span></li>
-                </ol>
-              )}
-            </section>
-          ) : null}
-
           <div className={styles.installActions}>
+            <button
+              type="button"
+              className={styles.installSecondary}
+              onClick={() => setInstallView('login')}
+            >
+              Yes — Continue to login
+            </button>
+
             <button
               type="button"
               className={styles.installPrimary}
               onClick={() => void requestInstall()}
               disabled={installBusy}
             >
-              <DownloadIcon />
-              {installBusy ? 'Preparing download…' : isInstalled ? 'Download again' : 'Download Dealer App'}
-            </button>
-
-            <button
-              type="button"
-              className={styles.installSecondary}
-              onClick={() => setInstallView('login')}
-            >
-              {isInstalled ? 'Continue to staff sign in' : 'Already installed? Continue to sign in'}
+              {installBusy ? 'Opening installer…' : 'No — Download app'}
             </button>
           </div>
 
-          <p className={styles.installFootnote}>
-            No app-store account is required. The Dealer App installs directly from Aim4price.
-          </p>
+          {showInstructions ? (
+            <section className={styles.installInstructions} aria-live="polite">
+              <p>
+                {installPlatform === 'ios'
+                  ? 'Tap Share, then Add to Home Screen.'
+                  : 'Open the browser menu and select Install app.'}
+              </p>
+              <button
+                type="button"
+                className={styles.installContinue}
+                onClick={() => setInstallView('login')}
+              >
+                Continue to login
+              </button>
+            </section>
+          ) : null}
         </section>
       </main>
     );
