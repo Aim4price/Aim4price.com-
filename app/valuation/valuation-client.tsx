@@ -4501,10 +4501,12 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
           <span className={styles.selectedSummaryPill}>{SECTOR_LABELS[selectedSector]}</span>
         </div>
 
-        <div className={styles.equipmentStageIntro}>
-          <h2 className={styles.stepTitle}>Choose {getAssetTypeLabel(selectedSector)}</h2>
-          <p className={styles.stepText}>{dealerAppMode ? 'Search or choose below.' : `Search or choose the ${getAssetTypeLabel(selectedSector)}. Selecting one moves to the brand step automatically.`}</p>
-        </div>
+        {!dealerAppMode ? (
+          <div className={styles.equipmentStageIntro}>
+            <h2 className={styles.stepTitle}>Choose {getAssetTypeLabel(selectedSector)}</h2>
+            <p className={styles.stepText}>Search or choose the {getAssetTypeLabel(selectedSector)}. Selecting one moves to the brand step automatically.</p>
+          </div>
+        ) : null}
 
         <div className={`${styles.currentCard} ${styles.equipmentPickerCard}`}>
           <div className={styles.equipmentPickerHead}>
@@ -4797,10 +4799,12 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
           ) : null}
         </div>
 
-        <div className={styles.equipmentStageIntro}>
-          <h2 className={styles.stepTitle}>Choose brand</h2>
-          <p className={styles.stepText}>{dealerAppMode ? 'Search or choose a brand.' : `Search or choose the brand for this ${selectedMotorSubtypeConfig ? selectedMotorSubtypeConfig.fieldLabel.toLowerCase() : getAssetItemLabel(selectedSector)}. Selecting one moves to the next step automatically.`}</p>
-        </div>
+        {!dealerAppMode ? (
+          <div className={styles.equipmentStageIntro}>
+            <h2 className={styles.stepTitle}>Choose brand</h2>
+            <p className={styles.stepText}>Search or choose the brand for this {selectedMotorSubtypeConfig ? selectedMotorSubtypeConfig.fieldLabel.toLowerCase() : getAssetItemLabel(selectedSector)}. Selecting one moves to the next step automatically.</p>
+          </div>
+        ) : null}
 
         <div className={`${styles.currentCard} ${styles.equipmentPickerCard}`}>
           <div className={styles.equipmentPickerHead}>
@@ -4887,8 +4891,12 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
 
     return (
       <div>
-        <h2 className={styles.stepTitle}>Choose estimate path</h2>
-        <p className={styles.stepText}>{dealerAppMode ? 'Choose one.' : 'Choose one path first. Aim4price only shows the matching setup after you select it.'}</p>
+        {!dealerAppMode ? (
+          <>
+            <h2 className={styles.stepTitle}>Choose estimate path</h2>
+            <p className={styles.stepText}>Choose one path first. Aim4price only shows the matching setup after you select it.</p>
+          </>
+        ) : null}
 
         <div className={pathDeckClassName}>
           {showExactPathCard ? (
@@ -5488,11 +5496,15 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
       <div className={styles.detailsModalOverlay} role="dialog" aria-modal="true" aria-label={`Choose ${getAssetNounLabel(selectedSector)} manufacturing year`}>
         <button type="button" className={styles.detailsModalBackdrop} aria-label="Close" onClick={() => setActiveDetailsModal(null)} />
         <div className={`${styles.detailsModal} ${styles.yearDetailsModal}`}>
-          <div className={styles.detailsModalHeader}>
+          <div className={`${styles.detailsModalHeader} ${dealerAppMode ? dealerStyles.dealerCompactModalHeader : ''}`}>
             <div>
               <span className={styles.currentEyebrow}>Step 1</span>
-              <h3 className={styles.detailsModalTitle}>{getAssetNounTitle(selectedSector)} manufacturing year</h3>
-              <p className={styles.detailsModalText}>{dealerAppMode ? 'Slide or enter the year.' : 'Slide to the year, fine-tune it if needed, then continue.'}</p>
+              {!dealerAppMode ? (
+                <>
+                  <h3 className={styles.detailsModalTitle}>{getAssetNounTitle(selectedSector)} manufacturing year</h3>
+                  <p className={styles.detailsModalText}>Slide to the year, fine-tune it if needed, then continue.</p>
+                </>
+              ) : null}
             </div>
             <button type="button" className={styles.saveModalClose} onClick={() => setActiveDetailsModal(null)} aria-label="Close">
               ×
@@ -5597,17 +5609,21 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
       <div className={styles.detailsModalOverlay} role="dialog" aria-modal="true" aria-label={`Enter ${getAssetNounLabel(selectedSector)} usage`}>
         <button type="button" className={styles.detailsModalBackdrop} aria-label="Close" onClick={() => setActiveDetailsModal(null)} />
         <div className={styles.detailsModal}>
-          <div className={styles.detailsModalHeader}>
+          <div className={`${styles.detailsModalHeader} ${dealerAppMode ? dealerStyles.dealerCompactModalHeader : ''}`}>
             <div>
               <span className={styles.currentEyebrow}>Step 2</span>
-              <h3 className={styles.detailsModalTitle}>{usageModalMode === 'hours' && showHoursInput ? selectedUsageFieldLabel : 'Worked percentage'}</h3>
-              <p className={styles.detailsModalText}>
-                {usageModalMode === 'hours' && showHoursInput
-                  ? selectedUsageDisplayUnit === 'km'
-                    ? dealerAppMode ? 'Enter the kilometres.' : 'Enter the odometer kilometres if they are available.'
-                    : dealerAppMode ? 'Enter the hours.' : 'Enter the engine or equipment hours if they are available.'
-                  : dealerAppMode ? 'Estimate the working life used.' : `Estimate how much of the ${getAssetNounLabel(selectedSector)}'s working life has already been used.`}
-              </p>
+              {!dealerAppMode ? (
+                <>
+                  <h3 className={styles.detailsModalTitle}>{usageModalMode === 'hours' && showHoursInput ? selectedUsageFieldLabel : 'Worked percentage'}</h3>
+                  <p className={styles.detailsModalText}>
+                    {usageModalMode === 'hours' && showHoursInput
+                      ? selectedUsageDisplayUnit === 'km'
+                        ? 'Enter the odometer kilometres if they are available.'
+                        : 'Enter the engine or equipment hours if they are available.'
+                      : `Estimate how much of the ${getAssetNounLabel(selectedSector)}'s working life has already been used.`}
+                  </p>
+                </>
+              ) : null}
             </div>
             <button type="button" className={styles.saveModalClose} onClick={() => setActiveDetailsModal(null)} aria-label="Close">
               ×
