@@ -454,227 +454,70 @@
 
 
 .installLoadingCard {
-  width: min(100%, 300px);
   display: grid;
   justify-items: center;
-  gap: 13px;
-  border: 1px solid rgba(37, 71, 51, 0.13);
-  border-radius: 22px;
-  background: rgba(255, 255, 255, 0.97);
-  padding: 26px;
-  box-shadow: 0 20px 46px rgba(18, 53, 45, 0.1);
+  gap: 12px;
+  color: var(--dealer-ink);
 }
 
 .installLoadingCard strong {
-  color: var(--dealer-ink);
-  font-size: 0.86rem;
+  font-size: 0.82rem;
   font-weight: 850;
 }
 
 .installCard {
-  width: min(100%, 450px);
+  width: min(100%, 390px);
   box-sizing: border-box;
-  border: 1px solid rgba(37, 71, 51, 0.13);
-  border-radius: 30px;
+  border: 1px solid rgba(37, 71, 51, 0.12);
+  border-radius: 28px;
   background: rgba(255, 255, 255, 0.98);
-  padding: clamp(20px, 5vw, 30px);
-  box-shadow: 0 26px 64px rgba(18, 53, 45, 0.13);
+  padding: clamp(26px, 7vw, 36px);
+  box-shadow: 0 24px 58px rgba(18, 53, 45, 0.12);
 }
 
 .installHeader {
   display: grid;
   justify-items: center;
-  gap: 8px;
+  gap: 10px;
   text-align: center;
 }
 
-.installAppIcon {
-  width: 88px;
-  height: 88px;
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-  margin-bottom: 5px;
-  border: 1px solid rgba(37, 71, 51, 0.11);
-  border-radius: 24px;
-  background: #ffffff;
-  box-shadow: 0 15px 32px rgba(18, 53, 45, 0.12);
-}
-
-.installAppIcon img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+.installLogo {
+  width: 92px;
+  height: 92px;
+  display: block;
+  margin-bottom: 4px;
+  object-fit: contain;
+  mix-blend-mode: multiply;
 }
 
 .installCard h1 {
   margin: 0;
   color: var(--dealer-ink);
-  font-size: clamp(1.85rem, 8vw, 2.35rem);
+  font-size: clamp(1.9rem, 8vw, 2.25rem);
   font-weight: 900;
   letter-spacing: -0.05em;
-  line-height: 1.02;
-}
-
-.installIntro {
-  max-width: 31rem;
-  margin: 1px 0 0;
-  color: var(--dealer-muted);
-  font-size: 0.88rem;
-  font-weight: 650;
-  line-height: 1.52;
-}
-
-.installBenefits {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  margin-top: 20px;
-}
-
-.installBenefits span {
-  min-width: 0;
-  min-height: 58px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  border: 1px solid rgba(37, 71, 51, 0.11);
-  border-radius: 15px;
-  background: var(--dealer-green-soft);
-  color: var(--dealer-green);
-  padding: 8px 10px;
-  font-size: 0.72rem;
-  font-weight: 820;
-  line-height: 1.25;
-  text-align: center;
-}
-
-.installBenefits svg,
-.installPrimary svg,
-.instructionIcon svg {
-  width: 20px;
-  height: 20px;
-  flex: 0 0 auto;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.9;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.installSuccess,
-.installNotice {
-  margin-top: 14px;
-  border-radius: 15px;
-  padding: 12px 13px;
-  font-size: 0.76rem;
-  line-height: 1.45;
-}
-
-.installSuccess {
-  display: grid;
-  gap: 3px;
-  border: 1px solid rgba(37, 107, 76, 0.18);
-  background: #eef8f1;
-  color: #20573d;
-}
-
-.installSuccess strong {
-  font-size: 0.8rem;
-  font-weight: 900;
-}
-
-.installSuccess span {
-  font-weight: 680;
-}
-
-.installNotice {
-  margin-bottom: 0;
-  border: 1px solid rgba(143, 105, 29, 0.18);
-  background: #fff8e8;
-  color: #785719;
-  font-weight: 700;
-}
-
-.installInstructions {
-  display: grid;
-  gap: 11px;
-  margin-top: 14px;
-  border: 1px solid rgba(37, 71, 51, 0.13);
-  border-radius: 18px;
-  background: #f8fbf9;
-  padding: 15px;
-}
-
-.installInstructions h2 {
-  margin: 0;
-  color: var(--dealer-ink);
-  font-size: 0.88rem;
-  font-weight: 900;
-  letter-spacing: -0.015em;
-}
-
-.installInstructions ol {
-  display: grid;
-  gap: 10px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.installInstructions li {
-  display: grid;
-  grid-template-columns: 30px minmax(0, 1fr);
-  align-items: center;
-  gap: 10px;
-  color: var(--dealer-muted);
-  font-size: 0.76rem;
-  font-weight: 670;
-  line-height: 1.42;
-}
-
-.installInstructions li strong {
-  color: var(--dealer-ink);
-  font-weight: 850;
-}
-
-.instructionNumber,
-.instructionIcon {
-  width: 30px;
-  height: 30px;
-  display: grid;
-  place-items: center;
-  border-radius: 10px;
-  background: var(--dealer-green-soft);
-  color: var(--dealer-green);
-  font-size: 0.74rem;
-  font-weight: 900;
-}
-
-.instructionIcon svg {
-  width: 17px;
-  height: 17px;
+  line-height: 1.05;
 }
 
 .installActions {
   display: grid;
-  gap: 10px;
-  margin-top: 18px;
+  gap: 11px;
+  margin-top: 26px;
 }
 
 .installPrimary,
-.installSecondary {
+.installSecondary,
+.installContinue {
   width: 100%;
   min-height: 56px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 9px;
   border-radius: 16px;
-  padding: 0 16px;
-  font: 900 0.86rem Montserrat, var(--font-body, Inter), Arial, sans-serif;
-  line-height: 1.25;
+  padding: 0 18px;
+  font: 900 0.88rem Montserrat, var(--font-body, Inter), Arial, sans-serif;
+  line-height: 1.2;
   text-align: center;
   cursor: pointer;
   transition: transform 160ms ease, background 160ms ease, border-color 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
@@ -684,31 +527,31 @@
   border: 1px solid var(--dealer-green);
   background: var(--dealer-green);
   color: #ffffff;
-  box-shadow: 0 15px 28px rgba(37, 71, 51, 0.2);
+  box-shadow: 0 14px 26px rgba(37, 71, 51, 0.2);
 }
 
 .installPrimary:hover:not(:disabled) {
   border-color: var(--dealer-green-dark);
   background: var(--dealer-green-dark);
-  box-shadow: 0 18px 32px rgba(29, 57, 41, 0.24);
+  box-shadow: 0 17px 30px rgba(29, 57, 41, 0.24);
   transform: translateY(-1px);
 }
 
 .installSecondary {
-  min-height: 50px;
-  border: 1px solid rgba(37, 71, 51, 0.18);
+  border: 1px solid rgba(37, 71, 51, 0.2);
   background: #ffffff;
   color: var(--dealer-green);
 }
 
 .installSecondary:hover {
-  border-color: rgba(37, 71, 51, 0.36);
+  border-color: rgba(37, 71, 51, 0.38);
   background: var(--dealer-green-soft);
   transform: translateY(-1px);
 }
 
 .installPrimary:active,
-.installSecondary:active {
+.installSecondary:active,
+.installContinue:active {
   transform: translateY(1px);
 }
 
@@ -719,23 +562,37 @@
   box-shadow: none;
 }
 
-.installFootnote {
-  margin: 14px 0 0;
-  color: rgba(100, 116, 106, 0.9);
-  font-size: 0.69rem;
-  font-weight: 650;
-  line-height: 1.45;
+.installInstructions {
+  display: grid;
+  gap: 11px;
+  margin-top: 14px;
+  border: 1px solid rgba(37, 71, 51, 0.13);
+  border-radius: 16px;
+  background: var(--dealer-green-soft);
+  padding: 13px;
   text-align: center;
 }
 
-@media (max-width: 380px) {
-  .installBenefits {
-    grid-template-columns: 1fr;
-  }
+.installInstructions p {
+  margin: 0;
+  color: var(--dealer-green);
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.4;
+}
 
-  .installBenefits span {
-    min-height: 48px;
-  }
+.installContinue {
+  min-height: 46px;
+  border: 1px solid rgba(37, 71, 51, 0.2);
+  background: #ffffff;
+  color: var(--dealer-green);
+  font-size: 0.8rem;
+}
+
+.installContinue:hover {
+  border-color: rgba(37, 71, 51, 0.38);
+  background: #f9fcfa;
+  transform: translateY(-1px);
 }
 
 @media (max-height: 760px) {
@@ -744,10 +601,9 @@
     overflow-y: auto;
   }
 
-  .installAppIcon {
-    width: 72px;
-    height: 72px;
-    border-radius: 20px;
+  .installLogo {
+    width: 76px;
+    height: 76px;
   }
 
   .installCard {
