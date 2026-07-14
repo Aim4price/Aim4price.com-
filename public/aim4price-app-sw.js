@@ -21,7 +21,10 @@ self.addEventListener('fetch', (event) => {
 
   const requestUrl = new URL(event.request.url);
   if (requestUrl.origin !== self.location.origin) return;
-  if (!requestUrl.pathname.startsWith(OWNER_APP_SCOPE_PREFIX)) return;
+  const isOwnerAppRequest =
+    requestUrl.pathname === OWNER_APP_SCOPE_PREFIX ||
+    requestUrl.pathname.startsWith(`${OWNER_APP_SCOPE_PREFIX}/`);
+  if (!isOwnerAppRequest) return;
 
   event.respondWith(fetch(event.request));
 });
