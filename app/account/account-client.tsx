@@ -1626,6 +1626,10 @@ export default function AccountClient() {
     window.location.assign("/account/dealer-app");
   }
 
+  function openOwnerAppAccessPage() {
+    window.location.assign("/account/owner-app");
+  }
+
   function openPartnerDirectory() {
     openActionModal("partnerDirectory");
   }
@@ -1946,6 +1950,18 @@ export default function AccountClient() {
                 >
                   <QuickActionIcon name="pin" />
                   <strong>Field Manager access</strong>
+                  <span className={styles.quickActionChevron}>›</span>
+                </button>
+              ) : null}
+
+              {isOwnerAccount ? (
+                <button
+                  type="button"
+                  className={styles.quickActionButton}
+                  onClick={openOwnerAppAccessPage}
+                >
+                  <QuickActionIcon name="registers" />
+                  <strong>Manage Owner App users</strong>
                   <span className={styles.quickActionChevron}>›</span>
                 </button>
               ) : null}
