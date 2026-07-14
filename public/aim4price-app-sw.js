@@ -13,6 +13,13 @@ self.addEventListener('install', () => {
 });
 
 self.addEventListener('activate', (event) => {
+  const registeredScopePath = new URL(self.registration.scope).pathname.replace(/\/+$/, '') || '/';
+
+  if (registeredScopePath !== OWNER_APP_SCOPE_PREFIX) {
+    event.waitUntil(self.registration.unregister());
+    return;
+  }
+
   event.waitUntil(self.clients.claim());
 });
 
