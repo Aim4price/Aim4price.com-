@@ -255,6 +255,14 @@ export default function DealerLoginClient({ hasAccountSession = false }: { hasAc
     <main className={styles.loginPage}>
       <section className={styles.loginCard} aria-labelledby="dealer-login-title">
         <header className={styles.loginHeader}>
+          <Image
+            className={styles.loginLogo}
+            src="/icon.png"
+            alt="Aim4price Dealer App"
+            width={76}
+            height={76}
+            priority
+          />
           <span className={styles.loginEyebrow}>Aim4price Dealer App</span>
           <h1 id="dealer-login-title">Sign In</h1>
           <p className={styles.loginIntro}>
