@@ -14,20 +14,20 @@ export async function GET() {
       scope: '/field-manager',
       display: 'standalone',
       orientation: 'portrait',
-      background_color: '#f5f8f5',
-      theme_color: '#12352d',
+      background_color: '#ffffff',
+      theme_color: '#ffffff',
       launch_handler: {
         client_mode: 'navigate-new',
       },
       icons: [
         {
-          src: '/field-manager-icon.png',
+          src: '/field-manager-icon.png?v=2',
           sizes: '512x512',
           type: 'image/png',
           purpose: 'any maskable',
         },
         {
-          src: '/field-manager-apple-icon.png',
+          src: '/field-manager-apple-icon.png?v=2',
           sizes: '180x180',
           type: 'image/png',
         },
