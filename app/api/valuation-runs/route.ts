@@ -363,7 +363,7 @@ function buildFriendlyError(error: unknown): { status: number; message: string }
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession({ allowDealerApp: true });
+    const session = await getServerSession({ allowDealerApp: true, allowOwnerApp: true });
 
     if (!session?.user?.id) {
       return NextResponse.json<SaveValuationRunApiResponse>(
