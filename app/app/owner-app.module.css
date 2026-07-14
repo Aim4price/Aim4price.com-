@@ -1,0 +1,899 @@
+.appPage,
+.loginPage,
+.appModule {
+  --app-green: #254733;
+  --app-green-dark: #1d3929;
+  --app-green-soft: #eef5f0;
+  --app-ink: #12352d;
+  --app-muted: #65746d;
+  --app-line: rgba(37, 71, 51, 0.14);
+  min-height: 100vh;
+  min-height: 100dvh;
+  box-sizing: border-box;
+  background: #ffffff;
+  color: var(--app-ink);
+  font-family: Montserrat, var(--font-body, Inter), Arial, sans-serif;
+}
+
+.appPage *,
+.loginPage *,
+.appModule * {
+  box-sizing: border-box;
+}
+
+.appPage button,
+.appPage input,
+.appPage select,
+.appPage textarea,
+.loginPage button,
+.loginPage input {
+  font-family: inherit;
+}
+
+.appPage {
+  padding:
+    calc(78px + env(safe-area-inset-top))
+    max(14px, env(safe-area-inset-right))
+    max(28px, env(safe-area-inset-bottom))
+    max(14px, env(safe-area-inset-left));
+}
+
+.appModule {
+  padding-top: calc(68px + env(safe-area-inset-top));
+  padding-bottom: max(20px, env(safe-area-inset-bottom));
+  overflow-x: clip;
+}
+
+.appNav {
+  position: fixed;
+  z-index: 100;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: calc(68px + env(safe-area-inset-top));
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  padding:
+    calc(10px + env(safe-area-inset-top))
+    max(14px, env(safe-area-inset-right))
+    10px
+    max(14px, env(safe-area-inset-left));
+  border-bottom: 1px solid rgba(37, 71, 51, 0.11);
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 8px 24px rgba(18, 53, 45, 0.055);
+  backdrop-filter: blur(16px);
+}
+
+.navBrand {
+  min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--app-green);
+  font-size: 0.9rem;
+  font-weight: 900;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+.navButton,
+.signOutButton {
+  min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border-radius: 14px;
+  padding: 0 15px;
+  font-size: 0.84rem;
+  font-weight: 850;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.navButton {
+  border: 1px solid var(--app-line);
+  background: #ffffff;
+  color: var(--app-green);
+}
+
+.signOutButton {
+  border: 1px solid rgba(150, 56, 56, 0.2);
+  background: #fffafa;
+  color: #8b3535;
+}
+
+.signOutButton:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.shell,
+.narrowShell {
+  width: min(100%, 540px);
+  margin: 0 auto;
+}
+
+.narrowShell {
+  width: min(100%, 480px);
+}
+
+.homeHero {
+  display: grid;
+  justify-items: center;
+  gap: 7px;
+  padding: 18px 8px 24px;
+  text-align: center;
+}
+
+.homeLogo,
+.installLogo,
+.loginLogo {
+  display: block;
+  width: 78px;
+  height: 78px;
+  object-fit: contain;
+  transform: translateX(10%);
+}
+
+.homeEyebrow,
+.pageEyebrow,
+.loginEyebrow {
+  margin: 0;
+  color: #2c6c55;
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.homeHero h1,
+.pageHeader h1,
+.loginCard h1,
+.installCard h1,
+.scheduleHeader h2 {
+  margin: 0;
+  color: var(--app-ink);
+  font-weight: 900;
+  letter-spacing: -0.05em;
+  line-height: 1.05;
+  text-wrap: balance;
+}
+
+.homeHero h1 {
+  max-width: 430px;
+  font-size: clamp(2rem, 9vw, 2.8rem);
+}
+
+.homeHero p:last-child,
+.pageHeader p,
+.loginIntro,
+.sectionIntro {
+  margin: 0;
+  color: var(--app-muted);
+  font-size: 0.9rem;
+  font-weight: 650;
+  line-height: 1.5;
+}
+
+.homeStats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  margin-bottom: 14px;
+}
+
+.statBox {
+  min-height: 86px;
+  display: grid;
+  align-content: center;
+  gap: 5px;
+  border: 1px solid var(--app-line);
+  border-radius: 18px;
+  background: #ffffff;
+  padding: 14px;
+  text-align: center;
+  box-shadow: 0 10px 24px rgba(18, 53, 45, 0.055);
+}
+
+.statBox span {
+  color: var(--app-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.statBox strong {
+  color: var(--app-green);
+  font-size: 1.28rem;
+  font-weight: 900;
+}
+
+.actionGrid {
+  display: grid;
+  gap: 11px;
+  padding: 10px;
+  border: 1px solid rgba(37, 71, 51, 0.1);
+  border-radius: 26px;
+  background: #ffffff;
+  box-shadow: 0 18px 42px rgba(18, 53, 45, 0.075);
+}
+
+.actionCard {
+  position: relative;
+  min-height: 82px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--app-line);
+  border-radius: 19px;
+  background: #ffffff;
+  color: var(--app-green);
+  padding: 17px 54px 17px 20px;
+  font-size: clamp(1.2rem, 5.5vw, 1.5rem);
+  font-weight: 900;
+  letter-spacing: -0.035em;
+  line-height: 1;
+  text-align: center;
+  text-decoration: none;
+  box-shadow: 0 9px 22px rgba(18, 53, 45, 0.055);
+}
+
+.actionCard::after {
+  content: '›';
+  position: absolute;
+  right: 20px;
+  color: rgba(37, 71, 51, 0.48);
+  font-size: 1.55rem;
+}
+
+.actionBadge {
+  position: absolute;
+  top: 11px;
+  right: 11px;
+  min-width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--app-green);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.section {
+  display: grid;
+  gap: 11px;
+  margin-top: 22px;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sectionHeader h2,
+.reportCard h2,
+.assetCard h2,
+.maintenanceCard h2,
+.detailCard h2 {
+  margin: 0;
+  color: var(--app-ink);
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: -0.025em;
+}
+
+.sectionHeader a {
+  color: var(--app-green);
+  font-size: 0.78rem;
+  font-weight: 850;
+  text-decoration: none;
+}
+
+.activityList,
+.assetList,
+.maintenanceList,
+.reportList,
+.documentList {
+  display: grid;
+  gap: 10px;
+}
+
+.activityItem,
+.emptyState,
+.notice,
+.assetCard,
+.maintenanceCard,
+.reportCard,
+.detailCard,
+.schedulePanel {
+  border: 1px solid var(--app-line);
+  border-radius: 19px;
+  background: #ffffff;
+  box-shadow: 0 10px 26px rgba(18, 53, 45, 0.06);
+}
+
+.activityItem {
+  display: grid;
+  gap: 5px;
+  padding: 14px;
+}
+
+.activityItem strong {
+  color: var(--app-ink);
+  font-size: 0.86rem;
+  font-weight: 850;
+}
+
+.activityItem p,
+.activityItem time,
+.assetMeta,
+.maintenanceMeta,
+.reportCard p,
+.detailCard p,
+.detailFact span,
+.documentItem small {
+  margin: 0;
+  color: var(--app-muted);
+  font-size: 0.78rem;
+  font-weight: 650;
+  line-height: 1.48;
+}
+
+.pageHeader {
+  display: grid;
+  gap: 6px;
+  padding: 12px 2px 18px;
+}
+
+.pageHeader h1 {
+  font-size: clamp(2rem, 9vw, 2.75rem);
+}
+
+.searchBox {
+  position: relative;
+  margin-bottom: 13px;
+}
+
+.searchBox input,
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 56px;
+  border: 1px solid rgba(37, 71, 51, 0.2);
+  border-radius: 16px;
+  background: #fbfdfb;
+  color: var(--app-ink);
+  padding: 0 14px;
+  font-size: 1rem;
+  font-weight: 720;
+  outline: none;
+}
+
+.searchBox input {
+  padding-right: 48px;
+}
+
+.searchBox span {
+  position: absolute;
+  top: 50%;
+  right: 16px;
+  color: var(--app-green);
+  font-size: 1.1rem;
+  transform: translateY(-50%);
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus,
+.searchBox input:focus {
+  border-color: rgba(37, 71, 51, 0.62);
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(37, 71, 51, 0.1);
+}
+
+.field textarea {
+  min-height: 104px;
+  padding-top: 13px;
+  resize: vertical;
+}
+
+.field {
+  display: grid;
+  gap: 7px;
+}
+
+.field > span,
+.field > label {
+  color: rgba(18, 53, 45, 0.8);
+  font-size: 0.79rem;
+  font-weight: 850;
+}
+
+.assetCard {
+  display: grid;
+  gap: 11px;
+  padding: 15px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.assetCardTop,
+.maintenanceCardTop,
+.reportCardTop,
+.detailHero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.assetCardValue {
+  color: var(--app-green);
+  font-size: 0.9rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.assetFacts,
+.detailFacts,
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.assetFact,
+.detailFact {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+  border-left: 3px solid rgba(37, 71, 51, 0.16);
+  padding-left: 9px;
+}
+
+.assetFact span,
+.detailFact span {
+  color: var(--app-muted);
+  font-size: 0.68rem;
+  font-weight: 750;
+}
+
+.assetFact strong,
+.detailFact strong {
+  overflow-wrap: anywhere;
+  color: var(--app-ink);
+  font-size: 0.8rem;
+  font-weight: 850;
+  line-height: 1.35;
+}
+
+.detailPhoto {
+  width: 100%;
+  max-height: 300px;
+  display: block;
+  border: 1px solid var(--app-line);
+  border-radius: 20px;
+  object-fit: cover;
+  background: #f4f6f4;
+}
+
+.detailCard {
+  display: grid;
+  gap: 13px;
+  padding: 16px;
+}
+
+.detailTitle {
+  min-width: 0;
+}
+
+.detailTitle h1 {
+  margin: 0;
+  color: var(--app-ink);
+  font-size: clamp(1.75rem, 8vw, 2.35rem);
+  font-weight: 900;
+  letter-spacing: -0.045em;
+  line-height: 1.08;
+}
+
+.detailTitle p {
+  margin-top: 6px;
+}
+
+.detailValue {
+  color: var(--app-green);
+  font-size: 1.15rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.buttonRow,
+.reportActions,
+.scheduleActions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.primaryButton,
+.secondaryButton,
+.dangerButton,
+.choiceButton {
+  min-height: 52px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 15px;
+  padding: 0 13px;
+  font-size: 0.82rem;
+  font-weight: 900;
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.primaryButton {
+  border: 1px solid var(--app-green);
+  background: var(--app-green);
+  color: #ffffff;
+  box-shadow: 0 12px 24px rgba(37, 71, 51, 0.18);
+}
+
+.primaryButton:hover:not(:disabled) {
+  border-color: var(--app-green-dark);
+  background: var(--app-green-dark);
+}
+
+.secondaryButton,
+.choiceButton {
+  border: 1px solid rgba(37, 71, 51, 0.2);
+  background: #ffffff;
+  color: var(--app-green);
+}
+
+.choiceButtonActive {
+  border-color: var(--app-green);
+  background: var(--app-green-soft);
+  box-shadow: inset 0 0 0 1px var(--app-green);
+}
+
+.dangerButton {
+  border: 1px solid rgba(150, 56, 56, 0.22);
+  background: #fffafa;
+  color: #8b3535;
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled,
+.dangerButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.maintenanceToolbar {
+  display: grid;
+  gap: 9px;
+  margin-bottom: 14px;
+}
+
+.maintenanceSummary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.maintenanceSummary .statBox {
+  min-height: 78px;
+  padding: 10px 6px;
+}
+
+.maintenanceCard {
+  display: grid;
+  gap: 11px;
+  padding: 15px;
+}
+
+.statusText {
+  border-left: 4px solid #c88a2b;
+  padding-left: 9px;
+  color: #7b581e;
+  font-size: 0.75rem;
+  font-weight: 900;
+}
+
+.statusOverdue {
+  border-left-color: #a8463c;
+  color: #8b3832;
+}
+
+.statusOkay {
+  border-left-color: #2c7359;
+  color: #255f4b;
+}
+
+.schedulePanel {
+  display: grid;
+  gap: 17px;
+  margin-bottom: 16px;
+  padding: 16px;
+}
+
+.scheduleHeader {
+  display: grid;
+  gap: 5px;
+}
+
+.scheduleHeader h2 {
+  font-size: 1.55rem;
+}
+
+.scheduleForm {
+  display: grid;
+  gap: 15px;
+}
+
+.choiceGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.recurringBox {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--app-line);
+  border-radius: 16px;
+  background: #fbfdfb;
+  padding: 13px;
+}
+
+.checkboxRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: var(--app-ink);
+  font-size: 0.84rem;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.checkboxRow input {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  margin: 0;
+  accent-color: var(--app-green);
+}
+
+.reportCard {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+.reportNumber {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 12px;
+  background: var(--app-green-soft);
+  color: var(--app-green);
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.reportSelectors {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 14px;
+  border: 1px solid var(--app-line);
+  border-radius: 19px;
+  background: #ffffff;
+  padding: 14px;
+}
+
+.documentItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid var(--app-line);
+  border-radius: 14px;
+  background: #ffffff;
+  padding: 12px;
+  color: var(--app-green);
+  font-size: 0.8rem;
+  font-weight: 850;
+  text-decoration: none;
+}
+
+.documentItem > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notice,
+.emptyState {
+  padding: 14px;
+  color: var(--app-muted);
+  font-size: 0.82rem;
+  font-weight: 720;
+  line-height: 1.48;
+}
+
+.noticeSuccess {
+  border-color: rgba(44, 115, 89, 0.25);
+  background: #f1f8f4;
+  color: #255f4b;
+}
+
+.noticeError {
+  border-color: rgba(150, 56, 56, 0.2);
+  background: #fff6f5;
+  color: #893b36;
+}
+
+.loadingState {
+  min-height: 45dvh;
+  display: grid;
+  place-items: center;
+  color: var(--app-green);
+  font-size: 0.86rem;
+  font-weight: 850;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  display: block;
+  border: 3px solid rgba(37, 71, 51, 0.14);
+  border-top-color: var(--app-green);
+  border-radius: 50%;
+  animation: ownerAppSpin 760ms linear infinite;
+}
+
+@keyframes ownerAppSpin {
+  to { transform: rotate(360deg); }
+}
+
+.loginPage {
+  display: grid;
+  place-items: center;
+  padding:
+    max(22px, env(safe-area-inset-top))
+    max(14px, env(safe-area-inset-right))
+    max(22px, env(safe-area-inset-bottom))
+    max(14px, env(safe-area-inset-left));
+}
+
+.loginCard,
+.installCard {
+  width: min(100%, 420px);
+  border: 1px solid var(--app-line);
+  border-radius: 27px;
+  background: #ffffff;
+  padding: clamp(22px, 6vw, 30px);
+  box-shadow: 0 22px 54px rgba(18, 53, 45, 0.11);
+}
+
+.loginHeader,
+.installHeader {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid rgba(37, 71, 51, 0.09);
+  text-align: center;
+}
+
+.loginLogo {
+  width: 76px;
+  height: 76px;
+}
+
+.installLogo {
+  width: 92px;
+  height: 92px;
+}
+
+.loginCard h1,
+.installCard h1 {
+  font-size: clamp(1.9rem, 8vw, 2.3rem);
+}
+
+.loginForm,
+.installActions,
+.installInstructions {
+  display: grid;
+  gap: 13px;
+  margin-top: 18px;
+}
+
+.passwordWrap {
+  position: relative;
+}
+
+.passwordWrap input {
+  padding-right: 80px;
+}
+
+.passwordToggle {
+  position: absolute;
+  top: 50%;
+  right: 7px;
+  min-width: 62px;
+  min-height: 42px;
+  border: 1px solid var(--app-line);
+  border-radius: 12px;
+  background: var(--app-green-soft);
+  color: var(--app-green);
+  font-size: 0.75rem;
+  font-weight: 850;
+  transform: translateY(-50%);
+}
+
+.installInstructions {
+  border: 1px solid var(--app-line);
+  border-radius: 16px;
+  background: var(--app-green-soft);
+  padding: 13px;
+  color: var(--app-green);
+  font-size: 0.8rem;
+  font-weight: 780;
+  line-height: 1.48;
+  text-align: center;
+}
+
+.loginLink {
+  display: block;
+  margin-top: 14px;
+  color: var(--app-green);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-align: center;
+  text-decoration: none;
+}
+
+@media (max-width: 390px) {
+  .appPage {
+    padding-right: 10px;
+    padding-left: 10px;
+  }
+
+  .homeStats,
+  .assetFacts,
+  .detailFacts,
+  .buttonRow,
+  .reportActions,
+  .scheduleActions {
+    grid-template-columns: 1fr;
+  }
+
+  .maintenanceSummary {
+    grid-template-columns: 1fr;
+  }
+
+  .maintenanceSummary .statBox {
+    min-height: 68px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+  }
+}
