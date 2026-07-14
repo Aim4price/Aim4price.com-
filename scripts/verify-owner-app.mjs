@@ -35,6 +35,21 @@ for (const [path, expected] of expectedHashes) {
 }
 if (existsSync(join(root, 'app/app'))) fail('Forbidden app/app directory exists.');
 
+const ownerAssetsRoutePath = 'app/api/owner-app/assets/route.ts';
+if (!existsSync(join(root, ownerAssetsRoutePath))) {
+  fail(`${ownerAssetsRoutePath} is missing.`);
+} else {
+  const ownerAssetsRoute = read(ownerAssetsRoutePath);
+  for (const required of [
+    'export async function GET',
+    'export async function POST',
+    'getOwnerAppAccess',
+    'listAllOwnerAppAssets',
+  ]) {
+    if (!ownerAssetsRoute.includes(required)) fail(`${ownerAssetsRoutePath} lacks ${required}.`);
+  }
+}
+
 const ownerLayout = read('app/owner-app/layout.tsx');
 for (const forbidden of ['AppFooter', 'globals.css', '<html', '<body']) {
   if (ownerLayout.includes(forbidden)) fail(`Owner App layout contains forbidden text: ${forbidden}`);
