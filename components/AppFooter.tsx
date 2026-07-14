@@ -67,7 +67,6 @@ export default function AppFooter() {
     pathname?.startsWith('/field-manager') ||
     pathname?.startsWith('/scan') ||
     pathname?.startsWith('/dealer') ||
-    pathname?.startsWith('/app') ||
     pathname?.startsWith('/account/dealer-app')
   ) {
     return null;
