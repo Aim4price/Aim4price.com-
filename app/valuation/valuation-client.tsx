@@ -1602,8 +1602,11 @@ function normalizeReportEmail(value: unknown): string {
   return cleaned && cleaned.includes('@') ? cleaned : '';
 }
 
-export default function ValuationClient({ dealerAppMode = false }: { dealerAppMode?: boolean } = {}) {
+export default function ValuationClient({ dealerAppMode = false, ownerAppMode = false }: { dealerAppMode?: boolean; ownerAppMode?: boolean } = {}) {
   const router = useRouter();
+  const compactAppMode = dealerAppMode || ownerAppMode;
+  const appHomePath = ownerAppMode ? '/owner-app' : dealerAppMode ? '/dealer' : '/';
+  const marketplacePath = ownerAppMode ? '/owner-app/marketplace' : dealerAppMode ? '/dealer/marketplace' : '/marketplace';
   const [step, setStep] = useState<Step>(1);
   const [selectedSector, setSelectedSector] = useState<SectorKey | null>(null);
   const [families, setFamilies] = useState<EquipmentFamilyRecord[]>([]);
@@ -3718,7 +3721,9 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
 
       if (options.redirectToAssetRegister) {
         const focusAssetId = data.assetId ?? conversionAssetId;
-        router.push(focusAssetId ? `/asset-register?convertedAssetId=${encodeURIComponent(focusAssetId)}` : '/asset-register');
+        router.push(ownerAppMode
+          ? (focusAssetId ? `/owner-app/assets/${encodeURIComponent(focusAssetId)}` : '/owner-app/assets')
+          : (focusAssetId ? `/asset-register?convertedAssetId=${encodeURIComponent(focusAssetId)}` : '/asset-register'));
       }
 
       return data;
@@ -3962,7 +3967,7 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
       setMarketplaceDraft(null);
       setSavedMarketplaceAssetId(null);
       router.push(
-        `${dealerAppMode ? '/dealer/marketplace' : '/marketplace'}?listing=${encodeURIComponent(String(listingReference))}`,
+        `${marketplacePath}?listing=${encodeURIComponent(String(listingReference))}`,
       );
     } catch (error) {
       console.error(error);
@@ -4419,7 +4424,7 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
         return;
       }
 
-      router.push(dealerAppMode ? '/dealer' : '/');
+      router.push(appHomePath);
       return;
     }
     if (isMotorSector(selectedSector) && step === 4) {
@@ -4435,7 +4440,7 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
         <div className={styles.sectorStart}>
           <div className={styles.sectorIntro}>
             <h2 className={styles.stepTitle}>Choose sector</h2>
-            <p className={styles.stepText}>{dealerAppMode ? 'Choose a sector.' : 'Pick the sector first. Hover over a card to preview that sector.'}</p>
+            <p className={styles.stepText}>{compactAppMode ? 'Choose a sector.' : 'Pick the sector first. Hover over a card to preview that sector.'}</p>
           </div>
 
           <div className={styles.sectorLargeGrid}>
@@ -4484,7 +4489,7 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
 
                     <span className={styles.sectorLabelWrap}>
                       <strong className={styles.sectorLabel}>{sector.label}</strong>
-                      {isAvailable ? <span className={styles.sectorCardHint}>{dealerAppMode ? 'Open' : 'Open estimate flow'}</span> : null}
+                      {isAvailable ? <span className={styles.sectorCardHint}>{compactAppMode ? 'Open' : 'Open estimate flow'}</span> : null}
                     </span>
                   </span>
                 </button>
@@ -4501,7 +4506,7 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
           <span className={styles.selectedSummaryPill}>{SECTOR_LABELS[selectedSector]}</span>
         </div>
 
-        {!dealerAppMode ? (
+        {!compactAppMode ? (
           <div className={styles.equipmentStageIntro}>
             <h2 className={styles.stepTitle}>Choose {getAssetTypeLabel(selectedSector)}</h2>
             <p className={styles.stepText}>Search or choose the {getAssetTypeLabel(selectedSector)}. Selecting one moves to the brand step automatically.</p>
@@ -4512,7 +4517,7 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
           <div className={styles.equipmentPickerHead}>
             <div>
               <span className={styles.fieldLabel}>Search {getAssetTypeLabel(selectedSector)}</span>
-              <p className={styles.equipmentPickerHint}>{dealerAppMode ? 'Type a name or choose below.' : <>Type a normal word, then pick the matching {getAssetItemLabel(selectedSector)} from the dropdown.</>}</p>
+              <p className={styles.equipmentPickerHint}>{compactAppMode ? 'Type a name or choose below.' : <>Type a normal word, then pick the matching {getAssetItemLabel(selectedSector)} from the dropdown.</>}</p>
             </div>
             <span className={styles.equipmentCountPill}>{familiesLoading ? 'Loading' : `${filteredFamilies.length} found`}</span>
           </div>
@@ -4799,7 +4804,7 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
           ) : null}
         </div>
 
-        {!dealerAppMode ? (
+        {!compactAppMode ? (
           <div className={styles.equipmentStageIntro}>
             <h2 className={styles.stepTitle}>Choose brand</h2>
             <p className={styles.stepText}>Search or choose the brand for this {selectedMotorSubtypeConfig ? selectedMotorSubtypeConfig.fieldLabel.toLowerCase() : getAssetItemLabel(selectedSector)}. Selecting one moves to the next step automatically.</p>
@@ -4810,7 +4815,7 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
           <div className={styles.equipmentPickerHead}>
             <div>
               <span className={styles.fieldLabel}>Search brand</span>
-              <p className={styles.equipmentPickerHint}>{dealerAppMode ? 'Type a name or choose below.' : 'Type the brand name, then pick the matching brand from the dropdown.'}</p>
+              <p className={styles.equipmentPickerHint}>{compactAppMode ? 'Type a name or choose below.' : 'Type the brand name, then pick the matching brand from the dropdown.'}</p>
             </div>
             <span className={styles.equipmentCountPill}>{brandsLoading ? 'Loading' : `${filteredBrands.length} found`}</span>
           </div>
@@ -4891,7 +4896,7 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
 
     return (
       <div>
-        {!dealerAppMode ? (
+        {!compactAppMode ? (
           <>
             <h2 className={styles.stepTitle}>Choose estimate path</h2>
             <p className={styles.stepText}>Choose one path first. Aim4price only shows the matching setup after you select it.</p>
@@ -4917,7 +4922,7 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
               }}
             >
               <strong>Use exact model</strong>
-              <span className={styles.choiceCardNote}>{dealerAppMode ? 'When you know the model.' : 'Best when you know the model and want the clearest estimate path.'}</span>
+              <span className={styles.choiceCardNote}>{compactAppMode ? 'When you know the model.' : 'Best when you know the model and want the clearest estimate path.'}</span>
             </button>
           ) : null}
 
@@ -4936,7 +4941,7 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
               }}
             >
               <strong>Use {getSpecsLabel(selectedSector)}</strong>
-              <span className={styles.choiceCardNote}>{dealerAppMode ? 'Uncertain model' : 'Use when exact model data is unavailable or the model is uncertain.'}</span>
+              <span className={styles.choiceCardNote}>{compactAppMode ? 'Uncertain model' : 'Use when exact model data is unavailable or the model is uncertain.'}</span>
             </button>
           ) : null}
         </div>
@@ -4945,7 +4950,7 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
           <div className={styles.pathSelectionPlaceholder}>Checking exact model availability...</div>
         ) : null}
 
-        {!flowMode ? <div className={styles.pathSelectionPlaceholder}>{dealerAppMode ? 'Choose a path.' : 'Select a path above to continue.'}</div> : null}
+        {!flowMode ? <div className={styles.pathSelectionPlaceholder}>{compactAppMode ? 'Choose a path.' : 'Select a path above to continue.'}</div> : null}
         {flowMode === 'exact_model' && exactTractorAvailable && showExactPathCard ? renderTractorModelPicker() : null}
         {genericExactModelPath && showExactPathCard ? renderGenericModelPicker() : null}
         {flowMode === 'generic_specs' ? renderUnknownModelChoice() : null}
@@ -4959,7 +4964,7 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
         <div className={styles.currentCardHead}>
           <div>
             <h3 className={styles.currentTitle}>Find the tractor model</h3>
-            <p className={styles.currentHint}>{dealerAppMode ? 'Choose type, drive and cab.' : 'Choose the basic setup first. The model list appears after type, drive and cab are selected.'}</p>
+            <p className={styles.currentHint}>{compactAppMode ? 'Choose type, drive and cab.' : 'Choose the basic setup first. The model list appears after type, drive and cab are selected.'}</p>
           </div>
         </div>
 
@@ -5496,10 +5501,10 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
       <div className={styles.detailsModalOverlay} role="dialog" aria-modal="true" aria-label={`Choose ${getAssetNounLabel(selectedSector)} manufacturing year`}>
         <button type="button" className={styles.detailsModalBackdrop} aria-label="Close" onClick={() => setActiveDetailsModal(null)} />
         <div className={`${styles.detailsModal} ${styles.yearDetailsModal}`}>
-          <div className={`${styles.detailsModalHeader} ${dealerAppMode ? dealerStyles.dealerCompactModalHeader : ''}`}>
+          <div className={`${styles.detailsModalHeader} ${compactAppMode ? dealerStyles.dealerCompactModalHeader : ''}`}>
             <div>
               <span className={styles.currentEyebrow}>Step 1</span>
-              {!dealerAppMode ? (
+              {!compactAppMode ? (
                 <>
                   <h3 className={styles.detailsModalTitle}>{getAssetNounTitle(selectedSector)} manufacturing year</h3>
                   <p className={styles.detailsModalText}>Slide to the year, fine-tune it if needed, then continue.</p>
@@ -5609,10 +5614,10 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
       <div className={styles.detailsModalOverlay} role="dialog" aria-modal="true" aria-label={`Enter ${getAssetNounLabel(selectedSector)} usage`}>
         <button type="button" className={styles.detailsModalBackdrop} aria-label="Close" onClick={() => setActiveDetailsModal(null)} />
         <div className={styles.detailsModal}>
-          <div className={`${styles.detailsModalHeader} ${dealerAppMode ? dealerStyles.dealerCompactModalHeader : ''}`}>
+          <div className={`${styles.detailsModalHeader} ${compactAppMode ? dealerStyles.dealerCompactModalHeader : ''}`}>
             <div>
               <span className={styles.currentEyebrow}>Step 2</span>
-              {!dealerAppMode ? (
+              {!compactAppMode ? (
                 <>
                   <h3 className={styles.detailsModalTitle}>{usageModalMode === 'hours' && showHoursInput ? selectedUsageFieldLabel : 'Worked percentage'}</h3>
                   <p className={styles.detailsModalText}>
@@ -5651,7 +5656,7 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
                   setUsageModalMode('percent');
                 }}
               >
-                {dealerAppMode ? 'I do not know' : getUnknownUsageButtonLabel(selectedSector, selectedFamily?.usageMetricType)}
+                {compactAppMode ? 'I do not know' : getUnknownUsageButtonLabel(selectedSector, selectedFamily?.usageMetricType)}
               </button>
             </>
           ) : (
@@ -5770,10 +5775,10 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
         ? getSpecsTitle(selectedSector)
         : 'Tractor details';
     const detailsIntro = genericExactModelPath
-      ? dealerAppMode
+      ? compactAppMode
         ? `Add year, ${usageTitle.toLowerCase()} and condition.`
         : `Aim4price will use the selected catalogue model replacement price. Add year, ${usageTitle.toLowerCase()} and condition to calculate the estimate.`
-      : dealerAppMode
+      : compactAppMode
         ? 'Answer each step.'
         : 'Answer one step at a time. Aim4price only reveals the next question after the current one is saved.';
 
@@ -5794,7 +5799,7 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
             <span className={`${styles.specStepNumber} ${yearStepComplete ? styles.specStepNumberDone : ''}`}>{yearStepComplete ? '✓' : 1}</span>
             <span className={styles.specStepContent}>
               <strong>{getAssetNounTitle(selectedSector)} manufacturing year</strong>
-              <small>{yearStepComplete ? getYearAnswerLabel() : dealerAppMode ? 'Choose the year.' : 'Choose the manufacturing year to start.'}</small>
+              <small>{yearStepComplete ? getYearAnswerLabel() : compactAppMode ? 'Choose the year.' : 'Choose the manufacturing year to start.'}</small>
             </span>
             <span className={styles.specStepAction}>{yearStepComplete ? 'Edit' : 'Choose year'}</span>
           </button>
@@ -5820,7 +5825,7 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
                 <div>
                   <span className={styles.currentEyebrow}>Step 3</span>
                   <h3 className={styles.currentTitle}>Condition</h3>
-                  <p className={styles.currentHint}>{dealerAppMode ? 'Choose one.' : 'Choose the closest current condition.'}</p>
+                  <p className={styles.currentHint}>{compactAppMode ? 'Choose one.' : 'Choose the closest current condition.'}</p>
                 </div>
                 {conditionStepComplete ? (
                   <span className={styles.selectedSummaryPill} data-selection-status="selected">{conditionLabel(condition)}</span>
@@ -6252,7 +6257,7 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
               <p>
                 {conversionAssetId
                   ? 'Save this estimate to update the existing manual asset. Marketplace, PDF and duplicate asset-register saves are hidden in conversion mode.'
-                  : dealerAppMode
+                  : compactAppMode
                     ? 'Download the PDF or create a listing.'
                     : 'Download the estimate PDF, send the asset to Marketplace, or save it to your Asset Register.'}
               </p>
@@ -6294,7 +6299,7 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
                       >
                         {saveLoading && finalSaveIntent === 'marketplace' ? 'Saving...' : isPublishingMarketplace ? 'Sending...' : 'Send to Marketplace'}
                       </button>
-                      {!dealerAppMode ? (
+                      {!compactAppMode ? (
                         <button
                           type="button"
                           className={styles.resultPrimaryActionButton}
@@ -6347,8 +6352,8 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
   const isSectorIntroStep = step === 1 && !selectedSector;
 
   return (
-    <main className={`${styles.page} ${dealerAppMode ? dealerStyles.dealerValuationSurface : ''}`}>
-      {!dealerAppMode ? <AppHeader active="valuation" /> : null}
+    <main className={`${styles.page} ${compactAppMode ? dealerStyles.dealerValuationSurface : ''}`}>
+      {!compactAppMode ? <AppHeader active="valuation" /> : null}
       {completionToastVisible ? (
         <div className={styles.completionToast} role="status" aria-live="polite">
           Required questions completed. You can now get the estimate.
@@ -6396,7 +6401,7 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
               </button>
               {step === 4 ? (
                 <p className={styles.preEstimateDisclaimer} data-valuation-disclaimer="true">
-                  {dealerAppMode
+                  {compactAppMode
                     ? 'Indicative estimate only. Confirm condition, documents, location and market demand.'
                     : 'Aim4price provides an indicative estimate only. It is not a certified valuation or inspection report. Final value should still be checked against asset condition, documents, location and current market demand.'}
                 </p>
