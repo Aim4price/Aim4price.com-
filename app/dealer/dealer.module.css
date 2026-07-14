@@ -19,9 +19,7 @@
   min-height: 100dvh;
   display: grid;
   place-items: center;
-  background:
-    radial-gradient(circle at 12% 0%, rgba(78, 138, 108, 0.18), transparent 21rem),
-    linear-gradient(180deg, #eff5f1 0%, #f9fbf9 48%, #edf4f0 100%);
+  background: #ffffff;
   padding: 20px;
   color: var(--dealer-ink, #12352d);
   font-family: Montserrat, var(--font-body, Inter), Arial, sans-serif;
@@ -59,9 +57,7 @@
 
 .shell,
 .loginPage {
-  background:
-    radial-gradient(circle at 12% 0%, rgba(78, 138, 108, 0.18), transparent 21rem),
-    linear-gradient(180deg, #eff5f1 0%, #f9fbf9 48%, #edf4f0 100%);
+  background: #ffffff;
 }
 
 .shell {
@@ -91,7 +87,7 @@
     10px
     max(14px, env(safe-area-inset-left));
   border-bottom: 1px solid rgba(37, 71, 51, 0.11);
-  background: rgba(247, 250, 248, 0.92);
+  background: rgba(255, 255, 255, 0.96);
   box-shadow: 0 10px 28px rgba(18, 53, 45, 0.055);
   backdrop-filter: blur(16px) saturate(1.08);
 }
@@ -442,13 +438,25 @@
   text-align: center;
 }
 
-.installLogo {
+.installLogo,
+.loginLogo {
   width: 92px;
   height: 92px;
   display: block;
   margin-bottom: 4px;
   object-fit: contain;
-  mix-blend-mode: multiply;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  transform: translateX(12%);
+}
+
+.loginLogo {
+  width: 76px;
+  height: 76px;
+  margin-bottom: 2px;
+  object-fit: contain;
 }
 
 .installCard h1 {
@@ -575,9 +583,7 @@
   padding-top: calc(68px + env(safe-area-inset-top));
   padding-bottom: max(24px, env(safe-area-inset-bottom));
   overflow-x: clip;
-  background:
-    radial-gradient(circle at 10% 0%, rgba(78, 138, 108, 0.09), transparent 22rem),
-    #f4f8f5;
+  background: #ffffff;
 }
 
 .module > main,
