@@ -2,9 +2,10 @@ import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 
 export const metadata: Metadata = {
+  applicationName: 'Aim4price Dealer App',
   title: 'Aim4price Dealer',
   description: 'Dealer valuation, discovery, leads and marketplace tools from Aim4price.',
-  manifest: '/dealer/manifest.webmanifest',
+  manifest: '/dealer/manifest.webmanifest?v=3',
   icons: {
     icon: [
       { url: '/dealer-icon-192.png?v=2', sizes: '192x192', type: 'image/png' },
