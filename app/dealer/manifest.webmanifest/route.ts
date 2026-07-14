@@ -6,17 +6,20 @@ export const dynamic = 'force-dynamic';
 export function GET() {
   return NextResponse.json(
     {
-      id: '/dealer',
+      id: '/apps/aim4price-dealer',
       name: 'Aim4price Dealer App',
       short_name: 'Dealer',
       description: 'Mobile dealer valuation, discovery, leads and marketplace tools from Aim4price.',
-      start_url: '/dealer',
-      scope: '/dealer/',
+      start_url: '/dealer/login?source=dealer-app',
+      scope: '/dealer',
       display: 'standalone',
       orientation: 'portrait-primary',
       background_color: '#f3f8f4',
       theme_color: '#254733',
       categories: ['business', 'productivity'],
+      launch_handler: {
+        client_mode: 'navigate-new',
+      },
       icons: [
         {
           src: '/dealer-icon-192.png',
