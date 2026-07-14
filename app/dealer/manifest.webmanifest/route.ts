@@ -14,27 +14,27 @@ export function GET() {
       scope: '/dealer',
       display: 'standalone',
       orientation: 'portrait-primary',
-      background_color: '#f3f8f4',
-      theme_color: '#254733',
+      background_color: '#ffffff',
+      theme_color: '#ffffff',
       categories: ['business', 'productivity'],
       launch_handler: {
         client_mode: 'navigate-new',
       },
       icons: [
         {
-          src: '/dealer-icon-192.png',
+          src: '/dealer-icon-192.png?v=3',
           sizes: '192x192',
           type: 'image/png',
           purpose: 'any maskable',
         },
         {
-          src: '/dealer-icon-512.png',
+          src: '/dealer-icon-512.png?v=3',
           sizes: '512x512',
           type: 'image/png',
           purpose: 'any maskable',
         },
         {
-          src: '/dealer-apple-touch-icon.png',
+          src: '/dealer-apple-touch-icon.png?v=3',
           sizes: '180x180',
           type: 'image/png',
           purpose: 'any',
