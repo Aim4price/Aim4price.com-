@@ -1,1 +1,96 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getAssetRegisterItemById, updateAssetRegisterItemFlag, updateAssetRegisterItemLocation } from '../../../../../../lib/asset-register-db';
+import {
+  cancelAssetMaintenanceRecord,
+  completeAssetMaintenanceRecord,
+  createAssetMaintenanceRecord,
+  reopenAssetMaintenanceRecord,
+  updateAssetMaintenanceRecord,
+} from '../../../../../../lib/asset-maintenance';
+import { publishAssetRegisterItemToMarketplace, removeAssetRegisterItemFromMarketplace } from '../../../../../../lib/marketplace-db';
+import { createMyInvoice, deleteMyInvoice, getMyInvoiceById, updateMyInvoice } from '../../../../../../lib/my-invoices';
+import { getOwnerAppAccess } from '../../../../../../lib/owner-app-access';
 
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+function text(value: unknown) { return String(value ?? '').trim(); }
+
+export async function POST(request: NextRequest, { params }: { params: { assetId: string } }) {
+  const access = await getOwnerAppAccess();
+  if (!access) return NextResponse.json({ ok: false, error: 'You must sign in to Aim4price Owner.' }, { status: 401 });
+  const asset = await getAssetRegisterItemById(access.ownerUserId, params.assetId);
+  if (!asset) return NextResponse.json({ ok: false, error: 'Asset not found.' }, { status: 404 });
+
+  let body: Record<string, unknown>;
+  try { body = await request.json() as Record<string, unknown>; }
+  catch { return NextResponse.json({ ok: false, error: 'Invalid action details.' }, { status: 400 }); }
+  const action = text(body.action);
+
+  try {
+    if (action === 'location') {
+      const latitude = Number(body.latitude);
+      const longitude = Number(body.longitude);
+      if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) throw new Error('Enter valid latitude and longitude values.');
+      await updateAssetRegisterItemLocation(access.ownerUserId, {
+        assetId: params.assetId,
+        latitude,
+        longitude,
+        locationText: text(body.locationText),
+        source: 'manual',
+      });
+    } else if (action === 'flag') {
+      await updateAssetRegisterItemFlag(access.ownerUserId, { assetId: params.assetId, isFlagged: Boolean(body.isFlagged) });
+    } else if (action === 'maintenance-create') {
+      await createAssetMaintenanceRecord(access.ownerUserId, { ...body, assetId: params.assetId });
+    } else if (action === 'maintenance-update') {
+      await updateAssetMaintenanceRecord(access.ownerUserId, text(body.maintenanceId), { ...body, assetId: params.assetId });
+    } else if (action === 'maintenance-complete') {
+      await completeAssetMaintenanceRecord(access.ownerUserId, text(body.maintenanceId), {
+        completedUsage: body.completedUsage,
+        completedNotes: body.completedNotes,
+        completedBy: access.displayName,
+      }, { assetId: params.assetId });
+    } else if (action === 'maintenance-cancel') {
+      const record = await cancelAssetMaintenanceRecord(access.ownerUserId, text(body.maintenanceId));
+      if (record.assetId !== params.assetId) throw new Error('Maintenance record not found.');
+    } else if (action === 'maintenance-reopen') {
+      const record = await reopenAssetMaintenanceRecord(access.ownerUserId, text(body.maintenanceId));
+      if (record.assetId !== params.assetId) throw new Error('Maintenance record not found.');
+    } else if (action === 'cost-create') {
+      await createMyInvoice(access.ownerUserId, { ...body, assetId: params.assetId, source: 'manual' });
+    } else if (action === 'cost-update') {
+      await updateMyInvoice(access.ownerUserId, text(body.invoiceId), { ...body, assetId: params.assetId, source: 'manual' });
+    } else if (action === 'cost-delete') {
+      const existing = await getMyInvoiceById(access.ownerUserId, text(body.invoiceId));
+      if (!existing || existing.assetId !== params.assetId) throw new Error('Cost record not found.');
+      await deleteMyInvoice(access.ownerUserId, text(body.invoiceId));
+    } else if (action === 'marketplace-publish') {
+      await publishAssetRegisterItemToMarketplace({
+        userId: access.ownerUserId,
+        assetId: params.assetId,
+        askingPriceExVat: Math.round(Number(body.askingPriceExVat) || 0) || null,
+        marketplaceNotes: text(body.marketplaceNotes) || null,
+        sellerPhone: text(body.sellerPhone) || null,
+        sellerName: text(body.sellerName) || null,
+        sellerCompany: text(body.sellerCompany) || null,
+        sellerEmail: text(body.sellerEmail) || null,
+        province: text(body.province) || null,
+        area: text(body.area) || null,
+        photos: asset.photos,
+      });
+    } else if (action === 'marketplace-remove') {
+      await removeAssetRegisterItemFromMarketplace({ userId: access.ownerUserId, assetId: params.assetId });
+    } else {
+      return NextResponse.json({ ok: false, error: 'Unsupported Owner App action.' }, { status: 400 });
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error(`Owner App asset action ${action} failed.`, error);
+    const message = error instanceof Error && error.message && !/^[A-Z0-9_]+$/.test(error.message)
+      ? error.message
+      : 'The requested asset action could not be completed.';
+    return NextResponse.json({ ok: false, error: message }, { status: 400 });
+  }
+}
