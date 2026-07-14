@@ -1769,7 +1769,7 @@ function mergeFamilies(records: EquipmentFamilyRecord[]): FamilyOption[] {
   });
 }
 
-export default function MarketplaceClient({ initialFilters, isSignedIn, accountType = 'public', dealerAppMode = false }: MarketplaceClientProps & { dealerAppMode?: boolean }) {
+export default function MarketplaceClient({ initialFilters, isSignedIn, accountType = 'public', dealerAppMode = false, ownerAppMode = false }: MarketplaceClientProps & { dealerAppMode?: boolean; ownerAppMode?: boolean }) {
   const initialSearch = [initialFilters.brand, initialFilters.model]
     .map((value) => String(value ?? '').trim())
     .filter(Boolean)
@@ -1777,6 +1777,8 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
   const normalizedAccountType = normalize(accountType || (isSignedIn ? 'owner' : 'public'));
   const isOwnerAccount = normalizedAccountType === 'owner';
   const isDealerAccount = normalizedAccountType === 'dealer';
+  const compactAppMode = dealerAppMode || ownerAppMode;
+  const valuationPath = ownerAppMode ? '/owner-app/valuation' : dealerAppMode ? '/dealer/valuation' : '/valuation';
 
   const [query, setQuery] = useState(initialSearch);
   const [items, setItems] = useState<MarketplaceListing[]>(seedMarketplaceListings);
@@ -1969,7 +1971,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
     const search = normalize(query);
 
     return items.filter((listing) => {
-      if (dealerAppMode && dealerListingView === 'mine' && !listing.canManage) {
+      if (compactAppMode && dealerListingView === 'mine' && !listing.canManage) {
         return false;
       }
 
@@ -1999,7 +2001,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
 
       return buildSearchText(listing).includes(search);
     });
-  }, [conditionFilter, dealRatingFilter, dealerAppMode, dealerListingView, distanceFilter, familyFilter, items, locationFilter, query, sectorFilter]);
+  }, [conditionFilter, dealRatingFilter, compactAppMode, dealerListingView, distanceFilter, familyFilter, items, locationFilter, query, sectorFilter]);
 
   const visible = useMemo(() => sortListings(filtered), [filtered]);
   const totalPages = Math.max(1, Math.ceil(visible.length / LISTINGS_PER_PAGE));
@@ -2222,7 +2224,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
   }, [shareListing]);
 
   useEffect(() => {
-    if (!dealerAppMode || !editListingTarget) {
+    if (!compactAppMode || !editListingTarget) {
       return;
     }
 
@@ -2241,7 +2243,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
       document.body.style.overflow = previousOverflow;
       window.removeEventListener('keydown', onKeyDown);
     };
-  }, [dealerAppMode, editListingTarget, isSavingListingEdit]);
+  }, [compactAppMode, editListingTarget, isSavingListingEdit]);
 
   function updateListingUrl(nextListingId: string | null) {
     if (typeof window === 'undefined') {
@@ -2312,7 +2314,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
   }
 
   function goToMarketplaceEstimate() {
-    window.location.assign(`${dealerAppMode ? '/dealer/valuation' : '/valuation'}?marketplace=1`);
+    window.location.assign(`${valuationPath}?marketplace=1`);
   }
 
   function handleCreateListingClick() {
@@ -2461,7 +2463,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
       return;
     }
 
-    if (dealerAppMode) {
+    if (compactAppMode) {
       setEditListingTarget(listing);
       setEditListingDraft({
         askingPriceExVat: String(Math.round(listing.askingPriceExVat || 0)),
@@ -2620,14 +2622,14 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
 
 
   return (
-    <main className={`${styles.page} ${dealerAppMode ? dealerStyles.dealerMarketplaceSurface : ''}`}>
-      {!dealerAppMode ? (
+    <main className={`${styles.page} ${compactAppMode ? dealerStyles.dealerMarketplaceSurface : ''}`}>
+      {!compactAppMode ? (
         <div className={styles.topBand}>
           <AppHeader active="marketplace" />
         </div>
       ) : null}
 
-      {dealerAppMode ? (
+      {compactAppMode ? (
         <section className={dealerStyles.marketplaceDealerToolbar} aria-label="Dealer Marketplace controls">
           <div className={dealerStyles.marketplaceModeTabs} role="group" aria-label="Marketplace view">
             <button
@@ -2666,7 +2668,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
               className={dealerStyles.marketplaceFilterButton}
               onClick={() => setDealerFiltersOpen((current) => !current)}
               aria-expanded={dealerFiltersOpen}
-              aria-controls="dealer-marketplace-filters"
+              aria-controls="mobile-marketplace-filters"
             >
               {dealerFiltersOpen ? 'Close filters' : 'Filters'}
             </button>
@@ -2677,7 +2679,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
         </section>
       ) : null}
 
-      {dealerAppMode && (isLoadingListings || listingLoadError) ? (
+      {compactAppMode && (isLoadingListings || listingLoadError) ? (
         <div
           className={`${dealerStyles.marketplaceLoadStatus} ${listingLoadError ? dealerStyles.marketplaceLoadStatusError : ''}`}
           role={listingLoadError ? 'alert' : 'status'}
@@ -2689,16 +2691,16 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
 
       <div className={styles.marketplaceShell}>
         <aside
-          id={dealerAppMode ? 'dealer-marketplace-filters' : undefined}
-          className={`${styles.sidebar} ${dealerAppMode ? dealerStyles.dealerMarketplaceSidebar : ''} ${dealerFiltersOpen ? dealerStyles.dealerMarketplaceSidebarOpen : ''}`}
+          id={compactAppMode ? 'mobile-marketplace-filters' : undefined}
+          className={`${styles.sidebar} ${compactAppMode ? dealerStyles.dealerMarketplaceSidebar : ''} ${dealerFiltersOpen ? dealerStyles.dealerMarketplaceSidebarOpen : ''}`}
           aria-label="Marketplace filters"
         >
-          {dealerAppMode ? (
+          {compactAppMode ? (
             <button type="button" className={dealerStyles.marketplaceCloseFilters} onClick={() => setDealerFiltersOpen(false)}>
               Close filters
             </button>
           ) : null}
-          {!dealerAppMode ? (
+          {!compactAppMode ? (
             <>
               <label className={styles.searchBox}>
                 <span className={styles.searchIcon} aria-hidden="true">
@@ -2969,9 +2971,9 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
             </div>
           ) : (
             <article className={styles.emptyState}>
-              <h2>{dealerAppMode && dealerListingView === 'mine' ? 'No live listings yet' : 'No listings found'}</h2>
+              <h2>{compactAppMode && dealerListingView === 'mine' ? 'No live listings yet' : 'No listings found'}</h2>
               <p>
-                {dealerAppMode && dealerListingView === 'mine'
+                {compactAppMode && dealerListingView === 'mine'
                   ? 'Create a listing from Valuation.'
                   : 'Try another search, category, condition or location.'}
               </p>
@@ -3086,7 +3088,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
                 </div>
 
                 <div className={styles.createListingChoiceGrid}>
-                  <a href="/asset-register" className={styles.createListingChoiceCard}>
+                  <a href={ownerAppMode ? '/owner-app/assets' : '/asset-register'} className={styles.createListingChoiceCard}>
                     <span className={styles.createListingChoiceIcon} aria-hidden="true">
                       <IconAssetRegister />
                     </span>
@@ -3452,7 +3454,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
               <div>
                 <h3 id="marketplace-delete-title">Delete marketplace listing?</h3>
                 <p id="marketplace-delete-copy">
-                  {dealerAppMode
+                  {compactAppMode
                     ? 'This removes the listing from the Marketplace.'
                     : 'This removes the listing from the marketplace. The asset stays saved in your Asset Register.'}
                 </p>
