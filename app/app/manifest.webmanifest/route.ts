@@ -10,7 +10,7 @@ export function GET() {
       name: 'Aim4price',
       short_name: 'Aim4price',
       description: 'Your Aim4price assets, values, maintenance and reports in your pocket.',
-      start_url: '/app/login?source=aim4price-app',
+      start_url: '/app/login',
       scope: '/app',
       display: 'standalone',
       orientation: 'portrait-primary',
