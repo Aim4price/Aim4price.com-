@@ -2,9 +2,10 @@ import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 
 export const metadata: Metadata = {
+  applicationName: 'Aim4price Farm Manager App',
   title: 'Field Manager | Aim4price',
   description: 'Mobile Field Manager access for Aim4price asset updates.',
-  manifest: '/field-manager/manifest.webmanifest',
+  manifest: '/field-manager/manifest.webmanifest?v=2',
   icons: {
     icon: [{ url: '/field-manager-icon.png?v=1', sizes: '512x512', type: 'image/png' }],
     apple: [{ url: '/field-manager-apple-icon.png?v=1', sizes: '180x180', type: 'image/png' }],

@@ -70,7 +70,7 @@ export default function FieldManagerLoginClient() {
     if ('serviceWorker' in window.navigator) {
       void window.navigator.serviceWorker
         .register('/field-manager-sw.js', {
-          scope: '/field-manager/',
+          scope: '/field-manager',
           updateViaCache: 'none',
         })
         .catch(() => {
@@ -235,6 +235,7 @@ export default function FieldManagerLoginClient() {
       <section className={styles.loginShell}>
         <section className={styles.loginCard}>
           <div className={`${styles.loginHeader} ${styles.loginHeaderCompact}`}>
+            <span className={styles.loginEyebrow}>Aim4price Farm Manager App</span>
             <h2>Sign in</h2>
           </div>
 
