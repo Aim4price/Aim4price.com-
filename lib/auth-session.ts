@@ -5,6 +5,7 @@ import { recordAdminUsageEventSafely } from "./admin-usage-events";
 import { auth } from "./auth";
 import { getDb } from "./db";
 import { getDealerAppSession } from "./dealer-app-session";
+import { getOwnerAppSession } from "./owner-app-session";
 
 export const ADMIN_SUPPORT_COOKIE_NAME = "aim4price_admin_support_user_id";
 export const ADMIN_SUPPORT_COOKIE_MAX_AGE_SECONDS = 60 * 60;
@@ -37,12 +38,17 @@ export type DealerAppSupportSession = NonNullServerSession & {
   dealerApp: { kind: "dealer-staff"; staffId: string; parentDealerUserId: string; displayName: string; username: string };
 };
 
-type EffectiveServerSession = NonNullServerSession | AdminSupportSession | DealerAppSupportSession | null;
+export type OwnerAppSupportSession = NonNullServerSession & {
+  ownerApp: { kind: "owner-app-user"; ownerAppUserId: string; parentOwnerUserId: string; displayName: string; username: string };
+};
+
+type EffectiveServerSession = NonNullServerSession | AdminSupportSession | DealerAppSupportSession | OwnerAppSupportSession | null;
 
 type SessionOptions = {
   requireActive?: boolean;
   allowAdmin?: boolean;
   allowDealerApp?: boolean;
+  allowOwnerApp?: boolean;
 };
 
 function cleanCookieUserId(value: unknown): string {
@@ -154,6 +160,12 @@ export function isDealerAppSession(
   return Boolean(session && "dealerApp" in session && session.dealerApp?.staffId);
 }
 
+export function isOwnerAppSession(
+  session: EffectiveServerSession,
+): session is OwnerAppSupportSession {
+  return Boolean(session && "ownerApp" in session && session.ownerApp?.ownerAppUserId);
+}
+
 async function readDealerAppSupportSession(): Promise<DealerAppSupportSession | null> {
   const dealer = await getDealerAppSession();
   if (!dealer) return null;
@@ -186,6 +198,40 @@ async function readDealerAppSupportSession(): Promise<DealerAppSupportSession | 
       username: dealer.username,
     },
   } as DealerAppSupportSession;
+}
+
+async function readOwnerAppSupportSession(): Promise<OwnerAppSupportSession | null> {
+  const owner = await getOwnerAppSession();
+  if (!owner) return null;
+  const now = new Date();
+  return {
+    user: {
+      id: owner.parentOwnerUserId,
+      name: owner.displayName,
+      email: "",
+      emailVerified: false,
+      image: null,
+      createdAt: now,
+      updatedAt: now,
+    },
+    session: {
+      id: `owner-app:${owner.ownerAppUserId}`,
+      userId: owner.parentOwnerUserId,
+      token: "",
+      expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+      createdAt: now,
+      updatedAt: now,
+      ipAddress: null,
+      userAgent: null,
+    },
+    ownerApp: {
+      kind: "owner-app-user",
+      ownerAppUserId: owner.ownerAppUserId,
+      parentOwnerUserId: owner.parentOwnerUserId,
+      displayName: owner.displayName,
+      username: owner.username,
+    },
+  } as OwnerAppSupportSession;
 }
 
 export function isAdminSupportSession(
@@ -229,6 +275,10 @@ export async function getServerSession(
   const session = await readAuthSession();
 
   if (!session?.user?.id) {
+    if (options.allowOwnerApp) {
+      const ownerAppSession = await readOwnerAppSupportSession();
+      if (ownerAppSession) return ownerAppSession;
+    }
     return options.allowDealerApp ? await readDealerAppSupportSession() : session;
   }
 

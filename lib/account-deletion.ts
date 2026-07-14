@@ -16,6 +16,8 @@ const USER_ID_TABLES = [
   'asset_registers',
   'account_profiles',
   'dealer_app_staff',
+  'owner_app_users',
+  'owner_app_overview_dismissals',
   'asset_discovery_enquiries',
 ] as const;
 
@@ -107,12 +109,25 @@ async function deleteUserWorkspaceDataInTransaction(
     await queryable.query('delete from dealer_app_staff where dealer_user_id = $1', [userId]);
   }
 
+  if (tableSet.has('owner_app_overview_dismissals')) {
+    await queryable.query('delete from owner_app_overview_dismissals where parent_owner_user_id = $1', [userId]);
+  }
+
+  if (tableSet.has('owner_app_users')) {
+    await queryable.query('delete from owner_app_users where parent_owner_user_id = $1', [userId]);
+  }
+
   if (tableSet.has('asset_discovery_enquiries')) {
     await queryable.query('delete from asset_discovery_enquiries where dealer_user_id = $1 or owner_user_id = $1', [userId]);
   }
 
   for (const tableName of USER_ID_TABLES) {
-    if (tableName === 'dealer_app_staff' || tableName === 'asset_discovery_enquiries') continue;
+    if (
+      tableName === 'dealer_app_staff'
+      || tableName === 'owner_app_users'
+      || tableName === 'owner_app_overview_dismissals'
+      || tableName === 'asset_discovery_enquiries'
+    ) continue;
     await deleteByColumn(queryable, tableSet, tableName, 'user_id', userId);
   }
 }
