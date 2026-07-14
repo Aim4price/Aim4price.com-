@@ -366,8 +366,11 @@
 }
 
 .loginHeader {
+  display: grid;
+  justify-items: center;
   padding-bottom: 18px;
   border-bottom: 1px solid rgba(18, 53, 45, 0.09);
+  text-align: center;
 }
 
 .loginHeaderCompact {
@@ -383,9 +386,11 @@
   margin-top: 0;
 }
 
-.loginHeader p {
+.loginHeader .loginSubheading {
+  max-width: 310px;
   margin: 8px 0 0;
   color: rgba(18, 53, 45, 0.67);
+  font-size: 0.88rem;
   font-weight: 720;
   line-height: 1.48;
 }
@@ -503,6 +508,7 @@
 
 .logoutButton {
   flex: 0 0 auto;
+  margin-left: auto;
   min-height: 48px;
   border: 1px solid rgba(198, 55, 55, 0.24);
   border-radius: 999px;

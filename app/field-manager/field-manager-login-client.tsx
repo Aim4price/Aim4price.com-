@@ -245,6 +245,9 @@ export default function FieldManagerLoginClient() {
             />
             <span className={styles.loginEyebrow}>Aim4price Farm Manager App</span>
             <h2>Sign in</h2>
+            <p className={styles.loginSubheading}>
+              Manage assets, maintenance and fuel in one place.
+            </p>
           </div>
 
           {notice ? <div className={styles.errorNotice}>{notice}</div> : null}
