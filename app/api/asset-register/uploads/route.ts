@@ -47,7 +47,7 @@ function uploadTypeNoun(uploadType: UploadType): string {
 }
 
 export async function POST(request: NextRequest) {
-  const session = await getServerSession({ allowDealerApp: true });
+  const session = await getServerSession({ allowDealerApp: true, allowOwnerApp: true });
 
   if (!session?.user?.id) return unauthorized();
 
