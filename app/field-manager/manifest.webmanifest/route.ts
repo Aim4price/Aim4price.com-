@@ -9,13 +9,16 @@ export async function GET() {
       name: 'Aim4price Field Manager',
       short_name: 'Field Manager',
       description: 'Mobile-only Aim4price Field Manager access.',
-      id: '/field-manager',
-      start_url: '/field-manager',
-      scope: '/field-manager/',
+      id: '/apps/aim4price-field-manager',
+      start_url: '/field-manager/login?source=field-manager-app',
+      scope: '/field-manager',
       display: 'standalone',
       orientation: 'portrait',
       background_color: '#f5f8f5',
       theme_color: '#12352d',
+      launch_handler: {
+        client_mode: 'navigate-new',
+      },
       icons: [
         {
           src: '/field-manager-icon.png',
