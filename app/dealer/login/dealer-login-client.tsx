@@ -62,7 +62,7 @@ export default function DealerLoginClient({ hasAccountSession = false }: { hasAc
     if ('serviceWorker' in window.navigator) {
       void window.navigator.serviceWorker
         .register('/dealer-sw.js', {
-          scope: '/dealer/',
+          scope: '/dealer',
           updateViaCache: 'none',
         })
         .catch(() => {
