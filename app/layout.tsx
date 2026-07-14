@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import AppFooter from '../components/AppFooter';
-import OwnerMobileAppGate from '../components/OwnerMobileAppGate';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -36,10 +35,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       </head>
       <body>
         <div className="appRoot">
-          <OwnerMobileAppGate>
-            {children}
-            <AppFooter />
-          </OwnerMobileAppGate>
+          {children}
+          <AppFooter />
         </div>
       </body>
     </html>
