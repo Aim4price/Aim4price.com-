@@ -235,6 +235,14 @@ export default function FieldManagerLoginClient() {
       <section className={styles.loginShell}>
         <section className={styles.loginCard}>
           <div className={`${styles.loginHeader} ${styles.loginHeaderCompact}`}>
+            <Image
+              className={styles.loginLogo}
+              src="/icon.png"
+              alt="Aim4price Farm Manager App"
+              width={76}
+              height={76}
+              priority
+            />
             <span className={styles.loginEyebrow}>Aim4price Farm Manager App</span>
             <h2>Sign in</h2>
           </div>
