@@ -1602,7 +1602,17 @@ function normalizeReportEmail(value: unknown): string {
   return cleaned && cleaned.includes('@') ? cleaned : '';
 }
 
-export default function ValuationClient({ dealerAppMode = false }: { dealerAppMode?: boolean } = {}) {
+type ValuationClientProps = {
+  dealerAppMode?: boolean;
+  appHomeHref?: string;
+  marketplaceHref?: string;
+};
+
+export default function ValuationClient({
+  dealerAppMode = false,
+  appHomeHref,
+  marketplaceHref,
+}: ValuationClientProps = {}) {
   const router = useRouter();
   const [step, setStep] = useState<Step>(1);
   const [selectedSector, setSelectedSector] = useState<SectorKey | null>(null);
@@ -3961,9 +3971,8 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
       clearMarketplacePhotoFiles();
       setMarketplaceDraft(null);
       setSavedMarketplaceAssetId(null);
-      router.push(
-        `${dealerAppMode ? '/dealer/marketplace' : '/marketplace'}?listing=${encodeURIComponent(String(listingReference))}`,
-      );
+      const destination = marketplaceHref || (dealerAppMode ? '/dealer/marketplace' : '/marketplace');
+      router.push(`${destination}?listing=${encodeURIComponent(String(listingReference))}`);
     } catch (error) {
       console.error(error);
       setMarketplacePublishError(error instanceof Error ? error.message : 'Failed to publish this marketplace listing.');
@@ -4419,7 +4428,7 @@ export default function ValuationClient({ dealerAppMode = false }: { dealerAppMo
         return;
       }
 
-      router.push(dealerAppMode ? '/dealer' : '/');
+      router.push(appHomeHref || (dealerAppMode ? '/dealer' : '/'));
       return;
     }
     if (isMotorSector(selectedSector) && step === 4) {
