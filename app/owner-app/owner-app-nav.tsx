@@ -22,9 +22,16 @@ export default function OwnerAppNav({ showBack = true, backHref = '/owner-app', 
   }
 
   return (
-    <nav className={`${styles.nav} ${showBack ? '' : styles.homeNav}`} aria-label="Aim4price Owner navigation">
-      {showBack ? <Link className={styles.navButton} href={backHref} prefetch={false}>← {backLabel}</Link> : <span aria-hidden="true" />}
-      <button type="button" className={styles.signOut} onClick={() => void signOut()} disabled={signingOut}>{signingOut ? 'Signing out…' : 'Sign out'}</button>
-    </nav>
+    <header className={styles.assetsHeader} aria-label="Aim4price Owner account controls">
+      {showBack ? (
+        <Link className={styles.navButton} href={backHref} prefetch={false} aria-label={backLabel}>
+          <span className={styles.navArrow} aria-hidden="true">←</span>
+          <span>{backLabel}</span>
+        </Link>
+      ) : null}
+      <button type="button" className={styles.logoutButton} onClick={() => void signOut()} disabled={signingOut}>
+        {signingOut ? 'Signing out…' : 'Sign out'}
+      </button>
+    </header>
   );
 }
