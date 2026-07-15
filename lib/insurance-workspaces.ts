@@ -509,6 +509,31 @@ export async function listInsurancePortfolio(brokerUserId: string): Promise<Insu
   });
 }
 
+export async function deleteInsuranceShare(input: { brokerUserId: string; shareId: string }): Promise<void> {
+  const lead = await findSharedLead(input.brokerUserId, input.shareId);
+  const client = await getDb().connect();
+  try {
+    await client.query('begin');
+    const deleted = await client.query(
+      'delete from asset_leads where id = $1::uuid and partner_user_id = $2 returning id',
+      [lead.id, input.brokerUserId],
+    );
+    if (!deleted.rowCount) throw new Error('INSURANCE_SHARE_NOT_FOUND');
+    await client.query(
+      `insert into access_audit_events
+        (owner_user_id, actor_user_id, event_type, entity_type, entity_id, metadata_json)
+       values ($1, $2, 'insurance_register_deleted', 'asset_lead', $3, $4::jsonb)`,
+      [lead.ownerUserId, input.brokerUserId, lead.id, JSON.stringify({ clientName: lead.ownerBusinessName || lead.ownerName })],
+    );
+    await client.query('commit');
+  } catch (error) {
+    await client.query('rollback');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 async function ownedWorkspaceRow(client: PoolClient, brokerUserId: string, workspaceId: string): Promise<DbRow> {
   const result = await client.query<DbRow>(
     'select * from insurance_workspaces where id = $1::uuid and broker_user_id = $2 for update',

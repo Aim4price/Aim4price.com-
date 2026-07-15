@@ -156,14 +156,13 @@ function reportHeader(payload: InsuranceReportPayload): string {
     <header>
       <div>
         <h1>${escapeHtml(payload.type === 'summary' ? 'Insurance Review Summary' : 'Detailed Insurance Review')}</h1>
-        <p class="muted">${escapeHtml(workspace.clientName)} · ${escapeHtml(payload.reference)}</p>
+        <p class="muted">${escapeHtml(workspace.clientName)}</p>
       </div>
       ${broker.logoUrl ? `<img src="${escapeHtml(broker.logoUrl)}" alt="${escapeHtml(broker.businessName || broker.displayName)} logo" />` : `<strong>${escapeHtml(broker.businessName || broker.displayName || 'Insurance broker')}</strong>`}
     </header>
     <div class="meta">
       <div><small>Client</small><strong>${escapeHtml(workspace.clientName)}</strong></div>
       <div><small>Client profile</small><strong>${escapeHtml(label(workspace.clientProfile))}</strong></div>
-      <div><small>Register snapshot</small><strong>${escapeHtml(workspace.snapshotReference)}</strong></div>
       <div><small>Generated</small><strong>${escapeHtml(dateLabel(payload.generatedAtIso))}</strong></div>
       <div><small>Assets</small><strong>${workspace.assetCount}</strong></div>
       <div><small>Register value</small><strong>${escapeHtml(money(workspace.totalRegisterValue))}</strong></div>
@@ -219,7 +218,11 @@ function detailedBody(payload: InsuranceReportPayload): string {
 
 export function buildInsuranceReportHtml(payload: InsuranceReportPayload): string {
   const body = payload.type === 'summary' ? summaryBody(payload) : detailedBody(payload);
-  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(payload.reference)}</title><style>${baseStyles(payload.type)}</style></head><body><main class="page">${reportHeader(payload)}${body}<p class="disclaimer">${escapeHtml(DISCLAIMER)}</p></main><button class="print" onclick="window.print()">Print / Save PDF</button></body></html>`;
+  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(`${workspaceTitle(payload)} insurance report`)}</title><style>${baseStyles(payload.type)}</style></head><body><main class="page">${reportHeader(payload)}${body}<p class="disclaimer">${escapeHtml(DISCLAIMER)}</p></main><button class="print" onclick="window.print()">Print / Save PDF</button></body></html>`;
+}
+
+function workspaceTitle(payload: InsuranceReportPayload): string {
+  return payload.workspace.clientName || 'Client';
 }
 
 export function safeReportFilename(value: string): string {
