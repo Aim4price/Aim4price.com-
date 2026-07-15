@@ -21,29 +21,20 @@ export default async function OwnerAppHome() {
   const notifications = await listHeaderNotifications({ userId: access.ownerUserId, accountType: profile.accountType }).catch(() => []);
 
   return (
-    <main className={styles.page}>
+    <main className={`${styles.page} ${styles.homePage}`}>
       <OwnerAppNav showBack={false} />
-      <div className={styles.content}>
-        <section className={`${styles.hero} ${styles.heroCenter}`}>
-          <p className={styles.eyebrow}>Aim4price Owner</p>
-          <h1>Welcome, {access.displayName}</h1>
-          <p>Your assets and owner tools in one place.</p>
-        </section>
-
-        <form className={styles.searchForm} action="/owner-app/assets">
-          <input className={styles.searchInput} name="q" placeholder="Search all assets" aria-label="Search all assets" />
-          <button className={styles.primaryButton} type="submit">Search</button>
-        </form>
-
-        <Link className={`${styles.panel} ${styles.notificationLink}`} href="/owner-app/notifications">
-          <span>Notifications</span><span className={styles.count}>{notifications.length}</span>
-        </Link>
-
-        <nav className={styles.launcher} aria-label="Owner tools">
-          {TOOLS.map((tool) => <Link key={tool.href} className={styles.launchCard} href={tool.href} prefetch={false}><span>{tool.label}</span><span>›</span></Link>)}
+      <div className={`${styles.content} ${styles.homeContent}`}>
+        <nav className={styles.homeLauncher} aria-label="Owner tools">
+          <Link className={styles.homeLaunchCard} href="/owner-app/notifications" prefetch={false}>
+            <strong>Notifications</strong>
+            {notifications.length > 0 ? <span className={styles.homeLaunchBadge}>{notifications.length > 99 ? '99+' : notifications.length}</span> : null}
+          </Link>
+          {TOOLS.map((tool) => (
+            <Link key={tool.href} className={styles.homeLaunchCard} href={tool.href} prefetch={false}>
+              <strong>{tool.label}</strong>
+            </Link>
+          ))}
         </nav>
-
-        <Link className={styles.secondaryButton} href="/owner-app/account">Account</Link>
       </div>
     </main>
   );
