@@ -7,6 +7,13 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export default async function OwnerNotificationsPage() {
-  await requireOwnerAppPageAccess();
-  return <main className={styles.page}><OwnerAppNav /><OwnerNotificationsClient /></main>;
+  const access = await requireOwnerAppPageAccess();
+  const notificationViewerId = access.ownerAppUserId ?? access.ownerUserId;
+
+  return (
+    <main className={styles.page}>
+      <OwnerAppNav />
+      <OwnerNotificationsClient viewerId={notificationViewerId} />
+    </main>
+  );
 }
