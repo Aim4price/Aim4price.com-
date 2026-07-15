@@ -188,14 +188,14 @@
   place-items: center;
   box-sizing: border-box;
   border-radius: 999px;
-  background: var(--owner-green);
+  background: #e02424;
   color: #fff;
   padding-inline: 7px;
   font-size: 0.76rem;
   font-weight: 950;
   letter-spacing: 0;
   line-height: 1;
-  box-shadow: 0 8px 18px rgba(37, 71, 51, 0.2);
+  box-shadow: 0 8px 18px rgba(174, 35, 35, 0.22);
 }
 
 .hero { display: grid; gap: 6px; padding: 14px 2px 4px; }
@@ -367,15 +367,278 @@
 .attentionCard p { color: var(--owner-muted); font-size: 0.78rem; line-height: 1.45; }
 .attentionLabels { display: flex; justify-content: space-between; gap: 8px; color: var(--owner-green); font-size: 0.7rem; font-weight: 900; text-transform: uppercase; }
 
-.notificationList { display: grid; gap: 10px; }
-.notificationCard { display: grid; gap: 6px; border: 1px solid var(--owner-line); border-radius: 15px; padding: 14px; color: inherit; text-decoration: none; }
-.notificationCard h2 { margin: 0; font-size: 0.92rem; }
-.notificationCard p { margin: 0; color: var(--owner-muted); font-size: 0.78rem; line-height: 1.45; }
+.notificationContent {
+  width: min(100% - 20px, 560px);
+  gap: 0;
+}
+
+.notificationIntro {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 8px 3px 18px;
+}
+
+.notificationIntro > div { min-width: 0; }
+.notificationIntro > div > span {
+  display: block;
+  color: #236851;
+  font-size: 0.7rem;
+  font-weight: 950;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.notificationIntro h1 {
+  margin: 5px 0 0;
+  color: #12352d;
+  font-size: clamp(2.1rem, 10vw, 3rem);
+  letter-spacing: -0.045em;
+  line-height: 0.98;
+}
+.notificationIntro p {
+  margin: 8px 0 0;
+  color: rgba(18, 53, 45, 0.64);
+  font-size: 0.94rem;
+  font-weight: 760;
+  line-height: 1.4;
+}
+
+.markCheckedButton {
+  flex: 0 0 auto;
+  min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid rgba(18, 53, 45, 0.14);
+  border-radius: 15px;
+  background: #f4f7f5;
+  color: rgba(18, 53, 45, 0.64);
+  padding: 0 13px;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 920;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 10px 22px rgba(18, 53, 45, 0.07);
+  transition: transform 0.16s ease, background 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease, opacity 0.16s ease;
+}
+.markCheckedButton > span { font-size: 0.92rem; }
+.markCheckedButtonNew {
+  border-color: rgba(204, 58, 58, 0.3);
+  background: #ffe4e4;
+  color: #7f2525;
+  box-shadow: 0 10px 22px rgba(174, 35, 35, 0.13);
+}
+.markCheckedButtonNew:active { transform: translateY(1px); }
+.markCheckedButton:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(204, 58, 58, 0.12), 0 10px 22px rgba(174, 35, 35, 0.13);
+}
+.markCheckedButton:disabled {
+  cursor: default;
+  opacity: 0.72;
+  transform: none;
+  box-shadow: none;
+}
+
+.notificationError {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.notificationError span { min-width: 0; }
+.notificationError button {
+  flex: 0 0 auto;
+  min-height: 40px;
+  border: 1px solid rgba(138, 36, 36, 0.2);
+  border-radius: 13px;
+  background: #fff;
+  color: #8a2424;
+  padding: 0 12px;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 920;
+  cursor: pointer;
+}
+
+.notificationSection { min-width: 0; }
+.notificationSectionHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 3px 10px;
+}
+.notificationSectionHeading h2 {
+  margin: 0;
+  color: #12352d;
+  font-size: clamp(1.2rem, 5vw, 1.42rem);
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+}
+.notificationSectionHeading > span {
+  min-width: 29px;
+  min-height: 29px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(204, 58, 58, 0.18);
+  border-radius: 999px;
+  background: #fff0f0;
+  color: #9a3030;
+  font-size: 0.78rem;
+  font-weight: 920;
+}
+
+.notificationList { display: grid; gap: 12px; }
+.notificationCard {
+  position: relative;
+  min-width: 0;
+  display: block;
+  overflow: hidden;
+  border: 1px solid rgba(18, 53, 45, 0.12);
+  border-radius: 22px;
+  padding: 16px;
+  color: #12352d;
+  text-decoration: none;
+  box-shadow: 0 16px 38px rgba(18, 53, 45, 0.09);
+  transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+}
+.notificationCard:active { transform: translateY(1px); }
+.notificationCard:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.12), 0 16px 38px rgba(18, 53, 45, 0.09);
+}
+.notificationCardNew {
+  border-color: rgba(204, 58, 58, 0.26);
+  background:
+    radial-gradient(circle at 0 0, rgba(204, 58, 58, 0.12), transparent 36%),
+    linear-gradient(180deg, #fff5f5 0%, #ffe8e8 100%);
+  box-shadow: 0 16px 36px rgba(157, 42, 42, 0.1);
+}
+.notificationCardPriority {
+  order: -1;
+  border-color: rgba(211, 137, 31, 0.42);
+  background:
+    radial-gradient(circle at 0 0, rgba(230, 161, 55, 0.2), transparent 38%),
+    linear-gradient(180deg, #fffdf8 0%, #fff0cf 100%);
+  box-shadow: 0 18px 38px rgba(153, 94, 12, 0.13);
+}
+
+.notificationCardLabels {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.notificationKind {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 27px;
+  border-radius: 999px;
+  background: rgba(204, 58, 58, 0.1);
+  color: #962e2e;
+  padding: 5px 9px;
+  font-size: 0.66rem;
+  font-weight: 950;
+  letter-spacing: 0.07em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+.notificationCardPriority .notificationKind {
+  background: rgba(210, 129, 22, 0.13);
+  color: #7d4b0a;
+}
+.notificationCardLabels time {
+  color: rgba(18, 53, 45, 0.58);
+  font-size: 0.7rem;
+  font-weight: 820;
+  line-height: 1.2;
+  text-align: right;
+}
+.notificationDot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: #c93a3a;
+  box-shadow: 0 0 0 4px rgba(201, 58, 58, 0.13);
+}
+.notificationCardPriority .notificationDot {
+  background: #d28116;
+  box-shadow: 0 0 0 4px rgba(210, 129, 22, 0.16);
+}
+.notificationToneSuccess .notificationDot { background: #25845e; box-shadow: 0 0 0 4px rgba(37, 132, 94, 0.13); }
+.notificationToneInfo .notificationDot { background: #3b6ea8; box-shadow: 0 0 0 4px rgba(59, 110, 168, 0.13); }
+.notificationToneWarning .notificationDot { background: #d28116; box-shadow: 0 0 0 4px rgba(210, 129, 22, 0.14); }
+.notificationCardNew .notificationKind .notificationDot { background: #c93a3a; box-shadow: 0 0 0 4px rgba(201, 58, 58, 0.13); }
+.notificationCardPriority .notificationKind .notificationDot { background: #d28116; box-shadow: 0 0 0 4px rgba(210, 129, 22, 0.16); }
+
+.notificationCard h3 {
+  margin: 0;
+  color: #12352d;
+  font-size: clamp(1.08rem, 4.7vw, 1.28rem);
+  letter-spacing: -0.025em;
+  line-height: 1.18;
+  overflow-wrap: anywhere;
+}
+.notificationCard p {
+  margin: 8px 0 0;
+  color: rgba(18, 53, 45, 0.68);
+  font-size: 0.86rem;
+  font-weight: 720;
+  line-height: 1.46;
+  overflow-wrap: anywhere;
+}
+.notificationOpenHint {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  margin-top: 14px;
+  border: 1px solid rgba(18, 53, 45, 0.14);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.78);
+  color: #174637;
+  padding: 0 13px;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+.notificationCardPriority .notificationOpenHint {
+  border-color: rgba(153, 94, 12, 0.2);
+  color: #76450b;
+}
+.notificationEmpty {
+  margin: 0;
+  border: 1px dashed rgba(18, 53, 45, 0.15);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.58);
+  color: rgba(18, 53, 45, 0.62);
+  padding: 18px 16px;
+  font-size: 0.88rem;
+  font-weight: 780;
+  line-height: 1.42;
+}
 
 @media (max-width: 560px) {
   .formGrid { grid-template-columns: 1fr; }
   .fieldFull { grid-column: auto; }
   .metrics { grid-template-columns: 1fr 1fr; }
+
+  .notificationIntro {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .markCheckedButton {
+    width: 100%;
+    min-height: 50px;
+  }
 }
 
 @media (max-width: 390px) {
