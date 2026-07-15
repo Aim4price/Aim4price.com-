@@ -1,12 +1,20 @@
 import { requireOwnerAppPageAccess } from '../../../lib/owner-app-access';
-import OwnerAppNav from '../owner-app-nav';
-import styles from '../owner-app.module.css';
 import OwnerAttentionClient from './owner-attention-client';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-export default async function OwnerAttentionPage() {
+type PageProps = {
+  searchParams?: {
+    range?: string;
+  };
+};
+
+export default async function OwnerAttentionPage({ searchParams }: PageProps) {
   await requireOwnerAppPageAccess();
-  return <main className={styles.page}><OwnerAppNav /><OwnerAttentionClient /></main>;
+  return (
+    <OwnerAttentionClient
+      initialRange={searchParams?.range === 'month' ? 'month' : 'week'}
+    />
+  );
 }

@@ -1,42 +1,339 @@
 'use client';
 
-import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import styles from '../owner-app.module.css';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import FieldManagerNavLink from '../../field-manager/field-manager-nav-link';
+import styles from '../../field-manager/page.module.css';
 
-type Item = { id: string; sourceId: string; type: string; section: 'needs_attention' | 'coming_up'; statusLabel: string; assetId: string; assetTitle: string; headline: string; detail: string; notes: string };
+type OverviewRange = 'week' | 'month';
+type OverviewItemType = 'problem' | 'service' | 'checkup' | 'license';
+type OverviewSection = 'needs_attention' | 'coming_up';
+type OverviewStatus = 'problem' | 'overdue' | 'due' | 'due_soon' | 'upcoming' | 'usage_needed';
 
-export default function OwnerAttentionClient() {
-  const [range, setRange] = useState<'week' | 'month'>('week');
-  const [items, setItems] = useState<Item[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [busyId, setBusyId] = useState('');
+type OverviewItem = {
+  id: string;
+  sourceId: string;
+  type: OverviewItemType;
+  section: OverviewSection;
+  status: OverviewStatus;
+  statusLabel: string;
+  assetId: string;
+  assetTitle: string;
+  headline: string;
+  detail: string;
+  notes: string;
+};
 
-  useEffect(() => { void load(); }, [range]);
-  async function load() {
-    setLoading(true); setError('');
-    try {
-      const response = await fetch(`/api/owner-app/attention?range=${range}`, { credentials: 'include', cache: 'no-store' });
-      const payload = await response.json().catch(() => null) as { ok?: boolean; items?: Item[]; error?: string } | null;
-      if (response.status === 401) { window.location.replace('/owner-app/login'); return; }
-      if (!response.ok || !payload?.ok) throw new Error(payload?.error || 'Failed to load Overview.');
-      setItems(payload.items ?? []);
-    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Failed to load Overview.'); }
-    finally { setLoading(false); }
+type OverviewApiResponse = {
+  ok?: boolean;
+  items?: OverviewItem[];
+  error?: string;
+};
+
+const TYPE_LABELS: Record<OverviewItemType, string> = {
+  problem: 'Problem',
+  service: 'Service',
+  checkup: 'Checkup',
+  license: 'Licence',
+};
+
+const STATUS_LABELS: Record<OverviewStatus, string> = {
+  problem: 'Problem',
+  overdue: 'Overdue',
+  due: 'Due now',
+  due_soon: 'Due soon',
+  upcoming: 'Upcoming',
+  usage_needed: 'Usage needed',
+};
+
+function extractError(payload: OverviewApiResponse | null, fallback: string): string {
+  return payload?.error?.trim() || fallback;
+}
+
+function statusClassName(item: OverviewItem): string {
+  if (item.status === 'problem' || item.status === 'overdue' || item.status === 'due') {
+    return `${styles.overviewStatus} ${styles.overviewStatusUrgent}`;
   }
-  async function clear(item: Item) {
-    setBusyId(item.id); setError('');
-    try {
-      const response = await fetch('/api/owner-app/attention', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ range, itemId: item.id, sourceId: item.sourceId }) });
-      const payload = await response.json().catch(() => null) as { ok?: boolean; error?: string } | null;
-      if (!response.ok || !payload?.ok) throw new Error(payload?.error || 'This item could not be cleared.');
-      setItems((current) => current.filter((entry) => entry.id !== item.id || entry.sourceId !== item.sourceId));
-    } catch (cause) { setError(cause instanceof Error ? cause.message : 'This item could not be cleared.'); }
-    finally { setBusyId(''); }
+
+  if (item.section === 'coming_up') {
+    return `${styles.overviewStatus} ${styles.overviewStatusUpcoming}`;
   }
-  const render = (item: Item) => <article className={styles.attentionCard} key={`${item.id}:${item.sourceId}`}><div className={styles.attentionLabels}><span>{item.type}</span><span>{item.statusLabel}</span></div><h3>{item.assetTitle}</h3><p><strong>{item.headline}</strong></p><p>{item.detail}</p>{item.notes ? <p>{item.notes}</p> : null}<div className={styles.actions}><button type="button" className={styles.secondaryButton} disabled={Boolean(busyId)} onClick={() => void clear(item)}>{busyId === item.id ? 'Clearing…' : 'Clear'}</button><Link className={styles.primaryButton} href={`/owner-app/assets/${encodeURIComponent(item.assetId)}`}>Open asset</Link></div></article>;
-  const attention = items.filter((item) => item.section === 'needs_attention');
-  const coming = items.filter((item) => item.section === 'coming_up');
-  return <div className={styles.content}><section className={styles.hero}><p className={styles.eyebrow}>Aim4price Owner</p><h1>Overview</h1><p>Problems, maintenance, checkups and licence items across all assets.</p></section><div className={styles.rangeTabs}><button className={range === 'week' ? styles.activeTab : ''} onClick={() => setRange('week')}>Next 7 days</button><button className={range === 'month' ? styles.activeTab : ''} onClick={() => setRange('month')}>Next 30 days</button></div>{error ? <div className={styles.errorNotice}>{error}<button className={styles.smallButton} onClick={() => void load()}>Try again</button></div> : null}{loading ? <div className={styles.loading}>Loading Overview…</div> : null}{!loading ? <><section className={styles.attentionSection}><div className={styles.attentionHeading}><h2>Needs Attention</h2><span className={styles.count}>{attention.length}</span></div>{attention.length ? attention.map(render) : <p className={styles.empty}>Nothing needs attention.</p>}</section><section className={styles.attentionSection}><div className={styles.attentionHeading}><h2>Coming Up</h2><span className={styles.count}>{coming.length}</span></div>{coming.length ? coming.map(render) : <p className={styles.empty}>Nothing coming up.</p>}</section></> : null}</div>;
+
+  return `${styles.overviewStatus} ${styles.overviewStatusNeutral}`;
+}
+
+function statusText(item: OverviewItem): string {
+  return item.statusLabel.trim() || STATUS_LABELS[item.status];
+}
+
+export default function OwnerAttentionClient({
+  initialRange = 'week',
+}: {
+  initialRange?: OverviewRange;
+}) {
+  const [range, setRange] = useState<OverviewRange>(initialRange);
+  const [items, setItems] = useState<OverviewItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [openingItemId, setOpeningItemId] = useState<string | null>(null);
+  const [clearingItemId, setClearingItemId] = useState<string | null>(null);
+  const [isSigningOut, setIsSigningOut] = useState(false);
+  const [reloadToken, setReloadToken] = useState(0);
+  const requestIdRef = useRef(0);
+
+  const needsAttentionItems = useMemo(
+    () => items.filter((item) => item.section === 'needs_attention'),
+    [items],
+  );
+  const comingUpItems = useMemo(
+    () => items.filter((item) => item.section === 'coming_up'),
+    [items],
+  );
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const requestId = ++requestIdRef.current;
+
+    async function loadOverview() {
+      setIsLoading(true);
+      setLoadError(null);
+      setActionError(null);
+      setItems([]);
+
+      try {
+        const response = await fetch(`/api/owner-app/attention?range=${range}`, {
+          credentials: 'include',
+          cache: 'no-store',
+          signal: controller.signal,
+        });
+        const payload = (await response.json().catch(() => null)) as OverviewApiResponse | null;
+
+        if (response.status === 401) {
+          window.location.replace('/owner-app/login');
+          return;
+        }
+
+        if (!response.ok || !payload?.ok || !Array.isArray(payload.items)) {
+          throw new Error(extractError(payload, 'Failed to load your Overview.'));
+        }
+
+        if (requestId === requestIdRef.current) {
+          setItems(payload.items);
+        }
+      } catch (error) {
+        if (controller.signal.aborted) return;
+
+        if (requestId === requestIdRef.current) {
+          setLoadError(error instanceof Error ? error.message : 'Failed to load your Overview.');
+        }
+      } finally {
+        if (!controller.signal.aborted && requestId === requestIdRef.current) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    void loadOverview();
+    return () => controller.abort();
+  }, [range, reloadToken]);
+
+  async function handleLogout() {
+    setIsSigningOut(true);
+    await Promise.allSettled([
+      fetch('/api/owner-app/logout', {
+        method: 'POST',
+        credentials: 'include',
+        cache: 'no-store',
+      }),
+      fetch('/api/auth/sign-out', {
+        method: 'POST',
+        credentials: 'include',
+        cache: 'no-store',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{}',
+      }),
+    ]);
+    window.location.replace('/owner-app/login');
+  }
+
+  function handleOpenAsset(item: OverviewItem) {
+    setOpeningItemId(item.id);
+    setActionError(null);
+    window.location.assign(`/owner-app/assets/${encodeURIComponent(item.assetId)}`);
+  }
+
+  async function handleClearItem(item: OverviewItem) {
+    setClearingItemId(item.id);
+    setActionError(null);
+
+    try {
+      const response = await fetch('/api/owner-app/attention', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        cache: 'no-store',
+        body: JSON.stringify({
+          range,
+          itemId: item.id,
+          sourceId: item.sourceId,
+        }),
+      });
+      const payload = (await response.json().catch(() => null)) as OverviewApiResponse | null;
+
+      if (response.status === 401) {
+        window.location.replace('/owner-app/login');
+        return;
+      }
+
+      if (!response.ok || !payload?.ok) {
+        throw new Error(extractError(payload, 'This item could not be cleared.'));
+      }
+
+      setItems((current) => current.filter(
+        (candidate) => candidate.id !== item.id || candidate.sourceId !== item.sourceId,
+      ));
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : 'This item could not be cleared.');
+    } finally {
+      setClearingItemId(null);
+    }
+  }
+
+  function renderOverviewCard(item: OverviewItem) {
+    const isOpening = openingItemId === item.id;
+    const isClearing = clearingItemId === item.id;
+    const hasPendingCardAction = Boolean(openingItemId) || Boolean(clearingItemId);
+
+    return (
+      <article key={`${item.id}:${item.sourceId}`} className={styles.overviewCard}>
+        <div className={styles.overviewCardLabels}>
+          <span className={styles.overviewType}>{TYPE_LABELS[item.type]}</span>
+          <span className={statusClassName(item)}>{statusText(item)}</span>
+        </div>
+
+        <h3>{item.assetTitle}</h3>
+        <p className={styles.overviewHeadline}>{item.headline}</p>
+        {item.detail.trim() ? <p className={styles.overviewDetail}>{item.detail}</p> : null}
+        {item.notes.trim() ? <p className={styles.overviewNotes}>{item.notes}</p> : null}
+
+        <div className={styles.overviewCardActions}>
+          <button
+            type="button"
+            className={styles.overviewClearButton}
+            onClick={() => void handleClearItem(item)}
+            disabled={hasPendingCardAction}
+            aria-busy={isClearing}
+            aria-label={`Clear ${TYPE_LABELS[item.type].toLowerCase()} for ${item.assetTitle} from your Overview`}
+          >
+            {isClearing ? 'Clearing…' : 'Clear'}
+          </button>
+          <button
+            type="button"
+            className={`${styles.mobilePrimaryButton} ${styles.overviewOpenButton}`}
+            onClick={() => handleOpenAsset(item)}
+            disabled={hasPendingCardAction}
+            aria-busy={isOpening}
+          >
+            {isOpening ? 'Opening…' : 'Open asset'}
+          </button>
+        </div>
+      </article>
+    );
+  }
+
+  return (
+    <main className={styles.mobilePage}>
+      <section className={`${styles.assetsShell} ${styles.overviewShell}`}>
+        <header className={styles.overviewHeader} aria-label="Overview controls">
+          <FieldManagerNavLink href="/owner-app" label="Home" />
+          <button
+            type="button"
+            className={styles.logoutButton}
+            onClick={() => void handleLogout()}
+            disabled={isSigningOut}
+          >
+            {isSigningOut ? 'Signing out…' : 'Sign out'}
+          </button>
+        </header>
+
+        <div className={styles.overviewIntro}>
+          <span>Aim4price Owner</span>
+          <h1>Overview</h1>
+          <p>What needs attention next.</p>
+        </div>
+
+        <div className={styles.overviewRange} role="group" aria-label="Overview time range">
+          <button
+            type="button"
+            className={range === 'week' ? styles.overviewRangeActive : undefined}
+            aria-pressed={range === 'week'}
+            onClick={() => setRange('week')}
+          >
+            Next 7 days
+          </button>
+          <button
+            type="button"
+            className={range === 'month' ? styles.overviewRangeActive : undefined}
+            aria-pressed={range === 'month'}
+            onClick={() => setRange('month')}
+          >
+            Next 30 days
+          </button>
+        </div>
+
+        {loadError ? (
+          <div className={`${styles.errorNotice} ${styles.overviewError}`} role="alert">
+            <span>{loadError}</span>
+            <button type="button" onClick={() => setReloadToken((current) => current + 1)}>
+              Try again
+            </button>
+          </div>
+        ) : null}
+
+        {actionError ? (
+          <div className={styles.errorNotice} role="alert">
+            {actionError}
+          </div>
+        ) : null}
+
+        {isLoading ? (
+          <p className={styles.mobileEmpty} role="status">
+            Loading your Overview…
+          </p>
+        ) : null}
+
+        {!isLoading && !loadError ? (
+          <div className={styles.overviewSections} aria-live="polite">
+            <section className={styles.overviewSection} aria-labelledby="needs-attention-title">
+              <div className={styles.overviewSectionHeading}>
+                <h2 id="needs-attention-title">Needs attention</h2>
+                <span aria-label={`${needsAttentionItems.length} items`}>
+                  {needsAttentionItems.length}
+                </span>
+              </div>
+              {needsAttentionItems.length ? (
+                <div className={styles.overviewList}>{needsAttentionItems.map(renderOverviewCard)}</div>
+              ) : (
+                <p className={styles.overviewEmpty}>Nothing needs attention.</p>
+              )}
+            </section>
+
+            <section className={styles.overviewSection} aria-labelledby="coming-up-title">
+              <div className={styles.overviewSectionHeading}>
+                <h2 id="coming-up-title">Coming up</h2>
+                <span aria-label={`${comingUpItems.length} items`}>{comingUpItems.length}</span>
+              </div>
+              {comingUpItems.length ? (
+                <div className={styles.overviewList}>{comingUpItems.map(renderOverviewCard)}</div>
+              ) : (
+                <p className={styles.overviewEmpty}>
+                  Nothing coming up in the next {range === 'week' ? '7 days' : '30 days'}.
+                </p>
+              )}
+            </section>
+          </div>
+        ) : null}
+      </section>
+    </main>
+  );
 }
