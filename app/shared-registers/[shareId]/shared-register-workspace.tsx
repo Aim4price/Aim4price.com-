@@ -1,750 +1,425 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import AppHeader from '../../../components/AppHeader';
-import { sharedRegisterSnapshot, type SharedRegisterAsset, type SharedRegisterLead } from '../../../lib/shared-register-prototype';
+import {
+  ASSET_CATEGORIES,
+  CLIENT_PROFILES,
+  EXCLUSION_REASONS,
+  categoryDefinition,
+  optionsForCategory,
+} from '../../../lib/insurance-option-config';
+import type {
+  InsuranceAssetReview,
+  InsuranceGeneralCoverReview,
+  InsuranceOptionReview,
+  InsuranceReportType,
+  InsuranceReviewStatus,
+  InsuranceWorkspaceAsset,
+  InsuranceWorkspaceData,
+} from '../../../lib/insurance-workspace-types';
 import styles from './workspace.module.css';
 
-type Tab = 'overview' | 'review' | 'report';
-type Decision = 'review' | 'included' | 'excluded' | 'information_required';
-type NoteVisibility = 'shared' | 'private';
+type Tab = 'overview' | 'assets' | 'general' | 'reports';
+type Notice = { tone: 'success' | 'error'; message: string };
 
-type AssetReview = {
-  assetGroup: string;
-  policySection: string;
-  scheduleItem: string;
-  decision: Decision;
-  proposedValue: string;
-  note: string;
-  noteVisibility: NoteVisibility;
-  lastReviewedAtIso?: string;
+const REVIEW_STATUS_LABELS: Record<InsuranceReviewStatus, string> = {
+  not_started: 'Not started', in_progress: 'In progress', completed: 'Completed',
 };
 
-type WorkspaceState = {
-  reviews: Record<string, AssetReview>;
-  nonAssetCovers: string[];
-  frozenAtIso: string | null;
-};
+const CURRENT_INSURANCE_OPTIONS = [
+  { value: 'unknown', label: 'Unknown' },
+  { value: 'insured', label: 'Insured' },
+  { value: 'not_insured', label: 'Not insured' },
+  { value: 'covered_elsewhere', label: 'Covered elsewhere' },
+  { value: 'not_applicable', label: 'Not applicable' },
+] as const;
 
-const ASSET_GROUPS = [
-  'Buildings & property',
-  'Vehicles',
-  'Mobile plant & equipment',
-  'Fixed plant & machinery',
-  'Electronic equipment',
-  'Irrigation & water systems',
-  'Renewable energy',
-  'Stock & materials',
-  'Livestock & biological assets',
-  'Other',
-];
+const RECOMMENDATION_OPTIONS = [
+  { value: 'review', label: 'Review' },
+  { value: 'include', label: 'Include' },
+  { value: 'exclude', label: 'Exclude' },
+  { value: 'information_required', label: 'Information required' },
+  { value: 'not_applicable', label: 'Not applicable' },
+] as const;
 
-const POLICY_SECTIONS = [
-  'Fire & allied perils',
-  'Buildings Combined',
-  'Office Contents',
-  'Business All Risks',
-  'Machinery Breakdown',
-  'Motor',
-  'Electronic Equipment',
-  'Goods in Transit',
-  'Theft',
-  'Glass',
-  'Accidental Damage',
-  'Deterioration of Stock',
-  'Livestock & Game',
-  'Other / refer',
-];
+const OPTION_STATUS_OPTIONS = [
+  { value: 'unknown', label: 'Unknown' },
+  { value: 'included', label: 'Included' },
+  { value: 'excluded', label: 'Excluded' },
+  { value: 'not_applicable', label: 'Not applicable' },
+] as const;
 
-const NON_ASSET_COVERS = [
-  'Business Interruption',
-  'Public Liability',
-  'Employers Liability',
-  'Goods in Transit',
-  'Money',
-  'Fidelity',
-  'Deterioration of Stock',
-  'Fire on Veld',
-];
-
-const DECISION_OPTIONS: Array<{ value: Decision; label: string; description: string }> = [
-  { value: 'included', label: 'Include', description: 'Add to the proposed insurance structure.' },
-  { value: 'information_required', label: 'Need information', description: 'Ask the client before deciding.' },
-  { value: 'excluded', label: 'Exclude', description: 'Leave out with a recorded decision.' },
-  { value: 'review', label: 'Review later', description: 'Keep this asset outstanding.' },
-];
-
-const EMPTY_REVIEW: AssetReview = {
-  assetGroup: '',
-  policySection: '',
-  scheduleItem: '',
-  decision: 'review',
-  proposedValue: '',
-  note: '',
-  noteVisibility: 'shared',
-};
-
-function asRecord(value: unknown): Record<string, unknown> {
-  return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
+function money(value: number | null | undefined): string {
+  if (value === null || value === undefined) return '—';
+  return new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR', maximumFractionDigits: 0 }).format(value);
 }
 
-function text(value: unknown): string {
-  return typeof value === 'string' ? value.trim() : '';
-}
-
-function numberValue(value: unknown): number {
-  const parsed = typeof value === 'number' ? value : Number(value);
-  return Number.isFinite(parsed) ? parsed : 0;
-}
-
-function money(value: number): string {
-  return new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR', maximumFractionDigits: 0 }).format(value || 0);
-}
-
-function dateLabel(value: string): string {
+function dateLabel(value: string | null): string {
+  if (!value) return '—';
   const date = new Date(value);
-  return Number.isNaN(date.getTime())
-    ? '—'
-    : new Intl.DateTimeFormat('en-ZA', { day: '2-digit', month: 'short', year: 'numeric' }).format(date);
+  return Number.isNaN(date.getTime()) ? '—' : new Intl.DateTimeFormat('en-ZA', { day: '2-digit', month: 'short', year: 'numeric' }).format(date);
 }
 
-function assetId(asset: SharedRegisterAsset, index: number): string {
-  return text(asset.id) || `asset-${index}`;
+function titleCase(value: string): string {
+  return value.replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
-function assetTitle(asset: SharedRegisterAsset): string {
-  return text(asset.title) || [text(asset.brandName), text(asset.modelName) || text(asset.typedModelName)].filter(Boolean).join(' ') || 'Untitled asset';
+function cloneAsset(asset: InsuranceWorkspaceAsset): InsuranceWorkspaceAsset {
+  return { ...asset, snapshot: { ...asset.snapshot }, review: { ...asset.review, options: asset.review.options.map((option) => ({ ...option })) } };
 }
 
-function assetKind(asset: SharedRegisterAsset): string {
-  return text(asset.equipmentFamilyLabel) || text(asset.kind) || 'Asset';
+function mergeCategoryOptions(categoryKey: string, current: InsuranceOptionReview[]): InsuranceOptionReview[] {
+  const existing = new Map(current.map((option) => [option.key, option]));
+  return optionsForCategory(categoryKey).map((definition) => existing.get(definition.key) ?? {
+    key: definition.key,
+    label: definition.label,
+    status: 'unknown',
+    exclusionReasonKey: '',
+    note: '',
+    amountValue: null,
+    textValue: '',
+  });
 }
 
-function assetValue(asset: SharedRegisterAsset): number {
-  return numberValue(asset.value ?? asset.selectedValueExVat ?? asset.aim4priceValueExVat);
-}
-
-function replacementValue(asset: SharedRegisterAsset): number {
-  const specs = asRecord(asset.specsJson);
-  return numberValue(
-    asset.replacementPriceExVat ??
-      asset.replacementPriceUsedExVat ??
-      asset.userReplacementPriceExVat ??
-      specs.replacementPriceExVat ??
-      specs.replacement_price_ex_vat,
-  );
-}
-
-function assetLocation(asset: SharedRegisterAsset): string {
-  const specs = asRecord(asset.specsJson);
-  return text(asset.lastKnownLocationText) || text(specs.location) || text(specs.assetLocation) || 'Location not supplied';
-}
-
-function existingInsuranceStatus(asset: SharedRegisterAsset): 'Yes' | 'No' | 'Not sure' | 'N/A' {
-  const specs = asRecord(asset.specsJson);
-  const raw = text(specs.insuranceStatus ?? specs.insurance_status).toLowerCase().replace(/[\s-]+/g, '_');
-  if (['yes', 'true', 'insured'].includes(raw)) return 'Yes';
-  if (['no', 'false', 'not_insured', 'uninsured'].includes(raw)) return 'No';
-  if (['not_applicable', 'n_a', 'na'].includes(raw)) return 'N/A';
-  if (raw) return 'Not sure';
-  if (asset.isInsured === true) return 'Yes';
-  if (asset.isInsured === false) return 'Not sure';
-  return 'Not sure';
-}
-
-function inferAssetGroup(asset: SharedRegisterAsset): string {
-  const value = `${assetKind(asset)} ${assetTitle(asset)}`.toLowerCase();
-  if (/building|shed|house|property|structure|store|warehouse|office/.test(value)) return 'Buildings & property';
-  if (/vehicle|hilux|truck|bakkie|trailer/.test(value)) return 'Vehicles';
-  if (/pivot|irrigation|pump|borehole|water system/.test(value)) return 'Irrigation & water systems';
-  if (/solar|battery|inverter|renewable/.test(value)) return 'Renewable energy';
-  if (/computer|server|electronic|camera|alarm/.test(value)) return 'Electronic equipment';
-  if (/tractor|loader|excavator|harvester|forklift|mobile equipment/.test(value)) return 'Mobile plant & equipment';
-  if (/livestock|cattle|game|animal/.test(value)) return 'Livestock & biological assets';
-  if (/stock|material|inventory|produce/.test(value)) return 'Stock & materials';
-  return 'Fixed plant & machinery';
-}
-
-function inferPolicySection(asset: SharedRegisterAsset): string {
-  const group = inferAssetGroup(asset);
-  if (group === 'Buildings & property') return 'Fire & allied perils';
-  if (group === 'Vehicles') return 'Motor';
-  if (group === 'Electronic equipment') return 'Electronic Equipment';
-  if (group === 'Fixed plant & machinery' || group === 'Renewable energy') return 'Machinery Breakdown';
-  if (group === 'Livestock & biological assets') return 'Livestock & Game';
-  if (group === 'Stock & materials') return 'Fire & allied perils';
-  return 'Business All Risks';
-}
-
-function decisionLabel(decision: Decision): string {
-  return {
-    review: 'Needs review',
-    included: 'Include',
-    excluded: 'Exclude',
-    information_required: 'Information required',
-  }[decision];
-}
-
-function defaultState(): WorkspaceState {
-  return { reviews: {}, nonAssetCovers: [], frozenAtIso: null };
-}
-
-function reviewIsComplete(review: AssetReview | undefined): boolean {
-  if (!review?.assetGroup) return false;
-  if (review.decision === 'included') return Boolean(review.policySection);
-  if (review.decision === 'excluded') return true;
-  return false;
-}
-
-function reviewSectionLabel(review: AssetReview | undefined): string {
-  if (review?.decision === 'excluded') return 'Excluded from proposal';
-  if (review?.decision === 'information_required') return 'Information required';
-  if (review?.decision === 'included' && review.policySection) return review.policySection;
-  return 'Unclassified';
-}
-
-type SelectOption = { value: string; label: string };
-
-function CustomSelect({
-  value,
-  options,
-  placeholder,
-  ariaLabel,
-  onChange,
-  compact = false,
-}: {
-  value: string;
-  options: SelectOption[];
-  placeholder: string;
-  ariaLabel: string;
-  onChange: (value: string) => void;
-  compact?: boolean;
-}) {
-  const [isOpen, setIsOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement | null>(null);
-  const selected = options.find((option) => option.value === value);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    const closeOnOutsideClick = (event: MouseEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) setIsOpen(false);
-    };
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setIsOpen(false);
-    };
-    document.addEventListener('mousedown', closeOnOutsideClick);
-    document.addEventListener('keydown', closeOnEscape);
-    return () => {
-      document.removeEventListener('mousedown', closeOnOutsideClick);
-      document.removeEventListener('keydown', closeOnEscape);
-    };
-  }, [isOpen]);
-
-  return (
-    <div ref={rootRef} className={`${styles.customSelect} ${compact ? styles.customSelectCompact : ''}`}>
-      <button
-        type="button"
-        className={`${styles.customSelectButton} ${isOpen ? styles.customSelectButtonOpen : ''}`}
-        aria-label={ariaLabel}
-        aria-haspopup="listbox"
-        aria-expanded={isOpen}
-        onClick={() => setIsOpen((current) => !current)}
-      >
-        <span className={selected ? '' : styles.customSelectPlaceholder}>{selected?.label ?? placeholder}</span>
-        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 7.5 5 5 5-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
-      </button>
-      {isOpen ? (
-        <div className={styles.customSelectMenu} role="listbox" aria-label={ariaLabel}>
-          {options.map((option) => (
-            <button
-              type="button"
-              role="option"
-              aria-selected={option.value === value}
-              key={option.value}
-              className={`${styles.customSelectOption} ${option.value === value ? styles.customSelectOptionActive : ''}`}
-              onClick={() => {
-                onChange(option.value);
-                setIsOpen(false);
-              }}
-            >
-              <span>{option.label}</span>
-              {option.value === value ? <b>✓</b> : null}
-            </button>
-          ))}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-export default function SharedRegisterWorkspace({ share }: { share: SharedRegisterLead }) {
-  const snapshot = sharedRegisterSnapshot(share);
-  const assets = useMemo(() => snapshot?.assets ?? [], [snapshot]);
+export default function SharedRegisterWorkspace({ initialWorkspace }: { initialWorkspace: InsuranceWorkspaceData }) {
+  const [workspace, setWorkspace] = useState(initialWorkspace);
   const [tab, setTab] = useState<Tab>('overview');
-  const [workspace, setWorkspace] = useState<WorkspaceState>(defaultState);
-  const [hydrated, setHydrated] = useState(false);
+  const [notice, setNotice] = useState<Notice | null>(null);
+  const [saving, setSaving] = useState(false);
   const [query, setQuery] = useState('');
-  const [sectionFilter, setSectionFilter] = useState('all');
-  const [reviewFilter, setReviewFilter] = useState('outstanding');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [reviewFilter, setReviewFilter] = useState<'all' | InsuranceReviewStatus>('all');
+  const [page, setPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [bulkSection, setBulkSection] = useState('');
-  const [editingAssetId, setEditingAssetId] = useState<string | null>(null);
-  const [draft, setDraft] = useState<AssetReview>(EMPTY_REVIEW);
-  const [notice, setNotice] = useState('');
-  const [noticeTone, setNoticeTone] = useState<'success' | 'error'>('success');
+  const [draft, setDraft] = useState<InsuranceWorkspaceAsset | null>(null);
+  const [dirty, setDirty] = useState(false);
+  const [covers, setCovers] = useState(initialWorkspace.generalCovers.map((cover) => ({ ...cover })));
+  const [bulk, setBulk] = useState({ insurerName: '', policyNumber: '', policySectionLabel: '', reviewStatus: '' });
+  const pageSize = 50;
 
-  const storageKey = `aim4price:insurance-workspace:${share.id}`;
+  const filteredAssets = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+    return workspace.assets.filter((asset) => {
+      if (categoryFilter !== 'all' && asset.review.categoryKey !== categoryFilter) return false;
+      if (reviewFilter !== 'all' && asset.review.reviewStatus !== reviewFilter) return false;
+      return !normalized || [asset.title, asset.kind, asset.location, asset.serialNumber, asset.registrationNumber, asset.review.policySectionLabel]
+        .join(' ').toLowerCase().includes(normalized);
+    });
+  }, [workspace.assets, query, categoryFilter, reviewFilter]);
 
-  useEffect(() => {
+  const pageCount = Math.max(1, Math.ceil(filteredAssets.length / pageSize));
+  const visibleAssets = filteredAssets.slice((page - 1) * pageSize, page * pageSize);
+  const completedCount = workspace.assets.filter((asset) => asset.review.reviewStatus === 'completed').length;
+  const informationCount = workspace.assets.filter((asset) => asset.review.recommendationStatus === 'information_required').length;
+  const uninsuredCount = workspace.assets.filter((asset) => asset.review.currentInsuranceStatus === 'not_insured').length;
+
+  useEffect(() => setPage(1), [query, categoryFilter, reviewFilter]);
+  useEffect(() => setCovers(workspace.generalCovers.map((cover) => ({ ...cover }))), [workspace.generalCovers]);
+
+  async function readResponse(response: Response): Promise<InsuranceWorkspaceData> {
+    const payload = (await response.json()) as { ok?: boolean; workspace?: InsuranceWorkspaceData; error?: string };
+    if (!response.ok || !payload.workspace) throw new Error(payload.error || 'The workspace could not be saved.');
+    return payload.workspace;
+  }
+
+  async function persistAsset(asset: InsuranceWorkspaceAsset, quiet = false): Promise<InsuranceWorkspaceData | null> {
+    setSaving(true);
+    setDirty(false);
     try {
-      const saved = window.localStorage.getItem(storageKey);
-      if (saved) setWorkspace({ ...defaultState(), ...(JSON.parse(saved) as WorkspaceState) });
-    } catch {
-      // A damaged browser prototype state should not block the register.
+      const response = await fetch(`/api/insurance-workspaces/${workspace.id}/assets/${asset.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ review: asset.review, options: asset.review.options }),
+      });
+      const updated = await readResponse(response);
+      setWorkspace(updated);
+      const savedAsset = updated.assets.find((candidate) => candidate.id === asset.id);
+      if (savedAsset) setDraft((current) => current?.id === asset.id ? cloneAsset(savedAsset) : current);
+      if (!quiet) setNotice({ tone: 'success', message: 'Asset review saved to the broker workspace.' });
+      return updated;
+    } catch (error) {
+      setDirty(true);
+      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'The asset review could not be saved.' });
+      return null;
+    } finally {
+      setSaving(false);
     }
-    setHydrated(true);
-  }, [storageKey]);
+  }
 
   useEffect(() => {
-    if (!hydrated) return;
-    window.localStorage.setItem(storageKey, JSON.stringify(workspace));
-  }, [hydrated, storageKey, workspace]);
-
-  useEffect(() => {
-    if (!notice) return;
-    const timer = window.setTimeout(() => setNotice(''), 3600);
+    if (!draft || !dirty) return;
+    const pending = cloneAsset(draft);
+    const timer = window.setTimeout(() => { void persistAsset(pending, true); }, 1200);
     return () => window.clearTimeout(timer);
-  }, [notice]);
+    // The draft object is the autosave source; workspace responses must not restart the timer.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft, dirty]);
 
-  const classifiedCount = assets.filter((asset, index) => reviewIsComplete(workspace.reviews[assetId(asset, index)])).length;
-  const informationRequiredCount = Object.values(workspace.reviews).filter((review) => review.decision === 'information_required').length;
-  const noteCount = Object.values(workspace.reviews).filter((review) => review.note.trim()).length;
-  const progress = assets.length ? Math.round((classifiedCount / assets.length) * 100) : 0;
+  function openAsset(asset: InsuranceWorkspaceAsset) {
+    setDraft(cloneAsset(asset));
+    setDirty(false);
+    setNotice(null);
+  }
 
-  const visibleAssets = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-    return assets.filter((asset, index) => {
-      const id = assetId(asset, index);
-      const review = workspace.reviews[id];
-      const searchable = [assetTitle(asset), assetKind(asset), assetLocation(asset), review?.assetGroup, review?.policySection, review?.scheduleItem]
-        .join(' ')
-        .toLowerCase();
-      const section = review?.policySection || 'Unclassified';
-      const matchesReviewFilter =
-        reviewFilter === 'all' ||
-        (reviewFilter === 'outstanding' && !reviewIsComplete(review)) ||
-        (reviewFilter === 'information_required' && review?.decision === 'information_required') ||
-        (reviewFilter === 'included' && reviewIsComplete(review) && review?.decision === 'included') ||
-        (reviewFilter === 'excluded' && reviewIsComplete(review) && review?.decision === 'excluded');
-      return (
-        (!normalizedQuery || searchable.includes(normalizedQuery)) &&
-        (sectionFilter === 'all' || section === sectionFilter) &&
-        matchesReviewFilter
-      );
+  function changeReview<K extends keyof InsuranceAssetReview>(key: K, value: InsuranceAssetReview[K]) {
+    setDraft((current) => {
+      if (!current) return current;
+      const nextReview = { ...current.review, [key]: value };
+      if (key === 'categoryKey') nextReview.options = mergeCategoryOptions(String(value), current.review.options);
+      return { ...current, review: nextReview };
     });
-  }, [assets, query, reviewFilter, sectionFilter, workspace.reviews]);
-
-  const sectionRows = useMemo(() => {
-    const rows = new Map<string, { count: number; replacement: number; proposed: number }>();
-    assets.forEach((asset, index) => {
-      const review = workspace.reviews[assetId(asset, index)];
-      const section = reviewSectionLabel(review);
-      const row = rows.get(section) ?? { count: 0, replacement: 0, proposed: 0 };
-      row.count += 1;
-      row.replacement += replacementValue(asset);
-      if (review?.decision === 'included') {
-        row.proposed += numberValue(review.proposedValue) || replacementValue(asset);
-      }
-      rows.set(section, row);
-    });
-    return Array.from(rows.entries()).sort(([a], [b]) => (a === 'Unclassified' ? 1 : b === 'Unclassified' ? -1 : a.localeCompare(b)));
-  }, [assets, workspace.reviews]);
-
-  function openReview(asset: SharedRegisterAsset, index: number) {
-    const id = assetId(asset, index);
-    const current = workspace.reviews[id];
-    setEditingAssetId(id);
-    setDraft(
-      current ?? {
-        ...EMPTY_REVIEW,
-        assetGroup: inferAssetGroup(asset),
-        policySection: '',
-        proposedValue: replacementValue(asset) ? String(Math.round(replacementValue(asset))) : '',
-      },
-    );
+    setDirty(true);
   }
 
-  function showNotice(message: string, tone: 'success' | 'error' = 'success') {
-    setNoticeTone(tone);
-    setNotice(message);
+  function changeOption(index: number, changes: Partial<InsuranceOptionReview>) {
+    setDraft((current) => current ? {
+      ...current,
+      review: { ...current.review, options: current.review.options.map((option, optionIndex) => optionIndex === index ? { ...option, ...changes } : option) },
+    } : current);
+    setDirty(true);
   }
 
-  function nextOutstandingAssetId(currentAssetId: string): string | null {
-    const currentIndex = assets.findIndex((asset, index) => assetId(asset, index) === currentAssetId);
-    const orderedAssets = [...assets.slice(currentIndex + 1), ...assets.slice(0, currentIndex + 1)];
-    const nextAsset = orderedAssets.find((asset) => {
-      const index = assets.indexOf(asset);
-      const id = assetId(asset, index);
-      return id !== currentAssetId && !reviewIsComplete(workspace.reviews[id]);
-    });
-    if (!nextAsset) return null;
-    const index = assets.indexOf(nextAsset);
-    return assetId(nextAsset, index);
+  async function saveAndNext() {
+    if (!draft) return;
+    const currentId = draft.id;
+    const updated = await persistAsset(draft);
+    if (!updated) return;
+    const index = updated.assets.findIndex((asset) => asset.id === currentId);
+    const next = updated.assets[index + 1];
+    if (next) openAsset(next);
   }
 
-  function openReviewById(id: string) {
-    const index = assets.findIndex((asset, assetIndex) => assetId(asset, assetIndex) === id);
-    if (index >= 0) openReview(assets[index], index);
-  }
-
-  function openNextOutstandingReview() {
-    setTab('review');
-    setReviewFilter('outstanding');
-    const next = assets.find((asset, index) => !reviewIsComplete(workspace.reviews[assetId(asset, index)]));
-    if (next) {
-      const index = assets.indexOf(next);
-      openReview(next, index);
-    }
-  }
-
-  function saveReview(openNext = false) {
-    if (!editingAssetId) return;
-    if (!draft.assetGroup) {
-      showNotice('Choose an asset group before saving.', 'error');
-      return;
-    }
-    if (draft.decision === 'included' && !draft.policySection) {
-      showNotice('Choose a policy section for an included asset.', 'error');
-      return;
-    }
-    if (draft.decision === 'information_required' && !draft.note.trim()) {
-      showNotice('Add the information needed from the client.', 'error');
-      return;
-    }
-
-    const savedReview = { ...draft, lastReviewedAtIso: new Date().toISOString() };
-    const nextId = openNext ? nextOutstandingAssetId(editingAssetId) : null;
-    setWorkspace((current) => ({ ...current, frozenAtIso: null, reviews: { ...current.reviews, [editingAssetId]: savedReview } }));
-    setEditingAssetId(null);
-    showNotice(draft.decision === 'information_required' ? 'Information request saved.' : 'Asset review saved.');
-    if (nextId) window.setTimeout(() => openReviewById(nextId), 0);
+  async function updateWorkspaceSettings(changes: Record<string, unknown>) {
+    setSaving(true);
+    try {
+      const response = await fetch(`/api/insurance-workspaces/${workspace.id}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(changes),
+      });
+      const updated = await readResponse(response);
+      setWorkspace(updated);
+      setNotice({ tone: 'success', message: 'Workspace settings saved.' });
+    } catch (error) {
+      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Workspace settings could not be saved.' });
+    } finally { setSaving(false); }
   }
 
   function toggleSelected(id: string) {
-    setSelectedIds((current) => (current.includes(id) ? current.filter((item) => item !== id) : [...current, id]));
+    setSelectedIds((current) => current.includes(id) ? current.filter((candidate) => candidate !== id) : [...current, id]);
   }
 
-  function applyBulkSection() {
-    if (!bulkSection || !selectedIds.length) return;
-    setWorkspace((current) => {
-      const reviews = { ...current.reviews };
-      selectedIds.forEach((id) => {
-        const assetIndex = assets.findIndex((asset, index) => assetId(asset, index) === id);
-        const asset = assets[assetIndex];
-        const existing = reviews[id] ?? EMPTY_REVIEW;
-        reviews[id] = {
-          ...existing,
-          assetGroup: existing.assetGroup || (asset ? inferAssetGroup(asset) : 'Other'),
-          policySection: bulkSection,
-          decision: existing.decision === 'review' ? 'included' : existing.decision,
-          proposedValue: existing.proposedValue || (asset ? String(Math.round(replacementValue(asset))) : ''),
-        };
-      });
-      return { ...current, frozenAtIso: null, reviews };
-    });
-    setSelectedIds([]);
-    setBulkSection('');
-    showNotice('Selected assets classified.');
-  }
-
-  function toggleNonAssetCover(cover: string) {
-    setWorkspace((current) => ({
-      ...current,
-      frozenAtIso: null,
-      nonAssetCovers: current.nonAssetCovers.includes(cover)
-        ? current.nonAssetCovers.filter((item) => item !== cover)
-        : [...current.nonAssetCovers, cover],
-    }));
-  }
-
-  function freezeSnapshot() {
-    if (classifiedCount !== assets.length || informationRequiredCount > 0) {
-      setTab('review');
-      setReviewFilter('outstanding');
-      showNotice(
-        informationRequiredCount > 0
-          ? `Resolve ${informationRequiredCount} information request${informationRequiredCount === 1 ? '' : 's'} before freezing the submission.`
-          : `Review the remaining ${assets.length - classifiedCount} asset${assets.length - classifiedCount === 1 ? '' : 's'} before freezing the submission.`,
-        'error',
-      );
+  async function applyBulk() {
+    const changes = Object.fromEntries(Object.entries(bulk).filter(([, value]) => value !== ''));
+    if (!selectedIds.length || !Object.keys(changes).length) {
+      setNotice({ tone: 'error', message: 'Select assets and enter at least one safe bulk field.' });
       return;
     }
-    setWorkspace((current) => ({ ...current, frozenAtIso: new Date().toISOString() }));
-    showNotice('Submission snapshot frozen in this browser.');
+    setSaving(true);
+    try {
+      const response = await fetch(`/api/insurance-workspaces/${workspace.id}/bulk`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ assetIds: selectedIds, changes }),
+      });
+      const updated = await readResponse(response);
+      setWorkspace(updated);
+      setSelectedIds([]);
+      setBulk({ insurerName: '', policyNumber: '', policySectionLabel: '', reviewStatus: '' });
+      setNotice({ tone: 'success', message: `Bulk fields applied to ${selectedIds.length} assets.` });
+    } catch (error) {
+      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Bulk update failed.' });
+    } finally { setSaving(false); }
   }
 
-  if (!snapshot) return null;
+  function changeCover(index: number, changes: Partial<InsuranceGeneralCoverReview>) {
+    setCovers((current) => current.map((cover, coverIndex) => coverIndex === index ? { ...cover, ...changes } : cover));
+  }
 
-  const editingAssetIndex = editingAssetId ? assets.findIndex((asset, index) => assetId(asset, index) === editingAssetId) : -1;
-  const editingAsset = editingAssetIndex >= 0 ? assets[editingAssetIndex] : null;
+  async function saveCovers() {
+    setSaving(true);
+    try {
+      const response = await fetch(`/api/insurance-workspaces/${workspace.id}/general-covers`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ covers }),
+      });
+      const updated = await readResponse(response);
+      setWorkspace(updated);
+      setNotice({ tone: 'success', message: 'General covers saved.' });
+    } catch (error) {
+      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'General covers could not be saved.' });
+    } finally { setSaving(false); }
+  }
+
+  async function generateReport(type: InsuranceReportType) {
+    setSaving(true);
+    try {
+      const response = await fetch(`/api/insurance-workspaces/${workspace.id}/reports`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type }),
+      });
+      const payload = (await response.json()) as { ok?: boolean; url?: string; error?: string };
+      if (!response.ok || !payload.url) throw new Error(payload.error || 'The report could not be generated.');
+      const refreshed = await fetch(`/api/insurance-workspaces/${workspace.id}`);
+      setWorkspace(await readResponse(refreshed));
+      window.open(payload.url, '_blank', 'noopener,noreferrer');
+      setNotice({ tone: 'success', message: `${titleCase(type)} report snapshot generated.` });
+    } catch (error) {
+      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'The report could not be generated.' });
+    } finally { setSaving(false); }
+  }
 
   return (
     <main className={styles.page}>
       <AppHeader active="shared-registers" />
       <section className={styles.shell}>
-        {notice ? <div className={`${styles.notice} ${noticeTone === 'error' ? styles.noticeError : ''}`}>{notice}</div> : null}
-        <div className={styles.workspaceBackRow}>
-          <Link href="/shared-registers" className={styles.backLink}>← Shared Registers</Link>
-        </div>
+        {notice ? <div className={`${styles.notice} ${notice.tone === 'error' ? styles.noticeError : ''}`}>{notice.message}</div> : null}
+        <div className={styles.backRow}><Link href="/shared-registers">← Portfolio</Link><span>{saving ? 'Saving…' : 'Saved to server'}</span></div>
         <header className={styles.workspaceHeader}>
-          <div className={styles.workspaceTitleBlock}>
-            <h1>{share.ownerBusinessName || snapshot.ownerName}</h1>
+          <div>
+            <p>{workspace.snapshotReference}</p>
+            <h1>{workspace.clientName}</h1>
+            <span>{workspace.clientMeta || 'Owner-provided shared register'} · Snapshot {dateLabel(workspace.snapshotGeneratedAtIso)}</span>
           </div>
+          <div className={styles.headerStatus}><small>Workspace status</small><strong>{REVIEW_STATUS_LABELS[workspace.reviewStatus]}</strong></div>
         </header>
-        <p className={styles.workspaceMetaRow}>{snapshot.title} · Shared {dateLabel(snapshot.generatedAtIso)} · Read-only owner register</p>
 
-        <nav className={styles.tabs} aria-label="Insurance workspace sections">
-          {(['overview', 'review', 'report'] as Tab[]).map((item) => (
-            <button key={item} type="button" className={tab === item ? styles.activeTab : ''} onClick={() => setTab(item)}>
-              {item === 'overview' ? 'Overview' : item === 'review' ? `Review assets${informationRequiredCount ? ` (${informationRequiredCount})` : ''}` : 'Report'}
-            </button>
+        <nav className={styles.tabs} aria-label="Insurance workspace">
+          {([['overview', 'Overview'], ['assets', 'Assets'], ['general', 'General Covers'], ['reports', 'Reports']] as Array<[Tab, string]>).map(([value, label]) => (
+            <button className={tab === value ? styles.activeTab : ''} type="button" key={value} onClick={() => setTab(value)}>{label}</button>
           ))}
         </nav>
 
         {tab === 'overview' ? (
-          <div className={styles.overviewLayout}>
-            <section className={styles.summaryGrid}>
-              <article className={styles.summaryTileActive}><span>Total assets</span><strong>{assets.length}</strong><small>{money(snapshot.totalValue)} register value</small></article>
-              <article><span>Replacement value</span><strong>{money(snapshot.totalReplacementValue)}</strong><small>Excluding VAT</small></article>
-              <article><span>Review progress</span><strong>{classifiedCount} of {assets.length}</strong><small>{informationRequiredCount} open requests · {noteCount} notes</small></article>
-            </section>
-
-            <section className={styles.card}>
-              <div className={styles.cardHeader}>
-                <div><h2>Asset review</h2><p>Confirm the assets that need attention.</p></div>
-                <button className={styles.secondaryButton} type="button" onClick={openNextOutstandingReview}>Continue review</button>
-              </div>
-              <div className={styles.progressTrack}><span style={{ width: `${progress}%` }} /></div>
-              <div className={styles.actionGrid}>
-                <article><strong>{assets.length - classifiedCount}</strong><span>Need a decision</span></article>
-                <article><strong>{informationRequiredCount}</strong><span>Information requests</span></article>
-                <article><strong>{sectionRows.filter(([section]) => POLICY_SECTIONS.includes(section)).length}</strong><span>Policy sections</span></article>
-              </div>
-            </section>
-
+          <section className={styles.overview}>
+            <div className={styles.summaryGrid}>
+              <article><span>Assets</span><strong>{workspace.assetCount}</strong><small>{completedCount} reviews completed</small></article>
+              <article><span>Replacement value</span><strong>{money(workspace.totalReplacementValue)}</strong><small>From shared register snapshot</small></article>
+              <article><span>Not insured</span><strong>{uninsuredCount}</strong><small>Recorded owner status</small></article>
+              <article><span>Information required</span><strong>{informationCount}</strong><small>Broker review decisions</small></article>
+            </div>
             <div className={styles.twoColumn}>
-              <section className={styles.card}>
-                <div className={styles.cardHeader}><div><span className={styles.kicker}>Insurance view</span><h2>Policy sections</h2></div></div>
-                <div className={styles.sectionList}>
-                  {sectionRows.map(([section, row]) => (
-                    <div key={section}><span><strong>{section}</strong><small>{row.count} assets</small></span><b>{money(row.proposed)}</b></div>
-                  ))}
-                </div>
-              </section>
-
-              <section className={styles.card}>
-                <div className={styles.cardHeader}><div><span className={styles.kicker}>Operation-level cover</span><h2>Non-asset covers</h2></div></div>
-                <p className={styles.helperCopy}>Track these at client or location level instead of forcing them onto a physical asset.</p>
-                <div className={styles.coverChips}>
-                  {NON_ASSET_COVERS.map((cover) => (
-                    <button key={cover} type="button" className={workspace.nonAssetCovers.includes(cover) ? styles.activeChip : ''} onClick={() => toggleNonAssetCover(cover)}>
-                      {workspace.nonAssetCovers.includes(cover) ? '✓ ' : '+ '}{cover}
-                    </button>
-                  ))}
-                </div>
-              </section>
+              <article className={styles.card}>
+                <h2>Review setup</h2>
+                <p>Choose the client profile to control the available general-cover checklist. Asset recommendations remain manual.</p>
+                <label><span>Client profile</span><select value={workspace.clientProfile} onChange={(event) => void updateWorkspaceSettings({ clientProfile: event.target.value })}>{CLIENT_PROFILES.map((option) => <option value={option.value} key={option.value}>{option.label}</option>)}</select></label>
+                <label><span>Workspace status</span><select value={workspace.reviewStatus} onChange={(event) => void updateWorkspaceSettings({ reviewStatus: event.target.value })}><option value="not_started">Not started</option><option value="in_progress">In progress</option><option value="completed">Completed</option></select></label>
+              </article>
+              <article className={styles.card}>
+                <h2>Source register</h2>
+                <dl><div><dt>Snapshot reference</dt><dd>{workspace.snapshotReference}</dd></div><div><dt>Generated</dt><dd>{dateLabel(workspace.snapshotGeneratedAtIso)}</dd></div><div><dt>Register value</dt><dd>{money(workspace.totalRegisterValue)}</dd></div><div><dt>Replacement value</dt><dd>{money(workspace.totalReplacementValue)}</dd></div></dl>
+                <p className={styles.readOnlyNote}>Owner facts are read-only in this workspace. Broker review data is stored separately with an audit trail.</p>
+              </article>
             </div>
-          </div>
-        ) : null}
-
-        {tab === 'review' ? (
-          <section className={styles.reviewPanel}>
-            <div className={styles.reviewToolbar}>
-              <label className={styles.reviewSearch}>
-                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" strokeWidth="2" /><path d="m16.5 16.5 4 4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
-                <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search assets, locations or schedule items" />
-              </label>
-              <CustomSelect
-                value={reviewFilter}
-                ariaLabel="Filter review status"
-                placeholder="Review status"
-                onChange={setReviewFilter}
-                options={[
-                  { value: 'outstanding', label: 'Needs review' },
-                  { value: 'information_required', label: 'Information required' },
-                  { value: 'included', label: 'Included' },
-                  { value: 'excluded', label: 'Excluded' },
-                  { value: 'all', label: 'All review statuses' },
-                ]}
-              />
-              <CustomSelect
-                value={sectionFilter}
-                ariaLabel="Filter policy section"
-                placeholder="Policy section"
-                onChange={setSectionFilter}
-                options={[
-                  { value: 'all', label: 'All policy sections' },
-                  { value: 'Unclassified', label: 'Unclassified' },
-                  ...POLICY_SECTIONS.map((section) => ({ value: section, label: section })),
-                ]}
-              />
-            </div>
-
-            {selectedIds.length ? (
-              <div className={styles.bulkBar}>
-                <strong>{selectedIds.length} selected</strong>
-                <CustomSelect
-                  compact
-                  value={bulkSection}
-                  ariaLabel="Choose policy section for selected assets"
-                  placeholder="Choose policy section"
-                  onChange={setBulkSection}
-                  options={POLICY_SECTIONS.map((section) => ({ value: section, label: section }))}
-                />
-                <button type="button" onClick={applyBulkSection} disabled={!bulkSection}>Apply</button>
-                <button type="button" onClick={() => setSelectedIds([])}>Clear</button>
-              </div>
-            ) : null}
-
-            <div className={styles.assetTableScroll}>
-              <div className={styles.assetTable}>
-                <div className={styles.assetTableHead}>
-                <label className={styles.checkWrap}>
-                  <input
-                    type="checkbox"
-                    checked={Boolean(visibleAssets.length) && visibleAssets.every((asset) => selectedIds.includes(assetId(asset, assets.indexOf(asset))))}
-                    onChange={() => {
-                      const visibleIds = visibleAssets.map((asset) => assetId(asset, assets.indexOf(asset)));
-                      const allSelected = visibleIds.every((id) => selectedIds.includes(id));
-                      setSelectedIds((current) => allSelected ? current.filter((id) => !visibleIds.includes(id)) : Array.from(new Set([...current, ...visibleIds])));
-                    }}
-                    aria-label="Select all visible assets"
-                  />
-                  <span />
-                </label>
-                <span>Asset</span><span>Location</span><span>Current insurance</span><span>Review classification</span><span>Replacement</span><span></span>
-                </div>
-                {visibleAssets.map((asset) => {
-                const index = assets.indexOf(asset);
-                const id = assetId(asset, index);
-                const review = workspace.reviews[id];
-                const suggestion = inferPolicySection(asset);
-                return (
-                  <article className={styles.assetRow} key={id}>
-                    <label className={styles.checkWrap}><input type="checkbox" checked={selectedIds.includes(id)} onChange={() => toggleSelected(id)} /><span /></label>
-                    <div className={styles.assetIdentity}>
-                      <span className={styles.assetAvatar}>{assetTitle(asset).slice(0, 2).toUpperCase()}</span>
-                      <span><strong>{assetTitle(asset)}</strong><small>{assetKind(asset)}</small>{review?.note ? <em>Broker note</em> : null}</span>
-                    </div>
-                    <span className={styles.locationCell}>{assetLocation(asset)}</span>
-                    <span className={`${styles.existingStatus} ${existingInsuranceStatus(asset) === 'Yes' ? styles.statusYes : existingInsuranceStatus(asset) === 'No' ? styles.statusNo : styles.statusUnknown}`}>{existingInsuranceStatus(asset)}</span>
-                    <div className={styles.classificationCell}>
-                      {review?.policySection ? <strong>{review.policySection}</strong> : <strong className={styles.unclassified}>Unclassified</strong>}
-                      <small>{review?.assetGroup || `Suggested: ${suggestion}`}</small>
-                      {review ? <span className={`${styles.decisionTag} ${styles[`decision_${review.decision}`]}`}>{decisionLabel(review.decision)}</span> : null}
-                    </div>
-                    <span className={styles.valueCell}><strong>{money(replacementValue(asset))}</strong><small>Replacement</small></span>
-                    <button type="button" className={styles.reviewButton} onClick={() => openReview(asset, index)}>{review ? 'Edit' : 'Review'}</button>
-                  </article>
-                );
-                })}
-              </div>
-            </div>
-            {!visibleAssets.length ? <div className={styles.emptyState}>No assets match these filters.</div> : null}
+            {workspace.ownerMessage ? <article className={styles.card}><h2>Owner message</h2><p>{workspace.ownerMessage}</p></article> : null}
           </section>
         ) : null}
 
-        {tab === 'report' ? (
-          <section className={styles.reportPage}>
-            <div className={styles.reportActions}>
-              <div><span className={styles.kicker}>Underwriting preview</span><h2>Insurance classification report</h2><p>Prepared from a frozen owner snapshot and broker-side review.</p></div>
-              <div>
-                <button type="button" className={styles.secondaryButton} onClick={() => window.print()}>Print / save PDF</button>
-                <button type="button" className={styles.primaryButton} onClick={freezeSnapshot}>Freeze submission</button>
-              </div>
+        {tab === 'assets' ? (
+          <section>
+            <div className={styles.assetToolbar}>
+              <label><span>Search assets</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Asset, location, serial or policy section" /></label>
+              <label><span>Category</span><select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}><option value="all">All categories</option>{ASSET_CATEGORIES.map((category) => <option value={category.key} key={category.key}>{category.label}</option>)}</select></label>
+              <label><span>Review</span><select value={reviewFilter} onChange={(event) => setReviewFilter(event.target.value as typeof reviewFilter)}><option value="all">All statuses</option><option value="not_started">Not started</option><option value="in_progress">In progress</option><option value="completed">Completed</option></select></label>
             </div>
-            {workspace.frozenAtIso ? <div className={styles.frozenBanner}>Frozen {dateLabel(workspace.frozenAtIso)} · Further browser changes create a new working version.</div> : null}
-            <div className={styles.reportHero}>
-              <div><span>Aim4price insurance review</span><h2>{share.ownerBusinessName || snapshot.ownerName}</h2><p>{snapshot.ownerMeta || [share.ownerProvince, share.ownerTownCity].filter(Boolean).join(' · ')}</p></div>
-              <div><span>Review progress</span><strong>{progress}%</strong><small>{classifiedCount} of {assets.length} assets classified</small></div>
-            </div>
-            <div className={styles.reportMetrics}>
-              <span><small>Register value</small><strong>{money(snapshot.totalValue)}</strong></span>
-              <span><small>Replacement value</small><strong>{money(snapshot.totalReplacementValue)}</strong></span>
-              <span><small>Information required</small><strong>{informationRequiredCount}</strong></span>
-              <span><small>Unclassified assets</small><strong>{assets.length - classifiedCount}</strong></span>
-            </div>
-            <section className={styles.reportSection}>
-              <h3>Policy section summary</h3>
-              <div className={styles.reportTable}>
-                <div><strong>Policy section</strong><strong>Assets</strong><strong>Replacement value</strong><strong>Proposed value</strong></div>
-                {sectionRows.map(([section, row]) => <div key={section}><span>{section}</span><span>{row.count}</span><span>{money(row.replacement)}</span><span>{money(row.proposed)}</span></div>)}
+            {selectedIds.length ? (
+              <div className={styles.bulkBar}>
+                <strong>{selectedIds.length} selected</strong>
+                <input value={bulk.insurerName} onChange={(event) => setBulk({ ...bulk, insurerName: event.target.value })} placeholder="Insurer" />
+                <input value={bulk.policyNumber} onChange={(event) => setBulk({ ...bulk, policyNumber: event.target.value })} placeholder="Policy number" />
+                <input value={bulk.policySectionLabel} onChange={(event) => setBulk({ ...bulk, policySectionLabel: event.target.value })} placeholder="Policy section" />
+                <select value={bulk.reviewStatus} onChange={(event) => setBulk({ ...bulk, reviewStatus: event.target.value })}><option value="">Keep review status</option><option value="not_started">Not started</option><option value="in_progress">In progress</option><option value="completed">Completed</option></select>
+                <button type="button" onClick={() => void applyBulk()} disabled={saving}>Apply</button>
               </div>
-            </section>
-            <section className={styles.reportSection}>
-              <h3>Non-asset covers selected for review</h3>
-              <p>{workspace.nonAssetCovers.length ? workspace.nonAssetCovers.join(' · ') : 'None selected yet.'}</p>
-            </section>
-            <section className={styles.reportSection}>
-              <h3>Broker notes and information requests</h3>
-              <div className={styles.reportNotes}>
-                {assets.map((asset, index) => ({ asset, review: workspace.reviews[assetId(asset, index)] })).filter(({ review }) => review?.note || review?.decision === 'information_required').map(({ asset, review }) => (
-                  <article key={assetTitle(asset)}><strong>{assetTitle(asset)}</strong><span>{review?.note || 'Additional information is required.'}</span><small>{review?.noteVisibility === 'private' ? 'Private broker note' : 'Shared with client'} · {review ? decisionLabel(review.decision) : ''}</small></article>
-                ))}
-                {!informationRequiredCount && !noteCount ? <p>No notes or information requests have been added.</p> : null}
-              </div>
-            </section>
-            <footer className={styles.reportFooter}>Prototype report · Insurance classifications are broker-side working decisions and do not amend the owner’s asset records or confirm cover.</footer>
+            ) : null}
+            <div className={styles.assetTableWrap}>
+              <table className={styles.assetTable}>
+                <thead><tr><th><span className={styles.srOnly}>Select</span></th><th>Asset</th><th>Type / location</th><th>Current status</th><th>Policy section</th><th>Recommendation</th><th>Sum insured</th><th>Review</th><th /></tr></thead>
+                <tbody>{visibleAssets.map((asset) => (
+                  <tr key={asset.id}>
+                    <td><input type="checkbox" checked={selectedIds.includes(asset.id)} onChange={() => toggleSelected(asset.id)} aria-label={`Select ${asset.title}`} /></td>
+                    <td><strong>{asset.title}</strong><small>{asset.serialNumber || asset.registrationNumber || 'No serial recorded'}</small></td>
+                    <td><strong>{asset.kind}</strong><small>{asset.location || 'No location supplied'}</small></td>
+                    <td>{titleCase(asset.review.currentInsuranceStatus)}</td>
+                    <td>{asset.review.policySectionLabel || '—'}</td>
+                    <td>{titleCase(asset.review.recommendationStatus)}</td>
+                    <td className={styles.numeric}>{money(asset.review.sumInsured)}</td>
+                    <td>{REVIEW_STATUS_LABELS[asset.review.reviewStatus]}</td>
+                    <td><button type="button" onClick={() => openAsset(asset)}>Review</button></td>
+                  </tr>
+                ))}</tbody>
+              </table>
+              {!visibleAssets.length ? <div className={styles.empty}>No assets match these filters.</div> : null}
+            </div>
+            <div className={styles.pagination}><span>{filteredAssets.length} assets · Page {page} of {pageCount}</span><div><button type="button" onClick={() => setPage((value) => Math.max(1, value - 1))} disabled={page === 1}>Previous</button><button type="button" onClick={() => setPage((value) => Math.min(pageCount, value + 1))} disabled={page === pageCount}>Next</button></div></div>
+          </section>
+        ) : null}
+
+        {tab === 'general' ? (
+          <section className={styles.generalSection}>
+            <header><div><h2>General covers</h2><p>Record non-asset covers and a manual broker recommendation for the selected client profile.</p></div><button type="button" onClick={() => void saveCovers()} disabled={saving}>Save all covers</button></header>
+            {workspace.clientProfile === 'unclassified' ? <div className={styles.infoBox}>Select a client profile on Overview to narrow this checklist.</div> : null}
+            <div className={styles.coverGrid}>{covers.map((cover, index) => (
+              <article className={styles.coverCard} key={cover.key}>
+                <h3>{cover.label}</h3>
+                <div className={styles.formGrid}>
+                  <label><span>Current status</span><select value={cover.status} onChange={(event) => changeCover(index, { status: event.target.value as InsuranceGeneralCoverReview['status'] })}>{OPTION_STATUS_OPTIONS.map((option) => <option value={option.value} key={option.value}>{option.label}</option>)}</select></label>
+                  <label><span>Broker recommendation</span><select value={cover.recommendationStatus} onChange={(event) => changeCover(index, { recommendationStatus: event.target.value as InsuranceGeneralCoverReview['recommendationStatus'] })}>{RECOMMENDATION_OPTIONS.map((option) => <option value={option.value} key={option.value}>{option.label}</option>)}</select></label>
+                  <label><span>Insurer</span><input value={cover.insurerName} onChange={(event) => changeCover(index, { insurerName: event.target.value })} /></label>
+                  <label><span>Policy number</span><input value={cover.policyNumber} onChange={(event) => changeCover(index, { policyNumber: event.target.value })} /></label>
+                  <label><span>Policy section</span><input value={cover.policySectionLabel} onChange={(event) => changeCover(index, { policySectionLabel: event.target.value })} /></label>
+                  <label><span>Limit (ZAR)</span><input type="number" min="0" value={cover.limitAmount ?? ''} onChange={(event) => changeCover(index, { limitAmount: event.target.value ? Number(event.target.value) : null })} /></label>
+                  {cover.status === 'excluded' ? <label><span>Exclusion reason</span><select value={cover.exclusionReasonKey} onChange={(event) => changeCover(index, { exclusionReasonKey: event.target.value })}>{EXCLUSION_REASONS.map((option) => <option value={option.value} key={option.value}>{option.label}</option>)}</select></label> : null}
+                  <label className={styles.wide}><span>Recommendation rationale</span><textarea value={cover.recommendationNote} onChange={(event) => changeCover(index, { recommendationNote: event.target.value })} rows={2} /></label>
+                  <label className={styles.wide}><span>Notes</span><textarea value={cover.notes} onChange={(event) => changeCover(index, { notes: event.target.value })} rows={2} /></label>
+                </div>
+              </article>
+            ))}</div>
+          </section>
+        ) : null}
+
+        {tab === 'reports' ? (
+          <section className={styles.reports}>
+            <div className={styles.reportGrid}>
+              <article><h2>Summary report</h2><p>Landscape review schedule for client discussion and placement preparation.</p><button type="button" onClick={() => void generateReport('summary')} disabled={saving}>Generate summary</button></article>
+              <article><h2>Detailed report</h2><p>Portrait report with every asset field, option decision, rationale, and general cover.</p><button type="button" onClick={() => void generateReport('detailed')} disabled={saving}>Generate detailed report</button></article>
+            </div>
+            <article className={styles.reportHistory}><h2>Report snapshots</h2><p>Each report is stored as an immutable revision of the recorded workspace data.</p>{workspace.reports.length ? <table><thead><tr><th>Reference</th><th>Type</th><th>Revision</th><th>Generated</th><th /></tr></thead><tbody>{workspace.reports.map((report) => <tr key={report.id}><td>{report.reference}</td><td>{titleCase(report.type)}</td><td>{report.revision}</td><td>{dateLabel(report.generatedAtIso)}</td><td><a href={`/api/insurance-reports/${report.id}`} target="_blank" rel="noreferrer">Open</a></td></tr>)}</tbody></table> : <div className={styles.empty}>No report snapshots generated yet.</div>}</article>
+            <p className={styles.disclaimer}>This report reflects insurance information and recommendations recorded by the broker. Aim4price does not provide financial advice or independently confirm insurance cover.</p>
           </section>
         ) : null}
       </section>
 
-      {editingAsset ? (
-        <div className={styles.modalOverlay} role="presentation">
-          <button type="button" className={styles.modalBackdrop} onClick={() => setEditingAssetId(null)} aria-label="Close review" />
-          <section className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="asset-review-title">
-            <header><div><span className={styles.kicker}>Review asset</span><h2 id="asset-review-title">{assetTitle(editingAsset)}</h2><p>Insurance working record · Owner details remain read-only</p></div><button type="button" onClick={() => setEditingAssetId(null)} aria-label="Close">×</button></header>
-            <div className={styles.modalBody}>
-              <div className={styles.assetFactGrid}>
-                <span><small>Location</small><strong>{assetLocation(editingAsset)}</strong></span>
-                <span><small>Replacement</small><strong>{money(replacementValue(editingAsset))}</strong></span>
-                <span><small>Register value</small><strong>{money(assetValue(editingAsset))}</strong></span>
-                <span><small>Current status</small><strong>{existingInsuranceStatus(editingAsset)}</strong></span>
-              </div>
-              <div className={styles.suggestionBox}><span>Aim4price suggestion</span><strong>{inferAssetGroup(editingAsset)} → {inferPolicySection(editingAsset)}</strong><button type="button" onClick={() => setDraft((current) => ({ ...current, assetGroup: inferAssetGroup(editingAsset), policySection: inferPolicySection(editingAsset) }))}>Use suggestion</button></div>
-              <div className={styles.formGrid}>
-                <div className={styles.formField}><span>Asset group</span><CustomSelect value={draft.assetGroup} ariaLabel="Choose asset group" placeholder="Choose asset group" onChange={(value) => setDraft((current) => ({ ...current, assetGroup: value }))} options={ASSET_GROUPS.map((group) => ({ value: group, label: group }))} /></div>
-                <div className={styles.formField}><span>Policy section</span><CustomSelect value={draft.policySection} ariaLabel="Choose policy section" placeholder="Choose policy section" onChange={(value) => setDraft((current) => ({ ...current, policySection: value }))} options={POLICY_SECTIONS.map((section) => ({ value: section, label: section }))} /></div>
-                <label><span>Schedule item</span><input value={draft.scheduleItem} onChange={(event) => setDraft((current) => ({ ...current, scheduleItem: event.target.value }))} placeholder="e.g. Irrigation equipment at Spitskop" /></label>
-                <label><span>Proposed sum insured excl. VAT</span><input type="number" min="0" value={draft.proposedValue} onChange={(event) => setDraft((current) => ({ ...current, proposedValue: event.target.value }))} /></label>
-                <fieldset className={`${styles.fullField} ${styles.decisionField}`}>
-                  <legend>Review decision</legend>
-                  <div className={styles.decisionGrid}>
-                    {DECISION_OPTIONS.map((option) => (
-                      <button type="button" key={option.value} className={draft.decision === option.value ? styles.decisionButtonActive : ''} onClick={() => setDraft((current) => ({ ...current, decision: option.value }))}>
-                        <span className={styles.decisionRadio}>{draft.decision === option.value ? '✓' : ''}</span>
-                        <span><strong>{option.label}</strong><small>{option.description}</small></span>
-                      </button>
-                    ))}
-                  </div>
-                </fieldset>
-                <label className={styles.fullField}><span>Broker or underwriter note</span><textarea value={draft.note} onChange={(event) => setDraft((current) => ({ ...current, note: event.target.value }))} placeholder="Add a concise note or question for the client." rows={4} /></label>
-                <fieldset className={`${styles.fullField} ${styles.visibilityField}`}>
-                  <legend>Note visibility</legend>
-                  <div>
-                    <button type="button" className={draft.noteVisibility === 'shared' ? styles.visibilityActive : ''} onClick={() => setDraft((current) => ({ ...current, noteVisibility: 'shared' }))}>Shared with client</button>
-                    <button type="button" className={draft.noteVisibility === 'private' ? styles.visibilityActive : ''} onClick={() => setDraft((current) => ({ ...current, noteVisibility: 'private' }))}>Private note</button>
-                  </div>
-                </fieldset>
-              </div>
+      {draft ? (
+        <div className={styles.drawerBackdrop} role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setDraft(null); }}>
+          <aside className={styles.drawer} role="dialog" aria-modal="true" aria-label={`Review ${draft.title}`}>
+            <header><div><small>Asset review</small><h2>{draft.title}</h2><p>{draft.kind} · {draft.location || 'No location supplied'}</p></div><button type="button" onClick={() => setDraft(null)} aria-label="Close review">×</button></header>
+            <div className={styles.ownerFacts}><h3>Owner-provided facts</h3><dl><div><dt>Register value</dt><dd>{money(draft.registerValue)}</dd></div><div><dt>Replacement value</dt><dd>{money(draft.replacementValue)}</dd></div><div><dt>Serial / registration</dt><dd>{[draft.serialNumber, draft.registrationNumber].filter(Boolean).join(' / ') || '—'}</dd></div><div><dt>Year / condition</dt><dd>{[draft.yearModel, draft.condition].filter(Boolean).join(' / ') || '—'}</dd></div></dl></div>
+            <div className={styles.drawerBody}>
+              <section><h3>Classification and current cover</h3><div className={styles.formGrid}>
+                <label><span>Asset category</span><select value={draft.review.categoryKey} onChange={(event) => changeReview('categoryKey', event.target.value)}>{ASSET_CATEGORIES.map((category) => <option value={category.key} key={category.key}>{category.label}</option>)}</select></label>
+                <label><span>Current insurance status</span><select value={draft.review.currentInsuranceStatus} onChange={(event) => changeReview('currentInsuranceStatus', event.target.value as InsuranceAssetReview['currentInsuranceStatus'])}>{CURRENT_INSURANCE_OPTIONS.map((option) => <option value={option.value} key={option.value}>{option.label}</option>)}</select></label>
+                <label><span>Insurer</span><input value={draft.review.insurerName} onChange={(event) => changeReview('insurerName', event.target.value)} /></label>
+                <label><span>Policy number</span><input value={draft.review.policyNumber} onChange={(event) => changeReview('policyNumber', event.target.value)} /></label>
+                <label><span>Policy section</span><input list="policy-sections" value={draft.review.policySectionLabel} onChange={(event) => changeReview('policySectionLabel', event.target.value)} /><datalist id="policy-sections">{categoryDefinition(draft.review.categoryKey).policySections.map((section) => <option value={section} key={section} />)}</datalist></label>
+                <label><span>Renewal date</span><input type="date" value={draft.review.renewalDate} onChange={(event) => changeReview('renewalDate', event.target.value)} /></label>
+                <label className={styles.wide}><span>Schedule description</span><textarea value={draft.review.scheduleDescription} onChange={(event) => changeReview('scheduleDescription', event.target.value)} rows={2} /></label>
+              </div></section>
+              <section><h3>Cover structure</h3><div className={styles.formGrid}>
+                <label><span>Cover basis</span><input value={draft.review.coverBasis} onChange={(event) => changeReview('coverBasis', event.target.value)} placeholder="Replacement, market or agreed value" /></label>
+                <label><span>Sum insured (ZAR)</span><input type="number" min="0" value={draft.review.sumInsured ?? ''} onChange={(event) => changeReview('sumInsured', event.target.value ? Number(event.target.value) : null)} /></label>
+                <label><span>VAT basis</span><select value={draft.review.vatBasis} onChange={(event) => changeReview('vatBasis', event.target.value as InsuranceAssetReview['vatBasis'])}><option value="">Not recorded</option><option value="exclusive">Exclusive</option><option value="inclusive">Inclusive</option><option value="unknown">Unknown</option></select></label>
+                <label><span>Scheduling treatment</span><select value={draft.review.schedulingTreatment} onChange={(event) => changeReview('schedulingTreatment', event.target.value as InsuranceAssetReview['schedulingTreatment'])}><option value="">Not recorded</option><option value="individual">Individual</option><option value="grouped">Grouped</option><option value="blanket">Blanket</option><option value="not_applicable">Not applicable</option></select></label>
+                <label className={styles.wide}><span>Excess</span><input value={draft.review.excessText} onChange={(event) => changeReview('excessText', event.target.value)} placeholder="Record the applicable excess wording or amount" /></label>
+                <label className={styles.wide}><span>Special conditions</span><textarea value={draft.review.specialConditions} onChange={(event) => changeReview('specialConditions', event.target.value)} rows={2} /></label>
+              </div></section>
+              <section><h3>Cover options</h3><div className={styles.optionTable}>{draft.review.options.map((option, index) => <div className={styles.optionRow} key={option.key}><div><strong>{option.label}</strong><small>{optionsForCategory(draft.review.categoryKey).find((definition) => definition.key === option.key)?.helpText}</small></div><select value={option.status} onChange={(event) => changeOption(index, { status: event.target.value as InsuranceOptionReview['status'] })}>{OPTION_STATUS_OPTIONS.map((choice) => <option value={choice.value} key={choice.value}>{choice.label}</option>)}</select>{option.status === 'excluded' ? <select value={option.exclusionReasonKey} onChange={(event) => changeOption(index, { exclusionReasonKey: event.target.value })}>{EXCLUSION_REASONS.map((reason) => <option value={reason.value} key={reason.value}>{reason.label}</option>)}</select> : <span /> }<input value={option.note} onChange={(event) => changeOption(index, { note: event.target.value })} placeholder="Option note" /></div>)}</div></section>
+              <section><h3>Broker recommendation</h3><div className={styles.formGrid}>
+                <label><span>Recommendation</span><select value={draft.review.recommendationStatus} onChange={(event) => changeReview('recommendationStatus', event.target.value as InsuranceAssetReview['recommendationStatus'])}>{RECOMMENDATION_OPTIONS.map((option) => <option value={option.value} key={option.value}>{option.label}</option>)}</select></label>
+                <label><span>Review status</span><select value={draft.review.reviewStatus} onChange={(event) => changeReview('reviewStatus', event.target.value as InsuranceAssetReview['reviewStatus'])}><option value="not_started">Not started</option><option value="in_progress">In progress</option><option value="completed">Completed</option></select></label>
+                {draft.review.recommendationStatus === 'exclude' ? <label><span>Exclusion reason</span><select value={draft.review.recommendationReasonKey} onChange={(event) => changeReview('recommendationReasonKey', event.target.value)}>{EXCLUSION_REASONS.map((option) => <option value={option.value} key={option.value}>{option.label}</option>)}</select></label> : null}
+                <label className={styles.wide}><span>Recommendation rationale</span><textarea value={draft.review.recommendationNote} onChange={(event) => changeReview('recommendationNote', event.target.value)} rows={3} placeholder="Record the broker's rationale. Aim4price does not generate a recommendation." /></label>
+                <label className={styles.wide}><span>Information required</span><textarea value={draft.review.informationRequiredNote} onChange={(event) => changeReview('informationRequiredNote', event.target.value)} rows={2} /></label>
+              </div></section>
             </div>
-            <footer>
-              <button type="button" className={styles.modalCancelButton} onClick={() => setEditingAssetId(null)}>Cancel</button>
-              <button type="button" className={styles.secondaryButton} onClick={() => saveReview(false)}>Save</button>
-              <button type="button" className={styles.primaryButton} onClick={() => saveReview(true)}>Save & next</button>
-            </footer>
-          </section>
+            <footer><span>{dirty ? 'Unsaved changes · autosaving' : saving ? 'Saving…' : 'Saved to server'}</span><div><button type="button" onClick={() => setDraft(null)}>Close</button><button type="button" onClick={() => void saveAndNext()} disabled={saving}>Save and next</button></div></footer>
+          </aside>
         </div>
       ) : null}
     </main>

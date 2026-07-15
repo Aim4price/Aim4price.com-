@@ -1,8 +1,7 @@
 import { notFound, redirect } from 'next/navigation';
 import { getAccountProfile } from '../../../lib/account-profile';
 import { requireActivePageAccess } from '../../../lib/account-access';
-import { listAssetLeadsForUser } from '../../../lib/partner-access';
-import { demoSharedRegisterLead, isSharedInsuranceRegister } from '../../../lib/shared-register-prototype';
+import { getOrCreateInsuranceWorkspaceForShare } from '../../../lib/insurance-workspaces';
 import SharedRegisterWorkspace from './shared-register-workspace';
 
 export const runtime = 'nodejs';
@@ -15,15 +14,11 @@ export default async function SharedRegisterWorkspacePage({ params }: { params: 
     redirect(profile.accountType === 'owner' ? '/asset-register' : '/leads');
   }
 
-  if (params.shareId === 'demo') {
-    return <SharedRegisterWorkspace share={demoSharedRegisterLead(session.user.id)} />;
+  try {
+    const workspace = await getOrCreateInsuranceWorkspaceForShare({ brokerUserId: session.user.id, shareId: params.shareId });
+    return <SharedRegisterWorkspace initialWorkspace={workspace} />;
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('NOT_FOUND')) notFound();
+    throw error;
   }
-
-  const leads = await listAssetLeadsForUser(session.user.id);
-  const share = leads.find(
-    (lead) => lead.id === params.shareId && lead.partnerUserId === session.user.id && isSharedInsuranceRegister(lead),
-  );
-
-  if (!share) notFound();
-  return <SharedRegisterWorkspace share={share} />;
 }
