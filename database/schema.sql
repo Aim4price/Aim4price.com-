@@ -75,6 +75,9 @@
 --   48-field-manager-overview-dismissals.sql
 --   49-dealer-app-staff.sql
 --   50-asset-discovery-priority-and-expiry.sql
+--   51-dealer-app-email-normalization.sql
+--   52-owner-app.sql
+--   53-insurance-workspaces.sql
 
 -- Fuel late-entry audit direction (migration 46):
 --   - historical issue date/time and real entry-added audit fields remain separate
