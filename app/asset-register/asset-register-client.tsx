@@ -10459,7 +10459,9 @@ export default function AssetRegisterClient() {
       isLicensed: licenseStatus === 'yes',
       licenseRegistrationNumber: readLicenseRegistrationNumber(asset),
       aim4priceValueExVat: asset.aim4priceValueExVat,
-        photoUrl: toAbsoluteUrl(assetPreviewImage(asset)),
+      photoUrl: toAbsoluteUrl(assetPreviewImage(asset)),
+      lastScannedAtIso: asset.lastScannedAtIso,
+      lastKnownLocationText: asset.lastKnownLocationText,
       createdAtIso: asset.createdAtIso,
       updatedAtIso: asset.updatedAtIso,
     };
