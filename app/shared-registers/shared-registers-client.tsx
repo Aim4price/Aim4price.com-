@@ -3,118 +3,94 @@
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import AppHeader from '../../components/AppHeader';
-import { sharedRegisterSnapshot, type SharedRegisterLead } from '../../lib/shared-register-prototype';
+import type { InsurancePortfolioItem, InsuranceReviewStatus } from '../../lib/insurance-workspace-types';
 import styles from './shared-registers.module.css';
 
-type Props = { initialShares: SharedRegisterLead[] };
+type Props = { initialItems: InsurancePortfolioItem[] };
 
 function money(value: number): string {
-  return new Intl.NumberFormat('en-ZA', {
-    style: 'currency',
-    currency: 'ZAR',
-    maximumFractionDigits: 0,
-  }).format(value || 0);
+  return new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR', maximumFractionDigits: 0 }).format(value || 0);
 }
 
-function dateLabel(value: string): string {
+function dateLabel(value: string | null): string {
+  if (!value) return 'Not reviewed';
   const date = new Date(value);
-  return Number.isNaN(date.getTime())
-    ? '—'
-    : new Intl.DateTimeFormat('en-ZA', { day: '2-digit', month: 'short', year: 'numeric' }).format(date);
+  return Number.isNaN(date.getTime()) ? 'Not reviewed' : new Intl.DateTimeFormat('en-ZA', { day: '2-digit', month: 'short', year: 'numeric' }).format(date);
 }
 
-function SearchIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" strokeWidth="2" />
-      <path d="m16.5 16.5 4 4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-  );
-}
+const STATUS_LABELS: Record<InsuranceReviewStatus, string> = {
+  not_started: 'Not started',
+  in_progress: 'In progress',
+  completed: 'Completed',
+};
 
-export default function SharedRegistersClient({ initialShares }: Props) {
+export default function SharedRegistersClient({ initialItems }: Props) {
   const [query, setQuery] = useState('');
-  const shares = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-    if (!normalizedQuery) return initialShares;
-    return initialShares.filter((share) =>
-      [share.ownerBusinessName, share.ownerName, share.ownerProvince, share.ownerTownCity]
-        .join(' ')
-        .toLowerCase()
-        .includes(normalizedQuery),
-    );
-  }, [initialShares, query]);
+  const [status, setStatus] = useState<'all' | InsuranceReviewStatus>('all');
 
-  const totalAssets = initialShares.reduce((sum, share) => sum + (sharedRegisterSnapshot(share)?.assetCount ?? 0), 0);
-  const totalReplacement = initialShares.reduce(
-    (sum, share) => sum + (sharedRegisterSnapshot(share)?.totalReplacementValue ?? 0),
-    0,
-  );
+  const items = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+    return initialItems.filter((item) => {
+      if (status !== 'all' && item.reviewStatus !== status) return false;
+      return !normalized || [item.clientName, item.clientMeta, item.snapshotReference].join(' ').toLowerCase().includes(normalized);
+    });
+  }, [initialItems, query, status]);
+
+  const totalAssets = initialItems.reduce((sum, item) => sum + item.assetCount, 0);
+  const outstanding = initialItems.reduce((sum, item) => sum + item.outstandingAssetCount, 0);
 
   return (
     <main className={styles.page}>
       <AppHeader active="shared-registers" />
       <section className={styles.shell}>
-        <section className={styles.panel}>
-          <header className={styles.hero}>
-            <h1>SHARED REGISTERS</h1>
-          </header>
-
-          <div className={styles.summaryGrid}>
-            <article><span>Shared registers</span><strong>{initialShares.length}</strong><small>Received insurance registers</small></article>
-            <article><span>Assets available</span><strong>{totalAssets}</strong><small>Across current register snapshots</small></article>
-            <article><span>Replacement value</span><strong>{money(totalReplacement)}</strong><small>Excluding VAT</small></article>
+        <header className={styles.hero}>
+          <div>
+            <p>Insurance portfolio</p>
+            <h1>Shared registers</h1>
+            <span>Review owner-provided snapshots, record broker decisions, and issue versioned reports.</span>
           </div>
+        </header>
 
-          <div className={styles.toolbar}>
-            <label className={styles.searchBox}>
-              <SearchIcon />
-              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by client or location" />
-            </label>
+        <section className={styles.summaryGrid} aria-label="Portfolio summary">
+          <article><span>Client workspaces</span><strong>{initialItems.length}</strong><small>Registers shared with your account</small></article>
+          <article><span>Assets received</span><strong>{totalAssets}</strong><small>Immutable snapshot assets</small></article>
+          <article><span>Reviews outstanding</span><strong>{outstanding}</strong><small>Assets not marked completed</small></article>
+        </section>
+
+        <section className={styles.toolbar} aria-label="Portfolio filters">
+          <label>
+            <span>Search</span>
+            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Client, location or register reference" />
+          </label>
+          <label>
+            <span>Review status</span>
+            <select value={status} onChange={(event) => setStatus(event.target.value as typeof status)}>
+              <option value="all">All statuses</option>
+              <option value="not_started">Not started</option>
+              <option value="in_progress">In progress</option>
+              <option value="completed">Completed</option>
+            </select>
+          </label>
+        </section>
+
+        <section className={styles.portfolioTable} aria-label="Shared insurance registers">
+          <div className={styles.tableHead}>
+            <span>Client</span><span>Status</span><span>Progress</span><span>Replacement value</span><span>Last reviewed</span><span />
           </div>
-
-          <div className={styles.registerStack}>
-            {shares.map((share) => {
-              const snapshot = sharedRegisterSnapshot(share);
-              if (!snapshot) return null;
-              return (
-                <article className={styles.registerCard} key={share.id}>
-                  <div className={styles.clientIdentity}>
-                    <h2>{share.ownerBusinessName || share.ownerName || 'Aim4price client'}</h2>
-                    <p>
-                      <strong>{share.status === 'sent' ? 'New register' : 'In review'}</strong>
-                      <span> · </span>
-                      {[share.ownerProvince, share.ownerTownCity].filter(Boolean).join(' · ') || 'Location not provided'}
-                    </p>
-                  </div>
-                  <div className={styles.cardMetrics}>
-                    <span><small>Assets</small><strong>{snapshot.assetCount}</strong></span>
-                    <span><small>Register value</small><strong>{money(snapshot.totalValue)}</strong></span>
-                    <span><small>Replacement</small><strong>{money(snapshot.totalReplacementValue)}</strong></span>
-                    <span><small>Shared</small><strong>{dateLabel(snapshot.generatedAtIso)}</strong></span>
-                  </div>
-                  <Link className={styles.openButton} href={`/shared-registers/${encodeURIComponent(share.id)}`}>
-                    Open register
-                  </Link>
-                </article>
-              );
-            })}
-
-            {!shares.length && initialShares.length ? <div className={styles.emptyState}>No shared registers match your search.</div> : null}
-
-            {!initialShares.length ? (
-              <article className={`${styles.registerCard} ${styles.demoCard}`}>
-                <div className={styles.clientIdentity}>
-                  <h2>Skimmelkrans Boerdery</h2>
-                  <p><strong>Prototype example</strong> · Sample insurance review</p>
-                </div>
-                <div className={styles.demoCopy}>
-                  A real register will appear here after an owner sends a full-register insurance share.
-                </div>
-                <Link className={styles.openButton} href="/shared-registers/demo">Open prototype</Link>
-              </article>
-            ) : null}
-          </div>
+          {items.map((item) => (
+            <article className={styles.tableRow} key={item.id}>
+              <div className={styles.clientCell}>
+                <strong>{item.clientName}</strong>
+                <small>{item.clientMeta || item.snapshotReference}</small>
+              </div>
+              <div><small className={styles.cellLabel}>Status</small><strong>{STATUS_LABELS[item.reviewStatus]}</strong></div>
+              <div><small className={styles.cellLabel}>Progress</small><strong>{item.completedAssetCount} of {item.assetCount}</strong><small>{item.outstandingAssetCount} outstanding</small></div>
+              <div><small className={styles.cellLabel}>Replacement value</small><strong>{money(item.totalReplacementValue)}</strong></div>
+              <div><small className={styles.cellLabel}>Last reviewed</small><strong>{dateLabel(item.lastReviewedAtIso)}</strong></div>
+              <Link className={styles.openButton} href={`/shared-registers/${item.shareId}`}>Open workspace</Link>
+            </article>
+          ))}
+          {!items.length ? <div className={styles.emptyState}>No shared registers match these filters.</div> : null}
         </section>
       </section>
     </main>
