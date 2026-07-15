@@ -1,41 +1,37 @@
-# Insurance Workspace Prototype
+# Insurance Broker Workspace
 
-This prototype introduces a broker and underwriter workflow without changing the owner's asset records.
+This implementation turns a full-register insurance share into a private, broker-owned review workspace without changing the owner's asset register.
 
-## What is included
+## Deploy
 
-- `Shared Registers` navigation for insurance accounts.
-- A list of full-register insurance shares already received through `My Leads`.
-- A read-only register workspace with Overview, Review assets and Report tabs.
-- Separate basic asset groups and policy-section classifications.
-- Suggested classifications that require a broker decision before being used.
-- Bulk policy-section assignment.
-- Include, exclude, information-required and needs-review decisions.
-- Shared or private broker notes.
-- Proposed schedule item and sum-insured fields.
-- Non-asset covers such as Business Interruption and Liability.
-- Policy-section totals and a printable underwriting preview.
-- A browser-persisted prototype snapshot that never overwrites owner data.
-- A demonstration register when the insurance account has no real shared registers yet.
-- Four-state insurance reporting: Yes, No, Not sure and Not applicable are no longer collapsed into a boolean in full-register lead reports.
+1. Apply `database/migrations/53-insurance-workspaces.sql` to PostgreSQL once.
+2. Deploy the changed application files through the normal Next.js build and start flow.
+3. Sign in with an active account whose account type is `insurance`.
+4. Open `/shared-registers`.
 
-## How to test
+The migration is idempotent. It creates workspace, asset-review, option-review, general-cover, audit-event, and immutable report-snapshot tables.
 
-1. Sign in with an account whose account type is `insurance`.
-2. Open `Shared Registers` in the main navigation.
-3. If no full register has been shared with that account, choose `Open prototype`.
-4. Review individual assets or select several assets and apply a policy section in bulk.
-5. Add a note or information request.
-6. Open `Report` to inspect the policy-section summary and print preview.
+## Workflow
 
-## Prototype limitations
+- The portfolio lists real full-register insurance shares received by the signed-in broker account.
+- Opening a share creates one workspace from the immutable snapshot and normalises all shared assets into workspace rows.
+- Owner facts are read-only. Broker fields, option decisions, recommendations, and notes are stored separately.
+- The four tabs are Overview, Assets, General Covers, and Reports.
+- Asset edits autosave to PostgreSQL, with an explicit Save and next action for rapid review.
+- Safe bulk fields are insurer, policy number, policy section, and review status.
+- Summary and detailed reports are generated on the server and stored as immutable, revisioned snapshots. Open a report and use the browser print dialog to save a PDF.
 
-- Broker classifications are stored in browser local storage for this first prototype.
-- Existing full-register shares are once-off snapshots, not live owner-register access.
-- `Freeze snapshot` records a local prototype timestamp; it does not yet create an immutable database version.
-- Policy records, schedule items, access grants, audit events and collaborative notes still need dedicated database tables and APIs for the production version.
-- Suggested classifications are simple rules intended to demonstrate the review flow, not insurance advice.
+## Insurance configuration
 
-## Recommended production follow-up
+Asset categories, policy-section choices, applicable cover options, general-cover definitions, and structured exclusion reasons live in `lib/insurance-option-config.ts`.
 
-The next version should persist an organisation-scoped insurance review, its asset classifications and its audit trail. It should then add permissioned live register access with immutable submission snapshots for underwriting.
+This configuration is generic across domestic, commercial, agricultural, transport, construction, and industrial clients. It uses common insurance terminology and does not reproduce insurer-specific policy wording.
+
+## Permissions and advice boundary
+
+- Every read and write is scoped to `broker_user_id` from the active server session.
+- A broker can open only an insurance share addressed to that broker account.
+- Request bodies cannot select an owner or broker identity.
+- Every workspace write produces an audit event.
+- Aim4price does not infer or generate insurance recommendations. The broker records all recommendations and rationale manually.
+- Reports state that Aim4price does not provide financial advice or independently confirm insurance cover.
