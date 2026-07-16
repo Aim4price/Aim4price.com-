@@ -6,7 +6,17 @@ import styles from '../owner-app.module.css';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-export default async function OwnerAppValuationPage() {
+export default async function OwnerAppValuationPage({ searchParams }: { searchParams?: { from?: string | string[] } }) {
   await requireOwnerAppPageAccess();
-  return <div className={styles.module}><OwnerAppNav /><ValuationClient ownerAppMode /></div>;
+  const from = Array.isArray(searchParams?.from) ? searchParams?.from[0] : searchParams?.from;
+  const returnToAddAsset = from === 'assets';
+  return (
+    <div className={styles.module}>
+      <OwnerAppNav
+        backHref={returnToAddAsset ? '/owner-app/assets/add' : '/owner-app'}
+        backLabel={returnToAddAsset ? 'Add asset' : 'Home'}
+      />
+      <ValuationClient ownerAppMode />
+    </div>
+  );
 }
