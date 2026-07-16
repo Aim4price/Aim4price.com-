@@ -3445,7 +3445,7 @@ function buildDepreciationReportWorkbook(
 
 
 export async function GET(request: NextRequest) {
-  const session = await getServerSession();
+  const session = await getServerSession({ allowOwnerApp: true });
 
   if (!session?.user?.id) {
     return NextResponse.redirect(new URL('/auth', request.url), { status: 302 });
