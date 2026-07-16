@@ -14,7 +14,7 @@ function badRequest(message: string) {
 }
 
 export async function POST(request: NextRequest) {
-  const session = await getServerSession();
+  const session = await getServerSession({ allowOwnerApp: true });
 
   if (!session?.user?.id) {
     return unauthorized();
