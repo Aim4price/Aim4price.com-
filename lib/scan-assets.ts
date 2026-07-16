@@ -597,8 +597,8 @@ function inferScanUsageMode(row: ScanAccessRow): ScanAssetUsageMode {
   const hours = asNumber(row.hours);
 
   if (kind === "property") return "none";
-  if (kind === "vehicle") return usageMetric === "km" ? "km" : "hours";
   if (specUsageMode) return specUsageMode;
+  if (kind === "vehicle") return usageMetric === "km" ? "km" : "hours";
   if (
     familyUsageMetricType === "wear_class" ||
     familyUsageMetricType === "percent_used" ||

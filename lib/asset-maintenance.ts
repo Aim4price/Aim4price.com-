@@ -1,6 +1,7 @@
 import { getDb } from './db';
 import { getAssetRegisterItemById, listAssetRegisterItems, type AssetRegisterItem } from './asset-register-db';
 import { listAssetRegisters } from './asset-registers';
+import { resolveAssetUsage } from './asset-usage';
 import { ensureFieldManagerTables, listFieldManagers } from './field-manager';
 
 export type AssetMaintenanceType = 'service' | 'checkup';
@@ -422,32 +423,14 @@ function usageMetricFromSpecs(specs: Record<string, unknown>, fallback: AssetMai
 }
 
 function assetUsageMetric(asset: AssetRegisterItem | AssetForAlert | { kind?: string; specsJson?: Record<string, unknown>; lifeWorkedPercent?: number | null; hours?: number | null }): AssetMaintenanceUsageMetric {
-  const specs = isRecord(asset.specsJson) ? asset.specsJson : {};
-  const defaultMetric = asText(asset.kind).toLowerCase() === 'vehicle' ? 'km' : 'hours';
-  const explicitMetric = usageMetricFromSpecs(specs, defaultMetric);
-  const lifeWorkedPercent = asNumber(asset.lifeWorkedPercent) ?? numberFromSpecs(specs, [
-    'lifeWorkedPercent',
-    'life_worked_percent',
-    'workedPercent',
-    'worked_percent',
-    'percentWorked',
-    'percent_worked',
-    'lifetimeWorkedPercent',
-    'lifetime_worked_percent',
-    'lifetimeUsedPercent',
-    'lifetime_used_percent',
-  ]);
-  const savedReading = asNumber(asset.hours);
-  const hasPositiveReading = savedReading !== null && savedReading > 0;
-
-  if (explicitMetric === 'percentage') return 'percentage';
-  if (lifeWorkedPercent !== null && !hasPositiveReading && explicitMetric === 'hours') return 'percentage';
-
-  return explicitMetric;
+  return resolveAssetUsage(asset).metric;
 }
 
-function assetUsageReading(asset: AssetRegisterItem | AssetForAlert | { specsJson?: Record<string, unknown>; lifeWorkedPercent?: number | null; hours?: number | null }, metric: AssetMaintenanceUsageMetric): number | null {
+function assetUsageReading(asset: AssetRegisterItem | AssetForAlert | { kind?: string; specsJson?: Record<string, unknown>; lifeWorkedPercent?: number | null; hours?: number | null }, metric: AssetMaintenanceUsageMetric): number | null {
   const specs = isRecord(asset.specsJson) ? asset.specsJson : {};
+  const resolved = resolveAssetUsage(asset);
+
+  if (resolved.metric === metric) return resolved.value;
 
   if (metric === 'percentage') {
     return asNumber(asset.lifeWorkedPercent) ?? numberFromSpecs(specs, [
@@ -464,7 +447,8 @@ function assetUsageReading(asset: AssetRegisterItem | AssetForAlert | { specsJso
     ]);
   }
 
-  return asNumber(asset.hours) ?? numberFromSpecs(specs, ['usageAmount', 'usage_amount', 'hours', 'engine_hours', 'km', 'kilometres', 'kilometers']);
+  const reading = asNumber(asset.hours) ?? numberFromSpecs(specs, ['usageAmount', 'usage_amount', 'hours', 'engine_hours', 'km', 'kilometres', 'kilometers']);
+  return reading !== null && reading > 0 ? reading : null;
 }
 
 function formatUsage(value: number | null | undefined, metric: AssetMaintenanceUsageMetric): string {

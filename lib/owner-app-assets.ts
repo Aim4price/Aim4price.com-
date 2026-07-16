@@ -1,5 +1,6 @@
 import { listAssetRegisterItems, type AssetRegisterItem } from './asset-register-db';
 import { listAssetRegisters, type AssetRegisterSummary } from './asset-registers';
+import { resolveAssetUsage } from './asset-usage';
 
 export type OwnerAppAssetSummary = {
   id: string;
@@ -41,18 +42,14 @@ function readFirst(specs: Record<string, unknown>, keys: string[]): string {
   return '';
 }
 
-function usageForAsset(item: AssetRegisterItem): { value: number | null; metric: 'hours' | 'km' | 'percentage' } {
-  const specs = asRecord(item.specsJson);
-  const rawMetric = readFirst(specs, ['usageMetric', 'usage_metric', 'selectedUsageMode', 'selected_usage_mode']).toLowerCase();
-  if (rawMetric.includes('percent') || (item.hours === null && item.lifeWorkedPercent !== null)) {
-    return { value: item.lifeWorkedPercent, metric: 'percentage' };
-  }
-  return { value: item.hours, metric: rawMetric === 'km' || item.kind === 'vehicle' ? 'km' : 'hours' };
-}
-
 function toSummary(item: AssetRegisterItem, register: AssetRegisterSummary): OwnerAppAssetSummary {
   const specs = asRecord(item.specsJson);
-  const usage = usageForAsset(item);
+  const usage = resolveAssetUsage({
+    kind: item.kind,
+    hours: item.hours,
+    lifeWorkedPercent: item.lifeWorkedPercent,
+    specsJson: specs,
+  });
   return {
     id: item.id,
     registerId: item.registerId,

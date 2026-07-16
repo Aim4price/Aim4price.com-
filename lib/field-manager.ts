@@ -1,6 +1,7 @@
 import { randomBytes, scrypt, timingSafeEqual } from "node:crypto";
 import { promisify } from "node:util";
 import { ensureAssetRegisterTables } from "./asset-registers";
+import { formatResolvedAssetUsage, resolveAssetUsage } from "./asset-usage";
 import { getDb } from "./db";
 import {
   type CanonicalAssetOwnerResolution,
@@ -332,56 +333,19 @@ function normalizeUsageLabel(row: FieldManagerAssetRow): {
   usageLabel: string;
 } {
   const specs = asRecord(row.specs_json);
-  const usageMetric = asText(
-    specs.usageMetric ??
-      specs.usage_metric ??
-      specs.selectedUsageMode ??
-      specs.selected_usage_mode ??
-      specs.usageMode ??
-      specs.usage_mode ??
-      specs.usageMetricType ??
-      specs.usage_metric_type ??
-      specs.usageUnit ??
-      specs.usage_unit,
-  ).toLowerCase();
-  const hours = asNumber(row.hours);
-  const percent = asNumber(row.life_worked_percent);
-  const kind = asText(row.kind).toLowerCase();
-  const usesPercentage = usageMetric.includes("percent");
-  const unit =
-    kind === "vehicle" || usageMetric === "km" || usageMetric === "kms"
-      ? "km"
-      : "hours";
-
-  if (usesPercentage) {
-    return percent !== null
-      ? {
-          usageReading: percent,
-          usageLabel: `${Math.round(percent * 10) / 10}%`,
-        }
-      : {
-          usageReading: null,
-          usageLabel: "No percentage saved",
-        };
-  }
-
-  if (hours !== null) {
-    return {
-      usageReading: hours,
-      usageLabel: `${Math.round(hours).toLocaleString("en-ZA")} ${unit}`,
-    };
-  }
-
-  if (percent !== null) {
-    return {
-      usageReading: percent,
-      usageLabel: `${Math.round(percent * 10) / 10}%`,
-    };
-  }
+  const usage = resolveAssetUsage({
+    kind: row.kind,
+    hours: row.hours,
+    lifeWorkedPercent: row.life_worked_percent,
+    specsJson: specs,
+  });
 
   return {
-    usageReading: null,
-    usageLabel: "No reading saved",
+    usageReading: usage.value,
+    usageLabel: formatResolvedAssetUsage(
+      usage,
+      usage.metric === "percentage" ? "No percentage saved" : "No reading saved",
+    ),
   };
 }
 
