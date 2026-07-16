@@ -9,7 +9,6 @@ import {
 import { deleteUnreferencedAssetRegisterUploads, listInternalAssetRegisterUploadIds } from '../../../../../lib/asset-register-uploads';
 import { listAssetMaintenanceData } from '../../../../../lib/asset-maintenance';
 import { getAssetRegisterForUser, listAssetRegisters, moveAssetRegisterItems } from '../../../../../lib/asset-registers';
-import { listMyInvoicesData } from '../../../../../lib/my-invoices';
 import { getOwnerAppAccess } from '../../../../../lib/owner-app-access';
 
 export const runtime = 'nodejs';
@@ -58,10 +57,9 @@ function documents(value: unknown): AssetRegisterDocument[] {
 async function loadDetail(ownerUserId: string, assetId: string) {
   const item = await getAssetRegisterItemById(ownerUserId, assetId);
   if (!item) return null;
-  const [registers, maintenance, costs] = await Promise.all([
+  const [registers, maintenance] = await Promise.all([
     listAssetRegisters(ownerUserId),
     listAssetMaintenanceData(ownerUserId, { assetId }),
-    listMyInvoicesData(ownerUserId, { assetId }),
   ]);
   const register = item.registerId ? await getAssetRegisterForUser(ownerUserId, item.registerId) : null;
   return {
@@ -70,8 +68,6 @@ async function loadDetail(ownerUserId: string, assetId: string) {
     registers,
     maintenance: maintenance.records,
     maintenanceSummary: maintenance.summary,
-    costs: costs.invoices,
-    costSummary: costs.summary,
   };
 }
 
