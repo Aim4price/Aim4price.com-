@@ -147,22 +147,13 @@ export default function OwnerAssetsClient({ initialQuery = '' }: { initialQuery?
                 </div>
               </div>
 
-              <div className={styles.assetCardActions}>
-                <Link
-                  className={styles.assetDetailsButton}
-                  href={`/owner-app/assets/${encodeURIComponent(asset.id)}`}
-                  prefetch={false}
-                >
-                  View details
-                </Link>
-                <Link
-                  className={styles.assetManageButton}
-                  href={`/owner-app/assets/${encodeURIComponent(asset.id)}/manage`}
-                  prefetch={false}
-                >
-                  Manage
-                </Link>
-              </div>
+              <Link
+                className={styles.ownerAssetOpenButton}
+                href={`/owner-app/assets/${encodeURIComponent(asset.id)}`}
+                prefetch={false}
+              >
+                Open
+              </Link>
             </article>
           ))}
         </section>
