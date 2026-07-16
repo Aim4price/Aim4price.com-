@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from 'react';
+import { formatResolvedAssetUsage, resolveAssetUsage, type AssetUsageMetric } from '../../../../lib/asset-usage';
 import styles from '../../owner-app.module.css';
 
 type Document = { id: string; url: string; fileName: string; contentType: string; byteSize: number; uploadedAtIso: string };
@@ -125,6 +126,45 @@ export default function OwnerAssetDetailClient({ assetId, view = 'details', sect
   function updateSpec(key: string, value: unknown) {
     setDraft((current) => current ? { ...current, specsJson: { ...current.specsJson, [key]: value } } : current);
   }
+  function updateUsageMetric(metric: AssetUsageMetric) {
+    setDraft((current) => {
+      if (!current) return current;
+
+      if (metric === 'percentage') {
+        return {
+          ...current,
+          hours: null,
+          specsJson: {
+            ...current.specsJson,
+            usageMode: 'percent',
+            usage_mode: 'percent',
+            usageBasis: 'percent',
+            usage_basis: 'percent',
+            selectedUsageMode: 'percent',
+            selected_usage_mode: 'percent',
+          },
+        };
+      }
+
+      return {
+        ...current,
+        lifeWorkedPercent: null,
+        specsJson: {
+          ...current.specsJson,
+          usageMetric: metric,
+          usage_metric: metric,
+          usageUnit: metric,
+          usage_unit: metric,
+          usageMode: metric,
+          usage_mode: metric,
+          usageBasis: 'reading',
+          usage_basis: 'reading',
+          selectedUsageMode: metric,
+          selected_usage_mode: metric,
+        },
+      };
+    });
+  }
   function updateStatus(type: 'finance' | 'insurance' | 'license', value: string) {
     setDraft((current) => current ? {
       ...current,
@@ -140,7 +180,12 @@ export default function OwnerAssetDetailClient({ assetId, view = 'details', sect
     setSaving(true);
     setNotice(null);
     try {
-      const usageMetric = specValue(draft.specsJson, 'usageMetric', 'usage_metric') || (draft.kind === 'vehicle' ? 'km' : 'hours');
+      const usageMetric = resolveAssetUsage({
+        kind: draft.kind,
+        hours: draft.hours,
+        lifeWorkedPercent: draft.lifeWorkedPercent,
+        specsJson: draft.specsJson,
+      }).metric;
       const response = await fetch(`/api/owner-app/assets/${encodeURIComponent(assetId)}`, {
         method: 'PUT', credentials: 'include', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...draft, usageMetric, allowUsageDecrease }),
@@ -225,12 +270,14 @@ export default function OwnerAssetDetailClient({ assetId, view = 'details', sect
   if (!draft) return <div className={styles.wideContent}><div className={styles.errorNotice}>{notice?.message || 'Asset not found.'}</div></div>;
 
   const extra = (key: string, ...fallbackKeys: string[]) => specValue(draft.specsJson, key, ...fallbackKeys);
-  const usageMetric = extra('usageMetric', 'usage_metric') || (draft.kind === 'vehicle' ? 'km' : 'hours');
-  const usageText = usageMetric.includes('percent') && draft.lifeWorkedPercent !== null
-    ? `${draft.lifeWorkedPercent.toLocaleString('en-ZA')}%`
-    : draft.hours !== null
-      ? `${draft.hours.toLocaleString('en-ZA')} ${usageMetric === 'km' ? 'km' : 'hours'}`
-      : 'Not saved';
+  const resolvedUsage = resolveAssetUsage({
+    kind: draft.kind,
+    hours: draft.hours,
+    lifeWorkedPercent: draft.lifeWorkedPercent,
+    specsJson: draft.specsJson,
+  });
+  const usageMetric = resolvedUsage.metric;
+  const usageText = formatResolvedAssetUsage(resolvedUsage, 'Not saved');
   const extraInput = (key: string, label: string, options: { type?: string; inputMode?: 'text' | 'decimal' | 'numeric'; fallbackKeys?: string[] } = {}) => (
     <label className={styles.field}><span>{label}</span><input type={options.type} inputMode={options.inputMode} value={extra(key, ...(options.fallbackKeys ?? []))} onChange={(event) => updateSpec(key, event.target.value)} /></label>
   );
@@ -318,7 +365,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'details', sect
           <label className={styles.field}><span>Serial / VIN / chassis</span><input value={draft.serialNumber} onChange={(event) => update('serialNumber', event.target.value)} /></label>
           {extraInput('internalReference', 'Internal reference', { fallbackKeys: ['internal_reference'] })}
           <label className={styles.field}><span>Condition</span><select value={draft.condition} onChange={(event) => update('condition', event.target.value)}><option value="">Not saved</option><option value="excellent">Excellent</option><option value="good">Good</option><option value="fair">Fair</option><option value="used">Used</option><option value="serious">Serious</option></select></label>
-          <label className={styles.field}><span>Usage type</span><select value={usageMetric} onChange={(event) => { updateSpec('usageMetric', event.target.value); updateSpec('usage_metric', event.target.value); }}><option value="hours">Hours</option><option value="km">Kilometres</option><option value="percentage">Percentage worked</option></select></label>
+          <label className={styles.field}><span>Usage type</span><select value={usageMetric} onChange={(event) => updateUsageMetric(event.target.value as AssetUsageMetric)}><option value="hours">Hours</option><option value="km">Kilometres</option><option value="percentage">Percentage worked</option></select></label>
           {usageMetric === 'percentage' ? <label className={styles.field}><span>Percentage worked</span><input inputMode="decimal" value={draft.lifeWorkedPercent ?? ''} onChange={(event) => update('lifeWorkedPercent', event.target.value ? Number(event.target.value) : null)} /></label> : <label className={styles.field}><span>Current usage</span><input inputMode="decimal" value={draft.hours ?? ''} onChange={(event) => update('hours', event.target.value ? Number(event.target.value) : null)} /></label>}
           <label className={styles.field}><span>Current Aim4price value excl. VAT</span><input inputMode="decimal" value={draft.value || ''} onChange={(event) => update('value', Number(event.target.value) || 0)} /></label>
           <label className={styles.field}><span>Replacement price excl. VAT</span><input inputMode="decimal" value={draft.replacementPriceExVat ?? ''} onChange={(event) => update('replacementPriceExVat', event.target.value ? Number(event.target.value) : null)} /></label>
