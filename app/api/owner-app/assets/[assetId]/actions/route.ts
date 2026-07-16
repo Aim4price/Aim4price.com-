@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAssetRegisterItemById, updateAssetRegisterItemFlag, updateAssetRegisterItemLocation } from '../../../../../../lib/asset-register-db';
+import {
+  getAssetRegisterItemById,
+  updateAssetRegisterItemFlag,
+  updateAssetRegisterItemLocation,
+  updateAssetRegisterItemMedia,
+  type AssetRegisterDocument,
+} from '../../../../../../lib/asset-register-db';
 import {
   cancelAssetMaintenanceRecord,
   completeAssetMaintenanceRecord,
@@ -14,6 +20,28 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 function text(value: unknown) { return String(value ?? '').trim(); }
+function record(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
+}
+function mediaPhotos(value: unknown): string[] {
+  return Array.isArray(value) ? Array.from(new Set(value.map(text).filter(Boolean))).slice(0, 12) : [];
+}
+function mediaDocuments(value: unknown): AssetRegisterDocument[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((entry) => {
+    const item = record(entry);
+    const url = text(item.url);
+    if (!url) return [];
+    return [{
+      id: text(item.id) || text(item.uploadId) || url,
+      url,
+      fileName: text(item.fileName) || 'Document',
+      contentType: text(item.contentType) || 'application/octet-stream',
+      byteSize: Math.max(0, Math.round(Number(item.byteSize) || 0)),
+      uploadedAtIso: text(item.uploadedAtIso) || new Date().toISOString(),
+    }];
+  }).slice(0, 20);
+}
 
 export async function POST(request: NextRequest, { params }: { params: { assetId: string } }) {
   const access = await getOwnerAppAccess();
@@ -27,7 +55,13 @@ export async function POST(request: NextRequest, { params }: { params: { assetId
   const action = text(body.action);
 
   try {
-    if (action === 'location') {
+    if (action === 'media') {
+      await updateAssetRegisterItemMedia(access.ownerUserId, {
+        assetId: params.assetId,
+        photos: mediaPhotos(body.photos),
+        documents: mediaDocuments(body.documents),
+      });
+    } else if (action === 'location') {
       const latitude = Number(body.latitude);
       const longitude = Number(body.longitude);
       if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) throw new Error('Enter valid latitude and longitude values.');
