@@ -988,26 +988,36 @@
 .ownerPartnerList { display: grid; gap: 10px; }
 .ownerOptionChoice {
   width: 100%;
-  min-height: 94px;
-  display: flex;
+  min-height: 176px;
+  display: grid;
+  justify-items: center;
   align-items: center;
-  justify-content: space-between;
-  gap: 13px;
+  align-content: center;
+  gap: 12px;
   box-sizing: border-box;
   border: 1px solid rgba(18, 53, 45, 0.14);
   border-radius: 18px;
   background: #fff;
   color: var(--owner-ink);
-  padding: 15px 16px;
+  padding: 18px 16px;
   font-family: inherit;
-  text-align: left;
+  text-align: center;
   cursor: pointer;
   box-shadow: 0 10px 24px rgba(18, 53, 45, 0.06);
 }
-.ownerOptionChoice > span { min-width: 0; display: grid; gap: 5px; }
+.ownerOptionChoiceIconTile {
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.58);
+}
+.ownerOptionChoiceIcon { width: 27px; height: 27px; display: block; }
+.ownerOptionChoiceCopy { min-width: 0; display: grid; justify-items: center; gap: 5px; text-align: center; }
 .ownerOptionChoice strong { font-size: 0.94rem; font-weight: 930; line-height: 1.2; }
-.ownerOptionChoice small { font-size: 0.72rem; font-weight: 680; line-height: 1.4; }
-.ownerOptionChoice > b { flex: 0 0 auto; font-size: 1.35rem; }
+.ownerOptionChoice small { max-width: 300px; font-size: 0.72rem; font-weight: 680; line-height: 1.4; }
 .ownerOptionFinance { border-color: rgba(196, 130, 32, 0.34); background: #fffaf1; color: #74460b; }
 .ownerOptionInsurance { border-color: rgba(48, 113, 169, 0.32); background: #f4f9fd; color: #244f76; }
 .ownerOptionDealer { border-color: rgba(66, 144, 102, 0.32); background: #f2faf5; color: #1d6545; }
