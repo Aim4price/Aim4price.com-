@@ -105,12 +105,15 @@
 
 .content,
 .wideContent {
-  width: min(100% - 24px, 480px);
+  width: min(calc(100% - 24px), 480px);
+  min-width: 0;
+  max-width: calc(100% - 24px);
+  box-sizing: border-box;
   margin: 0 auto;
   display: grid;
   gap: 16px;
 }
-.wideContent { width: min(100% - 24px, 760px); }
+.wideContent { width: min(calc(100% - 24px), 760px); }
 
 .homePage {
   display: flex;
@@ -310,8 +313,12 @@
   position: sticky;
   top: 0;
   z-index: 4;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   display: grid;
   gap: 10px;
+  box-sizing: border-box;
   border: 1px solid rgba(18, 53, 45, 0.11);
   border-radius: 22px;
   background: rgba(255, 255, 255, 0.96);
@@ -319,7 +326,7 @@
   box-shadow: 0 14px 32px rgba(18, 53, 45, 0.08);
   backdrop-filter: blur(12px);
 }
-.assetSearchField { display: grid; gap: 8px; }
+.assetSearchField { min-width: 0; max-width: 100%; display: grid; gap: 8px; }
 .assetSearchField span {
   color: rgba(18, 53, 45, 0.76);
   font-size: 0.8rem;
@@ -327,6 +334,8 @@
 }
 .assetSearchField input {
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
   min-height: 56px;
   box-sizing: border-box;
   border: 1px solid rgba(18, 53, 45, 0.16);
@@ -336,6 +345,7 @@
   padding: 0 15px;
   font: 800 clamp(0.86rem, 3.8vw, 0.98rem) Montserrat, var(--font-body, Inter), Arial, sans-serif;
   outline: none;
+  text-overflow: ellipsis;
 }
 .assetSearchField input:focus {
   border-color: rgba(35, 104, 81, 0.6);
@@ -343,6 +353,9 @@
   box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.1);
 }
 .addAssetButton {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   min-height: 56px;
   display: inline-flex;
   align-items: center;
@@ -361,12 +374,17 @@
 .addAssetButton:active { transform: translateY(1px); }
 .addAssetButton:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.12), 0 14px 28px rgba(37, 71, 51, 0.2); }
 
-.managerAssetList { display: grid; gap: 14px; padding-bottom: 22px; }
+.managerAssetList { min-width: 0; max-width: 100%; display: grid; gap: 14px; padding-bottom: 22px; }
 .assetListToolbar,
-.managerAssetList { width: min(100%, 560px); margin-inline: auto; }
+.managerAssetList { width: min(100%, 560px); max-width: 100%; box-sizing: border-box; margin-inline: auto; }
 .managerAssetCard {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   display: grid;
   gap: 14px;
+  box-sizing: border-box;
+  overflow: hidden;
   border: 1px solid rgba(18, 53, 45, 0.12);
   border-radius: 24px;
   background: #fff;
@@ -374,6 +392,8 @@
   box-shadow: 0 16px 36px rgba(18, 53, 45, 0.08);
 }
 .managerAssetCard h2 {
+  width: 100%;
+  min-width: 0;
   max-width: 100%;
   margin: 0 auto;
   color: var(--owner-ink);
@@ -385,8 +405,10 @@
   text-wrap: balance;
   overflow-wrap: anywhere;
 }
-.managerAssetMetaGrid { display: grid; gap: 10px; }
+.managerAssetMetaGrid { min-width: 0; max-width: 100%; display: grid; gap: 10px; }
 .managerAssetMetaGrid div {
+  min-width: 0;
+  max-width: 100%;
   min-height: 62px;
   display: grid;
   align-content: center;
@@ -1240,7 +1262,8 @@
 
   .content,
   .wideContent {
-    width: min(100% - 18px, 480px);
+    width: min(calc(100% - 18px), 480px);
+    max-width: calc(100% - 18px);
   }
 
   .homeLaunchCard {

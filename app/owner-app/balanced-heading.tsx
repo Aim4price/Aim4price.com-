@@ -18,8 +18,18 @@ export default function BalancedHeadingText({ text }: BalancedHeadingTextProps) 
 
   return (
     <>
-      {leadingWords}{' '}
-      <span style={{ whiteSpace: 'nowrap' }}>{trailingWords}</span>
+      <span style={{ display: 'block' }}>{leadingWords}</span>
+      <span
+        style={{
+          display: 'block',
+          maxWidth: '100%',
+          whiteSpace: 'normal',
+          overflowWrap: 'anywhere',
+          textWrap: 'balance',
+        }}
+      >
+        {trailingWords}
+      </span>
     </>
   );
 }
