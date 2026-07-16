@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import styles from '../owner-app.module.css';
@@ -13,8 +12,6 @@ type Asset = {
   marketplaceStatus: string; usage: number | null; usageMetric: 'hours' | 'km' | 'percentage'; thumbnailUrl: string;
 };
 type ApiResponse = { ok: boolean; items?: Asset[]; registers?: Register[]; redirectTo?: string; error?: string };
-
-const money = (value: number | null) => value && value > 0 ? `R ${Math.round(value).toLocaleString('en-ZA')}` : 'Not saved';
 
 export default function OwnerAssetsClient({ initialQuery = '' }: { initialQuery?: string }) {
   const [query, setQuery] = useState(initialQuery);
@@ -60,9 +57,8 @@ export default function OwnerAssetsClient({ initialQuery = '' }: { initialQuery?
 
   return (
     <div className={styles.wideContent}>
-      <section className={styles.hero}><p className={styles.eyebrow}>Aim4price Owner</p><h1>My Assets</h1><p>All assets from every register in one searchable list.</p></section>
       <section className={styles.toolbar}>
-        <input className={styles.searchInput} value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search name, make, model, serial, registration, register or location" aria-label="Search all assets" />
+        <input className={styles.searchInput} value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search asset name or serial number" aria-label="Search all assets" />
         <div className={styles.toolbarRow}><button type="button" className={styles.primaryButton} onClick={() => setShowCreate((current) => !current)}>{showCreate ? 'Close new asset' : '+ Add asset'}</button>{query ? <button type="button" className={styles.secondaryButton} onClick={() => setQuery('')}>Clear search</button> : null}</div>
       </section>
 
@@ -95,15 +91,13 @@ export default function OwnerAssetsClient({ initialQuery = '' }: { initialQuery?
       {!loading && !error ? (
         <div className={styles.assetList}>
           {items.map((asset) => (
-            <article key={asset.id} className={styles.assetCard}>
-              <Link className={styles.assetLink} href={`/owner-app/assets/${encodeURIComponent(asset.id)}`}>
-                {asset.thumbnailUrl ? <Image className={styles.thumb} src={asset.thumbnailUrl} alt="" width={176} height={232} unoptimized /> : <div className={styles.thumbPlaceholder}>No photo</div>}
-                <div className={styles.assetBody}>
-                  <h2>{asset.title}</h2>
-                  <p className={styles.assetMeta}>{[asset.registerName, [asset.brandName, asset.modelName].filter(Boolean).join(' '), asset.yearModel].filter(Boolean).join(' • ')}</p>
-                  <div className={styles.assetValues}><span>{money(asset.value)}</span><span>Replacement: {money(asset.replacementPriceExVat)}</span></div>
-                  <div className={styles.statusRow}>{asset.isInsured ? <span className={styles.statusLabel}>Insured</span> : null}{asset.isLicensed ? <span className={styles.statusLabel}>Licensed</span> : null}{asset.marketplaceStatus === 'live' ? <span className={styles.statusLabel}>Marketplace</span> : null}</div>
-                </div>
+            <article key={asset.id} className={`${styles.assetCard} ${styles.assetPickerCard}`}>
+              <div className={styles.assetPickerBody}>
+                <h2>{asset.title}</h2>
+                <p className={styles.assetSerial}>Serial: {asset.serialNumber || 'Not saved'}</p>
+              </div>
+              <Link className={styles.assetOpenButton} href={`/owner-app/assets/${encodeURIComponent(asset.id)}`} aria-label={`Open ${asset.title}`}>
+                Open
               </Link>
             </article>
           ))}
