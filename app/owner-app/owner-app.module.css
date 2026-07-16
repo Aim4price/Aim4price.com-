@@ -306,6 +306,131 @@
 .toolbar { display: grid; gap: 10px; }
 .toolbarRow { display: flex; gap: 8px; flex-wrap: wrap; }
 .toolbarRow > * { flex: 1 1 130px; }
+.assetListToolbar {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  display: grid;
+  gap: 10px;
+  border: 1px solid rgba(18, 53, 45, 0.11);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.96);
+  padding: 13px;
+  box-shadow: 0 14px 32px rgba(18, 53, 45, 0.08);
+  backdrop-filter: blur(12px);
+}
+.assetSearchField { display: grid; gap: 8px; }
+.assetSearchField span {
+  color: rgba(18, 53, 45, 0.76);
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+.assetSearchField input {
+  width: 100%;
+  min-height: 56px;
+  box-sizing: border-box;
+  border: 1px solid rgba(18, 53, 45, 0.16);
+  border-radius: 17px;
+  background: #fbfdfb;
+  color: #12352d;
+  padding: 0 15px;
+  font: 800 clamp(0.86rem, 3.8vw, 0.98rem) Montserrat, var(--font-body, Inter), Arial, sans-serif;
+  outline: none;
+}
+.assetSearchField input:focus {
+  border-color: rgba(35, 104, 81, 0.6);
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.1);
+}
+.addAssetButton {
+  min-height: 56px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--owner-green);
+  border-radius: 17px;
+  background: var(--owner-green);
+  color: #fff;
+  padding: 0 18px;
+  font-size: 0.92rem;
+  font-weight: 900;
+  text-decoration: none;
+  box-shadow: 0 14px 28px rgba(37, 71, 51, 0.2);
+}
+.addAssetButton:active { transform: translateY(1px); }
+.addAssetButton:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.12), 0 14px 28px rgba(37, 71, 51, 0.2); }
+
+.managerAssetList { display: grid; gap: 14px; padding-bottom: 22px; }
+.assetListToolbar,
+.managerAssetList { width: min(100%, 560px); margin-inline: auto; }
+.managerAssetCard {
+  display: grid;
+  gap: 14px;
+  border: 1px solid rgba(18, 53, 45, 0.12);
+  border-radius: 24px;
+  background: #fff;
+  padding: 18px 16px 16px;
+  box-shadow: 0 16px 36px rgba(18, 53, 45, 0.08);
+}
+.managerAssetCard h2 {
+  max-width: 100%;
+  margin: 0 auto;
+  color: var(--owner-ink);
+  font-size: clamp(1.18rem, 5.2vw, 1.5rem);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 1.12;
+  text-align: center;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+.managerAssetMetaGrid { display: grid; gap: 10px; }
+.managerAssetMetaGrid div {
+  min-height: 62px;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  border: 1px solid rgba(18, 53, 45, 0.1);
+  border-radius: 18px;
+  background: #fbfdfb;
+  padding: 11px 10px;
+  text-align: center;
+}
+.managerAssetMetaGrid span {
+  margin-bottom: 5px;
+  color: rgba(18, 53, 45, 0.52);
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.managerAssetMetaGrid strong {
+  color: var(--owner-ink);
+  font-size: clamp(0.94rem, 3.8vw, 1.08rem);
+  font-weight: 900;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.assetCardActions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+.assetDetailsButton,
+.assetManageButton {
+  min-height: 54px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  border-radius: 17px;
+  padding: 0 13px;
+  font-size: 0.84rem;
+  font-weight: 900;
+  text-align: center;
+  text-decoration: none;
+}
+.assetDetailsButton { border: 1px solid rgba(37, 71, 51, 0.22); background: #fff; color: var(--owner-green); }
+.assetManageButton { border: 1px solid var(--owner-green); background: var(--owner-green); color: #fff; box-shadow: 0 12px 24px rgba(37, 71, 51, 0.18); }
+.assetDetailsButton:focus-visible,
+.assetManageButton:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.12); }
 .assetList { display: grid; gap: 11px; }
 .assetCard { overflow: hidden; }
 .assetPickerCard {
@@ -362,6 +487,15 @@
 
 .detailHero { overflow: hidden; }
 .detailPhoto { width: 100%; max-height: 280px; object-fit: cover; background: var(--owner-soft); }
+.detailPhotoPlaceholder {
+  min-height: 180px;
+  display: grid;
+  place-items: center;
+  background: var(--owner-soft);
+  color: rgba(18, 53, 45, 0.58);
+  font-size: 0.78rem;
+  font-weight: 850;
+}
 .detailHeroBody { display: grid; gap: 8px; padding: 16px; }
 .detailHeroBody h1 { margin: 0; font-size: 1.65rem; letter-spacing: -0.04em; }
 .detailHeroBody p { margin: 0; color: var(--owner-muted); font-size: 0.82rem; }
@@ -389,12 +523,21 @@
   padding: 13px 14px;
   font-family: inherit;
   text-align: left;
+  text-decoration: none;
   cursor: pointer;
   box-shadow: 0 8px 20px rgba(18, 53, 45, 0.045);
 }
 .manageButton:active { transform: translateY(1px); }
 .manageButton:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(37, 71, 51, 0.1); }
 .manageButtonActive { border-color: var(--owner-green); background: #f0f6f2; box-shadow: 0 0 0 2px rgba(37, 71, 51, 0.07); }
+.manageButtonFeatured {
+  border-color: var(--owner-green);
+  background: var(--owner-green);
+  color: #fff;
+  box-shadow: 0 12px 24px rgba(37, 71, 51, 0.16);
+}
+.manageButtonFeatured .manageButtonCopy small,
+.manageButtonFeatured .manageButtonArrow { color: rgba(255, 255, 255, 0.76); }
 .manageButtonDanger { border-color: rgba(150, 56, 56, 0.22); background: #fff8f8; color: #8c3131; }
 .manageButtonCopy { min-width: 0; display: grid; gap: 4px; }
 .manageButtonCopy strong { font-size: 0.85rem; line-height: 1.22; overflow-wrap: anywhere; }
@@ -406,6 +549,96 @@
 .editorHeader { align-items: center; }
 .editorHeader .smallButton { flex: 0 0 auto; min-height: 42px; }
 .editorSaveBar { padding: 12px; }
+
+.flowIntro,
+.manageAssetIdentity,
+.taskIdentity {
+  display: grid;
+  gap: 7px;
+  padding: 8px 3px 3px;
+}
+.flowIntro > span,
+.manageAssetIdentity > span,
+.taskIdentity > span {
+  color: #236851;
+  font-size: 0.7rem;
+  font-weight: 950;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.flowIntro h1,
+.manageAssetIdentity h1,
+.taskIdentity h1 {
+  margin: 0;
+  color: var(--owner-ink);
+  font-size: clamp(1.75rem, 8vw, 2.35rem);
+  font-weight: 900;
+  letter-spacing: -0.045em;
+  line-height: 1.02;
+  overflow-wrap: anywhere;
+}
+.flowIntro p,
+.manageAssetIdentity p,
+.taskIdentity p {
+  margin: 0;
+  color: rgba(18, 53, 45, 0.64);
+  font-size: 0.88rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+.manageAssetIdentity {
+  border: 1px solid rgba(18, 53, 45, 0.12);
+  border-radius: 20px;
+  background: #f7faf8;
+  padding: 17px;
+}
+.manageAssetIdentity a {
+  width: fit-content;
+  margin-top: 5px;
+  color: var(--owner-green);
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.taskIdentity {
+  border-bottom: 1px solid rgba(18, 53, 45, 0.1);
+  padding-bottom: 15px;
+}
+.addChoiceGrid { display: grid; gap: 12px; }
+.addChoiceCard {
+  min-height: 126px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 13px;
+  border: 1px solid rgba(18, 53, 45, 0.14);
+  border-radius: 22px;
+  background: #fff;
+  color: var(--owner-ink);
+  padding: 18px;
+  text-decoration: none;
+  box-shadow: 0 14px 32px rgba(18, 53, 45, 0.08);
+}
+.addChoiceCardPrimary { border-color: var(--owner-green); background: var(--owner-green); color: #fff; box-shadow: 0 18px 36px rgba(37, 71, 51, 0.2); }
+.addChoiceNumber {
+  color: rgba(18, 53, 45, 0.42);
+  font-size: 0.7rem;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+}
+.addChoiceCardPrimary .addChoiceNumber { color: rgba(255, 255, 255, 0.62); }
+.addChoiceCopy { min-width: 0; display: grid; gap: 5px; }
+.addChoiceCopy strong { font-size: 1.08rem; font-weight: 900; line-height: 1.2; }
+.addChoiceCopy small { color: rgba(18, 53, 45, 0.62); font-size: 0.74rem; font-weight: 680; line-height: 1.4; }
+.addChoiceCardPrimary .addChoiceCopy small { color: rgba(255, 255, 255, 0.78); }
+.addChoiceArrow { color: rgba(18, 53, 45, 0.42); font-size: 1.5rem; font-weight: 900; }
+.addChoiceCardPrimary .addChoiceArrow { color: rgba(255, 255, 255, 0.82); }
+.addChoiceCard:active { transform: translateY(1px); }
+.addChoiceCard:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.12), 0 14px 32px rgba(18, 53, 45, 0.08); }
+.focusedForm { gap: 18px; }
+.deleteSection { border-color: rgba(150, 56, 56, 0.2); background: #fffafa; }
+.deleteSection > p { color: #875656; }
 
 .mediaGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .mediaItem { position: relative; overflow: hidden; border: 1px solid var(--owner-line); border-radius: 14px; background: #f6f8f7; }
