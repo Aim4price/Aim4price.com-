@@ -8,6 +8,7 @@ import styles from '../../owner-app.module.css';
 type PartnerType = 'dealer' | 'finance' | 'insurance';
 type AssetLeadType = 'finance' | 'insurance' | 'replacement_quote';
 type OptionsStage = 'choices' | 'partners' | 'message' | 'consent' | 'sent';
+type IconProps = { className?: string };
 
 type Partner = {
   userId: string;
@@ -41,8 +42,8 @@ const QUOTE_OPTIONS: QuoteOption[] = [
   {
     leadType: 'finance',
     partnerType: 'finance',
-    title: 'Get finance offer',
-    shortTitle: 'Finance offer',
+    title: 'Get finance help',
+    shortTitle: 'Finance help',
     description: 'Send this asset to a finance provider and request finance or refinance.',
     pickerTitle: 'Choose a finance provider',
     emptyText: 'No listed finance providers were found.',
@@ -50,8 +51,8 @@ const QUOTE_OPTIONS: QuoteOption[] = [
   {
     leadType: 'insurance',
     partnerType: 'insurance',
-    title: 'Get insurance quote',
-    shortTitle: 'Insurance quote',
+    title: 'Get insurance help',
+    shortTitle: 'Insurance help',
     description: 'Send this asset to an insurer or broker and request cover or a value review.',
     pickerTitle: 'Choose an insurer or broker',
     emptyText: 'No listed insurers or brokers were found.',
@@ -59,13 +60,71 @@ const QUOTE_OPTIONS: QuoteOption[] = [
   {
     leadType: 'replacement_quote',
     partnerType: 'dealer',
-    title: 'Get replacement price',
-    shortTitle: 'Replacement price',
+    title: 'Get dealership help',
+    shortTitle: 'Dealership help',
     description: 'Send this asset to a dealer and request a replacement price.',
     pickerTitle: 'Choose a dealer',
     emptyText: 'No listed dealers were found.',
   },
 ];
+
+function FinanceHelpIcon({ className }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M8.2 4.2c.55 1.35 1.7 2.1 3.8 2.1s3.25-.75 3.8-2.1" />
+      <path d="M9.15 3.2h5.7l1.55 2.25-1.85 1.85h-5.1L7.6 5.45z" />
+      <path d="M7.35 8.05c-2.65 2.2-4.1 5.15-4.1 8.25 0 3.15 2.5 4.5 8.75 4.5s8.75-1.35 8.75-4.5c0-3.1-1.45-6.05-4.1-8.25" />
+      <path d="M12 10.1v7.1" />
+      <path d="M14.4 11.65h-3.2c-.9 0-1.55.52-1.55 1.25s.58 1.12 1.55 1.32l1.6.34c.97.2 1.55.6 1.55 1.32s-.65 1.25-1.55 1.25H9.45" />
+    </svg>
+  );
+}
+
+function InsuranceHelpIcon({ className }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M12 3 20 6v5c0 5.2-3.3 8.7-8 10-4.7-1.3-8-4.8-8-10V6z" />
+      <path d="m9 12 2 2 4-5" />
+    </svg>
+  );
+}
+
+function DealershipHelpIcon({ className }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M3 9 5 4h14l2 5" />
+      <path d="M4 9h16v3a3 3 0 0 1-3 3h-1a3 3 0 0 1-2-1 3 3 0 0 1-4 0 3 3 0 0 1-2 1H7a3 3 0 0 1-3-3z" />
+      <path d="M5 15v5h14v-5" />
+    </svg>
+  );
+}
 
 function money(value: number) {
   return value > 0 ? `R ${Math.round(value).toLocaleString('en-ZA')}` : 'Not saved';
@@ -89,6 +148,12 @@ function optionTone(type: AssetLeadType) {
   if (type === 'finance') return styles.ownerOptionFinance;
   if (type === 'insurance') return styles.ownerOptionInsurance;
   return styles.ownerOptionDealer;
+}
+
+function renderOptionIcon(type: AssetLeadType) {
+  if (type === 'finance') return <FinanceHelpIcon className={styles.ownerOptionChoiceIcon} />;
+  if (type === 'insurance') return <InsuranceHelpIcon className={styles.ownerOptionChoiceIcon} />;
+  return <DealershipHelpIcon className={styles.ownerOptionChoiceIcon} />;
 }
 
 export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind, assetValue }: {
@@ -232,8 +297,8 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
           <div className={styles.ownerOptionChoiceList}>
             {availableOptions.map((option) => (
               <button key={option.leadType} type="button" className={`${styles.ownerOptionChoice} ${optionTone(option.leadType)}`} onClick={() => void chooseOption(option)}>
-                <span><strong>{option.title}</strong><small>{option.description}</small></span>
-                <b aria-hidden="true">›</b>
+                <span className={styles.ownerOptionChoiceIconTile}>{renderOptionIcon(option.leadType)}</span>
+                <span className={styles.ownerOptionChoiceCopy}><strong>{option.title}</strong><small>{option.description}</small></span>
               </button>
             ))}
           </div>
