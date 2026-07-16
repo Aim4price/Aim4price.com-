@@ -110,7 +110,7 @@ function findSelectedAsset(assets: MyInvoiceAssetOption[], filters: MyInvoiceLis
 }
 
 export async function GET(request: NextRequest) {
-  const session = await getServerSession({ requireActive: true });
+  const session = await getServerSession({ requireActive: true, allowOwnerApp: true });
   const userId = session?.user?.id ?? '';
 
   if (!session || !userId) {
