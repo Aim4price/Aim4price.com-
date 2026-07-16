@@ -8,7 +8,6 @@ import {
   updateAssetMaintenanceRecord,
 } from '../../../../../../lib/asset-maintenance';
 import { publishAssetRegisterItemToMarketplace, removeAssetRegisterItemFromMarketplace } from '../../../../../../lib/marketplace-db';
-import { createMyInvoice, deleteMyInvoice, getMyInvoiceById, updateMyInvoice } from '../../../../../../lib/my-invoices';
 import { getOwnerAppAccess } from '../../../../../../lib/owner-app-access';
 
 export const runtime = 'nodejs';
@@ -57,14 +56,6 @@ export async function POST(request: NextRequest, { params }: { params: { assetId
     } else if (action === 'maintenance-reopen') {
       const record = await reopenAssetMaintenanceRecord(access.ownerUserId, text(body.maintenanceId));
       if (record.assetId !== params.assetId) throw new Error('Maintenance record not found.');
-    } else if (action === 'cost-create') {
-      await createMyInvoice(access.ownerUserId, { ...body, assetId: params.assetId, source: 'manual' });
-    } else if (action === 'cost-update') {
-      await updateMyInvoice(access.ownerUserId, text(body.invoiceId), { ...body, assetId: params.assetId, source: 'manual' });
-    } else if (action === 'cost-delete') {
-      const existing = await getMyInvoiceById(access.ownerUserId, text(body.invoiceId));
-      if (!existing || existing.assetId !== params.assetId) throw new Error('Cost record not found.');
-      await deleteMyInvoice(access.ownerUserId, text(body.invoiceId));
     } else if (action === 'marketplace-publish') {
       await publishAssetRegisterItemToMarketplace({
         userId: access.ownerUserId,
