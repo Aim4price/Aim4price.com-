@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getAccountProfile } from '../../../../../lib/account-profile';
 import {
   deleteAssetRegisterItem,
   getAssetRegisterItemById,
@@ -9,7 +10,7 @@ import {
 import { deleteUnreferencedAssetRegisterUploads, listInternalAssetRegisterUploadIds } from '../../../../../lib/asset-register-uploads';
 import { resolveAssetUsage, type AssetUsageMetric } from '../../../../../lib/asset-usage';
 import { listAssetMaintenanceData } from '../../../../../lib/asset-maintenance';
-import { getAssetRegisterForUser, listAssetRegisters, moveAssetRegisterItems } from '../../../../../lib/asset-registers';
+import { getAssetRegisterForUser, getAssetRegisterReportLogoUrl, listAssetRegisters, moveAssetRegisterItems } from '../../../../../lib/asset-registers';
 import { getOwnerAppAccess } from '../../../../../lib/owner-app-access';
 
 export const runtime = 'nodejs';
@@ -73,9 +74,11 @@ function documents(value: unknown): AssetRegisterDocument[] {
 async function loadDetail(ownerUserId: string, assetId: string) {
   const item = await getAssetRegisterItemById(ownerUserId, assetId);
   if (!item) return null;
-  const [registers, maintenance] = await Promise.all([
+  const [registers, maintenance, profile, reportLogoUrl] = await Promise.all([
     listAssetRegisters(ownerUserId),
     listAssetMaintenanceData(ownerUserId, { assetId }),
+    getAccountProfile({ id: ownerUserId }),
+    getAssetRegisterReportLogoUrl(ownerUserId, item.registerId),
   ]);
   const register = item.registerId ? await getAssetRegisterForUser(ownerUserId, item.registerId) : null;
   return {
@@ -84,6 +87,16 @@ async function loadDetail(ownerUserId: string, assetId: string) {
     registers,
     maintenance: maintenance.records,
     maintenanceSummary: maintenance.summary,
+    ownerContext: {
+      businessName: profile.businessName || profile.displayName || profile.name,
+      contactName: profile.marketplaceSellerName || profile.displayName || profile.name,
+      phone: profile.marketplacePhone || profile.phone,
+      email: profile.marketplaceEmail || profile.email,
+      province: profile.province,
+      area: profile.marketplaceLocation || profile.townCity,
+      address: [profile.addressLine1, profile.addressLine2, profile.townCity, profile.province].filter(Boolean).join(', '),
+      reportLogoUrl,
+    },
   };
 }
 
