@@ -194,7 +194,7 @@ function formatError(error: unknown): { status: number; message: string } {
 }
 
 export async function POST(request: NextRequest) {
-  const session = await getServerSession();
+  const session = await getServerSession({ allowOwnerApp: true });
 
   if (!session?.user?.id) {
     return NextResponse.json<RevalueAssetResponse>({ ok: false, error: 'You must be signed in.' }, { status: 401 });
