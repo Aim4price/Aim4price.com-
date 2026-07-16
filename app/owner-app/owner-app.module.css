@@ -308,6 +308,35 @@
 .toolbarRow > * { flex: 1 1 130px; }
 .assetList { display: grid; gap: 11px; }
 .assetCard { overflow: hidden; }
+.assetPickerCard {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  min-height: 94px;
+  padding: 16px;
+}
+.assetPickerBody { min-width: 0; display: grid; gap: 7px; }
+.assetPickerBody h2 { margin: 0; overflow-wrap: anywhere; font-size: 1.02rem; line-height: 1.28; }
+.assetSerial { margin: 0; color: var(--owner-muted); font-size: 0.78rem; font-weight: 750; line-height: 1.35; overflow-wrap: anywhere; }
+.assetOpenButton {
+  min-width: 92px;
+  min-height: 50px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  border: 1px solid var(--owner-green);
+  border-radius: 14px;
+  background: var(--owner-green);
+  color: #fff;
+  padding: 0 18px;
+  font-size: 0.86rem;
+  font-weight: 900;
+  text-decoration: none;
+}
+.assetOpenButton:active { transform: translateY(1px); }
+.assetOpenButton:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(37, 71, 51, 0.12); }
 .assetLink { display: grid; grid-template-columns: 88px minmax(0, 1fr); color: inherit; text-decoration: none; }
 .thumb { width: 88px; height: 100%; min-height: 116px; object-fit: cover; background: var(--owner-soft); }
 .thumbPlaceholder { width: 88px; min-height: 116px; display: grid; place-items: center; background: var(--owner-soft); color: #4e6b5e; font-weight: 900; font-size: 0.72rem; text-align: center; padding: 8px; box-sizing: border-box; }
@@ -340,6 +369,43 @@
 .metric { display: grid; gap: 3px; border-radius: 13px; background: #f4f8f5; padding: 11px; }
 .metric span { color: var(--owner-muted); font-size: 0.67rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; }
 .metric strong { overflow-wrap: anywhere; font-size: 0.86rem; }
+
+.manageSection { gap: 12px; }
+.manageIntro { display: grid; gap: 4px; }
+.manageIntro h2 { margin: 0; font-size: 1.16rem; letter-spacing: -0.025em; }
+.manageIntro p { margin: 0; color: var(--owner-muted); font-size: 0.8rem; font-weight: 650; line-height: 1.45; }
+.manageGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+.manageButton {
+  min-width: 0;
+  min-height: 82px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid rgba(37, 71, 51, 0.15);
+  border-radius: 15px;
+  background: #fff;
+  color: var(--owner-ink);
+  padding: 13px 14px;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(18, 53, 45, 0.045);
+}
+.manageButton:active { transform: translateY(1px); }
+.manageButton:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(37, 71, 51, 0.1); }
+.manageButtonActive { border-color: var(--owner-green); background: #f0f6f2; box-shadow: 0 0 0 2px rgba(37, 71, 51, 0.07); }
+.manageButtonDanger { border-color: rgba(150, 56, 56, 0.22); background: #fff8f8; color: #8c3131; }
+.manageButtonCopy { min-width: 0; display: grid; gap: 4px; }
+.manageButtonCopy strong { font-size: 0.85rem; line-height: 1.22; overflow-wrap: anywhere; }
+.manageButtonCopy small { color: var(--owner-muted); font-size: 0.67rem; font-weight: 650; line-height: 1.35; overflow-wrap: anywhere; }
+.manageButtonDanger .manageButtonCopy small { color: #9b6262; }
+.manageButtonArrow { flex: 0 0 auto; color: rgba(37, 71, 51, 0.48); font-size: 1.15rem; font-weight: 900; }
+.manageButtonDanger .manageButtonArrow { color: rgba(140, 49, 49, 0.5); }
+.editorSection { scroll-margin-top: 80px; }
+.editorHeader { align-items: center; }
+.editorHeader .smallButton { flex: 0 0 auto; min-height: 42px; }
+.editorSaveBar { padding: 12px; }
 
 .mediaGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .mediaItem { position: relative; overflow: hidden; border: 1px solid var(--owner-line); border-radius: 14px; background: #f6f8f7; }
@@ -629,6 +695,7 @@
   .formGrid { grid-template-columns: 1fr; }
   .fieldFull { grid-column: auto; }
   .metrics { grid-template-columns: 1fr 1fr; }
+  .manageGrid { grid-template-columns: 1fr 1fr; }
 
   .notificationIntro {
     align-items: stretch;
@@ -639,6 +706,13 @@
     width: 100%;
     min-height: 50px;
   }
+}
+
+@media (max-width: 420px) {
+  .assetPickerCard { grid-template-columns: minmax(0, 1fr) 86px; gap: 10px; padding: 14px; }
+  .assetOpenButton { min-width: 0; padding-inline: 12px; }
+  .manageGrid { grid-template-columns: 1fr; }
+  .manageButton { min-height: 72px; }
 }
 
 @media (max-width: 390px) {
