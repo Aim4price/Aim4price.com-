@@ -555,7 +555,6 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
                       disabled={Boolean(actionBusy)}
                     />
                   </label>
-                  {primaryPhoto ? <button type="button" className={styles.detailOpenButton} onClick={() => setPhotoViewerOpen(true)}>Open photo</button> : null}
                 </div>
 
                 <div className={styles.assetDocumentPanel}>
@@ -628,22 +627,22 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
                   )}
                 </div>
 
-                <div className={styles.assetMirrorValueStack}>
-                  <Link href={`${manageBase}/details`} prefetch={false}>
+                <div className={styles.assetMirrorValueSummaries}>
+                  <Link className={styles.detailValueSummary} href={`${manageBase}/details`} prefetch={false}>
                     <span>Replacement price</span>
                     <strong>{money(draft.replacementPriceExVat)}</strong>
                     <small>Excl. VAT · Open ›</small>
                   </Link>
                   {insuranceStatus === 'yes' || draft.insuredValueExVat !== null ? (
-                    <Link href={`${manageBase}/insurance`} prefetch={false}>
-                      <span>Insurance value</span>
+                    <Link className={styles.detailValueSummary} href={`${manageBase}/insurance`} prefetch={false}>
+                      <span>Insured value</span>
                       <strong>{money(draft.insuredValueExVat)}</strong>
                       <small>Excl. VAT · Open ›</small>
                     </Link>
                   ) : null}
                   {draft.licenseRegistrationNumber ? (
-                    <Link href={`${manageBase}/licence`} prefetch={false}>
-                      <span>Registration number</span>
+                    <Link className={styles.detailValueSummary} href={`${manageBase}/licence`} prefetch={false}>
+                      <span>Registration</span>
                       <strong>{draft.licenseRegistrationNumber}</strong>
                       <small>Open ›</small>
                     </Link>
@@ -651,21 +650,20 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
                 </div>
 
                 <div className={styles.assetMirrorSecondaryGrid}>
-                  <Link href={`${manageBase}/maintenance`} prefetch={false}><span>Maintenance</span><strong>{upcomingMaintenance ? upcomingMaintenance.computedStatusLabel : 'Nothing upcoming'}</strong><small>Open ›</small></Link>
-                  <Link href={`${manageBase}/location`} prefetch={false}><span>Last scan</span><strong>{dateTime(draft.lastScannedAtIso)}</strong><small>Open ›</small></Link>
-                  {hasMappedLocation ? (
-                    <a href={mapHref} target="_blank" rel="noreferrer"><span>Location</span><strong>{draft.lastKnownLocationText || 'Mapped location'}</strong><small>Open map ›</small></a>
-                  ) : (
-                    <Link href={`${manageBase}/location`} prefetch={false}><span>Location</span><strong>{draft.lastKnownLocationText || 'Not saved'}</strong><small>Add location ›</small></Link>
-                  )}
-                  {draft.marketplaceStatus === 'live' ? (
-                    <Link href={`${manageBase}/marketplace`} prefetch={false}><span>Marketplace</span><strong>Listed</strong><small>Open listing ›</small></Link>
-                  ) : null}
                   <Link href={`${manageBase}/licence`} prefetch={false}>
                     <span>Licence renewal</span>
                     <strong>{dateOnly(licenceRenewalDate)}</strong>
                     <small>{licenceRenewalDate ? 'Open licence ›' : 'Add renewal date ›'}</small>
                   </Link>
+                  <Link href={`${manageBase}/maintenance`} prefetch={false}><span>Maintenance</span><strong>{upcomingMaintenance ? upcomingMaintenance.computedStatusLabel : 'Nothing upcoming'}</strong><small>Open ›</small></Link>
+                  {hasMappedLocation ? (
+                    <a href={mapHref} target="_blank" rel="noreferrer"><span>Location</span><strong>Mapped</strong><small>Open map ›</small></a>
+                  ) : (
+                    <Link href={`${manageBase}/location`} prefetch={false}><span>Location</span><strong>Not saved</strong><small>Add location ›</small></Link>
+                  )}
+                  {draft.marketplaceStatus === 'live' ? (
+                    <Link href={`${manageBase}/marketplace`} prefetch={false}><span>Marketplace</span><strong>Listed</strong><small>Open listing ›</small></Link>
+                  ) : null}
                 </div>
               </section>
             </div>
