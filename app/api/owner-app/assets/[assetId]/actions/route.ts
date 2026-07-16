@@ -9,6 +9,7 @@ import {
   cancelAssetMaintenanceRecord,
   completeAssetMaintenanceRecord,
   createAssetMaintenanceRecord,
+  getAssetMaintenanceRecordById,
   reopenAssetMaintenanceRecord,
   updateAssetMaintenanceRecord,
 } from '../../../../../../lib/asset-maintenance';
@@ -40,6 +41,13 @@ function mediaDocuments(value: unknown): AssetRegisterDocument[] {
       uploadedAtIso: text(item.uploadedAtIso) || new Date().toISOString(),
     }];
   }).slice(0, 20);
+}
+
+async function maintenanceIdForAsset(userId: string, assetId: string, value: unknown): Promise<string> {
+  const maintenanceId = text(value);
+  const maintenance = maintenanceId ? await getAssetMaintenanceRecordById(userId, maintenanceId) : null;
+  if (!maintenance || maintenance.assetId !== assetId) throw new Error('Maintenance record not found.');
+  return maintenanceId;
 }
 
 export async function POST(request: NextRequest, { params }: { params: { assetId: string } }) {
@@ -74,19 +82,21 @@ export async function POST(request: NextRequest, { params }: { params: { assetId
     } else if (action === 'maintenance-create') {
       await createAssetMaintenanceRecord(access.ownerUserId, { ...body, assetId: params.assetId });
     } else if (action === 'maintenance-update') {
-      await updateAssetMaintenanceRecord(access.ownerUserId, text(body.maintenanceId), { ...body, assetId: params.assetId });
+      const maintenanceId = await maintenanceIdForAsset(access.ownerUserId, params.assetId, body.maintenanceId);
+      await updateAssetMaintenanceRecord(access.ownerUserId, maintenanceId, { ...body, assetId: params.assetId });
     } else if (action === 'maintenance-complete') {
-      await completeAssetMaintenanceRecord(access.ownerUserId, text(body.maintenanceId), {
+      const maintenanceId = await maintenanceIdForAsset(access.ownerUserId, params.assetId, body.maintenanceId);
+      await completeAssetMaintenanceRecord(access.ownerUserId, maintenanceId, {
         completedUsage: body.completedUsage,
         completedNotes: body.completedNotes,
         completedBy: access.displayName,
       }, { assetId: params.assetId });
     } else if (action === 'maintenance-cancel') {
-      const record = await cancelAssetMaintenanceRecord(access.ownerUserId, text(body.maintenanceId));
-      if (record.assetId !== params.assetId) throw new Error('Maintenance record not found.');
+      const maintenanceId = await maintenanceIdForAsset(access.ownerUserId, params.assetId, body.maintenanceId);
+      await cancelAssetMaintenanceRecord(access.ownerUserId, maintenanceId);
     } else if (action === 'maintenance-reopen') {
-      const record = await reopenAssetMaintenanceRecord(access.ownerUserId, text(body.maintenanceId));
-      if (record.assetId !== params.assetId) throw new Error('Maintenance record not found.');
+      const maintenanceId = await maintenanceIdForAsset(access.ownerUserId, params.assetId, body.maintenanceId);
+      await reopenAssetMaintenanceRecord(access.ownerUserId, maintenanceId);
     } else if (action === 'marketplace-publish') {
       await publishAssetRegisterItemToMarketplace({
         userId: access.ownerUserId,
@@ -110,9 +120,11 @@ export async function POST(request: NextRequest, { params }: { params: { assetId
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error(`Owner App asset action ${action} failed.`, error);
-    const message = error instanceof Error && error.message && !/^[A-Z0-9_]+$/.test(error.message)
-      ? error.message
-      : 'The requested asset action could not be completed.';
+    const message = error instanceof Error && error.message === 'INVALID_GPS_COORDINATES'
+      ? 'Enter valid latitude (-90 to 90) and longitude (-180 to 180) values.'
+      : error instanceof Error && error.message && !/^[A-Z0-9_]+$/.test(error.message)
+        ? error.message
+        : 'The requested asset action could not be completed.';
     return NextResponse.json({ ok: false, error: message }, { status: 400 });
   }
 }
