@@ -290,10 +290,6 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
 
       {stage === 'choices' ? (
         <section className={`${styles.section} ${styles.ownerOptionsSection}`}>
-          <div className={styles.manageIntro}>
-            <h2><BalancedHeadingText text="What would you like to do?" /></h2>
-            <p>Choose one option to continue.</p>
-          </div>
           <div className={styles.ownerOptionChoiceList}>
             {availableOptions.map((option) => (
               <button key={option.leadType} type="button" className={`${styles.ownerOptionChoice} ${optionTone(option.leadType)}`} onClick={() => void chooseOption(option)}>

@@ -523,6 +523,21 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
               <small>Excl. VAT · Updated {dateOnly(draft.updatedAtIso)}</small>
             </div>
 
+            <div className={styles.assetMirrorValueSummaries}>
+              <Link className={styles.detailValueSummary} href={`${manageBase}/details`} prefetch={false}>
+                <span>Replacement price</span>
+                <strong>{money(draft.replacementPriceExVat)}</strong>
+                <small>Excl. VAT · Open ›</small>
+              </Link>
+              {draft.licenseRegistrationNumber ? (
+                <Link className={styles.detailValueSummary} href={`${manageBase}/licence`} prefetch={false}>
+                  <span>Registration</span>
+                  <strong>{draft.licenseRegistrationNumber}</strong>
+                  <small>Open ›</small>
+                </Link>
+              ) : null}
+            </div>
+
             <div className={styles.assetMirrorDetails}>
               <section className={styles.assetMirrorMediaSection}>
                 <h2><BalancedHeadingText text="Photos and saved documents" /></h2>
@@ -627,27 +642,15 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
                   )}
                 </div>
 
-                <div className={styles.assetMirrorValueSummaries}>
-                  <Link className={styles.detailValueSummary} href={`${manageBase}/details`} prefetch={false}>
-                    <span>Replacement price</span>
-                    <strong>{money(draft.replacementPriceExVat)}</strong>
-                    <small>Excl. VAT · Open ›</small>
-                  </Link>
-                  {insuranceStatus === 'yes' || draft.insuredValueExVat !== null ? (
+                {insuranceStatus === 'yes' || draft.insuredValueExVat !== null ? (
+                  <div className={styles.assetMirrorValueSummaries}>
                     <Link className={styles.detailValueSummary} href={`${manageBase}/insurance`} prefetch={false}>
                       <span>Insured value</span>
                       <strong>{money(draft.insuredValueExVat)}</strong>
                       <small>Excl. VAT · Open ›</small>
                     </Link>
-                  ) : null}
-                  {draft.licenseRegistrationNumber ? (
-                    <Link className={styles.detailValueSummary} href={`${manageBase}/licence`} prefetch={false}>
-                      <span>Registration</span>
-                      <strong>{draft.licenseRegistrationNumber}</strong>
-                      <small>Open ›</small>
-                    </Link>
-                  ) : null}
-                </div>
+                  </div>
+                ) : null}
 
                 <div className={styles.assetMirrorSecondaryGrid}>
                   <Link href={`${manageBase}/licence`} prefetch={false}>
