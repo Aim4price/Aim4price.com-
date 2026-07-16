@@ -71,8 +71,21 @@ function statusValue(asset: Asset, type: 'finance' | 'insurance' | 'license') {
   if (explicit) return explicit;
   return (type === 'finance' ? asset.isFinanced : type === 'insurance' ? asset.isInsured : asset.isLicensed) ? 'yes' : 'no';
 }
-function statusLabel(value: string) {
-  return value === 'not_applicable' ? 'Not applicable' : value.charAt(0).toUpperCase() + value.slice(1);
+function normalizeStatus(value: string): 'yes' | 'no' | 'unknown' | 'not_applicable' {
+  const normalized = text(value).toLowerCase().replace(/[\s-]+/g, '_');
+  if (['yes', 'y', 'true', 'financed', 'insured', 'licensed', 'licenced', 'is_financed', 'is_insured', 'is_licensed'].includes(normalized)) return 'yes';
+  if (['no', 'n', 'false', 'not_financed', 'not_insured', 'not_licensed', 'not_licenced', 'unfinanced', 'uninsured', 'unlicensed', 'unlicenced'].includes(normalized)) return 'no';
+  if (['not_applicable', 'not_app', 'n/a', 'na'].includes(normalized)) return 'not_applicable';
+  return 'unknown';
+}
+function statusVisual(value: string) {
+  const status = normalizeStatus(value);
+  return {
+    yes: { symbol: '✓', title: 'Yes', className: styles.assetMirrorStatusMarkYes },
+    no: { symbol: '×', title: 'No', className: styles.assetMirrorStatusMarkNo },
+    unknown: { symbol: '?', title: 'Not sure', className: styles.assetMirrorStatusMarkUnknown },
+    not_applicable: { symbol: 'N/A', title: 'Not applicable', className: styles.assetMirrorStatusMarkNotApplicable },
+  }[status];
 }
 function conditionLabel(value: string) {
   const normalized = text(value).replace(/[_-]+/g, ' ');
@@ -461,6 +474,17 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
     const hasMappedLocation = draft.lastKnownLat !== null && draft.lastKnownLng !== null;
     const manageBase = `/owner-app/assets/${encodeURIComponent(assetId)}/manage`;
     const mapHref = hasMappedLocation ? `https://www.google.com/maps?q=${draft.lastKnownLat},${draft.lastKnownLng}` : '';
+    const financeVisual = statusVisual(financeStatus);
+    const insuranceVisual = statusVisual(insuranceStatus);
+    const licenceVisual = statusVisual(licenseStatus);
+    const mappedVisual = statusVisual(hasMappedLocation ? 'yes' : 'no');
+    const licenceRenewalDate = specValue(
+      draft.specsJson,
+      'licenseRenewalDate',
+      'license_renewal_date',
+      'licenceRenewalDate',
+      'licence_renewal_date',
+    );
 
     return (
       <div className={styles.wideContent}>
@@ -578,14 +602,29 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
                   <small>Open asset details ›</small>
                 </Link>
 
-                <div className={styles.assetMirrorStatusGrid}>
-                  <Link href={`${manageBase}/finance`} prefetch={false}><span>Financed</span><strong>{statusLabel(financeStatus)}</strong><small>Open ›</small></Link>
-                  <Link href={`${manageBase}/insurance`} prefetch={false}><span>Insured</span><strong>{statusLabel(insuranceStatus)}</strong><small>Open ›</small></Link>
-                  <Link href={`${manageBase}/licence`} prefetch={false}><span>Licensed</span><strong>{statusLabel(licenseStatus)}</strong><small>Open ›</small></Link>
+                <div className={styles.assetMirrorStatusGrid} aria-label="Asset status">
+                  <Link href={`${manageBase}/finance`} prefetch={false} aria-label={`Financed: ${financeVisual.title}. Open finance details.`}>
+                    <span className={styles.assetMirrorStatusCopy}><span>Financed</span><small>Open finance ›</small></span>
+                    <strong className={`${styles.assetMirrorStatusMark} ${financeVisual.className}`} aria-hidden="true">{financeVisual.symbol}</strong>
+                  </Link>
+                  <Link href={`${manageBase}/insurance`} prefetch={false} aria-label={`Insured: ${insuranceVisual.title}. Open insurance details.`}>
+                    <span className={styles.assetMirrorStatusCopy}><span>Insured</span><small>Open insurance ›</small></span>
+                    <strong className={`${styles.assetMirrorStatusMark} ${insuranceVisual.className}`} aria-hidden="true">{insuranceVisual.symbol}</strong>
+                  </Link>
+                  <Link href={`${manageBase}/licence`} prefetch={false} aria-label={`Licensed: ${licenceVisual.title}. Open licence details.`}>
+                    <span className={styles.assetMirrorStatusCopy}><span>Licensed</span><small>Open licence ›</small></span>
+                    <strong className={`${styles.assetMirrorStatusMark} ${licenceVisual.className}`} aria-hidden="true">{licenceVisual.symbol}</strong>
+                  </Link>
                   {hasMappedLocation ? (
-                    <a href={mapHref} target="_blank" rel="noreferrer"><span>Mapped</span><strong>Yes</strong><small>Open map ›</small></a>
+                    <a href={mapHref} target="_blank" rel="noreferrer" aria-label="Mapped: Yes. Open map.">
+                      <span className={styles.assetMirrorStatusCopy}><span>Mapped</span><small>Open map ›</small></span>
+                      <strong className={`${styles.assetMirrorStatusMark} ${mappedVisual.className}`} aria-hidden="true">{mappedVisual.symbol}</strong>
+                    </a>
                   ) : (
-                    <Link href={`${manageBase}/location`} prefetch={false}><span>Mapped</span><strong>No</strong><small>Add location ›</small></Link>
+                    <Link href={`${manageBase}/location`} prefetch={false} aria-label="Mapped: No. Add a location.">
+                      <span className={styles.assetMirrorStatusCopy}><span>Mapped</span><small>Add location ›</small></span>
+                      <strong className={`${styles.assetMirrorStatusMark} ${mappedVisual.className}`} aria-hidden="true">{mappedVisual.symbol}</strong>
+                    </Link>
                   )}
                 </div>
 
@@ -619,7 +658,14 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
                   ) : (
                     <Link href={`${manageBase}/location`} prefetch={false}><span>Location</span><strong>{draft.lastKnownLocationText || 'Not saved'}</strong><small>Add location ›</small></Link>
                   )}
-                  <Link href={`${manageBase}/marketplace`} prefetch={false}><span>Marketplace</span><strong>{draft.marketplaceStatus === 'live' ? 'Live' : 'Not listed'}</strong><small>Open ›</small></Link>
+                  {draft.marketplaceStatus === 'live' ? (
+                    <Link href={`${manageBase}/marketplace`} prefetch={false}><span>Marketplace</span><strong>Listed</strong><small>Open listing ›</small></Link>
+                  ) : null}
+                  <Link href={`${manageBase}/licence`} prefetch={false}>
+                    <span>Licence renewal</span>
+                    <strong>{dateOnly(licenceRenewalDate)}</strong>
+                    <small>{licenceRenewalDate ? 'Open licence ›' : 'Add renewal date ›'}</small>
+                  </Link>
                 </div>
               </section>
             </div>
