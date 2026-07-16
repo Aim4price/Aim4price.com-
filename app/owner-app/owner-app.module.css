@@ -710,7 +710,10 @@
 .assetDocumentLinks a span:first-child { min-width: 0; overflow-wrap: anywhere; }
 .assetMirrorDetailGrid,
 .assetMirrorStatusGrid,
-.assetMirrorSecondaryGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.assetMirrorSecondaryGrid { display: grid; gap: 8px; }
+.assetMirrorDetailGrid,
+.assetMirrorStatusGrid { grid-template-columns: 1fr; }
+.assetMirrorSecondaryGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .assetMirrorDetailGrid > div,
 .assetMirrorStatusGrid > div,
 .assetMirrorStatusGrid > a,
@@ -736,13 +739,81 @@
 .assetMirrorDetailGrid strong,
 .assetMirrorStatusGrid strong,
 .assetMirrorSecondaryGrid strong { max-width: 100%; color: var(--owner-ink); font-size: 0.79rem; font-weight: 900; line-height: 1.3; overflow-wrap: anywhere; }
-.assetMirrorStatusGrid > div,
-.assetMirrorStatusGrid > a { grid-template-columns: 1fr auto; justify-items: stretch; text-align: left; }
-.assetMirrorStatusGrid > div span,
-.assetMirrorStatusGrid > a span { align-self: center; }
-.assetMirrorStatusGrid > div strong,
-.assetMirrorStatusGrid > a strong { align-self: center; color: #1a6d50; text-align: right; }
-.assetMirrorStatusGrid > a small,
+.assetMirrorDetailGrid > div {
+  min-height: 56px;
+  grid-template-columns: minmax(92px, 0.72fr) minmax(0, 1fr);
+  align-items: center;
+  align-content: center;
+  justify-items: stretch;
+  padding: 0;
+  overflow: hidden;
+  text-align: left;
+}
+.assetMirrorDetailGrid > div span {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  border-right: 1px solid rgba(216, 226, 236, 0.96);
+  background: linear-gradient(180deg, #fbfcfd 0%, #f1f6f8 100%);
+  padding: 0 12px;
+  color: #31485a;
+}
+.assetMirrorDetailGrid > div strong { padding: 0 12px; text-align: right; }
+.assetMirrorStatusGrid > a {
+  min-height: 62px;
+  grid-template-columns: minmax(0, 1fr) 66px;
+  align-content: stretch;
+  align-items: stretch;
+  justify-items: stretch;
+  gap: 0;
+  overflow: hidden;
+  padding: 0;
+  text-align: left;
+  box-shadow: 0 7px 17px rgba(18, 53, 45, 0.045);
+}
+.assetMirrorStatusCopy {
+  min-width: 0;
+  display: grid;
+  align-content: center;
+  align-self: stretch !important;
+  gap: 5px;
+  padding: 10px 13px;
+  background: linear-gradient(180deg, #ffffff 0%, #f7fafb 100%);
+}
+.assetMirrorStatusCopy > span {
+  color: #31485a !important;
+  font-size: 0.73rem !important;
+  font-weight: 930 !important;
+  letter-spacing: 0.06em !important;
+}
+.assetMirrorStatusCopy > small {
+  color: #287058;
+  font-size: 0.64rem;
+  font-weight: 880;
+  letter-spacing: normal;
+  text-transform: none;
+}
+.assetMirrorStatusGrid .assetMirrorStatusMark {
+  width: 100%;
+  min-height: 62px;
+  display: grid;
+  place-items: center;
+  align-self: stretch;
+  border-left: 1px solid rgba(255, 255, 255, 0.24);
+  color: #fff;
+  font-size: 1.65rem;
+  font-weight: 950;
+  line-height: 1;
+  text-align: center;
+}
+.assetMirrorStatusGrid .assetMirrorStatusMarkYes { background: linear-gradient(180deg, #23c766 0%, #14a64f 100%); }
+.assetMirrorStatusGrid .assetMirrorStatusMarkNo { background: linear-gradient(180deg, #ff2d2d 0%, #ef1818 100%); }
+.assetMirrorStatusGrid .assetMirrorStatusMarkUnknown { background: linear-gradient(180deg, #ff8a34 0%, #ff7417 100%); }
+.assetMirrorStatusGrid .assetMirrorStatusMarkNotApplicable {
+  background: linear-gradient(180deg, #0ea5e9 0%, #0284c7 100%);
+  font-size: 0.88rem;
+  letter-spacing: 0.035em;
+}
 .assetMirrorSecondaryGrid > a small {
   grid-column: 1 / -1;
   width: 100%;
@@ -1465,7 +1536,6 @@
   .assetOpenButton { min-width: 0; padding-inline: 12px; }
   .manageGrid { grid-template-columns: 1fr; }
   .manageButton { min-height: 72px; }
-  .assetMirrorDetailGrid,
   .assetMirrorSecondaryGrid { grid-template-columns: 1fr; }
   .detailPhotoNavButton { width: 42px; height: 42px; }
   .detailPhotoNavPrevious { left: 9px; }
