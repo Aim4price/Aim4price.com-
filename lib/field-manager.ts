@@ -335,16 +335,35 @@ function normalizeUsageLabel(row: FieldManagerAssetRow): {
   const usageMetric = asText(
     specs.usageMetric ??
       specs.usage_metric ??
+      specs.selectedUsageMode ??
+      specs.selected_usage_mode ??
+      specs.usageMode ??
+      specs.usage_mode ??
+      specs.usageMetricType ??
+      specs.usage_metric_type ??
       specs.usageUnit ??
       specs.usage_unit,
   ).toLowerCase();
   const hours = asNumber(row.hours);
   const percent = asNumber(row.life_worked_percent);
   const kind = asText(row.kind).toLowerCase();
+  const usesPercentage = usageMetric.includes("percent");
   const unit =
     kind === "vehicle" || usageMetric === "km" || usageMetric === "kms"
       ? "km"
       : "hours";
+
+  if (usesPercentage) {
+    return percent !== null
+      ? {
+          usageReading: percent,
+          usageLabel: `${Math.round(percent * 10) / 10}%`,
+        }
+      : {
+          usageReading: null,
+          usageLabel: "No percentage saved",
+        };
+  }
 
   if (hours !== null) {
     return {
@@ -356,7 +375,7 @@ function normalizeUsageLabel(row: FieldManagerAssetRow): {
   if (percent !== null) {
     return {
       usageReading: percent,
-      usageLabel: `${Math.round(percent * 10) / 10}% worked`,
+      usageLabel: `${Math.round(percent * 10) / 10}%`,
     };
   }
 
