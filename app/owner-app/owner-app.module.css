@@ -713,7 +713,9 @@
 .assetMirrorSecondaryGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .assetMirrorDetailGrid > div,
 .assetMirrorStatusGrid > div,
-.assetMirrorSecondaryGrid > div {
+.assetMirrorStatusGrid > a,
+.assetMirrorSecondaryGrid > div,
+.assetMirrorSecondaryGrid > a {
   min-width: 0;
   min-height: 66px;
   display: grid;
@@ -725,6 +727,7 @@
   background: #fff;
   padding: 10px;
   text-align: center;
+  text-decoration: none;
 }
 .assetMirrorDetailGrid span,
 .assetMirrorStatusGrid span,
@@ -733,11 +736,26 @@
 .assetMirrorDetailGrid strong,
 .assetMirrorStatusGrid strong,
 .assetMirrorSecondaryGrid strong { max-width: 100%; color: var(--owner-ink); font-size: 0.79rem; font-weight: 900; line-height: 1.3; overflow-wrap: anywhere; }
-.assetMirrorStatusGrid > div { grid-template-columns: 1fr auto; justify-items: stretch; text-align: left; }
-.assetMirrorStatusGrid > div span { align-self: center; }
-.assetMirrorStatusGrid > div strong { align-self: center; color: #1a6d50; text-align: right; }
+.assetMirrorStatusGrid > div,
+.assetMirrorStatusGrid > a { grid-template-columns: 1fr auto; justify-items: stretch; text-align: left; }
+.assetMirrorStatusGrid > div span,
+.assetMirrorStatusGrid > a span { align-self: center; }
+.assetMirrorStatusGrid > div strong,
+.assetMirrorStatusGrid > a strong { align-self: center; color: #1a6d50; text-align: right; }
+.assetMirrorStatusGrid > a small,
+.assetMirrorSecondaryGrid > a small {
+  grid-column: 1 / -1;
+  width: 100%;
+  color: #287058;
+  font-size: 0.62rem;
+  font-weight: 900;
+  text-align: right;
+}
+.assetMirrorStatusGrid > a:active,
+.assetMirrorSecondaryGrid > a:active { transform: translateY(1px); }
 .assetMirrorValueStack { display: grid; gap: 8px; }
-.assetMirrorValueStack > div {
+.assetMirrorValueStack > div,
+.assetMirrorValueStack > a {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
@@ -746,9 +764,33 @@
   border-radius: 15px;
   background: linear-gradient(135deg, #f1faf5 0%, #fff 100%);
   padding: 12px 13px;
+  color: inherit;
+  text-decoration: none;
 }
 .assetMirrorValueStack strong { color: #073b30; font-size: 0.94rem; font-weight: 950; text-align: right; overflow-wrap: anywhere; }
 .assetMirrorValueStack small { grid-column: 2; color: var(--owner-muted); font-size: 0.62rem; font-weight: 720; text-align: right; }
+.assetDetailsPageCard .assetMirrorDetails { border-top: 0; padding-top: 0; }
+.detailMediaActions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.detailUploadButton,
+.detailOpenButton {
+  min-height: 50px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  border: 1px solid rgba(35, 104, 81, 0.24);
+  border-radius: 14px;
+  background: #fff;
+  color: #236851;
+  padding: 0 13px;
+  font: 900 0.78rem Montserrat, var(--font-body, Inter), Arial, sans-serif;
+  text-align: center;
+  cursor: pointer;
+}
+.detailUploadButton input { position: absolute; width: 1px; height: 1px; overflow: hidden; opacity: 0; pointer-events: none; }
+.detailDocumentUploadButton { width: 100%; background: #eef6fc; color: #244f76; border-color: rgba(29, 72, 111, 0.18); }
+.assetDetailsEditLink { display: grid; gap: 8px; color: inherit; text-decoration: none; }
+.assetDetailsEditLink > small { color: #287058; font-size: 0.66rem; font-weight: 900; text-align: right; }
 .ownerPhotoViewer {
   position: fixed;
   inset: 0;
@@ -800,7 +842,7 @@
 .manageIntro { display: grid; justify-items: center; gap: 4px; text-align: center; }
 .manageIntro h2 { margin: 0; font-size: 1.16rem; letter-spacing: -0.025em; text-wrap: balance; }
 .manageIntro p { margin: 0; color: var(--owner-muted); font-size: 0.8rem; font-weight: 650; line-height: 1.45; text-align: center; }
-.manageGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+.manageGrid { display: grid; grid-template-columns: 1fr; gap: 9px; }
 .manageButton {
   min-width: 0;
   min-height: 82px;
@@ -837,6 +879,180 @@
 .manageButtonDanger .manageButtonCopy small { color: #9b6262; }
 .manageButtonArrow { flex: 0 0 auto; color: rgba(37, 71, 51, 0.48); font-size: 1.15rem; font-weight: 900; }
 .manageButtonDanger .manageButtonArrow { color: rgba(140, 49, 49, 0.5); }
+.ownerOptionsIdentity {
+  display: grid;
+  justify-items: center;
+  gap: 7px;
+  border: 1px solid rgba(18, 53, 45, 0.12);
+  border-radius: 20px;
+  background: #f7faf8;
+  padding: 17px;
+  text-align: center;
+}
+.ownerOptionsIdentity > span,
+.ownerOptionsFlowHeader > div > span {
+  color: #236851;
+  font-size: 0.68rem;
+  font-weight: 950;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+.ownerOptionsIdentity h1 {
+  margin: 0;
+  color: var(--owner-ink);
+  font-size: clamp(1.7rem, 7.5vw, 2.3rem);
+  font-weight: 950;
+  letter-spacing: -0.045em;
+  line-height: 1.05;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+.ownerOptionsIdentity p { margin: 0; color: var(--owner-muted); font-size: 0.8rem; font-weight: 760; }
+.ownerOptionsSection { gap: 15px; }
+.ownerOptionChoiceList,
+.ownerPartnerList { display: grid; gap: 10px; }
+.ownerOptionChoice {
+  width: 100%;
+  min-height: 94px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 13px;
+  box-sizing: border-box;
+  border: 1px solid rgba(18, 53, 45, 0.14);
+  border-radius: 18px;
+  background: #fff;
+  color: var(--owner-ink);
+  padding: 15px 16px;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(18, 53, 45, 0.06);
+}
+.ownerOptionChoice > span { min-width: 0; display: grid; gap: 5px; }
+.ownerOptionChoice strong { font-size: 0.94rem; font-weight: 930; line-height: 1.2; }
+.ownerOptionChoice small { font-size: 0.72rem; font-weight: 680; line-height: 1.4; }
+.ownerOptionChoice > b { flex: 0 0 auto; font-size: 1.35rem; }
+.ownerOptionFinance { border-color: rgba(196, 130, 32, 0.34); background: #fffaf1; color: #74460b; }
+.ownerOptionInsurance { border-color: rgba(48, 113, 169, 0.32); background: #f4f9fd; color: #244f76; }
+.ownerOptionDealer { border-color: rgba(66, 144, 102, 0.32); background: #f2faf5; color: #1d6545; }
+.ownerOptionsFlowHeader { display: grid; gap: 12px; text-align: center; }
+.ownerOptionsFlowHeader > button {
+  width: fit-content;
+  min-height: 40px;
+  border: 1px solid var(--owner-line);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--owner-green);
+  padding: 0 12px;
+  font: 900 0.75rem Montserrat, sans-serif;
+  cursor: pointer;
+}
+.ownerOptionsFlowHeader > div { display: grid; justify-items: center; gap: 5px; }
+.ownerOptionsFlowHeader h2 { max-width: 100%; margin: 0; text-align: center; text-wrap: balance; }
+.ownerPartnerSearch { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+.ownerPartnerSearch input {
+  min-width: 0;
+  min-height: 50px;
+  box-sizing: border-box;
+  border: 1px solid rgba(37, 71, 51, 0.2);
+  border-radius: 14px;
+  background: #fbfdfb;
+  color: var(--owner-ink);
+  padding: 0 13px;
+  font: 700 0.78rem Montserrat, sans-serif;
+}
+.ownerPartnerSearch button {
+  min-height: 50px;
+  border: 1px solid var(--owner-green);
+  border-radius: 14px;
+  background: var(--owner-green);
+  color: #fff;
+  padding: 0 14px;
+  font: 900 0.76rem Montserrat, sans-serif;
+  cursor: pointer;
+}
+.ownerPartnerSearch button:disabled { opacity: 0.58; cursor: not-allowed; }
+.ownerPartnerCard {
+  width: 100%;
+  min-height: 84px;
+  display: grid;
+  grid-template-columns: 50px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+  box-sizing: border-box;
+  border: 1px solid rgba(18, 53, 45, 0.13);
+  border-radius: 17px;
+  background: #fff;
+  color: var(--owner-ink);
+  padding: 12px;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ownerPartnerCard > b { color: rgba(18, 53, 45, 0.45); font-size: 1.25rem; }
+.ownerPartnerLogo {
+  width: 50px;
+  height: 50px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(18, 53, 45, 0.12);
+  border-radius: 14px;
+  background: #f4f8f5;
+  color: var(--owner-green);
+  font-size: 1rem;
+  font-weight: 950;
+}
+.ownerPartnerLogo img { width: 100%; height: 100%; display: block; object-fit: contain; }
+.ownerPartnerCopy { min-width: 0; display: grid; gap: 4px; }
+.ownerPartnerCopy strong { font-size: 0.84rem; font-weight: 930; line-height: 1.25; overflow-wrap: anywhere; }
+.ownerPartnerCopy small { color: var(--owner-muted); font-size: 0.67rem; font-weight: 700; line-height: 1.35; overflow-wrap: anywhere; }
+.ownerOptionsEmpty { margin: 0; border: 1px dashed rgba(18, 53, 45, 0.16); border-radius: 15px; color: var(--owner-muted); padding: 18px 14px; font-size: 0.78rem; font-weight: 720; text-align: center; }
+.ownerSelectedPartner { display: flex; align-items: center; gap: 12px; border: 1px solid rgba(18, 53, 45, 0.12); border-radius: 17px; background: #f7faf8; padding: 13px; }
+.ownerSelectedPartner > div { min-width: 0; display: grid; gap: 4px; }
+.ownerSelectedPartner strong { font-size: 0.9rem; overflow-wrap: anywhere; }
+.ownerSelectedPartner span { color: var(--owner-muted); font-size: 0.72rem; font-weight: 700; }
+.ownerPartnerContacts { display: grid; gap: 8px; }
+.ownerPartnerContacts > a,
+.ownerPartnerContacts > span {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+  border: 1px solid rgba(18, 53, 45, 0.1);
+  border-radius: 13px;
+  background: #fff;
+  color: var(--owner-ink);
+  padding: 10px 12px;
+  text-decoration: none;
+}
+.ownerPartnerContacts small { color: var(--owner-muted); font-size: 0.62rem; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; }
+.ownerPartnerContacts span,
+.ownerPartnerContacts b { font-size: 0.75rem; font-weight: 800; line-height: 1.35; overflow-wrap: anywhere; }
+.ownerShareNotice { margin: 0; border-radius: 14px; background: #f2f6f3; color: #315348; padding: 12px; font-size: 0.76rem; font-weight: 730; line-height: 1.42; }
+.ownerOptionMessageField { display: grid; gap: 7px; }
+.ownerOptionMessageField > span { color: #315348; font-size: 0.76rem; font-weight: 850; }
+.ownerOptionMessageField > span small { margin-left: 4px; color: var(--owner-muted); font-weight: 650; }
+.ownerOptionMessageField textarea {
+  min-height: 120px;
+  box-sizing: border-box;
+  border: 1px solid rgba(37, 71, 51, 0.2);
+  border-radius: 14px;
+  background: #fbfdfb;
+  color: var(--owner-ink);
+  padding: 13px;
+  font: 700 0.84rem Montserrat, sans-serif;
+  resize: vertical;
+}
+.ownerOptionsFooter { display: grid; grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.25fr); gap: 9px; }
+.ownerPopiaBox { display: grid; gap: 8px; border: 1px solid rgba(196, 130, 32, 0.24); border-radius: 16px; background: #fffaf0; color: #654414; padding: 14px; }
+.ownerPopiaBox strong { font-size: 0.84rem; }
+.ownerPopiaBox p { margin: 0; font-size: 0.74rem; font-weight: 680; line-height: 1.45; }
+.ownerConsentField { display: flex; align-items: flex-start; gap: 10px; color: var(--owner-ink); font-size: 0.78rem; font-weight: 790; line-height: 1.42; }
+.ownerConsentField input { width: 21px; height: 21px; flex: 0 0 auto; margin: 0; accent-color: var(--owner-green); }
+.ownerOptionsSent { justify-items: center; padding-block: 24px; text-align: center; }
+.ownerOptionsSent p { margin: 0; color: var(--owner-muted); font-size: 0.82rem; font-weight: 700; line-height: 1.45; }
+.ownerOptionsSent .primaryButton { width: 100%; }
 .editorSection { scroll-margin-top: 80px; }
 .editorHeader { align-items: center; justify-content: center; text-align: center; }
 .editorHeader > div { width: 100%; }
@@ -1226,10 +1442,12 @@
   .formGrid { grid-template-columns: 1fr; }
   .fieldFull { grid-column: auto; }
   .metrics { grid-template-columns: 1fr 1fr; }
-  .manageGrid { grid-template-columns: 1fr 1fr; }
+  .manageGrid { grid-template-columns: 1fr; }
   .assetMirrorActions { grid-template-columns: 1fr; gap: 10px; }
   .assetMirrorAction { min-height: 58px; font-size: 0.94rem; }
   .detailPhotoThumbs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .detailMediaActions,
+  .ownerOptionsFooter { grid-template-columns: 1fr; }
 
   .notificationIntro {
     align-items: stretch;
