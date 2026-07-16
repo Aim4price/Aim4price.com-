@@ -7,6 +7,7 @@ import {
   type AssetRegisterItemKind,
 } from '../../../../../lib/asset-register-db';
 import { deleteUnreferencedAssetRegisterUploads, listInternalAssetRegisterUploadIds } from '../../../../../lib/asset-register-uploads';
+import { resolveAssetUsage, type AssetUsageMetric } from '../../../../../lib/asset-usage';
 import { listAssetMaintenanceData } from '../../../../../lib/asset-maintenance';
 import { getAssetRegisterForUser, listAssetRegisters, moveAssetRegisterItems } from '../../../../../lib/asset-registers';
 import { getOwnerAppAccess } from '../../../../../lib/owner-app-access';
@@ -25,6 +26,21 @@ function numberOrNull(value: unknown): number | null {
   if (value === null || value === undefined || value === '') return null;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
+}
+function percentageOrNull(value: unknown): number | null {
+  const parsed = numberOrNull(value);
+  return parsed === null ? null : Math.min(100, Math.max(0, parsed));
+}
+function usageMetric(
+  value: unknown,
+  existing: { kind: string; hours: number | null; lifeWorkedPercent: number | null },
+  specsJson: Record<string, unknown>,
+): AssetUsageMetric {
+  const normalized = text(value).toLowerCase();
+  if (normalized === 'percentage' || normalized === 'percent') return 'percentage';
+  if (normalized === 'km' || normalized === 'kms') return 'km';
+  if (normalized === 'hours' || normalized === 'hour' || normalized === 'hrs') return 'hours';
+  return resolveAssetUsage({ ...existing, specsJson }).metric;
 }
 function boolean(value: unknown): boolean {
   if (typeof value === 'boolean') return value;
@@ -108,6 +124,24 @@ export async function PUT(request: NextRequest, { params }: { params: { assetId:
   }
 
   const specs = { ...asRecord(existing.specsJson), ...asRecord(body.specsJson) };
+  const selectedUsageMetric = usageMetric(body.usageMetric, existing, specs);
+  if (selectedUsageMetric === 'percentage') {
+    Object.assign(specs, {
+      usageMode: 'percent', usage_mode: 'percent',
+      usageBasis: 'percent', usage_basis: 'percent',
+      selectedUsageMode: 'percent', selected_usage_mode: 'percent',
+      selectedUsageBasis: 'percent', selected_usage_basis: 'percent',
+    });
+  } else {
+    Object.assign(specs, {
+      usageMetric: selectedUsageMetric, usage_metric: selectedUsageMetric,
+      usageUnit: selectedUsageMetric, usage_unit: selectedUsageMetric,
+      usageMode: selectedUsageMetric, usage_mode: selectedUsageMetric,
+      usageBasis: 'reading', usage_basis: 'reading',
+      selectedUsageMode: selectedUsageMetric, selected_usage_mode: selectedUsageMetric,
+      selectedUsageBasis: 'reading', selected_usage_basis: 'reading',
+    });
+  }
   const financeStatus = text(specs.financeStatus || specs.finance_status || (boolean(body.isFinanced) ? 'yes' : 'no'));
   const insuranceStatus = text(specs.insuranceStatus || specs.insurance_status || (boolean(body.isInsured) ? 'yes' : 'no'));
   const licenseStatus = text(specs.licenseStatus || specs.license_status || (boolean(body.isLicensed) ? 'yes' : 'no'));
@@ -144,9 +178,9 @@ export async function PUT(request: NextRequest, { params }: { params: { assetId:
       photos: nextPhotos,
       documents: nextDocuments,
       yearModel: numberOrNull(body.yearModel),
-      hours: numberOrNull(body.hours),
-      usageMetric: text(body.usageMetric) === 'km' ? 'km' : 'hours',
-      lifeWorkedPercent: numberOrNull(body.lifeWorkedPercent),
+      hours: selectedUsageMetric === 'percentage' ? null : numberOrNull(body.hours),
+      usageMetric: selectedUsageMetric === 'km' ? 'km' : 'hours',
+      lifeWorkedPercent: selectedUsageMetric === 'percentage' ? percentageOrNull(body.lifeWorkedPercent) : null,
       specsJson: specs,
       condition: text(body.condition) as any,
       allowUsageDecrease: boolean(body.allowUsageDecrease),
