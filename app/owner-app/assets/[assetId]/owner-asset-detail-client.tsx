@@ -653,14 +653,9 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
                   <Link href={`${manageBase}/licence`} prefetch={false}>
                     <span>Licence renewal</span>
                     <strong>{dateOnly(licenceRenewalDate)}</strong>
-                    <small>{licenceRenewalDate ? 'Open licence ›' : 'Add renewal date ›'}</small>
+                    <small>{licenceRenewalDate ? 'Open licence ›' : 'Add date ›'}</small>
                   </Link>
                   <Link href={`${manageBase}/maintenance`} prefetch={false}><span>Maintenance</span><strong>{upcomingMaintenance ? upcomingMaintenance.computedStatusLabel : 'Nothing upcoming'}</strong><small>Open ›</small></Link>
-                  {hasMappedLocation ? (
-                    <a href={mapHref} target="_blank" rel="noreferrer"><span>Location</span><strong>Mapped</strong><small>Open map ›</small></a>
-                  ) : (
-                    <Link href={`${manageBase}/location`} prefetch={false}><span>Location</span><strong>Not saved</strong><small>Add location ›</small></Link>
-                  )}
                   {draft.marketplaceStatus === 'live' ? (
                     <Link href={`${manageBase}/marketplace`} prefetch={false}><span>Marketplace</span><strong>Listed</strong><small>Open listing ›</small></Link>
                   ) : null}
