@@ -1,15 +1,21 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type Dispatch, type FormEvent, type SetStateAction } from 'react';
 import { formatResolvedAssetUsage, resolveAssetUsage, type AssetUsageMetric } from '../../../../lib/asset-usage';
+import { openAssetSheetPrint } from '../../../../lib/report-print';
 import BalancedHeadingText from '../../balanced-heading';
 import styles from '../../owner-app.module.css';
 import OwnerAssetOptionsClient from './owner-asset-options-client';
 
+declare global {
+  interface Window { L?: any }
+}
+
 type Document = { id: string; url: string; fileName: string; contentType: string; byteSize: number; uploadedAtIso: string };
 type Asset = {
   id: string; registerId: string | null; kind: string; title: string; value: number; replacementPriceExVat: number | null;
+  valuationRunId: number | null; selectedMethod: string;
   brandName: string; modelName: string; typedModelName: string; yearModel: number | null; hours: number | null;
   lifeWorkedPercent: number | null; condition: string; note: string; serialNumber: string; isFinanced: boolean;
   financeNote: string; isInsured: boolean; insuredValueExVat: number | null; isLicensed: boolean;
@@ -20,18 +26,23 @@ type Asset = {
   lastKnownLng: number | null; lastKnownLocationText: string; updatedAtIso: string;
 };
 type Register = { id: string; businessName: string };
+type OwnerContext = {
+  businessName: string; contactName: string; phone: string; email: string; province: string; area: string;
+  address: string; reportLogoUrl: string;
+};
 type Maintenance = {
   id: string; maintenanceType: 'service' | 'checkup'; status: string; computedStatusLabel: string; title: string;
   notes: string; triggerType: string; dueDate: string | null; dueUsage: number | null; usageMetric: string | null;
 };
 type DetailResponse = {
   ok: boolean; item?: Asset; register?: Register | null; registers?: Register[]; maintenance?: Maintenance[];
+  ownerContext?: OwnerContext;
   error?: string; requiresUsageConfirmation?: boolean;
 };
 type UploadResponse = { ok: boolean; uploads?: Array<{ uploadId: string; url: string; fileName: string; contentType: string; byteSize: number }>; error?: string };
 
 export type OwnerAssetView = 'summary' | 'details' | 'options' | 'manage' | 'section';
-export type OwnerAssetManageSection = 'details' | 'finance' | 'insurance' | 'licence' | 'location' | 'media' | 'marketplace' | 'maintenance' | 'delete';
+export type OwnerAssetManageSection = 'details' | 'reports' | 'pricing' | 'finance' | 'insurance' | 'licence' | 'location' | 'media' | 'marketplace' | 'maintenance' | 'delete';
 
 const STATUS_OPTIONS = [
   { value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' },
@@ -40,10 +51,12 @@ const STATUS_OPTIONS = [
 
 const MANAGE_SECTIONS: Array<{ id: OwnerAssetManageSection; title: string; description: string; tone?: 'featured' | 'danger' }> = [
   { id: 'details', title: 'Update asset', description: 'Edit the asset details, usage and values.', tone: 'featured' },
+  { id: 'reports', title: 'Reports', description: 'Download valuation, fuel, maintenance and ownership reports.' },
+  { id: 'pricing', title: 'Manage pricing', description: 'Recalculate the value or calculate a future price.' },
   { id: 'finance', title: 'Finance', description: 'Manage finance status and information.' },
   { id: 'insurance', title: 'Insurance', description: 'Manage insurance status and cover.' },
   { id: 'licence', title: 'Licence', description: 'Manage licence and registration details.' },
-  { id: 'location', title: 'Location & flags', description: 'Update the location or flag the asset.' },
+  { id: 'location', title: 'Location', description: 'Use this device, enter GPS coordinates or choose a point on the map.' },
   { id: 'media', title: 'Photos & documents', description: 'Add or remove saved files.' },
   { id: 'marketplace', title: 'Marketplace', description: 'Create or update the marketplace listing.' },
   { id: 'maintenance', title: 'Maintenance', description: 'Schedule and manage maintenance.' },
@@ -100,6 +113,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
   const [draft, setDraft] = useState<Asset | null>(null);
   const [registers, setRegisters] = useState<Register[]>([]);
   const [registerName, setRegisterName] = useState('');
+  const [ownerContext, setOwnerContext] = useState<OwnerContext | null>(null);
   const [maintenance, setMaintenance] = useState<Maintenance[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -115,7 +129,6 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
   const financeStatus = draft ? statusValue(draft, 'finance') : 'unknown';
   const insuranceStatus = draft ? statusValue(draft, 'insurance') : 'unknown';
   const licenseStatus = draft ? statusValue(draft, 'license') : 'unknown';
-  const flagged = Boolean(draft?.specsJson.assetFlagged ?? draft?.specsJson.asset_flagged ?? draft?.specsJson.flagged);
   const upcomingMaintenance = useMemo(() => maintenance.find((record) => record.status === 'upcoming') ?? null, [maintenance]);
 
   useEffect(() => { void loadDetail(); }, [assetId]);
@@ -157,6 +170,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
     setDraft(payload.item);
     setRegisters(payload.registers ?? []);
     setRegisterName(payload.register?.businessName ?? 'Asset register');
+    setOwnerContext(payload.ownerContext ?? null);
     setMaintenance(payload.maintenance ?? []);
     setLocation({
       locationText: payload.item.lastKnownLocationText || '',
@@ -349,6 +363,60 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
       setNotice({ tone: 'error', message: cause instanceof Error ? cause.message : 'Failed to delete this asset.' });
       setActionBusy('');
     }
+  }
+
+  function openValuationReport() {
+    if (!draft) return;
+    const usage = formatResolvedAssetUsage(resolveAssetUsage({
+      kind: draft.kind,
+      hours: draft.hours,
+      lifeWorkedPercent: draft.lifeWorkedPercent,
+      specsJson: draft.specsJson,
+    }), 'Not saved');
+    const methodLabel = draft.selectedMethod === 'manual' ? 'Manual value' : 'Aim4price value';
+    const didOpen = openAssetSheetPrint({
+      logoUrl: ownerContext?.reportLogoUrl || '/brand/aim4price-mark-black.png',
+      generatedAt: dateOnly(new Date().toISOString()),
+      assetBadge: draft.kind === 'property' ? 'Property / Buildings' : draft.kind.charAt(0).toUpperCase() + draft.kind.slice(1),
+      heroTitle: draft.title,
+      heroMeta: [draft.yearModel, draft.brandName, draft.modelName].filter(Boolean).join(' · '),
+      valueLabel: 'Estimated Value',
+      value: money(draft.value),
+      valueNote: methodLabel,
+      statusLabel: dateOnly(draft.updatedAtIso),
+      issuerName: 'Aim4price',
+      issuerAddress: 'Saved asset register data',
+      issuerEmail: 'aim4price@gmail.com',
+      clientRows: [
+        { label: 'Business Name', value: ownerContext?.businessName || 'Aim4price client' },
+        { label: 'Contact Details', value: ownerContext?.phone || '—' },
+        { label: 'Business Email', value: ownerContext?.email || '—' },
+        { label: 'Location / Address', value: ownerContext?.address || ownerContext?.area || '—' },
+      ],
+      photoUrl: draft.photos[0] || null,
+      photoUrls: draft.photos,
+      facts: [
+        { label: 'Category', value: draft.kind === 'property' ? 'Property / Buildings' : draft.kind },
+        { label: 'Brand', value: draft.brandName || '—' },
+        { label: 'Model', value: draft.modelName || draft.typedModelName || '—' },
+        { label: 'Year', value: draft.yearModel ? String(draft.yearModel) : '—' },
+        { label: 'Usage', value: usage },
+        { label: 'Condition', value: conditionLabel(draft.condition) },
+        { label: 'Replacement Price', value: draft.replacementPriceExVat ? `${money(draft.replacementPriceExVat)} excl. VAT` : 'Not saved' },
+        { label: 'Serial Number', value: draft.serialNumber || '—' },
+        { label: 'Insured', value: statusVisual(statusValue(draft, 'insurance')).title },
+        { label: 'Insured Value', value: draft.insuredValueExVat ? `${money(draft.insuredValueExVat)} excl. VAT` : 'Not saved' },
+        { label: 'Financed', value: statusVisual(statusValue(draft, 'finance')).title },
+        { label: 'Licensed', value: statusVisual(statusValue(draft, 'license')).title },
+        { label: 'Documents', value: draft.documents.length ? `${draft.documents.length} saved` : 'None' },
+        { label: 'Last Updated', value: dateOnly(draft.updatedAtIso) },
+      ],
+      notes: [],
+      methodCards: [{ label: methodLabel, value: money(draft.value), note: 'Saved value excluding VAT', selected: true }],
+      footerNote: 'Values are indicative estimates based on saved asset-register information and available pricing inputs. This is not a certified valuation, inspection report or guarantee of selling price.',
+    });
+
+    if (!didOpen) setNotice({ tone: 'error', message: 'Unable to open the valuation report. Please allow pop-ups and try again.' });
   }
 
   if (loading) return <div className={`${styles.wideContent} ${styles.loading}`}>Loading asset…</div>;
@@ -738,7 +806,6 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
           <label className={styles.field}><span>Model</span><input value={draft.modelName} onChange={(event) => update('modelName', event.target.value)} /></label>
           <label className={styles.field}><span>Year model / year built</span><input inputMode="numeric" value={draft.yearModel ?? ''} onChange={(event) => update('yearModel', event.target.value ? Number(event.target.value) : null)} /></label>
           <label className={styles.field}><span>Serial / VIN / chassis</span><input value={draft.serialNumber} onChange={(event) => update('serialNumber', event.target.value)} /></label>
-          {extraInput('internalReference', 'Internal reference', { fallbackKeys: ['internal_reference'] })}
           <label className={styles.field}><span>Condition</span><select value={draft.condition} onChange={(event) => update('condition', event.target.value)}><option value="">Not saved</option><option value="excellent">Excellent</option><option value="good">Good</option><option value="fair">Fair</option><option value="used">Used</option><option value="serious">Serious</option></select></label>
           <label className={styles.field}><span>Usage type</span><select value={usageMetric} onChange={(event) => updateUsageMetric(event.target.value as AssetUsageMetric)}><option value="hours">Hours</option><option value="km">Kilometres</option><option value="percentage">Percentage worked</option></select></label>
           {usageMetric === 'percentage' ? <label className={styles.field}><span>Percentage worked</span><input inputMode="decimal" value={draft.lifeWorkedPercent ?? ''} onChange={(event) => update('lifeWorkedPercent', event.target.value ? Number(event.target.value) : null)} /></label> : <label className={styles.field}><span>Current usage</span><input inputMode="decimal" value={draft.hours ?? ''} onChange={(event) => update('hours', event.target.value ? Number(event.target.value) : null)} /></label>}
@@ -748,6 +815,10 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
         </div>
         <div className={styles.actions}><button type="button" className={styles.primaryButton} onClick={() => void saveAsset()} disabled={saving || Boolean(actionBusy)}>{saving ? 'Saving…' : 'Save changes'}</button></div>
       </section> : null}
+
+      {section === 'reports' ? <ReportsSection draft={draft} openValuationReport={openValuationReport} /> : null}
+
+      {section === 'pricing' ? <PricingSection draft={draft} reload={() => loadDetail(true)} setNotice={setNotice} /> : null}
 
       {section === 'finance' ? <section className={`${styles.section} ${styles.editorSection}`}>
         {editorHeader('Finance', 'Manage finance status and information.')}
@@ -780,12 +851,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
         <div className={styles.actions}><button type="button" className={styles.primaryButton} onClick={() => void saveAsset()} disabled={saving || Boolean(actionBusy)}>{saving ? 'Saving…' : 'Save changes'}</button></div>
       </section> : null}
 
-      {section === 'location' ? <section className={`${styles.section} ${styles.editorSection}`}>
-        {editorHeader('Location, scan and flags', 'Update the saved location or flag this asset.')}
-        <p>Last scanned: {dateTime(draft.lastScannedAtIso)}</p>
-        <div className={styles.formGrid}><label className={`${styles.field} ${styles.fieldFull}`}><span>Location description</span><input value={location.locationText} onChange={(event) => setLocation((current) => ({ ...current, locationText: event.target.value }))} /></label><label className={styles.field}><span>Latitude</span><input inputMode="decimal" value={location.latitude} onChange={(event) => setLocation((current) => ({ ...current, latitude: event.target.value }))} /></label><label className={styles.field}><span>Longitude</span><input inputMode="decimal" value={location.longitude} onChange={(event) => setLocation((current) => ({ ...current, longitude: event.target.value }))} /></label></div>
-        <div className={styles.actions}><button type="button" className={styles.primaryButton} disabled={Boolean(actionBusy)} onClick={() => void action({ action: 'location', ...location }, 'Location updated.')}>Save location</button><button type="button" className={styles.secondaryButton} disabled={Boolean(actionBusy)} onClick={() => void action({ action: 'flag', isFlagged: !flagged }, flagged ? 'Flag removed.' : 'Asset flagged.')}>{flagged ? 'Remove flag' : 'Flag asset'}</button></div>
-      </section> : null}
+      {section === 'location' ? <LocationSection draft={draft} location={location} setLocation={setLocation} action={action} busy={Boolean(actionBusy)} /> : null}
 
       {section === 'media' ? <section className={`${styles.section} ${styles.editorSection}`}>
         {editorHeader('Photos and documents', 'Add, open or remove saved files.')}
@@ -794,7 +860,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
         <div className={styles.actions}><button type="button" className={styles.primaryButton} onClick={() => void saveAsset()} disabled={saving || Boolean(actionBusy)}>{saving ? 'Saving…' : 'Save changes'}</button></div>
       </section> : null}
 
-      {section === 'marketplace' ? <MarketplaceSection draft={draft} action={action} busy={Boolean(actionBusy)} /> : null}
+      {section === 'marketplace' ? <MarketplaceSection draft={draft} ownerContext={ownerContext} action={action} busy={Boolean(actionBusy)} /> : null}
       {section === 'maintenance' ? <MaintenanceSection records={maintenance} action={action} busy={Boolean(actionBusy)} /> : null}
       {section === 'delete' ? <section className={`${styles.section} ${styles.deleteSection}`}>
         {editorHeader('Delete asset', 'Permanently remove this asset and its saved Owner App record.')}
@@ -805,17 +871,321 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
   );
 }
 
-function MarketplaceSection({ draft, action, busy }: { draft: Asset; action: (body: Record<string, unknown>, message: string) => Promise<void>; busy: boolean }) {
+function ReportsSection({ draft, openValuationReport }: { draft: Asset; openValuationReport: () => void }) {
+  const currentYear = new Date().getFullYear();
+  const firstYear = Math.max(2000, Math.min(currentYear, new Date(draft.updatedAtIso || Date.now()).getFullYear() || currentYear));
+  const years = Array.from({ length: currentYear - firstYear + 1 }, (_, index) => String(currentYear - index));
+  const [year, setYear] = useState('all');
+  const [month, setMonth] = useState('all');
+  const [maintenanceType, setMaintenanceType] = useState('all');
+
+  function reportUrl(report: 'fuel' | 'maintenance' | 'depreciation', format: 'pdf' | 'xlsx') {
+    const params = new URLSearchParams({ assetId: draft.id, report });
+    if (format === 'xlsx') params.set('format', 'xlsx');
+    if (year !== 'all') {
+      params.set('year', year);
+      if (month !== 'all') params.set('month', month);
+    }
+    if (report === 'maintenance' && maintenanceType !== 'all') params.set('maintenanceType', maintenanceType);
+    return `/api/asset-register/scan-report?${params.toString()}`;
+  }
+
+  function ownershipUrl(format: 'pdf' | 'xlsx') {
+    const params = new URLSearchParams({ assetId: draft.id, format });
+    if (year !== 'all') {
+      params.set('year', year);
+      if (month !== 'all') params.set('month', month);
+    }
+    return `/api/my-invoices/report?${params.toString()}`;
+  }
+
+  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const reportCard = (title: string, description: string, pdfHref: string, xlsxHref: string) => (
+    <article className={styles.reportCard}>
+      <div><strong>{title}</strong><small>{description}</small></div>
+      <div className={styles.reportActions}>
+        <a href={pdfHref} target="_blank" rel="noreferrer">PDF</a>
+        <a href={xlsxHref}>Excel</a>
+      </div>
+    </article>
+  );
+
+  return (
+    <section className={`${styles.section} ${styles.editorSection}`}>
+      <div className={`${styles.sectionHeader} ${styles.editorHeader}`}><div><h2>Reports</h2><p>Download the same asset reports available in the desktop register.</p></div></div>
+      <div className={styles.reportFilterGrid}>
+        <label className={styles.field}><span>Year</span><select value={year} onChange={(event) => { setYear(event.target.value); setMonth('all'); }}><option value="all">All years</option>{years.map((value) => <option key={value} value={value}>{value}</option>)}</select></label>
+        <label className={styles.field}><span>Month</span><select value={month} disabled={year === 'all'} onChange={(event) => setMonth(event.target.value)}><option value="all">All months</option>{months.map((label, index) => <option key={label} value={String(index + 1)}>{label}</option>)}</select></label>
+        <label className={`${styles.field} ${styles.fieldFull}`}><span>Maintenance type</span><select value={maintenanceType} onChange={(event) => setMaintenanceType(event.target.value)}><option value="all">All maintenance</option><option value="checked">Checked</option><option value="serviced">Service</option><option value="repaired">Repair</option></select></label>
+      </div>
+      <div className={styles.reportList}>
+        <article className={`${styles.reportCard} ${styles.reportCardFeatured}`}>
+          <div><strong>Asset valuation</strong><small>Value summary with asset details, photos and saved status.</small></div>
+          <button type="button" onClick={openValuationReport}>Open PDF</button>
+        </article>
+        {reportCard('Maintenance report', 'Service and repair activity for the selected period.', reportUrl('maintenance', 'pdf'), reportUrl('maintenance', 'xlsx'))}
+        {draft.kind !== 'property' ? reportCard('Fuel report', 'Fuel activity and costs for the selected period.', reportUrl('fuel', 'pdf'), reportUrl('fuel', 'xlsx')) : null}
+        {draft.kind !== 'property' ? reportCard('Depreciation log', 'Saved value changes and depreciation history.', reportUrl('depreciation', 'pdf'), reportUrl('depreciation', 'xlsx')) : null}
+        {reportCard('Cost of ownership', 'Invoices, ownership costs and VAT for the selected period.', ownershipUrl('pdf'), ownershipUrl('xlsx'))}
+      </div>
+    </section>
+  );
+}
+
+type RevalueResponse = {
+  ok?: boolean; item?: Asset; oldValueExVat?: number; newValueExVat?: number; warning?: string;
+  replacementPriceUsedExVat?: number | null; error?: string;
+};
+type ProjectionResponse = {
+  ok?: boolean; error?: string; projection?: {
+    baseYear: number; targetYear: number; inflationRatePct: number; usageMetric?: string;
+    current: { hours: number; lifeWorkedPercent?: number | null };
+    projected: { retailExVat: number; hours: number; lifeWorkedPercent?: number | null };
+  };
+};
+
+function PricingSection({ draft, reload, setNotice }: {
+  draft: Asset;
+  reload: () => Promise<void>;
+  setNotice: Dispatch<SetStateAction<{ tone: 'success' | 'error'; message: string } | null>>;
+}) {
+  const usage = resolveAssetUsage({ kind: draft.kind, hours: draft.hours, lifeWorkedPercent: draft.lifeWorkedPercent, specsJson: draft.specsJson });
+  const canRecalculate = draft.valuationRunId !== null && draft.selectedMethod !== 'manual';
+  const [replacementMode, setReplacementMode] = useState<'saved' | 'custom'>('saved');
+  const [replacementPrice, setReplacementPrice] = useState(String(draft.replacementPriceExVat ?? ''));
+  const [preview, setPreview] = useState<RevalueResponse | null>(null);
+  const [pricingBusy, setPricingBusy] = useState('');
+  const [pricingError, setPricingError] = useState('');
+  const [targetYear, setTargetYear] = useState(String(new Date().getFullYear() + 1));
+  const [inflationRatePct, setInflationRatePct] = useState('8');
+  const [extraUsage, setExtraUsage] = useState('0');
+  const [targetPercent, setTargetPercent] = useState(String(draft.lifeWorkedPercent ?? ''));
+  const [projection, setProjection] = useState<ProjectionResponse['projection'] | null>(null);
+
+  async function requestRevalue(previewOnly: boolean) {
+    if (!canRecalculate || pricingBusy) return;
+    const customPrice = Number(replacementPrice.replace(/[^0-9.]/g, ''));
+    if (replacementMode === 'custom' && (!Number.isFinite(customPrice) || customPrice <= 0)) {
+      setPricingError('Enter a valid replacement price excluding VAT.');
+      return;
+    }
+    setPricingBusy(previewOnly ? 'preview' : 'save');
+    setPricingError('');
+    try {
+      const response = await fetch('/api/asset-register/revalue', {
+        method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          assetId: draft.id,
+          selectedMethod: 'aim4price',
+          ...(previewOnly ? { previewOnly: true } : {}),
+          ...(replacementMode === 'custom' ? { replacementPriceExVat: customPrice, saveReplacementPrice: !previewOnly } : {}),
+        }),
+      });
+      const data = await response.json().catch(() => null) as RevalueResponse | null;
+      if (response.status === 401) { window.location.replace('/owner-app/login'); return; }
+      if (!response.ok || !data?.ok || !data.item) throw new Error(data?.error || 'The Aim4price value could not be recalculated.');
+      if (previewOnly) {
+        setPreview(data);
+      } else {
+        setPreview(null);
+        await reload();
+        setNotice({ tone: 'success', message: `${draft.title} Aim4price value updated to ${money(data.newValueExVat ?? data.item.value)}.${data.warning ? ` ${data.warning}` : ''}` });
+      }
+    } catch (cause) {
+      setPricingError(cause instanceof Error ? cause.message : 'The Aim4price value could not be recalculated.');
+    } finally {
+      setPricingBusy('');
+    }
+  }
+
+  async function calculateProjection() {
+    if (pricingBusy) return;
+    setPricingBusy('projection');
+    setPricingError('');
+    setProjection(null);
+    try {
+      const response = await fetch('/api/asset-register/projection', {
+        method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          assetId: draft.id,
+          targetYear: Number(targetYear),
+          inflationRatePct: Number(inflationRatePct),
+          ...(usage.metric === 'percentage' ? { targetLifeWorkedPercent: Number(targetPercent) } : { extraUsage: Number(extraUsage) }),
+        }),
+      });
+      const data = await response.json().catch(() => null) as ProjectionResponse | null;
+      if (response.status === 401) { window.location.replace('/owner-app/login'); return; }
+      if (!response.ok || !data?.ok || !data.projection) throw new Error(data?.error || 'The future price could not be calculated.');
+      setProjection(data.projection);
+    } catch (cause) {
+      setPricingError(cause instanceof Error ? cause.message : 'The future price could not be calculated.');
+    } finally {
+      setPricingBusy('');
+    }
+  }
+
+  return (
+    <section className={`${styles.section} ${styles.editorSection}`}>
+      <div className={`${styles.sectionHeader} ${styles.editorHeader}`}><div><h2>Manage pricing</h2><p>Recalculate the current Aim4price value or estimate a future price.</p></div></div>
+      <div className={styles.pricingSummaryGrid}>
+        <div><span>Aim4price value</span><strong>{money(draft.value)}</strong><small>Excl. VAT</small></div>
+        <div><span>Replacement price</span><strong>{money(draft.replacementPriceExVat)}</strong><small>Excl. VAT</small></div>
+      </div>
+      <article className={styles.pricingPanel}>
+        <div className={styles.pricingPanelHeader}><strong>Recalculate value</strong><small>Refresh the saved Aim4price estimate using current asset information.</small></div>
+        {canRecalculate ? <>
+          <div className={styles.choiceRow}>
+            <button type="button" className={replacementMode === 'saved' ? styles.choiceActive : ''} onClick={() => { setReplacementMode('saved'); setPreview(null); }}>Use saved replacement price</button>
+            <button type="button" className={replacementMode === 'custom' ? styles.choiceActive : ''} onClick={() => { setReplacementMode('custom'); setPreview(null); }}>Enter updated price</button>
+          </div>
+          {replacementMode === 'custom' ? <label className={styles.field}><span>Replacement price excl. VAT</span><input inputMode="decimal" value={replacementPrice} onChange={(event) => { setReplacementPrice(event.target.value); setPreview(null); }} /></label> : null}
+          {preview?.item ? <div className={styles.pricingResult}><span>New Aim4price value</span><strong>{money(preview.newValueExVat ?? preview.item.value)}</strong><small>Current value: {money(preview.oldValueExVat ?? draft.value)}</small></div> : null}
+          <div className={styles.actions}>
+            <button type="button" className={styles.secondaryButton} disabled={Boolean(pricingBusy)} onClick={() => void requestRevalue(true)}>{pricingBusy === 'preview' ? 'Calculating…' : 'Preview new value'}</button>
+            {preview?.item ? <button type="button" className={styles.primaryButton} disabled={Boolean(pricingBusy)} onClick={() => void requestRevalue(false)}>{pricingBusy === 'save' ? 'Saving…' : 'Save new value'}</button> : null}
+          </div>
+        </> : <p className={styles.infoNotice}>Automatic recalculation is available for assets saved from an Aim4price valuation.</p>}
+      </article>
+      <article className={styles.pricingPanel}>
+        <div className={styles.pricingPanelHeader}><strong>Calculate future price</strong><small>Estimate a future value using inflation and expected usage.</small></div>
+        <div className={styles.formGrid}>
+          <label className={styles.field}><span>Target year</span><input inputMode="numeric" value={targetYear} onChange={(event) => setTargetYear(event.target.value)} /></label>
+          <label className={styles.field}><span>Inflation % per year</span><input inputMode="decimal" value={inflationRatePct} onChange={(event) => setInflationRatePct(event.target.value)} /></label>
+          {usage.metric === 'percentage' ? <label className={`${styles.field} ${styles.fieldFull}`}><span>Expected worked percentage</span><input inputMode="decimal" value={targetPercent} onChange={(event) => setTargetPercent(event.target.value)} /></label> : <label className={`${styles.field} ${styles.fieldFull}`}><span>Extra {usage.metric === 'km' ? 'kilometres' : 'hours'}</span><input inputMode="decimal" value={extraUsage} onChange={(event) => setExtraUsage(event.target.value)} /></label>}
+        </div>
+        <button type="button" className={styles.primaryButton} disabled={Boolean(pricingBusy)} onClick={() => void calculateProjection()}>{pricingBusy === 'projection' ? 'Calculating…' : 'Calculate future price'}</button>
+        {projection ? <div className={styles.pricingResult}><span>Estimated {projection.targetYear} value</span><strong>{money(projection.projected.retailExVat)}</strong><small>{projection.inflationRatePct}% annual inflation · excl. VAT</small></div> : null}
+      </article>
+      {pricingError ? <div className={styles.errorNotice}>{pricingError}</div> : null}
+    </section>
+  );
+}
+
+type LocationDraft = { locationText: string; latitude: string; longitude: string };
+
+function LocationSection({ draft, location, setLocation, action, busy }: {
+  draft: Asset;
+  location: LocationDraft;
+  setLocation: Dispatch<SetStateAction<LocationDraft>>;
+  action: (body: Record<string, unknown>, message: string) => Promise<void>;
+  busy: boolean;
+}) {
+  const [mode, setMode] = useState<'current' | 'manual' | 'map'>('current');
+  const [locationError, setLocationError] = useState('');
+  const [deviceBusy, setDeviceBusy] = useState(false);
+  const mapElementRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<any>(null);
+  const markerRef = useRef<any>(null);
+  const hasCoordinates = location.latitude.trim() !== '' && location.longitude.trim() !== '' &&
+    Number.isFinite(Number(location.latitude)) && Number.isFinite(Number(location.longitude));
+  const mapsHref = hasCoordinates ? `https://www.google.com/maps?q=${location.latitude},${location.longitude}` : '';
+
+  useEffect(() => {
+    if (mode !== 'map' || !mapElementRef.current) return undefined;
+    let active = true;
+
+    function loadLeaflet(): Promise<any> {
+      if (window.L) return Promise.resolve(window.L);
+      if (!document.getElementById('owner-leaflet-css')) {
+        const link = document.createElement('link');
+        link.id = 'owner-leaflet-css'; link.rel = 'stylesheet'; link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+        document.head.appendChild(link);
+      }
+      return new Promise((resolve, reject) => {
+        const existing = document.getElementById('owner-leaflet-script') as HTMLScriptElement | null;
+        const script = existing || document.createElement('script');
+        if (!existing) { script.id = 'owner-leaflet-script'; script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'; document.body.appendChild(script); }
+        script.addEventListener('load', () => resolve(window.L), { once: true });
+        script.addEventListener('error', () => reject(new Error('The location map could not be loaded.')), { once: true });
+      });
+    }
+
+    void loadLeaflet().then((L) => {
+      if (!active || !L || !mapElementRef.current) return;
+      const savedLat = Number(location.latitude);
+      const savedLng = Number(location.longitude);
+      const center: [number, number] = hasCoordinates ? [savedLat, savedLng] : [-29, 24];
+      const map = L.map(mapElementRef.current).setView(center, hasCoordinates ? 13 : 5);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
+      mapRef.current = map;
+      const setPoint = (lat: number, lng: number) => {
+        if (!markerRef.current) {
+          markerRef.current = L.marker([lat, lng], { draggable: true }).addTo(map);
+          markerRef.current.on('dragend', () => { const point = markerRef.current.getLatLng(); setLocation((current) => ({ ...current, latitude: point.lat.toFixed(6), longitude: point.lng.toFixed(6) })); });
+        } else markerRef.current.setLatLng([lat, lng]);
+        setLocation((current) => ({ ...current, latitude: lat.toFixed(6), longitude: lng.toFixed(6) }));
+      };
+      if (hasCoordinates) setPoint(savedLat, savedLng);
+      map.on('click', (event: any) => setPoint(event.latlng.lat, event.latlng.lng));
+      window.setTimeout(() => map.invalidateSize(), 0);
+    }).catch((cause) => setLocationError(cause instanceof Error ? cause.message : 'The location map could not be loaded.'));
+
+    return () => {
+      active = false;
+      if (mapRef.current) mapRef.current.remove();
+      mapRef.current = null;
+      markerRef.current = null;
+    };
+  }, [mode]);
+
+  function useDeviceLocation() {
+    setLocationError('');
+    if (!navigator.geolocation) { setLocationError('GPS is not available in this browser.'); return; }
+    setDeviceBusy(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const next = { ...location, latitude: position.coords.latitude.toFixed(6), longitude: position.coords.longitude.toFixed(6) };
+        setLocation(next);
+        void action({ action: 'location', ...next, source: 'device' }, 'Device location saved.').finally(() => setDeviceBusy(false));
+      },
+      (error) => { setDeviceBusy(false); setLocationError(error.code === 1 ? 'Location permission was denied.' : 'Your location could not be found.'); },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 },
+    );
+  }
+
+  return (
+    <section className={`${styles.section} ${styles.editorSection}`}>
+      <div className={`${styles.sectionHeader} ${styles.editorHeader}`}><div><h2>Location</h2><p>Save this asset’s position from the device, GPS coordinates or the map.</p></div></div>
+      <div className={styles.locationCurrentCard}>
+        <div><span>Saved location</span><strong>{location.locationText || (hasCoordinates ? `${location.latitude}, ${location.longitude}` : 'No location saved')}</strong><small>Last scanned: {dateTime(draft.lastScannedAtIso)}</small></div>
+        {mapsHref ? <a href={mapsHref} target="_blank" rel="noreferrer">Open in Maps</a> : null}
+      </div>
+      <div className={styles.locationChoiceGrid}>
+        <button type="button" onClick={useDeviceLocation} disabled={busy || deviceBusy}><strong>{deviceBusy ? 'Finding location…' : 'Use this device'}</strong><small>Save the phone or computer GPS position.</small></button>
+        <button type="button" onClick={() => setMode('manual')} className={mode === 'manual' ? styles.locationChoiceActive : ''}><strong>Enter GPS</strong><small>Type latitude and longitude manually.</small></button>
+        <button type="button" onClick={() => setMode('map')} className={mode === 'map' ? styles.locationChoiceActive : ''}><strong>Choose on map</strong><small>Tap the exact position on a map.</small></button>
+      </div>
+      {mode === 'manual' ? <div className={styles.locationEditor}>
+        <div className={styles.formGrid}><label className={`${styles.field} ${styles.fieldFull}`}><span>Location description</span><input value={location.locationText} onChange={(event) => setLocation((current) => ({ ...current, locationText: event.target.value }))} placeholder="Farm, branch, camp or address" /></label><label className={styles.field}><span>Latitude</span><input inputMode="decimal" value={location.latitude} onChange={(event) => setLocation((current) => ({ ...current, latitude: event.target.value }))} /></label><label className={styles.field}><span>Longitude</span><input inputMode="decimal" value={location.longitude} onChange={(event) => setLocation((current) => ({ ...current, longitude: event.target.value }))} /></label></div>
+        <button type="button" className={styles.primaryButton} disabled={busy} onClick={() => void action({ action: 'location', ...location, source: 'manual' }, 'Location updated.')}>Save GPS location</button>
+      </div> : null}
+      {mode === 'map' ? <div className={styles.locationEditor}>
+        <label className={styles.field}><span>Location description</span><input value={location.locationText} onChange={(event) => setLocation((current) => ({ ...current, locationText: event.target.value }))} placeholder="Farm, branch, camp or address" /></label>
+        <div ref={mapElementRef} className={styles.locationMap} aria-label="Choose the asset position on the map" />
+        <p className={styles.mapHint}>Tap the map or drag the marker to choose the asset position.</p>
+        <button type="button" className={styles.primaryButton} disabled={busy || !hasCoordinates} onClick={() => void action({ action: 'location', ...location, source: 'manual' }, 'Map location saved.')}>Save map position</button>
+      </div> : null}
+      {locationError ? <div className={styles.errorNotice}>{locationError}</div> : null}
+    </section>
+  );
+}
+
+function MarketplaceSection({ draft, ownerContext, action, busy }: { draft: Asset; ownerContext: OwnerContext | null; action: (body: Record<string, unknown>, message: string) => Promise<void>; busy: boolean }) {
   const [form, setForm] = useState({
-    askingPriceExVat: String(draft.marketplacePriceExVat ?? draft.value ?? ''), marketplaceNotes: draft.marketplaceNotes,
-    sellerName: draft.marketplaceSellerName, sellerCompany: draft.marketplaceSellerCompany, sellerPhone: draft.sellerPhone,
-    sellerEmail: draft.marketplaceSellerEmail, province: draft.marketplaceProvince, area: draft.marketplaceArea,
+    askingPriceExVat: String(draft.marketplacePriceExVat ?? draft.value ?? ''), marketplaceNotes: draft.marketplaceNotes || draft.note,
+    sellerName: draft.marketplaceSellerName || ownerContext?.contactName || '', sellerCompany: draft.marketplaceSellerCompany || ownerContext?.businessName || '', sellerPhone: draft.sellerPhone || ownerContext?.phone || '',
+    sellerEmail: draft.marketplaceSellerEmail || ownerContext?.email || '', province: draft.marketplaceProvince || ownerContext?.province || '', area: draft.marketplaceArea || ownerContext?.area || '',
   });
+  const listingTitle = [draft.yearModel, draft.brandName, draft.modelName || draft.typedModelName].filter(Boolean).join(' ') || draft.title;
   return (
     <section className={styles.section}>
-      <div className={`${styles.sectionHeader} ${styles.editorHeader}`}><div><h2>Marketplace</h2><p>Status: {draft.marketplaceStatus === 'live' ? 'Live' : 'Not listed'}</p></div></div>
+      <div className={`${styles.sectionHeader} ${styles.editorHeader}`}><div><h2>Marketplace</h2><p>Status: {draft.marketplaceStatus === 'live' ? 'Live' : 'Not listed'} · Asset and seller information is filled in automatically.</p></div></div>
+      <div className={styles.marketplacePreview}>
+        {draft.photos[0] ? <img src={draft.photos[0]} alt={listingTitle} /> : <div>No photo saved</div>}
+        <span><small>Listing title</small><strong>{listingTitle}</strong><em>{draft.photos.length} saved photo{draft.photos.length === 1 ? '' : 's'} will be used</em></span>
+      </div>
       <div className={styles.formGrid}>
-        {Object.entries({ askingPriceExVat: 'Asking price excl. VAT', sellerName: 'Seller name', sellerCompany: 'Company', sellerPhone: 'Phone', sellerEmail: 'Email', province: 'Province', area: 'Area' }).map(([key, label]) => <label className={styles.field} key={key}><span>{label}</span><input value={form[key as keyof typeof form]} onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))} /></label>)}
+        {Object.entries({ askingPriceExVat: 'Asking price excl. VAT', sellerName: 'Contact name', sellerCompany: 'Business name', sellerPhone: 'Phone', sellerEmail: 'Business email', province: 'Province', area: 'Area' }).map(([key, label]) => <label className={styles.field} key={key}><span>{label}</span><input value={form[key as keyof typeof form]} onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))} /></label>)}
         <label className={`${styles.field} ${styles.fieldFull}`}><span>Listing description</span><textarea value={form.marketplaceNotes} onChange={(event) => setForm((current) => ({ ...current, marketplaceNotes: event.target.value }))} /></label>
       </div>
       <div className={styles.actions}><button type="button" className={styles.primaryButton} disabled={busy} onClick={() => void action({ action: 'marketplace-publish', ...form }, draft.marketplaceStatus === 'live' ? 'Marketplace listing updated.' : 'Asset listed on Marketplace.')}>{draft.marketplaceStatus === 'live' ? 'Update listing' : 'List on Marketplace'}</button>{draft.marketplaceStatus === 'live' ? <button type="button" className={styles.dangerButton} disabled={busy} onClick={() => void action({ action: 'marketplace-remove' }, 'Marketplace listing removed.')}>Remove listing</button> : null}</div>
