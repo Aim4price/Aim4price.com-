@@ -26,10 +26,23 @@ type DetailResponse = {
   costs?: Cost[]; costSummary?: { totalSpent: number; invoiceCount: number }; error?: string; requiresUsageConfirmation?: boolean;
 };
 type UploadResponse = { ok: boolean; uploads?: Array<{ uploadId: string; url: string; fileName: string; contentType: string; byteSize: number }>; error?: string };
+type ManageSection = 'details' | 'finance' | 'insurance' | 'licence' | 'location' | 'media' | 'marketplace' | 'maintenance' | 'costs';
 
 const STATUS_OPTIONS = [
   { value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' },
   { value: 'unknown', label: 'Unknown' }, { value: 'not_applicable', label: 'Not applicable' },
+];
+
+const MANAGE_SECTIONS: Array<{ id: ManageSection; title: string; description: string }> = [
+  { id: 'details', title: 'Update asset', description: 'Edit the asset details, usage and values.' },
+  { id: 'finance', title: 'Finance', description: 'Manage finance status and information.' },
+  { id: 'insurance', title: 'Insurance', description: 'Manage insurance status and cover.' },
+  { id: 'licence', title: 'Licence', description: 'Manage licence and registration details.' },
+  { id: 'location', title: 'Location & flags', description: 'Update the location or flag the asset.' },
+  { id: 'media', title: 'Photos & documents', description: 'Add or remove saved files.' },
+  { id: 'marketplace', title: 'Marketplace', description: 'Create or update the marketplace listing.' },
+  { id: 'maintenance', title: 'Maintenance', description: 'Schedule and manage maintenance.' },
+  { id: 'costs', title: 'Recorded costs', description: 'Add and review asset costs.' },
 ];
 
 function text(value: unknown) { return String(value ?? '').trim(); }
@@ -62,6 +75,7 @@ export default function OwnerAssetDetailClient({ assetId }: { assetId: string })
   const [actionBusy, setActionBusy] = useState('');
   const [notice, setNotice] = useState<{ tone: 'success' | 'error'; message: string } | null>(null);
   const [location, setLocation] = useState({ locationText: '', latitude: '', longitude: '' });
+  const [activeSection, setActiveSection] = useState<ManageSection | null>(null);
 
   const primaryPhoto = draft?.photos[0] || '';
   const financeStatus = draft ? statusValue(draft, 'finance') : 'unknown';
@@ -174,12 +188,23 @@ export default function OwnerAssetDetailClient({ assetId }: { assetId: string })
     } catch (cause) { setNotice({ tone: 'error', message: cause instanceof Error ? cause.message : 'Failed to delete this asset.' }); setActionBusy(''); }
   }
 
+  function openManageSection(section: ManageSection) {
+    setActiveSection(section);
+    window.setTimeout(() => document.getElementById('owner-asset-editor')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
+  }
+
   if (loading) return <div className={`${styles.wideContent} ${styles.loading}`}>Loading asset…</div>;
   if (!draft || !asset) return <div className={styles.wideContent}><div className={styles.errorNotice}>{notice?.message || 'Asset not found.'}</div></div>;
 
   const extra = (key: string, ...fallbackKeys: string[]) => specValue(draft.specsJson, key, ...fallbackKeys);
   const extraInput = (key: string, label: string, options: { type?: string; inputMode?: 'text' | 'decimal' | 'numeric'; fallbackKeys?: string[] } = {}) => (
     <label className={styles.field}><span>{label}</span><input type={options.type} inputMode={options.inputMode} value={extra(key, ...(options.fallbackKeys ?? []))} onChange={(event) => updateSpec(key, event.target.value)} /></label>
+  );
+  const editorHeader = (title: string, description: string) => (
+    <div className={`${styles.sectionHeader} ${styles.editorHeader}`}>
+      <div><h2>{title}</h2><p>{description}</p></div>
+      <button type="button" className={styles.smallButton} onClick={() => setActiveSection(null)}>Close</button>
+    </div>
   );
 
   return (
@@ -189,7 +214,7 @@ export default function OwnerAssetDetailClient({ assetId }: { assetId: string })
       <section className={`${styles.summaryCard} ${styles.detailHero}`}>
         {primaryPhoto ? <img className={styles.detailPhoto} src={primaryPhoto} alt={draft.title} /> : null}
         <div className={styles.detailHeroBody}>
-          <p className={styles.eyebrow}>Aim4price Owner</p><h1>{draft.title}</h1><p>{registerName}</p>
+          <h1>{draft.title}</h1><p>{[registerName, draft.serialNumber ? `Serial: ${draft.serialNumber}` : 'Serial not saved'].join(' • ')}</p>
           <div className={styles.metrics}>
             <div className={styles.metric}><span>Aim4price value</span><strong>{money(draft.value)}</strong></div>
             <div className={styles.metric}><span>Replacement</span><strong>{money(draft.replacementPriceExVat)}</strong></div>
@@ -205,8 +230,22 @@ export default function OwnerAssetDetailClient({ assetId }: { assetId: string })
         </div>
       </section>
 
-      <section className={styles.section}>
-        <div className={styles.sectionHeader}><div><h2>Asset details</h2><p>Edit the full owner record.</p></div></div>
+      <section className={`${styles.section} ${styles.manageSection}`}>
+        <div className={styles.manageIntro}><h2>Manage asset</h2><p>Choose only what you want to view or change.</p></div>
+        <div className={styles.manageGrid}>
+          {MANAGE_SECTIONS.map((section) => (
+            <button key={section.id} type="button" className={`${styles.manageButton} ${activeSection === section.id ? styles.manageButtonActive : ''}`} onClick={() => openManageSection(section.id)} aria-expanded={activeSection === section.id} aria-controls="owner-asset-editor">
+              <span className={styles.manageButtonCopy}><strong>{section.title}</strong><small>{section.description}</small></span><span className={styles.manageButtonArrow}>›</span>
+            </button>
+          ))}
+          <button type="button" className={`${styles.manageButton} ${styles.manageButtonDanger}`} onClick={() => void deleteAsset()} disabled={Boolean(actionBusy)}>
+            <span className={styles.manageButtonCopy}><strong>{actionBusy === 'delete' ? 'Deleting…' : 'Delete asset'}</strong><small>Permanently remove this saved asset.</small></span><span className={styles.manageButtonArrow}>›</span>
+          </button>
+        </div>
+      </section>
+
+      {activeSection === 'details' ? <section id="owner-asset-editor" className={`${styles.section} ${styles.editorSection}`}>
+        {editorHeader('Update asset', 'Edit the asset details, usage and values.')}
         <div className={styles.formGrid}>
           <label className={`${styles.field} ${styles.fieldFull}`}><span>Asset name</span><input value={draft.title} onChange={(event) => update('title', event.target.value)} /></label>
           <label className={styles.field}><span>Register</span><select value={draft.registerId ?? ''} onChange={(event) => update('registerId', event.target.value)}>{registers.map((register) => <option key={register.id} value={register.id}>{register.businessName}</option>)}</select></label>
@@ -223,95 +262,62 @@ export default function OwnerAssetDetailClient({ assetId }: { assetId: string })
           <label className={styles.field}><span>Replacement price excl. VAT</span><input inputMode="decimal" value={draft.replacementPriceExVat ?? ''} onChange={(event) => update('replacementPriceExVat', event.target.value ? Number(event.target.value) : null)} /></label>
           <label className={`${styles.field} ${styles.fieldFull}`}><span>Notes</span><textarea value={draft.note} onChange={(event) => update('note', event.target.value)} /></label>
         </div>
-      </section>
+        <div className={styles.actions}><button type="button" className={styles.primaryButton} onClick={() => void saveAsset()} disabled={saving || Boolean(actionBusy)}>{saving ? 'Saving…' : 'Save changes'}</button></div>
+      </section> : null}
 
-      <section className={styles.section}>
-        <h2>Finance</h2>
+      {activeSection === 'finance' ? <section id="owner-asset-editor" className={`${styles.section} ${styles.editorSection}`}>
+        {editorHeader('Finance', 'Manage finance status and information.')}
         <div className={styles.formGrid}>
           <label className={styles.field}><span>Finance status</span><select value={financeStatus} onChange={(event) => updateStatus('finance', event.target.value)}>{STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
           {financeStatus === 'yes' ? <>
             <label className={styles.field}><span>Finance type</span><select value={extra('financeType', 'finance_type')} onChange={(event) => updateSpec('financeType', event.target.value)}><option value="">Not saved</option><option value="asset_specific">Asset-specific finance</option><option value="bulk_group">Bulk / group finance</option></select></label>
-            {extraInput('financierName', 'Financier', { fallbackKeys: ['financier_name'] })}
-            {extraInput('financeCurrentOutstandingExVat', 'Current outstanding excl. VAT', { inputMode: 'decimal', fallbackKeys: ['finance_current_outstanding_ex_vat'] })}
-            {extraInput('financeBoughtWhen', 'Bought when', { type: 'date', fallbackKeys: ['finance_bought_when'] })}
-            {extraInput('financeBoughtForExVat', 'Bought for excl. VAT', { inputMode: 'decimal', fallbackKeys: ['finance_bought_for_ex_vat'] })}
-            {extraInput('financeOriginalAmountExVat', 'Original financed amount', { inputMode: 'decimal', fallbackKeys: ['finance_original_amount_ex_vat'] })}
-            {extraInput('financeMonthlyPaymentExVat', 'Monthly payment', { inputMode: 'decimal', fallbackKeys: ['finance_monthly_payment_ex_vat'] })}
-            {extraInput('financeInterestRatePercent', 'Interest rate %', { inputMode: 'decimal', fallbackKeys: ['finance_interest_rate_percent'] })}
-            {extraInput('financeTermMonths', 'Term months', { inputMode: 'numeric', fallbackKeys: ['finance_term_months'] })}
-            {extraInput('financeBalloonPaymentExVat', 'Balloon payment', { inputMode: 'decimal', fallbackKeys: ['finance_balloon_payment_ex_vat'] })}
-            {extraInput('financeSettlementDate', 'Settlement date', { type: 'date', fallbackKeys: ['finance_settlement_date'] })}
-            {extraInput('financeReferenceNumber', 'Finance reference', { fallbackKeys: ['finance_reference_number'] })}
+            {extraInput('financierName', 'Financier', { fallbackKeys: ['financier_name'] })}{extraInput('financeCurrentOutstandingExVat', 'Current outstanding excl. VAT', { inputMode: 'decimal', fallbackKeys: ['finance_current_outstanding_ex_vat'] })}{extraInput('financeBoughtWhen', 'Bought when', { type: 'date', fallbackKeys: ['finance_bought_when'] })}{extraInput('financeBoughtForExVat', 'Bought for excl. VAT', { inputMode: 'decimal', fallbackKeys: ['finance_bought_for_ex_vat'] })}{extraInput('financeOriginalAmountExVat', 'Original financed amount', { inputMode: 'decimal', fallbackKeys: ['finance_original_amount_ex_vat'] })}{extraInput('financeMonthlyPaymentExVat', 'Monthly payment', { inputMode: 'decimal', fallbackKeys: ['finance_monthly_payment_ex_vat'] })}{extraInput('financeInterestRatePercent', 'Interest rate %', { inputMode: 'decimal', fallbackKeys: ['finance_interest_rate_percent'] })}{extraInput('financeTermMonths', 'Term months', { inputMode: 'numeric', fallbackKeys: ['finance_term_months'] })}{extraInput('financeBalloonPaymentExVat', 'Balloon payment', { inputMode: 'decimal', fallbackKeys: ['finance_balloon_payment_ex_vat'] })}{extraInput('financeSettlementDate', 'Settlement date', { type: 'date', fallbackKeys: ['finance_settlement_date'] })}{extraInput('financeReferenceNumber', 'Finance reference', { fallbackKeys: ['finance_reference_number'] })}
             <label className={`${styles.field} ${styles.fieldFull}`}><span>Finance notes</span><textarea value={draft.financeNote} onChange={(event) => update('financeNote', event.target.value)} /></label>
           </> : null}
         </div>
-      </section>
+        <div className={styles.actions}><button type="button" className={styles.primaryButton} onClick={() => void saveAsset()} disabled={saving || Boolean(actionBusy)}>{saving ? 'Saving…' : 'Save changes'}</button></div>
+      </section> : null}
 
-      <section className={styles.section}>
-        <h2>Insurance</h2>
+      {activeSection === 'insurance' ? <section id="owner-asset-editor" className={`${styles.section} ${styles.editorSection}`}>
+        {editorHeader('Insurance', 'Manage insurance status and cover.')}
         <div className={styles.formGrid}>
           <label className={styles.field}><span>Insurance status</span><select value={insuranceStatus} onChange={(event) => updateStatus('insurance', event.target.value)}>{STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
-          {insuranceStatus === 'yes' ? <>
-            <label className={styles.field}><span>Insured value excl. VAT</span><input inputMode="decimal" value={draft.insuredValueExVat ?? ''} onChange={(event) => update('insuredValueExVat', event.target.value ? Number(event.target.value) : null)} /></label>
-            {extraInput('insuranceInsurerName', 'Insurer / broker', { fallbackKeys: ['insurance_insurer_name'] })}
-            {extraInput('insurancePolicyNumber', 'Policy number', { fallbackKeys: ['insurance_policy_number'] })}
-            {extraInput('insuranceRenewalDate', 'Renewal date', { type: 'date', fallbackKeys: ['insurance_renewal_date'] })}
-            <label className={`${styles.field} ${styles.fieldFull}`}><span>Insurance notes</span><textarea value={extra('insuranceNote', 'insurance_note')} onChange={(event) => updateSpec('insuranceNote', event.target.value)} /></label>
-          </> : null}
+          {insuranceStatus === 'yes' ? <><label className={styles.field}><span>Insured value excl. VAT</span><input inputMode="decimal" value={draft.insuredValueExVat ?? ''} onChange={(event) => update('insuredValueExVat', event.target.value ? Number(event.target.value) : null)} /></label>{extraInput('insuranceInsurerName', 'Insurer / broker', { fallbackKeys: ['insurance_insurer_name'] })}{extraInput('insurancePolicyNumber', 'Policy number', { fallbackKeys: ['insurance_policy_number'] })}{extraInput('insuranceRenewalDate', 'Renewal date', { type: 'date', fallbackKeys: ['insurance_renewal_date'] })}<label className={`${styles.field} ${styles.fieldFull}`}><span>Insurance notes</span><textarea value={extra('insuranceNote', 'insurance_note')} onChange={(event) => updateSpec('insuranceNote', event.target.value)} /></label></> : null}
         </div>
-      </section>
+        <div className={styles.actions}><button type="button" className={styles.primaryButton} onClick={() => void saveAsset()} disabled={saving || Boolean(actionBusy)}>{saving ? 'Saving…' : 'Save changes'}</button></div>
+      </section> : null}
 
-      <section className={styles.section}>
-        <h2>Licence and registration</h2>
+      {activeSection === 'licence' ? <section id="owner-asset-editor" className={`${styles.section} ${styles.editorSection}`}>
+        {editorHeader('Licence and registration', 'Manage licence and registration details.')}
         <div className={styles.formGrid}>
           <label className={styles.field}><span>Licence status</span><select value={licenseStatus} onChange={(event) => updateStatus('license', event.target.value)}>{STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
-          {licenseStatus === 'yes' ? <>
-            <label className={styles.field}><span>Registration / licence number</span><input value={draft.licenseRegistrationNumber} onChange={(event) => update('licenseRegistrationNumber', event.target.value)} /></label>
-            {extraInput('licenseRenewalDate', 'Licence renewal date', { type: 'date', fallbackKeys: ['license_renewal_date', 'licenceRenewalDate'] })}
-            <label className={`${styles.field} ${styles.fieldFull}`}><span>Licence notes</span><textarea value={extra('licenseNote', 'license_note')} onChange={(event) => updateSpec('licenseNote', event.target.value)} /></label>
-          </> : null}
+          {licenseStatus === 'yes' ? <><label className={styles.field}><span>Registration / licence number</span><input value={draft.licenseRegistrationNumber} onChange={(event) => update('licenseRegistrationNumber', event.target.value)} /></label>{extraInput('licenseRenewalDate', 'Licence renewal date', { type: 'date', fallbackKeys: ['license_renewal_date', 'licenceRenewalDate'] })}<label className={`${styles.field} ${styles.fieldFull}`}><span>Licence notes</span><textarea value={extra('licenseNote', 'license_note')} onChange={(event) => updateSpec('licenseNote', event.target.value)} /></label></> : null}
         </div>
-      </section>
+        <div className={styles.actions}><button type="button" className={styles.primaryButton} onClick={() => void saveAsset()} disabled={saving || Boolean(actionBusy)}>{saving ? 'Saving…' : 'Save changes'}</button></div>
+      </section> : null}
 
-      <section className={styles.section}>
-        <h2>Location, scan and flags</h2>
+      {activeSection === 'location' ? <section id="owner-asset-editor" className={`${styles.section} ${styles.editorSection}`}>
+        {editorHeader('Location, scan and flags', 'Update the saved location or flag this asset.')}
         <p>Last scanned: {dateTime(draft.lastScannedAtIso)}</p>
-        <div className={styles.formGrid}>
-          <label className={`${styles.field} ${styles.fieldFull}`}><span>Location description</span><input value={location.locationText} onChange={(event) => setLocation((current) => ({ ...current, locationText: event.target.value }))} /></label>
-          <label className={styles.field}><span>Latitude</span><input inputMode="decimal" value={location.latitude} onChange={(event) => setLocation((current) => ({ ...current, latitude: event.target.value }))} /></label>
-          <label className={styles.field}><span>Longitude</span><input inputMode="decimal" value={location.longitude} onChange={(event) => setLocation((current) => ({ ...current, longitude: event.target.value }))} /></label>
-        </div>
-        <div className={styles.actions}>
-          <button type="button" className={styles.secondaryButton} disabled={Boolean(actionBusy)} onClick={() => void action({ action: 'location', ...location }, 'Location updated.')}>Save location</button>
-          <button type="button" className={styles.secondaryButton} disabled={Boolean(actionBusy)} onClick={() => void action({ action: 'flag', isFlagged: !flagged }, flagged ? 'Flag removed.' : 'Asset flagged.')}>{flagged ? 'Remove flag' : 'Flag asset'}</button>
-        </div>
-      </section>
+        <div className={styles.formGrid}><label className={`${styles.field} ${styles.fieldFull}`}><span>Location description</span><input value={location.locationText} onChange={(event) => setLocation((current) => ({ ...current, locationText: event.target.value }))} /></label><label className={styles.field}><span>Latitude</span><input inputMode="decimal" value={location.latitude} onChange={(event) => setLocation((current) => ({ ...current, latitude: event.target.value }))} /></label><label className={styles.field}><span>Longitude</span><input inputMode="decimal" value={location.longitude} onChange={(event) => setLocation((current) => ({ ...current, longitude: event.target.value }))} /></label></div>
+        <div className={styles.actions}><button type="button" className={styles.primaryButton} disabled={Boolean(actionBusy)} onClick={() => void action({ action: 'location', ...location }, 'Location updated.')}>Save location</button><button type="button" className={styles.secondaryButton} disabled={Boolean(actionBusy)} onClick={() => void action({ action: 'flag', isFlagged: !flagged }, flagged ? 'Flag removed.' : 'Asset flagged.')}>{flagged ? 'Remove flag' : 'Flag asset'}</button></div>
+      </section> : null}
 
-      <section className={styles.section}>
-        <h2>Photos and documents</h2>
-        <div className={styles.mediaGrid}>
-          {draft.photos.map((url) => <div className={styles.mediaItem} key={url}><img src={url} alt="Asset" /><button type="button" onClick={() => update('photos', draft.photos.filter((photo) => photo !== url))}>×</button></div>)}
-          {draft.documents.map((document) => <div className={styles.mediaItem} key={document.id}><a href={document.url} target="_blank" rel="noreferrer">{document.fileName}</a><button type="button" onClick={() => update('documents', draft.documents.filter((entry) => entry.id !== document.id))}>×</button></div>)}
-        </div>
-        <label className={styles.fileInput}>Add photos<input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={(event: ChangeEvent<HTMLInputElement>) => void uploadFiles('photo', event.target.files)} disabled={Boolean(actionBusy)} /></label>
-        <label className={styles.fileInput}>Add documents<input type="file" multiple onChange={(event: ChangeEvent<HTMLInputElement>) => void uploadFiles('document', event.target.files)} disabled={Boolean(actionBusy)} /></label>
-      </section>
+      {activeSection === 'media' ? <section id="owner-asset-editor" className={`${styles.section} ${styles.editorSection}`}>
+        {editorHeader('Photos and documents', 'Add, open or remove saved files.')}
+        <div className={styles.mediaGrid}>{draft.photos.map((url) => <div className={styles.mediaItem} key={url}><img src={url} alt="Asset" /><button type="button" onClick={() => update('photos', draft.photos.filter((photo) => photo !== url))}>×</button></div>)}{draft.documents.map((document) => <div className={styles.mediaItem} key={document.id}><a href={document.url} target="_blank" rel="noreferrer">{document.fileName}</a><button type="button" onClick={() => update('documents', draft.documents.filter((entry) => entry.id !== document.id))}>×</button></div>)}</div>
+        <label className={styles.fileInput}>Add photos<input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={(event: ChangeEvent<HTMLInputElement>) => void uploadFiles('photo', event.target.files)} disabled={Boolean(actionBusy)} /></label><label className={styles.fileInput}>Add documents<input type="file" multiple onChange={(event: ChangeEvent<HTMLInputElement>) => void uploadFiles('document', event.target.files)} disabled={Boolean(actionBusy)} /></label>
+        <div className={styles.actions}><button type="button" className={styles.primaryButton} onClick={() => void saveAsset()} disabled={saving || Boolean(actionBusy)}>{saving ? 'Saving…' : 'Save changes'}</button></div>
+      </section> : null}
 
-      <MarketplaceSection draft={draft} action={action} busy={Boolean(actionBusy)} />
-      <MaintenanceSection records={maintenance} action={action} busy={Boolean(actionBusy)} />
-      <CostsSection records={costs} summary={costSummary} action={action} busy={Boolean(actionBusy)} />
-
-      <section className={styles.section}>
-        <div className={styles.actions}>
-          <button type="button" className={styles.primaryButton} onClick={() => void saveAsset()} disabled={saving || Boolean(actionBusy)}>{saving ? 'Saving…' : 'Save all changes'}</button>
-          <button type="button" className={styles.dangerButton} onClick={() => void deleteAsset()} disabled={Boolean(actionBusy)}>{actionBusy === 'delete' ? 'Deleting…' : 'Delete asset'}</button>
-        </div>
-      </section>
+      {activeSection === 'marketplace' ? <div id="owner-asset-editor" className={styles.editorSection}><MarketplaceSection draft={draft} action={action} busy={Boolean(actionBusy)} onClose={() => setActiveSection(null)} /></div> : null}
+      {activeSection === 'maintenance' ? <div id="owner-asset-editor" className={styles.editorSection}><MaintenanceSection records={maintenance} action={action} busy={Boolean(actionBusy)} onClose={() => setActiveSection(null)} /></div> : null}
+      {activeSection === 'costs' ? <div id="owner-asset-editor" className={styles.editorSection}><CostsSection records={costs} summary={costSummary} action={action} busy={Boolean(actionBusy)} onClose={() => setActiveSection(null)} /></div> : null}
     </div>
   );
 }
 
-function MarketplaceSection({ draft, action, busy }: { draft: Asset; action: (body: Record<string, unknown>, message: string) => Promise<void>; busy: boolean }) {
+function MarketplaceSection({ draft, action, busy, onClose }: { draft: Asset; action: (body: Record<string, unknown>, message: string) => Promise<void>; busy: boolean; onClose: () => void }) {
   const [form, setForm] = useState({
     askingPriceExVat: String(draft.marketplacePriceExVat ?? draft.value ?? ''), marketplaceNotes: draft.marketplaceNotes,
     sellerName: draft.marketplaceSellerName, sellerCompany: draft.marketplaceSellerCompany, sellerPhone: draft.sellerPhone,
@@ -319,7 +325,7 @@ function MarketplaceSection({ draft, action, busy }: { draft: Asset; action: (bo
   });
   return (
     <section className={styles.section}>
-      <h2>Marketplace</h2><p>Status: {draft.marketplaceStatus === 'live' ? 'Live' : 'Not listed'}</p>
+      <div className={`${styles.sectionHeader} ${styles.editorHeader}`}><div><h2>Marketplace</h2><p>Status: {draft.marketplaceStatus === 'live' ? 'Live' : 'Not listed'}</p></div><button type="button" className={styles.smallButton} onClick={onClose}>Close</button></div>
       <div className={styles.formGrid}>
         {Object.entries({ askingPriceExVat: 'Asking price excl. VAT', sellerName: 'Seller name', sellerCompany: 'Company', sellerPhone: 'Phone', sellerEmail: 'Email', province: 'Province', area: 'Area' }).map(([key, label]) => <label className={styles.field} key={key}><span>{label}</span><input value={form[key as keyof typeof form]} onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))} /></label>)}
         <label className={`${styles.field} ${styles.fieldFull}`}><span>Listing description</span><textarea value={form.marketplaceNotes} onChange={(event) => setForm((current) => ({ ...current, marketplaceNotes: event.target.value }))} /></label>
@@ -329,7 +335,7 @@ function MarketplaceSection({ draft, action, busy }: { draft: Asset; action: (bo
   );
 }
 
-function MaintenanceSection({ records, action, busy }: { records: Maintenance[]; action: (body: Record<string, unknown>, message: string) => Promise<void>; busy: boolean }) {
+function MaintenanceSection({ records, action, busy, onClose }: { records: Maintenance[]; action: (body: Record<string, unknown>, message: string) => Promise<void>; busy: boolean; onClose: () => void }) {
   async function create(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); const form = event.currentTarget; const data = Object.fromEntries(new FormData(form).entries());
     await action({ action: 'maintenance-create', maintenanceType: 'service', triggerType: 'date', status: 'upcoming', alertBeforeValue: 7, alertBeforeUnit: 'days', ...data }, 'Maintenance item created.');
@@ -337,7 +343,7 @@ function MaintenanceSection({ records, action, busy }: { records: Maintenance[];
   }
   return (
     <section className={styles.section}>
-      <h2>Maintenance</h2>
+      <div className={`${styles.sectionHeader} ${styles.editorHeader}`}><div><h2>Maintenance</h2><p>Schedule and manage maintenance.</p></div><button type="button" className={styles.smallButton} onClick={onClose}>Close</button></div>
       <div className={styles.recordList}>{records.length ? records.map((record) => <article className={styles.record} key={record.id}><div className={styles.recordHeader}><h3>{record.title}</h3><span className={styles.recordStatus}>{record.computedStatusLabel}</span></div><p>{[record.maintenanceType, record.dueDate || (record.dueUsage !== null ? `${record.dueUsage} ${record.usageMetric || ''}` : ''), record.notes].filter(Boolean).join(' • ')}</p><div className={styles.actions}>{record.status === 'upcoming' ? <><button type="button" className={styles.smallButton} disabled={busy} onClick={() => void action({ action: 'maintenance-complete', maintenanceId: record.id }, 'Maintenance marked complete.')}>Complete</button><button type="button" className={styles.smallButton} disabled={busy} onClick={() => void action({ action: 'maintenance-cancel', maintenanceId: record.id }, 'Maintenance cancelled.')}>Cancel</button></> : record.status === 'done' ? <button type="button" className={styles.smallButton} disabled={busy} onClick={() => void action({ action: 'maintenance-reopen', maintenanceId: record.id }, 'Maintenance reopened.')}>Reopen</button> : null}</div></article>) : <p>No maintenance records yet.</p>}</div>
       <form className={styles.formGrid} onSubmit={(event) => void create(event)}>
         <label className={styles.field}><span>Type</span><select name="maintenanceType"><option value="service">Service</option><option value="checkup">Checkup</option></select></label>
@@ -350,7 +356,7 @@ function MaintenanceSection({ records, action, busy }: { records: Maintenance[];
   );
 }
 
-function CostsSection({ records, summary, action, busy }: { records: Cost[]; summary: { totalSpent: number; invoiceCount: number }; action: (body: Record<string, unknown>, message: string) => Promise<void>; busy: boolean }) {
+function CostsSection({ records, summary, action, busy, onClose }: { records: Cost[]; summary: { totalSpent: number; invoiceCount: number }; action: (body: Record<string, unknown>, message: string) => Promise<void>; busy: boolean; onClose: () => void }) {
   async function create(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); const form = event.currentTarget; const data = Object.fromEntries(new FormData(form).entries());
     await action({ action: 'cost-create', source: 'manual', usageMetric: 'none', ...data }, 'Cost record added.');
@@ -358,7 +364,7 @@ function CostsSection({ records, summary, action, busy }: { records: Cost[]; sum
   }
   return (
     <section className={styles.section}>
-      <h2>Recorded costs</h2><p>{summary.invoiceCount} record{summary.invoiceCount === 1 ? '' : 's'} • {money(summary.totalSpent)} total</p>
+      <div className={`${styles.sectionHeader} ${styles.editorHeader}`}><div><h2>Recorded costs</h2><p>{summary.invoiceCount} record{summary.invoiceCount === 1 ? '' : 's'} • {money(summary.totalSpent)} total</p></div><button type="button" className={styles.smallButton} onClick={onClose}>Close</button></div>
       <div className={styles.recordList}>{records.length ? records.map((record) => <article className={styles.record} key={record.id}><div className={styles.recordHeader}><h3>{record.supplierName || 'Cost record'}</h3><span className={styles.recordStatus}>{money(record.totalIncVat)}</span></div><p>{[record.invoiceDate, record.invoiceNumber, record.notes].filter(Boolean).join(' • ')}</p><button type="button" className={styles.smallButton} disabled={busy} onClick={() => { if (window.confirm('Delete this cost record?')) void action({ action: 'cost-delete', invoiceId: record.id }, 'Cost record deleted.'); }}>Delete</button></article>) : <p>No costs recorded yet.</p>}</div>
       <form className={styles.formGrid} onSubmit={(event) => void create(event)}>
         <label className={styles.field}><span>Supplier</span><input name="supplierName" /></label><label className={styles.field}><span>Invoice number</span><input name="invoiceNumber" /></label>
