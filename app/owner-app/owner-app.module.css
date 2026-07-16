@@ -412,8 +412,7 @@
   line-height: 1.2;
   overflow-wrap: anywhere;
 }
-.assetCardActions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
-.assetDetailsButton,
+.ownerAssetOpenButton,
 .assetManageButton {
   min-height: 54px;
   display: inline-flex;
@@ -427,9 +426,15 @@
   text-align: center;
   text-decoration: none;
 }
-.assetDetailsButton { border: 1px solid rgba(37, 71, 51, 0.22); background: #fff; color: var(--owner-green); }
+.ownerAssetOpenButton {
+  width: 100%;
+  border: 1px solid var(--owner-green);
+  background: var(--owner-green);
+  color: #fff;
+  box-shadow: 0 12px 24px rgba(37, 71, 51, 0.18);
+}
 .assetManageButton { border: 1px solid var(--owner-green); background: var(--owner-green); color: #fff; box-shadow: 0 12px 24px rgba(37, 71, 51, 0.18); }
-.assetDetailsButton:focus-visible,
+.ownerAssetOpenButton:focus-visible,
 .assetManageButton:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.12); }
 .assetList { display: grid; gap: 11px; }
 .assetCard { overflow: hidden; }
