@@ -14,7 +14,7 @@ function errorMessage(error: unknown, fallback: string): string {
 }
 
 export async function GET(request: NextRequest) {
-  const session = await getServerSession();
+  const session = await getServerSession({ allowOwnerApp: true });
 
   if (!session?.user?.id) {
     return unauthorized();
