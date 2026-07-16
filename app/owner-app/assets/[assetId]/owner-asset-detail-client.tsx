@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from 'react';
 import { formatResolvedAssetUsage, resolveAssetUsage, type AssetUsageMetric } from '../../../../lib/asset-usage';
+import BalancedHeadingText from '../../balanced-heading';
 import styles from '../../owner-app.module.css';
 
 type Document = { id: string; url: string; fileName: string; contentType: string; byteSize: number; uploadedAtIso: string };
@@ -50,6 +51,11 @@ const MANAGE_SECTIONS: Array<{ id: OwnerAssetManageSection; title: string; descr
 
 function text(value: unknown) { return String(value ?? '').trim(); }
 function money(value: number | null | undefined) { return value && value > 0 ? `R ${Math.round(value).toLocaleString('en-ZA')}` : 'Not saved'; }
+function dateOnly(value: string | null | undefined) {
+  if (!value) return 'Not saved';
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? 'Not saved' : new Intl.DateTimeFormat('en-ZA', { dateStyle: 'medium' }).format(parsed);
+}
 function dateTime(value: string | null) {
   if (!value) return 'Not saved';
   const parsed = new Date(value);
@@ -67,6 +73,10 @@ function statusValue(asset: Asset, type: 'finance' | 'insurance' | 'license') {
 function statusLabel(value: string) {
   return value === 'not_applicable' ? 'Not applicable' : value.charAt(0).toUpperCase() + value.slice(1);
 }
+function conditionLabel(value: string) {
+  const normalized = text(value).replace(/[_-]+/g, ' ');
+  return normalized ? normalized.charAt(0).toUpperCase() + normalized.slice(1) : 'Not saved';
+}
 
 export default function OwnerAssetDetailClient({ assetId, view = 'details', section }: {
   assetId: string;
@@ -82,8 +92,13 @@ export default function OwnerAssetDetailClient({ assetId, view = 'details', sect
   const [actionBusy, setActionBusy] = useState('');
   const [notice, setNotice] = useState<{ tone: 'success' | 'error'; message: string } | null>(null);
   const [location, setLocation] = useState({ locationText: '', latitude: '', longitude: '' });
+  const [photoIndex, setPhotoIndex] = useState(0);
+  const [photoViewerOpen, setPhotoViewerOpen] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
-  const primaryPhoto = draft?.photos[0] || '';
+  const photoCount = draft?.photos.length ?? 0;
+  const safePhotoIndex = photoCount ? Math.min(photoIndex, photoCount - 1) : 0;
+  const primaryPhoto = draft?.photos[safePhotoIndex] || '';
   const financeStatus = draft ? statusValue(draft, 'finance') : 'unknown';
   const insuranceStatus = draft ? statusValue(draft, 'insurance') : 'unknown';
   const licenseStatus = draft ? statusValue(draft, 'license') : 'unknown';
@@ -91,6 +106,38 @@ export default function OwnerAssetDetailClient({ assetId, view = 'details', sect
   const upcomingMaintenance = useMemo(() => maintenance.find((record) => record.status === 'upcoming') ?? null, [maintenance]);
 
   useEffect(() => { void loadDetail(); }, [assetId]);
+
+  useEffect(() => {
+    setPhotoIndex((current) => photoCount ? Math.min(current, photoCount - 1) : 0);
+  }, [photoCount]);
+
+  useEffect(() => {
+    if (!photoViewerOpen) return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    function handleViewerKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') setPhotoViewerOpen(false);
+      if (event.key === 'ArrowLeft' && photoCount > 1) {
+        setPhotoIndex((current) => (current - 1 + photoCount) % photoCount);
+      }
+      if (event.key === 'ArrowRight' && photoCount > 1) {
+        setPhotoIndex((current) => (current + 1) % photoCount);
+      }
+    }
+
+    window.addEventListener('keydown', handleViewerKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', handleViewerKeyDown);
+    };
+  }, [photoCount, photoViewerOpen]);
+
+  function cyclePhoto(direction: -1 | 1) {
+    if (photoCount <= 1) return;
+    setPhotoIndex((current) => (current + direction + photoCount) % photoCount);
+  }
 
   function applyDetail(payload: DetailResponse) {
     if (!payload.item) return;
@@ -282,33 +329,200 @@ export default function OwnerAssetDetailClient({ assetId, view = 'details', sect
     <label className={styles.field}><span>{label}</span><input type={options.type} inputMode={options.inputMode} value={extra(key, ...(options.fallbackKeys ?? []))} onChange={(event) => updateSpec(key, event.target.value)} /></label>
   );
   const editorHeader = (title: string, description: string) => (
-    <div className={`${styles.sectionHeader} ${styles.editorHeader}`}><div><h2>{title}</h2><p>{description}</p></div></div>
+    <div className={`${styles.sectionHeader} ${styles.editorHeader}`}><div><h2><BalancedHeadingText text={title} /></h2><p>{description}</p></div></div>
   );
 
   if (view === 'details') {
+    const hasMappedLocation = draft.lastKnownLat !== null && draft.lastKnownLng !== null;
+
     return (
       <div className={styles.wideContent}>
         {notice ? <div className={notice.tone === 'success' ? styles.successNotice : styles.errorNotice}>{notice.message}</div> : null}
-        <section className={`${styles.summaryCard} ${styles.detailHero}`}>
-          {primaryPhoto ? <img className={styles.detailPhoto} src={primaryPhoto} alt={draft.title} /> : <div className={styles.detailPhotoPlaceholder}>No asset photo saved</div>}
+        <section className={`${styles.summaryCard} ${styles.detailHero} ${styles.assetMirrorCard}`}>
+          <div className={styles.detailPhotoStage}>
+            {primaryPhoto ? (
+              <button
+                type="button"
+                className={styles.detailPhotoOpenButton}
+                onClick={() => setPhotoViewerOpen(true)}
+                aria-label={`Open ${draft.title} photo ${safePhotoIndex + 1}`}
+              >
+                <img className={styles.detailPhoto} src={primaryPhoto} alt={`${draft.title} photo ${safePhotoIndex + 1}`} />
+              </button>
+            ) : (
+              <div className={styles.detailPhotoPlaceholder}>No asset photo saved</div>
+            )}
+
+            {photoCount > 1 ? (
+              <>
+                <button
+                  type="button"
+                  className={`${styles.detailPhotoNavButton} ${styles.detailPhotoNavPrevious}`}
+                  onClick={() => cyclePhoto(-1)}
+                  aria-label="Show previous asset photo"
+                >
+                  ‹
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.detailPhotoNavButton} ${styles.detailPhotoNavNext}`}
+                  onClick={() => cyclePhoto(1)}
+                  aria-label="Show next asset photo"
+                >
+                  ›
+                </button>
+                <span className={styles.detailPhotoCounter}>{safePhotoIndex + 1} / {photoCount}</span>
+              </>
+            ) : null}
+          </div>
+
           <div className={styles.detailHeroBody}>
-            <h1>{draft.title}</h1>
-            <p>{[registerName, draft.serialNumber ? `Serial: ${draft.serialNumber}` : 'Serial not saved'].join(' · ')}</p>
-            <div className={styles.metrics}>
-              <div className={styles.metric}><span>Aim4price value</span><strong>{money(draft.value)}</strong></div>
-              <div className={styles.metric}><span>Replacement</span><strong>{money(draft.replacementPriceExVat)}</strong></div>
-              <div className={styles.metric}><span>Year</span><strong>{draft.yearModel || 'Not saved'}</strong></div>
-              <div className={styles.metric}><span>Usage</span><strong>{usageText}</strong></div>
-              <div className={styles.metric}><span>Insurance</span><strong>{insuranceStatus === 'yes' ? money(draft.insuredValueExVat) : statusLabel(insuranceStatus)}</strong></div>
-              <div className={styles.metric}><span>Licence</span><strong>{licenseStatus === 'yes' ? draft.licenseRegistrationNumber || 'Licensed' : statusLabel(licenseStatus)}</strong></div>
-              <div className={styles.metric}><span>Maintenance</span><strong>{upcomingMaintenance ? upcomingMaintenance.computedStatusLabel : 'Nothing upcoming'}</strong></div>
-              <div className={styles.metric}><span>Last scan</span><strong>{dateTime(draft.lastScannedAtIso)}</strong></div>
-              <div className={styles.metric}><span>Location</span><strong>{draft.lastKnownLocationText || 'Not saved'}</strong></div>
-              <div className={styles.metric}><span>Marketplace</span><strong>{draft.marketplaceStatus === 'live' ? 'Live' : 'Not listed'}</strong></div>
+            <div className={styles.detailIdentity}>
+              <h1><BalancedHeadingText text={draft.title} /></h1>
+              <p>{[registerName, draft.serialNumber ? `Serial ${draft.serialNumber}` : 'Serial not saved'].join(' · ')}</p>
             </div>
-            <Link className={styles.assetManageButton} href={`/owner-app/assets/${encodeURIComponent(assetId)}/manage`} prefetch={false}>Manage asset</Link>
+
+            <div className={styles.detailValueSummary}>
+              <span>Aim4price value</span>
+              <strong>{money(draft.value)}</strong>
+              <small>Excl. VAT · Updated {dateOnly(draft.updatedAtIso)}</small>
+            </div>
+
+            <div className={styles.assetMirrorActions} aria-label="Asset actions">
+              <button
+                type="button"
+                className={`${styles.assetMirrorAction} ${styles.assetMirrorViewAction}`}
+                onClick={() => setDetailsOpen((current) => !current)}
+                aria-expanded={detailsOpen}
+                aria-controls="owner-asset-saved-details"
+              >
+                {detailsOpen ? 'Hide Details' : 'View Details'}
+              </button>
+              <Link
+                className={`${styles.assetMirrorAction} ${styles.assetMirrorOptionsAction}`}
+                href={`/owner-app/assets/${encodeURIComponent(assetId)}/manage`}
+                prefetch={false}
+              >
+                Options
+              </Link>
+              <Link
+                className={`${styles.assetMirrorAction} ${styles.assetMirrorManageAction}`}
+                href={`/owner-app/assets/${encodeURIComponent(assetId)}/manage/details`}
+                prefetch={false}
+              >
+                Manage
+              </Link>
+            </div>
+
+            {detailsOpen ? (
+              <div className={styles.assetMirrorDetails} id="owner-asset-saved-details">
+                <section className={styles.assetMirrorMediaSection}>
+                  <h2><BalancedHeadingText text="Photos and saved documents" /></h2>
+
+                  {photoCount > 1 ? (
+                    <div className={styles.detailPhotoThumbs} aria-label="Saved asset photos">
+                      {draft.photos.map((photo, index) => (
+                        <button
+                          type="button"
+                          key={`${photo}-${index}`}
+                          className={`${styles.detailPhotoThumbButton} ${index === safePhotoIndex ? styles.detailPhotoThumbButtonActive : ''}`}
+                          onClick={() => setPhotoIndex(index)}
+                          aria-label={`Show asset photo ${index + 1}`}
+                          aria-pressed={index === safePhotoIndex}
+                        >
+                          <img src={photo} alt={`${draft.title} thumbnail ${index + 1}`} />
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+
+                  <div className={styles.assetDocumentPanel}>
+                    <div className={styles.assetDocumentPanelHeading}>
+                      <span aria-hidden="true">▤</span>
+                      <strong>Documents</strong>
+                      <small>{draft.documents.length} saved</small>
+                    </div>
+                    {draft.documents.length ? (
+                      <div className={styles.assetDocumentLinks}>
+                        {draft.documents.map((document, index) => (
+                          <a key={document.id || `${document.url}-${index}`} href={document.url} target="_blank" rel="noreferrer">
+                            <span>{document.fileName || `Document ${index + 1}`}</span>
+                            <span aria-hidden="true">↗</span>
+                          </a>
+                        ))}
+                      </div>
+                    ) : (
+                      <p>No documents have been saved for this asset.</p>
+                    )}
+                  </div>
+                </section>
+
+                <section className={styles.assetMirrorValuesSection}>
+                  <h2><BalancedHeadingText text="Saved asset details and values" /></h2>
+
+                  <div className={styles.assetMirrorDetailGrid}>
+                    <div><span>Serial</span><strong>{draft.serialNumber || 'Not saved'}</strong></div>
+                    <div><span>Year</span><strong>{draft.yearModel || 'Not saved'}</strong></div>
+                    <div><span>Usage</span><strong>{usageText}</strong></div>
+                    <div><span>Condition</span><strong>{conditionLabel(draft.condition)}</strong></div>
+                  </div>
+
+                  <div className={styles.assetMirrorStatusGrid}>
+                    <div><span>Financed</span><strong>{statusLabel(financeStatus)}</strong></div>
+                    <div><span>Insured</span><strong>{statusLabel(insuranceStatus)}</strong></div>
+                    <div><span>Licensed</span><strong>{statusLabel(licenseStatus)}</strong></div>
+                    <div><span>Mapped</span><strong>{hasMappedLocation ? 'Yes' : 'No'}</strong></div>
+                  </div>
+
+                  <div className={styles.assetMirrorValueStack}>
+                    <div>
+                      <span>Replacement price</span>
+                      <strong>{money(draft.replacementPriceExVat)}</strong>
+                      <small>Excl. VAT</small>
+                    </div>
+                    {draft.insuredValueExVat !== null ? (
+                      <div>
+                        <span>Insured value</span>
+                        <strong>{money(draft.insuredValueExVat)}</strong>
+                        <small>Excl. VAT</small>
+                      </div>
+                    ) : null}
+                    {draft.licenseRegistrationNumber ? (
+                      <div>
+                        <span>Registration number</span>
+                        <strong>{draft.licenseRegistrationNumber}</strong>
+                      </div>
+                    ) : null}
+                  </div>
+
+                  <div className={styles.assetMirrorSecondaryGrid}>
+                    <div><span>Maintenance</span><strong>{upcomingMaintenance ? upcomingMaintenance.computedStatusLabel : 'Nothing upcoming'}</strong></div>
+                    <div><span>Last scan</span><strong>{dateTime(draft.lastScannedAtIso)}</strong></div>
+                    <div><span>Location</span><strong>{draft.lastKnownLocationText || 'Not saved'}</strong></div>
+                    <div><span>Marketplace</span><strong>{draft.marketplaceStatus === 'live' ? 'Live' : 'Not listed'}</strong></div>
+                  </div>
+                </section>
+              </div>
+            ) : null}
           </div>
         </section>
+
+        {photoViewerOpen && primaryPhoto ? (
+          <div className={styles.ownerPhotoViewer} role="dialog" aria-modal="true" aria-label={`${draft.title} photo viewer`}>
+            <button type="button" className={styles.ownerPhotoViewerBackdrop} onClick={() => setPhotoViewerOpen(false)} aria-label="Close photo viewer" />
+            <div className={styles.ownerPhotoViewerCard}>
+              <button type="button" className={styles.ownerPhotoViewerClose} onClick={() => setPhotoViewerOpen(false)} aria-label="Close photo viewer">×</button>
+              <img src={primaryPhoto} alt={`${draft.title} enlarged photo ${safePhotoIndex + 1}`} />
+              {photoCount > 1 ? (
+                <>
+                  <button type="button" className={`${styles.ownerPhotoViewerNav} ${styles.ownerPhotoViewerPrevious}`} onClick={() => cyclePhoto(-1)} aria-label="Show previous photo">‹</button>
+                  <button type="button" className={`${styles.ownerPhotoViewerNav} ${styles.ownerPhotoViewerNext}`} onClick={() => cyclePhoto(1)} aria-label="Show next photo">›</button>
+                  <span className={styles.ownerPhotoViewerCounter}>{safePhotoIndex + 1} / {photoCount}</span>
+                </>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
       </div>
     );
   }
@@ -318,13 +532,13 @@ export default function OwnerAssetDetailClient({ assetId, view = 'details', sect
       <div className={styles.wideContent}>
         <section className={styles.manageAssetIdentity}>
           <span>Manage asset</span>
-          <h1>{draft.title}</h1>
+          <h1><BalancedHeadingText text={draft.title} /></h1>
           <p>{[draft.serialNumber ? `Serial: ${draft.serialNumber}` : 'Serial not saved', draft.yearModel ? `Year: ${draft.yearModel}` : '', usageText !== 'Not saved' ? `Usage: ${usageText}` : ''].filter(Boolean).join(' · ')}</p>
           <Link href={`/owner-app/assets/${encodeURIComponent(assetId)}`} prefetch={false}>View asset details</Link>
         </section>
 
         <section className={`${styles.section} ${styles.manageSection}`}>
-          <div className={styles.manageIntro}><h2>What would you like to manage?</h2><p>Choose one task to continue on its own page.</p></div>
+          <div className={styles.manageIntro}><h2><BalancedHeadingText text="What would you like to manage?" /></h2><p>Choose one task to continue on its own page.</p></div>
           <div className={styles.manageGrid}>
             {MANAGE_SECTIONS.map((item) => (
               <Link
@@ -347,7 +561,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'details', sect
     <div className={styles.wideContent}>
       <section className={styles.taskIdentity}>
         <span>{MANAGE_SECTIONS.find((item) => item.id === section)?.title || 'Manage asset'}</span>
-        <h1>{draft.title}</h1>
+        <h1><BalancedHeadingText text={draft.title} /></h1>
         <p>{draft.serialNumber ? `Serial: ${draft.serialNumber}` : registerName}</p>
       </section>
 
