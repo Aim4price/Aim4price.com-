@@ -26,7 +26,7 @@ function asRecord(value: unknown): Record<string, unknown> | null {
 }
 
 export async function GET() {
-  const session = await getServerSession({ allowDealerApp: true });
+  const session = await getServerSession({ allowDealerApp: true, allowOwnerApp: true });
 
   if (!session?.user?.id) {
     return unauthorized();
@@ -42,7 +42,7 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const session = await getServerSession({ allowDealerApp: true });
+  const session = await getServerSession({ allowDealerApp: true, allowOwnerApp: true });
 
   if (!session?.user?.id) {
     return unauthorized();
