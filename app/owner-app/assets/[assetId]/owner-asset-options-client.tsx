@@ -1,0 +1,337 @@
+'use client';
+
+import Link from 'next/link';
+import { useMemo, useState, type FormEvent } from 'react';
+import BalancedHeadingText from '../../balanced-heading';
+import styles from '../../owner-app.module.css';
+
+type PartnerType = 'dealer' | 'finance' | 'insurance';
+type AssetLeadType = 'finance' | 'insurance' | 'replacement_quote';
+type OptionsStage = 'choices' | 'partners' | 'message' | 'consent' | 'sent';
+
+type Partner = {
+  userId: string;
+  partnerType: PartnerType;
+  displayName: string;
+  businessName: string;
+  phone: string;
+  email: string;
+  province: string;
+  townCity: string;
+  addressLine1: string;
+  logoUrl: string;
+  websiteUrl: string;
+  description: string;
+  serviceRadiusKm: number | null;
+  brandFocus: string;
+  services: string;
+};
+
+type QuoteOption = {
+  leadType: AssetLeadType;
+  partnerType: PartnerType;
+  title: string;
+  shortTitle: string;
+  description: string;
+  pickerTitle: string;
+  emptyText: string;
+};
+
+const QUOTE_OPTIONS: QuoteOption[] = [
+  {
+    leadType: 'finance',
+    partnerType: 'finance',
+    title: 'Get finance offer',
+    shortTitle: 'Finance offer',
+    description: 'Send this asset to a finance provider and request finance or refinance.',
+    pickerTitle: 'Choose a finance provider',
+    emptyText: 'No listed finance providers were found.',
+  },
+  {
+    leadType: 'insurance',
+    partnerType: 'insurance',
+    title: 'Get insurance quote',
+    shortTitle: 'Insurance quote',
+    description: 'Send this asset to an insurer or broker and request cover or a value review.',
+    pickerTitle: 'Choose an insurer or broker',
+    emptyText: 'No listed insurers or brokers were found.',
+  },
+  {
+    leadType: 'replacement_quote',
+    partnerType: 'dealer',
+    title: 'Get replacement price',
+    shortTitle: 'Replacement price',
+    description: 'Send this asset to a dealer and request a replacement price.',
+    pickerTitle: 'Choose a dealer',
+    emptyText: 'No listed dealers were found.',
+  },
+];
+
+function money(value: number) {
+  return value > 0 ? `R ${Math.round(value).toLocaleString('en-ZA')}` : 'Not saved';
+}
+
+function partnerName(partner: Partner) {
+  return partner.businessName || partner.displayName || 'Aim4price business';
+}
+
+function partnerLocation(partner: Partner) {
+  return [partner.townCity, partner.province].filter(Boolean).join(', ') || 'Location not saved';
+}
+
+function partnerTypeLabel(type: PartnerType) {
+  if (type === 'finance') return 'Finance provider';
+  if (type === 'insurance') return 'Insurer or broker';
+  return 'Dealer';
+}
+
+function optionTone(type: AssetLeadType) {
+  if (type === 'finance') return styles.ownerOptionFinance;
+  if (type === 'insurance') return styles.ownerOptionInsurance;
+  return styles.ownerOptionDealer;
+}
+
+export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind, assetValue }: {
+  assetId: string;
+  assetTitle: string;
+  assetKind: string;
+  assetValue: number;
+}) {
+  const [stage, setStage] = useState<OptionsStage>('choices');
+  const [selectedLeadType, setSelectedLeadType] = useState<AssetLeadType | null>(null);
+  const [partners, setPartners] = useState<Partner[]>([]);
+  const [selectedPartnerId, setSelectedPartnerId] = useState('');
+  const [search, setSearch] = useState('');
+  const [message, setMessage] = useState('');
+  const [consentAccepted, setConsentAccepted] = useState(false);
+  const [loadingPartners, setLoadingPartners] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [notice, setNotice] = useState<{ tone: 'success' | 'error'; message: string } | null>(null);
+
+  const availableOptions = useMemo(
+    () => assetKind === 'property' ? QUOTE_OPTIONS.filter((option) => option.leadType !== 'replacement_quote') : QUOTE_OPTIONS,
+    [assetKind],
+  );
+  const selectedOption = useMemo(
+    () => QUOTE_OPTIONS.find((option) => option.leadType === selectedLeadType) ?? null,
+    [selectedLeadType],
+  );
+  const selectedPartner = useMemo(
+    () => partners.find((partner) => partner.userId === selectedPartnerId) ?? null,
+    [partners, selectedPartnerId],
+  );
+  const assetHref = `/owner-app/assets/${encodeURIComponent(assetId)}`;
+
+  async function loadPartners(option: QuoteOption, searchValue = '') {
+    setLoadingPartners(true);
+    setNotice(null);
+    try {
+      const params = new URLSearchParams({ type: option.partnerType });
+      if (searchValue.trim()) params.set('search', searchValue.trim());
+      const response = await fetch(`/api/partners?${params.toString()}`, { credentials: 'include', cache: 'no-store' });
+      const payload = await response.json().catch(() => null) as { ok?: boolean; partners?: Partner[]; error?: string } | null;
+      if (response.status === 401) { window.location.replace('/owner-app/login'); return; }
+      if (!response.ok || !payload?.ok || !Array.isArray(payload.partners)) throw new Error(payload?.error || 'Failed to load available companies.');
+      setPartners(payload.partners);
+      setSelectedPartnerId((current) => payload.partners?.some((partner) => partner.userId === current) ? current : '');
+    } catch (cause) {
+      setPartners([]);
+      setSelectedPartnerId('');
+      setNotice({ tone: 'error', message: cause instanceof Error ? cause.message : 'Failed to load available companies.' });
+    } finally {
+      setLoadingPartners(false);
+    }
+  }
+
+  async function chooseOption(option: QuoteOption) {
+    setSelectedLeadType(option.leadType);
+    setSelectedPartnerId('');
+    setSearch('');
+    setMessage('');
+    setConsentAccepted(false);
+    setStage('partners');
+    await loadPartners(option);
+  }
+
+  function submitSearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (selectedOption) void loadPartners(selectedOption, search);
+  }
+
+  function choosePartner(partner: Partner) {
+    setSelectedPartnerId(partner.userId);
+    setConsentAccepted(false);
+    setStage('message');
+    setNotice(null);
+  }
+
+  function backToChoices() {
+    setStage('choices');
+    setSelectedLeadType(null);
+    setPartners([]);
+    setSelectedPartnerId('');
+    setSearch('');
+    setMessage('');
+    setConsentAccepted(false);
+    setNotice(null);
+  }
+
+  async function sendRequest() {
+    if (!selectedOption || !selectedPartner || !consentAccepted || sending) return;
+    setSending(true);
+    setNotice(null);
+    try {
+      const response = await fetch('/api/asset-leads', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          assetId,
+          partnerUserId: selectedPartner.userId,
+          leadType: selectedOption.leadType,
+          ownerMessage: message,
+          includedSections: {
+            assetDetails: true,
+            valuationSummary: true,
+            mainPhoto: true,
+            photos: true,
+            documents: true,
+            scanHistory: false,
+            source: 'asset_register_options',
+          },
+        }),
+      });
+      const payload = await response.json().catch(() => null) as { ok?: boolean; error?: string } | null;
+      if (response.status === 401) { window.location.replace('/owner-app/login'); return; }
+      if (!response.ok || !payload?.ok) throw new Error(payload?.error || 'Failed to send this request.');
+      setStage('sent');
+      setNotice({ tone: 'success', message: `${selectedOption.shortTitle} request sent to ${partnerName(selectedPartner)}.` });
+    } catch (cause) {
+      setNotice({ tone: 'error', message: cause instanceof Error ? cause.message : 'Failed to send this request.' });
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <div className={styles.wideContent}>
+      <section className={styles.ownerOptionsIdentity}>
+        <span>Asset options</span>
+        <h1><BalancedHeadingText text={assetTitle} /></h1>
+        <p>{money(assetValue)} excl. VAT</p>
+      </section>
+
+      {notice ? <div className={notice.tone === 'success' ? styles.successNotice : styles.errorNotice}>{notice.message}</div> : null}
+
+      {stage === 'choices' ? (
+        <section className={`${styles.section} ${styles.ownerOptionsSection}`}>
+          <div className={styles.manageIntro}>
+            <h2><BalancedHeadingText text="What would you like to do?" /></h2>
+            <p>Choose one option to continue.</p>
+          </div>
+          <div className={styles.ownerOptionChoiceList}>
+            {availableOptions.map((option) => (
+              <button key={option.leadType} type="button" className={`${styles.ownerOptionChoice} ${optionTone(option.leadType)}`} onClick={() => void chooseOption(option)}>
+                <span><strong>{option.title}</strong><small>{option.description}</small></span>
+                <b aria-hidden="true">›</b>
+              </button>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {stage === 'partners' && selectedOption ? (
+        <section className={`${styles.section} ${styles.ownerOptionsSection}`}>
+          <div className={styles.ownerOptionsFlowHeader}>
+            <button type="button" onClick={backToChoices}>‹ Options</button>
+            <div><span>{partnerTypeLabel(selectedOption.partnerType)}</span><h2><BalancedHeadingText text={selectedOption.pickerTitle} /></h2></div>
+          </div>
+
+          <form className={styles.ownerPartnerSearch} onSubmit={submitSearch}>
+            <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search business, town or province" aria-label="Search available companies" />
+            <button type="submit" disabled={loadingPartners}>{loadingPartners ? 'Searching…' : 'Search'}</button>
+          </form>
+
+          <div className={styles.ownerPartnerList}>
+            {loadingPartners ? <p className={styles.ownerOptionsEmpty}>Loading available companies…</p> : partners.length ? partners.map((partner) => (
+              <button type="button" className={styles.ownerPartnerCard} key={partner.userId} onClick={() => choosePartner(partner)}>
+                <span className={styles.ownerPartnerLogo}>
+                  {partner.logoUrl ? <img src={partner.logoUrl} alt="" /> : <b>{partnerName(partner).charAt(0).toUpperCase()}</b>}
+                </span>
+                <span className={styles.ownerPartnerCopy}>
+                  <strong>{partnerName(partner)}</strong>
+                  <small>{partnerLocation(partner)}</small>
+                  <small>{partner.services || partnerTypeLabel(partner.partnerType)}</small>
+                </span>
+                <b aria-hidden="true">›</b>
+              </button>
+            )) : <p className={styles.ownerOptionsEmpty}>{selectedOption.emptyText}</p>}
+          </div>
+        </section>
+      ) : null}
+
+      {stage === 'message' && selectedOption && selectedPartner ? (
+        <section className={`${styles.section} ${styles.ownerOptionsSection}`}>
+          <div className={styles.ownerOptionsFlowHeader}>
+            <button type="button" onClick={() => setStage('partners')}>‹ Companies</button>
+            <div><span>{selectedOption.shortTitle}</span><h2><BalancedHeadingText text="Message to selected company" /></h2></div>
+          </div>
+
+          <div className={styles.ownerSelectedPartner}>
+            <span className={styles.ownerPartnerLogo}>
+              {selectedPartner.logoUrl ? <img src={selectedPartner.logoUrl} alt="" /> : <b>{partnerName(selectedPartner).charAt(0).toUpperCase()}</b>}
+            </span>
+            <div><strong>{partnerName(selectedPartner)}</strong><span>{partnerLocation(selectedPartner)}</span></div>
+          </div>
+
+          <div className={styles.ownerPartnerContacts}>
+            {selectedPartner.email ? <a href={`mailto:${selectedPartner.email}`}><small>Email</small><span>{selectedPartner.email}</span></a> : null}
+            {selectedPartner.phone ? <a href={`tel:${selectedPartner.phone.replace(/[^+\d]/g, '')}`}><small>Phone</small><span>{selectedPartner.phone}</span></a> : null}
+            <span><small>Address</small><b>{[selectedPartner.addressLine1, selectedPartner.townCity, selectedPartner.province].filter(Boolean).join(', ') || 'Not saved'}</b></span>
+          </div>
+
+          <p className={styles.ownerShareNotice}>This sends this asset only. It does not share the full asset register.</p>
+          <label className={styles.ownerOptionMessageField}>
+            <span>Message to company <small>Optional</small></span>
+            <textarea value={message} onChange={(event) => setMessage(event.target.value)} placeholder="Please contact me about this asset." />
+          </label>
+          <div className={styles.ownerOptionsFooter}>
+            <button type="button" className={styles.secondaryButton} onClick={() => setStage('partners')}>Back</button>
+            <button type="button" className={styles.primaryButton} onClick={() => { setConsentAccepted(false); setStage('consent'); }}>Next</button>
+          </div>
+        </section>
+      ) : null}
+
+      {stage === 'consent' && selectedOption && selectedPartner ? (
+        <section className={`${styles.section} ${styles.ownerOptionsSection}`}>
+          <div className={styles.ownerOptionsFlowHeader}>
+            <button type="button" onClick={() => setStage('message')} disabled={sending}>‹ Message</button>
+            <div><span>{selectedOption.shortTitle}</span><h2><BalancedHeadingText text="Confirm and send request" /></h2></div>
+          </div>
+
+          <div className={styles.ownerPopiaBox}>
+            <strong>Disclaimer and POPIA note</strong>
+            <p>By sending this request, you allow Aim4price to share this selected asset, its saved valuation details and your saved business contact details with {partnerName(selectedPartner)}.</p>
+            <p>This is a lead request only. It does not create a finance, insurance, valuation or sales agreement. The selected company may contact you outside Aim4price.</p>
+          </div>
+          <label className={styles.ownerConsentField}>
+            <input type="checkbox" checked={consentAccepted} onChange={(event) => setConsentAccepted(event.target.checked)} />
+            <span>I accept the disclaimer and POPIA permission note.</span>
+          </label>
+          <div className={styles.ownerOptionsFooter}>
+            <button type="button" className={styles.secondaryButton} onClick={() => setStage('message')} disabled={sending}>Back</button>
+            <button type="button" className={styles.primaryButton} onClick={() => void sendRequest()} disabled={sending || !consentAccepted}>{sending ? 'Sending…' : `Send to ${partnerName(selectedPartner)}`}</button>
+          </div>
+        </section>
+      ) : null}
+
+      {stage === 'sent' ? (
+        <section className={`${styles.section} ${styles.ownerOptionsSent}`}>
+          <h2>Request sent</h2>
+          <p>The selected company can now review the saved asset details and contact you.</p>
+          <Link className={styles.primaryButton} href={assetHref} prefetch={false}>Back to asset</Link>
+        </section>
+      ) : null}
+    </div>
+  );
+}

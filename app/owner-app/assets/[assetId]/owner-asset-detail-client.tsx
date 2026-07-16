@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from '
 import { formatResolvedAssetUsage, resolveAssetUsage, type AssetUsageMetric } from '../../../../lib/asset-usage';
 import BalancedHeadingText from '../../balanced-heading';
 import styles from '../../owner-app.module.css';
+import OwnerAssetOptionsClient from './owner-asset-options-client';
 
 type Document = { id: string; url: string; fileName: string; contentType: string; byteSize: number; uploadedAtIso: string };
 type Asset = {
@@ -29,7 +30,7 @@ type DetailResponse = {
 };
 type UploadResponse = { ok: boolean; uploads?: Array<{ uploadId: string; url: string; fileName: string; contentType: string; byteSize: number }>; error?: string };
 
-export type OwnerAssetView = 'details' | 'manage' | 'section';
+export type OwnerAssetView = 'summary' | 'details' | 'options' | 'manage' | 'section';
 export type OwnerAssetManageSection = 'details' | 'finance' | 'insurance' | 'licence' | 'location' | 'media' | 'marketplace' | 'maintenance' | 'delete';
 
 const STATUS_OPTIONS = [
@@ -78,7 +79,7 @@ function conditionLabel(value: string) {
   return normalized ? normalized.charAt(0).toUpperCase() + normalized.slice(1) : 'Not saved';
 }
 
-export default function OwnerAssetDetailClient({ assetId, view = 'details', section }: {
+export default function OwnerAssetDetailClient({ assetId, view = 'summary', section }: {
   assetId: string;
   view?: OwnerAssetView;
   section?: OwnerAssetManageSection;
@@ -94,7 +95,6 @@ export default function OwnerAssetDetailClient({ assetId, view = 'details', sect
   const [location, setLocation] = useState({ locationText: '', latitude: '', longitude: '' });
   const [photoIndex, setPhotoIndex] = useState(0);
   const [photoViewerOpen, setPhotoViewerOpen] = useState(false);
-  const [detailsOpen, setDetailsOpen] = useState(false);
 
   const photoCount = draft?.photos.length ?? 0;
   const safePhotoIndex = photoCount ? Math.min(photoIndex, photoCount - 1) : 0;
@@ -285,12 +285,37 @@ export default function OwnerAssetDetailClient({ assetId, view = 'details', sect
       const response = await fetch('/api/asset-register/uploads', { method: 'POST', credentials: 'include', body: formData });
       const payload = await response.json().catch(() => null) as UploadResponse | null;
       if (!response.ok || !payload?.ok) throw new Error(payload?.error || 'Upload failed.');
-      if (type === 'photo') {
-        update('photos', [...draft.photos, ...(payload.uploads ?? []).map((upload) => upload.url)]);
-      } else {
-        update('documents', [...draft.documents, ...(payload.uploads ?? []).map((upload) => ({ id: upload.uploadId, url: upload.url, fileName: upload.fileName, contentType: upload.contentType, byteSize: upload.byteSize, uploadedAtIso: new Date().toISOString() }))]);
+      const nextDraft: Asset = type === 'photo'
+        ? { ...draft, photos: [...draft.photos, ...(payload.uploads ?? []).map((upload) => upload.url)] }
+        : {
+            ...draft,
+            documents: [
+              ...draft.documents,
+              ...(payload.uploads ?? []).map((upload) => ({
+                id: upload.uploadId,
+                url: upload.url,
+                fileName: upload.fileName,
+                contentType: upload.contentType,
+                byteSize: upload.byteSize,
+                uploadedAtIso: new Date().toISOString(),
+              })),
+            ],
+          };
+      setDraft(nextDraft);
+
+      const saveResponse = await fetch(`/api/owner-app/assets/${encodeURIComponent(assetId)}/actions`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'media', photos: nextDraft.photos, documents: nextDraft.documents }),
+      });
+      const savedPayload = await saveResponse.json().catch(() => null) as { ok?: boolean; error?: string } | null;
+      if (saveResponse.status === 401) { window.location.replace('/owner-app/login'); return; }
+      if (!saveResponse.ok || !savedPayload?.ok) {
+        throw new Error(savedPayload?.error || `The ${type === 'photo' ? 'photos' : 'documents'} uploaded but could not be attached to this asset.`);
       }
-      setNotice({ tone: 'success', message: `${type === 'photo' ? 'Photos' : 'Documents'} uploaded. Save changes to attach them to this asset.` });
+      await loadDetail(true);
+      setNotice({ tone: 'success', message: `${type === 'photo' ? 'Photos' : 'Documents'} uploaded and saved.` });
     } catch (cause) {
       setNotice({ tone: 'error', message: cause instanceof Error ? cause.message : 'Upload failed.' });
     } finally {
@@ -332,9 +357,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'details', sect
     <div className={`${styles.sectionHeader} ${styles.editorHeader}`}><div><h2><BalancedHeadingText text={title} /></h2><p>{description}</p></div></div>
   );
 
-  if (view === 'details') {
-    const hasMappedLocation = draft.lastKnownLat !== null && draft.lastKnownLng !== null;
-
+  if (view === 'summary') {
     return (
       <div className={styles.wideContent}>
         {notice ? <div className={notice.tone === 'success' ? styles.successNotice : styles.errorNotice}>{notice.message}</div> : null}
@@ -379,7 +402,6 @@ export default function OwnerAssetDetailClient({ assetId, view = 'details', sect
           <div className={styles.detailHeroBody}>
             <div className={styles.detailIdentity}>
               <h1><BalancedHeadingText text={draft.title} /></h1>
-              <p>{[registerName, draft.serialNumber ? `Serial ${draft.serialNumber}` : 'Serial not saved'].join(' · ')}</p>
             </div>
 
             <div className={styles.detailValueSummary}>
@@ -389,121 +411,29 @@ export default function OwnerAssetDetailClient({ assetId, view = 'details', sect
             </div>
 
             <div className={styles.assetMirrorActions} aria-label="Asset actions">
-              <button
-                type="button"
+              <Link
                 className={`${styles.assetMirrorAction} ${styles.assetMirrorViewAction}`}
-                onClick={() => setDetailsOpen((current) => !current)}
-                aria-expanded={detailsOpen}
-                aria-controls="owner-asset-saved-details"
+                href={`/owner-app/assets/${encodeURIComponent(assetId)}/details`}
+                prefetch={false}
               >
-                {detailsOpen ? 'Hide Details' : 'View Details'}
-              </button>
+                View Details
+              </Link>
               <Link
                 className={`${styles.assetMirrorAction} ${styles.assetMirrorOptionsAction}`}
-                href={`/owner-app/assets/${encodeURIComponent(assetId)}/manage`}
+                href={`/owner-app/assets/${encodeURIComponent(assetId)}/options`}
                 prefetch={false}
               >
                 Options
               </Link>
               <Link
                 className={`${styles.assetMirrorAction} ${styles.assetMirrorManageAction}`}
-                href={`/owner-app/assets/${encodeURIComponent(assetId)}/manage/details`}
+                href={`/owner-app/assets/${encodeURIComponent(assetId)}/manage`}
                 prefetch={false}
               >
                 Manage
               </Link>
             </div>
 
-            {detailsOpen ? (
-              <div className={styles.assetMirrorDetails} id="owner-asset-saved-details">
-                <section className={styles.assetMirrorMediaSection}>
-                  <h2><BalancedHeadingText text="Photos and saved documents" /></h2>
-
-                  {photoCount > 1 ? (
-                    <div className={styles.detailPhotoThumbs} aria-label="Saved asset photos">
-                      {draft.photos.map((photo, index) => (
-                        <button
-                          type="button"
-                          key={`${photo}-${index}`}
-                          className={`${styles.detailPhotoThumbButton} ${index === safePhotoIndex ? styles.detailPhotoThumbButtonActive : ''}`}
-                          onClick={() => setPhotoIndex(index)}
-                          aria-label={`Show asset photo ${index + 1}`}
-                          aria-pressed={index === safePhotoIndex}
-                        >
-                          <img src={photo} alt={`${draft.title} thumbnail ${index + 1}`} />
-                        </button>
-                      ))}
-                    </div>
-                  ) : null}
-
-                  <div className={styles.assetDocumentPanel}>
-                    <div className={styles.assetDocumentPanelHeading}>
-                      <span aria-hidden="true">▤</span>
-                      <strong>Documents</strong>
-                      <small>{draft.documents.length} saved</small>
-                    </div>
-                    {draft.documents.length ? (
-                      <div className={styles.assetDocumentLinks}>
-                        {draft.documents.map((document, index) => (
-                          <a key={document.id || `${document.url}-${index}`} href={document.url} target="_blank" rel="noreferrer">
-                            <span>{document.fileName || `Document ${index + 1}`}</span>
-                            <span aria-hidden="true">↗</span>
-                          </a>
-                        ))}
-                      </div>
-                    ) : (
-                      <p>No documents have been saved for this asset.</p>
-                    )}
-                  </div>
-                </section>
-
-                <section className={styles.assetMirrorValuesSection}>
-                  <h2><BalancedHeadingText text="Saved asset details and values" /></h2>
-
-                  <div className={styles.assetMirrorDetailGrid}>
-                    <div><span>Serial</span><strong>{draft.serialNumber || 'Not saved'}</strong></div>
-                    <div><span>Year</span><strong>{draft.yearModel || 'Not saved'}</strong></div>
-                    <div><span>Usage</span><strong>{usageText}</strong></div>
-                    <div><span>Condition</span><strong>{conditionLabel(draft.condition)}</strong></div>
-                  </div>
-
-                  <div className={styles.assetMirrorStatusGrid}>
-                    <div><span>Financed</span><strong>{statusLabel(financeStatus)}</strong></div>
-                    <div><span>Insured</span><strong>{statusLabel(insuranceStatus)}</strong></div>
-                    <div><span>Licensed</span><strong>{statusLabel(licenseStatus)}</strong></div>
-                    <div><span>Mapped</span><strong>{hasMappedLocation ? 'Yes' : 'No'}</strong></div>
-                  </div>
-
-                  <div className={styles.assetMirrorValueStack}>
-                    <div>
-                      <span>Replacement price</span>
-                      <strong>{money(draft.replacementPriceExVat)}</strong>
-                      <small>Excl. VAT</small>
-                    </div>
-                    {draft.insuredValueExVat !== null ? (
-                      <div>
-                        <span>Insured value</span>
-                        <strong>{money(draft.insuredValueExVat)}</strong>
-                        <small>Excl. VAT</small>
-                      </div>
-                    ) : null}
-                    {draft.licenseRegistrationNumber ? (
-                      <div>
-                        <span>Registration number</span>
-                        <strong>{draft.licenseRegistrationNumber}</strong>
-                      </div>
-                    ) : null}
-                  </div>
-
-                  <div className={styles.assetMirrorSecondaryGrid}>
-                    <div><span>Maintenance</span><strong>{upcomingMaintenance ? upcomingMaintenance.computedStatusLabel : 'Nothing upcoming'}</strong></div>
-                    <div><span>Last scan</span><strong>{dateTime(draft.lastScannedAtIso)}</strong></div>
-                    <div><span>Location</span><strong>{draft.lastKnownLocationText || 'Not saved'}</strong></div>
-                    <div><span>Marketplace</span><strong>{draft.marketplaceStatus === 'live' ? 'Live' : 'Not listed'}</strong></div>
-                  </div>
-                </section>
-              </div>
-            ) : null}
           </div>
         </section>
 
@@ -527,14 +457,206 @@ export default function OwnerAssetDetailClient({ assetId, view = 'details', sect
     );
   }
 
+  if (view === 'details') {
+    const hasMappedLocation = draft.lastKnownLat !== null && draft.lastKnownLng !== null;
+    const manageBase = `/owner-app/assets/${encodeURIComponent(assetId)}/manage`;
+    const mapHref = hasMappedLocation ? `https://www.google.com/maps?q=${draft.lastKnownLat},${draft.lastKnownLng}` : '';
+
+    return (
+      <div className={styles.wideContent}>
+        {notice ? <div className={notice.tone === 'success' ? styles.successNotice : styles.errorNotice}>{notice.message}</div> : null}
+
+        <section className={`${styles.summaryCard} ${styles.detailHero} ${styles.assetMirrorCard} ${styles.assetDetailsPageCard}`}>
+          <div className={styles.detailPhotoStage}>
+            {primaryPhoto ? (
+              <button
+                type="button"
+                className={styles.detailPhotoOpenButton}
+                onClick={() => setPhotoViewerOpen(true)}
+                aria-label={`Open ${draft.title} photo ${safePhotoIndex + 1}`}
+              >
+                <img className={styles.detailPhoto} src={primaryPhoto} alt={`${draft.title} photo ${safePhotoIndex + 1}`} />
+              </button>
+            ) : (
+              <div className={styles.detailPhotoPlaceholder}>No asset photo saved</div>
+            )}
+
+            {photoCount > 1 ? <>
+              <button type="button" className={`${styles.detailPhotoNavButton} ${styles.detailPhotoNavPrevious}`} onClick={() => cyclePhoto(-1)} aria-label="Show previous asset photo">‹</button>
+              <button type="button" className={`${styles.detailPhotoNavButton} ${styles.detailPhotoNavNext}`} onClick={() => cyclePhoto(1)} aria-label="Show next asset photo">›</button>
+              <span className={styles.detailPhotoCounter}>{safePhotoIndex + 1} / {photoCount}</span>
+            </> : null}
+          </div>
+
+          <div className={styles.detailHeroBody}>
+            <div className={styles.detailIdentity}>
+              <h1><BalancedHeadingText text={draft.title} /></h1>
+            </div>
+
+            <div className={styles.detailValueSummary}>
+              <span>Aim4price value</span>
+              <strong>{money(draft.value)}</strong>
+              <small>Excl. VAT · Updated {dateOnly(draft.updatedAtIso)}</small>
+            </div>
+
+            <div className={styles.assetMirrorDetails}>
+              <section className={styles.assetMirrorMediaSection}>
+                <h2><BalancedHeadingText text="Photos and saved documents" /></h2>
+
+                {photoCount > 1 ? (
+                  <div className={styles.detailPhotoThumbs} aria-label="Saved asset photos">
+                    {draft.photos.map((photo, index) => (
+                      <button
+                        type="button"
+                        key={`${photo}-${index}`}
+                        className={`${styles.detailPhotoThumbButton} ${index === safePhotoIndex ? styles.detailPhotoThumbButtonActive : ''}`}
+                        onClick={() => setPhotoIndex(index)}
+                        aria-label={`Show asset photo ${index + 1}`}
+                        aria-pressed={index === safePhotoIndex}
+                      >
+                        <img src={photo} alt={`${draft.title} thumbnail ${index + 1}`} />
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+
+                <div className={styles.detailMediaActions}>
+                  <label className={styles.detailUploadButton}>
+                    <span>{actionBusy === 'upload-photo' ? 'Uploading photos…' : photoCount ? 'Add photos' : 'Upload photos'}</span>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      multiple
+                      onChange={(event: ChangeEvent<HTMLInputElement>) => void uploadFiles('photo', event.target.files)}
+                      disabled={Boolean(actionBusy)}
+                    />
+                  </label>
+                  {primaryPhoto ? <button type="button" className={styles.detailOpenButton} onClick={() => setPhotoViewerOpen(true)}>Open photo</button> : null}
+                </div>
+
+                <div className={styles.assetDocumentPanel}>
+                  <div className={styles.assetDocumentPanelHeading}>
+                    <span aria-hidden="true">▤</span>
+                    <strong>Documents</strong>
+                    <small>{draft.documents.length} saved</small>
+                  </div>
+                  {draft.documents.length ? (
+                    <div className={styles.assetDocumentLinks}>
+                      {draft.documents.map((document, index) => (
+                        <a key={document.id || `${document.url}-${index}`} href={document.url} target="_blank" rel="noreferrer">
+                          <span>{document.fileName || `Document ${index + 1}`}</span>
+                          <span aria-hidden="true">↗</span>
+                        </a>
+                      ))}
+                    </div>
+                  ) : (
+                    <p>No documents have been saved for this asset.</p>
+                  )}
+                  <label className={`${styles.detailUploadButton} ${styles.detailDocumentUploadButton}`}>
+                    <span>{actionBusy === 'upload-document' ? 'Uploading documents…' : 'Add documents'}</span>
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.jpg,.jpeg,.png,.webp"
+                      multiple
+                      onChange={(event: ChangeEvent<HTMLInputElement>) => void uploadFiles('document', event.target.files)}
+                      disabled={Boolean(actionBusy)}
+                    />
+                  </label>
+                </div>
+              </section>
+
+              <section className={styles.assetMirrorValuesSection}>
+                <h2><BalancedHeadingText text="Saved asset details and values" /></h2>
+
+                <Link className={styles.assetDetailsEditLink} href={`${manageBase}/details`} prefetch={false}>
+                  <div className={styles.assetMirrorDetailGrid}>
+                    <div><span>Serial</span><strong>{draft.serialNumber || 'Not saved'}</strong></div>
+                    <div><span>Year</span><strong>{draft.yearModel || 'Not saved'}</strong></div>
+                    <div><span>Usage</span><strong>{usageText}</strong></div>
+                    <div><span>Condition</span><strong>{conditionLabel(draft.condition)}</strong></div>
+                  </div>
+                  <small>Open asset details ›</small>
+                </Link>
+
+                <div className={styles.assetMirrorStatusGrid}>
+                  <Link href={`${manageBase}/finance`} prefetch={false}><span>Financed</span><strong>{statusLabel(financeStatus)}</strong><small>Open ›</small></Link>
+                  <Link href={`${manageBase}/insurance`} prefetch={false}><span>Insured</span><strong>{statusLabel(insuranceStatus)}</strong><small>Open ›</small></Link>
+                  <Link href={`${manageBase}/licence`} prefetch={false}><span>Licensed</span><strong>{statusLabel(licenseStatus)}</strong><small>Open ›</small></Link>
+                  {hasMappedLocation ? (
+                    <a href={mapHref} target="_blank" rel="noreferrer"><span>Mapped</span><strong>Yes</strong><small>Open map ›</small></a>
+                  ) : (
+                    <Link href={`${manageBase}/location`} prefetch={false}><span>Mapped</span><strong>No</strong><small>Add location ›</small></Link>
+                  )}
+                </div>
+
+                <div className={styles.assetMirrorValueStack}>
+                  <Link href={`${manageBase}/details`} prefetch={false}>
+                    <span>Replacement price</span>
+                    <strong>{money(draft.replacementPriceExVat)}</strong>
+                    <small>Excl. VAT · Open ›</small>
+                  </Link>
+                  {insuranceStatus === 'yes' || draft.insuredValueExVat !== null ? (
+                    <Link href={`${manageBase}/insurance`} prefetch={false}>
+                      <span>Insurance value</span>
+                      <strong>{money(draft.insuredValueExVat)}</strong>
+                      <small>Excl. VAT · Open ›</small>
+                    </Link>
+                  ) : null}
+                  {draft.licenseRegistrationNumber ? (
+                    <Link href={`${manageBase}/licence`} prefetch={false}>
+                      <span>Registration number</span>
+                      <strong>{draft.licenseRegistrationNumber}</strong>
+                      <small>Open ›</small>
+                    </Link>
+                  ) : null}
+                </div>
+
+                <div className={styles.assetMirrorSecondaryGrid}>
+                  <Link href={`${manageBase}/maintenance`} prefetch={false}><span>Maintenance</span><strong>{upcomingMaintenance ? upcomingMaintenance.computedStatusLabel : 'Nothing upcoming'}</strong><small>Open ›</small></Link>
+                  <Link href={`${manageBase}/location`} prefetch={false}><span>Last scan</span><strong>{dateTime(draft.lastScannedAtIso)}</strong><small>Open ›</small></Link>
+                  {hasMappedLocation ? (
+                    <a href={mapHref} target="_blank" rel="noreferrer"><span>Location</span><strong>{draft.lastKnownLocationText || 'Mapped location'}</strong><small>Open map ›</small></a>
+                  ) : (
+                    <Link href={`${manageBase}/location`} prefetch={false}><span>Location</span><strong>{draft.lastKnownLocationText || 'Not saved'}</strong><small>Add location ›</small></Link>
+                  )}
+                  <Link href={`${manageBase}/marketplace`} prefetch={false}><span>Marketplace</span><strong>{draft.marketplaceStatus === 'live' ? 'Live' : 'Not listed'}</strong><small>Open ›</small></Link>
+                </div>
+              </section>
+            </div>
+          </div>
+        </section>
+
+        {photoViewerOpen && primaryPhoto ? (
+          <div className={styles.ownerPhotoViewer} role="dialog" aria-modal="true" aria-label={`${draft.title} photo viewer`}>
+            <button type="button" className={styles.ownerPhotoViewerBackdrop} onClick={() => setPhotoViewerOpen(false)} aria-label="Close photo viewer" />
+            <div className={styles.ownerPhotoViewerCard}>
+              <button type="button" className={styles.ownerPhotoViewerClose} onClick={() => setPhotoViewerOpen(false)} aria-label="Close photo viewer">×</button>
+              <img src={primaryPhoto} alt={`${draft.title} enlarged photo ${safePhotoIndex + 1}`} />
+              {photoCount > 1 ? <>
+                <button type="button" className={`${styles.ownerPhotoViewerNav} ${styles.ownerPhotoViewerPrevious}`} onClick={() => cyclePhoto(-1)} aria-label="Show previous photo">‹</button>
+                <button type="button" className={`${styles.ownerPhotoViewerNav} ${styles.ownerPhotoViewerNext}`} onClick={() => cyclePhoto(1)} aria-label="Show next photo">›</button>
+                <span className={styles.ownerPhotoViewerCounter}>{safePhotoIndex + 1} / {photoCount}</span>
+              </> : null}
+            </div>
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
+  if (view === 'options') {
+    return <OwnerAssetOptionsClient assetId={assetId} assetTitle={draft.title} assetKind={draft.kind} assetValue={draft.value} />;
+  }
+
   if (view === 'manage') {
+    const manageMeta = [draft.serialNumber ? `Serial: ${draft.serialNumber}` : '', draft.yearModel ? `Year: ${draft.yearModel}` : '', usageText !== 'Not saved' ? `Usage: ${usageText}` : ''].filter(Boolean).join(' · ');
     return (
       <div className={styles.wideContent}>
         <section className={styles.manageAssetIdentity}>
           <span>Manage asset</span>
           <h1><BalancedHeadingText text={draft.title} /></h1>
-          <p>{[draft.serialNumber ? `Serial: ${draft.serialNumber}` : 'Serial not saved', draft.yearModel ? `Year: ${draft.yearModel}` : '', usageText !== 'Not saved' ? `Usage: ${usageText}` : ''].filter(Boolean).join(' · ')}</p>
-          <Link href={`/owner-app/assets/${encodeURIComponent(assetId)}`} prefetch={false}>View asset details</Link>
+          {manageMeta ? <p>{manageMeta}</p> : null}
+          <Link href={`/owner-app/assets/${encodeURIComponent(assetId)}/details`} prefetch={false}>View asset details</Link>
         </section>
 
         <section className={`${styles.section} ${styles.manageSection}`}>
