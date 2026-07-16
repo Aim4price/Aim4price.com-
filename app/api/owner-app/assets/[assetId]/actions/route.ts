@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
   getAssetRegisterItemById,
-  updateAssetRegisterItemFlag,
   updateAssetRegisterItemLocation,
   updateAssetRegisterItemMedia,
   type AssetRegisterDocument,
@@ -70,10 +69,8 @@ export async function POST(request: NextRequest, { params }: { params: { assetId
         latitude,
         longitude,
         locationText: text(body.locationText),
-        source: 'manual',
+        source: text(body.source) === 'device' ? 'device' : 'manual',
       });
-    } else if (action === 'flag') {
-      await updateAssetRegisterItemFlag(access.ownerUserId, { assetId: params.assetId, isFlagged: Boolean(body.isFlagged) });
     } else if (action === 'maintenance-create') {
       await createAssetMaintenanceRecord(access.ownerUserId, { ...body, assetId: params.assetId });
     } else if (action === 'maintenance-update') {
