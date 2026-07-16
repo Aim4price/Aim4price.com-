@@ -23,7 +23,7 @@ type Asset = {
   marketplaceStatus: string; marketplacePriceExVat: number | null; marketplaceNotes: string; sellerPhone: string;
   marketplaceSellerName: string; marketplaceSellerCompany: string; marketplaceSellerEmail: string;
   marketplaceProvince: string; marketplaceArea: string; lastScannedAtIso: string | null; lastKnownLat: number | null;
-  lastKnownLng: number | null; lastKnownLocationText: string; updatedAtIso: string;
+  lastKnownLng: number | null; lastKnownLocationText: string; createdAtIso: string; updatedAtIso: string;
 };
 type Register = { id: string; businessName: string };
 type OwnerContext = {
@@ -103,6 +103,16 @@ function statusVisual(value: string) {
 function conditionLabel(value: string) {
   const normalized = text(value).replace(/[_-]+/g, ' ');
   return normalized ? normalized.charAt(0).toUpperCase() + normalized.slice(1) : 'Not saved';
+}
+function manualMarketplaceNote(value: string) {
+  const note = text(value).replace(/\r\n/g, '\n');
+  if (!note) return '';
+  const compact = note.replace(/\s+/g, ' ').toLowerCase();
+  const isOperationalNote = compact.includes('lifetime worked updated to') ||
+    (/^checked\b/.test(compact) && compact.includes('checked items:')) ||
+    (/^serviced\b/.test(compact) && (compact.includes('serviced items:') || compact.includes('service items:') || compact.includes('work done:'))) ||
+    (/^repaired\b/.test(compact) && (compact.includes('work done:') || compact.includes('mechanic:') || compact.includes('company:')));
+  return isOperationalNote ? '' : note;
 }
 
 export default function OwnerAssetDetailClient({ assetId, view = 'summary', section }: {
@@ -769,7 +779,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
         <section className={`${styles.section} ${styles.manageSection}`}>
           <div className={styles.manageIntro}><h2><BalancedHeadingText text="What would you like to manage?" /></h2><p>Choose one task to continue on its own page.</p></div>
           <div className={styles.manageGrid}>
-            {MANAGE_SECTIONS.map((item) => (
+            {MANAGE_SECTIONS.filter((item) => item.id !== 'marketplace' || draft.kind !== 'property').map((item) => (
               <Link
                 key={item.id}
                 href={`/owner-app/assets/${encodeURIComponent(assetId)}/manage/${item.id}`}
@@ -873,8 +883,20 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
 
 function ReportsSection({ draft, openValuationReport }: { draft: Asset; openValuationReport: () => void }) {
   const currentYear = new Date().getFullYear();
-  const firstYear = Math.max(2000, Math.min(currentYear, new Date(draft.updatedAtIso || Date.now()).getFullYear() || currentYear));
-  const years = Array.from({ length: currentYear - firstYear + 1 }, (_, index) => String(currentYear - index));
+  const reportYear = (value: string | null | undefined) => {
+    if (!value) return null;
+    const year = new Date(value).getFullYear();
+    return Number.isFinite(year) && year >= 2000 && year <= 2100 ? year : null;
+  };
+  const reportYears = [
+    currentYear,
+    reportYear(draft.lastScannedAtIso),
+    reportYear(draft.updatedAtIso),
+    reportYear(draft.createdAtIso),
+  ].filter((value): value is number => value !== null);
+  const firstYear = Math.min(...reportYears, currentYear);
+  const lastYear = Math.max(...reportYears, currentYear);
+  const years = Array.from({ length: lastYear - firstYear + 1 }, (_, index) => String(lastYear - index));
   const [year, setYear] = useState('all');
   const [month, setMonth] = useState('all');
   const [maintenanceType, setMaintenanceType] = useState('all');
@@ -1106,7 +1128,7 @@ function LocationSection({ draft, location, setLocation, action, busy }: {
       const savedLng = Number(location.longitude);
       const center: [number, number] = hasCoordinates ? [savedLat, savedLng] : [-29, 24];
       const map = L.map(mapElementRef.current).setView(center, hasCoordinates ? 13 : 5);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
       mapRef.current = map;
       const setPoint = (lat: number, lng: number) => {
         if (!markerRef.current) {
@@ -1172,11 +1194,24 @@ function LocationSection({ draft, location, setLocation, action, busy }: {
 
 function MarketplaceSection({ draft, ownerContext, action, busy }: { draft: Asset; ownerContext: OwnerContext | null; action: (body: Record<string, unknown>, message: string) => Promise<void>; busy: boolean }) {
   const [form, setForm] = useState({
-    askingPriceExVat: String(draft.marketplacePriceExVat ?? draft.value ?? ''), marketplaceNotes: draft.marketplaceNotes || draft.note,
-    sellerName: draft.marketplaceSellerName || ownerContext?.contactName || '', sellerCompany: draft.marketplaceSellerCompany || ownerContext?.businessName || '', sellerPhone: draft.sellerPhone || ownerContext?.phone || '',
+    askingPriceExVat: String(draft.marketplacePriceExVat ?? draft.value ?? ''), marketplaceNotes: draft.marketplaceNotes || manualMarketplaceNote(draft.note),
+    sellerName: draft.marketplaceSellerName || ownerContext?.contactName || ownerContext?.businessName || 'Aim4price seller', sellerCompany: draft.marketplaceSellerCompany || ownerContext?.businessName || '', sellerPhone: draft.sellerPhone || ownerContext?.phone || '',
     sellerEmail: draft.marketplaceSellerEmail || ownerContext?.email || '', province: draft.marketplaceProvince || ownerContext?.province || '', area: draft.marketplaceArea || ownerContext?.area || '',
   });
-  const listingTitle = [draft.yearModel, draft.brandName, draft.modelName || draft.typedModelName].filter(Boolean).join(' ') || draft.title;
+  const [formError, setFormError] = useState('');
+  const listingBaseTitle = draft.title || [draft.brandName, draft.modelName || draft.typedModelName].filter(Boolean).join(' ') || 'Marketplace listing';
+  const listingUsage = formatResolvedAssetUsage(resolveAssetUsage({ kind: draft.kind, hours: draft.hours, lifeWorkedPercent: draft.lifeWorkedPercent, specsJson: draft.specsJson }), 'Usage not set');
+  const listingTitle = `${listingBaseTitle} · ${draft.yearModel || 'Year not set'} · ${listingUsage} · ${draft.condition ? conditionLabel(draft.condition) : 'Condition not set'}`;
+
+  async function publishMarketplaceListing() {
+    const askingPrice = Number(form.askingPriceExVat.replace(/[^0-9.]/g, ''));
+    if (draft.kind === 'property') { setFormError('Property / Buildings assets cannot be sent to Marketplace.'); return; }
+    if (!Number.isFinite(askingPrice) || askingPrice <= 0) { setFormError('Enter a valid marketplace price before continuing.'); return; }
+    if (!form.sellerName.trim() || !form.sellerPhone.trim()) { setFormError('Add at least a contact name and phone number before sending to Marketplace.'); return; }
+    setFormError('');
+    await action({ action: 'marketplace-publish', ...form, askingPriceExVat: askingPrice }, draft.marketplaceStatus === 'live' ? 'Marketplace listing updated.' : 'Asset listed on Marketplace.');
+  }
+
   return (
     <section className={styles.section}>
       <div className={`${styles.sectionHeader} ${styles.editorHeader}`}><div><h2>Marketplace</h2><p>Status: {draft.marketplaceStatus === 'live' ? 'Live' : 'Not listed'} · Asset and seller information is filled in automatically.</p></div></div>
@@ -1188,7 +1223,8 @@ function MarketplaceSection({ draft, ownerContext, action, busy }: { draft: Asse
         {Object.entries({ askingPriceExVat: 'Asking price excl. VAT', sellerName: 'Contact name', sellerCompany: 'Business name', sellerPhone: 'Phone', sellerEmail: 'Business email', province: 'Province', area: 'Area' }).map(([key, label]) => <label className={styles.field} key={key}><span>{label}</span><input value={form[key as keyof typeof form]} onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))} /></label>)}
         <label className={`${styles.field} ${styles.fieldFull}`}><span>Listing description</span><textarea value={form.marketplaceNotes} onChange={(event) => setForm((current) => ({ ...current, marketplaceNotes: event.target.value }))} /></label>
       </div>
-      <div className={styles.actions}><button type="button" className={styles.primaryButton} disabled={busy} onClick={() => void action({ action: 'marketplace-publish', ...form }, draft.marketplaceStatus === 'live' ? 'Marketplace listing updated.' : 'Asset listed on Marketplace.')}>{draft.marketplaceStatus === 'live' ? 'Update listing' : 'List on Marketplace'}</button>{draft.marketplaceStatus === 'live' ? <button type="button" className={styles.dangerButton} disabled={busy} onClick={() => void action({ action: 'marketplace-remove' }, 'Marketplace listing removed.')}>Remove listing</button> : null}</div>
+      {formError ? <div className={styles.errorNotice}>{formError}</div> : null}
+      <div className={styles.actions}><button type="button" className={styles.primaryButton} disabled={busy} onClick={() => void publishMarketplaceListing()}>{draft.marketplaceStatus === 'live' ? 'Update listing' : 'List on Marketplace'}</button>{draft.marketplaceStatus === 'live' ? <button type="button" className={styles.dangerButton} disabled={busy} onClick={() => void action({ action: 'marketplace-remove' }, 'Marketplace listing removed.')}>Remove listing</button> : null}</div>
     </section>
   );
 }
