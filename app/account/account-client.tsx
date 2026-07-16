@@ -160,6 +160,8 @@ type QuickActionIconName =
   | "business"
   | "registers"
   | "pin"
+  | "fieldManager"
+  | "ownerApp"
   | "dealer"
   | "marketplace"
   | "directory"
@@ -239,6 +241,56 @@ function QuickActionIcon({ name }: { name: QuickActionIconName }) {
           <path {...strokeProps} d="M8.25 10V7.8a3.75 3.75 0 0 1 7.5 0V10" />
           <path {...strokeProps} d="M12 14.25v1.9" />
           <circle cx="12" cy="13.25" r="0.75" fill="currentColor" />
+        </svg>
+      ) : null}
+
+      {name === "fieldManager" ? (
+        <svg {...svgProps}>
+          <circle
+            cx="9"
+            cy="8"
+            r="3.15"
+            fill="currentColor"
+            opacity="0.14"
+          />
+          <circle {...strokeProps} cx="9" cy="8" r="3.15" />
+          <path
+            {...strokeProps}
+            d="M3.9 19.25c.45-3.2 2.35-5.05 5.1-5.05 2.1 0 3.7 1.05 4.55 2.95"
+          />
+          <path
+            {...strokeProps}
+            d="M16.95 12.9a3.15 3.15 0 1 0 0 6.3 3.15 3.15 0 0 0 0-6.3Z"
+          />
+          <path {...strokeProps} d="m15.55 16.05.9.9 1.85-2" />
+        </svg>
+      ) : null}
+
+      {name === "ownerApp" ? (
+        <svg {...svgProps}>
+          <rect
+            x="5.5"
+            y="3.25"
+            width="13"
+            height="17.5"
+            rx="2.35"
+            fill="currentColor"
+            opacity="0.14"
+          />
+          <rect
+            {...strokeProps}
+            x="5.5"
+            y="3.25"
+            width="13"
+            height="17.5"
+            rx="2.35"
+          />
+          <circle {...strokeProps} cx="12" cy="9" r="2.05" />
+          <path
+            {...strokeProps}
+            d="M8.65 15.5c.3-2.05 1.55-3.25 3.35-3.25s3.05 1.2 3.35 3.25"
+          />
+          <path {...strokeProps} d="M10.75 18.1h2.5" />
         </svg>
       ) : null}
 
@@ -1948,8 +2000,8 @@ export default function AccountClient() {
                   className={styles.quickActionButton}
                   onClick={openFieldManagerPage}
                 >
-                  <QuickActionIcon name="pin" />
-                  <strong>Field Manager access</strong>
+                  <QuickActionIcon name="fieldManager" />
+                  <strong>Field manager app</strong>
                   <span className={styles.quickActionChevron}>›</span>
                 </button>
               ) : null}
@@ -1960,8 +2012,8 @@ export default function AccountClient() {
                   className={styles.quickActionButton}
                   onClick={openOwnerAppAccessPage}
                 >
-                  <QuickActionIcon name="registers" />
-                  <strong>Manage Owner App users</strong>
+                  <QuickActionIcon name="ownerApp" />
+                  <strong>Owner app</strong>
                   <span className={styles.quickActionChevron}>›</span>
                 </button>
               ) : null}
