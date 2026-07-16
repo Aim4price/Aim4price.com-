@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
+import BalancedHeadingText from '../balanced-heading';
 import styles from '../owner-app.module.css';
 
 type Asset = {
@@ -130,7 +131,7 @@ export default function OwnerAssetsClient({ initialQuery = '' }: { initialQuery?
         <section className={styles.managerAssetList} aria-label="Owner assets">
           {filteredItems.map((asset) => (
             <article key={asset.id} className={styles.managerAssetCard}>
-              <h2>{asset.title}</h2>
+              <h2><BalancedHeadingText text={asset.title} /></h2>
 
               <div className={styles.managerAssetMetaGrid}>
                 <div>
