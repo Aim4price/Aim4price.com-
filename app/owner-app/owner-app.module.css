@@ -31,7 +31,7 @@
   width: min(100% - 24px, 560px);
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: space-between;
   gap: 14px;
   min-height: 58px;
   margin: 0 auto;
@@ -39,13 +39,14 @@
 }
 
 .navButton {
-  margin-right: auto;
-  min-height: 48px;
+  width: min(42vw, 164px);
+  min-height: 50px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
   border: 1.5px solid #6fc596;
-  border-radius: 999px;
+  border-radius: 14px;
   background: linear-gradient(180deg, #ffffff 0%, #e6f8ef 100%);
   color: #0a543d;
   padding: 0 16px;
@@ -72,9 +73,14 @@
 .logoutButton {
   flex: 0 0 auto;
   margin-left: auto;
-  min-height: 48px;
+  width: min(42vw, 164px);
+  min-height: 50px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
   border: 1px solid rgba(198, 55, 55, 0.24);
-  border-radius: 999px;
+  border-radius: 14px;
   background: linear-gradient(180deg, #fff8f8 0%, #fde8e8 100%);
   color: #9b3030;
   padding: 0 18px;
@@ -88,6 +94,8 @@
   box-shadow: 0 12px 26px rgba(155, 48, 48, 0.1);
   transition: transform 0.16s ease, box-shadow 0.16s ease, opacity 0.16s ease;
 }
+
+.homeButton { text-decoration: none; }
 
 .logoutButton:focus-visible {
   outline: none;
@@ -1339,22 +1347,38 @@
 .pricingPanelHeader { display: grid; gap: 4px; }
 .pricingPanelHeader strong { color: var(--owner-ink); font-size: 1.02rem; font-weight: 800; }
 .pricingPanelHeader small { color: var(--owner-muted); font-size: 0.84rem; font-weight: 650; line-height: 1.45; }
-.choiceRow { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.choiceRow { display: grid; grid-template-columns: 1fr; gap: 9px; }
 .choiceRow button {
-  min-height: 54px;
+  width: 100%;
+  min-height: 52px;
+  box-sizing: border-box;
   border: 1px solid rgba(37, 71, 51, 0.18);
-  border-radius: 13px;
+  border-radius: 14px;
   background: #f8fbf9;
   color: var(--owner-ink);
-  padding: 8px 10px;
-  font: 800 0.84rem Montserrat, sans-serif;
+  padding: 8px 14px;
+  font: 800 0.9rem Montserrat, sans-serif;
   cursor: pointer;
 }
+.choiceRow button:disabled { cursor: not-allowed; opacity: 0.48; }
 .choiceRow .choiceActive { border-color: var(--owner-green); background: var(--owner-green); color: #fff; }
+.revalueInputCard {
+  display: grid;
+  gap: 10px;
+  border: 1px solid rgba(37, 71, 51, 0.12);
+  border-radius: 16px;
+  background: #f7faf8;
+  padding: 13px;
+}
+.revalueSaveToggle { display: flex; align-items: flex-start; gap: 9px; color: var(--owner-ink); font-size: 0.82rem; font-weight: 800; line-height: 1.4; }
+.revalueSaveToggle input { width: 20px; height: 20px; flex: 0 0 auto; margin: 0; accent-color: var(--owner-green); }
+.revalueInputCard > p { margin: -3px 0 0 29px; color: var(--owner-muted); font-size: 0.75rem; font-weight: 650; line-height: 1.4; }
+.revalueActions { display: grid; gap: 9px; }
+.revalueActions > button { width: 100%; min-height: 52px; }
 .pricingResult {
   display: grid;
   justify-items: center;
-  gap: 4px;
+  gap: 9px;
   border: 1px solid rgba(37, 71, 51, 0.14);
   border-radius: 16px;
   background: #edf6f0;
@@ -1363,6 +1387,12 @@
 }
 .pricingResult strong { color: var(--owner-ink); font-size: clamp(1.4rem, 7vw, 2rem); font-weight: 900; letter-spacing: -0.035em; }
 .pricingResult small { color: var(--owner-muted); font-size: 0.8rem; font-weight: 700; }
+.pricingCompareGrid { width: 100%; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.pricingCompareGrid > div { min-width: 0; display: grid; gap: 3px; border-radius: 12px; background: rgba(255, 255, 255, 0.76); padding: 10px; }
+.pricingCompareGrid b { color: var(--owner-ink); font-size: 0.9rem; font-weight: 850; overflow-wrap: anywhere; }
+.pricingResultDetails { width: 100%; display: grid; gap: 7px; border-top: 1px solid rgba(37, 71, 51, 0.1); padding-top: 10px; }
+.pricingResultDetails > div { min-width: 0; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; text-align: left; }
+.pricingResultDetails b { color: var(--owner-ink); font-size: 0.78rem; font-weight: 850; line-height: 1.35; text-align: right; overflow-wrap: anywhere; }
 .infoNotice { margin: 0; border-radius: 14px; background: #f4f7f5; color: var(--owner-muted); padding: 13px; font-size: 0.84rem; font-weight: 700; line-height: 1.45; }
 
 .locationCurrentCard {
@@ -1422,23 +1452,53 @@
 .locationMap { width: 100%; height: 330px; overflow: hidden; border: 1px solid rgba(18, 53, 45, 0.16); border-radius: 17px; background: #e9efeb; z-index: 0; }
 .mapHint { margin: -3px 0 0; color: var(--owner-muted); font-size: 0.78rem; font-weight: 650; text-align: center; }
 
-.marketplacePreview {
+.marketplaceTitlePanel,
+.marketplacePricePanel,
+.marketplacePhotosPanel,
+.marketplaceSellerPanel {
   min-width: 0;
   display: grid;
-  grid-template-columns: 104px minmax(0, 1fr);
-  align-items: center;
   gap: 12px;
   border: 1px solid rgba(18, 53, 45, 0.13);
   border-radius: 18px;
-  background: #f7faf8;
-  padding: 11px;
+  background: #fff;
+  padding: 14px;
 }
-.marketplacePreview > img,
-.marketplacePreview > div { width: 104px; height: 82px; display: grid; place-items: center; border-radius: 13px; background: #e9efeb; color: var(--owner-muted); object-fit: cover; font-size: 0.65rem; font-weight: 800; text-align: center; }
-.marketplacePreview > span { min-width: 0; display: grid; gap: 4px; }
-.marketplacePreview small { color: var(--owner-muted); font-size: 0.74rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; }
-.marketplacePreview strong { color: var(--owner-ink); font-size: 0.98rem; font-weight: 800; line-height: 1.3; overflow-wrap: anywhere; }
-.marketplacePreview em { color: var(--owner-muted); font-size: 0.78rem; font-style: normal; font-weight: 650; }
+.marketplaceTitlePanel { gap: 6px; background: #f3f8f5; }
+.marketplaceTitlePanel > span,
+.marketplacePanelHeading span { color: var(--owner-muted); font-size: 0.76rem; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; }
+.marketplaceTitlePanel > strong { color: var(--owner-ink); font-size: 1.02rem; font-weight: 850; line-height: 1.38; overflow-wrap: anywhere; }
+.marketplaceTitlePanel > small,
+.marketplacePanelHeading small { color: var(--owner-muted); font-size: 0.78rem; font-weight: 650; line-height: 1.45; }
+.marketplacePricePanel { background: #f9fbfa; }
+.marketplacePanelHeading { min-width: 0; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.marketplacePanelHeading > div { min-width: 0; display: grid; gap: 4px; }
+.marketplacePanelHeading > a {
+  min-height: 40px;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  border: 1.5px solid #6fc596;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #fff 0%, #e6f8ef 100%);
+  color: #0a543d;
+  padding: 0 12px;
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+.marketplaceMainPhoto { width: 100%; height: clamp(220px, 62vw, 360px); display: block; border-radius: 15px; background: #e9efeb; object-fit: cover; }
+.marketplacePhotoStrip { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+.marketplacePhotoStrip img,
+.marketplacePhotoStrip > span { width: 100%; aspect-ratio: 1; display: grid; place-items: center; border-radius: 9px; background: #e9efeb; color: var(--owner-ink); object-fit: cover; font-size: 0.72rem; font-weight: 900; }
+.marketplaceNoPhotos { min-height: 150px; display: grid; place-content: center; gap: 5px; border: 1px dashed rgba(18, 53, 45, 0.18); border-radius: 15px; background: #f6f9f7; padding: 18px; text-align: center; }
+.marketplaceNoPhotos strong { color: var(--owner-ink); font-size: 0.94rem; font-weight: 850; }
+.marketplaceNoPhotos span { color: var(--owner-muted); font-size: 0.78rem; font-weight: 650; line-height: 1.4; }
+.marketplaceDescriptionField { display: grid; gap: 7px; border: 1px solid rgba(18, 53, 45, 0.13); border-radius: 18px; background: #fff; padding: 14px; }
+.marketplaceDescriptionField textarea { min-height: 210px; }
+.marketplaceSellerPanel { background: #f9fbfa; }
 
 .editorSection { scroll-margin-top: 80px; }
 .editorHeader { align-items: center; justify-content: center; text-align: center; }
@@ -1495,7 +1555,6 @@
 }
 .manageAssetIdentityCopy { min-width: 0; display: grid; gap: 4px; }
 .manageAssetIdentity h1 { font-size: clamp(1.75rem, 7vw, 2.2rem); line-height: 1.08; }
-.manageAssetName { color: #24483d; font-size: 1rem; font-weight: 800; line-height: 1.35; overflow-wrap: anywhere; }
 .manageAssetIdentity p { font-size: 0.82rem; font-weight: 650; }
 .manageAssetIdentity a {
   min-height: 42px;
@@ -1937,8 +1996,8 @@
     padding: 14px;
   }
 
-  .navButton {
-    min-height: 44px;
+  .navButton,
+  .logoutButton {
     padding-right: 14px;
     padding-left: 14px;
     font-size: 0.86rem;

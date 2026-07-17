@@ -24,9 +24,14 @@ export default function OwnerAppNav({ showBack = true, backHref = '/owner-app', 
   return (
     <header className={styles.assetsHeader} aria-label="Aim4price Owner account controls">
       {showBack ? (
-        <Link className={styles.navButton} href={backHref} prefetch={false} aria-label={backLabel}>
-          <span>{backLabel}</span>
-        </Link>
+        <>
+          <Link className={styles.navButton} href={backHref} prefetch={false} aria-label={backLabel}>
+            <span>{backLabel}</span>
+          </Link>
+          <Link className={`${styles.logoutButton} ${styles.homeButton}`} href="/owner-app" prefetch={false} aria-label="Owner App home">
+            Home
+          </Link>
+        </>
       ) : (
         <button type="button" className={styles.logoutButton} onClick={() => void signOut()} disabled={signingOut}>
           {signingOut ? 'Signing out…' : 'Sign out'}
