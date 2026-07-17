@@ -13,6 +13,7 @@ export type OwnerAppAssetSummary = {
   yearModel: number | null;
   serialNumber: string;
   registrationNumber: string;
+  note: string;
   location: string;
   value: number;
   replacementPriceExVat: number | null;
@@ -61,6 +62,7 @@ function toSummary(item: AssetRegisterItem, register: AssetRegisterSummary): Own
     yearModel: item.yearModel,
     serialNumber: item.serialNumber || readFirst(specs, ['serialNumber', 'serial_number', 'vin', 'vinNumber', 'chassisNumber']),
     registrationNumber: item.licenseRegistrationNumber || readFirst(specs, ['registrationNumber', 'numberPlate', 'licenseRegistrationNumber']),
+    note: item.note,
     location: item.lastKnownLocationText,
     value: Math.round(Number(item.value || item.selectedValueExVat || 0)),
     replacementPriceExVat: item.replacementPriceExVat,
@@ -88,13 +90,16 @@ export async function listAllOwnerAppAssets(ownerUserId: string): Promise<{
 }
 
 export function filterOwnerAppAssets(items: OwnerAppAssetSummary[], query: string): OwnerAppAssetSummary[] {
-  const terms = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
+  const normalizedQuery = query.toLowerCase().trim();
+  const terms = normalizedQuery.split(/\s+/).filter(Boolean);
+  const compactQuery = normalizedQuery.replace(/[^a-z0-9]/g, '');
   if (!terms.length) return items;
   return items.filter((item) => {
     const haystack = [
       item.title, item.kind, item.brandName, item.modelName, item.yearModel, item.serialNumber,
-      item.registrationNumber, item.registerName, item.location,
+      item.registrationNumber, item.registerName, item.location, item.note,
     ].join(' ').toLowerCase();
-    return terms.every((term) => haystack.includes(term));
+    const compactHaystack = haystack.replace(/[^a-z0-9]/g, '');
+    return terms.every((term) => haystack.includes(term)) || Boolean(compactQuery && compactHaystack.includes(compactQuery));
   });
 }
