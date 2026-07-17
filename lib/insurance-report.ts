@@ -2,6 +2,7 @@ import { getDb } from './db';
 import type { InsuranceFinancialTerm, InsuranceReportType, InsuranceWorkspaceData } from './insurance-workspace-types';
 import { getInsuranceWorkspace } from './insurance-workspaces';
 import { INSURANCE_COVER_BY_KEY } from './insurance-cover-catalogue';
+import { getInsuranceWorkspaceReadiness } from './insurance-workspace-readiness';
 
 type BrokerDetails = {
   displayName: string;
@@ -54,6 +55,17 @@ function financialAmountVatIncluded(term: InsuranceFinancialTerm): number | null
   return term.vatBasis === 'exclusive' ? amount * VAT_MULTIPLIER : amount;
 }
 
+function financialTermReportLabel(term: InsuranceFinancialTerm): string {
+  if (term.amount) {
+    const basis = term.vatBasis === 'exclusive' ? 'VAT excl.' : term.vatBasis === 'inclusive' ? 'VAT incl.' : 'VAT basis unconfirmed';
+    const normalized = term.vatBasis === 'exclusive' ? ` (${money(financialAmountVatIncluded(term), term.currency)} VAT incl. comparison)` : '';
+    return `${money(term.amount, term.currency)} ${basis}${normalized}`;
+  }
+  if (term.percentage) return `${term.percentage}%`;
+  if (term.timeValue) return `${term.timeValue} ${term.timeUnit}`;
+  return 'Recorded';
+}
+
 function dateLabel(value: string | null | undefined): string {
   if (!value) return 'Not recorded';
   const date = new Date(value);
@@ -90,7 +102,10 @@ export async function createInsuranceReportSnapshot(input: {
   type: InsuranceReportType;
   broker: BrokerDetails;
 }) {
-  const workspace = reportSafeWorkspace(await getInsuranceWorkspace(input.brokerUserId, input.workspaceId));
+  const liveWorkspace = await getInsuranceWorkspace(input.brokerUserId, input.workspaceId);
+  const readiness = getInsuranceWorkspaceReadiness(liveWorkspace);
+  if (!readiness.ready) throw new Error(`INSURANCE_REPORT_NOT_READY:${readiness.issues.length}`);
+  const workspace = reportSafeWorkspace(liveWorkspace);
   const db = getDb();
   const client = await db.connect();
   try {
@@ -207,13 +222,40 @@ function currentCoverSummary(payload: InsuranceReportPayload): string {
     <tbody><tr><td>${counts.confirmed_included}</td><td>${counts.confirmed_excluded}</td><td>${counts.unknown}</td><td>${counts.not_recorded}</td><td>${counts.covered_elsewhere}</td><td>${counts.not_applicable}</td></tr></tbody></table>`;
 }
 
+function reviewQualitySummary(payload: InsuranceReportPayload): string {
+  const workspace = payload.workspace;
+  const currentPolicies = workspace.policies.filter((policy) => policy.status === 'current');
+  const renewalDates = currentPolicies.map((policy) => policy.renewalDate || policy.effectiveTo).filter(Boolean).sort();
+  const openQuestions = workspace.informationRequests.filter((request) => !['resolved', 'not_applicable'].includes(request.status));
+  const moneyTerms = [
+    ...workspace.assessments.flatMap((assessment) => assessment.financialTerms),
+    ...workspace.policies.flatMap((policy) => policy.sections.flatMap((section) => section.scheduleItems.flatMap((item) => item.financialTerms))),
+  ].filter((term) => term.amount);
+  const confirmedVatTerms = moneyTerms.filter((term) => ['inclusive', 'exclusive'].includes(term.vatBasis));
+  return `<h2>Review control summary</h2><div class="meta">
+    <div><small>Assets classified</small><strong>${workspace.riskObjects.filter((riskObject) => riskObject.classificationStatus !== 'unconfirmed').length}/${workspace.assetCount}</strong></div>
+    <div><small>Current policies</small><strong>${currentPolicies.length}</strong></div>
+    <div><small>Next renewal</small><strong>${escapeHtml(dateLabel(renewalDates[0]))}</strong></div>
+    <div><small>Open client questions</small><strong>${openQuestions.length}</strong></div>
+    <div><small>Money terms with VAT confirmed</small><strong>${confirmedVatTerms.length}/${moneyTerms.length}</strong></div>
+    <div><small>Policy sections</small><strong>${currentPolicies.reduce((total, policy) => total + policy.sections.length, 0)}</strong></div>
+    <div><small>Evidence references</small><strong>${workspace.evidence.length}</strong></div>
+    <div><small>Review status</small><strong>Ready at report generation</strong></div>
+  </div>`;
+}
+
 function assetTable(payload: InsuranceReportPayload): string {
   const assessmentByAsset = new Map<string, InsuranceWorkspaceData['assessments']>();
   payload.workspace.assessments.forEach((assessment) => assessment.assetIds.forEach((assetId) => assessmentByAsset.set(assetId, [...(assessmentByAsset.get(assetId) ?? []), assessment])));
+  const scheduleTermsByAsset = new Map<string, InsuranceFinancialTerm[]>();
+  payload.workspace.policies.forEach((policy) => policy.sections.forEach((section) => section.scheduleItems.forEach((item) => item.assetIds.forEach((assetId) => {
+    scheduleTermsByAsset.set(assetId, [...(scheduleTermsByAsset.get(assetId) ?? []), ...item.financialTerms]);
+  }))));
   const rows = payload.workspace.assets.map((asset) => {
     const assessments = assessmentByAsset.get(asset.id) ?? [];
     const sumTerms = assessments.flatMap((assessment) => assessment.financialTerms).filter((term) => term.termType === 'sum_insured');
-    const recordedSum = sumTerms[0];
+    const scheduleSumTerms = (scheduleTermsByAsset.get(asset.id) ?? []).filter((term) => term.termType === 'sum_insured');
+    const recordedSum = scheduleSumTerms[0] ?? sumTerms[0];
     const current = assessments.length ? [...new Set(assessments.map((assessment) => label(assessment.currentCoverPosition)))].join(', ') : 'Unknown';
     const ownerInsuredValue = nullableNumber(asset.snapshot.insuredValueExVat);
     return `<tr>
@@ -245,7 +287,7 @@ function assessmentTable(payload: InsuranceReportPayload): string {
   const rows = assessments.map((assessment) => {
     const limits = assessment.financialTerms
       .filter((term) => !['value', 'sum_insured'].includes(term.termType))
-      .map((term) => `${label(term.termType)}: ${term.amount ? `${money(financialAmountVatIncluded(term), term.currency)} VAT included` : term.percentage ? `${term.percentage}%` : term.timeValue ? `${term.timeValue} ${term.timeUnit}` : 'Recorded'}`)
+      .map((term) => `${label(term.termType)}: ${financialTermReportLabel(term)}`)
       .join('; ');
     const definition = assessment.canonicalCoverKey ? INSURANCE_COVER_BY_KEY[assessment.canonicalCoverKey] : null;
     const dependencies = definition ? [...definition.dependencies, ...definition.overlaps.map((entry) => `Overlap: ${entry}`)] : [];
@@ -264,9 +306,9 @@ function policyHierarchy(payload: InsuranceReportPayload): string {
   if (!policies.length) return '<h2>Policies and schedule</h2><p class="callout">No current policy hierarchy has been recorded.</p>';
   return `<h2>Policies and schedule</h2>${policies.map((policy) => `
     <section class="section"><h3>${escapeHtml([policy.insurerName, policy.policyNumber].filter(Boolean).join(' · ') || 'Policy details not recorded')}</h3>
-    <p class="muted">${escapeHtml(policy.productName || 'Product not recorded')} · ${escapeHtml(label(policy.status))} · ${escapeHtml(dateLabel(policy.effectiveFrom))} to ${escapeHtml(dateLabel(policy.effectiveTo))}</p>
+    <p class="muted">${escapeHtml(policy.productName || 'Product not recorded')} · ${escapeHtml(label(policy.status))} · ${escapeHtml(dateLabel(policy.effectiveFrom))} to ${escapeHtml(dateLabel(policy.effectiveTo))} · Renewal ${escapeHtml(dateLabel(policy.renewalDate || policy.effectiveTo))} · Source: ${escapeHtml(policy.provenance.sourceReference || label(policy.provenance.sourceType))}</p>
     <table><thead><tr><th>Actual insurer section</th><th>Canonical mapping</th><th>Wording / reference</th><th>Schedule treatment</th><th>Linked assets / exposures</th><th>Financial terms</th></tr></thead><tbody>
-    ${policy.sections.flatMap((section) => section.scheduleItems.length ? section.scheduleItems.map((item) => `<tr><td>${escapeHtml(section.actualSectionLabel)}</td><td>${escapeHtml(section.canonicalCoverKey ? label(section.canonicalCoverKey) : 'Not mapped')}</td><td>${escapeHtml([section.sectionNumberReference, section.wordingEditionReference].filter(Boolean).join(' · ') || 'Not recorded')}</td><td>${escapeHtml(label(item.treatment))}: ${escapeHtml(item.itemLabel)}</td><td>${item.assetIds.length} assets · ${item.exposureIds.length} exposures</td><td>${escapeHtml(item.financialTerms.map((term) => `${label(term.termType)} ${term.amount ? `${money(financialAmountVatIncluded(term), term.currency)} VAT included` : term.percentage ? `${term.percentage}%` : term.timeValue ? `${term.timeValue} ${term.timeUnit}` : ''}`).join('; ') || 'Not recorded')}</td></tr>`) : [`<tr><td>${escapeHtml(section.actualSectionLabel)}</td><td>${escapeHtml(section.canonicalCoverKey ? label(section.canonicalCoverKey) : 'Not mapped')}</td><td>${escapeHtml([section.sectionNumberReference, section.wordingEditionReference].filter(Boolean).join(' · ') || 'Not recorded')}</td><td>No schedule items recorded</td><td>—</td><td>Not recorded</td></tr>`]).join('')}
+    ${policy.sections.flatMap((section) => section.scheduleItems.length ? section.scheduleItems.map((item) => `<tr><td>${escapeHtml(section.actualSectionLabel)}</td><td>${escapeHtml(section.canonicalCoverKey ? label(section.canonicalCoverKey) : 'Not mapped')}</td><td>${escapeHtml([section.sectionNumberReference, section.wordingEditionReference].filter(Boolean).join(' · ') || 'Not recorded')}</td><td>${escapeHtml(label(item.treatment))}: ${escapeHtml(item.itemLabel)}</td><td>${item.assetIds.length} assets · ${item.exposureIds.length} exposures</td><td>${escapeHtml(item.financialTerms.map((term) => `${label(term.termType)} ${financialTermReportLabel(term)}`).join('; ') || 'Not recorded')}</td></tr>`) : [`<tr><td>${escapeHtml(section.actualSectionLabel)}</td><td>${escapeHtml(section.canonicalCoverKey ? label(section.canonicalCoverKey) : 'Not mapped')}</td><td>${escapeHtml([section.sectionNumberReference, section.wordingEditionReference].filter(Boolean).join(' · ') || 'Not recorded')}</td><td>No schedule items recorded</td><td>—</td><td>Not recorded</td></tr>`]).join('')}
     </tbody></table></section>`).join('')}`;
 }
 
@@ -304,6 +346,7 @@ function snapshotChanges(payload: InsuranceReportPayload): string {
 
 function reportBody(payload: InsuranceReportPayload): string {
   return [
+    reviewQualitySummary(payload),
     currentCoverSummary(payload),
     snapshotChanges(payload),
     assetTable(payload),

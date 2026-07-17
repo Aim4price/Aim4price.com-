@@ -387,6 +387,9 @@ export type InsurancePortfolioItem = Pick<
   completedAssetCount: number;
   includedAssetCount: number;
   outstandingAssetCount: number;
+  currentPolicyCount: number;
+  openQuestionCount: number;
+  nearestRenewalDateIso: string | null;
 };
 
 export type InsuranceCommand =
@@ -406,4 +409,5 @@ export type InsuranceCommand =
   | { operation: 'save_evidence'; evidenceType: InsuranceEvidence['evidenceType']; label: string; existingSharedReference?: string; sourceReference?: string; notes?: string; entityType?: InsuranceEvidence['links'][number]['entityType']; entityId?: string | null }
   | { operation: 'ingest_snapshot_revision'; shareId: string; expectedVersion: number }
   | { operation: 'refresh_suggestions'; assetIds?: string[] }
-  | { operation: 'decide_suggestion'; suggestionId: string; decision: 'accepted_for_assessment' | 'dismissed_with_reason' | 'information_required'; rationale: string };
+  | { operation: 'decide_suggestion'; suggestionId: string; decision: 'accepted_for_assessment' | 'dismissed_with_reason' | 'information_required'; rationale: string }
+  | { operation: 'decide_suggestions'; suggestionIds: string[]; decision: 'accepted_for_assessment' | 'dismissed_with_reason' | 'information_required'; rationale: string };

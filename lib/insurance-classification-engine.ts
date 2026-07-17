@@ -5,7 +5,7 @@ import {
   type InsuranceIndustryProfileKey,
 } from './insurance-cover-catalogue';
 
-export const INSURANCE_CLASSIFICATION_RULE_VERSION = 'insurance-rules-2026.07.1' as const;
+export const INSURANCE_CLASSIFICATION_RULE_VERSION = 'insurance-rules-2026.07.2' as const;
 
 export type InsuranceRuleConfidence = 'low' | 'medium' | 'high';
 
@@ -85,6 +85,14 @@ function factText(input: InsuranceClassificationInput): string {
     specs.category,
     specs.description,
     specs.use,
+    specs.generalAssetCategory,
+    specs.general_asset_category,
+    specs.generalAssetCategoryLabel,
+    specs.general_asset_category_label,
+    specs.insuranceUseContext,
+    specs.insurance_use_context,
+    specs.insuranceMobility,
+    specs.insurance_mobility,
   ].map(text).filter(Boolean).join(' '));
 }
 
@@ -156,7 +164,116 @@ function addPhysicalPropertyDependencies(result: MutableResult, ruleId: string, 
 export function classifyInsuranceRisk(input: InsuranceClassificationInput): InsuranceClassificationResult {
   const haystack = factText(input);
   const result: MutableResult = { candidates: new Map(), suggestions: new Map(), questions: new Set() };
-  const commercial = input.segments?.includes('commercial') ?? true;
+  const specs = record(input.ownerFacts.specsJson);
+  const generalAssetCategory = normalize(text(specs.generalAssetCategory ?? specs.general_asset_category));
+  const useContext = normalize(text(specs.insuranceUseContext ?? specs.insurance_use_context));
+  const mobility = normalize(text(specs.insuranceMobility ?? specs.insurance_mobility));
+  const criticalToOperations = input.criticalToOperations ?? normalize(text(
+    specs.insuranceCriticalToOperations ?? specs.insurance_critical_to_operations,
+  ));
+  const temperatureSensitiveStock = normalize(text(
+    specs.insuranceTemperatureSensitiveStock ?? specs.insurance_temperature_sensitive_stock,
+  ));
+  const portable = input.portable ?? (mobility === 'portable' || mobility === 'moves between locations' ? 'yes' : mobility ? 'no' : 'unknown');
+  const configuredSegments = input.segments ?? [];
+  const commercial = useContext === 'home'
+    ? false
+    : useContext === 'business' || useContext === 'mixed'
+      ? true
+      : configuredSegments.length > 0
+        ? configuredSegments.includes('commercial')
+        : true;
+
+  if (generalAssetCategory === 'furniture contents') {
+    const ruleId = 'OBJ-CONTENTS-001';
+    addCandidate(result, {
+      riskObjectType: commercial ? 'commercial_contents' : 'household_contents',
+      label: commercial ? 'Commercial furniture and contents' : 'Household furniture and contents',
+      confidence: 'high',
+      ruleId,
+      rationale: 'The owner classified the item as furniture or ordinary contents and recorded its use context.',
+      missingQuestions: ['At which address is it kept and what is its current full replacement value?', 'Is any item high-value, portable or owned by another party?'],
+    });
+    addCover(result, {
+      coverKey: commercial ? 'office_contents' : 'domestic_home_contents_householders',
+      ruleId,
+      rationale: commercial
+        ? 'Furniture and ordinary business contents are commonly assessed within a premises-based contents section.'
+        : 'Furniture and ordinary household contents are commonly assessed within home contents cover.',
+      confidence: 'high',
+      missingQuestions: ['Confirm the risk address, ownership, replacement inventory and security.'],
+    });
+    if (commercial) {
+      addCover(result, { coverKey: 'commercial_theft', ruleId, rationale: 'Theft trigger and premises security should be assessed separately for business contents.', confidence: 'medium', missingQuestions: ['What alarm, access and physical security controls apply?'] });
+    }
+  }
+
+  if (generalAssetCategory === 'appliances') {
+    const ruleId = 'OBJ-APPLIANCE-001';
+    addCandidate(result, { riskObjectType: commercial ? 'commercial_appliance' : 'domestic_equipment', label: commercial ? 'Commercial appliance' : 'Domestic appliance', confidence: 'high', ruleId, rationale: 'The owner classified the item as an appliance and recorded whether it is used at home or for business.', missingQuestions: ['Is it fixed or movable, and does it require professional installation?', 'Would a failure cause stock loss or a material interruption?'] });
+    addCover(result, { coverKey: commercial ? 'office_contents' : 'domestic_home_contents_householders', ruleId, rationale: commercial ? 'An ordinary business appliance is first assessed as business contents at its premises.' : 'An ordinary domestic appliance is first assessed as part of household contents.', confidence: 'high', missingQuestions: ['Confirm location, ownership, replacement value and any power-surge requirements.'] });
+    if (commercial && criticalToOperations === 'yes') {
+      addCover(result, { coverKey: 'business_interruption', ruleId, rationale: 'The owner marked the appliance as critical to operations, creating a possible interruption or increased-cost dependency.', confidence: 'medium', missingQuestions: ['How long could operations continue without it and what replacement arrangements exist?'] });
+    }
+  }
+
+  if (generalAssetCategory === 'computers it' || generalAssetCategory === 'portable electronics') {
+    const ruleId = generalAssetCategory === 'portable electronics' ? 'OBJ-PORTABLE-ELECTRONICS-001' : 'OBJ-COMPUTER-IT-001';
+    addCandidate(result, { riskObjectType: commercial ? 'electronic_equipment' : 'personal_electronics', label: commercial ? 'Electronic or IT equipment' : 'Personal electronic equipment', confidence: 'high', ruleId, rationale: 'The owner selected a structured computer, IT or portable-electronics category.', missingQuestions: ['Which devices, serial numbers, locations and replacement values apply?', 'What power, backup, data and security controls exist?'] });
+    if (commercial) {
+      addCover(result, { coverKey: 'electronic_equipment', ruleId, rationale: 'Business computer and electronic equipment can require specialist physical-damage, data-media and increased-cost treatment.', confidence: 'high', missingQuestions: ['Confirm the equipment schedule, portability, backup and surge protection.'] });
+      if (portable === 'yes') addCover(result, { coverKey: 'business_all_risks', ruleId, rationale: 'The item is recorded as portable or moving between locations, so away-from-premises treatment should be assessed.', confidence: 'high', missingQuestions: ['Where does it travel and what custody and vehicle-security controls apply?'] });
+      if (criticalToOperations === 'yes') addCover(result, { coverKey: 'business_interruption', ruleId, rationale: 'The item is recorded as operationally critical, creating a possible interruption or increased-cost dependency.', confidence: 'high', missingQuestions: ['What recovery time, redundancy and hired-replacement options exist?'] });
+      addCover(result, { coverKey: 'cyber_insurance', ruleId, rationale: 'Systems, data and privacy exposures are distinct from physical damage to the device and should be tested separately.', confidence: criticalToOperations === 'yes' ? 'medium' : 'low', missingQuestions: ['Does the item store sensitive data, connect to critical systems or support online operations?'] });
+    } else {
+      addCover(result, { coverKey: portable === 'yes' ? 'personal_all_risks_portable_possessions' : 'domestic_home_contents_householders', ruleId, rationale: portable === 'yes' ? 'Portable personal electronics may need individual away-from-home treatment.' : 'Personal electronics normally kept at home should first be assessed within household contents.', confidence: 'high', missingQuestions: ['Confirm business use, territory, serial number, replacement value and whether individual specification is needed.'] });
+    }
+  }
+
+  if (generalAssetCategory === 'commercial refrigeration') {
+    const ruleId = 'OBJ-REFRIGERATION-001';
+    addCandidate(result, { riskObjectType: 'commercial_refrigeration', label: 'Commercial refrigeration or cold-storage equipment', confidence: 'high', ruleId, rationale: 'The owner explicitly classified the item as commercial refrigeration or cold storage.', missingQuestions: ['What machinery, refrigerant, maintenance and power arrangements apply?', 'What is the maximum temperature-sensitive stock value and safe holding time?'] });
+    addCover(result, { coverKey: 'machinery_breakdown', ruleId, rationale: 'Internal mechanical or electrical breakdown is a distinct exposure for refrigeration equipment.', confidence: 'high', missingQuestions: ['What is the age, duty, service history and availability of spares?'] });
+    addCover(result, { coverKey: 'commercial_fire_allied_perils', ruleId, rationale: 'The equipment remains physical property at a stated premises and should be included in the property-value discussion.', confidence: 'medium', missingQuestions: ['At which location is it installed and on what replacement basis?'] });
+    if (temperatureSensitiveStock !== 'no') addCover(result, { coverKey: 'machinery_breakdown_bi_deterioration_stock', ruleId, rationale: 'Refrigeration failure may cause deterioration of temperature-sensitive stock as well as equipment damage.', confidence: temperatureSensitiveStock === 'yes' ? 'high' : 'medium', missingQuestions: ['Confirm peak stock values, temperature controls, alarms, waiting period and backup power.'] });
+    if (criticalToOperations === 'yes') addCover(result, { coverKey: 'business_interruption', ruleId, rationale: 'The owner marked the refrigeration equipment as critical to operations.', confidence: 'high', missingQuestions: ['What income, recovery time and increased costs follow a breakdown?'] });
+  }
+
+  if (generalAssetCategory === 'kitchen catering') {
+    const ruleId = 'OBJ-CATERING-EQUIPMENT-001';
+    addCandidate(result, { riskObjectType: 'commercial_kitchen_equipment', label: 'Commercial kitchen or catering equipment', confidence: 'high', ruleId, rationale: 'The owner classified the item as commercial kitchen or catering equipment.', missingQuestions: ['Is it gas, electrical, fixed or portable, and how is it maintained?', 'Would failure stop trading or create food-stock loss?'] });
+    addCover(result, { coverKey: 'commercial_fire_allied_perils', ruleId, rationale: 'Commercial catering equipment is physical property at the operating premises and creates material fire exposure.', confidence: 'high', missingQuestions: ['Confirm extraction, fire suppression, gas and electrical controls.'] });
+    addCover(result, { coverKey: 'machinery_breakdown', ruleId, rationale: 'Powered catering machinery may have an internal breakdown exposure distinct from ordinary property damage.', confidence: 'medium', missingQuestions: ['Which powered units are critical and what maintenance applies?'] });
+    if (criticalToOperations === 'yes') addCover(result, { coverKey: 'business_interruption', ruleId, rationale: 'The item is recorded as critical to business operations.', confidence: 'high', missingQuestions: ['What trading loss or increased cost follows failure?'] });
+  }
+
+  if (generalAssetCategory === 'security systems') {
+    const ruleId = 'OBJ-SECURITY-SYSTEM-001';
+    addCandidate(result, { riskObjectType: 'security_and_access_system', label: 'Security, alarm or access-control system', confidence: 'high', ruleId, rationale: 'The owner selected the structured security and access-system category.', missingQuestions: ['Is it fixed, monitored and owned by the client or a service provider?', 'What power, connectivity and maintenance dependencies exist?'] });
+    addCover(result, { coverKey: commercial ? 'electronic_equipment' : 'domestic_buildings_houseowners', ruleId, rationale: commercial ? 'Electronic security and access equipment can require specialist equipment treatment.' : 'Fixed domestic security equipment should be assessed with the building and attached installations.', confidence: 'high', missingQuestions: ['Confirm ownership, installation, replacement value and power protection.'] });
+    if (commercial && criticalToOperations === 'yes') addCover(result, { coverKey: 'business_interruption', ruleId, rationale: 'Loss of a critical security system may prevent safe access or continued operation.', confidence: 'medium', missingQuestions: ['Would the site close or require temporary guarding after failure?'] });
+  }
+
+  if (generalAssetCategory === 'power energy') {
+    const ruleId = 'OBJ-POWER-ENERGY-001';
+    addCandidate(result, { riskObjectType: 'power_or_energy_equipment', label: 'Generator, inverter, battery or solar equipment', confidence: 'high', ruleId, rationale: 'The owner selected a structured backup-power or energy-equipment category.', missingQuestions: ['Is it fixed or portable, and who owns and installed it?', 'What capacity, certificates, maintenance, fire and theft controls apply?'] });
+    addCover(result, { coverKey: commercial ? 'electronic_equipment' : mobility === 'fixed' ? 'domestic_buildings_houseowners' : 'domestic_home_contents_householders', ruleId, rationale: commercial ? 'Power electronics, controls and battery systems require equipment-specific physical-damage assessment.' : 'The home-use and installation facts determine whether the item is treated as a fixture or movable contents.', confidence: 'high', missingQuestions: ['Confirm installation, ownership, replacement value, surge and battery-fire controls.'] });
+    if (commercial) addCover(result, { coverKey: 'machinery_breakdown', ruleId, rationale: 'Generators and installed power equipment can have an internal mechanical or electrical breakdown exposure.', confidence: 'medium', missingQuestions: ['Which components can fail internally and what service support exists?'] });
+    if (commercial && criticalToOperations === 'yes') addCover(result, { coverKey: 'business_interruption', ruleId, rationale: 'The owner marked the power equipment as an operational dependency.', confidence: 'high', missingQuestions: ['What operations fail during an outage and for how long?'] });
+  }
+
+  if (generalAssetCategory === 'fixtures improvements') {
+    const ruleId = 'OBJ-FIXTURE-IMPROVEMENT-001';
+    addCandidate(result, { riskObjectType: commercial ? 'tenant_improvement_or_fixture' : 'domestic_fixed_installation', label: commercial ? 'Tenant improvement or fixed fixture' : 'Domestic fixed installation', confidence: 'high', ruleId, rationale: 'The owner classified the item as fixed, built in or an improvement.', missingQuestions: ['Who owns it and who is responsible under the title or lease?', 'Is its reinstatement value included in the building or contents valuation?'] });
+    addCover(result, { coverKey: commercial ? 'buildings_combined' : 'domestic_buildings_houseowners', ruleId, rationale: 'Fixed installations and improvements should be tested against the building ownership and reinstatement basis.', confidence: 'high', missingQuestions: ['Confirm ownership, lease responsibility, construction and rebuilding value.'] });
+    if (commercial) addCover(result, { coverKey: 'office_contents', ruleId, rationale: 'Tenant improvements can instead sit with office contents depending on ownership and wording.', confidence: 'medium', missingQuestions: ['Is the client a tenant and does the contents section include tenant improvements?'] });
+  }
+
+  if (generalAssetCategory === 'high value items') {
+    const ruleId = 'OBJ-HIGH-VALUE-ITEM-001';
+    addCandidate(result, { riskObjectType: commercial ? 'specified_high_value_business_property' : 'specified_high_value_personal_property', label: 'High-value item requiring individual review', confidence: 'high', ruleId, rationale: 'The owner identified the asset as high-value or specialist property.', missingQuestions: ['Is a current professional valuation available?', 'Where is it kept, displayed, transported and secured?'] });
+    addCover(result, { coverKey: commercial ? 'business_all_risks' : 'personal_all_risks_portable_possessions', ruleId, rationale: 'High-value items may require individual specification, valuation and territorial treatment.', confidence: 'high', missingQuestions: ['Confirm item description, ownership, valuation, security, use and territory.'] });
+  }
 
   if (hasAny(haystack, ['tractor', 'harvester', 'combine', 'loader', 'excavator', 'bulldozer', 'grader', 'forklift', 'telehandler', 'mobile plant'])) {
     const ruleId = 'OBJ-MOBILE-PLANT-001';
@@ -179,11 +296,15 @@ export function classifyInsuranceRisk(input: InsuranceClassificationInput): Insu
 
   if (hasAny(haystack, ['laptop', 'computer', 'server', 'tablet', 'electronic equipment', 'camera', 'printer', 'network'])) {
     const ruleId = 'OBJ-ELECTRONIC-001';
-    addCandidate(result, { riskObjectType: 'electronic_equipment', label: 'Electronic equipment', confidence: 'high', ruleId, rationale: 'The immutable facts identify electronic, computer or data-processing equipment.', missingQuestions: ['Is it portable or fixed?', 'What data, backup, power, cyber and operational dependencies exist?'] });
-    addCover(result, { coverKey: 'electronic_equipment', ruleId, rationale: 'Electronic equipment damage, data media and increased cost may require a specialist engineering section.', confidence: 'high', missingQuestions: ['Is equipment, data media or increased cost intended to be insured?'] });
-    addCover(result, { coverKey: 'business_all_risks', ruleId, rationale: 'Portable equipment away from premises can require Business All Risks treatment.', confidence: input.portable === 'yes' ? 'high' : 'medium', missingQuestions: ['Does the item regularly leave the premises?'] });
-    addCover(result, { coverKey: 'cyber_insurance', ruleId, rationale: 'Data, privacy and network interruption are distinct from physical equipment damage.', confidence: 'medium', missingQuestions: ['What data or network exposure exists beyond physical damage?'] });
-    addCover(result, { coverKey: 'business_interruption', ruleId, rationale: 'Critical electronics can create revenue or increased-cost dependency.', confidence: input.criticalToOperations === 'yes' ? 'high' : 'medium', missingQuestions: ['Would loss of the item interrupt operations or require hired replacement equipment?'] });
+    addCandidate(result, { riskObjectType: commercial ? 'electronic_equipment' : 'personal_electronics', label: commercial ? 'Electronic equipment' : 'Personal electronic equipment', confidence: 'high', ruleId, rationale: 'The immutable facts identify electronic, computer or data-processing equipment.', missingQuestions: ['Is it portable or fixed?', 'What data, backup, power, cyber and operational dependencies exist?'] });
+    if (commercial) {
+      addCover(result, { coverKey: 'electronic_equipment', ruleId, rationale: 'Electronic equipment damage, data media and increased cost may require a specialist engineering section.', confidence: 'high', missingQuestions: ['Is equipment, data media or increased cost intended to be insured?'] });
+      addCover(result, { coverKey: 'business_all_risks', ruleId, rationale: 'Portable equipment away from premises can require Business All Risks treatment.', confidence: portable === 'yes' ? 'high' : 'medium', missingQuestions: ['Does the item regularly leave the premises?'] });
+      addCover(result, { coverKey: 'cyber_insurance', ruleId, rationale: 'Data, privacy and network interruption are distinct from physical equipment damage.', confidence: 'medium', missingQuestions: ['What data or network exposure exists beyond physical damage?'] });
+      addCover(result, { coverKey: 'business_interruption', ruleId, rationale: 'Critical electronics can create revenue or increased-cost dependency.', confidence: criticalToOperations === 'yes' ? 'high' : 'medium', missingQuestions: ['Would loss of the item interrupt operations or require hired replacement equipment?'] });
+    } else {
+      addCover(result, { coverKey: portable === 'yes' ? 'personal_all_risks_portable_possessions' : 'domestic_home_contents_householders', ruleId, rationale: portable === 'yes' ? 'Portable personal electronics may require away-from-home specification.' : 'Personal electronics normally kept at home should first be assessed within household contents.', confidence: 'high', missingQuestions: ['Confirm replacement value, serial number, territory and any business use.'] });
+    }
   }
 
   if (hasAny(haystack, ['building', 'warehouse', 'office', 'shop', 'factory', 'house', 'shed', 'property', 'structure'])) {
@@ -205,6 +326,26 @@ export function classifyInsuranceRisk(input: InsuranceClassificationInput): Insu
     addCover(result, { coverKey: 'marine_cargo_stock_throughput', ruleId, rationale: 'International transit or continuous stock throughput may require marine treatment.', confidence: 'low', missingQuestions: ['Are imports, exports, Incoterms or overseas voyages involved?'] });
     addCover(result, { coverKey: 'commercial_theft', ruleId, rationale: 'Stock theft trigger and security conditions should be assessed separately.', confidence: 'medium', missingQuestions: ['What theft trigger, security and stock controls apply?'] });
     addCover(result, { coverKey: 'machinery_breakdown_bi_deterioration_stock', ruleId, rationale: 'Temperature-sensitive produce may deteriorate after equipment or supply failure.', confidence: 'low', missingQuestions: ['Is stock temperature-sensitive or dependent on refrigeration?'] });
+  }
+
+  if (hasAny(haystack, ['tools', 'tool set', 'power tool', 'workshop equipment', 'handheld equipment'])) {
+    const ruleId = 'OBJ-TOOLS-001';
+    addCandidate(result, { riskObjectType: 'tools_and_workshop_equipment', label: 'Tools or workshop equipment', confidence: 'high', ruleId, rationale: 'The asset facts identify tools, powered tools or workshop equipment.', missingQuestions: ['Are the tools portable, kept in vehicles or used at client sites?', 'What serials, values, security and custody controls apply?'] });
+    addCover(result, { coverKey: 'business_all_risks', ruleId, rationale: 'Portable business tools can require accidental-loss, theft and away-from-premises treatment.', confidence: portable === 'yes' ? 'high' : 'medium', missingQuestions: ['Where are the tools used and stored, and what vehicle or site security applies?'] });
+    addCover(result, { coverKey: 'commercial_theft', ruleId, rationale: 'Theft trigger and security conditions should be assessed for tools kept at a workshop or premises.', confidence: 'medium', missingQuestions: ['What alarm, access, storage and inventory controls apply?'] });
+    addCover(result, { coverKey: 'commercial_fire_allied_perils', ruleId, rationale: 'Tools stored at a declared business premises remain part of the physical property value at risk.', confidence: 'medium', missingQuestions: ['At which locations are the tools kept and what are the peak values?'] });
+  }
+
+  if (!generalAssetCategory && hasAny(haystack, ['furniture', 'desk', 'chair', 'couch', 'cupboard', 'shelving'])) {
+    const ruleId = 'OBJ-CONTENTS-LEGACY-001';
+    addCandidate(result, { riskObjectType: commercial ? 'commercial_contents' : 'household_contents', label: commercial ? 'Possible commercial furniture or contents' : 'Possible household contents', confidence: 'medium', ruleId, rationale: 'The item title contains a common furniture or contents term, but the new structured category has not been confirmed.', missingQuestions: ['Is this home or business property, and at which address is it kept?'] });
+    addCover(result, { coverKey: commercial ? 'office_contents' : 'domestic_home_contents_householders', ruleId, rationale: 'The item appears to be furniture or ordinary contents, subject to confirmation of use and location.', confidence: 'medium', missingQuestions: ['Confirm use, location, ownership and replacement value.'] });
+  }
+
+  if (!generalAssetCategory && hasAny(haystack, ['fridge', 'freezer', 'washing machine', 'dishwasher', 'microwave', 'appliance'])) {
+    const ruleId = 'OBJ-APPLIANCE-LEGACY-001';
+    addCandidate(result, { riskObjectType: commercial ? 'commercial_appliance' : 'domestic_equipment', label: 'Possible appliance', confidence: 'medium', ruleId, rationale: 'The item title contains a common appliance term, but its structured use and dependency facts have not been confirmed.', missingQuestions: ['Is it for home or business use, and does stock or income depend on it?'] });
+    addCover(result, { coverKey: commercial ? 'office_contents' : 'domestic_home_contents_householders', ruleId, rationale: 'The item appears to be an ordinary appliance and should first be assessed with the applicable contents section.', confidence: 'medium', missingQuestions: ['Confirm use, location, installation and replacement value.'] });
   }
 
   if (hasAny(haystack, ['crop', 'maize', 'wheat', 'sunflower', 'soy', 'orchard', 'vineyard', 'field'])) {

@@ -246,6 +246,12 @@ export function parseInsuranceCommand(value: unknown): InsuranceCommand {
     return { operation, suggestionId: uuidValue(body.suggestionId, 'suggestionId', true) as string, decision: enumValue(body.decision, new Set(['accepted_for_assessment', 'dismissed_with_reason', 'information_required']), 'decision', 'information_required'), rationale: stringValue(body.rationale, 'rationale', 4000, true) };
   }
 
+  if (operation === 'decide_suggestions') {
+    const suggestionIds = uuidArray(body.suggestionIds, 'suggestionIds');
+    if (!suggestionIds.length) throw new Error('INSURANCE_SUGGESTION_REQUIRED');
+    return { operation, suggestionIds, decision: enumValue(body.decision, new Set(['accepted_for_assessment', 'dismissed_with_reason', 'information_required']), 'decision', 'information_required'), rationale: stringValue(body.rationale, 'rationale', 4000, true) };
+  }
+
   if (booleanValue(body.allowUnknownOperation)) throw new Error('INSURANCE_UNKNOWN_OPERATION');
   throw new Error('INSURANCE_UNKNOWN_OPERATION');
 }

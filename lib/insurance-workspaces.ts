@@ -100,6 +100,57 @@ function sourceAssetKey(asset: SharedRegisterAsset, index: number): string {
   return text(asset.id) || `snapshot-asset-${index + 1}`;
 }
 
+async function insertClassificationSuggestions(
+  client: PoolClient,
+  input: {
+    workspaceId: string;
+    workspaceAssetId: string;
+    ownerFacts: Record<string, unknown>;
+    segments: InsuranceClientSegment[];
+    industries: InsuranceIndustryProfileKey[];
+    useDescription?: string;
+    exposureTypes?: string[];
+  },
+) {
+  const classificationInput = {
+    ownerFacts: input.ownerFacts,
+    segments: input.segments,
+    industries: input.industries,
+    useDescription: input.useDescription,
+    exposureTypes: input.exposureTypes,
+  };
+  const result = classifyInsuranceRisk(classificationInput);
+  const inputHash = createHash('sha256').update(JSON.stringify(classificationInput)).digest('hex');
+
+  for (const candidate of result.riskObjectCandidates) {
+    await client.query(
+      `insert into insurance_classification_suggestions
+        (workspace_id, workspace_asset_id, suggested_risk_object_type, rule_id, rule_version, rationale, confidence, missing_questions, input_hash)
+       select $1::uuid, $2::uuid, $3, $4, $5, $6, $7, $8::jsonb, $9
+       where not exists (
+         select 1 from insurance_classification_suggestions
+         where workspace_id = $1::uuid and workspace_asset_id = $2::uuid
+           and suggested_risk_object_type = $3 and rule_id = $4 and input_hash = $9
+       )`,
+      [input.workspaceId, input.workspaceAssetId, candidate.riskObjectType, candidate.ruleId, INSURANCE_CLASSIFICATION_RULE_VERSION, candidate.rationale, candidate.confidence, JSON.stringify(candidate.missingQuestions), inputHash],
+    );
+  }
+
+  for (const suggestion of result.coverSuggestions) {
+    await client.query(
+      `insert into insurance_classification_suggestions
+        (workspace_id, workspace_asset_id, suggested_cover_key, rule_id, rule_version, rationale, confidence, missing_questions, input_hash)
+       select $1::uuid, $2::uuid, $3, $4, $5, $6, $7, $8::jsonb, $9
+       where not exists (
+         select 1 from insurance_classification_suggestions
+         where workspace_id = $1::uuid and workspace_asset_id = $2::uuid
+           and suggested_cover_key = $3 and rule_id = $4 and input_hash = $9
+       )`,
+      [input.workspaceId, input.workspaceAssetId, suggestion.coverKey, suggestion.ruleId, INSURANCE_CLASSIFICATION_RULE_VERSION, suggestion.rationale, suggestion.confidence, JSON.stringify(suggestion.missingQuestions), inputHash],
+    );
+  }
+}
+
 function snapshotReference(lead: AssetLead, generatedAtIso: string): string {
   const date = new Date(generatedAtIso);
   const datePart = Number.isNaN(date.getTime()) ? lead.createdAtIso.slice(0, 10) : date.toISOString().slice(0, 10);
@@ -264,6 +315,14 @@ export async function getOrCreateInsuranceWorkspaceForShare(input: {
           'insert into insurance_exposure_assets (workspace_id, exposure_id, workspace_asset_id) values ($1::uuid, $2::uuid, $3::uuid)',
           [workspaceId, String(exposureResult.rows[0].id), workspaceAssetId],
         );
+        await insertClassificationSuggestions(client, {
+          workspaceId,
+          workspaceAssetId,
+          ownerFacts: asset as Record<string, unknown>,
+          segments: [],
+          industries: [],
+          exposureTypes: ['physical_asset'],
+        });
       }
       await audit(client, {
         workspaceId,
@@ -947,6 +1006,21 @@ export async function executeInsuranceCommand(input: {
       await replaceLinks({ client, workspaceId, linkTable: 'insurance_assessment_parties', ownerColumn: 'assessment_id', ownerId: assessmentId, targetColumn: 'party_id', target: 'party', ids: command.partyIds ?? [] });
       await replaceLinks({ client, workspaceId, linkTable: 'insurance_assessment_sections', ownerColumn: 'assessment_id', ownerId: assessmentId, targetColumn: 'section_id', target: 'section', ids: command.sectionIds ?? [] });
       await replaceLinks({ client, workspaceId, linkTable: 'insurance_assessment_schedule_items', ownerColumn: 'assessment_id', ownerId: assessmentId, targetColumn: 'schedule_item_id', target: 'schedule_item', ids: command.scheduleItemIds ?? [] });
+      if (command.placementStage === 'information_required') {
+        const question = definition?.underwritingQuestions[0]?.question || `What information is still needed to decide ${label}?`;
+        await client.query(
+          `insert into insurance_information_requests
+            (workspace_id, question, reason, related_entity_type, related_entity_id, status,
+             source_type, source_reference, requested_by_user_id)
+           select $1::uuid, $2, $3, 'assessment', $4::uuid, 'open', 'system_suggestion', $5, $6
+           where not exists (
+             select 1 from insurance_information_requests
+             where workspace_id = $1::uuid and related_entity_type = 'assessment'
+               and related_entity_id = $4::uuid and status not in ('resolved', 'not_applicable')
+           )`,
+          [workspaceId, question, `Needed to complete the ${label} cover decision.`, assessmentId, `assessment:${assessmentId}`, brokerUserId],
+        );
+      }
       await audit(client, { workspaceId, actorUserId: brokerUserId, entityType: 'cover_assessment', entityId: assessmentId, action: command.id ? 'updated' : 'created', before: beforeForAudit(row), after: command });
     });
   }
@@ -973,7 +1047,7 @@ export async function executeInsuranceCommand(input: {
       if (command.scheduleItemId) await assertWorkspaceIds(client, workspaceId, [command.scheduleItemId], 'schedule_item');
       let row: DbRow;
       const hasMonetaryAmount = command.amount !== null && command.amount !== undefined && command.amount !== '';
-      const vatBasis = hasMonetaryAmount ? 'inclusive' : command.vatBasis || 'not_applicable';
+      const vatBasis = hasMonetaryAmount ? command.vatBasis || 'unknown' : 'not_applicable';
       const values = [command.assessmentId ?? null, command.componentId ?? null, command.scheduleItemId ?? null, command.termType, command.amount, command.percentage, command.timeValue, command.timeUnit || null, command.currency, command.valuationBasis || null, command.limitType || null, vatBasis, command.valuationDate || null, command.effectiveFrom || null, command.effectiveTo || null, command.sourceType, command.sourceReference || null, 'manual', brokerUserId];
       if (command.id) {
         row = await updateRow({ client, table: 'insurance_financial_terms', workspaceId, id: command.id, expectedVersion: command.expectedVersion, assignments: 'assessment_id = $1::uuid, component_id = $2::uuid, schedule_item_id = $3::uuid, term_type = $4, amount = $5, percentage = $6, time_value = $7, time_unit = $8, currency = $9, valuation_basis = $10, limit_type = $11, vat_basis = $12, valuation_date = $13::date, effective_from = $14::date, effective_to = $15::date, source_type = $16, source_reference = $17, extraction_method = $18, human_confirmed_by = $19, human_confirmed_at = now(), updated_by_user_id = $19', values });
@@ -1129,78 +1203,151 @@ export async function executeInsuranceCommand(input: {
       const assets = await client.query<DbRow>(`select id, snapshot_json from insurance_workspace_assets where workspace_id = $1::uuid ${filter}`, values);
       for (const asset of assets.rows) {
         const ownerFacts = asset.snapshot_json && typeof asset.snapshot_json === 'object' ? asset.snapshot_json as Record<string, unknown> : {};
-        const result = classifyInsuranceRisk({ ownerFacts, segments: stringArray(workspace.client_segments) as InsuranceClientSegment[], industries: industriesResult.rows.map((row) => row.industry_key) });
-        const inputHash = createHash('sha256').update(JSON.stringify({ ownerFacts, segments: workspace.client_segments, industries: industriesResult.rows })).digest('hex');
-        for (const candidate of result.riskObjectCandidates) {
-          await client.query(
-            `insert into insurance_classification_suggestions
-              (workspace_id, workspace_asset_id, suggested_risk_object_type, rule_id, rule_version, rationale, confidence, missing_questions, input_hash)
-             select $1::uuid, $2::uuid, $3, $4, $5, $6, $7, $8::jsonb, $9
-             where not exists (
-               select 1 from insurance_classification_suggestions
-               where workspace_id = $1::uuid and workspace_asset_id = $2::uuid
-                 and suggested_risk_object_type = $3 and rule_id = $4 and input_hash = $9
-             )`,
-            [workspaceId, String(asset.id), candidate.riskObjectType, candidate.ruleId, INSURANCE_CLASSIFICATION_RULE_VERSION, candidate.rationale, candidate.confidence, JSON.stringify(candidate.missingQuestions), inputHash],
-          );
-        }
-        for (const suggestion of result.coverSuggestions) {
-          await client.query(
-            `insert into insurance_classification_suggestions
-              (workspace_id, workspace_asset_id, suggested_cover_key, rule_id, rule_version, rationale, confidence, missing_questions, input_hash)
-             select $1::uuid, $2::uuid, $3, $4, $5, $6, $7, $8::jsonb, $9
-             where not exists (
-               select 1 from insurance_classification_suggestions
-               where workspace_id = $1::uuid and workspace_asset_id = $2::uuid
-                 and suggested_cover_key = $3 and rule_id = $4 and input_hash = $9
-             )`,
-            [workspaceId, String(asset.id), suggestion.coverKey, suggestion.ruleId, INSURANCE_CLASSIFICATION_RULE_VERSION, suggestion.rationale, suggestion.confidence, JSON.stringify(suggestion.missingQuestions), inputHash],
-          );
-        }
+        const riskContext = await client.query<DbRow>(
+          `select string_agg(nullif(use_description, ''), ' | ' order by updated_at) as use_description
+           from insurance_risk_objects
+           where workspace_id = $1::uuid and workspace_asset_id = $2::uuid`,
+          [workspaceId, String(asset.id)],
+        );
+        const exposureContext = await client.query<DbRow>(
+          `select coalesce(array_agg(distinct e.exposure_type) filter (where e.exposure_type is not null), array[]::text[]) as exposure_types
+           from insurance_exposure_assets ea
+           join insurance_exposures e on e.id = ea.exposure_id and e.workspace_id = ea.workspace_id
+           where ea.workspace_id = $1::uuid and ea.workspace_asset_id = $2::uuid`,
+          [workspaceId, String(asset.id)],
+        );
+        await insertClassificationSuggestions(client, {
+          workspaceId,
+          workspaceAssetId: String(asset.id),
+          ownerFacts,
+          segments: stringArray(workspace.client_segments) as InsuranceClientSegment[],
+          industries: industriesResult.rows.map((row) => row.industry_key),
+          useDescription: text(riskContext.rows[0]?.use_description),
+          exposureTypes: stringArray(exposureContext.rows[0]?.exposure_types),
+        });
       }
       await audit(client, { workspaceId, actorUserId: brokerUserId, entityType: 'classification_suggestion', action: 'refreshed', after: { assetIds: command.assetIds ?? 'all', ruleVersion: INSURANCE_CLASSIFICATION_RULE_VERSION } });
     });
   }
 
-  if (command.operation === 'decide_suggestion') {
+  if (command.operation === 'decide_suggestion' || command.operation === 'decide_suggestions') {
     return runCommand(brokerUserId, workspaceId, async (client) => {
-      const suggestionResult = await client.query<DbRow>('select * from insurance_classification_suggestions where id = $1::uuid and workspace_id = $2::uuid for update', [command.suggestionId, workspaceId]);
-      const suggestion = suggestionResult.rows[0];
-      if (!suggestion) throw new Error('INSURANCE_SUGGESTION_NOT_FOUND');
-      const beforeDecision = await client.query<DbRow>('select * from insurance_suggestion_decisions where workspace_id = $1::uuid and suggestion_id = $2::uuid limit 1', [workspaceId, command.suggestionId]);
-      await client.query(
-        `insert into insurance_suggestion_decisions
-          (workspace_id, suggestion_id, decision, rationale, decided_by_user_id)
-         values ($1::uuid, $2::uuid, $3, $4, $5)
-         on conflict (workspace_id, suggestion_id) do update set
-           decision = excluded.decision, rationale = excluded.rationale,
-           decided_by_user_id = excluded.decided_by_user_id, decided_at = now(), version = insurance_suggestion_decisions.version + 1`,
-        [workspaceId, command.suggestionId, command.decision, command.rationale, brokerUserId],
+      const suggestionIds = command.operation === 'decide_suggestion' ? [command.suggestionId] : command.suggestionIds;
+      const suggestionResult = await client.query<DbRow>(
+        'select * from insurance_classification_suggestions where workspace_id = $1::uuid and id = any($2::uuid[]) for update',
+        [workspaceId, suggestionIds],
       );
-      if (command.decision === 'accepted_for_assessment' && suggestion.suggested_cover_key) {
-        const coverKey = text(suggestion.suggested_cover_key);
-        const definition = INSURANCE_COVER_BY_KEY[coverKey];
-        if (definition) {
-          const assessmentResult = await client.query<DbRow>(
-            `insert into insurance_cover_assessments
-              (workspace_id, canonical_cover_key, cover_label_snapshot, catalogue_version,
-               exposure_status, current_cover_position, placement_stage,
-               system_suggestion_rule_id, system_suggestion_rationale,
-               source_type, source_reference, confidence, extraction_method,
-               human_confirmed_by, human_confirmed_at, created_by_user_id, updated_by_user_id,
-               migration_source_key)
-             values ($1::uuid, $2, $3, $4, 'discovered', 'unknown', 'area_to_consider',
-                     $5, $6, 'system_suggestion', $7, $8, 'deterministic_rule', $9, now(), $9, $9, $10)
-             on conflict (workspace_id, migration_source_key) do nothing
-             returning id`,
-            [workspaceId, coverKey, definition.label, INSURANCE_CATALOGUE_VERSION, text(suggestion.rule_id), text(suggestion.rationale), `suggestion:${command.suggestionId}`, text(suggestion.confidence), brokerUserId, `suggestion:${command.suggestionId}`],
+      if (suggestionResult.rows.length !== suggestionIds.length) throw new Error('INSURANCE_SUGGESTION_NOT_FOUND');
+
+      for (const suggestion of suggestionResult.rows) {
+        await client.query(
+          `insert into insurance_suggestion_decisions
+            (workspace_id, suggestion_id, decision, rationale, decided_by_user_id)
+           values ($1::uuid, $2::uuid, $3, $4, $5)
+           on conflict (workspace_id, suggestion_id) do update set
+             decision = excluded.decision, rationale = excluded.rationale,
+             decided_by_user_id = excluded.decided_by_user_id, decided_at = now(), version = insurance_suggestion_decisions.version + 1`,
+          [workspaceId, suggestion.id, command.decision, command.rationale, brokerUserId],
+        );
+      }
+
+      const assessmentIdsByCover = new Map<string, string>();
+      if (command.decision === 'accepted_for_assessment' || command.decision === 'information_required') {
+        const suggestionsByCover = new Map<string, DbRow[]>();
+        for (const suggestion of suggestionResult.rows) {
+          const coverKey = text(suggestion.suggested_cover_key);
+          if (!coverKey) continue;
+          suggestionsByCover.set(coverKey, [...(suggestionsByCover.get(coverKey) ?? []), suggestion]);
+        }
+
+        for (const [coverKey, suggestions] of suggestionsByCover) {
+          const definition = INSURANCE_COVER_BY_KEY[coverKey];
+          if (!definition) continue;
+          const existingAssessment = await client.query<DbRow>(
+            `select id, placement_stage from insurance_cover_assessments
+             where workspace_id = $1::uuid and canonical_cover_key = $2
+             order by created_at limit 1`,
+            [workspaceId, coverKey],
           );
-          if (suggestion.workspace_asset_id && assessmentResult.rows[0]) {
-            await client.query('insert into insurance_assessment_assets (workspace_id, assessment_id, workspace_asset_id) values ($1::uuid, $2::uuid, $3::uuid) on conflict do nothing', [workspaceId, assessmentResult.rows[0].id, suggestion.workspace_asset_id]);
+          let assessmentId = existingAssessment.rows[0] ? String(existingAssessment.rows[0].id) : '';
+          if (assessmentId && command.decision === 'information_required' && ['not_assessed', 'area_to_consider'].includes(text(existingAssessment.rows[0].placement_stage))) {
+            await client.query(
+              `update insurance_cover_assessments
+               set placement_stage = 'information_required', updated_by_user_id = $3, updated_at = now(), version = version + 1
+               where workspace_id = $1::uuid and id = $2::uuid`,
+              [workspaceId, assessmentId, brokerUserId],
+            );
+          }
+          if (!assessmentId) {
+            const strongest = [...suggestions].sort((left, right) => {
+              const rank = { high: 3, medium: 2, low: 1 } as const;
+              return (rank[text(right.confidence) as keyof typeof rank] ?? 0) - (rank[text(left.confidence) as keyof typeof rank] ?? 0);
+            })[0];
+            const rationales = [...new Set(suggestions.map((suggestion) => text(suggestion.rationale)).filter(Boolean))].join(' ');
+            const assessmentResult = await client.query<DbRow>(
+              `insert into insurance_cover_assessments
+                (workspace_id, canonical_cover_key, cover_label_snapshot, catalogue_version,
+                 exposure_status, current_cover_position, placement_stage,
+                 system_suggestion_rule_id, system_suggestion_rationale,
+                 source_type, source_reference, confidence, extraction_method,
+                 human_confirmed_by, human_confirmed_at, created_by_user_id, updated_by_user_id,
+                 migration_source_key)
+               values ($1::uuid, $2, $3, $4, 'discovered', 'unknown', $5,
+                       $6, $7, 'system_suggestion', $8, $9, 'deterministic_rule', $10, now(), $10, $10, $11)
+               on conflict (workspace_id, migration_source_key) do update set
+                 system_suggestion_rationale = excluded.system_suggestion_rationale,
+                 confidence = excluded.confidence,
+                 updated_at = now()
+               returning id`,
+              [workspaceId, coverKey, definition.label, INSURANCE_CATALOGUE_VERSION, command.decision === 'information_required' ? 'information_required' : 'area_to_consider', text(strongest.rule_id), rationales, `suggestion-group:${coverKey}`, text(strongest.confidence), brokerUserId, `suggestion-group:${coverKey}`],
+            );
+            assessmentId = String(assessmentResult.rows[0].id);
+          }
+          assessmentIdsByCover.set(coverKey, assessmentId);
+          for (const suggestion of suggestions) {
+            if (suggestion.workspace_asset_id) {
+              await client.query('insert into insurance_assessment_assets (workspace_id, assessment_id, workspace_asset_id) values ($1::uuid, $2::uuid, $3::uuid) on conflict do nothing', [workspaceId, assessmentId, suggestion.workspace_asset_id]);
+            }
+            if (suggestion.exposure_id) {
+              await client.query('insert into insurance_assessment_exposures (workspace_id, assessment_id, exposure_id) values ($1::uuid, $2::uuid, $3::uuid) on conflict do nothing', [workspaceId, assessmentId, suggestion.exposure_id]);
+            }
           }
         }
       }
-      await audit(client, { workspaceId, actorUserId: brokerUserId, entityType: 'classification_suggestion', entityId: command.suggestionId, action: 'decision_recorded', before: beforeDecision.rows[0], after: command });
+
+      if (command.decision === 'information_required') {
+        const coverLabels = new Map<string, string>();
+        suggestionResult.rows.forEach((suggestion) => {
+          const coverKey = text(suggestion.suggested_cover_key);
+          if (coverKey && INSURANCE_COVER_BY_KEY[coverKey]) coverLabels.set(coverKey, INSURANCE_COVER_BY_KEY[coverKey].label);
+        });
+        const suggestedQuestions = suggestionResult.rows.flatMap((suggestion) => stringArray(suggestion.missing_questions));
+        const fallbackQuestions = [...coverLabels.keys()].map((coverKey) =>
+          INSURANCE_COVER_BY_KEY[coverKey]?.underwritingQuestions[0]?.question || `What information is still needed to decide ${INSURANCE_COVER_BY_KEY[coverKey]?.label || 'this cover area'}?`,
+        );
+        const questions = [...new Set(suggestedQuestions.length ? suggestedQuestions : fallbackQuestions)];
+        for (const question of questions) {
+          const singleAssessmentId = assessmentIdsByCover.size === 1 ? [...assessmentIdsByCover.values()][0] : null;
+          const singleAssetId = !singleAssessmentId && suggestionResult.rows.length === 1 && suggestionResult.rows[0].workspace_asset_id
+            ? String(suggestionResult.rows[0].workspace_asset_id)
+            : null;
+          const relatedEntityType = singleAssessmentId ? 'assessment' : singleAssetId ? 'asset' : null;
+          const relatedEntityId = singleAssessmentId || singleAssetId;
+          await client.query(
+            `insert into insurance_information_requests
+              (workspace_id, question, reason, related_entity_type, related_entity_id, status,
+               source_type, source_reference, requested_by_user_id)
+             select $1::uuid, $2, $3, $4, $5::uuid, 'open', 'system_suggestion', $6, $7
+             where not exists (
+               select 1 from insurance_information_requests
+               where workspace_id = $1::uuid and lower(question) = lower($2)
+                 and status not in ('resolved', 'not_applicable')
+             )`,
+            [workspaceId, question, `Needed to decide ${[...coverLabels.values()].join(', ') || 'an insurance area to consider'}.`, relatedEntityType, relatedEntityId, `suggestion-group:${suggestionIds.join(',')}`, brokerUserId],
+          );
+        }
+      }
+      await audit(client, { workspaceId, actorUserId: brokerUserId, entityType: 'classification_suggestion', entityId: suggestionIds.length === 1 ? suggestionIds[0] : undefined, action: suggestionIds.length === 1 ? 'decision_recorded' : 'bulk_decision_recorded', after: command });
     });
   }
 
@@ -1221,7 +1368,10 @@ export async function listInsurancePortfolio(brokerUserId: string): Promise<Insu
        (select count(distinct aa.workspace_asset_id)::int
         from insurance_assessment_assets aa
         join insurance_cover_assessments ca on ca.id = aa.assessment_id and ca.workspace_id = aa.workspace_id
-        where aa.workspace_id = w.id and ca.current_cover_position = 'confirmed_included') as included_asset_count
+        where aa.workspace_id = w.id and ca.current_cover_position = 'confirmed_included') as included_asset_count,
+       (select count(*)::int from insurance_policies p where p.workspace_id = w.id and p.status = 'current') as current_policy_count,
+       (select count(*)::int from insurance_information_requests r where r.workspace_id = w.id and r.status in ('open', 'sent_to_client', 'answered')) as open_question_count,
+       (select min(coalesce(p.renewal_date, p.effective_to)) from insurance_policies p where p.workspace_id = w.id and p.status = 'current') as nearest_renewal_date
      from insurance_workspaces w
      where w.broker_user_id = $1 and w.source_lead_id = any($2::uuid[])
      order by w.updated_at desc`,
@@ -1252,6 +1402,9 @@ export async function listInsurancePortfolio(brokerUserId: string): Promise<Insu
       completedAssetCount,
       includedAssetCount: stored ? integer(stored.included_asset_count) : 0,
       outstandingAssetCount: Math.max(0, assetCount - completedAssetCount),
+      currentPolicyCount: stored ? integer(stored.current_policy_count) : 0,
+      openQuestionCount: stored ? integer(stored.open_question_count) : 0,
+      nearestRenewalDateIso: stored ? iso(stored.nearest_renewal_date) : null,
     };
   });
 }
