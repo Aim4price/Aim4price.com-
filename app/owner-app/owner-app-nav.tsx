@@ -25,7 +25,6 @@ export default function OwnerAppNav({ showBack = true, backHref = '/owner-app', 
     <header className={styles.assetsHeader} aria-label="Aim4price Owner account controls">
       {showBack ? (
         <Link className={styles.navButton} href={backHref} prefetch={false} aria-label={backLabel}>
-          <span className={styles.navArrow} aria-hidden="true">←</span>
           <span>{backLabel}</span>
         </Link>
       ) : (
