@@ -23,6 +23,7 @@ export type MyInvoicesReportOptions = {
   invoices: MyInvoiceRecord[];
   includeFuelSlipCosts: boolean;
   xlsxUrl: string;
+  hideXlsx?: boolean;
 };
 
 type KeyValueRow = {
@@ -1011,9 +1012,9 @@ export function buildMyInvoicesReportHtml(options: MyInvoicesReportOptions): str
   </head>
   <body>
     <div class="assetReportScreenBar">
-      <p class="assetReportScreenText"><strong>${escapeHtml(options.title)}</strong> - use Print / Save as PDF for a PDF copy, or download the XLSX workbook.</p>
+      <p class="assetReportScreenText"><strong>${escapeHtml(options.title)}</strong> - ${options.hideXlsx ? 'use Print / Save as PDF to download your report.' : 'use Print / Save as PDF for a PDF copy, or download the XLSX workbook.'}</p>
       <div class="assetReportScreenActions">
-        <a class="assetReportButton" href="${escapeHtml(options.xlsxUrl)}">Download XLSX</a>
+        ${options.hideXlsx ? '' : `<a class="assetReportButton" href="${escapeHtml(options.xlsxUrl)}">Download XLSX</a>`}
         <button type="button" class="assetReportButton assetReportButtonPrimary" onclick="window.print()">Print / Save PDF</button>
       </div>
     </div>
