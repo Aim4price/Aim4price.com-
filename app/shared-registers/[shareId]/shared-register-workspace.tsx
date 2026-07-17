@@ -268,18 +268,22 @@ export default function SharedRegisterWorkspace({ initialWorkspace }: { initialW
           <strong>{stepGuidance[step].progress}</strong>
         </div>
         <div className={styles.progressTrack}><span style={{ width: `${(completedRequiredCount / REQUIRED_STEPS.length) * 100}%` }} /></div>
-        <button className={styles.allStepsToggle} type="button" onClick={() => setShowAllSteps((current) => !current)}>{showAllSteps ? 'Hide all steps' : 'View all steps'} <span>{showAllSteps ? '↑' : '↓'}</span></button>
-        {showAllSteps ? <nav className={styles.stepper} aria-label="Insurance review steps">
+      </section>
+
+      <button className={`${styles.allStepsToggle} ${showAllSteps ? styles.allStepsToggleOpen : ''}`} type="button" onClick={() => setShowAllSteps((current) => !current)} aria-expanded={showAllSteps} aria-controls="insurance-step-menu"><span className={styles.stepsIcon} aria-hidden="true">☷</span><span>{showAllSteps ? 'Close steps' : 'View all steps'}</span><strong>{currentStepIndex + 1}/{WORKFLOW_STEPS.length}</strong></button>
+      {showAllSteps ? <><button className={styles.stepMenuBackdrop} type="button" aria-label="Close step menu" onClick={() => setShowAllSteps(false)} /><aside className={styles.stepMenuPanel} id="insurance-step-menu" aria-label="Insurance review steps">
+        <header><div><span>Insurance review</span><h2>All steps</h2><p>Select a step to open it. Your saved work will remain in place.</p></div><button type="button" onClick={() => setShowAllSteps(false)} aria-label="Close step menu">×</button></header>
+        <nav className={styles.stepper}>
           {WORKFLOW_STEPS.map((entry, index) => {
             const isActive = entry.id === step;
             const isComplete = completion[entry.id];
             const status = isComplete ? 'Ready' : entry.optional ? 'Optional' : isActive ? 'In progress' : 'Still needed';
-            return <button className={`${styles.stepButton} ${isActive ? styles.activeStep : ''} ${isComplete ? styles.completeStep : ''}`} type="button" key={entry.id} onClick={() => goToStep(entry.id)} aria-current={isActive ? 'step' : undefined}>
+            return <button className={`${styles.stepButton} ${isActive ? styles.activeStep : ''} ${isComplete ? styles.completeStep : ''}`} type="button" key={entry.id} onClick={() => { setShowAllSteps(false); goToStep(entry.id); }} aria-current={isActive ? 'step' : undefined}>
               <span className={styles.stepNumber}>{isComplete ? '✓' : index + 1}</span><span><strong>{entry.shortTitle}</strong><small>{status}</small></span>
             </button>;
           })}
-        </nav> : null}
-      </section>
+        </nav>
+      </aside></> : null}
 
       <div ref={contentRef} className={styles.workflowContent}>
         {step === 'setup' ? <section className={styles.overview}>

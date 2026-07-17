@@ -513,3 +513,310 @@
   .advancedInline { width: 100%; margin-left: 0; }
   .recommendationGrid { grid-template-columns: 1fr; }
 }
+
+/* Final desktop density and owner-app typography alignment */
+.page {
+  --green-dark: #12352d;
+  --green: #254733;
+  --text: #173a31;
+  --muted: #64746a;
+  --line: rgba(37, 71, 51, .14);
+  font-family: 'Montserrat', var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 650;
+}
+.page button,
+.page input,
+.page select,
+.page textarea,
+.page a { font-family: inherit; }
+.shell { width: min(calc(100% - 2rem), 1360px); padding: .65rem 0 3rem; }
+.backRow { min-height: 2.4rem; padding-right: 10.5rem; font-size: .75rem; font-weight: 700; }
+.notice { margin-bottom: .55rem; padding: .7rem .85rem; border-radius: 12px; font-size: .78rem; font-weight: 750; }
+
+.compactWorkspaceHeader { gap: 1.25rem; padding: .9rem 1rem; border-radius: 18px; box-shadow: 0 8px 22px rgba(18, 53, 45, .045); }
+.compactWorkspaceHeader small { font-size: .62rem; font-weight: 900; }
+.compactWorkspaceHeader h1 { margin-top: .12rem; font-size: clamp(1.35rem, 2vw, 1.72rem); font-weight: 850; line-height: 1.08; letter-spacing: -.035em; }
+.compactWorkspaceHeader p { margin-top: .3rem; font-size: .74rem; font-weight: 650; line-height: 1.4; }
+.requiredProgress { min-width: 8.5rem; padding: .62rem .78rem; border-left-width: 3px; border-radius: 0 12px 12px 0; }
+.requiredProgress strong { font-size: 1.18rem; font-weight: 850; }
+.requiredProgress span { margin-top: .18rem; font-size: .61rem; font-weight: 750; }
+
+.currentTaskCard { margin: .55rem 0 .8rem; padding: .78rem .9rem; border-radius: 16px; box-shadow: none; }
+.currentTaskTop { gap: 1rem; }
+.currentTaskTop span { font-size: .6rem; font-weight: 900; }
+.currentTaskTop h2 { margin-top: .12rem; font-size: 1.08rem; font-weight: 850; letter-spacing: -.025em; }
+.currentTaskTop p { margin-top: .22rem; font-size: .74rem; font-weight: 650; line-height: 1.42; }
+.currentTaskTop > strong { max-width: 18rem; padding: .52rem .65rem; border-radius: 10px; font-size: .68rem; font-weight: 800; text-align: center; }
+.currentTaskCard .progressTrack { height: .28rem; margin: .6rem 0 0; }
+
+.allStepsToggle {
+  position: fixed;
+  top: 6.35rem;
+  right: max(1rem, calc((100vw - 1360px) / 2 + 1rem));
+  z-index: 86;
+  min-height: 2.55rem;
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  margin: 0;
+  padding: 0 .72rem;
+  border: 1px solid rgba(37, 71, 51, .22);
+  border-radius: 13px;
+  color: #214a3c;
+  background: rgba(255, 255, 255, .97);
+  box-shadow: 0 10px 25px rgba(18, 53, 45, .12);
+  font-size: .72rem;
+  font-weight: 850;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+}
+.allStepsToggle:hover, .allStepsToggleOpen { border-color: #39745c; color: #fff; background: #254733; transform: translateY(-1px); }
+.stepsIcon { font-size: 1rem; line-height: 1; }
+.allStepsToggle strong { min-width: 2.1rem; padding: .22rem .38rem; border-radius: 7px; color: inherit; background: rgba(37, 71, 51, .08); font-size: .62rem; text-align: center; }
+.allStepsToggleOpen strong { background: rgba(255,255,255,.14); }
+.stepMenuBackdrop { position: fixed; inset: 5.75rem 0 0; z-index: 73; border: 0; background: rgba(10, 31, 26, .22); backdrop-filter: blur(3px); }
+.stepMenuPanel {
+  position: fixed;
+  top: 9.25rem;
+  right: max(1rem, calc((100vw - 1360px) / 2 + 1rem));
+  z-index: 80;
+  width: min(21rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - 10.25rem);
+  overflow: auto;
+  padding: .8rem;
+  border: 1px solid rgba(37, 71, 51, .2);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 24px 60px rgba(18, 53, 45, .2);
+}
+.stepMenuPanel > header { display: flex; align-items: flex-start; justify-content: space-between; gap: .8rem; padding: .2rem .2rem .7rem; }
+.stepMenuPanel header span { color: #2c6c55; font-size: .6rem; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
+.stepMenuPanel header h2 { margin: .12rem 0 0; color: #12352d; font-size: 1.08rem; font-weight: 850; }
+.stepMenuPanel header p { margin: .22rem 0 0; color: #64746a; font-size: .7rem; line-height: 1.4; }
+.stepMenuPanel header > button { width: 2.25rem; height: 2.25rem; flex: 0 0 auto; border: 1px solid rgba(37,71,51,.16); border-radius: 10px; color: #254733; background: #f5f8f6; font-size: 1.25rem; cursor: pointer; }
+.stepMenuPanel .stepper { grid-template-columns: 1fr; gap: .42rem; margin: 0; }
+.stepMenuPanel .stepButton { min-height: 3.35rem; padding: .52rem .62rem; border-radius: 12px; font-size: .72rem; }
+.stepMenuPanel .stepNumber { width: 1.75rem; height: 1.75rem; font-size: .68rem; }
+.stepMenuPanel .stepButton small { margin-top: .12rem; font-size: .59rem; }
+
+.card, .coverCard, .reportHistory { padding: 1rem; border-radius: 18px; box-shadow: 0 8px 22px rgba(18, 53, 45, .035); }
+.card h2, .coverCard h3, .reportHistory h2 { font-size: 1.08rem; font-weight: 850; letter-spacing: -.025em; }
+.card h3 { font-size: .92rem; font-weight: 850; }
+.card p { font-size: .78rem; font-weight: 650; line-height: 1.48; }
+.overviewGrid, .coverGrid, .reportGrid, .workflowGrid { gap: .75rem; margin-bottom: .75rem; }
+.card dl { margin-top: .7rem; }
+.card dl div { padding: .52rem 0; font-size: .75rem; }
+.clientMessage { margin-bottom: .7rem; padding: .75rem .85rem; border-radius: 13px; }
+.clientMessage span { font-size: .6rem; }
+.clientMessage p { margin-top: .24rem; font-size: .75rem; }
+.cardHeading { margin-bottom: .75rem; }
+.cardHeading > span, .eyebrow { margin-bottom: .2rem; font-size: .59rem; }
+.cardHeading h2 { font-size: 1.08rem; }
+.cardHeading p { margin-top: .25rem; font-size: .75rem; }
+.fieldGroupTitle { margin: .9rem 0 .42rem; font-size: .78rem; }
+
+.page label { gap: .3rem; font-size: .7rem; font-weight: 800; }
+.page input, .page select, .page textarea {
+  border-width: 1px;
+  border-color: rgba(37, 71, 51, .25);
+  border-radius: 12px;
+  color: #12352d;
+  background-color: #fbfdfb;
+  font-size: .8rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+.page input, .page select { min-height: 2.65rem; padding: 0 .72rem; }
+.page textarea { padding: .65rem .72rem; }
+.page select {
+  appearance: none;
+  padding-right: 2.45rem;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #315348 50%),
+    linear-gradient(135deg, #315348 50%, transparent 50%),
+    linear-gradient(to right, rgba(37,71,51,.13), rgba(37,71,51,.13));
+  background-position:
+    calc(100% - 16px) calc(50% - 2px),
+    calc(100% - 11px) calc(50% - 2px),
+    calc(100% - 2.18rem) 50%;
+  background-size: 5px 5px, 5px 5px, 1px 1.55rem;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+.page select:hover { border-color: rgba(37, 71, 51, .56); background-color: #fff; }
+.page select option { color: #12352d; background: #fff; font-weight: 700; }
+.page input:hover, .page textarea:hover { border-color: rgba(37, 71, 51, .4); }
+.page input:focus, .page select:focus, .page textarea:focus { outline: none; border-color: #39745c; box-shadow: 0 0 0 3px rgba(37, 71, 51, .1); background-color: #fff; }
+.formGrid { gap: .65rem; }
+
+.primaryButton, .secondaryButton { min-height: 2.65rem; margin-top: .7rem; padding: 0 .8rem; border-radius: 12px; font-size: .76rem; font-weight: 850; }
+.primaryButton { border-color: #254733; background: #254733; box-shadow: 0 7px 16px rgba(37,71,51,.14); }
+.primaryButton:hover:not(:disabled) { background: #1d3929; transform: translateY(-1px); }
+.secondaryButton { border-color: rgba(37,71,51,.28); color: #254733; background: #fff; }
+.secondaryButton:hover:not(:disabled) { border-color: #39745c; background: #f3f8f5; transform: translateY(-1px); }
+.sectionHeader { gap: .75rem; margin-bottom: .7rem; padding: .8rem .9rem; border-radius: 16px; }
+.sectionHeader h2 { font-size: 1.12rem; font-weight: 850; }
+.sectionHeader p { margin-top: .2rem; font-size: .74rem; line-height: 1.42; }
+.sectionHeader button, .reportGrid button { min-height: 2.65rem; padding: 0 .8rem; border-radius: 12px; font-size: .75rem; font-weight: 850; }
+.infoBox, .disclaimer { margin-bottom: .7rem; padding: .68rem .78rem; border-radius: 12px; font-size: .73rem; line-height: 1.42; }
+
+.viewSwitch, .substepNav { gap: .2rem; margin-bottom: .7rem; padding: .22rem; border-radius: 13px; }
+.viewSwitch button, .substepNav button { min-height: 2.35rem; padding: 0 .68rem; border-radius: 10px; font-size: .68rem; font-weight: 800; }
+.viewSwitch button:hover, .substepNav button:hover { color: #173f32; background: rgba(37,71,51,.07); }
+.viewSwitch .activeView, .substepNav .activeView { background: #254733; box-shadow: 0 4px 10px rgba(37,71,51,.15); }
+
+.checkGrid { gap: .55rem; margin: .7rem 0; }
+.checkCard { min-height: 3.8rem; gap: .65rem !important; padding: .65rem; border-width: 1px; border-radius: 13px; }
+.checkCard:hover, .compactCheck:hover { border-color: rgba(37,71,51,.5); background: #f1f7f3; }
+.checkCard:has(input:checked), .compactCheck:has(input:checked), .scheduleLinkGrid label:has(input:checked), .linkedAdvanced label:has(input:checked) { border-color: #39745c; color: #173f32; background: #e8f3ed; box-shadow: inset 0 0 0 1px rgba(37,71,51,.08); }
+.checkCard strong { font-size: .78rem; font-weight: 850; }
+.checkCard small { margin-top: .12rem; font-size: .62rem; }
+.industryGrid { gap: .25rem .55rem; margin: .65rem 0; }
+.compactCheck { min-height: 2.25rem; padding: .32rem .42rem; }
+.compactCheck span { font-size: .7rem; font-weight: 700; }
+.gpsSuggestionSection { margin: .7rem 0 .85rem; padding: .75rem; border-radius: 15px; }
+.gpsCardGrid, .savedLocationGrid, .partyCardGrid { gap: .5rem; margin-top: .55rem; }
+.gpsCard, .savedLocationGrid article, .partyCardGrid article { padding: .68rem; border-radius: 13px; }
+.gpsCard strong, .savedLocationGrid h3, .partyCardGrid h3 { font-size: .78rem; }
+.gpsCard button, .gpsCard a, .savedLocationGrid a { min-height: 2.1rem; padding: 0 .55rem; border-radius: 9px; font-size: .64rem; }
+.successBox, .warningBox { margin: .7rem 0; padding: .68rem .78rem; border-radius: 12px; font-size: .72rem; }
+.advancedPanel, .linkedAdvanced { margin: .7rem 0; border-radius: 13px; }
+.advancedPanel > summary, .linkedAdvanced > summary { padding: .68rem .78rem; font-size: .7rem; }
+
+.assetReviewNav { grid-template-columns: auto minmax(14rem, 1fr) auto; gap: .55rem; margin-bottom: .6rem; padding: .6rem; border-radius: 15px; }
+.assetReviewNav > button { min-height: 2.65rem; padding: 0 .75rem; border-radius: 11px; font-size: .73rem; cursor: pointer; }
+.assetReviewNav > button:hover:not(:disabled) { border-color: #39745c; background: #eef5f0; }
+.focusedAssetCard { border-radius: 18px; }
+.assetReviewStatus { padding: .55rem .9rem; font-size: .64rem; }
+.statusComplete, .statusPending { min-width: 1.45rem; min-height: 1.45rem; padding: 0 .4rem; font-size: .64rem; }
+.assetHero { grid-template-columns: minmax(0, 1.5fr) minmax(13rem, .5fr); gap: .7rem; padding: .85rem .9rem .65rem; }
+.assetIdentity small { font-size: .6rem; }
+.assetIdentity h2 { margin-top: .12rem; font-size: clamp(1.18rem, 2vw, 1.45rem); font-weight: 850; letter-spacing: -.035em; }
+.assetIdentity p { margin-top: .22rem; font-size: .73rem; }
+.locationCard { padding: .62rem .72rem; border-radius: 13px; }
+.locationCard span { font-size: .57rem; }
+.locationCard strong { margin-top: .18rem; font-size: .75rem; }
+.locationCard small, .locationCard a { font-size: .63rem; }
+.focusedAssetCard .valueComparison { gap: .35rem; padding: 0 .9rem .7rem; }
+.valueComparison > div { padding: .52rem .6rem; border-left-width: 2px; }
+.valueComparison small { font-size: .56rem; }
+.valueComparison strong { margin-top: .12rem; font-size: .88rem; font-weight: 850; }
+.valueComparison span { font-size: .56rem; }
+.assetPhotoGallery { padding: .72rem .9rem; }
+.assetPhotoGallery > header { margin-bottom: .52rem; }
+.assetPhotoGallery header span { font-size: .59rem; }
+.assetPhotoGallery header strong { font-size: .76rem; }
+.assetPhotoGallery header small { font-size: .63rem; }
+.assetPhotoGallery > div { grid-auto-columns: minmax(9.5rem, 13rem); gap: .5rem; }
+.assetPhotoGallery a { min-height: 8rem; border-radius: 13px; }
+.assetPhotoGallery img { height: 8rem; }
+.classificationCard > header { gap: .8rem; padding: .72rem .9rem; }
+.classificationCard header span { font-size: .57rem; }
+.classificationCard header h3 { margin-top: .12rem; font-size: .92rem; font-weight: 850; }
+.classificationCard header p { margin-top: .18rem; font-size: .7rem; }
+.classificationCard header > strong { padding: .35rem .5rem; border-radius: 8px; font-size: .62rem; }
+.classificationFields { gap: .6rem; padding: .72rem .9rem 0; }
+.classificationActions { gap: .45rem; padding: 0 .9rem .7rem; }
+.classificationActions .primaryButton, .classificationActions .secondaryButton { margin-top: .65rem; }
+.assetDisclosure { padding: .7rem .9rem .85rem; }
+.assetDisclosure summary { font-size: .7rem; }
+.assetBrowseList { gap: .42rem; }
+.assetBrowseList > button, .readinessList > button { gap: .6rem; padding: .62rem .72rem; border-radius: 13px; }
+.assetBrowseList > button > img, .assetListPlaceholder { width: 3.7rem; height: 2.8rem; border-radius: 9px; }
+.assetBrowseList strong, .readinessList strong { font-size: .75rem; }
+.assetBrowseList small, .readinessList small { margin-top: .12rem; font-size: .63rem; }
+
+.recommendationGrid { gap: .62rem; }
+.recommendationCard { padding: .72rem; border-radius: 15px; box-shadow: 0 6px 16px rgba(18,53,45,.035); }
+.recommendationCard h3 { margin: .48rem 0 .2rem; font-size: .94rem; font-weight: 850; }
+.recommendationCard > p { min-height: 2.6rem; font-size: .7rem; }
+.recommendationCard > div { gap: .35rem; margin-top: .6rem; }
+.recommendationCard > div button { min-height: 2.35rem; padding: 0 .58rem; border-radius: 10px; font-size: .65rem; }
+.nextActionRow { gap: .45rem; margin-bottom: .7rem; }
+.assetExposureSummary { margin-bottom: .7rem; padding: .72rem .82rem; border-radius: 13px; font-size: .75rem; }
+.assetExposureSummary span { font-size: .69rem; }
+.catalogueFilters { gap: .55rem; margin: .7rem 0; padding: .65rem; border-radius: 13px; }
+.catalogueList { gap: .45rem; }
+.catalogueList article { gap: .7rem; padding: .68rem; border-radius: 13px; }
+.catalogueList h3 { font-size: .84rem; }
+.catalogueList p { margin-top: .22rem; font-size: .68rem; }
+.catalogueList button { min-height: 2.35rem; padding: 0 .65rem; border-radius: 10px; font-size: .68rem; }
+.coverAssessmentCard { padding: .82rem; border-radius: 16px; }
+.coverAssessmentCard header h3 { font-size: .96rem; }
+.suggestionReason { padding: .58rem .65rem; font-size: .7rem; }
+.inlineDetails { margin-top: .7rem; padding: .65rem; border-radius: 13px; }
+.financialRows { gap: .42rem; margin: .55rem 0; }
+.financialRows div { padding: .48rem .55rem; border-radius: 10px; }
+.financialRows strong, .financialRows span { font-size: .67rem; }
+.scheduleLinkGrid { margin: .7rem 0; }
+.linkedAdvanced fieldset, .scheduleLinkGrid fieldset { gap: .3rem; padding: .6rem; border-radius: 12px; }
+.linkedAdvanced fieldset label, .scheduleLinkGrid fieldset label { min-height: 2.15rem; padding: .32rem .42rem; border-radius: 9px; font-size: .67rem; }
+.policyHeader { padding-bottom: .6rem; }
+.policySection { margin-top: .55rem; padding: .62rem; border-radius: 12px; }
+.policySection summary { font-size: .73rem; }
+.simpleList { gap: .45rem; }
+.simpleList > div { padding: .55rem 0; }
+.simpleList strong { font-size: .74rem; }
+.simpleList span { margin-top: .12rem; font-size: .69rem; }
+.simpleList small { margin-top: .15rem; font-size: .63rem; }
+
+.readinessCard { margin-bottom: .7rem; padding: .85rem; border-radius: 17px; }
+.readinessCard > header { margin-bottom: .65rem; }
+.readinessCard h2 { font-size: 1rem; }
+.readinessCard header > strong { padding: .48rem .58rem; border-radius: 10px; font-size: .68rem; }
+.reportGrid article { min-height: 9.5rem; padding: 1rem; border-radius: 17px; }
+.reportGrid h2 { font-size: 1.08rem; font-weight: 850; }
+.reportGrid p { font-size: .74rem; line-height: 1.45; }
+.reportList > div { padding: .62rem 0; font-size: .74rem; }
+.reportList a { min-height: 2.4rem; padding: 0 .65rem; border-radius: 10px; font-size: .68rem; }
+
+.workflowFooter { bottom: .5rem; gap: .7rem; margin-top: .85rem; padding: .55rem; border-radius: 16px; box-shadow: 0 10px 28px rgba(18,49,40,.13); }
+.workflowFooter > button { min-height: 2.65rem; padding: 0 .75rem; border-radius: 11px; font-size: .72rem; cursor: pointer; }
+.workflowFooter span { font-size: .68rem; }
+.workflowFooter small { font-size: .59rem; }
+
+.shell button:not(:disabled),
+.shell a[href],
+.shell summary { cursor: pointer; transition: border-color .16s ease, background-color .16s ease, color .16s ease, box-shadow .16s ease, transform .16s ease; }
+.shell a[href] { text-underline-offset: .16em; }
+.shell summary { list-style: none; }
+.shell summary::-webkit-details-marker { display: none; }
+.advancedPanel > summary, .linkedAdvanced > summary, .inlineDetails > summary, .assetDisclosure > summary { display: flex; align-items: center; justify-content: space-between; gap: .8rem; }
+.advancedPanel > summary::after, .linkedAdvanced > summary::after, .inlineDetails > summary::after, .assetDisclosure > summary::after { content: '+'; width: 1.45rem; height: 1.45rem; display: grid; place-items: center; flex: 0 0 auto; border-radius: 7px; color: #254733; background: #e8f1ec; font-size: .9rem; font-weight: 850; }
+.advancedPanel[open] > summary::after, .linkedAdvanced[open] > summary::after, .inlineDetails[open] > summary::after, .assetDisclosure[open] > summary::after { content: '−'; }
+.advancedPanel > summary:hover, .linkedAdvanced > summary:hover, .inlineDetails > summary:hover, .assetDisclosure > summary:hover { color: #173f32; background: #f0f6f2; }
+.shell button:focus-visible, .shell a:focus-visible, .shell summary:focus-visible { outline: 3px solid rgba(37,71,51,.2); outline-offset: 2px; }
+.shell button:active:not(:disabled), .shell a:active { transform: translateY(1px); }
+
+@media (max-width: 900px) {
+  .shell { width: min(calc(100% - 1rem), 1360px); }
+  .compactWorkspaceHeader { align-items: flex-start; }
+  .assetHero { grid-template-columns: 1fr; }
+  .catalogueFilters { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 760px) {
+  .page { font-size: 14px; }
+  .shell { padding-top: .35rem; }
+  .backRow { min-height: 2.2rem; padding-right: 0; }
+  .allStepsToggle { top: auto; right: .75rem; bottom: .75rem; min-height: 2.7rem; }
+  .stepMenuBackdrop { inset: 0; }
+  .stepMenuPanel { top: auto; right: .75rem; bottom: 4.1rem; width: min(21rem, calc(100vw - 1.5rem)); max-height: calc(100dvh - 5rem); }
+  .compactWorkspaceHeader { gap: .65rem; padding: .78rem; border-radius: 15px; }
+  .compactWorkspaceHeader h1 { font-size: 1.28rem; }
+  .requiredProgress { width: 100%; }
+  .currentTaskTop { gap: .6rem; }
+  .currentTaskTop > strong { width: 100%; max-width: none; text-align: left; }
+  .currentTaskTop h2 { font-size: 1rem; }
+  .overviewGrid, .reportGrid { grid-template-columns: 1fr; }
+  .assetReviewNav { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .assetReviewNav label { grid-column: 1 / -1; }
+  .valueComparison, .classificationFields { grid-template-columns: 1fr; }
+  .assetPhotoGallery > div { grid-auto-columns: minmax(9rem, 75vw); }
+  .workflowFooter { margin-bottom: 3.6rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shell *, .allStepsToggle { scroll-behavior: auto !important; transition: none !important; }
+}
