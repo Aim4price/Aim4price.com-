@@ -209,6 +209,46 @@
 .hero h1 { margin: 0; color: var(--owner-ink); font-size: clamp(1.8rem, 8vw, 2.45rem); line-height: 1.04; letter-spacing: -0.045em; }
 .hero p { margin: 0; color: var(--owner-muted); font-size: 0.94rem; font-weight: 650; line-height: 1.5; }
 
+.ownerPageIntro {
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+  padding: 8px 3px 16px;
+}
+.notificationContent .ownerPageIntro .ownerPageTitle,
+.overviewPage .ownerPageIntro .ownerPageTitle {
+  margin: 0;
+  color: #12352d;
+  font-size: clamp(1.9rem, 8vw, 2.45rem);
+  font-weight: 900;
+  letter-spacing: -0.045em;
+  line-height: 1.04;
+}
+.notificationContent .ownerPageIntro .ownerPageSubtitle,
+.overviewPage .ownerPageIntro .ownerPageSubtitle {
+  margin: 0;
+  color: rgba(18, 53, 45, 0.64);
+  font-size: 0.94rem;
+  font-weight: 650;
+  line-height: 1.4;
+}
+.notificationContent .ownerSectionHeading h2,
+.overviewPage .ownerSectionHeading h2 {
+  margin: 0;
+  color: #12352d;
+  font-size: clamp(1.2rem, 5vw, 1.42rem);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+}
+.notificationContent .ownerSectionHeading > span,
+.overviewPage .ownerSectionHeading > span {
+  min-width: 29px;
+  min-height: 29px;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
 .searchForm { display: flex; gap: 8px; }
 .searchInput,
 .field input,
@@ -230,12 +270,29 @@
 .field select {
   appearance: none;
   -webkit-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9'%3E%3Cpath d='M2 2l5 5 5-5' fill='none' stroke='%23254733' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='34' height='34' viewBox='0 0 34 34'%3E%3Crect width='34' height='34' rx='10' fill='%23eef5f0'/%3E%3Cpath d='m11.5 14.5 5.5 5 5.5-5' fill='none' stroke='%23254733' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 17px center;
-  background-size: 14px 9px;
-  padding-right: 50px;
+  background-position: right 9px center;
+  background-size: 34px 34px;
+  padding-right: 52px;
   cursor: pointer;
+}
+.field input[type='date'] {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='34' height='34' viewBox='0 0 34 34'%3E%3Crect width='34' height='34' rx='10' fill='%23eef5f0'/%3E%3Cpath d='M11 13.5h12v10H11zM14 10.5v5M20 10.5v5M11 17h12' fill='none' stroke='%23254733' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 9px center;
+  background-size: 34px 34px;
+  padding-right: 52px;
+  cursor: pointer;
+}
+.field input[type='date']::-webkit-calendar-picker-indicator {
+  width: 34px;
+  height: 34px;
+  margin-right: -43px;
+  cursor: pointer;
+  opacity: 0;
 }
 .field select:disabled { cursor: not-allowed; opacity: 0.62; }
 .searchInput:focus,
@@ -1309,20 +1366,37 @@
 .infoNotice { margin: 0; border-radius: 14px; background: #f4f7f5; color: var(--owner-muted); padding: 13px; font-size: 0.84rem; font-weight: 700; line-height: 1.45; }
 
 .locationCurrentCard {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  display: grid;
+  justify-items: center;
+  gap: 7px;
   border: 1px solid rgba(18, 53, 45, 0.13);
   border-radius: 18px;
   background: #f5f9f6;
-  padding: 14px;
+  padding: 18px 14px;
+  text-align: center;
 }
-.locationCurrentCard > div { min-width: 0; display: grid; gap: 4px; }
 .locationCurrentCard span { color: var(--owner-muted); font-size: 0.76rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; }
-.locationCurrentCard strong { color: var(--owner-ink); font-size: 0.92rem; font-weight: 800; overflow-wrap: anywhere; }
+.locationCurrentCard strong { max-width: 100%; color: var(--owner-ink); font-size: 0.96rem; font-weight: 800; line-height: 1.4; overflow-wrap: anywhere; }
 .locationCurrentCard small { color: var(--owner-muted); font-size: 0.76rem; font-weight: 650; }
-.locationCurrentCard a { flex: 0 0 auto; color: var(--owner-green); font-size: 0.8rem; font-weight: 800; text-decoration: underline; text-underline-offset: 3px; }
+.locationCurrentCard a {
+  min-width: min(100%, 190px);
+  min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  margin-top: 3px;
+  border: 1.5px solid #6fc596;
+  border-radius: 13px;
+  background: linear-gradient(180deg, #ffffff 0%, #e6f8ef 100%);
+  color: #0a543d;
+  padding: 0 15px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-decoration: none;
+  box-shadow: 0 9px 20px rgba(10, 84, 61, 0.08);
+}
+.locationCurrentCard a:hover { border-color: #43ad73; background: linear-gradient(180deg, #fff 0%, #d9f1e5 100%); }
 .locationChoiceGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .locationChoiceGrid button {
   min-width: 0;
@@ -1476,6 +1550,7 @@
 .addChoiceCardManual { border-color: rgba(74, 137, 193, 0.34); background: linear-gradient(180deg, #fbfdff 0%, #e5f1fb 100%); color: #244f76; }
 .addChoiceCard:active { transform: translateY(1px); }
 .addChoiceCard:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.12), 0 14px 32px rgba(18, 53, 45, 0.08); }
+.pricingChoiceGrid { padding: 8px 0 24px; }
 .focusedForm { gap: 18px; }
 .deleteSection { border-color: rgba(150, 56, 56, 0.2); background: #fffafa; }
 .deleteSection > p { color: #875656; }
@@ -1493,6 +1568,25 @@
 .record h3 { margin: 0; font-size: 1rem; }
 .record p { margin: 0; color: var(--owner-muted); font-size: 0.86rem; line-height: 1.45; }
 .recordStatus { color: var(--owner-green); font-size: 0.78rem; font-weight: 800; white-space: nowrap; }
+.maintenanceAddButton {
+  min-height: 52px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid #6fc596;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #ffffff 0%, #e6f8ef 100%);
+  color: #0a543d;
+  padding: 0 16px;
+  font: 800 0.96rem Montserrat, var(--font-body, Inter), Arial, sans-serif;
+  box-shadow: 0 10px 22px rgba(10, 84, 61, 0.085);
+  cursor: pointer;
+}
+.maintenanceAddButton:hover { border-color: #43ad73; background: linear-gradient(180deg, #fff 0%, #d9f1e5 100%); }
+.maintenanceAddButton:disabled { cursor: not-allowed; opacity: 0.55; box-shadow: none; }
+.maintenanceRecordsBlock { display: grid; gap: 10px; border-top: 1px solid rgba(18, 53, 45, 0.1); padding-top: 14px; }
+.maintenanceRecordsBlock h2 { margin: 0; color: var(--owner-ink); font-size: 1rem; font-weight: 800; text-align: center; }
+.maintenanceEmpty { margin: 0; color: var(--owner-muted); font-size: 0.86rem; font-weight: 650; text-align: center; }
 
 .rangeTabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .rangeTabs button { min-height: 48px; border: 1px solid var(--owner-line); border-radius: 14px; background: #fff; color: var(--owner-green); font: 800 0.8rem Montserrat, sans-serif; cursor: pointer; }
