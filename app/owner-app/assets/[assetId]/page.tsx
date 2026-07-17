@@ -10,7 +10,7 @@ export default async function OwnerAssetDetailPage({ params }: { params: { asset
   await requireOwnerAppPageAccess();
   return (
     <main className={styles.page}>
-      <OwnerAppNav backHref="/owner-app/assets" backLabel="Assets" />
+      <OwnerAppNav backHref="/owner-app/assets" backLabel="My Assets" />
       <OwnerAssetDetailClient assetId={params.assetId} />
     </main>
   );

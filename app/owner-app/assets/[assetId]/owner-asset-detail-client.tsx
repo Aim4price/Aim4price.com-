@@ -454,7 +454,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
     return <label className={styles.field}><span>{label}</span>{options.currency ? <span className={styles.currencyInput}><span aria-hidden="true">R</span>{input}</span> : input}</label>;
   };
   const editorHeader = (title: string, description: string) => (
-    <div className={`${styles.sectionHeader} ${styles.editorHeader}`}><div><h2><BalancedHeadingText text={title} /></h2><p>{description}</p></div></div>
+    <p className={styles.editorIntro} aria-label={title}>{description}</p>
   );
 
   if (view === 'summary') {
@@ -516,7 +516,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
                 href={`/owner-app/assets/${encodeURIComponent(assetId)}/details`}
                 prefetch={false}
               >
-                View Details
+                View details
               </Link>
               <Link
                 className={`${styles.assetMirrorAction} ${styles.assetMirrorOptionsAction}`}
@@ -781,8 +781,8 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
       <div className={styles.wideContent}>
         <section className={styles.manageAssetIdentity}>
           <div className={styles.manageAssetIdentityCopy}>
-            <span>Manage asset</span>
-            <h1><BalancedHeadingText text={draft.title} /></h1>
+            <h1>Manage</h1>
+            <strong className={styles.manageAssetName}><BalancedHeadingText text={draft.title} /></strong>
             {manageMeta ? <p>{manageMeta}</p> : null}
           </div>
           <Link href={`/owner-app/assets/${encodeURIComponent(assetId)}/details`} prefetch={false}>View details <span aria-hidden="true">›</span></Link>
@@ -821,8 +821,8 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
   return (
     <div className={styles.wideContent}>
       <section className={styles.taskIdentity}>
-        <span>{MANAGE_SECTIONS.find((item) => item.id === section)?.title || 'Manage asset'}</span>
-        <h1><BalancedHeadingText text={draft.title} /></h1>
+        <h1><BalancedHeadingText text={MANAGE_SECTIONS.find((item) => item.id === section)?.title || 'Manage asset'} /></h1>
+        <strong><BalancedHeadingText text={draft.title} /></strong>
         <p>{draft.serialNumber ? `Serial: ${draft.serialNumber}` : registerName}</p>
       </section>
 
@@ -833,7 +833,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
         <div className={styles.formGrid}>
           <label className={`${styles.field} ${styles.fieldFull}`}><span>Asset name</span><input value={draft.title} onChange={(event) => update('title', event.target.value)} /></label>
           <label className={styles.field}><span>Register</span><select value={draft.registerId ?? ''} onChange={(event) => update('registerId', event.target.value)}>{registers.map((register) => <option key={register.id} value={register.id}>{register.businessName}</option>)}</select></label>
-          <label className={styles.field}><span>Asset type</span><select value={draft.kind} onChange={(event) => update('kind', event.target.value)}><option value="tractor">Tractor</option><option value="equipment">Equipment</option><option value="vehicle">Vehicle</option><option value="property">Property</option><option value="tools">Tools</option><option value="stock">Stock</option><option value="manual">Other</option></select></label>
+          <label className={styles.field}><span>Asset type</span><select value={draft.kind} onChange={(event) => update('kind', event.target.value)}><option value="tractor">Tractor</option><option value="equipment">Equipment</option><option value="vehicle">Vehicle</option><option value="property">Property / Land / Building</option><option value="tools">Tools</option><option value="stock">Stock</option><option value="manual">Furniture, appliances &amp; electronics</option></select></label>
           <label className={styles.field}><span>Make</span><input value={draft.brandName} onChange={(event) => update('brandName', event.target.value)} /></label>
           <label className={styles.field}><span>Model</span><input value={draft.modelName} onChange={(event) => update('modelName', event.target.value)} /></label>
           <label className={styles.field}><span>Year model / year built</span><input inputMode="numeric" value={draft.yearModel ?? ''} onChange={(event) => update('yearModel', event.target.value ? Number(event.target.value) : null)} /></label>
@@ -895,7 +895,6 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
       {section === 'marketplace' ? <MarketplaceSection draft={draft} ownerContext={ownerContext} action={action} busy={Boolean(actionBusy)} /> : null}
       {section === 'maintenance' ? <MaintenanceSection records={maintenance} action={action} busy={Boolean(actionBusy)} /> : null}
       {section === 'delete' ? <section className={`${styles.section} ${styles.deleteSection}`}>
-        {editorHeader('Delete asset', 'Permanently remove this asset and its saved Owner App record.')}
         <p>This cannot be undone. Only continue if you are certain that this asset must be removed.</p>
         <button type="button" className={styles.dangerButton} onClick={() => void deleteAsset()} disabled={Boolean(actionBusy)}>{actionBusy === 'delete' ? 'Deleting asset…' : 'Delete asset permanently'}</button>
       </section> : null}
@@ -987,7 +986,6 @@ function ReportsSection({ draft, openValuationReport }: { draft: Asset; openValu
 
   return (
     <section className={`${styles.section} ${styles.editorSection}`}>
-      <div className={`${styles.sectionHeader} ${styles.editorHeader}`}><div><h2>Reports</h2></div></div>
       <div className={styles.reportList}>
         {reportCard('valuation', 'Asset valuation', openValuationReport)}
         {filterableReports.map((report) => reportCard(report.id, report.title, () => chooseReport(report.id)))}
@@ -1113,7 +1111,7 @@ function PricingSection({ draft, reload, setNotice }: {
 
   return (
     <section className={`${styles.section} ${styles.editorSection}`}>
-      <div className={`${styles.sectionHeader} ${styles.editorHeader}`}><div><h2>Manage pricing</h2><p>Recalculate the current Aim4price value or estimate a future price.</p></div></div>
+      <p className={styles.editorIntro}>Recalculate the current Aim4price value or estimate a future price.</p>
       <div className={styles.pricingSummaryGrid}>
         <div><span>Aim4price value</span><strong>{money(draft.value)}</strong><small>Excl. VAT</small></div>
         <div><span>Replacement price</span><strong>{money(draft.replacementPriceExVat)}</strong><small>Excl. VAT</small></div>
@@ -1232,7 +1230,7 @@ function LocationSection({ draft, location, setLocation, action, busy }: {
 
   return (
     <section className={`${styles.section} ${styles.editorSection}`}>
-      <div className={`${styles.sectionHeader} ${styles.editorHeader}`}><div><h2>Location</h2><p>Save this asset’s position from the device, GPS coordinates or the map.</p></div></div>
+      <p className={styles.editorIntro}>Save this asset’s position from the device, GPS coordinates or the map.</p>
       <div className={styles.locationCurrentCard}>
         <div><span>Saved location</span><strong>{location.locationText || (hasCoordinates ? `${location.latitude}, ${location.longitude}` : 'No location saved')}</strong><small>Last scanned: {dateTime(draft.lastScannedAtIso)}</small></div>
         {mapsHref ? <a href={mapsHref} target="_blank" rel="noreferrer">Open in Maps</a> : null}
@@ -1279,7 +1277,7 @@ function MarketplaceSection({ draft, ownerContext, action, busy }: { draft: Asse
 
   return (
     <section className={styles.section}>
-      <div className={`${styles.sectionHeader} ${styles.editorHeader}`}><div><h2>Marketplace</h2><p>Status: {draft.marketplaceStatus === 'live' ? 'Live' : 'Not listed'} · Asset and seller information is filled in automatically.</p></div></div>
+      <p className={styles.editorIntro}>Status: {draft.marketplaceStatus === 'live' ? 'Live' : 'Not listed'} · Asset and seller information is filled in automatically.</p>
       <div className={styles.marketplacePreview}>
         {draft.photos[0] ? <img src={draft.photos[0]} alt={listingTitle} /> : <div>No photo saved</div>}
         <span><small>Listing title</small><strong>{listingTitle}</strong><em>{draft.photos.length} saved photo{draft.photos.length === 1 ? '' : 's'} will be used</em></span>
@@ -1304,7 +1302,7 @@ function MaintenanceSection({ records, action, busy }: { records: Maintenance[];
   }
   return (
     <section className={styles.section}>
-      <div className={`${styles.sectionHeader} ${styles.editorHeader}`}><div><h2>Maintenance</h2><p>Schedule and manage maintenance.</p></div></div>
+      <p className={styles.editorIntro}>Schedule and manage maintenance.</p>
       <div className={styles.recordList}>{records.length ? records.map((record) => <article className={styles.record} key={record.id}><div className={styles.recordHeader}><h3>{record.title}</h3><span className={styles.recordStatus}>{record.computedStatusLabel}</span></div><p>{[record.maintenanceType, record.dueDate || (record.dueUsage !== null ? `${record.dueUsage} ${record.usageMetric || ''}` : ''), record.notes].filter(Boolean).join(' · ')}</p><div className={styles.actions}>{record.status === 'upcoming' ? <><button type="button" className={styles.smallButton} disabled={busy} onClick={() => void action({ action: 'maintenance-complete', maintenanceId: record.id }, 'Maintenance marked complete.')}>Complete</button><button type="button" className={styles.smallButton} disabled={busy} onClick={() => void action({ action: 'maintenance-cancel', maintenanceId: record.id }, 'Maintenance cancelled.')}>Cancel</button></> : record.status === 'done' ? <button type="button" className={styles.smallButton} disabled={busy} onClick={() => void action({ action: 'maintenance-reopen', maintenanceId: record.id }, 'Maintenance reopened.')}>Reopen</button> : null}</div></article>) : <p>No maintenance records yet.</p>}</div>
       <form className={styles.formGrid} onSubmit={(event) => void create(event)}>
         <label className={styles.field}><span>Type</span><select name="maintenanceType"><option value="service">Service</option><option value="checkup">Checkup</option></select></label>

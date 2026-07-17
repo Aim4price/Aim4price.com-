@@ -281,8 +281,8 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
   return (
     <div className={styles.wideContent}>
       <section className={styles.ownerOptionsIdentity}>
-        <span>Asset options</span>
-        <h1><BalancedHeadingText text={assetTitle} /></h1>
+        <h1>Options</h1>
+        <strong><BalancedHeadingText text={assetTitle} /></strong>
         <p>{money(assetValue)} excl. VAT</p>
       </section>
 
@@ -304,8 +304,8 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
       {stage === 'partners' && selectedOption ? (
         <section className={`${styles.section} ${styles.ownerOptionsSection}`}>
           <div className={styles.ownerOptionsFlowHeader}>
-            <button type="button" onClick={backToChoices}>‹ Options</button>
-            <div><span>{partnerTypeLabel(selectedOption.partnerType)}</span><h2><BalancedHeadingText text={selectedOption.pickerTitle} /></h2></div>
+            <button type="button" onClick={backToChoices}>Back to options</button>
+            <div><h2><BalancedHeadingText text={selectedOption.pickerTitle} /></h2></div>
           </div>
 
           <form className={styles.ownerPartnerSearch} onSubmit={submitSearch}>
@@ -334,8 +334,8 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
       {stage === 'message' && selectedOption && selectedPartner ? (
         <section className={`${styles.section} ${styles.ownerOptionsSection}`}>
           <div className={styles.ownerOptionsFlowHeader}>
-            <button type="button" onClick={() => setStage('partners')}>‹ Companies</button>
-            <div><span>{selectedOption.shortTitle}</span><h2><BalancedHeadingText text="Message to selected company" /></h2></div>
+            <button type="button" onClick={() => setStage('partners')}>Back to companies</button>
+            <div><h2><BalancedHeadingText text="Message to selected company" /></h2></div>
           </div>
 
           <div className={styles.ownerSelectedPartner}>
@@ -366,8 +366,8 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
       {stage === 'consent' && selectedOption && selectedPartner ? (
         <section className={`${styles.section} ${styles.ownerOptionsSection}`}>
           <div className={styles.ownerOptionsFlowHeader}>
-            <button type="button" onClick={() => setStage('message')} disabled={sending}>‹ Message</button>
-            <div><span>{selectedOption.shortTitle}</span><h2><BalancedHeadingText text="Confirm and send request" /></h2></div>
+            <button type="button" onClick={() => setStage('message')} disabled={sending}>Back to message</button>
+            <div><h2><BalancedHeadingText text="Confirm and send request" /></h2></div>
           </div>
 
           <div className={styles.ownerPopiaBox}>
