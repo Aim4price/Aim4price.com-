@@ -129,13 +129,20 @@ export default function OwnerNotificationsClient({ viewerId }: { viewerId: strin
     setSeenAtIso(markOwnerNotificationsSeen(viewerId, items));
   }
 
+  function handleNotificationOpen() {
+    setSeenAtIso(markOwnerNotificationsSeen(viewerId, items));
+  }
+
   const isReady = seenStateReady && !loading;
   const newCountLabel = `${newItems.length} new notification${newItems.length === 1 ? '' : 's'}`;
 
   return (
     <div className={`${styles.content} ${styles.notificationContent}`}>
       <section className={styles.notificationIntro}>
-        <h1>Notifications</h1>
+        <div>
+          <h1>Notifications</h1>
+          <p>View all new messages.</p>
+        </div>
         <button
           type="button"
           className={`${styles.markCheckedButton} ${newItems.length ? styles.markCheckedButtonNew : ''}`}
@@ -172,6 +179,7 @@ export default function OwnerNotificationsClient({ viewerId }: { viewerId: strin
                   className={`${styles.notificationCard} ${toneClassName(item.tone)} ${item.priority ? styles.notificationCardPriority : styles.notificationCardNew}`}
                   href={destination(item)}
                   prefetch={false}
+                  onClick={handleNotificationOpen}
                 >
                   <div className={styles.notificationCardLabels}>
                     <span className={styles.notificationKind}>
