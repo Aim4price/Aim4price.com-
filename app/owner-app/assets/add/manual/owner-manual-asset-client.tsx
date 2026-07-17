@@ -76,9 +76,8 @@ export default function OwnerManualAssetClient() {
   return (
     <div className={styles.content}>
       <section className={styles.flowIntro}>
-        <span>Manual Entry</span>
-        <h1>Add an asset</h1>
-        <p>Enter the asset details and your own current values.</p>
+        <h1>Add manual asset</h1>
+        <p>Enter asset details.</p>
       </section>
 
       <form className={`${styles.section} ${styles.focusedForm}`} onSubmit={createAsset}>
@@ -96,13 +95,12 @@ export default function OwnerManualAssetClient() {
           <label className={styles.field}>
             <span>Asset type</span>
             <select name="kind" defaultValue="equipment">
-              <option value="tractor">Tractor</option>
               <option value="equipment">Equipment</option>
               <option value="vehicle">Vehicle</option>
-              <option value="property">Property</option>
+              <option value="property">Property / Land / Building</option>
               <option value="tools">Tools</option>
               <option value="stock">Stock</option>
-              <option value="manual">Other</option>
+              <option value="manual">Furniture, appliances &amp; electronics</option>
             </select>
           </label>
           <label className={styles.field}><span>Make</span><input name="brandName" /></label>

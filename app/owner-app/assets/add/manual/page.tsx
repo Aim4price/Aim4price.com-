@@ -11,7 +11,7 @@ export default async function OwnerManualAssetPage() {
 
   return (
     <main className={styles.page}>
-      <OwnerAppNav backHref="/owner-app/assets/add" backLabel="Add asset" />
+      <OwnerAppNav backHref="/owner-app/assets/add" backLabel="Add Asset" />
       <OwnerManualAssetClient />
     </main>
   );
