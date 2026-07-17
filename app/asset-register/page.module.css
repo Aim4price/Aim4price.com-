@@ -25333,6 +25333,43 @@ button.documentOpenLink {
   grid-template-columns: minmax(0, 1fr);
 }
 
+.assetInsuranceClassificationCard {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid rgba(37, 99, 235, 0.18);
+  border-radius: 1.15rem;
+  background: linear-gradient(180deg, rgba(239, 246, 255, 0.78) 0%, rgba(248, 251, 255, 0.94) 100%);
+}
+
+.assetInsuranceClassificationIntro {
+  display: grid;
+  gap: 0.28rem;
+}
+
+.assetInsuranceClassificationIntro strong {
+  color: #1e3a5f;
+  font-size: 0.96rem;
+}
+
+.assetInsuranceClassificationIntro p {
+  margin: 0;
+  color: #526779;
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.assetInsuranceClassificationGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+  align-items: end;
+}
+
+.assetInsuranceClassificationGrid > .customSelectField {
+  min-width: 0;
+}
+
 .assetFormModal .assetTitleRow .manualTitleField,
 .assetFormModal .assetTripleGrid > .field,
 .assetFormModal .assetTripleGrid > .customSelectField,
@@ -25403,6 +25440,10 @@ button.documentOpenLink {
 
   .assetFormModal .assetValueBoxGrid > .field {
     min-height: 6.2rem;
+  }
+
+  .assetInsuranceClassificationGrid {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

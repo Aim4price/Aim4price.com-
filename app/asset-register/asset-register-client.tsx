@@ -10,6 +10,12 @@ import {
   type ReportKeyValue,
   type ReportMethodCard,
 } from '../../lib/report-print';
+import {
+  GENERAL_ASSET_CATEGORIES,
+  generalAssetCategoryLabel,
+  normalizeGeneralAssetCategory,
+  type GeneralAssetCategoryKey,
+} from '../../lib/general-asset-catalogue';
 import styles from './page.module.css';
 
 type NoticeTone = 'success' | 'error';
@@ -91,6 +97,9 @@ type AssetConditionValue = ConditionKey | '';
 type UsageMetric = 'hours' | 'km';
 type ProjectionUsageMetric = UsageMetric | 'percent';
 type AssetStatusChoice = 'yes' | 'no' | 'unknown' | 'not_applicable';
+type InsuranceUseContext = 'business' | 'home' | 'mixed';
+type InsuranceMobility = 'premises' | 'portable' | 'moves_between_locations' | 'fixed';
+type InsuranceFactAnswer = 'yes' | 'no' | 'unknown';
 type AssetStatusSection = 'finance' | 'insurance' | 'license';
 type AssetStatusEditView = 'hub' | AssetStatusSection;
 type AssetStatusQuickOrigin = 'detail-card' | null;
@@ -670,6 +679,11 @@ type MarketplacePublishDraft = {
 
 type AssetDraft = {
   kind: AssetKind;
+  generalAssetCategory: GeneralAssetCategoryKey | '';
+  insuranceUseContext: InsuranceUseContext | '';
+  insuranceMobility: InsuranceMobility | '';
+  insuranceCriticalToOperations: InsuranceFactAnswer;
+  insuranceTemperatureSensitiveStock: InsuranceFactAnswer;
   title: string;
   value: string;
   replacementPrice: string;
@@ -803,6 +817,20 @@ const PROPERTY_ASSET_DESCRIPTION = 'Land, buildings, houses, sheds, stores and f
 const PROPERTY_ASSET_TITLE_PLACEHOLDER = 'Example: Farm land, machinery shed or workshop building';
 const PROPERTY_YEAR_LABEL = 'Year';
 const PROPERTY_SIZE_SPEC_KEYS = ['propertySize', 'property_size', 'size', 'sizeText', 'size_text'] as const;
+const GENERAL_ASSET_INSURANCE_SPEC_KEYS = [
+  'generalAssetCategory',
+  'general_asset_category',
+  'generalAssetCategoryLabel',
+  'general_asset_category_label',
+  'insuranceUseContext',
+  'insurance_use_context',
+  'insuranceMobility',
+  'insurance_mobility',
+  'insuranceCriticalToOperations',
+  'insurance_critical_to_operations',
+  'insuranceTemperatureSensitiveStock',
+  'insurance_temperature_sensitive_stock',
+] as const;
 const MANUAL_ASSET_TYPE_OPTIONS: Array<{
   value: Extract<AssetKind, 'vehicle' | 'tools' | 'property' | 'equipment' | 'manual' | 'stock'>;
   label: string;
@@ -841,10 +869,41 @@ const MANUAL_ASSET_TYPE_OPTIONS: Array<{
   },
   {
     value: 'manual',
-    label: 'Other',
-    description: 'Any asset that does not fit the standard equipment, vehicle, property or tools groups.',
-    titlePlaceholder: 'Example: Irrigation rights, livestock equipment or custom asset',
+    label: 'Furniture, appliances & electronics',
+    description: 'Furniture, fridges, laptops, electronics, power equipment and other everyday assets.',
+    titlePlaceholder: 'Example: Samsung fridge, office desks or MacBook Pro',
   },
+];
+
+const GENERAL_ASSET_CATEGORY_OPTIONS: Array<{
+  value: GeneralAssetCategoryKey;
+  label: string;
+  description: string;
+}> = GENERAL_ASSET_CATEGORIES.map((category) => ({ ...category }));
+
+const INSURANCE_USE_CONTEXT_OPTIONS: Array<{ value: InsuranceUseContext; label: string; description: string }> = [
+  { value: 'business', label: 'Business use', description: 'Used for work, trade, farming or another business activity.' },
+  { value: 'home', label: 'Home / personal use', description: 'Used mainly as part of a household or for private purposes.' },
+  { value: 'mixed', label: 'Both business and personal', description: 'Regularly used for both business and personal purposes.' },
+];
+
+const INSURANCE_MOBILITY_OPTIONS: Array<{ value: InsuranceMobility; label: string; description: string }> = [
+  { value: 'premises', label: 'Usually stays at one premises', description: 'Movable, but normally kept and used at one address.' },
+  { value: 'portable', label: 'Portable / carried around', description: 'Regularly carried by a person, such as a laptop, phone or camera.' },
+  { value: 'moves_between_locations', label: 'Moves between sites', description: 'Regularly transported between farms, branches, jobs or client sites.' },
+  { value: 'fixed', label: 'Fixed or built in', description: 'Attached to the building or installed as a permanent fixture.' },
+];
+
+const INSURANCE_CRITICALITY_OPTIONS: Array<{ value: InsuranceFactAnswer; label: string; description: string }> = [
+  { value: 'yes', label: 'Yes', description: 'Losing it would stop or materially disrupt operations.' },
+  { value: 'no', label: 'No', description: 'The business or household could continue without material disruption.' },
+  { value: 'unknown', label: 'Not sure', description: 'Leave this for the insurance review to confirm.' },
+];
+
+const TEMPERATURE_SENSITIVE_STOCK_OPTIONS: Array<{ value: InsuranceFactAnswer; label: string; description: string }> = [
+  { value: 'yes', label: 'Yes', description: 'A failure could spoil refrigerated or frozen stock, food, medicine or produce.' },
+  { value: 'no', label: 'No', description: 'No temperature-sensitive stock depends on this equipment.' },
+  { value: 'unknown', label: 'Not sure', description: 'Leave this for the insurance review to confirm.' },
 ];
 
 const LIFETIME_PERCENT_SETTINGS_ERROR =
@@ -1188,6 +1247,11 @@ const QUOTE_TONE_STYLES: Record<PartnerType, QuoteToneStyle> = {
 
 const initialAssetDraft: AssetDraft = {
   kind: 'equipment',
+  generalAssetCategory: '',
+  insuranceUseContext: '',
+  insuranceMobility: '',
+  insuranceCriticalToOperations: 'unknown',
+  insuranceTemperatureSensitiveStock: 'unknown',
   title: '',
   value: '',
   replacementPrice: '',
@@ -2194,7 +2258,7 @@ function kindLabel(value: AssetKind): string {
     {
       tractor: 'Tractor',
       equipment: 'Equipment',
-      manual: 'Other',
+      manual: 'Furniture, appliances & electronics',
       property: PROPERTY_ASSET_LABEL,
       vehicle: 'Vehicle',
       tools: 'Tools',
@@ -2205,6 +2269,23 @@ function kindLabel(value: AssetKind): string {
 
 function normalizeDraftKind(value: AssetKind): AssetKind {
   return value;
+}
+
+function normalizeInsuranceUseContext(value: unknown): InsuranceUseContext | '' {
+  const normalized = String(value ?? '').trim().toLowerCase();
+  return normalized === 'business' || normalized === 'home' || normalized === 'mixed' ? normalized : '';
+}
+
+function normalizeInsuranceMobility(value: unknown): InsuranceMobility | '' {
+  const normalized = String(value ?? '').trim().toLowerCase();
+  return normalized === 'premises' || normalized === 'portable' || normalized === 'moves_between_locations' || normalized === 'fixed'
+    ? normalized
+    : '';
+}
+
+function normalizeInsuranceFactAnswer(value: unknown): InsuranceFactAnswer {
+  const normalized = String(value ?? '').trim().toLowerCase();
+  return normalized === 'yes' || normalized === 'no' ? normalized : 'unknown';
 }
 
 function normalizeUsageMetric(value: unknown, kind?: AssetKind): UsageMetric {
@@ -2493,6 +2574,10 @@ function getAssetSettingsUsageForKind(asset: RegisterAsset, nextKind: AssetKind)
 
 function buildAssetSettingsSpecsJson(asset: RegisterAsset, nextKind: AssetKind, usageMetric: UsageMetric | null, lifeWorkedPercent: number | null): Record<string, unknown> {
   const specs = isPlainRecord(asset.specsJson) ? { ...asset.specsJson } : {};
+
+  if (nextKind !== 'manual') {
+    GENERAL_ASSET_INSURANCE_SPEC_KEYS.forEach((key) => delete specs[key]);
+  }
 
   specs.manualAssetKind = nextKind;
   specs.manual_asset_kind = nextKind;
@@ -3890,9 +3975,19 @@ function buildDraftFromAsset(asset: RegisterAsset): AssetDraft {
   const initialModelValue = asset.modelName || asset.typedModelName || '';
   const derivedBrandName = deriveAssetReportBrandName(asset, initialModelValue);
   const derivedModelName = deriveAssetReportModelName(asset, derivedBrandName);
+  const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
 
   return {
     kind: normalizeDraftKind(asset.kind),
+    generalAssetCategory: normalizeGeneralAssetCategory(specs.generalAssetCategory ?? specs.general_asset_category),
+    insuranceUseContext: normalizeInsuranceUseContext(specs.insuranceUseContext ?? specs.insurance_use_context),
+    insuranceMobility: normalizeInsuranceMobility(specs.insuranceMobility ?? specs.insurance_mobility),
+    insuranceCriticalToOperations: normalizeInsuranceFactAnswer(
+      specs.insuranceCriticalToOperations ?? specs.insurance_critical_to_operations,
+    ),
+    insuranceTemperatureSensitiveStock: normalizeInsuranceFactAnswer(
+      specs.insuranceTemperatureSensitiveStock ?? specs.insurance_temperature_sensitive_stock,
+    ),
     title: asset.title,
     value: formatRegisterValueInput(asset.value || ''),
     replacementPrice: formatRegisterValueInput(readAssetReplacementPriceExVat(asset) ?? ''),
@@ -3995,6 +4090,10 @@ function assetPreviewImage(asset: RegisterAsset): string | null {
 
 function assetSectorLabel(asset: RegisterAsset): string {
   if (asset.kind === 'stock') return 'Stock';
+  if (asset.kind === 'manual') {
+    const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
+    return generalAssetCategoryLabel(specs.generalAssetCategory ?? specs.general_asset_category) || 'Everyday asset';
+  }
   if (isTractorAsset(asset) || isValuedEquipmentAsset(asset)) return 'Agricultural';
   if (asset.kind === 'property') return PROPERTY_ASSET_LABEL;
   if (asset.kind === 'vehicle') return 'Vehicle';
@@ -4010,6 +4109,10 @@ function assetFamilyLabel(asset: RegisterAsset): string {
   if (asset.kind === 'vehicle') return 'Vehicle';
   if (asset.kind === 'tools') return 'Tools';
   if (asset.kind === 'stock') return 'Stock';
+  if (asset.kind === 'manual') {
+    const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
+    return generalAssetCategoryLabel(specs.generalAssetCategory ?? specs.general_asset_category) || 'Everyday asset';
+  }
   if (isValuedEquipmentAsset(asset)) return 'Valued equipment';
   return 'Other';
 }
@@ -7500,6 +7603,11 @@ export default function AssetRegisterClient() {
     setAssetDraft((current) => ({
       ...current,
       kind: nextKind,
+      generalAssetCategory: nextKind === 'manual' ? current.generalAssetCategory : '',
+      insuranceUseContext: nextKind === 'manual' ? current.insuranceUseContext : '',
+      insuranceMobility: nextKind === 'manual' ? current.insuranceMobility : '',
+      insuranceCriticalToOperations: nextKind === 'manual' ? current.insuranceCriticalToOperations : 'unknown',
+      insuranceTemperatureSensitiveStock: nextKind === 'manual' ? current.insuranceTemperatureSensitiveStock : 'unknown',
       hours: nextKind === 'property' || nextKind === 'tools' || nextKind === 'manual' || nextKind === 'stock' ? '' : current.hours,
       usageMetric: nextKind === 'vehicle' ? normalizeUsageMetric(current.usageMetric, 'vehicle') : 'hours',
       lifeWorkedPercent: nextKind === 'property' || nextKind === 'vehicle' || nextKind === 'manual' || nextKind === 'stock' ? '' : current.lifeWorkedPercent,
@@ -8007,6 +8115,19 @@ export default function AssetRegisterClient() {
     const hasInsuredValue = assetStatusDraft.insuredValueExVat.trim() !== '';
     const insuredValueExVat = hasInsuredValue ? parseRegisterValueInput(assetStatusDraft.insuredValueExVat) : null;
     const usageErrorLabel = assetDraft.usageMetric === 'km' ? 'Kilometres' : 'Machine hours';
+
+    if (
+      assetFormKind === 'manual' &&
+      (!assetDraft.generalAssetCategory || !assetDraft.insuranceUseContext || !assetDraft.insuranceMobility)
+    ) {
+      if (showFeedback) {
+        setNotice({
+          tone: 'error',
+          message: 'Choose what the asset is, where it is used and whether it stays at one place or moves around.',
+        });
+      }
+      return false;
+    }
 
     if (!assetDraft.title.trim() || value <= 0) {
       if (showFeedback) setNotice({ tone: 'error', message: 'Asset title and current value are required before moving to the next step.' });
@@ -8921,6 +9042,22 @@ export default function AssetRegisterClient() {
       replacementPriceBasis: 'user',
       replacement_price_basis: 'user',
     };
+
+    if (assetFormKind === 'manual' && assetDraft.generalAssetCategory) {
+      const categoryLabel = generalAssetCategoryLabel(assetDraft.generalAssetCategory);
+      specsJson.generalAssetCategory = assetDraft.generalAssetCategory;
+      specsJson.general_asset_category = assetDraft.generalAssetCategory;
+      specsJson.generalAssetCategoryLabel = categoryLabel;
+      specsJson.general_asset_category_label = categoryLabel;
+      specsJson.insuranceUseContext = assetDraft.insuranceUseContext;
+      specsJson.insurance_use_context = assetDraft.insuranceUseContext;
+      specsJson.insuranceMobility = assetDraft.insuranceMobility;
+      specsJson.insurance_mobility = assetDraft.insuranceMobility;
+      specsJson.insuranceCriticalToOperations = assetDraft.insuranceCriticalToOperations;
+      specsJson.insurance_critical_to_operations = assetDraft.insuranceCriticalToOperations;
+      specsJson.insuranceTemperatureSensitiveStock = assetDraft.insuranceTemperatureSensitiveStock;
+      specsJson.insurance_temperature_sensitive_stock = assetDraft.insuranceTemperatureSensitiveStock;
+    }
 
     if (brandName) {
       specsJson.brandName = brandName;
@@ -12916,6 +13053,86 @@ export default function AssetRegisterClient() {
                           />
                         </label>
                       </div>
+
+                      {assetFormKind === 'manual' ? (
+                        <div className={styles.assetInsuranceClassificationCard}>
+                          <div className={styles.assetInsuranceClassificationIntro}>
+                            <strong>Help us put this asset in the right group</strong>
+                            <p>
+                              Choose ordinary facts about the item. Aim4price uses them to suggest insurance areas to consider;
+                              a broker must still confirm the final classification and cover.
+                            </p>
+                          </div>
+
+                          <div className={styles.assetInsuranceClassificationGrid}>
+                            <ModalSelect<GeneralAssetCategoryKey>
+                              label="What is it? *"
+                              value={assetDraft.generalAssetCategory}
+                              options={GENERAL_ASSET_CATEGORY_OPTIONS}
+                              onChange={(generalAssetCategory) =>
+                                setAssetDraft((current) => ({
+                                  ...current,
+                                  generalAssetCategory,
+                                  insuranceMobility:
+                                    generalAssetCategory === 'portable_electronics' && !current.insuranceMobility
+                                      ? 'portable'
+                                      : current.insuranceMobility,
+                                  insuranceTemperatureSensitiveStock:
+                                    generalAssetCategory === 'commercial_refrigeration'
+                                      ? current.insuranceTemperatureSensitiveStock
+                                      : 'unknown',
+                                }))
+                              }
+                              placeholder="Choose the closest match"
+                              usePortal
+                            />
+
+                            <ModalSelect<InsuranceUseContext>
+                              label="Where is it used? *"
+                              value={assetDraft.insuranceUseContext}
+                              options={INSURANCE_USE_CONTEXT_OPTIONS}
+                              onChange={(insuranceUseContext) =>
+                                setAssetDraft((current) => ({ ...current, insuranceUseContext }))
+                              }
+                              placeholder="Choose home or business use"
+                              usePortal
+                            />
+
+                            <ModalSelect<InsuranceMobility>
+                              label="Does it move around? *"
+                              value={assetDraft.insuranceMobility}
+                              options={INSURANCE_MOBILITY_OPTIONS}
+                              onChange={(insuranceMobility) =>
+                                setAssetDraft((current) => ({ ...current, insuranceMobility }))
+                              }
+                              placeholder="Choose how the item is used"
+                              usePortal
+                            />
+
+                            <ModalSelect<InsuranceFactAnswer>
+                              label="Critical to operations?"
+                              value={assetDraft.insuranceCriticalToOperations}
+                              options={INSURANCE_CRITICALITY_OPTIONS}
+                              onChange={(insuranceCriticalToOperations) =>
+                                setAssetDraft((current) => ({ ...current, insuranceCriticalToOperations }))
+                              }
+                              usePortal
+                            />
+
+                            {assetDraft.generalAssetCategory === 'commercial_refrigeration' ? (
+                              <ModalSelect<InsuranceFactAnswer>
+                                label="Protects temperature-sensitive stock?"
+                                value={assetDraft.insuranceTemperatureSensitiveStock}
+                                options={TEMPERATURE_SENSITIVE_STOCK_OPTIONS}
+                                onChange={(insuranceTemperatureSensitiveStock) =>
+                                  setAssetDraft((current) => ({ ...current, insuranceTemperatureSensitiveStock }))
+                                }
+                                usePortal
+                              />
+                            ) : null}
+                          </div>
+                        </div>
+                      ) : null}
 
                       {assetFormKind !== 'property' ? (
                         <div className={styles.assetTripleGrid}>
