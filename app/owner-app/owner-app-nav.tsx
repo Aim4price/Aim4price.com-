@@ -28,10 +28,11 @@ export default function OwnerAppNav({ showBack = true, backHref = '/owner-app', 
           <span className={styles.navArrow} aria-hidden="true">←</span>
           <span>{backLabel}</span>
         </Link>
-      ) : null}
-      <button type="button" className={styles.logoutButton} onClick={() => void signOut()} disabled={signingOut}>
-        {signingOut ? 'Signing out…' : 'Sign out'}
-      </button>
+      ) : (
+        <button type="button" className={styles.logoutButton} onClick={() => void signOut()} disabled={signingOut}>
+          {signingOut ? 'Signing out…' : 'Sign out'}
+        </button>
+      )}
     </header>
   );
 }

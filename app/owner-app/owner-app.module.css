@@ -24,7 +24,7 @@
   width: min(100% - 24px, 560px);
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 14px;
   min-height: 58px;
   margin: 0 auto;
@@ -32,15 +32,16 @@
 }
 
 .navButton {
+  margin-left: auto;
   min-height: 48px;
   display: inline-flex;
   align-items: center;
   gap: 7px;
   justify-content: center;
-  border: 1px solid rgba(18, 53, 45, 0.14);
+  border: 1.5px solid #6fc596;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.92);
-  color: #174637;
+  background: linear-gradient(180deg, #ffffff 0%, #e6f8ef 100%);
+  color: #0a543d;
   padding: 0 16px;
   font-family: inherit;
   font-size: 0.94rem;
@@ -49,7 +50,7 @@
   text-decoration: none;
   cursor: pointer;
   white-space: nowrap;
-  box-shadow: 0 10px 24px rgba(18, 53, 45, 0.08);
+  box-shadow: 0 10px 24px rgba(10, 84, 61, 0.1);
   transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
 }
 
@@ -120,56 +121,142 @@
   min-height: 100vh;
   min-height: 100dvh;
   flex-direction: column;
+  background:
+    radial-gradient(circle at 50% 4%, rgba(111, 197, 150, 0.18), transparent 32%),
+    linear-gradient(180deg, #f7fbf8 0%, #ffffff 46%, #f5faf7 100%);
 }
 
 .homeContent {
   flex: 1 1 auto;
   width: min(100% - 24px, 560px);
   display: grid;
-  place-items: center;
+  align-content: center;
   margin: 0 auto;
   padding: 0 0 24px;
 }
 
+.homeDashboard {
+  width: min(100%, 420px);
+  display: grid;
+  gap: 16px;
+  margin: 0 auto;
+}
+
+.homeWelcome {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  gap: 7px;
+  border: 1px solid rgba(35, 104, 81, 0.16);
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 100% 0, rgba(118, 205, 158, 0.28), transparent 43%),
+    linear-gradient(135deg, #edf8f2 0%, #ffffff 76%);
+  padding: 22px;
+  box-shadow: 0 18px 42px rgba(18, 53, 45, 0.09);
+}
+
+.homeWelcome > span {
+  color: #277056;
+  font-size: 0.68rem;
+  font-weight: 950;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.homeWelcome h1 {
+  max-width: 330px;
+  margin: 0;
+  color: var(--owner-ink);
+  font-size: clamp(1.72rem, 7.5vw, 2.25rem);
+  font-weight: 950;
+  letter-spacing: -0.045em;
+  line-height: 1.04;
+}
+
+.homeWelcome p {
+  margin: 0;
+  color: rgba(18, 53, 45, 0.64);
+  font-size: 0.82rem;
+  font-weight: 720;
+  line-height: 1.45;
+}
+
 .homeLauncher {
-  width: min(100%, 390px);
+  width: 100%;
   box-sizing: border-box;
   display: grid;
-  gap: 14px;
+  gap: 10px;
   margin: 0 auto;
-  padding: 14px;
+  padding: 12px;
   border: 1px solid rgba(18, 53, 45, 0.12);
-  border-radius: 30px;
-  background: rgba(255, 255, 255, 0.42);
-  box-shadow: 0 20px 48px rgba(18, 53, 45, 0.08);
+  border-radius: 26px;
+  background: rgba(238, 247, 242, 0.8);
+  box-shadow: 0 18px 42px rgba(18, 53, 45, 0.07);
 }
 
 .homeLaunchCard {
   position: relative;
   width: 100%;
-  min-height: 96px;
-  display: flex;
+  min-height: 74px;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: center;
+  justify-content: stretch;
+  gap: 12px;
   box-sizing: border-box;
   border: 1px solid rgba(18, 53, 45, 0.12);
-  border-radius: 24px;
+  border-radius: 19px;
   background: rgba(255, 255, 255, 0.95);
   color: var(--owner-ink);
-  padding: 18px 20px;
-  box-shadow: 0 20px 48px rgba(18, 53, 45, 0.1);
-  text-align: center;
+  padding: 13px 15px;
+  box-shadow: 0 10px 24px rgba(18, 53, 45, 0.075);
+  text-align: left;
   text-decoration: none;
   transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
 }
 
-.homeLaunchCard strong {
+.homeLaunchIcon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(35, 104, 81, 0.15);
+  border-radius: 14px;
+  background: #e9f6ef;
+  color: #176047;
+  font-size: 1rem;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.homeLaunchCopy {
+  min-width: 0;
+  display: grid;
+  align-content: center;
+  gap: 3px;
+}
+
+.homeLaunchCopy strong {
   margin: 0;
   color: var(--owner-ink);
-  font-size: clamp(2rem, 10vw, 3rem);
-  letter-spacing: -0.04em;
+  font-size: clamp(1rem, 4.5vw, 1.16rem);
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+}
+
+.homeLaunchCopy small {
+  color: rgba(18, 53, 45, 0.58);
+  font-size: 0.69rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.homeLaunchArrow {
+  color: rgba(18, 53, 45, 0.42);
+  font-size: 1.45rem;
+  font-weight: 850;
   line-height: 1;
-  text-align: center;
 }
 
 .homeLaunchCard:active {
@@ -182,11 +269,8 @@
 }
 
 .homeLaunchBadge {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  min-width: 30px;
-  min-height: 30px;
+  min-width: 25px;
+  min-height: 25px;
   display: grid;
   place-items: center;
   box-sizing: border-box;
@@ -194,7 +278,7 @@
   background: #e02424;
   color: #fff;
   padding-inline: 7px;
-  font-size: 0.76rem;
+  font-size: 0.66rem;
   font-weight: 950;
   letter-spacing: 0;
   line-height: 1;
@@ -461,10 +545,6 @@
 }
 .ownerAssetOpenButton {
   width: 100%;
-  border: 1px solid var(--owner-green);
-  background: var(--owner-green);
-  color: #fff;
-  box-shadow: 0 12px 24px rgba(37, 71, 51, 0.18);
 }
 .assetManageButton { border: 1px solid var(--owner-green); background: var(--owner-green); color: #fff; box-shadow: 0 12px 24px rgba(37, 71, 51, 0.18); }
 .ownerAssetOpenButton:focus-visible,
@@ -1519,39 +1599,32 @@
 
 .notificationContent {
   width: min(100% - 20px, 560px);
-  gap: 0;
+  gap: 18px;
+  box-sizing: border-box;
+  border: 1px solid rgba(35, 104, 81, 0.15);
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 100% 0, rgba(111, 197, 150, 0.2), transparent 34%),
+    linear-gradient(180deg, #f0f8f4 0%, #f8fbf9 100%);
+  padding: clamp(16px, 4.5vw, 22px);
+  box-shadow: 0 20px 48px rgba(18, 53, 45, 0.09);
 }
 
 .notificationIntro {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: 14px;
-  padding: 8px 3px 18px;
+  padding: 0;
 }
 
-.notificationIntro > div { min-width: 0; }
-.notificationIntro > div > span {
-  display: block;
-  color: #236851;
-  font-size: 0.7rem;
-  font-weight: 950;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
 .notificationIntro h1 {
-  margin: 5px 0 0;
+  min-width: 0;
+  margin: 0;
   color: #12352d;
-  font-size: clamp(2.1rem, 10vw, 3rem);
+  font-size: clamp(1.8rem, 8.5vw, 2.5rem);
   letter-spacing: -0.045em;
-  line-height: 0.98;
-}
-.notificationIntro p {
-  margin: 8px 0 0;
-  color: rgba(18, 53, 45, 0.64);
-  font-size: 0.94rem;
-  font-weight: 760;
-  line-height: 1.4;
+  line-height: 1;
 }
 
 .markCheckedButton {
@@ -1577,10 +1650,10 @@
 }
 .markCheckedButton > span { font-size: 0.92rem; }
 .markCheckedButtonNew {
-  border-color: rgba(204, 58, 58, 0.3);
-  background: #ffe4e4;
-  color: #7f2525;
-  box-shadow: 0 10px 22px rgba(174, 35, 35, 0.13);
+  border-color: rgba(35, 104, 81, 0.24);
+  background: #e3f4eb;
+  color: #12553e;
+  box-shadow: 0 10px 22px rgba(35, 104, 81, 0.1);
 }
 .markCheckedButtonNew:active { transform: translateY(1px); }
 .markCheckedButton:focus-visible {
@@ -1664,11 +1737,11 @@
   box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.12), 0 16px 38px rgba(18, 53, 45, 0.09);
 }
 .notificationCardNew {
-  border-color: rgba(204, 58, 58, 0.26);
+  border-color: rgba(35, 104, 81, 0.16);
   background:
-    radial-gradient(circle at 0 0, rgba(204, 58, 58, 0.12), transparent 36%),
-    linear-gradient(180deg, #fff5f5 0%, #ffe8e8 100%);
-  box-shadow: 0 16px 36px rgba(157, 42, 42, 0.1);
+    radial-gradient(circle at 0 0, rgba(111, 197, 150, 0.14), transparent 36%),
+    linear-gradient(180deg, #ffffff 0%, #f2f8f5 100%);
+  box-shadow: 0 14px 32px rgba(18, 53, 45, 0.08);
 }
 .notificationCardPriority {
   order: -1;
@@ -1746,23 +1819,6 @@
   line-height: 1.46;
   overflow-wrap: anywhere;
 }
-.notificationOpenHint {
-  display: inline-flex;
-  align-items: center;
-  min-height: 38px;
-  margin-top: 14px;
-  border: 1px solid rgba(18, 53, 45, 0.14);
-  border-radius: 13px;
-  background: rgba(255, 255, 255, 0.78);
-  color: #174637;
-  padding: 0 13px;
-  font-size: 0.78rem;
-  font-weight: 900;
-}
-.notificationCardPriority .notificationOpenHint {
-  border-color: rgba(153, 94, 12, 0.2);
-  color: #76450b;
-}
 .notificationEmpty {
   margin: 0;
   border: 1px dashed rgba(18, 53, 45, 0.15);
@@ -1827,10 +1883,6 @@
   .homeLaunchCard {
     border-radius: 22px;
     padding: 14px;
-  }
-
-  .homeLaunchCard strong {
-    font-size: 2rem;
   }
 
   .navButton {

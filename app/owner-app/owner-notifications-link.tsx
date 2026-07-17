@@ -70,12 +70,18 @@ export default function OwnerNotificationsLink({ viewerId }: { viewerId: string 
 
   return (
     <Link className={styles.homeLaunchCard} href="/owner-app/notifications" prefetch={false}>
-      <strong>Notifications</strong>
+      <span className={styles.homeLaunchIcon} aria-hidden="true">!</span>
+      <span className={styles.homeLaunchCopy}>
+        <strong>Notifications</strong>
+        <small>Updates across your assets</small>
+      </span>
       {unreadCount > 0 ? (
         <span className={styles.homeLaunchBadge} aria-label={`${unreadCount} new notifications`}>
           {unreadCount > 99 ? '99+' : unreadCount}
         </span>
-      ) : null}
+      ) : (
+        <span className={styles.homeLaunchArrow} aria-hidden="true">›</span>
+      )}
     </Link>
   );
 }
