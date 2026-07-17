@@ -10,6 +10,7 @@ import type {
   InsuranceWorkspaceAsset,
   InsuranceWorkspaceData,
 } from '../../../lib/insurance-workspace-types';
+import { getInsuranceWorkspaceReadiness } from '../../../lib/insurance-workspace-readiness';
 import {
   InsuranceCoversPanel,
   InsuranceOverviewPanel,
@@ -114,21 +115,15 @@ function detailRows(asset: InsuranceWorkspaceAsset): Array<[string, string]> {
 }
 
 function workflowCompletion(workspace: InsuranceWorkspaceData): Record<StepId, boolean> {
-  const hasRealLocation = workspace.locations.some((location) => !location.isUnknown);
-  const assetsReviewed = workspace.assets.length > 0 && workspace.assets.every((asset) => workspace.riskObjects.some((entry) => entry.workspaceAssetId === asset.id && entry.classificationStatus !== 'unconfirmed'));
-  const assessments = workspace.assessments.filter((assessment) => assessment.canonicalCoverKey);
-  const coversReviewed = assessments.length > 0 && assessments.every((assessment) => assessment.currentCoverPosition !== 'unknown' && assessment.placementStage !== 'not_assessed');
-  const hasConfirmedCurrentCover = assessments.some((assessment) => assessment.currentCoverPosition === 'confirmed_included');
-  const hasScheduleEvidence = workspace.policies.some((policy) => policy.sections.some((section) => section.scheduleItems.length > 0));
-  const requiredReady = workspace.segments.length > 0 && hasRealLocation && workspace.parties.length > 0 && assetsReviewed && coversReviewed && (!hasConfirmedCurrentCover || hasScheduleEvidence);
+  const readiness = getInsuranceWorkspaceReadiness(workspace);
   const supportingInfoUsed = workspace.evidence.length > 0 || workspace.notes.length > 0 || workspace.informationRequests.length > 0;
   return {
-    setup: workspace.segments.length > 0 && hasRealLocation && workspace.parties.length > 0,
-    assets: assetsReviewed,
-    covers: coversReviewed,
-    policies: coversReviewed && (!hasConfirmedCurrentCover || hasScheduleEvidence),
+    setup: readiness.completion.setup,
+    assets: readiness.completion.assets,
+    covers: readiness.completion.covers,
+    policies: readiness.completion.policies,
     questions: supportingInfoUsed && workspace.overview.openInformationRequestCount === 0,
-    finish: requiredReady && workspace.reports.length > 0,
+    finish: readiness.ready && workspace.reports.length > 0,
   };
 }
 
@@ -153,9 +148,10 @@ export default function SharedRegisterWorkspace({ initialWorkspace }: { initialW
   const contentRef = useRef<HTMLDivElement>(null);
 
   const completion = useMemo(() => workflowCompletion(workspace), [workspace]);
+  const readiness = useMemo(() => getInsuranceWorkspaceReadiness(workspace), [workspace]);
   const currentStepIndex = WORKFLOW_STEPS.findIndex((entry) => entry.id === step);
-  const completedRequiredCount = REQUIRED_STEPS.filter((entry) => completion[entry]).length;
-  const requiredReady = completedRequiredCount === REQUIRED_STEPS.length;
+  const completedRequiredCount = readiness.readyStepCount;
+  const requiredReady = readiness.ready;
   const reviewedAssetCount = workspace.assets.filter((asset) => workspace.riskObjects.some((entry) => entry.workspaceAssetId === asset.id && entry.classificationStatus !== 'unconfirmed')).length;
   const canonicalAssessments = workspace.assessments.filter((assessment) => assessment.canonicalCoverKey);
   const assessedCoverCount = canonicalAssessments.filter((assessment) => assessment.currentCoverPosition !== 'unknown' && assessment.placementStage !== 'not_assessed').length;
@@ -243,8 +239,8 @@ export default function SharedRegisterWorkspace({ initialWorkspace }: { initialW
     setup: { body: 'Confirm three basics: the client profile, at least one real location, and the insured party.', progress: `${workspace.locations.filter((location) => !location.isUnknown).length} saved locations · ${workspace.parties.length} parties` },
     assets: { body: 'Check the suggested classification, saved location and values. Confirm it, then move to the next asset.', progress: `${reviewedAssetCount} of ${workspace.assets.length} reviewed` },
     covers: { body: 'Start with system suggestions. Decide what is relevant before opening the full catalogue.', progress: `${assessedCoverCount} of ${canonicalAssessments.length} decided` },
-    policies: { body: 'Use the actual insurer schedule. Amounts entered here are always recorded as VAT included.', progress: `${workspace.policies.length} policies · ${policySectionCount} sections · ${scheduleItemCount} items` },
-    questions: { body: 'This step is optional. Use it only when you need questions, notes or supporting evidence.', progress: `${workspace.overview.openInformationRequestCount} open questions · ${workspace.evidence.length} evidence items` },
+    policies: { body: 'Use the actual insurer schedule. Record each amount exactly as shown and confirm whether it is VAT-inclusive or VAT-exclusive.', progress: `${workspace.policies.length} policies · ${policySectionCount} sections · ${scheduleItemCount} items` },
+    questions: { body: 'Questions created from missing information appear here. Record the client response and keep notes and evidence with the review.', progress: `${workspace.overview.openInformationRequestCount} open questions · ${workspace.evidence.length} evidence items` },
     finish: { body: 'The readiness check shows exactly what remains. Reports unlock when all required steps are ready.', progress: `${completedRequiredCount} of ${REQUIRED_STEPS.length} required steps ready` },
   };
 
@@ -358,8 +354,11 @@ export default function SharedRegisterWorkspace({ initialWorkspace }: { initialW
         {step === 'finish' ? <section className={styles.reports}>
           <article className={styles.readinessCard}>
             <header><div><span>Required readiness check</span><h2>{requiredReady ? 'Everything required is ready' : 'Complete the highlighted items first'}</h2></div><strong>{completedRequiredCount}/{REQUIRED_STEPS.length} ready</strong></header>
-            <div className={styles.readinessList}>{WORKFLOW_STEPS.filter((entry) => REQUIRED_STEPS.includes(entry.id)).map((entry) => <button type="button" key={entry.id} onClick={() => goToStep(entry.id)}><span className={completion[entry.id] ? styles.statusComplete : styles.statusPending}>{completion[entry.id] ? '✓' : '!'}</span><span><strong>{entry.title}</strong><small>{completion[entry.id] ? 'Ready' : entry.description}</small></span><span>{completion[entry.id] ? 'Review' : 'Complete now'} →</span></button>)}</div>
-            <button className={styles.optionalSupportLink} type="button" onClick={() => goToStep('questions')}><span>Supporting information</span><strong>{completion.questions ? '✓ Added and resolved' : 'Optional · Add questions, notes or evidence'} →</strong></button>
+            <div className={styles.readinessList}>{WORKFLOW_STEPS.filter((entry) => REQUIRED_STEPS.includes(entry.id)).map((entry) => {
+              const issues = readiness.issues.filter((issue) => issue.step === entry.id);
+              return <button type="button" key={entry.id} onClick={() => goToStep(entry.id)}><span className={completion[entry.id] ? styles.statusComplete : styles.statusPending}>{completion[entry.id] ? '✓' : '!'}</span><span><strong>{entry.title}</strong><small>{completion[entry.id] ? 'Ready' : issues.slice(0, 3).map((issue) => issue.title).join(' · ')}{issues.length > 3 ? ` · +${issues.length - 3} more` : ''}</small></span><span>{completion[entry.id] ? 'Review' : 'Fix now'} →</span></button>;
+            })}</div>
+            <button className={styles.optionalSupportLink} type="button" onClick={() => goToStep('questions')}><span>Client questions and supporting information</span><strong>{workspace.overview.openInformationRequestCount ? `${workspace.overview.openInformationRequestCount} need attention` : completion.questions ? '✓ Added and resolved' : 'Add notes or evidence if needed'} →</strong></button>
           </article>
           <div className={styles.reportGrid}>
             <article><span>Recommended</span><h2>Client summary</h2><p>A concise, client-ready view of the cover position, values and outstanding information.</p><button type="button" onClick={() => void generateReport('summary')} disabled={saving || !requiredReady}>{requiredReady ? 'Create summary report' : 'Complete required steps first'}</button></article>

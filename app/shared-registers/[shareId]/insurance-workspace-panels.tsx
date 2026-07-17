@@ -16,6 +16,7 @@ import type {
   InsuranceCoverAssessment,
   InsuranceEvidence,
   InsuranceFinancialTerm,
+  InsuranceInformationRequest,
   InsuranceLocation,
   InsuranceRiskObject,
   InsuranceWorkspaceData,
@@ -45,6 +46,34 @@ function financialTermMoney(term: InsuranceFinancialTerm): string {
   const amount = Number(term.amount);
   if (!Number.isFinite(amount)) return 'Not recorded';
   return money(term.vatBasis === 'exclusive' ? amount * 1.15 : amount, term.currency);
+}
+
+function financialTermDescription(term: InsuranceFinancialTerm): string {
+  if (term.amount) {
+    const basis = term.vatBasis === 'exclusive' ? 'VAT excl.' : term.vatBasis === 'inclusive' ? 'VAT incl.' : 'VAT basis unconfirmed';
+    const normalized = term.vatBasis === 'exclusive' ? ` · ${financialTermMoney(term)} VAT incl.` : '';
+    return `${money(term.amount, term.currency)} ${basis}${normalized}`;
+  }
+  if (term.percentage) return `${term.percentage}%`;
+  if (term.timeValue) return `${term.timeValue} ${term.timeUnit}`;
+  return 'Recorded without amount';
+}
+
+function renewalLabel(value: string): string {
+  if (!value) return 'Renewal date missing';
+  const renewal = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(renewal.getTime())) return 'Renewal date invalid';
+  const days = Math.ceil((renewal.getTime() - Date.now()) / 86_400_000);
+  if (days < 0) return `Renewal overdue by ${Math.abs(days)} day${Math.abs(days) === 1 ? '' : 's'}`;
+  if (days === 0) return 'Renews today';
+  return `Renews in ${days} day${days === 1 ? '' : 's'}`;
+}
+
+function policyDateFromText(value: string): string {
+  const isoMatch = value.match(/\b(20\d{2})[-/.](0?[1-9]|1[0-2])[-/.](0?[1-9]|[12]\d|3[01])\b/);
+  if (isoMatch) return `${isoMatch[1]}-${isoMatch[2].padStart(2, '0')}-${isoMatch[3].padStart(2, '0')}`;
+  const localMatch = value.match(/\b(0?[1-9]|[12]\d|3[01])[-/.](0?[1-9]|1[0-2])[-/.](20\d{2})\b/);
+  return localMatch ? `${localMatch[3]}-${localMatch[2].padStart(2, '0')}-${localMatch[1].padStart(2, '0')}` : '';
 }
 
 const currentCoverOptions: Array<{ value: InsuranceCurrentCoverPosition; label: string }> = [
@@ -231,7 +260,7 @@ export function InsuranceRiskObjectEditor({ riskObject, locations, runCommand, o
   </section>;
 }
 
-function AssessmentEditor({ assessment, runCommand }: { assessment: InsuranceCoverAssessment; runCommand: RunCommand }) {
+function AssessmentEditor({ assessment, assets, runCommand }: { assessment: InsuranceCoverAssessment; assets: InsuranceWorkspaceAsset[]; runCommand: RunCommand }) {
   const [currentCoverPosition, setCurrentCoverPosition] = useState(assessment.currentCoverPosition);
   const [placementStage, setPlacementStage] = useState(assessment.placementStage);
   const [sourceReference, setSourceReference] = useState(assessment.provenance.sourceReference);
@@ -241,6 +270,9 @@ function AssessmentEditor({ assessment, runCommand }: { assessment: InsuranceCov
   const [componentStatus, setComponentStatus] = useState<InsuranceCurrentCoverPosition>('unknown');
   const [termType, setTermType] = useState<'sum_insured' | 'sublimit' | 'basic_excess' | 'time_excess'>('sum_insured');
   const [termAmount, setTermAmount] = useState('');
+  const [termVatBasis, setTermVatBasis] = useState<'inclusive' | 'exclusive' | 'unknown'>('unknown');
+  const definition = assessment.canonicalCoverKey ? INSURANCE_COVER_CATALOGUE.find((cover) => cover.key === assessment.canonicalCoverKey) : undefined;
+  const linkedAssets = assets.filter((asset) => assessment.assetIds.includes(asset.id));
 
   async function saveAssessment() {
     await runCommand({
@@ -257,6 +289,8 @@ function AssessmentEditor({ assessment, runCommand }: { assessment: InsuranceCov
   return <article className={styles.coverAssessmentCard}>
     <header><div><small>{assessment.systemSuggestionRuleId ? 'Suggested for this review' : 'Added by broker'}</small><h3>{assessment.coverLabel}</h3></div><strong>{assessment.currentCoverPosition === 'unknown' ? 'Decision needed' : label(assessment.currentCoverPosition)}</strong></header>
     {assessment.systemSuggestionRationale ? <p className={styles.suggestionReason}>{assessment.systemSuggestionRationale}</p> : null}
+    {linkedAssets.length ? <div className={styles.linkedAssetChips}><strong>Linked assets</strong>{linkedAssets.map((asset) => <span key={asset.id}>{asset.title}</span>)}</div> : null}
+    {definition ? <details className={styles.handbookGuide}><summary>Plain-language cover guide</summary><div><p><strong>What it protects:</strong> {definition.insuredInterestSummary}</p><p><strong>Typical trigger:</strong> {definition.triggerSummary}</p>{definition.limitationsAndConditions.length ? <p><strong>Check carefully:</strong> {definition.limitationsAndConditions.slice(0, 3).join(' · ')}</p> : null}{definition.underwritingQuestions.length ? <p><strong>Useful client questions:</strong> {definition.underwritingQuestions.slice(0, 3).map((question) => question.question).join(' · ')}</p> : null}<small>{definition.sourceReferences.slice(0, 2).join(' · ')}</small></div></details> : null}
     <h4 className={styles.decisionPrompt}>Make two decisions</h4>
     <div className={styles.formGrid}>
       <label><span>1. What does the current policy say?</span><select value={currentCoverPosition} onChange={(event) => setCurrentCoverPosition(event.target.value as InsuranceCurrentCoverPosition)}>{currentCoverOptions.map((option) => <option value={option.value} key={option.value}>{option.label}</option>)}</select></label>
@@ -274,12 +308,13 @@ function AssessmentEditor({ assessment, runCommand }: { assessment: InsuranceCov
         <label className={styles.wide}><span>Component label</span><input value={componentLabel} onChange={(event) => setComponentLabel(event.target.value)} /></label>
       </div>
       <button className={styles.secondaryButton} type="button" onClick={() => void runCommand({ operation: 'save_component', assessmentId: assessment.id, componentType, label: componentLabel, selectionStatus: componentStatus, sourceType: 'broker_recorded', sourceReference }, 'Cover component saved.').then((ok) => { if (ok) setComponentLabel(''); })}>Add component</button>
-      <div className={styles.financialRows}>{assessment.financialTerms.map((term) => <div key={term.id}><strong>{label(term.termType)}</strong><span>{term.amount ? `${financialTermMoney(term)} VAT included` : term.percentage ? `${term.percentage}%` : term.timeValue ? `${term.timeValue} ${term.timeUnit}` : 'Recorded without amount'}</span></div>)}</div>
+      <div className={styles.financialRows}>{assessment.financialTerms.map((term) => <div key={term.id}><strong>{label(term.termType)}</strong><span>{financialTermDescription(term)}</span></div>)}</div>
       <div className={styles.formGrid}>
         <label><span>Financial term</span><select value={termType} onChange={(event) => setTermType(event.target.value as typeof termType)}><option value="sum_insured">Sum insured</option><option value="sublimit">Sublimit</option><option value="basic_excess">Basic excess</option><option value="time_excess">Time excess</option></select></label>
-        <label><span>{termType === 'time_excess' ? 'Hours' : 'Amount including VAT (ZAR)'}</span><input inputMode="decimal" value={termAmount} onChange={(event) => setTermAmount(event.target.value)} /></label>
+        <label><span>{termType === 'time_excess' ? 'Hours' : 'Amount exactly as shown (ZAR)'}</span><input inputMode="decimal" value={termAmount} onChange={(event) => setTermAmount(event.target.value)} /></label>
+        {termType === 'time_excess' ? null : <label><span>VAT basis shown on the source *</span><select value={termVatBasis} onChange={(event) => setTermVatBasis(event.target.value as typeof termVatBasis)}><option value="unknown">Choose VAT basis…</option><option value="inclusive">VAT inclusive</option><option value="exclusive">VAT exclusive</option></select></label>}
       </div>
-      <button className={styles.secondaryButton} type="button" onClick={() => void runCommand({ operation: 'save_financial_term', assessmentId: assessment.id, termType, amount: termType === 'time_excess' ? null : termAmount, timeValue: termType === 'time_excess' ? termAmount : null, timeUnit: termType === 'time_excess' ? 'hours' : '', currency: 'ZAR', vatBasis: termType === 'time_excess' ? 'not_applicable' : 'inclusive', sourceType: 'broker_recorded', sourceReference }, 'VAT-inclusive financial term saved.').then((ok) => { if (ok) setTermAmount(''); })}>Add VAT-inclusive financial term</button>
+      <button className={styles.secondaryButton} type="button" disabled={!termAmount.trim() || (termType !== 'time_excess' && termVatBasis === 'unknown')} onClick={() => void runCommand({ operation: 'save_financial_term', assessmentId: assessment.id, termType, amount: termType === 'time_excess' ? null : termAmount, timeValue: termType === 'time_excess' ? termAmount : null, timeUnit: termType === 'time_excess' ? 'hours' : '', currency: 'ZAR', vatBasis: termType === 'time_excess' ? 'not_applicable' : termVatBasis, sourceType: 'broker_recorded', sourceReference }, 'Financial term saved with its VAT basis.').then((ok) => { if (ok) { setTermAmount(''); setTermVatBasis('unknown'); } })}>Add financial term</button>
     </details>
   </article>;
 }
@@ -300,6 +335,34 @@ export function InsuranceCoversPanel({ workspace, assets, runCommand }: { worksp
   const assessments = workspace.assessments.filter((assessment) => assessment.canonicalCoverKey);
   const activeAssessment = assessments[Math.min(assessmentIndex, Math.max(0, assessments.length - 1))];
   const openSuggestions = workspace.suggestions.filter((suggestion) => suggestion.suggestedCoverKey && !suggestion.decision);
+  const groupedSuggestions = useMemo(() => {
+    const rank = { low: 1, medium: 2, high: 3 } as const;
+    const grouped = new Map<string, {
+      coverKey: string;
+      suggestionIds: string[];
+      assetIds: string[];
+      rationales: string[];
+      missingQuestions: string[];
+      confidence: 'low' | 'medium' | 'high';
+    }>();
+    openSuggestions.forEach((suggestion) => {
+      const coverKey = suggestion.suggestedCoverKey;
+      if (!coverKey) return;
+      const current = grouped.get(coverKey) ?? { coverKey, suggestionIds: [], assetIds: [], rationales: [], missingQuestions: [], confidence: 'low' as const };
+      current.suggestionIds.push(suggestion.id);
+      if (suggestion.workspaceAssetId) current.assetIds.push(suggestion.workspaceAssetId);
+      current.rationales.push(suggestion.rationale);
+      current.missingQuestions.push(...suggestion.missingQuestions);
+      if (rank[suggestion.confidence] > rank[current.confidence]) current.confidence = suggestion.confidence;
+      grouped.set(coverKey, current);
+    });
+    return [...grouped.values()].map((group) => ({
+      ...group,
+      assetIds: [...new Set(group.assetIds)],
+      rationales: [...new Set(group.rationales)],
+      missingQuestions: [...new Set(group.missingQuestions)],
+    }));
+  }, [openSuggestions]);
   const nonAssetExposures = workspace.exposures.filter((exposure) => exposure.exposureType !== 'physical_asset');
   const physicalAssetExposures = workspace.exposures.filter((exposure) => exposure.exposureType === 'physical_asset');
   const unreviewedAssets = workspace.riskObjects.filter((riskObject) => riskObject.classificationStatus !== 'human_confirmed');
@@ -321,26 +384,29 @@ export function InsuranceCoversPanel({ workspace, assets, runCommand }: { worksp
   }
 
   return <section>
-    <header className={styles.sectionHeader}><div><span className={styles.eyebrow}>Guided cover review</span><h2>Decide what cover needs attention</h2><p>Start with the recommendations created from the client profile and reviewed assets. Nothing is treated as insured until you record policy evidence.</p></div><button type="button" onClick={() => void runCommand({ operation: 'refresh_suggestions' }, 'Cover recommendations refreshed.')}>Refresh recommendations</button></header>
+    <header className={styles.sectionHeader}><div><span className={styles.eyebrow}>Guided cover review</span><h2>Decide what cover needs attention</h2><p>Start with grouped areas to consider created from confirmed client and asset facts. Nothing is treated as insured until you record policy evidence.</p></div><button type="button" onClick={() => void runCommand({ operation: 'refresh_suggestions' }, 'Cover areas refreshed from confirmed information.')}>Refresh from confirmed facts</button></header>
     <nav className={styles.substepNav} aria-label="Cover review sections">
-      <button className={coverView === 'suggestions' ? styles.activeView : ''} type="button" onClick={() => setCoverView('suggestions')}>1. Recommended covers ({openSuggestions.length})</button>
+      <button className={coverView === 'suggestions' ? styles.activeView : ''} type="button" onClick={() => setCoverView('suggestions')}>1. Areas to consider ({groupedSuggestions.length})</button>
       <button className={coverView === 'exposures' ? styles.activeView : ''} type="button" onClick={() => setCoverView('exposures')}>2. Extra exposures ({nonAssetExposures.length})</button>
       <button className={coverView === 'assessments' ? styles.activeView : ''} type="button" onClick={() => setCoverView('assessments')}>3. Cover decisions ({workspace.assessments.filter((assessment) => assessment.canonicalCoverKey).length})</button>
     </nav>
 
     {coverView === 'suggestions' ? <>
-      {unreviewedAssets.length ? <div className={styles.warningBox}><strong>Finish reviewing the assets first</strong><span>{unreviewedAssets.length} asset{unreviewedAssets.length === 1 ? '' : 's'} still need a confirmed type and saved location. Recommendations become more useful after that.</span></div> : null}
-      {openSuggestions.length ? <div className={styles.recommendationGrid}>{openSuggestions.map((suggestion) => {
-        const cover = INSURANCE_COVER_CATALOGUE.find((entry) => entry.key === suggestion.suggestedCoverKey);
+      {unreviewedAssets.length ? <div className={styles.warningBox}><strong>Finish reviewing the assets first</strong><span>{unreviewedAssets.length} asset{unreviewedAssets.length === 1 ? '' : 's'} still need a confirmed type and saved location. Suggestions become more useful after that.</span></div> : null}
+      {groupedSuggestions.length ? <div className={styles.recommendationGrid}>{groupedSuggestions.map((group) => {
+        const cover = INSURANCE_COVER_CATALOGUE.find((entry) => entry.key === group.coverKey);
         if (!cover) return null;
-        return <article className={styles.recommendationCard} key={suggestion.id}>
-          <header><span>{label(suggestion.confidence)} confidence</span><small>{label(cover.familyKey)}</small></header>
+        const linkedAssets = assets.filter((asset) => group.assetIds.includes(asset.id));
+        return <article className={styles.recommendationCard} key={group.coverKey}>
+          <header><span>{label(group.confidence)} confidence</span><small>{label(cover.familyKey)} · {group.suggestionIds.length} signal{group.suggestionIds.length === 1 ? '' : 's'}</small></header>
           <h3>{cover.label}</h3>
           <p>{cover.purpose}</p>
-          <details><summary>Why this was recommended</summary><p>{suggestion.rationale}</p></details>
-          <div><button className={styles.primaryButton} type="button" onClick={() => void runCommand({ operation: 'decide_suggestion', suggestionId: suggestion.id, decision: 'accepted_for_assessment', rationale: 'Added by the broker for cover review.' }, `${cover.label} added to cover decisions.`)}>Review this cover</button><button type="button" onClick={() => void runCommand({ operation: 'decide_suggestion', suggestionId: suggestion.id, decision: 'information_required', rationale: 'More information is needed before this cover can be decided.' }, 'Recommendation marked for more information.')}>Need information</button><button type="button" onClick={() => void runCommand({ operation: 'decide_suggestion', suggestionId: suggestion.id, decision: 'dismissed_with_reason', rationale: 'Reviewed by the broker and not relevant to this client.' }, 'Recommendation marked not relevant.')}>Not relevant</button></div>
+          {linkedAssets.length ? <div className={styles.linkedAssetChips}><strong>Linked assets</strong>{linkedAssets.slice(0, 8).map((asset) => <span key={asset.id}>{asset.title}</span>)}{linkedAssets.length > 8 ? <span>+{linkedAssets.length - 8} more</span> : null}</div> : null}
+          <details><summary>Why this area was raised</summary>{group.rationales.map((rationale) => <p key={rationale}>{rationale}</p>)}</details>
+          <details className={styles.handbookGuide}><summary>Explain this cover</summary><div><p><strong>What it protects:</strong> {cover.insuredInterestSummary}</p><p><strong>Typical trigger:</strong> {cover.triggerSummary}</p>{cover.limitationsAndConditions.length ? <p><strong>Check:</strong> {cover.limitationsAndConditions.slice(0, 3).join(' · ')}</p> : null}{group.missingQuestions.length ? <p><strong>Missing information:</strong> {group.missingQuestions.join(' · ')}</p> : null}</div></details>
+          <div><button className={styles.primaryButton} type="button" onClick={() => void runCommand({ operation: 'decide_suggestions', suggestionIds: group.suggestionIds, decision: 'accepted_for_assessment', rationale: 'Grouped signals added by the broker for one cover review.' }, `${cover.label} added once with ${linkedAssets.length} linked asset${linkedAssets.length === 1 ? '' : 's'}.`)}>Review this cover</button><button type="button" onClick={() => void runCommand({ operation: 'decide_suggestions', suggestionIds: group.suggestionIds, decision: 'information_required', rationale: 'More information is needed before this cover can be decided.' }, 'Client questions created from the missing information.')}>Create client questions</button><button type="button" onClick={() => void runCommand({ operation: 'decide_suggestions', suggestionIds: group.suggestionIds, decision: 'dismissed_with_reason', rationale: 'Reviewed by the broker and not relevant to this client.' }, 'Area marked not relevant.')}>Not relevant</button></div>
         </article>;
-      })}</div> : <div className={styles.successBox}><strong>✓ No recommendations are waiting for review.</strong><span>{unreviewedAssets.length ? 'Finish the asset review, then refresh recommendations.' : assessments.length ? 'Continue to cover decisions, or search the catalogue if something is missing.' : 'Refresh recommendations to build a shortlist from the completed client and asset information.'}</span></div>}
+      })}</div> : <div className={styles.successBox}><strong>✓ No cover areas are waiting for review.</strong><span>{unreviewedAssets.length ? 'Finish the asset review, then refresh suggestions.' : assessments.length ? 'Continue to cover decisions, or search the catalogue if something is missing.' : 'Refresh suggestions to build a shortlist from the completed client and asset information.'}</span></div>}
       <div className={styles.nextActionRow}><button className={styles.primaryButton} type="button" disabled={!assessments.length} onClick={() => setCoverView('assessments')}>Continue to cover decisions →</button><button className={styles.secondaryButton} type="button" onClick={() => setCoverView('exposures')}>Add an extra exposure</button></div>
       <details className={styles.advancedPanel}>
         <summary>Can’t find a cover? Search the full catalogue</summary>
@@ -375,13 +441,13 @@ export function InsuranceCoversPanel({ workspace, assets, runCommand }: { worksp
         <h2>Saved extra exposures</h2>
         {nonAssetExposures.length ? <div className={styles.simpleList}>{nonAssetExposures.map((exposure) => <div key={exposure.id}><strong>{exposure.label}</strong><span>{label(exposure.exposureType)} · {label(exposure.exposureStatus)}</span><small>{exposure.assetIds.length ? `${exposure.assetIds.length} linked assets` : 'Not linked to a specific asset'}{exposure.description ? ` · ${exposure.description}` : ''}</small></div>)}</div> : <p className={styles.infoBox}>No extra exposures added. That is fine if the shared asset list covers the risk review.</p>}
       </article>
-    </div><button className={styles.secondaryButton} type="button" onClick={() => setCoverView('suggestions')}>Back to recommended covers</button></> : null}
+    </div><button className={styles.secondaryButton} type="button" onClick={() => setCoverView('suggestions')}>Back to areas to consider</button></> : null}
 
     {coverView === 'assessments' ? <>{activeAssessment ? <><div className={styles.assetReviewNav}>
       <button type="button" disabled={assessmentIndex <= 0} onClick={() => setAssessmentIndex((current) => Math.max(0, current - 1))}>← Previous</button>
       <label><span>Cover {assessmentIndex + 1} of {assessments.length}</span><select value={activeAssessment.id} onChange={(event) => setAssessmentIndex(assessments.findIndex((assessment) => assessment.id === event.target.value))}>{assessments.map((assessment, index) => <option value={assessment.id} key={assessment.id}>{index + 1}. {assessment.coverLabel} · {label(assessment.placementStage)}</option>)}</select></label>
       <button type="button" disabled={assessmentIndex >= assessments.length - 1} onClick={() => setAssessmentIndex((current) => Math.min(assessments.length - 1, current + 1))}>Next cover →</button>
-    </div><div className={styles.assessmentList}><AssessmentEditor key={`${activeAssessment.id}-${activeAssessment.version}`} assessment={activeAssessment} runCommand={runCommand} /></div></> : <p className={styles.infoBox}>No cover assessments have been added yet. Return to Areas to consider to add one.</p>}
+    </div><div className={styles.assessmentList}><AssessmentEditor key={`${activeAssessment.id}-${activeAssessment.version}`} assessment={activeAssessment} assets={assets} runCommand={runCommand} /></div></> : <p className={styles.infoBox}>No cover assessments have been added yet. Return to Areas to consider to add one.</p>}
     {!assets.length ? null : <p className={styles.infoBox}>You will link individual assets to the correct schedule item when you record the policy evidence.</p>}</> : null}
   </section>;
 }
@@ -396,6 +462,11 @@ export function InsurancePoliciesPanel({ workspace, assets, runCommand }: { work
   const [productName, setProductName] = useState('');
   const [policyNumber, setPolicyNumber] = useState('');
   const [policySource, setPolicySource] = useState('');
+  const [policyRenewalDate, setPolicyRenewalDate] = useState('');
+  const [policyEffectiveFrom, setPolicyEffectiveFrom] = useState('');
+  const [policyEffectiveTo, setPolicyEffectiveTo] = useState('');
+  const [editingPolicyId, setEditingPolicyId] = useState('');
+  const [policyImportText, setPolicyImportText] = useState('');
   const [policyId, setPolicyId] = useState(workspace.policies[0]?.id ?? '');
   const [sectionLabel, setSectionLabel] = useState('');
   const [canonicalCoverKey, setCanonicalCoverKey] = useState('');
@@ -410,6 +481,7 @@ export function InsurancePoliciesPanel({ workspace, assets, runCommand }: { work
   const [financialScheduleItemId, setFinancialScheduleItemId] = useState(workspace.policies.flatMap((policy) => policy.sections).flatMap((section) => section.scheduleItems)[0]?.id ?? '');
   const [scheduleTermType, setScheduleTermType] = useState<'sum_insured' | 'any_one_item_limit' | 'any_one_event_limit' | 'any_one_location_limit' | 'annual_aggregate' | 'sublimit' | 'basic_excess' | 'additional_excess' | 'percentage_excess' | 'time_excess' | 'coinsurance'>('sum_insured');
   const [scheduleTermValue, setScheduleTermValue] = useState('');
+  const [scheduleTermVatBasis, setScheduleTermVatBasis] = useState<'inclusive' | 'exclusive' | 'unknown'>('unknown');
   const sections = workspace.policies.flatMap((policy) => policy.sections);
   const scheduleItems = sections.flatMap((section) => section.scheduleItems);
   const scheduleTermUsesPercentage = scheduleTermType === 'percentage_excess' || scheduleTermType === 'coinsurance';
@@ -419,8 +491,54 @@ export function InsurancePoliciesPanel({ workspace, assets, runCommand }: { work
     setter(current.includes(value) ? current.filter((entry) => entry !== value) : [...current, value]);
   }
 
+  function editPolicy(id: string) {
+    const policy = workspace.policies.find((entry) => entry.id === id);
+    if (!policy) return;
+    setEditingPolicyId(policy.id);
+    setInsurerName(policy.insurerName);
+    setProductName(policy.productName);
+    setPolicyNumber(policy.policyNumber);
+    setPolicySource(policy.provenance.sourceReference);
+    setPolicyRenewalDate(policy.renewalDate);
+    setPolicyEffectiveFrom(policy.effectiveFrom);
+    setPolicyEffectiveTo(policy.effectiveTo);
+    setPolicyView('policy');
+  }
+
+  function resetPolicyForm() {
+    setEditingPolicyId('');
+    setInsurerName('');
+    setProductName('');
+    setPolicyNumber('');
+    setPolicySource('');
+    setPolicyRenewalDate('');
+    setPolicyEffectiveFrom('');
+    setPolicyEffectiveTo('');
+  }
+
+  function prefillPolicyHeading() {
+    const lines = policyImportText.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+    const valueAfter = (patterns: RegExp[]) => {
+      const match = lines.find((line) => patterns.some((pattern) => pattern.test(line)));
+      return match ? match.replace(/^[^:–—-]+[:–—-]\s*/, '').trim() : '';
+    };
+    const insurer = valueAfter([/^insurer\b/i, /^underwriter\b/i]);
+    const number = valueAfter([/^policy\s*(number|no\.?|#)\b/i]);
+    const product = valueAfter([/^product\b/i, /^policy\s*type\b/i]);
+    const renewalLine = lines.find((line) => /renewal/i.test(line)) || '';
+    const periodLine = lines.find((line) => /(period|effective|inception|start|expiry|end)/i.test(line)) || '';
+    const periodDates = [...periodLine.matchAll(/(?:20\d{2}[-/.]\d{1,2}[-/.]\d{1,2}|\d{1,2}[-/.]\d{1,2}[-/.]20\d{2})/g)].map((match) => policyDateFromText(match[0]));
+    if (insurer) setInsurerName(insurer);
+    if (number) setPolicyNumber(number);
+    if (product) setProductName(product);
+    if (periodDates[0]) setPolicyEffectiveFrom(periodDates[0]);
+    if (periodDates[1]) setPolicyEffectiveTo(periodDates[1]);
+    const renewal = policyDateFromText(renewalLine);
+    if (renewal) setPolicyRenewalDate(renewal);
+  }
+
   return <section>
-    <header className={styles.sectionHeader}><div><span className={styles.eyebrow}>Follow the document from top to bottom</span><h2>Copy the current policy schedule</h2><p>Add the policy, its section, the relevant schedule line, then the VAT-inclusive limit or excess shown on the document.</p></div></header>
+    <header className={styles.sectionHeader}><div><span className={styles.eyebrow}>Follow the document from top to bottom</span><h2>Capture the current policy schedule</h2><p>Add or edit the policy, section and relevant schedule line. Record each amount exactly as shown and state whether it includes VAT.</p></div></header>
     <nav className={styles.substepNav} aria-label="Policy capture sections">
       <button className={policyView === 'policy' ? styles.activeView : ''} type="button" onClick={() => setPolicyView('policy')}>1. Policy details {workspace.policies.length ? '✓' : ''}</button>
       <button className={policyView === 'section' ? styles.activeView : ''} type="button" onClick={() => setPolicyView('section')}>2. Policy section {sections.length ? '✓' : ''}</button>
@@ -429,12 +547,15 @@ export function InsurancePoliciesPanel({ workspace, assets, runCommand }: { work
       <button className={policyView === 'review' ? styles.activeView : ''} type="button" onClick={() => setPolicyView('review')}>5. Check</button>
     </nav>
     <div className={`${styles.workflowGrid} ${styles.singleWorkflow}`}>
-      {policyView === 'policy' ? <article className={styles.card}><div className={styles.cardHeading}><span>Start here</span><h2>Copy the policy heading</h2><p>Use exactly what appears on the insurer&apos;s schedule so another broker can trace it later.</p></div><div className={styles.formGrid}>
+      {policyView === 'policy' ? <article className={styles.card}><div className={styles.cardHeading}><span>{editingPolicyId ? 'Editing saved policy' : 'Start here'}</span><h2>{editingPolicyId ? 'Update the policy and renewal dates' : 'Copy the policy heading'}</h2><p>Use exactly what appears on the insurer&apos;s schedule so another broker can trace it and the portfolio can track renewal.</p></div>{editingPolicyId ? null : <details className={styles.advancedPanel}><summary>Paste a policy heading to prefill these fields</summary><div className={styles.policyImportBox}><p>Paste the heading or first-page text. Aim4price will prefill recognisable fields only; you must check every field against the source before saving.</p><textarea rows={7} value={policyImportText} onChange={(event) => setPolicyImportText(event.target.value)} placeholder={'Insurer: …\nPolicy number: …\nPeriod: … to …\nRenewal date: …'} /><button type="button" disabled={!policyImportText.trim()} onClick={prefillPolicyHeading}>Prefill for human review</button></div></details>}<div className={styles.formGrid}>
         <label><span>Insurer *</span><input value={insurerName} onChange={(event) => setInsurerName(event.target.value)} placeholder="Insurer name" /></label>
         <label><span>Policy number *</span><input value={policyNumber} onChange={(event) => setPolicyNumber(event.target.value)} /></label>
         <label><span>Product name (optional)</span><input value={productName} onChange={(event) => setProductName(event.target.value)} /></label>
         <label><span>Where did you get this? *</span><input value={policySource} onChange={(event) => setPolicySource(event.target.value)} placeholder="Document name, email or schedule reference" /></label>
-      </div><button className={styles.primaryButton} type="button" disabled={!insurerName.trim() || !policyNumber.trim() || !policySource.trim()} onClick={() => void runCommand({ operation: 'save_policy', insurerName, productName, policyNumber, status: 'current', sourceType: 'policy_schedule', sourceReference: policySource }, 'Policy details saved.').then((ok) => { if (ok) { setInsurerName(''); setProductName(''); setPolicyNumber(''); setPolicyView('section'); } })}>Save policy and continue →</button></article> : null}
+        <label><span>Policy starts</span><input type="date" value={policyEffectiveFrom} onChange={(event) => setPolicyEffectiveFrom(event.target.value)} /></label>
+        <label><span>Policy ends</span><input type="date" value={policyEffectiveTo} onChange={(event) => setPolicyEffectiveTo(event.target.value)} /></label>
+        <label><span>Renewal date *</span><input type="date" value={policyRenewalDate} onChange={(event) => setPolicyRenewalDate(event.target.value)} /></label>
+      </div><button className={styles.primaryButton} type="button" disabled={!insurerName.trim() || !policyNumber.trim() || !policySource.trim() || (!policyRenewalDate && !policyEffectiveTo)} onClick={() => { const existing = workspace.policies.find((policy) => policy.id === editingPolicyId); void runCommand({ operation: 'save_policy', id: existing?.id, expectedVersion: existing?.version, insurerName, productName, policyNumber, status: 'current', effectiveFrom: policyEffectiveFrom, effectiveTo: policyEffectiveTo, renewalDate: policyRenewalDate, sourceType: 'policy_schedule', sourceReference: policySource }, editingPolicyId ? 'Policy and renewal details updated.' : 'Policy details saved.').then((ok) => { if (ok) { resetPolicyForm(); setPolicyView(editingPolicyId ? 'review' : 'section'); } }); }}>{editingPolicyId ? 'Save policy changes' : 'Save policy and continue →'}</button>{editingPolicyId ? <button className={styles.secondaryButton} type="button" onClick={() => { resetPolicyForm(); setPolicyView('review'); }}>Cancel editing</button> : null}</article> : null}
 
       {policyView === 'section' ? <article className={styles.card}><div className={styles.cardHeading}><span>Next</span><h2>Copy one section heading</h2><p>Keep the insurer&apos;s wording. Matching it to a cover is optional but useful.</p></div><div className={styles.formGrid}>
         <label><span>Policy</span><select value={policyId} onChange={(event) => setPolicyId(event.target.value)}><option value="">Select policy</option>{workspace.policies.map((policy) => <option value={policy.id} key={policy.id}>{[policy.insurerName, policy.policyNumber].filter(Boolean).join(' · ') || 'Unnamed policy'}</option>)}</select></label>
@@ -452,15 +573,30 @@ export function InsurancePoliciesPanel({ workspace, assets, runCommand }: { work
         <fieldset><legend>Locations or parties (optional)</legend>{workspace.locations.filter((location) => !location.isUnknown).map((location) => <label key={location.id}><input type="checkbox" checked={locationIds.includes(location.id)} onChange={() => toggleScheduleLink(location.id, locationIds, setLocationIds)} /><span>{location.label}<small>Saved location</small></span></label>)}{workspace.parties.map((party) => <label key={party.id}><input type="checkbox" checked={partyIds.includes(party.id)} onChange={() => toggleScheduleLink(party.id, partyIds, setPartyIds)} /><span>{party.displayName}<small>{party.roles.map((role) => label(role.roleKey)).join(', ')}</small></span></label>)}</fieldset>
       </div><details className={styles.linkedAdvanced}><summary>Link an extra non-asset exposure</summary><div><fieldset><legend>Extra exposures</legend>{workspace.exposures.filter((exposure) => exposure.exposureType !== 'physical_asset').map((exposure) => <label key={exposure.id}><input type="checkbox" checked={exposureIds.includes(exposure.id)} onChange={() => toggleScheduleLink(exposure.id, exposureIds, setExposureIds)} /> {exposure.label}</label>)}</fieldset></div></details><button className={styles.primaryButton} type="button" disabled={!sectionId || !itemLabel.trim()} onClick={() => void runCommand({ operation: 'save_schedule_item', sectionId, itemLabel, treatment, assetIds, exposureIds, locationIds, partyIds, sourceType: 'policy_schedule', sourceReference: policySource || 'Broker-recorded policy schedule' }, 'Schedule line saved.').then((ok) => { if (ok) { setItemLabel(''); setAssetIds([]); setExposureIds([]); setLocationIds([]); setPartyIds([]); setPolicyView('terms'); } })}>Save schedule line and continue →</button></article> : null}
 
-      {policyView === 'terms' ? <article className={styles.card}><div className={styles.cardHeading}><span>VAT included</span><h2>Add the value, limit or excess</h2><p>Enter monetary amounts exactly as the client pays them, including VAT. Percentages and time excesses are labelled separately.</p></div><div className={styles.formGrid}>
+      {policyView === 'terms' ? <article className={styles.card}><div className={styles.cardHeading}><span>Policy value</span><h2>Add the value, limit or excess</h2><p>Enter the amount exactly as it appears on the source, then record its VAT basis. The report normalises VAT-exclusive amounts for comparison.</p></div><div className={styles.formGrid}>
         <label><span>Schedule item</span><select value={financialScheduleItemId} onChange={(event) => setFinancialScheduleItemId(event.target.value)}><option value="">Select schedule item</option>{scheduleItems.map((item) => <option value={item.id} key={item.id}>{item.itemLabel}</option>)}</select></label>
         <label><span>What is this amount?</span><select value={scheduleTermType} onChange={(event) => setScheduleTermType(event.target.value as typeof scheduleTermType)}><option value="sum_insured">Sum insured</option><option value="any_one_item_limit">Any one item limit</option><option value="any_one_event_limit">Any one event limit</option><option value="any_one_location_limit">Any one location limit</option><option value="annual_aggregate">Annual aggregate</option><option value="sublimit">Sublimit</option><option value="basic_excess">Basic excess</option><option value="additional_excess">Additional excess</option><option value="percentage_excess">Percentage excess</option><option value="time_excess">Time excess</option><option value="coinsurance">Co-insurance</option></select></label>
-        <label><span>{scheduleTermUsesTime ? 'Hours' : scheduleTermUsesPercentage ? 'Percentage' : 'VAT-inclusive amount (ZAR)'}</span><input inputMode="decimal" value={scheduleTermValue} onChange={(event) => setScheduleTermValue(event.target.value)} /></label>
-      </div><button className={styles.primaryButton} type="button" disabled={!financialScheduleItemId || !scheduleTermValue.trim()} onClick={() => void runCommand({ operation: 'save_financial_term', scheduleItemId: financialScheduleItemId, termType: scheduleTermType, amount: scheduleTermUsesPercentage || scheduleTermUsesTime ? null : scheduleTermValue, percentage: scheduleTermUsesPercentage ? scheduleTermValue : null, timeValue: scheduleTermUsesTime ? scheduleTermValue : null, timeUnit: scheduleTermUsesTime ? 'hours' : '', currency: 'ZAR', vatBasis: scheduleTermUsesPercentage || scheduleTermUsesTime ? 'not_applicable' : 'inclusive', sourceType: 'policy_schedule', sourceReference: policySource || 'Broker-recorded policy schedule' }, 'VAT-inclusive policy term saved.').then((ok) => { if (ok) { setScheduleTermValue(''); setPolicyView('review'); } })}>Save value and check policy →</button><button className={styles.secondaryButton} type="button" onClick={() => setPolicyView('review')}>No value shown — check policy</button></article> : null}
+        <label><span>{scheduleTermUsesTime ? 'Hours' : scheduleTermUsesPercentage ? 'Percentage' : 'Amount exactly as shown (ZAR)'}</span><input inputMode="decimal" value={scheduleTermValue} onChange={(event) => setScheduleTermValue(event.target.value)} /></label>
+        {scheduleTermUsesPercentage || scheduleTermUsesTime ? null : <label><span>VAT basis shown on the source *</span><select value={scheduleTermVatBasis} onChange={(event) => setScheduleTermVatBasis(event.target.value as typeof scheduleTermVatBasis)}><option value="unknown">Choose VAT basis…</option><option value="inclusive">VAT inclusive</option><option value="exclusive">VAT exclusive</option></select></label>}
+      </div>{!scheduleTermUsesPercentage && !scheduleTermUsesTime && scheduleTermValue && scheduleTermVatBasis === 'exclusive' ? <p className={styles.infoBox}>Report comparison: {money(Number(scheduleTermValue) * 1.15)} VAT included.</p> : null}<button className={styles.primaryButton} type="button" disabled={!financialScheduleItemId || !scheduleTermValue.trim() || (!scheduleTermUsesPercentage && !scheduleTermUsesTime && scheduleTermVatBasis === 'unknown')} onClick={() => void runCommand({ operation: 'save_financial_term', scheduleItemId: financialScheduleItemId, termType: scheduleTermType, amount: scheduleTermUsesPercentage || scheduleTermUsesTime ? null : scheduleTermValue, percentage: scheduleTermUsesPercentage ? scheduleTermValue : null, timeValue: scheduleTermUsesTime ? scheduleTermValue : null, timeUnit: scheduleTermUsesTime ? 'hours' : '', currency: 'ZAR', vatBasis: scheduleTermUsesPercentage || scheduleTermUsesTime ? 'not_applicable' : scheduleTermVatBasis, sourceType: 'policy_schedule', sourceReference: policySource || 'Broker-recorded policy schedule' }, 'Policy term saved with its VAT basis.').then((ok) => { if (ok) { setScheduleTermValue(''); setScheduleTermVatBasis('unknown'); setPolicyView('review'); } })}>Save value and check policy →</button><button className={styles.secondaryButton} type="button" onClick={() => setPolicyView('review')}>No value shown — check policy</button></article> : null}
     </div>
 
-    {policyView === 'review' ? <><div className={styles.policyList}>{workspace.policies.map((policy) => <article className={styles.card} key={policy.id}><header className={styles.policyHeader}><div><small>{policy.productName || 'Current policy'}</small><h2>{[policy.insurerName, policy.policyNumber].filter(Boolean).join(' · ') || 'Policy details incomplete'}</h2></div><strong>✓ Saved</strong></header>{policy.sections.length ? policy.sections.map((section) => <details className={styles.policySection} key={section.id} open><summary><span>{section.actualSectionLabel}</span><small>{section.canonicalCoverKey ? INSURANCE_COVER_CATALOGUE.find((cover) => cover.key === section.canonicalCoverKey)?.label : 'Not matched to a catalogue cover'}</small></summary><p>Wording: {section.wordingEditionReference || 'Not recorded'} · Source: {section.provenance.sourceReference || label(section.provenance.sourceType)}</p>{section.scheduleItems.length ? <div className={styles.simpleList}>{section.scheduleItems.map((item) => <div key={item.id}><strong>{item.itemLabel}</strong><span>{label(item.treatment)} · {item.assetIds.length} assets · {item.locationIds.length} locations</span><small>{item.financialTerms.length ? item.financialTerms.map((term) => `${label(term.termType)}: ${term.amount ? `${financialTermMoney(term)} VAT included` : term.percentage ? `${term.percentage}%` : term.timeValue ? `${term.timeValue} ${term.timeUnit}` : 'Recorded'}`).join(' · ') : 'No value or excess recorded'}</small></div>)}</div> : <p className={styles.infoBox}>No schedule lines recorded yet.</p>}</details>) : <p className={styles.infoBox}>No policy sections recorded yet.</p>}</article>)}</div>{!workspace.policies.length ? <p className={styles.infoBox}>No policy evidence has been recorded. Return to Policy details to start.</p> : <p className={styles.successBox}>✓ Policy evidence saved. Check that every confirmed current cover has a matching section or schedule line.</p>}</> : null}
+    {policyView === 'review' ? <><div className={styles.policyList}>{workspace.policies.map((policy) => <article className={styles.card} key={policy.id}><header className={styles.policyHeader}><div><small>{policy.productName || 'Current policy'}</small><h2>{[policy.insurerName, policy.policyNumber].filter(Boolean).join(' · ') || 'Policy details incomplete'}</h2><p>{dateLabel(policy.effectiveFrom)} to {dateLabel(policy.effectiveTo)} · <strong>{renewalLabel(policy.renewalDate || policy.effectiveTo)}</strong></p></div><div className={styles.policyHeaderActions}><strong>✓ Saved</strong><button type="button" onClick={() => editPolicy(policy.id)}>Edit policy</button></div></header>{policy.sections.length ? policy.sections.map((section) => <details className={styles.policySection} key={section.id} open><summary><span>{section.actualSectionLabel}</span><small>{section.canonicalCoverKey ? INSURANCE_COVER_CATALOGUE.find((cover) => cover.key === section.canonicalCoverKey)?.label : 'Not matched to a catalogue cover'}</small></summary><p>Wording: {section.wordingEditionReference || 'Not recorded'} · Source: {section.provenance.sourceReference || label(section.provenance.sourceType)}</p>{section.scheduleItems.length ? <div className={styles.simpleList}>{section.scheduleItems.map((item) => <div key={item.id}><strong>{item.itemLabel}</strong><span>{label(item.treatment)} · {item.assetIds.length} assets · {item.locationIds.length} locations</span><small>{item.financialTerms.length ? item.financialTerms.map((term) => `${label(term.termType)}: ${financialTermDescription(term)}`).join(' · ') : 'No value or excess recorded'}</small></div>)}</div> : <p className={styles.infoBox}>No schedule lines recorded yet.</p>}</details>) : <p className={styles.infoBox}>No policy sections recorded yet.</p>}</article>)}</div>{!workspace.policies.length ? <p className={styles.infoBox}>No policy evidence has been recorded. Return to Policy details to start.</p> : <p className={styles.successBox}>✓ Policy evidence saved. Check that every confirmed current cover has a matching section, linked schedule line, value and confirmed VAT basis.</p>}</> : null}
   </section>;
+}
+
+function InformationRequestEditor({ request, runCommand }: { request: InsuranceInformationRequest; runCommand: RunCommand }) {
+  const [status, setStatus] = useState(request.status);
+  const [response, setResponse] = useState(request.response);
+  const closed = ['resolved', 'not_applicable'].includes(request.status);
+  return <article className={styles.questionEditor}>
+    <div><small>{label(request.status)} · {dateLabel(request.requestedAtIso)}</small><strong>{request.question}</strong><p>{request.reason || 'Needed to complete the insurance review.'}</p>{request.relatedEntityType ? <small>Linked to {label(request.relatedEntityType)}</small> : null}</div>
+    <div className={styles.questionActions}>
+      <label><span>Status</span><select value={status} onChange={(event) => setStatus(event.target.value as InsuranceInformationRequest['status'])}><option value="open">Open</option><option value="sent_to_client">Sent to client</option><option value="answered">Answered</option><option value="resolved">Resolved</option><option value="not_applicable">Not applicable</option></select></label>
+      <label><span>Client response / working answer</span><textarea rows={2} value={response} onChange={(event) => setResponse(event.target.value)} placeholder="Record the answer here" /></label>
+      <button type="button" onClick={() => void runCommand({ operation: 'save_information_request', id: request.id, expectedVersion: request.version, question: request.question, reason: request.reason, relatedEntityType: request.relatedEntityType, relatedEntityId: request.relatedEntityId, status, response }, 'Client question updated.')}>{closed && status === request.status && response === request.response ? 'Saved' : 'Save question'}</button>
+    </div>
+  </article>;
 }
 
 export function InsuranceQuestionsPanel({ workspace, runCommand }: { workspace: InsuranceWorkspaceData; runCommand: RunCommand }) {
@@ -508,8 +644,8 @@ export function InsuranceQuestionsPanel({ workspace, runCommand }: { workspace: 
     {supportView === 'questions' ? <><article className={styles.card}><h2>Add information request</h2><p>Ask only for information that is needed to finish a cover or policy decision.</p><div className={styles.formGrid}>
         <label className={styles.wide}><span>Question</span><textarea rows={3} value={question} onChange={(event) => setQuestion(event.target.value)} /></label>
         <label className={styles.wide}><span>Why it is needed</span><textarea rows={2} value={reason} onChange={(event) => setReason(event.target.value)} /></label>
-      </div><button className={styles.primaryButton} type="button" disabled={!question.trim()} onClick={() => void runCommand({ operation: 'save_information_request', question, reason, status: 'open' }, 'Information request added.').then((ok) => { if (ok) { setQuestion(''); setReason(''); } })}>Add request</button></article>
-      <article className={styles.card}><h2>Outstanding questions</h2>{workspace.informationRequests.length ? <div className={styles.questionList}>{workspace.informationRequests.map((request) => <article key={request.id}><div><small>{label(request.status)} · {dateLabel(request.requestedAtIso)}</small><strong>{request.question}</strong><p>{request.reason}</p>{request.response ? <p><b>Response:</b> {request.response}</p> : null}</div>{!['resolved', 'not_applicable'].includes(request.status) ? <button type="button" onClick={() => void runCommand({ operation: 'save_information_request', id: request.id, expectedVersion: request.version, question: request.question, reason: request.reason, relatedEntityType: request.relatedEntityType, relatedEntityId: request.relatedEntityId, status: 'resolved', response: request.response }, 'Information request resolved.')}>Resolve</button> : null}</article>)}</div> : <p className={styles.infoBox}>No information requests have been recorded.</p>}</article>
+      </div><button className={styles.primaryButton} type="button" disabled={!question.trim() || !reason.trim()} onClick={() => void runCommand({ operation: 'save_information_request', question, reason, status: 'open' }, 'Information request added.').then((ok) => { if (ok) { setQuestion(''); setReason(''); } })}>Add request</button></article>
+      <article className={styles.card}><h2>Client question pack</h2><p>Questions created from missing suggestion information appear here automatically. Record when each was sent and save the client&apos;s answer before resolving it.</p>{workspace.informationRequests.length ? <div className={styles.questionList}>{workspace.informationRequests.map((request) => <InformationRequestEditor key={`${request.id}-${request.version}`} request={request} runCommand={runCommand} />)}</div> : <p className={styles.infoBox}>No information requests have been recorded.</p>}</article>
       <button className={styles.secondaryButton} type="button" onClick={() => setSupportView('notes')}>Continue to notes →</button></> : null}
 
     {supportView === 'notes' ? <><article className={styles.card}><h2>Add note</h2><p>Choose the audience first. Private broker notes never enter client-ready reports.</p><div className={styles.formGrid}>
