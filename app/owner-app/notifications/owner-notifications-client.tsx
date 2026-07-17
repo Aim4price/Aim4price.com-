@@ -19,6 +19,7 @@ type Notification = {
   body: string;
   href: string;
   createdAtIso: string;
+  assetId?: string;
   priority?: boolean;
 };
 
@@ -28,8 +29,11 @@ type NotificationsResponse = {
   error?: string;
 };
 
-function destination(category: string): string {
-  if (category === 'partner_note' || category === 'lead' || category === 'asset_discovery') {
+function destination(item: Notification): string {
+  if (item.assetId) {
+    return `/owner-app/assets/${encodeURIComponent(item.assetId)}`;
+  }
+  if (item.category === 'partner_note' || item.category === 'lead' || item.category === 'asset_discovery') {
     return '/owner-app/marketplace';
   }
   return '/owner-app/assets';
@@ -131,11 +135,7 @@ export default function OwnerNotificationsClient({ viewerId }: { viewerId: strin
   return (
     <div className={`${styles.content} ${styles.notificationContent}`}>
       <section className={styles.notificationIntro}>
-        <div>
-          <span>Aim4price Owner</span>
-          <h1>Notifications</h1>
-          <p>New activity for your account.</p>
-        </div>
+        <h1>Notifications</h1>
         <button
           type="button"
           className={`${styles.markCheckedButton} ${newItems.length ? styles.markCheckedButtonNew : ''}`}
@@ -170,7 +170,7 @@ export default function OwnerNotificationsClient({ viewerId }: { viewerId: strin
                 <Link
                   key={item.id}
                   className={`${styles.notificationCard} ${toneClassName(item.tone)} ${item.priority ? styles.notificationCardPriority : styles.notificationCardNew}`}
-                  href={destination(item.category)}
+                  href={destination(item)}
                   prefetch={false}
                 >
                   <div className={styles.notificationCardLabels}>
@@ -182,7 +182,6 @@ export default function OwnerNotificationsClient({ viewerId }: { viewerId: strin
                   </div>
                   <h3>{item.title}</h3>
                   <p>{item.body}</p>
-                  <span className={styles.notificationOpenHint}>Open</span>
                 </Link>
               ))}
             </div>
