@@ -1,6 +1,7 @@
 import { getDb } from './db';
 import type { InsuranceReportType, InsuranceWorkspaceData } from './insurance-workspace-types';
 import { getInsuranceWorkspace } from './insurance-workspaces';
+import { INSURANCE_COVER_BY_KEY } from './insurance-cover-catalogue';
 
 type BrokerDetails = {
   displayName: string;
@@ -10,7 +11,7 @@ type BrokerDetails = {
   logoUrl: string;
 };
 
-type InsuranceReportPayload = {
+export type InsuranceReportPayload = {
   workspace: InsuranceWorkspaceData;
   broker: BrokerDetails;
   type: InsuranceReportType;
@@ -18,7 +19,7 @@ type InsuranceReportPayload = {
   generatedAtIso: string;
 };
 
-const DISCLAIMER = 'This report reflects insurance information and recommendations recorded by the broker. Aim4price does not provide financial advice or independently confirm insurance cover.';
+const DISCLAIMER = 'This report reflects information and human decisions recorded by the broker or authorised insurance user. System-generated items are labelled as areas to consider and are not financial advice, confirmation of cover, insurer acceptance or a substitute for the applicable schedule, wording and endorsements. Aim4price does not independently confirm insurance cover.';
 
 function text(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
@@ -33,25 +34,41 @@ function escapeHtml(value: unknown): string {
     .replace(/'/g, '&#039;');
 }
 
-function money(value: number | null | undefined): string {
-  if (value === null || value === undefined) return '—';
-  return new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR', maximumFractionDigits: 0 }).format(value);
+function money(value: number | string | null | undefined, currency = 'ZAR'): string {
+  if (value === null || value === undefined || value === '') return 'Not recorded';
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return 'Not recorded';
+  return new Intl.NumberFormat('en-ZA', { style: 'currency', currency, maximumFractionDigits: 2 }).format(parsed);
 }
 
 function dateLabel(value: string | null | undefined): string {
-  if (!value) return '—';
+  if (!value) return 'Not recorded';
   const date = new Date(value);
   return Number.isNaN(date.getTime())
-    ? '—'
+    ? 'Not recorded'
     : new Intl.DateTimeFormat('en-ZA', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Africa/Johannesburg' }).format(date);
 }
 
 function label(value: string): string {
-  return value.replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+  return value ? value.replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase()) : 'Not recorded';
+}
+
+function nullableNumber(value: unknown): number | null {
+  if (value === null || value === undefined || value === '') return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
 function slug(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 90) || 'insurance-report';
+}
+
+function reportSafeWorkspace(workspace: InsuranceWorkspaceData): InsuranceWorkspaceData {
+  return {
+    ...workspace,
+    availableSnapshotShares: [],
+    notes: workspace.notes.filter((note) => note.noteType === 'report_visible'),
+  };
 }
 
 export async function createInsuranceReportSnapshot(input: {
@@ -60,7 +77,7 @@ export async function createInsuranceReportSnapshot(input: {
   type: InsuranceReportType;
   broker: BrokerDetails;
 }) {
-  const workspace = await getInsuranceWorkspace(input.brokerUserId, input.workspaceId);
+  const workspace = reportSafeWorkspace(await getInsuranceWorkspace(input.brokerUserId, input.workspaceId));
   const db = getDb();
   const client = await db.connect();
   try {
@@ -76,25 +93,22 @@ export async function createInsuranceReportSnapshot(input: {
     const typeCode = input.type === 'summary' ? 'SUM' : 'DET';
     const reference = `${workspace.snapshotReference}-${typeCode}-${String(revision).padStart(2, '0')}`;
     const filename = `${slug(`${workspace.clientName}-${input.type}-insurance-review-${revision}`)}.html`;
-    const payload: InsuranceReportPayload = {
-      workspace,
-      broker: input.broker,
-      type: input.type,
-      reference,
-      generatedAtIso,
-    };
+    const payload: InsuranceReportPayload = { workspace, broker: input.broker, type: input.type, reference, generatedAtIso };
+    const latestSnapshot = workspace.snapshotRevisions[0];
     const result = await client.query<{ id: string }>(
       `insert into insurance_report_snapshots
-        (workspace_id, report_type, revision, report_reference, filename, payload_json, generated_by_user_id, generated_at)
-       values ($1::uuid, $2, $3, $4, $5, $6::jsonb, $7, $8::timestamptz)
+        (workspace_id, report_type, revision, report_reference, filename, payload_json,
+         generated_by_user_id, generated_at, payload_schema_version,
+         source_snapshot_revision_id, catalogue_version)
+       values ($1::uuid, $2, $3, $4, $5, $6::jsonb, $7, $8::timestamptz, 1, $9::uuid, $10)
        returning id`,
-      [input.workspaceId, input.type, revision, reference, filename, JSON.stringify(payload), input.brokerUserId, generatedAtIso],
+      [input.workspaceId, input.type, revision, reference, filename, JSON.stringify(payload), input.brokerUserId, generatedAtIso, latestSnapshot?.id ?? null, workspace.catalogueVersion],
     );
     await client.query(
       `insert into insurance_review_events
         (workspace_id, actor_user_id, entity_type, entity_id, action, after_json)
        values ($1::uuid, $2, 'report_snapshot', $3, 'generated', $4::jsonb)`,
-      [input.workspaceId, input.brokerUserId, result.rows[0].id, JSON.stringify({ type: input.type, revision, reference })],
+      [input.workspaceId, input.brokerUserId, result.rows[0].id, JSON.stringify({ type: input.type, revision, reference, schemaVersion: 1, snapshotRevision: latestSnapshot?.revision ?? null })],
     );
     await client.query('commit');
     return { id: result.rows[0].id, type: input.type, revision, reference, filename, generatedAtIso };
@@ -116,17 +130,14 @@ export async function getInsuranceReportSnapshot(brokerUserId: string, reportId:
     [reportId, brokerUserId],
   );
   if (!result.rows[0]) throw new Error('INSURANCE_REPORT_NOT_FOUND');
-  return {
-    filename: result.rows[0].filename,
-    payload: result.rows[0].payload_json as InsuranceReportPayload,
-  };
+  return { filename: result.rows[0].filename, payload: result.rows[0].payload_json as InsuranceReportPayload };
 }
 
 function baseStyles(type: InsuranceReportType): string {
   return `
     @page { size: ${type === 'summary' ? 'A4 landscape' : 'A4 portrait'}; margin: 12mm; }
     * { box-sizing: border-box; }
-    body { margin: 0; color: #17332d; font: 11px/1.4 Arial, sans-serif; background: #fff; }
+    body { margin: 0; color: #17332d; font: 10.5px/1.42 Arial, sans-serif; background: #fff; }
     .page { max-width: 1180px; margin: 0 auto; }
     header { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding-bottom: 14px; border-bottom: 3px solid #153f35; }
     header img { max-width: 180px; max-height: 58px; object-fit: contain; }
@@ -140,10 +151,11 @@ function baseStyles(type: InsuranceReportType): string {
     .meta small { display: block; color: #62716d; margin-bottom: 3px; }
     table { width: 100%; border-collapse: collapse; table-layout: fixed; }
     th, td { padding: 7px 6px; border: 1px solid #d6dfdc; vertical-align: top; word-break: break-word; }
-    th { color: #fff; background: #1d5144; text-align: left; font-size: 9px; text-transform: uppercase; letter-spacing: .3px; }
+    th { color: #fff; background: #1d5144; text-align: left; font-size: 8.5px; text-transform: uppercase; letter-spacing: .3px; }
     tr:nth-child(even) td { background: #f5f8f7; }
     .right { text-align: right; }
     .section { break-inside: avoid; }
+    .callout { margin: 10px 0; padding: 10px 12px; border-left: 4px solid #2d7b60; background: #f3f8f6; }
     .disclaimer { margin-top: 22px; padding: 10px 12px; border: 1px solid #d6dfdc; background: #f7f9f8; color: #56635f; font-size: 9px; }
     .print { position: fixed; right: 18px; bottom: 18px; padding: 10px 14px; border: 0; color: #fff; background: #153f35; cursor: pointer; }
     @media print { .print { display: none; } .page { max-width: none; } }
@@ -152,73 +164,147 @@ function baseStyles(type: InsuranceReportType): string {
 
 function reportHeader(payload: InsuranceReportPayload): string {
   const { workspace, broker } = payload;
+  const segments = workspace.segments.length ? workspace.segments.map(label).join(' and ') : 'Not classified';
+  const industries = workspace.industryProfiles.length ? workspace.industryProfiles.map(label).join(', ') : 'Not recorded';
+  const snapshot = workspace.snapshotRevisions[0];
   return `
     <header>
       <div>
         <h1>${escapeHtml(payload.type === 'summary' ? 'Insurance Review Summary' : 'Detailed Insurance Review')}</h1>
-        <p class="muted">${escapeHtml(workspace.clientName)}</p>
+        <p class="muted">${escapeHtml(workspace.clientName)} · ${escapeHtml(payload.reference)}</p>
       </div>
       ${broker.logoUrl ? `<img src="${escapeHtml(broker.logoUrl)}" alt="${escapeHtml(broker.businessName || broker.displayName)} logo" />` : `<strong>${escapeHtml(broker.businessName || broker.displayName || 'Insurance broker')}</strong>`}
     </header>
     <div class="meta">
       <div><small>Client</small><strong>${escapeHtml(workspace.clientName)}</strong></div>
-      <div><small>Client profile</small><strong>${escapeHtml(label(workspace.clientProfile))}</strong></div>
+      <div><small>Client segment</small><strong>${escapeHtml(segments)}</strong></div>
+      <div><small>Industry profiles</small><strong>${escapeHtml(industries)}</strong></div>
       <div><small>Generated</small><strong>${escapeHtml(dateLabel(payload.generatedAtIso))}</strong></div>
+      <div><small>Source snapshot</small><strong>${escapeHtml(snapshot ? `Revision ${snapshot.revision} · ${dateLabel(snapshot.generatedAtIso)}` : workspace.snapshotReference)}</strong></div>
       <div><small>Assets</small><strong>${workspace.assetCount}</strong></div>
-      <div><small>Register value</small><strong>${escapeHtml(money(workspace.totalRegisterValue))}</strong></div>
-      <div><small>Replacement value</small><strong>${escapeHtml(money(workspace.totalReplacementValue))}</strong></div>
+      <div><small>Replacement values</small><strong>${escapeHtml(money(workspace.totalReplacementValue))}</strong></div>
       <div><small>Prepared by</small><strong>${escapeHtml(broker.businessName || broker.displayName)}</strong></div>
     </div>`;
 }
 
-function summaryBody(payload: InsuranceReportPayload): string {
-  const rows = payload.workspace.assets.map((asset) => `
-    <tr>
-      <td>${escapeHtml(asset.title)}</td>
-      <td>${escapeHtml(asset.kind)}</td>
-      <td>${escapeHtml(asset.location || '—')}</td>
-      <td>${escapeHtml(label(asset.review.currentInsuranceStatus))}</td>
-      <td>${escapeHtml(asset.review.policySectionLabel || '—')}</td>
-      <td>${escapeHtml(label(asset.review.recommendationStatus))}</td>
-      <td class="right">${escapeHtml(money(asset.review.sumInsured ?? asset.replacementValue))}</td>
-      <td>${escapeHtml(asset.review.recommendationNote || asset.review.informationRequiredNote || '—')}</td>
-    </tr>`).join('');
-  const covers = payload.workspace.generalCovers.map((cover) => `
-    <tr><td>${escapeHtml(cover.label)}</td><td>${escapeHtml(label(cover.status))}</td><td>${escapeHtml(cover.policySectionLabel || '—')}</td><td>${escapeHtml(label(cover.recommendationStatus))}</td><td class="right">${escapeHtml(money(cover.limitAmount))}</td><td>${escapeHtml(cover.recommendationNote || cover.notes || '—')}</td></tr>`).join('');
-  return `
-    <h2>Asset review</h2>
-    <table><thead><tr><th>Asset</th><th>Type</th><th>Location</th><th>Current status</th><th>Policy section</th><th>Broker recommendation</th><th>Sum insured</th><th>Recorded rationale / information</th></tr></thead><tbody>${rows || '<tr><td colspan="8">No assets recorded.</td></tr>'}</tbody></table>
-    <h2>General covers</h2>
-    <table><thead><tr><th>Cover</th><th>Current status</th><th>Policy section</th><th>Broker recommendation</th><th>Limit</th><th>Notes</th></tr></thead><tbody>${covers || '<tr><td colspan="6">No general covers recorded.</td></tr>'}</tbody></table>`;
+function currentCoverSummary(payload: InsuranceReportPayload): string {
+  const counts = payload.workspace.overview.currentCoverCounts;
+  return `<h2>Recorded current-cover position</h2>
+    <table><thead><tr><th>Confirmed included</th><th>Confirmed excluded</th><th>Unknown</th><th>Not recorded</th><th>Covered elsewhere</th><th>Not applicable</th></tr></thead>
+    <tbody><tr><td>${counts.confirmed_included}</td><td>${counts.confirmed_excluded}</td><td>${counts.unknown}</td><td>${counts.not_recorded}</td><td>${counts.covered_elsewhere}</td><td>${counts.not_applicable}</td></tr></tbody></table>`;
 }
 
-function detailedBody(payload: InsuranceReportPayload): string {
-  const assets = payload.workspace.assets.map((asset, index) => {
-    const optionRows = asset.review.options.map((option) => `<tr><td>${escapeHtml(option.label)}</td><td>${escapeHtml(label(option.status))}</td><td>${escapeHtml(label(option.exclusionReasonKey) || '—')}</td><td>${escapeHtml(option.note || option.textValue || '—')}</td></tr>`).join('');
-    return `<section class="section">
-      <h2>${index + 1}. ${escapeHtml(asset.title)}</h2>
-      <table><tbody>
-        <tr><th>Asset type</th><td>${escapeHtml(asset.kind)}</td><th>Category</th><td>${escapeHtml(label(asset.review.categoryKey))}</td></tr>
-        <tr><th>Location</th><td>${escapeHtml(asset.location || '—')}</td><th>Serial / registration</th><td>${escapeHtml([asset.serialNumber, asset.registrationNumber].filter(Boolean).join(' / ') || '—')}</td></tr>
-        <tr><th>Current insurance</th><td>${escapeHtml(label(asset.review.currentInsuranceStatus))}</td><th>Insurer / policy</th><td>${escapeHtml([asset.review.insurerName, asset.review.policyNumber].filter(Boolean).join(' / ') || '—')}</td></tr>
-        <tr><th>Policy section</th><td>${escapeHtml(asset.review.policySectionLabel || '—')}</td><th>Schedule description</th><td>${escapeHtml(asset.review.scheduleDescription || '—')}</td></tr>
-        <tr><th>Cover basis</th><td>${escapeHtml(asset.review.coverBasis || '—')}</td><th>Sum insured / VAT</th><td>${escapeHtml(money(asset.review.sumInsured))} / ${escapeHtml(label(asset.review.vatBasis) || '—')}</td></tr>
-        <tr><th>Excess</th><td>${escapeHtml(asset.review.excessText || '—')}</td><th>Scheduling</th><td>${escapeHtml(label(asset.review.schedulingTreatment) || '—')}</td></tr>
-        <tr><th>Broker recommendation</th><td>${escapeHtml(label(asset.review.recommendationStatus))}</td><th>Renewal</th><td>${escapeHtml(dateLabel(asset.review.renewalDate))}</td></tr>
-        <tr><th>Recommendation rationale</th><td colspan="3">${escapeHtml(asset.review.recommendationNote || '—')}</td></tr>
-        <tr><th>Information required</th><td colspan="3">${escapeHtml(asset.review.informationRequiredNote || '—')}</td></tr>
-        <tr><th>Special conditions</th><td colspan="3">${escapeHtml(asset.review.specialConditions || '—')}</td></tr>
-      </tbody></table>
-      <h3>Cover options</h3>
-      <table><thead><tr><th>Option</th><th>Status</th><th>Exclusion reason</th><th>Notes</th></tr></thead><tbody>${optionRows || '<tr><td colspan="4">No options recorded.</td></tr>'}</tbody></table>
-    </section>`;
+function assetTable(payload: InsuranceReportPayload): string {
+  const assessmentByAsset = new Map<string, InsuranceWorkspaceData['assessments']>();
+  payload.workspace.assessments.forEach((assessment) => assessment.assetIds.forEach((assetId) => assessmentByAsset.set(assetId, [...(assessmentByAsset.get(assetId) ?? []), assessment])));
+  const rows = payload.workspace.assets.map((asset) => {
+    const assessments = assessmentByAsset.get(asset.id) ?? [];
+    const sumTerms = assessments.flatMap((assessment) => assessment.financialTerms).filter((term) => term.termType === 'sum_insured');
+    const recordedSum = sumTerms[0];
+    const current = assessments.length ? [...new Set(assessments.map((assessment) => label(assessment.currentCoverPosition)))].join(', ') : 'Unknown';
+    const ownerInsuredValue = nullableNumber(asset.snapshot.insuredValueExVat);
+    return `<tr>
+      <td>${escapeHtml(asset.title)}</td><td>${escapeHtml(asset.kind)}</td><td>${escapeHtml(asset.location || 'Unknown / not supplied')}</td>
+      <td class="right">${escapeHtml(money(asset.replacementValue))}</td>
+      <td class="right">${escapeHtml(money(ownerInsuredValue))}</td>
+      <td class="right">${escapeHtml(recordedSum ? money(recordedSum.amount, recordedSum.currency) : 'Not recorded')}</td>
+      <td>${escapeHtml(current)}</td>
+      <td>${escapeHtml(assessments.map((assessment) => assessment.coverLabel).join(', ') || 'Not assessed')}</td>
+    </tr>`;
   }).join('');
-  return `${assets}<h2>General covers</h2>${summaryBody({ ...payload, workspace: { ...payload.workspace, assets: [] } }).split('<h2>General covers</h2>')[1] ?? ''}`;
+  return `<h2>Locations and asset inventory</h2>
+    <table><thead><tr><th>Asset</th><th>Risk object</th><th>Location</th><th>Replacement value</th><th>Owner-provided insured value</th><th>Recorded sum insured</th><th>Current-cover position</th><th>Linked covers / sections</th></tr></thead>
+    <tbody>${rows || '<tr><td colspan="8">No assets recorded.</td></tr>'}</tbody></table>`;
+}
+
+function exposureAndPartyInventory(payload: InsuranceReportPayload): string {
+  const workspace = payload.workspace;
+  const locationRows = workspace.locations.map((location) => `<tr><td>${escapeHtml(location.label)}</td><td>${escapeHtml(location.isUnknown ? 'Unknown / not supplied' : location.addressText || 'Not recorded')}</td><td>${escapeHtml(location.occupancyUse || 'Not recorded')}</td><td>${location.assetIds.length}</td></tr>`).join('');
+  const exposureRows = workspace.exposures.map((exposure) => `<tr><td>${escapeHtml(exposure.label)}</td><td>${escapeHtml(label(exposure.exposureType))}</td><td>${escapeHtml(label(exposure.exposureStatus))}</td><td>${exposure.assetIds.length} assets · ${exposure.locationIds.length} locations · ${exposure.partyIds.length} parties</td><td>${escapeHtml(exposure.provenance.sourceReference || label(exposure.provenance.sourceType))}</td></tr>`).join('');
+  const partyRows = workspace.parties.map((party) => `<tr><td>${escapeHtml(party.displayName)}</td><td>${escapeHtml(label(party.partyType))}</td><td>${escapeHtml(party.roles.map((role) => `${label(role.roleKey)}${role.context ? ` — ${role.context}` : ''}`).join('; ') || 'Not recorded')}</td></tr>`).join('');
+  return `<h2>Normalized locations</h2><table><thead><tr><th>Location</th><th>Address</th><th>Occupancy / use</th><th>Linked assets</th></tr></thead><tbody>${locationRows || '<tr><td colspan="4">No normalized locations recorded.</td></tr>'}</tbody></table>
+    <h2>Non-asset and linked exposures</h2><table><thead><tr><th>Exposure</th><th>Type</th><th>Status</th><th>Links</th><th>Source</th></tr></thead><tbody>${exposureRows || '<tr><td colspan="5">No exposures recorded.</td></tr>'}</tbody></table>
+    ${partyRows ? `<h2>Parties and roles</h2><table><thead><tr><th>Party</th><th>Type</th><th>Roles</th></tr></thead><tbody>${partyRows}</tbody></table>` : ''}`;
+}
+
+function assessmentTable(payload: InsuranceReportPayload): string {
+  const assessments = payload.workspace.assessments ?? [];
+  const rows = assessments.map((assessment) => {
+    const limits = assessment.financialTerms
+      .filter((term) => !['value', 'sum_insured'].includes(term.termType))
+      .map((term) => `${label(term.termType)}: ${term.amount ? money(term.amount, term.currency) : term.percentage ? `${term.percentage}%` : term.timeValue ? `${term.timeValue} ${term.timeUnit}` : 'Recorded'}`)
+      .join('; ');
+    const definition = assessment.canonicalCoverKey ? INSURANCE_COVER_BY_KEY[assessment.canonicalCoverKey] : null;
+    const dependencies = definition ? [...definition.dependencies, ...definition.overlaps.map((entry) => `Overlap: ${entry}`)] : [];
+    const rationale = assessment.placementStage === 'broker_recommended'
+      ? `Broker recommendation: ${assessment.brokerRationale}`
+      : assessment.systemSuggestionRationale ? `System area to consider: ${assessment.systemSuggestionRationale}` : assessment.brokerRationale || 'Not recorded';
+    return `<tr><td>${escapeHtml(assessment.coverLabel)}</td><td>${escapeHtml(label(assessment.exposureStatus))}</td><td>${escapeHtml(label(assessment.currentCoverPosition))}</td><td>${escapeHtml(label(assessment.placementStage))}</td><td>${escapeHtml(assessment.provenance.sourceReference || label(assessment.provenance.sourceType))}</td><td>${escapeHtml(limits || 'Not recorded')}</td><td>${escapeHtml(dependencies.map(label).join('; ') || 'None recorded')}</td><td>${escapeHtml(rationale)}</td></tr>`;
+  }).join('');
+  return `<h2>Covers and exposures</h2>
+    <table><thead><tr><th>Canonical cover</th><th>Exposure status</th><th>Current-cover position</th><th>Review / placement stage</th><th>Source</th><th>Limits / excesses</th><th>Dependencies / overlaps</th><th>Recorded rationale</th></tr></thead>
+    <tbody>${rows || '<tr><td colspan="8">No cover assessments recorded.</td></tr>'}</tbody></table>`;
+}
+
+function policyHierarchy(payload: InsuranceReportPayload): string {
+  const policies = payload.workspace.policies ?? [];
+  if (!policies.length) return '<h2>Policies and schedule</h2><p class="callout">No current policy hierarchy has been recorded.</p>';
+  return `<h2>Policies and schedule</h2>${policies.map((policy) => `
+    <section class="section"><h3>${escapeHtml([policy.insurerName, policy.policyNumber].filter(Boolean).join(' · ') || 'Policy details not recorded')}</h3>
+    <p class="muted">${escapeHtml(policy.productName || 'Product not recorded')} · ${escapeHtml(label(policy.status))} · ${escapeHtml(dateLabel(policy.effectiveFrom))} to ${escapeHtml(dateLabel(policy.effectiveTo))}</p>
+    <table><thead><tr><th>Actual insurer section</th><th>Canonical mapping</th><th>Wording / reference</th><th>Schedule treatment</th><th>Linked assets / exposures</th><th>Financial terms</th></tr></thead><tbody>
+    ${policy.sections.flatMap((section) => section.scheduleItems.length ? section.scheduleItems.map((item) => `<tr><td>${escapeHtml(section.actualSectionLabel)}</td><td>${escapeHtml(section.canonicalCoverKey ? label(section.canonicalCoverKey) : 'Not mapped')}</td><td>${escapeHtml([section.sectionNumberReference, section.wordingEditionReference].filter(Boolean).join(' · ') || 'Not recorded')}</td><td>${escapeHtml(label(item.treatment))}: ${escapeHtml(item.itemLabel)}</td><td>${item.assetIds.length} assets · ${item.exposureIds.length} exposures</td><td>${escapeHtml(item.financialTerms.map((term) => `${label(term.termType)} ${term.amount ? money(term.amount, term.currency) : term.percentage ? `${term.percentage}%` : term.timeValue ? `${term.timeValue} ${term.timeUnit}` : ''}`).join('; ') || 'Not recorded')}</td></tr>`) : [`<tr><td>${escapeHtml(section.actualSectionLabel)}</td><td>${escapeHtml(section.canonicalCoverKey ? label(section.canonicalCoverKey) : 'Not mapped')}</td><td>${escapeHtml([section.sectionNumberReference, section.wordingEditionReference].filter(Boolean).join(' · ') || 'Not recorded')}</td><td>No schedule items recorded</td><td>—</td><td>Not recorded</td></tr>`]).join('')}
+    </tbody></table></section>`).join('')}`;
+}
+
+function questionsAndNotes(payload: InsuranceReportPayload): string {
+  const requests = (payload.workspace.informationRequests ?? []).filter((request) => ['open', 'sent_to_client', 'answered'].includes(request.status));
+  const notes = payload.workspace.notes ?? [];
+  const requestRows = requests.map((request) => `<tr><td>${escapeHtml(request.question)}</td><td>${escapeHtml(request.reason)}</td><td>${escapeHtml(label(request.status))}</td><td>${escapeHtml(request.response || 'Not supplied')}</td></tr>`).join('');
+  const noteRows = notes.map((note) => `<tr><td>${escapeHtml(label(note.noteType))}</td><td>${escapeHtml(note.body)}</td><td>${escapeHtml(dateLabel(note.createdAtIso))}</td></tr>`).join('');
+  return `<h2>Outstanding information</h2><table><thead><tr><th>Question</th><th>Reason</th><th>Status</th><th>Response</th></tr></thead><tbody>${requestRows || '<tr><td colspan="4">No information requests recorded.</td></tr>'}</tbody></table>
+    ${noteRows ? `<h2>Report-visible notes</h2><table><thead><tr><th>Type</th><th>Note</th><th>Date</th></tr></thead><tbody>${noteRows}</tbody></table>` : ''}`;
+}
+
+function detailedComponents(payload: InsuranceReportPayload): string {
+  if (payload.type !== 'detailed') return '';
+  const sections = (payload.workspace.assessments ?? []).map((assessment) => {
+    const components = assessment.components.map((component) => `<tr><td>${escapeHtml(label(component.componentType))}</td><td>${escapeHtml(component.label)}</td><td>${escapeHtml(label(component.selectionStatus))}</td><td>${escapeHtml(component.territory || 'Not recorded')}</td><td>${escapeHtml(component.conditionsNotes || 'Not recorded')}</td><td>${escapeHtml(component.provenance.sourceReference || label(component.provenance.sourceType))}</td></tr>`).join('');
+    return `<section class="section"><h3>${escapeHtml(assessment.coverLabel)} · components</h3><table><thead><tr><th>Type</th><th>Component</th><th>Current position</th><th>Territory</th><th>Conditions / notes</th><th>Source</th></tr></thead><tbody>${components || '<tr><td colspan="6">No structured components recorded.</td></tr>'}</tbody></table></section>`;
+  }).join('');
+  return `<h2>Structured cover elements</h2>${sections || '<p class="callout">No structured cover elements recorded.</p>'}`;
+}
+
+function evidenceTrail(payload: InsuranceReportPayload): string {
+  const evidence = payload.workspace.evidence ?? [];
+  if (!evidence.length) return '';
+  const rows = evidence.map((entry) => `<tr><td>${escapeHtml(entry.label)}</td><td>${escapeHtml(label(entry.evidenceType))}</td><td>${escapeHtml(entry.sourceReference || entry.existingSharedReference || 'Not recorded')}</td><td>${entry.links.length}</td><td>${escapeHtml(entry.notes || 'Not recorded')}</td></tr>`).join('');
+  return `<h2>Evidence trail</h2><table><thead><tr><th>Evidence</th><th>Type</th><th>Reference</th><th>Linked records</th><th>Notes</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function snapshotChanges(payload: InsuranceReportPayload): string {
+  const diffs = payload.workspace.latestSnapshotDiffs ?? [];
+  if (!diffs.length) return '<h2>Source snapshot changes</h2><p class="callout">No later authorised snapshot changes are recorded for this workspace.</p>';
+  const rows = diffs.map((diff) => `<tr><td>${escapeHtml(diff.sourceAssetKey)}</td><td>${escapeHtml(label(diff.changeType))}</td><td>${escapeHtml(diff.changedFields.join(', ') || 'Not listed')}</td></tr>`).join('');
+  return `<h2>Source snapshot changes</h2><table><thead><tr><th>Source asset</th><th>Change</th><th>Changed fields</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function reportBody(payload: InsuranceReportPayload): string {
+  return [
+    currentCoverSummary(payload),
+    snapshotChanges(payload),
+    assetTable(payload),
+    exposureAndPartyInventory(payload),
+    assessmentTable(payload),
+    policyHierarchy(payload),
+    detailedComponents(payload),
+    evidenceTrail(payload),
+    questionsAndNotes(payload),
+  ].join('');
 }
 
 export function buildInsuranceReportHtml(payload: InsuranceReportPayload): string {
-  const body = payload.type === 'summary' ? summaryBody(payload) : detailedBody(payload);
-  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(`${workspaceTitle(payload)} insurance report`)}</title><style>${baseStyles(payload.type)}</style></head><body><main class="page">${reportHeader(payload)}${body}<p class="disclaimer">${escapeHtml(DISCLAIMER)}</p></main><button class="print" onclick="window.print()">Print / Save PDF</button></body></html>`;
+  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(`${workspaceTitle(payload)} insurance report`)}</title><style>${baseStyles(payload.type)}</style></head><body><main class="page">${reportHeader(payload)}${reportBody(payload)}<p class="disclaimer">${escapeHtml(DISCLAIMER)}</p></main><button class="print" onclick="window.print()">Print / Save PDF</button></body></html>`;
 }
 
 function workspaceTitle(payload: InsuranceReportPayload): string {
