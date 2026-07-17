@@ -225,10 +225,21 @@
   outline: none;
 }
 .field textarea { min-height: 100px; padding-block: 13px; resize: vertical; }
+.field select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9'%3E%3Cpath d='M2 2l5 5 5-5' fill='none' stroke='%23254733' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 17px center;
+  background-size: 14px 9px;
+  padding-right: 50px;
+  cursor: pointer;
+}
+.field select:disabled { cursor: not-allowed; opacity: 0.62; }
 .searchInput:focus,
 .field input:focus,
 .field select:focus,
-.field textarea:focus { border-color: rgba(37, 71, 51, 0.62); box-shadow: 0 0 0 4px rgba(37, 71, 51, 0.09); background: #fff; }
+.field textarea:focus { border-color: rgba(37, 71, 51, 0.62); box-shadow: 0 0 0 4px rgba(37, 71, 51, 0.09); background-color: #fff; }
 
 .button,
 .primaryButton,
@@ -505,8 +516,28 @@
 .formGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .field { min-width: 0; display: grid; gap: 7px; }
 .fieldFull { grid-column: 1 / -1; }
-.field > span,
+.field > span:not(.currencyInput),
 .fieldLabel { color: #315348; font-size: 0.76rem; font-weight: 850; }
+.currencyInput { position: relative; min-width: 0; display: flex; align-items: center; }
+.currencyInput > span {
+  position: absolute;
+  left: 1px;
+  top: 1px;
+  bottom: 1px;
+  z-index: 1;
+  width: 42px;
+  display: grid;
+  place-items: center;
+  border-right: 1px solid rgba(37, 71, 51, 0.14);
+  border-radius: 13px 0 0 13px;
+  background: #f1f6f3;
+  color: var(--owner-green);
+  font-size: 0.82rem;
+  font-weight: 900;
+  pointer-events: none;
+}
+.currencyInput > input { padding-left: 55px; }
+.currencyInput:focus-within > span { border-color: rgba(37, 71, 51, 0.3); background: #eaf3ed; }
 .checkField { min-height: 48px; display: flex; align-items: center; gap: 9px; color: #315348; font-size: 0.82rem; font-weight: 800; }
 .checkField input { width: 20px; height: 20px; }
 .actions { display: flex; gap: 9px; flex-wrap: wrap; }
@@ -962,10 +993,8 @@
 .manageButton:focus-visible { position: relative; z-index: 1; outline: none; box-shadow: inset 0 0 0 3px rgba(37, 71, 51, 0.12); }
 .manageButtonDanger { background: #fff; color: #8c3131; }
 .manageButtonDanger:hover { background: #fff8f8; }
-.manageButtonCopy { min-width: 0; display: grid; gap: 4px; }
+.manageButtonCopy { min-width: 0; display: grid; }
 .manageButtonCopy strong { font-size: 0.82rem; font-weight: 860; line-height: 1.22; overflow-wrap: anywhere; }
-.manageButtonCopy small { color: var(--owner-muted); font-size: 0.65rem; font-weight: 650; line-height: 1.32; overflow-wrap: anywhere; }
-.manageButtonDanger .manageButtonCopy small { color: #9b6262; }
 .manageButtonArrow { flex: 0 0 auto; color: rgba(37, 71, 51, 0.46); font-size: 1.1rem; font-weight: 900; }
 .manageButtonDanger .manageButtonArrow { color: rgba(140, 49, 49, 0.5); }
 .ownerOptionsIdentity {
@@ -1161,50 +1190,25 @@
 }
 .reportList { display: grid; gap: 9px; }
 .reportCard {
+  width: 100%;
   min-width: 0;
-  display: grid;
-  grid-template-columns: 42px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 11px;
-  border: 1px solid rgba(18, 53, 45, 0.13);
-  border-radius: 16px;
-  background: #fff;
-  padding: 11px;
-  box-shadow: 0 7px 18px rgba(18, 53, 45, 0.04);
-}
-.reportPdfBadge {
-  width: 42px;
-  height: 42px;
+  min-height: 54px;
   display: grid;
   place-items: center;
   box-sizing: border-box;
-  border: 1px solid rgba(37, 71, 51, 0.12);
-  border-radius: 12px;
-  background: #f1f6f3;
+  border: 1px solid rgba(18, 53, 45, 0.13);
+  border-radius: 14px;
+  background: #f8faf9;
   color: var(--owner-green);
-  font-size: 0.62rem;
-  font-weight: 950;
-  letter-spacing: 0.04em;
-}
-.reportCard > div { min-width: 0; display: grid; gap: 4px; }
-.reportCard strong { color: var(--owner-ink); font-size: 0.84rem; font-weight: 880; line-height: 1.25; }
-.reportCard small { color: var(--owner-muted); font-size: 0.67rem; font-weight: 660; line-height: 1.38; }
-.reportCard > button {
-  min-height: 40px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  border: 1px solid rgba(37, 71, 51, 0.2);
-  border-radius: 11px;
-  background: var(--owner-green);
-  color: #fff;
-  padding: 0 12px;
-  font: 850 0.68rem Montserrat, sans-serif;
+  padding: 10px 14px;
+  font: 760 0.82rem/1.3 Montserrat, sans-serif;
+  text-align: center;
   cursor: pointer;
+  transition: border-color 0.16s ease, background 0.16s ease, transform 0.16s ease;
 }
-.reportCard > button:hover { background: var(--owner-green-dark); }
-.reportCard > button:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(37, 71, 51, 0.11); }
+.reportCard:hover { border-color: rgba(37, 71, 51, 0.32); background: #f1f6f3; }
+.reportCard:active { transform: translateY(1px); }
+.reportCard:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(37, 71, 51, 0.1); }
 .reportFilterDialog { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 14px; }
 .reportFilterBackdrop { position: absolute; inset: 0; border: 0; background: rgba(8, 24, 18, 0.54); padding: 0; cursor: pointer; backdrop-filter: blur(5px); }
 .reportFilterModal {
@@ -1222,12 +1226,13 @@
   padding: 18px;
   box-shadow: 0 28px 80px rgba(8, 24, 18, 0.28);
 }
-.reportFilterModalHeader { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
-.reportFilterModalHeader > div { min-width: 0; display: grid; gap: 4px; }
-.reportFilterModalHeader span { color: #236851; font-size: 0.64rem; font-weight: 950; letter-spacing: 0.1em; text-transform: uppercase; }
-.reportFilterModalHeader h2 { margin: 0; color: var(--owner-ink); font-size: 1.15rem; font-weight: 900; letter-spacing: -0.03em; line-height: 1.2; }
-.reportFilterModalHeader p { margin: 0; color: var(--owner-muted); font-size: 0.72rem; font-weight: 650; line-height: 1.4; }
+.reportFilterModalHeader { position: relative; min-height: 40px; display: grid; place-items: center; padding-inline: 46px; text-align: center; }
+.reportFilterModalHeader > div { min-width: 0; }
+.reportFilterModalHeader h2 { margin: 0; color: var(--owner-ink); font-size: 1rem; font-weight: 820; letter-spacing: -0.02em; line-height: 1.25; }
 .reportFilterModalHeader > button {
+  position: absolute;
+  top: 0;
+  right: 0;
   width: 40px;
   height: 40px;
   flex: 0 0 auto;
@@ -1491,7 +1496,7 @@
 .mediaItem img { width: 100%; height: 130px; object-fit: cover; display: block; }
 .mediaItem a { display: block; padding: 12px; color: var(--owner-green); font-size: 0.76rem; font-weight: 800; overflow-wrap: anywhere; }
 .mediaItem button { position: absolute; top: 6px; right: 6px; min-width: 36px; min-height: 36px; border: 0; border-radius: 10px; color: #fff; background: rgba(126, 36, 36, 0.88); font-weight: 900; cursor: pointer; }
-.fileInput { display: grid; gap: 8px; border: 1px dashed rgba(37, 71, 51, 0.28); border-radius: 14px; padding: 13px; color: var(--owner-green); font-size: 0.78rem; font-weight: 850; }
+.manageMediaUploadActions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
 
 .recordList { display: grid; gap: 9px; }
 .record { display: grid; gap: 7px; border: 1px solid var(--owner-line); border-radius: 14px; padding: 13px; }
@@ -1774,8 +1779,6 @@
   .formGrid { grid-template-columns: 1fr; }
   .fieldFull { grid-column: auto; }
   .reportFilterGrid { grid-template-columns: 1fr; }
-  .reportCard { grid-template-columns: 42px minmax(0, 1fr); }
-  .reportCard > button { grid-column: 1 / -1; width: 100%; }
   .locationChoiceGrid { grid-template-columns: 1fr; }
   .locationChoiceGrid button { min-height: 72px; }
   .metrics { grid-template-columns: 1fr 1fr; }
@@ -1784,6 +1787,7 @@
   .assetMirrorAction { min-height: 58px; font-size: 0.94rem; }
   .detailPhotoThumbs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .detailMediaActions,
+  .manageMediaUploadActions,
   .ownerOptionsFooter { grid-template-columns: 1fr; }
 
   .notificationIntro {
