@@ -198,5 +198,7 @@ assert.match(workspace, /insurance_assessment_locations/);
 assert.match(workspace, /insurance_assessment_parties/);
 assert.match(workspace, /insurance_evidence_links/);
 assert.doesNotMatch(workspace, /delete from insurance_suggestion_decisions/i, 'Rule refresh must not erase human decisions');
+assert.doesNotMatch(workspace, /\bp\.status\b/, 'Policy queries must use the database column policy_status');
+assert.match(workspace, /p\.policy_status\s*=\s*'current'/, 'Portfolio renewal tracking must filter current policies by policy_status');
 
 console.log(`Insurance workspace verification passed: ${definitions.length} covers, deterministic rules, route, migration and report guards.`);
