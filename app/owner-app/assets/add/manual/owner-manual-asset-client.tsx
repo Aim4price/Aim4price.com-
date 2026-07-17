@@ -109,8 +109,8 @@ export default function OwnerManualAssetClient() {
           <label className={styles.field}><span>Model</span><input name="modelName" /></label>
           <label className={styles.field}><span>Year model / year built</span><input name="yearModel" inputMode="numeric" /></label>
           <label className={styles.field}><span>Serial / VIN / chassis</span><input name="serialNumber" /></label>
-          <label className={styles.field}><span>Current value excl. VAT</span><input name="value" inputMode="decimal" required /></label>
-          <label className={styles.field}><span>Replacement price excl. VAT</span><input name="replacementPriceExVat" inputMode="decimal" required /></label>
+          <label className={styles.field}><span>Current value excl. VAT</span><span className={styles.currencyInput}><span aria-hidden="true">R</span><input name="value" inputMode="decimal" required /></span></label>
+          <label className={styles.field}><span>Replacement price excl. VAT</span><span className={styles.currencyInput}><span aria-hidden="true">R</span><input name="replacementPriceExVat" inputMode="decimal" required /></span></label>
           <label className={styles.field}>
             <span>Usage type</span>
             <select name="usageMetric">
