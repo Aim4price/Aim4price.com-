@@ -1369,9 +1369,9 @@ export async function listInsurancePortfolio(brokerUserId: string): Promise<Insu
         from insurance_assessment_assets aa
         join insurance_cover_assessments ca on ca.id = aa.assessment_id and ca.workspace_id = aa.workspace_id
         where aa.workspace_id = w.id and ca.current_cover_position = 'confirmed_included') as included_asset_count,
-       (select count(*)::int from insurance_policies p where p.workspace_id = w.id and p.status = 'current') as current_policy_count,
+       (select count(*)::int from insurance_policies p where p.workspace_id = w.id and p.policy_status = 'current') as current_policy_count,
        (select count(*)::int from insurance_information_requests r where r.workspace_id = w.id and r.status in ('open', 'sent_to_client', 'answered')) as open_question_count,
-       (select min(coalesce(p.renewal_date, p.effective_to)) from insurance_policies p where p.workspace_id = w.id and p.status = 'current') as nearest_renewal_date
+       (select min(coalesce(p.renewal_date, p.effective_to)) from insurance_policies p where p.workspace_id = w.id and p.policy_status = 'current') as nearest_renewal_date
      from insurance_workspaces w
      where w.broker_user_id = $1 and w.source_lead_id = any($2::uuid[])
      order by w.updated_at desc`,
