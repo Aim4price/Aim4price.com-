@@ -107,15 +107,15 @@ export default function OwnerAssetsClient({ initialQuery = '' }: { initialQuery?
   return (
     <div className={styles.wideContent}>
       <section className={styles.assetListToolbar}>
-        <label className={styles.assetSearchField}>
-          <span>Choose asset</span>
+        <div className={styles.assetSearchField}>
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search asset, model, reg or serial"
+            aria-label="Search assets"
             autoComplete="off"
           />
-        </label>
+        </div>
         <Link className={styles.addAssetButton} href="/owner-app/assets/add" prefetch={false}>
           <span aria-hidden="true">+</span>
           <span>Add asset</span>
@@ -149,7 +149,7 @@ export default function OwnerAssetsClient({ initialQuery = '' }: { initialQuery?
               </div>
 
               <Link
-                className={styles.ownerAssetOpenButton}
+                className={`${styles.assetMirrorAction} ${styles.assetMirrorManageAction} ${styles.ownerAssetOpenButton}`}
                 href={`/owner-app/assets/${encodeURIComponent(asset.id)}`}
                 prefetch={false}
               >
