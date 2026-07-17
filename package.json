@@ -4,7 +4,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "sh -c 'next start -H 0.0.0.0 -p ${PORT:-3000}'"
+    "start": "sh -c 'next start -H 0.0.0.0 -p ${PORT:-3000}'",
+    "typecheck": "tsc --noEmit",
+    "verify:insurance": "node scripts/verify-insurance-workspace.cjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1029.0",
