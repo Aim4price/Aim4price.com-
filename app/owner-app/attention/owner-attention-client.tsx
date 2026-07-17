@@ -227,9 +227,9 @@ export default function OwnerAttentionClient({
       <OwnerAppNav />
       <section className={`${styles.overviewShell} ${ownerStyles.overviewContent}`}>
 
-        <div className={styles.overviewIntro}>
-          <h1>Overview</h1>
-          <p>What needs attention next.</p>
+        <div className={`${styles.overviewIntro} ${ownerStyles.ownerPageIntro}`}>
+          <h1 className={ownerStyles.ownerPageTitle}>Overview</h1>
+          <p className={ownerStyles.ownerPageSubtitle}>What needs attention next.</p>
         </div>
 
         <div className={styles.overviewRange} role="group" aria-label="Overview time range">
@@ -275,7 +275,7 @@ export default function OwnerAttentionClient({
         {!isLoading && !loadError ? (
           <div className={styles.overviewSections} aria-live="polite">
             <section className={styles.overviewSection} aria-labelledby="needs-attention-title">
-              <div className={styles.overviewSectionHeading}>
+              <div className={`${styles.overviewSectionHeading} ${ownerStyles.ownerSectionHeading}`}>
                 <h2 id="needs-attention-title">Needs attention</h2>
                 <span aria-label={`${needsAttentionItems.length} items`}>
                   {needsAttentionItems.length}
@@ -289,7 +289,7 @@ export default function OwnerAttentionClient({
             </section>
 
             <section className={styles.overviewSection} aria-labelledby="coming-up-title">
-              <div className={styles.overviewSectionHeading}>
+              <div className={`${styles.overviewSectionHeading} ${ownerStyles.ownerSectionHeading}`}>
                 <h2 id="coming-up-title">Coming up</h2>
                 <span aria-label={`${comingUpItems.length} items`}>{comingUpItems.length}</span>
               </div>
