@@ -18,7 +18,7 @@ type Asset = {
   id: string; registerId: string | null; kind: string; title: string; value: number; replacementPriceExVat: number | null;
   valuationRunId: number | null; selectedMethod: string;
   brandName: string; modelName: string; typedModelName: string; yearModel: number | null; hours: number | null;
-  lifeWorkedPercent: number | null; condition: string; note: string; serialNumber: string; isFinanced: boolean;
+  lifeWorkedPercent: number | null; maxLifetimeHours: number | null; condition: string; note: string; serialNumber: string; isFinanced: boolean;
   financeNote: string; isInsured: boolean; insuredValueExVat: number | null; isLicensed: boolean;
   licenseRegistrationNumber: string; specsJson: Record<string, unknown>; photos: string[]; documents: Document[];
   marketplaceStatus: string; marketplacePriceExVat: number | null; marketplaceNotes: string; sellerPhone: string;
@@ -123,6 +123,38 @@ function manualMarketplaceNote(value: string) {
     (/^serviced\b/.test(compact) && (compact.includes('serviced items:') || compact.includes('service items:') || compact.includes('work done:'))) ||
     (/^repaired\b/.test(compact) && (compact.includes('work done:') || compact.includes('mechanic:') || compact.includes('company:')));
   return isOperationalNote ? '' : note;
+}
+
+const EXPECTED_LIFETIME_SPEC_KEYS = [
+  'maxLifetimeHours', 'max_lifetime_hours', 'expectedLifetimeHours', 'expected_lifetime_hours',
+  'lifetimeHours', 'lifetime_hours', 'designLifeHours', 'design_life_hours', 'usefulLifeHours', 'useful_life_hours',
+  'maxLifetimeKm', 'max_lifetime_km', 'expectedLifetimeKm', 'expected_lifetime_km',
+  'lifetimeKm', 'lifetime_km', 'designLifeKm', 'design_life_km', 'usefulLifeKm', 'useful_life_km',
+] as const;
+
+function readExpectedLifetime(asset: Pick<Asset, 'maxLifetimeHours' | 'specsJson'>): number | null {
+  const direct = Number(asset.maxLifetimeHours);
+  if (Number.isFinite(direct) && direct > 0) return Math.round(direct);
+  for (const key of EXPECTED_LIFETIME_SPEC_KEYS) {
+    const value = Number(asset.specsJson[key]);
+    if (Number.isFinite(value) && value > 0) return Math.round(value);
+  }
+  return null;
+}
+
+function formatWholeNumberInput(value: unknown): string {
+  const digits = String(value ?? '').replace(/\D/g, '');
+  return digits ? Number(digits).toLocaleString('en-ZA').replace(/,/g, ' ') : '';
+}
+
+function parseWholeNumberInput(value: string): number | null {
+  const parsed = Number(value.replace(/\D/g, ''));
+  return Number.isFinite(parsed) && parsed > 0 ? Math.round(parsed) : null;
+}
+
+function moneyDifference(value: number): string {
+  if (!Number.isFinite(value) || value === 0) return 'R 0';
+  return `${value > 0 ? '+' : '−'}R ${Math.abs(Math.round(value)).toLocaleString('en-ZA')}`;
 }
 
 export default function OwnerAssetDetailClient({ assetId, view = 'summary', section, pricingMode = 'landing' }: {
@@ -787,8 +819,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
       <div className={styles.wideContent}>
         <section className={styles.manageAssetIdentity}>
           <div className={styles.manageAssetIdentityCopy}>
-            <h1>Manage</h1>
-            <strong className={styles.manageAssetName}><BalancedHeadingText text={draft.title} /></strong>
+            <h1><BalancedHeadingText text={draft.title} /></h1>
             {manageMeta ? <p>{manageMeta}</p> : null}
           </div>
           <Link href={`/owner-app/assets/${encodeURIComponent(assetId)}/details`} prefetch={false}>View details <span aria-hidden="true">›</span></Link>
@@ -1048,8 +1079,12 @@ function PricingSection({ assetId, mode, draft, reload, setNotice }: {
 }) {
   const usage = resolveAssetUsage({ kind: draft.kind, hours: draft.hours, lifeWorkedPercent: draft.lifeWorkedPercent, specsJson: draft.specsJson });
   const canRecalculate = draft.valuationRunId !== null && draft.selectedMethod !== 'manual';
+  const usesPercentUsage = usage.metric === 'percentage';
+  const lifetimeUnit = usage.metric === 'km' ? 'km' : 'hours';
   const [replacementMode, setReplacementMode] = useState<'saved' | 'custom'>('saved');
   const [replacementPrice, setReplacementPrice] = useState(String(draft.replacementPriceExVat ?? ''));
+  const [saveReplacementPrice, setSaveReplacementPrice] = useState(false);
+  const [expectedLifetime, setExpectedLifetime] = useState(formatWholeNumberInput(readExpectedLifetime(draft) ?? ''));
   const [preview, setPreview] = useState<RevalueResponse | null>(null);
   const [pricingBusy, setPricingBusy] = useState('');
   const [pricingError, setPricingError] = useState('');
@@ -1076,8 +1111,17 @@ function PricingSection({ assetId, mode, draft, reload, setNotice }: {
   async function requestRevalue(previewOnly: boolean) {
     if (!canRecalculate || pricingBusy) return;
     const customPrice = Number(replacementPrice.replace(/[^0-9.]/g, ''));
+    const lifetime = usesPercentUsage ? null : parseWholeNumberInput(expectedLifetime);
+    if (replacementMode === 'saved' && (!draft.replacementPriceExVat || draft.replacementPriceExVat <= 0)) {
+      setPricingError('This asset does not have a saved replacement price. Enter an updated price to continue.');
+      return;
+    }
     if (replacementMode === 'custom' && (!Number.isFinite(customPrice) || customPrice <= 0)) {
       setPricingError('Enter a valid replacement price excluding VAT.');
+      return;
+    }
+    if (!usesPercentUsage && lifetime === null) {
+      setPricingError(`Enter an expected lifetime in ${lifetimeUnit}.`);
       return;
     }
     setPricingBusy(previewOnly ? 'preview' : 'save');
@@ -1089,7 +1133,8 @@ function PricingSection({ assetId, mode, draft, reload, setNotice }: {
           assetId: draft.id,
           selectedMethod: 'aim4price',
           ...(previewOnly ? { previewOnly: true } : {}),
-          ...(replacementMode === 'custom' ? { replacementPriceExVat: customPrice, saveReplacementPrice: !previewOnly } : {}),
+          ...(replacementMode === 'custom' ? { replacementPriceExVat: customPrice, saveReplacementPrice: !previewOnly && saveReplacementPrice } : {}),
+          ...(!usesPercentUsage && lifetime !== null ? { advancedAssumptions: { maxLifetimeUsage: lifetime } } : {}),
         }),
       });
       const data = await response.json().catch(() => null) as RevalueResponse | null;
@@ -1146,12 +1191,29 @@ function PricingSection({ assetId, mode, draft, reload, setNotice }: {
         <div className={styles.pricingPanelHeader}><strong>Recalculate value</strong><small>Refresh the saved Aim4price estimate using current asset information.</small></div>
         {canRecalculate ? <>
           <div className={styles.choiceRow}>
-            <button type="button" className={replacementMode === 'saved' ? styles.choiceActive : ''} onClick={() => { setReplacementMode('saved'); setPreview(null); }}>Use saved replacement price</button>
-            <button type="button" className={replacementMode === 'custom' ? styles.choiceActive : ''} onClick={() => { setReplacementMode('custom'); setPreview(null); }}>Enter updated price</button>
+            <button type="button" disabled={!draft.replacementPriceExVat} className={replacementMode === 'saved' ? styles.choiceActive : ''} onClick={() => { setReplacementMode('saved'); setSaveReplacementPrice(false); setPreview(null); setPricingError(''); }}>Use saved replacement price</button>
+            <button type="button" className={replacementMode === 'custom' ? styles.choiceActive : ''} onClick={() => { setReplacementMode('custom'); setPreview(null); setPricingError(''); }}>Enter updated price</button>
           </div>
-          {replacementMode === 'custom' ? <label className={styles.field}><span>Replacement price excl. VAT</span><span className={styles.currencyInput}><span aria-hidden="true">R</span><GroupedCurrencyInput value={replacementPrice} onValueChange={(value) => { setReplacementPrice(value); setPreview(null); }} /></span></label> : null}
-          {preview?.item ? <div className={styles.pricingResult}><span>New Aim4price value</span><strong>{money(preview.newValueExVat ?? preview.item.value)}</strong><small>Current value: {money(preview.oldValueExVat ?? draft.value)}</small></div> : null}
-          <div className={styles.actions}>
+          {replacementMode === 'custom' ? <div className={styles.revalueInputCard}>
+            <label className={styles.field}><span>Replacement price excl. VAT</span><span className={styles.currencyInput}><span aria-hidden="true">R</span><GroupedCurrencyInput value={replacementPrice} onValueChange={(value) => { setReplacementPrice(value); setPreview(null); setPricingError(''); }} /></span></label>
+            <label className={styles.revalueSaveToggle}><input type="checkbox" checked={saveReplacementPrice} onChange={(event) => setSaveReplacementPrice(event.target.checked)} /><span>Save this as the replacement price on this asset</span></label>
+            <p>Leave unticked to use this price for this calculation only.</p>
+          </div> : null}
+          {!usesPercentUsage ? <label className={styles.field}><span>Expected lifetime ({lifetimeUnit})</span><input inputMode="numeric" value={expectedLifetime} placeholder={usage.metric === 'km' ? 'Example: 350 000' : 'Example: 12 000'} onChange={(event) => { setExpectedLifetime(formatWholeNumberInput(event.target.value)); setPreview(null); setPricingError(''); }} /></label> : null}
+          {preview?.item ? <div className={styles.pricingResult}>
+            <span>New Aim4price value</span>
+            <strong>{money(preview.newValueExVat ?? preview.item.value)}</strong>
+            <div className={styles.pricingCompareGrid}>
+              <div><small>Current value</small><b>{money(preview.oldValueExVat ?? draft.value)}</b></div>
+              <div><small>Difference</small><b>{moneyDifference((preview.newValueExVat ?? preview.item.value) - (preview.oldValueExVat ?? draft.value))}</b></div>
+            </div>
+            <div className={styles.pricingResultDetails}>
+              <div><small>Replacement price used</small><b>{money(preview.replacementPriceUsedExVat ?? (replacementMode === 'custom' ? Number(replacementPrice.replace(/[^0-9.]/g, '')) : draft.replacementPriceExVat))}</b></div>
+              {!usesPercentUsage ? <div><small>Expected lifetime used</small><b>{expectedLifetime} {lifetimeUnit}</b></div> : null}
+              {replacementMode === 'custom' ? <div><small>Replacement price action</small><b>{saveReplacementPrice ? 'New price will also be saved' : 'Used for this calculation only'}</b></div> : null}
+            </div>
+          </div> : null}
+          <div className={styles.revalueActions}>
             <button type="button" className={styles.secondaryButton} disabled={Boolean(pricingBusy)} onClick={() => void requestRevalue(true)}>{pricingBusy === 'preview' ? 'Calculating…' : 'Preview new value'}</button>
             {preview?.item ? <button type="button" className={styles.primaryButton} disabled={Boolean(pricingBusy)} onClick={() => void requestRevalue(false)}>{pricingBusy === 'save' ? 'Saving…' : 'Save new value'}</button> : null}
           </div>
@@ -1317,14 +1379,38 @@ function MarketplaceSection({ draft, ownerContext, action, busy }: { draft: Asse
   return (
     <section className={styles.section}>
       <p className={styles.editorIntro}>Status: {draft.marketplaceStatus === 'live' ? 'Live' : 'Not listed'} · Asset and seller information is filled in automatically.</p>
-      <div className={styles.marketplacePreview}>
-        {draft.photos[0] ? <img src={draft.photos[0]} alt={listingTitle} /> : <div>No photo saved</div>}
-        <span><small>Listing title</small><strong>{listingTitle}</strong><em>{draft.photos.length} saved photo{draft.photos.length === 1 ? '' : 's'} will be used</em></span>
-      </div>
-      <div className={styles.formGrid}>
-        {Object.entries({ askingPriceExVat: 'Asking price excl. VAT', sellerName: 'Contact name', sellerCompany: 'Business name', sellerPhone: 'Phone', sellerEmail: 'Business email', province: 'Province', area: 'Area' }).map(([key, label]) => <label className={styles.field} key={key}><span>{label}</span>{key === 'askingPriceExVat' ? <span className={styles.currencyInput}><span aria-hidden="true">R</span><GroupedCurrencyInput value={form.askingPriceExVat} onValueChange={(value) => setForm((current) => ({ ...current, askingPriceExVat: value }))} /></span> : <input value={form[key as keyof typeof form]} onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))} />}</label>)}
-        <label className={`${styles.field} ${styles.fieldFull}`}><span>Listing description</span><textarea value={form.marketplaceNotes} onChange={(event) => setForm((current) => ({ ...current, marketplaceNotes: event.target.value }))} /></label>
-      </div>
+      <section className={styles.marketplaceTitlePanel}>
+        <span>Listing title</span>
+        <strong>{listingTitle}</strong>
+        <small>Year model, usage and condition are included automatically.</small>
+      </section>
+
+      <section className={styles.marketplacePricePanel}>
+        <label className={styles.field}><span>Asking price excl. VAT</span><span className={styles.currencyInput}><span aria-hidden="true">R</span><GroupedCurrencyInput value={form.askingPriceExVat} onValueChange={(value) => setForm((current) => ({ ...current, askingPriceExVat: value }))} /></span></label>
+      </section>
+
+      <section className={styles.marketplacePhotosPanel}>
+        <div className={styles.marketplacePanelHeading}>
+          <div><span>Photos</span><small>{draft.photos.length ? `${draft.photos.length} saved photo${draft.photos.length === 1 ? '' : 's'} will be shown on the listing.` : 'No photos are saved for this asset yet.'}</small></div>
+          <Link href={`/owner-app/assets/${encodeURIComponent(draft.id)}/manage/media`} prefetch={false}>Manage photos</Link>
+        </div>
+        {draft.photos.length ? <>
+          <img className={styles.marketplaceMainPhoto} src={draft.photos[0]} alt={`${listingTitle} main marketplace photo`} />
+          {draft.photos.length > 1 ? <div className={styles.marketplacePhotoStrip} aria-label="Marketplace listing photos">
+            {draft.photos.slice(0, 6).map((photoUrl, index) => <img key={`${photoUrl}-${index}`} src={photoUrl} alt={`${draft.title} marketplace photo ${index + 1}`} />)}
+            {draft.photos.length > 6 ? <span>+{draft.photos.length - 6}</span> : null}
+          </div> : null}
+        </> : <div className={styles.marketplaceNoPhotos}><strong>No photos uploaded</strong><span>Add photos before publishing to show buyers the real asset.</span></div>}
+      </section>
+
+      <label className={`${styles.field} ${styles.marketplaceDescriptionField}`}><span>Listing description</span><textarea value={form.marketplaceNotes} onChange={(event) => setForm((current) => ({ ...current, marketplaceNotes: event.target.value }))} placeholder="Add important buyer notes, extras, service history, condition or known issues." /></label>
+
+      <section className={styles.marketplaceSellerPanel}>
+        <div className={styles.marketplacePanelHeading}><div><span>Seller details</span><small>These details will be shown with the listing.</small></div></div>
+        <div className={styles.formGrid}>
+          {Object.entries({ sellerName: 'Contact name', sellerCompany: 'Business name', sellerPhone: 'Phone', sellerEmail: 'Business email', province: 'Province', area: 'Area' }).map(([key, label]) => <label className={styles.field} key={key}><span>{label}</span><input value={form[key as keyof typeof form]} onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))} /></label>)}
+        </div>
+      </section>
       {formError ? <div className={styles.errorNotice}>{formError}</div> : null}
       <div className={styles.actions}><button type="button" className={styles.primaryButton} disabled={busy} onClick={() => void publishMarketplaceListing()}>{draft.marketplaceStatus === 'live' ? 'Update listing' : 'List on Marketplace'}</button>{draft.marketplaceStatus === 'live' ? <button type="button" className={styles.dangerButton} disabled={busy} onClick={() => void action({ action: 'marketplace-remove' }, 'Marketplace listing removed.')}>Remove listing</button> : null}</div>
     </section>
