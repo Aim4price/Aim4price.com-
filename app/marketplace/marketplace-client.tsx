@@ -10,6 +10,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
 } from 'react';
 import AppHeader from '../../components/AppHeader';
+import GroupedCurrencyInput from '../../components/GroupedCurrencyInput';
 import styles from './page.module.css';
 import dealerStyles from '../dealer/dealer.module.css';
 import {
@@ -1796,6 +1797,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
   const [isDeletingListing, setIsDeletingListing] = useState(false);
   const [deleteListingError, setDeleteListingError] = useState('');
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [photoViewerOpen, setPhotoViewerOpen] = useState(false);
   const [shareListing, setShareListing] = useState<MarketplaceListing | null>(null);
   const [shareFeedback, setShareFeedback] = useState('');
   const [isCreatingJpegAd, setIsCreatingJpegAd] = useState(false);
@@ -2176,6 +2178,10 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
       }
 
       if (event.key === 'Escape') {
+        if (photoViewerOpen) {
+          setPhotoViewerOpen(false);
+          return;
+        }
         closeListing();
         return;
       }
@@ -2199,7 +2205,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
       document.body.style.overflow = previousOverflow;
       window.removeEventListener('keydown', onKeyDown);
     };
-  }, [activeImages.length, activeListing, deleteListingTarget, editListingTarget, manageListingTarget, shareListing]);
+  }, [activeImages.length, activeListing, deleteListingTarget, editListingTarget, manageListingTarget, photoViewerOpen, shareListing]);
 
   useEffect(() => {
     if (!shareListing) {
@@ -2339,6 +2345,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
   function openListing(listing: MarketplaceListing) {
     setActiveListing(getListingForCurrentViewer(listing, isSignedIn));
     setActiveImageIndex(0);
+    setPhotoViewerOpen(false);
     updateListingUrl(listing.id);
   }
 
@@ -2351,6 +2358,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
     setDeleteListingTarget(null);
     setDeleteListingError('');
     setActiveImageIndex(0);
+    setPhotoViewerOpen(false);
     updateListingUrl(null);
   }
 
@@ -3123,13 +3131,20 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
             <div className={styles.modalGallery}>
               <div className={styles.modalImageFrame}>
                 {activeImages.length ? (
-                  <ListingImage
-                    src={activeImages[activeImageIndex]}
-                    listing={activeListing}
-                    alt={listingDisplayTitle(activeListing)}
-                    className={styles.modalImage}
-                    variant="modal"
-                  />
+                  <button
+                    type="button"
+                    className={styles.modalImageOpenButton}
+                    onClick={() => setPhotoViewerOpen(true)}
+                    aria-label={`Open ${listingDisplayTitle(activeListing)} photo full screen`}
+                  >
+                    <ListingImage
+                      src={activeImages[activeImageIndex]}
+                      listing={activeListing}
+                      alt={listingDisplayTitle(activeListing)}
+                      className={styles.modalImage}
+                      variant="modal"
+                    />
+                  </button>
                 ) : (
                   <ListingPlaceholder listing={activeListing} variant="modal" />
                 )}
@@ -3325,6 +3340,35 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
         </div>
       ) : null}
 
+      {photoViewerOpen && activeListing && activeImages.length ? (
+        <div className={styles.marketplacePhotoViewer} role="dialog" aria-modal="true" aria-label={`${listingDisplayTitle(activeListing)} photo viewer`}>
+          <button type="button" className={styles.marketplacePhotoViewerBackdrop} onClick={() => setPhotoViewerOpen(false)} aria-label="Close photo viewer" />
+          <div className={styles.marketplacePhotoViewerCard}>
+            <button type="button" className={styles.marketplacePhotoViewerClose} onClick={() => setPhotoViewerOpen(false)} aria-label="Close photo viewer">
+              <IconClose />
+            </button>
+            <ListingImage
+              src={activeImages[activeImageIndex]}
+              listing={activeListing}
+              alt={`${listingDisplayTitle(activeListing)} enlarged photo ${activeImageIndex + 1}`}
+              className={styles.marketplacePhotoViewerImage}
+              variant="modal"
+            />
+            {activeImages.length > 1 ? (
+              <>
+                <button type="button" className={`${styles.marketplacePhotoViewerNav} ${styles.marketplacePhotoViewerPrevious}`} onClick={showPreviousImage} aria-label="Previous photo">
+                  <IconChevronLeft />
+                </button>
+                <button type="button" className={`${styles.marketplacePhotoViewerNav} ${styles.marketplacePhotoViewerNext}`} onClick={showNextImage} aria-label="Next photo">
+                  <IconChevronRight />
+                </button>
+              </>
+            ) : null}
+            <span className={styles.marketplacePhotoViewerCounter}>{activeImageIndex + 1} / {activeImages.length}</span>
+          </div>
+        </div>
+      ) : null}
+
       {manageListingTarget ? (
         <div className={styles.marketplaceManageBackdrop} onClick={closeManageListingModal}>
           <div
@@ -3396,7 +3440,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
             <div className={dealerStyles.editListingBody}>
               <label className={dealerStyles.editListingField}>
                 <span>Asking price excluding VAT</span>
-                <input inputMode="decimal" value={editListingDraft.askingPriceExVat} onChange={(event) => updateListingEditDraft({ askingPriceExVat: event.target.value })} />
+                <GroupedCurrencyInput value={editListingDraft.askingPriceExVat} onValueChange={(value) => updateListingEditDraft({ askingPriceExVat: value })} />
               </label>
               <label className={dealerStyles.editListingField}>
                 <span>Description</span>
@@ -3503,54 +3547,56 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
               <IconClose />
             </button>
 
-            <div className={styles.shareHeader}>
-              <span>Share listing</span>
-              <h2 id="share-listing-title">Send this listing outside Aim4price.</h2>
-              <p>Share the direct listing link or create a ready-to-post JPEG ad.</p>
-            </div>
-
-            <div
-              className={`${styles.sharePreviewCard} ${getListingImages(shareListing).length ? '' : styles.sharePreviewCardNoMedia}`}
-            >
-              <ListingImage
-                src={getListingImages(shareListing)[0]}
-                listing={shareListing}
-                alt={listingDisplayTitle(shareListing)}
-                className={styles.sharePreviewImage}
-                variant="share"
-              />
-              <div className={styles.sharePreviewMeta}>
-                <strong>{listingDisplayTitle(shareListing)}</strong>
-                <PriceWithVat value={shareListing.askingPriceExVat} className={styles.sharePrice} />
-                <small>{formatLocation(shareListing)}</small>
+            <div className={styles.shareDialogScroll}>
+              <div className={styles.shareHeader}>
+                <span>Share listing</span>
+                <h2 id="share-listing-title">Send this listing outside Aim4price.</h2>
+                <p>Share the direct listing link or create a ready-to-post JPEG ad.</p>
               </div>
+
+              <div
+                className={`${styles.sharePreviewCard} ${getListingImages(shareListing).length ? '' : styles.sharePreviewCardNoMedia}`}
+              >
+                <ListingImage
+                  src={getListingImages(shareListing)[0]}
+                  listing={shareListing}
+                  alt={listingDisplayTitle(shareListing)}
+                  className={styles.sharePreviewImage}
+                  variant="share"
+                />
+                <div className={styles.sharePreviewMeta}>
+                  <strong>{listingDisplayTitle(shareListing)}</strong>
+                  <PriceWithVat value={shareListing.askingPriceExVat} className={styles.sharePrice} />
+                  <small>{formatLocation(shareListing)}</small>
+                </div>
+              </div>
+
+              <div className={styles.shareGrid}>
+                <button type="button" onClick={() => void handleShareAction('whatsapp')}>
+                  <BrandIcon src="/brand/whatsapp.png" />
+                  <span>WhatsApp</span>
+                </button>
+                <button type="button" onClick={() => void handleShareAction('facebook')}>
+                  <BrandIcon src="/brand/facebook.png" />
+                  <span>Facebook</span>
+                </button>
+                <button type="button" onClick={() => void handleShareAction('copy')}>
+                  <IconCopy />
+                  <span>Copy link</span>
+                </button>
+                <button type="button" onClick={() => void handleCreateJpegAd()} disabled={isCreatingJpegAd}>
+                  <IconPhoto />
+                  <span>{isCreatingJpegAd ? 'Creating...' : 'Create JPEG'}</span>
+                </button>
+              </div>
+
+              <label className={styles.shareLinkField}>
+                <span>Direct link</span>
+                <input value={shareUrl} readOnly aria-label="Direct listing link" />
+              </label>
+
+              {shareFeedback ? <p className={styles.shareFeedback}>{shareFeedback}</p> : null}
             </div>
-
-            <div className={styles.shareGrid}>
-              <button type="button" onClick={() => void handleShareAction('whatsapp')}>
-                <BrandIcon src="/brand/whatsapp.png" />
-                <span>WhatsApp</span>
-              </button>
-              <button type="button" onClick={() => void handleShareAction('facebook')}>
-                <BrandIcon src="/brand/facebook.png" />
-                <span>Facebook</span>
-              </button>
-              <button type="button" onClick={() => void handleShareAction('copy')}>
-                <IconCopy />
-                <span>Copy link</span>
-              </button>
-              <button type="button" onClick={() => void handleCreateJpegAd()} disabled={isCreatingJpegAd}>
-                <IconPhoto />
-                <span>{isCreatingJpegAd ? 'Creating...' : 'Create JPEG'}</span>
-              </button>
-            </div>
-
-            <label className={styles.shareLinkField}>
-              <span>Direct link</span>
-              <input value={shareUrl} readOnly aria-label="Direct listing link" />
-            </label>
-
-            {shareFeedback ? <p className={styles.shareFeedback}>{shareFeedback}</p> : null}
           </div>
         </div>
       ) : null}
