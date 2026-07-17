@@ -6257,6 +6257,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               <p>
                 {conversionAssetId
                   ? 'Save this estimate to update the existing manual asset. Marketplace, PDF and duplicate asset-register saves are hidden in conversion mode.'
+                  : ownerAppMode
+                    ? 'Save the asset to My Assets, create a Marketplace listing or download the estimate PDF.'
                   : compactAppMode
                     ? 'Download the PDF or create a listing.'
                     : 'Download the estimate PDF, send the asset to Marketplace, or save it to your Asset Register.'}
@@ -6281,16 +6283,18 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 )
               ) : (
                 <>
-                  <button
-                    type="button"
-                    className={styles.resultPdfActionButton}
-                    onClick={downloadValuationPdf}
-                    disabled={pdfLoading || advancedRecalculateLoading || !resultState || headlineValue === null}
-                  >
-                    {pdfLoading ? 'Preparing PDF...' : 'Download PDF'}
-                  </button>
                   {isSignedIn ? (
                     <>
+                      {ownerAppMode ? (
+                        <button
+                          type="button"
+                          className={styles.resultPrimaryActionButton}
+                          onClick={saveToAssetRegister}
+                          disabled={saveLoading || isPublishingMarketplace || replacementRecalculateLoading || advancedRecalculateLoading || !canSaveToAssetRegister || headlineValue === null}
+                        >
+                          {saveLoading && finalSaveIntent === 'asset-register' ? 'Saving...' : 'Save to My Assets'}
+                        </button>
+                      ) : null}
                       <button
                         type="button"
                         className={styles.resultAlternateActionButton}
@@ -6315,6 +6319,14 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                       <p>Sign in to save this estimate to your Asset Register or send it to Marketplace.</p>
                     </div>
                   )}
+                  <button
+                    type="button"
+                    className={styles.resultPdfActionButton}
+                    onClick={downloadValuationPdf}
+                    disabled={pdfLoading || advancedRecalculateLoading || !resultState || headlineValue === null}
+                  >
+                    {pdfLoading ? 'Preparing PDF...' : 'Download PDF'}
+                  </button>
                 </>
               )}
             </div>
@@ -6347,7 +6359,9 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     Number.isFinite(finalSaveReplacementPrice) &&
     finalSaveReplacementPrice > 0 &&
     !finalSaveHasPendingReplacementPrice;
-  const finalSaveTitle = finalSaveIntent === 'marketplace' ? 'Send to Marketplace' : 'Save to Asset Register';
+  const finalSaveTitle = finalSaveIntent === 'marketplace'
+    ? 'Send to Marketplace'
+    : ownerAppMode ? 'Save to My Assets' : 'Save to Asset Register';
   const finalSaveCta = finalSaveIntent === 'marketplace' ? 'Save and continue to Marketplace' : 'Confirm and save';
   const isSectorIntroStep = step === 1 && !selectedSector;
 
