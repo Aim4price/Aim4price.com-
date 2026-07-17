@@ -79,6 +79,7 @@ export type AssetDiscoveryEnquiryDetail = {
 
 export type AssetDiscoveryNotification = {
   id: string;
+  assetId: string;
   status: AssetDiscoveryEnquiryStatus;
   createdAtIso: string;
   updatedAtIso: string;
@@ -686,6 +687,7 @@ function mapEnquiryForAudience(
 function mapNotification(row: EnquiryRow): AssetDiscoveryNotification {
   return {
     id: row.id,
+    assetId: row.asset_register_item_id,
     status: normalizeStatus(row.status),
     createdAtIso: row.created_at || new Date().toISOString(),
     updatedAtIso: row.updated_at || row.created_at || new Date().toISOString(),

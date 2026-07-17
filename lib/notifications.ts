@@ -30,6 +30,7 @@ export type HeaderNotificationItem = {
   body: string;
   href: string;
   createdAtIso: string;
+  assetId?: string;
   assetDiscoveryEnquiryId?: string;
   priority?: boolean;
 };
@@ -289,6 +290,7 @@ async function listOpenPartnerNoteNotifications(userId: string): Promise<HeaderN
         body: `${partnerDisplayName(row)} left a note on ${assetTitle}: ${noteText}`,
         href: '/asset-register',
         createdAtIso: isoFallback(row.created_at || row.updated_at),
+        assetId: asText(row.asset_register_item_id),
       } satisfies HeaderNotificationItem;
     });
   } catch (error) {
@@ -322,6 +324,7 @@ async function listOwnerLeadNotifications(userId: string): Promise<HeaderNotific
             body: `${managerName} updated ${assetTitle} and sent the asset to ${partner} for dealer help.`,
             href: '/leads',
             createdAtIso: isoFallback(lead.updatedAtIso || lead.createdAtIso),
+            assetId: lead.assetRegisterItemId,
           } satisfies HeaderNotificationItem;
         }
 
@@ -333,6 +336,7 @@ async function listOwnerLeadNotifications(userId: string): Promise<HeaderNotific
           body: `${partner} ${statusLabel} your ${typeLabel} request for ${assetTitle}.`,
           href: '/leads',
           createdAtIso: isoFallback(lead.updatedAtIso || lead.createdAtIso),
+          assetId: lead.assetRegisterItemId,
         } satisfies HeaderNotificationItem;
       });
   } catch (error) {
@@ -385,6 +389,7 @@ async function listOwnerAssetDiscoveryNotifications(userId: string): Promise<Hea
       body: `Another user is looking for a machine like your ${enquiry.asset.brand} ${enquiry.asset.model}. Interested in selling it?`,
       href: '',
       createdAtIso: isoFallback(enquiry.createdAtIso || enquiry.updatedAtIso),
+      assetId: enquiry.assetId,
       assetDiscoveryEnquiryId: enquiry.id,
       priority: true,
     } satisfies HeaderNotificationItem));
@@ -474,6 +479,7 @@ async function listQrScanNotifications(userId: string): Promise<HeaderNotificati
         body: `${updaterName} updated ${assetTitle}. ${scanNotificationDetailText(row)}`,
         href: '/asset-register',
         createdAtIso,
+        assetId: asText(row.asset_id),
       } satisfies HeaderNotificationItem;
     });
   } catch (error) {
@@ -502,6 +508,7 @@ async function listFuelNotifications(userId: string): Promise<HeaderNotification
           body: `${describeFuelEvent(event)}${operator}.${note}`,
           href: '/fuel',
           createdAtIso: isoFallback(event.createdAtIso),
+          assetId: event.assetId || undefined,
         } satisfies HeaderNotificationItem;
       });
   } catch (error) {
