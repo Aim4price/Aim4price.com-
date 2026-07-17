@@ -43,24 +43,32 @@ type UploadResponse = { ok: boolean; uploads?: Array<{ uploadId: string; url: st
 
 export type OwnerAssetView = 'summary' | 'details' | 'options' | 'manage' | 'section';
 export type OwnerAssetManageSection = 'details' | 'reports' | 'pricing' | 'finance' | 'insurance' | 'licence' | 'location' | 'media' | 'marketplace' | 'maintenance' | 'delete';
+type OwnerAssetManageGroup = 'asset' | 'records' | 'selling' | 'removal';
 
 const STATUS_OPTIONS = [
   { value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' },
   { value: 'unknown', label: 'Unknown' }, { value: 'not_applicable', label: 'Not applicable' },
 ];
 
-const MANAGE_SECTIONS: Array<{ id: OwnerAssetManageSection; title: string; description: string; tone?: 'featured' | 'danger' }> = [
-  { id: 'details', title: 'Update asset', description: 'Edit the asset details, usage and values.', tone: 'featured' },
-  { id: 'reports', title: 'Reports', description: 'Download valuation, fuel, maintenance and ownership reports.' },
-  { id: 'pricing', title: 'Manage pricing', description: 'Recalculate the value or calculate a future price.' },
-  { id: 'finance', title: 'Finance', description: 'Manage finance status and information.' },
-  { id: 'insurance', title: 'Insurance', description: 'Manage insurance status and cover.' },
-  { id: 'licence', title: 'Licence', description: 'Manage licence and registration details.' },
-  { id: 'location', title: 'Location', description: 'Use this device, enter GPS coordinates or choose a point on the map.' },
-  { id: 'media', title: 'Photos & documents', description: 'Add or remove saved files.' },
-  { id: 'marketplace', title: 'Marketplace', description: 'Create or update the marketplace listing.' },
-  { id: 'maintenance', title: 'Maintenance', description: 'Schedule and manage maintenance.' },
-  { id: 'delete', title: 'Delete asset', description: 'Permanently remove this saved asset.', tone: 'danger' },
+const MANAGE_SECTIONS: Array<{ id: OwnerAssetManageSection; group: OwnerAssetManageGroup; title: string; description: string; tone?: 'danger' }> = [
+  { id: 'details', group: 'asset', title: 'Update asset', description: 'Details, usage and values' },
+  { id: 'pricing', group: 'asset', title: 'Manage pricing', description: 'Current and future values' },
+  { id: 'location', group: 'asset', title: 'Location', description: 'GPS position and map' },
+  { id: 'media', group: 'asset', title: 'Photos & documents', description: 'Saved photos and files' },
+  { id: 'reports', group: 'records', title: 'Reports', description: 'Download available PDF reports' },
+  { id: 'maintenance', group: 'records', title: 'Maintenance', description: 'Schedules and service records' },
+  { id: 'finance', group: 'records', title: 'Finance', description: 'Finance status and information' },
+  { id: 'insurance', group: 'records', title: 'Insurance', description: 'Insurance status and cover' },
+  { id: 'licence', group: 'records', title: 'Licence', description: 'Licence and registration' },
+  { id: 'marketplace', group: 'selling', title: 'Marketplace', description: 'Create or update the listing' },
+  { id: 'delete', group: 'removal', title: 'Delete asset', description: 'Permanently remove this asset', tone: 'danger' },
+];
+
+const MANAGE_GROUPS: Array<{ id: OwnerAssetManageGroup; title: string }> = [
+  { id: 'asset', title: 'Asset information' },
+  { id: 'records', title: 'Records & cover' },
+  { id: 'selling', title: 'Selling' },
+  { id: 'removal', title: 'Asset removal' },
 ];
 
 function text(value: unknown) { return String(value ?? '').trim(); }
@@ -767,29 +775,42 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
 
   if (view === 'manage') {
     const manageMeta = [draft.serialNumber ? `Serial: ${draft.serialNumber}` : '', draft.yearModel ? `Year: ${draft.yearModel}` : '', usageText !== 'Not saved' ? `Usage: ${usageText}` : ''].filter(Boolean).join(' · ');
+    const availableManageSections = MANAGE_SECTIONS.filter((item) => item.id !== 'marketplace' || draft.kind !== 'property');
     return (
       <div className={styles.wideContent}>
         <section className={styles.manageAssetIdentity}>
-          <span>Manage asset</span>
-          <h1><BalancedHeadingText text={draft.title} /></h1>
-          {manageMeta ? <p>{manageMeta}</p> : null}
-          <Link href={`/owner-app/assets/${encodeURIComponent(assetId)}/details`} prefetch={false}>View asset details</Link>
+          <div className={styles.manageAssetIdentityCopy}>
+            <span>Manage asset</span>
+            <h1><BalancedHeadingText text={draft.title} /></h1>
+            {manageMeta ? <p>{manageMeta}</p> : null}
+          </div>
+          <Link href={`/owner-app/assets/${encodeURIComponent(assetId)}/details`} prefetch={false}>View details <span aria-hidden="true">›</span></Link>
         </section>
 
-        <section className={`${styles.section} ${styles.manageSection}`}>
-          <div className={styles.manageIntro}><h2><BalancedHeadingText text="What would you like to manage?" /></h2><p>Choose one task to continue on its own page.</p></div>
-          <div className={styles.manageGrid}>
-            {MANAGE_SECTIONS.filter((item) => item.id !== 'marketplace' || draft.kind !== 'property').map((item) => (
-              <Link
-                key={item.id}
-                href={`/owner-app/assets/${encodeURIComponent(assetId)}/manage/${item.id}`}
-                prefetch={false}
-                className={`${styles.manageButton} ${item.tone === 'featured' ? styles.manageButtonFeatured : ''} ${item.tone === 'danger' ? styles.manageButtonDanger : ''}`}
-              >
-                <span className={styles.manageButtonCopy}><strong>{item.title}</strong><small>{item.description}</small></span>
-                <span className={styles.manageButtonArrow} aria-hidden="true">›</span>
-              </Link>
-            ))}
+        <section className={styles.manageSection} aria-label="Asset management options">
+          <div className={styles.manageGroupGrid}>
+            {MANAGE_GROUPS.map((group) => {
+              const groupItems = availableManageSections.filter((item) => item.group === group.id);
+              if (!groupItems.length) return null;
+              return (
+                <section className={`${styles.manageGroup} ${group.id === 'removal' ? styles.manageGroupDanger : ''}`} key={group.id}>
+                  <h2>{group.title}</h2>
+                  <div className={styles.manageList}>
+                    {groupItems.map((item) => (
+                      <Link
+                        key={item.id}
+                        href={`/owner-app/assets/${encodeURIComponent(assetId)}/manage/${item.id}`}
+                        prefetch={false}
+                        className={`${styles.manageButton} ${item.tone === 'danger' ? styles.manageButtonDanger : ''}`}
+                      >
+                        <span className={styles.manageButtonCopy}><strong>{item.title}</strong><small>{item.description}</small></span>
+                        <span className={styles.manageButtonArrow} aria-hidden="true">›</span>
+                      </Link>
+                    ))}
+                  </div>
+                </section>
+              );
+            })}
           </div>
         </section>
       </div>
@@ -882,6 +903,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
 }
 
 function ReportsSection({ draft, openValuationReport }: { draft: Asset; openValuationReport: () => void }) {
+  type FilterableReport = 'maintenance' | 'fuel' | 'depreciation' | 'ownership';
   const currentYear = new Date().getFullYear();
   const reportYear = (value: string | null | undefined) => {
     if (!value) return null;
@@ -900,10 +922,10 @@ function ReportsSection({ draft, openValuationReport }: { draft: Asset; openValu
   const [year, setYear] = useState('all');
   const [month, setMonth] = useState('all');
   const [maintenanceType, setMaintenanceType] = useState('all');
+  const [selectedReport, setSelectedReport] = useState<FilterableReport | null>(null);
 
-  function reportUrl(report: 'fuel' | 'maintenance' | 'depreciation', format: 'pdf' | 'xlsx') {
+  function reportUrl(report: Exclude<FilterableReport, 'ownership'>) {
     const params = new URLSearchParams({ assetId: draft.id, report });
-    if (format === 'xlsx') params.set('format', 'xlsx');
     if (year !== 'all') {
       params.set('year', year);
       if (month !== 'all') params.set('month', month);
@@ -912,8 +934,8 @@ function ReportsSection({ draft, openValuationReport }: { draft: Asset; openValu
     return `/api/asset-register/scan-report?${params.toString()}`;
   }
 
-  function ownershipUrl(format: 'pdf' | 'xlsx') {
-    const params = new URLSearchParams({ assetId: draft.id, format });
+  function ownershipUrl() {
+    const params = new URLSearchParams({ assetId: draft.id, format: 'pdf', source: 'owner-app' });
     if (year !== 'all') {
       params.set('year', year);
       if (month !== 'all') params.set('month', month);
@@ -922,34 +944,80 @@ function ReportsSection({ draft, openValuationReport }: { draft: Asset; openValu
   }
 
   const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  const reportCard = (title: string, description: string, pdfHref: string, xlsxHref: string) => (
-    <article className={styles.reportCard}>
+  const filterableReports: Array<{ id: FilterableReport; title: string; description: string }> = [
+    { id: 'maintenance', title: 'Maintenance report', description: 'Service, checks and repair activity.' },
+    ...(draft.kind !== 'property' ? [
+      { id: 'fuel' as const, title: 'Fuel report', description: 'Fuel activity, usage and costs.' },
+      { id: 'depreciation' as const, title: 'Depreciation log', description: 'Saved value changes and depreciation history.' },
+    ] : []),
+    { id: 'ownership', title: 'Cost of ownership', description: 'Invoices, ownership costs and VAT.' },
+  ];
+  const selectedReportDetails = filterableReports.find((report) => report.id === selectedReport) ?? null;
+  const selectedReportHref = selectedReport
+    ? selectedReport === 'ownership' ? ownershipUrl() : reportUrl(selectedReport)
+    : '';
+
+  useEffect(() => {
+    if (!selectedReport) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setSelectedReport(null);
+    };
+    window.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [selectedReport]);
+
+  function chooseReport(report: FilterableReport) {
+    setYear('all');
+    setMonth('all');
+    setMaintenanceType('all');
+    setSelectedReport(report);
+  }
+
+  const reportCard = (key: string, title: string, description: string, onClick: () => void) => (
+    <article className={styles.reportCard} key={key}>
+      <span className={styles.reportPdfBadge} aria-hidden="true">PDF</span>
       <div><strong>{title}</strong><small>{description}</small></div>
-      <div className={styles.reportActions}>
-        <a href={pdfHref} target="_blank" rel="noreferrer">PDF</a>
-        <a href={xlsxHref}>Excel</a>
-      </div>
+      <button type="button" onClick={onClick}>Download PDF</button>
     </article>
   );
 
   return (
     <section className={`${styles.section} ${styles.editorSection}`}>
-      <div className={`${styles.sectionHeader} ${styles.editorHeader}`}><div><h2>Reports</h2><p>Download the same asset reports available in the desktop register.</p></div></div>
-      <div className={styles.reportFilterGrid}>
-        <label className={styles.field}><span>Year</span><select value={year} onChange={(event) => { setYear(event.target.value); setMonth('all'); }}><option value="all">All years</option>{years.map((value) => <option key={value} value={value}>{value}</option>)}</select></label>
-        <label className={styles.field}><span>Month</span><select value={month} disabled={year === 'all'} onChange={(event) => setMonth(event.target.value)}><option value="all">All months</option>{months.map((label, index) => <option key={label} value={String(index + 1)}>{label}</option>)}</select></label>
-        <label className={`${styles.field} ${styles.fieldFull}`}><span>Maintenance type</span><select value={maintenanceType} onChange={(event) => setMaintenanceType(event.target.value)}><option value="all">All maintenance</option><option value="checked">Checked</option><option value="serviced">Service</option><option value="repaired">Repair</option></select></label>
-      </div>
+      <div className={`${styles.sectionHeader} ${styles.editorHeader}`}><div><h2>Available reports</h2><p>Choose a report first. Any available filters will appear before the PDF opens.</p></div></div>
       <div className={styles.reportList}>
-        <article className={`${styles.reportCard} ${styles.reportCardFeatured}`}>
-          <div><strong>Asset valuation</strong><small>Value summary with asset details, photos and saved status.</small></div>
-          <button type="button" onClick={openValuationReport}>Open PDF</button>
-        </article>
-        {reportCard('Maintenance report', 'Service and repair activity for the selected period.', reportUrl('maintenance', 'pdf'), reportUrl('maintenance', 'xlsx'))}
-        {draft.kind !== 'property' ? reportCard('Fuel report', 'Fuel activity and costs for the selected period.', reportUrl('fuel', 'pdf'), reportUrl('fuel', 'xlsx')) : null}
-        {draft.kind !== 'property' ? reportCard('Depreciation log', 'Saved value changes and depreciation history.', reportUrl('depreciation', 'pdf'), reportUrl('depreciation', 'xlsx')) : null}
-        {reportCard('Cost of ownership', 'Invoices, ownership costs and VAT for the selected period.', ownershipUrl('pdf'), ownershipUrl('xlsx'))}
+        {reportCard('valuation', 'Asset valuation', 'Value summary, asset details, photos and saved status.', openValuationReport)}
+        {filterableReports.map((report) => reportCard(report.id, report.title, report.description, () => chooseReport(report.id)))}
       </div>
+
+      {selectedReport && selectedReportDetails ? (
+        <div className={styles.reportFilterDialog} role="dialog" aria-modal="true" aria-labelledby="owner-report-filter-title">
+          <button type="button" className={styles.reportFilterBackdrop} onClick={() => setSelectedReport(null)} aria-label="Close report filters" />
+          <section className={styles.reportFilterModal}>
+            <div className={styles.reportFilterModalHeader}>
+              <div>
+                <span>PDF report</span>
+                <h2 id="owner-report-filter-title">{selectedReportDetails.title}</h2>
+                <p>Choose what the PDF should include.</p>
+              </div>
+              <button type="button" onClick={() => setSelectedReport(null)} aria-label="Close report filters">×</button>
+            </div>
+            <div className={styles.reportFilterGrid}>
+              <label className={styles.field}><span>Year</span><select value={year} onChange={(event) => { setYear(event.target.value); setMonth('all'); }}><option value="all">All years</option>{years.map((value) => <option key={value} value={value}>{value}</option>)}</select></label>
+              <label className={styles.field}><span>Month</span><select value={month} disabled={year === 'all'} onChange={(event) => setMonth(event.target.value)}><option value="all">All months</option>{months.map((label, index) => <option key={label} value={String(index + 1)}>{label}</option>)}</select></label>
+              {selectedReport === 'maintenance' ? <label className={`${styles.field} ${styles.fieldFull}`}><span>Maintenance type</span><select value={maintenanceType} onChange={(event) => setMaintenanceType(event.target.value)}><option value="all">All maintenance</option><option value="checked">Checked</option><option value="serviced">Service</option><option value="repaired">Repair</option></select></label> : null}
+            </div>
+            <div className={styles.reportFilterActions}>
+              <button type="button" onClick={() => setSelectedReport(null)}>Cancel</button>
+              <a href={selectedReportHref} target="_blank" rel="noreferrer" onClick={() => setSelectedReport(null)}>Download PDF</a>
+            </div>
+          </section>
+        </div>
+      ) : null}
     </section>
   );
 }
