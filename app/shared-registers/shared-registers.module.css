@@ -109,6 +109,8 @@
 }
 
 .clientCopy { min-width: 0; }
+.clientHeading { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.clientHeading > div { min-width: 0; }
 .clientCopy h2, .clientCopy p { margin: 0; }
 .clientCopy h2 {
   color: #073b30;
@@ -125,6 +127,13 @@
   font-size: 0.94rem;
   font-weight: 700;
 }
+.renewalBadge, .urgentBadge { flex: 0 0 auto; padding: .42rem .65rem; border-radius: .75rem; color: #176044; background: #e7f5ed; font-size: .72rem; font-weight: 850; }
+.urgentBadge { color: #943531; background: #fff0ef; }
+.portfolioProgress { height: .48rem; margin-top: .85rem; overflow: hidden; border-radius: 999px; background: #e6eeeb; }
+.portfolioProgress span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #197454, #64b78c); }
+.portfolioMeta { display: flex; flex-wrap: wrap; gap: .45rem .9rem; margin-top: .62rem; color: #667a71; font-family: var(--font-body, 'Inter'), sans-serif; font-size: .76rem; font-weight: 650; }
+.portfolioMeta strong { color: #1a4f3e; }
+.portfolioMeta .urgentText, .portfolioMeta .urgentText strong { color: #a13b35; }
 
 .cardActions { display: flex; align-items: center; gap: 0.75rem; }
 .cardActions button, .cardActions a {
@@ -197,6 +206,8 @@
   .shell { width: min(calc(100% - 1rem), 1640px); }
   .hero { min-height: 6.5rem; padding: 1.15rem; border-radius: 1.25rem; }
   .registerCard { grid-template-columns: 1fr; padding: 1rem; border-radius: 1.2rem; }
+  .clientHeading { display: grid; }
+  .renewalBadge, .urgentBadge { width: fit-content; }
   .cardActions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .cardActions button, .cardActions a { min-width: 0; width: 100%; }
 }
