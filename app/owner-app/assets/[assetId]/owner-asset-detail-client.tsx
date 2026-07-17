@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type Dispatch, type FormEvent, type SetStateAction } from 'react';
+import GroupedCurrencyInput, { parseCurrencyInput } from '../../../../components/GroupedCurrencyInput';
 import { formatResolvedAssetUsage, resolveAssetUsage, type AssetUsageMetric } from '../../../../lib/asset-usage';
 import { openAssetSheetPrint } from '../../../../lib/report-print';
 import BalancedHeadingText from '../../balanced-heading';
@@ -43,6 +44,7 @@ type UploadResponse = { ok: boolean; uploads?: Array<{ uploadId: string; url: st
 
 export type OwnerAssetView = 'summary' | 'details' | 'options' | 'manage' | 'section';
 export type OwnerAssetManageSection = 'details' | 'reports' | 'pricing' | 'finance' | 'insurance' | 'licence' | 'location' | 'media' | 'marketplace' | 'maintenance' | 'delete';
+export type OwnerAssetPricingMode = 'landing' | 'recalculate' | 'future';
 type OwnerAssetManageGroup = 'asset' | 'records' | 'selling' | 'removal';
 
 const STATUS_OPTIONS = [
@@ -123,10 +125,11 @@ function manualMarketplaceNote(value: string) {
   return isOperationalNote ? '' : note;
 }
 
-export default function OwnerAssetDetailClient({ assetId, view = 'summary', section }: {
+export default function OwnerAssetDetailClient({ assetId, view = 'summary', section, pricingMode = 'landing' }: {
   assetId: string;
   view?: OwnerAssetView;
   section?: OwnerAssetManageSection;
+  pricingMode?: OwnerAssetPricingMode;
 }) {
   const [draft, setDraft] = useState<Asset | null>(null);
   const [registers, setRegisters] = useState<Register[]>([]);
@@ -450,7 +453,10 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
   const usageMetric = resolvedUsage.metric;
   const usageText = formatResolvedAssetUsage(resolvedUsage, 'Not saved');
   const extraInput = (key: string, label: string, options: { type?: string; inputMode?: 'text' | 'decimal' | 'numeric'; fallbackKeys?: string[]; currency?: boolean } = {}) => {
-    const input = <input type={options.type} inputMode={options.inputMode} value={extra(key, ...(options.fallbackKeys ?? []))} onChange={(event) => updateSpec(key, event.target.value)} />;
+    const value = extra(key, ...(options.fallbackKeys ?? []));
+    const input = options.currency
+      ? <GroupedCurrencyInput value={value} onValueChange={(nextValue) => updateSpec(key, nextValue)} />
+      : <input type={options.type} inputMode={options.inputMode} value={value} onChange={(event) => updateSpec(key, event.target.value)} />;
     return <label className={styles.field}><span>{label}</span>{options.currency ? <span className={styles.currencyInput}><span aria-hidden="true">R</span>{input}</span> : input}</label>;
   };
   const editorHeader = (title: string, description: string) => (
@@ -821,7 +827,11 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
   return (
     <div className={styles.wideContent}>
       <section className={styles.taskIdentity}>
-        <h1><BalancedHeadingText text={MANAGE_SECTIONS.find((item) => item.id === section)?.title || 'Manage asset'} /></h1>
+        <h1><BalancedHeadingText text={section === 'pricing' && pricingMode === 'recalculate'
+          ? 'Recalculate Value'
+          : section === 'pricing' && pricingMode === 'future'
+            ? 'Future Price'
+            : MANAGE_SECTIONS.find((item) => item.id === section)?.title || 'Manage asset'} /></h1>
         <strong><BalancedHeadingText text={draft.title} /></strong>
         <p>{draft.serialNumber ? `Serial: ${draft.serialNumber}` : registerName}</p>
       </section>
@@ -841,8 +851,8 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
           <label className={styles.field}><span>Condition</span><select value={draft.condition} onChange={(event) => update('condition', event.target.value)}><option value="">Not saved</option><option value="excellent">Excellent</option><option value="good">Good</option><option value="fair">Fair</option><option value="used">Used</option><option value="serious">Serious</option></select></label>
           <label className={styles.field}><span>Usage type</span><select value={usageMetric} onChange={(event) => updateUsageMetric(event.target.value as AssetUsageMetric)}><option value="hours">Hours</option><option value="km">Kilometres</option><option value="percentage">Percentage worked</option></select></label>
           {usageMetric === 'percentage' ? <label className={styles.field}><span>Percentage worked</span><input inputMode="decimal" value={draft.lifeWorkedPercent ?? ''} onChange={(event) => update('lifeWorkedPercent', event.target.value ? Number(event.target.value) : null)} /></label> : <label className={styles.field}><span>Current usage</span><input inputMode="decimal" value={draft.hours ?? ''} onChange={(event) => update('hours', event.target.value ? Number(event.target.value) : null)} /></label>}
-          <label className={styles.field}><span>Current Aim4price value excl. VAT</span><span className={styles.currencyInput}><span aria-hidden="true">R</span><input inputMode="decimal" value={draft.value || ''} onChange={(event) => update('value', Number(event.target.value) || 0)} /></span></label>
-          <label className={styles.field}><span>Replacement price excl. VAT</span><span className={styles.currencyInput}><span aria-hidden="true">R</span><input inputMode="decimal" value={draft.replacementPriceExVat ?? ''} onChange={(event) => update('replacementPriceExVat', event.target.value ? Number(event.target.value) : null)} /></span></label>
+          <label className={styles.field}><span>Current Aim4price value excl. VAT</span><span className={styles.currencyInput}><span aria-hidden="true">R</span><GroupedCurrencyInput value={draft.value || ''} onValueChange={(value) => update('value', parseCurrencyInput(value) ?? 0)} /></span></label>
+          <label className={styles.field}><span>Replacement price excl. VAT</span><span className={styles.currencyInput}><span aria-hidden="true">R</span><GroupedCurrencyInput value={draft.replacementPriceExVat ?? ''} onValueChange={(value) => update('replacementPriceExVat', parseCurrencyInput(value))} /></span></label>
           <label className={`${styles.field} ${styles.fieldFull}`}><span>Notes</span><textarea value={draft.note} onChange={(event) => update('note', event.target.value)} /></label>
         </div>
         <div className={styles.actions}><button type="button" className={styles.primaryButton} onClick={() => void saveAsset()} disabled={saving || Boolean(actionBusy)}>{saving ? 'Saving…' : 'Save changes'}</button></div>
@@ -850,7 +860,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
 
       {section === 'reports' ? <ReportsSection draft={draft} openValuationReport={openValuationReport} /> : null}
 
-      {section === 'pricing' ? <PricingSection draft={draft} reload={() => loadDetail(true)} setNotice={setNotice} /> : null}
+      {section === 'pricing' ? <PricingSection assetId={assetId} mode={pricingMode} draft={draft} reload={() => loadDetail(true)} setNotice={setNotice} /> : null}
 
       {section === 'finance' ? <section className={`${styles.section} ${styles.editorSection}`}>
         {editorHeader('Finance', 'Manage finance status and information.')}
@@ -869,7 +879,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
         {editorHeader('Insurance', 'Manage insurance status and cover.')}
         <div className={styles.formGrid}>
           <label className={styles.field}><span>Insurance status</span><select value={insuranceStatus} onChange={(event) => updateStatus('insurance', event.target.value)}>{STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
-          {insuranceStatus === 'yes' ? <><label className={styles.field}><span>Insured value excl. VAT</span><span className={styles.currencyInput}><span aria-hidden="true">R</span><input inputMode="decimal" value={draft.insuredValueExVat ?? ''} onChange={(event) => update('insuredValueExVat', event.target.value ? Number(event.target.value) : null)} /></span></label>{extraInput('insuranceInsurerName', 'Insurer / broker', { fallbackKeys: ['insurance_insurer_name'] })}{extraInput('insurancePolicyNumber', 'Policy number', { fallbackKeys: ['insurance_policy_number'] })}{extraInput('insuranceRenewalDate', 'Renewal date', { type: 'date', fallbackKeys: ['insurance_renewal_date'] })}<label className={`${styles.field} ${styles.fieldFull}`}><span>Insurance notes</span><textarea value={extra('insuranceNote', 'insurance_note')} onChange={(event) => updateSpec('insuranceNote', event.target.value)} /></label></> : null}
+          {insuranceStatus === 'yes' ? <><label className={styles.field}><span>Insured value excl. VAT</span><span className={styles.currencyInput}><span aria-hidden="true">R</span><GroupedCurrencyInput value={draft.insuredValueExVat ?? ''} onValueChange={(value) => update('insuredValueExVat', parseCurrencyInput(value))} /></span></label>{extraInput('insuranceInsurerName', 'Insurer / broker', { fallbackKeys: ['insurance_insurer_name'] })}{extraInput('insurancePolicyNumber', 'Policy number', { fallbackKeys: ['insurance_policy_number'] })}{extraInput('insuranceRenewalDate', 'Renewal date', { type: 'date', fallbackKeys: ['insurance_renewal_date'] })}<label className={`${styles.field} ${styles.fieldFull}`}><span>Insurance notes</span><textarea value={extra('insuranceNote', 'insurance_note')} onChange={(event) => updateSpec('insuranceNote', event.target.value)} /></label></> : null}
         </div>
         <div className={styles.actions}><button type="button" className={styles.primaryButton} onClick={() => void saveAsset()} disabled={saving || Boolean(actionBusy)}>{saving ? 'Saving…' : 'Save changes'}</button></div>
       </section> : null}
@@ -1029,7 +1039,9 @@ type ProjectionResponse = {
   };
 };
 
-function PricingSection({ draft, reload, setNotice }: {
+function PricingSection({ assetId, mode, draft, reload, setNotice }: {
+  assetId: string;
+  mode: OwnerAssetPricingMode;
   draft: Asset;
   reload: () => Promise<void>;
   setNotice: Dispatch<SetStateAction<{ tone: 'success' | 'error'; message: string } | null>>;
@@ -1046,6 +1058,20 @@ function PricingSection({ draft, reload, setNotice }: {
   const [extraUsage, setExtraUsage] = useState('0');
   const [targetPercent, setTargetPercent] = useState(String(draft.lifeWorkedPercent ?? ''));
   const [projection, setProjection] = useState<ProjectionResponse['projection'] | null>(null);
+
+  if (mode === 'landing') {
+    const pricingBase = `/owner-app/assets/${encodeURIComponent(assetId)}/manage/pricing`;
+    return (
+      <section className={`${styles.addChoiceGrid} ${styles.pricingChoiceGrid}`} aria-label="Pricing options">
+        <Link className={`${styles.addChoiceCard} ${styles.addChoiceCardValue}`} href={`${pricingBase}/recalculate`} prefetch={false}>
+          <strong>Recalculate Value</strong>
+        </Link>
+        <Link className={`${styles.addChoiceCard} ${styles.addChoiceCardManual}`} href={`${pricingBase}/future`} prefetch={false}>
+          <strong>Future Price</strong>
+        </Link>
+      </section>
+    );
+  }
 
   async function requestRevalue(previewOnly: boolean) {
     if (!canRecalculate || pricingBusy) return;
@@ -1109,29 +1135,40 @@ function PricingSection({ draft, reload, setNotice }: {
     }
   }
 
-  return (
+  if (mode === 'recalculate') return (
     <section className={`${styles.section} ${styles.editorSection}`}>
-      <p className={styles.editorIntro}>Recalculate the current Aim4price value or estimate a future price.</p>
+      <p className={styles.editorIntro}>Refresh the saved Aim4price estimate using the latest asset information.</p>
       <div className={styles.pricingSummaryGrid}>
         <div><span>Aim4price value</span><strong>{money(draft.value)}</strong><small>Excl. VAT</small></div>
         <div><span>Replacement price</span><strong>{money(draft.replacementPriceExVat)}</strong><small>Excl. VAT</small></div>
       </div>
-      <article className={styles.pricingPanel}>
+      <div className={styles.pricingPanel}>
         <div className={styles.pricingPanelHeader}><strong>Recalculate value</strong><small>Refresh the saved Aim4price estimate using current asset information.</small></div>
         {canRecalculate ? <>
           <div className={styles.choiceRow}>
             <button type="button" className={replacementMode === 'saved' ? styles.choiceActive : ''} onClick={() => { setReplacementMode('saved'); setPreview(null); }}>Use saved replacement price</button>
             <button type="button" className={replacementMode === 'custom' ? styles.choiceActive : ''} onClick={() => { setReplacementMode('custom'); setPreview(null); }}>Enter updated price</button>
           </div>
-          {replacementMode === 'custom' ? <label className={styles.field}><span>Replacement price excl. VAT</span><span className={styles.currencyInput}><span aria-hidden="true">R</span><input inputMode="decimal" value={replacementPrice} onChange={(event) => { setReplacementPrice(event.target.value); setPreview(null); }} /></span></label> : null}
+          {replacementMode === 'custom' ? <label className={styles.field}><span>Replacement price excl. VAT</span><span className={styles.currencyInput}><span aria-hidden="true">R</span><GroupedCurrencyInput value={replacementPrice} onValueChange={(value) => { setReplacementPrice(value); setPreview(null); }} /></span></label> : null}
           {preview?.item ? <div className={styles.pricingResult}><span>New Aim4price value</span><strong>{money(preview.newValueExVat ?? preview.item.value)}</strong><small>Current value: {money(preview.oldValueExVat ?? draft.value)}</small></div> : null}
           <div className={styles.actions}>
             <button type="button" className={styles.secondaryButton} disabled={Boolean(pricingBusy)} onClick={() => void requestRevalue(true)}>{pricingBusy === 'preview' ? 'Calculating…' : 'Preview new value'}</button>
             {preview?.item ? <button type="button" className={styles.primaryButton} disabled={Boolean(pricingBusy)} onClick={() => void requestRevalue(false)}>{pricingBusy === 'save' ? 'Saving…' : 'Save new value'}</button> : null}
           </div>
         </> : <p className={styles.infoNotice}>Automatic recalculation is available for assets saved from an Aim4price valuation.</p>}
-      </article>
-      <article className={styles.pricingPanel}>
+      </div>
+      {pricingError ? <div className={styles.errorNotice}>{pricingError}</div> : null}
+    </section>
+  );
+
+  return (
+    <section className={`${styles.section} ${styles.editorSection}`}>
+      <p className={styles.editorIntro}>Estimate what this asset could be worth in a future year.</p>
+      <div className={styles.pricingSummaryGrid}>
+        <div><span>Current value</span><strong>{money(draft.value)}</strong><small>Excl. VAT</small></div>
+        <div><span>Current usage</span><strong>{formatResolvedAssetUsage(usage, 'Not saved')}</strong><small>Saved reading</small></div>
+      </div>
+      <div className={styles.pricingPanel}>
         <div className={styles.pricingPanelHeader}><strong>Calculate future price</strong><small>Estimate a future value using inflation and expected usage.</small></div>
         <div className={styles.formGrid}>
           <label className={styles.field}><span>Target year</span><input inputMode="numeric" value={targetYear} onChange={(event) => setTargetYear(event.target.value)} /></label>
@@ -1140,7 +1177,7 @@ function PricingSection({ draft, reload, setNotice }: {
         </div>
         <button type="button" className={styles.primaryButton} disabled={Boolean(pricingBusy)} onClick={() => void calculateProjection()}>{pricingBusy === 'projection' ? 'Calculating…' : 'Calculate future price'}</button>
         {projection ? <div className={styles.pricingResult}><span>Estimated {projection.targetYear} value</span><strong>{money(projection.projected.retailExVat)}</strong><small>{projection.inflationRatePct}% annual inflation · excl. VAT</small></div> : null}
-      </article>
+      </div>
       {pricingError ? <div className={styles.errorNotice}>{pricingError}</div> : null}
     </section>
   );
@@ -1232,7 +1269,9 @@ function LocationSection({ draft, location, setLocation, action, busy }: {
     <section className={`${styles.section} ${styles.editorSection}`}>
       <p className={styles.editorIntro}>Save this asset’s position from the device, GPS coordinates or the map.</p>
       <div className={styles.locationCurrentCard}>
-        <div><span>Saved location</span><strong>{location.locationText || (hasCoordinates ? `${location.latitude}, ${location.longitude}` : 'No location saved')}</strong><small>Last scanned: {dateTime(draft.lastScannedAtIso)}</small></div>
+        <span>Saved location</span>
+        <strong>{hasCoordinates ? `${location.latitude}, ${location.longitude}` : 'No GPS coordinates saved'}</strong>
+        <small>Last scanned: {dateTime(draft.lastScannedAtIso)}</small>
         {mapsHref ? <a href={mapsHref} target="_blank" rel="noreferrer">Open in Maps</a> : null}
       </div>
       <div className={styles.locationChoiceGrid}>
@@ -1283,7 +1322,7 @@ function MarketplaceSection({ draft, ownerContext, action, busy }: { draft: Asse
         <span><small>Listing title</small><strong>{listingTitle}</strong><em>{draft.photos.length} saved photo{draft.photos.length === 1 ? '' : 's'} will be used</em></span>
       </div>
       <div className={styles.formGrid}>
-        {Object.entries({ askingPriceExVat: 'Asking price excl. VAT', sellerName: 'Contact name', sellerCompany: 'Business name', sellerPhone: 'Phone', sellerEmail: 'Business email', province: 'Province', area: 'Area' }).map(([key, label]) => <label className={styles.field} key={key}><span>{label}</span>{key === 'askingPriceExVat' ? <span className={styles.currencyInput}><span aria-hidden="true">R</span><input inputMode="decimal" value={form.askingPriceExVat} onChange={(event) => setForm((current) => ({ ...current, askingPriceExVat: event.target.value }))} /></span> : <input value={form[key as keyof typeof form]} onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))} />}</label>)}
+        {Object.entries({ askingPriceExVat: 'Asking price excl. VAT', sellerName: 'Contact name', sellerCompany: 'Business name', sellerPhone: 'Phone', sellerEmail: 'Business email', province: 'Province', area: 'Area' }).map(([key, label]) => <label className={styles.field} key={key}><span>{label}</span>{key === 'askingPriceExVat' ? <span className={styles.currencyInput}><span aria-hidden="true">R</span><GroupedCurrencyInput value={form.askingPriceExVat} onValueChange={(value) => setForm((current) => ({ ...current, askingPriceExVat: value }))} /></span> : <input value={form[key as keyof typeof form]} onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))} />}</label>)}
         <label className={`${styles.field} ${styles.fieldFull}`}><span>Listing description</span><textarea value={form.marketplaceNotes} onChange={(event) => setForm((current) => ({ ...current, marketplaceNotes: event.target.value }))} /></label>
       </div>
       {formError ? <div className={styles.errorNotice}>{formError}</div> : null}
@@ -1303,14 +1342,17 @@ function MaintenanceSection({ records, action, busy }: { records: Maintenance[];
   return (
     <section className={styles.section}>
       <p className={styles.editorIntro}>Schedule and manage maintenance.</p>
-      <div className={styles.recordList}>{records.length ? records.map((record) => <article className={styles.record} key={record.id}><div className={styles.recordHeader}><h3>{record.title}</h3><span className={styles.recordStatus}>{record.computedStatusLabel}</span></div><p>{[record.maintenanceType, record.dueDate || (record.dueUsage !== null ? `${record.dueUsage} ${record.usageMetric || ''}` : ''), record.notes].filter(Boolean).join(' · ')}</p><div className={styles.actions}>{record.status === 'upcoming' ? <><button type="button" className={styles.smallButton} disabled={busy} onClick={() => void action({ action: 'maintenance-complete', maintenanceId: record.id }, 'Maintenance marked complete.')}>Complete</button><button type="button" className={styles.smallButton} disabled={busy} onClick={() => void action({ action: 'maintenance-cancel', maintenanceId: record.id }, 'Maintenance cancelled.')}>Cancel</button></> : record.status === 'done' ? <button type="button" className={styles.smallButton} disabled={busy} onClick={() => void action({ action: 'maintenance-reopen', maintenanceId: record.id }, 'Maintenance reopened.')}>Reopen</button> : null}</div></article>) : <p>No maintenance records yet.</p>}</div>
       <form className={styles.formGrid} onSubmit={(event) => void create(event)}>
         <label className={styles.field}><span>Type</span><select name="maintenanceType"><option value="service">Service</option><option value="checkup">Checkup</option></select></label>
         <label className={styles.field}><span>Due date</span><input name="dueDate" type="date" required /></label>
         <label className={`${styles.field} ${styles.fieldFull}`}><span>Title</span><input name="title" required placeholder="Next service" /></label>
         <label className={`${styles.field} ${styles.fieldFull}`}><span>Notes</span><textarea name="notes" /></label>
-        <button className={`${styles.secondaryButton} ${styles.fieldFull}`} type="submit" disabled={busy}>Add maintenance</button>
+        <button className={`${styles.maintenanceAddButton} ${styles.fieldFull}`} type="submit" disabled={busy}>Add maintenance</button>
       </form>
+      <div className={styles.maintenanceRecordsBlock}>
+        <h2>Maintenance records</h2>
+        <div className={styles.recordList}>{records.length ? records.map((record) => <article className={styles.record} key={record.id}><div className={styles.recordHeader}><h3>{record.title}</h3><span className={styles.recordStatus}>{record.computedStatusLabel}</span></div><p>{[record.maintenanceType, record.dueDate || (record.dueUsage !== null ? `${record.dueUsage} ${record.usageMetric || ''}` : ''), record.notes].filter(Boolean).join(' · ')}</p><div className={styles.actions}>{record.status === 'upcoming' ? <><button type="button" className={styles.smallButton} disabled={busy} onClick={() => void action({ action: 'maintenance-complete', maintenanceId: record.id }, 'Maintenance marked complete.')}>Complete</button><button type="button" className={styles.smallButton} disabled={busy} onClick={() => void action({ action: 'maintenance-cancel', maintenanceId: record.id }, 'Maintenance cancelled.')}>Cancel</button></> : record.status === 'done' ? <button type="button" className={styles.smallButton} disabled={busy} onClick={() => void action({ action: 'maintenance-reopen', maintenanceId: record.id }, 'Maintenance reopened.')}>Reopen</button> : null}</div></article>) : <p className={styles.maintenanceEmpty}>No maintenance records yet.</p>}</div>
+      </div>
     </section>
   );
 }

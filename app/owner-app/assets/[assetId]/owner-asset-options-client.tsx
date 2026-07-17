@@ -230,17 +230,6 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
     setNotice(null);
   }
 
-  function backToChoices() {
-    setStage('choices');
-    setSelectedLeadType(null);
-    setPartners([]);
-    setSelectedPartnerId('');
-    setSearch('');
-    setMessage('');
-    setConsentAccepted(false);
-    setNotice(null);
-  }
-
   async function sendRequest() {
     if (!selectedOption || !selectedPartner || !consentAccepted || sending) return;
     setSending(true);
@@ -304,7 +293,6 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
       {stage === 'partners' && selectedOption ? (
         <section className={`${styles.section} ${styles.ownerOptionsSection}`}>
           <div className={styles.ownerOptionsFlowHeader}>
-            <button type="button" onClick={backToChoices}>Back to options</button>
             <div><h2><BalancedHeadingText text={selectedOption.pickerTitle} /></h2></div>
           </div>
 
