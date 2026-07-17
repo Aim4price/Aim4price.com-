@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, type FormEvent } from 'react';
+import GroupedCurrencyInput, { normalizeCurrencyInput } from '../../../../../components/GroupedCurrencyInput';
 import styles from '../../../owner-app.module.css';
 
 type Register = { id: string; businessName: string };
@@ -16,6 +17,8 @@ export default function OwnerManualAssetClient() {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
+  const [currentValue, setCurrentValue] = useState('');
+  const [replacementPrice, setReplacementPrice] = useState('');
 
   useEffect(() => {
     const controller = new AbortController();
@@ -52,6 +55,8 @@ export default function OwnerManualAssetClient() {
     setCreating(true);
     setError('');
     const body = Object.fromEntries(new FormData(event.currentTarget).entries());
+    body.value = normalizeCurrencyInput(String(body.value ?? ''));
+    body.replacementPriceExVat = normalizeCurrencyInput(String(body.replacementPriceExVat ?? ''));
 
     try {
       const response = await fetch('/api/owner-app/assets', {
@@ -107,8 +112,8 @@ export default function OwnerManualAssetClient() {
           <label className={styles.field}><span>Model</span><input name="modelName" /></label>
           <label className={styles.field}><span>Year model / year built</span><input name="yearModel" inputMode="numeric" /></label>
           <label className={styles.field}><span>Serial / VIN / chassis</span><input name="serialNumber" /></label>
-          <label className={styles.field}><span>Current value excl. VAT</span><span className={styles.currencyInput}><span aria-hidden="true">R</span><input name="value" inputMode="decimal" required /></span></label>
-          <label className={styles.field}><span>Replacement price excl. VAT</span><span className={styles.currencyInput}><span aria-hidden="true">R</span><input name="replacementPriceExVat" inputMode="decimal" required /></span></label>
+          <label className={styles.field}><span>Current value excl. VAT</span><span className={styles.currencyInput}><span aria-hidden="true">R</span><GroupedCurrencyInput name="value" value={currentValue} onValueChange={setCurrentValue} required /></span></label>
+          <label className={styles.field}><span>Replacement price excl. VAT</span><span className={styles.currencyInput}><span aria-hidden="true">R</span><GroupedCurrencyInput name="replacementPriceExVat" value={replacementPrice} onValueChange={setReplacementPrice} required /></span></label>
           <label className={styles.field}>
             <span>Usage type</span>
             <select name="usageMetric">
