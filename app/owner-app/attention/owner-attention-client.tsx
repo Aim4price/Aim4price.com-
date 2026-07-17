@@ -1,9 +1,9 @@
 'use client';
 
-import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import styles from '../../field-manager/page.module.css';
 import ownerStyles from '../owner-app.module.css';
+import OwnerAppNav from '../owner-app-nav';
 
 type OverviewRange = 'week' | 'month';
 type OverviewItemType = 'problem' | 'service' | 'checkup' | 'license';
@@ -210,12 +210,12 @@ export default function OwnerAttentionClient({
           </button>
           <button
             type="button"
-            className={`${styles.mobilePrimaryButton} ${styles.overviewOpenButton}`}
+            className={`${styles.mobilePrimaryButton} ${styles.overviewOpenButton} ${ownerStyles.overviewOpenAction}`}
             onClick={() => handleOpenAsset(item)}
             disabled={hasPendingCardAction}
             aria-busy={isOpening}
           >
-            {isOpening ? 'Opening…' : 'Open asset'}
+            {isOpening ? 'Opening…' : 'Open'}
           </button>
         </div>
       </article>
@@ -223,17 +223,11 @@ export default function OwnerAttentionClient({
   }
 
   return (
-    <main className={styles.mobilePage}>
-      <section className={`${styles.assetsShell} ${styles.overviewShell}`}>
-        <header className={styles.overviewHeader} aria-label="Overview controls">
-          <Link className={ownerStyles.navButton} href="/owner-app" prefetch={false} aria-label="Home">
-            <span className={ownerStyles.navArrow} aria-hidden="true">←</span>
-            <span>Home</span>
-          </Link>
-        </header>
+    <main className={`${styles.mobilePage} ${ownerStyles.page} ${ownerStyles.overviewPage}`}>
+      <OwnerAppNav />
+      <section className={`${styles.overviewShell} ${ownerStyles.overviewContent}`}>
 
         <div className={styles.overviewIntro}>
-          <span>Aim4price Owner</span>
           <h1>Overview</h1>
           <p>What needs attention next.</p>
         </div>
