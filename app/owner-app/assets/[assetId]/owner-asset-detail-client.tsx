@@ -50,18 +50,18 @@ const STATUS_OPTIONS = [
   { value: 'unknown', label: 'Unknown' }, { value: 'not_applicable', label: 'Not applicable' },
 ];
 
-const MANAGE_SECTIONS: Array<{ id: OwnerAssetManageSection; group: OwnerAssetManageGroup; title: string; description: string; tone?: 'danger' }> = [
-  { id: 'details', group: 'asset', title: 'Update asset', description: 'Details, usage and values' },
-  { id: 'pricing', group: 'asset', title: 'Manage pricing', description: 'Current and future values' },
-  { id: 'location', group: 'asset', title: 'Location', description: 'GPS position and map' },
-  { id: 'media', group: 'asset', title: 'Photos & documents', description: 'Saved photos and files' },
-  { id: 'reports', group: 'records', title: 'Reports', description: 'Download available PDF reports' },
-  { id: 'maintenance', group: 'records', title: 'Maintenance', description: 'Schedules and service records' },
-  { id: 'finance', group: 'records', title: 'Finance', description: 'Finance status and information' },
-  { id: 'insurance', group: 'records', title: 'Insurance', description: 'Insurance status and cover' },
-  { id: 'licence', group: 'records', title: 'Licence', description: 'Licence and registration' },
-  { id: 'marketplace', group: 'selling', title: 'Marketplace', description: 'Create or update the listing' },
-  { id: 'delete', group: 'removal', title: 'Delete asset', description: 'Permanently remove this asset', tone: 'danger' },
+const MANAGE_SECTIONS: Array<{ id: OwnerAssetManageSection; group: OwnerAssetManageGroup; title: string; tone?: 'danger' }> = [
+  { id: 'details', group: 'asset', title: 'Update asset' },
+  { id: 'pricing', group: 'asset', title: 'Manage pricing' },
+  { id: 'location', group: 'asset', title: 'Location' },
+  { id: 'media', group: 'asset', title: 'Photos & documents' },
+  { id: 'reports', group: 'records', title: 'Reports' },
+  { id: 'maintenance', group: 'records', title: 'Maintenance' },
+  { id: 'finance', group: 'records', title: 'Finance' },
+  { id: 'insurance', group: 'records', title: 'Insurance' },
+  { id: 'licence', group: 'records', title: 'Licence' },
+  { id: 'marketplace', group: 'selling', title: 'Marketplace' },
+  { id: 'delete', group: 'removal', title: 'Delete asset', tone: 'danger' },
 ];
 
 const MANAGE_GROUPS: Array<{ id: OwnerAssetManageGroup; title: string }> = [
@@ -449,9 +449,10 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
   });
   const usageMetric = resolvedUsage.metric;
   const usageText = formatResolvedAssetUsage(resolvedUsage, 'Not saved');
-  const extraInput = (key: string, label: string, options: { type?: string; inputMode?: 'text' | 'decimal' | 'numeric'; fallbackKeys?: string[] } = {}) => (
-    <label className={styles.field}><span>{label}</span><input type={options.type} inputMode={options.inputMode} value={extra(key, ...(options.fallbackKeys ?? []))} onChange={(event) => updateSpec(key, event.target.value)} /></label>
-  );
+  const extraInput = (key: string, label: string, options: { type?: string; inputMode?: 'text' | 'decimal' | 'numeric'; fallbackKeys?: string[]; currency?: boolean } = {}) => {
+    const input = <input type={options.type} inputMode={options.inputMode} value={extra(key, ...(options.fallbackKeys ?? []))} onChange={(event) => updateSpec(key, event.target.value)} />;
+    return <label className={styles.field}><span>{label}</span>{options.currency ? <span className={styles.currencyInput}><span aria-hidden="true">R</span>{input}</span> : input}</label>;
+  };
   const editorHeader = (title: string, description: string) => (
     <div className={`${styles.sectionHeader} ${styles.editorHeader}`}><div><h2><BalancedHeadingText text={title} /></h2><p>{description}</p></div></div>
   );
@@ -803,7 +804,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
                         prefetch={false}
                         className={`${styles.manageButton} ${item.tone === 'danger' ? styles.manageButtonDanger : ''}`}
                       >
-                        <span className={styles.manageButtonCopy}><strong>{item.title}</strong><small>{item.description}</small></span>
+                        <span className={styles.manageButtonCopy}><strong>{item.title}</strong></span>
                         <span className={styles.manageButtonArrow} aria-hidden="true">›</span>
                       </Link>
                     ))}
@@ -840,8 +841,8 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
           <label className={styles.field}><span>Condition</span><select value={draft.condition} onChange={(event) => update('condition', event.target.value)}><option value="">Not saved</option><option value="excellent">Excellent</option><option value="good">Good</option><option value="fair">Fair</option><option value="used">Used</option><option value="serious">Serious</option></select></label>
           <label className={styles.field}><span>Usage type</span><select value={usageMetric} onChange={(event) => updateUsageMetric(event.target.value as AssetUsageMetric)}><option value="hours">Hours</option><option value="km">Kilometres</option><option value="percentage">Percentage worked</option></select></label>
           {usageMetric === 'percentage' ? <label className={styles.field}><span>Percentage worked</span><input inputMode="decimal" value={draft.lifeWorkedPercent ?? ''} onChange={(event) => update('lifeWorkedPercent', event.target.value ? Number(event.target.value) : null)} /></label> : <label className={styles.field}><span>Current usage</span><input inputMode="decimal" value={draft.hours ?? ''} onChange={(event) => update('hours', event.target.value ? Number(event.target.value) : null)} /></label>}
-          <label className={styles.field}><span>Current Aim4price value excl. VAT</span><input inputMode="decimal" value={draft.value || ''} onChange={(event) => update('value', Number(event.target.value) || 0)} /></label>
-          <label className={styles.field}><span>Replacement price excl. VAT</span><input inputMode="decimal" value={draft.replacementPriceExVat ?? ''} onChange={(event) => update('replacementPriceExVat', event.target.value ? Number(event.target.value) : null)} /></label>
+          <label className={styles.field}><span>Current Aim4price value excl. VAT</span><span className={styles.currencyInput}><span aria-hidden="true">R</span><input inputMode="decimal" value={draft.value || ''} onChange={(event) => update('value', Number(event.target.value) || 0)} /></span></label>
+          <label className={styles.field}><span>Replacement price excl. VAT</span><span className={styles.currencyInput}><span aria-hidden="true">R</span><input inputMode="decimal" value={draft.replacementPriceExVat ?? ''} onChange={(event) => update('replacementPriceExVat', event.target.value ? Number(event.target.value) : null)} /></span></label>
           <label className={`${styles.field} ${styles.fieldFull}`}><span>Notes</span><textarea value={draft.note} onChange={(event) => update('note', event.target.value)} /></label>
         </div>
         <div className={styles.actions}><button type="button" className={styles.primaryButton} onClick={() => void saveAsset()} disabled={saving || Boolean(actionBusy)}>{saving ? 'Saving…' : 'Save changes'}</button></div>
@@ -857,7 +858,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
           <label className={styles.field}><span>Finance status</span><select value={financeStatus} onChange={(event) => updateStatus('finance', event.target.value)}>{STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
           {financeStatus === 'yes' ? <>
             <label className={styles.field}><span>Finance type</span><select value={extra('financeType', 'finance_type')} onChange={(event) => updateSpec('financeType', event.target.value)}><option value="">Not saved</option><option value="asset_specific">Asset-specific finance</option><option value="bulk_group">Bulk / group finance</option></select></label>
-            {extraInput('financierName', 'Financier', { fallbackKeys: ['financier_name'] })}{extraInput('financeCurrentOutstandingExVat', 'Current outstanding excl. VAT', { inputMode: 'decimal', fallbackKeys: ['finance_current_outstanding_ex_vat'] })}{extraInput('financeBoughtWhen', 'Bought when', { type: 'date', fallbackKeys: ['finance_bought_when'] })}{extraInput('financeBoughtForExVat', 'Bought for excl. VAT', { inputMode: 'decimal', fallbackKeys: ['finance_bought_for_ex_vat'] })}{extraInput('financeOriginalAmountExVat', 'Original financed amount', { inputMode: 'decimal', fallbackKeys: ['finance_original_amount_ex_vat'] })}{extraInput('financeMonthlyPaymentExVat', 'Monthly payment', { inputMode: 'decimal', fallbackKeys: ['finance_monthly_payment_ex_vat'] })}{extraInput('financeInterestRatePercent', 'Interest rate %', { inputMode: 'decimal', fallbackKeys: ['finance_interest_rate_percent'] })}{extraInput('financeTermMonths', 'Term months', { inputMode: 'numeric', fallbackKeys: ['finance_term_months'] })}{extraInput('financeBalloonPaymentExVat', 'Balloon payment', { inputMode: 'decimal', fallbackKeys: ['finance_balloon_payment_ex_vat'] })}{extraInput('financeSettlementDate', 'Settlement date', { type: 'date', fallbackKeys: ['finance_settlement_date'] })}{extraInput('financeReferenceNumber', 'Finance reference', { fallbackKeys: ['finance_reference_number'] })}
+            {extraInput('financierName', 'Financier', { fallbackKeys: ['financier_name'] })}{extraInput('financeCurrentOutstandingExVat', 'Current outstanding excl. VAT', { inputMode: 'decimal', fallbackKeys: ['finance_current_outstanding_ex_vat'], currency: true })}{extraInput('financeBoughtWhen', 'Bought when', { type: 'date', fallbackKeys: ['finance_bought_when'] })}{extraInput('financeBoughtForExVat', 'Bought for excl. VAT', { inputMode: 'decimal', fallbackKeys: ['finance_bought_for_ex_vat'], currency: true })}{extraInput('financeOriginalAmountExVat', 'Original financed amount', { inputMode: 'decimal', fallbackKeys: ['finance_original_amount_ex_vat'], currency: true })}{extraInput('financeMonthlyPaymentExVat', 'Monthly payment', { inputMode: 'decimal', fallbackKeys: ['finance_monthly_payment_ex_vat'], currency: true })}{extraInput('financeInterestRatePercent', 'Interest rate %', { inputMode: 'decimal', fallbackKeys: ['finance_interest_rate_percent'] })}{extraInput('financeTermMonths', 'Term months', { inputMode: 'numeric', fallbackKeys: ['finance_term_months'] })}{extraInput('financeBalloonPaymentExVat', 'Balloon payment', { inputMode: 'decimal', fallbackKeys: ['finance_balloon_payment_ex_vat'], currency: true })}{extraInput('financeSettlementDate', 'Settlement date', { type: 'date', fallbackKeys: ['finance_settlement_date'] })}{extraInput('financeReferenceNumber', 'Finance reference', { fallbackKeys: ['finance_reference_number'] })}
             <label className={`${styles.field} ${styles.fieldFull}`}><span>Finance notes</span><textarea value={draft.financeNote} onChange={(event) => update('financeNote', event.target.value)} /></label>
           </> : null}
         </div>
@@ -868,7 +869,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
         {editorHeader('Insurance', 'Manage insurance status and cover.')}
         <div className={styles.formGrid}>
           <label className={styles.field}><span>Insurance status</span><select value={insuranceStatus} onChange={(event) => updateStatus('insurance', event.target.value)}>{STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
-          {insuranceStatus === 'yes' ? <><label className={styles.field}><span>Insured value excl. VAT</span><input inputMode="decimal" value={draft.insuredValueExVat ?? ''} onChange={(event) => update('insuredValueExVat', event.target.value ? Number(event.target.value) : null)} /></label>{extraInput('insuranceInsurerName', 'Insurer / broker', { fallbackKeys: ['insurance_insurer_name'] })}{extraInput('insurancePolicyNumber', 'Policy number', { fallbackKeys: ['insurance_policy_number'] })}{extraInput('insuranceRenewalDate', 'Renewal date', { type: 'date', fallbackKeys: ['insurance_renewal_date'] })}<label className={`${styles.field} ${styles.fieldFull}`}><span>Insurance notes</span><textarea value={extra('insuranceNote', 'insurance_note')} onChange={(event) => updateSpec('insuranceNote', event.target.value)} /></label></> : null}
+          {insuranceStatus === 'yes' ? <><label className={styles.field}><span>Insured value excl. VAT</span><span className={styles.currencyInput}><span aria-hidden="true">R</span><input inputMode="decimal" value={draft.insuredValueExVat ?? ''} onChange={(event) => update('insuredValueExVat', event.target.value ? Number(event.target.value) : null)} /></span></label>{extraInput('insuranceInsurerName', 'Insurer / broker', { fallbackKeys: ['insurance_insurer_name'] })}{extraInput('insurancePolicyNumber', 'Policy number', { fallbackKeys: ['insurance_policy_number'] })}{extraInput('insuranceRenewalDate', 'Renewal date', { type: 'date', fallbackKeys: ['insurance_renewal_date'] })}<label className={`${styles.field} ${styles.fieldFull}`}><span>Insurance notes</span><textarea value={extra('insuranceNote', 'insurance_note')} onChange={(event) => updateSpec('insuranceNote', event.target.value)} /></label></> : null}
         </div>
         <div className={styles.actions}><button type="button" className={styles.primaryButton} onClick={() => void saveAsset()} disabled={saving || Boolean(actionBusy)}>{saving ? 'Saving…' : 'Save changes'}</button></div>
       </section> : null}
@@ -887,7 +888,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
       {section === 'media' ? <section className={`${styles.section} ${styles.editorSection}`}>
         {editorHeader('Photos and documents', 'Add, open or remove saved files.')}
         <div className={styles.mediaGrid}>{draft.photos.map((url) => <div className={styles.mediaItem} key={url}><img src={url} alt="Asset" /><button type="button" onClick={() => update('photos', draft.photos.filter((photo) => photo !== url))}>×</button></div>)}{draft.documents.map((document) => <div className={styles.mediaItem} key={document.id}><a href={document.url} target="_blank" rel="noreferrer">{document.fileName}</a><button type="button" onClick={() => update('documents', draft.documents.filter((entry) => entry.id !== document.id))}>×</button></div>)}</div>
-        <label className={styles.fileInput}>Add photos<input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={(event: ChangeEvent<HTMLInputElement>) => void uploadFiles('photo', event.target.files)} disabled={Boolean(actionBusy)} /></label><label className={styles.fileInput}>Add documents<input type="file" multiple onChange={(event: ChangeEvent<HTMLInputElement>) => void uploadFiles('document', event.target.files)} disabled={Boolean(actionBusy)} /></label>
+        <div className={styles.manageMediaUploadActions}><label className={styles.detailUploadButton}><span>{actionBusy === 'upload-photo' ? 'Uploading photos…' : 'Add photos'}</span><input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={(event: ChangeEvent<HTMLInputElement>) => void uploadFiles('photo', event.target.files)} disabled={Boolean(actionBusy)} /></label><label className={`${styles.detailUploadButton} ${styles.detailDocumentUploadButton}`}><span>{actionBusy === 'upload-document' ? 'Uploading documents…' : 'Add documents'}</span><input type="file" multiple onChange={(event: ChangeEvent<HTMLInputElement>) => void uploadFiles('document', event.target.files)} disabled={Boolean(actionBusy)} /></label></div>
         <div className={styles.actions}><button type="button" className={styles.primaryButton} onClick={() => void saveAsset()} disabled={saving || Boolean(actionBusy)}>{saving ? 'Saving…' : 'Save changes'}</button></div>
       </section> : null}
 
@@ -944,13 +945,13 @@ function ReportsSection({ draft, openValuationReport }: { draft: Asset; openValu
   }
 
   const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  const filterableReports: Array<{ id: FilterableReport; title: string; description: string }> = [
-    { id: 'maintenance', title: 'Maintenance report', description: 'Service, checks and repair activity.' },
+  const filterableReports: Array<{ id: FilterableReport; title: string }> = [
+    { id: 'maintenance', title: 'Maintenance report' },
     ...(draft.kind !== 'property' ? [
-      { id: 'fuel' as const, title: 'Fuel report', description: 'Fuel activity, usage and costs.' },
-      { id: 'depreciation' as const, title: 'Depreciation log', description: 'Saved value changes and depreciation history.' },
+      { id: 'fuel' as const, title: 'Fuel report' },
+      { id: 'depreciation' as const, title: 'Depreciation log' },
     ] : []),
-    { id: 'ownership', title: 'Cost of ownership', description: 'Invoices, ownership costs and VAT.' },
+    { id: 'ownership', title: 'Cost of ownership' },
   ];
   const selectedReportDetails = filterableReports.find((report) => report.id === selectedReport) ?? null;
   const selectedReportHref = selectedReport
@@ -978,20 +979,18 @@ function ReportsSection({ draft, openValuationReport }: { draft: Asset; openValu
     setSelectedReport(report);
   }
 
-  const reportCard = (key: string, title: string, description: string, onClick: () => void) => (
-    <article className={styles.reportCard} key={key}>
-      <span className={styles.reportPdfBadge} aria-hidden="true">PDF</span>
-      <div><strong>{title}</strong><small>{description}</small></div>
-      <button type="button" onClick={onClick}>Download PDF</button>
-    </article>
+  const reportCard = (key: string, title: string, onClick: () => void) => (
+    <button type="button" className={styles.reportCard} key={key} onClick={onClick}>
+      <span>{title}</span>
+    </button>
   );
 
   return (
     <section className={`${styles.section} ${styles.editorSection}`}>
-      <div className={`${styles.sectionHeader} ${styles.editorHeader}`}><div><h2>Available reports</h2><p>Choose a report first. Any available filters will appear before the PDF opens.</p></div></div>
+      <div className={`${styles.sectionHeader} ${styles.editorHeader}`}><div><h2>Reports</h2></div></div>
       <div className={styles.reportList}>
-        {reportCard('valuation', 'Asset valuation', 'Value summary, asset details, photos and saved status.', openValuationReport)}
-        {filterableReports.map((report) => reportCard(report.id, report.title, report.description, () => chooseReport(report.id)))}
+        {reportCard('valuation', 'Asset valuation', openValuationReport)}
+        {filterableReports.map((report) => reportCard(report.id, report.title, () => chooseReport(report.id)))}
       </div>
 
       {selectedReport && selectedReportDetails ? (
@@ -1000,9 +999,7 @@ function ReportsSection({ draft, openValuationReport }: { draft: Asset; openValu
           <section className={styles.reportFilterModal}>
             <div className={styles.reportFilterModalHeader}>
               <div>
-                <span>PDF report</span>
                 <h2 id="owner-report-filter-title">{selectedReportDetails.title}</h2>
-                <p>Choose what the PDF should include.</p>
               </div>
               <button type="button" onClick={() => setSelectedReport(null)} aria-label="Close report filters">×</button>
             </div>
@@ -1013,7 +1010,7 @@ function ReportsSection({ draft, openValuationReport }: { draft: Asset; openValu
             </div>
             <div className={styles.reportFilterActions}>
               <button type="button" onClick={() => setSelectedReport(null)}>Cancel</button>
-              <a href={selectedReportHref} target="_blank" rel="noreferrer" onClick={() => setSelectedReport(null)}>Download PDF</a>
+              <a href={selectedReportHref} target="_blank" rel="noreferrer" onClick={() => setSelectedReport(null)}>Open report</a>
             </div>
           </section>
         </div>
@@ -1128,7 +1125,7 @@ function PricingSection({ draft, reload, setNotice }: {
             <button type="button" className={replacementMode === 'saved' ? styles.choiceActive : ''} onClick={() => { setReplacementMode('saved'); setPreview(null); }}>Use saved replacement price</button>
             <button type="button" className={replacementMode === 'custom' ? styles.choiceActive : ''} onClick={() => { setReplacementMode('custom'); setPreview(null); }}>Enter updated price</button>
           </div>
-          {replacementMode === 'custom' ? <label className={styles.field}><span>Replacement price excl. VAT</span><input inputMode="decimal" value={replacementPrice} onChange={(event) => { setReplacementPrice(event.target.value); setPreview(null); }} /></label> : null}
+          {replacementMode === 'custom' ? <label className={styles.field}><span>Replacement price excl. VAT</span><span className={styles.currencyInput}><span aria-hidden="true">R</span><input inputMode="decimal" value={replacementPrice} onChange={(event) => { setReplacementPrice(event.target.value); setPreview(null); }} /></span></label> : null}
           {preview?.item ? <div className={styles.pricingResult}><span>New Aim4price value</span><strong>{money(preview.newValueExVat ?? preview.item.value)}</strong><small>Current value: {money(preview.oldValueExVat ?? draft.value)}</small></div> : null}
           <div className={styles.actions}>
             <button type="button" className={styles.secondaryButton} disabled={Boolean(pricingBusy)} onClick={() => void requestRevalue(true)}>{pricingBusy === 'preview' ? 'Calculating…' : 'Preview new value'}</button>
@@ -1288,7 +1285,7 @@ function MarketplaceSection({ draft, ownerContext, action, busy }: { draft: Asse
         <span><small>Listing title</small><strong>{listingTitle}</strong><em>{draft.photos.length} saved photo{draft.photos.length === 1 ? '' : 's'} will be used</em></span>
       </div>
       <div className={styles.formGrid}>
-        {Object.entries({ askingPriceExVat: 'Asking price excl. VAT', sellerName: 'Contact name', sellerCompany: 'Business name', sellerPhone: 'Phone', sellerEmail: 'Business email', province: 'Province', area: 'Area' }).map(([key, label]) => <label className={styles.field} key={key}><span>{label}</span><input value={form[key as keyof typeof form]} onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))} /></label>)}
+        {Object.entries({ askingPriceExVat: 'Asking price excl. VAT', sellerName: 'Contact name', sellerCompany: 'Business name', sellerPhone: 'Phone', sellerEmail: 'Business email', province: 'Province', area: 'Area' }).map(([key, label]) => <label className={styles.field} key={key}><span>{label}</span>{key === 'askingPriceExVat' ? <span className={styles.currencyInput}><span aria-hidden="true">R</span><input inputMode="decimal" value={form.askingPriceExVat} onChange={(event) => setForm((current) => ({ ...current, askingPriceExVat: event.target.value }))} /></span> : <input value={form[key as keyof typeof form]} onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))} />}</label>)}
         <label className={`${styles.field} ${styles.fieldFull}`}><span>Listing description</span><textarea value={form.marketplaceNotes} onChange={(event) => setForm((current) => ({ ...current, marketplaceNotes: event.target.value }))} /></label>
       </div>
       {formError ? <div className={styles.errorNotice}>{formError}</div> : null}
