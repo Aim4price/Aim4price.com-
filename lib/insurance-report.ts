@@ -1,5 +1,5 @@
 import { getDb } from './db';
-import type { InsuranceReportType, InsuranceWorkspaceData } from './insurance-workspace-types';
+import type { InsuranceFinancialTerm, InsuranceReportType, InsuranceWorkspaceData } from './insurance-workspace-types';
 import { getInsuranceWorkspace } from './insurance-workspaces';
 import { INSURANCE_COVER_BY_KEY } from './insurance-cover-catalogue';
 
@@ -20,6 +20,7 @@ export type InsuranceReportPayload = {
 };
 
 const DISCLAIMER = 'This report reflects information and human decisions recorded by the broker or authorised insurance user. System-generated items are labelled as areas to consider and are not financial advice, confirmation of cover, insurer acceptance or a substitute for the applicable schedule, wording and endorsements. Aim4price does not independently confirm insurance cover.';
+const VAT_MULTIPLIER = 1.15;
 
 function text(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
@@ -39,6 +40,18 @@ function money(value: number | string | null | undefined, currency = 'ZAR'): str
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return 'Not recorded';
   return new Intl.NumberFormat('en-ZA', { style: 'currency', currency, maximumFractionDigits: 2 }).format(parsed);
+}
+
+function vatIncluded(value: number | string | null | undefined): number | null {
+  if (value === null || value === undefined || value === '') return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed * VAT_MULTIPLIER : null;
+}
+
+function financialAmountVatIncluded(term: InsuranceFinancialTerm): number | null {
+  const amount = nullableNumber(term.amount);
+  if (amount === null) return null;
+  return term.vatBasis === 'exclusive' ? amount * VAT_MULTIPLIER : amount;
 }
 
 function dateLabel(value: string | null | undefined): string {
@@ -182,7 +195,7 @@ function reportHeader(payload: InsuranceReportPayload): string {
       <div><small>Generated</small><strong>${escapeHtml(dateLabel(payload.generatedAtIso))}</strong></div>
       <div><small>Source snapshot</small><strong>${escapeHtml(snapshot ? `Revision ${snapshot.revision} · ${dateLabel(snapshot.generatedAtIso)}` : workspace.snapshotReference)}</strong></div>
       <div><small>Assets</small><strong>${workspace.assetCount}</strong></div>
-      <div><small>Replacement values</small><strong>${escapeHtml(money(workspace.totalReplacementValue))}</strong></div>
+      <div><small>Replacement values (VAT included)</small><strong>${escapeHtml(money(vatIncluded(workspace.totalReplacementValue)))}</strong></div>
       <div><small>Prepared by</small><strong>${escapeHtml(broker.businessName || broker.displayName)}</strong></div>
     </div>`;
 }
@@ -205,24 +218,24 @@ function assetTable(payload: InsuranceReportPayload): string {
     const ownerInsuredValue = nullableNumber(asset.snapshot.insuredValueExVat);
     return `<tr>
       <td>${escapeHtml(asset.title)}</td><td>${escapeHtml(asset.kind)}</td><td>${escapeHtml(asset.location || 'Unknown / not supplied')}</td>
-      <td class="right">${escapeHtml(money(asset.replacementValue))}</td>
-      <td class="right">${escapeHtml(money(ownerInsuredValue))}</td>
-      <td class="right">${escapeHtml(recordedSum ? money(recordedSum.amount, recordedSum.currency) : 'Not recorded')}</td>
+      <td class="right">${escapeHtml(money(vatIncluded(asset.replacementValue)))}</td>
+      <td class="right">${escapeHtml(money(vatIncluded(ownerInsuredValue)))}</td>
+      <td class="right">${escapeHtml(recordedSum ? money(financialAmountVatIncluded(recordedSum), recordedSum.currency) : 'Not recorded')}</td>
       <td>${escapeHtml(current)}</td>
       <td>${escapeHtml(assessments.map((assessment) => assessment.coverLabel).join(', ') || 'Not assessed')}</td>
     </tr>`;
   }).join('');
   return `<h2>Locations and asset inventory</h2>
-    <table><thead><tr><th>Asset</th><th>Risk object</th><th>Location</th><th>Replacement value</th><th>Owner-provided insured value</th><th>Recorded sum insured</th><th>Current-cover position</th><th>Linked covers / sections</th></tr></thead>
+    <table><thead><tr><th>Asset</th><th>Risk object</th><th>Location</th><th>Replacement value (VAT incl.)</th><th>Owner-provided insured value (VAT incl.)</th><th>Recorded sum insured (VAT incl.)</th><th>Current-cover position</th><th>Linked covers / sections</th></tr></thead>
     <tbody>${rows || '<tr><td colspan="8">No assets recorded.</td></tr>'}</tbody></table>`;
 }
 
 function exposureAndPartyInventory(payload: InsuranceReportPayload): string {
   const workspace = payload.workspace;
-  const locationRows = workspace.locations.map((location) => `<tr><td>${escapeHtml(location.label)}</td><td>${escapeHtml(location.isUnknown ? 'Unknown / not supplied' : location.addressText || 'Not recorded')}</td><td>${escapeHtml(location.occupancyUse || 'Not recorded')}</td><td>${location.assetIds.length}</td></tr>`).join('');
+  const locationRows = workspace.locations.map((location) => `<tr><td>${escapeHtml(location.label)}</td><td>${escapeHtml(location.isUnknown ? 'Unknown / not supplied' : location.addressText || 'Not recorded')}</td><td>${escapeHtml(location.latitude && location.longitude ? `${location.latitude}, ${location.longitude}` : 'Not recorded')}</td><td>${escapeHtml(location.occupancyUse || 'Not recorded')}</td><td>${location.assetIds.length}</td></tr>`).join('');
   const exposureRows = workspace.exposures.map((exposure) => `<tr><td>${escapeHtml(exposure.label)}</td><td>${escapeHtml(label(exposure.exposureType))}</td><td>${escapeHtml(label(exposure.exposureStatus))}</td><td>${exposure.assetIds.length} assets · ${exposure.locationIds.length} locations · ${exposure.partyIds.length} parties</td><td>${escapeHtml(exposure.provenance.sourceReference || label(exposure.provenance.sourceType))}</td></tr>`).join('');
   const partyRows = workspace.parties.map((party) => `<tr><td>${escapeHtml(party.displayName)}</td><td>${escapeHtml(label(party.partyType))}</td><td>${escapeHtml(party.roles.map((role) => `${label(role.roleKey)}${role.context ? ` — ${role.context}` : ''}`).join('; ') || 'Not recorded')}</td></tr>`).join('');
-  return `<h2>Normalized locations</h2><table><thead><tr><th>Location</th><th>Address</th><th>Occupancy / use</th><th>Linked assets</th></tr></thead><tbody>${locationRows || '<tr><td colspan="4">No normalized locations recorded.</td></tr>'}</tbody></table>
+  return `<h2>Saved locations</h2><table><thead><tr><th>Location</th><th>Address</th><th>Saved GPS</th><th>Occupancy / use</th><th>Linked assets</th></tr></thead><tbody>${locationRows || '<tr><td colspan="5">No saved locations recorded.</td></tr>'}</tbody></table>
     <h2>Non-asset and linked exposures</h2><table><thead><tr><th>Exposure</th><th>Type</th><th>Status</th><th>Links</th><th>Source</th></tr></thead><tbody>${exposureRows || '<tr><td colspan="5">No exposures recorded.</td></tr>'}</tbody></table>
     ${partyRows ? `<h2>Parties and roles</h2><table><thead><tr><th>Party</th><th>Type</th><th>Roles</th></tr></thead><tbody>${partyRows}</tbody></table>` : ''}`;
 }
@@ -232,7 +245,7 @@ function assessmentTable(payload: InsuranceReportPayload): string {
   const rows = assessments.map((assessment) => {
     const limits = assessment.financialTerms
       .filter((term) => !['value', 'sum_insured'].includes(term.termType))
-      .map((term) => `${label(term.termType)}: ${term.amount ? money(term.amount, term.currency) : term.percentage ? `${term.percentage}%` : term.timeValue ? `${term.timeValue} ${term.timeUnit}` : 'Recorded'}`)
+      .map((term) => `${label(term.termType)}: ${term.amount ? `${money(financialAmountVatIncluded(term), term.currency)} VAT included` : term.percentage ? `${term.percentage}%` : term.timeValue ? `${term.timeValue} ${term.timeUnit}` : 'Recorded'}`)
       .join('; ');
     const definition = assessment.canonicalCoverKey ? INSURANCE_COVER_BY_KEY[assessment.canonicalCoverKey] : null;
     const dependencies = definition ? [...definition.dependencies, ...definition.overlaps.map((entry) => `Overlap: ${entry}`)] : [];
@@ -253,7 +266,7 @@ function policyHierarchy(payload: InsuranceReportPayload): string {
     <section class="section"><h3>${escapeHtml([policy.insurerName, policy.policyNumber].filter(Boolean).join(' · ') || 'Policy details not recorded')}</h3>
     <p class="muted">${escapeHtml(policy.productName || 'Product not recorded')} · ${escapeHtml(label(policy.status))} · ${escapeHtml(dateLabel(policy.effectiveFrom))} to ${escapeHtml(dateLabel(policy.effectiveTo))}</p>
     <table><thead><tr><th>Actual insurer section</th><th>Canonical mapping</th><th>Wording / reference</th><th>Schedule treatment</th><th>Linked assets / exposures</th><th>Financial terms</th></tr></thead><tbody>
-    ${policy.sections.flatMap((section) => section.scheduleItems.length ? section.scheduleItems.map((item) => `<tr><td>${escapeHtml(section.actualSectionLabel)}</td><td>${escapeHtml(section.canonicalCoverKey ? label(section.canonicalCoverKey) : 'Not mapped')}</td><td>${escapeHtml([section.sectionNumberReference, section.wordingEditionReference].filter(Boolean).join(' · ') || 'Not recorded')}</td><td>${escapeHtml(label(item.treatment))}: ${escapeHtml(item.itemLabel)}</td><td>${item.assetIds.length} assets · ${item.exposureIds.length} exposures</td><td>${escapeHtml(item.financialTerms.map((term) => `${label(term.termType)} ${term.amount ? money(term.amount, term.currency) : term.percentage ? `${term.percentage}%` : term.timeValue ? `${term.timeValue} ${term.timeUnit}` : ''}`).join('; ') || 'Not recorded')}</td></tr>`) : [`<tr><td>${escapeHtml(section.actualSectionLabel)}</td><td>${escapeHtml(section.canonicalCoverKey ? label(section.canonicalCoverKey) : 'Not mapped')}</td><td>${escapeHtml([section.sectionNumberReference, section.wordingEditionReference].filter(Boolean).join(' · ') || 'Not recorded')}</td><td>No schedule items recorded</td><td>—</td><td>Not recorded</td></tr>`]).join('')}
+    ${policy.sections.flatMap((section) => section.scheduleItems.length ? section.scheduleItems.map((item) => `<tr><td>${escapeHtml(section.actualSectionLabel)}</td><td>${escapeHtml(section.canonicalCoverKey ? label(section.canonicalCoverKey) : 'Not mapped')}</td><td>${escapeHtml([section.sectionNumberReference, section.wordingEditionReference].filter(Boolean).join(' · ') || 'Not recorded')}</td><td>${escapeHtml(label(item.treatment))}: ${escapeHtml(item.itemLabel)}</td><td>${item.assetIds.length} assets · ${item.exposureIds.length} exposures</td><td>${escapeHtml(item.financialTerms.map((term) => `${label(term.termType)} ${term.amount ? `${money(financialAmountVatIncluded(term), term.currency)} VAT included` : term.percentage ? `${term.percentage}%` : term.timeValue ? `${term.timeValue} ${term.timeUnit}` : ''}`).join('; ') || 'Not recorded')}</td></tr>`) : [`<tr><td>${escapeHtml(section.actualSectionLabel)}</td><td>${escapeHtml(section.canonicalCoverKey ? label(section.canonicalCoverKey) : 'Not mapped')}</td><td>${escapeHtml([section.sectionNumberReference, section.wordingEditionReference].filter(Boolean).join(' · ') || 'Not recorded')}</td><td>No schedule items recorded</td><td>—</td><td>Not recorded</td></tr>`]).join('')}
     </tbody></table></section>`).join('')}`;
 }
 

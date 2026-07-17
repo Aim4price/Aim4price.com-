@@ -972,7 +972,9 @@ export async function executeInsuranceCommand(input: {
       if (command.componentId) await assertWorkspaceIds(client, workspaceId, [command.componentId], 'component');
       if (command.scheduleItemId) await assertWorkspaceIds(client, workspaceId, [command.scheduleItemId], 'schedule_item');
       let row: DbRow;
-      const values = [command.assessmentId ?? null, command.componentId ?? null, command.scheduleItemId ?? null, command.termType, command.amount, command.percentage, command.timeValue, command.timeUnit || null, command.currency, command.valuationBasis || null, command.limitType || null, command.vatBasis || null, command.valuationDate || null, command.effectiveFrom || null, command.effectiveTo || null, command.sourceType, command.sourceReference || null, 'manual', brokerUserId];
+      const hasMonetaryAmount = command.amount !== null && command.amount !== undefined && command.amount !== '';
+      const vatBasis = hasMonetaryAmount ? 'inclusive' : command.vatBasis || 'not_applicable';
+      const values = [command.assessmentId ?? null, command.componentId ?? null, command.scheduleItemId ?? null, command.termType, command.amount, command.percentage, command.timeValue, command.timeUnit || null, command.currency, command.valuationBasis || null, command.limitType || null, vatBasis, command.valuationDate || null, command.effectiveFrom || null, command.effectiveTo || null, command.sourceType, command.sourceReference || null, 'manual', brokerUserId];
       if (command.id) {
         row = await updateRow({ client, table: 'insurance_financial_terms', workspaceId, id: command.id, expectedVersion: command.expectedVersion, assignments: 'assessment_id = $1::uuid, component_id = $2::uuid, schedule_item_id = $3::uuid, term_type = $4, amount = $5, percentage = $6, time_value = $7, time_unit = $8, currency = $9, valuation_basis = $10, limit_type = $11, vat_basis = $12, valuation_date = $13::date, effective_from = $14::date, effective_to = $15::date, source_type = $16, source_reference = $17, extraction_method = $18, human_confirmed_by = $19, human_confirmed_at = now(), updated_by_user_id = $19', values });
       } else {
