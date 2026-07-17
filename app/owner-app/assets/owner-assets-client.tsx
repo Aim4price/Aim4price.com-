@@ -15,6 +15,7 @@ type Asset = {
   serialNumber: string;
   registrationNumber: string;
   registerName: string;
+  note: string;
   usage: number | null;
   usageMetric: 'hours' | 'km' | 'percentage';
 };
@@ -35,6 +36,7 @@ function searchHaystack(asset: Asset): string {
     asset.serialNumber,
     asset.registrationNumber,
     asset.registerName,
+    asset.note,
   ].join(' ').toLowerCase();
 }
 
@@ -64,9 +66,11 @@ export default function OwnerAssetsClient({ initialQuery = '' }: { initialQuery?
     const normalizedQuery = query.trim().toLowerCase();
     if (!normalizedQuery) return items;
     const terms = normalizedQuery.split(/\s+/).filter(Boolean);
+    const compactQuery = normalizedQuery.replace(/[^a-z0-9]/g, '');
     return items.filter((asset) => {
       const haystack = searchHaystack(asset);
-      return terms.every((term) => haystack.includes(term));
+      const compactHaystack = haystack.replace(/[^a-z0-9]/g, '');
+      return terms.every((term) => haystack.includes(term)) || Boolean(compactQuery && compactHaystack.includes(compactQuery));
     });
   }, [items, query]);
 
