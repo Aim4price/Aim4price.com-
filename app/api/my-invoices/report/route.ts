@@ -119,7 +119,8 @@ export async function GET(request: NextRequest) {
 
   try {
     const filters = parseFilters(request);
-    const format = parseFormat(request.nextUrl.searchParams.get('format'));
+    const ownerAppMode = request.nextUrl.searchParams.get('source') === 'owner-app';
+    const format = ownerAppMode ? 'pdf' : parseFormat(request.nextUrl.searchParams.get('format'));
     const [data, profile, rawLogoUrl] = await Promise.all([
       listMyInvoicesData(userId, filters),
       getAccountProfile({ id: userId, name: session.user.name, email: session.user.email }),
@@ -143,6 +144,7 @@ export async function GET(request: NextRequest) {
       invoices: data.invoices,
       includeFuelSlipCosts: filters.includeFuelSlipCosts !== false,
       xlsxUrl: buildFormatUrl(request, 'xlsx'),
+      hideXlsx: ownerAppMode,
     };
 
     const filename = `${slugify(options.assetLabel)}-cost-of-ownership.${format === 'xlsx' ? 'xlsx' : 'html'}`;
