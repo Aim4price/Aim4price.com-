@@ -14,7 +14,7 @@ export default async function OwnerAppValuationPage({ searchParams }: { searchPa
     <div className={styles.module}>
       <OwnerAppNav
         backHref={returnToAddAsset ? '/owner-app/assets/add' : '/owner-app'}
-        backLabel={returnToAddAsset ? 'Add asset' : 'Home'}
+        backLabel={returnToAddAsset ? 'Add Asset' : 'Home'}
       />
       <ValuationClient ownerAppMode />
     </div>
