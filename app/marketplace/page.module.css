@@ -1049,6 +1049,14 @@
 }
 
 .marketplacePhotoViewerClose { top: 0.75rem; right: 0.75rem; width: 2.75rem; height: 2.75rem; }
+.marketplacePhotoViewerClose svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.35;
+  stroke-linecap: round;
+}
 .marketplacePhotoViewerNav { top: 50%; width: 3rem; height: 3rem; transform: translateY(-50%); }
 .marketplacePhotoViewerPrevious { left: 0.75rem; }
 .marketplacePhotoViewerNext { right: 0.75rem; }
