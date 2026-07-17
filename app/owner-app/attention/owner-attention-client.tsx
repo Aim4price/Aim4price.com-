@@ -1,8 +1,9 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import FieldManagerNavLink from '../../field-manager/field-manager-nav-link';
 import styles from '../../field-manager/page.module.css';
+import ownerStyles from '../owner-app.module.css';
 
 type OverviewRange = 'week' | 'month';
 type OverviewItemType = 'problem' | 'service' | 'checkup' | 'license';
@@ -77,7 +78,6 @@ export default function OwnerAttentionClient({
   const [actionError, setActionError] = useState<string | null>(null);
   const [openingItemId, setOpeningItemId] = useState<string | null>(null);
   const [clearingItemId, setClearingItemId] = useState<string | null>(null);
-  const [isSigningOut, setIsSigningOut] = useState(false);
   const [reloadToken, setReloadToken] = useState(0);
   const requestIdRef = useRef(0);
 
@@ -136,25 +136,6 @@ export default function OwnerAttentionClient({
     void loadOverview();
     return () => controller.abort();
   }, [range, reloadToken]);
-
-  async function handleLogout() {
-    setIsSigningOut(true);
-    await Promise.allSettled([
-      fetch('/api/owner-app/logout', {
-        method: 'POST',
-        credentials: 'include',
-        cache: 'no-store',
-      }),
-      fetch('/api/auth/sign-out', {
-        method: 'POST',
-        credentials: 'include',
-        cache: 'no-store',
-        headers: { 'Content-Type': 'application/json' },
-        body: '{}',
-      }),
-    ]);
-    window.location.replace('/owner-app/login');
-  }
 
   function handleOpenAsset(item: OverviewItem) {
     setOpeningItemId(item.id);
@@ -245,15 +226,10 @@ export default function OwnerAttentionClient({
     <main className={styles.mobilePage}>
       <section className={`${styles.assetsShell} ${styles.overviewShell}`}>
         <header className={styles.overviewHeader} aria-label="Overview controls">
-          <FieldManagerNavLink href="/owner-app" label="Home" />
-          <button
-            type="button"
-            className={styles.logoutButton}
-            onClick={() => void handleLogout()}
-            disabled={isSigningOut}
-          >
-            {isSigningOut ? 'Signing out…' : 'Sign out'}
-          </button>
+          <Link className={ownerStyles.navButton} href="/owner-app" prefetch={false} aria-label="Home">
+            <span className={ownerStyles.navArrow} aria-hidden="true">←</span>
+            <span>Home</span>
+          </Link>
         </header>
 
         <div className={styles.overviewIntro}>
