@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, type ChangeEvent } from 'react';
+import { useMemo, useState } from 'react';
 import {
   INSURANCE_COVER_CATALOGUE,
   INSURANCE_INDUSTRY_PROFILES,
@@ -15,6 +15,7 @@ import type {
   InsuranceCommand,
   InsuranceCoverAssessment,
   InsuranceEvidence,
+  InsuranceFinancialTerm,
   InsuranceLocation,
   InsuranceRiskObject,
   InsuranceWorkspaceData,
@@ -40,19 +41,25 @@ function money(value: string | number | null | undefined, currency = 'ZAR'): str
   return new Intl.NumberFormat('en-ZA', { style: 'currency', currency, maximumFractionDigits: 2 }).format(parsed);
 }
 
+function financialTermMoney(term: InsuranceFinancialTerm): string {
+  const amount = Number(term.amount);
+  if (!Number.isFinite(amount)) return 'Not recorded';
+  return money(term.vatBasis === 'exclusive' ? amount * 1.15 : amount, term.currency);
+}
+
 const currentCoverOptions: Array<{ value: InsuranceCurrentCoverPosition; label: string }> = [
-  { value: 'unknown', label: 'Unknown' },
-  { value: 'not_recorded', label: 'Not recorded' },
-  { value: 'confirmed_included', label: 'Confirmed included' },
-  { value: 'confirmed_excluded', label: 'Confirmed excluded' },
+  { value: 'unknown', label: 'Choose the current position…' },
+  { value: 'not_recorded', label: 'No current-cover evidence available' },
+  { value: 'confirmed_included', label: 'Included on the current policy' },
+  { value: 'confirmed_excluded', label: 'Explicitly excluded on the current policy' },
   { value: 'covered_elsewhere', label: 'Covered elsewhere' },
   { value: 'not_applicable', label: 'Not applicable' },
 ];
 
 const placementOptions: Array<{ value: InsurancePlacementStage; label: string }> = [
-  { value: 'not_assessed', label: 'Not assessed' },
-  { value: 'area_to_consider', label: 'Area to consider' },
-  { value: 'information_required', label: 'Information required' },
+  { value: 'not_assessed', label: 'Choose what happens next…' },
+  { value: 'area_to_consider', label: 'Keep under consideration' },
+  { value: 'information_required', label: 'More information is required' },
   { value: 'quote_requested', label: 'Quote requested' },
   { value: 'quoted', label: 'Quoted' },
   { value: 'broker_recommended', label: 'Broker recommended' },
@@ -63,18 +70,50 @@ const placementOptions: Array<{ value: InsurancePlacementStage; label: string }>
   { value: 'not_applicable', label: 'Not applicable' },
 ];
 
+const riskObjectTypeOptions = [
+  ['mobile_machinery', 'Mobile Machinery'],
+  ['mobile_plant', 'Mobile Plant or Agricultural Machinery'],
+  ['motor_vehicle', 'Motor Vehicle'],
+  ['commercial_building', 'Commercial Building'],
+  ['domestic_building', 'Domestic Building'],
+  ['contents', 'Contents and Equipment'],
+  ['electronic_equipment', 'Electronic Equipment'],
+  ['stock_or_goods', 'Stock, Goods or Materials'],
+  ['portable_equipment', 'Portable Equipment'],
+  ['crop_field', 'Crop Field or Growing Crop'],
+  ['livestock', 'Livestock or Animals'],
+  ['project_or_contract_works', 'Project or Contract Works'],
+  ['unclassified_physical_asset', 'Other Physical Asset'],
+] as const;
+
 export function InsuranceOverviewPanel({ workspace, runCommand }: { workspace: InsuranceWorkspaceData; runCommand: RunCommand }) {
-  const [setupView, setSetupView] = useState<'classification' | 'locations' | 'parties' | 'source'>(() => workspace.segments.length === 0 ? 'classification' : workspace.locations.length === 0 ? 'locations' : workspace.parties.length === 0 ? 'parties' : 'source');
+  const [setupView, setSetupView] = useState<'classification' | 'locations' | 'parties'>(() => workspace.segments.length === 0 ? 'classification' : !workspace.locations.some((location) => !location.isUnknown) ? 'locations' : 'parties');
   const [segments, setSegments] = useState<InsuranceClientSegment[]>(workspace.segments);
   const [industries, setIndustries] = useState<InsuranceIndustryProfileKey[]>(workspace.industryProfiles);
   const [locationLabel, setLocationLabel] = useState('');
   const [locationAddress, setLocationAddress] = useState('');
   const [locationUse, setLocationUse] = useState('');
-  const [partyName, setPartyName] = useState('');
+  const [locationLatitude, setLocationLatitude] = useState('');
+  const [locationLongitude, setLocationLongitude] = useState('');
+  const [partyName, setPartyName] = useState(workspace.parties.length ? '' : workspace.clientName);
   const [partyType, setPartyType] = useState<'person' | 'organisation' | 'trust' | 'estate' | 'other'>('organisation');
   const [partyRole, setPartyRole] = useState<'insured' | 'owner' | 'financier_mortgagee' | 'beneficiary' | 'operator' | 'custodian' | 'principal' | 'contractor'>('insured');
   const [partyRoleContext, setPartyRoleContext] = useState('');
   const latestSnapshot = workspace.snapshotRevisions[0];
+  const realLocations = workspace.locations.filter((location) => !location.isUnknown);
+  const assetGpsLocations = [...new Map(workspace.assets.flatMap((asset) => {
+    const rawLat = asset.snapshot.lastKnownLat;
+    const rawLng = asset.snapshot.lastKnownLng;
+    if (rawLat === null || rawLat === undefined || rawLat === '' || rawLng === null || rawLng === undefined || rawLng === '') return [];
+    const lat = Number(rawLat);
+    const lng = Number(rawLng);
+    return Number.isFinite(lat) && Number.isFinite(lng) ? [[`${lat.toFixed(6)}:${lng.toFixed(6)}`, { asset, lat, lng }]] as const : [];
+  })).values()];
+  const latestGeneratedMs = latestSnapshot?.generatedAtIso ? new Date(latestSnapshot.generatedAtIso).getTime() : 0;
+  const newerShares = [...new Map(workspace.availableSnapshotShares.filter((share) => {
+    const createdMs = new Date(share.createdAtIso).getTime();
+    return Number.isFinite(createdMs) && createdMs > latestGeneratedMs;
+  }).map((share) => [`${share.createdAtIso}:${share.assetCount}`, share])).values()];
 
   function toggleSegment(segment: InsuranceClientSegment) {
     setSegments((current) => current.includes(segment) ? current.filter((entry) => entry !== segment) : [...current, segment]);
@@ -85,54 +124,70 @@ export function InsuranceOverviewPanel({ workspace, runCommand }: { workspace: I
     setIndustries((current) => current.includes(industry) ? current.filter((entry) => entry !== industry) : [...current, industry]);
   }
 
+  function useAssetGps(asset: InsuranceWorkspaceAsset, lat: number, lng: number) {
+    setLocationLabel(asset.location || asset.title);
+    setLocationAddress(asset.location);
+    setLocationLatitude(String(lat));
+    setLocationLongitude(String(lng));
+  }
+
+  function saveLocation() {
+    return runCommand({
+      operation: 'save_location', label: locationLabel, addressText: locationAddress, occupancyUse: locationUse,
+      latitude: locationLatitude || null, longitude: locationLongitude || null,
+    }, 'Location saved.').then((ok) => {
+      if (ok) { setLocationLabel(''); setLocationAddress(''); setLocationUse(''); setLocationLatitude(''); setLocationLongitude(''); }
+    });
+  }
+
   return <section>
-    <nav className={styles.substepNav} aria-label="Client setup sections">
-      <button className={setupView === 'classification' ? styles.activeView : ''} type="button" onClick={() => setSetupView('classification')}>1. Classification {workspace.segments.length ? '✓' : ''}</button>
-      <button className={setupView === 'locations' ? styles.activeView : ''} type="button" onClick={() => setSetupView('locations')}>2. Locations ({workspace.locations.length})</button>
-      <button className={setupView === 'parties' ? styles.activeView : ''} type="button" onClick={() => setSetupView('parties')}>3. Parties ({workspace.parties.length})</button>
-      <button className={setupView === 'source' ? styles.activeView : ''} type="button" onClick={() => setSetupView('source')}>4. Source check</button>
+    <nav className={styles.substepNav} aria-label="Client setup checklist">
+      <button className={setupView === 'classification' ? styles.activeView : ''} type="button" onClick={() => setSetupView('classification')}><span>1</span> Client profile {workspace.segments.length ? '✓' : ''}</button>
+      <button className={setupView === 'locations' ? styles.activeView : ''} type="button" onClick={() => setSetupView('locations')}><span>2</span> Saved locations {realLocations.length ? '✓' : ''}</button>
+      <button className={setupView === 'parties' ? styles.activeView : ''} type="button" onClick={() => setSetupView('parties')}><span>3</span> Insured parties {workspace.parties.length ? '✓' : ''}</button>
     </nav>
 
     {setupView === 'classification' ? <article className={styles.card}>
-        <h2>Client classification</h2>
-        <p>First identify whether this is a domestic or commercial review. For commercial clients, select every industry profile that applies.</p>
+        <div className={styles.cardHeading}><span>Required</span><h2>What type of client is this?</h2><p>This choice controls which cover suggestions appear later.</p></div>
         <div className={styles.checkGrid}>
-          {(['domestic', 'commercial'] as InsuranceClientSegment[]).map((segment) => <label className={styles.checkCard} key={segment}><input type="checkbox" checked={segments.includes(segment)} onChange={() => toggleSegment(segment)} /><span><strong>{label(segment)}</strong><small>Top-level client segment</small></span></label>)}
+          {(['domestic', 'commercial'] as InsuranceClientSegment[]).map((segment) => <label className={styles.checkCard} key={segment}><input type="checkbox" checked={segments.includes(segment)} onChange={() => toggleSegment(segment)} /><span><strong>{label(segment)}</strong><small>{segment === 'domestic' ? 'Personal, household and private-use insurance' : 'Business, farming and commercial insurance'}</small></span></label>)}
         </div>
-        {segments.includes('commercial') ? <div className={styles.industryGrid}>{INSURANCE_INDUSTRY_PROFILES.map((industry) => <label className={styles.compactCheck} key={industry.key}><input type="checkbox" checked={industries.includes(industry.key)} onChange={() => toggleIndustry(industry.key)} /><span>{industry.label}</span></label>)}</div> : <p className={styles.infoBox}>Choose Commercial to record one or more industry profiles.</p>}
-        <button className={styles.primaryButton} type="button" disabled={!segments.length} onClick={() => void runCommand({ operation: 'update_profile', expectedVersion: workspace.version, segments, industryProfiles: segments.includes('commercial') ? industries : [] }, 'Client classification saved.').then((ok) => { if (ok) setSetupView('locations'); })}>Save and continue to locations</button>
+        {segments.includes('commercial') ? <><h3 className={styles.fieldGroupTitle}>Which industries apply?</h3><div className={styles.industryGrid}>{INSURANCE_INDUSTRY_PROFILES.map((industry) => <label className={styles.compactCheck} key={industry.key}><input type="checkbox" checked={industries.includes(industry.key)} onChange={() => toggleIndustry(industry.key)} /><span>{industry.label}</span></label>)}</div></> : null}
+        <button className={styles.primaryButton} type="button" disabled={!segments.length || (segments.includes('commercial') && !industries.length)} onClick={() => void runCommand({ operation: 'update_profile', expectedVersion: workspace.version, segments, industryProfiles: segments.includes('commercial') ? industries : [] }, 'Client profile saved.').then((ok) => { if (ok) setSetupView('locations'); })}>Save profile and continue →</button>
       </article> : null}
 
     {setupView === 'locations' ? <article className={styles.card}>
-        <h2>Workspace locations</h2>
-        <p>Add the sites needed for risk and schedule links. This does not change the owner&apos;s original location text.</p>
+        <div className={styles.cardHeading}><span>Required</span><h2>Where are the assets or risks located?</h2><p>Save at least one real location. GPS coordinates found in the shared register are shown below.</p></div>
+        {assetGpsLocations.length ? <section className={styles.gpsSuggestionSection}><header><strong>GPS locations found on shared assets</strong><small>Select one to prefill the location form.</small></header><div className={styles.gpsCardGrid}>{assetGpsLocations.map(({ asset, lat, lng }) => <article className={styles.gpsCard} key={`${lat}:${lng}`}><span>Saved GPS</span><strong>{asset.location || asset.title}</strong><small>{lat.toFixed(6)}, {lng.toFixed(6)}</small><div><button type="button" onClick={() => useAssetGps(asset, lat, lng)}>Use this location</button><a href={`https://www.google.com/maps?q=${lat},${lng}`} target="_blank" rel="noreferrer">Open map ↗</a></div></article>)}</div></section> : <p className={styles.infoBox}>No GPS coordinates were shared. Enter a site label and address below.</p>}
+        <h3 className={styles.fieldGroupTitle}>Add a saved location</h3>
         <div className={styles.formGrid}>
-          <label><span>Location / site label</span><input value={locationLabel} onChange={(event) => setLocationLabel(event.target.value)} /></label>
-          <label><span>Occupancy / use</span><input value={locationUse} onChange={(event) => setLocationUse(event.target.value)} /></label>
-          <label className={styles.wide}><span>Address</span><input value={locationAddress} onChange={(event) => setLocationAddress(event.target.value)} /></label>
+          <label><span>Location name *</span><input value={locationLabel} onChange={(event) => setLocationLabel(event.target.value)} placeholder="For example: Main farm or George depot" /></label>
+          <label><span>What happens here?</span><input value={locationUse} onChange={(event) => setLocationUse(event.target.value)} placeholder="Storage, farming, office, workshop…" /></label>
+          <label className={styles.wide}><span>Street address or farm description</span><input value={locationAddress} onChange={(event) => setLocationAddress(event.target.value)} /></label>
+          <label><span>GPS latitude</span><input inputMode="decimal" value={locationLatitude} onChange={(event) => setLocationLatitude(event.target.value)} placeholder="-33.9249" /></label>
+          <label><span>GPS longitude</span><input inputMode="decimal" value={locationLongitude} onChange={(event) => setLocationLongitude(event.target.value)} placeholder="18.4241" /></label>
         </div>
-        <button className={styles.primaryButton} type="button" disabled={!locationLabel.trim()} onClick={() => void runCommand({ operation: 'save_location', label: locationLabel, addressText: locationAddress, occupancyUse: locationUse }, 'Location added.').then((ok) => { if (ok) { setLocationLabel(''); setLocationAddress(''); setLocationUse(''); } })}>Add location</button>
-        <div className={styles.simpleList}>{workspace.locations.map((location) => <div key={location.id}><strong>{location.label}</strong><span>{location.isUnknown ? 'Unknown / not supplied' : location.occupancyUse || 'Use not recorded'}</span><small>{location.addressText || 'Address not recorded'} · {location.assetIds.length} linked assets</small></div>)}</div>
-        <button className={styles.secondaryButton} type="button" onClick={() => setSetupView('parties')}>Continue to parties →</button>
+        <button className={styles.primaryButton} type="button" disabled={!locationLabel.trim()} onClick={() => void saveLocation()}>Save location</button>
+        {realLocations.length ? <><h3 className={styles.fieldGroupTitle}>Saved workspace locations</h3><div className={styles.savedLocationGrid}>{realLocations.map((location) => <article key={location.id}><span>✓ Saved</span><h3>{location.label}</h3><p>{location.addressText || location.occupancyUse || 'Address not recorded'}</p>{location.latitude && location.longitude ? <><small>{location.latitude}, {location.longitude}</small><a href={`https://www.google.com/maps?q=${location.latitude},${location.longitude}`} target="_blank" rel="noreferrer">Open GPS in Maps ↗</a></> : <small>No GPS coordinates saved</small>}<strong>{location.assetIds.length} linked asset{location.assetIds.length === 1 ? '' : 's'}</strong></article>)}</div></> : null}
+        <button className={styles.secondaryButton} type="button" disabled={!realLocations.length} onClick={() => setSetupView('parties')}>Continue to insured parties →</button>
       </article> : null}
 
     {setupView === 'parties' ? <article className={styles.card}>
-        <h2>Parties and roles</h2>
-        <p>Add the insured, owner, financier or other party whose interests need to be reflected in the review.</p>
+        <div className={styles.cardHeading}><span>Required</span><h2>Who must be shown on the insurance?</h2><p>Start with the main insured. Add owners or financiers only when they have a separate interest.</p></div>
         <div className={styles.formGrid}>
-          <label><span>Party name</span><input value={partyName} onChange={(event) => setPartyName(event.target.value)} /></label>
+          <label><span>Name *</span><input value={partyName} onChange={(event) => setPartyName(event.target.value)} /></label>
           <label><span>Party type</span><select value={partyType} onChange={(event) => setPartyType(event.target.value as typeof partyType)}><option value="organisation">Organisation</option><option value="person">Person</option><option value="trust">Trust</option><option value="estate">Estate</option><option value="other">Other</option></select></label>
-          <label><span>Role</span><select value={partyRole} onChange={(event) => setPartyRole(event.target.value as typeof partyRole)}><option value="insured">Insured</option><option value="owner">Owner</option><option value="financier_mortgagee">Financier / mortgagee</option><option value="beneficiary">Beneficiary</option><option value="operator">Operator</option><option value="custodian">Custodian</option><option value="principal">Principal</option><option value="contractor">Contractor</option></select></label>
-          <label><span>Role context</span><input value={partyRoleContext} onChange={(event) => setPartyRoleContext(event.target.value)} /></label>
+          <label><span>Insurance role</span><select value={partyRole} onChange={(event) => setPartyRole(event.target.value as typeof partyRole)}><option value="insured">Main insured</option><option value="owner">Owner</option><option value="financier_mortgagee">Financier / mortgagee</option><option value="beneficiary">Beneficiary</option><option value="operator">Operator</option><option value="custodian">Custodian</option><option value="principal">Principal</option><option value="contractor">Contractor</option></select></label>
+          <label><span>Extra explanation (optional)</span><input value={partyRoleContext} onChange={(event) => setPartyRoleContext(event.target.value)} /></label>
         </div>
-        <button className={styles.primaryButton} type="button" disabled={!partyName.trim()} onClick={() => void runCommand({ operation: 'save_party', partyType, displayName: partyName, roles: [{ roleKey: partyRole, context: partyRoleContext }] }, 'Party and role added.').then((ok) => { if (ok) { setPartyName(''); setPartyRoleContext(''); } })}>Add party</button>
-        <div className={styles.simpleList}>{workspace.parties.map((party) => <div key={party.id}><strong>{party.displayName}</strong><span>{label(party.partyType)}</span><small>{party.roles.map((role) => `${label(role.roleKey)}${role.context ? ` — ${role.context}` : ''}`).join(', ')}</small></div>)}</div>
-        <button className={styles.secondaryButton} type="button" onClick={() => setSetupView('source')}>Continue to source check →</button>
+        <button className={styles.primaryButton} type="button" disabled={!partyName.trim()} onClick={() => void runCommand({ operation: 'save_party', partyType, displayName: partyName, roles: [{ roleKey: partyRole, context: partyRoleContext }] }, 'Insured party saved.').then((ok) => { if (ok) { setPartyName(''); setPartyRoleContext(''); } })}>Save party</button>
+        {workspace.parties.length ? <div className={styles.partyCardGrid}>{workspace.parties.map((party) => <article key={party.id}><span>{label(party.partyType)}</span><h3>{party.displayName}</h3><p>{party.roles.map((role) => `${label(role.roleKey)}${role.context ? ` — ${role.context}` : ''}`).join(', ')}</p></article>)}</div> : null}
+        {workspace.parties.length ? <p className={styles.successBox}>✓ Client setup has the required profile, location and insured-party information.</p> : null}
       </article> : null}
 
-    {setupView === 'source' ? <article className={styles.card}>
-      <h2>Authorised source check</h2>
-      <p>Confirm that the imported source is the revision you intend to review. Owner facts remain separate from broker-recorded cover evidence.</p>
+    <details className={styles.advancedPanel}>
+      <summary>Advanced: source revision and import history</summary>
+      <div><h2>Authorised source</h2><p>These controls are only needed when the client sends a genuinely newer register.</p>
       <dl>
         <div><dt>Revision</dt><dd>{latestSnapshot ? latestSnapshot.revision : 'Not recorded'}</dd></div>
         <div><dt>Generated</dt><dd>{dateLabel(latestSnapshot?.generatedAtIso ?? null)}</dd></div>
@@ -141,25 +196,39 @@ export function InsuranceOverviewPanel({ workspace, runCommand }: { workspace: I
         <div><dt>Authorisation</dt><dd>{latestSnapshot?.ownerAuthorisationReference || 'Not recorded'}</dd></div>
       </dl>
       {workspace.latestSnapshotDiffs.length ? <><h3>Latest authorised changes</h3><div className={styles.simpleList}>{workspace.latestSnapshotDiffs.map((diff) => <div key={diff.id}><strong>{label(diff.changeType)}</strong><span>{diff.sourceAssetKey}</span><small>{diff.changedFields.join(', ') || 'Material fields not listed'}</small></div>)}</div></> : <p className={styles.infoBox}>No later owner-authorised snapshot revision has been ingested.</p>}
-      {workspace.availableSnapshotShares.length ? <><h3>Later authorised shares available</h3><div className={styles.simpleList}>{workspace.availableSnapshotShares.map((share) => <div key={share.id}><strong>{dateLabel(share.createdAtIso)}</strong><span>{share.assetCount} shared assets</span><small>{share.ownerMessage || 'No owner message supplied'}</small><button className={styles.secondaryButton} type="button" onClick={() => void runCommand({ operation: 'ingest_snapshot_revision', shareId: share.id, expectedVersion: workspace.version }, 'Owner-authorised snapshot revision ingested.')}>Ingest as next revision</button></div>)}</div></> : null}
-      <p className={styles.disclaimer}>Replacement value, owner-provided insured value and broker-recorded current sum insured are separate facts. A missing sum insured remains unknown.</p>
-    </article> : null}
+      {newerShares.length ? <><h3>Newer authorised registers</h3><div className={styles.simpleList}>{newerShares.map((share) => <div key={share.id}><strong>{dateLabel(share.createdAtIso)}</strong><span>{share.assetCount} shared assets</span><small>{share.ownerMessage || 'No owner message supplied'}</small><button className={styles.secondaryButton} type="button" onClick={() => void runCommand({ operation: 'ingest_snapshot_revision', shareId: share.id, expectedVersion: workspace.version }, 'Newer owner-authorised register imported.')}>Import this newer register</button></div>)}</div></> : <p className={styles.infoBox}>No newer register is available. The current source should remain unchanged.</p>}
+      </div>
+    </details>
   </section>;
 }
 
-export function InsuranceRiskObjectEditor({ riskObject, locations, runCommand }: { riskObject: InsuranceRiskObject; locations: InsuranceLocation[]; runCommand: RunCommand }) {
+export function InsuranceRiskObjectEditor({ riskObject, locations, runCommand, onSaved }: { riskObject: InsuranceRiskObject; locations: InsuranceLocation[]; runCommand: RunCommand; onSaved?: () => void | Promise<void> }) {
   const [objectType, setObjectType] = useState(riskObject.objectType);
   const [useDescription, setUseDescription] = useState(riskObject.useDescription);
   const [locationId, setLocationId] = useState(riskObject.locationId ?? '');
-  const [classificationStatus, setClassificationStatus] = useState(riskObject.classificationStatus);
-  return <div className={styles.riskObjectEditor}>
-    <div><small>Broker classification — separate from policy section</small><strong>{riskObject.objectLabel}</strong></div>
-    <label><span>Risk-object type</span><input value={objectType} onChange={(event) => setObjectType(event.target.value)} /></label>
-    <label><span>Normalized location</span><select value={locationId} onChange={(event) => setLocationId(event.target.value)}><option value="">Unknown / not supplied</option>{locations.filter((location) => !location.isUnknown).map((location) => <option value={location.id} key={location.id}>{location.label}</option>)}</select></label>
-    <label><span>Classification status</span><select value={classificationStatus} onChange={(event) => setClassificationStatus(event.target.value as typeof classificationStatus)}><option value="unconfirmed">Unconfirmed</option><option value="human_confirmed">Human confirmed</option><option value="dismissed">Dismissed</option></select></label>
-    <label className={styles.wide}><span>Use / operating context</span><input value={useDescription} onChange={(event) => setUseDescription(event.target.value)} /></label>
-    <button className={styles.secondaryButton} type="button" onClick={() => void runCommand({ operation: 'save_risk_object', id: riskObject.id, expectedVersion: riskObject.version, objectType, objectLabel: riskObject.objectLabel, useDescription, locationId: locationId || null, classificationStatus }, 'Risk-object classification saved.')}>Save classification</button>
-  </div>;
+  const knownType = riskObjectTypeOptions.some(([value]) => value === objectType);
+
+  async function save(status: InsuranceRiskObject['classificationStatus'], continueAfterSave = false) {
+    const ok = await runCommand({
+      operation: 'save_risk_object', id: riskObject.id, expectedVersion: riskObject.version,
+      objectType, objectLabel: riskObject.objectLabel, useDescription, locationId: locationId || null, classificationStatus: status,
+    }, status === 'human_confirmed' ? 'Asset classification confirmed.' : status === 'dismissed' ? 'Asset marked as not applicable.' : 'Changes saved.');
+    if (ok && continueAfterSave) await onSaved?.();
+  }
+
+  return <section className={styles.classificationCard}>
+    <header><div><span>Next action</span><h3>Confirm the insurance classification</h3><p>The suggested type can be changed. Choose plain-language options below, then confirm and continue.</p></div><strong>{riskObject.classificationStatus === 'human_confirmed' ? '✓ Confirmed' : 'Needs confirmation'}</strong></header>
+    <div className={styles.classificationFields}>
+      <label><span>What kind of insurance item is this?</span><select value={objectType} onChange={(event) => setObjectType(event.target.value)}>{!knownType ? <option value={objectType}>{label(objectType)}</option> : null}{riskObjectTypeOptions.map(([value, optionLabel]) => <option value={value} key={value}>{optionLabel}</option>)}</select><small>Shown in reports as “{riskObjectTypeOptions.find(([value]) => value === objectType)?.[1] || label(objectType)}”.</small></label>
+      <label><span>Which saved location applies?</span><select value={locationId} onChange={(event) => setLocationId(event.target.value)}><option value="">Choose a saved location</option>{locations.filter((location) => !location.isUnknown).map((location) => <option value={location.id} key={location.id}>{location.label}{location.latitude && location.longitude ? ' · GPS saved' : ''}</option>)}</select><small>{locationId ? 'This location will be linked to the asset.' : 'Choose a real location before confirming.'}</small></label>
+      <label className={styles.wide}><span>How is it used?</span><input value={useDescription} onChange={(event) => setUseDescription(event.target.value)} placeholder="For example: Farm operations, contracting, private use…" /></label>
+    </div>
+    <div className={styles.classificationActions}>
+      <button className={styles.primaryButton} type="button" disabled={!objectType || !locationId} onClick={() => void save('human_confirmed', true)}>{riskObject.classificationStatus === 'human_confirmed' ? 'Save and review next asset →' : 'Looks correct — confirm and continue →'}</button>
+      <button className={styles.secondaryButton} type="button" onClick={() => void save('unconfirmed')}>Save without confirming</button>
+    </div>
+    <details className={styles.advancedInline}><summary>This item should not be included in the insurance review</summary><p>Use this only when the shared row is not an insurable asset or was included by mistake.</p><button type="button" onClick={() => void save('dismissed', true)}>Mark not applicable and continue</button></details>
+  </section>;
 }
 
 function AssessmentEditor({ assessment, runCommand }: { assessment: InsuranceCoverAssessment; runCommand: RunCommand }) {
@@ -186,17 +255,18 @@ function AssessmentEditor({ assessment, runCommand }: { assessment: InsuranceCov
   }
 
   return <article className={styles.coverAssessmentCard}>
-    <header><div><small>{assessment.systemSuggestionRuleId ? 'Suggested area to consider' : 'Broker-added assessment'}</small><h3>{assessment.coverLabel}</h3></div><strong>{label(assessment.currentCoverPosition)}</strong></header>
+    <header><div><small>{assessment.systemSuggestionRuleId ? 'Suggested for this review' : 'Added by broker'}</small><h3>{assessment.coverLabel}</h3></div><strong>{assessment.currentCoverPosition === 'unknown' ? 'Decision needed' : label(assessment.currentCoverPosition)}</strong></header>
     {assessment.systemSuggestionRationale ? <p className={styles.suggestionReason}>{assessment.systemSuggestionRationale}</p> : null}
+    <h4 className={styles.decisionPrompt}>Make two decisions</h4>
     <div className={styles.formGrid}>
-      <label><span>Current-cover position</span><select value={currentCoverPosition} onChange={(event) => setCurrentCoverPosition(event.target.value as InsuranceCurrentCoverPosition)}>{currentCoverOptions.map((option) => <option value={option.value} key={option.value}>{option.label}</option>)}</select></label>
-      <label><span>Review / placement stage</span><select value={placementStage} onChange={(event) => setPlacementStage(event.target.value as InsurancePlacementStage)}>{placementOptions.map((option) => <option value={option.value} key={option.value}>{option.label}</option>)}</select></label>
-      <label className={styles.wide}><span>Source reference {currentCoverPosition === 'confirmed_included' ? '(required)' : ''}</span><input value={sourceReference} onChange={(event) => setSourceReference(event.target.value)} placeholder="Policy schedule, wording, insurer confirmation or recorded source" /></label>
-      <label className={styles.wide}><span>Broker rationale</span><textarea rows={2} value={brokerRationale} onChange={(event) => setBrokerRationale(event.target.value)} /></label>
+      <label><span>1. What does the current policy say?</span><select value={currentCoverPosition} onChange={(event) => setCurrentCoverPosition(event.target.value as InsuranceCurrentCoverPosition)}>{currentCoverOptions.map((option) => <option value={option.value} key={option.value}>{option.label}</option>)}</select></label>
+      <label><span>2. What should happen next?</span><select value={placementStage} onChange={(event) => setPlacementStage(event.target.value as InsurancePlacementStage)}>{placementOptions.map((option) => <option value={option.value} key={option.value}>{option.label}</option>)}</select></label>
+      <label className={styles.wide}><span>Where did you confirm this? {currentCoverPosition === 'confirmed_included' ? '*' : '(optional when no evidence exists)'}</span><input value={sourceReference} onChange={(event) => setSourceReference(event.target.value)} placeholder="For example: Santam schedule dated 15 July 2026, section 4" /></label>
+      <label className={styles.wide}><span>Why is this the right decision?</span><textarea rows={2} value={brokerRationale} onChange={(event) => setBrokerRationale(event.target.value)} placeholder="Short explanation for the file and final report" /></label>
     </div>
-    <button className={styles.primaryButton} type="button" onClick={() => void saveAssessment()}>Save assessment</button>
+    <button className={styles.primaryButton} type="button" disabled={currentCoverPosition === 'unknown' || placementStage === 'not_assessed' || (currentCoverPosition === 'confirmed_included' && !sourceReference.trim())} onClick={() => void saveAssessment()}>Save cover decision</button>
 
-    <details className={styles.inlineDetails}><summary>Components, limits and excesses</summary>
+    <details className={styles.inlineDetails}><summary>Advanced: extensions, conditions, limits and excesses</summary>
       {assessment.components.length ? <div className={styles.simpleList}>{assessment.components.map((component) => <div key={component.id}><strong>{component.label}</strong><span>{label(component.componentType)} · {label(component.selectionStatus)}</span><small>{component.conditionsNotes || component.provenance.sourceReference || 'No additional terms recorded'}</small></div>)}</div> : <p>No structured components recorded.</p>}
       <div className={styles.formGrid}>
         <label><span>Component type</span><select value={componentType} onChange={(event) => setComponentType(event.target.value as typeof componentType)}><option value="extension">Extension</option><option value="condition">Condition</option><option value="warranty">Warranty</option><option value="endorsement">Endorsement</option></select></label>
@@ -204,34 +274,35 @@ function AssessmentEditor({ assessment, runCommand }: { assessment: InsuranceCov
         <label className={styles.wide}><span>Component label</span><input value={componentLabel} onChange={(event) => setComponentLabel(event.target.value)} /></label>
       </div>
       <button className={styles.secondaryButton} type="button" onClick={() => void runCommand({ operation: 'save_component', assessmentId: assessment.id, componentType, label: componentLabel, selectionStatus: componentStatus, sourceType: 'broker_recorded', sourceReference }, 'Cover component saved.').then((ok) => { if (ok) setComponentLabel(''); })}>Add component</button>
-      <div className={styles.financialRows}>{assessment.financialTerms.map((term) => <div key={term.id}><strong>{label(term.termType)}</strong><span>{term.amount ? money(term.amount, term.currency) : term.percentage ? `${term.percentage}%` : term.timeValue ? `${term.timeValue} ${term.timeUnit}` : 'Recorded without amount'}</span></div>)}</div>
+      <div className={styles.financialRows}>{assessment.financialTerms.map((term) => <div key={term.id}><strong>{label(term.termType)}</strong><span>{term.amount ? `${financialTermMoney(term)} VAT included` : term.percentage ? `${term.percentage}%` : term.timeValue ? `${term.timeValue} ${term.timeUnit}` : 'Recorded without amount'}</span></div>)}</div>
       <div className={styles.formGrid}>
         <label><span>Financial term</span><select value={termType} onChange={(event) => setTermType(event.target.value as typeof termType)}><option value="sum_insured">Sum insured</option><option value="sublimit">Sublimit</option><option value="basic_excess">Basic excess</option><option value="time_excess">Time excess</option></select></label>
-        <label><span>{termType === 'time_excess' ? 'Hours' : 'Amount (ZAR)'}</span><input inputMode="decimal" value={termAmount} onChange={(event) => setTermAmount(event.target.value)} /></label>
+        <label><span>{termType === 'time_excess' ? 'Hours' : 'Amount including VAT (ZAR)'}</span><input inputMode="decimal" value={termAmount} onChange={(event) => setTermAmount(event.target.value)} /></label>
       </div>
-      <button className={styles.secondaryButton} type="button" onClick={() => void runCommand({ operation: 'save_financial_term', assessmentId: assessment.id, termType, amount: termType === 'time_excess' ? null : termAmount, timeValue: termType === 'time_excess' ? termAmount : null, timeUnit: termType === 'time_excess' ? 'hours' : '', currency: 'ZAR', sourceType: 'broker_recorded', sourceReference }, 'Financial term saved.').then((ok) => { if (ok) setTermAmount(''); })}>Add financial term</button>
+      <button className={styles.secondaryButton} type="button" onClick={() => void runCommand({ operation: 'save_financial_term', assessmentId: assessment.id, termType, amount: termType === 'time_excess' ? null : termAmount, timeValue: termType === 'time_excess' ? termAmount : null, timeUnit: termType === 'time_excess' ? 'hours' : '', currency: 'ZAR', vatBasis: termType === 'time_excess' ? 'not_applicable' : 'inclusive', sourceType: 'broker_recorded', sourceReference }, 'VAT-inclusive financial term saved.').then((ok) => { if (ok) setTermAmount(''); })}>Add VAT-inclusive financial term</button>
     </details>
   </article>;
 }
 
 export function InsuranceCoversPanel({ workspace, assets, runCommand }: { workspace: InsuranceWorkspaceData; assets: InsuranceWorkspaceAsset[]; runCommand: RunCommand }) {
-  const [coverView, setCoverView] = useState<'exposures' | 'suggestions' | 'assessments'>(() => workspace.exposures.length === 0 ? 'exposures' : workspace.suggestions.some((suggestion) => !suggestion.decision) ? 'suggestions' : 'assessments');
+  const [coverView, setCoverView] = useState<'exposures' | 'suggestions' | 'assessments'>(() => workspace.suggestions.some((suggestion) => suggestion.suggestedCoverKey && !suggestion.decision) ? 'suggestions' : workspace.assessments.some((assessment) => assessment.canonicalCoverKey) ? 'assessments' : 'suggestions');
   const [assessmentIndex, setAssessmentIndex] = useState(() => Math.max(0, workspace.assessments.filter((assessment) => assessment.canonicalCoverKey).findIndex((assessment) => assessment.placementStage === 'not_assessed')));
   const [query, setQuery] = useState('');
   const [family, setFamily] = useState('all');
   const [regulatoryClass, setRegulatoryClass] = useState('all');
-  const [showFullCatalogue, setShowFullCatalogue] = useState(false);
   const [exposureLabel, setExposureLabel] = useState('');
   const [exposureType, setExposureType] = useState('liability');
   const [exposureDescription, setExposureDescription] = useState('');
   const [exposureAssetIds, setExposureAssetIds] = useState<string[]>([]);
   const [exposureLocationIds, setExposureLocationIds] = useState<string[]>([]);
   const [exposurePartyIds, setExposurePartyIds] = useState<string[]>([]);
-  const [suggestionRationale, setSuggestionRationale] = useState('');
   const existingKeys = new Set(workspace.assessments.map((assessment) => assessment.canonicalCoverKey).filter(Boolean));
   const assessments = workspace.assessments.filter((assessment) => assessment.canonicalCoverKey);
   const activeAssessment = assessments[Math.min(assessmentIndex, Math.max(0, assessments.length - 1))];
-  const suggestedKeys = new Set(workspace.suggestions.filter((suggestion) => suggestion.suggestedCoverKey && !suggestion.decision).map((suggestion) => suggestion.suggestedCoverKey));
+  const openSuggestions = workspace.suggestions.filter((suggestion) => suggestion.suggestedCoverKey && !suggestion.decision);
+  const nonAssetExposures = workspace.exposures.filter((exposure) => exposure.exposureType !== 'physical_asset');
+  const physicalAssetExposures = workspace.exposures.filter((exposure) => exposure.exposureType === 'physical_asset');
+  const unreviewedAssets = workspace.riskObjects.filter((riskObject) => riskObject.classificationStatus !== 'human_confirmed');
   const families = [...new Set(INSURANCE_COVER_CATALOGUE.map((cover) => cover.familyKey))].sort();
 
   const filteredCatalogue = useMemo(() => {
@@ -240,69 +311,79 @@ export function InsuranceCoversPanel({ workspace, assets, runCommand }: { worksp
       if (family !== 'all' && cover.familyKey !== family) return false;
       if (regulatoryClass !== 'all' && !cover.regulatoryMappings.some((mapping) => mapping.classKey === regulatoryClass)) return false;
       if (normalized && ![cover.label, cover.key, cover.familyKey, ...cover.aliases].join(' ').toLowerCase().includes(normalized)) return false;
-      if (showFullCatalogue || normalized || family !== 'all' || regulatoryClass !== 'all') return true;
-      return suggestedKeys.has(cover.key) || cover.eligibleClientSegments.some((segment) => workspace.segments.includes(segment)) && (!cover.relevantIndustryProfiles.length || cover.relevantIndustryProfiles.some((industry) => workspace.industryProfiles.includes(industry)));
+      return Boolean(normalized || family !== 'all' || regulatoryClass !== 'all');
     });
-    return showFullCatalogue || normalized || family !== 'all' || regulatoryClass !== 'all' ? relevant : relevant.slice(0, 18);
-  }, [family, regulatoryClass, query, showFullCatalogue, suggestedKeys, workspace.industryProfiles, workspace.segments]);
+    return relevant.slice(0, 30);
+  }, [family, regulatoryClass, query]);
+
+  function toggleLink(value: string, current: string[], setter: (next: string[]) => void) {
+    setter(current.includes(value) ? current.filter((entry) => entry !== value) : [...current, value]);
+  }
 
   return <section>
-    <header className={styles.sectionHeader}><div><h2>Covers and exposures</h2><p>System suggestions, current policy evidence and broker decisions remain separate.</p></div><button type="button" onClick={() => void runCommand({ operation: 'refresh_suggestions' }, 'Deterministic suggestions refreshed.')}>Refresh suggestions</button></header>
+    <header className={styles.sectionHeader}><div><span className={styles.eyebrow}>Guided cover review</span><h2>Decide what cover needs attention</h2><p>Start with the recommendations created from the client profile and reviewed assets. Nothing is treated as insured until you record policy evidence.</p></div><button type="button" onClick={() => void runCommand({ operation: 'refresh_suggestions' }, 'Cover recommendations refreshed.')}>Refresh recommendations</button></header>
     <nav className={styles.substepNav} aria-label="Cover review sections">
-      <button className={coverView === 'exposures' ? styles.activeView : ''} type="button" onClick={() => setCoverView('exposures')}>1. Exposures ({workspace.exposures.length})</button>
-      <button className={coverView === 'suggestions' ? styles.activeView : ''} type="button" onClick={() => setCoverView('suggestions')}>2. Areas to consider ({workspace.suggestions.filter((suggestion) => !suggestion.decision).length})</button>
+      <button className={coverView === 'suggestions' ? styles.activeView : ''} type="button" onClick={() => setCoverView('suggestions')}>1. Recommended covers ({openSuggestions.length})</button>
+      <button className={coverView === 'exposures' ? styles.activeView : ''} type="button" onClick={() => setCoverView('exposures')}>2. Extra exposures ({nonAssetExposures.length})</button>
       <button className={coverView === 'assessments' ? styles.activeView : ''} type="button" onClick={() => setCoverView('assessments')}>3. Cover decisions ({workspace.assessments.filter((assessment) => assessment.canonicalCoverKey).length})</button>
     </nav>
 
-    {coverView === 'exposures' ? <><div className={styles.overviewGrid}>
+    {coverView === 'suggestions' ? <>
+      {unreviewedAssets.length ? <div className={styles.warningBox}><strong>Finish reviewing the assets first</strong><span>{unreviewedAssets.length} asset{unreviewedAssets.length === 1 ? '' : 's'} still need a confirmed type and saved location. Recommendations become more useful after that.</span></div> : null}
+      {openSuggestions.length ? <div className={styles.recommendationGrid}>{openSuggestions.map((suggestion) => {
+        const cover = INSURANCE_COVER_CATALOGUE.find((entry) => entry.key === suggestion.suggestedCoverKey);
+        if (!cover) return null;
+        return <article className={styles.recommendationCard} key={suggestion.id}>
+          <header><span>{label(suggestion.confidence)} confidence</span><small>{label(cover.familyKey)}</small></header>
+          <h3>{cover.label}</h3>
+          <p>{cover.purpose}</p>
+          <details><summary>Why this was recommended</summary><p>{suggestion.rationale}</p></details>
+          <div><button className={styles.primaryButton} type="button" onClick={() => void runCommand({ operation: 'decide_suggestion', suggestionId: suggestion.id, decision: 'accepted_for_assessment', rationale: 'Added by the broker for cover review.' }, `${cover.label} added to cover decisions.`)}>Review this cover</button><button type="button" onClick={() => void runCommand({ operation: 'decide_suggestion', suggestionId: suggestion.id, decision: 'information_required', rationale: 'More information is needed before this cover can be decided.' }, 'Recommendation marked for more information.')}>Need information</button><button type="button" onClick={() => void runCommand({ operation: 'decide_suggestion', suggestionId: suggestion.id, decision: 'dismissed_with_reason', rationale: 'Reviewed by the broker and not relevant to this client.' }, 'Recommendation marked not relevant.')}>Not relevant</button></div>
+        </article>;
+      })}</div> : <div className={styles.successBox}><strong>✓ No recommendations are waiting for review.</strong><span>{unreviewedAssets.length ? 'Finish the asset review, then refresh recommendations.' : assessments.length ? 'Continue to cover decisions, or search the catalogue if something is missing.' : 'Refresh recommendations to build a shortlist from the completed client and asset information.'}</span></div>}
+      <div className={styles.nextActionRow}><button className={styles.primaryButton} type="button" disabled={!assessments.length} onClick={() => setCoverView('assessments')}>Continue to cover decisions →</button><button className={styles.secondaryButton} type="button" onClick={() => setCoverView('exposures')}>Add an extra exposure</button></div>
+      <details className={styles.advancedPanel}>
+        <summary>Can’t find a cover? Search the full catalogue</summary>
+        <article className={styles.card}>
+          <p>Use this only when the recommended shortlist does not include the cover you need.</p>
+          <div className={styles.catalogueFilters}>
+            <label><span>Search cover name</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="For example: business interruption" /></label>
+            <label><span>Cover family</span><select value={family} onChange={(event) => setFamily(event.target.value)}><option value="all">Choose a family</option>{families.map((entry) => <option key={entry} value={entry}>{label(entry)}</option>)}</select></label>
+            <label><span>Regulatory class</span><select value={regulatoryClass} onChange={(event) => setRegulatoryClass(event.target.value)}><option value="all">Choose a class</option>{INSURANCE_REGULATORY_CLASSES.map((entry) => <option value={entry.key} key={entry.key}>{entry.label}</option>)}</select></label>
+          </div>
+          {!query.trim() && family === 'all' && regulatoryClass === 'all' ? <p className={styles.infoBox}>Enter a cover name or choose a filter to see matching covers.</p> : <div className={styles.catalogueList}>{filteredCatalogue.map((cover) => <article key={cover.key}><div><small>{label(cover.familyKey)}</small><h3>{cover.label}</h3><p>{cover.purpose}</p></div><button type="button" disabled={existingKeys.has(cover.key)} onClick={() => void runCommand({ operation: 'save_assessment', canonicalCoverKey: cover.key, coverLabel: cover.label, exposureStatus: 'discovered', currentCoverPosition: 'unknown', placementStage: 'not_assessed', sourceType: 'broker_recorded', sourceReference: 'Selected by broker from cover catalogue' }, `${cover.label} added to cover decisions.`)}>{existingKeys.has(cover.key) ? 'Already added' : 'Add to review'}</button></article>)}</div>}
+        </article>
+      </details>
+    </> : null}
+
+    {coverView === 'exposures' ? <><div className={styles.assetExposureSummary}><strong>{physicalAssetExposures.length} asset exposure{physicalAssetExposures.length === 1 ? '' : 's'} already carried across</strong><span>You do not need to add the shared assets again. Only add risks that are not represented by an asset—such as liability, income, people, crops or cyber.</span></div><div className={styles.overviewGrid}>
       <article className={styles.card}>
-        <h2>Non-asset exposure</h2>
-        <p>Add people, liability, income, receivables, contracts, projects, crops, animals or intangible interests without inventing an asset row.</p>
+        <div className={styles.cardHeading}><span>Optional</span><h2>Add an extra exposure</h2><p>Only add something here when it is not already one of the shared assets.</p></div>
         <div className={styles.formGrid}>
           <label><span>Exposure type</span><select value={exposureType} onChange={(event) => setExposureType(event.target.value)}><option value="liability">Liability</option><option value="income">Income / business interruption</option><option value="people">People</option><option value="receivables">Receivables</option><option value="contract">Contract or project</option><option value="crop">Crop field</option><option value="animal">Animals</option><option value="cyber">Data / cyber</option><option value="other">Other</option></select></label>
-          <label><span>Label</span><input value={exposureLabel} onChange={(event) => setExposureLabel(event.target.value)} /></label>
-          <label className={styles.wide}><span>Description</span><textarea rows={3} value={exposureDescription} onChange={(event) => setExposureDescription(event.target.value)} /></label>
-          <label><span>Linked assets</span><select className={styles.multiSelect} multiple value={exposureAssetIds} onChange={(event) => setExposureAssetIds(selectedValues(event))}>{assets.map((asset) => <option value={asset.id} key={asset.id}>{asset.title}</option>)}</select></label>
-          <label><span>Linked locations</span><select className={styles.multiSelect} multiple value={exposureLocationIds} onChange={(event) => setExposureLocationIds(selectedValues(event))}>{workspace.locations.map((location) => <option value={location.id} key={location.id}>{location.label}</option>)}</select></label>
-          <label><span>Linked parties</span><select className={styles.multiSelect} multiple value={exposurePartyIds} onChange={(event) => setExposurePartyIds(selectedValues(event))}>{workspace.parties.map((party) => <option value={party.id} key={party.id}>{party.displayName}</option>)}</select></label>
+          <label><span>Short name *</span><input value={exposureLabel} onChange={(event) => setExposureLabel(event.target.value)} placeholder="For example: Public liability" /></label>
+          <label className={styles.wide}><span>What could be lost or go wrong?</span><textarea rows={3} value={exposureDescription} onChange={(event) => setExposureDescription(event.target.value)} /></label>
         </div>
-        <button className={styles.primaryButton} type="button" onClick={() => void runCommand({ operation: 'save_exposure', exposureType, label: exposureLabel, description: exposureDescription, exposureStatus: 'confirmed', assetIds: exposureAssetIds, locationIds: exposureLocationIds, partyIds: exposurePartyIds }, 'Exposure added.').then((ok) => { if (ok) { setExposureLabel(''); setExposureDescription(''); setExposureAssetIds([]); setExposureLocationIds([]); setExposurePartyIds([]); } })}>Add exposure</button>
+        <details className={styles.linkedAdvanced}><summary>Link this exposure to specific records (optional)</summary><div>
+          <fieldset><legend>Assets</legend>{assets.map((asset) => <label key={asset.id}><input type="checkbox" checked={exposureAssetIds.includes(asset.id)} onChange={() => toggleLink(asset.id, exposureAssetIds, setExposureAssetIds)} /> {asset.title}</label>)}</fieldset>
+          <fieldset><legend>Locations</legend>{workspace.locations.filter((location) => !location.isUnknown).map((location) => <label key={location.id}><input type="checkbox" checked={exposureLocationIds.includes(location.id)} onChange={() => toggleLink(location.id, exposureLocationIds, setExposureLocationIds)} /> {location.label}</label>)}</fieldset>
+          <fieldset><legend>Parties</legend>{workspace.parties.map((party) => <label key={party.id}><input type="checkbox" checked={exposurePartyIds.includes(party.id)} onChange={() => toggleLink(party.id, exposurePartyIds, setExposurePartyIds)} /> {party.displayName}</label>)}</fieldset>
+        </div></details>
+        <button className={styles.primaryButton} type="button" disabled={!exposureLabel.trim()} onClick={() => void runCommand({ operation: 'save_exposure', exposureType, label: exposureLabel, description: exposureDescription, exposureStatus: 'confirmed', assetIds: exposureAssetIds, locationIds: exposureLocationIds, partyIds: exposurePartyIds }, 'Extra exposure added.').then((ok) => { if (ok) { setExposureLabel(''); setExposureDescription(''); setExposureAssetIds([]); setExposureLocationIds([]); setExposurePartyIds([]); } })}>Save extra exposure</button>
       </article>
       <article className={styles.card}>
-        <h2>Recorded exposures</h2>
-        <div className={styles.simpleList}>{workspace.exposures.map((exposure) => <div key={exposure.id}><strong>{exposure.label}</strong><span>{label(exposure.exposureType)} · {label(exposure.exposureStatus)}</span><small>{exposure.assetIds.length ? `${exposure.assetIds.length} linked assets` : 'Non-asset exposure'}{exposure.description ? ` · ${exposure.description}` : ''}</small></div>)}</div>
+        <h2>Saved extra exposures</h2>
+        {nonAssetExposures.length ? <div className={styles.simpleList}>{nonAssetExposures.map((exposure) => <div key={exposure.id}><strong>{exposure.label}</strong><span>{label(exposure.exposureType)} · {label(exposure.exposureStatus)}</span><small>{exposure.assetIds.length ? `${exposure.assetIds.length} linked assets` : 'Not linked to a specific asset'}{exposure.description ? ` · ${exposure.description}` : ''}</small></div>)}</div> : <p className={styles.infoBox}>No extra exposures added. That is fine if the shared asset list covers the risk review.</p>}
       </article>
-    </div><button className={styles.secondaryButton} type="button" onClick={() => setCoverView('suggestions')}>Continue to areas to consider →</button></> : null}
-
-    {coverView === 'suggestions' ? <>{workspace.suggestions.some((suggestion) => !suggestion.decision) ? <article className={styles.card}>
-      <h2>Open deterministic suggestions</h2>
-      <p>Accepting a suggestion creates an assessment at <em>Area to consider</em>. It does not mark the client insured and does not create a broker recommendation.</p>
-      <label><span>Decision rationale</span><input value={suggestionRationale} onChange={(event) => setSuggestionRationale(event.target.value)} placeholder="Why this suggestion is accepted, dismissed or needs information" /></label>
-      <div className={styles.suggestionList}>{workspace.suggestions.filter((suggestion) => !suggestion.decision).slice(0, 30).map((suggestion) => <article key={suggestion.id}><div><small>{suggestion.ruleId} · {label(suggestion.confidence)} confidence</small><strong>{suggestion.suggestedCoverKey ? INSURANCE_COVER_CATALOGUE.find((cover) => cover.key === suggestion.suggestedCoverKey)?.label : label(suggestion.suggestedRiskObjectType)}</strong><p>{suggestion.rationale}</p></div><div><button type="button" onClick={() => void runCommand({ operation: 'decide_suggestion', suggestionId: suggestion.id, decision: 'accepted_for_assessment', rationale: suggestionRationale || 'Accepted by broker for assessment.' }, 'Suggestion accepted for assessment.')}>Assess</button><button type="button" onClick={() => void runCommand({ operation: 'decide_suggestion', suggestionId: suggestion.id, decision: 'information_required', rationale: suggestionRationale || 'Further information required.' }, 'Suggestion marked for information.')}>Need info</button><button type="button" onClick={() => void runCommand({ operation: 'decide_suggestion', suggestionId: suggestion.id, decision: 'dismissed_with_reason', rationale: suggestionRationale || 'Dismissed by broker after review.' }, 'Suggestion dismissed.')}>Dismiss</button></div></article>)}</div>
-    </article> : <p className={styles.infoBox}>There are no open system suggestions. Use the catalogue below if another cover needs to be assessed.</p>}
-
-    <article className={styles.card}>
-      <div className={styles.catalogueHeader}><div><h2>South African non-life catalogue</h2><p>{INSURANCE_COVER_CATALOGUE.length} canonical learning definitions · version {workspace.catalogueVersion}</p></div><button className={styles.secondaryButton} type="button" onClick={() => setShowFullCatalogue((current) => !current)}>{showFullCatalogue ? 'Show relevant shortlist' : 'Browse all 66 covers'}</button></div>
-      <div className={styles.catalogueFilters}>
-        <label><span>Search</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search cover, alias or family" /></label>
-        <label><span>Family</span><select value={family} onChange={(event) => setFamily(event.target.value)}><option value="all">All families</option>{families.map((entry) => <option key={entry} value={entry}>{label(entry)}</option>)}</select></label>
-        <label><span>Regulatory class</span><select value={regulatoryClass} onChange={(event) => setRegulatoryClass(event.target.value)}><option value="all">All classes</option>{INSURANCE_REGULATORY_CLASSES.map((entry) => <option value={entry.key} key={entry.key}>{entry.label}</option>)}</select></label>
-      </div>
-      <div className={styles.catalogueList}>{filteredCatalogue.map((cover) => <article key={cover.key}><div><small>{label(cover.familyKey)} · {cover.regulatoryMappings.map((mapping) => label(mapping.classKey)).join(', ')}</small><h3>{cover.label}</h3><p>{cover.purpose}</p><span>{cover.specialistReferral ? 'Specialist / referral confirmation required' : 'Standard catalogue definition — verify wording'}</span></div><button type="button" disabled={existingKeys.has(cover.key)} onClick={() => void runCommand({ operation: 'save_assessment', canonicalCoverKey: cover.key, coverLabel: cover.label, exposureStatus: 'discovered', currentCoverPosition: 'unknown', placementStage: 'area_to_consider', sourceType: 'broker_recorded', sourceReference: 'Broker selected from canonical catalogue' }, `${cover.label} added for assessment.`)}>{existingKeys.has(cover.key) ? 'Already added' : 'Add assessment'}</button></article>)}</div>
-    </article>
-    <button className={styles.secondaryButton} type="button" onClick={() => setCoverView('assessments')}>Continue to cover decisions →</button></> : null}
+    </div><button className={styles.secondaryButton} type="button" onClick={() => setCoverView('suggestions')}>Back to recommended covers</button></> : null}
 
     {coverView === 'assessments' ? <>{activeAssessment ? <><div className={styles.assetReviewNav}>
       <button type="button" disabled={assessmentIndex <= 0} onClick={() => setAssessmentIndex((current) => Math.max(0, current - 1))}>← Previous</button>
       <label><span>Cover {assessmentIndex + 1} of {assessments.length}</span><select value={activeAssessment.id} onChange={(event) => setAssessmentIndex(assessments.findIndex((assessment) => assessment.id === event.target.value))}>{assessments.map((assessment, index) => <option value={assessment.id} key={assessment.id}>{index + 1}. {assessment.coverLabel} · {label(assessment.placementStage)}</option>)}</select></label>
       <button type="button" disabled={assessmentIndex >= assessments.length - 1} onClick={() => setAssessmentIndex((current) => Math.min(assessments.length - 1, current + 1))}>Next cover →</button>
     </div><div className={styles.assessmentList}><AssessmentEditor key={`${activeAssessment.id}-${activeAssessment.version}`} assessment={activeAssessment} runCommand={runCommand} /></div></> : <p className={styles.infoBox}>No cover assessments have been added yet. Return to Areas to consider to add one.</p>}
-    {!assets.length ? null : <p className={styles.infoBox}>Asset links are preserved separately from cover definitions. Use the policy schedule workflow to record grouped, blanket or individually specified treatment.</p>}</> : null}
+    {!assets.length ? null : <p className={styles.infoBox}>You will link individual assets to the correct schedule item when you record the policy evidence.</p>}</> : null}
   </section>;
-}
-
-function selectedValues(event: ChangeEvent<HTMLSelectElement>): string[] {
-  return Array.from(event.target.selectedOptions).map((option) => option.value);
 }
 
 export function InsurancePoliciesPanel({ workspace, assets, runCommand }: { workspace: InsuranceWorkspaceData; assets: InsuranceWorkspaceAsset[]; runCommand: RunCommand }) {
@@ -315,18 +396,18 @@ export function InsurancePoliciesPanel({ workspace, assets, runCommand }: { work
   const [productName, setProductName] = useState('');
   const [policyNumber, setPolicyNumber] = useState('');
   const [policySource, setPolicySource] = useState('');
-  const [policyId, setPolicyId] = useState('');
+  const [policyId, setPolicyId] = useState(workspace.policies[0]?.id ?? '');
   const [sectionLabel, setSectionLabel] = useState('');
   const [canonicalCoverKey, setCanonicalCoverKey] = useState('');
   const [wordingReference, setWordingReference] = useState('');
-  const [sectionId, setSectionId] = useState('');
+  const [sectionId, setSectionId] = useState(workspace.policies.flatMap((policy) => policy.sections)[0]?.id ?? '');
   const [itemLabel, setItemLabel] = useState('');
   const [treatment, setTreatment] = useState<'individual' | 'grouped' | 'blanket' | 'unscheduled'>('individual');
   const [assetIds, setAssetIds] = useState<string[]>([]);
   const [exposureIds, setExposureIds] = useState<string[]>([]);
   const [locationIds, setLocationIds] = useState<string[]>([]);
   const [partyIds, setPartyIds] = useState<string[]>([]);
-  const [financialScheduleItemId, setFinancialScheduleItemId] = useState('');
+  const [financialScheduleItemId, setFinancialScheduleItemId] = useState(workspace.policies.flatMap((policy) => policy.sections).flatMap((section) => section.scheduleItems)[0]?.id ?? '');
   const [scheduleTermType, setScheduleTermType] = useState<'sum_insured' | 'any_one_item_limit' | 'any_one_event_limit' | 'any_one_location_limit' | 'annual_aggregate' | 'sublimit' | 'basic_excess' | 'additional_excess' | 'percentage_excess' | 'time_excess' | 'coinsurance'>('sum_insured');
   const [scheduleTermValue, setScheduleTermValue] = useState('');
   const sections = workspace.policies.flatMap((policy) => policy.sections);
@@ -334,48 +415,51 @@ export function InsurancePoliciesPanel({ workspace, assets, runCommand }: { work
   const scheduleTermUsesPercentage = scheduleTermType === 'percentage_excess' || scheduleTermType === 'coinsurance';
   const scheduleTermUsesTime = scheduleTermType === 'time_excess';
 
+  function toggleScheduleLink(value: string, current: string[], setter: (next: string[]) => void) {
+    setter(current.includes(value) ? current.filter((entry) => entry !== value) : [...current, value]);
+  }
+
   return <section>
-    <header className={styles.sectionHeader}><div><h2>Policies and schedule</h2><p>Record the insurer&apos;s actual hierarchy and map it to the canonical catalogue without replacing insurer labels.</p></div></header>
+    <header className={styles.sectionHeader}><div><span className={styles.eyebrow}>Follow the document from top to bottom</span><h2>Copy the current policy schedule</h2><p>Add the policy, its section, the relevant schedule line, then the VAT-inclusive limit or excess shown on the document.</p></div></header>
     <nav className={styles.substepNav} aria-label="Policy capture sections">
-      <button className={policyView === 'policy' ? styles.activeView : ''} type="button" onClick={() => setPolicyView('policy')}>1. Policy ({workspace.policies.length})</button>
-      <button className={policyView === 'section' ? styles.activeView : ''} type="button" onClick={() => setPolicyView('section')}>2. Section ({sections.length})</button>
-      <button className={policyView === 'schedule' ? styles.activeView : ''} type="button" onClick={() => setPolicyView('schedule')}>3. Schedule item ({scheduleItems.length})</button>
-      <button className={policyView === 'terms' ? styles.activeView : ''} type="button" onClick={() => setPolicyView('terms')}>4. Limits & excesses</button>
-      <button className={policyView === 'review' ? styles.activeView : ''} type="button" onClick={() => setPolicyView('review')}>5. Review</button>
+      <button className={policyView === 'policy' ? styles.activeView : ''} type="button" onClick={() => setPolicyView('policy')}>1. Policy details {workspace.policies.length ? '✓' : ''}</button>
+      <button className={policyView === 'section' ? styles.activeView : ''} type="button" onClick={() => setPolicyView('section')}>2. Policy section {sections.length ? '✓' : ''}</button>
+      <button className={policyView === 'schedule' ? styles.activeView : ''} type="button" onClick={() => setPolicyView('schedule')}>3. Schedule line {scheduleItems.length ? '✓' : ''}</button>
+      <button className={policyView === 'terms' ? styles.activeView : ''} type="button" onClick={() => setPolicyView('terms')}>4. Value / excess</button>
+      <button className={policyView === 'review' ? styles.activeView : ''} type="button" onClick={() => setPolicyView('review')}>5. Check</button>
     </nav>
     <div className={`${styles.workflowGrid} ${styles.singleWorkflow}`}>
-      {policyView === 'policy' ? <article className={styles.card}><h2>1. Add current policy</h2><p>Start with the policy shown on the insurer schedule. You can add another policy later from this same step.</p><div className={styles.formGrid}>
-        <label><span>Insurer</span><input value={insurerName} onChange={(event) => setInsurerName(event.target.value)} /></label>
-        <label><span>Policy number</span><input value={policyNumber} onChange={(event) => setPolicyNumber(event.target.value)} /></label>
-        <label><span>Product name</span><input value={productName} onChange={(event) => setProductName(event.target.value)} /></label>
-        <label><span>Schedule / source reference</span><input value={policySource} onChange={(event) => setPolicySource(event.target.value)} /></label>
-      </div><button className={styles.primaryButton} type="button" disabled={!insurerName.trim() && !policyNumber.trim() && !productName.trim()} onClick={() => void runCommand({ operation: 'save_policy', insurerName, productName, policyNumber, status: 'current', sourceType: 'policy_schedule', sourceReference: policySource }, 'Policy added.').then((ok) => { if (ok) { setInsurerName(''); setProductName(''); setPolicyNumber(''); setPolicyView('section'); } })}>Save and continue to policy section</button></article> : null}
+      {policyView === 'policy' ? <article className={styles.card}><div className={styles.cardHeading}><span>Start here</span><h2>Copy the policy heading</h2><p>Use exactly what appears on the insurer&apos;s schedule so another broker can trace it later.</p></div><div className={styles.formGrid}>
+        <label><span>Insurer *</span><input value={insurerName} onChange={(event) => setInsurerName(event.target.value)} placeholder="Insurer name" /></label>
+        <label><span>Policy number *</span><input value={policyNumber} onChange={(event) => setPolicyNumber(event.target.value)} /></label>
+        <label><span>Product name (optional)</span><input value={productName} onChange={(event) => setProductName(event.target.value)} /></label>
+        <label><span>Where did you get this? *</span><input value={policySource} onChange={(event) => setPolicySource(event.target.value)} placeholder="Document name, email or schedule reference" /></label>
+      </div><button className={styles.primaryButton} type="button" disabled={!insurerName.trim() || !policyNumber.trim() || !policySource.trim()} onClick={() => void runCommand({ operation: 'save_policy', insurerName, productName, policyNumber, status: 'current', sourceType: 'policy_schedule', sourceReference: policySource }, 'Policy details saved.').then((ok) => { if (ok) { setInsurerName(''); setProductName(''); setPolicyNumber(''); setPolicyView('section'); } })}>Save policy and continue →</button></article> : null}
 
-      {policyView === 'section' ? <article className={styles.card}><h2>2. Add policy section</h2><p>Use the insurer&apos;s actual section label, then map it to the closest catalogue definition where appropriate.</p><div className={styles.formGrid}>
+      {policyView === 'section' ? <article className={styles.card}><div className={styles.cardHeading}><span>Next</span><h2>Copy one section heading</h2><p>Keep the insurer&apos;s wording. Matching it to a cover is optional but useful.</p></div><div className={styles.formGrid}>
         <label><span>Policy</span><select value={policyId} onChange={(event) => setPolicyId(event.target.value)}><option value="">Select policy</option>{workspace.policies.map((policy) => <option value={policy.id} key={policy.id}>{[policy.insurerName, policy.policyNumber].filter(Boolean).join(' · ') || 'Unnamed policy'}</option>)}</select></label>
-        <label><span>Actual insurer section label</span><input value={sectionLabel} onChange={(event) => setSectionLabel(event.target.value)} /></label>
-        <label><span>Canonical mapping</span><select value={canonicalCoverKey} onChange={(event) => setCanonicalCoverKey(event.target.value)}><option value="">Not mapped yet</option>{INSURANCE_COVER_CATALOGUE.map((cover) => <option value={cover.key} key={cover.key}>{cover.label}</option>)}</select></label>
-        <label><span>Wording edition / reference</span><input value={wordingReference} onChange={(event) => setWordingReference(event.target.value)} /></label>
-      </div><button className={styles.primaryButton} type="button" disabled={!policyId || !sectionLabel.trim()} onClick={() => void runCommand({ operation: 'save_section', policyId, canonicalCoverKey: canonicalCoverKey || null, actualSectionLabel: sectionLabel, wordingEditionReference: wordingReference, status: 'current', sourceType: 'policy_schedule', sourceReference: policySource || 'Broker-recorded policy schedule' }, 'Policy section added.').then((ok) => { if (ok) { setSectionLabel(''); setPolicyView('schedule'); } })}>Save and continue to schedule item</button></article> : null}
+        <label><span>Section heading *</span><input value={sectionLabel} onChange={(event) => setSectionLabel(event.target.value)} placeholder="For example: Agricultural vehicles" /></label>
+        <label><span>Match to a cover (optional)</span><select value={canonicalCoverKey} onChange={(event) => setCanonicalCoverKey(event.target.value)}><option value="">Leave unmatched</option>{INSURANCE_COVER_CATALOGUE.map((cover) => <option value={cover.key} key={cover.key}>{cover.label}</option>)}</select></label>
+        <label><span>Wording edition / page reference</span><input value={wordingReference} onChange={(event) => setWordingReference(event.target.value)} /></label>
+      </div><button className={styles.primaryButton} type="button" disabled={!policyId || !sectionLabel.trim()} onClick={() => void runCommand({ operation: 'save_section', policyId, canonicalCoverKey: canonicalCoverKey || null, actualSectionLabel: sectionLabel, wordingEditionReference: wordingReference, status: 'current', sourceType: 'policy_schedule', sourceReference: policySource || 'Broker-recorded policy schedule' }, 'Policy section saved.').then((ok) => { if (ok) { setSectionLabel(''); setPolicyView('schedule'); } })}>Save section and continue →</button></article> : null}
 
-      {policyView === 'schedule' ? <article className={styles.card}><h2>3. Add schedule item</h2><p>Choose the section, name the schedule line, and link the assets, locations, exposures or parties that it covers.</p><div className={styles.formGrid}>
+      {policyView === 'schedule' ? <article className={styles.card}><div className={styles.cardHeading}><span>Then</span><h2>Copy the relevant schedule line</h2><p>Choose what this line applies to by ticking cards. There is no Ctrl/Cmd multi-select.</p></div><div className={styles.formGrid}>
         <label><span>Policy section</span><select value={sectionId} onChange={(event) => setSectionId(event.target.value)}><option value="">Select section</option>{sections.map((section) => <option value={section.id} key={section.id}>{section.actualSectionLabel}</option>)}</select></label>
-        <label><span>Treatment</span><select value={treatment} onChange={(event) => setTreatment(event.target.value as typeof treatment)}><option value="individual">Individual</option><option value="grouped">Grouped</option><option value="blanket">Blanket</option><option value="unscheduled">Unscheduled</option></select></label>
-        <label className={styles.wide}><span>Schedule item label</span><input value={itemLabel} onChange={(event) => setItemLabel(event.target.value)} /></label>
-        <label><span>Linked assets (Ctrl/Cmd for several)</span><select className={styles.multiSelect} multiple value={assetIds} onChange={(event) => setAssetIds(selectedValues(event))}>{assets.map((asset) => <option value={asset.id} key={asset.id}>{asset.title}</option>)}</select></label>
-        <label><span>Linked exposures</span><select className={styles.multiSelect} multiple value={exposureIds} onChange={(event) => setExposureIds(selectedValues(event))}>{workspace.exposures.map((exposure) => <option value={exposure.id} key={exposure.id}>{exposure.label}</option>)}</select></label>
-        <label><span>Linked locations</span><select className={styles.multiSelect} multiple value={locationIds} onChange={(event) => setLocationIds(selectedValues(event))}>{workspace.locations.map((location) => <option value={location.id} key={location.id}>{location.label}</option>)}</select></label>
-        <label><span>Linked parties</span><select className={styles.multiSelect} multiple value={partyIds} onChange={(event) => setPartyIds(selectedValues(event))}>{workspace.parties.map((party) => <option value={party.id} key={party.id}>{party.displayName}</option>)}</select></label>
-      </div><button className={styles.primaryButton} type="button" disabled={!sectionId || !itemLabel.trim()} onClick={() => void runCommand({ operation: 'save_schedule_item', sectionId, itemLabel, treatment, assetIds, exposureIds, locationIds, partyIds, sourceType: 'policy_schedule', sourceReference: policySource || 'Broker-recorded policy schedule' }, 'Schedule item added.').then((ok) => { if (ok) { setItemLabel(''); setAssetIds([]); setExposureIds([]); setLocationIds([]); setPartyIds([]); setPolicyView('terms'); } })}>Save and continue to limits and excesses</button></article> : null}
+        <label><span>How the schedule treats these items</span><select value={treatment} onChange={(event) => setTreatment(event.target.value as typeof treatment)}><option value="individual">Each item listed separately</option><option value="grouped">Several items grouped together</option><option value="blanket">One blanket amount</option><option value="unscheduled">Not individually scheduled</option></select></label>
+        <label className={styles.wide}><span>Schedule line label *</span><input value={itemLabel} onChange={(event) => setItemLabel(event.target.value)} /></label>
+      </div><div className={styles.scheduleLinkGrid}>
+        <fieldset><legend>Which assets are on this line?</legend>{assets.map((asset) => <label key={asset.id}><input type="checkbox" checked={assetIds.includes(asset.id)} onChange={() => toggleScheduleLink(asset.id, assetIds, setAssetIds)} /><span>{asset.title}<small>{asset.location || 'No location supplied'}</small></span></label>)}</fieldset>
+        <fieldset><legend>Locations or parties (optional)</legend>{workspace.locations.filter((location) => !location.isUnknown).map((location) => <label key={location.id}><input type="checkbox" checked={locationIds.includes(location.id)} onChange={() => toggleScheduleLink(location.id, locationIds, setLocationIds)} /><span>{location.label}<small>Saved location</small></span></label>)}{workspace.parties.map((party) => <label key={party.id}><input type="checkbox" checked={partyIds.includes(party.id)} onChange={() => toggleScheduleLink(party.id, partyIds, setPartyIds)} /><span>{party.displayName}<small>{party.roles.map((role) => label(role.roleKey)).join(', ')}</small></span></label>)}</fieldset>
+      </div><details className={styles.linkedAdvanced}><summary>Link an extra non-asset exposure</summary><div><fieldset><legend>Extra exposures</legend>{workspace.exposures.filter((exposure) => exposure.exposureType !== 'physical_asset').map((exposure) => <label key={exposure.id}><input type="checkbox" checked={exposureIds.includes(exposure.id)} onChange={() => toggleScheduleLink(exposure.id, exposureIds, setExposureIds)} /> {exposure.label}</label>)}</fieldset></div></details><button className={styles.primaryButton} type="button" disabled={!sectionId || !itemLabel.trim()} onClick={() => void runCommand({ operation: 'save_schedule_item', sectionId, itemLabel, treatment, assetIds, exposureIds, locationIds, partyIds, sourceType: 'policy_schedule', sourceReference: policySource || 'Broker-recorded policy schedule' }, 'Schedule line saved.').then((ok) => { if (ok) { setItemLabel(''); setAssetIds([]); setExposureIds([]); setLocationIds([]); setPartyIds([]); setPolicyView('terms'); } })}>Save schedule line and continue →</button></article> : null}
 
-      {policyView === 'terms' ? <article className={styles.card}><h2>4. Add schedule limit or excess</h2><p>Record each financial term separately so sums insured, limits, percentages and time excesses remain distinct.</p><div className={styles.formGrid}>
+      {policyView === 'terms' ? <article className={styles.card}><div className={styles.cardHeading}><span>VAT included</span><h2>Add the value, limit or excess</h2><p>Enter monetary amounts exactly as the client pays them, including VAT. Percentages and time excesses are labelled separately.</p></div><div className={styles.formGrid}>
         <label><span>Schedule item</span><select value={financialScheduleItemId} onChange={(event) => setFinancialScheduleItemId(event.target.value)}><option value="">Select schedule item</option>{scheduleItems.map((item) => <option value={item.id} key={item.id}>{item.itemLabel}</option>)}</select></label>
-        <label><span>Term type</span><select value={scheduleTermType} onChange={(event) => setScheduleTermType(event.target.value as typeof scheduleTermType)}><option value="sum_insured">Sum insured</option><option value="any_one_item_limit">Any one item limit</option><option value="any_one_event_limit">Any one event limit</option><option value="any_one_location_limit">Any one location limit</option><option value="annual_aggregate">Annual aggregate</option><option value="sublimit">Sublimit</option><option value="basic_excess">Basic excess</option><option value="additional_excess">Additional excess</option><option value="percentage_excess">Percentage excess</option><option value="time_excess">Time excess</option><option value="coinsurance">Co-insurance</option></select></label>
-        <label><span>{scheduleTermUsesTime ? 'Hours' : scheduleTermUsesPercentage ? 'Percentage' : 'Amount (ZAR)'}</span><input inputMode="decimal" value={scheduleTermValue} onChange={(event) => setScheduleTermValue(event.target.value)} /></label>
-      </div><button className={styles.primaryButton} type="button" disabled={!financialScheduleItemId || !scheduleTermValue.trim()} onClick={() => void runCommand({ operation: 'save_financial_term', scheduleItemId: financialScheduleItemId, termType: scheduleTermType, amount: scheduleTermUsesPercentage || scheduleTermUsesTime ? null : scheduleTermValue, percentage: scheduleTermUsesPercentage ? scheduleTermValue : null, timeValue: scheduleTermUsesTime ? scheduleTermValue : null, timeUnit: scheduleTermUsesTime ? 'hours' : '', currency: 'ZAR', sourceType: 'policy_schedule', sourceReference: policySource || 'Broker-recorded policy schedule' }, 'Schedule financial term added.').then((ok) => { if (ok) { setScheduleTermValue(''); setPolicyView('review'); } })}>Save term and review policy</button><button className={styles.secondaryButton} type="button" onClick={() => setPolicyView('review')}>Skip for now and review →</button></article> : null}
+        <label><span>What is this amount?</span><select value={scheduleTermType} onChange={(event) => setScheduleTermType(event.target.value as typeof scheduleTermType)}><option value="sum_insured">Sum insured</option><option value="any_one_item_limit">Any one item limit</option><option value="any_one_event_limit">Any one event limit</option><option value="any_one_location_limit">Any one location limit</option><option value="annual_aggregate">Annual aggregate</option><option value="sublimit">Sublimit</option><option value="basic_excess">Basic excess</option><option value="additional_excess">Additional excess</option><option value="percentage_excess">Percentage excess</option><option value="time_excess">Time excess</option><option value="coinsurance">Co-insurance</option></select></label>
+        <label><span>{scheduleTermUsesTime ? 'Hours' : scheduleTermUsesPercentage ? 'Percentage' : 'VAT-inclusive amount (ZAR)'}</span><input inputMode="decimal" value={scheduleTermValue} onChange={(event) => setScheduleTermValue(event.target.value)} /></label>
+      </div><button className={styles.primaryButton} type="button" disabled={!financialScheduleItemId || !scheduleTermValue.trim()} onClick={() => void runCommand({ operation: 'save_financial_term', scheduleItemId: financialScheduleItemId, termType: scheduleTermType, amount: scheduleTermUsesPercentage || scheduleTermUsesTime ? null : scheduleTermValue, percentage: scheduleTermUsesPercentage ? scheduleTermValue : null, timeValue: scheduleTermUsesTime ? scheduleTermValue : null, timeUnit: scheduleTermUsesTime ? 'hours' : '', currency: 'ZAR', vatBasis: scheduleTermUsesPercentage || scheduleTermUsesTime ? 'not_applicable' : 'inclusive', sourceType: 'policy_schedule', sourceReference: policySource || 'Broker-recorded policy schedule' }, 'VAT-inclusive policy term saved.').then((ok) => { if (ok) { setScheduleTermValue(''); setPolicyView('review'); } })}>Save value and check policy →</button><button className={styles.secondaryButton} type="button" onClick={() => setPolicyView('review')}>No value shown — check policy</button></article> : null}
     </div>
 
-    {policyView === 'review' ? <><div className={styles.policyList}>{workspace.policies.map((policy) => <article className={styles.card} key={policy.id}><header className={styles.policyHeader}><div><small>{policy.productName || 'Product not recorded'}</small><h2>{[policy.insurerName, policy.policyNumber].filter(Boolean).join(' · ') || 'Policy details incomplete'}</h2></div><strong>{label(policy.status)}</strong></header>{policy.sections.length ? policy.sections.map((section) => <details className={styles.policySection} key={section.id} open><summary><span>{section.actualSectionLabel}</span><small>{section.canonicalCoverKey ? INSURANCE_COVER_CATALOGUE.find((cover) => cover.key === section.canonicalCoverKey)?.label : 'Canonical mapping not recorded'}</small></summary><p>Wording: {section.wordingEditionReference || 'Not recorded'} · Source: {section.provenance.sourceReference || label(section.provenance.sourceType)}</p>{section.scheduleItems.length ? <div className={styles.simpleList}>{section.scheduleItems.map((item) => <div key={item.id}><strong>{item.itemLabel}</strong><span>{label(item.treatment)} · {item.assetIds.length} assets · {item.exposureIds.length} exposures</span><small>{item.itemDescription || 'No schedule description recorded'} · {item.financialTerms.length} financial terms</small></div>)}</div> : <p className={styles.infoBox}>No schedule items recorded.</p>}</details>) : <p className={styles.infoBox}>No policy sections recorded.</p>}</article>)}</div>{!workspace.policies.length ? <p className={styles.infoBox}>No policies have been recorded. Return to step 1 to add the first policy.</p> : null}</> : null}
+    {policyView === 'review' ? <><div className={styles.policyList}>{workspace.policies.map((policy) => <article className={styles.card} key={policy.id}><header className={styles.policyHeader}><div><small>{policy.productName || 'Current policy'}</small><h2>{[policy.insurerName, policy.policyNumber].filter(Boolean).join(' · ') || 'Policy details incomplete'}</h2></div><strong>✓ Saved</strong></header>{policy.sections.length ? policy.sections.map((section) => <details className={styles.policySection} key={section.id} open><summary><span>{section.actualSectionLabel}</span><small>{section.canonicalCoverKey ? INSURANCE_COVER_CATALOGUE.find((cover) => cover.key === section.canonicalCoverKey)?.label : 'Not matched to a catalogue cover'}</small></summary><p>Wording: {section.wordingEditionReference || 'Not recorded'} · Source: {section.provenance.sourceReference || label(section.provenance.sourceType)}</p>{section.scheduleItems.length ? <div className={styles.simpleList}>{section.scheduleItems.map((item) => <div key={item.id}><strong>{item.itemLabel}</strong><span>{label(item.treatment)} · {item.assetIds.length} assets · {item.locationIds.length} locations</span><small>{item.financialTerms.length ? item.financialTerms.map((term) => `${label(term.termType)}: ${term.amount ? `${financialTermMoney(term)} VAT included` : term.percentage ? `${term.percentage}%` : term.timeValue ? `${term.timeValue} ${term.timeUnit}` : 'Recorded'}`).join(' · ') : 'No value or excess recorded'}</small></div>)}</div> : <p className={styles.infoBox}>No schedule lines recorded yet.</p>}</details>) : <p className={styles.infoBox}>No policy sections recorded yet.</p>}</article>)}</div>{!workspace.policies.length ? <p className={styles.infoBox}>No policy evidence has been recorded. Return to Policy details to start.</p> : <p className={styles.successBox}>✓ Policy evidence saved. Check that every confirmed current cover has a matching section or schedule line.</p>}</> : null}
   </section>;
 }
 

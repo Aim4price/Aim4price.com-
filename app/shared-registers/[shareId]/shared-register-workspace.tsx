@@ -5,6 +5,7 @@ import { useMemo, useRef, useState } from 'react';
 import AppHeader from '../../../components/AppHeader';
 import type {
   InsuranceCommand,
+  InsuranceFinancialTerm,
   InsuranceReportType,
   InsuranceWorkspaceAsset,
   InsuranceWorkspaceData,
@@ -22,13 +23,15 @@ type StepId = 'setup' | 'assets' | 'covers' | 'policies' | 'questions' | 'finish
 type Notice = { tone: 'success' | 'error'; message: string };
 type AssetView = 'guided' | 'browse';
 
-const WORKFLOW_STEPS: Array<{ id: StepId; title: string; description: string }> = [
-  { id: 'setup', title: 'Client setup', description: 'Confirm who and what this review is for.' },
-  { id: 'assets', title: 'Assets', description: 'Review and classify each shared asset.' },
-  { id: 'covers', title: 'Risks & covers', description: 'Consider exposures and record cover decisions.' },
-  { id: 'policies', title: 'Policies', description: 'Capture the policy and schedule evidence.' },
-  { id: 'questions', title: 'Supporting information', description: 'Resolve questions and attach evidence.' },
-  { id: 'finish', title: 'Review & finish', description: 'Check readiness and create the report.' },
+const VAT_MULTIPLIER = 1.15;
+const REQUIRED_STEPS: StepId[] = ['setup', 'assets', 'covers', 'policies'];
+const WORKFLOW_STEPS: Array<{ id: StepId; title: string; shortTitle: string; description: string; optional?: boolean }> = [
+  { id: 'setup', title: 'Confirm the client', shortTitle: 'Client', description: 'Confirm the client, locations and insured parties.' },
+  { id: 'assets', title: 'Review the assets', shortTitle: 'Assets', description: 'Check each asset and confirm its insurance classification.' },
+  { id: 'covers', title: 'Choose the cover plan', shortTitle: 'Cover plan', description: 'Review relevant cover suggestions and record decisions.' },
+  { id: 'policies', title: 'Record policy evidence', shortTitle: 'Policy', description: 'Capture the actual schedule, sections, limits and excesses.' },
+  { id: 'questions', title: 'Add supporting information', shortTitle: 'Supporting info', description: 'Record questions, notes and evidence when needed.', optional: true },
+  { id: 'finish', title: 'Check and create the report', shortTitle: 'Finish', description: 'Resolve required items and generate the final report.' },
 ];
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -43,6 +46,17 @@ function asNumber(value: unknown): number | null {
   if (value === null || value === undefined || value === '') return null;
   const parsed = typeof value === 'number' ? value : Number(value);
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+function vatIncluded(value: number | null | undefined): number | null {
+  if (value === null || value === undefined || !Number.isFinite(value)) return null;
+  return Math.round(value * VAT_MULTIPLIER * 100) / 100;
+}
+
+function termValueVatIncluded(term: InsuranceFinancialTerm | undefined): number | null {
+  const amount = asNumber(term?.amount);
+  if (amount === null) return null;
+  return term?.vatBasis === 'exclusive' ? vatIncluded(amount) : amount;
 }
 
 function money(value: number | null | undefined): string {
@@ -72,15 +86,19 @@ function assetMeta(asset: InsuranceWorkspaceAsset): string {
   const model = asText(asset.snapshot.modelName) || asText(asset.snapshot.typedModelName);
   const hours = asNumber(asset.snapshot.hours);
   return [brand, model, asset.yearModel, hours !== null ? `${new Intl.NumberFormat('en-ZA').format(hours)} hours` : '', titleCase(asset.condition)]
-    .filter(Boolean).join(' · ') || asset.kind;
+    .filter(Boolean).join(' · ') || titleCase(asset.kind);
+}
+
+function assetGps(asset: InsuranceWorkspaceAsset): { lat: number; lng: number } | null {
+  const lat = asNumber(asset.snapshot.lastKnownLat);
+  const lng = asNumber(asset.snapshot.lastKnownLng);
+  return lat === null || lng === null ? null : { lat, lng };
 }
 
 function detailRows(asset: InsuranceWorkspaceAsset): Array<[string, string]> {
   const specs = asRecord(asset.snapshot.specsJson);
-  const lat = asNumber(asset.snapshot.lastKnownLat);
-  const lng = asNumber(asset.snapshot.lastKnownLng);
-  const rows: Array<[string, string]> = [
-    ['Asset type', asset.kind],
+  return [
+    ['Asset type', titleCase(asset.kind)],
     ['Location supplied by owner', asset.location || 'Unknown / not supplied'],
     ['Brand', asText(asset.snapshot.brandName) || '—'],
     ['Model', asText(asset.snapshot.modelName) || asText(asset.snapshot.typedModelName) || '—'],
@@ -89,38 +107,40 @@ function detailRows(asset: InsuranceWorkspaceAsset): Array<[string, string]> {
     ['Serial number', asset.serialNumber || '—'],
     ['Registration', asset.registrationNumber || '—'],
     ['Finance status', asText(specs.financeStatus) ? titleCase(asText(specs.financeStatus)) : '—'],
-    ['Owner-provided insured value', money(asNumber(asset.snapshot.insuredValueExVat))],
-    ['Register value', money(asset.registerValue)],
-    ['Replacement value', money(asset.replacementValue)],
+    ['Owner-provided insured value (VAT included)', money(vatIncluded(asNumber(asset.snapshot.insuredValueExVat)))],
+    ['Register value (VAT included)', money(vatIncluded(asset.registerValue))],
+    ['Replacement value (VAT included)', money(vatIncluded(asset.replacementValue))],
   ];
-  if (lat !== null && lng !== null) rows.splice(2, 0, ['Map coordinates', `${lat.toFixed(6)}, ${lng.toFixed(6)}`]);
-  return rows;
 }
 
 function workflowCompletion(workspace: InsuranceWorkspaceData): Record<StepId, boolean> {
-  const assetsReviewed = workspace.assets.every((asset) => workspace.riskObjects.some((entry) => entry.workspaceAssetId === asset.id && entry.classificationStatus !== 'unconfirmed'));
-  const canonicalAssessments = workspace.assessments.filter((assessment) => assessment.canonicalCoverKey);
-  const coversReviewed = canonicalAssessments.length > 0 && canonicalAssessments.every((assessment) => assessment.placementStage !== 'not_assessed');
-  const hasConfirmedCurrentCover = canonicalAssessments.some((assessment) => assessment.currentCoverPosition === 'confirmed_included');
+  const hasRealLocation = workspace.locations.some((location) => !location.isUnknown);
+  const assetsReviewed = workspace.assets.length > 0 && workspace.assets.every((asset) => workspace.riskObjects.some((entry) => entry.workspaceAssetId === asset.id && entry.classificationStatus !== 'unconfirmed'));
+  const assessments = workspace.assessments.filter((assessment) => assessment.canonicalCoverKey);
+  const coversReviewed = assessments.length > 0 && assessments.every((assessment) => assessment.currentCoverPosition !== 'unknown' && assessment.placementStage !== 'not_assessed');
+  const hasConfirmedCurrentCover = assessments.some((assessment) => assessment.currentCoverPosition === 'confirmed_included');
   const hasScheduleEvidence = workspace.policies.some((policy) => policy.sections.some((section) => section.scheduleItems.length > 0));
+  const requiredReady = workspace.segments.length > 0 && hasRealLocation && workspace.parties.length > 0 && assetsReviewed && coversReviewed && (!hasConfirmedCurrentCover || hasScheduleEvidence);
+  const supportingInfoUsed = workspace.evidence.length > 0 || workspace.notes.length > 0 || workspace.informationRequests.length > 0;
   return {
-    setup: workspace.segments.length > 0 && workspace.parties.length > 0,
+    setup: workspace.segments.length > 0 && hasRealLocation && workspace.parties.length > 0,
     assets: assetsReviewed,
     covers: coversReviewed,
     policies: coversReviewed && (!hasConfirmedCurrentCover || hasScheduleEvidence),
-    questions: workspace.overview.openInformationRequestCount === 0,
-    finish: workspace.reports.length > 0,
+    questions: supportingInfoUsed && workspace.overview.openInformationRequestCount === 0,
+    finish: requiredReady && workspace.reports.length > 0,
   };
 }
 
 function initialStep(workspace: InsuranceWorkspaceData): StepId {
   const completion = workflowCompletion(workspace);
-  return WORKFLOW_STEPS.find((step) => !completion[step.id])?.id || 'finish';
+  return REQUIRED_STEPS.find((step) => !completion[step]) || 'finish';
 }
 
 export default function SharedRegisterWorkspace({ initialWorkspace }: { initialWorkspace: InsuranceWorkspaceData }) {
   const [workspace, setWorkspace] = useState(initialWorkspace);
   const [step, setStep] = useState<StepId>(() => initialStep(initialWorkspace));
+  const [showAllSteps, setShowAllSteps] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [saving, setSaving] = useState(false);
   const [assetIndex, setAssetIndex] = useState(() => Math.max(0, initialWorkspace.assets.findIndex((asset) => {
@@ -130,17 +150,15 @@ export default function SharedRegisterWorkspace({ initialWorkspace }: { initialW
   const [assetView, setAssetView] = useState<AssetView>('guided');
   const [query, setQuery] = useState('');
   const [kindFilter, setKindFilter] = useState('all');
-  const [photoIndexByAsset, setPhotoIndexByAsset] = useState<Record<string, number>>({});
   const contentRef = useRef<HTMLDivElement>(null);
 
   const completion = useMemo(() => workflowCompletion(workspace), [workspace]);
   const currentStepIndex = WORKFLOW_STEPS.findIndex((entry) => entry.id === step);
-  const completedStepCount = WORKFLOW_STEPS.filter((entry) => completion[entry.id]).length;
-  const readyReviewStageCount = WORKFLOW_STEPS.slice(0, -1).filter((entry) => completion[entry.id]).length;
-  const reviewedAssetCount = workspace.riskObjects.filter((entry) => entry.workspaceAssetId && entry.classificationStatus !== 'unconfirmed').length;
+  const completedRequiredCount = REQUIRED_STEPS.filter((entry) => completion[entry]).length;
+  const requiredReady = completedRequiredCount === REQUIRED_STEPS.length;
+  const reviewedAssetCount = workspace.assets.filter((asset) => workspace.riskObjects.some((entry) => entry.workspaceAssetId === asset.id && entry.classificationStatus !== 'unconfirmed')).length;
   const canonicalAssessments = workspace.assessments.filter((assessment) => assessment.canonicalCoverKey);
-  const assessedCoverCount = canonicalAssessments.filter((assessment) => assessment.placementStage !== 'not_assessed').length;
-  const openQuestionCount = workspace.overview.openInformationRequestCount;
+  const assessedCoverCount = canonicalAssessments.filter((assessment) => assessment.currentCoverPosition !== 'unknown' && assessment.placementStage !== 'not_assessed').length;
   const policySectionCount = workspace.policies.reduce((total, policy) => total + policy.sections.length, 0);
   const scheduleItemCount = workspace.policies.reduce((total, policy) => total + policy.sections.reduce((sectionTotal, section) => sectionTotal + section.scheduleItems.length, 0), 0);
   const activeAsset = workspace.assets[Math.min(assetIndex, Math.max(0, workspace.assets.length - 1))];
@@ -178,6 +196,10 @@ export default function SharedRegisterWorkspace({ initialWorkspace }: { initialW
   }
 
   async function generateReport(type: InsuranceReportType) {
+    if (!requiredReady) {
+      setNotice({ tone: 'error', message: 'Complete the four required review steps before creating a report.' });
+      return;
+    }
     setSaving(true);
     try {
       const response = await fetch(`/api/insurance-workspaces/${workspace.id}/reports`, {
@@ -197,6 +219,7 @@ export default function SharedRegisterWorkspace({ initialWorkspace }: { initialW
 
   function goToStep(nextStep: StepId) {
     setStep(nextStep);
+    setShowAllSteps(false);
     setNotice(null);
     window.requestAnimationFrame(() => contentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   }
@@ -207,102 +230,120 @@ export default function SharedRegisterWorkspace({ initialWorkspace }: { initialW
     window.requestAnimationFrame(() => contentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   }
 
-  const stepGuidance: Record<StepId, { heading: string; body: string; progress: string }> = {
-    setup: { heading: 'Start with the client', body: 'Confirm the client type, their operating profile, key locations and parties before assessing cover.', progress: `${workspace.locations.length} locations · ${workspace.parties.length} parties` },
-    assets: { heading: 'Review one asset at a time', body: 'Confirm the insurance classification and location for each shared asset. You can return to any asset later.', progress: `${reviewedAssetCount} of ${workspace.assets.length} assets reviewed` },
-    covers: { heading: 'Turn the facts into cover decisions', body: 'Add non-asset exposures, consider the catalogue suggestions, then record a placement decision for every relevant cover.', progress: `${assessedCoverCount} of ${canonicalAssessments.length} covers assessed` },
-    policies: { heading: 'Record the actual policy evidence', body: 'Follow the policy hierarchy from policy, to section, to schedule item, and finally its limits or excesses.', progress: `${workspace.policies.length} policies · ${policySectionCount} sections · ${scheduleItemCount} schedule items` },
-    questions: { heading: 'Close the information gaps', body: 'Resolve open questions, keep audience-specific notes separate, and reference the evidence used in the review.', progress: `${openQuestionCount} open questions · ${workspace.evidence.length} evidence references` },
-    finish: { heading: 'Check the review and finish', body: 'Use the readiness check to spot anything outstanding, then generate the client-ready report.', progress: `${readyReviewStageCount} of ${WORKFLOW_STEPS.length - 1} review stages ready` },
+  async function continueAfterAssetSave() {
+    if (assetIndex < workspace.assets.length - 1) {
+      goToAsset(assetIndex + 1);
+      return;
+    }
+    const refreshed = await runCommand({ operation: 'refresh_suggestions' }, 'All assets reviewed. Cover suggestions are ready.');
+    if (refreshed) goToStep('covers');
+  }
+
+  const stepGuidance: Record<StepId, { body: string; progress: string }> = {
+    setup: { body: 'Confirm three basics: the client profile, at least one real location, and the insured party.', progress: `${workspace.locations.filter((location) => !location.isUnknown).length} saved locations · ${workspace.parties.length} parties` },
+    assets: { body: 'Check the suggested classification, saved location and values. Confirm it, then move to the next asset.', progress: `${reviewedAssetCount} of ${workspace.assets.length} reviewed` },
+    covers: { body: 'Start with system suggestions. Decide what is relevant before opening the full catalogue.', progress: `${assessedCoverCount} of ${canonicalAssessments.length} decided` },
+    policies: { body: 'Use the actual insurer schedule. Amounts entered here are always recorded as VAT included.', progress: `${workspace.policies.length} policies · ${policySectionCount} sections · ${scheduleItemCount} items` },
+    questions: { body: 'This step is optional. Use it only when you need questions, notes or supporting evidence.', progress: `${workspace.overview.openInformationRequestCount} open questions · ${workspace.evidence.length} evidence items` },
+    finish: { body: 'The readiness check shows exactly what remains. Reports unlock when all required steps are ready.', progress: `${completedRequiredCount} of ${REQUIRED_STEPS.length} required steps ready` },
   };
+
+  const nextStep = WORKFLOW_STEPS[Math.min(WORKFLOW_STEPS.length - 1, currentStepIndex + 1)];
+  const canContinue = completion[step] || step === 'questions';
 
   return <main className={styles.page}>
     <AppHeader active="shared-registers" />
     <section className={styles.shell}>
       {notice ? <div className={`${styles.notice} ${notice.tone === 'error' ? styles.noticeError : ''}`}>{notice.message}</div> : null}
-      <div className={styles.backRow}><Link href="/shared-registers">← Shared Registers</Link><span>{saving ? 'Saving…' : 'All changes saved'}</span></div>
-      <header className={styles.workspaceHeader}>
-        <div><small>Insurance workspace</small><h1>{workspace.clientName}</h1><p>{workspace.clientMeta || 'Structured insurance review'}</p></div>
-        <div className={styles.headerStatus}><small>Review status</small><strong>{completedStepCount}/{WORKFLOW_STEPS.length}</strong><span>{titleCase(workspace.reviewStatus)}</span></div>
+      <div className={styles.backRow}><Link href="/shared-registers">← Shared Registers</Link><span>{saving ? 'Saving…' : '✓ All changes saved'}</span></div>
+
+      <header className={styles.compactWorkspaceHeader}>
+        <div><small>Insurance review</small><h1>{workspace.clientName}</h1><p>{workspace.clientMeta || 'Client insurance workspace'}</p></div>
+        <div className={styles.requiredProgress}><strong>{completedRequiredCount}/{REQUIRED_STEPS.length}</strong><span>required steps ready</span></div>
       </header>
 
-      <section className={styles.workflowProgress} aria-label="Insurance review progress">
-        <div className={styles.progressSummary}><div><strong>{Math.round((completedStepCount / WORKFLOW_STEPS.length) * 100)}% complete</strong><span>Work from left to right, or open any step when you need it.</span></div><span>{completedStepCount} of {WORKFLOW_STEPS.length} steps</span></div>
-        <div className={styles.progressTrack}><span style={{ width: `${(completedStepCount / WORKFLOW_STEPS.length) * 100}%` }} /></div>
-        <nav className={styles.stepper}>
+      <section className={styles.currentTaskCard} aria-label="Current review task">
+        <div className={styles.currentTaskTop}>
+          <div><span>Step {currentStepIndex + 1} of {WORKFLOW_STEPS.length}{WORKFLOW_STEPS[currentStepIndex].optional ? ' · Optional' : ''}</span><h2>{WORKFLOW_STEPS[currentStepIndex].title}</h2><p>{stepGuidance[step].body}</p></div>
+          <strong>{stepGuidance[step].progress}</strong>
+        </div>
+        <div className={styles.progressTrack}><span style={{ width: `${(completedRequiredCount / REQUIRED_STEPS.length) * 100}%` }} /></div>
+        <button className={styles.allStepsToggle} type="button" onClick={() => setShowAllSteps((current) => !current)}>{showAllSteps ? 'Hide all steps' : 'View all steps'} <span>{showAllSteps ? '↑' : '↓'}</span></button>
+        {showAllSteps ? <nav className={styles.stepper} aria-label="Insurance review steps">
           {WORKFLOW_STEPS.map((entry, index) => {
             const isActive = entry.id === step;
             const isComplete = completion[entry.id];
+            const status = isComplete ? 'Ready' : entry.optional ? 'Optional' : isActive ? 'In progress' : 'Still needed';
             return <button className={`${styles.stepButton} ${isActive ? styles.activeStep : ''} ${isComplete ? styles.completeStep : ''}`} type="button" key={entry.id} onClick={() => goToStep(entry.id)} aria-current={isActive ? 'step' : undefined}>
-              <span className={styles.stepNumber}>{isComplete ? '✓' : index + 1}</span>
-              <span><strong>{entry.title}</strong><small>{isComplete ? 'Complete' : isActive ? 'In progress' : 'Not complete'}</small></span>
+              <span className={styles.stepNumber}>{isComplete ? '✓' : index + 1}</span><span><strong>{entry.shortTitle}</strong><small>{status}</small></span>
             </button>;
           })}
-        </nav>
+        </nav> : null}
       </section>
 
       <div ref={contentRef} className={styles.workflowContent}>
-        <header className={styles.stepIntro}>
-          <div><span>Step {currentStepIndex + 1} of {WORKFLOW_STEPS.length}</span><h2>{stepGuidance[step].heading}</h2><p>{stepGuidance[step].body}</p></div>
-          <strong>{stepGuidance[step].progress}</strong>
-        </header>
-
         {step === 'setup' ? <section className={styles.overview}>
+          {workspace.ownerMessage ? <article className={styles.clientMessage}><span>Message from client</span><p>{workspace.ownerMessage}</p></article> : null}
           <InsuranceOverviewPanel workspace={workspace} runCommand={runCommand} />
-          {workspace.ownerMessage ? <article className={styles.card}><h2>Message from client</h2><p>{workspace.ownerMessage}</p></article> : null}
         </section> : null}
 
         {step === 'assets' ? <section className={styles.assetsSection}>
           <div className={styles.viewSwitch} role="group" aria-label="Asset view">
-            <button className={assetView === 'guided' ? styles.activeView : ''} type="button" onClick={() => setAssetView('guided')}>Guided review</button>
-            <button className={assetView === 'browse' ? styles.activeView : ''} type="button" onClick={() => setAssetView('browse')}>Find an asset</button>
+            <button className={assetView === 'guided' ? styles.activeView : ''} type="button" onClick={() => setAssetView('guided')}>Review next asset</button>
+            <button className={assetView === 'browse' ? styles.activeView : ''} type="button" onClick={() => setAssetView('browse')}>Asset checklist</button>
           </div>
 
-          {assetView === 'guided' ? <>
-            {activeAsset ? (() => {
-              const riskObject = workspace.riskObjects.find((entry) => entry.workspaceAssetId === activeAsset.id);
-              const photos = assetPhotos(activeAsset);
-              const photoIndex = Math.min(photoIndexByAsset[activeAsset.id] ?? 0, Math.max(0, photos.length - 1));
-              const sumTerm = workspace.assessments.filter((assessment) => assessment.assetIds.includes(activeAsset.id))
-                .flatMap((assessment) => assessment.financialTerms).find((term) => term.termType === 'sum_insured' && term.amount !== null);
-              const reviewed = Boolean(riskObject && riskObject.classificationStatus !== 'unconfirmed');
-              return <>
-                <div className={styles.assetReviewNav}>
-                  <button type="button" onClick={() => goToAsset(assetIndex - 1)} disabled={assetIndex <= 0}>← Previous</button>
-                  <label><span>Asset {assetIndex + 1} of {workspace.assets.length}</span><select value={activeAsset.id} onChange={(event) => goToAsset(workspace.assets.findIndex((asset) => asset.id === event.target.value))}>{workspace.assets.map((asset, index) => <option value={asset.id} key={asset.id}>{index + 1}. {asset.title}</option>)}</select></label>
-                  <button type="button" onClick={() => assetIndex >= workspace.assets.length - 1 ? goToStep('covers') : goToAsset(assetIndex + 1)}>{assetIndex >= workspace.assets.length - 1 ? 'Continue to covers →' : 'Next asset →'}</button>
-                </div>
-                <article className={`${styles.assetCard} ${styles.focusedAssetCard}`}>
-                  <div className={styles.assetReviewStatus}><span className={reviewed ? styles.statusComplete : styles.statusPending}>{reviewed ? '✓ Classification reviewed' : 'Action needed: confirm classification'}</span><span>{activeAsset.location || 'Location not supplied'}</span></div>
-                  <div className={styles.assetHeader}>
-                    <div className={styles.assetTitleBlock}><small>{activeAsset.kind}</small><h2>{activeAsset.title}</h2><p>{assetMeta(activeAsset)}</p></div>
-                    <div className={styles.valueComparison}>
-                      <div><small>Replacement value</small><strong>{money(activeAsset.replacementValue)}</strong><span>Register fact</span></div>
-                      <div><small>Owner-provided insured value</small><strong>{money(asNumber(activeAsset.snapshot.insuredValueExVat))}</strong><span>Not proof of current cover</span></div>
-                      <div><small>Recorded sum insured</small><strong>{money(sumTerm?.amount === null || sumTerm?.amount === undefined ? null : Number(sumTerm.amount))}</strong><span>Policy or broker evidence</span></div>
-                    </div>
+          {assetView === 'guided' ? <>{activeAsset ? (() => {
+            const riskObject = workspace.riskObjects.find((entry) => entry.workspaceAssetId === activeAsset.id);
+            const photos = assetPhotos(activeAsset);
+            const gps = assetGps(activeAsset);
+            const sumTerm = workspace.assessments.filter((assessment) => assessment.assetIds.includes(activeAsset.id)).flatMap((assessment) => assessment.financialTerms).find((term) => term.termType === 'sum_insured' && term.amount !== null);
+            const reviewed = Boolean(riskObject && riskObject.classificationStatus !== 'unconfirmed');
+            return <>
+              <div className={styles.assetReviewNav}>
+                <button type="button" onClick={() => goToAsset(assetIndex - 1)} disabled={assetIndex <= 0}>← Previous</button>
+                <label><span>Reviewing asset {assetIndex + 1} of {workspace.assets.length}</span><select value={activeAsset.id} onChange={(event) => goToAsset(workspace.assets.findIndex((asset) => asset.id === event.target.value))}>{workspace.assets.map((asset, index) => <option value={asset.id} key={asset.id}>{index + 1}. {asset.title}</option>)}</select></label>
+                <button type="button" onClick={() => goToAsset(assetIndex + 1)} disabled={assetIndex >= workspace.assets.length - 1}>Next asset →</button>
+              </div>
+
+              <article className={`${styles.assetCard} ${styles.focusedAssetCard}`}>
+                <div className={styles.assetReviewStatus}><span className={reviewed ? styles.statusComplete : styles.statusPending}>{reviewed ? '✓ Reviewed' : 'Next action: confirm the classification below'}</span><span>{photos.length} photo{photos.length === 1 ? '' : 's'} shared</span></div>
+                <div className={styles.assetHero}>
+                  <div className={styles.assetIdentity}><small>{titleCase(activeAsset.kind)}</small><h2>{activeAsset.title}</h2><p>{assetMeta(activeAsset)}</p></div>
+                  <div className={styles.locationCard}>
+                    <span>Saved location</span><strong>{activeAsset.location || (gps ? 'GPS location available' : 'Not supplied')}</strong>
+                    {gps ? <><small>{gps.lat.toFixed(6)}, {gps.lng.toFixed(6)}</small><a href={`https://www.google.com/maps?q=${gps.lat},${gps.lng}`} target="_blank" rel="noreferrer">Open saved GPS in Maps ↗</a></> : <small>No GPS coordinates were shared for this asset.</small>}
                   </div>
-                  {riskObject ? <InsuranceRiskObjectEditor key={`${riskObject.id}-${riskObject.version}`} riskObject={riskObject} locations={workspace.locations} runCommand={runCommand} /> : <p className={styles.infoBox}>This asset does not yet have a risk object. Refresh the workspace suggestions before continuing.</p>}
-                  <details className={styles.assetDisclosure}>
-                    <summary>Photos and full owner-authorised details</summary>
-                    <div className={styles.assetDetails}>
-                      <div className={styles.photoPanel}>{photos.length ? <><a className={styles.mainPhoto} href={photos[photoIndex]} target="_blank" rel="noreferrer"><img src={photos[photoIndex]} alt={`${activeAsset.title} photo`} /></a>{photos.length > 1 ? <div className={styles.photoThumbs}>{photos.map((photo, index) => <button className={index === photoIndex ? styles.activeThumb : ''} type="button" key={photo} onClick={() => setPhotoIndexByAsset((current) => ({ ...current, [activeAsset.id]: index }))}><img src={photo} alt={`${activeAsset.title} thumbnail ${index + 1}`} /></button>)}</div> : null}</> : <div className={styles.photoPlaceholder}>No photo shared</div>}</div>
-                      <div className={styles.detailsPanel}><h3>Owner-authorised asset details</h3><dl>{detailRows(activeAsset).map(([rowLabel, value]) => <div key={rowLabel}><dt>{rowLabel}</dt><dd>{value}</dd></div>)}</dl></div>
-                    </div>
-                  </details>
-                </article>
-              </>;
-            })() : <div className={styles.empty}>No assets were shared for this workspace.</div>}
-          </> : <>
+                </div>
+
+                <div className={styles.valueComparison}>
+                  <div><small>Replacement value</small><strong>{money(vatIncluded(activeAsset.replacementValue))}</strong><span>VAT included · Register fact</span></div>
+                  <div><small>Owner-provided insured value</small><strong>{money(vatIncluded(asNumber(activeAsset.snapshot.insuredValueExVat)))}</strong><span>VAT included · Not proof of cover</span></div>
+                  <div><small>Recorded sum insured</small><strong>{money(termValueVatIncluded(sumTerm))}</strong><span>VAT included · Policy evidence</span></div>
+                </div>
+
+                {photos.length ? <section className={styles.assetPhotoGallery}><header><div><span>Shared photos</span><strong>{photos.length} available</strong></div><small>Select any photo to open the full image.</small></header><div>{photos.map((photo, index) => <a href={photo} target="_blank" rel="noreferrer" key={`${photo}-${index}`}><img src={photo} alt={`${activeAsset.title} photo ${index + 1}`} /><span>Photo {index + 1}</span></a>)}</div></section> : <div className={styles.photoPlaceholder}>No photos were shared for this asset.</div>}
+
+                {riskObject ? <InsuranceRiskObjectEditor key={`${riskObject.id}-${riskObject.version}`} riskObject={riskObject} locations={workspace.locations} runCommand={runCommand} onSaved={continueAfterAssetSave} /> : <p className={styles.infoBox}>A suggested classification is not available yet. Refresh the review and try again.</p>}
+
+                <details className={styles.assetDisclosure}>
+                  <summary>View serial number, registration and all asset facts</summary>
+                  <div className={styles.detailsPanel}><h3>Owner-authorised asset details</h3><dl>{detailRows(activeAsset).map(([rowLabel, value]) => <div key={rowLabel}><dt>{rowLabel}</dt><dd>{value}</dd></div>)}</dl></div>
+                </details>
+              </article>
+            </>;
+          })() : <div className={styles.empty}>No assets were shared for this workspace.</div>}</> : <>
             <div className={styles.assetToolbar}>
-              <label className={styles.assetSearch}><span>Search assets</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Asset, location, serial or registration" /></label>
-              <label><span>Asset type</span><select value={kindFilter} onChange={(event) => setKindFilter(event.target.value)}><option value="all">All asset types</option>{kinds.map((kind) => <option value={kind} key={kind}>{kind}</option>)}</select></label>
+              <label className={styles.assetSearch}><span>Find an asset</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by name, location, serial or registration" /></label>
+              <label><span>Asset type</span><select value={kindFilter} onChange={(event) => setKindFilter(event.target.value)}><option value="all">All asset types</option>{kinds.map((kind) => <option value={kind} key={kind}>{titleCase(kind)}</option>)}</select></label>
             </div>
             <div className={styles.assetBrowseList}>{filteredAssets.map((asset) => {
               const index = workspace.assets.findIndex((entry) => entry.id === asset.id);
               const riskObject = workspace.riskObjects.find((entry) => entry.workspaceAssetId === asset.id);
               const reviewed = Boolean(riskObject && riskObject.classificationStatus !== 'unconfirmed');
-              return <button type="button" key={asset.id} onClick={() => goToAsset(index)}><span className={reviewed ? styles.statusComplete : styles.statusPending}>{reviewed ? '✓' : '!'}</span><span><strong>{asset.title}</strong><small>{asset.location || 'Location not supplied'} · {assetMeta(asset)}</small></span><span>Review →</span></button>;
+              const photos = assetPhotos(asset);
+              const gps = assetGps(asset);
+              return <button type="button" key={asset.id} onClick={() => goToAsset(index)}>{photos[0] ? <img src={photos[0]} alt="" /> : <span className={styles.assetListPlaceholder} /> }<span className={reviewed ? styles.statusComplete : styles.statusPending}>{reviewed ? '✓' : '!'}</span><span><strong>{asset.title}</strong><small>{gps ? `GPS: ${gps.lat.toFixed(4)}, ${gps.lng.toFixed(4)}` : asset.location || 'Location not supplied'} · {assetMeta(asset)}</small></span><span>{reviewed ? 'Review again' : 'Review now'} →</span></button>;
             })}{!filteredAssets.length ? <div className={styles.empty}>No assets match the current filters.</div> : null}</div>
           </>}
         </section> : null}
@@ -312,23 +353,22 @@ export default function SharedRegisterWorkspace({ initialWorkspace }: { initialW
         {step === 'questions' ? <InsuranceQuestionsPanel workspace={workspace} runCommand={runCommand} /> : null}
         {step === 'finish' ? <section className={styles.reports}>
           <article className={styles.readinessCard}>
-            <header><div><span>Readiness check</span><h2>{Object.values(completion).slice(0, -1).every(Boolean) ? 'Ready to create the report' : 'A few items still need attention'}</h2></div><strong>{Object.values(completion).slice(0, -1).filter(Boolean).length}/5 ready</strong></header>
-            <div className={styles.readinessList}>
-              {WORKFLOW_STEPS.slice(0, -1).map((entry) => <button type="button" key={entry.id} onClick={() => goToStep(entry.id)}><span className={completion[entry.id] ? styles.statusComplete : styles.statusPending}>{completion[entry.id] ? '✓' : '!'}</span><span><strong>{entry.title}</strong><small>{completion[entry.id] ? 'Ready' : entry.description}</small></span><span>{completion[entry.id] ? 'Review' : 'Complete step'} →</span></button>)}
-            </div>
+            <header><div><span>Required readiness check</span><h2>{requiredReady ? 'Everything required is ready' : 'Complete the highlighted items first'}</h2></div><strong>{completedRequiredCount}/{REQUIRED_STEPS.length} ready</strong></header>
+            <div className={styles.readinessList}>{WORKFLOW_STEPS.filter((entry) => REQUIRED_STEPS.includes(entry.id)).map((entry) => <button type="button" key={entry.id} onClick={() => goToStep(entry.id)}><span className={completion[entry.id] ? styles.statusComplete : styles.statusPending}>{completion[entry.id] ? '✓' : '!'}</span><span><strong>{entry.title}</strong><small>{completion[entry.id] ? 'Ready' : entry.description}</small></span><span>{completion[entry.id] ? 'Review' : 'Complete now'} →</span></button>)}</div>
+            <button className={styles.optionalSupportLink} type="button" onClick={() => goToStep('questions')}><span>Supporting information</span><strong>{completion.questions ? '✓ Added and resolved' : 'Optional · Add questions, notes or evidence'} →</strong></button>
           </article>
           <div className={styles.reportGrid}>
-            <article><span>Recommended</span><h2>Summary report</h2><p>A client-ready snapshot of source revision, current-cover evidence, areas to consider, values and outstanding questions.</p><button type="button" onClick={() => void generateReport('summary')} disabled={saving}>Generate summary</button></article>
-            <article><span>Full record</span><h2>Detailed report</h2><p>Includes policy hierarchy, schedule links, components, structured limits, excesses, provenance and unresolved information.</p><button type="button" onClick={() => void generateReport('detailed')} disabled={saving}>Generate detailed report</button></article>
+            <article><span>Recommended</span><h2>Client summary</h2><p>A concise, client-ready view of the cover position, values and outstanding information.</p><button type="button" onClick={() => void generateReport('summary')} disabled={saving || !requiredReady}>{requiredReady ? 'Create summary report' : 'Complete required steps first'}</button></article>
+            <article><span>Full working record</span><h2>Detailed report</h2><p>The policy hierarchy, schedule links, VAT-inclusive values, limits, excesses and evidence trail.</p><button type="button" onClick={() => void generateReport('detailed')} disabled={saving || !requiredReady}>{requiredReady ? 'Create detailed report' : 'Complete required steps first'}</button></article>
           </div>
-          <article className={styles.reportHistory}><h2>Previous reports</h2>{workspace.reports.length ? <div className={styles.reportList}>{workspace.reports.map((report) => <div key={report.id}><div><strong>{titleCase(report.type)} report</strong><small>Revision {report.revision} · {dateLabel(report.generatedAtIso)}</small></div><a href={`/api/insurance-reports/${report.id}`} target="_blank" rel="noreferrer">Open report</a></div>)}</div> : <div className={styles.empty}>No reports have been generated yet.</div>}</article>
-          <p className={styles.disclaimer}>System-generated items are labelled as areas to consider. Only explicit human action with a recorded source can confirm current cover or a broker recommendation. Private broker notes are excluded.</p>
+          <article className={styles.reportHistory}><h2>Previous reports</h2><p>Previous reports do not mark the current review complete. Create a new report only when the readiness check is green.</p>{workspace.reports.length ? <div className={styles.reportList}>{workspace.reports.map((report) => <div key={report.id}><div><strong>{titleCase(report.type)} report</strong><small>Revision {report.revision} · {dateLabel(report.generatedAtIso)}</small></div><a href={`/api/insurance-reports/${report.id}`} target="_blank" rel="noreferrer">Open report</a></div>)}</div> : <div className={styles.empty}>No reports have been generated yet.</div>}</article>
+          <p className={styles.disclaimer}>System suggestions are areas to consider, not confirmation of cover. Only a recorded human decision and supporting source can confirm the current position.</p>
         </section> : null}
 
         <footer className={styles.workflowFooter}>
-          <button type="button" onClick={() => goToStep(WORKFLOW_STEPS[Math.max(0, currentStepIndex - 1)].id)} disabled={currentStepIndex === 0}>← {currentStepIndex > 0 ? WORKFLOW_STEPS[currentStepIndex - 1].title : 'Previous'}</button>
-          <div><span>{completion[step] ? '✓ This step is complete' : 'You can return to finish this step later'}</span><small>Changes save as you work.</small></div>
-          <button className={styles.primaryButton} type="button" onClick={() => goToStep(WORKFLOW_STEPS[Math.min(WORKFLOW_STEPS.length - 1, currentStepIndex + 1)].id)} disabled={currentStepIndex === WORKFLOW_STEPS.length - 1}>{currentStepIndex < WORKFLOW_STEPS.length - 1 ? `${WORKFLOW_STEPS[currentStepIndex + 1].title} →` : 'Review complete'}</button>
+          <button type="button" onClick={() => goToStep(WORKFLOW_STEPS[Math.max(0, currentStepIndex - 1)].id)} disabled={currentStepIndex === 0}>← {currentStepIndex > 0 ? WORKFLOW_STEPS[currentStepIndex - 1].shortTitle : 'Previous'}</button>
+          <div><span>{completion[step] ? '✓ This step is ready' : step === 'questions' ? 'Optional — use only when needed' : 'Complete the main action above to continue'}</span><small>Your saved changes are kept automatically.</small></div>
+          <button className={styles.primaryButton} type="button" onClick={() => goToStep(nextStep.id)} disabled={currentStepIndex === WORKFLOW_STEPS.length - 1 || !canContinue}>{currentStepIndex < WORKFLOW_STEPS.length - 1 ? `${canContinue ? 'Continue to' : 'Finish this step for'} ${nextStep.shortTitle} →` : 'Review complete'}</button>
         </footer>
       </div>
     </section>

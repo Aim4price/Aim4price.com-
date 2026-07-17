@@ -381,3 +381,135 @@
   .assetBrowseList > button, .readinessList > button { grid-template-columns: auto minmax(0, 1fr); }
   .assetBrowseList > button > span:last-child, .readinessList > button > span:last-child { grid-column: 2; }
 }
+
+/* Simplified guided review */
+.compactWorkspaceHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  padding: 1.25rem 1.4rem;
+  border: 1px solid #c9ddd5;
+  border-radius: 1.4rem;
+  background: radial-gradient(circle at 0 50%, rgba(23, 107, 80, .1), transparent 28%), #fff;
+  box-shadow: 0 12px 30px rgba(21, 62, 50, .05);
+}
+.compactWorkspaceHeader small { color: #176b50; font-size: .68rem; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
+.compactWorkspaceHeader h1 { margin: .2rem 0 0; color: var(--green-dark); font-size: clamp(1.7rem, 3vw, 2.7rem); line-height: 1; letter-spacing: -.045em; }
+.compactWorkspaceHeader p { max-width: 60rem; margin: .45rem 0 0; color: #65766f; font-size: .84rem; line-height: 1.45; }
+.requiredProgress { min-width: 10rem; padding: .8rem 1rem; border-left: 4px solid #1f7b5c; border-radius: 0 .9rem .9rem 0; background: #eef7f3; }
+.requiredProgress strong, .requiredProgress span { display: block; }
+.requiredProgress strong { color: #104c39; font-size: 1.55rem; line-height: 1; }
+.requiredProgress span { margin-top: .3rem; color: #63756e; font-size: .68rem; font-weight: 800; }
+
+.currentTaskCard { margin: .8rem 0 1rem; padding: 1.1rem 1.2rem; border: 1px solid #c9ddd5; border-radius: 1.35rem; background: linear-gradient(135deg, #f2faf6, #fff 60%); }
+.currentTaskTop { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; }
+.currentTaskTop span { color: #187054; font-size: .66rem; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+.currentTaskTop h2 { margin: .22rem 0 0; color: var(--green-dark); font-size: 1.45rem; letter-spacing: -.035em; }
+.currentTaskTop p { margin: .3rem 0 0; color: #5f736c; font-size: .82rem; }
+.currentTaskTop > strong { flex: 0 0 auto; padding: .7rem .85rem; border-radius: .85rem; color: #145640; background: #e1f1e9; font-size: .76rem; }
+.currentTaskCard .progressTrack { margin: .85rem 0 .4rem; }
+.allStepsToggle { display: flex; align-items: center; gap: .5rem; margin-left: auto; padding: .35rem 0; border: 0; color: #176349; background: transparent; font-size: .72rem; font-weight: 900; cursor: pointer; }
+.currentTaskCard .stepper { margin: .7rem 0 0; }
+
+.clientMessage { margin-bottom: 1rem; padding: 1rem 1.1rem; border: 1px solid #d0dfda; border-left: 4px solid #2e7a60; border-radius: 1rem; background: #fff; }
+.clientMessage span { color: #176349; font-size: .66rem; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+.clientMessage p { margin: .35rem 0 0; color: #4d645c; line-height: 1.55; }
+.cardHeading { margin-bottom: 1rem; }
+.cardHeading > span, .eyebrow { display: block; margin-bottom: .28rem; color: #177052; font-size: .65rem; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+.cardHeading h2, .cardHeading p { margin: 0; }
+.cardHeading p { margin-top: .35rem; }
+.fieldGroupTitle { margin: 1.25rem 0 .55rem; color: #174638; font-size: .88rem; }
+
+.gpsSuggestionSection { margin: 1rem 0 1.2rem; padding: 1rem; border: 1px solid #bcd9cd; border-radius: 1.2rem; background: #f2faf6; }
+.gpsSuggestionSection > header { display: flex; justify-content: space-between; gap: 1rem; }
+.gpsSuggestionSection header strong, .gpsSuggestionSection header small { display: block; }
+.gpsSuggestionSection header small { color: #697b74; }
+.gpsCardGrid, .savedLocationGrid, .partyCardGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: .7rem; margin-top: .8rem; }
+.gpsCard, .savedLocationGrid article, .partyCardGrid article { padding: .9rem; border: 1px solid #cbded6; border-radius: 1rem; background: #fff; }
+.gpsCard > span, .savedLocationGrid article > span, .partyCardGrid article > span { color: #1a7456; font-size: .62rem; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
+.gpsCard strong, .gpsCard small, .savedLocationGrid h3, .savedLocationGrid p, .savedLocationGrid small, .savedLocationGrid strong, .partyCardGrid h3, .partyCardGrid p { display: block; margin: .25rem 0 0; }
+.gpsCard small, .savedLocationGrid small, .partyCardGrid p { color: #65766f; font-size: .72rem; }
+.gpsCard div { display: flex; gap: .45rem; margin-top: .7rem; }
+.gpsCard button, .gpsCard a, .savedLocationGrid a { min-height: 2.35rem; display: inline-flex; align-items: center; padding: 0 .65rem; border: 1px solid #7db59e; border-radius: .65rem; color: #15573f; background: #f1faf6; font-size: .7rem; font-weight: 850; text-decoration: none; }
+.savedLocationGrid a { margin-top: .55rem; }
+.savedLocationGrid strong { color: #315a4e; font-size: .7rem; }
+.successBox, .warningBox { display: grid; gap: .25rem; margin: 1rem 0; padding: .9rem 1rem; border: 1px solid #b7d9c9; border-radius: 1rem; color: #17563f; background: #ecf8f2; font-size: .8rem; }
+.warningBox { border-color: #edce8d; color: #704b10; background: #fff7e7; }
+.advancedPanel, .linkedAdvanced { margin: 1rem 0; border: 1px solid #d4e0dc; border-radius: 1rem; background: #f9fbfa; }
+.advancedPanel > summary, .linkedAdvanced > summary { padding: .9rem 1rem; color: #355f52; font-size: .78rem; font-weight: 900; cursor: pointer; }
+.advancedPanel > div, .advancedPanel > article, .linkedAdvanced > div { padding: 0 1rem 1rem; }
+
+.assetHero { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(15rem, .6fr); gap: 1rem; padding: 1.25rem 1.35rem 1rem; }
+.assetIdentity small { color: #167052; font-size: .68rem; font-weight: 900; text-transform: uppercase; }
+.assetIdentity h2 { margin: .2rem 0 0; color: var(--green-dark); font-size: clamp(1.5rem, 2.7vw, 2.2rem); letter-spacing: -.05em; }
+.assetIdentity p { margin: .35rem 0 0; color: #61726c; }
+.locationCard { padding: .85rem 1rem; border: 1px solid #b8d7ca; border-radius: 1rem; background: #eff8f4; }
+.locationCard span, .locationCard strong, .locationCard small, .locationCard a { display: block; }
+.locationCard span { color: #1c7758; font-size: .62rem; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
+.locationCard strong { margin-top: .3rem; color: #154936; }
+.locationCard small { margin-top: .2rem; color: #64776f; font-size: .7rem; }
+.locationCard a { margin-top: .55rem; color: #115e44; font-size: .72rem; font-weight: 900; }
+.focusedAssetCard .valueComparison { padding: 0 1.35rem 1rem; }
+.assetPhotoGallery { padding: 1rem 1.35rem; border-top: 1px solid #dce7e2; background: #f8fbfa; }
+.assetPhotoGallery > header { display: flex; justify-content: space-between; gap: 1rem; margin-bottom: .7rem; }
+.assetPhotoGallery header span, .assetPhotoGallery header strong { display: block; }
+.assetPhotoGallery header span { color: #167052; font-size: .66rem; font-weight: 900; text-transform: uppercase; }
+.assetPhotoGallery header small { color: #6b7c75; font-size: .72rem; }
+.assetPhotoGallery > div { display: grid; grid-auto-columns: minmax(12rem, 18rem); grid-auto-flow: column; gap: .7rem; overflow-x: auto; padding-bottom: .35rem; scroll-snap-type: x proximity; }
+.assetPhotoGallery a { position: relative; min-height: 11rem; overflow: hidden; border: 1px solid #c8d9d2; border-radius: 1rem; background: #e9f0ed; scroll-snap-align: start; }
+.assetPhotoGallery img { width: 100%; height: 11rem; display: block; object-fit: cover; }
+.assetPhotoGallery a span { position: absolute; right: .5rem; bottom: .5rem; padding: .3rem .45rem; border-radius: .5rem; color: #fff; background: rgba(9, 47, 36, .82); font-size: .65rem; font-weight: 850; }
+.focusedAssetCard > .photoPlaceholder { margin: 0 1.35rem 1rem; height: auto; min-height: 6rem; display: grid; place-items: center; border: 1px dashed #c7d7d1; border-radius: 1rem; color: #697b74; background: #f7faf9; }
+
+.classificationCard { border-top: 1px solid #cfe0d9; background: #fff; }
+.classificationCard > header { display: flex; justify-content: space-between; gap: 1.2rem; padding: 1rem 1.35rem; background: #eff8f4; }
+.classificationCard header span { color: #1b7557; font-size: .63rem; font-weight: 900; text-transform: uppercase; }
+.classificationCard header h3 { margin: .2rem 0 0; color: #123f31; font-size: 1.12rem; }
+.classificationCard header p { margin: .25rem 0 0; color: #60746b; font-size: .78rem; }
+.classificationCard header > strong { align-self: start; padding: .45rem .65rem; border-radius: .65rem; color: #704d12; background: #fff1cf; font-size: .7rem; }
+.classificationFields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; padding: 1rem 1.35rem 0; }
+.classificationFields label small { color: #70807a; font-weight: 600; }
+.classificationActions { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; padding: 0 1.35rem 1rem; }
+.classificationActions .primaryButton, .classificationActions .secondaryButton { margin-top: .85rem; }
+.advancedInline { margin-left: auto; }
+.advancedInline summary { padding: .7rem; color: #697a74; font-size: .7rem; font-weight: 800; cursor: pointer; }
+.advancedInline div { display: flex; gap: .4rem; }
+.assetBrowseList > button { grid-template-columns: 4.2rem auto minmax(0, 1fr) auto; }
+.assetBrowseList > button > img, .assetListPlaceholder { width: 4.2rem; height: 3.2rem; display: block; border-radius: .65rem; object-fit: cover; background: linear-gradient(135deg, #dce9e4, #eff5f2); }
+
+.recommendationGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr)); gap: .85rem; }
+.recommendationCard { padding: 1rem; border: 1px solid #c7ddd3; border-radius: 1.2rem; background: linear-gradient(145deg, #fff, #f4faf7); box-shadow: 0 8px 20px rgba(20, 70, 52, .04); }
+.recommendationCard > header { display: flex; justify-content: space-between; gap: 1rem; }
+.recommendationCard header span { padding: .25rem .45rem; border-radius: .5rem; color: #145b43; background: #def2e8; font-size: .62rem; font-weight: 900; text-transform: uppercase; }
+.recommendationCard header small { color: #6d7d77; }
+.recommendationCard h3 { margin: .7rem 0 .3rem; color: #113f31; font-size: 1.15rem; }
+.recommendationCard > p { min-height: 3.2rem; margin: 0; color: #5c7068; font-size: .8rem; line-height: 1.5; }
+.recommendationCard details { margin-top: .65rem; color: #5e716a; font-size: .73rem; }
+.recommendationCard details summary { color: #176349; font-weight: 850; cursor: pointer; }
+.recommendationCard > div { display: flex; flex-wrap: wrap; gap: .45rem; margin-top: .8rem; }
+.recommendationCard > div button { min-height: 2.65rem; padding: 0 .7rem; border: 1px solid #8ab9a5; border-radius: .75rem; color: #15523e; background: #fff; font-size: .72rem; font-weight: 850; }
+.recommendationCard > div .primaryButton { margin: 0; color: #fff; background: #176b50; }
+.nextActionRow { display: flex; flex-wrap: wrap; gap: .6rem; margin-bottom: 1rem; }
+.assetExposureSummary { display: grid; gap: .25rem; margin-bottom: 1rem; padding: 1rem 1.1rem; border: 1px solid #b9d7ca; border-radius: 1rem; color: #185740; background: #edf8f3; }
+.assetExposureSummary span { color: #5a7067; font-size: .78rem; }
+.linkedAdvanced fieldset, .scheduleLinkGrid fieldset { display: grid; gap: .4rem; min-width: 0; padding: .8rem; border: 1px solid #d6e2de; border-radius: .85rem; }
+.linkedAdvanced fieldset label, .scheduleLinkGrid fieldset label { display: flex; align-items: center; gap: .55rem; min-height: 2.45rem; padding: .4rem .5rem; border-radius: .65rem; background: #f7faf9; cursor: pointer; }
+.linkedAdvanced input, .scheduleLinkGrid input { width: 1rem; min-width: 1rem; height: 1rem; min-height: 0; accent-color: #176b50; }
+.linkedAdvanced > div, .scheduleLinkGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: .7rem; }
+.scheduleLinkGrid { margin: 1rem 0; }
+.scheduleLinkGrid legend, .linkedAdvanced legend { color: #214c3f; font-size: .75rem; font-weight: 900; }
+.scheduleLinkGrid label span { color: #1c4a3b; font-weight: 800; }
+.scheduleLinkGrid label small { display: block; margin-top: .12rem; color: #718079; font-weight: 600; }
+.optionalSupportLink { width: 100%; display: flex; align-items: center; justify-content: space-between; margin-top: .8rem; padding: .8rem 1rem; border: 1px dashed #abc9bd; border-radius: .85rem; color: #315e50; background: rgba(255,255,255,.7); cursor: pointer; }
+
+@media (max-width: 760px) {
+  .compactWorkspaceHeader, .currentTaskTop, .gpsSuggestionSection > header, .classificationCard > header, .assetPhotoGallery > header { align-items: flex-start; flex-direction: column; }
+  .requiredProgress, .currentTaskTop > strong { width: 100%; }
+  .assetHero, .classificationFields { grid-template-columns: 1fr; }
+  .assetBrowseList > button { grid-template-columns: 3.5rem auto minmax(0, 1fr); }
+  .assetBrowseList > button > img, .assetListPlaceholder { width: 3.5rem; }
+  .assetBrowseList > button > span:last-child { grid-column: 3; }
+  .advancedInline { width: 100%; margin-left: 0; }
+  .recommendationGrid { grid-template-columns: 1fr; }
+}
