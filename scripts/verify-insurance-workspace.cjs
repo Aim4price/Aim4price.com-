@@ -101,9 +101,57 @@ assertSuggestion(scenario(engine, 'Construction project and contract works'), 'c
 assertSuggestion(scenario(engine, 'Consulting activity', { exposureTypes: ['third party liability'] }), 'public_liability');
 assertSuggestion(scenario(engine, 'Solar facility', { industries: ['renewable_energy'] }), 'renewable_energy_project_operational');
 
+const furniture = engine.classifyInsuranceRisk({
+  ownerFacts: {
+    title: 'Boardroom furniture',
+    kind: 'manual',
+    specsJson: {
+      generalAssetCategory: 'furniture_contents',
+      insuranceUseContext: 'business',
+      insuranceMobility: 'premises',
+    },
+  },
+  segments: [],
+});
+assertSuggestion(furniture, 'office_contents');
+
+const homeLaptop = engine.classifyInsuranceRisk({
+  ownerFacts: {
+    title: 'MacBook Pro',
+    kind: 'manual',
+    specsJson: {
+      generalAssetCategory: 'computers_it',
+      insuranceUseContext: 'home',
+      insuranceMobility: 'portable',
+    },
+  },
+  segments: ['commercial'],
+});
+assertSuggestion(homeLaptop, 'personal_all_risks_portable_possessions');
+assert.ok(!homeLaptop.coverSuggestions.some((entry) => entry.coverKey === 'electronic_equipment'), 'Home-use facts must not silently force a commercial electronics section');
+
+const coldRoom = engine.classifyInsuranceRisk({
+  ownerFacts: {
+    title: 'Main cold room',
+    kind: 'manual',
+    specsJson: {
+      generalAssetCategory: 'commercial_refrigeration',
+      insuranceUseContext: 'business',
+      insuranceMobility: 'fixed',
+      insuranceCriticalToOperations: 'yes',
+      insuranceTemperatureSensitiveStock: 'yes',
+    },
+  },
+});
+assertSuggestion(coldRoom, 'machinery_breakdown');
+assertSuggestion(coldRoom, 'machinery_breakdown_bi_deterioration_stock');
+assertSuggestion(coldRoom, 'business_interruption');
+
 const uuid = '11111111-1111-4111-8111-111111111111';
 const emptyMoney = validation.parseInsuranceCommand({ operation: 'save_financial_term', assessmentId: uuid, termType: 'sum_insured' });
 assert.equal(emptyMoney.amount, null, 'Missing policy money must remain null');
+const groupedDecision = validation.parseInsuranceCommand({ operation: 'decide_suggestions', suggestionIds: [uuid], decision: 'accepted_for_assessment', rationale: 'Group matching asset signals into one cover review.' });
+assert.deepEqual(groupedDecision.suggestionIds, [uuid], 'Grouped suggestion decisions must retain every selected signal');
 assert.throws(() => validation.parseInsuranceCommand({ operation: 'save_assessment', canonicalCoverKey: 'public_liability', currentCoverPosition: 'confirmed_included', sourceType: 'system_suggestion', sourceReference: 'rule' }), /INSURANCE_CONFIRMED_COVER_SOURCE_REQUIRED/);
 assert.throws(() => validation.parseInsuranceCommand({ operation: 'save_assessment', canonicalCoverKey: 'public_liability', placementStage: 'broker_recommended' }), /INSURANCE_BROKER_RATIONALE_REQUIRED/);
 assert.throws(() => validation.parseInsuranceCommand({ operation: 'save_exposure', exposureType: 'liability', label: 'Dismissed exposure', exposureStatus: 'dismissed_with_reason' }), /INSURANCE_DISMISSAL_REASON_REQUIRED/);
@@ -118,11 +166,20 @@ const report = source('lib/insurance-report.ts');
 const migration = source('database/migrations/54-insurance-workspace-normalized.sql');
 const workspaceRoute = source('app/api/insurance-workspaces/[workspaceId]/route.ts');
 const routeAuth = source('lib/insurance-route-auth.ts');
+const readiness = source('lib/insurance-workspace-readiness.ts');
+const panels = source('app/shared-registers/[shareId]/insurance-workspace-panels.tsx');
 
 assert.match(workspaceRoute, /requireInsuranceBrokerUserId/);
 assert.match(workspaceRoute, /parseInsuranceCommand/);
 assert.match(routeAuth, /accountType !== 'insurance'/);
 assert.ok(!/sumInsured\s*\?\?\s*[^\n]*replacementValue/.test(report), 'Reports must not fall back from sum insured to replacement value');
+assert.match(report, /getInsuranceWorkspaceReadiness/);
+assert.match(report, /scheduleTermsByAsset/, 'Reports must use sums insured linked through policy schedule items');
+assert.match(readiness, /policy-vat-/);
+assert.match(readiness, /policy-renewal-/);
+assert.match(panels, /decide_suggestions/);
+assert.match(panels, /Create client questions/);
+assert.doesNotMatch(workspace, /vatBasis\s*=\s*amount\s*\?\s*'inclusive'/, 'Saved monetary values must not silently force VAT-inclusive');
 assert.match(workspace, /version\s*=\s*version\s*\+\s*1/);
 assert.match(report, /note\.noteType === 'report_visible'/);
 assert.match(migration, /CREATE TABLE IF NOT EXISTS public\.insurance_policy_sections/);
