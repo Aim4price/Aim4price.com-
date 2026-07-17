@@ -64,6 +64,7 @@ const placementOptions: Array<{ value: InsurancePlacementStage; label: string }>
 ];
 
 export function InsuranceOverviewPanel({ workspace, runCommand }: { workspace: InsuranceWorkspaceData; runCommand: RunCommand }) {
+  const [setupView, setSetupView] = useState<'classification' | 'locations' | 'parties' | 'source'>(() => workspace.segments.length === 0 ? 'classification' : workspace.locations.length === 0 ? 'locations' : workspace.parties.length === 0 ? 'parties' : 'source');
   const [segments, setSegments] = useState<InsuranceClientSegment[]>(workspace.segments);
   const [industries, setIndustries] = useState<InsuranceIndustryProfileKey[]>(workspace.industryProfiles);
   const [locationLabel, setLocationLabel] = useState('');
@@ -85,78 +86,64 @@ export function InsuranceOverviewPanel({ workspace, runCommand }: { workspace: I
   }
 
   return <section>
-    <div className={styles.summaryGrid}>
-      <article><span>Locations</span><strong>{workspace.overview.locationCount}</strong><small>{workspace.overview.assetCount} immutable shared assets</small></article>
-      <article><span>Non-asset exposures</span><strong>{workspace.overview.nonAssetExposureCount}</strong><small>People, liability, income, contracts and other interests</small></article>
-      <article><span>Open questions</span><strong>{workspace.overview.openInformationRequestCount}</strong><small>Structured information requests still unresolved</small></article>
-      <article><span>Unassessed covers</span><strong>{workspace.overview.unassessedAssessmentCount}</strong><small>{workspace.overview.reviewedAssessmentCount} assessments progressed</small></article>
-    </div>
+    <nav className={styles.substepNav} aria-label="Client setup sections">
+      <button className={setupView === 'classification' ? styles.activeView : ''} type="button" onClick={() => setSetupView('classification')}>1. Classification {workspace.segments.length ? '✓' : ''}</button>
+      <button className={setupView === 'locations' ? styles.activeView : ''} type="button" onClick={() => setSetupView('locations')}>2. Locations ({workspace.locations.length})</button>
+      <button className={setupView === 'parties' ? styles.activeView : ''} type="button" onClick={() => setSetupView('parties')}>3. Parties ({workspace.parties.length})</button>
+      <button className={setupView === 'source' ? styles.activeView : ''} type="button" onClick={() => setSetupView('source')}>4. Source check</button>
+    </nav>
 
-    <div className={styles.overviewGrid}>
-      <article className={styles.card}>
+    {setupView === 'classification' ? <article className={styles.card}>
         <h2>Client classification</h2>
-        <p>Segment and industry are separate. Agriculture, transport, construction and industrial activity sit under Commercial.</p>
+        <p>First identify whether this is a domestic or commercial review. For commercial clients, select every industry profile that applies.</p>
         <div className={styles.checkGrid}>
           {(['domestic', 'commercial'] as InsuranceClientSegment[]).map((segment) => <label className={styles.checkCard} key={segment}><input type="checkbox" checked={segments.includes(segment)} onChange={() => toggleSegment(segment)} /><span><strong>{label(segment)}</strong><small>Top-level client segment</small></span></label>)}
         </div>
         {segments.includes('commercial') ? <div className={styles.industryGrid}>{INSURANCE_INDUSTRY_PROFILES.map((industry) => <label className={styles.compactCheck} key={industry.key}><input type="checkbox" checked={industries.includes(industry.key)} onChange={() => toggleIndustry(industry.key)} /><span>{industry.label}</span></label>)}</div> : <p className={styles.infoBox}>Choose Commercial to record one or more industry profiles.</p>}
-        <button className={styles.primaryButton} type="button" onClick={() => void runCommand({ operation: 'update_profile', expectedVersion: workspace.version, segments, industryProfiles: segments.includes('commercial') ? industries : [] }, 'Client classification saved.')}>Save classification</button>
-      </article>
+        <button className={styles.primaryButton} type="button" disabled={!segments.length} onClick={() => void runCommand({ operation: 'update_profile', expectedVersion: workspace.version, segments, industryProfiles: segments.includes('commercial') ? industries : [] }, 'Client classification saved.').then((ok) => { if (ok) setSetupView('locations'); })}>Save and continue to locations</button>
+      </article> : null}
 
-      <article className={styles.card}>
-        <h2>Authorised source snapshot</h2>
-        <dl>
-          <div><dt>Revision</dt><dd>{latestSnapshot ? latestSnapshot.revision : 'Not recorded'}</dd></div>
-          <div><dt>Generated</dt><dd>{dateLabel(latestSnapshot?.generatedAtIso ?? null)}</dd></div>
-          <div><dt>Imported</dt><dd>{dateLabel(latestSnapshot?.importedAtIso ?? null)}</dd></div>
-          <div><dt>Assets</dt><dd>{latestSnapshot?.assetCount ?? workspace.overview.assetCount}</dd></div>
-          <div><dt>Authorisation</dt><dd>{latestSnapshot?.ownerAuthorisationReference || 'Not recorded'}</dd></div>
-        </dl>
-        <h3>Latest authorised changes</h3>
-        {workspace.latestSnapshotDiffs.length ? <div className={styles.simpleList}>{workspace.latestSnapshotDiffs.map((diff) => <div key={diff.id}><strong>{label(diff.changeType)}</strong><span>{diff.sourceAssetKey}</span><small>{diff.changedFields.join(', ') || 'Material fields not listed'}</small></div>)}</div> : <p className={styles.infoBox}>No later owner-authorised snapshot revision has been ingested.</p>}
-        {workspace.availableSnapshotShares.length ? <><h3>Later authorised shares available</h3><div className={styles.simpleList}>{workspace.availableSnapshotShares.map((share) => <div key={share.id}><strong>{dateLabel(share.createdAtIso)}</strong><span>{share.assetCount} shared assets</span><small>{share.ownerMessage || 'No owner message supplied'}</small><button className={styles.secondaryButton} type="button" onClick={() => void runCommand({ operation: 'ingest_snapshot_revision', shareId: share.id, expectedVersion: workspace.version }, 'Owner-authorised snapshot revision ingested.')}>Ingest as next revision</button></div>)}</div></> : null}
-      </article>
-    </div>
-
-    <article className={styles.card}>
-      <h2>Review completeness and value quality</h2>
-      <div className={styles.metricTable}>
-        <div><span>Confirmed included</span><strong>{workspace.overview.currentCoverCounts.confirmed_included}</strong></div>
-        <div><span>Unknown current cover</span><strong>{workspace.overview.currentCoverCounts.unknown}</strong></div>
-        <div><span>Confirmed excluded</span><strong>{workspace.overview.currentCoverCounts.confirmed_excluded}</strong></div>
-        <div><span>Covered elsewhere</span><strong>{workspace.overview.currentCoverCounts.covered_elsewhere}</strong></div>
-        <div><span>Missing recorded sum insured</span><strong>{workspace.overview.missingSumInsuredCount}</strong></div>
-        <div><span>Value differences ≥10%</span><strong>{workspace.overview.replacementValueDifferenceCount}</strong></div>
-      </div>
-      <p className={styles.disclaimer}>Replacement value, owner-provided insured value and broker-recorded current sum insured are separate facts. A missing sum insured remains unknown and is never replaced by an Aim4price value.</p>
-    </article>
-
-    <div className={styles.overviewGrid}>
-      <article className={styles.card}>
+    {setupView === 'locations' ? <article className={styles.card}>
         <h2>Workspace locations</h2>
-        <p>Create normalized sites without changing the owner&apos;s read-only location text. Unknown / not supplied remains explicit.</p>
+        <p>Add the sites needed for risk and schedule links. This does not change the owner&apos;s original location text.</p>
         <div className={styles.formGrid}>
           <label><span>Location / site label</span><input value={locationLabel} onChange={(event) => setLocationLabel(event.target.value)} /></label>
           <label><span>Occupancy / use</span><input value={locationUse} onChange={(event) => setLocationUse(event.target.value)} /></label>
           <label className={styles.wide}><span>Address</span><input value={locationAddress} onChange={(event) => setLocationAddress(event.target.value)} /></label>
         </div>
-        <button className={styles.primaryButton} type="button" onClick={() => void runCommand({ operation: 'save_location', label: locationLabel, addressText: locationAddress, occupancyUse: locationUse }, 'Location added.').then((ok) => { if (ok) { setLocationLabel(''); setLocationAddress(''); setLocationUse(''); } })}>Add location</button>
+        <button className={styles.primaryButton} type="button" disabled={!locationLabel.trim()} onClick={() => void runCommand({ operation: 'save_location', label: locationLabel, addressText: locationAddress, occupancyUse: locationUse }, 'Location added.').then((ok) => { if (ok) { setLocationLabel(''); setLocationAddress(''); setLocationUse(''); } })}>Add location</button>
         <div className={styles.simpleList}>{workspace.locations.map((location) => <div key={location.id}><strong>{location.label}</strong><span>{location.isUnknown ? 'Unknown / not supplied' : location.occupancyUse || 'Use not recorded'}</span><small>{location.addressText || 'Address not recorded'} · {location.assetIds.length} linked assets</small></div>)}</div>
-      </article>
+        <button className={styles.secondaryButton} type="button" onClick={() => setSetupView('parties')}>Continue to parties →</button>
+      </article> : null}
 
-      <article className={styles.card}>
+    {setupView === 'parties' ? <article className={styles.card}>
         <h2>Parties and roles</h2>
-        <p>A party can later hold several policy, schedule, exposure and assessment links.</p>
+        <p>Add the insured, owner, financier or other party whose interests need to be reflected in the review.</p>
         <div className={styles.formGrid}>
           <label><span>Party name</span><input value={partyName} onChange={(event) => setPartyName(event.target.value)} /></label>
           <label><span>Party type</span><select value={partyType} onChange={(event) => setPartyType(event.target.value as typeof partyType)}><option value="organisation">Organisation</option><option value="person">Person</option><option value="trust">Trust</option><option value="estate">Estate</option><option value="other">Other</option></select></label>
           <label><span>Role</span><select value={partyRole} onChange={(event) => setPartyRole(event.target.value as typeof partyRole)}><option value="insured">Insured</option><option value="owner">Owner</option><option value="financier_mortgagee">Financier / mortgagee</option><option value="beneficiary">Beneficiary</option><option value="operator">Operator</option><option value="custodian">Custodian</option><option value="principal">Principal</option><option value="contractor">Contractor</option></select></label>
           <label><span>Role context</span><input value={partyRoleContext} onChange={(event) => setPartyRoleContext(event.target.value)} /></label>
         </div>
-        <button className={styles.primaryButton} type="button" onClick={() => void runCommand({ operation: 'save_party', partyType, displayName: partyName, roles: [{ roleKey: partyRole, context: partyRoleContext }] }, 'Party and role added.').then((ok) => { if (ok) { setPartyName(''); setPartyRoleContext(''); } })}>Add party</button>
+        <button className={styles.primaryButton} type="button" disabled={!partyName.trim()} onClick={() => void runCommand({ operation: 'save_party', partyType, displayName: partyName, roles: [{ roleKey: partyRole, context: partyRoleContext }] }, 'Party and role added.').then((ok) => { if (ok) { setPartyName(''); setPartyRoleContext(''); } })}>Add party</button>
         <div className={styles.simpleList}>{workspace.parties.map((party) => <div key={party.id}><strong>{party.displayName}</strong><span>{label(party.partyType)}</span><small>{party.roles.map((role) => `${label(role.roleKey)}${role.context ? ` — ${role.context}` : ''}`).join(', ')}</small></div>)}</div>
-      </article>
-    </div>
+        <button className={styles.secondaryButton} type="button" onClick={() => setSetupView('source')}>Continue to source check →</button>
+      </article> : null}
+
+    {setupView === 'source' ? <article className={styles.card}>
+      <h2>Authorised source check</h2>
+      <p>Confirm that the imported source is the revision you intend to review. Owner facts remain separate from broker-recorded cover evidence.</p>
+      <dl>
+        <div><dt>Revision</dt><dd>{latestSnapshot ? latestSnapshot.revision : 'Not recorded'}</dd></div>
+        <div><dt>Generated</dt><dd>{dateLabel(latestSnapshot?.generatedAtIso ?? null)}</dd></div>
+        <div><dt>Imported</dt><dd>{dateLabel(latestSnapshot?.importedAtIso ?? null)}</dd></div>
+        <div><dt>Assets</dt><dd>{latestSnapshot?.assetCount ?? workspace.overview.assetCount}</dd></div>
+        <div><dt>Authorisation</dt><dd>{latestSnapshot?.ownerAuthorisationReference || 'Not recorded'}</dd></div>
+      </dl>
+      {workspace.latestSnapshotDiffs.length ? <><h3>Latest authorised changes</h3><div className={styles.simpleList}>{workspace.latestSnapshotDiffs.map((diff) => <div key={diff.id}><strong>{label(diff.changeType)}</strong><span>{diff.sourceAssetKey}</span><small>{diff.changedFields.join(', ') || 'Material fields not listed'}</small></div>)}</div></> : <p className={styles.infoBox}>No later owner-authorised snapshot revision has been ingested.</p>}
+      {workspace.availableSnapshotShares.length ? <><h3>Later authorised shares available</h3><div className={styles.simpleList}>{workspace.availableSnapshotShares.map((share) => <div key={share.id}><strong>{dateLabel(share.createdAtIso)}</strong><span>{share.assetCount} shared assets</span><small>{share.ownerMessage || 'No owner message supplied'}</small><button className={styles.secondaryButton} type="button" onClick={() => void runCommand({ operation: 'ingest_snapshot_revision', shareId: share.id, expectedVersion: workspace.version }, 'Owner-authorised snapshot revision ingested.')}>Ingest as next revision</button></div>)}</div></> : null}
+      <p className={styles.disclaimer}>Replacement value, owner-provided insured value and broker-recorded current sum insured are separate facts. A missing sum insured remains unknown.</p>
+    </article> : null}
   </section>;
 }
 
@@ -228,6 +215,8 @@ function AssessmentEditor({ assessment, runCommand }: { assessment: InsuranceCov
 }
 
 export function InsuranceCoversPanel({ workspace, assets, runCommand }: { workspace: InsuranceWorkspaceData; assets: InsuranceWorkspaceAsset[]; runCommand: RunCommand }) {
+  const [coverView, setCoverView] = useState<'exposures' | 'suggestions' | 'assessments'>(() => workspace.exposures.length === 0 ? 'exposures' : workspace.suggestions.some((suggestion) => !suggestion.decision) ? 'suggestions' : 'assessments');
+  const [assessmentIndex, setAssessmentIndex] = useState(() => Math.max(0, workspace.assessments.filter((assessment) => assessment.canonicalCoverKey).findIndex((assessment) => assessment.placementStage === 'not_assessed')));
   const [query, setQuery] = useState('');
   const [family, setFamily] = useState('all');
   const [regulatoryClass, setRegulatoryClass] = useState('all');
@@ -240,6 +229,8 @@ export function InsuranceCoversPanel({ workspace, assets, runCommand }: { worksp
   const [exposurePartyIds, setExposurePartyIds] = useState<string[]>([]);
   const [suggestionRationale, setSuggestionRationale] = useState('');
   const existingKeys = new Set(workspace.assessments.map((assessment) => assessment.canonicalCoverKey).filter(Boolean));
+  const assessments = workspace.assessments.filter((assessment) => assessment.canonicalCoverKey);
+  const activeAssessment = assessments[Math.min(assessmentIndex, Math.max(0, assessments.length - 1))];
   const suggestedKeys = new Set(workspace.suggestions.filter((suggestion) => suggestion.suggestedCoverKey && !suggestion.decision).map((suggestion) => suggestion.suggestedCoverKey));
   const families = [...new Set(INSURANCE_COVER_CATALOGUE.map((cover) => cover.familyKey))].sort();
 
@@ -257,8 +248,13 @@ export function InsuranceCoversPanel({ workspace, assets, runCommand }: { worksp
 
   return <section>
     <header className={styles.sectionHeader}><div><h2>Covers and exposures</h2><p>System suggestions, current policy evidence and broker decisions remain separate.</p></div><button type="button" onClick={() => void runCommand({ operation: 'refresh_suggestions' }, 'Deterministic suggestions refreshed.')}>Refresh suggestions</button></header>
+    <nav className={styles.substepNav} aria-label="Cover review sections">
+      <button className={coverView === 'exposures' ? styles.activeView : ''} type="button" onClick={() => setCoverView('exposures')}>1. Exposures ({workspace.exposures.length})</button>
+      <button className={coverView === 'suggestions' ? styles.activeView : ''} type="button" onClick={() => setCoverView('suggestions')}>2. Areas to consider ({workspace.suggestions.filter((suggestion) => !suggestion.decision).length})</button>
+      <button className={coverView === 'assessments' ? styles.activeView : ''} type="button" onClick={() => setCoverView('assessments')}>3. Cover decisions ({workspace.assessments.filter((assessment) => assessment.canonicalCoverKey).length})</button>
+    </nav>
 
-    <div className={styles.overviewGrid}>
+    {coverView === 'exposures' ? <><div className={styles.overviewGrid}>
       <article className={styles.card}>
         <h2>Non-asset exposure</h2>
         <p>Add people, liability, income, receivables, contracts, projects, crops, animals or intangible interests without inventing an asset row.</p>
@@ -276,14 +272,14 @@ export function InsuranceCoversPanel({ workspace, assets, runCommand }: { worksp
         <h2>Recorded exposures</h2>
         <div className={styles.simpleList}>{workspace.exposures.map((exposure) => <div key={exposure.id}><strong>{exposure.label}</strong><span>{label(exposure.exposureType)} · {label(exposure.exposureStatus)}</span><small>{exposure.assetIds.length ? `${exposure.assetIds.length} linked assets` : 'Non-asset exposure'}{exposure.description ? ` · ${exposure.description}` : ''}</small></div>)}</div>
       </article>
-    </div>
+    </div><button className={styles.secondaryButton} type="button" onClick={() => setCoverView('suggestions')}>Continue to areas to consider →</button></> : null}
 
-    {workspace.suggestions.some((suggestion) => !suggestion.decision) ? <article className={styles.card}>
+    {coverView === 'suggestions' ? <>{workspace.suggestions.some((suggestion) => !suggestion.decision) ? <article className={styles.card}>
       <h2>Open deterministic suggestions</h2>
       <p>Accepting a suggestion creates an assessment at <em>Area to consider</em>. It does not mark the client insured and does not create a broker recommendation.</p>
       <label><span>Decision rationale</span><input value={suggestionRationale} onChange={(event) => setSuggestionRationale(event.target.value)} placeholder="Why this suggestion is accepted, dismissed or needs information" /></label>
       <div className={styles.suggestionList}>{workspace.suggestions.filter((suggestion) => !suggestion.decision).slice(0, 30).map((suggestion) => <article key={suggestion.id}><div><small>{suggestion.ruleId} · {label(suggestion.confidence)} confidence</small><strong>{suggestion.suggestedCoverKey ? INSURANCE_COVER_CATALOGUE.find((cover) => cover.key === suggestion.suggestedCoverKey)?.label : label(suggestion.suggestedRiskObjectType)}</strong><p>{suggestion.rationale}</p></div><div><button type="button" onClick={() => void runCommand({ operation: 'decide_suggestion', suggestionId: suggestion.id, decision: 'accepted_for_assessment', rationale: suggestionRationale || 'Accepted by broker for assessment.' }, 'Suggestion accepted for assessment.')}>Assess</button><button type="button" onClick={() => void runCommand({ operation: 'decide_suggestion', suggestionId: suggestion.id, decision: 'information_required', rationale: suggestionRationale || 'Further information required.' }, 'Suggestion marked for information.')}>Need info</button><button type="button" onClick={() => void runCommand({ operation: 'decide_suggestion', suggestionId: suggestion.id, decision: 'dismissed_with_reason', rationale: suggestionRationale || 'Dismissed by broker after review.' }, 'Suggestion dismissed.')}>Dismiss</button></div></article>)}</div>
-    </article> : null}
+    </article> : <p className={styles.infoBox}>There are no open system suggestions. Use the catalogue below if another cover needs to be assessed.</p>}
 
     <article className={styles.card}>
       <div className={styles.catalogueHeader}><div><h2>South African non-life catalogue</h2><p>{INSURANCE_COVER_CATALOGUE.length} canonical learning definitions · version {workspace.catalogueVersion}</p></div><button className={styles.secondaryButton} type="button" onClick={() => setShowFullCatalogue((current) => !current)}>{showFullCatalogue ? 'Show relevant shortlist' : 'Browse all 66 covers'}</button></div>
@@ -294,9 +290,14 @@ export function InsuranceCoversPanel({ workspace, assets, runCommand }: { worksp
       </div>
       <div className={styles.catalogueList}>{filteredCatalogue.map((cover) => <article key={cover.key}><div><small>{label(cover.familyKey)} · {cover.regulatoryMappings.map((mapping) => label(mapping.classKey)).join(', ')}</small><h3>{cover.label}</h3><p>{cover.purpose}</p><span>{cover.specialistReferral ? 'Specialist / referral confirmation required' : 'Standard catalogue definition — verify wording'}</span></div><button type="button" disabled={existingKeys.has(cover.key)} onClick={() => void runCommand({ operation: 'save_assessment', canonicalCoverKey: cover.key, coverLabel: cover.label, exposureStatus: 'discovered', currentCoverPosition: 'unknown', placementStage: 'area_to_consider', sourceType: 'broker_recorded', sourceReference: 'Broker selected from canonical catalogue' }, `${cover.label} added for assessment.`)}>{existingKeys.has(cover.key) ? 'Already added' : 'Add assessment'}</button></article>)}</div>
     </article>
+    <button className={styles.secondaryButton} type="button" onClick={() => setCoverView('assessments')}>Continue to cover decisions →</button></> : null}
 
-    <div className={styles.assessmentList}>{workspace.assessments.filter((assessment) => assessment.canonicalCoverKey).map((assessment) => <AssessmentEditor key={assessment.id} assessment={assessment} runCommand={runCommand} />)}</div>
-    {!assets.length ? null : <p className={styles.infoBox}>Asset links are preserved separately from cover definitions. Use the policy schedule workflow to record grouped, blanket or individually specified treatment.</p>}
+    {coverView === 'assessments' ? <>{activeAssessment ? <><div className={styles.assetReviewNav}>
+      <button type="button" disabled={assessmentIndex <= 0} onClick={() => setAssessmentIndex((current) => Math.max(0, current - 1))}>← Previous</button>
+      <label><span>Cover {assessmentIndex + 1} of {assessments.length}</span><select value={activeAssessment.id} onChange={(event) => setAssessmentIndex(assessments.findIndex((assessment) => assessment.id === event.target.value))}>{assessments.map((assessment, index) => <option value={assessment.id} key={assessment.id}>{index + 1}. {assessment.coverLabel} · {label(assessment.placementStage)}</option>)}</select></label>
+      <button type="button" disabled={assessmentIndex >= assessments.length - 1} onClick={() => setAssessmentIndex((current) => Math.min(assessments.length - 1, current + 1))}>Next cover →</button>
+    </div><div className={styles.assessmentList}><AssessmentEditor key={`${activeAssessment.id}-${activeAssessment.version}`} assessment={activeAssessment} runCommand={runCommand} /></div></> : <p className={styles.infoBox}>No cover assessments have been added yet. Return to Areas to consider to add one.</p>}
+    {!assets.length ? null : <p className={styles.infoBox}>Asset links are preserved separately from cover definitions. Use the policy schedule workflow to record grouped, blanket or individually specified treatment.</p>}</> : null}
   </section>;
 }
 
@@ -305,6 +306,11 @@ function selectedValues(event: ChangeEvent<HTMLSelectElement>): string[] {
 }
 
 export function InsurancePoliciesPanel({ workspace, assets, runCommand }: { workspace: InsuranceWorkspaceData; assets: InsuranceWorkspaceAsset[]; runCommand: RunCommand }) {
+  const [policyView, setPolicyView] = useState<'policy' | 'section' | 'schedule' | 'terms' | 'review'>(() => {
+    const existingSections = workspace.policies.flatMap((policy) => policy.sections);
+    const existingItems = existingSections.flatMap((section) => section.scheduleItems);
+    return workspace.policies.length === 0 ? 'policy' : existingSections.length === 0 ? 'section' : existingItems.length === 0 ? 'schedule' : 'review';
+  });
   const [insurerName, setInsurerName] = useState('');
   const [productName, setProductName] = useState('');
   const [policyNumber, setPolicyNumber] = useState('');
@@ -330,22 +336,29 @@ export function InsurancePoliciesPanel({ workspace, assets, runCommand }: { work
 
   return <section>
     <header className={styles.sectionHeader}><div><h2>Policies and schedule</h2><p>Record the insurer&apos;s actual hierarchy and map it to the canonical catalogue without replacing insurer labels.</p></div></header>
-    <div className={styles.workflowGrid}>
-      <article className={styles.card}><h2>1. Add current policy</h2><div className={styles.formGrid}>
+    <nav className={styles.substepNav} aria-label="Policy capture sections">
+      <button className={policyView === 'policy' ? styles.activeView : ''} type="button" onClick={() => setPolicyView('policy')}>1. Policy ({workspace.policies.length})</button>
+      <button className={policyView === 'section' ? styles.activeView : ''} type="button" onClick={() => setPolicyView('section')}>2. Section ({sections.length})</button>
+      <button className={policyView === 'schedule' ? styles.activeView : ''} type="button" onClick={() => setPolicyView('schedule')}>3. Schedule item ({scheduleItems.length})</button>
+      <button className={policyView === 'terms' ? styles.activeView : ''} type="button" onClick={() => setPolicyView('terms')}>4. Limits & excesses</button>
+      <button className={policyView === 'review' ? styles.activeView : ''} type="button" onClick={() => setPolicyView('review')}>5. Review</button>
+    </nav>
+    <div className={`${styles.workflowGrid} ${styles.singleWorkflow}`}>
+      {policyView === 'policy' ? <article className={styles.card}><h2>1. Add current policy</h2><p>Start with the policy shown on the insurer schedule. You can add another policy later from this same step.</p><div className={styles.formGrid}>
         <label><span>Insurer</span><input value={insurerName} onChange={(event) => setInsurerName(event.target.value)} /></label>
         <label><span>Policy number</span><input value={policyNumber} onChange={(event) => setPolicyNumber(event.target.value)} /></label>
         <label><span>Product name</span><input value={productName} onChange={(event) => setProductName(event.target.value)} /></label>
         <label><span>Schedule / source reference</span><input value={policySource} onChange={(event) => setPolicySource(event.target.value)} /></label>
-      </div><button className={styles.primaryButton} type="button" onClick={() => void runCommand({ operation: 'save_policy', insurerName, productName, policyNumber, status: 'current', sourceType: 'policy_schedule', sourceReference: policySource }, 'Policy added.').then((ok) => { if (ok) { setInsurerName(''); setProductName(''); setPolicyNumber(''); } })}>Add policy</button></article>
+      </div><button className={styles.primaryButton} type="button" disabled={!insurerName.trim() && !policyNumber.trim() && !productName.trim()} onClick={() => void runCommand({ operation: 'save_policy', insurerName, productName, policyNumber, status: 'current', sourceType: 'policy_schedule', sourceReference: policySource }, 'Policy added.').then((ok) => { if (ok) { setInsurerName(''); setProductName(''); setPolicyNumber(''); setPolicyView('section'); } })}>Save and continue to policy section</button></article> : null}
 
-      <article className={styles.card}><h2>2. Add policy section</h2><div className={styles.formGrid}>
+      {policyView === 'section' ? <article className={styles.card}><h2>2. Add policy section</h2><p>Use the insurer&apos;s actual section label, then map it to the closest catalogue definition where appropriate.</p><div className={styles.formGrid}>
         <label><span>Policy</span><select value={policyId} onChange={(event) => setPolicyId(event.target.value)}><option value="">Select policy</option>{workspace.policies.map((policy) => <option value={policy.id} key={policy.id}>{[policy.insurerName, policy.policyNumber].filter(Boolean).join(' · ') || 'Unnamed policy'}</option>)}</select></label>
         <label><span>Actual insurer section label</span><input value={sectionLabel} onChange={(event) => setSectionLabel(event.target.value)} /></label>
         <label><span>Canonical mapping</span><select value={canonicalCoverKey} onChange={(event) => setCanonicalCoverKey(event.target.value)}><option value="">Not mapped yet</option>{INSURANCE_COVER_CATALOGUE.map((cover) => <option value={cover.key} key={cover.key}>{cover.label}</option>)}</select></label>
         <label><span>Wording edition / reference</span><input value={wordingReference} onChange={(event) => setWordingReference(event.target.value)} /></label>
-      </div><button className={styles.primaryButton} type="button" onClick={() => void runCommand({ operation: 'save_section', policyId, canonicalCoverKey: canonicalCoverKey || null, actualSectionLabel: sectionLabel, wordingEditionReference: wordingReference, status: 'current', sourceType: 'policy_schedule', sourceReference: policySource || 'Broker-recorded policy schedule' }, 'Policy section added.').then((ok) => { if (ok) setSectionLabel(''); })}>Add section</button></article>
+      </div><button className={styles.primaryButton} type="button" disabled={!policyId || !sectionLabel.trim()} onClick={() => void runCommand({ operation: 'save_section', policyId, canonicalCoverKey: canonicalCoverKey || null, actualSectionLabel: sectionLabel, wordingEditionReference: wordingReference, status: 'current', sourceType: 'policy_schedule', sourceReference: policySource || 'Broker-recorded policy schedule' }, 'Policy section added.').then((ok) => { if (ok) { setSectionLabel(''); setPolicyView('schedule'); } })}>Save and continue to schedule item</button></article> : null}
 
-      <article className={styles.card}><h2>3. Add schedule item</h2><div className={styles.formGrid}>
+      {policyView === 'schedule' ? <article className={styles.card}><h2>3. Add schedule item</h2><p>Choose the section, name the schedule line, and link the assets, locations, exposures or parties that it covers.</p><div className={styles.formGrid}>
         <label><span>Policy section</span><select value={sectionId} onChange={(event) => setSectionId(event.target.value)}><option value="">Select section</option>{sections.map((section) => <option value={section.id} key={section.id}>{section.actualSectionLabel}</option>)}</select></label>
         <label><span>Treatment</span><select value={treatment} onChange={(event) => setTreatment(event.target.value as typeof treatment)}><option value="individual">Individual</option><option value="grouped">Grouped</option><option value="blanket">Blanket</option><option value="unscheduled">Unscheduled</option></select></label>
         <label className={styles.wide}><span>Schedule item label</span><input value={itemLabel} onChange={(event) => setItemLabel(event.target.value)} /></label>
@@ -353,20 +366,21 @@ export function InsurancePoliciesPanel({ workspace, assets, runCommand }: { work
         <label><span>Linked exposures</span><select className={styles.multiSelect} multiple value={exposureIds} onChange={(event) => setExposureIds(selectedValues(event))}>{workspace.exposures.map((exposure) => <option value={exposure.id} key={exposure.id}>{exposure.label}</option>)}</select></label>
         <label><span>Linked locations</span><select className={styles.multiSelect} multiple value={locationIds} onChange={(event) => setLocationIds(selectedValues(event))}>{workspace.locations.map((location) => <option value={location.id} key={location.id}>{location.label}</option>)}</select></label>
         <label><span>Linked parties</span><select className={styles.multiSelect} multiple value={partyIds} onChange={(event) => setPartyIds(selectedValues(event))}>{workspace.parties.map((party) => <option value={party.id} key={party.id}>{party.displayName}</option>)}</select></label>
-      </div><button className={styles.primaryButton} type="button" onClick={() => void runCommand({ operation: 'save_schedule_item', sectionId, itemLabel, treatment, assetIds, exposureIds, locationIds, partyIds, sourceType: 'policy_schedule', sourceReference: policySource || 'Broker-recorded policy schedule' }, 'Schedule item added.').then((ok) => { if (ok) { setItemLabel(''); setAssetIds([]); setExposureIds([]); setLocationIds([]); setPartyIds([]); } })}>Add schedule item</button></article>
+      </div><button className={styles.primaryButton} type="button" disabled={!sectionId || !itemLabel.trim()} onClick={() => void runCommand({ operation: 'save_schedule_item', sectionId, itemLabel, treatment, assetIds, exposureIds, locationIds, partyIds, sourceType: 'policy_schedule', sourceReference: policySource || 'Broker-recorded policy schedule' }, 'Schedule item added.').then((ok) => { if (ok) { setItemLabel(''); setAssetIds([]); setExposureIds([]); setLocationIds([]); setPartyIds([]); setPolicyView('terms'); } })}>Save and continue to limits and excesses</button></article> : null}
 
-      <article className={styles.card}><h2>4. Add schedule limit or excess</h2><div className={styles.formGrid}>
+      {policyView === 'terms' ? <article className={styles.card}><h2>4. Add schedule limit or excess</h2><p>Record each financial term separately so sums insured, limits, percentages and time excesses remain distinct.</p><div className={styles.formGrid}>
         <label><span>Schedule item</span><select value={financialScheduleItemId} onChange={(event) => setFinancialScheduleItemId(event.target.value)}><option value="">Select schedule item</option>{scheduleItems.map((item) => <option value={item.id} key={item.id}>{item.itemLabel}</option>)}</select></label>
         <label><span>Term type</span><select value={scheduleTermType} onChange={(event) => setScheduleTermType(event.target.value as typeof scheduleTermType)}><option value="sum_insured">Sum insured</option><option value="any_one_item_limit">Any one item limit</option><option value="any_one_event_limit">Any one event limit</option><option value="any_one_location_limit">Any one location limit</option><option value="annual_aggregate">Annual aggregate</option><option value="sublimit">Sublimit</option><option value="basic_excess">Basic excess</option><option value="additional_excess">Additional excess</option><option value="percentage_excess">Percentage excess</option><option value="time_excess">Time excess</option><option value="coinsurance">Co-insurance</option></select></label>
         <label><span>{scheduleTermUsesTime ? 'Hours' : scheduleTermUsesPercentage ? 'Percentage' : 'Amount (ZAR)'}</span><input inputMode="decimal" value={scheduleTermValue} onChange={(event) => setScheduleTermValue(event.target.value)} /></label>
-      </div><button className={styles.primaryButton} type="button" onClick={() => void runCommand({ operation: 'save_financial_term', scheduleItemId: financialScheduleItemId, termType: scheduleTermType, amount: scheduleTermUsesPercentage || scheduleTermUsesTime ? null : scheduleTermValue, percentage: scheduleTermUsesPercentage ? scheduleTermValue : null, timeValue: scheduleTermUsesTime ? scheduleTermValue : null, timeUnit: scheduleTermUsesTime ? 'hours' : '', currency: 'ZAR', sourceType: 'policy_schedule', sourceReference: policySource || 'Broker-recorded policy schedule' }, 'Schedule financial term added.').then((ok) => { if (ok) setScheduleTermValue(''); })}>Add structured term</button></article>
+      </div><button className={styles.primaryButton} type="button" disabled={!financialScheduleItemId || !scheduleTermValue.trim()} onClick={() => void runCommand({ operation: 'save_financial_term', scheduleItemId: financialScheduleItemId, termType: scheduleTermType, amount: scheduleTermUsesPercentage || scheduleTermUsesTime ? null : scheduleTermValue, percentage: scheduleTermUsesPercentage ? scheduleTermValue : null, timeValue: scheduleTermUsesTime ? scheduleTermValue : null, timeUnit: scheduleTermUsesTime ? 'hours' : '', currency: 'ZAR', sourceType: 'policy_schedule', sourceReference: policySource || 'Broker-recorded policy schedule' }, 'Schedule financial term added.').then((ok) => { if (ok) { setScheduleTermValue(''); setPolicyView('review'); } })}>Save term and review policy</button><button className={styles.secondaryButton} type="button" onClick={() => setPolicyView('review')}>Skip for now and review →</button></article> : null}
     </div>
 
-    <div className={styles.policyList}>{workspace.policies.map((policy) => <article className={styles.card} key={policy.id}><header className={styles.policyHeader}><div><small>{policy.productName || 'Product not recorded'}</small><h2>{[policy.insurerName, policy.policyNumber].filter(Boolean).join(' · ') || 'Policy details incomplete'}</h2></div><strong>{label(policy.status)}</strong></header>{policy.sections.length ? policy.sections.map((section) => <details className={styles.policySection} key={section.id}><summary><span>{section.actualSectionLabel}</span><small>{section.canonicalCoverKey ? INSURANCE_COVER_CATALOGUE.find((cover) => cover.key === section.canonicalCoverKey)?.label : 'Canonical mapping not recorded'}</small></summary><p>Wording: {section.wordingEditionReference || 'Not recorded'} · Source: {section.provenance.sourceReference || label(section.provenance.sourceType)}</p>{section.scheduleItems.length ? <div className={styles.simpleList}>{section.scheduleItems.map((item) => <div key={item.id}><strong>{item.itemLabel}</strong><span>{label(item.treatment)} · {item.assetIds.length} assets · {item.exposureIds.length} exposures</span><small>{item.itemDescription || 'No schedule description recorded'}</small></div>)}</div> : <p className={styles.infoBox}>No schedule items recorded.</p>}</details>) : <p className={styles.infoBox}>No policy sections recorded.</p>}</article>)}</div>
+    {policyView === 'review' ? <><div className={styles.policyList}>{workspace.policies.map((policy) => <article className={styles.card} key={policy.id}><header className={styles.policyHeader}><div><small>{policy.productName || 'Product not recorded'}</small><h2>{[policy.insurerName, policy.policyNumber].filter(Boolean).join(' · ') || 'Policy details incomplete'}</h2></div><strong>{label(policy.status)}</strong></header>{policy.sections.length ? policy.sections.map((section) => <details className={styles.policySection} key={section.id} open><summary><span>{section.actualSectionLabel}</span><small>{section.canonicalCoverKey ? INSURANCE_COVER_CATALOGUE.find((cover) => cover.key === section.canonicalCoverKey)?.label : 'Canonical mapping not recorded'}</small></summary><p>Wording: {section.wordingEditionReference || 'Not recorded'} · Source: {section.provenance.sourceReference || label(section.provenance.sourceType)}</p>{section.scheduleItems.length ? <div className={styles.simpleList}>{section.scheduleItems.map((item) => <div key={item.id}><strong>{item.itemLabel}</strong><span>{label(item.treatment)} · {item.assetIds.length} assets · {item.exposureIds.length} exposures</span><small>{item.itemDescription || 'No schedule description recorded'} · {item.financialTerms.length} financial terms</small></div>)}</div> : <p className={styles.infoBox}>No schedule items recorded.</p>}</details>) : <p className={styles.infoBox}>No policy sections recorded.</p>}</article>)}</div>{!workspace.policies.length ? <p className={styles.infoBox}>No policies have been recorded. Return to step 1 to add the first policy.</p> : null}</> : null}
   </section>;
 }
 
 export function InsuranceQuestionsPanel({ workspace, runCommand }: { workspace: InsuranceWorkspaceData; runCommand: RunCommand }) {
+  const [supportView, setSupportView] = useState<'questions' | 'notes' | 'evidence'>(() => workspace.informationRequests.some((request) => !['resolved', 'not_applicable'].includes(request.status)) ? 'questions' : workspace.evidence.length === 0 ? 'evidence' : 'notes');
   const [question, setQuestion] = useState('');
   const [reason, setReason] = useState('');
   const [noteType, setNoteType] = useState<'private_broker' | 'client_information_request' | 'insurer_underwriter' | 'report_visible'>('private_broker');
@@ -400,30 +414,34 @@ export function InsuranceQuestionsPanel({ workspace, runCommand }: { workspace: 
   }
 
   return <section>
-    <header className={styles.sectionHeader}><div><h2>Questions and notes</h2><p>Private broker notes are segregated and never enter client-ready reports.</p></div></header>
-    <div className={styles.overviewGrid}>
-      <article className={styles.card}><h2>Add information request</h2><div className={styles.formGrid}>
+    <header className={styles.sectionHeader}><div><h2>Supporting information</h2><p>Resolve gaps, keep audience-specific notes separate, and record the evidence used for decisions.</p></div></header>
+    <nav className={styles.substepNav} aria-label="Supporting information sections">
+      <button className={supportView === 'questions' ? styles.activeView : ''} type="button" onClick={() => setSupportView('questions')}>1. Questions ({workspace.overview.openInformationRequestCount} open)</button>
+      <button className={supportView === 'notes' ? styles.activeView : ''} type="button" onClick={() => setSupportView('notes')}>2. Notes ({workspace.notes.length})</button>
+      <button className={supportView === 'evidence' ? styles.activeView : ''} type="button" onClick={() => setSupportView('evidence')}>3. Evidence ({workspace.evidence.length})</button>
+    </nav>
+
+    {supportView === 'questions' ? <><article className={styles.card}><h2>Add information request</h2><p>Ask only for information that is needed to finish a cover or policy decision.</p><div className={styles.formGrid}>
         <label className={styles.wide}><span>Question</span><textarea rows={3} value={question} onChange={(event) => setQuestion(event.target.value)} /></label>
         <label className={styles.wide}><span>Why it is needed</span><textarea rows={2} value={reason} onChange={(event) => setReason(event.target.value)} /></label>
-      </div><button className={styles.primaryButton} type="button" onClick={() => void runCommand({ operation: 'save_information_request', question, reason, status: 'open' }, 'Information request added.').then((ok) => { if (ok) { setQuestion(''); setReason(''); } })}>Add request</button></article>
-      <article className={styles.card}><h2>Add note</h2><div className={styles.formGrid}>
+      </div><button className={styles.primaryButton} type="button" disabled={!question.trim()} onClick={() => void runCommand({ operation: 'save_information_request', question, reason, status: 'open' }, 'Information request added.').then((ok) => { if (ok) { setQuestion(''); setReason(''); } })}>Add request</button></article>
+      <article className={styles.card}><h2>Outstanding questions</h2>{workspace.informationRequests.length ? <div className={styles.questionList}>{workspace.informationRequests.map((request) => <article key={request.id}><div><small>{label(request.status)} · {dateLabel(request.requestedAtIso)}</small><strong>{request.question}</strong><p>{request.reason}</p>{request.response ? <p><b>Response:</b> {request.response}</p> : null}</div>{!['resolved', 'not_applicable'].includes(request.status) ? <button type="button" onClick={() => void runCommand({ operation: 'save_information_request', id: request.id, expectedVersion: request.version, question: request.question, reason: request.reason, relatedEntityType: request.relatedEntityType, relatedEntityId: request.relatedEntityId, status: 'resolved', response: request.response }, 'Information request resolved.')}>Resolve</button> : null}</article>)}</div> : <p className={styles.infoBox}>No information requests have been recorded.</p>}</article>
+      <button className={styles.secondaryButton} type="button" onClick={() => setSupportView('notes')}>Continue to notes →</button></> : null}
+
+    {supportView === 'notes' ? <><article className={styles.card}><h2>Add note</h2><p>Choose the audience first. Private broker notes never enter client-ready reports.</p><div className={styles.formGrid}>
         <label><span>Audience / type</span><select value={noteType} onChange={(event) => setNoteType(event.target.value as typeof noteType)}><option value="private_broker">Private broker note</option><option value="client_information_request">Client information request</option><option value="insurer_underwriter">Insurer / underwriter note</option><option value="report_visible">Report-visible note</option></select></label>
         <label className={styles.wide}><span>Note</span><textarea rows={4} value={noteBody} onChange={(event) => setNoteBody(event.target.value)} /></label>
-      </div><button className={styles.primaryButton} type="button" onClick={() => void runCommand({ operation: 'save_note', noteType, body: noteBody }, 'Note saved.').then((ok) => { if (ok) setNoteBody(''); })}>Save note</button></article>
-      <article className={styles.card}><h2>Add evidence reference</h2><p>Reference an already shared photo/document or a schedule, wording, valuation, certificate or correspondence. This does not expose private uploads publicly.</p><div className={styles.formGrid}>
+      </div><button className={styles.primaryButton} type="button" disabled={!noteBody.trim()} onClick={() => void runCommand({ operation: 'save_note', noteType, body: noteBody }, 'Note saved.').then((ok) => { if (ok) setNoteBody(''); })}>Save note</button></article>
+      <div className={styles.noteColumns}>{(['private_broker', 'client_information_request', 'insurer_underwriter', 'report_visible'] as const).map((type) => <article className={styles.card} key={type}><h2>{label(type)}</h2>{workspace.notes.filter((note) => note.noteType === type).length ? <div className={styles.simpleList}>{workspace.notes.filter((note) => note.noteType === type).map((note) => <div key={note.id}><strong>{dateLabel(note.createdAtIso)}</strong><span>{note.body}</span></div>)}</div> : <p className={styles.infoBox}>No notes recorded.</p>}</article>)}</div>
+      <button className={styles.secondaryButton} type="button" onClick={() => setSupportView('evidence')}>Continue to evidence →</button></> : null}
+
+    {supportView === 'evidence' ? <><article className={styles.card}><h2>Add evidence reference</h2><p>Reference an already shared photo/document or a schedule, wording, valuation, certificate or correspondence. This does not expose private uploads publicly.</p><div className={styles.formGrid}>
         <label><span>Evidence type</span><select value={evidenceType} onChange={(event) => setEvidenceType(event.target.value as typeof evidenceType)}><option value="shared_photo">Shared photo</option><option value="shared_document">Shared document</option><option value="policy_schedule">Policy schedule</option><option value="wording">Wording</option><option value="endorsement">Endorsement</option><option value="valuation">Valuation</option><option value="certificate">Certificate</option><option value="correspondence">Correspondence</option><option value="other_reference">Other reference</option></select></label>
         <label><span>Label</span><input value={evidenceLabel} onChange={(event) => setEvidenceLabel(event.target.value)} /></label>
         <label><span>Source / document reference</span><input value={evidenceReference} onChange={(event) => setEvidenceReference(event.target.value)} /></label>
         <label><span>Link to record (optional)</span><select value={evidenceTarget} onChange={(event) => setEvidenceTarget(event.target.value)}><option value="">Workspace-level evidence</option>{evidenceTargets.map((target) => <option value={target.value} key={target.value}>{target.label}</option>)}</select></label>
         <label className={styles.wide}><span>Evidence notes</span><textarea rows={2} value={evidenceNotes} onChange={(event) => setEvidenceNotes(event.target.value)} /></label>
-      </div><button className={styles.primaryButton} type="button" onClick={() => void saveEvidence()}>Save evidence reference</button></article>
-    </div>
-
-    <article className={styles.card}><h2>Outstanding questions</h2><div className={styles.questionList}>{workspace.informationRequests.map((request) => <article key={request.id}><div><small>{label(request.status)} · {dateLabel(request.requestedAtIso)}</small><strong>{request.question}</strong><p>{request.reason}</p>{request.response ? <p><b>Response:</b> {request.response}</p> : null}</div>{!['resolved', 'not_applicable'].includes(request.status) ? <button type="button" onClick={() => void runCommand({ operation: 'save_information_request', id: request.id, expectedVersion: request.version, question: request.question, reason: request.reason, relatedEntityType: request.relatedEntityType, relatedEntityId: request.relatedEntityId, status: 'resolved', response: request.response }, 'Information request resolved.')}>Resolve</button> : null}</article>)}</div></article>
-
-    <div className={styles.noteColumns}>
-      {(['private_broker', 'client_information_request', 'insurer_underwriter', 'report_visible'] as const).map((type) => <article className={styles.card} key={type}><h2>{label(type)}</h2>{workspace.notes.filter((note) => note.noteType === type).length ? <div className={styles.simpleList}>{workspace.notes.filter((note) => note.noteType === type).map((note) => <div key={note.id}><strong>{dateLabel(note.createdAtIso)}</strong><span>{note.body}</span></div>)}</div> : <p className={styles.infoBox}>No notes recorded.</p>}</article>)}
-    </div>
-    <article className={styles.card}><h2>Evidence trail</h2>{workspace.evidence.length ? <div className={styles.simpleList}>{workspace.evidence.map((entry) => <div key={entry.id}><strong>{entry.label}</strong><span>{label(entry.evidenceType)} · {entry.sourceReference || entry.existingSharedReference}</span><small>{entry.links.length ? `${entry.links.length} linked record${entry.links.length === 1 ? '' : 's'}` : 'Workspace-level reference'}{entry.notes ? ` · ${entry.notes}` : ''}</small></div>)}</div> : <p className={styles.infoBox}>No evidence references recorded.</p>}</article>
+      </div><button className={styles.primaryButton} type="button" disabled={!evidenceLabel.trim()} onClick={() => void saveEvidence()}>Save evidence reference</button></article>
+      <article className={styles.card}><h2>Evidence trail</h2>{workspace.evidence.length ? <div className={styles.simpleList}>{workspace.evidence.map((entry) => <div key={entry.id}><strong>{entry.label}</strong><span>{label(entry.evidenceType)} · {entry.sourceReference || entry.existingSharedReference}</span><small>{entry.links.length ? `${entry.links.length} linked record${entry.links.length === 1 ? '' : 's'}` : 'Workspace-level reference'}{entry.notes ? ` · ${entry.notes}` : ''}</small></div>)}</div> : <p className={styles.infoBox}>No evidence references recorded.</p>}</article></> : null}
   </section>;
 }
