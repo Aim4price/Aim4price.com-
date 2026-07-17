@@ -139,9 +139,9 @@ export default function OwnerNotificationsClient({ viewerId }: { viewerId: strin
   return (
     <div className={`${styles.content} ${styles.notificationContent}`}>
       <section className={styles.notificationIntro}>
-        <div>
-          <h1>Notifications</h1>
-          <p>View all new messages.</p>
+        <div className={styles.ownerPageIntro}>
+          <h1 className={styles.ownerPageTitle}>Notifications</h1>
+          <p className={styles.ownerPageSubtitle}>View all new messages.</p>
         </div>
         <button
           type="button"
@@ -166,7 +166,7 @@ export default function OwnerNotificationsClient({ viewerId }: { viewerId: strin
 
       {!error && isReady ? (
         <section className={styles.notificationSection} aria-labelledby="new-notifications-title">
-          <div className={styles.notificationSectionHeading}>
+          <div className={`${styles.notificationSectionHeading} ${styles.ownerSectionHeading}`}>
             <h2 id="new-notifications-title">New</h2>
             <span aria-label={newCountLabel}>{newItems.length}</span>
           </div>
