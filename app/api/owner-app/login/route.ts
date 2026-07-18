@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAccountProfile } from '../../../../lib/account-profile';
 import { getAnyServerSession } from '../../../../lib/auth-session';
-import { findOwnerAppUserForLogin, markOwnerAppUserLogin, verifyOwnerAppPassword } from '../../../../lib/owner-app';
+import {
+  findOwnerAppUserForLogin,
+  isOwnerAppLoginLocked,
+  markOwnerAppUserLogin,
+  recordOwnerAppLoginFailure,
+  verifyOwnerAppPassword,
+} from '../../../../lib/owner-app';
 import { createOwnerAppToken, OWNER_APP_COOKIE, OWNER_APP_MAX_AGE } from '../../../../lib/owner-app-session';
 
 export const runtime = 'nodejs';
@@ -15,7 +21,7 @@ function attemptKey(request: NextRequest, username: string) {
 }
 
 function genericError(status = 401) {
-  return NextResponse.json({ ok: false, error: 'Incorrect username or password.' }, { status });
+  return NextResponse.json({ ok: false, error: 'Incorrect username or passcode.' }, { status });
 }
 
 export async function POST(request: NextRequest) {
@@ -38,15 +44,24 @@ export async function POST(request: NextRequest) {
   const key = attemptKey(request, username);
   const now = Date.now();
   const current = attempts.get(key);
-  if (current && current.resetAt > now && current.count >= 8) {
+  if (current && current.resetAt > now && current.count >= 5) {
     return NextResponse.json({ ok: false, error: 'Too many attempts. Try again later.' }, { status: 429 });
   }
   if (!current || current.resetAt <= now) attempts.set(key, { count: 1, resetAt: now + 15 * 60_000 });
   else current.count += 1;
 
   const row = await findOwnerAppUserForLogin(username);
+  if (row && isOwnerAppLoginLocked(row)) {
+    return NextResponse.json({ ok: false, error: 'Too many attempts. Try again in 15 minutes.' }, { status: 429 });
+  }
   const credentialsValid = Boolean(row && row.is_active && await verifyOwnerAppPassword(password, row.password_hash));
-  if (!credentialsValid) return genericError();
+  if (!credentialsValid) {
+    const locked = row?.is_active ? await recordOwnerAppLoginFailure(row.id) : false;
+    if (locked) {
+      return NextResponse.json({ ok: false, error: 'Too many attempts. Try again in 15 minutes.' }, { status: 429 });
+    }
+    return genericError();
+  }
 
   const profile = await getAccountProfile({ id: row!.parent_owner_user_id, name: null, email: null });
   if (profile.accountType !== 'owner' || profile.accountStatus !== 'active') return genericError();
