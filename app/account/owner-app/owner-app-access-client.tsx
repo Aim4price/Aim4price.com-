@@ -21,6 +21,14 @@ function normalizeUsername(value: string) {
   return value.trim().toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9._@-]/g, '').slice(0, 80);
 }
 
+function normalizePasscode(value: string) {
+  return value.replace(/\D/g, '').slice(0, 4);
+}
+
+function isFourDigitPasscode(value: string) {
+  return /^\d{4}$/.test(value);
+}
+
 function formatDate(value: string | null) {
   if (!value) return 'Not yet';
   const parsed = new Date(value);
@@ -42,6 +50,8 @@ export default function OwnerAppAccessClient() {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [notice, setNotice] = useState<{ tone: 'success' | 'error'; message: string } | null>(null);
+  const [createUsernameError, setCreateUsernameError] = useState('');
+  const [editUsernameErrors, setEditUsernameErrors] = useState<Record<string, string>>({});
   const [showCreatePassword, setShowCreatePassword] = useState(false);
   const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
   const appLink = useMemo(loginLink, []);
@@ -70,10 +80,11 @@ export default function OwnerAppAccessClient() {
 
   async function createUser(event: FormEvent) {
     event.preventDefault();
-    if (!draft.displayName.trim() || normalizeUsername(draft.username).length < 3 || draft.password.length < 8) {
-      setNotice({ tone: 'error', message: 'Enter a name, a username of at least 3 characters, and a password of at least 8 characters.' });
+    if (!draft.displayName.trim() || normalizeUsername(draft.username).length < 3 || !isFourDigitPasscode(draft.password)) {
+      setNotice({ tone: 'error', message: 'Enter a name, a username of at least 3 characters, and a 4-digit passcode.' });
       return;
     }
+    setCreateUsernameError('');
     setCreating(true);
     try {
       const response = await fetch('/api/owner-app/users', {
@@ -86,15 +97,23 @@ export default function OwnerAppAccessClient() {
       setEditDrafts((current) => ({ ...current, [payload.user!.id]: { displayName: payload.user!.displayName, username: payload.user!.username, password: '' } }));
       setDraft(EMPTY_DRAFT);
       setShowCreatePassword(false);
+      setCreateUsernameError('');
       setNotice({ tone: 'success', message: 'Owner App user created.' });
     } catch (error) {
-      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to create Owner App user.' });
+      const message = error instanceof Error ? error.message : 'Failed to create Owner App user.';
+      if (/username is already in use/i.test(message)) {
+        setCreateUsernameError(message);
+        setNotice(null);
+      } else {
+        setNotice({ tone: 'error', message });
+      }
     } finally {
       setCreating(false);
     }
   }
 
   async function patchUser(user: OwnerAppUser, changes: Record<string, unknown>, message: string) {
+    setEditUsernameErrors((current) => ({ ...current, [user.id]: '' }));
     setBusyId(user.id);
     try {
       const response = await fetch(`/api/owner-app/users/${encodeURIComponent(user.id)}`, {
@@ -106,9 +125,16 @@ export default function OwnerAppAccessClient() {
       setUsers((current) => current.map((entry) => entry.id === updated.id ? updated : entry));
       setEditDrafts((current) => ({ ...current, [updated.id]: { displayName: updated.displayName, username: updated.username, password: '' } }));
       setVisiblePasswords((current) => ({ ...current, [updated.id]: false }));
+      setEditUsernameErrors((current) => ({ ...current, [updated.id]: '' }));
       setNotice({ tone: 'success', message });
     } catch (error) {
-      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to update Owner App user.' });
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update Owner App user.';
+      if (/username is already in use/i.test(errorMessage)) {
+        setEditUsernameErrors((current) => ({ ...current, [user.id]: errorMessage }));
+        setNotice(null);
+      } else {
+        setNotice({ tone: 'error', message: errorMessage });
+      }
     } finally {
       setBusyId(null);
     }
@@ -120,8 +146,8 @@ export default function OwnerAppAccessClient() {
     if (!edit) return;
     const changes: Record<string, unknown> = { displayName: edit.displayName.trim(), username: normalizeUsername(edit.username) };
     if (edit.password) {
-      if (edit.password.length < 8) {
-        setNotice({ tone: 'error', message: 'A new password must contain at least 8 characters.' });
+      if (!isFourDigitPasscode(edit.password)) {
+        setNotice({ tone: 'error', message: 'The new passcode must contain exactly 4 digits.' });
         return;
       }
       changes.password = edit.password;
@@ -189,14 +215,18 @@ export default function OwnerAppAccessClient() {
 
         <section className={styles.grid}>
           <section className={styles.card}>
-            <div className={styles.cardHeader}><h2>New Owner App user</h2><p>Create one secure username and password.</p></div>
+            <div className={styles.cardHeader}><h2>New Owner App user</h2><p>Create one username and 4-digit passcode.</p></div>
             <form className={styles.form} onSubmit={createUser}>
-              <label className={styles.field}><span>User name</span><input value={draft.displayName} onChange={(event) => setDraft((current) => ({ ...current, displayName: event.target.value }))} placeholder="Example: Farm owner" /></label>
-              <label className={styles.field}><span>Username</span><input value={draft.username} onChange={(event) => setDraft((current) => ({ ...current, username: normalizeUsername(event.target.value) }))} placeholder="owner.name" autoCapitalize="none" /></label>
+              <label className={styles.field}><span>Display name</span><input value={draft.displayName} onChange={(event) => setDraft((current) => ({ ...current, displayName: event.target.value }))} placeholder="Example: Farm owner" /></label>
+              <label className={styles.field}>
+                <span>Username</span>
+                <input value={draft.username} onChange={(event) => { setDraft((current) => ({ ...current, username: normalizeUsername(event.target.value) })); setCreateUsernameError(''); }} placeholder="owner.name" autoCapitalize="none" aria-invalid={Boolean(createUsernameError)} />
+                {createUsernameError ? <small className={styles.fieldError} role="alert">{createUsernameError}</small> : null}
+              </label>
               <div className={styles.field}>
-                <label className={styles.fieldLabel} htmlFor="owner-app-create-password">Password</label>
+                <label className={styles.fieldLabel} htmlFor="owner-app-create-password">4-digit passcode</label>
                 <div className={styles.passwordInputWrap}>
-                  <input id="owner-app-create-password" type={showCreatePassword ? 'text' : 'password'} value={draft.password} onChange={(event) => setDraft((current) => ({ ...current, password: event.target.value }))} placeholder="Minimum 8 characters" autoComplete="new-password" />
+                  <input id="owner-app-create-password" type={showCreatePassword ? 'text' : 'password'} value={draft.password} onChange={(event) => setDraft((current) => ({ ...current, password: normalizePasscode(event.target.value) }))} placeholder="4 digits" inputMode="numeric" pattern="[0-9]{4}" maxLength={4} autoComplete="new-password" />
                   <button type="button" className={styles.passwordToggleButton} onClick={() => setShowCreatePassword((current) => !current)}>{showCreatePassword ? 'Hide' : 'Show'}</button>
                 </div>
               </div>
@@ -225,11 +255,15 @@ export default function OwnerAppAccessClient() {
                       <div className={styles.managerDropdown}>
                         <form className={styles.inlineForm} onSubmit={(event) => void saveUser(event, user)}>
                           <label className={styles.compactField}><span>Display name</span><input value={edit.displayName} onChange={(event) => setEditDrafts((current) => ({ ...current, [user.id]: { ...edit, displayName: event.target.value } }))} /></label>
-                          <label className={styles.compactField}><span>Username</span><input value={edit.username} onChange={(event) => setEditDrafts((current) => ({ ...current, [user.id]: { ...edit, username: normalizeUsername(event.target.value) } }))} /></label>
+                          <label className={styles.compactField}>
+                            <span>Username</span>
+                            <input value={edit.username} onChange={(event) => { setEditDrafts((current) => ({ ...current, [user.id]: { ...edit, username: normalizeUsername(event.target.value) } })); setEditUsernameErrors((current) => ({ ...current, [user.id]: '' })); }} aria-invalid={Boolean(editUsernameErrors[user.id])} />
+                            {editUsernameErrors[user.id] ? <small className={styles.fieldError} role="alert">{editUsernameErrors[user.id]}</small> : null}
+                          </label>
                           <div className={styles.compactField}>
-                            <label className={styles.fieldLabel} htmlFor={`owner-app-password-${user.id}`}>New password</label>
+                            <label className={styles.fieldLabel} htmlFor={`owner-app-password-${user.id}`}>New 4-digit passcode</label>
                             <div className={styles.passwordInputWrap}>
-                              <input id={`owner-app-password-${user.id}`} type={visiblePasswords[user.id] ? 'text' : 'password'} value={edit.password} onChange={(event) => setEditDrafts((current) => ({ ...current, [user.id]: { ...edit, password: event.target.value } }))} placeholder="Leave blank to keep current password" />
+                              <input id={`owner-app-password-${user.id}`} type={visiblePasswords[user.id] ? 'text' : 'password'} value={edit.password} onChange={(event) => setEditDrafts((current) => ({ ...current, [user.id]: { ...edit, password: normalizePasscode(event.target.value) } }))} placeholder="Leave blank to keep current passcode" inputMode="numeric" pattern="[0-9]{4}" maxLength={4} />
                               <button type="button" className={styles.passwordToggleButton} onClick={() => setVisiblePasswords((current) => ({ ...current, [user.id]: !current[user.id] }))}>{visiblePasswords[user.id] ? 'Hide' : 'Show'}</button>
                             </div>
                           </div>
