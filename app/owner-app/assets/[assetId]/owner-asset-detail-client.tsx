@@ -6,6 +6,7 @@ import GroupedCurrencyInput, { parseCurrencyInput } from '../../../../components
 import { formatResolvedAssetUsage, resolveAssetUsage, type AssetUsageMetric } from '../../../../lib/asset-usage';
 import { openAssetSheetPrint } from '../../../../lib/report-print';
 import BalancedHeadingText from '../../balanced-heading';
+import OwnerAppNav from '../../owner-app-nav';
 import styles from '../../owner-app.module.css';
 import OwnerAssetOptionsClient from './owner-asset-options-client';
 
@@ -472,8 +473,18 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
     if (!didOpen) setNotice({ tone: 'error', message: 'Unable to open the valuation report. Please allow pop-ups and try again.' });
   }
 
-  if (loading) return <div className={`${styles.wideContent} ${styles.loading}`}>Loading asset…</div>;
-  if (!draft) return <div className={styles.wideContent}><div className={styles.errorNotice}>{notice?.message || 'Asset not found.'}</div></div>;
+  if (loading) return (
+    <>
+      {view === 'options' ? <OwnerAppNav backHref={`/owner-app/assets/${encodeURIComponent(assetId)}`} backLabel="Asset" /> : null}
+      <div className={`${styles.wideContent} ${styles.loading}`}>Loading asset…</div>
+    </>
+  );
+  if (!draft) return (
+    <>
+      {view === 'options' ? <OwnerAppNav backHref={`/owner-app/assets/${encodeURIComponent(assetId)}`} backLabel="Asset" /> : null}
+      <div className={styles.wideContent}><div className={styles.errorNotice}>{notice?.message || 'Asset not found.'}</div></div>
+    </>
+  );
 
   const extra = (key: string, ...fallbackKeys: string[]) => specValue(draft.specsJson, key, ...fallbackKeys);
   const resolvedUsage = resolveAssetUsage({

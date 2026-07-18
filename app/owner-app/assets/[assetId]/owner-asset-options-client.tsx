@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useMemo, useState, type FormEvent } from 'react';
 import BalancedHeadingText from '../../balanced-heading';
+import OwnerAppNav from '../../owner-app-nav';
 import styles from '../../owner-app.module.css';
 
 type PartnerType = 'dealer' | 'finance' | 'insurance';
@@ -187,6 +188,26 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
   );
   const assetHref = `/owner-app/assets/${encodeURIComponent(assetId)}`;
 
+  function returnToStage(nextStage: OptionsStage) {
+    setNotice(null);
+    setStage(nextStage);
+  }
+
+  const topBackLabel = stage === 'partners'
+    ? 'Options'
+    : stage === 'message'
+      ? 'Companies'
+      : stage === 'consent'
+        ? 'Message'
+        : 'Asset';
+  const topBackAction = stage === 'partners'
+    ? () => returnToStage('choices')
+    : stage === 'message'
+      ? () => returnToStage('partners')
+      : stage === 'consent'
+        ? () => returnToStage('message')
+        : undefined;
+
   async function loadPartners(option: QuoteOption, searchValue = '') {
     setLoadingPartners(true);
     setNotice(null);
@@ -268,12 +289,14 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
   }
 
   return (
-    <div className={styles.wideContent}>
-      <section className={styles.ownerOptionsIdentity}>
-        <h1>Options</h1>
-        <strong><BalancedHeadingText text={assetTitle} /></strong>
-        <p>{money(assetValue)} excl. VAT</p>
-      </section>
+    <>
+      <OwnerAppNav backHref={assetHref} backLabel={topBackLabel} backAction={topBackAction} />
+      <div className={styles.wideContent}>
+        <section className={styles.ownerOptionsIdentity}>
+          <h1>Options</h1>
+          <strong><BalancedHeadingText text={assetTitle} /></strong>
+          <p>{money(assetValue)} excl. VAT</p>
+        </section>
 
       {notice ? <div className={notice.tone === 'success' ? styles.successNotice : styles.errorNotice}>{notice.message}</div> : null}
 
@@ -322,15 +345,17 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
       {stage === 'message' && selectedOption && selectedPartner ? (
         <section className={`${styles.section} ${styles.ownerOptionsSection}`}>
           <div className={styles.ownerOptionsFlowHeader}>
-            <button type="button" onClick={() => setStage('partners')}>Back to companies</button>
-            <div><h2><BalancedHeadingText text="Message to selected company" /></h2></div>
+            <div>
+              <h2><BalancedHeadingText text="Send message" /></h2>
+              <p>Add an optional note before reviewing the request.</p>
+            </div>
           </div>
 
           <div className={styles.ownerSelectedPartner}>
             <span className={styles.ownerPartnerLogo}>
               {selectedPartner.logoUrl ? <img src={selectedPartner.logoUrl} alt="" /> : <b>{partnerName(selectedPartner).charAt(0).toUpperCase()}</b>}
             </span>
-            <div><strong>{partnerName(selectedPartner)}</strong><span>{partnerLocation(selectedPartner)}</span></div>
+            <div><small>Selected company</small><strong>{partnerName(selectedPartner)}</strong><span>{partnerLocation(selectedPartner)}</span></div>
           </div>
 
           <div className={styles.ownerPartnerContacts}>
@@ -341,12 +366,11 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
 
           <p className={styles.ownerShareNotice}>This sends this asset only. It does not share the full asset register.</p>
           <label className={styles.ownerOptionMessageField}>
-            <span>Message to company <small>Optional</small></span>
+            <span>Your message <small>Optional</small></span>
             <textarea value={message} onChange={(event) => setMessage(event.target.value)} placeholder="Please contact me about this asset." />
           </label>
-          <div className={styles.ownerOptionsFooter}>
-            <button type="button" className={styles.secondaryButton} onClick={() => setStage('partners')}>Back</button>
-            <button type="button" className={styles.primaryButton} onClick={() => { setConsentAccepted(false); setStage('consent'); }}>Next</button>
+          <div className={`${styles.ownerOptionsFooter} ${styles.ownerOptionsFooterSingle}`}>
+            <button type="button" className={styles.primaryButton} onClick={() => { setConsentAccepted(false); setStage('consent'); }}>Review request</button>
           </div>
         </section>
       ) : null}
@@ -354,7 +378,6 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
       {stage === 'consent' && selectedOption && selectedPartner ? (
         <section className={`${styles.section} ${styles.ownerOptionsSection}`}>
           <div className={styles.ownerOptionsFlowHeader}>
-            <button type="button" onClick={() => setStage('message')} disabled={sending}>Back to message</button>
             <div><h2><BalancedHeadingText text="Confirm and send request" /></h2></div>
           </div>
 
@@ -367,8 +390,7 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
             <input type="checkbox" checked={consentAccepted} onChange={(event) => setConsentAccepted(event.target.checked)} />
             <span>I accept the disclaimer and POPIA permission note.</span>
           </label>
-          <div className={styles.ownerOptionsFooter}>
-            <button type="button" className={styles.secondaryButton} onClick={() => setStage('message')} disabled={sending}>Back</button>
+          <div className={`${styles.ownerOptionsFooter} ${styles.ownerOptionsFooterSingle}`}>
             <button type="button" className={styles.primaryButton} onClick={() => void sendRequest()} disabled={sending || !consentAccepted}>{sending ? 'Sending…' : `Send to ${partnerName(selectedPartner)}`}</button>
           </div>
         </section>
@@ -381,6 +403,7 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
           <Link className={styles.primaryButton} href={assetHref} prefetch={false}>Back to asset</Link>
         </section>
       ) : null}
-    </div>
+      </div>
+    </>
   );
 }
