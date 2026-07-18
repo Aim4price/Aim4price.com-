@@ -15,7 +15,7 @@ async function requireManagingOwner() {
 
 function errorResponse(error: unknown, fallback: string) {
   const message = error instanceof Error && error.message ? error.message : fallback;
-  const status = /not found/i.test(message) ? 404 : /username|password|display name|enter/i.test(message) ? 400 : 500;
+  const status = /not found/i.test(message) ? 404 : /username|password|passcode|display name|enter/i.test(message) ? 400 : 500;
   return NextResponse.json({ ok: false, error: message }, { status });
 }
 
