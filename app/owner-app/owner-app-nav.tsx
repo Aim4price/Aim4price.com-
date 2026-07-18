@@ -4,12 +4,14 @@ import Link from 'next/link';
 import { useState } from 'react';
 import styles from './owner-app.module.css';
 
-export default function OwnerAppNav({ showBack = true, backHref = '/owner-app', backLabel = 'Home' }: {
+export default function OwnerAppNav({ showBack = true, backHref = '/owner-app', backLabel = 'Home', backAction }: {
   showBack?: boolean;
   backHref?: string;
   backLabel?: string;
+  backAction?: () => void;
 }) {
   const [signingOut, setSigningOut] = useState(false);
+  const backIsHome = showBack && !backAction && backHref === '/owner-app' && backLabel === 'Home';
 
   async function signOut() {
     if (signingOut) return;
@@ -22,15 +24,23 @@ export default function OwnerAppNav({ showBack = true, backHref = '/owner-app', 
   }
 
   return (
-    <header className={styles.assetsHeader} aria-label="Aim4price Owner account controls">
+    <header className={`${styles.assetsHeader} ${backIsHome ? styles.assetsHeaderSingle : ''}`} aria-label="Aim4price Owner account controls">
       {showBack ? (
         <>
-          <Link className={styles.navButton} href={backHref} prefetch={false} aria-label={backLabel}>
-            <span>{backLabel}</span>
-          </Link>
-          <Link className={`${styles.logoutButton} ${styles.homeButton}`} href="/owner-app" prefetch={false} aria-label="Owner App home">
-            Home
-          </Link>
+          {backAction ? (
+            <button type="button" className={styles.navButton} onClick={backAction} aria-label={backLabel}>
+              <span>{backLabel}</span>
+            </button>
+          ) : (
+            <Link className={styles.navButton} href={backHref} prefetch={false} aria-label={backLabel}>
+              <span>{backLabel}</span>
+            </Link>
+          )}
+          {!backIsHome ? (
+            <Link className={`${styles.logoutButton} ${styles.homeButton}`} href="/owner-app" prefetch={false} aria-label="Owner App home">
+              Home
+            </Link>
+          ) : null}
         </>
       ) : (
         <button type="button" className={styles.logoutButton} onClick={() => void signOut()} disabled={signingOut}>

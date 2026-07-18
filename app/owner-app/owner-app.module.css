@@ -32,11 +32,13 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
+  gap: 8px;
   min-height: 58px;
   margin: 0 auto;
   padding: 4px 2px 14px;
 }
+
+.assetsHeaderSingle { justify-content: center; }
 
 .navButton {
   width: min(42vw, 164px);
@@ -1121,19 +1123,9 @@
 .ownerOptionInsurance { border-color: rgba(48, 113, 169, 0.32); background: #f4f9fd; color: #244f76; }
 .ownerOptionDealer { border-color: rgba(66, 144, 102, 0.32); background: #f2faf5; color: #1d6545; }
 .ownerOptionsFlowHeader { display: grid; gap: 12px; text-align: center; }
-.ownerOptionsFlowHeader > button {
-  width: fit-content;
-  min-height: 40px;
-  border: 1px solid var(--owner-line);
-  border-radius: 12px;
-  background: #fff;
-  color: var(--owner-green);
-  padding: 0 12px;
-  font: 800 0.84rem Montserrat, sans-serif;
-  cursor: pointer;
-}
 .ownerOptionsFlowHeader > div { display: grid; justify-items: center; gap: 5px; }
 .ownerOptionsFlowHeader h2 { max-width: 100%; margin: 0; font-size: clamp(1.35rem, 5.8vw, 1.75rem); font-weight: 800; text-align: center; text-wrap: balance; }
+.ownerOptionsFlowHeader p { max-width: 34rem; margin: 0; color: var(--owner-muted); font-size: 0.82rem; font-weight: 650; line-height: 1.45; }
 .ownerPartnerSearch { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
 .ownerPartnerSearch input {
   min-width: 0;
@@ -1193,42 +1185,47 @@
 .ownerPartnerCopy strong { font-size: 0.94rem; font-weight: 800; line-height: 1.25; overflow-wrap: anywhere; }
 .ownerPartnerCopy small { color: var(--owner-muted); font-size: 0.78rem; font-weight: 650; line-height: 1.4; overflow-wrap: anywhere; }
 .ownerOptionsEmpty { margin: 0; border: 1px dashed rgba(18, 53, 45, 0.16); border-radius: 15px; color: var(--owner-muted); padding: 18px 14px; font-size: 0.88rem; font-weight: 700; text-align: center; }
-.ownerSelectedPartner { display: flex; align-items: center; gap: 12px; border: 1px solid rgba(18, 53, 45, 0.12); border-radius: 17px; background: #f7faf8; padding: 13px; }
+.ownerSelectedPartner { display: flex; align-items: center; gap: 12px; border: 1px solid rgba(66, 144, 102, 0.24); border-radius: 17px; background: linear-gradient(180deg, #f7fcf9 0%, #edf7f1 100%); padding: 14px; box-shadow: 0 9px 22px rgba(18, 53, 45, 0.055); }
 .ownerSelectedPartner > div { min-width: 0; display: grid; gap: 4px; }
-.ownerSelectedPartner strong { font-size: 0.9rem; overflow-wrap: anywhere; }
+.ownerSelectedPartner small { color: #39705c; font-size: 0.65rem; font-weight: 900; letter-spacing: 0.07em; text-transform: uppercase; }
+.ownerSelectedPartner strong { font-size: 0.96rem; overflow-wrap: anywhere; }
 .ownerSelectedPartner span { color: var(--owner-muted); font-size: 0.72rem; font-weight: 700; }
-.ownerPartnerContacts { display: grid; gap: 8px; }
+.ownerPartnerContacts { display: grid; overflow: hidden; gap: 0; border: 1px solid rgba(18, 53, 45, 0.11); border-radius: 15px; background: #fff; }
 .ownerPartnerContacts > a,
 .ownerPartnerContacts > span {
   min-width: 0;
   display: grid;
   gap: 3px;
-  border: 1px solid rgba(18, 53, 45, 0.1);
-  border-radius: 13px;
+  border: 0;
+  border-bottom: 1px solid rgba(18, 53, 45, 0.08);
+  border-radius: 0;
   background: #fff;
   color: var(--owner-ink);
-  padding: 10px 12px;
+  padding: 11px 13px;
   text-decoration: none;
 }
+.ownerPartnerContacts > :last-child { border-bottom: 0; }
 .ownerPartnerContacts small { color: var(--owner-muted); font-size: 0.74rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; }
 .ownerPartnerContacts span,
 .ownerPartnerContacts b { font-size: 0.86rem; font-weight: 750; line-height: 1.4; overflow-wrap: anywhere; }
-.ownerShareNotice { margin: 0; border-radius: 14px; background: #f2f6f3; color: #315348; padding: 12px; font-size: 0.86rem; font-weight: 700; line-height: 1.45; }
-.ownerOptionMessageField { display: grid; gap: 7px; }
+.ownerShareNotice { margin: 0; border: 1px solid rgba(37, 71, 51, 0.1); border-radius: 14px; background: #f2f6f3; color: #315348; padding: 12px 13px; font-size: 0.84rem; font-weight: 700; line-height: 1.45; }
+.ownerOptionMessageField { display: grid; gap: 9px; border: 1px solid rgba(18, 53, 45, 0.11); border-radius: 17px; background: #f7faf8; padding: 14px; }
 .ownerOptionMessageField > span { color: #315348; font-size: 0.84rem; font-weight: 800; }
 .ownerOptionMessageField > span small { margin-left: 4px; color: var(--owner-muted); font-weight: 650; }
 .ownerOptionMessageField textarea {
-  min-height: 120px;
+  min-height: 154px;
   box-sizing: border-box;
   border: 1px solid rgba(37, 71, 51, 0.2);
   border-radius: 14px;
-  background: #fbfdfb;
+  background: #fff;
   color: var(--owner-ink);
   padding: 13px;
   font: 700 1rem Montserrat, sans-serif;
+  line-height: 1.45;
   resize: vertical;
 }
 .ownerOptionsFooter { display: grid; grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.25fr); gap: 9px; }
+.ownerOptionsFooterSingle { grid-template-columns: 1fr; }
 .ownerPopiaBox { display: grid; gap: 8px; border: 1px solid rgba(196, 130, 32, 0.24); border-radius: 16px; background: #fffaf0; color: #654414; padding: 14px; }
 .ownerPopiaBox strong { font-size: 0.84rem; }
 .ownerPopiaBox p { margin: 0; font-size: 0.84rem; font-weight: 650; line-height: 1.5; }
