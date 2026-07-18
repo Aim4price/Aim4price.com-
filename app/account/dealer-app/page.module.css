@@ -307,6 +307,21 @@
   line-height: 1.4;
 }
 
+.fieldError {
+  margin: -0.12rem 0 0;
+  color: #a33636;
+  font-size: 0.72rem;
+  font-weight: 750;
+  line-height: 1.4;
+}
+
+.field input[aria-invalid='true'],
+.compactField input[aria-invalid='true'] {
+  border-color: rgba(179, 54, 54, 0.48);
+  background: #fffafa;
+  box-shadow: 0 0 0 4px rgba(179, 54, 54, 0.07);
+}
+
 .field input:focus,
 .compactField input:focus {
   border-color: rgba(31, 138, 102, 0.38);
