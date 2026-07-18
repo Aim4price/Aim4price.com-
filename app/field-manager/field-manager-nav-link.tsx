@@ -9,9 +9,11 @@ type FieldManagerNavLinkProps = {
 export default function FieldManagerNavLink({ href, label }: FieldManagerNavLinkProps) {
   return (
     <Link className={styles.navLink} href={href} aria-label={label}>
-      <span className={styles.arrow} aria-hidden="true">
-        ←
-      </span>
+      {label === 'Back' ? (
+        <span className={styles.arrow} aria-hidden="true">
+          ←
+        </span>
+      ) : null}
       <span>{label}</span>
     </Link>
   );

@@ -1,4 +1,5 @@
 .mobilePage {
+  --field-page-gutter: 24px;
   min-height: 100vh;
   min-height: 100dvh;
   background: #ffffff;
@@ -217,7 +218,7 @@
 
 .loginShell,
 .assetsShell {
-  width: min(100% - 24px, 560px);
+  width: min(calc(100% - var(--field-page-gutter)), 560px);
   margin: 0 auto;
   padding: max(18px, env(safe-area-inset-top)) 0 max(24px, env(safe-area-inset-bottom));
 }
@@ -276,6 +277,12 @@
   flex-direction: column;
 }
 
+.homePage {
+  background:
+    radial-gradient(circle at 50% 5%, rgba(111, 197, 150, 0.16), transparent 34%),
+    linear-gradient(180deg, #f5faf7 0%, #ffffff 48%, #f4f9f6 100%);
+}
+
 .homeCard {
   flex: 1 1 auto;
   display: grid;
@@ -301,30 +308,29 @@
 }
 
 .homeActionGrid {
-  width: min(100%, 390px);
+  width: min(100%, 400px);
+  box-sizing: border-box;
   display: grid;
-  gap: 14px;
+  gap: 13px;
   margin: 0 auto;
-  padding: 14px;
-  border: 1px solid rgba(18, 53, 45, 0.12);
-  border-radius: 30px;
-  background: rgba(255, 255, 255, 0.42);
-  box-shadow: 0 20px 48px rgba(18, 53, 45, 0.08);
+  padding: 0;
 }
 
 .homeActionCard {
   position: relative;
   width: 100%;
-  min-height: 96px;
+  min-height: 72px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 24px;
-  padding: 18px 20px;
+  border-radius: 17px;
+  background: #ffffff;
+  padding: 15px 44px;
   color: #12352d;
   font: inherit;
   text-align: center;
   cursor: pointer;
+  box-shadow: 0 9px 24px rgba(18, 53, 45, 0.07);
   transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
 }
 
@@ -333,8 +339,9 @@
 }
 
 .homeActionCard strong {
-  font-size: clamp(2rem, 10vw, 3rem);
-  line-height: 1;
+  font-size: clamp(1.18rem, 5vw, 1.38rem);
+  font-weight: 800;
+  line-height: 1.1;
   text-align: center;
 }
 
@@ -347,22 +354,23 @@
 
 .homeActionBadge {
   position: absolute;
-  top: 12px;
-  right: 12px;
-  min-width: 30px;
-  min-height: 30px;
+  top: 10px;
+  right: 10px;
+  min-width: 25px;
+  min-height: 25px;
   display: grid !important;
   place-items: center;
   margin: 0 !important;
   border-radius: 999px;
-  background: #254733;
+  background: #e02424;
   color: #fff !important;
-  font-size: 0.76rem !important;
-  font-weight: 950;
+  padding-inline: 7px;
+  font-size: 0.66rem !important;
+  font-weight: 900;
   letter-spacing: 0 !important;
   line-height: 1;
   text-transform: none !important;
-  box-shadow: 0 8px 18px rgba(37, 71, 51, 0.2);
+  box-shadow: 0 8px 18px rgba(174, 35, 35, 0.22);
 }
 
 .loginHeader {
@@ -434,7 +442,10 @@
 }
 
 .searchField input {
+  min-height: 56px;
+  border-radius: 17px;
   font-size: clamp(0.88rem, 3.9vw, 1rem);
+  font-weight: 700;
 }
 
 .mobileField input:focus,
@@ -484,6 +495,10 @@
 .mobilePrimaryButton,
 .logoutButton {
   min-height: 56px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
   border: 0;
   border-radius: 18px;
   padding: 0 18px;
@@ -509,12 +524,14 @@
 .logoutButton {
   flex: 0 0 auto;
   margin-left: auto;
-  min-height: 48px;
+  width: min(100%, 164px);
+  min-height: 50px;
   border: 1px solid rgba(198, 55, 55, 0.24);
-  border-radius: 999px;
+  border-radius: 14px;
   background: linear-gradient(180deg, #fff8f8 0%, #fde8e8 100%);
   color: #9b3030;
-  font-size: 0.96rem;
+  font-size: 0.9rem;
+  font-weight: 800;
   line-height: 1;
   white-space: nowrap;
   word-break: keep-all;
@@ -570,8 +587,8 @@
 .assetsHeader {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 14px;
+  justify-content: flex-start;
+  gap: 8px;
   min-height: 58px;
   padding: 4px 2px 14px;
 }
@@ -597,21 +614,26 @@
   position: sticky;
   top: 0;
   z-index: 2;
-  border-radius: 24px;
-  padding: 14px;
+  border-radius: 22px;
+  padding: 13px;
+  box-shadow: 0 14px 32px rgba(18, 53, 45, 0.08);
   backdrop-filter: blur(12px);
 }
 
 .assetList {
   display: grid;
   gap: 14px;
-  margin-top: 14px;
+  margin-top: 16px;
   padding-bottom: 22px;
 }
 
 .assetCard {
+  display: grid;
+  gap: 14px;
+  overflow: hidden;
   border-radius: 24px;
   padding: 18px 16px 16px;
+  box-shadow: 0 16px 36px rgba(18, 53, 45, 0.08);
 }
 
 .assetTopRow {
@@ -632,8 +654,9 @@
 .assetTopRow h2 {
   max-width: 100%;
   margin: 0 auto;
-  font-size: clamp(1.28rem, 5.3vw, 1.55rem);
-  line-height: 1.08;
+  font-size: clamp(1.18rem, 5.2vw, 1.5rem);
+  font-weight: 800;
+  line-height: 1.12;
   text-align: center;
   text-wrap: balance;
   overflow-wrap: anywhere;
@@ -654,7 +677,7 @@
 .assetMetaGrid {
   display: grid;
   gap: 10px;
-  margin: 14px 0;
+  margin: 0;
 }
 
 .assetMetaGrid div {
@@ -665,7 +688,7 @@
   border: 1px solid rgba(18, 53, 45, 0.1);
   border-radius: 18px;
   background: #fbfdfb;
-  padding: 12px 10px;
+  padding: 11px 10px;
   text-align: center;
 }
 
@@ -676,13 +699,41 @@
   color: rgba(18, 53, 45, 0.52);
 }
 
+.assetMetaGrid span {
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+}
+
 .assetMetaGrid strong {
   display: block;
   color: #12352d;
-  font-size: clamp(0.98rem, 3.7vw, 1.15rem);
-  font-weight: 900;
-  line-height: 1.18;
+  font-size: clamp(0.94rem, 3.8vw, 1.08rem);
+  font-weight: 800;
+  line-height: 1.2;
   overflow-wrap: anywhere;
+}
+
+.assetOpenButton,
+.overviewOpenButton {
+  border: 1.5px solid #6fc596;
+  background: linear-gradient(180deg, #ffffff 0%, #e6f8ef 100%);
+  color: #0a543d;
+  font-weight: 800;
+}
+
+.assetOpenButton {
+  min-height: 58px;
+  border-radius: 17px;
+  font-size: 0.94rem;
+  line-height: 1;
+  box-shadow: 0 10px 22px rgba(10, 84, 61, 0.085);
+}
+
+.assetOpenButton:hover:not(:disabled),
+.overviewOpenButton:hover:not(:disabled) {
+  border-color: #43ad73;
+  background: linear-gradient(180deg, #ffffff 0%, #d9f1e5 100%);
 }
 
 .mobileEmpty {
@@ -695,7 +746,7 @@
 }
 
 .overviewShell {
-  width: min(100% - 20px, 560px);
+  width: min(calc(100% - var(--field-page-gutter)), 560px);
   padding-bottom: max(28px, env(safe-area-inset-bottom));
 }
 
@@ -728,18 +779,19 @@
 }
 
 .overviewIntro h1 {
-  margin: 5px 0 0;
+  margin: 0;
   color: #12352d;
-  font-size: clamp(2.1rem, 10vw, 3rem);
+  font-size: clamp(1.9rem, 8vw, 2.45rem);
+  font-weight: 900;
   letter-spacing: -0.045em;
-  line-height: 0.98;
+  line-height: 1.04;
 }
 
 .overviewIntro p {
   margin: 8px 0 0;
   color: rgba(18, 53, 45, 0.64);
   font-size: 0.94rem;
-  font-weight: 760;
+  font-weight: 650;
   line-height: 1.4;
 }
 
@@ -822,6 +874,7 @@
   margin: 0;
   color: #12352d;
   font-size: clamp(1.2rem, 5vw, 1.42rem);
+  font-weight: 800;
   letter-spacing: -0.025em;
   line-height: 1.1;
 }
@@ -836,7 +889,7 @@
   background: rgba(255, 255, 255, 0.84);
   color: rgba(18, 53, 45, 0.68);
   font-size: 0.78rem;
-  font-weight: 920;
+  font-weight: 800;
 }
 
 .overviewList {
@@ -908,6 +961,7 @@
   margin: 0;
   color: #12352d;
   font-size: clamp(1.16rem, 4.8vw, 1.38rem);
+  font-weight: 800;
   letter-spacing: -0.025em;
   line-height: 1.16;
   overflow-wrap: anywhere;
@@ -916,8 +970,8 @@
 .overviewHeadline {
   margin: 8px 0 0;
   color: #174637;
-  font-size: 0.94rem;
-  font-weight: 880;
+  font-size: 0.96rem;
+  font-weight: 800;
   line-height: 1.36;
   overflow-wrap: anywhere;
 }
@@ -925,7 +979,7 @@
 .overviewDetail {
   margin: 7px 0 0;
   color: rgba(18, 53, 45, 0.66);
-  font-size: 0.86rem;
+  font-size: 0.88rem;
   font-weight: 720;
   line-height: 1.42;
   overflow-wrap: anywhere;
@@ -938,7 +992,7 @@
   border-left: 3px solid rgba(35, 104, 81, 0.22);
   color: rgba(18, 53, 45, 0.72);
   padding: 1px 0 1px 10px;
-  font-size: 0.84rem;
+  font-size: 0.88rem;
   font-weight: 740;
   line-height: 1.42;
   overflow-wrap: anywhere;
@@ -950,7 +1004,8 @@
   min-height: 50px;
   margin-top: 15px;
   border-radius: 15px;
-  box-shadow: 0 12px 24px rgba(35, 104, 81, 0.2);
+  font-size: 0.96rem;
+  box-shadow: 0 10px 22px rgba(10, 84, 61, 0.1);
 }
 
 .overviewCardActions {
@@ -1015,16 +1070,23 @@
 }
 
 @media (max-width: 390px) {
+  .mobilePage { --field-page-gutter: 18px; }
+
   .loginShell,
   .assetsShell {
-    width: min(100% - 18px, 560px);
+    width: min(calc(100% - var(--field-page-gutter)), 560px);
   }
 
   .loginCard,
-  .homeActionCard,
-  .assetCard {
+  .homeActionCard {
     border-radius: 22px;
     padding: 14px;
+  }
+
+  .logoutButton {
+    padding-right: 14px;
+    padding-left: 14px;
+    font-size: 0.86rem;
   }
 
   .loginHeader h2,
@@ -1041,19 +1103,12 @@
   }
 
   .overviewShell {
-    width: min(100% - 16px, 560px);
+    width: min(calc(100% - var(--field-page-gutter)), 560px);
   }
 
   .overviewHeader {
     padding-left: 0;
     padding-right: 0;
-  }
-
-  .overviewHeader .logoutButton {
-    min-height: 44px;
-    padding-left: 14px;
-    padding-right: 14px;
-    font-size: 0.86rem;
   }
 
   .overviewIntro {

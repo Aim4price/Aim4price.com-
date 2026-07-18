@@ -98,7 +98,7 @@ export default function FieldManagerHomeClient() {
   }
 
   return (
-    <main className={styles.mobilePage}>
+    <main className={`${styles.mobilePage} ${styles.homePage}`}>
       <section className={`${styles.assetsShell} ${styles.homeShell}`}>
         <header className={styles.assetsHeader} aria-label="Field Manager account controls">
           <button type="button" className={styles.logoutButton} onClick={() => void handleLogout()}>
@@ -135,7 +135,7 @@ export default function FieldManagerHomeClient() {
                 className={styles.homeActionCard}
                 onClick={() => window.location.assign('/field-manager/assets')}
               >
-                <strong>Manage</strong>
+                <strong>Choose asset</strong>
               </button>
 
               <button

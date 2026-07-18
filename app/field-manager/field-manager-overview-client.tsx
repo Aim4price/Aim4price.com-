@@ -94,7 +94,6 @@ export default function FieldManagerOverviewClient({
   const [actionError, setActionError] = useState<string | null>(null);
   const [openingItemId, setOpeningItemId] = useState<string | null>(null);
   const [clearingItemId, setClearingItemId] = useState<string | null>(null);
-  const [isSigningOut, setIsSigningOut] = useState(false);
   const [reloadToken, setReloadToken] = useState(0);
   const requestIdRef = useRef(0);
 
@@ -153,16 +152,6 @@ export default function FieldManagerOverviewClient({
     void loadOverview();
     return () => controller.abort();
   }, [range, reloadToken]);
-
-  async function handleLogout() {
-    setIsSigningOut(true);
-    await fetch('/api/field-manager/login', {
-      method: 'DELETE',
-      credentials: 'include',
-      cache: 'no-store',
-    }).catch(() => undefined);
-    window.location.replace('/field-manager/login');
-  }
 
   async function handleOpenAsset(item: OverviewItem) {
     setOpeningItemId(item.id);
@@ -273,7 +262,7 @@ export default function FieldManagerOverviewClient({
             disabled={hasPendingCardAction || !item.openAsset}
             aria-busy={isOpening}
           >
-            {isOpening ? 'Opening…' : 'Open asset'}
+            {isOpening ? 'Opening…' : 'Open'}
           </button>
         </div>
       </article>
@@ -283,20 +272,11 @@ export default function FieldManagerOverviewClient({
   return (
     <main className={styles.mobilePage}>
       <section className={`${styles.assetsShell} ${styles.overviewShell}`}>
-        <header className={styles.overviewHeader} aria-label="Overview controls">
+        <header className={styles.assetsHeader} aria-label="Overview controls">
           <FieldManagerNavLink href="/field-manager" label="Home" />
-          <button
-            type="button"
-            className={styles.logoutButton}
-            onClick={() => void handleLogout()}
-            disabled={isSigningOut}
-          >
-            {isSigningOut ? 'Signing out…' : 'Sign out'}
-          </button>
         </header>
 
         <div className={styles.overviewIntro}>
-          <span>Field Manager</span>
           <h1>Overview</h1>
           <p>What needs attention next.</p>
         </div>

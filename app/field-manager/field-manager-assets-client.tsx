@@ -154,15 +154,6 @@ export default function FieldManagerAssetsClient() {
     }
   }
 
-  async function handleLogout() {
-    await fetch('/api/field-manager/login', {
-      method: 'DELETE',
-      credentials: 'include',
-      cache: 'no-store',
-    }).catch(() => undefined);
-    window.location.replace('/field-manager/login');
-  }
-
   async function handleOpenAsset(asset: FieldManagerAssetSummary) {
     setOpeningAssetId(asset.id);
     setNotice(null);
@@ -196,23 +187,20 @@ export default function FieldManagerAssetsClient() {
       <section className={styles.assetsShell}>
         <header className={styles.assetsHeader} aria-label="Field Manager account controls">
           <FieldManagerNavLink href="/field-manager" label="Home" />
-          <button type="button" className={styles.logoutButton} onClick={() => void handleLogout()}>
-            Sign out
-          </button>
         </header>
 
         {notice ? <div className={styles.errorNotice}>{notice}</div> : null}
 
         <section className={styles.searchCard}>
-          <label className={styles.searchField}>
-            <span>Choose asset</span>
+          <div className={styles.searchField}>
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Search asset, model, reg, serial or notes"
+              aria-label="Search assets"
               autoComplete="off"
             />
-          </label>
+          </div>
         </section>
 
         {isLoading ? <p className={styles.mobileEmpty}>Loading available assets…</p> : null}
@@ -254,7 +242,7 @@ export default function FieldManagerAssetsClient() {
 
                 <button
                   type="button"
-                  className={styles.mobilePrimaryButton}
+                  className={`${styles.mobilePrimaryButton} ${styles.assetOpenButton}`}
                   onClick={() => void handleOpenAsset(asset)}
                   disabled={Boolean(openingAssetId)}
                 >

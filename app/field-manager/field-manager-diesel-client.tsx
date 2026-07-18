@@ -158,15 +158,6 @@ export default function FieldManagerDieselClient() {
     }
   }
 
-  async function handleLogout() {
-    await fetch('/api/field-manager/login', {
-      method: 'DELETE',
-      credentials: 'include',
-      cache: 'no-store',
-    }).catch(() => undefined);
-    window.location.replace('/field-manager/login');
-  }
-
   async function handleOpenStorage(storage: FieldManagerFuelStorageSummary) {
     setOpeningStorageId(storage.id);
     setNotice(null);
@@ -200,23 +191,20 @@ export default function FieldManagerDieselClient() {
       <section className={styles.assetsShell}>
         <header className={styles.assetsHeader} aria-label="Field Manager account controls">
           <FieldManagerNavLink href="/field-manager" label="Home" />
-          <button type="button" className={styles.logoutButton} onClick={() => void handleLogout()}>
-            Sign out
-          </button>
         </header>
 
         {notice ? <div className={styles.errorNotice}>{notice}</div> : null}
 
         <section className={styles.searchCard}>
-          <label className={styles.searchField}>
-            <span>Choose fuel storage</span>
+          <div className={styles.searchField}>
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Search tank, fuel type, location or code"
+              aria-label="Search fuel storage units"
               autoComplete="off"
             />
-          </label>
+          </div>
         </section>
 
         {isLoading ? <p className={styles.mobileEmpty}>Loading available fuel storage units…</p> : null}
@@ -263,7 +251,7 @@ export default function FieldManagerDieselClient() {
 
                 <button
                   type="button"
-                  className={styles.mobilePrimaryButton}
+                  className={`${styles.mobilePrimaryButton} ${styles.assetOpenButton}`}
                   onClick={() => void handleOpenStorage(storage)}
                   disabled={Boolean(openingStorageId)}
                 >

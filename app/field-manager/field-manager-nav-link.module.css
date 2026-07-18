@@ -1,20 +1,24 @@
 .navLink {
-  min-height: 48px;
+  width: min(100%, 164px);
+  min-height: 50px;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
   gap: 7px;
-  border: 1px solid rgba(18, 53, 45, 0.14);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.92);
-  color: #174637;
+  border: 1.5px solid #6fc596;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #ffffff 0%, #e6f8ef 100%);
+  color: #0a543d;
   padding: 0 16px;
   font-family: inherit;
-  font-size: 0.94rem;
-  font-weight: 900;
+  font-size: 0.9rem;
+  font-weight: 800;
   line-height: 1;
   text-decoration: none;
+  white-space: nowrap;
   cursor: pointer;
-  box-shadow: 0 10px 24px rgba(18, 53, 45, 0.08);
+  box-shadow: 0 10px 24px rgba(10, 84, 61, 0.1);
   transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
 }
 
@@ -34,7 +38,6 @@
 
 @media (max-width: 390px) {
   .navLink {
-    min-height: 44px;
     padding-right: 14px;
     padding-left: 14px;
     font-size: 0.86rem;
