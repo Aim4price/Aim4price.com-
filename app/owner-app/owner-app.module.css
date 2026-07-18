@@ -6,6 +6,8 @@
   --owner-ink: #12352d;
   --owner-muted: #64746a;
   --owner-line: rgba(37, 71, 51, 0.15);
+  --owner-page-gutter: 24px;
+  --owner-content-gap: 16px;
   --dealer-green: var(--owner-green);
   --dealer-green-dark: var(--owner-green-dark);
   --dealer-green-soft: var(--owner-soft);
@@ -28,20 +30,29 @@
 }
 
 .assetsHeader {
-  width: min(100% - 24px, 560px);
+  width: min(calc(100% - var(--owner-page-gutter)), 560px);
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 8px;
   min-height: 58px;
   margin: 0 auto;
   padding: 4px 2px 14px;
 }
 
-.assetsHeaderSingle { justify-content: center; }
+.assetsHeaderSingle { justify-content: flex-start; }
+.assetsHeaderPair { justify-content: flex-start; }
+.assetsHeaderPair .navButton,
+.assetsHeaderPair .logoutButton {
+  width: auto;
+  max-width: 164px;
+  flex: 1 1 0;
+}
+.assetsHeaderPair .logoutButton { margin-left: 0; }
+.assetsHeaderSignOut .logoutButton { margin-left: auto; }
 
 .navButton {
-  width: min(42vw, 164px);
+  width: min(100%, 164px);
   min-height: 50px;
   display: inline-flex;
   align-items: center;
@@ -75,7 +86,7 @@
 .logoutButton {
   flex: 0 0 auto;
   margin-left: auto;
-  width: min(42vw, 164px);
+  width: min(100%, 164px);
   min-height: 50px;
   display: inline-flex;
   align-items: center;
@@ -117,15 +128,15 @@
 
 .content,
 .wideContent {
-  width: min(calc(100% - 24px), 480px);
+  width: min(calc(100% - var(--owner-page-gutter)), 480px);
   min-width: 0;
-  max-width: calc(100% - 24px);
+  max-width: calc(100% - var(--owner-page-gutter));
   box-sizing: border-box;
   margin: 0 auto;
   display: grid;
-  gap: 16px;
+  gap: var(--owner-content-gap);
 }
-.wideContent { width: min(calc(100% - 24px), 760px); }
+.wideContent { width: min(calc(100% - var(--owner-page-gutter)), 760px); }
 
 .homePage {
   display: flex;
@@ -139,7 +150,7 @@
 
 .homeContent {
   flex: 1 1 auto;
-  width: min(100% - 24px, 560px);
+  width: min(calc(100% - var(--owner-page-gutter)), 560px);
   display: grid;
   align-content: center;
   margin: 0 auto;
@@ -338,6 +349,17 @@
 .secondaryButton:disabled,
 .dangerButton:disabled,
 .smallButton:disabled { opacity: 0.55; cursor: not-allowed; }
+.button:focus-visible,
+.primaryButton:focus-visible,
+.secondaryButton:focus-visible,
+.smallButton:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(37, 71, 51, 0.11);
+}
+.dangerButton:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(150, 56, 56, 0.11);
+}
 
 .launcher { display: grid; gap: 11px; }
 .launchCard {
@@ -1084,7 +1106,7 @@
 }
 .ownerOptionsIdentity > strong { color: #23483d; font-size: 1rem; font-weight: 800; line-height: 1.35; overflow-wrap: anywhere; }
 .ownerOptionsIdentity p { margin: 0; color: var(--owner-muted); font-size: 0.9rem; font-weight: 700; }
-.ownerOptionsSection { gap: 15px; }
+.ownerOptionsSection { gap: var(--owner-content-gap); }
 .ownerOptionChoiceList,
 .ownerPartnerList { display: grid; gap: 10px; }
 .ownerOptionChoice {
@@ -1105,7 +1127,11 @@
   text-align: center;
   cursor: pointer;
   box-shadow: 0 10px 24px rgba(18, 53, 45, 0.06);
+  transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
 }
+.ownerOptionChoice:hover { border-color: rgba(18, 53, 45, 0.28); box-shadow: 0 14px 28px rgba(18, 53, 45, 0.09); }
+.ownerOptionChoice:active { transform: translateY(1px); }
+.ownerOptionChoice:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.11), 0 10px 24px rgba(18, 53, 45, 0.06); }
 .ownerOptionChoiceIconTile {
   width: 56px;
   height: 56px;
@@ -1137,7 +1163,9 @@
   color: var(--owner-ink);
   padding: 0 13px;
   font: 700 1rem Montserrat, sans-serif;
+  outline: none;
 }
+.ownerPartnerSearch input:focus { border-color: rgba(37, 71, 51, 0.62); background: #fff; box-shadow: 0 0 0 4px rgba(37, 71, 51, 0.09); }
 .ownerPartnerSearch button {
   min-height: 50px;
   border: 1px solid var(--owner-green);
@@ -1149,6 +1177,7 @@
   cursor: pointer;
 }
 .ownerPartnerSearch button:disabled { opacity: 0.58; cursor: not-allowed; }
+.ownerPartnerSearch button:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(37, 71, 51, 0.11); }
 .ownerPartnerCard {
   width: 100%;
   min-height: 84px;
@@ -1165,7 +1194,11 @@
   font-family: inherit;
   text-align: left;
   cursor: pointer;
+  transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
 }
+.ownerPartnerCard:hover { border-color: rgba(37, 71, 51, 0.26); background: #fbfdfb; box-shadow: 0 10px 22px rgba(18, 53, 45, 0.06); }
+.ownerPartnerCard:active { transform: translateY(1px); }
+.ownerPartnerCard:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(37, 71, 51, 0.1); }
 .ownerPartnerCard > b { color: rgba(18, 53, 45, 0.45); font-size: 1.25rem; }
 .ownerPartnerLogo {
   width: 50px;
@@ -1222,10 +1255,14 @@
   padding: 13px;
   font: 700 1rem Montserrat, sans-serif;
   line-height: 1.45;
+  outline: none;
   resize: vertical;
 }
+.ownerOptionMessageField textarea:focus { border-color: rgba(37, 71, 51, 0.62); box-shadow: 0 0 0 4px rgba(37, 71, 51, 0.09); }
 .ownerOptionsFooter { display: grid; grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.25fr); gap: 9px; }
 .ownerOptionsFooterSingle { grid-template-columns: 1fr; }
+.ownerOptionsFooter > button,
+.ownerOptionsFooter > a { width: 100%; }
 .ownerPopiaBox { display: grid; gap: 8px; border: 1px solid rgba(196, 130, 32, 0.24); border-radius: 16px; background: #fffaf0; color: #654414; padding: 14px; }
 .ownerPopiaBox strong { font-size: 0.84rem; }
 .ownerPopiaBox p { margin: 0; font-size: 0.84rem; font-weight: 650; line-height: 1.5; }
@@ -1657,8 +1694,8 @@
 .attentionLabels { display: flex; justify-content: space-between; gap: 8px; color: var(--owner-green); font-size: 0.7rem; font-weight: 900; text-transform: uppercase; }
 
 .notificationContent {
-  width: min(100% - 20px, 560px);
-  gap: 18px;
+  width: min(calc(100% - var(--owner-page-gutter)), 560px);
+  gap: var(--owner-content-gap);
   box-sizing: border-box;
   border: 1px solid rgba(35, 104, 81, 0.15);
   border-radius: 28px;
@@ -1900,7 +1937,7 @@
 
 .overviewPage { padding-top: max(16px, env(safe-area-inset-top)); }
 .overviewContent {
-  width: min(calc(100% - 20px), 560px);
+  width: min(calc(100% - var(--owner-page-gutter)), 560px);
   margin: 0 auto;
   padding: 0 0 max(28px, env(safe-area-inset-bottom));
 }
@@ -1971,27 +2008,26 @@
   .manageButton { min-height: 60px; }
   .manageAssetIdentity { align-items: stretch; flex-direction: column; gap: 11px; }
   .manageAssetIdentity a { width: 100%; }
+  .sectionHeader,
+  .marketplacePanelHeading { align-items: stretch; flex-direction: column; }
+  .marketplacePanelHeading > a { width: 100%; }
   .detailPhotoNavButton { width: 42px; height: 42px; }
   .detailPhotoNavPrevious { left: 9px; }
   .detailPhotoNavNext { right: 9px; }
 }
 
 @media (max-width: 390px) {
-  .assetsHeader,
-  .homeContent {
-    width: min(100% - 18px, 560px);
-  }
-
-  .content,
-  .wideContent {
-    width: min(calc(100% - 18px), 480px);
-    max-width: calc(100% - 18px);
-  }
+  .page,
+  .module { --owner-page-gutter: 18px; }
 
   .homeLaunchCard {
     border-radius: 22px;
     padding: 14px;
   }
+
+  .ownerPartnerSearch,
+  .reportFilterActions { grid-template-columns: 1fr; }
+  .marketplacePhotoStrip { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 
   .navButton,
   .logoutButton {

@@ -12,6 +12,11 @@ export default function OwnerAppNav({ showBack = true, backHref = '/owner-app', 
 }) {
   const [signingOut, setSigningOut] = useState(false);
   const backIsHome = showBack && !backAction && backHref === '/owner-app' && backLabel === 'Home';
+  const headerLayoutClass = backIsHome
+    ? styles.assetsHeaderSingle
+    : showBack
+      ? styles.assetsHeaderPair
+      : styles.assetsHeaderSignOut;
 
   async function signOut() {
     if (signingOut) return;
@@ -24,7 +29,7 @@ export default function OwnerAppNav({ showBack = true, backHref = '/owner-app', 
   }
 
   return (
-    <header className={`${styles.assetsHeader} ${backIsHome ? styles.assetsHeaderSingle : ''}`} aria-label="Aim4price Owner account controls">
+    <header className={`${styles.assetsHeader} ${headerLayoutClass}`} aria-label="Aim4price Owner account controls">
       {showBack ? (
         <>
           {backAction ? (
