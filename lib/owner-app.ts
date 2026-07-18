@@ -4,7 +4,9 @@ import { getDb } from './db';
 
 const scryptAsync = promisify(scrypt);
 
-export const OWNER_APP_PASSWORD_MIN_LENGTH = 8;
+export const OWNER_APP_PASSCODE_LENGTH = 4;
+export const OWNER_APP_MAX_FAILED_ATTEMPTS = 5;
+export const OWNER_APP_LOCK_MINUTES = 15;
 
 type OwnerAppUserRow = {
   id: string;
@@ -15,6 +17,8 @@ type OwnerAppUserRow = {
   password_hash: string;
   is_active: boolean;
   session_version: number;
+  failed_login_attempts: number;
+  login_locked_until: string | Date | null;
   last_login_at: string | Date | null;
   created_at: string | Date;
   updated_at: string | Date;
@@ -71,11 +75,15 @@ async function ensureOwnerAppTablesOnce(): Promise<void> {
       password_hash text not null,
       is_active boolean not null default true,
       session_version integer not null default 1 check (session_version > 0),
+      failed_login_attempts integer not null default 0 check (failed_login_attempts >= 0),
+      login_locked_until timestamptz,
       last_login_at timestamptz,
       created_at timestamptz not null default now(),
       updated_at timestamptz not null default now()
     )
   `);
+  await db.query('alter table public.owner_app_users add column if not exists failed_login_attempts integer not null default 0');
+  await db.query('alter table public.owner_app_users add column if not exists login_locked_until timestamptz');
   await db.query('create unique index if not exists idx_owner_app_users_username_normalized on public.owner_app_users(username_normalized)');
   await db.query('create index if not exists idx_owner_app_users_parent on public.owner_app_users(parent_owner_user_id, created_at desc)');
   await db.query('create index if not exists idx_owner_app_users_active on public.owner_app_users(parent_owner_user_id, is_active)');
@@ -125,12 +133,9 @@ export async function verifyOwnerAppPassword(password: string, encoded: string):
   return expected.length === actual.length && timingSafeEqual(expected, actual);
 }
 
-function validatePassword(value: unknown): string {
+function validatePasscode(value: unknown): string {
   const password = typeof value === 'string' ? value : '';
-  if (password.length < OWNER_APP_PASSWORD_MIN_LENGTH) {
-    throw new Error(`Password must be at least ${OWNER_APP_PASSWORD_MIN_LENGTH} characters.`);
-  }
-  if (password.length > 200) throw new Error('Password is too long.');
+  if (!/^\d{4}$/.test(password)) throw new Error('Passcode must contain exactly 4 digits.');
   return password;
 }
 
@@ -150,7 +155,7 @@ export async function createOwnerAppUser(
   await ensureOwnerAppTables();
   const displayName = cleanText(input.displayName).replace(/\s+/g, ' ').slice(0, 120);
   const username = normalizeOwnerAppUsername(input.username);
-  const password = validatePassword(input.password);
+  const password = validatePasscode(input.password);
   if (!displayName) throw new Error('Enter the user display name.');
   if (username.length < 3) throw new Error('Username must be at least 3 characters.');
 
@@ -192,7 +197,7 @@ export async function updateOwnerAppUser(
   if (!displayName) throw new Error('Enter the user display name.');
   if (username.length < 3) throw new Error('Username must be at least 3 characters.');
   const passwordHash = passwordChanged
-    ? await hashOwnerAppPassword(validatePassword(input.password))
+    ? await hashOwnerAppPassword(validatePasscode(input.password))
     : row.password_hash;
   const mustRevoke = passwordChanged || isActive !== row.is_active;
 
@@ -235,6 +240,40 @@ export async function findOwnerAppUserForLogin(username: string): Promise<OwnerA
   return result.rows[0] ?? null;
 }
 
+export function isOwnerAppLoginLocked(row: OwnerAppUserRow): boolean {
+  if (!row.login_locked_until) return false;
+  const lockedUntil = row.login_locked_until instanceof Date ? row.login_locked_until : new Date(row.login_locked_until);
+  return !Number.isNaN(lockedUntil.getTime()) && lockedUntil.getTime() > Date.now();
+}
+
+export async function recordOwnerAppLoginFailure(id: string): Promise<boolean> {
+  await ensureOwnerAppTables();
+  const result = await getDb().query<{ locked: boolean }>(
+    `with current_state as (
+      select id,
+        case
+          when login_locked_until is not null and login_locked_until <= now() then 1
+          else failed_login_attempts + 1
+        end as next_attempt
+      from public.owner_app_users
+      where id = $1::uuid
+      for update
+    )
+    update public.owner_app_users as owner_user set
+      failed_login_attempts = current_state.next_attempt,
+      login_locked_until = case
+        when current_state.next_attempt >= $2 then now() + ($3 * interval '1 minute')
+        else null
+      end,
+      updated_at = now()
+    from current_state
+    where owner_user.id = current_state.id
+    returning owner_user.login_locked_until is not null and owner_user.login_locked_until > now() as locked`,
+    [id, OWNER_APP_MAX_FAILED_ATTEMPTS, OWNER_APP_LOCK_MINUTES],
+  );
+  return Boolean(result.rows[0]?.locked);
+}
+
 export async function getOwnerAppUserById(id: string): Promise<OwnerAppUserRow | null> {
   await ensureOwnerAppTables();
   const result = await getDb().query<OwnerAppUserRow>(
@@ -247,7 +286,12 @@ export async function getOwnerAppUserById(id: string): Promise<OwnerAppUserRow |
 export async function markOwnerAppUserLogin(id: string): Promise<void> {
   await ensureOwnerAppTables();
   await getDb().query(
-    'update public.owner_app_users set last_login_at = now(), updated_at = now() where id = $1::uuid',
+    `update public.owner_app_users set
+      failed_login_attempts = 0,
+      login_locked_until = null,
+      last_login_at = now(),
+      updated_at = now()
+    where id = $1::uuid`,
     [id],
   );
 }
