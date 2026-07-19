@@ -14,7 +14,7 @@ export default async function OwnerAttentionPage({ searchParams }: PageProps) {
   await requireOwnerAppPageAccess();
   return (
     <OwnerAttentionClient
-      initialRange={searchParams?.range === 'month' ? 'month' : 'week'}
+      initialRange={searchParams?.range === 'week' ? 'week' : 'upcoming'}
     />
   );
 }

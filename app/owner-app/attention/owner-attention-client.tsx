@@ -5,7 +5,7 @@ import styles from '../../field-manager/page.module.css';
 import ownerStyles from '../owner-app.module.css';
 import OwnerAppNav from '../owner-app-nav';
 
-type OverviewRange = 'week' | 'month';
+type OverviewRange = 'week' | 'upcoming';
 type OverviewItemType = 'problem' | 'service' | 'checkup' | 'license';
 type OverviewSection = 'needs_attention' | 'coming_up';
 type OverviewStatus = 'problem' | 'overdue' | 'due' | 'due_soon' | 'upcoming' | 'usage_needed';
@@ -67,7 +67,7 @@ function statusText(item: OverviewItem): string {
 }
 
 export default function OwnerAttentionClient({
-  initialRange = 'week',
+  initialRange = 'upcoming',
 }: {
   initialRange?: OverviewRange;
 }) {
@@ -229,10 +229,18 @@ export default function OwnerAttentionClient({
 
         <div className={`${styles.overviewIntro} ${ownerStyles.ownerPageIntro}`}>
           <h1 className={ownerStyles.ownerPageTitle}>Overview</h1>
-          <p className={ownerStyles.ownerPageSubtitle}>What needs attention next.</p>
+          <p className={ownerStyles.ownerPageSubtitle}>Needs attention and upcoming maintenance.</p>
         </div>
 
         <div className={styles.overviewRange} role="group" aria-label="Overview time range">
+          <button
+            type="button"
+            className={range === 'upcoming' ? styles.overviewRangeActive : undefined}
+            aria-pressed={range === 'upcoming'}
+            onClick={() => setRange('upcoming')}
+          >
+            Upcoming
+          </button>
           <button
             type="button"
             className={range === 'week' ? styles.overviewRangeActive : undefined}
@@ -240,14 +248,6 @@ export default function OwnerAttentionClient({
             onClick={() => setRange('week')}
           >
             Next 7 days
-          </button>
-          <button
-            type="button"
-            className={range === 'month' ? styles.overviewRangeActive : undefined}
-            aria-pressed={range === 'month'}
-            onClick={() => setRange('month')}
-          >
-            Next 30 days
           </button>
         </div>
 
@@ -288,16 +288,16 @@ export default function OwnerAttentionClient({
               )}
             </section>
 
-            <section className={styles.overviewSection} aria-labelledby="coming-up-title">
+            <section className={styles.overviewSection} aria-labelledby="upcoming-title">
               <div className={`${styles.overviewSectionHeading} ${ownerStyles.ownerSectionHeading}`}>
-                <h2 id="coming-up-title">Coming up</h2>
+                <h2 id="upcoming-title">Upcoming</h2>
                 <span aria-label={`${comingUpItems.length} items`}>{comingUpItems.length}</span>
               </div>
               {comingUpItems.length ? (
                 <div className={styles.overviewList}>{comingUpItems.map(renderOverviewCard)}</div>
               ) : (
                 <p className={styles.overviewEmpty}>
-                  Nothing coming up in the next {range === 'week' ? '7 days' : '30 days'}.
+                  {range === 'week' ? 'Nothing upcoming in the next 7 days.' : 'Nothing upcoming.'}
                 </p>
               )}
             </section>
