@@ -5,7 +5,7 @@ import { getDb } from './db';
 import { listAllOwnerAppAssets, type OwnerAppAssetSummary } from './owner-app-assets';
 import { ensureOwnerAppTables } from './owner-app';
 
-export type OwnerAppOverviewRange = 'week' | 'month';
+export type OwnerAppOverviewRange = 'week' | 'upcoming';
 export type OwnerAppOverviewItem = {
   id: string; sourceId: string; sourceKind: 'maintenance' | 'problem' | 'license';
   type: 'problem' | 'service' | 'checkup' | 'license'; section: 'needs_attention' | 'coming_up';
@@ -20,7 +20,7 @@ type LicenseRow = {
 
 function text(value: unknown) { return String(value ?? '').replace(/\s+/g, ' ').trim(); }
 function record(value: unknown): Record<string, unknown> { return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}; }
-function rangeDays(range: OwnerAppOverviewRange) { return range === 'month' ? 30 : 7; }
+function rangeDays(range: OwnerAppOverviewRange): number | null { return range === 'week' ? 7 : null; }
 function dateIso(value: string | null) { const parsed = parseAssetLicenseDateKey(value); return parsed ? new Date(parsed.timestamp).toISOString() : null; }
 function dayDifference(left: string, right: string) {
   const a = parseAssetLicenseDateKey(left); const b = parseAssetLicenseDateKey(right);
@@ -72,9 +72,11 @@ async function buildOverview(ownerUserId: string, range: OwnerAppOverviewRange):
   maintenance.forEach((entry) => {
     const asset = byId.get(entry.assetId);
     if (!asset || entry.status !== 'upcoming') return;
-    const include = entry.triggerType === 'usage'
-      ? entry.currentUsage === null || ['overdue', 'due', 'due_soon'].includes(entry.computedStatus)
-      : entry.daysUntilDue !== null && (entry.daysUntilDue < 0 || entry.daysUntilDue <= horizon);
+    const include = horizon === null
+      ? true
+      : entry.triggerType === 'usage'
+        ? entry.currentUsage === null || ['overdue', 'due', 'due_soon'].includes(entry.computedStatus)
+        : entry.daysUntilDue !== null && (entry.daysUntilDue < 0 || entry.daysUntilDue <= horizon);
     if (include) result.push(maintenanceItem(entry, asset));
   });
 
@@ -95,7 +97,7 @@ async function buildOverview(ownerUserId: string, range: OwnerAppOverviewRange):
     const alert = buildAssetLicenseRenewalAlert({ id: row.id, kind: row.kind, isLicensed: row.is_licensed, licenseRegistrationNumber: row.license_registration_number, specsJson: record(row.specs_json) }, row.license_renewal_alert_noted_for_date, today);
     if (!alert) return;
     const days = dayDifference(alert.renewalDate, today);
-    if (days === null || (days > horizon && days >= 0)) return;
+    if (days === null || (horizon !== null && days > horizon && days >= 0)) return;
     const urgent = alert.computedStatus === 'overdue' || alert.computedStatus === 'due';
     result.push({ id: alert.id, sourceId: alert.id, sourceKind: 'license', type: 'license', section: urgent ? 'needs_attention' : 'coming_up', status: alert.computedStatus, statusLabel: alert.computedStatusLabel, assetId: asset.id, assetTitle: asset.title, headline: 'Licence renewal', detail: alert.body, notes: '', sortValue: days, sortTimestamp: dateIso(alert.renewalDate) });
   });

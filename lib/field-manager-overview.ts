@@ -16,7 +16,7 @@ import {
   type FieldManagerAssetSummary,
 } from './field-manager';
 
-export type FieldManagerOverviewRange = 'week' | 'month';
+export type FieldManagerOverviewRange = 'week' | 'upcoming';
 export type FieldManagerOverviewItemType =
   | 'problem'
   | 'service'
@@ -168,8 +168,8 @@ async function listFieldManagerOverviewDismissalKeys(
   );
 }
 
-function rangeDays(range: FieldManagerOverviewRange): number {
-  return range === 'month' ? 30 : 7;
+function rangeDays(range: FieldManagerOverviewRange): number | null {
+  return range === 'week' ? 7 : null;
 }
 
 function dateKeyToIso(value: string | null | undefined): string | null {
@@ -312,10 +312,14 @@ function maintenanceStatus(record: AssetMaintenanceRecord): {
 
 function shouldIncludeMaintenance(
   record: AssetMaintenanceRecord,
-  horizonDays: number,
+  horizonDays: number | null,
 ): boolean {
   if (record.status !== 'upcoming') {
     return false;
+  }
+
+  if (horizonDays === null) {
+    return true;
   }
 
   if (record.triggerType === 'usage') {
@@ -517,7 +521,10 @@ async function buildFieldManagerOverview(input: {
 
     if (!alert) return;
     const daysUntilDue = daysBetweenDateKeys(alert.renewalDate, todayKey);
-    if (daysUntilDue === null || (daysUntilDue > horizonDays && daysUntilDue >= 0)) return;
+    if (
+      daysUntilDue === null
+      || (horizonDays !== null && daysUntilDue > horizonDays && daysUntilDue >= 0)
+    ) return;
 
     const needsAttention = alert.computedStatus === 'overdue' || alert.computedStatus === 'due';
     items.push({
