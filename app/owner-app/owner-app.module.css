@@ -109,6 +109,7 @@
 }
 
 .homeButton { text-decoration: none; }
+.assetsHeader .homeNavButton { font-size: 1.04rem; }
 
 .logoutButton:focus-visible {
   outline: none;
@@ -2063,4 +2064,6 @@
     padding-left: 14px;
     font-size: 0.86rem;
   }
+
+  .assetsHeader .homeNavButton { font-size: 1rem; }
 }
