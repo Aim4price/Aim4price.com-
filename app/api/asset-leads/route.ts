@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from '../../../lib/auth-session';
+import { getServerSession, isOwnerAppSession } from '../../../lib/auth-session';
+import {
+  assertAssetHasOpenMaintenance,
+  grantDealerMaintenanceTracking,
+} from '../../../lib/dealer-maintenance-tracker';
 import { createAssetLead, listAssetLeadsForUser, normalizeLeadType } from '../../../lib/partner-access';
 
 export const runtime = 'nodejs';
@@ -11,6 +15,7 @@ type CreateAssetLeadBody = {
   leadType?: unknown;
   ownerMessage?: unknown;
   includedSections?: unknown;
+  trackMaintenance?: unknown;
 };
 
 function unauthorized() {
@@ -60,12 +65,17 @@ export async function POST(request: NextRequest) {
   const partnerUserId = String(body.partnerUserId ?? '').trim();
   const leadType = normalizeLeadType(body.leadType);
   const includedSections = asRecord(body.includedSections);
+  const trackMaintenance = body.trackMaintenance === true;
 
   if (!assetId || !partnerUserId || !leadType) {
     return NextResponse.json({ ok: false, error: 'Choose a valid asset, partner and lead type.' }, { status: 400 });
   }
 
   try {
+    if (trackMaintenance) {
+      await assertAssetHasOpenMaintenance(session.user.id, assetId);
+    }
+
     const lead = await createAssetLead({
       ownerUserId: session.user.id,
       ownerName: session.user.name,
@@ -74,10 +84,24 @@ export async function POST(request: NextRequest) {
       partnerUserId,
       leadType,
       ownerMessage: typeof body.ownerMessage === 'string' ? body.ownerMessage : null,
-      includedSections,
+      includedSections: {
+        ...(includedSections ?? {}),
+        maintenanceTrackingEnabled: trackMaintenance,
+      },
     });
 
-    return NextResponse.json({ ok: true, lead });
+    const trackingAccess = trackMaintenance
+      ? await grantDealerMaintenanceTracking({
+          ownerUserId: session.user.id,
+          dealerUserId: partnerUserId,
+          assetId,
+          actorType: 'owner',
+          actorId: isOwnerAppSession(session) ? session.ownerApp.ownerAppUserId : session.user.id,
+          actorName: isOwnerAppSession(session) ? session.ownerApp.displayName : session.user.name,
+        })
+      : null;
+
+    return NextResponse.json({ ok: true, lead, trackingAccess });
   } catch (error) {
     if (error instanceof Error && error.message === 'ASSET_NOT_FOUND') {
       return NextResponse.json({ ok: false, error: 'Asset not found.' }, { status: 404 });
@@ -85,6 +109,13 @@ export async function POST(request: NextRequest) {
 
     if (error instanceof Error && error.message === 'PARTNER_NOT_FOUND') {
       return NextResponse.json({ ok: false, error: 'Selected partner could not be found.' }, { status: 404 });
+    }
+
+    if (error instanceof Error && error.message === 'OPEN_MAINTENANCE_REQUIRED') {
+      return NextResponse.json(
+        { ok: false, error: 'Create an open maintenance schedule before adding this asset to the dealer tracker.' },
+        { status: 400 },
+      );
     }
 
     console.error('asset leads POST failed', error);
