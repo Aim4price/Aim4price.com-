@@ -3050,3 +3050,357 @@
   height: clamp(4.6rem, 18vw, 5.45rem);
   border-radius: 1.55rem;
 }
+
+.editorContent,
+.shareFlow {
+  display: contents;
+}
+
+.fieldManagerMobileSurface .fieldManagerEditorOverlay,
+.fieldManagerMobileSurface .fieldManagerShareOverlay {
+  align-items: flex-start;
+  justify-content: center;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding:
+    max(16px, env(safe-area-inset-top))
+    12px
+    max(28px, env(safe-area-inset-bottom));
+  background:
+    radial-gradient(circle at 50% 0%, rgba(111, 197, 150, 0.12), transparent 30%),
+    linear-gradient(180deg, #f7fbf8 0%, #ffffff 52%, #f4f9f6 100%);
+  backdrop-filter: none;
+}
+
+.fieldManagerMobileSurface .fieldManagerShareOverlay .modalBackdrop {
+  display: none;
+}
+
+.fieldManagerMobileSurface .fieldManagerEditorCard,
+.fieldManagerMobileSurface .fieldManagerShareModal {
+  width: min(100%, 560px);
+  min-height: auto;
+  max-height: none;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.fieldManagerMobileSurface .fieldManagerEditorCard {
+  display: grid;
+}
+
+.fieldManagerMobileSurface .fieldManagerEditorCard .editorHeader,
+.fieldManagerMobileSurface .fieldManagerShareModal .shareHeader {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+  padding: 0 2px 16px;
+  border: 0;
+  background: transparent;
+}
+
+.fieldManagerMobileSurface .fieldManagerEditorCard .editorTitleBlock,
+.fieldManagerMobileSurface .fieldManagerShareModal .shareTitleBlock {
+  grid-row: 2;
+  justify-items: center;
+  gap: 7px;
+  padding: 8px 3px 0;
+  text-align: center;
+}
+
+.fieldManagerMobileSurface .fieldManagerEditorEyebrow,
+.fieldManagerMobileSurface .fieldManagerShareModal .shareTitleBlock > span {
+  color: #236851;
+  font-size: 0.7rem;
+  font-weight: 950;
+  letter-spacing: 0.12em;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.fieldManagerMobileSurface .fieldManagerEditorCard .editorHeader h3,
+.fieldManagerMobileSurface .fieldManagerShareModal .shareTitleBlock h3 {
+  margin: 0;
+  color: #12352d;
+  font-size: clamp(1.9rem, 8vw, 2.45rem);
+  font-weight: 900;
+  letter-spacing: -0.045em;
+  line-height: 1.04;
+  text-align: center;
+}
+
+.fieldManagerMobileSurface .fieldManagerEditorCard .editorHeader p,
+.fieldManagerMobileSurface .fieldManagerShareModal .shareTitleBlock p {
+  max-width: none;
+  margin: 0;
+  color: rgba(18, 53, 45, 0.64);
+  font-size: 0.94rem;
+  font-weight: 650;
+  line-height: 1.48;
+  text-align: center;
+}
+
+.fieldManagerPageBackButton {
+  grid-row: 1;
+  justify-self: start;
+  width: min(100%, 164px);
+  min-height: 50px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  box-sizing: border-box;
+  border: 1.5px solid #6fc596;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #ffffff 0%, #e6f8ef 100%);
+  color: #0a543d;
+  padding: 0 16px;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(10, 84, 61, 0.1);
+}
+
+.fieldManagerPageBackButton > span:first-child {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.fieldManagerPageBackButton:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.12), 0 10px 24px rgba(18, 53, 45, 0.08);
+}
+
+.fieldManagerPageBackButton:active {
+  transform: translateY(1px);
+}
+
+.fieldManagerMobileSurface .fieldManagerEditorContent,
+.fieldManagerMobileSurface .fieldManagerShareFlow {
+  display: grid;
+  overflow: hidden;
+  border: 1px solid rgba(18, 53, 45, 0.12);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 16px 38px rgba(18, 53, 45, 0.08);
+}
+
+.fieldManagerMobileSurface .fieldManagerEditorContent .editorBody,
+.fieldManagerMobileSurface .fieldManagerShareFlow .shareBody {
+  min-height: auto;
+  overflow: visible;
+  gap: 15px;
+  padding: 17px;
+  background: transparent;
+}
+
+.fieldManagerMobileSurface .fieldManagerEditorContent .editorBody {
+  flex: none;
+}
+
+.fieldManagerMobileSurface .fieldManagerScreenDescription {
+  margin: 0;
+  color: rgba(18, 53, 45, 0.64);
+  font-size: 0.94rem;
+  font-weight: 650;
+  line-height: 1.48;
+  text-align: center;
+}
+
+.fieldManagerMobileSurface .fieldManagerEditorContent .field,
+.fieldManagerMobileSurface .fieldManagerShareFlow .field {
+  gap: 7px;
+}
+
+.fieldManagerMobileSurface .fieldManagerEditorContent .field > span,
+.fieldManagerMobileSurface .fieldManagerShareFlow .field > span {
+  color: rgba(18, 53, 45, 0.72);
+  font-size: 0.78rem;
+  font-weight: 850;
+  letter-spacing: 0.025em;
+}
+
+.fieldManagerMobileSurface .fieldManagerEditorContent .field input,
+.fieldManagerMobileSurface .fieldManagerEditorContent .field select,
+.fieldManagerMobileSurface .fieldManagerEditorContent .field textarea,
+.fieldManagerMobileSurface .fieldManagerShareFlow .field input,
+.fieldManagerMobileSurface .fieldManagerShareFlow .field select,
+.fieldManagerMobileSurface .fieldManagerShareFlow .field textarea,
+.fieldManagerMobileSurface .fieldManagerShareFlow .shareSearchBar input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid rgba(18, 53, 45, 0.16);
+  border-radius: 14px;
+  background: #fbfdfb;
+  color: #12352d;
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 700;
+  outline: none;
+  box-shadow: none;
+}
+
+.fieldManagerMobileSurface .fieldManagerEditorContent .field input,
+.fieldManagerMobileSurface .fieldManagerEditorContent .field select,
+.fieldManagerMobileSurface .fieldManagerShareFlow .field input,
+.fieldManagerMobileSurface .fieldManagerShareFlow .field select,
+.fieldManagerMobileSurface .fieldManagerShareFlow .shareSearchBar input {
+  min-height: 52px;
+  padding: 0 13px;
+}
+
+.fieldManagerMobileSurface .fieldManagerEditorContent .field textarea,
+.fieldManagerMobileSurface .fieldManagerShareFlow .field textarea {
+  min-height: 150px;
+  padding: 13px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.fieldManagerMobileSurface .fieldManagerEditorContent .fieldManagerNotesField textarea {
+  min-height: 12rem;
+}
+
+.fieldManagerMobileSurface .fieldManagerEditorContent .field input:focus,
+.fieldManagerMobileSurface .fieldManagerEditorContent .field select:focus,
+.fieldManagerMobileSurface .fieldManagerEditorContent .field textarea:focus,
+.fieldManagerMobileSurface .fieldManagerShareFlow .field input:focus,
+.fieldManagerMobileSurface .fieldManagerShareFlow .field select:focus,
+.fieldManagerMobileSurface .fieldManagerShareFlow .field textarea:focus,
+.fieldManagerMobileSurface .fieldManagerShareFlow .shareSearchBar input:focus {
+  border-color: rgba(37, 71, 51, 0.62);
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(37, 71, 51, 0.09);
+}
+
+.fieldManagerMobileSurface .fieldManagerEditorContent .largeInput {
+  min-height: 72px !important;
+  font-size: clamp(1.8rem, 9vw, 2.5rem) !important;
+}
+
+.fieldManagerMobileSurface .fieldManagerEditorContent .centerStack {
+  gap: 15px;
+}
+
+.fieldManagerMobileSurface .fieldManagerEditorContent .modalStack,
+.fieldManagerMobileSurface .fieldManagerEditorContent .serviceModeGrid,
+.fieldManagerMobileSurface .fieldManagerEditorContent .optionList,
+.fieldManagerMobileSurface .fieldManagerEditorContent .servicePanel,
+.fieldManagerMobileSurface .fieldManagerEditorContent .serviceDetailsCard {
+  gap: 12px;
+}
+
+.fieldManagerMobileSurface .fieldManagerEditorContent .serviceModeCard,
+.fieldManagerMobileSurface .fieldManagerEditorContent .mediaButton,
+.fieldManagerMobileSurface .fieldManagerEditorContent .listOptionButton,
+.fieldManagerMobileSurface .fieldManagerEditorContent .servicePanel,
+.fieldManagerMobileSurface .fieldManagerEditorContent .serviceDetailsCard {
+  border-color: rgba(18, 53, 45, 0.14);
+  border-radius: 15px;
+  background: #fbfdfb;
+  box-shadow: none;
+}
+
+.fieldManagerMobileSurface .fieldManagerEditorContent .helperText {
+  font-size: 0.88rem;
+}
+
+.fieldManagerMobileSurface .fieldManagerEditorContent .editorFooter,
+.fieldManagerMobileSurface .fieldManagerShareFlow .shareFooter {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 0 17px 17px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.fieldManagerMobileSurface .fieldManagerEditorContent .editorFooter .primaryButton,
+.fieldManagerMobileSurface .fieldManagerEditorContent .editorFooter .secondaryButton,
+.fieldManagerMobileSurface .fieldManagerShareFlow .shareFooter .primaryButton,
+.fieldManagerMobileSurface .fieldManagerShareFlow .shareFooter .secondaryButton,
+.fieldManagerMobileSurface .fieldManagerShareFlow .shareSearchBar .secondaryButton {
+  min-height: 54px;
+  border-radius: 15px;
+  padding: 0 16px;
+  font-size: 0.94rem;
+  font-weight: 850;
+}
+
+.fieldManagerMobileSurface .fieldManagerEditorContent .editorFooter .primaryButton,
+.fieldManagerMobileSurface .fieldManagerShareFlow .shareFooter .primaryButton {
+  border: 1.5px solid #6fc596;
+  background: linear-gradient(180deg, #ffffff 0%, #e6f8ef 100%);
+  color: #0a543d;
+  box-shadow: 0 10px 22px rgba(10, 84, 61, 0.09);
+}
+
+.fieldManagerMobileSurface .fieldManagerEditorContent .editorFooter .secondaryButton,
+.fieldManagerMobileSurface .fieldManagerShareFlow .shareFooter .secondaryButton,
+.fieldManagerMobileSurface .fieldManagerShareFlow .shareSearchBar .secondaryButton {
+  border: 1px solid rgba(18, 53, 45, 0.16);
+  background: #ffffff;
+  color: #174637;
+  box-shadow: none;
+}
+
+.fieldManagerMobileSurface .fieldManagerEditorContent .editorFooter .secondaryButton {
+  order: 1;
+}
+
+.fieldManagerMobileSurface .fieldManagerEditorContent .editorFooter .primaryButton {
+  order: 2;
+}
+
+.fieldManagerMobileSurface .fieldManagerShareFlow .shareFooter > :only-child {
+  grid-column: 1 / -1;
+}
+
+.fieldManagerMobileSurface .fieldManagerShareFlow .shareSearchBar {
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.fieldManagerMobileSurface .fieldManagerShareFlow .shareDealerList {
+  min-height: 0;
+  overflow: visible;
+  border-color: rgba(18, 53, 45, 0.12);
+  border-radius: 15px;
+  background: #f7fbf8;
+  box-shadow: none;
+}
+
+.fieldManagerMobileSurface .fieldManagerShareFlow .shareDealerCard,
+.fieldManagerMobileSurface .fieldManagerShareFlow .shareStepHeader,
+.fieldManagerMobileSurface .fieldManagerShareFlow .shareConsentCheck,
+.fieldManagerMobileSurface .fieldManagerShareFlow .shareSelectedPanel,
+.fieldManagerMobileSurface .fieldManagerShareFlow .shareTrackingChoice {
+  border-color: rgba(18, 53, 45, 0.14);
+  border-radius: 14px;
+  box-shadow: none;
+}
+
+@media (max-width: 560px) {
+  .fieldManagerMobileSurface .fieldManagerShareFlow .shareSearchBar {
+    grid-template-columns: 1fr;
+  }
+
+  .fieldManagerMobileSurface .fieldManagerEditorContent .editorFooter,
+  .fieldManagerMobileSurface .fieldManagerShareFlow .shareFooter {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 390px) {
+  .fieldManagerPageBackButton {
+    padding-right: 14px;
+    padding-left: 14px;
+    font-size: 0.86rem;
+  }
+}

@@ -3236,6 +3236,57 @@ export default function ScanClient({
   const selectedSharePartnerWebsiteHref = selectedSharePartner
     ? normalizeWebsiteHref(selectedSharePartner.websiteUrl)
     : "";
+  const editorEyebrow = activeEditor === "usage"
+    ? "Usage"
+    : activeEditor === "service"
+      ? "Maintenance"
+      : activeEditor === "notes"
+        ? "Notes"
+        : "Photos";
+  const editorTitle = activeEditor === "usage"
+    ? isFieldManagerMode
+      ? "Update Usage"
+      : asset?.usageMode === "km"
+        ? "Capture the latest kilometres"
+        : "Capture the latest hours"
+    : activeEditor === "service"
+      ? showServicePhotoStep
+        ? "Add Photos"
+        : draft.serviceMode === "checked"
+          ? serviceCopy.checkedTitle
+          : draft.serviceMode === "serviced"
+            ? showServiceDetailsStep
+              ? "Service Details"
+              : serviceCopy.servicedTitle
+            : draft.serviceMode === "repaired"
+              ? showServiceDetailsStep
+                ? "Repairer Details"
+                : serviceCopy.repairedTitle
+              : "Maintenance"
+      : activeEditor === "notes"
+        ? "Notes"
+        : isFieldManagerMode
+          ? "Add Photos"
+          : "Photos";
+  const editorDescription = activeEditor === "usage"
+    ? "Use the latest reading shown on the machine."
+    : activeEditor === "service"
+      ? showServicePhotoStep
+        ? "Add clear photos."
+        : draft.serviceMode === "checked"
+          ? serviceCopy.checkedPrompt
+          : draft.serviceMode === "serviced"
+            ? showServiceDetailsStep
+              ? serviceCopy.detailsSubheader
+              : serviceCopy.servicedPrompt
+            : draft.serviceMode === "repaired"
+              ? showServiceDetailsStep
+                ? serviceCopy.detailsSubheader
+                : serviceCopy.repairedPrompt
+              : "Choose update type."
+      : activeEditor === "notes"
+        ? "Record any issues, problems or follow-up needed."
+        : "Upload existing photos or take new ones.";
   if (isDone) {
     return (
       <main className={pageClassName}>
@@ -3542,7 +3593,7 @@ export default function ScanClient({
                   {isFieldManagerMode ? (
                     <button type="button" className={styles.actionCard} onClick={openSchedulePage}>
                       <span className={styles.actionIconWrap}><ServiceIcon className={styles.actionIcon} /></span>
-                      <span className={styles.actionTextBlock}><strong className={styles.scheduleActionTitle}><span>Schedule</span><span>maintenance</span></strong><small>Set the next service</small></span>
+                      <span className={styles.actionTextBlock}><strong className={styles.scheduleActionTitle}><span>Schedule</span><span>Maintenance</span></strong><small>Set the next service</small></span>
                     </button>
                   ) : null}
 
@@ -3600,40 +3651,57 @@ export default function ScanClient({
       ) : null}
 
       {asset && isShareModalOpen && canUseDealerShare ? (
-        <div className={styles.shareOverlay}>
+        <div className={`${styles.shareOverlay} ${isFieldManagerMode ? styles.fieldManagerShareOverlay : ""}`}>
           <div className={styles.modalBackdrop} onClick={closeShareModal} />
           <section
-            className={styles.shareModal}
+            className={`${styles.shareModal} ${isFieldManagerMode ? styles.fieldManagerShareModal : ""}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="share-modal-title"
           >
             <header className={styles.shareHeader}>
               <div className={styles.shareTitleBlock}>
-                <span>{isFieldManagerMode ? "Contact Dealer" : "Dealer help"}</span>
+                <span>{isFieldManagerMode ? "Dealer Support" : "Dealer help"}</span>
                 <h3 id="share-modal-title">
                   {shareLeadStep === "consent"
-                    ? "Confirm request"
+                    ? "Confirm Request"
                     : shareLeadStep === "message"
-                      ? "Message to dealer"
+                      ? "Message to Dealer"
                       : shareLeadStep === "settings"
-                        ? "Tracking settings"
-                      : isFieldManagerMode ? "Choose a dealer" : "Get assistance"}
+                        ? "Tracking Settings"
+                      : isFieldManagerMode ? "Contact Dealer" : "Get assistance"}
                 </h3>
-                <p>{isFieldManagerMode ? "Search and choose the dealer you want to contact." : "Get parts quotes, repair help or dealer support."}</p>
+                <p>{isFieldManagerMode ? asset.title : "Get parts quotes, repair help or dealer support."}</p>
               </div>
-              <button
-                type="button"
-                className={styles.iconButton}
-                onClick={closeShareModal}
-                aria-label="Close dealer share"
-              >
-                <CloseIcon className={styles.closeIcon} />
-              </button>
+              {isFieldManagerMode ? (
+                <button
+                  type="button"
+                  className={styles.fieldManagerPageBackButton}
+                  onClick={closeShareModal}
+                >
+                  <span aria-hidden="true">←</span>
+                  <span>Back</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className={styles.iconButton}
+                  onClick={closeShareModal}
+                  aria-label="Close dealer share"
+                >
+                  <CloseIcon className={styles.closeIcon} />
+                </button>
+              )}
             </header>
 
+            <div className={`${styles.shareFlow} ${isFieldManagerMode ? styles.fieldManagerShareFlow : ""}`}>
             {!shareLeadStep ? (
               <div className={styles.shareBody}>
+                {isFieldManagerMode ? (
+                  <p className={styles.fieldManagerScreenDescription}>
+                    Search and choose the dealer you want to contact.
+                  </p>
+                ) : null}
                 <button type="button" className={styles.shareTrackingSettingsButton} onClick={openShareTrackingSettings}>
                   <span><strong>Dealer tracking settings</strong><small>{shareTrackingAccess.length ? `${shareTrackingAccess.length} dealer${shareTrackingAccess.length === 1 ? "" : "s"} tracking this asset` : "No dealer tracking this asset"}</small></span>
                   <b aria-hidden="true">›</b>
@@ -3932,77 +4000,52 @@ export default function ScanClient({
                 </button>
               </div>
             )}
+            </div>
           </section>
         </div>
       ) : null}
 
       {asset && activeEditor ? (
-        <div className={styles.editorOverlay}>
+        <div className={`${styles.editorOverlay} ${isFieldManagerMode ? styles.fieldManagerEditorOverlay : ""}`}>
           <div
-            className={`${styles.editorCard} ${activeEditor && activeEditor !== "usage" ? styles.actionEditorCard : ""}`}
+            className={`${styles.editorCard} ${activeEditor && activeEditor !== "usage" ? styles.actionEditorCard : ""} ${isFieldManagerMode ? styles.fieldManagerEditorCard : ""}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="scan-editor-title"
           >
             <div className={styles.editorHeader}>
               <div className={styles.editorTitleBlock}>
-                <h3 id="scan-editor-title">
-                  {activeEditor === "usage"
-                    ? asset.usageMode === "km"
-                      ? "Capture the latest kilometres"
-                      : "Capture the latest hours"
-                    : activeEditor === "service"
-                      ? showServicePhotoStep
-                        ? "Photos"
-                        : draft.serviceMode === "checked"
-                          ? serviceCopy.checkedTitle
-                          : draft.serviceMode === "serviced"
-                            ? showServiceDetailsStep
-                              ? "Service details"
-                              : serviceCopy.servicedTitle
-                            : draft.serviceMode === "repaired"
-                              ? showServiceDetailsStep
-                                ? "Repairer details"
-                                : serviceCopy.repairedTitle
-                              : "Maintenance"
-                      : activeEditor === "notes"
-                        ? "Notes"
-                        : "Photos"}
-                </h3>
-                <p>
-                  {activeEditor === "usage"
-                    ? "Use the latest reading shown on the machine."
-                    : activeEditor === "service"
-                      ? showServicePhotoStep
-                        ? "Add clear photos."
-                        : draft.serviceMode === "checked"
-                          ? serviceCopy.checkedPrompt
-                          : draft.serviceMode === "serviced"
-                            ? showServiceDetailsStep
-                              ? serviceCopy.detailsSubheader
-                              : serviceCopy.servicedPrompt
-                            : draft.serviceMode === "repaired"
-                              ? showServiceDetailsStep
-                                ? serviceCopy.detailsSubheader
-                                : serviceCopy.repairedPrompt
-                              : "Choose update type."
-                      : activeEditor === "notes"
-                        ? "Issues & Problems"
-                        : "Add clear photos."}
-                </p>
+                {isFieldManagerMode ? <span className={styles.fieldManagerEditorEyebrow}>{editorEyebrow}</span> : null}
+                <h3 id="scan-editor-title">{editorTitle}</h3>
+                <p>{isFieldManagerMode ? asset.title : editorDescription}</p>
               </div>
 
-              <button
-                type="button"
-                className={styles.iconButton}
-                onClick={closeEditor}
-                aria-label="Close editor"
-              >
-                <CloseIcon className={styles.closeIcon} />
-              </button>
+              {isFieldManagerMode ? (
+                <button
+                  type="button"
+                  className={styles.fieldManagerPageBackButton}
+                  onClick={closeEditor}
+                >
+                  <span aria-hidden="true">←</span>
+                  <span>Back</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className={styles.iconButton}
+                  onClick={closeEditor}
+                  aria-label="Close editor"
+                >
+                  <CloseIcon className={styles.closeIcon} />
+                </button>
+              )}
             </div>
 
+            <div className={`${styles.editorContent} ${isFieldManagerMode ? styles.fieldManagerEditorContent : ""}`}>
             <div className={styles.editorBody}>
+              {isFieldManagerMode ? (
+                <p className={styles.fieldManagerScreenDescription}>{editorDescription}</p>
+              ) : null}
               {activeEditor === "usage" && isMeterUsageMode(asset) ? (
                 <div className={styles.centerStack}>
                   <label className={styles.field}>
@@ -4840,6 +4883,7 @@ export default function ScanClient({
               >
                 {saveButtonLabel}
               </button>
+            </div>
             </div>
           </div>
         </div>
