@@ -220,7 +220,7 @@ export default function FieldManagerMaintenanceClient({ publicAssetCode, assetId
           <>
             <section className={styles.maintenanceIntro}>
               <span>Maintenance</span>
-              <h1>Schedule maintenance</h1>
+              <h1>Schedule Maintenance</h1>
               <p>{asset.title}</p>
             </section>
 
