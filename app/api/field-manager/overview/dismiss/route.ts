@@ -19,7 +19,9 @@ function asText(value: unknown, maxLength: number): string {
 }
 
 function readRange(value: unknown): FieldManagerOverviewRange | null {
-  return value === 'week' || value === 'month' ? value : null;
+  if (value === 'week') return 'week';
+  if (value === 'upcoming' || value === 'month') return 'upcoming';
+  return null;
 }
 
 export async function POST(request: NextRequest) {
