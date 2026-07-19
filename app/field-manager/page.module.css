@@ -1063,6 +1063,208 @@
   line-height: 1.42;
 }
 
+.maintenancePage {
+  background:
+    radial-gradient(circle at 50% 0%, rgba(111, 197, 150, 0.12), transparent 30%),
+    linear-gradient(180deg, #f7fbf8 0%, #ffffff 52%, #f4f9f6 100%);
+}
+
+.maintenanceShell {
+  width: min(calc(100% - var(--field-page-gutter)), 560px);
+  padding-bottom: max(28px, env(safe-area-inset-bottom));
+}
+
+.maintenanceIntro {
+  display: grid;
+  gap: 7px;
+  padding: 8px 3px 16px;
+  text-align: center;
+}
+
+.maintenanceIntro > span,
+.maintenanceSuccess > span {
+  color: #236851;
+  font-size: 0.7rem;
+  font-weight: 950;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.maintenanceIntro h1,
+.maintenanceSuccess h1 {
+  margin: 0;
+  color: #12352d;
+  font-size: clamp(1.9rem, 8vw, 2.45rem);
+  font-weight: 900;
+  letter-spacing: -0.045em;
+  line-height: 1.04;
+}
+
+.maintenanceIntro p,
+.maintenanceSuccess p,
+.maintenanceDescription {
+  margin: 0;
+  color: rgba(18, 53, 45, 0.64);
+  font-size: 0.94rem;
+  font-weight: 650;
+  line-height: 1.48;
+}
+
+.maintenanceCard,
+.maintenanceSuccess {
+  border: 1px solid rgba(18, 53, 45, 0.12);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.97);
+  padding: 17px;
+  box-shadow: 0 16px 38px rgba(18, 53, 45, 0.08);
+}
+
+.maintenanceCard {
+  display: grid;
+  gap: 15px;
+}
+
+.maintenanceDescription {
+  text-align: center;
+}
+
+.maintenanceFormGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.maintenanceField {
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+}
+
+.maintenanceField > span {
+  color: rgba(18, 53, 45, 0.72);
+  font-size: 0.78rem;
+  font-weight: 850;
+  letter-spacing: 0.025em;
+}
+
+.maintenanceField input,
+.maintenanceField select,
+.maintenanceField textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid rgba(18, 53, 45, 0.16);
+  border-radius: 14px;
+  background: #fbfdfb;
+  color: #12352d;
+  padding: 0 13px;
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 700;
+  outline: none;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+}
+
+.maintenanceField input,
+.maintenanceField select {
+  min-height: 52px;
+}
+
+.maintenanceField textarea {
+  min-height: 150px;
+  padding-top: 13px;
+  padding-bottom: 13px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.maintenanceField input:focus,
+.maintenanceField select:focus,
+.maintenanceField textarea:focus {
+  border-color: rgba(37, 71, 51, 0.62);
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(37, 71, 51, 0.09);
+}
+
+.maintenanceFieldFull {
+  grid-column: 1 / -1;
+}
+
+.maintenanceRecurringChoice {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  border: 1px solid rgba(111, 197, 150, 0.42);
+  border-radius: 15px;
+  background: #f1f9f4;
+  padding: 13px;
+  cursor: pointer;
+}
+
+.maintenanceRecurringChoice > input {
+  width: 20px;
+  height: 20px;
+  margin: 1px 0 0;
+  accent-color: #254733;
+}
+
+.maintenanceRecurringChoice > span {
+  display: grid;
+  gap: 3px;
+}
+
+.maintenanceRecurringChoice strong {
+  color: #12352d;
+  font-size: 0.9rem;
+  font-weight: 850;
+}
+
+.maintenanceRecurringChoice small {
+  color: rgba(18, 53, 45, 0.64);
+  font-size: 0.78rem;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.maintenanceAddButton,
+.maintenanceSuccess a {
+  min-height: 54px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  border: 1.5px solid #6fc596;
+  border-radius: 15px;
+  background: linear-gradient(180deg, #ffffff 0%, #e6f8ef 100%);
+  color: #0a543d;
+  padding: 0 16px;
+  font: inherit;
+  font-size: 0.94rem;
+  font-weight: 850;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: 0 10px 22px rgba(10, 84, 61, 0.09);
+}
+
+.maintenanceAddButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.maintenanceSuccess {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  text-align: center;
+}
+
+.maintenanceSuccess a {
+  width: 100%;
+  margin-top: 4px;
+}
+
 @media (min-width: 640px) {
   .assetMetaGrid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1118,5 +1320,15 @@
   .overviewCard {
     border-radius: 20px;
     padding: 14px;
+  }
+}
+
+@media (max-width: 560px) {
+  .maintenanceFormGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .maintenanceFieldFull {
+    grid-column: auto;
   }
 }
