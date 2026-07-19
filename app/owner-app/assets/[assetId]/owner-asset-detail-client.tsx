@@ -59,7 +59,7 @@ const MANAGE_SECTIONS: Array<{ id: OwnerAssetManageSection; group: OwnerAssetMan
   { id: 'location', group: 'asset', title: 'Location' },
   { id: 'media', group: 'asset', title: 'Photos & documents' },
   { id: 'reports', group: 'records', title: 'Reports' },
-  { id: 'maintenance', group: 'records', title: 'Maintenance' },
+  { id: 'maintenance', group: 'records', title: 'Schedule maintenance' },
   { id: 'finance', group: 'records', title: 'Finance' },
   { id: 'insurance', group: 'records', title: 'Insurance' },
   { id: 'licence', group: 'records', title: 'Licence' },
@@ -791,7 +791,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
                     <strong>{dateOnly(licenceRenewalDate)}</strong>
                     <small>{licenceRenewalDate ? 'Open licence ›' : 'Add date ›'}</small>
                   </Link>
-                  <Link href={`${manageBase}/maintenance`} prefetch={false}><span>Maintenance</span><strong>{upcomingMaintenance ? upcomingMaintenance.computedStatusLabel : 'Nothing upcoming'}</strong><small>Open ›</small></Link>
+                  <Link href={`/owner-app/assets/${encodeURIComponent(assetId)}/maintenance`} prefetch={false}><span>Maintenance</span><strong>{upcomingMaintenance ? upcomingMaintenance.computedStatusLabel : 'Nothing upcoming'}</strong><small>Schedule ›</small></Link>
                   {draft.marketplaceStatus === 'live' ? (
                     <Link href={`${manageBase}/marketplace`} prefetch={false}><span>Marketplace</span><strong>Listed</strong><small>Open listing ›</small></Link>
                   ) : null}
@@ -848,7 +848,9 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
                     {groupItems.map((item) => (
                       <Link
                         key={item.id}
-                        href={`/owner-app/assets/${encodeURIComponent(assetId)}/manage/${item.id}`}
+                        href={item.id === 'maintenance'
+                          ? `/owner-app/assets/${encodeURIComponent(assetId)}/maintenance`
+                          : `/owner-app/assets/${encodeURIComponent(assetId)}/manage/${item.id}`}
                         prefetch={false}
                         className={`${styles.manageButton} ${item.tone === 'danger' ? styles.manageButtonDanger : ''}`}
                       >
