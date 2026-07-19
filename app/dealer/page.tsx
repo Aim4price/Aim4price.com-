@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { getServerSession } from '../../lib/auth-session';
 import { getAccountProfile } from '../../lib/account-profile';
 import DealerNav from './dealer-nav';
+import { listDealerMaintenanceNotifications } from '../../lib/dealer-maintenance-tracker';
 import styles from './dealer.module.css';
 
 export const runtime = 'nodejs';
@@ -12,6 +13,7 @@ const DEALER_TOOLS = [
   { label: 'Valuation', href: '/dealer/valuation' },
   { label: 'Discovery', href: '/dealer/discovery' },
   { label: 'Leads', href: '/dealer/leads' },
+  { label: 'Maintenance Tracker', href: '/dealer/maintenance' },
   { label: 'Marketplace', href: '/dealer/marketplace' },
 ] as const;
 
@@ -29,12 +31,19 @@ export default async function DealerHome() {
     redirect('/dealer/login');
   }
 
+  const maintenanceNotifications = await listDealerMaintenanceNotifications(session.user.id).catch(() => []);
+  const unreadMaintenanceCount = maintenanceNotifications.filter((notification) => !notification.isRead).length;
+  const dealerTools = [
+    ...DEALER_TOOLS,
+    { label: unreadMaintenanceCount ? `Notifications (${unreadMaintenanceCount})` : 'Notifications', href: '/dealer/notifications' },
+  ];
+
   return (
     <main className={styles.shell}>
       <DealerNav showBack={false} />
       <div className={styles.content}>
         <nav className={styles.launcher} aria-label="Dealer tools">
-          {DEALER_TOOLS.map((tool) => (
+          {dealerTools.map((tool) => (
             <Link
               prefetch={false}
               key={tool.href}
