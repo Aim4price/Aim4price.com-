@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { requireOwnerAppPageAccess } from '../../../../../../lib/owner-app-access';
 import OwnerAppNav from '../../../../owner-app-nav';
 import styles from '../../../../owner-app.module.css';
@@ -27,6 +27,9 @@ export default async function OwnerAssetManageSectionPage({ params }: {
   await requireOwnerAppPageAccess();
   const section = params.section as OwnerAssetManageSection;
   if (!MANAGE_SECTIONS.has(section)) notFound();
+  if (section === 'maintenance') {
+    redirect(`/owner-app/assets/${encodeURIComponent(params.assetId)}/maintenance`);
+  }
   const manageHref = `/owner-app/assets/${encodeURIComponent(params.assetId)}/manage`;
 
   return (
