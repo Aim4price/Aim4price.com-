@@ -339,7 +339,7 @@
 }
 
 .homeActionCard strong {
-  font-size: clamp(1.18rem, 5vw, 1.38rem);
+  font-size: clamp(1.28rem, 5.2vw, 1.5rem);
   font-weight: 800;
   line-height: 1.1;
   text-align: center;
@@ -1294,10 +1294,6 @@
   .loginHeader h2,
   .homeCard h2 {
     font-size: 1.78rem;
-  }
-
-  .homeActionCard strong {
-    font-size: 2rem;
   }
 
   .assetsHeader {
