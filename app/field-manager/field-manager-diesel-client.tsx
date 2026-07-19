@@ -74,7 +74,6 @@ function formatDate(value: string | null): string {
   if (Number.isNaN(parsed.getTime())) return 'No update yet';
   return new Intl.DateTimeFormat('en-ZA', {
     dateStyle: 'medium',
-    timeStyle: 'short',
   }).format(parsed);
 }
 

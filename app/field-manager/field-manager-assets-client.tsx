@@ -225,7 +225,7 @@ export default function FieldManagerAssetsClient() {
                   </div>
                 </div>
 
-                <div className={styles.assetMetaGrid}>
+                <div className={`${styles.assetMetaGrid} ${styles.assetMetaGridVertical}`}>
                   <div>
                     <span>Serial</span>
                     <strong>{serialDisplayText(asset)}</strong>
