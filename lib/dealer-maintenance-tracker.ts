@@ -377,8 +377,14 @@ async function buildTrackedAsset(row: DealerMaintenanceAccessRow): Promise<Deale
     (record) => record.assetId === row.asset_register_item_id && record.status === 'upcoming',
   );
   if (!openRecords.length) return null;
+  const percentageBasedAsset = openRecords.some(
+    (record) => (record.assetUsageMetric ?? record.usageMetric) === 'percentage',
+  );
 
   const ranked = [...openRecords].sort((left, right) => {
+    if (percentageBasedAsset && left.triggerType !== right.triggerType) {
+      return left.triggerType === 'date' ? -1 : 1;
+    }
     const priority = statusPriority(trackerStatus(left)) - statusPriority(trackerStatus(right));
     if (priority) return priority;
     const leftRemaining = left.remainingUsage ?? left.daysUntilDue ?? Number.POSITIVE_INFINITY;
