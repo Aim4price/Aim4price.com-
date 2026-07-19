@@ -440,7 +440,7 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
           {selectedOption.leadType === 'replacement_quote' ? (
             <label className={styles.ownerTrackingChoice}>
               <input type="checkbox" checked={trackMaintenance} onChange={(event) => setTrackMaintenance(event.target.checked)} />
-              <span><strong>Add to dealer Maintenance Tracker</strong><small>The dealer can read current usage and open maintenance schedules until tracking is removed.</small></span>
+              <span><strong>Add to dealer Maintenance Tracker</strong><small>Give this dealer read-only access to the asset&apos;s current usage and open maintenance schedules. Access ends when tracking is removed.</small></span>
             </label>
           ) : null}
           <div className={`${styles.ownerOptionsFooter} ${styles.ownerOptionsFooterSingle}`}>
