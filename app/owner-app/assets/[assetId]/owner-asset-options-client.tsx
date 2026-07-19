@@ -8,7 +8,7 @@ import styles from '../../owner-app.module.css';
 
 type PartnerType = 'dealer' | 'finance' | 'insurance';
 type AssetLeadType = 'finance' | 'insurance' | 'replacement_quote';
-type OptionsStage = 'choices' | 'partners' | 'message' | 'consent' | 'sent';
+type OptionsStage = 'choices' | 'partners' | 'message' | 'consent' | 'tracking' | 'sent';
 type IconProps = { className?: string };
 
 type Partner = {
@@ -27,6 +27,14 @@ type Partner = {
   serviceRadiusKm: number | null;
   brandFocus: string;
   services: string;
+};
+
+type DealerTrackingAccess = {
+  id: string;
+  dealerUserId: string;
+  dealerName: string;
+  grantedByName: string;
+  createdAtIso: string;
 };
 
 type QuoteOption = {
@@ -170,6 +178,10 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
   const [search, setSearch] = useState('');
   const [message, setMessage] = useState('');
   const [consentAccepted, setConsentAccepted] = useState(false);
+  const [trackMaintenance, setTrackMaintenance] = useState(false);
+  const [trackingAccess, setTrackingAccess] = useState<DealerTrackingAccess[]>([]);
+  const [loadingTracking, setLoadingTracking] = useState(false);
+  const [removingTrackingId, setRemovingTrackingId] = useState('');
   const [loadingPartners, setLoadingPartners] = useState(false);
   const [sending, setSending] = useState(false);
   const [notice, setNotice] = useState<{ tone: 'success' | 'error'; message: string } | null>(null);
@@ -199,14 +211,62 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
       ? 'Companies'
       : stage === 'consent'
         ? 'Message'
-        : 'Asset';
+        : stage === 'tracking'
+          ? 'Options'
+          : 'Asset';
   const topBackAction = stage === 'partners'
     ? () => returnToStage('choices')
     : stage === 'message'
       ? () => returnToStage('partners')
       : stage === 'consent'
         ? () => returnToStage('message')
+      : stage === 'tracking'
+        ? () => returnToStage('choices')
         : undefined;
+
+  async function openTrackingSettings() {
+    setStage('tracking');
+    setLoadingTracking(true);
+    setNotice(null);
+    try {
+      const response = await fetch(`/api/dealer-maintenance-access?assetId=${encodeURIComponent(assetId)}`, {
+        credentials: 'include',
+        cache: 'no-store',
+      });
+      const payload = await response.json().catch(() => null) as { ok?: boolean; trackingAccess?: DealerTrackingAccess[]; error?: string } | null;
+      if (!response.ok || !payload?.ok || !Array.isArray(payload.trackingAccess)) {
+        throw new Error(payload?.error || 'Failed to load dealer tracking settings.');
+      }
+      setTrackingAccess(payload.trackingAccess);
+    } catch (cause) {
+      setTrackingAccess([]);
+      setNotice({ tone: 'error', message: cause instanceof Error ? cause.message : 'Failed to load dealer tracking settings.' });
+    } finally {
+      setLoadingTracking(false);
+    }
+  }
+
+  async function stopDealerTracking(entry: DealerTrackingAccess) {
+    if (removingTrackingId) return;
+    setRemovingTrackingId(entry.id);
+    setNotice(null);
+    try {
+      const response = await fetch('/api/dealer-maintenance-access', {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ assetId, dealerUserId: entry.dealerUserId }),
+      });
+      const payload = await response.json().catch(() => null) as { ok?: boolean; error?: string } | null;
+      if (!response.ok || !payload?.ok) throw new Error(payload?.error || 'Failed to stop dealer tracking.');
+      setTrackingAccess((current) => current.filter((item) => item.id !== entry.id));
+      setNotice({ tone: 'success', message: `${entry.dealerName} can no longer track this asset.` });
+    } catch (cause) {
+      setNotice({ tone: 'error', message: cause instanceof Error ? cause.message : 'Failed to stop dealer tracking.' });
+    } finally {
+      setRemovingTrackingId('');
+    }
+  }
 
   async function loadPartners(option: QuoteOption, searchValue = '') {
     setLoadingPartners(true);
@@ -235,6 +295,7 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
     setSearch('');
     setMessage('');
     setConsentAccepted(false);
+    setTrackMaintenance(false);
     setStage('partners');
     await loadPartners(option);
   }
@@ -274,6 +335,7 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
             scanHistory: false,
             source: 'asset_register_options',
           },
+          trackMaintenance: selectedOption.leadType === 'replacement_quote' && trackMaintenance,
         }),
       });
       const payload = await response.json().catch(() => null) as { ok?: boolean; error?: string } | null;
@@ -310,6 +372,12 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
               </button>
             ))}
           </div>
+          {assetKind !== 'property' ? (
+            <button type="button" className={styles.ownerTrackingSettingsButton} onClick={() => void openTrackingSettings()}>
+              <span><strong>Dealer tracking settings</strong><small>View or remove dealers tracking this asset.</small></span>
+              <b aria-hidden="true">›</b>
+            </button>
+          ) : null}
         </section>
       ) : null}
 
@@ -369,6 +437,12 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
             <span>Your message <small>Optional</small></span>
             <textarea value={message} onChange={(event) => setMessage(event.target.value)} placeholder="Please contact me about this asset." />
           </label>
+          {selectedOption.leadType === 'replacement_quote' ? (
+            <label className={styles.ownerTrackingChoice}>
+              <input type="checkbox" checked={trackMaintenance} onChange={(event) => setTrackMaintenance(event.target.checked)} />
+              <span><strong>Add to dealer Maintenance Tracker</strong><small>The dealer can read current usage and open maintenance schedules until tracking is removed.</small></span>
+            </label>
+          ) : null}
           <div className={`${styles.ownerOptionsFooter} ${styles.ownerOptionsFooterSingle}`}>
             <button type="button" className={styles.primaryButton} onClick={() => { setConsentAccepted(false); setStage('consent'); }}>Review request</button>
           </div>
@@ -385,6 +459,7 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
             <strong>Disclaimer and POPIA note</strong>
             <p>By sending this request, you allow Aim4price to share this selected asset, its saved valuation details and your saved business contact details with {partnerName(selectedPartner)}.</p>
             <p>This is a lead request only. It does not create a finance, insurance, valuation or sales agreement. The selected company may contact you outside Aim4price.</p>
+            {selectedOption.leadType === 'replacement_quote' && trackMaintenance ? <p>The dealer will also receive ongoing read-only access to this asset&apos;s current usage and open maintenance schedules.</p> : null}
           </div>
           <label className={styles.ownerConsentField}>
             <input type="checkbox" checked={consentAccepted} onChange={(event) => setConsentAccepted(event.target.checked)} />
@@ -393,6 +468,24 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
           <div className={`${styles.ownerOptionsFooter} ${styles.ownerOptionsFooterSingle}`}>
             <button type="button" className={styles.primaryButton} onClick={() => void sendRequest()} disabled={sending || !consentAccepted}>{sending ? 'Sending…' : `Send to ${partnerName(selectedPartner)}`}</button>
           </div>
+        </section>
+      ) : null}
+
+      {stage === 'tracking' ? (
+        <section className={`${styles.section} ${styles.ownerOptionsSection}`}>
+          <div className={styles.ownerOptionsFlowHeader}>
+            <div><h2><BalancedHeadingText text="Dealer tracking settings" /></h2><p>Only the dealers below can track this asset&apos;s usage and open maintenance.</p></div>
+          </div>
+          {loadingTracking ? <p className={styles.ownerOptionsEmpty}>Loading tracking settings…</p> : trackingAccess.length ? (
+            <div className={styles.ownerTrackingList}>
+              {trackingAccess.map((entry) => (
+                <article key={entry.id} className={styles.ownerTrackingAccessCard}>
+                  <span><strong>{entry.dealerName}</strong><small>{entry.grantedByName ? `Shared by ${entry.grantedByName}` : 'Maintenance tracking active'}</small></span>
+                  <button type="button" onClick={() => void stopDealerTracking(entry)} disabled={Boolean(removingTrackingId)}>{removingTrackingId === entry.id ? 'Removing…' : 'Stop tracking'}</button>
+                </article>
+              ))}
+            </div>
+          ) : <p className={styles.ownerOptionsEmpty}>No dealer is currently tracking this asset.</p>}
         </section>
       ) : null}
 
