@@ -11,8 +11,10 @@ export const dynamic = 'force-dynamic';
 function readRange(request: NextRequest): FieldManagerOverviewRange | null {
   const requestedRange = request.nextUrl.searchParams.get('range');
 
-  if (!requestedRange) return 'week';
-  if (requestedRange === 'week' || requestedRange === 'month') return requestedRange;
+  if (!requestedRange || requestedRange === 'upcoming' || requestedRange === 'month') {
+    return 'upcoming';
+  }
+  if (requestedRange === 'week') return 'week';
   return null;
 }
 
@@ -29,7 +31,7 @@ export async function GET(request: NextRequest) {
   const range = readRange(request);
   if (!range) {
     return NextResponse.json(
-      { ok: false, error: 'Range must be either week or month.' },
+      { ok: false, error: 'Range must be either upcoming or week.' },
       { status: 400 },
     );
   }
