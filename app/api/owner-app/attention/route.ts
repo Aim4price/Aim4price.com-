@@ -5,7 +5,9 @@ import { dismissOwnerAppOverviewItem, listOwnerAppOverview, type OwnerAppOvervie
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-function range(value: unknown): OwnerAppOverviewRange { return String(value ?? '') === 'month' ? 'month' : 'week'; }
+function range(value: unknown): OwnerAppOverviewRange {
+  return String(value ?? '') === 'week' ? 'week' : 'upcoming';
+}
 
 export async function GET(request: NextRequest) {
   const access = await getOwnerAppAccess();
