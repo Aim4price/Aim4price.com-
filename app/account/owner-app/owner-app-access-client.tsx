@@ -22,11 +22,11 @@ function normalizeUsername(value: string) {
 }
 
 function normalizePasscode(value: string) {
-  return value.replace(/\D/g, '').slice(0, 4);
+  return value.slice(0, 64);
 }
 
-function isFourDigitPasscode(value: string) {
-  return /^\d{4}$/.test(value);
+function isValidPasscode(value: string) {
+  return value.length >= 4 && value.length <= 64 && /\S/.test(value);
 }
 
 function formatDate(value: string | null) {
@@ -80,8 +80,8 @@ export default function OwnerAppAccessClient() {
 
   async function createUser(event: FormEvent) {
     event.preventDefault();
-    if (!draft.displayName.trim() || normalizeUsername(draft.username).length < 3 || !isFourDigitPasscode(draft.password)) {
-      setNotice({ tone: 'error', message: 'Enter a name, a username of at least 3 characters, and a 4-digit passcode.' });
+    if (!draft.displayName.trim() || normalizeUsername(draft.username).length < 3 || !isValidPasscode(draft.password)) {
+      setNotice({ tone: 'error', message: 'Enter a name, a username of at least 3 characters, and a passcode of at least 4 characters.' });
       return;
     }
     setCreateUsernameError('');
@@ -146,8 +146,8 @@ export default function OwnerAppAccessClient() {
     if (!edit) return;
     const changes: Record<string, unknown> = { displayName: edit.displayName.trim(), username: normalizeUsername(edit.username) };
     if (edit.password) {
-      if (!isFourDigitPasscode(edit.password)) {
-        setNotice({ tone: 'error', message: 'The new passcode must contain exactly 4 digits.' });
+      if (!isValidPasscode(edit.password)) {
+        setNotice({ tone: 'error', message: 'The new passcode must contain at least 4 characters.' });
         return;
       }
       changes.password = edit.password;
@@ -215,7 +215,7 @@ export default function OwnerAppAccessClient() {
 
         <section className={styles.grid}>
           <section className={styles.card}>
-            <div className={styles.cardHeader}><h2>New Owner App user</h2><p>Create one username and 4-digit passcode.</p></div>
+            <div className={styles.cardHeader}><h2>New Owner App user</h2><p>Create one username and a passcode of at least 4 characters.</p></div>
             <form className={styles.form} onSubmit={createUser}>
               <label className={styles.field}><span>Display name</span><input value={draft.displayName} onChange={(event) => setDraft((current) => ({ ...current, displayName: event.target.value }))} placeholder="Example: Farm owner" /></label>
               <label className={styles.field}>
@@ -224,9 +224,9 @@ export default function OwnerAppAccessClient() {
                 {createUsernameError ? <small className={styles.fieldError} role="alert">{createUsernameError}</small> : null}
               </label>
               <div className={styles.field}>
-                <label className={styles.fieldLabel} htmlFor="owner-app-create-password">4-digit passcode</label>
+                <label className={styles.fieldLabel} htmlFor="owner-app-create-password">Passcode</label>
                 <div className={styles.passwordInputWrap}>
-                  <input id="owner-app-create-password" type={showCreatePassword ? 'text' : 'password'} value={draft.password} onChange={(event) => setDraft((current) => ({ ...current, password: normalizePasscode(event.target.value) }))} placeholder="4 digits" inputMode="numeric" pattern="[0-9]{4}" maxLength={4} autoComplete="new-password" />
+                  <input id="owner-app-create-password" type={showCreatePassword ? 'text' : 'password'} value={draft.password} onChange={(event) => setDraft((current) => ({ ...current, password: normalizePasscode(event.target.value) }))} placeholder="At least 4 characters" minLength={4} maxLength={64} autoComplete="new-password" />
                   <button type="button" className={styles.passwordToggleButton} onClick={() => setShowCreatePassword((current) => !current)}>{showCreatePassword ? 'Hide' : 'Show'}</button>
                 </div>
               </div>
@@ -261,9 +261,9 @@ export default function OwnerAppAccessClient() {
                             {editUsernameErrors[user.id] ? <small className={styles.fieldError} role="alert">{editUsernameErrors[user.id]}</small> : null}
                           </label>
                           <div className={styles.compactField}>
-                            <label className={styles.fieldLabel} htmlFor={`owner-app-password-${user.id}`}>New 4-digit passcode</label>
+                            <label className={styles.fieldLabel} htmlFor={`owner-app-password-${user.id}`}>New passcode</label>
                             <div className={styles.passwordInputWrap}>
-                              <input id={`owner-app-password-${user.id}`} type={visiblePasswords[user.id] ? 'text' : 'password'} value={edit.password} onChange={(event) => setEditDrafts((current) => ({ ...current, [user.id]: { ...edit, password: normalizePasscode(event.target.value) } }))} placeholder="Leave blank to keep current passcode" inputMode="numeric" pattern="[0-9]{4}" maxLength={4} />
+                              <input id={`owner-app-password-${user.id}`} type={visiblePasswords[user.id] ? 'text' : 'password'} value={edit.password} onChange={(event) => setEditDrafts((current) => ({ ...current, [user.id]: { ...edit, password: normalizePasscode(event.target.value) } }))} placeholder="Leave blank to keep current passcode" minLength={4} maxLength={64} />
                               <button type="button" className={styles.passwordToggleButton} onClick={() => setVisiblePasswords((current) => ({ ...current, [user.id]: !current[user.id] }))}>{visiblePasswords[user.id] ? 'Hide' : 'Show'}</button>
                             </div>
                           </div>
