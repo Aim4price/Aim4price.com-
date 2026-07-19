@@ -40,8 +40,8 @@ function asBoolean(value: unknown): boolean {
   return normalized === "true" || normalized === "1" || normalized === "yes";
 }
 
-function normalizeOverviewRange(value: unknown): "week" | "month" {
-  return asText(value).toLowerCase() === "month" ? "month" : "week";
+function normalizeOverviewRange(value: unknown): "week" | "upcoming" {
+  return asText(value).toLowerCase() === "week" ? "week" : "upcoming";
 }
 
 function maintenanceIdFromOpenRequest(body: OpenAssetRequest): string {
