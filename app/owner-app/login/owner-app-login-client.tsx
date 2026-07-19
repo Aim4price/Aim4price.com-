@@ -118,7 +118,7 @@ export default function OwnerAppLoginClient({ hasAccountSession = false }: { has
           <Image className={styles.loginLogo} src="/icon.png" alt="Aim4price Owner" width={76} height={76} priority />
           <span className={styles.loginEyebrow}>Aim4price Owner</span>
           <h1 id="owner-login-title">Sign In</h1>
-          <p className={styles.loginIntro}>Use the Owner App username and 4-digit passcode supplied by the account owner.</p>
+          <p className={styles.loginIntro}>Use the Owner App username and passcode supplied by the account owner.</p>
         </header>
         {accountSessionActive ? (
           <div className={styles.loginForm}>
@@ -129,7 +129,7 @@ export default function OwnerAppLoginClient({ hasAccountSession = false }: { has
         ) : (
           <form className={styles.loginForm} onSubmit={submit}>
             <div className={styles.field}><label className={styles.fieldLabel} htmlFor="owner-app-username">Username</label><input id="owner-app-username" value={username} onChange={(event) => setUsername(normalizeUsername(event.target.value))} placeholder="owner.user" autoComplete="username" autoCapitalize="none" disabled={busy} required /></div>
-            <div className={styles.field}><label className={styles.fieldLabel} htmlFor="owner-app-password">4-digit passcode</label><span className={styles.inputWrap}><input id="owner-app-password" className={styles.passwordInput} type={showPassword ? 'text' : 'password'} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Enter passcode" inputMode="numeric" autoComplete="current-password" disabled={busy} required /><button type="button" className={styles.passwordToggle} onClick={() => setShowPassword((current) => !current)} disabled={busy}>{showPassword ? 'Hide' : 'Show'}</button></span></div>
+            <div className={styles.field}><label className={styles.fieldLabel} htmlFor="owner-app-password">Passcode</label><span className={styles.inputWrap}><input id="owner-app-password" className={styles.passwordInput} type={showPassword ? 'text' : 'password'} value={password} onChange={(event) => setPassword(event.target.value.slice(0, 64))} placeholder="Enter passcode" minLength={4} maxLength={64} autoComplete="current-password" disabled={busy} required /><button type="button" className={styles.passwordToggle} onClick={() => setShowPassword((current) => !current)} disabled={busy}>{showPassword ? 'Hide' : 'Show'}</button></span></div>
             {error ? <p className={styles.error}>{error}</p> : null}
             <button type="submit" className={styles.primary} disabled={busy}>{busy ? 'Opening Aim4price Owner…' : 'Sign in'}</button>
           </form>
