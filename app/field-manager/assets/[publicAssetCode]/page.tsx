@@ -18,7 +18,7 @@ type PageProps = {
 
 export default function FieldManagerAssetUpdatePage({ params, searchParams }: PageProps) {
   const openedFromOverview = searchParams?.from === 'overview';
-  const overviewRange = searchParams?.overviewRange === 'month' ? 'month' : 'week';
+  const overviewRange = searchParams?.overviewRange === 'week' ? 'week' : 'upcoming';
 
   return (
     <ScanClient
