@@ -854,7 +854,7 @@
 
 .overviewSections {
   display: grid;
-  gap: 24px;
+  gap: 32px;
   margin-top: 20px;
 }
 
@@ -910,7 +910,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 12px;
   margin-bottom: 12px;
 }
 
@@ -935,6 +936,7 @@
 
 .overviewStatus {
   max-width: 60%;
+  margin-left: auto;
   justify-content: center;
   text-align: center;
 }
