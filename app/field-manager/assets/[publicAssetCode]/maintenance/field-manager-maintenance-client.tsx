@@ -48,16 +48,17 @@ const EMPTY_DRAFT: ScheduleDraft = {
 function defaultDraft(asset: FieldManagerAsset): ScheduleDraft {
   const usageMetric = asset.usageMode === 'km' ? 'km' : asset.usageMode === 'percent' ? 'percentage' : 'hours';
   const currentUsage = asset.usageMode === 'percent' ? asset.lifeWorkedPercent : asset.hours;
+  const dateOriented = asset.usageMode === 'none' || asset.usageMode === 'percent';
   const interval = usageMetric === 'km' ? 10000 : usageMetric === 'percentage' ? 10 : 250;
   const alert = usageMetric === 'km' ? 1000 : usageMetric === 'percentage' ? 5 : 20;
 
   return {
     ...EMPTY_DRAFT,
-    triggerType: asset.usageMode === 'none' ? 'date' : 'usage',
+    triggerType: dateOriented ? 'date' : 'usage',
     dueDate: new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10),
     dueUsage: String(Math.max(0, Math.round((currentUsage ?? 0) + interval))),
-    alertBeforeValue: String(asset.usageMode === 'none' ? 7 : alert),
-    recurringIntervalValue: String(asset.usageMode === 'none' ? 1 : interval),
+    alertBeforeValue: String(dateOriented ? 7 : alert),
+    recurringIntervalValue: String(dateOriented ? 1 : interval),
   };
 }
 
@@ -71,6 +72,17 @@ function usageLabel(asset: FieldManagerAsset): string {
   if (asset.usageMode === 'km') return 'kilometres';
   if (asset.usageMode === 'percent') return 'percentage';
   return 'hours';
+}
+
+function maintenanceTypeLabel(maintenanceType: MaintenanceType): string {
+  return maintenanceType === 'checkup' ? 'checkup' : 'service';
+}
+
+function usageNotificationLabel(asset: FieldManagerAsset, maintenanceType: MaintenanceType): string {
+  const maintenanceLabel = maintenanceTypeLabel(maintenanceType);
+  if (asset.usageMode === 'km') return `Notify kilometers before ${maintenanceLabel}`;
+  if (asset.usageMode === 'percent') return `Notify percentage points before ${maintenanceLabel}`;
+  return `Notify hours before ${maintenanceLabel}`;
 }
 
 export default function FieldManagerMaintenanceClient({ publicAssetCode, assetId, assetHref }: {
@@ -238,8 +250,17 @@ export default function FieldManagerMaintenanceClient({ publicAssetCode, assetId
                 <label className={styles.maintenanceField}>
                   <span>Based on</span>
                   <select value={draft.triggerType} onChange={(event) => changeTriggerType(event.target.value as TriggerType)}>
-                    {asset.usageMode !== 'none' ? <option value="usage">Usage</option> : null}
-                    <option value="date">Date</option>
+                    {asset.usageMode === 'percent' ? (
+                      <>
+                        <option value="date">Date</option>
+                        <option value="usage">Usage</option>
+                      </>
+                    ) : (
+                      <>
+                        {asset.usageMode !== 'none' ? <option value="usage">Usage</option> : null}
+                        <option value="date">Date</option>
+                      </>
+                    )}
                   </select>
                 </label>
 
@@ -250,7 +271,7 @@ export default function FieldManagerMaintenanceClient({ publicAssetCode, assetId
                       <input type="number" min="0" step="0.01" required value={draft.dueUsage} onChange={(event) => update('dueUsage', event.target.value)} />
                     </label>
                     <label className={styles.maintenanceField}>
-                      <span>Notify before</span>
+                      <span>{usageNotificationLabel(asset, draft.maintenanceType)}</span>
                       <input type="number" min="0" step="0.01" required value={draft.alertBeforeValue} onChange={(event) => update('alertBeforeValue', event.target.value)} />
                     </label>
                   </>
@@ -261,7 +282,7 @@ export default function FieldManagerMaintenanceClient({ publicAssetCode, assetId
                       <input type="date" required value={draft.dueDate} onChange={(event) => update('dueDate', event.target.value)} />
                     </label>
                     <label className={styles.maintenanceField}>
-                      <span>Notify days before</span>
+                      <span>Notify days before {maintenanceTypeLabel(draft.maintenanceType)}</span>
                       <input type="number" min="0" step="1" required value={draft.alertBeforeValue} onChange={(event) => update('alertBeforeValue', event.target.value)} />
                     </label>
                   </>
