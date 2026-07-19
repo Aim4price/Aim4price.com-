@@ -3746,7 +3746,6 @@ export default function ScanClient({
                           <small>{dealerPartnerLocation(partner)}</small>
                           <em>{dealerPartnerServicesDisplay(partner)}</em>
                         </span>
-                        <span className={styles.shareDealerAction}>Choose</span>
                       </button>
                     ))
                   ) : (

@@ -3386,6 +3386,23 @@
   box-shadow: none;
 }
 
+.fieldManagerMobileSurface .fieldManagerShareFlow .shareSearchBar .secondaryButton {
+  border-color: #254733;
+  background: #254733;
+  color: #ffffff;
+  box-shadow: 0 10px 22px rgba(37, 71, 51, 0.18);
+}
+
+.fieldManagerMobileSurface .fieldManagerShareFlow .shareSearchBar .secondaryButton:hover:not(:disabled) {
+  border-color: #173f30;
+  background: #173f30;
+}
+
+.fieldManagerMobileSurface .fieldManagerShareFlow .shareSearchBar .secondaryButton:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.14), 0 10px 22px rgba(37, 71, 51, 0.18);
+}
+
 @media (max-width: 560px) {
   .fieldManagerMobileSurface .fieldManagerShareFlow .shareSearchBar {
     grid-template-columns: 1fr;
@@ -3763,6 +3780,10 @@
 .fieldManagerMobileSurface .fieldManagerShareFlow .sharePhotoPanel {
   border-radius: 15px;
   box-shadow: none;
+}
+
+.fieldManagerMobileSurface .fieldManagerShareFlow .shareDealerCard {
+  grid-template-columns: auto minmax(0, 1fr);
 }
 
 @media (max-width: 390px) {
