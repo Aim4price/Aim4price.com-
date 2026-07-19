@@ -135,7 +135,9 @@ export async function verifyOwnerAppPassword(password: string, encoded: string):
 
 function validatePasscode(value: unknown): string {
   const password = typeof value === 'string' ? value : '';
-  if (!/^\d{4}$/.test(password)) throw new Error('Passcode must contain exactly 4 digits.');
+  if (password.length < 4 || password.length > 64 || !/\S/.test(password)) {
+    throw new Error('Passcode must contain between 4 and 64 characters.');
+  }
   return password;
 }
 
