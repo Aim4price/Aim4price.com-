@@ -20,7 +20,7 @@ export default function FieldManagerMaintenancePage({ params, searchParams }: Pa
   if (assetId) assetParams.set('assetId', assetId);
   if (searchParams?.from === 'overview') {
     assetParams.set('from', 'overview');
-    assetParams.set('overviewRange', searchParams?.overviewRange === 'month' ? 'month' : 'week');
+    assetParams.set('overviewRange', searchParams?.overviewRange === 'week' ? 'week' : 'upcoming');
   }
   const query = assetParams.toString();
   const assetHref = `/field-manager/assets/${encodeURIComponent(params.publicAssetCode ?? '')}${query ? `?${query}` : ''}`;
