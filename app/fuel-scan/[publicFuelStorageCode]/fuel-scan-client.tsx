@@ -56,9 +56,10 @@ type FuelLedgerAsset = {
   plateLabel: string;
   publicAssetCode: string;
   hours: number | null;
+  lifeWorkedPercent: number | null;
   fuelPercent: number | null;
   yearModel: number | null;
-  usageMetric: 'hours' | 'km' | 'both' | 'none';
+  usageMetric: 'hours' | 'km' | 'both' | 'percentage' | 'none';
   canReceiveFuel: boolean;
 };
 
@@ -192,12 +193,17 @@ function assetYearText(asset: FuelLedgerAsset): string {
 }
 
 function assetUsageText(asset: FuelLedgerAsset): string {
+  if (asset.usageMetric === 'percentage') {
+    if (asset.lifeWorkedPercent === null || !Number.isFinite(asset.lifeWorkedPercent)) return 'Not captured';
+    return `${new Intl.NumberFormat('en-ZA', { maximumFractionDigits: 1 }).format(asset.lifeWorkedPercent)}%`;
+  }
+
   if (asset.hours === null || typeof asset.hours === 'undefined' || !Number.isFinite(asset.hours)) return 'Not captured';
 
   const reading = new Intl.NumberFormat('en-ZA').format(Math.round(asset.hours));
-  if (asset.usageMetric === 'km') return `${reading} km`;
+  if (asset.usageMetric === 'km' || (asset.usageMetric === 'both' && asset.kind === 'vehicle')) return `${reading} km`;
   if (asset.usageMetric === 'none') return 'Not captured';
-  return `${reading} h`;
+  return `${reading} hours`;
 }
 
 function assetSearchText(asset: FuelLedgerAsset): string {
@@ -1249,24 +1255,14 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
 
           <section className={styles.fieldManagerAssetSearchCard}>
             <label className={styles.fieldManagerAssetSearchField}>
-              <span>Choose asset</span>
               <input
                 value={assetSearch}
                 onChange={(event) => setAssetSearch(event.target.value)}
-                placeholder="Search asset, model, reg, serial or notes"
+                placeholder="Search asset, model, reg or serial"
                 autoFocus
               />
             </label>
           </section>
-
-          <div className={styles.assetSearchSummary}>
-            <span>{filteredAssets.length} {filteredAssets.length === 1 ? 'asset' : 'assets'} available</span>
-            {assetSearch.trim() ? (
-              <button type="button" onClick={() => setAssetSearch('')}>
-                Clear search
-              </button>
-            ) : null}
-          </div>
 
           <div className={styles.fieldManagerAssetList}>
             {filteredAssets.map((asset) => {
