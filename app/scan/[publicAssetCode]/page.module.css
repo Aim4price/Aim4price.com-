@@ -3808,3 +3808,51 @@
     padding-left: 9px;
   }
 }
+
+/* Field Manager photo actions: keep both choices balanced on narrow screens. */
+.fieldManagerMobileSurface .fieldManagerEditorContent .mediaChoiceGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.fieldManagerMobileSurface .fieldManagerEditorContent .mediaButton {
+  min-height: 112px;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto auto;
+  place-items: center;
+  gap: 10px;
+  border-color: rgba(35, 104, 81, 0.16);
+  border-radius: 17px;
+  background: linear-gradient(180deg, #ffffff 0%, #f4faf7 100%);
+  padding: 14px 10px;
+  text-align: center;
+  box-shadow: 0 10px 24px rgba(18, 53, 45, 0.055);
+}
+
+.fieldManagerMobileSurface .fieldManagerEditorContent .mediaButtonIcon {
+  width: 52px;
+  height: 52px;
+  border-radius: 15px;
+  background: linear-gradient(180deg, #effaf5 0%, #def3e8 100%);
+  border-color: rgba(35, 104, 81, 0.18);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92);
+}
+
+.fieldManagerMobileSurface .fieldManagerEditorContent .mediaButtonSvg {
+  width: 24px;
+  height: 24px;
+}
+
+.fieldManagerMobileSurface .fieldManagerEditorContent .mediaButton > span:last-child {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  width: 100%;
+}
+
+.fieldManagerMobileSurface .fieldManagerEditorContent .mediaButton strong {
+  font-size: 1rem;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  text-align: center;
+}
