@@ -1,7 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { recordAdminUsageEventSafely } from '../../../../../../lib/admin-usage-events';
-import { authorizePublicQrScanAccess } from '../../../../../../lib/scan-auth';
+import {
+  authorizeFieldManagerScanAccess,
+  authorizePublicQrScanAccess,
+} from '../../../../../../lib/scan-auth';
 import { normalizePublicAssetCode } from '../../../../../../lib/scan-assets';
+import {
+  assertAssetHasOpenMaintenance,
+  grantDealerMaintenanceTracking,
+  listOwnerDealerMaintenanceAccess,
+  revokeDealerMaintenanceTracking,
+} from '../../../../../../lib/dealer-maintenance-tracker';
 import { createAssetLead, listPartnerDirectory } from '../../../../../../lib/partner-access';
 
 export const runtime = 'nodejs';
@@ -20,6 +29,7 @@ type DealerShareRequest = {
   latitude?: unknown;
   longitude?: unknown;
   sharePhotoUrls?: unknown;
+  trackMaintenance?: unknown;
 };
 
 const MAX_DEALER_SHARE_PHOTOS = 3;
@@ -82,9 +92,17 @@ function errorMessage(error: unknown, fallback: string): string {
   return error instanceof Error && error.message ? error.message : fallback;
 }
 
+async function authorizeDealerShareAccess(request: NextRequest, publicAssetCode: string) {
+  const fieldManager = request.nextUrl.searchParams.get('fieldManager') === '1';
+  const assetId = request.nextUrl.searchParams.get('assetId');
+  return fieldManager
+    ? authorizeFieldManagerScanAccess(request, publicAssetCode, assetId)
+    : authorizePublicQrScanAccess(request, publicAssetCode);
+}
+
 export async function GET(request: NextRequest, context: RouteContext) {
   const publicAssetCode = normalizePublicAssetCode(context.params?.publicAssetCode);
-  const access = await authorizePublicQrScanAccess(request, publicAssetCode);
+  const access = await authorizeDealerShareAccess(request, publicAssetCode);
 
   if (!access.ok) {
     return NextResponse.json(
@@ -94,13 +112,6 @@ export async function GET(request: NextRequest, context: RouteContext) {
         pinRequired: access.pinRequired,
       },
       { status: access.status },
-    );
-  }
-
-  if (access.accessMode === 'field_manager') {
-    return NextResponse.json(
-      { ok: false, error: 'Dealer sharing is not available in Field Manager mode.' },
-      { status: 403 },
     );
   }
 
@@ -113,7 +124,8 @@ export async function GET(request: NextRequest, context: RouteContext) {
       search,
     });
 
-    return NextResponse.json({ ok: true, partners });
+    const trackingAccess = await listOwnerDealerMaintenanceAccess(access.ownerUserId, access.asset.id);
+    return NextResponse.json({ ok: true, partners, trackingAccess });
   } catch (error) {
     console.error('scan dealer-share GET failed', error);
     return NextResponse.json(
@@ -125,7 +137,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
 export async function POST(request: NextRequest, context: RouteContext) {
   const publicAssetCode = normalizePublicAssetCode(context.params?.publicAssetCode);
-  const access = await authorizePublicQrScanAccess(request, publicAssetCode);
+  const access = await authorizeDealerShareAccess(request, publicAssetCode);
 
   if (!access.ok) {
     return NextResponse.json(
@@ -138,13 +150,6 @@ export async function POST(request: NextRequest, context: RouteContext) {
     );
   }
 
-  if (access.accessMode === 'field_manager') {
-    return NextResponse.json(
-      { ok: false, error: 'Dealer sharing is not available in Field Manager mode.' },
-      { status: 403 },
-    );
-  }
-
   let body: DealerShareRequest;
 
   try {
@@ -154,12 +159,13 @@ export async function POST(request: NextRequest, context: RouteContext) {
   }
 
   const partnerUserId = asText(body.partnerUserId);
-  const operatorName = asText(body.operatorName).slice(0, 80);
+  const operatorName = (access.fieldManagerDisplayName || asText(body.operatorName)).slice(0, 80);
   const latitude = normalizeCoordinate(body.latitude, 90);
   const longitude = normalizeCoordinate(body.longitude, 180);
   const locationText = latitude !== null && longitude !== null ? `GPS ${latitude.toFixed(6)}, ${longitude.toFixed(6)}` : '';
   const ownerMessage = asText(body.ownerMessage).slice(0, 1600);
   const sharePhotoUrls = normalizeSharePhotoUrls(body.sharePhotoUrls);
+  const trackMaintenance = body.trackMaintenance === true;
 
   if (!partnerUserId) {
     return NextResponse.json({ ok: false, error: 'Choose a dealer before sending.' }, { status: 400 });
@@ -170,6 +176,10 @@ export async function POST(request: NextRequest, context: RouteContext) {
   }
 
   try {
+    if (trackMaintenance) {
+      await assertAssetHasOpenMaintenance(access.ownerUserId, access.asset.id);
+    }
+
     const ownerMessageAttachments = buildOwnerMessagePhotoAttachments(sharePhotoUrls);
     const lead = await createAssetLead({
       ownerUserId: access.ownerUserId,
@@ -199,8 +209,20 @@ export async function POST(request: NextRequest, context: RouteContext) {
         ownerMessageAttachments,
         messageAttachments: ownerMessageAttachments,
         ownerSharePhotoCount: sharePhotoUrls.length,
+        maintenanceTrackingEnabled: trackMaintenance,
       },
     });
+
+    const trackingAccess = trackMaintenance
+      ? await grantDealerMaintenanceTracking({
+          ownerUserId: access.ownerUserId,
+          dealerUserId: partnerUserId,
+          assetId: access.asset.id,
+          actorType: access.accessMode === 'field_manager' ? 'field_manager' : 'owner',
+          actorId: access.fieldManagerId ?? access.ownerUserId,
+          actorName: operatorName,
+        })
+      : null;
 
     await recordAdminUsageEventSafely({
       userId: access.ownerUserId,
@@ -214,7 +236,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       },
     });
 
-    return NextResponse.json({ ok: true, lead });
+    return NextResponse.json({ ok: true, lead, trackingAccess });
   } catch (error) {
     if (error instanceof Error && error.message === 'ASSET_NOT_FOUND') {
       return NextResponse.json({ ok: false, error: 'Asset not found.' }, { status: 404 });
@@ -224,10 +246,42 @@ export async function POST(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ ok: false, error: 'Selected dealer could not be found.' }, { status: 404 });
     }
 
+    if (error instanceof Error && error.message === 'OPEN_MAINTENANCE_REQUIRED') {
+      return NextResponse.json(
+        { ok: false, error: 'Create an open maintenance schedule before adding this asset to the dealer tracker.' },
+        { status: 400 },
+      );
+    }
+
     console.error('scan dealer-share POST failed', error);
     return NextResponse.json(
       { ok: false, error: errorMessage(error, 'Failed to send the asset to the dealer.') },
       { status: 500 },
     );
+  }
+}
+
+export async function DELETE(request: NextRequest, context: RouteContext) {
+  const publicAssetCode = normalizePublicAssetCode(context.params?.publicAssetCode);
+  const access = await authorizeDealerShareAccess(request, publicAssetCode);
+  if (!access.ok) {
+    return NextResponse.json({ ok: false, error: access.error, pinRequired: access.pinRequired }, { status: access.status });
+  }
+  if (access.accessMode === 'scan_pin') {
+    return NextResponse.json({ ok: false, error: 'Only the owner or a Field Manager can change dealer tracking.' }, { status: 403 });
+  }
+  const body = await request.json().catch(() => null) as { partnerUserId?: unknown } | null;
+  const partnerUserId = asText(body?.partnerUserId);
+  if (!partnerUserId) return NextResponse.json({ ok: false, error: 'Choose a tracked dealer.' }, { status: 400 });
+  try {
+    const revoked = await revokeDealerMaintenanceTracking({
+      ownerUserId: access.ownerUserId,
+      assetId: access.asset.id,
+      dealerUserId: partnerUserId,
+    });
+    return NextResponse.json({ ok: true, revoked });
+  } catch (error) {
+    console.error('scan dealer-share DELETE failed', error);
+    return NextResponse.json({ ok: false, error: 'Failed to stop dealer tracking.' }, { status: 500 });
   }
 }
