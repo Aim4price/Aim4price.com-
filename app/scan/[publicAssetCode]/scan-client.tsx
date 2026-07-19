@@ -26,9 +26,29 @@ type ScanAssetUsageMode = "hours" | "percent" | "km" | "none";
 type ScanAssetStatusChoice = "yes" | "no" | "unknown" | "not_applicable";
 type ServiceMode = "" | "checked" | "serviced" | "repaired";
 type PartnerType = "dealer" | "finance" | "insurance";
-type ShareLeadStep = "message" | "consent" | null;
+type ShareLeadStep = "message" | "consent" | "settings" | null;
 type ScanAccessResponseMode = "owner_session" | "scan_pin" | "field_manager";
 type ScheduledMaintenanceType = "service" | "checkup";
+
+type DealerTrackingAccess = {
+  id: string;
+  dealerUserId: string;
+  dealerName: string;
+  grantedByName: string;
+  createdAtIso: string;
+};
+
+type MaintenanceScheduleDraft = {
+  maintenanceType: "service" | "checkup";
+  triggerType: "date" | "usage";
+  title: string;
+  notes: string;
+  dueDate: string;
+  dueUsage: string;
+  alertBeforeValue: string;
+  recurringEnabled: boolean;
+  recurringIntervalValue: string;
+};
 
 type PartnerDirectoryEntry = {
   userId: string;
@@ -128,6 +148,7 @@ type SaveScanEventResponse = {
 type PartnerDirectoryApiResponse = {
   ok: boolean;
   partners?: PartnerDirectoryEntry[];
+  trackingAccess?: DealerTrackingAccess[];
   error?: string;
   pinRequired?: boolean;
 };
@@ -1590,9 +1611,25 @@ export default function ScanClient({
   const [sharePhotoUrls, setSharePhotoUrls] = useState<string[]>([]);
   const [shareLeadStep, setShareLeadStep] = useState<ShareLeadStep>(null);
   const [shareConsentAccepted, setShareConsentAccepted] = useState(false);
+  const [shareTrackMaintenance, setShareTrackMaintenance] = useState(false);
+  const [shareTrackingAccess, setShareTrackingAccess] = useState<DealerTrackingAccess[]>([]);
+  const [removingShareTrackingId, setRemovingShareTrackingId] = useState("");
   const [isLoadingSharePartners, setIsLoadingSharePartners] = useState(false);
   const [isSendingShareLead, setIsSendingShareLead] = useState(false);
   const [isUploadingSharePhoto, setIsUploadingSharePhoto] = useState(false);
+  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [isSavingSchedule, setIsSavingSchedule] = useState(false);
+  const [scheduleDraft, setScheduleDraft] = useState<MaintenanceScheduleDraft>({
+    maintenanceType: "service",
+    triggerType: "usage",
+    title: "Next service",
+    notes: "",
+    dueDate: "",
+    dueUsage: "",
+    alertBeforeValue: "20",
+    recurringEnabled: false,
+    recurringIntervalValue: "250",
+  });
 
   const galleryInputRef = useRef<HTMLInputElement | null>(null);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
@@ -2497,6 +2534,7 @@ export default function ScanClient({
     setSharePhotoUrls([]);
     setShareLeadStep(null);
     setShareConsentAccepted(false);
+    setShareTrackMaintenance(false);
   }
 
   function closeShareModal() {
@@ -2511,9 +2549,16 @@ export default function ScanClient({
     setIsLoadingSharePartners(true);
 
     try {
-      const query = searchValue.trim()
-        ? `?search=${encodeURIComponent(searchValue.trim())}`
-        : "";
+      const params = new URLSearchParams();
+      if (searchValue.trim()) params.set("search", searchValue.trim());
+      if (fieldManagerMode || scanAccessMode === "field_manager") {
+        params.set("fieldManager", "1");
+        if (normalizedFieldManagerAssetId || asset?.id) {
+          params.set("assetId", normalizedFieldManagerAssetId || asset?.id || "");
+        }
+      }
+      const queryText = params.toString();
+      const query = queryText ? `?${queryText}` : "";
       const response = await fetch(
         `/api/scan/assets/${encodeURIComponent(normalizedCode)}/dealer-share${query}`,
         {
@@ -2531,6 +2576,7 @@ export default function ScanClient({
 
       const nextPartners = data.partners ?? [];
       setSharePartners(nextPartners);
+      setShareTrackingAccess(data.trackingAccess ?? []);
       setSelectedSharePartnerId((current) => {
         if (!current) return current;
         return nextPartners.some((partner) => partner.userId === current)
@@ -2558,14 +2604,6 @@ export default function ScanClient({
 
   function handleShareTap() {
     if (!asset) return;
-
-    if (scanAccessMode === "field_manager") {
-      setNotice({
-        tone: "error",
-        message: "Dealer sharing is not available in Field Manager mode.",
-      });
-      return;
-    }
 
     if (
       needsUsageUpdateBeforeActions(
@@ -2606,6 +2644,38 @@ export default function ScanClient({
     );
     setIsShareModalOpen(true);
     setNotice(null);
+  }
+
+  function openShareTrackingSettings() {
+    setShareLeadStep("settings");
+    setShareConsentAccepted(false);
+    removeShareMap();
+  }
+
+  async function stopShareTracking(entry: DealerTrackingAccess) {
+    if (!asset || removingShareTrackingId) return;
+    setRemovingShareTrackingId(entry.id);
+    setNotice(null);
+    try {
+      const query = fieldManagerQueryString();
+      const response = await fetch(
+        `/api/scan/assets/${encodeURIComponent(normalizedCode)}/dealer-share${query}`,
+        {
+          method: "DELETE",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ partnerUserId: entry.dealerUserId }),
+        },
+      );
+      const data = await response.json().catch(() => null) as { ok?: boolean; error?: string } | null;
+      if (!response.ok || !data?.ok) throw new Error(data?.error || "Failed to stop dealer tracking.");
+      setShareTrackingAccess((current) => current.filter((item) => item.id !== entry.id));
+      setNotice({ tone: "success", message: `${entry.dealerName} can no longer track this asset.` });
+    } catch (error) {
+      setNotice({ tone: "error", message: error instanceof Error ? error.message : "Failed to stop dealer tracking." });
+    } finally {
+      setRemovingShareTrackingId("");
+    }
   }
 
   function openShareLeadMessage(partner: PartnerDirectoryEntry) {
@@ -2700,7 +2770,7 @@ export default function ScanClient({
       if (!saved) return;
 
       const response = await fetch(
-        `/api/scan/assets/${encodeURIComponent(normalizedCode)}/dealer-share`,
+        `/api/scan/assets/${encodeURIComponent(normalizedCode)}/dealer-share${fieldManagerQueryString()}`,
         {
           method: "POST",
           credentials: "include",
@@ -2712,6 +2782,7 @@ export default function ScanClient({
             latitude: shareLatitude,
             longitude: shareLongitude,
             sharePhotoUrls,
+            trackMaintenance: shareTrackMaintenance,
           }),
         },
       );
@@ -2734,7 +2805,9 @@ export default function ScanClient({
       removeShareMap();
       setNotice({
         tone: "success",
-        message: `Dealer request sent to ${dealerPartnerName(selectedPartner)}.`,
+        message: shareTrackMaintenance
+          ? `Dealer request sent and maintenance tracking enabled for ${dealerPartnerName(selectedPartner)}.`
+          : `Dealer request sent to ${dealerPartnerName(selectedPartner)}.`,
       });
       window.requestAnimationFrame(() => {
         window.scrollTo({ top: 0, behavior: "smooth" });
@@ -2749,6 +2822,68 @@ export default function ScanClient({
       });
     } finally {
       setIsSendingShareLead(false);
+    }
+  }
+
+  function openScheduleModal() {
+    if (!asset) return;
+    const usageMetric = asset.usageMode === "km" ? "km" : asset.usageMode === "percent" ? "percentage" : "hours";
+    const currentUsage = asset.usageMode === "percent" ? asset.lifeWorkedPercent : asset.hours;
+    const interval = usageMetric === "km" ? 10000 : usageMetric === "percentage" ? 10 : 250;
+    const alert = usageMetric === "km" ? 1000 : usageMetric === "percentage" ? 5 : 20;
+    const dueDate = new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10);
+    setScheduleDraft({
+      maintenanceType: "service",
+      triggerType: asset.usageMode === "none" ? "date" : "usage",
+      title: "Next service",
+      notes: "",
+      dueDate,
+      dueUsage: String(Math.max(0, Math.round((currentUsage ?? 0) + interval))),
+      alertBeforeValue: String(alert),
+      recurringEnabled: false,
+      recurringIntervalValue: String(interval),
+    });
+    setIsScheduleModalOpen(true);
+    setNotice(null);
+  }
+
+  async function createMaintenanceSchedule(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!asset || !isFieldManagerMode || isSavingSchedule) return;
+    const usageMetric = asset.usageMode === "km" ? "km" : asset.usageMode === "percent" ? "percentage" : "hours";
+    setIsSavingSchedule(true);
+    setNotice(null);
+    try {
+      const response = await fetch(`/api/field-manager/assets/${encodeURIComponent(asset.id)}/maintenance`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          maintenanceType: scheduleDraft.maintenanceType,
+          triggerType: scheduleDraft.triggerType,
+          title: scheduleDraft.title,
+          notes: scheduleDraft.notes,
+          dueDate: scheduleDraft.triggerType === "date" ? scheduleDraft.dueDate : null,
+          dueUsage: scheduleDraft.triggerType === "usage" ? scheduleDraft.dueUsage : null,
+          usageMetric: scheduleDraft.triggerType === "usage" ? usageMetric : null,
+          alertBeforeValue: scheduleDraft.alertBeforeValue,
+          alertBeforeUnit: scheduleDraft.triggerType === "date" ? "days" : usageMetric,
+          recurringEnabled: scheduleDraft.recurringEnabled,
+          recurringIntervalValue: scheduleDraft.recurringEnabled ? scheduleDraft.recurringIntervalValue : null,
+          recurringIntervalUnit: scheduleDraft.recurringEnabled
+            ? scheduleDraft.triggerType === "date" ? "months" : usageMetric
+            : null,
+        }),
+      });
+      const data = await response.json().catch(() => null) as { ok?: boolean; error?: string } | null;
+      if (!response.ok || !data?.ok) throw new Error(data?.error || "Failed to create the maintenance schedule.");
+      setIsScheduleModalOpen(false);
+      setNotice({ tone: "success", message: "Maintenance schedule created and added to your Overview." });
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (error) {
+      setNotice({ tone: "error", message: error instanceof Error ? error.message : "Failed to create the maintenance schedule." });
+    } finally {
+      setIsSavingSchedule(false);
     }
   }
 
@@ -3451,7 +3586,7 @@ export default function ScanClient({
     [sharePartners, selectedSharePartnerId],
   );
   const pageClassName = `${styles.page} ${isFieldManagerMode ? styles.fieldManagerMobileSurface : ""}`;
-  const canUseDealerShare = !isFieldManagerMode;
+  const canUseDealerShare = true;
   const selectedSharePartnerPhoneHref = selectedSharePartner
     ? normalizePhoneHref(selectedSharePartner.phone)
     : "";
@@ -3705,22 +3840,6 @@ export default function ScanClient({
             ) : (
               <>
                 <section className={styles.actionGrid}>
-                  {canUseDealerShare ? (
-                    <button
-                      type="button"
-                      className={styles.actionCard}
-                      onClick={handleShareTap}
-                    >
-                      <span className={styles.actionIconWrap}>
-                        <ShareIcon className={styles.actionIcon} />
-                      </span>
-                      <span className={styles.actionTextBlock}>
-                        <strong>Share</strong>
-                        <small>Dealer help</small>
-                      </span>
-                    </button>
-                  ) : null}
-
                   {showFieldManagerUsageAction ? (
                     <button
                       type="button"
@@ -3782,8 +3901,22 @@ export default function ScanClient({
                     <span className={styles.actionTextBlock}>
                       <strong>Notes</strong>
                       <small>{buildEditorSummary("notes", asset)}</small>
-                    </span>
-                  </button>
+                      </span>
+                    </button>
+
+                  {isFieldManagerMode ? (
+                    <button type="button" className={styles.actionCard} onClick={openScheduleModal}>
+                      <span className={styles.actionIconWrap}><ServiceIcon className={styles.actionIcon} /></span>
+                      <span className={styles.actionTextBlock}><strong>Schedule maintenance</strong><small>Set the next service</small></span>
+                    </button>
+                  ) : null}
+
+                  {canUseDealerShare ? (
+                    <button type="button" className={styles.actionCard} onClick={handleShareTap}>
+                      <span className={styles.actionIconWrap}><ShareIcon className={styles.actionIcon} /></span>
+                      <span className={styles.actionTextBlock}><strong>Get dealership help</strong><small>Send asset and message</small></span>
+                    </button>
+                  ) : null}
                 </section>
 
                 <button
@@ -3831,6 +3964,40 @@ export default function ScanClient({
         </div>
       ) : null}
 
+      {asset && isFieldManagerMode && isScheduleModalOpen ? (
+        <div className={styles.editorOverlay}>
+          <div className={styles.modalBackdrop} onClick={() => { if (!isSavingSchedule) setIsScheduleModalOpen(false); }} />
+          <form className={`${styles.editorCard} ${styles.actionEditorCard} ${styles.scheduleModalCard}`} role="dialog" aria-modal="true" aria-labelledby="schedule-maintenance-title" onSubmit={(event) => void createMaintenanceSchedule(event)}>
+            <div className={styles.editorHeader}>
+              <div><h3 id="schedule-maintenance-title">Schedule maintenance</h3><p>Create the next service or checkup for this asset.</p></div>
+              <button type="button" className={styles.iconButton} onClick={() => setIsScheduleModalOpen(false)} disabled={isSavingSchedule} aria-label="Close maintenance schedule"><CloseIcon className={styles.closeIcon} /></button>
+            </div>
+            <div className={`${styles.editorBody} ${styles.scheduleForm}`}>
+              <div className={styles.scheduleTwoColumns}>
+                <label className={styles.field}><span>Type</span><select value={scheduleDraft.maintenanceType} onChange={(event) => setScheduleDraft((current) => ({ ...current, maintenanceType: event.target.value as "service" | "checkup" }))}><option value="service">Service</option><option value="checkup">Checkup</option></select></label>
+                <label className={styles.field}><span>Based on</span><select value={scheduleDraft.triggerType} onChange={(event) => setScheduleDraft((current) => ({ ...current, triggerType: event.target.value as "date" | "usage" }))}><option value="usage">Usage</option><option value="date">Date</option></select></label>
+              </div>
+              {scheduleDraft.triggerType === "usage" ? (
+                <div className={styles.scheduleTwoColumns}>
+                  <label className={styles.field}><span>Due at {asset.usageMode === "km" ? "kilometres" : asset.usageMode === "percent" ? "percentage" : "hours"}</span><input type="number" min="0" step="0.01" required value={scheduleDraft.dueUsage} onChange={(event) => setScheduleDraft((current) => ({ ...current, dueUsage: event.target.value }))} /></label>
+                  <label className={styles.field}><span>Notify before</span><input type="number" min="0" step="0.01" required value={scheduleDraft.alertBeforeValue} onChange={(event) => setScheduleDraft((current) => ({ ...current, alertBeforeValue: event.target.value }))} /></label>
+                </div>
+              ) : (
+                <div className={styles.scheduleTwoColumns}>
+                  <label className={styles.field}><span>Due date</span><input type="date" required value={scheduleDraft.dueDate} onChange={(event) => setScheduleDraft((current) => ({ ...current, dueDate: event.target.value }))} /></label>
+                  <label className={styles.field}><span>Notify days before</span><input type="number" min="0" step="1" required value={scheduleDraft.alertBeforeValue} onChange={(event) => setScheduleDraft((current) => ({ ...current, alertBeforeValue: event.target.value }))} /></label>
+                </div>
+              )}
+              <label className={styles.field}><span>Title</span><input required maxLength={180} value={scheduleDraft.title} onChange={(event) => setScheduleDraft((current) => ({ ...current, title: event.target.value }))} placeholder="Next service" /></label>
+              <label className={styles.field}><span>Notes</span><textarea value={scheduleDraft.notes} onChange={(event) => setScheduleDraft((current) => ({ ...current, notes: event.target.value }))} placeholder="Service requirements or reminders" /></label>
+              <label className={styles.scheduleRecurringChoice}><input type="checkbox" checked={scheduleDraft.recurringEnabled} onChange={(event) => setScheduleDraft((current) => ({ ...current, recurringEnabled: event.target.checked }))} /><span><strong>Recurring maintenance</strong><small>Create the next schedule automatically when this one is completed.</small></span></label>
+              {scheduleDraft.recurringEnabled ? <label className={styles.field}><span>Recurring interval {scheduleDraft.triggerType === "date" ? "in months" : "in usage"}</span><input type="number" min="1" step="0.01" required value={scheduleDraft.recurringIntervalValue} onChange={(event) => setScheduleDraft((current) => ({ ...current, recurringIntervalValue: event.target.value }))} /></label> : null}
+            </div>
+            <div className={styles.editorFooter}><button type="button" className={styles.secondaryButton} onClick={() => setIsScheduleModalOpen(false)} disabled={isSavingSchedule}>Cancel</button><button type="submit" className={styles.primaryButton} disabled={isSavingSchedule}>{isSavingSchedule ? "Saving…" : "Create schedule"}</button></div>
+          </form>
+        </div>
+      ) : null}
+
       {asset && isShareModalOpen && canUseDealerShare ? (
         <div className={styles.shareOverlay}>
           <div className={styles.modalBackdrop} onClick={closeShareModal} />
@@ -3848,6 +4015,8 @@ export default function ScanClient({
                     ? "Confirm request"
                     : shareLeadStep === "message"
                       ? "Message to dealer"
+                      : shareLeadStep === "settings"
+                        ? "Tracking settings"
                       : "Get assistance"}
                 </h3>
                 <p>Get parts quotes, repair help or dealer support.</p>
@@ -3864,6 +4033,10 @@ export default function ScanClient({
 
             {!shareLeadStep ? (
               <div className={styles.shareBody}>
+                <button type="button" className={styles.shareTrackingSettingsButton} onClick={openShareTrackingSettings}>
+                  <span><strong>Dealer tracking settings</strong><small>{shareTrackingAccess.length ? `${shareTrackingAccess.length} dealer${shareTrackingAccess.length === 1 ? "" : "s"} tracking this asset` : "No dealer tracking this asset"}</small></span>
+                  <b aria-hidden="true">›</b>
+                </button>
                 <form
                   className={styles.shareSearchBar}
                   onSubmit={handleShareSearchSubmit}
@@ -4028,6 +4201,11 @@ export default function ScanClient({
                       </div>
                     ) : null}
                   </div>
+
+                  <label className={styles.shareTrackingChoice}>
+                    <input type="checkbox" checked={shareTrackMaintenance} onChange={(event) => setShareTrackMaintenance(event.target.checked)} />
+                    <span><strong>Add to dealer Maintenance Tracker</strong><small>Read-only access to current usage and open maintenance until tracking is removed.</small></span>
+                  </label>
                 </div>
                 <footer className={styles.shareFooter}>
                   <button
@@ -4071,6 +4249,7 @@ export default function ScanClient({
                       {sharePhotoUrls.length ? ", attached photos" : ""} and
                       relevant documents will be shared with this dealer.
                     </p>
+                    {shareTrackMaintenance ? <p>This dealer will also receive ongoing read-only access to current usage and open maintenance schedules.</p> : null}
                   </div>
 
                   <label className={styles.shareConsentCheck}>
@@ -4116,6 +4295,23 @@ export default function ScanClient({
                         : "Send to dealer"}
                   </button>
                 </footer>
+              </>
+            ) : shareLeadStep === "settings" ? (
+              <>
+                <div className={styles.shareBody}>
+                  <div className={styles.shareStepHeader}><strong>Dealers tracking this asset</strong><span>Tracking can be removed at any time.</span></div>
+                  {shareTrackingAccess.length ? (
+                    <div className={styles.shareTrackingList}>
+                      {shareTrackingAccess.map((entry) => (
+                        <article key={entry.id} className={styles.shareTrackingAccessCard}>
+                          <span><strong>{entry.dealerName}</strong><small>{entry.grantedByName ? `Shared by ${entry.grantedByName}` : "Maintenance tracking active"}</small></span>
+                          <button type="button" onClick={() => void stopShareTracking(entry)} disabled={Boolean(removingShareTrackingId)}>{removingShareTrackingId === entry.id ? "Removing…" : "Stop tracking"}</button>
+                        </article>
+                      ))}
+                    </div>
+                  ) : <div className={styles.shareEmptyState}>No dealer is currently tracking this asset.</div>}
+                </div>
+                <footer className={styles.shareFooter}><button type="button" className={styles.secondaryButton} onClick={goBackToShareMap} disabled={Boolean(removingShareTrackingId)}>Back</button></footer>
               </>
             ) : (
               <div className={styles.shareBody}>
