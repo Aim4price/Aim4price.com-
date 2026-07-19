@@ -120,10 +120,17 @@ export async function POST(request: NextRequest, { params }: { params: { assetId
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error(`Owner App asset action ${action} failed.`, error);
-    const message = error instanceof Error && error.message === 'INVALID_GPS_COORDINATES'
+    const code = error instanceof Error ? error.message : '';
+    const message = code === 'DUE_DATE_REQUIRED'
+      ? 'Select the maintenance due date.'
+      : code === 'DUE_USAGE_REQUIRED'
+        ? 'Enter the maintenance usage target.'
+        : code === 'RECURRING_INTERVAL_REQUIRED'
+          ? 'Enter the recurring maintenance interval.'
+          : code === 'INVALID_GPS_COORDINATES'
       ? 'Enter valid latitude (-90 to 90) and longitude (-180 to 180) values.'
-      : error instanceof Error && error.message && !/^[A-Z0-9_]+$/.test(error.message)
-        ? error.message
+      : code && !/^[A-Z0-9_]+$/.test(code)
+        ? code
         : 'The requested asset action could not be completed.';
     return NextResponse.json({ ok: false, error: message }, { status: 400 });
   }
