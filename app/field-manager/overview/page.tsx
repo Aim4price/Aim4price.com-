@@ -12,7 +12,7 @@ type PageProps = {
 export default function FieldManagerOverviewPage({ searchParams }: PageProps) {
   return (
     <FieldManagerOverviewClient
-      initialRange={searchParams?.range === 'month' ? 'month' : 'week'}
+      initialRange={searchParams?.range === 'week' ? 'week' : 'upcoming'}
     />
   );
 }
