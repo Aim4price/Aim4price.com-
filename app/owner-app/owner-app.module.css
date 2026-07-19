@@ -1109,6 +1109,23 @@
 .ownerOptionsSection { gap: var(--owner-content-gap); }
 .ownerOptionChoiceList,
 .ownerPartnerList { display: grid; gap: 10px; }
+.ownerTrackingSettingsButton {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border: 1px solid rgba(37, 71, 51, 0.14);
+  border-radius: 16px;
+  background: #fff;
+  color: var(--owner-ink);
+  padding: 14px 15px;
+  text-align: left;
+}
+.ownerTrackingSettingsButton > span { min-width: 0; display: grid; gap: 3px; }
+.ownerTrackingSettingsButton strong { font-size: 0.9rem; font-weight: 850; }
+.ownerTrackingSettingsButton small { color: var(--owner-muted); font-size: 0.76rem; font-weight: 650; line-height: 1.4; }
+.ownerTrackingSettingsButton > b { color: var(--owner-green); font-size: 1.25rem; }
 .ownerOptionChoice {
   width: 100%;
   min-height: 176px;
@@ -1259,6 +1276,17 @@
   resize: vertical;
 }
 .ownerOptionMessageField textarea:focus { border-color: rgba(37, 71, 51, 0.62); box-shadow: 0 0 0 4px rgba(37, 71, 51, 0.09); }
+.ownerTrackingChoice { display: flex; align-items: flex-start; gap: 11px; border: 1px solid rgba(66, 144, 102, 0.3); border-radius: 16px; background: #f2faf5; color: #214d3d; padding: 14px; }
+.ownerTrackingChoice input { width: 21px; height: 21px; flex: 0 0 auto; margin: 1px 0 0; accent-color: var(--owner-green); }
+.ownerTrackingChoice > span { display: grid; gap: 4px; }
+.ownerTrackingChoice strong { font-size: 0.88rem; font-weight: 850; }
+.ownerTrackingChoice small { color: #497063; font-size: 0.76rem; font-weight: 650; line-height: 1.45; }
+.ownerTrackingList { display: grid; gap: 10px; }
+.ownerTrackingAccessCard { display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 1px solid rgba(37, 71, 51, 0.13); border-radius: 16px; background: #fff; padding: 14px; }
+.ownerTrackingAccessCard > span { min-width: 0; display: grid; gap: 4px; }
+.ownerTrackingAccessCard strong { font-size: 0.9rem; font-weight: 850; }
+.ownerTrackingAccessCard small { color: var(--owner-muted); font-size: 0.75rem; font-weight: 650; }
+.ownerTrackingAccessCard button { flex: 0 0 auto; border: 1px solid rgba(166, 47, 47, 0.23); border-radius: 11px; background: #fff5f5; color: #913737; padding: 9px 11px; font: inherit; font-size: 0.75rem; font-weight: 850; }
 .ownerOptionsFooter { display: grid; grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.25fr); gap: 9px; }
 .ownerOptionsFooterSingle { grid-template-columns: 1fr; }
 .ownerOptionsFooter > button,
