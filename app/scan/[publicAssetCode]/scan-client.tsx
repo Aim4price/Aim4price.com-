@@ -2520,7 +2520,7 @@ export default function ScanClient({
     if (fieldManagerReturnHref.startsWith("/field-manager/overview")) {
       const returnUrl = new URL(fieldManagerReturnHref, window.location.origin);
       params.set("from", "overview");
-      params.set("overviewRange", returnUrl.searchParams.get("range") === "month" ? "month" : "week");
+      params.set("overviewRange", returnUrl.searchParams.get("range") === "week" ? "week" : "upcoming");
     }
     window.location.assign(
       `/field-manager/assets/${encodeURIComponent(normalizedCode)}/maintenance?${params.toString()}`,
@@ -3876,7 +3876,7 @@ export default function ScanClient({
 
                   <label className={styles.shareTrackingChoice}>
                     <input type="checkbox" checked={shareTrackMaintenance} onChange={(event) => setShareTrackMaintenance(event.target.checked)} />
-                    <span><strong>Add to dealer Maintenance Tracker</strong><small>Read-only access to current usage and open maintenance until tracking is removed.</small></span>
+                    <span><strong>Add to dealer Maintenance Tracker</strong><small>Give this dealer read-only access to the asset&apos;s current usage and open maintenance schedules. Access ends when tracking is removed.</small></span>
                   </label>
                 </div>
                 <footer className={styles.shareFooter}>
