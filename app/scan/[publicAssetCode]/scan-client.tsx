@@ -38,18 +38,6 @@ type DealerTrackingAccess = {
   createdAtIso: string;
 };
 
-type MaintenanceScheduleDraft = {
-  maintenanceType: "service" | "checkup";
-  triggerType: "date" | "usage";
-  title: string;
-  notes: string;
-  dueDate: string;
-  dueUsage: string;
-  alertBeforeValue: string;
-  recurringEnabled: boolean;
-  recurringIntervalValue: string;
-};
-
 type PartnerDirectoryEntry = {
   userId: string;
   partnerType: PartnerType;
@@ -199,14 +187,6 @@ const MAX_SHARE_PHOTOS = 3;
 const QR_PHOTO_MAX_DIMENSION = 1400;
 const QR_PHOTO_JPEG_QUALITY = 0.72;
 const QR_PHOTO_SKIP_COMPRESSION_BYTES = 700 * 1024;
-const SCAN_LEAFLET_SCRIPT_ID = "aim4price-scan-leaflet-script";
-const SCAN_LEAFLET_CSS_ID = "aim4price-scan-leaflet-css";
-const SCAN_LEAFLET_JS_URL = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
-const SCAN_LEAFLET_CSS_URL = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
-const DEFAULT_DEALER_MAP_CENTER: [number, number] = [-29, 24];
-const DEFAULT_DEALER_MAP_ZOOM = 5;
-let scanLeafletLoaderPromise: Promise<any> | null = null;
-
 type ServiceOption = {
   label: string;
   description: string;
@@ -1021,7 +1001,7 @@ function buildEditorSummary(
 ): string {
   if (editor === "usage") return formatUsage(asset);
 
-  if (editor === "service") return "Check Service Repair";
+  if (editor === "service") return "Check - Service - Repair";
 
   if (editor === "notes") return "Issues & Problems";
 
@@ -1153,72 +1133,6 @@ function buildServiceNote(draft: DraftState): string {
   return note;
 }
 
-declare global {
-  interface Window {
-    L?: any;
-  }
-}
-
-function loadScanLeaflet(): Promise<any> {
-  if (typeof window === "undefined" || typeof document === "undefined") {
-    return Promise.reject(new Error("Map is only available in the browser."));
-  }
-
-  if (window.L) {
-    return Promise.resolve(window.L);
-  }
-
-  if (scanLeafletLoaderPromise) {
-    return scanLeafletLoaderPromise;
-  }
-
-  scanLeafletLoaderPromise = new Promise((resolve, reject) => {
-    if (!document.getElementById(SCAN_LEAFLET_CSS_ID)) {
-      const link = document.createElement("link");
-      link.id = SCAN_LEAFLET_CSS_ID;
-      link.rel = "stylesheet";
-      link.href = SCAN_LEAFLET_CSS_URL;
-      document.head.appendChild(link);
-    }
-
-    const existingScript = document.getElementById(
-      SCAN_LEAFLET_SCRIPT_ID,
-    ) as HTMLScriptElement | null;
-
-    const resolveWhenReady = () => {
-      if (window.L) {
-        resolve(window.L);
-      } else {
-        reject(new Error("Map could not be loaded."));
-      }
-    };
-
-    if (existingScript) {
-      existingScript.addEventListener("load", resolveWhenReady, { once: true });
-      existingScript.addEventListener(
-        "error",
-        () => reject(new Error("Map could not be loaded.")),
-        { once: true },
-      );
-      return;
-    }
-
-    const script = document.createElement("script");
-    script.id = SCAN_LEAFLET_SCRIPT_ID;
-    script.src = SCAN_LEAFLET_JS_URL;
-    script.async = true;
-    script.addEventListener("load", resolveWhenReady, { once: true });
-    script.addEventListener(
-      "error",
-      () => reject(new Error("Map could not be loaded.")),
-      { once: true },
-    );
-    document.body.appendChild(script);
-  });
-
-  return scanLeafletLoaderPromise;
-}
-
 function dealerPartnerName(partner: PartnerDirectoryEntry): string {
   return partner.businessName || partner.displayName || "Aim4price dealer";
 }
@@ -1230,11 +1144,6 @@ function dealerPartnerLocation(partner: PartnerDirectoryEntry): string {
   );
 }
 
-function dealerPartnerInitial(partner: PartnerDirectoryEntry): string {
-  const name = dealerPartnerName(partner);
-  return name.trim().charAt(0).toUpperCase() || "D";
-}
-
 function dealerPartnerAddress(partner: PartnerDirectoryEntry): string {
   return [partner.addressLine1, partner.townCity, partner.province]
     .filter(Boolean)
@@ -1243,15 +1152,6 @@ function dealerPartnerAddress(partner: PartnerDirectoryEntry): string {
 
 function dealerPartnerServicesDisplay(partner: PartnerDirectoryEntry): string {
   return partner.services || partner.brandFocus || "Dealer services";
-}
-
-function hasDealerPartnerCoordinates(partner: PartnerDirectoryEntry): boolean {
-  return (
-    typeof partner.latitude === "number" &&
-    Number.isFinite(partner.latitude) &&
-    typeof partner.longitude === "number" &&
-    Number.isFinite(partner.longitude)
-  );
 }
 
 function normalizeWebsiteHref(value: string): string {
@@ -1273,31 +1173,6 @@ function normalizePhoneHref(value: string): string {
 function normalizeEmailHref(value: string): string {
   const email = value.trim();
   return email ? `mailto:${email}` : "";
-}
-
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
-function buildDealerPartnerPopupHtml(partner: PartnerDirectoryEntry): string {
-  const name = escapeHtml(dealerPartnerName(partner));
-  const location = escapeHtml(dealerPartnerLocation(partner));
-  const services = escapeHtml(dealerPartnerServicesDisplay(partner));
-  const userId = escapeHtml(partner.userId);
-
-  return `
-    <div class="scanSharePopup">
-      <strong>${name}</strong>
-      <span>${location}</span>
-      <small>${services}</small>
-      <button type="button" class="scanSharePopupChooseButton" data-scan-share-partner-id="${userId}">Get assistance</button>
-    </div>
-  `;
 }
 
 function apiErrorMessage(
@@ -1617,28 +1492,11 @@ export default function ScanClient({
   const [isLoadingSharePartners, setIsLoadingSharePartners] = useState(false);
   const [isSendingShareLead, setIsSendingShareLead] = useState(false);
   const [isUploadingSharePhoto, setIsUploadingSharePhoto] = useState(false);
-  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
-  const [isSavingSchedule, setIsSavingSchedule] = useState(false);
-  const [scheduleDraft, setScheduleDraft] = useState<MaintenanceScheduleDraft>({
-    maintenanceType: "service",
-    triggerType: "usage",
-    title: "Next service",
-    notes: "",
-    dueDate: "",
-    dueUsage: "",
-    alertBeforeValue: "20",
-    recurringEnabled: false,
-    recurringIntervalValue: "250",
-  });
 
   const galleryInputRef = useRef<HTMLInputElement | null>(null);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const sharePhotoInputRef = useRef<HTMLInputElement | null>(null);
   const autoLocationKeyRef = useRef<string>("");
-  const shareMapElementRef = useRef<HTMLDivElement | null>(null);
-  const shareLeafletMapRef = useRef<any>(null);
-  const shareMarkerLayerRef = useRef<any>(null);
-  const shareMarkersByPartnerRef = useRef<Map<string, any>>(new Map());
   const autoFieldManagerOpenKeyRef = useRef<string>("");
 
   useEffect(() => {
@@ -1723,12 +1581,6 @@ export default function ScanClient({
     } else {
       setLocationState("idle");
       setLocationMessage(DEFAULT_LOCATION_REQUIRED_MESSAGE);
-    }
-    if (shareLeafletMapRef.current) {
-      shareLeafletMapRef.current.remove();
-      shareLeafletMapRef.current = null;
-      shareMarkerLayerRef.current = null;
-      shareMarkersByPartnerRef.current.clear();
     }
     autoLocationKeyRef.current = "";
     autoFieldManagerOpenKeyRef.current = "";
@@ -1864,125 +1716,6 @@ export default function ScanClient({
     void loadSharePartners(sharePartnerSearch);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isShareModalOpen, asset?.id]);
-
-  useEffect(() => {
-    if (!isShareModalOpen || shareLeadStep || !shareMapElementRef.current)
-      return undefined;
-
-    const partnersWithCoordinates = sharePartners.filter(
-      hasDealerPartnerCoordinates,
-    );
-    let isCancelled = false;
-
-    if (!partnersWithCoordinates.length) {
-      if (shareMarkerLayerRef.current) {
-        shareMarkerLayerRef.current.clearLayers();
-        shareMarkersByPartnerRef.current.clear();
-      }
-      return undefined;
-    }
-
-    async function renderShareMap() {
-      try {
-        const leaflet = await loadScanLeaflet();
-        if (isCancelled || !shareMapElementRef.current) return;
-
-        if (!shareLeafletMapRef.current) {
-          shareLeafletMapRef.current = leaflet
-            .map(shareMapElementRef.current, { scrollWheelZoom: false })
-            .setView(DEFAULT_DEALER_MAP_CENTER, DEFAULT_DEALER_MAP_ZOOM);
-
-          leaflet
-            .tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-              attribution: "&copy; OpenStreetMap contributors",
-              maxZoom: 19,
-            })
-            .addTo(shareLeafletMapRef.current);
-
-          shareMarkerLayerRef.current = leaflet
-            .layerGroup()
-            .addTo(shareLeafletMapRef.current);
-        }
-
-        const map = shareLeafletMapRef.current;
-        const markerLayer = shareMarkerLayerRef.current;
-        markerLayer.clearLayers();
-        shareMarkersByPartnerRef.current.clear();
-
-        const bounds = leaflet.latLngBounds([]);
-
-        partnersWithCoordinates.forEach((partner) => {
-          const marker = leaflet.marker([partner.latitude, partner.longitude], {
-            icon: leaflet.divIcon({
-              className: "scanShareMapMarker",
-              html: `<span>${escapeHtml(dealerPartnerInitial(partner))}</span>`,
-              iconSize: [40, 40],
-              iconAnchor: [20, 20],
-            }),
-          });
-
-          marker.bindPopup(buildDealerPartnerPopupHtml(partner), {
-            closeButton: false,
-            maxWidth: 320,
-          });
-
-          marker.on("popupopen", () => {
-            window.setTimeout(() => {
-              const popupElement = marker.getPopup?.()?.getElement?.();
-              const button = popupElement?.querySelector?.(
-                "button[data-scan-share-partner-id]",
-              ) as HTMLButtonElement | null;
-              button?.addEventListener(
-                "click",
-                () => openShareLeadMessage(partner),
-                { once: true },
-              );
-            }, 0);
-          });
-
-          marker.addTo(markerLayer);
-          shareMarkersByPartnerRef.current.set(partner.userId, marker);
-          bounds.extend([partner.latitude, partner.longitude]);
-        });
-
-        if (bounds.isValid()) {
-          map.fitBounds(bounds.pad(0.22), { maxZoom: 9 });
-        }
-
-        window.setTimeout(() => map.invalidateSize(), 120);
-      } catch {
-        // The dealer list remains usable if the map script cannot be loaded.
-      }
-    }
-
-    void renderShareMap();
-
-    return () => {
-      isCancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isShareModalOpen, shareLeadStep, sharePartners]);
-
-  useEffect(() => {
-    if (!isShareModalOpen || shareLeadStep || !selectedSharePartnerId) return;
-    const selectedPartner = sharePartners.find(
-      (partner) => partner.userId === selectedSharePartnerId,
-    );
-    if (!selectedPartner || !hasDealerPartnerCoordinates(selectedPartner))
-      return;
-
-    const map = shareLeafletMapRef.current;
-    const marker = shareMarkersByPartnerRef.current.get(selectedPartner.userId);
-
-    if (!map || !marker) return;
-
-    map.setView(
-      [selectedPartner.latitude, selectedPartner.longitude],
-      Math.max(map.getZoom?.() ?? DEFAULT_DEALER_MAP_ZOOM, 8),
-      { animate: true },
-    );
-    marker.openPopup();
-  }, [isShareModalOpen, shareLeadStep, selectedSharePartnerId, sharePartners]);
 
   useEffect(() => {
     if (!asset?.id) return;
@@ -2517,16 +2250,6 @@ export default function ScanClient({
     setNotice(null);
   }
 
-  function removeShareMap() {
-    if (shareLeafletMapRef.current) {
-      shareLeafletMapRef.current.remove();
-      shareLeafletMapRef.current = null;
-    }
-
-    shareMarkerLayerRef.current = null;
-    shareMarkersByPartnerRef.current.clear();
-  }
-
   function resetShareFlow() {
     setSharePartnerSearch("");
     setSelectedSharePartnerId("");
@@ -2542,7 +2265,6 @@ export default function ScanClient({
     setIsShareModalOpen(false);
     setSharePartners([]);
     resetShareFlow();
-    removeShareMap();
   }
 
   async function loadSharePartners(searchValue = sharePartnerSearch) {
@@ -2617,27 +2339,6 @@ export default function ScanClient({
       return;
     }
 
-    const storedSession = readQrScanSession(normalizedCode);
-    const hasSessionLocation =
-      hasLocationCaptured(draft) || sessionHasLocation(storedSession);
-
-    if (!hasSessionLocation) {
-      setNotice({
-        tone: "error",
-        message: "GPS is required before sending this asset to a dealer.",
-      });
-      void captureLocation(false);
-      return;
-    }
-
-    if (!hasLocationCaptured(draft) && sessionHasLocation(storedSession)) {
-      setDraft((current) =>
-        applySessionLocationToDraft(current, storedSession),
-      );
-      setLocationState("ready");
-      setLocationMessage(sessionLocationMessage(storedSession));
-    }
-
     resetShareFlow();
     setShareOwnerMessage(
       `Please assist with ${asset.title}.${asset.serialNumber ? ` Serial number: ${asset.serialNumber}.` : ""}`,
@@ -2649,7 +2350,6 @@ export default function ScanClient({
   function openShareTrackingSettings() {
     setShareLeadStep("settings");
     setShareConsentAccepted(false);
-    removeShareMap();
   }
 
   async function stopShareTracking(entry: DealerTrackingAccess) {
@@ -2682,10 +2382,9 @@ export default function ScanClient({
     setSelectedSharePartnerId(partner.userId);
     setShareLeadStep("message");
     setShareConsentAccepted(false);
-    removeShareMap();
   }
 
-  function goBackToShareMap() {
+  function goBackToDealerList() {
     if (isSendingShareLead || isUploadingSharePhoto) return;
     setShareLeadStep(null);
     setShareConsentAccepted(false);
@@ -2754,15 +2453,6 @@ export default function ScanClient({
       storedSession?.longitude ||
       "";
 
-    if (!shareLatitude.trim() || !shareLongitude.trim()) {
-      setNotice({
-        tone: "error",
-        message: "GPS is required before sending this asset to a dealer.",
-      });
-      void captureLocation(false);
-      return;
-    }
-
     setIsSendingShareLead(true);
 
     try {
@@ -2802,7 +2492,6 @@ export default function ScanClient({
       setHasCompletedRequiredUsageUpdate(true);
       setSharePartners([]);
       resetShareFlow();
-      removeShareMap();
       setNotice({
         tone: "success",
         message: shareTrackMaintenance
@@ -2825,66 +2514,17 @@ export default function ScanClient({
     }
   }
 
-  function openScheduleModal() {
-    if (!asset) return;
-    const usageMetric = asset.usageMode === "km" ? "km" : asset.usageMode === "percent" ? "percentage" : "hours";
-    const currentUsage = asset.usageMode === "percent" ? asset.lifeWorkedPercent : asset.hours;
-    const interval = usageMetric === "km" ? 10000 : usageMetric === "percentage" ? 10 : 250;
-    const alert = usageMetric === "km" ? 1000 : usageMetric === "percentage" ? 5 : 20;
-    const dueDate = new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10);
-    setScheduleDraft({
-      maintenanceType: "service",
-      triggerType: asset.usageMode === "none" ? "date" : "usage",
-      title: "Next service",
-      notes: "",
-      dueDate,
-      dueUsage: String(Math.max(0, Math.round((currentUsage ?? 0) + interval))),
-      alertBeforeValue: String(alert),
-      recurringEnabled: false,
-      recurringIntervalValue: String(interval),
-    });
-    setIsScheduleModalOpen(true);
-    setNotice(null);
-  }
-
-  async function createMaintenanceSchedule(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!asset || !isFieldManagerMode || isSavingSchedule) return;
-    const usageMetric = asset.usageMode === "km" ? "km" : asset.usageMode === "percent" ? "percentage" : "hours";
-    setIsSavingSchedule(true);
-    setNotice(null);
-    try {
-      const response = await fetch(`/api/field-manager/assets/${encodeURIComponent(asset.id)}/maintenance`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          maintenanceType: scheduleDraft.maintenanceType,
-          triggerType: scheduleDraft.triggerType,
-          title: scheduleDraft.title,
-          notes: scheduleDraft.notes,
-          dueDate: scheduleDraft.triggerType === "date" ? scheduleDraft.dueDate : null,
-          dueUsage: scheduleDraft.triggerType === "usage" ? scheduleDraft.dueUsage : null,
-          usageMetric: scheduleDraft.triggerType === "usage" ? usageMetric : null,
-          alertBeforeValue: scheduleDraft.alertBeforeValue,
-          alertBeforeUnit: scheduleDraft.triggerType === "date" ? "days" : usageMetric,
-          recurringEnabled: scheduleDraft.recurringEnabled,
-          recurringIntervalValue: scheduleDraft.recurringEnabled ? scheduleDraft.recurringIntervalValue : null,
-          recurringIntervalUnit: scheduleDraft.recurringEnabled
-            ? scheduleDraft.triggerType === "date" ? "months" : usageMetric
-            : null,
-        }),
-      });
-      const data = await response.json().catch(() => null) as { ok?: boolean; error?: string } | null;
-      if (!response.ok || !data?.ok) throw new Error(data?.error || "Failed to create the maintenance schedule.");
-      setIsScheduleModalOpen(false);
-      setNotice({ tone: "success", message: "Maintenance schedule created and added to your Overview." });
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    } catch (error) {
-      setNotice({ tone: "error", message: error instanceof Error ? error.message : "Failed to create the maintenance schedule." });
-    } finally {
-      setIsSavingSchedule(false);
+  function openSchedulePage() {
+    if (!asset || !isFieldManagerMode) return;
+    const params = new URLSearchParams({ assetId: asset.id });
+    if (fieldManagerReturnHref.startsWith("/field-manager/overview")) {
+      const returnUrl = new URL(fieldManagerReturnHref, window.location.origin);
+      params.set("from", "overview");
+      params.set("overviewRange", returnUrl.searchParams.get("range") === "month" ? "month" : "week");
     }
+    window.location.assign(
+      `/field-manager/assets/${encodeURIComponent(normalizedCode)}/maintenance?${params.toString()}`,
+    );
   }
 
   async function captureLocation(isAutomatic = false) {
@@ -3596,11 +3236,6 @@ export default function ScanClient({
   const selectedSharePartnerWebsiteHref = selectedSharePartner
     ? normalizeWebsiteHref(selectedSharePartner.websiteUrl)
     : "";
-  const sharePartnersWithCoordinates = useMemo(
-    () => sharePartners.filter(hasDealerPartnerCoordinates),
-    [sharePartners],
-  );
-
   if (isDone) {
     return (
       <main className={pageClassName}>
@@ -3885,7 +3520,7 @@ export default function ScanClient({
                       <CameraIcon className={styles.actionIcon} />
                     </span>
                     <span className={styles.actionTextBlock}>
-                      <strong>Photos</strong>
+                      <strong>{isFieldManagerMode ? "Add Photos" : "Photos"}</strong>
                       <small>{buildEditorSummary("photos", asset)}</small>
                     </span>
                   </button>
@@ -3905,16 +3540,16 @@ export default function ScanClient({
                     </button>
 
                   {isFieldManagerMode ? (
-                    <button type="button" className={styles.actionCard} onClick={openScheduleModal}>
+                    <button type="button" className={styles.actionCard} onClick={openSchedulePage}>
                       <span className={styles.actionIconWrap}><ServiceIcon className={styles.actionIcon} /></span>
-                      <span className={styles.actionTextBlock}><strong>Schedule maintenance</strong><small>Set the next service</small></span>
+                      <span className={styles.actionTextBlock}><strong className={styles.scheduleActionTitle}><span>Schedule</span><span>maintenance</span></strong><small>Set the next service</small></span>
                     </button>
                   ) : null}
 
                   {canUseDealerShare ? (
                     <button type="button" className={styles.actionCard} onClick={handleShareTap}>
                       <span className={styles.actionIconWrap}><ShareIcon className={styles.actionIcon} /></span>
-                      <span className={styles.actionTextBlock}><strong>Get dealership help</strong><small>Send asset and message</small></span>
+                      <span className={styles.actionTextBlock}><strong>{isFieldManagerMode ? "Contact Dealer" : "Get dealership help"}</strong><small>Send asset and message</small></span>
                     </button>
                   ) : null}
                 </section>
@@ -3964,40 +3599,6 @@ export default function ScanClient({
         </div>
       ) : null}
 
-      {asset && isFieldManagerMode && isScheduleModalOpen ? (
-        <div className={styles.editorOverlay}>
-          <div className={styles.modalBackdrop} onClick={() => { if (!isSavingSchedule) setIsScheduleModalOpen(false); }} />
-          <form className={`${styles.editorCard} ${styles.actionEditorCard} ${styles.scheduleModalCard}`} role="dialog" aria-modal="true" aria-labelledby="schedule-maintenance-title" onSubmit={(event) => void createMaintenanceSchedule(event)}>
-            <div className={styles.editorHeader}>
-              <div><h3 id="schedule-maintenance-title">Schedule maintenance</h3><p>Create the next service or checkup for this asset.</p></div>
-              <button type="button" className={styles.iconButton} onClick={() => setIsScheduleModalOpen(false)} disabled={isSavingSchedule} aria-label="Close maintenance schedule"><CloseIcon className={styles.closeIcon} /></button>
-            </div>
-            <div className={`${styles.editorBody} ${styles.scheduleForm}`}>
-              <div className={styles.scheduleTwoColumns}>
-                <label className={styles.field}><span>Type</span><select value={scheduleDraft.maintenanceType} onChange={(event) => setScheduleDraft((current) => ({ ...current, maintenanceType: event.target.value as "service" | "checkup" }))}><option value="service">Service</option><option value="checkup">Checkup</option></select></label>
-                <label className={styles.field}><span>Based on</span><select value={scheduleDraft.triggerType} onChange={(event) => setScheduleDraft((current) => ({ ...current, triggerType: event.target.value as "date" | "usage" }))}><option value="usage">Usage</option><option value="date">Date</option></select></label>
-              </div>
-              {scheduleDraft.triggerType === "usage" ? (
-                <div className={styles.scheduleTwoColumns}>
-                  <label className={styles.field}><span>Due at {asset.usageMode === "km" ? "kilometres" : asset.usageMode === "percent" ? "percentage" : "hours"}</span><input type="number" min="0" step="0.01" required value={scheduleDraft.dueUsage} onChange={(event) => setScheduleDraft((current) => ({ ...current, dueUsage: event.target.value }))} /></label>
-                  <label className={styles.field}><span>Notify before</span><input type="number" min="0" step="0.01" required value={scheduleDraft.alertBeforeValue} onChange={(event) => setScheduleDraft((current) => ({ ...current, alertBeforeValue: event.target.value }))} /></label>
-                </div>
-              ) : (
-                <div className={styles.scheduleTwoColumns}>
-                  <label className={styles.field}><span>Due date</span><input type="date" required value={scheduleDraft.dueDate} onChange={(event) => setScheduleDraft((current) => ({ ...current, dueDate: event.target.value }))} /></label>
-                  <label className={styles.field}><span>Notify days before</span><input type="number" min="0" step="1" required value={scheduleDraft.alertBeforeValue} onChange={(event) => setScheduleDraft((current) => ({ ...current, alertBeforeValue: event.target.value }))} /></label>
-                </div>
-              )}
-              <label className={styles.field}><span>Title</span><input required maxLength={180} value={scheduleDraft.title} onChange={(event) => setScheduleDraft((current) => ({ ...current, title: event.target.value }))} placeholder="Next service" /></label>
-              <label className={styles.field}><span>Notes</span><textarea value={scheduleDraft.notes} onChange={(event) => setScheduleDraft((current) => ({ ...current, notes: event.target.value }))} placeholder="Service requirements or reminders" /></label>
-              <label className={styles.scheduleRecurringChoice}><input type="checkbox" checked={scheduleDraft.recurringEnabled} onChange={(event) => setScheduleDraft((current) => ({ ...current, recurringEnabled: event.target.checked }))} /><span><strong>Recurring maintenance</strong><small>Create the next schedule automatically when this one is completed.</small></span></label>
-              {scheduleDraft.recurringEnabled ? <label className={styles.field}><span>Recurring interval {scheduleDraft.triggerType === "date" ? "in months" : "in usage"}</span><input type="number" min="1" step="0.01" required value={scheduleDraft.recurringIntervalValue} onChange={(event) => setScheduleDraft((current) => ({ ...current, recurringIntervalValue: event.target.value }))} /></label> : null}
-            </div>
-            <div className={styles.editorFooter}><button type="button" className={styles.secondaryButton} onClick={() => setIsScheduleModalOpen(false)} disabled={isSavingSchedule}>Cancel</button><button type="submit" className={styles.primaryButton} disabled={isSavingSchedule}>{isSavingSchedule ? "Saving…" : "Create schedule"}</button></div>
-          </form>
-        </div>
-      ) : null}
-
       {asset && isShareModalOpen && canUseDealerShare ? (
         <div className={styles.shareOverlay}>
           <div className={styles.modalBackdrop} onClick={closeShareModal} />
@@ -4009,7 +3610,7 @@ export default function ScanClient({
           >
             <header className={styles.shareHeader}>
               <div className={styles.shareTitleBlock}>
-                <span>Dealer help</span>
+                <span>{isFieldManagerMode ? "Contact Dealer" : "Dealer help"}</span>
                 <h3 id="share-modal-title">
                   {shareLeadStep === "consent"
                     ? "Confirm request"
@@ -4017,9 +3618,9 @@ export default function ScanClient({
                       ? "Message to dealer"
                       : shareLeadStep === "settings"
                         ? "Tracking settings"
-                      : "Get assistance"}
+                      : isFieldManagerMode ? "Choose a dealer" : "Get assistance"}
                 </h3>
-                <p>Get parts quotes, repair help or dealer support.</p>
+                <p>{isFieldManagerMode ? "Search and choose the dealer you want to contact." : "Get parts quotes, repair help or dealer support."}</p>
               </div>
               <button
                 type="button"
@@ -4058,27 +3659,31 @@ export default function ScanClient({
                   </button>
                 </form>
 
-                <div className={styles.shareMapStage}>
-                  <div className={styles.shareMapShell}>
-                    {isLoadingSharePartners &&
-                    !sharePartnersWithCoordinates.length ? (
-                      <div className={styles.shareMapFallback}>
-                        Loading approved dealers…
-                      </div>
-                    ) : sharePartnersWithCoordinates.length ? (
-                      <div
-                        ref={shareMapElementRef}
-                        className={styles.shareMapCanvas}
-                        aria-label="Dealer map"
-                      />
-                    ) : (
-                      <div className={styles.shareMapFallback}>
-                        {!sharePartners.length
-                          ? "No approved dealers found. Try a wider search."
-                          : "Map pins are not available for the current dealer results."}
-                      </div>
-                    )}
-                  </div>
+                <div className={styles.shareDealerList} aria-label="Available dealers">
+                  {isLoadingSharePartners ? (
+                    <div className={styles.shareEmptyState}>Loading approved dealers…</div>
+                  ) : sharePartners.length ? (
+                    sharePartners.map((partner) => (
+                      <button
+                        type="button"
+                        className={styles.shareDealerCard}
+                        key={partner.userId}
+                        onClick={() => openShareLeadMessage(partner)}
+                      >
+                        <span className={styles.shareDealerLogo}>
+                          {partner.logoUrl ? <img src={partner.logoUrl} alt="" /> : dealerPartnerName(partner).charAt(0).toUpperCase()}
+                        </span>
+                        <span className={styles.shareDealerMeta}>
+                          <strong>{dealerPartnerName(partner)}</strong>
+                          <small>{dealerPartnerLocation(partner)}</small>
+                          <em>{dealerPartnerServicesDisplay(partner)}</em>
+                        </span>
+                        <span className={styles.shareDealerAction}>Choose</span>
+                      </button>
+                    ))
+                  ) : (
+                    <div className={styles.shareEmptyState}>No approved dealers found. Try a wider search.</div>
+                  )}
                 </div>
               </div>
             ) : shareLeadStep === "message" && selectedSharePartner ? (
@@ -4211,7 +3816,7 @@ export default function ScanClient({
                   <button
                     type="button"
                     className={styles.secondaryButton}
-                    onClick={goBackToShareMap}
+                    onClick={goBackToDealerList}
                     disabled={
                       isSendingShareLead || isSaving || isUploadingSharePhoto
                     }
@@ -4311,7 +3916,7 @@ export default function ScanClient({
                     </div>
                   ) : <div className={styles.shareEmptyState}>No dealer is currently tracking this asset.</div>}
                 </div>
-                <footer className={styles.shareFooter}><button type="button" className={styles.secondaryButton} onClick={goBackToShareMap} disabled={Boolean(removingShareTrackingId)}>Back</button></footer>
+                <footer className={styles.shareFooter}><button type="button" className={styles.secondaryButton} onClick={goBackToDealerList} disabled={Boolean(removingShareTrackingId)}>Back</button></footer>
               </>
             ) : (
               <div className={styles.shareBody}>
@@ -4321,7 +3926,7 @@ export default function ScanClient({
                 <button
                   type="button"
                   className={styles.secondaryButton}
-                  onClick={goBackToShareMap}
+                  onClick={goBackToDealerList}
                 >
                   Back to dealers
                 </button>
@@ -5090,7 +4695,7 @@ export default function ScanClient({
 
               {activeEditor === "notes" ? (
                 <div className={styles.modalStack}>
-                  <label className={styles.field}>
+                  <label className={`${styles.field} ${isFieldManagerMode ? styles.fieldManagerNotesField : ""}`}>
                     <span>Notes</span>
                     <textarea
                       value={draft.note}

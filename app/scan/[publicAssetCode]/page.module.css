@@ -3031,6 +3031,20 @@
   letter-spacing: -0.012em;
 }
 
+.fieldManagerMobileSurface .actionCard .scheduleActionTitle {
+  display: grid;
+  gap: 0.08rem;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+.fieldManagerMobileSurface .actionEditorCard .fieldManagerNotesField textarea {
+  min-height: 12rem;
+}
+
 .fieldManagerMobileSurface .actionIconWrap {
   width: clamp(4.6rem, 18vw, 5.45rem);
   height: clamp(4.6rem, 18vw, 5.45rem);
