@@ -37,12 +37,12 @@ export default function OwnerAppNav({ showBack = true, backHref = '/owner-app', 
               <span>{backLabel}</span>
             </button>
           ) : (
-            <Link className={`${styles.navButton} ${backIsHome ? styles.homeNavButton : ''}`} href={backHref} prefetch={false} aria-label={backLabel}>
+            <Link className={styles.navButton} href={backHref} prefetch={false} aria-label={backLabel}>
               <span>{backLabel}</span>
             </Link>
           )}
           {!backIsHome ? (
-            <Link className={`${styles.logoutButton} ${styles.homeButton} ${styles.homeNavButton}`} href="/owner-app" prefetch={false} aria-label="Owner App home">
+            <Link className={`${styles.logoutButton} ${styles.homeButton}`} href="/owner-app" prefetch={false} aria-label="Owner App home">
               Home
             </Link>
           ) : null}
