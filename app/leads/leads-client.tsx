@@ -2,6 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type DragEvent } from 'react';
 import AppHeader from '../../components/AppHeader';
+import {
+  WorkspaceSummaryGrid,
+  WorkspaceSummaryTile,
+  WorkspaceTitlePanel,
+  workspaceStyles,
+} from '../../components/WorkspacePrimitives';
 import { openAssetRegisterSummaryPrint, openAssetSheetPrint, type ReportKeyValue, type ReportMethodCard } from '../../lib/report-print';
 import assetStyles from '../asset-register/page.module.css';
 import styles from './page.module.css';
@@ -1330,6 +1336,7 @@ function searchTextForLead(lead: AssetLead): string {
 
 type LeadsClientProps = {
   dealerAppMode?: boolean;
+  dealerWorkspaceMode?: boolean;
   initialLeads?: AssetLead[];
   initialSessionUserId?: string;
   initialAccountTitle?: string;
@@ -1337,10 +1344,14 @@ type LeadsClientProps = {
 
 export default function LeadsClient({
   dealerAppMode = false,
+  dealerWorkspaceMode,
   initialLeads = [],
   initialSessionUserId = '',
   initialAccountTitle = '',
 }: LeadsClientProps = {}) {
+  const useDealerWorkspaceStyles = dealerWorkspaceMode ?? dealerAppMode;
+  const dealerWorkspaceClass = (...classNames: string[]) =>
+    useDealerWorkspaceStyles ? classNames.join(' ') : '';
   const [sessionUserId, setSessionUserId] = useState(initialSessionUserId);
   const [leads, setLeads] = useState<AssetLead[]>(initialLeads);
   const [accountInboxTitle, setAccountInboxTitle] = useState(() =>
@@ -1531,6 +1542,49 @@ export default function LeadsClient({
   useEffect(() => {
     setCurrentPage((page) => Math.min(Math.max(page, 1), totalLeadPages));
   }, [totalLeadPages]);
+
+  const hasOpenLeadModal = useDealerWorkspaceStyles && Boolean(
+    isFilterModalOpen || managedLead || emailLead || reportLead || deleteLeadTarget || ownerPhotoPreview || noteLead,
+  );
+
+  useEffect(() => {
+    if (!hasOpenLeadModal) return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key !== 'Escape') return;
+      if (isDeletingLead || isSavingNote || isDownloadingLeadReport) return;
+
+      if (ownerPhotoPreview) setOwnerPhotoPreview(null);
+      else if (deleteLeadTarget) setDeleteLeadTarget(null);
+      else if (noteLead) closeNoteModal();
+      else if (reportLead) closeLeadReportModal();
+      else if (emailLead) closeEmailModal();
+      else if (managedLead) setManagedLead(null);
+      else setIsFilterModalOpen(false);
+    }
+
+    document.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [
+    deleteLeadTarget,
+    emailLead,
+    hasOpenLeadModal,
+    isDeletingLead,
+    isDownloadingLeadReport,
+    isSavingNote,
+    managedLead,
+    noteLead,
+    ownerPhotoPreview,
+    reportLead,
+    useDealerWorkspaceStyles,
+  ]);
 
   async function deleteLead(leadToDelete: AssetLead): Promise<boolean> {
     try {
@@ -2392,10 +2446,10 @@ export default function LeadsClient({
   const hasMultipleOwnerPreviewPhotos = Boolean(ownerPhotoPreview && ownerPhotoPreview.urls.length > 1);
 
   return (
-    <main className={`${assetStyles.page} ${styles.leadsPage} ${dealerAppMode ? dealerStyles.dealerLeadsSurface : ''}`}>
+    <main className={`${assetStyles.page} ${useDealerWorkspaceStyles ? workspaceStyles.page : ''} ${styles.leadsPage} ${useDealerWorkspaceStyles ? styles.dealerOwnerParity : ''} ${dealerAppMode ? dealerStyles.dealerLeadsSurface : ''}`}>
       {!dealerAppMode ? <AppHeader active="leads" /> : null}
 
-      <section className={assetStyles.shell}>
+      <section className={`${assetStyles.shell} ${useDealerWorkspaceStyles ? workspaceStyles.shell : ''}`}>
         {notice ? (
           <div className={`${assetStyles.notice} ${notice.tone === 'success' ? assetStyles.noticeSuccess : assetStyles.noticeError}`}>
             {notice.message}
@@ -2403,34 +2457,46 @@ export default function LeadsClient({
         ) : null}
 
         <section className={`${assetStyles.registerPanel} ${styles.leadsRegisterPanel}`}>
-          <div className={`${assetStyles.registerHeader} ${styles.leadsRegisterHeader}`}>
-            <div className={`${assetStyles.registerTitleBlock} ${styles.leadsHeroTitleBlock}`}>
-              <h1>{dealerAppMode ? 'Leads' : accountInboxTitle}</h1>
+          {useDealerWorkspaceStyles ? (
+            <WorkspaceTitlePanel title={dealerAppMode ? 'Leads' : accountInboxTitle} />
+          ) : (
+            <div className={`${assetStyles.registerHeader} ${styles.leadsRegisterHeader}`}>
+              <div className={`${assetStyles.registerTitleBlock} ${styles.leadsHeroTitleBlock}`}>
+                <h1>{dealerAppMode ? 'Leads' : accountInboxTitle}</h1>
+              </div>
             </div>
-          </div>
+          )}
 
-          <div className={`${styles.leadSummaryRow} ${dealerAppMode ? dealerStyles.dealerHidden : ''}`}>
-            <article className={`${styles.leadSummaryCard} ${styles.leadSummaryCardNew}`}>
-              <span>New</span>
-              <strong>{newLeadCount}</strong>
-              <small>Not yet opened or actioned.</small>
-            </article>
+          {useDealerWorkspaceStyles && !dealerAppMode ? (
+            <WorkspaceSummaryGrid label="Lead summary">
+              <WorkspaceSummaryTile label="New" value={newLeadCount} helper="Not yet opened or actioned." tone="copper" />
+              <WorkspaceSummaryTile label="Open" value={activeLeadCount} helper="Currently being reviewed or actioned." tone="blue" />
+              <WorkspaceSummaryTile label="Completed" value={completedLeadCount} helper="Marked done for the selected period." tone="green" />
+            </WorkspaceSummaryGrid>
+          ) : !useDealerWorkspaceStyles ? (
+            <div className={`${styles.leadSummaryRow} ${dealerAppMode ? dealerStyles.dealerHidden : ''}`}>
+              <article className={`${styles.leadSummaryCard} ${styles.leadSummaryCardNew}`}>
+                <span>New</span>
+                <strong>{newLeadCount}</strong>
+                <small>Not yet opened or actioned.</small>
+              </article>
 
-            <article className={`${styles.leadSummaryCard} ${styles.leadSummaryCardActive}`}>
-              <span>Open</span>
-              <strong>{activeLeadCount}</strong>
-              <small>Currently being reviewed or actioned.</small>
-            </article>
+              <article className={`${styles.leadSummaryCard} ${styles.leadSummaryCardActive}`}>
+                <span>Open</span>
+                <strong>{activeLeadCount}</strong>
+                <small>Currently being reviewed or actioned.</small>
+              </article>
 
-            <article className={`${styles.leadSummaryCard} ${styles.leadSummaryCardDone}`}>
-              <span>Completed</span>
-              <strong>{completedLeadCount}</strong>
-              <small>Marked done for the selected period.</small>
-            </article>
-          </div>
+              <article className={`${styles.leadSummaryCard} ${styles.leadSummaryCardDone}`}>
+                <span>Completed</span>
+                <strong>{completedLeadCount}</strong>
+                <small>Marked done for the selected period.</small>
+              </article>
+            </div>
+          ) : null}
 
-          <div className={`${assetStyles.toolbar} ${styles.leadSearchToolbar}`}>
-            <label className={assetStyles.searchWrap}>
+          <div className={`${assetStyles.toolbar} ${useDealerWorkspaceStyles ? workspaceStyles.controlsRow : ''} ${styles.leadSearchToolbar}`}>
+            <label className={`${assetStyles.searchWrap} ${useDealerWorkspaceStyles ? workspaceStyles.searchField : ''}`}>
               <SearchIcon className={assetStyles.searchIcon} />
               <input
                 className={assetStyles.searchInput}
@@ -2456,7 +2522,7 @@ export default function LeadsClient({
             <div className={styles.leadToolbarActions}>
               <button
                 type="button"
-                className={`${assetStyles.secondaryButton} ${assetStyles.filterTriggerButton} ${styles.leadFilterButton} ${hasActiveLeadFilter ? assetStyles.filterTriggerButtonActive : ''}`}
+                className={`${assetStyles.secondaryButton} ${assetStyles.filterTriggerButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionMint}` : ''} ${styles.leadFilterButton} ${hasActiveLeadFilter ? assetStyles.filterTriggerButtonActive : ''}`}
                 onClick={openLeadFilterModal}
                 disabled={isLoading}
               >
@@ -2467,7 +2533,7 @@ export default function LeadsClient({
 
               <button
                 type="button"
-                className={`${assetStyles.secondaryButton} ${styles.leadRefreshButton}`}
+                className={`${assetStyles.secondaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionNeutral}` : ''} ${styles.leadRefreshButton}`}
                 onClick={() => void refreshLeads()}
                 disabled={isLoading}
               >
@@ -2487,7 +2553,7 @@ export default function LeadsClient({
 
 
           {!isLoading && !filteredLeads.length ? (
-            <div className={assetStyles.emptyState}>No leads match this search or filter.</div>
+            <div className={`${assetStyles.emptyState} ${useDealerWorkspaceStyles ? workspaceStyles.emptyState : ''}`}>No leads match this search or filter.</div>
           ) : null}
 
           {!isLoading && filteredLeads.length ? (
@@ -2499,15 +2565,15 @@ export default function LeadsClient({
                 const isMarkingThisLeadDone = markingLeadDoneId === lead.id;
 
                 return (
-                  <article key={lead.id} className={`${styles.leadThread} ${isLeadNew ? styles.leadThreadNew : ''} ${isLeadDone ? styles.leadThreadDone : ''} ${isLeadOpen ? styles.leadThreadOpen : ''}`}>
+                  <article key={lead.id} className={`${useDealerWorkspaceStyles ? workspaceStyles.card : ''} ${styles.leadThread} ${isLeadNew ? styles.leadThreadNew : ''} ${isLeadDone ? styles.leadThreadDone : ''} ${isLeadOpen ? styles.leadThreadOpen : ''}`}>
                     <div className={styles.clientPanel}>
                       <div className={styles.clientPanelHeader}>
                         <div className={styles.clientIdentity}>
                           <div className={styles.leadCardTitleRow}>
                             <h3>{lead.ownerBusinessName || ownerDisplayName(lead)}</h3>
-                            {isLeadNew ? <span className={`${styles.leadStatusBadge} ${styles.leadStatusBadgeNew}`}>New</span> : null}
-                            {!isLeadNew && !isLeadDone ? <span className={`${styles.leadStatusBadge} ${styles.leadStatusBadgeOpen}`}>Open</span> : null}
-                            {isLeadDone ? <span className={`${styles.leadStatusBadge} ${styles.leadStatusBadgeDone}`}>Done</span> : null}
+                            {isLeadNew ? <span className={`${useDealerWorkspaceStyles ? `${workspaceStyles.statusPill} ${workspaceStyles.statusCopper}` : styles.leadStatusBadgeNew} ${styles.leadStatusBadge}`}>New</span> : null}
+                            {!isLeadNew && !isLeadDone ? <span className={`${useDealerWorkspaceStyles ? `${workspaceStyles.statusPill} ${workspaceStyles.statusBlue}` : styles.leadStatusBadgeOpen} ${styles.leadStatusBadge}`}>Open</span> : null}
+                            {isLeadDone ? <span className={`${useDealerWorkspaceStyles ? `${workspaceStyles.statusPill} ${workspaceStyles.statusGreen}` : styles.leadStatusBadgeDone} ${styles.leadStatusBadge}`}>Done</span> : null}
                           </div>
                           <strong className={styles.leadAssetName}>{assetTitle(lead)}</strong>
                           <span className={styles.clientKicker}>{formatLeadType(lead.leadType)} · Received {formatDate(lead.createdAtIso)}</span>
@@ -2517,7 +2583,7 @@ export default function LeadsClient({
                           <div className={styles.clientActionRow}>
                             <button
                               type="button"
-                              className={`${assetStyles.secondaryButton} ${isLeadDone ? styles.doneLeadPill : styles.markDoneLeadButton}`}
+                              className={`${assetStyles.secondaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionMint}` : ''} ${isLeadDone ? styles.doneLeadPill : styles.markDoneLeadButton}`}
                               onClick={() => void toggleLeadDone(lead)}
                               disabled={Boolean(markingLeadDoneId)}
                               aria-pressed={isLeadDone}
@@ -2529,12 +2595,12 @@ export default function LeadsClient({
 
                             {isLeadOpen ? (
                               <>
-                                <button type="button" className={`${assetStyles.secondaryButton} ${styles.deleteLeadButton}`} onClick={() => setDeleteLeadTarget(lead)}>
+                                <button type="button" className={`${assetStyles.secondaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionDanger}` : ''} ${styles.deleteLeadButton}`} onClick={() => setDeleteLeadTarget(lead)}>
                                   Delete
                                 </button>
                                 <button
                                   type="button"
-                                  className={`${assetStyles.secondaryButton} ${styles.closeLeadButton}`}
+                                  className={`${assetStyles.secondaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionNeutral}` : ''} ${styles.closeLeadButton}`}
                                   onClick={() => {
                                     setOpenLeadId(null);
                                   }}
@@ -2545,7 +2611,7 @@ export default function LeadsClient({
                             ) : (
                               <button
                                 type="button"
-                                className={`${assetStyles.primaryButton} ${styles.openLeadButton}`}
+                                className={`${assetStyles.primaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionGreen}` : ''} ${styles.openLeadButton}`}
                                 onClick={() => {
                                   void openLead(lead);
                                 }}
@@ -2600,7 +2666,7 @@ export default function LeadsClient({
           ) : null}
 
           {!isLoading && filteredLeads.length > LEADS_PER_PAGE ? (
-            <nav className={styles.leadPagination} aria-label="Lead pagination">
+            <nav className={`${useDealerWorkspaceStyles ? workspaceStyles.pagination : ''} ${styles.leadPagination}`} aria-label="Lead pagination">
               <div className={styles.leadPaginationSummary}>
                 Showing <strong>{leadRangeStart}</strong>-<strong>{leadRangeEnd}</strong> of <strong>{filteredLeads.length}</strong> leads
               </div>
@@ -2649,22 +2715,22 @@ export default function LeadsClient({
       </section>
 
       {isFilterModalOpen ? (
-        <div className={assetStyles.modalOverlay}>
+        <div className={`${assetStyles.modalOverlay} ${dealerWorkspaceClass(workspaceStyles.modalOverlay)}`}>
           <div className={assetStyles.modalBackdrop} onClick={closeLeadFilterModal} />
 
-          <div className={`${assetStyles.modalCard} ${styles.leadFilterModal}`} role="dialog" aria-modal="true" aria-labelledby="lead-filter-title">
-            <div className={assetStyles.modalHeader}>
+          <div className={`${assetStyles.modalCard} ${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadFilterModal}`} role="dialog" aria-modal="true" aria-labelledby="lead-filter-title">
+            <div className={`${assetStyles.modalHeader} ${dealerWorkspaceClass(workspaceStyles.modalHeader)}`}>
               <div className={assetStyles.modalHeaderText}>
                 <h3 id="lead-filter-title">Choose which leads to show.</h3>
                 <p className={styles.leadFilterIntro}>Filter your inbox by the date the lead was received and the current lead status.</p>
               </div>
 
-              <button type="button" className={assetStyles.modalCloseButton} onClick={closeLeadFilterModal} aria-label="Close filter modal">
+              <button type="button" className={`${assetStyles.modalCloseButton} ${dealerWorkspaceClass(workspaceStyles.modalClose)}`} onClick={closeLeadFilterModal} aria-label="Close filter modal">
                 <CloseIcon className={assetStyles.buttonIcon} />
               </button>
             </div>
 
-            <div className={styles.leadFilterForm}>
+            <div className={`${dealerWorkspaceClass(workspaceStyles.modalBody)} ${styles.leadFilterForm}`}>
               <LeadFilterDropdown
                 label="Month"
                 dropdownKey="month"
@@ -2696,7 +2762,7 @@ export default function LeadsClient({
               />
             </div>
 
-            <div className={`${assetStyles.formActions} ${styles.leadFilterActions}`}>
+            <div className={`${assetStyles.formActions} ${dealerWorkspaceClass(workspaceStyles.modalFooter)} ${styles.leadFilterActions}`}>
               <button type="button" className={assetStyles.secondaryButton} onClick={resetLeadFilters} disabled={!hasActiveLeadFilter}>
                 Reset filters
               </button>
@@ -2709,22 +2775,22 @@ export default function LeadsClient({
       ) : null}
 
       {managedLead ? (
-        <div className={assetStyles.modalOverlay}>
+        <div className={`${assetStyles.modalOverlay} ${dealerWorkspaceClass(workspaceStyles.modalOverlay)}`}>
           <div className={assetStyles.modalBackdrop} onClick={() => setManagedLead(null)} />
 
-          <div className={`${assetStyles.optionsModal} ${styles.leadManageModal}`} role="dialog" aria-modal="true" aria-labelledby="lead-manage-title">
-            <div className={`${assetStyles.modalHeader} ${assetStyles.optionsModalHeader}`}>
+          <div className={`${assetStyles.optionsModal} ${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadManageModal}`} role="dialog" aria-modal="true" aria-labelledby="lead-manage-title">
+            <div className={`${assetStyles.modalHeader} ${assetStyles.optionsModalHeader} ${dealerWorkspaceClass(workspaceStyles.modalHeader)}`}>
               <div className={assetStyles.modalHeaderText}>
                 <h3 id="lead-manage-title">{assetTitle(managedLead)}</h3>
                 <p>{leadAssetMeta(managedLead)}</p>
               </div>
 
-              <button type="button" className={assetStyles.modalCloseButton} onClick={() => setManagedLead(null)} aria-label="Close lead management">
+              <button type="button" className={`${assetStyles.modalCloseButton} ${dealerWorkspaceClass(workspaceStyles.modalClose)}`} onClick={() => setManagedLead(null)} aria-label="Close lead management">
                 <CloseIcon className={assetStyles.buttonIcon} />
               </button>
             </div>
 
-            <div className={`${assetStyles.modalScrollBody} ${assetStyles.optionsScrollBody}`}>
+            <div className={`${assetStyles.modalScrollBody} ${assetStyles.optionsScrollBody} ${dealerWorkspaceClass(workspaceStyles.modalBody)}`}>
               <div className={assetStyles.optionsContent}>
                 <div className={`${assetStyles.optionsGrid} ${assetStyles.assetOptionsGrid} ${styles.manageOptionsGrid}`}>
                   <button type="button" className={`${assetStyles.optionActionButton} ${assetStyles.optionFeaturedButton} ${styles.whatsAppActionButton}`} onClick={() => openWhatsApp(managedLead)}>
@@ -2772,22 +2838,22 @@ export default function LeadsClient({
       ) : null}
 
       {emailLead ? (
-        <div className={assetStyles.modalOverlay}>
+        <div className={`${assetStyles.modalOverlay} ${dealerWorkspaceClass(workspaceStyles.modalOverlay)}`}>
           <div className={assetStyles.modalBackdrop} onClick={closeEmailModal} />
 
-          <div className={`${assetStyles.modalCard} ${styles.leadEmailModal}`} role="dialog" aria-modal="true" aria-labelledby="lead-email-title">
-            <div className={assetStyles.modalHeader}>
+          <div className={`${assetStyles.modalCard} ${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadEmailModal}`} role="dialog" aria-modal="true" aria-labelledby="lead-email-title">
+            <div className={`${assetStyles.modalHeader} ${dealerWorkspaceClass(workspaceStyles.modalHeader)}`}>
               <div className={assetStyles.modalHeaderText}>
                 <h3 id="lead-email-title">Email client</h3>
                 <p>{assetTitle(emailLead)} · {ownerDisplayName(emailLead)}</p>
               </div>
 
-              <button type="button" className={assetStyles.modalCloseButton} onClick={closeEmailModal} aria-label="Close email draft">
+              <button type="button" className={`${assetStyles.modalCloseButton} ${dealerWorkspaceClass(workspaceStyles.modalClose)}`} onClick={closeEmailModal} aria-label="Close email draft">
                 <CloseIcon className={assetStyles.buttonIcon} />
               </button>
             </div>
 
-            <div className={styles.leadEmailDraftPanel}>
+            <div className={`${dealerWorkspaceClass(workspaceStyles.modalBody)} ${styles.leadEmailDraftPanel}`}>
               <div className={styles.leadEmailRecipientCard}>
                 <span>To</span>
                 <strong>{activeEmailRecipient()}</strong>
@@ -2804,7 +2870,7 @@ export default function LeadsClient({
               </label>
             </div>
 
-            <div className={styles.leadEmailActions}>
+            <div className={`${dealerWorkspaceClass(workspaceStyles.modalFooter)} ${styles.leadEmailActions}`}>
               <button type="button" className={assetStyles.secondaryButton} onClick={closeEmailModal}>
                 Cancel
               </button>
@@ -2823,21 +2889,21 @@ export default function LeadsClient({
       ) : null}
 
       {reportLead ? (
-        <div className={assetStyles.modalOverlay}>
+        <div className={`${assetStyles.modalOverlay} ${dealerWorkspaceClass(workspaceStyles.modalOverlay)}`}>
           <div className={assetStyles.modalBackdrop} onClick={closeLeadReportModal} />
 
-          <div className={`${assetStyles.modalCard} ${assetStyles.exportModal} ${styles.leadReportModal}`} role="dialog" aria-modal="true" aria-labelledby="lead-report-export-title">
-            <div className={`${assetStyles.modalHeader} ${assetStyles.exportModalHeader}`}>
+          <div className={`${assetStyles.modalCard} ${assetStyles.exportModal} ${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadReportModal}`} role="dialog" aria-modal="true" aria-labelledby="lead-report-export-title">
+            <div className={`${assetStyles.modalHeader} ${assetStyles.exportModalHeader} ${dealerWorkspaceClass(workspaceStyles.modalHeader)}`}>
               <div className={assetStyles.modalHeaderText}>
                 <h3 id="lead-report-export-title">Download lead report</h3>
               </div>
 
-              <button type="button" className={assetStyles.modalCloseButton} onClick={closeLeadReportModal} aria-label="Close report download options" disabled={isDownloadingLeadReport}>
+              <button type="button" className={`${assetStyles.modalCloseButton} ${dealerWorkspaceClass(workspaceStyles.modalClose)}`} onClick={closeLeadReportModal} aria-label="Close report download options" disabled={isDownloadingLeadReport}>
                 <CloseIcon className={assetStyles.buttonIcon} />
               </button>
             </div>
 
-            <div className={`${assetStyles.modalScrollBody} ${assetStyles.exportModalScrollBody}`}>
+            <div className={`${assetStyles.modalScrollBody} ${assetStyles.exportModalScrollBody} ${dealerWorkspaceClass(workspaceStyles.modalBody)}`}>
               <div className={assetStyles.exportModalBody}>
                 {leadReportStep === 'format' ? (
                   <>
@@ -2911,18 +2977,18 @@ export default function LeadsClient({
       ) : null}
 
       {deleteLeadTarget ? (
-        <div className={`${assetStyles.modalOverlay} ${assetStyles.confirmDeleteOverlay}`}>
+        <div className={`${assetStyles.modalOverlay} ${assetStyles.confirmDeleteOverlay} ${dealerWorkspaceClass(workspaceStyles.modalOverlay)}`}>
           <div className={assetStyles.modalBackdrop} onClick={closeDeleteLeadModal} />
 
           <div
-            className={`${assetStyles.deleteConfirmModal} ${styles.leadDeleteModal}`}
+            className={`${assetStyles.deleteConfirmModal} ${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadDeleteModal}`}
             role="alertdialog"
             aria-modal="true"
             aria-labelledby="delete-lead-confirm-title"
             aria-describedby="delete-lead-confirm-copy"
           >
             <div className={`${assetStyles.deleteConfirmContent} ${styles.leadDeleteContent}`}>
-              <div className={`${assetStyles.deleteConfirmHeader} ${styles.leadDeleteHeader}`}>
+              <div className={`${assetStyles.deleteConfirmHeader} ${dealerWorkspaceClass(workspaceStyles.modalHeader)} ${styles.leadDeleteHeader}`}>
                 <div>
                   <h3 id="delete-lead-confirm-title">Delete lead?</h3>
                   <p id="delete-lead-confirm-copy">This removes the lead from your leads inbox.</p>
@@ -2930,7 +2996,7 @@ export default function LeadsClient({
 
                 <button
                   type="button"
-                  className={`${assetStyles.modalCloseButton} ${styles.leadDeleteCloseButton}`}
+                  className={`${assetStyles.modalCloseButton} ${dealerWorkspaceClass(workspaceStyles.modalClose)} ${styles.leadDeleteCloseButton}`}
                   onClick={closeDeleteLeadModal}
                   aria-label="Close delete confirmation"
                   disabled={isDeletingLead}
@@ -2945,7 +3011,7 @@ export default function LeadsClient({
                 <small>{assetTitle(deleteLeadTarget)} · {formatCurrency(assetValue(deleteLeadTarget))} excl. VAT</small>
               </div>
 
-              <div className={`${assetStyles.deleteConfirmActions} ${styles.leadDeleteActions}`}>
+              <div className={`${assetStyles.deleteConfirmActions} ${dealerWorkspaceClass(workspaceStyles.modalFooter)} ${styles.leadDeleteActions}`}>
                 <button type="button" className={assetStyles.secondaryButton} onClick={closeDeleteLeadModal} disabled={isDeletingLead}>
                   Close
                 </button>
@@ -2965,22 +3031,22 @@ export default function LeadsClient({
       ) : null}
 
       {ownerPhotoPreview && ownerPhotoPreviewUrl ? (
-        <div className={`${assetStyles.modalOverlay} ${styles.ownerPhotoPreviewOverlay}`}>
+        <div className={`${assetStyles.modalOverlay} ${dealerWorkspaceClass(workspaceStyles.modalOverlay)} ${styles.ownerPhotoPreviewOverlay}`}>
           <div className={assetStyles.modalBackdrop} onClick={closeOwnerPhotoPreview} />
 
-          <div className={styles.ownerPhotoPreviewModal} role="dialog" aria-modal="true" aria-labelledby="owner-photo-preview-title">
-            <div className={styles.ownerPhotoPreviewHeader}>
+          <div className={`${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.ownerPhotoPreviewModal}`} role="dialog" aria-modal="true" aria-labelledby="owner-photo-preview-title">
+            <div className={`${dealerWorkspaceClass(workspaceStyles.modalHeader)} ${styles.ownerPhotoPreviewHeader}`}>
               <div>
                 <strong id="owner-photo-preview-title">{ownerPhotoPreview.title}</strong>
                 <span>Owner photo {ownerPhotoPreviewIndex + 1} of {ownerPhotoPreview.urls.length}</span>
               </div>
 
-              <button type="button" className={styles.ownerPhotoPreviewCloseButton} onClick={closeOwnerPhotoPreview} aria-label="Close owner photo preview">
+              <button type="button" className={`${dealerWorkspaceClass(workspaceStyles.modalClose)} ${styles.ownerPhotoPreviewCloseButton}`} onClick={closeOwnerPhotoPreview} aria-label="Close owner photo preview">
                 <CloseIcon className={assetStyles.buttonIcon} />
               </button>
             </div>
 
-            <div className={styles.ownerPhotoPreviewFrame}>
+            <div className={`${dealerWorkspaceClass(workspaceStyles.modalBody)} ${styles.ownerPhotoPreviewFrame}`}>
               <img src={ownerPhotoPreviewUrl} alt={`Owner attached photo ${ownerPhotoPreviewIndex + 1}`} />
 
               {hasMultipleOwnerPreviewPhotos ? (
@@ -3010,17 +3076,17 @@ export default function LeadsClient({
       ) : null}
 
       {noteLead ? (
-        <div className={assetStyles.modalOverlay}>
+        <div className={`${assetStyles.modalOverlay} ${dealerWorkspaceClass(workspaceStyles.modalOverlay)}`}>
           <div className={assetStyles.modalBackdrop} onClick={closeNoteModal} />
 
-          <div className={`${assetStyles.modalCard} ${assetStyles.sharedNoteModal} ${styles.leadNoteModal}`} role="dialog" aria-modal="true" aria-labelledby="lead-note-title">
-            <div className={assetStyles.modalHeader}>
+          <div className={`${assetStyles.modalCard} ${assetStyles.sharedNoteModal} ${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadNoteModal}`} role="dialog" aria-modal="true" aria-labelledby="lead-note-title">
+            <div className={`${assetStyles.modalHeader} ${dealerWorkspaceClass(workspaceStyles.modalHeader)}`}>
               <div className={assetStyles.modalHeaderText}>
                 <h3 id="lead-note-title">Send note or quote</h3>
                 <p>{assetTitle(noteLead)} · {ownerDisplayName(noteLead)}</p>
               </div>
 
-              <button type="button" className={assetStyles.modalCloseButton} onClick={closeNoteModal} aria-label="Close note modal" disabled={isSavingNote}>
+              <button type="button" className={`${assetStyles.modalCloseButton} ${dealerWorkspaceClass(workspaceStyles.modalClose)}`} onClick={closeNoteModal} aria-label="Close note modal" disabled={isSavingNote}>
                 <CloseIcon className={assetStyles.buttonIcon} />
               </button>
             </div>
@@ -3076,7 +3142,7 @@ export default function LeadsClient({
 
             <p className={styles.leadNoteDeliveryHint}>This note and any attached quote will appear in the owner&apos;s Asset Register.</p>
 
-            <div className={`${assetStyles.formActions} ${assetStyles.sharedNoteActions} ${styles.leadNoteActions}`}>
+            <div className={`${assetStyles.formActions} ${assetStyles.sharedNoteActions} ${dealerWorkspaceClass(workspaceStyles.modalFooter)} ${styles.leadNoteActions}`}>
               <button type="button" className={assetStyles.secondaryButton} onClick={closeNoteModal} disabled={isSavingNote}>
                 Cancel
               </button>
