@@ -294,6 +294,20 @@ function normalizeSpecsJson(value: unknown): Record<string, unknown> {
   return {};
 }
 
+function replacementPriceNotApplicable(
+  kind: AssetRegisterItemKind,
+  specs: Record<string, unknown>,
+): boolean {
+  const explicitFlag = String(
+    specs.replacementPriceNotApplicable ?? specs.replacement_price_not_applicable ?? '',
+  ).trim().toLowerCase();
+  const propertySubtype = String(
+    specs.propertyAssetSubtype ?? specs.property_asset_subtype ?? '',
+  ).trim().toLowerCase();
+
+  return explicitFlag === 'true' || kind === 'stock' || (kind === 'property' && propertySubtype === 'land');
+}
+
 function buildManualSpecsJson(
   value: unknown,
   usageMetric: 'hours' | 'km' | null,
@@ -560,6 +574,7 @@ export async function POST(request: NextRequest) {
   if (ownerError) return ownerError;
 
   const body = (await request.json()) as Partial<CreateManualAssetInput>;
+  const kind = normalizeKind(body.kind);
   const title = String(body.title ?? '').trim();
   const value = Math.round(Number(body.value) || 0);
   const usageMetric = normalizeUsageMetric(body.usageMetric);
@@ -578,12 +593,13 @@ export async function POST(request: NextRequest) {
   );
   const brandName = String((body as { brandName?: unknown }).brandName ?? '').trim();
   const modelName = String((body as { modelName?: unknown }).modelName ?? '').trim();
+  const normalizedSpecsJson = normalizeSpecsJson(body.specsJson);
   const insuranceStatus = readInsuranceStatusFromSpecs(
-    normalizeSpecsJson(body.specsJson),
+    normalizedSpecsJson,
     Boolean(body.isInsured) || insuredValueExVat !== null ? 'yes' : 'no',
   );
   const specsJsonWithInsuranceStatus = {
-    ...normalizeSpecsJson(body.specsJson),
+    ...normalizedSpecsJson,
     insuranceStatus,
     insurance_status: insuranceStatus,
     insuredStatus: insuranceStatus,
@@ -601,7 +617,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  if (replacementPriceExVat === null) {
+  if (replacementPriceExVat === null && !replacementPriceNotApplicable(kind, normalizedSpecsJson)) {
     return NextResponse.json(
       {
         ok: false,
@@ -614,7 +630,7 @@ export async function POST(request: NextRequest) {
   try {
     const item = await createManualAssetRegisterItem(session.user.id, {
       registerId: String((body as { registerId?: unknown }).registerId ?? '').trim() || null,
-      kind: normalizeKind(body.kind),
+      kind,
       title,
       value,
       note: body.note ?? null,
@@ -697,12 +713,13 @@ export async function PUT(request: NextRequest) {
   );
   const brandName = String((body as { brandName?: unknown }).brandName ?? '').trim();
   const modelName = String((body as { modelName?: unknown }).modelName ?? '').trim();
+  const normalizedSpecsJson = normalizeSpecsJson(body.specsJson);
   const insuranceStatus = readInsuranceStatusFromSpecs(
-    normalizeSpecsJson(body.specsJson),
+    normalizedSpecsJson,
     Boolean(body.isInsured) || insuredValueExVat !== null ? 'yes' : 'no',
   );
   const specsJsonWithInsuranceStatus = {
-    ...normalizeSpecsJson(body.specsJson),
+    ...normalizedSpecsJson,
     insuranceStatus,
     insurance_status: insuranceStatus,
     insuredStatus: insuranceStatus,
@@ -730,9 +747,13 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Asset not found.' }, { status: 404 });
   }
 
-  const effectiveReplacementPriceExVat = replacementPriceExVat ?? normalizeReplacementPrice(existing.replacementPriceExVat);
+  const kind = existing.valuationRunId ? existing.kind : normalizeKind(body.kind);
+  const canOmitReplacementPrice = replacementPriceNotApplicable(kind, normalizedSpecsJson);
+  const effectiveReplacementPriceExVat = canOmitReplacementPrice
+    ? replacementPriceExVat
+    : replacementPriceExVat ?? normalizeReplacementPrice(existing.replacementPriceExVat);
 
-  if (effectiveReplacementPriceExVat === null) {
+  if (effectiveReplacementPriceExVat === null && !canOmitReplacementPrice) {
     return NextResponse.json(
       {
         ok: false,
@@ -753,7 +774,7 @@ export async function PUT(request: NextRequest) {
   try {
     const item = await updateAssetRegisterItem(session.user.id, {
       assetId,
-      kind: normalizeKind(body.kind),
+      kind,
       title,
       value,
       note: body.note ?? null,
