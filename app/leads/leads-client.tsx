@@ -14,7 +14,7 @@ import dealerStyles from '../dealer/dealer.module.css';
 type LeadType = 'finance' | 'insurance' | 'replacement_quote';
 type LeadStatus = 'sent' | 'viewed' | 'accepted' | 'quoted' | 'declined' | 'closed';
 type NoticeTone = 'success' | 'error';
-type LeadStatusFilter = 'all' | 'new' | 'opened';
+type LeadStatusFilter = 'all' | 'new' | 'open' | 'completed';
 type FilterDropdownKey = 'month' | 'year' | 'status';
 type AssetStatusChoice = 'yes' | 'no' | 'unknown' | 'not_applicable';
 type LeadReportStep = 'format' | 'pdf-report';
@@ -113,6 +113,7 @@ type OwnerPhotoPreview = {
   urls: string[];
   index: number;
   title: string;
+  sourceLabel: string;
 };
 
 type PartnerNoteResponse = {
@@ -165,7 +166,8 @@ const PAGINATION_WINDOW = 5;
 const STATUS_FILTER_OPTIONS: LeadFilterOption[] = [
   { value: 'all', label: 'All leads' },
   { value: 'new', label: 'New leads' },
-  { value: 'opened', label: 'Opened leads' },
+  { value: 'open', label: 'Open leads' },
+  { value: 'completed', label: 'Completed leads' },
 ];
 
 const PDF_REPORT_OPTIONS: PdfReportOption[] = [
@@ -395,7 +397,7 @@ function LeadFilterDropdown({
   const isOpen = openDropdown === dropdownKey;
 
   return (
-    <label className={`${assetStyles.field} ${styles.leadFilterField}`}>
+    <label className={`${assetStyles.field} ${styles.leadFilterField} ${isOpen ? styles.leadFilterFieldOpen : ''}`}>
       <span>{label}</span>
       <div className={styles.leadFilterDropdown}>
         <button
@@ -488,6 +490,20 @@ function isNewLead(lead: AssetLead): boolean {
 
 function isCompletedLead(lead: AssetLead): boolean {
   return lead.status === 'quoted' || lead.status === 'closed';
+}
+
+function isTrackingLead(lead: AssetLead): boolean {
+  const source = [
+    asText(lead.includedSections.source),
+    asText(lead.assetSnapshot.source),
+    asText(lead.assetSnapshot.sharePurpose),
+  ].join(' ').toLowerCase();
+
+  return (
+    asBoolean(lead.includedSections.maintenanceTrackingEnabled) ||
+    asBoolean(lead.assetSnapshot.maintenanceTrackingEnabled) ||
+    source.includes('tracking')
+  );
 }
 
 function leadDateParts(lead: AssetLead): { month: string; year: string } | null {
@@ -679,6 +695,8 @@ function registerLeadLabel(lead: AssetLead): string {
 }
 
 function formatLeadDisplayType(lead: AssetLead): string {
+  if (isTrackingLead(lead)) return 'Asset tracking request';
+
   if (isFullRegisterLead(lead)) {
     if (lead.leadType === 'finance') return 'Full finance lead';
     if (lead.leadType === 'insurance') return 'Full insurance lead';
@@ -1422,7 +1440,8 @@ export default function LeadsClient({
 
     return periodLeads.filter((lead) => {
       if (statusFilter === 'new' && !isNewLead(lead)) return false;
-      if (statusFilter === 'opened' && isNewLead(lead)) return false;
+      if (statusFilter === 'open' && (isNewLead(lead) || isCompletedLead(lead))) return false;
+      if (statusFilter === 'completed' && !isCompletedLead(lead)) return false;
 
       if (!query) return true;
       return searchTextForLead(lead).includes(query);
@@ -1466,7 +1485,8 @@ export default function LeadsClient({
     if (selectedMonth && selectedMonth.value !== 'all') labels.push(selectedMonth.label);
     if (yearFilter !== 'all') labels.push(yearFilter);
     if (statusFilter === 'new') labels.push('New leads');
-    if (statusFilter === 'opened') labels.push('Opened leads');
+    if (statusFilter === 'open') labels.push('Open leads');
+    if (statusFilter === 'completed') labels.push('Completed leads');
 
     if (!labels.length) return 'Filter';
     if (labels.length === 1) return labels[0];
@@ -2175,7 +2195,7 @@ export default function LeadsClient({
     setLeadPhotoIndex(lead.id, nextIndex);
   }
 
-  function openOwnerPhotoPreview(lead: AssetLead, urls: string[], index: number) {
+  function openOwnerPhotoPreview(lead: AssetLead, urls: string[], index: number, sourceLabel = 'Owner photo') {
     const normalizedUrls = urls.map(normalizeLeadPhotoUrl).filter(Boolean);
 
     if (!normalizedUrls.length) return;
@@ -2184,6 +2204,7 @@ export default function LeadsClient({
       urls: normalizedUrls,
       index: Math.min(Math.max(index, 0), normalizedUrls.length - 1),
       title: assetTitle(lead),
+      sourceLabel,
     });
   }
 
@@ -2319,8 +2340,16 @@ export default function LeadsClient({
           <div className={`${assetStyles.previewStage} ${styles.leadPreviewStage}`}>
             {photo ? (
               <>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={photo} alt={`${assetTitle(lead)} photo ${photoIndex + 1}`} className={`${assetStyles.previewImage} ${styles.leadPreviewImage}`} />
+                <button
+                  type="button"
+                  className={styles.leadPreviewOpenButton}
+                  onClick={() => openOwnerPhotoPreview(lead, photos, photoIndex, 'Asset photo')}
+                  aria-label={`Open ${assetTitle(lead)} photo ${photoIndex + 1}`}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={photo} alt={`${assetTitle(lead)} photo ${photoIndex + 1}`} className={`${assetStyles.previewImage} ${styles.leadPreviewImage}`} />
+                  <span className={styles.leadPreviewOpenLabel}>Open photo</span>
+                </button>
 
                 {hasMultiplePhotos ? (
                   <>
@@ -2467,39 +2496,39 @@ export default function LeadsClient({
 
           {useDealerWorkspaceStyles && !dealerAppMode ? (
             <section className={`${assetStyles.summaryRow} ${assetStyles.heroSummaryRow} ${styles.leadSummaryRow}`} aria-label="Lead summary">
-              <article className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile}`}>
+              <article className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${styles.leadOwnerSummaryCard} ${styles.leadOwnerSummaryCardNew}`}>
                 <div className={assetStyles.heroSummaryHead}>
-                  <span className={assetStyles.heroSummaryTitle}>New</span>
+                  <span className={`${assetStyles.heroSummaryTitle} ${styles.leadOwnerSummaryText}`}>New</span>
                 </div>
                 <div className={assetStyles.heroSummaryValueRow}>
-                  <strong className={assetStyles.heroSummaryValue}>{newLeadCount}</strong>
+                  <strong className={`${assetStyles.heroSummaryValue} ${styles.leadOwnerSummaryText}`}>{newLeadCount}</strong>
                 </div>
-                <div className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter}`}>
-                  <small>Not yet opened or actioned.</small>
+                <div className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${styles.leadOwnerSummaryFooter}`}>
+                  <small className={styles.leadOwnerSummaryText}>Not yet opened or actioned.</small>
                 </div>
               </article>
 
-              <article className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile}`}>
+              <article className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${styles.leadOwnerSummaryCard} ${styles.leadOwnerSummaryCardOpen}`}>
                 <div className={assetStyles.heroSummaryHead}>
-                  <span className={assetStyles.heroSummaryTitle}>Open</span>
+                  <span className={`${assetStyles.heroSummaryTitle} ${styles.leadOwnerSummaryText}`}>Open</span>
                 </div>
                 <div className={assetStyles.heroSummaryValueRow}>
-                  <strong className={assetStyles.heroSummaryValue}>{activeLeadCount}</strong>
+                  <strong className={`${assetStyles.heroSummaryValue} ${styles.leadOwnerSummaryText}`}>{activeLeadCount}</strong>
                 </div>
-                <div className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter}`}>
-                  <small>Currently being reviewed or actioned.</small>
+                <div className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${styles.leadOwnerSummaryFooter}`}>
+                  <small className={styles.leadOwnerSummaryText}>Currently being reviewed or actioned.</small>
                 </div>
               </article>
 
-              <article className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile}`}>
+              <article className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${styles.leadOwnerSummaryCard} ${styles.leadOwnerSummaryCardDone}`}>
                 <div className={assetStyles.heroSummaryHead}>
-                  <span className={assetStyles.heroSummaryTitle}>Completed</span>
+                  <span className={`${assetStyles.heroSummaryTitle} ${styles.leadOwnerSummaryText}`}>Completed</span>
                 </div>
                 <div className={assetStyles.heroSummaryValueRow}>
-                  <strong className={assetStyles.heroSummaryValue}>{completedLeadCount}</strong>
+                  <strong className={`${assetStyles.heroSummaryValue} ${styles.leadOwnerSummaryText}`}>{completedLeadCount}</strong>
                 </div>
-                <div className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter}`}>
-                  <small>Marked done for the selected period.</small>
+                <div className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${styles.leadOwnerSummaryFooter}`}>
+                  <small className={styles.leadOwnerSummaryText}>Marked done for the selected period.</small>
                 </div>
               </article>
             </section>
@@ -2592,21 +2621,26 @@ export default function LeadsClient({
                 const isLeadOpen = openLeadId === lead.id;
                 const isLeadNew = isNewLead(lead);
                 const isLeadDone = isCompletedLead(lead);
+                const isLeadActive = !isLeadNew && !isLeadDone;
+                const isTrackingRequest = isTrackingLead(lead);
                 const isMarkingThisLeadDone = markingLeadDoneId === lead.id;
 
                 return (
-                  <article key={lead.id} className={`${useDealerWorkspaceStyles ? workspaceStyles.card : ''} ${styles.leadThread} ${isLeadNew ? styles.leadThreadNew : ''} ${isLeadDone ? styles.leadThreadDone : ''} ${isLeadOpen ? styles.leadThreadOpen : ''}`}>
+                  <article key={lead.id} className={`${useDealerWorkspaceStyles ? workspaceStyles.card : ''} ${styles.leadThread} ${isLeadNew ? styles.leadThreadNew : ''} ${isLeadActive ? styles.leadThreadActive : ''} ${isLeadDone ? styles.leadThreadDone : ''} ${isTrackingRequest ? styles.leadThreadTracking : ''} ${isLeadOpen ? styles.leadThreadOpen : ''}`}>
                     <div className={styles.clientPanel}>
                       <div className={styles.clientPanelHeader}>
                         <div className={styles.clientIdentity}>
                           <div className={styles.leadCardTitleRow}>
                             <h3>{lead.ownerBusinessName || ownerDisplayName(lead)}</h3>
-                            {isLeadNew ? <span className={`${useDealerWorkspaceStyles ? `${workspaceStyles.statusPill} ${workspaceStyles.statusCopper}` : styles.leadStatusBadgeNew} ${styles.leadStatusBadge}`}>New</span> : null}
-                            {!isLeadNew && !isLeadDone ? <span className={`${useDealerWorkspaceStyles ? `${workspaceStyles.statusPill} ${workspaceStyles.statusBlue}` : styles.leadStatusBadgeOpen} ${styles.leadStatusBadge}`}>Open</span> : null}
-                            {isLeadDone ? <span className={`${useDealerWorkspaceStyles ? `${workspaceStyles.statusPill} ${workspaceStyles.statusGreen}` : styles.leadStatusBadgeDone} ${styles.leadStatusBadge}`}>Done</span> : null}
                           </div>
                           <strong className={styles.leadAssetName}>{assetTitle(lead)}</strong>
-                          <span className={styles.clientKicker}>{formatLeadType(lead.leadType)} · Received {formatDate(lead.createdAtIso)}</span>
+                          {isTrackingRequest ? (
+                            <span className={styles.trackingLeadPurpose}>
+                              <strong>Asset sent for tracking</strong>
+                              <small>Maintenance tracking access was shared with your dealership.</small>
+                            </span>
+                          ) : null}
+                          <span className={styles.clientKicker}>{formatLeadDisplayType(lead)} · Received {formatDate(lead.createdAtIso)}</span>
                         </div>
 
                         <div className={styles.clientDecisionArea}>
@@ -2646,7 +2680,7 @@ export default function LeadsClient({
                                   void openLead(lead);
                                 }}
                               >
-                                Open lead
+                                {isTrackingRequest ? 'Open tracking request' : 'Open lead'}
                               </button>
                             )}
                           </div>
@@ -3068,16 +3102,16 @@ export default function LeadsClient({
             <div className={`${dealerWorkspaceClass(workspaceStyles.modalHeader)} ${styles.ownerPhotoPreviewHeader}`}>
               <div>
                 <strong id="owner-photo-preview-title">{ownerPhotoPreview.title}</strong>
-                <span>Owner photo {ownerPhotoPreviewIndex + 1} of {ownerPhotoPreview.urls.length}</span>
+                <span>{ownerPhotoPreview.sourceLabel} {ownerPhotoPreviewIndex + 1} of {ownerPhotoPreview.urls.length}</span>
               </div>
 
-              <button type="button" className={`${dealerWorkspaceClass(workspaceStyles.modalClose)} ${styles.ownerPhotoPreviewCloseButton}`} onClick={closeOwnerPhotoPreview} aria-label="Close owner photo preview">
+              <button type="button" className={`${dealerWorkspaceClass(workspaceStyles.modalClose)} ${styles.ownerPhotoPreviewCloseButton}`} onClick={closeOwnerPhotoPreview} aria-label="Close photo preview">
                 <CloseIcon className={assetStyles.buttonIcon} />
               </button>
             </div>
 
             <div className={`${dealerWorkspaceClass(workspaceStyles.modalBody)} ${styles.ownerPhotoPreviewFrame}`}>
-              <img src={ownerPhotoPreviewUrl} alt={`Owner attached photo ${ownerPhotoPreviewIndex + 1}`} />
+              <img src={ownerPhotoPreviewUrl} alt={`${ownerPhotoPreview.sourceLabel} ${ownerPhotoPreviewIndex + 1}`} />
 
               {hasMultipleOwnerPreviewPhotos ? (
                 <>
@@ -3085,7 +3119,7 @@ export default function LeadsClient({
                     type="button"
                     className={`${styles.ownerPhotoPreviewNavButton} ${styles.ownerPhotoPreviewNavPrevious}`}
                     onClick={() => cycleOwnerPhotoPreview(-1)}
-                    aria-label="Show previous owner photo"
+                    aria-label="Show previous photo"
                   >
                     <ChevronLeftIcon className={assetStyles.buttonIcon} />
                   </button>
@@ -3094,7 +3128,7 @@ export default function LeadsClient({
                     type="button"
                     className={`${styles.ownerPhotoPreviewNavButton} ${styles.ownerPhotoPreviewNavNext}`}
                     onClick={() => cycleOwnerPhotoPreview(1)}
-                    aria-label="Show next owner photo"
+                    aria-label="Show next photo"
                   >
                     <ChevronRightIcon className={assetStyles.buttonIcon} />
                   </button>
@@ -3110,7 +3144,7 @@ export default function LeadsClient({
           <div className={assetStyles.modalBackdrop} onClick={closeNoteModal} />
 
           <div className={`${assetStyles.modalCard} ${assetStyles.sharedNoteModal} ${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadNoteModal}`} role="dialog" aria-modal="true" aria-labelledby="lead-note-title">
-            <div className={`${assetStyles.modalHeader} ${dealerWorkspaceClass(workspaceStyles.modalHeader)}`}>
+            <div className={`${assetStyles.modalHeader} ${dealerWorkspaceClass(workspaceStyles.modalHeader)} ${styles.leadNoteHeader}`}>
               <div className={assetStyles.modalHeaderText}>
                 <h3 id="lead-note-title">Send note or quote</h3>
                 <p>{assetTitle(noteLead)} · {ownerDisplayName(noteLead)}</p>
@@ -3121,56 +3155,58 @@ export default function LeadsClient({
               </button>
             </div>
 
-            <label className={`${assetStyles.field} ${assetStyles.sharedNoteField}`}>
-              <span>Note to asset owner</span>
-              <textarea
-                className={assetStyles.sharedNoteTextarea}
-                value={noteDraft}
-                onChange={(event) => setNoteDraft(event.target.value)}
-                placeholder="Example: Please find the attached quote PDF for this asset."
-                autoFocus
-              />
-            </label>
+            <div className={styles.leadNoteBody}>
+              <label className={`${assetStyles.field} ${assetStyles.sharedNoteField}`}>
+                <span>Note to asset owner</span>
+                <textarea
+                  className={assetStyles.sharedNoteTextarea}
+                  value={noteDraft}
+                  onChange={(event) => setNoteDraft(event.target.value)}
+                  placeholder="Example: Please find the attached quote PDF for this asset."
+                  autoFocus
+                />
+              </label>
 
-            <label
-              className={`${styles.leadNoteAttachmentDropzone} ${isNoteAttachmentDragging ? styles.leadNoteAttachmentDropzoneDragging : ''}`}
-              onDragEnter={(event) => {
-                event.preventDefault();
-                setIsNoteAttachmentDragging(true);
-              }}
-              onDragOver={(event) => {
-                event.preventDefault();
-                setIsNoteAttachmentDragging(true);
-              }}
-              onDragLeave={() => setIsNoteAttachmentDragging(false)}
-              onDrop={handleLeadNoteAttachmentDrop}
-            >
-              <input
-                className={styles.leadNoteAttachmentInput}
-                type="file"
-                accept="application/pdf,.pdf"
-                onChange={handleLeadNoteAttachmentChange}
-                disabled={isSavingNote}
-              />
-              <PdfIcon className={styles.leadNoteAttachmentIcon} />
-              <span className={styles.leadNoteAttachmentEyebrow}>Attach quote PDF — optional</span>
-              <strong>Drop quote PDF here or click to upload</strong>
-              <small>PDF only · maximum {formatByteSize(MAX_LEAD_NOTE_PDF_BYTES)}.</small>
-            </label>
+              <label
+                className={`${styles.leadNoteAttachmentDropzone} ${isNoteAttachmentDragging ? styles.leadNoteAttachmentDropzoneDragging : ''}`}
+                onDragEnter={(event) => {
+                  event.preventDefault();
+                  setIsNoteAttachmentDragging(true);
+                }}
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  setIsNoteAttachmentDragging(true);
+                }}
+                onDragLeave={() => setIsNoteAttachmentDragging(false)}
+                onDrop={handleLeadNoteAttachmentDrop}
+              >
+                <input
+                  className={styles.leadNoteAttachmentInput}
+                  type="file"
+                  accept="application/pdf,.pdf"
+                  onChange={handleLeadNoteAttachmentChange}
+                  disabled={isSavingNote}
+                />
+                <PdfIcon className={styles.leadNoteAttachmentIcon} />
+                <span className={styles.leadNoteAttachmentEyebrow}>Attach quote PDF — optional</span>
+                <strong>Drop quote PDF here or click to upload</strong>
+                <small>PDF only · maximum {formatByteSize(MAX_LEAD_NOTE_PDF_BYTES)}.</small>
+              </label>
 
-            {noteAttachmentFile ? (
-              <div className={styles.leadNoteAttachmentPreview}>
-                <div>
-                  <strong>{noteAttachmentFile.name}</strong>
-                  <span>{formatByteSize(noteAttachmentFile.size)}</span>
+              {noteAttachmentFile ? (
+                <div className={styles.leadNoteAttachmentPreview}>
+                  <div>
+                    <strong>{noteAttachmentFile.name}</strong>
+                    <span>{formatByteSize(noteAttachmentFile.size)}</span>
+                  </div>
+                  <button type="button" onClick={() => setNoteAttachmentFile(null)} disabled={isSavingNote}>
+                    Remove PDF
+                  </button>
                 </div>
-                <button type="button" onClick={() => setNoteAttachmentFile(null)} disabled={isSavingNote}>
-                  Remove PDF
-                </button>
-              </div>
-            ) : null}
+              ) : null}
 
-            <p className={styles.leadNoteDeliveryHint}>This note and any attached quote will appear in the owner&apos;s Asset Register.</p>
+              <p className={styles.leadNoteDeliveryHint}>This note and any attached quote will appear in the owner&apos;s Asset Register.</p>
+            </div>
 
             <div className={`${assetStyles.formActions} ${assetStyles.sharedNoteActions} ${dealerWorkspaceClass(workspaceStyles.modalFooter)} ${styles.leadNoteActions}`}>
               <button type="button" className={assetStyles.secondaryButton} onClick={closeNoteModal} disabled={isSavingNote}>

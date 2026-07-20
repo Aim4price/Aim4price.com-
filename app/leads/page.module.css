@@ -3162,3 +3162,297 @@
     max-height: calc(100dvh - 1.5rem) !important;
   }
 }
+
+/* === Dealer My Leads status palette, overlays and interaction polish === */
+.leadsPage {
+  --lead-state-new-bg-top: #fff7f7;
+  --lead-state-new-bg-bottom: #ffe8e8;
+  --lead-state-new-line: rgba(204, 58, 58, 0.32);
+  --lead-state-new-ink: #912f2f;
+  --lead-state-open-bg-top: #fffaf2;
+  --lead-state-open-bg-bottom: #ffedcc;
+  --lead-state-open-line: rgba(211, 137, 31, 0.4);
+  --lead-state-open-ink: #7d4b0a;
+  --lead-state-done-bg-top: #f7fcf9;
+  --lead-state-done-bg-bottom: #e5f5ec;
+  --lead-state-done-line: rgba(43, 138, 99, 0.34);
+  --lead-state-done-ink: #236347;
+}
+
+.leadsPage .leadOwnerSummaryCard {
+  overflow: hidden !important;
+  border-width: 1px !important;
+  box-shadow:
+    0 14px 30px rgba(18, 53, 45, 0.075),
+    inset 0 1px 0 rgba(255, 255, 255, 0.78) !important;
+}
+
+.leadsPage .leadOwnerSummaryCardNew {
+  border-color: var(--lead-state-new-line) !important;
+  background:
+    radial-gradient(circle at 0 0, rgba(204, 58, 58, 0.12), transparent 42%),
+    linear-gradient(180deg, var(--lead-state-new-bg-top) 0%, var(--lead-state-new-bg-bottom) 100%) !important;
+}
+
+.leadsPage .leadOwnerSummaryCardOpen {
+  border-color: var(--lead-state-open-line) !important;
+  background:
+    radial-gradient(circle at 0 0, rgba(230, 161, 55, 0.17), transparent 43%),
+    linear-gradient(180deg, var(--lead-state-open-bg-top) 0%, var(--lead-state-open-bg-bottom) 100%) !important;
+}
+
+.leadsPage .leadOwnerSummaryCardDone {
+  border-color: var(--lead-state-done-line) !important;
+  background:
+    radial-gradient(circle at 0 0, rgba(43, 138, 99, 0.12), transparent 43%),
+    linear-gradient(180deg, var(--lead-state-done-bg-top) 0%, var(--lead-state-done-bg-bottom) 100%) !important;
+}
+
+.leadsPage .leadOwnerSummaryCardNew .leadOwnerSummaryText {
+  color: var(--lead-state-new-ink) !important;
+}
+
+.leadsPage .leadOwnerSummaryCardOpen .leadOwnerSummaryText {
+  color: var(--lead-state-open-ink) !important;
+}
+
+.leadsPage .leadOwnerSummaryCardDone .leadOwnerSummaryText {
+  color: var(--lead-state-done-ink) !important;
+}
+
+.leadsPage .leadOwnerSummaryCardNew .leadOwnerSummaryFooter {
+  border-color: rgba(145, 47, 47, 0.22) !important;
+}
+
+.leadsPage .leadOwnerSummaryCardOpen .leadOwnerSummaryFooter {
+  border-color: rgba(125, 75, 10, 0.2) !important;
+}
+
+.leadsPage .leadOwnerSummaryCardDone .leadOwnerSummaryFooter {
+  border-color: rgba(35, 99, 71, 0.2) !important;
+}
+
+.leadsPage .leadThreadNew,
+.leadsPage .leadThreadNew.leadThreadOpen {
+  border-color: var(--lead-state-new-line) !important;
+  background:
+    radial-gradient(circle at 0 0, rgba(204, 58, 58, 0.075), transparent 32%),
+    linear-gradient(180deg, var(--lead-state-new-bg-top) 0%, var(--lead-state-new-bg-bottom) 100%) !important;
+}
+
+.leadsPage .leadThreadActive,
+.leadsPage .leadThreadActive.leadThreadOpen {
+  border-color: var(--lead-state-open-line) !important;
+  background:
+    radial-gradient(circle at 0 0, rgba(230, 161, 55, 0.1), transparent 34%),
+    linear-gradient(180deg, var(--lead-state-open-bg-top) 0%, var(--lead-state-open-bg-bottom) 100%) !important;
+}
+
+.leadsPage .leadThreadDone,
+.leadsPage .leadThreadDone.leadThreadOpen {
+  border-color: var(--lead-state-done-line) !important;
+  background:
+    radial-gradient(circle at 0 0, rgba(43, 138, 99, 0.085), transparent 34%),
+    linear-gradient(180deg, var(--lead-state-done-bg-top) 0%, var(--lead-state-done-bg-bottom) 100%) !important;
+}
+
+.leadsPage .leadThreadNew:hover,
+.leadsPage .leadThreadNew.leadThreadOpen:hover {
+  border-color: rgba(204, 58, 58, 0.48) !important;
+  background: linear-gradient(180deg, #fffafa 0%, #ffe4e4 100%) !important;
+}
+
+.leadsPage .leadThreadActive:hover,
+.leadsPage .leadThreadActive.leadThreadOpen:hover {
+  border-color: rgba(211, 137, 31, 0.56) !important;
+  background: linear-gradient(180deg, #fffdf8 0%, #ffe9c0 100%) !important;
+}
+
+.leadsPage .leadThreadDone:hover,
+.leadsPage .leadThreadDone.leadThreadOpen:hover {
+  border-color: rgba(43, 138, 99, 0.48) !important;
+  background: linear-gradient(180deg, #f9fdfa 0%, #dff2e7 100%) !important;
+}
+
+.leadsPage .leadThreadNew::before {
+  background: #c93a3a !important;
+}
+
+.leadsPage .leadThreadActive::before {
+  background: #d28116 !important;
+}
+
+.leadsPage .leadThreadDone::before {
+  background: #2b8a63 !important;
+}
+
+.trackingLeadPurpose {
+  width: fit-content;
+  max-width: min(100%, 35rem);
+  display: grid;
+  gap: 0.16rem;
+  margin-top: 0.28rem;
+  padding: 0.55rem 0.72rem;
+  border: 1px solid rgba(55, 105, 151, 0.24);
+  border-left: 4px solid #3b6f9e;
+  border-radius: 0.7rem;
+  background: rgba(255, 255, 255, 0.72);
+  color: #244f76;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.84);
+}
+
+.trackingLeadPurpose strong {
+  font-size: 0.83rem;
+  font-weight: 850;
+  line-height: 1.2;
+}
+
+.trackingLeadPurpose small {
+  color: #536e84;
+  font-size: 0.75rem;
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.leadPreviewOpenButton {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  cursor: zoom-in;
+}
+
+.leadPreviewOpenButton .leadPreviewImage {
+  display: block !important;
+  transition: transform 180ms ease, filter 180ms ease;
+}
+
+.leadPreviewOpenButton:hover .leadPreviewImage,
+.leadPreviewOpenButton:focus-visible .leadPreviewImage {
+  transform: scale(1.018);
+  filter: brightness(0.94);
+}
+
+.leadPreviewOpenButton:focus-visible {
+  outline: 3px solid rgba(37, 138, 99, 0.45);
+  outline-offset: -3px;
+}
+
+.leadPreviewOpenLabel {
+  position: absolute;
+  right: 0.7rem;
+  bottom: 0.7rem;
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  padding: 0 0.7rem;
+  border: 1px solid rgba(255, 255, 255, 0.58);
+  border-radius: 0.65rem;
+  background: rgba(18, 53, 45, 0.84);
+  color: #ffffff;
+  box-shadow: 0 8px 20px rgba(18, 53, 45, 0.2);
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.leadFilterModal.leadFilterModal {
+  max-height: none !important;
+  overflow: visible !important;
+  scrollbar-gutter: auto !important;
+}
+
+.leadFilterModal .leadFilterForm {
+  position: relative;
+  z-index: 2;
+  flex: 0 0 auto;
+  min-height: auto;
+  overflow: visible !important;
+  scrollbar-gutter: auto;
+}
+
+.leadFilterField {
+  position: relative;
+  z-index: 1;
+  overflow: visible !important;
+}
+
+.leadFilterFieldOpen {
+  z-index: 1000;
+}
+
+.leadFilterModal .leadFilterDropdown {
+  overflow: visible;
+}
+
+.leadFilterModal .leadFilterSelectMenu {
+  z-index: 10000;
+  max-height: min(18rem, calc(100dvh - 15rem));
+  overscroll-behavior: contain;
+}
+
+.leadFilterModal .leadFilterActions {
+  position: relative;
+  z-index: 1;
+}
+
+.leadNoteModal.leadNoteModal {
+  max-height: calc(100dvh - 2rem) !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  scrollbar-gutter: auto !important;
+}
+
+.leadNoteHeader.leadNoteHeader {
+  margin: 0 !important;
+}
+
+.leadNoteBody {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  align-content: start;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.leadNoteBody > * {
+  margin: 0 !important;
+}
+
+.leadNoteBody .leadNoteDeliveryHint {
+  border-radius: 0.9rem;
+  cursor: default;
+}
+
+.leadNoteActions.leadNoteActions {
+  margin: 0 !important;
+  padding: 1rem 1.5rem 1.25rem !important;
+}
+
+@media (max-width: 760px) {
+  .leadFilterModal.leadFilterModal {
+    max-height: calc(100dvh - 1.5rem) !important;
+  }
+
+  .leadFilterModal .leadFilterForm {
+    overflow-y: visible !important;
+  }
+
+  .leadNoteBody {
+    padding: 1rem;
+  }
+
+  .leadNoteActions.leadNoteActions {
+    padding: 0.85rem 1rem 1rem !important;
+  }
+}
