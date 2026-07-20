@@ -67,6 +67,7 @@ export type AssetMaintenanceRecord = {
   recurringEnabled: boolean;
   recurringIntervalValue: number | null;
   recurringIntervalUnit: AssetMaintenanceIntervalUnit | null;
+  generatedFromMaintenanceId: string | null;
   completedAtIso: string | null;
   completedUsage: number | null;
   completedNotes: string;
@@ -170,6 +171,7 @@ type MaintenanceRow = {
   recurring_enabled: boolean | null;
   recurring_interval_value: string | number | null;
   recurring_interval_unit: string | null;
+  generated_from_maintenance_id: string | null;
   completed_at: string | Date | null;
   completed_usage: string | number | null;
   completed_notes: string | null;
@@ -689,6 +691,7 @@ function mapMaintenanceRow(row: MaintenanceRow): AssetMaintenanceRecord {
     recurringEnabled: Boolean(row.recurring_enabled),
     recurringIntervalValue: asNumber(row.recurring_interval_value),
     recurringIntervalUnit: row.recurring_interval_unit ? normalizeIntervalUnit(row.recurring_interval_unit, triggerType === 'date' ? 'months' : usageMetric ?? 'hours') : null,
+    generatedFromMaintenanceId: asText(row.generated_from_maintenance_id) || null,
     completedAtIso: toNullableIsoString(row.completed_at),
     completedUsage: asNumber(row.completed_usage),
     completedNotes: asLongText(row.completed_notes),
@@ -1453,7 +1456,7 @@ export async function completeAssetMaintenanceRecord(
   }
 
   const completedUsage = existing.triggerType === 'usage'
-    ? nonNegativeNumber(input.completedUsage) ?? existing.currentUsage ?? existing.dueUsage
+    ? nonNegativeNumber(input.completedUsage) ?? existing.currentUsage
     : nonNegativeNumber(input.completedUsage);
   const completedNotes = asLongText(input.completedNotes);
   const completedBy = asText(input.completedBy);
