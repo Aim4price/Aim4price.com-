@@ -1304,6 +1304,529 @@
   }
 }
 
+/* === Owner Account-aligned dealership account === */
+.dealerAccountPage {
+  --owner-green: #254733;
+  --owner-green-dark: #1d3929;
+  --owner-soft: #eef5f0;
+  --owner-ink: #12352d;
+  --owner-muted: #64746a;
+  --owner-line: rgba(37, 71, 51, 0.15);
+  color: var(--owner-ink);
+  background:
+    radial-gradient(circle at 50% 4%, rgba(111, 197, 150, 0.13), transparent 31rem),
+    linear-gradient(180deg, #f6faf7 0%, #ffffff 42%, #f4f8f6 100%);
+  font-family: 'Montserrat', var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif;
+}
+
+.dealerAccountPage .accountHero {
+  min-height: 9rem;
+  padding: 1.35rem 1.5rem;
+  border: 1px solid rgba(37, 71, 51, 0.2);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 6% 0%, rgba(111, 197, 150, 0.32), transparent 20rem),
+    radial-gradient(circle at 96% 100%, rgba(191, 122, 53, 0.18), transparent 18rem),
+    linear-gradient(135deg, #1d3929 0%, #254733 62%, #2f5740 100%);
+  box-shadow: 0 18px 42px rgba(18, 53, 45, 0.14);
+}
+
+.dealerAccountPage .accountHero::after {
+  background: radial-gradient(circle, rgba(191, 122, 53, 0.18) 0%, rgba(191, 122, 53, 0) 70%);
+}
+
+.dealerAccountPage .heroAvatar {
+  width: 6.45rem;
+  height: 6.45rem;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  box-shadow: 0 14px 30px rgba(8, 24, 18, 0.24);
+}
+
+.dealerAccountPage .heroAvatar img {
+  padding: 0.5rem;
+}
+
+.dealerAccountPage .heroCopy h1 {
+  font-size: clamp(1.85rem, 2.8vw, 2.55rem);
+  font-weight: 800;
+  letter-spacing: -0.045em;
+}
+
+.dealerAccountPage .heroCopy p {
+  font-size: 0.96rem;
+  font-weight: 650;
+}
+
+.dealerAccountPage .heroCopy small {
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.heroStatusGroup {
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.dealerAccountPage .statusBadge {
+  min-height: 2.15rem;
+  padding: 0 0.72rem;
+  border-radius: 10px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.directoryHeroBadge {
+  color: #fff6eb !important;
+  border-color: rgba(255, 218, 180, 0.24) !important;
+  background: rgba(191, 122, 53, 0.28) !important;
+}
+
+.dealerAccountPage .card {
+  border: 1px solid var(--owner-line);
+  border-radius: 22px;
+  background: #ffffff;
+  box-shadow: 0 14px 32px rgba(18, 53, 45, 0.07);
+}
+
+.dealerAccountPage .compactCardHeader h2 {
+  color: var(--owner-ink);
+  font-size: clamp(1.35rem, 2vw, 1.7rem);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+}
+
+.dealerAccountPage .compactCardHeader p {
+  color: var(--owner-muted);
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+
+.dealerAccountPage .metricGrid {
+  gap: 0.75rem;
+}
+
+.dealerAccountPage .metricTile {
+  min-height: 5.5rem;
+  padding: 0.85rem;
+  border: 1px solid rgba(37, 71, 51, 0.11);
+  border-radius: 14px;
+  background: #f7faf8;
+}
+
+.dealerAccountPage .metricTile span {
+  color: var(--owner-muted);
+  font-size: 0.67rem;
+  font-weight: 800;
+}
+
+.dealerAccountPage .metricTile strong {
+  color: var(--owner-ink);
+  font-size: 0.98rem;
+  font-weight: 800;
+}
+
+.dealerAccountPage .metricTile small {
+  color: var(--owner-muted);
+  font-size: 0.73rem;
+  font-weight: 650;
+}
+
+.dealerAccountPage .metricTile:last-child {
+  grid-column: 1 / -1;
+  min-height: 4.6rem;
+}
+
+.dealerAccountPage .quickActionList {
+  gap: 0.7rem;
+}
+
+.dealerAccountPage .quickActionButton {
+  min-height: 3.75rem;
+  padding: 0.78rem 0.9rem;
+  border: 1px solid var(--owner-line);
+  border-radius: 17px;
+  color: var(--owner-ink);
+  background: #ffffff;
+  box-shadow: 0 9px 24px rgba(18, 53, 45, 0.055);
+}
+
+.dealerAccountPage .quickActionButton:hover {
+  border-color: rgba(37, 71, 51, 0.28);
+  background: #f7faf8;
+  box-shadow: 0 12px 28px rgba(18, 53, 45, 0.08);
+}
+
+.dealerAccountPage .quickActionButton strong {
+  font-size: 0.92rem;
+  font-weight: 800;
+}
+
+.dealerAccountPage .quickActionIcon {
+  border-radius: 14px;
+  color: var(--owner-green);
+  background: var(--owner-soft);
+  border-color: rgba(37, 71, 51, 0.13);
+}
+
+.dealerAccountPage .quickActionDanger {
+  margin-top: 0.4rem;
+  border-color: rgba(150, 56, 56, 0.18);
+  background: #fff9f9;
+}
+
+.partnerDirectoryModalCard {
+  --owner-green: #254733;
+  --owner-green-dark: #1d3929;
+  --owner-soft: #eef5f0;
+  --owner-ink: #12352d;
+  --owner-muted: #64746a;
+  --owner-line: rgba(37, 71, 51, 0.15);
+  width: min(100%, 64rem) !important;
+  border: 1px solid var(--owner-line) !important;
+  border-radius: 22px !important;
+  background: #ffffff !important;
+  box-shadow: 0 28px 80px rgba(8, 24, 18, 0.28) !important;
+  font-family: 'Montserrat', var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif;
+}
+
+.partnerDirectoryModalCard .accountModalScrollShell,
+.partnerDirectoryModalCard .accountModalScrollContent {
+  background: #ffffff !important;
+}
+
+.partnerDirectoryModalCard .accountModalScrollContent {
+  padding: 1.25rem !important;
+}
+
+.partnerDirectoryModalCard .accountModalScrollRail {
+  display: none;
+}
+
+.partnerDirectoryModalCard .modalHeader {
+  margin-bottom: 0.9rem;
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid var(--owner-line);
+}
+
+.partnerDirectoryModalCard .modalHeader h2 {
+  color: var(--owner-ink);
+  font-size: clamp(1.65rem, 2.5vw, 2.1rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+.partnerDirectoryModalCard .modalHeader p {
+  max-width: 46rem;
+  color: var(--owner-muted);
+  font-size: 0.9rem;
+  font-weight: 650;
+  line-height: 1.5;
+}
+
+.partnerDirectoryTopGrid {
+  display: grid;
+  grid-template-columns: minmax(17rem, 0.78fr) minmax(0, 1.22fr);
+  gap: 0.85rem;
+}
+
+.partnerVisibilityToggle {
+  min-height: 100%;
+  align-items: center;
+  padding: 1rem;
+  border: 1px solid var(--owner-line);
+  border-radius: 17px;
+  background: #f7faf8;
+}
+
+.partnerVisibilityToggle input {
+  appearance: none;
+  position: relative;
+  width: 2.8rem;
+  height: 1.55rem;
+  margin: 0;
+  border: 1px solid rgba(37, 71, 51, 0.2);
+  border-radius: 999px;
+  background: #dfe7e2;
+  cursor: pointer;
+  transition: background 160ms ease, border-color 160ms ease;
+}
+
+.partnerVisibilityToggle input::after {
+  content: '';
+  position: absolute;
+  top: 0.16rem;
+  left: 0.16rem;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 3px 8px rgba(18, 53, 45, 0.18);
+  transition: transform 160ms ease;
+}
+
+.partnerVisibilityToggle input:checked {
+  border-color: var(--owner-green);
+  background: var(--owner-green);
+}
+
+.partnerVisibilityToggle input:checked::after {
+  transform: translateX(1.25rem);
+}
+
+.partnerVisibilityToggle strong {
+  color: var(--owner-ink);
+  font-size: 0.94rem;
+  font-weight: 800;
+}
+
+.partnerVisibilityToggle small {
+  color: var(--owner-muted);
+  font-size: 0.76rem;
+  font-weight: 650;
+}
+
+.partnerDirectoryPreview {
+  min-width: 0;
+  display: grid;
+  gap: 0.7rem;
+  padding: 1rem;
+  border: 1px solid rgba(37, 71, 51, 0.16);
+  border-radius: 17px;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(111, 197, 150, 0.16), transparent 12rem),
+    #ffffff;
+  box-shadow: 0 9px 22px rgba(18, 53, 45, 0.055);
+}
+
+.partnerPreviewEyebrow {
+  color: #2c6c55;
+  font-size: 0.66rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.partnerPreviewIdentity {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.72rem;
+}
+
+.partnerPreviewIdentity > div:last-child {
+  min-width: 0;
+  display: grid;
+  gap: 0.2rem;
+}
+
+.partnerPreviewIdentity > div:last-child > strong {
+  color: var(--owner-ink);
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.partnerPreviewIdentity small {
+  color: var(--owner-muted);
+  font-size: 0.74rem;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.partnerPreviewLogo {
+  width: 3.5rem;
+  height: 3.5rem;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid var(--owner-line);
+  border-radius: 14px;
+  color: var(--owner-green);
+  background: var(--owner-soft);
+}
+
+.partnerPreviewLogo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 0.25rem;
+  background: #ffffff;
+}
+
+.partnerPreviewLogo strong {
+  font-size: 0.9rem;
+  font-weight: 900;
+}
+
+.partnerPreviewDetails {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.partnerPreviewDetails span {
+  min-width: 0;
+  padding: 0.65rem 0.7rem;
+  border-radius: 12px;
+  color: #315348;
+  background: #f2f6f3;
+  font-size: 0.72rem;
+  font-weight: 750;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.partnerDirectoryPreview p {
+  margin: 0;
+  color: var(--owner-muted);
+  font-size: 0.76rem;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.partnerDirectoryModalCard .partnerMapField {
+  padding: 0.9rem;
+  border: 1px solid var(--owner-line);
+  border-radius: 17px;
+  background: #f7faf8;
+}
+
+.partnerDirectoryModalCard .partnerMapHeader strong {
+  color: var(--owner-ink);
+  font-size: 1.08rem;
+  font-weight: 800;
+}
+
+.partnerDirectoryModalCard .partnerMapHeader p {
+  color: var(--owner-muted);
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+
+.partnerDirectoryModalCard .partnerMapCanvas {
+  height: clamp(14rem, 24vw, 17rem);
+  min-height: 14rem;
+  border-radius: 17px;
+  box-shadow: none;
+}
+
+.partnerDirectoryModalCard .partnerMapFooter {
+  min-height: 3.35rem;
+  border-radius: 14px;
+}
+
+.partnerRadiusField { grid-column: span 4; }
+.partnerBrandField { grid-column: span 8; }
+.partnerServicesField { grid-column: 1 / -1; }
+
+.partnerDirectoryModalCard .field > span {
+  color: #315348;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.partnerDirectoryModalCard .field input,
+.partnerDirectoryModalCard .field textarea {
+  min-height: 50px;
+  border: 1px solid var(--owner-line);
+  border-radius: 14px;
+  color: var(--owner-ink);
+  background: #ffffff;
+  font-weight: 650;
+}
+
+.partnerDirectoryModalCard .partnerDescriptionField textarea {
+  min-height: 7.5rem;
+}
+
+.partnerDescriptionCount {
+  justify-self: end;
+  color: var(--owner-muted) !important;
+  font-size: 0.68rem !important;
+  font-weight: 650 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+
+.partnerDirectoryModalCard .primaryButton,
+.partnerDirectoryModalCard .secondaryButton,
+.partnerDirectoryModalCard .ghostButton {
+  min-height: 48px;
+  border-radius: 14px;
+  font-weight: 800;
+}
+
+.partnerDirectoryModalCard .primaryButton {
+  color: #ffffff;
+  border-color: var(--owner-green);
+  background: var(--owner-green);
+  box-shadow: 0 12px 24px rgba(37, 71, 51, 0.18);
+}
+
+.partnerDirectoryModalCard .secondaryButton,
+.partnerDirectoryModalCard .ghostButton {
+  color: var(--owner-green);
+  border-color: var(--owner-line);
+  background: #ffffff;
+}
+
+.partnerDirectoryModalCard .directoryForm .actionsRow {
+  position: sticky;
+  bottom: -1.25rem;
+  z-index: 5;
+  margin: 0 -1.25rem -1.25rem;
+  padding: 0.9rem 1.25rem 1.25rem;
+  border-top: 1px solid var(--owner-line);
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(12px);
+}
+
+@media (max-width: 760px) {
+  .dealerAccountPage .accountHero {
+    border-radius: 18px !important;
+  }
+
+  .heroStatusGroup {
+    justify-content: flex-start;
+  }
+
+  .dealerAccountPage .metricTile:last-child {
+    grid-column: 1;
+  }
+
+  .partnerDirectoryTopGrid,
+  .partnerPreviewDetails {
+    grid-template-columns: 1fr;
+  }
+
+  .partnerRadiusField,
+  .partnerBrandField,
+  .partnerServicesField {
+    grid-column: 1 / -1;
+  }
+
+  .partnerDirectoryModalCard .partnerMapCanvas {
+    height: 14rem;
+  }
+
+  .partnerDirectoryModalCard .directoryForm .actionsRow {
+    position: static;
+    margin: 0;
+    padding: 0;
+    border-top: 0;
+    background: transparent;
+    backdrop-filter: none;
+  }
+}
+
 .overviewCard,
 .quickActionsCard,
 .detailCard,
@@ -2676,4 +3199,3 @@
     -webkit-overflow-scrolling: touch;
   }
 }
-

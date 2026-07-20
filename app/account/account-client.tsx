@@ -1864,7 +1864,7 @@ export default function AccountClient() {
   }
 
   return (
-    <main className={styles.page}>
+    <main className={`${styles.page} ${isDealerAccount ? styles.dealerAccountPage : ""}`}>
       <AppHeader active="none" />
 
       <section className={styles.shell}>
@@ -1897,7 +1897,14 @@ export default function AccountClient() {
             </div>
           </div>
 
-          <span className={styles.statusBadge}>Active</span>
+          <div className={styles.heroStatusGroup}>
+            <span className={styles.statusBadge}>Active</span>
+            {isDealerAccount ? (
+              <span className={`${styles.statusBadge} ${styles.directoryHeroBadge}`}>
+                Directory {directoryStatusLabel.toLowerCase()}
+              </span>
+            ) : null}
+          </div>
         </section>
 
         {notice ? (
@@ -2615,7 +2622,7 @@ export default function AccountClient() {
               <div className={styles.modalHeader}>
                 <h2 id="partner-directory-modal-title">Partner directory</h2>
                 <p>
-                  Control whether owners can select this account when sending a
+                  Set up how owners see and select your business when sending a
                   quote lead.
                 </p>
               </div>
@@ -2624,26 +2631,49 @@ export default function AccountClient() {
                 className={`${styles.form} ${styles.directoryForm}`}
                 onSubmit={handleProfileSubmit}
               >
-                <label
-                  className={`${styles.toggleField} ${styles.partnerVisibilityToggle} ${styles.fullWidth}`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={profileDraft.partnerDirectoryEnabled}
-                    onChange={(event) =>
-                      setProfileDraft((current) => ({
-                        ...current,
-                        partnerDirectoryEnabled: event.target.checked,
-                      }))
-                    }
-                  />
-                  <span>
-                    <strong>Show in Aim4price partner directory</strong>
-                    <small>
-                      Owners can select this account when sending a quote lead.
-                    </small>
-                  </span>
-                </label>
+                <div className={`${styles.partnerDirectoryTopGrid} ${styles.fullWidth}`}>
+                  <label
+                    className={`${styles.toggleField} ${styles.partnerVisibilityToggle}`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={profileDraft.partnerDirectoryEnabled}
+                      onChange={(event) =>
+                        setProfileDraft((current) => ({
+                          ...current,
+                          partnerDirectoryEnabled: event.target.checked,
+                        }))
+                      }
+                    />
+                    <span>
+                      <strong>Show in the Aim4price partner directory</strong>
+                      <small>
+                        Owners can select this business when sending a quote lead.
+                      </small>
+                    </span>
+                  </label>
+
+                  <aside className={styles.partnerDirectoryPreview} aria-label="Partner directory owner preview">
+                    <span className={styles.partnerPreviewEyebrow}>Owner preview</span>
+                    <div className={styles.partnerPreviewIdentity}>
+                      <div className={styles.partnerPreviewLogo}>
+                        {logoUrl ? <img src={logoUrl} alt="" /> : <strong>{profileInitials}</strong>}
+                      </div>
+                      <div>
+                        <strong>{accountDisplayName}</strong>
+                        <small>{marketplaceLocation}</small>
+                      </div>
+                    </div>
+                    <div className={styles.partnerPreviewDetails}>
+                      <span>{profileDraft.partnerBrandFocus.trim() || "All supported brands"}</span>
+                      <span>{profileDraft.partnerServices.trim() || "Services not added yet"}</span>
+                    </div>
+                    <p>
+                      {profileDraft.partnerDescription.trim() ||
+                        "Add a short description so owners understand how your business can help them."}
+                    </p>
+                  </aside>
+                </div>
 
                 <div
                   className={`${styles.partnerMapField} ${styles.fullWidth}`}
@@ -2694,7 +2724,7 @@ export default function AccountClient() {
                   </div>
                 </div>
 
-                <label className={`${styles.field} ${styles.thirdField}`}>
+                <label className={`${styles.field} ${styles.partnerRadiusField}`}>
                   <span>Service radius km</span>
                   <input
                     inputMode="numeric"
@@ -2709,7 +2739,7 @@ export default function AccountClient() {
                   />
                 </label>
 
-                <label className={`${styles.field} ${styles.halfField}`}>
+                <label className={`${styles.field} ${styles.partnerBrandField}`}>
                   <span>Brand focus</span>
                   <input
                     value={profileDraft.partnerBrandFocus}
@@ -2723,7 +2753,7 @@ export default function AccountClient() {
                   />
                 </label>
 
-                <label className={`${styles.field} ${styles.halfField}`}>
+                <label className={`${styles.field} ${styles.partnerServicesField}`}>
                   <span>Services</span>
                   <input
                     value={profileDraft.partnerServices}
@@ -2751,6 +2781,9 @@ export default function AccountClient() {
                     }
                     placeholder="Example: Finance partner for agricultural machinery, asset-backed finance and refinancing discussions."
                   />
+                  <small className={styles.partnerDescriptionCount}>
+                    {profileDraft.partnerDescription.trim().length} characters
+                  </small>
                 </label>
 
                 <div className={styles.actionsRow}>
