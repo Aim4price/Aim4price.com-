@@ -67,6 +67,7 @@ type MaintenanceRecord = {
   recurringEnabled: boolean;
   recurringIntervalValue: number | null;
   recurringIntervalUnit: IntervalUnit | null;
+  generatedFromMaintenanceId: string | null;
   completedAtIso: string | null;
   completedUsage: number | null;
   completedNotes: string;
@@ -373,6 +374,42 @@ function maintenanceDueValue(record: MaintenanceRecord): string {
 
 function maintenanceDueCaption(record: MaintenanceRecord): string {
   return record.triggerType === 'date' ? 'Due Date' : 'Due Usage';
+}
+
+function maintenanceCardValue(record: MaintenanceRecord): string {
+  if (record.status !== 'done') return maintenanceDueValue(record);
+  if (record.triggerType === 'date') return dateOnly(record.completedAtIso);
+  return record.completedUsage === null
+    ? 'Reading not recorded'
+    : formatUsage(record.completedUsage, record.usageMetric ?? record.assetUsageMetric);
+}
+
+function maintenanceCardCaption(record: MaintenanceRecord): string {
+  if (record.status !== 'done') return maintenanceDueCaption(record);
+  return record.triggerType === 'date' ? 'Completed On' : 'Completed At';
+}
+
+function arrangeMaintenanceTimeline(records: MaintenanceRecord[]): MaintenanceRecord[] {
+  const byId = new Map(records.map((record) => [record.id, record]));
+  const added = new Set<string>();
+  const arranged: MaintenanceRecord[] = [];
+
+  records.forEach((record) => {
+    if (added.has(record.id)) return;
+
+    arranged.push(record);
+    added.add(record.id);
+
+    if (record.generatedFromMaintenanceId) {
+      const completedParent = byId.get(record.generatedFromMaintenanceId);
+      if (completedParent && completedParent.status === 'done' && !added.has(completedParent.id)) {
+        arranged.push(completedParent);
+        added.add(completedParent.id);
+      }
+    }
+  });
+
+  return arranged;
 }
 
 function maintenanceAlertLabel(record: MaintenanceRecord): string {
@@ -773,8 +810,10 @@ export default function MaintenanceClient() {
 
   const filteredRecords = useMemo(() => {
     const query = search.trim().toLowerCase();
-    if (!query) return records;
-    return records.filter((record) => recordSearchText(record).includes(query));
+    const matchingRecords = query
+      ? records.filter((record) => recordSearchText(record).includes(query))
+      : records;
+    return arrangeMaintenanceTimeline(matchingRecords);
   }, [records, search]);
 
   const totalPages = Math.max(1, Math.ceil(filteredRecords.length / PAGE_SIZE));
@@ -937,7 +976,7 @@ export default function MaintenanceClient() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           status: markDone ? 'done' : 'upcoming',
-          completedUsage: markDone ? record.currentUsage ?? record.dueUsage : null,
+          completedUsage: markDone ? record.currentUsage : null,
         }),
       });
       const payload = (await response.json().catch(() => ({}))) as MaintenancePayload;
@@ -1105,10 +1144,11 @@ export default function MaintenanceClient() {
             <div className={styles.invoiceList}>
               {pagedRecords.map((record) => {
                 const isDone = record.status === 'done';
+                const isRecurringFollowUp = Boolean(record.generatedFromMaintenanceId);
 
                 return (
                   <article
-                    className={`${styles.invoiceRow} ${isDone ? styles.maintenanceCardDone : styles.maintenanceCardOpen}`}
+                    className={`${styles.invoiceRow} ${isDone ? styles.maintenanceCardDone : styles.maintenanceCardOpen} ${isRecurringFollowUp ? styles.maintenanceRecurringFollowUp : ''}`}
                     key={record.id}
                   >
                     <div className={styles.invoiceHeader}>
@@ -1116,31 +1156,38 @@ export default function MaintenanceClient() {
                         <span
                           className={`${styles.maintenanceStatusPill} ${isDone ? styles.maintenanceStatusGood : styles.maintenanceStatusDanger}`}
                         >
-                          {isDone ? 'Maintenance done' : 'Maintenance upcoming'}
+                          {isDone ? 'Maintenance completed' : isRecurringFollowUp ? 'Next recurring maintenance' : 'Maintenance upcoming'}
                         </span>
                         <h2 className={styles.invoiceTitle}>{record.assetTitle}</h2>
+                        <p className={styles.maintenanceServiceTitle}>
+                          {record.title || (record.maintenanceType === 'checkup' ? 'Maintenance checkup' : 'Maintenance service')}
+                        </p>
                         <p className={styles.invoiceAsset}>{buildMaintenanceAssetMeta(record)}</p>
                         <div className={styles.invoiceMetaList}>
                           <span className={styles.invoiceValueMethodLabel}>Assigned to {record.assignedName || 'Unassigned'}</span>
                           <span className={styles.invoiceSavedDateLabel}>{maintenanceAlertLabel(record)}</span>
-                          <span className={styles.invoiceSavedDateLabel}>Updated {dateOnly(record.updatedAtIso)}</span>
+                          <span className={styles.invoiceSavedDateLabel}>
+                            {isDone ? `Completed ${dateOnly(record.completedAtIso || record.updatedAtIso)}` : `Updated ${dateOnly(record.updatedAtIso)}`}
+                          </span>
                         </div>
                       </div>
 
                       <div className={styles.invoiceHeaderAside}>
                         <div className={styles.invoiceValueBlock}>
-                          <strong className={styles.invoicePrice}>{maintenanceDueValue(record)}</strong>
-                          <span className={styles.invoiceVatLabel}>{maintenanceDueCaption(record)}</span>
+                          <strong className={styles.invoicePrice}>{maintenanceCardValue(record)}</strong>
+                          <span className={styles.invoiceVatLabel}>{maintenanceCardCaption(record)}</span>
                         </div>
 
                         <div className={styles.rowActions}>
                           <button
                             className={`${styles.secondaryButtonSmall} ${styles.invoiceOpenButton} ${isDone ? styles.invoiceCompletedButton : ''}`}
                             type="button"
-                            onClick={() => void toggleComplete(record)}
-                            disabled={busyCompleteId !== null}
+                            onClick={() => {
+                              if (!isDone) void toggleComplete(record);
+                            }}
+                            disabled={isDone || busyCompleteId !== null}
                             aria-pressed={isDone}
-                            aria-label={isDone ? `Move ${record.assetTitle} maintenance back to upcoming` : `Mark ${record.assetTitle} maintenance done`}
+                            aria-label={isDone ? `${record.assetTitle} maintenance completed` : `Mark ${record.assetTitle} maintenance done`}
                           >
                             <CheckIcon />
                             <span>{busyCompleteId === record.id ? 'Saving...' : isDone ? 'Done' : 'Mark done'}</span>

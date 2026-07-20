@@ -4457,3 +4457,43 @@
   border-color: rgba(71, 164, 113, 0.74);
   background: linear-gradient(180deg, #f8fdf9 0%, #dff3e8 100%);
 }
+
+.maintenanceServiceTitle {
+  margin: -0.08rem 0 0;
+  color: #244b40;
+  font-size: 0.98rem;
+  font-weight: 830;
+  line-height: 1.35;
+}
+
+.invoiceRow.maintenanceRecurringFollowUp {
+  position: relative;
+  border-color: rgba(193, 123, 51, 0.42);
+  background:
+    radial-gradient(circle at 0% 0%, rgba(230, 148, 61, 0.08), transparent 38%),
+    linear-gradient(180deg, #fffdf9 0%, #fff8ee 58%, #ffffff 100%);
+  box-shadow:
+    0 18px 42px rgba(182, 111, 38, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.invoiceRow.maintenanceRecurringFollowUp::after {
+  content: "";
+  position: absolute;
+  left: 2.15rem;
+  bottom: -1.05rem;
+  width: 2px;
+  height: 1.05rem;
+  background: linear-gradient(180deg, rgba(113, 156, 137, 0.72), rgba(113, 156, 137, 0.22));
+}
+
+.invoiceCompletedButton:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+@media (max-width: 760px) {
+  .invoiceRow.maintenanceRecurringFollowUp::after {
+    left: 1.5rem;
+  }
+}
