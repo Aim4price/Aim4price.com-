@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type DragEvent } from 'react';
+import { useRouter } from 'next/navigation';
 import AppHeader from '../../components/AppHeader';
 import {
   WorkspaceTitlePanel,
@@ -1375,6 +1376,7 @@ export default function LeadsClient({
   initialSessionUserId = '',
   initialAccountTitle = '',
 }: LeadsClientProps = {}) {
+  const router = useRouter();
   const useDealerWorkspaceStyles = dealerWorkspaceMode ?? dealerAppMode;
   const dealerWorkspaceClass = (...classNames: string[]) =>
     useDealerWorkspaceStyles ? classNames.join(' ') : '';
@@ -1571,7 +1573,7 @@ export default function LeadsClient({
     setCurrentPage((page) => Math.min(Math.max(page, 1), totalLeadPages));
   }, [totalLeadPages]);
 
-  const hasOpenLeadModal = useDealerWorkspaceStyles && Boolean(
+  const hasOpenLeadModal = Boolean(
     isFilterModalOpen || managedLead || emailLead || reportLead || deleteLeadTarget || ownerPhotoPreview || noteLead,
   );
 
@@ -1582,8 +1584,21 @@ export default function LeadsClient({
     document.body.style.overflow = 'hidden';
 
     function handleEscape(event: KeyboardEvent) {
-      if (event.key !== 'Escape') return;
-      if (isDeletingLead || isSavingNote || isDownloadingLeadReport) return;
+      if (ownerPhotoPreview && (event.key === 'ArrowLeft' || event.key === 'ArrowRight')) {
+        event.preventDefault();
+        const direction = event.key === 'ArrowLeft' ? -1 : 1;
+        setOwnerPhotoPreview((current) => {
+          if (!current || current.urls.length <= 1) return current;
+
+          return {
+            ...current,
+            index: (current.index + direction + current.urls.length) % current.urls.length,
+          };
+        });
+        return;
+      }
+
+      if (event.key !== 'Escape' || isDeletingLead || isSavingNote || isDownloadingLeadReport) return;
 
       if (ownerPhotoPreview) setOwnerPhotoPreview(null);
       else if (deleteLeadTarget) setDeleteLeadTarget(null);
@@ -1673,10 +1688,7 @@ export default function LeadsClient({
     setDeleteLeadTarget(null);
   }
 
-  async function openLead(leadToOpen: AssetLead) {
-    setNotice(null);
-    setOpenLeadId(leadToOpen.id);
-
+  async function markLeadViewed(leadToOpen: AssetLead) {
     if (!isNewLead(leadToOpen)) return;
 
     const viewedAtIso = new Date().toISOString();
@@ -1715,6 +1727,19 @@ export default function LeadsClient({
         message: error instanceof Error ? error.message : 'Lead opened, but it could not be marked as opened.',
       });
     }
+  }
+
+  async function openLead(leadToOpen: AssetLead) {
+    setNotice(null);
+
+    if (isTrackingLead(leadToOpen)) {
+      await markLeadViewed(leadToOpen);
+      router.push('/tracking');
+      return;
+    }
+
+    setOpenLeadId(leadToOpen.id);
+    await markLeadViewed(leadToOpen);
   }
 
   async function refreshLeads() {
@@ -2408,8 +2433,11 @@ export default function LeadsClient({
                     type="button"
                     key={`${lead.id}-lead-photo-${index}`}
                     className={`${assetStyles.previewThumbButton} ${styles.leadPreviewThumbButton} ${isActivePhoto ? assetStyles.previewThumbButtonActive : ''}`}
-                    onClick={() => setLeadPhotoIndex(lead.id, index)}
-                    aria-label={`View photo ${index + 1}`}
+                    onClick={() => {
+                      setLeadPhotoIndex(lead.id, index);
+                      openOwnerPhotoPreview(lead, photos, index, 'Asset photo');
+                    }}
+                    aria-label={`Open photo ${index + 1}`}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={thumbnail} alt={`${assetTitle(lead)} thumbnail ${index + 1}`} className={`${assetStyles.previewThumbImage} ${styles.leadPreviewThumbImage}`} />
@@ -2921,8 +2949,9 @@ export default function LeadsClient({
           <div className={assetStyles.modalBackdrop} onClick={closeEmailModal} />
 
           <div className={`${assetStyles.modalCard} ${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadEmailModal}`} role="dialog" aria-modal="true" aria-labelledby="lead-email-title">
-            <div className={`${assetStyles.modalHeader} ${dealerWorkspaceClass(workspaceStyles.modalHeader)}`}>
-              <div className={assetStyles.modalHeaderText}>
+            <div className={`${assetStyles.modalHeader} ${dealerWorkspaceClass(workspaceStyles.modalHeader)} ${styles.leadEmailHeader}`}>
+              <div className={`${assetStyles.modalHeaderText} ${styles.leadModalTitleGroup}`}>
+                <span className={styles.leadModalEyebrow}>Client communication</span>
                 <h3 id="lead-email-title">Email client</h3>
                 <p>{assetTitle(emailLead)} · {ownerDisplayName(emailLead)}</p>
               </div>
@@ -2934,8 +2963,13 @@ export default function LeadsClient({
 
             <div className={`${dealerWorkspaceClass(workspaceStyles.modalBody)} ${styles.leadEmailDraftPanel}`}>
               <div className={styles.leadEmailRecipientCard}>
-                <span>To</span>
-                <strong>{activeEmailRecipient()}</strong>
+                <span className={styles.leadEmailRecipientIcon} aria-hidden="true">
+                  <EmailIcon className={assetStyles.buttonIcon} />
+                </span>
+                <div>
+                  <span>To</span>
+                  <strong>{activeEmailRecipient()}</strong>
+                </div>
               </div>
 
               <label className={`${assetStyles.field} ${styles.leadEmailField}`}>
@@ -2950,18 +2984,20 @@ export default function LeadsClient({
             </div>
 
             <div className={`${dealerWorkspaceClass(workspaceStyles.modalFooter)} ${styles.leadEmailActions}`}>
-              <button type="button" className={assetStyles.secondaryButton} onClick={closeEmailModal}>
+              <button type="button" className={`${assetStyles.secondaryButton} ${styles.leadModalCancelButton}`} onClick={closeEmailModal}>
                 Cancel
               </button>
-              <button type="button" className={assetStyles.secondaryButton} onClick={() => void copyEmailDraft()}>
-                {isEmailDraftCopied ? 'Copied' : 'Copy draft'}
-              </button>
-              <button type="button" className={assetStyles.secondaryButton} onClick={openDefaultEmailClient}>
-                Open email app
-              </button>
-              <button type="button" className={assetStyles.primaryButton} onClick={openGmailCompose}>
-                Open Gmail
-              </button>
+              <div className={styles.leadEmailActionGroup}>
+                <button type="button" className={assetStyles.secondaryButton} onClick={() => void copyEmailDraft()}>
+                  {isEmailDraftCopied ? 'Copied' : 'Copy draft'}
+                </button>
+                <button type="button" className={assetStyles.secondaryButton} onClick={openDefaultEmailClient}>
+                  Open email app
+                </button>
+                <button type="button" className={assetStyles.primaryButton} onClick={openGmailCompose}>
+                  Open Gmail
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -3117,7 +3153,7 @@ export default function LeadsClient({
             <div className={`${dealerWorkspaceClass(workspaceStyles.modalHeader)} ${styles.ownerPhotoPreviewHeader}`}>
               <div>
                 <strong id="owner-photo-preview-title">{ownerPhotoPreview.title}</strong>
-                <span>{ownerPhotoPreview.sourceLabel} {ownerPhotoPreviewIndex + 1} of {ownerPhotoPreview.urls.length}</span>
+                <span>{ownerPhotoPreview.sourceLabel} · {ownerPhotoPreviewIndex + 1} of {ownerPhotoPreview.urls.length}</span>
               </div>
 
               <button type="button" className={`${dealerWorkspaceClass(workspaceStyles.modalClose)} ${styles.ownerPhotoPreviewCloseButton}`} onClick={closeOwnerPhotoPreview} aria-label="Close photo preview">
@@ -3125,29 +3161,48 @@ export default function LeadsClient({
               </button>
             </div>
 
-            <div className={`${dealerWorkspaceClass(workspaceStyles.modalBody)} ${styles.ownerPhotoPreviewFrame}`}>
-              <img src={ownerPhotoPreviewUrl} alt={`${ownerPhotoPreview.sourceLabel} ${ownerPhotoPreviewIndex + 1}`} />
+            <div className={`${dealerWorkspaceClass(workspaceStyles.modalBody)} ${styles.ownerPhotoPreviewBody}`}>
+              <div className={styles.ownerPhotoPreviewFrame}>
+                <img src={ownerPhotoPreviewUrl} alt={`${ownerPhotoPreview.sourceLabel} ${ownerPhotoPreviewIndex + 1}`} />
+
+                {hasMultipleOwnerPreviewPhotos ? (
+                  <>
+                    <button
+                      type="button"
+                      className={`${styles.ownerPhotoPreviewNavButton} ${styles.ownerPhotoPreviewNavPrevious}`}
+                      onClick={() => cycleOwnerPhotoPreview(-1)}
+                      aria-label="Show previous photo"
+                    >
+                      <ChevronLeftIcon className={assetStyles.buttonIcon} />
+                    </button>
+
+                    <button
+                      type="button"
+                      className={`${styles.ownerPhotoPreviewNavButton} ${styles.ownerPhotoPreviewNavNext}`}
+                      onClick={() => cycleOwnerPhotoPreview(1)}
+                      aria-label="Show next photo"
+                    >
+                      <ChevronRightIcon className={assetStyles.buttonIcon} />
+                    </button>
+                  </>
+                ) : null}
+              </div>
 
               {hasMultipleOwnerPreviewPhotos ? (
-                <>
-                  <button
-                    type="button"
-                    className={`${styles.ownerPhotoPreviewNavButton} ${styles.ownerPhotoPreviewNavPrevious}`}
-                    onClick={() => cycleOwnerPhotoPreview(-1)}
-                    aria-label="Show previous photo"
-                  >
-                    <ChevronLeftIcon className={assetStyles.buttonIcon} />
-                  </button>
-
-                  <button
-                    type="button"
-                    className={`${styles.ownerPhotoPreviewNavButton} ${styles.ownerPhotoPreviewNavNext}`}
-                    onClick={() => cycleOwnerPhotoPreview(1)}
-                    aria-label="Show next photo"
-                  >
-                    <ChevronRightIcon className={assetStyles.buttonIcon} />
-                  </button>
-                </>
+                <div className={styles.ownerPhotoPreviewThumbRow} aria-label="Photo viewer thumbnails">
+                  {ownerPhotoPreview.urls.map((url, index) => (
+                    <button
+                      type="button"
+                      key={`${url}-${index}`}
+                      className={`${styles.ownerPhotoPreviewThumbButton} ${index === ownerPhotoPreviewIndex ? styles.ownerPhotoPreviewThumbButtonActive : ''}`}
+                      onClick={() => setOwnerPhotoPreview((current) => (current ? { ...current, index } : current))}
+                      aria-label={`Show photo ${index + 1}`}
+                      aria-current={index === ownerPhotoPreviewIndex ? 'true' : undefined}
+                    >
+                      <img src={url} alt="" />
+                    </button>
+                  ))}
+                </div>
               ) : null}
             </div>
           </div>
@@ -3160,7 +3215,8 @@ export default function LeadsClient({
 
           <div className={`${assetStyles.modalCard} ${assetStyles.sharedNoteModal} ${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadNoteModal}`} role="dialog" aria-modal="true" aria-labelledby="lead-note-title">
             <div className={`${assetStyles.modalHeader} ${dealerWorkspaceClass(workspaceStyles.modalHeader)} ${styles.leadNoteHeader}`}>
-              <div className={assetStyles.modalHeaderText}>
+              <div className={`${assetStyles.modalHeaderText} ${styles.leadModalTitleGroup}`}>
+                <span className={styles.leadModalEyebrow}>Asset owner response</span>
                 <h3 id="lead-note-title">Send note or quote</h3>
                 <p>{assetTitle(noteLead)} · {ownerDisplayName(noteLead)}</p>
               </div>
@@ -3224,7 +3280,7 @@ export default function LeadsClient({
             </div>
 
             <div className={`${assetStyles.formActions} ${assetStyles.sharedNoteActions} ${dealerWorkspaceClass(workspaceStyles.modalFooter)} ${styles.leadNoteActions}`}>
-              <button type="button" className={assetStyles.secondaryButton} onClick={closeNoteModal} disabled={isSavingNote}>
+              <button type="button" className={`${assetStyles.secondaryButton} ${styles.leadModalCancelButton}`} onClick={closeNoteModal} disabled={isSavingNote}>
                 Cancel
               </button>
               <button type="button" className={assetStyles.primaryButton} onClick={() => void submitLeadNote()} disabled={isSavingNote}>
