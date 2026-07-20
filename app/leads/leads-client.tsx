@@ -2716,7 +2716,7 @@ export default function LeadsClient({
         <div className={assetStyles.modalOverlay}>
           <div className={assetStyles.modalBackdrop} onClick={() => setManagedLead(null)} />
 
-          <div className={assetStyles.optionsModal} role="dialog" aria-modal="true" aria-labelledby="lead-manage-title">
+          <div className={`${assetStyles.optionsModal} ${styles.leadManageModal}`} role="dialog" aria-modal="true" aria-labelledby="lead-manage-title">
             <div className={`${assetStyles.modalHeader} ${assetStyles.optionsModalHeader}`}>
               <div className={assetStyles.modalHeaderText}>
                 <h3 id="lead-manage-title">{assetTitle(managedLead)}</h3>

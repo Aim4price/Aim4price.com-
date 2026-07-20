@@ -2951,3 +2951,65 @@
     font-size: clamp(1.75rem, 9vw, 2.2rem) !important;
   }
 }
+
+/* === Dealer lead modal viewport safety === */
+.leadFilterModal,
+.leadManageModal,
+.leadEmailModal,
+.leadReportModal,
+.leadDeleteModal,
+.leadNoteModal,
+.ownerPhotoPreviewModal {
+  max-height: calc(100dvh - 2rem) !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: #2b8a63 #eef5f0;
+  -webkit-overflow-scrolling: touch;
+}
+
+.leadFilterModal::-webkit-scrollbar,
+.leadManageModal::-webkit-scrollbar,
+.leadEmailModal::-webkit-scrollbar,
+.leadReportModal::-webkit-scrollbar,
+.leadDeleteModal::-webkit-scrollbar,
+.leadNoteModal::-webkit-scrollbar,
+.ownerPhotoPreviewModal::-webkit-scrollbar {
+  width: 0.65rem;
+}
+
+.leadFilterModal::-webkit-scrollbar-track,
+.leadManageModal::-webkit-scrollbar-track,
+.leadEmailModal::-webkit-scrollbar-track,
+.leadReportModal::-webkit-scrollbar-track,
+.leadDeleteModal::-webkit-scrollbar-track,
+.leadNoteModal::-webkit-scrollbar-track,
+.ownerPhotoPreviewModal::-webkit-scrollbar-track {
+  background: #eef5f0;
+}
+
+.leadFilterModal::-webkit-scrollbar-thumb,
+.leadManageModal::-webkit-scrollbar-thumb,
+.leadEmailModal::-webkit-scrollbar-thumb,
+.leadReportModal::-webkit-scrollbar-thumb,
+.leadDeleteModal::-webkit-scrollbar-thumb,
+.leadNoteModal::-webkit-scrollbar-thumb,
+.ownerPhotoPreviewModal::-webkit-scrollbar-thumb {
+  border: 2px solid #eef5f0;
+  border-radius: 999px;
+  background: #2b8a63;
+}
+
+@media (max-width: 760px) {
+  .leadFilterModal,
+  .leadManageModal,
+  .leadEmailModal,
+  .leadReportModal,
+  .leadDeleteModal,
+  .leadNoteModal,
+  .ownerPhotoPreviewModal {
+    max-height: calc(100dvh - 1.5rem) !important;
+  }
+}
