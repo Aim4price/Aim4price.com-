@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState, type MouseEventHandler, type Reac
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import styles from './AppHeader.module.css';
 
 type ActivePage =
@@ -483,7 +483,6 @@ export default function AppHeader({
   ctaLabel = 'Create Account',
 }: AppHeaderProps) {
   const primaryHref = ctaHref ?? signupHref;
-  const router = useRouter();
   const pathname = usePathname();
   const accountMenuRef = useRef<HTMLDivElement | null>(null);
   const notificationMenuRef = useRef<HTMLDivElement | null>(null);
@@ -967,8 +966,7 @@ export default function AppHeader({
       setNotificationOpen(false);
       setNotifications([]);
       setIsSigningOut(false);
-      router.refresh();
-      window.location.href = '/';
+      window.location.replace('/');
     }
   }
 
