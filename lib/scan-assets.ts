@@ -33,6 +33,7 @@ export type ScanSafeAsset = {
   equipmentFamilyKey: string;
   equipmentFamilyLabel: string;
   serialNumber: string;
+  yearModel: number | null;
   financeStatus: ScanAssetStatusChoice;
   insuranceStatus: ScanAssetStatusChoice;
   licenseStatus: ScanAssetStatusChoice;
@@ -846,6 +847,7 @@ function mapScanSafeAsset(row: ScanAccessRow): ScanSafeAsset {
     equipmentFamilyKey: asText(row.equipment_family_key),
     equipmentFamilyLabel: asText(row.equipment_family_label),
     serialNumber: asText(row.serial_number),
+    yearModel: asNumber(row.year_model),
     financeStatus: readStatusFromSpecs(
       specs,
       ["financeStatus", "finance_status", "financedStatus", "financed_status"],
