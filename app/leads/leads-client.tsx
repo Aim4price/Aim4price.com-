@@ -2405,11 +2405,7 @@ export default function LeadsClient({
         <section className={`${assetStyles.registerPanel} ${styles.leadsRegisterPanel}`}>
           <div className={`${assetStyles.registerHeader} ${styles.leadsRegisterHeader}`}>
             <div className={`${assetStyles.registerTitleBlock} ${styles.leadsHeroTitleBlock}`}>
-              {!dealerAppMode ? <span className={styles.leadsHeroEyebrow}>Dealer workspace</span> : null}
-              <h1>{dealerAppMode ? 'Leads' : 'My Leads'}</h1>
-              {!dealerAppMode ? (
-                <p>Quote requests and shared asset enquiries for {accountInboxTitle}.</p>
-              ) : null}
+              <h1>{dealerAppMode ? 'Leads' : accountInboxTitle}</h1>
             </div>
           </div>
 

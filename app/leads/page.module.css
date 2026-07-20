@@ -3013,3 +3013,148 @@
     max-height: calc(100dvh - 1.5rem) !important;
   }
 }
+
+/* === Dealer desktop hierarchy matched to the Owner Asset Register === */
+.leadsPage .leadsRegisterHeader {
+  width: 100% !important;
+  min-height: clamp(5.1rem, 7vw, 6.1rem) !important;
+  display: flex !important;
+  align-items: center !important;
+  margin: 0 0 clamp(1.05rem, 1.5vw, 1.3rem) !important;
+  padding: clamp(1.15rem, 2vw, 1.55rem) clamp(1.25rem, 2.6vw, 2rem) !important;
+  border: 1.5px solid rgba(193, 211, 218, 0.98) !important;
+  border-radius: clamp(1.25rem, 2vw, 1.7rem) !important;
+  background:
+    radial-gradient(circle at 3% 0%, rgba(25, 116, 84, 0.08) 0%, rgba(25, 116, 84, 0) 38%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(248, 252, 253, 0.98) 100%) !important;
+  box-shadow:
+    0 18px 38px rgba(16, 36, 40, 0.06),
+    0 6px 16px rgba(16, 36, 40, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.leadsPage .leadsHeroTitleBlock {
+  width: 100% !important;
+  max-width: none !important;
+  display: block !important;
+}
+
+.leadsPage .leadsHeroTitleBlock h1 {
+  width: 100% !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  color: #073b30 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif !important;
+  font-size: clamp(2.35rem, 4.15vw, 3.55rem) !important;
+  font-weight: 900 !important;
+  line-height: 0.98 !important;
+  letter-spacing: -0.062em !important;
+  text-transform: uppercase !important;
+  overflow-wrap: anywhere !important;
+  text-wrap: balance;
+}
+
+.leadsPage .leadSummaryRow {
+  gap: clamp(0.9rem, 1.25vw, 1.15rem) !important;
+  margin-bottom: clamp(1rem, 1.4vw, 1.2rem) !important;
+}
+
+.leadsPage .leadSummaryCard {
+  min-height: clamp(8.35rem, 9.2vw, 9.3rem) !important;
+  padding: 1.15rem 1.3rem 1.15rem 1.55rem !important;
+  border-color: rgba(196, 215, 223, 0.98) !important;
+  border-radius: clamp(1.25rem, 1.7vw, 1.55rem) !important;
+  box-shadow:
+    0 12px 26px rgba(16, 31, 28, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.leadsPage .leadSummaryCard > span {
+  font-size: 0.88rem !important;
+  font-weight: 850 !important;
+}
+
+.leadsPage .leadSummaryCard > strong {
+  font-size: clamp(2.25rem, 3.4vw, 3rem) !important;
+}
+
+.leadsPage .leadSummaryCard > small {
+  max-width: 21rem;
+  font-size: 0.82rem !important;
+  line-height: 1.45 !important;
+}
+
+.leadsPage .leadSearchToolbar {
+  gap: 0.85rem !important;
+  margin-bottom: 0.7rem !important;
+}
+
+.leadsPage .leadSearchToolbar > label,
+.leadsPage .leadToolbarActions .leadFilterButton,
+.leadsPage .leadRefreshButton {
+  min-height: 3.65rem !important;
+  border-radius: 1.1rem !important;
+}
+
+.leadsPage .leadStack {
+  gap: 0.95rem !important;
+}
+
+.leadsPage .leadThread,
+.leadsPage .leadThreadNew:not(.leadThreadOpen),
+.leadsPage .leadThreadDone {
+  padding: clamp(1.05rem, 1.45vw, 1.25rem) !important;
+  border-color: rgba(198, 216, 223, 0.98) !important;
+  border-radius: 1.45rem !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(25, 116, 84, 0.035) 0%, rgba(25, 116, 84, 0) 34%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(248, 252, 253, 0.99) 100%) !important;
+}
+
+.leadsPage .clientPanelHeader {
+  min-height: clamp(6.2rem, 7vw, 7rem) !important;
+  gap: clamp(1rem, 1.8vw, 1.5rem) !important;
+}
+
+.leadsPage .clientIdentity {
+  gap: 0.38rem !important;
+  padding-left: 0.3rem;
+}
+
+.leadsPage .clientPanel h3,
+.leadsPage .leadThreadNew:not(.leadThreadOpen) .clientPanel h3,
+.leadsPage .leadThreadDone .clientPanel h3 {
+  font-size: clamp(1.42rem, 1.9vw, 1.72rem) !important;
+  font-weight: 850 !important;
+  letter-spacing: -0.04em !important;
+}
+
+.leadsPage .leadAssetName {
+  font-size: 0.98rem;
+}
+
+@media (max-width: 760px) {
+  .leadsPage .leadsRegisterHeader {
+    min-height: 4.35rem !important;
+    padding: 1rem 1.05rem !important;
+    border-radius: 1.15rem !important;
+  }
+
+  .leadsPage .leadsHeroTitleBlock h1 {
+    font-size: clamp(1.75rem, 9vw, 2.2rem) !important;
+    letter-spacing: -0.045em !important;
+  }
+
+  .leadsPage .leadSummaryCard {
+    min-height: 6.4rem !important;
+  }
+
+  .leadsPage .clientPanelHeader {
+    min-height: 0 !important;
+  }
+}
