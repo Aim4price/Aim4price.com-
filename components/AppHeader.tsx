@@ -696,7 +696,6 @@ export default function AppHeader({
     ? accountProfileLogoState.logoUrl
     : sessionAccountLogoUrl;
   const isOwnerAccount = session?.accountType === 'owner';
-  const isDealerAccount = session?.accountType === 'dealer';
   const navAccountType = isLoadingSession ? null : (session?.accountType ?? 'public');
   const navItems = useMemo(() => buildNavItems(navAccountType), [navAccountType]);
   const mobileNavItems = useMemo(
@@ -707,7 +706,7 @@ export default function AppHeader({
     () => resolveActiveNavKey(pathname, mobileNavItems, active),
     [active, mobileNavItems, pathname],
   );
-  const navWindowSize = session?.accountType === 'dealer' ? 5 : NAV_WINDOW_SIZE;
+  const navWindowSize = NAV_WINDOW_SIZE;
   const [navWindowStart, setNavWindowStart] = useState(0);
   const navMaxWindowStart = Math.max(0, navItems.length - navWindowSize);
   const showNavWindowControls = navItems.length > navWindowSize;
@@ -1388,17 +1387,16 @@ export default function AppHeader({
             />
           </Link>
 
-          <nav className={`${styles.nav} ${isDealerAccount ? styles.dealerNav : ''}`} aria-label="Primary navigation">
+          <nav className={styles.nav} aria-label="Primary navigation">
             {showNavWindowControls ? (
               <button
                 type="button"
-                className={`${styles.navWindowButton} ${styles.navWindowButtonPrevious} ${isDealerAccount ? styles.dealerNavWindowButton : ''}`}
+                className={`${styles.navWindowButton} ${styles.navWindowButtonPrevious}`}
                 onClick={() => moveNavWindow(-1)}
                 disabled={navWindowStart <= 0}
-                aria-label="Show previous dealer pages"
-                title="Previous dealer pages"
+                aria-label="Show previous navigation items"
               >
-                <span aria-hidden="true">&lt;</span>
+                <span aria-hidden="true">‹</span>
               </button>
             ) : null}
 
@@ -1422,13 +1420,12 @@ export default function AppHeader({
             {showNavWindowControls ? (
               <button
                 type="button"
-                className={`${styles.navWindowButton} ${styles.navWindowButtonNext} ${isDealerAccount ? styles.dealerNavWindowButton : ''}`}
+                className={`${styles.navWindowButton} ${styles.navWindowButtonNext}`}
                 onClick={() => moveNavWindow(1)}
                 disabled={navWindowStart >= navMaxWindowStart}
-                aria-label="Show next dealer pages"
-                title="Next dealer pages"
+                aria-label="Show next navigation items"
               >
-                <span aria-hidden="true">&gt;</span>
+                <span aria-hidden="true">›</span>
               </button>
             ) : null}
           </nav>

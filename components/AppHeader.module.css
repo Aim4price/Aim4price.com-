@@ -149,43 +149,6 @@
   opacity: 0.13;
 }
 
-.dealerNav {
-  gap: 0.5rem;
-}
-
-.dealerNavWindowButton {
-  width: 2.7rem;
-  min-width: 2.7rem;
-  height: 3.28rem;
-  min-height: 3.28rem;
-  border: 1px solid rgba(23, 77, 62, 0.13);
-  border-radius: 1rem;
-  color: #173f32;
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow:
-    0 9px 20px rgba(18, 45, 37, 0.055),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96);
-  font-size: 1.08rem;
-  font-weight: 900;
-  opacity: 1;
-}
-
-.dealerNavWindowButton:hover:not(:disabled) {
-  color: #ffffff;
-  border-color: #1a5a45;
-  background: #1a5a45;
-  box-shadow: 0 12px 24px rgba(18, 66, 51, 0.16);
-  opacity: 1;
-}
-
-.dealerNavWindowButton:disabled {
-  color: rgba(23, 63, 50, 0.34);
-  border-color: rgba(23, 77, 62, 0.07);
-  background: rgba(247, 250, 248, 0.86);
-  box-shadow: none;
-  opacity: 0.72;
-}
-
 .actions {
   display: flex;
   align-items: center;
@@ -2954,16 +2917,5 @@
     min-width: 100%;
     max-width: 100%;
     overflow-x: visible;
-  }
-}
-
-@media (min-width: 901px) and (max-width: 1180px) {
-  .dealerNavWindowButton {
-    width: 2.5rem;
-    min-width: 2.5rem;
-    height: 2.85rem;
-    min-height: 2.85rem;
-    border-radius: 0.9rem;
-    font-size: 1rem;
   }
 }
