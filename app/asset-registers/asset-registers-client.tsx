@@ -3176,7 +3176,7 @@ export default function AssetRegistersClient() {
 
             <div className={styles.manageModalScrollArea}>
               <div className={styles.manageActionPanel}>
-                <div className={styles.manageActionGrid}>
+                <div className={`${styles.manageActionGrid} ${isManagingCombined ? styles.manageActionGridCombined : ""}`}>
                   {!isManagingCombined ? (
                     <button
                       type="button"
