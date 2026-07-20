@@ -163,6 +163,7 @@ type QuickActionIconName =
   | "fieldManager"
   | "ownerApp"
   | "dealer"
+  | "tracking"
   | "marketplace"
   | "directory"
   | "delete";
@@ -305,6 +306,15 @@ function QuickActionIcon({ name }: { name: QuickActionIconName }) {
           <path {...strokeProps} d="M4.75 19.25c.35-3.05 2.35-4.9 5.05-4.9s4.7 1.85 5.05 4.9" />
           <path {...strokeProps} d="M15.6 9.25h3.65v7.25H15.6" />
           <path {...strokeProps} d="M17.4 12.9h.02" />
+        </svg>
+      ) : null}
+
+      {name === "tracking" ? (
+        <svg {...svgProps}>
+          <circle cx="12" cy="12" r="7.7" fill="currentColor" opacity="0.14" />
+          <circle {...strokeProps} cx="12" cy="12" r="7.7" />
+          <path {...strokeProps} d="M12 7.75v4.7l3.15 1.9" />
+          <path {...strokeProps} d="M8.35 4.9 6.7 3.4M15.65 4.9l1.65-1.5" />
         </svg>
       ) : null}
 
@@ -1678,6 +1688,10 @@ export default function AccountClient() {
     window.location.assign("/account/dealer-app");
   }
 
+  function openTrackingPage() {
+    window.location.assign("/tracking");
+  }
+
   function openOwnerAppAccessPage() {
     window.location.assign("/account/owner-app");
   }
@@ -2029,6 +2043,18 @@ export default function AccountClient() {
                 <button
                   type="button"
                   className={styles.quickActionButton}
+                  onClick={openTrackingPage}
+                >
+                  <QuickActionIcon name="tracking" />
+                  <strong>Equipment tracking</strong>
+                  <span className={styles.quickActionChevron}>›</span>
+                </button>
+              ) : null}
+
+              {isDealerAccount ? (
+                <button
+                  type="button"
+                  className={styles.quickActionButton}
                   onClick={openDealerAppAccessPage}
                 >
                   <QuickActionIcon name="dealer" />
@@ -2178,6 +2204,7 @@ export default function AccountClient() {
                 <p>
                   Update the core account information used across Aim4price.
                 </p>
+                <button type="button" className={styles.modalCloseButton} onClick={closeActionModal} aria-label="Close business details">×</button>
               </div>
 
               {isLoading ? (
@@ -2407,18 +2434,20 @@ export default function AccountClient() {
       {activeAccountModal === "scanPin" ? (
         <div className={styles.modalBackdrop} onClick={closeActionModal}>
           <section
-            className={`${styles.modalCard} ${styles.accountActionModalCard} ${styles.accountActionModalCardNarrow}`}
+            className={`${styles.modalCard} ${styles.accountActionModalCard} ${styles.accountActionModalCardNarrow} ${styles.accountScrollableModalCard}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="scan-pin-modal-title"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className={styles.modalHeader}>
-              <h2 id="scan-pin-modal-title">Update QR PIN</h2>
-              <p>
-                Create or update the 4 to 8 digit PIN used for QR scan updates.
-              </p>
-            </div>
+            <AccountModalScroller>
+              <div className={styles.modalHeader}>
+                <h2 id="scan-pin-modal-title">Update QR PIN</h2>
+                <p>
+                  Create or update the 4 to 8 digit PIN used for QR scan updates.
+                </p>
+                <button type="button" className={styles.modalCloseButton} onClick={closeActionModal} aria-label="Close QR PIN editor">×</button>
+              </div>
 
             <div className={styles.pinModalStatus}>
               <span>Current PIN status</span>
@@ -2430,7 +2459,7 @@ export default function AccountClient() {
               </p>
             </div>
 
-            <form className={styles.modalForm} onSubmit={handleScanPinSubmit}>
+              <form className={styles.modalForm} onSubmit={handleScanPinSubmit}>
               <div className={styles.pinGrid}>
                 <label className={styles.field}>
                   <span>New scan PIN</span>
@@ -2499,7 +2528,8 @@ export default function AccountClient() {
                       : "Save PIN"}
                 </button>
               </div>
-            </form>
+              </form>
+            </AccountModalScroller>
           </section>
         </div>
       ) : null}
@@ -2507,21 +2537,23 @@ export default function AccountClient() {
       {activeAccountModal === "marketplace" ? (
         <div className={styles.modalBackdrop} onClick={closeActionModal}>
           <section
-            className={styles.accountActionModalCard + " " + styles.modalCard}
+            className={`${styles.modalCard} ${styles.accountActionModalCard} ${styles.accountScrollableModalCard}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="marketplace-contact-modal-title"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className={styles.modalHeader}>
-              <h2 id="marketplace-contact-modal-title">Marketplace contact</h2>
-              <p>
-                These details are shown when customers contact you from the
-                marketplace.
-              </p>
-            </div>
+            <AccountModalScroller>
+              <div className={styles.modalHeader}>
+                <h2 id="marketplace-contact-modal-title">Marketplace contact</h2>
+                <p>
+                  These details are shown when customers contact you from the
+                  marketplace.
+                </p>
+                <button type="button" className={styles.modalCloseButton} onClick={closeActionModal} aria-label="Close marketplace contact editor">×</button>
+              </div>
 
-            {isLoading ? (
+              {isLoading ? (
               <p className={styles.loading}>Loading marketplace contact...</p>
             ) : (
               <form
@@ -2604,7 +2636,8 @@ export default function AccountClient() {
                   </button>
                 </div>
               </form>
-            )}
+              )}
+            </AccountModalScroller>
           </section>
         </div>
       ) : null}
@@ -2625,6 +2658,7 @@ export default function AccountClient() {
                   Set up how owners see and select your business when sending a
                   quote lead.
                 </p>
+                <button type="button" className={styles.modalCloseButton} onClick={closeActionModal} aria-label="Close partner directory editor">×</button>
               </div>
 
               <form
@@ -2812,18 +2846,23 @@ export default function AccountClient() {
       {isDeleteDialogOpen ? (
         <div className={styles.modalBackdrop} onClick={closeDeleteDialog}>
           <section
-            className={styles.modalCard}
+            className={`${styles.modalCard} ${styles.accountActionModalCardNarrow} ${styles.accountScrollableModalCard}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-account-modal-title"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className={styles.modalHeader}>
-              <h2>Confirm permanent removal</h2>
-              <p>
-                This removes your full Aim4price workspace, including saved
-                valuations, asset register items and account details.
-              </p>
-            </div>
+            <AccountModalScroller>
+              <div className={styles.modalHeader}>
+                <h2 id="delete-account-modal-title">Confirm permanent removal</h2>
+                <p>
+                  This removes your full Aim4price workspace, including saved
+                  valuations, asset register items and account details.
+                </p>
+                <button type="button" className={styles.modalCloseButton} onClick={closeDeleteDialog} aria-label="Close account deletion">×</button>
+              </div>
 
-            <form className={styles.modalForm} onSubmit={handleDeleteAccount}>
+              <form className={styles.modalForm} onSubmit={handleDeleteAccount}>
               <div className={styles.confirmBox}>
                 <strong>This action cannot be undone.</strong>
                 <p>Enter your password and type DELETE below to confirm.</p>
@@ -2865,7 +2904,8 @@ export default function AccountClient() {
                   {isDeletingAccount ? "Deleting account..." : "Delete account"}
                 </button>
               </div>
-            </form>
+              </form>
+            </AccountModalScroller>
           </section>
         </div>
       ) : null}

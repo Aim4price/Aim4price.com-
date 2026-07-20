@@ -3199,3 +3199,150 @@
     -webkit-overflow-scrolling: touch;
   }
 }
+
+/* === Dealer account modal and workflow polish (final cascade) === */
+.dealerAccountPage,
+.dealerAccountPage button,
+.dealerAccountPage input,
+.dealerAccountPage textarea,
+.dealerAccountPage select {
+  font-family: 'Montserrat', var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif;
+}
+
+.modalBackdrop {
+  align-items: center !important;
+  overflow: hidden !important;
+  padding: clamp(0.75rem, 2vw, 1.5rem) !important;
+}
+
+.modalCard,
+.accountActionModalCard,
+.accountScrollableModalCard,
+.partnerDirectoryModalCard {
+  max-height: calc(100dvh - clamp(1.5rem, 4vw, 3rem)) !important;
+}
+
+.accountScrollableModalCard {
+  overflow: hidden !important;
+}
+
+.accountModalScrollShell,
+.accountModalScrollViewport {
+  min-height: 0 !important;
+  max-height: inherit !important;
+}
+
+.accountModalScrollViewport {
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
+}
+
+.accountScrollableModalCard .form,
+.accountScrollableModalCard .modalForm,
+.accountScrollableModalCard .compactEditForm,
+.accountScrollableModalCard .directoryForm,
+.accountScrollableModalCard .marketplaceFields {
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.partnerDirectoryModalCard .accountModalScrollRail {
+  display: block !important;
+}
+
+.modalHeader {
+  position: relative;
+  padding-right: 3.5rem;
+}
+
+.modalHeader h2 {
+  color: #12352d;
+  font-weight: 800 !important;
+  letter-spacing: -0.04em;
+}
+
+.modalHeader p {
+  color: #64746a;
+  font-weight: 650 !important;
+}
+
+.modalCloseButton {
+  appearance: none;
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 2.85rem;
+  min-width: 2.85rem;
+  height: 2.85rem;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgba(37, 71, 51, 0.15);
+  border-radius: 14px;
+  color: #254733;
+  background: #f7faf8;
+  font: inherit;
+  font-size: 1.35rem;
+  font-weight: 650;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.modalCloseButton:hover {
+  border-color: rgba(37, 71, 51, 0.28);
+  background: #eef5f0;
+}
+
+.modalCloseButton:focus-visible {
+  outline: 3px solid rgba(43, 138, 99, 0.2);
+  outline-offset: 3px;
+}
+
+.accountScrollableModalCard .modalActions,
+.accountScrollableModalCard .marketplaceActions,
+.accountScrollableModalCard .actionsRow {
+  position: sticky;
+  bottom: -1.45rem;
+  z-index: 5;
+  margin-right: -1.45rem;
+  margin-bottom: -1.45rem;
+  margin-left: -1.45rem;
+  padding: 0.9rem 1.45rem 1.45rem;
+  border-top: 1px solid rgba(37, 71, 51, 0.13);
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(12px);
+}
+
+.dealerAccountPage .quickActionButton {
+  min-height: 4.55rem;
+}
+
+@media (max-width: 760px) {
+  .modalHeader {
+    padding-right: 3.15rem;
+  }
+
+  .modalCloseButton {
+    width: 2.6rem;
+    min-width: 2.6rem;
+    height: 2.6rem;
+    border-radius: 12px;
+  }
+
+  .accountModalScrollContent {
+    padding: 1rem 1.35rem 1rem 1rem !important;
+  }
+
+  .accountScrollableModalCard .modalActions,
+  .accountScrollableModalCard .marketplaceActions,
+  .accountScrollableModalCard .actionsRow {
+    bottom: -1rem;
+    margin-right: -1.35rem;
+    margin-bottom: -1rem;
+    margin-left: -1rem;
+    padding: 0.8rem 1.35rem 1rem 1rem;
+  }
+}
