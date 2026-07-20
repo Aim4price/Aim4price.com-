@@ -3187,14 +3187,22 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.78) !important;
 }
 
-.leadsPage .leadOwnerSummaryCardNew {
+.leadsPage .leadSummaryRow > .leadOwnerSummaryCard.leadOwnerSummaryCardNew:first-child,
+.leadsPage .leadSummaryRow > .leadOwnerSummaryCard.leadOwnerSummaryCardNew:first-child:hover,
+.leadsPage .leadSummaryRow > .leadOwnerSummaryCard.leadOwnerSummaryCardNew:first-child:focus-within {
   border-color: rgba(204, 58, 58, 0.24) !important;
-  background:
+  background-color: #ffe7e7 !important;
+  background-image:
     radial-gradient(circle at 0 0, rgba(204, 58, 58, 0.11), transparent 34%),
     linear-gradient(180deg, #fff2f2 0%, #ffe7e7 100%) !important;
+  background-position: 0 0 !important;
+  background-repeat: no-repeat !important;
+  background-size: 100% 100% !important;
   box-shadow:
     0 16px 36px rgba(157, 42, 42, 0.08),
     inset 0 1px 0 rgba(255, 255, 255, 0.88) !important;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
 }
 
 .leadsPage .leadOwnerSummaryCardOpen {
