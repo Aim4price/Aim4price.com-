@@ -18,6 +18,7 @@ type ActivePage =
   | 'account'
   | 'asset-discovery'
   | 'leads'
+  | 'tracking'
   | 'shared-registers'
   | 'marketplace'
   | 'none';
@@ -195,9 +196,9 @@ const ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
   { href: '/asset-register', label: 'Asset Register', accountTypes: ['owner'] },
   { href: '/my-invoices', label: 'Cost Ledger', accountTypes: ['owner'] },
   { href: '/asset-discovery', label: 'Discovery', accountTypes: ['dealer'] },
+  { href: '/tracking', label: 'Tracking', accountTypes: ['dealer'] },
   { href: '/fuel', label: 'Fuel Ledger', accountTypes: ['owner'] },
   { href: '/valuation', label: 'Get Estimate', accountTypes: ['dealer'] },
-  { href: '/', label: 'Home', accountTypes: ['dealer'] },
   { href: '/maintenance', label: 'Maintenance', accountTypes: ['owner'] },
   { href: '/marketplace', label: 'Marketplace', accountTypes: ['owner', 'dealer'] },
   { href: '/leads', label: 'My Leads', accountTypes: ['dealer'] },
@@ -248,12 +249,15 @@ function buildNavItems(accountType: AccountType | 'public' | null): NavItem[] {
 
 function buildMobileNavItems(accountType: AccountType): NavItem[] {
   const items = buildNavItems(accountType);
+  const accountItems = accountType === 'dealer'
+    ? [...items, { key: 'tracking' as const, href: '/tracking', label: 'Tracking' }]
+    : items;
 
-  if (items.some((item) => item.key === 'account')) {
-    return items;
+  if (accountItems.some((item) => item.key === 'account')) {
+    return accountItems;
   }
 
-  return [...items, { key: 'account', href: '/account', label: 'Account' }];
+  return [...accountItems, { key: 'account', href: '/account', label: 'Account' }];
 }
 
 function isPathMatchingHref(pathname: string, href: string): boolean {
@@ -700,7 +704,10 @@ export default function AppHeader({
     () => (session?.accountType ? buildMobileNavItems(session.accountType) : navItems),
     [navItems, session?.accountType],
   );
-  const activeNavKey = useMemo(() => resolveActiveNavKey(pathname, navItems, active), [active, navItems, pathname]);
+  const activeNavKey = useMemo(
+    () => resolveActiveNavKey(pathname, mobileNavItems, active),
+    [active, mobileNavItems, pathname],
+  );
   const navWindowSize = session?.accountType === 'dealer' ? 5 : NAV_WINDOW_SIZE;
   const [navWindowStart, setNavWindowStart] = useState(0);
   const navMaxWindowStart = Math.max(0, navItems.length - navWindowSize);
