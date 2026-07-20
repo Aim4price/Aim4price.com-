@@ -350,6 +350,16 @@ function CheckIcon({ className }: IconProps) {
   );
 }
 
+function MaintenanceTrackingIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
+      <path d="M6.5 3v3M17.5 3v3M4 8.5h16" strokeLinecap="round" />
+      <rect x="4" y="5" width="16" height="15" rx="3" />
+      <path d="m8.5 14 2.1 2.1 4.9-5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function ChevronDownIcon({ className }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
@@ -2636,8 +2646,13 @@ export default function LeadsClient({
                           <strong className={styles.leadAssetName}>{assetTitle(lead)}</strong>
                           {isTrackingRequest ? (
                             <span className={styles.trackingLeadPurpose}>
-                              <strong>Asset sent for tracking</strong>
-                              <small>Maintenance tracking access was shared with your dealership.</small>
+                              <span className={styles.trackingLeadPurposeIcon} aria-hidden="true">
+                                <MaintenanceTrackingIcon className={styles.trackingLeadPurposeIconGraphic} />
+                              </span>
+                              <span className={styles.trackingLeadPurposeCopy}>
+                                <strong>Asset sent for tracking</strong>
+                                <small>Maintenance tracking access was shared with your dealership.</small>
+                              </span>
                             </span>
                           ) : null}
                           <span className={styles.clientKicker}>{formatLeadDisplayType(lead)} · Received {formatDate(lead.createdAtIso)}</span>
