@@ -1636,10 +1636,10 @@
   text-decoration: none;
 }
 .taskIdentity {
-  justify-items: center;
+  justify-items: start;
   border-bottom: 1px solid rgba(18, 53, 45, 0.1);
   padding-bottom: 15px;
-  text-align: center;
+  text-align: left;
 }
 .taskIdentity > strong {
   color: #24483d;
