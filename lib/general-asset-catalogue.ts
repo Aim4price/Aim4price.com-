@@ -56,9 +56,84 @@ export const GENERAL_ASSET_CATEGORIES = [
   },
 ] as const;
 
+export const PROPERTY_ASSET_SUBTYPES = [
+  {
+    value: 'land',
+    label: 'Land',
+    description: 'Vacant, agricultural or other land recorded separately from buildings and improvements.',
+  },
+  {
+    value: 'building_structure',
+    label: 'Building or structure',
+    description: 'Houses, offices, warehouses, workshops, sheds, stores and similar structures.',
+  },
+  {
+    value: 'fixed_improvement',
+    label: 'Fixed improvement',
+    description: 'Walls, paving, boreholes, fencing and other permanent improvements to a property.',
+  },
+  {
+    value: 'tenant_improvement',
+    label: 'Tenant improvement',
+    description: 'Alterations, fittings or improvements paid for by a tenant at a leased premises.',
+  },
+  {
+    value: 'other_property',
+    label: 'Other property',
+    description: 'Another property interest that does not fit one of the groups above.',
+  },
+] as const;
+
+export const STOCK_ASSET_SUBTYPES = [
+  {
+    value: 'raw_materials',
+    label: 'Raw materials',
+    description: 'Materials and commodities held for manufacturing, processing or production.',
+  },
+  {
+    value: 'finished_goods',
+    label: 'Finished goods',
+    description: 'Completed products or merchandise held for sale or distribution.',
+  },
+  {
+    value: 'parts_spares',
+    label: 'Parts and spares',
+    description: 'Replacement parts, workshop spares and service inventory.',
+  },
+  {
+    value: 'agricultural_inputs',
+    label: 'Agricultural inputs',
+    description: 'Seed, fertiliser, chemicals, feed and other farming inputs.',
+  },
+  {
+    value: 'produce',
+    label: 'Produce',
+    description: 'Harvested crops, food products and other stored agricultural produce.',
+  },
+  {
+    value: 'livestock',
+    label: 'Livestock',
+    description: 'Animals or herds recorded on a market, agreed or declared-value basis.',
+  },
+  {
+    value: 'third_party_stock',
+    label: 'Third-party or consignment stock',
+    description: 'Goods held on behalf of a customer, supplier or another owner.',
+  },
+  {
+    value: 'other_stock',
+    label: 'Other stock',
+    description: 'Another inventory or stock group that does not fit one of the groups above.',
+  },
+] as const;
+
 export type GeneralAssetCategoryKey = (typeof GENERAL_ASSET_CATEGORIES)[number]['value'];
+export type PropertyAssetSubtypeKey = (typeof PROPERTY_ASSET_SUBTYPES)[number]['value'];
+export type StockAssetSubtypeKey = (typeof STOCK_ASSET_SUBTYPES)[number]['value'];
 
 const GENERAL_ASSET_CATEGORY_KEYS = new Set<string>(GENERAL_ASSET_CATEGORIES.map((category) => category.value));
+const PROPERTY_ASSET_SUBTYPE_KEYS = new Set<string>(PROPERTY_ASSET_SUBTYPES.map((category) => category.value));
+const STOCK_ASSET_SUBTYPE_KEYS = new Set<string>(STOCK_ASSET_SUBTYPES.map((category) => category.value));
 
 export function normalizeGeneralAssetCategory(value: unknown): GeneralAssetCategoryKey | '' {
   const normalized = typeof value === 'string' ? value.trim().toLowerCase() : '';
@@ -68,4 +143,24 @@ export function normalizeGeneralAssetCategory(value: unknown): GeneralAssetCateg
 export function generalAssetCategoryLabel(value: unknown): string {
   const normalized = normalizeGeneralAssetCategory(value);
   return GENERAL_ASSET_CATEGORIES.find((category) => category.value === normalized)?.label ?? '';
+}
+
+export function normalizePropertyAssetSubtype(value: unknown): PropertyAssetSubtypeKey | '' {
+  const normalized = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return PROPERTY_ASSET_SUBTYPE_KEYS.has(normalized) ? normalized as PropertyAssetSubtypeKey : '';
+}
+
+export function propertyAssetSubtypeLabel(value: unknown): string {
+  const normalized = normalizePropertyAssetSubtype(value);
+  return PROPERTY_ASSET_SUBTYPES.find((category) => category.value === normalized)?.label ?? '';
+}
+
+export function normalizeStockAssetSubtype(value: unknown): StockAssetSubtypeKey | '' {
+  const normalized = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return STOCK_ASSET_SUBTYPE_KEYS.has(normalized) ? normalized as StockAssetSubtypeKey : '';
+}
+
+export function stockAssetSubtypeLabel(value: unknown): string {
+  const normalized = normalizeStockAssetSubtype(value);
+  return STOCK_ASSET_SUBTYPES.find((category) => category.value === normalized)?.label ?? '';
 }

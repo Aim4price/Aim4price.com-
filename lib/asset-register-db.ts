@@ -871,7 +871,10 @@ function buildManualSpecsJson(
   const lifeWorkedPercent = Number.isFinite(explicitLifeWorkedPercent as number)
     ? explicitLifeWorkedPercent
     : percentFromSpecs(specs);
-  const replacementPriceExVat = normalizeReplacementPriceExVat(input.replacementPriceExVat) ?? replacementPriceFromSpecs(specs);
+  const replacementPriceNotApplicable = assetReplacementPriceNotApplicable(kind, specs);
+  const replacementPriceExVat = replacementPriceNotApplicable
+    ? null
+    : normalizeReplacementPriceExVat(input.replacementPriceExVat) ?? replacementPriceFromSpecs(specs);
   const hasIncomingInsuredValue = Object.prototype.hasOwnProperty.call(input, 'insuredValueExVat');
   const incomingInsuredValueExVat = normalizeInsuredValueExVat(input.insuredValueExVat);
   const insuredValueExVat = hasIncomingInsuredValue ? incomingInsuredValueExVat : insuredValueFromSpecs(specs);
@@ -902,6 +905,12 @@ function buildManualSpecsJson(
 
   if (insuredValueForSave === null) {
     for (const key of INSURED_VALUE_SPEC_KEYS) {
+      delete specs[key];
+    }
+  }
+
+  if (replacementPriceNotApplicable) {
+    for (const key of REPLACEMENT_PRICE_SPEC_KEYS) {
       delete specs[key];
     }
   }
@@ -976,7 +985,14 @@ function buildManualSpecsJson(
           replacementPriceBasis: 'user',
           replacement_price_basis: 'user',
         }
-      : {}),
+      : replacementPriceNotApplicable
+        ? {
+            replacementPriceNotApplicable: true,
+            replacement_price_not_applicable: true,
+            replacementPriceBasis: 'not_applicable',
+            replacement_price_basis: 'not_applicable',
+          }
+        : {}),
     usageMetric,
     usage_metric: usageMetric,
     usage_unit: usageMetric,
@@ -1414,6 +1430,20 @@ const REPLACEMENT_PRICE_SPEC_KEYS = [
   'replacementPrice',
   'replacement_price',
 ] as const;
+
+function assetReplacementPriceNotApplicable(
+  kind: AssetRegisterItemKind,
+  specs: Record<string, unknown>,
+): boolean {
+  const explicitFlag = String(
+    specs.replacementPriceNotApplicable ?? specs.replacement_price_not_applicable ?? '',
+  ).trim().toLowerCase();
+  const propertySubtype = asText(
+    specs.propertyAssetSubtype ?? specs.property_asset_subtype,
+  ).toLowerCase();
+
+  return explicitFlag === 'true' || kind === 'stock' || (kind === 'property' && propertySubtype === 'land');
+}
 
 function normalizeReplacementPriceExVat(value: unknown): number | null {
   const numeric = asNumber(value);
@@ -2442,16 +2472,18 @@ export async function createManualAssetRegisterItem(
 
   const schema = await getAssetRegisterSchema();
   const now = new Date();
+  const nextKind = normalizeKind(input.kind);
   const nextValue = Math.round(Number(input.value) || 0);
   const nextReplacementPriceExVat = normalizeReplacementPriceExVat(input.replacementPriceExVat);
+  const incomingSpecsJson = isRecord(input.specsJson) ? input.specsJson : {};
+  const replacementPriceNotApplicable = assetReplacementPriceNotApplicable(nextKind, incomingSpecsJson);
   const nextIsInsured = Boolean(input.isInsured);
   const nextInsuredValueExVat = nextIsInsured ? normalizeInsuredValueExVat(input.insuredValueExVat) : null;
 
-  if (nextReplacementPriceExVat === null) {
+  if (nextReplacementPriceExVat === null && !replacementPriceNotApplicable) {
     throw new Error('REPLACEMENT_PRICE_REQUIRED');
   }
 
-  const nextKind = normalizeKind(input.kind);
   const nextSpecsJson = buildManualSpecsJson(input, nextKind);
   const nextLicenseRegistrationNumber = Boolean(input.isLicensed) ? normalizeLicenseRegistrationNumber(input.licenseRegistrationNumber) : null;
   const nextLifeWorkedPercent = percentFromSpecs(nextSpecsJson);
@@ -3007,10 +3039,15 @@ export async function updateAssetRegisterItem(
   const nextKind = existing.valuationRunId ? existing.kind : normalizeKind(input.kind);
   const nextValue = Math.round(Number(input.value) || 0);
   const nextReplacementPriceExVat = normalizeReplacementPriceExVat(input.replacementPriceExVat);
+  const mergedReplacementSpecs = {
+    ...(isRecord(existing.specsJson) ? existing.specsJson : {}),
+    ...(isRecord(input.specsJson) ? input.specsJson : {}),
+  };
+  const replacementPriceNotApplicable = assetReplacementPriceNotApplicable(nextKind, mergedReplacementSpecs);
   const nextIsInsured = Boolean(input.isInsured);
   const nextInsuredValueExVat = nextIsInsured ? normalizeInsuredValueExVat(input.insuredValueExVat) : null;
 
-  if (nextReplacementPriceExVat === null) {
+  if (nextReplacementPriceExVat === null && !replacementPriceNotApplicable) {
     throw new Error('REPLACEMENT_PRICE_REQUIRED');
   }
 

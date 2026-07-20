@@ -5,7 +5,7 @@ import {
   type InsuranceIndustryProfileKey,
 } from './insurance-cover-catalogue';
 
-export const INSURANCE_CLASSIFICATION_RULE_VERSION = 'insurance-rules-2026.07.2' as const;
+export const INSURANCE_CLASSIFICATION_RULE_VERSION = 'insurance-rules-2026.07.3' as const;
 
 export type InsuranceRuleConfidence = 'low' | 'medium' | 'high';
 
@@ -93,6 +93,20 @@ function factText(input: InsuranceClassificationInput): string {
     specs.insurance_use_context,
     specs.insuranceMobility,
     specs.insurance_mobility,
+    specs.propertyAssetSubtype,
+    specs.property_asset_subtype,
+    specs.propertyAssetSubtypeLabel,
+    specs.property_asset_subtype_label,
+    specs.propertyInterest,
+    specs.property_interest,
+    specs.stockAssetSubtype,
+    specs.stock_asset_subtype,
+    specs.stockAssetSubtypeLabel,
+    specs.stock_asset_subtype_label,
+    specs.stockValuationBasis,
+    specs.stock_valuation_basis,
+    specs.stockMovement,
+    specs.stock_movement,
   ].map(text).filter(Boolean).join(' '));
 }
 
@@ -166,6 +180,11 @@ export function classifyInsuranceRisk(input: InsuranceClassificationInput): Insu
   const result: MutableResult = { candidates: new Map(), suggestions: new Map(), questions: new Set() };
   const specs = record(input.ownerFacts.specsJson);
   const generalAssetCategory = normalize(text(specs.generalAssetCategory ?? specs.general_asset_category));
+  const propertyAssetSubtype = normalize(text(specs.propertyAssetSubtype ?? specs.property_asset_subtype));
+  const propertyInterest = normalize(text(specs.propertyInterest ?? specs.property_interest));
+  const stockAssetSubtype = normalize(text(specs.stockAssetSubtype ?? specs.stock_asset_subtype));
+  const stockValuationBasis = normalize(text(specs.stockValuationBasis ?? specs.stock_valuation_basis));
+  const stockMovement = normalize(text(specs.stockMovement ?? specs.stock_movement));
   const useContext = normalize(text(specs.insuranceUseContext ?? specs.insurance_use_context));
   const mobility = normalize(text(specs.insuranceMobility ?? specs.insurance_mobility));
   const criticalToOperations = input.criticalToOperations ?? normalize(text(
@@ -307,7 +326,56 @@ export function classifyInsuranceRisk(input: InsuranceClassificationInput): Insu
     }
   }
 
-  if (hasAny(haystack, ['building', 'warehouse', 'office', 'shop', 'factory', 'house', 'shed', 'property', 'structure'])) {
+  if (propertyAssetSubtype === 'land') {
+    const ruleId = 'OBJ-LAND-001';
+    addCandidate(result, {
+      riskObjectType: 'land_or_property_interest',
+      label: 'Land or property interest',
+      confidence: 'high',
+      ruleId,
+      rationale: 'The owner explicitly recorded this property as land rather than a building or fixed improvement.',
+      missingQuestions: [
+        'What is the land used for, who owns or occupies it, and which liability or agricultural activities arise there?',
+        'Are any buildings, fencing, boreholes, crops or other improvements recorded separately?',
+      ],
+    });
+    if (commercial) {
+      addCover(result, {
+        coverKey: 'public_liability',
+        ruleId,
+        rationale: 'Ownership or occupation of land can create third-party liability even though the land itself does not have a rebuilding value.',
+        confidence: 'medium',
+        missingQuestions: ['Who enters or works on the land and what activities or hazards exist there?'],
+      });
+    }
+  }
+
+  if (propertyAssetSubtype === 'fixed improvement' || propertyAssetSubtype === 'tenant improvement') {
+    const tenantImprovement = propertyAssetSubtype === 'tenant improvement' || propertyInterest === 'tenant improvement';
+    const ruleId = tenantImprovement ? 'OBJ-TENANT-IMPROVEMENT-001' : 'OBJ-FIXED-IMPROVEMENT-001';
+    addCandidate(result, {
+      riskObjectType: tenantImprovement ? 'tenant_improvement' : 'fixed_property_improvement',
+      label: tenantImprovement ? 'Tenant improvement' : 'Fixed property improvement',
+      confidence: 'high',
+      ruleId,
+      rationale: tenantImprovement
+        ? 'The owner recorded an improvement at a leased premises rather than ownership of the whole building.'
+        : 'The owner recorded a permanent improvement separately from land and buildings.',
+      missingQuestions: ['Who is responsible for insuring the improvement under the title or lease?', 'What is its current reinstatement cost and risk address?'],
+    });
+    addCover(result, {
+      coverKey: commercial ? 'commercial_fire_allied_perils' : 'domestic_buildings_houseowners',
+      ruleId,
+      rationale: 'A fixed improvement is physical property at a stated location, but ownership and policy treatment must be confirmed.',
+      confidence: 'high',
+      missingQuestions: ['Confirm ownership, location, reinstatement value and whether it is included with a building or contents section.'],
+    });
+  }
+
+  if (
+    propertyAssetSubtype === 'building structure' ||
+    (!propertyAssetSubtype && hasAny(haystack, ['building', 'warehouse', 'office', 'shop', 'factory', 'house', 'shed', 'structure']))
+  ) {
     const ruleId = 'OBJ-BUILDING-001';
     addCandidate(result, { riskObjectType: commercial ? 'commercial_building' : 'domestic_building', label: commercial ? 'Commercial building' : 'Domestic building', confidence: 'high', ruleId, rationale: 'The asset facts identify a building or fixed structure.', missingQuestions: ['Who owns and occupies the structure?', 'What is the construction, occupancy, location and full rebuilding value?'] });
     addCover(result, { coverKey: commercial ? 'buildings_combined' : 'domestic_buildings_houseowners', ruleId, rationale: 'A building-specific section is a plausible primary treatment subject to ownership and use.', confidence: 'high', missingQuestions: ['Confirm segment, ownership, occupancy and rebuild basis.'] });
@@ -318,14 +386,42 @@ export function classifyInsuranceRisk(input: InsuranceClassificationInput): Insu
     addPhysicalPropertyDependencies(result, ruleId, 'A physical building exposure exists.');
   }
 
-  if (hasAny(haystack, ['stock', 'inventory', 'goods', 'produce', 'materials', 'merchandise'])) {
+  if (stockAssetSubtype === 'livestock') {
+    const ruleId = 'OBJ-LIVESTOCK-001';
+    addCandidate(result, {
+      riskObjectType: 'livestock_or_herd',
+      label: 'Livestock or herd',
+      confidence: 'high',
+      ruleId,
+      rationale: 'The owner explicitly classified this stock record as livestock.',
+      missingQuestions: ['Which animals, quantities, identification and value basis apply?', 'What health, security, movement and accumulation controls exist?'],
+    });
+    addCover(result, {
+      coverKey: 'livestock_pedigree_game',
+      ruleId,
+      rationale: 'Livestock requires specialist animal treatment rather than ordinary premises stock classification.',
+      confidence: 'high',
+      missingQuestions: ['Confirm animal schedule or herd basis, per-animal or agreed values, covered perils and veterinary requirements.'],
+    });
+    addCover(result, {
+      coverKey: 'agricultural_package_farm_property',
+      ruleId,
+      rationale: 'The livestock exposure should be considered alongside the wider farm property and operational position.',
+      confidence: 'medium',
+      missingQuestions: ['What other farm property, produce and liability exposures exist at the same locations?'],
+    });
+  }
+
+  if (stockAssetSubtype !== 'livestock' && hasAny(haystack, ['stock', 'inventory', 'goods', 'produce', 'materials', 'merchandise'])) {
     const ruleId = 'OBJ-STOCK-001';
-    addCandidate(result, { riskObjectType: 'stock_or_goods', label: 'Stock, goods or materials', confidence: 'high', ruleId, rationale: 'The asset facts identify stock, goods, produce or inventory.', missingQuestions: ['Who owns the goods and what is the valuation basis?', 'What are the peak values by location and conveyance?'] });
+    addCandidate(result, { riskObjectType: 'stock_or_goods', label: 'Stock, goods or materials', confidence: 'high', ruleId, rationale: stockAssetSubtype ? 'The owner selected a structured stock subtype and value basis.' : 'The asset facts identify stock, goods, produce or inventory.', missingQuestions: [stockValuationBasis ? 'Confirm that the recorded value follows the selected basis and VAT treatment.' : 'Who owns the goods and what is the valuation basis?', 'What are the peak values by location and conveyance?'] });
     addCover(result, { coverKey: 'commercial_fire_allied_perils', ruleId, rationale: 'Stock at a premises can form part of the commercial property value at risk.', confidence: 'high', missingQuestions: ['What stock is held at each location and on what valuation basis?'] });
-    addCover(result, { coverKey: 'goods_in_transit', ruleId, rationale: 'Movement between locations creates a separate transit exposure.', confidence: 'medium', missingQuestions: ['When and how are the goods transported?'] });
+    addCover(result, { coverKey: 'goods_in_transit', ruleId, rationale: 'Movement between locations creates a separate transit exposure.', confidence: stockMovement === 'regular transit' ? 'high' : stockMovement === 'one location' ? 'low' : 'medium', missingQuestions: ['When and how are the goods transported?'] });
     addCover(result, { coverKey: 'marine_cargo_stock_throughput', ruleId, rationale: 'International transit or continuous stock throughput may require marine treatment.', confidence: 'low', missingQuestions: ['Are imports, exports, Incoterms or overseas voyages involved?'] });
     addCover(result, { coverKey: 'commercial_theft', ruleId, rationale: 'Stock theft trigger and security conditions should be assessed separately.', confidence: 'medium', missingQuestions: ['What theft trigger, security and stock controls apply?'] });
-    addCover(result, { coverKey: 'machinery_breakdown_bi_deterioration_stock', ruleId, rationale: 'Temperature-sensitive produce may deteriorate after equipment or supply failure.', confidence: 'low', missingQuestions: ['Is stock temperature-sensitive or dependent on refrigeration?'] });
+    if (temperatureSensitiveStock !== 'no') {
+      addCover(result, { coverKey: 'machinery_breakdown_bi_deterioration_stock', ruleId, rationale: 'Temperature-sensitive produce may deteriorate after equipment or supply failure.', confidence: temperatureSensitiveStock === 'yes' ? 'high' : 'low', missingQuestions: ['Is stock temperature-sensitive or dependent on refrigeration?'] });
+    }
   }
 
   if (hasAny(haystack, ['tools', 'tool set', 'power tool', 'workshop equipment', 'handheld equipment'])) {
