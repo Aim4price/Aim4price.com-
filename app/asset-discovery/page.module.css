@@ -1953,3 +1953,74 @@
     grid-column: 1;
   }
 }
+
+/* === Dealer Discovery list and modal usability polish === */
+.dealerAssetCardHeader {
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  gap: clamp(1rem, 2vw, 1.5rem) !important;
+}
+
+.dealerAssetCard .assetIdentity {
+  padding-left: 0.25rem;
+}
+
+.contactModal {
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) auto !important;
+  max-height: calc(100dvh - 2rem) !important;
+  overflow: hidden !important;
+}
+
+.contactBody {
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: #2b8a63 #eef5f0;
+  -webkit-overflow-scrolling: touch;
+}
+
+.contactBody::-webkit-scrollbar {
+  width: 0.65rem;
+}
+
+.contactBody::-webkit-scrollbar-track {
+  background: #eef5f0;
+}
+
+.contactBody::-webkit-scrollbar-thumb {
+  border: 2px solid #eef5f0;
+  border-radius: 999px;
+  background: #2b8a63;
+}
+
+.contactActions {
+  position: relative;
+  z-index: 2;
+  margin: 0 !important;
+  border-top: 1px solid rgba(37, 71, 51, 0.12) !important;
+}
+
+@media (max-width: 760px) {
+  .dealerAssetCardHeader {
+    grid-template-columns: 1fr !important;
+  }
+
+  .dealerAssetCard .assetIdentity {
+    padding-left: 0;
+  }
+
+  .assetActionRow {
+    grid-column: auto !important;
+  }
+
+  .contactOverlay {
+    padding: 0.75rem !important;
+  }
+
+  .contactModal {
+    max-height: calc(100dvh - 1.5rem) !important;
+  }
+}

@@ -251,19 +251,6 @@ function dealerAssetMeta(asset: AssetDiscoveryAsset): string {
   return details.join(" • ");
 }
 
-function dealerAssetInitials(asset: AssetDiscoveryAsset): string {
-  const source = [cleanText(asset.brand), cleanText(asset.model)]
-    .filter((value) => value && !isUnknown(value))
-    .join(" ") || cleanText(asset.type) || "Asset";
-
-  const words = source.split(/\s+/).filter(Boolean);
-  const initials = words.length > 1
-    ? `${words[0]?.[0] ?? ""}${words[1]?.[0] ?? ""}`
-    : source.slice(0, 2);
-
-  return initials.toUpperCase();
-}
-
 function temporaryDenialExpired(asset: AssetDiscoveryAsset): boolean {
   if (asset.enquiryStatus !== "temporarily_denied" || !asset.requestAgainAtIso)
     return false;
@@ -1011,16 +998,11 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
                 className={`${styles.assetCard} ${styles.dealerAssetCard} ${assetCardStatusClass(asset)}`}
               >
                 <div className={`${styles.assetCardHeader} ${styles.dealerAssetCardHeader}`}>
-                  <div className={styles.assetVisual} aria-hidden="true">
-                    <strong>{dealerAssetInitials(asset)}</strong>
-                    <span>{cleanText(asset.type) || "Asset"}</span>
-                  </div>
-
                   <div className={styles.assetIdentity}>
                     <h2>{dealerAssetDisplayName(asset)}</h2>
                     <p className={styles.dealerAssetMeta}>{dealerAssetMeta(asset)}</p>
                     <span className={styles.dealerAssetProvince}>
-                      {dealerAppMode ? "" : "Province: "}{cleanText(asset.province) || "Not saved"}
+                      {[cleanText(asset.type) || "Asset", cleanText(asset.province) || "Location not saved"].join(" · ")}
                     </span>
                   </div>
 
