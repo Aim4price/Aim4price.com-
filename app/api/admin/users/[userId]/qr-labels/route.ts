@@ -17,6 +17,7 @@ type AdminQrAssetRow = {
   plate_label: string | null;
   public_asset_code: string | null;
   kind: string | null;
+  register_id: string | null;
   register_name: string | null;
   created_at: string | Date | null;
   updated_at: string | Date | null;
@@ -28,6 +29,7 @@ type AdminQrLabelAsset = {
   plateLabel: string;
   publicAssetCode: string;
   kind: string;
+  registerId: string;
   registerName: string;
   hasQr: boolean;
   createdAtIso: string | null;
@@ -128,17 +130,17 @@ function normalizeAssetIds(value: unknown): string[] {
   return ids;
 }
 
-async function requireAdminSession() {
+async function requireQrLabelSession(userId: string) {
   const session = await getAnyServerSession();
 
   if (!session?.user?.id) {
     return { session: null, response: jsonError("Not authenticated.", 401) };
   }
 
-  if (!isAim4priceAdminEmail(session.user.email)) {
+  if (!isAim4priceAdminEmail(session.user.email) && session.user.id !== userId) {
     return {
       session: null,
-      response: jsonError("Admin access required.", 403),
+      response: jsonError("You can only generate QR labels for your own account.", 403),
     };
   }
 
@@ -156,6 +158,7 @@ function mapAdminQrAssetRow(row: AdminQrAssetRow): AdminQrLabelAsset {
     plateLabel,
     publicAssetCode,
     kind: cleanText(row.kind),
+    registerId: cleanText(row.register_id),
     registerName: cleanText(row.register_name) || "Asset Register",
     hasQr: Boolean(publicAssetCode),
     createdAtIso: toIso(row.created_at),
@@ -163,7 +166,7 @@ function mapAdminQrAssetRow(row: AdminQrAssetRow): AdminQrLabelAsset {
   };
 }
 
-async function listAdminQrLabelAssets(userId: string): Promise<AdminQrLabelAsset[]> {
+async function listAdminQrLabelAssets(userId: string, registerId = ""): Promise<AdminQrLabelAsset[]> {
   await ensureAssetRegisterTables();
 
   const db = getDb();
@@ -175,6 +178,7 @@ async function listAdminQrLabelAssets(userId: string): Promise<AdminQrLabelAsset
         ari.plate_label,
         ari.public_asset_code,
         ari.kind,
+        ari.register_id::text as register_id,
         coalesce(nullif(ar.business_name, ''), 'Asset Register') as register_name,
         ari.created_at,
         ari.updated_at
@@ -183,12 +187,13 @@ async function listAdminQrLabelAssets(userId: string): Promise<AdminQrLabelAsset
         on ar.id = ari.register_id
        and ar.user_id = ari.user_id
       where ari.user_id = $1
+        and ($2::text = '' or ari.register_id::text = $2)
         and coalesce(nullif(ari.qr_status, ''), 'active') <> 'deleted'
       order by lower(coalesce(nullif(ari.title, ''), nullif(trim(concat_ws(' ', ari.brand_name, ari.model_name)), ''), 'untitled asset')) asc,
                ari.created_at desc nulls last,
                ari.id desc
     `,
-    [userId],
+    [userId, cleanText(registerId)],
   );
 
   return result.rows.map(mapAdminQrAssetRow).filter((asset) => asset.id);
@@ -900,22 +905,19 @@ async function buildQrLabelsPdf(options: {
   return pdf.build(catalogObjectId);
 }
 
-export async function GET(_request: NextRequest, context: { params: { userId: string } }) {
-  const { response } = await requireAdminSession();
-
-  if (response) {
-    return response;
-  }
-
+export async function GET(request: NextRequest, context: { params: { userId: string } }) {
   const userId = cleanText(context.params.userId);
 
   if (!userId) {
     return jsonError("Missing user ID.");
   }
 
+  const { response } = await requireQrLabelSession(userId);
+  if (response) return response;
+
   try {
     const userEmail = await findAdminUserEmail(userId);
-    const assets = await listAdminQrLabelAssets(userId);
+    const assets = await listAdminQrLabelAssets(userId, request.nextUrl.searchParams.get("registerId") ?? "");
 
     return NextResponse.json({
       ok: true,
@@ -929,17 +931,14 @@ export async function GET(_request: NextRequest, context: { params: { userId: st
 }
 
 export async function POST(request: NextRequest, context: { params: { userId: string } }) {
-  const { response } = await requireAdminSession();
-
-  if (response) {
-    return response;
-  }
-
   const userId = cleanText(context.params.userId);
 
   if (!userId) {
     return jsonError("Missing user ID.");
   }
+
+  const { response } = await requireQrLabelSession(userId);
+  if (response) return response;
 
   let body: Record<string, unknown>;
 
@@ -951,6 +950,8 @@ export async function POST(request: NextRequest, context: { params: { userId: st
 
   const layout = normalizeLayout(body.layout);
   const selectedAssetIds = normalizeAssetIds(body.assetIds);
+  const registerId = cleanText(body.registerId);
+  const fileNameBase = cleanText(body.fileNameBase);
 
   if (selectedAssetIds.length === 0) {
     return jsonError("Select at least one asset QR label.");
@@ -958,7 +959,7 @@ export async function POST(request: NextRequest, context: { params: { userId: st
 
   try {
     const userEmail = await findAdminUserEmail(userId);
-    const allAssets = await listAdminQrLabelAssets(userId);
+    const allAssets = await listAdminQrLabelAssets(userId, registerId);
     const selectedIdSet = new Set(selectedAssetIds);
     const selectedAssets = allAssets.filter((asset) => selectedIdSet.has(asset.id) && asset.hasQr);
 
@@ -971,7 +972,7 @@ export async function POST(request: NextRequest, context: { params: { userId: st
       layout,
       origin: resolvePublicOrigin(request),
     });
-    const fileName = `${slugifyFileSegment(userEmail)}-${slugifyFileSegment(QR_LAYOUT_LABELS[layout])}.pdf`;
+    const fileName = `${slugifyFileSegment(fileNameBase || userEmail)}-qr-codes-${layout === "small-qr-25mm" ? "25mm" : "full-labels"}.pdf`;
 
     return new NextResponse(new Uint8Array(pdfBuffer), {
       status: 200,
