@@ -584,7 +584,7 @@ export default function AdminClient({
       if (typeof window !== "undefined") {
         window.localStorage.removeItem("aim4price-tractors-kit-register");
         window.localStorage.removeItem("aim4price-tractors-kit-marketplace");
-        window.location.assign("/");
+        window.location.replace("/");
       }
     }
   }
