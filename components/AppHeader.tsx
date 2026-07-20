@@ -236,6 +236,7 @@ function buildNavItems(accountType: AccountType | 'public' | null): NavItem[] {
       ...BASE_NAV_ITEMS,
       { key: 'leads', href: '/leads', label: 'My Leads' },
       { key: 'asset-discovery', href: '/asset-discovery', label: 'Discovery' },
+      { key: 'tracking', href: '/tracking', label: 'Tracking' },
       { key: 'marketplace', href: '/marketplace', label: 'Marketplace' },
     ];
   }
@@ -249,15 +250,12 @@ function buildNavItems(accountType: AccountType | 'public' | null): NavItem[] {
 
 function buildMobileNavItems(accountType: AccountType): NavItem[] {
   const items = buildNavItems(accountType);
-  const accountItems = accountType === 'dealer'
-    ? [...items, { key: 'tracking' as const, href: '/tracking', label: 'Tracking' }]
-    : items;
 
-  if (accountItems.some((item) => item.key === 'account')) {
-    return accountItems;
+  if (items.some((item) => item.key === 'account')) {
+    return items;
   }
 
-  return [...accountItems, { key: 'account', href: '/account', label: 'Account' }];
+  return [...items, { key: 'account', href: '/account', label: 'Account' }];
 }
 
 function isPathMatchingHref(pathname: string, href: string): boolean {
@@ -698,6 +696,7 @@ export default function AppHeader({
     ? accountProfileLogoState.logoUrl
     : sessionAccountLogoUrl;
   const isOwnerAccount = session?.accountType === 'owner';
+  const isDealerAccount = session?.accountType === 'dealer';
   const navAccountType = isLoadingSession ? null : (session?.accountType ?? 'public');
   const navItems = useMemo(() => buildNavItems(navAccountType), [navAccountType]);
   const mobileNavItems = useMemo(
@@ -1389,16 +1388,17 @@ export default function AppHeader({
             />
           </Link>
 
-          <nav className={styles.nav} aria-label="Primary navigation">
+          <nav className={`${styles.nav} ${isDealerAccount ? styles.dealerNav : ''}`} aria-label="Primary navigation">
             {showNavWindowControls ? (
               <button
                 type="button"
-                className={`${styles.navWindowButton} ${styles.navWindowButtonPrevious}`}
+                className={`${styles.navWindowButton} ${styles.navWindowButtonPrevious} ${isDealerAccount ? styles.dealerNavWindowButton : ''}`}
                 onClick={() => moveNavWindow(-1)}
                 disabled={navWindowStart <= 0}
-                aria-label="Show previous navigation items"
+                aria-label="Show previous dealer pages"
+                title="Previous dealer pages"
               >
-                <span aria-hidden="true">‹</span>
+                <span aria-hidden="true">&lt;</span>
               </button>
             ) : null}
 
@@ -1422,12 +1422,13 @@ export default function AppHeader({
             {showNavWindowControls ? (
               <button
                 type="button"
-                className={`${styles.navWindowButton} ${styles.navWindowButtonNext}`}
+                className={`${styles.navWindowButton} ${styles.navWindowButtonNext} ${isDealerAccount ? styles.dealerNavWindowButton : ''}`}
                 onClick={() => moveNavWindow(1)}
                 disabled={navWindowStart >= navMaxWindowStart}
-                aria-label="Show next navigation items"
+                aria-label="Show next dealer pages"
+                title="Next dealer pages"
               >
-                <span aria-hidden="true">›</span>
+                <span aria-hidden="true">&gt;</span>
               </button>
             ) : null}
           </nav>
