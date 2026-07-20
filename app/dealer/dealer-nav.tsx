@@ -31,7 +31,7 @@ export default function DealerNav({
       }),
     ]);
 
-    window.location.replace('/dealer/login');
+    window.location.replace('/');
   }
 
   return (
