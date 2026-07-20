@@ -2951,7 +2951,6 @@ export default function LeadsClient({
           <div className={`${assetStyles.modalCard} ${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadEmailModal}`} role="dialog" aria-modal="true" aria-labelledby="lead-email-title">
             <div className={`${assetStyles.modalHeader} ${dealerWorkspaceClass(workspaceStyles.modalHeader)} ${styles.leadEmailHeader}`}>
               <div className={`${assetStyles.modalHeaderText} ${styles.leadModalTitleGroup}`}>
-                <span className={styles.leadModalEyebrow}>Client communication</span>
                 <h3 id="lead-email-title">Email client</h3>
                 <p>{assetTitle(emailLead)} · {ownerDisplayName(emailLead)}</p>
               </div>
@@ -3216,7 +3215,6 @@ export default function LeadsClient({
           <div className={`${assetStyles.modalCard} ${assetStyles.sharedNoteModal} ${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadNoteModal}`} role="dialog" aria-modal="true" aria-labelledby="lead-note-title">
             <div className={`${assetStyles.modalHeader} ${dealerWorkspaceClass(workspaceStyles.modalHeader)} ${styles.leadNoteHeader}`}>
               <div className={`${assetStyles.modalHeaderText} ${styles.leadModalTitleGroup}`}>
-                <span className={styles.leadModalEyebrow}>Asset owner response</span>
                 <h3 id="lead-note-title">Send note or quote</h3>
                 <p>{assetTitle(noteLead)} · {ownerDisplayName(noteLead)}</p>
               </div>

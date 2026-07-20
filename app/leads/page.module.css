@@ -693,7 +693,7 @@
 .leadModalTitleGroup {
   min-width: 0;
   display: grid !important;
-  gap: 0.35rem !important;
+  gap: 0.42rem !important;
 }
 
 .leadModalTitleGroup h3 {
@@ -712,23 +712,6 @@
   font-weight: 650 !important;
   line-height: 1.4 !important;
   overflow-wrap: anywhere;
-}
-
-.leadModalEyebrow {
-  width: fit-content;
-  min-height: 1.7rem;
-  display: inline-flex;
-  align-items: center;
-  padding: 0 0.62rem;
-  border: 1px solid rgba(25, 116, 84, 0.17);
-  border-radius: 0.55rem;
-  color: #28634f;
-  background: rgba(237, 247, 242, 0.94);
-  font-size: 0.67rem;
-  font-weight: 900;
-  letter-spacing: 0.075em;
-  line-height: 1;
-  text-transform: uppercase;
 }
 
 .leadEmailDraftPanel.leadEmailDraftPanel {
@@ -870,13 +853,14 @@
 
 .ownerPhotoPreviewOverlay.ownerPhotoPreviewOverlay {
   z-index: 10100 !important;
-  padding: clamp(0.6rem, 1.5vw, 1.1rem);
+  padding: clamp(0.75rem, 2vw, 1.5rem);
 }
 
 .ownerPhotoPreviewModal.ownerPhotoPreviewModal {
-  width: min(96vw, 1040px) !important;
-  max-height: calc(100dvh - 1.5rem) !important;
+  width: min(90vw, 900px) !important;
+  max-height: calc(100dvh - 3rem) !important;
   min-height: 0;
+  box-sizing: border-box;
   display: flex !important;
   flex-direction: column !important;
   gap: 0 !important;
@@ -897,7 +881,7 @@
   align-items: center;
   gap: 1rem;
   margin: 0;
-  padding: 1rem 4.8rem 1rem 1.25rem !important;
+  padding: 0.95rem 4.7rem 0.9rem 1.2rem !important;
   border-bottom: 1px solid rgba(211, 224, 234, 0.94);
   background: #ffffff;
 }
@@ -911,28 +895,35 @@
   flex: 1 1 auto;
   min-height: 0;
   display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
-  gap: 0.75rem;
-  padding: 0.8rem 0.9rem 0.9rem !important;
+  grid-template-rows: auto auto;
+  align-content: start;
+  gap: 0.7rem;
+  padding: 0.85rem 0.95rem 0.95rem !important;
   overflow: hidden !important;
   background: #eef3f5;
 }
 
 .ownerPhotoPreviewBody .ownerPhotoPreviewFrame {
-  min-height: min(64vh, 610px);
-  height: min(68vh, 680px);
+  width: 100%;
+  height: min(58dvh, 560px);
+  min-height: min(300px, 44dvh);
+  box-sizing: border-box;
+  padding: clamp(0.4rem, 1vw, 0.7rem);
   border-color: rgba(29, 49, 58, 0.38);
+  border-radius: 1rem;
   background:
     radial-gradient(circle at 50% 45%, rgba(58, 77, 85, 0.76), transparent 52%),
     #111c21;
 }
 
 .ownerPhotoPreviewBody .ownerPhotoPreviewFrame img {
-  width: auto;
-  height: auto;
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  object-fit: contain !important;
+  object-position: center !important;
 }
 
 .ownerPhotoPreviewThumbRow {
@@ -948,9 +939,9 @@
 }
 
 .ownerPhotoPreviewThumbButton {
-  flex: 0 0 4.25rem;
-  width: 4.25rem;
-  height: 3.45rem;
+  flex: 0 0 4rem;
+  width: 4rem;
+  height: 3.1rem;
   overflow: hidden;
   padding: 0.16rem;
   border: 2px solid transparent;
@@ -985,8 +976,8 @@
   .leadEmailModal.leadEmailModal,
   .leadNoteModal.leadNoteModal,
   .ownerPhotoPreviewModal.ownerPhotoPreviewModal {
-    width: calc(100vw - 1rem) !important;
-    max-height: calc(100dvh - 1rem) !important;
+    width: calc(100vw - 1.25rem) !important;
+    max-height: calc(100dvh - 1.25rem) !important;
     border-radius: 1.15rem !important;
   }
 
@@ -1023,12 +1014,14 @@
   }
 
   .ownerPhotoPreviewBody.ownerPhotoPreviewBody {
-    padding: 0.55rem 0.55rem 0.7rem !important;
+    gap: 0.6rem;
+    padding: 0.65rem 0.65rem 0.75rem !important;
   }
 
   .ownerPhotoPreviewBody .ownerPhotoPreviewFrame {
-    min-height: 0;
-    height: min(67vh, 610px);
+    height: min(52dvh, 460px);
+    min-height: min(230px, 40dvh);
+    padding: 0.35rem;
     border-radius: 0.85rem;
   }
 
