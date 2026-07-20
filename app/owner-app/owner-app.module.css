@@ -1636,16 +1636,32 @@
   text-decoration: none;
 }
 .taskIdentity {
-  justify-items: start;
+  width: 100%;
+  justify-items: center;
+  gap: 6px;
+  box-sizing: border-box;
   border-bottom: 1px solid rgba(18, 53, 45, 0.1);
-  padding-bottom: 15px;
-  text-align: left;
+  padding: 8px 14px 17px;
+  text-align: center;
+}
+.taskIdentity h1 {
+  max-width: 100%;
+  text-wrap: balance;
 }
 .taskIdentity > strong {
+  max-width: 30rem;
   color: #24483d;
-  font-size: 1rem;
+  font-size: clamp(0.98rem, 4.2vw, 1.08rem);
   font-weight: 800;
   line-height: 1.35;
+  text-align: center;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+.taskIdentity > p {
+  max-width: 100%;
+  font-size: 0.86rem;
+  text-align: center;
   overflow-wrap: anywhere;
 }
 .addAssetContent { min-height: calc(100dvh - 104px); align-content: center; padding-bottom: 54px; }
