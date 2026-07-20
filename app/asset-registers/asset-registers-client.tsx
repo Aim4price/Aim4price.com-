@@ -23,6 +23,9 @@ type ExportFormat = "pdf" | "xlsx";
 type ExportScope = "all" | "single" | "combined";
 type ExportMode = "download" | "summary";
 type ExportFlowStep = "closed" | "choice" | "single-picker" | "combined-picker" | "format";
+type QrLabelLayout = "full-labels-10-per-page" | "small-qr-25mm";
+
+const COMBINED_REGISTER_ID = "__combined_asset_registers__";
 
 
 type AssetRegisterSummary = {
@@ -87,6 +90,23 @@ type RegisterAsset = {
   plateLabel?: string;
   createdAtIso?: string;
   updatedAtIso: string;
+  registerName?: string;
+};
+
+type QrLabelAsset = {
+  id: string;
+  title: string;
+  plateLabel: string;
+  publicAssetCode: string;
+  kind: string;
+  registerName: string;
+  hasQr: boolean;
+};
+
+type QrLabelsApiResponse = {
+  ok: boolean;
+  assets?: QrLabelAsset[];
+  error?: string;
 };
 
 type AssetRegistersApiResponse = {
@@ -194,6 +214,20 @@ function SummaryIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+function QrCodeIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <rect x="3" y="3" width="7" height="7" />
+      <rect x="14" y="3" width="7" height="7" />
+      <rect x="3" y="14" width="7" height="7" />
+      <path d="M14 14h3v3h-3z" />
+      <path d="M18 14h3v3" />
+      <path d="M14 18v3h3" />
+      <path d="M19 19h2v2h-2z" />
+    </IconBase>
+  );
+}
+
 function EditIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <IconBase {...props}>
@@ -253,6 +287,10 @@ function ChevronDownIcon(props: SVGProps<SVGSVGElement>) {
 
 function buildOpenHref(registerId: string): string {
   return `/asset-register?registerId=${encodeURIComponent(registerId)}`;
+}
+
+function buildCombinedOpenHref(): string {
+  return "/asset-register?scope=combined";
 }
 
 function normalizeLogoUrls(value: unknown): string[] {
@@ -1218,12 +1256,49 @@ export default function AssetRegistersClient() {
   const [exportRegisterSearch, setExportRegisterSearch] = useState("");
   const [selectedExportRegisterIds, setSelectedExportRegisterIds] = useState<string[]>([]);
   const [isExporting, setIsExporting] = useState(false);
+  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
+  const [qrAssets, setQrAssets] = useState<QrLabelAsset[]>([]);
+  const [selectedQrAssetIds, setSelectedQrAssetIds] = useState<string[]>([]);
+  const [qrLayout, setQrLayout] = useState<QrLabelLayout>("full-labels-10-per-page");
+  const [qrAssetSearch, setQrAssetSearch] = useState("");
+  const [isLoadingQrAssets, setIsLoadingQrAssets] = useState(false);
+  const [isGeneratingQrPdf, setIsGeneratingQrPdf] = useState(false);
+  const [qrError, setQrError] = useState("");
+
+  const combinedRegister = useMemo<AssetRegisterSummary | null>(() => {
+    if (!registers.length) return null;
+
+    const newestUpdatedAt = registers.reduce(
+      (latest, register) => register.updatedAtIso > latest ? register.updatedAtIso : latest,
+      registers[0]?.updatedAtIso ?? new Date(0).toISOString(),
+    );
+
+    return {
+      id: COMBINED_REGISTER_ID,
+      userId: registers[0]?.userId ?? "",
+      businessName: "Combined Asset Registers",
+      email: "",
+      phone: "",
+      addressLine1: "All asset registers on this account",
+      logoUrls: [],
+      showLogosOnRegister: false,
+      isPrimary: false,
+      isSelected: false,
+      assetCount: registers.reduce((sum, register) => sum + register.assetCount, 0),
+      totalValue: registers.reduce((sum, register) => sum + register.totalValue, 0),
+      totalReplacementPrice: registers.reduce((sum, register) => sum + register.totalReplacementPrice, 0),
+      createdAtIso: registers[0]?.createdAtIso ?? newestUpdatedAt,
+      updatedAtIso: newestUpdatedAt,
+    };
+  }, [registers]);
 
   const managedRegister = useMemo(
-    () =>
-      registers.find((register) => register.id === managedRegisterId) ?? null,
-    [managedRegisterId, registers],
+    () => managedRegisterId === COMBINED_REGISTER_ID
+      ? combinedRegister
+      : registers.find((register) => register.id === managedRegisterId) ?? null,
+    [combinedRegister, managedRegisterId, registers],
   );
+  const isManagingCombined = managedRegisterId === COMBINED_REGISTER_ID;
   const managedMoveTargets = useMemo(
     () =>
       managedRegister
@@ -1245,6 +1320,17 @@ export default function AssetRegistersClient() {
       ),
     [registerSearchTerm, registers],
   );
+  const visibleQrAssets = useMemo(() => {
+    const query = qrAssetSearch.trim().toLowerCase();
+    if (!query) return qrAssets;
+
+    return qrAssets.filter((asset) => [
+      asset.title,
+      asset.plateLabel,
+      asset.publicAssetCode,
+      asset.registerName,
+    ].some((value) => value.toLowerCase().includes(query)));
+  }, [qrAssetSearch, qrAssets]);
   const exportPickerRegisters = useMemo(
     () =>
       registers.filter((register) =>
@@ -1309,7 +1395,8 @@ export default function AssetRegistersClient() {
     Boolean(managedRegister) ||
     isEditDetailsModalOpen ||
     Boolean(deleteCandidateRegister) ||
-    isExportFlowOpen;
+    isExportFlowOpen ||
+    isQrModalOpen;
 
   async function refreshRegisters(
     showLoading = false,
@@ -1368,6 +1455,11 @@ export default function AssetRegistersClient() {
 
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
+        if (isQrModalOpen && !isGeneratingQrPdf) {
+          closeQrModal();
+          return;
+        }
+
         if (openTargetDropdownId) {
           setOpenTargetDropdownId(null);
           return;
@@ -1414,6 +1506,8 @@ export default function AssetRegistersClient() {
     isEditDetailsModalOpen,
     isExportFlowOpen,
     isExporting,
+    isGeneratingQrPdf,
+    isQrModalOpen,
     isSavingDetails,
     managedRegister,
     movingAssetId,
@@ -1428,27 +1522,36 @@ export default function AssetRegistersClient() {
     setAssetMoveTargets({});
 
     try {
-      const params = new URLSearchParams({ registerId: register.id });
-      const response = await fetch(`/api/asset-register?${params.toString()}`, {
-        cache: "no-store",
-        credentials: "include",
-      });
-      const payload = await readJsonPayload(response);
-      const data = (payload ?? null) as AssetRegisterItemsApiResponse | null;
+      const targetRegisters = register.id === COMBINED_REGISTER_ID ? registers : [register];
+      const bundles = await Promise.all(targetRegisters.map(async (targetRegister) => {
+        const params = new URLSearchParams({ registerId: targetRegister.id });
+        const response = await fetch(`/api/asset-register?${params.toString()}`, {
+          cache: "no-store",
+          credentials: "include",
+        });
+        const payload = await readJsonPayload(response);
+        const data = (payload ?? null) as AssetRegisterItemsApiResponse | null;
 
-      if (!response.ok || !data?.ok) {
-        throw new Error(
-          extractErrorMessage(payload, "Failed to load register assets."),
-        );
-      }
+        if (!response.ok || !data?.ok) {
+          throw new Error(
+            extractErrorMessage(payload, `Failed to load assets for ${targetRegister.businessName}.`),
+          );
+        }
 
-      setManagedAssets(
-        Array.isArray(data.items)
+        const items = Array.isArray(data.items)
           ? data.items
           : Array.isArray(data.assets)
             ? data.assets
-            : [],
-      );
+            : [];
+
+        return items.map((asset) => ({
+          ...asset,
+          registerId: asset.registerId || targetRegister.id,
+          registerName: targetRegister.businessName,
+        }));
+      }));
+
+      setManagedAssets(bundles.flat());
     } catch (error) {
       setNotice({
         tone: "error",
@@ -1480,6 +1583,10 @@ export default function AssetRegistersClient() {
     setEditDraft(draftFromRegister(register));
     setManageSaveState("idle");
     void loadManagedAssets(register);
+  }
+
+  function openCombinedRegister() {
+    router.push(buildCombinedOpenHref());
   }
 
   function closeManagePanel() {
@@ -1902,6 +2009,125 @@ export default function AssetRegistersClient() {
     }
   }
 
+  function openCombinedDownload() {
+    setOpenTargetDropdownId(null);
+    setExportMode("download");
+    setExportScope("all");
+    setExportFormat("pdf");
+    setSelectedExportRegisterIds([]);
+    setExportRegisterSearch("");
+    setExportEntityName("Combined Asset Registers");
+    setExportStep("format");
+  }
+
+  async function openQrModal() {
+    if (!managedRegister || isLoadingQrAssets) return;
+
+    setIsQrModalOpen(true);
+    setQrAssets([]);
+    setSelectedQrAssetIds([]);
+    setQrLayout("full-labels-10-per-page");
+    setQrAssetSearch("");
+    setQrError("");
+    setIsLoadingQrAssets(true);
+
+    try {
+      const params = new URLSearchParams();
+      if (!isManagingCombined) params.set("registerId", managedRegister.id);
+      const suffix = params.toString() ? `?${params.toString()}` : "";
+      const response = await fetch(
+        `/api/admin/users/${encodeURIComponent(managedRegister.userId)}/qr-labels${suffix}`,
+        { cache: "no-store", credentials: "include" },
+      );
+      const payload = (await response.json().catch(() => null)) as QrLabelsApiResponse | null;
+
+      if (!response.ok || !payload?.ok) {
+        throw new Error(payload?.error || "Failed to load QR labels.");
+      }
+
+      const assets = Array.isArray(payload.assets) ? payload.assets : [];
+      setQrAssets(assets);
+      setSelectedQrAssetIds(assets.filter((asset) => asset.hasQr).map((asset) => asset.id));
+    } catch (error) {
+      setQrError(error instanceof Error ? error.message : "Failed to load QR labels.");
+    } finally {
+      setIsLoadingQrAssets(false);
+    }
+  }
+
+  function closeQrModal() {
+    setIsQrModalOpen(false);
+    setQrAssets([]);
+    setSelectedQrAssetIds([]);
+    setQrAssetSearch("");
+    setQrError("");
+  }
+
+  function toggleQrAsset(assetId: string) {
+    setSelectedQrAssetIds((current) => current.includes(assetId)
+      ? current.filter((id) => id !== assetId)
+      : [...current, assetId]);
+  }
+
+  function selectVisibleQrAssets() {
+    setSelectedQrAssetIds((current) => Array.from(new Set([
+      ...current,
+      ...visibleQrAssets.filter((asset) => asset.hasQr).map((asset) => asset.id),
+    ])));
+  }
+
+  async function generateQrLabelsPdf() {
+    if (!managedRegister || isGeneratingQrPdf) return;
+
+    const selectedIds = selectedQrAssetIds.filter((assetId) =>
+      qrAssets.some((asset) => asset.id === assetId && asset.hasQr),
+    );
+
+    if (!selectedIds.length) {
+      setQrError("Select at least one asset with a QR code.");
+      return;
+    }
+
+    setQrError("");
+    setIsGeneratingQrPdf(true);
+
+    try {
+      const response = await fetch(
+        `/api/admin/users/${encodeURIComponent(managedRegister.userId)}/qr-labels`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            layout: qrLayout,
+            assetIds: selectedIds,
+            registerId: isManagingCombined ? null : managedRegister.id,
+            fileNameBase: managedRegister.businessName,
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as QrLabelsApiResponse | null;
+        throw new Error(payload?.error || "Failed to generate QR label PDF.");
+      }
+
+      const blob = await response.blob();
+      const layoutName = qrLayout === "small-qr-25mm" ? "25mm" : "full-labels";
+      const fallbackName = `${slugFallback(managedRegister.businessName)}-qr-codes-${layoutName}.pdf`;
+      downloadBlob(blob, parseDownloadFileName(response, fallbackName));
+      setNotice({
+        tone: "success",
+        message: `QR label PDF generated for ${selectedIds.length} asset${selectedIds.length === 1 ? "" : "s"}.`,
+      });
+      closeQrModal();
+    } catch (error) {
+      setQrError(error instanceof Error ? error.message : "Failed to generate QR label PDF.");
+    } finally {
+      setIsGeneratingQrPdf(false);
+    }
+  }
+
   async function uploadRegisterLogoFiles(registerId: string, files: File[]): Promise<RegisterLogoUploadResult> {
     if (!files.length) {
       return { logoUrls: [] };
@@ -2193,9 +2419,15 @@ export default function AssetRegistersClient() {
         throw new Error(extractErrorMessage(payload, "Failed to move asset."));
       }
 
-      setManagedAssets((current) =>
-        current.filter((entry) => entry.id !== asset.id),
-      );
+      setManagedAssets((current) => isManagingCombined
+        ? current.map((entry) => entry.id === asset.id
+          ? {
+              ...entry,
+              registerId: targetRegisterId,
+              registerName: targetRegister?.businessName ?? entry.registerName,
+            }
+          : entry)
+        : current.filter((entry) => entry.id !== asset.id));
       setAssetMoveTargets((current) => {
         const next = { ...current };
         delete next[asset.id];
@@ -2382,8 +2614,72 @@ export default function AssetRegistersClient() {
                   <span>Add Asset Register</span>
                 </button>
               </div>
-            ) : visibleRegisters.length ? (
+            ) : combinedRegister ? (
               <div className={styles.registerList}>
+                <article className={`${styles.registerCard} ${styles.combinedRegisterCard}`}>
+                  <div className={styles.combinedRegisterGraphic} aria-hidden="true">
+                    <SummaryIcon />
+                  </div>
+
+                  <div className={styles.registerInfo}>
+                    <div className={styles.registerTitleBlock}>
+                      <h2>{combinedRegister.businessName}</h2>
+                      <div className={styles.registerDetails}>
+                        <span>One live book containing every asset register on this account.</span>
+                      </div>
+                    </div>
+
+                    <div className={styles.statGrid}>
+                      <div>
+                        <span>Assets</span>
+                        <strong>{combinedRegister.assetCount}</strong>
+                      </div>
+                      <div>
+                        <span>Register value</span>
+                        <strong>{money(combinedRegister.totalValue)}</strong>
+                      </div>
+                      <div>
+                        <span>Replacement value</span>
+                        <strong>{money(combinedRegister.totalReplacementPrice)}</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className={styles.registerAside}>
+                    <div className={styles.badgeStack}>
+                      <span className={styles.combinedBadge}>All registers</span>
+                    </div>
+                    <div className={styles.unitActions}>
+                      <button
+                        type="button"
+                        className={`${styles.unitButton} ${styles.openRegisterButton}`}
+                        onClick={openCombinedRegister}
+                      >
+                        <OpenIcon className={styles.buttonIcon} />
+                        <span>Open</span>
+                      </button>
+                      <button
+                        type="button"
+                        className={`${styles.unitButton} ${styles.manageUnitButton}`}
+                        onClick={() => openManagePanel(combinedRegister)}
+                        disabled={isLoadingManagedAssets}
+                      >
+                        <GearIcon className={styles.buttonIcon} />
+                        <span>Manage</span>
+                      </button>
+                      <button
+                        type="button"
+                        className={`${styles.unitButton} ${styles.combinedDownloadButton}`}
+                        onClick={openCombinedDownload}
+                        disabled={isExporting}
+                      >
+                        <DownloadIcon className={styles.buttonIcon} />
+                        <span>Download</span>
+                      </button>
+                    </div>
+                  </div>
+                </article>
+
                 {visibleRegisters.map((register) => {
                   const isBusySelecting = selectingRegisterId === register.id;
                   const isBusyRemoving = removingRegisterId === register.id;
@@ -2478,19 +2774,21 @@ export default function AssetRegistersClient() {
                     </article>
                   );
                 })}
+
+                {!visibleRegisters.length ? (
+                  <div className={styles.emptyState}>
+                    <strong>No individual asset register matches the search.</strong>
+                    <button
+                      type="button"
+                      className={styles.secondaryButton}
+                      onClick={() => setRegisterSearchTerm("")}
+                    >
+                      Clear search
+                    </button>
+                  </div>
+                ) : null}
               </div>
-            ) : (
-              <div className={styles.emptyState}>
-                <strong>No asset register matches the search.</strong>
-                <button
-                  type="button"
-                  className={styles.secondaryButton}
-                  onClick={() => setRegisterSearchTerm("")}
-                >
-                  Clear search
-                </button>
-              </div>
-            )}
+            ) : null}
           </section>
         </section>
       </main>
@@ -2860,7 +3158,9 @@ export default function AssetRegistersClient() {
                   {managedRegister.businessName}
                 </h2>
                 <p className={styles.modalIntro}>
-                  Update register details or move assets from this register to another register on the same account.
+                  {isManagingCombined
+                    ? "Review every asset and move equipment between the saved asset registers on this account."
+                    : "Update register details or move assets from this register to another register on the same account."}
                 </p>
               </div>
               <button
@@ -2877,20 +3177,24 @@ export default function AssetRegistersClient() {
             <div className={styles.manageModalScrollArea}>
               <div className={styles.manageActionPanel}>
                 <div className={styles.manageActionGrid}>
-                  <button
-                    type="button"
-                    className={`${styles.manageActionButton} ${styles.manageEditAction}`}
-                    onClick={openManagedEditModal}
-                    disabled={isSavingDetails || Boolean(movingAssetId)}
-                  >
-                    <EditIcon className={styles.manageActionIcon} />
-                    <span>Edit</span>
-                  </button>
+                  {!isManagingCombined ? (
+                    <button
+                      type="button"
+                      className={`${styles.manageActionButton} ${styles.manageEditAction}`}
+                      onClick={openManagedEditModal}
+                      disabled={isSavingDetails || Boolean(movingAssetId)}
+                    >
+                      <EditIcon className={styles.manageActionIcon} />
+                      <span>Edit</span>
+                    </button>
+                  ) : null}
 
                   <button
                     type="button"
                     className={`${styles.manageActionButton} ${styles.manageSummaryAction}`}
-                    onClick={() => void handleManagedRegisterSummary(managedRegister)}
+                    onClick={() => isManagingCombined
+                      ? void handleSummaryPdfExport("all", registers, { closeFlowOnSuccess: false })
+                      : void handleManagedRegisterSummary(managedRegister)}
                     disabled={isExporting || isLoadingManagedAssets}
                   >
                     <SummaryIcon className={styles.manageActionIcon} />
@@ -2900,11 +3204,23 @@ export default function AssetRegistersClient() {
                   <button
                     type="button"
                     className={`${styles.manageActionButton} ${styles.manageDownloadAction}`}
-                    onClick={() => openSpecificRegisterExportModal("download", managedRegister)}
+                    onClick={() => isManagingCombined
+                      ? openCombinedDownload()
+                      : openSpecificRegisterExportModal("download", managedRegister)}
                     disabled={isExporting || isLoadingManagedAssets}
                   >
                     <DownloadIcon className={styles.manageActionIcon} />
                     <span>Download</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`${styles.manageActionButton} ${styles.manageQrAction}`}
+                    onClick={() => void openQrModal()}
+                    disabled={isLoadingQrAssets || isLoadingManagedAssets}
+                  >
+                    <QrCodeIcon className={styles.manageActionIcon} />
+                    <span>QR Codes</span>
                   </button>
                 </div>
 
@@ -2940,6 +3256,9 @@ export default function AssetRegistersClient() {
                         <div className={styles.assetMoveCopy}>
                           <strong>{asset.title}</strong>
                           <span>{compactAssetMeta(asset)}</span>
+                          {isManagingCombined ? (
+                            <small className={styles.assetSourceRegister}>{asset.registerName || "Asset Register"}</small>
+                          ) : null}
                           <small>{money(asset.value)} current value</small>
                         </div>
 
@@ -2947,10 +3266,14 @@ export default function AssetRegistersClient() {
                           <RegisterTargetDropdown
                             dropdownId={`move-${asset.id}`}
                             value={assetMoveTargets[asset.id] ?? ""}
-                            targets={managedMoveTargets}
+                            targets={isManagingCombined
+                              ? registers.filter((register) => register.id !== asset.registerId)
+                              : managedMoveTargets}
                             placeholder="Choose target register"
                             disabled={
-                              !managedMoveTargets.length ||
+                              (isManagingCombined
+                                ? registers.filter((register) => register.id !== asset.registerId).length === 0
+                                : !managedMoveTargets.length) ||
                               movingAssetId === asset.id
                             }
                             openDropdownId={openTargetDropdownId}
@@ -2993,12 +3316,158 @@ export default function AssetRegistersClient() {
                   </p>
                 )}
 
-                {!managedMoveTargets.length ? (
+                {(isManagingCombined ? registers.length <= 1 : !managedMoveTargets.length) ? (
                   <p className={styles.muted}>
                     Create another asset register before moving assets.
                   </p>
                 ) : null}
               </div>
+            </div>
+          </section>
+        </div>
+      ) : null}
+
+      {isQrModalOpen && managedRegister ? (
+        <div
+          className={`${styles.modalOverlay} ${styles.qrLabelsOverlay}`}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="qr-labels-title"
+        >
+          <section className={`${styles.modalCard} ${styles.qrLabelsModal}`}>
+            <div className={styles.modalHeader}>
+              <div>
+                <h2 id="qr-labels-title">QR Codes</h2>
+                <p className={styles.modalIntro}>
+                  Choose the label size and assets for {managedRegister.businessName}.
+                </p>
+              </div>
+              <button
+                type="button"
+                className={styles.closeButton}
+                onClick={closeQrModal}
+                disabled={isGeneratingQrPdf}
+                aria-label="Close QR Codes modal"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className={`${styles.modalBody} ${styles.qrLabelsBody}`}>
+              <div className={styles.exportFormatGrid} aria-label="QR label size">
+                <button
+                  type="button"
+                  className={`${styles.exportOption} ${qrLayout === "small-qr-25mm" ? styles.exportOptionActive : ""}`}
+                  onClick={() => setQrLayout("small-qr-25mm")}
+                  disabled={isGeneratingQrPdf}
+                >
+                  <span className={`${styles.exportGraphic} ${styles.qrExportGraphic}`}>
+                    <QrCodeIcon className={styles.qrExportIcon} />
+                  </span>
+                  <span className={styles.exportOptionTitleBlock}>
+                    <strong>25 mm Small Labels</strong>
+                    <small>Compact QR stickers with the asset name above.</small>
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  className={`${styles.exportOption} ${qrLayout === "full-labels-10-per-page" ? styles.exportOptionActive : ""}`}
+                  onClick={() => setQrLayout("full-labels-10-per-page")}
+                  disabled={isGeneratingQrPdf}
+                >
+                  <span className={`${styles.exportGraphic} ${styles.qrExportGraphic}`}>
+                    <QrCodeIcon className={styles.qrExportIcon} />
+                  </span>
+                  <span className={styles.exportOptionTitleBlock}>
+                    <strong>Full Labels</strong>
+                    <small>Ten larger Aim4price plate labels per A4 page.</small>
+                  </span>
+                </button>
+              </div>
+
+              <div className={styles.qrAssetToolbar}>
+                <label className={`${styles.searchWrap} ${styles.qrAssetSearchWrap}`}>
+                  <SearchIcon className={styles.searchIcon} />
+                  <input
+                    className={styles.searchInput}
+                    value={qrAssetSearch}
+                    onChange={(event) => setQrAssetSearch(event.target.value)}
+                    placeholder="Search assets, QR codes or registers..."
+                    disabled={isLoadingQrAssets || isGeneratingQrPdf}
+                  />
+                </label>
+                <button
+                  type="button"
+                  className={styles.secondaryButton}
+                  onClick={selectVisibleQrAssets}
+                  disabled={isLoadingQrAssets || isGeneratingQrPdf || !visibleQrAssets.some((asset) => asset.hasQr)}
+                >
+                  Select all visible
+                </button>
+                <button
+                  type="button"
+                  className={styles.secondaryButton}
+                  onClick={() => setSelectedQrAssetIds([])}
+                  disabled={isGeneratingQrPdf || !selectedQrAssetIds.length}
+                >
+                  Clear
+                </button>
+              </div>
+
+              <div className={styles.qrAssetList}>
+                {isLoadingQrAssets ? (
+                  <div className={styles.qrAssetEmpty}>Loading QR Codes...</div>
+                ) : visibleQrAssets.length ? (
+                  visibleQrAssets.map((asset) => {
+                    const isSelected = selectedQrAssetIds.includes(asset.id);
+                    return (
+                      <label
+                        key={asset.id}
+                        className={`${styles.qrAssetRow} ${isSelected ? styles.qrAssetRowSelected : ""} ${!asset.hasQr ? styles.qrAssetRowDisabled : ""}`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleQrAsset(asset.id)}
+                          disabled={!asset.hasQr || isGeneratingQrPdf}
+                        />
+                        <span className={styles.qrAssetCopy}>
+                          <strong>{asset.title}</strong>
+                          <small>{asset.registerName} · {asset.plateLabel || "QR code not available"}</small>
+                        </span>
+                        <span className={styles.qrAssetStatus}>
+                          {asset.hasQr ? "Ready" : "Unavailable"}
+                        </span>
+                      </label>
+                    );
+                  })
+                ) : (
+                  <div className={styles.qrAssetEmpty}>No assets match this search.</div>
+                )}
+              </div>
+
+              {qrError ? <p className={styles.exportValidation}>{qrError}</p> : null}
+            </div>
+
+            <div className={`${styles.modalFooter} ${styles.exportModalFooter}`}>
+              <button
+                type="button"
+                className={styles.secondaryButton}
+                onClick={closeQrModal}
+                disabled={isGeneratingQrPdf}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className={styles.primaryButton}
+                onClick={() => void generateQrLabelsPdf()}
+                disabled={isLoadingQrAssets || isGeneratingQrPdf || !selectedQrAssetIds.length}
+              >
+                <DownloadIcon className={styles.buttonIcon} />
+                <span>{isGeneratingQrPdf ? "Preparing PDF..." : `Download ${selectedQrAssetIds.length || ""} PDF`}</span>
+              </button>
             </div>
           </section>
         </div>

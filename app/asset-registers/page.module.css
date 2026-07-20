@@ -1609,6 +1609,255 @@
   }
 }
 
+/* === Combined register, owner QR labels and compact manage actions === */
+.combinedRegisterCard {
+  border-color: rgba(76, 133, 115, 0.48);
+  background:
+    radial-gradient(circle at 0% 0%, rgba(25, 116, 84, 0.13) 0%, rgba(25, 116, 84, 0) 42%),
+    linear-gradient(180deg, #ffffff 0%, #edf8f3 100%);
+  box-shadow:
+    0 20px 42px rgba(12, 83, 61, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.combinedRegisterGraphic {
+  width: min(100%, 190px);
+  aspect-ratio: 1 / 1;
+  display: grid;
+  place-items: center;
+  border: 1.6px solid rgba(25, 116, 84, 0.28);
+  border-radius: clamp(1.2rem, 2vw, 1.65rem);
+  color: #0f684d;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(25, 116, 84, 0.13), transparent 48%),
+    linear-gradient(180deg, #ffffff 0%, #eaf7f0 100%);
+  box-shadow:
+    0 14px 28px rgba(16, 72, 55, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.combinedRegisterGraphic svg {
+  width: clamp(3.4rem, 5vw, 4.8rem);
+  height: clamp(3.4rem, 5vw, 4.8rem);
+  stroke-width: 1.65;
+}
+
+.combinedBadge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 1.85rem;
+  padding: 0 0.78rem;
+  border: 1px solid rgba(78, 151, 119, 0.34);
+  border-radius: 999px;
+  color: #14523d;
+  background: #e6f5ed;
+  font-size: 0.72rem;
+  font-weight: 880;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+.combinedDownloadButton {
+  color: #475762;
+  border-color: #b9c5cc;
+  background: linear-gradient(180deg, #ffffff 0%, #edf1f3 100%);
+}
+
+.combinedDownloadButton:hover:not(:disabled) {
+  color: #263843;
+  border-color: #929fa7;
+  background: linear-gradient(180deg, #ffffff 0%, #e2e8eb 100%);
+}
+
+.manageActionGrid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(0.68rem, 1vw, 0.9rem);
+}
+
+.manageActionButton {
+  min-height: clamp(4.5rem, 6vw, 5.35rem);
+  padding: 0.82rem 0.9rem;
+  border-radius: clamp(1rem, 1.65vw, 1.35rem);
+  font-size: clamp(1rem, 1.55vw, 1.3rem);
+}
+
+.manageQrAction {
+  color: #4b5963;
+  border-color: #aeb9c0;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(95, 111, 121, 0.1), transparent 48%),
+    linear-gradient(180deg, #ffffff 0%, #edf1f3 100%);
+}
+
+.manageQrAction:hover:not(:disabled) {
+  color: #263841;
+  border-color: #87969f;
+  background: linear-gradient(180deg, #ffffff 0%, #dfe6e9 100%);
+}
+
+.assetSourceRegister {
+  width: fit-content;
+  padding: 0.24rem 0.55rem;
+  border: 1px solid rgba(85, 113, 127, 0.2);
+  border-radius: 0.55rem;
+  color: #435c68 !important;
+  background: #eef3f5;
+  font-weight: 800 !important;
+}
+
+.qrLabelsOverlay {
+  z-index: 1500;
+}
+
+.qrLabelsModal {
+  width: min(1120px, 100%);
+  max-height: min(92vh, 880px);
+  overflow: hidden;
+}
+
+.qrLabelsBody {
+  display: grid;
+  gap: 1rem;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.qrExportGraphic {
+  color: #174f40;
+  background: linear-gradient(180deg, #ffffff 0%, #eaf3ef 100%);
+}
+
+.qrExportIcon {
+  width: 3rem;
+  height: 3rem;
+  stroke-width: 1.7;
+}
+
+.qrAssetToolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 0.7rem;
+  align-items: center;
+}
+
+.qrAssetSearchWrap {
+  min-width: 0;
+}
+
+.qrAssetList {
+  min-height: 10rem;
+  max-height: 19rem;
+  display: grid;
+  align-content: start;
+  gap: 0.62rem;
+  padding-right: 0.35rem;
+  overflow-y: auto;
+}
+
+.qrAssetRow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.85rem;
+  align-items: center;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid #d3dfe5;
+  border-radius: 1rem;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.qrAssetRowSelected {
+  border-color: #72bd95;
+  background: #eff9f4;
+}
+
+.qrAssetRowDisabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+}
+
+.qrAssetRow input {
+  width: 1.15rem;
+  height: 1.15rem;
+  accent-color: #176f52;
+}
+
+.qrAssetCopy {
+  min-width: 0;
+  display: grid;
+  gap: 0.2rem;
+}
+
+.qrAssetCopy strong {
+  color: #073b30;
+  font-size: 0.98rem;
+  font-weight: 850;
+}
+
+.qrAssetCopy small,
+.qrAssetStatus {
+  color: #627483;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.qrAssetStatus {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.qrAssetEmpty {
+  display: grid;
+  place-items: center;
+  min-height: 9rem;
+  border: 1px dashed #c8d7df;
+  border-radius: 1rem;
+  color: #617382;
+  background: #f8fbfc;
+  font-weight: 750;
+}
+
+@media (max-width: 980px) {
+  .manageActionGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .qrAssetToolbar {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .qrAssetSearchWrap {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 760px) {
+  .combinedRegisterGraphic {
+    width: 100%;
+    max-width: none;
+    min-height: 7rem;
+    aspect-ratio: auto;
+  }
+
+  .manageActionGrid,
+  .qrAssetToolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .qrAssetSearchWrap {
+    grid-column: auto;
+  }
+
+  .qrAssetRow {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .qrAssetStatus {
+    grid-column: 2;
+  }
+}
+
 @media (max-width: 760px) {
   .shell {
     width: min(calc(100% - 1rem), 1320px);
@@ -3738,5 +3987,40 @@
   .topSummaryButton,
   .topDownloadButton {
     width: 100%;
+  }
+}
+
+/* Final cascade for the 2026-07-20 combined-register controls. */
+.registerCard.combinedRegisterCard {
+  border-color: rgba(76, 133, 115, 0.48);
+  background:
+    radial-gradient(circle at 0% 0%, rgba(25, 116, 84, 0.13) 0%, rgba(25, 116, 84, 0) 42%),
+    linear-gradient(180deg, #ffffff 0%, #edf8f3 100%);
+  box-shadow:
+    0 20px 42px rgba(12, 83, 61, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.manageActionGrid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(0.68rem, 1vw, 0.9rem);
+}
+
+.manageActionButton {
+  min-height: clamp(4.5rem, 6vw, 5.35rem);
+  padding: 0.82rem 0.9rem;
+  border-radius: clamp(1rem, 1.65vw, 1.35rem);
+  font-size: clamp(1rem, 1.55vw, 1.3rem);
+}
+
+@media (max-width: 980px) {
+  .manageActionGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .manageActionGrid {
+    grid-template-columns: 1fr;
   }
 }
