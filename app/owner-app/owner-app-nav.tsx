@@ -25,7 +25,7 @@ export default function OwnerAppNav({ showBack = true, backHref = '/owner-app', 
       fetch('/api/owner-app/logout', { method: 'POST', credentials: 'include' }),
       fetch('/api/auth/sign-out', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: '{}' }),
     ]);
-    window.location.replace('/owner-app/login');
+    window.location.replace('/');
   }
 
   return (
