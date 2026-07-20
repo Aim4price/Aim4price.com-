@@ -656,6 +656,474 @@
   }
 }
 
+/* === Owner Account-aligned dealership workspace === */
+.leadsPage {
+  --owner-green: #254733;
+  --owner-green-dark: #1d3929;
+  --owner-soft: #eef5f0;
+  --owner-ink: #12352d;
+  --owner-muted: #64746a;
+  --owner-line: rgba(37, 71, 51, 0.15);
+  color: var(--owner-ink);
+  background:
+    radial-gradient(circle at 50% 4%, rgba(111, 197, 150, 0.13), transparent 31rem),
+    linear-gradient(180deg, #f6faf7 0%, #ffffff 42%, #f4f8f6 100%) !important;
+  font-family: 'Montserrat', var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif;
+}
+
+.leadsRegisterPanel {
+  overflow: visible !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.leadsRegisterHeader {
+  min-height: 0 !important;
+  margin: 0 0 1rem !important;
+  padding: 1.15rem 1.25rem !important;
+  border: 1px solid var(--owner-line) !important;
+  border-radius: 22px !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  box-shadow: 0 14px 32px rgba(18, 53, 45, 0.08) !important;
+}
+
+.leadsHeroTitleBlock {
+  display: grid !important;
+  gap: 0.38rem !important;
+}
+
+.leadsHeroEyebrow {
+  color: #2c6c55;
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.13em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.leadsHeroTitleBlock h1 {
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--owner-ink) !important;
+  font-size: clamp(1.95rem, 3.2vw, 2.65rem) !important;
+  font-weight: 800 !important;
+  line-height: 1.04 !important;
+  letter-spacing: -0.045em !important;
+  text-transform: none !important;
+}
+
+.leadsHeroTitleBlock p {
+  max-width: 46rem;
+  margin: 0 !important;
+  color: var(--owner-muted);
+  font-size: 0.94rem;
+  font-weight: 650;
+  line-height: 1.5;
+}
+
+.leadSummaryRow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.leadSummaryCard {
+  position: relative;
+  overflow: hidden;
+  min-height: 7.25rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-content: center;
+  gap: 0.35rem 0.8rem;
+  padding: 1rem 1.08rem 1rem 1.28rem;
+  border: 1px solid var(--owner-line);
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(18, 53, 45, 0.055);
+}
+
+.leadSummaryCard::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: #7f938a;
+}
+
+.leadSummaryCard > span {
+  color: var(--owner-muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.leadSummaryCard > strong {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  color: var(--owner-ink);
+  font-size: clamp(1.9rem, 3vw, 2.45rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.05em;
+}
+
+.leadSummaryCard > small {
+  color: var(--owner-muted);
+  font-size: 0.78rem;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.leadSummaryCardNew::before { background: #cf7b32; }
+.leadSummaryCardNew { background: linear-gradient(180deg, #fffdfa 0%, #fff7ef 100%); }
+.leadSummaryCardActive::before { background: #52718f; }
+.leadSummaryCardActive { background: linear-gradient(180deg, #ffffff 0%, #f5f8fb 100%); }
+.leadSummaryCardDone::before { background: #2b8a63; }
+.leadSummaryCardDone { background: linear-gradient(180deg, #ffffff 0%, #f1f8f4 100%); }
+
+.leadSearchToolbar {
+  gap: 0.75rem !important;
+  margin-bottom: 0.55rem !important;
+}
+
+.leadToolbarActions .leadFilterButton,
+.leadRefreshButton {
+  min-height: 50px !important;
+  border-radius: 14px !important;
+  font-weight: 800 !important;
+}
+
+.leadToolbarActions .leadFilterButton {
+  color: #0a543d !important;
+  border-color: #6fc596 !important;
+  background: linear-gradient(180deg, #ffffff 0%, #e6f8ef 100%) !important;
+  box-shadow: 0 10px 24px rgba(10, 84, 61, 0.09) !important;
+}
+
+.leadRefreshButton {
+  min-width: 142px !important;
+  color: var(--owner-green) !important;
+  border-color: var(--owner-line) !important;
+  background: #ffffff !important;
+  box-shadow: 0 9px 22px rgba(18, 53, 45, 0.055) !important;
+}
+
+.leadResultSummary {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  margin: 0 0 0.9rem;
+  padding: 0 0.25rem;
+  color: var(--owner-muted);
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+
+.leadResultSummary strong {
+  color: var(--owner-ink);
+  font-size: 0.92rem;
+  font-weight: 800;
+}
+
+.leadStack {
+  gap: 0.85rem;
+}
+
+.leadThread,
+.leadThreadNew:not(.leadThreadOpen),
+.leadThreadDone {
+  position: relative;
+  overflow: hidden;
+  padding: 1rem !important;
+  border: 1px solid var(--owner-line) !important;
+  border-radius: 20px !important;
+  background: #ffffff !important;
+  box-shadow: 0 10px 24px rgba(18, 53, 45, 0.06) !important;
+}
+
+.leadThread::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: #82918a;
+}
+
+.leadThreadNew:not(.leadThreadOpen)::before { background: #cf7b32; }
+.leadThreadDone::before { background: #2b8a63; }
+.leadThreadOpen::before { background: var(--owner-green); }
+
+.leadThread:hover,
+.leadThreadNew:not(.leadThreadOpen):hover,
+.leadThreadDone:hover {
+  transform: translateY(-1px);
+  border-color: rgba(37, 71, 51, 0.25) !important;
+  box-shadow: 0 14px 30px rgba(18, 53, 45, 0.085) !important;
+}
+
+.clientPanelHeader {
+  min-height: 5.55rem !important;
+  gap: 1rem !important;
+}
+
+.clientIdentity {
+  gap: 0.28rem !important;
+  padding-left: 0.22rem;
+}
+
+.leadsPage .clientPanel h3,
+.leadsPage .leadThreadNew:not(.leadThreadOpen) .clientPanel h3,
+.leadsPage .leadThreadDone .clientPanel h3 {
+  color: var(--owner-ink) !important;
+  font-size: clamp(1.25rem, 1.7vw, 1.52rem) !important;
+  font-weight: 800 !important;
+  line-height: 1.15 !important;
+  letter-spacing: -0.03em !important;
+}
+
+.leadAssetName {
+  color: #315348;
+  font-size: 0.9rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.clientKicker,
+.leadsPage .leadThreadNew:not(.leadThreadOpen) .clientKicker,
+.leadsPage .leadThreadDone .clientKicker {
+  color: var(--owner-muted) !important;
+  font-size: 0.78rem !important;
+  font-weight: 650 !important;
+}
+
+.leadStatusBadge {
+  min-height: 1.65rem;
+  padding: 0 0.55rem;
+  border-radius: 8px;
+  font-size: 0.66rem;
+  font-weight: 800;
+}
+
+.leadStatusBadgeNew {
+  color: #74460b;
+  background: #fff5e7;
+  border-color: rgba(196, 130, 32, 0.42);
+}
+
+.leadStatusBadgeOpen {
+  color: #315b7e;
+  background: #f1f6fb;
+  border-color: rgba(72, 112, 149, 0.3);
+}
+
+.leadStatusBadgeDone {
+  color: #176047;
+  background: #edf8f2;
+  border-color: rgba(44, 139, 99, 0.32);
+}
+
+.openLeadButton,
+.markDoneLeadButton,
+.doneLeadPill,
+.deleteLeadButton,
+.closeLeadButton,
+.leadManageButton {
+  min-height: 48px !important;
+  border-radius: 14px !important;
+  font-weight: 800 !important;
+}
+
+.openLeadButton {
+  min-width: 9.5rem !important;
+  color: #ffffff !important;
+  border-color: var(--owner-green) !important;
+  background: var(--owner-green) !important;
+  box-shadow: 0 12px 24px rgba(37, 71, 51, 0.18) !important;
+}
+
+.openLeadButton:hover {
+  background: var(--owner-green-dark) !important;
+}
+
+.markDoneLeadButton,
+.doneLeadPill {
+  color: #0a543d !important;
+  border-color: #6fc596 !important;
+  background: linear-gradient(180deg, #ffffff 0%, #e6f8ef 100%) !important;
+  box-shadow: 0 9px 20px rgba(10, 84, 61, 0.08) !important;
+}
+
+.deleteLeadButton {
+  color: #8c3131 !important;
+  border-color: rgba(150, 56, 56, 0.24) !important;
+  background: #fff7f7 !important;
+  box-shadow: none !important;
+}
+
+.closeLeadButton {
+  color: var(--owner-green) !important;
+  border-color: var(--owner-line) !important;
+  background: #ffffff !important;
+}
+
+.leadAssetCard {
+  margin-top: 0.85rem !important;
+  border: 1px solid rgba(37, 71, 51, 0.13) !important;
+  border-radius: 18px !important;
+  background: #fbfdfb !important;
+  box-shadow: none !important;
+}
+
+.leadAssetHeader {
+  border-bottom-color: rgba(37, 71, 51, 0.12) !important;
+}
+
+.leadAssetHeader h2,
+.leadValueBlock strong {
+  font-weight: 800 !important;
+}
+
+.leadAssetHeaderActions > button {
+  min-height: 48px !important;
+  border-radius: 14px !important;
+  font-weight: 800 !important;
+}
+
+.leadNoteModal {
+  width: min(100%, 56rem) !important;
+  padding: 1.25rem !important;
+  border: 1px solid var(--owner-line) !important;
+  border-radius: 22px !important;
+  background: #ffffff !important;
+  box-shadow: 0 28px 80px rgba(18, 53, 45, 0.22) !important;
+}
+
+.leadNoteAttachmentDropzone {
+  position: relative;
+  grid-template-columns: auto minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 0.2rem 0.8rem !important;
+  min-height: 7rem;
+  padding: 1rem !important;
+  border: 1px dashed rgba(37, 71, 51, 0.28) !important;
+  border-radius: 17px !important;
+  background: #f7faf8 !important;
+}
+
+.leadNoteAttachmentIcon {
+  grid-row: 1 / span 3;
+  width: 2.6rem;
+  height: 2.6rem;
+  padding: 0.62rem;
+  border-radius: 14px;
+  color: #244f76;
+  background: #eef6fc;
+  border: 1px solid rgba(29, 72, 111, 0.16);
+}
+
+.leadNoteAttachmentEyebrow,
+.leadNoteAttachmentDropzone > strong,
+.leadNoteAttachmentDropzone > small {
+  grid-column: 2;
+}
+
+.leadNoteAttachmentEyebrow {
+  color: #315348 !important;
+  font-size: 0.72rem !important;
+  font-weight: 800 !important;
+}
+
+.leadNoteAttachmentDropzone > strong {
+  color: var(--owner-ink);
+  font-size: 0.92rem;
+  font-weight: 800;
+}
+
+.leadNoteAttachmentDropzone > small {
+  color: var(--owner-muted);
+  font-size: 0.76rem;
+  font-weight: 650;
+}
+
+.leadNoteDeliveryHint {
+  margin: 0;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid rgba(37, 71, 51, 0.1);
+  border-radius: 14px;
+  color: #315348;
+  background: #f2f6f3;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+@media (max-width: 900px) {
+  .leadSummaryRow {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .leadSummaryCard {
+    min-height: 6.5rem;
+    grid-template-columns: 1fr;
+  }
+
+  .leadSummaryCard > strong {
+    grid-column: 1;
+    grid-row: auto;
+  }
+}
+
+@media (max-width: 700px) {
+  .leadsRegisterHeader {
+    border-radius: 18px !important;
+  }
+
+  .leadSummaryRow {
+    grid-template-columns: 1fr !important;
+  }
+
+  .leadSummaryCard {
+    min-height: 5.8rem;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .leadSummaryCard > strong {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+
+  .clientPanelHeader,
+  .clientActionRow {
+    grid-template-columns: 1fr !important;
+  }
+
+  .leadResultSummary {
+    flex-wrap: wrap;
+  }
+
+  .leadNoteAttachmentDropzone {
+    grid-template-columns: 1fr !important;
+  }
+
+  .leadNoteAttachmentIcon,
+  .leadNoteAttachmentEyebrow,
+  .leadNoteAttachmentDropzone > strong,
+  .leadNoteAttachmentDropzone > small {
+    grid-column: 1;
+    grid-row: auto;
+  }
+}
+
 @media (max-width: 620px) {
   .fullRegisterStatsGrid {
     grid-template-columns: 1fr;
@@ -2323,3 +2791,163 @@
   }
 }
 
+/* === Dealership workspace cascade lock (must remain last) === */
+.leadsPage {
+  background:
+    radial-gradient(circle at 50% 4%, rgba(111, 197, 150, 0.13), transparent 31rem),
+    linear-gradient(180deg, #f6faf7 0%, #ffffff 42%, #f4f8f6 100%) !important;
+}
+
+.leadsPage .leadsRegisterPanel {
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.leadsPage .leadsRegisterHeader {
+  min-height: 0 !important;
+  margin: 0 0 1rem !important;
+  padding: 1.15rem 1.25rem !important;
+  border: 1px solid rgba(37, 71, 51, 0.15) !important;
+  border-radius: 22px !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  box-shadow: 0 14px 32px rgba(18, 53, 45, 0.08) !important;
+}
+
+.leadsPage .leadsHeroTitleBlock {
+  display: grid !important;
+  gap: 0.38rem !important;
+}
+
+.leadsPage .leadsHeroTitleBlock h1 {
+  min-height: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #12352d !important;
+  font-size: clamp(1.95rem, 3.2vw, 2.65rem) !important;
+  font-weight: 800 !important;
+  line-height: 1.04 !important;
+  letter-spacing: -0.045em !important;
+  text-transform: none !important;
+}
+
+.leadsPage .leadThread,
+.leadsPage .leadThreadNew:not(.leadThreadOpen),
+.leadsPage .leadThreadDone {
+  position: relative;
+  overflow: hidden;
+  padding: 1rem !important;
+  border: 1px solid rgba(37, 71, 51, 0.15) !important;
+  border-radius: 20px !important;
+  background: #ffffff !important;
+  box-shadow: 0 10px 24px rgba(18, 53, 45, 0.06) !important;
+}
+
+.leadsPage .leadThread:hover,
+.leadsPage .leadThreadNew:not(.leadThreadOpen):hover,
+.leadsPage .leadThreadDone:hover {
+  border-color: rgba(37, 71, 51, 0.25) !important;
+  background: #ffffff !important;
+  box-shadow: 0 14px 30px rgba(18, 53, 45, 0.085) !important;
+}
+
+.leadsPage .leadThreadNew:not(.leadThreadOpen)::before {
+  background: #cf7b32 !important;
+}
+
+.leadsPage .leadThreadDone::before {
+  background: #2b8a63 !important;
+}
+
+.leadsPage .leadThreadOpen::before {
+  background: #254733 !important;
+}
+
+.leadsPage .clientPanel h3,
+.leadsPage .leadThreadNew:not(.leadThreadOpen) .clientPanel h3,
+.leadsPage .leadThreadDone .clientPanel h3 {
+  color: #12352d !important;
+  font-size: clamp(1.25rem, 1.7vw, 1.52rem) !important;
+  font-weight: 800 !important;
+  line-height: 1.15 !important;
+  letter-spacing: -0.03em !important;
+}
+
+.leadsPage .clientKicker,
+.leadsPage .leadThreadNew:not(.leadThreadOpen) .clientKicker,
+.leadsPage .leadThreadDone .clientKicker {
+  color: #64746a !important;
+  font-size: 0.78rem !important;
+  font-weight: 650 !important;
+}
+
+.leadsPage .leadStatusBadge {
+  min-height: 1.65rem !important;
+  padding: 0 0.55rem !important;
+  border-radius: 8px !important;
+  font-size: 0.66rem !important;
+  font-weight: 800 !important;
+}
+
+.leadsPage .leadStatusBadgeNew {
+  color: #74460b !important;
+  background: #fff5e7 !important;
+  border-color: rgba(196, 130, 32, 0.42) !important;
+}
+
+.leadsPage .leadStatusBadgeOpen {
+  color: #315b7e !important;
+  background: #f1f6fb !important;
+  border-color: rgba(72, 112, 149, 0.3) !important;
+}
+
+.leadsPage .leadStatusBadgeDone {
+  color: #176047 !important;
+  background: #edf8f2 !important;
+  border-color: rgba(44, 139, 99, 0.32) !important;
+}
+
+.leadsPage .clientActionRow .openLeadButton {
+  min-width: 9.5rem !important;
+  color: #ffffff !important;
+  border-color: #254733 !important;
+  background: #254733 !important;
+  box-shadow: 0 12px 24px rgba(37, 71, 51, 0.18) !important;
+}
+
+.leadsPage .clientActionRow .openLeadButton:hover:not(:disabled) {
+  color: #ffffff !important;
+  border-color: #1d3929 !important;
+  background: #1d3929 !important;
+}
+
+.leadsPage .clientActionRow .deleteLeadButton {
+  color: #8c3131 !important;
+  border-color: rgba(150, 56, 56, 0.24) !important;
+  background: #fff7f7 !important;
+  box-shadow: none !important;
+}
+
+.leadsPage .leadAssetCard {
+  border: 1px solid rgba(37, 71, 51, 0.13) !important;
+  border-radius: 18px !important;
+  background: #fbfdfb !important;
+  box-shadow: none !important;
+}
+
+.leadsPage .leadAssetCard .leadManageButton {
+  color: #ffffff !important;
+  border-color: #254733 !important;
+  background: #254733 !important;
+  box-shadow: 0 10px 22px rgba(37, 71, 51, 0.14) !important;
+}
+
+@media (max-width: 760px) {
+  .leadsPage .leadsHeroTitleBlock h1 {
+    font-size: clamp(1.75rem, 9vw, 2.2rem) !important;
+  }
+}

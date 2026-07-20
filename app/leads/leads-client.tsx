@@ -502,7 +502,7 @@ function asText(value: unknown): string {
 
 function formatInboxTitle(value: unknown): string {
   const title = asText(value);
-  return title ? title.toUpperCase() : 'LEADS INBOX LOADING...';
+  return title || 'your dealership';
 }
 
 function asNumber(value: unknown): number | null {
@@ -1344,7 +1344,7 @@ export default function LeadsClient({
   const [sessionUserId, setSessionUserId] = useState(initialSessionUserId);
   const [leads, setLeads] = useState<AssetLead[]>(initialLeads);
   const [accountInboxTitle, setAccountInboxTitle] = useState(() =>
-    initialAccountTitle ? formatInboxTitle(initialAccountTitle) : 'LEADS INBOX LOADING...',
+    initialAccountTitle ? formatInboxTitle(initialAccountTitle) : 'your dealership',
   );
   const [statusFilter, setStatusFilter] = useState<LeadStatusFilter>('all');
   const [monthFilter, setMonthFilter] = useState('all');
@@ -1421,6 +1421,14 @@ export default function LeadsClient({
   }, [periodLeads, searchTerm, statusFilter]);
 
   const newLeadCount = useMemo(() => filteredLeads.filter((lead) => isNewLead(lead)).length, [filteredLeads]);
+  const activeLeadCount = useMemo(
+    () => filteredLeads.filter((lead) => !isNewLead(lead) && !isCompletedLead(lead)).length,
+    [filteredLeads],
+  );
+  const completedLeadCount = useMemo(
+    () => filteredLeads.filter((lead) => isCompletedLead(lead)).length,
+    [filteredLeads],
+  );
   const totalLeadPages = Math.max(1, Math.ceil(filteredLeads.length / LEADS_PER_PAGE));
   const visibleLeadPage = Math.min(Math.max(currentPage, 1), totalLeadPages);
   const paginatedLeads = useMemo(() => {
@@ -2397,52 +2405,32 @@ export default function LeadsClient({
         <section className={`${assetStyles.registerPanel} ${styles.leadsRegisterPanel}`}>
           <div className={`${assetStyles.registerHeader} ${styles.leadsRegisterHeader}`}>
             <div className={`${assetStyles.registerTitleBlock} ${styles.leadsHeroTitleBlock}`}>
-              <h1>{dealerAppMode ? 'Leads' : accountInboxTitle}</h1>
+              {!dealerAppMode ? <span className={styles.leadsHeroEyebrow}>Dealer workspace</span> : null}
+              <h1>{dealerAppMode ? 'Leads' : 'My Leads'}</h1>
+              {!dealerAppMode ? (
+                <p>Quote requests and shared asset enquiries for {accountInboxTitle}.</p>
+              ) : null}
             </div>
           </div>
 
-          <div className={`${assetStyles.summaryRow} ${assetStyles.heroSummaryRow} ${styles.leadSummaryRow} ${dealerAppMode ? dealerStyles.dealerHidden : ''}`}>
-            <div className={`${assetStyles.summaryTile} ${assetStyles.registerValueTile} ${assetStyles.heroSummaryTile} ${assetStyles.heroRegisterTile}`}>
-              <div className={assetStyles.heroSummaryHead}>
-                <span className={assetStyles.heroSummaryTitle}>Lead overview</span>
-              </div>
+          <div className={`${styles.leadSummaryRow} ${dealerAppMode ? dealerStyles.dealerHidden : ''}`}>
+            <article className={`${styles.leadSummaryCard} ${styles.leadSummaryCardNew}`}>
+              <span>New</span>
+              <strong>{newLeadCount}</strong>
+              <small>Not yet opened or actioned.</small>
+            </article>
 
-              <div className={assetStyles.heroSummaryValueRow}>
-                <strong className={assetStyles.heroSummaryValue}>{filteredLeads.length}</strong>
-              </div>
+            <article className={`${styles.leadSummaryCard} ${styles.leadSummaryCardActive}`}>
+              <span>Open</span>
+              <strong>{activeLeadCount}</strong>
+              <small>Currently being reviewed or actioned.</small>
+            </article>
 
-              <div className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter}`}>
-                <small>Showing leads after search and filters.</small>
-              </div>
-            </div>
-
-            <div className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile}`}>
-              <div className={assetStyles.heroSummaryHead}>
-                <span className={assetStyles.heroSummaryTitle}>Total leads</span>
-              </div>
-
-              <div className={assetStyles.heroSummaryValueRow}>
-                <strong className={assetStyles.heroSummaryValue}>{periodLeads.length}</strong>
-              </div>
-
-              <div className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter}`}>
-                <small>For the selected month and year.</small>
-              </div>
-            </div>
-
-            <div className={`${assetStyles.summaryTile} ${assetStyles.totalAssetsTile} ${assetStyles.heroSummaryTile}`}>
-              <div className={assetStyles.heroSummaryHead}>
-                <span className={assetStyles.heroSummaryTitle}>New leads</span>
-              </div>
-
-              <div className={assetStyles.heroSummaryValueRow}>
-                <strong className={assetStyles.heroSummaryValue}>{newLeadCount}</strong>
-              </div>
-
-              <div className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter}`}>
-                <small>Not yet opened or actioned.</small>
-              </div>
-            </div>
+            <article className={`${styles.leadSummaryCard} ${styles.leadSummaryCardDone}`}>
+              <span>Completed</span>
+              <strong>{completedLeadCount}</strong>
+              <small>Marked done for the selected period.</small>
+            </article>
           </div>
 
           <div className={`${assetStyles.toolbar} ${styles.leadSearchToolbar}`}>
@@ -2493,6 +2481,14 @@ export default function LeadsClient({
             </div>
           </div>
 
+          {!isLoading ? (
+            <div className={styles.leadResultSummary}>
+              <span>Showing</span>
+              <strong>{filteredLeads.length}</strong>
+              <span>of {periodLeads.length} leads for the selected period</span>
+            </div>
+          ) : null}
+
 
           {!isLoading && !filteredLeads.length ? (
             <div className={assetStyles.emptyState}>No leads match this search or filter.</div>
@@ -2514,9 +2510,11 @@ export default function LeadsClient({
                           <div className={styles.leadCardTitleRow}>
                             <h3>{lead.ownerBusinessName || ownerDisplayName(lead)}</h3>
                             {isLeadNew ? <span className={`${styles.leadStatusBadge} ${styles.leadStatusBadgeNew}`}>New</span> : null}
+                            {!isLeadNew && !isLeadDone ? <span className={`${styles.leadStatusBadge} ${styles.leadStatusBadgeOpen}`}>Open</span> : null}
                             {isLeadDone ? <span className={`${styles.leadStatusBadge} ${styles.leadStatusBadgeDone}`}>Done</span> : null}
                           </div>
-                          <span className={styles.clientKicker}>Received {formatDate(lead.createdAtIso)}</span>
+                          <strong className={styles.leadAssetName}>{assetTitle(lead)}</strong>
+                          <span className={styles.clientKicker}>{formatLeadType(lead.leadType)} · Received {formatDate(lead.createdAtIso)}</span>
                         </div>
 
                         <div className={styles.clientDecisionArea}>
@@ -2534,30 +2532,30 @@ export default function LeadsClient({
                             </button>
 
                             {isLeadOpen ? (
-                              <button
-                                type="button"
-                                className={`${assetStyles.secondaryButton} ${styles.closeLeadButton}`}
-                                onClick={() => {
-                                  setOpenLeadId(null);
-                                }}
-                              >
-                                Close
-                              </button>
-                            ) : (
                               <>
                                 <button type="button" className={`${assetStyles.secondaryButton} ${styles.deleteLeadButton}`} onClick={() => setDeleteLeadTarget(lead)}>
                                   Delete
                                 </button>
                                 <button
                                   type="button"
-                                  className={`${assetStyles.primaryButton} ${styles.openLeadButton}`}
+                                  className={`${assetStyles.secondaryButton} ${styles.closeLeadButton}`}
                                   onClick={() => {
-                                    void openLead(lead);
+                                    setOpenLeadId(null);
                                   }}
                                 >
-                                  Open
+                                  Close
                                 </button>
                               </>
+                            ) : (
+                              <button
+                                type="button"
+                                className={`${assetStyles.primaryButton} ${styles.openLeadButton}`}
+                                onClick={() => {
+                                  void openLead(lead);
+                                }}
+                              >
+                                Open lead
+                              </button>
                             )}
                           </div>
                         </div>
@@ -2585,12 +2583,12 @@ export default function LeadsClient({
                             <div className={`${assetStyles.assetHeaderActions} ${styles.leadAssetHeaderActions}`}>
                               <button type="button" className={`${assetStyles.optionsButton} ${assetStyles.sharedNoteActionButton}`} onClick={() => openNoteModal(lead)}>
                                 <NoteIcon className={assetStyles.buttonIcon} />
-                                <span>Leave note</span>
+                                <span>Send note or quote</span>
                               </button>
 
                               <button type="button" className={`${assetStyles.optionsButton} ${styles.leadManageButton}`} onClick={() => setManagedLead(lead)}>
                                 <ManageIcon className={assetStyles.buttonIcon} />
-                                <span>Manage</span>
+                                <span>Lead actions</span>
                               </button>
                             </div>
                           </div>
@@ -3019,10 +3017,10 @@ export default function LeadsClient({
         <div className={assetStyles.modalOverlay}>
           <div className={assetStyles.modalBackdrop} onClick={closeNoteModal} />
 
-          <div className={`${assetStyles.modalCard} ${assetStyles.sharedNoteModal}`} role="dialog" aria-modal="true" aria-labelledby="lead-note-title">
+          <div className={`${assetStyles.modalCard} ${assetStyles.sharedNoteModal} ${styles.leadNoteModal}`} role="dialog" aria-modal="true" aria-labelledby="lead-note-title">
             <div className={assetStyles.modalHeader}>
               <div className={assetStyles.modalHeaderText}>
-                <h3 id="lead-note-title">Leave note</h3>
+                <h3 id="lead-note-title">Send note or quote</h3>
                 <p>{assetTitle(noteLead)} · {ownerDisplayName(noteLead)}</p>
               </div>
 
@@ -3062,9 +3060,10 @@ export default function LeadsClient({
                 onChange={handleLeadNoteAttachmentChange}
                 disabled={isSavingNote}
               />
-              <span className={styles.leadNoteAttachmentEyebrow}>Optional PDF quote</span>
+              <PdfIcon className={styles.leadNoteAttachmentIcon} />
+              <span className={styles.leadNoteAttachmentEyebrow}>Attach quote PDF — optional</span>
               <strong>Drop quote PDF here or click to upload</strong>
-              <small>PDF only · maximum {formatByteSize(MAX_LEAD_NOTE_PDF_BYTES)}. The owner can open it from their Asset Register.</small>
+              <small>PDF only · maximum {formatByteSize(MAX_LEAD_NOTE_PDF_BYTES)}.</small>
             </label>
 
             {noteAttachmentFile ? (
@@ -3079,12 +3078,14 @@ export default function LeadsClient({
               </div>
             ) : null}
 
+            <p className={styles.leadNoteDeliveryHint}>This note and any attached quote will appear in the owner&apos;s Asset Register.</p>
+
             <div className={`${assetStyles.formActions} ${assetStyles.sharedNoteActions} ${styles.leadNoteActions}`}>
               <button type="button" className={assetStyles.secondaryButton} onClick={closeNoteModal} disabled={isSavingNote}>
                 Cancel
               </button>
               <button type="button" className={assetStyles.primaryButton} onClick={() => void submitLeadNote()} disabled={isSavingNote}>
-                {isSavingNote ? 'Saving...' : 'Save note'}
+                {isSavingNote ? 'Sending...' : 'Send note'}
               </button>
             </div>
           </div>
