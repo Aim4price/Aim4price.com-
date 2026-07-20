@@ -3457,6 +3457,36 @@
   letter-spacing: -0.04em;
 }
 
+.fieldManagerMobileSurface .fieldManagerAssetIdentityCard {
+  align-items: stretch;
+  justify-items: stretch;
+  text-align: left;
+}
+
+.fieldManagerMobileSurface .fieldManagerAssetIdentityCard .fieldManagerAssetTitleBlock {
+  justify-items: start;
+  text-align: left;
+}
+
+.fieldManagerMobileSurface .fieldManagerAssetIdentityCard .fieldManagerAssetTitleBlock h1 {
+  max-width: none;
+  margin: 0;
+  text-align: left;
+}
+
+.fieldManagerMobileSurface .fieldManagerAssetMeta {
+  margin: 7px 0 0;
+  color: rgba(18, 53, 45, 0.64);
+  font-size: 0.82rem;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.fieldManagerMobileSurface .fieldManagerAssetIdentityCard .gpsButton {
+  width: 100%;
+  justify-self: stretch;
+}
+
 .fieldManagerMobileSurface .gpsButton {
   min-height: 48px;
   border-radius: 14px;

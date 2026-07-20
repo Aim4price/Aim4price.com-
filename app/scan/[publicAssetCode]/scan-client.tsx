@@ -70,6 +70,7 @@ type ScanSafeAsset = {
   equipmentFamilyKey: string;
   equipmentFamilyLabel: string;
   serialNumber: string;
+  yearModel: number | null;
   financeStatus: ScanAssetStatusChoice;
   insuranceStatus: ScanAssetStatusChoice;
   licenseStatus: ScanAssetStatusChoice;
@@ -3287,6 +3288,12 @@ export default function ScanClient({
       : activeEditor === "notes"
         ? "Record any issues, problems or follow-up needed."
         : "Upload existing photos or take new ones.";
+  const fieldManagerAssetMeta = asset
+    ? [
+        asset.yearModel ? `Year: ${asset.yearModel}` : "",
+        formatUsage(asset) !== "—" ? `Usage: ${formatUsage(asset)}` : "Usage: Not saved",
+      ].filter(Boolean).join(" · ")
+    : "";
   if (isDone) {
     return (
       <main className={pageClassName}>
@@ -3478,13 +3485,16 @@ export default function ScanClient({
 
         {asset ? (
           <>
-            <section className={styles.assetOpenedCard}>
+            <section className={`${styles.assetOpenedCard} ${isFieldManagerMode ? styles.fieldManagerAssetIdentityCard : ""}`}>
               <div
                 className={`${styles.assetScanTitleBlock} ${
                   isFieldManagerMode ? styles.fieldManagerAssetTitleBlock : ""
                 }`}
               >
                 <h1>{scanTitleText(asset.title, "Asset")}</h1>
+                {isFieldManagerMode && fieldManagerAssetMeta ? (
+                  <p className={styles.fieldManagerAssetMeta}>{fieldManagerAssetMeta}</p>
+                ) : null}
               </div>
               <button
                 type="button"
