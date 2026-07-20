@@ -120,9 +120,7 @@ export default function TrackingClient({
   return (
     <main className={styles.page}>
       <section className={styles.hero}>
-        <span className={styles.eyebrow}>Dealer workspace</span>
         <h1>Equipment Tracking</h1>
-        <p>Monitor maintenance schedules and usage for equipment shared with your dealership.</p>
       </section>
 
       <section className={styles.summaryGrid} aria-label="Equipment tracking summary">

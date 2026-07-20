@@ -545,3 +545,115 @@
   .detailKickerRow,
   .recordHeading { align-items: flex-start; flex-direction: column; }
 }
+
+/* === Dealer tracking matched to the Owner Asset Register === */
+.page {
+  width: min(calc(100% - 2.5rem), 1360px);
+  padding: clamp(1.25rem, 2vw, 1.85rem) 0 4rem;
+}
+
+.hero {
+  width: 100%;
+  min-height: clamp(5.1rem, 7vw, 6.1rem);
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: clamp(1.15rem, 2vw, 1.55rem) clamp(1.25rem, 2.6vw, 2rem);
+  border: 1.5px solid rgba(193, 211, 218, 0.98);
+  border-radius: clamp(1.25rem, 2vw, 1.7rem);
+  background:
+    radial-gradient(circle at 3% 0%, rgba(25, 116, 84, 0.08) 0%, rgba(25, 116, 84, 0) 38%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(248, 252, 253, 0.98) 100%);
+  box-shadow:
+    0 18px 38px rgba(16, 36, 40, 0.06),
+    0 6px 16px rgba(16, 36, 40, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.hero h1 {
+  margin: 0;
+  color: #073b30;
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
+  font-size: clamp(2.35rem, 4.15vw, 3.55rem);
+  font-weight: 900;
+  line-height: 0.98;
+  letter-spacing: -0.062em;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+
+.summaryGrid {
+  gap: clamp(0.9rem, 1.25vw, 1.15rem);
+  margin-top: clamp(1.05rem, 1.5vw, 1.3rem);
+}
+
+.summaryCard {
+  min-height: clamp(8.35rem, 9.2vw, 9.3rem);
+  padding: 1.15rem 1.3rem 1.15rem 1.55rem;
+  border-color: rgba(196, 215, 223, 0.98);
+  border-radius: clamp(1.25rem, 1.7vw, 1.55rem);
+  box-shadow:
+    0 12px 26px rgba(16, 31, 28, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.summaryCard span { font-size: 0.88rem; }
+.summaryCard small { max-width: 21rem; font-size: 0.82rem; line-height: 1.45; }
+.summaryCard > strong { font-size: clamp(2.25rem, 3.4vw, 3rem); }
+
+.controls {
+  gap: 0.85rem;
+  margin-top: clamp(1rem, 1.4vw, 1.2rem);
+}
+
+.searchField,
+.filterGroup {
+  min-height: 3.65rem;
+  border-radius: 1.1rem;
+}
+
+.filterGroup button {
+  min-height: 3rem;
+}
+
+.assetList { gap: 0.95rem; }
+
+.assetCard {
+  border-color: rgba(198, 216, 223, 0.98);
+  border-radius: 1.45rem;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(25, 116, 84, 0.035) 0%, rgba(25, 116, 84, 0) 34%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(248, 252, 253, 0.99) 100%);
+}
+
+.assetBody {
+  gap: 0.9rem;
+  padding: 1.15rem 1.3rem;
+}
+
+.assetHeading h2 {
+  font-size: clamp(1.42rem, 1.9vw, 1.72rem);
+  font-weight: 850;
+  letter-spacing: -0.04em;
+}
+
+@media (max-width: 700px) {
+  .page,
+  .detailPage {
+    width: min(calc(100% - 1rem), 48rem);
+  }
+
+  .hero {
+    min-height: 4.35rem;
+    padding: 1rem 1.05rem;
+    border-radius: 1.15rem;
+  }
+
+  .hero h1 {
+    font-size: clamp(1.75rem, 9vw, 2.2rem);
+    letter-spacing: -0.045em;
+  }
+
+  .summaryCard { min-height: 6.4rem; }
+}
