@@ -531,6 +531,56 @@ export async function GET(request: NextRequest) {
     if (ownerError) return ownerError;
 
     const { searchParams } = new URL(request.url);
+    const scope = String(searchParams.get('scope') ?? '').trim().toLowerCase();
+    if (scope === 'combined') {
+      const registers = await listAssetRegisters(session.user.id);
+      if (!registers.length) {
+        return NextResponse.json({ ok: false, error: 'Asset register not found.' }, { status: 404 });
+      }
+
+      const itemGroups = await Promise.all(registers.map(async (sourceRegister) => {
+        const registerItems = await listAssetRegisterItems(session.user.id, sourceRegister.id);
+        return registerItems.map((item) => ({
+          ...item,
+          registerId: item.registerId || sourceRegister.id,
+          registerName: sourceRegister.businessName,
+        }));
+      }));
+      const baseItems = itemGroups.flat();
+      const items = await attachOpenAssetAlerts(session.user.id, baseItems);
+      const combinedRegister = {
+        id: '__combined_asset_registers__',
+        userId: session.user.id,
+        businessName: 'Combined Asset Registers',
+        email: '',
+        phone: '',
+        addressLine1: 'All asset registers on this account',
+        logoUrls: [],
+        showLogosOnRegister: false,
+        isPrimary: false,
+        isSelected: false,
+        assetCount: items.length,
+        totalValue: items.reduce((sum, item) => sum + Number(item.value || 0), 0),
+        totalReplacementPrice: items.reduce((sum, item) => sum + Number(item.replacementPriceExVat || 0), 0),
+        createdAtIso: registers[0]?.createdAtIso ?? new Date().toISOString(),
+        updatedAtIso: registers.reduce(
+          (latest, entry) => entry.updatedAtIso > latest ? entry.updatedAtIso : latest,
+          registers[0]?.updatedAtIso ?? new Date().toISOString(),
+        ),
+      };
+
+      return NextResponse.json({
+        ok: true,
+        register: combinedRegister,
+        registers,
+        items,
+        summary: {
+          count: items.length,
+          totalValue: combinedRegister.totalValue,
+        },
+      });
+    }
+
     const requestedRegisterId = String(searchParams.get('registerId') ?? '').trim();
     const register = requestedRegisterId
       ? await getAssetRegisterForUser(session.user.id, requestedRegisterId)
