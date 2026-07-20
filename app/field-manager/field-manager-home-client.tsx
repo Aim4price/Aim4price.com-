@@ -94,7 +94,7 @@ export default function FieldManagerHomeClient() {
       credentials: 'include',
       cache: 'no-store',
     }).catch(() => undefined);
-    window.location.replace('/field-manager/login');
+    window.location.replace('/');
   }
 
   return (
