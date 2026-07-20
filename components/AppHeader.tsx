@@ -236,7 +236,6 @@ function buildNavItems(accountType: AccountType | 'public' | null): NavItem[] {
       { key: 'leads', href: '/leads', label: 'My Leads' },
       { key: 'asset-discovery', href: '/asset-discovery', label: 'Discovery' },
       { key: 'marketplace', href: '/marketplace', label: 'Marketplace' },
-      { key: 'account', href: '/account', label: 'Account' },
     ];
   }
 
@@ -702,12 +701,13 @@ export default function AppHeader({
     [navItems, session?.accountType],
   );
   const activeNavKey = useMemo(() => resolveActiveNavKey(pathname, navItems, active), [active, navItems, pathname]);
+  const navWindowSize = session?.accountType === 'dealer' ? 5 : NAV_WINDOW_SIZE;
   const [navWindowStart, setNavWindowStart] = useState(0);
-  const navMaxWindowStart = Math.max(0, navItems.length - NAV_WINDOW_SIZE);
-  const showNavWindowControls = navItems.length > NAV_WINDOW_SIZE;
+  const navMaxWindowStart = Math.max(0, navItems.length - navWindowSize);
+  const showNavWindowControls = navItems.length > navWindowSize;
   const visibleNavItems = useMemo(
-    () => navItems.slice(navWindowStart, navWindowStart + NAV_WINDOW_SIZE),
-    [navItems, navWindowStart],
+    () => navItems.slice(navWindowStart, navWindowStart + navWindowSize),
+    [navItems, navWindowSize, navWindowStart],
   );
   const latestNotificationTime = useMemo(
     () => notifications.reduce((latest, item) => Math.max(latest, parseTime(item.createdAtIso)), 0),
@@ -747,13 +747,13 @@ export default function AppHeader({
     }
 
     setNavWindowStart((current) => {
-      if (activeIndex >= current && activeIndex < current + NAV_WINDOW_SIZE) {
+      if (activeIndex >= current && activeIndex < current + navWindowSize) {
         return Math.min(current, navMaxWindowStart);
       }
 
-      return Math.min(navMaxWindowStart, Math.max(0, activeIndex - NAV_WINDOW_SIZE + 1));
+      return Math.min(navMaxWindowStart, Math.max(0, activeIndex - navWindowSize + 1));
     });
-  }, [activeNavKey, navItems, navMaxWindowStart, showNavWindowControls]);
+  }, [activeNavKey, navItems, navMaxWindowStart, navWindowSize, showNavWindowControls]);
 
   function moveNavWindow(direction: -1 | 1) {
     setNavWindowStart((current) => Math.min(navMaxWindowStart, Math.max(0, current + direction)));
