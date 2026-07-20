@@ -11,6 +11,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import AppHeader from "../../components/AppHeader";
+import { workspaceStyles } from "../../components/WorkspacePrimitives";
 import styles from "./page.module.css";
 
 type NoticeTone = "success" | "error";
@@ -1878,7 +1879,7 @@ export default function AccountClient() {
   }
 
   return (
-    <main className={`${styles.page} ${isDealerAccount ? styles.dealerAccountPage : ""}`}>
+    <main className={`${styles.page} ${isDealerAccount ? `${workspaceStyles.page} ${styles.dealerAccountPage}` : ""}`}>
       <AppHeader active="none" />
 
       <section className={styles.shell}>
@@ -2190,21 +2191,21 @@ export default function AccountClient() {
       </section>
 
       {activeAccountModal === "business" ? (
-        <div className={styles.modalBackdrop} onClick={closeActionModal}>
+        <div className={`${styles.modalBackdrop} ${isDealerAccount ? workspaceStyles.modalOverlay : ""}`} onClick={closeActionModal}>
           <section
-            className={`${styles.modalCard} ${styles.accountActionModalCard} ${styles.accountScrollableModalCard}`}
+            className={`${styles.modalCard} ${styles.accountActionModalCard} ${styles.accountScrollableModalCard} ${isDealerAccount ? workspaceStyles.modal : ""}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="business-details-modal-title"
             onClick={(event) => event.stopPropagation()}
           >
             <AccountModalScroller>
-              <div className={styles.modalHeader}>
+              <div className={`${styles.modalHeader} ${isDealerAccount ? workspaceStyles.modalHeader : ""}`}>
                 <h2 id="business-details-modal-title">Business details</h2>
                 <p>
                   Update the core account information used across Aim4price.
                 </p>
-                <button type="button" className={styles.modalCloseButton} onClick={closeActionModal} aria-label="Close business details">×</button>
+                <button type="button" className={`${styles.modalCloseButton} ${isDealerAccount ? workspaceStyles.modalClose : ""}`} onClick={closeActionModal} aria-label="Close business details">×</button>
               </div>
 
               {isLoading ? (
@@ -2432,21 +2433,21 @@ export default function AccountClient() {
       ) : null}
 
       {activeAccountModal === "scanPin" ? (
-        <div className={styles.modalBackdrop} onClick={closeActionModal}>
+        <div className={`${styles.modalBackdrop} ${isDealerAccount ? workspaceStyles.modalOverlay : ""}`} onClick={closeActionModal}>
           <section
-            className={`${styles.modalCard} ${styles.accountActionModalCard} ${styles.accountActionModalCardNarrow} ${styles.accountScrollableModalCard}`}
+            className={`${styles.modalCard} ${styles.accountActionModalCard} ${styles.accountActionModalCardNarrow} ${styles.accountScrollableModalCard} ${isDealerAccount ? workspaceStyles.modal : ""}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="scan-pin-modal-title"
             onClick={(event) => event.stopPropagation()}
           >
             <AccountModalScroller>
-              <div className={styles.modalHeader}>
+              <div className={`${styles.modalHeader} ${isDealerAccount ? workspaceStyles.modalHeader : ""}`}>
                 <h2 id="scan-pin-modal-title">Update QR PIN</h2>
                 <p>
                   Create or update the 4 to 8 digit PIN used for QR scan updates.
                 </p>
-                <button type="button" className={styles.modalCloseButton} onClick={closeActionModal} aria-label="Close QR PIN editor">×</button>
+                <button type="button" className={`${styles.modalCloseButton} ${isDealerAccount ? workspaceStyles.modalClose : ""}`} onClick={closeActionModal} aria-label="Close QR PIN editor">×</button>
               </div>
 
             <div className={styles.pinModalStatus}>
@@ -2535,22 +2536,22 @@ export default function AccountClient() {
       ) : null}
 
       {activeAccountModal === "marketplace" ? (
-        <div className={styles.modalBackdrop} onClick={closeActionModal}>
+        <div className={`${styles.modalBackdrop} ${isDealerAccount ? workspaceStyles.modalOverlay : ""}`} onClick={closeActionModal}>
           <section
-            className={`${styles.modalCard} ${styles.accountActionModalCard} ${styles.accountScrollableModalCard}`}
+            className={`${styles.modalCard} ${styles.accountActionModalCard} ${styles.accountScrollableModalCard} ${isDealerAccount ? workspaceStyles.modal : ""}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="marketplace-contact-modal-title"
             onClick={(event) => event.stopPropagation()}
           >
             <AccountModalScroller>
-              <div className={styles.modalHeader}>
+              <div className={`${styles.modalHeader} ${isDealerAccount ? workspaceStyles.modalHeader : ""}`}>
                 <h2 id="marketplace-contact-modal-title">Marketplace contact</h2>
                 <p>
                   These details are shown when customers contact you from the
                   marketplace.
                 </p>
-                <button type="button" className={styles.modalCloseButton} onClick={closeActionModal} aria-label="Close marketplace contact editor">×</button>
+                <button type="button" className={`${styles.modalCloseButton} ${isDealerAccount ? workspaceStyles.modalClose : ""}`} onClick={closeActionModal} aria-label="Close marketplace contact editor">×</button>
               </div>
 
               {isLoading ? (
@@ -2643,22 +2644,22 @@ export default function AccountClient() {
       ) : null}
 
       {activeAccountModal === "partnerDirectory" && showPartnerDirectory ? (
-        <div className={styles.modalBackdrop} onClick={closeActionModal}>
+        <div className={`${styles.modalBackdrop} ${isDealerAccount ? workspaceStyles.modalOverlay : ""}`} onClick={closeActionModal}>
           <section
-            className={`${styles.modalCard} ${styles.accountActionModalCard} ${styles.accountScrollableModalCard} ${styles.partnerDirectoryModalCard}`}
+            className={`${styles.modalCard} ${styles.accountActionModalCard} ${styles.accountScrollableModalCard} ${styles.partnerDirectoryModalCard} ${isDealerAccount ? workspaceStyles.modal : ""}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="partner-directory-modal-title"
             onClick={(event) => event.stopPropagation()}
           >
             <AccountModalScroller>
-              <div className={styles.modalHeader}>
+              <div className={`${styles.modalHeader} ${isDealerAccount ? workspaceStyles.modalHeader : ""}`}>
                 <h2 id="partner-directory-modal-title">Partner directory</h2>
                 <p>
                   Set up how owners see and select your business when sending a
                   quote lead.
                 </p>
-                <button type="button" className={styles.modalCloseButton} onClick={closeActionModal} aria-label="Close partner directory editor">×</button>
+                <button type="button" className={`${styles.modalCloseButton} ${isDealerAccount ? workspaceStyles.modalClose : ""}`} onClick={closeActionModal} aria-label="Close partner directory editor">×</button>
               </div>
 
               <form
@@ -2844,22 +2845,22 @@ export default function AccountClient() {
       ) : null}
 
       {isDeleteDialogOpen ? (
-        <div className={styles.modalBackdrop} onClick={closeDeleteDialog}>
+        <div className={`${styles.modalBackdrop} ${isDealerAccount ? workspaceStyles.modalOverlay : ""}`} onClick={closeDeleteDialog}>
           <section
-            className={`${styles.modalCard} ${styles.accountActionModalCardNarrow} ${styles.accountScrollableModalCard}`}
+            className={`${styles.modalCard} ${styles.accountActionModalCardNarrow} ${styles.accountScrollableModalCard} ${isDealerAccount ? workspaceStyles.modal : ""}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="delete-account-modal-title"
             onClick={(event) => event.stopPropagation()}
           >
             <AccountModalScroller>
-              <div className={styles.modalHeader}>
+              <div className={`${styles.modalHeader} ${isDealerAccount ? workspaceStyles.modalHeader : ""}`}>
                 <h2 id="delete-account-modal-title">Confirm permanent removal</h2>
                 <p>
                   This removes your full Aim4price workspace, including saved
                   valuations, asset register items and account details.
                 </p>
-                <button type="button" className={styles.modalCloseButton} onClick={closeDeleteDialog} aria-label="Close account deletion">×</button>
+                <button type="button" className={`${styles.modalCloseButton} ${isDealerAccount ? workspaceStyles.modalClose : ""}`} onClick={closeDeleteDialog} aria-label="Close account deletion">×</button>
               </div>
 
               <form className={styles.modalForm} onSubmit={handleDeleteAccount}>

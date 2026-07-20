@@ -3200,13 +3200,16 @@
   }
 }
 
-/* === Dealer account modal and workflow polish (final cascade) === */
-.dealerAccountPage,
+/* Account modal viewport safety and workflow layout. */
+.dealerAccountPage {
+  font-family: var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif;
+}
+
 .dealerAccountPage button,
 .dealerAccountPage input,
 .dealerAccountPage textarea,
 .dealerAccountPage select {
-  font-family: 'Montserrat', var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif;
+  font-family: inherit;
 }
 
 .modalBackdrop {
