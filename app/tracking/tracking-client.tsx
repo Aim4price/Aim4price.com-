@@ -2,6 +2,12 @@
 
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
+import {
+  WorkspaceSummaryGrid,
+  WorkspaceSummaryTile,
+  WorkspaceTitlePanel,
+  workspaceStyles,
+} from '../../components/WorkspacePrimitives';
 import type {
   DealerMaintenanceTrackedAsset,
   DealerMaintenanceTrackerStatus,
@@ -118,28 +124,32 @@ export default function TrackingClient({
   );
 
   return (
-    <main className={styles.page}>
-      <section className={styles.hero}>
-        <h1>Equipment Tracking</h1>
-      </section>
+    <main className={`${workspaceStyles.page} ${workspaceStyles.shell} ${styles.page}`}>
+      <WorkspaceTitlePanel title="Equipment Tracking" />
 
-      <section className={styles.summaryGrid} aria-label="Equipment tracking summary">
-        <article className={`${styles.summaryCard} ${styles.summaryTotal}`}>
-          <div><span>Tracked equipment</span><small>Shared by owners or Field Managers.</small></div>
-          <strong>{initialAssets.length}</strong>
-        </article>
-        <article className={`${styles.summaryCard} ${styles.summaryAttention}`}>
-          <div><span>Needs attention</span><small>Due, overdue, due soon or awaiting usage.</small></div>
-          <strong>{attentionCount}</strong>
-        </article>
-        <article className={`${styles.summaryCard} ${styles.summaryUpcoming}`}>
-          <div><span>Upcoming</span><small>Schedules currently on track.</small></div>
-          <strong>{upcomingCount}</strong>
-        </article>
-      </section>
+      <WorkspaceSummaryGrid label="Equipment tracking summary">
+        <WorkspaceSummaryTile
+          label="Tracked equipment"
+          value={initialAssets.length}
+          helper="Shared by owners or Field Managers."
+          tone="blue"
+        />
+        <WorkspaceSummaryTile
+          label="Needs attention"
+          value={attentionCount}
+          helper="Due, overdue, due soon or awaiting usage."
+          tone="copper"
+        />
+        <WorkspaceSummaryTile
+          label="Upcoming"
+          value={upcomingCount}
+          helper="Schedules currently on track."
+          tone="green"
+        />
+      </WorkspaceSummaryGrid>
 
-      <section className={styles.controls} aria-label="Tracking search and filters">
-        <label className={styles.searchField}>
+      <section className={`${workspaceStyles.controlsRow} ${styles.controls}`} aria-label="Tracking search and filters">
+        <label className={`${workspaceStyles.searchField} ${styles.searchField}`}>
           <span className={styles.searchIcon} aria-hidden="true">⌕</span>
           <input
             type="search"
@@ -163,7 +173,7 @@ export default function TrackingClient({
       </div>
 
       {!initialAssets.length ? (
-        <section className={styles.emptyState}>
+        <section className={`${workspaceStyles.emptyState} ${styles.emptyState}`}>
           <span className={styles.emptyIcon} aria-hidden="true">✓</span>
           <strong>No tracked equipment yet</strong>
           <p>Equipment will appear here when an owner or Field Manager enables dealer maintenance tracking.</p>
@@ -171,7 +181,7 @@ export default function TrackingClient({
       ) : null}
 
       {initialAssets.length > 0 && !visibleAssets.length ? (
-        <section className={styles.emptyState}>
+        <section className={`${workspaceStyles.emptyState} ${styles.emptyState}`}>
           <span className={styles.emptyIcon} aria-hidden="true">⌕</span>
           <strong>No equipment matches this view</strong>
           <p>Try another search or status filter.</p>
@@ -183,7 +193,7 @@ export default function TrackingClient({
           <Link
             key={asset.accessId}
             href={`/tracking/${encodeURIComponent(asset.accessId)}`}
-            className={styles.assetCard}
+            className={`${workspaceStyles.card} ${styles.assetCard}`}
             prefetch={false}
           >
             <div className={styles.assetPhoto}>
