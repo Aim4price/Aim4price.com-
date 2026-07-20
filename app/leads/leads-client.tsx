@@ -3,8 +3,6 @@
 import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type DragEvent } from 'react';
 import AppHeader from '../../components/AppHeader';
 import {
-  WorkspaceSummaryGrid,
-  WorkspaceSummaryTile,
   WorkspaceTitlePanel,
   workspaceStyles,
 } from '../../components/WorkspacePrimitives';
@@ -2468,11 +2466,43 @@ export default function LeadsClient({
           )}
 
           {useDealerWorkspaceStyles && !dealerAppMode ? (
-            <WorkspaceSummaryGrid label="Lead summary">
-              <WorkspaceSummaryTile label="New" value={newLeadCount} helper="Not yet opened or actioned." tone="copper" />
-              <WorkspaceSummaryTile label="Open" value={activeLeadCount} helper="Currently being reviewed or actioned." tone="blue" />
-              <WorkspaceSummaryTile label="Completed" value={completedLeadCount} helper="Marked done for the selected period." tone="green" />
-            </WorkspaceSummaryGrid>
+            <section className={`${assetStyles.summaryRow} ${assetStyles.heroSummaryRow} ${styles.leadSummaryRow}`} aria-label="Lead summary">
+              <article className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile}`}>
+                <div className={assetStyles.heroSummaryHead}>
+                  <span className={assetStyles.heroSummaryTitle}>New</span>
+                </div>
+                <div className={assetStyles.heroSummaryValueRow}>
+                  <strong className={assetStyles.heroSummaryValue}>{newLeadCount}</strong>
+                </div>
+                <div className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter}`}>
+                  <small>Not yet opened or actioned.</small>
+                </div>
+              </article>
+
+              <article className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile}`}>
+                <div className={assetStyles.heroSummaryHead}>
+                  <span className={assetStyles.heroSummaryTitle}>Open</span>
+                </div>
+                <div className={assetStyles.heroSummaryValueRow}>
+                  <strong className={assetStyles.heroSummaryValue}>{activeLeadCount}</strong>
+                </div>
+                <div className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter}`}>
+                  <small>Currently being reviewed or actioned.</small>
+                </div>
+              </article>
+
+              <article className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile}`}>
+                <div className={assetStyles.heroSummaryHead}>
+                  <span className={assetStyles.heroSummaryTitle}>Completed</span>
+                </div>
+                <div className={assetStyles.heroSummaryValueRow}>
+                  <strong className={assetStyles.heroSummaryValue}>{completedLeadCount}</strong>
+                </div>
+                <div className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter}`}>
+                  <small>Marked done for the selected period.</small>
+                </div>
+              </article>
+            </section>
           ) : !useDealerWorkspaceStyles ? (
             <div className={`${styles.leadSummaryRow} ${dealerAppMode ? dealerStyles.dealerHidden : ''}`}>
               <article className={`${styles.leadSummaryCard} ${styles.leadSummaryCardNew}`}>
@@ -2522,6 +2552,16 @@ export default function LeadsClient({
             <div className={styles.leadToolbarActions}>
               <button
                 type="button"
+                className={`${assetStyles.secondaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionNeutral}` : ''} ${styles.leadRefreshButton}`}
+                onClick={() => void refreshLeads()}
+                disabled={isLoading}
+              >
+                <RefreshIcon className={`${assetStyles.buttonIcon} ${isLoading ? styles.leadRefreshIconActive : ''}`} />
+                <span>Refresh</span>
+              </button>
+
+              <button
+                type="button"
                 className={`${assetStyles.secondaryButton} ${assetStyles.filterTriggerButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionMint}` : ''} ${styles.leadFilterButton} ${hasActiveLeadFilter ? assetStyles.filterTriggerButtonActive : ''}`}
                 onClick={openLeadFilterModal}
                 disabled={isLoading}
@@ -2529,16 +2569,6 @@ export default function LeadsClient({
                 <FilterIcon className={assetStyles.buttonIcon} />
                 <span>{activeLeadFilterLabel}</span>
                 <ChevronDownIcon className={assetStyles.filterChevron} />
-              </button>
-
-              <button
-                type="button"
-                className={`${assetStyles.secondaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionNeutral}` : ''} ${styles.leadRefreshButton}`}
-                onClick={() => void refreshLeads()}
-                disabled={isLoading}
-              >
-                <RefreshIcon className={`${assetStyles.buttonIcon} ${isLoading ? styles.leadRefreshIconActive : ''}`} />
-                <span>Refresh</span>
               </button>
             </div>
           </div>
