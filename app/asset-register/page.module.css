@@ -17704,7 +17704,7 @@
 .optionsModal .assetQuoteChoiceGrid.registerShareOptionGrid {
   width: 100% !important;
   display: grid !important;
-  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   gap: clamp(1.2rem, 1.8vw, 1.55rem) !important;
   align-items: stretch !important;
   justify-content: center !important;
@@ -17774,7 +17774,7 @@
   display: block !important;
   width: 100% !important;
   text-align: center !important;
-  white-space: nowrap !important;
+  white-space: normal !important;
 }
 
 @media (max-width: 1060px) {
@@ -17784,12 +17784,19 @@
   }
 
   .optionsModal .assetQuoteChoiceGrid.registerShareOptionGrid {
-    grid-template-columns: 1fr !important;
-    max-width: 34rem !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    max-width: 46rem !important;
   }
 
   .optionsModal .assetQuoteChoiceGrid.registerShareOptionGrid .registerShareOptionCard {
     min-height: 12.9rem !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .optionsModal .assetQuoteChoiceGrid.registerShareOptionGrid {
+    grid-template-columns: 1fr !important;
+    max-width: 34rem !important;
   }
 }
 

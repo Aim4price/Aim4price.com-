@@ -4815,6 +4815,22 @@ function buildOwnerName(profile: AccountProfile | null): string {
   return profile.businessName || profile.name || 'Aim4price account';
 }
 
+function buildCombinedAssetRegisterShareName(
+  profile: AccountProfile | null,
+  registers: AssetRegisterSummary[],
+): string {
+  const savedBusinessName = String(
+    profile?.businessName
+      || registers.find((register) => register.isPrimary)?.businessName
+      || profile?.name
+      || 'Aim4price',
+  )
+    .replace(/\s+combined asset registers?$/i, '')
+    .trim();
+
+  return `${savedBusinessName || 'Aim4price'} Combined Asset Register`;
+}
+
 function buildOwnerMeta(profile: AccountProfile | null): string {
   if (!profile) return 'Aim4price asset register summary';
 
@@ -6044,11 +6060,14 @@ export default function AssetRegisterClient() {
     [registerUnnotedAlertCounts],
   );
   const canUseOwnerOnlyAssetActions = true;
-  const canShareActiveRegister = canUseOwnerOnlyAssetActions && !isCombinedRegisterView;
+  const canShareActiveRegister = canUseOwnerOnlyAssetActions;
   const canAddAssetsToActiveRegister = canUseOwnerOnlyAssetActions && !isCombinedRegisterView;
   const canUseMarketplaceActions = true;
   const isQuoteModalOpen = Boolean(quoteAsset);
   const isFullRegisterQuoteLead = quoteScope === 'register';
+  const activeRegisterShareName = isCombinedRegisterView
+    ? buildCombinedAssetRegisterShareName(accountProfile, assetRegisters)
+    : activeRegister?.businessName || buildOwnerName(accountProfile);
 
   const selectedQuoteOption = useMemo(() => quoteOptionForLeadType(selectedQuoteLeadType), [selectedQuoteLeadType]);
   const availableAssetQuoteOptions = useMemo(
@@ -8701,12 +8720,16 @@ export default function AssetRegisterClient() {
         throw new Error(extractApiError(payload, 'Failed to send asset lead.'));
       }
 
-      const fullRegisterQuoteLabel = selectedQuoteOption.leadType === 'insurance' ? 'insurance quote' : 'refinance quote';
+      const fullRegisterQuoteLabel = selectedQuoteOption.leadType === 'insurance'
+        ? 'insurance quote'
+        : selectedQuoteOption.leadType === 'replacement_quote'
+          ? 'dealer request'
+          : 'refinance quote';
 
       setNotice({
         tone: 'success',
         message: isFullRegisterQuoteLead
-          ? `Full Asset Register ${fullRegisterQuoteLabel} sent to ${quotePartnerName(selectedQuotePartner)}.`
+          ? `${activeRegisterShareName} ${fullRegisterQuoteLabel} sent to ${quotePartnerName(selectedQuotePartner)}.`
           : `${selectedQuoteOption.shortTitle.toLowerCase()} request sent to ${quotePartnerName(selectedQuotePartner)}.`,
       });
       closeAssetQuoteModal();
@@ -10878,8 +10901,22 @@ export default function AssetRegisterClient() {
   function buildFullRegisterLeadSections(leadType: AssetLeadType, profile: AccountProfile | null): Record<string, unknown> {
     const registerAssets = assets.map(buildFullRegisterLeadAssetSnapshot);
     const generatedAtIso = new Date().toISOString();
-    const leadLabel = leadType === 'insurance' ? 'Full insurance quote' : 'Full refinance quote';
-    const registerLeadType = leadType === 'insurance' ? 'full_insurance_quote' : 'full_refinance_quote';
+    const leadLabel = leadType === 'insurance'
+      ? 'Full insurance quote'
+      : leadType === 'replacement_quote'
+        ? 'Full dealership request'
+        : 'Full refinance quote';
+    const registerLeadType = leadType === 'insurance'
+      ? 'full_insurance_quote'
+      : leadType === 'replacement_quote'
+        ? 'full_dealership_request'
+        : 'full_refinance_quote';
+    const combinedRegisterName = buildCombinedAssetRegisterShareName(accountProfile ?? profile, assetRegisters);
+    const snapshotTitle = isCombinedRegisterView ? combinedRegisterName : 'Full Asset Register';
+    const snapshotOwnerName = isCombinedRegisterView ? combinedRegisterName : buildOwnerName(profile);
+    const snapshotLogoUrl = isCombinedRegisterView
+      ? toAbsoluteUrl(accountProfile?.logoUrl || profile?.logoUrl) ?? ''
+      : getRegisterReportLogoUrl(activeRegister);
 
     return {
       assetDetails: true,
@@ -10895,12 +10932,13 @@ export default function AssetRegisterClient() {
       liveAccess: false,
       registerSnapshot: {
         snapshotType: 'full_asset_register',
-        title: 'Full Asset Register',
+        title: snapshotTitle,
+        registerName: snapshotTitle,
         leadLabel,
         generatedAtIso,
-        ownerName: buildOwnerName(profile),
+        ownerName: snapshotOwnerName,
         ownerMeta: buildOwnerMeta(profile),
-        logoUrl: getRegisterReportLogoUrl(activeRegister),
+        logoUrl: snapshotLogoUrl,
         assetCount: assets.length,
         totalAssets: assets.length,
         totalValue,
@@ -10919,7 +10957,7 @@ export default function AssetRegisterClient() {
     };
   }
 
-  function openFullRegisterQuotePartnerPicker(leadType: Extract<AssetLeadType, 'finance' | 'insurance'>) {
+  function openFullRegisterQuotePartnerPicker(leadType: AssetLeadType) {
     const anchorAsset = assets[0];
 
     if (!anchorAsset) {
@@ -13018,8 +13056,8 @@ export default function AssetRegisterClient() {
           >
             <div className={`${styles.modalHeader} ${styles.optionsModalHeader} ${styles.assetQuoteModalHeader} ${styles.registerShareModalHeader}`}>
               <div className={styles.modalHeaderText}>
-                <h3 id="asset-register-share-title">Share full Asset Register</h3>
-                <p>Send the complete register as a once-off to a finance or insurance partner.</p>
+                <h3 id="asset-register-share-title">Share {activeRegisterShareName}</h3>
+                <p>Send {activeRegisterShareName} as a once-off to a finance, insurance or dealer partner.</p>
               </div>
 
               <button
@@ -13048,7 +13086,7 @@ export default function AssetRegisterClient() {
                     <span className={styles.assetQuoteChoiceText}>
                       <strong>Get refinance quote</strong>
                       <small>
-                        <span>Send a once-off full-register to a finance partner.</span>
+                        <span>Send {activeRegisterShareName} to a finance partner.</span>
                       </small>
                     </span>
                   </button>
@@ -13065,7 +13103,24 @@ export default function AssetRegisterClient() {
                     <span className={styles.assetQuoteChoiceText}>
                       <strong>Get insurance help</strong>
                       <small>
-                        <span>Send a once-off full-register to an insurance partner.</span>
+                        <span>Send {activeRegisterShareName} to an insurance partner.</span>
+                      </small>
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`${styles.optionActionButton} ${styles.assetQuoteChoiceCard} ${styles.registerShareOptionCard} ${quoteToneClassForLeadType('replacement_quote')}`}
+                    onClick={() => openFullRegisterQuotePartnerPicker('replacement_quote')}
+                    disabled={isExporting}
+                  >
+                    <span className={styles.assetQuoteChoiceIconTile}>
+                      {renderQuoteOptionIcon('replacement_quote', styles.assetQuoteChoiceIcon)}
+                    </span>
+                    <span className={styles.assetQuoteChoiceText}>
+                      <strong>Share with a dealer</strong>
+                      <small>
+                        <span>Send {activeRegisterShareName} to a dealer.</span>
                       </small>
                     </span>
                   </button>
@@ -14946,11 +15001,11 @@ export default function AssetRegisterClient() {
           >
             <div className={`${styles.modalHeader} ${styles.optionsModalHeader} ${styles.assetQuoteModalHeader}`}>
               <div className={styles.modalHeaderText}>
-                <h3 id="asset-quote-title">{selectedQuoteOption ? selectedQuoteOption.mapTitle : isFullRegisterQuoteLead ? 'Share full Asset Register' : quoteAsset?.title}</h3>
+                <h3 id="asset-quote-title">{selectedQuoteOption ? selectedQuoteOption.mapTitle : isFullRegisterQuoteLead ? `Share ${activeRegisterShareName}` : quoteAsset?.title}</h3>
                 {!selectedQuoteOption ? (
                   <p>{quoteAsset ? `${buildAssetMeta(quoteAsset)} · ${money(quoteAsset.value)} excl. VAT` : ''}</p>
                 ) : isFullRegisterQuoteLead ? (
-                  <p>Once-off full-register snapshot · {assets.length} {assets.length === 1 ? 'asset' : 'assets'} · {money(totalValue)} excl. VAT</p>
+                  <p>Once-off {activeRegisterShareName} snapshot · {assets.length} {assets.length === 1 ? 'asset' : 'assets'} · {money(totalValue)} excl. VAT</p>
                 ) : null}
               </div>
 
