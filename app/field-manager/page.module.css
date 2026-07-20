@@ -826,6 +826,53 @@
   box-shadow: 0 8px 18px rgba(37, 71, 51, 0.2);
 }
 
+.overviewSearch {
+  min-height: 54px;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  align-items: center;
+  gap: 11px;
+  box-sizing: border-box;
+  border: 1px solid rgba(18, 53, 45, 0.14);
+  border-radius: 17px;
+  background: rgba(255, 255, 255, 0.96);
+  color: rgba(18, 53, 45, 0.56);
+  padding: 0 16px;
+  box-shadow: 0 12px 28px rgba(18, 53, 45, 0.07);
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.overviewSearch:focus-within {
+  border-color: rgba(35, 104, 81, 0.42);
+  box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.1), 0 12px 28px rgba(18, 53, 45, 0.07);
+}
+
+.overviewSearch svg {
+  width: 22px;
+  height: 22px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.overviewSearch input {
+  width: 100%;
+  min-width: 0;
+  min-height: 52px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #12352d;
+  padding: 0;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 720;
+}
+
+.overviewSearch input::placeholder {
+  color: rgba(18, 53, 45, 0.48);
+  opacity: 1;
+}
+
 .overviewError {
   display: flex;
   align-items: center;
