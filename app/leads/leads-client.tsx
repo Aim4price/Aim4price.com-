@@ -110,11 +110,11 @@ type LeadPartnerNote = {
   updatedAtIso?: string;
 };
 
-type OwnerPhotoPreview = {
+type PhotoModalState = {
+  leadId: string;
   urls: string[];
   index: number;
   title: string;
-  sourceLabel: string;
 };
 
 type PartnerNoteResponse = {
@@ -1394,7 +1394,8 @@ export default function LeadsClient({
   const [openFilterDropdown, setOpenFilterDropdown] = useState<FilterDropdownKey | null>(null);
   const [openLeadId, setOpenLeadId] = useState<string | null>(null);
   const [leadPhotoIndexes, setLeadPhotoIndexes] = useState<Record<string, number>>({});
-  const [ownerPhotoPreview, setOwnerPhotoPreview] = useState<OwnerPhotoPreview | null>(null);
+  const [assetPhotoModal, setAssetPhotoModal] = useState<PhotoModalState | null>(null);
+  const [sentPhotoModal, setSentPhotoModal] = useState<PhotoModalState | null>(null);
   const [managedLead, setManagedLead] = useState<AssetLead | null>(null);
   const [emailLead, setEmailLead] = useState<AssetLead | null>(null);
   const [emailSubjectDraft, setEmailSubjectDraft] = useState('');
@@ -1574,7 +1575,7 @@ export default function LeadsClient({
   }, [totalLeadPages]);
 
   const hasOpenLeadModal = Boolean(
-    isFilterModalOpen || managedLead || emailLead || reportLead || deleteLeadTarget || ownerPhotoPreview || noteLead,
+    isFilterModalOpen || managedLead || emailLead || reportLead || deleteLeadTarget || assetPhotoModal || sentPhotoModal || noteLead,
   );
 
   useEffect(() => {
@@ -1584,10 +1585,24 @@ export default function LeadsClient({
     document.body.style.overflow = 'hidden';
 
     function handleEscape(event: KeyboardEvent) {
-      if (ownerPhotoPreview && (event.key === 'ArrowLeft' || event.key === 'ArrowRight')) {
+      if (assetPhotoModal && (event.key === 'ArrowLeft' || event.key === 'ArrowRight')) {
         event.preventDefault();
         const direction = event.key === 'ArrowLeft' ? -1 : 1;
-        setOwnerPhotoPreview((current) => {
+        setAssetPhotoModal((current) => {
+          if (!current || current.urls.length <= 1) return current;
+
+          return {
+            ...current,
+            index: (current.index + direction + current.urls.length) % current.urls.length,
+          };
+        });
+        return;
+      }
+
+      if (sentPhotoModal && (event.key === 'ArrowLeft' || event.key === 'ArrowRight')) {
+        event.preventDefault();
+        const direction = event.key === 'ArrowLeft' ? -1 : 1;
+        setSentPhotoModal((current) => {
           if (!current || current.urls.length <= 1) return current;
 
           return {
@@ -1600,7 +1615,8 @@ export default function LeadsClient({
 
       if (event.key !== 'Escape' || isDeletingLead || isSavingNote || isDownloadingLeadReport) return;
 
-      if (ownerPhotoPreview) setOwnerPhotoPreview(null);
+      if (assetPhotoModal) setAssetPhotoModal(null);
+      else if (sentPhotoModal) setSentPhotoModal(null);
       else if (deleteLeadTarget) setDeleteLeadTarget(null);
       else if (noteLead) closeNoteModal();
       else if (reportLead) closeLeadReportModal();
@@ -1616,6 +1632,7 @@ export default function LeadsClient({
       document.removeEventListener('keydown', handleEscape);
     };
   }, [
+    assetPhotoModal,
     deleteLeadTarget,
     emailLead,
     hasOpenLeadModal,
@@ -1624,8 +1641,8 @@ export default function LeadsClient({
     isSavingNote,
     managedLead,
     noteLead,
-    ownerPhotoPreview,
     reportLead,
+    sentPhotoModal,
     useDealerWorkspaceStyles,
   ]);
 
@@ -2230,25 +2247,26 @@ export default function LeadsClient({
     setLeadPhotoIndex(lead.id, nextIndex);
   }
 
-  function openOwnerPhotoPreview(lead: AssetLead, urls: string[], index: number, sourceLabel = 'Owner photo') {
-    const normalizedUrls = urls.map(normalizeLeadPhotoUrl).filter(Boolean);
+  function openAssetPhotoModal(lead: AssetLead, index: number) {
+    const urls = assetPhotos(lead).map(normalizeLeadPhotoUrl).filter(Boolean);
 
-    if (!normalizedUrls.length) return;
+    if (!urls.length) return;
 
-    setOwnerPhotoPreview({
-      urls: normalizedUrls,
-      index: Math.min(Math.max(index, 0), normalizedUrls.length - 1),
+    setSentPhotoModal(null);
+    setAssetPhotoModal({
+      leadId: lead.id,
+      urls,
+      index: Math.min(Math.max(index, 0), urls.length - 1),
       title: assetTitle(lead),
-      sourceLabel,
     });
   }
 
-  function closeOwnerPhotoPreview() {
-    setOwnerPhotoPreview(null);
+  function closeAssetPhotoModal() {
+    setAssetPhotoModal(null);
   }
 
-  function cycleOwnerPhotoPreview(direction: -1 | 1) {
-    setOwnerPhotoPreview((current) => {
+  function cycleAssetPhotoModal(direction: -1 | 1) {
+    setAssetPhotoModal((current) => {
       if (!current || current.urls.length <= 1) return current;
 
       return {
@@ -2256,6 +2274,51 @@ export default function LeadsClient({
         index: (current.index + direction + current.urls.length) % current.urls.length,
       };
     });
+  }
+
+  function selectAssetPhoto(index: number) {
+    setAssetPhotoModal((current) => (
+      current
+        ? { ...current, index: Math.min(Math.max(index, 0), current.urls.length - 1) }
+        : current
+    ));
+  }
+
+  function openSentPhotoModal(lead: AssetLead, index: number) {
+    const urls = leadSharedPhotoUrls(lead).map(normalizeLeadPhotoUrl).filter(Boolean);
+
+    if (!urls.length) return;
+
+    setAssetPhotoModal(null);
+    setSentPhotoModal({
+      leadId: lead.id,
+      urls,
+      index: Math.min(Math.max(index, 0), urls.length - 1),
+      title: assetTitle(lead),
+    });
+  }
+
+  function closeSentPhotoModal() {
+    setSentPhotoModal(null);
+  }
+
+  function cycleSentPhotoModal(direction: -1 | 1) {
+    setSentPhotoModal((current) => {
+      if (!current || current.urls.length <= 1) return current;
+
+      return {
+        ...current,
+        index: (current.index + direction + current.urls.length) % current.urls.length,
+      };
+    });
+  }
+
+  function selectSentPhoto(index: number) {
+    setSentPhotoModal((current) => (
+      current
+        ? { ...current, index: Math.min(Math.max(index, 0), current.urls.length - 1) }
+        : current
+    ));
   }
 
   function renderLeadAssetStatusMark(value: AssetStatusChoice) {
@@ -2301,7 +2364,7 @@ export default function LeadsClient({
                   type="button"
                   key={`${url}-${index}`}
                   className={styles.ownerSharedPhotoLink}
-                  onClick={() => openOwnerPhotoPreview(lead, sharedPhotos, index)}
+                  onClick={() => openSentPhotoModal(lead, index)}
                   aria-label={`Open owner attached photo ${index + 1}`}
                 >
                   <img src={url} alt={`Owner attached photo ${index + 1}`} />
@@ -2378,7 +2441,7 @@ export default function LeadsClient({
                 <button
                   type="button"
                   className={styles.leadPreviewOpenButton}
-                  onClick={() => openOwnerPhotoPreview(lead, photos, photoIndex, 'Asset photo')}
+                  onClick={() => openAssetPhotoModal(lead, photoIndex)}
                   aria-label={`Open ${assetTitle(lead)} photo ${photoIndex + 1}`}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -2435,7 +2498,7 @@ export default function LeadsClient({
                     className={`${assetStyles.previewThumbButton} ${styles.leadPreviewThumbButton} ${isActivePhoto ? assetStyles.previewThumbButtonActive : ''}`}
                     onClick={() => {
                       setLeadPhotoIndex(lead.id, index);
-                      openOwnerPhotoPreview(lead, photos, index, 'Asset photo');
+                      openAssetPhotoModal(lead, index);
                     }}
                     aria-label={`Open photo ${index + 1}`}
                   >
@@ -2504,11 +2567,16 @@ export default function LeadsClient({
     );
   }
 
-  const ownerPhotoPreviewIndex = ownerPhotoPreview
-    ? Math.min(Math.max(ownerPhotoPreview.index, 0), ownerPhotoPreview.urls.length - 1)
+  const assetPhotoModalIndex = assetPhotoModal
+    ? Math.min(Math.max(assetPhotoModal.index, 0), assetPhotoModal.urls.length - 1)
     : 0;
-  const ownerPhotoPreviewUrl = ownerPhotoPreview?.urls[ownerPhotoPreviewIndex] ?? '';
-  const hasMultipleOwnerPreviewPhotos = Boolean(ownerPhotoPreview && ownerPhotoPreview.urls.length > 1);
+  const assetPhotoModalUrl = assetPhotoModal?.urls[assetPhotoModalIndex] ?? '';
+  const hasMultipleAssetPhotos = Boolean(assetPhotoModal && assetPhotoModal.urls.length > 1);
+  const sentPhotoModalIndex = sentPhotoModal
+    ? Math.min(Math.max(sentPhotoModal.index, 0), sentPhotoModal.urls.length - 1)
+    : 0;
+  const sentPhotoModalUrl = sentPhotoModal?.urls[sentPhotoModalIndex] ?? '';
+  const hasMultipleSentPhotos = Boolean(sentPhotoModal && sentPhotoModal.urls.length > 1);
 
   return (
     <main className={`${assetStyles.page} ${useDealerWorkspaceStyles ? workspaceStyles.page : ''} ${styles.leadsPage} ${useDealerWorkspaceStyles ? styles.dealerOwnerParity : ''} ${dealerAppMode ? dealerStyles.dealerLeadsSurface : ''}`}>
@@ -3144,42 +3212,42 @@ export default function LeadsClient({
         </div>
       ) : null}
 
-      {ownerPhotoPreview && ownerPhotoPreviewUrl ? (
-        <div className={`${assetStyles.modalOverlay} ${dealerWorkspaceClass(workspaceStyles.modalOverlay)} ${styles.ownerPhotoPreviewOverlay}`}>
-          <div className={assetStyles.modalBackdrop} onClick={closeOwnerPhotoPreview} />
+      {assetPhotoModal && assetPhotoModalUrl ? (
+        <div className={`${assetStyles.modalOverlay} ${dealerWorkspaceClass(workspaceStyles.modalOverlay)} ${styles.leadPhotoModalOverlay} ${styles.assetPhotoModalOverlay}`}>
+          <div className={assetStyles.modalBackdrop} onClick={closeAssetPhotoModal} />
 
-          <div className={`${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.ownerPhotoPreviewModal}`} role="dialog" aria-modal="true" aria-labelledby="owner-photo-preview-title">
-            <div className={`${dealerWorkspaceClass(workspaceStyles.modalHeader)} ${styles.ownerPhotoPreviewHeader}`}>
+          <div className={`${styles.leadPhotoModal} ${styles.assetPhotoModal}`} role="dialog" aria-modal="true" aria-labelledby="asset-photo-modal-title">
+            <div className={`${styles.leadPhotoModalHeader} ${styles.assetPhotoModalHeader}`}>
               <div>
-                <strong id="owner-photo-preview-title">{ownerPhotoPreview.title}</strong>
-                <span>{ownerPhotoPreview.sourceLabel} · {ownerPhotoPreviewIndex + 1} of {ownerPhotoPreview.urls.length}</span>
+                <strong id="asset-photo-modal-title">Asset photos</strong>
+                <span>{assetPhotoModal.title} · {assetPhotoModalIndex + 1} of {assetPhotoModal.urls.length}</span>
               </div>
 
-              <button type="button" className={`${dealerWorkspaceClass(workspaceStyles.modalClose)} ${styles.ownerPhotoPreviewCloseButton}`} onClick={closeOwnerPhotoPreview} aria-label="Close photo preview">
+              <button type="button" className={styles.leadPhotoModalCloseButton} onClick={closeAssetPhotoModal} aria-label="Close asset photos">
                 <CloseIcon className={assetStyles.buttonIcon} />
               </button>
             </div>
 
-            <div className={`${dealerWorkspaceClass(workspaceStyles.modalBody)} ${styles.ownerPhotoPreviewBody}`}>
-              <div className={styles.ownerPhotoPreviewFrame}>
-                <img src={ownerPhotoPreviewUrl} alt={`${ownerPhotoPreview.sourceLabel} ${ownerPhotoPreviewIndex + 1}`} />
+            <div className={`${styles.leadPhotoModalBody} ${styles.assetPhotoModalBody}`}>
+              <div className={`${styles.leadPhotoModalFrame} ${styles.assetPhotoModalFrame}`}>
+                <img src={assetPhotoModalUrl} alt={`${assetPhotoModal.title} asset photo ${assetPhotoModalIndex + 1}`} />
 
-                {hasMultipleOwnerPreviewPhotos ? (
+                {hasMultipleAssetPhotos ? (
                   <>
                     <button
                       type="button"
-                      className={`${styles.ownerPhotoPreviewNavButton} ${styles.ownerPhotoPreviewNavPrevious}`}
-                      onClick={() => cycleOwnerPhotoPreview(-1)}
-                      aria-label="Show previous photo"
+                      className={`${styles.leadPhotoModalNavButton} ${styles.leadPhotoModalNavPrevious}`}
+                      onClick={() => cycleAssetPhotoModal(-1)}
+                      aria-label="Show previous asset photo"
                     >
                       <ChevronLeftIcon className={assetStyles.buttonIcon} />
                     </button>
 
                     <button
                       type="button"
-                      className={`${styles.ownerPhotoPreviewNavButton} ${styles.ownerPhotoPreviewNavNext}`}
-                      onClick={() => cycleOwnerPhotoPreview(1)}
-                      aria-label="Show next photo"
+                      className={`${styles.leadPhotoModalNavButton} ${styles.leadPhotoModalNavNext}`}
+                      onClick={() => cycleAssetPhotoModal(1)}
+                      aria-label="Show next asset photo"
                     >
                       <ChevronRightIcon className={assetStyles.buttonIcon} />
                     </button>
@@ -3187,16 +3255,80 @@ export default function LeadsClient({
                 ) : null}
               </div>
 
-              {hasMultipleOwnerPreviewPhotos ? (
-                <div className={styles.ownerPhotoPreviewThumbRow} aria-label="Photo viewer thumbnails">
-                  {ownerPhotoPreview.urls.map((url, index) => (
+              {hasMultipleAssetPhotos ? (
+                <div className={styles.leadPhotoModalThumbRow} aria-label="Asset photo thumbnails">
+                  {assetPhotoModal.urls.map((url, index) => (
                     <button
                       type="button"
-                      key={`${url}-${index}`}
-                      className={`${styles.ownerPhotoPreviewThumbButton} ${index === ownerPhotoPreviewIndex ? styles.ownerPhotoPreviewThumbButtonActive : ''}`}
-                      onClick={() => setOwnerPhotoPreview((current) => (current ? { ...current, index } : current))}
-                      aria-label={`Show photo ${index + 1}`}
-                      aria-current={index === ownerPhotoPreviewIndex ? 'true' : undefined}
+                      key={`${assetPhotoModal.leadId}-asset-photo-${index}`}
+                      className={`${styles.leadPhotoModalThumbButton} ${index === assetPhotoModalIndex ? styles.leadPhotoModalThumbButtonActive : ''}`}
+                      onClick={() => selectAssetPhoto(index)}
+                      aria-label={`Show asset photo ${index + 1}`}
+                      aria-current={index === assetPhotoModalIndex ? 'true' : undefined}
+                    >
+                      <img src={url} alt="" />
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {sentPhotoModal && sentPhotoModalUrl ? (
+        <div className={`${assetStyles.modalOverlay} ${dealerWorkspaceClass(workspaceStyles.modalOverlay)} ${styles.leadPhotoModalOverlay} ${styles.sentPhotoModalOverlay}`}>
+          <div className={assetStyles.modalBackdrop} onClick={closeSentPhotoModal} />
+
+          <div className={`${styles.leadPhotoModal} ${styles.sentPhotoModal}`} role="dialog" aria-modal="true" aria-labelledby="sent-photo-modal-title">
+            <div className={`${styles.leadPhotoModalHeader} ${styles.sentPhotoModalHeader}`}>
+              <div>
+                <strong id="sent-photo-modal-title">Sent photos</strong>
+                <span>{sentPhotoModal.title} · {sentPhotoModalIndex + 1} of {sentPhotoModal.urls.length}</span>
+              </div>
+
+              <button type="button" className={styles.leadPhotoModalCloseButton} onClick={closeSentPhotoModal} aria-label="Close sent photos">
+                <CloseIcon className={assetStyles.buttonIcon} />
+              </button>
+            </div>
+
+            <div className={`${styles.leadPhotoModalBody} ${styles.sentPhotoModalBody}`}>
+              <div className={`${styles.leadPhotoModalFrame} ${styles.sentPhotoModalFrame}`}>
+                <img src={sentPhotoModalUrl} alt={`${sentPhotoModal.title} sent photo ${sentPhotoModalIndex + 1}`} />
+
+                {hasMultipleSentPhotos ? (
+                  <>
+                    <button
+                      type="button"
+                      className={`${styles.leadPhotoModalNavButton} ${styles.leadPhotoModalNavPrevious}`}
+                      onClick={() => cycleSentPhotoModal(-1)}
+                      aria-label="Show previous sent photo"
+                    >
+                      <ChevronLeftIcon className={assetStyles.buttonIcon} />
+                    </button>
+
+                    <button
+                      type="button"
+                      className={`${styles.leadPhotoModalNavButton} ${styles.leadPhotoModalNavNext}`}
+                      onClick={() => cycleSentPhotoModal(1)}
+                      aria-label="Show next sent photo"
+                    >
+                      <ChevronRightIcon className={assetStyles.buttonIcon} />
+                    </button>
+                  </>
+                ) : null}
+              </div>
+
+              {hasMultipleSentPhotos ? (
+                <div className={styles.leadPhotoModalThumbRow} aria-label="Sent photo thumbnails">
+                  {sentPhotoModal.urls.map((url, index) => (
+                    <button
+                      type="button"
+                      key={`${sentPhotoModal.leadId}-sent-photo-${index}`}
+                      className={`${styles.leadPhotoModalThumbButton} ${index === sentPhotoModalIndex ? styles.leadPhotoModalThumbButtonActive : ''}`}
+                      onClick={() => selectSentPhoto(index)}
+                      aria-label={`Show sent photo ${index + 1}`}
+                      aria-current={index === sentPhotoModalIndex ? 'true' : undefined}
                     >
                       <img src={url} alt="" />
                     </button>
