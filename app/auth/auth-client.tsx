@@ -491,7 +491,7 @@ export default function AuthClient() {
     if (mode === "signup") {
       return {
         title: "Create your account",
-        text: "Create an Aim4price account. Access stays pending until payment/admin approval is completed.",
+        text: "Tell us how you plan to use Aim4price so we can set up the right workspace for you. Access remains pending until payment or admin approval is complete.",
         action: "Create account",
         footer: "Already have an account?",
         footerAction: "Log in",
@@ -510,7 +510,7 @@ export default function AuthClient() {
 
     return {
       title: "Welcome back",
-      text: "Log in to manage your valuations and machinery records.",
+      text: "Log in to access your Aim4price account and workspace.",
       action: "Log in",
       footer: "Need an account?",
       footerAction: "Create one",
