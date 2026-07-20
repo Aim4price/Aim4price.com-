@@ -901,9 +901,7 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
   return (
     <section className={`${styles.shell} ${dealerAppMode ? dealerStyles.dealerDiscoverySurface : ""}`}>
       <div className={styles.heroPanel}>
-        {!dealerAppMode ? <span className={styles.heroEyebrow}>Dealer workspace</span> : null}
         <h1>{dealerAppMode ? "Discovery" : "Asset Discovery"}</h1>
-        {!dealerAppMode ? <p>Find assets and request contact with owners in your service area.</p> : null}
       </div>
 
       <section

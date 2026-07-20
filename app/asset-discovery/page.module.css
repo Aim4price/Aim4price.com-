@@ -2024,3 +2024,154 @@
     max-height: calc(100dvh - 1.5rem) !important;
   }
 }
+
+/* === Dealer desktop hierarchy matched to the Owner Asset Register === */
+.heroPanel {
+  width: 100% !important;
+  min-height: clamp(5.1rem, 7vw, 6.1rem) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  padding: clamp(1.15rem, 2vw, 1.55rem) clamp(1.25rem, 2.6vw, 2rem) !important;
+  border: 1.5px solid rgba(193, 211, 218, 0.98) !important;
+  border-radius: clamp(1.25rem, 2vw, 1.7rem) !important;
+  background:
+    radial-gradient(circle at 3% 0%, rgba(25, 116, 84, 0.08) 0%, rgba(25, 116, 84, 0) 38%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(248, 252, 253, 0.98) 100%) !important;
+  box-shadow:
+    0 18px 38px rgba(16, 36, 40, 0.06),
+    0 6px 16px rgba(16, 36, 40, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.heroPanel h1 {
+  margin: 0 !important;
+  color: #073b30 !important;
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif !important;
+  font-size: clamp(2.35rem, 4.15vw, 3.55rem) !important;
+  font-weight: 900 !important;
+  line-height: 0.98 !important;
+  letter-spacing: -0.062em !important;
+  text-transform: uppercase !important;
+  overflow-wrap: anywhere !important;
+  text-wrap: balance;
+}
+
+.controlsPanel {
+  margin: clamp(1.05rem, 1.5vw, 1.3rem) 0 !important;
+}
+
+.summaryGrid {
+  gap: clamp(0.9rem, 1.25vw, 1.15rem) !important;
+  margin-bottom: clamp(1rem, 1.4vw, 1.2rem) !important;
+}
+
+.summaryCard,
+.summaryCard:first-child {
+  min-height: clamp(8.35rem, 9.2vw, 9.3rem) !important;
+  padding: 1.15rem 1.3rem 1.15rem 1.55rem !important;
+  border-color: rgba(196, 215, 223, 0.98) !important;
+  border-radius: clamp(1.25rem, 1.7vw, 1.55rem) !important;
+  box-shadow:
+    0 12px 26px rgba(16, 31, 28, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.summaryCard span {
+  font-size: 0.88rem !important;
+  font-weight: 850 !important;
+}
+
+.summaryCard strong {
+  font-size: clamp(2.25rem, 3.4vw, 3rem) !important;
+}
+
+.summaryCard small {
+  max-width: 21rem;
+  font-size: 0.82rem !important;
+  line-height: 1.45 !important;
+}
+
+.toolbar {
+  gap: 0.85rem !important;
+}
+
+.searchBox,
+.customFilterButton {
+  min-height: 3.65rem !important;
+  border-radius: 1.1rem !important;
+}
+
+.cardStack {
+  gap: 0.95rem !important;
+}
+
+.dealerAssetCard,
+.dealerAssetCard:hover {
+  min-height: clamp(7.2rem, 8vw, 8rem);
+  padding: clamp(1.05rem, 1.45vw, 1.25rem) !important;
+  border-color: rgba(198, 216, 223, 0.98) !important;
+  border-radius: 1.45rem !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(25, 116, 84, 0.035) 0%, rgba(25, 116, 84, 0) 34%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(248, 252, 253, 0.99) 100%) !important;
+}
+
+.dealerAssetCardHeader {
+  min-height: clamp(5.1rem, 6vw, 5.8rem) !important;
+  gap: clamp(1rem, 1.8vw, 1.5rem) !important;
+}
+
+.dealerAssetCard .assetIdentity {
+  gap: 0.42rem !important;
+  padding-left: 0.3rem;
+}
+
+.dealerAssetCard .assetIdentity h2,
+.assetIdentity h2 {
+  font-size: clamp(1.42rem, 1.9vw, 1.72rem) !important;
+  font-weight: 850 !important;
+  letter-spacing: -0.04em !important;
+}
+
+.dealerAssetMeta {
+  font-size: 0.92rem !important;
+}
+
+.dealerAssetProvince {
+  font-size: 0.82rem !important;
+}
+
+.dealerAssetCard .assetActionRow > :is(button, span),
+.dealerAssetCard .enquireButton,
+.statusPill {
+  min-width: 11.2rem !important;
+  min-height: 3.35rem !important;
+  border-radius: 1rem !important;
+}
+
+@media (max-width: 760px) {
+  .heroPanel {
+    min-height: 4.35rem !important;
+    padding: 1rem 1.05rem !important;
+    border-radius: 1.15rem !important;
+  }
+
+  .heroPanel h1 {
+    font-size: clamp(1.75rem, 9vw, 2.2rem) !important;
+    letter-spacing: -0.045em !important;
+  }
+
+  .summaryCard,
+  .summaryCard:first-child {
+    min-height: 6.4rem !important;
+  }
+
+  .dealerAssetCard {
+    min-height: 0;
+  }
+
+  .dealerAssetCardHeader {
+    min-height: 0 !important;
+  }
+}
