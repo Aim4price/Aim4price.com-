@@ -85,6 +85,7 @@ declare global {
 const REGISTER_SUMMARY_VISIBLE_CARD_COUNT = 3;
 const REGISTER_SUMMARY_TOTAL_CARD_COUNT = 8;
 const ASSET_REGISTER_SUMMARY_VAT_MULTIPLIER = 1.15;
+const COMBINED_REGISTER_ID = '__combined_asset_registers__';
 
 function getRegisterSummaryCardsPerView(): number {
   if (typeof window === 'undefined') return REGISTER_SUMMARY_VISIBLE_CARD_COUNT;
@@ -378,6 +379,7 @@ type RegisterAsset = {
   id: string;
   userId: string;
   registerId: string | null;
+  registerName?: string;
   valuationRunId: number | null;
   sectorId: number | null;
   equipmentFamilyId: number | null;
@@ -5222,11 +5224,20 @@ function readRegisterIdFromLocation(): string {
     return '';
   }
 
-  return new URLSearchParams(window.location.search).get('registerId')?.trim() ?? '';
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('scope')?.trim().toLowerCase() === 'combined') {
+    return COMBINED_REGISTER_ID;
+  }
+
+  return params.get('registerId')?.trim() ?? '';
 }
 
 function buildAssetRegisterApiUrl(registerId?: string | null): string {
   const cleanedRegisterId = String(registerId ?? '').trim();
+
+  if (cleanedRegisterId === COMBINED_REGISTER_ID) {
+    return '/api/asset-register?scope=combined';
+  }
 
   if (!cleanedRegisterId) {
     return '/api/asset-register';
@@ -5236,12 +5247,18 @@ function buildAssetRegisterApiUrl(registerId?: string | null): string {
   return `/api/asset-register?${params.toString()}`;
 }
 
-function buildAssetRegisterExportUrl(registerId?: string | null): string {
+function buildAssetRegisterExportUrl(registerId?: string | null, entityName = ''): string {
   const params = new URLSearchParams({ format: 'xlsx' });
   const cleanedRegisterId = String(registerId ?? '').trim();
+  const cleanedEntityName = entityName.trim();
 
-  if (cleanedRegisterId) {
-    params.set('registerId', cleanedRegisterId);
+  if (cleanedRegisterId === COMBINED_REGISTER_ID) {
+    params.set('scope', 'all');
+    params.set('entityName', cleanedEntityName || 'Combined Asset Registers');
+  } else if (cleanedRegisterId) {
+    params.set('scope', 'single');
+    params.set('registerIds', cleanedRegisterId);
+    if (cleanedEntityName) params.set('entityName', cleanedEntityName);
   }
 
   return `/api/asset-register/export?${params.toString()}`;
@@ -5254,7 +5271,10 @@ function buildAssetRegisterSummaryExportUrl(registerId: string | null | undefine
   });
   const cleanedRegisterId = String(registerId ?? '').trim();
 
-  if (cleanedRegisterId) {
+  if (cleanedRegisterId === COMBINED_REGISTER_ID) {
+    params.set('scope', 'all');
+    params.set('entityName', 'Combined Asset Registers');
+  } else if (cleanedRegisterId) {
     params.set('registerId', cleanedRegisterId);
   }
 
@@ -5694,6 +5714,7 @@ export default function AssetRegisterClient() {
   const [isRegisterShareModalOpen, setIsRegisterShareModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [exportFormat, setExportFormat] = useState<ExportFormat>('pdf');
+  const [exportEntityName, setExportEntityName] = useState('');
   const [exportStep, setExportStep] = useState<ExportStep>('format');
   const [pdfReportKind, setPdfReportKind] = useState<PdfReportKind>('full');
   const [pdfReportSelection, setPdfReportSelection] = useState<PdfReportKind | ''>('');
@@ -6000,18 +6021,19 @@ export default function AssetRegisterClient() {
     });
   }, [activeRegister, assetRegisters]);
   const canOpenRegisterSwitcher = registerSwitcherOptions.length > 1;
+  const isCombinedRegisterView = activeRegister?.id === COMBINED_REGISTER_ID || activeRegisterId === COMBINED_REGISTER_ID;
   const activeRegisterUnnotedAlertCount = useMemo(() => assetListUnnotedAlertCount(assets), [assets]);
   const registerUnnotedAlertCounts = useMemo(() => {
     const countsByRegisterId = new Map<string, number>();
 
     registerSwitcherOptions.forEach((register) => {
-      if (register.id) {
+      if (register.id && register.id !== COMBINED_REGISTER_ID) {
         countsByRegisterId.set(register.id, registerSummaryUnnotedAlertCount(register));
       }
     });
 
     const activeId = String(activeRegister?.id || activeRegisterId || '').trim();
-    if (activeId) {
+    if (activeId && activeId !== COMBINED_REGISTER_ID) {
       countsByRegisterId.set(activeId, activeRegisterUnnotedAlertCount);
     }
 
@@ -6022,6 +6044,8 @@ export default function AssetRegisterClient() {
     [registerUnnotedAlertCounts],
   );
   const canUseOwnerOnlyAssetActions = true;
+  const canShareActiveRegister = canUseOwnerOnlyAssetActions && !isCombinedRegisterView;
+  const canAddAssetsToActiveRegister = canUseOwnerOnlyAssetActions && !isCombinedRegisterView;
   const canUseMarketplaceActions = true;
   const isQuoteModalOpen = Boolean(quoteAsset);
   const isFullRegisterQuoteLead = quoteScope === 'register';
@@ -10968,6 +10992,7 @@ export default function AssetRegisterClient() {
     }
 
     setExportFormat('pdf');
+    setExportEntityName(activeRegister?.businessName || (isCombinedRegisterView ? 'Combined Asset Registers' : 'Asset Register'));
     setExportStep('format');
     setPdfReportKind('full');
     setPdfReportSelection('');
@@ -11084,7 +11109,7 @@ export default function AssetRegisterClient() {
     const didOpen = openAssetRegisterSummaryPrint({
       logoUrl: reportLogoUrl ?? getRegisterReportLogoUrl(activeRegister),
       generatedAt: formatDate(new Date().toISOString()),
-      reportTitle: `${reportOption.label} Report`,
+      reportTitle: `${exportEntityName.trim() || activeRegister?.businessName || 'Asset Register'} - ${reportOption.label} Report`,
       reportSubtitle: 'Aim4price asset register',
       valueLabel: isCustomAssetSelection ? 'Selected Register Value' : reportKind === 'full' ? 'Register Value' : 'Filtered Register Value',
       assetSectionTitle: reportOption.sectionTitle,
@@ -11124,7 +11149,9 @@ export default function AssetRegisterClient() {
 
         return {
           asset: asset.title,
-          type: assetKindLabel(asset),
+          type: isCombinedRegisterView
+            ? `${asset.registerName || 'Asset Register'} · ${assetKindLabel(asset)}`
+            : assetKindLabel(asset),
           method: methodLabel(asset.selectedMethod),
           detail: buildExportDetail(asset),
           value: money(asset.value),
@@ -11215,7 +11242,7 @@ export default function AssetRegisterClient() {
   }
 
   async function handleExportXlsx() {
-    const response = await fetch(buildAssetRegisterExportUrl(activeRegister?.id || activeRegisterId), {
+    const response = await fetch(buildAssetRegisterExportUrl(activeRegister?.id || activeRegisterId, exportEntityName), {
       credentials: 'include',
       cache: 'no-store',
     });
@@ -11656,7 +11683,7 @@ export default function AssetRegisterClient() {
             </div>
 
             <div className={`${styles.headerActions} ${canUseOwnerOnlyAssetActions ? styles.ownerRegisterHeaderActions : styles.sharedRegisterHeaderActions}`}>
-              {canUseOwnerOnlyAssetActions ? (
+              {canShareActiveRegister ? (
                 <button
                   type="button"
                   className={`${styles.secondaryButton} ${styles.headerShareButton}`}
@@ -12130,7 +12157,7 @@ export default function AssetRegisterClient() {
                 <span>{isRefreshingRegister ? 'Refreshing...' : 'Refresh'}</span>
               </button>
 
-              {canUseOwnerOnlyAssetActions ? (
+              {canAddAssetsToActiveRegister ? (
                 <button type="button" className={`${styles.primaryButton} ${styles.toolbarPrimaryButton}`} onClick={openAddAssetChoiceModal}>
                   <PlusIcon className={styles.buttonIcon} />
                   <span>Add Asset</span>
@@ -12246,6 +12273,9 @@ export default function AssetRegisterClient() {
                             <p>{buildAssetMeta(asset)}</p>
                             <div className={styles.assetMetaRow}>
                               <span className={styles.assetValueMethodLabel}>{methodLabel(asset.selectedMethod)} value</span>
+                              {isCombinedRegisterView ? (
+                                <span className={styles.assetSourceRegisterName}>{asset.registerName || 'Asset Register'}</span>
+                              ) : null}
                               <span className={styles.assetSavedDateLabel}>{assetStatusDateLabel(asset)}</span>
                             </div>
 
@@ -15981,6 +16011,16 @@ export default function AssetRegisterClient() {
               <div className={styles.exportModalBody}>
                 {exportStep === 'format' ? (
                   <>
+                    <label className={`${styles.field} ${styles.exportEntityNameField}`}>
+                      <span>Asset register / report name</span>
+                      <input
+                        value={exportEntityName}
+                        onChange={(event) => setExportEntityName(event.target.value)}
+                        placeholder="Enter the asset register or report name"
+                        disabled={isExporting}
+                      />
+                    </label>
+
                     <div className={styles.exportChoices}>
                       <button
                         type="button"

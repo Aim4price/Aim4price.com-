@@ -1620,6 +1620,41 @@
   }
 }
 
+/* === Combined Asset Registers source labels and named exports === */
+.assetSourceRegisterName {
+  color: #3e4d61 !important;
+  font: inherit;
+  font-size: inherit !important;
+  font-weight: 880 !important;
+  line-height: inherit;
+}
+
+.exportEntityNameField {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border: 1px solid rgba(207, 220, 229, 0.96);
+  border-radius: 1.15rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f7fafc 100%);
+}
+
+.exportEntityNameField input {
+  width: 100%;
+  min-height: 3.25rem;
+  padding: 0 0.95rem;
+  border: 1px solid #c9d7e0;
+  border-radius: 0.9rem;
+  color: #15372e;
+  background: #ffffff;
+  font: inherit;
+  font-weight: 700;
+  outline: none;
+}
+
+.exportEntityNameField input:focus {
+  border-color: #6aad8d;
+  box-shadow: 0 0 0 4px rgba(64, 145, 105, 0.12);
+}
+
 @media (max-width: 480px) {
   .registerPanel,
   .modalCard,
