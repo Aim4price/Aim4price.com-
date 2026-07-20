@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import AppHeader from '../../../components/AppHeader';
+import { workspaceStyles } from '../../../components/WorkspacePrimitives';
 import { getAccountProfile } from '../../../lib/account-profile';
 import { getServerSession } from '../../../lib/auth-session';
 import {
@@ -59,12 +60,12 @@ export default async function TrackingDetailPage({ params }: { params: { accessI
   if (!asset) notFound();
 
   return (
-    <div className={styles.screen}>
+    <div className={`${workspaceStyles.page} ${styles.screen}`}>
       <AppHeader active="tracking" />
-      <main className={`${styles.page} ${styles.detailPage}`}>
+      <main className={`${workspaceStyles.shell} ${styles.page} ${styles.detailPage}`}>
         <Link href="/tracking" className={styles.backLink}>← Back to tracking</Link>
 
-        <section className={styles.detailHero}>
+        <section className={`${workspaceStyles.card} ${styles.detailHero}`}>
           <div className={styles.detailPhoto}>
             {asset.photoUrl ? <img src={asset.photoUrl} alt="" /> : <span>{asset.assetTitle.charAt(0).toUpperCase()}</span>}
           </div>
@@ -97,7 +98,7 @@ export default async function TrackingDetailPage({ params }: { params: { accessI
           </header>
 
           {!asset.maintenanceRecords.length ? (
-            <div className={styles.emptyState}>
+            <div className={`${workspaceStyles.emptyState} ${styles.emptyState}`}>
               <strong>No open maintenance schedules</strong>
               <p>The owner has not shared any current maintenance items for this equipment.</p>
             </div>
