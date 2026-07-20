@@ -238,20 +238,30 @@ function assetDisplayName(asset: AssetDiscoveryAsset): string {
 }
 
 function dealerAssetDisplayName(asset: AssetDiscoveryAsset): string {
-  const year = cleanText(asset.year);
-  const name = assetDisplayName(asset);
-  return !isUnknown(year) ? `${year} ${name}` : name;
+  return assetDisplayName(asset);
 }
 
 function dealerAssetMeta(asset: AssetDiscoveryAsset): string {
   const details = [
-    `Year Model: ${cleanText(asset.year) || "Unknown"}`,
-    `Usage: ${cleanText(asset.usage) || "Unknown"}`,
-    `Condition: ${cleanText(asset.condition) || "Unknown"}`,
-    `Family: ${cleanText(asset.type) || "Unknown"}`,
+    cleanText(asset.year) || "Year unknown",
+    cleanText(asset.usage) || "Usage unknown",
+    cleanText(asset.condition) || "Condition unknown",
   ];
 
   return details.join(" • ");
+}
+
+function dealerAssetInitials(asset: AssetDiscoveryAsset): string {
+  const source = [cleanText(asset.brand), cleanText(asset.model)]
+    .filter((value) => value && !isUnknown(value))
+    .join(" ") || cleanText(asset.type) || "Asset";
+
+  const words = source.split(/\s+/).filter(Boolean);
+  const initials = words.length > 1
+    ? `${words[0]?.[0] ?? ""}${words[1]?.[0] ?? ""}`
+    : source.slice(0, 2);
+
+  return initials.toUpperCase();
 }
 
 function temporaryDenialExpired(asset: AssetDiscoveryAsset): boolean {
@@ -262,8 +272,8 @@ function temporaryDenialExpired(asset: AssetDiscoveryAsset): boolean {
 }
 
 function statusPillLabel(asset: AssetDiscoveryAsset): string {
-  if (asset.enquiryStatus === "approved") return "Unlocked";
-  if (asset.enquiryStatus === "pending") return "Pending request";
+  if (asset.enquiryStatus === "approved") return "Contact open";
+  if (asset.enquiryStatus === "pending") return "Enquiry pending";
   if (
     asset.enquiryStatus === "temporarily_denied" &&
     !temporaryDenialExpired(asset)
@@ -776,7 +786,7 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
         onClick={() => handleEnquire(asset)}
         disabled={isProcessing}
       >
-        {isProcessing ? "Sending..." : "Enquire"}
+        {isProcessing ? "Sending..." : "Request contact"}
       </button>
     );
   }
@@ -904,7 +914,9 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
   return (
     <section className={`${styles.shell} ${dealerAppMode ? dealerStyles.dealerDiscoverySurface : ""}`}>
       <div className={styles.heroPanel}>
-        <h1>{dealerAppMode ? "Discovery" : "ASSET DISCOVERY"}</h1>
+        {!dealerAppMode ? <span className={styles.heroEyebrow}>Dealer workspace</span> : null}
+        <h1>{dealerAppMode ? "Discovery" : "Asset Discovery"}</h1>
+        {!dealerAppMode ? <p>Find assets and request contact with owners in your service area.</p> : null}
       </div>
 
       <section
@@ -917,19 +929,19 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
             aria-label="Asset Discovery summary"
           >
           <article className={styles.summaryCard}>
-            <span>Available Assets</span>
+            <span>Available assets</span>
             <strong>{summary.totalAssets}</strong>
-            <small>Assets matching current filters.</small>
+            <small>Matching the current search and filters.</small>
           </article>
           <article className={styles.summaryCard}>
-            <span>Types</span>
+            <span>Asset types</span>
             <strong>{summary.typeCount}</strong>
-            <small>Asset types matching current filters.</small>
+            <small>Asset families represented in these results.</small>
           </article>
           <article className={styles.summaryCard}>
             <span>Provinces</span>
             <strong>{summary.provinceCount}</strong>
-            <small>Saved provinces represented.</small>
+            <small>Saved owner provinces represented.</small>
           </article>
           </div>
         ) : null}
@@ -999,6 +1011,11 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
                 className={`${styles.assetCard} ${styles.dealerAssetCard} ${assetCardStatusClass(asset)}`}
               >
                 <div className={`${styles.assetCardHeader} ${styles.dealerAssetCardHeader}`}>
+                  <div className={styles.assetVisual} aria-hidden="true">
+                    <strong>{dealerAssetInitials(asset)}</strong>
+                    <span>{cleanText(asset.type) || "Asset"}</span>
+                  </div>
+
                   <div className={styles.assetIdentity}>
                     <h2>{dealerAssetDisplayName(asset)}</h2>
                     <p className={styles.dealerAssetMeta}>{dealerAssetMeta(asset)}</p>
@@ -1101,7 +1118,7 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
                       <strong>Not supplied</strong>
                     )}
                   </div>
-                  <div>
+                  <div className={styles.contactLocationCard}>
                     <span>Location</span>
                     <strong>
                       {activeEnquiry.ownerContact.location || "Not supplied"}
