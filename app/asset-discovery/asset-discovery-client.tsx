@@ -1,6 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import {
+  WorkspaceSummaryGrid,
+  WorkspaceSummaryTile,
+  WorkspaceTitlePanel,
+  workspaceStyles,
+} from "../../components/WorkspacePrimitives";
 import styles from "./page.module.css";
 import dealerStyles from "../dealer/dealer.module.css";
 
@@ -899,43 +905,40 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
   }
 
   return (
-    <section className={`${styles.shell} ${dealerAppMode ? dealerStyles.dealerDiscoverySurface : ""}`}>
-      <div className={styles.heroPanel}>
-        <h1>{dealerAppMode ? "Discovery" : "Asset Discovery"}</h1>
-      </div>
+    <section className={`${workspaceStyles.shell} ${styles.shell} ${dealerAppMode ? dealerStyles.dealerDiscoverySurface : ""}`}>
+      <WorkspaceTitlePanel title={dealerAppMode ? "Discovery" : "Asset Discovery"} />
 
       <section
         className={styles.controlsPanel}
         aria-label="Asset Discovery controls"
       >
         {!dealerAppMode ? (
-          <div
-            className={styles.summaryGrid}
-            aria-label="Asset Discovery summary"
-          >
-          <article className={styles.summaryCard}>
-            <span>Available assets</span>
-            <strong>{summary.totalAssets}</strong>
-            <small>Matching the current search and filters.</small>
-          </article>
-          <article className={styles.summaryCard}>
-            <span>Asset types</span>
-            <strong>{summary.typeCount}</strong>
-            <small>Asset families represented in these results.</small>
-          </article>
-          <article className={styles.summaryCard}>
-            <span>Provinces</span>
-            <strong>{summary.provinceCount}</strong>
-            <small>Saved owner provinces represented.</small>
-          </article>
-          </div>
+          <WorkspaceSummaryGrid label="Asset Discovery summary">
+            <WorkspaceSummaryTile
+              label="Available assets"
+              value={summary.totalAssets}
+              helper="Matching the current search and filters."
+              tone="green"
+            />
+            <WorkspaceSummaryTile
+              label="Asset types"
+              value={summary.typeCount}
+              helper="Asset families represented in these results."
+              tone="blue"
+            />
+            <WorkspaceSummaryTile
+              label="Provinces"
+              value={summary.provinceCount}
+              helper="Saved owner provinces represented."
+            />
+          </WorkspaceSummaryGrid>
         ) : null}
 
         <section
-          className={styles.toolbar}
+          className={`${workspaceStyles.controlsRow} ${styles.toolbar}`}
           aria-label="Search and filter Asset Discovery"
         >
-          <label className={styles.searchBox}>
+          <label className={`${workspaceStyles.searchField} ${styles.searchBox}`}>
             <SearchIcon className={styles.searchIcon} />
             <input
               type="search"
@@ -993,7 +996,7 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
             return (
               <article
                 key={asset.id}
-                className={`${styles.assetCard} ${styles.dealerAssetCard} ${assetCardStatusClass(asset)}`}
+                className={`${workspaceStyles.card} ${styles.assetCard} ${styles.dealerAssetCard} ${assetCardStatusClass(asset)}`}
               >
                 <div className={`${styles.assetCardHeader} ${styles.dealerAssetCardHeader}`}>
                   <div className={styles.assetIdentity}>
@@ -1012,7 +1015,7 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
             );
           })
         ) : !error ? (
-          <div className={styles.emptyState}>
+          <div className={`${workspaceStyles.emptyState} ${styles.emptyState}`}>
             No assets match this search or filter.
           </div>
         ) : null}
@@ -1022,17 +1025,17 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
 
       {activeEnquiry ? (
         <div
-          className={styles.contactOverlay}
+          className={`${workspaceStyles.modalOverlay} ${styles.contactOverlay}`}
           onMouseDown={() => setActiveEnquiry(null)}
         >
           <section
-            className={styles.contactModal}
+            className={`${workspaceStyles.modal} ${styles.contactModal}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="dealer-discovery-contact-title"
             onMouseDown={(event) => event.stopPropagation()}
           >
-            <header className={styles.contactHeader}>
+            <header className={`${workspaceStyles.modalHeader} ${styles.contactHeader}`}>
               <div className={styles.contactHeaderCopy}>
                 <span className={styles.contactKicker}>Open contact</span>
                 <h2 id="dealer-discovery-contact-title">
@@ -1048,7 +1051,7 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
               </div>
               <button
                 type="button"
-                className={styles.contactCloseButton}
+                className={`${workspaceStyles.modalClose} ${styles.contactCloseButton}`}
                 onClick={() => setActiveEnquiry(null)}
                 aria-label="Close approved contact"
               >
@@ -1056,7 +1059,7 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
               </button>
             </header>
 
-            <div className={styles.contactBody}>
+            <div className={`${workspaceStyles.modalBody} ${styles.contactBody}`}>
               <div className={styles.contactAccessNote}>
                 <span>Owner approved your enquiry</span>
                 <p>
@@ -1113,10 +1116,10 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
               )}
             </div>
 
-            <div className={styles.contactActions}>
+            <div className={`${workspaceStyles.modalFooter} ${styles.contactActions}`}>
               {activeEnquiry.ownerContact?.phone ? (
                 <a
-                  className={styles.contactPrimaryAction}
+                  className={`${workspaceStyles.actionButton} ${workspaceStyles.actionGreen} ${styles.contactPrimaryAction}`}
                   href={`tel:${activeEnquiry.ownerContact.phone}`}
                 >
                   Call owner
@@ -1124,7 +1127,7 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
               ) : null}
               {activeEnquiry.ownerContact?.email ? (
                 <a
-                  className={styles.contactPrimaryAction}
+                  className={`${workspaceStyles.actionButton} ${workspaceStyles.actionGreen} ${styles.contactPrimaryAction}`}
                   href={`mailto:${activeEnquiry.ownerContact.email}`}
                 >
                   Email owner
@@ -1132,7 +1135,7 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
               ) : null}
               <button
                 type="button"
-                className={styles.contactSecondaryAction}
+                className={`${workspaceStyles.actionButton} ${workspaceStyles.actionNeutral} ${styles.contactSecondaryAction}`}
                 onClick={() => setActiveEnquiry(null)}
               >
                 Close
