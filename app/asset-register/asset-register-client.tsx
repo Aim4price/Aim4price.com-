@@ -12,9 +12,17 @@ import {
 } from '../../lib/report-print';
 import {
   GENERAL_ASSET_CATEGORIES,
+  PROPERTY_ASSET_SUBTYPES,
+  STOCK_ASSET_SUBTYPES,
   generalAssetCategoryLabel,
   normalizeGeneralAssetCategory,
+  normalizePropertyAssetSubtype,
+  normalizeStockAssetSubtype,
+  propertyAssetSubtypeLabel,
+  stockAssetSubtypeLabel,
   type GeneralAssetCategoryKey,
+  type PropertyAssetSubtypeKey,
+  type StockAssetSubtypeKey,
 } from '../../lib/general-asset-catalogue';
 import styles from './page.module.css';
 
@@ -100,6 +108,9 @@ type AssetStatusChoice = 'yes' | 'no' | 'unknown' | 'not_applicable';
 type InsuranceUseContext = 'business' | 'home' | 'mixed';
 type InsuranceMobility = 'premises' | 'portable' | 'moves_between_locations' | 'fixed';
 type InsuranceFactAnswer = 'yes' | 'no' | 'unknown';
+type PropertyInterest = 'owned_occupied' | 'owned_let' | 'leased_occupied' | 'tenant_improvement' | 'unknown';
+type StockValuationBasis = 'purchase_cost' | 'replacement_cost' | 'selling_price' | 'market_value' | 'other' | 'unknown';
+type StockMovement = 'one_location' | 'multiple_locations' | 'regular_transit' | 'seasonal_locations' | 'unknown';
 type AssetStatusSection = 'finance' | 'insurance' | 'license';
 type AssetStatusEditView = 'hub' | AssetStatusSection;
 type AssetStatusQuickOrigin = 'detail-card' | null;
@@ -680,6 +691,12 @@ type MarketplacePublishDraft = {
 type AssetDraft = {
   kind: AssetKind;
   generalAssetCategory: GeneralAssetCategoryKey | '';
+  propertyAssetSubtype: PropertyAssetSubtypeKey | '';
+  propertyInterest: PropertyInterest | '';
+  stockAssetSubtype: StockAssetSubtypeKey | '';
+  stockValuationBasis: StockValuationBasis | '';
+  stockMovement: StockMovement | '';
+  stockPeakValue: string;
   insuranceUseContext: InsuranceUseContext | '';
   insuranceMobility: InsuranceMobility | '';
   insuranceCriticalToOperations: InsuranceFactAnswer;
@@ -812,8 +829,8 @@ type StandardPageSize = (typeof PAGE_SIZE_OPTIONS)[number];
 type PageSize = StandardPageSize | 'all';
 const DEFAULT_PAGE_SIZE: PageSize = 6;
 const FALLBACK_ASSET_IMAGE = '/brand/Tractor.png';
-const PROPERTY_ASSET_LABEL = 'Property / Land / Building';
-const PROPERTY_ASSET_DESCRIPTION = 'Land, buildings, houses, sheds, stores and fixed improvements.';
+const PROPERTY_ASSET_LABEL = 'Property, land & buildings';
+const PROPERTY_ASSET_DESCRIPTION = 'Land, buildings, structures and fixed improvements.';
 const PROPERTY_ASSET_TITLE_PLACEHOLDER = 'Example: Farm land, machinery shed or workshop building';
 const PROPERTY_YEAR_LABEL = 'Year';
 const PROPERTY_SIZE_SPEC_KEYS = ['propertySize', 'property_size', 'size', 'sizeText', 'size_text'] as const;
@@ -830,6 +847,22 @@ const GENERAL_ASSET_INSURANCE_SPEC_KEYS = [
   'insurance_critical_to_operations',
   'insuranceTemperatureSensitiveStock',
   'insurance_temperature_sensitive_stock',
+  'propertyAssetSubtype',
+  'property_asset_subtype',
+  'propertyAssetSubtypeLabel',
+  'property_asset_subtype_label',
+  'propertyInterest',
+  'property_interest',
+  'stockAssetSubtype',
+  'stock_asset_subtype',
+  'stockAssetSubtypeLabel',
+  'stock_asset_subtype_label',
+  'stockValuationBasis',
+  'stock_valuation_basis',
+  'stockMovement',
+  'stock_movement',
+  'stockPeakValueExVat',
+  'stock_peak_value_ex_vat',
 ] as const;
 const MANUAL_ASSET_TYPE_OPTIONS: Array<{
   value: Extract<AssetKind, 'vehicle' | 'tools' | 'property' | 'equipment' | 'manual' | 'stock'>;
@@ -864,13 +897,13 @@ const MANUAL_ASSET_TYPE_OPTIONS: Array<{
   {
     value: 'stock',
     label: 'Stock',
-    description: 'Inventory, goods, livestock and other stock held by the business.',
+    description: 'Inventory, goods, produce, livestock and other stock held by the business.',
     titlePlaceholder: 'Example: Parts inventory, fertiliser stock or livestock',
   },
   {
     value: 'manual',
-    label: 'Furniture, appliances & electronics',
-    description: 'Furniture, fridges, laptops, electronics, power equipment and other everyday assets.',
+    label: 'Contents & electronics',
+    description: 'Furniture, appliances, computers, electronics and other everyday contents.',
     titlePlaceholder: 'Example: Samsung fridge, office desks or MacBook Pro',
   },
 ];
@@ -880,6 +913,18 @@ const GENERAL_ASSET_CATEGORY_OPTIONS: Array<{
   label: string;
   description: string;
 }> = GENERAL_ASSET_CATEGORIES.map((category) => ({ ...category }));
+
+const PROPERTY_ASSET_SUBTYPE_OPTIONS: Array<{
+  value: PropertyAssetSubtypeKey;
+  label: string;
+  description: string;
+}> = PROPERTY_ASSET_SUBTYPES.map((category) => ({ ...category }));
+
+const STOCK_ASSET_SUBTYPE_OPTIONS: Array<{
+  value: StockAssetSubtypeKey;
+  label: string;
+  description: string;
+}> = STOCK_ASSET_SUBTYPES.map((category) => ({ ...category }));
 
 const INSURANCE_USE_CONTEXT_OPTIONS: Array<{ value: InsuranceUseContext; label: string; description: string }> = [
   { value: 'business', label: 'Business use', description: 'Used for work, trade, farming or another business activity.' },
@@ -892,6 +937,31 @@ const INSURANCE_MOBILITY_OPTIONS: Array<{ value: InsuranceMobility; label: strin
   { value: 'portable', label: 'Portable / carried around', description: 'Regularly carried by a person, such as a laptop, phone or camera.' },
   { value: 'moves_between_locations', label: 'Moves between sites', description: 'Regularly transported between farms, branches, jobs or client sites.' },
   { value: 'fixed', label: 'Fixed or built in', description: 'Attached to the building or installed as a permanent fixture.' },
+];
+
+const PROPERTY_INTEREST_OPTIONS: Array<{ value: PropertyInterest; label: string; description: string }> = [
+  { value: 'owned_occupied', label: 'Owned and occupied', description: 'The owner owns and uses the property.' },
+  { value: 'owned_let', label: 'Owned and let to others', description: 'The owner owns the property and rents or lets it to another party.' },
+  { value: 'leased_occupied', label: 'Leased or rented', description: 'The property is occupied under a lease or rental arrangement.' },
+  { value: 'tenant_improvement', label: 'Tenant improvement only', description: 'Only alterations or improvements paid for by the tenant are being recorded.' },
+  { value: 'unknown', label: 'Not sure', description: 'Leave the property interest for later confirmation.' },
+];
+
+const STOCK_VALUATION_BASIS_OPTIONS: Array<{ value: StockValuationBasis; label: string; description: string }> = [
+  { value: 'purchase_cost', label: 'Purchase or landed cost', description: 'The amount paid to buy and bring the stock to its current location.' },
+  { value: 'replacement_cost', label: 'Replacement cost', description: 'The current cost to replace the stock with similar goods.' },
+  { value: 'selling_price', label: 'Selling price', description: 'The expected selling value of the stock.' },
+  { value: 'market_value', label: 'Market value', description: 'The supported current market value, including livestock or commodities.' },
+  { value: 'other', label: 'Another basis', description: 'A different value basis applies to this stock group.' },
+  { value: 'unknown', label: 'Not sure', description: 'Record the value now and confirm the basis later.' },
+];
+
+const STOCK_MOVEMENT_OPTIONS: Array<{ value: StockMovement; label: string; description: string }> = [
+  { value: 'one_location', label: 'Usually at one location', description: 'The stock normally remains at one premises, farm or storage site.' },
+  { value: 'multiple_locations', label: 'Held at multiple locations', description: 'The total is spread across more than one site.' },
+  { value: 'regular_transit', label: 'Regularly transported', description: 'The stock routinely moves between suppliers, sites or customers.' },
+  { value: 'seasonal_locations', label: 'Moves seasonally', description: 'The normal storage location changes during the year or production cycle.' },
+  { value: 'unknown', label: 'Not sure', description: 'Leave the movement pattern for later confirmation.' },
 ];
 
 const INSURANCE_CRITICALITY_OPTIONS: Array<{ value: InsuranceFactAnswer; label: string; description: string }> = [
@@ -1248,6 +1318,12 @@ const QUOTE_TONE_STYLES: Record<PartnerType, QuoteToneStyle> = {
 const initialAssetDraft: AssetDraft = {
   kind: 'equipment',
   generalAssetCategory: '',
+  propertyAssetSubtype: '',
+  propertyInterest: '',
+  stockAssetSubtype: '',
+  stockValuationBasis: '',
+  stockMovement: '',
+  stockPeakValue: '',
   insuranceUseContext: '',
   insuranceMobility: '',
   insuranceCriticalToOperations: 'unknown',
@@ -2258,7 +2334,7 @@ function kindLabel(value: AssetKind): string {
     {
       tractor: 'Tractor',
       equipment: 'Equipment',
-      manual: 'Furniture, appliances & electronics',
+      manual: 'Contents & electronics',
       property: PROPERTY_ASSET_LABEL,
       vehicle: 'Vehicle',
       tools: 'Tools',
@@ -2286,6 +2362,44 @@ function normalizeInsuranceMobility(value: unknown): InsuranceMobility | '' {
 function normalizeInsuranceFactAnswer(value: unknown): InsuranceFactAnswer {
   const normalized = String(value ?? '').trim().toLowerCase();
   return normalized === 'yes' || normalized === 'no' ? normalized : 'unknown';
+}
+
+function normalizePropertyInterest(value: unknown): PropertyInterest | '' {
+  const normalized = String(value ?? '').trim().toLowerCase();
+  return normalized === 'owned_occupied' ||
+    normalized === 'owned_let' ||
+    normalized === 'leased_occupied' ||
+    normalized === 'tenant_improvement' ||
+    normalized === 'unknown'
+    ? normalized
+    : '';
+}
+
+function normalizeStockValuationBasis(value: unknown): StockValuationBasis | '' {
+  const normalized = String(value ?? '').trim().toLowerCase();
+  return normalized === 'purchase_cost' ||
+    normalized === 'replacement_cost' ||
+    normalized === 'selling_price' ||
+    normalized === 'market_value' ||
+    normalized === 'other' ||
+    normalized === 'unknown'
+    ? normalized
+    : '';
+}
+
+function normalizeStockMovement(value: unknown): StockMovement | '' {
+  const normalized = String(value ?? '').trim().toLowerCase();
+  return normalized === 'one_location' ||
+    normalized === 'multiple_locations' ||
+    normalized === 'regular_transit' ||
+    normalized === 'seasonal_locations' ||
+    normalized === 'unknown'
+    ? normalized
+    : '';
+}
+
+function assetKindSupportsLicensing(kind: AssetKind): boolean {
+  return kind === 'tractor' || kind === 'equipment' || kind === 'vehicle';
 }
 
 function normalizeUsageMetric(value: unknown, kind?: AssetKind): UsageMetric {
@@ -2927,10 +3041,10 @@ function statusOptionalText(value: string): string {
   return String(value ?? '').replace(/\s+/g, ' ').trim();
 }
 
-function buildStatusSpecsFragment(draft: AssetStatusDraft, isPropertyAsset: boolean): Record<string, unknown> {
+function buildStatusSpecsFragment(draft: AssetStatusDraft, licenseApplicable: boolean): Record<string, unknown> {
   const financeStatus = draft.financeStatus;
   const insuranceStatus = draft.insuranceStatus;
-  const licenseStatus: AssetStatusChoice = isPropertyAsset ? 'not_applicable' : draft.licenseStatus;
+  const licenseStatus: AssetStatusChoice = licenseApplicable ? draft.licenseStatus : 'not_applicable';
   const insuredValueExVat = insuranceStatus === 'yes' ? optionalMoneyForStatusPayload(draft.insuredValueExVat) : null;
   const licenseRegistrationNumber = licenseStatus === 'yes' ? normalizeLicenseRegistrationText(draft.licenseRegistrationNumber) : '';
   const financeCurrentOutstandingExVat = financeStatus === 'yes' ? optionalMoneyForStatusPayload(draft.financeCurrentOutstandingExVat) : null;
@@ -3980,6 +4094,14 @@ function buildDraftFromAsset(asset: RegisterAsset): AssetDraft {
   return {
     kind: normalizeDraftKind(asset.kind),
     generalAssetCategory: normalizeGeneralAssetCategory(specs.generalAssetCategory ?? specs.general_asset_category),
+    propertyAssetSubtype: normalizePropertyAssetSubtype(specs.propertyAssetSubtype ?? specs.property_asset_subtype),
+    propertyInterest: normalizePropertyInterest(specs.propertyInterest ?? specs.property_interest),
+    stockAssetSubtype: normalizeStockAssetSubtype(specs.stockAssetSubtype ?? specs.stock_asset_subtype),
+    stockValuationBasis: normalizeStockValuationBasis(specs.stockValuationBasis ?? specs.stock_valuation_basis),
+    stockMovement: normalizeStockMovement(specs.stockMovement ?? specs.stock_movement),
+    stockPeakValue: formatRegisterValueInput(
+      readNumberFromSpecs(specs, ['stockPeakValueExVat', 'stock_peak_value_ex_vat']) ?? '',
+    ),
     insuranceUseContext: normalizeInsuranceUseContext(specs.insuranceUseContext ?? specs.insurance_use_context),
     insuranceMobility: normalizeInsuranceMobility(specs.insuranceMobility ?? specs.insurance_mobility),
     insuranceCriticalToOperations: normalizeInsuranceFactAnswer(
@@ -4102,15 +4224,19 @@ function assetSectorLabel(asset: RegisterAsset): string {
 }
 
 function assetFamilyLabel(asset: RegisterAsset): string {
+  const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
   if (asset.equipmentFamilyLabel) return asset.equipmentFamilyLabel;
   if (isTractorAsset(asset)) return 'Tractor';
   if (asset.kind === 'equipment') return 'Equipment';
-  if (asset.kind === 'property') return PROPERTY_ASSET_LABEL;
+  if (asset.kind === 'property') {
+    return propertyAssetSubtypeLabel(specs.propertyAssetSubtype ?? specs.property_asset_subtype) || PROPERTY_ASSET_LABEL;
+  }
   if (asset.kind === 'vehicle') return 'Vehicle';
   if (asset.kind === 'tools') return 'Tools';
-  if (asset.kind === 'stock') return 'Stock';
+  if (asset.kind === 'stock') {
+    return stockAssetSubtypeLabel(specs.stockAssetSubtype ?? specs.stock_asset_subtype) || 'Stock';
+  }
   if (asset.kind === 'manual') {
-    const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
     return generalAssetCategoryLabel(specs.generalAssetCategory ?? specs.general_asset_category) || 'Everyday asset';
   }
   if (isValuedEquipmentAsset(asset)) return 'Valued equipment';
@@ -6916,8 +7042,8 @@ export default function AssetRegisterClient() {
   }, [assetFormKind, showPercentUsageField]);
 
   const showConditionField = useMemo(() => {
-    return true;
-  }, [assetFormKind]);
+    return assetFormKind !== 'stock' && !(assetFormKind === 'property' && assetDraft.propertyAssetSubtype === 'land');
+  }, [assetDraft.propertyAssetSubtype, assetFormKind]);
 
   const showLifeWorkedPercentField = useMemo(() => {
     if (editingAsset) return false;
@@ -7598,26 +7724,37 @@ export default function AssetRegisterClient() {
   }
 
   function selectManualAssetKind(nextKind: AssetKind, shouldAdvance = false) {
+    const supportsLicensing = assetKindSupportsLicensing(nextKind);
     setHasManualAssetKindSelection(true);
 
     setAssetDraft((current) => ({
       ...current,
       kind: nextKind,
       generalAssetCategory: nextKind === 'manual' ? current.generalAssetCategory : '',
-      insuranceUseContext: nextKind === 'manual' ? current.insuranceUseContext : '',
+      propertyAssetSubtype: nextKind === 'property' ? current.propertyAssetSubtype : '',
+      propertyInterest: nextKind === 'property' ? current.propertyInterest : '',
+      stockAssetSubtype: nextKind === 'stock' ? current.stockAssetSubtype : '',
+      stockValuationBasis: nextKind === 'stock' ? current.stockValuationBasis : '',
+      stockMovement: nextKind === 'stock' ? current.stockMovement : '',
+      stockPeakValue: nextKind === 'stock' ? current.stockPeakValue : '',
+      replacementPrice: nextKind === 'stock' ? '' : current.replacementPrice,
+      yearModel: nextKind === 'stock' ? '' : current.yearModel,
+      condition: nextKind === 'stock' ? '' : current.condition,
+      insuranceUseContext: nextKind === 'manual' || nextKind === 'property' ? current.insuranceUseContext : '',
       insuranceMobility: nextKind === 'manual' ? current.insuranceMobility : '',
       insuranceCriticalToOperations: nextKind === 'manual' ? current.insuranceCriticalToOperations : 'unknown',
-      insuranceTemperatureSensitiveStock: nextKind === 'manual' ? current.insuranceTemperatureSensitiveStock : 'unknown',
+      insuranceTemperatureSensitiveStock:
+        nextKind === 'manual' || nextKind === 'stock' ? current.insuranceTemperatureSensitiveStock : 'unknown',
       hours: nextKind === 'property' || nextKind === 'tools' || nextKind === 'manual' || nextKind === 'stock' ? '' : current.hours,
       usageMetric: nextKind === 'vehicle' ? normalizeUsageMetric(current.usageMetric, 'vehicle') : 'hours',
       lifeWorkedPercent: nextKind === 'property' || nextKind === 'vehicle' || nextKind === 'manual' || nextKind === 'stock' ? '' : current.lifeWorkedPercent,
       propertySize: nextKind === 'property' ? current.propertySize : '',
-      licenseStatus: nextKind === 'property' ? 'not_applicable' : current.licenseStatus,
-      isLicensed: nextKind === 'property' ? false : current.isLicensed,
-      licenseRegistrationNumber: nextKind === 'property' ? '' : current.licenseRegistrationNumber,
+      licenseStatus: supportsLicensing ? current.licenseStatus : 'not_applicable',
+      isLicensed: supportsLicensing ? current.isLicensed : false,
+      licenseRegistrationNumber: supportsLicensing ? current.licenseRegistrationNumber : '',
     }));
 
-    if (nextKind === 'property') {
+    if (!supportsLicensing) {
       setAssetStatusDraft((current) => ({
         ...current,
         licenseStatus: 'not_applicable',
@@ -7639,7 +7776,8 @@ export default function AssetRegisterClient() {
     }
 
     const nextKind = assetSettingsTypeDraft;
-    const nextKindIsProperty = nextKind === 'property';
+    const nextKindHasNoItemIdentity = nextKind === 'property' || nextKind === 'stock';
+    const nextKindSupportsLicensing = assetKindSupportsLicensing(nextKind);
     const replacementPrice = readAssetReplacementPriceExVat(editingAsset);
 
     if (!replacementPrice || replacementPrice <= 0) {
@@ -7666,22 +7804,23 @@ export default function AssetRegisterClient() {
           replacementPriceExVat: replacementPrice,
           insuredValueExVat: readAssetInsuredValueExVat(editingAsset),
           note: getManualAssetNote(editingAsset.note),
-          serialNumber: nextKindIsProperty ? '' : editingAsset.serialNumber,
-          brandName: nextKindIsProperty || deriveAssetReportBrandName(editingAsset) === '—' ? '' : deriveAssetReportBrandName(editingAsset),
-          modelName: nextKindIsProperty || deriveAssetReportModelName(editingAsset) === '—' ? '' : deriveAssetReportModelName(editingAsset),
+          serialNumber: nextKindHasNoItemIdentity ? '' : editingAsset.serialNumber,
+          brandName: nextKindHasNoItemIdentity || deriveAssetReportBrandName(editingAsset) === '—' ? '' : deriveAssetReportBrandName(editingAsset),
+          modelName: nextKindHasNoItemIdentity || deriveAssetReportModelName(editingAsset) === '—' ? '' : deriveAssetReportModelName(editingAsset),
           isFinanced: readFinanceStatusChoice(editingAsset) === 'yes',
           isInsured: readInsuranceStatusChoice(editingAsset) === 'yes',
-          isLicensed: nextKindIsProperty ? false : readLicenseStatusChoice(editingAsset) === 'yes',
-          licenseRegistrationNumber: nextKindIsProperty || readLicenseStatusChoice(editingAsset) !== 'yes' ? '' : readLicenseRegistrationNumber(editingAsset),
+          isLicensed: nextKindSupportsLicensing ? readLicenseStatusChoice(editingAsset) === 'yes' : false,
+          licenseRegistrationNumber:
+            !nextKindSupportsLicensing || readLicenseStatusChoice(editingAsset) !== 'yes' ? '' : readLicenseRegistrationNumber(editingAsset),
           financeNote: editingAsset.financeNote ?? null,
           photos: normalizePhotos(editingAsset.photos),
           documents: assetDocuments(editingAsset),
-          yearModel: editingAsset.yearModel ?? null,
+          yearModel: nextKind === 'stock' ? null : editingAsset.yearModel ?? null,
           hours: usage.hours,
           usageMetric: usage.usageMetric,
           lifeWorkedPercent: usage.lifeWorkedPercent,
           specsJson: nextSpecsJson,
-          condition: usage.condition,
+          condition: nextKind === 'stock' ? null : usage.condition,
         }),
       });
       const data = (await response.json()) as AssetRegisterApiResponse;
@@ -7804,9 +7943,9 @@ export default function AssetRegisterClient() {
   }
 
   function applyStatusDraftToAssetDraft(current: AssetDraft, nextStatusDraft: AssetStatusDraft, nextKind: AssetKind): AssetDraft {
-    const propertyAsset = nextKind === 'property';
+    const licenseApplicable = assetKindSupportsLicensing(nextKind);
     const insuranceStatus = nextStatusDraft.insuranceStatus;
-    const licenseStatus: AssetStatusChoice = propertyAsset ? 'not_applicable' : nextStatusDraft.licenseStatus;
+    const licenseStatus: AssetStatusChoice = licenseApplicable ? nextStatusDraft.licenseStatus : 'not_applicable';
 
     return {
       ...current,
@@ -7876,12 +8015,14 @@ export default function AssetRegisterClient() {
   }
 
   function setAssetLicenseStatus(nextStatus: AssetStatusChoice) {
+    const licenseApplicable = assetKindSupportsLicensing(assetFormKind);
     setAssetStatusDraftWithSync((current) => ({
       ...current,
-      licenseStatus: assetFormKind === 'property' ? 'not_applicable' : nextStatus,
-      licenseRegistrationNumber: nextStatus === 'yes' ? normalizeLicenseRegistrationText(current.licenseRegistrationNumber) : '',
-      licenseRenewalDate: nextStatus === 'yes' ? current.licenseRenewalDate : '',
-      licenseNote: nextStatus === 'yes' ? current.licenseNote : '',
+      licenseStatus: licenseApplicable ? nextStatus : 'not_applicable',
+      licenseRegistrationNumber:
+        licenseApplicable && nextStatus === 'yes' ? normalizeLicenseRegistrationText(current.licenseRegistrationNumber) : '',
+      licenseRenewalDate: licenseApplicable && nextStatus === 'yes' ? current.licenseRenewalDate : '',
+      licenseNote: licenseApplicable && nextStatus === 'yes' ? current.licenseNote : '',
     }));
   }
 
@@ -7893,7 +8034,7 @@ export default function AssetRegisterClient() {
   }
 
   function openAssetStatusEditView(section: AssetStatusSection) {
-    if (section === 'license' && assetFormKind === 'property') return;
+    if (section === 'license' && !assetKindSupportsLicensing(assetFormKind)) return;
     setAssetStatusEditView(section);
     setAssetStatusAdvancedOpen(false);
     setAssetStatusError('');
@@ -7901,7 +8042,7 @@ export default function AssetRegisterClient() {
 
   function openQuickAssetStatusEditor(asset: RegisterAsset, section: AssetStatusSection) {
     if (!canUseOwnerOnlyAssetActions) return;
-    if (section === 'license' && asset.kind === 'property') return;
+    if (section === 'license' && !assetKindSupportsLicensing(asset.kind)) return;
 
     pendingPhotoFilesRef.current.forEach((entry) => revokePhotoPreviewUrl(entry.previewUrl));
     pendingPhotoFilesRef.current = [];
@@ -7986,8 +8127,8 @@ export default function AssetRegisterClient() {
   }
 
   function buildAssetStatusPayload(section: AssetStatusSection, draft: AssetStatusDraft, asset: RegisterAsset) {
-    const isPropertyAsset = asset.kind === 'property';
-    const statusSpecsJson = buildStatusSpecsFragment(draft, isPropertyAsset);
+    const licenseApplicable = assetKindSupportsLicensing(asset.kind);
+    const statusSpecsJson = buildStatusSpecsFragment(draft, licenseApplicable);
 
     if (section === 'finance') {
       return {
@@ -8028,10 +8169,11 @@ export default function AssetRegisterClient() {
     return {
       assetId: asset.id,
       section,
-      licenseStatus: isPropertyAsset ? 'not_applicable' : draft.licenseStatus,
-      licenseRegistrationNumber: draft.licenseStatus === 'yes' && !isPropertyAsset ? normalizeLicenseRegistrationText(draft.licenseRegistrationNumber) : '',
-      licenseRenewalDate: draft.licenseStatus === 'yes' && !isPropertyAsset ? statusOptionalText(draft.licenseRenewalDate) : '',
-      licenseNote: draft.licenseStatus === 'yes' && !isPropertyAsset ? statusOptionalText(draft.licenseNote) : '',
+      licenseStatus: licenseApplicable ? draft.licenseStatus : 'not_applicable',
+      licenseRegistrationNumber:
+        licenseApplicable && draft.licenseStatus === 'yes' ? normalizeLicenseRegistrationText(draft.licenseRegistrationNumber) : '',
+      licenseRenewalDate: licenseApplicable && draft.licenseStatus === 'yes' ? statusOptionalText(draft.licenseRenewalDate) : '',
+      licenseNote: licenseApplicable && draft.licenseStatus === 'yes' ? statusOptionalText(draft.licenseNote) : '',
       specsJson: statusSpecsJson,
     };
   }
@@ -8042,7 +8184,7 @@ export default function AssetRegisterClient() {
     const normalizedStatusDraft: AssetStatusDraft = {
       ...assetStatusDraft,
       licenseRegistrationNumber: normalizeLicenseRegistrationText(assetStatusDraft.licenseRegistrationNumber),
-      licenseStatus: assetFormKind === 'property' ? 'not_applicable' : assetStatusDraft.licenseStatus,
+      licenseStatus: assetKindSupportsLicensing(assetFormKind) ? assetStatusDraft.licenseStatus : 'not_applicable',
     };
 
     setAssetStatusDraft(normalizedStatusDraft);
@@ -8105,7 +8247,11 @@ export default function AssetRegisterClient() {
 
   function validateAssetDetailsDraft(showFeedback = true): boolean {
     const value = parseRegisterValueInput(assetDraft.value);
-    const replacementPrice = parseRegisterValueInput(assetDraft.replacementPrice);
+    const isLandProperty = assetFormKind === 'property' && assetDraft.propertyAssetSubtype === 'land';
+    const replacementPriceRequired = assetFormKind !== 'stock' && !isLandProperty;
+    const replacementPrice = replacementPriceRequired ? parseRegisterValueInput(assetDraft.replacementPrice) : value;
+    const hasStockPeakValue = assetFormKind === 'stock' && assetDraft.stockPeakValue.trim() !== '';
+    const stockPeakValue = hasStockPeakValue ? parseRegisterValueInput(assetDraft.stockPeakValue) : null;
     const hasYearModel = assetDraft.yearModel.trim() !== '';
     const yearModel = hasYearModel ? Number(assetDraft.yearModel) : null;
     const hasHours = showUsageHoursField && assetDraft.hours.trim() !== '';
@@ -8129,13 +8275,57 @@ export default function AssetRegisterClient() {
       return false;
     }
 
+    const hasStartedPropertyClassification = Boolean(
+      assetDraft.propertyAssetSubtype || assetDraft.propertyInterest || assetDraft.insuranceUseContext,
+    );
+    if (
+      assetFormKind === 'property' &&
+      (!editingAsset || hasStartedPropertyClassification) &&
+      (!assetDraft.propertyAssetSubtype || !assetDraft.insuranceUseContext || !assetDraft.propertyInterest)
+    ) {
+      if (showFeedback) {
+        setNotice({
+          tone: 'error',
+          message: 'Choose the property type, how it is used and your interest in the property.',
+        });
+      }
+      return false;
+    }
+
+    const hasStartedStockClassification = Boolean(
+      assetDraft.stockAssetSubtype || assetDraft.stockValuationBasis || assetDraft.stockMovement,
+    );
+    if (
+      assetFormKind === 'stock' &&
+      (!editingAsset || hasStartedStockClassification) &&
+      (!assetDraft.stockAssetSubtype || !assetDraft.stockValuationBasis || !assetDraft.stockMovement)
+    ) {
+      if (showFeedback) {
+        setNotice({
+          tone: 'error',
+          message: 'Choose the stock type, valuation basis and normal movement pattern.',
+        });
+      }
+      return false;
+    }
+
     if (!assetDraft.title.trim() || value <= 0) {
       if (showFeedback) setNotice({ tone: 'error', message: 'Asset title and current value are required before moving to the next step.' });
       return false;
     }
 
-    if (!replacementPrice || replacementPrice <= 0) {
+    if (replacementPriceRequired && (!replacementPrice || replacementPrice <= 0)) {
       if (showFeedback) setNotice({ tone: 'error', message: 'Replacement price is required and must be greater than zero.' });
+      return false;
+    }
+
+    if (hasStockPeakValue && (!stockPeakValue || stockPeakValue <= 0)) {
+      if (showFeedback) setNotice({ tone: 'error', message: 'Peak stock value must be greater than zero when entered.' });
+      return false;
+    }
+
+    if (stockPeakValue !== null && stockPeakValue < value) {
+      if (showFeedback) setNotice({ tone: 'error', message: 'Peak stock value cannot be lower than the current stock value.' });
       return false;
     }
 
@@ -8927,7 +9117,13 @@ export default function AssetRegisterClient() {
     }
 
     const value = parseRegisterValueInput(assetDraft.value);
-    const replacementPrice = parseRegisterValueInput(assetDraft.replacementPrice);
+    const isPropertyAsset = assetFormKind === 'property';
+    const isStockAsset = assetFormKind === 'stock';
+    const isLandProperty = isPropertyAsset && assetDraft.propertyAssetSubtype === 'land';
+    const replacementPriceRequired = !isStockAsset && !isLandProperty;
+    const replacementPrice = replacementPriceRequired ? parseRegisterValueInput(assetDraft.replacementPrice) : null;
+    const hasStockPeakValue = isStockAsset && assetDraft.stockPeakValue.trim() !== '';
+    const stockPeakValue = hasStockPeakValue ? parseRegisterValueInput(assetDraft.stockPeakValue) : null;
     const hasYearModel = assetDraft.yearModel.trim() !== '';
     const yearModel = hasYearModel ? Number(assetDraft.yearModel) : null;
     const hasHours = showUsageHoursField && assetDraft.hours.trim() !== '';
@@ -8938,18 +9134,18 @@ export default function AssetRegisterClient() {
     const insuredValueExVat = hasInsuredValue ? parseRegisterValueInput(assetDraft.insuredValue) : null;
     const usageErrorLabel = assetDraft.usageMetric === 'km' ? 'Kilometres' : 'Machine hours';
     const title = assetDraft.title.trim();
-    const isPropertyAsset = assetFormKind === 'property';
-    const brandName = isPropertyAsset ? '' : assetDraft.brandName.trim();
-    const modelName = isPropertyAsset ? '' : assetDraft.modelName.trim();
+    const brandName = isPropertyAsset || isStockAsset ? '' : assetDraft.brandName.trim();
+    const modelName = isPropertyAsset || isStockAsset ? '' : assetDraft.modelName.trim();
     const propertySize = isPropertyAsset ? assetDraft.propertySize.trim().replace(/\s+/g, ' ') : '';
-    const nextLicenseStatus: AssetStatusChoice = isPropertyAsset ? 'not_applicable' : assetStatusDraft.licenseStatus;
+    const licenseApplicable = assetKindSupportsLicensing(assetFormKind);
+    const nextLicenseStatus: AssetStatusChoice = licenseApplicable ? assetStatusDraft.licenseStatus : 'not_applicable';
     const nextInsuranceStatus: AssetStatusChoice = assetStatusDraft.insuranceStatus;
     const insuredValueForSave = nextInsuranceStatus === 'yes' && insuredValueExVat !== null && insuredValueExVat > 0 ? insuredValueExVat : null;
 
     if (
       !validateAssetStatusDraft('finance', showFeedback) ||
       !validateAssetStatusDraft('insurance', showFeedback) ||
-      (!isPropertyAsset && !validateAssetStatusDraft('license', showFeedback))
+      (licenseApplicable && !validateAssetStatusDraft('license', showFeedback))
     ) {
       if (showFeedback) {
         setManualAssetStep(3);
@@ -8963,8 +9159,18 @@ export default function AssetRegisterClient() {
       return false;
     }
 
-    if (!replacementPrice || replacementPrice <= 0) {
+    if (replacementPriceRequired && (!replacementPrice || replacementPrice <= 0)) {
       if (showFeedback) setNotice({ tone: 'error', message: 'Replacement price is required and must be greater than zero.' });
+      return false;
+    }
+
+    if (hasStockPeakValue && (!stockPeakValue || stockPeakValue <= 0)) {
+      if (showFeedback) setNotice({ tone: 'error', message: 'Peak stock value must be greater than zero when entered.' });
+      return false;
+    }
+
+    if (stockPeakValue !== null && stockPeakValue < value) {
+      if (showFeedback) setNotice({ tone: 'error', message: 'Peak stock value cannot be lower than the current stock value.' });
       return false;
     }
 
@@ -9028,19 +9234,28 @@ export default function AssetRegisterClient() {
       ? normalizeLicenseRegistrationText(assetStatusDraft.licenseRegistrationNumber)
       : '';
     const specsJson: Record<string, unknown> = {
-      ...buildStatusSpecsFragment(assetStatusDraft, isPropertyAsset),
-      replacementPriceExVat: replacementPrice,
-      replacement_price_ex_vat: replacementPrice,
-      replacementPrice: replacementPrice,
-      replacement_price: replacementPrice,
-      replacementPriceUsedExVat: replacementPrice,
-      replacement_price_used_ex_vat: replacementPrice,
-      userReplacementPriceExVat: replacementPrice,
-      user_replacement_price_ex_vat: replacementPrice,
-      officialReplacementPriceExVat: replacementPrice,
-      official_replacement_price_ex_vat: replacementPrice,
-      replacementPriceBasis: 'user',
-      replacement_price_basis: 'user',
+      ...buildStatusSpecsFragment(assetStatusDraft, licenseApplicable),
+      ...(replacementPrice !== null
+        ? {
+            replacementPriceExVat: replacementPrice,
+            replacement_price_ex_vat: replacementPrice,
+            replacementPrice: replacementPrice,
+            replacement_price: replacementPrice,
+            replacementPriceUsedExVat: replacementPrice,
+            replacement_price_used_ex_vat: replacementPrice,
+            userReplacementPriceExVat: replacementPrice,
+            user_replacement_price_ex_vat: replacementPrice,
+            officialReplacementPriceExVat: replacementPrice,
+            official_replacement_price_ex_vat: replacementPrice,
+            replacementPriceBasis: 'user',
+            replacement_price_basis: 'user',
+          }
+        : {
+            replacementPriceNotApplicable: true,
+            replacement_price_not_applicable: true,
+            replacementPriceBasis: 'not_applicable',
+            replacement_price_basis: 'not_applicable',
+          }),
     };
 
     if (assetFormKind === 'manual' && assetDraft.generalAssetCategory) {
@@ -9074,8 +9289,35 @@ export default function AssetRegisterClient() {
     }
 
     if (isPropertyAsset) {
+      const propertySubtypeLabel = propertyAssetSubtypeLabel(assetDraft.propertyAssetSubtype);
+      specsJson.propertyAssetSubtype = assetDraft.propertyAssetSubtype;
+      specsJson.property_asset_subtype = assetDraft.propertyAssetSubtype;
+      specsJson.propertyAssetSubtypeLabel = propertySubtypeLabel;
+      specsJson.property_asset_subtype_label = propertySubtypeLabel;
+      specsJson.propertyInterest = assetDraft.propertyInterest;
+      specsJson.property_interest = assetDraft.propertyInterest;
+      specsJson.insuranceUseContext = assetDraft.insuranceUseContext;
+      specsJson.insurance_use_context = assetDraft.insuranceUseContext;
       specsJson.propertySize = propertySize;
       specsJson.property_size = propertySize;
+    }
+
+    if (isStockAsset) {
+      const stockSubtypeLabel = stockAssetSubtypeLabel(assetDraft.stockAssetSubtype);
+      specsJson.stockAssetSubtype = assetDraft.stockAssetSubtype;
+      specsJson.stock_asset_subtype = assetDraft.stockAssetSubtype;
+      specsJson.stockAssetSubtypeLabel = stockSubtypeLabel;
+      specsJson.stock_asset_subtype_label = stockSubtypeLabel;
+      specsJson.stockValuationBasis = assetDraft.stockValuationBasis;
+      specsJson.stock_valuation_basis = assetDraft.stockValuationBasis;
+      specsJson.stockMovement = assetDraft.stockMovement;
+      specsJson.stock_movement = assetDraft.stockMovement;
+      specsJson.insuranceTemperatureSensitiveStock = assetDraft.insuranceTemperatureSensitiveStock;
+      specsJson.insurance_temperature_sensitive_stock = assetDraft.insuranceTemperatureSensitiveStock;
+      if (stockPeakValue !== null) {
+        specsJson.stockPeakValueExVat = stockPeakValue;
+        specsJson.stock_peak_value_ex_vat = stockPeakValue;
+      }
     }
 
     if (insuredValueForSave !== null) {
@@ -9132,7 +9374,7 @@ export default function AssetRegisterClient() {
         replacementPriceExVat: replacementPrice,
         insuredValueExVat: insuredValueForSave,
         note: assetDraft.note.trim(),
-        serialNumber: isPropertyAsset ? '' : assetDraft.serialNumber.trim(),
+        serialNumber: isPropertyAsset || isStockAsset ? '' : assetDraft.serialNumber.trim(),
         brandName,
         modelName,
         isFinanced: assetStatusDraft.financeStatus === 'yes',
@@ -9151,10 +9393,11 @@ export default function AssetRegisterClient() {
       };
 
       const previousReplacementPriceExVat = editingAsset ? readAssetReplacementPriceExVat(editingAsset) : null;
-      const nextReplacementPriceExVat = Math.round(replacementPrice);
+      const nextReplacementPriceExVat = replacementPrice === null ? null : Math.round(replacementPrice);
       const shouldPromptReplacementPriceRevalue = Boolean(
         editingAssetId !== null &&
         isSavedAim4priceAsset(editingAsset) &&
+        nextReplacementPriceExVat !== null &&
         previousReplacementPriceExVat !== nextReplacementPriceExVat,
       );
 
@@ -9196,7 +9439,7 @@ export default function AssetRegisterClient() {
           });
         }
 
-        if (shouldPromptReplacementPriceRevalue) {
+        if (shouldPromptReplacementPriceRevalue && nextReplacementPriceExVat !== null) {
           setReplacementPriceRevaluePrompt({
             asset: data.item,
             oldReplacementPriceExVat: previousReplacementPriceExVat,
@@ -11198,6 +11441,17 @@ export default function AssetRegisterClient() {
       ? 'No assets match the current search or filter.'
       : 'No saved assets yet.';
   const selectedManualAssetType = getManualAssetOption(assetFormKind);
+  const isLandPropertyDraft = assetFormKind === 'property' && assetDraft.propertyAssetSubtype === 'land';
+  const replacementPriceRequiredForDraft = assetFormKind !== 'stock' && !isLandPropertyDraft;
+  const assetLicenseApplicable = assetKindSupportsLicensing(assetFormKind);
+  const currentValueFieldLabel = assetFormKind === 'stock'
+    ? 'Current stock value excl. VAT *'
+    : isLandPropertyDraft
+      ? 'Current / market value excl. VAT *'
+      : 'Current Value excl. VAT *';
+  const replacementValueFieldLabel = assetFormKind === 'property'
+    ? 'Rebuilding / replacement value excl. VAT *'
+    : 'Replacement Price excl. VAT *';
   const manualDraftDocumentCount = assetDraft.documents.length + pendingDocumentFiles.length;
   const manualDraftRawPhotoCount = assetDraft.photos.length + pendingPhotoFiles.length;
   const manualDraftPhotoCount = Math.min(MAX_PHOTOS, manualDraftRawPhotoCount);
@@ -12910,7 +13164,7 @@ export default function AssetRegisterClient() {
           <div className={styles.modalBackdrop} onClick={() => { if (!isAssetAutosaveBusy) closeAssetModal(); }} />
 
           <div
-            className={`${styles.modalCard} ${styles.assetFormModal} ${editingAsset ? styles.assetUpdateModal : ''} ${manualAssetStep === 1 ? styles.assetFormModalStepOne : ''}`}
+            className={`${styles.modalCard} ${styles.assetFormModal} ${manualAssetStep > 1 ? styles.assetUpdateModal : ''} ${manualAssetStep === 1 ? styles.assetFormModalStepOne : ''}`}
             role="dialog"
             aria-modal="true"
             aria-label={editingAsset ? 'Update asset' : 'Add asset'}
@@ -12921,13 +13175,16 @@ export default function AssetRegisterClient() {
                   <h3>{editingAsset ? 'Update asset' : 'Add an asset'}</h3>
                   <p>Choose the asset type that best matches what you are adding.</p>
                 </div>
-              ) : editingAsset ? (
+              ) : (
                 <div className={styles.assetUpdateHeaderContent}>
                   <div className={styles.assetUpdateIdentity}>
-                    <h3>{assetDraft.title.trim() || editingAsset.title}</h3>
+                    <h3>
+                      {assetDraft.title.trim() ||
+                        (editingAsset ? editingAsset.title : `Add ${selectedManualAssetType.label.toLowerCase()}`)}
+                    </h3>
                   </div>
                 </div>
-              ) : null}
+              )}
 
               <button
                 type="button"
@@ -12968,7 +13225,7 @@ export default function AssetRegisterClient() {
                 {manualAssetStep === 1 ? (
                   <section className={`${styles.manualStageCard} ${styles.manualSingleStageCard} ${styles.manualCompactStageCard} ${styles.manualStepOneCard} ${styles.fullWidth}`}>
                     <div className={styles.manualStepIntro}>
-                      <h4>Select an asset type</h4>
+                      <h4>What are you adding?</h4>
                     </div>
 
                     {editingAsset?.valuationRunId ? (
@@ -13011,13 +13268,7 @@ export default function AssetRegisterClient() {
                 ) : null}
 
                 {manualAssetStep === 2 ? (
-                  <section className={`${styles.manualStageCard} ${styles.manualSingleStageCard} ${styles.manualCompactStageCard} ${editingAsset ? styles.assetUpdateStageCard : ''} ${styles.fullWidth}`}>
-                    {!editingAsset ? (
-                      <div className={styles.manualStepIntro}>
-                        <h4>Details</h4>
-                      </div>
-                    ) : null}
-
+                  <section className={`${styles.manualStageCard} ${styles.manualSingleStageCard} ${styles.manualCompactStageCard} ${styles.assetUpdateStageCard} ${styles.fullWidth}`}>
                     <div className={styles.manualUtilityRow}>
                       <div className={styles.manualSelectedTypeStrip}>
                         <span>{editingAsset ? 'Type' : 'Type of Asset:'}</span>
@@ -13027,12 +13278,12 @@ export default function AssetRegisterClient() {
                       <button
                         type="button"
                         className={styles.manualSettingsButton}
-                        onClick={openAssetSettingsModal}
-                        aria-label="Asset settings"
-                        title="Asset settings"
+                        onClick={editingAsset ? openAssetSettingsModal : () => setManualAssetStep(1)}
+                        aria-label={editingAsset ? 'Asset settings' : 'Change asset type'}
+                        title={editingAsset ? 'Asset settings' : 'Change asset type'}
                       >
                         <ManageIcon className={styles.buttonIcon} />
-                        <span>Settings</span>
+                        <span>{editingAsset ? 'Settings' : 'Change type'}</span>
                       </button>
                     </div>
 
@@ -13054,87 +13305,195 @@ export default function AssetRegisterClient() {
                         </label>
                       </div>
 
-                      {assetFormKind === 'manual' ? (
+                      {assetFormKind === 'manual' || assetFormKind === 'property' || assetFormKind === 'stock' ? (
                         <div className={styles.assetInsuranceClassificationCard}>
                           <div className={styles.assetInsuranceClassificationIntro}>
-                            <strong>Help us put this asset in the right group</strong>
+                            <strong>Tell us more about this asset</strong>
                             <p>
-                              Choose ordinary facts about the item. Aim4price uses them to suggest insurance areas to consider;
-                              a broker must still confirm the final classification and cover.
+                              These details help Aim4price organise the asset correctly and prepare clearer records and reports.
+                              If the register is shared for insurance, Aim4price may suggest areas for a broker to review, but the
+                              broker still confirms the final classification and cover.
                             </p>
                           </div>
 
                           <div className={styles.assetInsuranceClassificationGrid}>
-                            <ModalSelect<GeneralAssetCategoryKey>
-                              label="What is it? *"
-                              value={assetDraft.generalAssetCategory}
-                              options={GENERAL_ASSET_CATEGORY_OPTIONS}
-                              onChange={(generalAssetCategory) =>
-                                setAssetDraft((current) => ({
-                                  ...current,
-                                  generalAssetCategory,
-                                  insuranceMobility:
-                                    generalAssetCategory === 'portable_electronics' && !current.insuranceMobility
-                                      ? 'portable'
-                                      : current.insuranceMobility,
-                                  insuranceTemperatureSensitiveStock:
-                                    generalAssetCategory === 'commercial_refrigeration'
-                                      ? current.insuranceTemperatureSensitiveStock
-                                      : 'unknown',
-                                }))
-                              }
-                              placeholder="Choose the closest match"
-                              usePortal
-                            />
+                            {assetFormKind === 'manual' ? (
+                              <>
+                                <ModalSelect<GeneralAssetCategoryKey>
+                                  label="What is it? *"
+                                  value={assetDraft.generalAssetCategory}
+                                  options={GENERAL_ASSET_CATEGORY_OPTIONS}
+                                  onChange={(generalAssetCategory) =>
+                                    setAssetDraft((current) => ({
+                                      ...current,
+                                      generalAssetCategory,
+                                      insuranceMobility:
+                                        generalAssetCategory === 'portable_electronics' && !current.insuranceMobility
+                                          ? 'portable'
+                                          : current.insuranceMobility,
+                                      insuranceTemperatureSensitiveStock:
+                                        generalAssetCategory === 'commercial_refrigeration'
+                                          ? current.insuranceTemperatureSensitiveStock
+                                          : 'unknown',
+                                    }))
+                                  }
+                                  placeholder="Choose the closest match"
+                                  usePortal
+                                />
 
-                            <ModalSelect<InsuranceUseContext>
-                              label="Where is it used? *"
-                              value={assetDraft.insuranceUseContext}
-                              options={INSURANCE_USE_CONTEXT_OPTIONS}
-                              onChange={(insuranceUseContext) =>
-                                setAssetDraft((current) => ({ ...current, insuranceUseContext }))
-                              }
-                              placeholder="Choose home or business use"
-                              usePortal
-                            />
+                                <ModalSelect<InsuranceUseContext>
+                                  label="Where is it used? *"
+                                  value={assetDraft.insuranceUseContext}
+                                  options={INSURANCE_USE_CONTEXT_OPTIONS}
+                                  onChange={(insuranceUseContext) =>
+                                    setAssetDraft((current) => ({ ...current, insuranceUseContext }))
+                                  }
+                                  placeholder="Choose home or business use"
+                                  usePortal
+                                />
 
-                            <ModalSelect<InsuranceMobility>
-                              label="Does it move around? *"
-                              value={assetDraft.insuranceMobility}
-                              options={INSURANCE_MOBILITY_OPTIONS}
-                              onChange={(insuranceMobility) =>
-                                setAssetDraft((current) => ({ ...current, insuranceMobility }))
-                              }
-                              placeholder="Choose how the item is used"
-                              usePortal
-                            />
+                                <ModalSelect<InsuranceMobility>
+                                  label="Does it move around? *"
+                                  value={assetDraft.insuranceMobility}
+                                  options={INSURANCE_MOBILITY_OPTIONS}
+                                  onChange={(insuranceMobility) =>
+                                    setAssetDraft((current) => ({ ...current, insuranceMobility }))
+                                  }
+                                  placeholder="Choose how the item is used"
+                                  usePortal
+                                />
 
-                            <ModalSelect<InsuranceFactAnswer>
-                              label="Critical to operations?"
-                              value={assetDraft.insuranceCriticalToOperations}
-                              options={INSURANCE_CRITICALITY_OPTIONS}
-                              onChange={(insuranceCriticalToOperations) =>
-                                setAssetDraft((current) => ({ ...current, insuranceCriticalToOperations }))
-                              }
-                              usePortal
-                            />
+                                <ModalSelect<InsuranceFactAnswer>
+                                  label="Critical to operations?"
+                                  value={assetDraft.insuranceCriticalToOperations}
+                                  options={INSURANCE_CRITICALITY_OPTIONS}
+                                  onChange={(insuranceCriticalToOperations) =>
+                                    setAssetDraft((current) => ({ ...current, insuranceCriticalToOperations }))
+                                  }
+                                  usePortal
+                                />
 
-                            {assetDraft.generalAssetCategory === 'commercial_refrigeration' ? (
-                              <ModalSelect<InsuranceFactAnswer>
-                                label="Protects temperature-sensitive stock?"
-                                value={assetDraft.insuranceTemperatureSensitiveStock}
-                                options={TEMPERATURE_SENSITIVE_STOCK_OPTIONS}
-                                onChange={(insuranceTemperatureSensitiveStock) =>
-                                  setAssetDraft((current) => ({ ...current, insuranceTemperatureSensitiveStock }))
-                                }
-                                usePortal
-                              />
+                                {assetDraft.generalAssetCategory === 'commercial_refrigeration' ? (
+                                  <ModalSelect<InsuranceFactAnswer>
+                                    label="Protects temperature-sensitive stock?"
+                                    value={assetDraft.insuranceTemperatureSensitiveStock}
+                                    options={TEMPERATURE_SENSITIVE_STOCK_OPTIONS}
+                                    onChange={(insuranceTemperatureSensitiveStock) =>
+                                      setAssetDraft((current) => ({ ...current, insuranceTemperatureSensitiveStock }))
+                                    }
+                                    usePortal
+                                  />
+                                ) : null}
+                              </>
+                            ) : null}
+
+                            {assetFormKind === 'property' ? (
+                              <>
+                                <ModalSelect<PropertyAssetSubtypeKey>
+                                  label="What kind of property is this? *"
+                                  value={assetDraft.propertyAssetSubtype}
+                                  options={PROPERTY_ASSET_SUBTYPE_OPTIONS}
+                                  onChange={(propertyAssetSubtype) =>
+                                    setAssetDraft((current) => ({
+                                      ...current,
+                                      propertyAssetSubtype,
+                                      yearModel: propertyAssetSubtype === 'land' ? '' : current.yearModel,
+                                      replacementPrice: propertyAssetSubtype === 'land' ? '' : current.replacementPrice,
+                                      condition: propertyAssetSubtype === 'land' ? '' : current.condition,
+                                      propertyInterest:
+                                        propertyAssetSubtype === 'tenant_improvement' && !current.propertyInterest
+                                          ? 'tenant_improvement'
+                                          : current.propertyInterest,
+                                    }))
+                                  }
+                                  placeholder="Choose the closest property type"
+                                  usePortal
+                                />
+
+                                <ModalSelect<InsuranceUseContext>
+                                  label="How is it used? *"
+                                  value={assetDraft.insuranceUseContext}
+                                  options={INSURANCE_USE_CONTEXT_OPTIONS}
+                                  onChange={(insuranceUseContext) =>
+                                    setAssetDraft((current) => ({ ...current, insuranceUseContext }))
+                                  }
+                                  placeholder="Choose home or business use"
+                                  usePortal
+                                />
+
+                                <ModalSelect<PropertyInterest>
+                                  label="What is your interest? *"
+                                  value={assetDraft.propertyInterest}
+                                  options={PROPERTY_INTEREST_OPTIONS}
+                                  onChange={(propertyInterest) =>
+                                    setAssetDraft((current) => ({ ...current, propertyInterest }))
+                                  }
+                                  placeholder="Choose ownership or occupancy"
+                                  usePortal
+                                />
+                              </>
+                            ) : null}
+
+                            {assetFormKind === 'stock' ? (
+                              <>
+                                <ModalSelect<StockAssetSubtypeKey>
+                                  label="What kind of stock is this? *"
+                                  value={assetDraft.stockAssetSubtype}
+                                  options={STOCK_ASSET_SUBTYPE_OPTIONS}
+                                  onChange={(stockAssetSubtype) =>
+                                    setAssetDraft((current) => ({
+                                      ...current,
+                                      stockAssetSubtype,
+                                      insuranceTemperatureSensitiveStock:
+                                        stockAssetSubtype === 'livestock'
+                                          ? 'unknown'
+                                          : current.insuranceTemperatureSensitiveStock,
+                                    }))
+                                  }
+                                  placeholder="Choose the closest stock type"
+                                  usePortal
+                                />
+
+                                <ModalSelect<StockValuationBasis>
+                                  label="How is it valued? *"
+                                  value={assetDraft.stockValuationBasis}
+                                  options={STOCK_VALUATION_BASIS_OPTIONS}
+                                  onChange={(stockValuationBasis) =>
+                                    setAssetDraft((current) => ({ ...current, stockValuationBasis }))
+                                  }
+                                  placeholder="Choose the value basis"
+                                  usePortal
+                                />
+
+                                <ModalSelect<StockMovement>
+                                  label="Where is it normally kept? *"
+                                  value={assetDraft.stockMovement}
+                                  options={STOCK_MOVEMENT_OPTIONS}
+                                  onChange={(stockMovement) =>
+                                    setAssetDraft((current) => ({ ...current, stockMovement }))
+                                  }
+                                  placeholder="Choose the normal movement pattern"
+                                  usePortal
+                                />
+
+                                {assetDraft.stockAssetSubtype !== 'livestock' ? (
+                                  <ModalSelect<InsuranceFactAnswer>
+                                    label="Temperature-sensitive?"
+                                    value={assetDraft.insuranceTemperatureSensitiveStock}
+                                    options={TEMPERATURE_SENSITIVE_STOCK_OPTIONS}
+                                    onChange={(insuranceTemperatureSensitiveStock) =>
+                                      setAssetDraft((current) => ({ ...current, insuranceTemperatureSensitiveStock }))
+                                    }
+                                    usePortal
+                                  />
+                                ) : null}
+                              </>
                             ) : null}
                           </div>
                         </div>
                       ) : null}
 
-                      {assetFormKind !== 'property' ? (
+                      {assetFormKind !== 'property' && assetFormKind !== 'stock' ? (
                         <div className={styles.assetTripleGrid}>
                           <label className={styles.field}>
                             <span>Serial / reference</span>
@@ -13180,26 +13539,28 @@ export default function AssetRegisterClient() {
                         </div>
                       ) : null}
 
-                      <div className={styles.assetTripleGrid}>
-                        <label className={styles.field}>
-                          <span>{yearFieldLabel}</span>
-                          <input
-                            type="number"
-                            min="1800"
-                            max={new Date().getFullYear() + 1}
-                            step="1"
-                            value={assetDraft.yearModel}
-                            onChange={(event) =>
-                              setAssetDraft((current) => ({
-                                ...current,
-                                yearModel: event.target.value,
-                              }))
-                            }
-                            placeholder="Optional"
-                          />
-                        </label>
+                      {assetFormKind === 'property' ? (
+                        <div className={styles.assetTripleGrid}>
+                          {!isLandPropertyDraft ? (
+                            <label className={styles.field}>
+                              <span>{yearFieldLabel}</span>
+                              <input
+                                type="number"
+                                min="1800"
+                                max={new Date().getFullYear() + 1}
+                                step="1"
+                                value={assetDraft.yearModel}
+                                onChange={(event) =>
+                                  setAssetDraft((current) => ({
+                                    ...current,
+                                    yearModel: event.target.value,
+                                  }))
+                                }
+                                placeholder="Optional"
+                              />
+                            </label>
+                          ) : null}
 
-                        {assetFormKind === 'property' ? (
                           <label className={styles.field}>
                             <span>Size</span>
                             <input
@@ -13214,64 +13575,103 @@ export default function AssetRegisterClient() {
                               placeholder="Example: 12 ha, 450 m² or 1 200 m² shed"
                             />
                           </label>
-                        ) : showPercentUsageField ? (
+
+                          {showConditionField ? (
+                            <ModalSelect<AssetConditionValue>
+                              label="Condition"
+                              value={assetDraft.condition}
+                              options={CONDITION_OPTIONS}
+                              onChange={(nextCondition) =>
+                                setAssetDraft((current) => ({
+                                  ...current,
+                                  condition: nextCondition,
+                                }))
+                              }
+                              className={styles.assetConditionField}
+                            />
+                          ) : null}
+                        </div>
+                      ) : assetFormKind !== 'stock' ? (
+                        <div className={styles.assetTripleGrid}>
                           <label className={styles.field}>
-                            <span>{usageFieldLabel}</span>
+                            <span>{yearFieldLabel}</span>
                             <input
                               type="number"
-                              min="0"
-                              max="100"
-                              step="0.1"
-                              value={assetDraft.lifeWorkedPercent}
+                              min="1800"
+                              max={new Date().getFullYear() + 1}
+                              step="1"
+                              value={assetDraft.yearModel}
                               onChange={(event) =>
                                 setAssetDraft((current) => ({
                                   ...current,
-                                  lifeWorkedPercent: event.target.value,
+                                  yearModel: event.target.value,
                                 }))
                               }
-                              placeholder={usageFieldPlaceholder}
+                              placeholder="Optional"
                             />
                           </label>
-                        ) : showUsageHoursField ? (
-                          <label className={styles.field}>
-                            <span>{usageFieldLabel}</span>
-                            <input
-                              type="text"
-                              inputMode="numeric"
-                              value={formatUsageAmountInput(assetDraft.hours)}
-                              onChange={(event) =>
-                                setAssetDraft((current) => ({
-                                  ...current,
-                                  hours: formatUsageAmountInput(event.target.value),
-                                }))
-                              }
-                              placeholder={usageFieldPlaceholder}
-                            />
-                          </label>
-                        ) : (
-                          <label className={`${styles.field} ${styles.assetStaticField}`}>
-                            <span>{usageFieldLabel}</span>
-                            <input value="Not applicable" disabled readOnly />
-                          </label>
-                        )}
 
-                        <ModalSelect<AssetConditionValue>
-                          label="Condition"
-                          value={assetDraft.condition}
-                          options={CONDITION_OPTIONS}
-                          onChange={(nextCondition) =>
-                            setAssetDraft((current) => ({
-                              ...current,
-                              condition: nextCondition,
-                            }))
-                          }
-                          className={styles.assetConditionField}
-                        />
-                      </div>
+                          {showPercentUsageField ? (
+                            <label className={styles.field}>
+                              <span>{usageFieldLabel}</span>
+                              <input
+                                type="number"
+                                min="0"
+                                max="100"
+                                step="0.1"
+                                value={assetDraft.lifeWorkedPercent}
+                                onChange={(event) =>
+                                  setAssetDraft((current) => ({
+                                    ...current,
+                                    lifeWorkedPercent: event.target.value,
+                                  }))
+                                }
+                                placeholder={usageFieldPlaceholder}
+                              />
+                            </label>
+                          ) : showUsageHoursField ? (
+                            <label className={styles.field}>
+                              <span>{usageFieldLabel}</span>
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                value={formatUsageAmountInput(assetDraft.hours)}
+                                onChange={(event) =>
+                                  setAssetDraft((current) => ({
+                                    ...current,
+                                    hours: formatUsageAmountInput(event.target.value),
+                                  }))
+                                }
+                                placeholder={usageFieldPlaceholder}
+                              />
+                            </label>
+                          ) : (
+                            <label className={`${styles.field} ${styles.assetStaticField}`}>
+                              <span>{usageFieldLabel}</span>
+                              <input value="Not applicable" disabled readOnly />
+                            </label>
+                          )}
+
+                          {showConditionField ? (
+                            <ModalSelect<AssetConditionValue>
+                              label="Condition"
+                              value={assetDraft.condition}
+                              options={CONDITION_OPTIONS}
+                              onChange={(nextCondition) =>
+                                setAssetDraft((current) => ({
+                                  ...current,
+                                  condition: nextCondition,
+                                }))
+                              }
+                              className={styles.assetConditionField}
+                            />
+                          ) : null}
+                        </div>
+                      ) : null}
 
                       <div className={styles.assetValueBoxGrid}>
                         <label className={`${styles.field} ${styles.manualValueField}`}>
-                          <span>Current Value excl. VAT</span>
+                          <span>{currentValueFieldLabel}</span>
                           <div className={styles.manualCurrencyInput}>
                             <span>R</span>
                             <input
@@ -13289,24 +13689,45 @@ export default function AssetRegisterClient() {
                           </div>
                         </label>
 
-                        <label className={`${styles.field} ${styles.manualReplacementValueField}`}>
-                          <span>Replacement Price excl. VAT *</span>
-                          <div className={styles.manualCurrencyInput}>
-                            <span>R</span>
-                            <input
-                              type="text"
-                              inputMode="numeric"
-                              value={formatRegisterValueInput(assetDraft.replacementPrice)}
-                              onChange={(event) =>
-                                setAssetDraft((current) => ({
-                                  ...current,
-                                  replacementPrice: formatRegisterValueInput(event.target.value),
-                                }))
-                              }
-                              placeholder="Required"
-                            />
-                          </div>
-                        </label>
+                        {replacementPriceRequiredForDraft ? (
+                          <label className={`${styles.field} ${styles.manualReplacementValueField}`}>
+                            <span>{replacementValueFieldLabel}</span>
+                            <div className={styles.manualCurrencyInput}>
+                              <span>R</span>
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                value={formatRegisterValueInput(assetDraft.replacementPrice)}
+                                onChange={(event) =>
+                                  setAssetDraft((current) => ({
+                                    ...current,
+                                    replacementPrice: formatRegisterValueInput(event.target.value),
+                                  }))
+                                }
+                                placeholder="Required"
+                              />
+                            </div>
+                          </label>
+                        ) : assetFormKind === 'stock' ? (
+                          <label className={`${styles.field} ${styles.manualReplacementValueField}`}>
+                            <span>Peak / seasonal stock value excl. VAT</span>
+                            <div className={styles.manualCurrencyInput}>
+                              <span>R</span>
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                value={formatRegisterValueInput(assetDraft.stockPeakValue)}
+                                onChange={(event) =>
+                                  setAssetDraft((current) => ({
+                                    ...current,
+                                    stockPeakValue: formatRegisterValueInput(event.target.value),
+                                  }))
+                                }
+                                placeholder="Optional"
+                              />
+                            </div>
+                          </label>
+                        ) : null}
 
                         <label className={`${styles.field} ${styles.assetInsuredValueField}`}>
                           <span>Insured Value excl. VAT</span>
@@ -13364,13 +13785,7 @@ export default function AssetRegisterClient() {
                 ) : null}
 
                 {manualAssetStep === 3 ? (
-                  <section className={`${styles.manualStageCard} ${styles.manualSingleStageCard} ${styles.manualCompactStageCard} ${editingAsset ? styles.assetUpdateStageCard : ''} ${styles.fullWidth} ${styles.assetStatusStageCard}`}>
-                    {!editingAsset ? (
-                      <div className={styles.manualStepIntro}>
-                        <h4>{assetFormKind === 'property' ? 'Finance and insurance' : 'Finance, insurance and license'}</h4>
-                      </div>
-                    ) : null}
-
+                  <section className={`${styles.manualStageCard} ${styles.manualSingleStageCard} ${styles.manualCompactStageCard} ${styles.assetUpdateStageCard} ${styles.fullWidth} ${styles.assetStatusStageCard}`}>
                     {assetStatusEditView === 'hub' ? (
                       <div className={styles.assetStatusHubGrid}>
                         <button
@@ -13391,7 +13806,7 @@ export default function AssetRegisterClient() {
                           <small>{insuranceStatusSummary(assetStatusDraft)}</small>
                         </button>
 
-                        {assetFormKind !== 'property' ? (
+                        {assetLicenseApplicable ? (
                           <button
                             type="button"
                             className={styles.assetStatusHubCard}
@@ -13677,7 +14092,7 @@ export default function AssetRegisterClient() {
                       </div>
                     ) : null}
 
-                    {assetStatusEditView === 'license' && assetFormKind !== 'property' ? (
+                    {assetStatusEditView === 'license' && assetLicenseApplicable ? (
                       <div className={styles.assetStatusFocusedForm}>
                         <div className={styles.assetStatusFocusedHeader}>
                           <strong>License</strong>
@@ -13744,13 +14159,7 @@ export default function AssetRegisterClient() {
                 ) : null}
 
                 {manualAssetStep === 4 ? (
-                  <section className={`${styles.manualStageCard} ${styles.manualSingleStageCard} ${styles.manualCompactStageCard} ${editingAsset ? styles.assetUpdateStageCard : ''} ${styles.fullWidth}`}>
-                    {!editingAsset ? (
-                      <div className={styles.manualStepIntro}>
-                        <h4>Documents and photos</h4>
-                      </div>
-                    ) : null}
-
+                  <section className={`${styles.manualStageCard} ${styles.manualSingleStageCard} ${styles.manualCompactStageCard} ${styles.assetUpdateStageCard} ${styles.fullWidth}`}>
                     <div className={`${styles.manualStageGrid} ${styles.manualUploadGrid}`}>
                       <div className={styles.field}>
                         <span>Documents</span>
@@ -13907,47 +14316,21 @@ export default function AssetRegisterClient() {
                   </section>
                 ) : null}
 
-                {!editingAsset && manualAssetStep > 1 && !isAssetStatusFocusedView ? (
-                  <div className={`${styles.formActions} ${styles.assetFormActions} ${styles.manualStepFormActions}`}>
-                    <div className={styles.assetFormActionRight}>
-                      {manualAssetStep > 1 ? (
-                        <button type="button" className={styles.secondaryButton} onClick={goToPreviousManualAssetStep}>
-                          Back
-                        </button>
-                      ) : null}
-
-                      {manualAssetStep < 4 ? (
-                        <button type="button" className={styles.primaryButton} onClick={goToNextManualAssetStep}>
-                          {manualAssetStep === 1 ? 'Next' : manualStepPrimaryLabel}
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          className={styles.primaryButton}
-                          onClick={() => void handleAssetSubmit()}
-                          disabled={isSavingAsset || isUploadingPhotos || isUploadingDocuments}
-                        >
-                          {isSavingAsset ? 'Saving...' : manualStepPrimaryLabel}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ) : null}
               </form>
             </div>
 
-            {editingAsset && !isAssetStatusFocusedView ? (
+            {manualAssetStep > 1 && !isAssetStatusFocusedView ? (
               <div className={styles.assetUpdateFooter}>
                 <span
-                  className={`${styles.assetUpdateSaveText} ${assetAutosaveState === 'error' ? styles.assetUpdateSaveTextError : ''}`}
+                  className={`${styles.assetUpdateSaveText} ${editingAsset && assetAutosaveState === 'error' ? styles.assetUpdateSaveTextError : ''}`}
                   role="status"
                   aria-live="polite"
                 >
-                  {assetAutosaveLabel}
+                  {editingAsset ? assetAutosaveLabel : 'Saved when you finish'}
                 </span>
 
                 <div className={styles.assetUpdateFooterActions}>
-                  {manualAssetStep > 2 ? (
+                  {(editingAsset && manualAssetStep > 2) || (!editingAsset && manualAssetStep > 1) ? (
                     <button
                       type="button"
                       className={styles.secondaryButton}
@@ -13970,10 +14353,20 @@ export default function AssetRegisterClient() {
                     <button
                       type="button"
                       className={styles.primaryButton}
-                      onClick={closeAssetModal}
-                      disabled={isAssetAutosaveBusy || assetAutosaveState === 'error'}
+                      onClick={editingAsset ? closeAssetModal : () => void handleAssetSubmit()}
+                      disabled={
+                        editingAsset
+                          ? isAssetAutosaveBusy || assetAutosaveState === 'error'
+                          : isSavingAsset || isUploadingPhotos || isUploadingDocuments
+                      }
                     >
-                      {isAssetAutosaveBusy ? 'Saving...' : 'Done'}
+                      {editingAsset
+                        ? isAssetAutosaveBusy
+                          ? 'Saving...'
+                          : 'Done'
+                        : isSavingAsset
+                          ? 'Saving...'
+                          : manualStepPrimaryLabel}
                     </button>
                   )}
                 </div>
