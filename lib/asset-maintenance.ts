@@ -1364,9 +1364,16 @@ async function createNextRecurringRecord(
 
   if (completedRecord.triggerType === 'date') {
     const completedDate = (completedRecord.completedAtIso ?? new Date().toISOString()).slice(0, 10);
-    nextDueDate = addDateInterval(completedDate, completedRecord.recurringIntervalValue, completedRecord.recurringIntervalUnit);
+    const baseDate = completedRecord.dueDate && completedRecord.dueDate > completedDate
+      ? completedRecord.dueDate
+      : completedDate;
+    nextDueDate = addDateInterval(baseDate, completedRecord.recurringIntervalValue, completedRecord.recurringIntervalUnit);
   } else {
-    const baseUsage = completedRecord.completedUsage ?? completedRecord.currentUsage ?? completedRecord.dueUsage ?? 0;
+    // An early completion must still consume the clicked schedule. Advance from
+    // at least its due target so the replacement cannot repeat the same card.
+    // When work is completed late, advance from the higher actual reading.
+    const completionUsage = completedRecord.completedUsage ?? completedRecord.currentUsage ?? 0;
+    const baseUsage = Math.max(completionUsage, completedRecord.dueUsage ?? 0);
     nextDueUsage = Math.round((baseUsage + completedRecord.recurringIntervalValue) * 100) / 100;
   }
 
