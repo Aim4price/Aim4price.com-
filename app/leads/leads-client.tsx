@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type DragEvent } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import AppHeader from '../../components/AppHeader';
 import {
@@ -2247,15 +2248,13 @@ export default function LeadsClient({
     setLeadPhotoIndex(lead.id, nextIndex);
   }
 
-  function openAssetPhotoModal(lead: AssetLead, index: number) {
-    const urls = assetPhotos(lead).map(normalizeLeadPhotoUrl).filter(Boolean);
-
+  function openAssetPhotoModal(lead: AssetLead, urls: string[], index: number) {
     if (!urls.length) return;
 
     setSentPhotoModal(null);
     setAssetPhotoModal({
       leadId: lead.id,
-      urls,
+      urls: [...urls],
       index: Math.min(Math.max(index, 0), urls.length - 1),
       title: assetTitle(lead),
     });
@@ -2284,15 +2283,13 @@ export default function LeadsClient({
     ));
   }
 
-  function openSentPhotoModal(lead: AssetLead, index: number) {
-    const urls = leadSharedPhotoUrls(lead).map(normalizeLeadPhotoUrl).filter(Boolean);
-
+  function openSentPhotoModal(lead: AssetLead, urls: string[], index: number) {
     if (!urls.length) return;
 
     setAssetPhotoModal(null);
     setSentPhotoModal({
       leadId: lead.id,
-      urls,
+      urls: [...urls],
       index: Math.min(Math.max(index, 0), urls.length - 1),
       title: assetTitle(lead),
     });
@@ -2364,7 +2361,7 @@ export default function LeadsClient({
                   type="button"
                   key={`${url}-${index}`}
                   className={styles.ownerSharedPhotoLink}
-                  onClick={() => openSentPhotoModal(lead, index)}
+                  onClick={() => openSentPhotoModal(lead, sharedPhotos, index)}
                   aria-label={`Open owner attached photo ${index + 1}`}
                 >
                   <img src={url} alt={`Owner attached photo ${index + 1}`} />
@@ -2441,7 +2438,7 @@ export default function LeadsClient({
                 <button
                   type="button"
                   className={styles.leadPreviewOpenButton}
-                  onClick={() => openAssetPhotoModal(lead, photoIndex)}
+                  onClick={() => openAssetPhotoModal(lead, photos, photoIndex)}
                   aria-label={`Open ${assetTitle(lead)} photo ${photoIndex + 1}`}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -2498,7 +2495,7 @@ export default function LeadsClient({
                     className={`${assetStyles.previewThumbButton} ${styles.leadPreviewThumbButton} ${isActivePhoto ? assetStyles.previewThumbButtonActive : ''}`}
                     onClick={() => {
                       setLeadPhotoIndex(lead.id, index);
-                      openAssetPhotoModal(lead, index);
+                      openAssetPhotoModal(lead, photos, index);
                     }}
                     aria-label={`Open photo ${index + 1}`}
                   >
@@ -3212,12 +3209,13 @@ export default function LeadsClient({
         </div>
       ) : null}
 
-      {assetPhotoModal && assetPhotoModalUrl ? (
-        <div className={`${assetStyles.modalOverlay} ${dealerWorkspaceClass(workspaceStyles.modalOverlay)} ${styles.leadPhotoModalOverlay} ${styles.assetPhotoModalOverlay}`}>
+      {typeof document !== 'undefined' && assetPhotoModal && assetPhotoModalUrl
+        ? createPortal(
+          <div className={`${assetStyles.modalOverlay} ${dealerWorkspaceClass(workspaceStyles.modalOverlay)} ${styles.leadPhotoModalOverlay} ${styles.assetPhotoModalOverlay}`}>
           <div className={assetStyles.modalBackdrop} onClick={closeAssetPhotoModal} />
 
           <div className={`${styles.leadPhotoModal} ${styles.assetPhotoModal}`} role="dialog" aria-modal="true" aria-labelledby="asset-photo-modal-title">
-            <div className={`${styles.leadPhotoModalHeader} ${styles.assetPhotoModalHeader}`}>
+            <div className={styles.leadPhotoModalHeader}>
               <div>
                 <strong id="asset-photo-modal-title">Asset photos</strong>
                 <span>{assetPhotoModal.title} · {assetPhotoModalIndex + 1} of {assetPhotoModal.urls.length}</span>
@@ -3228,8 +3226,8 @@ export default function LeadsClient({
               </button>
             </div>
 
-            <div className={`${styles.leadPhotoModalBody} ${styles.assetPhotoModalBody}`}>
-              <div className={`${styles.leadPhotoModalFrame} ${styles.assetPhotoModalFrame}`}>
+            <div className={styles.leadPhotoModalBody}>
+              <div className={styles.leadPhotoModalFrame}>
                 <img src={assetPhotoModalUrl} alt={`${assetPhotoModal.title} asset photo ${assetPhotoModalIndex + 1}`} />
 
                 {hasMultipleAssetPhotos ? (
@@ -3273,15 +3271,18 @@ export default function LeadsClient({
               ) : null}
             </div>
           </div>
-        </div>
-      ) : null}
+          </div>,
+          document.body,
+        )
+        : null}
 
-      {sentPhotoModal && sentPhotoModalUrl ? (
-        <div className={`${assetStyles.modalOverlay} ${dealerWorkspaceClass(workspaceStyles.modalOverlay)} ${styles.leadPhotoModalOverlay} ${styles.sentPhotoModalOverlay}`}>
+      {typeof document !== 'undefined' && sentPhotoModal && sentPhotoModalUrl
+        ? createPortal(
+          <div className={`${assetStyles.modalOverlay} ${dealerWorkspaceClass(workspaceStyles.modalOverlay)} ${styles.leadPhotoModalOverlay} ${styles.sentPhotoModalOverlay}`}>
           <div className={assetStyles.modalBackdrop} onClick={closeSentPhotoModal} />
 
           <div className={`${styles.leadPhotoModal} ${styles.sentPhotoModal}`} role="dialog" aria-modal="true" aria-labelledby="sent-photo-modal-title">
-            <div className={`${styles.leadPhotoModalHeader} ${styles.sentPhotoModalHeader}`}>
+            <div className={styles.leadPhotoModalHeader}>
               <div>
                 <strong id="sent-photo-modal-title">Sent photos</strong>
                 <span>{sentPhotoModal.title} · {sentPhotoModalIndex + 1} of {sentPhotoModal.urls.length}</span>
@@ -3292,7 +3293,7 @@ export default function LeadsClient({
               </button>
             </div>
 
-            <div className={`${styles.leadPhotoModalBody} ${styles.sentPhotoModalBody}`}>
+            <div className={styles.leadPhotoModalBody}>
               <div className={`${styles.leadPhotoModalFrame} ${styles.sentPhotoModalFrame}`}>
                 <img src={sentPhotoModalUrl} alt={`${sentPhotoModal.title} sent photo ${sentPhotoModalIndex + 1}`} />
 
@@ -3337,8 +3338,10 @@ export default function LeadsClient({
               ) : null}
             </div>
           </div>
-        </div>
-      ) : null}
+          </div>,
+          document.body,
+        )
+        : null}
 
       {noteLead ? (
         <div className={`${assetStyles.modalOverlay} ${dealerWorkspaceClass(workspaceStyles.modalOverlay)}`}>

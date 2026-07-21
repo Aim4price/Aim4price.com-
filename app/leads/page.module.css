@@ -851,9 +851,17 @@
   background: #f1f7f3;
 }
 
+/* === My Leads photo viewers: authoritative modal sizing and image fit === */
 .leadPhotoModalOverlay.leadPhotoModalOverlay {
+  position: fixed !important;
+  inset: 0 !important;
   z-index: 10100 !important;
-  padding: clamp(0.75rem, 2vw, 1.5rem);
+  min-height: 100dvh;
+  display: grid !important;
+  place-items: center !important;
+  overflow: hidden !important;
+  padding: 1rem !important;
+  font-family: inherit;
 }
 
 .assetPhotoModalOverlay {
@@ -869,9 +877,9 @@
 .leadPhotoModal {
   position: relative;
   z-index: 2;
-  width: min(calc(100vw - 3rem), 760px);
+  width: min(calc(100vw - 2rem), 720px);
   max-width: 100%;
-  max-height: min(calc(100dvh - 3rem), 680px);
+  max-height: calc(100dvh - 2rem);
   min-width: 0;
   min-height: 0;
   box-sizing: border-box;
@@ -880,17 +888,17 @@
   overflow: hidden;
   padding: 0;
   border: 1px solid rgba(194, 211, 222, 0.98);
-  border-radius: 1.35rem;
+  border-radius: 1.25rem;
   background: #ffffff;
   box-shadow: 0 30px 80px rgba(5, 18, 24, 0.32);
 }
 
 .assetPhotoModal {
-  width: min(calc(100vw - 3rem), 760px);
+  width: min(calc(100vw - 2rem), 720px);
 }
 
 .sentPhotoModal {
-  width: min(calc(100vw - 3rem), 680px);
+  width: min(calc(100vw - 2rem), 640px);
 }
 
 .leadPhotoModalHeader {
@@ -900,13 +908,9 @@
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 1rem;
-  padding: 0.9rem 1rem 0.85rem 1.15rem;
+  padding: 0.85rem 0.9rem 0.8rem 1.05rem;
   border-bottom: 1px solid rgba(211, 224, 234, 0.94);
   background: #ffffff;
-}
-
-.assetPhotoModalHeader,
-.sentPhotoModalHeader {
   box-shadow: inset 0 3px 0 var(--lead-photo-accent);
 }
 
@@ -946,9 +950,9 @@
 }
 
 .leadPhotoModalCloseButton {
-  width: 2.55rem;
-  height: 2.55rem;
-  border-radius: 0.85rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.82rem;
 }
 
 .leadPhotoModalCloseButton:hover,
@@ -966,17 +970,14 @@
   min-width: 0;
   min-height: 0;
   display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
   align-content: start;
-  gap: 0.7rem;
-  overflow: auto;
+  gap: 0.65rem;
+  overflow-x: hidden;
+  overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 0.8rem 0.85rem 0.9rem;
+  padding: 0.75rem 0.8rem 0.85rem;
   background: #eef3f5;
-}
-
-.assetPhotoModalBody,
-.sentPhotoModalBody {
   scrollbar-width: thin;
   scrollbar-color: rgba(25, 66, 55, 0.45) transparent;
 }
@@ -984,21 +985,16 @@
 .leadPhotoModalFrame {
   position: relative;
   width: 100%;
-  height: min(48dvh, 440px);
+  height: min(52dvh, 420px);
+  max-height: 420px;
   min-height: 0;
   box-sizing: border-box;
   display: grid;
   place-items: center;
   overflow: hidden;
-  padding: clamp(0.45rem, 1vw, 0.75rem);
+  padding: clamp(0.4rem, 1vw, 0.7rem);
   border: 1px solid rgba(29, 49, 58, 0.32);
-  border-radius: 1rem;
-  background:
-    radial-gradient(circle at 50% 45%, rgba(59, 77, 85, 0.7), transparent 54%),
-    #111c21;
-}
-
-.assetPhotoModalFrame {
+  border-radius: 0.95rem;
   background:
     radial-gradient(circle at 50% 45%, rgba(59, 77, 85, 0.7), transparent 54%),
     #111c21;
@@ -1022,8 +1018,8 @@
   position: absolute;
   top: 50%;
   z-index: 2;
-  width: 2.65rem;
-  height: 2.65rem;
+  width: 2.6rem;
+  height: 2.6rem;
   border-radius: 999px;
   transform: translateY(-50%);
   box-shadow: 0 10px 22px rgba(16, 31, 28, 0.14);
@@ -1035,11 +1031,11 @@
 }
 
 .leadPhotoModalNavPrevious {
-  left: 0.65rem;
+  left: 0.6rem;
 }
 
 .leadPhotoModalNavNext {
-  right: 0.65rem;
+  right: 0.6rem;
 }
 
 .leadPhotoModalThumbRow {
@@ -1055,9 +1051,9 @@
 }
 
 .leadPhotoModalThumbButton {
-  flex: 0 0 3.85rem;
-  width: 3.85rem;
-  height: 3rem;
+  flex: 0 0 3.75rem;
+  width: 3.75rem;
+  height: 2.9rem;
   overflow: hidden;
   padding: 0.14rem;
   border: 2px solid transparent;
@@ -1124,8 +1120,13 @@
 
   .leadPhotoModal {
     width: calc(100vw - 1rem);
-    max-height: calc(100dvh - 1rem);
+    max-height: calc(100dvh - 2rem);
     border-radius: 1rem;
+  }
+
+  .assetPhotoModal,
+  .sentPhotoModal {
+    width: calc(100vw - 1rem);
   }
 
   .leadPhotoModalHeader {
@@ -1144,7 +1145,8 @@
   }
 
   .leadPhotoModalFrame {
-    height: min(44dvh, 360px);
+    height: min(44dvh, 340px);
+    max-height: 340px;
     padding: 0.35rem;
     border-radius: 0.8rem;
   }
@@ -1172,6 +1174,7 @@
 @media (max-height: 700px) {
   .leadPhotoModalFrame {
     height: min(42dvh, 300px);
+    max-height: 300px;
   }
 }
 
