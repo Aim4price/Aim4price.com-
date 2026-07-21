@@ -1148,16 +1148,17 @@ export default function MaintenanceClient() {
               {pagedRecords.map((record) => {
                 const isDone = record.status === 'done';
                 const isRecurringFollowUp = Boolean(record.generatedFromMaintenanceId);
+                const isUpcomingRecurringFollowUp = isRecurringFollowUp && !isDone;
 
                 return (
                   <article
-                    className={`${styles.invoiceRow} ${isDone ? styles.maintenanceCardDone : styles.maintenanceCardOpen} ${isRecurringFollowUp ? styles.maintenanceRecurringFollowUp : ''}`}
+                    className={`${styles.invoiceRow} ${isDone ? styles.maintenanceCardDone : styles.maintenanceCardOpen} ${isUpcomingRecurringFollowUp ? styles.maintenanceRecurringFollowUp : ''}`}
                     key={record.id}
                   >
                     <div className={styles.invoiceHeader}>
                       <div className={styles.invoiceTitleBlock}>
                         <span
-                          className={`${styles.maintenanceStatusPill} ${isDone ? styles.maintenanceStatusGood : styles.maintenanceStatusDanger}`}
+                          className={`${styles.maintenanceStatusPill} ${isDone ? styles.maintenanceStatusGood : isRecurringFollowUp ? styles.maintenanceStatusWarning : styles.maintenanceStatusDanger}`}
                         >
                           {isDone ? 'Maintenance completed' : isRecurringFollowUp ? 'Next recurring maintenance' : 'Maintenance upcoming'}
                         </span>

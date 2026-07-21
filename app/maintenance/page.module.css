@@ -4466,7 +4466,7 @@
   line-height: 1.35;
 }
 
-.invoiceRow.maintenanceRecurringFollowUp {
+.invoiceRow.maintenanceCardOpen.maintenanceRecurringFollowUp {
   position: relative;
   border-color: rgba(193, 123, 51, 0.42);
   background:
@@ -4477,7 +4477,13 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.98);
 }
 
-.invoiceRow.maintenanceRecurringFollowUp::after {
+.maintenanceStatusWarning {
+  color: #8b4f12;
+  border-color: rgba(193, 123, 51, 0.32);
+  background: #fff0dc;
+}
+
+.invoiceRow.maintenanceCardOpen.maintenanceRecurringFollowUp::after {
   content: "";
   position: absolute;
   left: 2.15rem;
@@ -4493,7 +4499,7 @@
 }
 
 @media (max-width: 760px) {
-  .invoiceRow.maintenanceRecurringFollowUp::after {
+  .invoiceRow.maintenanceCardOpen.maintenanceRecurringFollowUp::after {
     left: 1.5rem;
   }
 }
