@@ -22,6 +22,8 @@ type OverviewItem = {
   headline: string;
   detail: string;
   notes: string;
+  isRecurringFollowUp: boolean;
+  createdAtIso: string;
 };
 
 type OverviewApiResponse = {
@@ -77,6 +79,7 @@ export default function OwnerAttentionClient() {
   const [clearingItemId, setClearingItemId] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
   const requestIdRef = useRef(0);
+  const hasLoadedRef = useRef(false);
 
   const visibleItems = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
@@ -106,10 +109,9 @@ export default function OwnerAttentionClient() {
     const requestId = ++requestIdRef.current;
 
     async function loadOverview() {
-      setIsLoading(true);
+      if (!hasLoadedRef.current) setIsLoading(true);
       setLoadError(null);
       setActionError(null);
-      setItems([]);
 
       try {
         const response = await fetch(`/api/owner-app/attention?range=${range}`, {
@@ -139,6 +141,7 @@ export default function OwnerAttentionClient() {
         }
       } finally {
         if (!controller.signal.aborted && requestId === requestIdRef.current) {
+          hasLoadedRef.current = true;
           setIsLoading(false);
         }
       }
@@ -148,10 +151,29 @@ export default function OwnerAttentionClient() {
     return () => controller.abort();
   }, [reloadToken]);
 
+  useEffect(() => {
+    const refresh = () => setReloadToken((current) => current + 1);
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') refresh();
+    };
+    const interval = window.setInterval(refresh, 30_000);
+
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refreshWhenVisible);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
+    };
+  }, []);
+
   function handleOpenAsset(item: OverviewItem) {
     setOpeningItemId(item.id);
     setActionError(null);
-    window.location.assign(`/owner-app/assets/${encodeURIComponent(item.assetId)}`);
+    const destination = item.type === 'service' || item.type === 'checkup'
+      ? `/owner-app/assets/${encodeURIComponent(item.assetId)}/maintenance?maintenanceId=${encodeURIComponent(item.sourceId)}`
+      : `/owner-app/assets/${encodeURIComponent(item.assetId)}`;
+    window.location.assign(destination);
   }
 
   async function handleClearItem(item: OverviewItem) {
@@ -197,12 +219,18 @@ export default function OwnerAttentionClient() {
     const hasPendingCardAction = Boolean(openingItemId) || Boolean(clearingItemId);
 
     return (
-      <article key={`${item.id}:${item.sourceId}`} className={styles.overviewCard}>
+      <article
+        key={`${item.id}:${item.sourceId}`}
+        className={`${styles.overviewCard} ${item.isRecurringFollowUp ? styles.overviewRecurringCard : ''}`}
+      >
         <div className={styles.overviewCardLabels}>
-          <span className={styles.overviewType}>{TYPE_LABELS[item.type]}</span>
+          <span className={`${styles.overviewType} ${item.isRecurringFollowUp ? styles.overviewRecurringType : ''}`}>
+            {item.isRecurringFollowUp ? `Recurring ${TYPE_LABELS[item.type]}` : TYPE_LABELS[item.type]}
+          </span>
           <span className={statusClassName(item)}>{statusText(item)}</span>
         </div>
 
+        {item.isRecurringFollowUp ? <p className={styles.overviewRecurringNotice}>Next recurring maintenance</p> : null}
         <h3>{item.assetTitle}</h3>
         <p className={styles.overviewHeadline}>{item.headline}</p>
         {item.detail.trim() ? <p className={styles.overviewDetail}>{item.detail}</p> : null}
