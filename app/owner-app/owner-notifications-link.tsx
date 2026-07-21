@@ -44,6 +44,11 @@ export default function OwnerNotificationsLink({ viewerId }: { viewerId: string 
   useEffect(() => {
     const controller = new AbortController();
     void loadUnreadCount(controller.signal);
+    const refresh = () => void loadUnreadCount();
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') refresh();
+    };
+    const intervalId = window.setInterval(refresh, 30_000);
 
     function handleStorage(event: StorageEvent) {
       if (event.key === ownerNotificationSeenStorageKey(viewerId)) {
@@ -60,11 +65,16 @@ export default function OwnerNotificationsLink({ viewerId }: { viewerId: string 
 
     window.addEventListener('storage', handleStorage);
     window.addEventListener(OWNER_NOTIFICATION_SEEN_EVENT, handleNotificationsSeen);
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refreshWhenVisible);
 
     return () => {
       controller.abort();
+      window.clearInterval(intervalId);
       window.removeEventListener('storage', handleStorage);
       window.removeEventListener(OWNER_NOTIFICATION_SEEN_EVENT, handleNotificationsSeen);
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
     };
   }, [loadUnreadCount, viewerId]);
 
