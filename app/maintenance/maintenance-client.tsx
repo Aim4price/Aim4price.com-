@@ -89,6 +89,7 @@ type MaintenanceSummary = {
 type MaintenancePayload = {
   ok?: boolean;
   error?: string;
+  nextRecord?: MaintenanceRecord | null;
   assets?: AssetOption[];
   fieldManagers?: FieldManagerOption[];
   records?: MaintenanceRecord[];
@@ -990,7 +991,9 @@ export default function MaintenanceClient() {
         type: 'success',
         text: markDone
           ? record.recurringEnabled
-            ? 'Maintenance marked done and the next recurring record was created.'
+            ? payload.nextRecord
+              ? `Maintenance marked done. Next recurring maintenance is due at ${maintenanceDueValue(payload.nextRecord)}.`
+              : 'Maintenance marked done.'
             : 'Maintenance marked done.'
           : 'Maintenance moved back to upcoming.',
       });
@@ -1169,6 +1172,9 @@ export default function MaintenanceClient() {
                           <span className={styles.invoiceSavedDateLabel}>
                             {isDone ? `Completed ${dateOnly(record.completedAtIso || record.updatedAtIso)}` : `Updated ${dateOnly(record.updatedAtIso)}`}
                           </span>
+                          {isDone && maintenanceDueValue(record) ? (
+                            <span className={styles.invoiceSavedDateLabel}>Scheduled for {maintenanceDueValue(record)}</span>
+                          ) : null}
                         </div>
                       </div>
 
