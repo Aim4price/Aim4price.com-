@@ -47,6 +47,8 @@ export type FieldManagerOverviewItem = {
   headline: string;
   detail: string;
   notes: string;
+  isRecurringFollowUp: boolean;
+  createdAtIso: string;
   sortTimestamp: string | null;
   sortValue: number | null;
   openAsset: true;
@@ -355,6 +357,8 @@ function maintenanceToOverviewItem(
     headline: asText(record.title) || `Scheduled ${maintenanceTypeLabel(record).toLowerCase()}`,
     detail: maintenanceDetail(record),
     notes: asText(record.notes),
+    isRecurringFollowUp: Boolean(record.generatedFromMaintenanceId),
+    createdAtIso: record.createdAtIso,
     sortTimestamp: record.triggerType === 'date' ? dateKeyToIso(record.dueDate) : null,
     sortValue: typeof sortValue === 'number' && Number.isFinite(sortValue) ? sortValue : null,
     openAsset: true,
@@ -408,6 +412,15 @@ function sortOverviewItems(items: FieldManagerOverviewItem[]): FieldManagerOverv
         const rightTime = right.sortTimestamp ? new Date(right.sortTimestamp).getTime() : 0;
         if (leftTime !== rightTime) return rightTime - leftTime;
       }
+    }
+
+    const recurringDifference = Number(right.isRecurringFollowUp) - Number(left.isRecurringFollowUp);
+    if (recurringDifference !== 0) return recurringDifference;
+
+    if (left.isRecurringFollowUp && right.isRecurringFollowUp) {
+      const leftCreatedTime = new Date(left.createdAtIso).getTime();
+      const rightCreatedTime = new Date(right.createdAtIso).getTime();
+      if (leftCreatedTime !== rightCreatedTime) return rightCreatedTime - leftCreatedTime;
     }
 
     const leftValue = left.sortValue ?? Number.POSITIVE_INFINITY;
@@ -496,6 +509,8 @@ async function buildFieldManagerOverview(input: {
       headline: 'Problem reported',
       detail: group.latest.note,
       notes: supportingDetails.join(' • '),
+      isRecurringFollowUp: false,
+      createdAtIso: group.latest.createdAtIso,
       sortTimestamp: group.latest.createdAtIso || null,
       sortValue: null,
       openAsset: true,
@@ -539,6 +554,8 @@ async function buildFieldManagerOverview(input: {
       headline: 'License renewal',
       detail: alert.body,
       notes: '',
+      isRecurringFollowUp: false,
+      createdAtIso: dateKeyToIso(alert.renewalDate) ?? new Date(0).toISOString(),
       sortTimestamp: dateKeyToIso(alert.renewalDate),
       sortValue: daysUntilDue,
       openAsset: true,

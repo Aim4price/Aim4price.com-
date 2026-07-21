@@ -12,12 +12,14 @@ import {
   type AssetLeadStatus,
   type LeadType,
 } from './partner-access';
+import { listAssetMaintenanceRecords, type AssetMaintenanceRecord } from './asset-maintenance';
 
 export type HeaderNotificationCategory =
   | 'partner_note'
   | 'lead'
   | 'qr_scan'
   | 'fuel'
+  | 'maintenance'
   | 'asset_discovery';
 
 export type HeaderNotificationTone = 'neutral' | 'success' | 'warning' | 'info';
@@ -74,6 +76,7 @@ const MAX_NOTIFICATIONS = 12;
 const RECENT_SCAN_DAYS = 14;
 const RECENT_FUEL_DAYS = 14;
 const RECENT_LEAD_DAYS = 45;
+const RECENT_MAINTENANCE_DAYS = 45;
 
 function asText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
@@ -250,6 +253,53 @@ function describeFuelEvent(event: FuelLedgerEvent): string {
   }
 
   return `Opening balance recorded for ${event.storageName}.`;
+}
+
+function maintenanceDueText(record: AssetMaintenanceRecord): string {
+  if (record.triggerType === 'date' && record.dueDate) {
+    const dueDate = new Date(`${record.dueDate.slice(0, 10)}T00:00:00Z`);
+    const label = new Intl.DateTimeFormat('en-ZA', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      timeZone: 'UTC',
+    }).format(dueDate);
+    return `Due ${label}.`;
+  }
+
+  if (record.triggerType === 'usage' && record.dueUsage !== null) {
+    const unit = record.usageMetric === 'km'
+      ? 'km'
+      : record.usageMetric === 'percentage'
+        ? '%'
+        : 'hours';
+    return `Due at ${new Intl.NumberFormat('en-ZA', { maximumFractionDigits: 2 }).format(record.dueUsage)} ${unit}.`;
+  }
+
+  return 'Open the schedule to review its next due target.';
+}
+
+async function listOwnerRecurringMaintenanceNotifications(userId: string): Promise<HeaderNotificationItem[]> {
+  try {
+    const records = await listAssetMaintenanceRecords(userId, { status: 'upcoming' });
+
+    return records
+      .filter((record) => Boolean(record.generatedFromMaintenanceId))
+      .filter((record) => isWithinDays(record.createdAtIso, RECENT_MAINTENANCE_DAYS))
+      .map((record) => ({
+        id: `maintenance-recurring:${record.id}`,
+        category: 'maintenance',
+        tone: 'warning',
+        title: 'Next recurring maintenance',
+        body: `${record.title} for ${record.assetTitle} was scheduled automatically. ${maintenanceDueText(record)}`,
+        href: `/owner-app/assets/${encodeURIComponent(record.assetId)}/maintenance?maintenanceId=${encodeURIComponent(record.id)}`,
+        createdAtIso: isoFallback(record.createdAtIso),
+        assetId: record.assetId,
+      } satisfies HeaderNotificationItem));
+  } catch (error) {
+    console.error('Failed to load recurring maintenance notifications', error);
+    return [];
+  }
 }
 
 async function listOpenPartnerNoteNotifications(userId: string): Promise<HeaderNotificationItem[]> {
@@ -524,6 +574,7 @@ export async function listHeaderNotifications(input: ListHeaderNotificationsInpu
         listOpenPartnerNoteNotifications(input.userId),
         listOwnerLeadNotifications(input.userId),
         listOwnerAssetDiscoveryNotifications(input.userId),
+        listOwnerRecurringMaintenanceNotifications(input.userId),
         listQrScanNotifications(input.userId),
         listFuelNotifications(input.userId),
       ])

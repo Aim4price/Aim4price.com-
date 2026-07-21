@@ -10,7 +10,8 @@ export type OwnerAppOverviewItem = {
   id: string; sourceId: string; sourceKind: 'maintenance' | 'problem' | 'license';
   type: 'problem' | 'service' | 'checkup' | 'license'; section: 'needs_attention' | 'coming_up';
   status: string; statusLabel: string; assetId: string; assetTitle: string; headline: string;
-  detail: string; notes: string; sortValue: number | null; sortTimestamp: string | null;
+  detail: string; notes: string; isRecurringFollowUp: boolean; createdAtIso: string;
+  sortValue: number | null; sortTimestamp: string | null;
 };
 
 type LicenseRow = {
@@ -48,6 +49,7 @@ function maintenanceItem(item: AssetMaintenanceRecord, asset: OwnerAppAssetSumma
     section: urgent ? 'needs_attention' : 'coming_up', status: needsUsage ? 'usage_needed' : item.computedStatus,
     statusLabel: needsUsage ? 'Usage needed' : item.computedStatusLabel, assetId: asset.id, assetTitle: asset.title,
     headline: text(item.title) || `Scheduled ${typeLabel.toLowerCase()}`, detail, notes: text(item.notes),
+    isRecurringFollowUp: Boolean(item.generatedFromMaintenanceId), createdAtIso: item.createdAtIso,
     sortValue: item.triggerType === 'date' ? item.daysUntilDue : item.remainingUsage,
     sortTimestamp: item.triggerType === 'date' ? dateIso(item.dueDate) : null,
   };
@@ -88,6 +90,7 @@ async function buildOverview(ownerUserId: string, range: OwnerAppOverviewRange):
       section: 'needs_attention', status: 'problem', statusLabel: 'Needs attention', assetId: asset.id,
       assetTitle: asset.title, headline: 'Problem reported', detail: group.latest.note,
       notes: [reporter ? `Reported by ${reporter}` : '', reported ? `Reported ${reported}` : ''].filter(Boolean).join(' • '),
+      isRecurringFollowUp: false, createdAtIso: group.latest.createdAtIso,
       sortValue: null, sortTimestamp: group.latest.createdAtIso || null,
     });
   });
@@ -99,13 +102,19 @@ async function buildOverview(ownerUserId: string, range: OwnerAppOverviewRange):
     const days = dayDifference(alert.renewalDate, today);
     if (days === null || (horizon !== null && days > horizon && days >= 0)) return;
     const urgent = alert.computedStatus === 'overdue' || alert.computedStatus === 'due';
-    result.push({ id: alert.id, sourceId: alert.id, sourceKind: 'license', type: 'license', section: urgent ? 'needs_attention' : 'coming_up', status: alert.computedStatus, statusLabel: alert.computedStatusLabel, assetId: asset.id, assetTitle: asset.title, headline: 'Licence renewal', detail: alert.body, notes: '', sortValue: days, sortTimestamp: dateIso(alert.renewalDate) });
+    result.push({ id: alert.id, sourceId: alert.id, sourceKind: 'license', type: 'license', section: urgent ? 'needs_attention' : 'coming_up', status: alert.computedStatus, statusLabel: alert.computedStatusLabel, assetId: asset.id, assetTitle: asset.title, headline: 'Licence renewal', detail: alert.body, notes: '', isRecurringFollowUp: false, createdAtIso: dateIso(alert.renewalDate) ?? new Date(0).toISOString(), sortValue: days, sortTimestamp: dateIso(alert.renewalDate) });
   });
 
   return result.sort((a, b) => {
     if (a.section !== b.section) return a.section === 'needs_attention' ? -1 : 1;
     const priority = (value: string) => ({ problem: 0, overdue: 1, due: 2, usage_needed: 3, due_soon: 4, upcoming: 5 }[value] ?? 9);
     const difference = priority(a.status) - priority(b.status); if (difference) return difference;
+    const recurringDifference = Number(b.isRecurringFollowUp) - Number(a.isRecurringFollowUp);
+    if (recurringDifference) return recurringDifference;
+    if (a.isRecurringFollowUp && b.isRecurringFollowUp) {
+      const createdDifference = new Date(b.createdAtIso).getTime() - new Date(a.createdAtIso).getTime();
+      if (createdDifference) return createdDifference;
+    }
     return (a.sortValue ?? Number.POSITIVE_INFINITY) - (b.sortValue ?? Number.POSITIVE_INFINITY) || a.assetTitle.localeCompare(b.assetTitle);
   });
 }

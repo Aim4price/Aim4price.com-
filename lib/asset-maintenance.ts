@@ -3,6 +3,7 @@ import { getAssetRegisterItemById, listAssetRegisterItems, type AssetRegisterIte
 import { listAssetRegisters } from './asset-registers';
 import { resolveAssetUsage } from './asset-usage';
 import { ensureFieldManagerTables, listFieldManagers } from './field-manager';
+import type { PoolClient } from 'pg';
 
 export type AssetMaintenanceType = 'service' | 'checkup';
 export type AssetMaintenanceTriggerType = 'date' | 'usage';
@@ -196,6 +197,8 @@ type MaintenanceRow = {
 type MaintenanceOwnerRow = MaintenanceRow & {
   asset_owner_user_id?: string | null;
 };
+
+type MaintenanceQueryClient = Pick<PoolClient, 'query'>;
 
 type AssetForAlert = {
   id: string;
@@ -1004,22 +1007,31 @@ export async function listAssetMaintenanceData(userId: string, filters: AssetMai
   };
 }
 
-export async function getAssetMaintenanceRecordById(userId: string, maintenanceId: string): Promise<AssetMaintenanceRecord | null> {
-  await ensureAssetMaintenanceTables();
-
+async function getAssetMaintenanceRecordByIdWithClient(
+  client: MaintenanceQueryClient,
+  userId: string,
+  maintenanceId: string,
+  lockRecord = false,
+): Promise<AssetMaintenanceRecord | null> {
   if (!isAssetMaintenanceRecordId(maintenanceId)) {
     return null;
   }
 
-  const result = await getDb().query<MaintenanceRow>(
+  const result = await client.query<MaintenanceRow>(
     `
       ${maintenanceSelectSql(`where m.user_id = $1 and m.id = $2::uuid`)}
       limit 1
+      ${lockRecord ? 'for update of m' : ''}
     `,
     [userId, maintenanceId],
   );
 
   return result.rows[0] ? mapMaintenanceRow(result.rows[0]) : null;
+}
+
+export async function getAssetMaintenanceRecordById(userId: string, maintenanceId: string): Promise<AssetMaintenanceRecord | null> {
+  await ensureAssetMaintenanceTables();
+  return getAssetMaintenanceRecordByIdWithClient(getDb(), userId, maintenanceId);
 }
 
 export async function getAssignedFieldManagerMaintenanceRecord(input: {
@@ -1299,14 +1311,26 @@ function addDateInterval(dateIso: string, value: number, unit: AssetMaintenanceI
   const interval = Math.max(1, Math.round(value));
 
   if (unit === 'weeks') date.setUTCDate(date.getUTCDate() + interval * 7);
-  else if (unit === 'months') date.setUTCMonth(date.getUTCMonth() + interval);
+  else if (unit === 'months') {
+    // Keep month-end schedules at the end of the target month instead of
+    // allowing JavaScript's date overflow (for example, 31 Jan -> 3 Mar).
+    const originalDay = date.getUTCDate();
+    date.setUTCDate(1);
+    date.setUTCMonth(date.getUTCMonth() + interval);
+    const lastDayOfTargetMonth = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 0)).getUTCDate();
+    date.setUTCDate(Math.min(originalDay, lastDayOfTargetMonth));
+  }
   else date.setUTCDate(date.getUTCDate() + interval);
 
   return date.toISOString().slice(0, 10);
 }
 
-async function getActiveRecurringChild(userId: string, maintenanceId: string): Promise<AssetMaintenanceRecord | null> {
-  const result = await getDb().query<{ id: string }>(
+async function getActiveRecurringChild(
+  client: MaintenanceQueryClient,
+  userId: string,
+  maintenanceId: string,
+): Promise<AssetMaintenanceRecord | null> {
+  const result = await client.query<{ id: string }>(
     `
       select id::text as id
       from public.asset_maintenance_records
@@ -1320,20 +1344,21 @@ async function getActiveRecurringChild(userId: string, maintenanceId: string): P
   );
 
   const childId = result.rows[0]?.id;
-  return childId ? getAssetMaintenanceRecordById(userId, childId) : null;
+  return childId ? getAssetMaintenanceRecordByIdWithClient(client, userId, childId) : null;
 }
 
-async function createNextRecurringRecord(userId: string, completedRecord: AssetMaintenanceRecord): Promise<AssetMaintenanceRecord | null> {
+async function createNextRecurringRecord(
+  client: MaintenanceQueryClient,
+  userId: string,
+  completedRecord: AssetMaintenanceRecord,
+): Promise<AssetMaintenanceRecord | null> {
   if (!completedRecord.recurringEnabled || !completedRecord.recurringIntervalValue || !completedRecord.recurringIntervalUnit) {
     return null;
   }
 
-  const existingChild = await getActiveRecurringChild(userId, completedRecord.id);
+  const existingChild = await getActiveRecurringChild(client, userId, completedRecord.id);
   if (existingChild) return existingChild;
 
-  const asset = await verifyAssetBelongsToUser(userId, completedRecord.assetId);
-  const assetMetric = assetUsageMetric(asset);
-  const currentUsage = assetUsageReading(asset, completedRecord.usageMetric ?? assetMetric);
   let nextDueDate: string | null = null;
   let nextDueUsage: number | null = null;
 
@@ -1341,20 +1366,12 @@ async function createNextRecurringRecord(userId: string, completedRecord: AssetM
     const completedDate = (completedRecord.completedAtIso ?? new Date().toISOString()).slice(0, 10);
     nextDueDate = addDateInterval(completedDate, completedRecord.recurringIntervalValue, completedRecord.recurringIntervalUnit);
   } else {
-    const baseUsage = completedRecord.completedUsage ?? currentUsage ?? completedRecord.dueUsage ?? 0;
+    const baseUsage = completedRecord.completedUsage ?? completedRecord.currentUsage ?? completedRecord.dueUsage ?? 0;
     nextDueUsage = Math.round((baseUsage + completedRecord.recurringIntervalValue) * 100) / 100;
   }
 
-  const result = await getDb().query<{ id: string }>(
+  const result = await client.query<{ id: string }>(
     `
-      with locked_parent as (
-        select id
-        from public.asset_maintenance_records
-        where user_id = $1
-          and id = $17::uuid
-          and status = 'done'
-        for update
-      )
       insert into public.asset_maintenance_records (
         user_id,
         asset_register_item_id,
@@ -1398,7 +1415,13 @@ async function createNextRecurringRecord(userId: string, completedRecord: AssetM
         $17::uuid,
         now(),
         now()
-      from locked_parent
+      where exists (
+        select 1
+        from public.asset_maintenance_records
+        where user_id = $1
+          and id = $17::uuid
+          and status = 'done'
+      )
       on conflict do nothing
       returning id::text as id
     `,
@@ -1424,7 +1447,9 @@ async function createNextRecurringRecord(userId: string, completedRecord: AssetM
   );
 
   const createdId = result.rows[0]?.id;
-  return createdId ? getAssetMaintenanceRecordById(userId, createdId) : getActiveRecurringChild(userId, completedRecord.id);
+  return createdId
+    ? getAssetMaintenanceRecordByIdWithClient(client, userId, createdId)
+    : getActiveRecurringChild(client, userId, completedRecord.id);
 }
 
 export async function completeAssetMaintenanceRecord(
@@ -1434,68 +1459,78 @@ export async function completeAssetMaintenanceRecord(
   guard: AssetMaintenanceCompletionGuard = {},
 ): Promise<{ completed: AssetMaintenanceRecord; nextRecord: AssetMaintenanceRecord | null }> {
   await ensureAssetMaintenanceTables();
+  const client = await getDb().connect();
 
-  const existing = await getAssetMaintenanceRecordById(userId, maintenanceId);
-  if (!existing || existing.status === 'cancelled') throw new Error('MAINTENANCE_NOT_FOUND');
+  try {
+    await client.query('begin');
 
-  const guardedAssetId = asText(guard.assetId) || null;
-  const guardedManagerId = asText(guard.assignedFieldManagerId) || null;
-  const guardedMaintenanceType = guard.maintenanceType ?? null;
-
-  if (
-    (guardedAssetId && existing.assetId !== guardedAssetId)
-    || (guardedManagerId && existing.assignedFieldManagerId !== guardedManagerId)
-    || (guardedMaintenanceType && existing.maintenanceType !== guardedMaintenanceType)
-  ) {
-    throw new Error('MAINTENANCE_NOT_FOUND');
-  }
-
-  if (existing.status === 'done') {
-    const nextRecord = await createNextRecurringRecord(userId, existing);
-    return { completed: existing, nextRecord };
-  }
-
-  const completedUsage = existing.triggerType === 'usage'
-    ? nonNegativeNumber(input.completedUsage) ?? existing.currentUsage
-    : nonNegativeNumber(input.completedUsage);
-  const completedNotes = asLongText(input.completedNotes);
-  const completedBy = asText(input.completedBy);
-
-  await getDb().query(
-    `
-      update public.asset_maintenance_records
-      set
-        status = 'done',
-        completed_at = now(),
-        completed_usage = $3,
-        completed_notes = $4,
-        completed_by = $5,
-        alert_noted_at = now(),
-        updated_at = now()
-      where user_id = $1
-        and id = $2::uuid
-        and coalesce(status, 'upcoming') = 'upcoming'
-        and ($6::uuid is null or asset_register_item_id = $6::uuid)
-        and ($7::uuid is null or assigned_field_manager_id = $7::uuid)
-        and ($8::text is null or maintenance_type = $8::text)
-    `,
-    [
+    const existing = await getAssetMaintenanceRecordByIdWithClient(
+      client,
       userId,
       maintenanceId,
-      completedUsage,
-      completedNotes,
-      completedBy,
-      guardedAssetId,
-      guardedManagerId,
-      guardedMaintenanceType,
-    ],
-  );
+      true,
+    );
+    if (!existing || existing.status === 'cancelled') throw new Error('MAINTENANCE_NOT_FOUND');
 
-  const completed = await getAssetMaintenanceRecordById(userId, maintenanceId);
-  if (!completed || completed.status !== 'done') throw new Error('MAINTENANCE_NOT_FOUND');
+    const guardedAssetId = asText(guard.assetId) || null;
+    const guardedManagerId = asText(guard.assignedFieldManagerId) || null;
+    const guardedMaintenanceType = guard.maintenanceType ?? null;
 
-  const nextRecord = await createNextRecurringRecord(userId, completed);
-  return { completed, nextRecord };
+    if (
+      (guardedAssetId && existing.assetId !== guardedAssetId)
+      || (guardedManagerId && existing.assignedFieldManagerId !== guardedManagerId)
+      || (guardedMaintenanceType && existing.maintenanceType !== guardedMaintenanceType)
+    ) {
+      throw new Error('MAINTENANCE_NOT_FOUND');
+    }
+
+    let completed = existing;
+
+    if (existing.status !== 'done') {
+      // Completion is intentionally independent of whether the saved reading has
+      // reached the due target. Owners may service an asset early.
+      const completedUsage = existing.triggerType === 'usage'
+        ? nonNegativeNumber(input.completedUsage) ?? existing.currentUsage
+        : nonNegativeNumber(input.completedUsage);
+
+      await client.query(
+        `
+          update public.asset_maintenance_records
+          set
+            status = 'done',
+            completed_at = now(),
+            completed_usage = $3,
+            completed_notes = $4,
+            completed_by = $5,
+            alert_noted_at = now(),
+            updated_at = now()
+          where user_id = $1
+            and id = $2::uuid
+            and coalesce(status, 'upcoming') = 'upcoming'
+        `,
+        [
+          userId,
+          maintenanceId,
+          completedUsage,
+          asLongText(input.completedNotes),
+          asText(input.completedBy),
+        ],
+      );
+
+      const updated = await getAssetMaintenanceRecordByIdWithClient(client, userId, maintenanceId);
+      if (!updated || updated.status !== 'done') throw new Error('MAINTENANCE_NOT_FOUND');
+      completed = updated;
+    }
+
+    const nextRecord = await createNextRecurringRecord(client, userId, completed);
+    await client.query('commit');
+    return { completed, nextRecord };
+  } catch (error) {
+    await client.query('rollback');
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 export async function reopenAssetMaintenanceRecord(userId: string, maintenanceId: string): Promise<AssetMaintenanceRecord> {
