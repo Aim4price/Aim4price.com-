@@ -4,17 +4,21 @@ import FieldManagerMaintenanceClient from '../../../../field-manager/assets/[pub
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-export default async function OwnerMaintenancePage({ params }: {
+export default async function OwnerMaintenancePage({ params, searchParams }: {
   params: { assetId: string };
+  searchParams?: { maintenanceId?: string | string[] };
 }) {
   await requireOwnerAppPageAccess();
   const assetId = String(params.assetId ?? '').trim();
+  const maintenanceIdValue = searchParams?.maintenanceId;
+  const maintenanceId = String(Array.isArray(maintenanceIdValue) ? maintenanceIdValue[0] : maintenanceIdValue ?? '').trim();
 
   return (
     <FieldManagerMaintenanceClient
       mode="owner"
       assetId={assetId}
       assetHref={`/owner-app/assets/${encodeURIComponent(assetId)}`}
+      highlightMaintenanceId={maintenanceId}
     />
   );
 }
