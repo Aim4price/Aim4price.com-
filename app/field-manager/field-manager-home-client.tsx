@@ -39,6 +39,24 @@ export default function FieldManagerHomeClient() {
     void loadSession();
   }, []);
 
+  useEffect(() => {
+    if (!hasManagerAccess) return undefined;
+
+    const refresh = () => void loadOverviewCount();
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') refresh();
+    };
+    const interval = window.setInterval(refresh, 30_000);
+
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refreshWhenVisible);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
+    };
+  }, [hasManagerAccess]);
+
   async function loadSession() {
     setIsLoading(true);
     setHasManagerAccess(false);
@@ -71,7 +89,7 @@ export default function FieldManagerHomeClient() {
 
   async function loadOverviewCount() {
     try {
-      const response = await fetch('/api/field-manager/overview?range=week', {
+      const response = await fetch('/api/field-manager/overview?range=upcoming', {
         credentials: 'include',
         cache: 'no-store',
       });

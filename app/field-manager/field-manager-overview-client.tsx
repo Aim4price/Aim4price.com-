@@ -27,6 +27,8 @@ type OverviewItem = {
   headline: string;
   detail: string;
   notes: string;
+  isRecurringFollowUp: boolean;
+  createdAtIso: string;
   sortTimestamp: string | null;
   sortValue: number | null;
   openAsset: true;
@@ -93,6 +95,7 @@ export default function FieldManagerOverviewClient() {
   const [clearingItemId, setClearingItemId] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
   const requestIdRef = useRef(0);
+  const hasLoadedRef = useRef(false);
 
   const visibleItems = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
@@ -122,10 +125,9 @@ export default function FieldManagerOverviewClient() {
     const requestId = ++requestIdRef.current;
 
     async function loadOverview() {
-      setIsLoading(true);
+      if (!hasLoadedRef.current) setIsLoading(true);
       setLoadError(null);
       setActionError(null);
-      setItems([]);
 
       try {
         const response = await fetch(`/api/field-manager/overview?range=${range}`, {
@@ -155,6 +157,7 @@ export default function FieldManagerOverviewClient() {
         }
       } finally {
         if (!controller.signal.aborted && requestId === requestIdRef.current) {
+          hasLoadedRef.current = true;
           setIsLoading(false);
         }
       }
@@ -163,6 +166,22 @@ export default function FieldManagerOverviewClient() {
     void loadOverview();
     return () => controller.abort();
   }, [reloadToken]);
+
+  useEffect(() => {
+    const refresh = () => setReloadToken((current) => current + 1);
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') refresh();
+    };
+    const interval = window.setInterval(refresh, 30_000);
+
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refreshWhenVisible);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
+    };
+  }, []);
 
   async function handleOpenAsset(item: OverviewItem) {
     setOpeningItemId(item.id);
@@ -244,12 +263,18 @@ export default function FieldManagerOverviewClient() {
     const hasPendingCardAction = Boolean(openingItemId) || Boolean(clearingItemId);
 
     return (
-      <article key={`${item.id}:${item.sourceId}`} className={styles.overviewCard}>
+      <article
+        key={`${item.id}:${item.sourceId}`}
+        className={`${styles.overviewCard} ${item.isRecurringFollowUp ? styles.overviewRecurringCard : ''}`}
+      >
         <div className={styles.overviewCardLabels}>
-          <span className={styles.overviewType}>{TYPE_LABELS[item.type]}</span>
+          <span className={`${styles.overviewType} ${item.isRecurringFollowUp ? styles.overviewRecurringType : ''}`}>
+            {item.isRecurringFollowUp ? `Recurring ${TYPE_LABELS[item.type]}` : TYPE_LABELS[item.type]}
+          </span>
           <span className={statusClassName(item)}>{statusText(item)}</span>
         </div>
 
+        {item.isRecurringFollowUp ? <p className={styles.overviewRecurringNotice}>Next recurring maintenance</p> : null}
         <h3>{item.assetTitle}</h3>
         <p className={styles.overviewHeadline}>{item.headline}</p>
         {item.detail.trim() ? <p className={styles.overviewDetail}>{item.detail}</p> : null}

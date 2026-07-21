@@ -953,6 +953,14 @@
   box-shadow: 0 16px 38px rgba(18, 53, 45, 0.09);
 }
 
+.overviewCard.overviewRecurringCard {
+  border-color: rgba(193, 123, 51, 0.46);
+  background:
+    radial-gradient(circle at 0 0, rgba(230, 148, 61, 0.1), transparent 42%),
+    linear-gradient(180deg, #fffdf9 0%, #fff8ee 100%);
+  box-shadow: 0 16px 38px rgba(182, 111, 38, 0.13);
+}
+
 .overviewCardLabels {
   display: flex;
   align-items: center;
@@ -979,6 +987,22 @@
 .overviewType {
   background: rgba(35, 104, 81, 0.09);
   color: #1d5b46;
+}
+
+.overviewType.overviewRecurringType {
+  border: 1px solid rgba(193, 123, 51, 0.22);
+  background: #fff0dc;
+  color: #8b4f12;
+}
+
+.overviewRecurringNotice {
+  margin: -2px 0 10px;
+  color: #9a5816;
+  font-size: 0.72rem;
+  font-weight: 950;
+  letter-spacing: 0.07em;
+  line-height: 1.2;
+  text-transform: uppercase;
 }
 
 .overviewStatus {
@@ -1312,6 +1336,182 @@
 .maintenanceSuccess a {
   width: 100%;
   margin-top: 4px;
+}
+
+.maintenanceScheduleSection {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.maintenanceActionNotice {
+  border: 1px solid rgba(35, 104, 81, 0.22);
+  border-radius: 14px;
+  background: #edf8f2;
+  color: #15533e;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  font-size: 0.84rem;
+  font-weight: 750;
+  line-height: 1.4;
+}
+
+.maintenanceScheduleHeading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 3px;
+}
+
+.maintenanceScheduleHeading > div {
+  display: grid;
+  gap: 3px;
+}
+
+.maintenanceScheduleHeading span {
+  color: #236851;
+  font-size: 0.67rem;
+  font-weight: 950;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.maintenanceScheduleHeading h2 {
+  margin: 0;
+  color: #12352d;
+  font-size: 1.22rem;
+  letter-spacing: -0.025em;
+}
+
+.maintenanceScheduleHeading > strong {
+  min-width: 30px;
+  min-height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #edf6f1;
+  color: #1c6048;
+  font-size: 0.78rem;
+}
+
+.maintenanceScheduleList {
+  display: grid;
+  gap: 11px;
+}
+
+.maintenanceScheduleCard {
+  display: grid;
+  gap: 8px;
+  border: 1px solid rgba(18, 53, 45, 0.13);
+  border-radius: 19px;
+  background: #fff;
+  padding: 15px;
+  box-shadow: 0 12px 30px rgba(18, 53, 45, 0.07);
+  scroll-margin-block: 120px;
+}
+
+.maintenanceScheduleCardRecurring {
+  border-color: rgba(193, 123, 51, 0.5);
+  background:
+    radial-gradient(circle at 0 0, rgba(230, 148, 61, 0.12), transparent 42%),
+    linear-gradient(180deg, #fffdf9 0%, #fff8ee 100%);
+}
+
+.maintenanceScheduleCardSelected {
+  outline: 4px solid rgba(230, 148, 61, 0.2);
+  border-color: #c17b33;
+  box-shadow: 0 18px 42px rgba(182, 111, 38, 0.18);
+}
+
+.maintenanceScheduleLabels {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.maintenanceScheduleLabels span,
+.maintenanceScheduleLabels strong {
+  border-radius: 999px;
+  padding: 6px 9px;
+  font-size: 0.64rem;
+  font-weight: 950;
+  letter-spacing: 0.055em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.maintenanceScheduleLabels span {
+  background: #edf6f1;
+  color: #1c6048;
+}
+
+.maintenanceScheduleLabels span.maintenanceScheduleRecurringLabel {
+  border: 1px solid rgba(193, 123, 51, 0.25);
+  background: #fff0dc;
+  color: #8b4f12;
+}
+
+.maintenanceScheduleLabels strong {
+  background: rgba(18, 53, 45, 0.07);
+  color: rgba(18, 53, 45, 0.72);
+}
+
+.maintenanceScheduleCard h3,
+.maintenanceScheduleCard p,
+.maintenanceScheduleCard small {
+  margin: 0;
+}
+
+.maintenanceScheduleCard h3 {
+  color: #12352d;
+  font-size: 1.08rem;
+  line-height: 1.2;
+}
+
+.maintenanceScheduleCard p {
+  color: #1c6048;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.maintenanceScheduleCard small {
+  color: rgba(18, 53, 45, 0.63);
+  font-size: 0.78rem;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.maintenanceScheduleActions {
+  display: flex;
+  gap: 8px;
+  margin-top: 3px;
+}
+
+.maintenanceScheduleActions button {
+  min-height: 43px;
+  flex: 1 1 0;
+  border: 1px solid rgba(35, 104, 81, 0.24);
+  border-radius: 12px;
+  background: #eef7f2;
+  color: #15533e;
+  padding: 0 12px;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.maintenanceScheduleActions button + button {
+  border-color: rgba(138, 36, 36, 0.16);
+  background: #fff5f3;
+  color: #8a2424;
+}
+
+.maintenanceScheduleActions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 @media (min-width: 640px) {
