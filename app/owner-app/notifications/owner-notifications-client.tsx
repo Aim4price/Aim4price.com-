@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   isOwnerNotificationNew,
   markOwnerNotificationsSeen,
@@ -30,6 +30,9 @@ type NotificationsResponse = {
 };
 
 function destination(item: Notification): string {
+  if (item.href.startsWith('/owner-app/')) {
+    return item.href;
+  }
   if (item.assetId) {
     return `/owner-app/assets/${encodeURIComponent(item.assetId)}`;
   }
@@ -76,6 +79,7 @@ export default function OwnerNotificationsClient({ viewerId }: { viewerId: strin
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [reloadToken, setReloadToken] = useState(0);
+  const hasLoadedRef = useRef(false);
 
   useEffect(() => {
     setSeenAtIso(readOwnerNotificationsSeenAt(viewerId));
@@ -86,7 +90,7 @@ export default function OwnerNotificationsClient({ viewerId }: { viewerId: strin
     const controller = new AbortController();
 
     async function load() {
-      setLoading(true);
+      if (!hasLoadedRef.current) setLoading(true);
       setError('');
 
       try {
@@ -110,13 +114,32 @@ export default function OwnerNotificationsClient({ viewerId }: { viewerId: strin
         if (controller.signal.aborted) return;
         setError(cause instanceof Error ? cause.message : 'Failed to load notifications.');
       } finally {
-        if (!controller.signal.aborted) setLoading(false);
+        if (!controller.signal.aborted) {
+          hasLoadedRef.current = true;
+          setLoading(false);
+        }
       }
     }
 
     void load();
     return () => controller.abort();
   }, [reloadToken]);
+
+  useEffect(() => {
+    const reload = () => setReloadToken((current) => current + 1);
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') reload();
+    };
+    const intervalId = window.setInterval(reload, 30_000);
+    window.addEventListener('focus', reload);
+    document.addEventListener('visibilitychange', refreshWhenVisible);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener('focus', reload);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
+    };
+  }, []);
 
   const newItems = useMemo(
     () => seenStateReady
