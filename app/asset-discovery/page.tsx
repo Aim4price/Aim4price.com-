@@ -4,6 +4,7 @@ import { getAccountProfile } from '../../lib/account-profile';
 import { requireActivePageAccess } from '../../lib/account-access';
 import AssetDiscoveryClient from './asset-discovery-client';
 import { workspaceStyles } from '../../components/WorkspacePrimitives';
+import leadStyles from '../leads/page.module.css';
 import styles from './page.module.css';
 
 export const runtime = 'nodejs';
@@ -23,7 +24,7 @@ export default async function AssetDiscoveryPage() {
   }
 
   return (
-    <main className={`${workspaceStyles.page} ${styles.page}`}>
+    <main className={`${workspaceStyles.page} ${leadStyles.leadsPage} ${leadStyles.dealerOwnerParity} ${styles.page}`}>
       <AppHeader active="asset-discovery" />
       <AssetDiscoveryClient />
     </main>

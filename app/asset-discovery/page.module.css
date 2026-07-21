@@ -15,6 +15,13 @@
   grid-template-columns: minmax(0, 1fr) minmax(13rem, 0.29fr) minmax(13rem, 0.29fr);
 }
 
+.parityToolbar {
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: stretch !important;
+  gap: clamp(0.8rem, 1.15vw, 1rem) !important;
+  margin-bottom: 0.55rem !important;
+}
+
 .searchBox {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
@@ -307,6 +314,46 @@
   cursor: pointer;
 }
 
+.discoveryPrimaryAction {
+  white-space: nowrap;
+}
+
+.pendingRequestButton,
+.discoveryStatusAction {
+  min-width: 9.5rem !important;
+  min-height: 48px !important;
+  border-radius: 14px !important;
+  font-weight: 800 !important;
+  white-space: nowrap;
+}
+
+.pendingRequestButton {
+  color: #7d4b0a !important;
+  border-color: rgba(211, 137, 31, 0.48) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #ffedcc 100%) !important;
+  box-shadow:
+    0 9px 20px rgba(125, 75, 10, 0.09),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.pendingRequestButton:hover:not(:disabled) {
+  color: #693d07 !important;
+  border-color: rgba(211, 137, 31, 0.66) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #ffe4b6 100%) !important;
+  transform: translateY(-1px);
+}
+
+.discoveryStatusAction {
+  cursor: default;
+  box-shadow: none !important;
+}
+
+.discoveryDeniedAction {
+  color: #8d2d2d !important;
+  border-color: rgba(204, 58, 58, 0.28) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #ffe8e8 100%) !important;
+}
+
 .emptyState {
   color: #607286;
   font-size: 0.9rem;
@@ -394,6 +441,18 @@
 
 .contactOverlay {
   cursor: default;
+}
+
+.discoveryFilterModal {
+  width: min(100%, 820px) !important;
+}
+
+.discoveryFilterForm {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
+.discoveryFilterModal p {
+  white-space: normal !important;
 }
 
 .contactModal {
@@ -542,6 +601,14 @@
     grid-template-columns: 1fr;
   }
 
+  .parityToolbar {
+    grid-template-columns: 1fr !important;
+  }
+
+  .discoveryFilterForm {
+    grid-template-columns: 1fr !important;
+  }
+
   .assetCardHeader,
   .dealerAssetCardHeader {
     grid-template-columns: 1fr;
@@ -561,6 +628,12 @@
 }
 
 @media (max-width: 760px) {
+  .pendingRequestButton,
+  .discoveryStatusAction,
+  .discoveryPrimaryAction {
+    width: 100% !important;
+  }
+
   .contactGrid { grid-template-columns: 1fr; }
   .contactPrimaryCard,
   .contactLocationCard { grid-column: auto; }

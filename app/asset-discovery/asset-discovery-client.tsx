@@ -2,11 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
-  WorkspaceSummaryGrid,
-  WorkspaceSummaryTile,
   WorkspaceTitlePanel,
   workspaceStyles,
 } from "../../components/WorkspacePrimitives";
+import assetStyles from "../asset-register/page.module.css";
+import leadStyles from "../leads/page.module.css";
 import styles from "./page.module.css";
 import dealerStyles from "../dealer/dealer.module.css";
 
@@ -104,6 +104,11 @@ type IconProps = {
 
 type DiscoveryFilterKey = "type" | "province" | "pageSize";
 
+type DiscoveryFilterOption = {
+  value: string;
+  label: string;
+};
+
 const SEARCH_DEBOUNCE_MS = 250;
 const DISCOVERY_PAGE_SIZE = 10;
 const DISCOVERY_PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
@@ -142,6 +147,49 @@ function SearchIcon({ className }: IconProps) {
   );
 }
 
+function FilterIcon({ className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      aria-hidden="true"
+    >
+      <path d="M4 6h16" />
+      <path d="M7 12h10" />
+      <path d="M10 18h4" />
+    </svg>
+  );
+}
+
+function RefreshIcon({ className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      aria-hidden="true"
+    >
+      <path
+        d="M20 11a8 8 0 0 0-14.7-4.3L4 8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path d="M4 4v4h4" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M4 13a8 8 0 0 0 14.7 4.3L20 16"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path d="M20 20v-4h-4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function CloseIcon({ className }: IconProps) {
   return (
     <svg
@@ -173,6 +221,76 @@ function ChevronDownIcon({ className }: IconProps) {
     >
       <path d="m7 10 5 5 5-5" />
     </svg>
+  );
+}
+
+function DiscoveryFilterDropdown({
+  label,
+  filterKey,
+  value,
+  options,
+  openFilter,
+  onOpenChange,
+  onChange,
+}: {
+  label: string;
+  filterKey: DiscoveryFilterKey;
+  value: string;
+  options: DiscoveryFilterOption[];
+  openFilter: DiscoveryFilterKey | null;
+  onOpenChange: (filter: DiscoveryFilterKey | null) => void;
+  onChange: (value: string) => void;
+}) {
+  const isOpen = openFilter === filterKey;
+  const selectedOption = options.find((option) => option.value === value);
+
+  return (
+    <label
+      className={`${assetStyles.field} ${leadStyles.leadFilterField} ${isOpen ? leadStyles.leadFilterFieldOpen : ""}`}
+      data-discovery-filter="true"
+    >
+      <span>{label}</span>
+      <div className={leadStyles.leadFilterDropdown}>
+        <button
+          type="button"
+          className={`${leadStyles.leadFilterSelectButton} ${isOpen ? leadStyles.leadFilterSelectButtonOpen : ""}`}
+          onClick={() => onOpenChange(isOpen ? null : filterKey)}
+          aria-haspopup="listbox"
+          aria-expanded={isOpen}
+        >
+          <span>{selectedOption?.label ?? "Choose option"}</span>
+          <ChevronDownIcon className={leadStyles.leadFilterSelectIcon} />
+        </button>
+
+        {isOpen ? (
+          <div
+            className={leadStyles.leadFilterSelectMenu}
+            role="listbox"
+            aria-label={label}
+          >
+            {options.map((option) => {
+              const isSelected = option.value === value;
+
+              return (
+                <button
+                  type="button"
+                  key={`${filterKey}-${option.value}`}
+                  className={`${leadStyles.leadFilterSelectOption} ${isSelected ? leadStyles.leadFilterSelectOptionActive : ""}`}
+                  onClick={() => {
+                    onChange(option.value);
+                    onOpenChange(null);
+                  }}
+                  role="option"
+                  aria-selected={isSelected}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
+      </div>
+    </label>
   );
 }
 
@@ -335,6 +453,12 @@ function assetCardStatusClass(asset: AssetDiscoveryAsset): string {
   return "";
 }
 
+function leadParityAssetCardStatusClass(asset: AssetDiscoveryAsset): string {
+  if (asset.enquiryStatus === "approved") return leadStyles.leadThreadDone;
+  if (asset.enquiryStatus === "pending") return leadStyles.leadThreadActive;
+  return leadStyles.leadThreadNew;
+}
+
 export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealerAppMode?: boolean } = {}) {
   const [assets, setAssets] = useState<AssetDiscoveryAsset[]>([]);
   const [provinceOptions, setProvinceOptions] = useState<Option[]>([]);
@@ -347,9 +471,11 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
   const [province, setProvince] = useState("all");
   const [type, setType] = useState("all");
   const [openFilter, setOpenFilter] = useState<DiscoveryFilterKey | null>(null);
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] =
     useState<DiscoveryPageSize>(DISCOVERY_PAGE_SIZE);
+  const [refreshVersion, setRefreshVersion] = useState(0);
   const [processingAssetIds, setProcessingAssetIds] = useState<Set<string>>(
     () => new Set(),
   );
@@ -384,6 +510,25 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
       window.removeEventListener("keydown", onKeyDown);
     };
   }, [activeEnquiry]);
+
+  useEffect(() => {
+    if (!isFilterModalOpen) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setOpenFilter(null);
+        setIsFilterModalOpen(false);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [isFilterModalOpen]);
 
   useEffect(() => {
     if (!openFilter) return undefined;
@@ -463,12 +608,64 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
     return () => {
       mounted = false;
     };
-  }, [currentPage, pageSize, province, search, type]);
+  }, [currentPage, pageSize, province, refreshVersion, search, type]);
 
   const visiblePaginationPages = useMemo(
     () => paginationPages(pagination.page, pagination.totalPages),
     [pagination.page, pagination.totalPages],
   );
+
+  const typeFilterOptions = useMemo<DiscoveryFilterOption[]>(
+    () => [
+      { value: "all", label: "All types" },
+      ...typeOptions.map((option) => ({
+        value: option.value,
+        label: `${option.label} (${option.count})`,
+      })),
+    ],
+    [typeOptions],
+  );
+
+  const provinceFilterOptions = useMemo<DiscoveryFilterOption[]>(
+    () => [
+      { value: "all", label: "All provinces" },
+      ...provinceOptions.map((option) => ({
+        value: option.value,
+        label: `${option.label} (${option.count})`,
+      })),
+    ],
+    [provinceOptions],
+  );
+
+  const pageSizeFilterOptions = useMemo<DiscoveryFilterOption[]>(
+    () =>
+      DISCOVERY_PAGE_SIZE_OPTIONS.map((option) => ({
+        value: String(option),
+        label: `${option} assets per page`,
+      })),
+    [],
+  );
+
+  const hasActiveDiscoveryFilter =
+    type !== "all" ||
+    province !== "all" ||
+    pageSize !== DISCOVERY_PAGE_SIZE;
+
+  const activeDiscoveryFilterLabel = useMemo(() => {
+    const labels: string[] = [];
+    const selectedType = typeOptions.find((option) => option.value === type);
+    const selectedProvince = provinceOptions.find(
+      (option) => option.value === province,
+    );
+
+    if (selectedType) labels.push(selectedType.label);
+    if (selectedProvince) labels.push(selectedProvince.label);
+    if (pageSize !== DISCOVERY_PAGE_SIZE) labels.push(`${pageSize} per page`);
+
+    if (!labels.length) return "Filter";
+    if (labels.length === 1) return labels[0];
+    return `${labels.length} filters`;
+  }, [pageSize, province, provinceOptions, type, typeOptions]);
 
   function handleSearchChange(value: string) {
     setSearchInput(value);
@@ -482,6 +679,28 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
   function handleProvinceChange(value: string) {
     setProvince(value);
     setCurrentPage(1);
+  }
+
+  function openDiscoveryFilterModal() {
+    setOpenFilter(null);
+    setIsFilterModalOpen(true);
+  }
+
+  function closeDiscoveryFilterModal() {
+    setOpenFilter(null);
+    setIsFilterModalOpen(false);
+  }
+
+  function resetDiscoveryFilters() {
+    setType("all");
+    setProvince("all");
+    setPageSize(DISCOVERY_PAGE_SIZE);
+    setCurrentPage(1);
+    setOpenFilter(null);
+  }
+
+  function refreshAssets() {
+    setRefreshVersion((current) => current + 1);
   }
 
   function renderDealerFilter(
@@ -737,7 +956,11 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
       return (
         <button
           type="button"
-          className={`${styles.primaryButton} ${styles.enquireButton}`}
+          className={
+            dealerAppMode
+              ? `${styles.primaryButton} ${styles.enquireButton}`
+              : `${assetStyles.primaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionGreen} ${leadStyles.openLeadButton} ${styles.discoveryPrimaryAction}`
+          }
           onClick={() => void openApprovedContact(asset)}
           disabled={loadingEnquiryId === asset.enquiryId}
         >
@@ -750,7 +973,11 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
       return (
         <button
           type="button"
-          className={`${statusClassName(asset)} ${styles.retractEnquiryButton}`}
+          className={
+            dealerAppMode
+              ? `${statusClassName(asset)} ${styles.retractEnquiryButton}`
+              : `${assetStyles.secondaryButton} ${workspaceStyles.actionButton} ${styles.pendingRequestButton}`
+          }
           title="Retract this enquiry"
           aria-label="Retract pending enquiry"
           onClick={() => void handleRetractEnquiry(asset)}
@@ -764,7 +991,11 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
     if (pillLabel) {
       return (
         <span
-          className={statusClassName(asset)}
+          className={
+            dealerAppMode
+              ? statusClassName(asset)
+              : `${workspaceStyles.actionButton} ${styles.discoveryStatusAction} ${styles.discoveryDeniedAction}`
+          }
           title={statusDescription(asset)}
         >
           {pillLabel}
@@ -775,7 +1006,11 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
     return (
       <button
         type="button"
-        className={`${styles.primaryButton} ${styles.enquireButton}`}
+        className={
+          dealerAppMode
+            ? `${styles.primaryButton} ${styles.enquireButton}`
+            : `${assetStyles.primaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionGreen} ${leadStyles.openLeadButton} ${styles.discoveryPrimaryAction}`
+        }
         onClick={() => handleEnquire(asset)}
         disabled={isProcessing}
       >
@@ -913,70 +1148,168 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
         aria-label="Asset Discovery controls"
       >
         {!dealerAppMode ? (
-          <WorkspaceSummaryGrid label="Asset Discovery summary">
-            <WorkspaceSummaryTile
-              label="Available assets"
-              value={summary.totalAssets}
-              helper="Matching the current search and filters."
-              tone="green"
-            />
-            <WorkspaceSummaryTile
-              label="Asset types"
-              value={summary.typeCount}
-              helper="Asset families represented in these results."
-              tone="blue"
-            />
-            <WorkspaceSummaryTile
-              label="Provinces"
-              value={summary.provinceCount}
-              helper="Saved owner provinces represented."
-            />
-          </WorkspaceSummaryGrid>
+          <section
+            className={`${assetStyles.summaryRow} ${assetStyles.heroSummaryRow} ${leadStyles.leadSummaryRow}`}
+            aria-label="Asset Discovery summary"
+          >
+            <article
+              className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${leadStyles.leadOwnerSummaryCard} ${leadStyles.leadOwnerSummaryCardNew}`}
+            >
+              <div className={assetStyles.heroSummaryHead}>
+                <span className={`${assetStyles.heroSummaryTitle} ${leadStyles.leadOwnerSummaryText}`}>
+                  Available assets
+                </span>
+              </div>
+              <div className={assetStyles.heroSummaryValueRow}>
+                <strong className={`${assetStyles.heroSummaryValue} ${leadStyles.leadOwnerSummaryText}`}>
+                  {summary.totalAssets}
+                </strong>
+              </div>
+              <div className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${leadStyles.leadOwnerSummaryFooter}`}>
+                <small className={leadStyles.leadOwnerSummaryText}>
+                  Matching the current search and filters.
+                </small>
+              </div>
+            </article>
+
+            <article
+              className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${leadStyles.leadOwnerSummaryCard} ${leadStyles.leadOwnerSummaryCardOpen}`}
+            >
+              <div className={assetStyles.heroSummaryHead}>
+                <span className={`${assetStyles.heroSummaryTitle} ${leadStyles.leadOwnerSummaryText}`}>
+                  Asset types
+                </span>
+              </div>
+              <div className={assetStyles.heroSummaryValueRow}>
+                <strong className={`${assetStyles.heroSummaryValue} ${leadStyles.leadOwnerSummaryText}`}>
+                  {summary.typeCount}
+                </strong>
+              </div>
+              <div className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${leadStyles.leadOwnerSummaryFooter}`}>
+                <small className={leadStyles.leadOwnerSummaryText}>
+                  Asset families represented in these results.
+                </small>
+              </div>
+            </article>
+
+            <article
+              className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${leadStyles.leadOwnerSummaryCard} ${leadStyles.leadOwnerSummaryCardDone}`}
+            >
+              <div className={assetStyles.heroSummaryHead}>
+                <span className={`${assetStyles.heroSummaryTitle} ${leadStyles.leadOwnerSummaryText}`}>
+                  Provinces
+                </span>
+              </div>
+              <div className={assetStyles.heroSummaryValueRow}>
+                <strong className={`${assetStyles.heroSummaryValue} ${leadStyles.leadOwnerSummaryText}`}>
+                  {summary.provinceCount}
+                </strong>
+              </div>
+              <div className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${leadStyles.leadOwnerSummaryFooter}`}>
+                <small className={leadStyles.leadOwnerSummaryText}>
+                  Saved owner provinces represented.
+                </small>
+              </div>
+            </article>
+          </section>
         ) : null}
 
-        <section
-          className={`${workspaceStyles.controlsRow} ${styles.toolbar}`}
-          aria-label="Search and filter Asset Discovery"
-        >
-          <label className={`${workspaceStyles.searchField} ${styles.searchBox}`}>
-            <SearchIcon className={styles.searchIcon} />
-            <input
-              type="search"
-              value={searchInput}
-              onChange={(event) => handleSearchChange(event.target.value)}
-              placeholder={dealerAppMode ? "Search assets" : "Search by type, brand, model, year, usage, condition or province"}
-              aria-label="Search Asset Discovery"
-            />
-            {searchInput ? (
+        {dealerAppMode ? (
+          <section
+            className={`${workspaceStyles.controlsRow} ${styles.toolbar}`}
+            aria-label="Search and filter Asset Discovery"
+          >
+            <label className={`${workspaceStyles.searchField} ${styles.searchBox}`}>
+              <SearchIcon className={styles.searchIcon} />
+              <input
+                type="search"
+                value={searchInput}
+                onChange={(event) => handleSearchChange(event.target.value)}
+                placeholder="Search assets"
+                aria-label="Search Asset Discovery"
+              />
+              {searchInput ? (
+                <button
+                  type="button"
+                  className={styles.clearSearchButton}
+                  onClick={() => handleSearchChange("")}
+                  aria-label="Clear Discovery search"
+                >
+                  <CloseIcon className={styles.buttonIcon} />
+                </button>
+              ) : null}
+            </label>
+
+            {renderDealerFilter(
+              "type",
+              type,
+              typeOptions,
+              "All types",
+              "Filter by asset type",
+              handleTypeChange,
+            )}
+
+            {renderDealerFilter(
+              "province",
+              province,
+              provinceOptions,
+              "All provinces",
+              "Filter by province",
+              handleProvinceChange,
+            )}
+          </section>
+        ) : (
+          <div
+            className={`${assetStyles.toolbar} ${workspaceStyles.controlsRow} ${leadStyles.leadSearchToolbar} ${styles.parityToolbar}`}
+            aria-label="Search and filter Asset Discovery"
+          >
+            <label className={`${assetStyles.searchWrap} ${workspaceStyles.searchField}`}>
+              <SearchIcon className={assetStyles.searchIcon} />
+              <input
+                className={assetStyles.searchInput}
+                type="search"
+                value={searchInput}
+                onChange={(event) => handleSearchChange(event.target.value)}
+                placeholder="Search by type, brand, model, year, usage, condition or province"
+                aria-label="Search Asset Discovery"
+              />
+
+              {searchInput ? (
+                <button
+                  type="button"
+                  className={assetStyles.clearSearchButton}
+                  onClick={() => handleSearchChange("")}
+                  aria-label="Clear Discovery search"
+                >
+                  <CloseIcon className={assetStyles.buttonIcon} />
+                </button>
+              ) : null}
+            </label>
+
+            <div className={leadStyles.leadToolbarActions}>
               <button
                 type="button"
-                className={styles.clearSearchButton}
-                onClick={() => handleSearchChange("")}
-                aria-label="Clear Discovery search"
+                className={`${assetStyles.secondaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionNeutral} ${leadStyles.leadRefreshButton}`}
+                onClick={refreshAssets}
+                disabled={loading}
               >
-                <CloseIcon className={styles.buttonIcon} />
+                <RefreshIcon className={`${assetStyles.buttonIcon} ${loading ? leadStyles.leadRefreshIconActive : ""}`} />
+                <span>Refresh</span>
               </button>
-            ) : null}
-          </label>
 
-          {renderDealerFilter(
-            "type",
-            type,
-            typeOptions,
-            "All types",
-            "Filter by asset type",
-            handleTypeChange,
-          )}
-
-          {renderDealerFilter(
-            "province",
-            province,
-            provinceOptions,
-            "All provinces",
-            "Filter by province",
-            handleProvinceChange,
-          )}
-        </section>
+              <button
+                type="button"
+                className={`${assetStyles.secondaryButton} ${assetStyles.filterTriggerButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionMint} ${leadStyles.leadFilterButton} ${hasActiveDiscoveryFilter ? assetStyles.filterTriggerButtonActive : ""}`}
+                onClick={openDiscoveryFilterModal}
+                disabled={loading}
+              >
+                <FilterIcon className={assetStyles.buttonIcon} />
+                <span>{activeDiscoveryFilterLabel}</span>
+                <ChevronDownIcon className={assetStyles.filterChevron} />
+              </button>
+            </div>
+          </div>
+        )}
       </section>
 
       {notice ? (
@@ -988,12 +1321,25 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
       ) : null}
       {error ? <div className={styles.errorPanel}>{error}</div> : null}
 
-      <section className={styles.cardStack} aria-label="Asset Discovery assets">
+      {!loading && !error ? (
+        <div className={leadStyles.leadResultSummary}>
+          <span>Showing</span>
+          <strong>{pagination.totalItems}</strong>
+          <span>assets for the current search and filters</span>
+        </div>
+      ) : null}
+
+      <section
+        className={dealerAppMode ? styles.cardStack : leadStyles.leadStack}
+        aria-label="Asset Discovery assets"
+      >
         {loading ? (
-          <div className={styles.emptyState}>Loading Asset Discovery...</div>
+          <div className={`${workspaceStyles.emptyState} ${styles.emptyState}`}>
+            Loading Asset Discovery...
+          </div>
         ) : !error && assets.length ? (
           assets.map((asset) => {
-            return (
+            return dealerAppMode ? (
               <article
                 key={asset.id}
                 className={`${workspaceStyles.card} ${styles.assetCard} ${styles.dealerAssetCard} ${assetCardStatusClass(asset)}`}
@@ -1012,6 +1358,31 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
                   </div>
                 </div>
               </article>
+            ) : (
+              <article
+                key={asset.id}
+                className={`${workspaceStyles.card} ${leadStyles.leadThread} ${leadParityAssetCardStatusClass(asset)}`}
+              >
+                <div className={leadStyles.clientPanel}>
+                  <div className={leadStyles.clientPanelHeader}>
+                    <div className={leadStyles.clientIdentity}>
+                      <h3>{dealerAssetDisplayName(asset)}</h3>
+                      <strong className={leadStyles.leadAssetName}>
+                        {dealerAssetMeta(asset)}
+                      </strong>
+                      <span className={leadStyles.clientKicker}>
+                        {[cleanText(asset.type) || "Asset", cleanText(asset.province) || "Location not saved"].join(" · ")}
+                      </span>
+                    </div>
+
+                    <div className={leadStyles.clientDecisionArea}>
+                      <div className={leadStyles.clientActionRow}>
+                        {renderEnquiryControl(asset)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </article>
             );
           })
         ) : !error ? (
@@ -1022,6 +1393,87 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
       </section>
 
       {renderPagination()}
+
+      {!dealerAppMode && isFilterModalOpen ? (
+        <div className={`${assetStyles.modalOverlay} ${workspaceStyles.modalOverlay}`}>
+          <div className={assetStyles.modalBackdrop} onClick={closeDiscoveryFilterModal} />
+
+          <div
+            className={`${assetStyles.modalCard} ${workspaceStyles.modal} ${leadStyles.leadFilterModal} ${styles.discoveryFilterModal}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="discovery-filter-title"
+          >
+            <div className={`${assetStyles.modalHeader} ${workspaceStyles.modalHeader}`}>
+              <div className={assetStyles.modalHeaderText}>
+                <h3 id="discovery-filter-title">Choose which assets to show.</h3>
+                <p className={leadStyles.leadFilterIntro}>
+                  Filter Asset Discovery by equipment type, owner province and page size.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className={`${assetStyles.modalCloseButton} ${workspaceStyles.modalClose}`}
+                onClick={closeDiscoveryFilterModal}
+                aria-label="Close filter modal"
+              >
+                <CloseIcon className={assetStyles.buttonIcon} />
+              </button>
+            </div>
+
+            <div className={`${workspaceStyles.modalBody} ${leadStyles.leadFilterForm} ${styles.discoveryFilterForm}`}>
+              <DiscoveryFilterDropdown
+                label="Asset type"
+                filterKey="type"
+                value={type}
+                options={typeFilterOptions}
+                openFilter={openFilter}
+                onOpenChange={setOpenFilter}
+                onChange={handleTypeChange}
+              />
+
+              <DiscoveryFilterDropdown
+                label="Province"
+                filterKey="province"
+                value={province}
+                options={provinceFilterOptions}
+                openFilter={openFilter}
+                onOpenChange={setOpenFilter}
+                onChange={handleProvinceChange}
+              />
+
+              <DiscoveryFilterDropdown
+                label="Assets per page"
+                filterKey="pageSize"
+                value={String(pageSize)}
+                options={pageSizeFilterOptions}
+                openFilter={openFilter}
+                onOpenChange={setOpenFilter}
+                onChange={handlePageSizeChange}
+              />
+            </div>
+
+            <div className={`${assetStyles.formActions} ${workspaceStyles.modalFooter} ${leadStyles.leadFilterActions}`}>
+              <button
+                type="button"
+                className={`${assetStyles.secondaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionNeutral}`}
+                onClick={resetDiscoveryFilters}
+                disabled={!hasActiveDiscoveryFilter}
+              >
+                Reset filters
+              </button>
+              <button
+                type="button"
+                className={`${assetStyles.primaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionGreen}`}
+                onClick={closeDiscoveryFilterModal}
+              >
+                Apply filters
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {activeEnquiry ? (
         <div
