@@ -16,6 +16,23 @@ type FieldManagerAsset = {
   usageMode: 'hours' | 'km' | 'percent' | 'none';
 };
 
+type OwnerMaintenanceRecord = {
+  id: string;
+  title: string;
+  maintenanceType: MaintenanceType;
+  triggerType: TriggerType;
+  status: 'upcoming' | 'done' | 'cancelled';
+  computedStatusLabel: string;
+  dueDate: string | null;
+  dueUsage: number | null;
+  usageMetric: 'hours' | 'km' | 'percentage' | null;
+  recurringEnabled: boolean;
+  generatedFromMaintenanceId: string | null;
+  completedAtIso: string | null;
+  assignedName: string;
+  notes: string;
+};
+
 type AssetResponse = {
   ok?: boolean;
   asset?: FieldManagerAsset;
@@ -27,6 +44,7 @@ type AssetResponse = {
     lifeWorkedPercent: number | null;
     specsJson: Record<string, unknown>;
   };
+  maintenance?: OwnerMaintenanceRecord[];
   error?: string;
 };
 
@@ -87,6 +105,24 @@ function maintenanceTypeLabel(maintenanceType: MaintenanceType): string {
   return maintenanceType === 'checkup' ? 'checkup' : 'service';
 }
 
+function ownerMaintenanceDueLabel(record: OwnerMaintenanceRecord): string {
+  if (record.triggerType === 'date' && record.dueDate) {
+    return `Due ${new Intl.DateTimeFormat('en-ZA', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      timeZone: 'UTC',
+    }).format(new Date(`${record.dueDate.slice(0, 10)}T00:00:00Z`))}`;
+  }
+
+  if (record.triggerType === 'usage' && record.dueUsage !== null) {
+    const unit = record.usageMetric === 'km' ? 'km' : record.usageMetric === 'percentage' ? '%' : 'hours';
+    return `Due at ${new Intl.NumberFormat('en-ZA', { maximumFractionDigits: 2 }).format(record.dueUsage)} ${unit}`;
+  }
+
+  return 'Due target unavailable';
+}
+
 function usageNotificationLabel(asset: FieldManagerAsset, maintenanceType: MaintenanceType): string {
   const maintenanceLabel = maintenanceTypeLabel(maintenanceType);
   if (asset.usageMode === 'km') return `Notify kilometers before ${maintenanceLabel}`;
@@ -128,11 +164,13 @@ export default function FieldManagerMaintenanceClient({
   assetId,
   assetHref,
   mode = 'field-manager',
+  highlightMaintenanceId = '',
 }: {
   publicAssetCode?: string;
   assetId: string;
   assetHref: string;
   mode?: 'field-manager' | 'owner';
+  highlightMaintenanceId?: string;
 }) {
   const [asset, setAsset] = useState<FieldManagerAsset | null>(null);
   const [draft, setDraft] = useState<ScheduleDraft>(EMPTY_DRAFT);
@@ -140,6 +178,9 @@ export default function FieldManagerMaintenanceClient({
   const [saving, setSaving] = useState(false);
   const [created, setCreated] = useState(false);
   const [notice, setNotice] = useState('');
+  const [maintenanceRecords, setMaintenanceRecords] = useState<OwnerMaintenanceRecord[]>([]);
+  const [focusedMaintenanceId, setFocusedMaintenanceId] = useState(highlightMaintenanceId);
+  const [actionMaintenanceId, setActionMaintenanceId] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -176,6 +217,9 @@ export default function FieldManagerMaintenanceClient({
         if (!active) return;
         setAsset(loadedAsset);
         setDraft(defaultDraft(loadedAsset));
+        if (mode === 'owner') {
+          setMaintenanceRecords(Array.isArray(payload?.maintenance) ? payload.maintenance : []);
+        }
       } catch (error) {
         if (active) setNotice(error instanceof Error ? error.message : 'Failed to open maintenance scheduling.');
       } finally {
@@ -186,6 +230,79 @@ export default function FieldManagerMaintenanceClient({
     void loadAsset();
     return () => { active = false; };
   }, [assetId, mode, publicAssetCode]);
+
+  useEffect(() => {
+    if (!focusedMaintenanceId || !maintenanceRecords.some((record) => record.id === focusedMaintenanceId)) return;
+    const frameId = window.requestAnimationFrame(() => {
+      document.getElementById(`maintenance-${focusedMaintenanceId}`)?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+    });
+    return () => window.cancelAnimationFrame(frameId);
+  }, [focusedMaintenanceId, maintenanceRecords]);
+
+  async function refreshOwnerMaintenance(nextFromParentId = ''): Promise<void> {
+    const response = await fetch(`/api/owner-app/assets/${encodeURIComponent(assetId)}`, {
+      credentials: 'include',
+      cache: 'no-store',
+    });
+    const payload = await response.json().catch(() => null) as AssetResponse | null;
+    if (response.status === 401) {
+      window.location.replace('/owner-app/login');
+      return;
+    }
+    if (!response.ok || !payload?.ok || !Array.isArray(payload.maintenance)) {
+      throw new Error(payload?.error || 'Failed to refresh maintenance schedules.');
+    }
+
+    setMaintenanceRecords(payload.maintenance);
+    if (nextFromParentId) {
+      const nextRecord = payload.maintenance.find(
+        (record) => record.generatedFromMaintenanceId === nextFromParentId && record.status === 'upcoming',
+      );
+      setFocusedMaintenanceId(nextRecord?.id || nextFromParentId);
+    }
+  }
+
+  async function updateOwnerMaintenance(
+    record: OwnerMaintenanceRecord,
+    action: 'maintenance-complete' | 'maintenance-cancel' | 'maintenance-reopen',
+  ): Promise<void> {
+    if (actionMaintenanceId) return;
+    setActionMaintenanceId(record.id);
+    setNotice('');
+
+    try {
+      const response = await fetch(`/api/owner-app/assets/${encodeURIComponent(assetId)}/actions`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, maintenanceId: record.id }),
+      });
+      const payload = await response.json().catch(() => null) as { ok?: boolean; error?: string } | null;
+      if (response.status === 401) {
+        window.location.replace('/owner-app/login');
+        return;
+      }
+      if (!response.ok || !payload?.ok) {
+        throw new Error(payload?.error || 'Failed to update the maintenance schedule.');
+      }
+
+      await refreshOwnerMaintenance(action === 'maintenance-complete' && record.recurringEnabled ? record.id : '');
+      setNotice(action === 'maintenance-complete'
+        ? record.recurringEnabled
+          ? 'Maintenance marked done. The next recurring schedule is highlighted below.'
+          : 'Maintenance marked done.'
+        : action === 'maintenance-reopen'
+          ? 'Maintenance schedule reopened.'
+          : 'Maintenance schedule cancelled.');
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Failed to update the maintenance schedule.');
+    } finally {
+      setActionMaintenanceId(null);
+    }
+  }
 
   function update<K extends keyof ScheduleDraft>(key: K, value: ScheduleDraft[K]) {
     setDraft((current) => ({ ...current, [key]: value }));
@@ -256,6 +373,7 @@ export default function FieldManagerMaintenanceClient({
       if (!response.ok || !payload?.ok) {
         throw new Error(payload?.error || 'Failed to create the maintenance schedule.');
       }
+      if (mode === 'owner') await refreshOwnerMaintenance();
       setCreated(true);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (error) {
@@ -273,7 +391,11 @@ export default function FieldManagerMaintenanceClient({
         </header>
 
         {loading ? <p className={styles.mobileEmpty}>Opening maintenance scheduling…</p> : null}
-        {notice ? <div className={styles.errorNotice}>{notice}</div> : null}
+        {notice ? (
+          <div className={/marked done|schedule reopened|schedule cancelled/i.test(notice) ? styles.maintenanceActionNotice : styles.errorNotice} role="status">
+            {notice}
+          </div>
+        ) : null}
 
         {!loading && created && asset ? (
           <section className={styles.maintenanceSuccess}>
@@ -291,6 +413,71 @@ export default function FieldManagerMaintenanceClient({
               <h1>Schedule Maintenance</h1>
               <p>{asset.title}</p>
             </section>
+
+            {mode === 'owner' && maintenanceRecords.length ? (
+              <section className={styles.maintenanceScheduleSection} aria-labelledby="maintenance-schedules-title">
+                <div className={styles.maintenanceScheduleHeading}>
+                  <div>
+                    <span>Maintenance</span>
+                    <h2 id="maintenance-schedules-title">Current schedules</h2>
+                  </div>
+                  <strong>{maintenanceRecords.length}</strong>
+                </div>
+                <div className={styles.maintenanceScheduleList}>
+                  {maintenanceRecords.map((record) => {
+                    const isFocused = focusedMaintenanceId === record.id;
+                    const isRecurringFollowUp = Boolean(record.generatedFromMaintenanceId);
+                    const isUpdating = actionMaintenanceId === record.id;
+                    return (
+                      <article
+                        id={`maintenance-${record.id}`}
+                        key={record.id}
+                        className={`${styles.maintenanceScheduleCard} ${isRecurringFollowUp ? styles.maintenanceScheduleCardRecurring : ''} ${isFocused ? styles.maintenanceScheduleCardSelected : ''}`}
+                      >
+                        <div className={styles.maintenanceScheduleLabels}>
+                          <span className={isRecurringFollowUp ? styles.maintenanceScheduleRecurringLabel : ''}>
+                            {isRecurringFollowUp ? 'Next recurring maintenance' : maintenanceTypeLabel(record.maintenanceType)}
+                          </span>
+                          <strong>{record.computedStatusLabel}</strong>
+                        </div>
+                        <h3>{record.title}</h3>
+                        <p>{ownerMaintenanceDueLabel(record)}</p>
+                        {record.assignedName ? <small>Assigned to {record.assignedName}</small> : null}
+                        {record.notes ? <small>{record.notes}</small> : null}
+                        <div className={styles.maintenanceScheduleActions}>
+                          {record.status === 'upcoming' ? (
+                            <>
+                              <button
+                                type="button"
+                                disabled={Boolean(actionMaintenanceId)}
+                                onClick={() => void updateOwnerMaintenance(record, 'maintenance-complete')}
+                              >
+                                {isUpdating ? 'Updating…' : 'Mark done'}
+                              </button>
+                              <button
+                                type="button"
+                                disabled={Boolean(actionMaintenanceId)}
+                                onClick={() => void updateOwnerMaintenance(record, 'maintenance-cancel')}
+                              >
+                                Cancel
+                              </button>
+                            </>
+                          ) : record.status === 'done' ? (
+                            <button
+                              type="button"
+                              disabled={Boolean(actionMaintenanceId)}
+                              onClick={() => void updateOwnerMaintenance(record, 'maintenance-reopen')}
+                            >
+                              {isUpdating ? 'Updating…' : 'Reopen'}
+                            </button>
+                          ) : null}
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              </section>
+            ) : null}
 
             <section className={styles.maintenanceCard}>
               <p className={styles.maintenanceDescription}>Schedule the next service or checkup for this asset.</p>
