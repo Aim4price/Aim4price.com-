@@ -427,16 +427,18 @@ export default function FieldManagerMaintenanceClient({
                   {maintenanceRecords.map((record) => {
                     const isFocused = focusedMaintenanceId === record.id;
                     const isRecurringFollowUp = Boolean(record.generatedFromMaintenanceId);
+                    const isDone = record.status === 'done';
+                    const isUpcomingRecurringFollowUp = isRecurringFollowUp && !isDone;
                     const isUpdating = actionMaintenanceId === record.id;
                     return (
                       <article
                         id={`maintenance-${record.id}`}
                         key={record.id}
-                        className={`${styles.maintenanceScheduleCard} ${isRecurringFollowUp ? styles.maintenanceScheduleCardRecurring : ''} ${isFocused ? styles.maintenanceScheduleCardSelected : ''}`}
+                        className={`${styles.maintenanceScheduleCard} ${isUpcomingRecurringFollowUp ? styles.maintenanceScheduleCardRecurring : ''} ${isDone ? styles.maintenanceScheduleCardDone : ''} ${isFocused ? styles.maintenanceScheduleCardSelected : ''}`}
                       >
                         <div className={styles.maintenanceScheduleLabels}>
-                          <span className={isRecurringFollowUp ? styles.maintenanceScheduleRecurringLabel : ''}>
-                            {isRecurringFollowUp ? 'Next recurring maintenance' : maintenanceTypeLabel(record.maintenanceType)}
+                          <span className={isUpcomingRecurringFollowUp ? styles.maintenanceScheduleRecurringLabel : ''}>
+                            {isDone ? 'Maintenance completed' : isRecurringFollowUp ? 'Next recurring maintenance' : maintenanceTypeLabel(record.maintenanceType)}
                           </span>
                           <strong>{record.computedStatusLabel}</strong>
                         </div>
