@@ -2706,7 +2706,7 @@ export default function LeadsClient({
           </div>
 
           {!isLoading ? (
-            <div className={styles.leadResultSummary}>
+            <div className={`${styles.leadResultSummary} ${useDealerWorkspaceStyles ? styles.leadResultSummaryDealer : ''}`}>
               <span>Showing</span>
               <strong>{filteredLeads.length}</strong>
               <span>of {periodLeads.length} leads for the selected period</span>

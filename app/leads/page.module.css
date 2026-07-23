@@ -1506,6 +1506,11 @@
   font-weight: 800;
 }
 
+.leadResultSummaryDealer {
+  justify-content: flex-end;
+  text-align: right;
+}
+
 .leadStack {
   gap: 0.85rem;
 }
