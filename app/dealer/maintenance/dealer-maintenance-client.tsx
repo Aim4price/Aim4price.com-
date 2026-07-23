@@ -60,7 +60,7 @@ export default function DealerMaintenanceClient({ initialAssets }: { initialAsse
     <main className={styles.trackerPage}>
       <header className={styles.pageIntro}>
         <h1>Maintenance Tracker</h1>
-        <p>Read-only service tracking for assets shared with your dealership.</p>
+        <p>Track shared service schedules and send owner-approved asset detail corrections.</p>
       </header>
 
       <div className={styles.filterBar} role="group" aria-label="Maintenance filters">
