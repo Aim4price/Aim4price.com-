@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { clearCachedHeaderSession } from '../../lib/header-session-cache';
 import styles from './owner-app.module.css';
 
 export default function OwnerAppNav({ showBack = true, backHref = '/owner-app', backLabel = 'Home', backAction }: {
@@ -25,7 +26,8 @@ export default function OwnerAppNav({ showBack = true, backHref = '/owner-app', 
       fetch('/api/owner-app/logout', { method: 'POST', credentials: 'include' }),
       fetch('/api/auth/sign-out', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: '{}' }),
     ]);
-    window.location.replace('/');
+    clearCachedHeaderSession();
+    window.location.replace('/owner-app/login');
   }
 
   return (
