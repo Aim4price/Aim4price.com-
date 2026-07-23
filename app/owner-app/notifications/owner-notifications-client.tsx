@@ -20,6 +20,7 @@ type Notification = {
   href: string;
   createdAtIso: string;
   assetId?: string;
+  dealerAssetCorrectionId?: string;
   priority?: boolean;
 };
 
@@ -79,6 +80,7 @@ export default function OwnerNotificationsClient({ viewerId }: { viewerId: strin
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [reloadToken, setReloadToken] = useState(0);
+  const [processingCorrectionIds, setProcessingCorrectionIds] = useState<Set<string>>(() => new Set());
   const hasLoadedRef = useRef(false);
 
   useEffect(() => {
@@ -156,6 +158,39 @@ export default function OwnerNotificationsClient({ viewerId }: { viewerId: strin
     setSeenAtIso(markOwnerNotificationsSeen(viewerId, items));
   }
 
+  async function handleCorrectionDecision(correctionId: string, decision: 'accept' | 'reject') {
+    setProcessingCorrectionIds((current) => new Set(current).add(correctionId));
+    setError('');
+
+    try {
+      const response = await fetch(`/api/asset-corrections/${encodeURIComponent(correctionId)}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ decision }),
+      });
+      const payload = await response.json().catch(() => null) as { ok?: boolean; error?: string } | null;
+      if (response.status === 401) {
+        window.location.replace('/owner-app/login');
+        return;
+      }
+      if (!response.ok || !payload?.ok) {
+        throw new Error(payload?.error || 'Failed to save the correction decision.');
+      }
+
+      setItems((current) => current.filter((item) => item.dealerAssetCorrectionId !== correctionId));
+      setSeenAtIso(markOwnerNotificationsSeen(viewerId, items));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Failed to save the correction decision.');
+    } finally {
+      setProcessingCorrectionIds((current) => {
+        const next = new Set(current);
+        next.delete(correctionId);
+        return next;
+      });
+    }
+  }
+
   const isReady = seenStateReady && !loading;
   const newCountLabel = `${newItems.length} new notification${newItems.length === 1 ? '' : 's'}`;
 
@@ -196,25 +231,62 @@ export default function OwnerNotificationsClient({ viewerId }: { viewerId: strin
 
           {newItems.length ? (
             <div className={styles.notificationList} aria-live="polite">
-              {newItems.map((item) => (
-                <Link
-                  key={item.id}
-                  className={`${styles.notificationCard} ${toneClassName(item.tone)} ${item.priority ? styles.notificationCardPriority : styles.notificationCardNew}`}
-                  href={destination(item)}
-                  prefetch={false}
-                  onClick={handleNotificationOpen}
-                >
-                  <div className={styles.notificationCardLabels}>
-                    <span className={styles.notificationKind}>
-                      <i className={styles.notificationDot} aria-hidden="true" />
-                      {item.priority ? '#1 Priority' : 'New'}
-                    </span>
-                    <time dateTime={item.createdAtIso}>{formatNotificationTime(item.createdAtIso)}</time>
-                  </div>
-                  <h3>{item.title}</h3>
-                  <p>{item.body}</p>
-                </Link>
-              ))}
+              {newItems.map((item) => {
+                const className = `${styles.notificationCard} ${toneClassName(item.tone)} ${item.priority ? styles.notificationCardPriority : styles.notificationCardNew}`;
+                const cardContent = (
+                  <>
+                    <div className={styles.notificationCardLabels}>
+                      <span className={styles.notificationKind}>
+                        <i className={styles.notificationDot} aria-hidden="true" />
+                        {item.priority ? '#1 Priority' : 'New'}
+                      </span>
+                      <time dateTime={item.createdAtIso}>{formatNotificationTime(item.createdAtIso)}</time>
+                    </div>
+                    <h3>{item.title}</h3>
+                    <p>{item.body}</p>
+                  </>
+                );
+
+                if (item.dealerAssetCorrectionId) {
+                  const correctionId = item.dealerAssetCorrectionId;
+                  const processing = processingCorrectionIds.has(correctionId);
+                  return (
+                    <article key={item.id} className={`${className} ${styles.notificationCorrectionCard}`}>
+                      {cardContent}
+                      <div className={styles.notificationCorrectionActions}>
+                        <button
+                          type="button"
+                          className={styles.notificationCorrectionDecline}
+                          onClick={() => void handleCorrectionDecision(correctionId, 'reject')}
+                          disabled={processing}
+                        >
+                          {processing ? 'Saving…' : 'Decline'}
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.notificationCorrectionAccept}
+                          onClick={() => void handleCorrectionDecision(correctionId, 'accept')}
+                          disabled={processing}
+                        >
+                          {processing ? 'Saving…' : 'Accept update'}
+                        </button>
+                      </div>
+                    </article>
+                  );
+                }
+
+                return (
+                  <Link
+                    key={item.id}
+                    className={className}
+                    href={destination(item)}
+                    prefetch={false}
+                    onClick={handleNotificationOpen}
+                  >
+                    {cardContent}
+                  </Link>
+                );
+              })}
             </div>
           ) : (
             <p className={styles.notificationEmpty} aria-live="polite">
