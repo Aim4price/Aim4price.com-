@@ -510,7 +510,6 @@
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 0.6rem;
 }
 
 .notificationClearButton,
@@ -538,8 +537,10 @@
 }
 
 .notificationCloseButton {
-  width: 2.68rem;
+  width: 2.82rem;
+  height: 2.82rem;
   padding: 0;
+  border-radius: 999px;
   font-size: 1.38rem;
   line-height: 1;
 }
@@ -567,6 +568,13 @@
   box-shadow: 0 13px 26px rgba(204, 58, 58, 0.16);
 }
 
+.notificationClearButton:disabled {
+  cursor: default;
+  opacity: 0.66;
+  transform: none;
+  box-shadow: none;
+}
+
 .notificationListHeader {
   display: flex;
   align-items: center;
@@ -578,6 +586,13 @@
   line-height: 1.2;
   font-weight: 820;
   letter-spacing: 0.02em;
+}
+
+.notificationListHeaderActions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.72rem;
 }
 
 .notificationListHeader strong {
@@ -803,6 +818,17 @@
   gap: 0.34rem;
 }
 
+.notificationCopyWithAction {
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 1rem;
+}
+
+.notificationCopyWithAction > strong,
+.notificationCopyWithAction > span:not(.notificationOpenHint),
+.notificationCopyWithAction > small {
+  grid-column: 1;
+}
+
 .notificationCopy strong {
   color: #17362c;
   font-size: 1.03rem;
@@ -992,14 +1018,23 @@
 }
 
 .notificationOpenHint {
-  width: fit-content;
-  margin-top: 0.18rem;
-  padding: 0.38rem 0.68rem;
-  border-radius: 999px;
-  color: #0f684f !important;
-  background: rgba(23, 126, 91, 0.09);
-  border: 1px solid rgba(23, 126, 91, 0.14);
-  font-size: 0.78rem !important;
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  align-self: end;
+  justify-self: end;
+  min-width: 7.8rem;
+  min-height: 2.55rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0 0.92rem;
+  border-radius: 0.82rem;
+  color: #ffffff !important;
+  background: linear-gradient(180deg, #208661 0%, #116c50 100%);
+  border: 1px solid rgba(15, 104, 79, 0.94);
+  box-shadow: 0 10px 20px rgba(15, 104, 79, 0.16);
+  font-size: 0.8rem !important;
   line-height: 1 !important;
   font-weight: 860 !important;
 }
@@ -1647,12 +1682,7 @@
   }
 
   .notificationHeaderActions {
-    width: 100%;
-    justify-content: space-between;
-  }
-
-  .notificationClearButton {
-    flex: 1 1 auto;
+    justify-content: flex-end;
   }
 
   .notificationCloseButton {
@@ -1660,7 +1690,19 @@
   }
 
   .notificationListHeader {
+    align-items: flex-start;
     padding-inline: 0.2rem;
+  }
+
+  .notificationListHeaderActions {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.42rem;
+  }
+
+  .notificationClearButton {
+    min-height: 2.38rem;
+    padding: 0 0.8rem;
   }
 
   .notificationList {
@@ -1689,6 +1731,24 @@
     gap: 0.75rem;
     padding: 0.98rem;
     border-radius: 1.08rem;
+  }
+
+  .notificationCopyWithAction {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .notificationCopyWithAction > strong,
+  .notificationCopyWithAction > span:not(.notificationOpenHint),
+  .notificationCopyWithAction > small,
+  .notificationOpenHint {
+    grid-column: 1;
+  }
+
+  .notificationOpenHint {
+    grid-row: auto;
+    justify-self: end;
+    min-width: 7.3rem;
+    margin-top: 0.28rem;
   }
 
   .notificationMediaToolbar {

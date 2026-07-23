@@ -1,11 +1,20 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, type MouseEventHandler, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEventHandler, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import {
+  clearCachedHeaderSession,
+  readCachedHeaderSession,
+  refreshCachedHeaderSession,
+  writeCachedHeaderSession,
+  type HeaderSessionUser,
+} from '../lib/header-session-cache';
 import styles from './AppHeader.module.css';
+
+const useBrowserLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect;
 
 type ActivePage =
   | 'home'
@@ -31,7 +40,7 @@ type AppHeaderProps = {
   ctaLabel?: string;
 };
 
-type AccountType = 'owner' | 'dealer' | 'finance' | 'insurance';
+type AccountType = HeaderSessionUser['accountType'];
 
 type NavItem = {
   key: ActivePage;
@@ -61,22 +70,12 @@ type AccountLogoFields = {
   avatarUrl?: string | null;
 };
 
-type SessionUser = AccountLogoFields & {
-  id: string;
-  name: string;
-  email: string;
-  accountType: AccountType;
+type SessionUser = HeaderSessionUser & AccountLogoFields & {
   account?: AccountLogoFields | null;
   company?: AccountLogoFields | null;
   business?: AccountLogoFields | null;
   profile?: AccountLogoFields | null;
   organization?: AccountLogoFields | null;
-};
-
-type SessionResponse = {
-  ok: boolean;
-  signedIn: boolean;
-  user: SessionUser | null;
 };
 
 type AccountProfileLogo = AccountLogoFields & {
@@ -487,9 +486,8 @@ export default function AppHeader({
   const accountMenuRef = useRef<HTMLDivElement | null>(null);
   const notificationMenuRef = useRef<HTMLDivElement | null>(null);
   const notificationDialogRef = useRef<HTMLElement | null>(null);
-  const hasLoadedSessionOnceRef = useRef(false);
 
-  const [session, setSession] = useState<SessionResponse['user']>(null);
+  const [session, setSession] = useState<SessionUser | null>(null);
   const [accountProfileLogoState, setAccountProfileLogoState] = useState<AccountProfileLogoState>({
     loaded: false,
     logoUrl: null,
@@ -512,6 +510,15 @@ export default function AppHeader({
 
   useEffect(() => {
     setCanUseNotificationPortal(true);
+  }, []);
+
+  useBrowserLayoutEffect(() => {
+    const cachedSession = readCachedHeaderSession();
+
+    if (cachedSession !== undefined) {
+      setSession(cachedSession);
+      setIsLoadingSession(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -542,28 +549,14 @@ export default function AppHeader({
     let mounted = true;
 
     async function loadSession() {
-      const isInitialSessionLoad = !hasLoadedSessionOnceRef.current;
-
       try {
-        if (isInitialSessionLoad) {
-          setIsLoadingSession(true);
-        }
-
-        const response = await fetch('/api/me', {
-          credentials: 'include',
-          cache: 'no-store',
-        });
-
-        const data = (await response.json()) as SessionResponse;
-
+        const nextSession = await refreshCachedHeaderSession();
         if (!mounted) return;
-        setSession(data?.signedIn ? data.user : null);
+        setSession(nextSession);
       } catch {
-        if (!mounted) return;
-        setSession(null);
+        // Keep a recent cached header visible if the background refresh is interrupted.
       } finally {
         if (mounted) {
-          hasLoadedSessionOnceRef.current = true;
           setIsLoadingSession(false);
         }
       }
@@ -574,7 +567,7 @@ export default function AppHeader({
     return () => {
       mounted = false;
     };
-  }, [pathname]);
+  }, []);
 
   useEffect(() => {
     function handleDocumentClick(event: MouseEvent) {
@@ -764,11 +757,20 @@ export default function AppHeader({
   }
 
   useEffect(() => {
-    if (!session?.id) {
+    const activeSession = session;
+
+    if (!activeSession?.id) {
       setAccountProfileLogoState({ loaded: false, logoUrl: null });
       return;
     }
 
+    const cacheSession: HeaderSessionUser = {
+      id: activeSession.id,
+      name: activeSession.name,
+      email: activeSession.email,
+      accountType: activeSession.accountType,
+      logoUrl: activeSession.logoUrl,
+    };
     let mounted = true;
 
     async function loadAccountLogoFromProfile() {
@@ -789,6 +791,10 @@ export default function AppHeader({
         if (mounted) {
           setAccountProfileLogoState({
             loaded: Boolean(data?.ok && data?.profile),
+            logoUrl: nextLogoUrl,
+          });
+          writeCachedHeaderSession({
+            ...cacheSession,
             logoUrl: nextLogoUrl,
           });
         }
@@ -960,13 +966,14 @@ export default function AppHeader({
       });
     } finally {
       clearLegacyPrototypeStorage();
+      clearCachedHeaderSession();
       setSession(null);
       setMenuOpen(false);
       setMobileMenuOpen(false);
       setNotificationOpen(false);
       setNotifications([]);
       setIsSigningOut(false);
-      window.location.replace('/');
+      window.location.replace('/auth#login');
     }
   }
 
@@ -974,7 +981,7 @@ export default function AppHeader({
     return (
       <>
         <span className={styles.notificationDot} aria-hidden="true" />
-        <span className={styles.notificationCopy}>
+        <span className={`${styles.notificationCopy} ${actionLabel ? styles.notificationCopyWithAction : ''}`}>
           <strong>{notification.title}</strong>
           <span>{notification.body}</span>
           <small>{formatNotificationTime(notification.createdAtIso)}</small>
@@ -1258,14 +1265,6 @@ export default function AppHeader({
                 <div className={styles.notificationHeaderActions}>
                   <button
                     type="button"
-                    className={`${styles.notificationClearButton} ${unreadNotificationCount ? styles.notificationClearButtonNew : ''}`}
-                    onClick={markNotificationsSeen}
-                    aria-label={unreadNotificationCount ? `Mark ${unreadNotificationCount} new notifications checked` : 'Mark all notifications checked'}
-                  >
-                    Mark checked
-                  </button>
-                  <button
-                    type="button"
                     className={styles.notificationCloseButton}
                     aria-label="Close notifications"
                     onClick={() => setNotificationOpen(false)}
@@ -1285,13 +1284,24 @@ export default function AppHeader({
                         : `${notifications.length} ${notifications.length === 1 ? 'notification' : 'notifications'}`
                       : 'No notifications'}
                 </span>
-                <strong>
-                  {unreadNotificationCount
-                    ? `${unreadNotificationCount} new`
-                    : notifications.length
-                      ? 'All checked'
-                      : 'Clear'}
-                </strong>
+                <div className={styles.notificationListHeaderActions}>
+                  <strong>
+                    {unreadNotificationCount
+                      ? `${unreadNotificationCount} new`
+                      : notifications.length
+                        ? 'All checked'
+                        : 'Clear'}
+                  </strong>
+                  <button
+                    type="button"
+                    className={`${styles.notificationClearButton} ${unreadNotificationCount ? styles.notificationClearButtonNew : ''}`}
+                    onClick={markNotificationsSeen}
+                    disabled={!unreadNotificationCount}
+                    aria-label={unreadNotificationCount ? `Mark ${unreadNotificationCount} new notifications checked` : 'All notifications are checked'}
+                  >
+                    {unreadNotificationCount ? 'Mark checked' : 'All checked'}
+                  </button>
+                </div>
               </div>
 
               <div className={styles.notificationList}>
