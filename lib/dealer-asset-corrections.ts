@@ -562,14 +562,16 @@ async function applyAcceptedCorrectionToAsset(input: {
 
     pushValueAssignment(replacementColumn, replacement);
     pushValueAssignment(userReplacementColumn, replacement);
-    pushValueAssignment(replacementBasisColumn, 'dealer_accepted');
+    // Keep this aligned with the established Asset Register write path. Some
+    // deployed databases validate this field against the existing basis values.
+    pushValueAssignment(replacementBasisColumn, 'user');
 
     if (specsColumn) {
       const specsMeta = assetColumns.get(specsColumn);
       values.push(JSON.stringify({
         ...replacementPatch,
-        replacementPriceBasis: 'dealer_accepted',
-        replacement_price_basis: 'dealer_accepted',
+        replacementPriceBasis: 'user',
+        replacement_price_basis: 'user',
       }));
       const placeholder = `$${values.length}::jsonb`;
       if (specsMeta?.data_type === 'json' || specsMeta?.udt_name === 'json') {
@@ -681,6 +683,12 @@ export async function resolveDealerAssetCorrection(input: {
   await ensureDealerAssetCorrectionTables();
   const db = getDb();
   const client = await db.connect();
+  let resolvedCorrection: DealerAssetCorrectionRequest | null = null;
+  let snapshotSync: {
+    current: DealerAssetCorrectionRequest;
+    replacementPatch: Record<string, number>;
+    leadColumns: Map<string, TableColumnRow>;
+  } | null = null;
 
   try {
     await client.query('begin');
@@ -703,13 +711,11 @@ export async function resolveDealerAssetCorrection(input: {
         ownerUserId: input.ownerUserId,
         assetColumns,
       });
-      await applyAcceptedCorrectionToLeadSnapshots({
-        client,
+      snapshotSync = {
         current,
-        ownerUserId: input.ownerUserId,
         replacementPatch,
         leadColumns,
-      });
+      };
     }
 
     await client.query(
@@ -728,15 +734,34 @@ export async function resolveDealerAssetCorrection(input: {
       `${correctionSelectSql('where correction.id = $1::uuid')} limit 1`,
       [current.id],
     );
-    await client.query('commit');
     if (!resolvedResult.rows[0]) throw new Error('CORRECTION_NOT_FOUND');
-    return mapCorrection(resolvedResult.rows[0]);
+    resolvedCorrection = mapCorrection(resolvedResult.rows[0]);
+    await client.query('commit');
   } catch (error) {
     await client.query('rollback').catch(() => undefined);
-    throw error;
-  } finally {
     client.release();
+    throw error;
   }
+
+  // Lead snapshots are denormalized copies for the dealer view. A stale or
+  // legacy lead row must not roll back a valid owner decision or asset update.
+  if (snapshotSync) {
+    try {
+      await applyAcceptedCorrectionToLeadSnapshots({
+        client,
+        current: snapshotSync.current,
+        ownerUserId: input.ownerUserId,
+        replacementPatch: snapshotSync.replacementPatch,
+        leadColumns: snapshotSync.leadColumns,
+      });
+    } catch (error) {
+      console.error('Accepted dealer correction, but failed to refresh dealer lead snapshots.', error);
+    }
+  }
+
+  client.release();
+  if (!resolvedCorrection) throw new Error('CORRECTION_NOT_FOUND');
+  return resolvedCorrection;
 }
 
 export function applyDealerCorrectionToSnapshot(
