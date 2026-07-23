@@ -32481,3 +32481,185 @@ button.documentOpenLink {
     min-height: 5.9rem !important;
   }
 }
+
+/* === Dealer-proposed Asset Register update === */
+.assetCardDealerCorrection {
+  border-color: rgba(22, 126, 91, 0.54) !important;
+  background:
+    radial-gradient(circle at top left, rgba(40, 167, 122, 0.12), transparent 34%),
+    linear-gradient(180deg, #effbf5 0%, #f9fdfb 48%, #ffffff 100%) !important;
+  box-shadow: 0 18px 44px rgba(17, 107, 76, 0.13) !important;
+}
+
+.assetCardDealerCorrection:hover {
+  border-color: rgba(15, 107, 76, 0.72) !important;
+}
+
+.badgeDealerCorrection {
+  color: #0d563d !important;
+  background: #dff7eb !important;
+  border-color: rgba(22, 126, 91, 0.28) !important;
+}
+
+.dealerCorrectionBanner {
+  grid-column: 1 / -1;
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.2rem;
+  margin-top: 0.35rem;
+  padding: 1rem 1.05rem;
+  border: 1px solid rgba(22, 126, 91, 0.3);
+  border-radius: 1.15rem;
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.26), transparent 38%),
+    linear-gradient(135deg, #197d5c 0%, #116247 100%);
+  box-shadow:
+    0 14px 28px rgba(15, 91, 66, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.dealerCorrectionCopy {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 2.55rem minmax(0, 1fr);
+  align-items: start;
+  gap: 0.85rem;
+}
+
+.dealerCorrectionIcon {
+  width: 2.55rem;
+  height: 2.55rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  border-radius: 0.82rem;
+  color: #0d6549;
+  background: #ffffff;
+  font-size: 1.05rem;
+  font-weight: 950;
+  box-shadow: 0 9px 20px rgba(7, 57, 40, 0.18);
+}
+
+.dealerCorrectionCopy > div {
+  min-width: 0;
+}
+
+.dealerCorrectionCopy strong {
+  display: block;
+  color: #ffffff;
+  font-size: 0.92rem;
+  font-weight: 900;
+  letter-spacing: -0.015em;
+}
+
+.dealerCorrectionCopy p {
+  margin: 0.3rem 0 0;
+  color: rgba(248, 255, 251, 0.94);
+  font-size: 0.82rem;
+  font-weight: 680;
+  line-height: 1.48;
+  overflow-wrap: anywhere;
+}
+
+.dealerCorrectionCopy small {
+  display: block;
+  margin-top: 0.38rem;
+  color: rgba(235, 255, 245, 0.72);
+  font-size: 0.72rem;
+  font-weight: 720;
+  line-height: 1.4;
+}
+
+.dealerCorrectionActions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.dealerCorrectionDeclineButton,
+.dealerCorrectionAcceptButton {
+  min-height: 2.75rem;
+  border-radius: 0.86rem;
+  padding: 0 1rem;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 900;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    background 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.dealerCorrectionDeclineButton {
+  border: 1px solid rgba(255, 255, 255, 0.54);
+  color: #ffffff;
+  background: rgba(10, 75, 53, 0.48);
+}
+
+.dealerCorrectionAcceptButton {
+  border: 1px solid #ffffff;
+  color: #0d6045;
+  background: #ffffff;
+  box-shadow: 0 9px 20px rgba(7, 57, 40, 0.18);
+}
+
+.dealerCorrectionDeclineButton:hover:not(:disabled),
+.dealerCorrectionAcceptButton:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.dealerCorrectionDeclineButton:hover:not(:disabled) {
+  background: rgba(8, 66, 46, 0.72);
+}
+
+.dealerCorrectionAcceptButton:hover:not(:disabled) {
+  background: #effcf5;
+}
+
+.dealerCorrectionDeclineButton:focus-visible,
+.dealerCorrectionAcceptButton:focus-visible {
+  outline: 3px solid rgba(255, 255, 255, 0.34);
+  outline-offset: 3px;
+}
+
+.dealerCorrectionDeclineButton:disabled,
+.dealerCorrectionAcceptButton:disabled {
+  cursor: wait;
+  opacity: 0.64;
+}
+
+@media (max-width: 760px) {
+  .dealerCorrectionBanner {
+    align-items: stretch;
+    flex-direction: column;
+    padding: 0.9rem;
+  }
+
+  .dealerCorrectionCopy {
+    grid-template-columns: 2.3rem minmax(0, 1fr);
+    gap: 0.7rem;
+  }
+
+  .dealerCorrectionIcon {
+    width: 2.3rem;
+    height: 2.3rem;
+  }
+
+  .dealerCorrectionActions {
+    display: grid;
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  }
+
+  .dealerCorrectionDeclineButton,
+  .dealerCorrectionAcceptButton {
+    width: 100%;
+  }
+}

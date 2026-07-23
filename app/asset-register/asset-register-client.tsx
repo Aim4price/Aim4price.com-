@@ -24,6 +24,7 @@ import {
   type PropertyAssetSubtypeKey,
   type StockAssetSubtypeKey,
 } from '../../lib/general-asset-catalogue';
+import type { DealerAssetCorrectionRequest } from '../../lib/dealer-asset-corrections';
 import styles from './page.module.css';
 
 type NoticeTone = 'success' | 'error';
@@ -446,6 +447,7 @@ type RegisterAsset = {
   latestIssueNoteStatus?: LatestIssueNoteStatus | null;
   maintenanceAlert?: MaintenanceUpcomingAlert | null;
   licenseRenewalAlert?: LicenseRenewalAlert | null;
+  dealerAssetCorrection?: DealerAssetCorrectionRequest | null;
 };
 
 type ReplacementPriceRevaluePrompt = {
@@ -2037,6 +2039,34 @@ function money(value: number | null | undefined): string {
     currency: 'ZAR',
     maximumFractionDigits: 0,
   }).format(value || 0);
+}
+
+function dealerCorrectionActor(correction: DealerAssetCorrectionRequest): string {
+  const dealerName = correction.dealerName.trim() || 'the dealer';
+  const actorName = correction.actorName.trim();
+
+  if (!actorName || actorName.toLowerCase() === dealerName.toLowerCase()) {
+    return dealerName;
+  }
+
+  return `${actorName} at ${dealerName}`;
+}
+
+function dealerCorrectionDescription(correction: DealerAssetCorrectionRequest): string {
+  const actor = dealerCorrectionActor(correction);
+
+  if (correction.serialNumberChanged && correction.proposedSerialNumber) {
+    return `${actor} proposed changing the serial number from ${correction.currentSerialNumber || 'not saved'} to ${correction.proposedSerialNumber}.`;
+  }
+
+  if (correction.replacementPriceChanged && correction.proposedReplacementPriceExVat !== null) {
+    const currentValue = correction.currentReplacementPriceExVat === null
+      ? 'not saved'
+      : `${money(correction.currentReplacementPriceExVat)} excl. VAT`;
+    return `${actor} proposed changing the replacement price from ${currentValue} to ${money(correction.proposedReplacementPriceExVat)} excl. VAT.`;
+  }
+
+  return `${actor} proposed an update to this asset.`;
 }
 
 function formatMoneyDifference(value: number | null | undefined): string {
@@ -3772,6 +3802,7 @@ function assetUnnotedAlertCount(asset: RegisterAsset): number {
   if (asset.licenseRenewalAlert) count += 1;
   if (asset.latestMaintenanceStatus) count += 1;
   if (asset.latestIssueNoteStatus) count += 1;
+  if (asset.dealerAssetCorrection) count += 1;
   count += openPartnerNoteAlertCount(asset);
 
   return count;
@@ -3791,6 +3822,7 @@ function formatAlertBadgeCount(count: number): string {
 }
 
 function assetAttentionRank(asset: RegisterAsset): number {
+  if (asset.dealerAssetCorrection) return 8;
   if (asset.latestIssueNoteStatus) return 7;
   if (asset.maintenanceAlert) return 6;
   if (asset.licenseRenewalAlert) return 5;
@@ -3808,6 +3840,16 @@ function assetAttentionTimestamp(asset: RegisterAsset): number {
   const licenseRenewalAlert = asset.licenseRenewalAlert ?? null;
   const latestMaintenanceStatus = asset.latestMaintenanceStatus ?? null;
   const latestIssueNoteStatus = asset.latestIssueNoteStatus ?? null;
+  const dealerAssetCorrection = asset.dealerAssetCorrection ?? null;
+
+  if (dealerAssetCorrection) {
+    return (
+      timestampFromIso(dealerAssetCorrection.updatedAtIso) ||
+      timestampFromIso(dealerAssetCorrection.createdAtIso) ||
+      timestampFromIso(asset.updatedAtIso) ||
+      timestampFromIso(asset.createdAtIso)
+    );
+  }
 
   if (latestIssueNoteStatus) {
     return (
@@ -5699,6 +5741,7 @@ export default function AssetRegisterClient() {
   const [busyMaintenanceAlertId, setBusyMaintenanceAlertId] = useState<string | null>(null);
   const [busyLicenseRenewalAssetId, setBusyLicenseRenewalAssetId] = useState<string | null>(null);
   const [busyIssueNoteStatusId, setBusyIssueNoteStatusId] = useState<string | null>(null);
+  const [busyDealerCorrectionId, setBusyDealerCorrectionId] = useState<string | null>(null);
   const [busyRevalueAction, setBusyRevalueAction] = useState<RevalueMethod | null>(null);
   const [replacementPriceRevaluePrompt, setReplacementPriceRevaluePrompt] = useState<ReplacementPriceRevaluePrompt | null>(null);
   const [pricingPreview, setPricingPreview] = useState<PricingRevaluePreview | null>(null);
@@ -8475,11 +8518,16 @@ export default function AssetRegisterClient() {
   }
 
   function preserveLicenseRenewalAlert(previous: RegisterAsset | null | undefined, nextAsset: RegisterAsset): RegisterAsset {
-    if (!previous || typeof nextAsset.licenseRenewalAlert !== 'undefined') return nextAsset;
+    if (!previous) return nextAsset;
+
+    const shouldPreserveLicenseAlert = typeof nextAsset.licenseRenewalAlert === 'undefined';
+    const shouldPreserveDealerCorrection = typeof nextAsset.dealerAssetCorrection === 'undefined';
+    if (!shouldPreserveLicenseAlert && !shouldPreserveDealerCorrection) return nextAsset;
 
     return {
       ...nextAsset,
-      licenseRenewalAlert: previous.licenseRenewalAlert ?? null,
+      ...(shouldPreserveLicenseAlert ? { licenseRenewalAlert: previous.licenseRenewalAlert ?? null } : {}),
+      ...(shouldPreserveDealerCorrection ? { dealerAssetCorrection: previous.dealerAssetCorrection ?? null } : {}),
     };
   }
 
@@ -10218,6 +10266,75 @@ export default function AssetRegisterClient() {
         tone: 'error',
         message: error instanceof Error ? error.message : 'Failed to mark note as noted.',
       });
+    }
+  }
+
+  async function handleDealerCorrectionDecision(
+    correction: DealerAssetCorrectionRequest,
+    decision: 'accept' | 'reject',
+  ) {
+    setBusyDealerCorrectionId(correction.id);
+
+    try {
+      const response = await fetch(`/api/asset-corrections/${encodeURIComponent(correction.id)}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ decision }),
+      });
+      const data = (await response.json().catch(() => null)) as {
+        ok?: boolean;
+        correction?: DealerAssetCorrectionRequest;
+        error?: string;
+      } | null;
+
+      if (!response.ok || !data?.ok) {
+        throw new Error(data?.error ?? 'Failed to save the dealer update decision.');
+      }
+
+      const applyDecision = (entry: RegisterAsset): RegisterAsset => {
+        if (entry.id !== correction.assetId) return entry;
+
+        const updated: RegisterAsset = {
+          ...entry,
+          dealerAssetCorrection: null,
+        };
+
+        if (decision === 'accept' && correction.serialNumberChanged && correction.proposedSerialNumber) {
+          updated.serialNumber = correction.proposedSerialNumber;
+        }
+        if (
+          decision === 'accept'
+          && correction.replacementPriceChanged
+          && correction.proposedReplacementPriceExVat !== null
+        ) {
+          updated.replacementPriceExVat = correction.proposedReplacementPriceExVat;
+        }
+
+        return updated;
+      };
+
+      setAssets((current) => current.map(applyDecision));
+      setActiveAsset((current) => current ? applyDecision(current) : current);
+      setMarketplaceAsset((current) => current ? applyDecision(current) : current);
+      setProjectionAsset((current) => current ? applyDecision(current) : current);
+      setQuoteAsset((current) => current ? applyDecision(current) : current);
+      setNotice({
+        tone: 'success',
+        message: decision === 'accept'
+          ? 'Dealer update accepted and saved to the Asset Register.'
+          : 'Dealer update declined.',
+      });
+      window.dispatchEvent(new CustomEvent('aim4price:dealer-correction-resolved', {
+        detail: { correctionId: correction.id },
+      }));
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Failed to save the dealer update decision.',
+      });
+    } finally {
+      setBusyDealerCorrectionId((current) => (current === correction.id ? null : current));
     }
   }
 
@@ -12227,6 +12344,13 @@ export default function AssetRegisterClient() {
                     const latestIssueNoteStatus = asset.latestIssueNoteStatus ?? null;
                     const maintenanceAlert = asset.maintenanceAlert ?? null;
                     const licenseRenewalAlert = asset.licenseRenewalAlert ?? null;
+                    const dealerAssetCorrection = asset.dealerAssetCorrection ?? null;
+                    const dealerCorrectionLabel = dealerAssetCorrection?.serialNumberChanged
+                      ? 'Serial number update'
+                      : 'Replacement price update';
+                    const isDecidingDealerCorrection = dealerAssetCorrection
+                      ? busyDealerCorrectionId === dealerAssetCorrection.id
+                      : false;
                     const isManualValueAsset = asset.selectedMethod === 'manual';
                     const assetValueVatMode = assetValueVatModes[asset.id] ?? 'excluded';
                     const displayedAssetValue = assetValueVatMode === 'included' ? Math.round(Number(asset.value || 0) * 1.15) : asset.value;
@@ -12291,11 +12415,11 @@ export default function AssetRegisterClient() {
 
                         <article
                           id={`asset-card-${asset.id}`}
-                          className={`${styles.assetCard} ${isExpanded ? styles.assetCardExpanded : ''} ${isFlagged ? styles.assetCardFlagged : ''} ${estimateNeedsUpdate ? styles.assetCardEstimateStale : ''} ${openPartnerNote ? `${styles.assetCardPartnerNote} ${partnerNoteToneClass}` : ''} ${maintenanceAlert || licenseRenewalAlert ? styles.assetCardMaintenanceUpcoming : ''} ${latestMaintenanceStatus ? styles.assetCardMaintenanceDone : ''} ${latestIssueNoteStatus ? styles.assetCardIssueNote : ''}`}
+                          className={`${styles.assetCard} ${isExpanded ? styles.assetCardExpanded : ''} ${isFlagged ? styles.assetCardFlagged : ''} ${estimateNeedsUpdate ? styles.assetCardEstimateStale : ''} ${openPartnerNote ? `${styles.assetCardPartnerNote} ${partnerNoteToneClass}` : ''} ${maintenanceAlert || licenseRenewalAlert ? styles.assetCardMaintenanceUpcoming : ''} ${latestMaintenanceStatus ? styles.assetCardMaintenanceDone : ''} ${latestIssueNoteStatus ? styles.assetCardIssueNote : ''} ${dealerAssetCorrection ? styles.assetCardDealerCorrection : ''}`}
                         >
                         <div className={styles.assetHeader}>
                           <div className={styles.assetTitleBlock}>
-                            {isFlagged || isLive || estimateNeedsUpdate || openPartnerNote || maintenanceAlert || licenseRenewalAlert || latestMaintenanceStatus || latestIssueNoteStatus ? (
+                            {isFlagged || isLive || estimateNeedsUpdate || openPartnerNote || maintenanceAlert || licenseRenewalAlert || latestMaintenanceStatus || latestIssueNoteStatus || dealerAssetCorrection ? (
                               <div className={styles.badgeRow}>
                                 {isFlagged ? <span className={`${styles.badge} ${styles.badgeDanger}`}>Flagged</span> : null}
                                 {isLive ? <span className={`${styles.badge} ${styles.badgeSuccess}`}>Live on marketplace</span> : null}
@@ -12307,6 +12431,7 @@ export default function AssetRegisterClient() {
                                 {licenseRenewalAlert ? <span className={`${styles.badge} ${styles.badgeMaintenanceUpcoming}`}>License renewal upcoming</span> : null}
                                 {latestMaintenanceStatus ? <span className={`${styles.badge} ${styles.badgeMaintenanceDone}`}>{maintenanceDoneLabel}</span> : null}
                                 {latestIssueNoteStatus ? <span className={`${styles.badge} ${styles.badgeIssueNote}`}>Open issue</span> : null}
+                                {dealerAssetCorrection ? <span className={`${styles.badge} ${styles.badgeDealerCorrection}`}>{dealerCorrectionLabel}</span> : null}
                               </div>
                             ) : null}
                             <h2>{asset.title}</h2>
@@ -12381,6 +12506,37 @@ export default function AssetRegisterClient() {
                               </button>
                             </div>
                           </div>
+
+                          {dealerAssetCorrection ? (
+                            <div className={styles.dealerCorrectionBanner} role="status">
+                              <div className={styles.dealerCorrectionCopy}>
+                                <span className={styles.dealerCorrectionIcon} aria-hidden="true">✓</span>
+                                <div>
+                                  <strong>Dealer update awaiting your approval</strong>
+                                  <p>{dealerCorrectionDescription(dealerAssetCorrection)}</p>
+                                  <small>Review this one change before the dealer can submit another update for this asset.</small>
+                                </div>
+                              </div>
+                              <div className={styles.dealerCorrectionActions}>
+                                <button
+                                  type="button"
+                                  className={styles.dealerCorrectionDeclineButton}
+                                  disabled={isDecidingDealerCorrection}
+                                  onClick={() => void handleDealerCorrectionDecision(dealerAssetCorrection, 'reject')}
+                                >
+                                  {isDecidingDealerCorrection ? 'Saving…' : 'Decline'}
+                                </button>
+                                <button
+                                  type="button"
+                                  className={styles.dealerCorrectionAcceptButton}
+                                  disabled={isDecidingDealerCorrection}
+                                  onClick={() => void handleDealerCorrectionDecision(dealerAssetCorrection, 'accept')}
+                                >
+                                  {isDecidingDealerCorrection ? 'Saving…' : 'Accept update'}
+                                </button>
+                              </div>
+                            </div>
+                          ) : null}
 
                           {openPartnerNote ? (
                             <div className={`${styles.partnerNoteBanner} ${partnerNoteToneClass}`}>
