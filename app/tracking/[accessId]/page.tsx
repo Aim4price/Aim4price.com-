@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import AppHeader from '../../../components/AppHeader';
+import DealerAssetCorrectionEditor from '../../../components/DealerAssetCorrectionEditor';
 import { workspaceStyles } from '../../../components/WorkspacePrimitives';
 import { getAccountProfile } from '../../../lib/account-profile';
 import { getServerSession } from '../../../lib/auth-session';
@@ -31,6 +32,15 @@ function formatDate(value: string | null): string {
     year: 'numeric',
     timeZone: 'UTC',
   }).format(parsed);
+}
+
+function formatCurrency(value: number | null): string {
+  if (value === null || !Number.isFinite(value)) return 'Not saved';
+  return new Intl.NumberFormat('en-ZA', {
+    style: 'currency',
+    currency: 'ZAR',
+    maximumFractionDigits: 0,
+  }).format(value);
 }
 
 function statusClass(status: DealerMaintenanceTrackerStatus): string {
@@ -84,7 +94,29 @@ export default async function TrackingDetailPage({ params }: { params: { accessI
           <article><span>Current usage</span><strong>{formatUsage(asset.currentUsage, asset.usageMetric)}</strong></article>
           <article><span>Open schedules</span><strong>{asset.maintenanceRecords.length}</strong></article>
           <article><span>Serial number</span><strong>{asset.serialNumber || 'Not saved'}</strong></article>
+          <article><span>Replacement price</span><strong>{formatCurrency(asset.replacementPriceExVat)}</strong></article>
           <article><span>Tracking status</span><strong>{asset.statusLabel}</strong></article>
+        </section>
+
+        <section className={`${styles.recordsPanel} ${styles.correctionPanel}`}>
+          <header className={styles.recordsHeader}>
+            <div>
+              <span className={styles.eyebrow}>Owner-approved updates</span>
+              <h2>Asset corrections</h2>
+              <p>Correct the dealer-facing serial number or replacement price and send it to the owner for acceptance.</p>
+            </div>
+            <span className={styles.correctionBadge}>Owner approval</span>
+          </header>
+          <div className={styles.correctionActions}>
+            <DealerAssetCorrectionEditor
+              assetTitle={asset.assetTitle}
+              sourceType="maintenance"
+              sourceId={asset.accessId}
+              serialNumber={asset.serialNumber}
+              replacementPriceExVat={asset.replacementPriceExVat}
+              correction={asset.dealerCorrection}
+            />
+          </div>
         </section>
 
         <section className={styles.recordsPanel}>
