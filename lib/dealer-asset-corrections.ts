@@ -1,3 +1,4 @@
+import type { PoolClient } from 'pg';
 import { getAssetRegisterItemById } from './asset-register-db';
 import { getDb } from './db';
 
@@ -52,6 +53,13 @@ type DealerAssetCorrectionRow = {
 type CorrectionAccessRow = {
   owner_user_id: string;
   asset_register_item_id: string;
+};
+
+type TableColumnRow = {
+  table_name: string;
+  column_name: string;
+  data_type: string;
+  udt_name: string;
 };
 
 let dealerAssetCorrectionTablesPromise: Promise<void> | null = null;
@@ -446,6 +454,196 @@ function replacementSnapshotPatch(value: number): Record<string, number> {
   };
 }
 
+function firstAvailableColumn(columns: Map<string, TableColumnRow>, candidates: string[]): string | null {
+  for (const candidate of candidates) {
+    if (columns.has(candidate)) return candidate;
+  }
+  return null;
+}
+
+function quotedIdentifier(value: string): string {
+  return `"${value.replace(/"/g, '""')}"`;
+}
+
+async function loadCorrectionTableColumns(
+  client: PoolClient,
+): Promise<{
+  assetColumns: Map<string, TableColumnRow>;
+  leadColumns: Map<string, TableColumnRow>;
+}> {
+  const result = await client.query<TableColumnRow>(
+    `
+      select table_name, column_name, data_type, udt_name
+      from information_schema.columns
+      where table_schema = 'public'
+        and table_name = any($1::text[])
+    `,
+    [['asset_register_items', 'asset_leads']],
+  );
+
+  const assetColumns = new Map<string, TableColumnRow>();
+  const leadColumns = new Map<string, TableColumnRow>();
+  for (const row of result.rows) {
+    if (row.table_name === 'asset_register_items') assetColumns.set(row.column_name, row);
+    if (row.table_name === 'asset_leads') leadColumns.set(row.column_name, row);
+  }
+
+  return { assetColumns, leadColumns };
+}
+
+async function applyAcceptedCorrectionToAsset(input: {
+  client: PoolClient;
+  current: DealerAssetCorrectionRequest;
+  ownerUserId: string;
+  assetColumns: Map<string, TableColumnRow>;
+}): Promise<Record<string, number>> {
+  const { client, current, ownerUserId, assetColumns } = input;
+  const userIdColumn = firstAvailableColumn(assetColumns, ['user_id']);
+  const idColumn = firstAvailableColumn(assetColumns, ['id']);
+  if (!userIdColumn || !idColumn) throw new Error('ASSET_UPDATE_UNSUPPORTED');
+
+  const assignments: string[] = [];
+  const values: unknown[] = [];
+  const assignedColumns = new Set<string>();
+  const pushValueAssignment = (column: string | null, value: unknown, cast = '') => {
+    if (!column || assignedColumns.has(column)) return;
+    values.push(value);
+    assignments.push(`${quotedIdentifier(column)} = $${values.length}${cast}`);
+    assignedColumns.add(column);
+  };
+
+  if (current.serialNumberChanged && current.proposedSerialNumber) {
+    const serialColumn = firstAvailableColumn(assetColumns, ['serial_number', 'serial', 'vin']);
+    if (!serialColumn) throw new Error('ASSET_UPDATE_UNSUPPORTED');
+    pushValueAssignment(serialColumn, current.proposedSerialNumber);
+  }
+
+  let replacementPatch: Record<string, number> = {};
+  if (current.replacementPriceChanged && current.proposedReplacementPriceExVat !== null) {
+    const replacement = current.proposedReplacementPriceExVat;
+    replacementPatch = replacementSnapshotPatch(replacement);
+
+    const replacementColumn = firstAvailableColumn(assetColumns, [
+      'replacement_price_used_ex_vat',
+      'replacement_price_ex_vat',
+      'official_replacement_price_ex_vat',
+    ]);
+    const userReplacementColumn = firstAvailableColumn(assetColumns, ['user_replacement_price_ex_vat']);
+    const replacementBasisColumn = firstAvailableColumn(assetColumns, ['replacement_price_basis']);
+    const specsColumn = firstAvailableColumn(assetColumns, ['specs_json']);
+
+    pushValueAssignment(replacementColumn, replacement);
+    pushValueAssignment(userReplacementColumn, replacement);
+    pushValueAssignment(replacementBasisColumn, 'dealer_accepted');
+
+    if (specsColumn) {
+      const specsMeta = assetColumns.get(specsColumn);
+      values.push(JSON.stringify({
+        ...replacementPatch,
+        replacementPriceBasis: 'dealer_accepted',
+        replacement_price_basis: 'dealer_accepted',
+      }));
+      const placeholder = `$${values.length}::jsonb`;
+      if (specsMeta?.data_type === 'json' || specsMeta?.udt_name === 'json') {
+        assignments.push(
+          `${quotedIdentifier(specsColumn)} = (coalesce(${quotedIdentifier(specsColumn)}, '{}'::json)::jsonb || ${placeholder})::json`,
+        );
+      } else {
+        assignments.push(
+          `${quotedIdentifier(specsColumn)} = coalesce(${quotedIdentifier(specsColumn)}, '{}'::jsonb) || ${placeholder}`,
+        );
+      }
+      assignedColumns.add(specsColumn);
+    }
+
+    if (!replacementColumn && !userReplacementColumn && !specsColumn) {
+      throw new Error('ASSET_UPDATE_UNSUPPORTED');
+    }
+  }
+
+  const updatedAtColumn = firstAvailableColumn(assetColumns, ['updated_at', 'modified_at', 'updatedon']);
+  if (updatedAtColumn && !assignedColumns.has(updatedAtColumn)) {
+    assignments.push(`${quotedIdentifier(updatedAtColumn)} = now()`);
+  }
+  if (!assignments.length) throw new Error('ASSET_UPDATE_UNSUPPORTED');
+
+  values.push(current.assetId, ownerUserId);
+  const updatedAsset = await client.query(
+    `
+      update public.asset_register_items
+      set ${assignments.join(', ')}
+      where ${quotedIdentifier(idColumn)} = $${values.length - 1}::uuid
+        and ${quotedIdentifier(userIdColumn)} = $${values.length}
+    `,
+    values,
+  );
+  if (!updatedAsset.rowCount) throw new Error('ASSET_NOT_FOUND');
+
+  return replacementPatch;
+}
+
+async function applyAcceptedCorrectionToLeadSnapshots(input: {
+  client: PoolClient;
+  current: DealerAssetCorrectionRequest;
+  ownerUserId: string;
+  replacementPatch: Record<string, number>;
+  leadColumns: Map<string, TableColumnRow>;
+}): Promise<void> {
+  const {
+    client,
+    current,
+    ownerUserId,
+    replacementPatch,
+    leadColumns,
+  } = input;
+  const ownerColumn = firstAvailableColumn(leadColumns, ['owner_user_id']);
+  const assetColumn = firstAvailableColumn(leadColumns, ['asset_register_item_id']);
+  const snapshotColumn = firstAvailableColumn(leadColumns, ['asset_snapshot_json']);
+  if (!ownerColumn || !assetColumn || !snapshotColumn) return;
+
+  const rootSnapshotPatch: Record<string, unknown> = {
+    updatedAtIso: new Date().toISOString(),
+  };
+  if (current.serialNumberChanged && current.proposedSerialNumber) {
+    rootSnapshotPatch.serialNumber = current.proposedSerialNumber;
+  }
+  Object.assign(rootSnapshotPatch, replacementPatch);
+
+  const snapshotMeta = leadColumns.get(snapshotColumn);
+  const snapshotIdentifier = quotedIdentifier(snapshotColumn);
+  const ownerIdentifier = quotedIdentifier(ownerColumn);
+  const assetIdentifier = quotedIdentifier(assetColumn);
+  const isJsonColumn = snapshotMeta?.data_type === 'json' || snapshotMeta?.udt_name === 'json';
+
+  if (Object.keys(replacementPatch).length) {
+    const mergedSnapshot = `jsonb_set(
+      coalesce(${snapshotIdentifier}${isJsonColumn ? '::jsonb' : ''}, '{}'::jsonb) || $3::jsonb,
+      '{specsJson}',
+      coalesce(${snapshotIdentifier}${isJsonColumn ? '::jsonb' : ''}->'specsJson', '{}'::jsonb) || $4::jsonb,
+      true
+    )`;
+    await client.query(
+      `
+        update public.asset_leads
+        set ${snapshotIdentifier} = ${isJsonColumn ? `(${mergedSnapshot})::json` : mergedSnapshot}
+        where ${ownerIdentifier} = $1 and ${assetIdentifier} = $2::uuid
+      `,
+      [ownerUserId, current.assetId, JSON.stringify(rootSnapshotPatch), JSON.stringify(replacementPatch)],
+    );
+    return;
+  }
+
+  const mergedSnapshot = `coalesce(${snapshotIdentifier}${isJsonColumn ? '::jsonb' : ''}, '{}'::jsonb) || $3::jsonb`;
+  await client.query(
+    `
+      update public.asset_leads
+      set ${snapshotIdentifier} = ${isJsonColumn ? `(${mergedSnapshot})::json` : mergedSnapshot}
+      where ${ownerIdentifier} = $1 and ${assetIdentifier} = $2::uuid
+    `,
+    [ownerUserId, current.assetId, JSON.stringify(rootSnapshotPatch)],
+  );
+}
+
 export async function resolveDealerAssetCorrection(input: {
   ownerUserId: string;
   correctionId: string;
@@ -470,72 +668,20 @@ export async function resolveDealerAssetCorrection(input: {
     if (current.status !== 'pending') throw new Error('CORRECTION_ALREADY_RESOLVED');
 
     if (input.decision === 'accept') {
-      const assetSet: string[] = [];
-      const assetValues: unknown[] = [];
-      const pushAssetValue = (clause: string, value: unknown) => {
-        assetValues.push(value);
-        assetSet.push(`${clause} = $${assetValues.length}`);
-      };
-
-      if (current.serialNumberChanged && current.proposedSerialNumber) {
-        pushAssetValue('serial_number', current.proposedSerialNumber);
-      }
-
-      let replacementPatch: Record<string, number> = {};
-      if (current.replacementPriceChanged && current.proposedReplacementPriceExVat !== null) {
-        const replacement = current.proposedReplacementPriceExVat;
-        replacementPatch = replacementSnapshotPatch(replacement);
-        pushAssetValue('replacement_price_used_ex_vat', replacement);
-        pushAssetValue('user_replacement_price_ex_vat', replacement);
-        pushAssetValue('replacement_price_basis', 'dealer_accepted');
-        assetValues.push(JSON.stringify({ ...replacementPatch, replacementPriceBasis: 'dealer_accepted', replacement_price_basis: 'dealer_accepted' }));
-        assetSet.push(`specs_json = coalesce(specs_json, '{}'::jsonb) || $${assetValues.length}::jsonb`);
-      }
-
-      assetSet.push('updated_at = now()');
-      assetValues.push(current.assetId, input.ownerUserId);
-      const updatedAsset = await client.query(
-        `
-          update public.asset_register_items
-          set ${assetSet.join(', ')}
-          where id = $${assetValues.length - 1}::uuid and user_id = $${assetValues.length}
-        `,
-        assetValues,
-      );
-      if (!updatedAsset.rowCount) throw new Error('ASSET_NOT_FOUND');
-
-      const rootSnapshotPatch: Record<string, unknown> = {
-        updatedAtIso: new Date().toISOString(),
-      };
-      if (current.serialNumberChanged && current.proposedSerialNumber) {
-        rootSnapshotPatch.serialNumber = current.proposedSerialNumber;
-      }
-      Object.assign(rootSnapshotPatch, replacementPatch);
-
-      if (Object.keys(replacementPatch).length) {
-        await client.query(
-          `
-            update public.asset_leads
-            set asset_snapshot_json = jsonb_set(
-                  coalesce(asset_snapshot_json, '{}'::jsonb) || $3::jsonb,
-                  '{specsJson}',
-                  coalesce(asset_snapshot_json->'specsJson', '{}'::jsonb) || $4::jsonb,
-                  true
-                )
-            where owner_user_id = $1 and asset_register_item_id = $2::uuid
-          `,
-          [input.ownerUserId, current.assetId, JSON.stringify(rootSnapshotPatch), JSON.stringify(replacementPatch)],
-        );
-      } else {
-        await client.query(
-          `
-            update public.asset_leads
-            set asset_snapshot_json = coalesce(asset_snapshot_json, '{}'::jsonb) || $3::jsonb
-            where owner_user_id = $1 and asset_register_item_id = $2::uuid
-          `,
-          [input.ownerUserId, current.assetId, JSON.stringify(rootSnapshotPatch)],
-        );
-      }
+      const { assetColumns, leadColumns } = await loadCorrectionTableColumns(client);
+      const replacementPatch = await applyAcceptedCorrectionToAsset({
+        client,
+        current,
+        ownerUserId: input.ownerUserId,
+        assetColumns,
+      });
+      await applyAcceptedCorrectionToLeadSnapshots({
+        client,
+        current,
+        ownerUserId: input.ownerUserId,
+        replacementPatch,
+        leadColumns,
+      });
     }
 
     await client.query(
