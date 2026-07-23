@@ -177,8 +177,52 @@ async function ensureDealerAssetCorrectionTablesOnce(): Promise<void> {
     )
   `);
   await db.query(`
-    create unique index if not exists dealer_asset_correction_pending_unique_idx
-      on public.dealer_asset_correction_requests (owner_user_id, dealer_user_id, asset_register_item_id)
+    update public.dealer_asset_correction_requests
+    set status = 'superseded',
+        resolved_at = coalesce(resolved_at, now()),
+        updated_at = now()
+    where status = 'pending'
+      and serial_number_changed = true
+      and replacement_price_changed = true
+  `);
+  await db.query(`
+    with ranked_pending as (
+      select
+        id,
+        row_number() over (
+          partition by owner_user_id, asset_register_item_id
+          order by updated_at desc, id desc
+        ) as pending_rank
+      from public.dealer_asset_correction_requests
+      where status = 'pending'
+    )
+    update public.dealer_asset_correction_requests correction
+    set status = 'superseded',
+        resolved_at = coalesce(correction.resolved_at, now()),
+        updated_at = now()
+    from ranked_pending
+    where correction.id = ranked_pending.id
+      and ranked_pending.pending_rank > 1
+  `);
+  await db.query(`
+    do $$
+    begin
+      if not exists (
+        select 1
+        from pg_constraint
+        where conname = 'dealer_asset_correction_single_field_check'
+          and conrelid = 'public.dealer_asset_correction_requests'::regclass
+      ) then
+        alter table public.dealer_asset_correction_requests
+          add constraint dealer_asset_correction_single_field_check
+          check (serial_number_changed <> replacement_price_changed) not valid;
+      end if;
+    end;
+    $$;
+  `);
+  await db.query(`
+    create unique index if not exists dealer_asset_correction_asset_pending_unique_idx
+      on public.dealer_asset_correction_requests (owner_user_id, asset_register_item_id)
       where status = 'pending'
   `);
   await db.query(`
@@ -281,23 +325,38 @@ export async function createOrUpdateDealerAssetCorrection(input: {
 
   try {
     await client.query('begin');
+    await client.query(
+      `
+        select id
+        from public.asset_register_items
+        where id = $1::uuid and user_id = $2
+        for update
+      `,
+      [asset.id, access.owner_user_id],
+    );
     const existingResult = await client.query<DealerAssetCorrectionRow>(
       `${correctionSelectSql(`
         where correction.owner_user_id = $1
-          and correction.dealer_user_id = $2
-          and correction.asset_register_item_id = $3::uuid
+          and correction.asset_register_item_id = $2::uuid
           and correction.status = 'pending'
       `)} for update of correction`,
-      [access.owner_user_id, input.dealerUserId, asset.id],
+      [access.owner_user_id, asset.id],
     );
     const existing = existingResult.rows[0] ? mapCorrection(existingResult.rows[0]) : null;
+    if (existing) {
+      throw new Error(
+        existing.serialNumberChanged
+          ? 'CORRECTION_SERIAL_PENDING'
+          : 'CORRECTION_REPLACEMENT_PENDING',
+      );
+    }
 
     const proposedSerialNumber = input.field === 'serialNumber'
       ? serialNumber
-      : existing?.proposedSerialNumber ?? null;
+      : null;
     const proposedReplacementPriceExVat = input.field === 'replacementPriceExVat'
       ? roundedReplacementPrice
-      : existing?.proposedReplacementPriceExVat ?? null;
+      : null;
     const serialNumberChanged = Boolean(proposedSerialNumber && proposedSerialNumber !== asset.serialNumber);
     const replacementPriceChanged = proposedReplacementPriceExVat !== null
       && proposedReplacementPriceExVat !== asset.replacementPriceExVat;
@@ -308,81 +367,46 @@ export async function createOrUpdateDealerAssetCorrection(input: {
 
     const dealerName = asText(input.dealerName).slice(0, 160) || 'Dealer';
     const actorName = asText(input.actorName).slice(0, 160) || dealerName;
-    let correctionId = existing?.id ?? '';
-
-    if (existing) {
-      await client.query(
-        `
-          update public.dealer_asset_correction_requests
-          set source_type = $2,
-              source_id = $3,
-              dealer_name = $4,
-              actor_name = $5,
-              current_serial_number = $6,
-              proposed_serial_number = $7,
-              current_replacement_price_ex_vat = $8,
-              proposed_replacement_price_ex_vat = $9,
-              serial_number_changed = $10,
-              replacement_price_changed = $11,
-              updated_at = now()
-          where id = $1::uuid
-        `,
-        [
-          existing.id,
-          input.sourceType,
-          sourceId,
-          dealerName,
-          actorName,
-          asset.serialNumber || null,
-          serialNumberChanged ? proposedSerialNumber : null,
-          asset.replacementPriceExVat,
-          replacementPriceChanged ? proposedReplacementPriceExVat : null,
-          serialNumberChanged,
-          replacementPriceChanged,
-        ],
-      );
-    } else {
-      const inserted = await client.query<{ id: string }>(
-        `
-          insert into public.dealer_asset_correction_requests (
-            owner_user_id,
-            dealer_user_id,
-            asset_register_item_id,
-            source_type,
-            source_id,
-            dealer_name,
-            actor_name,
-            current_serial_number,
-            proposed_serial_number,
-            current_replacement_price_ex_vat,
-            proposed_replacement_price_ex_vat,
-            serial_number_changed,
-            replacement_price_changed,
-            status,
-            created_at,
-            updated_at
-          )
-          values ($1, $2, $3::uuid, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'pending', now(), now())
-          returning id::text
-        `,
-        [
-          access.owner_user_id,
-          input.dealerUserId,
-          asset.id,
-          input.sourceType,
-          sourceId,
-          dealerName,
-          actorName,
-          asset.serialNumber || null,
-          serialNumberChanged ? proposedSerialNumber : null,
-          asset.replacementPriceExVat,
-          replacementPriceChanged ? proposedReplacementPriceExVat : null,
-          serialNumberChanged,
-          replacementPriceChanged,
-        ],
-      );
-      correctionId = inserted.rows[0]?.id ?? '';
-    }
+    const inserted = await client.query<{ id: string }>(
+      `
+        insert into public.dealer_asset_correction_requests (
+          owner_user_id,
+          dealer_user_id,
+          asset_register_item_id,
+          source_type,
+          source_id,
+          dealer_name,
+          actor_name,
+          current_serial_number,
+          proposed_serial_number,
+          current_replacement_price_ex_vat,
+          proposed_replacement_price_ex_vat,
+          serial_number_changed,
+          replacement_price_changed,
+          status,
+          created_at,
+          updated_at
+        )
+        values ($1, $2, $3::uuid, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'pending', now(), now())
+        returning id::text
+      `,
+      [
+        access.owner_user_id,
+        input.dealerUserId,
+        asset.id,
+        input.sourceType,
+        sourceId,
+        dealerName,
+        actorName,
+        serialNumberChanged ? asset.serialNumber || null : null,
+        serialNumberChanged ? proposedSerialNumber : null,
+        replacementPriceChanged ? asset.replacementPriceExVat : null,
+        replacementPriceChanged ? proposedReplacementPriceExVat : null,
+        serialNumberChanged,
+        replacementPriceChanged,
+      ],
+    );
+    const correctionId = inserted.rows[0]?.id ?? '';
 
     const loaded = await client.query<DealerAssetCorrectionRow>(
       `${correctionSelectSql('where correction.id = $1::uuid')} limit 1`,
@@ -423,18 +447,22 @@ export async function listPendingDealerAssetCorrections(
 
 export async function listPendingOwnerAssetCorrections(
   ownerUserId: string,
+  assetIds?: string[],
 ): Promise<DealerAssetCorrectionRequest[]> {
   await ensureDealerAssetCorrectionTables();
+  const normalizedAssetIds = Array.from(new Set((assetIds ?? []).map(asText).filter(Boolean)));
+  const assetFilter = normalizedAssetIds.length ? 'and correction.asset_register_item_id = any($2::uuid[])' : '';
+  const values: unknown[] = normalizedAssetIds.length ? [ownerUserId, normalizedAssetIds] : [ownerUserId];
   const result = await getDb().query<DealerAssetCorrectionRow>(
     `
       ${correctionSelectSql(`
         where correction.owner_user_id = $1
           and correction.status = 'pending'
+          ${assetFilter}
       `)}
       order by correction.updated_at desc, correction.id desc
-      limit 20
     `,
-    [ownerUserId],
+    values,
   );
   return result.rows.map(mapCorrection);
 }

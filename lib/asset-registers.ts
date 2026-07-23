@@ -313,6 +313,7 @@ async function attachAssetRegisterOpenAlertCounts(
   try {
     const hasPartnerNotes = await publicTableExists('asset_partner_notes');
     const hasScanEvents = await publicTableExists('asset_scan_events');
+    const hasDealerAssetCorrections = await publicTableExists('dealer_asset_correction_requests');
     const alertSources: string[] = [
       `
         select
@@ -397,6 +398,20 @@ async function attachAssetRegisterOpenAlertCounts(
           on n.asset_register_item_id::text = a.asset_id
         where n.owner_user_id = $1
           and lower(coalesce(n.status, 'open')) = 'open'
+        group by a.register_id
+      `);
+    }
+
+    if (hasDealerAssetCorrections) {
+      alertSources.push(`
+        select
+          a.register_id,
+          count(distinct correction.asset_register_item_id)::integer as alert_count
+        from register_assets a
+        inner join public.dealer_asset_correction_requests correction
+          on correction.asset_register_item_id::text = a.asset_id
+        where correction.owner_user_id = $1
+          and correction.status = 'pending'
         group by a.register_id
       `);
     }
