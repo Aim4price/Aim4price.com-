@@ -16,6 +16,11 @@ type DecisionBody = {
   decision?: unknown;
 };
 
+type DatabaseError = {
+  code?: unknown;
+  constraint?: unknown;
+};
+
 export async function PATCH(request: NextRequest, context: RouteContext) {
   const session = await getServerSession({ allowOwnerApp: true });
   if (!session?.user?.id) {
@@ -65,6 +70,19 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     if (message === 'ASSET_UPDATE_UNSUPPORTED') {
       return NextResponse.json(
         { ok: false, error: 'This Asset Register item could not be updated. Refresh the page and try again.' },
+        { status: 409 },
+      );
+    }
+    const databaseError = error && typeof error === 'object' ? error as DatabaseError : null;
+    if (databaseError?.code === '23505') {
+      return NextResponse.json(
+        { ok: false, error: 'This corrected value conflicts with another saved asset. Check the value and try again.' },
+        { status: 409 },
+      );
+    }
+    if (databaseError?.code === '23514' || databaseError?.code === '23502') {
+      return NextResponse.json(
+        { ok: false, error: 'The corrected value does not meet the Asset Register requirements. Check the value and try again.' },
         { status: 409 },
       );
     }
