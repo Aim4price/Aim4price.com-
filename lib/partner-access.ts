@@ -1,6 +1,11 @@
 import { ensureAccountProfileColumns, getAccountProfile } from './account-profile';
 import { getAssetRegisterItemById, listAssetRegisterItems, type AssetRegisterItem } from './asset-register-db';
 import { getAssetRegisterReportLogoUrl } from './asset-registers';
+import {
+  applyDealerCorrectionToSnapshot,
+  listPendingDealerAssetCorrections,
+  type DealerAssetCorrectionRequest,
+} from './dealer-asset-corrections';
 import { getDb } from './db';
 
 export type AccountRole = 'owner' | 'dealer' | 'finance' | 'insurance';
@@ -57,6 +62,7 @@ export type AssetLead = {
   latestPartnerNoteAttachmentFileName: string;
   latestPartnerNoteAttachmentByteSize: number | null;
   latestPartnerNoteAttachmentCreatedAtIso: string | null;
+  dealerCorrection?: DealerAssetCorrectionRequest | null;
   createdAtIso: string;
   viewedAtIso: string | null;
   acceptedAtIso: string | null;
@@ -806,6 +812,29 @@ async function hydrateLeadAttachmentSummaries(leads: AssetLead[], currentUserId:
   });
 }
 
+async function hydrateDealerAssetCorrections(leads: AssetLead[], currentUserId: string): Promise<AssetLead[]> {
+  const dealerLeads = leads.filter((lead) => lead.partnerUserId === currentUserId);
+  if (!dealerLeads.length) return leads;
+
+  const corrections = await listPendingDealerAssetCorrections(
+    currentUserId,
+    dealerLeads.map((lead) => lead.assetRegisterItemId),
+  );
+  const correctionsByAssetId = new Map(corrections.map((correction) => [correction.assetId, correction]));
+
+  return leads.map((lead) => {
+    if (lead.partnerUserId !== currentUserId) return lead;
+    const correction = correctionsByAssetId.get(lead.assetRegisterItemId);
+    if (!correction) return lead;
+
+    return {
+      ...lead,
+      assetSnapshot: applyDealerCorrectionToSnapshot(lead.assetSnapshot, correction),
+      dealerCorrection: correction,
+    };
+  });
+}
+
 function normalizeAssetPartnerNoteStatus(value: unknown): AssetPartnerNoteStatus {
   const normalized = asText(value).toLowerCase();
   return ASSET_PARTNER_NOTE_STATUSES.has(normalized as AssetPartnerNoteStatus) ? (normalized as AssetPartnerNoteStatus) : 'open';
@@ -1250,7 +1279,8 @@ export async function listAssetLeadsForUser(userId: string): Promise<AssetLead[]
     [userId],
   );
 
-  return hydrateLeadAttachmentSummaries(result.rows.map(mapLeadRow), userId);
+  const leadsWithAttachments = await hydrateLeadAttachmentSummaries(result.rows.map(mapLeadRow), userId);
+  return hydrateDealerAssetCorrections(leadsWithAttachments, userId);
 }
 
 export async function updateAssetLeadStatus(input: {
@@ -1299,7 +1329,8 @@ export async function updateAssetLeadStatus(input: {
   );
 
   const updated = await db.query<LeadRow>(`${leadSelectSql('where l.id = $1::uuid')} limit 1`, [input.leadId]);
-  const [updatedLead] = await hydrateLeadAttachmentSummaries([mapLeadRow(updated.rows[0])], input.currentUserId);
+  const withAttachments = await hydrateLeadAttachmentSummaries([mapLeadRow(updated.rows[0])], input.currentUserId);
+  const [updatedLead] = await hydrateDealerAssetCorrections(withAttachments, input.currentUserId);
   await writeAuditEvent({
     ownerUserId: updatedLead.ownerUserId,
     actorUserId: input.currentUserId,

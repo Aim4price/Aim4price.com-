@@ -8,6 +8,10 @@ import {
   type AssetMaintenanceTriggerType,
   type AssetMaintenanceUsageMetric,
 } from './asset-maintenance';
+import {
+  listPendingDealerAssetCorrections,
+  type DealerAssetCorrectionRequest,
+} from './dealer-asset-corrections';
 import { getDb } from './db';
 
 export type DealerMaintenanceTrackerStatus =
@@ -47,6 +51,8 @@ export type DealerMaintenanceTrackedAsset = {
   modelName: string;
   yearModel: number | null;
   serialNumber: string;
+  replacementPriceExVat: number | null;
+  dealerCorrection: DealerAssetCorrectionRequest | null;
   photoUrl: string;
   currentUsage: number | null;
   usageMetric: AssetMaintenanceUsageMetric;
@@ -408,6 +414,8 @@ async function buildTrackedAsset(row: DealerMaintenanceAccessRow): Promise<Deale
     modelName: asset.modelName || asset.typedModelName,
     yearModel: asset.yearModel,
     serialNumber: asset.serialNumber,
+    replacementPriceExVat: asset.replacementPriceExVat,
+    dealerCorrection: null,
     photoUrl: asset.photos[0] ?? '',
     currentUsage,
     usageMetric,
@@ -422,14 +430,44 @@ async function buildTrackedAsset(row: DealerMaintenanceAccessRow): Promise<Deale
   };
 }
 
+async function hydrateTrackedAssetCorrections(
+  dealerUserId: string,
+  assets: DealerMaintenanceTrackedAsset[],
+): Promise<DealerMaintenanceTrackedAsset[]> {
+  if (!assets.length) return assets;
+  const corrections = await listPendingDealerAssetCorrections(
+    dealerUserId,
+    assets.map((asset) => asset.assetId),
+  );
+  const correctionsByAssetId = new Map(corrections.map((correction) => [correction.assetId, correction]));
+
+  return assets.map((asset) => {
+    const correction = correctionsByAssetId.get(asset.assetId);
+    if (!correction) return asset;
+    return {
+      ...asset,
+      serialNumber: correction.serialNumberChanged && correction.proposedSerialNumber
+        ? correction.proposedSerialNumber
+        : asset.serialNumber,
+      replacementPriceExVat: correction.replacementPriceChanged
+        ? correction.proposedReplacementPriceExVat
+        : asset.replacementPriceExVat,
+      dealerCorrection: correction,
+    };
+  });
+}
+
 export async function listDealerTrackedAssets(dealerUserId: string): Promise<DealerMaintenanceTrackedAsset[]> {
   const rows = await listAccessRows(
     'where access.dealer_user_id = $1 and access.is_active = true',
     [dealerUserId],
   );
-  const assets = await Promise.all(rows.map(buildTrackedAsset));
+  const builtAssets = await Promise.all(rows.map(buildTrackedAsset));
+  const assets = await hydrateTrackedAssetCorrections(
+    dealerUserId,
+    builtAssets.filter((asset): asset is DealerMaintenanceTrackedAsset => Boolean(asset)),
+  );
   return assets
-    .filter((asset): asset is DealerMaintenanceTrackedAsset => Boolean(asset))
     .sort((left, right) => {
       const priority = statusPriority(left.status) - statusPriority(right.status);
       if (priority) return priority;
@@ -445,7 +483,11 @@ export async function getDealerTrackedAsset(
     'where access.dealer_user_id = $1 and access.id = $2::uuid and access.is_active = true',
     [dealerUserId, accessId],
   );
-  return rows[0] ? buildTrackedAsset(rows[0]) : null;
+  if (!rows[0]) return null;
+  const asset = await buildTrackedAsset(rows[0]);
+  if (!asset) return null;
+  const [hydratedAsset] = await hydrateTrackedAssetCorrections(dealerUserId, [asset]);
+  return hydratedAsset ?? null;
 }
 
 function usageLabel(value: number | null, metric: AssetMaintenanceUsageMetric | null): string {

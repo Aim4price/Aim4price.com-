@@ -13,6 +13,10 @@ import {
   type LeadType,
 } from './partner-access';
 import { listAssetMaintenanceRecords, type AssetMaintenanceRecord } from './asset-maintenance';
+import {
+  listPendingOwnerAssetCorrections,
+  type DealerAssetCorrectionRequest,
+} from './dealer-asset-corrections';
 
 export type HeaderNotificationCategory =
   | 'partner_note'
@@ -20,6 +24,7 @@ export type HeaderNotificationCategory =
   | 'qr_scan'
   | 'fuel'
   | 'maintenance'
+  | 'dealer_correction'
   | 'asset_discovery';
 
 export type HeaderNotificationTone = 'neutral' | 'success' | 'warning' | 'info';
@@ -34,6 +39,7 @@ export type HeaderNotificationItem = {
   createdAtIso: string;
   assetId?: string;
   assetDiscoveryEnquiryId?: string;
+  dealerAssetCorrectionId?: string;
   priority?: boolean;
 };
 
@@ -277,6 +283,58 @@ function maintenanceDueText(record: AssetMaintenanceRecord): string {
   }
 
   return 'Open the schedule to review its next due target.';
+}
+
+function correctionActor(correction: DealerAssetCorrectionRequest): string {
+  const dealerName = asText(correction.dealerName) || 'the dealer';
+  const actorName = asText(correction.actorName);
+  if (!actorName || actorName.toLowerCase() === dealerName.toLowerCase()) return dealerName;
+  return `${actorName} at ${dealerName}`;
+}
+
+function correctionValueSummary(correction: DealerAssetCorrectionRequest): string {
+  const changes: string[] = [];
+
+  if (correction.serialNumberChanged && correction.proposedSerialNumber) {
+    const previous = correction.currentSerialNumber || 'not saved';
+    changes.push(`serial number from ${previous} to ${correction.proposedSerialNumber}`);
+  }
+
+  if (correction.replacementPriceChanged && correction.proposedReplacementPriceExVat !== null) {
+    const currency = new Intl.NumberFormat('en-ZA', {
+      style: 'currency',
+      currency: 'ZAR',
+      maximumFractionDigits: 0,
+    });
+    const previous = correction.currentReplacementPriceExVat === null
+      ? 'not saved'
+      : currency.format(correction.currentReplacementPriceExVat);
+    changes.push(`replacement price from ${previous} to ${currency.format(correction.proposedReplacementPriceExVat)} excl. VAT`);
+  }
+
+  return changes.join(' and ');
+}
+
+async function listOwnerDealerAssetCorrectionNotifications(userId: string): Promise<HeaderNotificationItem[]> {
+  try {
+    const corrections = await listPendingOwnerAssetCorrections(userId);
+
+    return corrections.map((correction) => ({
+      id: `dealer-correction:${correction.id}:${correction.updatedAtIso}`,
+      category: 'dealer_correction',
+      tone: 'warning',
+      title: 'Dealer updated asset details',
+      body: `${correctionActor(correction)} updated the ${correctionValueSummary(correction)} for ${correction.assetTitle}. Accept the change to update your Asset Register.`,
+      href: '',
+      createdAtIso: correction.updatedAtIso,
+      assetId: correction.assetId,
+      dealerAssetCorrectionId: correction.id,
+      priority: true,
+    } satisfies HeaderNotificationItem));
+  } catch (error) {
+    console.error('Failed to load dealer asset correction notifications', error);
+    return [];
+  }
 }
 
 async function listOwnerRecurringMaintenanceNotifications(userId: string): Promise<HeaderNotificationItem[]> {
@@ -571,6 +629,7 @@ export async function listHeaderNotifications(input: ListHeaderNotificationsInpu
   const accountType = normalizeAccountType(input.accountType);
   const notificationGroups = accountType === 'owner'
     ? await Promise.all([
+        listOwnerDealerAssetCorrectionNotifications(input.userId),
         listOpenPartnerNoteNotifications(input.userId),
         listOwnerLeadNotifications(input.userId),
         listOwnerAssetDiscoveryNotifications(input.userId),
