@@ -28,6 +28,7 @@ export async function GET() {
         name: session.dealerApp.displayName,
         email: '',
         accountType: 'dealer',
+        logoUrl: profile.logoUrl,
         dealerAppStaff: true,
         dealerAppStaffId: session.dealerApp.staffId,
       },
@@ -42,6 +43,7 @@ export async function GET() {
       name: profile.name || session.user.name,
       email: session.user.email,
       accountType: profile.accountType,
+      logoUrl: profile.logoUrl,
     },
   });
 }
