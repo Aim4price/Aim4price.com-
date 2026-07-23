@@ -78,6 +78,7 @@
 --   51-dealer-app-email-normalization.sql
 --   52-owner-app.sql
 --   53-insurance-workspaces.sql
+--   57-dealer-asset-corrections.sql
 
 -- Fuel late-entry audit direction (migration 46):
 --   - historical issue date/time and real entry-added audit fields remain separate
