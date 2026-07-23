@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type DragE
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import AppHeader from '../../components/AppHeader';
+import DealerAssetCorrectionEditor from '../../components/DealerAssetCorrectionEditor';
 import {
   WorkspaceTitlePanel,
   workspaceStyles,
@@ -12,6 +13,7 @@ import { openAssetRegisterSummaryPrint, openAssetSheetPrint, type ReportKeyValue
 import assetStyles from '../asset-register/page.module.css';
 import styles from './page.module.css';
 import dealerStyles from '../dealer/dealer.module.css';
+import type { DealerAssetCorrectionRequest } from '../../lib/dealer-asset-corrections';
 
 type LeadType = 'finance' | 'insurance' | 'replacement_quote';
 type LeadStatus = 'sent' | 'viewed' | 'accepted' | 'quoted' | 'declined' | 'closed';
@@ -75,6 +77,7 @@ type AssetLead = {
   latestPartnerNoteAttachmentByteSize?: number | null;
   latestPartnerNoteAttachmentCreatedAtIso?: string | null;
   partnerNotes?: LeadPartnerNote[];
+  dealerCorrection?: DealerAssetCorrectionRequest | null;
   createdAtIso: string;
   viewedAtIso: string | null;
   acceptedAtIso: string | null;
@@ -544,6 +547,46 @@ function asNumber(value: unknown): number | null {
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
+}
+
+function replacementSnapshotPatch(value: number): Record<string, number> {
+  return {
+    replacementPriceExVat: value,
+    replacement_price_ex_vat: value,
+    replacementPriceUsedExVat: value,
+    replacement_price_used_ex_vat: value,
+    userReplacementPriceExVat: value,
+    user_replacement_price_ex_vat: value,
+    officialReplacementPriceExVat: value,
+    official_replacement_price_ex_vat: value,
+    replacementPrice: value,
+    replacement_price: value,
+  };
+}
+
+function leadWithDealerCorrection(lead: AssetLead, correction: DealerAssetCorrectionRequest): AssetLead {
+  const assetSnapshot = { ...lead.assetSnapshot };
+
+  if (correction.serialNumberChanged && correction.proposedSerialNumber) {
+    assetSnapshot.serialNumber = correction.proposedSerialNumber;
+  }
+
+  if (correction.replacementPriceChanged && correction.proposedReplacementPriceExVat !== null) {
+    const replacementPatch = replacementSnapshotPatch(correction.proposedReplacementPriceExVat);
+    Object.assign(assetSnapshot, replacementPatch);
+    assetSnapshot.specsJson = {
+      ...(asRecord(assetSnapshot.specsJson) ?? {}),
+      ...replacementPatch,
+    };
+  }
+
+  assetSnapshot.dealerCorrectionPending = true;
+  assetSnapshot.dealerCorrectionUpdatedAtIso = correction.updatedAtIso;
+  return {
+    ...lead,
+    assetSnapshot,
+    dealerCorrection: correction,
+  };
 }
 
 function asBoolean(value: unknown): boolean {
@@ -1816,6 +1859,20 @@ export default function LeadsClient({
     }
   }
 
+  function handleDealerCorrectionSaved(correction: DealerAssetCorrectionRequest) {
+    setLeads((current) => current.map((lead) => (
+      lead.assetRegisterItemId === correction.assetId
+        ? leadWithDealerCorrection(lead, correction)
+        : lead
+    )));
+    setManagedLead((current) => (
+      current && current.assetRegisterItemId === correction.assetId
+        ? leadWithDealerCorrection(current, correction)
+        : current
+    ));
+    setNotice({ tone: 'success', message: 'Dealer correction sent to the owner for approval.' });
+  }
+
   function resetLeadFilters() {
     setMonthFilter('all');
     setYearFilter('all');
@@ -3002,6 +3059,19 @@ export default function LeadsClient({
                       <small>Start a phone call from the saved number.</small>
                     </span>
                   </button>
+
+                  {useDealerWorkspaceStyles && !isFullRegisterLead(managedLead) ? (
+                    <DealerAssetCorrectionEditor
+                      assetTitle={assetTitle(managedLead)}
+                      sourceType="lead"
+                      sourceId={managedLead.id}
+                      serialNumber={asText(managedLead.assetSnapshot.serialNumber)}
+                      replacementPriceExVat={snapshotReplacementPrice(managedLead.assetSnapshot)}
+                      correction={managedLead.dealerCorrection}
+                      actionClassName={assetStyles.optionActionButton}
+                      onSaved={handleDealerCorrectionSaved}
+                    />
+                  ) : null}
                 </div>
               </div>
             </div>
