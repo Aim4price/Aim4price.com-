@@ -966,6 +966,7 @@ export default function AppHeader({
 
       setNotifications((current) => current.filter((item) => item.dealerAssetCorrectionId !== correctionId));
       markNotificationsSeen();
+      window.dispatchEvent(new Event('aim4price:asset-register-updated'));
     } catch (error) {
       setNotificationDetailError(error instanceof Error ? error.message : 'Failed to save the dealer correction decision.');
     } finally {
@@ -1439,8 +1440,13 @@ export default function AppHeader({
               <section className={styles.notificationDetailModal} role="dialog" aria-modal="true" aria-labelledby="notification-error-title">
                 <div className={styles.notificationDetailHeader}>
                   <div className={styles.notificationDetailHeaderText}>
-                    <span className={styles.notificationDetailKicker}>Notification</span>
-                    <h2 id="notification-error-title">Could not open this notification</h2>
+                    <span className={styles.notificationDetailErrorIcon} aria-hidden="true">
+                      <svg viewBox="0 0 24 24">
+                        <path d="M12 8v4.5M12 16h.01" />
+                        <circle cx="12" cy="12" r="8.5" />
+                      </svg>
+                    </span>
+                    <h2 id="notification-error-title">Could not complete this action</h2>
                     <p>{notificationDetailError}</p>
                   </div>
                   <button type="button" className={styles.notificationDetailCloseButton} onClick={closeNotificationDetailModal} aria-label="Close notification error">

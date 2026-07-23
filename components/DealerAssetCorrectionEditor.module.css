@@ -15,6 +15,11 @@
 
 .actionButtonBase {
   position: relative;
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    background 180ms ease,
+    box-shadow 180ms ease;
 }
 
 .actionButtonBase > span {
@@ -36,10 +41,20 @@
   line-height: 1.35;
 }
 
+.actionButtonBase:hover {
+  transform: translateY(-1px);
+}
+
+.actionButtonBase:focus-visible {
+  outline: 3px solid rgba(29, 59, 98, 0.16);
+  outline-offset: 3px;
+}
+
 .actionIcon {
-  width: 22px;
-  height: 22px;
+  width: 1.35rem;
+  height: 1.35rem;
   flex: 0 0 auto;
+  color: #1d3b62;
 }
 
 .pendingNotice {
@@ -72,39 +87,75 @@
   display: grid;
   place-items: center;
   padding: 20px;
-  background: rgba(8, 23, 18, 0.62);
-  backdrop-filter: blur(8px);
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.26) 0%, rgba(8, 23, 18, 0.58) 70%),
+    rgba(8, 23, 18, 0.48);
+  backdrop-filter: blur(20px) saturate(0.9);
+  -webkit-backdrop-filter: blur(20px) saturate(0.9);
 }
 
 .modal {
-  width: min(560px, 100%);
+  width: min(620px, 100%);
   max-height: min(760px, calc(100vh - 40px));
   overflow: hidden;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
   border: 1px solid rgba(255, 255, 255, 0.72);
-  border-radius: 24px;
-  background: #fff;
+  border-radius: 2rem;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdfc 100%);
   color: #17362d;
-  box-shadow: 0 34px 90px rgba(5, 24, 18, 0.28);
+  box-shadow:
+    0 34px 90px rgba(5, 24, 18, 0.3),
+    0 14px 36px rgba(18, 45, 37, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
   font-family: var(--font-montserrat), Montserrat, Arial, sans-serif;
 }
 
 .modalHeader {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 18px;
-  padding: 22px 24px 18px;
-  border-bottom: 1px solid rgba(23, 54, 45, 0.1);
-  background: linear-gradient(180deg, #f5faf7 0%, #fff 100%);
+  gap: 1.15rem;
+  padding: 1.55rem 1.65rem 1.35rem;
+  border-bottom: 1px solid rgba(18, 45, 37, 0.09);
+  background: rgba(255, 255, 255, 0.94);
 }
 
-.modalHeader > div {
+.modalTitleGroup {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 3.25rem minmax(0, 1fr);
+  align-items: center;
+  gap: 1rem;
+}
+
+.modalIconShell {
+  width: 3.25rem;
+  height: 3.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1rem;
+  color: #1d3b62;
+  background: linear-gradient(180deg, #ffffff 0%, #f1f6fb 100%);
+  border: 1px solid rgba(190, 205, 220, 0.94);
+  box-shadow:
+    0 10px 22px rgba(16, 31, 28, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.modalTitleIcon {
+  width: 1.45rem !important;
+  height: 1.45rem !important;
+  color: currentColor;
+}
+
+.modalHeaderCopy {
   min-width: 0;
 }
 
-.modalHeader span {
+.modalKicker {
+  display: block;
   color: #2c795b;
   font-size: 0.68rem;
   font-weight: 900;
@@ -113,49 +164,78 @@
 }
 
 .modalHeader h2 {
-  margin: 6px 0 0;
-  font-size: clamp(1.3rem, 4vw, 1.75rem);
+  margin: 0.35rem 0 0;
+  color: #10352b;
+  font-size: clamp(1.38rem, 4vw, 1.85rem);
   font-weight: 900;
-  letter-spacing: -0.025em;
+  line-height: 1.08;
+  letter-spacing: -0.04em;
 }
 
 .modalHeader p {
-  margin: 6px 0 0;
-  color: #647a72;
-  font-size: 0.82rem;
+  margin: 0.42rem 0 0;
+  color: #64748b;
+  font-size: 0.84rem;
   font-weight: 700;
+  overflow-wrap: anywhere;
 }
 
 .closeButton {
-  width: 40px;
-  height: 40px;
+  width: 3rem;
+  height: 3rem;
   flex: 0 0 auto;
-  border: 1px solid rgba(23, 54, 45, 0.12);
-  border-radius: 12px;
-  background: #fff;
-  color: #274c40;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(62, 110, 213, 0.16);
+  border-radius: 999px;
+  background: #f7fbff;
+  color: #17315c;
   font: inherit;
-  font-size: 1.5rem;
+  font-size: 1.45rem;
   line-height: 1;
   cursor: pointer;
+  box-shadow: 0 10px 22px rgba(41, 72, 145, 0.08);
+  transition:
+    transform 180ms ease,
+    background 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.closeButton:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: #ffffff;
+  border-color: rgba(23, 77, 62, 0.16);
+  box-shadow: 0 14px 28px rgba(18, 45, 37, 0.1);
+}
+
+.closeButton:focus-visible,
+.cancelButton:focus-visible,
+.saveButton:focus-visible {
+  outline: 3px solid rgba(23, 77, 62, 0.16);
+  outline-offset: 3px;
 }
 
 .modalBody {
   min-height: 0;
   overflow-y: auto;
   display: grid;
-  gap: 17px;
-  padding: 22px 24px;
+  gap: 1rem;
+  padding: 1.35rem 1.65rem 1.5rem;
 }
 
 .currentValue,
 .explainer {
   display: grid;
-  gap: 5px;
-  border: 1px solid rgba(23, 54, 45, 0.1);
-  border-radius: 15px;
-  background: #f7faf8;
-  padding: 14px 16px;
+  gap: 0.38rem;
+  border: 1px solid rgba(206, 218, 229, 0.94);
+  border-radius: 1.05rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f7fafc 100%);
+  padding: 0.95rem 1.05rem;
+  box-shadow:
+    0 10px 22px rgba(16, 31, 28, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
 }
 
 .currentValue span,
@@ -168,25 +248,33 @@
 }
 
 .currentValue strong {
-  font-size: 1rem;
+  color: #123b31;
+  font-size: 1.05rem;
   font-weight: 900;
   overflow-wrap: anywhere;
 }
 
 .field {
   display: grid;
-  gap: 8px;
+  gap: 0.55rem;
+  padding: 0.95rem 1rem 1rem;
+  border: 1px solid rgba(206, 218, 229, 0.94);
+  border-radius: 1.05rem;
+  background: #ffffff;
+  box-shadow:
+    0 10px 22px rgba(16, 31, 28, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
 }
 
 .field input {
   width: 100%;
-  min-height: 52px;
+  min-height: 3.55rem;
   box-sizing: border-box;
   border: 1px solid rgba(23, 54, 45, 0.18);
-  border-radius: 14px;
+  border-radius: 1rem;
   background: #fff;
   color: #17362d;
-  padding: 0 15px;
+  padding: 0 1rem;
   font: inherit;
   font-size: 0.94rem;
   font-weight: 750;
@@ -200,7 +288,7 @@
 
 .explainer {
   border-color: rgba(49, 135, 101, 0.18);
-  background: #f0f8f4;
+  background: linear-gradient(180deg, #f4fbf7 0%, #eef8f3 100%);
 }
 
 .explainer strong {
@@ -231,21 +319,26 @@
 .modalFooter {
   display: grid;
   grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
-  gap: 10px;
-  padding: 16px 24px 20px;
+  gap: 0.72rem;
+  padding: 1rem 1.65rem 1.45rem;
   border-top: 1px solid rgba(23, 54, 45, 0.1);
   background: #fbfcfb;
 }
 
 .cancelButton,
 .saveButton {
-  min-height: 48px;
-  border-radius: 14px;
-  padding: 0 16px;
+  min-height: 3.15rem;
+  border-radius: 1rem;
+  padding: 0 1rem;
   font: inherit;
   font-size: 0.82rem;
   font-weight: 900;
   cursor: pointer;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    background 180ms ease,
+    border-color 180ms ease;
 }
 
 .cancelButton {
@@ -259,6 +352,11 @@
   background: linear-gradient(180deg, #248864 0%, #176f51 100%);
   color: #fff;
   box-shadow: 0 10px 22px rgba(23, 111, 81, 0.18);
+}
+
+.cancelButton:hover:not(:disabled),
+.saveButton:hover:not(:disabled) {
+  transform: translateY(-1px);
 }
 
 .cancelButton:disabled,
@@ -276,7 +374,7 @@
 
   .modal {
     max-height: calc(100vh - 20px);
-    border-radius: 22px;
+    border-radius: 1.45rem;
   }
 
   .modalHeader,
@@ -287,5 +385,21 @@
 
   .modalFooter {
     padding: 14px 18px 18px;
+  }
+
+  .modalTitleGroup {
+    grid-template-columns: 2.75rem minmax(0, 1fr);
+    gap: 0.78rem;
+  }
+
+  .modalIconShell {
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 0.9rem;
+  }
+
+  .modalTitleIcon {
+    width: 1.25rem !important;
+    height: 1.25rem !important;
   }
 }

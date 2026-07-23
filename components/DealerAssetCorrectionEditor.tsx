@@ -24,21 +24,24 @@ type DealerAssetCorrectionEditorProps = {
   replacementPriceExVat: number | null;
   correction?: DealerAssetCorrectionRequest | null;
   actionClassName?: string;
+  iconClassName?: string;
   onSaved?: (correction: DealerAssetCorrectionRequest) => void;
 };
 
-function SerialIcon() {
+function SerialIcon({ className = '' }: { className?: string }) {
   return (
-    <svg className={styles.actionIcon} viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M5 6.5h14v11H5zM8 10h8M8 14h5" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+    <svg className={`${styles.actionIcon} ${className}`} viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="3.75" y="5.25" width="16.5" height="13.5" rx="2.25" fill="none" stroke="currentColor" strokeWidth="1.9" />
+      <path d="M7.25 9.25h5.75M7.25 13h9.5M7.25 16h6.25" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
     </svg>
   );
 }
 
-function PriceIcon() {
+function PriceIcon({ className = '' }: { className?: string }) {
   return (
-    <svg className={styles.actionIcon} viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M12 3v18M16.5 7.2c-.9-1-2.2-1.6-4-1.6-2.3 0-4 1.2-4 3.1 0 4.7 8 1.8 8 6.6 0 1.9-1.7 3.1-4.2 3.1-1.9 0-3.5-.7-4.6-2" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+    <svg className={`${styles.actionIcon} ${className}`} viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="8.75" fill="none" stroke="currentColor" strokeWidth="1.9" />
+      <path d="M12 6.75v10.5M15.25 8.6c-.72-.75-1.75-1.13-3.1-1.13-1.84 0-3.15.9-3.15 2.3 0 3.5 6.2 1.35 6.2 4.88 0 1.4-1.32 2.3-3.25 2.3-1.45 0-2.72-.47-3.58-1.4" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -60,6 +63,7 @@ export default function DealerAssetCorrectionEditor({
   replacementPriceExVat,
   correction,
   actionClassName = '',
+  iconClassName = '',
   onSaved,
 }: DealerAssetCorrectionEditorProps) {
   const router = useRouter();
@@ -163,7 +167,7 @@ export default function DealerAssetCorrectionEditor({
   return (
     <>
       <button type="button" className={`${actionClassName || styles.actionButton} ${styles.actionButtonBase}`} onClick={() => openEditor('serialNumber')}>
-        <SerialIcon />
+        <SerialIcon className={iconClassName} />
         <span>
           <strong>Update serial number</strong>
           <small>{effectiveSerialNumber || 'No serial number saved'}.</small>
@@ -171,7 +175,7 @@ export default function DealerAssetCorrectionEditor({
       </button>
 
       <button type="button" className={`${actionClassName || styles.actionButton} ${styles.actionButtonBase}`} onClick={() => openEditor('replacementPriceExVat')}>
-        <PriceIcon />
+        <PriceIcon className={iconClassName} />
         <span>
           <strong>Update replacement price</strong>
           <small>{formatCurrency(effectiveReplacementPrice)} excl. VAT.</small>
@@ -191,10 +195,15 @@ export default function DealerAssetCorrectionEditor({
         }}>
           <section className={styles.modal} role="dialog" aria-modal="true" aria-labelledby={titleId}>
             <header className={styles.modalHeader}>
-              <div>
-                <span>Dealer correction</span>
-                <h2 id={titleId}>{fieldIsSerial ? 'Update serial number' : 'Update replacement price'}</h2>
-                <p>{assetTitle}</p>
+              <div className={styles.modalTitleGroup}>
+                <span className={styles.modalIconShell} aria-hidden="true">
+                  {fieldIsSerial ? <SerialIcon className={styles.modalTitleIcon} /> : <PriceIcon className={styles.modalTitleIcon} />}
+                </span>
+                <div className={styles.modalHeaderCopy}>
+                  <span className={styles.modalKicker}>Dealer asset update</span>
+                  <h2 id={titleId}>{fieldIsSerial ? 'Update serial number' : 'Update replacement price'}</h2>
+                  <p>{assetTitle}</p>
+                </div>
               </div>
               <button type="button" className={styles.closeButton} onClick={closeEditor} disabled={saving} aria-label="Close correction form">×</button>
             </header>

@@ -1111,18 +1111,30 @@
   min-width: 0;
 }
 
-.notificationDetailKicker {
+.notificationDetailErrorIcon {
+  width: 2.75rem;
+  height: 2.75rem;
   display: inline-flex;
-  width: fit-content;
-  margin-bottom: 0.45rem;
-  padding: 0.34rem 0.64rem;
-  border-radius: 999px;
-  color: #0f684f;
-  background: rgba(23, 126, 91, 0.09);
-  border: 1px solid rgba(23, 126, 91, 0.14);
-  font-size: 0.76rem;
-  font-weight: 860;
-  line-height: 1;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.72rem;
+  border-radius: 0.9rem;
+  color: #a53838;
+  background: linear-gradient(180deg, #fffafa 0%, #fff1f1 100%);
+  border: 1px solid rgba(165, 56, 56, 0.18);
+  box-shadow:
+    0 10px 22px rgba(151, 38, 38, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.notificationDetailErrorIcon svg {
+  width: 1.35rem;
+  height: 1.35rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .notificationDetailHeader h2 {
