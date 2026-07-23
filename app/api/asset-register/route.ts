@@ -8,6 +8,10 @@ import { attachLatestMaintenanceStatusToAssets } from '../../../lib/scan-assets'
 import { attachUpcomingMaintenanceAlertsToAssets } from '../../../lib/asset-maintenance';
 import { attachUpcomingLicenseRenewalAlertsToAssets } from '../../../lib/asset-license-renewal';
 import {
+  listPendingOwnerAssetCorrections,
+  type DealerAssetCorrectionRequest,
+} from '../../../lib/dealer-asset-corrections';
+import {
   getAssetRegisterForUser,
   getSelectedAssetRegister,
   listAssetRegisters,
@@ -69,12 +73,26 @@ function getUsageUserId(session: Awaited<ReturnType<typeof getServerSession>>): 
 async function attachOpenAssetAlerts<T extends { id: string }>(
   ownerUserId: string,
   items: T[],
-): Promise<Array<T & { openPartnerNote: unknown; maintenanceAlert: unknown; licenseRenewalAlert: unknown; latestMaintenanceStatus: unknown; latestIssueNoteStatus: unknown }>> {
+): Promise<Array<T & {
+  openPartnerNote: unknown;
+  maintenanceAlert: unknown;
+  licenseRenewalAlert: unknown;
+  latestMaintenanceStatus: unknown;
+  latestIssueNoteStatus: unknown;
+  dealerAssetCorrection: DealerAssetCorrectionRequest | null;
+}>> {
   const itemsWithPartnerNotes = await attachOpenPartnerNotesToAssets(ownerUserId, items);
   const itemsWithScheduledMaintenance = await attachUpcomingMaintenanceAlertsToAssets(ownerUserId, itemsWithPartnerNotes);
   const itemsWithLicenseRenewals = await attachUpcomingLicenseRenewalAlertsToAssets(ownerUserId, itemsWithScheduledMaintenance);
   const itemsWithMaintenanceStatus = await attachLatestMaintenanceStatusToAssets(itemsWithLicenseRenewals);
-  return attachOpenIssueNoteStatusToAssets(itemsWithMaintenanceStatus);
+  const itemsWithIssueStatus = await attachOpenIssueNoteStatusToAssets(itemsWithMaintenanceStatus);
+  const corrections = await listPendingOwnerAssetCorrections(ownerUserId, items.map((item) => item.id));
+  const correctionByAssetId = new Map(corrections.map((correction) => [correction.assetId, correction]));
+
+  return itemsWithIssueStatus.map((item) => ({
+    ...item,
+    dealerAssetCorrection: correctionByAssetId.get(item.id) ?? null,
+  }));
 }
 
 async function requireOwnerAccount(user: { id: string; name?: string | null; email?: string | null }) {
