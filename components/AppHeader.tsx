@@ -981,11 +981,20 @@ export default function AppHeader({
     return (
       <>
         <span className={styles.notificationDot} aria-hidden="true" />
-        <span className={`${styles.notificationCopy} ${actionLabel ? styles.notificationCopyWithAction : ''}`}>
+        <span className={styles.notificationCopy}>
           <strong>{notification.title}</strong>
           <span>{notification.body}</span>
-          <small>{formatNotificationTime(notification.createdAtIso)}</small>
-          {actionLabel ? <span className={styles.notificationOpenHint}>{actionLabel}</span> : null}
+          <span className={styles.notificationMetaRow}>
+            <small>{formatNotificationTime(notification.createdAtIso)}</small>
+            {actionLabel ? (
+              <span className={styles.notificationOpenHint}>
+                <span>{actionLabel}</span>
+                <svg viewBox="0 0 20 20" aria-hidden="true">
+                  <path d="M4 10h11M11 6l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </span>
+            ) : null}
+          </span>
         </span>
       </>
     );
