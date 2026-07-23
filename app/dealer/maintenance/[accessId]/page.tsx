@@ -2,6 +2,7 @@ import { notFound, redirect } from 'next/navigation';
 import { getAccountProfile } from '../../../../lib/account-profile';
 import { getServerSession } from '../../../../lib/auth-session';
 import { getDealerTrackedAsset } from '../../../../lib/dealer-maintenance-tracker';
+import DealerAssetCorrectionEditor from '../../../../components/DealerAssetCorrectionEditor';
 import DealerNav from '../../dealer-nav';
 import styles from '../maintenance-tracker.module.css';
 import dealerStyles from '../../dealer.module.css';
@@ -19,6 +20,15 @@ function date(value: string | null): string {
   if (!value) return 'Not set';
   const parsed = new Date(`${value}T00:00:00Z`);
   return Number.isNaN(parsed.getTime()) ? value : new Intl.DateTimeFormat('en-ZA', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(parsed);
+}
+
+function currency(value: number | null): string {
+  if (value === null || !Number.isFinite(value)) return 'Not saved';
+  return new Intl.NumberFormat('en-ZA', {
+    style: 'currency',
+    currency: 'ZAR',
+    maximumFractionDigits: 0,
+  }).format(value);
 }
 
 export default async function DealerTrackedAssetPage({ params }: { params: { accessId: string } }) {
@@ -43,6 +53,24 @@ export default async function DealerTrackedAssetPage({ params }: { params: { acc
           <div><span>Open maintenance</span><strong>{asset.maintenanceRecords.length.toLocaleString('en-ZA')}</strong></div>
           <div><span>Status</span><strong>{asset.statusLabel}</strong></div>
           <div><span>Serial</span><strong>{asset.serialNumber || 'Not saved'}</strong></div>
+          <div><span>Replacement price</span><strong>{currency(asset.replacementPriceExVat)}</strong></div>
+        </section>
+
+        <section className={styles.correctionSection}>
+          <header>
+            <h2>Asset corrections</h2>
+            <p>Correct dealer-facing asset details and send them to the owner for approval.</p>
+          </header>
+          <div className={styles.correctionActions}>
+            <DealerAssetCorrectionEditor
+              assetTitle={asset.assetTitle}
+              sourceType="maintenance"
+              sourceId={asset.accessId}
+              serialNumber={asset.serialNumber}
+              replacementPriceExVat={asset.replacementPriceExVat}
+              correction={asset.dealerCorrection}
+            />
+          </div>
         </section>
 
         <section className={styles.recordsSection}>
