@@ -86,6 +86,24 @@ export async function POST(request: NextRequest) {
     if (message === 'CORRECTION_NO_CHANGES') {
       return NextResponse.json({ ok: false, error: 'The corrected value must differ from the owner’s current value.' }, { status: 400 });
     }
+    if (message === 'CORRECTION_SERIAL_PENDING') {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: 'A serial number update is already waiting for owner approval. It must be accepted or declined before another asset detail can be updated.',
+        },
+        { status: 409 },
+      );
+    }
+    if (message === 'CORRECTION_REPLACEMENT_PENDING') {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: 'A replacement price update is already waiting for owner approval. It must be accepted or declined before another asset detail can be updated.',
+        },
+        { status: 409 },
+      );
+    }
 
     console.error('Dealer asset correction POST failed.', error);
     return NextResponse.json({ ok: false, error: 'Failed to send the asset correction to the owner.' }, { status: 500 });
