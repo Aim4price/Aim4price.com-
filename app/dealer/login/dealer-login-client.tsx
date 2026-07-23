@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import { useEffect, useState, type FormEvent } from 'react';
+import { clearCachedHeaderSession } from '../../../lib/header-session-cache';
 import styles from '../dealer.module.css';
 
 type InstallPlatform = 'ios' | 'other';
@@ -131,6 +132,7 @@ export default function DealerLoginClient({ hasAccountSession = false }: { hasAc
         throw new Error('The current Aim4price account could not be signed out. Please try again.');
       }
 
+      clearCachedHeaderSession();
       setAccountSessionActive(false);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to switch to staff sign in.');
