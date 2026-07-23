@@ -9,6 +9,7 @@ import {
   type FormEvent,
   type KeyboardEvent,
 } from "react";
+import { refreshCachedHeaderSession } from "../../lib/header-session-cache";
 import styles from "./page.module.css";
 
 type Mode = "signup" | "login" | "forgot";
@@ -698,6 +699,8 @@ export default function AuthClient() {
       });
 
       const redirectUrl = extractRedirectUrl(payload) ?? POST_LOGIN_REDIRECT;
+
+      await refreshCachedHeaderSession().catch(() => null);
 
       setNotice({
         tone: "success",
