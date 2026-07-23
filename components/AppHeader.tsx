@@ -684,6 +684,24 @@ export default function AppHeader({
     };
   }, [session?.id, pathname]);
 
+  useEffect(() => {
+    function handleDealerCorrectionResolved(event: Event) {
+      const correctionId = String(
+        (event as CustomEvent<{ correctionId?: string }>).detail?.correctionId ?? '',
+      ).trim();
+      if (!correctionId) return;
+
+      setNotifications((current) => current.filter(
+        (item) => item.dealerAssetCorrectionId !== correctionId,
+      ));
+    }
+
+    window.addEventListener('aim4price:dealer-correction-resolved', handleDealerCorrectionResolved);
+    return () => {
+      window.removeEventListener('aim4price:dealer-correction-resolved', handleDealerCorrectionResolved);
+    };
+  }, []);
+
   const accountName = useMemo(() => session?.name?.trim() || 'Aim4price User', [session]);
   const sessionAccountLogoUrl = useMemo(() => pickAccountLogoUrl(session), [session]);
   const accountLogoUrl = accountProfileLogoState.loaded

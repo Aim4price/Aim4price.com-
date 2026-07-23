@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, useMemo, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import type {
@@ -85,13 +85,11 @@ export default function DealerAssetCorrectionEditor({
   const effectiveReplacementPrice = effectiveCorrection?.replacementPriceChanged
     ? effectiveCorrection.proposedReplacementPriceExVat
     : replacementPriceExVat;
-  const pendingLabels = useMemo(() => {
-    if (!effectiveCorrection) return [];
-    return [
-      effectiveCorrection.serialNumberChanged ? 'serial number' : '',
-      effectiveCorrection.replacementPriceChanged ? 'replacement price' : '',
-    ].filter(Boolean);
-  }, [effectiveCorrection]);
+  const pendingFieldLabel = effectiveCorrection?.serialNumberChanged
+    ? 'serial number'
+    : effectiveCorrection?.replacementPriceChanged
+      ? 'replacement price'
+      : '';
 
   useEffect(() => {
     if (!activeField) return undefined;
@@ -109,6 +107,7 @@ export default function DealerAssetCorrectionEditor({
   }, [activeField, saving]);
 
   function openEditor(field: DealerAssetCorrectionField) {
+    if (effectiveCorrection) return;
     setError('');
     setActiveField(field);
     setDraft(
@@ -166,7 +165,13 @@ export default function DealerAssetCorrectionEditor({
 
   return (
     <>
-      <button type="button" className={`${actionClassName || styles.actionButton} ${styles.actionButtonBase}`} onClick={() => openEditor('serialNumber')}>
+      <button
+        type="button"
+        className={`${actionClassName || styles.actionButton} ${styles.actionButtonBase}`}
+        onClick={() => openEditor('serialNumber')}
+        disabled={Boolean(effectiveCorrection)}
+        title={effectiveCorrection ? 'Resolve the pending dealer update before proposing another change.' : undefined}
+      >
         <SerialIcon className={iconClassName} />
         <span>
           <strong>Update serial number</strong>
@@ -174,7 +179,13 @@ export default function DealerAssetCorrectionEditor({
         </span>
       </button>
 
-      <button type="button" className={`${actionClassName || styles.actionButton} ${styles.actionButtonBase}`} onClick={() => openEditor('replacementPriceExVat')}>
+      <button
+        type="button"
+        className={`${actionClassName || styles.actionButton} ${styles.actionButtonBase}`}
+        onClick={() => openEditor('replacementPriceExVat')}
+        disabled={Boolean(effectiveCorrection)}
+        title={effectiveCorrection ? 'Resolve the pending dealer update before proposing another change.' : undefined}
+      >
         <PriceIcon className={iconClassName} />
         <span>
           <strong>Update replacement price</strong>
@@ -182,10 +193,10 @@ export default function DealerAssetCorrectionEditor({
         </span>
       </button>
 
-      {pendingLabels.length ? (
+      {pendingFieldLabel ? (
         <div className={styles.pendingNotice}>
-          <strong>Waiting for owner approval</strong>
-          <span>The proposed {pendingLabels.join(' and ')} already shows in your dealer view.</span>
+          <strong>{pendingFieldLabel === 'serial number' ? 'Serial number' : 'Replacement price'} update waiting for owner approval</strong>
+          <span>The owner must accept or decline this update before another asset detail can be changed.</span>
         </div>
       ) : null}
 
