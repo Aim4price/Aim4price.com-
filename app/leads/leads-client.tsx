@@ -3069,6 +3069,7 @@ export default function LeadsClient({
                       replacementPriceExVat={snapshotReplacementPrice(managedLead.assetSnapshot)}
                       correction={managedLead.dealerCorrection}
                       actionClassName={assetStyles.optionActionButton}
+                      iconClassName={assetStyles.buttonIcon}
                       onSaved={handleDealerCorrectionSaved}
                     />
                   ) : null}
