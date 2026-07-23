@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { clearCachedHeaderSession } from "../../lib/header-session-cache";
 import styles from "./page.module.css";
 
 type AccountStatus = "pending_payment" | "active" | "suspended";
@@ -584,7 +585,8 @@ export default function AdminClient({
       if (typeof window !== "undefined") {
         window.localStorage.removeItem("aim4price-tractors-kit-register");
         window.localStorage.removeItem("aim4price-tractors-kit-marketplace");
-        window.location.replace("/");
+        clearCachedHeaderSession();
+        window.location.replace("/auth#login");
       }
     }
   }
