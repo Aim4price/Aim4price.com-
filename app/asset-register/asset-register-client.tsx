@@ -6262,9 +6262,11 @@ export default function AssetRegisterClient() {
     }
 
     void loadAssetRegister();
+    window.addEventListener('aim4price:asset-register-updated', loadAssetRegister);
 
     return () => {
       mounted = false;
+      window.removeEventListener('aim4price:asset-register-updated', loadAssetRegister);
     };
   }, []);
 
