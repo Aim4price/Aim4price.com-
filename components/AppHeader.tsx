@@ -96,7 +96,7 @@ type AccountProfileLogoState = {
   logoUrl: string | null;
 };
 
-type HeaderNotificationCategory = 'partner_note' | 'lead' | 'qr_scan' | 'fuel' | 'asset_discovery';
+type HeaderNotificationCategory = 'partner_note' | 'lead' | 'qr_scan' | 'fuel' | 'maintenance' | 'dealer_correction' | 'asset_discovery';
 
 type HeaderNotificationTone = 'neutral' | 'success' | 'warning' | 'info';
 
@@ -109,6 +109,7 @@ type HeaderNotificationItem = {
   href: string;
   createdAtIso: string;
   assetDiscoveryEnquiryId?: string;
+  dealerAssetCorrectionId?: string;
   priority?: boolean;
 };
 
@@ -503,6 +504,7 @@ export default function AppHeader({
   const [notificationsSeenAt, setNotificationsSeenAt] = useState<string | null>(null);
   const [notificationPage, setNotificationPage] = useState(1);
   const [processingAssetDiscoveryEnquiryIds, setProcessingAssetDiscoveryEnquiryIds] = useState<Set<string>>(() => new Set());
+  const [processingDealerCorrectionIds, setProcessingDealerCorrectionIds] = useState<Set<string>>(() => new Set());
   const [activeAssetDiscoveryEnquiry, setActiveAssetDiscoveryEnquiry] = useState<AssetDiscoveryEnquiry | null>(null);
   const [notificationDetailError, setNotificationDetailError] = useState<string | null>(null);
   const [loadingNotificationActionId, setLoadingNotificationActionId] = useState<string | null>(null);
@@ -943,6 +945,38 @@ export default function AppHeader({
     }
   }
 
+  async function handleDealerCorrectionDecision(correctionId: string, decision: 'accept' | 'reject') {
+    setProcessingDealerCorrectionIds((current) => new Set(current).add(correctionId));
+    setNotificationDetailError(null);
+
+    try {
+      const response = await fetch(`/api/asset-corrections/${encodeURIComponent(correctionId)}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ decision }),
+      });
+      const data = (await response.json().catch(() => null)) as { ok?: boolean; error?: string } | null;
+
+      if (!response.ok || !data?.ok) {
+        throw new Error(data?.error || 'Failed to save the dealer correction decision.');
+      }
+
+      setNotifications((current) => current.filter((item) => item.dealerAssetCorrectionId !== correctionId));
+      markNotificationsSeen();
+    } catch (error) {
+      setNotificationDetailError(error instanceof Error ? error.message : 'Failed to save the dealer correction decision.');
+    } finally {
+      setProcessingDealerCorrectionIds((current) => {
+        const next = new Set(current);
+        next.delete(correctionId);
+        return next;
+      });
+    }
+  }
+
   async function handleSignOut() {
     try {
       setIsSigningOut(true);
@@ -1009,6 +1043,42 @@ export default function AppHeader({
     const newClass = isNotificationNew(notification) ? styles.notificationItemNew : '';
     const priorityClass = notification.priority ? styles.notificationItemPriority : '';
     const baseClassName = `${styles.notificationItem} ${toneClass} ${newClass} ${priorityClass}`;
+
+    if (notification.dealerAssetCorrectionId) {
+      const correctionId = notification.dealerAssetCorrectionId;
+      const processing = processingDealerCorrectionIds.has(correctionId);
+
+      return (
+        <div key={notification.id} className={`${baseClassName} ${styles.notificationItemActionable}`}>
+          <span className={styles.notificationDot} aria-hidden="true" />
+          <span className={styles.notificationCopy}>
+            <strong>{notification.title}</strong>
+            <span>{notification.body}</span>
+            <span className={styles.notificationMetaRow}>
+              <small>{formatNotificationTime(notification.createdAtIso)}</small>
+            </span>
+            <span className={styles.notificationActionRow}>
+              <button
+                type="button"
+                className={styles.notificationDenyButton}
+                onClick={() => void handleDealerCorrectionDecision(correctionId, 'reject')}
+                disabled={processing}
+              >
+                {processing ? 'Saving...' : 'Decline'}
+              </button>
+              <button
+                type="button"
+                className={styles.notificationApproveButton}
+                onClick={() => void handleDealerCorrectionDecision(correctionId, 'accept')}
+                disabled={processing}
+              >
+                {processing ? 'Saving...' : 'Accept update'}
+              </button>
+            </span>
+          </span>
+        </div>
+      );
+    }
 
     if (notification.assetDiscoveryEnquiryId) {
       const loading = loadingNotificationActionId === `asset-discovery:${notification.assetDiscoveryEnquiryId}`;
