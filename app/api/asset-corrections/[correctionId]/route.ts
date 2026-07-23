@@ -62,6 +62,12 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     if (message === 'ASSET_NOT_FOUND') {
       return NextResponse.json({ ok: false, error: 'The asset is no longer available.' }, { status: 404 });
     }
+    if (message === 'ASSET_UPDATE_UNSUPPORTED') {
+      return NextResponse.json(
+        { ok: false, error: 'This Asset Register item could not be updated. Refresh the page and try again.' },
+        { status: 409 },
+      );
+    }
 
     console.error('Owner dealer asset correction PATCH failed.', error);
     return NextResponse.json({ ok: false, error: 'Failed to save the correction decision.' }, { status: 500 });
