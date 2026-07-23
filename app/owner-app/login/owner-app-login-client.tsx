@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import { useEffect, useState, type FormEvent } from 'react';
+import { clearCachedHeaderSession } from '../../../lib/header-session-cache';
 import styles from '../../dealer/dealer.module.css';
 
 type InstallView = 'checking' | 'install' | 'login';
@@ -65,6 +66,7 @@ export default function OwnerAppLoginClient({ hasAccountSession = false }: { has
     try {
       const response = await fetch('/api/auth/sign-out', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: '{}' });
       if (!response.ok) throw new Error('The current Aim4price account could not be signed out. Please try again.');
+      clearCachedHeaderSession();
       setAccountSessionActive(false);
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Unable to switch sign in.'); }
     finally { setBusy(false); }
