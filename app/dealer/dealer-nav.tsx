@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { clearCachedHeaderSession } from '../../lib/header-session-cache';
 import styles from './dealer.module.css';
 
 type DealerNavProps = {
@@ -31,7 +32,8 @@ export default function DealerNav({
       }),
     ]);
 
-    window.location.replace('/');
+    clearCachedHeaderSession();
+    window.location.replace('/dealer/login');
   }
 
   return (
