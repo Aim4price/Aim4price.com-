@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { clearCachedHeaderSession } from '../../lib/header-session-cache';
 import styles from './page.module.css';
 
 type FieldManagerSession = {
@@ -112,7 +113,8 @@ export default function FieldManagerHomeClient() {
       credentials: 'include',
       cache: 'no-store',
     }).catch(() => undefined);
-    window.location.replace('/');
+    clearCachedHeaderSession();
+    window.location.replace('/field-manager/login');
   }
 
   return (
