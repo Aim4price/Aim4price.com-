@@ -1967,6 +1967,38 @@
   line-height: 1.46;
   overflow-wrap: anywhere;
 }
+.notificationCorrectionCard {
+  display: block;
+}
+.notificationCorrectionActions {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  gap: 9px;
+  margin-top: 15px;
+}
+.notificationCorrectionActions button {
+  min-height: 46px;
+  border-radius: 14px;
+  padding: 0 14px;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+.notificationCorrectionDecline {
+  border: 1px solid rgba(145, 48, 48, 0.2);
+  background: rgba(255, 255, 255, 0.72);
+  color: #8b3030;
+}
+.notificationCorrectionAccept {
+  border: 1px solid #176f51;
+  background: linear-gradient(180deg, #248864 0%, #176f51 100%);
+  color: #fff;
+  box-shadow: 0 9px 20px rgba(23, 111, 81, 0.18);
+}
+.notificationCorrectionActions button:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
 .notificationEmpty {
   margin: 0;
   border: 1px dashed rgba(18, 53, 45, 0.15);
