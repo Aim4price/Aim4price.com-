@@ -9,7 +9,7 @@ import styles from './page.module.css';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-export default async function TrackingPage() {
+export default async function TrackingPage({ searchParams }: { searchParams?: { open?: string } }) {
   const session = await getServerSession({ allowDealerApp: true });
 
   if (!session?.user?.id) {
@@ -31,7 +31,7 @@ export default async function TrackingPage() {
   return (
     <div className={styles.screen}>
       <AppHeader active="tracking" />
-      <TrackingClient initialAssets={assets} />
+      <TrackingClient initialAssets={assets} initialOpenAccessId={String(searchParams?.open ?? '').trim() || null} />
     </div>
   );
 }
