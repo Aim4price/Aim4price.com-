@@ -49,13 +49,13 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   }
 
   try {
-    const correction = await resolveDealerAssetCorrection({
+    const result = await resolveDealerAssetCorrection({
       ownerUserId: session.user.id,
       correctionId: String(context.params.correctionId ?? '').trim(),
       decision,
       resolvedByUserId: isOwnerAppSession(session) ? session.ownerApp.ownerAppUserId : session.user.id,
     });
-    return NextResponse.json({ ok: true, correction });
+    return NextResponse.json({ ok: true, ...result });
   } catch (error) {
     const message = error instanceof Error ? error.message : '';
     if (message === 'CORRECTION_NOT_FOUND') {
