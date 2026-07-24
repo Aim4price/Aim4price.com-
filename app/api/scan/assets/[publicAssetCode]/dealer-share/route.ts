@@ -10,6 +10,8 @@ import {
   grantDealerMaintenanceTracking,
   listOwnerDealerMaintenanceAccess,
   revokeDealerMaintenanceTracking,
+  updateDealerMaintenancePermissions,
+  type DealerMaintenancePermissions,
 } from '../../../../../../lib/dealer-maintenance-tracker';
 import { createAssetLead, listPartnerDirectory } from '../../../../../../lib/partner-access';
 
@@ -90,6 +92,24 @@ function buildOwnerMessagePhotoAttachments(photoUrls: string[]): Array<{ type: '
 
 function errorMessage(error: unknown, fallback: string): string {
   return error instanceof Error && error.message ? error.message : fallback;
+}
+
+function readPermissions(value: unknown): DealerMaintenancePermissions | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const permissions = value as Record<string, unknown>;
+  const keys = [
+    'canViewLoggedProblems',
+    'canViewMaintenanceReports',
+    'canUpdateSerial',
+    'canUpdateReplacementPrice',
+  ] as const;
+  if (keys.some((key) => typeof permissions[key] !== 'boolean')) return null;
+  return {
+    canViewLoggedProblems: permissions.canViewLoggedProblems as boolean,
+    canViewMaintenanceReports: permissions.canViewMaintenanceReports as boolean,
+    canUpdateSerial: permissions.canUpdateSerial as boolean,
+    canUpdateReplacementPrice: permissions.canUpdateReplacementPrice as boolean,
+  };
 }
 
 async function authorizeDealerShareAccess(request: NextRequest, publicAssetCode: string) {
@@ -261,6 +281,41 @@ export async function POST(request: NextRequest, context: RouteContext) {
   }
 }
 
+export async function PATCH(request: NextRequest, context: RouteContext) {
+  const publicAssetCode = normalizePublicAssetCode(context.params?.publicAssetCode);
+  const access = await authorizeDealerShareAccess(request, publicAssetCode);
+  if (!access.ok) {
+    return NextResponse.json({ ok: false, error: access.error, pinRequired: access.pinRequired }, { status: access.status });
+  }
+  if (access.accessMode === 'scan_pin') {
+    return NextResponse.json({ ok: false, error: 'Only the owner or a Field Manager can change dealer tracking.' }, { status: 403 });
+  }
+  const body = await request.json().catch(() => null) as {
+    accessId?: unknown;
+    permissions?: unknown;
+  } | null;
+  const accessId = asText(body?.accessId);
+  const permissions = readPermissions(body?.permissions);
+  if (!accessId || !permissions) {
+    return NextResponse.json({ ok: false, error: 'Choose a tracked dealer and valid permissions.' }, { status: 400 });
+  }
+  try {
+    const trackingAccess = await updateDealerMaintenancePermissions({
+      ownerUserId: access.ownerUserId,
+      assetId: access.asset.id,
+      accessId,
+      permissions,
+    });
+    if (!trackingAccess) {
+      return NextResponse.json({ ok: false, error: 'This dealer tracking access was not found.' }, { status: 404 });
+    }
+    return NextResponse.json({ ok: true, trackingAccess });
+  } catch (error) {
+    console.error('scan dealer-share PATCH failed', error);
+    return NextResponse.json({ ok: false, error: 'Failed to save dealer tracking permissions.' }, { status: 500 });
+  }
+}
+
 export async function DELETE(request: NextRequest, context: RouteContext) {
   const publicAssetCode = normalizePublicAssetCode(context.params?.publicAssetCode);
   const access = await authorizeDealerShareAccess(request, publicAssetCode);
@@ -270,14 +325,19 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
   if (access.accessMode === 'scan_pin') {
     return NextResponse.json({ ok: false, error: 'Only the owner or a Field Manager can change dealer tracking.' }, { status: 403 });
   }
-  const body = await request.json().catch(() => null) as { partnerUserId?: unknown } | null;
+  const body = await request.json().catch(() => null) as {
+    partnerUserId?: unknown;
+    accessId?: unknown;
+  } | null;
   const partnerUserId = asText(body?.partnerUserId);
-  if (!partnerUserId) return NextResponse.json({ ok: false, error: 'Choose a tracked dealer.' }, { status: 400 });
+  const accessId = asText(body?.accessId);
+  if (!partnerUserId && !accessId) return NextResponse.json({ ok: false, error: 'Choose a tracked dealer.' }, { status: 400 });
   try {
     const revoked = await revokeDealerMaintenanceTracking({
       ownerUserId: access.ownerUserId,
       assetId: access.asset.id,
       dealerUserId: partnerUserId,
+      accessId,
     });
     return NextResponse.json({ ok: true, revoked });
   } catch (error) {
