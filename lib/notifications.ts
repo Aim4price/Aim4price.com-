@@ -14,7 +14,7 @@ import {
 } from './partner-access';
 import { listAssetMaintenanceRecords, type AssetMaintenanceRecord } from './asset-maintenance';
 import {
-  listPendingOwnerAssetCorrections,
+  listOwnerAssetCorrectionAlerts,
   type DealerAssetCorrectionRequest,
 } from './dealer-asset-corrections';
 
@@ -40,6 +40,7 @@ export type HeaderNotificationItem = {
   assetId?: string;
   assetDiscoveryEnquiryId?: string;
   dealerAssetCorrectionId?: string;
+  dealerAssetCorrectionAction?: 'decision' | 'retry' | 'pending';
   priority?: boolean;
 };
 
@@ -317,20 +318,46 @@ function correctionValueSummary(correction: DealerAssetCorrectionRequest): strin
 
 async function listOwnerDealerAssetCorrectionNotifications(userId: string): Promise<HeaderNotificationItem[]> {
   try {
-    const corrections = await listPendingOwnerAssetCorrections(userId);
+    const corrections = await listOwnerAssetCorrectionAlerts(userId);
 
-    return corrections.map((correction) => ({
-      id: `dealer-correction:${correction.id}:${correction.updatedAtIso}`,
-      category: 'dealer_correction',
-      tone: 'warning',
-      title: 'Dealer updated asset details',
-      body: `${correctionActor(correction)} updated the ${correctionValueSummary(correction)} for ${correction.assetTitle}. Accept the change to update your Asset Register.`,
-      href: '',
-      createdAtIso: correction.updatedAtIso,
-      assetId: correction.assetId,
-      dealerAssetCorrectionId: correction.id,
-      priority: true,
-    } satisfies HeaderNotificationItem));
+    return corrections.map((correction) => {
+      if (correction.status === 'accepted') {
+        const retryable = correction.revaluationRetryable;
+        return {
+          id: `dealer-correction-revaluation:${correction.id}:${correction.updatedAtIso}`,
+          category: 'dealer_correction',
+          tone: 'warning',
+          title: correction.revaluationStatus === 'failed'
+            ? 'Aim4price recalculation needs attention'
+            : 'Aim4price recalculation pending',
+          body: correction.revaluationStatus === 'failed'
+            ? correction.revaluationFailureMessage || 'The replacement price was saved, but Aim4price could not recalculate this asset automatically.'
+            : retryable
+              ? 'The replacement price was saved, but the pending recalculation can now be retried safely.'
+              : 'The replacement price was saved and Aim4price is still recalculating this asset.',
+          href: '',
+          createdAtIso: correction.updatedAtIso,
+          assetId: correction.assetId,
+          dealerAssetCorrectionId: correction.id,
+          dealerAssetCorrectionAction: retryable ? 'retry' : 'pending',
+          priority: true,
+        } satisfies HeaderNotificationItem;
+      }
+
+      return {
+        id: `dealer-correction:${correction.id}:${correction.updatedAtIso}`,
+        category: 'dealer_correction',
+        tone: 'warning',
+        title: 'Dealer updated asset details',
+        body: `${correctionActor(correction)} updated the ${correctionValueSummary(correction)} for ${correction.assetTitle}. Accept the change to update your Asset Register.`,
+        href: '',
+        createdAtIso: correction.updatedAtIso,
+        assetId: correction.assetId,
+        dealerAssetCorrectionId: correction.id,
+        dealerAssetCorrectionAction: 'decision',
+        priority: true,
+      } satisfies HeaderNotificationItem;
+    });
   } catch (error) {
     console.error('Failed to load dealer asset correction notifications', error);
     return [];

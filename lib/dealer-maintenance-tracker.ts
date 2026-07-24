@@ -38,6 +38,15 @@ export type DealerMaintenancePermissions = {
   canUpdateReplacementPrice: boolean;
 };
 
+export type DealerMaintenanceLeadAccess = {
+  accessId: string;
+  ownerUserId: string;
+  dealerUserId: string;
+  assetId: string;
+  isActive: true;
+  permissions: DealerMaintenancePermissions;
+};
+
 export type DealerMaintenanceRecordSummary = {
   id: string;
   maintenanceType: 'service' | 'checkup';
@@ -344,6 +353,30 @@ async function listAccessRows(whereSql: string, values: unknown[]): Promise<Deal
     values,
   );
   return result.rows;
+}
+
+export async function listActiveDealerMaintenanceLeadAccess(input: {
+  dealerUserId: string;
+  leads: Array<{ ownerUserId: string; assetId: string }>;
+}): Promise<DealerMaintenanceLeadAccess[]> {
+  const requestedKeys = new Set(
+    input.leads.map((lead) => `${asText(lead.ownerUserId)}::${asText(lead.assetId)}`),
+  );
+  if (!requestedKeys.size) return [];
+  const rows = await listAccessRows(
+    'where access.dealer_user_id = $1 and access.is_active = true',
+    [input.dealerUserId],
+  );
+  return rows
+    .filter((row) => requestedKeys.has(`${row.owner_user_id}::${row.asset_register_item_id}`))
+    .map((row) => ({
+      accessId: row.id,
+      ownerUserId: row.owner_user_id,
+      dealerUserId: row.dealer_user_id,
+      assetId: row.asset_register_item_id,
+      isActive: true as const,
+      permissions: rowPermissions(row),
+    }));
 }
 
 export async function assertAssetHasOpenMaintenance(ownerUserId: string, assetId: string): Promise<void> {

@@ -6,6 +6,10 @@ import {
   listPendingDealerAssetCorrections,
   type DealerAssetCorrectionRequest,
 } from './dealer-asset-corrections';
+import {
+  listActiveDealerMaintenanceLeadAccess,
+  type DealerMaintenanceLeadAccess,
+} from './dealer-maintenance-tracker';
 import { getDb } from './db';
 
 export type AccountRole = 'owner' | 'dealer' | 'finance' | 'insurance';
@@ -63,6 +67,7 @@ export type AssetLead = {
   latestPartnerNoteAttachmentByteSize: number | null;
   latestPartnerNoteAttachmentCreatedAtIso: string | null;
   dealerCorrection?: DealerAssetCorrectionRequest | null;
+  maintenanceAccess?: DealerMaintenanceLeadAccess | null;
   createdAtIso: string;
   viewedAtIso: string | null;
   acceptedAtIso: string | null;
@@ -835,6 +840,27 @@ async function hydrateDealerAssetCorrections(leads: AssetLead[], currentUserId: 
   });
 }
 
+async function hydrateDealerMaintenanceAccess(leads: AssetLead[], currentUserId: string): Promise<AssetLead[]> {
+  const dealerLeads = leads.filter((lead) => lead.partnerUserId === currentUserId);
+  if (!dealerLeads.length) return leads;
+  const accessEntries = await listActiveDealerMaintenanceLeadAccess({
+    dealerUserId: currentUserId,
+    leads: dealerLeads.map((lead) => ({
+      ownerUserId: lead.ownerUserId,
+      assetId: lead.assetRegisterItemId,
+    })),
+  });
+  const accessByLeadKey = new Map(
+    accessEntries.map((access) => [`${access.ownerUserId}::${access.assetId}`, access]),
+  );
+  return leads.map((lead) => lead.partnerUserId === currentUserId
+    ? {
+        ...lead,
+        maintenanceAccess: accessByLeadKey.get(`${lead.ownerUserId}::${lead.assetRegisterItemId}`) ?? null,
+      }
+    : lead);
+}
+
 function normalizeAssetPartnerNoteStatus(value: unknown): AssetPartnerNoteStatus {
   const normalized = asText(value).toLowerCase();
   return ASSET_PARTNER_NOTE_STATUSES.has(normalized as AssetPartnerNoteStatus) ? (normalized as AssetPartnerNoteStatus) : 'open';
@@ -1280,7 +1306,8 @@ export async function listAssetLeadsForUser(userId: string): Promise<AssetLead[]
   );
 
   const leadsWithAttachments = await hydrateLeadAttachmentSummaries(result.rows.map(mapLeadRow), userId);
-  return hydrateDealerAssetCorrections(leadsWithAttachments, userId);
+  const leadsWithCorrections = await hydrateDealerAssetCorrections(leadsWithAttachments, userId);
+  return hydrateDealerMaintenanceAccess(leadsWithCorrections, userId);
 }
 
 export async function updateAssetLeadStatus(input: {
@@ -1330,7 +1357,8 @@ export async function updateAssetLeadStatus(input: {
 
   const updated = await db.query<LeadRow>(`${leadSelectSql('where l.id = $1::uuid')} limit 1`, [input.leadId]);
   const withAttachments = await hydrateLeadAttachmentSummaries([mapLeadRow(updated.rows[0])], input.currentUserId);
-  const [updatedLead] = await hydrateDealerAssetCorrections(withAttachments, input.currentUserId);
+  const withCorrections = await hydrateDealerAssetCorrections(withAttachments, input.currentUserId);
+  const [updatedLead] = await hydrateDealerMaintenanceAccess(withCorrections, input.currentUserId);
   await writeAuditEvent({
     ownerUserId: updatedLead.ownerUserId,
     actorUserId: input.currentUserId,

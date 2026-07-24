@@ -1,10 +1,21 @@
 import type { PoolClient } from 'pg';
-import { getAssetRegisterItemById } from './asset-register-db';
+import {
+  getAssetRegisterItemById,
+  type AssetRegisterItem,
+} from './asset-register-db';
+import { revalueAssetRegisterItem } from './asset-register-revaluation';
 import { getDb } from './db';
 
 export type DealerAssetCorrectionSource = 'lead' | 'maintenance';
 export type DealerAssetCorrectionField = 'serialNumber' | 'replacementPriceExVat';
 export type DealerAssetCorrectionStatus = 'pending' | 'accepted' | 'rejected' | 'superseded';
+export type DealerAssetCorrectionRevaluationStatus = 'not_required' | 'pending' | 'succeeded' | 'failed';
+export type DealerAssetCorrectionResolutionOutcome =
+  | 'accepted_revalued'
+  | 'accepted_revaluation_failed'
+  | 'accepted_revaluation_pending'
+  | 'accepted_no_revaluation'
+  | 'rejected';
 
 export type DealerAssetCorrectionRequest = {
   id: string;
@@ -23,9 +34,27 @@ export type DealerAssetCorrectionRequest = {
   serialNumberChanged: boolean;
   replacementPriceChanged: boolean;
   status: DealerAssetCorrectionStatus;
+  revaluationStatus: DealerAssetCorrectionRevaluationStatus;
+  revaluationAttemptCount: number;
+  revaluationLastAttemptedAtIso: string | null;
+  revaluationCompletedAtIso: string | null;
+  revaluationRunId: number | null;
+  revaluationPreviousRunId: number | null;
+  revaluationPreviousValueExVat: number | null;
+  revaluationNewValueExVat: number | null;
+  revaluationFailureCode: string;
+  revaluationFailureMessage: string;
+  revaluationRetryable: boolean;
   createdAtIso: string;
   updatedAtIso: string;
   resolvedAtIso: string | null;
+};
+
+export type DealerAssetCorrectionResolution = {
+  correction: DealerAssetCorrectionRequest;
+  outcome: DealerAssetCorrectionResolutionOutcome;
+  message: string;
+  asset: AssetRegisterItem | null;
 };
 
 type DealerAssetCorrectionRow = {
@@ -45,6 +74,16 @@ type DealerAssetCorrectionRow = {
   serial_number_changed: boolean | null;
   replacement_price_changed: boolean | null;
   status: string;
+  revaluation_status: string | null;
+  revaluation_attempt_count: string | number | null;
+  revaluation_last_attempted_at: string | Date | null;
+  revaluation_completed_at: string | Date | null;
+  revaluation_run_id: string | number | null;
+  revaluation_previous_run_id: string | number | null;
+  revaluation_previous_value_ex_vat: string | number | null;
+  revaluation_new_value_ex_vat: string | number | null;
+  revaluation_failure_code: string | null;
+  revaluation_failure_message: string | null;
   created_at: string | Date | null;
   updated_at: string | Date | null;
   resolved_at: string | Date | null;
@@ -63,15 +102,28 @@ type TableColumnRow = {
 };
 
 let dealerAssetCorrectionTablesPromise: Promise<void> | null = null;
+const REVALUATION_STALE_AFTER_MS = 15 * 60 * 1000;
 
 function asText(value: unknown): string {
   return String(value ?? '').replace(/\s+/g, ' ').trim();
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return {};
 }
 
 function asNumber(value: unknown): number | null {
   if (value === null || typeof value === 'undefined' || value === '') return null;
   const numeric = Number(value);
   return Number.isFinite(numeric) ? numeric : null;
+}
+
+function asInteger(value: unknown): number | null {
+  const numeric = asNumber(value);
+  return numeric === null ? null : Math.round(numeric);
 }
 
 function iso(value: string | Date | null | undefined): string {
@@ -97,7 +149,22 @@ function normalizeStatus(value: unknown): DealerAssetCorrectionStatus {
   return 'pending';
 }
 
+function normalizeRevaluationStatus(value: unknown): DealerAssetCorrectionRevaluationStatus {
+  const status = asText(value).toLowerCase();
+  if (status === 'pending' || status === 'succeeded' || status === 'failed') return status;
+  return 'not_required';
+}
+
+function isStaleRevaluationAttempt(lastAttemptedAtIso: string | null): boolean {
+  if (!lastAttemptedAtIso) return true;
+  const attemptedAt = Date.parse(lastAttemptedAtIso);
+  return !Number.isFinite(attemptedAt) || Date.now() - attemptedAt >= REVALUATION_STALE_AFTER_MS;
+}
+
 function mapCorrection(row: DealerAssetCorrectionRow): DealerAssetCorrectionRequest {
+  const status = normalizeStatus(row.status);
+  const revaluationStatus = normalizeRevaluationStatus(row.revaluation_status);
+  const revaluationLastAttemptedAtIso = nullableIso(row.revaluation_last_attempted_at);
   return {
     id: row.id,
     ownerUserId: row.owner_user_id,
@@ -114,7 +181,24 @@ function mapCorrection(row: DealerAssetCorrectionRow): DealerAssetCorrectionRequ
     proposedReplacementPriceExVat: asNumber(row.proposed_replacement_price_ex_vat),
     serialNumberChanged: Boolean(row.serial_number_changed),
     replacementPriceChanged: Boolean(row.replacement_price_changed),
-    status: normalizeStatus(row.status),
+    status,
+    revaluationStatus,
+    revaluationAttemptCount: Math.max(0, asInteger(row.revaluation_attempt_count) ?? 0),
+    revaluationLastAttemptedAtIso,
+    revaluationCompletedAtIso: nullableIso(row.revaluation_completed_at),
+    revaluationRunId: asInteger(row.revaluation_run_id),
+    revaluationPreviousRunId: asInteger(row.revaluation_previous_run_id),
+    revaluationPreviousValueExVat: asNumber(row.revaluation_previous_value_ex_vat),
+    revaluationNewValueExVat: asNumber(row.revaluation_new_value_ex_vat),
+    revaluationFailureCode: asText(row.revaluation_failure_code),
+    revaluationFailureMessage: asText(row.revaluation_failure_message),
+    revaluationRetryable:
+      status === 'accepted'
+      && Boolean(row.replacement_price_changed)
+      && (
+        revaluationStatus === 'failed'
+        || (revaluationStatus === 'pending' && isStaleRevaluationAttempt(revaluationLastAttemptedAtIso))
+      ),
     createdAtIso: iso(row.created_at),
     updatedAtIso: iso(row.updated_at ?? row.created_at),
     resolvedAtIso: nullableIso(row.resolved_at),
@@ -140,6 +224,16 @@ function correctionSelectSql(whereClause: string): string {
       correction.serial_number_changed,
       correction.replacement_price_changed,
       correction.status,
+      correction.revaluation_status,
+      correction.revaluation_attempt_count,
+      correction.revaluation_last_attempted_at,
+      correction.revaluation_completed_at,
+      correction.revaluation_run_id,
+      correction.revaluation_previous_run_id,
+      correction.revaluation_previous_value_ex_vat,
+      correction.revaluation_new_value_ex_vat,
+      correction.revaluation_failure_code,
+      correction.revaluation_failure_message,
       correction.created_at,
       correction.updated_at,
       correction.resolved_at
@@ -175,6 +269,56 @@ async function ensureDealerAssetCorrectionTablesOnce(): Promise<void> {
       updated_at timestamptz not null default now(),
       check (serial_number_changed or replacement_price_changed)
     )
+  `);
+  await db.query(`
+    alter table public.dealer_asset_correction_requests
+      add column if not exists revaluation_status text not null default 'not_required',
+      add column if not exists revaluation_attempt_count integer not null default 0,
+      add column if not exists revaluation_last_attempted_at timestamptz,
+      add column if not exists revaluation_completed_at timestamptz,
+      add column if not exists revaluation_run_id bigint,
+      add column if not exists revaluation_previous_run_id bigint,
+      add column if not exists revaluation_previous_value_ex_vat numeric(14, 2),
+      add column if not exists revaluation_new_value_ex_vat numeric(14, 2),
+      add column if not exists revaluation_failure_code text,
+      add column if not exists revaluation_failure_message text
+  `);
+  await db.query(`
+    update public.dealer_asset_correction_requests
+    set
+      revaluation_status = coalesce(nullif(revaluation_status, ''), 'not_required'),
+      revaluation_attempt_count = greatest(coalesce(revaluation_attempt_count, 0), 0)
+    where revaluation_status is null
+       or revaluation_status = ''
+       or revaluation_attempt_count is null
+       or revaluation_attempt_count < 0
+  `);
+  await db.query(`
+    do $$
+    begin
+      if not exists (
+        select 1
+        from pg_constraint
+        where conname = 'dealer_asset_correction_revaluation_status_check'
+          and conrelid = 'public.dealer_asset_correction_requests'::regclass
+      ) then
+        alter table public.dealer_asset_correction_requests
+          add constraint dealer_asset_correction_revaluation_status_check
+          check (revaluation_status in ('not_required', 'pending', 'succeeded', 'failed')) not valid;
+      end if;
+
+      if not exists (
+        select 1
+        from pg_constraint
+        where conname = 'dealer_asset_correction_revaluation_attempt_count_check'
+          and conrelid = 'public.dealer_asset_correction_requests'::regclass
+      ) then
+        alter table public.dealer_asset_correction_requests
+          add constraint dealer_asset_correction_revaluation_attempt_count_check
+          check (revaluation_attempt_count >= 0) not valid;
+      end if;
+    end;
+    $$;
   `);
   await db.query(`
     update public.dealer_asset_correction_requests
@@ -232,6 +376,15 @@ async function ensureDealerAssetCorrectionTablesOnce(): Promise<void> {
   await db.query(`
     create index if not exists dealer_asset_correction_dealer_pending_idx
       on public.dealer_asset_correction_requests (dealer_user_id, status, updated_at desc)
+  `);
+  await db.query(`
+    create index if not exists dealer_asset_correction_owner_revaluation_idx
+      on public.dealer_asset_correction_requests (
+        owner_user_id,
+        revaluation_status,
+        revaluation_last_attempted_at desc
+      )
+      where status = 'accepted' and replacement_price_changed = true
   `);
 }
 
@@ -475,6 +628,35 @@ export async function listPendingOwnerAssetCorrections(
   return result.rows.map(mapCorrection);
 }
 
+export async function listOwnerAssetCorrectionAlerts(
+  ownerUserId: string,
+  assetIds?: string[],
+): Promise<DealerAssetCorrectionRequest[]> {
+  await ensureDealerAssetCorrectionTables();
+  const normalizedAssetIds = Array.from(new Set((assetIds ?? []).map(asText).filter(Boolean)));
+  const assetFilter = normalizedAssetIds.length ? 'and correction.asset_register_item_id = any($2::uuid[])' : '';
+  const values: unknown[] = normalizedAssetIds.length ? [ownerUserId, normalizedAssetIds] : [ownerUserId];
+  const result = await getDb().query<DealerAssetCorrectionRow>(
+    `
+      ${correctionSelectSql(`
+        where correction.owner_user_id = $1
+          and (
+            correction.status = 'pending'
+            or (
+              correction.status = 'accepted'
+              and correction.replacement_price_changed = true
+              and correction.revaluation_status in ('pending', 'failed')
+            )
+          )
+          ${assetFilter}
+      `)}
+      order by correction.updated_at desc, correction.id desc
+    `,
+    values,
+  );
+  return result.rows.map(mapCorrection);
+}
+
 function replacementSnapshotPatch(value: number): Record<string, number> {
   return {
     replacementPriceExVat: value,
@@ -620,66 +802,524 @@ async function applyAcceptedCorrectionToAsset(input: {
   return replacementPatch;
 }
 
-async function applyAcceptedCorrectionToLeadSnapshots(input: {
+type AssetValuationState = {
+  valueExVat: number | null;
+  valuationRunId: number | null;
+};
+
+type LeadSnapshotRow = {
+  id: string;
+  asset_snapshot_json: unknown;
+  included_sections_json: unknown;
+};
+
+function assetValuationStateSelect(
+  assetColumns: Map<string, TableColumnRow>,
+): { valueColumn: string | null; runColumn: string | null } {
+  return {
+    valueColumn: firstAvailableColumn(assetColumns, [
+      'selected_value_ex_vat',
+      'value',
+      'selected_value',
+      'saved_value_ex_vat',
+      'aim4price_value_ex_vat',
+    ]),
+    runColumn: firstAvailableColumn(assetColumns, ['valuation_run_id', 'run_id']),
+  };
+}
+
+async function lockAndReadAssetValuationState(input: {
   client: PoolClient;
   current: DealerAssetCorrectionRequest;
   ownerUserId: string;
-  replacementPatch: Record<string, number>;
-  leadColumns: Map<string, TableColumnRow>;
-}): Promise<void> {
-  const {
-    client,
-    current,
-    ownerUserId,
-    replacementPatch,
-    leadColumns,
-  } = input;
-  const ownerColumn = firstAvailableColumn(leadColumns, ['owner_user_id']);
-  const assetColumn = firstAvailableColumn(leadColumns, ['asset_register_item_id']);
-  const snapshotColumn = firstAvailableColumn(leadColumns, ['asset_snapshot_json']);
-  if (!ownerColumn || !assetColumn || !snapshotColumn) return;
-
-  const rootSnapshotPatch: Record<string, unknown> = {
-    updatedAtIso: new Date().toISOString(),
+  assetColumns: Map<string, TableColumnRow>;
+}): Promise<AssetValuationState> {
+  const idColumn = firstAvailableColumn(input.assetColumns, ['id']);
+  const userIdColumn = firstAvailableColumn(input.assetColumns, ['user_id']);
+  if (!idColumn || !userIdColumn) throw new Error('ASSET_UPDATE_UNSUPPORTED');
+  const { valueColumn, runColumn } = assetValuationStateSelect(input.assetColumns);
+  const result = await input.client.query<{
+    value_ex_vat: string | number | null;
+    valuation_run_id: string | number | null;
+  }>(
+    `
+      select
+        ${valueColumn ? `${quotedIdentifier(valueColumn)}::numeric` : 'null::numeric'} as value_ex_vat,
+        ${runColumn ? `${quotedIdentifier(runColumn)}::bigint` : 'null::bigint'} as valuation_run_id
+      from public.asset_register_items
+      where ${quotedIdentifier(idColumn)} = $1::uuid
+        and ${quotedIdentifier(userIdColumn)} = $2
+      for update
+    `,
+    [input.current.assetId, input.ownerUserId],
+  );
+  if (!result.rows[0]) throw new Error('ASSET_NOT_FOUND');
+  return {
+    valueExVat: asNumber(result.rows[0].value_ex_vat),
+    valuationRunId: asInteger(result.rows[0].valuation_run_id),
   };
-  if (current.serialNumberChanged && current.proposedSerialNumber) {
-    rootSnapshotPatch.serialNumber = current.proposedSerialNumber;
+}
+
+function actualAssetSnapshotPatch(asset: AssetRegisterItem): {
+  root: Record<string, unknown>;
+  specs: Record<string, unknown>;
+} {
+  const replacementPatch = asset.replacementPriceExVat !== null
+    ? replacementSnapshotPatch(asset.replacementPriceExVat)
+    : {};
+  const replacementBasis = asText(
+    asset.specsJson.replacementPriceBasis ?? asset.specsJson.replacement_price_basis,
+  ) || (asset.replacementPriceExVat !== null ? 'user' : '');
+  const specs = {
+    ...asset.specsJson,
+    ...replacementPatch,
+    ...(replacementBasis
+      ? {
+          replacementPriceBasis: replacementBasis,
+          replacement_price_basis: replacementBasis,
+        }
+      : {}),
+  };
+
+  return {
+    root: {
+      id: asset.id,
+      title: asset.title,
+      kind: asset.kind,
+      value: asset.value,
+      selectedValueExVat: asset.selectedValueExVat,
+      ...replacementPatch,
+      ...(replacementBasis
+        ? {
+            replacementPriceBasis: replacementBasis,
+            replacement_price_basis: replacementBasis,
+          }
+        : {}),
+      valuationRunId: asset.valuationRunId,
+      valuation_run_id: asset.valuationRunId,
+      selectedMethod: asset.selectedMethod,
+      brandName: asset.brandName,
+      modelName: asset.modelName,
+      typedModelName: asset.typedModelName,
+      equipmentFamilyKey: asset.equipmentFamilyKey,
+      equipmentFamilyLabel: asset.equipmentFamilyLabel,
+      yearModel: asset.yearModel,
+      hours: asset.hours,
+      condition: asset.condition,
+      depreciationMethodUsed: asset.depreciationMethodUsed,
+      lifeWorkedPercent: asset.lifeWorkedPercent,
+      lifeRemainingPercent: asset.lifeRemainingPercent,
+      estimatedHours: asset.estimatedHours,
+      maxLifetimeHours: asset.maxLifetimeHours,
+      aim4priceValueExVat: asset.aim4priceValueExVat,
+      marketMidExVat: asset.marketMidExVat,
+      serialNumber: asset.serialNumber,
+      updatedAtIso: asset.updatedAtIso,
+      dealerCorrectionPending: false,
+    },
+    specs,
+  };
+}
+
+function applyActualAssetToSnapshot(
+  snapshotValue: unknown,
+  asset: AssetRegisterItem,
+): Record<string, unknown> {
+  const snapshot = asRecord(snapshotValue);
+  const patch = actualAssetSnapshotPatch(asset);
+  const next: Record<string, unknown> = {
+    ...snapshot,
+    ...patch.root,
+    specsJson: {
+      ...asRecord(snapshot.specsJson),
+      ...patch.specs,
+    },
+  };
+  const registerSnapshot = asRecord(snapshot.registerSnapshot);
+  if (Array.isArray(registerSnapshot.assets)) {
+    next.registerSnapshot = {
+      ...registerSnapshot,
+      assets: registerSnapshot.assets.map((entry) => {
+        const record = asRecord(entry);
+        return asText(record.id) === asset.id
+          ? {
+              ...record,
+              ...patch.root,
+              specsJson: {
+                ...asRecord(record.specsJson),
+                ...patch.specs,
+              },
+            }
+          : entry;
+      }),
+    };
   }
-  Object.assign(rootSnapshotPatch, replacementPatch);
+  return next;
+}
 
-  const snapshotMeta = leadColumns.get(snapshotColumn);
-  const snapshotIdentifier = quotedIdentifier(snapshotColumn);
-  const ownerIdentifier = quotedIdentifier(ownerColumn);
-  const assetIdentifier = quotedIdentifier(assetColumn);
-  const isJsonColumn = snapshotMeta?.data_type === 'json' || snapshotMeta?.udt_name === 'json';
+async function syncDealerLeadSnapshotsWithAsset(
+  ownerUserId: string,
+  assetId: string,
+): Promise<AssetRegisterItem | null> {
+  const asset = await getAssetRegisterItemById(ownerUserId, assetId);
+  if (!asset) return null;
+  const db = getDb();
+  const result = await db.query<LeadSnapshotRow>(
+    `
+      select id::text, asset_snapshot_json, included_sections_json
+      from public.asset_leads
+      where owner_user_id = $1 and asset_register_item_id = $2::uuid
+    `,
+    [ownerUserId, assetId],
+  );
 
-  if (Object.keys(replacementPatch).length) {
-    const mergedSnapshot = `jsonb_set(
-      coalesce(${snapshotIdentifier}${isJsonColumn ? '::jsonb' : ''}, '{}'::jsonb) || $3::jsonb,
-      '{specsJson}',
-      coalesce(${snapshotIdentifier}${isJsonColumn ? '::jsonb' : ''}->'specsJson', '{}'::jsonb) || $4::jsonb,
-      true
-    )`;
-    await client.query(
+  for (const row of result.rows) {
+    const includedSections = asRecord(row.included_sections_json);
+    const includedRegisterSnapshot = asRecord(includedSections.registerSnapshot);
+    const nextIncludedSections = Array.isArray(includedRegisterSnapshot.assets)
+      ? {
+          ...includedSections,
+          registerSnapshot: {
+            ...includedRegisterSnapshot,
+            assets: includedRegisterSnapshot.assets.map((entry) => {
+              const record = asRecord(entry);
+              if (asText(record.id) !== asset.id) return entry;
+              const patch = actualAssetSnapshotPatch(asset);
+              return {
+                ...record,
+                ...patch.root,
+                specsJson: {
+                  ...asRecord(record.specsJson),
+                  ...patch.specs,
+                },
+              };
+            }),
+          },
+        }
+      : includedSections;
+
+    await db.query(
       `
         update public.asset_leads
-        set ${snapshotIdentifier} = ${isJsonColumn ? `(${mergedSnapshot})::json` : mergedSnapshot}
-        where ${ownerIdentifier} = $1 and ${assetIdentifier} = $2::uuid
+        set asset_snapshot_json = $2::jsonb,
+            included_sections_json = $3::jsonb,
+            updated_at = now()
+        where id = $1::uuid
       `,
-      [ownerUserId, current.assetId, JSON.stringify(rootSnapshotPatch), JSON.stringify(replacementPatch)],
+      [
+        row.id,
+        JSON.stringify(applyActualAssetToSnapshot(row.asset_snapshot_json, asset)),
+        JSON.stringify(nextIncludedSections),
+      ],
     );
-    return;
+  }
+  return asset;
+}
+
+function safeRevaluationFailure(error: unknown): { code: string; message: string } {
+  const rawMessage = error instanceof Error ? error.message : '';
+  const normalized = rawMessage.toLowerCase();
+
+  if (rawMessage === 'ASSET_NOT_REVALUEABLE') {
+    return {
+      code: 'manual_or_unvalued_asset',
+      message: 'This is a manual asset or it does not yet have an Aim4price valuation to recalculate.',
+    };
+  }
+  if (rawMessage === 'VALUATION_RUN_NOT_FOUND') {
+    return {
+      code: 'missing_original_valuation',
+      message: 'The original Aim4price valuation run could not be found.',
+    };
+  }
+  if (
+    normalized.includes('model link')
+    || normalized.includes('brand link')
+    || normalized.includes('equipment-family link')
+    || normalized.includes('sector link')
+  ) {
+    return {
+      code: 'missing_linked_model',
+      message: 'This asset is missing a linked model or catalogue record needed for recalculation.',
+    };
+  }
+  if (
+    rawMessage === 'SELECTED_METHOD_NOT_AVAILABLE'
+    || rawMessage === 'REPLACEMENT_PRICE_REQUIRED'
+    || normalized.includes('missing its condition')
+    || normalized.includes('missing its year')
+    || normalized.includes('no valuation method')
+  ) {
+    return {
+      code: 'insufficient_saved_valuation',
+      message: 'There is not enough saved valuation information to recalculate this asset automatically.',
+    };
+  }
+  return {
+    code: 'temporary_revaluation_failure',
+    message: 'Aim4price could not complete the automatic recalculation. Please try again.',
+  };
+}
+
+function resolutionMessage(outcome: DealerAssetCorrectionResolutionOutcome): string {
+  if (outcome === 'accepted_revalued') {
+    return 'Dealer replacement price accepted. Aim4price recalculated the asset and saved the latest estimate.';
+  }
+  if (outcome === 'accepted_revaluation_failed') {
+    return 'Replacement price accepted and saved. Aim4price could not recalculate this asset automatically.';
+  }
+  if (outcome === 'accepted_revaluation_pending') {
+    return 'Replacement price accepted and saved. Aim4price recalculation is still pending.';
+  }
+  if (outcome === 'accepted_no_revaluation') {
+    return 'Dealer serial number accepted and saved. No valuation recalculation was required.';
+  }
+  return 'Dealer correction declined.';
+}
+
+async function loadOwnerCorrection(
+  ownerUserId: string,
+  correctionId: string,
+): Promise<DealerAssetCorrectionRequest | null> {
+  const result = await getDb().query<DealerAssetCorrectionRow>(
+    `${correctionSelectSql(`
+      where correction.id = $1::uuid
+        and correction.owner_user_id = $2
+    `)} limit 1`,
+    [correctionId, ownerUserId],
+  );
+  return result.rows[0] ? mapCorrection(result.rows[0]) : null;
+}
+
+async function claimRevaluationAttempt(input: {
+  ownerUserId: string;
+  correctionId: string;
+}): Promise<{
+  action: 'run' | 'pending' | 'succeeded';
+  correction: DealerAssetCorrectionRequest;
+  asset: AssetRegisterItem | null;
+}> {
+  const currentAssetCorrection = await loadOwnerCorrection(input.ownerUserId, input.correctionId);
+  if (!currentAssetCorrection) throw new Error('CORRECTION_NOT_FOUND');
+  const currentAsset = await getAssetRegisterItemById(
+    input.ownerUserId,
+    currentAssetCorrection.assetId,
+  );
+
+  const db = getDb();
+  const client = await db.connect();
+  try {
+    await client.query('begin');
+    const result = await client.query<DealerAssetCorrectionRow>(
+      `${correctionSelectSql(`
+        where correction.id = $1::uuid
+          and correction.owner_user_id = $2
+      `)} for update of correction`,
+      [input.correctionId, input.ownerUserId],
+    );
+    const correction = result.rows[0] ? mapCorrection(result.rows[0]) : null;
+    if (!correction) throw new Error('CORRECTION_NOT_FOUND');
+    if (correction.status !== 'accepted') throw new Error('CORRECTION_NOT_ACCEPTED');
+    if (!correction.replacementPriceChanged || correction.proposedReplacementPriceExVat === null) {
+      throw new Error('CORRECTION_REVALUATION_NOT_REQUIRED');
+    }
+    if (correction.revaluationStatus === 'succeeded') {
+      await client.query('commit');
+      return { action: 'succeeded', correction, asset: currentAsset };
+    }
+    if (
+      correction.revaluationStatus === 'pending'
+      && !isStaleRevaluationAttempt(correction.revaluationLastAttemptedAtIso)
+    ) {
+      await client.query('commit');
+      return { action: 'pending', correction, asset: currentAsset };
+    }
+
+    const recoveredAfterInterruptedAttempt = Boolean(
+      currentAsset
+      && currentAsset.valuationRunId
+      && currentAsset.valuationRunId !== correction.revaluationPreviousRunId
+      && currentAsset.replacementPriceExVat === correction.proposedReplacementPriceExVat,
+    );
+    if (recoveredAfterInterruptedAttempt && currentAsset) {
+      await client.query(
+        `
+          update public.dealer_asset_correction_requests
+          set revaluation_status = 'succeeded',
+              revaluation_completed_at = now(),
+              revaluation_run_id = $3,
+              revaluation_new_value_ex_vat = $4,
+              revaluation_failure_code = null,
+              revaluation_failure_message = null,
+              updated_at = now()
+          where id = $1::uuid and owner_user_id = $2
+        `,
+        [correction.id, input.ownerUserId, currentAsset.valuationRunId, currentAsset.value],
+      );
+      const recovered = await client.query<DealerAssetCorrectionRow>(
+        `${correctionSelectSql('where correction.id = $1::uuid')} limit 1`,
+        [correction.id],
+      );
+      await client.query('commit');
+      return {
+        action: 'succeeded',
+        correction: recovered.rows[0] ? mapCorrection(recovered.rows[0]) : correction,
+        asset: currentAsset,
+      };
+    }
+
+    await client.query(
+      `
+        update public.dealer_asset_correction_requests
+        set revaluation_status = 'pending',
+            revaluation_attempt_count = revaluation_attempt_count + 1,
+            revaluation_last_attempted_at = now(),
+            revaluation_completed_at = null,
+            revaluation_failure_code = null,
+            revaluation_failure_message = null,
+            updated_at = now()
+        where id = $1::uuid and owner_user_id = $2
+      `,
+      [correction.id, input.ownerUserId],
+    );
+    const claimed = await client.query<DealerAssetCorrectionRow>(
+      `${correctionSelectSql('where correction.id = $1::uuid')} limit 1`,
+      [correction.id],
+    );
+    await client.query('commit');
+    if (!claimed.rows[0]) throw new Error('CORRECTION_NOT_FOUND');
+    return { action: 'run', correction: mapCorrection(claimed.rows[0]), asset: currentAsset };
+  } catch (error) {
+    await client.query('rollback').catch(() => undefined);
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+async function attemptDealerAssetCorrectionRevaluation(input: {
+  ownerUserId: string;
+  correctionId: string;
+}): Promise<DealerAssetCorrectionResolution> {
+  const claimed = await claimRevaluationAttempt(input);
+  if (claimed.action === 'succeeded') {
+    if (claimed.asset) {
+      await syncDealerLeadSnapshotsWithAsset(
+        input.ownerUserId,
+        claimed.correction.assetId,
+      ).catch((error) => {
+        console.error('Recovered dealer correction revaluation, but failed to refresh dealer lead snapshots.', error);
+      });
+    }
+    return {
+      correction: claimed.correction,
+      outcome: 'accepted_revalued',
+      message: resolutionMessage('accepted_revalued'),
+      asset: claimed.asset,
+    };
+  }
+  if (claimed.action === 'pending') {
+    return {
+      correction: claimed.correction,
+      outcome: 'accepted_revaluation_pending',
+      message: resolutionMessage('accepted_revaluation_pending'),
+      asset: claimed.asset,
+    };
   }
 
-  const mergedSnapshot = `coalesce(${snapshotIdentifier}${isJsonColumn ? '::jsonb' : ''}, '{}'::jsonb) || $3::jsonb`;
-  await client.query(
-    `
-      update public.asset_leads
-      set ${snapshotIdentifier} = ${isJsonColumn ? `(${mergedSnapshot})::json` : mergedSnapshot}
-      where ${ownerIdentifier} = $1 and ${assetIdentifier} = $2::uuid
-    `,
-    [ownerUserId, current.assetId, JSON.stringify(rootSnapshotPatch)],
-  );
+  try {
+    const result = await revalueAssetRegisterItem({
+      userId: input.ownerUserId,
+      assetId: claimed.correction.assetId,
+      replacementPriceExVat: claimed.correction.proposedReplacementPriceExVat,
+      saveReplacementPrice: true,
+      previewOnly: false,
+    });
+    await getDb().query(
+      `
+        update public.dealer_asset_correction_requests
+        set revaluation_status = 'succeeded',
+            revaluation_completed_at = now(),
+            revaluation_run_id = $3,
+            revaluation_previous_value_ex_vat = coalesce(revaluation_previous_value_ex_vat, $4),
+            revaluation_new_value_ex_vat = $5,
+            revaluation_failure_code = null,
+            revaluation_failure_message = null,
+            updated_at = now()
+        where id = $1::uuid
+          and owner_user_id = $2
+          and revaluation_status = 'pending'
+      `,
+      [
+        claimed.correction.id,
+        input.ownerUserId,
+        result.valuationRunId,
+        result.oldValueExVat,
+        result.newValueExVat,
+      ],
+    );
+    let asset = result.item;
+    try {
+      asset = (await syncDealerLeadSnapshotsWithAsset(
+        input.ownerUserId,
+        claimed.correction.assetId,
+      )) ?? result.item;
+    } catch (error) {
+      console.error('Revalued accepted dealer correction, but failed to refresh dealer lead snapshots.', error);
+    }
+    const correction = (await loadOwnerCorrection(input.ownerUserId, claimed.correction.id))
+      ?? claimed.correction;
+    return {
+      correction,
+      outcome: correction.revaluationStatus === 'succeeded'
+        ? 'accepted_revalued'
+        : 'accepted_revaluation_pending',
+      message: resolutionMessage(
+        correction.revaluationStatus === 'succeeded'
+          ? 'accepted_revalued'
+          : 'accepted_revaluation_pending',
+      ),
+      asset,
+    };
+  } catch (error) {
+    const failure = safeRevaluationFailure(error);
+    try {
+      await getDb().query(
+        `
+          update public.dealer_asset_correction_requests
+          set revaluation_status = 'failed',
+              revaluation_completed_at = null,
+              revaluation_failure_code = $3,
+              revaluation_failure_message = $4,
+              updated_at = now()
+          where id = $1::uuid
+            and owner_user_id = $2
+            and revaluation_status = 'pending'
+        `,
+        [claimed.correction.id, input.ownerUserId, failure.code, failure.message],
+      );
+    } catch (stateError) {
+      console.error('Automatic dealer correction revaluation failed and its failure state could not be finalized.', stateError);
+    }
+    const correction = (await loadOwnerCorrection(input.ownerUserId, claimed.correction.id))
+      ?? claimed.correction;
+    const asset = await getAssetRegisterItemById(
+      input.ownerUserId,
+      claimed.correction.assetId,
+    ).catch(() => null);
+    return {
+      correction,
+      outcome: correction.revaluationStatus === 'failed'
+        ? 'accepted_revaluation_failed'
+        : 'accepted_revaluation_pending',
+      message: resolutionMessage(
+        correction.revaluationStatus === 'failed'
+          ? 'accepted_revaluation_failed'
+          : 'accepted_revaluation_pending',
+      ),
+      asset,
+    };
+  }
 }
 
 export async function resolveDealerAssetCorrection(input: {
@@ -687,16 +1327,11 @@ export async function resolveDealerAssetCorrection(input: {
   correctionId: string;
   decision: 'accept' | 'reject';
   resolvedByUserId: string;
-}): Promise<DealerAssetCorrectionRequest> {
+}): Promise<DealerAssetCorrectionResolution> {
   await ensureDealerAssetCorrectionTables();
   const db = getDb();
   const client = await db.connect();
   let resolvedCorrection: DealerAssetCorrectionRequest | null = null;
-  let snapshotSync: {
-    current: DealerAssetCorrectionRequest;
-    replacementPatch: Record<string, number>;
-    leadColumns: Map<string, TableColumnRow>;
-  } | null = null;
 
   try {
     await client.query('begin');
@@ -711,31 +1346,57 @@ export async function resolveDealerAssetCorrection(input: {
     if (!current) throw new Error('CORRECTION_NOT_FOUND');
     if (current.status !== 'pending') throw new Error('CORRECTION_ALREADY_RESOLVED');
 
+    let previousValuationState: AssetValuationState = {
+      valueExVat: null,
+      valuationRunId: null,
+    };
     if (input.decision === 'accept') {
-      const { assetColumns, leadColumns } = await loadCorrectionTableColumns(client);
-      const replacementPatch = await applyAcceptedCorrectionToAsset({
+      const { assetColumns } = await loadCorrectionTableColumns(client);
+      previousValuationState = await lockAndReadAssetValuationState({
         client,
         current,
         ownerUserId: input.ownerUserId,
         assetColumns,
       });
-      snapshotSync = {
+      await applyAcceptedCorrectionToAsset({
+        client,
         current,
-        replacementPatch,
-        leadColumns,
-      };
+        ownerUserId: input.ownerUserId,
+        assetColumns,
+      });
     }
 
+    const needsRevaluation =
+      input.decision === 'accept'
+      && current.replacementPriceChanged
+      && current.proposedReplacementPriceExVat !== null;
     await client.query(
       `
         update public.dealer_asset_correction_requests
         set status = $2,
             resolved_by_user_id = $3,
             resolved_at = now(),
+            revaluation_status = $4,
+            revaluation_attempt_count = 0,
+            revaluation_last_attempted_at = null,
+            revaluation_completed_at = null,
+            revaluation_run_id = null,
+            revaluation_previous_run_id = $5,
+            revaluation_previous_value_ex_vat = $6,
+            revaluation_new_value_ex_vat = null,
+            revaluation_failure_code = null,
+            revaluation_failure_message = null,
             updated_at = now()
         where id = $1::uuid
       `,
-      [current.id, input.decision === 'accept' ? 'accepted' : 'rejected', input.resolvedByUserId],
+      [
+        current.id,
+        input.decision === 'accept' ? 'accepted' : 'rejected',
+        input.resolvedByUserId,
+        needsRevaluation ? 'pending' : 'not_required',
+        needsRevaluation ? previousValuationState.valuationRunId : null,
+        needsRevaluation ? previousValuationState.valueExVat : null,
+      ],
     );
 
     const resolvedResult = await client.query<DealerAssetCorrectionRow>(
@@ -747,29 +1408,94 @@ export async function resolveDealerAssetCorrection(input: {
     await client.query('commit');
   } catch (error) {
     await client.query('rollback').catch(() => undefined);
-    client.release();
     throw error;
+  } finally {
+    client.release();
   }
 
-  // Lead snapshots are denormalized copies for the dealer view. A stale or
-  // legacy lead row must not roll back a valid owner decision or asset update.
-  if (snapshotSync) {
-    try {
-      await applyAcceptedCorrectionToLeadSnapshots({
-        client,
-        current: snapshotSync.current,
-        ownerUserId: input.ownerUserId,
-        replacementPatch: snapshotSync.replacementPatch,
-        leadColumns: snapshotSync.leadColumns,
-      });
-    } catch (error) {
-      console.error('Accepted dealer correction, but failed to refresh dealer lead snapshots.', error);
-    }
-  }
-
-  client.release();
   if (!resolvedCorrection) throw new Error('CORRECTION_NOT_FOUND');
-  return resolvedCorrection;
+  if (input.decision === 'reject') {
+    return {
+      correction: resolvedCorrection,
+      outcome: 'rejected',
+      message: resolutionMessage('rejected'),
+      asset: await getAssetRegisterItemById(input.ownerUserId, resolvedCorrection.assetId),
+    };
+  }
+
+  let acceptedAsset: AssetRegisterItem | null = null;
+  try {
+    acceptedAsset = await syncDealerLeadSnapshotsWithAsset(
+      input.ownerUserId,
+      resolvedCorrection.assetId,
+    );
+  } catch (error) {
+    console.error('Accepted dealer correction, but failed to refresh dealer lead snapshots.', error);
+  }
+
+  if (!resolvedCorrection.replacementPriceChanged) {
+    return {
+      correction: resolvedCorrection,
+      outcome: 'accepted_no_revaluation',
+      message: resolutionMessage('accepted_no_revaluation'),
+      asset: acceptedAsset ?? await getAssetRegisterItemById(input.ownerUserId, resolvedCorrection.assetId),
+    };
+  }
+
+  try {
+    return await attemptDealerAssetCorrectionRevaluation({
+      ownerUserId: input.ownerUserId,
+      correctionId: resolvedCorrection.id,
+    });
+  } catch (error) {
+    const failure = safeRevaluationFailure(error);
+    console.error('Accepted dealer correction, but automatic revaluation could not be started.', error);
+    try {
+      await getDb().query(
+        `
+          update public.dealer_asset_correction_requests
+          set revaluation_status = 'failed',
+              revaluation_completed_at = null,
+              revaluation_failure_code = $3,
+              revaluation_failure_message = $4,
+              updated_at = now()
+          where id = $1::uuid
+            and owner_user_id = $2
+            and revaluation_status = 'pending'
+        `,
+        [resolvedCorrection.id, input.ownerUserId, failure.code, failure.message],
+      );
+    } catch (stateError) {
+      console.error('Automatic dealer correction revaluation could not start and its failure state could not be finalized.', stateError);
+    }
+
+    const latestCorrection = await loadOwnerCorrection(
+      input.ownerUserId,
+      resolvedCorrection.id,
+    ).catch(() => null) ?? resolvedCorrection;
+    const outcome: DealerAssetCorrectionResolutionOutcome =
+      latestCorrection.revaluationStatus === 'failed'
+        ? 'accepted_revaluation_failed'
+        : 'accepted_revaluation_pending';
+    const asset = acceptedAsset ?? await getAssetRegisterItemById(
+      input.ownerUserId,
+      resolvedCorrection.assetId,
+    ).catch(() => null);
+    return {
+      correction: latestCorrection,
+      outcome,
+      message: resolutionMessage(outcome),
+      asset,
+    };
+  }
+}
+
+export async function retryDealerAssetCorrectionRevaluation(input: {
+  ownerUserId: string;
+  correctionId: string;
+}): Promise<DealerAssetCorrectionResolution> {
+  await ensureDealerAssetCorrectionTables();
+  return attemptDealerAssetCorrectionRevaluation(input);
 }
 
 export function applyDealerCorrectionToSnapshot(
