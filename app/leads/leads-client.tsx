@@ -2,9 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type DragEvent } from 'react';
 import { createPortal } from 'react-dom';
-import { useRouter } from 'next/navigation';
 import AppHeader from '../../components/AppHeader';
 import DealerAssetCorrectionEditor from '../../components/DealerAssetCorrectionEditor';
+import DealerMaintenanceReportModal from '../../components/DealerMaintenanceReportModal';
 import {
   WorkspaceTitlePanel,
   workspaceStyles,
@@ -78,6 +78,19 @@ type AssetLead = {
   latestPartnerNoteAttachmentCreatedAtIso?: string | null;
   partnerNotes?: LeadPartnerNote[];
   dealerCorrection?: DealerAssetCorrectionRequest | null;
+  maintenanceAccess?: {
+    accessId: string;
+    ownerUserId: string;
+    dealerUserId: string;
+    assetId: string;
+    isActive: true;
+    permissions: {
+      canViewLoggedProblems: boolean;
+      canViewMaintenanceReports: boolean;
+      canUpdateSerial: boolean;
+      canUpdateReplacementPrice: boolean;
+    };
+  } | null;
   createdAtIso: string;
   viewedAtIso: string | null;
   acceptedAtIso: string | null;
@@ -1420,7 +1433,6 @@ export default function LeadsClient({
   initialSessionUserId = '',
   initialAccountTitle = '',
 }: LeadsClientProps = {}) {
-  const router = useRouter();
   const useDealerWorkspaceStyles = dealerWorkspaceMode ?? dealerAppMode;
   const dealerWorkspaceClass = (...classNames: string[]) =>
     useDealerWorkspaceStyles ? classNames.join(' ') : '';
@@ -1446,6 +1458,7 @@ export default function LeadsClient({
   const [emailBodyDraft, setEmailBodyDraft] = useState('');
   const [isEmailDraftCopied, setIsEmailDraftCopied] = useState(false);
   const [reportLead, setReportLead] = useState<AssetLead | null>(null);
+  const [maintenanceReportAccessId, setMaintenanceReportAccessId] = useState<string | null>(null);
   const [leadReportStep, setLeadReportStep] = useState<LeadReportStep>('format');
   const [leadPdfReportSelection, setLeadPdfReportSelection] = useState<PdfReportKind | ''>('');
   const [isDownloadingLeadReport, setIsDownloadingLeadReport] = useState(false);
@@ -1619,7 +1632,15 @@ export default function LeadsClient({
   }, [totalLeadPages]);
 
   const hasOpenLeadModal = Boolean(
-    isFilterModalOpen || managedLead || emailLead || reportLead || deleteLeadTarget || assetPhotoModal || sentPhotoModal || noteLead,
+    isFilterModalOpen
+    || managedLead
+    || emailLead
+    || reportLead
+    || maintenanceReportAccessId
+    || deleteLeadTarget
+    || assetPhotoModal
+    || sentPhotoModal
+    || noteLead,
   );
 
   useEffect(() => {
@@ -1663,6 +1684,7 @@ export default function LeadsClient({
       else if (sentPhotoModal) setSentPhotoModal(null);
       else if (deleteLeadTarget) setDeleteLeadTarget(null);
       else if (noteLead) closeNoteModal();
+      else if (maintenanceReportAccessId) setMaintenanceReportAccessId(null);
       else if (reportLead) closeLeadReportModal();
       else if (emailLead) closeEmailModal();
       else if (managedLead) setManagedLead(null);
@@ -1684,6 +1706,7 @@ export default function LeadsClient({
     isDownloadingLeadReport,
     isSavingNote,
     managedLead,
+    maintenanceReportAccessId,
     noteLead,
     reportLead,
     sentPhotoModal,
@@ -1792,13 +1815,6 @@ export default function LeadsClient({
 
   async function openLead(leadToOpen: AssetLead) {
     setNotice(null);
-
-    if (isTrackingLead(leadToOpen)) {
-      await markLeadViewed(leadToOpen);
-      router.push('/tracking');
-      return;
-    }
-
     setOpenLeadId(leadToOpen.id);
     await markLeadViewed(leadToOpen);
   }
@@ -2845,7 +2861,7 @@ export default function LeadsClient({
                                   void openLead(lead);
                                 }}
                               >
-                                {isTrackingRequest ? 'Open tracking request' : 'Open lead'}
+                                {isTrackingRequest ? 'Open tracking' : 'Open lead'}
                               </button>
                             )}
                           </div>
@@ -2876,6 +2892,19 @@ export default function LeadsClient({
                                 <NoteIcon className={assetStyles.buttonIcon} />
                                 <span>Send note or quote</span>
                               </button>
+
+                              {isTrackingLead(lead)
+                              && lead.maintenanceAccess?.isActive
+                              && lead.maintenanceAccess.permissions.canViewMaintenanceReports ? (
+                                <button
+                                  type="button"
+                                  className={`${assetStyles.optionsButton} ${styles.maintenanceReportButton}`}
+                                  onClick={() => setMaintenanceReportAccessId(lead.maintenanceAccess!.accessId)}
+                                >
+                                  <DownloadIcon className={assetStyles.buttonIcon} />
+                                  <span>Maintenance Report</span>
+                                </button>
+                              ) : null}
 
                               <button type="button" className={`${assetStyles.optionsButton} ${styles.leadManageButton}`} onClick={() => setManagedLead(lead)}>
                                 <ManageIcon className={assetStyles.buttonIcon} />
@@ -2942,6 +2971,14 @@ export default function LeadsClient({
           ) : null}
         </section>
       </section>
+
+      {maintenanceReportAccessId ? (
+        <DealerMaintenanceReportModal
+          accessId={maintenanceReportAccessId}
+          onClose={() => setMaintenanceReportAccessId(null)}
+          onError={(message) => setNotice({ tone: 'error', message })}
+        />
+      ) : null}
 
       {isFilterModalOpen ? (
         <div className={`${assetStyles.modalOverlay} ${dealerWorkspaceClass(workspaceStyles.modalOverlay)}`}>

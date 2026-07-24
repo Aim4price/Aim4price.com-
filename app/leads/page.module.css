@@ -2209,6 +2209,18 @@
     inset 0 1px 0 rgba(255, 255, 255, 1) !important;
 }
 
+.leadAssetCard .maintenanceReportButton {
+  color: #ffffff !important;
+  border-color: #197d5c !important;
+  background: linear-gradient(180deg, #24906b 0%, #197d5c 100%) !important;
+  box-shadow: 0 10px 22px rgba(25, 125, 92, 0.16) !important;
+}
+
+.leadAssetCard .maintenanceReportButton:hover:not(:disabled) {
+  border-color: #126b4e !important;
+  background: linear-gradient(180deg, #208663 0%, #126b4e 100%) !important;
+}
+
 /* === Leads page: asset-register-matched title type and soft action buttons === */
 .leadsPage .clientPanel h3,
 .leadsPage .leadThreadNew:not(.leadThreadOpen) .clientPanel h3 {
