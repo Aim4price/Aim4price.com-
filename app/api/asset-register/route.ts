@@ -8,7 +8,7 @@ import { attachLatestMaintenanceStatusToAssets } from '../../../lib/scan-assets'
 import { attachUpcomingMaintenanceAlertsToAssets } from '../../../lib/asset-maintenance';
 import { attachUpcomingLicenseRenewalAlertsToAssets } from '../../../lib/asset-license-renewal';
 import {
-  listPendingOwnerAssetCorrections,
+  listOwnerAssetCorrectionAlerts,
   type DealerAssetCorrectionRequest,
 } from '../../../lib/dealer-asset-corrections';
 import {
@@ -86,7 +86,7 @@ async function attachOpenAssetAlerts<T extends { id: string }>(
   const itemsWithLicenseRenewals = await attachUpcomingLicenseRenewalAlertsToAssets(ownerUserId, itemsWithScheduledMaintenance);
   const itemsWithMaintenanceStatus = await attachLatestMaintenanceStatusToAssets(itemsWithLicenseRenewals);
   const itemsWithIssueStatus = await attachOpenIssueNoteStatusToAssets(itemsWithMaintenanceStatus);
-  const corrections = await listPendingOwnerAssetCorrections(ownerUserId, items.map((item) => item.id));
+  const corrections = await listOwnerAssetCorrectionAlerts(ownerUserId, items.map((item) => item.id));
   const correctionByAssetId = new Map(corrections.map((correction) => [correction.assetId, correction]));
 
   return itemsWithIssueStatus.map((item) => ({
