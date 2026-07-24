@@ -1,0 +1,375 @@
+.trackerPage {
+  min-width: 0;
+  color: #073b30;
+  font-family: var(--font-heading, "Montserrat"), sans-serif;
+}
+
+.expandedBody {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+  background: #f8faf9;
+}
+
+.assetOverview {
+  display: grid;
+  grid-template-columns: minmax(13rem, 0.78fr) minmax(0, 1.4fr);
+  gap: 1rem;
+}
+
+.photoPanel {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  align-content: start;
+}
+
+.photoPanel img,
+.photoFallback {
+  width: 100%;
+  min-height: 8.5rem;
+  height: 100%;
+  max-height: 14rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid #d9e4e0;
+  border-radius: 0.85rem;
+  object-fit: cover;
+  background: #e9f3ef;
+}
+
+.photoPanel img:first-child {
+  grid-column: 1 / -1;
+  min-height: 13rem;
+}
+
+.photoFallback {
+  grid-column: 1 / -1;
+  color: #177047;
+  font-size: 2.6rem;
+  font-weight: 900;
+}
+
+.overviewContent {
+  min-width: 0;
+  display: grid;
+  gap: 0.8rem;
+  align-content: start;
+}
+
+.statGrid,
+.recordGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.58rem;
+}
+
+.statGrid > div,
+.recordGrid > div {
+  min-width: 0;
+  display: grid;
+  gap: 0.28rem;
+  padding: 0.76rem 0.8rem;
+  border: 1px solid #dce5e2;
+  border-radius: 0.78rem;
+  background: #fff;
+}
+
+.statGrid span,
+.recordGrid span,
+.note > span {
+  color: #687a73;
+  font-size: 0.64rem;
+  font-weight: 850;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+.statGrid strong,
+.recordGrid strong {
+  color: #173f35;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.9rem;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid;
+  border-radius: 0.7rem;
+  font-size: 0.68rem;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.statusUrgent {
+  color: #943434;
+  border-color: #e3bcbc;
+  background: #fff5f5;
+}
+
+.statusAttention {
+  color: #8a4c0c;
+  border-color: #e7c88f;
+  background: #fff8ec;
+}
+
+.statusUpcoming {
+  color: #12643f;
+  border-color: #b8dac8;
+  background: #f1faf5;
+}
+
+.statusNoOpen {
+  color: #526962;
+  border-color: #cad8d3;
+  background: #f4f7f6;
+}
+
+.actionRow,
+.correctionGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.reportButton {
+  min-height: 4rem;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.72rem;
+  align-items: center;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid #aad2be;
+  border-radius: 0.8rem;
+  color: #0f5c3c;
+  background: #f1faf5;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.reportButton > svg {
+  width: 1.35rem;
+}
+
+.reportButton > span {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.reportButton strong {
+  font-size: 0.8rem;
+}
+
+.reportButton small {
+  color: #5e746a;
+  font-size: 0.68rem;
+}
+
+.section {
+  overflow: visible;
+  border: 1px solid #dbe5e1;
+  border-radius: 0.9rem;
+  background: #fff;
+}
+
+.section > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 0.95rem;
+  border-bottom: 1px solid #e3eae8;
+  background: #fafcfb;
+}
+
+.section > header > div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.section > header span {
+  color: #597269;
+  font-size: 0.63rem;
+  font-weight: 850;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.section > header h3 {
+  margin: 0;
+  color: #073b30;
+  font-size: 1rem;
+}
+
+.section > header > strong {
+  color: #177047;
+  font-size: 0.9rem;
+}
+
+.correctionGrid {
+  padding: 0.9rem;
+}
+
+.problemList,
+.recordList {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.85rem;
+}
+
+.problemList article {
+  padding: 0.85rem 0.9rem;
+  border-left: 4px solid #c77831;
+  border-radius: 0.65rem;
+  background: #fff8ef;
+}
+
+.problemList span {
+  color: #8a4c0c;
+  font-size: 0.65rem;
+  font-weight: 850;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.problemList p,
+.note p {
+  margin: 0.36rem 0 0;
+  color: #294c42;
+  font-size: 0.78rem;
+  font-weight: 650;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.problemList small,
+.note small {
+  display: block;
+  margin-top: 0.45rem;
+  color: #708079;
+  font-size: 0.66rem;
+}
+
+.recordCard {
+  overflow: hidden;
+  border: 1px solid #dce5e2;
+  border-radius: 0.78rem;
+  background: #fff;
+}
+
+.recordCard > header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.78rem 0.85rem;
+  border-bottom: 1px solid #e4ebe8;
+  background: #f9fbfa;
+}
+
+.recordCard > header > div {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.recordCard > header span {
+  color: #64776f;
+  font-size: 0.62rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.recordCard h4 {
+  margin: 0;
+  color: #123b31;
+  font-size: 0.88rem;
+}
+
+.recordCard > header > strong {
+  align-self: flex-start;
+  font-size: 0.67rem;
+  text-transform: uppercase;
+}
+
+.recordOpen {
+  color: #9a5918;
+}
+
+.recordDone {
+  color: #177047;
+}
+
+.recordGrid {
+  padding: 0.75rem;
+}
+
+.note {
+  margin: 0 0.75rem 0.75rem;
+  padding: 0.7rem 0.75rem;
+  border: 1px solid #dce5e2;
+  border-radius: 0.65rem;
+  background: #f8faf9;
+}
+
+.completedNote {
+  border-color: #bddccc;
+  background: #f2faf6;
+}
+
+.sectionEmpty {
+  padding: 1.15rem;
+  color: #65776f;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.reportFilters {
+  position: relative;
+  z-index: 4;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 900px) {
+  .assetOverview {
+    grid-template-columns: 1fr;
+  }
+
+  .statGrid,
+  .recordGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .expandedBody {
+    padding: 0.7rem;
+  }
+
+  .photoPanel,
+  .statGrid,
+  .recordGrid,
+  .actionRow,
+  .correctionGrid,
+  .reportFilters {
+    grid-template-columns: 1fr;
+  }
+
+  .photoPanel img:first-child {
+    grid-column: auto;
+  }
+
+  .section > header,
+  .recordCard > header {
+    align-items: flex-start;
+  }
+}

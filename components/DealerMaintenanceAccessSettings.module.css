@@ -1,0 +1,162 @@
+.manager {
+  display: grid;
+  gap: 0.8rem;
+  min-width: 0;
+  font-family: var(--font-heading, "Montserrat"), sans-serif;
+}
+
+.list {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.card {
+  overflow: hidden;
+  border: 1px solid #d7e2df;
+  border-radius: 1rem;
+  background: #fff;
+  box-shadow: 0 10px 24px rgba(20, 58, 49, 0.06);
+}
+
+.card > header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.05rem;
+  border-bottom: 1px solid #e1e9e6;
+  background: #f8fbfa;
+}
+
+.card > header > div,
+.permission > span {
+  min-width: 0;
+  display: grid;
+  gap: 0.24rem;
+}
+
+.card > header strong {
+  color: #073b30;
+  font-size: 0.96rem;
+}
+
+.card > header small,
+.permission small {
+  color: #65766f;
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.card > header > span {
+  align-self: flex-start;
+  color: #177047;
+  font-size: 0.67rem;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.permissions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+}
+
+.permission {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.72rem;
+  padding: 0.92rem 1rem;
+  border-bottom: 1px solid #e7edeb;
+  cursor: pointer;
+}
+
+.permission:nth-child(odd) {
+  border-right: 1px solid #e7edeb;
+}
+
+.permission input {
+  width: 1.05rem;
+  height: 1.05rem;
+  margin-top: 0.12rem;
+  accent-color: #177047;
+}
+
+.permission strong {
+  color: #173f35;
+  font-size: 0.8rem;
+}
+
+.card > footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  padding: 0.82rem 1rem;
+  background: #fbfdfc;
+}
+
+.card button {
+  min-height: 2.55rem;
+  padding: 0 0.95rem;
+  border: 1px solid #cad8d3;
+  border-radius: 0.72rem;
+  background: #fff;
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.card button:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
+}
+
+.saveButton {
+  color: #fff;
+  border-color: #177047 !important;
+  background: #177047 !important;
+}
+
+.stopButton {
+  color: #9b3434;
+}
+
+.notice,
+.empty {
+  margin: 0;
+  padding: 0.85rem 1rem;
+  border: 1px solid #d8e3df;
+  border-radius: 0.82rem;
+  color: #536b63;
+  background: #f8fbfa;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.noticeSuccess {
+  color: #16613f;
+  border-color: #b9dacb;
+  background: #f1faf5;
+}
+
+.noticeError {
+  color: #8f3030;
+  border-color: #e5bcbc;
+  background: #fff6f6;
+}
+
+@media (max-width: 720px) {
+  .permissions {
+    grid-template-columns: 1fr;
+  }
+
+  .permission:nth-child(odd) {
+    border-right: 0;
+  }
+
+  .card > footer {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+}

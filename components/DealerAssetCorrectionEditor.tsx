@@ -23,6 +23,8 @@ type DealerAssetCorrectionEditorProps = {
   serialNumber: string;
   replacementPriceExVat: number | null;
   correction?: DealerAssetCorrectionRequest | null;
+  canUpdateSerial?: boolean;
+  canUpdateReplacementPrice?: boolean;
   actionClassName?: string;
   iconClassName?: string;
   onSaved?: (correction: DealerAssetCorrectionRequest) => void;
@@ -62,6 +64,8 @@ export default function DealerAssetCorrectionEditor({
   serialNumber,
   replacementPriceExVat,
   correction,
+  canUpdateSerial = true,
+  canUpdateReplacementPrice = true,
   actionClassName = '',
   iconClassName = '',
   onSaved,
@@ -165,33 +169,37 @@ export default function DealerAssetCorrectionEditor({
 
   return (
     <>
-      <button
-        type="button"
-        className={`${actionClassName || styles.actionButton} ${styles.actionButtonBase}`}
-        onClick={() => openEditor('serialNumber')}
-        disabled={Boolean(effectiveCorrection)}
-        title={effectiveCorrection ? 'Resolve the pending dealer update before proposing another change.' : undefined}
-      >
-        <SerialIcon className={iconClassName} />
-        <span>
-          <strong>Update serial number</strong>
-          <small>{effectiveSerialNumber || 'No serial number saved'}.</small>
-        </span>
-      </button>
+      {canUpdateSerial ? (
+        <button
+          type="button"
+          className={`${actionClassName || styles.actionButton} ${styles.actionButtonBase}`}
+          onClick={() => openEditor('serialNumber')}
+          disabled={Boolean(effectiveCorrection)}
+          title={effectiveCorrection ? 'Resolve the pending dealer update before proposing another change.' : undefined}
+        >
+          <SerialIcon className={iconClassName} />
+          <span>
+            <strong>Update serial number</strong>
+            <small>{effectiveSerialNumber || 'No serial number saved'}.</small>
+          </span>
+        </button>
+      ) : null}
 
-      <button
-        type="button"
-        className={`${actionClassName || styles.actionButton} ${styles.actionButtonBase}`}
-        onClick={() => openEditor('replacementPriceExVat')}
-        disabled={Boolean(effectiveCorrection)}
-        title={effectiveCorrection ? 'Resolve the pending dealer update before proposing another change.' : undefined}
-      >
-        <PriceIcon className={iconClassName} />
-        <span>
-          <strong>Update replacement price</strong>
-          <small>{formatCurrency(effectiveReplacementPrice)} excl. VAT.</small>
-        </span>
-      </button>
+      {canUpdateReplacementPrice ? (
+        <button
+          type="button"
+          className={`${actionClassName || styles.actionButton} ${styles.actionButtonBase}`}
+          onClick={() => openEditor('replacementPriceExVat')}
+          disabled={Boolean(effectiveCorrection)}
+          title={effectiveCorrection ? 'Resolve the pending dealer update before proposing another change.' : undefined}
+        >
+          <PriceIcon className={iconClassName} />
+          <span>
+            <strong>Update replacement price</strong>
+            <small>{formatCurrency(effectiveReplacementPrice)} excl. VAT.</small>
+          </span>
+        </button>
+      ) : null}
 
       {pendingFieldLabel ? (
         <div className={styles.pendingNotice}>
