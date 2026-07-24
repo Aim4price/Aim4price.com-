@@ -21,6 +21,7 @@ type Notification = {
   createdAtIso: string;
   assetId?: string;
   dealerAssetCorrectionId?: string;
+  dealerAssetCorrectionAction?: 'decision' | 'retry' | 'pending';
   priority?: boolean;
 };
 
@@ -79,6 +80,10 @@ export default function OwnerNotificationsClient({ viewerId }: { viewerId: strin
   const [seenStateReady, setSeenStateReady] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [outcomeNotice, setOutcomeNotice] = useState<{
+    tone: 'success' | 'warning';
+    message: string;
+  } | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
   const [processingCorrectionIds, setProcessingCorrectionIds] = useState<Set<string>>(() => new Set());
   const hasLoadedRef = useRef(false);
@@ -145,7 +150,11 @@ export default function OwnerNotificationsClient({ viewerId }: { viewerId: strin
 
   const newItems = useMemo(
     () => seenStateReady
-      ? items.filter((item) => isOwnerNotificationNew(item.createdAtIso, seenAtIso))
+      ? items.filter((item) => (
+        item.dealerAssetCorrectionAction === 'retry'
+        || item.dealerAssetCorrectionAction === 'pending'
+        || isOwnerNotificationNew(item.createdAtIso, seenAtIso)
+      ))
       : [],
     [items, seenAtIso, seenStateReady],
   );
@@ -169,7 +178,12 @@ export default function OwnerNotificationsClient({ viewerId }: { viewerId: strin
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ decision }),
       });
-      const payload = await response.json().catch(() => null) as { ok?: boolean; error?: string } | null;
+      const payload = await response.json().catch(() => null) as {
+        ok?: boolean;
+        outcome?: string;
+        message?: string;
+        error?: string;
+      } | null;
       if (response.status === 401) {
         window.location.replace('/owner-app/login');
         return;
@@ -178,10 +192,85 @@ export default function OwnerNotificationsClient({ viewerId }: { viewerId: strin
         throw new Error(payload?.error || 'Failed to save the correction decision.');
       }
 
-      setItems((current) => current.filter((item) => item.dealerAssetCorrectionId !== correctionId));
+      const needsAttention =
+        payload.outcome === 'accepted_revaluation_failed'
+        || payload.outcome === 'accepted_revaluation_pending';
+      setItems((current) => needsAttention
+        ? current.map((item) => item.dealerAssetCorrectionId === correctionId
+          ? {
+              ...item,
+              title: payload.outcome === 'accepted_revaluation_failed'
+                ? 'Aim4price recalculation needs attention'
+                : 'Aim4price recalculation pending',
+              body: payload.message || item.body,
+              dealerAssetCorrectionAction: payload.outcome === 'accepted_revaluation_failed' ? 'retry' : 'pending',
+            }
+          : item)
+        : current.filter((item) => item.dealerAssetCorrectionId !== correctionId));
       setSeenAtIso(markOwnerNotificationsSeen(viewerId, items));
+      setOutcomeNotice({
+        tone: needsAttention ? 'warning' : 'success',
+        message: payload.message || (
+          decision === 'reject'
+            ? 'Dealer correction declined.'
+            : 'Dealer update accepted and saved.'
+        ),
+      });
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Failed to save the correction decision.');
+    } finally {
+      setProcessingCorrectionIds((current) => {
+        const next = new Set(current);
+        next.delete(correctionId);
+        return next;
+      });
+    }
+  }
+
+  async function handleCorrectionRetry(correctionId: string) {
+    setProcessingCorrectionIds((current) => new Set(current).add(correctionId));
+    setError('');
+    setOutcomeNotice(null);
+
+    try {
+      const response = await fetch(`/api/asset-corrections/${encodeURIComponent(correctionId)}/retry`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      const payload = await response.json().catch(() => null) as {
+        ok?: boolean;
+        outcome?: string;
+        message?: string;
+        error?: string;
+      } | null;
+      if (response.status === 401) {
+        window.location.replace('/owner-app/login');
+        return;
+      }
+      if (!response.ok || !payload?.ok) {
+        throw new Error(payload?.error || 'Aim4price could not retry this valuation.');
+      }
+
+      const succeeded = payload.outcome === 'accepted_revalued';
+      setItems((current) => succeeded
+        ? current.filter((item) => item.dealerAssetCorrectionId !== correctionId)
+        : current.map((item) => item.dealerAssetCorrectionId === correctionId
+          ? {
+              ...item,
+              body: payload.message || item.body,
+              dealerAssetCorrectionAction: payload.outcome === 'accepted_revaluation_failed' ? 'retry' : 'pending',
+            }
+          : item));
+      setOutcomeNotice({
+        tone: succeeded ? 'success' : 'warning',
+        message: payload.message || (
+          succeeded
+            ? 'Aim4price recalculated the asset and saved the latest estimate.'
+            : 'Aim4price could not complete the recalculation.'
+        ),
+      });
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Aim4price could not retry this valuation.');
     } finally {
       setProcessingCorrectionIds((current) => {
         const next = new Set(current);
@@ -222,6 +311,21 @@ export default function OwnerNotificationsClient({ viewerId }: { viewerId: strin
         </div>
       ) : null}
 
+      {outcomeNotice ? (
+        <div
+          className={`${styles.notificationOutcomeNotice} ${
+            outcomeNotice.tone === 'success'
+              ? styles.notificationOutcomeSuccess
+              : styles.notificationOutcomeWarning
+          }`}
+          role="status"
+        >
+          <span aria-hidden="true">{outcomeNotice.tone === 'success' ? '✓' : '!'}</span>
+          <p>{outcomeNotice.message}</p>
+          <button type="button" onClick={() => setOutcomeNotice(null)} aria-label="Dismiss message">×</button>
+        </div>
+      ) : null}
+
       {!error && isReady ? (
         <section className={styles.notificationSection} aria-labelledby="new-notifications-title">
           <div className={`${styles.notificationSectionHeading} ${styles.ownerSectionHeading}`}>
@@ -250,26 +354,44 @@ export default function OwnerNotificationsClient({ viewerId }: { viewerId: strin
                 if (item.dealerAssetCorrectionId) {
                   const correctionId = item.dealerAssetCorrectionId;
                   const processing = processingCorrectionIds.has(correctionId);
+                  const correctionAction = item.dealerAssetCorrectionAction ?? 'decision';
                   return (
                     <article key={item.id} className={`${className} ${styles.notificationCorrectionCard}`}>
                       {cardContent}
                       <div className={styles.notificationCorrectionActions}>
-                        <button
-                          type="button"
-                          className={styles.notificationCorrectionDecline}
-                          onClick={() => void handleCorrectionDecision(correctionId, 'reject')}
-                          disabled={processing}
-                        >
-                          {processing ? 'Saving…' : 'Decline'}
-                        </button>
-                        <button
-                          type="button"
-                          className={styles.notificationCorrectionAccept}
-                          onClick={() => void handleCorrectionDecision(correctionId, 'accept')}
-                          disabled={processing}
-                        >
-                          {processing ? 'Saving…' : 'Accept update'}
-                        </button>
+                        {correctionAction === 'decision' ? (
+                          <>
+                            <button
+                              type="button"
+                              className={styles.notificationCorrectionDecline}
+                              onClick={() => void handleCorrectionDecision(correctionId, 'reject')}
+                              disabled={processing}
+                            >
+                              {processing ? 'Saving…' : 'Decline'}
+                            </button>
+                            <button
+                              type="button"
+                              className={styles.notificationCorrectionAccept}
+                              onClick={() => void handleCorrectionDecision(correctionId, 'accept')}
+                              disabled={processing}
+                            >
+                              {processing ? 'Saving…' : 'Accept update'}
+                            </button>
+                          </>
+                        ) : correctionAction === 'retry' ? (
+                          <button
+                            type="button"
+                            className={styles.notificationCorrectionAccept}
+                            onClick={() => void handleCorrectionRetry(correctionId)}
+                            disabled={processing}
+                          >
+                            {processing ? 'Retrying…' : 'Retry valuation'}
+                          </button>
+                        ) : (
+                          <button type="button" className={styles.notificationCorrectionDecline} disabled>
+                            Recalculation pending
+                          </button>
+                        )}
                       </div>
                     </article>
                   );
