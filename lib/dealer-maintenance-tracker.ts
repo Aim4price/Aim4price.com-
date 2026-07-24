@@ -1,13 +1,22 @@
 import { getAccountProfile } from './account-profile';
 import { getAssetRegisterItemById, type AssetRegisterItem } from './asset-register-db';
 import {
+  calculateAssetMaintenanceSummary,
   ensureAssetMaintenanceTables,
+  listAssetMaintenanceData,
   listAssetMaintenanceRecords,
+  type AssetMaintenanceListFilters,
+  type AssetMaintenanceListResult,
   type AssetMaintenanceComputedStatus,
   type AssetMaintenanceRecord,
+  type AssetMaintenanceStatus,
   type AssetMaintenanceTriggerType,
   type AssetMaintenanceUsageMetric,
 } from './asset-maintenance';
+import {
+  listIssueNotesForAssets,
+  type AssetIssueNoteStatus,
+} from './asset-issue-notes';
 import {
   listPendingDealerAssetCorrections,
   type DealerAssetCorrectionRequest,
@@ -19,12 +28,21 @@ export type DealerMaintenanceTrackerStatus =
   | 'due'
   | 'due_soon'
   | 'usage_needed'
-  | 'upcoming';
+  | 'upcoming'
+  | 'no_open';
+
+export type DealerMaintenancePermissions = {
+  canViewLoggedProblems: boolean;
+  canViewMaintenanceReports: boolean;
+  canUpdateSerial: boolean;
+  canUpdateReplacementPrice: boolean;
+};
 
 export type DealerMaintenanceRecordSummary = {
   id: string;
   maintenanceType: 'service' | 'checkup';
   triggerType: AssetMaintenanceTriggerType;
+  status: AssetMaintenanceStatus;
   title: string;
   notes: string;
   computedStatus: AssetMaintenanceComputedStatus;
@@ -36,6 +54,16 @@ export type DealerMaintenanceRecordSummary = {
   usageMetric: AssetMaintenanceUsageMetric | null;
   alertBeforeValue: number | null;
   alertBeforeUnit: string | null;
+  assignedFieldManagerId: string | null;
+  assignedName: string;
+  recurringEnabled: boolean;
+  recurringIntervalValue: number | null;
+  recurringIntervalUnit: string | null;
+  completedAtIso: string | null;
+  completedUsage: number | null;
+  completedNotes: string;
+  completedBy: string;
+  createdAtIso: string;
   updatedAtIso: string;
 };
 
@@ -54,13 +82,18 @@ export type DealerMaintenanceTrackedAsset = {
   replacementPriceExVat: number | null;
   dealerCorrection: DealerAssetCorrectionRequest | null;
   photoUrl: string;
+  photoUrls: string[];
   currentUsage: number | null;
   usageMetric: AssetMaintenanceUsageMetric;
   usageUpdatedAtIso: string | null;
   status: DealerMaintenanceTrackerStatus;
   statusLabel: string;
-  nextMaintenance: DealerMaintenanceRecordSummary;
+  nextMaintenance: DealerMaintenanceRecordSummary | null;
+  openMaintenanceRecords: DealerMaintenanceRecordSummary[];
+  completedMaintenanceRecords: DealerMaintenanceRecordSummary[];
   maintenanceRecords: DealerMaintenanceRecordSummary[];
+  loggedProblems: AssetIssueNoteStatus[];
+  permissions: DealerMaintenancePermissions;
   grantedByName: string;
   createdAtIso: string;
   updatedAtIso: string;
@@ -72,6 +105,7 @@ export type DealerMaintenanceAccessSummary = {
   dealerName: string;
   grantedByName: string;
   createdAtIso: string;
+  permissions: DealerMaintenancePermissions;
 };
 
 export type DealerMaintenanceNotification = {
@@ -94,6 +128,10 @@ type DealerMaintenanceAccessRow = {
   granted_by_name: string | null;
   created_at: string | Date | null;
   updated_at: string | Date | null;
+  can_view_logged_problems: boolean | null;
+  can_view_maintenance_reports: boolean | null;
+  can_update_serial: boolean | null;
+  can_update_replacement_price: boolean | null;
   owner_display_name: string | null;
   owner_business_name: string | null;
   dealer_display_name: string | null;
@@ -137,6 +175,7 @@ function trackerStatusLabel(status: DealerMaintenanceTrackerStatus): string {
   if (status === 'due') return 'Due now';
   if (status === 'due_soon') return 'Due soon';
   if (status === 'usage_needed') return 'Usage needed';
+  if (status === 'no_open') return 'No open maintenance';
   return 'Upcoming';
 }
 
@@ -145,7 +184,8 @@ function statusPriority(status: DealerMaintenanceTrackerStatus): number {
   if (status === 'due') return 1;
   if (status === 'due_soon') return 2;
   if (status === 'usage_needed') return 3;
-  return 4;
+  if (status === 'upcoming') return 4;
+  return 5;
 }
 
 function recordSummary(record: AssetMaintenanceRecord): DealerMaintenanceRecordSummary {
@@ -153,6 +193,7 @@ function recordSummary(record: AssetMaintenanceRecord): DealerMaintenanceRecordS
     id: record.id,
     maintenanceType: record.maintenanceType,
     triggerType: record.triggerType,
+    status: record.status,
     title: record.title || (record.maintenanceType === 'checkup' ? 'Scheduled checkup' : 'Scheduled service'),
     notes: record.notes,
     computedStatus: record.computedStatus,
@@ -164,7 +205,26 @@ function recordSummary(record: AssetMaintenanceRecord): DealerMaintenanceRecordS
     usageMetric: record.usageMetric,
     alertBeforeValue: record.alertBeforeValue,
     alertBeforeUnit: record.alertBeforeUnit,
+    assignedFieldManagerId: record.assignedFieldManagerId,
+    assignedName: record.assignedName,
+    recurringEnabled: record.recurringEnabled,
+    recurringIntervalValue: record.recurringIntervalValue,
+    recurringIntervalUnit: record.recurringIntervalUnit,
+    completedAtIso: record.completedAtIso,
+    completedUsage: record.completedUsage,
+    completedNotes: record.completedNotes,
+    completedBy: record.completedBy,
+    createdAtIso: record.createdAtIso,
     updatedAtIso: record.updatedAtIso,
+  };
+}
+
+function rowPermissions(row: DealerMaintenanceAccessRow): DealerMaintenancePermissions {
+  return {
+    canViewLoggedProblems: Boolean(row.can_view_logged_problems),
+    canViewMaintenanceReports: Boolean(row.can_view_maintenance_reports),
+    canUpdateSerial: row.can_update_serial !== false,
+    canUpdateReplacementPrice: row.can_update_replacement_price !== false,
   };
 }
 
@@ -176,12 +236,17 @@ function accessDealerName(row: DealerMaintenanceAccessRow): string {
   return asText(row.dealer_business_name) || asText(row.dealer_display_name) || 'Dealer';
 }
 
-function assetUsageMetric(asset: AssetRegisterItem, record: AssetMaintenanceRecord): AssetMaintenanceUsageMetric {
-  if (record.usageMetric) return record.usageMetric;
-  if (record.assetUsageMetric) return record.assetUsageMetric;
+function assetUsageMetric(asset: AssetRegisterItem, record?: AssetMaintenanceRecord | null): AssetMaintenanceUsageMetric {
+  if (record?.usageMetric) return record.usageMetric;
+  if (record?.assetUsageMetric) return record.assetUsageMetric;
   const savedMetric = asText(asset.specsJson?.usageMetric).toLowerCase();
   if (savedMetric === 'km' || savedMetric === 'percentage') return savedMetric;
   return 'hours';
+}
+
+function currentAssetUsage(asset: AssetRegisterItem, metric: AssetMaintenanceUsageMetric): number | null {
+  if (metric === 'percentage') return asset.lifeWorkedPercent;
+  return asset.hours;
 }
 
 async function ensureDealerMaintenanceTablesOnce(): Promise<void> {
@@ -211,6 +276,13 @@ async function ensureDealerMaintenanceTablesOnce(): Promise<void> {
   await db.query(`
     create index if not exists dealer_maintenance_access_owner_asset_idx
       on public.dealer_maintenance_access (owner_user_id, asset_register_item_id, is_active)
+  `);
+  await db.query(`
+    alter table public.dealer_maintenance_access
+      add column if not exists can_view_logged_problems boolean not null default false,
+      add column if not exists can_view_maintenance_reports boolean not null default false,
+      add column if not exists can_update_serial boolean not null default true,
+      add column if not exists can_update_replacement_price boolean not null default true
   `);
   await db.query(`
     create table if not exists public.dealer_maintenance_notifications (
@@ -255,6 +327,10 @@ async function listAccessRows(whereSql: string, values: unknown[]): Promise<Deal
         access.granted_by_name,
         access.created_at,
         access.updated_at,
+        access.can_view_logged_problems,
+        access.can_view_maintenance_reports,
+        access.can_update_serial,
+        access.can_update_replacement_price,
         owner.display_name as owner_display_name,
         owner.business_name as owner_business_name,
         dealer.display_name as dealer_display_name,
@@ -347,42 +423,88 @@ export async function listOwnerDealerMaintenanceAccess(
     dealerName: accessDealerName(row),
     grantedByName: asText(row.granted_by_name),
     createdAtIso: iso(row.created_at),
+    permissions: rowPermissions(row),
   }));
+}
+
+export async function updateDealerMaintenancePermissions(input: {
+  ownerUserId: string;
+  assetId: string;
+  accessId: string;
+  permissions: DealerMaintenancePermissions;
+}): Promise<DealerMaintenanceAccessSummary | null> {
+  await ensureDealerMaintenanceTrackerTables();
+  const result = await getDb().query(
+    `
+      update public.dealer_maintenance_access
+      set
+        can_view_logged_problems = $4,
+        can_view_maintenance_reports = $5,
+        can_update_serial = $6,
+        can_update_replacement_price = $7,
+        updated_at = now()
+      where owner_user_id = $1
+        and asset_register_item_id = $2::uuid
+        and id = $3::uuid
+        and is_active = true
+    `,
+    [
+      input.ownerUserId,
+      input.assetId,
+      input.accessId,
+      input.permissions.canViewLoggedProblems,
+      input.permissions.canViewMaintenanceReports,
+      input.permissions.canUpdateSerial,
+      input.permissions.canUpdateReplacementPrice,
+    ],
+  );
+  if (!result.rowCount) return null;
+  const access = await listOwnerDealerMaintenanceAccess(input.ownerUserId, input.assetId);
+  return access.find((entry) => entry.id === input.accessId) ?? null;
 }
 
 export async function revokeDealerMaintenanceTracking(input: {
   ownerUserId: string;
   assetId: string;
-  dealerUserId: string;
+  dealerUserId?: string;
+  accessId?: string;
 }): Promise<boolean> {
   await ensureDealerMaintenanceTrackerTables();
+  const accessId = asText(input.accessId);
+  const dealerUserId = asText(input.dealerUserId);
+  if (!accessId && !dealerUserId) return false;
   const result = await getDb().query(
     `
       update public.dealer_maintenance_access
       set is_active = false, revoked_at = now(), updated_at = now()
       where owner_user_id = $1
-        and dealer_user_id = $2
-        and asset_register_item_id = $3::uuid
+        and asset_register_item_id = $2::uuid
+        and (
+          ($3 <> '' and id = nullif($3, '')::uuid)
+          or ($3 = '' and dealer_user_id = $4)
+        )
         and is_active = true
     `,
-    [input.ownerUserId, input.dealerUserId, input.assetId],
+    [input.ownerUserId, input.assetId, accessId, dealerUserId],
   );
   return Boolean(result.rowCount);
 }
 
 async function buildTrackedAsset(row: DealerMaintenanceAccessRow): Promise<DealerMaintenanceTrackedAsset | null> {
+  const permissions = rowPermissions(row);
   const [asset, records] = await Promise.all([
     getAssetRegisterItemById(row.owner_user_id, row.asset_register_item_id),
     listAssetMaintenanceRecords(row.owner_user_id, {
       assetId: row.asset_register_item_id,
-      status: 'upcoming',
     }),
   ]);
   if (!asset) return null;
   const openRecords = records.filter(
     (record) => record.assetId === row.asset_register_item_id && record.status === 'upcoming',
   );
-  if (!openRecords.length) return null;
+  const completedRecords = records.filter(
+    (record) => record.assetId === row.asset_register_item_id && record.status === 'done',
+  );
   const percentageBasedAsset = openRecords.some(
     (record) => (record.assetUsageMetric ?? record.usageMetric) === 'percentage',
   );
@@ -397,10 +519,15 @@ async function buildTrackedAsset(row: DealerMaintenanceAccessRow): Promise<Deale
     const rightRemaining = right.remainingUsage ?? right.daysUntilDue ?? Number.POSITIVE_INFINITY;
     return leftRemaining - rightRemaining;
   });
-  const next = ranked[0];
-  const status = trackerStatus(next);
+  const next = ranked[0] ?? null;
+  const status: DealerMaintenanceTrackerStatus = next ? trackerStatus(next) : 'no_open';
   const usageMetric = assetUsageMetric(asset, next);
-  const currentUsage = next.currentUsage ?? next.assetUsageReading ?? null;
+  const currentUsage = next?.currentUsage ?? next?.assetUsageReading ?? currentAssetUsage(asset, usageMetric);
+  const loggedProblems = permissions.canViewLoggedProblems
+    ? await listIssueNotesForAssets([asset.id], { includeNoted: true })
+    : [];
+  const openSummaries = ranked.map(recordSummary);
+  const completedSummaries = completedRecords.map(recordSummary);
 
   return {
     accessId: row.id,
@@ -417,13 +544,18 @@ async function buildTrackedAsset(row: DealerMaintenanceAccessRow): Promise<Deale
     replacementPriceExVat: asset.replacementPriceExVat,
     dealerCorrection: null,
     photoUrl: asset.photos[0] ?? '',
+    photoUrls: [...asset.photos],
     currentUsage,
     usageMetric,
     usageUpdatedAtIso: asset.lastScannedAtIso || asset.updatedAtIso || null,
     status,
     statusLabel: trackerStatusLabel(status),
-    nextMaintenance: recordSummary(next),
-    maintenanceRecords: ranked.map(recordSummary),
+    nextMaintenance: next ? recordSummary(next) : null,
+    openMaintenanceRecords: openSummaries,
+    completedMaintenanceRecords: completedSummaries,
+    maintenanceRecords: [...openSummaries, ...completedSummaries],
+    loggedProblems,
+    permissions,
     grantedByName: asText(row.granted_by_name),
     createdAtIso: iso(row.created_at),
     updatedAtIso: iso(row.updated_at),
@@ -488,6 +620,52 @@ export async function getDealerTrackedAsset(
   if (!asset) return null;
   const [hydratedAsset] = await hydrateTrackedAssetCorrections(dealerUserId, [asset]);
   return hydratedAsset ?? null;
+}
+
+export async function listDealerMaintenanceReportData(input: {
+  dealerUserId: string;
+  accessId: string;
+  filters?: AssetMaintenanceListFilters;
+}): Promise<{
+  ownerUserId: string;
+  data: AssetMaintenanceListResult;
+}> {
+  const contextRows = await listAccessRows(
+    'where access.dealer_user_id = $1 and access.id = $2::uuid and access.is_active = true',
+    [input.dealerUserId, input.accessId],
+  );
+  const context = contextRows[0];
+  if (!context || !rowPermissions(context).canViewMaintenanceReports) {
+    throw new Error('MAINTENANCE_REPORT_FORBIDDEN');
+  }
+
+  const permittedRows = await listAccessRows(
+    `where access.dealer_user_id = $1
+      and access.owner_user_id = $2
+      and access.is_active = true
+      and access.can_view_maintenance_reports = true`,
+    [input.dealerUserId, context.owner_user_id],
+  );
+  const permittedAssetIds = new Set(permittedRows.map((row) => row.asset_register_item_id));
+  const filters = input.filters ?? {};
+
+  if (filters.assetId && !permittedAssetIds.has(filters.assetId)) {
+    throw new Error('MAINTENANCE_REPORT_FORBIDDEN');
+  }
+
+  const rawData = await listAssetMaintenanceData(context.owner_user_id, filters);
+  const records = rawData.records.filter((record) => permittedAssetIds.has(record.assetId));
+  const assets = rawData.assets.filter((asset) => permittedAssetIds.has(asset.id));
+
+  return {
+    ownerUserId: context.owner_user_id,
+    data: {
+      assets,
+      fieldManagers: rawData.fieldManagers,
+      records,
+      summary: calculateAssetMaintenanceSummary(records),
+    },
+  };
 }
 
 function usageLabel(value: number | null, metric: AssetMaintenanceUsageMetric | null): string {

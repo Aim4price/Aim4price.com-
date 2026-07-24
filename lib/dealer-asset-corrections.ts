@@ -249,6 +249,7 @@ async function resolveDealerAccess(input: {
   dealerUserId: string;
   sourceType: DealerAssetCorrectionSource;
   sourceId: string;
+  field: DealerAssetCorrectionField;
 }): Promise<CorrectionAccessRow | null> {
   const db = getDb();
 
@@ -269,10 +270,16 @@ async function resolveDealerAccess(input: {
     `
       select owner_user_id, asset_register_item_id::text
       from public.dealer_maintenance_access
-      where id = $1::uuid and dealer_user_id = $2 and is_active = true
+      where id = $1::uuid
+        and dealer_user_id = $2
+        and is_active = true
+        and (
+          ($3 = 'serialNumber' and can_update_serial = true)
+          or ($3 = 'replacementPriceExVat' and can_update_replacement_price = true)
+        )
       limit 1
     `,
-    [input.sourceId, input.dealerUserId],
+    [input.sourceId, input.dealerUserId, input.field],
   );
   return result.rows[0] ?? null;
 }
@@ -294,6 +301,7 @@ export async function createOrUpdateDealerAssetCorrection(input: {
     dealerUserId: input.dealerUserId,
     sourceType: input.sourceType,
     sourceId,
+    field: input.field,
   });
   if (!access) throw new Error('CORRECTION_FORBIDDEN');
 

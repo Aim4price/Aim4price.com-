@@ -32,6 +32,10 @@ export type AssetIssueNoteGroup = {
   totalCount: number;
 };
 
+export type AssetIssueNoteListOptions = {
+  includeNoted?: boolean;
+};
+
 const ISSUE_NOTE_PREFIX_PATTERN = /^notes\s*\/\s*problems\s*:\s*(.*)$/i;
 const MAINTENANCE_METADATA_LINE_PATTERN = /^(?:checked|serviced|repaired|checked\s+items|work\s+done|company|mechanic|repair\s+details)\s*(?::|$)/i;
 
@@ -227,6 +231,48 @@ export async function listOpenIssueNoteGroupsForAssets(
       earlierCount: Math.max(0, statuses.length - 1),
       totalCount: statuses.length,
     }];
+  });
+}
+
+export async function listIssueNotesForAssets(
+  assetIdsInput: string[],
+  options: AssetIssueNoteListOptions = {},
+): Promise<AssetIssueNoteStatus[]> {
+  const assetIds = [...new Set(assetIdsInput.map((assetId) => asId(assetId)).filter(Boolean))];
+
+  if (!assetIds.length) {
+    return [];
+  }
+
+  const hasStorage = await ensureAssetIssueNoteStorage();
+
+  if (!hasStorage) {
+    return [];
+  }
+
+  const result = await getDb().query<AssetIssueNoteRow>(
+    `
+      select
+        e.id,
+        e.asset_id,
+        e.actor_type,
+        e.operator_name,
+        e.note,
+        e.issue_noted_at::text as issue_noted_at,
+        e.created_at
+      from public.asset_scan_events e
+      where e.asset_id::text = any($1::text[])
+        ${options.includeNoted ? '' : 'and e.issue_noted_at is null'}
+        and nullif(trim(coalesce(e.note, '')), '') is not null
+        and lower(coalesce(e.note, '')) like '%notes%problems:%'
+      order by e.created_at desc, e.id desc
+    `,
+    [assetIds],
+  );
+
+  return result.rows.flatMap((row) => {
+    const issueStatus = mapIssueNoteStatusFromScanEvent(row);
+    return issueStatus ? [issueStatus] : [];
   });
 }
 
