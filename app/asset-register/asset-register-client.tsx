@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { createPortal } from 'react-dom';
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ChangeEvent, type FormEvent, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import AppHeader from '../../components/AppHeader';
+import DealerMaintenanceAccessSettings from '../../components/DealerMaintenanceAccessSettings';
 import {
   openAssetRegisterSummaryPrint,
   openAssetSheetPrint,
@@ -25,6 +26,7 @@ import {
   type StockAssetSubtypeKey,
 } from '../../lib/general-asset-catalogue';
 import type { DealerAssetCorrectionRequest } from '../../lib/dealer-asset-corrections';
+import type { DealerMaintenanceAccessSummary } from '../../lib/dealer-maintenance-tracker';
 import styles from './page.module.css';
 
 type NoticeTone = 'success' | 'error';
@@ -5685,11 +5687,15 @@ export default function AssetRegisterClient() {
   const [quoteOwnerMessage, setQuoteOwnerMessage] = useState('');
   const [quoteLeadStep, setQuoteLeadStep] = useState<QuoteLeadStep>(null);
   const [quoteConsentAccepted, setQuoteConsentAccepted] = useState(false);
+  const [quoteTrackMaintenance, setQuoteTrackMaintenance] = useState(false);
   const [quoteIncludePhotos, setQuoteIncludePhotos] = useState(true);
   const [quoteIncludeDocuments, setQuoteIncludeDocuments] = useState(true);
   const [quoteIncludeScanHistory, setQuoteIncludeScanHistory] = useState(false);
   const [isLoadingQuotePartners, setIsLoadingQuotePartners] = useState(false);
   const [isSendingQuoteLead, setIsSendingQuoteLead] = useState(false);
+  const [isDealerTrackingSettingsOpen, setIsDealerTrackingSettingsOpen] = useState(false);
+  const [isLoadingDealerTrackingSettings, setIsLoadingDealerTrackingSettings] = useState(false);
+  const [dealerTrackingAccess, setDealerTrackingAccess] = useState<DealerMaintenanceAccessSummary[]>([]);
   const quoteMapElementRef = useRef<HTMLDivElement | null>(null);
   const quoteLeafletMapRef = useRef<any>(null);
   const quoteMarkerLayerRef = useRef<any>(null);
@@ -8514,6 +8520,8 @@ export default function AssetRegisterClient() {
     setIsQrModalOpen(false);
     setCopiedScanLinkAssetId(null);
     setDeleteCandidateAsset(null);
+    setIsDealerTrackingSettingsOpen(false);
+    setDealerTrackingAccess([]);
     setActiveAsset(null);
   }
 
@@ -8565,9 +8573,8 @@ export default function AssetRegisterClient() {
     setQuotePartnerSearch('');
     setQuoteLeadStep(null);
     setQuoteConsentAccepted(false);
+    setQuoteTrackMaintenance(false);
     setQuoteOwnerMessage('');
-    setQuoteLeadStep(null);
-    setQuoteConsentAccepted(false);
     setQuoteIncludePhotos(true);
     setQuoteIncludeDocuments(true);
     setQuoteIncludeScanHistory(false);
@@ -8636,6 +8643,7 @@ export default function AssetRegisterClient() {
     setQuoteOwnerMessage('');
     setQuoteLeadStep(null);
     setQuoteConsentAccepted(false);
+    setQuoteTrackMaintenance(false);
     setQuotePartners([]);
     setQuoteIncludePhotos(true);
     setQuoteIncludeDocuments(true);
@@ -8656,6 +8664,7 @@ export default function AssetRegisterClient() {
     setQuotePartnerSearch('');
     setQuoteLeadStep(null);
     setQuoteConsentAccepted(false);
+    setQuoteTrackMaintenance(false);
 
     if (quoteLeafletMapRef.current) {
       quoteLeafletMapRef.current.remove();
@@ -8760,6 +8769,7 @@ export default function AssetRegisterClient() {
           leadType: selectedQuoteOption.leadType,
           ownerMessage: quoteOwnerMessage,
           includedSections,
+          trackMaintenance: selectedQuoteOption.leadType === 'replacement_quote' && quoteTrackMaintenance,
         }),
       });
 
@@ -8787,6 +8797,32 @@ export default function AssetRegisterClient() {
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to send asset lead.' });
     } finally {
       setIsSendingQuoteLead(false);
+    }
+  }
+
+  async function openDealerTrackingSettings(asset: RegisterAsset) {
+    setIsDealerTrackingSettingsOpen(true);
+    setIsLoadingDealerTrackingSettings(true);
+    setDealerTrackingAccess([]);
+    setNotice(null);
+    try {
+      const response = await fetch(`/api/dealer-maintenance-access?assetId=${encodeURIComponent(asset.id)}`, {
+        credentials: 'include',
+        cache: 'no-store',
+      });
+      const payload = await response.json().catch(() => null) as {
+        ok?: boolean;
+        trackingAccess?: DealerMaintenanceAccessSummary[];
+        error?: string;
+      } | null;
+      if (!response.ok || !payload?.ok || !Array.isArray(payload.trackingAccess)) {
+        throw new Error(payload?.error || 'Failed to load dealer tracking settings.');
+      }
+      setDealerTrackingAccess(payload.trackingAccess);
+    } catch (cause) {
+      setNotice({ tone: 'error', message: cause instanceof Error ? cause.message : 'Failed to load dealer tracking settings.' });
+    } finally {
+      setIsLoadingDealerTrackingSettings(false);
     }
   }
 
@@ -15392,6 +15428,17 @@ export default function AssetRegisterClient() {
                                   }
                                 />
                               </label>
+
+                              {selectedQuoteOption.leadType === 'replacement_quote' && quoteScope === 'asset' ? (
+                                <label className={styles.assetQuoteConsentCheck}>
+                                  <input
+                                    type="checkbox"
+                                    checked={quoteTrackMaintenance}
+                                    onChange={(event) => setQuoteTrackMaintenance(event.target.checked)}
+                                  />
+                                  <span>Add this asset to the dealer&apos;s Maintenance Tracker. You can set the dealer&apos;s detailed permissions after sharing.</span>
+                                </label>
+                              ) : null}
                             </div>
                           </div>
                         ) : (
@@ -15409,6 +15456,9 @@ export default function AssetRegisterClient() {
                                   ? 'You confirm that you have permission to share the complete register information and understand that the selected company may contact you outside Aim4price.'
                                   : 'You confirm that you have permission to share this asset information and understand that the selected company may contact you outside Aim4price.'}
                               </p>
+                              {selectedQuoteOption.leadType === 'replacement_quote' && quoteTrackMaintenance ? (
+                                <p>The selected dealer will receive ongoing Maintenance Tracker access to this asset until you stop it. Logged Problems and Maintenance Reports remain disabled until you enable them in Dealer tracking settings.</p>
+                              ) : null}
                             </div>
 
                             <label className={styles.assetQuoteConsentCheck}>
@@ -15571,6 +15621,16 @@ export default function AssetRegisterClient() {
                     </span>
                   </button>
 
+                  {canUseOwnerOnlyAssetActions && activeAsset.kind !== 'property' ? (
+                    <button type="button" className={styles.optionActionButton} onClick={() => void openDealerTrackingSettings(activeAsset)}>
+                      <ManageIcon className={styles.buttonIcon} />
+                      <span>
+                        <strong>Dealer tracking settings</strong>
+                        <small>Manage each dealer&apos;s Maintenance Tracker permissions.</small>
+                      </span>
+                    </button>
+                  ) : null}
+
                   {canUseMarketplaceActions && isMarketplaceEligible(activeAsset) ? (
                     <button type="button" className={styles.optionActionButton} onClick={() => handlePublishFromDialog(activeAsset)}>
                       <CartIcon className={styles.buttonIcon} />
@@ -15612,6 +15672,38 @@ export default function AssetRegisterClient() {
                   ) : null}
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {activeAsset && isDealerTrackingSettingsOpen ? (
+        <div className={`${styles.modalOverlay} ${styles.subModalOverlay}`}>
+          <div className={styles.modalBackdrop} onClick={() => setIsDealerTrackingSettingsOpen(false)} />
+
+          <div className={`${styles.modalCard} ${styles.pricingModal}`} role="dialog" aria-modal="true" aria-labelledby="dealer-tracking-settings-title">
+            <div className={`${styles.modalHeader} ${styles.pricingModalHeader}`}>
+              <div className={styles.modalHeaderText}>
+                <h3 id="dealer-tracking-settings-title">Dealer tracking settings</h3>
+                <p>{activeAsset.title}</p>
+              </div>
+
+              <button type="button" className={styles.modalCloseButton} onClick={() => setIsDealerTrackingSettingsOpen(false)} aria-label="Close dealer tracking settings">
+                <CloseIcon className={styles.buttonIcon} />
+              </button>
+            </div>
+
+            <div className={`${styles.modalScrollBody} ${styles.pricingModalBody}`}>
+              {isLoadingDealerTrackingSettings ? (
+                <div className={styles.emptyState}>Loading dealer tracking settings…</div>
+              ) : (
+                <DealerMaintenanceAccessSettings
+                  assetId={activeAsset.id}
+                  entries={dealerTrackingAccess}
+                  mutationUrl="/api/dealer-maintenance-access"
+                  onEntriesChange={setDealerTrackingAccess}
+                />
+              )}
             </div>
           </div>
         </div>
