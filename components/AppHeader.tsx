@@ -110,6 +110,7 @@ type HeaderNotificationItem = {
   createdAtIso: string;
   assetDiscoveryEnquiryId?: string;
   dealerAssetCorrectionId?: string;
+  dealerAssetCorrectionAction?: 'decision' | 'retry' | 'pending';
   priority?: boolean;
 };
 
@@ -507,6 +508,11 @@ export default function AppHeader({
   const [processingDealerCorrectionIds, setProcessingDealerCorrectionIds] = useState<Set<string>>(() => new Set());
   const [activeAssetDiscoveryEnquiry, setActiveAssetDiscoveryEnquiry] = useState<AssetDiscoveryEnquiry | null>(null);
   const [notificationDetailError, setNotificationDetailError] = useState<string | null>(null);
+  const [notificationDetailOutcome, setNotificationDetailOutcome] = useState<{
+    tone: 'success' | 'warning';
+    title: string;
+    message: string;
+  } | null>(null);
   const [loadingNotificationActionId, setLoadingNotificationActionId] = useState<string | null>(null);
   const [canUseNotificationPortal, setCanUseNotificationPortal] = useState(false);
 
@@ -594,6 +600,7 @@ export default function AppHeader({
         setNotificationOpen(false);
         setActiveAssetDiscoveryEnquiry(null);
         setNotificationDetailError(null);
+        setNotificationDetailOutcome(null);
       }
     }
 
@@ -612,7 +619,11 @@ export default function AppHeader({
   }, [pathname]);
 
   const hasBlockingModal =
-    mobileMenuOpen || notificationOpen || Boolean(activeAssetDiscoveryEnquiry) || Boolean(notificationDetailError);
+    mobileMenuOpen
+    || notificationOpen
+    || Boolean(activeAssetDiscoveryEnquiry)
+    || Boolean(notificationDetailError)
+    || Boolean(notificationDetailOutcome);
 
   useEffect(() => {
     if (!hasBlockingModal || typeof document === 'undefined') return;
@@ -841,6 +852,7 @@ export default function AppHeader({
   function closeNotificationDetailModal() {
     setActiveAssetDiscoveryEnquiry(null);
     setNotificationDetailError(null);
+    setNotificationDetailOutcome(null);
   }
 
   function closeAccountMenu() {
@@ -976,17 +988,97 @@ export default function AppHeader({
         },
         body: JSON.stringify({ decision }),
       });
-      const data = (await response.json().catch(() => null)) as { ok?: boolean; error?: string } | null;
+      const data = (await response.json().catch(() => null)) as {
+        ok?: boolean;
+        outcome?: string;
+        message?: string;
+        error?: string;
+      } | null;
 
       if (!response.ok || !data?.ok) {
         throw new Error(data?.error || 'Failed to save the dealer correction decision.');
       }
 
-      setNotifications((current) => current.filter((item) => item.dealerAssetCorrectionId !== correctionId));
+      const revaluationNeedsAttention =
+        data.outcome === 'accepted_revaluation_failed'
+        || data.outcome === 'accepted_revaluation_pending';
+      setNotifications((current) => revaluationNeedsAttention
+        ? current.map((item) => item.dealerAssetCorrectionId === correctionId
+          ? {
+              ...item,
+              id: `${item.id}:${data.outcome}`,
+              title: data.outcome === 'accepted_revaluation_failed'
+                ? 'Aim4price recalculation needs attention'
+                : 'Aim4price recalculation pending',
+              body: data.message || 'The replacement price was saved, but recalculation still needs attention.',
+              dealerAssetCorrectionAction: data.outcome === 'accepted_revaluation_failed' ? 'retry' : 'pending',
+            }
+          : item)
+        : current.filter((item) => item.dealerAssetCorrectionId !== correctionId));
       markNotificationsSeen();
       window.dispatchEvent(new Event('aim4price:asset-register-updated'));
+      setNotificationDetailOutcome({
+        tone: revaluationNeedsAttention ? 'warning' : 'success',
+        title: revaluationNeedsAttention ? 'Replacement price saved' : 'Asset Register updated',
+        message: data.message || (
+          decision === 'reject'
+            ? 'Dealer correction declined.'
+            : 'Dealer update accepted and saved.'
+        ),
+      });
     } catch (error) {
       setNotificationDetailError(error instanceof Error ? error.message : 'Failed to save the dealer correction decision.');
+    } finally {
+      setProcessingDealerCorrectionIds((current) => {
+        const next = new Set(current);
+        next.delete(correctionId);
+        return next;
+      });
+    }
+  }
+
+  async function handleDealerCorrectionRetry(correctionId: string) {
+    setProcessingDealerCorrectionIds((current) => new Set(current).add(correctionId));
+    setNotificationDetailError(null);
+    setNotificationDetailOutcome(null);
+
+    try {
+      const response = await fetch(`/api/asset-corrections/${encodeURIComponent(correctionId)}/retry`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      const data = (await response.json().catch(() => null)) as {
+        ok?: boolean;
+        outcome?: string;
+        message?: string;
+        error?: string;
+      } | null;
+      if (!response.ok || !data?.ok) {
+        throw new Error(data?.error || 'Aim4price could not retry this valuation.');
+      }
+
+      const succeeded = data.outcome === 'accepted_revalued';
+      setNotifications((current) => succeeded
+        ? current.filter((item) => item.dealerAssetCorrectionId !== correctionId)
+        : current.map((item) => item.dealerAssetCorrectionId === correctionId
+          ? {
+              ...item,
+              body: data.message || item.body,
+              dealerAssetCorrectionAction: data.outcome === 'accepted_revaluation_failed' ? 'retry' : 'pending',
+            }
+          : item));
+      window.dispatchEvent(new Event('aim4price:asset-register-updated'));
+      setNotificationDetailOutcome({
+        tone: succeeded ? 'success' : 'warning',
+        title: succeeded ? 'Valuation updated' : 'Recalculation still needs attention',
+        message: data.message || (
+          succeeded
+            ? 'Aim4price recalculated the asset and saved the latest estimate.'
+            : 'Aim4price could not complete the recalculation.'
+        ),
+      });
+    } catch (error) {
+      setNotificationDetailError(error instanceof Error ? error.message : 'Aim4price could not retry this valuation.');
     } finally {
       setProcessingDealerCorrectionIds((current) => {
         const next = new Set(current);
@@ -1066,6 +1158,7 @@ export default function AppHeader({
     if (notification.dealerAssetCorrectionId) {
       const correctionId = notification.dealerAssetCorrectionId;
       const processing = processingDealerCorrectionIds.has(correctionId);
+      const correctionAction = notification.dealerAssetCorrectionAction ?? 'decision';
 
       return (
         <div key={notification.id} className={`${baseClassName} ${styles.notificationItemActionable}`}>
@@ -1076,24 +1169,43 @@ export default function AppHeader({
             <span className={styles.notificationMetaRow}>
               <small>{formatNotificationTime(notification.createdAtIso)}</small>
             </span>
-            <span className={styles.notificationActionRow}>
-              <button
-                type="button"
-                className={styles.notificationDenyButton}
-                onClick={() => void handleDealerCorrectionDecision(correctionId, 'reject')}
-                disabled={processing}
-              >
-                {processing ? 'Saving...' : 'Decline'}
-              </button>
-              <button
-                type="button"
-                className={styles.notificationApproveButton}
-                onClick={() => void handleDealerCorrectionDecision(correctionId, 'accept')}
-                disabled={processing}
-              >
-                {processing ? 'Saving...' : 'Accept update'}
-              </button>
-            </span>
+            {correctionAction === 'decision' ? (
+              <span className={styles.notificationActionRow}>
+                <button
+                  type="button"
+                  className={styles.notificationDenyButton}
+                  onClick={() => void handleDealerCorrectionDecision(correctionId, 'reject')}
+                  disabled={processing}
+                >
+                  {processing ? 'Saving...' : 'Decline'}
+                </button>
+                <button
+                  type="button"
+                  className={styles.notificationApproveButton}
+                  onClick={() => void handleDealerCorrectionDecision(correctionId, 'accept')}
+                  disabled={processing}
+                >
+                  {processing ? 'Saving...' : 'Accept update'}
+                </button>
+              </span>
+            ) : correctionAction === 'retry' ? (
+              <span className={styles.notificationActionRow}>
+                <button
+                  type="button"
+                  className={styles.notificationApproveButton}
+                  onClick={() => void handleDealerCorrectionRetry(correctionId)}
+                  disabled={processing}
+                >
+                  {processing ? 'Retrying...' : 'Retry valuation'}
+                </button>
+              </span>
+            ) : (
+              <span className={styles.notificationActionRow}>
+                <button type="button" className={styles.notificationDenyButton} disabled>
+                  Recalculation pending
+                </button>
+              </span>
+            )}
           </span>
         </div>
       );
@@ -1442,7 +1554,7 @@ export default function AppHeader({
       : null;
 
   const notificationDetailPortal =
-    canUseNotificationPortal && (activeAssetDiscoveryEnquiry || notificationDetailError)
+    canUseNotificationPortal && (activeAssetDiscoveryEnquiry || notificationDetailError || notificationDetailOutcome)
       ? createPortal(
           <div
             className={styles.notificationDetailBackdrop}
@@ -1468,6 +1580,36 @@ export default function AppHeader({
                     <p>{notificationDetailError}</p>
                   </div>
                   <button type="button" className={styles.notificationDetailCloseButton} onClick={closeNotificationDetailModal} aria-label="Close notification error">
+                    ×
+                  </button>
+                </div>
+                <div className={styles.notificationDetailActions}>
+                  <button type="button" className={styles.notificationSecondaryButton} onClick={closeNotificationDetailModal}>
+                    Close
+                  </button>
+                </div>
+              </section>
+            ) : null}
+            {!activeAssetDiscoveryEnquiry && !notificationDetailError && notificationDetailOutcome ? (
+              <section
+                className={`${styles.notificationDetailModal} ${
+                  notificationDetailOutcome.tone === 'success'
+                    ? styles.notificationDetailOutcomeSuccess
+                    : styles.notificationDetailOutcomeWarning
+                }`}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="notification-outcome-title"
+              >
+                <div className={styles.notificationDetailHeader}>
+                  <div className={styles.notificationDetailHeaderText}>
+                    <span className={styles.notificationDetailOutcomeIcon} aria-hidden="true">
+                      {notificationDetailOutcome.tone === 'success' ? '✓' : '!'}
+                    </span>
+                    <h2 id="notification-outcome-title">{notificationDetailOutcome.title}</h2>
+                    <p>{notificationDetailOutcome.message}</p>
+                  </div>
+                  <button type="button" className={styles.notificationDetailCloseButton} onClick={closeNotificationDetailModal} aria-label="Close notification result">
                     ×
                   </button>
                 </div>

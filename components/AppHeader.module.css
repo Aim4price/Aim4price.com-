@@ -1137,6 +1137,37 @@
   stroke-linejoin: round;
 }
 
+.notificationDetailOutcomeSuccess {
+  border-color: rgba(25, 125, 92, 0.24);
+  background: linear-gradient(180deg, #f5fff9 0%, #ffffff 100%);
+}
+
+.notificationDetailOutcomeWarning {
+  border-color: rgba(181, 119, 20, 0.28);
+  background: linear-gradient(180deg, #fffaf0 0%, #ffffff 100%);
+}
+
+.notificationDetailOutcomeIcon {
+  width: 2.75rem;
+  height: 2.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.72rem;
+  border: 1px solid rgba(25, 125, 92, 0.2);
+  border-radius: 0.9rem;
+  color: #0d684b;
+  background: #e8f8f0;
+  font-size: 1.18rem;
+  font-weight: 950;
+}
+
+.notificationDetailOutcomeWarning .notificationDetailOutcomeIcon {
+  border-color: rgba(181, 119, 20, 0.24);
+  color: #8a5a0b;
+  background: #fff1ce;
+}
+
 .notificationDetailHeader h2 {
   margin: 0;
   color: #073b30;

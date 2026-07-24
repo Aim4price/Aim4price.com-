@@ -339,6 +339,18 @@
   margin-bottom: 1rem;
 }
 
+.reportError {
+  margin: 0.9rem 1.2rem 0;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid rgba(166, 73, 44, 0.24);
+  border-radius: 0.9rem;
+  color: #8b3b25;
+  background: #fff2ed;
+  font-size: 0.82rem;
+  font-weight: 750;
+  line-height: 1.45;
+}
+
 @media (max-width: 900px) {
   .assetOverview {
     grid-template-columns: 1fr;

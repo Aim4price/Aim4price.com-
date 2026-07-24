@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import DealerAssetCorrectionEditor from './DealerAssetCorrectionEditor';
+import DealerMaintenanceReportModal from './DealerMaintenanceReportModal';
 import {
   WorkspaceTitlePanel,
   workspaceStyles,
@@ -13,15 +14,10 @@ import type {
 } from '../lib/dealer-maintenance-tracker';
 import assetStyles from '../app/asset-register/page.module.css';
 import leadStyles from '../app/leads/page.module.css';
-import maintenanceStyles from '../app/maintenance/page.module.css';
 import styles from './DealerMaintenanceTrackerClient.module.css';
 
 type TrackerStatusFilter = 'all' | 'attention' | 'upcoming' | 'no_open';
 type FilterDropdownKey = 'owner' | 'status';
-type ReportDropdownKey = 'asset' | 'type' | 'status' | 'assignedTo';
-type DownloadScope = 'total' | 'asset' | 'upcoming' | 'done';
-type DownloadFormat = 'pdf' | 'xlsx';
-type DownloadStep = 'scope' | 'asset' | 'format';
 type Option = { value: string; label: string };
 
 type Props = {
@@ -41,13 +37,6 @@ const statusOptions: Option[] = [
   { value: 'attention', label: 'Needs attention' },
   { value: 'upcoming', label: 'Upcoming' },
   { value: 'no_open', label: 'No open maintenance' },
-];
-
-const reportScopeOptions: Array<{ value: DownloadScope; title: string; description: string }> = [
-  { value: 'total', title: 'Total maintenance report', description: 'All authorised maintenance records for this owner matching the selected filters.' },
-  { value: 'asset', title: 'Specific asset maintenance report', description: 'The full maintenance timeline for one authorised tracked asset.' },
-  { value: 'upcoming', title: 'Upcoming maintenance report', description: 'Open maintenance records, including due soon and overdue work.' },
-  { value: 'done', title: 'Completed / Done maintenance report', description: 'Completed services and checkups for authorised assets.' },
 ];
 
 function SearchIcon({ className = '' }: { className?: string }) {
@@ -243,16 +232,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
   );
   const [loading, setLoading] = useState(false);
   const [notice, setNotice] = useState<{ tone: 'success' | 'error'; text: string } | null>(null);
-  const [reportAsset, setReportAsset] = useState<DealerMaintenanceTrackedAsset | null>(null);
-  const [downloadStep, setDownloadStep] = useState<DownloadStep>('scope');
-  const [downloadScope, setDownloadScope] = useState<DownloadScope>('total');
-  const [downloadFormat, setDownloadFormat] = useState<DownloadFormat>('pdf');
-  const [downloadAssetId, setDownloadAssetId] = useState('all');
-  const [downloadAssetSearch, setDownloadAssetSearch] = useState('');
-  const [reportType, setReportType] = useState('all');
-  const [reportStatus, setReportStatus] = useState('all');
-  const [reportAssignedTo, setReportAssignedTo] = useState('all');
-  const [openReportDropdown, setOpenReportDropdown] = useState<ReportDropdownKey | null>(null);
+  const [reportAccessId, setReportAccessId] = useState<string | null>(null);
 
   useEffect(() => setAssets(initialAssets), [initialAssets]);
 
@@ -276,32 +256,6 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
   const noOpenCount = assets.filter((asset) => asset.status === 'no_open').length;
   const hasActiveFilter = ownerFilter !== 'all' || statusFilter !== 'all';
   const activeFilterLabel = hasActiveFilter ? 'Filtered' : 'Filter';
-
-  const reportAssets = useMemo(
-    () => reportAsset
-      ? assets.filter((asset) => asset.ownerUserId === reportAsset.ownerUserId && asset.permissions.canViewMaintenanceReports)
-      : [],
-    [assets, reportAsset],
-  );
-  const filteredReportAssets = useMemo(() => {
-    const query = downloadAssetSearch.trim().toLowerCase();
-    return reportAssets.filter((asset) => !query || `${asset.assetTitle} ${asset.brandName} ${asset.modelName}`.toLowerCase().includes(query));
-  }, [downloadAssetSearch, reportAssets]);
-  const reportAssigneeOptions = useMemo<Option[]>(() => {
-    const map = new Map<string, string>();
-    reportAssets.flatMap((asset) => asset.maintenanceRecords).forEach((record) => {
-      if (record.assignedFieldManagerId) map.set(record.assignedFieldManagerId, record.assignedName || 'Field Manager');
-    });
-    return [
-      { value: 'all', label: 'All assignees' },
-      { value: 'unassigned', label: 'Unassigned' },
-      ...Array.from(map.entries()).sort((left, right) => left[1].localeCompare(right[1])).map(([value, label]) => ({ value, label })),
-    ];
-  }, [reportAssets]);
-  const reportAssetOptions = useMemo<Option[]>(() => [
-    { value: 'all', label: 'All authorised assets' },
-    ...reportAssets.map((asset) => ({ value: asset.assetId, label: asset.assetTitle })),
-  ], [reportAssets]);
 
   async function refresh() {
     if (loading) return;
@@ -338,42 +292,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
   }
 
   function openReports(asset: DealerMaintenanceTrackedAsset) {
-    setReportAsset(asset);
-    setDownloadStep('scope');
-    setDownloadScope('total');
-    setDownloadFormat('pdf');
-    setDownloadAssetId('all');
-    setDownloadAssetSearch('');
-    setReportType('all');
-    setReportStatus('all');
-    setReportAssignedTo('all');
-    setOpenReportDropdown(null);
-  }
-
-  function buildReportUrl(): string {
-    if (!reportAsset) return '';
-    const params = new URLSearchParams({
-      accessId: reportAsset.accessId,
-      scope: downloadScope,
-      format: downloadFormat,
-    });
-    const selectedAssetId = downloadAssetId;
-    if (selectedAssetId !== 'all') params.set('assetId', selectedAssetId);
-    if (reportType !== 'all') params.set('type', reportType);
-    if (reportAssignedTo !== 'all') params.set('assignedTo', reportAssignedTo);
-    if (downloadScope !== 'upcoming' && downloadScope !== 'done' && reportStatus !== 'all') params.set('status', reportStatus);
-    return `/api/dealer/maintenance/report?${params.toString()}`;
-  }
-
-  function submitReport() {
-    if (!reportAsset) return;
-    if (downloadScope === 'asset' && downloadAssetId === 'all') {
-      setNotice({ tone: 'error', text: 'Choose an authorised asset for the specific asset report.' });
-      return;
-    }
-    const url = buildReportUrl();
-    if (downloadFormat === 'xlsx') window.location.href = url;
-    else window.open(url, '_blank', 'noopener,noreferrer');
+    setReportAccessId(asset.accessId);
   }
 
   function syncCorrection(assetId: string, correction: NonNullable<DealerMaintenanceTrackedAsset['dealerCorrection']>) {
@@ -571,85 +490,12 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
         </div>
       ) : null}
 
-      {reportAsset ? (
-        <div className={maintenanceStyles.modalBackdrop} role="dialog" aria-modal="true" aria-labelledby="dealer-maintenance-download-title">
-          <section className={`${maintenanceStyles.downloadModal} ${maintenanceStyles.maintenanceExportModal}`}>
-            <header className={maintenanceStyles.modalHeader}>
-              <div>
-                <h2 id="dealer-maintenance-download-title">{downloadStep === 'scope' ? 'Download maintenance reports' : downloadStep === 'asset' ? 'Choose asset for maintenance report' : 'Choose download format'}</h2>
-                <div className={maintenanceStyles.maintenanceExportHeadingRow}><p>{downloadStep === 'scope' ? 'Choose filters and which authorised maintenance records should be included.' : downloadStep === 'asset' ? 'Select an asset shared by this owner with Maintenance Reports permission.' : 'Choose the owner-style PDF report or XLSX workbook.'}</p></div>
-              </div>
-              <button className={maintenanceStyles.closeButton} type="button" onClick={() => setReportAsset(null)} aria-label="Close reports"><CloseIcon /></button>
-            </header>
-            <div className={maintenanceStyles.modalDivider} />
-
-            {downloadStep === 'scope' ? (
-              <>
-                <div className={`${maintenanceStyles.formModalScrollBody} ${maintenanceStyles.maintenanceExportBody}`}>
-                  <div className={styles.reportFilters}>
-                    <Dropdown label="Asset" value={downloadAssetId} options={reportAssetOptions} dropdownKey="asset" openDropdown={openReportDropdown} onOpenChange={(key) => setOpenReportDropdown(key as ReportDropdownKey | null)} onChange={setDownloadAssetId} />
-                    <Dropdown label="Maintenance type" value={reportType} options={[{ value: 'all', label: 'All types' }, { value: 'service', label: 'Service' }, { value: 'checkup', label: 'Checkup' }]} dropdownKey="type" openDropdown={openReportDropdown} onOpenChange={(key) => setOpenReportDropdown(key as ReportDropdownKey | null)} onChange={setReportType} />
-                    <Dropdown label="Status" value={reportStatus} options={[{ value: 'all', label: 'All statuses' }, { value: 'upcoming', label: 'Upcoming' }, { value: 'done', label: 'Done' }]} dropdownKey="status" openDropdown={openReportDropdown} onOpenChange={(key) => setOpenReportDropdown(key as ReportDropdownKey | null)} onChange={setReportStatus} />
-                    <Dropdown label="Assigned to" value={reportAssignedTo} options={reportAssigneeOptions} dropdownKey="assignedTo" openDropdown={openReportDropdown} onOpenChange={(key) => setOpenReportDropdown(key as ReportDropdownKey | null)} onChange={setReportAssignedTo} />
-                  </div>
-                  <div className={maintenanceStyles.maintenanceScopeList}>
-                    {reportScopeOptions.map((option) => (
-                      <button key={option.value} type="button" className={`${maintenanceStyles.maintenanceScopeOption} ${downloadScope === option.value ? maintenanceStyles.maintenanceScopeOptionActive : ''}`} onClick={() => setDownloadScope(option.value)}>
-                        <span className={maintenanceStyles.maintenanceScopeIcon} aria-hidden="true"><DownloadIcon /></span>
-                        <span className={maintenanceStyles.maintenanceScopeCopy}><strong>{option.title}</strong><small>{option.description}</small></span>
-                        <span className={maintenanceStyles.maintenanceSelectionMark} aria-hidden="true">✓</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <footer className={`${maintenanceStyles.modalFooter} ${maintenanceStyles.maintenanceExportFooter}`}>
-                  <button className={maintenanceStyles.secondaryButton} type="button" onClick={() => setReportAsset(null)}>Cancel</button>
-                  <button className={maintenanceStyles.primaryButton} type="button" onClick={() => setDownloadStep(downloadScope === 'asset' ? 'asset' : 'format')}>Next</button>
-                </footer>
-              </>
-            ) : downloadStep === 'asset' ? (
-              <>
-                <div className={`${maintenanceStyles.formModalScrollBody} ${maintenanceStyles.maintenanceExportBody}`}>
-                  <div className={maintenanceStyles.pickerToolbar}>
-                    <label className={maintenanceStyles.pickerSearchField}><SearchIcon /><input type="search" value={downloadAssetSearch} onChange={(event) => setDownloadAssetSearch(event.target.value)} placeholder="Search authorised assets..." /></label>
-                    <button className={`${maintenanceStyles.secondaryButton} ${maintenanceStyles.pickerClearButton}`} type="button" onClick={() => setDownloadAssetSearch('')} disabled={!downloadAssetSearch}>Clear</button>
-                  </div>
-                  <div className={maintenanceStyles.assetList}>
-                    {filteredReportAssets.map((asset) => (
-                      <button key={asset.assetId} className={`${maintenanceStyles.assetRow} ${downloadAssetId === asset.assetId ? maintenanceStyles.maintenanceScopeOptionActive : ''}`} type="button" onClick={() => { setDownloadAssetId(asset.assetId); setDownloadStep('format'); }}>
-                        <span className={maintenanceStyles.assetInfo}><strong>{asset.assetTitle}</strong><small>{[asset.brandName, asset.modelName, asset.yearModel].filter(Boolean).join(' · ') || asset.assetKind}</small></span>
-                        <span className={maintenanceStyles.assetValue}><strong>{formatCurrency(asset.replacementPriceExVat)}</strong><small>replacement price</small></span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <footer className={`${maintenanceStyles.modalFooter} ${maintenanceStyles.maintenanceExportFooter}`}>
-                  <button className={maintenanceStyles.secondaryButton} type="button" onClick={() => setDownloadStep('scope')}>Back</button>
-                  <button className={maintenanceStyles.secondaryButton} type="button" onClick={() => setReportAsset(null)}>Cancel</button>
-                </footer>
-              </>
-            ) : (
-              <>
-                <div className={`${maintenanceStyles.formModalScrollBody} ${maintenanceStyles.maintenanceExportBody}`}>
-                  <div className={maintenanceStyles.maintenanceFormatGrid}>
-                    {([{ value: 'pdf', title: 'PDF report', description: 'Clean print-ready report using the owner maintenance report design.' }, { value: 'xlsx', title: 'XLSX workbook', description: 'Excel-ready authorised maintenance data.' }] as const).map((option) => (
-                      <button key={option.value} type="button" className={`${maintenanceStyles.maintenanceFormatOption} ${downloadFormat === option.value ? maintenanceStyles.maintenanceFormatOptionActive : ''}`} onClick={() => setDownloadFormat(option.value)}>
-                        <span className={maintenanceStyles.maintenanceFormatGraphic}><img src={option.value === 'pdf' ? '/brand/pdf.png' : '/brand/sheet.png'} alt="" /></span>
-                        <span className={maintenanceStyles.maintenanceFormatCopy}><strong>{option.title}</strong><small>{option.description}</small></span>
-                        <span className={maintenanceStyles.maintenanceSelectionMark} aria-hidden="true">✓</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <footer className={`${maintenanceStyles.modalFooter} ${maintenanceStyles.maintenanceExportFooter}`}>
-                  <button className={maintenanceStyles.secondaryButton} type="button" onClick={() => setDownloadStep(downloadScope === 'asset' ? 'asset' : 'scope')}>Back</button>
-                  <button className={maintenanceStyles.secondaryButton} type="button" onClick={() => setReportAsset(null)}>Cancel</button>
-                  <button className={maintenanceStyles.primaryButton} type="button" onClick={submitReport}>{downloadFormat === 'pdf' ? 'Open PDF report' : 'Download Excel'}</button>
-                </footer>
-              </>
-            )}
-          </section>
-        </div>
+      {reportAccessId ? (
+        <DealerMaintenanceReportModal
+          accessId={reportAccessId}
+          onClose={() => setReportAccessId(null)}
+          onError={(message) => setNotice({ tone: 'error', text: message })}
+        />
       ) : null}
     </main>
   );
