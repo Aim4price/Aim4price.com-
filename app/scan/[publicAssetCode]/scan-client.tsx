@@ -8,7 +8,9 @@ import {
   type ChangeEvent,
   type FormEvent,
 } from "react";
+import DealerMaintenanceAccessSettings from "../../../components/DealerMaintenanceAccessSettings";
 import FieldManagerNavLink from "../../field-manager/field-manager-nav-link";
+import type { DealerMaintenancePermissions } from "../../../lib/dealer-maintenance-tracker";
 import styles from "./page.module.css";
 import {
   createOfflineClientEventId,
@@ -36,6 +38,7 @@ type DealerTrackingAccess = {
   dealerName: string;
   grantedByName: string;
   createdAtIso: string;
+  permissions: DealerMaintenancePermissions;
 };
 
 type PartnerDirectoryEntry = {
@@ -1489,7 +1492,6 @@ export default function ScanClient({
   const [shareConsentAccepted, setShareConsentAccepted] = useState(false);
   const [shareTrackMaintenance, setShareTrackMaintenance] = useState(false);
   const [shareTrackingAccess, setShareTrackingAccess] = useState<DealerTrackingAccess[]>([]);
-  const [removingShareTrackingId, setRemovingShareTrackingId] = useState("");
   const [isLoadingSharePartners, setIsLoadingSharePartners] = useState(false);
   const [isSendingShareLead, setIsSendingShareLead] = useState(false);
   const [isUploadingSharePhoto, setIsUploadingSharePhoto] = useState(false);
@@ -2353,32 +2355,6 @@ export default function ScanClient({
     setShareConsentAccepted(false);
   }
 
-  async function stopShareTracking(entry: DealerTrackingAccess) {
-    if (!asset || removingShareTrackingId) return;
-    setRemovingShareTrackingId(entry.id);
-    setNotice(null);
-    try {
-      const query = fieldManagerQueryString();
-      const response = await fetch(
-        `/api/scan/assets/${encodeURIComponent(normalizedCode)}/dealer-share${query}`,
-        {
-          method: "DELETE",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ partnerUserId: entry.dealerUserId }),
-        },
-      );
-      const data = await response.json().catch(() => null) as { ok?: boolean; error?: string } | null;
-      if (!response.ok || !data?.ok) throw new Error(data?.error || "Failed to stop dealer tracking.");
-      setShareTrackingAccess((current) => current.filter((item) => item.id !== entry.id));
-      setNotice({ tone: "success", message: `${entry.dealerName} can no longer track this asset.` });
-    } catch (error) {
-      setNotice({ tone: "error", message: error instanceof Error ? error.message : "Failed to stop dealer tracking." });
-    } finally {
-      setRemovingShareTrackingId("");
-    }
-  }
-
   function openShareLeadMessage(partner: PartnerDirectoryEntry) {
     setSelectedSharePartnerId(partner.userId);
     setShareLeadStep("message");
@@ -3143,6 +3119,8 @@ export default function ScanClient({
     sessionHasLocation(readQrScanSession(normalizedCode));
   const isFieldManagerMode =
     fieldManagerMode || scanAccessMode === "field_manager";
+  const canManageDealerTracking =
+    isFieldManagerMode || scanAccessMode === "owner_session";
   const usageUpdateRequired =
     !isFieldManagerMode &&
     needsUsageUpdateBeforeActions(
@@ -3712,10 +3690,12 @@ export default function ScanClient({
                     Search and choose the dealer you want to contact.
                   </p>
                 ) : null}
-                <button type="button" className={styles.shareTrackingSettingsButton} onClick={openShareTrackingSettings}>
-                  <span><strong>Dealer tracking settings</strong><small>{shareTrackingAccess.length ? `${shareTrackingAccess.length} dealer${shareTrackingAccess.length === 1 ? "" : "s"} tracking this asset` : "No dealer tracking this asset"}</small></span>
-                  <b aria-hidden="true">›</b>
-                </button>
+                {canManageDealerTracking ? (
+                  <button type="button" className={styles.shareTrackingSettingsButton} onClick={openShareTrackingSettings}>
+                    <span><strong>Dealer tracking settings</strong><small>{shareTrackingAccess.length ? `${shareTrackingAccess.length} dealer${shareTrackingAccess.length === 1 ? "" : "s"} tracking this asset` : "No dealer tracking this asset"}</small></span>
+                    <b aria-hidden="true">›</b>
+                  </button>
+                ) : null}
                 <form
                   className={styles.shareSearchBar}
                   onSubmit={handleShareSearchSubmit}
@@ -3982,18 +3962,14 @@ export default function ScanClient({
               <>
                 <div className={styles.shareBody}>
                   <div className={styles.shareStepHeader}><strong>Dealers tracking this asset</strong><span>Tracking can be removed at any time.</span></div>
-                  {shareTrackingAccess.length ? (
-                    <div className={styles.shareTrackingList}>
-                      {shareTrackingAccess.map((entry) => (
-                        <article key={entry.id} className={styles.shareTrackingAccessCard}>
-                          <span><strong>{entry.dealerName}</strong><small>{entry.grantedByName ? `Shared by ${entry.grantedByName}` : "Maintenance tracking active"}</small></span>
-                          <button type="button" onClick={() => void stopShareTracking(entry)} disabled={Boolean(removingShareTrackingId)}>{removingShareTrackingId === entry.id ? "Removing…" : "Stop tracking"}</button>
-                        </article>
-                      ))}
-                    </div>
-                  ) : <div className={styles.shareEmptyState}>No dealer is currently tracking this asset.</div>}
+                  <DealerMaintenanceAccessSettings
+                    assetId={asset.id}
+                    entries={shareTrackingAccess}
+                    mutationUrl={`/api/scan/assets/${encodeURIComponent(normalizedCode)}/dealer-share${fieldManagerQueryString()}`}
+                    onEntriesChange={setShareTrackingAccess}
+                  />
                 </div>
-                <footer className={styles.shareFooter}><button type="button" className={styles.secondaryButton} onClick={goBackToDealerList} disabled={Boolean(removingShareTrackingId)}>Back</button></footer>
+                <footer className={styles.shareFooter}><button type="button" className={styles.secondaryButton} onClick={goBackToDealerList}>Back</button></footer>
               </>
             ) : (
               <div className={styles.shareBody}>
