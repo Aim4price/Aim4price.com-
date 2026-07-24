@@ -29,7 +29,7 @@ import type { DealerAssetCorrectionRequest } from '../../lib/dealer-asset-correc
 import type { DealerMaintenanceAccessSummary } from '../../lib/dealer-maintenance-tracker';
 import styles from './page.module.css';
 
-type NoticeTone = 'success' | 'error';
+type NoticeTone = 'success' | 'warning' | 'error';
 type PartnerType = 'dealer' | 'finance' | 'insurance';
 type AssetLeadType = 'finance' | 'insurance' | 'replacement_quote';
 type QuoteLeadStep = 'message' | 'consent' | null;
@@ -10321,6 +10321,9 @@ export default function AssetRegisterClient() {
       const data = (await response.json().catch(() => null)) as {
         ok?: boolean;
         correction?: DealerAssetCorrectionRequest;
+        outcome?: string;
+        message?: string;
+        asset?: RegisterAsset | null;
         error?: string;
       } | null;
 
@@ -10330,24 +10333,16 @@ export default function AssetRegisterClient() {
 
       const applyDecision = (entry: RegisterAsset): RegisterAsset => {
         if (entry.id !== correction.assetId) return entry;
-
-        const updated: RegisterAsset = {
+        const revaluationNeedsAttention =
+          data.outcome === 'accepted_revaluation_failed'
+          || data.outcome === 'accepted_revaluation_pending';
+        return {
           ...entry,
-          dealerAssetCorrection: null,
-        };
-
-        if (decision === 'accept' && correction.serialNumberChanged && correction.proposedSerialNumber) {
-          updated.serialNumber = correction.proposedSerialNumber;
-        }
-        if (
-          decision === 'accept'
-          && correction.replacementPriceChanged
-          && correction.proposedReplacementPriceExVat !== null
-        ) {
-          updated.replacementPriceExVat = correction.proposedReplacementPriceExVat;
-        }
-
-        return updated;
+          ...(data.asset ?? {}),
+          dealerAssetCorrection: revaluationNeedsAttention
+            ? data.correction ?? correction
+            : null,
+        } as RegisterAsset;
       };
 
       setAssets((current) => current.map(applyDecision));
@@ -10356,14 +10351,20 @@ export default function AssetRegisterClient() {
       setProjectionAsset((current) => current ? applyDecision(current) : current);
       setQuoteAsset((current) => current ? applyDecision(current) : current);
       setNotice({
-        tone: 'success',
-        message: decision === 'accept'
-          ? 'Dealer update accepted and saved to the Asset Register.'
-          : 'Dealer update declined.',
+        tone: data.outcome === 'accepted_revaluation_failed' || data.outcome === 'accepted_revaluation_pending'
+          ? 'warning'
+          : 'success',
+        message: data.message || (
+          decision === 'accept'
+            ? 'Dealer update accepted and saved to the Asset Register.'
+            : 'Dealer update declined.'
+        ),
       });
-      window.dispatchEvent(new CustomEvent('aim4price:dealer-correction-resolved', {
-        detail: { correctionId: correction.id },
-      }));
+      if (data.outcome !== 'accepted_revaluation_failed' && data.outcome !== 'accepted_revaluation_pending') {
+        window.dispatchEvent(new CustomEvent('aim4price:dealer-correction-resolved', {
+          detail: { correctionId: correction.id },
+        }));
+      }
     } catch (error) {
       setNotice({
         tone: 'error',
@@ -10371,6 +10372,61 @@ export default function AssetRegisterClient() {
       });
     } finally {
       setBusyDealerCorrectionId((current) => (current === correction.id ? null : current));
+    }
+  }
+
+  async function handleDealerCorrectionRevaluationRetry(correction: DealerAssetCorrectionRequest) {
+    setBusyDealerCorrectionId(correction.id);
+    try {
+      const response = await fetch(`/api/asset-corrections/${encodeURIComponent(correction.id)}/retry`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      const data = (await response.json().catch(() => null)) as {
+        ok?: boolean;
+        correction?: DealerAssetCorrectionRequest;
+        outcome?: string;
+        message?: string;
+        asset?: RegisterAsset | null;
+        error?: string;
+      } | null;
+      if (!response.ok || !data?.ok) {
+        throw new Error(data?.error ?? 'Aim4price could not retry this valuation.');
+      }
+
+      const succeeded = data.outcome === 'accepted_revalued';
+      const applyResult = (entry: RegisterAsset): RegisterAsset => entry.id === correction.assetId
+        ? {
+            ...entry,
+            ...(data.asset ?? {}),
+            dealerAssetCorrection: succeeded ? null : data.correction ?? correction,
+          } as RegisterAsset
+        : entry;
+      setAssets((current) => current.map(applyResult));
+      setActiveAsset((current) => current ? applyResult(current) : current);
+      setMarketplaceAsset((current) => current ? applyResult(current) : current);
+      setProjectionAsset((current) => current ? applyResult(current) : current);
+      setQuoteAsset((current) => current ? applyResult(current) : current);
+      setNotice({
+        tone: succeeded ? 'success' : 'warning',
+        message: data.message || (
+          succeeded
+            ? 'Aim4price recalculated the asset and saved the latest estimate.'
+            : 'Aim4price could not complete the recalculation.'
+        ),
+      });
+      if (succeeded) {
+        window.dispatchEvent(new CustomEvent('aim4price:dealer-correction-resolved', {
+          detail: { correctionId: correction.id },
+        }));
+      }
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Aim4price could not retry this valuation.',
+      });
+    } finally {
+      setBusyDealerCorrectionId(null);
     }
   }
 
@@ -11842,7 +11898,13 @@ export default function AssetRegisterClient() {
 
       <section className={styles.shell}>
         {notice ? (
-          <div className={`${styles.notice} ${notice.tone === 'success' ? styles.noticeSuccess : styles.noticeError}`}>
+          <div className={`${styles.notice} ${
+            notice.tone === 'success'
+              ? styles.noticeSuccess
+              : notice.tone === 'warning'
+                ? styles.noticeWarning
+                : styles.noticeError
+          }`}>
             {notice.message}
           </div>
         ) : null}
@@ -12381,9 +12443,19 @@ export default function AssetRegisterClient() {
                     const maintenanceAlert = asset.maintenanceAlert ?? null;
                     const licenseRenewalAlert = asset.licenseRenewalAlert ?? null;
                     const dealerAssetCorrection = asset.dealerAssetCorrection ?? null;
-                    const dealerCorrectionLabel = dealerAssetCorrection?.serialNumberChanged
-                      ? 'Serial number update'
-                      : 'Replacement price update';
+                    const dealerCorrectionRevaluationAlert =
+                      dealerAssetCorrection?.status === 'accepted'
+                      && (
+                        dealerAssetCorrection.revaluationStatus === 'failed'
+                        || dealerAssetCorrection.revaluationStatus === 'pending'
+                      );
+                    const dealerCorrectionLabel = dealerCorrectionRevaluationAlert
+                      ? dealerAssetCorrection?.revaluationStatus === 'failed'
+                        ? 'Valuation retry needed'
+                        : 'Valuation pending'
+                      : dealerAssetCorrection?.serialNumberChanged
+                        ? 'Serial number update'
+                        : 'Replacement price update';
                     const isDecidingDealerCorrection = dealerAssetCorrection
                       ? busyDealerCorrectionId === dealerAssetCorrection.id
                       : false;
@@ -12451,7 +12523,7 @@ export default function AssetRegisterClient() {
 
                         <article
                           id={`asset-card-${asset.id}`}
-                          className={`${styles.assetCard} ${isExpanded ? styles.assetCardExpanded : ''} ${isFlagged ? styles.assetCardFlagged : ''} ${estimateNeedsUpdate ? styles.assetCardEstimateStale : ''} ${openPartnerNote ? `${styles.assetCardPartnerNote} ${partnerNoteToneClass}` : ''} ${maintenanceAlert || licenseRenewalAlert ? styles.assetCardMaintenanceUpcoming : ''} ${latestMaintenanceStatus ? styles.assetCardMaintenanceDone : ''} ${latestIssueNoteStatus ? styles.assetCardIssueNote : ''} ${dealerAssetCorrection ? styles.assetCardDealerCorrection : ''}`}
+                          className={`${styles.assetCard} ${isExpanded ? styles.assetCardExpanded : ''} ${isFlagged ? styles.assetCardFlagged : ''} ${estimateNeedsUpdate ? styles.assetCardEstimateStale : ''} ${openPartnerNote ? `${styles.assetCardPartnerNote} ${partnerNoteToneClass}` : ''} ${maintenanceAlert || licenseRenewalAlert ? styles.assetCardMaintenanceUpcoming : ''} ${latestMaintenanceStatus ? styles.assetCardMaintenanceDone : ''} ${latestIssueNoteStatus ? styles.assetCardIssueNote : ''} ${dealerAssetCorrection ? styles.assetCardDealerCorrection : ''} ${dealerCorrectionRevaluationAlert ? styles.assetCardDealerCorrectionWarning : ''}`}
                         >
                         <div className={styles.assetHeader}>
                           <div className={styles.assetTitleBlock}>
@@ -12467,7 +12539,7 @@ export default function AssetRegisterClient() {
                                 {licenseRenewalAlert ? <span className={`${styles.badge} ${styles.badgeMaintenanceUpcoming}`}>License renewal upcoming</span> : null}
                                 {latestMaintenanceStatus ? <span className={`${styles.badge} ${styles.badgeMaintenanceDone}`}>{maintenanceDoneLabel}</span> : null}
                                 {latestIssueNoteStatus ? <span className={`${styles.badge} ${styles.badgeIssueNote}`}>Open issue</span> : null}
-                                {dealerAssetCorrection ? <span className={`${styles.badge} ${styles.badgeDealerCorrection}`}>{dealerCorrectionLabel}</span> : null}
+                                {dealerAssetCorrection ? <span className={`${styles.badge} ${styles.badgeDealerCorrection} ${dealerCorrectionRevaluationAlert ? styles.badgeDealerCorrectionWarning : ''}`}>{dealerCorrectionLabel}</span> : null}
                               </div>
                             ) : null}
                             <h2>{asset.title}</h2>
@@ -12544,32 +12616,59 @@ export default function AssetRegisterClient() {
                           </div>
 
                           {dealerAssetCorrection ? (
-                            <div className={styles.dealerCorrectionBanner} role="status">
+                            <div className={`${styles.dealerCorrectionBanner} ${dealerCorrectionRevaluationAlert ? styles.dealerCorrectionBannerWarning : ''}`} role="status">
                               <div className={styles.dealerCorrectionCopy}>
-                                <span className={styles.dealerCorrectionIcon} aria-hidden="true">✓</span>
+                                <span className={styles.dealerCorrectionIcon} aria-hidden="true">{dealerCorrectionRevaluationAlert ? '!' : '✓'}</span>
                                 <div>
-                                  <strong>Dealer update awaiting your approval</strong>
-                                  <p>{dealerCorrectionDescription(dealerAssetCorrection)}</p>
-                                  <small>Review this one change before the dealer can submit another update for this asset.</small>
+                                  <strong>{dealerCorrectionRevaluationAlert
+                                    ? dealerAssetCorrection.revaluationStatus === 'failed'
+                                      ? 'Replacement price saved — valuation retry needed'
+                                      : 'Replacement price saved — valuation pending'
+                                    : 'Dealer update awaiting your approval'}</strong>
+                                  <p>{dealerCorrectionRevaluationAlert
+                                    ? dealerAssetCorrection.revaluationStatus === 'failed'
+                                      ? dealerAssetCorrection.revaluationFailureMessage || 'Aim4price could not recalculate this asset automatically.'
+                                      : 'Aim4price is still recalculating this asset. A safe retry becomes available if the attempt is interrupted.'
+                                    : dealerCorrectionDescription(dealerAssetCorrection)}</p>
+                                  <small>{dealerCorrectionRevaluationAlert
+                                    ? 'The accepted replacement price remains saved regardless of the valuation result.'
+                                    : 'Review this one change before the dealer can submit another update for this asset.'}</small>
                                 </div>
                               </div>
                               <div className={styles.dealerCorrectionActions}>
-                                <button
-                                  type="button"
-                                  className={styles.dealerCorrectionDeclineButton}
-                                  disabled={isDecidingDealerCorrection}
-                                  onClick={() => void handleDealerCorrectionDecision(dealerAssetCorrection, 'reject')}
-                                >
-                                  {isDecidingDealerCorrection ? 'Saving…' : 'Decline'}
-                                </button>
-                                <button
-                                  type="button"
-                                  className={styles.dealerCorrectionAcceptButton}
-                                  disabled={isDecidingDealerCorrection}
-                                  onClick={() => void handleDealerCorrectionDecision(dealerAssetCorrection, 'accept')}
-                                >
-                                  {isDecidingDealerCorrection ? 'Saving…' : 'Accept update'}
-                                </button>
+                                {dealerCorrectionRevaluationAlert ? (
+                                  <button
+                                    type="button"
+                                    className={styles.dealerCorrectionAcceptButton}
+                                    disabled={isDecidingDealerCorrection || !dealerAssetCorrection.revaluationRetryable}
+                                    onClick={() => void handleDealerCorrectionRevaluationRetry(dealerAssetCorrection)}
+                                  >
+                                    {isDecidingDealerCorrection
+                                      ? 'Retrying…'
+                                      : dealerAssetCorrection.revaluationRetryable
+                                        ? 'Retry valuation'
+                                        : 'Recalculation pending'}
+                                  </button>
+                                ) : (
+                                  <>
+                                    <button
+                                      type="button"
+                                      className={styles.dealerCorrectionDeclineButton}
+                                      disabled={isDecidingDealerCorrection}
+                                      onClick={() => void handleDealerCorrectionDecision(dealerAssetCorrection, 'reject')}
+                                    >
+                                      {isDecidingDealerCorrection ? 'Saving…' : 'Decline'}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className={styles.dealerCorrectionAcceptButton}
+                                      disabled={isDecidingDealerCorrection}
+                                      onClick={() => void handleDealerCorrectionDecision(dealerAssetCorrection, 'accept')}
+                                    >
+                                      {isDecidingDealerCorrection ? 'Saving…' : 'Accept update'}
+                                    </button>
+                                  </>
+                                )}
                               </div>
                             </div>
                           ) : null}

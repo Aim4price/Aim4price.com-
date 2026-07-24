@@ -52,6 +52,12 @@
   border-color: #f1d2d2;
 }
 
+.noticeWarning {
+  color: #80520b;
+  background: #fff5dc;
+  border-color: #f0d99d;
+}
+
 .registerPanel {
   background: rgba(255, 255, 255, 0.94);
   border: 1px solid rgba(225, 233, 241, 0.95);
@@ -9324,6 +9330,12 @@
   color: #9b2f2f !important;
   background: linear-gradient(180deg, #fffafa 0%, #fff0f0 100%) !important;
   border-color: rgba(239, 196, 196, 0.98) !important;
+}
+
+.noticeWarning {
+  color: #80520b !important;
+  background: linear-gradient(180deg, #fffaf0 0%, #fff1cf 100%) !important;
+  border-color: rgba(224, 184, 103, 0.96) !important;
 }
 
 .assetFormModal {
@@ -32495,10 +32507,24 @@ button.documentOpenLink {
   border-color: rgba(15, 107, 76, 0.72) !important;
 }
 
+.assetCardDealerCorrectionWarning {
+  border-color: rgba(183, 119, 17, 0.5) !important;
+  background:
+    radial-gradient(circle at top left, rgba(224, 154, 44, 0.12), transparent 34%),
+    linear-gradient(180deg, #fff8e8 0%, #fffdf7 48%, #ffffff 100%) !important;
+  box-shadow: 0 18px 44px rgba(137, 89, 15, 0.13) !important;
+}
+
 .badgeDealerCorrection {
   color: #0d563d !important;
   background: #dff7eb !important;
   border-color: rgba(22, 126, 91, 0.28) !important;
+}
+
+.badgeDealerCorrectionWarning {
+  color: #744908 !important;
+  background: #fff0c9 !important;
+  border-color: rgba(183, 119, 17, 0.3) !important;
 }
 
 .dealerCorrectionBanner {
@@ -32519,6 +32545,20 @@ button.documentOpenLink {
   box-shadow:
     0 14px 28px rgba(15, 91, 66, 0.16),
     inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.dealerCorrectionBannerWarning {
+  border-color: rgba(255, 235, 190, 0.48);
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.24), transparent 38%),
+    linear-gradient(135deg, #a96e13 0%, #855207 100%);
+  box-shadow:
+    0 14px 28px rgba(119, 74, 9, 0.17),
+    inset 0 1px 0 rgba(255, 255, 255, 0.17);
+}
+
+.dealerCorrectionBannerWarning .dealerCorrectionIcon {
+  color: #8a5709;
 }
 
 .dealerCorrectionCopy {
@@ -32579,6 +32619,10 @@ button.documentOpenLink {
   display: flex;
   align-items: center;
   gap: 0.6rem;
+}
+
+.dealerCorrectionActions > button:only-child {
+  min-width: 10.5rem;
 }
 
 .dealerCorrectionDeclineButton,
