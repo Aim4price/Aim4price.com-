@@ -2,8 +2,10 @@
 
 import Link from 'next/link';
 import { useMemo, useState, type FormEvent } from 'react';
+import DealerMaintenanceAccessSettings from '../../../../components/DealerMaintenanceAccessSettings';
 import BalancedHeadingText from '../../balanced-heading';
 import OwnerAppNav from '../../owner-app-nav';
+import type { DealerMaintenancePermissions } from '../../../../lib/dealer-maintenance-tracker';
 import styles from '../../owner-app.module.css';
 
 type PartnerType = 'dealer' | 'finance' | 'insurance';
@@ -35,6 +37,7 @@ type DealerTrackingAccess = {
   dealerName: string;
   grantedByName: string;
   createdAtIso: string;
+  permissions: DealerMaintenancePermissions;
 };
 
 type QuoteOption = {
@@ -181,7 +184,6 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
   const [trackMaintenance, setTrackMaintenance] = useState(false);
   const [trackingAccess, setTrackingAccess] = useState<DealerTrackingAccess[]>([]);
   const [loadingTracking, setLoadingTracking] = useState(false);
-  const [removingTrackingId, setRemovingTrackingId] = useState('');
   const [loadingPartners, setLoadingPartners] = useState(false);
   const [sending, setSending] = useState(false);
   const [notice, setNotice] = useState<{ tone: 'success' | 'error'; message: string } | null>(null);
@@ -243,28 +245,6 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
       setNotice({ tone: 'error', message: cause instanceof Error ? cause.message : 'Failed to load dealer tracking settings.' });
     } finally {
       setLoadingTracking(false);
-    }
-  }
-
-  async function stopDealerTracking(entry: DealerTrackingAccess) {
-    if (removingTrackingId) return;
-    setRemovingTrackingId(entry.id);
-    setNotice(null);
-    try {
-      const response = await fetch('/api/dealer-maintenance-access', {
-        method: 'DELETE',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ assetId, dealerUserId: entry.dealerUserId }),
-      });
-      const payload = await response.json().catch(() => null) as { ok?: boolean; error?: string } | null;
-      if (!response.ok || !payload?.ok) throw new Error(payload?.error || 'Failed to stop dealer tracking.');
-      setTrackingAccess((current) => current.filter((item) => item.id !== entry.id));
-      setNotice({ tone: 'success', message: `${entry.dealerName} can no longer track this asset.` });
-    } catch (cause) {
-      setNotice({ tone: 'error', message: cause instanceof Error ? cause.message : 'Failed to stop dealer tracking.' });
-    } finally {
-      setRemovingTrackingId('');
     }
   }
 
@@ -474,18 +454,16 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
       {stage === 'tracking' ? (
         <section className={`${styles.section} ${styles.ownerOptionsSection}`}>
           <div className={styles.ownerOptionsFlowHeader}>
-            <div><h2><BalancedHeadingText text="Dealer tracking settings" /></h2><p>Only the dealers below can track this asset&apos;s usage and open maintenance.</p></div>
+            <div><h2><BalancedHeadingText text="Dealer tracking settings" /></h2><p>Control exactly what each dealer can view or update for this asset.</p></div>
           </div>
-          {loadingTracking ? <p className={styles.ownerOptionsEmpty}>Loading tracking settings…</p> : trackingAccess.length ? (
-            <div className={styles.ownerTrackingList}>
-              {trackingAccess.map((entry) => (
-                <article key={entry.id} className={styles.ownerTrackingAccessCard}>
-                  <span><strong>{entry.dealerName}</strong><small>{entry.grantedByName ? `Shared by ${entry.grantedByName}` : 'Maintenance tracking active'}</small></span>
-                  <button type="button" onClick={() => void stopDealerTracking(entry)} disabled={Boolean(removingTrackingId)}>{removingTrackingId === entry.id ? 'Removing…' : 'Stop tracking'}</button>
-                </article>
-              ))}
-            </div>
-          ) : <p className={styles.ownerOptionsEmpty}>No dealer is currently tracking this asset.</p>}
+          {loadingTracking ? <p className={styles.ownerOptionsEmpty}>Loading tracking settings…</p> : (
+            <DealerMaintenanceAccessSettings
+              assetId={assetId}
+              entries={trackingAccess}
+              mutationUrl="/api/dealer-maintenance-access"
+              onEntriesChange={setTrackingAccess}
+            />
+          )}
         </section>
       ) : null}
 
