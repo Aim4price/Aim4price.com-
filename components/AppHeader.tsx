@@ -186,7 +186,6 @@ const DEFAULT_NAV_ITEMS: NavItem[] = [
 
 const OWNER_NAV_ITEMS: NavItem[] = [
   ...DEFAULT_NAV_ITEMS,
-  { key: 'asset-discovery', href: '/asset-discovery', label: 'Discover Assets' },
   { key: 'asset-map', href: '/asset-map', label: 'Asset Map' },
   { key: 'cost', href: '/my-invoices', label: 'Cost Ledger' },
   { key: 'maintenance', href: '/maintenance', label: 'Maintenance' },
@@ -199,7 +198,6 @@ const ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
   { href: '/asset-map', label: 'Asset Map', accountTypes: ['owner'] },
   { href: '/asset-register', label: 'Asset Register', accountTypes: ['owner'] },
   { href: '/my-invoices', label: 'Cost Ledger', accountTypes: ['owner'] },
-  { href: '/asset-discovery', label: 'Discover Assets', accountTypes: ['owner', 'dealer'] },
   { href: '/tracking', label: 'Tracking', accountTypes: ['dealer'] },
   { href: '/fuel', label: 'Fuel Ledger', accountTypes: ['owner'] },
   { href: '/valuation', label: 'Get Estimate', accountTypes: ['dealer'] },
@@ -239,7 +237,6 @@ function buildNavItems(accountType: AccountType | 'public' | null): NavItem[] {
     return [
       ...BASE_NAV_ITEMS,
       { key: 'leads', href: '/leads', label: 'My Leads' },
-      { key: 'asset-discovery', href: '/asset-discovery', label: 'Discover Assets' },
       { key: 'tracking', href: '/tracking', label: 'Tracking' },
       { key: 'marketplace', href: '/marketplace', label: 'Marketplace' },
     ];
