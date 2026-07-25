@@ -32711,15 +32711,15 @@ button.documentOpenLink {
 /* === Asset card actions: equal dimensions and consistent spacing === */
 @media (min-width: 901px) {
   .page .assetHeaderAside {
-    min-width: min(100%, 33rem);
+    min-width: min(100%, 29rem);
   }
 
   .page .assetHeaderActions {
-    width: 33rem;
+    width: 29rem;
     max-width: 100%;
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.75rem;
+    gap: 0.65rem;
   }
 
   .page .assetHeaderActions .cardOptionsButton,
@@ -32728,23 +32728,31 @@ button.documentOpenLink {
     width: 100%;
     min-width: 0;
     max-width: none;
-    min-height: 3.75rem;
-    height: 3.75rem;
+    min-height: 3.2rem;
+    height: 3.2rem;
     justify-content: center;
-    padding: 0 0.9rem;
+    padding: 0 0.75rem;
+    font-size: 0.92rem;
+  }
+
+  .page .assetHeaderActions .cardOptionsButton .buttonIcon,
+  .page .assetHeaderActions .cardViewDetailsButton .buttonIcon,
+  .page .assetHeaderActions .cardManageButton .buttonIcon {
+    width: 1rem;
+    height: 1rem;
   }
 
   .page .assetHeaderActions .updateEstimateInlineButton {
     grid-column: 1 / -1;
     width: 100%;
     min-width: 0;
-    min-height: 3.75rem;
+    min-height: 3.2rem;
   }
 }
 
 @media (max-width: 900px) {
   .page .assetHeaderActions {
-    gap: 0.75rem !important;
+    gap: 0.65rem !important;
   }
 
   .page .assetHeaderActions .cardOptionsButton,
@@ -32752,6 +32760,6 @@ button.documentOpenLink {
   .page .assetHeaderActions .cardManageButton {
     width: 100%;
     min-width: 0;
-    min-height: 3.5rem !important;
+    min-height: 3.2rem !important;
   }
 }
