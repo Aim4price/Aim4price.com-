@@ -118,7 +118,10 @@ async function deleteUserWorkspaceDataInTransaction(
   }
 
   if (tableSet.has('asset_discovery_enquiries')) {
-    await queryable.query('delete from asset_discovery_enquiries where dealer_user_id = $1 or owner_user_id = $1', [userId]);
+    await queryable.query(
+      'delete from asset_discovery_enquiries where requester_user_id = $1 or dealer_user_id = $1 or owner_user_id = $1',
+      [userId],
+    );
   }
 
   for (const tableName of USER_ID_TABLES) {

@@ -41,6 +41,7 @@ export type AccountProfile = {
   marketplacePhone: string;
   marketplaceEmail: string;
   marketplaceLocation: string;
+  discoveryParticipationEnabled: boolean;
   partnerDirectoryEnabled: boolean;
   partnerDirectoryStatus: string;
   partnerDescription: string;
@@ -78,6 +79,7 @@ export type UpsertAccountProfileInput = {
   marketplacePhone?: string | null;
   marketplaceEmail?: string | null;
   marketplaceLocation?: string | null;
+  discoveryParticipationEnabled?: boolean | null;
   partnerDirectoryEnabled?: boolean | null;
   partnerDirectoryStatus?: string | null;
   partnerDescription?: string | null;
@@ -112,6 +114,7 @@ type AccountProfileRow = {
   marketplace_phone: string | null;
   marketplace_email: string | null;
   marketplace_location: string | null;
+  discovery_participation_enabled: boolean | null;
   partner_directory_enabled: boolean | null;
   partner_directory_status: string | null;
   partner_description: string | null;
@@ -134,6 +137,7 @@ type AccountTypeRow = {
   account_type: string | null;
   account_subtype: string | null;
   logo_url: string | null;
+  discovery_participation_enabled: boolean | null;
 };
 
 const MAX_LOGO_URL_LENGTH = 3_000_000;
@@ -451,6 +455,7 @@ export async function ensureAccountProfileColumns(): Promise<void> {
       marketplace_phone text,
       marketplace_email text,
       marketplace_location text,
+      discovery_participation_enabled boolean not null default false,
       partner_directory_enabled boolean not null default false,
       partner_directory_status text not null default 'approved',
       partner_description text,
@@ -491,6 +496,7 @@ export async function ensureAccountProfileColumns(): Promise<void> {
       add column if not exists marketplace_phone text,
       add column if not exists marketplace_email text,
       add column if not exists marketplace_location text,
+      add column if not exists discovery_participation_enabled boolean not null default false,
       add column if not exists partner_directory_enabled boolean not null default false,
       add column if not exists partner_directory_status text not null default 'approved',
       add column if not exists partner_description text,
@@ -570,6 +576,11 @@ export async function ensureAccountProfileColumns(): Promise<void> {
   `);
 
   await db.query(`
+    create index if not exists idx_account_profiles_discovery_participation
+      on account_profiles(account_type, account_status, discovery_participation_enabled)
+  `);
+
+  await db.query(`
     create index if not exists idx_account_profiles_account_status
       on account_profiles(account_status)
   `);
@@ -628,6 +639,9 @@ function mapAccountProfileRow(
     marketplacePhone: asText(row?.marketplace_phone),
     marketplaceEmail: asText(row?.marketplace_email),
     marketplaceLocation: asText(row?.marketplace_location),
+    discoveryParticipationEnabled:
+      accountType === "owner" &&
+      Boolean(row?.discovery_participation_enabled),
     partnerDirectoryEnabled: Boolean(row?.partner_directory_enabled),
     partnerDirectoryStatus: normalizeDirectoryStatus(
       row?.partner_directory_status,
@@ -770,6 +784,7 @@ export async function getAccountProfile(user: {
         marketplace_phone,
         marketplace_email,
         marketplace_location,
+        discovery_participation_enabled,
         partner_directory_enabled,
         partner_directory_status,
         partner_description,
@@ -800,7 +815,7 @@ export async function upsertAccountProfile(
 
   const existingAccountTypeResult = await db.query<AccountTypeRow>(
     `
-      select account_type, account_subtype, logo_url
+      select account_type, account_subtype, logo_url, discovery_participation_enabled
       from account_profiles
       where user_id = $1
       limit 1
@@ -837,6 +852,12 @@ export async function upsertAccountProfile(
   );
   const partnerDirectoryEnabled =
     normalizedAccountType !== "owner" && Boolean(input.partnerDirectoryEnabled);
+  const discoveryParticipationEnabled =
+    normalizedAccountType === "owner"
+      ? typeof input.discoveryParticipationEnabled === "boolean"
+        ? input.discoveryParticipationEnabled
+        : Boolean(existingAccount?.discovery_participation_enabled)
+      : false;
 
   const result = await db.query<AccountProfileRow>(
     `
@@ -860,6 +881,7 @@ export async function upsertAccountProfile(
         marketplace_phone,
         marketplace_email,
         marketplace_location,
+        discovery_participation_enabled,
         partner_directory_enabled,
         partner_directory_status,
         partner_description,
@@ -873,7 +895,7 @@ export async function upsertAccountProfile(
       )
       values (
         $1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
-        $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, now(), now()
+        $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, now(), now()
       )
       on conflict (user_id)
       do update set
@@ -895,6 +917,7 @@ export async function upsertAccountProfile(
         marketplace_phone = excluded.marketplace_phone,
         marketplace_email = excluded.marketplace_email,
         marketplace_location = excluded.marketplace_location,
+        discovery_participation_enabled = excluded.discovery_participation_enabled,
         partner_directory_enabled = excluded.partner_directory_enabled,
         partner_directory_status = excluded.partner_directory_status,
         partner_description = excluded.partner_description,
@@ -927,6 +950,7 @@ export async function upsertAccountProfile(
         marketplace_phone,
         marketplace_email,
         marketplace_location,
+        discovery_participation_enabled,
         partner_directory_enabled,
         partner_directory_status,
         partner_description,
@@ -958,6 +982,7 @@ export async function upsertAccountProfile(
       asText(input.marketplacePhone) || null,
       normalizedMarketplaceEmail || null,
       asText(input.marketplaceLocation) || null,
+      discoveryParticipationEnabled,
       partnerDirectoryEnabled,
       normalizeDirectoryStatus(input.partnerDirectoryStatus),
       asText(input.partnerDescription) || null,

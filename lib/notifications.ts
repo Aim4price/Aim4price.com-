@@ -2,7 +2,7 @@ import { getDb } from './db';
 import { ensureFuelLedgerTables, listFuelLedger, type FuelLedgerEvent } from './fuel-ledger';
 import {
   listPendingAssetDiscoveryEnquiriesForOwner,
-  listRecentAssetDiscoveryEnquiriesForDealer,
+  listRecentAssetDiscoveryEnquiriesForRequester,
 } from './asset-discovery';
 import {
   ensurePartnerAccessTables,
@@ -534,9 +534,9 @@ async function listOwnerAssetDiscoveryNotifications(userId: string): Promise<Hea
   }
 }
 
-async function listDealerAssetDiscoveryNotifications(userId: string): Promise<HeaderNotificationItem[]> {
+async function listRequesterAssetDiscoveryNotifications(userId: string): Promise<HeaderNotificationItem[]> {
   try {
-    const enquiries = await listRecentAssetDiscoveryEnquiriesForDealer(userId);
+    const enquiries = await listRecentAssetDiscoveryEnquiriesForRequester(userId);
 
     return enquiries.map((enquiry) => {
       const approved = enquiry.status === 'approved';
@@ -546,7 +546,7 @@ async function listDealerAssetDiscoveryNotifications(userId: string): Promise<He
         : '';
 
       return {
-        id: `asset-discovery-dealer:${enquiry.id}:${enquiry.status}:${enquiry.updatedAtIso}`,
+        id: `asset-discovery-requester:${enquiry.id}:${enquiry.status}:${enquiry.updatedAtIso}`,
         category: 'asset_discovery',
         tone: approved ? 'success' : 'warning',
         title: approved ? 'Asset enquiry approved' : 'Asset unavailable for 90 days',
@@ -559,7 +559,7 @@ async function listDealerAssetDiscoveryNotifications(userId: string): Promise<He
       } satisfies HeaderNotificationItem;
     });
   } catch (error) {
-    console.error('Failed to load dealer Discovery notifications', error);
+    console.error('Failed to load requester Discovery notifications', error);
     return [];
   }
 }
@@ -660,13 +660,14 @@ export async function listHeaderNotifications(input: ListHeaderNotificationsInpu
         listOpenPartnerNoteNotifications(input.userId),
         listOwnerLeadNotifications(input.userId),
         listOwnerAssetDiscoveryNotifications(input.userId),
+        listRequesterAssetDiscoveryNotifications(input.userId),
         listOwnerRecurringMaintenanceNotifications(input.userId),
         listQrScanNotifications(input.userId),
         listFuelNotifications(input.userId),
       ])
     : await Promise.all([
         listPartnerLeadNotifications(input.userId),
-        accountType === 'dealer' ? listDealerAssetDiscoveryNotifications(input.userId) : Promise.resolve([]),
+        accountType === 'dealer' ? listRequesterAssetDiscoveryNotifications(input.userId) : Promise.resolve([]),
       ]);
 
   return notificationGroups
