@@ -9792,7 +9792,7 @@ export default function AssetRegisterClient() {
       closeMarketplaceModal();
 
       const listingIdentifier = data.listing?.id ?? data.listing?.sourceAssetId ?? data.assetId ?? publishedAsset.id;
-      window.location.assign(`/marketplace?listing=${encodeURIComponent(String(listingIdentifier))}`);
+      window.location.assign(`/marketplace/browse?listing=${encodeURIComponent(String(listingIdentifier))}`);
     } catch (error) {
       setNotice({
         tone: 'error',
