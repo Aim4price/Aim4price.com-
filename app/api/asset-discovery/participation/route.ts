@@ -7,7 +7,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function PATCH(request: NextRequest) {
-  const session = await getServerSession();
+  const session = await getServerSession({ allowOwnerApp: true });
   if (!session?.user?.id) {
     return NextResponse.json(
       { ok: false, error: "You must be signed in." },
