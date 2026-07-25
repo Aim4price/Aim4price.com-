@@ -12589,8 +12589,8 @@ export default function AssetRegisterClient() {
                                 className={`${styles.optionsButton} ${styles.cardOptionsButton}`}
                                 onClick={() => openAssetQuoteOptions(asset)}
                               >
-                                <OptionsIcon className={styles.buttonIcon} />
-                                <span>Options</span>
+                                <ShareIcon className={styles.buttonIcon} />
+                                <span>Share</span>
                               </button>
 
                               <button
