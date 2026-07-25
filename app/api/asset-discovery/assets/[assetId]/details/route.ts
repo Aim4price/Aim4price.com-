@@ -13,7 +13,10 @@ type RouteContext = {
 };
 
 export async function GET(_request: Request, context: RouteContext) {
-  const session = await getServerSession({ allowDealerApp: true });
+  const session = await getServerSession({
+    allowDealerApp: true,
+    allowOwnerApp: true,
+  });
   if (!session?.user?.id) {
     return NextResponse.json(
       { ok: false, error: "You must be signed in." },
