@@ -83,7 +83,10 @@ export default async function MarketplaceEntryPage({
                 <path d="m11.6 20.4 2.7-6.1 6.1-2.7-2.7 6.1-6.1 2.7Z" />
               </svg>
             </span>
-            <strong>Discovery</strong>
+            <span className={styles.choiceFooter}>
+              <strong>Discovery</strong>
+              <span className={styles.choiceArrow} aria-hidden="true">›</span>
+            </span>
           </Link>
 
           <Link href="/marketplace/browse" className={`${styles.choiceCard} ${styles.marketplaceCard}`}>
@@ -95,7 +98,10 @@ export default async function MarketplaceEntryPage({
                 <path d="M13 27v-5h6v5" />
               </svg>
             </span>
-            <strong>Marketplace</strong>
+            <span className={styles.choiceFooter}>
+              <strong>Marketplace</strong>
+              <span className={styles.choiceArrow} aria-hidden="true">›</span>
+            </span>
           </Link>
         </nav>
       </section>

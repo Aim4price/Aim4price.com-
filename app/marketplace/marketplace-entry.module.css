@@ -14,27 +14,28 @@
 }
 
 .choiceGrid {
-  width: min(100%, 56rem);
+  width: min(100%, 54rem);
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1.5rem;
+  gap: 1.35rem;
 }
 
 .choiceCard {
+  position: relative;
   min-width: 0;
-  min-height: 13rem;
+  min-height: 12.75rem;
   display: grid;
-  grid-template-rows: 7.8rem auto;
-  gap: 1rem;
+  grid-template-rows: 7.5rem auto;
+  gap: 0.85rem;
   align-items: center;
-  padding: 1.15rem;
+  overflow: hidden;
+  padding: 1.05rem;
   border: 1px solid;
-  border-radius: 1.65rem;
+  border-radius: 1.55rem;
   color: #0a3f34;
   box-shadow:
-    0 14px 30px rgba(18, 61, 51, 0.06),
+    0 14px 30px rgba(18, 61, 51, 0.065),
     inset 0 1px 0 rgba(255, 255, 255, 0.96);
-  text-align: center;
   text-decoration: none;
   transition:
     background 170ms ease,
@@ -54,13 +55,27 @@
 }
 
 .choiceIcon {
+  position: relative;
   width: 100%;
   height: 100%;
   display: grid;
   place-items: center;
+  overflow: hidden;
   border: 1px solid;
-  border-radius: 1.25rem;
+  border-radius: 1.2rem;
   background: rgba(255, 255, 255, 0.58);
+}
+
+.choiceIcon::after {
+  position: absolute;
+  right: -2.8rem;
+  bottom: -4.7rem;
+  width: 9.5rem;
+  height: 9.5rem;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  content: '';
+  opacity: 0.07;
 }
 
 .discoveryCard .choiceIcon {
@@ -76,6 +91,8 @@
 }
 
 .choiceIcon svg {
+  position: relative;
+  z-index: 1;
   width: 2.9rem;
   height: 2.9rem;
   fill: none;
@@ -85,22 +102,70 @@
   stroke-width: 1.9;
 }
 
-.choiceCard strong {
-  align-self: start;
-  display: block;
+.choiceFooter {
+  min-width: 0;
+  min-height: 2.55rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0 0.2rem 0 0.45rem;
+}
+
+.choiceFooter strong {
+  min-width: 0;
   margin: 0;
-  padding: 0 0.5rem 0.25rem;
   font-family: var(--font-heading, 'Montserrat'), sans-serif;
-  font-size: clamp(1.35rem, 2vw, 1.65rem);
+  font-size: clamp(1.25rem, 1.8vw, 1.5rem);
   font-weight: 850;
   letter-spacing: -0.035em;
   line-height: 1.15;
+  text-align: left;
+}
+
+.choiceArrow {
+  width: 2.1rem;
+  height: 2.1rem;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(18, 61, 51, 0.16);
+  border-radius: 50%;
+  color: #24453c;
+  background: rgba(255, 255, 255, 0.86);
+  font-family: Arial, sans-serif;
+  font-size: 1.55rem;
+  font-weight: 400;
+  line-height: 1;
+  transition:
+    background 170ms ease,
+    border-color 170ms ease,
+    color 170ms ease,
+    transform 170ms ease;
 }
 
 .choiceCard:hover,
 .choiceCard:focus-visible {
   outline: none;
   transform: translateY(-2px);
+}
+
+.choiceCard:hover .choiceArrow,
+.choiceCard:focus-visible .choiceArrow {
+  color: #ffffff;
+  transform: translateX(2px);
+}
+
+.discoveryCard:hover .choiceArrow,
+.discoveryCard:focus-visible .choiceArrow {
+  border-color: #245fd6;
+  background: #245fd6;
+}
+
+.marketplaceCard:hover .choiceArrow,
+.marketplaceCard:focus-visible .choiceArrow {
+  border-color: #147554;
+  background: #147554;
 }
 
 .discoveryCard:hover,
@@ -134,10 +199,10 @@
   }
 
   .choiceCard {
-    min-height: 11.5rem;
-    grid-template-rows: 6.5rem auto;
-    gap: 0.85rem;
-    padding: 1rem;
+    min-height: 11.25rem;
+    grid-template-rows: 6.35rem auto;
+    gap: 0.75rem;
+    padding: 0.9rem;
     border-radius: 1.4rem;
   }
 
@@ -149,10 +214,16 @@
     width: 2.55rem;
     height: 2.55rem;
   }
+
+  .choiceFooter {
+    min-height: 2.35rem;
+    padding-left: 0.35rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .choiceCard {
+  .choiceCard,
+  .choiceArrow {
     transition: none;
   }
 }
