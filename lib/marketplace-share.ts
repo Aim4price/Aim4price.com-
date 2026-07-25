@@ -354,7 +354,7 @@ export function toAbsoluteMarketplaceUrl(value: string, origin: string): string 
 }
 
 export function buildMarketplaceListingUrl(origin: string, listing: MarketplaceListing): string {
-  const url = new URL('/marketplace', normalizeMarketplaceOrigin(origin));
+  const url = new URL('/marketplace/browse', normalizeMarketplaceOrigin(origin));
   url.searchParams.set('listing', listing.id);
   return url.toString();
 }
