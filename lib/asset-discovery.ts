@@ -1072,12 +1072,22 @@ function baseAssetWhere(input: {
     `(${DISCOVERY_ELIGIBLE_ASSET_SQL})`,
     `${RESOLVED_ASSET_TYPE_SQL} !~* '${PROPERTY_LIKE_ASSET_PATTERN}'`,
     `coalesce(asset.title, '') !~* '${PROPERTY_LIKE_ASSET_PATTERN}'`,
-    `not exists (
-      select 1
-      from public.asset_discovery_enquiries blocked_enquiry
-      where blocked_enquiry.asset_register_item_id = asset.id
-        and blocked_enquiry.status = 'temporarily_denied'
-        and blocked_enquiry.request_again_at > now()
+    `(
+      not exists (
+        select 1
+        from public.asset_discovery_enquiries blocked_enquiry
+        where blocked_enquiry.asset_register_item_id = asset.id
+          and blocked_enquiry.status = 'temporarily_denied'
+          and blocked_enquiry.request_again_at > now()
+      )
+      or exists (
+        select 1
+        from public.asset_discovery_enquiries viewer_denial
+        where viewer_denial.asset_register_item_id = asset.id
+          and viewer_denial.requester_user_id = $1
+          and viewer_denial.status = 'temporarily_denied'
+          and viewer_denial.request_again_at > now()
+      )
     )`,
   ];
 
@@ -1510,7 +1520,13 @@ async function loadDiscoveryDetailRow(
         asset.life_worked_percent,
         ${ASSET_SPECS_JSON_SQL} as specs_json,
         asset.condition,
-        asset.photos,
+        coalesce(
+          to_jsonb(asset)->'photos',
+          to_jsonb(asset)->'photo_urls',
+          to_jsonb(asset)->'image_urls',
+          to_jsonb(asset)->'images',
+          '[]'::jsonb
+        ) as photos,
         owner.province,
         owner.business_name as owner_business_name,
         owner.display_name as owner_display_name,
