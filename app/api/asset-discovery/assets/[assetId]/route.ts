@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { getAccountProfile } from "../../../../../../lib/account-profile";
-import { getAssetDiscoveryAssetDetails } from "../../../../../../lib/asset-discovery";
-import { getServerSession } from "../../../../../../lib/auth-session";
+import { getAccountProfile } from "../../../../../lib/account-profile";
+import { getAssetDiscoveryAssetDetails } from "../../../../../lib/asset-discovery";
+import { getServerSession } from "../../../../../lib/auth-session";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
