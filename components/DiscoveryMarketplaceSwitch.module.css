@@ -1,0 +1,70 @@
+.switch {
+  width: min(100%, 34rem);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
+  margin: 0 auto 1rem;
+  padding: 0.38rem;
+  border: 1px solid #c9d9d3;
+  border-radius: 0.75rem;
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(10, 52, 43, 0.06);
+}
+
+.switch a {
+  min-height: 2.9rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.65rem 1rem;
+  border: 1px solid transparent;
+  border-radius: 0.45rem;
+  color: #315348;
+  background: #f5f8f7;
+  font-family: var(--font-heading, "Montserrat"), sans-serif;
+  font-size: 0.86rem;
+  font-weight: 780;
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  transition:
+    border-color 150ms ease,
+    background 150ms ease,
+    color 150ms ease;
+}
+
+.switch a:hover,
+.switch a:focus-visible {
+  border-color: #8db9a8;
+  color: #0d5f43;
+  background: #edf7f2;
+  outline: none;
+}
+
+.switch .active {
+  border-color: #126b4d;
+  color: #ffffff;
+  background: #197454;
+}
+
+.switch .active:hover,
+.switch .active:focus-visible {
+  border-color: #0d5f43;
+  color: #ffffff;
+  background: #126b4d;
+}
+
+.compact {
+  margin-top: 0.25rem;
+}
+
+@media (max-width: 520px) {
+  .switch {
+    width: 100%;
+  }
+
+  .switch a {
+    padding-inline: 0.55rem;
+    font-size: 0.78rem;
+  }
+}

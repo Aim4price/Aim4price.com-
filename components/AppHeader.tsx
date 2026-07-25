@@ -143,7 +143,9 @@ type AssetDiscoveryEnquiry = {
   deniedAtIso: string | null;
   requestAgainAtIso: string | null;
   asset: AssetDiscoverySafeSummary;
-  dealerMessage: string;
+  requesterAccountType: 'owner' | 'dealer';
+  requesterMessage: string;
+  requesterContact: AssetDiscoveryContactDetails | null;
   dealerContact: AssetDiscoveryContactDetails | null;
   ownerContact: AssetDiscoveryContactDetails | null;
 };
@@ -184,6 +186,7 @@ const DEFAULT_NAV_ITEMS: NavItem[] = [
 
 const OWNER_NAV_ITEMS: NavItem[] = [
   ...DEFAULT_NAV_ITEMS,
+  { key: 'asset-discovery', href: '/asset-discovery', label: 'Discover Assets' },
   { key: 'asset-map', href: '/asset-map', label: 'Asset Map' },
   { key: 'cost', href: '/my-invoices', label: 'Cost Ledger' },
   { key: 'maintenance', href: '/maintenance', label: 'Maintenance' },
@@ -196,7 +199,7 @@ const ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
   { href: '/asset-map', label: 'Asset Map', accountTypes: ['owner'] },
   { href: '/asset-register', label: 'Asset Register', accountTypes: ['owner'] },
   { href: '/my-invoices', label: 'Cost Ledger', accountTypes: ['owner'] },
-  { href: '/asset-discovery', label: 'Discovery', accountTypes: ['dealer'] },
+  { href: '/asset-discovery', label: 'Discover Assets', accountTypes: ['owner', 'dealer'] },
   { href: '/tracking', label: 'Tracking', accountTypes: ['dealer'] },
   { href: '/fuel', label: 'Fuel Ledger', accountTypes: ['owner'] },
   { href: '/valuation', label: 'Get Estimate', accountTypes: ['dealer'] },
@@ -236,7 +239,7 @@ function buildNavItems(accountType: AccountType | 'public' | null): NavItem[] {
     return [
       ...BASE_NAV_ITEMS,
       { key: 'leads', href: '/leads', label: 'My Leads' },
-      { key: 'asset-discovery', href: '/asset-discovery', label: 'Discovery' },
+      { key: 'asset-discovery', href: '/asset-discovery', label: 'Discover Assets' },
       { key: 'tracking', href: '/tracking', label: 'Tracking' },
       { key: 'marketplace', href: '/marketplace', label: 'Marketplace' },
     ];
@@ -1252,14 +1255,15 @@ export default function AppHeader({
     const isPending = enquiry.status === 'pending';
     const isApproved = enquiry.status === 'approved';
     const retryDate = formatDateTime(enquiry.requestAgainAtIso);
-    const contact = enquiry.dealerContact || enquiry.ownerContact;
+    const contact = enquiry.requesterContact || enquiry.ownerContact || enquiry.dealerContact;
+    const requesterLabel = enquiry.requesterAccountType === 'owner' ? 'owner' : 'dealer';
 
     return (
       <section className={styles.notificationDetailModal} role="dialog" aria-modal="true" aria-labelledby="notification-asset-discovery-title">
         <div className={styles.notificationDetailHeader}>
           <div className={styles.notificationDetailHeaderText}>
             <h2 id="notification-asset-discovery-title">Discovery enquiry</h2>
-            <p>{isPending ? 'Another user is looking for a machine like this. Interested in selling it?' : 'Asset-specific enquiry status.'}</p>
+            <p>{isPending ? `A ${requesterLabel} is looking for a machine like this. Interested in making contact?` : 'Asset-specific enquiry status.'}</p>
           </div>
           <button type="button" className={styles.notificationDetailCloseButton} onClick={closeNotificationDetailModal} aria-label="Close Discovery enquiry">
             ×
@@ -1293,10 +1297,10 @@ export default function AppHeader({
             </div>
           ) : null}
 
-          {isApproved && enquiry.dealerMessage ? (
+          {isApproved && enquiry.requesterMessage ? (
             <div className={styles.notificationDetailMessageBox}>
-              <strong>Dealer message</strong>
-              <p>{enquiry.dealerMessage}</p>
+              <strong>{enquiry.requesterAccountType === 'dealer' ? 'Dealer' : 'Owner'} message</strong>
+              <p>{enquiry.requesterMessage}</p>
             </div>
           ) : null}
 
