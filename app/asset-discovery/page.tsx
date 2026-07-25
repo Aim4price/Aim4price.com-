@@ -18,8 +18,7 @@ export default async function AssetDiscoveryPage() {
     email: session.user.email,
   });
 
-  if (profile.accountType !== 'dealer') {
-    if (profile.accountType === 'owner') redirect('/asset-register');
+  if (profile.accountType !== 'dealer' && profile.accountType !== 'owner') {
     redirect('/leads');
   }
 

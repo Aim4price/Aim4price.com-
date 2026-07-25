@@ -5,6 +5,7 @@ import {
   WorkspaceTitlePanel,
   workspaceStyles,
 } from "../../components/WorkspacePrimitives";
+import DiscoveryMarketplaceSwitch from "../../components/DiscoveryMarketplaceSwitch";
 import assetStyles from "../asset-register/page.module.css";
 import leadStyles from "../leads/page.module.css";
 import styles from "./page.module.css";
@@ -52,12 +53,35 @@ type DiscoveryPagination = {
 
 type ListResponse = {
   ok: boolean;
+  access?: DiscoveryAccess;
   assets?: AssetDiscoveryAsset[];
   provinceOptions?: Option[];
   typeOptions?: Option[];
   summary?: DiscoverySummary;
   pagination?: DiscoveryPagination;
   error?: string;
+};
+
+type DiscoveryAccess = {
+  accountType: "owner" | "dealer";
+  canBrowse: boolean;
+  participationEnabled: boolean;
+  eligibleAssetCount: number;
+  reason: "allowed" | "participation_disabled" | "no_eligible_assets";
+};
+
+type DiscoveryAssetDetails = {
+  asset: Pick<
+    AssetDiscoveryAsset,
+    "id" | "type" | "brand" | "model" | "year" | "usage" | "condition" | "province"
+  >;
+  enquiryId: string | null;
+  enquiryStatus: EnquiryStatus | null;
+  photosUnlocked: boolean;
+  contactUnlocked: boolean;
+  accessSource: "approved_enquiry" | "dealer_share" | null;
+  photoUrls: string[];
+  ownerContact: DiscoveryContact | null;
 };
 
 type EnquiryResponse = {
@@ -482,6 +506,18 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
+  const [access, setAccess] = useState<DiscoveryAccess | null>(null);
+  const [isUpdatingParticipation, setIsUpdatingParticipation] = useState(false);
+  const [expandedAssetId, setExpandedAssetId] = useState<string | null>(null);
+  const [detailsByAssetId, setDetailsByAssetId] = useState<
+    Record<string, DiscoveryAssetDetails>
+  >({});
+  const [detailsErrorByAssetId, setDetailsErrorByAssetId] = useState<
+    Record<string, string>
+  >({});
+  const [loadingDetailsAssetId, setLoadingDetailsAssetId] = useState<
+    string | null
+  >(null);
   const [activeEnquiry, setActiveEnquiry] =
     useState<DiscoveryEnquiryDetail | null>(null);
   const [loadingEnquiryId, setLoadingEnquiryId] = useState<string | null>(null);
@@ -578,6 +614,7 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
         }
 
         if (!mounted) return;
+        setAccess(data.access ?? null);
         setAssets(Array.isArray(data.assets) ? data.assets : []);
         setProvinceOptions(
           Array.isArray(data.provinceOptions) ? data.provinceOptions : [],
@@ -590,6 +627,7 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
         }
       } catch (loadError) {
         if (!mounted) return;
+        setAccess(null);
         setAssets([]);
         setSummary(EMPTY_SUMMARY);
         setPagination(EMPTY_PAGINATION);
@@ -701,6 +739,103 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
 
   function refreshAssets() {
     setRefreshVersion((current) => current + 1);
+  }
+
+  async function enableOwnerDiscoveryParticipation() {
+    if (isUpdatingParticipation) return;
+    setIsUpdatingParticipation(true);
+    setNotice(null);
+
+    try {
+      const response = await fetch("/api/asset-discovery/participation", {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled: true }),
+      });
+      const payload = (await response.json().catch(() => null)) as {
+        ok?: boolean;
+        access?: DiscoveryAccess;
+        error?: string;
+      } | null;
+      if (!response.ok || !payload?.ok || !payload.access) {
+        throw new Error(
+          payload?.error || "Failed to enable Discovery participation.",
+        );
+      }
+
+      setAccess(payload.access);
+      setNotice({
+        tone: "success",
+        message: "Discovery participation enabled.",
+      });
+      setRefreshVersion((current) => current + 1);
+    } catch (cause) {
+      setNotice({
+        tone: "error",
+        message:
+          cause instanceof Error
+            ? cause.message
+            : "Failed to enable Discovery participation.",
+      });
+    } finally {
+      setIsUpdatingParticipation(false);
+    }
+  }
+
+  async function toggleAssetDetails(asset: AssetDiscoveryAsset) {
+    if (expandedAssetId === asset.id) {
+      setExpandedAssetId(null);
+      return;
+    }
+
+    setExpandedAssetId(asset.id);
+    setLoadingDetailsAssetId(asset.id);
+    setDetailsErrorByAssetId((current) => {
+      const next = { ...current };
+      delete next[asset.id];
+      return next;
+    });
+
+    try {
+      const response = await fetch(
+        `/api/asset-discovery/assets/${encodeURIComponent(asset.id)}/details`,
+        {
+          credentials: "include",
+          cache: "no-store",
+        },
+      );
+      const payload = (await response.json().catch(() => null)) as {
+        ok?: boolean;
+        details?: DiscoveryAssetDetails;
+        error?: string;
+      } | null;
+      if (!response.ok || !payload?.ok || !payload.details) {
+        throw new Error(payload?.error || "Asset details are not available.");
+      }
+
+      setDetailsByAssetId((current) => ({
+        ...current,
+        [asset.id]: payload.details as DiscoveryAssetDetails,
+      }));
+    } catch (cause) {
+      setDetailsByAssetId((current) => {
+        const next = { ...current };
+        delete next[asset.id];
+        return next;
+      });
+      setDetailsErrorByAssetId((current) => ({
+        ...current,
+        [asset.id]:
+          cause instanceof Error
+            ? cause.message
+            : "Asset details are not available.",
+      }));
+    } finally {
+      setLoadingDetailsAssetId((current) =>
+        current === asset.id ? null : current,
+      );
+    }
   }
 
   function renderDealerFilter(
@@ -1019,6 +1154,157 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
     );
   }
 
+  function renderOpenControl(asset: AssetDiscoveryAsset) {
+    const isExpanded = expandedAssetId === asset.id;
+    const isLoading = loadingDetailsAssetId === asset.id;
+
+    return (
+      <button
+        type="button"
+        className={`${assetStyles.primaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionGreen} ${leadStyles.openLeadButton} ${styles.discoveryOpenButton}`}
+        onClick={() => void toggleAssetDetails(asset)}
+        aria-expanded={isExpanded}
+        aria-controls={`discovery-details-${asset.id}`}
+      >
+        {isExpanded ? "Close" : isLoading ? "Opening..." : "Open"}
+      </button>
+    );
+  }
+
+  function renderExpandedAsset(asset: AssetDiscoveryAsset) {
+    if (expandedAssetId !== asset.id) return null;
+    const details = detailsByAssetId[asset.id];
+    const detailsError = detailsErrorByAssetId[asset.id];
+    const isLoading = loadingDetailsAssetId === asset.id;
+
+    return (
+      <section
+        id={`discovery-details-${asset.id}`}
+        className={styles.discoveryExpanded}
+        aria-label={`${assetDisplayName(asset)} Discovery details`}
+      >
+        {isLoading ? (
+          <div className={styles.discoveryDetailsLoading}>
+            Loading protected asset details…
+          </div>
+        ) : detailsError ? (
+          <div className={styles.discoveryDetailsError}>{detailsError}</div>
+        ) : details ? (
+          <>
+            <div className={styles.discoveryDetailGrid}>
+              {[
+                ["Asset type", details.asset.type],
+                ["Brand", details.asset.brand],
+                ["Model", details.asset.model],
+                ["Year", details.asset.year],
+                ["Usage", details.asset.usage],
+                ["Condition", details.asset.condition],
+                ["Province", details.asset.province],
+                [
+                  "Enquiry",
+                  statusPillLabel(asset) || "Contact not requested",
+                ],
+              ].map(([label, value]) => (
+                <div key={`${asset.id}-${label}`}>
+                  <span>{label}</span>
+                  <strong>{value}</strong>
+                </div>
+              ))}
+            </div>
+
+            {details.photosUnlocked ? (
+              details.photoUrls.length ? (
+                <div
+                  className={styles.discoveryPhotoGrid}
+                  aria-label="Authorized asset photos"
+                >
+                  {details.photoUrls.map((photoUrl, index) => (
+                    <a
+                      key={photoUrl}
+                      href={photoUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={styles.discoveryPhoto}
+                      aria-label={`Open authorized asset photo ${index + 1}`}
+                    >
+                      <img
+                        src={photoUrl}
+                        alt={`${assetDisplayName(asset)} photo ${index + 1}`}
+                      />
+                    </a>
+                  ))}
+                </div>
+              ) : (
+                <p className={styles.discoveryNoPhotos}>
+                  Access is open, but the owner has not saved asset photos.
+                </p>
+              )
+            ) : (
+              <div
+                className={styles.discoveryLockedMedia}
+                aria-label="Photos locked until access is approved"
+              >
+                <div className={styles.discoveryLockedArtwork} aria-hidden="true">
+                  <span />
+                  <span />
+                  <span />
+                </div>
+                <div>
+                  <strong>Photos are locked</strong>
+                  <p>
+                    This is a privacy placeholder. No private image was sent to
+                    your browser.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {details.ownerContact ? (
+              <div className={styles.discoveryInlineContact}>
+                <div>
+                  <span>Owner or business</span>
+                  <strong>
+                    {details.ownerContact.businessName ||
+                      details.ownerContact.name ||
+                      "Not supplied"}
+                  </strong>
+                </div>
+                <div>
+                  <span>Phone</span>
+                  <strong>{details.ownerContact.phone || "Not supplied"}</strong>
+                </div>
+                <div>
+                  <span>Email</span>
+                  <strong>{details.ownerContact.email || "Not supplied"}</strong>
+                </div>
+                <div>
+                  <span>Location</span>
+                  <strong>
+                    {details.ownerContact.location || "Not supplied"}
+                  </strong>
+                </div>
+              </div>
+            ) : null}
+
+            <div className={styles.discoveryExpandedActions}>
+              <div>
+                <strong>
+                  {details.accessSource === "dealer_share"
+                    ? "Photos open through an existing direct share."
+                    : details.accessSource === "approved_enquiry"
+                      ? "Owner-approved Discovery access."
+                      : "Request contact to ask the owner for access."}
+                </strong>
+                <span>{statusDescription(asset)}</span>
+              </div>
+              {renderEnquiryControl(asset)}
+            </div>
+          </>
+        ) : null}
+      </section>
+    );
+  }
+
   function renderPagination() {
     if (!pagination.totalItems) return null;
 
@@ -1139,9 +1425,93 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
     );
   }
 
+  if (
+    access?.accountType === "owner" &&
+    !access.canBrowse &&
+    !loading
+  ) {
+    const participationDisabled =
+      access.reason === "participation_disabled";
+
+    return (
+      <section
+        className={`${workspaceStyles.shell} ${styles.shell}`}
+        aria-label="Discovery participation required"
+      >
+        <DiscoveryMarketplaceSwitch active="discovery" />
+        <WorkspaceTitlePanel title="Discover Assets" />
+
+        {notice ? (
+          <div
+            className={`${styles.notice} ${notice.tone === "success" ? styles.noticeSuccess : styles.noticeError}`}
+          >
+            {notice.message}
+          </div>
+        ) : null}
+
+        <section className={styles.discoveryAccessPanel}>
+          <div className={styles.discoveryAccessIcon} aria-hidden="true">
+            {participationDisabled ? "○" : "＋"}
+          </div>
+          <div>
+            <h2>
+              {participationDisabled
+                ? "Participate to browse Discovery"
+                : "Add an eligible asset first"}
+            </h2>
+            <p>
+              {participationDisabled
+                ? "Discovery is an owner-to-owner exchange. Enable participation so your eligible assets join while you browse other participating owners’ assets."
+                : "Participation is enabled, but Discovery needs at least one eligible Aim4price asset in your Asset Register before you can browse."}
+            </p>
+          </div>
+
+          <div className={styles.discoveryAccessActions}>
+            {participationDisabled ? (
+              <button
+                type="button"
+                className={`${workspaceStyles.actionButton} ${workspaceStyles.actionGreen}`}
+                onClick={() => void enableOwnerDiscoveryParticipation()}
+                disabled={isUpdatingParticipation}
+              >
+                {isUpdatingParticipation
+                  ? "Enabling…"
+                  : "Enable Discovery participation"}
+              </button>
+            ) : (
+              <>
+                <a
+                  href="/asset-register"
+                  className={`${workspaceStyles.actionButton} ${workspaceStyles.actionGreen}`}
+                >
+                  Open Asset Register
+                </a>
+                <a
+                  href="/valuation"
+                  className={`${workspaceStyles.actionButton} ${workspaceStyles.actionNeutral}`}
+                >
+                  Get an estimate
+                </a>
+              </>
+            )}
+          </div>
+
+          <small>
+            Participation defaults to off. Marketplace listings and maintenance
+            sharing are managed separately.
+          </small>
+        </section>
+      </section>
+    );
+  }
+
   return (
     <section className={`${workspaceStyles.shell} ${styles.shell} ${dealerAppMode ? dealerStyles.dealerDiscoverySurface : ""}`}>
-      <WorkspaceTitlePanel title={dealerAppMode ? "Discovery" : "Asset Discovery"} />
+      <DiscoveryMarketplaceSwitch
+        active="discovery"
+        dealerAppMode={dealerAppMode}
+      />
+      <WorkspaceTitlePanel title="Discover Assets" />
 
       <section
         className={styles.controlsPanel}
@@ -1289,7 +1659,7 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
             <div className={leadStyles.leadToolbarActions}>
               <button
                 type="button"
-                className={`${assetStyles.secondaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionNeutral} ${leadStyles.leadRefreshButton}`}
+                className={`${assetStyles.secondaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionNeutral} ${leadStyles.leadRefreshButton} ${styles.discoveryRefreshButton}`}
                 onClick={refreshAssets}
                 disabled={loading}
               >
@@ -1354,9 +1724,10 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
                   </div>
 
                   <div className={styles.assetActionRow}>
-                    {renderEnquiryControl(asset)}
+                    {renderOpenControl(asset)}
                   </div>
                 </div>
+                {renderExpandedAsset(asset)}
               </article>
             ) : (
               <article
@@ -1377,11 +1748,12 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
 
                     <div className={leadStyles.clientDecisionArea}>
                       <div className={leadStyles.clientActionRow}>
-                        {renderEnquiryControl(asset)}
+                        {renderOpenControl(asset)}
                       </div>
                     </div>
                   </div>
                 </div>
+                {renderExpandedAsset(asset)}
               </article>
             );
           })
