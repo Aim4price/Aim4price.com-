@@ -2,392 +2,157 @@
   min-height: 100vh;
   color: #0a3f34;
   background:
-    radial-gradient(circle at 10% 14%, rgba(196, 232, 218, 0.38), transparent 30rem),
-    radial-gradient(circle at 92% 72%, rgba(201, 224, 238, 0.32), transparent 34rem),
-    linear-gradient(180deg, #fbfdfc 0%, #f1f7f5 55%, #eaf2f1 100%);
+    radial-gradient(circle at 50% 0%, rgba(221, 239, 233, 0.5), transparent 30rem),
+    linear-gradient(180deg, #fbfdfc 0%, #f1f7f5 100%);
 }
 
 .choiceSection {
   min-height: calc(100dvh - 7rem);
   display: grid;
   place-items: start center;
-  padding: clamp(2.5rem, 5vw, 5rem) clamp(1rem, 4vw, 3rem) clamp(3.5rem, 6vw, 6rem);
+  padding: clamp(2.75rem, 5vw, 4.5rem) 1.25rem 3.5rem;
 }
 
-.choiceShell {
-  width: min(100%, 102rem);
+.choiceGrid {
+  width: min(100%, 56rem);
   display: grid;
-  gap: clamp(1.25rem, 2.2vw, 2rem);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem;
 }
 
-.heading {
-  position: relative;
-  min-height: clamp(8.5rem, 14vw, 11rem);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 2rem;
-  overflow: hidden;
-  border: 1px solid #bfd4dc;
-  border-radius: clamp(1.5rem, 2.5vw, 2rem);
-  background:
-    radial-gradient(circle at 14% 50%, rgba(208, 236, 226, 0.7), transparent 27rem),
-    linear-gradient(110deg, rgba(255, 255, 255, 0.98) 0%, rgba(250, 253, 252, 0.96) 62%, rgba(236, 246, 243, 0.94) 100%);
-  box-shadow: 0 18px 42px rgba(18, 61, 51, 0.1);
-  padding: clamp(1.8rem, 4vw, 3rem) clamp(1.5rem, 4vw, 3rem);
-}
-
-.heading::after {
-  position: absolute;
-  right: -7rem;
-  bottom: -10rem;
-  width: 22rem;
-  height: 22rem;
-  border: 1px solid rgba(36, 113, 87, 0.12);
-  border-radius: 50%;
-  background: rgba(222, 241, 234, 0.35);
-  content: '';
-}
-
-.headingCopy {
-  position: relative;
-  z-index: 1;
+.choiceCard {
   min-width: 0;
+  min-height: 13rem;
+  display: grid;
+  grid-template-rows: 7.8rem auto;
+  gap: 1rem;
+  align-items: center;
+  padding: 1.15rem;
+  border: 1px solid;
+  border-radius: 1.65rem;
+  color: #0a3f34;
+  box-shadow:
+    0 14px 30px rgba(18, 61, 51, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+  text-align: center;
+  text-decoration: none;
+  transition:
+    background 170ms ease,
+    border-color 170ms ease,
+    box-shadow 170ms ease,
+    transform 170ms ease;
 }
 
-.heading p {
-  margin: 0 0 0.55rem;
-  color: #187354;
-  font-family: var(--font-heading, 'Montserrat'), sans-serif;
-  font-size: clamp(0.72rem, 1vw, 0.84rem);
-  font-weight: 850;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+.discoveryCard {
+  border-color: #a9c9f7;
+  background: linear-gradient(180deg, #ffffff 0%, #f2f7ff 100%);
 }
 
-.heading h1 {
-  margin: 0;
-  color: #073e32;
-  font-family: var(--font-heading, 'Montserrat'), sans-serif;
-  font-size: clamp(2.2rem, 4.4vw, 4.25rem);
-  font-weight: 850;
-  letter-spacing: -0.055em;
-  line-height: 0.98;
-  text-wrap: balance;
+.marketplaceCard {
+  border-color: #a8dcc2;
+  background: linear-gradient(180deg, #ffffff 0%, #effaf5 100%);
 }
 
-.headingCopy > span {
-  display: block;
-  margin-top: 0.8rem;
-  color: #567168;
-  font-size: clamp(0.9rem, 1.25vw, 1.05rem);
-  font-weight: 650;
-  line-height: 1.45;
-}
-
-.headingIcon {
-  position: relative;
-  z-index: 1;
-  width: clamp(4.75rem, 7vw, 6.3rem);
-  height: clamp(4.75rem, 7vw, 6.3rem);
-  flex: 0 0 auto;
+.choiceIcon {
+  width: 100%;
+  height: 100%;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(36, 113, 87, 0.24);
-  border-radius: clamp(1.25rem, 2vw, 1.75rem);
-  color: #14694f;
-  background: linear-gradient(145deg, #ffffff 0%, #e8f5f0 100%);
-  box-shadow:
-    0 14px 30px rgba(18, 92, 69, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  border: 1px solid;
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, 0.58);
 }
 
-.headingIcon svg {
-  width: 54%;
-  height: 54%;
+.discoveryCard .choiceIcon {
+  border-color: #b8d2fb;
+  color: #245fd6;
+  background: linear-gradient(180deg, #ffffff 0%, #edf4ff 100%);
+}
+
+.marketplaceCard .choiceIcon {
+  border-color: #b5e1ca;
+  color: #147554;
+  background: linear-gradient(180deg, #ffffff 0%, #eaf8f1 100%);
+}
+
+.choiceIcon svg {
+  width: 2.9rem;
+  height: 2.9rem;
   fill: none;
   stroke: currentColor;
   stroke-linecap: round;
   stroke-linejoin: round;
-  stroke-width: 1.8;
+  stroke-width: 1.9;
 }
 
-.choiceGrid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: clamp(1rem, 2.2vw, 1.6rem);
-}
-
-.choiceCard {
-  position: relative;
-  min-height: clamp(18rem, 24vw, 21rem);
-  display: grid;
-  grid-template-rows: auto 1fr auto;
-  gap: clamp(1.35rem, 2vw, 1.8rem);
-  padding: clamp(1.6rem, 3vw, 2.4rem);
-  overflow: hidden;
-  border: 1.5px solid;
-  border-radius: clamp(1.5rem, 2.5vw, 2rem);
-  color: #092f27;
-  box-shadow: 0 16px 38px rgba(18, 61, 51, 0.085);
-  text-decoration: none;
-  transition:
-    border-color 180ms ease,
-    background 180ms ease,
-    box-shadow 180ms ease,
-    transform 180ms ease;
-}
-
-.choiceCard::before {
-  position: absolute;
-  top: -8rem;
-  right: -8rem;
-  width: 18rem;
-  height: 18rem;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.62);
-  content: '';
-  opacity: 0.65;
-  transition:
-    opacity 180ms ease,
-    transform 180ms ease;
-}
-
-.discoveryCard {
-  border-color: #88b8da;
-  background: linear-gradient(145deg, #ffffff 0%, #eff8ff 100%);
-}
-
-.marketplaceCard {
-  border-color: #72c39a;
-  background: linear-gradient(145deg, #ffffff 0%, #eaf8f1 100%);
+.choiceCard strong {
+  align-self: start;
+  display: block;
+  margin: 0;
+  padding: 0 0.5rem 0.25rem;
+  font-family: var(--font-heading, 'Montserrat'), sans-serif;
+  font-size: clamp(1.35rem, 2vw, 1.65rem);
+  font-weight: 850;
+  letter-spacing: -0.035em;
+  line-height: 1.15;
 }
 
 .choiceCard:hover,
 .choiceCard:focus-visible {
   outline: none;
-  transform: translateY(-3px);
+  transform: translateY(-2px);
 }
 
 .discoveryCard:hover,
 .discoveryCard:focus-visible {
-  border-color: #4e91c5;
-  background: linear-gradient(145deg, #ffffff 0%, #e3f2ff 100%);
-  box-shadow: 0 22px 48px rgba(30, 97, 145, 0.15);
+  border-color: #79a8ed;
+  background: linear-gradient(180deg, #ffffff 0%, #e9f2ff 100%);
+  box-shadow:
+    0 18px 36px rgba(36, 95, 214, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
 }
 
 .marketplaceCard:hover,
 .marketplaceCard:focus-visible {
-  border-color: #3da975;
-  background: linear-gradient(145deg, #ffffff 0%, #def4e9 100%);
-  box-shadow: 0 22px 48px rgba(22, 108, 75, 0.15);
-}
-
-.choiceCard:hover::before,
-.choiceCard:focus-visible::before {
-  opacity: 0.95;
-  transform: translate(-0.5rem, 0.5rem);
-}
-
-.choiceCardTop,
-.choiceCopy,
-.choiceAction {
-  position: relative;
-  z-index: 1;
-}
-
-.choiceCardTop {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-}
-
-.choiceIcon {
-  width: clamp(4.2rem, 6vw, 5.25rem);
-  height: clamp(4.2rem, 6vw, 5.25rem);
-  flex: 0 0 auto;
-  display: grid;
-  place-items: center;
-  border: 1px solid;
-  border-radius: clamp(1.15rem, 1.8vw, 1.5rem);
+  border-color: #78c89f;
+  background: linear-gradient(180deg, #ffffff 0%, #e4f6ed 100%);
   box-shadow:
-    0 10px 24px rgba(18, 61, 51, 0.09),
-    inset 0 1px 0 rgba(255, 255, 255, 0.92);
+    0 18px 36px rgba(20, 117, 84, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
 }
 
-.discoveryCard .choiceIcon {
-  border-color: rgba(57, 129, 181, 0.3);
-  color: #246d9f;
-  background: linear-gradient(145deg, #ffffff 0%, #dcedfa 100%);
-}
-
-.marketplaceCard .choiceIcon {
-  border-color: rgba(36, 136, 96, 0.3);
-  color: #176f52;
-  background: linear-gradient(145deg, #ffffff 0%, #dcefe7 100%);
-}
-
-.choiceIcon svg {
-  width: 52%;
-  height: 52%;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 1.75;
-}
-
-.choiceEyebrow {
-  color: #5b756c;
-  font-family: var(--font-heading, 'Montserrat'), sans-serif;
-  font-size: clamp(0.72rem, 1vw, 0.82rem);
-  font-weight: 850;
-  letter-spacing: 0.12em;
-  text-align: right;
-  text-transform: uppercase;
-}
-
-.choiceCopy {
-  align-self: center;
-  display: grid;
-  gap: 0.75rem;
-}
-
-.choiceCopy strong {
-  font-family: var(--font-heading, 'Montserrat'), sans-serif;
-  font-size: clamp(2rem, 3.6vw, 3.35rem);
-  font-weight: 850;
-  letter-spacing: -0.05em;
-  line-height: 1.03;
-  text-wrap: balance;
-}
-
-.choiceCopy small {
-  max-width: 31rem;
-  color: #557068;
-  font-size: clamp(0.93rem, 1.2vw, 1.05rem);
-  font-weight: 650;
-  line-height: 1.5;
-}
-
-.choiceAction {
-  min-height: 3.3rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  border-top: 1px solid rgba(18, 61, 51, 0.12);
-  padding-top: 1.2rem;
-  color: #193f35;
-  font-family: var(--font-heading, 'Montserrat'), sans-serif;
-  font-size: 0.92rem;
-  font-weight: 800;
-}
-
-.choiceArrow {
-  width: 2.35rem;
-  height: 2.35rem;
-  display: grid;
-  place-items: center;
-  border: 1px solid rgba(18, 61, 51, 0.18);
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.8);
-  font-family: Arial, sans-serif;
-  font-size: 1.8rem;
-  font-weight: 400;
-  line-height: 0;
-  transition:
-    background 180ms ease,
-    color 180ms ease,
-    transform 180ms ease;
-}
-
-.choiceCard:hover .choiceArrow,
-.choiceCard:focus-visible .choiceArrow {
-  color: #ffffff;
-  background: #14694f;
-  transform: translateX(0.2rem);
-}
-
-.discoveryCard:hover .choiceArrow,
-.discoveryCard:focus-visible .choiceArrow {
-  background: #246d9f;
-}
-
-@media (max-width: 820px) {
+@media (max-width: 700px) {
   .choiceSection {
     min-height: auto;
     padding: 2rem 1rem 3rem;
   }
 
-  .heading {
-    min-height: 0;
-    border-radius: 1.5rem;
-  }
-
   .choiceGrid {
+    width: min(100%, 28rem);
     grid-template-columns: 1fr;
-  }
-
-  .choiceCard {
-    min-height: 17rem;
-    border-radius: 1.5rem;
-  }
-}
-
-@media (max-width: 560px) {
-  .choiceShell {
     gap: 1rem;
   }
 
-  .heading {
-    align-items: flex-start;
-    gap: 1rem;
-    padding: 1.45rem;
-  }
-
-  .heading h1 {
-    font-size: clamp(2rem, 11vw, 3rem);
-  }
-
-  .headingCopy > span {
-    max-width: 18rem;
-    font-size: 0.88rem;
-  }
-
-  .headingIcon {
-    width: 3.6rem;
-    height: 3.6rem;
-    border-radius: 1rem;
-  }
-
   .choiceCard {
-    min-height: 15rem;
-    gap: 1.2rem;
-    padding: 1.35rem;
+    min-height: 11.5rem;
+    grid-template-rows: 6.5rem auto;
+    gap: 0.85rem;
+    padding: 1rem;
+    border-radius: 1.4rem;
   }
 
   .choiceIcon {
-    width: 3.8rem;
-    height: 3.8rem;
-    border-radius: 1rem;
+    border-radius: 1.05rem;
   }
 
-  .choiceCopy strong {
-    font-size: clamp(1.8rem, 9vw, 2.4rem);
-  }
-
-  .choiceEyebrow {
-    max-width: 9rem;
-    line-height: 1.35;
+  .choiceIcon svg {
+    width: 2.55rem;
+    height: 2.55rem;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .choiceCard,
-  .choiceCard::before,
-  .choiceArrow {
+  .choiceCard {
     transition: none;
   }
 }
