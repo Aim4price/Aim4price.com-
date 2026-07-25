@@ -50,7 +50,10 @@ function errorMessage(error: unknown, fallback: string): string {
 }
 
 export async function GET(request: NextRequest) {
-  const session = await getServerSession({ allowDealerApp: true });
+  const session = await getServerSession({
+    allowDealerApp: true,
+    allowOwnerApp: true,
+  });
 
   if (!session?.user?.id) return unauthorized();
 
@@ -113,7 +116,10 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const session = await getServerSession({ allowDealerApp: true });
+  const session = await getServerSession({
+    allowDealerApp: true,
+    allowOwnerApp: true,
+  });
 
   if (!session?.user?.id) return unauthorized();
 
