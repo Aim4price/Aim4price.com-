@@ -9,6 +9,9 @@ const migration = read(
 );
 const client = read("app/asset-discovery/asset-discovery-client.tsx");
 const css = read("app/asset-discovery/page.module.css");
+const photoRoute = read(
+  "app/api/asset-discovery/assets/[assetId]/photos/[photoIndex]/route.ts",
+);
 const header = read("components/AppHeader.tsx");
 const marketplaceClient = read("app/marketplace/marketplace-client.tsx");
 const marketplaceEntry = read("app/marketplace/page.tsx");
@@ -82,6 +85,15 @@ test("locked cards render a static placeholder without a private image", () => {
   assert.doesNotMatch(lockedBlock, /<img/);
 });
 
+test("detail loading supports legacy photo column names without exposing them in list responses", () => {
+  assert.match(discovery, /to_jsonb\(asset\)->'photos'/);
+  assert.match(discovery, /to_jsonb\(asset\)->'photo_urls'/);
+  assert.match(discovery, /to_jsonb\(asset\)->'image_urls'/);
+  assert.match(discovery, /to_jsonb\(asset\)->'images'/);
+  assert.match(photoRoute, /context\.params\.photoIndex/);
+  assert.match(photoRoute, /getAssetDiscoveryPhoto/);
+});
+
 test("dealer photos unlock through active approval or an exact direct share", () => {
   assert.match(discovery, /approvedEnquiry \|\| access\.dealerShare/);
   assert.match(discovery, /lead\.partner_user_id = \$3/);
@@ -108,6 +120,29 @@ test("expired, retracted and revoked access cannot unlock photos", () => {
 test("owner opt-out immediately revokes active Discovery enquiries", () => {
   assert.match(discovery, /set status = 'revoked'/);
   assert.match(discovery, /owner_user_id = \$1 or requester_user_id = \$1/);
+});
+
+test("active 90-day denials remain visible only to a denied requester", () => {
+  assert.match(
+    discovery,
+    /viewer_denial\.requester_user_id = \$1[\s\S]*viewer_denial\.status = 'temporarily_denied'/,
+  );
+  assert.match(client, /discoveryAssetCardDenied/);
+  assert.match(css, /\.discoveryAssetCardDenied/);
+});
+
+test("owner settings can disable participation without deleting Asset Register records", () => {
+  assert.match(client, />Settings</);
+  assert.match(client, /Disable & remove assets/);
+  assert.match(client, /Nothing[\s\S]*is deleted from your Asset Register/);
+  assert.match(client, /updateOwnerDiscoveryParticipation\(false\)/);
+});
+
+test("participation explains request-based contact privacy and exclusions", () => {
+  assert.match(client, /No contact details are shared immediately/);
+  assert.match(client, /Property, land and buildings/);
+  assert.match(client, /Manual or unclassified entries/);
+  assert.match(client, /Tools and small loose equipment/);
 });
 
 test("existing active dealer Discovery remains supported", () => {
