@@ -55,6 +55,14 @@ function ChevronDownIcon({ className = '' }: { className?: string }) {
   return <svg className={className} viewBox="0 0 24 24" aria-hidden="true"><path d="m7 9.5 5 5 5-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>;
 }
 
+function ChevronLeftIcon({ className = '' }: { className?: string }) {
+  return <svg className={className} viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>;
+}
+
+function ChevronRightIcon({ className = '' }: { className?: string }) {
+  return <svg className={className} viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>;
+}
+
 function CloseIcon({ className = '' }: { className?: string }) {
   return <svg className={className} viewBox="0 0 24 24" aria-hidden="true"><path d="m6.5 6.5 11 11m0-11-11 11" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>;
 }
@@ -111,13 +119,6 @@ function recurringLabel(record: DealerMaintenanceRecordSummary): string {
   if (!record.recurringEnabled) return 'Not recurring';
   if (record.recurringIntervalValue === null || !record.recurringIntervalUnit) return 'Recurring';
   return `Every ${record.recurringIntervalValue.toLocaleString('en-ZA')} ${record.recurringIntervalUnit}`;
-}
-
-function statusClass(status: DealerMaintenanceTrackerStatus): string {
-  if (status === 'overdue' || status === 'due') return styles.statusUrgent;
-  if (status === 'due_soon' || status === 'usage_needed') return styles.statusAttention;
-  if (status === 'no_open') return styles.statusNoOpen;
-  return styles.statusUpcoming;
 }
 
 function needsAttention(status: DealerMaintenanceTrackerStatus): boolean {
@@ -227,6 +228,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
   const [draftStatusFilter, setDraftStatusFilter] = useState<TrackerStatusFilter>('all');
   const [openFilterDropdown, setOpenFilterDropdown] = useState<FilterDropdownKey | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [photoIndexes, setPhotoIndexes] = useState<Record<string, number>>({});
   const [openAccessId, setOpenAccessId] = useState<string | null>(
     initialAssets.some((asset) => asset.accessId === initialOpenAccessId) ? initialOpenAccessId : null,
   );
@@ -295,6 +297,35 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
     setReportAccessId(asset.accessId);
   }
 
+  function selectedPhotoIndex(asset: DealerMaintenanceTrackedAsset): number {
+    if (!asset.photoUrls.length) return 0;
+    return Math.min(
+      Math.max(photoIndexes[asset.accessId] ?? 0, 0),
+      asset.photoUrls.length - 1,
+    );
+  }
+
+  function selectPhoto(asset: DealerMaintenanceTrackedAsset, index: number) {
+    if (!asset.photoUrls.length) return;
+    setPhotoIndexes((current) => ({
+      ...current,
+      [asset.accessId]: Math.min(
+        Math.max(index, 0),
+        asset.photoUrls.length - 1,
+      ),
+    }));
+  }
+
+  function cyclePhoto(asset: DealerMaintenanceTrackedAsset, direction: -1 | 1) {
+    if (asset.photoUrls.length <= 1) return;
+    const currentIndex = selectedPhotoIndex(asset);
+    selectPhoto(
+      asset,
+      (currentIndex + direction + asset.photoUrls.length) %
+        asset.photoUrls.length,
+    );
+  }
+
   function syncCorrection(assetId: string, correction: NonNullable<DealerMaintenanceTrackedAsset['dealerCorrection']>) {
     setAssets((current) => current.map((asset) => asset.assetId === assetId
       ? {
@@ -358,6 +389,9 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
             {filteredAssets.map((asset) => {
               const isOpen = openAccessId === asset.accessId;
               const correctionVisible = asset.permissions.canUpdateSerial || asset.permissions.canUpdateReplacementPrice || Boolean(asset.dealerCorrection);
+              const photoIndex = selectedPhotoIndex(asset);
+              const activePhotoUrl = asset.photoUrls[photoIndex] ?? '';
+              const hasMultiplePhotos = asset.photoUrls.length > 1;
               return (
                 <article key={asset.accessId} className={`${workspaceStyles.card} ${leadStyles.leadThread} ${needsAttention(asset.status) ? leadStyles.leadThreadNew : ''} ${asset.status === 'no_open' ? leadStyles.leadThreadDone : ''} ${isOpen ? leadStyles.leadThreadOpen : ''}`}>
                   <div className={leadStyles.clientPanel}>
@@ -388,32 +422,130 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                           <div className={assetStyles.assetMetaRow}><span className={assetStyles.assetSavedDateLabel}>Tracking shared by {asset.grantedByName || 'the asset owner'}</span></div>
                         </div>
                         <div className={`${assetStyles.assetHeaderAside} ${leadStyles.leadAssetHeaderAside}`}>
-                          <span className={`${styles.statusBadge} ${statusClass(asset.status)}`}>{asset.statusLabel}</span>
+                          <div className={`${assetStyles.valueBlock} ${leadStyles.leadValueBlock} ${styles.trackerStatusValue}`}>
+                            <strong>{asset.statusLabel}</strong>
+                            <span>Maintenance status</span>
+                          </div>
+
+                          {asset.permissions.canViewMaintenanceReports ? (
+                            <div className={`${assetStyles.assetHeaderActions} ${leadStyles.leadAssetHeaderActions}`}>
+                              <button
+                                type="button"
+                                className={`${assetStyles.optionsButton} ${leadStyles.maintenanceReportButton} ${styles.trackerReportButton}`}
+                                onClick={() => openReports(asset)}
+                              >
+                                <DownloadIcon className={assetStyles.buttonIcon} />
+                                <span>Maintenance Report</span>
+                              </button>
+                            </div>
+                          ) : null}
                         </div>
                       </div>
 
-                      <div className={styles.expandedBody}>
-                        <section className={styles.assetOverview}>
-                          <div className={styles.photoPanel}>
-                            {asset.photoUrls.length ? asset.photoUrls.map((url, index) => <img key={`${url}-${index}`} src={url} alt={`${asset.assetTitle} photo ${index + 1}`} />) : <div className={styles.photoFallback}>{asset.assetTitle.charAt(0).toUpperCase()}</div>}
+                      <div className={`${assetStyles.assetBody} ${leadStyles.leadAssetBody} ${styles.trackerAssetBody}`}>
+                        <div className={`${assetStyles.previewWrap} ${leadStyles.leadPreviewWrap}`}>
+                          <div className={`${assetStyles.previewStage} ${leadStyles.leadPreviewStage}`}>
+                            {activePhotoUrl ? (
+                              <>
+                                <a
+                                  href={activePhotoUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className={leadStyles.leadPreviewOpenButton}
+                                  aria-label={`Open ${asset.assetTitle} photo ${photoIndex + 1}`}
+                                >
+                                  <img
+                                    src={activePhotoUrl}
+                                    alt={`${asset.assetTitle} photo ${photoIndex + 1}`}
+                                    className={`${assetStyles.previewImage} ${leadStyles.leadPreviewImage}`}
+                                  />
+                                  <span className={leadStyles.leadPreviewOpenLabel}>Open photo</span>
+                                </a>
+
+                                {hasMultiplePhotos ? (
+                                  <>
+                                    <button
+                                      type="button"
+                                      className={`${assetStyles.previewNavButton} ${assetStyles.previewNavPrev}`}
+                                      onClick={() => cyclePhoto(asset, -1)}
+                                      aria-label="Show previous photo"
+                                    >
+                                      <ChevronLeftIcon className={assetStyles.buttonIcon} />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className={`${assetStyles.previewNavButton} ${assetStyles.previewNavNext}`}
+                                      onClick={() => cyclePhoto(asset, 1)}
+                                      aria-label="Show next photo"
+                                    >
+                                      <ChevronRightIcon className={assetStyles.buttonIcon} />
+                                    </button>
+                                    <div className={assetStyles.previewCounter}>
+                                      {photoIndex + 1} / {asset.photoUrls.length}
+                                    </div>
+                                  </>
+                                ) : null}
+                              </>
+                            ) : (
+                              <div className={`${assetStyles.previewPlaceholder} ${leadStyles.leadPreviewPlaceholder}`}>
+                                <div className={assetStyles.previewPlaceholderBadges}>
+                                  <span className={`${assetStyles.badge} ${assetStyles.badgeNeutral} ${assetStyles.previewPlaceholderBadge}`}>
+                                    {asset.assetKind || 'Tracked asset'}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
                           </div>
-                          <div className={styles.overviewContent}>
-                            <div className={styles.statGrid}>
-                              <div><span>Current usage</span><strong>{formatUsage(asset.currentUsage, asset.usageMetric)}</strong></div>
-                              <div><span>Next maintenance</span><strong>{asset.nextMaintenance?.title || 'No open maintenance'}</strong></div>
-                              <div><span>Due</span><strong>{asset.nextMaintenance ? dueLabel(asset.nextMaintenance, asset.usageMetric) : 'Not scheduled'}</strong></div>
-                              <div><span>Remaining</span><strong>{asset.nextMaintenance ? remainingLabel(asset.nextMaintenance, asset.usageMetric) : 'No open schedule'}</strong></div>
-                              <div><span>Serial number</span><strong>{asset.serialNumber || 'Not saved'}</strong></div>
-                              <div><span>Replacement price</span><strong>{formatCurrency(asset.replacementPriceExVat)} excl. VAT</strong></div>
+
+                          {hasMultiplePhotos ? (
+                            <div className={`${assetStyles.previewThumbRow} ${leadStyles.leadPreviewThumbRow}`}>
+                              {asset.photoUrls.map((url, index) => (
+                                <button
+                                  type="button"
+                                  key={`${asset.accessId}-tracking-photo-${index}`}
+                                  className={`${assetStyles.previewThumbButton} ${leadStyles.leadPreviewThumbButton} ${index === photoIndex ? assetStyles.previewThumbButtonActive : ''}`}
+                                  onClick={() => selectPhoto(asset, index)}
+                                  aria-label={`Show photo ${index + 1}`}
+                                >
+                                  <img
+                                    src={url}
+                                    alt={`${asset.assetTitle} thumbnail ${index + 1}`}
+                                    className={`${assetStyles.previewThumbImage} ${leadStyles.leadPreviewThumbImage}`}
+                                  />
+                                </button>
+                              ))}
+                            </div>
+                          ) : null}
+                        </div>
+
+                        <div className={assetStyles.assetDetailDivider} aria-hidden="true" />
+
+                        <div className={assetStyles.assetDetailsPanel}>
+                          <div className={assetStyles.assetDetailsGrid}>
+                            <div className={assetStyles.assetPrimaryDetails}>
+                              <div className={assetStyles.assetDetailRow}><span>Serial</span><strong>{asset.serialNumber || 'Not saved'}</strong></div>
+                              <div className={assetStyles.assetDetailRow}><span>Year</span><strong>{asset.yearModel || 'Not saved'}</strong></div>
+                              <div className={assetStyles.assetDetailRow}><span>Usage</span><strong>{formatUsage(asset.currentUsage, asset.usageMetric)}</strong></div>
+                              <div className={assetStyles.assetDetailRow}><span>Status</span><strong>{asset.statusLabel}</strong></div>
                             </div>
 
-                            <div className={styles.actionRow}>
-                              {asset.permissions.canViewMaintenanceReports ? (
-                                <button type="button" className={styles.reportButton} onClick={() => openReports(asset)}><DownloadIcon /><span><strong>Maintenance reports</strong><small>Owner-style PDF or XLSX report.</small></span></button>
-                              ) : null}
+                            <div className={assetStyles.assetPrimaryDetails}>
+                              <div className={assetStyles.assetDetailRow}><span>Next</span><strong>{asset.nextMaintenance?.title || 'No open maintenance'}</strong></div>
+                              <div className={assetStyles.assetDetailRow}><span>Due</span><strong>{asset.nextMaintenance ? dueLabel(asset.nextMaintenance, asset.usageMetric) : 'Not scheduled'}</strong></div>
+                              <div className={assetStyles.assetDetailRow}><span>Remaining</span><strong>{asset.nextMaintenance ? remainingLabel(asset.nextMaintenance, asset.usageMetric) : 'No open schedule'}</strong></div>
+                              <div className={assetStyles.assetDetailRow}><span>Shared by</span><strong>{asset.grantedByName || 'Asset owner'}</strong></div>
                             </div>
                           </div>
-                        </section>
+
+                          <div className={assetStyles.assetReplacementPriceBubble}>
+                            <span>Replacement Price</span>
+                            <strong>{formatCurrency(asset.replacementPriceExVat)}</strong>
+                            <small>Excl. VAT</small>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className={styles.trackerSections}>
 
                         {correctionVisible ? (
                           <section className={styles.section}>

@@ -4,6 +4,34 @@
   font-family: var(--font-heading, "Montserrat"), sans-serif;
 }
 
+.trackerAssetBody.trackerAssetBody {
+  grid-template-columns: minmax(205px, 275px) 1px minmax(390px, 1.55fr);
+  gap: 1rem;
+}
+
+.trackerStatusValue {
+  max-width: 24rem;
+}
+
+.trackerStatusValue strong {
+  max-width: 24rem;
+  font-size: clamp(1.45rem, 2.25vw, 2.15rem) !important;
+  line-height: 1.05 !important;
+  white-space: normal !important;
+}
+
+.trackerReportButton {
+  min-width: clamp(170px, 12.5vw, 205px) !important;
+}
+
+.trackerSections {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(218, 228, 236, 0.95);
+}
+
 .expandedBody {
   display: grid;
   gap: 1rem;
@@ -176,8 +204,11 @@
 .section {
   overflow: visible;
   border: 1px solid #dbe5e1;
-  border-radius: 0.9rem;
+  border-radius: 1.15rem;
   background: #fff;
+  box-shadow:
+    0 10px 22px rgba(16, 31, 28, 0.025),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
 }
 
 .section > header {
@@ -352,6 +383,10 @@
 }
 
 @media (max-width: 900px) {
+  .trackerAssetBody.trackerAssetBody {
+    grid-template-columns: 1fr;
+  }
+
   .assetOverview {
     grid-template-columns: 1fr;
   }
