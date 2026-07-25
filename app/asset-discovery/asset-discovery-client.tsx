@@ -5,6 +5,7 @@ import {
   WorkspaceTitlePanel,
   workspaceStyles,
 } from "../../components/WorkspacePrimitives";
+import LeadPhotoViewerModal from "../../components/LeadPhotoViewerModal";
 import assetStyles from "../asset-register/page.module.css";
 import leadStyles from "../leads/page.module.css";
 import styles from "./page.module.css";
@@ -130,6 +131,13 @@ type DiscoveryFilterKey = "type" | "province" | "pageSize";
 type DiscoveryFilterOption = {
   value: string;
   label: string;
+};
+
+type DiscoveryPhotoModal = {
+  assetId: string;
+  title: string;
+  urls: string[];
+  index: number;
 };
 
 const SEARCH_DEBOUNCE_MS = 250;
@@ -604,6 +612,9 @@ export default function AssetDiscoveryClient({
   const [photoIndexByAssetId, setPhotoIndexByAssetId] = useState<
     Record<string, number>
   >({});
+  const [photoModal, setPhotoModal] = useState<DiscoveryPhotoModal | null>(
+    null,
+  );
   const [detailsErrorByAssetId, setDetailsErrorByAssetId] = useState<
     Record<string, string>
   >({});
@@ -1305,6 +1316,20 @@ export default function AssetDiscoveryClient({
     );
   }
 
+  function openDiscoveryPhotoModal(
+    asset: AssetDiscoveryAsset,
+    photoUrls: string[],
+    index: number,
+  ) {
+    if (!photoUrls.length) return;
+    setPhotoModal({
+      assetId: asset.id,
+      title: dealerAssetDisplayName(asset),
+      urls: [...photoUrls],
+      index: Math.min(Math.max(index, 0), photoUrls.length - 1),
+    });
+  }
+
   function renderExpandedAsset(asset: AssetDiscoveryAsset) {
     if (expandedAssetId !== asset.id) return null;
     const details = detailsByAssetId[asset.id];
@@ -1358,10 +1383,11 @@ export default function AssetDiscoveryClient({
                       type="button"
                       key={`${asset.id}-discovery-photo-${index}`}
                       className={`${assetStyles.previewThumbButton} ${leadStyles.leadPreviewThumbButton} ${index === photoIndex ? assetStyles.previewThumbButtonActive : ""}`}
-                      onClick={() =>
-                        selectDiscoveryPhoto(asset.id, index, photoUrls.length)
-                      }
-                      aria-label={`Show photo ${index + 1}`}
+                      onClick={() => {
+                        selectDiscoveryPhoto(asset.id, index, photoUrls.length);
+                        openDiscoveryPhotoModal(asset, photoUrls, index);
+                      }}
+                      aria-label={`Open photo ${index + 1}`}
                     >
                       <img
                         src={photoUrl}
@@ -1376,11 +1402,12 @@ export default function AssetDiscoveryClient({
               <div className={`${assetStyles.previewStage} ${leadStyles.leadPreviewStage} ${styles.discoveryPreviewStage}`}>
                 {activePhotoUrl ? (
                   <>
-                    <a
-                      href={activePhotoUrl}
-                      target="_blank"
-                      rel="noreferrer"
+                    <button
+                      type="button"
                       className={leadStyles.leadPreviewOpenButton}
+                      onClick={() =>
+                        openDiscoveryPhotoModal(asset, photoUrls, photoIndex)
+                      }
                       aria-label={`Open ${assetDisplayName(asset)} photo ${photoIndex + 1}`}
                     >
                       <img
@@ -1389,7 +1416,7 @@ export default function AssetDiscoveryClient({
                         className={`${assetStyles.previewImage} ${leadStyles.leadPreviewImage}`}
                       />
                       <span className={leadStyles.leadPreviewOpenLabel}>Open photo</span>
-                    </a>
+                    </button>
 
                     {hasMultiplePhotos ? (
                       <>
@@ -2045,6 +2072,16 @@ export default function AssetDiscoveryClient({
       </section>
 
       {renderPagination()}
+
+      {photoModal ? (
+        <LeadPhotoViewerModal
+          assetKey={`discovery-${photoModal.assetId}`}
+          title={photoModal.title}
+          urls={photoModal.urls}
+          initialIndex={photoModal.index}
+          onClose={() => setPhotoModal(null)}
+        />
+      ) : null}
 
       {!compactAppMode && isFilterModalOpen ? (
         <div className={`${assetStyles.modalOverlay} ${workspaceStyles.modalOverlay}`}>
