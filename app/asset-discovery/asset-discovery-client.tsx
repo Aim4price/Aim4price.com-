@@ -287,6 +287,40 @@ function ChevronDownIcon({ className }: IconProps) {
   );
 }
 
+function ChevronLeftIcon({ className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.25"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="m15 18-6-6 6-6" />
+    </svg>
+  );
+}
+
+function ChevronRightIcon({ className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.25"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="m9 18 6-6-6-6" />
+    </svg>
+  );
+}
+
 function DiscoveryFilterDropdown({
   label,
   filterKey,
@@ -566,6 +600,9 @@ export default function AssetDiscoveryClient({
   const [expandedAssetId, setExpandedAssetId] = useState<string | null>(null);
   const [detailsByAssetId, setDetailsByAssetId] = useState<
     Record<string, DiscoveryAssetDetails>
+  >({});
+  const [photoIndexByAssetId, setPhotoIndexByAssetId] = useState<
+    Record<string, number>
   >({});
   const [detailsErrorByAssetId, setDetailsErrorByAssetId] = useState<
     Record<string, string>
@@ -1234,123 +1271,215 @@ export default function AssetDiscoveryClient({
     );
   }
 
+  function getDiscoveryPhotoIndex(assetId: string, photoCount: number): number {
+    if (!photoCount) return 0;
+    return Math.min(
+      Math.max(photoIndexByAssetId[assetId] ?? 0, 0),
+      photoCount - 1,
+    );
+  }
+
+  function selectDiscoveryPhoto(
+    assetId: string,
+    index: number,
+    photoCount: number,
+  ) {
+    if (!photoCount) return;
+    setPhotoIndexByAssetId((current) => ({
+      ...current,
+      [assetId]: Math.min(Math.max(index, 0), photoCount - 1),
+    }));
+  }
+
+  function cycleDiscoveryPhoto(
+    assetId: string,
+    direction: -1 | 1,
+    photoCount: number,
+  ) {
+    if (photoCount <= 1) return;
+    const currentIndex = getDiscoveryPhotoIndex(assetId, photoCount);
+    selectDiscoveryPhoto(
+      assetId,
+      (currentIndex + direction + photoCount) % photoCount,
+      photoCount,
+    );
+  }
+
   function renderExpandedAsset(asset: AssetDiscoveryAsset) {
     if (expandedAssetId !== asset.id) return null;
     const details = detailsByAssetId[asset.id];
     const detailsError = detailsErrorByAssetId[asset.id];
     const isLoading = loadingDetailsAssetId === asset.id;
+    const photoUrls = details?.photosUnlocked ? details.photoUrls : [];
+    const photoIndex = getDiscoveryPhotoIndex(asset.id, photoUrls.length);
+    const activePhotoUrl = photoUrls[photoIndex] ?? "";
+    const hasMultiplePhotos = photoUrls.length > 1;
 
     return (
-      <section
+      <div
         id={`discovery-details-${asset.id}`}
-        className={styles.discoveryExpanded}
+        className={`${assetStyles.assetCard} ${leadStyles.leadAssetCard} ${assetStyles.assetCardExpanded} ${styles.discoveryLeadAssetCard}`}
         aria-label={`${assetDisplayName(asset)} Discovery details`}
       >
+        <div className={`${assetStyles.assetHeader} ${leadStyles.leadAssetHeader}`}>
+          <div className={assetStyles.assetTitleBlock}>
+            <h2>{dealerAssetDisplayName(asset)}</h2>
+            <p>{dealerAssetMeta(asset)}</p>
+            <div className={assetStyles.assetMetaRow}>
+              <span className={assetStyles.assetValueMethodLabel}>
+                {cleanText(asset.type) || "Asset"}
+              </span>
+              <span className={assetStyles.assetSavedDateLabel}>
+                {cleanText(asset.province) || "Location not saved"}
+              </span>
+            </div>
+          </div>
+
+          <div className={`${assetStyles.assetHeaderAside} ${leadStyles.leadAssetHeaderAside}`}>
+            <div className={`${assetStyles.assetHeaderActions} ${leadStyles.leadAssetHeaderActions}`}>
+              {renderEnquiryControl(asset)}
+            </div>
+          </div>
+        </div>
+
         {isLoading ? (
-          <div className={styles.discoveryDetailsLoading}>
+          <div className={`${workspaceStyles.emptyState} ${styles.discoveryDetailsLoading}`}>
             Loading protected asset details…
           </div>
         ) : detailsError ? (
           <div className={styles.discoveryDetailsError}>{detailsError}</div>
         ) : details ? (
-          <>
-            <div className={styles.discoveryDetailGrid}>
-              {[
-                ["Asset type", details.asset.type],
-                ["Brand", details.asset.brand],
-                ["Model", details.asset.model],
-                ["Year", details.asset.year],
-                ["Usage", details.asset.usage],
-                ["Condition", details.asset.condition],
-                ["Province", details.asset.province],
-                [
-                  "Enquiry",
-                  statusPillLabel(asset) || "Contact not requested",
-                ],
-              ].map(([label, value]) => (
-                <div key={`${asset.id}-${label}`}>
-                  <span>{label}</span>
-                  <strong>{value}</strong>
-                </div>
-              ))}
-            </div>
-
-            {details.photosUnlocked ? (
-              details.photoUrls.length ? (
-                <div
-                  className={styles.discoveryPhotoGrid}
-                  aria-label="Authorized asset photos"
-                >
-                  {details.photoUrls.map((photoUrl, index) => (
-                    <a
-                      key={photoUrl}
-                      href={photoUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className={styles.discoveryPhoto}
-                      aria-label={`Open authorized asset photo ${index + 1}`}
+          <div className={`${assetStyles.assetBody} ${leadStyles.leadAssetBody} ${styles.discoveryLeadAssetBody}`}>
+            <div className={`${assetStyles.previewWrap} ${leadStyles.leadPreviewWrap}`}>
+              {hasMultiplePhotos ? (
+                <div className={`${assetStyles.previewThumbRow} ${leadStyles.leadPreviewThumbRow} ${styles.discoveryPreviewThumbRow}`}>
+                  {photoUrls.map((photoUrl, index) => (
+                    <button
+                      type="button"
+                      key={`${asset.id}-discovery-photo-${index}`}
+                      className={`${assetStyles.previewThumbButton} ${leadStyles.leadPreviewThumbButton} ${index === photoIndex ? assetStyles.previewThumbButtonActive : ""}`}
+                      onClick={() =>
+                        selectDiscoveryPhoto(asset.id, index, photoUrls.length)
+                      }
+                      aria-label={`Show photo ${index + 1}`}
                     >
                       <img
                         src={photoUrl}
-                        alt={`${assetDisplayName(asset)} photo ${index + 1}`}
+                        alt={`${assetDisplayName(asset)} thumbnail ${index + 1}`}
+                        className={`${assetStyles.previewThumbImage} ${leadStyles.leadPreviewThumbImage}`}
                       />
-                    </a>
+                    </button>
                   ))}
                 </div>
-              ) : (
-                <p className={styles.discoveryNoPhotos}>
-                  Access is open, but the owner has not saved asset photos.
-                </p>
-              )
-            ) : (
-              <div
-                className={styles.discoveryLockedMedia}
-                aria-label="Photos locked until access is approved"
-              >
-                <div className={styles.discoveryLockedArtwork} aria-hidden="true">
-                  <span />
-                  <span />
-                  <span />
+              ) : null}
+
+              <div className={`${assetStyles.previewStage} ${leadStyles.leadPreviewStage} ${styles.discoveryPreviewStage}`}>
+                {activePhotoUrl ? (
+                  <>
+                    <a
+                      href={activePhotoUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={leadStyles.leadPreviewOpenButton}
+                      aria-label={`Open ${assetDisplayName(asset)} photo ${photoIndex + 1}`}
+                    >
+                      <img
+                        src={activePhotoUrl}
+                        alt={`${assetDisplayName(asset)} photo ${photoIndex + 1}`}
+                        className={`${assetStyles.previewImage} ${leadStyles.leadPreviewImage}`}
+                      />
+                      <span className={leadStyles.leadPreviewOpenLabel}>Open photo</span>
+                    </a>
+
+                    {hasMultiplePhotos ? (
+                      <>
+                        <button
+                          type="button"
+                          className={`${assetStyles.previewNavButton} ${assetStyles.previewNavPrev}`}
+                          onClick={() =>
+                            cycleDiscoveryPhoto(asset.id, -1, photoUrls.length)
+                          }
+                          aria-label="Show previous photo"
+                        >
+                          <ChevronLeftIcon className={assetStyles.buttonIcon} />
+                        </button>
+                        <button
+                          type="button"
+                          className={`${assetStyles.previewNavButton} ${assetStyles.previewNavNext}`}
+                          onClick={() =>
+                            cycleDiscoveryPhoto(asset.id, 1, photoUrls.length)
+                          }
+                          aria-label="Show next photo"
+                        >
+                          <ChevronRightIcon className={assetStyles.buttonIcon} />
+                        </button>
+                        <div className={assetStyles.previewCounter}>
+                          {photoIndex + 1} / {photoUrls.length}
+                        </div>
+                      </>
+                    ) : null}
+                  </>
+                ) : details.photosUnlocked ? (
+                  <div className={`${assetStyles.previewPlaceholder} ${styles.discoveryPreviewPlaceholder}`}>
+                    <div className={assetStyles.previewPlaceholderBadges}>
+                      <span className={`${assetStyles.badge} ${assetStyles.badgeNeutral} ${assetStyles.previewPlaceholderBadge}`}>
+                        No photos saved
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className={`${assetStyles.previewPlaceholder} ${styles.discoveryPreviewPlaceholder} ${styles.discoveryPreviewLocked}`}>
+                    <div className={styles.discoveryLockedArtwork} aria-hidden="true">
+                      <span />
+                      <span />
+                      <span />
+                    </div>
+                    <div className={styles.discoveryLockedMedia}>
+                      <strong>Photos are locked</strong>
+                      <span>No private image was sent to your browser.</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className={assetStyles.assetDetailDivider} aria-hidden="true" />
+
+            <div className={assetStyles.assetDetailsPanel}>
+              <div className={assetStyles.assetDetailsGrid}>
+                <div className={assetStyles.assetPrimaryDetails}>
+                  {[
+                    ["Asset type", details.asset.type],
+                    ["Brand", details.asset.brand],
+                    ["Model", details.asset.model],
+                    ["Year", details.asset.year],
+                  ].map(([label, value]) => (
+                    <div className={assetStyles.assetDetailRow} key={`${asset.id}-${label}`}>
+                      <span>{label}</span>
+                      <strong>{value || "Not saved"}</strong>
+                    </div>
+                  ))}
                 </div>
-                <div>
-                  <strong>Photos are locked</strong>
-                  <p>
-                    This is a privacy placeholder. No private image was sent to
-                    your browser.
-                  </p>
+
+                <div className={assetStyles.assetPrimaryDetails}>
+                  {[
+                    ["Usage", details.asset.usage],
+                    ["Condition", details.asset.condition],
+                    ["Province", details.asset.province],
+                    [
+                      "Enquiry",
+                      statusPillLabel(asset) || "Contact not requested",
+                    ],
+                  ].map(([label, value]) => (
+                    <div className={assetStyles.assetDetailRow} key={`${asset.id}-${label}`}>
+                      <span>{label}</span>
+                      <strong>{value || "Not saved"}</strong>
+                    </div>
+                  ))}
                 </div>
               </div>
-            )}
 
-            {details.ownerContact ? (
-              <div className={styles.discoveryInlineContact}>
-                <div>
-                  <span>Owner or business</span>
-                  <strong>
-                    {details.ownerContact.businessName ||
-                      details.ownerContact.name ||
-                      "Not supplied"}
-                  </strong>
-                </div>
-                <div>
-                  <span>Phone</span>
-                  <strong>{details.ownerContact.phone || "Not supplied"}</strong>
-                </div>
-                <div>
-                  <span>Email</span>
-                  <strong>{details.ownerContact.email || "Not supplied"}</strong>
-                </div>
-                <div>
-                  <span>Location</span>
-                  <strong>
-                    {details.ownerContact.location || "Not supplied"}
-                  </strong>
-                </div>
-              </div>
-            ) : null}
-
-            <div className={styles.discoveryExpandedActions}>
-              <div>
+              <div className={styles.discoveryAccessNote}>
                 <strong>
                   {details.accessSource === "dealer_share"
                     ? "Photos open through an existing direct share."
@@ -1363,11 +1492,37 @@ export default function AssetDiscoveryClient({
                     "No contact details are shared unless the owner approves your request."}
                 </span>
               </div>
-              {renderEnquiryControl(asset)}
+
+              {details.ownerContact ? (
+                <div className={styles.discoveryInlineContact}>
+                  <div>
+                    <span>Owner or business</span>
+                    <strong>
+                      {details.ownerContact.businessName ||
+                        details.ownerContact.name ||
+                        "Not supplied"}
+                    </strong>
+                  </div>
+                  <div>
+                    <span>Phone</span>
+                    <strong>{details.ownerContact.phone || "Not supplied"}</strong>
+                  </div>
+                  <div>
+                    <span>Email</span>
+                    <strong>{details.ownerContact.email || "Not supplied"}</strong>
+                  </div>
+                  <div>
+                    <span>Location</span>
+                    <strong>
+                      {details.ownerContact.location || "Not supplied"}
+                    </strong>
+                  </div>
+                </div>
+              ) : null}
             </div>
-          </>
+          </div>
         ) : null}
-      </section>
+      </div>
     );
   }
 
@@ -1852,7 +2007,7 @@ export default function AssetDiscoveryClient({
             ) : (
               <article
                 key={asset.id}
-                className={`${workspaceStyles.card} ${leadStyles.leadThread} ${leadParityAssetCardStatusClass(asset)} ${
+                className={`${workspaceStyles.card} ${leadStyles.leadThread} ${leadParityAssetCardStatusClass(asset)} ${expandedAssetId === asset.id ? leadStyles.leadThreadOpen : ""} ${
                   asset.enquiryStatus === "temporarily_denied" &&
                   !temporaryDenialExpired(asset)
                     ? styles.discoveryAssetCardDenied

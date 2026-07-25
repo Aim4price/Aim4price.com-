@@ -648,8 +648,115 @@
 }
 
 .discoveryOpenButton {
-  min-width: 8.5rem !important;
-  border-radius: 0.7rem !important;
+  min-width: 9.5rem !important;
+  border-radius: 14px !important;
+}
+
+.discoveryLeadAssetCard {
+  margin-top: 0.85rem !important;
+}
+
+.discoveryLeadAssetBody.discoveryLeadAssetBody {
+  grid-template-columns: minmax(205px, 275px) 1px minmax(390px, 1.55fr);
+  gap: 1rem;
+}
+
+.discoveryLeadAssetCard .discoveryPrimaryAction,
+.discoveryLeadAssetCard .pendingRequestButton,
+.discoveryLeadAssetCard .discoveryStatusAction,
+.discoveryLeadAssetCard .enquireButton,
+.discoveryLeadAssetCard .statusPill {
+  min-width: clamp(140px, 10.5vw, 166px) !important;
+  min-height: 3.06rem !important;
+  border-radius: 14px !important;
+  font-weight: 800 !important;
+}
+
+.discoveryDetailsLoading,
+.discoveryDetailsError {
+  margin-top: 1rem;
+}
+
+.discoveryPreviewPlaceholder {
+  min-height: 0 !important;
+}
+
+.discoveryPreviewStage {
+  order: 1;
+}
+
+.discoveryPreviewThumbRow {
+  order: 2;
+}
+
+.discoveryPreviewLocked {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.discoveryPreviewLocked .discoveryLockedArtwork {
+  position: absolute;
+  inset: 0;
+  min-height: 0;
+  border-radius: inherit;
+}
+
+.discoveryPreviewLocked > .discoveryLockedMedia {
+  position: relative;
+  z-index: 2;
+  width: min(86%, 15rem);
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: center;
+  gap: 0.38rem;
+  min-height: 0;
+  padding: 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 0.9rem;
+  color: #173f35;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 12px 28px rgba(20, 43, 43, 0.1);
+  text-align: center;
+}
+
+.discoveryPreviewLocked > .discoveryLockedMedia strong {
+  font-size: 0.9rem;
+  font-weight: 850;
+}
+
+.discoveryPreviewLocked > .discoveryLockedMedia span {
+  color: #60756d;
+  font-size: 0.72rem;
+  font-weight: 680;
+  line-height: 1.4;
+}
+
+.discoveryAccessNote {
+  display: grid;
+  gap: 0.28rem;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid rgba(186, 222, 201, 0.92);
+  border-radius: 0.96rem;
+  color: #315f50;
+  background: linear-gradient(180deg, #ffffff 0%, #eef8f3 100%);
+}
+
+.discoveryAccessNote strong {
+  color: #0c5d43;
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.discoveryAccessNote span {
+  color: #587068;
+  font-size: 0.76rem;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.discoveryLeadAssetCard .discoveryInlineContact {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .discoveryExpanded {
@@ -1117,6 +1224,12 @@
   }
 }
 
+@media (max-width: 1180px) {
+  .discoveryLeadAssetBody.discoveryLeadAssetBody {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 760px) {
   .pendingRequestButton,
   .discoveryStatusAction,
@@ -1142,4 +1255,5 @@
   .discoveryExclusions ul { grid-template-columns: 1fr; }
   .discoverySettingsActions { grid-template-columns: 1fr !important; }
   .discoverySettingsActions > * { width: 100%; }
+  .discoveryLeadAssetCard .discoveryInlineContact { grid-template-columns: 1fr; }
 }
