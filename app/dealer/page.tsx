@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 
 const DEALER_TOOLS = [
   { label: 'Valuation', href: '/dealer/valuation' },
-  { label: 'Discovery', href: '/dealer/discovery' },
+  { label: 'Discover Assets', href: '/dealer/discovery' },
   { label: 'Leads', href: '/dealer/leads' },
   { label: 'Maintenance Tracker', href: '/dealer/maintenance' },
   { label: 'Marketplace', href: '/dealer/marketplace' },
