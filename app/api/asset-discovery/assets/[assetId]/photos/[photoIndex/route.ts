@@ -14,7 +14,10 @@ type RouteContext = {
 };
 
 export async function GET(_request: Request, context: RouteContext) {
-  const session = await getServerSession({ allowDealerApp: true });
+  const session = await getServerSession({
+    allowDealerApp: true,
+    allowOwnerApp: true,
+  });
   if (!session?.user?.id) {
     return new NextResponse("Not found", { status: 404 });
   }
