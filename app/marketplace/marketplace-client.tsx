@@ -10,6 +10,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
 } from 'react';
 import AppHeader from '../../components/AppHeader';
+import DiscoveryMarketplaceSwitch from '../../components/DiscoveryMarketplaceSwitch';
 import GroupedCurrencyInput from '../../components/GroupedCurrencyInput';
 import styles from './page.module.css';
 import dealerStyles from '../dealer/dealer.module.css';
@@ -2635,6 +2636,13 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
         <div className={styles.topBand}>
           <AppHeader active="marketplace" />
         </div>
+      ) : null}
+
+      {!ownerAppMode && (isOwnerAccount || isDealerAccount) ? (
+        <DiscoveryMarketplaceSwitch
+          active="marketplace"
+          dealerAppMode={dealerAppMode}
+        />
       ) : null}
 
       {compactAppMode ? (
