@@ -1,7 +1,7 @@
 .trackerPage {
   min-width: 0;
   color: #073b30;
-  font-family: var(--font-heading, "Montserrat"), sans-serif;
+  font-family: var(--font-body, "Inter"), ui-sans-serif, system-ui, sans-serif;
 }
 
 .trackerAssetBody.trackerAssetBody {
@@ -15,8 +15,6 @@
 
 .trackerStatusValue strong {
   max-width: 24rem;
-  font-size: clamp(1.45rem, 2.25vw, 2.15rem) !important;
-  line-height: 1.05 !important;
   white-space: normal !important;
 }
 

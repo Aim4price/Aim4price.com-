@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import DealerAssetCorrectionEditor from './DealerAssetCorrectionEditor';
 import DealerMaintenanceReportModal from './DealerMaintenanceReportModal';
+import LeadPhotoViewerModal from './LeadPhotoViewerModal';
 import {
   WorkspaceTitlePanel,
   workspaceStyles,
@@ -30,6 +31,13 @@ type TrackerResponse = {
   ok?: boolean;
   assets?: DealerMaintenanceTrackedAsset[];
   error?: string;
+};
+
+type TrackerPhotoModal = {
+  accessId: string;
+  title: string;
+  urls: string[];
+  index: number;
 };
 
 const statusOptions: Option[] = [
@@ -123,6 +131,14 @@ function recurringLabel(record: DealerMaintenanceRecordSummary): string {
 
 function needsAttention(status: DealerMaintenanceTrackerStatus): boolean {
   return ['overdue', 'due', 'due_soon', 'usage_needed'].includes(status);
+}
+
+function trackerCardStatusClass(
+  status: DealerMaintenanceTrackerStatus,
+): string {
+  if (needsAttention(status)) return leadStyles.leadThreadNew;
+  if (status === 'no_open') return leadStyles.leadThreadDone;
+  return leadStyles.leadThreadActive;
 }
 
 function matchesSearch(asset: DealerMaintenanceTrackedAsset, search: string): boolean {
@@ -229,6 +245,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
   const [openFilterDropdown, setOpenFilterDropdown] = useState<FilterDropdownKey | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
   const [photoIndexes, setPhotoIndexes] = useState<Record<string, number>>({});
+  const [photoModal, setPhotoModal] = useState<TrackerPhotoModal | null>(null);
   const [openAccessId, setOpenAccessId] = useState<string | null>(
     initialAssets.some((asset) => asset.accessId === initialOpenAccessId) ? initialOpenAccessId : null,
   );
@@ -326,6 +343,19 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
     );
   }
 
+  function openPhotoModal(
+    asset: DealerMaintenanceTrackedAsset,
+    index: number,
+  ) {
+    if (!asset.photoUrls.length) return;
+    setPhotoModal({
+      accessId: asset.accessId,
+      title: asset.assetTitle,
+      urls: [...asset.photoUrls],
+      index: Math.min(Math.max(index, 0), asset.photoUrls.length - 1),
+    });
+  }
+
   function syncCorrection(assetId: string, correction: NonNullable<DealerMaintenanceTrackedAsset['dealerCorrection']>) {
     setAssets((current) => current.map((asset) => asset.assetId === assetId
       ? {
@@ -346,20 +376,20 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
           <WorkspaceTitlePanel title="Maintenance Tracker" />
 
           <section className={`${assetStyles.summaryRow} ${assetStyles.heroSummaryRow} ${leadStyles.leadSummaryRow}`} aria-label="Maintenance Tracker summary">
-            <article className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${leadStyles.leadOwnerSummaryCard} ${leadStyles.leadOwnerSummaryCardOpen}`}>
-              <div className={assetStyles.heroSummaryHead}><span className={assetStyles.heroSummaryTitle}>Tracked equipment</span></div>
-              <div className={assetStyles.heroSummaryValueRow}><strong className={assetStyles.heroSummaryValue}>{assets.length}</strong></div>
-              <div className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter}`}><small>Actively shared by owners or Field Managers.</small></div>
-            </article>
             <article className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${leadStyles.leadOwnerSummaryCard} ${leadStyles.leadOwnerSummaryCardNew}`}>
-              <div className={assetStyles.heroSummaryHead}><span className={assetStyles.heroSummaryTitle}>Needs attention</span></div>
-              <div className={assetStyles.heroSummaryValueRow}><strong className={assetStyles.heroSummaryValue}>{attentionCount}</strong></div>
-              <div className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter}`}><small>Due, overdue, due soon or awaiting usage.</small></div>
+              <div className={assetStyles.heroSummaryHead}><span className={`${assetStyles.heroSummaryTitle} ${leadStyles.leadOwnerSummaryText}`}>Needs attention</span></div>
+              <div className={assetStyles.heroSummaryValueRow}><strong className={`${assetStyles.heroSummaryValue} ${leadStyles.leadOwnerSummaryText}`}>{attentionCount}</strong></div>
+              <div className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${leadStyles.leadOwnerSummaryFooter}`}><small className={leadStyles.leadOwnerSummaryText}>Due, overdue, due soon or awaiting usage.</small></div>
+            </article>
+            <article className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${leadStyles.leadOwnerSummaryCard} ${leadStyles.leadOwnerSummaryCardOpen}`}>
+              <div className={assetStyles.heroSummaryHead}><span className={`${assetStyles.heroSummaryTitle} ${leadStyles.leadOwnerSummaryText}`}>Tracked equipment</span></div>
+              <div className={assetStyles.heroSummaryValueRow}><strong className={`${assetStyles.heroSummaryValue} ${leadStyles.leadOwnerSummaryText}`}>{assets.length}</strong></div>
+              <div className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${leadStyles.leadOwnerSummaryFooter}`}><small className={leadStyles.leadOwnerSummaryText}>Actively shared by owners or Field Managers.</small></div>
             </article>
             <article className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${leadStyles.leadOwnerSummaryCard} ${leadStyles.leadOwnerSummaryCardDone}`}>
-              <div className={assetStyles.heroSummaryHead}><span className={assetStyles.heroSummaryTitle}>No open maintenance</span></div>
-              <div className={assetStyles.heroSummaryValueRow}><strong className={assetStyles.heroSummaryValue}>{noOpenCount}</strong></div>
-              <div className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter}`}><small>Still tracked with completed history retained.</small></div>
+              <div className={assetStyles.heroSummaryHead}><span className={`${assetStyles.heroSummaryTitle} ${leadStyles.leadOwnerSummaryText}`}>No open maintenance</span></div>
+              <div className={assetStyles.heroSummaryValueRow}><strong className={`${assetStyles.heroSummaryValue} ${leadStyles.leadOwnerSummaryText}`}>{noOpenCount}</strong></div>
+              <div className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${leadStyles.leadOwnerSummaryFooter}`}><small className={leadStyles.leadOwnerSummaryText}>Still tracked with completed history retained.</small></div>
             </article>
           </section>
 
@@ -393,7 +423,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
               const activePhotoUrl = asset.photoUrls[photoIndex] ?? '';
               const hasMultiplePhotos = asset.photoUrls.length > 1;
               return (
-                <article key={asset.accessId} className={`${workspaceStyles.card} ${leadStyles.leadThread} ${needsAttention(asset.status) ? leadStyles.leadThreadNew : ''} ${asset.status === 'no_open' ? leadStyles.leadThreadDone : ''} ${isOpen ? leadStyles.leadThreadOpen : ''}`}>
+                <article key={asset.accessId} className={`${workspaceStyles.card} ${leadStyles.leadThread} ${trackerCardStatusClass(asset.status)} ${isOpen ? leadStyles.leadThreadOpen : ''}`}>
                   <div className={leadStyles.clientPanel}>
                     <div className={leadStyles.clientPanelHeader}>
                       <div className={leadStyles.clientIdentity}>
@@ -447,11 +477,10 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                           <div className={`${assetStyles.previewStage} ${leadStyles.leadPreviewStage}`}>
                             {activePhotoUrl ? (
                               <>
-                                <a
-                                  href={activePhotoUrl}
-                                  target="_blank"
-                                  rel="noreferrer"
+                                <button
+                                  type="button"
                                   className={leadStyles.leadPreviewOpenButton}
+                                  onClick={() => openPhotoModal(asset, photoIndex)}
                                   aria-label={`Open ${asset.assetTitle} photo ${photoIndex + 1}`}
                                 >
                                   <img
@@ -460,7 +489,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                                     className={`${assetStyles.previewImage} ${leadStyles.leadPreviewImage}`}
                                   />
                                   <span className={leadStyles.leadPreviewOpenLabel}>Open photo</span>
-                                </a>
+                                </button>
 
                                 {hasMultiplePhotos ? (
                                   <>
@@ -504,8 +533,11 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                                   type="button"
                                   key={`${asset.accessId}-tracking-photo-${index}`}
                                   className={`${assetStyles.previewThumbButton} ${leadStyles.leadPreviewThumbButton} ${index === photoIndex ? assetStyles.previewThumbButtonActive : ''}`}
-                                  onClick={() => selectPhoto(asset, index)}
-                                  aria-label={`Show photo ${index + 1}`}
+                                  onClick={() => {
+                                    selectPhoto(asset, index);
+                                    openPhotoModal(asset, index);
+                                  }}
+                                  aria-label={`Open photo ${index + 1}`}
                                 >
                                   <img
                                     src={url}
@@ -620,6 +652,16 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
             </div>
           </div>
         </div>
+      ) : null}
+
+      {photoModal ? (
+        <LeadPhotoViewerModal
+          assetKey={`tracking-${photoModal.accessId}`}
+          title={photoModal.title}
+          urls={photoModal.urls}
+          initialIndex={photoModal.index}
+          onClose={() => setPhotoModal(null)}
+        />
       ) : null}
 
       {reportAccessId ? (
