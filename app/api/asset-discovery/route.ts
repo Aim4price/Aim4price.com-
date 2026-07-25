@@ -3,6 +3,7 @@ import { getAccountProfile } from "../../../lib/account-profile";
 import { getServerSession } from "../../../lib/auth-session";
 import {
   createAssetDiscoveryEnquiry,
+  getAssetDiscoveryBrowseAccess,
   listAssetDiscoveryAssets,
 } from "../../../lib/asset-discovery";
 
@@ -25,7 +26,7 @@ function forbidden() {
   return NextResponse.json(
     {
       ok: false,
-      error: "Discovery is available to active dealer accounts only.",
+      error: "Discovery is available to active owner and dealer accounts.",
     },
     { status: 403 },
   );
@@ -60,11 +61,40 @@ export async function GET(request: NextRequest) {
       email: session.user.email,
     });
 
-    if (profile.accountType !== "dealer") return forbidden();
+    if (profile.accountType !== "dealer" && profile.accountType !== "owner") {
+      return forbidden();
+    }
+
+    const access = await getAssetDiscoveryBrowseAccess({
+      userId: session.user.id,
+      accountType: profile.accountType,
+    });
+
+    if (!access.canBrowse) {
+      return NextResponse.json({
+        ok: true,
+        access,
+        assets: [],
+        provinceOptions: [],
+        typeOptions: [],
+        summary: { totalAssets: 0, typeCount: 0, provinceCount: 0 },
+        pagination: {
+          page: 1,
+          pageSize: 10,
+          totalItems: 0,
+          totalPages: 1,
+          rangeStart: 0,
+          rangeEnd: 0,
+          hasPreviousPage: false,
+          hasNextPage: false,
+        },
+      });
+    }
 
     const { searchParams } = request.nextUrl;
     const result = await listAssetDiscoveryAssets({
-      dealerUserId: session.user.id,
+      viewerUserId: session.user.id,
+      viewerAccountType: profile.accountType,
       search: searchParams.get("search") ?? undefined,
       province: searchParams.get("province") ?? undefined,
       type: searchParams.get("type") ?? undefined,
@@ -72,7 +102,7 @@ export async function GET(request: NextRequest) {
       pageSize: positiveIntParam(searchParams.get("pageSize"), 10),
     });
 
-    return NextResponse.json({ ok: true, ...result });
+    return NextResponse.json({ ok: true, access, ...result });
   } catch (error) {
     console.error("asset-discovery GET failed", error);
     return NextResponse.json(
@@ -104,10 +134,13 @@ export async function POST(request: NextRequest) {
       email: session.user.email,
     });
 
-    if (profile.accountType !== "dealer") return forbidden();
+    if (profile.accountType !== "dealer" && profile.accountType !== "owner") {
+      return forbidden();
+    }
 
     const enquiry = await createAssetDiscoveryEnquiry({
-      dealerUserId: session.user.id,
+      requesterUserId: session.user.id,
+      requesterAccountType: profile.accountType,
       assetId: asText(body.assetId),
       message: asText(body.message),
     });
