@@ -572,7 +572,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
                 href={`/owner-app/assets/${encodeURIComponent(assetId)}/options`}
                 prefetch={false}
               >
-                Options
+                Share
               </Link>
               <Link
                 className={`${styles.assetMirrorAction} ${styles.assetMirrorManageAction}`}

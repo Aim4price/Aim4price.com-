@@ -208,13 +208,13 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
   }
 
   const topBackLabel = stage === 'partners'
-    ? 'Options'
+    ? 'Share'
     : stage === 'message'
       ? 'Companies'
       : stage === 'consent'
         ? 'Message'
         : stage === 'tracking'
-          ? 'Options'
+          ? 'Share'
           : 'Asset';
   const topBackAction = stage === 'partners'
     ? () => returnToStage('choices')
@@ -335,7 +335,7 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
       <OwnerAppNav backHref={assetHref} backLabel={topBackLabel} backAction={topBackAction} />
       <div className={styles.wideContent}>
         <section className={styles.ownerOptionsIdentity}>
-          <h1>Options</h1>
+          <h1>Share</h1>
           <strong><BalancedHeadingText text={assetTitle} /></strong>
           <p>{money(assetValue)} excl. VAT</p>
         </section>
