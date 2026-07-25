@@ -74,34 +74,70 @@ export default async function MarketplaceEntryPage({
 
       <section className={styles.choiceSection} aria-labelledby="marketplace-choice-title">
         <div className={styles.choiceShell}>
-          <div className={styles.heading}>
-            <p>Aim4price Marketplace</p>
-            <h1 id="marketplace-choice-title">Where would you like to go?</h1>
-          </div>
+          <header className={styles.heading}>
+            <div className={styles.headingCopy}>
+              <p>Aim4price Marketplace</p>
+              <h1 id="marketplace-choice-title">Where would you like to go?</h1>
+              <span>Choose how you would like to browse equipment on Aim4price.</span>
+            </div>
+
+            <span className={styles.headingIcon} aria-hidden="true">
+              <svg viewBox="0 0 32 32">
+                <path d="M5 14h22" />
+                <path d="m7.5 6-2.5 8a4 4 0 0 0 7 2.6A4 4 0 0 0 16 19a4 4 0 0 0 4-2.4A4 4 0 0 0 27 14l-2.5-8H7.5Z" />
+                <path d="M8 18.5V27h16v-8.5" />
+                <path d="M13 27v-5h6v5" />
+              </svg>
+            </span>
+          </header>
 
           <nav className={styles.choiceGrid} aria-label="Marketplace choices">
-            <Link href="/asset-discovery" className={styles.choiceCard}>
-              <span className={styles.choiceIcon} aria-hidden="true">
-                <svg viewBox="0 0 24 24">
-                  <circle cx="12" cy="12" r="8" />
-                  <path d="m9.25 14.75 1.7-3.8 3.8-1.7-1.7 3.8-3.8 1.7Z" />
-                </svg>
+            <Link href="/asset-discovery" className={`${styles.choiceCard} ${styles.discoveryCard}`}>
+              <div className={styles.choiceCardTop}>
+                <span className={styles.choiceIcon} aria-hidden="true">
+                  <svg viewBox="0 0 32 32">
+                    <circle cx="16" cy="16" r="9" />
+                    <circle cx="16" cy="16" r="2.5" />
+                    <path d="M16 3v3M16 26v3M3 16h3M26 16h3" />
+                    <path d="m11.6 20.4 2.7-6.1 6.1-2.7-2.7 6.1-6.1 2.7Z" />
+                  </svg>
+                </span>
+                <span className={styles.choiceEyebrow}>Asset Discovery</span>
+              </div>
+
+              <span className={styles.choiceCopy}>
+                <strong>Discover Assets</strong>
+                <small>Browse equipment shared by participating Aim4price owners.</small>
               </span>
-              <strong>Discover</strong>
-              <small>Browse participating owners&apos; assets.</small>
-              <span className={styles.choiceArrow} aria-hidden="true">›</span>
+
+              <span className={styles.choiceAction}>
+                <span>Open Discovery</span>
+                <span className={styles.choiceArrow} aria-hidden="true">›</span>
+              </span>
             </Link>
 
-            <Link href="/marketplace/browse" className={styles.choiceCard}>
-              <span className={styles.choiceIcon} aria-hidden="true">
-                <svg viewBox="0 0 24 24">
-                  <path d="M5 8.5h14l-1 10H6l-1-10Z" />
-                  <path d="M8.5 8.5a3.5 3.5 0 0 1 7 0" />
-                </svg>
+            <Link href="/marketplace/browse" className={`${styles.choiceCard} ${styles.marketplaceCard}`}>
+              <div className={styles.choiceCardTop}>
+                <span className={styles.choiceIcon} aria-hidden="true">
+                  <svg viewBox="0 0 32 32">
+                    <path d="M5 14h22" />
+                    <path d="m7.5 6-2.5 8a4 4 0 0 0 7 2.6A4 4 0 0 0 16 19a4 4 0 0 0 4-2.4A4 4 0 0 0 27 14l-2.5-8H7.5Z" />
+                    <path d="M8 18.5V27h16v-8.5" />
+                    <path d="M13 27v-5h6v5" />
+                  </svg>
+                </span>
+                <span className={styles.choiceEyebrow}>Assets for Sale</span>
+              </div>
+
+              <span className={styles.choiceCopy}>
+                <strong>Marketplace</strong>
+                <small>Browse equipment currently listed for sale across South Africa.</small>
               </span>
-              <strong>Marketplace</strong>
-              <small>Browse assets currently listed for sale.</small>
-              <span className={styles.choiceArrow} aria-hidden="true">›</span>
+
+              <span className={styles.choiceAction}>
+                <span>Open Marketplace</span>
+                <span className={styles.choiceArrow} aria-hidden="true">›</span>
+              </span>
             </Link>
           </nav>
         </div>
