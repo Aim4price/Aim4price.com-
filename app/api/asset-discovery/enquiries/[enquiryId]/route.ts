@@ -106,13 +106,14 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
       email: session.user.email,
     });
 
-    if (profile.accountType !== 'dealer') {
-      return NextResponse.json({ ok: false, error: 'Only the dealer can retract this enquiry.' }, { status: 403 });
+    if (profile.accountType !== 'dealer' && profile.accountType !== 'owner') {
+      return NextResponse.json({ ok: false, error: 'Only the requester can retract this enquiry.' }, { status: 403 });
     }
 
     await retractAssetDiscoveryEnquiry({
       enquiryId: context.params.enquiryId,
-      dealerUserId: session.user.id,
+      requesterUserId: session.user.id,
+      requesterAccountType: profile.accountType,
     });
 
     return NextResponse.json({ ok: true });
