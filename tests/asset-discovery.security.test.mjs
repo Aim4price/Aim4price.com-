@@ -9,6 +9,10 @@ const migration = read(
 );
 const client = read("app/asset-discovery/asset-discovery-client.tsx");
 const css = read("app/asset-discovery/page.module.css");
+const header = read("components/AppHeader.tsx");
+const marketplaceClient = read("app/marketplace/marketplace-client.tsx");
+const marketplaceEntry = read("app/marketplace/page.tsx");
+const ownerAppHome = read("app/owner-app/page.tsx");
 
 test("owner participation defaults to off", () => {
   assert.match(
@@ -122,4 +126,25 @@ test("Refresh remains white in every interaction state", () => {
     assert.ok(css.includes(state), `missing ${state}`);
   }
   assert.match(css, /background: #ffffff !important/);
+});
+
+test("desktop navigation exposes Discovery only through the Marketplace entry page", () => {
+  const navigationConfig = header.slice(
+    header.indexOf("const BASE_NAV_ITEMS"),
+    header.indexOf("function isAccountMenuItemVisible"),
+  );
+
+  assert.doesNotMatch(navigationConfig, /href:\s*['"]\/asset-discovery['"]/);
+  assert.match(marketplaceEntry, /href="\/asset-discovery"/);
+  assert.match(marketplaceEntry, /href="\/marketplace\/browse"/);
+});
+
+test("Discovery and Marketplace pages do not render the old switch", () => {
+  assert.doesNotMatch(client, /DiscoveryMarketplaceSwitch/);
+  assert.doesNotMatch(marketplaceClient, /DiscoveryMarketplaceSwitch/);
+});
+
+test("Owner App keeps direct separate Discovery and Marketplace buttons", () => {
+  assert.match(ownerAppHome, /href:\s*['"]\/owner-app\/discovery['"]/);
+  assert.match(ownerAppHome, /href:\s*['"]\/owner-app\/marketplace['"]/);
 });
