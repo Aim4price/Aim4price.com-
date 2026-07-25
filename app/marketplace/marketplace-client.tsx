@@ -10,7 +10,6 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
 } from 'react';
 import AppHeader from '../../components/AppHeader';
-import DiscoveryMarketplaceSwitch from '../../components/DiscoveryMarketplaceSwitch';
 import GroupedCurrencyInput from '../../components/GroupedCurrencyInput';
 import styles from './page.module.css';
 import dealerStyles from '../dealer/dealer.module.css';
@@ -901,10 +900,10 @@ function listingMatchesReference(listing: MarketplaceListing, value: string): bo
 function buildListingShareUrl(listing: MarketplaceListing): string {
   if (typeof window === 'undefined') {
     const params = new URLSearchParams({ listing: listing.id, preview: 'photo' });
-    return `/marketplace?${params.toString()}`;
+    return `/marketplace/browse?${params.toString()}`;
   }
 
-  const url = new URL('/marketplace', window.location.origin);
+  const url = new URL('/marketplace/browse', window.location.origin);
   url.searchParams.set('listing', listing.id);
   url.searchParams.set('preview', 'photo');
   return url.toString();
@@ -2636,13 +2635,6 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
         <div className={styles.topBand}>
           <AppHeader active="marketplace" />
         </div>
-      ) : null}
-
-      {!ownerAppMode && (isOwnerAccount || isDealerAccount) ? (
-        <DiscoveryMarketplaceSwitch
-          active="marketplace"
-          dealerAppMode={dealerAppMode}
-        />
       ) : null}
 
       {compactAppMode ? (
