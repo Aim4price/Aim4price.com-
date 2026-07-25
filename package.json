@@ -6,6 +6,7 @@
     "build": "next build",
     "start": "sh -c 'next start -H 0.0.0.0 -p ${PORT:-3000}'",
     "typecheck": "tsc --noEmit",
+    "test:asset-discovery": "node --test tests/asset-discovery.security.test.mjs",
     "verify:insurance": "node scripts/verify-insurance-workspace.cjs"
   },
   "dependencies": {
