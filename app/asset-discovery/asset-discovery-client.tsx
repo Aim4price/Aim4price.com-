@@ -213,6 +213,46 @@ function RefreshIcon({ className }: IconProps) {
   );
 }
 
+function SettingsIcon({ className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-1.8 1.8-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V20h-2.55v-.1A1.7 1.7 0 0 0 11.42 18.34a1.7 1.7 0 0 0-1.88.34l-.06.06-1.8-1.8.06-.06A1.7 1.7 0 0 0 8.08 15a1.7 1.7 0 0 0-1.56-1.03h-.1v-2.55h.1A1.7 1.7 0 0 0 8.08 10a1.7 1.7 0 0 0-.34-1.88l-.06-.06 1.8-1.8.06.06A1.7 1.7 0 0 0 11.42 6a1.7 1.7 0 0 0 1.03-1.56v-.1H15v.1A1.7 1.7 0 0 0 16.06 6a1.7 1.7 0 0 0 1.88-.34L18 5.6l1.8 1.8-.06.06A1.7 1.7 0 0 0 19.4 9.34a1.7 1.7 0 0 0 1.56 1.03h.1v2.55h-.1A1.7 1.7 0 0 0 19.4 15Z" />
+    </svg>
+  );
+}
+
+function DiscoveryParticipationIcon({ className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 48 48"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.25"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M13 18.5a13.5 13.5 0 0 1 22-3.8" />
+      <path d="m35 9.5.2 5.7-5.7.2" />
+      <path d="M35 29.5A13.5 13.5 0 0 1 13 33.3" />
+      <path d="m13 38.5-.2-5.7 5.7-.2" />
+      <path d="M18.5 23.6 24 20l5.5 3.6v6.1L24 33l-5.5-3.3v-6.1Z" />
+      <path d="m21.5 26.4 1.7 1.7 3.6-3.7" />
+    </svg>
+  );
+}
+
 function CloseIcon({ className }: IconProps) {
   return (
     <svg
@@ -473,6 +513,12 @@ function sortAssetsByEnquiryPriority(
 function assetCardStatusClass(asset: AssetDiscoveryAsset): string {
   if (asset.enquiryStatus === "approved") return styles.dealerAssetCardOpen;
   if (asset.enquiryStatus === "pending") return styles.dealerAssetCardPending;
+  if (
+    asset.enquiryStatus === "temporarily_denied" &&
+    !temporaryDenialExpired(asset)
+  ) {
+    return styles.discoveryAssetCardDenied;
+  }
   return "";
 }
 
@@ -502,6 +548,9 @@ export default function AssetDiscoveryClient({
   const [type, setType] = useState("all");
   const [openFilter, setOpenFilter] = useState<DiscoveryFilterKey | null>(null);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [showParticipationExclusions, setShowParticipationExclusions] =
+    useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] =
     useState<DiscoveryPageSize>(DISCOVERY_PAGE_SIZE);
@@ -554,7 +603,7 @@ export default function AssetDiscoveryClient({
   }, [activeEnquiry]);
 
   useEffect(() => {
-    if (!isFilterModalOpen) return undefined;
+    if (!isFilterModalOpen && !isSettingsModalOpen) return undefined;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
@@ -562,6 +611,7 @@ export default function AssetDiscoveryClient({
       if (event.key === "Escape") {
         setOpenFilter(null);
         setIsFilterModalOpen(false);
+        setIsSettingsModalOpen(false);
       }
     };
     window.addEventListener("keydown", onKeyDown);
@@ -570,7 +620,7 @@ export default function AssetDiscoveryClient({
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [isFilterModalOpen]);
+  }, [isFilterModalOpen, isSettingsModalOpen]);
 
   useEffect(() => {
     if (!openFilter) return undefined;
@@ -747,7 +797,7 @@ export default function AssetDiscoveryClient({
     setRefreshVersion((current) => current + 1);
   }
 
-  async function enableOwnerDiscoveryParticipation() {
+  async function updateOwnerDiscoveryParticipation(enabled: boolean) {
     if (isUpdatingParticipation) return;
     setIsUpdatingParticipation(true);
     setNotice(null);
@@ -757,7 +807,7 @@ export default function AssetDiscoveryClient({
         method: "PATCH",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ enabled: true }),
+        body: JSON.stringify({ enabled }),
       });
       const payload = (await response.json().catch(() => null)) as {
         ok?: boolean;
@@ -766,14 +816,20 @@ export default function AssetDiscoveryClient({
       } | null;
       if (!response.ok || !payload?.ok || !payload.access) {
         throw new Error(
-          payload?.error || "Failed to enable Discovery participation.",
+          payload?.error || "Failed to update Discovery participation.",
         );
       }
 
       setAccess(payload.access);
+      setExpandedAssetId(null);
+      setDetailsByAssetId({});
+      setDetailsErrorByAssetId({});
+      setIsSettingsModalOpen(false);
       setNotice({
         tone: "success",
-        message: "Discovery participation enabled.",
+        message: enabled
+          ? "Discovery participation enabled."
+          : "Discovery disabled. Your assets were removed from Discovery, but remain safely saved in your Asset Register.",
       });
       setRefreshVersion((current) => current + 1);
     } catch (cause) {
@@ -782,7 +838,7 @@ export default function AssetDiscoveryClient({
         message:
           cause instanceof Error
             ? cause.message
-            : "Failed to enable Discovery participation.",
+            : "Failed to update Discovery participation.",
       });
     } finally {
       setIsUpdatingParticipation(false);
@@ -971,7 +1027,8 @@ export default function AssetDiscoveryClient({
       );
       setNotice({
         tone: "success",
-        message: "Enquiry sent. Waiting for owner approval.",
+        message:
+          "Access request sent. The owner will be asked if they are interested in selling.",
       });
     } catch (submitError) {
       setNotice({
@@ -1155,7 +1212,7 @@ export default function AssetDiscoveryClient({
         onClick={() => handleEnquire(asset)}
         disabled={isProcessing}
       >
-        {isProcessing ? "Sending..." : "Request contact"}
+        {isProcessing ? "Sending..." : "Request access"}
       </button>
     );
   }
@@ -1299,9 +1356,12 @@ export default function AssetDiscoveryClient({
                     ? "Photos open through an existing direct share."
                     : details.accessSource === "approved_enquiry"
                       ? "Owner-approved Discovery access."
-                      : "Request contact to ask the owner for access."}
+                      : "Request access to ask whether the owner is interested in selling."}
                 </strong>
-                <span>{statusDescription(asset)}</span>
+                <span>
+                  {statusDescription(asset) ||
+                    "No contact details are shared unless the owner approves your request."}
+                </span>
               </div>
               {renderEnquiryControl(asset)}
             </div>
@@ -1456,7 +1516,9 @@ export default function AssetDiscoveryClient({
 
         <section className={styles.discoveryAccessPanel}>
           <div className={styles.discoveryAccessIcon} aria-hidden="true">
-            {participationDisabled ? "○" : "＋"}
+            <DiscoveryParticipationIcon
+              className={styles.discoveryAccessIconGraphic}
+            />
           </div>
           <div>
             <h2>
@@ -1466,23 +1528,53 @@ export default function AssetDiscoveryClient({
             </h2>
             <p>
               {participationDisabled
-                ? "Discovery is an owner-to-owner exchange. Enable participation so your eligible assets join while you browse other participating owners’ assets."
+                ? "Join the owner-to-owner Discovery exchange. Your eligible machinery becomes discoverable while you browse assets shared by other participating owners."
                 : "Participation is enabled, but Discovery needs at least one eligible Aim4price asset in your Asset Register before you can browse."}
             </p>
           </div>
 
+          {participationDisabled ? (
+            <div className={styles.discoveryAccessPrivacy}>
+              <strong>Your details stay private.</strong>
+              <span>
+                No contact details are shared immediately. Every interested
+                user must send a request, and you decide whether to approve it.
+              </span>
+            </div>
+          ) : null}
+
           <div className={styles.discoveryAccessActions}>
             {participationDisabled ? (
-              <button
-                type="button"
-                className={`${workspaceStyles.actionButton} ${workspaceStyles.actionGreen}`}
-                onClick={() => void enableOwnerDiscoveryParticipation()}
-                disabled={isUpdatingParticipation}
-              >
-                {isUpdatingParticipation
-                  ? "Enabling…"
-                  : "Enable Discovery participation"}
-              </button>
+              <>
+                <button
+                  type="button"
+                  className={`${workspaceStyles.actionButton} ${workspaceStyles.actionGreen}`}
+                  onClick={() =>
+                    void updateOwnerDiscoveryParticipation(true)
+                  }
+                  disabled={isUpdatingParticipation}
+                >
+                  {isUpdatingParticipation
+                    ? "Enabling…"
+                    : "Enable Discovery participation"}
+                </button>
+                <button
+                  type="button"
+                  className={`${workspaceStyles.actionButton} ${workspaceStyles.actionNeutral} ${styles.discoveryExclusionsButton}`}
+                  onClick={() =>
+                    setShowParticipationExclusions((current) => !current)
+                  }
+                  aria-expanded={showParticipationExclusions}
+                  aria-controls="discovery-participation-exclusions"
+                >
+                  {showParticipationExclusions
+                    ? "Hide exclusions"
+                    : "View exclusions"}
+                  <ChevronDownIcon
+                    className={`${styles.buttonIcon} ${showParticipationExclusions ? styles.discoveryExclusionsChevronOpen : ""}`}
+                  />
+                </button>
+              </>
             ) : (
               <>
                 <a
@@ -1501,9 +1593,24 @@ export default function AssetDiscoveryClient({
             )}
           </div>
 
+          {participationDisabled && showParticipationExclusions ? (
+            <div
+              id="discovery-participation-exclusions"
+              className={styles.discoveryExclusions}
+            >
+              <strong>Assets not included in Discovery</strong>
+              <ul>
+                <li>Property, land and buildings</li>
+                <li>Fixed improvements and property-related structures</li>
+                <li>Manual or unclassified entries</li>
+                <li>Tools and small loose equipment</li>
+              </ul>
+            </div>
+          ) : null}
+
           <small>
-            Participation defaults to off. Marketplace listings and maintenance
-            sharing are managed separately.
+            Discovery includes eligible machinery and equipment only.
+            Marketplace listings and maintenance sharing remain separate.
           </small>
         </section>
       </section>
@@ -1660,7 +1767,7 @@ export default function AssetDiscoveryClient({
             <div className={leadStyles.leadToolbarActions}>
               <button
                 type="button"
-                className={`${assetStyles.secondaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionNeutral} ${leadStyles.leadRefreshButton} ${styles.discoveryRefreshButton}`}
+                className={`${assetStyles.secondaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionNeutral} ${leadStyles.leadRefreshButton} ${styles.discoveryRefreshButton} ${access?.accountType === "owner" ? styles.ownerDiscoveryRefreshButton : ""}`}
                 onClick={refreshAssets}
                 disabled={loading}
               >
@@ -1678,6 +1785,18 @@ export default function AssetDiscoveryClient({
                 <span>{activeDiscoveryFilterLabel}</span>
                 <ChevronDownIcon className={assetStyles.filterChevron} />
               </button>
+
+              {access?.accountType === "owner" ? (
+                <button
+                  type="button"
+                  className={`${assetStyles.primaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionGreen} ${styles.discoverySettingsButton}`}
+                  onClick={() => setIsSettingsModalOpen(true)}
+                  disabled={loading || isUpdatingParticipation}
+                >
+                  <SettingsIcon className={assetStyles.buttonIcon} />
+                  <span>Settings</span>
+                </button>
+              ) : null}
             </div>
           </div>
         )}
@@ -1733,7 +1852,12 @@ export default function AssetDiscoveryClient({
             ) : (
               <article
                 key={asset.id}
-                className={`${workspaceStyles.card} ${leadStyles.leadThread} ${leadParityAssetCardStatusClass(asset)}`}
+                className={`${workspaceStyles.card} ${leadStyles.leadThread} ${leadParityAssetCardStatusClass(asset)} ${
+                  asset.enquiryStatus === "temporarily_denied" &&
+                  !temporaryDenialExpired(asset)
+                    ? styles.discoveryAssetCardDenied
+                    : ""
+                }`}
               >
                 <div className={leadStyles.clientPanel}>
                   <div className={leadStyles.clientPanelHeader}>
@@ -1842,6 +1966,99 @@ export default function AssetDiscoveryClient({
                 onClick={closeDiscoveryFilterModal}
               >
                 Apply filters
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {!compactAppMode &&
+      access?.accountType === "owner" &&
+      isSettingsModalOpen ? (
+        <div
+          className={`${assetStyles.modalOverlay} ${workspaceStyles.modalOverlay}`}
+        >
+          <div
+            className={assetStyles.modalBackdrop}
+            onClick={() => setIsSettingsModalOpen(false)}
+          />
+
+          <div
+            className={`${assetStyles.modalCard} ${workspaceStyles.modal} ${styles.discoverySettingsModal}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="discovery-settings-title"
+          >
+            <div
+              className={`${assetStyles.modalHeader} ${workspaceStyles.modalHeader}`}
+            >
+              <div className={assetStyles.modalHeaderText}>
+                <h3 id="discovery-settings-title">Discovery settings</h3>
+                <p>
+                  Control whether your eligible assets participate in owner
+                  Discovery.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className={`${assetStyles.modalCloseButton} ${workspaceStyles.modalClose}`}
+                onClick={() => setIsSettingsModalOpen(false)}
+                aria-label="Close Discovery settings"
+              >
+                <CloseIcon className={assetStyles.buttonIcon} />
+              </button>
+            </div>
+
+            <div
+              className={`${workspaceStyles.modalBody} ${styles.discoverySettingsBody}`}
+            >
+              <div className={styles.discoverySettingsStatus}>
+                <span>Current status</span>
+                <strong>Discovery participation is enabled</strong>
+                <p>
+                  {access.eligibleAssetCount} eligible{" "}
+                  {access.eligibleAssetCount === 1 ? "asset is" : "assets are"}{" "}
+                  currently participating.
+                </p>
+              </div>
+
+              <div className={styles.discoverySettingsWarning}>
+                <strong>Disable Discovery and remove my assets</strong>
+                <p>
+                  Your eligible assets will be removed from Discovery and
+                  active requests or approved access will be revoked. Nothing
+                  is deleted from your Asset Register.
+                </p>
+                <p>
+                  You will no longer be able to browse other owners&apos;
+                  assets until you enable participation again.
+                </p>
+              </div>
+            </div>
+
+            <div
+              className={`${assetStyles.formActions} ${workspaceStyles.modalFooter} ${styles.discoverySettingsActions}`}
+            >
+              <button
+                type="button"
+                className={`${assetStyles.secondaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionNeutral}`}
+                onClick={() => setIsSettingsModalOpen(false)}
+                disabled={isUpdatingParticipation}
+              >
+                Keep Discovery enabled
+              </button>
+              <button
+                type="button"
+                className={`${workspaceStyles.actionButton} ${workspaceStyles.actionDanger} ${styles.discoveryDisableButton}`}
+                onClick={() =>
+                  void updateOwnerDiscoveryParticipation(false)
+                }
+                disabled={isUpdatingParticipation}
+              >
+                {isUpdatingParticipation
+                  ? "Disabling…"
+                  : "Disable & remove assets"}
               </button>
             </div>
           </div>

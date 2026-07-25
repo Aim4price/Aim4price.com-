@@ -200,6 +200,23 @@
     linear-gradient(180deg, #ffffff 0%, #fffaf4 100%);
 }
 
+.discoveryAssetCardDenied {
+  border-color: rgba(218, 118, 118, 0.72) !important;
+  background:
+    radial-gradient(circle at 0 0, rgba(201, 61, 61, 0.08), transparent 38%),
+    linear-gradient(180deg, #fffafa 0%, #ffeded 100%) !important;
+  box-shadow:
+    inset 4px 0 0 rgba(199, 61, 61, 0.72),
+    0 14px 28px rgba(111, 42, 42, 0.055) !important;
+}
+
+.discoveryAssetCardDenied:hover {
+  border-color: rgba(202, 84, 84, 0.82) !important;
+  box-shadow:
+    inset 4px 0 0 rgba(187, 49, 49, 0.82),
+    0 18px 34px rgba(111, 42, 42, 0.075) !important;
+}
+
 .assetCardHeader,
 .dealerAssetCardHeader {
   min-height: clamp(5.1rem, 6vw, 5.8rem);
@@ -612,6 +629,24 @@
   opacity: 0.62 !important;
 }
 
+.ownerDiscoveryRefreshButton,
+.ownerDiscoveryRefreshButton:hover,
+.ownerDiscoveryRefreshButton:focus,
+.ownerDiscoveryRefreshButton:focus-visible,
+.ownerDiscoveryRefreshButton:active,
+.ownerDiscoveryRefreshButton:disabled {
+  color: #173c33 !important;
+  border-color: #c4d4ce !important;
+  background: #ffffff !important;
+  background-image: none !important;
+}
+
+.discoverySettingsButton {
+  min-width: 9.5rem !important;
+  min-height: 3.25rem !important;
+  border-radius: 1.1rem !important;
+}
+
 .discoveryOpenButton {
   min-width: 8.5rem !important;
   border-radius: 0.7rem !important;
@@ -800,30 +835,41 @@
 }
 
 .discoveryAccessPanel {
-  max-width: 50rem;
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
   display: grid;
   justify-items: center;
-  gap: 1rem;
+  gap: 1.05rem;
   margin: 1.5rem auto 0;
-  padding: clamp(1.5rem, 4vw, 2.7rem);
+  padding: clamp(1.65rem, 3vw, 2.6rem) clamp(1rem, 4vw, 4rem);
   border: 1px solid #cadbd4;
-  border-radius: 0.85rem;
-  background: #ffffff;
-  box-shadow: 0 14px 36px rgba(14, 54, 45, 0.07);
+  border-radius: 1.35rem;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(25, 116, 84, 0.075), transparent 33%),
+    linear-gradient(180deg, #ffffff 0%, #fbfdfc 100%);
+  box-shadow: 0 18px 40px rgba(14, 54, 45, 0.075);
   text-align: center;
 }
 
 .discoveryAccessIcon {
-  width: 3.4rem;
-  height: 3.4rem;
+  width: 4.25rem;
+  height: 4.25rem;
   display: grid;
   place-items: center;
-  border: 1px solid #a8c8bb;
+  border: 1px solid #8ebcab;
   border-radius: 50%;
-  color: #197454;
-  background: #edf7f2;
-  font-size: 1.6rem;
-  font-weight: 700;
+  color: #0d6549;
+  background:
+    radial-gradient(circle at 34% 24%, #ffffff 0%, #f3fbf7 36%, #dff3e9 100%);
+  box-shadow:
+    0 12px 26px rgba(25, 116, 84, 0.13),
+    inset 0 0 0 6px rgba(255, 255, 255, 0.65);
+}
+
+.discoveryAccessIconGraphic {
+  width: 2.7rem;
+  height: 2.7rem;
 }
 
 .discoveryAccessPanel h2 {
@@ -834,15 +880,17 @@
 }
 
 .discoveryAccessPanel p {
-  max-width: 42rem;
+  max-width: 52rem;
   margin: 0.55rem auto 0;
   color: #5e746b;
   line-height: 1.58;
 }
 
 .discoveryAccessPanel > small {
+  max-width: 50rem;
   color: #71857d;
   font-size: 0.75rem;
+  line-height: 1.5;
 }
 
 .discoveryAccessActions {
@@ -854,6 +902,163 @@
 
 .discoveryAccessActions a {
   text-decoration: none;
+}
+
+.discoveryAccessPrivacy {
+  width: min(100%, 50rem);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.42rem 0.8rem;
+  box-sizing: border-box;
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(137, 195, 168, 0.7);
+  border-radius: 0.9rem;
+  color: #315f50;
+  background: rgba(235, 248, 241, 0.88);
+  text-align: left;
+}
+
+.discoveryAccessPrivacy strong {
+  color: #0c5d43;
+  font-size: 0.82rem;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.discoveryAccessPrivacy span {
+  color: #49695f;
+  font-size: 0.82rem;
+  font-weight: 650;
+  line-height: 1.5;
+}
+
+.discoveryExclusionsButton {
+  min-width: 11rem;
+}
+
+.discoveryExclusionsChevronOpen {
+  transform: rotate(180deg);
+}
+
+.discoveryExclusions {
+  width: min(100%, 50rem);
+  box-sizing: border-box;
+  padding: 1rem 1.1rem;
+  border: 1px solid #d4dfdb;
+  border-radius: 0.9rem;
+  color: #405f55;
+  background: rgba(248, 251, 250, 0.96);
+  text-align: left;
+}
+
+.discoveryExclusions > strong {
+  display: block;
+  color: #173f35;
+  font-size: 0.84rem;
+  font-weight: 850;
+}
+
+.discoveryExclusions ul {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem 1.2rem;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.discoveryExclusions li {
+  position: relative;
+  padding-left: 1.1rem;
+  color: #5c746b;
+  font-size: 0.78rem;
+  font-weight: 660;
+  line-height: 1.45;
+}
+
+.discoveryExclusions li::before {
+  position: absolute;
+  top: 0.52em;
+  left: 0;
+  width: 0.42rem;
+  height: 0.42rem;
+  border-radius: 50%;
+  background: #c65a5a;
+  content: "";
+}
+
+.discoverySettingsModal {
+  width: min(100%, 46rem) !important;
+}
+
+.discoverySettingsBody {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.discoverySettingsStatus,
+.discoverySettingsWarning {
+  padding: 1rem 1.1rem;
+  border: 1px solid #d3e1db;
+  border-radius: 1rem;
+}
+
+.discoverySettingsStatus {
+  background: #f2faf6;
+}
+
+.discoverySettingsStatus span {
+  display: block;
+  margin-bottom: 0.34rem;
+  color: #668078;
+  font-size: 0.68rem;
+  font-weight: 850;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.discoverySettingsStatus strong,
+.discoverySettingsWarning strong {
+  display: block;
+  color: #123f34;
+  font-size: 0.96rem;
+  font-weight: 850;
+}
+
+.discoverySettingsStatus p,
+.discoverySettingsWarning p {
+  margin: 0.42rem 0 0;
+  color: #5b7169;
+  font-size: 0.84rem;
+  font-weight: 640;
+  line-height: 1.52;
+}
+
+.discoverySettingsWarning {
+  border-color: #edcaca;
+  background: #fff7f7;
+}
+
+.discoverySettingsWarning strong {
+  color: #902f2f;
+}
+
+.discoveryDisableButton {
+  min-width: 13.5rem;
+  color: #9b2f2f !important;
+  border-color: #e4b6b6 !important;
+  background: linear-gradient(180deg, #ffffff 0%, #ffecec 100%) !important;
+  box-shadow: 0 9px 20px rgba(139, 44, 44, 0.08) !important;
+}
+
+.discoveryDisableButton:hover:not(:disabled) {
+  border-color: #d98f8f !important;
+  background: linear-gradient(180deg, #ffffff 0%, #ffdfdf 100%) !important;
+}
+
+.discoverySettingsActions {
+  justify-content: space-between !important;
 }
 
 @media (max-width: 1080px) {
@@ -905,6 +1110,11 @@
     align-items: stretch;
     flex-direction: column;
   }
+
+  .discoverySettingsActions {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 @media (max-width: 760px) {
@@ -927,4 +1137,9 @@
   }
   .discoveryPaginationControls { justify-content: space-between; }
   .discoveryPaginationPages { overflow-x: auto; }
+  .discoveryAccessPrivacy { grid-template-columns: 1fr; text-align: center; }
+  .discoveryAccessPrivacy strong { white-space: normal; }
+  .discoveryExclusions ul { grid-template-columns: 1fr; }
+  .discoverySettingsActions { grid-template-columns: 1fr !important; }
+  .discoverySettingsActions > * { width: 100%; }
 }
