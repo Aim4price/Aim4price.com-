@@ -19,6 +19,7 @@ type AccountActionModal =
   | "business"
   | "scanPin"
   | "marketplace"
+  | "discovery"
   | "partnerDirectory";
 
 type AccountProfile = {
@@ -43,6 +44,7 @@ type AccountProfile = {
   marketplacePhone: string;
   marketplaceEmail: string;
   marketplaceLocation: string;
+  discoveryParticipationEnabled: boolean;
   partnerDirectoryEnabled: boolean;
   partnerDirectoryStatus: string;
   partnerDescription: string;
@@ -91,6 +93,7 @@ type ProfileDraft = {
   marketplacePhone: string;
   marketplaceEmail: string;
   marketplaceLocation: string;
+  discoveryParticipationEnabled: boolean;
   partnerDirectoryEnabled: boolean;
   partnerDirectoryStatus: string;
   partnerDescription: string;
@@ -119,6 +122,7 @@ const initialProfileDraft: ProfileDraft = {
   marketplacePhone: "",
   marketplaceEmail: "",
   marketplaceLocation: "",
+  discoveryParticipationEnabled: false,
   partnerDirectoryEnabled: false,
   partnerDirectoryStatus: "approved",
   partnerDescription: "",
@@ -166,6 +170,7 @@ type QuickActionIconName =
   | "dealer"
   | "tracking"
   | "marketplace"
+  | "discovery"
   | "directory"
   | "delete";
 
@@ -330,6 +335,15 @@ function QuickActionIcon({ name }: { name: QuickActionIconName }) {
           <path {...strokeProps} d="M9 8.7a3 3 0 0 1 6 0" />
           <path {...strokeProps} d="M9.6 13.1h4.8" />
           <path {...strokeProps} d="M10.7 15.55h2.6" />
+        </svg>
+      ) : null}
+
+      {name === "discovery" ? (
+        <svg {...svgProps}>
+          <circle cx="12" cy="12" r="7.7" fill="currentColor" opacity="0.14" />
+          <circle {...strokeProps} cx="12" cy="12" r="7.7" />
+          <path {...strokeProps} d="m9.2 14.8 1.65-4.15 4.15-1.65-1.65 4.15-4.15 1.65Z" />
+          <path {...strokeProps} d="M12 4.3v1.2M12 18.5v1.2M4.3 12h1.2M18.5 12h1.2" />
         </svg>
       ) : null}
 
@@ -513,6 +527,9 @@ function buildProfileDraft(profile: AccountProfile | null): ProfileDraft {
     marketplacePhone: profile.marketplacePhone || profile.phone,
     marketplaceEmail: profile.marketplaceEmail,
     marketplaceLocation: profile.marketplaceLocation || fallbackLocation,
+    discoveryParticipationEnabled: Boolean(
+      profile.discoveryParticipationEnabled,
+    ),
     partnerDirectoryEnabled: Boolean(profile.partnerDirectoryEnabled),
     partnerDirectoryStatus: profile.partnerDirectoryStatus || "approved",
     partnerDescription: profile.partnerDescription,
@@ -1468,6 +1485,9 @@ export default function AccountClient() {
         },
         body: JSON.stringify({
           ...nextDraft,
+          discoveryParticipationEnabled: isOwnerAccount
+            ? nextDraft.discoveryParticipationEnabled
+            : undefined,
           extraPhotoUrls: [],
           syncPrimaryLogoToRegister: shouldSyncPrimaryLogo,
         }),
@@ -1675,6 +1695,10 @@ export default function AccountClient() {
 
   function openMarketplaceEditor() {
     openActionModal("marketplace");
+  }
+
+  function openDiscoveryEditor() {
+    openActionModal("discovery");
   }
 
   function openScanPinEditor() {
@@ -2072,6 +2096,18 @@ export default function AccountClient() {
                 >
                   <QuickActionIcon name="marketplace" />
                   <strong>Marketplace contact</strong>
+                  <span className={styles.quickActionChevron}>›</span>
+                </button>
+              ) : null}
+
+              {isOwnerAccount ? (
+                <button
+                  type="button"
+                  className={styles.quickActionButton}
+                  onClick={openDiscoveryEditor}
+                >
+                  <QuickActionIcon name="discovery" />
+                  <strong>Discovery participation</strong>
                   <span className={styles.quickActionChevron}>›</span>
                 </button>
               ) : null}
@@ -2638,6 +2674,92 @@ export default function AccountClient() {
                 </div>
               </form>
               )}
+            </AccountModalScroller>
+          </section>
+        </div>
+      ) : null}
+
+      {activeAccountModal === "discovery" && isOwnerAccount ? (
+        <div
+          className={styles.modalBackdrop}
+          onClick={closeActionModal}
+        >
+          <section
+            className={`${styles.modalCard} ${styles.accountActionModalCardNarrow} ${styles.accountScrollableModalCard}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="discovery-participation-modal-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <AccountModalScroller>
+              <div className={styles.modalHeader}>
+                <h2 id="discovery-participation-modal-title">
+                  Discovery participation
+                </h2>
+                <p>
+                  Choose whether your eligible assets may participate while you
+                  browse other participating owners&apos; assets.
+                </p>
+                <button
+                  type="button"
+                  className={styles.modalCloseButton}
+                  onClick={closeActionModal}
+                  aria-label="Close Discovery participation"
+                >
+                  ×
+                </button>
+              </div>
+
+              <form className={styles.modalForm} onSubmit={handleProfileSubmit}>
+                <label
+                  className={`${styles.toggleField} ${styles.discoveryParticipationToggle}`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={profileDraft.discoveryParticipationEnabled}
+                    onChange={(event) =>
+                      setProfileDraft((current) => ({
+                        ...current,
+                        discoveryParticipationEnabled: event.target.checked,
+                      }))
+                    }
+                  />
+                  <span>
+                    <strong>Participate in Discovery</strong>
+                    <small>
+                      When enabled, all eligible Aim4price assets participate.
+                      Your own assets remain hidden from you.
+                    </small>
+                  </span>
+                </label>
+
+                <div className={styles.confirmBox}>
+                  <strong>Private information stays locked.</strong>
+                  <p>
+                    Photos and contact details are released only after you
+                    approve an enquiry. Turning this off immediately removes
+                    your assets and revokes Discovery-only access.
+                  </p>
+                </div>
+
+                <div className={styles.modalActions}>
+                  <button
+                    type="button"
+                    className={styles.ghostButton}
+                    onClick={closeActionModal}
+                    disabled={isSavingProfile}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className={styles.primaryButton}
+                    disabled={isSavingProfile}
+                  >
+                    {isSavingProfile ? "Saving..." : "Save participation"}
+                  </button>
+                </div>
+              </form>
             </AccountModalScroller>
           </section>
         </div>
