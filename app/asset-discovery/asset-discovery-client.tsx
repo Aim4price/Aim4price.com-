@@ -5,7 +5,6 @@ import {
   WorkspaceTitlePanel,
   workspaceStyles,
 } from "../../components/WorkspacePrimitives";
-import DiscoveryMarketplaceSwitch from "../../components/DiscoveryMarketplaceSwitch";
 import assetStyles from "../asset-register/page.module.css";
 import leadStyles from "../leads/page.module.css";
 import styles from "./page.module.css";
@@ -483,7 +482,14 @@ function leadParityAssetCardStatusClass(asset: AssetDiscoveryAsset): string {
   return leadStyles.leadThreadNew;
 }
 
-export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealerAppMode?: boolean } = {}) {
+export default function AssetDiscoveryClient({
+  dealerAppMode = false,
+  ownerAppMode = false,
+}: {
+  dealerAppMode?: boolean;
+  ownerAppMode?: boolean;
+} = {}) {
+  const compactAppMode = dealerAppMode || ownerAppMode;
   const [assets, setAssets] = useState<AssetDiscoveryAsset[]>([]);
   const [provinceOptions, setProvinceOptions] = useState<Option[]>([]);
   const [typeOptions, setTypeOptions] = useState<Option[]>([]);
@@ -1092,7 +1098,7 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
         <button
           type="button"
           className={
-            dealerAppMode
+            compactAppMode
               ? `${styles.primaryButton} ${styles.enquireButton}`
               : `${assetStyles.primaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionGreen} ${leadStyles.openLeadButton} ${styles.discoveryPrimaryAction}`
           }
@@ -1109,7 +1115,7 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
         <button
           type="button"
           className={
-            dealerAppMode
+            compactAppMode
               ? `${statusClassName(asset)} ${styles.retractEnquiryButton}`
               : `${assetStyles.secondaryButton} ${workspaceStyles.actionButton} ${styles.pendingRequestButton}`
           }
@@ -1127,7 +1133,7 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
       return (
         <span
           className={
-            dealerAppMode
+            compactAppMode
               ? statusClassName(asset)
               : `${workspaceStyles.actionButton} ${styles.discoveryStatusAction} ${styles.discoveryDeniedAction}`
           }
@@ -1142,7 +1148,7 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
       <button
         type="button"
         className={
-          dealerAppMode
+          compactAppMode
             ? `${styles.primaryButton} ${styles.enquireButton}`
             : `${assetStyles.primaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionGreen} ${leadStyles.openLeadButton} ${styles.discoveryPrimaryAction}`
         }
@@ -1438,7 +1444,6 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
         className={`${workspaceStyles.shell} ${styles.shell}`}
         aria-label="Discovery participation required"
       >
-        <DiscoveryMarketplaceSwitch active="discovery" />
         <WorkspaceTitlePanel title="Discover Assets" />
 
         {notice ? (
@@ -1481,13 +1486,13 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
             ) : (
               <>
                 <a
-                  href="/asset-register"
+                  href={ownerAppMode ? "/owner-app/assets" : "/asset-register"}
                   className={`${workspaceStyles.actionButton} ${workspaceStyles.actionGreen}`}
                 >
                   Open Asset Register
                 </a>
                 <a
-                  href="/valuation"
+                  href={ownerAppMode ? "/owner-app/valuation" : "/valuation"}
                   className={`${workspaceStyles.actionButton} ${workspaceStyles.actionNeutral}`}
                 >
                   Get an estimate
@@ -1506,18 +1511,14 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
   }
 
   return (
-    <section className={`${workspaceStyles.shell} ${styles.shell} ${dealerAppMode ? dealerStyles.dealerDiscoverySurface : ""}`}>
-      <DiscoveryMarketplaceSwitch
-        active="discovery"
-        dealerAppMode={dealerAppMode}
-      />
+    <section className={`${workspaceStyles.shell} ${styles.shell} ${compactAppMode ? dealerStyles.dealerDiscoverySurface : ""}`}>
       <WorkspaceTitlePanel title="Discover Assets" />
 
       <section
         className={styles.controlsPanel}
         aria-label="Asset Discovery controls"
       >
-        {!dealerAppMode ? (
+        {!compactAppMode ? (
           <section
             className={`${assetStyles.summaryRow} ${assetStyles.heroSummaryRow} ${leadStyles.leadSummaryRow}`}
             aria-label="Asset Discovery summary"
@@ -1584,7 +1585,7 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
           </section>
         ) : null}
 
-        {dealerAppMode ? (
+        {compactAppMode ? (
           <section
             className={`${workspaceStyles.controlsRow} ${styles.toolbar}`}
             aria-label="Search and filter Asset Discovery"
@@ -1700,7 +1701,7 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
       ) : null}
 
       <section
-        className={dealerAppMode ? styles.cardStack : leadStyles.leadStack}
+        className={compactAppMode ? styles.cardStack : leadStyles.leadStack}
         aria-label="Asset Discovery assets"
       >
         {loading ? (
@@ -1709,7 +1710,7 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
           </div>
         ) : !error && assets.length ? (
           assets.map((asset) => {
-            return dealerAppMode ? (
+            return compactAppMode ? (
               <article
                 key={asset.id}
                 className={`${workspaceStyles.card} ${styles.assetCard} ${styles.dealerAssetCard} ${assetCardStatusClass(asset)}`}
@@ -1766,7 +1767,7 @@ export default function AssetDiscoveryClient({ dealerAppMode = false }: { dealer
 
       {renderPagination()}
 
-      {!dealerAppMode && isFilterModalOpen ? (
+      {!compactAppMode && isFilterModalOpen ? (
         <div className={`${assetStyles.modalOverlay} ${workspaceStyles.modalOverlay}`}>
           <div className={assetStyles.modalBackdrop} onClick={closeDiscoveryFilterModal} />
 
