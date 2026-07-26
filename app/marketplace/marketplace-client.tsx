@@ -3149,6 +3149,8 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
                   <ListingPlaceholder listing={activeListing} variant="modal" />
                 )}
 
+                <DealRatingBadge listing={activeListing} variant="modal" />
+
                 {activeImages.length > 1 ? (
                   <>
                     <button
@@ -3197,7 +3199,6 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
             <aside ref={modalDetailsRef} className={styles.modalDetails} onScroll={updateModalScrollRail}>
               <div className={styles.modalTitleArea}>
                 <PriceWithVat value={activeListing.askingPriceExVat} className={styles.modalPrice} />
-                <DealRatingBadge listing={activeListing} variant="modal" />
                 <h2 id="marketplace-listing-title">{listingDisplayTitle(activeListing)}</h2>
                 <p>{formatLocation(activeListing)}</p>
               </div>

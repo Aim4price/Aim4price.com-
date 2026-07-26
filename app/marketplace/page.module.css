@@ -398,12 +398,14 @@
   position: absolute;
   z-index: 2;
   top: 0.7rem;
-  left: 0.7rem;
+  right: 0.7rem;
 }
 
 .modalDealRatingBadge {
-  margin-top: 0.76rem;
-  box-shadow: none;
+  position: absolute;
+  z-index: 3;
+  top: 1rem;
+  right: 1rem;
 }
 
 .dealRatingBadgeLow {
@@ -667,7 +669,7 @@
 .cardShareButton {
   position: absolute;
   right: 0.55rem;
-  top: 0.55rem;
+  bottom: 0.55rem;
   width: 2.35rem;
   height: 2.35rem;
   border: 0;
@@ -2690,6 +2692,11 @@
     overflow: hidden;
   }
 
+  .modalCloseButton {
+    right: auto;
+    left: 1rem;
+  }
+
   .modalGallery {
     min-height: min(42dvh, 24rem);
   }
@@ -2781,7 +2788,7 @@
 
   .modalCloseButton {
     top: 0.75rem;
-    right: 0.75rem;
+    left: 0.75rem;
   }
 
   .modalActionRow,
