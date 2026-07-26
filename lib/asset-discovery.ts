@@ -1135,6 +1135,7 @@ export async function listAssetDiscoveryAssets(input: {
   search?: string;
   province?: string;
   type?: string;
+  focusAssetId?: string;
   page?: number;
   pageSize?: number;
 }): Promise<AssetDiscoveryListResult> {
@@ -1200,7 +1201,14 @@ export async function listAssetDiscoveryAssets(input: {
   const page = Math.min(Math.max(1, requestedPage), totalPages);
   const offset = (page - 1) * pageSize;
 
-  const listParams = [...params, pageSize, offset];
+  const listParams = [...params];
+  const focusAssetId = asText(input.focusAssetId);
+  let focusOrderSql = "";
+  if (focusAssetId) {
+    listParams.push(focusAssetId);
+    focusOrderSql = `case when asset.id::text = $${listParams.length} then 0 else 1 end,`;
+  }
+  listParams.push(pageSize, offset);
   const limitParam = `$${listParams.length - 1}`;
   const offsetParam = `$${listParams.length}`;
 
@@ -1253,6 +1261,7 @@ export async function listAssetDiscoveryAssets(input: {
     ) enquiry on true
     ${whereClause}
     order by
+      ${focusOrderSql}
       case
         when enquiry.is_active and enquiry.status = 'approved' then 0
         when enquiry.is_active and enquiry.status = 'pending' then 1
