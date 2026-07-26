@@ -25243,11 +25243,17 @@ button.documentOpenLink {
   border-color: #fecaca !important;
 }
 
-.assetFlagButton {
+.assetSideActions {
   position: absolute;
   top: 1.34rem;
   left: calc(0rem - clamp(2.35rem, 2.8vw, 3.05rem));
   z-index: 4;
+  display: grid;
+  gap: 0.28rem;
+  width: 2.05rem;
+}
+
+.assetFlagButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -25291,10 +25297,49 @@ button.documentOpenLink {
   background: #fee2e2;
 }
 
+.assetRegisterMoveButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.05rem;
+  min-width: 2.05rem;
+  height: 2.05rem;
+  min-height: 2.05rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0.6rem;
+  color: rgba(8, 71, 56, 0.88);
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 160ms ease,
+    color 160ms ease,
+    background 160ms ease;
+}
+
+.assetRegisterMoveButton:hover {
+  color: #075d45;
+  background: rgba(215, 244, 230, 0.82);
+  transform: translateY(-1px);
+}
+
+.assetRegisterMoveButton:focus-visible {
+  outline: 3px solid rgba(20, 112, 82, 0.22);
+  outline-offset: 3px;
+}
+
 .assetFlagIcon {
   display: block;
   width: 1.4rem;
   height: 1.4rem;
+}
+
+.assetRegisterMoveIcon {
+  display: block;
+  width: 1.32rem;
+  height: 1.32rem;
 }
 
 .page .assetCardFlagged,
@@ -25332,21 +25377,29 @@ button.documentOpenLink {
     gap: 0.2rem !important;
   }
 
-  .assetFlagButton {
+  .assetSideActions {
     position: static !important;
     grid-column: 1;
     grid-row: 1;
     align-self: start;
     width: 1.65rem;
-    min-width: 1.65rem;
-    height: 4.4rem;
-    min-height: 4.4rem;
     margin-top: 0.58rem;
+    gap: 0.2rem;
+  }
+
+  .assetSideActions .assetFlagButton,
+  .assetSideActions .assetRegisterMoveButton {
+    width: 1.65rem;
+    min-width: 1.65rem;
+    height: 2.1rem;
+    min-height: 2.1rem;
+    margin: 0;
     border-radius: 0.75rem;
     transform: none !important;
   }
 
-  .assetFlagButton:hover:not(:disabled) {
+  .assetSideActions .assetFlagButton:hover:not(:disabled),
+  .assetSideActions .assetRegisterMoveButton:hover {
     transform: none !important;
   }
 
@@ -25362,6 +25415,11 @@ button.documentOpenLink {
     width: 1.18rem;
     height: 1.18rem;
   }
+
+  .assetRegisterMoveIcon {
+    width: 1.12rem;
+    height: 1.12rem;
+  }
 }
 
 @media (max-width: 520px) {
@@ -25370,7 +25428,9 @@ button.documentOpenLink {
     gap: 0.14rem !important;
   }
 
-  .assetFlagButton {
+  .assetSideActions,
+  .assetSideActions .assetFlagButton,
+  .assetSideActions .assetRegisterMoveButton {
     width: 1.45rem;
     min-width: 1.45rem;
   }

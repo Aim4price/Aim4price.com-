@@ -6066,6 +6066,37 @@ export default function AssetRegisterClient() {
     () => mergeProfileWithRegister(accountProfile, activeRegister),
     [accountProfile, activeRegister],
   );
+  const combinedRegisterSwitcherOption = useMemo<AssetRegisterSummary | null>(() => {
+    const savedRegisters = assetRegisters.filter((register) => register.id !== COMBINED_REGISTER_ID);
+
+    if (!savedRegisters.length) {
+      return activeRegister?.id === COMBINED_REGISTER_ID ? activeRegister : null;
+    }
+
+    const newestUpdatedAt = savedRegisters.reduce(
+      (latest, register) => register.updatedAtIso > latest ? register.updatedAtIso : latest,
+      savedRegisters[0]?.updatedAtIso ?? new Date(0).toISOString(),
+    );
+
+    return {
+      id: COMBINED_REGISTER_ID,
+      userId: savedRegisters[0]?.userId ?? '',
+      businessName: 'Combined Asset Registers',
+      email: '',
+      phone: '',
+      addressLine1: 'All asset registers on this account',
+      logoUrls: [],
+      showLogosOnRegister: false,
+      isPrimary: false,
+      isSelected: false,
+      assetCount: savedRegisters.reduce((sum, register) => sum + Math.max(0, Number(register.assetCount) || 0), 0),
+      totalValue: savedRegisters.reduce((sum, register) => sum + (Number(register.totalValue) || 0), 0),
+      totalReplacementPrice: savedRegisters.reduce((sum, register) => sum + (Number(register.totalReplacementPrice) || 0), 0),
+      unnotedAlertCount: savedRegisters.reduce((sum, register) => sum + registerSummaryUnnotedAlertCount(register), 0),
+      createdAtIso: savedRegisters[0]?.createdAtIso ?? newestUpdatedAt,
+      updatedAtIso: newestUpdatedAt,
+    };
+  }, [activeRegister, assetRegisters]);
   const registerSwitcherOptions = useMemo(() => {
     const registersById = new Map<string, AssetRegisterSummary>();
 
@@ -6077,14 +6108,20 @@ export default function AssetRegisterClient() {
       registersById.set(activeRegister.id, activeRegister);
     }
 
+    if (combinedRegisterSwitcherOption) {
+      registersById.set(COMBINED_REGISTER_ID, combinedRegisterSwitcherOption);
+    }
+
     return Array.from(registersById.values()).sort((left, right) => {
+      if (left.id === COMBINED_REGISTER_ID) return -1;
+      if (right.id === COMBINED_REGISTER_ID) return 1;
       if (left.id === activeRegister?.id) return -1;
       if (right.id === activeRegister?.id) return 1;
       if (left.isSelected && !right.isSelected) return -1;
       if (!left.isSelected && right.isSelected) return 1;
       return left.businessName.localeCompare(right.businessName);
     });
-  }, [activeRegister, assetRegisters]);
+  }, [activeRegister, assetRegisters, combinedRegisterSwitcherOption]);
   const canOpenRegisterSwitcher = registerSwitcherOptions.length > 1;
   const isCombinedRegisterView = activeRegister?.id === COMBINED_REGISTER_ID || activeRegisterId === COMBINED_REGISTER_ID;
   const activeRegisterUnnotedAlertCount = useMemo(() => assetListUnnotedAlertCount(assets), [assets]);
@@ -6406,6 +6443,11 @@ export default function AssetRegisterClient() {
     setChangingRegisterId(nextRegisterId);
     setNotice(null);
 
+    if (nextRegisterId === COMBINED_REGISTER_ID) {
+      window.location.assign('/asset-register?scope=combined');
+      return;
+    }
+
     try {
       const response = await fetch('/api/asset-registers', {
         method: 'PUT',
@@ -6432,6 +6474,15 @@ export default function AssetRegisterClient() {
       });
       setChangingRegisterId('');
     }
+  }
+
+  function openAssetRegisterMoveManager(asset: RegisterAsset) {
+    const params = new URLSearchParams({
+      manage: 'combined',
+      assetId: asset.id,
+    });
+
+    window.location.assign(`/asset-registers?${params.toString()}`);
   }
 
   useEffect(() => {
@@ -12140,9 +12191,6 @@ export default function AssetRegisterClient() {
                     <ManageIcon className={styles.buttonIcon} />
                     <span>Manage</span>
                   </Link>
-                  <button type="button" className={styles.primaryButton} onClick={closeChangeRegisterModal} disabled={Boolean(changingRegisterId)}>
-                    Done
-                  </button>
                 </div>
               </div>
             </div>
@@ -12509,17 +12557,29 @@ export default function AssetRegisterClient() {
 
                     return (
                       <div className={styles.assetCardRow} key={asset.id}>
-                        <button
-                          type="button"
-                          className={`${styles.assetFlagButton} ${isFlagged ? styles.assetFlagButtonActive : ''}`}
-                          onClick={() => void handleAssetFlagToggle(asset)}
-                          disabled={isFlagBusy}
-                          aria-label={isFlagged ? `Unflag ${asset.title}` : `Flag ${asset.title}`}
-                          aria-pressed={isFlagged}
-                          title={isFlagged ? `Unflag ${asset.title}` : `Flag ${asset.title}`}
-                        >
-                          <FlagIcon className={styles.assetFlagIcon} />
-                        </button>
+                        <div className={styles.assetSideActions}>
+                          <button
+                            type="button"
+                            className={`${styles.assetFlagButton} ${isFlagged ? styles.assetFlagButtonActive : ''}`}
+                            onClick={() => void handleAssetFlagToggle(asset)}
+                            disabled={isFlagBusy}
+                            aria-label={isFlagged ? `Unflag ${asset.title}` : `Flag ${asset.title}`}
+                            aria-pressed={isFlagged}
+                            title={isFlagged ? `Unflag ${asset.title}` : `Flag ${asset.title}`}
+                          >
+                            <FlagIcon className={styles.assetFlagIcon} />
+                          </button>
+
+                          <button
+                            type="button"
+                            className={styles.assetRegisterMoveButton}
+                            onClick={() => openAssetRegisterMoveManager(asset)}
+                            aria-label={`Move ${asset.title} to another asset register`}
+                            title="Move to another asset register"
+                          >
+                            <ChangeRegisterIcon className={styles.assetRegisterMoveIcon} />
+                          </button>
+                        </div>
 
                         <article
                           id={`asset-card-${asset.id}`}
