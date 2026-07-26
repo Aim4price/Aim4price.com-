@@ -1104,6 +1104,65 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.96);
 }
 
+.notificationDiscoveryDetailModal {
+  width: min(50rem, calc(100vw - 2rem));
+  max-height: min(49rem, calc(100dvh - 3rem));
+}
+
+.notificationDiscoveryDetailModal .notificationDetailHeader {
+  padding: clamp(1.45rem, 2.5vw, 2rem);
+}
+
+.notificationDiscoveryDetailModal .notificationDetailHeader h2 {
+  font-size: clamp(1.85rem, 3vw, 2.35rem);
+}
+
+.notificationDiscoveryDetailModal .notificationDetailHeader p {
+  max-width: 42rem;
+  margin-top: 0.62rem;
+  font-size: 1.05rem;
+  line-height: 1.5;
+}
+
+.notificationDiscoveryDetailModal .notificationDetailBody {
+  gap: 1.1rem;
+  padding: clamp(1.35rem, 2.3vw, 1.85rem);
+}
+
+.notificationDiscoveryDetailModal .notificationDetailMetaGrid {
+  gap: 0.95rem;
+}
+
+.notificationDiscoveryDetailModal .notificationDetailMetaCard {
+  gap: 0.45rem;
+  min-height: 6.25rem;
+  align-content: center;
+  padding: 1.12rem 1.2rem;
+}
+
+.notificationDiscoveryDetailModal .notificationDetailMetaCard span {
+  font-size: 0.8rem;
+}
+
+.notificationDiscoveryDetailModal .notificationDetailMetaCard strong {
+  font-size: 1.06rem;
+  line-height: 1.35;
+}
+
+.notificationDiscoveryDetailModal .notificationDetailActions {
+  gap: 0.8rem;
+  padding: 1.2rem clamp(1.45rem, 2.5vw, 2rem) clamp(1.45rem, 2.5vw, 1.8rem);
+}
+
+.notificationDiscoveryDetailModal .notificationPrimaryButton,
+.notificationDiscoveryDetailModal .notificationSoftDangerButton,
+.notificationDiscoveryDetailModal .notificationSecondaryButton {
+  min-width: 5.5rem;
+  min-height: 3.35rem;
+  padding-inline: 1.35rem;
+  font-size: 1rem;
+}
+
 .notificationDetailHeader {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -1918,6 +1977,31 @@
     width: 100%;
     max-height: calc(100dvh - 2rem);
     border-radius: 1.32rem;
+  }
+
+  .notificationDiscoveryDetailModal .notificationDetailHeader {
+    padding: 1.1rem;
+  }
+
+  .notificationDiscoveryDetailModal .notificationDetailHeader h2 {
+    font-size: clamp(1.5rem, 8vw, 1.85rem);
+  }
+
+  .notificationDiscoveryDetailModal .notificationDetailHeader p {
+    font-size: 0.96rem;
+  }
+
+  .notificationDiscoveryDetailModal .notificationDetailBody {
+    padding: 1rem;
+  }
+
+  .notificationDiscoveryDetailModal .notificationDetailMetaCard {
+    min-height: 0;
+    padding: 1rem;
+  }
+
+  .notificationDiscoveryDetailModal .notificationDetailActions {
+    padding: 1rem;
   }
 
   .notificationDetailHeader {

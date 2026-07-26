@@ -1257,11 +1257,16 @@ export default function AppHeader({
     const requesterLabel = enquiry.requesterAccountType === 'owner' ? 'owner' : 'dealer';
 
     return (
-      <section className={styles.notificationDetailModal} role="dialog" aria-modal="true" aria-labelledby="notification-asset-discovery-title">
+      <section
+        className={`${styles.notificationDetailModal} ${styles.notificationDiscoveryDetailModal}`}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="notification-asset-discovery-title"
+      >
         <div className={styles.notificationDetailHeader}>
           <div className={styles.notificationDetailHeaderText}>
             <h2 id="notification-asset-discovery-title">Discovery enquiry</h2>
-            <p>{isPending ? `A ${requesterLabel} is looking for a machine like this. Interested in making contact?` : 'Asset-specific enquiry status.'}</p>
+            <p>{isPending ? `${requesterLabel === 'owner' ? 'An' : 'A'} ${requesterLabel} is looking for a machine like this. Interested in making contact?` : 'Asset-specific enquiry status.'}</p>
           </div>
           <button type="button" className={styles.notificationDetailCloseButton} onClick={closeNotificationDetailModal} aria-label="Close Discovery enquiry">
             ×
