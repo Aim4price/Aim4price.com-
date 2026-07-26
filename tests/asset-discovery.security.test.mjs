@@ -13,6 +13,8 @@ const photoRoute = read(
   "app/api/asset-discovery/assets/[assetId]/photos/[photoIndex]/route.ts",
 );
 const header = read("components/AppHeader.tsx");
+const discoveryPage = read("app/asset-discovery/page.tsx");
+const discoveryRoute = read("app/api/asset-discovery/route.ts");
 const marketplaceClient = read("app/marketplace/marketplace-client.tsx");
 const marketplaceEntry = read("app/marketplace/page.tsx");
 const ownerAppHome = read("app/owner-app/page.tsx");
@@ -177,6 +179,19 @@ test("desktop navigation exposes Discovery only through the Marketplace entry pa
 test("Discovery and Marketplace pages do not render the old switch", () => {
   assert.doesNotMatch(client, /DiscoveryMarketplaceSwitch/);
   assert.doesNotMatch(marketplaceClient, /DiscoveryMarketplaceSwitch/);
+});
+
+test("approved notification opens the matching Discovery card", () => {
+  assert.match(
+    header,
+    /href=\{`\/asset-discovery\?openAsset=\$\{encodeURIComponent\(enquiry\.assetId\)\}`\}/,
+  );
+  assert.match(header, /canOpenDiscoveryAsset = isApproved && Boolean\(enquiry\.ownerContact\)/);
+  assert.match(discoveryPage, /initialOpenAssetId=/);
+  assert.match(discoveryRoute, /focusAssetId: searchParams\.get\("focusAssetId"\)/);
+  assert.match(discovery, /focusOrderSql/);
+  assert.match(client, /void toggleAssetDetails\(requestedAsset\)/);
+  assert.match(client, /scrollIntoView\(\{ behavior: "smooth", block: "start" \}\)/);
 });
 
 test("Owner App keeps direct separate Discovery and Marketplace buttons", () => {
