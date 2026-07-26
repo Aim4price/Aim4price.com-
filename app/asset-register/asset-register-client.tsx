@@ -5644,6 +5644,7 @@ export default function AssetRegisterClient() {
   const [activeRegisterId, setActiveRegisterId] = useState('');
   const [isChangeRegisterModalOpen, setIsChangeRegisterModalOpen] = useState(false);
   const [changingRegisterId, setChangingRegisterId] = useState('');
+  const [registerSwitcherSearchTerm, setRegisterSwitcherSearchTerm] = useState('');
   const [assetRegisterMoveAsset, setAssetRegisterMoveAsset] = useState<RegisterAsset | null>(null);
   const [assetRegisterMoveSearchTerm, setAssetRegisterMoveSearchTerm] = useState('');
   const [assetRegisterMoveTargetId, setAssetRegisterMoveTargetId] = useState('');
@@ -6127,6 +6128,21 @@ export default function AssetRegisterClient() {
       return left.businessName.localeCompare(right.businessName);
     });
   }, [activeRegister, assetRegisters, combinedRegisterSwitcherOption]);
+  const visibleRegisterSwitcherOptions = useMemo(() => {
+    const query = registerSwitcherSearchTerm.trim().toLowerCase();
+
+    if (!query) {
+      return registerSwitcherOptions;
+    }
+
+    return registerSwitcherOptions.filter((register) => [
+      register.businessName,
+      register.addressLine1,
+      register.email,
+      register.phone,
+      String(register.assetCount),
+    ].some((value) => String(value ?? '').toLowerCase().includes(query)));
+  }, [registerSwitcherOptions, registerSwitcherSearchTerm]);
   const canOpenRegisterSwitcher = registerSwitcherOptions.length > 1;
   const isCombinedRegisterView = activeRegister?.id === COMBINED_REGISTER_ID || activeRegisterId === COMBINED_REGISTER_ID;
   const activeRegisterUnnotedAlertCount = useMemo(() => assetListUnnotedAlertCount(assets), [assets]);
@@ -6448,6 +6464,7 @@ export default function AssetRegisterClient() {
     }
 
     setNotice(null);
+    setRegisterSwitcherSearchTerm('');
     setIsChangeRegisterModalOpen(true);
   }
 
@@ -12282,8 +12299,31 @@ export default function AssetRegisterClient() {
                   </button>
                 </div>
 
+                <div className={styles.changeRegisterToolbar}>
+                  <label className={styles.changeRegisterSearchWrap}>
+                    <SearchIcon className={styles.changeRegisterSearchIcon} />
+                    <input
+                      value={registerSwitcherSearchTerm}
+                      onChange={(event) => setRegisterSwitcherSearchTerm(event.target.value)}
+                      placeholder="Search asset registers..."
+                      aria-label="Search asset registers"
+                      disabled={Boolean(changingRegisterId)}
+                      autoFocus
+                    />
+                  </label>
+
+                  <Link
+                    href="/asset-registers"
+                    className={`${styles.secondaryButton} ${styles.changeRegisterManageButton}`}
+                    onClick={closeChangeRegisterModal}
+                  >
+                    <ManageIcon className={styles.buttonIcon} />
+                    <span>Manage</span>
+                  </Link>
+                </div>
+
                 <div className={styles.changeRegisterList}>
-                  {registerSwitcherOptions.map((register) => {
+                  {visibleRegisterSwitcherOptions.map((register) => {
                     const isCurrentRegister = register.id === activeRegister?.id || register.id === activeRegisterId;
                     const isChangingThisRegister = changingRegisterId === register.id;
                     const registerAssetCount = Math.max(0, Math.round(Number(register.assetCount) || 0));
@@ -12319,13 +12359,19 @@ export default function AssetRegisterClient() {
                       </button>
                     );
                   })}
-                </div>
 
-                <div className={styles.changeRegisterModalFooter}>
-                  <Link href="/asset-registers" className={styles.secondaryButton} onClick={closeChangeRegisterModal}>
-                    <ManageIcon className={styles.buttonIcon} />
-                    <span>Manage</span>
-                  </Link>
+                  {!visibleRegisterSwitcherOptions.length ? (
+                    <div className={styles.changeRegisterEmptyState}>
+                      <strong>No asset registers match your search.</strong>
+                      <button
+                        type="button"
+                        className={styles.secondaryButton}
+                        onClick={() => setRegisterSwitcherSearchTerm('')}
+                      >
+                        Clear search
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </div>
@@ -12374,8 +12420,24 @@ export default function AssetRegisterClient() {
                     <div className={styles.assetRegisterMoveRow}>
                       <div className={styles.assetRegisterMoveCopy}>
                         <strong>{assetRegisterMoveAsset.title}</strong>
-                        <span>{buildAssetMeta(assetRegisterMoveAsset)}</span>
-                        <small>{money(assetRegisterMoveAsset.value)} current value</small>
+                        <div className={styles.assetRegisterMoveDetails}>
+                          <span>
+                            <b>Year model:</b>
+                            {assetRegisterMoveAsset.yearModel || '—'}
+                          </span>
+                          <span>
+                            <b>Usage:</b>
+                            {buildAssetUsageValue(assetRegisterMoveAsset)}
+                          </span>
+                          <span>
+                            <b>Condition:</b>
+                            {conditionLabel(assetRegisterMoveAsset.condition)}
+                          </span>
+                          <span className={styles.assetRegisterMovePrice}>
+                            <b>Current value:</b>
+                            {money(assetRegisterMoveAsset.value)}
+                          </span>
+                        </div>
                       </div>
 
                       {assetRegisterMoveTargetOptions.length ? (
