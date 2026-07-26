@@ -1701,7 +1701,7 @@ export default function AssetDiscoveryClient({
               className={styles.discoveryAccessIconGraphic}
             />
           </div>
-          <div>
+          <div className={styles.discoveryAccessIntro}>
             <h2>
               {participationDisabled
                 ? "Participate to browse Discovery"

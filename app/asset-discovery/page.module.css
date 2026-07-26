@@ -1213,6 +1213,71 @@
   justify-content: space-between !important;
 }
 
+@media (min-width: 901px) {
+  .page .discoveryAccessPanel {
+    gap: 1.25rem;
+    margin-top: 1.75rem;
+    padding: clamp(2.75rem, 4vw, 3.75rem) clamp(2rem, 6vw, 5.5rem);
+  }
+
+  .page .discoveryAccessIcon {
+    margin-bottom: 0.1rem;
+  }
+
+  .page .discoveryAccessIntro {
+    width: min(100%, 58rem);
+  }
+
+  .page .discoveryAccessPanel h2 {
+    font-size: clamp(1.65rem, 2vw, 1.95rem);
+    line-height: 1.15;
+  }
+
+  .page .discoveryAccessPanel p {
+    max-width: 58rem;
+    margin-top: 0.7rem;
+    font-size: 1rem;
+    line-height: 1.62;
+  }
+
+  .page .discoveryAccessPrivacy,
+  .page .discoveryAccessActions,
+  .page .discoveryExclusions {
+    width: min(100%, 54rem);
+  }
+
+  .page .discoveryAccessPrivacy {
+    grid-template-columns: max-content minmax(0, 1fr);
+    gap: 1rem;
+    padding: 1rem 1.2rem;
+  }
+
+  .page .discoveryAccessActions {
+    display: grid;
+    grid-template-columns: minmax(0, 1.65fr) minmax(12.5rem, 0.85fr);
+    gap: 0.85rem;
+  }
+
+  .page .discoveryAccessActions > * {
+    width: 100%;
+    min-height: 3.65rem;
+  }
+
+  .page .discoveryAccessActions .discoveryParticipationButton {
+    width: 100%;
+  }
+
+  .page .discoveryExclusionsButton {
+    min-width: 0;
+  }
+
+  .page .discoveryAccessPanel > small {
+    max-width: 54rem;
+    margin-top: 0.15rem;
+    font-size: 0.78rem;
+  }
+}
+
 @media (max-width: 1080px) {
   .toolbar {
     grid-template-columns: minmax(0, 1fr) repeat(2, minmax(11.5rem, 0.35fr));
