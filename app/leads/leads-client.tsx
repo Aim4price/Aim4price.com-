@@ -2843,6 +2843,13 @@ export default function LeadsClient({
                               <>
                                 <button
                                   type="button"
+                                  className={`${assetStyles.secondaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionDanger}` : ''} ${styles.deleteLeadButton}`}
+                                  onClick={() => setDeleteLeadTarget(lead)}
+                                >
+                                  Delete
+                                </button>
+                                <button
+                                  type="button"
                                   className={`${assetStyles.secondaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionNeutral}` : ''} ${styles.trackingOpenButton}`}
                                   onClick={() => openTracking(lead)}
                                 >
@@ -2899,7 +2906,7 @@ export default function LeadsClient({
                                       void openLead(lead);
                                     }}
                                   >
-                                    Open lead
+                                    Open
                                   </button>
                                 )}
                               </>
