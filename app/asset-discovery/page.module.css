@@ -1247,9 +1247,10 @@
   }
 
   .page .discoveryAccessPrivacy {
-    grid-template-columns: max-content minmax(0, 1fr);
-    gap: 1rem;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.35rem;
     padding: 1rem 1.2rem;
+    text-align: center;
   }
 
   .page .discoveryAccessActions {
