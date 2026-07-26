@@ -462,11 +462,11 @@
 }
 
 .discoveryFilterModal {
-  width: min(100%, 820px) !important;
+  width: min(100%, 920px) !important;
 }
 
 .discoveryFilterForm {
-  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  grid-template-columns: minmax(20rem, 1.4fr) repeat(2, minmax(13rem, 1fr)) !important;
 }
 
 .discoveryFilterModal p {
