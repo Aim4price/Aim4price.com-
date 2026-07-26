@@ -228,13 +228,13 @@ function SettingsIcon({ className }: IconProps) {
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="1.9"
+      strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
     >
+      <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.09a2 2 0 0 1 1 1.74v.5a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z" />
       <circle cx="12" cy="12" r="3" />
-      <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-1.8 1.8-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V20h-2.55v-.1A1.7 1.7 0 0 0 11.42 18.34a1.7 1.7 0 0 0-1.88.34l-.06.06-1.8-1.8.06-.06A1.7 1.7 0 0 0 8.08 15a1.7 1.7 0 0 0-1.56-1.03h-.1v-2.55h.1A1.7 1.7 0 0 0 8.08 10a1.7 1.7 0 0 0-.34-1.88l-.06-.06 1.8-1.8.06.06A1.7 1.7 0 0 0 11.42 6a1.7 1.7 0 0 0 1.03-1.56v-.1H15v.1A1.7 1.7 0 0 0 16.06 6a1.7 1.7 0 0 0 1.88-.34L18 5.6l1.8 1.8-.06.06A1.7 1.7 0 0 0 19.4 9.34a1.7 1.7 0 0 0 1.56 1.03h.1v2.55h-.1A1.7 1.7 0 0 0 19.4 15Z" />
     </svg>
   );
 }
@@ -1977,7 +1977,9 @@ export default function AssetDiscoveryClient({
                   onClick={() => setIsSettingsModalOpen(true)}
                   disabled={loading || isUpdatingParticipation}
                 >
-                  <SettingsIcon className={assetStyles.buttonIcon} />
+                  <span className={styles.discoverySettingsIcon}>
+                    <SettingsIcon />
+                  </span>
                   <span>Settings</span>
                 </button>
               ) : null}
@@ -2184,7 +2186,7 @@ export default function AssetDiscoveryClient({
             aria-labelledby="discovery-settings-title"
           >
             <div
-              className={`${assetStyles.modalHeader} ${workspaceStyles.modalHeader}`}
+              className={`${assetStyles.modalHeader} ${workspaceStyles.modalHeader} ${styles.discoverySettingsHeader}`}
             >
               <div className={assetStyles.modalHeaderText}>
                 <h3 id="discovery-settings-title">Discovery settings</h3>
@@ -2219,15 +2221,18 @@ export default function AssetDiscoveryClient({
 
               <div className={styles.discoverySettingsWarning}>
                 <strong>Disable Discovery and remove my assets</strong>
-                <p>
-                  Your eligible assets will be removed from Discovery and
-                  active requests or approved access will be revoked. Nothing
-                  is deleted from your Asset Register.
+                <p className={styles.discoverySettingsWarningIntro}>
+                  If you continue:
                 </p>
-                <p>
-                  You will no longer be able to browse other owners&apos;
-                  assets until you enable participation again.
-                </p>
+                <ul className={styles.discoverySettingsConsequences}>
+                  <li>Your eligible assets will be removed from Discovery.</li>
+                  <li>Active requests and approved access will be revoked.</li>
+                  <li>Nothing is deleted from your Asset Register.</li>
+                  <li>
+                    You will not be able to browse other owners&apos; assets
+                    until you enable participation again.
+                  </li>
+                </ul>
               </div>
             </div>
 
@@ -2240,7 +2245,7 @@ export default function AssetDiscoveryClient({
                 onClick={() => setIsSettingsModalOpen(false)}
                 disabled={isUpdatingParticipation}
               >
-                Keep Discovery enabled
+                Cancel
               </button>
               <button
                 type="button"
