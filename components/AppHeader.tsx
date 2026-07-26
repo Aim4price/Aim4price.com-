@@ -1252,6 +1252,7 @@ export default function AppHeader({
     const isProcessing = processingAssetDiscoveryEnquiryIds.has(enquiry.id);
     const isPending = enquiry.status === 'pending';
     const isApproved = enquiry.status === 'approved';
+    const canOpenDiscoveryAsset = isApproved && Boolean(enquiry.ownerContact);
     const retryDate = formatDateTime(enquiry.requestAgainAtIso);
     const contact = enquiry.requesterContact || enquiry.ownerContact || enquiry.dealerContact;
     const requesterLabel = enquiry.requesterAccountType === 'owner' ? 'owner' : 'dealer';
@@ -1353,6 +1354,15 @@ export default function AppHeader({
             <button type="button" className={styles.notificationSecondaryButton} onClick={closeNotificationDetailModal}>
               Close
             </button>
+            {canOpenDiscoveryAsset ? (
+              <a
+                className={styles.notificationPrimaryButton}
+                href={`/asset-discovery?openAsset=${encodeURIComponent(enquiry.assetId)}`}
+                onClick={markNotificationsSeen}
+              >
+                Open
+              </a>
+            ) : null}
           </div>
         )}
       </section>

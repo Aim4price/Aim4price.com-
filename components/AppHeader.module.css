@@ -1385,10 +1385,14 @@
 .notificationSecondaryButton {
   min-height: 3.1rem;
   padding: 0 1.15rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 1rem;
   font-size: 0.95rem;
   line-height: 1;
   font-weight: 880;
+  text-decoration: none;
   cursor: pointer;
   transition:
     transform 180ms ease,
