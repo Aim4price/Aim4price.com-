@@ -961,23 +961,23 @@
 }
 
 .discoveryAccessIcon {
-  width: 4.25rem;
-  height: 4.25rem;
+  width: 4.6rem;
+  height: 4.6rem;
   display: grid;
   place-items: center;
-  border: 1px solid #8ebcab;
+  border: 1.5px solid #71ad96;
   border-radius: 50%;
-  color: #0d6549;
+  color: #086046;
   background:
-    radial-gradient(circle at 34% 24%, #ffffff 0%, #f3fbf7 36%, #dff3e9 100%);
+    radial-gradient(circle at 32% 22%, #ffffff 0%, #f0fbf6 36%, #d7f0e4 100%);
   box-shadow:
-    0 12px 26px rgba(25, 116, 84, 0.13),
-    inset 0 0 0 6px rgba(255, 255, 255, 0.65);
+    0 14px 30px rgba(13, 101, 73, 0.18),
+    inset 0 0 0 7px rgba(255, 255, 255, 0.7);
 }
 
 .discoveryAccessIconGraphic {
-  width: 2.7rem;
-  height: 2.7rem;
+  width: 3.05rem;
+  height: 3.05rem;
 }
 
 .discoveryAccessPanel h2 {
@@ -1002,6 +1002,7 @@
 }
 
 .discoveryAccessActions {
+  width: 100%;
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
@@ -1010,6 +1011,49 @@
 
 .discoveryAccessActions a {
   text-decoration: none;
+}
+
+.discoveryAccessActions .discoveryParticipationButton {
+  width: min(100%, 22rem);
+  min-height: 3.65rem;
+  color: #ffffff;
+  border-color: #075c43;
+  background: linear-gradient(180deg, #1b805d 0%, #0d6045 100%);
+  box-shadow:
+    0 15px 28px rgba(13, 96, 69, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  font-weight: 850;
+}
+
+.discoveryAccessActions .discoveryParticipationButton:hover:not(:disabled) {
+  border-color: #064d38;
+  background: linear-gradient(180deg, #197756 0%, #0a513b 100%);
+  box-shadow:
+    0 18px 32px rgba(13, 96, 69, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.discoveryAccessActions .discoveryParticipationButton:focus-visible {
+  outline: 3px solid rgba(25, 128, 93, 0.25);
+  outline-offset: 3px;
+}
+
+.discoveryAccessActions .discoveryParticipationButton:disabled {
+  color: rgba(255, 255, 255, 0.92);
+  border-color: #6a9c89;
+  background: linear-gradient(180deg, #77a997 0%, #628f7f 100%);
+  opacity: 0.78;
+}
+
+.discoveryParticipationButtonIcon {
+  width: 1.15rem;
+  height: 1.15rem;
+  flex: 0 0 auto;
+  transition: transform 160ms ease;
+}
+
+.discoveryParticipationButton:hover:not(:disabled) .discoveryParticipationButtonIcon {
+  transform: translateX(0.18rem);
 }
 
 .discoveryAccessPrivacy {

@@ -246,17 +246,16 @@ function DiscoveryParticipationIcon({ className }: IconProps) {
       viewBox="0 0 48 48"
       fill="none"
       stroke="currentColor"
-      strokeWidth="2.25"
+      strokeWidth="2.4"
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
     >
-      <path d="M13 18.5a13.5 13.5 0 0 1 22-3.8" />
-      <path d="m35 9.5.2 5.7-5.7.2" />
-      <path d="M35 29.5A13.5 13.5 0 0 1 13 33.3" />
-      <path d="m13 38.5-.2-5.7 5.7-.2" />
-      <path d="M18.5 23.6 24 20l5.5 3.6v6.1L24 33l-5.5-3.3v-6.1Z" />
-      <path d="m21.5 26.4 1.7 1.7 3.6-3.7" />
+      <circle cx="21" cy="21" r="12.5" fill="currentColor" opacity="0.08" />
+      <circle cx="21" cy="21" r="12.5" />
+      <path d="m30.3 30.3 8.2 8.2" strokeWidth="3.2" />
+      <path d="m21 15.3 5.4 3.2v6.3L21 28l-5.4-3.2v-6.3l5.4-3.2Z" fill="currentColor" opacity="0.12" />
+      <path d="m15.6 18.5 5.4 3.3 5.4-3.3M21 21.8V28" />
     </svg>
   );
 }
@@ -1730,7 +1729,7 @@ export default function AssetDiscoveryClient({
               <>
                 <button
                   type="button"
-                  className={`${workspaceStyles.actionButton} ${workspaceStyles.actionGreen}`}
+                  className={`${workspaceStyles.actionButton} ${workspaceStyles.actionGreen} ${styles.discoveryParticipationButton}`}
                   onClick={() =>
                     void updateOwnerDiscoveryParticipation(true)
                   }
@@ -1739,6 +1738,9 @@ export default function AssetDiscoveryClient({
                   {isUpdatingParticipation
                     ? "Enabling…"
                     : "Enable Discovery participation"}
+                  <ChevronRightIcon
+                    className={styles.discoveryParticipationButtonIcon}
+                  />
                 </button>
                 <button
                   type="button"
