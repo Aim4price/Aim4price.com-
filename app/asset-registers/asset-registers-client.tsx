@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ChangeEvent,
   type FocusEvent,
@@ -407,6 +408,7 @@ function matchesManagedAssetSearch(asset: RegisterAsset, searchTerm: string): bo
   }
 
   const searchableText = [
+    asset.id,
     asset.title,
     compactAssetMeta(asset),
     asset.kind,
@@ -1264,6 +1266,7 @@ export default function AssetRegistersClient() {
   const [isLoadingQrAssets, setIsLoadingQrAssets] = useState(false);
   const [isGeneratingQrPdf, setIsGeneratingQrPdf] = useState(false);
   const [qrError, setQrError] = useState("");
+  const manageIntentHandledRef = useRef(false);
 
   const combinedRegister = useMemo<AssetRegisterSummary | null>(() => {
     if (!registers.length) return null;
@@ -1438,6 +1441,31 @@ export default function AssetRegistersClient() {
   }, []);
 
   useEffect(() => {
+    if (isLoading || manageIntentHandledRef.current || typeof window === "undefined") {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const requestedManageTarget = String(params.get("manage") ?? "").trim();
+
+    if (!requestedManageTarget) {
+      return;
+    }
+
+    const targetRegister = requestedManageTarget === "combined"
+      ? combinedRegister
+      : registers.find((register) => register.id === requestedManageTarget) ?? null;
+
+    if (!targetRegister) {
+      return;
+    }
+
+    manageIntentHandledRef.current = true;
+    openManagePanel(targetRegister, String(params.get("assetId") ?? "").trim());
+    window.history.replaceState(window.history.state, "", window.location.pathname);
+  }, [combinedRegister, isLoading, registers]);
+
+  useEffect(() => {
     if (!notice) return undefined;
     const timeout = window.setTimeout(() => setNotice(null), 4200);
     return () => window.clearTimeout(timeout);
@@ -1515,7 +1543,7 @@ export default function AssetRegistersClient() {
     removingRegisterId,
   ]);
 
-  async function loadManagedAssets(register: AssetRegisterSummary) {
+  async function loadManagedAssets(register: AssetRegisterSummary, focusAssetId = "") {
     setIsLoadingManagedAssets(true);
     setManagedAssets([]);
     setManagedAssetSearchTerm("");
@@ -1551,7 +1579,12 @@ export default function AssetRegistersClient() {
         }));
       }));
 
-      setManagedAssets(bundles.flat());
+      const loadedAssets = bundles.flat();
+      setManagedAssets(loadedAssets);
+
+      if (focusAssetId && loadedAssets.some((asset) => asset.id === focusAssetId)) {
+        setManagedAssetSearchTerm(focusAssetId);
+      }
     } catch (error) {
       setNotice({
         tone: "error",
@@ -1577,12 +1610,12 @@ export default function AssetRegistersClient() {
     setOpenTargetDropdownId(null);
   }
 
-  function openManagePanel(register: AssetRegisterSummary) {
+  function openManagePanel(register: AssetRegisterSummary, focusAssetId = "") {
     setOpenTargetDropdownId(null);
     setManagedRegisterId(register.id);
     setEditDraft(draftFromRegister(register));
     setManageSaveState("idle");
-    void loadManagedAssets(register);
+    void loadManagedAssets(register, focusAssetId);
   }
 
   function openCombinedRegister() {
