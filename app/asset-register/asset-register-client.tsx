@@ -5644,6 +5644,11 @@ export default function AssetRegisterClient() {
   const [activeRegisterId, setActiveRegisterId] = useState('');
   const [isChangeRegisterModalOpen, setIsChangeRegisterModalOpen] = useState(false);
   const [changingRegisterId, setChangingRegisterId] = useState('');
+  const [assetRegisterMoveAsset, setAssetRegisterMoveAsset] = useState<RegisterAsset | null>(null);
+  const [assetRegisterMoveSearchTerm, setAssetRegisterMoveSearchTerm] = useState('');
+  const [assetRegisterMoveTargetId, setAssetRegisterMoveTargetId] = useState('');
+  const [assetRegisterMoveError, setAssetRegisterMoveError] = useState('');
+  const [isMovingAssetRegister, setIsMovingAssetRegister] = useState(false);
   const [assetDraft, setAssetDraft] = useState<AssetDraft>(initialAssetDraft);
   const [assetStatusDraft, setAssetStatusDraft] = useState<AssetStatusDraft>(initialAssetStatusDraft);
   const [assetStatusEditView, setAssetStatusEditView] = useState<AssetStatusEditView>('hub');
@@ -6145,6 +6150,27 @@ export default function AssetRegisterClient() {
     () => Array.from(registerUnnotedAlertCounts.values()).reduce((sum, count) => sum + count, 0),
     [registerUnnotedAlertCounts],
   );
+  const assetRegisterMoveSourceId = String(
+    assetRegisterMoveAsset?.registerId
+      || activeRegister?.id
+      || activeRegisterId
+      || '',
+  ).trim();
+  const assetRegisterMoveTargets = useMemo(
+    () => assetRegisters.filter((register) => (
+      register.id !== COMBINED_REGISTER_ID
+      && register.id !== assetRegisterMoveSourceId
+    )),
+    [assetRegisterMoveSourceId, assetRegisters],
+  );
+  const assetRegisterMoveTargetOptions = useMemo<Array<ModalSelectOption<string>>>(
+    () => assetRegisterMoveTargets.map((register) => ({
+      value: register.id,
+      label: register.businessName || 'Asset Register',
+      description: `${Math.max(0, Math.round(Number(register.assetCount) || 0)).toLocaleString('en-ZA')} ${Number(register.assetCount) === 1 ? 'asset' : 'assets'} · ${money(Number(register.totalValue) || 0)} current value`,
+    })),
+    [assetRegisterMoveTargets],
+  );
   const canUseOwnerOnlyAssetActions = true;
   const canShareActiveRegister = canUseOwnerOnlyAssetActions;
   const canAddAssetsToActiveRegister = canUseOwnerOnlyAssetActions && !isCombinedRegisterView;
@@ -6477,12 +6503,115 @@ export default function AssetRegisterClient() {
   }
 
   function openAssetRegisterMoveManager(asset: RegisterAsset) {
-    const params = new URLSearchParams({
-      manage: 'combined',
-      assetId: asset.id,
-    });
+    setNotice(null);
+    setAssetRegisterMoveAsset(asset);
+    setAssetRegisterMoveSearchTerm(asset.title);
+    setAssetRegisterMoveTargetId('');
+    setAssetRegisterMoveError('');
+  }
 
-    window.location.assign(`/asset-registers?${params.toString()}`);
+  function closeAssetRegisterMoveManager() {
+    if (isMovingAssetRegister) return;
+
+    setAssetRegisterMoveAsset(null);
+    setAssetRegisterMoveSearchTerm('');
+    setAssetRegisterMoveTargetId('');
+    setAssetRegisterMoveError('');
+  }
+
+  async function handleMoveAssetRegister() {
+    if (!assetRegisterMoveAsset || !assetRegisterMoveTargetId || isMovingAssetRegister) {
+      if (!assetRegisterMoveTargetId) {
+        setAssetRegisterMoveError('Choose the target asset register first.');
+      }
+      return;
+    }
+
+    const sourceRegisterId = assetRegisterMoveSourceId;
+    const targetRegister = assetRegisterMoveTargets.find((register) => register.id === assetRegisterMoveTargetId) ?? null;
+    const assetValue = Number(assetRegisterMoveAsset.value) || 0;
+    const assetReplacementValue = readAssetReplacementPriceExVat(assetRegisterMoveAsset) ?? 0;
+
+    setIsMovingAssetRegister(true);
+    setAssetRegisterMoveError('');
+
+    try {
+      const response = await fetch('/api/asset-registers/move-assets', {
+        method: 'PUT',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          assetId: assetRegisterMoveAsset.id,
+          targetRegisterId: assetRegisterMoveTargetId,
+        }),
+      });
+      const payload = (await response.json().catch(() => null)) as AssetRegisterApiResponse | null;
+
+      if (!response.ok || !payload?.ok) {
+        throw new Error(extractApiError(payload, 'Failed to move asset.'));
+      }
+
+      setAssets((currentAssets) => (
+        isCombinedRegisterView
+          ? currentAssets.map((asset) => (
+              asset.id === assetRegisterMoveAsset.id
+                ? {
+                    ...asset,
+                    registerId: assetRegisterMoveTargetId,
+                    registerName: targetRegister?.businessName ?? asset.registerName,
+                  }
+                : asset
+            ))
+          : currentAssets.filter((asset) => asset.id !== assetRegisterMoveAsset.id)
+      ));
+      setAssetRegisters((currentRegisters) => currentRegisters.map((register) => {
+        if (register.id === sourceRegisterId) {
+          return {
+            ...register,
+            assetCount: Math.max(0, register.assetCount - 1),
+            totalValue: Math.max(0, register.totalValue - assetValue),
+            totalReplacementPrice: Math.max(0, register.totalReplacementPrice - assetReplacementValue),
+          };
+        }
+
+        if (register.id === assetRegisterMoveTargetId) {
+          return {
+            ...register,
+            assetCount: register.assetCount + 1,
+            totalValue: register.totalValue + assetValue,
+            totalReplacementPrice: register.totalReplacementPrice + assetReplacementValue,
+          };
+        }
+
+        return register;
+      }));
+      setActiveRegister((currentRegister) => (
+        currentRegister?.id === sourceRegisterId
+          ? {
+              ...currentRegister,
+              assetCount: Math.max(0, currentRegister.assetCount - 1),
+              totalValue: Math.max(0, currentRegister.totalValue - assetValue),
+              totalReplacementPrice: Math.max(0, currentRegister.totalReplacementPrice - assetReplacementValue),
+            }
+          : currentRegister
+      ));
+      setExpandedAssetId((current) => current === assetRegisterMoveAsset.id ? null : current);
+
+      const movedAssetTitle = assetRegisterMoveAsset.title;
+      setAssetRegisterMoveAsset(null);
+      setAssetRegisterMoveSearchTerm('');
+      setAssetRegisterMoveTargetId('');
+      setNotice({
+        tone: 'success',
+        message: targetRegister
+          ? `${movedAssetTitle} moved successfully to ${targetRegister.businessName}.`
+          : `${movedAssetTitle} moved successfully.`,
+      });
+    } catch (error) {
+      setAssetRegisterMoveError(error instanceof Error ? error.message : 'Failed to move asset.');
+    } finally {
+      setIsMovingAssetRegister(false);
+    }
   }
 
   useEffect(() => {
@@ -6556,6 +6685,7 @@ export default function AssetRegisterClient() {
     isAssetReportModalOpen ||
     isAssetFilterOpen ||
     isChangeRegisterModalOpen ||
+    Boolean(assetRegisterMoveAsset) ||
     isPricingModalOpen ||
     Boolean(pricingPreview) ||
     isQrModalOpen ||
@@ -6625,6 +6755,11 @@ export default function AssetRegisterClient() {
 
       if (isChangeRegisterModalOpen) {
         closeChangeRegisterModal();
+        return;
+      }
+
+      if (assetRegisterMoveAsset) {
+        closeAssetRegisterMoveManager();
         return;
       }
 
@@ -6709,7 +6844,7 @@ export default function AssetRegisterClient() {
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [activeAsset, anyModalOpen, deleteCandidateAsset, isAddChoiceModalOpen, isAssetFilterOpen, isChangeRegisterModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isPricingModalOpen, pricingPreview, isQrModalOpen, isRegisterShareModalOpen, isSummaryModalOpen, marketplaceAsset, projectionAsset, isQuoteModalOpen, quoteLeadStep, isAssetSettingsModalOpen, pendingUsageOverride, isManualConversionConfirmOpen, isSavingAssetSettings, replacementPriceRevaluePrompt, photoViewer]);
+  }, [activeAsset, anyModalOpen, assetRegisterMoveAsset, deleteCandidateAsset, isAddChoiceModalOpen, isAssetFilterOpen, isChangeRegisterModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isPricingModalOpen, pricingPreview, isQrModalOpen, isRegisterShareModalOpen, isSummaryModalOpen, marketplaceAsset, projectionAsset, isQuoteModalOpen, quoteLeadStep, isAssetSettingsModalOpen, pendingUsageOverride, isManualConversionConfirmOpen, isSavingAssetSettings, replacementPriceRevaluePrompt, photoViewer]);
 
   useEffect(() => {
     if (!isQuoteModalOpen || !selectedQuoteLeadType) return;
@@ -12191,6 +12326,108 @@ export default function AssetRegisterClient() {
                     <ManageIcon className={styles.buttonIcon} />
                     <span>Manage</span>
                   </Link>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          {assetRegisterMoveAsset ? (
+            <div className={styles.modalOverlay}>
+              <div className={styles.modalBackdrop} onClick={closeAssetRegisterMoveManager} />
+
+              <div
+                className={`${styles.modalCard} ${styles.assetRegisterMoveModal}`}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="asset-register-move-title"
+              >
+                <div className={`${styles.modalHeader} ${styles.assetRegisterMoveModalHeader}`}>
+                  <div className={styles.modalHeaderText}>
+                    <h3 id="asset-register-move-title">Move Asset</h3>
+                    <p>Choose the asset register where this asset should be moved.</p>
+                  </div>
+
+                  <button
+                    type="button"
+                    className={styles.modalCloseButton}
+                    onClick={closeAssetRegisterMoveManager}
+                    aria-label="Close move asset modal"
+                    disabled={isMovingAssetRegister}
+                  >
+                    <CloseIcon className={styles.buttonIcon} />
+                  </button>
+                </div>
+
+                <div className={styles.assetRegisterMoveModalBody}>
+                  <label className={styles.assetRegisterMoveSearchWrap}>
+                    <SearchIcon className={styles.assetRegisterMoveSearchIcon} />
+                    <input
+                      value={assetRegisterMoveSearchTerm}
+                      onChange={(event) => setAssetRegisterMoveSearchTerm(event.target.value)}
+                      placeholder="Search assets..."
+                      aria-label="Search selected asset"
+                      disabled={isMovingAssetRegister}
+                    />
+                  </label>
+
+                  {assetRegisterMoveAsset.title.toLowerCase().includes(assetRegisterMoveSearchTerm.trim().toLowerCase()) ? (
+                    <div className={styles.assetRegisterMoveRow}>
+                      <div className={styles.assetRegisterMoveCopy}>
+                        <strong>{assetRegisterMoveAsset.title}</strong>
+                        <span>{buildAssetMeta(assetRegisterMoveAsset)}</span>
+                        <small>{money(assetRegisterMoveAsset.value)} current value</small>
+                      </div>
+
+                      {assetRegisterMoveTargetOptions.length ? (
+                        <ModalSelect<string>
+                          label="Target asset register"
+                          value={assetRegisterMoveTargetId}
+                          options={assetRegisterMoveTargetOptions}
+                          onChange={(value) => {
+                            setAssetRegisterMoveTargetId(value);
+                            setAssetRegisterMoveError('');
+                          }}
+                          placeholder="Choose target register"
+                          className={styles.assetRegisterMoveTargetField}
+                          usePortal
+                        />
+                      ) : (
+                        <p className={styles.assetRegisterMoveNoTarget}>
+                          Create another asset register before moving this asset.
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className={styles.assetRegisterMoveNoMatch}>
+                      No asset matches this search.
+                    </p>
+                  )}
+
+                  {assetRegisterMoveError ? (
+                    <p className={styles.assetRegisterMoveError} role="alert">
+                      {assetRegisterMoveError}
+                    </p>
+                  ) : null}
+                </div>
+
+                <div className={styles.assetRegisterMoveModalFooter}>
+                  <button
+                    type="button"
+                    className={styles.secondaryButton}
+                    onClick={closeAssetRegisterMoveManager}
+                    disabled={isMovingAssetRegister}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.primaryButton}
+                    onClick={() => void handleMoveAssetRegister()}
+                    disabled={!assetRegisterMoveTargetId || isMovingAssetRegister}
+                  >
+                    <ChangeRegisterIcon className={styles.buttonIcon} />
+                    <span>{isMovingAssetRegister ? 'Moving...' : 'Move Asset'}</span>
+                  </button>
                 </div>
               </div>
             </div>

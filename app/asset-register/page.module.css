@@ -28759,6 +28759,160 @@ button.documentOpenLink {
   border-top: 1px solid rgba(211, 224, 234, 0.94);
 }
 
+.assetRegisterMoveModal {
+  width: min(100%, 920px) !important;
+  max-height: min(88vh, calc(100dvh - 2rem)) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0 !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  border-radius: 1.65rem !important;
+}
+
+.assetRegisterMoveModalHeader {
+  margin: 0 !important;
+  padding: clamp(1.2rem, 2vw, 1.55rem) !important;
+  border-bottom: 1px solid rgba(211, 224, 234, 0.94);
+}
+
+.assetRegisterMoveModalBody {
+  min-height: 0;
+  display: grid;
+  gap: 1rem;
+  overflow-y: auto;
+  padding: clamp(1.2rem, 2vw, 1.55rem);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(20, 112, 82, 0.055), transparent 34%),
+    linear-gradient(180deg, #ffffff 0%, #f8fcfa 100%);
+}
+
+.assetRegisterMoveSearchWrap {
+  position: relative;
+  display: block;
+}
+
+.assetRegisterMoveSearchWrap input {
+  width: 100%;
+  min-height: 3.7rem;
+  padding: 0.85rem 1rem 0.85rem 3.15rem;
+  border: 1.5px solid rgba(202, 218, 230, 0.98);
+  border-radius: 1rem;
+  background: #ffffff;
+  color: #17362c;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 760;
+  outline: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.assetRegisterMoveSearchWrap input:focus {
+  border-color: rgba(20, 112, 82, 0.5);
+  box-shadow: 0 0 0 4px rgba(20, 112, 82, 0.09);
+}
+
+.assetRegisterMoveSearchIcon {
+  position: absolute;
+  top: 50%;
+  left: 1.05rem;
+  z-index: 1;
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #315d50;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.assetRegisterMoveRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.85fr);
+  align-items: center;
+  gap: 1.1rem;
+  padding: 1.15rem;
+  border: 1.5px solid rgba(190, 214, 227, 0.95);
+  border-radius: 1.2rem;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow:
+    0 12px 28px rgba(31, 51, 71, 0.055),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+}
+
+.assetRegisterMoveCopy {
+  min-width: 0;
+  display: grid;
+  gap: 0.28rem;
+}
+
+.assetRegisterMoveCopy strong {
+  color: #073b30;
+  font-size: 1.08rem;
+  font-weight: 900;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+  overflow-wrap: anywhere;
+}
+
+.assetRegisterMoveCopy span,
+.assetRegisterMoveCopy small {
+  color: #607386;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.assetRegisterMoveTargetField {
+  min-width: 0;
+}
+
+.assetRegisterMoveTargetField > span {
+  color: #315d50 !important;
+  font-size: 0.77rem !important;
+  font-weight: 850 !important;
+}
+
+.assetRegisterMoveNoTarget,
+.assetRegisterMoveNoMatch {
+  margin: 0;
+  padding: 1rem;
+  border: 1px solid rgba(202, 218, 230, 0.96);
+  border-radius: 1rem;
+  background: #f7fafb;
+  color: #607386;
+  font-weight: 750;
+  line-height: 1.45;
+}
+
+.assetRegisterMoveNoMatch {
+  text-align: center;
+}
+
+.assetRegisterMoveError {
+  margin: 0;
+  padding: 0.85rem 1rem;
+  border: 1px solid #fecaca;
+  border-radius: 0.9rem;
+  background: #fff1f2;
+  color: #9f1239;
+  font-size: 0.9rem;
+  font-weight: 780;
+  line-height: 1.4;
+}
+
+.assetRegisterMoveModalFooter {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem clamp(1.2rem, 2vw, 1.55rem);
+  border-top: 1px solid rgba(211, 224, 234, 0.94);
+  background: #ffffff;
+}
+
 .page .paginationActions .paginationButtonActive,
 .page .paginationActions .paginationButtonActive:hover:not(:disabled) {
   color: #0a543d !important;
@@ -28806,6 +28960,21 @@ button.documentOpenLink {
 
   .changeRegisterModalFooter .primaryButton,
   .changeRegisterModalFooter .secondaryButton {
+    width: 100%;
+  }
+
+  .assetRegisterMoveRow {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .assetRegisterMoveModalFooter {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .assetRegisterMoveModalFooter .primaryButton,
+  .assetRegisterMoveModalFooter .secondaryButton {
     width: 100%;
   }
 }
