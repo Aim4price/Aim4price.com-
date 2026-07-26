@@ -561,18 +561,18 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
 
             <div className={styles.assetMirrorActions} aria-label="Asset actions">
               <Link
-                className={`${styles.assetMirrorAction} ${styles.assetMirrorViewAction}`}
-                href={`/owner-app/assets/${encodeURIComponent(assetId)}/details`}
-                prefetch={false}
-              >
-                View details
-              </Link>
-              <Link
                 className={`${styles.assetMirrorAction} ${styles.assetMirrorOptionsAction}`}
                 href={`/owner-app/assets/${encodeURIComponent(assetId)}/options`}
                 prefetch={false}
               >
                 Share
+              </Link>
+              <Link
+                className={`${styles.assetMirrorAction} ${styles.assetMirrorViewAction}`}
+                href={`/owner-app/assets/${encodeURIComponent(assetId)}/details`}
+                prefetch={false}
+              >
+                View details
               </Link>
               <Link
                 className={`${styles.assetMirrorAction} ${styles.assetMirrorManageAction}`}
