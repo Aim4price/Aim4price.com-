@@ -719,6 +719,7 @@ export default function AppHeader({
     ? accountProfileLogoState.logoUrl
     : sessionAccountLogoUrl;
   const isOwnerAccount = session?.accountType === 'owner';
+  const isDealerAccount = session?.accountType === 'dealer';
   const navAccountType = isLoadingSession ? null : (session?.accountType ?? 'public');
   const navItems = useMemo(() => buildNavItems(navAccountType), [navAccountType]);
   const mobileNavItems = useMemo(
@@ -729,7 +730,7 @@ export default function AppHeader({
     () => resolveActiveNavKey(pathname, mobileNavItems, active),
     [active, mobileNavItems, pathname],
   );
-  const navWindowSize = NAV_WINDOW_SIZE;
+  const navWindowSize = isDealerAccount ? navItems.length : NAV_WINDOW_SIZE;
   const [navWindowStart, setNavWindowStart] = useState(0);
   const navMaxWindowStart = Math.max(0, navItems.length - navWindowSize);
   const showNavWindowControls = navItems.length > navWindowSize;
@@ -1629,7 +1630,7 @@ export default function AppHeader({
   return (
     <>
       <header className={styles.header}>
-        <div className={styles.inner}>
+        <div className={`${styles.inner} ${isDealerAccount ? styles.innerDealer : ''}`}>
           <Link href="/" className={styles.brand} aria-label="Go to Aim4price home">
             <Image
               src="/brand/Aim4price_Home_Logo.png"
