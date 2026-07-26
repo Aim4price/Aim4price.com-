@@ -2838,16 +2838,26 @@ export default function LeadsClient({
                         </div>
 
                         <div className={styles.clientDecisionArea}>
-                          <div className={`${styles.clientActionRow} ${isTrackingRequest ? styles.trackingLeadActions : ''}`}>
+                          <div
+                            className={`${styles.clientActionRow} ${
+                              isTrackingRequest
+                                ? `${styles.trackingLeadActions} ${
+                                    isLeadOpen ? styles.trackingLeadActionsOpen : styles.trackingLeadActionsClosed
+                                  }`
+                                : ''
+                            }`}
+                          >
                             {isTrackingRequest ? (
                               <>
-                                <button
-                                  type="button"
-                                  className={`${assetStyles.secondaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionDanger}` : ''} ${styles.deleteLeadButton}`}
-                                  onClick={() => setDeleteLeadTarget(lead)}
-                                >
-                                  Delete
-                                </button>
+                                {isLeadOpen ? (
+                                  <button
+                                    type="button"
+                                    className={`${assetStyles.secondaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionDanger}` : ''} ${styles.deleteLeadButton}`}
+                                    onClick={() => setDeleteLeadTarget(lead)}
+                                  >
+                                    Delete
+                                  </button>
+                                ) : null}
                                 <button
                                   type="button"
                                   className={`${assetStyles.secondaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionNeutral}` : ''} ${styles.trackingOpenButton}`}

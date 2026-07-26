@@ -3955,10 +3955,18 @@
 }
 
 .trackingLeadActions {
-  min-width: 28rem;
   display: grid !important;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.72rem;
+}
+
+.trackingLeadActionsClosed {
+  min-width: 20rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.trackingLeadActionsOpen {
+  min-width: 28rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .trackingLeadActions > button {
@@ -4001,7 +4009,7 @@
 .leadFilterModal.leadFilterModal {
   width: min(100%, 52rem) !important;
   max-height: calc(100dvh - clamp(1.5rem, 4vw, 3rem)) !important;
-  overflow: hidden !important;
+  overflow: visible !important;
   padding: 0 !important;
   border: 1px solid rgba(203, 218, 230, 0.98) !important;
   border-radius: 2rem !important;
@@ -4091,8 +4099,8 @@
 }
 
 .leadFilterModal .leadFilterField:last-child .leadFilterSelectMenu {
-  top: auto;
-  bottom: calc(100% + 0.55rem);
+  top: calc(100% + 0.55rem);
+  bottom: auto;
 }
 
 .leadFilterModal .leadFilterSelectOption {
@@ -4108,6 +4116,7 @@
   margin: 0 !important;
   padding: 1.1rem 1.7rem 1.4rem !important;
   border-top: 1px solid rgba(211, 224, 234, 0.94) !important;
+  border-radius: 0 0 2rem 2rem;
   background: rgba(255, 255, 255, 0.96);
 }
 
@@ -4125,6 +4134,13 @@
   .trackingLeadActions {
     width: 100%;
     min-width: 0;
+  }
+
+  .trackingLeadActionsClosed {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .trackingLeadActionsOpen {
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   }
 }
@@ -4166,6 +4182,7 @@
     display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     padding: 1rem 1.2rem 1.2rem !important;
+    border-radius: 0 0 1.65rem 1.65rem;
   }
 
   .leadFilterModal .leadFilterActions > button {
@@ -4175,11 +4192,12 @@
 }
 
 @media (max-width: 620px) {
-  .trackingLeadActions {
+  .trackingLeadActionsClosed,
+  .trackingLeadActionsOpen {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 
-  .trackingLeadActions .deleteLeadButton {
+  .trackingLeadActionsOpen .deleteLeadButton {
     grid-column: 1 / -1;
   }
 }
