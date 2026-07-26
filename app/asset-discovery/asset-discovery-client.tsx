@@ -1967,7 +1967,6 @@ export default function AssetDiscoveryClient({
               >
                 <FilterIcon className={assetStyles.buttonIcon} />
                 <span>{activeDiscoveryFilterLabel}</span>
-                <ChevronDownIcon className={assetStyles.filterChevron} />
               </button>
 
               {access?.accountType === "owner" ? (
