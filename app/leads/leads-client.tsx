@@ -18,7 +18,7 @@ import type { DealerAssetCorrectionRequest } from '../../lib/dealer-asset-correc
 type LeadType = 'finance' | 'insurance' | 'replacement_quote';
 type LeadStatus = 'sent' | 'viewed' | 'accepted' | 'quoted' | 'declined' | 'closed';
 type NoticeTone = 'success' | 'error';
-type LeadStatusFilter = 'all' | 'new' | 'open' | 'completed';
+type LeadStatusFilter = 'all' | 'new' | 'open' | 'completed' | 'tracking';
 type FilterDropdownKey = 'month' | 'year' | 'status';
 type AssetStatusChoice = 'yes' | 'no' | 'unknown' | 'not_applicable';
 type LeadReportStep = 'format' | 'pdf-report';
@@ -186,6 +186,7 @@ const STATUS_FILTER_OPTIONS: LeadFilterOption[] = [
   { value: 'new', label: 'New leads' },
   { value: 'open', label: 'Open leads' },
   { value: 'completed', label: 'Completed leads' },
+  { value: 'tracking', label: 'Tracking requests' },
 ];
 
 const PDF_REPORT_OPTIONS: PdfReportOption[] = [
@@ -1512,6 +1513,7 @@ export default function LeadsClient({
       if (statusFilter === 'new' && !isNewLead(lead)) return false;
       if (statusFilter === 'open' && (isNewLead(lead) || isCompletedLead(lead))) return false;
       if (statusFilter === 'completed' && !isCompletedLead(lead)) return false;
+      if (statusFilter === 'tracking' && !isTrackingLead(lead)) return false;
 
       if (!query) return true;
       return searchTextForLead(lead).includes(query);
@@ -1557,6 +1559,7 @@ export default function LeadsClient({
     if (statusFilter === 'new') labels.push('New leads');
     if (statusFilter === 'open') labels.push('Open leads');
     if (statusFilter === 'completed') labels.push('Completed leads');
+    if (statusFilter === 'tracking') labels.push('Tracking requests');
 
     if (!labels.length) return 'Filter';
     if (labels.length === 1) return labels[0];
@@ -1817,6 +1820,16 @@ export default function LeadsClient({
     setNotice(null);
     setOpenLeadId(leadToOpen.id);
     await markLeadViewed(leadToOpen);
+  }
+
+  function openTracking(leadToOpen: AssetLead) {
+    const trackingBasePath = dealerAppMode ? '/dealer/maintenance' : '/tracking';
+    const accessId = asText(leadToOpen.maintenanceAccess?.accessId);
+    const trackingPath = accessId
+      ? `${trackingBasePath}?open=${encodeURIComponent(accessId)}`
+      : trackingBasePath;
+
+    window.location.assign(trackingPath);
   }
 
   async function refreshLeads() {
@@ -2805,11 +2818,12 @@ export default function LeadsClient({
                   <article key={lead.id} className={`${useDealerWorkspaceStyles ? workspaceStyles.card : ''} ${styles.leadThread} ${isLeadNew ? styles.leadThreadNew : ''} ${isLeadActive ? styles.leadThreadActive : ''} ${isLeadDone ? styles.leadThreadDone : ''} ${isTrackingRequest ? styles.leadThreadTracking : ''} ${isLeadOpen ? styles.leadThreadOpen : ''}`}>
                     <div className={styles.clientPanel}>
                       <div className={styles.clientPanelHeader}>
-                        <div className={styles.clientIdentity}>
+                        <div className={`${styles.clientIdentity} ${isTrackingRequest ? styles.trackingLeadIdentity : ''}`}>
                           <div className={styles.leadCardTitleRow}>
                             <h3>{lead.ownerBusinessName || ownerDisplayName(lead)}</h3>
                           </div>
                           <strong className={styles.leadAssetName}>{assetTitle(lead)}</strong>
+                          <span className={styles.clientKicker}>{formatLeadDisplayType(lead)} · Received {formatDate(lead.createdAtIso)}</span>
                           {isTrackingRequest ? (
                             <span className={styles.trackingLeadPurpose}>
                               <span className={styles.trackingLeadPurposeIcon} aria-hidden="true">
@@ -2821,48 +2835,74 @@ export default function LeadsClient({
                               </span>
                             </span>
                           ) : null}
-                          <span className={styles.clientKicker}>{formatLeadDisplayType(lead)} · Received {formatDate(lead.createdAtIso)}</span>
                         </div>
 
                         <div className={styles.clientDecisionArea}>
-                          <div className={styles.clientActionRow}>
-                            <button
-                              type="button"
-                              className={`${assetStyles.secondaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionMint}` : ''} ${isLeadDone ? styles.doneLeadPill : styles.markDoneLeadButton}`}
-                              onClick={() => void toggleLeadDone(lead)}
-                              disabled={Boolean(markingLeadDoneId)}
-                              aria-pressed={isLeadDone}
-                              title={isLeadDone ? 'Click to move this lead back to Mark done' : 'Mark this lead as done'}
-                            >
-                              <CheckIcon className={assetStyles.buttonIcon} />
-                              <span>{isMarkingThisLeadDone ? 'Updating...' : isLeadDone ? 'Done' : 'Mark done'}</span>
-                            </button>
-
-                            {isLeadOpen ? (
+                          <div className={`${styles.clientActionRow} ${isTrackingRequest ? styles.trackingLeadActions : ''}`}>
+                            {isTrackingRequest ? (
                               <>
-                                <button type="button" className={`${assetStyles.secondaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionDanger}` : ''} ${styles.deleteLeadButton}`} onClick={() => setDeleteLeadTarget(lead)}>
-                                  Delete
+                                <button
+                                  type="button"
+                                  className={`${assetStyles.secondaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionNeutral}` : ''} ${styles.trackingOpenButton}`}
+                                  onClick={() => openTracking(lead)}
+                                >
+                                  Open tracking
                                 </button>
                                 <button
                                   type="button"
-                                  className={`${assetStyles.secondaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionNeutral}` : ''} ${styles.closeLeadButton}`}
+                                  className={`${assetStyles.primaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionGreen}` : ''} ${styles.openLeadButton}`}
                                   onClick={() => {
-                                    setOpenLeadId(null);
+                                    if (isLeadOpen) {
+                                      setOpenLeadId(null);
+                                    } else {
+                                      void openLead(lead);
+                                    }
                                   }}
                                 >
-                                  Close
+                                  {isLeadOpen ? 'Close' : 'Open'}
                                 </button>
                               </>
                             ) : (
-                              <button
-                                type="button"
-                                className={`${assetStyles.primaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionGreen}` : ''} ${styles.openLeadButton}`}
-                                onClick={() => {
-                                  void openLead(lead);
-                                }}
-                              >
-                                {isTrackingRequest ? 'Open tracking' : 'Open lead'}
-                              </button>
+                              <>
+                                <button
+                                  type="button"
+                                  className={`${assetStyles.secondaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionMint}` : ''} ${isLeadDone ? styles.doneLeadPill : styles.markDoneLeadButton}`}
+                                  onClick={() => void toggleLeadDone(lead)}
+                                  disabled={Boolean(markingLeadDoneId)}
+                                  aria-pressed={isLeadDone}
+                                  title={isLeadDone ? 'Click to move this lead back to Mark done' : 'Mark this lead as done'}
+                                >
+                                  <CheckIcon className={assetStyles.buttonIcon} />
+                                  <span>{isMarkingThisLeadDone ? 'Updating...' : isLeadDone ? 'Done' : 'Mark done'}</span>
+                                </button>
+
+                                {isLeadOpen ? (
+                                  <>
+                                    <button type="button" className={`${assetStyles.secondaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionDanger}` : ''} ${styles.deleteLeadButton}`} onClick={() => setDeleteLeadTarget(lead)}>
+                                      Delete
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className={`${assetStyles.secondaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionNeutral}` : ''} ${styles.closeLeadButton}`}
+                                      onClick={() => {
+                                        setOpenLeadId(null);
+                                      }}
+                                    >
+                                      Close
+                                    </button>
+                                  </>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    className={`${assetStyles.primaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionGreen}` : ''} ${styles.openLeadButton}`}
+                                    onClick={() => {
+                                      void openLead(lead);
+                                    }}
+                                  >
+                                    Open lead
+                                  </button>
+                                )}
+                              </>
                             )}
                           </div>
                         </div>
@@ -2985,10 +3025,10 @@ export default function LeadsClient({
           <div className={assetStyles.modalBackdrop} onClick={closeLeadFilterModal} />
 
           <div className={`${assetStyles.modalCard} ${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadFilterModal}`} role="dialog" aria-modal="true" aria-labelledby="lead-filter-title">
-            <div className={`${assetStyles.modalHeader} ${dealerWorkspaceClass(workspaceStyles.modalHeader)}`}>
+            <div className={`${assetStyles.modalHeader} ${dealerWorkspaceClass(workspaceStyles.modalHeader)} ${styles.leadFilterHeader}`}>
               <div className={assetStyles.modalHeaderText}>
-                <h3 id="lead-filter-title">Choose which leads to show.</h3>
-                <p className={styles.leadFilterIntro}>Filter your inbox by the date the lead was received and the current lead status.</p>
+                <h3 id="lead-filter-title">Filter leads</h3>
+                <p className={styles.leadFilterIntro}>Choose a received date, lead status, or show only asset tracking requests.</p>
               </div>
 
               <button type="button" className={`${assetStyles.modalCloseButton} ${dealerWorkspaceClass(workspaceStyles.modalClose)}`} onClick={closeLeadFilterModal} aria-label="Close filter modal">
