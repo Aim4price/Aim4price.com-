@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   WorkspaceTitlePanel,
   workspaceStyles,
@@ -572,11 +572,16 @@ function leadParityAssetCardStatusClass(asset: AssetDiscoveryAsset): string {
 export default function AssetDiscoveryClient({
   dealerAppMode = false,
   ownerAppMode = false,
+  initialOpenAssetId = "",
 }: {
   dealerAppMode?: boolean;
   ownerAppMode?: boolean;
+  initialOpenAssetId?: string;
 } = {}) {
   const compactAppMode = dealerAppMode || ownerAppMode;
+  const requestedOpenAssetId = cleanText(initialOpenAssetId);
+  const preparedOpenAssetIdRef = useRef("");
+  const autoOpenedAssetIdRef = useRef("");
   const [assets, setAssets] = useState<AssetDiscoveryAsset[]>([]);
   const [provinceOptions, setProvinceOptions] = useState<Option[]>([]);
   const [typeOptions, setTypeOptions] = useState<Option[]>([]);
@@ -623,6 +628,23 @@ export default function AssetDiscoveryClient({
   const [activeEnquiry, setActiveEnquiry] =
     useState<DiscoveryEnquiryDetail | null>(null);
   const [loadingEnquiryId, setLoadingEnquiryId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (
+      !requestedOpenAssetId ||
+      preparedOpenAssetIdRef.current === requestedOpenAssetId
+    ) {
+      return;
+    }
+
+    preparedOpenAssetIdRef.current = requestedOpenAssetId;
+    autoOpenedAssetIdRef.current = "";
+    setSearchInput("");
+    setSearch("");
+    setProvince("all");
+    setType("all");
+    setCurrentPage(1);
+  }, [requestedOpenAssetId]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -696,6 +718,9 @@ export default function AssetDiscoveryClient({
     if (search) params.set("search", search);
     if (province !== "all") params.set("province", province);
     if (type !== "all") params.set("type", type);
+    if (requestedOpenAssetId) {
+      params.set("focusAssetId", requestedOpenAssetId);
+    }
     params.set("page", String(currentPage));
     params.set("pageSize", String(pageSize));
 
@@ -717,8 +742,9 @@ export default function AssetDiscoveryClient({
         }
 
         if (!mounted) return;
+        const nextAssets = Array.isArray(data.assets) ? data.assets : [];
         setAccess(data.access ?? null);
-        setAssets(Array.isArray(data.assets) ? data.assets : []);
+        setAssets(nextAssets);
         setProvinceOptions(
           Array.isArray(data.provinceOptions) ? data.provinceOptions : [],
         );
@@ -727,6 +753,17 @@ export default function AssetDiscoveryClient({
         setPagination(data.pagination ?? EMPTY_PAGINATION);
         if (data.pagination && data.pagination.page !== currentPage) {
           setCurrentPage(data.pagination.page);
+        }
+
+        const requestedAsset = requestedOpenAssetId
+          ? nextAssets.find((asset) => asset.id === requestedOpenAssetId)
+          : undefined;
+        if (
+          requestedAsset &&
+          autoOpenedAssetIdRef.current !== requestedOpenAssetId
+        ) {
+          autoOpenedAssetIdRef.current = requestedOpenAssetId;
+          void toggleAssetDetails(requestedAsset);
         }
       } catch (loadError) {
         if (!mounted) return;
@@ -749,7 +786,32 @@ export default function AssetDiscoveryClient({
     return () => {
       mounted = false;
     };
-  }, [currentPage, pageSize, province, refreshVersion, search, type]);
+  }, [
+    currentPage,
+    pageSize,
+    province,
+    refreshVersion,
+    requestedOpenAssetId,
+    search,
+    type,
+  ]);
+
+  useEffect(() => {
+    if (
+      !requestedOpenAssetId ||
+      expandedAssetId !== requestedOpenAssetId
+    ) {
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      document
+        .getElementById(`discovery-details-${requestedOpenAssetId}`)
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [expandedAssetId, requestedOpenAssetId]);
 
   const visiblePaginationPages = useMemo(
     () => paginationPages(pagination.page, pagination.totalPages),

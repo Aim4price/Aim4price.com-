@@ -10,7 +10,19 @@ import styles from './page.module.css';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-export default async function AssetDiscoveryPage() {
+type AssetDiscoveryPageProps = {
+  searchParams?: {
+    openAsset?: string | string[];
+  };
+};
+
+function firstSearchValue(value: string | string[] | undefined): string {
+  return String(Array.isArray(value) ? value[0] ?? '' : value ?? '').trim();
+}
+
+export default async function AssetDiscoveryPage({
+  searchParams,
+}: AssetDiscoveryPageProps) {
   const { session } = await requireActivePageAccess();
   const profile = await getAccountProfile({
     id: session.user.id,
@@ -25,7 +37,9 @@ export default async function AssetDiscoveryPage() {
   return (
     <main className={`${workspaceStyles.page} ${leadStyles.leadsPage} ${leadStyles.dealerOwnerParity} ${styles.page}`}>
       <AppHeader active="asset-discovery" />
-      <AssetDiscoveryClient />
+      <AssetDiscoveryClient
+        initialOpenAssetId={firstSearchValue(searchParams?.openAsset)}
+      />
     </main>
   );
 }
