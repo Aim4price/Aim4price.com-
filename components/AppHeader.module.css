@@ -21,7 +21,6 @@
 }
 
 .innerDealer {
-  width: min(calc(100% - 3rem), 1680px);
   grid-template-columns: minmax(13rem, 1fr) auto minmax(13rem, 1fr);
   gap: clamp(1rem, 1.8vw, 2rem);
 }
