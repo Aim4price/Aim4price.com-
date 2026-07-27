@@ -167,7 +167,6 @@ type QuickActionIconName =
   | "fieldManager"
   | "ownerApp"
   | "dealer"
-  | "tracking"
   | "marketplace"
   | "discovery"
   | "directory"
@@ -311,15 +310,6 @@ function QuickActionIcon({ name }: { name: QuickActionIconName }) {
           <path {...strokeProps} d="M4.75 19.25c.35-3.05 2.35-4.9 5.05-4.9s4.7 1.85 5.05 4.9" />
           <path {...strokeProps} d="M15.6 9.25h3.65v7.25H15.6" />
           <path {...strokeProps} d="M17.4 12.9h.02" />
-        </svg>
-      ) : null}
-
-      {name === "tracking" ? (
-        <svg {...svgProps}>
-          <circle cx="12" cy="12" r="7.7" fill="currentColor" opacity="0.14" />
-          <circle {...strokeProps} cx="12" cy="12" r="7.7" />
-          <path {...strokeProps} d="M12 7.75v4.7l3.15 1.9" />
-          <path {...strokeProps} d="M8.35 4.9 6.7 3.4M15.65 4.9l1.65-1.5" />
         </svg>
       ) : null}
 
@@ -1712,10 +1702,6 @@ export default function AccountClient() {
     window.location.assign("/account/dealer-app");
   }
 
-  function openTrackingPage() {
-    window.location.assign("/tracking");
-  }
-
   function openOwnerAppAccessPage() {
     window.location.assign("/account/owner-app");
   }
@@ -2059,18 +2045,6 @@ export default function AccountClient() {
                 >
                   <QuickActionIcon name="ownerApp" />
                   <strong>Owner app</strong>
-                  <span className={styles.quickActionChevron}>›</span>
-                </button>
-              ) : null}
-
-              {isDealerAccount ? (
-                <button
-                  type="button"
-                  className={styles.quickActionButton}
-                  onClick={openTrackingPage}
-                >
-                  <QuickActionIcon name="tracking" />
-                  <strong>Equipment tracking</strong>
                   <span className={styles.quickActionChevron}>›</span>
                 </button>
               ) : null}
