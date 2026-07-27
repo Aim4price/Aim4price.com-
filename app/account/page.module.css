@@ -1382,9 +1382,9 @@
 }
 
 .directoryHeroBadge {
-  color: #fff6eb !important;
-  border-color: rgba(255, 218, 180, 0.24) !important;
-  background: rgba(191, 122, 53, 0.28) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  background: rgba(47, 119, 91, 0.72) !important;
 }
 
 .dealerAccountPage .card {
