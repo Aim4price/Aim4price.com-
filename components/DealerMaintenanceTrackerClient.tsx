@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import DealerAssetCorrectionEditor from './DealerAssetCorrectionEditor';
-import DealerMaintenanceReportModal from './DealerMaintenanceReportModal';
 import LeadPhotoViewerModal from './LeadPhotoViewerModal';
 import {
   WorkspaceTitlePanel,
@@ -77,6 +76,10 @@ function CloseIcon({ className = '' }: { className?: string }) {
 
 function DownloadIcon({ className = '' }: { className?: string }) {
   return <svg className={className} viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 20h14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>;
+}
+
+function MaintenanceIcon({ className = '' }: { className?: string }) {
+  return <svg className={className} viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h12M7 12h12M7 19h12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /><circle cx="4" cy="5" r="1" fill="currentColor" /><circle cx="4" cy="12" r="1" fill="currentColor" /><circle cx="4" cy="19" r="1" fill="currentColor" /></svg>;
 }
 
 function formatUsage(value: number | null, metric: string | null): string {
@@ -154,6 +157,20 @@ function matchesSearch(asset: DealerMaintenanceTrackedAsset, search: string): bo
     asset.statusLabel,
     asset.nextMaintenance?.title,
     ...asset.maintenanceRecords.map((record) => `${record.title} ${record.notes} ${record.completedNotes}`),
+  ].some((value) => String(value || '').toLowerCase().includes(query));
+}
+
+function matchesMaintenanceSearch(record: DealerMaintenanceRecordSummary, search: string): boolean {
+  const query = search.trim().toLowerCase();
+  if (!query) return true;
+  return [
+    record.title,
+    record.maintenanceType,
+    record.computedStatusLabel,
+    record.assignedName,
+    record.notes,
+    record.completedNotes,
+    record.completedBy,
   ].some((value) => String(value || '').toLowerCase().includes(query));
 }
 
@@ -251,7 +268,9 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
   );
   const [loading, setLoading] = useState(false);
   const [notice, setNotice] = useState<{ tone: 'success' | 'error'; text: string } | null>(null);
-  const [reportAccessId, setReportAccessId] = useState<string | null>(null);
+  const [maintenanceViewAccessId, setMaintenanceViewAccessId] = useState<string | null>(null);
+  const [maintenanceSearch, setMaintenanceSearch] = useState('');
+  const [reportLoadingAccessId, setReportLoadingAccessId] = useState<string | null>(null);
 
   useEffect(() => setAssets(initialAssets), [initialAssets]);
 
@@ -310,8 +329,67 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
     setFilterOpen(false);
   }
 
-  function openReports(asset: DealerMaintenanceTrackedAsset) {
-    setReportAccessId(asset.accessId);
+  function openAsset(asset: DealerMaintenanceTrackedAsset) {
+    setOpenAccessId(asset.accessId);
+    if (maintenanceViewAccessId !== asset.accessId) {
+      setMaintenanceViewAccessId(null);
+      setMaintenanceSearch('');
+    }
+  }
+
+  function closeAsset() {
+    setOpenAccessId(null);
+    setMaintenanceViewAccessId(null);
+    setMaintenanceSearch('');
+  }
+
+  function toggleMaintenance(asset: DealerMaintenanceTrackedAsset) {
+    if (maintenanceViewAccessId === asset.accessId) {
+      setMaintenanceViewAccessId(null);
+      setMaintenanceSearch('');
+      return;
+    }
+    setMaintenanceViewAccessId(asset.accessId);
+    setMaintenanceSearch('');
+  }
+
+  async function openFullMaintenanceReport(asset: DealerMaintenanceTrackedAsset) {
+    if (reportLoadingAccessId) return;
+    const popup = window.open('', '_blank');
+    if (!popup) {
+      setNotice({ tone: 'error', text: 'Enable pop-ups to open the full maintenance report.' });
+      return;
+    }
+
+    setReportLoadingAccessId(asset.accessId);
+    setNotice(null);
+    try {
+      const params = new URLSearchParams({
+        accessId: asset.accessId,
+        scope: 'total',
+        format: 'pdf',
+      });
+      const response = await fetch(`/api/dealer/maintenance/report?${params.toString()}`, {
+        credentials: 'include',
+        cache: 'no-store',
+      });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null) as { error?: string } | null;
+        popup.close();
+        throw new Error(payload?.error || 'The full maintenance report could not be generated.');
+      }
+      const blobUrl = URL.createObjectURL(await response.blob());
+      popup.location.replace(blobUrl);
+      window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+    } catch (cause) {
+      popup.close();
+      setNotice({
+        tone: 'error',
+        text: cause instanceof Error ? cause.message : 'The full maintenance report could not be generated.',
+      });
+    } finally {
+      setReportLoadingAccessId(null);
+    }
   }
 
   function selectedPhotoIndex(asset: DealerMaintenanceTrackedAsset): number {
@@ -422,6 +500,12 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
               const photoIndex = selectedPhotoIndex(asset);
               const activePhotoUrl = asset.photoUrls[photoIndex] ?? '';
               const hasMultiplePhotos = asset.photoUrls.length > 1;
+              const isMaintenanceOpen = maintenanceViewAccessId === asset.accessId;
+              const filteredOpenMaintenance = asset.openMaintenanceRecords.filter((record) => matchesMaintenanceSearch(record, maintenanceSearch));
+              const filteredCompletedMaintenance = asset.completedMaintenanceRecords.filter((record) => matchesMaintenanceSearch(record, maintenanceSearch));
+              const filteredMaintenanceCount = filteredOpenMaintenance.length + filteredCompletedMaintenance.length;
+              const totalMaintenanceCount = asset.openMaintenanceRecords.length + asset.completedMaintenanceRecords.length;
+              const isReportLoading = reportLoadingAccessId === asset.accessId;
               return (
                 <article key={asset.accessId} className={`${workspaceStyles.card} ${leadStyles.leadThread} ${trackerCardStatusClass(asset.status)} ${isOpen ? leadStyles.leadThreadOpen : ''}`}>
                   <div className={leadStyles.clientPanel}>
@@ -434,9 +518,9 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                       <div className={leadStyles.clientDecisionArea}>
                         <div className={leadStyles.clientActionRow}>
                           {isOpen ? (
-                            <button type="button" className={`${assetStyles.secondaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionNeutral} ${leadStyles.closeLeadButton}`} onClick={() => setOpenAccessId(null)}>Close</button>
+                            <button type="button" className={`${assetStyles.secondaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionNeutral} ${leadStyles.closeLeadButton}`} onClick={closeAsset}>Close</button>
                           ) : (
-                            <button type="button" className={`${assetStyles.primaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionGreen} ${leadStyles.openLeadButton}`} onClick={() => setOpenAccessId(asset.accessId)}>Open</button>
+                            <button type="button" className={`${assetStyles.primaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionGreen} ${leadStyles.openLeadButton}`} onClick={() => openAsset(asset)}>Open</button>
                           )}
                         </div>
                       </div>
@@ -457,18 +541,29 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                             <span>Maintenance status</span>
                           </div>
 
-                          {asset.permissions.canViewMaintenanceReports ? (
-                            <div className={`${assetStyles.assetHeaderActions} ${leadStyles.leadAssetHeaderActions}`}>
+                          <div className={`${assetStyles.assetHeaderActions} ${leadStyles.leadAssetHeaderActions} ${styles.trackerHeaderActions}`}>
+                            <button
+                              type="button"
+                              className={`${assetStyles.optionsButton} ${leadStyles.leadManageButton} ${styles.maintenanceViewButton}`}
+                              onClick={() => toggleMaintenance(asset)}
+                              aria-expanded={isMaintenanceOpen}
+                              aria-controls={`maintenance-view-${asset.accessId}`}
+                            >
+                              <MaintenanceIcon className={assetStyles.buttonIcon} />
+                              <span>{isMaintenanceOpen ? 'Hide maintenance' : 'View maintenance'}</span>
+                            </button>
+                            {asset.permissions.canViewMaintenanceReports ? (
                               <button
                                 type="button"
                                 className={`${assetStyles.optionsButton} ${leadStyles.maintenanceReportButton} ${styles.trackerReportButton}`}
-                                onClick={() => openReports(asset)}
+                                onClick={() => void openFullMaintenanceReport(asset)}
+                                disabled={Boolean(reportLoadingAccessId)}
                               >
                                 <DownloadIcon className={assetStyles.buttonIcon} />
-                                <span>Maintenance Report</span>
+                                <span>{isReportLoading ? 'Preparing report...' : 'Full PDF report'}</span>
                               </button>
-                            </div>
-                          ) : null}
+                            ) : null}
+                          </div>
                         </div>
                       </div>
 
@@ -615,15 +710,48 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                           </section>
                         ) : null}
 
-                        <section className={styles.section}>
-                          <header><div><span>Maintenance schedule</span><h3>Open maintenance</h3></div><strong>{asset.openMaintenanceRecords.length}</strong></header>
-                          {asset.openMaintenanceRecords.length ? <div className={styles.recordList}>{asset.openMaintenanceRecords.map((record) => <RecordCard key={record.id} record={record} asset={asset} />)}</div> : <div className={styles.sectionEmpty}>No open maintenance. This asset remains tracked and its completed history is still available.</div>}
-                        </section>
+                        {isMaintenanceOpen ? (
+                          <section id={`maintenance-view-${asset.accessId}`} className={styles.maintenanceViewPanel}>
+                            <header className={styles.maintenanceViewHeader}>
+                              <div>
+                                <span>Maintenance records</span>
+                                <h3>View maintenance</h3>
+                                <p>Search the owner’s open and completed maintenance for this asset.</p>
+                              </div>
+                              <strong>{maintenanceSearch ? `${filteredMaintenanceCount} of ${totalMaintenanceCount}` : totalMaintenanceCount}</strong>
+                            </header>
 
-                        <section className={styles.section}>
-                          <header><div><span>Maintenance history</span><h3>Completed maintenance</h3></div><strong>{asset.completedMaintenanceRecords.length}</strong></header>
-                          {asset.completedMaintenanceRecords.length ? <div className={styles.recordList}>{asset.completedMaintenanceRecords.map((record) => <RecordCard key={record.id} record={record} asset={asset} />)}</div> : <div className={styles.sectionEmpty}>No completed maintenance has been saved yet.</div>}
-                        </section>
+                            <div className={styles.maintenanceSearchRow}>
+                              <label className={styles.maintenanceSearchField}>
+                                <SearchIcon className={styles.maintenanceSearchIcon} />
+                                <input
+                                  type="search"
+                                  value={maintenanceSearch}
+                                  onChange={(event) => setMaintenanceSearch(event.target.value)}
+                                  placeholder="Search maintenance, notes, status or assignee"
+                                  aria-label={`Search maintenance for ${asset.assetTitle}`}
+                                />
+                                {maintenanceSearch ? (
+                                  <button type="button" onClick={() => setMaintenanceSearch('')} aria-label="Clear maintenance search">
+                                    <CloseIcon className={assetStyles.buttonIcon} />
+                                  </button>
+                                ) : null}
+                              </label>
+                            </div>
+
+                            <div className={styles.maintenanceRecordSections}>
+                              <section className={styles.section}>
+                                <header><div><span>Maintenance schedule</span><h3>Open maintenance</h3></div><strong>{filteredOpenMaintenance.length}</strong></header>
+                                {filteredOpenMaintenance.length ? <div className={styles.recordList}>{filteredOpenMaintenance.map((record) => <RecordCard key={record.id} record={record} asset={asset} />)}</div> : <div className={styles.sectionEmpty}>{maintenanceSearch ? 'No open maintenance matches this search.' : 'No open maintenance. This asset remains tracked and its completed history is still available.'}</div>}
+                              </section>
+
+                              <section className={styles.section}>
+                                <header><div><span>Maintenance history</span><h3>Completed maintenance</h3></div><strong>{filteredCompletedMaintenance.length}</strong></header>
+                                {filteredCompletedMaintenance.length ? <div className={styles.recordList}>{filteredCompletedMaintenance.map((record) => <RecordCard key={record.id} record={record} asset={asset} />)}</div> : <div className={styles.sectionEmpty}>{maintenanceSearch ? 'No completed maintenance matches this search.' : 'No completed maintenance has been saved yet.'}</div>}
+                              </section>
+                            </div>
+                          </section>
+                        ) : null}
                       </div>
                     </div>
                   ) : null}
@@ -637,18 +765,18 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
       {filterOpen ? (
         <div className={assetStyles.modalOverlay}>
           <div className={assetStyles.modalBackdrop} onClick={() => setFilterOpen(false)} />
-          <div className={`${assetStyles.modalCard} ${workspaceStyles.modal} ${leadStyles.leadFilterModal}`} role="dialog" aria-modal="true" aria-labelledby="tracker-filter-title">
-            <div className={assetStyles.modalHeader}>
+          <div className={`${assetStyles.modalCard} ${workspaceStyles.modal} ${leadStyles.leadFilterModal} ${styles.trackerFilterModal}`} role="dialog" aria-modal="true" aria-labelledby="tracker-filter-title">
+            <div className={`${assetStyles.modalHeader} ${leadStyles.leadFilterHeader} ${styles.trackerFilterHeader}`}>
               <div><h3 id="tracker-filter-title">Filter tracked equipment</h3><p className={leadStyles.leadFilterIntro}>Filter by asset owner and current maintenance position.</p></div>
               <button type="button" className={`${assetStyles.modalCloseButton} ${workspaceStyles.modalClose}`} onClick={() => setFilterOpen(false)} aria-label="Close filters"><CloseIcon className={assetStyles.buttonIcon} /></button>
             </div>
-            <div className={`${workspaceStyles.modalBody} ${leadStyles.leadFilterForm}`}>
+            <div className={`${workspaceStyles.modalBody} ${leadStyles.leadFilterForm} ${styles.trackerFilterForm}`}>
               <Dropdown label="Asset owner" value={draftOwnerFilter} options={ownerOptions} dropdownKey="owner" openDropdown={openFilterDropdown} onOpenChange={(key) => setOpenFilterDropdown(key as FilterDropdownKey | null)} onChange={setDraftOwnerFilter} />
               <Dropdown label="Maintenance status" value={draftStatusFilter} options={statusOptions} dropdownKey="status" openDropdown={openFilterDropdown} onOpenChange={(key) => setOpenFilterDropdown(key as FilterDropdownKey | null)} onChange={(value) => setDraftStatusFilter(value as TrackerStatusFilter)} />
             </div>
-            <div className={`${assetStyles.formActions} ${workspaceStyles.modalFooter} ${leadStyles.leadFilterActions}`}>
+            <div className={`${assetStyles.formActions} ${workspaceStyles.modalFooter} ${leadStyles.leadFilterActions} ${styles.trackerFilterActions}`}>
               <button type="button" className={assetStyles.secondaryButton} onClick={clearFilters}>Clear filters</button>
-              <button type="button" className={assetStyles.primaryButton} onClick={() => { setOwnerFilter(draftOwnerFilter); setStatusFilter(draftStatusFilter); setFilterOpen(false); }}>Apply filters</button>
+              <button type="button" className={assetStyles.primaryButton} onClick={() => { setOwnerFilter(draftOwnerFilter); setStatusFilter(draftStatusFilter); setOpenFilterDropdown(null); setFilterOpen(false); }}>Apply filters</button>
             </div>
           </div>
         </div>
@@ -664,13 +792,6 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
         />
       ) : null}
 
-      {reportAccessId ? (
-        <DealerMaintenanceReportModal
-          accessId={reportAccessId}
-          onClose={() => setReportAccessId(null)}
-          onError={(message) => setNotice({ tone: 'error', text: message })}
-        />
-      ) : null}
     </main>
   );
 }

@@ -22,6 +22,17 @@
   min-width: clamp(170px, 12.5vw, 205px) !important;
 }
 
+.trackerHeaderActions {
+  flex-wrap: wrap !important;
+}
+
+.maintenanceViewButton,
+.trackerReportButton {
+  min-height: 3.06rem !important;
+  border-radius: 0.9rem !important;
+  font-weight: 800 !important;
+}
+
 .trackerSections {
   display: grid;
   gap: 1rem;
@@ -359,6 +370,171 @@
   font-weight: 700;
 }
 
+.maintenanceViewPanel {
+  overflow: hidden;
+  border: 1px solid #d7e4df;
+  border-radius: 1.3rem;
+  background:
+    radial-gradient(circle at top left, rgba(23, 112, 71, 0.045), transparent 32%),
+    #f8fbf9;
+  box-shadow: 0 14px 30px rgba(16, 49, 40, 0.055);
+}
+
+.maintenanceViewHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.05rem 0.9rem;
+  border-bottom: 1px solid #dfe8e5;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.maintenanceViewHeader > div {
+  min-width: 0;
+}
+
+.maintenanceViewHeader span {
+  color: #4e6e63;
+  font-size: 0.64rem;
+  font-weight: 850;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.maintenanceViewHeader h3 {
+  margin: 0.2rem 0 0;
+  color: #073b30;
+  font-family: var(--font-heading, "Montserrat"), var(--font-body, "Inter"), sans-serif;
+  font-size: 1.08rem;
+  font-weight: 800;
+}
+
+.maintenanceViewHeader p {
+  margin: 0.32rem 0 0;
+  color: #647870;
+  font-size: 0.76rem;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.maintenanceViewHeader > strong {
+  flex: 0 0 auto;
+  min-width: 2.55rem;
+  min-height: 2.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.65rem;
+  border: 1px solid #b9d7c8;
+  border-radius: 0.75rem;
+  color: #12643f;
+  background: #eff8f3;
+  font-size: 0.76rem;
+  font-weight: 850;
+}
+
+.maintenanceSearchRow {
+  padding: 0.9rem 1rem;
+}
+
+.maintenanceSearchField {
+  min-height: 3.15rem;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0 0.55rem 0 0.9rem;
+  border: 1px solid #ccdcd6;
+  border-radius: 0.95rem;
+  background: #ffffff;
+  box-shadow: 0 8px 18px rgba(20, 59, 48, 0.045);
+}
+
+.maintenanceSearchField:focus-within {
+  border-color: #68ad8c;
+  box-shadow:
+    0 0 0 3px rgba(34, 139, 96, 0.1),
+    0 10px 20px rgba(20, 59, 48, 0.06);
+}
+
+.maintenanceSearchIcon {
+  width: 1.05rem;
+  height: 1.05rem;
+  color: #4f7568;
+}
+
+.maintenanceSearchField input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  color: #173f35;
+  background: transparent;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 650;
+}
+
+.maintenanceSearchField input::placeholder {
+  color: #7c8e87;
+}
+
+.maintenanceSearchField > button {
+  width: 2.35rem;
+  height: 2.35rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 0.72rem;
+  color: #4e685f;
+  background: #eef4f1;
+  cursor: pointer;
+}
+
+.maintenanceSearchField > button:hover {
+  color: #0a543d;
+  background: #e1eee7;
+}
+
+.maintenanceRecordSections {
+  display: grid;
+  gap: 0.85rem;
+  padding: 0 1rem 1rem;
+}
+
+.trackerFilterModal.trackerFilterModal {
+  width: min(calc(100vw - 2rem), 48rem) !important;
+}
+
+.trackerFilterHeader {
+  min-height: 0 !important;
+}
+
+.trackerFilterForm.trackerFilterForm {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 1rem !important;
+  padding: 1.35rem 1.55rem 1.5rem !important;
+}
+
+.trackerFilterForm > label {
+  min-width: 0;
+}
+
+.trackerFilterForm > label:last-child {
+  grid-column: auto !important;
+}
+
+.trackerFilterActions.trackerFilterActions {
+  justify-content: flex-end !important;
+  padding: 1rem 1.55rem 1.25rem !important;
+}
+
+.trackerFilterActions > button {
+  min-width: 10rem !important;
+}
+
 .reportFilters {
   position: relative;
   z-index: 4;
@@ -395,6 +571,23 @@
   }
 }
 
+@media (max-width: 760px) {
+  .trackerFilterForm.trackerFilterForm {
+    grid-template-columns: 1fr !important;
+    padding: 1.15rem 1.2rem 1.3rem !important;
+  }
+
+  .trackerFilterActions.trackerFilterActions {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    padding: 0.95rem 1.2rem 1.15rem !important;
+  }
+
+  .trackerFilterActions > button {
+    width: 100%;
+    min-width: 0 !important;
+  }
+}
+
 @media (max-width: 680px) {
   .expandedBody {
     padding: 0.7rem;
@@ -416,5 +609,27 @@
   .section > header,
   .recordCard > header {
     align-items: flex-start;
+  }
+
+  .trackerHeaderActions {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+  }
+
+  .trackerHeaderActions > button {
+    width: 100%;
+    min-width: 0 !important;
+  }
+
+  .maintenanceViewHeader {
+    padding: 0.9rem;
+  }
+
+  .maintenanceSearchRow {
+    padding: 0.75rem 0.8rem;
+  }
+
+  .maintenanceRecordSections {
+    padding: 0 0.8rem 0.8rem;
   }
 }
