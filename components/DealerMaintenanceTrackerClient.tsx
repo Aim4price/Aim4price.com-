@@ -731,14 +731,13 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                               disabled={Boolean(historyAccessCheckId)}
                               aria-expanded={isMaintenanceOpen}
                               aria-controls={`maintenance-view-${asset.accessId}`}
+                              aria-label="View maintenance history"
                             >
                               <MaintenanceIcon className={assetStyles.buttonIcon} />
                               <span>
                                 {isHistoryChecking
-                                  ? 'Checking access…'
-                                  : isMaintenanceOpen
-                                    ? 'Hide maintenance history'
-                                    : 'View maintenance history'}
+                                  ? 'Checking…'
+                                  : 'History'}
                               </span>
                             </button>
                             <button
@@ -746,24 +745,26 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                               className={`${assetStyles.optionsButton} ${leadStyles.maintenanceReportButton} ${styles.trackerReportButton}`}
                               onClick={() => setReportAccessId(asset.accessId)}
                               disabled={!asset.permissions.canViewMaintenanceReports}
+                              aria-label="Download maintenance report"
                               title={asset.permissions.canViewMaintenanceReports
                                 ? undefined
                                 : 'The asset owner has not granted maintenance report access.'}
                             >
                               <DownloadIcon className={assetStyles.buttonIcon} />
-                              <span>Download maintenance report</span>
+                              <span>Reports</span>
                             </button>
                             <button
                               type="button"
                               className={`${assetStyles.optionsButton} ${leadStyles.leadManageButton} ${styles.scheduleCreateButton}`}
                               onClick={() => setScheduleAccessId(asset.accessId)}
                               disabled={!asset.permissions.canCreateMaintenanceSchedules}
+                              aria-label="Send a proposed schedule"
                               title={asset.permissions.canCreateMaintenanceSchedules
-                                ? undefined
+                                ? 'Send a proposed schedule'
                                 : 'The asset owner has not granted permission to create maintenance schedules.'}
                             >
                               <MaintenanceIcon className={assetStyles.buttonIcon} />
-                              <span>Create maintenance schedule</span>
+                              <span>Propose</span>
                             </button>
                           </div>
                         </div>
@@ -1073,7 +1074,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
             setAssets((current) => current.map((asset) => asset.accessId === scheduleAccessId
               ? { ...asset, scheduleProposals: proposals }
               : asset));
-            setNotice({ tone: 'success', text: 'Maintenance schedule sent to the owner for approval.' });
+            setNotice({ tone: 'success', text: 'Proposed schedule sent to the owner for approval.' });
           }}
           onError={(message) => setNotice({ tone: 'error', text: message })}
         />
