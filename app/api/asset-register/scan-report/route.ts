@@ -14,6 +14,7 @@ import {
 } from '../../../../lib/asset-depreciation-timeline';
 import { createXlsxWorkbook, type XlsxCellStyle, type XlsxCellValue, type XlsxPrimitiveCellValue, type XlsxSheet } from '../../../../lib/simple-xlsx';
 import { resolveReportLogoUrlForHtml } from '../../../../lib/report-logo';
+import { getDealerTrackedAsset } from '../../../../lib/dealer-maintenance-tracker';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -99,6 +100,8 @@ const MAINTENANCE_TYPE_LABELS: Record<MaintenanceReportType, string> = {
   serviced: 'Service',
   repaired: 'Repair',
 };
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function asText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
@@ -3445,13 +3448,14 @@ function buildDepreciationReportWorkbook(
 
 
 export async function GET(request: NextRequest) {
-  const session = await getServerSession({ allowOwnerApp: true });
+  const session = await getServerSession({ allowOwnerApp: true, allowDealerApp: true });
 
   if (!session?.user?.id) {
     return NextResponse.redirect(new URL('/auth', request.url), { status: 302 });
   }
 
   const assetId = asText(request.nextUrl.searchParams.get('assetId'));
+  const dealerAccessId = asText(request.nextUrl.searchParams.get('accessId'));
   const reportKind = normalizeReportKind(
     request.nextUrl.searchParams.get('report') ?? request.nextUrl.searchParams.get('reportType') ?? request.nextUrl.searchParams.get('type'),
   );
@@ -3473,7 +3477,28 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Report type must be fuel, maintenance or depreciation.' }, { status: 400 });
   }
 
-  const asset = await getAssetRegisterItemById(session.user.id, assetId);
+  let ownerUserId = session.user.id;
+  let isDealerMaintenanceReport = false;
+
+  if (dealerAccessId) {
+    if (reportKind !== 'maintenance' || !UUID_PATTERN.test(dealerAccessId)) {
+      return NextResponse.json({ ok: false, error: 'Dealer tracking access only supports maintenance reports.' }, { status: 403 });
+    }
+
+    const trackedAsset = await getDealerTrackedAsset(session.user.id, dealerAccessId);
+    if (
+      !trackedAsset
+      || trackedAsset.assetId !== assetId
+      || !trackedAsset.permissions.canViewMaintenanceReports
+    ) {
+      return NextResponse.json({ ok: false, error: 'Maintenance report access is no longer active for this asset.' }, { status: 403 });
+    }
+
+    ownerUserId = trackedAsset.ownerUserId;
+    isDealerMaintenanceReport = true;
+  }
+
+  const asset = await getAssetRegisterItemById(ownerUserId, assetId);
 
   if (!asset) {
     return NextResponse.json({ ok: false, error: 'Asset not found.' }, { status: 404 });
@@ -3487,20 +3512,26 @@ export async function GET(request: NextRequest) {
   }
 
   const ownerProfile = await getAccountProfile({
-    id: session.user.id,
-    name: session.user.name,
-    email: session.user.email,
+    id: ownerUserId,
+    name: isDealerMaintenanceReport ? undefined : session.user.name,
+    email: isDealerMaintenanceReport ? undefined : session.user.email,
   });
-  const ownerDetails = buildOwnerReportDetails(ownerProfile, session.user, asset);
+  const ownerDetails = buildOwnerReportDetails(
+    ownerProfile,
+    isDealerMaintenanceReport
+      ? { name: ownerProfile.businessName || ownerProfile.displayName || ownerProfile.name, email: ownerProfile.email }
+      : session.user,
+    asset,
+  );
   const generatedAt = formatDate(new Date().toISOString());
-  const rawLogoUrl = await getAssetRegisterReportLogoUrl(session.user.id, asset.registerId).catch(() => '');
+  const rawLogoUrl = await getAssetRegisterReportLogoUrl(ownerUserId, asset.registerId).catch(() => '');
   const logoUrl = await resolveReportLogoUrlForHtml(rawLogoUrl, request.url);
 
   const baseFileName = `${slugifyFileSegment(asset.title)}-${slugifyFileSegment(asset.plateLabel || asset.publicAssetCode || asset.id)}-${slugifyFileSegment(REPORT_LABELS[reportKind])}`;
 
   if (reportKind === 'depreciation') {
     const logEntries = await listAssetDepreciationLogEntriesForAsset({
-      userId: session.user.id,
+      userId: ownerUserId,
       assetId: asset.id,
       fromIso: reportDateRange.fromIso,
       toIso: reportDateRange.toIso,
