@@ -5702,6 +5702,7 @@ export default function AssetRegisterClient() {
   const [isDealerTrackingSettingsOpen, setIsDealerTrackingSettingsOpen] = useState(false);
   const [isLoadingDealerTrackingSettings, setIsLoadingDealerTrackingSettings] = useState(false);
   const [dealerTrackingAccess, setDealerTrackingAccess] = useState<DealerMaintenanceAccessSummary[]>([]);
+  const [activeDealerTrackingByAssetId, setActiveDealerTrackingByAssetId] = useState<Record<string, boolean>>({});
   const quoteMapElementRef = useRef<HTMLDivElement | null>(null);
   const quoteLeafletMapRef = useRef<any>(null);
   const quoteMarkerLayerRef = useRef<any>(null);
@@ -8710,8 +8711,31 @@ export default function AssetRegisterClient() {
     }, 180);
   }
 
+  async function loadDealerTrackingStatus(assetId: string): Promise<DealerMaintenanceAccessSummary[]> {
+    try {
+      const response = await fetch(`/api/dealer-maintenance-access?assetId=${encodeURIComponent(assetId)}`, {
+        credentials: 'include',
+        cache: 'no-store',
+      });
+      const payload = await response.json().catch(() => null) as {
+        ok?: boolean;
+        trackingAccess?: DealerMaintenanceAccessSummary[];
+      } | null;
+      const entries = response.ok && payload?.ok && Array.isArray(payload.trackingAccess)
+        ? payload.trackingAccess
+        : [];
+      setActiveDealerTrackingByAssetId((current) => ({ ...current, [assetId]: entries.length > 0 }));
+      return entries;
+    } catch {
+      setActiveDealerTrackingByAssetId((current) => ({ ...current, [assetId]: false }));
+      return [];
+    }
+  }
+
   function openActionDialog(asset: RegisterAsset) {
     setActiveAsset(asset);
+    setActiveDealerTrackingByAssetId((current) => ({ ...current, [asset.id]: false }));
+    void loadDealerTrackingStatus(asset.id);
   }
 
   function closeActionDialog() {
@@ -9022,6 +9046,10 @@ export default function AssetRegisterClient() {
         throw new Error(payload?.error || 'Failed to load dealer tracking settings.');
       }
       setDealerTrackingAccess(payload.trackingAccess);
+      setActiveDealerTrackingByAssetId((current) => ({
+        ...current,
+        [asset.id]: payload.trackingAccess.length > 0,
+      }));
     } catch (cause) {
       setNotice({ tone: 'error', message: cause instanceof Error ? cause.message : 'Failed to load dealer tracking settings.' });
     } finally {
@@ -16079,7 +16107,9 @@ export default function AssetRegisterClient() {
                     </span>
                   </button>
 
-                  {canUseOwnerOnlyAssetActions && activeAsset.kind !== 'property' ? (
+                  {canUseOwnerOnlyAssetActions
+                    && activeAsset.kind !== 'property'
+                    && activeDealerTrackingByAssetId[activeAsset.id] === true ? (
                     <button type="button" className={styles.optionActionButton} onClick={() => void openDealerTrackingSettings(activeAsset)}>
                       <ManageIcon className={styles.buttonIcon} />
                       <span>
@@ -16159,7 +16189,13 @@ export default function AssetRegisterClient() {
                   assetId={activeAsset.id}
                   entries={dealerTrackingAccess}
                   mutationUrl="/api/dealer-maintenance-access"
-                  onEntriesChange={setDealerTrackingAccess}
+                  onEntriesChange={(entries) => {
+                    setDealerTrackingAccess(entries);
+                    setActiveDealerTrackingByAssetId((current) => ({
+                      ...current,
+                      [activeAsset.id]: entries.length > 0,
+                    }));
+                  }}
                 />
               )}
             </div>
