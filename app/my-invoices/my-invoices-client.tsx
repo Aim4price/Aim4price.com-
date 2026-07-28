@@ -22,6 +22,7 @@ type AssetOption = {
   value: number;
   selectedMethod: string;
   meta: string;
+  ownerName?: string;
 };
 
 type InvoiceDocument = {
@@ -53,6 +54,10 @@ type InvoiceRecord = {
   assetUsageReading: number | null;
   assetUsageMetric: 'hours' | 'km' | 'percentage';
   assetCondition: string;
+  ownerName: string;
+  createdByDealerUserId: string;
+  createdByDealerStaffId: string;
+  createdByDisplayName: string;
   invoiceDocumentId: string | null;
   document: InvoiceDocument | null;
   supplierName: string;
@@ -90,7 +95,21 @@ type InvoicesResponse = {
   summary?: InvoiceSummary;
   invoice?: InvoiceRecord | null;
   duplicateWarnings?: string[];
+  dealerDefaults?: DealerDefaults;
   error?: string;
+};
+
+type DealerDefaults = {
+  supplierName: string;
+  vatNumber: string;
+  address: string;
+};
+
+type MyInvoicesClientProps = {
+  dealerMode?: boolean;
+  initialAssetId?: string;
+  initialOpenAdd?: boolean;
+  initialDealerDefaults?: DealerDefaults;
 };
 
 type UploadResponse = {
@@ -563,9 +582,9 @@ function captureMethodLabel(source: InvoiceSource): string {
   return source === 'automatic' ? 'Automatic capture' : 'Manual entry';
 }
 
-function buildEmptyDraft(source: InvoiceSource): InvoiceDraft {
+function buildEmptyDraft(source: InvoiceSource, defaultSupplierName = ''): InvoiceDraft {
   return {
-    supplierName: '',
+    supplierName: defaultSupplierName,
     invoiceNumber: '',
     invoiceDate: '',
     subtotalExVat: '',
@@ -582,9 +601,15 @@ function buildEmptyDraft(source: InvoiceSource): InvoiceDraft {
   };
 }
 
-function draftFromExtraction(extractionDraft: ExtractionDraft, source: InvoiceSource, documentId: string, defaultUsageMetric: UsageMetric = 'none'): InvoiceDraft {
+function draftFromExtraction(
+  extractionDraft: ExtractionDraft,
+  source: InvoiceSource,
+  documentId: string,
+  defaultUsageMetric: UsageMetric = 'none',
+  defaultSupplierName = '',
+): InvoiceDraft {
   return {
-    supplierName: extractionDraft.supplierName ?? '',
+    supplierName: extractionDraft.supplierName || defaultSupplierName,
     invoiceNumber: extractionDraft.invoiceNumber ?? '',
     invoiceDate: extractionDraft.invoiceDate ?? '',
     subtotalExVat: formatInvoiceMoneyInput(formatMoneyWithCents(extractionDraft.subtotalExVat ?? null)),
@@ -621,7 +646,7 @@ function draftFromInvoice(invoice: InvoiceRecord): InvoiceDraft {
 }
 
 function assetSearchText(asset: AssetOption): string {
-  return `${asset.title} ${asset.categoryLabel} ${asset.meta} ${asset.value}`.toLowerCase();
+  return `${asset.ownerName ?? ''} ${asset.title} ${asset.categoryLabel} ${asset.meta} ${asset.value}`.toLowerCase();
 }
 
 function invoiceSearchText(invoice: InvoiceRecord): string {
@@ -629,6 +654,8 @@ function invoiceSearchText(invoice: InvoiceRecord): string {
     invoice.supplierName,
     invoice.invoiceNumber,
     invoice.assetTitle,
+    invoice.ownerName,
+    invoice.createdByDisplayName,
     invoice.source,
     sourceLabel(invoice.source),
     invoice.invoiceDate,
@@ -649,7 +676,7 @@ function invoiceYear(invoice: InvoiceRecord): number | null {
   return Number.isInteger(year) && year >= 2000 && year <= 2100 ? year : null;
 }
 
-function buildInvoiceListUrl(filters: InvoiceFilterState): string {
+function buildInvoiceListUrl(filters: InvoiceFilterState, apiRoot: string): string {
   const params = new URLSearchParams();
 
   if (filters.assetId !== 'all') params.set('assetId', filters.assetId);
@@ -657,7 +684,7 @@ function buildInvoiceListUrl(filters: InvoiceFilterState): string {
   if (filters.month !== 'all') params.set('month', filters.month);
 
   const query = params.toString();
-  return query ? `/api/my-invoices?${query}` : '/api/my-invoices';
+  return query ? `${apiRoot}?${query}` : apiRoot;
 }
 
 function buildReportUrl(filters: InvoiceFilterState, format: ReportFormat, includeFuelSlipCosts: boolean): string {
@@ -670,7 +697,13 @@ function buildReportUrl(filters: InvoiceFilterState, format: ReportFormat, inclu
   return `/api/my-invoices/report?${params.toString()}`;
 }
 
-export default function MyInvoicesClient() {
+export default function MyInvoicesClient({
+  dealerMode = false,
+  initialAssetId = '',
+  initialOpenAdd = false,
+  initialDealerDefaults = { supplierName: '', vatNumber: '', address: '' },
+}: MyInvoicesClientProps = {}) {
+  const apiRoot = dealerMode ? '/api/dealer/costs' : '/api/my-invoices';
   const [assets, setAssets] = useState<AssetOption[]>([]);
   const [invoices, setInvoices] = useState<InvoiceRecord[]>([]);
   const [availableYears, setAvailableYears] = useState<number[]>([]);
@@ -689,7 +722,10 @@ export default function MyInvoicesClient() {
   const [filterAssetSearch, setFilterAssetSearch] = useState('');
   const [downloadOpen, setDownloadOpen] = useState(false);
   const [includeFuelSlipCosts, setIncludeFuelSlipCosts] = useState(true);
-  const [draft, setDraft] = useState<InvoiceDraft>(buildEmptyDraft('manual'));
+  const [dealerDefaults, setDealerDefaults] = useState<DealerDefaults>(initialDealerDefaults);
+  const [draft, setDraft] = useState<InvoiceDraft>(buildEmptyDraft('manual', initialDealerDefaults.supplierName));
+  const [assetLockedForFlow, setAssetLockedForFlow] = useState(false);
+  const [initialLaunchHandled, setInitialLaunchHandled] = useState(!initialOpenAdd);
   const [editingInvoiceId, setEditingInvoiceId] = useState<string | null>(null);
   const [manualUploadFile, setManualUploadFile] = useState<File | null>(null);
   const [automaticUploadFile, setAutomaticUploadFile] = useState<File | null>(null);
@@ -728,6 +764,21 @@ export default function MyInvoicesClient() {
       cancelled = true;
     };
   }, [activeFilters.assetId, activeFilters.year, activeFilters.month]);
+
+  useEffect(() => {
+    if (initialLaunchHandled || isLoading) return;
+    setInitialLaunchHandled(true);
+
+    const requestedAssetId = initialAssetId.trim();
+    if (requestedAssetId && assets.some((asset) => asset.id === requestedAssetId)) {
+      openAddInvoiceModal(requestedAssetId);
+      return;
+    }
+
+    if (requestedAssetId) {
+      setNotice({ tone: 'error', message: 'This asset is not currently shared with your dealership.' });
+    }
+  }, [assets, initialAssetId, initialLaunchHandled, isLoading]);
 
   const selectedAsset = useMemo(
     () => assets.find((asset) => asset.id === selectedAssetId) ?? null,
@@ -882,7 +933,7 @@ export default function MyInvoicesClient() {
   }, [usageMetricDropdownOpen]);
 
   async function fetchInvoiceData(filters: InvoiceFilterState): Promise<InvoicesResponse> {
-    const response = await fetch(buildInvoiceListUrl(filters), { cache: 'no-store' });
+    const response = await fetch(buildInvoiceListUrl(filters, apiRoot), { cache: 'no-store' });
     const data = (await response.json()) as InvoicesResponse;
 
     if (!response.ok || !data.ok) {
@@ -897,6 +948,7 @@ export default function MyInvoicesClient() {
 
     setAssets(data.assets ?? []);
     setInvoices(nextInvoices);
+    if (data.dealerDefaults) setDealerDefaults(data.dealerDefaults);
     setAvailableYears((current) => {
       const years = new Set(current);
       for (const invoice of nextInvoices) {
@@ -919,7 +971,7 @@ export default function MyInvoicesClient() {
 
   function buildDraftForAsset(source: InvoiceSource, assetId: string): InvoiceDraft {
     return {
-      ...buildEmptyDraft(source),
+      ...buildEmptyDraft(source, dealerMode ? dealerDefaults.supplierName : ''),
       usageMetric: defaultUsageMetricForAsset(assetId),
     };
   }
@@ -935,12 +987,14 @@ export default function MyInvoicesClient() {
     setRawTextPreview('');
     setExtractionWarnings([]);
     setUsageMetricDropdownOpen(false);
-    setDraft(buildEmptyDraft('manual'));
+    setAssetLockedForFlow(false);
+    setDraft(buildEmptyDraft('manual', dealerMode ? dealerDefaults.supplierName : ''));
   }
 
-  function openAddInvoiceModal() {
+  function openAddInvoiceModal(assetId = '') {
+    const normalizedAssetId = assetId.trim();
     setNotice(null);
-    setSelectedAssetId('');
+    setSelectedAssetId(normalizedAssetId);
     setPickerSearch('');
     setEditingInvoiceId(null);
     setManualUploadFile(null);
@@ -949,13 +1003,17 @@ export default function MyInvoicesClient() {
     setRawTextPreview('');
     setExtractionWarnings([]);
     setUsageMetricDropdownOpen(false);
-    setDraft(buildEmptyDraft('manual'));
+    setAssetLockedForFlow(Boolean(normalizedAssetId));
+    setDraft(buildEmptyDraft('manual', dealerMode ? dealerDefaults.supplierName : ''));
     setFlow('source-choice');
   }
 
   function startFlow(source: InvoiceSource) {
+    const presetAssetId = selectedAssetId && assets.some((asset) => asset.id === selectedAssetId)
+      ? selectedAssetId
+      : '';
     setNotice(null);
-    setSelectedAssetId('');
+    setSelectedAssetId(presetAssetId);
     setPickerSearch('');
     setEditingInvoiceId(null);
     setManualUploadFile(null);
@@ -964,13 +1022,19 @@ export default function MyInvoicesClient() {
     setRawTextPreview('');
     setExtractionWarnings([]);
     setUsageMetricDropdownOpen(false);
-    setDraft(buildEmptyDraft(source));
-    setFlow(source === 'manual' ? 'asset-manual' : 'asset-automatic');
+    setDraft(presetAssetId
+      ? buildDraftForAsset(source, presetAssetId)
+      : buildEmptyDraft(source, dealerMode ? dealerDefaults.supplierName : ''));
+    setAssetLockedForFlow(Boolean(presetAssetId));
+    setFlow(presetAssetId
+      ? source === 'manual' ? 'manual-form' : 'upload'
+      : source === 'manual' ? 'asset-manual' : 'asset-automatic');
   }
 
   function selectAssetAndContinue(assetId: string) {
     setSelectedAssetId(assetId);
     setPickerSearch('');
+    setAssetLockedForFlow(false);
 
     if (flow === 'asset-automatic') {
       setDraft(buildDraftForAsset('automatic', assetId));
@@ -1053,7 +1117,7 @@ export default function MyInvoicesClient() {
     formData.append('source', source);
     formData.append('file', file);
 
-    const response = await fetch('/api/my-invoices/upload', {
+    const response = await fetch(`${apiRoot}/upload`, {
       method: 'POST',
       body: formData,
     });
@@ -1076,7 +1140,7 @@ export default function MyInvoicesClient() {
       const document = await uploadInvoiceFile(selectedAssetId, 'automatic', automaticUploadFile);
       setUploadedDocument(document);
 
-      const response = await fetch('/api/my-invoices/extract', {
+      const response = await fetch(`${apiRoot}/extract`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ documentId: document.id, assetId: selectedAssetId }),
@@ -1093,7 +1157,13 @@ export default function MyInvoicesClient() {
 
       const nextDocument = data.document ?? document;
       setUploadedDocument(nextDocument);
-      setDraft(draftFromExtraction(data.extraction.draft, 'automatic', nextDocument.id, defaultUsageMetricForAsset(selectedAssetId)));
+      setDraft(draftFromExtraction(
+        data.extraction.draft,
+        'automatic',
+        nextDocument.id,
+        defaultUsageMetricForAsset(selectedAssetId),
+        dealerMode ? dealerDefaults.supplierName : '',
+      ));
       setExtractionWarnings(data.extraction.warnings ?? []);
       setRawTextPreview((data.extraction.rawText ?? '').slice(0, 3000));
       setFlow('review');
@@ -1141,7 +1211,7 @@ export default function MyInvoicesClient() {
         notes: draft.notes,
       };
 
-      const response = await fetch(editingInvoiceId ? `/api/my-invoices/${editingInvoiceId}` : '/api/my-invoices', {
+      const response = await fetch(editingInvoiceId ? `${apiRoot}/${editingInvoiceId}` : apiRoot, {
         method: editingInvoiceId ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -1194,7 +1264,7 @@ export default function MyInvoicesClient() {
     setNotice(null);
 
     try {
-      const response = await fetch(`/api/my-invoices/${invoiceId}`, { method: 'DELETE' });
+      const response = await fetch(`${apiRoot}/${invoiceId}`, { method: 'DELETE' });
       const data = (await response.json()) as InvoicesResponse;
 
       if (!response.ok || !data.ok) {
@@ -1233,14 +1303,15 @@ export default function MyInvoicesClient() {
   }
 
   return (
-    <main className={styles.page}>
-      <AppHeader active="none" />
+    <main className={`${styles.page} ${dealerMode ? styles.dealerCostsPage : ''}`}>
+      {!dealerMode ? <AppHeader active="none" /> : null}
       <section className={styles.shell}>
         {notice ? <div className={`${styles.notice} ${styles[notice.tone === 'success' ? 'noticeSuccess' : 'noticeError']}`}>{notice.message}</div> : null}
 
         <section className={styles.pageTitleBlock}>
           <div>
-            <h1>ASSET COST TRACKING SYSTEM</h1>
+            <h1>{dealerMode ? 'CLIENT ASSET COSTS' : 'ASSET COST TRACKING SYSTEM'}</h1>
+            {dealerMode ? <p>Find a shared client asset and add an invoice or cost.</p> : null}
           </div>
         </section>
 
@@ -1252,7 +1323,9 @@ export default function MyInvoicesClient() {
               className={styles.searchInput}
               value={invoiceSearch}
               onChange={(event) => setInvoiceSearch(event.target.value)}
-              placeholder="Search suppliers, assets, invoice numbers or costs..."
+              placeholder={dealerMode
+                ? 'Search clients, shared assets, invoice numbers or costs...'
+                : 'Search suppliers, assets, invoice numbers or costs...'}
               aria-label="Search saved cost records"
             />
             {hasInvoiceSearch ? (
@@ -1263,7 +1336,7 @@ export default function MyInvoicesClient() {
           </label>
 
           <div className={styles.toolbarButtons}>
-            <button type="button" className={`${styles.secondaryButton} ${styles.toolbarButton} ${styles.toolbarAddButton}`} onClick={openAddInvoiceModal}>
+            <button type="button" className={`${styles.secondaryButton} ${styles.toolbarButton} ${styles.toolbarAddButton}`} onClick={() => openAddInvoiceModal()}>
               <span className={styles.plusMark} aria-hidden="true">+</span>
               <span>Add Cost</span>
             </button>
@@ -1272,10 +1345,12 @@ export default function MyInvoicesClient() {
               <span>Filter</span>
               {activeFilterCount ? <strong>{activeFilterCount}</strong> : null}
             </button>
-            <button type="button" className={`${styles.primaryButton} ${styles.toolbarButton} ${styles.toolbarDownloadButton}`} onClick={openDownloadModal}>
-              <DownloadIcon className={styles.buttonIcon} />
-              <span>Download</span>
-            </button>
+            {!dealerMode ? (
+              <button type="button" className={`${styles.primaryButton} ${styles.toolbarButton} ${styles.toolbarDownloadButton}`} onClick={openDownloadModal}>
+                <DownloadIcon className={styles.buttonIcon} />
+                <span>Download</span>
+              </button>
+            ) : null}
           </div>
         </section>
 
@@ -1295,10 +1370,16 @@ export default function MyInvoicesClient() {
                   <div className={styles.invoiceHeader}>
                     <div className={styles.invoiceTitleBlock}>
                       <h2 className={styles.invoiceTitle}>{invoice.supplierName || 'Unknown supplier'}</h2>
-                      <p className={styles.invoiceAsset}>{buildInvoiceAssetMeta(invoice)}</p>
+                      <p className={styles.invoiceAsset}>
+                        {dealerMode && invoice.ownerName ? `${invoice.ownerName} · ` : ''}
+                        {buildInvoiceAssetMeta(invoice)}
+                      </p>
                       <div className={styles.invoiceMetaList}>
                         <span className={styles.invoiceValueMethodLabel}>{invoice.invoiceNumber || 'No invoice number'}</span>
                         <span className={styles.invoiceSavedDateLabel}>{sourceLabel(invoice.source)}</span>
+                        {invoice.createdByDisplayName ? (
+                          <span className={styles.invoiceSavedDateLabel}>Added by {invoice.createdByDisplayName}</span>
+                        ) : null}
                         {updatedLabel ? <span className={styles.invoiceSavedDateLabel}>{updatedLabel}</span> : null}
                       </div>
                     </div>
@@ -1367,7 +1448,7 @@ export default function MyInvoicesClient() {
             <div className={styles.modalHeader}>
               <div>
                 <h2>Add asset cost</h2>
-                <p>Save an invoice, repair, parts or maintenance cost against a saved asset.</p>
+                <p>Save an invoice, repair, parts or maintenance cost against {dealerMode ? 'a shared client asset' : 'a saved asset'}.</p>
               </div>
               <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close add asset cost"><CloseIcon /></button>
             </div>
@@ -1462,7 +1543,7 @@ export default function MyInvoicesClient() {
         </div>
       ) : null}
 
-      {downloadOpen ? (
+      {!dealerMode && downloadOpen ? (
         <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label="External fuel costs included?">
           <div className={`${styles.downloadModal} ${styles.reportModal}`}>
             <div className={styles.modalHeader}>
@@ -1549,6 +1630,7 @@ export default function MyInvoicesClient() {
                   onClick={() => selectAssetAndContinue(asset.id)}
                 >
                   <span className={styles.assetInfo}>
+                    {asset.ownerName ? <small>{asset.ownerName}</small> : null}
                     <strong>{asset.title}</strong>
                     <small>{asset.meta}</small>
                     <small>{asset.categoryLabel} · {asset.selectedMethod === 'manual' ? 'Manual' : 'Aim4price'}</small>
@@ -1558,7 +1640,7 @@ export default function MyInvoicesClient() {
                     <small>current value</small>
                   </span>
                 </button>
-              )) : <div className={styles.emptyState}>No matching assets found.</div>}
+              )) : <div className={styles.emptyState}>{dealerMode ? 'No matching shared assets found.' : 'No matching assets found.'}</div>}
             </div>
             <div className={styles.modalFooter}>
               <button type="button" className={styles.secondaryButton} onClick={closeModal}>Cancel</button>
@@ -1593,7 +1675,7 @@ export default function MyInvoicesClient() {
               </section>
             </div>
             <div className={styles.modalFooter}>
-              <button type="button" className={styles.secondaryButton} onClick={() => setFlow('asset-automatic')}>Back</button>
+              <button type="button" className={styles.secondaryButton} onClick={() => setFlow(assetLockedForFlow ? 'source-choice' : 'asset-automatic')}>Back</button>
               <button type="button" className={styles.primaryButton} onClick={handleAutomaticExtract} disabled={!automaticUploadFile || isExtracting}>
                 {isExtracting ? 'Reading invoice/photo...' : 'Review cost details'}
               </button>
@@ -1622,6 +1704,14 @@ export default function MyInvoicesClient() {
               ) : null}
 
               <section className={styles.invoiceFormCard}>
+                {dealerMode && dealerDefaults.supplierName ? (
+                  <div className={styles.dealerDetailsCard}>
+                    <span>Dealer details pulled from your account</span>
+                    <strong>{dealerDefaults.supplierName}</strong>
+                    {dealerDefaults.vatNumber ? <small>VAT: {dealerDefaults.vatNumber}</small> : null}
+                    {dealerDefaults.address ? <small>{dealerDefaults.address}</small> : null}
+                  </div>
+                ) : null}
                 <div className={styles.formGrid}>
                   <label>
                     <span>Supplier name</span>
@@ -1774,7 +1864,7 @@ export default function MyInvoicesClient() {
             <div className={styles.modalFooter}>
               <button type="button" className={styles.secondaryButton} onClick={() => {
                 if (editingInvoiceId) closeModal();
-                else if (flow === 'manual-form') setFlow('asset-manual');
+                else if (flow === 'manual-form') setFlow(assetLockedForFlow ? 'source-choice' : 'asset-manual');
                 else if (flow === 'review') setFlow('upload');
                 else closeModal();
               }}>Back</button>

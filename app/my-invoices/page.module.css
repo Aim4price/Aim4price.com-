@@ -75,6 +75,17 @@
   text-transform: uppercase;
 }
 
+.pageTitleBlock p {
+  margin: 0.7rem 0 0;
+  color: var(--text-muted);
+  font-size: clamp(0.9rem, 1.3vw, 1.02rem);
+  font-weight: 720;
+}
+
+.dealerCostsPage {
+  min-height: calc(100dvh - 68px - env(safe-area-inset-top));
+}
+
 .optionGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -667,6 +678,35 @@
     radial-gradient(circle at top left, rgba(22, 83, 64, 0.04), transparent 36%),
     linear-gradient(180deg, #ffffff 0%, #f7fafb 100%);
   box-shadow: 0 10px 24px rgba(16, 28, 45, 0.035), inset 0 1px 0 rgba(255, 255, 255, 0.94);
+}
+
+.dealerDetailsCard {
+  display: grid;
+  gap: 0.28rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--brand-light-border);
+  border-radius: 1rem;
+  background: var(--brand-light);
+  color: var(--brand-dark);
+}
+
+.dealerDetailsCard span {
+  color: var(--brand-mid);
+  font-size: 0.75rem;
+  font-weight: 850;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+.dealerDetailsCard strong {
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.dealerDetailsCard small {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 680;
 }
 
 .uploadPanel h3 {
