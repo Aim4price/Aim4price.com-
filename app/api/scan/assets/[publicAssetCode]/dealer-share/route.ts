@@ -6,7 +6,6 @@ import {
 } from '../../../../../../lib/scan-auth';
 import { normalizePublicAssetCode } from '../../../../../../lib/scan-assets';
 import {
-  assertAssetHasOpenMaintenance,
   grantDealerMaintenanceTracking,
   listOwnerDealerMaintenanceAccess,
   revokeDealerMaintenanceTracking,
@@ -100,6 +99,7 @@ function readPermissions(value: unknown): DealerMaintenancePermissions | null {
   const keys = [
     'canViewLoggedProblems',
     'canViewMaintenanceReports',
+    'canCreateMaintenanceSchedules',
     'canUpdateSerial',
     'canUpdateReplacementPrice',
   ] as const;
@@ -107,6 +107,7 @@ function readPermissions(value: unknown): DealerMaintenancePermissions | null {
   return {
     canViewLoggedProblems: permissions.canViewLoggedProblems as boolean,
     canViewMaintenanceReports: permissions.canViewMaintenanceReports as boolean,
+    canCreateMaintenanceSchedules: permissions.canCreateMaintenanceSchedules as boolean,
     canUpdateSerial: permissions.canUpdateSerial as boolean,
     canUpdateReplacementPrice: permissions.canUpdateReplacementPrice as boolean,
   };
@@ -196,10 +197,6 @@ export async function POST(request: NextRequest, context: RouteContext) {
   }
 
   try {
-    if (trackMaintenance) {
-      await assertAssetHasOpenMaintenance(access.ownerUserId, access.asset.id);
-    }
-
     const ownerMessageAttachments = buildOwnerMessagePhotoAttachments(sharePhotoUrls);
     const lead = await createAssetLead({
       ownerUserId: access.ownerUserId,
@@ -264,13 +261,6 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
     if (error instanceof Error && error.message === 'PARTNER_NOT_FOUND') {
       return NextResponse.json({ ok: false, error: 'Selected dealer could not be found.' }, { status: 404 });
-    }
-
-    if (error instanceof Error && error.message === 'OPEN_MAINTENANCE_REQUIRED') {
-      return NextResponse.json(
-        { ok: false, error: 'Create an open maintenance schedule before adding this asset to the dealer tracker.' },
-        { status: 400 },
-      );
     }
 
     console.error('scan dealer-share POST failed', error);
