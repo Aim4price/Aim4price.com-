@@ -121,6 +121,20 @@ function trackingAssetMeta(asset: DealerMaintenanceTrackedAsset): string {
   ].join(' • ');
 }
 
+function trackingDeleteAssetMeta(asset: DealerMaintenanceTrackedAsset): string {
+  const details: string[] = [];
+  const usage = formatUsage(asset.currentUsage, asset.usageMetric);
+  const condition = asset.condition?.trim();
+
+  if (usage !== 'Not recorded') details.push(usage);
+  if (condition) {
+    const conditionLabel = `${condition.charAt(0).toUpperCase()}${condition.slice(1)}`;
+    details.push(/condition$/i.test(conditionLabel) ? conditionLabel : `${conditionLabel} condition`);
+  }
+
+  return details.length ? details.join(' · ') : 'Shared maintenance tracking';
+}
+
 function cleanPhoneForTel(value: string): string {
   const trimmed = value.trim();
   if (!trimmed) return '';
@@ -1151,12 +1165,12 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
               <div className={`${assetStyles.deleteConfirmAsset} ${leadStyles.leadDeleteSummary}`}>
                 <span>Selected tracking</span>
                 <strong>{deleteTrackingTarget.ownerName}</strong>
-                <small>{deleteTrackingTarget.assetTitle} · {trackingAssetMeta(deleteTrackingTarget)}</small>
+                <small>{deleteTrackingTarget.assetTitle} · {trackingDeleteAssetMeta(deleteTrackingTarget)}</small>
               </div>
 
               <div className={leadStyles.leadDeleteWarning}>
-                <strong>Tracking access will stop immediately.</strong>
-                <span>The owner’s saved maintenance records will not be deleted and the asset can be shared with you again later.</span>
+                <strong>Maintenance tracking access will stop.</strong>
+                <span>The owner’s records stay saved and they can share this asset with you again.</span>
               </div>
 
               <div className={`${assetStyles.deleteConfirmActions} ${workspaceStyles.modalFooter} ${leadStyles.leadDeleteActions}`}>
