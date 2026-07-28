@@ -29,7 +29,6 @@ export default async function LeadsPage() {
       dealerWorkspaceMode={profile.accountType === "dealer"}
       initialLeads={initialLeads}
       initialSessionUserId={session.user.id}
-      initialAccountTitle={profile.businessName || profile.displayName || profile.name || session.user.name}
     />
   );
 }

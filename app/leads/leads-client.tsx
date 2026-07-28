@@ -152,17 +152,6 @@ type SessionResponse = {
   } | null;
 };
 
-type AccountProfileResponse = {
-  ok: boolean;
-  profile?: {
-    businessName: string;
-    displayName: string;
-    name: string;
-    email: string;
-  };
-  error?: string;
-};
-
 const MONTH_OPTIONS = [
   { value: 'all', label: 'All months' },
   { value: '0', label: 'January' },
@@ -559,11 +548,6 @@ function leadDateParts(lead: AssetLead): { month: string; year: string } | null 
 
 function asText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
-}
-
-function formatInboxTitle(value: unknown): string {
-  const title = asText(value);
-  return title || 'your dealership';
 }
 
 function asNumber(value: unknown): number | null {
@@ -1436,7 +1420,6 @@ type LeadsClientProps = {
   dealerWorkspaceMode?: boolean;
   initialLeads?: AssetLead[];
   initialSessionUserId?: string;
-  initialAccountTitle?: string;
 };
 
 export default function LeadsClient({
@@ -1444,16 +1427,12 @@ export default function LeadsClient({
   dealerWorkspaceMode,
   initialLeads = [],
   initialSessionUserId = '',
-  initialAccountTitle = '',
 }: LeadsClientProps = {}) {
   const useDealerWorkspaceStyles = dealerWorkspaceMode ?? dealerAppMode;
   const dealerWorkspaceClass = (...classNames: string[]) =>
     useDealerWorkspaceStyles ? classNames.join(' ') : '';
   const [sessionUserId, setSessionUserId] = useState(initialSessionUserId);
   const [leads, setLeads] = useState<AssetLead[]>(initialLeads);
-  const [accountInboxTitle, setAccountInboxTitle] = useState(() =>
-    initialAccountTitle ? formatInboxTitle(initialAccountTitle) : 'your dealership',
-  );
   const [statusFilter, setStatusFilter] = useState<LeadStatusFilter>('all');
   const [monthFilter, setMonthFilter] = useState('all');
   const [yearFilter, setYearFilter] = useState('all');
@@ -1593,15 +1572,13 @@ export default function LeadsClient({
         return true;
       }
 
-      const [sessionResponse, leadsResponse, profileResponse] = await Promise.all([
+      const [sessionResponse, leadsResponse] = await Promise.all([
         fetch('/api/me', { cache: 'no-store', credentials: 'include' }),
         fetch('/api/asset-leads', { cache: 'no-store', credentials: 'include' }),
-        fetch('/api/account-profile', { cache: 'no-store', credentials: 'include' }),
       ]);
 
       const sessionData = (await sessionResponse.json()) as SessionResponse;
       const leadsData = (await leadsResponse.json()) as LeadsResponse;
-      const profileData = profileResponse.ok ? ((await profileResponse.json()) as AccountProfileResponse) : null;
 
       if (!sessionResponse.ok || !sessionData.signedIn || !sessionData.user) {
         throw new Error('You must be signed in.');
@@ -1611,11 +1588,7 @@ export default function LeadsClient({
         throw new Error(leadsData.error ?? 'Failed to load leads.');
       }
 
-      const profile = profileData?.profile;
-      const accountTitle = profile?.businessName || profile?.displayName || profile?.name || sessionData.user.name;
-
       setSessionUserId(sessionData.user.id);
-      setAccountInboxTitle(formatInboxTitle(accountTitle));
       setLeads(leadsData.leads);
       return true;
     } catch (error) {
@@ -2680,11 +2653,11 @@ export default function LeadsClient({
 
         <section className={`${assetStyles.registerPanel} ${styles.leadsRegisterPanel}`}>
           {useDealerWorkspaceStyles ? (
-            <WorkspaceTitlePanel title={dealerAppMode ? 'Leads' : accountInboxTitle} />
+            <WorkspaceTitlePanel title="LEAD MANAGEMENT" />
           ) : (
             <div className={`${assetStyles.registerHeader} ${styles.leadsRegisterHeader}`}>
               <div className={`${assetStyles.registerTitleBlock} ${styles.leadsHeroTitleBlock}`}>
-                <h1>{dealerAppMode ? 'Leads' : accountInboxTitle}</h1>
+                <h1>LEAD MANAGEMENT</h1>
               </div>
             </div>
           )}
