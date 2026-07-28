@@ -267,6 +267,15 @@ function DownloadIcon({ className }: IconProps) {
   );
 }
 
+function CostIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="5" y="3" width="14" height="18" rx="2" fill="none" stroke="currentColor" strokeWidth="2" />
+      <path d="M9 8h6M9 12h6M9 16h3" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function PdfIcon({ className }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
@@ -1950,6 +1959,12 @@ export default function LeadsClient({
     setMaintenanceScheduleLead(lead);
   }
 
+  function openDealerCost(lead: AssetLead) {
+    if (isFullRegisterLead(lead)) return;
+    setManagedLead(null);
+    window.location.href = `/dealer/costs?assetId=${encodeURIComponent(lead.assetRegisterItemId)}&add=1`;
+  }
+
   function closeLeadReportModal() {
     if (isDownloadingLeadReport) return;
     setReportLead(null);
@@ -3180,6 +3195,20 @@ export default function LeadsClient({
                       iconClassName={assetStyles.buttonIcon}
                       onSaved={handleDealerCorrectionSaved}
                     />
+                  ) : null}
+
+                  {dealerAppMode && !isFullRegisterLead(managedLead) ? (
+                    <button
+                      type="button"
+                      className={assetStyles.optionActionButton}
+                      onClick={() => openDealerCost(managedLead)}
+                    >
+                      <CostIcon className={assetStyles.buttonIcon} />
+                      <span>
+                        <strong>Add asset cost</strong>
+                        <small>Upload an invoice or enter a cost manually.</small>
+                      </span>
+                    </button>
                   ) : null}
                 </div>
               </div>
