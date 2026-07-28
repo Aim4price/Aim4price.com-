@@ -451,7 +451,7 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
           {selectedOption.leadType === 'replacement_quote' ? (
             <label className={styles.ownerTrackingChoice}>
               <input type="checkbox" checked={trackMaintenance} onChange={(event) => setTrackMaintenance(event.target.checked)} />
-              <span><strong>Add to dealer Maintenance Tracker</strong><small>Give this dealer read-only access to the asset&apos;s current usage and open maintenance schedules. Access ends when tracking is removed.</small></span>
+              <span><strong>Add to dealer Maintenance Tracker</strong><small>The dealer can download maintenance reports and create schedules. New schedules only enter your Asset Register after you approve them.</small></span>
             </label>
           ) : null}
           <div className={`${styles.ownerOptionsFooter} ${styles.ownerOptionsFooterSingle}`}>
@@ -470,7 +470,7 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
             <strong>Disclaimer and POPIA note</strong>
             <p>By sending this request, you allow Aim4price to share this selected asset, its saved valuation details and your saved business contact details with {partnerName(selectedPartner)}.</p>
             <p>This is a lead request only. It does not create a finance, insurance, valuation or sales agreement. The selected company may contact you outside Aim4price.</p>
-            {selectedOption.leadType === 'replacement_quote' && trackMaintenance ? <p>The dealer will also receive ongoing read-only access to this asset&apos;s current usage and open maintenance schedules.</p> : null}
+            {selectedOption.leadType === 'replacement_quote' && trackMaintenance ? <p>The dealer will receive ongoing Maintenance Tracker access, maintenance reports and permission to propose schedules for your approval.</p> : null}
           </div>
           <label className={styles.ownerConsentField}>
             <input type="checkbox" checked={consentAccepted} onChange={(event) => setConsentAccepted(event.target.checked)} />
