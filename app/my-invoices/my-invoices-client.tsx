@@ -107,6 +107,7 @@ type DealerDefaults = {
 
 type MyInvoicesClientProps = {
   dealerMode?: boolean;
+  showAppHeader?: boolean;
   initialAssetId?: string;
   initialOpenAdd?: boolean;
   initialDealerDefaults?: DealerDefaults;
@@ -699,11 +700,13 @@ function buildReportUrl(filters: InvoiceFilterState, format: ReportFormat, inclu
 
 export default function MyInvoicesClient({
   dealerMode = false,
+  showAppHeader,
   initialAssetId = '',
   initialOpenAdd = false,
   initialDealerDefaults = { supplierName: '', vatNumber: '', address: '' },
 }: MyInvoicesClientProps = {}) {
-  const apiRoot = dealerMode ? '/api/dealer/costs' : '/api/my-invoices';
+  const apiRoot = dealerMode ? '/api/dealer/cost' : '/api/my-invoices';
+  const shouldShowAppHeader = showAppHeader ?? !dealerMode;
   const [assets, setAssets] = useState<AssetOption[]>([]);
   const [invoices, setInvoices] = useState<InvoiceRecord[]>([]);
   const [availableYears, setAvailableYears] = useState<number[]>([]);
@@ -1304,7 +1307,7 @@ export default function MyInvoicesClient({
 
   return (
     <main className={`${styles.page} ${dealerMode ? styles.dealerCostsPage : ''}`}>
-      {!dealerMode ? <AppHeader active="none" /> : null}
+      {shouldShowAppHeader ? <AppHeader active={dealerMode ? 'cost' : 'none'} /> : null}
       <section className={styles.shell}>
         {notice ? <div className={`${styles.notice} ${styles[notice.tone === 'success' ? 'noticeSuccess' : 'noticeError']}`}>{notice.message}</div> : null}
 
