@@ -26,14 +26,23 @@ test('history access is rechecked before records are expanded', () => {
   assert.match(tracker, /This asset is no longer shared with your dealership/);
 });
 
-test('upcoming work and active problems remain outside collapsed history', () => {
+test('upcoming work is collapsed by default and remains outside maintenance history', () => {
   const upcomingIndex = tracker.indexOf('<h3>Upcoming maintenance</h3>');
   const problemsIndex = tracker.indexOf('<h3>Active problems and notes</h3>');
   const historyConditionalIndex = tracker.indexOf('{isMaintenanceOpen ? (');
   assert.ok(upcomingIndex > 0);
   assert.ok(problemsIndex > upcomingIndex);
   assert.ok(historyConditionalIndex > problemsIndex);
+  assert.match(tracker, /<details className=\{styles\.section\}>/);
+  assert.match(tracker, /<summary>/);
   assert.match(tracker, /View maintenance history/);
+});
+
+test('dealer tracker omits replacement pricing and owner-approved asset corrections', () => {
+  assert.doesNotMatch(tracker, /DealerAssetCorrectionEditor/);
+  assert.doesNotMatch(tracker, /assetReplacementPriceBubble/);
+  assert.doesNotMatch(tracker, /Owner-approved updates/);
+  assert.doesNotMatch(tracker, /Asset corrections/);
 });
 
 test('history supports text, record type and inclusive from/to date filters', () => {

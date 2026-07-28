@@ -21,6 +21,8 @@ test('new tracking shares enable reports and dealer schedule proposals without r
 });
 
 test('My Leads exposes the owner-style maintenance report and schedule creation action', () => {
+  assert.match(leads, /<WorkspaceTitlePanel title="LEAD MANAGEMENT" \/>/);
+  assert.match(leads, /<h1>LEAD MANAGEMENT<\/h1>/);
   assert.match(leads, /<strong>PDF reports<\/strong>/);
   assert.match(leads, /assetReportOptionsGrid/);
   assert.match(leads, /<strong>Download asset valuation<\/strong>/);
