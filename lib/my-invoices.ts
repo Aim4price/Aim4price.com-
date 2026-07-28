@@ -27,6 +27,9 @@ export type MyInvoiceDocument = {
   id: string;
   userId: string;
   assetId: string;
+  createdByDealerUserId: string;
+  createdByDealerStaffId: string;
+  createdByDisplayName: string;
   uploadId: string;
   uploadUrl: string;
   fileName: string;
@@ -63,6 +66,10 @@ export type MyInvoiceRecord = {
   assetUsageMetric: 'hours' | 'km' | 'percentage';
   assetCondition: string;
   assetValue: number;
+  ownerName: string;
+  createdByDealerUserId: string;
+  createdByDealerStaffId: string;
+  createdByDisplayName: string;
   invoiceDocumentId: string | null;
   document: MyInvoiceDocument | null;
   supplierName: string;
@@ -99,6 +106,7 @@ export type MyInvoiceListFilters = {
   year?: number | null;
   month?: number | null;
   includeFuelSlipCosts?: boolean;
+  createdByDealerUserId?: string | null;
 };
 
 export type MyInvoiceListResult = {
@@ -126,10 +134,19 @@ export type MyInvoiceDraftInput = {
   notes?: unknown;
 };
 
+export type MyInvoiceActorContext = {
+  dealerUserId?: string | null;
+  dealerStaffId?: string | null;
+  displayName?: string | null;
+};
+
 type MyInvoiceDocumentRow = {
   id: string;
   user_id: string;
   asset_register_item_id: string;
+  created_by_dealer_user_id: string | null;
+  created_by_dealer_staff_id: string | null;
+  created_by_display_name: string | null;
   upload_id: string | null;
   upload_url: string | null;
   file_name: string | null;
@@ -146,6 +163,9 @@ type MyInvoiceRow = {
   id: string;
   user_id: string;
   asset_register_item_id: string;
+  created_by_dealer_user_id: string | null;
+  created_by_dealer_staff_id: string | null;
+  created_by_display_name: string | null;
   invoice_document_id: string | null;
   supplier_name: string | null;
   invoice_number: string | null;
@@ -170,6 +190,7 @@ type MyInvoiceRow = {
   asset_selected_value: string | number | null;
   asset_selected_method: string | null;
   asset_specs_json: unknown;
+  owner_name: string | null;
 };
 
 type MyInvoiceBlockRow = {
@@ -473,7 +494,7 @@ function buildAssetMeta(asset: AssetRegisterItem): string {
   return parts.join(' • ') || assetCategoryLabel(asset);
 }
 
-function mapAssetOption(asset: AssetRegisterItem): MyInvoiceAssetOption {
+export function mapMyInvoiceAssetOption(asset: AssetRegisterItem): MyInvoiceAssetOption {
   const usageMetric = assetUsageMetric(asset);
   const categoryLabel = assetCategoryLabel(asset);
 
@@ -545,6 +566,9 @@ function mapDocumentRow(row: MyInvoiceDocumentRow | null | undefined): MyInvoice
     id: String(row.id),
     userId: asText(row.user_id),
     assetId: asText(row.asset_register_item_id),
+    createdByDealerUserId: asText(row.created_by_dealer_user_id),
+    createdByDealerStaffId: asText(row.created_by_dealer_staff_id),
+    createdByDisplayName: asText(row.created_by_display_name),
     uploadId,
     uploadUrl: asText(row.upload_url) || buildAssetRegisterUploadUrl(uploadId),
     fileName: asText(row.file_name),
@@ -590,6 +614,10 @@ function mapInvoiceRow(row: MyInvoiceRow, document: MyInvoiceDocument | null, bl
     assetUsageMetric,
     assetCondition: assetConditionLabel(asText(row.asset_condition)),
     assetValue,
+    ownerName: asText(row.owner_name),
+    createdByDealerUserId: asText(row.created_by_dealer_user_id),
+    createdByDealerStaffId: asText(row.created_by_dealer_staff_id),
+    createdByDisplayName: asText(row.created_by_display_name),
     invoiceDocumentId: asText(row.invoice_document_id) || null,
     document,
     supplierName: asText(row.supplier_name),
@@ -622,6 +650,9 @@ async function ensureMyInvoiceTablesOnce(): Promise<void> {
       id uuid primary key default gen_random_uuid(),
       user_id text not null,
       asset_register_item_id uuid not null references public.asset_register_items(id) on delete cascade,
+      created_by_dealer_user_id text,
+      created_by_dealer_staff_id text,
+      created_by_display_name text,
       upload_id text,
       upload_url text,
       file_name text,
@@ -640,6 +671,9 @@ async function ensureMyInvoiceTablesOnce(): Promise<void> {
       id uuid primary key default gen_random_uuid(),
       user_id text not null,
       asset_register_item_id uuid not null references public.asset_register_items(id) on delete cascade,
+      created_by_dealer_user_id text,
+      created_by_dealer_staff_id text,
+      created_by_display_name text,
       invoice_document_id uuid references public.asset_invoice_documents(id) on delete set null,
       supplier_name text,
       invoice_number text,
@@ -670,10 +704,25 @@ async function ensureMyInvoiceTablesOnce(): Promise<void> {
     )
   `);
 
+  await db.query(`
+    alter table public.asset_invoice_documents
+      add column if not exists created_by_dealer_user_id text,
+      add column if not exists created_by_dealer_staff_id text,
+      add column if not exists created_by_display_name text
+  `);
+  await db.query(`
+    alter table public.asset_invoices
+      add column if not exists created_by_dealer_user_id text,
+      add column if not exists created_by_dealer_staff_id text,
+      add column if not exists created_by_display_name text
+  `);
+
   await db.query(`create index if not exists asset_invoice_documents_user_id_idx on public.asset_invoice_documents (user_id)`);
   await db.query(`create index if not exists asset_invoice_documents_asset_register_item_id_idx on public.asset_invoice_documents (asset_register_item_id)`);
+  await db.query(`create index if not exists asset_invoice_documents_dealer_idx on public.asset_invoice_documents (created_by_dealer_user_id, created_at desc)`);
   await db.query(`create index if not exists asset_invoices_user_id_idx on public.asset_invoices (user_id)`);
   await db.query(`create index if not exists asset_invoices_asset_register_item_id_idx on public.asset_invoices (asset_register_item_id)`);
+  await db.query(`create index if not exists asset_invoices_dealer_idx on public.asset_invoices (created_by_dealer_user_id, created_at desc)`);
   await db.query(`create index if not exists asset_invoices_invoice_date_idx on public.asset_invoices (invoice_date)`);
   await db.query(`create index if not exists asset_invoices_invoice_number_idx on public.asset_invoices (invoice_number)`);
   await db.query(`create index if not exists asset_invoices_supplier_name_idx on public.asset_invoices (supplier_name)`);
@@ -709,7 +758,7 @@ export async function listMyInvoiceAssets(userId: string): Promise<MyInvoiceAsse
 
     for (const asset of assetGroups.flat()) {
       if (!assetOptionsById.has(asset.id)) {
-        assetOptionsById.set(asset.id, mapAssetOption(asset));
+        assetOptionsById.set(asset.id, mapMyInvoiceAssetOption(asset));
       }
     }
 
@@ -740,6 +789,11 @@ function buildInvoiceFilterClause(filters: MyInvoiceListFilters, values: unknown
 
   if (filters.includeFuelSlipCosts === false) {
     clauses.push(`coalesce(i.source, 'manual') <> 'fuel_slip'`);
+  }
+
+  if (filters.createdByDealerUserId) {
+    values.push(filters.createdByDealerUserId);
+    clauses.push(`i.created_by_dealer_user_id = $${values.length}`);
   }
 
   return clauses.join(' and ');
@@ -846,11 +900,14 @@ export async function listMyInvoices(userId: string, filters: MyInvoiceListFilte
           ''
         ) as asset_selected_value,
         nullif(coalesce(to_jsonb(ai)->>'selected_method', to_jsonb(ai)->>'method', to_jsonb(ai)->>'valuation_method'), '') as asset_selected_method,
-        coalesce(to_jsonb(ai)->'specs_json', '{}'::jsonb) as asset_specs_json
+        coalesce(to_jsonb(ai)->'specs_json', '{}'::jsonb) as asset_specs_json,
+        coalesce(nullif(owner.business_name, ''), nullif(owner.display_name, ''), 'Asset owner') as owner_name
       from public.asset_invoices i
       join public.asset_register_items ai
         on ai.id = i.asset_register_item_id
        and ai.user_id = i.user_id
+      left join public.account_profiles owner
+        on owner.user_id = i.user_id
       left join public.valuation_runs vr
         on vr.id::text = nullif(to_jsonb(ai)->>'valuation_run_id', '')
       left join public.equipment_models em
@@ -1030,6 +1087,7 @@ async function verifyInvoiceDocument(input: {
   userId: string;
   assetId: string;
   invoiceDocumentId: string | null;
+  actor?: MyInvoiceActorContext;
 }): Promise<void> {
   if (!input.invoiceDocumentId) return;
 
@@ -1040,9 +1098,10 @@ async function verifyInvoiceDocument(input: {
       where id = $1::uuid
         and user_id = $2
         and asset_register_item_id = $3::uuid
+        and ($4 = '' or created_by_dealer_user_id = $4)
       limit 1
     `,
-    [input.invoiceDocumentId, input.userId, input.assetId],
+    [input.invoiceDocumentId, input.userId, input.assetId, asText(input.actor?.dealerUserId)],
   );
 
   if (!result.rows[0]) {
@@ -1142,6 +1201,7 @@ export async function createInvoiceDocumentRecord(input: {
   contentType?: string | null;
   byteSize?: number | null;
   source?: MyInvoiceSource;
+  actor?: MyInvoiceActorContext;
 }): Promise<MyInvoiceDocument> {
   await ensureMyInvoiceTables();
   await verifyAssetBelongsToUser(input.userId, input.assetId);
@@ -1153,18 +1213,24 @@ export async function createInvoiceDocumentRecord(input: {
       insert into public.asset_invoice_documents (
         user_id,
         asset_register_item_id,
+        created_by_dealer_user_id,
+        created_by_dealer_staff_id,
+        created_by_display_name,
         upload_id,
         upload_url,
         file_name,
         content_type,
         byte_size,
         source
-      ) values ($1, $2::uuid, $3, $4, $5, $6, $7, $8)
+      ) values ($1, $2::uuid, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       returning *
     `,
     [
       input.userId,
       input.assetId,
+      asText(input.actor?.dealerUserId) || null,
+      asText(input.actor?.dealerStaffId) || null,
+      asText(input.actor?.displayName) || null,
       uploadId || null,
       uploadUrl || null,
       asText(input.fileName) || 'invoice-upload',
@@ -1199,8 +1265,21 @@ export async function getInvoiceDocument(userId: string, documentId: string): Pr
 export async function getInvoiceDocumentUpload(input: {
   userId: string;
   documentId: string;
+  dealerUserId?: string | null;
 }): Promise<{ document: MyInvoiceDocument; data: Buffer; contentType: string; fileName: string } | null> {
-  const document = await getInvoiceDocument(input.userId, input.documentId);
+  await ensureMyInvoiceTables();
+  const result = await getDb().query<MyInvoiceDocumentRow>(
+    `
+      select *
+      from public.asset_invoice_documents
+      where id = $1::uuid
+        and user_id = $2
+        and ($3 = '' or created_by_dealer_user_id = $3)
+      limit 1
+    `,
+    [input.documentId, input.userId, asText(input.dealerUserId)],
+  );
+  const document = mapDocumentRow(result.rows[0]);
   if (!document) return null;
 
   const upload = await getLegacyAssetRegisterUploadResponse(document.uploadId || document.uploadUrl);
@@ -1220,6 +1299,7 @@ export async function updateInvoiceDocumentExtraction(input: {
   rawText: string;
   status: MyInvoiceExtractionStatus;
   warnings: string[];
+  dealerUserId?: string | null;
 }): Promise<MyInvoiceDocument | null> {
   await ensureMyInvoiceTables();
 
@@ -1232,6 +1312,7 @@ export async function updateInvoiceDocumentExtraction(input: {
         extraction_warnings = $5::jsonb
       where id = $1::uuid
         and user_id = $2
+        and ($6 = '' or created_by_dealer_user_id = $6)
       returning *
     `,
     [
@@ -1240,13 +1321,18 @@ export async function updateInvoiceDocumentExtraction(input: {
       asLongText(input.rawText, 12000),
       input.status,
       JSON.stringify(input.warnings.slice(0, 12)),
+      asText(input.dealerUserId),
     ],
   );
 
   return mapDocumentRow(result.rows[0]);
 }
 
-export async function createMyInvoice(userId: string, input: MyInvoiceDraftInput): Promise<{
+export async function createMyInvoice(
+  userId: string,
+  input: MyInvoiceDraftInput,
+  actor: MyInvoiceActorContext = {},
+): Promise<{
   invoice: MyInvoiceRecord | null;
   duplicateWarnings: string[];
 }> {
@@ -1254,7 +1340,7 @@ export async function createMyInvoice(userId: string, input: MyInvoiceDraftInput
 
   const draft = normalizeInvoiceDraft(input);
   await verifyAssetBelongsToUser(userId, draft.assetId);
-  await verifyInvoiceDocument({ userId, assetId: draft.assetId, invoiceDocumentId: draft.invoiceDocumentId });
+  await verifyInvoiceDocument({ userId, assetId: draft.assetId, invoiceDocumentId: draft.invoiceDocumentId, actor });
   const duplicateWarnings = await findDuplicateInvoiceWarnings(userId, input);
   const blocks = buildBlocksFromDraft(draft);
   const client = await getDb().connect();
@@ -1266,6 +1352,9 @@ export async function createMyInvoice(userId: string, input: MyInvoiceDraftInput
         insert into public.asset_invoices (
           user_id,
           asset_register_item_id,
+          created_by_dealer_user_id,
+          created_by_dealer_staff_id,
+          created_by_display_name,
           invoice_document_id,
           supplier_name,
           invoice_number,
@@ -1277,12 +1366,15 @@ export async function createMyInvoice(userId: string, input: MyInvoiceDraftInput
           usage_metric,
           source,
           notes
-        ) values ($1, $2::uuid, $3::uuid, $4, $5, $6::date, $7, $8, $9, $10, $11, $12, $13)
+        ) values ($1, $2::uuid, $3, $4, $5, $6::uuid, $7, $8, $9::date, $10, $11, $12, $13, $14, $15, $16)
         returning id
       `,
       [
         userId,
         draft.assetId,
+        asText(actor.dealerUserId) || null,
+        asText(actor.dealerStaffId) || null,
+        asText(actor.displayName) || null,
         draft.invoiceDocumentId,
         draft.supplierName || null,
         draft.invoiceNumber || null,
@@ -1315,7 +1407,12 @@ export async function createMyInvoice(userId: string, input: MyInvoiceDraftInput
   }
 }
 
-export async function updateMyInvoice(userId: string, invoiceId: string, input: MyInvoiceDraftInput): Promise<{
+export async function updateMyInvoice(
+  userId: string,
+  invoiceId: string,
+  input: MyInvoiceDraftInput,
+  actor: MyInvoiceActorContext = {},
+): Promise<{
   invoice: MyInvoiceRecord | null;
   duplicateWarnings: string[];
 }> {
@@ -1325,10 +1422,13 @@ export async function updateMyInvoice(userId: string, invoiceId: string, input: 
   if (!existing) {
     throw new Error('INVOICE_NOT_FOUND');
   }
+  if (actor.dealerUserId && existing.createdByDealerUserId !== asText(actor.dealerUserId)) {
+    throw new Error('INVOICE_NOT_FOUND');
+  }
 
   const draft = normalizeInvoiceDraft({ ...input, assetId: input.assetId ?? existing.assetId });
   await verifyAssetBelongsToUser(userId, draft.assetId);
-  await verifyInvoiceDocument({ userId, assetId: draft.assetId, invoiceDocumentId: draft.invoiceDocumentId });
+  await verifyInvoiceDocument({ userId, assetId: draft.assetId, invoiceDocumentId: draft.invoiceDocumentId, actor });
   const duplicateWarnings = await findDuplicateInvoiceWarnings(userId, { ...input, assetId: draft.assetId }, invoiceId);
   const blocks = buildBlocksFromDraft(draft);
   const client = await getDb().connect();
@@ -1354,6 +1454,7 @@ export async function updateMyInvoice(userId: string, invoiceId: string, input: 
           updated_at = now()
         where id = $1::uuid
           and user_id = $2
+          and ($15 = '' or created_by_dealer_user_id = $15)
         returning id
       `,
       [
@@ -1371,6 +1472,7 @@ export async function updateMyInvoice(userId: string, invoiceId: string, input: 
         draft.usageMetric,
         draft.source,
         draft.notes || null,
+        asText(actor.dealerUserId),
       ],
     );
 
@@ -1401,6 +1503,26 @@ export async function deleteMyInvoice(userId: string, invoiceId: string): Promis
         and user_id = $2
     `,
     [invoiceId, userId],
+  );
+
+  return (result.rowCount ?? 0) > 0;
+}
+
+export async function deleteDealerMyInvoice(
+  userId: string,
+  invoiceId: string,
+  dealerUserId: string,
+): Promise<boolean> {
+  await ensureMyInvoiceTables();
+
+  const result = await getDb().query(
+    `
+      delete from public.asset_invoices
+      where id = $1::uuid
+        and user_id = $2
+        and created_by_dealer_user_id = $3
+    `,
+    [invoiceId, userId, dealerUserId],
   );
 
   return (result.rowCount ?? 0) > 0;
