@@ -17,6 +17,10 @@ import {
   listOwnerAssetCorrectionAlerts,
   type DealerAssetCorrectionRequest,
 } from './dealer-asset-corrections';
+import {
+  listPendingOwnerDealerMaintenanceScheduleProposals,
+  type DealerMaintenanceScheduleProposal,
+} from './dealer-maintenance-tracker';
 
 export type HeaderNotificationCategory =
   | 'partner_note'
@@ -24,6 +28,7 @@ export type HeaderNotificationCategory =
   | 'qr_scan'
   | 'fuel'
   | 'maintenance'
+  | 'dealer_schedule'
   | 'dealer_correction'
   | 'asset_discovery';
 
@@ -41,6 +46,7 @@ export type HeaderNotificationItem = {
   assetDiscoveryEnquiryId?: string;
   dealerAssetCorrectionId?: string;
   dealerAssetCorrectionAction?: 'decision' | 'retry' | 'pending';
+  dealerMaintenanceScheduleProposalId?: string;
   priority?: boolean;
 };
 
@@ -286,6 +292,28 @@ function maintenanceDueText(record: AssetMaintenanceRecord): string {
   return 'Open the schedule to review its next due target.';
 }
 
+function proposedScheduleDueText(proposal: DealerMaintenanceScheduleProposal): string {
+  if (proposal.triggerType === 'date' && proposal.dueDate) {
+    const dueDate = new Date(`${proposal.dueDate.slice(0, 10)}T00:00:00Z`);
+    const label = new Intl.DateTimeFormat('en-ZA', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      timeZone: 'UTC',
+    }).format(dueDate);
+    return `Due ${label}.`;
+  }
+  if (proposal.triggerType === 'usage' && proposal.dueUsage !== null) {
+    const unit = proposal.usageMetric === 'km'
+      ? 'km'
+      : proposal.usageMetric === 'percentage'
+        ? '%'
+        : 'hours';
+    return `Due at ${new Intl.NumberFormat('en-ZA', { maximumFractionDigits: 2 }).format(proposal.dueUsage)} ${unit}.`;
+  }
+  return 'Open the proposal to review its due target.';
+}
+
 function correctionActor(correction: DealerAssetCorrectionRequest): string {
   const dealerName = asText(correction.dealerName) || 'the dealer';
   const actorName = asText(correction.actorName);
@@ -360,6 +388,27 @@ async function listOwnerDealerAssetCorrectionNotifications(userId: string): Prom
     });
   } catch (error) {
     console.error('Failed to load dealer asset correction notifications', error);
+    return [];
+  }
+}
+
+async function listOwnerDealerMaintenanceScheduleNotifications(userId: string): Promise<HeaderNotificationItem[]> {
+  try {
+    const proposals = await listPendingOwnerDealerMaintenanceScheduleProposals(userId);
+    return proposals.map((proposal) => ({
+      id: `dealer-maintenance-schedule:${proposal.id}:${proposal.updatedAtIso}`,
+      category: 'dealer_schedule',
+      tone: 'warning',
+      title: 'Dealer proposed a maintenance schedule',
+      body: `${proposal.dealerName} proposed ${proposal.title} for ${proposal.assetTitle}. ${proposedScheduleDueText(proposal)}`,
+      href: '',
+      createdAtIso: proposal.createdAtIso,
+      assetId: proposal.assetId,
+      dealerMaintenanceScheduleProposalId: proposal.id,
+      priority: true,
+    } satisfies HeaderNotificationItem));
+  } catch (error) {
+    console.error('Failed to load dealer maintenance schedule notifications', error);
     return [];
   }
 }
@@ -657,6 +706,7 @@ export async function listHeaderNotifications(input: ListHeaderNotificationsInpu
   const notificationGroups = accountType === 'owner'
     ? await Promise.all([
         listOwnerDealerAssetCorrectionNotifications(input.userId),
+        listOwnerDealerMaintenanceScheduleNotifications(input.userId),
         listOpenPartnerNoteNotifications(input.userId),
         listOwnerLeadNotifications(input.userId),
         listOwnerAssetDiscoveryNotifications(input.userId),

@@ -8,9 +8,11 @@ import {
   type AssetMaintenanceListFilters,
   type AssetMaintenanceListResult,
   type AssetMaintenanceComputedStatus,
+  type AssetMaintenanceIntervalUnit,
   type AssetMaintenanceRecord,
   type AssetMaintenanceStatus,
   type AssetMaintenanceTriggerType,
+  type AssetMaintenanceType,
   type AssetMaintenanceUsageMetric,
 } from './asset-maintenance';
 import {
@@ -34,8 +36,56 @@ export type DealerMaintenanceTrackerStatus =
 export type DealerMaintenancePermissions = {
   canViewLoggedProblems: boolean;
   canViewMaintenanceReports: boolean;
+  canCreateMaintenanceSchedules: boolean;
   canUpdateSerial: boolean;
   canUpdateReplacementPrice: boolean;
+};
+
+export type DealerMaintenanceScheduleProposalStatus = 'pending' | 'approved' | 'declined';
+
+export type DealerMaintenanceScheduleProposal = {
+  id: string;
+  accessId: string;
+  ownerUserId: string;
+  dealerUserId: string;
+  assetId: string;
+  leadId: string | null;
+  assetTitle: string;
+  dealerName: string;
+  status: DealerMaintenanceScheduleProposalStatus;
+  maintenanceType: AssetMaintenanceType;
+  triggerType: AssetMaintenanceTriggerType;
+  title: string;
+  notes: string;
+  dueDate: string | null;
+  dueUsage: number | null;
+  usageMetric: AssetMaintenanceUsageMetric | null;
+  alertBeforeValue: number | null;
+  alertBeforeUnit: AssetMaintenanceIntervalUnit | null;
+  recurringEnabled: boolean;
+  recurringIntervalValue: number | null;
+  recurringIntervalUnit: AssetMaintenanceIntervalUnit | null;
+  createdMaintenanceRecordId: string | null;
+  createdAtIso: string;
+  updatedAtIso: string;
+  decidedAtIso: string | null;
+};
+
+export type DealerMaintenanceScheduleProposalInput = {
+  accessId?: unknown;
+  leadId?: unknown;
+  maintenanceType?: unknown;
+  triggerType?: unknown;
+  title?: unknown;
+  notes?: unknown;
+  dueDate?: unknown;
+  dueUsage?: unknown;
+  usageMetric?: unknown;
+  alertBeforeValue?: unknown;
+  alertBeforeUnit?: unknown;
+  recurringEnabled?: unknown;
+  recurringIntervalValue?: unknown;
+  recurringIntervalUnit?: unknown;
 };
 
 export type DealerMaintenanceLeadAccess = {
@@ -102,6 +152,7 @@ export type DealerMaintenanceTrackedAsset = {
   completedMaintenanceRecords: DealerMaintenanceRecordSummary[];
   maintenanceRecords: DealerMaintenanceRecordSummary[];
   loggedProblems: AssetIssueNoteStatus[];
+  scheduleProposals: DealerMaintenanceScheduleProposal[];
   permissions: DealerMaintenancePermissions;
   grantedByName: string;
   createdAtIso: string;
@@ -139,6 +190,7 @@ type DealerMaintenanceAccessRow = {
   updated_at: string | Date | null;
   can_view_logged_problems: boolean | null;
   can_view_maintenance_reports: boolean | null;
+  can_create_maintenance_schedules: boolean | null;
   can_update_serial: boolean | null;
   can_update_replacement_price: boolean | null;
   owner_display_name: string | null;
@@ -159,7 +211,37 @@ type DealerMaintenanceNotificationRow = {
   created_at: string | Date | null;
 };
 
+type DealerMaintenanceScheduleProposalRow = {
+  id: string;
+  access_id: string;
+  owner_user_id: string;
+  dealer_user_id: string;
+  asset_register_item_id: string;
+  lead_id: string | null;
+  proposal_status: string | null;
+  maintenance_type: string | null;
+  trigger_type: string | null;
+  title: string | null;
+  notes: string | null;
+  due_date: string | Date | null;
+  due_usage: string | number | null;
+  usage_metric: string | null;
+  alert_before_value: string | number | null;
+  alert_before_unit: string | null;
+  recurring_enabled: boolean | null;
+  recurring_interval_value: string | number | null;
+  recurring_interval_unit: string | null;
+  created_maintenance_record_id: string | null;
+  created_at: string | Date | null;
+  updated_at: string | Date | null;
+  decided_at: string | Date | null;
+  asset_title: string | null;
+  dealer_display_name: string | null;
+  dealer_business_name: string | null;
+};
+
 let dealerMaintenanceTablesPromise: Promise<void> | null = null;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function asText(value: unknown): string {
   return String(value ?? '').replace(/\s+/g, ' ').trim();
@@ -169,6 +251,73 @@ function iso(value: string | Date | null | undefined): string {
   if (!value) return new Date().toISOString();
   const parsed = value instanceof Date ? value : new Date(value);
   return Number.isNaN(parsed.getTime()) ? new Date().toISOString() : parsed.toISOString();
+}
+
+function optionalIso(value: string | Date | null | undefined): string | null {
+  return value ? iso(value) : null;
+}
+
+function finiteNumber(value: unknown): number | null {
+  if (value === null || typeof value === 'undefined' || value === '') return null;
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
+function nonNegativeNumber(value: unknown): number | null {
+  const numeric = finiteNumber(value);
+  return numeric !== null && numeric >= 0 ? numeric : null;
+}
+
+function positiveNumber(value: unknown): number | null {
+  const numeric = finiteNumber(value);
+  return numeric !== null && numeric > 0 ? numeric : null;
+}
+
+function dateOnly(value: unknown): string | null {
+  const text = asText(value);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return null;
+  const parsed = new Date(`${text}T00:00:00Z`);
+  return Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== text ? null : text;
+}
+
+function storedDateOnly(value: string | Date | null | undefined): string | null {
+  if (!value) return null;
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  return dateOnly(String(value).slice(0, 10));
+}
+
+function normalizeProposalMaintenanceType(value: unknown): AssetMaintenanceType {
+  return asText(value).toLowerCase() === 'checkup' ? 'checkup' : 'service';
+}
+
+function normalizeProposalTriggerType(value: unknown): AssetMaintenanceTriggerType {
+  return asText(value).toLowerCase() === 'usage' ? 'usage' : 'date';
+}
+
+function normalizeProposalUsageMetric(
+  value: unknown,
+  fallback: AssetMaintenanceUsageMetric,
+): AssetMaintenanceUsageMetric {
+  const normalized = asText(value).toLowerCase();
+  if (normalized === 'km' || normalized === 'percentage' || normalized === 'hours') return normalized;
+  return fallback;
+}
+
+function normalizeProposalIntervalUnit(
+  value: unknown,
+  fallback: AssetMaintenanceIntervalUnit,
+): AssetMaintenanceIntervalUnit {
+  const normalized = asText(value).toLowerCase();
+  if (['days', 'weeks', 'months', 'hours', 'km', 'percentage'].includes(normalized)) {
+    return normalized as AssetMaintenanceIntervalUnit;
+  }
+  return fallback;
+}
+
+function normalizeProposalStatus(value: unknown): DealerMaintenanceScheduleProposalStatus {
+  const normalized = asText(value).toLowerCase();
+  if (normalized === 'approved' || normalized === 'declined') return normalized;
+  return 'pending';
 }
 
 function trackerStatus(record: AssetMaintenanceRecord): DealerMaintenanceTrackerStatus {
@@ -232,6 +381,7 @@ function rowPermissions(row: DealerMaintenanceAccessRow): DealerMaintenancePermi
   return {
     canViewLoggedProblems: Boolean(row.can_view_logged_problems),
     canViewMaintenanceReports: Boolean(row.can_view_maintenance_reports),
+    canCreateMaintenanceSchedules: row.can_create_maintenance_schedules !== false,
     canUpdateSerial: row.can_update_serial !== false,
     canUpdateReplacementPrice: row.can_update_replacement_price !== false,
   };
@@ -290,8 +440,52 @@ async function ensureDealerMaintenanceTablesOnce(): Promise<void> {
     alter table public.dealer_maintenance_access
       add column if not exists can_view_logged_problems boolean not null default false,
       add column if not exists can_view_maintenance_reports boolean not null default false,
+      add column if not exists can_create_maintenance_schedules boolean not null default true,
       add column if not exists can_update_serial boolean not null default true,
       add column if not exists can_update_replacement_price boolean not null default true
+  `);
+  await db.query(`
+    alter table public.dealer_maintenance_access
+      alter column can_view_maintenance_reports set default true,
+      alter column can_create_maintenance_schedules set default true
+  `);
+  await db.query(`
+    create table if not exists public.dealer_maintenance_schedule_proposals (
+      id uuid primary key default gen_random_uuid(),
+      access_id uuid not null references public.dealer_maintenance_access(id) on delete cascade,
+      owner_user_id text not null,
+      dealer_user_id text not null,
+      asset_register_item_id uuid not null references public.asset_register_items(id) on delete cascade,
+      lead_id uuid,
+      proposal_status text not null default 'pending'
+        check (proposal_status in ('pending', 'approved', 'declined')),
+      maintenance_type text not null
+        check (maintenance_type in ('service', 'checkup')),
+      trigger_type text not null
+        check (trigger_type in ('date', 'usage')),
+      title text not null default '',
+      notes text not null default '',
+      due_date date,
+      due_usage numeric,
+      usage_metric text,
+      alert_before_value numeric,
+      alert_before_unit text,
+      recurring_enabled boolean not null default false,
+      recurring_interval_value numeric,
+      recurring_interval_unit text,
+      created_maintenance_record_id uuid references public.asset_maintenance_records(id) on delete set null,
+      decided_at timestamptz,
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now()
+    )
+  `);
+  await db.query(`
+    create index if not exists dealer_maintenance_schedule_proposals_dealer_idx
+      on public.dealer_maintenance_schedule_proposals (dealer_user_id, access_id, created_at desc)
+  `);
+  await db.query(`
+    create index if not exists dealer_maintenance_schedule_proposals_owner_pending_idx
+      on public.dealer_maintenance_schedule_proposals (owner_user_id, proposal_status, created_at desc)
   `);
   await db.query(`
     create table if not exists public.dealer_maintenance_notifications (
@@ -338,6 +532,7 @@ async function listAccessRows(whereSql: string, values: unknown[]): Promise<Deal
         access.updated_at,
         access.can_view_logged_problems,
         access.can_view_maintenance_reports,
+        access.can_create_maintenance_schedules,
         access.can_update_serial,
         access.can_update_replacement_price,
         owner.display_name as owner_display_name,
@@ -379,13 +574,6 @@ export async function listActiveDealerMaintenanceLeadAccess(input: {
     }));
 }
 
-export async function assertAssetHasOpenMaintenance(ownerUserId: string, assetId: string): Promise<void> {
-  const records = await listAssetMaintenanceRecords(ownerUserId, { assetId, status: 'upcoming' });
-  if (!records.some((record) => record.assetId === assetId && record.status === 'upcoming')) {
-    throw new Error('OPEN_MAINTENANCE_REQUIRED');
-  }
-}
-
 export async function grantDealerMaintenanceTracking(input: {
   ownerUserId: string;
   dealerUserId: string;
@@ -401,7 +589,6 @@ export async function grantDealerMaintenanceTracking(input: {
   ]);
   if (!asset) throw new Error('ASSET_NOT_FOUND');
   if (dealer.accountType !== 'dealer' || dealer.accountStatus !== 'active') throw new Error('DEALER_NOT_FOUND');
-  await assertAssetHasOpenMaintenance(input.ownerUserId, input.assetId);
 
   const result = await getDb().query<{ id: string }>(
     `
@@ -412,17 +599,21 @@ export async function grantDealerMaintenanceTracking(input: {
         granted_by_actor_type,
         granted_by_actor_id,
         granted_by_name,
+        can_view_maintenance_reports,
+        can_create_maintenance_schedules,
         is_active,
         revoked_at,
         created_at,
         updated_at
       )
-      values ($1, $2, $3::uuid, $4, $5, $6, true, null, now(), now())
+      values ($1, $2, $3::uuid, $4, $5, $6, true, true, true, null, now(), now())
       on conflict (owner_user_id, dealer_user_id, asset_register_item_id)
       do update set
         granted_by_actor_type = excluded.granted_by_actor_type,
         granted_by_actor_id = excluded.granted_by_actor_id,
         granted_by_name = excluded.granted_by_name,
+        can_view_maintenance_reports = excluded.can_view_maintenance_reports,
+        can_create_maintenance_schedules = excluded.can_create_maintenance_schedules,
         is_active = true,
         revoked_at = null,
         updated_at = now()
@@ -473,8 +664,9 @@ export async function updateDealerMaintenancePermissions(input: {
       set
         can_view_logged_problems = $4,
         can_view_maintenance_reports = $5,
-        can_update_serial = $6,
-        can_update_replacement_price = $7,
+        can_create_maintenance_schedules = $6,
+        can_update_serial = $7,
+        can_update_replacement_price = $8,
         updated_at = now()
       where owner_user_id = $1
         and asset_register_item_id = $2::uuid
@@ -487,6 +679,7 @@ export async function updateDealerMaintenancePermissions(input: {
       input.accessId,
       input.permissions.canViewLoggedProblems,
       input.permissions.canViewMaintenanceReports,
+      input.permissions.canCreateMaintenanceSchedules,
       input.permissions.canUpdateSerial,
       input.permissions.canUpdateReplacementPrice,
     ],
@@ -523,12 +716,384 @@ export async function revokeDealerMaintenanceTracking(input: {
   return Boolean(result.rowCount);
 }
 
+function proposalSelectSql(whereSql: string): string {
+  return `
+    select
+      proposal.id::text,
+      proposal.access_id::text,
+      proposal.owner_user_id,
+      proposal.dealer_user_id,
+      proposal.asset_register_item_id::text,
+      proposal.lead_id::text,
+      proposal.proposal_status,
+      proposal.maintenance_type,
+      proposal.trigger_type,
+      proposal.title,
+      proposal.notes,
+      proposal.due_date,
+      proposal.due_usage,
+      proposal.usage_metric,
+      proposal.alert_before_value,
+      proposal.alert_before_unit,
+      proposal.recurring_enabled,
+      proposal.recurring_interval_value,
+      proposal.recurring_interval_unit,
+      proposal.created_maintenance_record_id::text,
+      proposal.created_at,
+      proposal.updated_at,
+      proposal.decided_at,
+      asset.title as asset_title,
+      dealer.display_name as dealer_display_name,
+      dealer.business_name as dealer_business_name
+    from public.dealer_maintenance_schedule_proposals proposal
+    inner join public.dealer_maintenance_access access on access.id = proposal.access_id
+    inner join public.asset_register_items asset on asset.id = proposal.asset_register_item_id
+    left join public.account_profiles dealer on dealer.user_id = proposal.dealer_user_id
+    ${whereSql}
+  `;
+}
+
+function mapScheduleProposal(row: DealerMaintenanceScheduleProposalRow): DealerMaintenanceScheduleProposal {
+  const usageMetric = asText(row.usage_metric).toLowerCase();
+  const alertBeforeUnit = asText(row.alert_before_unit).toLowerCase();
+  const recurringIntervalUnit = asText(row.recurring_interval_unit).toLowerCase();
+  return {
+    id: row.id,
+    accessId: row.access_id,
+    ownerUserId: row.owner_user_id,
+    dealerUserId: row.dealer_user_id,
+    assetId: row.asset_register_item_id,
+    leadId: row.lead_id,
+    assetTitle: asText(row.asset_title) || 'Tracked asset',
+    dealerName: asText(row.dealer_business_name) || asText(row.dealer_display_name) || 'Dealer',
+    status: normalizeProposalStatus(row.proposal_status),
+    maintenanceType: normalizeProposalMaintenanceType(row.maintenance_type),
+    triggerType: normalizeProposalTriggerType(row.trigger_type),
+    title: asText(row.title) || (row.maintenance_type === 'checkup' ? 'Scheduled checkup' : 'Scheduled service'),
+    notes: asText(row.notes),
+    dueDate: storedDateOnly(row.due_date),
+    dueUsage: nonNegativeNumber(row.due_usage),
+    usageMetric: usageMetric === 'hours' || usageMetric === 'km' || usageMetric === 'percentage'
+      ? usageMetric
+      : null,
+    alertBeforeValue: nonNegativeNumber(row.alert_before_value),
+    alertBeforeUnit: ['days', 'weeks', 'months', 'hours', 'km', 'percentage'].includes(alertBeforeUnit)
+      ? alertBeforeUnit as AssetMaintenanceIntervalUnit
+      : null,
+    recurringEnabled: Boolean(row.recurring_enabled),
+    recurringIntervalValue: positiveNumber(row.recurring_interval_value),
+    recurringIntervalUnit: ['days', 'weeks', 'months', 'hours', 'km', 'percentage'].includes(recurringIntervalUnit)
+      ? recurringIntervalUnit as AssetMaintenanceIntervalUnit
+      : null,
+    createdMaintenanceRecordId: row.created_maintenance_record_id,
+    createdAtIso: iso(row.created_at),
+    updatedAtIso: iso(row.updated_at),
+    decidedAtIso: optionalIso(row.decided_at),
+  };
+}
+
+export async function listDealerMaintenanceScheduleProposals(input: {
+  dealerUserId: string;
+  accessId?: string | null;
+}): Promise<DealerMaintenanceScheduleProposal[]> {
+  await ensureDealerMaintenanceTrackerTables();
+  const accessId = asText(input.accessId);
+  if (accessId && !UUID_PATTERN.test(accessId)) return [];
+  const result = await getDb().query<DealerMaintenanceScheduleProposalRow>(
+    `
+      ${proposalSelectSql(`
+        where proposal.dealer_user_id = $1
+          and access.dealer_user_id = $1
+          and access.is_active = true
+          and ($2 = '' or proposal.access_id = nullif($2, '')::uuid)
+      `)}
+      order by proposal.created_at desc, proposal.id desc
+      limit 100
+    `,
+    [input.dealerUserId, accessId],
+  );
+  return result.rows.map(mapScheduleProposal);
+}
+
+export async function listPendingOwnerDealerMaintenanceScheduleProposals(
+  ownerUserId: string,
+): Promise<DealerMaintenanceScheduleProposal[]> {
+  await ensureDealerMaintenanceTrackerTables();
+  const result = await getDb().query<DealerMaintenanceScheduleProposalRow>(
+    `
+      ${proposalSelectSql(`
+        where proposal.owner_user_id = $1
+          and proposal.proposal_status = 'pending'
+          and access.owner_user_id = $1
+          and access.is_active = true
+      `)}
+      order by proposal.created_at desc, proposal.id desc
+      limit 50
+    `,
+    [ownerUserId],
+  );
+  return result.rows.map(mapScheduleProposal);
+}
+
+export async function createDealerMaintenanceScheduleProposal(input: {
+  dealerUserId: string;
+  draft: DealerMaintenanceScheduleProposalInput;
+}): Promise<DealerMaintenanceScheduleProposal> {
+  await ensureDealerMaintenanceTrackerTables();
+  const accessId = asText(input.draft.accessId);
+  const leadId = asText(input.draft.leadId);
+  if (!UUID_PATTERN.test(accessId) || (leadId && !UUID_PATTERN.test(leadId))) {
+    throw new Error('TRACKING_ACCESS_NOT_FOUND');
+  }
+
+  const accessRows = await listAccessRows(
+    'where access.dealer_user_id = $1 and access.id = $2::uuid and access.is_active = true',
+    [input.dealerUserId, accessId],
+  );
+  const access = accessRows[0];
+  if (!access) throw new Error('TRACKING_ACCESS_NOT_FOUND');
+  if (!rowPermissions(access).canCreateMaintenanceSchedules) {
+    throw new Error('MAINTENANCE_SCHEDULE_PERMISSION_REQUIRED');
+  }
+
+  if (leadId) {
+    const leadResult = await getDb().query<{ id: string }>(
+      `
+        select id::text
+        from public.asset_leads
+        where id = $1::uuid
+          and owner_user_id = $2
+          and partner_user_id = $3
+          and asset_register_item_id = $4::uuid
+        limit 1
+      `,
+      [leadId, access.owner_user_id, input.dealerUserId, access.asset_register_item_id],
+    );
+    if (!leadResult.rows[0]) throw new Error('LEAD_NOT_FOUND');
+  }
+
+  const asset = await getAssetRegisterItemById(access.owner_user_id, access.asset_register_item_id);
+  if (!asset) throw new Error('ASSET_NOT_FOUND');
+
+  const maintenanceType = normalizeProposalMaintenanceType(input.draft.maintenanceType);
+  const triggerType = normalizeProposalTriggerType(input.draft.triggerType);
+  const defaultUsageMetric = assetUsageMetric(asset);
+  const usageMetric = triggerType === 'usage'
+    ? normalizeProposalUsageMetric(input.draft.usageMetric, defaultUsageMetric)
+    : null;
+  const dueDate = triggerType === 'date' ? dateOnly(input.draft.dueDate) : null;
+  const dueUsage = triggerType === 'usage' ? nonNegativeNumber(input.draft.dueUsage) : null;
+  if (triggerType === 'date' && !dueDate) throw new Error('DUE_DATE_REQUIRED');
+  if (triggerType === 'usage' && dueUsage === null) throw new Error('DUE_USAGE_REQUIRED');
+
+  const defaultAlertUnit: AssetMaintenanceIntervalUnit = triggerType === 'date'
+    ? 'days'
+    : usageMetric ?? defaultUsageMetric;
+  const alertBeforeValue = nonNegativeNumber(input.draft.alertBeforeValue)
+    ?? (triggerType === 'date' ? 7 : usageMetric === 'km' ? 1000 : usageMetric === 'percentage' ? 5 : 20);
+  const alertBeforeUnit = normalizeProposalIntervalUnit(input.draft.alertBeforeUnit, defaultAlertUnit);
+  const recurringEnabled = input.draft.recurringEnabled === true;
+  const recurringIntervalValue = recurringEnabled
+    ? positiveNumber(input.draft.recurringIntervalValue)
+    : null;
+  if (recurringEnabled && recurringIntervalValue === null) {
+    throw new Error('RECURRING_INTERVAL_REQUIRED');
+  }
+  const recurringFallbackUnit: AssetMaintenanceIntervalUnit = triggerType === 'date'
+    ? 'months'
+    : usageMetric ?? defaultUsageMetric;
+  const recurringIntervalUnit = recurringEnabled
+    ? normalizeProposalIntervalUnit(input.draft.recurringIntervalUnit, recurringFallbackUnit)
+    : null;
+  const title = asText(input.draft.title).slice(0, 180)
+    || (maintenanceType === 'checkup' ? 'Scheduled checkup' : 'Scheduled service');
+  const notes = asText(input.draft.notes).slice(0, 4000);
+
+  const result = await getDb().query<{ id: string }>(
+    `
+      insert into public.dealer_maintenance_schedule_proposals (
+        access_id,
+        owner_user_id,
+        dealer_user_id,
+        asset_register_item_id,
+        lead_id,
+        proposal_status,
+        maintenance_type,
+        trigger_type,
+        title,
+        notes,
+        due_date,
+        due_usage,
+        usage_metric,
+        alert_before_value,
+        alert_before_unit,
+        recurring_enabled,
+        recurring_interval_value,
+        recurring_interval_unit,
+        created_at,
+        updated_at
+      )
+      values (
+        $1::uuid, $2, $3, $4::uuid, $5::uuid, 'pending', $6, $7, $8, $9,
+        $10::date, $11, $12, $13, $14, $15, $16, $17, now(), now()
+      )
+      returning id::text
+    `,
+    [
+      accessId,
+      access.owner_user_id,
+      input.dealerUserId,
+      access.asset_register_item_id,
+      leadId || null,
+      maintenanceType,
+      triggerType,
+      title,
+      notes,
+      dueDate,
+      dueUsage,
+      usageMetric,
+      alertBeforeValue,
+      alertBeforeUnit,
+      recurringEnabled,
+      recurringIntervalValue,
+      recurringIntervalUnit,
+    ],
+  );
+  const proposalId = result.rows[0]?.id;
+  const proposals = await listDealerMaintenanceScheduleProposals({
+    dealerUserId: input.dealerUserId,
+    accessId,
+  });
+  const proposal = proposals.find((entry) => entry.id === proposalId);
+  if (!proposal) throw new Error('MAINTENANCE_PROPOSAL_NOT_FOUND');
+  return proposal;
+}
+
+export async function resolveDealerMaintenanceScheduleProposal(input: {
+  ownerUserId: string;
+  proposalId: string;
+  decision: 'approve' | 'decline';
+}): Promise<DealerMaintenanceScheduleProposal> {
+  await ensureDealerMaintenanceTrackerTables();
+  if (!UUID_PATTERN.test(input.proposalId)) throw new Error('MAINTENANCE_PROPOSAL_NOT_FOUND');
+  const client = await getDb().connect();
+  try {
+    await client.query('begin');
+    const currentResult = await client.query<DealerMaintenanceScheduleProposalRow>(
+      `
+        ${proposalSelectSql(`
+          where proposal.id = $1::uuid
+            and proposal.owner_user_id = $2
+            and access.owner_user_id = $2
+            and access.is_active = true
+        `)}
+        limit 1
+        for update of proposal
+      `,
+      [input.proposalId, input.ownerUserId],
+    );
+    const currentRow = currentResult.rows[0];
+    if (!currentRow) throw new Error('MAINTENANCE_PROPOSAL_NOT_FOUND');
+    if (normalizeProposalStatus(currentRow.proposal_status) !== 'pending') {
+      throw new Error('MAINTENANCE_PROPOSAL_ALREADY_RESOLVED');
+    }
+
+    let maintenanceRecordId: string | null = null;
+    if (input.decision === 'approve') {
+      const recordResult = await client.query<{ id: string }>(
+        `
+          insert into public.asset_maintenance_records (
+            user_id,
+            asset_register_item_id,
+            maintenance_type,
+            trigger_type,
+            status,
+            title,
+            notes,
+            assigned_field_manager_id,
+            assigned_name,
+            due_date,
+            due_usage,
+            usage_metric,
+            alert_before_value,
+            alert_before_unit,
+            recurring_enabled,
+            recurring_interval_value,
+            recurring_interval_unit,
+            created_at,
+            updated_at
+          )
+          values (
+            $1, $2::uuid, $3, $4, 'upcoming', $5, $6, null, '',
+            $7::date, $8, $9, $10, $11, $12, $13, $14, now(), now()
+          )
+          returning id::text
+        `,
+        [
+          input.ownerUserId,
+          currentRow.asset_register_item_id,
+          normalizeProposalMaintenanceType(currentRow.maintenance_type),
+          normalizeProposalTriggerType(currentRow.trigger_type),
+          asText(currentRow.title),
+          asText(currentRow.notes),
+          storedDateOnly(currentRow.due_date),
+          nonNegativeNumber(currentRow.due_usage),
+          asText(currentRow.usage_metric) || null,
+          nonNegativeNumber(currentRow.alert_before_value),
+          asText(currentRow.alert_before_unit) || null,
+          Boolean(currentRow.recurring_enabled),
+          positiveNumber(currentRow.recurring_interval_value),
+          asText(currentRow.recurring_interval_unit) || null,
+        ],
+      );
+      maintenanceRecordId = recordResult.rows[0]?.id ?? null;
+      if (!maintenanceRecordId) throw new Error('MAINTENANCE_NOT_CREATED');
+    }
+
+    const nextStatus: DealerMaintenanceScheduleProposalStatus = input.decision === 'approve'
+      ? 'approved'
+      : 'declined';
+    await client.query(
+      `
+        update public.dealer_maintenance_schedule_proposals
+        set
+          proposal_status = $3,
+          created_maintenance_record_id = $4::uuid,
+          decided_at = now(),
+          updated_at = now()
+        where id = $1::uuid
+          and owner_user_id = $2
+          and proposal_status = 'pending'
+      `,
+      [input.proposalId, input.ownerUserId, nextStatus, maintenanceRecordId],
+    );
+    await client.query('commit');
+
+    return mapScheduleProposal({
+      ...currentRow,
+      proposal_status: nextStatus,
+      created_maintenance_record_id: maintenanceRecordId,
+      decided_at: new Date(),
+      updated_at: new Date(),
+    });
+  } catch (error) {
+    await client.query('rollback');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 async function buildTrackedAsset(row: DealerMaintenanceAccessRow): Promise<DealerMaintenanceTrackedAsset | null> {
   const permissions = rowPermissions(row);
-  const [asset, records] = await Promise.all([
+  const [asset, records, scheduleProposals] = await Promise.all([
     getAssetRegisterItemById(row.owner_user_id, row.asset_register_item_id),
     listAssetMaintenanceRecords(row.owner_user_id, {
       assetId: row.asset_register_item_id,
+    }),
+    listDealerMaintenanceScheduleProposals({
+      dealerUserId: row.dealer_user_id,
+      accessId: row.id,
     }),
   ]);
   if (!asset) return null;
@@ -588,6 +1153,7 @@ async function buildTrackedAsset(row: DealerMaintenanceAccessRow): Promise<Deale
     completedMaintenanceRecords: completedSummaries,
     maintenanceRecords: [...openSummaries, ...completedSummaries],
     loggedProblems,
+    scheduleProposals,
     permissions,
     grantedByName: asText(row.granted_by_name),
     createdAtIso: iso(row.created_at),
