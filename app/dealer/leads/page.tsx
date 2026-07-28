@@ -30,7 +30,6 @@ export default async function DealerLeadsPage() {
         dealerAppMode
         initialLeads={initialLeads}
         initialSessionUserId={session.user.id}
-        initialAccountTitle={profile.businessName || profile.displayName || profile.name || session.user.name}
       />
     </div>
   );
