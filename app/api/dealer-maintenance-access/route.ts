@@ -17,6 +17,7 @@ function readPermissions(value: unknown): DealerMaintenancePermissions | null {
   const keys = [
     'canViewLoggedProblems',
     'canViewMaintenanceReports',
+    'canCreateMaintenanceSchedules',
     'canUpdateSerial',
     'canUpdateReplacementPrice',
   ] as const;
@@ -24,6 +25,7 @@ function readPermissions(value: unknown): DealerMaintenancePermissions | null {
   return {
     canViewLoggedProblems: permissions.canViewLoggedProblems as boolean,
     canViewMaintenanceReports: permissions.canViewMaintenanceReports as boolean,
+    canCreateMaintenanceSchedules: permissions.canCreateMaintenanceSchedules as boolean,
     canUpdateSerial: permissions.canUpdateSerial as boolean,
     canUpdateReplacementPrice: permissions.canUpdateReplacementPrice as boolean,
   };
