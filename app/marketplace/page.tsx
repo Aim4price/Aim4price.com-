@@ -8,6 +8,7 @@ import {
   type MarketplacePageProps,
 } from './marketplace-browse-page';
 import valuationStyles from '../valuation/page.module.css';
+import entryStyles from './marketplace-entry.module.css';
 
 type SearchParamValue = string | string[] | undefined;
 
@@ -72,22 +73,31 @@ export default async function MarketplaceEntryPage({
     <main className={valuationStyles.page}>
       <AppHeader active="marketplace" />
 
-      <div className={valuationStyles.container}>
-        <section className={`${valuationStyles.wizardShell} ${valuationStyles.sectorWizardShell}`}>
-          <div className={`${valuationStyles.wizardCard} ${valuationStyles.sectorWizardCard}`}>
-            <div className={`${valuationStyles.stepContent} ${valuationStyles.sectorStepContent}`}>
-              <div className={valuationStyles.sectorStart}>
-                <div className={valuationStyles.sectorIntro}>
+      <div className={`${valuationStyles.container} ${entryStyles.entryContainer}`}>
+        <section
+          className={`${valuationStyles.wizardShell} ${valuationStyles.sectorWizardShell} ${entryStyles.entryShell}`}
+        >
+          <div
+            className={`${valuationStyles.wizardCard} ${valuationStyles.sectorWizardCard} ${entryStyles.entryCard}`}
+          >
+            <div
+              className={`${valuationStyles.stepContent} ${valuationStyles.sectorStepContent} ${entryStyles.entryContent}`}
+            >
+              <div className={`${valuationStyles.sectorStart} ${entryStyles.entryStart}`}>
+                <div className={`${valuationStyles.sectorIntro} ${entryStyles.entryIntro}`}>
                   <h1 className={valuationStyles.stepTitle}>Choose an option</h1>
                   <p className={valuationStyles.stepText}>
                     Choose where you want to go. Hover over a card to preview it.
                   </p>
                 </div>
 
-                <nav className={valuationStyles.sectorLargeGrid} aria-label="Marketplace choices">
+                <nav
+                  className={`${valuationStyles.sectorLargeGrid} ${entryStyles.entryGrid}`}
+                  aria-label="Marketplace choices"
+                >
                   <Link
                     href="/asset-discovery"
-                    className={`${valuationStyles.sectorBigCard} ${valuationStyles.sectorBigCardLive}`}
+                    className={`${valuationStyles.sectorBigCard} ${valuationStyles.sectorBigCardLive} ${entryStyles.entryChoiceCard}`}
                     style={{ textDecoration: 'none' }}
                     aria-label="Open Discovery"
                   >
@@ -104,11 +114,9 @@ export default async function MarketplaceEntryPage({
 
                     <span className={valuationStyles.sectorVideoOverlay} />
 
-                    <span className={valuationStyles.sectorBigCardContent}>
-                      <span className={valuationStyles.sectorCardTopRow}>
-                        <span className={valuationStyles.liveBadge}>Live now</span>
-                      </span>
-
+                    <span
+                      className={`${valuationStyles.sectorBigCardContent} ${entryStyles.entryChoiceContent}`}
+                    >
                       <span className={valuationStyles.sectorLabelWrap}>
                         <strong className={valuationStyles.sectorLabel}>Discovery</strong>
                         <span className={valuationStyles.sectorCardHint}>Discover assets</span>
@@ -118,7 +126,7 @@ export default async function MarketplaceEntryPage({
 
                   <Link
                     href="/marketplace/browse"
-                    className={`${valuationStyles.sectorBigCard} ${valuationStyles.sectorBigCardLive}`}
+                    className={`${valuationStyles.sectorBigCard} ${valuationStyles.sectorBigCardLive} ${entryStyles.entryChoiceCard}`}
                     style={{ textDecoration: 'none' }}
                     aria-label="Open Marketplace"
                   >
@@ -135,11 +143,9 @@ export default async function MarketplaceEntryPage({
 
                     <span className={valuationStyles.sectorVideoOverlay} />
 
-                    <span className={valuationStyles.sectorBigCardContent}>
-                      <span className={valuationStyles.sectorCardTopRow}>
-                        <span className={valuationStyles.liveBadge}>Live now</span>
-                      </span>
-
+                    <span
+                      className={`${valuationStyles.sectorBigCardContent} ${entryStyles.entryChoiceContent}`}
+                    >
                       <span className={valuationStyles.sectorLabelWrap}>
                         <strong className={valuationStyles.sectorLabel}>Marketplace</strong>
                         <span className={valuationStyles.sectorCardHint}>Browse assets for sale</span>

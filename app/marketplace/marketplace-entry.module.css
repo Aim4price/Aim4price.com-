@@ -227,3 +227,88 @@
     transition: none;
   }
 }
+
+/* Marketplace entry: align the discovery surface with the application header. */
+.entryContainer.entryContainer {
+  width: min(calc(100% - 3rem), 1360px);
+}
+
+.entryShell.entryShell,
+.entryCard.entryCard,
+.entryIntro.entryIntro,
+.entryGrid.entryGrid {
+  width: 100%;
+}
+
+.entryContent.entryContent {
+  padding: clamp(1.75rem, 2.5vw, 2.7rem);
+}
+
+.entryStart.entryStart {
+  gap: clamp(1.45rem, 2vw, 2rem);
+}
+
+.entryGrid.entryGrid {
+  gap: clamp(1.2rem, 1.8vw, 1.65rem);
+}
+
+.entryChoiceCard.entryChoiceCard {
+  min-height: clamp(19rem, 22vw, 21.5rem);
+}
+
+.entryChoiceContent.entryChoiceContent {
+  justify-content: flex-end;
+  padding: clamp(1.45rem, 2vw, 1.9rem);
+}
+
+@media (max-width: 1180px) {
+  .entryContainer.entryContainer {
+    width: min(calc(100% - 2rem), 1180px);
+  }
+
+  .entryChoiceCard.entryChoiceCard {
+    min-height: clamp(16rem, 25vw, 18rem);
+  }
+}
+
+@media (max-width: 900px) {
+  .entryContainer.entryContainer {
+    width: min(calc(100% - 1.4rem), 56rem);
+  }
+
+  .entryContent.entryContent {
+    padding: 1.35rem 1rem 1.2rem;
+  }
+
+  .entryChoiceCard.entryChoiceCard {
+    min-height: 14.5rem;
+  }
+}
+
+@media (max-width: 720px) {
+  .entryContainer.entryContainer {
+    width: min(calc(100% - 1rem), 46rem);
+  }
+
+  .entryContent.entryContent {
+    padding: 1rem 0.8rem;
+  }
+
+  .entryStart.entryStart {
+    gap: 1rem;
+  }
+
+  .entryGrid.entryGrid {
+    gap: 0.85rem;
+  }
+
+  .entryChoiceCard.entryChoiceCard {
+    min-height: 13.2rem;
+  }
+}
+
+@media (max-width: 430px) {
+  .entryContainer.entryContainer {
+    width: min(calc(100% - 0.9rem), 44rem);
+  }
+}
