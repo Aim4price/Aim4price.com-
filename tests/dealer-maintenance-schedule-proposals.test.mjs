@@ -12,6 +12,7 @@ const notifications = read('lib/notifications.ts');
 const ownerNotifications = read('app/owner-app/notifications/owner-notifications-client.tsx');
 const accessSettings = read('components/DealerMaintenanceAccessSettings.tsx');
 const ownerShare = read('app/asset-register/asset-register-client.tsx');
+const scheduleModal = read('components/DealerMaintenanceScheduleModal.tsx');
 
 test('new tracking shares enable reports and dealer schedule proposals without requiring an existing schedule', () => {
   assert.match(tracker, /can_view_maintenance_reports,\s*can_create_maintenance_schedules/);
@@ -20,10 +21,29 @@ test('new tracking shares enable reports and dealer schedule proposals without r
 });
 
 test('My Leads exposes the owner-style maintenance report and schedule creation action', () => {
-  assert.match(leads, />Download maintenance report</);
-  assert.match(leads, />Create maintenance schedule</);
+  assert.match(leads, /<strong>PDF reports<\/strong>/);
+  assert.match(leads, /assetReportOptionsGrid/);
+  assert.match(leads, /<strong>Download asset valuation<\/strong>/);
+  assert.match(leads, /<strong>Download maintenance report<\/strong>/);
+  assert.match(leads, /<strong>Send a proposed schedule<\/strong>/);
   assert.match(leads, /DealerMaintenanceReportModal/);
   assert.match(leads, /DealerMaintenanceScheduleModal/);
+});
+
+test('empty shared assets stay in My Leads until approved maintenance exists', () => {
+  assert.match(tracker, /hasMaintenanceRecords: Boolean\(row\.has_maintenance_records\)/);
+  assert.match(tracker, /asset !== null && asset\.maintenanceRecords\.length > 0/);
+  assert.match(leads, /lead\.maintenanceAccess\?\.hasMaintenanceRecords/);
+});
+
+test('dealer proposal wizard reuses the owner maintenance flow without the asset picker', () => {
+  assert.match(scheduleModal, /from '\.\.\/app\/maintenance\/page\.module\.css'/);
+  assert.match(scheduleModal, />What are you scheduling\?</);
+  assert.match(scheduleModal, />When should it be due\?</);
+  assert.match(scheduleModal, /maintenanceChoiceGrid/);
+  assert.match(scheduleModal, /maintenanceFieldGrid/);
+  assert.match(scheduleModal, /'Send proposal'/);
+  assert.doesNotMatch(scheduleModal, /Choose asset for maintenance/);
 });
 
 test('dealer proposal creation is bound to the active share, permission and exact lead asset', () => {
