@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession, isOwnerAppSession } from '../../../lib/auth-session';
 import {
-  assertAssetHasOpenMaintenance,
   grantDealerMaintenanceTracking,
 } from '../../../lib/dealer-maintenance-tracker';
 import { createAssetLead, listAssetLeadsForUser, normalizeLeadType } from '../../../lib/partner-access';
@@ -72,10 +71,6 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    if (trackMaintenance) {
-      await assertAssetHasOpenMaintenance(session.user.id, assetId);
-    }
-
     const lead = await createAssetLead({
       ownerUserId: session.user.id,
       ownerName: session.user.name,
@@ -109,13 +104,6 @@ export async function POST(request: NextRequest) {
 
     if (error instanceof Error && error.message === 'PARTNER_NOT_FOUND') {
       return NextResponse.json({ ok: false, error: 'Selected partner could not be found.' }, { status: 404 });
-    }
-
-    if (error instanceof Error && error.message === 'OPEN_MAINTENANCE_REQUIRED') {
-      return NextResponse.json(
-        { ok: false, error: 'Create an open maintenance schedule before adding this asset to the dealer tracker.' },
-        { status: 400 },
-      );
     }
 
     console.error('asset leads POST failed', error);
