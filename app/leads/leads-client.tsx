@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import AppHeader from '../../components/AppHeader';
 import DealerAssetCorrectionEditor from '../../components/DealerAssetCorrectionEditor';
 import DealerMaintenanceReportModal from '../../components/DealerMaintenanceReportModal';
+import DealerMaintenanceScheduleModal from '../../components/DealerMaintenanceScheduleModal';
 import {
   WorkspaceTitlePanel,
   workspaceStyles,
@@ -87,6 +88,7 @@ type AssetLead = {
     permissions: {
       canViewLoggedProblems: boolean;
       canViewMaintenanceReports: boolean;
+      canCreateMaintenanceSchedules: boolean;
       canUpdateSerial: boolean;
       canUpdateReplacementPrice: boolean;
     };
@@ -1460,6 +1462,7 @@ export default function LeadsClient({
   const [isEmailDraftCopied, setIsEmailDraftCopied] = useState(false);
   const [reportLead, setReportLead] = useState<AssetLead | null>(null);
   const [maintenanceReportAccessId, setMaintenanceReportAccessId] = useState<string | null>(null);
+  const [maintenanceScheduleLead, setMaintenanceScheduleLead] = useState<AssetLead | null>(null);
   const [leadReportStep, setLeadReportStep] = useState<LeadReportStep>('format');
   const [leadPdfReportSelection, setLeadPdfReportSelection] = useState<PdfReportKind | ''>('');
   const [isDownloadingLeadReport, setIsDownloadingLeadReport] = useState(false);
@@ -1640,6 +1643,7 @@ export default function LeadsClient({
     || emailLead
     || reportLead
     || maintenanceReportAccessId
+    || maintenanceScheduleLead
     || deleteLeadTarget
     || assetPhotoModal
     || sentPhotoModal
@@ -1687,6 +1691,7 @@ export default function LeadsClient({
       else if (sentPhotoModal) setSentPhotoModal(null);
       else if (deleteLeadTarget) setDeleteLeadTarget(null);
       else if (noteLead) closeNoteModal();
+      else if (maintenanceScheduleLead) setMaintenanceScheduleLead(null);
       else if (maintenanceReportAccessId) setMaintenanceReportAccessId(null);
       else if (reportLead) closeLeadReportModal();
       else if (emailLead) closeEmailModal();
@@ -1710,6 +1715,7 @@ export default function LeadsClient({
     isSavingNote,
     managedLead,
     maintenanceReportAccessId,
+    maintenanceScheduleLead,
     noteLead,
     reportLead,
     sentPhotoModal,
@@ -1935,6 +1941,34 @@ export default function LeadsClient({
     setLeadPdfReportSelection('');
     setManagedLead(null);
     void handleLeadPdfReportDownload(lead, 'full');
+  }
+
+  function openMaintenanceReport(lead: AssetLead) {
+    const access = lead.maintenanceAccess;
+    if (!access?.isActive) {
+      setNotice({ tone: 'error', message: 'This Maintenance Tracker share is no longer active.' });
+      return;
+    }
+    if (!access.permissions.canViewMaintenanceReports) {
+      setNotice({ tone: 'error', message: 'The asset owner has not enabled maintenance report access.' });
+      return;
+    }
+    setManagedLead(null);
+    setMaintenanceReportAccessId(access.accessId);
+  }
+
+  function openMaintenanceSchedule(lead: AssetLead) {
+    const access = lead.maintenanceAccess;
+    if (!access?.isActive) {
+      setNotice({ tone: 'error', message: 'This Maintenance Tracker share is no longer active.' });
+      return;
+    }
+    if (!access.permissions.canCreateMaintenanceSchedules) {
+      setNotice({ tone: 'error', message: 'The asset owner has not enabled dealer-created maintenance schedules.' });
+      return;
+    }
+    setManagedLead(null);
+    setMaintenanceScheduleLead(lead);
   }
 
   function closeLeadReportModal() {
@@ -2950,16 +2984,18 @@ export default function LeadsClient({
                                 <span>Send note or quote</span>
                               </button>
 
-                              {isTrackingLead(lead)
-                              && lead.maintenanceAccess?.isActive
-                              && lead.maintenanceAccess.permissions.canViewMaintenanceReports ? (
+                              {isTrackingLead(lead) && lead.maintenanceAccess?.isActive ? (
                                 <button
                                   type="button"
                                   className={`${assetStyles.optionsButton} ${styles.maintenanceReportButton}`}
-                                  onClick={() => setMaintenanceReportAccessId(lead.maintenanceAccess!.accessId)}
+                                  onClick={() => openMaintenanceReport(lead)}
+                                  disabled={!lead.maintenanceAccess.permissions.canViewMaintenanceReports}
+                                  title={!lead.maintenanceAccess.permissions.canViewMaintenanceReports
+                                    ? 'The asset owner has not enabled maintenance report access.'
+                                    : undefined}
                                 >
                                   <DownloadIcon className={assetStyles.buttonIcon} />
-                                  <span>Maintenance Report</span>
+                                  <span>Download maintenance report</span>
                                 </button>
                               ) : null}
 
@@ -3033,6 +3069,19 @@ export default function LeadsClient({
         <DealerMaintenanceReportModal
           accessId={maintenanceReportAccessId}
           onClose={() => setMaintenanceReportAccessId(null)}
+          onError={(message) => setNotice({ tone: 'error', message })}
+        />
+      ) : null}
+
+      {maintenanceScheduleLead?.maintenanceAccess?.isActive ? (
+        <DealerMaintenanceScheduleModal
+          accessId={maintenanceScheduleLead.maintenanceAccess.accessId}
+          leadId={maintenanceScheduleLead.id}
+          onClose={() => setMaintenanceScheduleLead(null)}
+          onCreated={() => setNotice({
+            tone: 'success',
+            message: 'Maintenance schedule sent to the owner for approval.',
+          })}
           onError={(message) => setNotice({ tone: 'error', message })}
         />
       ) : null}
@@ -3131,6 +3180,50 @@ export default function LeadsClient({
                       <small>Download a PDF report for this lead.</small>
                     </span>
                   </button>
+
+                  {isTrackingLead(managedLead) && managedLead.maintenanceAccess?.isActive ? (
+                    <>
+                      <button
+                        type="button"
+                        className={assetStyles.optionActionButton}
+                        onClick={() => openMaintenanceReport(managedLead)}
+                        disabled={!managedLead.maintenanceAccess.permissions.canViewMaintenanceReports}
+                        title={!managedLead.maintenanceAccess.permissions.canViewMaintenanceReports
+                          ? 'The asset owner has not enabled maintenance report access.'
+                          : undefined}
+                      >
+                        <DownloadIcon className={assetStyles.buttonIcon} />
+                        <span>
+                          <strong>Download maintenance report</strong>
+                          <small>
+                            {managedLead.maintenanceAccess.permissions.canViewMaintenanceReports
+                              ? 'Download the owner-style PDF or Excel maintenance report.'
+                              : 'Owner permission is required.'}
+                          </small>
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        className={assetStyles.optionActionButton}
+                        onClick={() => openMaintenanceSchedule(managedLead)}
+                        disabled={!managedLead.maintenanceAccess.permissions.canCreateMaintenanceSchedules}
+                        title={!managedLead.maintenanceAccess.permissions.canCreateMaintenanceSchedules
+                          ? 'The asset owner has not enabled dealer-created schedules.'
+                          : undefined}
+                      >
+                        <MaintenanceTrackingIcon className={assetStyles.buttonIcon} />
+                        <span>
+                          <strong>Create maintenance schedule</strong>
+                          <small>
+                            {managedLead.maintenanceAccess.permissions.canCreateMaintenanceSchedules
+                              ? 'Send a proposed schedule to the owner for approval.'
+                              : 'Owner permission is required.'}
+                          </small>
+                        </span>
+                      </button>
+                    </>
+                  ) : null}
 
                   <button
                     type="button"
