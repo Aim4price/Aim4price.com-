@@ -19,7 +19,7 @@
 }
 
 .trackerReportButton {
-  min-width: clamp(170px, 12.5vw, 205px) !important;
+  min-width: clamp(220px, 16vw, 265px) !important;
 }
 
 .trackerHeaderActions {
@@ -298,6 +298,102 @@
   font-size: 0.66rem;
 }
 
+.problemCard.problemCard {
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid #e9c9a6;
+  border-left: 4px solid #c77831;
+  border-radius: 0.78rem;
+  background: #fffaf4;
+}
+
+.problemCardResolved.problemCardResolved {
+  border-color: #c9ddd3;
+  border-left-color: #4b9271;
+  background: #f6fbf8;
+}
+
+.problemCard > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.78rem 0.85rem;
+  border-bottom: 1px solid rgba(216, 226, 222, 0.9);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.problemCard > header > div {
+  min-width: 0;
+  display: grid;
+  gap: 0.18rem;
+}
+
+.problemCard > header h4 {
+  margin: 0;
+  color: #123b31;
+  font-size: 0.88rem;
+  line-height: 1.35;
+}
+
+.problemCard > header > strong {
+  flex: 0 0 auto;
+  font-size: 0.67rem;
+  font-weight: 850;
+  line-height: 1.3;
+  text-transform: uppercase;
+}
+
+.problemOpen {
+  color: #9a5918;
+}
+
+.problemResolved {
+  color: #177047;
+}
+
+.problemCard > p {
+  margin: 0;
+  padding: 0.78rem 0.85rem 0;
+  color: #294c42;
+  font-size: 0.78rem;
+  font-weight: 650;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.problemMetaGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.58rem;
+  padding: 0.75rem 0.85rem 0.85rem;
+}
+
+.problemMetaGrid > div {
+  min-width: 0;
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.68rem 0.72rem;
+  border: 1px solid rgba(216, 226, 222, 0.92);
+  border-radius: 0.68rem;
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.problemMetaGrid span {
+  color: #687a73;
+  font-size: 0.62rem;
+  font-weight: 850;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+.problemMetaGrid strong {
+  color: #173f35;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
 .recordCard {
   overflow: hidden;
   border: 1px solid #dce5e2;
@@ -438,6 +534,16 @@
   padding: 0.9rem 1rem;
 }
 
+.historyToolbar {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  grid-template-columns: minmax(16rem, 1.8fr) minmax(11rem, 1fr) repeat(2, minmax(10rem, 0.8fr)) auto;
+  gap: 0.75rem;
+  align-items: end;
+  padding: 0.95rem 1rem 1rem;
+}
+
 .maintenanceSearchField {
   min-height: 3.15rem;
   display: grid;
@@ -493,6 +599,79 @@
   cursor: pointer;
 }
 
+.historyRecordTypeField {
+  position: relative;
+  min-width: 0;
+}
+
+.historyRecordTypeField > label {
+  min-width: 0;
+  display: grid;
+  gap: 0.48rem;
+}
+
+.historyRecordTypeField > label > span,
+.historyDateField > span {
+  color: #334b42;
+  font-size: 0.75rem;
+  font-weight: 780;
+  line-height: 1.25;
+  text-transform: none;
+}
+
+.historyRecordTypeField button {
+  min-height: 3.15rem;
+}
+
+.historyRecordTypeField [role="listbox"] {
+  left: 0;
+  right: 0;
+  z-index: 50;
+  max-height: min(13rem, calc(100dvh - 12rem));
+}
+
+.historyDateField {
+  min-width: 0;
+  display: grid;
+  gap: 0.48rem;
+}
+
+.historyDateField input {
+  width: 100%;
+  min-width: 0;
+  min-height: 3.15rem;
+  padding: 0 0.85rem;
+  border: 1px solid #ccdcd6;
+  border-radius: 0.95rem;
+  outline: 0;
+  color: #173f35;
+  background: #ffffff;
+  box-shadow: 0 8px 18px rgba(20, 59, 48, 0.045);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.historyDateField input:focus {
+  border-color: #68ad8c;
+  box-shadow:
+    0 0 0 3px rgba(34, 139, 96, 0.1),
+    0 10px 20px rgba(20, 59, 48, 0.06);
+}
+
+.historyClearButton {
+  min-width: 8.7rem;
+  min-height: 3.15rem !important;
+  border-radius: 0.95rem !important;
+  font-weight: 800 !important;
+}
+
+.historyResults {
+  display: grid;
+  gap: 0.82rem;
+  padding: 0 1rem 1rem;
+}
+
 .maintenanceSearchField > button:hover {
   color: #0a543d;
   background: #e1eee7;
@@ -506,6 +685,8 @@
 
 .trackerFilterModal.trackerFilterModal {
   width: min(calc(100vw - 2rem), 48rem) !important;
+  max-height: calc(100dvh - 2rem) !important;
+  overflow: visible !important;
 }
 
 .trackerFilterHeader {
@@ -519,6 +700,7 @@
 }
 
 .trackerFilterForm > label {
+  width: 100%;
   min-width: 0;
 }
 
@@ -533,6 +715,8 @@
 
 .trackerFilterActions > button {
   min-width: 10rem !important;
+  min-height: 3.18rem !important;
+  border-radius: 1rem !important;
 }
 
 .reportFilters {
@@ -563,6 +747,18 @@
 
   .assetOverview {
     grid-template-columns: 1fr;
+  }
+
+  .historyToolbar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .maintenanceSearchField {
+    grid-column: 1 / -1;
+  }
+
+  .historyClearButton {
+    width: 100%;
   }
 
   .statGrid,
@@ -596,10 +792,19 @@
   .photoPanel,
   .statGrid,
   .recordGrid,
+  .problemMetaGrid,
   .actionRow,
   .correctionGrid,
   .reportFilters {
     grid-template-columns: 1fr;
+  }
+
+  .historyToolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .maintenanceSearchField {
+    grid-column: auto;
   }
 
   .photoPanel img:first-child {
