@@ -254,7 +254,8 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.96);
 }
 
-.section > header {
+.section > header,
+.section > summary {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -264,12 +265,33 @@
   background: #fafcfb;
 }
 
-.section > header > div {
+.section > summary {
+  border-bottom: 0;
+  list-style: none;
+  cursor: pointer;
+}
+
+.section[open] > summary {
+  border-bottom: 1px solid #e3eae8;
+}
+
+.section > summary::-webkit-details-marker {
+  display: none;
+}
+
+.section > summary:focus-visible {
+  outline: 3px solid rgba(34, 139, 96, 0.18);
+  outline-offset: -3px;
+}
+
+.section > header > div,
+.section > summary > div {
   display: grid;
   gap: 0.2rem;
 }
 
-.section > header span {
+.section > header span,
+.section > summary span {
   color: #597269;
   font-size: 0.63rem;
   font-weight: 850;
@@ -277,15 +299,33 @@
   text-transform: uppercase;
 }
 
-.section > header h3 {
+.section > header h3,
+.section > summary h3 {
   margin: 0;
   color: #073b30;
   font-size: 1rem;
 }
 
-.section > header > strong {
+.section > header > strong,
+.section > summary > strong {
   color: #177047;
   font-size: 0.9rem;
+}
+
+.section > summary > strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sectionChevron {
+  width: 1rem;
+  height: 1rem;
+  transition: transform 160ms ease;
+}
+
+.section[open] .sectionChevron {
+  transform: rotate(180deg);
 }
 
 .correctionGrid {
@@ -846,6 +886,7 @@
   }
 
   .section > header,
+  .section > summary,
   .recordCard > header {
     align-items: flex-start;
   }

@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import DealerAssetCorrectionEditor from './DealerAssetCorrectionEditor';
 import DealerMaintenanceReportModal from './DealerMaintenanceReportModal';
 import DealerMaintenanceScheduleModal from './DealerMaintenanceScheduleModal';
 import LeadPhotoViewerModal from './LeadPhotoViewerModal';
@@ -109,11 +108,6 @@ function formatDate(value: string | null, includeTime = false): string {
     ...(includeTime ? { hour: '2-digit', minute: '2-digit' } : {}),
     timeZone: value.includes('T') ? 'Africa/Johannesburg' : 'UTC',
   }).format(parsed);
-}
-
-function formatCurrency(value: number | null): string {
-  if (value === null || !Number.isFinite(value)) return 'Not saved';
-  return new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR', maximumFractionDigits: 0 }).format(value);
 }
 
 function dueLabel(record: DealerMaintenanceRecordSummary, fallbackMetric: string): string {
@@ -589,17 +583,6 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
     });
   }
 
-  function syncCorrection(assetId: string, correction: NonNullable<DealerMaintenanceTrackedAsset['dealerCorrection']>) {
-    setAssets((current) => current.map((asset) => asset.assetId === assetId
-      ? {
-          ...asset,
-          dealerCorrection: correction,
-          serialNumber: correction.serialNumberChanged && correction.proposedSerialNumber ? correction.proposedSerialNumber : asset.serialNumber,
-          replacementPriceExVat: correction.replacementPriceChanged ? correction.proposedReplacementPriceExVat : asset.replacementPriceExVat,
-        }
-      : asset));
-  }
-
   return (
     <main className={`${assetStyles.page} ${workspaceStyles.page} ${leadStyles.leadsPage} ${leadStyles.dealerOwnerParity} ${styles.trackerPage} ${dealerAppMode ? styles.dealerApp : ''}`}>
       <section className={`${assetStyles.shell} ${workspaceStyles.shell}`}>
@@ -651,7 +634,6 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
           <div className={leadStyles.leadStack}>
             {filteredAssets.map((asset) => {
               const isOpen = openAccessId === asset.accessId;
-              const correctionVisible = asset.permissions.canUpdateSerial || asset.permissions.canUpdateReplacementPrice || Boolean(asset.dealerCorrection);
               const photoIndex = selectedPhotoIndex(asset);
               const activePhotoUrl = asset.photoUrls[photoIndex] ?? '';
               const hasMultiplePhotos = asset.photoUrls.length > 1;
@@ -866,21 +848,18 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                               <div className={assetStyles.assetDetailRow}><span>Shared by</span><strong>{asset.grantedByName || 'Asset owner'}</strong></div>
                             </div>
                           </div>
-
-                          <div className={assetStyles.assetReplacementPriceBubble}>
-                            <span>Replacement Price</span>
-                            <strong>{formatCurrency(asset.replacementPriceExVat)}</strong>
-                            <small>Excl. VAT</small>
-                          </div>
                         </div>
                       </div>
 
                       <div className={styles.trackerSections}>
-                        <section className={styles.section}>
-                          <header>
+                        <details className={styles.section}>
+                          <summary>
                             <div><span>Current schedule</span><h3>Upcoming maintenance</h3></div>
-                            <strong>{asset.openMaintenanceRecords.length}</strong>
-                          </header>
+                            <strong>
+                              {asset.openMaintenanceRecords.length}
+                              <ChevronDownIcon className={styles.sectionChevron} />
+                            </strong>
+                          </summary>
                           {asset.openMaintenanceRecords.length ? (
                             <div className={styles.recordList}>
                               {asset.openMaintenanceRecords.map((record) => (
@@ -890,7 +869,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                           ) : (
                             <div className={styles.sectionEmpty}>No upcoming maintenance is scheduled for this asset.</div>
                           )}
-                        </section>
+                        </details>
 
                         {asset.permissions.canViewLoggedProblems ? (
                           <section className={styles.section}>
@@ -920,25 +899,6 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                               {asset.scheduleProposals.map((proposal) => (
                                 <ProposalCard key={proposal.id} proposal={proposal} />
                               ))}
-                            </div>
-                          </section>
-                        ) : null}
-
-                        {correctionVisible ? (
-                          <section className={styles.section}>
-                            <header><div><span>Owner-approved updates</span><h3>Asset corrections</h3></div></header>
-                            <div className={styles.correctionGrid}>
-                              <DealerAssetCorrectionEditor
-                                assetTitle={asset.assetTitle}
-                                sourceType="maintenance"
-                                sourceId={asset.accessId}
-                                serialNumber={asset.serialNumber}
-                                replacementPriceExVat={asset.replacementPriceExVat}
-                                correction={asset.dealerCorrection}
-                                canUpdateSerial={asset.permissions.canUpdateSerial}
-                                canUpdateReplacementPrice={asset.permissions.canUpdateReplacementPrice}
-                                onSaved={(correction) => syncCorrection(asset.assetId, correction)}
-                              />
                             </div>
                           </section>
                         ) : null}
