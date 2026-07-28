@@ -2314,6 +2314,12 @@
   padding-inline: 0.92rem !important;
 }
 
+.leadAssetHeaderActions > .leadQuickActionButton {
+  min-width: 8.25rem !important;
+  padding-inline: 1rem !important;
+  white-space: nowrap;
+}
+
 @media (max-width: 980px) {
   .leadAssetHeader {
     grid-template-columns: 1fr !important;
@@ -3967,6 +3973,16 @@
 .trackingLeadActionsOpen {
   min-width: 28rem;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.trackingLeadActionsSingle.trackingLeadActionsClosed {
+  min-width: 9.5rem;
+  grid-template-columns: minmax(9.5rem, 1fr);
+}
+
+.trackingLeadActionsSingle.trackingLeadActionsOpen {
+  min-width: 20rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .trackingLeadActions > button {

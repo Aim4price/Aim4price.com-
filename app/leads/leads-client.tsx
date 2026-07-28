@@ -22,7 +22,6 @@ type NoticeTone = 'success' | 'error';
 type LeadStatusFilter = 'all' | 'new' | 'open' | 'completed' | 'tracking';
 type FilterDropdownKey = 'month' | 'year' | 'status';
 type AssetStatusChoice = 'yes' | 'no' | 'unknown' | 'not_applicable';
-type LeadReportStep = 'format' | 'pdf-report';
 type PdfReportKind = 'full' | 'financed' | 'insured' | 'licensed' | 'not-financed' | 'not-insured' | 'not-licensed';
 
 type PdfReportOption = {
@@ -85,6 +84,7 @@ type AssetLead = {
     dealerUserId: string;
     assetId: string;
     isActive: true;
+    hasMaintenanceRecords: boolean;
     permissions: {
       canViewLoggedProblems: boolean;
       canViewMaintenanceReports: boolean;
@@ -285,6 +285,16 @@ function PdfIcon({ className }: IconProps) {
       <path d="M14 3v5h5" />
       <path d="M9 15h6" />
       <path d="M9 18h5" />
+    </svg>
+  );
+}
+
+function DocumentIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <path d="M7 3h7l5 5v13H7z" />
+      <path d="M14 3v5h5" />
+      <path d="M10 13h6M10 17h6" />
     </svg>
   );
 }
@@ -1463,8 +1473,6 @@ export default function LeadsClient({
   const [reportLead, setReportLead] = useState<AssetLead | null>(null);
   const [maintenanceReportAccessId, setMaintenanceReportAccessId] = useState<string | null>(null);
   const [maintenanceScheduleLead, setMaintenanceScheduleLead] = useState<AssetLead | null>(null);
-  const [leadReportStep, setLeadReportStep] = useState<LeadReportStep>('format');
-  const [leadPdfReportSelection, setLeadPdfReportSelection] = useState<PdfReportKind | ''>('');
   const [isDownloadingLeadReport, setIsDownloadingLeadReport] = useState(false);
   const [noteLead, setNoteLead] = useState<AssetLead | null>(null);
   const [deleteLeadTarget, setDeleteLeadTarget] = useState<AssetLead | null>(null);
@@ -1936,11 +1944,8 @@ export default function LeadsClient({
 
   function openLeadReportModal(lead: AssetLead) {
     setNotice(null);
-    setReportLead(null);
-    setLeadReportStep('format');
-    setLeadPdfReportSelection('');
     setManagedLead(null);
-    void handleLeadPdfReportDownload(lead, 'full');
+    setReportLead(lead);
   }
 
   function openMaintenanceReport(lead: AssetLead) {
@@ -1954,6 +1959,7 @@ export default function LeadsClient({
       return;
     }
     setManagedLead(null);
+    setReportLead(null);
     setMaintenanceReportAccessId(access.accessId);
   }
 
@@ -1974,24 +1980,6 @@ export default function LeadsClient({
   function closeLeadReportModal() {
     if (isDownloadingLeadReport) return;
     setReportLead(null);
-    setLeadReportStep('format');
-    setLeadPdfReportSelection('');
-  }
-
-  function closeLeadPdfReportChooser() {
-    if (isDownloadingLeadReport) return;
-    setLeadReportStep('format');
-    setLeadPdfReportSelection('');
-  }
-
-  function handleLeadPdfReportSelectionChange(event: ChangeEvent<HTMLSelectElement>) {
-    if (!reportLead) return;
-
-    const nextReportKind = event.target.value;
-    if (!isPdfReportKind(nextReportKind)) return;
-
-    setLeadPdfReportSelection(nextReportKind);
-    void handleLeadPdfReportDownload(reportLead, nextReportKind);
   }
 
   async function handleLeadPdfReportDownload(lead: AssetLead, reportKind: PdfReportKind = 'full') {
@@ -2002,24 +1990,8 @@ export default function LeadsClient({
 
     if (didOpen) {
       setReportLead(null);
-      setLeadReportStep('format');
-      setLeadPdfReportSelection('');
       setNotice({ tone: 'success', message: `${reportOption.label} PDF opened.` });
-    } else {
-      setLeadPdfReportSelection('');
     }
-  }
-
-  async function handleConfirmLeadReportDownload() {
-    if (!reportLead || isDownloadingLeadReport) return;
-
-    if (isFullRegisterLead(reportLead)) {
-      setLeadReportStep('pdf-report');
-      setLeadPdfReportSelection('');
-      return;
-    }
-
-    await handleLeadPdfReportDownload(reportLead, 'full');
   }
 
   function resetLeadNoteDraft() {
@@ -2877,7 +2849,7 @@ export default function LeadsClient({
                               isTrackingRequest
                                 ? `${styles.trackingLeadActions} ${
                                     isLeadOpen ? styles.trackingLeadActionsOpen : styles.trackingLeadActionsClosed
-                                  }`
+                                  } ${lead.maintenanceAccess?.hasMaintenanceRecords ? '' : styles.trackingLeadActionsSingle}`
                                 : ''
                             }`}
                           >
@@ -2892,13 +2864,15 @@ export default function LeadsClient({
                                     Delete
                                   </button>
                                 ) : null}
-                                <button
-                                  type="button"
-                                  className={`${assetStyles.secondaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionNeutral}` : ''} ${styles.trackingOpenButton}`}
-                                  onClick={() => openTracking(lead)}
-                                >
-                                  Open tracking
-                                </button>
+                                {lead.maintenanceAccess?.hasMaintenanceRecords ? (
+                                  <button
+                                    type="button"
+                                    className={`${assetStyles.secondaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionNeutral}` : ''} ${styles.trackingOpenButton}`}
+                                    onClick={() => openTracking(lead)}
+                                  >
+                                    Tracking
+                                  </button>
+                                ) : null}
                                 <button
                                   type="button"
                                   className={`${assetStyles.primaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionGreen}` : ''} ${styles.openLeadButton}`}
@@ -2979,29 +2953,25 @@ export default function LeadsClient({
                             </div>
 
                             <div className={`${assetStyles.assetHeaderActions} ${styles.leadAssetHeaderActions}`}>
-                              <button type="button" className={`${assetStyles.optionsButton} ${assetStyles.sharedNoteActionButton}`} onClick={() => openNoteModal(lead)}>
+                              <button
+                                type="button"
+                                className={`${assetStyles.optionsButton} ${assetStyles.sharedNoteActionButton} ${styles.leadQuickActionButton}`}
+                                onClick={() => openNoteModal(lead)}
+                                title="Send a note or quote"
+                                aria-label="Send a note or quote"
+                              >
                                 <NoteIcon className={assetStyles.buttonIcon} />
-                                <span>Send note or quote</span>
+                                <span>Send</span>
                               </button>
 
-                              {isTrackingLead(lead) && lead.maintenanceAccess?.isActive ? (
-                                <button
-                                  type="button"
-                                  className={`${assetStyles.optionsButton} ${styles.maintenanceReportButton}`}
-                                  onClick={() => openMaintenanceReport(lead)}
-                                  disabled={!lead.maintenanceAccess.permissions.canViewMaintenanceReports}
-                                  title={!lead.maintenanceAccess.permissions.canViewMaintenanceReports
-                                    ? 'The asset owner has not enabled maintenance report access.'
-                                    : undefined}
-                                >
-                                  <DownloadIcon className={assetStyles.buttonIcon} />
-                                  <span>Download maintenance report</span>
-                                </button>
-                              ) : null}
-
-                              <button type="button" className={`${assetStyles.optionsButton} ${styles.leadManageButton}`} onClick={() => setManagedLead(lead)}>
+                              <button
+                                type="button"
+                                className={`${assetStyles.optionsButton} ${styles.leadManageButton} ${styles.leadQuickActionButton}`}
+                                onClick={() => setManagedLead(lead)}
+                                aria-label="Manage lead"
+                              >
                                 <ManageIcon className={assetStyles.buttonIcon} />
-                                <span>Lead actions</span>
+                                <span>Manage</span>
                               </button>
                             </div>
                           </div>
@@ -3080,7 +3050,7 @@ export default function LeadsClient({
           onClose={() => setMaintenanceScheduleLead(null)}
           onCreated={() => setNotice({
             tone: 'success',
-            message: 'Maintenance schedule sent to the owner for approval.',
+            message: 'Proposed schedule sent to the owner for approval.',
           })}
           onError={(message) => setNotice({ tone: 'error', message })}
         />
@@ -3176,53 +3146,31 @@ export default function LeadsClient({
                   <button type="button" className={assetStyles.optionActionButton} onClick={() => openLeadReportModal(managedLead)}>
                     <DownloadIcon className={assetStyles.buttonIcon} />
                     <span>
-                      <strong>Download Report</strong>
-                      <small>Download a PDF report for this lead.</small>
+                      <strong>PDF reports</strong>
+                      <small>Choose a valuation or maintenance report.</small>
                     </span>
                   </button>
 
                   {isTrackingLead(managedLead) && managedLead.maintenanceAccess?.isActive ? (
-                    <>
-                      <button
-                        type="button"
-                        className={assetStyles.optionActionButton}
-                        onClick={() => openMaintenanceReport(managedLead)}
-                        disabled={!managedLead.maintenanceAccess.permissions.canViewMaintenanceReports}
-                        title={!managedLead.maintenanceAccess.permissions.canViewMaintenanceReports
-                          ? 'The asset owner has not enabled maintenance report access.'
-                          : undefined}
-                      >
-                        <DownloadIcon className={assetStyles.buttonIcon} />
-                        <span>
-                          <strong>Download maintenance report</strong>
-                          <small>
-                            {managedLead.maintenanceAccess.permissions.canViewMaintenanceReports
-                              ? 'Download the owner-style PDF or Excel maintenance report.'
-                              : 'Owner permission is required.'}
-                          </small>
-                        </span>
-                      </button>
-
-                      <button
-                        type="button"
-                        className={assetStyles.optionActionButton}
-                        onClick={() => openMaintenanceSchedule(managedLead)}
-                        disabled={!managedLead.maintenanceAccess.permissions.canCreateMaintenanceSchedules}
-                        title={!managedLead.maintenanceAccess.permissions.canCreateMaintenanceSchedules
-                          ? 'The asset owner has not enabled dealer-created schedules.'
-                          : undefined}
-                      >
-                        <MaintenanceTrackingIcon className={assetStyles.buttonIcon} />
-                        <span>
-                          <strong>Create maintenance schedule</strong>
-                          <small>
-                            {managedLead.maintenanceAccess.permissions.canCreateMaintenanceSchedules
-                              ? 'Send a proposed schedule to the owner for approval.'
-                              : 'Owner permission is required.'}
-                          </small>
-                        </span>
-                      </button>
-                    </>
+                    <button
+                      type="button"
+                      className={assetStyles.optionActionButton}
+                      onClick={() => openMaintenanceSchedule(managedLead)}
+                      disabled={!managedLead.maintenanceAccess.permissions.canCreateMaintenanceSchedules}
+                      title={!managedLead.maintenanceAccess.permissions.canCreateMaintenanceSchedules
+                        ? 'The asset owner has not enabled dealer-created schedules.'
+                        : undefined}
+                    >
+                      <MaintenanceTrackingIcon className={assetStyles.buttonIcon} />
+                      <span>
+                        <strong>Send a proposed schedule</strong>
+                        <small>
+                          {managedLead.maintenanceAccess.permissions.canCreateMaintenanceSchedules
+                            ? 'The owner can approve or disapprove it.'
+                            : 'Owner permission is required.'}
+                        </small>
+                      </span>
+                    </button>
                   ) : null}
 
                   <button
@@ -3326,87 +3274,68 @@ export default function LeadsClient({
       ) : null}
 
       {reportLead ? (
-        <div className={`${assetStyles.modalOverlay} ${dealerWorkspaceClass(workspaceStyles.modalOverlay)}`}>
+        <div className={`${assetStyles.modalOverlay} ${assetStyles.subModalOverlay}`}>
           <div className={assetStyles.modalBackdrop} onClick={closeLeadReportModal} />
 
-          <div className={`${assetStyles.modalCard} ${assetStyles.exportModal} ${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadReportModal}`} role="dialog" aria-modal="true" aria-labelledby="lead-report-export-title">
-            <div className={`${assetStyles.modalHeader} ${assetStyles.exportModalHeader} ${dealerWorkspaceClass(workspaceStyles.modalHeader)}`}>
+          <div
+            className={`${assetStyles.modalCard} ${assetStyles.assetReportModal}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="lead-report-title"
+          >
+            <div className={`${assetStyles.modalHeader} ${assetStyles.assetReportModalHeader}`}>
               <div className={assetStyles.modalHeaderText}>
-                <h3 id="lead-report-export-title">Download lead report</h3>
+                <h3 id="lead-report-title">{assetTitle(reportLead)}</h3>
+                <p>{leadAssetMeta(reportLead)}</p>
               </div>
 
-              <button type="button" className={`${assetStyles.modalCloseButton} ${dealerWorkspaceClass(workspaceStyles.modalClose)}`} onClick={closeLeadReportModal} aria-label="Close report download options" disabled={isDownloadingLeadReport}>
+              <button
+                type="button"
+                className={assetStyles.modalCloseButton}
+                onClick={closeLeadReportModal}
+                aria-label="Close PDF reports"
+                disabled={isDownloadingLeadReport}
+              >
                 <CloseIcon className={assetStyles.buttonIcon} />
               </button>
             </div>
 
-            <div className={`${assetStyles.modalScrollBody} ${assetStyles.exportModalScrollBody} ${dealerWorkspaceClass(workspaceStyles.modalBody)}`}>
-              <div className={assetStyles.exportModalBody}>
-                {leadReportStep === 'format' ? (
-                  <>
-                    <div className={assetStyles.exportChoices}>
-                      <div className={`${assetStyles.exportOption} ${assetStyles.exportOptionActive}`}>
-                        <div className={assetStyles.exportOptionTop}>
-                          <span className={assetStyles.exportGraphic}>
-                            <ExportGraphic src="/brand/pdf.png" alt="PDF export" icon={<PdfIcon className={assetStyles.exportOptionIcon} />} />
-                          </span>
+            <div className={`${assetStyles.modalScrollBody} ${assetStyles.assetReportModalBody}`}>
+              <div className={assetStyles.assetReportOptionsGrid}>
+                <button
+                  type="button"
+                  className={assetStyles.assetReportOptionButton}
+                  onClick={() => void handleLeadPdfReportDownload(reportLead, 'full')}
+                  disabled={isDownloadingLeadReport}
+                >
+                  <PdfIcon className={assetStyles.buttonIcon} />
+                  <span>
+                    <strong>Download asset valuation</strong>
+                    <small>PDF value summary with the shared asset details.</small>
+                  </span>
+                </button>
 
-                          <div className={assetStyles.exportOptionTitleBlock}>
-                            <strong>PDF summary</strong>
-                            <span className={assetStyles.exportOptionStatus}>Only available format</span>
-                          </div>
-                        </div>
-
-                        <ul className={assetStyles.exportFeatureList}>
-                          <li>PDF report for this lead only</li>
-                          <li>No XLSX lead export</li>
-                          <li>No full-register spreadsheet handover</li>
-                        </ul>
-                      </div>
-                    </div>
-
-                    <div className={`${assetStyles.formActions} ${assetStyles.exportActions}`}>
-                      <button type="button" className={assetStyles.primaryButton} onClick={() => void handleConfirmLeadReportDownload()} disabled={isDownloadingLeadReport}>
-                        <ChevronRightIcon className={assetStyles.buttonIcon} />
-                        <span>{isDownloadingLeadReport ? 'Preparing PDF...' : isFullRegisterLead(reportLead) ? 'Choose PDF report' : 'Open PDF'}</span>
-                      </button>
-
-                      <button type="button" className={assetStyles.secondaryButton} onClick={closeLeadReportModal} disabled={isDownloadingLeadReport}>
-                        Cancel
-                      </button>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className={assetStyles.pdfReportDropdownPanel}>
-                      <select
-                        className={assetStyles.pdfReportDropdown}
-                        value={leadPdfReportSelection}
-                        onChange={handleLeadPdfReportSelectionChange}
-                        disabled={isDownloadingLeadReport}
-                        aria-label="Choose PDF summary option"
-                      >
-                        <option value="" disabled>Choose option</option>
-                        {PDF_REPORT_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDownIcon className={assetStyles.pdfReportDropdownIcon} />
-                    </div>
-
-                    <div className={`${assetStyles.formActions} ${assetStyles.exportActions}`}>
-                      <button type="button" className={assetStyles.secondaryButton} onClick={closeLeadPdfReportChooser} disabled={isDownloadingLeadReport}>
-                        Back
-                      </button>
-
-                      <button type="button" className={assetStyles.secondaryButton} onClick={closeLeadReportModal} disabled={isDownloadingLeadReport}>
-                        Cancel
-                      </button>
-                    </div>
-                  </>
-                )}
+                {isTrackingLead(reportLead) && reportLead.maintenanceAccess?.isActive ? (
+                  <button
+                    type="button"
+                    className={assetStyles.assetReportOptionButton}
+                    onClick={() => openMaintenanceReport(reportLead)}
+                    disabled={!reportLead.maintenanceAccess.permissions.canViewMaintenanceReports}
+                    title={!reportLead.maintenanceAccess.permissions.canViewMaintenanceReports
+                      ? 'The asset owner has not enabled maintenance report access.'
+                      : undefined}
+                  >
+                    <DocumentIcon className={assetStyles.buttonIcon} />
+                    <span>
+                      <strong>Download maintenance report</strong>
+                      <small>
+                        {reportLead.maintenanceAccess.permissions.canViewMaintenanceReports
+                          ? 'PDF or Excel maintenance history.'
+                          : 'Owner permission is required.'}
+                      </small>
+                    </span>
+                  </button>
+                ) : null}
               </div>
             </div>
           </div>
