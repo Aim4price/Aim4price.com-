@@ -205,6 +205,7 @@ const ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
   { href: '/maintenance', label: 'Maintenance', accountTypes: ['owner'] },
   { href: '/marketplace', label: 'Marketplace', accountTypes: ['owner', 'dealer'] },
   { href: '/leads', label: 'My Leads', accountTypes: ['dealer'] },
+  { href: '/dealer-costs', label: 'Client Costs', accountTypes: ['dealer'] },
   { href: '/shared-registers', label: 'Shared Registers', accountTypes: ['insurance'] },
 ];
 
@@ -238,6 +239,7 @@ function buildNavItems(accountType: AccountType | 'public' | null): NavItem[] {
     return [
       ...BASE_NAV_ITEMS,
       { key: 'leads', href: '/leads', label: 'My Leads' },
+      { key: 'cost', href: '/dealer-costs', label: 'Costs' },
       { key: 'tracking', href: '/tracking', label: 'Tracking' },
       { key: 'marketplace', href: '/marketplace', label: 'Marketplace' },
     ];
