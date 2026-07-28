@@ -3483,6 +3483,14 @@
   box-shadow: none !important;
 }
 
+.leadsPage .clientActionRow .closeLeadButton,
+.leadsPage .clientActionRow .closeLeadButton:hover:not(:disabled) {
+  color: #254733 !important;
+  border-color: rgba(37, 71, 51, 0.22) !important;
+  background: #ffffff !important;
+  box-shadow: 0 10px 22px rgba(37, 71, 51, 0.06) !important;
+}
+
 .leadsPage .leadAssetCard {
   border: 1px solid rgba(37, 71, 51, 0.13) !important;
   border-radius: 18px !important;
