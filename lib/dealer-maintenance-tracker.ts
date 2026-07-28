@@ -94,6 +94,7 @@ export type DealerMaintenanceLeadAccess = {
   dealerUserId: string;
   assetId: string;
   isActive: true;
+  hasMaintenanceRecords: boolean;
   permissions: DealerMaintenancePermissions;
 };
 
@@ -137,6 +138,7 @@ export type DealerMaintenanceTrackedAsset = {
   brandName: string;
   modelName: string;
   yearModel: number | null;
+  condition: string;
   serialNumber: string;
   replacementPriceExVat: number | null;
   dealerCorrection: DealerAssetCorrectionRequest | null;
@@ -193,6 +195,7 @@ type DealerMaintenanceAccessRow = {
   can_create_maintenance_schedules: boolean | null;
   can_update_serial: boolean | null;
   can_update_replacement_price: boolean | null;
+  has_maintenance_records: boolean | null;
   owner_display_name: string | null;
   owner_business_name: string | null;
   dealer_display_name: string | null;
@@ -535,6 +538,13 @@ async function listAccessRows(whereSql: string, values: unknown[]): Promise<Deal
         access.can_create_maintenance_schedules,
         access.can_update_serial,
         access.can_update_replacement_price,
+        exists (
+          select 1
+          from public.asset_maintenance_records maintenance
+          where maintenance.user_id = access.owner_user_id
+            and maintenance.asset_register_item_id = access.asset_register_item_id
+            and maintenance.status in ('upcoming', 'done')
+        ) as has_maintenance_records,
         owner.display_name as owner_display_name,
         owner.business_name as owner_business_name,
         dealer.display_name as dealer_display_name,
@@ -570,6 +580,7 @@ export async function listActiveDealerMaintenanceLeadAccess(input: {
       dealerUserId: row.dealer_user_id,
       assetId: row.asset_register_item_id,
       isActive: true as const,
+      hasMaintenanceRecords: Boolean(row.has_maintenance_records),
       permissions: rowPermissions(row),
     }));
 }
@@ -1138,6 +1149,7 @@ async function buildTrackedAsset(row: DealerMaintenanceAccessRow): Promise<Deale
     brandName: asset.brandName,
     modelName: asset.modelName || asset.typedModelName,
     yearModel: asset.yearModel,
+    condition: asset.condition,
     serialNumber: asset.serialNumber,
     replacementPriceExVat: asset.replacementPriceExVat,
     dealerCorrection: null,
@@ -1196,7 +1208,10 @@ export async function listDealerTrackedAssets(dealerUserId: string): Promise<Dea
   const builtAssets = await Promise.all(rows.map(buildTrackedAsset));
   const assets = await hydrateTrackedAssetCorrections(
     dealerUserId,
-    builtAssets.filter((asset): asset is DealerMaintenanceTrackedAsset => Boolean(asset)),
+    builtAssets.filter(
+      (asset): asset is DealerMaintenanceTrackedAsset =>
+        asset !== null && asset.maintenanceRecords.length > 0,
+    ),
   );
   return assets
     .sort((left, right) => {
