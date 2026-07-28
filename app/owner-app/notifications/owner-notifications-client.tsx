@@ -22,6 +22,7 @@ type Notification = {
   assetId?: string;
   dealerAssetCorrectionId?: string;
   dealerAssetCorrectionAction?: 'decision' | 'retry' | 'pending';
+  dealerMaintenanceScheduleProposalId?: string;
   priority?: boolean;
 };
 
@@ -86,6 +87,7 @@ export default function OwnerNotificationsClient({ viewerId }: { viewerId: strin
   } | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
   const [processingCorrectionIds, setProcessingCorrectionIds] = useState<Set<string>>(() => new Set());
+  const [processingScheduleProposalIds, setProcessingScheduleProposalIds] = useState<Set<string>>(() => new Set());
   const hasLoadedRef = useRef(false);
 
   useEffect(() => {
@@ -227,6 +229,52 @@ export default function OwnerNotificationsClient({ viewerId }: { viewerId: strin
     }
   }
 
+  async function handleScheduleDecision(proposalId: string, decision: 'approve' | 'decline') {
+    setProcessingScheduleProposalIds((current) => new Set(current).add(proposalId));
+    setError('');
+    setOutcomeNotice(null);
+    try {
+      const response = await fetch(`/api/dealer-maintenance-schedule-proposals/${encodeURIComponent(proposalId)}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ decision }),
+      });
+      const payload = await response.json().catch(() => null) as {
+        ok?: boolean;
+        message?: string;
+        error?: string;
+      } | null;
+      if (response.status === 401) {
+        window.location.replace('/owner-app/login');
+        return;
+      }
+      if (!response.ok || !payload?.ok) {
+        throw new Error(payload?.error || 'Failed to save the maintenance schedule decision.');
+      }
+      setItems((current) => current.filter(
+        (item) => item.dealerMaintenanceScheduleProposalId !== proposalId,
+      ));
+      setSeenAtIso(markOwnerNotificationsSeen(viewerId, items));
+      setOutcomeNotice({
+        tone: 'success',
+        message: payload.message || (
+          decision === 'approve'
+            ? 'Maintenance schedule approved and added to the Asset Register.'
+            : 'Maintenance schedule disapproved.'
+        ),
+      });
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Failed to save the maintenance schedule decision.');
+    } finally {
+      setProcessingScheduleProposalIds((current) => {
+        const next = new Set(current);
+        next.delete(proposalId);
+        return next;
+      });
+    }
+  }
+
   async function handleCorrectionRetry(correctionId: string) {
     setProcessingCorrectionIds((current) => new Set(current).add(correctionId));
     setError('');
@@ -350,6 +398,34 @@ export default function OwnerNotificationsClient({ viewerId }: { viewerId: strin
                     <p>{item.body}</p>
                   </>
                 );
+
+                if (item.dealerMaintenanceScheduleProposalId) {
+                  const proposalId = item.dealerMaintenanceScheduleProposalId;
+                  const processing = processingScheduleProposalIds.has(proposalId);
+                  return (
+                    <article key={item.id} className={`${className} ${styles.notificationCorrectionCard}`}>
+                      {cardContent}
+                      <div className={styles.notificationCorrectionActions}>
+                        <button
+                          type="button"
+                          className={styles.notificationCorrectionDecline}
+                          onClick={() => void handleScheduleDecision(proposalId, 'decline')}
+                          disabled={processing}
+                        >
+                          {processing ? 'Saving…' : 'Disapprove'}
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.notificationCorrectionAccept}
+                          onClick={() => void handleScheduleDecision(proposalId, 'approve')}
+                          disabled={processing}
+                        >
+                          {processing ? 'Saving…' : 'Approve schedule'}
+                        </button>
+                      </div>
+                    </article>
+                  );
+                }
 
                 if (item.dealerAssetCorrectionId) {
                   const correctionId = item.dealerAssetCorrectionId;
