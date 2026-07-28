@@ -1438,6 +1438,7 @@ export default function LeadsClient({
   initialSessionUserId = '',
 }: LeadsClientProps = {}) {
   const useDealerWorkspaceStyles = dealerWorkspaceMode ?? dealerAppMode;
+  const canAddDealerCosts = Boolean(dealerAppMode || dealerWorkspaceMode);
   const dealerWorkspaceClass = (...classNames: string[]) =>
     useDealerWorkspaceStyles ? classNames.join(' ') : '';
   const [sessionUserId, setSessionUserId] = useState(initialSessionUserId);
@@ -1962,7 +1963,8 @@ export default function LeadsClient({
   function openDealerCost(lead: AssetLead) {
     if (isFullRegisterLead(lead)) return;
     setManagedLead(null);
-    window.location.href = `/dealer/costs?assetId=${encodeURIComponent(lead.assetRegisterItemId)}&add=1`;
+    const costPath = dealerAppMode ? '/dealer/cost' : '/dealer-costs';
+    window.location.href = `${costPath}?assetId=${encodeURIComponent(lead.assetRegisterItemId)}&add=1`;
   }
 
   function closeLeadReportModal() {
@@ -3197,7 +3199,7 @@ export default function LeadsClient({
                     />
                   ) : null}
 
-                  {dealerAppMode && !isFullRegisterLead(managedLead) ? (
+                  {canAddDealerCosts && !isFullRegisterLead(managedLead) ? (
                     <button
                       type="button"
                       className={assetStyles.optionActionButton}
