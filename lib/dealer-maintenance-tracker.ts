@@ -672,23 +672,18 @@ export async function listDealerMaintenanceReportData(input: {
     throw new Error('MAINTENANCE_REPORT_FORBIDDEN');
   }
 
-  const permittedRows = await listAccessRows(
-    `where access.dealer_user_id = $1
-      and access.owner_user_id = $2
-      and access.is_active = true
-      and access.can_view_maintenance_reports = true`,
-    [input.dealerUserId, context.owner_user_id],
-  );
-  const permittedAssetIds = new Set(permittedRows.map((row) => row.asset_register_item_id));
   const filters = input.filters ?? {};
 
-  if (filters.assetId && !permittedAssetIds.has(filters.assetId)) {
+  if (filters.assetId && filters.assetId !== context.asset_register_item_id) {
     throw new Error('MAINTENANCE_REPORT_FORBIDDEN');
   }
 
-  const rawData = await listAssetMaintenanceData(context.owner_user_id, filters);
-  const records = rawData.records.filter((record) => permittedAssetIds.has(record.assetId));
-  const assets = rawData.assets.filter((asset) => permittedAssetIds.has(asset.id));
+  const rawData = await listAssetMaintenanceData(context.owner_user_id, {
+    ...filters,
+    assetId: context.asset_register_item_id,
+  });
+  const records = rawData.records.filter((record) => record.assetId === context.asset_register_item_id);
+  const assets = rawData.assets.filter((asset) => asset.id === context.asset_register_item_id);
 
   return {
     ownerUserId: context.owner_user_id,
