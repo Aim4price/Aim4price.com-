@@ -87,6 +87,22 @@ function DownloadIcon({ className = '' }: { className?: string }) {
   return <svg className={className} viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 20h14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>;
 }
 
+function ManageIcon({ className = '' }: { className?: string }) {
+  return <svg className={className} viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" strokeWidth="2" /><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06-2.87 2.87-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1.03 1.56V21H10v-.04A1.7 1.7 0 0 0 8.97 19.4a1.7 1.7 0 0 0-1.87.34l-.06.06-2.87-2.87.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.03H3V10h.04A1.7 1.7 0 0 0 4.6 8.97a1.7 1.7 0 0 0-.34-1.87l-.06-.06 2.87-2.87.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1.03-1.56V3H14v.04A1.7 1.7 0 0 0 15.03 4.6a1.7 1.7 0 0 0 1.87-.34l.06-.06 2.87 2.87-.06.06A1.7 1.7 0 0 0 19.4 9a1.7 1.7 0 0 0 1.56 1.03H21V14h-.04A1.7 1.7 0 0 0 19.4 15Z" fill="none" stroke="currentColor" strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round" /></svg>;
+}
+
+function EmailIcon({ className = '' }: { className?: string }) {
+  return <svg className={className} viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h16v11H4v-11Z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" /><path d="m5 8 7 5 7-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>;
+}
+
+function PhoneIcon({ className = '' }: { className?: string }) {
+  return <svg className={className} viewBox="0 0 24 24" aria-hidden="true"><path d="M8.2 5.2 6.7 6.7c-.8.8-.9 2.1-.3 3.3 1.4 2.7 4.9 6.2 7.6 7.6 1.2.6 2.5.5 3.3-.3l1.5-1.5-3.3-3.3-1.4 1.4c-1.7-.9-3.1-2.3-4-4l1.4-1.4-3.3-3.3Z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>;
+}
+
+function WhatsAppIcon({ className = '' }: { className?: string }) {
+  return <svg className={className} viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.25a8.55 8.55 0 0 0-7.26 13.05l-1.06 3.9 4.04-1.02A8.55 8.55 0 1 0 12 3.25Z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /><path d="M8.55 7.65c.22-.48.45-.5.68-.5h.6c.2 0 .43.05.57.38l.78 1.82c.1.27.08.5-.08.72l-.42.53c-.1.12-.13.28-.05.43.48.9 1.35 1.78 2.34 2.34.15.08.3.05.43-.05l.53-.42c.22-.17.45-.2.72-.08l1.82.78c.33.13.38.37.38.57v.6c0 .23-.02.47-.5.68-.5.22-1.14.34-1.9.24-2.28-.32-5.83-3.86-6.15-6.15-.1-.76.02-1.4.25-1.9Z" fill="currentColor" /></svg>;
+}
+
 function MaintenanceIcon({ className = '' }: { className?: string }) {
   return <svg className={className} viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h12M7 12h12M7 19h12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /><circle cx="4" cy="5" r="1" fill="currentColor" /><circle cx="4" cy="12" r="1" fill="currentColor" /><circle cx="4" cy="19" r="1" fill="currentColor" /></svg>;
 }
@@ -95,6 +111,36 @@ function formatUsage(value: number | null, metric: string | null): string {
   if (value === null || !Number.isFinite(value)) return 'Not recorded';
   if (metric === 'percentage') return `${value.toLocaleString('en-ZA', { maximumFractionDigits: 1 })}%`;
   return `${value.toLocaleString('en-ZA', { maximumFractionDigits: 1 })} ${metric === 'km' ? 'km' : 'hours'}`;
+}
+
+function trackingAssetMeta(asset: DealerMaintenanceTrackedAsset): string {
+  return [
+    `Year Model: ${asset.yearModel ?? 'Not recorded'}`,
+    `Usage: ${formatUsage(asset.currentUsage, asset.usageMetric)}`,
+    `Condition: ${asset.condition || 'Not recorded'}`,
+  ].join(' • ');
+}
+
+function cleanPhoneForTel(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  const prefix = trimmed.startsWith('+') ? '+' : '';
+  return `${prefix}${trimmed.replace(/\D/g, '')}`;
+}
+
+function cleanPhoneForWhatsApp(value: string): string {
+  const digits = value.replace(/\D/g, '');
+  if (!digits) return '';
+  if (digits.startsWith('27')) return digits;
+  if (digits.startsWith('0') && digits.length >= 10) return `27${digits.slice(1)}`;
+  return digits;
+}
+
+function cleanEmail(value: string): string {
+  const firstAddress = value.split(/[;,]/)[0]?.trim() ?? '';
+  const bracketMatch = firstAddress.match(/<([^>]+)>/);
+  const email = (bracketMatch?.[1] ?? firstAddress).replace(/\s+/g, '');
+  return email.includes('@') ? email : '';
 }
 
 function formatDate(value: string | null, includeTime = false): string {
@@ -398,6 +444,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
   const [historyAccessCheckId, setHistoryAccessCheckId] = useState<string | null>(null);
   const [reportAccessId, setReportAccessId] = useState<string | null>(null);
   const [scheduleAccessId, setScheduleAccessId] = useState<string | null>(null);
+  const [managedAccessId, setManagedAccessId] = useState<string | null>(null);
 
   useEffect(() => setAssets(initialAssets), [initialAssets]);
 
@@ -450,6 +497,9 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
   const noOpenCount = assets.filter((asset) => asset.status === 'no_open').length;
   const hasActiveFilter = ownerFilter !== 'all' || statusFilter !== 'all';
   const activeFilterLabel = hasActiveFilter ? 'Filtered' : 'Filter';
+  const managedAsset = managedAccessId
+    ? assets.find((asset) => asset.accessId === managedAccessId) ?? null
+    : null;
 
   async function refresh() {
     if (loading) return;
@@ -496,6 +546,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
   function closeAsset() {
     setOpenAccessId(null);
     setMaintenanceViewAccessId(null);
+    setManagedAccessId(null);
     clearHistoryFilters();
   }
 
@@ -581,6 +632,39 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
       urls: [...asset.photoUrls],
       index: Math.min(Math.max(index, 0), asset.photoUrls.length - 1),
     });
+  }
+
+  function openWhatsApp(asset: DealerMaintenanceTrackedAsset) {
+    const phone = cleanPhoneForWhatsApp(asset.ownerPhone);
+    if (!phone) {
+      setNotice({ tone: 'error', text: 'No owner cellphone number is saved for this tracked asset.' });
+      return;
+    }
+    const message = encodeURIComponent(`Good day ${asset.ownerName}, I am following up about maintenance tracking for ${asset.assetTitle} on Aim4price.`);
+    window.open(`https://wa.me/${phone}?text=${message}`, '_blank', 'noopener,noreferrer');
+    setManagedAccessId(null);
+  }
+
+  function callOwner(asset: DealerMaintenanceTrackedAsset) {
+    const phone = cleanPhoneForTel(asset.ownerPhone);
+    if (!phone) {
+      setNotice({ tone: 'error', text: 'No owner contact number is saved for this tracked asset.' });
+      return;
+    }
+    setManagedAccessId(null);
+    window.location.href = `tel:${phone}`;
+  }
+
+  function emailOwner(asset: DealerMaintenanceTrackedAsset) {
+    const email = cleanEmail(asset.ownerEmail);
+    if (!email) {
+      setNotice({ tone: 'error', text: 'No owner email address is saved for this tracked asset.' });
+      return;
+    }
+    const subject = `Aim4price maintenance tracking: ${asset.assetTitle}`;
+    const body = `Good day ${asset.ownerName},\n\nI am following up about maintenance tracking for ${asset.assetTitle} on Aim4price.\n\nKind regards`;
+    setManagedAccessId(null);
+    window.location.href = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   }
 
   return (
@@ -696,7 +780,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                       <div className={`${assetStyles.assetHeader} ${leadStyles.leadAssetHeader}`}>
                         <div className={assetStyles.assetTitleBlock}>
                           <h2>{asset.assetTitle}</h2>
-                          <p>{[asset.brandName, asset.modelName, asset.yearModel].filter(Boolean).join(' · ') || asset.assetKind}</p>
+                          <p>{trackingAssetMeta(asset)}</p>
                           <div className={assetStyles.assetMetaRow}><span className={assetStyles.assetSavedDateLabel}>Tracking shared by {asset.grantedByName || 'the asset owner'}</span></div>
                         </div>
                         <div className={`${assetStyles.assetHeaderAside} ${leadStyles.leadAssetHeaderAside}`}>
@@ -724,16 +808,12 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                             </button>
                             <button
                               type="button"
-                              className={`${assetStyles.optionsButton} ${leadStyles.maintenanceReportButton} ${styles.trackerReportButton}`}
-                              onClick={() => setReportAccessId(asset.accessId)}
-                              disabled={!asset.permissions.canViewMaintenanceReports}
-                              aria-label="Download maintenance report"
-                              title={asset.permissions.canViewMaintenanceReports
-                                ? undefined
-                                : 'The asset owner has not granted maintenance report access.'}
+                              className={`${assetStyles.optionsButton} ${leadStyles.leadManageButton} ${styles.manageButton}`}
+                              onClick={() => setManagedAccessId(asset.accessId)}
+                              aria-label={`Manage ${asset.assetTitle}`}
                             >
-                              <DownloadIcon className={assetStyles.buttonIcon} />
-                              <span>Reports</span>
+                              <ManageIcon className={assetStyles.buttonIcon} />
+                              <span>Manage</span>
                             </button>
                             <button
                               type="button"
@@ -997,6 +1077,88 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
           </div>
         </section>
       </section>
+
+      {managedAsset ? (
+        <div className={`${assetStyles.modalOverlay} ${workspaceStyles.modalOverlay}`}>
+          <div className={assetStyles.modalBackdrop} onClick={() => setManagedAccessId(null)} />
+          <div className={`${assetStyles.optionsModal} ${workspaceStyles.modal} ${leadStyles.leadManageModal} ${styles.trackerManageModal}`} role="dialog" aria-modal="true" aria-labelledby="tracking-manage-title">
+            <div className={`${assetStyles.modalHeader} ${assetStyles.optionsModalHeader} ${workspaceStyles.modalHeader}`}>
+              <div className={assetStyles.modalHeaderText}>
+                <h3 id="tracking-manage-title">{managedAsset.assetTitle}</h3>
+                <p>{trackingAssetMeta(managedAsset)}</p>
+              </div>
+              <button type="button" className={`${assetStyles.modalCloseButton} ${workspaceStyles.modalClose}`} onClick={() => setManagedAccessId(null)} aria-label="Close tracking management">
+                <CloseIcon className={assetStyles.buttonIcon} />
+              </button>
+            </div>
+
+            <div className={`${assetStyles.modalScrollBody} ${assetStyles.optionsScrollBody} ${workspaceStyles.modalBody}`}>
+              <div className={assetStyles.optionsContent}>
+                <div className={`${assetStyles.optionsGrid} ${assetStyles.assetOptionsGrid} ${leadStyles.manageOptionsGrid}`}>
+                  <button
+                    type="button"
+                    className={`${assetStyles.optionActionButton} ${assetStyles.optionFeaturedButton} ${leadStyles.whatsAppActionButton}`}
+                    onClick={() => openWhatsApp(managedAsset)}
+                    disabled={!cleanPhoneForWhatsApp(managedAsset.ownerPhone)}
+                    title={!cleanPhoneForWhatsApp(managedAsset.ownerPhone) ? 'No owner cellphone number is saved.' : undefined}
+                  >
+                    <WhatsAppIcon className={`${assetStyles.buttonIcon} ${leadStyles.whatsAppIcon}`} />
+                    <span>
+                      <strong>WhatsApp owner</strong>
+                      <small>{managedAsset.ownerPhone ? 'Open a WhatsApp message to the owner.' : 'No owner cellphone number saved.'}</small>
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={assetStyles.optionActionButton}
+                    onClick={() => {
+                      setManagedAccessId(null);
+                      setReportAccessId(managedAsset.accessId);
+                    }}
+                    disabled={!managedAsset.permissions.canViewMaintenanceReports}
+                    title={!managedAsset.permissions.canViewMaintenanceReports ? 'The asset owner has not granted maintenance report access.' : undefined}
+                  >
+                    <DownloadIcon className={assetStyles.buttonIcon} />
+                    <span>
+                      <strong>PDF reports</strong>
+                      <small>{managedAsset.permissions.canViewMaintenanceReports ? 'Choose and download a maintenance report.' : 'Owner permission is required.'}</small>
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={assetStyles.optionActionButton}
+                    onClick={() => callOwner(managedAsset)}
+                    disabled={!cleanPhoneForTel(managedAsset.ownerPhone)}
+                    title={!cleanPhoneForTel(managedAsset.ownerPhone) ? 'No owner contact number is saved.' : undefined}
+                  >
+                    <PhoneIcon className={assetStyles.buttonIcon} />
+                    <span>
+                      <strong>Call owner</strong>
+                      <small>{managedAsset.ownerPhone ? 'Start a phone call from the saved number.' : 'No owner contact number saved.'}</small>
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={assetStyles.optionActionButton}
+                    onClick={() => emailOwner(managedAsset)}
+                    disabled={!cleanEmail(managedAsset.ownerEmail)}
+                    title={!cleanEmail(managedAsset.ownerEmail) ? 'No owner email address is saved.' : undefined}
+                  >
+                    <EmailIcon className={assetStyles.buttonIcon} />
+                    <span>
+                      <strong>Email owner</strong>
+                      <small>{cleanEmail(managedAsset.ownerEmail) ? 'Open an email draft with asset context.' : 'No owner email address saved.'}</small>
+                    </span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {filterOpen ? (
         <div className={assetStyles.modalOverlay}>

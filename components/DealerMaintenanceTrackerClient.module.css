@@ -18,7 +18,7 @@
   white-space: normal !important;
 }
 
-.trackerReportButton {
+.manageButton {
   min-width: clamp(220px, 16vw, 265px) !important;
 }
 
@@ -31,11 +31,33 @@
 }
 
 .maintenanceViewButton,
-.trackerReportButton,
+.manageButton,
 .scheduleCreateButton {
   min-height: 3.06rem !important;
   border-radius: 0.9rem !important;
   font-weight: 800 !important;
+}
+
+.trackerPage .trackerHeaderActions .maintenanceViewButton.maintenanceViewButton {
+  color: #0a543d !important;
+  border-color: #6fc596 !important;
+  background: linear-gradient(180deg, #ffffff 0%, #e6f8ef 100%) !important;
+  box-shadow:
+    0 10px 22px rgba(15, 90, 67, 0.085),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.trackerPage .trackerHeaderActions .maintenanceViewButton.maintenanceViewButton:hover:not(:disabled) {
+  color: #0b4635 !important;
+  border-color: #43ad73 !important;
+  background: linear-gradient(180deg, #ffffff 0%, #d9f1e5 100%) !important;
+  box-shadow:
+    0 14px 28px rgba(15, 90, 67, 0.115),
+    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+}
+
+.trackerManageModal {
+  width: min(100%, 900px) !important;
 }
 
 .proposalCard {
