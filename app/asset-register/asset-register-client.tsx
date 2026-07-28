@@ -9045,10 +9045,11 @@ export default function AssetRegisterClient() {
       if (!response.ok || !payload?.ok || !Array.isArray(payload.trackingAccess)) {
         throw new Error(payload?.error || 'Failed to load dealer tracking settings.');
       }
-      setDealerTrackingAccess(payload.trackingAccess);
+      const trackingAccess = payload.trackingAccess;
+      setDealerTrackingAccess(trackingAccess);
       setActiveDealerTrackingByAssetId((current) => ({
         ...current,
-        [asset.id]: payload.trackingAccess.length > 0,
+        [asset.id]: trackingAccess.length > 0,
       }));
     } catch (cause) {
       setNotice({ tone: 'error', message: cause instanceof Error ? cause.message : 'Failed to load dealer tracking settings.' });
