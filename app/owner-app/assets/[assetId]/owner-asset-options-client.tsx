@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import DealerMaintenanceAccessSettings from '../../../../components/DealerMaintenanceAccessSettings';
 import BalancedHeadingText from '../../balanced-heading';
 import OwnerAppNav from '../../owner-app-nav';
@@ -183,6 +183,7 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
   const [consentAccepted, setConsentAccepted] = useState(false);
   const [trackMaintenance, setTrackMaintenance] = useState(false);
   const [trackingAccess, setTrackingAccess] = useState<DealerTrackingAccess[]>([]);
+  const [hasActiveTracking, setHasActiveTracking] = useState(false);
   const [loadingTracking, setLoadingTracking] = useState(false);
   const [loadingPartners, setLoadingPartners] = useState(false);
   const [sending, setSending] = useState(false);
@@ -201,6 +202,32 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
     [partners, selectedPartnerId],
   );
   const assetHref = `/owner-app/assets/${encodeURIComponent(assetId)}`;
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function loadActiveTrackingState() {
+      try {
+        const response = await fetch(`/api/dealer-maintenance-access?assetId=${encodeURIComponent(assetId)}`, {
+          credentials: 'include',
+          cache: 'no-store',
+          signal: controller.signal,
+        });
+        const payload = await response.json().catch(() => null) as {
+          ok?: boolean;
+          trackingAccess?: DealerTrackingAccess[];
+        } | null;
+        if (!controller.signal.aborted) {
+          setHasActiveTracking(Boolean(response.ok && payload?.ok && payload.trackingAccess?.length));
+        }
+      } catch {
+        if (!controller.signal.aborted) setHasActiveTracking(false);
+      }
+    }
+
+    void loadActiveTrackingState();
+    return () => controller.abort();
+  }, [assetId]);
 
   function returnToStage(nextStage: OptionsStage) {
     setNotice(null);
@@ -240,6 +267,7 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
         throw new Error(payload?.error || 'Failed to load dealer tracking settings.');
       }
       setTrackingAccess(payload.trackingAccess);
+      setHasActiveTracking(payload.trackingAccess.length > 0);
     } catch (cause) {
       setTrackingAccess([]);
       setNotice({ tone: 'error', message: cause instanceof Error ? cause.message : 'Failed to load dealer tracking settings.' });
@@ -321,6 +349,9 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
       const payload = await response.json().catch(() => null) as { ok?: boolean; error?: string } | null;
       if (response.status === 401) { window.location.replace('/owner-app/login'); return; }
       if (!response.ok || !payload?.ok) throw new Error(payload?.error || 'Failed to send this request.');
+      if (selectedOption.leadType === 'replacement_quote' && trackMaintenance) {
+        setHasActiveTracking(true);
+      }
       setStage('sent');
       setNotice({ tone: 'success', message: `${selectedOption.shortTitle} request sent to ${partnerName(selectedPartner)}.` });
     } catch (cause) {
@@ -352,7 +383,7 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
               </button>
             ))}
           </div>
-          {assetKind !== 'property' ? (
+          {assetKind !== 'property' && hasActiveTracking ? (
             <button type="button" className={styles.ownerTrackingSettingsButton} onClick={() => void openTrackingSettings()}>
               <span><strong>Dealer tracking settings</strong><small>View or remove dealers tracking this asset.</small></span>
               <b aria-hidden="true">›</b>
@@ -461,7 +492,10 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
               assetId={assetId}
               entries={trackingAccess}
               mutationUrl="/api/dealer-maintenance-access"
-              onEntriesChange={setTrackingAccess}
+              onEntriesChange={(entries) => {
+                setTrackingAccess(entries);
+                setHasActiveTracking(entries.length > 0);
+              }}
             />
           )}
         </section>
