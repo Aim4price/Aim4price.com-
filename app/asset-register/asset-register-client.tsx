@@ -15923,7 +15923,7 @@ export default function AssetRegisterClient() {
                                     checked={quoteTrackMaintenance}
                                     onChange={(event) => setQuoteTrackMaintenance(event.target.checked)}
                                   />
-                                  <span>Add this asset to the dealer&apos;s Maintenance Tracker. You can set the dealer&apos;s detailed permissions after sharing.</span>
+                                  <span>Add this asset to the dealer&apos;s Maintenance Tracker. The dealer can download maintenance reports and create maintenance schedules, which will only appear in your Asset Register after you approve them. You can manage the dealer&apos;s detailed permissions after sharing.</span>
                                 </label>
                               ) : null}
                             </div>
@@ -15944,7 +15944,7 @@ export default function AssetRegisterClient() {
                                   : 'You confirm that you have permission to share this asset information and understand that the selected company may contact you outside Aim4price.'}
                               </p>
                               {selectedQuoteOption.leadType === 'replacement_quote' && quoteTrackMaintenance ? (
-                                <p>The selected dealer will receive ongoing Maintenance Tracker access to this asset until you stop it. Logged Problems and Maintenance Reports remain disabled until you enable them in Dealer tracking settings.</p>
+                                <p>The selected dealer will receive ongoing Maintenance Tracker access, maintenance reports and permission to propose maintenance schedules until you stop tracking. Proposed schedules require your approval. Logged Problems remain disabled until you enable them in Dealer tracking settings.</p>
                               ) : null}
                             </div>
 
