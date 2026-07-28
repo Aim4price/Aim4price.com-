@@ -445,6 +445,8 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
   const [reportAccessId, setReportAccessId] = useState<string | null>(null);
   const [scheduleAccessId, setScheduleAccessId] = useState<string | null>(null);
   const [managedAccessId, setManagedAccessId] = useState<string | null>(null);
+  const [deleteTrackingTarget, setDeleteTrackingTarget] = useState<DealerMaintenanceTrackedAsset | null>(null);
+  const [isDeletingTracking, setIsDeletingTracking] = useState(false);
 
   useEffect(() => setAssets(initialAssets), [initialAssets]);
 
@@ -667,6 +669,51 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
     window.location.href = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   }
 
+  function closeDeleteTrackingModal() {
+    if (isDeletingTracking) return;
+    setDeleteTrackingTarget(null);
+  }
+
+  async function confirmDeleteTracking() {
+    if (!deleteTrackingTarget || isDeletingTracking) return;
+    const accessId = deleteTrackingTarget.accessId;
+    setIsDeletingTracking(true);
+    setNotice(null);
+
+    try {
+      const response = await fetch(`/api/dealer/maintenance/${encodeURIComponent(accessId)}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      const payload = await response.json().catch(() => null) as TrackerResponse | null;
+      if (!response.ok || !payload?.ok) {
+        throw new Error(payload?.error || 'Failed to delete the tracked asset.');
+      }
+
+      setAssets((current) => current.filter((asset) => asset.accessId !== accessId));
+      setOpenAccessId((current) => (current === accessId ? null : current));
+      setMaintenanceViewAccessId((current) => (current === accessId ? null : current));
+      setManagedAccessId((current) => (current === accessId ? null : current));
+      setReportAccessId((current) => (current === accessId ? null : current));
+      setScheduleAccessId((current) => (current === accessId ? null : current));
+      setPhotoIndexes((current) => {
+        const next = { ...current };
+        delete next[accessId];
+        return next;
+      });
+      setDeleteTrackingTarget(null);
+      clearHistoryFilters();
+      setNotice({ tone: 'success', text: 'Asset removed from Maintenance Tracker.' });
+    } catch (cause) {
+      setNotice({
+        tone: 'error',
+        text: cause instanceof Error ? cause.message : 'Failed to delete the tracked asset.',
+      });
+    } finally {
+      setIsDeletingTracking(false);
+    }
+  }
+
   return (
     <main className={`${assetStyles.page} ${workspaceStyles.page} ${leadStyles.leadsPage} ${leadStyles.dealerOwnerParity} ${styles.trackerPage} ${dealerAppMode ? styles.dealerApp : ''}`}>
       <section className={`${assetStyles.shell} ${workspaceStyles.shell}`}>
@@ -766,7 +813,16 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                       <div className={leadStyles.clientDecisionArea}>
                         <div className={leadStyles.clientActionRow}>
                           {isOpen ? (
-                            <button type="button" className={`${assetStyles.secondaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionNeutral} ${leadStyles.closeLeadButton}`} onClick={closeAsset}>Close</button>
+                            <>
+                              <button
+                                type="button"
+                                className={`${assetStyles.secondaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionDanger} ${leadStyles.deleteLeadButton}`}
+                                onClick={() => setDeleteTrackingTarget(asset)}
+                              >
+                                Delete
+                              </button>
+                              <button type="button" className={`${assetStyles.secondaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionNeutral} ${leadStyles.closeLeadButton}`} onClick={closeAsset}>Close</button>
+                            </>
                           ) : (
                             <button type="button" className={`${assetStyles.primaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionGreen} ${leadStyles.openLeadButton}`} onClick={() => openAsset(asset)}>Open</button>
                           )}
@@ -792,7 +848,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                           <div className={`${assetStyles.assetHeaderActions} ${leadStyles.leadAssetHeaderActions} ${styles.trackerHeaderActions}`}>
                             <button
                               type="button"
-                              className={`${assetStyles.optionsButton} ${leadStyles.leadManageButton} ${styles.maintenanceViewButton}`}
+                              className={`${assetStyles.optionsButton} ${assetStyles.sharedNoteActionButton} ${styles.maintenanceViewButton}`}
                               onClick={() => void toggleMaintenance(asset)}
                               disabled={Boolean(historyAccessCheckId)}
                               aria-expanded={isMaintenanceOpen}
@@ -814,19 +870,6 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                             >
                               <ManageIcon className={assetStyles.buttonIcon} />
                               <span>Manage</span>
-                            </button>
-                            <button
-                              type="button"
-                              className={`${assetStyles.optionsButton} ${leadStyles.leadManageButton} ${styles.scheduleCreateButton}`}
-                              onClick={() => setScheduleAccessId(asset.accessId)}
-                              disabled={!asset.permissions.canCreateMaintenanceSchedules}
-                              aria-label="Send a proposed schedule"
-                              title={asset.permissions.canCreateMaintenanceSchedules
-                                ? 'Send a proposed schedule'
-                                : 'The asset owner has not granted permission to create maintenance schedules.'}
-                            >
-                              <MaintenanceIcon className={assetStyles.buttonIcon} />
-                              <span>Propose</span>
                             </button>
                           </div>
                         </div>
@@ -1078,6 +1121,62 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
         </section>
       </section>
 
+      {deleteTrackingTarget ? (
+        <div className={`${assetStyles.modalOverlay} ${assetStyles.confirmDeleteOverlay} ${workspaceStyles.modalOverlay}`}>
+          <div className={assetStyles.modalBackdrop} onClick={closeDeleteTrackingModal} />
+          <div
+            className={`${assetStyles.deleteConfirmModal} ${workspaceStyles.modal} ${leadStyles.leadDeleteModal} ${styles.trackerDeleteModal}`}
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="delete-tracking-title"
+            aria-describedby="delete-tracking-copy"
+          >
+            <div className={`${assetStyles.deleteConfirmContent} ${leadStyles.leadDeleteContent}`}>
+              <div className={`${assetStyles.deleteConfirmHeader} ${workspaceStyles.modalHeader} ${leadStyles.leadDeleteHeader}`}>
+                <div>
+                  <h3 id="delete-tracking-title">Delete tracking?</h3>
+                  <p id="delete-tracking-copy">This removes the asset from your Maintenance Tracker.</p>
+                </div>
+                <button
+                  type="button"
+                  className={`${assetStyles.modalCloseButton} ${workspaceStyles.modalClose} ${leadStyles.leadDeleteCloseButton}`}
+                  onClick={closeDeleteTrackingModal}
+                  aria-label="Close tracking delete confirmation"
+                  disabled={isDeletingTracking}
+                >
+                  <CloseIcon className={assetStyles.buttonIcon} />
+                </button>
+              </div>
+
+              <div className={`${assetStyles.deleteConfirmAsset} ${leadStyles.leadDeleteSummary}`}>
+                <span>Selected tracking</span>
+                <strong>{deleteTrackingTarget.ownerName}</strong>
+                <small>{deleteTrackingTarget.assetTitle} · {trackingAssetMeta(deleteTrackingTarget)}</small>
+              </div>
+
+              <div className={leadStyles.leadDeleteWarning}>
+                <strong>Tracking access will stop immediately.</strong>
+                <span>The owner’s saved maintenance records will not be deleted and the asset can be shared with you again later.</span>
+              </div>
+
+              <div className={`${assetStyles.deleteConfirmActions} ${workspaceStyles.modalFooter} ${leadStyles.leadDeleteActions}`}>
+                <button type="button" className={assetStyles.secondaryButton} onClick={closeDeleteTrackingModal} disabled={isDeletingTracking}>
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className={`${assetStyles.primaryButton} ${assetStyles.deleteConfirmButton} ${leadStyles.leadDeleteConfirmButton}`}
+                  onClick={() => void confirmDeleteTracking()}
+                  disabled={isDeletingTracking}
+                >
+                  <span>{isDeletingTracking ? 'Deleting...' : 'Delete tracking'}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {managedAsset ? (
         <div className={`${assetStyles.modalOverlay} ${workspaceStyles.modalOverlay}`}>
           <div className={assetStyles.modalBackdrop} onClick={() => setManagedAccessId(null)} />
@@ -1123,6 +1222,25 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                     <span>
                       <strong>PDF reports</strong>
                       <small>{managedAsset.permissions.canViewMaintenanceReports ? 'Choose and download a maintenance report.' : 'Owner permission is required.'}</small>
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={assetStyles.optionActionButton}
+                    onClick={() => {
+                      setManagedAccessId(null);
+                      setScheduleAccessId(managedAsset.accessId);
+                    }}
+                    disabled={!managedAsset.permissions.canCreateMaintenanceSchedules}
+                    title={!managedAsset.permissions.canCreateMaintenanceSchedules
+                      ? 'The asset owner has not granted permission to create maintenance schedules.'
+                      : undefined}
+                  >
+                    <MaintenanceIcon className={assetStyles.buttonIcon} />
+                    <span>
+                      <strong>Propose schedule</strong>
+                      <small>{managedAsset.permissions.canCreateMaintenanceSchedules ? 'Send a proposed schedule for owner approval.' : 'Owner permission is required.'}</small>
                     </span>
                   </button>
 
