@@ -2848,7 +2848,7 @@ export default function LeadsClient({
                                 ) : null}
                                 <button
                                   type="button"
-                                  className={`${assetStyles.primaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionGreen}` : ''} ${styles.openLeadButton}`}
+                                  className={`${isLeadOpen ? assetStyles.secondaryButton : assetStyles.primaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${isLeadOpen ? workspaceStyles.actionNeutral : workspaceStyles.actionGreen}` : ''} ${isLeadOpen ? styles.trackingCloseButton : styles.openLeadButton}`}
                                   onClick={() => {
                                     if (isLeadOpen) {
                                       setOpenLeadId(null);
@@ -3330,7 +3330,7 @@ export default function LeadsClient({
               <div className={`${assetStyles.deleteConfirmHeader} ${dealerWorkspaceClass(workspaceStyles.modalHeader)} ${styles.leadDeleteHeader}`}>
                 <div>
                   <h3 id="delete-lead-confirm-title">Delete lead?</h3>
-                  <p id="delete-lead-confirm-copy">This removes the lead from your leads inbox.</p>
+                  <p id="delete-lead-confirm-copy">This permanently removes the lead from your My Leads inbox.</p>
                 </div>
 
                 <button
@@ -3350,9 +3350,18 @@ export default function LeadsClient({
                 <small>{assetTitle(deleteLeadTarget)} · {formatCurrency(assetValue(deleteLeadTarget))} excl. VAT</small>
               </div>
 
+              <div className={styles.leadDeleteWarning}>
+                <strong>{isTrackingLead(deleteLeadTarget) ? 'Maintenance tracking will remain active.' : 'This action cannot be undone.'}</strong>
+                <span>
+                  {isTrackingLead(deleteLeadTarget)
+                    ? 'Delete the asset separately from Tracking if you also want to stop maintenance tracking access.'
+                    : 'The owner will need to send a new lead if you need this information again.'}
+                </span>
+              </div>
+
               <div className={`${assetStyles.deleteConfirmActions} ${dealerWorkspaceClass(workspaceStyles.modalFooter)} ${styles.leadDeleteActions}`}>
                 <button type="button" className={assetStyles.secondaryButton} onClick={closeDeleteLeadModal} disabled={isDeletingLead}>
-                  Close
+                  Cancel
                 </button>
 
                 <button
@@ -3361,7 +3370,7 @@ export default function LeadsClient({
                   onClick={() => void confirmDeleteLead()}
                   disabled={isDeletingLead}
                 >
-                  <span>{isDeletingLead ? 'Deleting...' : 'Yes, delete lead'}</span>
+                  <span>{isDeletingLead ? 'Deleting...' : 'Delete lead'}</span>
                 </button>
               </div>
             </div>
