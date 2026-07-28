@@ -3866,7 +3866,7 @@ export default function ScanClient({
 
                   <label className={styles.shareTrackingChoice}>
                     <input type="checkbox" checked={shareTrackMaintenance} onChange={(event) => setShareTrackMaintenance(event.target.checked)} />
-                    <span><strong>Add to dealer Maintenance Tracker</strong><small>Give this dealer read-only access to the asset&apos;s current usage and open maintenance schedules. Access ends when tracking is removed.</small></span>
+                    <span><strong>Add to dealer Maintenance Tracker</strong><small>The dealer can download maintenance reports and create schedules. New schedules only enter the owner&apos;s Asset Register after approval.</small></span>
                   </label>
                 </div>
                 <footer className={styles.shareFooter}>
@@ -3911,7 +3911,7 @@ export default function ScanClient({
                       {sharePhotoUrls.length ? ", attached photos" : ""} and
                       relevant documents will be shared with this dealer.
                     </p>
-                    {shareTrackMaintenance ? <p>This dealer will also receive ongoing read-only access to current usage and open maintenance schedules.</p> : null}
+                    {shareTrackMaintenance ? <p>This dealer will receive ongoing Maintenance Tracker access, maintenance reports and permission to propose schedules for owner approval.</p> : null}
                   </div>
 
                   <label className={styles.shareConsentCheck}>
