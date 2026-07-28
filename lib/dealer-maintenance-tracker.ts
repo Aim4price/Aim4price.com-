@@ -133,6 +133,8 @@ export type DealerMaintenanceTrackedAsset = {
   dealerUserId: string;
   assetId: string;
   ownerName: string;
+  ownerPhone: string;
+  ownerEmail: string;
   assetTitle: string;
   assetKind: string;
   brandName: string;
@@ -198,6 +200,8 @@ type DealerMaintenanceAccessRow = {
   has_maintenance_records: boolean | null;
   owner_display_name: string | null;
   owner_business_name: string | null;
+  owner_phone: string | null;
+  owner_email: string | null;
   dealer_display_name: string | null;
   dealer_business_name: string | null;
 };
@@ -547,10 +551,13 @@ async function listAccessRows(whereSql: string, values: unknown[]): Promise<Deal
         ) as has_maintenance_records,
         owner.display_name as owner_display_name,
         owner.business_name as owner_business_name,
+        owner.phone as owner_phone,
+        owner_user.email as owner_email,
         dealer.display_name as dealer_display_name,
         dealer.business_name as dealer_business_name
       from public.dealer_maintenance_access access
       left join public.account_profiles owner on owner.user_id = access.owner_user_id
+      left join public."user" owner_user on owner_user.id = access.owner_user_id
       left join public.account_profiles dealer on dealer.user_id = access.dealer_user_id
       ${whereSql}
       order by access.updated_at desc, access.created_at desc
@@ -1144,6 +1151,8 @@ async function buildTrackedAsset(row: DealerMaintenanceAccessRow): Promise<Deale
     dealerUserId: row.dealer_user_id,
     assetId: asset.id,
     ownerName: accessOwnerName(row),
+    ownerPhone: asText(row.owner_phone),
+    ownerEmail: asText(row.owner_email),
     assetTitle: asset.title,
     assetKind: asset.kind,
     brandName: asset.brandName,
