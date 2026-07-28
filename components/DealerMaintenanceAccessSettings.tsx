@@ -38,6 +38,11 @@ const permissionOptions: Array<{
     description: 'Allow owner-style PDF and XLSX maintenance reports for authorised assets.',
   },
   {
+    key: 'canCreateMaintenanceSchedules',
+    title: 'Create Maintenance Schedules',
+    description: 'Allow the dealer to propose schedules that require owner approval before becoming official.',
+  },
+  {
     key: 'canUpdateSerial',
     title: 'Update Serial',
     description: 'Allow serial-number corrections that still require owner approval.',
@@ -84,7 +89,8 @@ export default function DealerMaintenanceAccessSettings({
       [entryId]: {
         ...(current[entryId] ?? entries.find((entry) => entry.id === entryId)?.permissions ?? {
           canViewLoggedProblems: false,
-          canViewMaintenanceReports: false,
+          canViewMaintenanceReports: true,
+          canCreateMaintenanceSchedules: true,
           canUpdateSerial: true,
           canUpdateReplacementPrice: true,
         }),

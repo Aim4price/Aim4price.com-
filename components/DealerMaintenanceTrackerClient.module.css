@@ -22,15 +22,49 @@
   min-width: clamp(220px, 16vw, 265px) !important;
 }
 
+.scheduleCreateButton {
+  min-width: clamp(220px, 16vw, 265px) !important;
+}
+
 .trackerHeaderActions {
   flex-wrap: wrap !important;
 }
 
 .maintenanceViewButton,
-.trackerReportButton {
+.trackerReportButton,
+.scheduleCreateButton {
   min-height: 3.06rem !important;
   border-radius: 0.9rem !important;
   font-weight: 800 !important;
+}
+
+.proposalCard {
+  border-left: 4px solid #d69a36;
+}
+
+.proposalPending,
+.proposalApproved,
+.proposalDeclined {
+  border-radius: 0.55rem;
+  padding: 0.42rem 0.55rem;
+  font-size: 0.65rem;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.proposalPending {
+  background: #fff5e4;
+  color: #7a5416;
+}
+
+.proposalApproved {
+  background: #edf8f2;
+  color: #216346;
+}
+
+.proposalDeclined {
+  background: #fff1f1;
+  color: #943838;
 }
 
 .trackerSections {

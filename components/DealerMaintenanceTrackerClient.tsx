@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import DealerAssetCorrectionEditor from './DealerAssetCorrectionEditor';
 import DealerMaintenanceReportModal from './DealerMaintenanceReportModal';
+import DealerMaintenanceScheduleModal from './DealerMaintenanceScheduleModal';
 import LeadPhotoViewerModal from './LeadPhotoViewerModal';
 import {
   WorkspaceTitlePanel,
@@ -10,6 +11,7 @@ import {
 } from './WorkspacePrimitives';
 import type {
   DealerMaintenanceRecordSummary,
+  DealerMaintenanceScheduleProposal,
   DealerMaintenanceTrackedAsset,
   DealerMaintenanceTrackerStatus,
 } from '../lib/dealer-maintenance-tracker';
@@ -166,6 +168,7 @@ function matchesSearch(asset: DealerMaintenanceTrackedAsset, search: string): bo
     asset.nextMaintenance?.title,
     ...asset.maintenanceRecords.map((record) => `${record.title} ${record.notes} ${record.completedNotes}`),
     ...asset.loggedProblems.map((problem) => `${problem.summary} ${problem.note} ${problem.operatorName} ${problem.notedAtIso ? 'resolved noted' : 'open active'}`),
+    ...asset.scheduleProposals.map((proposal) => `${proposal.title} ${proposal.notes} ${proposal.status} ${proposal.maintenanceType}`),
   ].some((value) => String(value || '').toLowerCase().includes(query));
 }
 
@@ -340,6 +343,42 @@ function ProblemCard({
   );
 }
 
+function ProposalCard({ proposal }: { proposal: DealerMaintenanceScheduleProposal }) {
+  const status = proposal.status === 'approved'
+    ? 'Approved'
+    : proposal.status === 'declined'
+      ? 'Disapproved'
+      : 'Awaiting owner approval';
+  const due = proposal.triggerType === 'date'
+    ? formatDate(proposal.dueDate)
+    : formatUsage(proposal.dueUsage, proposal.usageMetric);
+  return (
+    <article className={`${styles.recordCard} ${styles.proposalCard}`}>
+      <header>
+        <div>
+          <span>Dealer-created {proposal.maintenanceType === 'checkup' ? 'checkup' : 'service'}</span>
+          <h4>{proposal.title}</h4>
+        </div>
+        <strong className={
+          proposal.status === 'approved'
+            ? styles.proposalApproved
+            : proposal.status === 'declined'
+              ? styles.proposalDeclined
+              : styles.proposalPending
+        }>
+          {status}
+        </strong>
+      </header>
+      <div className={styles.recordGrid}>
+        <div><span>Due</span><strong>{due}</strong></div>
+        <div><span>Created</span><strong>{formatDate(proposal.createdAtIso)}</strong></div>
+        <div><span>Visibility</span><strong>{proposal.status === 'declined' ? 'Dealer only' : proposal.status === 'approved' ? 'Dealer and owner' : 'Owner decision pending'}</strong></div>
+      </div>
+      {proposal.notes ? <div className={styles.note}><span>Proposal note</span><p>{proposal.notes}</p></div> : null}
+    </article>
+  );
+}
+
 export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAppMode = false, initialOpenAccessId = null }: Props) {
   const [assets, setAssets] = useState(initialAssets);
   const [search, setSearch] = useState('');
@@ -364,6 +403,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
   const [openHistoryDropdown, setOpenHistoryDropdown] = useState<string | null>(null);
   const [historyAccessCheckId, setHistoryAccessCheckId] = useState<string | null>(null);
   const [reportAccessId, setReportAccessId] = useState<string | null>(null);
+  const [scheduleAccessId, setScheduleAccessId] = useState<string | null>(null);
 
   useEffect(() => setAssets(initialAssets), [initialAssets]);
 
@@ -701,16 +741,30 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                                     : 'View maintenance history'}
                               </span>
                             </button>
-                            {asset.permissions.canViewMaintenanceReports ? (
-                              <button
-                                type="button"
-                                className={`${assetStyles.optionsButton} ${leadStyles.maintenanceReportButton} ${styles.trackerReportButton}`}
-                                onClick={() => setReportAccessId(asset.accessId)}
-                              >
-                                <DownloadIcon className={assetStyles.buttonIcon} />
-                                <span>Download maintenance report</span>
-                              </button>
-                            ) : null}
+                            <button
+                              type="button"
+                              className={`${assetStyles.optionsButton} ${leadStyles.maintenanceReportButton} ${styles.trackerReportButton}`}
+                              onClick={() => setReportAccessId(asset.accessId)}
+                              disabled={!asset.permissions.canViewMaintenanceReports}
+                              title={asset.permissions.canViewMaintenanceReports
+                                ? undefined
+                                : 'The asset owner has not granted maintenance report access.'}
+                            >
+                              <DownloadIcon className={assetStyles.buttonIcon} />
+                              <span>Download maintenance report</span>
+                            </button>
+                            <button
+                              type="button"
+                              className={`${assetStyles.optionsButton} ${leadStyles.leadManageButton} ${styles.scheduleCreateButton}`}
+                              onClick={() => setScheduleAccessId(asset.accessId)}
+                              disabled={!asset.permissions.canCreateMaintenanceSchedules}
+                              title={asset.permissions.canCreateMaintenanceSchedules
+                                ? undefined
+                                : 'The asset owner has not granted permission to create maintenance schedules.'}
+                            >
+                              <MaintenanceIcon className={assetStyles.buttonIcon} />
+                              <span>Create maintenance schedule</span>
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -855,6 +909,20 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                           </section>
                         ) : null}
 
+                        {asset.scheduleProposals.length ? (
+                          <section className={styles.section}>
+                            <header>
+                              <div><span>Dealer-created schedules</span><h3>Schedule proposals</h3></div>
+                              <strong>{asset.scheduleProposals.length}</strong>
+                            </header>
+                            <div className={styles.recordList}>
+                              {asset.scheduleProposals.map((proposal) => (
+                                <ProposalCard key={proposal.id} proposal={proposal} />
+                              ))}
+                            </div>
+                          </section>
+                        ) : null}
+
                         {correctionVisible ? (
                           <section className={styles.section}>
                             <header><div><span>Owner-approved updates</span><h3>Asset corrections</h3></div></header>
@@ -993,6 +1061,20 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
         <DealerMaintenanceReportModal
           accessId={reportAccessId}
           onClose={() => setReportAccessId(null)}
+          onError={(message) => setNotice({ tone: 'error', text: message })}
+        />
+      ) : null}
+
+      {scheduleAccessId ? (
+        <DealerMaintenanceScheduleModal
+          accessId={scheduleAccessId}
+          onClose={() => setScheduleAccessId(null)}
+          onCreated={(proposals) => {
+            setAssets((current) => current.map((asset) => asset.accessId === scheduleAccessId
+              ? { ...asset, scheduleProposals: proposals }
+              : asset));
+            setNotice({ tone: 'success', text: 'Maintenance schedule sent to the owner for approval.' });
+          }}
           onError={(message) => setNotice({ tone: 'error', text: message })}
         />
       ) : null}

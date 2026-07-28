@@ -96,7 +96,7 @@ type AccountProfileLogoState = {
   logoUrl: string | null;
 };
 
-type HeaderNotificationCategory = 'partner_note' | 'lead' | 'qr_scan' | 'fuel' | 'maintenance' | 'dealer_correction' | 'asset_discovery';
+type HeaderNotificationCategory = 'partner_note' | 'lead' | 'qr_scan' | 'fuel' | 'maintenance' | 'dealer_schedule' | 'dealer_correction' | 'asset_discovery';
 
 type HeaderNotificationTone = 'neutral' | 'success' | 'warning' | 'info';
 
@@ -111,6 +111,7 @@ type HeaderNotificationItem = {
   assetDiscoveryEnquiryId?: string;
   dealerAssetCorrectionId?: string;
   dealerAssetCorrectionAction?: 'decision' | 'retry' | 'pending';
+  dealerMaintenanceScheduleProposalId?: string;
   priority?: boolean;
 };
 
@@ -506,6 +507,7 @@ export default function AppHeader({
   const [notificationPage, setNotificationPage] = useState(1);
   const [processingAssetDiscoveryEnquiryIds, setProcessingAssetDiscoveryEnquiryIds] = useState<Set<string>>(() => new Set());
   const [processingDealerCorrectionIds, setProcessingDealerCorrectionIds] = useState<Set<string>>(() => new Set());
+  const [processingMaintenanceScheduleProposalIds, setProcessingMaintenanceScheduleProposalIds] = useState<Set<string>>(() => new Set());
   const [activeAssetDiscoveryEnquiry, setActiveAssetDiscoveryEnquiry] = useState<AssetDiscoveryEnquiry | null>(null);
   const [notificationDetailError, setNotificationDetailError] = useState<string | null>(null);
   const [notificationDetailOutcome, setNotificationDetailOutcome] = useState<{
@@ -1038,6 +1040,50 @@ export default function AppHeader({
     }
   }
 
+  async function handleMaintenanceScheduleDecision(proposalId: string, decision: 'approve' | 'decline') {
+    setProcessingMaintenanceScheduleProposalIds((current) => new Set(current).add(proposalId));
+    setNotificationDetailError(null);
+    setNotificationDetailOutcome(null);
+    try {
+      const response = await fetch(`/api/dealer-maintenance-schedule-proposals/${encodeURIComponent(proposalId)}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ decision }),
+      });
+      const data = await response.json().catch(() => null) as {
+        ok?: boolean;
+        message?: string;
+        error?: string;
+      } | null;
+      if (!response.ok || !data?.ok) {
+        throw new Error(data?.error || 'Failed to save the maintenance schedule decision.');
+      }
+      setNotifications((current) => current.filter(
+        (item) => item.dealerMaintenanceScheduleProposalId !== proposalId,
+      ));
+      markNotificationsSeen();
+      window.dispatchEvent(new Event('aim4price:asset-register-updated'));
+      setNotificationDetailOutcome({
+        tone: 'success',
+        title: decision === 'approve' ? 'Maintenance schedule approved' : 'Maintenance schedule disapproved',
+        message: data.message || (
+          decision === 'approve'
+            ? 'The schedule was added to your Asset Register.'
+            : 'The schedule is no longer visible on your side.'
+        ),
+      });
+    } catch (error) {
+      setNotificationDetailError(error instanceof Error ? error.message : 'Failed to save the maintenance schedule decision.');
+    } finally {
+      setProcessingMaintenanceScheduleProposalIds((current) => {
+        const next = new Set(current);
+        next.delete(proposalId);
+        return next;
+      });
+    }
+  }
+
   async function handleDealerCorrectionRetry(correctionId: string) {
     setProcessingDealerCorrectionIds((current) => new Set(current).add(correctionId));
     setNotificationDetailError(null);
@@ -1155,6 +1201,41 @@ export default function AppHeader({
     const newClass = isNotificationNew(notification) ? styles.notificationItemNew : '';
     const priorityClass = notification.priority ? styles.notificationItemPriority : '';
     const baseClassName = `${styles.notificationItem} ${toneClass} ${newClass} ${priorityClass}`;
+
+    if (notification.dealerMaintenanceScheduleProposalId) {
+      const proposalId = notification.dealerMaintenanceScheduleProposalId;
+      const processing = processingMaintenanceScheduleProposalIds.has(proposalId);
+      return (
+        <div key={notification.id} className={`${baseClassName} ${styles.notificationItemActionable}`}>
+          <span className={styles.notificationDot} aria-hidden="true" />
+          <span className={styles.notificationCopy}>
+            <strong>{notification.title}</strong>
+            <span>{notification.body}</span>
+            <span className={styles.notificationMetaRow}>
+              <small>{formatNotificationTime(notification.createdAtIso)}</small>
+            </span>
+            <span className={styles.notificationActionRow}>
+              <button
+                type="button"
+                className={styles.notificationDenyButton}
+                onClick={() => void handleMaintenanceScheduleDecision(proposalId, 'decline')}
+                disabled={processing}
+              >
+                {processing ? 'Saving...' : 'Disapprove'}
+              </button>
+              <button
+                type="button"
+                className={styles.notificationApproveButton}
+                onClick={() => void handleMaintenanceScheduleDecision(proposalId, 'approve')}
+                disabled={processing}
+              >
+                {processing ? 'Saving...' : 'Approve schedule'}
+              </button>
+            </span>
+          </span>
+        </div>
+      );
+    }
 
     if (notification.dealerAssetCorrectionId) {
       const correctionId = notification.dealerAssetCorrectionId;
