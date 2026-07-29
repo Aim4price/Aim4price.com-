@@ -9,6 +9,7 @@ type InvoiceSource = 'manual' | 'automatic' | 'fuel_slip';
 type FilterSource = 'all' | InvoiceSource;
 type UsageMetric = 'none' | 'hours' | 'km' | 'percentage';
 type NoticeTone = 'success' | 'error';
+type OwnerStorageStatus = 'owner' | 'pending' | 'approved' | 'declined';
 
 type AssetOption = {
   id: string;
@@ -58,6 +59,8 @@ type InvoiceRecord = {
   createdByDealerUserId: string;
   createdByDealerStaffId: string;
   createdByDisplayName: string;
+  ownerStorageStatus: OwnerStorageStatus;
+  ownerStorageDecidedAtIso: string | null;
   invoiceDocumentId: string | null;
   document: InvoiceDocument | null;
   supplierName: string;
@@ -577,6 +580,13 @@ function sourceLabel(source: InvoiceSource): string {
   return source === 'automatic' ? 'Automatic' : 'Manual';
 }
 
+function ownerStorageLabel(status: OwnerStorageStatus): string {
+  if (status === 'approved') return 'Dealer and owner';
+  if (status === 'declined') return 'Dealer only';
+  if (status === 'pending') return 'Owner decision pending';
+  return 'Owner Cost Ledger';
+}
+
 
 function captureMethodLabel(source: InvoiceSource): string {
   if (source === 'fuel_slip') return 'Fuel Slip';
@@ -657,6 +667,7 @@ function invoiceSearchText(invoice: InvoiceRecord): string {
     invoice.assetTitle,
     invoice.ownerName,
     invoice.createdByDisplayName,
+    ownerStorageLabel(invoice.ownerStorageStatus),
     invoice.source,
     sourceLabel(invoice.source),
     invoice.invoiceDate,
@@ -1228,7 +1239,12 @@ export default function MyInvoicesClient({
       await reloadData();
       const duplicateText = data.duplicateWarnings?.length ? ` ${data.duplicateWarnings.join(' ')}` : '';
       closeModal();
-      setNotice({ tone: 'success', message: `Cost record saved.${duplicateText}` });
+      setNotice({
+        tone: 'success',
+        message: dealerMode
+          ? `Cost record saved on the dealer side. The owner has been notified and can choose whether to store it in their Cost Ledger.${duplicateText}`
+          : `Cost record saved.${duplicateText}`,
+      });
     } catch (error) {
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'The cost record could not be saved.' });
     } finally {
@@ -1382,6 +1398,11 @@ export default function MyInvoicesClient({
                         <span className={styles.invoiceSavedDateLabel}>{sourceLabel(invoice.source)}</span>
                         {invoice.createdByDisplayName ? (
                           <span className={styles.invoiceSavedDateLabel}>Added by {invoice.createdByDisplayName}</span>
+                        ) : null}
+                        {dealerMode ? (
+                          <span className={styles.invoiceSavedDateLabel}>
+                            Visibility: {ownerStorageLabel(invoice.ownerStorageStatus)}
+                          </span>
                         ) : null}
                         {updatedLabel ? <span className={styles.invoiceSavedDateLabel}>{updatedLabel}</span> : null}
                       </div>
