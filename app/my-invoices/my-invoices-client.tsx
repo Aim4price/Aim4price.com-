@@ -190,7 +190,8 @@ type Notice = {
 };
 
 type ReportFormat = 'pdf' | 'xlsx' | 'csv';
-type DownloadStep = 'filters' | 'format';
+type DownloadExportFormat = Exclude<ReportFormat, 'csv'>;
+type DownloadStep = 'format' | 'settings';
 
 const DEFAULT_FILTERS: InvoiceFilterState = {
   ownerId: 'all',
@@ -756,8 +757,8 @@ export default function MyInvoicesClient({
   const [filterAssetSearch, setFilterAssetSearch] = useState('');
   const [filterOwnerSearch, setFilterOwnerSearch] = useState('');
   const [downloadOpen, setDownloadOpen] = useState(false);
-  const [downloadStep, setDownloadStep] = useState<DownloadStep>('filters');
-  const [downloadFormat, setDownloadFormat] = useState<ReportFormat>('pdf');
+  const [downloadStep, setDownloadStep] = useState<DownloadStep>('format');
+  const [downloadFormat, setDownloadFormat] = useState<DownloadExportFormat>('pdf');
   const [downloadReportName, setDownloadReportName] = useState('Cost of Ownership Report');
   const [includeFuelSlipCosts, setIncludeFuelSlipCosts] = useState(true);
   const [dealerDefaults, setDealerDefaults] = useState<DealerDefaults>(initialDealerDefaults);
@@ -1165,7 +1166,7 @@ export default function MyInvoicesClient({
   function openDownloadModal() {
     setIncludeFuelSlipCosts(true);
     setDownloadFilters(activeFilters);
-    setDownloadStep('filters');
+    setDownloadStep('format');
     setDownloadFormat('pdf');
     setDownloadReportName('Cost of Ownership Report');
     setOpenFilterDropdown(null);
@@ -1174,7 +1175,7 @@ export default function MyInvoicesClient({
 
   function closeDownloadModal() {
     setOpenFilterDropdown(null);
-    setDownloadStep('filters');
+    setDownloadStep('format');
     setDownloadOpen(false);
   }
 
@@ -1183,9 +1184,9 @@ export default function MyInvoicesClient({
     setDownloadStep('format');
   }
 
-  function showDownloadFilterStep() {
+  function showDownloadSettingsStep() {
     setOpenFilterDropdown(null);
-    setDownloadStep('filters');
+    setDownloadStep('settings');
   }
 
   function handleDownloadReport(format: ReportFormat) {
@@ -1690,21 +1691,70 @@ export default function MyInvoicesClient({
           <div className={`${styles.downloadModal} ${styles.reportModal} ${downloadStep === 'format' ? styles.downloadFormatModal : ''}`}>
             <div className={styles.modalHeader}>
               <div>
-                <h2>{downloadStep === 'filters' ? 'Download cost records' : 'Export cost records'}</h2>
+                <h2>{downloadStep === 'format' ? 'Download cost records' : 'Export cost records'}</h2>
                 <p>
-                  {downloadStep === 'filters'
-                    ? 'Choose the reporting period and fuel costs to include.'
-                    : 'Confirm the report name and choose the export format.'}
+                  {downloadStep === 'format'
+                    ? 'Choose the export format before setting the report timeline.'
+                    : 'Confirm the report name, timeline and fuel costs.'}
                 </p>
               </div>
               <button type="button" className={styles.closeButton} onClick={closeDownloadModal} aria-label="Close download"><CloseIcon /></button>
             </div>
             <div className={styles.modalDivider} />
-            {downloadStep === 'filters' ? (
+            {downloadStep === 'format' ? (
               <>
-                <section className={styles.reportPeriodPanel} aria-label="Report period">
+                <div className={`${styles.reportChoiceGrid} ${styles.downloadFormatGrid}`}>
+                  <button
+                    type="button"
+                    className={`${styles.reportOption} ${downloadFormat === 'pdf' ? styles.reportOptionActive : ''}`}
+                    onClick={() => setDownloadFormat('pdf')}
+                    aria-pressed={downloadFormat === 'pdf'}
+                  >
+                    <span className={styles.reportGraphic}>
+                      <img src="/brand/pdf.png" alt="PDF report" className={styles.reportGraphicImage} />
+                    </span>
+                    <span className={styles.reportTitleBlock}>
+                      <strong>PDF report</strong>
+                      <small>Open a clear report for clients, banks or insurance partners.</small>
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.reportOption} ${downloadFormat === 'xlsx' ? styles.reportOptionActive : ''}`}
+                    onClick={() => setDownloadFormat('xlsx')}
+                    aria-pressed={downloadFormat === 'xlsx'}
+                  >
+                    <span className={styles.reportGraphic}>
+                      <img src="/brand/sheet.png" alt="Excel workbook" className={styles.reportGraphicImage} />
+                    </span>
+                    <span className={styles.reportTitleBlock}>
+                      <strong>XLSX workbook</strong>
+                      <small>Download all report rows in an Excel-ready workbook.</small>
+                    </span>
+                  </button>
+                </div>
+                <div className={`${styles.modalFooter} ${styles.downloadModalFooter} ${styles.downloadFormatFooter}`}>
+                  <button type="button" className={`${styles.secondaryButton} ${styles.downloadSecondaryButton}`} onClick={closeDownloadModal}>Cancel</button>
+                  <button type="button" className={styles.primaryButton} onClick={showDownloadSettingsStep}>
+                    <span>Next</span>
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <label className={styles.downloadReportNameField}>
+                  <span>Report name</span>
+                  <input
+                    type="text"
+                    value={downloadReportName}
+                    onChange={(event) => setDownloadReportName(event.target.value)}
+                    placeholder="Enter the report name"
+                    maxLength={100}
+                  />
+                </label>
+                <section className={styles.reportPeriodPanel} aria-label="Report timeline">
                   <div className={styles.reportSectionHeading}>
-                    <strong>Report period</strong>
+                    <strong>Report timeline</strong>
                     <span>Choose the year and month to include in this export.</span>
                   </div>
                   <div className={styles.reportPeriodGrid}>
@@ -1767,71 +1817,8 @@ export default function MyInvoicesClient({
                     </span>
                   </button>
                 </div>
-                <div className={`${styles.modalFooter} ${styles.downloadModalFooter}`}>
-                  <button type="button" className={`${styles.secondaryButton} ${styles.downloadSecondaryButton}`} onClick={closeDownloadModal}>Cancel</button>
-                  <button type="button" className={styles.primaryButton} onClick={showDownloadFormatStep}>
-                    <span>Next</span>
-                  </button>
-                </div>
-              </>
-            ) : (
-              <>
-                <label className={styles.downloadReportNameField}>
-                  <span>Report name</span>
-                  <input
-                    type="text"
-                    value={downloadReportName}
-                    onChange={(event) => setDownloadReportName(event.target.value)}
-                    placeholder="Enter the report name"
-                    maxLength={100}
-                  />
-                </label>
-                <div className={`${styles.reportChoiceGrid} ${styles.downloadFormatGrid}`}>
-                  <button
-                    type="button"
-                    className={`${styles.reportOption} ${downloadFormat === 'pdf' ? styles.reportOptionActive : ''}`}
-                    onClick={() => setDownloadFormat('pdf')}
-                    aria-pressed={downloadFormat === 'pdf'}
-                  >
-                    <span className={styles.reportGraphic}>
-                      <img src="/brand/pdf.png" alt="PDF report" className={styles.reportGraphicImage} />
-                    </span>
-                    <span className={styles.reportTitleBlock}>
-                      <strong>PDF report</strong>
-                      <small>Open a clear report for clients, banks or insurance partners.</small>
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    className={`${styles.reportOption} ${downloadFormat === 'xlsx' ? styles.reportOptionActive : ''}`}
-                    onClick={() => setDownloadFormat('xlsx')}
-                    aria-pressed={downloadFormat === 'xlsx'}
-                  >
-                    <span className={styles.reportGraphic}>
-                      <img src="/brand/sheet.png" alt="Excel workbook" className={styles.reportGraphicImage} />
-                    </span>
-                    <span className={styles.reportTitleBlock}>
-                      <strong>XLSX workbook</strong>
-                      <small>Download all report rows in an Excel-ready workbook.</small>
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    className={`${styles.reportOption} ${downloadFormat === 'csv' ? styles.reportOptionActive : ''}`}
-                    onClick={() => setDownloadFormat('csv')}
-                    aria-pressed={downloadFormat === 'csv'}
-                  >
-                    <span className={styles.reportGraphic}>
-                      <DownloadIcon />
-                    </span>
-                    <span className={styles.reportTitleBlock}>
-                      <strong>CSV file</strong>
-                      <small>Download accounting-ready rows in a simple CSV file.</small>
-                    </span>
-                  </button>
-                </div>
                 <div className={`${styles.modalFooter} ${styles.downloadModalFooter} ${styles.downloadFormatFooter}`}>
-                  <button type="button" className={`${styles.secondaryButton} ${styles.downloadSecondaryButton}`} onClick={showDownloadFilterStep}>Back</button>
+                  <button type="button" className={`${styles.secondaryButton} ${styles.downloadSecondaryButton}`} onClick={showDownloadFormatStep}>Back</button>
                   <button type="button" className={`${styles.secondaryButton} ${styles.downloadSecondaryButton}`} onClick={closeDownloadModal}>Cancel</button>
                   <button
                     type="button"
@@ -1843,9 +1830,7 @@ export default function MyInvoicesClient({
                     <span>
                       {downloadFormat === 'pdf'
                         ? 'Open PDF report'
-                        : downloadFormat === 'xlsx'
-                          ? 'Download Excel'
-                          : 'Download CSV'}
+                        : 'Download Excel'}
                     </span>
                   </button>
                 </div>
