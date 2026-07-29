@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation';
 import MyInvoicesClient from '../../my-invoices/my-invoices-client';
 import { getDealerCostRequestContext } from '../../../lib/dealer-cost-request';
-import DealerNav from '../dealer-nav';
 import dealerStyles from '../dealer.module.css';
 
 export const runtime = 'nodejs';
@@ -23,7 +22,6 @@ export default async function DealerCostsPage({ searchParams }: PageProps) {
 
   return (
     <div className={dealerStyles.module}>
-      <DealerNav backLabel="Home" />
       <MyInvoicesClient
         dealerMode
         initialAssetId={initialAssetId}
