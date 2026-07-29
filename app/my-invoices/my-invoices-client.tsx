@@ -14,6 +14,7 @@ type OwnerStorageStatus = 'owner' | 'pending' | 'approved' | 'declined';
 
 type AssetOption = {
   id: string;
+  ownerUserId?: string;
   title: string;
   kind: string;
   categoryLabel: string;
@@ -168,13 +169,14 @@ type InvoiceDraft = {
 };
 
 type InvoiceFilterState = {
+  ownerId: string;
   assetId: string;
   source: FilterSource;
   year: string;
   month: string;
 };
 
-type FilterDropdownKey = 'asset' | 'source' | 'year' | 'month';
+type FilterDropdownKey = 'owner' | 'asset' | 'source' | 'year' | 'month' | 'download-year' | 'download-month';
 
 type FilterSelectOption = {
   value: string;
@@ -186,9 +188,10 @@ type Notice = {
   message: string;
 };
 
-type ReportFormat = 'pdf' | 'xlsx';
+type ReportFormat = 'pdf' | 'xlsx' | 'csv';
 
 const DEFAULT_FILTERS: InvoiceFilterState = {
+  ownerId: 'all',
   assetId: 'all',
   source: 'all',
   year: 'all',
@@ -217,6 +220,12 @@ const SOURCE_FILTER_OPTIONS: FilterSelectOption[] = [
   { value: 'manual', label: 'Manual cost records' },
   { value: 'automatic', label: 'Uploaded invoice/photo records' },
   { value: 'fuel_slip', label: 'Fuel Slip costs' },
+];
+
+const DEALER_SOURCE_FILTER_OPTIONS: FilterSelectOption[] = [
+  { value: 'all', label: 'All dealer cost sources' },
+  { value: 'manual', label: 'Manual cost records' },
+  { value: 'automatic', label: 'Uploaded invoice/photo records' },
 ];
 
 const USAGE_METRIC_OPTIONS: Array<{ value: UsageMetric; label: string }> = [
@@ -692,6 +701,7 @@ function invoiceYear(invoice: InvoiceRecord): number | null {
 function buildInvoiceListUrl(filters: InvoiceFilterState, apiRoot: string): string {
   const params = new URLSearchParams();
 
+  if (filters.ownerId !== 'all') params.set('ownerId', filters.ownerId);
   if (filters.assetId !== 'all') params.set('assetId', filters.assetId);
   if (filters.year !== 'all') params.set('year', filters.year);
   if (filters.month !== 'all') params.set('month', filters.month);
@@ -730,11 +740,13 @@ export default function MyInvoicesClient({
   const [invoiceSearch, setInvoiceSearch] = useState('');
   const [activeFilters, setActiveFilters] = useState<InvoiceFilterState>(DEFAULT_FILTERS);
   const [draftFilters, setDraftFilters] = useState<InvoiceFilterState>(DEFAULT_FILTERS);
+  const [downloadFilters, setDownloadFilters] = useState<InvoiceFilterState>(DEFAULT_FILTERS);
   const [filterOpen, setFilterOpen] = useState(false);
   const [currentInvoicePage, setCurrentInvoicePage] = useState(1);
   const [openFilterDropdown, setOpenFilterDropdown] = useState<FilterDropdownKey | null>(null);
   const [usageMetricDropdownOpen, setUsageMetricDropdownOpen] = useState(false);
   const [filterAssetSearch, setFilterAssetSearch] = useState('');
+  const [filterOwnerSearch, setFilterOwnerSearch] = useState('');
   const [downloadOpen, setDownloadOpen] = useState(false);
   const [includeFuelSlipCosts, setIncludeFuelSlipCosts] = useState(true);
   const [dealerDefaults, setDealerDefaults] = useState<DealerDefaults>(initialDealerDefaults);
@@ -778,7 +790,7 @@ export default function MyInvoicesClient({
     return () => {
       cancelled = true;
     };
-  }, [activeFilters.assetId, activeFilters.year, activeFilters.month]);
+  }, [activeFilters.ownerId, activeFilters.assetId, activeFilters.year, activeFilters.month]);
 
   useEffect(() => {
     if (initialLaunchHandled || isLoading) return;
@@ -826,17 +838,48 @@ export default function MyInvoicesClient({
 
   const yearOptions = useMemo(() => {
     const years = new Set(availableYears);
-    for (const value of [activeFilters.year, draftFilters.year]) {
+    for (const value of [activeFilters.year, draftFilters.year, downloadFilters.year]) {
       const year = Number(value);
       if (Number.isInteger(year) && year >= 2000 && year <= 2100) years.add(year);
     }
     return Array.from(years).sort((a, b) => b - a);
-  }, [activeFilters.year, availableYears, draftFilters.year]);
+  }, [activeFilters.year, availableYears, downloadFilters.year, draftFilters.year]);
 
-  const assetFilterOptions = useMemo<FilterSelectOption[]>(() => [
-    { value: 'all', label: 'All saved assets' },
-    ...assets.map((asset) => ({ value: asset.id, label: asset.title })),
-  ], [assets]);
+  const ownerFilterOptions = useMemo<FilterSelectOption[]>(() => {
+    const owners = new Map<string, string>();
+    for (const asset of assets) {
+      const ownerId = String(asset.ownerUserId ?? '').trim();
+      const ownerName = String(asset.ownerName ?? '').trim();
+      if (ownerId && !owners.has(ownerId)) owners.set(ownerId, ownerName || 'Asset owner');
+    }
+
+    return [
+      { value: 'all', label: 'All companies and owners' },
+      ...Array.from(owners.entries())
+        .sort((left, right) => left[1].localeCompare(right[1]))
+        .map(([value, label]) => ({ value, label })),
+    ];
+  }, [assets]);
+
+  const assetFilterOptions = useMemo<FilterSelectOption[]>(() => {
+    const visibleAssets = dealerMode && draftFilters.ownerId !== 'all'
+      ? assets.filter((asset) => asset.ownerUserId === draftFilters.ownerId)
+      : dealerMode
+        ? []
+        : assets;
+
+    return [
+      {
+        value: 'all',
+        label: dealerMode && draftFilters.ownerId === 'all'
+          ? 'Choose a company or owner first'
+          : dealerMode
+            ? 'All assets for this owner'
+            : 'All saved assets',
+      },
+      ...visibleAssets.map((asset) => ({ value: asset.id, label: asset.title })),
+    ];
+  }, [assets, dealerMode, draftFilters.ownerId]);
 
   const yearFilterOptions = useMemo<FilterSelectOption[]>(() => [
     { value: 'all', label: 'All invoice years' },
@@ -850,12 +893,13 @@ export default function MyInvoicesClient({
 
   const activeFilterCount = useMemo(() => {
     return [
+      dealerMode && activeFilters.ownerId !== 'all',
       activeFilters.assetId !== 'all',
       activeFilters.source !== 'all',
       activeFilters.year !== 'all',
       activeFilters.month !== 'all',
     ].filter(Boolean).length;
-  }, [activeFilters]);
+  }, [activeFilters, dealerMode]);
 
   const sourceChoiceOpen = flow === 'source-choice';
   const assetPickerOpen = flow === 'asset-manual' || flow === 'asset-automatic';
@@ -869,7 +913,7 @@ export default function MyInvoicesClient({
 
   useEffect(() => {
     setCurrentInvoicePage(1);
-  }, [activeFilters.assetId, activeFilters.source, activeFilters.year, activeFilters.month, invoiceSearch]);
+  }, [activeFilters.ownerId, activeFilters.assetId, activeFilters.source, activeFilters.year, activeFilters.month, invoiceSearch]);
 
   useEffect(() => {
     setCurrentInvoicePage((page) => Math.min(page, totalInvoicePages));
@@ -890,7 +934,7 @@ export default function MyInvoicesClient({
   }, [modalOpen]);
 
   useEffect(() => {
-    if (!filterOpen || !openFilterDropdown) return undefined;
+    if ((!filterOpen && !downloadOpen) || !openFilterDropdown) return undefined;
 
     function handlePointerDown(event: MouseEvent) {
       const target = event.target;
@@ -898,6 +942,7 @@ export default function MyInvoicesClient({
       if (!target.closest('[data-filter-dropdown="true"]')) {
         setOpenFilterDropdown(null);
         setFilterAssetSearch('');
+        setFilterOwnerSearch('');
       }
     }
 
@@ -905,6 +950,7 @@ export default function MyInvoicesClient({
       if (event.key === 'Escape') {
         setOpenFilterDropdown(null);
         setFilterAssetSearch('');
+        setFilterOwnerSearch('');
       }
     }
 
@@ -915,7 +961,7 @@ export default function MyInvoicesClient({
       document.removeEventListener('mousedown', handlePointerDown);
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [filterOpen, openFilterDropdown]);
+  }, [downloadOpen, filterOpen, openFilterDropdown]);
 
   useEffect(() => {
     if (!formOpen) setUsageMetricDropdownOpen(false);
@@ -1065,6 +1111,7 @@ export default function MyInvoicesClient({
     setDraftFilters(activeFilters);
     setOpenFilterDropdown(null);
     setFilterAssetSearch('');
+    setFilterOwnerSearch('');
     setFilterOpen(true);
   }
 
@@ -1072,6 +1119,7 @@ export default function MyInvoicesClient({
     setDraftFilters(activeFilters);
     setOpenFilterDropdown(null);
     setFilterAssetSearch('');
+    setFilterOwnerSearch('');
     setFilterOpen(false);
   }
 
@@ -1079,6 +1127,7 @@ export default function MyInvoicesClient({
     setActiveFilters(draftFilters);
     setOpenFilterDropdown(null);
     setFilterAssetSearch('');
+    setFilterOwnerSearch('');
     setFilterOpen(false);
   }
 
@@ -1087,6 +1136,7 @@ export default function MyInvoicesClient({
     setActiveFilters(DEFAULT_FILTERS);
     setOpenFilterDropdown(null);
     setFilterAssetSearch('');
+    setFilterOwnerSearch('');
     setFilterOpen(false);
   }
 
@@ -1095,21 +1145,23 @@ export default function MyInvoicesClient({
 
     if (key !== 'asset') {
       setFilterAssetSearch('');
-      return;
     }
-
-    setFilterAssetSearch('');
+    if (key !== 'owner') {
+      setFilterOwnerSearch('');
+    }
   }
 
   function openDownloadModal() {
     setIncludeFuelSlipCosts(true);
+    setDownloadFilters(activeFilters);
+    setOpenFilterDropdown(null);
     setDownloadOpen(true);
   }
 
   function handleDownloadReport(format: ReportFormat) {
-    const url = buildReportUrl(activeFilters, format, includeFuelSlipCosts);
+    const url = buildReportUrl(downloadFilters, format, includeFuelSlipCosts);
 
-    if (format === 'xlsx') {
+    if (format === 'xlsx' || format === 'csv') {
       const link = document.createElement('a');
       link.href = url;
       link.download = '';
@@ -1117,12 +1169,14 @@ export default function MyInvoicesClient({
       document.body.appendChild(link);
       link.click();
       link.remove();
+      setOpenFilterDropdown(null);
       setDownloadOpen(false);
       return;
     }
 
     const opened = window.open(url, '_blank', 'noopener,noreferrer');
     if (!opened) window.location.href = url;
+    setOpenFilterDropdown(null);
     setDownloadOpen(false);
   }
 
@@ -1517,11 +1571,36 @@ export default function MyInvoicesClient({
             <div className={styles.modalHeader}>
               <div>
                 <h2>Filter cost records</h2>
+                <p>
+                  {dealerMode
+                    ? 'Choose a company or owner first, then narrow the records to one of their shared assets.'
+                    : 'Narrow the Cost Ledger by asset, source and invoice period.'}
+                </p>
               </div>
               <button type="button" className={styles.closeButton} onClick={closeFilterPanel} aria-label="Close filter"><CloseIcon /></button>
             </div>
             <div className={styles.modalDivider} />
-            <div className={styles.filterGrid}>
+            <div className={`${styles.filterGrid} ${dealerMode ? styles.dealerFilterGrid : ''}`}>
+              {dealerMode ? (
+                <FilterDropdown
+                  label="Company / owner"
+                  dropdownKey="owner"
+                  value={draftFilters.ownerId}
+                  options={ownerFilterOptions}
+                  openDropdown={openFilterDropdown}
+                  searchable
+                  searchValue={filterOwnerSearch}
+                  searchPlaceholder="Search companies and owners"
+                  noMatchesLabel="No companies or owners found"
+                  onOpenChange={handleFilterDropdownOpenChange}
+                  onChange={(value) => setDraftFilters((current) => ({
+                    ...current,
+                    ownerId: value,
+                    assetId: 'all',
+                  }))}
+                  onSearchChange={setFilterOwnerSearch}
+                />
+              ) : null}
               <FilterDropdown
                 label="Asset"
                 dropdownKey="asset"
@@ -1530,17 +1609,18 @@ export default function MyInvoicesClient({
                 openDropdown={openFilterDropdown}
                 searchable
                 searchValue={filterAssetSearch}
-                searchPlaceholder="Search saved assets"
-                noMatchesLabel="No saved assets found"
+                searchPlaceholder={dealerMode ? 'Search this owner’s assets' : 'Search saved assets'}
+                noMatchesLabel={dealerMode ? 'No shared assets found for this owner' : 'No saved assets found'}
                 onOpenChange={handleFilterDropdownOpenChange}
                 onChange={(value) => setDraftFilters((current) => ({ ...current, assetId: value }))}
                 onSearchChange={setFilterAssetSearch}
+                disabled={dealerMode && draftFilters.ownerId === 'all'}
               />
               <FilterDropdown
                 label="Source"
                 dropdownKey="source"
                 value={draftFilters.source}
-                options={SOURCE_FILTER_OPTIONS}
+                options={dealerMode ? DEALER_SOURCE_FILTER_OPTIONS : SOURCE_FILTER_OPTIONS}
                 openDropdown={openFilterDropdown}
                 onOpenChange={handleFilterDropdownOpenChange}
                 onChange={(value) => setDraftFilters((current) => ({ ...current, source: value as FilterSource }))}
@@ -1575,16 +1655,54 @@ export default function MyInvoicesClient({
       ) : null}
 
       {!dealerMode && downloadOpen ? (
-        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label="External fuel costs included?">
+        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label="Download cost records">
           <div className={`${styles.downloadModal} ${styles.reportModal}`}>
             <div className={styles.modalHeader}>
               <div>
-                <h2>External fuel costs included?</h2>
-                <p>Choose whether Fuel Slip costs saved against assets must be included in the exported Cost of Ownership report.</p>
+                <h2>Download cost records</h2>
+                <p>Choose the reporting period, fuel treatment and file format.</p>
               </div>
-              <button type="button" className={styles.closeButton} onClick={() => setDownloadOpen(false)} aria-label="Close download"><CloseIcon /></button>
+              <button type="button" className={styles.closeButton} onClick={() => {
+                setOpenFilterDropdown(null);
+                setDownloadOpen(false);
+              }} aria-label="Close download"><CloseIcon /></button>
             </div>
             <div className={styles.modalDivider} />
+            <section className={styles.reportPeriodPanel} aria-label="Report period">
+              <div className={styles.reportSectionHeading}>
+                <strong>Report period</strong>
+                <span>Every export is filtered using the year and month selected here.</span>
+              </div>
+              <div className={styles.reportPeriodGrid}>
+                <FilterDropdown
+                  label="Year"
+                  dropdownKey="download-year"
+                  value={downloadFilters.year}
+                  options={yearFilterOptions}
+                  openDropdown={openFilterDropdown}
+                  onOpenChange={handleFilterDropdownOpenChange}
+                  onChange={(value) => setDownloadFilters((current) => ({
+                    ...current,
+                    year: value,
+                    month: value === 'all' ? 'all' : current.month,
+                  }))}
+                />
+                <FilterDropdown
+                  label="Month"
+                  dropdownKey="download-month"
+                  value={downloadFilters.month}
+                  options={monthFilterOptions}
+                  openDropdown={openFilterDropdown}
+                  onOpenChange={handleFilterDropdownOpenChange}
+                  onChange={(value) => setDownloadFilters((current) => ({ ...current, month: value }))}
+                  disabled={downloadFilters.year === 'all'}
+                />
+              </div>
+            </section>
+            <div className={styles.reportSectionHeading}>
+              <strong>External fuel costs</strong>
+              <span>Fuel slips can be included for owners, or removed from the export and its totals.</span>
+            </div>
             <div className={styles.reportChoiceGrid}>
               <button
                 type="button"
@@ -1615,11 +1733,18 @@ export default function MyInvoicesClient({
                 </span>
               </button>
             </div>
-            <div className={styles.modalFooter}>
-              <button type="button" className={styles.secondaryButton} onClick={() => setDownloadOpen(false)}>Cancel</button>
+            <div className={`${styles.modalFooter} ${styles.downloadModalFooter}`}>
+              <button type="button" className={styles.secondaryButton} onClick={() => {
+                setOpenFilterDropdown(null);
+                setDownloadOpen(false);
+              }}>Cancel</button>
               <button type="button" className={styles.primaryButton} onClick={() => handleDownloadReport('pdf')}>
                 <DownloadIcon className={styles.buttonIcon} />
                 <span>Download PDF</span>
+              </button>
+              <button type="button" className={styles.primaryButton} onClick={() => handleDownloadReport('csv')}>
+                <DownloadIcon className={styles.buttonIcon} />
+                <span>Download CSV</span>
               </button>
               <button type="button" className={styles.primaryButton} onClick={() => handleDownloadReport('xlsx')}>
                 <DownloadIcon className={styles.buttonIcon} />

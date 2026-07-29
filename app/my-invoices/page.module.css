@@ -1410,10 +1410,8 @@
   letter-spacing: -0.052em;
 }
 
-.reportModal .modalHeader p {
-  display: none;
-}
-
+.filterModal .modalHeader p,
+.reportModal .modalHeader p,
 .sourceChoiceModal .modalHeader p {
   margin: 0;
   color: #627386;
@@ -1449,6 +1447,10 @@
 
 .filterModal .filterGrid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.dealerFilterGrid {
+  align-items: start;
 }
 
 .filterModal .filterField {
@@ -1529,6 +1531,70 @@
   min-width: 13.5rem;
 }
 
+.reportModal {
+  max-height: min(94vh, calc(100dvh - 1.25rem));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.reportPeriodPanel {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1rem;
+  border: 1px solid rgba(207, 224, 234, 0.92);
+  border-radius: 1.25rem;
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.07), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #f6faf8 100%);
+}
+
+.reportSectionHeading {
+  min-width: 0;
+  display: grid;
+  gap: 0.28rem;
+}
+
+.reportSectionHeading strong {
+  color: #10352b;
+  font-size: 1rem;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.reportSectionHeading span {
+  color: #627386;
+  font-size: 0.86rem;
+  font-weight: 680;
+  line-height: 1.4;
+}
+
+.reportPeriodGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.reportPeriodGrid .filterField {
+  gap: 0.5rem;
+}
+
+.reportPeriodGrid .filterField > span {
+  color: #687a8d;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.downloadModalFooter {
+  flex-wrap: wrap;
+}
+
+.reportModal .downloadModalFooter .primaryButton {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
 @media (max-width: 900px) {
   .filterModal,
   .sourceChoiceModal,
@@ -1555,7 +1621,8 @@
 
   .filterModal .filterGrid,
   .sourceChoiceGrid,
-  .reportChoiceGrid {
+  .reportChoiceGrid,
+  .reportPeriodGrid {
     grid-template-columns: 1fr;
   }
 
