@@ -226,7 +226,7 @@ export default function DealerCostDecisionModal({
               <p>
                 {isDeletion
                   ? 'The dealer removed this record. Your copy stays protected until you decide what should happen.'
-                  : 'Review the important details below before adding this dealer cost to your Cost Ledger.'}
+                  : 'Check the details before adding this dealer cost to your Cost Ledger.'}
               </p>
             </div>
           </div>
@@ -338,7 +338,7 @@ export default function DealerCostDecisionModal({
                   <p>
                     {isDeletion
                       ? 'Keep retains the cost in your ledger and reports. Delete permanently removes your copy. The dealer can no longer edit either outcome.'
-                      : 'Add includes the cost in your ledger and owner reports. Dealer-only leaves it on the dealer side without adding it to your account.'}
+                      : 'Keep dealer-only saves this cost on the dealer side only. Add to Cost Ledger also saves it in your Cost Ledger and owner reports.'}
                   </p>
                 </div>
               </aside>
