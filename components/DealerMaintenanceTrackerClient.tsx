@@ -1254,7 +1254,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                     <MaintenanceIcon className={assetStyles.buttonIcon} />
                     <span>
                       <strong>Propose schedule</strong>
-                      <small>{managedAsset.permissions.canCreateMaintenanceSchedules ? 'Send a proposed schedule for owner approval.' : 'Owner permission is required.'}</small>
+                      <small>{managedAsset.permissions.canCreateMaintenanceSchedules ? 'The owner can approve or disapprove it.' : 'Owner permission is required.'}</small>
                     </span>
                   </button>
 
