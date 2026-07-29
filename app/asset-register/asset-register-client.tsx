@@ -134,7 +134,16 @@ type PdfReportKind =
 type AssetPdfReportKind = 'fuel' | 'maintenance' | 'depreciation';
 type AssetReportFormat = 'pdf' | 'xlsx';
 type AssetReportSelectKey = 'type' | 'year' | 'month';
-type AssetReportStep = 'options' | 'fuel-filter' | 'maintenance-filter' | 'depreciation-filter' | 'ownership-filter';
+type AssetReportStep =
+  | 'options'
+  | 'fuel-format'
+  | 'fuel-filter'
+  | 'maintenance-format'
+  | 'maintenance-filter'
+  | 'depreciation-format'
+  | 'depreciation-filter'
+  | 'ownership-format'
+  | 'ownership-filter';
 type PhotoViewerState = { assetId: string; index: number };
 
 type AssetPdfReportFilters = {
@@ -11054,7 +11063,7 @@ export default function AssetRegisterClient() {
       return;
     }
 
-    setAssetReportStep('fuel-filter');
+    setAssetReportStep('fuel-format');
     setAssetFuelReportYear('all');
     setAssetFuelReportMonth('all');
     setAssetReportDownloadFormat('pdf');
@@ -11062,7 +11071,7 @@ export default function AssetRegisterClient() {
   }
 
   function openAssetMaintenanceReportFilter() {
-    setAssetReportStep('maintenance-filter');
+    setAssetReportStep('maintenance-format');
     setAssetMaintenanceReportType('all');
     setAssetMaintenanceReportYear('all');
     setAssetMaintenanceReportMonth('all');
@@ -11076,7 +11085,7 @@ export default function AssetRegisterClient() {
       return;
     }
 
-    setAssetReportStep('depreciation-filter');
+    setAssetReportStep('depreciation-format');
     setAssetDepreciationReportYear('all');
     setAssetDepreciationReportMonth('all');
     setAssetReportDownloadFormat('pdf');
@@ -11084,7 +11093,7 @@ export default function AssetRegisterClient() {
   }
 
   function openAssetOwnershipReportFilter() {
-    setAssetReportStep('ownership-filter');
+    setAssetReportStep('ownership-format');
     setAssetOwnershipReportYear('all');
     setAssetOwnershipReportMonth('all');
     setAssetReportDownloadFormat('pdf');
@@ -11093,6 +11102,28 @@ export default function AssetRegisterClient() {
 
   function backToAssetReportOptions() {
     setAssetReportStep('options');
+    setOpenAssetReportSelect(null);
+  }
+
+  function showAssetReportTimelineStep() {
+    setAssetReportStep((currentStep) => {
+      if (currentStep === 'fuel-format') return 'fuel-filter';
+      if (currentStep === 'maintenance-format') return 'maintenance-filter';
+      if (currentStep === 'depreciation-format') return 'depreciation-filter';
+      if (currentStep === 'ownership-format') return 'ownership-filter';
+      return currentStep;
+    });
+    setOpenAssetReportSelect(null);
+  }
+
+  function backToAssetReportFormatStep() {
+    setAssetReportStep((currentStep) => {
+      if (currentStep === 'fuel-filter') return 'fuel-format';
+      if (currentStep === 'maintenance-filter') return 'maintenance-format';
+      if (currentStep === 'depreciation-filter') return 'depreciation-format';
+      if (currentStep === 'ownership-filter') return 'ownership-format';
+      return currentStep;
+    });
     setOpenAssetReportSelect(null);
   }
 
@@ -16561,8 +16592,36 @@ export default function AssetRegisterClient() {
             </div>
 
             <div className={`${styles.modalScrollBody} ${styles.assetReportModalBody}`}>
-              {assetReportStep === 'fuel-filter' ? (
+              {assetReportStep.endsWith('-format') ? (
                 <>
+                  <div className={styles.assetTimelineStageHeading}>
+                    <strong>Choose export format</strong>
+                    <span>Select PDF or Excel, then continue to the report timeline.</span>
+                  </div>
+
+                  <AssetReportFormatPicker value={assetReportDownloadFormat} onChange={setAssetReportDownloadFormat} />
+
+                  <div className={`${styles.formActions} ${styles.exportActions} ${styles.assetFuelReportActions}`}>
+                    <button type="button" className={`${styles.secondaryButton} ${styles.assetTimelineSecondaryButton}`} onClick={backToAssetReportOptions}>Back</button>
+                    <button
+                      type="button"
+                      className={`${styles.secondaryButton} ${styles.assetTimelineSecondaryButton}`}
+                      onClick={closeAssetReportDialog}
+                    >
+                      Cancel
+                    </button>
+                    <button type="button" className={styles.primaryButton} onClick={showAssetReportTimelineStep}>
+                      <span>Next</span>
+                    </button>
+                  </div>
+                </>
+              ) : assetReportStep === 'fuel-filter' ? (
+                <>
+                  <div className={styles.assetTimelineStageHeading}>
+                    <strong>Report timeline</strong>
+                    <span>Choose the year and month to include.</span>
+                  </div>
+
                   <div className={styles.assetFuelReportFilterBox}>
                     <ReportSelect
                       label="Year"
@@ -16584,10 +16643,8 @@ export default function AssetRegisterClient() {
                     />
                   </div>
 
-                  <AssetReportFormatPicker value={assetReportDownloadFormat} onChange={setAssetReportDownloadFormat} />
-
                   <div className={`${styles.formActions} ${styles.exportActions} ${styles.assetFuelReportActions}`}>
-                    <button type="button" className={`${styles.secondaryButton} ${styles.assetTimelineSecondaryButton}`} onClick={backToAssetReportOptions}>Back</button>
+                    <button type="button" className={`${styles.secondaryButton} ${styles.assetTimelineSecondaryButton}`} onClick={backToAssetReportFormatStep}>Back</button>
                     <button
                       type="button"
                       className={`${styles.secondaryButton} ${styles.assetTimelineSecondaryButton}`}
@@ -16607,6 +16664,11 @@ export default function AssetRegisterClient() {
                 </>
               ) : assetReportStep === 'maintenance-filter' ? (
                 <>
+                  <div className={styles.assetTimelineStageHeading}>
+                    <strong>Report timeline</strong>
+                    <span>Choose the maintenance type, year and month to include.</span>
+                  </div>
+
                   <div className={`${styles.assetFuelReportFilterBox} ${styles.assetMaintenanceReportFilterBox}`}>
                     <ReportSelect
                       label="Type"
@@ -16637,10 +16699,8 @@ export default function AssetRegisterClient() {
                     />
                   </div>
 
-                  <AssetReportFormatPicker value={assetReportDownloadFormat} onChange={setAssetReportDownloadFormat} />
-
                   <div className={`${styles.formActions} ${styles.exportActions} ${styles.assetFuelReportActions}`}>
-                    <button type="button" className={`${styles.secondaryButton} ${styles.assetTimelineSecondaryButton}`} onClick={backToAssetReportOptions}>Back</button>
+                    <button type="button" className={`${styles.secondaryButton} ${styles.assetTimelineSecondaryButton}`} onClick={backToAssetReportFormatStep}>Back</button>
                     <button
                       type="button"
                       className={`${styles.secondaryButton} ${styles.assetTimelineSecondaryButton}`}
@@ -16660,6 +16720,11 @@ export default function AssetRegisterClient() {
                 </>
               ) : assetReportStep === 'depreciation-filter' ? (
                 <>
+                  <div className={styles.assetTimelineStageHeading}>
+                    <strong>Report timeline</strong>
+                    <span>Choose the year and month to include.</span>
+                  </div>
+
                   <div className={styles.assetFuelReportFilterBox}>
                     <ReportSelect
                       label="Year"
@@ -16681,10 +16746,8 @@ export default function AssetRegisterClient() {
                     />
                   </div>
 
-                  <AssetReportFormatPicker value={assetReportDownloadFormat} onChange={setAssetReportDownloadFormat} />
-
                   <div className={`${styles.formActions} ${styles.exportActions} ${styles.assetFuelReportActions}`}>
-                    <button type="button" className={`${styles.secondaryButton} ${styles.assetTimelineSecondaryButton}`} onClick={backToAssetReportOptions}>Back</button>
+                    <button type="button" className={`${styles.secondaryButton} ${styles.assetTimelineSecondaryButton}`} onClick={backToAssetReportFormatStep}>Back</button>
                     <button
                       type="button"
                       className={`${styles.secondaryButton} ${styles.assetTimelineSecondaryButton}`}
@@ -16704,6 +16767,11 @@ export default function AssetRegisterClient() {
                 </>
               ) : assetReportStep === 'ownership-filter' ? (
                 <>
+                  <div className={styles.assetTimelineStageHeading}>
+                    <strong>Report timeline</strong>
+                    <span>Choose the year and month to include.</span>
+                  </div>
+
                   <div className={styles.assetFuelReportFilterBox}>
                     <ReportSelect
                       label="Year"
@@ -16725,10 +16793,8 @@ export default function AssetRegisterClient() {
                     />
                   </div>
 
-                  <AssetReportFormatPicker value={assetReportDownloadFormat} onChange={setAssetReportDownloadFormat} />
-
                   <div className={`${styles.formActions} ${styles.exportActions} ${styles.assetFuelReportActions}`}>
-                    <button type="button" className={`${styles.secondaryButton} ${styles.assetTimelineSecondaryButton}`} onClick={backToAssetReportOptions}>Back</button>
+                    <button type="button" className={`${styles.secondaryButton} ${styles.assetTimelineSecondaryButton}`} onClick={backToAssetReportFormatStep}>Back</button>
                     <button
                       type="button"
                       className={`${styles.secondaryButton} ${styles.assetTimelineSecondaryButton}`}

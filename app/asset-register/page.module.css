@@ -33105,6 +33105,26 @@ button.documentOpenLink {
   z-index: 10001 !important;
 }
 
+.assetTimelineStageHeading {
+  display: grid;
+  gap: 0.28rem;
+  margin-bottom: 0.9rem;
+}
+
+.assetTimelineStageHeading strong {
+  color: #10352b;
+  font-size: 1.05rem;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.assetTimelineStageHeading span {
+  color: #627386;
+  font-size: 0.9rem;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
 .assetTimelineFormatGrid {
   position: relative;
   z-index: 1;
