@@ -12,6 +12,7 @@ import {
   writeCachedHeaderSession,
   type HeaderSessionUser,
 } from '../lib/header-session-cache';
+import DealerCostDecisionModal from './DealerCostDecisionModal';
 import styles from './AppHeader.module.css';
 
 const useBrowserLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect;
@@ -96,7 +97,7 @@ type AccountProfileLogoState = {
   logoUrl: string | null;
 };
 
-type HeaderNotificationCategory = 'partner_note' | 'lead' | 'qr_scan' | 'fuel' | 'maintenance' | 'dealer_schedule' | 'dealer_correction' | 'asset_discovery';
+type HeaderNotificationCategory = 'partner_note' | 'lead' | 'qr_scan' | 'fuel' | 'maintenance' | 'dealer_schedule' | 'dealer_cost' | 'dealer_correction' | 'asset_discovery';
 
 type HeaderNotificationTone = 'neutral' | 'success' | 'warning' | 'info';
 
@@ -112,6 +113,7 @@ type HeaderNotificationItem = {
   dealerAssetCorrectionId?: string;
   dealerAssetCorrectionAction?: 'decision' | 'retry' | 'pending';
   dealerMaintenanceScheduleProposalId?: string;
+  dealerCostInvoiceId?: string;
   priority?: boolean;
 };
 
@@ -239,7 +241,6 @@ function buildNavItems(accountType: AccountType | 'public' | null): NavItem[] {
     return [
       ...BASE_NAV_ITEMS,
       { key: 'leads', href: '/leads', label: 'My Leads' },
-      { key: 'cost', href: '/dealer-costs', label: 'Costs' },
       { key: 'tracking', href: '/tracking', label: 'Tracking' },
       { key: 'marketplace', href: '/marketplace', label: 'Marketplace' },
     ];
@@ -510,6 +511,7 @@ export default function AppHeader({
   const [processingAssetDiscoveryEnquiryIds, setProcessingAssetDiscoveryEnquiryIds] = useState<Set<string>>(() => new Set());
   const [processingDealerCorrectionIds, setProcessingDealerCorrectionIds] = useState<Set<string>>(() => new Set());
   const [processingMaintenanceScheduleProposalIds, setProcessingMaintenanceScheduleProposalIds] = useState<Set<string>>(() => new Set());
+  const [activeDealerCostInvoiceId, setActiveDealerCostInvoiceId] = useState<string | null>(null);
   const [activeAssetDiscoveryEnquiry, setActiveAssetDiscoveryEnquiry] = useState<AssetDiscoveryEnquiry | null>(null);
   const [notificationDetailError, setNotificationDetailError] = useState<string | null>(null);
   const [notificationDetailOutcome, setNotificationDetailOutcome] = useState<{
@@ -860,6 +862,10 @@ export default function AppHeader({
     setNotificationDetailOutcome(null);
   }
 
+  function closeDealerCostDecisionModal() {
+    setActiveDealerCostInvoiceId(null);
+  }
+
   function closeAccountMenu() {
     setMenuOpen(false);
   }
@@ -871,6 +877,7 @@ export default function AppHeader({
       if (nextOpen) {
         setMobileMenuOpen(false);
         setNotificationOpen(false);
+        closeDealerCostDecisionModal();
         closeNotificationDetailModal();
       }
 
@@ -892,6 +899,7 @@ export default function AppHeader({
       if (nextOpen) {
         setMenuOpen(false);
         setMobileMenuOpen(false);
+        closeDealerCostDecisionModal();
         closeNotificationDetailModal();
       }
       return nextOpen;
@@ -910,6 +918,7 @@ export default function AppHeader({
       if (nextOpen) {
         setMenuOpen(false);
         setNotificationOpen(false);
+        closeDealerCostDecisionModal();
         closeNotificationDetailModal();
       }
 
@@ -1086,6 +1095,31 @@ export default function AppHeader({
     }
   }
 
+  function handleOpenDealerCost(invoiceId: string) {
+    setNotificationOpen(false);
+    closeNotificationDetailModal();
+    setActiveDealerCostInvoiceId(invoiceId);
+    markNotificationsSeen();
+  }
+
+  function handleDealerCostResolved(
+    invoiceId: string,
+    decision: 'approve' | 'decline',
+    message: string,
+  ) {
+    setNotifications((current) => current.filter(
+      (item) => item.dealerCostInvoiceId !== invoiceId,
+    ));
+    setActiveDealerCostInvoiceId(null);
+    markNotificationsSeen();
+    window.dispatchEvent(new Event('aim4price:cost-ledger-updated'));
+    setNotificationDetailOutcome({
+      tone: 'success',
+      title: decision === 'approve' ? 'Cost stored' : 'Cost kept dealer-only',
+      message,
+    });
+  }
+
   async function handleDealerCorrectionRetry(correctionId: string) {
     setProcessingDealerCorrectionIds((current) => new Set(current).add(correctionId));
     setNotificationDetailError(null);
@@ -1203,6 +1237,31 @@ export default function AppHeader({
     const newClass = isNotificationNew(notification) ? styles.notificationItemNew : '';
     const priorityClass = notification.priority ? styles.notificationItemPriority : '';
     const baseClassName = `${styles.notificationItem} ${toneClass} ${newClass} ${priorityClass}`;
+
+    if (notification.dealerCostInvoiceId) {
+      const invoiceId = notification.dealerCostInvoiceId;
+      return (
+        <div key={notification.id} className={`${baseClassName} ${styles.notificationItemActionable}`}>
+          <span className={styles.notificationDot} aria-hidden="true" />
+          <span className={styles.notificationCopy}>
+            <strong>{notification.title}</strong>
+            <span>{notification.body}</span>
+            <span className={styles.notificationMetaRow}>
+              <small>{formatNotificationTime(notification.createdAtIso)}</small>
+            </span>
+            <span className={styles.notificationActionRow}>
+              <button
+                type="button"
+                className={styles.notificationApproveButton}
+                onClick={() => handleOpenDealerCost(invoiceId)}
+              >
+                View cost
+              </button>
+            </span>
+          </span>
+        </div>
+      );
+    }
 
     if (notification.dealerMaintenanceScheduleProposalId) {
       const proposalId = notification.dealerMaintenanceScheduleProposalId;
@@ -1913,6 +1972,14 @@ export default function AppHeader({
       {mobileMenuPortal}
       {notificationPortal}
       {notificationDetailPortal}
+      <DealerCostDecisionModal
+        invoiceId={activeDealerCostInvoiceId}
+        onClose={closeDealerCostDecisionModal}
+        onResolved={(decision, message) => {
+          if (!activeDealerCostInvoiceId) return;
+          handleDealerCostResolved(activeDealerCostInvoiceId, decision, message);
+        }}
+      />
     </>
   );
 }
