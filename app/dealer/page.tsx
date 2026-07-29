@@ -13,7 +13,7 @@ const DEALER_TOOLS = [
   { label: 'Valuation', href: '/dealer/valuation' },
   { label: 'Discover Assets', href: '/dealer/discovery' },
   { label: 'Leads', href: '/dealer/leads' },
-  { label: 'Costs', href: '/dealer/costs' },
+  { label: 'Costs', href: '/dealer/cost' },
   { label: 'Maintenance Tracker', href: '/dealer/maintenance' },
   { label: 'Marketplace', href: '/dealer/marketplace' },
 ] as const;
