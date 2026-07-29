@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import DealerCostDecisionModal from '../../../components/DealerCostDecisionModal';
 import {
   isOwnerNotificationNew,
   markOwnerNotificationsSeen,
@@ -23,6 +24,7 @@ type Notification = {
   dealerAssetCorrectionId?: string;
   dealerAssetCorrectionAction?: 'decision' | 'retry' | 'pending';
   dealerMaintenanceScheduleProposalId?: string;
+  dealerCostInvoiceId?: string;
   priority?: boolean;
 };
 
@@ -88,6 +90,7 @@ export default function OwnerNotificationsClient({ viewerId }: { viewerId: strin
   const [reloadToken, setReloadToken] = useState(0);
   const [processingCorrectionIds, setProcessingCorrectionIds] = useState<Set<string>>(() => new Set());
   const [processingScheduleProposalIds, setProcessingScheduleProposalIds] = useState<Set<string>>(() => new Set());
+  const [activeDealerCostInvoiceId, setActiveDealerCostInvoiceId] = useState<string | null>(null);
   const hasLoadedRef = useRef(false);
 
   useEffect(() => {
@@ -155,6 +158,7 @@ export default function OwnerNotificationsClient({ viewerId }: { viewerId: strin
       ? items.filter((item) => (
         item.dealerAssetCorrectionAction === 'retry'
         || item.dealerAssetCorrectionAction === 'pending'
+        || Boolean(item.dealerCostInvoiceId)
         || isOwnerNotificationNew(item.createdAtIso, seenAtIso)
       ))
       : [],
@@ -275,6 +279,25 @@ export default function OwnerNotificationsClient({ viewerId }: { viewerId: strin
     }
   }
 
+  function handleDealerCostResolved(
+    invoiceId: string,
+    decision: 'approve' | 'decline',
+    message: string,
+  ) {
+    setItems((current) => current.filter((item) => item.dealerCostInvoiceId !== invoiceId));
+    setActiveDealerCostInvoiceId(null);
+    setSeenAtIso(markOwnerNotificationsSeen(viewerId, items));
+    setOutcomeNotice({
+      tone: 'success',
+      message: message || (
+        decision === 'approve'
+          ? 'The dealer cost was stored in your Cost Ledger.'
+          : 'The cost will remain visible to the dealer only.'
+      ),
+    });
+    window.dispatchEvent(new Event('aim4price:cost-ledger-updated'));
+  }
+
   async function handleCorrectionRetry(correctionId: string) {
     setProcessingCorrectionIds((current) => new Set(current).add(correctionId));
     setError('');
@@ -332,7 +355,8 @@ export default function OwnerNotificationsClient({ viewerId }: { viewerId: strin
   const newCountLabel = `${newItems.length} new notification${newItems.length === 1 ? '' : 's'}`;
 
   return (
-    <div className={`${styles.content} ${styles.notificationContent}`}>
+    <>
+      <div className={`${styles.content} ${styles.notificationContent}`}>
       <section className={styles.notificationIntro}>
         <div className={styles.ownerPageIntro}>
           <h1 className={styles.ownerPageTitle}>Notifications</h1>
@@ -398,6 +422,24 @@ export default function OwnerNotificationsClient({ viewerId }: { viewerId: strin
                     <p>{item.body}</p>
                   </>
                 );
+
+                if (item.dealerCostInvoiceId) {
+                  const invoiceId = item.dealerCostInvoiceId;
+                  return (
+                    <article key={item.id} className={`${className} ${styles.notificationCorrectionCard}`}>
+                      {cardContent}
+                      <div className={styles.notificationCorrectionActions}>
+                        <button
+                          type="button"
+                          className={styles.notificationCorrectionAccept}
+                          onClick={() => setActiveDealerCostInvoiceId(invoiceId)}
+                        >
+                          View cost
+                        </button>
+                      </div>
+                    </article>
+                  );
+                }
 
                 if (item.dealerMaintenanceScheduleProposalId) {
                   const proposalId = item.dealerMaintenanceScheduleProposalId;
@@ -497,6 +539,16 @@ export default function OwnerNotificationsClient({ viewerId }: { viewerId: strin
       {!error && !isReady ? (
         <p className={styles.notificationEmpty} role="status">Loading notifications…</p>
       ) : null}
-    </div>
+      </div>
+      <DealerCostDecisionModal
+        invoiceId={activeDealerCostInvoiceId}
+        loginHref="/owner-app/login"
+        onClose={() => setActiveDealerCostInvoiceId(null)}
+        onResolved={(decision, message) => {
+          if (!activeDealerCostInvoiceId) return;
+          handleDealerCostResolved(activeDealerCostInvoiceId, decision, message);
+        }}
+      />
+    </>
   );
 }
