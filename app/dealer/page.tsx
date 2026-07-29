@@ -2,7 +2,6 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getServerSession } from '../../lib/auth-session';
 import { getAccountProfile } from '../../lib/account-profile';
-import DealerNav from './dealer-nav';
 import { listDealerMaintenanceNotifications } from '../../lib/dealer-maintenance-tracker';
 import styles from './dealer.module.css';
 
@@ -41,12 +40,10 @@ export default async function DealerHome() {
 
   return (
     <main className={styles.shell}>
-      <DealerNav showBack={false} />
       <div className={styles.content}>
         <nav className={styles.launcher} aria-label="Dealer tools">
           {dealerTools.map((tool) => (
             <Link
-              prefetch={false}
               key={tool.href}
               className={styles.card}
               href={tool.href}

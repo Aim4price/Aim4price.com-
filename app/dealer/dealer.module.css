@@ -1,3 +1,4 @@
+.dealerLayout,
 .shell,
 .module,
 .loginPage {
@@ -12,6 +13,10 @@
   min-height: 100dvh;
   color: var(--dealer-ink);
   font-family: Montserrat, var(--font-body, Inter), Arial, sans-serif;
+}
+
+.dealerLayout {
+  background: #ffffff;
 }
 
 .loadingPage {

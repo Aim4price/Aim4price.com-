@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
+import DealerNav from './dealer-nav';
+import styles from './dealer.module.css';
 
 export const metadata: Metadata = {
   applicationName: 'Aim4price Dealer App',
@@ -28,5 +30,10 @@ export const viewport: Viewport = {
 };
 
 export default function DealerLayout({ children }: { children: ReactNode }) {
-  return children;
+  return (
+    <div className={styles.dealerLayout}>
+      <DealerNav />
+      {children}
+    </div>
+  );
 }

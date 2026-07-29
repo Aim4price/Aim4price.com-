@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { clearCachedHeaderSession } from '../../lib/header-session-cache';
 import styles from './dealer.module.css';
@@ -13,10 +14,14 @@ type DealerNavProps = {
 
 export default function DealerNav({
   backHref = '/dealer',
-  backLabel = 'Apps',
-  showBack = true,
+  backLabel = 'Home',
+  showBack,
 }: DealerNavProps) {
+  const pathname = usePathname();
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const resolvedShowBack = showBack ?? pathname !== '/dealer';
+
+  if (pathname === '/dealer/login') return null;
 
   async function signOut() {
     if (isSigningOut) return;
@@ -38,8 +43,8 @@ export default function DealerNav({
 
   return (
     <nav className={styles.nav} aria-label="Dealer App navigation">
-      {showBack ? (
-        <Link className={styles.navButton} href={backHref} prefetch={false} replace>
+      {resolvedShowBack ? (
+        <Link className={styles.navButton} href={backHref}>
           <span className={styles.navArrow} aria-hidden="true">←</span>
           <span>{backLabel}</span>
         </Link>
