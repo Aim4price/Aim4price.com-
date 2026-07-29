@@ -4,7 +4,7 @@
   z-index: 1300;
   display: grid;
   place-items: center;
-  padding: 1rem;
+  padding: clamp(1rem, 3vw, 2rem);
 }
 
 .backdrop {
@@ -13,22 +13,24 @@
   width: 100%;
   height: 100%;
   border: 0;
-  background: rgba(5, 24, 20, 0.66);
-  backdrop-filter: blur(8px);
+  background: rgba(12, 22, 25, 0.48);
+  backdrop-filter: blur(14px);
   cursor: default;
 }
 
 .modal {
   position: relative;
-  width: min(760px, 100%);
-  max-height: min(860px, calc(100vh - 2rem));
+  width: min(880px, 100%);
+  max-height: min(900px, calc(100dvh - 2rem));
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
   overflow: hidden;
-  border: 1px solid rgba(190, 213, 205, 0.9);
-  border-radius: 1.65rem;
-  background: #fff;
-  box-shadow: 0 34px 90px rgba(0, 28, 21, 0.3);
+  border: 1px solid rgba(207, 224, 234, 0.95);
+  border-radius: 2rem;
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.065), transparent 32%),
+    linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
+  box-shadow: 0 32px 88px rgba(16, 28, 45, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.96);
 }
 
 .header {
@@ -36,11 +38,9 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
-  padding: 1.45rem 1.55rem 1.2rem;
-  border-bottom: 1px solid #e3eeea;
-  background:
-    radial-gradient(circle at 0% 0%, rgba(28, 136, 98, 0.12), transparent 36%),
-    linear-gradient(180deg, #fbfefd 0%, #f5faf8 100%);
+  padding: clamp(1.45rem, 2.6vw, 2rem) clamp(1.35rem, 3vw, 2.15rem) 1.35rem;
+  border-bottom: 1px solid rgba(216, 226, 236, 0.92);
+  background: transparent;
 }
 
 .header > div {
@@ -50,9 +50,9 @@
 .header span {
   display: block;
   margin-bottom: 0.38rem;
-  color: #16815f;
-  font-size: 0.75rem;
-  font-weight: 800;
+  color: #147052;
+  font-size: 0.76rem;
+  font-weight: 900;
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
@@ -60,30 +60,32 @@
 .header h2 {
   margin: 0;
   color: #073b30;
-  font-size: clamp(1.45rem, 3vw, 2rem);
-  line-height: 1.08;
-  letter-spacing: -0.035em;
+  font-size: clamp(1.85rem, 3.2vw, 2.55rem);
+  font-weight: 880;
+  line-height: 1.03;
+  letter-spacing: -0.05em;
 }
 
 .header p {
-  max-width: 620px;
+  max-width: 690px;
   margin: 0.55rem 0 0;
   color: #60736c;
-  font-size: 0.94rem;
+  font-size: 0.98rem;
+  font-weight: 650;
   line-height: 1.5;
 }
 
 .closeButton {
   flex: 0 0 auto;
-  width: 2.45rem;
-  height: 2.45rem;
+  width: 3.15rem;
+  height: 3.15rem;
   display: grid;
   place-items: center;
-  border: 1px solid #ccddd7;
+  border: 1px solid rgba(210, 222, 237, 0.98);
   border-radius: 999px;
-  background: #fff;
-  color: #31564b;
-  font-size: 1.55rem;
+  background: linear-gradient(180deg, #f7fbff 0%, #eef5fb 100%);
+  color: #17364b;
+  font-size: 1.65rem;
   line-height: 1;
   cursor: pointer;
 }
@@ -96,7 +98,8 @@
 .body {
   min-height: 0;
   overflow-y: auto;
-  padding: 1.35rem 1.55rem;
+  padding: clamp(1.2rem, 2.4vw, 1.75rem) clamp(1.35rem, 3vw, 2.15rem);
+  scrollbar-gutter: stable;
 }
 
 .state,
@@ -119,10 +122,12 @@
 }
 
 .summary {
-  padding: 1.1rem 1.15rem;
-  border: 1px solid #cae4da;
-  border-radius: 1.15rem;
-  background: linear-gradient(140deg, #effaf6 0%, #f9fdfb 100%);
+  padding: 1.2rem 1.3rem;
+  border: 1px solid rgba(190, 224, 206, 0.98);
+  border-radius: 1.3rem;
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.09), transparent 46%),
+    linear-gradient(145deg, #effaf6 0%, #ffffff 100%);
 }
 
 .summary > div {
@@ -134,15 +139,16 @@
 
 .summary span {
   color: #58736a;
-  font-size: 0.78rem;
-  font-weight: 800;
+  font-size: 0.76rem;
+  font-weight: 900;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
 .summary strong {
   color: #086348;
-  font-size: clamp(1.35rem, 4vw, 1.9rem);
+  font-size: clamp(1.55rem, 4vw, 2.15rem);
+  letter-spacing: -0.04em;
 }
 
 .summary p {
@@ -154,16 +160,16 @@
 .details {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem;
-  margin: 1rem 0 0;
+  gap: 0.85rem;
+  margin: 1.05rem 0 0;
 }
 
 .details > div {
   min-width: 0;
-  padding: 0.82rem 0.9rem;
+  padding: 0.9rem 1rem;
   border: 1px solid #e0ebe7;
-  border-radius: 0.95rem;
-  background: #fbfdfc;
+  border-radius: 1.05rem;
+  background: rgba(255, 255, 255, 0.9);
 }
 
 .details dt {
@@ -184,22 +190,28 @@
 }
 
 .work {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
   margin-top: 1rem;
-  padding: 1rem 1.05rem;
+  padding: 1.1rem;
   border: 1px solid #e0ebe7;
   border-radius: 1.05rem;
 }
 
 .work h3 {
+  grid-column: 1 / -1;
   margin: 0 0 0.7rem;
   color: #153e33;
   font-size: 1rem;
 }
 
-.work > div + div {
-  margin-top: 0.7rem;
-  padding-top: 0.7rem;
-  border-top: 1px solid #edf2f0;
+.work > div {
+  min-width: 0;
+  padding: 0.9rem;
+  border: 1px solid #e5eeeb;
+  border-radius: 0.95rem;
+  background: #f9fcfb;
 }
 
 .work span {
@@ -239,10 +251,11 @@
 
 .note {
   margin-top: 1rem;
-  padding: 0.95rem 1rem;
-  border-radius: 1rem;
-  background: #fff8e8;
-  color: #725821;
+  padding: 1rem 1.1rem;
+  border: 1px solid rgba(190, 224, 206, 0.9);
+  border-radius: 1.05rem;
+  background: #eff9f4;
+  color: #315f50;
 }
 
 .note strong {
@@ -259,23 +272,23 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 0.75rem;
-  padding: 1rem 1.55rem 1.25rem;
-  border-top: 1px solid #e3eeea;
-  background: #fbfdfc;
+  padding: 1rem clamp(1.35rem, 3vw, 2.15rem) clamp(1.25rem, 2.5vw, 1.7rem);
+  border-top: 1px solid rgba(216, 226, 236, 0.92);
+  background: rgba(250, 252, 251, 0.96);
 }
 
 .declineButton,
 .approveButton {
-  min-height: 3rem;
+  min-height: 3.35rem;
   padding: 0.78rem 1rem;
-  border-radius: 0.9rem;
+  border-radius: 1rem;
   font: inherit;
   font-weight: 800;
   cursor: pointer;
 }
 
 .declineButton {
-  border: 1px solid #cbd9d4;
+  border: 1px solid rgba(203, 217, 212, 0.95);
   background: #fff;
   color: #3b5a51;
 }
@@ -312,6 +325,10 @@
   }
 
   .details {
+    grid-template-columns: 1fr;
+  }
+
+  .work {
     grid-template-columns: 1fr;
   }
 

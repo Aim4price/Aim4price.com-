@@ -165,7 +165,7 @@ export default function DealerCostDecisionModal({
         decision,
         payload.message || (
           decision === 'approve'
-            ? 'The dealer cost was stored in your Cost Ledger.'
+            ? 'This dealer cost is now in your Cost Ledger and will be included in owner cost reports.'
             : 'The cost will remain visible to the dealer only.'
         ),
       );
@@ -202,9 +202,9 @@ export default function DealerCostDecisionModal({
       >
         <header className={styles.header}>
           <div>
-            <span>Owner decision</span>
-            <h2 id="dealer-cost-decision-title">Store this dealer cost?</h2>
-            <p>Review the record before choosing whether it must appear in your Cost Ledger.</p>
+            <span>Dealer cost approval</span>
+            <h2 id="dealer-cost-decision-title">Add this cost to your ledger?</h2>
+            <p>Check the invoice details, then choose whether to add this dealer cost to your Cost Ledger.</p>
           </div>
           <button
             type="button"
@@ -229,7 +229,7 @@ export default function DealerCostDecisionModal({
                   <strong>{formatMoney(invoice.totalIncVat)}</strong>
                 </div>
                 <p>
-                  Added by {invoice.createdByDisplayName || 'the dealer'} for{' '}
+                  Submitted by {invoice.createdByDisplayName || 'the dealer'} for{' '}
                   <strong>{invoice.assetTitle}</strong>.
                 </p>
               </section>
@@ -270,10 +270,10 @@ export default function DealerCostDecisionModal({
               ) : null}
 
               <aside className={styles.note}>
-                <strong>Your choice controls owner-side storage</strong>
+                <strong>What happens next?</strong>
                 <p>
-                  Yes adds the cost to your Cost Ledger. No keeps the record on the dealer side only.
-                  The dealer can still manage its own record.
+                  Add it to include this cost in your ledger and owner reports. Keeping it dealer-only
+                  leaves the dealer’s record unchanged without adding it to your account.
                 </p>
               </aside>
             </>
@@ -287,7 +287,7 @@ export default function DealerCostDecisionModal({
             onClick={() => void saveDecision('decline')}
             disabled={!invoice || Boolean(savingDecision)}
           >
-            {savingDecision === 'decline' ? 'Saving…' : 'No, keep dealer only'}
+            {savingDecision === 'decline' ? 'Saving…' : 'Keep dealer-only'}
           </button>
           <button
             type="button"
@@ -295,7 +295,7 @@ export default function DealerCostDecisionModal({
             onClick={() => void saveDecision('approve')}
             disabled={!invoice || Boolean(savingDecision)}
           >
-            {savingDecision === 'approve' ? 'Saving…' : 'Yes, store cost'}
+            {savingDecision === 'approve' ? 'Saving…' : 'Add to Cost Ledger'}
           </button>
         </footer>
       </section>

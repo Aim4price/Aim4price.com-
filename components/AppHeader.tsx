@@ -1115,7 +1115,7 @@ export default function AppHeader({
     window.dispatchEvent(new Event('aim4price:cost-ledger-updated'));
     setNotificationDetailOutcome({
       tone: 'success',
-      title: decision === 'approve' ? 'Cost stored' : 'Cost kept dealer-only',
+      title: decision === 'approve' ? 'Cost added to your ledger' : 'Cost kept dealer-only',
       message,
     });
   }
@@ -1751,7 +1751,7 @@ export default function AppHeader({
             ) : null}
             {!activeAssetDiscoveryEnquiry && !notificationDetailError && notificationDetailOutcome ? (
               <section
-                className={`${styles.notificationDetailModal} ${
+                className={`${styles.notificationDetailModal} ${styles.notificationOutcomeModal} ${
                   notificationDetailOutcome.tone === 'success'
                     ? styles.notificationDetailOutcomeSuccess
                     : styles.notificationDetailOutcomeWarning
@@ -1773,8 +1773,8 @@ export default function AppHeader({
                   </button>
                 </div>
                 <div className={styles.notificationDetailActions}>
-                  <button type="button" className={styles.notificationSecondaryButton} onClick={closeNotificationDetailModal}>
-                    Close
+                  <button type="button" className={styles.notificationPrimaryButton} onClick={closeNotificationDetailModal}>
+                    Done
                   </button>
                 </div>
               </section>
