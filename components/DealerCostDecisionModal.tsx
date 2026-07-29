@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import styles from './DealerCostDecisionModal.module.css';
 
-type DealerCostDecision = 'approve' | 'decline';
+type DealerCostAction = 'store' | 'delete';
+type DealerCostDecision = 'approve' | 'decline' | 'keep' | 'delete';
 
 type DealerCostInvoice = {
   id: string;
@@ -30,6 +31,7 @@ type DealerCostInvoice = {
 
 type DealerCostResponse = {
   ok?: boolean;
+  action?: DealerCostAction;
   invoice?: DealerCostInvoice;
   message?: string;
   error?: string;
@@ -39,7 +41,11 @@ type DealerCostDecisionModalProps = {
   invoiceId: string | null;
   loginHref?: string;
   onClose: () => void;
-  onResolved: (decision: DealerCostDecision, message: string) => void;
+  onResolved: (
+    action: DealerCostAction,
+    decision: DealerCostDecision,
+    message: string,
+  ) => void;
 };
 
 function formatMoney(value: number | null): string {
@@ -77,6 +83,7 @@ export default function DealerCostDecisionModal({
   onResolved,
 }: DealerCostDecisionModalProps) {
   const [invoice, setInvoice] = useState<DealerCostInvoice | null>(null);
+  const [action, setAction] = useState<DealerCostAction | null>(null);
   const [loading, setLoading] = useState(false);
   const [savingDecision, setSavingDecision] = useState<DealerCostDecision | null>(null);
   const [error, setError] = useState('');
@@ -84,6 +91,7 @@ export default function DealerCostDecisionModal({
   useEffect(() => {
     if (!invoiceId) {
       setInvoice(null);
+      setAction(null);
       setError('');
       return;
     }
@@ -92,6 +100,7 @@ export default function DealerCostDecisionModal({
     const controller = new AbortController();
     setLoading(true);
     setInvoice(null);
+    setAction(null);
     setError('');
 
     async function loadInvoice() {
@@ -106,10 +115,11 @@ export default function DealerCostDecisionModal({
           window.location.replace(loginHref);
           return;
         }
-        if (!response.ok || !payload?.ok || !payload.invoice) {
+        if (!response.ok || !payload?.ok || !payload.invoice || !payload.action) {
           throw new Error(payload?.error || 'Failed to load this dealer cost.');
         }
         setInvoice(payload.invoice);
+        setAction(payload.action);
       } catch (cause) {
         if (controller.signal.aborted) return;
         setError(cause instanceof Error ? cause.message : 'Failed to load this dealer cost.');
@@ -141,8 +151,9 @@ export default function DealerCostDecisionModal({
   if (!invoiceId) return null;
 
   async function saveDecision(decision: DealerCostDecision) {
-    if (!invoiceId) return;
+    if (!invoiceId || !action) return;
     const activeInvoiceId = invoiceId;
+    const activeAction = action;
     setSavingDecision(decision);
     setError('');
 
@@ -162,11 +173,16 @@ export default function DealerCostDecisionModal({
         throw new Error(payload?.error || 'Failed to save your cost decision.');
       }
       onResolved(
+        activeAction,
         decision,
         payload.message || (
-          decision === 'approve'
-            ? 'This dealer cost is now in your Cost Ledger and will be included in owner cost reports.'
-            : 'The cost will remain visible to the dealer only.'
+          activeAction === 'delete'
+            ? decision === 'keep'
+              ? 'The cost was kept in your Cost Ledger.'
+              : 'The cost was permanently deleted from your Cost Ledger.'
+            : decision === 'approve'
+              ? 'This dealer cost is now in your Cost Ledger.'
+              : 'The cost will remain visible to the dealer only.'
         ),
       );
     } catch (cause) {
@@ -176,6 +192,7 @@ export default function DealerCostDecisionModal({
     }
   }
 
+  const isDeletion = action === 'delete';
   const workItems = invoice
     ? [
         ['Maintenance', invoice.maintenanceWorkDone],
@@ -191,69 +208,117 @@ export default function DealerCostDecisionModal({
         type="button"
         className={styles.backdrop}
         onClick={onClose}
-        aria-label="Close dealer cost"
+        aria-label="Close dealer cost decision"
         disabled={Boolean(savingDecision)}
       />
       <section
-        className={styles.modal}
+        className={`${styles.modal} ${isDeletion ? styles.deletionModal : ''}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="dealer-cost-decision-title"
       >
         <header className={styles.header}>
-          <div>
-            <span>Dealer cost approval</span>
-            <h2 id="dealer-cost-decision-title">Add this cost to your ledger?</h2>
-            <p>Check the invoice details, then choose whether to add this dealer cost to your Cost Ledger.</p>
+          <div className={styles.headerIntro}>
+            <span className={styles.headerIcon} aria-hidden="true">
+              {isDeletion ? (
+                <svg viewBox="0 0 24 24">
+                  <path d="M5 7h14M9 7V4h6v3M8 10v7M12 10v7M16 10v7M7 7l1 13h8l1-13" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24">
+                  <path d="M7 3h10v18H7zM10 8h4M10 12h4M10 16h2M4 6h3M17 6h3" />
+                </svg>
+              )}
+            </span>
+            <div>
+              <span className={styles.eyebrow}>
+                {isDeletion ? 'Dealer deletion request' : 'Dealer cost approval'}
+              </span>
+              <h2 id="dealer-cost-decision-title">
+                {isDeletion ? 'Keep or delete this cost?' : 'Add this cost to your ledger?'}
+              </h2>
+              <p>
+                {isDeletion
+                  ? 'The dealer removed this record. Your copy stays protected until you decide what should happen.'
+                  : 'Review the important details below before adding this dealer cost to your Cost Ledger.'}
+              </p>
+            </div>
           </div>
           <button
             type="button"
             className={styles.closeButton}
             onClick={onClose}
-            aria-label="Close dealer cost"
+            aria-label="Close dealer cost decision"
             disabled={Boolean(savingDecision)}
           >
-            ×
+            <svg viewBox="0 0 20 20" aria-hidden="true">
+              <path d="m5 5 10 10M15 5 5 15" />
+            </svg>
           </button>
         </header>
 
         <div className={styles.body}>
-          {loading ? <div className={styles.state}>Loading dealer cost…</div> : null}
+          {loading ? (
+            <div className={styles.state}>
+              <span className={styles.spinner} aria-hidden="true" />
+              Loading cost details…
+            </div>
+          ) : null}
           {error ? <div className={styles.error} role="alert">{error}</div> : null}
 
           {!loading && invoice ? (
             <>
               <section className={styles.summary}>
-                <div>
+                <div className={styles.summaryContext}>
+                  <span>{isDeletion ? 'Removed by dealer' : 'Submitted by dealer'}</span>
+                  <strong>{invoice.createdByDisplayName || 'Dealer'}</strong>
+                  <p>{invoice.assetTitle}</p>
+                </div>
+                <div className={styles.total}>
                   <span>Total incl. VAT</span>
                   <strong>{formatMoney(invoice.totalIncVat)}</strong>
                 </div>
-                <p>
-                  Submitted by {invoice.createdByDisplayName || 'the dealer'} for{' '}
-                  <strong>{invoice.assetTitle}</strong>.
-                </p>
+                <div className={styles.amountBreakdown}>
+                  <span>
+                    <small>Excl. VAT</small>
+                    <strong>{formatMoney(invoice.subtotalExVat)}</strong>
+                  </span>
+                  <span>
+                    <small>VAT</small>
+                    <strong>{formatMoney(invoice.vatAmount)}</strong>
+                  </span>
+                </div>
               </section>
 
-              <dl className={styles.details}>
-                <div><dt>Asset</dt><dd>{invoice.assetTitle}</dd></div>
-                <div><dt>Category</dt><dd>{invoice.assetCategoryLabel || 'Asset'}</dd></div>
-                <div><dt>Supplier</dt><dd>{invoice.supplierName || 'Not supplied'}</dd></div>
-                <div><dt>Invoice number</dt><dd>{invoice.invoiceNumber || 'Not supplied'}</dd></div>
-                <div><dt>Invoice date</dt><dd>{formatDate(invoice.invoiceDate)}</dd></div>
-                <div><dt>Usage reading</dt><dd>{formatUsage(invoice)}</dd></div>
-                <div><dt>Subtotal excl. VAT</dt><dd>{formatMoney(invoice.subtotalExVat)}</dd></div>
-                <div><dt>VAT</dt><dd>{formatMoney(invoice.vatAmount)}</dd></div>
-              </dl>
+              <section className={styles.detailSection}>
+                <div className={styles.sectionHeading}>
+                  <h3>Invoice overview</h3>
+                  <span>Verify before deciding</span>
+                </div>
+                <dl className={styles.details}>
+                  <div><dt>Asset</dt><dd>{invoice.assetTitle}</dd></div>
+                  <div><dt>Category</dt><dd>{invoice.assetCategoryLabel || 'Asset'}</dd></div>
+                  <div><dt>Supplier</dt><dd>{invoice.supplierName || 'Not supplied'}</dd></div>
+                  <div><dt>Invoice number</dt><dd>{invoice.invoiceNumber || 'Not supplied'}</dd></div>
+                  <div><dt>Invoice date</dt><dd>{formatDate(invoice.invoiceDate)}</dd></div>
+                  <div><dt>Usage reading</dt><dd>{formatUsage(invoice)}</dd></div>
+                </dl>
+              </section>
 
               {workItems.length ? (
                 <section className={styles.work}>
-                  <h3>Cost details</h3>
-                  {workItems.map(([label, value]) => (
-                    <div key={label}>
-                      <span>{label}</span>
-                      <p>{value}</p>
-                    </div>
-                  ))}
+                  <div className={styles.sectionHeading}>
+                    <h3>Cost details</h3>
+                    <span>{workItems.length} supplied</span>
+                  </div>
+                  <div className={styles.workGrid}>
+                    {workItems.map(([label, value]) => (
+                      <div key={label}>
+                        <span>{label}</span>
+                        <p>{value}</p>
+                      </div>
+                    ))}
+                  </div>
                 </section>
               ) : null}
 
@@ -264,39 +329,78 @@ export default function DealerCostDecisionModal({
                   target="_blank"
                   rel="noreferrer"
                 >
-                  <span>View invoice or photo</span>
-                  <small>{invoice.document.fileName || 'Uploaded cost document'}</small>
+                  <span className={styles.fileIcon} aria-hidden="true">
+                    <svg viewBox="0 0 24 24">
+                      <path d="M7 3h7l4 4v14H7zM14 3v5h5M10 13h5M10 17h5" />
+                    </svg>
+                  </span>
+                  <span>
+                    <strong>Open invoice or photo</strong>
+                    <small>{invoice.document.fileName || 'Uploaded cost document'}</small>
+                  </span>
+                  <svg className={styles.fileArrow} viewBox="0 0 20 20" aria-hidden="true">
+                    <path d="M7 4h9v9M16 4 5 15" />
+                  </svg>
                 </a>
               ) : null}
 
-              <aside className={styles.note}>
-                <strong>What happens next?</strong>
-                <p>
-                  Add it to include this cost in your ledger and owner reports. Keeping it dealer-only
-                  leaves the dealer’s record unchanged without adding it to your account.
-                </p>
+              <aside className={`${styles.note} ${isDeletion ? styles.deletionNote : ''}`}>
+                <span className={styles.noteIcon} aria-hidden="true">
+                  {isDeletion ? '!' : 'i'}
+                </span>
+                <div>
+                  <strong>{isDeletion ? 'Your copy, your decision' : 'What happens next?'}</strong>
+                  <p>
+                    {isDeletion
+                      ? 'Keep retains the cost in your ledger and reports. Delete permanently removes your copy. The dealer can no longer edit either outcome.'
+                      : 'Add includes the cost in your ledger and owner reports. Dealer-only leaves it on the dealer side without adding it to your account.'}
+                  </p>
+                </div>
               </aside>
             </>
           ) : null}
         </div>
 
         <footer className={styles.footer}>
-          <button
-            type="button"
-            className={styles.declineButton}
-            onClick={() => void saveDecision('decline')}
-            disabled={!invoice || Boolean(savingDecision)}
-          >
-            {savingDecision === 'decline' ? 'Saving…' : 'Keep dealer-only'}
-          </button>
-          <button
-            type="button"
-            className={styles.approveButton}
-            onClick={() => void saveDecision('approve')}
-            disabled={!invoice || Boolean(savingDecision)}
-          >
-            {savingDecision === 'approve' ? 'Saving…' : 'Add to Cost Ledger'}
-          </button>
+          {isDeletion ? (
+            <>
+              <button
+                type="button"
+                className={styles.deleteButton}
+                onClick={() => void saveDecision('delete')}
+                disabled={!invoice || Boolean(savingDecision)}
+              >
+                {savingDecision === 'delete' ? 'Deleting…' : 'Delete permanently'}
+              </button>
+              <button
+                type="button"
+                className={styles.approveButton}
+                onClick={() => void saveDecision('keep')}
+                disabled={!invoice || Boolean(savingDecision)}
+              >
+                {savingDecision === 'keep' ? 'Keeping…' : 'Keep in Cost Ledger'}
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                className={styles.declineButton}
+                onClick={() => void saveDecision('decline')}
+                disabled={!invoice || Boolean(savingDecision)}
+              >
+                {savingDecision === 'decline' ? 'Saving…' : 'Keep dealer-only'}
+              </button>
+              <button
+                type="button"
+                className={styles.approveButton}
+                onClick={() => void saveDecision('approve')}
+                disabled={!invoice || Boolean(savingDecision)}
+              >
+                {savingDecision === 'approve' ? 'Adding…' : 'Add to Cost Ledger'}
+              </button>
+            </>
+          )}
         </footer>
       </section>
     </div>

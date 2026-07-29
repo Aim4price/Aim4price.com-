@@ -114,6 +114,7 @@ type HeaderNotificationItem = {
   dealerAssetCorrectionAction?: 'decision' | 'retry' | 'pending';
   dealerMaintenanceScheduleProposalId?: string;
   dealerCostInvoiceId?: string;
+  dealerCostAction?: 'store' | 'delete';
   priority?: boolean;
 };
 
@@ -1104,7 +1105,8 @@ export default function AppHeader({
 
   function handleDealerCostResolved(
     invoiceId: string,
-    decision: 'approve' | 'decline',
+    action: 'store' | 'delete',
+    decision: 'approve' | 'decline' | 'keep' | 'delete',
     message: string,
   ) {
     setNotifications((current) => current.filter(
@@ -1114,8 +1116,14 @@ export default function AppHeader({
     markNotificationsSeen();
     window.dispatchEvent(new Event('aim4price:cost-ledger-updated'));
     setNotificationDetailOutcome({
-      tone: 'success',
-      title: decision === 'approve' ? 'Cost added to your ledger' : 'Cost kept dealer-only',
+      tone: action === 'delete' && decision === 'delete' ? 'warning' : 'success',
+      title: action === 'delete'
+        ? decision === 'keep'
+          ? 'Cost kept in your ledger'
+          : 'Cost permanently deleted'
+        : decision === 'approve'
+          ? 'Cost added to your ledger'
+          : 'Cost kept dealer-only',
       message,
     });
   }
@@ -1255,7 +1263,7 @@ export default function AppHeader({
                 className={styles.notificationApproveButton}
                 onClick={() => handleOpenDealerCost(invoiceId)}
               >
-                View cost
+                {notification.dealerCostAction === 'delete' ? 'Review deletion' : 'View cost'}
               </button>
             </span>
           </span>
@@ -1975,9 +1983,9 @@ export default function AppHeader({
       <DealerCostDecisionModal
         invoiceId={activeDealerCostInvoiceId}
         onClose={closeDealerCostDecisionModal}
-        onResolved={(decision, message) => {
+        onResolved={(action, decision, message) => {
           if (!activeDealerCostInvoiceId) return;
-          handleDealerCostResolved(activeDealerCostInvoiceId, decision, message);
+          handleDealerCostResolved(activeDealerCostInvoiceId, action, decision, message);
         }}
       />
     </>
