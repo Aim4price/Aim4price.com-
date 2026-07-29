@@ -90,7 +90,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       ok: true,
       ownerStorageStatus,
       message: decision === 'approve'
-        ? 'The dealer cost was stored in your Cost Ledger.'
+        ? 'This dealer cost is now in your Cost Ledger and will be included in owner cost reports.'
         : 'The cost will remain visible to the dealer only.',
     });
   } catch (error) {
