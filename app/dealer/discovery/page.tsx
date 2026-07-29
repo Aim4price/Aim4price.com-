@@ -2,7 +2,6 @@ import { redirect } from 'next/navigation';
 import { getServerSession } from '../../../lib/auth-session';
 import { getAccountProfile } from '../../../lib/account-profile';
 import AssetDiscoveryClient from '../../asset-discovery/asset-discovery-client';
-import DealerNav from '../dealer-nav';
 import styles from '../dealer.module.css';
 
 export const runtime = 'nodejs';
@@ -21,7 +20,6 @@ export default async function DealerDiscoveryPage() {
 
   return (
     <div className={styles.module}>
-      <DealerNav />
       <main>
         <AssetDiscoveryClient dealerAppMode />
       </main>
