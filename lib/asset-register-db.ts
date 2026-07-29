@@ -2424,6 +2424,45 @@ export async function getAssetRegisterItemById(userId: string, assetId: string):
   return row ? mapAssetRegisterRow(row) : null;
 }
 
+export async function getAssetRegisterItemsByRefs(
+  refs: Array<{ userId: string; assetId: string }>,
+): Promise<AssetRegisterItem[]> {
+  if (!refs.length) return [];
+
+  const uniqueRefs = Array.from(
+    new Map(
+      refs
+        .map((ref) => ({
+          userId: asText(ref.userId),
+          assetId: asText(ref.assetId),
+        }))
+        .filter((ref) => ref.userId && ref.assetId)
+        .map((ref) => [`${ref.userId}:${ref.assetId}`, ref]),
+    ).values(),
+  );
+  if (!uniqueRefs.length) return [];
+
+  const db = getDb();
+  const schema = await getAssetRegisterSchema();
+  const result = await db.query<AssetRegisterRow>(
+    `
+      select
+        ${buildSelectList(schema)}
+      from asset_register_items
+      where (user_id::text, id) in (
+        select requested.user_id, requested.asset_id
+        from unnest($1::text[], $2::uuid[]) as requested(user_id, asset_id)
+      )
+    `,
+    [
+      uniqueRefs.map((ref) => ref.userId),
+      uniqueRefs.map((ref) => ref.assetId),
+    ],
+  );
+
+  return result.rows.map(mapAssetRegisterRow);
+}
+
 export async function listAssetRegisterItems(userId: string, registerId?: string | null): Promise<AssetRegisterItem[]> {
   const db = getDb();
   const activeRegister = registerId

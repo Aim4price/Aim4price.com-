@@ -106,6 +106,7 @@ export type MyInvoiceSummary = {
 
 export type MyInvoiceListFilters = {
   assetId?: string | null;
+  ownerUserId?: string | null;
   year?: number | null;
   month?: number | null;
   includeFuelSlipCosts?: boolean;

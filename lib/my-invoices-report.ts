@@ -211,6 +211,85 @@ function invoiceSourceLabel(invoice: MyInvoiceRecord): string {
   return 'Manual';
 }
 
+const ACCOUNTING_HEADERS = [
+  'Date',
+  'Effect',
+  'Supplier',
+  'Reference',
+  'Description',
+  'VAT %',
+  'Excl. VAT',
+  'VAT',
+  'Incl. VAT',
+  'by Affecting Acc.',
+] as const;
+
+function accountingInvoiceDate(invoice: MyInvoiceRecord): string {
+  return invoice.invoiceDate || invoice.createdAtIso.slice(0, 10);
+}
+
+function accountingDescription(invoice: MyInvoiceRecord): string {
+  const details = [
+    invoice.maintenanceWorkDone ? `Maintenance: ${normalizeSpaces(invoice.maintenanceWorkDone)}` : '',
+    invoice.partsSupplied ? `Parts: ${normalizeSpaces(invoice.partsSupplied)}` : '',
+    invoice.repairWorkDone ? `Repairs: ${normalizeSpaces(invoice.repairWorkDone)}` : '',
+    invoice.notes ? `Notes: ${normalizeSpaces(invoice.notes)}` : '',
+  ].filter(Boolean);
+  const asset = normalizeSpaces(invoice.assetTitle) || 'Saved asset';
+
+  return details.length ? `${asset} — ${details.join('; ')}` : `${asset} — Asset cost`;
+}
+
+function accountingVatRate(invoice: MyInvoiceRecord): string {
+  const vat = invoice.vatAmount ?? 0;
+  const exclVat = invoice.subtotalExVat ?? Math.max(0, invoice.totalIncVat - vat);
+  if (vat <= 0 || exclVat <= 0) return 'No VAT';
+
+  const rate = Math.round((vat / exclVat) * 10000) / 100;
+  return `${rate.toLocaleString('en-ZA', { maximumFractionDigits: 2 })}%`;
+}
+
+function accountingAffectingAccount(invoice: MyInvoiceRecord): string {
+  const category = normalizeSpaces(invoice.assetCategoryLabel || invoice.assetKind) || 'Assets';
+  return invoice.source === 'fuel_slip'
+    ? `Fuel - ${category}`
+    : `Repairs and maintenance - ${category}`;
+}
+
+function accountingValues(invoice: MyInvoiceRecord): XlsxPrimitiveCellValue[] {
+  const vat = Math.round((invoice.vatAmount ?? 0) * 100) / 100;
+  const exclVat = Math.round((invoice.subtotalExVat ?? Math.max(0, invoice.totalIncVat - vat)) * 100) / 100;
+  const inclVat = Math.round(invoice.totalIncVat * 100) / 100;
+
+  return [
+    accountingInvoiceDate(invoice),
+    'Increase',
+    invoice.supplierName || 'Unknown supplier',
+    invoice.invoiceNumber || `AIM-${invoice.id.slice(0, 8).toUpperCase()}`,
+    accountingDescription(invoice),
+    accountingVatRate(invoice),
+    exclVat,
+    vat,
+    inclVat,
+    accountingAffectingAccount(invoice),
+  ];
+}
+
+function csvCell(value: XlsxPrimitiveCellValue): string {
+  let text = value === null || value === undefined ? '' : String(value);
+  if (/^[=+\-@\t\r]/.test(text)) text = `'${text}`;
+  return `"${text.replace(/"/g, '""')}"`;
+}
+
+export function buildMyInvoicesAccountingCsv(invoices: MyInvoiceRecord[]): string {
+  const rows = [
+    [...ACCOUNTING_HEADERS],
+    ...invoices.map(accountingValues),
+  ];
+
+  return `\uFEFF${rows.map((row) => row.map(csvCell).join(',')).join('\r\n')}\r\n`;
+}
+
 function renderInvoiceRecords(invoices: MyInvoiceRecord[]): string {
   if (!invoices.length) {
     return '<div class="assetReportEmpty">No invoices have been saved for this report period.</div>';
@@ -1251,6 +1330,15 @@ export function buildMyInvoicesWorkbook(options: MyInvoicesReportOptions): XlsxS
   ];
 
   const supplierRows = buildSupplierSpendRows(options.invoices);
+  const accountingRows: XlsxCellValue[][] = [
+    ACCOUNTING_HEADERS.map((header) => styled(header, 'tableHeader')),
+    ...options.invoices.map((invoice) => accountingValues(invoice).map((value, index) => {
+      if (index === 0) return styled(value, 'date');
+      if (index >= 6 && index <= 8) return styled(value, 'currency');
+      if (index === 4) return styled(value, 'note');
+      return styled(value, 'text');
+    })),
+  ];
 
   return [
     {
@@ -1262,6 +1350,19 @@ export function buildMyInvoicesWorkbook(options: MyInvoicesReportOptions): XlsxS
         { fromRow: 2, fromColumn: 1, toRow: 2, toColumn: 6 },
       ],
       tabColor: '10382F',
+    },
+    {
+      name: 'Accounting',
+      rows: accountingRows,
+      columns: [16, 14, 28, 22, 52, 14, 18, 16, 18, 36],
+      freezeRow: 1,
+      autoFilter: {
+        fromRow: 1,
+        fromColumn: 1,
+        toRow: Math.max(1, 1 + options.invoices.length),
+        toColumn: ACCOUNTING_HEADERS.length,
+      },
+      tabColor: '2E7D5B',
     },
     {
       name: 'Invoices',

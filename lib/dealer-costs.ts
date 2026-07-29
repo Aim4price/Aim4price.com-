@@ -1,4 +1,4 @@
-import { getAssetRegisterItemById } from './asset-register-db';
+import { getAssetRegisterItemsByRefs } from './asset-register-db';
 import { ensureDealerMaintenanceTrackerTables } from './dealer-maintenance-tracker';
 import { getDb } from './db';
 import {
@@ -127,18 +127,25 @@ async function listDealerCostAssetRefs(
 
 export async function listDealerCostAssets(dealerUserId: string): Promise<DealerCostAssetOption[]> {
   const refs = await listDealerCostAssetRefs(dealerUserId);
-  const assets = await Promise.all(
-    refs.map(async (ref) => {
-      const asset = await getAssetRegisterItemById(ref.owner_user_id, ref.asset_register_item_id);
-      if (!asset) return null;
-
-      return {
-        ...mapMyInvoiceAssetOption(asset),
-        ownerUserId: ref.owner_user_id,
-        ownerName: asText(ref.owner_name) || 'Asset owner',
-      } satisfies DealerCostAssetOption;
-    }),
+  const assetRows = await getAssetRegisterItemsByRefs(
+    refs.map((ref) => ({
+      userId: ref.owner_user_id,
+      assetId: ref.asset_register_item_id,
+    })),
   );
+  const assetsByRef = new Map(
+    assetRows.map((asset) => [`${asset.userId}:${asset.id}`, asset]),
+  );
+  const assets = refs.map((ref) => {
+    const asset = assetsByRef.get(`${ref.owner_user_id}:${ref.asset_register_item_id}`);
+    if (!asset) return null;
+
+    return {
+      ...mapMyInvoiceAssetOption(asset),
+      ownerUserId: ref.owner_user_id,
+      ownerName: asText(ref.owner_name) || 'Asset owner',
+    } satisfies DealerCostAssetOption;
+  });
 
   return assets
     .filter((asset): asset is DealerCostAssetOption => Boolean(asset))
@@ -161,14 +168,16 @@ export async function listDealerCostsData(
   filters: MyInvoiceListFilters = {},
 ): Promise<DealerCostsData> {
   const assets = await listDealerCostAssets(dealerUserId);
-  const allowedAssetIds = new Set(assets.map((asset) => asset.id));
+  const ownerUserId = asText(filters.ownerUserId);
+  const scopedAssets = assets.filter((asset) => !ownerUserId || asset.ownerUserId === ownerUserId);
+  const allowedAssetIds = new Set(scopedAssets.map((asset) => asset.id));
 
   if (filters.assetId && !allowedAssetIds.has(filters.assetId)) {
     return { assets, invoices: [], summary: calculateMyInvoiceSummary([]) };
   }
 
   const ownerUserIds = Array.from(new Set(
-    assets
+    scopedAssets
       .filter((asset) => !filters.assetId || asset.id === filters.assetId)
       .map((asset) => asset.ownerUserId),
   ));
@@ -181,7 +190,7 @@ export async function listDealerCostsData(
   );
   const invoices = invoiceGroups
     .flat()
-    .filter((invoice) => allowedAssetIds.has(invoice.assetId))
+    .filter((invoice) => allowedAssetIds.has(invoice.assetId) && invoice.source !== 'fuel_slip')
     .sort((left, right) => {
       const leftTime = Date.parse(left.invoiceDate || left.createdAtIso) || 0;
       const rightTime = Date.parse(right.invoiceDate || right.createdAtIso) || 0;
@@ -201,10 +210,18 @@ function withDefaultSupplier(input: MyInvoiceDraftInput, supplierName: string): 
     : { ...input, supplierName };
 }
 
+function assertDealerCostSourceAllowed(input: MyInvoiceDraftInput): void {
+  const source = asText(input.source).toLowerCase().replace(/-/g, '_');
+  if (source === 'fuel_slip') {
+    throw new Error('DEALER_FUEL_COST_NOT_ALLOWED');
+  }
+}
+
 export async function createDealerCost(
   actor: DealerCostActor,
   input: MyInvoiceDraftInput,
 ) {
+  assertDealerCostSourceAllowed(input);
   const assetId = asText(input.assetId);
   const access = assetId ? await getDealerCostAssetAccess(actor.dealerUserId, assetId) : null;
   if (!access) throw new Error('DEALER_COST_ASSET_FORBIDDEN');
@@ -241,6 +258,7 @@ export async function updateDealerCost(
   invoiceId: string,
   input: MyInvoiceDraftInput,
 ) {
+  assertDealerCostSourceAllowed(input);
   const existing = await getDealerCostInvoiceRef(actor.dealerUserId, invoiceId);
   if (!existing) throw new Error('INVOICE_NOT_FOUND');
 
