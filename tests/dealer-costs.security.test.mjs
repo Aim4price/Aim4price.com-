@@ -10,13 +10,18 @@ const dealerRoute = read('app/api/dealer/cost/route.ts');
 const dealerInvoiceRoute = read('app/api/dealer/cost/[invoiceId]/route.ts');
 const dealerUploadRoute = read('app/api/dealer/cost/upload/route.ts');
 const dealerExtractRoute = read('app/api/dealer/cost/extract/route.ts');
+const ownerDecisionRoute = read('app/api/dealer-cost-proposals/[invoiceId]/route.ts');
 const leads = read('app/leads/leads-client.tsx');
 const costClient = read('app/my-invoices/my-invoices-client.tsx');
+const ownerNotifications = read('app/owner-app/notifications/owner-notifications-client.tsx');
 const standardDealerPage = read('app/dealer-costs/page.tsx');
 const dealerAppPage = read('app/dealer/cost/page.tsx');
 const dealerAppHome = read('app/dealer/page.tsx');
 const appHeader = read('components/AppHeader.tsx');
+const decisionModal = read('components/DealerCostDecisionModal.tsx');
+const notifications = read('lib/notifications.ts');
 const migration = read('database/migrations/61-dealer-asset-costs.sql');
+const ownerStorageMigration = read('database/migrations/62-dealer-cost-owner-storage.sql');
 
 test('dealer cost assets come only from leads or active maintenance shares', () => {
   assert.match(dealerCosts, /from public\.asset_leads lead/);
@@ -91,6 +96,7 @@ test('dealer cost creation stays separate from maintenance history', () => {
   assert.doesNotMatch(dealerCosts, /asset_maintenance_records/);
   assert.doesNotMatch(dealerCosts, /createMaintenance|updateMaintenance|deleteMaintenance/);
   assert.match(dealerCosts, /return createMyInvoice/);
+  assert.match(invoices, /asText\(actor\.dealerUserId\) \? 'pending' : 'owner'/);
 });
 
 test('both dealer workspaces show the Manage action and open the correct cost page', () => {
@@ -110,8 +116,8 @@ test('dealer cost page reuses manual and automatic owner cost entry without owne
   assert.match(costClient, /\{!dealerMode \? \([\s\S]*Download/);
 });
 
-test('standard dealer and Dealer App navigation both expose their working cost routes', () => {
-  assert.match(appHeader, /\{ key: 'cost', href: '\/dealer-costs', label: 'Costs' \}/);
+test('dealer costs stay out of the header and remain available from Manage and Dealer App tools', () => {
+  assert.doesNotMatch(appHeader, /\{ key: 'cost', href: '\/dealer-costs', label: 'Costs' \}/);
   assert.match(appHeader, /\{ href: '\/dealer-costs', label: 'Client Costs', accountTypes: \['dealer'\] \}/);
   assert.match(standardDealerPage, /getDealerCostRequestContext\(\)/);
   assert.match(standardDealerPage, /dealerMode[\s\S]*showAppHeader/);
@@ -120,9 +126,33 @@ test('standard dealer and Dealer App navigation both expose their working cost r
   assert.doesNotMatch(dealerAppPage, /showAppHeader/);
 });
 
+test('dealer-created costs stay dealer-only until the owner approves storage', () => {
+  assert.match(invoices, /owner_storage_status in \('owner', 'approved'\)/);
+  assert.match(invoices, /ownerStorageStatus: normalizeOwnerStorageStatus/);
+  assert.match(dealerCosts, /listPendingOwnerDealerCosts/);
+  assert.match(dealerCosts, /owner_storage_status = 'pending'/);
+  assert.match(dealerCosts, /resolveDealerCostOwnerDecision/);
+  assert.match(ownerDecisionRoute, /getServerSession\(\{ allowOwnerApp: true \}\)/);
+  assert.match(ownerDecisionRoute, /export async function GET/);
+  assert.match(ownerDecisionRoute, /export async function PATCH/);
+  assert.match(ownerDecisionRoute, /Only the asset owner|Owner sign-in is required/);
+});
+
+test('owners can view a dealer cost and choose yes or no from notifications', () => {
+  assert.match(notifications, /category: 'dealer_cost'/);
+  assert.match(notifications, /dealerCostInvoiceId: invoice\.id/);
+  assert.match(appHeader, /<DealerCostDecisionModal/);
+  assert.match(ownerNotifications, /<DealerCostDecisionModal/);
+  assert.match(decisionModal, /View invoice or photo/);
+  assert.match(decisionModal, /No, keep dealer only/);
+  assert.match(decisionModal, /Yes, store cost/);
+});
+
 test('migration records dealer provenance on uploaded documents and saved costs', () => {
   assert.match(migration, /ALTER TABLE public\.asset_invoice_documents/);
   assert.match(migration, /created_by_dealer_user_id/);
   assert.match(migration, /ALTER TABLE public\.asset_invoices/);
   assert.match(migration, /created_by_display_name/);
+  assert.match(ownerStorageMigration, /owner_storage_status/);
+  assert.match(ownerStorageMigration, /'pending', 'approved', 'declined'/);
 });
