@@ -2593,3 +2593,85 @@
     width: 100%;
   }
 }
+
+/* === Cost Ledger staged report export === */
+.downloadFormatModal {
+  width: min(100%, 1040px);
+}
+
+.downloadReportNameField {
+  min-width: 0;
+  display: grid;
+  gap: 0.52rem;
+}
+
+.downloadReportNameField > span {
+  color: #263f37;
+  font-size: 0.86rem;
+  font-weight: 850;
+}
+
+.downloadReportNameField input {
+  width: 100%;
+  min-height: 3.55rem;
+  padding: 0 1rem;
+  border: 1px solid rgba(207, 222, 234, 0.98);
+  border-radius: 1.05rem;
+  outline: none;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  color: #1e3348;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 720;
+  box-shadow:
+    0 9px 20px rgba(16, 31, 28, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.downloadReportNameField input:focus {
+  border-color: rgba(77, 150, 205, 0.82);
+  background: #ffffff;
+  box-shadow:
+    0 0 0 4px rgba(69, 142, 202, 0.12),
+    0 10px 22px rgba(16, 31, 28, 0.04);
+}
+
+.downloadFormatGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.downloadFormatGrid .reportOption {
+  min-height: 7.1rem;
+}
+
+.downloadSecondaryButton {
+  color: #143a65 !important;
+  border: 1px solid rgba(91, 164, 224, 0.88) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f1f8ff 100%) !important;
+  box-shadow: 0 9px 20px rgba(48, 119, 180, 0.07) !important;
+}
+
+.downloadSecondaryButton:hover:not(:disabled) {
+  color: #0c2d52 !important;
+  border-color: rgba(55, 139, 211, 0.98) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #e8f4ff 100%) !important;
+}
+
+.downloadFormatFooter .primaryButton {
+  min-width: 15.5rem;
+}
+
+@media (max-width: 900px) {
+  .downloadFormatGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .downloadFormatGrid .reportOption {
+    min-height: auto;
+  }
+
+  .downloadFormatFooter {
+    align-items: stretch;
+  }
+}

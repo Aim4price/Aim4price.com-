@@ -190,6 +190,7 @@ type Notice = {
 };
 
 type ReportFormat = 'pdf' | 'xlsx' | 'csv';
+type DownloadStep = 'filters' | 'format';
 
 const DEFAULT_FILTERS: InvoiceFilterState = {
   ownerId: 'all',
@@ -711,12 +712,18 @@ function buildInvoiceListUrl(filters: InvoiceFilterState, apiRoot: string): stri
   return query ? `${apiRoot}?${query}` : apiRoot;
 }
 
-function buildReportUrl(filters: InvoiceFilterState, format: ReportFormat, includeFuelSlipCosts: boolean): string {
+function buildReportUrl(
+  filters: InvoiceFilterState,
+  format: ReportFormat,
+  includeFuelSlipCosts: boolean,
+  reportName: string,
+): string {
   const params = new URLSearchParams({ format, includeFuelSlipCosts: includeFuelSlipCosts ? 'true' : 'false' });
 
   if (filters.assetId !== 'all') params.set('assetId', filters.assetId);
   if (filters.year !== 'all') params.set('year', filters.year);
   if (filters.month !== 'all') params.set('month', filters.month);
+  if (reportName.trim()) params.set('reportName', reportName.trim());
 
   return `/api/my-invoices/report?${params.toString()}`;
 }
@@ -749,6 +756,9 @@ export default function MyInvoicesClient({
   const [filterAssetSearch, setFilterAssetSearch] = useState('');
   const [filterOwnerSearch, setFilterOwnerSearch] = useState('');
   const [downloadOpen, setDownloadOpen] = useState(false);
+  const [downloadStep, setDownloadStep] = useState<DownloadStep>('filters');
+  const [downloadFormat, setDownloadFormat] = useState<ReportFormat>('pdf');
+  const [downloadReportName, setDownloadReportName] = useState('Cost of Ownership Report');
   const [includeFuelSlipCosts, setIncludeFuelSlipCosts] = useState(true);
   const [dealerDefaults, setDealerDefaults] = useState<DealerDefaults>(initialDealerDefaults);
   const [draft, setDraft] = useState<InvoiceDraft>(buildEmptyDraft('manual', initialDealerDefaults.supplierName));
@@ -1155,12 +1165,31 @@ export default function MyInvoicesClient({
   function openDownloadModal() {
     setIncludeFuelSlipCosts(true);
     setDownloadFilters(activeFilters);
+    setDownloadStep('filters');
+    setDownloadFormat('pdf');
+    setDownloadReportName('Cost of Ownership Report');
     setOpenFilterDropdown(null);
     setDownloadOpen(true);
   }
 
+  function closeDownloadModal() {
+    setOpenFilterDropdown(null);
+    setDownloadStep('filters');
+    setDownloadOpen(false);
+  }
+
+  function showDownloadFormatStep() {
+    setOpenFilterDropdown(null);
+    setDownloadStep('format');
+  }
+
+  function showDownloadFilterStep() {
+    setOpenFilterDropdown(null);
+    setDownloadStep('filters');
+  }
+
   function handleDownloadReport(format: ReportFormat) {
-    const url = buildReportUrl(downloadFilters, format, includeFuelSlipCosts);
+    const url = buildReportUrl(downloadFilters, format, includeFuelSlipCosts, downloadReportName);
 
     if (format === 'xlsx' || format === 'csv') {
       const link = document.createElement('a');
@@ -1170,15 +1199,13 @@ export default function MyInvoicesClient({
       document.body.appendChild(link);
       link.click();
       link.remove();
-      setOpenFilterDropdown(null);
-      setDownloadOpen(false);
+      closeDownloadModal();
       return;
     }
 
     const opened = window.open(url, '_blank', 'noopener,noreferrer');
     if (!opened) window.location.href = url;
-    setOpenFilterDropdown(null);
-    setDownloadOpen(false);
+    closeDownloadModal();
   }
 
   async function uploadInvoiceFile(assetId: string, source: InvoiceSource, file: File): Promise<InvoiceDocument> {
@@ -1660,101 +1687,170 @@ export default function MyInvoicesClient({
 
       {!dealerMode && downloadOpen ? (
         <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label="Download cost records">
-          <div className={`${styles.downloadModal} ${styles.reportModal}`}>
+          <div className={`${styles.downloadModal} ${styles.reportModal} ${downloadStep === 'format' ? styles.downloadFormatModal : ''}`}>
             <div className={styles.modalHeader}>
               <div>
-                <h2>Download cost records</h2>
-                <p>Choose the reporting period, fuel treatment and file format.</p>
+                <h2>{downloadStep === 'filters' ? 'Download cost records' : 'Export cost records'}</h2>
+                <p>
+                  {downloadStep === 'filters'
+                    ? 'Choose the reporting period and fuel costs to include.'
+                    : 'Confirm the report name and choose the export format.'}
+                </p>
               </div>
-              <button type="button" className={styles.closeButton} onClick={() => {
-                setOpenFilterDropdown(null);
-                setDownloadOpen(false);
-              }} aria-label="Close download"><CloseIcon /></button>
+              <button type="button" className={styles.closeButton} onClick={closeDownloadModal} aria-label="Close download"><CloseIcon /></button>
             </div>
             <div className={styles.modalDivider} />
-            <section className={styles.reportPeriodPanel} aria-label="Report period">
-              <div className={styles.reportSectionHeading}>
-                <strong>Report period</strong>
-                <span>Every export is filtered using the year and month selected here.</span>
-              </div>
-              <div className={styles.reportPeriodGrid}>
-                <FilterDropdown
-                  label="Year"
-                  dropdownKey="download-year"
-                  value={downloadFilters.year}
-                  options={yearFilterOptions}
-                  openDropdown={openFilterDropdown}
-                  onOpenChange={handleFilterDropdownOpenChange}
-                  onChange={(value) => setDownloadFilters((current) => ({
-                    ...current,
-                    year: value,
-                    month: value === 'all' ? 'all' : current.month,
-                  }))}
-                />
-                <FilterDropdown
-                  label="Month"
-                  dropdownKey="download-month"
-                  value={downloadFilters.month}
-                  options={monthFilterOptions}
-                  openDropdown={openFilterDropdown}
-                  onOpenChange={handleFilterDropdownOpenChange}
-                  onChange={(value) => setDownloadFilters((current) => ({ ...current, month: value }))}
-                  disabled={downloadFilters.year === 'all'}
-                />
-              </div>
-            </section>
-            <div className={styles.reportSectionHeading}>
-              <strong>External fuel costs</strong>
-              <span>Fuel slips can be included for owners, or removed from the export and its totals.</span>
-            </div>
-            <div className={styles.reportChoiceGrid}>
-              <button
-                type="button"
-                className={`${styles.reportOption} ${includeFuelSlipCosts ? styles.reportOptionActive : ''}`}
-                onClick={() => setIncludeFuelSlipCosts(true)}
-                aria-pressed={includeFuelSlipCosts}
-              >
-                <span className={styles.reportGraphic}>
-                  <ManualInvoiceIcon />
-                </span>
-                <span className={styles.reportTitleBlock}>
-                  <strong>Yes, include fuel slip costs</strong>
-                  <small>Fuel Slip rows stay in the exported report and are included in totals.</small>
-                </span>
-              </button>
-              <button
-                type="button"
-                className={`${styles.reportOption} ${!includeFuelSlipCosts ? styles.reportOptionActive : ''}`}
-                onClick={() => setIncludeFuelSlipCosts(false)}
-                aria-pressed={!includeFuelSlipCosts}
-              >
-                <span className={styles.reportGraphic}>
-                  <AutomaticInvoiceIcon />
-                </span>
-                <span className={styles.reportTitleBlock}>
-                  <strong>No, exclude fuel slip costs</strong>
-                  <small>Fuel Slip rows are removed from the exported report rows and totals.</small>
-                </span>
-              </button>
-            </div>
-            <div className={`${styles.modalFooter} ${styles.downloadModalFooter}`}>
-              <button type="button" className={styles.secondaryButton} onClick={() => {
-                setOpenFilterDropdown(null);
-                setDownloadOpen(false);
-              }}>Cancel</button>
-              <button type="button" className={styles.primaryButton} onClick={() => handleDownloadReport('pdf')}>
-                <DownloadIcon className={styles.buttonIcon} />
-                <span>Download PDF</span>
-              </button>
-              <button type="button" className={styles.primaryButton} onClick={() => handleDownloadReport('csv')}>
-                <DownloadIcon className={styles.buttonIcon} />
-                <span>Download CSV</span>
-              </button>
-              <button type="button" className={styles.primaryButton} onClick={() => handleDownloadReport('xlsx')}>
-                <DownloadIcon className={styles.buttonIcon} />
-                <span>Download Excel</span>
-              </button>
-            </div>
+            {downloadStep === 'filters' ? (
+              <>
+                <section className={styles.reportPeriodPanel} aria-label="Report period">
+                  <div className={styles.reportSectionHeading}>
+                    <strong>Report period</strong>
+                    <span>Choose the year and month to include in this export.</span>
+                  </div>
+                  <div className={styles.reportPeriodGrid}>
+                    <FilterDropdown
+                      label="Year"
+                      dropdownKey="download-year"
+                      value={downloadFilters.year}
+                      options={yearFilterOptions}
+                      openDropdown={openFilterDropdown}
+                      onOpenChange={handleFilterDropdownOpenChange}
+                      onChange={(value) => setDownloadFilters((current) => ({
+                        ...current,
+                        year: value,
+                        month: value === 'all' ? 'all' : current.month,
+                      }))}
+                    />
+                    <FilterDropdown
+                      label="Month"
+                      dropdownKey="download-month"
+                      value={downloadFilters.month}
+                      options={monthFilterOptions}
+                      openDropdown={openFilterDropdown}
+                      onOpenChange={handleFilterDropdownOpenChange}
+                      onChange={(value) => setDownloadFilters((current) => ({ ...current, month: value }))}
+                      disabled={downloadFilters.year === 'all'}
+                    />
+                  </div>
+                </section>
+                <div className={styles.reportSectionHeading}>
+                  <strong>External fuel costs</strong>
+                  <span>Choose whether Fuel Slip records must be included in the report and totals.</span>
+                </div>
+                <div className={styles.reportChoiceGrid}>
+                  <button
+                    type="button"
+                    className={`${styles.reportOption} ${includeFuelSlipCosts ? styles.reportOptionActive : ''}`}
+                    onClick={() => setIncludeFuelSlipCosts(true)}
+                    aria-pressed={includeFuelSlipCosts}
+                  >
+                    <span className={styles.reportGraphic}>
+                      <ManualInvoiceIcon />
+                    </span>
+                    <span className={styles.reportTitleBlock}>
+                      <strong>Include fuel slip costs</strong>
+                      <small>Fuel Slip records stay in the report and are included in totals.</small>
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.reportOption} ${!includeFuelSlipCosts ? styles.reportOptionActive : ''}`}
+                    onClick={() => setIncludeFuelSlipCosts(false)}
+                    aria-pressed={!includeFuelSlipCosts}
+                  >
+                    <span className={styles.reportGraphic}>
+                      <AutomaticInvoiceIcon />
+                    </span>
+                    <span className={styles.reportTitleBlock}>
+                      <strong>Exclude fuel slip costs</strong>
+                      <small>Fuel Slip records are left out of the report and its totals.</small>
+                    </span>
+                  </button>
+                </div>
+                <div className={`${styles.modalFooter} ${styles.downloadModalFooter}`}>
+                  <button type="button" className={`${styles.secondaryButton} ${styles.downloadSecondaryButton}`} onClick={closeDownloadModal}>Cancel</button>
+                  <button type="button" className={styles.primaryButton} onClick={showDownloadFormatStep}>
+                    <span>Next</span>
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <label className={styles.downloadReportNameField}>
+                  <span>Report name</span>
+                  <input
+                    type="text"
+                    value={downloadReportName}
+                    onChange={(event) => setDownloadReportName(event.target.value)}
+                    placeholder="Enter the report name"
+                    maxLength={100}
+                  />
+                </label>
+                <div className={`${styles.reportChoiceGrid} ${styles.downloadFormatGrid}`}>
+                  <button
+                    type="button"
+                    className={`${styles.reportOption} ${downloadFormat === 'pdf' ? styles.reportOptionActive : ''}`}
+                    onClick={() => setDownloadFormat('pdf')}
+                    aria-pressed={downloadFormat === 'pdf'}
+                  >
+                    <span className={styles.reportGraphic}>
+                      <img src="/brand/pdf.png" alt="PDF report" className={styles.reportGraphicImage} />
+                    </span>
+                    <span className={styles.reportTitleBlock}>
+                      <strong>PDF report</strong>
+                      <small>Open a clear report for clients, banks or insurance partners.</small>
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.reportOption} ${downloadFormat === 'xlsx' ? styles.reportOptionActive : ''}`}
+                    onClick={() => setDownloadFormat('xlsx')}
+                    aria-pressed={downloadFormat === 'xlsx'}
+                  >
+                    <span className={styles.reportGraphic}>
+                      <img src="/brand/sheet.png" alt="Excel workbook" className={styles.reportGraphicImage} />
+                    </span>
+                    <span className={styles.reportTitleBlock}>
+                      <strong>XLSX workbook</strong>
+                      <small>Download all report rows in an Excel-ready workbook.</small>
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.reportOption} ${downloadFormat === 'csv' ? styles.reportOptionActive : ''}`}
+                    onClick={() => setDownloadFormat('csv')}
+                    aria-pressed={downloadFormat === 'csv'}
+                  >
+                    <span className={styles.reportGraphic}>
+                      <DownloadIcon />
+                    </span>
+                    <span className={styles.reportTitleBlock}>
+                      <strong>CSV file</strong>
+                      <small>Download accounting-ready rows in a simple CSV file.</small>
+                    </span>
+                  </button>
+                </div>
+                <div className={`${styles.modalFooter} ${styles.downloadModalFooter} ${styles.downloadFormatFooter}`}>
+                  <button type="button" className={`${styles.secondaryButton} ${styles.downloadSecondaryButton}`} onClick={showDownloadFilterStep}>Back</button>
+                  <button type="button" className={`${styles.secondaryButton} ${styles.downloadSecondaryButton}`} onClick={closeDownloadModal}>Cancel</button>
+                  <button
+                    type="button"
+                    className={styles.primaryButton}
+                    onClick={() => handleDownloadReport(downloadFormat)}
+                    disabled={!downloadReportName.trim()}
+                  >
+                    <DownloadIcon className={styles.buttonIcon} />
+                    <span>
+                      {downloadFormat === 'pdf'
+                        ? 'Open PDF report'
+                        : downloadFormat === 'xlsx'
+                          ? 'Download Excel'
+                          : 'Download CSV'}
+                    </span>
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       ) : null}
