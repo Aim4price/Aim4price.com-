@@ -6,6 +6,7 @@ import {
   createMyInvoice,
   deleteDealerMyInvoice,
   ensureMyInvoiceTables,
+  getMyInvoiceById,
   listMyInvoices,
   mapMyInvoiceAssetOption,
   updateMyInvoice,
@@ -36,6 +37,8 @@ export type DealerCostsData = {
   summary: MyInvoiceSummary;
 };
 
+export type DealerCostOwnerDecision = 'approve' | 'decline';
+
 type DealerCostAssetRef = {
   owner_user_id: string;
   asset_register_item_id: string;
@@ -50,6 +53,8 @@ type DealerCostInvoiceRef = {
 function asText(value: unknown): string {
   return String(value ?? '').trim();
 }
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function actorContext(actor: DealerCostActor): MyInvoiceActorContext {
   return {
@@ -266,4 +271,64 @@ export async function deleteDealerCost(
   }
 
   return deleteDealerMyInvoice(existing.owner_user_id, invoiceId, actor.dealerUserId);
+}
+
+export async function listPendingOwnerDealerCosts(
+  ownerUserId: string,
+): Promise<MyInvoiceRecord[]> {
+  return listMyInvoices(ownerUserId, { ownerStorageStatus: 'pending' });
+}
+
+export async function getPendingOwnerDealerCost(
+  ownerUserId: string,
+  invoiceId: string,
+): Promise<MyInvoiceRecord | null> {
+  if (!UUID_PATTERN.test(asText(invoiceId))) return null;
+  return getMyInvoiceById(ownerUserId, invoiceId, { ownerStorageStatus: 'pending' });
+}
+
+export async function resolveDealerCostOwnerDecision(input: {
+  ownerUserId: string;
+  invoiceId: string;
+  decision: DealerCostOwnerDecision;
+}): Promise<'approved' | 'declined'> {
+  await ensureMyInvoiceTables();
+  if (!UUID_PATTERN.test(asText(input.invoiceId))) {
+    throw new Error('DEALER_COST_DECISION_NOT_FOUND');
+  }
+
+  const nextStatus = input.decision === 'approve' ? 'approved' : 'declined';
+  const result = await getDb().query<{ owner_storage_status: string }>(
+    `
+      update public.asset_invoices
+      set
+        owner_storage_status = $3,
+        owner_storage_decided_at = now(),
+        updated_at = now()
+      where id = $1::uuid
+        and user_id = $2
+        and created_by_dealer_user_id is not null
+        and owner_storage_status = 'pending'
+      returning owner_storage_status
+    `,
+    [input.invoiceId, input.ownerUserId, nextStatus],
+  );
+
+  if (!result.rows[0]) {
+    const existing = await getDb().query<{ owner_storage_status: string }>(
+      `
+        select owner_storage_status
+        from public.asset_invoices
+        where id = $1::uuid
+          and user_id = $2
+          and created_by_dealer_user_id is not null
+        limit 1
+      `,
+      [input.invoiceId, input.ownerUserId],
+    );
+    if (existing.rows[0]) throw new Error('DEALER_COST_DECISION_ALREADY_RESOLVED');
+    throw new Error('DEALER_COST_DECISION_NOT_FOUND');
+  }
+
+  return nextStatus;
 }

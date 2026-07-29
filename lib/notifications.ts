@@ -21,6 +21,7 @@ import {
   listPendingOwnerDealerMaintenanceScheduleProposals,
   type DealerMaintenanceScheduleProposal,
 } from './dealer-maintenance-tracker';
+import { listPendingOwnerDealerCosts } from './dealer-costs';
 
 export type HeaderNotificationCategory =
   | 'partner_note'
@@ -29,6 +30,7 @@ export type HeaderNotificationCategory =
   | 'fuel'
   | 'maintenance'
   | 'dealer_schedule'
+  | 'dealer_cost'
   | 'dealer_correction'
   | 'asset_discovery';
 
@@ -47,6 +49,7 @@ export type HeaderNotificationItem = {
   dealerAssetCorrectionId?: string;
   dealerAssetCorrectionAction?: 'decision' | 'retry' | 'pending';
   dealerMaintenanceScheduleProposalId?: string;
+  dealerCostInvoiceId?: string;
   priority?: boolean;
 };
 
@@ -314,6 +317,14 @@ function proposedScheduleDueText(proposal: DealerMaintenanceScheduleProposal): s
   return 'Open the proposal to review its due target.';
 }
 
+function formatCostAmount(value: number): string {
+  return new Intl.NumberFormat('en-ZA', {
+    style: 'currency',
+    currency: 'ZAR',
+    maximumFractionDigits: 2,
+  }).format(Math.max(0, value));
+}
+
 function correctionActor(correction: DealerAssetCorrectionRequest): string {
   const dealerName = asText(correction.dealerName) || 'the dealer';
   const actorName = asText(correction.actorName);
@@ -409,6 +420,38 @@ async function listOwnerDealerMaintenanceScheduleNotifications(userId: string): 
     } satisfies HeaderNotificationItem));
   } catch (error) {
     console.error('Failed to load dealer maintenance schedule notifications', error);
+    return [];
+  }
+}
+
+async function listOwnerDealerCostNotifications(userId: string): Promise<HeaderNotificationItem[]> {
+  try {
+    const invoices = await listPendingOwnerDealerCosts(userId);
+    return invoices.map((invoice) => {
+      const dealerName = asText(invoice.createdByDisplayName) || 'A dealer';
+      const supplier = asText(invoice.supplierName);
+      const invoiceReference = asText(invoice.invoiceNumber);
+      const costDetail = [
+        formatCostAmount(invoice.totalIncVat),
+        supplier ? `from ${supplier}` : '',
+        invoiceReference ? `(invoice ${invoiceReference})` : '',
+      ].filter(Boolean).join(' ');
+
+      return {
+        id: `dealer-cost:${invoice.id}:${invoice.updatedAtIso}`,
+        category: 'dealer_cost',
+        tone: 'warning',
+        title: 'Dealer added an asset cost',
+        body: `${dealerName} added ${costDetail || 'a cost'} for ${invoice.assetTitle}. View it and choose whether it must be stored in your Cost Ledger.`,
+        href: '',
+        createdAtIso: invoice.updatedAtIso || invoice.createdAtIso,
+        assetId: invoice.assetId,
+        dealerCostInvoiceId: invoice.id,
+        priority: true,
+      } satisfies HeaderNotificationItem;
+    });
+  } catch (error) {
+    console.error('Failed to load dealer cost notifications', error);
     return [];
   }
 }
@@ -707,6 +750,7 @@ export async function listHeaderNotifications(input: ListHeaderNotificationsInpu
     ? await Promise.all([
         listOwnerDealerAssetCorrectionNotifications(input.userId),
         listOwnerDealerMaintenanceScheduleNotifications(input.userId),
+        listOwnerDealerCostNotifications(input.userId),
         listOpenPartnerNoteNotifications(input.userId),
         listOwnerLeadNotifications(input.userId),
         listOwnerAssetDiscoveryNotifications(input.userId),

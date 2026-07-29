@@ -8,6 +8,7 @@ export type MyInvoiceSource = 'manual' | 'automatic' | 'fuel_slip';
 export type MyInvoiceUsageMetric = 'none' | 'hours' | 'km' | 'percentage';
 export type MyInvoiceBlockType = 'maintenance' | 'parts' | 'repair' | 'other';
 export type MyInvoiceExtractionStatus = 'not_extracted' | 'extracted' | 'failed' | 'skipped';
+export type MyInvoiceOwnerStorageStatus = 'owner' | 'pending' | 'approved' | 'declined';
 
 export type MyInvoiceAssetOption = {
   id: string;
@@ -70,6 +71,8 @@ export type MyInvoiceRecord = {
   createdByDealerUserId: string;
   createdByDealerStaffId: string;
   createdByDisplayName: string;
+  ownerStorageStatus: MyInvoiceOwnerStorageStatus;
+  ownerStorageDecidedAtIso: string | null;
   invoiceDocumentId: string | null;
   document: MyInvoiceDocument | null;
   supplierName: string;
@@ -107,6 +110,7 @@ export type MyInvoiceListFilters = {
   month?: number | null;
   includeFuelSlipCosts?: boolean;
   createdByDealerUserId?: string | null;
+  ownerStorageStatus?: MyInvoiceOwnerStorageStatus | null;
 };
 
 export type MyInvoiceListResult = {
@@ -166,6 +170,8 @@ type MyInvoiceRow = {
   created_by_dealer_user_id: string | null;
   created_by_dealer_staff_id: string | null;
   created_by_display_name: string | null;
+  owner_storage_status: string | null;
+  owner_storage_decided_at: string | Date | null;
   invoice_document_id: string | null;
   supplier_name: string | null;
   invoice_number: string | null;
@@ -297,6 +303,14 @@ function normalizeExtractionStatus(value: unknown): MyInvoiceExtractionStatus {
   const normalized = asText(value).toLowerCase();
   if (normalized === 'extracted' || normalized === 'failed' || normalized === 'skipped') return normalized;
   return 'not_extracted';
+}
+
+function normalizeOwnerStorageStatus(value: unknown): MyInvoiceOwnerStorageStatus {
+  const normalized = asText(value).toLowerCase();
+  if (normalized === 'pending' || normalized === 'approved' || normalized === 'declined') {
+    return normalized;
+  }
+  return 'owner';
 }
 
 function toIsoString(value: unknown): string {
@@ -618,6 +632,10 @@ function mapInvoiceRow(row: MyInvoiceRow, document: MyInvoiceDocument | null, bl
     createdByDealerUserId: asText(row.created_by_dealer_user_id),
     createdByDealerStaffId: asText(row.created_by_dealer_staff_id),
     createdByDisplayName: asText(row.created_by_display_name),
+    ownerStorageStatus: normalizeOwnerStorageStatus(row.owner_storage_status),
+    ownerStorageDecidedAtIso: row.owner_storage_decided_at
+      ? toIsoString(row.owner_storage_decided_at)
+      : null,
     invoiceDocumentId: asText(row.invoice_document_id) || null,
     document,
     supplierName: asText(row.supplier_name),
@@ -674,6 +692,8 @@ async function ensureMyInvoiceTablesOnce(): Promise<void> {
       created_by_dealer_user_id text,
       created_by_dealer_staff_id text,
       created_by_display_name text,
+      owner_storage_status text not null default 'owner',
+      owner_storage_decided_at timestamptz,
       invoice_document_id uuid references public.asset_invoice_documents(id) on delete set null,
       supplier_name text,
       invoice_number text,
@@ -714,7 +734,33 @@ async function ensureMyInvoiceTablesOnce(): Promise<void> {
     alter table public.asset_invoices
       add column if not exists created_by_dealer_user_id text,
       add column if not exists created_by_dealer_staff_id text,
-      add column if not exists created_by_display_name text
+      add column if not exists created_by_display_name text,
+      add column if not exists owner_storage_status text not null default 'owner',
+      add column if not exists owner_storage_decided_at timestamptz
+  `);
+  await db.query(`
+    update public.asset_invoices
+    set
+      owner_storage_status = 'approved',
+      owner_storage_decided_at = coalesce(owner_storage_decided_at, updated_at, created_at)
+    where created_by_dealer_user_id is not null
+      and owner_storage_status = 'owner'
+  `);
+  await db.query(`
+    do $$
+    begin
+      if not exists (
+        select 1
+        from pg_constraint
+        where conname = 'asset_invoices_owner_storage_status_check'
+          and conrelid = 'public.asset_invoices'::regclass
+      ) then
+        alter table public.asset_invoices
+          add constraint asset_invoices_owner_storage_status_check
+          check (owner_storage_status in ('owner', 'pending', 'approved', 'declined'));
+      end if;
+    end
+    $$
   `);
 
   await db.query(`create index if not exists asset_invoice_documents_user_id_idx on public.asset_invoice_documents (user_id)`);
@@ -723,6 +769,11 @@ async function ensureMyInvoiceTablesOnce(): Promise<void> {
   await db.query(`create index if not exists asset_invoices_user_id_idx on public.asset_invoices (user_id)`);
   await db.query(`create index if not exists asset_invoices_asset_register_item_id_idx on public.asset_invoices (asset_register_item_id)`);
   await db.query(`create index if not exists asset_invoices_dealer_idx on public.asset_invoices (created_by_dealer_user_id, created_at desc)`);
+  await db.query(`
+    create index if not exists asset_invoices_owner_storage_pending_idx
+      on public.asset_invoices (user_id, owner_storage_status, updated_at desc)
+      where created_by_dealer_user_id is not null
+  `);
   await db.query(`create index if not exists asset_invoices_invoice_date_idx on public.asset_invoices (invoice_date)`);
   await db.query(`create index if not exists asset_invoices_invoice_number_idx on public.asset_invoices (invoice_number)`);
   await db.query(`create index if not exists asset_invoices_supplier_name_idx on public.asset_invoices (supplier_name)`);
@@ -794,6 +845,15 @@ function buildInvoiceFilterClause(filters: MyInvoiceListFilters, values: unknown
   if (filters.createdByDealerUserId) {
     values.push(filters.createdByDealerUserId);
     clauses.push(`i.created_by_dealer_user_id = $${values.length}`);
+  } else if (filters.ownerStorageStatus) {
+    values.push(filters.ownerStorageStatus);
+    clauses.push(`i.created_by_dealer_user_id is not null`);
+    clauses.push(`i.owner_storage_status = $${values.length}`);
+  } else {
+    clauses.push(`(
+      i.created_by_dealer_user_id is null
+      or i.owner_storage_status in ('owner', 'approved')
+    )`);
   }
 
   return clauses.join(' and ');
@@ -985,8 +1045,12 @@ export async function listMyInvoicesData(userId: string, filters: MyInvoiceListF
   };
 }
 
-export async function getMyInvoiceById(userId: string, invoiceId: string): Promise<MyInvoiceRecord | null> {
-  const invoices = await listMyInvoices(userId, {});
+export async function getMyInvoiceById(
+  userId: string,
+  invoiceId: string,
+  filters: Pick<MyInvoiceListFilters, 'createdByDealerUserId' | 'ownerStorageStatus'> = {},
+): Promise<MyInvoiceRecord | null> {
+  const invoices = await listMyInvoices(userId, filters);
   return invoices.find((invoice) => invoice.id === invoiceId) ?? null;
 }
 
@@ -1355,6 +1419,7 @@ export async function createMyInvoice(
           created_by_dealer_user_id,
           created_by_dealer_staff_id,
           created_by_display_name,
+          owner_storage_status,
           invoice_document_id,
           supplier_name,
           invoice_number,
@@ -1366,7 +1431,7 @@ export async function createMyInvoice(
           usage_metric,
           source,
           notes
-        ) values ($1, $2::uuid, $3, $4, $5, $6::uuid, $7, $8, $9::date, $10, $11, $12, $13, $14, $15, $16)
+        ) values ($1, $2::uuid, $3, $4, $5, $6, $7::uuid, $8, $9, $10::date, $11, $12, $13, $14, $15, $16, $17)
         returning id
       `,
       [
@@ -1375,6 +1440,7 @@ export async function createMyInvoice(
         asText(actor.dealerUserId) || null,
         asText(actor.dealerStaffId) || null,
         asText(actor.displayName) || null,
+        asText(actor.dealerUserId) ? 'pending' : 'owner',
         draft.invoiceDocumentId,
         draft.supplierName || null,
         draft.invoiceNumber || null,
@@ -1396,7 +1462,9 @@ export async function createMyInvoice(
     await client.query('commit');
 
     return {
-      invoice: await getMyInvoiceById(userId, invoiceId),
+      invoice: await getMyInvoiceById(userId, invoiceId, {
+        createdByDealerUserId: asText(actor.dealerUserId) || null,
+      }),
       duplicateWarnings,
     };
   } catch (error) {
@@ -1418,7 +1486,9 @@ export async function updateMyInvoice(
 }> {
   await ensureMyInvoiceTables();
 
-  const existing = await getMyInvoiceById(userId, invoiceId);
+  const existing = await getMyInvoiceById(userId, invoiceId, {
+    createdByDealerUserId: asText(actor.dealerUserId) || null,
+  });
   if (!existing) {
     throw new Error('INVOICE_NOT_FOUND');
   }
@@ -1451,6 +1521,14 @@ export async function updateMyInvoice(
           usage_metric = $12,
           source = $13,
           notes = $14,
+          owner_storage_status = case
+            when $15 = '' then owner_storage_status
+            else 'pending'
+          end,
+          owner_storage_decided_at = case
+            when $15 = '' then owner_storage_decided_at
+            else null
+          end,
           updated_at = now()
         where id = $1::uuid
           and user_id = $2
@@ -1482,7 +1560,9 @@ export async function updateMyInvoice(
     await client.query('commit');
 
     return {
-      invoice: await getMyInvoiceById(userId, invoiceId),
+      invoice: await getMyInvoiceById(userId, invoiceId, {
+        createdByDealerUserId: asText(actor.dealerUserId) || null,
+      }),
       duplicateWarnings,
     };
   } catch (error) {
