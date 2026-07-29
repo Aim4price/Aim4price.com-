@@ -101,6 +101,7 @@ type InvoicesResponse = {
   invoice?: InvoiceRecord | null;
   duplicateWarnings?: string[];
   dealerDefaults?: DealerDefaults;
+  message?: string;
   error?: string;
 };
 
@@ -1347,7 +1348,10 @@ export default function MyInvoicesClient({
 
       await reloadData();
       setDeleteCandidateInvoice((current) => (current?.id === invoiceId ? null : current));
-      setNotice({ tone: 'success', message: 'Cost record deleted.' });
+      setNotice({
+        tone: 'success',
+        message: data.message || (dealerMode ? 'Cost removed from your dealer records.' : 'Cost record deleted.'),
+      });
     } catch (error) {
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'The cost record could not be deleted.' });
     } finally {
@@ -2051,10 +2055,13 @@ export default function MyInvoicesClient({
             </button>
 
             <div className={styles.deleteConfirmContent}>
-              <h3 id="delete-cost-confirm-title">Are you sure you want to delete this?</h3>
+              <h3 id="delete-cost-confirm-title">
+                {dealerMode ? 'Remove this cost from your dealer records?' : 'Are you sure you want to delete this?'}
+              </h3>
               <p id="delete-cost-confirm-copy">
-                This cost record will be permanently removed from the Asset Cost Tracking System,
-                including saved invoice details and any attached invoice/photo file.
+                {dealerMode
+                  ? 'The cost will disappear from your dealer workspace. The owner will be notified and can choose whether to keep their copy in the Cost Ledger or delete it permanently.'
+                  : 'This cost record will be permanently removed from the Asset Cost Tracking System, including saved invoice details and any attached invoice/photo file.'}
               </p>
 
               <div className={styles.deleteConfirmAsset}>
@@ -2081,7 +2088,13 @@ export default function MyInvoicesClient({
                   onClick={() => void confirmDeleteInvoice()}
                   disabled={deletingInvoiceId === deleteCandidateInvoice.id}
                 >
-                  <span>{deletingInvoiceId === deleteCandidateInvoice.id ? 'Deleting...' : 'Yes, delete cost record'}</span>
+                  <span>
+                    {deletingInvoiceId === deleteCandidateInvoice.id
+                      ? 'Removing...'
+                      : dealerMode
+                        ? 'Yes, remove from dealer records'
+                        : 'Yes, delete cost record'}
+                  </span>
                 </button>
               </div>
             </div>
