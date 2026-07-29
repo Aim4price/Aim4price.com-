@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent, type SVGProps } from 'react';
 import AppHeader from '../../components/AppHeader';
+import { WorkspaceTitlePanel } from '../../components/WorkspacePrimitives';
 import styles from './page.module.css';
 
 type FlowMode = 'source-choice' | 'asset-manual' | 'asset-automatic' | 'manual-form' | 'upload' | 'review' | null;
@@ -1327,12 +1328,18 @@ export default function MyInvoicesClient({
       <section className={styles.shell}>
         {notice ? <div className={`${styles.notice} ${styles[notice.tone === 'success' ? 'noticeSuccess' : 'noticeError']}`}>{notice.message}</div> : null}
 
-        <section className={styles.pageTitleBlock}>
-          <div>
-            <h1>{dealerMode ? 'CLIENT ASSET COSTS' : 'ASSET COST TRACKING SYSTEM'}</h1>
-            {dealerMode ? <p>Find a shared client asset and add an invoice or cost.</p> : null}
-          </div>
-        </section>
+        {dealerMode ? (
+          <WorkspaceTitlePanel
+            title="CLIENT ASSET COSTS"
+            className={styles.dealerCostsTitlePanel}
+          />
+        ) : (
+          <section className={styles.pageTitleBlock}>
+            <div>
+              <h1>ASSET COST TRACKING SYSTEM</h1>
+            </div>
+          </section>
+        )}
 
         <section className={styles.invoiceToolbar} aria-label="Saved cost record controls">
           <label className={styles.searchWrap}>
@@ -1354,7 +1361,7 @@ export default function MyInvoicesClient({
             ) : null}
           </label>
 
-          <div className={styles.toolbarButtons}>
+          <div className={`${styles.toolbarButtons} ${dealerMode ? styles.dealerToolbarButtons : ''}`}>
             <button type="button" className={`${styles.secondaryButton} ${styles.toolbarButton} ${styles.toolbarAddButton}`} onClick={() => openAddInvoiceModal()}>
               <span className={styles.plusMark} aria-hidden="true">+</span>
               <span>Add Cost</span>

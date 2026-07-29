@@ -86,6 +86,10 @@
   min-height: calc(100dvh - 68px - env(safe-area-inset-top));
 }
 
+.dealerCostsTitlePanel {
+  --workspace-ink: var(--brand-dark);
+}
+
 .optionGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -190,6 +194,10 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(9.5rem, auto));
   gap: clamp(0.8rem, 1vw, 0.95rem);
+}
+
+.toolbarButtons.dealerToolbarButtons {
+  grid-template-columns: repeat(2, minmax(9.5rem, auto));
 }
 
 .primaryButton,
@@ -1280,6 +1288,10 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
+  .toolbarButtons.dealerToolbarButtons {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
 }
 
 @media (max-width: 760px) {
@@ -1297,6 +1309,10 @@
   .pickerToolbar,
   .uploadBox,
   .uploadInline {
+    grid-template-columns: 1fr;
+  }
+
+  .toolbarButtons.dealerToolbarButtons {
     grid-template-columns: 1fr;
   }
 
