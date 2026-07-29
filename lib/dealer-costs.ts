@@ -117,7 +117,7 @@ async function listDealerCostAssetRefs(
         on owner_user.id = shared.owner_user_id
       where true
         ${assetClause}
-      order by owner_name asc, shared.asset_register_item_id asc
+      order by owner_name asc, shared.asset_register_item_id::text asc
     `,
     values,
   );
