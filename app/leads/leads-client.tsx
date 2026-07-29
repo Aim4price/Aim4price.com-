@@ -2670,11 +2670,11 @@ export default function LeadsClient({
 
         <section className={`${assetStyles.registerPanel} ${styles.leadsRegisterPanel}`}>
           {useDealerWorkspaceStyles ? (
-            <WorkspaceTitlePanel title="LEAD MANAGEMENT" />
+            <WorkspaceTitlePanel title="LEAD MANAGEMENT SYSTEM" />
           ) : (
             <div className={`${assetStyles.registerHeader} ${styles.leadsRegisterHeader}`}>
               <div className={`${assetStyles.registerTitleBlock} ${styles.leadsHeroTitleBlock}`}>
-                <h1>LEAD MANAGEMENT</h1>
+                <h1>LEAD MANAGEMENT SYSTEM</h1>
               </div>
             </div>
           )}
