@@ -57,6 +57,16 @@ function parseIncludeFuelSlipCosts(value: string | null): boolean {
   return normalized !== 'false' && normalized !== '0' && normalized !== 'no';
 }
 
+function parseReportName(value: string | null): string {
+  const normalized = String(value ?? '')
+    .replace(/[\u0000-\u001f\u007f]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 100);
+
+  return normalized || 'Cost of Ownership Report';
+}
+
 function parseFilters(request: NextRequest): MyInvoiceListFilters {
   const searchParams = request.nextUrl.searchParams;
   const assetId = searchParams.get('assetId');
@@ -124,6 +134,7 @@ export async function GET(request: NextRequest) {
     const filters = parseFilters(request);
     const ownerAppMode = request.nextUrl.searchParams.get('source') === 'owner-app';
     const format = ownerAppMode ? 'pdf' : parseFormat(request.nextUrl.searchParams.get('format'));
+    const reportName = parseReportName(request.nextUrl.searchParams.get('reportName'));
     const [data, profile, rawLogoUrl] = await Promise.all([
       listMyInvoicesData(userId, filters),
       getAccountProfile({ id: userId, name: session.user.name, email: session.user.email }),
@@ -134,7 +145,7 @@ export async function GET(request: NextRequest) {
     const selectedAsset = findSelectedAsset(data.assets, filters);
     const ownerDetails = buildMyInvoicesOwnerDetails(profile, session.user);
     const options = {
-      title: 'Cost of Ownership Report',
+      title: reportName,
       subtitle: 'Aim4price asset register',
       generatedAt: formatGeneratedDate(),
       ownerEmail: ownerDetails.businessEmail || session.user.email || '',
@@ -151,7 +162,9 @@ export async function GET(request: NextRequest) {
     };
 
     const extension = format === 'xlsx' ? 'xlsx' : format === 'csv' ? 'csv' : 'html';
-    const filename = `${slugify(options.assetLabel)}-cost-of-ownership.${extension}`;
+    const filename = ownerAppMode
+      ? `${slugify(options.assetLabel)}-cost-of-ownership.${extension}`
+      : `${slugify(options.title)}.${extension}`;
 
     if (format === 'csv') {
       const csv = buildMyInvoicesAccountingCsv(data.invoices);
