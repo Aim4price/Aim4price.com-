@@ -3,7 +3,6 @@ import { getServerSession } from '../../../lib/auth-session';
 import { getAccountProfile } from '../../../lib/account-profile';
 import { listAssetLeadsForUser } from '../../../lib/partner-access';
 import LeadsClient from '../../leads/leads-client';
-import DealerNav from '../dealer-nav';
 import styles from '../dealer.module.css';
 
 export const runtime = 'nodejs';
@@ -25,7 +24,6 @@ export default async function DealerLeadsPage() {
 
   return (
     <div className={styles.module}>
-      <DealerNav />
       <LeadsClient
         dealerAppMode
         initialLeads={initialLeads}
