@@ -69,7 +69,10 @@ export async function DELETE(_request: NextRequest, route: RouteContext) {
     if (!deleted) {
       return NextResponse.json({ ok: false, error: 'This dealership cost record could not be found.' }, { status: 404 });
     }
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({
+      ok: true,
+      message: 'Cost removed from your dealer records. The owner has been asked whether to keep or delete their copy.',
+    });
   } catch (error) {
     console.error('Aim4price Dealer Costs DELETE failed.', error);
     return NextResponse.json({ ok: false, error: errorMessage(error) }, { status: 403 });
