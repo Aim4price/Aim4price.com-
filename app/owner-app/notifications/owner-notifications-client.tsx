@@ -25,6 +25,7 @@ type Notification = {
   dealerAssetCorrectionAction?: 'decision' | 'retry' | 'pending';
   dealerMaintenanceScheduleProposalId?: string;
   dealerCostInvoiceId?: string;
+  dealerCostAction?: 'store' | 'delete';
   priority?: boolean;
 };
 
@@ -281,18 +282,23 @@ export default function OwnerNotificationsClient({ viewerId }: { viewerId: strin
 
   function handleDealerCostResolved(
     invoiceId: string,
-    decision: 'approve' | 'decline',
+    action: 'store' | 'delete',
+    decision: 'approve' | 'decline' | 'keep' | 'delete',
     message: string,
   ) {
     setItems((current) => current.filter((item) => item.dealerCostInvoiceId !== invoiceId));
     setActiveDealerCostInvoiceId(null);
     setSeenAtIso(markOwnerNotificationsSeen(viewerId, items));
     setOutcomeNotice({
-      tone: 'success',
+      tone: action === 'delete' && decision === 'delete' ? 'warning' : 'success',
       message: message || (
-        decision === 'approve'
-          ? 'The dealer cost was stored in your Cost Ledger.'
-          : 'The cost will remain visible to the dealer only.'
+        action === 'delete'
+          ? decision === 'keep'
+            ? 'The cost was kept in your Cost Ledger.'
+            : 'The cost was permanently deleted from your Cost Ledger.'
+          : decision === 'approve'
+            ? 'The dealer cost was stored in your Cost Ledger.'
+            : 'The cost will remain visible to the dealer only.'
       ),
     });
     window.dispatchEvent(new Event('aim4price:cost-ledger-updated'));
@@ -434,7 +440,7 @@ export default function OwnerNotificationsClient({ viewerId }: { viewerId: strin
                           className={styles.notificationCorrectionAccept}
                           onClick={() => setActiveDealerCostInvoiceId(invoiceId)}
                         >
-                          View cost
+                          {item.dealerCostAction === 'delete' ? 'Review deletion' : 'View cost'}
                         </button>
                       </div>
                     </article>
@@ -544,9 +550,9 @@ export default function OwnerNotificationsClient({ viewerId }: { viewerId: strin
         invoiceId={activeDealerCostInvoiceId}
         loginHref="/owner-app/login"
         onClose={() => setActiveDealerCostInvoiceId(null)}
-        onResolved={(decision, message) => {
+        onResolved={(action, decision, message) => {
           if (!activeDealerCostInvoiceId) return;
-          handleDealerCostResolved(activeDealerCostInvoiceId, decision, message);
+          handleDealerCostResolved(activeDealerCostInvoiceId, action, decision, message);
         }}
       />
     </>
