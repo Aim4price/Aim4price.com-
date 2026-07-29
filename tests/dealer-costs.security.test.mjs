@@ -16,11 +16,6 @@ const standardDealerPage = read('app/dealer-costs/page.tsx');
 const dealerAppPage = read('app/dealer/cost/page.tsx');
 const dealerAppHome = read('app/dealer/page.tsx');
 const appHeader = read('components/AppHeader.tsx');
-const pluralDealerPageAlias = read('app/dealer/costs/page.tsx');
-const pluralDealerRouteAlias = read('app/api/dealer/costs/route.ts');
-const pluralDealerInvoiceRouteAlias = read('app/api/dealer/costs/[invoiceId]/route.ts');
-const pluralDealerUploadRouteAlias = read('app/api/dealer/costs/upload/route.ts');
-const pluralDealerExtractRouteAlias = read('app/api/dealer/costs/extract/route.ts');
 const migration = read('database/migrations/61-dealer-asset-costs.sql');
 
 test('dealer cost assets come only from leads or active maintenance shares', () => {
@@ -56,7 +51,26 @@ test('all dealer cost endpoints require a dealer request context', () => {
     dealerExtractRoute,
   ]) {
     assert.match(route, /getDealerCostRequestContext\(\)/);
-    assert.match(route, /Dealer App sign-in is required/);
+    assert.match(route, /Dealer sign-in is required/);
+  }
+});
+
+test('dealer cost routes contain concrete handlers and never re-export themselves', () => {
+  assert.match(dealerRoute, /export async function GET/);
+  assert.match(dealerRoute, /export async function POST/);
+  assert.match(dealerInvoiceRoute, /export async function PATCH/);
+  assert.match(dealerInvoiceRoute, /export async function DELETE/);
+  assert.match(dealerUploadRoute, /export async function POST/);
+  assert.match(dealerExtractRoute, /export async function POST/);
+
+  for (const route of [
+    dealerRoute,
+    dealerInvoiceRoute,
+    dealerUploadRoute,
+    dealerExtractRoute,
+    dealerAppPage,
+  ]) {
+    assert.doesNotMatch(route, /export\s*\{[^}]+\}\s*from/);
   }
 });
 
@@ -104,14 +118,6 @@ test('standard dealer and Dealer App navigation both expose their working cost r
   assert.match(dealerAppHome, /\{ label: 'Costs', href: '\/dealer\/cost' \}/);
   assert.match(dealerAppPage, /dealerMode/);
   assert.doesNotMatch(dealerAppPage, /showAppHeader/);
-});
-
-test('legacy plural dealer cost links and API requests remain compatible', () => {
-  assert.match(pluralDealerPageAlias, /from '\.\.\/cost\/page'/);
-  assert.match(pluralDealerRouteAlias, /from '\.\.\/cost\/route'/);
-  assert.match(pluralDealerInvoiceRouteAlias, /from '\.\.\/\.\.\/cost\/\[invoiceId\]\/route'/);
-  assert.match(pluralDealerUploadRouteAlias, /from '\.\.\/\.\.\/cost\/upload\/route'/);
-  assert.match(pluralDealerExtractRouteAlias, /from '\.\.\/\.\.\/cost\/extract\/route'/);
 });
 
 test('migration records dealer provenance on uploaded documents and saved costs', () => {
