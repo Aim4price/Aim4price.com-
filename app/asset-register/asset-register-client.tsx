@@ -158,6 +158,11 @@ type ReportSelectProps = {
   onChange: (value: string) => void;
 };
 
+type AssetReportFormatPickerProps = {
+  value: AssetReportFormat;
+  onChange: (value: AssetReportFormat) => void;
+};
+
 type PdfReportOption = {
   value: PdfReportKind;
   label: string;
@@ -1834,6 +1839,42 @@ function ReportSelect({ label, value, options, isOpen, disabled = false, onToggl
           ))}
         </div>
       ) : null}
+    </div>
+  );
+}
+
+function AssetReportFormatPicker({ value, onChange }: AssetReportFormatPickerProps) {
+  return (
+    <div className={styles.assetTimelineFormatGrid} aria-label="Report format">
+      <button
+        type="button"
+        className={`${styles.assetTimelineFormatOption} ${value === 'pdf' ? styles.assetTimelineFormatOptionActive : ''}`}
+        onClick={() => onChange('pdf')}
+        aria-pressed={value === 'pdf'}
+      >
+        <span className={styles.assetTimelineFormatGraphic}>
+          <ExportGraphic src="/brand/pdf.png" alt="PDF report" icon={<PdfIcon className={styles.assetTimelineFormatFallbackIcon} />} />
+        </span>
+        <span className={styles.assetTimelineFormatCopy}>
+          <strong>PDF report</strong>
+          <small>Open a clear report for clients, banks or insurance partners.</small>
+        </span>
+      </button>
+
+      <button
+        type="button"
+        className={`${styles.assetTimelineFormatOption} ${value === 'xlsx' ? styles.assetTimelineFormatOptionActive : ''}`}
+        onClick={() => onChange('xlsx')}
+        aria-pressed={value === 'xlsx'}
+      >
+        <span className={styles.assetTimelineFormatGraphic}>
+          <ExportGraphic src="/brand/sheet.png" alt="Excel workbook" icon={<SpreadsheetIcon className={styles.assetTimelineFormatFallbackIcon} />} />
+        </span>
+        <span className={styles.assetTimelineFormatCopy}>
+          <strong>XLSX workbook</strong>
+          <small>Download the selected timeline records in an Excel-ready workbook.</small>
+        </span>
+      </button>
     </div>
   );
 }
@@ -5721,6 +5762,7 @@ export default function AssetRegisterClient() {
   const [assetDepreciationReportMonth, setAssetDepreciationReportMonth] = useState('all');
   const [assetOwnershipReportYear, setAssetOwnershipReportYear] = useState('all');
   const [assetOwnershipReportMonth, setAssetOwnershipReportMonth] = useState('all');
+  const [assetReportDownloadFormat, setAssetReportDownloadFormat] = useState<AssetReportFormat>('pdf');
   const [openAssetReportSelect, setOpenAssetReportSelect] = useState<AssetReportSelectKey | null>(null);
   const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
@@ -9081,6 +9123,7 @@ export default function AssetRegisterClient() {
     setAssetDepreciationReportMonth('all');
     setAssetOwnershipReportYear('all');
     setAssetOwnershipReportMonth('all');
+    setAssetReportDownloadFormat('pdf');
     setOpenAssetReportSelect(null);
     setIsAssetReportModalOpen(true);
   }
@@ -9097,6 +9140,7 @@ export default function AssetRegisterClient() {
     setAssetDepreciationReportMonth('all');
     setAssetOwnershipReportYear('all');
     setAssetOwnershipReportMonth('all');
+    setAssetReportDownloadFormat('pdf');
     setOpenAssetReportSelect(null);
   }
 
@@ -11013,6 +11057,7 @@ export default function AssetRegisterClient() {
     setAssetReportStep('fuel-filter');
     setAssetFuelReportYear('all');
     setAssetFuelReportMonth('all');
+    setAssetReportDownloadFormat('pdf');
     setOpenAssetReportSelect(null);
   }
 
@@ -11021,6 +11066,7 @@ export default function AssetRegisterClient() {
     setAssetMaintenanceReportType('all');
     setAssetMaintenanceReportYear('all');
     setAssetMaintenanceReportMonth('all');
+    setAssetReportDownloadFormat('pdf');
     setOpenAssetReportSelect(null);
   }
 
@@ -11033,6 +11079,7 @@ export default function AssetRegisterClient() {
     setAssetReportStep('depreciation-filter');
     setAssetDepreciationReportYear('all');
     setAssetDepreciationReportMonth('all');
+    setAssetReportDownloadFormat('pdf');
     setOpenAssetReportSelect(null);
   }
 
@@ -11040,6 +11087,7 @@ export default function AssetRegisterClient() {
     setAssetReportStep('ownership-filter');
     setAssetOwnershipReportYear('all');
     setAssetOwnershipReportMonth('all');
+    setAssetReportDownloadFormat('pdf');
     setOpenAssetReportSelect(null);
   }
 
@@ -16536,19 +16584,24 @@ export default function AssetRegisterClient() {
                     />
                   </div>
 
+                  <AssetReportFormatPicker value={assetReportDownloadFormat} onChange={setAssetReportDownloadFormat} />
+
                   <div className={`${styles.formActions} ${styles.exportActions} ${styles.assetFuelReportActions}`}>
-                    <button type="button" className={styles.secondaryButton} onClick={backToAssetReportOptions}>Back</button>
-                    <button type="button" className={styles.primaryButton} onClick={() => void handleDownloadFilteredFuelReport(activeAsset, 'pdf')}>
-                      <PdfIcon className={styles.buttonIcon} />
-                      <span>Download PDF</span>
+                    <button type="button" className={`${styles.secondaryButton} ${styles.assetTimelineSecondaryButton}`} onClick={backToAssetReportOptions}>Back</button>
+                    <button
+                      type="button"
+                      className={`${styles.secondaryButton} ${styles.assetTimelineSecondaryButton}`}
+                      onClick={closeAssetReportDialog}
+                    >
+                      Cancel
                     </button>
                     <button
                       type="button"
-                      className={`${styles.primaryButton} ${styles.assetReportExcelButton}`}
-                      onClick={() => void handleDownloadFilteredFuelReport(activeAsset, 'xlsx')}
+                      className={styles.primaryButton}
+                      onClick={() => void handleDownloadFilteredFuelReport(activeAsset, assetReportDownloadFormat)}
                     >
-                      <SpreadsheetIcon className={styles.buttonIcon} />
-                      <span>Download Excel</span>
+                      <DownloadIcon className={styles.buttonIcon} />
+                      <span>{assetReportDownloadFormat === 'pdf' ? 'Open PDF report' : 'Download Excel'}</span>
                     </button>
                   </div>
                 </>
@@ -16584,19 +16637,24 @@ export default function AssetRegisterClient() {
                     />
                   </div>
 
+                  <AssetReportFormatPicker value={assetReportDownloadFormat} onChange={setAssetReportDownloadFormat} />
+
                   <div className={`${styles.formActions} ${styles.exportActions} ${styles.assetFuelReportActions}`}>
-                    <button type="button" className={styles.secondaryButton} onClick={backToAssetReportOptions}>Back</button>
-                    <button type="button" className={styles.primaryButton} onClick={() => void handleDownloadFilteredMaintenanceReport(activeAsset, 'pdf')}>
-                      <PdfIcon className={styles.buttonIcon} />
-                      <span>Download PDF</span>
+                    <button type="button" className={`${styles.secondaryButton} ${styles.assetTimelineSecondaryButton}`} onClick={backToAssetReportOptions}>Back</button>
+                    <button
+                      type="button"
+                      className={`${styles.secondaryButton} ${styles.assetTimelineSecondaryButton}`}
+                      onClick={closeAssetReportDialog}
+                    >
+                      Cancel
                     </button>
                     <button
                       type="button"
-                      className={`${styles.primaryButton} ${styles.assetReportExcelButton}`}
-                      onClick={() => void handleDownloadFilteredMaintenanceReport(activeAsset, 'xlsx')}
+                      className={styles.primaryButton}
+                      onClick={() => void handleDownloadFilteredMaintenanceReport(activeAsset, assetReportDownloadFormat)}
                     >
-                      <SpreadsheetIcon className={styles.buttonIcon} />
-                      <span>Download Excel</span>
+                      <DownloadIcon className={styles.buttonIcon} />
+                      <span>{assetReportDownloadFormat === 'pdf' ? 'Open PDF report' : 'Download Excel'}</span>
                     </button>
                   </div>
                 </>
@@ -16623,19 +16681,24 @@ export default function AssetRegisterClient() {
                     />
                   </div>
 
+                  <AssetReportFormatPicker value={assetReportDownloadFormat} onChange={setAssetReportDownloadFormat} />
+
                   <div className={`${styles.formActions} ${styles.exportActions} ${styles.assetFuelReportActions}`}>
-                    <button type="button" className={styles.secondaryButton} onClick={backToAssetReportOptions}>Back</button>
-                    <button type="button" className={styles.primaryButton} onClick={() => void handleDownloadFilteredDepreciationReport(activeAsset, 'pdf')}>
-                      <PdfIcon className={styles.buttonIcon} />
-                      <span>Download PDF</span>
+                    <button type="button" className={`${styles.secondaryButton} ${styles.assetTimelineSecondaryButton}`} onClick={backToAssetReportOptions}>Back</button>
+                    <button
+                      type="button"
+                      className={`${styles.secondaryButton} ${styles.assetTimelineSecondaryButton}`}
+                      onClick={closeAssetReportDialog}
+                    >
+                      Cancel
                     </button>
                     <button
                       type="button"
-                      className={`${styles.primaryButton} ${styles.assetReportExcelButton}`}
-                      onClick={() => void handleDownloadFilteredDepreciationReport(activeAsset, 'xlsx')}
+                      className={styles.primaryButton}
+                      onClick={() => void handleDownloadFilteredDepreciationReport(activeAsset, assetReportDownloadFormat)}
                     >
-                      <SpreadsheetIcon className={styles.buttonIcon} />
-                      <span>Download Excel</span>
+                      <DownloadIcon className={styles.buttonIcon} />
+                      <span>{assetReportDownloadFormat === 'pdf' ? 'Open PDF report' : 'Download Excel'}</span>
                     </button>
                   </div>
                 </>
@@ -16662,19 +16725,24 @@ export default function AssetRegisterClient() {
                     />
                   </div>
 
+                  <AssetReportFormatPicker value={assetReportDownloadFormat} onChange={setAssetReportDownloadFormat} />
+
                   <div className={`${styles.formActions} ${styles.exportActions} ${styles.assetFuelReportActions}`}>
-                    <button type="button" className={styles.secondaryButton} onClick={backToAssetReportOptions}>Back</button>
-                    <button type="button" className={styles.primaryButton} onClick={() => void handleDownloadFilteredOwnershipReport(activeAsset, 'pdf')}>
-                      <PdfIcon className={styles.buttonIcon} />
-                      <span>Download PDF</span>
+                    <button type="button" className={`${styles.secondaryButton} ${styles.assetTimelineSecondaryButton}`} onClick={backToAssetReportOptions}>Back</button>
+                    <button
+                      type="button"
+                      className={`${styles.secondaryButton} ${styles.assetTimelineSecondaryButton}`}
+                      onClick={closeAssetReportDialog}
+                    >
+                      Cancel
                     </button>
                     <button
                       type="button"
-                      className={`${styles.primaryButton} ${styles.assetReportExcelButton}`}
-                      onClick={() => void handleDownloadFilteredOwnershipReport(activeAsset, 'xlsx')}
+                      className={styles.primaryButton}
+                      onClick={() => void handleDownloadFilteredOwnershipReport(activeAsset, assetReportDownloadFormat)}
                     >
-                      <SpreadsheetIcon className={styles.buttonIcon} />
-                      <span>Download Excel</span>
+                      <DownloadIcon className={styles.buttonIcon} />
+                      <span>{assetReportDownloadFormat === 'pdf' ? 'Open PDF report' : 'Download Excel'}</span>
                     </button>
                   </div>
                 </>

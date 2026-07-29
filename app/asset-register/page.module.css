@@ -33082,3 +33082,167 @@ button.documentOpenLink {
     min-height: 3.2rem !important;
   }
 }
+
+/* === Asset timeline report format and dropdown layering === */
+.assetFuelReportModal {
+  overflow: visible !important;
+}
+
+.assetFuelReportModal .assetReportModalBody {
+  overflow: visible !important;
+  scrollbar-gutter: auto !important;
+}
+
+.assetFuelReportFilterBox {
+  z-index: 80 !important;
+}
+
+.reportSelectFieldOpen {
+  z-index: 10000 !important;
+}
+
+.reportSelectMenu {
+  z-index: 10001 !important;
+}
+
+.assetTimelineFormatGrid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.05rem;
+}
+
+.assetTimelineFormatOption {
+  appearance: none;
+  min-width: 0;
+  min-height: 7rem;
+  display: grid;
+  grid-template-columns: 4rem minmax(0, 1fr);
+  align-items: center;
+  gap: 1.05rem;
+  padding: 1.1rem 1.2rem;
+  border: 1px solid rgba(208, 221, 231, 0.98);
+  border-radius: 1.25rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f6f9fb 100%);
+  color: #10352b;
+  box-shadow:
+    0 12px 26px rgba(16, 31, 28, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.assetTimelineFormatOption:hover {
+  transform: translateY(-1px);
+  border-color: rgba(168, 196, 210, 0.98);
+  background: linear-gradient(180deg, #ffffff 0%, #eef6f4 100%);
+  box-shadow:
+    0 16px 34px rgba(16, 31, 28, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.assetTimelineFormatOption:focus-visible {
+  outline: none;
+  border-color: rgba(69, 142, 202, 0.9);
+  box-shadow:
+    0 0 0 4px rgba(69, 142, 202, 0.12),
+    0 16px 34px rgba(16, 31, 28, 0.07);
+}
+
+.assetTimelineFormatOptionActive {
+  border-color: rgba(171, 219, 196, 0.98);
+  background:
+    radial-gradient(circle at top left, rgba(26, 103, 76, 0.12), transparent 44%),
+    linear-gradient(180deg, #ffffff 0%, #eef9f4 100%);
+}
+
+.assetTimelineFormatGraphic {
+  width: 4rem;
+  height: 4rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(208, 221, 231, 0.98);
+  border-radius: 1.08rem;
+  background: #ffffff;
+  box-shadow:
+    0 9px 18px rgba(16, 31, 28, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.assetTimelineFormatGraphic .exportGraphicImage,
+.assetTimelineFormatGraphic .exportGraphicFallback,
+.assetTimelineFormatFallbackIcon {
+  width: 2.45rem !important;
+  height: 2.45rem !important;
+  object-fit: contain;
+}
+
+.assetTimelineFormatCopy {
+  min-width: 0;
+  display: grid;
+  gap: 0.3rem;
+}
+
+.assetTimelineFormatCopy strong {
+  color: #10352b;
+  font-size: 1.12rem;
+  font-weight: 900;
+  line-height: 1.16;
+  letter-spacing: -0.03em;
+}
+
+.assetTimelineFormatCopy small {
+  color: #627386;
+  font-size: 0.9rem;
+  font-weight: 650;
+  line-height: 1.38;
+}
+
+.assetTimelineSecondaryButton {
+  color: #143a65 !important;
+  border: 1px solid rgba(91, 164, 224, 0.9) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f1f8ff 100%) !important;
+  box-shadow: 0 9px 20px rgba(48, 119, 180, 0.07) !important;
+}
+
+.assetTimelineSecondaryButton:hover:not(:disabled) {
+  color: #0c2d52 !important;
+  border-color: rgba(55, 139, 211, 0.98) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #e8f4ff 100%) !important;
+}
+
+@media (max-width: 760px) {
+  .assetFuelReportModal .assetReportModalBody {
+    overflow-y: auto !important;
+  }
+
+  .assetTimelineFormatGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .assetTimelineFormatOption {
+    min-height: 5.7rem;
+    grid-template-columns: 3.4rem minmax(0, 1fr);
+    padding: 0.95rem 1rem;
+  }
+
+  .assetTimelineFormatGraphic {
+    width: 3.4rem;
+    height: 3.4rem;
+  }
+
+  .assetTimelineFormatGraphic .exportGraphicImage,
+  .assetTimelineFormatGraphic .exportGraphicFallback,
+  .assetTimelineFormatFallbackIcon {
+    width: 2.1rem !important;
+    height: 2.1rem !important;
+  }
+}
