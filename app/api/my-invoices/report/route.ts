@@ -5,6 +5,7 @@ import { getAssetRegisterReportLogoUrl } from '../../../../lib/asset-registers';
 import { listMyInvoicesData, type MyInvoiceAssetOption, type MyInvoiceListFilters } from '../../../../lib/my-invoices';
 import {
   buildMyInvoicesOwnerDetails,
+  buildMyInvoicesAccountingCsv,
   buildMyInvoicesReportHtml,
   buildMyInvoicesWorkbook,
 } from '../../../../lib/my-invoices-report';
@@ -14,7 +15,7 @@ import { resolveReportLogoUrlForHtml } from '../../../../lib/report-logo';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-type ReportFormat = 'pdf' | 'xlsx';
+type ReportFormat = 'pdf' | 'xlsx' | 'csv';
 
 const MONTH_LABELS = [
   'January',
@@ -46,7 +47,9 @@ function parseMonth(value: string | null): number | null {
 }
 
 function parseFormat(value: string | null): ReportFormat {
-  return String(value ?? '').toLowerCase() === 'xlsx' ? 'xlsx' : 'pdf';
+  const format = String(value ?? '').toLowerCase();
+  if (format === 'xlsx' || format === 'csv') return format;
+  return 'pdf';
 }
 
 function parseIncludeFuelSlipCosts(value: string | null): boolean {
@@ -147,7 +150,20 @@ export async function GET(request: NextRequest) {
       hideXlsx: ownerAppMode,
     };
 
-    const filename = `${slugify(options.assetLabel)}-cost-of-ownership.${format === 'xlsx' ? 'xlsx' : 'html'}`;
+    const extension = format === 'xlsx' ? 'xlsx' : format === 'csv' ? 'csv' : 'html';
+    const filename = `${slugify(options.assetLabel)}-cost-of-ownership.${extension}`;
+
+    if (format === 'csv') {
+      const csv = buildMyInvoicesAccountingCsv(data.invoices);
+      return new NextResponse(csv, {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/csv; charset=utf-8',
+          'Content-Disposition': `attachment; filename="${formatForHeader(filename)}"`,
+          'Cache-Control': 'no-store',
+        },
+      });
+    }
 
     if (format === 'xlsx') {
       const workbook = buildMyInvoicesWorkbook(options);
