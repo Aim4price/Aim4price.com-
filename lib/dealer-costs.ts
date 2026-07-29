@@ -4,11 +4,11 @@ import { getDb } from './db';
 import {
   calculateMyInvoiceSummary,
   createMyInvoice,
-  deleteDealerMyInvoice,
   ensureMyInvoiceTables,
   getMyInvoiceById,
   listMyInvoices,
   mapMyInvoiceAssetOption,
+  requestDealerMyInvoiceDeletion,
   updateMyInvoice,
   type MyInvoiceActorContext,
   type MyInvoiceAssetOption,
@@ -37,7 +37,8 @@ export type DealerCostsData = {
   summary: MyInvoiceSummary;
 };
 
-export type DealerCostOwnerDecision = 'approve' | 'decline';
+export type DealerCostOwnerAction = 'store' | 'delete';
+export type DealerCostOwnerDecision = 'approve' | 'decline' | 'keep' | 'delete';
 
 type DealerCostAssetRef = {
   owner_user_id: string;
@@ -190,7 +191,11 @@ export async function listDealerCostsData(
   );
   const invoices = invoiceGroups
     .flat()
-    .filter((invoice) => allowedAssetIds.has(invoice.assetId) && invoice.source !== 'fuel_slip')
+    .filter((invoice) => (
+      allowedAssetIds.has(invoice.assetId)
+      && invoice.source !== 'fuel_slip'
+      && invoice.dealerDeletionStatus === 'active'
+    ))
     .sort((left, right) => {
       const leftTime = Date.parse(left.invoiceDate || left.createdAtIso) || 0;
       const rightTime = Date.parse(right.invoiceDate || right.createdAtIso) || 0;
@@ -246,6 +251,7 @@ async function getDealerCostInvoiceRef(
       from public.asset_invoices
       where id = $1::uuid
         and created_by_dealer_user_id = $2
+        and dealer_deletion_status = 'active'
       limit 1
     `,
     [invoiceId, dealerUserId],
@@ -288,13 +294,22 @@ export async function deleteDealerCost(
     throw new Error('DEALER_COST_ASSET_FORBIDDEN');
   }
 
-  return deleteDealerMyInvoice(existing.owner_user_id, invoiceId, actor.dealerUserId);
+  return requestDealerMyInvoiceDeletion(existing.owner_user_id, invoiceId, actor.dealerUserId);
 }
 
 export async function listPendingOwnerDealerCosts(
   ownerUserId: string,
 ): Promise<MyInvoiceRecord[]> {
-  return listMyInvoices(ownerUserId, { ownerStorageStatus: 'pending' });
+  return listMyInvoices(ownerUserId, {
+    ownerStorageStatus: 'pending',
+    dealerDeletionStatus: 'active',
+  });
+}
+
+export async function listPendingOwnerDealerCostDeletions(
+  ownerUserId: string,
+): Promise<MyInvoiceRecord[]> {
+  return listMyInvoices(ownerUserId, { dealerDeletionStatus: 'pending' });
 }
 
 export async function getPendingOwnerDealerCost(
@@ -302,13 +317,35 @@ export async function getPendingOwnerDealerCost(
   invoiceId: string,
 ): Promise<MyInvoiceRecord | null> {
   if (!UUID_PATTERN.test(asText(invoiceId))) return null;
-  return getMyInvoiceById(ownerUserId, invoiceId, { ownerStorageStatus: 'pending' });
+  return getMyInvoiceById(ownerUserId, invoiceId, {
+    ownerStorageStatus: 'pending',
+    dealerDeletionStatus: 'active',
+  });
+}
+
+export async function getPendingOwnerDealerCostDeletion(
+  ownerUserId: string,
+  invoiceId: string,
+): Promise<MyInvoiceRecord | null> {
+  if (!UUID_PATTERN.test(asText(invoiceId))) return null;
+  return getMyInvoiceById(ownerUserId, invoiceId, { dealerDeletionStatus: 'pending' });
+}
+
+export async function getOwnerDealerCostDecision(
+  ownerUserId: string,
+  invoiceId: string,
+): Promise<{ action: DealerCostOwnerAction; invoice: MyInvoiceRecord } | null> {
+  const deletionInvoice = await getPendingOwnerDealerCostDeletion(ownerUserId, invoiceId);
+  if (deletionInvoice) return { action: 'delete', invoice: deletionInvoice };
+
+  const storageInvoice = await getPendingOwnerDealerCost(ownerUserId, invoiceId);
+  return storageInvoice ? { action: 'store', invoice: storageInvoice } : null;
 }
 
 export async function resolveDealerCostOwnerDecision(input: {
   ownerUserId: string;
   invoiceId: string;
-  decision: DealerCostOwnerDecision;
+  decision: 'approve' | 'decline';
 }): Promise<'approved' | 'declined'> {
   await ensureMyInvoiceTables();
   if (!UUID_PATTERN.test(asText(input.invoiceId))) {
@@ -327,6 +364,7 @@ export async function resolveDealerCostOwnerDecision(input: {
         and user_id = $2
         and created_by_dealer_user_id is not null
         and owner_storage_status = 'pending'
+        and dealer_deletion_status = 'active'
       returning owner_storage_status
     `,
     [input.invoiceId, input.ownerUserId, nextStatus],
@@ -349,4 +387,62 @@ export async function resolveDealerCostOwnerDecision(input: {
   }
 
   return nextStatus;
+}
+
+export async function resolveDealerCostDeletionDecision(input: {
+  ownerUserId: string;
+  invoiceId: string;
+  decision: 'keep' | 'delete';
+}): Promise<'kept' | 'deleted'> {
+  await ensureMyInvoiceTables();
+  if (!UUID_PATTERN.test(asText(input.invoiceId))) {
+    throw new Error('DEALER_COST_DELETION_NOT_FOUND');
+  }
+
+  if (input.decision === 'keep') {
+    const kept = await getDb().query<{ id: string }>(
+      `
+        update public.asset_invoices
+        set
+          dealer_deletion_status = 'kept',
+          owner_storage_status = 'approved',
+          owner_storage_decided_at = now(),
+          updated_at = now()
+        where id = $1::uuid
+          and user_id = $2
+          and created_by_dealer_user_id is not null
+          and dealer_deletion_status = 'pending'
+        returning id::text
+      `,
+      [input.invoiceId, input.ownerUserId],
+    );
+    if (kept.rows[0]) return 'kept';
+  } else {
+    const deleted = await getDb().query<{ id: string }>(
+      `
+        delete from public.asset_invoices
+        where id = $1::uuid
+          and user_id = $2
+          and created_by_dealer_user_id is not null
+          and dealer_deletion_status = 'pending'
+        returning id::text
+      `,
+      [input.invoiceId, input.ownerUserId],
+    );
+    if (deleted.rows[0]) return 'deleted';
+  }
+
+  const existing = await getDb().query<{ dealer_deletion_status: string }>(
+    `
+      select dealer_deletion_status
+      from public.asset_invoices
+      where id = $1::uuid
+        and user_id = $2
+        and created_by_dealer_user_id is not null
+      limit 1
+    `,
+    [input.invoiceId, input.ownerUserId],
+  );
+  if (existing.rows[0]) throw new Error('DEALER_COST_DELETION_ALREADY_RESOLVED');
+  throw new Error('DEALER_COST_DELETION_NOT_FOUND');
 }

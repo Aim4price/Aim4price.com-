@@ -9,6 +9,7 @@ export type MyInvoiceUsageMetric = 'none' | 'hours' | 'km' | 'percentage';
 export type MyInvoiceBlockType = 'maintenance' | 'parts' | 'repair' | 'other';
 export type MyInvoiceExtractionStatus = 'not_extracted' | 'extracted' | 'failed' | 'skipped';
 export type MyInvoiceOwnerStorageStatus = 'owner' | 'pending' | 'approved' | 'declined';
+export type MyInvoiceDealerDeletionStatus = 'active' | 'pending' | 'kept';
 
 export type MyInvoiceAssetOption = {
   id: string;
@@ -73,6 +74,8 @@ export type MyInvoiceRecord = {
   createdByDisplayName: string;
   ownerStorageStatus: MyInvoiceOwnerStorageStatus;
   ownerStorageDecidedAtIso: string | null;
+  dealerDeletionStatus: MyInvoiceDealerDeletionStatus;
+  dealerDeletionRequestedAtIso: string | null;
   invoiceDocumentId: string | null;
   document: MyInvoiceDocument | null;
   supplierName: string;
@@ -112,6 +115,7 @@ export type MyInvoiceListFilters = {
   includeFuelSlipCosts?: boolean;
   createdByDealerUserId?: string | null;
   ownerStorageStatus?: MyInvoiceOwnerStorageStatus | null;
+  dealerDeletionStatus?: MyInvoiceDealerDeletionStatus | null;
 };
 
 export type MyInvoiceListResult = {
@@ -173,6 +177,8 @@ type MyInvoiceRow = {
   created_by_display_name: string | null;
   owner_storage_status: string | null;
   owner_storage_decided_at: string | Date | null;
+  dealer_deletion_status: string | null;
+  dealer_deletion_requested_at: string | Date | null;
   invoice_document_id: string | null;
   supplier_name: string | null;
   invoice_number: string | null;
@@ -312,6 +318,12 @@ function normalizeOwnerStorageStatus(value: unknown): MyInvoiceOwnerStorageStatu
     return normalized;
   }
   return 'owner';
+}
+
+function normalizeDealerDeletionStatus(value: unknown): MyInvoiceDealerDeletionStatus {
+  const normalized = asText(value).toLowerCase();
+  if (normalized === 'pending' || normalized === 'kept') return normalized;
+  return 'active';
 }
 
 function toIsoString(value: unknown): string {
@@ -637,6 +649,10 @@ function mapInvoiceRow(row: MyInvoiceRow, document: MyInvoiceDocument | null, bl
     ownerStorageDecidedAtIso: row.owner_storage_decided_at
       ? toIsoString(row.owner_storage_decided_at)
       : null,
+    dealerDeletionStatus: normalizeDealerDeletionStatus(row.dealer_deletion_status),
+    dealerDeletionRequestedAtIso: row.dealer_deletion_requested_at
+      ? toIsoString(row.dealer_deletion_requested_at)
+      : null,
     invoiceDocumentId: asText(row.invoice_document_id) || null,
     document,
     supplierName: asText(row.supplier_name),
@@ -695,6 +711,8 @@ async function ensureMyInvoiceTablesOnce(): Promise<void> {
       created_by_display_name text,
       owner_storage_status text not null default 'owner',
       owner_storage_decided_at timestamptz,
+      dealer_deletion_status text not null default 'active',
+      dealer_deletion_requested_at timestamptz,
       invoice_document_id uuid references public.asset_invoice_documents(id) on delete set null,
       supplier_name text,
       invoice_number text,
@@ -737,7 +755,9 @@ async function ensureMyInvoiceTablesOnce(): Promise<void> {
       add column if not exists created_by_dealer_staff_id text,
       add column if not exists created_by_display_name text,
       add column if not exists owner_storage_status text not null default 'owner',
-      add column if not exists owner_storage_decided_at timestamptz
+      add column if not exists owner_storage_decided_at timestamptz,
+      add column if not exists dealer_deletion_status text not null default 'active',
+      add column if not exists dealer_deletion_requested_at timestamptz
   `);
   await db.query(`
     update public.asset_invoices
@@ -763,6 +783,22 @@ async function ensureMyInvoiceTablesOnce(): Promise<void> {
     end
     $$
   `);
+  await db.query(`
+    do $$
+    begin
+      if not exists (
+        select 1
+        from pg_constraint
+        where conname = 'asset_invoices_dealer_deletion_status_check'
+          and conrelid = 'public.asset_invoices'::regclass
+      ) then
+        alter table public.asset_invoices
+          add constraint asset_invoices_dealer_deletion_status_check
+          check (dealer_deletion_status in ('active', 'pending', 'kept'));
+      end if;
+    end
+    $$
+  `);
 
   await db.query(`create index if not exists asset_invoice_documents_user_id_idx on public.asset_invoice_documents (user_id)`);
   await db.query(`create index if not exists asset_invoice_documents_asset_register_item_id_idx on public.asset_invoice_documents (asset_register_item_id)`);
@@ -773,6 +809,11 @@ async function ensureMyInvoiceTablesOnce(): Promise<void> {
   await db.query(`
     create index if not exists asset_invoices_owner_storage_pending_idx
       on public.asset_invoices (user_id, owner_storage_status, updated_at desc)
+      where created_by_dealer_user_id is not null
+  `);
+  await db.query(`
+    create index if not exists asset_invoices_dealer_deletion_pending_idx
+      on public.asset_invoices (user_id, dealer_deletion_status, dealer_deletion_requested_at desc)
       where created_by_dealer_user_id is not null
   `);
   await db.query(`create index if not exists asset_invoices_invoice_date_idx on public.asset_invoices (invoice_date)`);
@@ -843,6 +884,11 @@ function buildInvoiceFilterClause(filters: MyInvoiceListFilters, values: unknown
     clauses.push(`coalesce(i.source, 'manual') <> 'fuel_slip'`);
   }
 
+  if (filters.dealerDeletionStatus) {
+    values.push(filters.dealerDeletionStatus);
+    clauses.push(`i.dealer_deletion_status = $${values.length}`);
+  }
+
   if (filters.createdByDealerUserId) {
     values.push(filters.createdByDealerUserId);
     clauses.push(`i.created_by_dealer_user_id = $${values.length}`);
@@ -850,6 +896,8 @@ function buildInvoiceFilterClause(filters: MyInvoiceListFilters, values: unknown
     values.push(filters.ownerStorageStatus);
     clauses.push(`i.created_by_dealer_user_id is not null`);
     clauses.push(`i.owner_storage_status = $${values.length}`);
+  } else if (filters.dealerDeletionStatus) {
+    clauses.push(`i.created_by_dealer_user_id is not null`);
   } else {
     clauses.push(`(
       i.created_by_dealer_user_id is null
@@ -1049,7 +1097,10 @@ export async function listMyInvoicesData(userId: string, filters: MyInvoiceListF
 export async function getMyInvoiceById(
   userId: string,
   invoiceId: string,
-  filters: Pick<MyInvoiceListFilters, 'createdByDealerUserId' | 'ownerStorageStatus'> = {},
+  filters: Pick<
+    MyInvoiceListFilters,
+    'createdByDealerUserId' | 'ownerStorageStatus' | 'dealerDeletionStatus'
+  > = {},
 ): Promise<MyInvoiceRecord | null> {
   const invoices = await listMyInvoices(userId, filters);
   return invoices.find((invoice) => invoice.id === invoiceId) ?? null;
@@ -1589,7 +1640,7 @@ export async function deleteMyInvoice(userId: string, invoiceId: string): Promis
   return (result.rowCount ?? 0) > 0;
 }
 
-export async function deleteDealerMyInvoice(
+export async function requestDealerMyInvoiceDeletion(
   userId: string,
   invoiceId: string,
   dealerUserId: string,
@@ -1598,10 +1649,15 @@ export async function deleteDealerMyInvoice(
 
   const result = await getDb().query(
     `
-      delete from public.asset_invoices
+      update public.asset_invoices
+      set
+        dealer_deletion_status = 'pending',
+        dealer_deletion_requested_at = now(),
+        updated_at = now()
       where id = $1::uuid
         and user_id = $2
         and created_by_dealer_user_id = $3
+        and dealer_deletion_status = 'active'
     `,
     [invoiceId, userId, dealerUserId],
   );
