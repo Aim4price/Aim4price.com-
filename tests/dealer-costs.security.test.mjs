@@ -23,6 +23,7 @@ const decisionModal = read('components/DealerCostDecisionModal.tsx');
 const notifications = read('lib/notifications.ts');
 const migration = read('database/migrations/61-dealer-asset-costs.sql');
 const ownerStorageMigration = read('database/migrations/62-dealer-cost-owner-storage.sql');
+const deletionDecisionMigration = read('database/migrations/63-dealer-cost-deletion-decisions.sql');
 
 test('dealer cost assets come only from leads or active maintenance shares', () => {
   assert.match(dealerCosts, /from public\.asset_leads lead/);
@@ -162,9 +163,22 @@ test('owners can view a dealer cost and choose yes or no from notifications', ()
   assert.match(notifications, /dealerCostInvoiceId: invoice\.id/);
   assert.match(appHeader, /<DealerCostDecisionModal/);
   assert.match(ownerNotifications, /<DealerCostDecisionModal/);
-  assert.match(decisionModal, /View invoice or photo/);
-  assert.match(decisionModal, /No, keep dealer only/);
-  assert.match(decisionModal, /Yes, store cost/);
+  assert.match(decisionModal, /Open invoice or photo/);
+  assert.match(decisionModal, /Keep dealer-only/);
+  assert.match(decisionModal, /Add to Cost Ledger/);
+});
+
+test('dealer deletions require an owner keep or delete decision', () => {
+  assert.match(invoices, /dealer_deletion_status = 'pending'/);
+  assert.match(dealerCosts, /requestDealerMyInvoiceDeletion/);
+  assert.match(dealerCosts, /listPendingOwnerDealerCostDeletions/);
+  assert.match(dealerCosts, /resolveDealerCostDeletionDecision/);
+  assert.match(notifications, /dealerCostAction: 'delete'/);
+  assert.match(notifications, /Dealer removed an asset cost/);
+  assert.match(ownerDecisionRoute, /getOwnerDealerCostDecision/);
+  assert.match(ownerDecisionRoute, /resolveDealerCostDeletionDecision/);
+  assert.match(decisionModal, /Keep in Cost Ledger/);
+  assert.match(decisionModal, /Delete permanently/);
 });
 
 test('migration records dealer provenance on uploaded documents and saved costs', () => {
@@ -174,4 +188,6 @@ test('migration records dealer provenance on uploaded documents and saved costs'
   assert.match(migration, /created_by_display_name/);
   assert.match(ownerStorageMigration, /owner_storage_status/);
   assert.match(ownerStorageMigration, /'pending', 'approved', 'declined'/);
+  assert.match(deletionDecisionMigration, /dealer_deletion_status/);
+  assert.match(deletionDecisionMigration, /'active', 'pending', 'kept'/);
 });
