@@ -24,6 +24,9 @@ function errorMessage(error: unknown): string {
   if (message === 'INVOICE_DOCUMENT_NOT_FOUND') {
     return 'The selected invoice/photo could not be found for this shared asset.';
   }
+  if (message === 'DEALER_FUEL_COST_NOT_ALLOWED') {
+    return 'Fuel slips cannot be saved from the dealer cost screen.';
+  }
   return message || 'The cost record could not be updated.';
 }
 
