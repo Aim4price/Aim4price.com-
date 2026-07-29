@@ -13,6 +13,7 @@ const ownerNotifications = read('app/owner-app/notifications/owner-notifications
 const accessSettings = read('components/DealerMaintenanceAccessSettings.tsx');
 const ownerShare = read('app/asset-register/asset-register-client.tsx');
 const scheduleModal = read('components/DealerMaintenanceScheduleModal.tsx');
+const trackerClient = read('components/DealerMaintenanceTrackerClient.tsx');
 
 test('new tracking shares enable reports and dealer schedule proposals without requiring an existing schedule', () => {
   assert.match(tracker, /can_view_maintenance_reports,\s*can_create_maintenance_schedules/);
@@ -21,8 +22,8 @@ test('new tracking shares enable reports and dealer schedule proposals without r
 });
 
 test('My Leads exposes the owner-style maintenance report and schedule creation action', () => {
-  assert.match(leads, /<WorkspaceTitlePanel title="LEAD MANAGEMENT" \/>/);
-  assert.match(leads, /<h1>LEAD MANAGEMENT<\/h1>/);
+  assert.match(leads, /<WorkspaceTitlePanel title="LEAD MANAGEMENT SYSTEM" \/>/);
+  assert.match(leads, /<h1>LEAD MANAGEMENT SYSTEM<\/h1>/);
   assert.match(leads, /<strong>PDF reports<\/strong>/);
   assert.match(leads, /assetReportOptionsGrid/);
   assert.match(leads, /<strong>Download asset valuation<\/strong>/);
@@ -30,6 +31,12 @@ test('My Leads exposes the owner-style maintenance report and schedule creation 
   assert.match(leads, /<strong>Send a proposed schedule<\/strong>/);
   assert.match(leads, /DealerMaintenanceReportModal/);
   assert.match(leads, /DealerMaintenanceScheduleModal/);
+});
+
+test('Tracking uses the same proposed schedule helper text as My Leads', () => {
+  assert.match(leads, /The owner can approve or disapprove it\./);
+  assert.match(trackerClient, /The owner can approve or disapprove it\./);
+  assert.doesNotMatch(trackerClient, /Send a proposed schedule for owner approval\./);
 });
 
 test('empty shared assets stay in My Leads until approved maintenance exists', () => {

@@ -13,6 +13,7 @@ const dealerExtractRoute = read('app/api/dealer/cost/extract/route.ts');
 const ownerDecisionRoute = read('app/api/dealer-cost-proposals/[invoiceId]/route.ts');
 const leads = read('app/leads/leads-client.tsx');
 const costClient = read('app/my-invoices/my-invoices-client.tsx');
+const costStyles = read('app/my-invoices/page.module.css');
 const ownerNotifications = read('app/owner-app/notifications/owner-notifications-client.tsx');
 const standardDealerPage = read('app/dealer-costs/page.tsx');
 const dealerAppPage = read('app/dealer/cost/page.tsx');
@@ -114,6 +115,24 @@ test('dealer cost page reuses manual and automatic owner cost entry without owne
   assert.match(costClient, /Upload invoice\/photo/);
   assert.match(costClient, /dealerMode && dealerDefaults\.supplierName/);
   assert.match(costClient, /\{!dealerMode \? \([\s\S]*Download/);
+});
+
+test('dealer cost page uses the shared workspace title without an unused toolbar column', () => {
+  assert.match(costClient, /<WorkspaceTitlePanel[\s\S]*title="CLIENT ASSET COSTS"/);
+  assert.doesNotMatch(costClient, /Find a shared client asset and add an invoice or cost\./);
+  assert.match(costClient, /dealerMode \? styles\.dealerToolbarButtons : ''/);
+  assert.match(costStyles, /\.toolbarButtons\.dealerToolbarButtons[\s\S]*grid-template-columns: repeat\(2,/);
+});
+
+test('dealer shared asset query orders by the selected DISTINCT expression', () => {
+  assert.match(
+    dealerCosts,
+    /select distinct[\s\S]*shared\.asset_register_item_id::text[\s\S]*order by owner_name asc, shared\.asset_register_item_id::text asc/,
+  );
+  assert.doesNotMatch(
+    dealerCosts,
+    /order by owner_name asc, shared\.asset_register_item_id asc/,
+  );
 });
 
 test('dealer costs stay out of the header and remain available from Manage and Dealer App tools', () => {
