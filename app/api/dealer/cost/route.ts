@@ -26,8 +26,10 @@ function parseMonth(value: string | null): number | null {
 
 function parseFilters(request: NextRequest): MyInvoiceListFilters {
   const assetId = String(request.nextUrl.searchParams.get('assetId') ?? '').trim();
+  const ownerUserId = String(request.nextUrl.searchParams.get('ownerId') ?? '').trim();
   return {
     assetId: assetId && assetId !== 'all' ? assetId : null,
+    ownerUserId: ownerUserId && ownerUserId !== 'all' ? ownerUserId : null,
     year: parseYear(request.nextUrl.searchParams.get('year')),
     month: parseMonth(request.nextUrl.searchParams.get('month')),
   };
@@ -43,6 +45,9 @@ function errorMessage(error: unknown): string {
   }
   if (message === 'INVOICE_CREATE_FAILED') {
     return 'The cost record could not be saved. Please try again.';
+  }
+  if (message === 'DEALER_FUEL_COST_NOT_ALLOWED') {
+    return 'Fuel slips cannot be saved from the dealer cost screen.';
   }
   return message || 'The dealer Costs request could not be completed.';
 }
