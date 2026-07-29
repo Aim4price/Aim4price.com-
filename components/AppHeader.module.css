@@ -1214,6 +1214,7 @@
 .notificationOutcomeModal {
   width: min(39rem, calc(100vw - 2rem));
   grid-template-rows: auto auto;
+  font-family: var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif;
 }
 
 .notificationOutcomeModal .notificationDetailHeader {
@@ -1221,34 +1222,16 @@
 }
 
 .notificationOutcomeModal .notificationDetailHeaderText {
-  display: grid;
-  grid-template-columns: 3.35rem minmax(0, 1fr);
-  column-gap: 1rem;
-  row-gap: 0.35rem;
-  align-items: center;
-}
-
-.notificationOutcomeModal .notificationDetailOutcomeIcon {
-  grid-column: 1;
-  grid-row: 1 / span 2;
-  width: 3.35rem;
-  height: 3.35rem;
-  margin: 0;
-  border-radius: 1.05rem;
-  font-size: 1.4rem;
+  display: block;
 }
 
 .notificationOutcomeModal .notificationDetailHeader h2 {
-  grid-column: 2;
-  grid-row: 1;
-  align-self: end;
+  margin: 0;
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
 }
 
 .notificationOutcomeModal .notificationDetailHeader p {
-  grid-column: 2;
-  grid-row: 2;
-  align-self: start;
-  margin: 0;
+  margin: 0.45rem 0 0;
 }
 
 .notificationOutcomeModal .notificationDetailActions {
@@ -1258,27 +1241,6 @@
 
 .notificationOutcomeModal .notificationPrimaryButton {
   min-width: 8.5rem;
-}
-
-.notificationDetailOutcomeIcon {
-  width: 2.75rem;
-  height: 2.75rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 0.72rem;
-  border: 1px solid rgba(25, 125, 92, 0.2);
-  border-radius: 0.9rem;
-  color: #0d684b;
-  background: #e8f8f0;
-  font-size: 1.18rem;
-  font-weight: 950;
-}
-
-.notificationDetailOutcomeWarning .notificationDetailOutcomeIcon {
-  border-color: rgba(181, 119, 20, 0.24);
-  color: #8a5a0b;
-  background: #fff1ce;
 }
 
 .notificationDetailHeader h2 {
@@ -2062,16 +2024,6 @@
 
   .notificationOutcomeModal .notificationDetailHeader {
     padding: 1.25rem;
-  }
-
-  .notificationOutcomeModal .notificationDetailHeaderText {
-    grid-template-columns: 3rem minmax(0, 1fr);
-    column-gap: 0.8rem;
-  }
-
-  .notificationOutcomeModal .notificationDetailOutcomeIcon {
-    width: 3rem;
-    height: 3rem;
   }
 
   .notificationOutcomeModal .notificationDetailActions {

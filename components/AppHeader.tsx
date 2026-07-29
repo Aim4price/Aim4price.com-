@@ -1770,9 +1770,6 @@ export default function AppHeader({
               >
                 <div className={styles.notificationDetailHeader}>
                   <div className={styles.notificationDetailHeaderText}>
-                    <span className={styles.notificationDetailOutcomeIcon} aria-hidden="true">
-                      {notificationDetailOutcome.tone === 'success' ? '✓' : '!'}
-                    </span>
                     <h2 id="notification-outcome-title">{notificationDetailOutcome.title}</h2>
                     <p>{notificationDetailOutcome.message}</p>
                   </div>

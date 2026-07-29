@@ -219,21 +219,7 @@ export default function DealerCostDecisionModal({
       >
         <header className={styles.header}>
           <div className={styles.headerIntro}>
-            <span className={styles.headerIcon} aria-hidden="true">
-              {isDeletion ? (
-                <svg viewBox="0 0 24 24">
-                  <path d="M5 7h14M9 7V4h6v3M8 10v7M12 10v7M16 10v7M7 7l1 13h8l1-13" />
-                </svg>
-              ) : (
-                <svg viewBox="0 0 24 24">
-                  <path d="M7 3h10v18H7zM10 8h4M10 12h4M10 16h2M4 6h3M17 6h3" />
-                </svg>
-              )}
-            </span>
             <div>
-              <span className={styles.eyebrow}>
-                {isDeletion ? 'Dealer deletion request' : 'Dealer cost approval'}
-              </span>
               <h2 id="dealer-cost-decision-title">
                 {isDeletion ? 'Keep or delete this cost?' : 'Add this cost to your ledger?'}
               </h2>
@@ -270,7 +256,6 @@ export default function DealerCostDecisionModal({
             <>
               <section className={styles.summary}>
                 <div className={styles.summaryContext}>
-                  <span>{isDeletion ? 'Removed by dealer' : 'Submitted by dealer'}</span>
                   <strong>{invoice.createdByDisplayName || 'Dealer'}</strong>
                   <p>{invoice.assetTitle}</p>
                 </div>
