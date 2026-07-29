@@ -18,7 +18,7 @@ export default function DealerMaintenanceNotificationsClient({ notifications }: 
       {!notifications.length ? <div className={styles.emptyState}><strong>No maintenance notifications.</strong><span>New alerts will appear when a tracked asset enters its saved maintenance range.</span></div> : (
         <section className={styles.notificationList}>
           {notifications.map((notification) => (
-            <Link key={notification.id} href={`/dealer/maintenance/${encodeURIComponent(notification.accessId)}`} className={`${styles.notificationCard} ${notification.isRead ? '' : styles.notificationUnread}`} prefetch={false}>
+            <Link key={notification.id} href={`/dealer/maintenance/${encodeURIComponent(notification.accessId)}`} className={`${styles.notificationCard} ${notification.isRead ? '' : styles.notificationUnread}`}>
               <span className={styles.notificationMark} aria-hidden="true" />
               <div><strong>{notification.title}</strong><p>{notification.body}</p><time>{dateTime(notification.createdAtIso)}</time></div>
               <span className={styles.notificationArrow} aria-hidden="true">›</span>
