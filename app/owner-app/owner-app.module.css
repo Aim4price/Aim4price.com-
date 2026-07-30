@@ -1276,11 +1276,114 @@
   resize: vertical;
 }
 .ownerOptionMessageField textarea:focus { border-color: rgba(37, 71, 51, 0.62); box-shadow: 0 0 0 4px rgba(37, 71, 51, 0.09); }
-.ownerTrackingChoice { display: flex; align-items: flex-start; gap: 11px; border: 1px solid rgba(66, 144, 102, 0.3); border-radius: 16px; background: #f2faf5; color: #214d3d; padding: 14px; }
-.ownerTrackingChoice input { width: 21px; height: 21px; flex: 0 0 auto; margin: 1px 0 0; accent-color: var(--owner-green); }
-.ownerTrackingChoice > span { display: grid; gap: 4px; }
+.ownerTrackingChoice {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: flex-start;
+  gap: 11px;
+  border: 1px solid rgba(66, 144, 102, 0.3);
+  border-radius: 16px;
+  background: #f2faf5;
+  color: #214d3d;
+  padding: 14px;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ownerTrackingChoice:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(37, 71, 51, 0.11); }
+.ownerTrackingCheckbox {
+  width: 21px;
+  height: 21px;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  margin-top: 1px;
+  border: 1.5px solid rgba(37, 71, 51, 0.34);
+  border-radius: 6px;
+  background: #fff;
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 900;
+  line-height: 1;
+}
+.ownerTrackingCheckboxActive { border-color: var(--owner-green); background: var(--owner-green); }
+.ownerTrackingChoiceCopy { min-width: 0; display: grid; gap: 4px; }
 .ownerTrackingChoice strong { font-size: 0.88rem; font-weight: 850; }
 .ownerTrackingChoice small { color: #497063; font-size: 0.76rem; font-weight: 650; line-height: 1.45; }
+.ownerTrackingChoice em { color: #286449; font-size: 0.72rem; font-style: normal; font-weight: 800; line-height: 1.4; }
+.ownerTrackingPickerOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 420;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: max(16px, env(safe-area-inset-top)) 12px max(16px, env(safe-area-inset-bottom));
+}
+.ownerTrackingPickerBackdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgba(10, 31, 25, 0.56);
+  cursor: pointer;
+  backdrop-filter: blur(5px);
+}
+.ownerTrackingPickerModal {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 720px);
+  max-height: min(90dvh, 820px);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
+  border: 1px solid rgba(18, 53, 45, 0.14);
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 28px 70px rgba(10, 31, 25, 0.28);
+  --font-body: 'Montserrat';
+  --font-heading: 'Montserrat';
+}
+.ownerTrackingPickerHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 17px 18px;
+  border-bottom: 1px solid rgba(18, 53, 45, 0.11);
+  background: #f7faf8;
+}
+.ownerTrackingPickerHeader > div { min-width: 0; display: grid; gap: 4px; }
+.ownerTrackingPickerHeader h2 { margin: 0; color: var(--owner-ink); font-size: clamp(1.3rem, 5vw, 1.65rem); font-weight: 850; letter-spacing: -0.035em; line-height: 1.1; }
+.ownerTrackingPickerHeader p { margin: 0; color: var(--owner-muted); font-size: 0.8rem; font-weight: 700; line-height: 1.4; overflow-wrap: anywhere; }
+.ownerTrackingPickerHeader > button {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(18, 53, 45, 0.14);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--owner-ink);
+  font: 700 1.45rem/1 Montserrat, sans-serif;
+  cursor: pointer;
+}
+.ownerTrackingPickerHeader > button:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(37, 71, 51, 0.11); }
+.ownerTrackingPickerBody { min-height: 0; display: grid; gap: 12px; overflow-y: auto; padding: 16px; }
+.ownerTrackingPickerIntro { display: grid; gap: 4px; border: 1px solid rgba(37, 71, 51, 0.12); border-radius: 15px; background: #f4f8f5; padding: 13px 14px; }
+.ownerTrackingPickerIntro strong { color: var(--owner-ink); font-size: 0.9rem; font-weight: 850; }
+.ownerTrackingPickerIntro p { margin: 0; color: var(--owner-muted); font-size: 0.78rem; font-weight: 650; line-height: 1.45; }
+.ownerTrackingPickerFooter {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 9px;
+  padding: 14px 16px 16px;
+  border-top: 1px solid rgba(18, 53, 45, 0.1);
+  background: #fff;
+}
+.ownerTrackingPickerFooter > button { width: 100%; min-width: 0; }
 .ownerTrackingList { display: grid; gap: 10px; }
 .ownerTrackingAccessCard { display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 1px solid rgba(37, 71, 51, 0.13); border-radius: 16px; background: #fff; padding: 14px; }
 .ownerTrackingAccessCard > span { min-width: 0; display: grid; gap: 4px; }
@@ -1299,6 +1402,12 @@
 .ownerOptionsSent { justify-items: center; padding-block: 24px; text-align: center; }
 .ownerOptionsSent p { margin: 0; color: var(--owner-muted); font-size: 0.82rem; font-weight: 700; line-height: 1.45; }
 .ownerOptionsSent .primaryButton { width: 100%; }
+
+@media (max-width: 620px) {
+  .ownerTrackingPickerOverlay { align-items: flex-end; padding: 0; }
+  .ownerTrackingPickerModal { width: 100%; max-height: 94dvh; border-right: 0; border-bottom: 0; border-left: 0; border-radius: 22px 22px 0 0; }
+  .ownerTrackingPickerFooter { grid-template-columns: 1fr; }
+}
 
 .reportFilterGrid,
 .pricingSummaryGrid {
