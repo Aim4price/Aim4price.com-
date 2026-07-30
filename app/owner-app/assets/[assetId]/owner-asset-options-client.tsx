@@ -2,7 +2,10 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import DealerMaintenanceAccessSettings from '../../../../components/DealerMaintenanceAccessSettings';
+import DealerMaintenanceAccessSettings, {
+  DEFAULT_DEALER_MAINTENANCE_PERMISSIONS,
+  DealerMaintenancePermissionPicker,
+} from '../../../../components/DealerMaintenanceAccessSettings';
 import BalancedHeadingText from '../../balanced-heading';
 import OwnerAppNav from '../../owner-app-nav';
 import type { DealerMaintenancePermissions } from '../../../../lib/dealer-maintenance-tracker';
@@ -182,6 +185,10 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
   const [message, setMessage] = useState('');
   const [consentAccepted, setConsentAccepted] = useState(false);
   const [trackMaintenance, setTrackMaintenance] = useState(false);
+  const [trackingPermissions, setTrackingPermissions] = useState<DealerMaintenancePermissions>(() => ({
+    ...DEFAULT_DEALER_MAINTENANCE_PERMISSIONS,
+  }));
+  const [isTrackingPermissionsOpen, setIsTrackingPermissionsOpen] = useState(false);
   const [trackingAccess, setTrackingAccess] = useState<DealerTrackingAccess[]>([]);
   const [hasActiveTracking, setHasActiveTracking] = useState(false);
   const [loadingTracking, setLoadingTracking] = useState(false);
@@ -304,6 +311,8 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
     setMessage('');
     setConsentAccepted(false);
     setTrackMaintenance(false);
+    setTrackingPermissions({ ...DEFAULT_DEALER_MAINTENANCE_PERMISSIONS });
+    setIsTrackingPermissionsOpen(false);
     setStage('partners');
     await loadPartners(option);
   }
@@ -318,6 +327,31 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
     setConsentAccepted(false);
     setStage('message');
     setNotice(null);
+  }
+
+  function openTrackingPermissions() {
+    if (!trackMaintenance) {
+      setTrackingPermissions({ ...DEFAULT_DEALER_MAINTENANCE_PERMISSIONS });
+    }
+    setIsTrackingPermissionsOpen(true);
+  }
+
+  function cancelTrackingPermissions() {
+    if (!trackMaintenance) {
+      setTrackingPermissions({ ...DEFAULT_DEALER_MAINTENANCE_PERMISSIONS });
+    }
+    setIsTrackingPermissionsOpen(false);
+  }
+
+  function confirmTrackingPermissions() {
+    setTrackMaintenance(true);
+    setIsTrackingPermissionsOpen(false);
+  }
+
+  function disableTracking() {
+    setTrackMaintenance(false);
+    setTrackingPermissions({ ...DEFAULT_DEALER_MAINTENANCE_PERMISSIONS });
+    setIsTrackingPermissionsOpen(false);
   }
 
   async function sendRequest() {
@@ -344,6 +378,9 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
             source: 'asset_register_options',
           },
           trackMaintenance: selectedOption.leadType === 'replacement_quote' && trackMaintenance,
+          trackingPermissions: selectedOption.leadType === 'replacement_quote' && trackMaintenance
+            ? trackingPermissions
+            : undefined,
         }),
       });
       const payload = await response.json().catch(() => null) as { ok?: boolean; error?: string } | null;
@@ -385,7 +422,7 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
           </div>
           {assetKind !== 'property' && hasActiveTracking ? (
             <button type="button" className={styles.ownerTrackingSettingsButton} onClick={() => void openTrackingSettings()}>
-              <span><strong>Dealer tracking settings</strong><small>View or remove dealers tracking this asset.</small></span>
+              <span><strong>Dealer tracking settings</strong><small>Control what each dealer can see or update.</small></span>
               <b aria-hidden="true">›</b>
             </button>
           ) : null}
@@ -449,10 +486,21 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
             <textarea value={message} onChange={(event) => setMessage(event.target.value)} placeholder="Please contact me about this asset." />
           </label>
           {selectedOption.leadType === 'replacement_quote' ? (
-            <label className={styles.ownerTrackingChoice}>
-              <input type="checkbox" checked={trackMaintenance} onChange={(event) => setTrackMaintenance(event.target.checked)} />
-              <span><strong>Add to dealer Maintenance Tracker</strong><small>The dealer can download maintenance reports and create schedules. New schedules only enter your Asset Register after you approve them.</small></span>
-            </label>
+            <button
+              type="button"
+              className={styles.ownerTrackingChoice}
+              onClick={openTrackingPermissions}
+              aria-pressed={trackMaintenance}
+            >
+              <span className={`${styles.ownerTrackingCheckbox} ${trackMaintenance ? styles.ownerTrackingCheckboxActive : ''}`} aria-hidden="true">
+                {trackMaintenance ? '✓' : ''}
+              </span>
+              <span className={styles.ownerTrackingChoiceCopy}>
+                <strong>Enable dealer tracking</strong>
+                <small>The dealer can download maintenance reports and create schedules. New schedules only enter your Asset Register after you approve them.</small>
+                <em>{trackMaintenance ? 'Permissions selected. Tap to review.' : 'Choose what the dealer can see and update.'}</em>
+              </span>
+            </button>
           ) : null}
           <div className={`${styles.ownerOptionsFooter} ${styles.ownerOptionsFooterSingle}`}>
             <button type="button" className={styles.primaryButton} onClick={() => { setConsentAccepted(false); setStage('consent'); }}>Review request</button>
@@ -470,7 +518,7 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
             <strong>Disclaimer and POPIA note</strong>
             <p>By sending this request, you allow Aim4price to share this selected asset, its saved valuation details and your saved business contact details with {partnerName(selectedPartner)}.</p>
             <p>This is a lead request only. It does not create a finance, insurance, valuation or sales agreement. The selected company may contact you outside Aim4price.</p>
-            {selectedOption.leadType === 'replacement_quote' && trackMaintenance ? <p>The dealer will receive ongoing Maintenance Tracker access, maintenance reports and permission to propose schedules for your approval.</p> : null}
+            {selectedOption.leadType === 'replacement_quote' && trackMaintenance ? <p>The dealer will receive ongoing Maintenance Tracker access with the permissions you selected. Proposed schedules and asset changes still require your approval.</p> : null}
           </div>
           <label className={styles.ownerConsentField}>
             <input type="checkbox" checked={consentAccepted} onChange={(event) => setConsentAccepted(event.target.checked)} />
@@ -509,6 +557,48 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
         </section>
       ) : null}
       </div>
+
+      {isTrackingPermissionsOpen && selectedOption?.leadType === 'replacement_quote' ? (
+        <div className={styles.ownerTrackingPickerOverlay}>
+          <button
+            type="button"
+            className={styles.ownerTrackingPickerBackdrop}
+            onClick={cancelTrackingPermissions}
+            aria-label="Close dealer tracking settings"
+          />
+          <section
+            className={styles.ownerTrackingPickerModal}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="owner-tracking-picker-title"
+          >
+            <header className={styles.ownerTrackingPickerHeader}>
+              <div>
+                <h2 id="owner-tracking-picker-title">Dealer tracking settings</h2>
+                <p>{assetTitle}</p>
+              </div>
+              <button type="button" onClick={cancelTrackingPermissions} aria-label="Close dealer tracking settings">×</button>
+            </header>
+            <div className={styles.ownerTrackingPickerBody}>
+              <div className={styles.ownerTrackingPickerIntro}>
+                <strong>Choose what this dealer can access</strong>
+                <p>Select the permissions to activate as soon as the asset is shared.</p>
+              </div>
+              <DealerMaintenancePermissionPicker
+                value={trackingPermissions}
+                onChange={setTrackingPermissions}
+              />
+            </div>
+            <footer className={styles.ownerTrackingPickerFooter}>
+              <button type="button" className={styles.secondaryButton} onClick={cancelTrackingPermissions}>Cancel</button>
+              {trackMaintenance ? (
+                <button type="button" className={styles.secondaryButton} onClick={disableTracking}>Disable tracking</button>
+              ) : null}
+              <button type="button" className={styles.primaryButton} onClick={confirmTrackingPermissions}>Save tracking settings</button>
+            </footer>
+          </section>
+        </div>
+      ) : null}
     </>
   );
 }
