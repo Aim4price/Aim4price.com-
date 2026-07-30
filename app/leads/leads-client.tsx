@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type DragE
 import { createPortal } from 'react-dom';
 import AppHeader from '../../components/AppHeader';
 import DealerAssetCorrectionEditor from '../../components/DealerAssetCorrectionEditor';
+import DealerCostOfOwnershipReportModal from '../../components/DealerCostOfOwnershipReportModal';
 import DealerMaintenanceReportModal from '../../components/DealerMaintenanceReportModal';
 import DealerMaintenanceScheduleModal from '../../components/DealerMaintenanceScheduleModal';
 import {
@@ -88,6 +89,7 @@ type AssetLead = {
     permissions: {
       canViewLoggedProblems: boolean;
       canViewMaintenanceReports: boolean;
+      canViewCostOfOwnership: boolean;
       canCreateMaintenanceSchedules: boolean;
       canUpdateSerial: boolean;
       canUpdateReplacementPrice: boolean;
@@ -1461,6 +1463,7 @@ export default function LeadsClient({
   const [isEmailDraftCopied, setIsEmailDraftCopied] = useState(false);
   const [reportLead, setReportLead] = useState<AssetLead | null>(null);
   const [maintenanceReportAccessId, setMaintenanceReportAccessId] = useState<string | null>(null);
+  const [costReportLead, setCostReportLead] = useState<AssetLead | null>(null);
   const [maintenanceScheduleLead, setMaintenanceScheduleLead] = useState<AssetLead | null>(null);
   const [isDownloadingLeadReport, setIsDownloadingLeadReport] = useState(false);
   const [noteLead, setNoteLead] = useState<AssetLead | null>(null);
@@ -1634,6 +1637,7 @@ export default function LeadsClient({
     || emailLead
     || reportLead
     || maintenanceReportAccessId
+    || costReportLead
     || maintenanceScheduleLead
     || deleteLeadTarget
     || assetPhotoModal
@@ -1683,6 +1687,7 @@ export default function LeadsClient({
       else if (deleteLeadTarget) setDeleteLeadTarget(null);
       else if (noteLead) closeNoteModal();
       else if (maintenanceScheduleLead) setMaintenanceScheduleLead(null);
+      else if (costReportLead) setCostReportLead(null);
       else if (maintenanceReportAccessId) setMaintenanceReportAccessId(null);
       else if (reportLead) closeLeadReportModal();
       else if (emailLead) closeEmailModal();
@@ -1705,6 +1710,7 @@ export default function LeadsClient({
     isDownloadingLeadReport,
     isSavingNote,
     managedLead,
+    costReportLead,
     maintenanceReportAccessId,
     maintenanceScheduleLead,
     noteLead,
@@ -1944,6 +1950,21 @@ export default function LeadsClient({
     setManagedLead(null);
     setReportLead(null);
     setMaintenanceReportAccessId(access.accessId);
+  }
+
+  function openCostOfOwnershipReport(lead: AssetLead) {
+    const access = lead.maintenanceAccess;
+    if (!access?.isActive) {
+      setNotice({ tone: 'error', message: 'This Maintenance Tracker share is no longer active.' });
+      return;
+    }
+    if (!access.permissions.canViewCostOfOwnership) {
+      setNotice({ tone: 'error', message: 'The asset owner has not enabled Cost of Ownership access.' });
+      return;
+    }
+    setManagedLead(null);
+    setReportLead(null);
+    setCostReportLead(lead);
   }
 
   function openMaintenanceSchedule(lead: AssetLead) {
@@ -3033,6 +3054,18 @@ export default function LeadsClient({
         />
       ) : null}
 
+      {costReportLead?.maintenanceAccess?.isActive ? (
+        <DealerCostOfOwnershipReportModal
+          accessId={costReportLead.maintenanceAccess.accessId}
+          assetTitle={assetTitle(costReportLead)}
+          assetMeta={leadAssetMeta(costReportLead)}
+          createdAtIso={costReportLead.createdAtIso}
+          updatedAtIso={costReportLead.updatedAtIso}
+          onClose={() => setCostReportLead(null)}
+          onError={(message) => setNotice({ tone: 'error', message })}
+        />
+      ) : null}
+
       {maintenanceScheduleLead?.maintenanceAccess?.isActive ? (
         <DealerMaintenanceScheduleModal
           accessId={maintenanceScheduleLead.maintenanceAccess.accessId}
@@ -3320,25 +3353,47 @@ export default function LeadsClient({
                 </button>
 
                 {isTrackingLead(reportLead) && reportLead.maintenanceAccess?.isActive ? (
-                  <button
-                    type="button"
-                    className={assetStyles.assetReportOptionButton}
-                    onClick={() => openMaintenanceReport(reportLead)}
-                    disabled={!reportLead.maintenanceAccess.permissions.canViewMaintenanceReports}
-                    title={!reportLead.maintenanceAccess.permissions.canViewMaintenanceReports
-                      ? 'The asset owner has not enabled maintenance report access.'
-                      : undefined}
-                  >
-                    <DocumentIcon className={assetStyles.buttonIcon} />
-                    <span>
-                      <strong>Download maintenance report</strong>
-                      <small>
-                        {reportLead.maintenanceAccess.permissions.canViewMaintenanceReports
-                          ? 'PDF or Excel maintenance history.'
-                          : 'Owner permission is required.'}
-                      </small>
-                    </span>
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      className={assetStyles.assetReportOptionButton}
+                      onClick={() => openMaintenanceReport(reportLead)}
+                      disabled={!reportLead.maintenanceAccess.permissions.canViewMaintenanceReports}
+                      title={!reportLead.maintenanceAccess.permissions.canViewMaintenanceReports
+                        ? 'The asset owner has not enabled maintenance report access.'
+                        : undefined}
+                    >
+                      <DocumentIcon className={assetStyles.buttonIcon} />
+                      <span>
+                        <strong>Download maintenance report</strong>
+                        <small>
+                          {reportLead.maintenanceAccess.permissions.canViewMaintenanceReports
+                            ? 'PDF or Excel maintenance history.'
+                            : 'Owner permission is required.'}
+                        </small>
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      className={assetStyles.assetReportOptionButton}
+                      onClick={() => openCostOfOwnershipReport(reportLead)}
+                      disabled={!reportLead.maintenanceAccess.permissions.canViewCostOfOwnership}
+                      title={!reportLead.maintenanceAccess.permissions.canViewCostOfOwnership
+                        ? 'The asset owner has not enabled Cost of Ownership access.'
+                        : undefined}
+                    >
+                      <DocumentIcon className={assetStyles.buttonIcon} />
+                      <span>
+                        <strong>Download cost of ownership</strong>
+                        <small>
+                          {reportLead.maintenanceAccess.permissions.canViewCostOfOwnership
+                            ? 'PDF or Excel ownership costs and VAT.'
+                            : 'Owner permission is required.'}
+                        </small>
+                      </span>
+                    </button>
+                  </>
                 ) : null}
               </div>
             </div>
