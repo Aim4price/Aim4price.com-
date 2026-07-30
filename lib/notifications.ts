@@ -236,6 +236,17 @@ function isQrDealerHelpLead(lead: AssetLead): boolean {
   return source === 'asset_qr_share' || source === 'qr_dealer_help' || source === 'scan_share';
 }
 
+function isShareOpportunityLead(lead: AssetLead): boolean {
+  const sections = asRecord(lead.includedSections);
+  const source = asText(sections.source).toLowerCase();
+
+  return source === 'asset_register_options'
+    || source === 'full_asset_register'
+    || source === 'asset_qr_share'
+    || source === 'qr_dealer_help'
+    || source === 'scan_share';
+}
+
 function qrDealerHelpOperatorName(lead: AssetLead): string {
   const sections = asRecord(lead.includedSections);
   const operatorName = asText(sections.operatorName) || asText(sections.operator_name);
@@ -618,6 +629,7 @@ async function listPartnerLeadNotifications(userId: string): Promise<HeaderNotif
       .map((lead) => {
         const owner = lead.ownerBusinessName || lead.ownerName || 'An asset owner';
         const typeLabel = leadTypeLabel(lead.leadType);
+        const shareOpportunity = isShareOpportunityLead(lead);
         const assetTitle = assetTitleFromLead(lead);
         const ownerMessage = truncateText(lead.ownerMessage, 96);
         const bodySuffix = ownerMessage ? ` Message: ${ownerMessage}` : '';
@@ -626,8 +638,12 @@ async function listPartnerLeadNotifications(userId: string): Promise<HeaderNotif
           id: `lead-partner:${lead.id}:${lead.status}:${lead.updatedAtIso}`,
           category: 'lead',
           tone: lead.status === 'sent' ? 'info' : leadTone(lead.status),
-          title: lead.status === 'sent' ? 'New lead opportunity' : `Lead ${leadStatusLabel(lead.status)}`,
-          body: `${owner} sent a ${typeLabel} opportunity for ${assetTitle}.${bodySuffix}`,
+          title: lead.status === 'sent'
+            ? shareOpportunity ? 'New opportunity' : 'New lead opportunity'
+            : `${shareOpportunity ? 'Opportunity' : 'Lead'} ${leadStatusLabel(lead.status)}`,
+          body: shareOpportunity
+            ? `${owner} sent an opportunity for ${assetTitle}.${bodySuffix}`
+            : `${owner} sent a ${typeLabel} opportunity for ${assetTitle}.${bodySuffix}`,
           href: '/leads',
           createdAtIso: isoFallback(lead.updatedAtIso || lead.createdAtIso),
         } satisfies HeaderNotificationItem;
