@@ -31,6 +31,7 @@ type DealerShareRequest = {
   longitude?: unknown;
   sharePhotoUrls?: unknown;
   trackMaintenance?: unknown;
+  trackingPermissions?: unknown;
 };
 
 const MAX_DEALER_SHARE_PHOTOS = 3;
@@ -99,6 +100,7 @@ function readPermissions(value: unknown): DealerMaintenancePermissions | null {
   const keys = [
     'canViewLoggedProblems',
     'canViewMaintenanceReports',
+    'canViewCostOfOwnership',
     'canCreateMaintenanceSchedules',
     'canUpdateSerial',
     'canUpdateReplacementPrice',
@@ -107,6 +109,7 @@ function readPermissions(value: unknown): DealerMaintenancePermissions | null {
   return {
     canViewLoggedProblems: permissions.canViewLoggedProblems as boolean,
     canViewMaintenanceReports: permissions.canViewMaintenanceReports as boolean,
+    canViewCostOfOwnership: permissions.canViewCostOfOwnership as boolean,
     canCreateMaintenanceSchedules: permissions.canCreateMaintenanceSchedules as boolean,
     canUpdateSerial: permissions.canUpdateSerial as boolean,
     canUpdateReplacementPrice: permissions.canUpdateReplacementPrice as boolean,
@@ -187,6 +190,11 @@ export async function POST(request: NextRequest, context: RouteContext) {
   const ownerMessage = asText(body.ownerMessage).slice(0, 1600);
   const sharePhotoUrls = normalizeSharePhotoUrls(body.sharePhotoUrls);
   const trackMaintenance = body.trackMaintenance === true;
+  const trackingPermissions = readPermissions(body.trackingPermissions);
+
+  if (trackMaintenance && body.trackingPermissions && !trackingPermissions) {
+    return NextResponse.json({ ok: false, error: 'Choose valid dealer tracking permissions.' }, { status: 400 });
+  }
 
   if (!partnerUserId) {
     return NextResponse.json({ ok: false, error: 'Choose a dealer before sending.' }, { status: 400 });
@@ -238,6 +246,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
           actorType: access.accessMode === 'field_manager' ? 'field_manager' : 'owner',
           actorId: access.fieldManagerId ?? access.ownerUserId,
           actorName: operatorName,
+          permissions: trackingPermissions,
         })
       : null;
 
