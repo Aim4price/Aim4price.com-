@@ -2606,23 +2606,6 @@
   width: min(100%, 980px);
 }
 
-.downloadStepEyebrow {
-  width: fit-content;
-  display: inline-flex;
-  align-items: center;
-  min-height: 1.65rem;
-  padding: 0.15rem 0.65rem;
-  border: 1px solid rgba(180, 213, 197, 0.92);
-  border-radius: 999px;
-  color: #176549;
-  background: #eef8f3;
-  font-size: 0.72rem;
-  font-weight: 850;
-  line-height: 1;
-  letter-spacing: 0.035em;
-  text-transform: uppercase;
-}
-
 .downloadStageRail {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2732,6 +2715,10 @@
   flex-wrap: nowrap;
   gap: 0.8rem;
   margin-top: 0.08rem;
+}
+
+.downloadExportModal .downloadFormatFooter {
+  justify-content: flex-end;
 }
 
 .downloadFooterActions {

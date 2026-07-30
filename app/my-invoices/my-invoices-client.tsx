@@ -1698,9 +1698,6 @@ export default function MyInvoicesClient({
           <div className={`${styles.downloadModal} ${styles.reportModal} ${styles.downloadExportModal} ${downloadStep === 'format' ? styles.downloadFormatModal : ''}`}>
             <div className={styles.modalHeader}>
               <div>
-                <span className={styles.downloadStepEyebrow}>
-                  Step {DOWNLOAD_STEPS.findIndex((step) => step.key === downloadStep) + 1} of {DOWNLOAD_STEPS.length}
-                </span>
                 <h2>
                   {downloadStep === 'format'
                     ? 'Download cost records'
