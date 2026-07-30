@@ -33312,8 +33312,35 @@ button.documentOpenLink {
 .dealerTrackingBody {
   display: grid !important;
   gap: 0.9rem !important;
-  padding: 1rem 0.15rem 0.1rem 0 !important;
+  padding: 1rem 0.65rem 0.15rem 0 !important;
   overflow-y: auto !important;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: #2a8061 rgba(226, 237, 232, 0.86);
+}
+
+.dealerTrackingBody::-webkit-scrollbar {
+  width: 0.72rem;
+}
+
+.dealerTrackingBody::-webkit-scrollbar-track {
+  margin: 0.35rem 0;
+  border-radius: 999px;
+  background: rgba(226, 237, 232, 0.86);
+}
+
+.dealerTrackingBody::-webkit-scrollbar-thumb {
+  border: 2px solid rgba(226, 237, 232, 0.86);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #4a9a7d 0%, #1f6f53 100%);
+}
+
+.dealerTrackingBody::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #3e8e71 0%, #175c45 100%);
+}
+
+.dealerTrackingOptionSubtitle {
+  white-space: nowrap;
 }
 
 .dealerTrackingIntro {
@@ -33345,7 +33372,7 @@ button.documentOpenLink {
 }
 
 .assetQuoteMessageStepModal {
-  width: min(100%, 980px) !important;
+  width: min(100%, 1220px) !important;
   max-height: min(88vh, calc(100dvh - 2rem)) !important;
   border-radius: 1.8rem !important;
 }
@@ -33374,7 +33401,7 @@ button.documentOpenLink {
 }
 
 .assetQuoteMessageStepBody {
-  grid-template-columns: minmax(15.5rem, 18.5rem) minmax(0, 1fr) !important;
+  grid-template-columns: minmax(21rem, 23rem) minmax(0, 1fr) !important;
   align-items: stretch !important;
   overflow-y: auto !important;
   background: #f8fbfa !important;
@@ -33453,6 +33480,9 @@ button.documentOpenLink {
   font-family: var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif !important;
   font-size: 0.76rem !important;
   font-weight: 620 !important;
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+  white-space: nowrap;
 }
 
 .assetQuoteMessagePanel {
@@ -33505,6 +33535,10 @@ button.documentOpenLink {
     border-color 160ms ease,
     background 160ms ease,
     box-shadow 160ms ease !important;
+  width: 100% !important;
+  appearance: none !important;
+  font: inherit !important;
+  text-align: left !important;
 }
 
 .assetQuoteTrackingChoice:hover {
@@ -33513,11 +33547,31 @@ button.documentOpenLink {
   box-shadow: 0 12px 24px rgba(16, 52, 41, 0.06) !important;
 }
 
-.assetQuoteTrackingChoice:has(input:checked) {
+.assetQuoteTrackingChoice:has(input:checked),
+.assetQuoteTrackingChoice[aria-pressed='true'] {
   border-color: rgba(160, 210, 186, 0.98) !important;
   background:
     radial-gradient(circle at 0 0, rgba(25, 116, 84, 0.08), transparent 45%),
     linear-gradient(180deg, #ffffff 0%, #edf8f2 100%) !important;
+}
+
+.assetQuoteTrackingCheckbox {
+  width: 1.2rem;
+  height: 1.2rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid #97a9b4;
+  border-radius: 0.2rem;
+  color: #ffffff;
+  background: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.assetQuoteTrackingCheckboxActive {
+  border-color: #197454;
+  background: #197454;
 }
 
 .assetQuoteTrackingChoice > input {
@@ -33543,6 +33597,12 @@ button.documentOpenLink {
 }
 
 .assetQuoteTrackingChoice:has(input:checked) .assetQuoteTrackingIcon {
+  color: #126044;
+  border-color: rgba(174, 220, 196, 0.98);
+  background: #e7f5ed;
+}
+
+.assetQuoteTrackingChoice[aria-pressed='true'] .assetQuoteTrackingIcon {
   color: #126044;
   border-color: rgba(174, 220, 196, 0.98);
   background: #e7f5ed;
@@ -33590,6 +33650,39 @@ button.documentOpenLink {
   font-family: var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif !important;
   font-size: 0.86rem !important;
   font-weight: 760 !important;
+}
+
+.assetQuoteMapShell :global(.assetQuotePopupCard--insurance .assetQuotePopupChooseButton) {
+  background: linear-gradient(180deg, #3475f0 0%, #1d4ed8 100%) !important;
+  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.24) !important;
+}
+
+.assetQuoteMapShell :global(.assetQuotePopupCard--dealer .assetQuotePopupChooseButton) {
+  background: linear-gradient(180deg, #1b9b6c 0%, #0f6f4d 100%) !important;
+  box-shadow: 0 12px 24px rgba(21, 144, 99, 0.23) !important;
+}
+
+.assetQuoteMapShell :global(.assetQuotePopupCard--finance .assetQuotePopupChooseButton) {
+  background: linear-gradient(180deg, #c48220 0%, #8b5a12 100%) !important;
+  box-shadow: 0 12px 24px rgba(196, 130, 32, 0.24) !important;
+}
+
+.quoteTrackingSettingsOverlay {
+  z-index: 160 !important;
+}
+
+.quoteTrackingSettingsModal {
+  width: min(100%, 980px) !important;
+}
+
+.quoteTrackingSettingsActions {
+  justify-content: flex-end !important;
+  margin-top: 0.15rem;
+  padding: 0.15rem 0 0 !important;
+}
+
+.quoteTrackingSettingsActions > button {
+  min-width: 10.5rem;
 }
 
 @media (max-width: 900px) {
@@ -33658,6 +33751,11 @@ button.documentOpenLink {
     grid-template-columns: 4.25rem minmax(0, 1fr) !important;
   }
 
+  .assetQuoteSelectedContactRow span {
+    white-space: normal;
+    overflow-wrap: anywhere !important;
+  }
+
   .assetQuoteTrackingChoice {
     grid-template-columns: auto 2.55rem minmax(0, 1fr) !important;
     align-items: start !important;
@@ -33668,5 +33766,14 @@ button.documentOpenLink {
   .assetQuoteTrackingIcon {
     width: 2.55rem;
     height: 2.55rem;
+  }
+
+  .quoteTrackingSettingsActions {
+    grid-template-columns: 1fr !important;
+  }
+
+  .quoteTrackingSettingsActions > button {
+    width: 100%;
+    min-width: 0;
   }
 }

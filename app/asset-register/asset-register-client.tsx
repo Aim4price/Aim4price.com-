@@ -4,7 +4,10 @@ import Link from 'next/link';
 import { createPortal } from 'react-dom';
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ChangeEvent, type FormEvent, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import AppHeader from '../../components/AppHeader';
-import DealerMaintenanceAccessSettings from '../../components/DealerMaintenanceAccessSettings';
+import DealerMaintenanceAccessSettings, {
+  DEFAULT_DEALER_MAINTENANCE_PERMISSIONS,
+  DealerMaintenancePermissionPicker,
+} from '../../components/DealerMaintenanceAccessSettings';
 import {
   openAssetRegisterSummaryPrint,
   openAssetSheetPrint,
@@ -26,7 +29,10 @@ import {
   type StockAssetSubtypeKey,
 } from '../../lib/general-asset-catalogue';
 import type { DealerAssetCorrectionRequest } from '../../lib/dealer-asset-corrections';
-import type { DealerMaintenanceAccessSummary } from '../../lib/dealer-maintenance-tracker';
+import type {
+  DealerMaintenanceAccessSummary,
+  DealerMaintenancePermissions,
+} from '../../lib/dealer-maintenance-tracker';
 import styles from './page.module.css';
 
 type NoticeTone = 'success' | 'warning' | 'error';
@@ -5651,7 +5657,7 @@ function buildQuotePartnerPopupHtml(partner: PartnerDirectoryEntry): string {
   ].filter(Boolean).join('');
 
   return `
-    <div class="assetQuotePopupCard assetQuotePopupCardSimple">
+    <div class="assetQuotePopupCard assetQuotePopupCardSimple assetQuotePopupCard--${escapeHtml(partner.partnerType)}">
       <div class="assetQuotePopupSimpleHeader">
         <strong>${name}</strong>
       </div>
@@ -5744,6 +5750,10 @@ export default function AssetRegisterClient() {
   const [quoteLeadStep, setQuoteLeadStep] = useState<QuoteLeadStep>(null);
   const [quoteConsentAccepted, setQuoteConsentAccepted] = useState(false);
   const [quoteTrackMaintenance, setQuoteTrackMaintenance] = useState(false);
+  const [quoteTrackingPermissions, setQuoteTrackingPermissions] = useState<DealerMaintenancePermissions>(() => ({
+    ...DEFAULT_DEALER_MAINTENANCE_PERMISSIONS,
+  }));
+  const [isQuoteTrackingSettingsOpen, setIsQuoteTrackingSettingsOpen] = useState(false);
   const [quoteIncludePhotos, setQuoteIncludePhotos] = useState(true);
   const [quoteIncludeDocuments, setQuoteIncludeDocuments] = useState(true);
   const [quoteIncludeScanHistory, setQuoteIncludeScanHistory] = useState(false);
@@ -6750,6 +6760,7 @@ export default function AssetRegisterClient() {
     Boolean(replacementPriceRevaluePrompt) ||
     Boolean(activeAsset) ||
     isQuoteModalOpen ||
+    isQuoteTrackingSettingsOpen ||
     Boolean(deleteCandidateAsset) ||
     isAssetReportModalOpen ||
     isAssetFilterOpen ||
@@ -6867,6 +6878,11 @@ export default function AssetRegisterClient() {
         return;
       }
 
+      if (isQuoteTrackingSettingsOpen) {
+        cancelQuoteTrackingSettings();
+        return;
+      }
+
       if (isQuoteModalOpen) {
         if (quoteLeadStep) {
           closeQuoteLeadStep();
@@ -6913,7 +6929,7 @@ export default function AssetRegisterClient() {
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [activeAsset, anyModalOpen, assetRegisterMoveAsset, deleteCandidateAsset, isAddChoiceModalOpen, isAssetFilterOpen, isChangeRegisterModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isPricingModalOpen, pricingPreview, isQrModalOpen, isRegisterShareModalOpen, isSummaryModalOpen, marketplaceAsset, projectionAsset, isQuoteModalOpen, quoteLeadStep, isAssetSettingsModalOpen, pendingUsageOverride, isManualConversionConfirmOpen, isSavingAssetSettings, replacementPriceRevaluePrompt, photoViewer]);
+  }, [activeAsset, anyModalOpen, assetRegisterMoveAsset, deleteCandidateAsset, isAddChoiceModalOpen, isAssetFilterOpen, isChangeRegisterModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isPricingModalOpen, pricingPreview, isQrModalOpen, isRegisterShareModalOpen, isSummaryModalOpen, marketplaceAsset, projectionAsset, isQuoteModalOpen, isQuoteTrackingSettingsOpen, quoteLeadStep, isAssetSettingsModalOpen, pendingUsageOverride, isManualConversionConfirmOpen, isSavingAssetSettings, replacementPriceRevaluePrompt, photoViewer]);
 
   useEffect(() => {
     if (!isQuoteModalOpen || !selectedQuoteLeadType) return;
@@ -8852,6 +8868,8 @@ export default function AssetRegisterClient() {
     setQuoteLeadStep(null);
     setQuoteConsentAccepted(false);
     setQuoteTrackMaintenance(false);
+    setQuoteTrackingPermissions({ ...DEFAULT_DEALER_MAINTENANCE_PERMISSIONS });
+    setIsQuoteTrackingSettingsOpen(false);
     setQuoteOwnerMessage('');
     setQuoteIncludePhotos(true);
     setQuoteIncludeDocuments(true);
@@ -8922,6 +8940,8 @@ export default function AssetRegisterClient() {
     setQuoteLeadStep(null);
     setQuoteConsentAccepted(false);
     setQuoteTrackMaintenance(false);
+    setQuoteTrackingPermissions({ ...DEFAULT_DEALER_MAINTENANCE_PERMISSIONS });
+    setIsQuoteTrackingSettingsOpen(false);
     setQuotePartners([]);
     setQuoteIncludePhotos(true);
     setQuoteIncludeDocuments(true);
@@ -8943,6 +8963,8 @@ export default function AssetRegisterClient() {
     setQuoteLeadStep(null);
     setQuoteConsentAccepted(false);
     setQuoteTrackMaintenance(false);
+    setQuoteTrackingPermissions({ ...DEFAULT_DEALER_MAINTENANCE_PERMISSIONS });
+    setIsQuoteTrackingSettingsOpen(false);
 
     if (quoteLeafletMapRef.current) {
       quoteLeafletMapRef.current.remove();
@@ -8979,6 +9001,29 @@ export default function AssetRegisterClient() {
     setSelectedQuotePartnerId(partner.userId);
     setQuoteConsentAccepted(false);
     setQuoteLeadStep('message');
+  }
+
+  function openQuoteTrackingSettings() {
+    if (!quoteTrackMaintenance) {
+      setQuoteTrackingPermissions({ ...DEFAULT_DEALER_MAINTENANCE_PERMISSIONS });
+    }
+    setIsQuoteTrackingSettingsOpen(true);
+  }
+
+  function closeQuoteTrackingSettings() {
+    setIsQuoteTrackingSettingsOpen(false);
+  }
+
+  function cancelQuoteTrackingSettings() {
+    if (!quoteTrackMaintenance) {
+      setQuoteTrackingPermissions({ ...DEFAULT_DEALER_MAINTENANCE_PERMISSIONS });
+    }
+    setIsQuoteTrackingSettingsOpen(false);
+  }
+
+  function confirmQuoteTrackingSettings() {
+    setQuoteTrackMaintenance(true);
+    setIsQuoteTrackingSettingsOpen(false);
   }
 
   function closeQuoteLeadStep() {
@@ -9048,6 +9093,9 @@ export default function AssetRegisterClient() {
           ownerMessage: quoteOwnerMessage,
           includedSections,
           trackMaintenance: selectedQuoteOption.leadType === 'replacement_quote' && quoteTrackMaintenance,
+          trackingPermissions: selectedQuoteOption.leadType === 'replacement_quote' && quoteTrackMaintenance
+            ? quoteTrackingPermissions
+            : undefined,
         }),
       });
 
@@ -15894,7 +15942,6 @@ export default function AssetRegisterClient() {
                       <section className={`${styles.assetQuoteStepModal} ${quoteLeadStep === 'message' ? styles.assetQuoteMessageStepModal : ''}`} aria-live="polite">
                         <div className={styles.assetQuoteStepHeader}>
                           <div>
-                            <span>{quotePartnerName(selectedQuotePartner)}</span>
                             <h4>{quoteLeadStep === 'message' ? 'Message to selected company' : 'Confirm and send request'}</h4>
                           </div>
                           <button
@@ -15930,13 +15977,13 @@ export default function AssetRegisterClient() {
                                 <div className={styles.assetQuoteSelectedContactList}>
                                   {selectedQuotePartner.email && selectedQuotePartnerEmailHref ? (
                                     <a className={styles.assetQuoteSelectedContactRow} href={selectedQuotePartnerEmailHref}>
-                                      <small>Business email</small>
+                                      <small>Email</small>
                                       <span>{selectedQuotePartner.email}</span>
                                     </a>
                                   ) : (
                                     <span className={styles.assetQuoteSelectedContactRow}>
-                                      <small>Business email</small>
-                                      <span>Business email not saved</span>
+                                      <small>Email</small>
+                                      <span>Email not saved</span>
                                     </span>
                                   )}
 
@@ -15996,21 +16043,27 @@ export default function AssetRegisterClient() {
                               </label>
 
                               {selectedQuoteOption.leadType === 'replacement_quote' && quoteScope === 'asset' ? (
-                                <label className={`${styles.assetQuoteConsentCheck} ${styles.assetQuoteTrackingChoice}`}>
-                                  <input
-                                    type="checkbox"
-                                    checked={quoteTrackMaintenance}
-                                    onChange={(event) => setQuoteTrackMaintenance(event.target.checked)}
-                                  />
+                                <button
+                                  type="button"
+                                  className={`${styles.assetQuoteConsentCheck} ${styles.assetQuoteTrackingChoice}`}
+                                  onClick={openQuoteTrackingSettings}
+                                  aria-pressed={quoteTrackMaintenance}
+                                >
+                                  <span
+                                    className={`${styles.assetQuoteTrackingCheckbox} ${quoteTrackMaintenance ? styles.assetQuoteTrackingCheckboxActive : ''}`}
+                                    aria-hidden="true"
+                                  >
+                                    {quoteTrackMaintenance ? '✓' : ''}
+                                  </span>
                                   <span className={styles.assetQuoteTrackingIcon} aria-hidden="true">
                                     <ManageIcon className={styles.buttonIcon} />
                                   </span>
                                   <span className={styles.assetQuoteTrackingCopy}>
                                     <strong>Enable dealer tracking</strong>
                                     <small>The dealer can download maintenance reports and create maintenance schedules, which will only appear in your Asset Register after you approve them.</small>
-                                    <em>You can review detailed permissions after sharing.</em>
+                                    <em>{quoteTrackMaintenance ? 'Permissions selected. Click to review.' : 'Choose the dealer permissions before sharing.'}</em>
                                   </span>
-                                </label>
+                                </button>
                               ) : null}
                             </div>
                           </div>
@@ -16030,7 +16083,7 @@ export default function AssetRegisterClient() {
                                   : 'You confirm that you have permission to share this asset information and understand that the selected company may contact you outside Aim4price.'}
                               </p>
                               {selectedQuoteOption.leadType === 'replacement_quote' && quoteTrackMaintenance ? (
-                                <p>The selected dealer will receive ongoing Maintenance Tracker access, maintenance reports and permission to propose maintenance schedules until you stop tracking. Proposed schedules require your approval. Logged Problems remain disabled until you enable them in Dealer tracking settings.</p>
+                                <p>The selected dealer will receive ongoing Maintenance Tracker access with the permissions you selected. Proposed schedules and asset changes still require your approval.</p>
                               ) : null}
                             </div>
 
@@ -16078,6 +16131,63 @@ export default function AssetRegisterClient() {
               )}
             </div>
 
+          </div>
+        </div>
+      ) : null}
+
+      {quoteAsset && isQuoteTrackingSettingsOpen ? (
+        <div className={`${styles.modalOverlay} ${styles.subModalOverlay} ${styles.quoteTrackingSettingsOverlay}`}>
+          <div className={styles.modalBackdrop} onClick={cancelQuoteTrackingSettings} />
+
+          <div
+            className={`${styles.modalCard} ${styles.pricingModal} ${styles.dealerTrackingModal} ${styles.quoteTrackingSettingsModal}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="quote-tracking-settings-title"
+          >
+            <div className={`${styles.modalHeader} ${styles.pricingModalHeader} ${styles.dealerTrackingHeader}`}>
+              <div className={styles.modalHeaderText}>
+                <h3 id="quote-tracking-settings-title">Dealer tracking settings</h3>
+                <p>{quoteAsset.title}</p>
+              </div>
+
+              <button type="button" className={styles.modalCloseButton} onClick={cancelQuoteTrackingSettings} aria-label="Close dealer tracking settings">
+                <CloseIcon className={styles.buttonIcon} />
+              </button>
+            </div>
+
+            <div className={`${styles.modalScrollBody} ${styles.pricingModalBody} ${styles.dealerTrackingBody}`}>
+              <div className={styles.dealerTrackingIntro}>
+                <strong>Choose what this dealer can access</strong>
+                <p>Select the permissions to activate as soon as the asset is shared.</p>
+              </div>
+
+              <DealerMaintenancePermissionPicker
+                value={quoteTrackingPermissions}
+                onChange={setQuoteTrackingPermissions}
+              />
+
+              <div className={`${styles.formActions} ${styles.exportActions} ${styles.quoteTrackingSettingsActions}`}>
+                <button type="button" className={styles.secondaryButton} onClick={cancelQuoteTrackingSettings}>
+                  Cancel
+                </button>
+                {quoteTrackMaintenance ? (
+                  <button
+                    type="button"
+                    className={styles.secondaryButton}
+                    onClick={() => {
+                      setQuoteTrackMaintenance(false);
+                      closeQuoteTrackingSettings();
+                    }}
+                  >
+                    Disable tracking
+                  </button>
+                ) : null}
+                <button type="button" className={styles.primaryButton} onClick={confirmQuoteTrackingSettings}>
+                  Save tracking settings
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       ) : null}
@@ -16197,7 +16307,7 @@ export default function AssetRegisterClient() {
                       <ManageIcon className={styles.buttonIcon} />
                       <span>
                         <strong>Dealer tracking settings</strong>
-                        <small>Manage each dealer&apos;s Maintenance Tracker permissions.</small>
+                        <small className={styles.dealerTrackingOptionSubtitle}>Manage dealer access and permissions.</small>
                       </span>
                     </button>
                   ) : null}
@@ -16270,8 +16380,8 @@ export default function AssetRegisterClient() {
               ) : (
                 <>
                   <div className={styles.dealerTrackingIntro}>
-                    <strong>Choose what each dealer can access</strong>
-                    <p>Click any permission to turn it on or off. Owner approval is still required for schedules and asset changes.</p>
+                    <strong>Dealers with access</strong>
+                    <p>Select a dealer to review or change their access. Owner approval is still required for schedules and asset changes.</p>
                   </div>
                   <DealerMaintenanceAccessSettings
                     assetId={activeAsset.id}
