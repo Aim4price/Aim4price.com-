@@ -8,7 +8,7 @@ import {
   type ChangeEvent,
   type FormEvent,
 } from "react";
-import DealerMaintenanceAccessSettings, {
+import {
   DEFAULT_DEALER_MAINTENANCE_PERMISSIONS,
   DealerMaintenancePermissionPicker,
 } from "../../../components/DealerMaintenanceAccessSettings";
@@ -31,18 +31,9 @@ type ScanAssetUsageMode = "hours" | "percent" | "km" | "none";
 type ScanAssetStatusChoice = "yes" | "no" | "unknown" | "not_applicable";
 type ServiceMode = "" | "checked" | "serviced" | "repaired";
 type PartnerType = "dealer" | "finance" | "insurance";
-type ShareLeadStep = "message" | "consent" | "settings" | null;
+type ShareLeadStep = "message" | "consent" | null;
 type ScanAccessResponseMode = "owner_session" | "scan_pin" | "field_manager";
 type ScheduledMaintenanceType = "service" | "checkup";
-
-type DealerTrackingAccess = {
-  id: string;
-  dealerUserId: string;
-  dealerName: string;
-  grantedByName: string;
-  createdAtIso: string;
-  permissions: DealerMaintenancePermissions;
-};
 
 type PartnerDirectoryEntry = {
   userId: string;
@@ -143,7 +134,6 @@ type SaveScanEventResponse = {
 type PartnerDirectoryApiResponse = {
   ok: boolean;
   partners?: PartnerDirectoryEntry[];
-  trackingAccess?: DealerTrackingAccess[];
   error?: string;
   pinRequired?: boolean;
 };
@@ -1500,7 +1490,6 @@ export default function ScanClient({
     }));
   const [isShareTrackingPermissionsOpen, setIsShareTrackingPermissionsOpen] =
     useState(false);
-  const [shareTrackingAccess, setShareTrackingAccess] = useState<DealerTrackingAccess[]>([]);
   const [isLoadingSharePartners, setIsLoadingSharePartners] = useState(false);
   const [isSendingShareLead, setIsSendingShareLead] = useState(false);
   const [isUploadingSharePhoto, setIsUploadingSharePhoto] = useState(false);
@@ -2312,7 +2301,6 @@ export default function ScanClient({
 
       const nextPartners = data.partners ?? [];
       setSharePartners(nextPartners);
-      setShareTrackingAccess(data.trackingAccess ?? []);
       setSelectedSharePartnerId((current) => {
         if (!current) return current;
         return nextPartners.some((partner) => partner.userId === current)
@@ -2359,11 +2347,6 @@ export default function ScanClient({
     );
     setIsShareModalOpen(true);
     setNotice(null);
-  }
-
-  function openShareTrackingSettings() {
-    setShareLeadStep("settings");
-    setShareConsentAccepted(false);
   }
 
   function openShareTrackingPermissions() {
@@ -3164,8 +3147,6 @@ export default function ScanClient({
     sessionHasLocation(readQrScanSession(normalizedCode));
   const isFieldManagerMode =
     fieldManagerMode || scanAccessMode === "field_manager";
-  const canManageDealerTracking =
-    isFieldManagerMode || scanAccessMode === "owner_session";
   const usageUpdateRequired =
     !isFieldManagerMode &&
     needsUsageUpdateBeforeActions(
@@ -3700,8 +3681,6 @@ export default function ScanClient({
                     ? "Confirm Request"
                     : shareLeadStep === "message"
                       ? "Message to Dealer"
-                      : shareLeadStep === "settings"
-                        ? "Tracking Settings"
                       : isFieldManagerMode ? "Contact Dealer" : "Get assistance"}
                 </h3>
                 <p>{isFieldManagerMode ? asset.title : "Get parts quotes, repair help or dealer support."}</p>
@@ -3734,12 +3713,6 @@ export default function ScanClient({
                   <p className={styles.fieldManagerScreenDescription}>
                     Search and choose the dealer you want to contact.
                   </p>
-                ) : null}
-                {canManageDealerTracking ? (
-                  <button type="button" className={styles.shareTrackingSettingsButton} onClick={openShareTrackingSettings}>
-                    <span><strong>Dealer tracking settings</strong><small>{shareTrackingAccess.length ? `${shareTrackingAccess.length} dealer${shareTrackingAccess.length === 1 ? "" : "s"} tracking this asset` : "No dealer tracking this asset"}</small></span>
-                    <b aria-hidden="true">›</b>
-                  </button>
                 ) : null}
                 <form
                   className={styles.shareSearchBar}
@@ -4013,19 +3986,6 @@ export default function ScanClient({
                         : "Send to dealer"}
                   </button>
                 </footer>
-              </>
-            ) : shareLeadStep === "settings" ? (
-              <>
-                <div className={styles.shareBody}>
-                  <div className={styles.shareStepHeader}><strong>Dealers tracking this asset</strong><span>Tracking can be removed at any time.</span></div>
-                  <DealerMaintenanceAccessSettings
-                    assetId={asset.id}
-                    entries={shareTrackingAccess}
-                    mutationUrl={`/api/scan/assets/${encodeURIComponent(normalizedCode)}/dealer-share${fieldManagerQueryString()}`}
-                    onEntriesChange={setShareTrackingAccess}
-                  />
-                </div>
-                <footer className={styles.shareFooter}><button type="button" className={styles.secondaryButton} onClick={goBackToDealerList}>Back</button></footer>
               </>
             ) : (
               <div className={styles.shareBody}>

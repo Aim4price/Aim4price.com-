@@ -2131,12 +2131,10 @@
   min-height: 11.5rem;
 }
 
-.shareTrackingSettingsButton,
-.shareTrackingChoice,
-.shareTrackingAccessCard {
+.shareTrackingChoice {
   width: 100%;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: 0.85rem;
   border: 1px solid rgba(184, 215, 202, 0.98);
@@ -2146,46 +2144,26 @@
   color: var(--text);
 }
 
-.shareTrackingSettingsButton {
-  min-height: 4.7rem;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.shareTrackingSettingsButton span,
-.shareTrackingChoiceCopy,
-.shareTrackingAccessCard > span {
+.shareTrackingChoiceCopy {
   min-width: 0;
   display: grid;
   gap: 0.25rem;
 }
 
-.shareTrackingSettingsButton strong,
-.shareTrackingChoice strong,
-.shareTrackingAccessCard strong {
+.shareTrackingChoice strong {
   font-size: 1rem;
   font-weight: 900;
   line-height: 1.2;
 }
 
-.shareTrackingSettingsButton small,
-.shareTrackingChoice small,
-.shareTrackingAccessCard small {
+.shareTrackingChoice small {
   color: var(--text-soft);
   font-size: 0.88rem;
   font-weight: 720;
   line-height: 1.28;
 }
 
-.shareTrackingSettingsButton b {
-  color: var(--green-strong);
-  font-size: 1.85rem;
-  line-height: 1;
-}
-
 .shareTrackingChoice {
-  grid-template-columns: auto minmax(0, 1fr);
   align-items: start;
   font: inherit;
   text-align: left;
@@ -2384,35 +2362,6 @@
   .shareTrackingPermissionFooter {
     grid-template-columns: 1fr;
   }
-}
-
-.shareTrackingList {
-  display: grid;
-  gap: 0.72rem;
-}
-
-.shareTrackingAccessCard {
-  background: #ffffff;
-  border-color: rgba(213, 226, 236, 0.98);
-}
-
-.shareTrackingAccessCard button {
-  min-height: 2.9rem;
-  border: 1px solid rgba(178, 64, 64, 0.28);
-  border-radius: 0.88rem;
-  padding: 0 0.85rem;
-  background: #fff5f5;
-  color: #9c2929;
-  font: inherit;
-  font-size: 0.86rem;
-  font-weight: 860;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.shareTrackingAccessCard button:disabled {
-  cursor: wait;
-  opacity: 0.62;
 }
 
 .scheduleModalCard {
@@ -2633,13 +2582,8 @@
     align-items: flex-start;
   }
 
-  .scheduleTwoColumns,
-  .shareTrackingAccessCard {
+  .scheduleTwoColumns {
     grid-template-columns: 1fr;
-  }
-
-  .shareTrackingAccessCard button {
-    width: 100%;
   }
 
   .shareSearchBar {
@@ -3994,7 +3938,6 @@
 .fieldManagerMobileSurface .fieldManagerShareFlow .shareConsentCheck,
 .fieldManagerMobileSurface .fieldManagerShareFlow .shareSelectedPanel,
 .fieldManagerMobileSurface .fieldManagerShareFlow .shareTrackingChoice,
-.fieldManagerMobileSurface .fieldManagerShareFlow .shareTrackingSettingsButton,
 .fieldManagerMobileSurface .fieldManagerShareFlow .sharePhotoPanel {
   border-radius: 15px;
   box-shadow: none;
