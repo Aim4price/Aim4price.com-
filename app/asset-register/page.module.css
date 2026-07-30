@@ -33523,7 +33523,7 @@ button.documentOpenLink {
 
 .assetQuoteTrackingChoice {
   position: relative !important;
-  grid-template-columns: auto 2.8rem minmax(0, 1fr) !important;
+  grid-template-columns: auto minmax(0, 1fr) !important;
   align-items: center !important;
   gap: 0.8rem !important;
   min-height: 6.1rem !important;
@@ -33578,34 +33578,6 @@ button.documentOpenLink {
   width: 1.2rem !important;
   height: 1.2rem !important;
   margin: 0 !important;
-}
-
-.assetQuoteTrackingIcon {
-  width: 2.8rem;
-  height: 2.8rem;
-  display: grid;
-  place-items: center;
-  border: 1px solid rgba(204, 219, 232, 0.98);
-  border-radius: 0.9rem;
-  color: #17466d;
-  background: #f0f6fb;
-}
-
-.assetQuoteTrackingIcon .buttonIcon {
-  width: 1.18rem;
-  height: 1.18rem;
-}
-
-.assetQuoteTrackingChoice:has(input:checked) .assetQuoteTrackingIcon {
-  color: #126044;
-  border-color: rgba(174, 220, 196, 0.98);
-  background: #e7f5ed;
-}
-
-.assetQuoteTrackingChoice[aria-pressed='true'] .assetQuoteTrackingIcon {
-  color: #126044;
-  border-color: rgba(174, 220, 196, 0.98);
-  background: #e7f5ed;
 }
 
 .assetQuoteTrackingCopy {
@@ -33757,15 +33729,10 @@ button.documentOpenLink {
   }
 
   .assetQuoteTrackingChoice {
-    grid-template-columns: auto 2.55rem minmax(0, 1fr) !important;
+    grid-template-columns: auto minmax(0, 1fr) !important;
     align-items: start !important;
     gap: 0.65rem !important;
     min-height: 0 !important;
-  }
-
-  .assetQuoteTrackingIcon {
-    width: 2.55rem;
-    height: 2.55rem;
   }
 
   .quoteTrackingSettingsActions {

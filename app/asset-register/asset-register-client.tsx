@@ -16055,9 +16055,6 @@ export default function AssetRegisterClient() {
                                   >
                                     {quoteTrackMaintenance ? '✓' : ''}
                                   </span>
-                                  <span className={styles.assetQuoteTrackingIcon} aria-hidden="true">
-                                    <ManageIcon className={styles.buttonIcon} />
-                                  </span>
                                   <span className={styles.assetQuoteTrackingCopy}>
                                     <strong>Enable dealer tracking</strong>
                                     <small>The dealer can download maintenance reports and create maintenance schedules, which will only appear in your Asset Register after you approve them.</small>
