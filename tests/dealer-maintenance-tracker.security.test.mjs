@@ -6,9 +6,13 @@ const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf
 const tracker = read('components/DealerMaintenanceTrackerClient.tsx');
 const trackerData = read('lib/dealer-maintenance-tracker.ts');
 const reportModal = read('components/DealerMaintenanceReportModal.tsx');
+const costReportModal = read('components/DealerCostOfOwnershipReportModal.tsx');
 const ownerReportRoute = read('app/api/asset-register/scan-report/route.ts');
+const costReportRoute = read('app/api/my-invoices/report/route.ts');
 const assetRegister = read('app/asset-register/asset-register-client.tsx');
+const leads = read('app/leads/leads-client.tsx');
 const ownerAppOptions = read('app/owner-app/assets/[assetId]/owner-asset-options-client.tsx');
+const costPermissionMigration = read('database/migrations/64-dealer-cost-of-ownership-permission.sql');
 
 test('dealer tracker lists active shares only', () => {
   assert.match(
@@ -71,6 +75,22 @@ test('owner report endpoint validates the exact active dealer share and asset', 
   assert.match(ownerReportRoute, /trackedAsset\.assetId !== assetId/);
   assert.match(ownerReportRoute, /!trackedAsset\.permissions\.canViewMaintenanceReports/);
   assert.match(ownerReportRoute, /ownerUserId = trackedAsset\.ownerUserId/);
+});
+
+test('dealer Cost of Ownership report is permission-gated and locked to the shared asset owner', () => {
+  assert.match(costReportModal, /accessId/);
+  assert.match(costReportModal, /\/api\/my-invoices\/report/);
+  assert.match(costReportModal, /Report timeline/);
+  assert.match(costReportModal, /PDF report/);
+  assert.match(costReportModal, /XLSX workbook/);
+  assert.match(costReportRoute, /getDealerTrackedAsset\(userId, dealerAccessId\)/);
+  assert.match(costReportRoute, /!trackedAsset\.permissions\.canViewCostOfOwnership/);
+  assert.match(costReportRoute, /reportOwnerUserId = trackedAsset\.ownerUserId/);
+  assert.match(costReportRoute, /filters\.assetId = trackedAsset\.assetId/);
+  assert.match(leads, /Download cost of ownership/);
+  assert.match(leads, /permissions\.canViewCostOfOwnership/);
+  assert.match(costPermissionMigration, /ADD COLUMN IF NOT EXISTS can_view_cost_of_ownership/);
+  assert.match(costPermissionMigration, /NOT NULL DEFAULT false/);
 });
 
 test('legacy dealer report data is restricted to the access row asset', () => {

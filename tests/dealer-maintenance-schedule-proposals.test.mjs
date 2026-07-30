@@ -16,8 +16,18 @@ const scheduleModal = read('components/DealerMaintenanceScheduleModal.tsx');
 const trackerClient = read('components/DealerMaintenanceTrackerClient.tsx');
 
 test('new tracking shares enable reports and dealer schedule proposals without requiring an existing schedule', () => {
-  assert.match(tracker, /can_view_maintenance_reports,\s*can_create_maintenance_schedules/);
-  assert.match(tracker, /values \(\$1, \$2, \$3::uuid, \$4, \$5, \$6, true, true, true/);
+  assert.match(
+    tracker,
+    /can_view_maintenance_reports,\s*can_view_cost_of_ownership,\s*can_create_maintenance_schedules/,
+  );
+  assert.match(
+    tracker,
+    /canViewMaintenanceReports: true,[\s\S]*canViewCostOfOwnership: false,[\s\S]*canCreateMaintenanceSchedules: true/,
+  );
+  assert.match(
+    tracker,
+    /permissions\.canViewMaintenanceReports,[\s\S]*permissions\.canViewCostOfOwnership,[\s\S]*permissions\.canCreateMaintenanceSchedules/,
+  );
   assert.doesNotMatch(tracker, /export async function assertAssetHasOpenMaintenance/);
 });
 
