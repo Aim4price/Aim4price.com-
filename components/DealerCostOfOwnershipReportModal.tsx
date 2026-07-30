@@ -1,0 +1,396 @@
+'use client';
+
+import { useMemo, useState } from 'react';
+import assetStyles from '../app/asset-register/page.module.css';
+import trackerStyles from './DealerMaintenanceTrackerClient.module.css';
+
+type DownloadFormat = 'pdf' | 'xlsx';
+type ReportStep = 'format' | 'timeline';
+type ReportSelectKey = 'year' | 'month';
+type ReportOption = { value: string; label: string };
+
+type Props = {
+  accessId: string;
+  assetTitle: string;
+  assetMeta: string;
+  createdAtIso?: string | null;
+  updatedAtIso?: string | null;
+  onClose: () => void;
+  onError?: (message: string) => void;
+};
+
+const MONTH_LABELS = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
+
+const MONTH_OPTIONS: ReportOption[] = [
+  { value: 'all', label: 'All months' },
+  ...MONTH_LABELS.map((label, index) => ({
+    value: String(index + 1).padStart(2, '0'),
+    label,
+  })),
+];
+
+function CloseIcon({ className = '' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <path d="m6.5 6.5 11 11m0-11-11 11" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ChevronDownIcon({ className = '' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <path d="m7 9.5 5 5 5-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function DownloadIcon({ className = '' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 3v12m0 0 4-4m-4 4-4-4M5 20h14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function PdfIcon({ className = '' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M7 3h7l4 4v14H7zM14 3v5h5M9.5 15.5h5M9.5 12h5" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function SpreadsheetIcon({ className = '' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="4" y="3.5" width="16" height="17" rx="2" fill="none" stroke="currentColor" strokeWidth="1.9" />
+      <path d="M4 9h16M10 9v11.5M15 9v11.5M4 15h16" fill="none" stroke="currentColor" strokeWidth="1.7" />
+    </svg>
+  );
+}
+
+function parseDownloadFileName(response: Response, fallback: string): string {
+  const disposition = response.headers.get('content-disposition') || '';
+  const quotedMatch = /filename="([^"]+)"/i.exec(disposition);
+  return (quotedMatch?.[1] || fallback).replace(/[\\/:*?"<>|]+/g, '-');
+}
+
+function extractYear(value?: string | null): number | null {
+  if (!value) return null;
+  const parsed = new Date(value);
+  const year = parsed.getFullYear();
+  return Number.isFinite(year) && year >= 2000 && year <= 2100 ? year : null;
+}
+
+function reportYearOptions(createdAtIso?: string | null, updatedAtIso?: string | null): ReportOption[] {
+  const currentYear = new Date().getFullYear();
+  const candidateYears = [
+    currentYear,
+    extractYear(createdAtIso),
+    extractYear(updatedAtIso),
+  ].filter((year): year is number => typeof year === 'number' && Number.isFinite(year));
+  const minYear = Math.min(...candidateYears, currentYear);
+  const maxYear = Math.max(...candidateYears, currentYear);
+  const options: ReportOption[] = [{ value: 'all', label: 'All years' }];
+
+  for (let year = maxYear; year >= minYear; year -= 1) {
+    options.push({ value: String(year), label: String(year) });
+  }
+
+  return options;
+}
+
+function ReportSelect({
+  label,
+  value,
+  options,
+  selectKey,
+  openSelect,
+  disabled = false,
+  onOpenChange,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  options: ReportOption[];
+  selectKey: ReportSelectKey;
+  openSelect: ReportSelectKey | null;
+  disabled?: boolean;
+  onOpenChange: (key: ReportSelectKey | null) => void;
+  onChange: (value: string) => void;
+}) {
+  const isOpen = openSelect === selectKey;
+  const selectedOption = options.find((option) => option.value === value) ?? options[0];
+
+  return (
+    <div className={`${assetStyles.reportSelectField} ${isOpen ? assetStyles.reportSelectFieldOpen : ''} ${disabled ? assetStyles.reportSelectFieldDisabled : ''}`}>
+      <span className={assetStyles.reportSelectLabel}>{label}</span>
+      <button
+        type="button"
+        className={assetStyles.reportSelectButton}
+        onClick={() => onOpenChange(isOpen ? null : selectKey)}
+        disabled={disabled}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+      >
+        <span>{selectedOption?.label ?? 'Select option'}</span>
+        <ChevronDownIcon className={assetStyles.reportSelectChevron} />
+      </button>
+
+      {isOpen && !disabled ? (
+        <div className={assetStyles.reportSelectMenu} role="listbox" aria-label={label}>
+          {options.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              className={`${assetStyles.reportSelectOption} ${option.value === value ? assetStyles.reportSelectOptionActive : ''}`}
+              onClick={() => {
+                onChange(option.value);
+                onOpenChange(null);
+              }}
+              role="option"
+              aria-selected={option.value === value}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+export default function DealerCostOfOwnershipReportModal({
+  accessId,
+  assetTitle,
+  assetMeta,
+  createdAtIso,
+  updatedAtIso,
+  onClose,
+  onError,
+}: Props) {
+  const [step, setStep] = useState<ReportStep>('format');
+  const [format, setFormat] = useState<DownloadFormat>('pdf');
+  const [reportYear, setReportYear] = useState('all');
+  const [reportMonth, setReportMonth] = useState('all');
+  const [openSelect, setOpenSelect] = useState<ReportSelectKey | null>(null);
+  const [downloading, setDownloading] = useState(false);
+  const [error, setError] = useState('');
+  const yearOptions = useMemo(
+    () => reportYearOptions(createdAtIso, updatedAtIso),
+    [createdAtIso, updatedAtIso],
+  );
+
+  function buildReportUrl(): string {
+    const params = new URLSearchParams({
+      accessId,
+      format,
+    });
+    if (reportYear !== 'all') {
+      params.set('year', reportYear);
+      if (reportMonth !== 'all') params.set('month', reportMonth);
+    }
+    return `/api/my-invoices/report?${params.toString()}`;
+  }
+
+  async function downloadReport() {
+    if (downloading) return;
+    const popup = format === 'pdf' ? window.open('', '_blank') : null;
+    if (format === 'pdf' && !popup) {
+      const message = 'Enable pop-ups to open the Cost of Ownership report.';
+      setError(message);
+      onError?.(message);
+      return;
+    }
+
+    setDownloading(true);
+    setError('');
+    try {
+      const response = await fetch(buildReportUrl(), {
+        credentials: 'include',
+        cache: 'no-store',
+      });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null) as { error?: string } | null;
+        popup?.close();
+        throw new Error(
+          response.status === 403
+            ? 'Cost of Ownership access is no longer active for this asset.'
+            : payload?.error || 'The Cost of Ownership report could not be generated.',
+        );
+      }
+
+      const blobUrl = URL.createObjectURL(await response.blob());
+      if (format === 'pdf') {
+        popup!.location.replace(blobUrl);
+      } else {
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = parseDownloadFileName(response, `${assetTitle}-cost-of-ownership.xlsx`);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+      }
+      window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+      onClose();
+    } catch (cause) {
+      popup?.close();
+      const message = cause instanceof Error ? cause.message : 'The Cost of Ownership report could not be generated.';
+      setError(message);
+      onError?.(message);
+    } finally {
+      setDownloading(false);
+    }
+  }
+
+  return (
+    <div className={`${assetStyles.modalOverlay} ${assetStyles.subModalOverlay}`}>
+      <div className={assetStyles.modalBackdrop} onClick={onClose} />
+      <div
+        className={`${assetStyles.modalCard} ${assetStyles.assetReportModal} ${assetStyles.assetFuelReportModal}`}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="dealer-cost-of-ownership-report-title"
+      >
+        <div className={`${assetStyles.modalHeader} ${assetStyles.assetReportModalHeader}`}>
+          <div className={assetStyles.modalHeaderText}>
+            <h3 id="dealer-cost-of-ownership-report-title">{assetTitle}</h3>
+            <p>{assetMeta}</p>
+          </div>
+          <button type="button" className={assetStyles.modalCloseButton} onClick={onClose} aria-label="Close Cost of Ownership report">
+            <CloseIcon className={assetStyles.buttonIcon} />
+          </button>
+        </div>
+
+        <div className={`${assetStyles.modalScrollBody} ${assetStyles.assetReportModalBody}`}>
+          {error ? <div className={trackerStyles.reportError} role="alert">{error}</div> : null}
+
+          {step === 'format' ? (
+            <>
+              <div className={assetStyles.assetTimelineStageHeading}>
+                <strong>Choose export format</strong>
+                <span>Select PDF or Excel, then continue to the report timeline.</span>
+              </div>
+
+              <div className={assetStyles.assetTimelineFormatGrid} aria-label="Report format">
+                <button
+                  type="button"
+                  className={`${assetStyles.assetTimelineFormatOption} ${format === 'pdf' ? assetStyles.assetTimelineFormatOptionActive : ''}`}
+                  onClick={() => setFormat('pdf')}
+                  aria-pressed={format === 'pdf'}
+                >
+                  <span className={assetStyles.assetTimelineFormatGraphic}>
+                    <PdfIcon className={assetStyles.assetTimelineFormatFallbackIcon} />
+                  </span>
+                  <span className={assetStyles.assetTimelineFormatCopy}>
+                    <strong>PDF report</strong>
+                    <small>Open a clear ownership cost report.</small>
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  className={`${assetStyles.assetTimelineFormatOption} ${format === 'xlsx' ? assetStyles.assetTimelineFormatOptionActive : ''}`}
+                  onClick={() => setFormat('xlsx')}
+                  aria-pressed={format === 'xlsx'}
+                >
+                  <span className={assetStyles.assetTimelineFormatGraphic}>
+                    <SpreadsheetIcon className={assetStyles.assetTimelineFormatFallbackIcon} />
+                  </span>
+                  <span className={assetStyles.assetTimelineFormatCopy}>
+                    <strong>XLSX workbook</strong>
+                    <small>Download ownership costs and VAT in Excel.</small>
+                  </span>
+                </button>
+              </div>
+
+              <div className={`${assetStyles.formActions} ${assetStyles.exportActions} ${assetStyles.assetFuelReportActions}`}>
+                <button type="button" className={`${assetStyles.secondaryButton} ${assetStyles.assetTimelineSecondaryButton}`} onClick={onClose}>
+                  Cancel
+                </button>
+                <button type="button" className={assetStyles.primaryButton} onClick={() => setStep('timeline')}>
+                  Next
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className={assetStyles.assetTimelineStageHeading}>
+                <strong>Report timeline</strong>
+                <span>Choose the year and month to include.</span>
+              </div>
+
+              <div className={assetStyles.assetFuelReportFilterBox}>
+                <ReportSelect
+                  label="Year"
+                  value={reportYear}
+                  options={yearOptions}
+                  selectKey="year"
+                  openSelect={openSelect}
+                  onOpenChange={setOpenSelect}
+                  onChange={(value) => {
+                    setReportYear(value);
+                    setReportMonth('all');
+                  }}
+                />
+                <ReportSelect
+                  label="Month"
+                  value={reportMonth}
+                  options={MONTH_OPTIONS}
+                  selectKey="month"
+                  openSelect={openSelect}
+                  disabled={reportYear === 'all'}
+                  onOpenChange={setOpenSelect}
+                  onChange={setReportMonth}
+                />
+              </div>
+
+              <div className={`${assetStyles.formActions} ${assetStyles.exportActions} ${assetStyles.assetFuelReportActions}`}>
+                <button
+                  type="button"
+                  className={`${assetStyles.secondaryButton} ${assetStyles.assetTimelineSecondaryButton}`}
+                  onClick={() => {
+                    setOpenSelect(null);
+                    setStep('format');
+                  }}
+                  disabled={downloading}
+                >
+                  Back
+                </button>
+                <button
+                  type="button"
+                  className={assetStyles.primaryButton}
+                  onClick={() => void downloadReport()}
+                  disabled={downloading}
+                >
+                  <DownloadIcon className={assetStyles.buttonIcon} />
+                  <span>
+                    {downloading
+                      ? 'Preparing report…'
+                      : format === 'pdf'
+                        ? 'Open PDF report'
+                        : 'Download Excel'}
+                  </span>
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

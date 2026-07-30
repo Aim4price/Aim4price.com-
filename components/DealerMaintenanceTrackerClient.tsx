@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import DealerCostOfOwnershipReportModal from './DealerCostOfOwnershipReportModal';
 import DealerMaintenanceReportModal from './DealerMaintenanceReportModal';
 import DealerMaintenanceScheduleModal from './DealerMaintenanceScheduleModal';
 import LeadPhotoViewerModal from './LeadPhotoViewerModal';
@@ -457,6 +458,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
   const [openHistoryDropdown, setOpenHistoryDropdown] = useState<string | null>(null);
   const [historyAccessCheckId, setHistoryAccessCheckId] = useState<string | null>(null);
   const [reportAccessId, setReportAccessId] = useState<string | null>(null);
+  const [costReportAccessId, setCostReportAccessId] = useState<string | null>(null);
   const [scheduleAccessId, setScheduleAccessId] = useState<string | null>(null);
   const [managedAccessId, setManagedAccessId] = useState<string | null>(null);
   const [deleteTrackingTarget, setDeleteTrackingTarget] = useState<DealerMaintenanceTrackedAsset | null>(null);
@@ -515,6 +517,9 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
   const activeFilterLabel = hasActiveFilter ? 'Filtered' : 'Filter';
   const managedAsset = managedAccessId
     ? assets.find((asset) => asset.accessId === managedAccessId) ?? null
+    : null;
+  const costReportAsset = costReportAccessId
+    ? assets.find((asset) => asset.accessId === costReportAccessId) ?? null
     : null;
 
   async function refresh() {
@@ -1205,7 +1210,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
               </button>
             </div>
 
-            <div className={`${assetStyles.modalScrollBody} ${assetStyles.optionsScrollBody} ${workspaceStyles.modalBody}`}>
+            <div className={`${assetStyles.modalScrollBody} ${assetStyles.optionsScrollBody} ${workspaceStyles.modalBody} ${styles.trackerManageBody}`}>
               <div className={assetStyles.optionsContent}>
                 <div className={`${assetStyles.optionsGrid} ${assetStyles.assetOptionsGrid} ${leadStyles.manageOptionsGrid}`}>
                   <button
@@ -1219,6 +1224,25 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                     <span>
                       <strong>WhatsApp owner</strong>
                       <small>{managedAsset.ownerPhone ? 'Open a WhatsApp message to the owner.' : 'No owner cellphone number saved.'}</small>
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={assetStyles.optionActionButton}
+                    onClick={() => {
+                      setManagedAccessId(null);
+                      setCostReportAccessId(managedAsset.accessId);
+                    }}
+                    disabled={!managedAsset.permissions.canViewCostOfOwnership}
+                    title={!managedAsset.permissions.canViewCostOfOwnership
+                      ? 'The asset owner has not granted Cost of Ownership access.'
+                      : undefined}
+                  >
+                    <DownloadIcon className={assetStyles.buttonIcon} />
+                    <span>
+                      <strong>Cost of ownership</strong>
+                      <small>{managedAsset.permissions.canViewCostOfOwnership ? 'Choose a timeline and download the report.' : 'Owner permission is required.'}</small>
                     </span>
                   </button>
 
@@ -1316,6 +1340,18 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
         <DealerMaintenanceReportModal
           accessId={reportAccessId}
           onClose={() => setReportAccessId(null)}
+          onError={(message) => setNotice({ tone: 'error', text: message })}
+        />
+      ) : null}
+
+      {costReportAsset ? (
+        <DealerCostOfOwnershipReportModal
+          accessId={costReportAsset.accessId}
+          assetTitle={costReportAsset.assetTitle}
+          assetMeta={trackingAssetMeta(costReportAsset)}
+          createdAtIso={costReportAsset.createdAtIso}
+          updatedAtIso={costReportAsset.updatedAtIso}
+          onClose={() => setCostReportAccessId(null)}
           onError={(message) => setNotice({ tone: 'error', text: message })}
         />
       ) : null}

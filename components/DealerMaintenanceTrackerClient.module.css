@@ -51,7 +51,43 @@
 }
 
 .trackerManageModal {
-  width: min(100%, 900px) !important;
+  width: min(100%, 960px) !important;
+}
+
+.trackerManageBody {
+  padding-right: 0.72rem !important;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: #2a8061 rgba(226, 237, 232, 0.86);
+}
+
+.trackerManageBody::-webkit-scrollbar {
+  width: 0.72rem;
+}
+
+.trackerManageBody::-webkit-scrollbar-track {
+  margin: 0.35rem 0;
+  border-radius: 999px;
+  background: rgba(226, 237, 232, 0.86);
+}
+
+.trackerManageBody::-webkit-scrollbar-thumb {
+  border: 2px solid rgba(226, 237, 232, 0.86);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #4a9a7d 0%, #1f6f53 100%);
+}
+
+.trackerManageBody::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #3e8e71 0%, #175c45 100%);
+}
+
+.trackerManageBody strong {
+  font-size: 0.98rem !important;
+}
+
+.trackerManageBody small {
+  font-size: 0.84rem !important;
+  line-height: 1.42 !important;
 }
 
 .trackerDeleteModal {

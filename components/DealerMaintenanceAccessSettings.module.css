@@ -7,7 +7,117 @@
 
 .list {
   display: grid;
-  gap: 1rem;
+  gap: 0.78rem;
+}
+
+.detailStep {
+  display: grid;
+  gap: 0.78rem;
+}
+
+.dealerChoice {
+  width: 100%;
+  min-width: 0;
+  min-height: 5.6rem;
+  display: grid;
+  grid-template-columns: 3.25rem minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(204, 219, 232, 0.98);
+  border-radius: 1.15rem;
+  color: #15392f;
+  background:
+    radial-gradient(circle at 0 0, rgba(25, 116, 84, 0.065), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #f7fbf9 100%);
+  box-shadow:
+    0 12px 26px rgba(16, 36, 40, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  font-family: var(--font-body, "Inter"), ui-sans-serif, system-ui, sans-serif;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.dealerChoice:hover {
+  transform: translateY(-1px);
+  border-color: rgba(149, 199, 177, 0.98);
+  box-shadow:
+    0 16px 32px rgba(16, 52, 41, 0.075),
+    inset 4px 0 0 #197454;
+}
+
+.dealerChoice:focus-visible,
+.backButton:focus-visible {
+  outline: 3px solid rgba(25, 116, 84, 0.16);
+  outline-offset: 2px;
+}
+
+.dealerChoiceInitial {
+  width: 3.25rem;
+  height: 3.25rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(174, 220, 196, 0.96);
+  border-radius: 0.95rem;
+  color: #126044;
+  background: #edf9f2;
+  font-family: var(--font-heading, "Montserrat"), var(--font-body, "Inter"), sans-serif;
+  font-size: 1.12rem;
+  font-weight: 850;
+}
+
+.dealerChoiceCopy {
+  min-width: 0;
+  display: grid;
+  gap: 0.3rem;
+}
+
+.dealerChoiceCopy strong {
+  color: #0c3429;
+  font-family: var(--font-heading, "Montserrat"), var(--font-body, "Inter"), sans-serif;
+  font-size: 1.04rem;
+  font-weight: 820;
+  line-height: 1.2;
+}
+
+.dealerChoiceCopy small {
+  color: #607286;
+  font-size: 0.84rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.dealerChoiceChevron {
+  color: #42685b;
+  font-size: 1.85rem;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.backButton {
+  justify-self: start;
+  min-height: 2.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0 0.85rem;
+  border: 1px solid rgba(196, 211, 224, 0.98);
+  border-radius: 0.85rem;
+  color: #204b3d;
+  background: #ffffff;
+  font-family: var(--font-body, "Inter"), ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.84rem;
+  font-weight: 760;
+  cursor: pointer;
+}
+
+.backButton span {
+  font-size: 1.35rem;
+  line-height: 1;
 }
 
 .card {
@@ -42,7 +152,7 @@
 .card > header strong {
   color: #0c3429;
   font-family: var(--font-heading, "Montserrat"), var(--font-body, "Inter"), sans-serif;
-  font-size: 1rem;
+  font-size: 1.08rem;
   font-weight: 820;
   line-height: 1.15;
   letter-spacing: -0.025em;
@@ -51,7 +161,7 @@
 .card > header small,
 .permission small {
   color: #607286;
-  font-size: 0.78rem;
+  font-size: 0.84rem;
   font-weight: 560;
   line-height: 1.42;
 }
@@ -96,8 +206,8 @@
   grid-template-columns: auto minmax(0, 1fr);
   align-items: start;
   gap: 0.72rem;
-  min-height: 5.25rem;
-  padding: 0.9rem;
+  min-height: 5.65rem;
+  padding: 0.95rem;
   border: 1px solid rgba(211, 225, 235, 0.98);
   border-radius: 1rem;
   background: linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
@@ -132,7 +242,7 @@
 
 .permission strong {
   color: #15392f;
-  font-size: 0.84rem;
+  font-size: 0.92rem;
   font-weight: 760;
   line-height: 1.25;
 }
@@ -166,7 +276,7 @@
   border-radius: 0.9rem;
   background: #ffffff;
   font-family: var(--font-body, "Inter"), ui-sans-serif, system-ui, sans-serif;
-  font-size: 0.78rem;
+  font-size: 0.84rem;
   font-weight: 760;
   cursor: pointer;
   transition:
@@ -204,7 +314,7 @@
 
 .changeStatus {
   color: #6b7c89;
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   font-weight: 650;
 }
 
@@ -260,5 +370,19 @@
 
   .card button {
     width: 100%;
+  }
+
+  .dealerChoice {
+    grid-template-columns: 2.85rem minmax(0, 1fr) auto;
+    gap: 0.72rem;
+  }
+
+  .dealerChoiceInitial {
+    width: 2.85rem;
+    height: 2.85rem;
+  }
+
+  .dealerChoice .activeStatus {
+    display: none;
   }
 }

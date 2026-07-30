@@ -22,7 +22,16 @@ type AccessResponse = {
   error?: string;
 };
 
-const permissionOptions: Array<{
+export const DEFAULT_DEALER_MAINTENANCE_PERMISSIONS: DealerMaintenancePermissions = {
+  canViewLoggedProblems: false,
+  canViewMaintenanceReports: true,
+  canViewCostOfOwnership: false,
+  canCreateMaintenanceSchedules: true,
+  canUpdateSerial: true,
+  canUpdateReplacementPrice: true,
+};
+
+export const dealerMaintenancePermissionOptions: Array<{
   key: keyof DealerMaintenancePermissions;
   title: string;
   description: string;
@@ -36,6 +45,11 @@ const permissionOptions: Array<{
     key: 'canViewMaintenanceReports',
     title: 'Maintenance Reports',
     description: 'Let the dealer download PDF and XLSX maintenance reports.',
+  },
+  {
+    key: 'canViewCostOfOwnership',
+    title: 'Cost of Ownership',
+    description: 'Let the dealer download PDF and Excel ownership costs and VAT.',
   },
   {
     key: 'canCreateMaintenanceSchedules',
@@ -58,6 +72,40 @@ function copyPermissions(value: DealerMaintenancePermissions): DealerMaintenance
   return { ...value };
 }
 
+type PermissionPickerProps = {
+  value: DealerMaintenancePermissions;
+  onChange: (permissions: DealerMaintenancePermissions) => void;
+  disabled?: boolean;
+};
+
+export function DealerMaintenancePermissionPicker({
+  value,
+  onChange,
+  disabled = false,
+}: PermissionPickerProps) {
+  return (
+    <div className={styles.permissions}>
+      {dealerMaintenancePermissionOptions.map((option) => (
+        <label
+          key={option.key}
+          className={`${styles.permission} ${value[option.key] ? styles.permissionEnabled : ''}`}
+        >
+          <input
+            type="checkbox"
+            checked={value[option.key]}
+            onChange={(event) => onChange({ ...value, [option.key]: event.target.checked })}
+            disabled={disabled}
+          />
+          <span>
+            <strong>{option.title}</strong>
+            <small>{option.description}</small>
+          </span>
+        </label>
+      ))}
+    </div>
+  );
+}
+
 export default function DealerMaintenanceAccessSettings({
   assetId,
   entries,
@@ -69,36 +117,21 @@ export default function DealerMaintenanceAccessSettings({
   const [drafts, setDrafts] = useState<Record<string, DealerMaintenancePermissions>>({});
   const [busyId, setBusyId] = useState('');
   const [notice, setNotice] = useState<{ tone: 'success' | 'error'; text: string } | null>(null);
+  const [selectedEntryId, setSelectedEntryId] = useState('');
 
   useEffect(() => {
     setDrafts(Object.fromEntries(entries.map((entry) => [entry.id, copyPermissions(entry.permissions)])));
+    setSelectedEntryId((current) => entries.some((entry) => entry.id === current) ? current : '');
   }, [entries]);
 
   const changedIds = useMemo(
     () => new Set(entries.flatMap((entry) => {
       const draft = drafts[entry.id];
       if (!draft) return [];
-      return permissionOptions.some(({ key }) => draft[key] !== entry.permissions[key]) ? [entry.id] : [];
+      return dealerMaintenancePermissionOptions.some(({ key }) => draft[key] !== entry.permissions[key]) ? [entry.id] : [];
     })),
     [drafts, entries],
   );
-
-  function updateDraft(entryId: string, key: keyof DealerMaintenancePermissions, checked: boolean) {
-    setDrafts((current) => ({
-      ...current,
-      [entryId]: {
-        ...(current[entryId] ?? entries.find((entry) => entry.id === entryId)?.permissions ?? {
-          canViewLoggedProblems: false,
-          canViewMaintenanceReports: true,
-          canCreateMaintenanceSchedules: true,
-          canUpdateSerial: true,
-          canUpdateReplacementPrice: true,
-        }),
-        [key]: checked,
-      },
-    }));
-    setNotice(null);
-  }
 
   async function save(entry: DealerMaintenanceAccessSummary) {
     const permissions = drafts[entry.id];
@@ -141,6 +174,7 @@ export default function DealerMaintenanceAccessSettings({
         throw new Error(payload?.error || 'Failed to stop dealer tracking.');
       }
       onEntriesChange(entries.filter((item) => item.id !== entry.id));
+      setSelectedEntryId('');
       setNotice({ tone: 'success', text: `${entry.dealerName} can no longer track this asset.` });
     } catch (cause) {
       setNotice({ tone: 'error', text: cause instanceof Error ? cause.message : 'Failed to stop dealer tracking.' });
@@ -153,6 +187,8 @@ export default function DealerMaintenanceAccessSettings({
     return <p className={styles.empty}>{emptyText}</p>;
   }
 
+  const selectedEntry = entries.find((entry) => entry.id === selectedEntryId) ?? null;
+
   return (
     <div className={styles.manager}>
       {notice ? (
@@ -161,69 +197,93 @@ export default function DealerMaintenanceAccessSettings({
         </p>
       ) : null}
 
-      <div className={styles.list}>
-        {entries.map((entry) => {
-          const draft = drafts[entry.id] ?? entry.permissions;
-          const isBusy = busyId === entry.id;
-          return (
-            <article key={entry.id} className={styles.card}>
-              <header>
-                <div>
-                  <strong>{entry.dealerName}</strong>
-                  <small>{entry.grantedByName ? `Shared by ${entry.grantedByName}` : 'Maintenance tracking active'}</small>
-                </div>
-                <span className={styles.activeStatus}><i aria-hidden="true" />Active</span>
-              </header>
+      {selectedEntry ? (
+        <div className={styles.detailStep}>
+          <button
+            type="button"
+            className={styles.backButton}
+            onClick={() => setSelectedEntryId('')}
+            disabled={Boolean(busyId)}
+          >
+            <span aria-hidden="true">‹</span>
+            All dealers
+          </button>
 
-              <div className={styles.permissions}>
-                {permissionOptions.map((option) => (
-                  <label
-                    key={option.key}
-                    className={`${styles.permission} ${draft[option.key] ? styles.permissionEnabled : ''}`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={draft[option.key]}
-                      onChange={(event) => updateDraft(entry.id, option.key, event.target.checked)}
-                      disabled={!canEdit || isBusy}
-                    />
-                    <span>
-                      <strong>{option.title}</strong>
-                      <small>{option.description}</small>
-                    </span>
-                  </label>
-                ))}
+          <article className={styles.card}>
+            <header>
+              <div>
+                <strong>{selectedEntry.dealerName}</strong>
+                <small>{selectedEntry.grantedByName ? `Shared by ${selectedEntry.grantedByName}` : 'Maintenance tracking active'}</small>
               </div>
+              <span className={styles.activeStatus}><i aria-hidden="true" />Active</span>
+            </header>
 
-              {canEdit ? (
-                <footer>
-                  <span className={`${styles.changeStatus} ${changedIds.has(entry.id) ? styles.changeStatusPending : ''}`}>
-                    {changedIds.has(entry.id) ? 'Unsaved changes' : 'Permissions up to date'}
-                  </span>
-                  <div className={styles.actions}>
-                    <button
-                      type="button"
-                      className={styles.stopButton}
-                      onClick={() => void revoke(entry)}
-                      disabled={Boolean(busyId)}
-                    >
-                      {isBusy && !changedIds.has(entry.id) ? 'Stopping…' : 'Stop tracking'}
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.saveButton}
-                      onClick={() => void save(entry)}
-                      disabled={Boolean(busyId) || !changedIds.has(entry.id)}
-                    >
-                      {isBusy && changedIds.has(entry.id) ? 'Saving…' : 'Save permissions'}
-                    </button>
-                  </div>
-                </footer>
-              ) : null}
-            </article>
-          );
-        })}
-      </div>
+            <DealerMaintenancePermissionPicker
+              value={drafts[selectedEntry.id] ?? selectedEntry.permissions}
+              onChange={(permissions) => {
+                setDrafts((current) => ({ ...current, [selectedEntry.id]: permissions }));
+                setNotice(null);
+              }}
+              disabled={!canEdit || busyId === selectedEntry.id}
+            />
+
+            {canEdit ? (
+              <footer>
+                <span className={`${styles.changeStatus} ${changedIds.has(selectedEntry.id) ? styles.changeStatusPending : ''}`}>
+                  {changedIds.has(selectedEntry.id) ? 'Unsaved changes' : 'Permissions up to date'}
+                </span>
+                <div className={styles.actions}>
+                  <button
+                    type="button"
+                    className={styles.stopButton}
+                    onClick={() => void revoke(selectedEntry)}
+                    disabled={Boolean(busyId)}
+                  >
+                    {busyId === selectedEntry.id && !changedIds.has(selectedEntry.id) ? 'Stopping…' : 'Stop tracking'}
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.saveButton}
+                    onClick={() => void save(selectedEntry)}
+                    disabled={Boolean(busyId) || !changedIds.has(selectedEntry.id)}
+                  >
+                    {busyId === selectedEntry.id && changedIds.has(selectedEntry.id) ? 'Saving…' : 'Save permissions'}
+                  </button>
+                </div>
+              </footer>
+            ) : null}
+          </article>
+        </div>
+      ) : (
+        <div className={styles.list} aria-label="Dealers with tracking access">
+          {entries.map((entry) => {
+            const enabledCount = dealerMaintenancePermissionOptions.filter((option) => (
+              (drafts[entry.id] ?? entry.permissions)[option.key]
+            )).length;
+            return (
+              <button
+                key={entry.id}
+                type="button"
+                className={styles.dealerChoice}
+                onClick={() => {
+                  setSelectedEntryId(entry.id);
+                  setNotice(null);
+                }}
+              >
+                <span className={styles.dealerChoiceInitial} aria-hidden="true">
+                  {entry.dealerName.trim().charAt(0).toUpperCase() || 'D'}
+                </span>
+                <span className={styles.dealerChoiceCopy}>
+                  <strong>{entry.dealerName}</strong>
+                  <small>{enabledCount} of {dealerMaintenancePermissionOptions.length} permissions enabled</small>
+                </span>
+                <span className={styles.activeStatus}><i aria-hidden="true" />Active</span>
+                <span className={styles.dealerChoiceChevron} aria-hidden="true">›</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
