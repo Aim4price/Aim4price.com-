@@ -1298,7 +1298,7 @@ export default function AppHeader({
                 onClick={() => void handleMaintenanceScheduleDecision(proposalId, 'approve')}
                 disabled={processing}
               >
-                {processing ? 'Saving...' : 'Approve schedule'}
+                {processing ? 'Saving...' : 'Approve'}
               </button>
             </span>
           </span>
@@ -1336,7 +1336,7 @@ export default function AppHeader({
                   onClick={() => void handleDealerCorrectionDecision(correctionId, 'accept')}
                   disabled={processing}
                 >
-                  {processing ? 'Saving...' : 'Accept update'}
+                  {processing ? 'Saving...' : 'Approve'}
                 </button>
               </span>
             ) : correctionAction === 'retry' ? (
