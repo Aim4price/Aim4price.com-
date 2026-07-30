@@ -11,6 +11,7 @@ import {
 } from '../../../../lib/my-invoices-report';
 import { createXlsxWorkbook } from '../../../../lib/simple-xlsx';
 import { resolveReportLogoUrlForHtml } from '../../../../lib/report-logo';
+import { getDealerTrackedAsset } from '../../../../lib/dealer-maintenance-tracker';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -31,6 +32,7 @@ const MONTH_LABELS = [
   'November',
   'December',
 ];
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function parseYear(value: string | null): number | null {
   if (!value || value === 'all') return null;
@@ -132,23 +134,49 @@ export async function GET(request: NextRequest) {
 
   try {
     const filters = parseFilters(request);
+    const dealerAccessId = String(request.nextUrl.searchParams.get('accessId') ?? '').trim();
+    let reportOwnerUserId = userId;
+    let ownerFallbackUser: { name?: unknown; email?: unknown } = session.user;
+
+    if (dealerAccessId) {
+      if (!UUID_PATTERN.test(dealerAccessId)) {
+        return NextResponse.json({ ok: false, error: 'Cost of Ownership access is invalid.' }, { status: 400 });
+      }
+
+      const trackedAsset = await getDealerTrackedAsset(userId, dealerAccessId);
+      if (!trackedAsset || !trackedAsset.permissions.canViewCostOfOwnership) {
+        return NextResponse.json({ ok: false, error: 'Cost of Ownership access is no longer active for this asset.' }, { status: 403 });
+      }
+
+      reportOwnerUserId = trackedAsset.ownerUserId;
+      filters.assetId = trackedAsset.assetId;
+      ownerFallbackUser = {
+        name: trackedAsset.ownerName,
+        email: trackedAsset.ownerEmail,
+      };
+    }
+
     const ownerAppMode = request.nextUrl.searchParams.get('source') === 'owner-app';
     const format = ownerAppMode ? 'pdf' : parseFormat(request.nextUrl.searchParams.get('format'));
     const reportName = parseReportName(request.nextUrl.searchParams.get('reportName'));
     const [data, profile, rawLogoUrl] = await Promise.all([
-      listMyInvoicesData(userId, filters),
-      getAccountProfile({ id: userId, name: session.user.name, email: session.user.email }),
-      getAssetRegisterReportLogoUrl(userId),
+      listMyInvoicesData(reportOwnerUserId, filters),
+      getAccountProfile({
+        id: reportOwnerUserId,
+        name: String(ownerFallbackUser.name ?? ''),
+        email: String(ownerFallbackUser.email ?? ''),
+      }),
+      getAssetRegisterReportLogoUrl(reportOwnerUserId),
     ]);
     const logoUrl = await resolveReportLogoUrlForHtml(rawLogoUrl, request.url);
 
     const selectedAsset = findSelectedAsset(data.assets, filters);
-    const ownerDetails = buildMyInvoicesOwnerDetails(profile, session.user);
+    const ownerDetails = buildMyInvoicesOwnerDetails(profile, ownerFallbackUser);
     const options = {
       title: reportName,
       subtitle: 'Aim4price asset register',
       generatedAt: formatGeneratedDate(),
-      ownerEmail: ownerDetails.businessEmail || session.user.email || '',
+      ownerEmail: ownerDetails.businessEmail || String(ownerFallbackUser.email ?? ''),
       ownerDetails,
       logoUrl,
       dateRangeLabel: dateRangeLabel(filters),
