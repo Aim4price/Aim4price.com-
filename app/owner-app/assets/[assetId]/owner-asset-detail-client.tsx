@@ -2,8 +2,10 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type Dispatch, type FormEvent, type SetStateAction } from 'react';
+import DealerMaintenanceAccessSettings from '../../../../components/DealerMaintenanceAccessSettings';
 import GroupedCurrencyInput, { parseCurrencyInput } from '../../../../components/GroupedCurrencyInput';
 import { formatResolvedAssetUsage, resolveAssetUsage, type AssetUsageMetric } from '../../../../lib/asset-usage';
+import type { DealerMaintenanceAccessSummary } from '../../../../lib/dealer-maintenance-tracker';
 import { openAssetSheetPrint } from '../../../../lib/report-print';
 import BalancedHeadingText from '../../balanced-heading';
 import OwnerAppNav from '../../owner-app-nav';
@@ -44,7 +46,7 @@ type DetailResponse = {
 type UploadResponse = { ok: boolean; uploads?: Array<{ uploadId: string; url: string; fileName: string; contentType: string; byteSize: number }>; error?: string };
 
 export type OwnerAssetView = 'summary' | 'details' | 'options' | 'manage' | 'section';
-export type OwnerAssetManageSection = 'details' | 'reports' | 'pricing' | 'finance' | 'insurance' | 'licence' | 'location' | 'media' | 'marketplace' | 'maintenance' | 'delete';
+export type OwnerAssetManageSection = 'details' | 'reports' | 'pricing' | 'finance' | 'insurance' | 'licence' | 'location' | 'media' | 'marketplace' | 'maintenance' | 'dealer-tracking' | 'delete';
 export type OwnerAssetPricingMode = 'landing' | 'recalculate' | 'future';
 type OwnerAssetManageGroup = 'asset' | 'records' | 'selling' | 'removal';
 
@@ -60,6 +62,7 @@ const MANAGE_SECTIONS: Array<{ id: OwnerAssetManageSection; group: OwnerAssetMan
   { id: 'media', group: 'asset', title: 'Photos & documents' },
   { id: 'reports', group: 'records', title: 'Reports' },
   { id: 'maintenance', group: 'records', title: 'Schedule maintenance' },
+  { id: 'dealer-tracking', group: 'records', title: 'Dealer tracking' },
   { id: 'finance', group: 'records', title: 'Finance' },
   { id: 'insurance', group: 'records', title: 'Insurance' },
   { id: 'licence', group: 'records', title: 'Licence' },
@@ -169,6 +172,9 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
   const [registerName, setRegisterName] = useState('');
   const [ownerContext, setOwnerContext] = useState<OwnerContext | null>(null);
   const [maintenance, setMaintenance] = useState<Maintenance[]>([]);
+  const [dealerTrackingAccess, setDealerTrackingAccess] = useState<DealerMaintenanceAccessSummary[]>([]);
+  const [dealerTrackingLoading, setDealerTrackingLoading] = useState(false);
+  const [dealerTrackingError, setDealerTrackingError] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [actionBusy, setActionBusy] = useState('');
@@ -186,6 +192,47 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
   const upcomingMaintenance = useMemo(() => maintenance.find((record) => record.status === 'upcoming') ?? null, [maintenance]);
 
   useEffect(() => { void loadDetail(); }, [assetId]);
+
+  useEffect(() => {
+    if (view !== 'manage' && section !== 'dealer-tracking') return undefined;
+
+    const controller = new AbortController();
+    setDealerTrackingAccess([]);
+    setDealerTrackingError('');
+    setDealerTrackingLoading(true);
+
+    async function loadDealerTrackingAccess() {
+      try {
+        const response = await fetch(`/api/dealer-maintenance-access?assetId=${encodeURIComponent(assetId)}`, {
+          credentials: 'include',
+          cache: 'no-store',
+          signal: controller.signal,
+        });
+        const payload = await response.json().catch(() => null) as {
+          ok?: boolean;
+          trackingAccess?: DealerMaintenanceAccessSummary[];
+          error?: string;
+        } | null;
+        if (response.status === 401) {
+          window.location.replace('/owner-app/login');
+          return;
+        }
+        if (!response.ok || !payload?.ok || !Array.isArray(payload.trackingAccess)) {
+          throw new Error(payload?.error || 'Failed to load dealer tracking settings.');
+        }
+        if (!controller.signal.aborted) setDealerTrackingAccess(payload.trackingAccess);
+      } catch (cause) {
+        if (controller.signal.aborted) return;
+        setDealerTrackingAccess([]);
+        setDealerTrackingError(cause instanceof Error ? cause.message : 'Failed to load dealer tracking settings.');
+      } finally {
+        if (!controller.signal.aborted) setDealerTrackingLoading(false);
+      }
+    }
+
+    void loadDealerTrackingAccess();
+    return () => controller.abort();
+  }, [assetId, section, view]);
 
   useEffect(() => {
     setPhotoIndex((current) => photoCount ? Math.min(current, photoCount - 1) : 0);
@@ -825,7 +872,10 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
 
   if (view === 'manage') {
     const manageMeta = [draft.serialNumber ? `Serial: ${draft.serialNumber}` : '', draft.yearModel ? `Year: ${draft.yearModel}` : '', usageText !== 'Not saved' ? `Usage: ${usageText}` : ''].filter(Boolean).join(' · ');
-    const availableManageSections = MANAGE_SECTIONS.filter((item) => item.id !== 'marketplace' || draft.kind !== 'property');
+    const availableManageSections = MANAGE_SECTIONS.filter((item) => (
+      (item.id !== 'marketplace' || draft.kind !== 'property')
+      && (item.id !== 'dealer-tracking' || dealerTrackingAccess.length > 0)
+    ));
     return (
       <div className={styles.wideContent}>
         <section className={styles.manageAssetIdentity}>
@@ -948,6 +998,19 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
 
       {section === 'marketplace' ? <MarketplaceSection draft={draft} ownerContext={ownerContext} action={action} busy={Boolean(actionBusy)} /> : null}
       {section === 'maintenance' ? <MaintenanceSection records={maintenance} action={action} busy={Boolean(actionBusy)} /> : null}
+      {section === 'dealer-tracking' ? <section className={`${styles.section} ${styles.editorSection}`}>
+        {editorHeader('Dealer tracking', 'Control what each dealer can see or update for this asset.')}
+        {dealerTrackingLoading ? <p className={styles.ownerOptionsEmpty}>Loading dealer tracking settings…</p> : dealerTrackingError ? (
+          <div className={styles.errorNotice}>{dealerTrackingError}</div>
+        ) : (
+          <DealerMaintenanceAccessSettings
+            assetId={assetId}
+            entries={dealerTrackingAccess}
+            mutationUrl="/api/dealer-maintenance-access"
+            onEntriesChange={setDealerTrackingAccess}
+          />
+        )}
+      </section> : null}
       {section === 'delete' ? <section className={`${styles.section} ${styles.deleteSection}`}>
         <p>This cannot be undone. Only continue if you are certain that this asset must be removed.</p>
         <button type="button" className={styles.dangerButton} onClick={() => void deleteAsset()} disabled={Boolean(actionBusy)}>{actionBusy === 'delete' ? 'Deleting asset…' : 'Delete asset permanently'}</button>

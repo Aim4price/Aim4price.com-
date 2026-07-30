@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import DealerMaintenanceAccessSettings, {
+import { useMemo, useState, type FormEvent } from 'react';
+import {
   DEFAULT_DEALER_MAINTENANCE_PERMISSIONS,
   DealerMaintenancePermissionPicker,
 } from '../../../../components/DealerMaintenanceAccessSettings';
@@ -13,7 +13,7 @@ import styles from '../../owner-app.module.css';
 
 type PartnerType = 'dealer' | 'finance' | 'insurance';
 type AssetLeadType = 'finance' | 'insurance' | 'replacement_quote';
-type OptionsStage = 'choices' | 'partners' | 'message' | 'consent' | 'tracking' | 'sent';
+type OptionsStage = 'choices' | 'partners' | 'message' | 'consent' | 'sent';
 type IconProps = { className?: string };
 
 type Partner = {
@@ -32,15 +32,6 @@ type Partner = {
   serviceRadiusKm: number | null;
   brandFocus: string;
   services: string;
-};
-
-type DealerTrackingAccess = {
-  id: string;
-  dealerUserId: string;
-  dealerName: string;
-  grantedByName: string;
-  createdAtIso: string;
-  permissions: DealerMaintenancePermissions;
 };
 
 type QuoteOption = {
@@ -189,9 +180,6 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
     ...DEFAULT_DEALER_MAINTENANCE_PERMISSIONS,
   }));
   const [isTrackingPermissionsOpen, setIsTrackingPermissionsOpen] = useState(false);
-  const [trackingAccess, setTrackingAccess] = useState<DealerTrackingAccess[]>([]);
-  const [hasActiveTracking, setHasActiveTracking] = useState(false);
-  const [loadingTracking, setLoadingTracking] = useState(false);
   const [loadingPartners, setLoadingPartners] = useState(false);
   const [sending, setSending] = useState(false);
   const [notice, setNotice] = useState<{ tone: 'success' | 'error'; message: string } | null>(null);
@@ -210,32 +198,6 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
   );
   const assetHref = `/owner-app/assets/${encodeURIComponent(assetId)}`;
 
-  useEffect(() => {
-    const controller = new AbortController();
-
-    async function loadActiveTrackingState() {
-      try {
-        const response = await fetch(`/api/dealer-maintenance-access?assetId=${encodeURIComponent(assetId)}`, {
-          credentials: 'include',
-          cache: 'no-store',
-          signal: controller.signal,
-        });
-        const payload = await response.json().catch(() => null) as {
-          ok?: boolean;
-          trackingAccess?: DealerTrackingAccess[];
-        } | null;
-        if (!controller.signal.aborted) {
-          setHasActiveTracking(Boolean(response.ok && payload?.ok && payload.trackingAccess?.length));
-        }
-      } catch {
-        if (!controller.signal.aborted) setHasActiveTracking(false);
-      }
-    }
-
-    void loadActiveTrackingState();
-    return () => controller.abort();
-  }, [assetId]);
-
   function returnToStage(nextStage: OptionsStage) {
     setNotice(null);
     setStage(nextStage);
@@ -247,41 +209,14 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
       ? 'Companies'
       : stage === 'consent'
         ? 'Message'
-        : stage === 'tracking'
-          ? 'Share'
-          : 'Asset';
+        : 'Asset';
   const topBackAction = stage === 'partners'
     ? () => returnToStage('choices')
     : stage === 'message'
       ? () => returnToStage('partners')
       : stage === 'consent'
         ? () => returnToStage('message')
-      : stage === 'tracking'
-        ? () => returnToStage('choices')
         : undefined;
-
-  async function openTrackingSettings() {
-    setStage('tracking');
-    setLoadingTracking(true);
-    setNotice(null);
-    try {
-      const response = await fetch(`/api/dealer-maintenance-access?assetId=${encodeURIComponent(assetId)}`, {
-        credentials: 'include',
-        cache: 'no-store',
-      });
-      const payload = await response.json().catch(() => null) as { ok?: boolean; trackingAccess?: DealerTrackingAccess[]; error?: string } | null;
-      if (!response.ok || !payload?.ok || !Array.isArray(payload.trackingAccess)) {
-        throw new Error(payload?.error || 'Failed to load dealer tracking settings.');
-      }
-      setTrackingAccess(payload.trackingAccess);
-      setHasActiveTracking(payload.trackingAccess.length > 0);
-    } catch (cause) {
-      setTrackingAccess([]);
-      setNotice({ tone: 'error', message: cause instanceof Error ? cause.message : 'Failed to load dealer tracking settings.' });
-    } finally {
-      setLoadingTracking(false);
-    }
-  }
 
   async function loadPartners(option: QuoteOption, searchValue = '') {
     setLoadingPartners(true);
@@ -386,9 +321,6 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
       const payload = await response.json().catch(() => null) as { ok?: boolean; error?: string } | null;
       if (response.status === 401) { window.location.replace('/owner-app/login'); return; }
       if (!response.ok || !payload?.ok) throw new Error(payload?.error || 'Failed to send this request.');
-      if (selectedOption.leadType === 'replacement_quote' && trackMaintenance) {
-        setHasActiveTracking(true);
-      }
       setStage('sent');
       setNotice({ tone: 'success', message: `${selectedOption.shortTitle} request sent to ${partnerName(selectedPartner)}.` });
     } catch (cause) {
@@ -420,12 +352,6 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
               </button>
             ))}
           </div>
-          {assetKind !== 'property' && hasActiveTracking ? (
-            <button type="button" className={styles.ownerTrackingSettingsButton} onClick={() => void openTrackingSettings()}>
-              <span><strong>Dealer tracking settings</strong><small>Control what each dealer can see or update.</small></span>
-              <b aria-hidden="true">›</b>
-            </button>
-          ) : null}
         </section>
       ) : null}
 
@@ -527,25 +453,6 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
           <div className={`${styles.ownerOptionsFooter} ${styles.ownerOptionsFooterSingle}`}>
             <button type="button" className={styles.primaryButton} onClick={() => void sendRequest()} disabled={sending || !consentAccepted}>{sending ? 'Sending…' : `Send to ${partnerName(selectedPartner)}`}</button>
           </div>
-        </section>
-      ) : null}
-
-      {stage === 'tracking' ? (
-        <section className={`${styles.section} ${styles.ownerOptionsSection}`}>
-          <div className={styles.ownerOptionsFlowHeader}>
-            <div><h2><BalancedHeadingText text="Dealer tracking settings" /></h2><p>Control exactly what each dealer can view or update for this asset.</p></div>
-          </div>
-          {loadingTracking ? <p className={styles.ownerOptionsEmpty}>Loading tracking settings…</p> : (
-            <DealerMaintenanceAccessSettings
-              assetId={assetId}
-              entries={trackingAccess}
-              mutationUrl="/api/dealer-maintenance-access"
-              onEntriesChange={(entries) => {
-                setTrackingAccess(entries);
-                setHasActiveTracking(entries.length > 0);
-              }}
-            />
-          )}
         </section>
       ) : null}
 
