@@ -30,27 +30,27 @@ const permissionOptions: Array<{
   {
     key: 'canViewLoggedProblems',
     title: 'Logged Problems',
-    description: 'Show owner and Field Manager problem notes recorded against this asset.',
+    description: 'Let the dealer view owner and Field Manager problem notes for this asset.',
   },
   {
     key: 'canViewMaintenanceReports',
     title: 'Maintenance Reports',
-    description: 'Allow owner-style PDF and XLSX maintenance reports for authorised assets.',
+    description: 'Let the dealer download PDF and XLSX maintenance reports.',
   },
   {
     key: 'canCreateMaintenanceSchedules',
     title: 'Create Maintenance Schedules',
-    description: 'Allow the dealer to propose schedules that require owner approval before becoming official.',
+    description: 'Let the dealer propose schedules that require owner approval before becoming official.',
   },
   {
     key: 'canUpdateSerial',
     title: 'Update Serial',
-    description: 'Allow serial-number corrections that still require owner approval.',
+    description: 'Let the dealer suggest serial-number corrections for your approval.',
   },
   {
     key: 'canUpdateReplacementPrice',
     title: 'Update Replacement Price',
-    description: 'Allow replacement-price corrections that still require owner approval.',
+    description: 'Let the dealer suggest replacement-price changes for your approval.',
   },
 ];
 
@@ -172,12 +172,15 @@ export default function DealerMaintenanceAccessSettings({
                   <strong>{entry.dealerName}</strong>
                   <small>{entry.grantedByName ? `Shared by ${entry.grantedByName}` : 'Maintenance tracking active'}</small>
                 </div>
-                <span>Active</span>
+                <span className={styles.activeStatus}><i aria-hidden="true" />Active</span>
               </header>
 
               <div className={styles.permissions}>
                 {permissionOptions.map((option) => (
-                  <label key={option.key} className={styles.permission}>
+                  <label
+                    key={option.key}
+                    className={`${styles.permission} ${draft[option.key] ? styles.permissionEnabled : ''}`}
+                  >
                     <input
                       type="checkbox"
                       checked={draft[option.key]}
@@ -194,22 +197,27 @@ export default function DealerMaintenanceAccessSettings({
 
               {canEdit ? (
                 <footer>
-                  <button
-                    type="button"
-                    className={styles.stopButton}
-                    onClick={() => void revoke(entry)}
-                    disabled={Boolean(busyId)}
-                  >
-                    {isBusy && !changedIds.has(entry.id) ? 'Stopping…' : 'Stop tracking'}
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.saveButton}
-                    onClick={() => void save(entry)}
-                    disabled={Boolean(busyId) || !changedIds.has(entry.id)}
-                  >
-                    {isBusy && changedIds.has(entry.id) ? 'Saving…' : 'Save permissions'}
-                  </button>
+                  <span className={`${styles.changeStatus} ${changedIds.has(entry.id) ? styles.changeStatusPending : ''}`}>
+                    {changedIds.has(entry.id) ? 'Unsaved changes' : 'Permissions up to date'}
+                  </span>
+                  <div className={styles.actions}>
+                    <button
+                      type="button"
+                      className={styles.stopButton}
+                      onClick={() => void revoke(entry)}
+                      disabled={Boolean(busyId)}
+                    >
+                      {isBusy && !changedIds.has(entry.id) ? 'Stopping…' : 'Stop tracking'}
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.saveButton}
+                      onClick={() => void save(entry)}
+                      disabled={Boolean(busyId) || !changedIds.has(entry.id)}
+                    >
+                      {isBusy && changedIds.has(entry.id) ? 'Saving…' : 'Save permissions'}
+                    </button>
+                  </div>
                 </footer>
               ) : null}
             </article>
