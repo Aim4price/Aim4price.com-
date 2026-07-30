@@ -12,6 +12,9 @@ const costReportRoute = read('app/api/my-invoices/report/route.ts');
 const assetRegister = read('app/asset-register/asset-register-client.tsx');
 const leads = read('app/leads/leads-client.tsx');
 const ownerAppOptions = read('app/owner-app/assets/[assetId]/owner-asset-options-client.tsx');
+const ownerAppDetail = read('app/owner-app/assets/[assetId]/owner-asset-detail-client.tsx');
+const ownerAppManageRoute = read('app/owner-app/assets/[assetId]/manage/[section]/page.tsx');
+const scanClient = read('app/scan/[publicAssetCode]/scan-client.tsx');
 const costPermissionMigration = read('database/migrations/64-dealer-cost-of-ownership-permission.sql');
 
 test('dealer tracker lists active shares only', () => {
@@ -104,9 +107,16 @@ test('legacy dealer report data is restricted to the access row asset', () => {
   );
 });
 
-test('owner tracking settings are visible only for database-confirmed active shares', () => {
+test('dealer tracking setup stays in sharing while active access is managed from the Owner App', () => {
   assert.match(assetRegister, /activeDealerTrackingByAssetId\[activeAsset\.id\] === true/);
   assert.match(assetRegister, /entries\.length > 0/);
-  assert.match(ownerAppOptions, /assetKind !== 'property' && hasActiveTracking/);
-  assert.match(ownerAppOptions, /setHasActiveTracking\(entries\.length > 0\)/);
+  assert.match(ownerAppOptions, /onClick=\{openTrackingPermissions\}/);
+  assert.match(ownerAppOptions, /setTrackMaintenance\(true\)/);
+  assert.match(scanClient, /onClick=\{openShareTrackingPermissions\}/);
+  assert.match(scanClient, /setShareTrackMaintenance\(true\)/);
+  assert.doesNotMatch(ownerAppOptions, /ownerTrackingSettingsButton|openTrackingSettings/);
+  assert.doesNotMatch(scanClient, /shareTrackingSettingsButton|openShareTrackingSettings/);
+  assert.match(ownerAppDetail, /item\.id !== 'dealer-tracking' \|\| dealerTrackingAccess\.length > 0/);
+  assert.match(ownerAppDetail, /mutationUrl="\/api\/dealer-maintenance-access"/);
+  assert.match(ownerAppManageRoute, /'dealer-tracking'/);
 });
