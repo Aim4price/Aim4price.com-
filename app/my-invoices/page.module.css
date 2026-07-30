@@ -2595,46 +2595,96 @@
 }
 
 /* === Cost Ledger staged report export === */
-.downloadFormatModal {
-  width: min(100%, 1040px);
+.downloadExportModal {
+  width: min(100%, 960px);
+  max-height: none;
+  overflow: visible;
+  grid-template-rows: auto auto minmax(0, 1fr);
 }
 
-.downloadReportNameField {
+.downloadFormatModal {
+  width: min(100%, 980px);
+}
+
+.downloadStepEyebrow {
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.65rem;
+  padding: 0.15rem 0.65rem;
+  border: 1px solid rgba(180, 213, 197, 0.92);
+  border-radius: 999px;
+  color: #176549;
+  background: #eef8f3;
+  font-size: 0.72rem;
+  font-weight: 850;
+  line-height: 1;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+.downloadStageRail {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.downloadStageItem {
+  min-width: 0;
+  min-height: 2.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.58rem;
+  padding: 0.48rem 0.68rem;
+  border: 1px solid rgba(215, 226, 234, 0.92);
+  border-radius: 0.9rem;
+  color: #738294;
+  background: #f7fafb;
+  font-size: 0.8rem;
+  font-weight: 760;
+  line-height: 1.2;
+}
+
+.downloadStageItemActive {
+  color: #123f31;
+  border-color: rgba(163, 207, 185, 0.96);
+  background: linear-gradient(180deg, #ffffff 0%, #edf8f2 100%);
+}
+
+.downloadStageItemComplete {
+  color: #2f6754;
+  border-color: rgba(199, 221, 210, 0.94);
+  background: #f4faf7;
+}
+
+.downloadStageNumber {
+  width: 1.55rem;
+  min-width: 1.55rem;
+  height: 1.55rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(190, 205, 216, 0.98);
+  border-radius: 999px;
+  color: #637689;
+  background: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 900;
+}
+
+.downloadStageItemActive .downloadStageNumber,
+.downloadStageItemComplete .downloadStageNumber {
+  color: #ffffff;
+  border-color: #197454;
+  background: #197454;
+}
+
+.downloadStageContent {
   min-width: 0;
   display: grid;
-  gap: 0.52rem;
-}
-
-.downloadReportNameField > span {
-  color: #263f37;
-  font-size: 0.86rem;
-  font-weight: 850;
-}
-
-.downloadReportNameField input {
-  width: 100%;
-  min-height: 3.55rem;
-  padding: 0 1rem;
-  border: 1px solid rgba(207, 222, 234, 0.98);
-  border-radius: 1.05rem;
-  outline: none;
-  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-  color: #1e3348;
-  font: inherit;
-  font-size: 1rem;
-  font-weight: 720;
-  box-shadow:
-    0 9px 20px rgba(16, 31, 28, 0.035),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
-  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
-}
-
-.downloadReportNameField input:focus {
-  border-color: rgba(77, 150, 205, 0.82);
-  background: #ffffff;
-  box-shadow:
-    0 0 0 4px rgba(69, 142, 202, 0.12),
-    0 10px 22px rgba(16, 31, 28, 0.04);
+  gap: 1rem;
 }
 
 .downloadFormatGrid {
@@ -2642,7 +2692,26 @@
 }
 
 .downloadFormatGrid .reportOption {
-  min-height: 7.1rem;
+  min-height: 6.65rem;
+}
+
+.downloadFuelPanel {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1rem;
+  border: 1px solid rgba(207, 224, 234, 0.92);
+  border-radius: 1.25rem;
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.07), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #f6faf8 100%);
+}
+
+.downloadFuelChoiceGrid {
+  padding: 0;
+}
+
+.downloadFuelChoiceGrid .reportOption {
+  min-height: 6.2rem;
 }
 
 .downloadSecondaryButton {
@@ -2658,11 +2727,59 @@
   background: linear-gradient(180deg, #ffffff 0%, #e8f4ff 100%) !important;
 }
 
-.downloadFormatFooter .primaryButton {
-  min-width: 15.5rem;
+.downloadExportModal .downloadModalFooter {
+  justify-content: space-between;
+  flex-wrap: nowrap;
+  gap: 0.8rem;
+  margin-top: 0.08rem;
+}
+
+.downloadFooterActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.8rem;
+}
+
+.downloadExportModal .downloadModalFooter .primaryButton {
+  flex: 0 0 auto;
+  min-width: 9.5rem;
+}
+
+.downloadExportModal .downloadModalFooter .downloadNextButton {
+  min-width: 8.75rem;
+}
+
+.downloadExportModal .downloadModalFooter .downloadSubmitButton {
+  min-width: 12.75rem;
 }
 
 @media (max-width: 900px) {
+  .downloadExportModal {
+    width: min(100%, calc(100vw - 1rem));
+    max-height: min(92vh, calc(100dvh - 1rem));
+    overflow-y: auto;
+  }
+
+  .downloadStageRail {
+    gap: 0.42rem;
+  }
+
+  .downloadStageItem {
+    justify-content: center;
+    min-height: 2.55rem;
+    gap: 0.38rem;
+    padding: 0.4rem;
+    font-size: 0.7rem;
+  }
+
+  .downloadStageNumber {
+    width: 1.35rem;
+    min-width: 1.35rem;
+    height: 1.35rem;
+    font-size: 0.62rem;
+  }
+
   .downloadFormatGrid {
     grid-template-columns: 1fr;
   }
@@ -2671,7 +2788,39 @@
     min-height: auto;
   }
 
-  .downloadFormatFooter {
+  .downloadExportModal .downloadModalFooter {
     align-items: stretch;
+    flex-direction: column;
+  }
+
+  .downloadFooterActions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .downloadExportModal .downloadModalFooter .primaryButton,
+  .downloadExportModal .downloadModalFooter .secondaryButton {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .downloadFormatFooter {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .downloadStageItem {
+    display: grid;
+    justify-items: center;
+    gap: 0.25rem;
+    text-align: center;
+  }
+
+  .downloadFooterActions,
+  .downloadFormatFooter {
+    grid-template-columns: 1fr;
   }
 }
