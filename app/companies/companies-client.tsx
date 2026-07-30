@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import AppHeader from '../../components/AppHeader';
+import { WorkspaceTitlePanel, workspaceStyles } from '../../components/WorkspacePrimitives';
 import styles from './page.module.css';
 
 export type CompanyTypeFilter = 'all' | 'finance' | 'insurance' | 'dealer';
@@ -443,14 +444,12 @@ export default function CompaniesClient({ initialType }: CompaniesClientProps) {
   }
 
   return (
-    <main className={styles.page}>
+    <main className={`${workspaceStyles.page} ${styles.page}`}>
       <AppHeader active="none" />
 
-      <section className={styles.shell}>
+      <section className={`${workspaceStyles.shell} ${styles.shell}`}>
         <section className={styles.heroCard}>
-          <div className={styles.heroTitleRow}>
-            <h1>Company Search</h1>
-          </div>
+          <WorkspaceTitlePanel title="Aim4price Companies" className={styles.heroTitlePanel} />
 
           <div className={styles.categoryGrid} aria-label="Company types">
             {TYPE_TABS.map((tab) => {
@@ -465,16 +464,19 @@ export default function CompaniesClient({ initialType }: CompaniesClientProps) {
                   onClick={() => handleTypeSelect(tab.value)}
                   aria-pressed={isActive}
                 >
-                  <span className={styles.categoryButtonMain}>{tab.title}</span>
-                  <span className={styles.categoryCount}>{count} listed</span>
+                  <span className={styles.categoryButtonCopy}>
+                    <strong className={styles.categoryButtonMain}>{tab.title}</strong>
+                    <small>{tab.description}</small>
+                  </span>
+                  <strong className={styles.categoryCount}>{count}</strong>
                 </button>
               );
             })}
           </div>
         </section>
 
-        <section className={styles.searchPanel} aria-label="Search companies">
-          <label className={styles.searchBox}>
+        <section className={`${workspaceStyles.controlsRow} ${styles.searchPanel}`} aria-label="Search companies">
+          <label className={`${workspaceStyles.searchField} ${styles.searchBox}`}>
             <SearchIcon className={styles.icon} />
             <input
               value={searchTerm}
@@ -492,7 +494,7 @@ export default function CompaniesClient({ initialType }: CompaniesClientProps) {
           <div className={styles.filterShell} ref={filterShellRef}>
             <button
               type="button"
-              className={`${styles.filterButton} ${selectedProvince ? styles.filterButtonActive : ''} ${isFilterOpen ? styles.filterButtonOpen : ''}`}
+              className={`${workspaceStyles.actionButton} ${workspaceStyles.actionGreen} ${styles.filterButton} ${selectedProvince ? styles.filterButtonActive : ''} ${isFilterOpen ? styles.filterButtonOpen : ''}`}
               onClick={() => setIsFilterOpen((current) => !current)}
               aria-haspopup="listbox"
               aria-expanded={isFilterOpen}
@@ -529,6 +531,14 @@ export default function CompaniesClient({ initialType }: CompaniesClientProps) {
 
         {errorMessage ? <p className={styles.noticeError}>{errorMessage}</p> : null}
 
+        {!isLoading && !errorMessage ? (
+          <div className={styles.resultSummary} role="status">
+            <span>Showing</span>
+            <strong>{filteredCompanies.length}</strong>
+            <span>{filteredCompanies.length === 1 ? 'company' : 'companies'} for the current search and filters</span>
+          </div>
+        ) : null}
+
         <section className={styles.companyStack} aria-label="Companies">
           {isLoading ? (
             <div className={styles.emptyState}>Loading companies...</div>
@@ -552,7 +562,7 @@ export default function CompaniesClient({ initialType }: CompaniesClientProps) {
                       className={styles.viewDetailsButton}
                       onClick={() => setOpenCompanyId((current) => (current === company.userId ? null : company.userId))}
                     >
-                      {isOpen ? 'Close' : 'View Details'}
+                      {isOpen ? 'Close' : 'View details'}
                     </button>
                   </div>
 

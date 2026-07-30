@@ -969,3 +969,509 @@ a.detailRow:hover {
     min-height: 12.5rem;
   }
 }
+
+/* === Asset Discovery parity: Aim4price Companies, July 2026 === */
+.page {
+  background:
+    radial-gradient(circle at 50% 4%, rgba(111, 197, 150, 0.08), transparent 31rem),
+    linear-gradient(180deg, #f7faf9 0%, #eef5f5 100%);
+}
+
+.shell {
+  width: min(calc(100% - 2rem), 1360px);
+  padding: clamp(1rem, 1.7vw, 1.35rem) 0 3.5rem;
+}
+
+.heroCard {
+  gap: clamp(0.9rem, 1.25vw, 1.15rem);
+}
+
+.heroTitlePanel {
+  margin-bottom: 0 !important;
+}
+
+.categoryGrid {
+  gap: clamp(0.9rem, 1.25vw, 1.15rem);
+}
+
+.categoryButton,
+.toneFinance.categoryButton,
+.toneInsurance.categoryButton,
+.toneDealer.categoryButton {
+  position: relative;
+  min-height: clamp(8.35rem, 9.2vw, 9.3rem);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  justify-items: stretch;
+  gap: 1rem;
+  padding: 1.15rem 1.3rem;
+  border: 1px solid rgba(196, 215, 223, 0.98);
+  border-radius: clamp(1.25rem, 1.7vw, 1.55rem);
+  color: #073b30;
+  background:
+    radial-gradient(circle at 0 0, rgba(25, 116, 84, 0.055), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #f7fafb 100%);
+  box-shadow:
+    0 12px 26px rgba(16, 31, 28, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  text-align: left;
+  white-space: normal;
+}
+
+.toneFinance.categoryButton {
+  background:
+    radial-gradient(circle at 0 0, rgba(200, 117, 52, 0.06), transparent 42%),
+    linear-gradient(180deg, #fffefa 0%, #fff9f2 100%);
+}
+
+.toneInsurance.categoryButton {
+  background:
+    radial-gradient(circle at 0 0, rgba(62, 110, 213, 0.05), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #f5f9fd 100%);
+}
+
+.toneDealer.categoryButton {
+  background:
+    radial-gradient(circle at 0 0, rgba(25, 116, 84, 0.07), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #f2faf6 100%);
+}
+
+.categoryButton:hover,
+.categoryButtonActive,
+.toneFinance.categoryButton:hover,
+.toneInsurance.categoryButton:hover,
+.toneDealer.categoryButton:hover,
+.toneFinance.categoryButtonActive,
+.toneInsurance.categoryButtonActive,
+.toneDealer.categoryButtonActive {
+  transform: translateY(-1px);
+  color: #073b30;
+  border-color: rgba(132, 183, 160, 0.98);
+  box-shadow:
+    0 17px 34px rgba(16, 52, 41, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+}
+
+.categoryButtonActive::after {
+  content: '';
+  position: absolute;
+  top: 0.9rem;
+  right: 0.9rem;
+  width: 0.52rem;
+  height: 0.52rem;
+  border-radius: 999px;
+  background: #197454;
+  box-shadow: 0 0 0 4px rgba(25, 116, 84, 0.11);
+}
+
+.categoryButtonCopy {
+  min-width: 0;
+  display: grid;
+  gap: 0.42rem;
+}
+
+.categoryButtonMain {
+  position: static;
+  width: auto;
+  min-width: 0;
+  transform: none;
+  color: #405b52;
+  font-size: 0.88rem;
+  font-weight: 850;
+  line-height: 1.15;
+  letter-spacing: 0.045em;
+  text-align: left;
+  text-transform: uppercase;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.categoryButtonCopy small {
+  max-width: 20rem;
+  color: #607286;
+  font-family: var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.82rem;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.categoryCount {
+  position: static;
+  align-self: center;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  color: #073b30;
+  background: transparent;
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
+  font-size: clamp(2.25rem, 3.4vw, 3rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.06em;
+}
+
+.searchPanel {
+  position: relative;
+  top: auto;
+  z-index: 25;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.85rem;
+  margin: 1rem 0 0;
+  padding: 0;
+}
+
+.searchBox {
+  min-height: 3.65rem;
+  padding: 0 1rem;
+  border-radius: 1.1rem;
+}
+
+.searchBox input {
+  min-height: 3.35rem;
+  font-family: var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.98rem;
+  font-weight: 620;
+}
+
+.searchBox input::placeholder {
+  color: #8192a4;
+}
+
+.filterButton {
+  min-width: 12rem;
+  min-height: 3.65rem;
+  padding: 0 1.15rem;
+  border-radius: 1.02rem;
+  color: #ffffff;
+  background: linear-gradient(180deg, #197454 0%, #0f5840 100%);
+  border-color: #197454;
+  box-shadow: 0 12px 24px rgba(25, 116, 84, 0.16);
+  font-family: var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.92rem;
+  font-weight: 760;
+}
+
+.filterButton:hover,
+.filterButtonOpen,
+.filterButtonActive {
+  transform: translateY(-1px);
+  background: linear-gradient(180deg, #218061 0%, #0b4b37 100%);
+  box-shadow: 0 16px 30px rgba(25, 116, 84, 0.22);
+}
+
+.provinceDropdown {
+  top: calc(100% + 0.45rem);
+  border-radius: 1rem;
+}
+
+.resultSummary {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.32rem;
+  margin: 0.85rem 0 0;
+  padding: 0 0.18rem;
+  color: #607286;
+  font-size: 0.82rem;
+  font-weight: 620;
+  line-height: 1.4;
+}
+
+.resultSummary strong {
+  color: #0f5840;
+  font-size: 0.9rem;
+  font-weight: 820;
+}
+
+.companyStack {
+  gap: 0.9rem;
+  margin-top: 0.75rem;
+}
+
+.companyCard,
+.companyCard.toneFinance,
+.companyCard.toneInsurance,
+.companyCard.toneDealer {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(198, 216, 223, 0.98);
+  border-radius: 1.45rem;
+  background: #ffffff;
+  box-shadow:
+    0 12px 26px rgba(16, 31, 28, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.companyCard::before {
+  content: '';
+  position: absolute;
+  inset: 1.15rem auto 1.15rem 0;
+  width: 4px;
+  border-radius: 0 999px 999px 0;
+  background: #9aabaf;
+  opacity: 0.78;
+}
+
+.companyCard.toneFinance::before {
+  background: #c87534;
+}
+
+.companyCard.toneInsurance::before {
+  background: #4f8dc4;
+}
+
+.companyCard.toneDealer::before {
+  background: #197454;
+}
+
+.companyCard:hover,
+.companyCardOpen {
+  transform: translateY(-1px);
+  border-color: rgba(154, 190, 174, 0.98);
+  box-shadow:
+    0 18px 36px rgba(16, 52, 41, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.companySummary {
+  min-height: 6.3rem;
+  padding: 1.15rem 1.35rem 1.15rem 1.55rem;
+}
+
+.companyIdentity {
+  gap: 0.34rem;
+}
+
+.companyIdentity h2 {
+  color: #073b30;
+  font-size: clamp(1.28rem, 1.8vw, 1.55rem);
+  font-weight: 850;
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+}
+
+.companyIdentity p {
+  color: #607286;
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+
+.viewDetailsButton,
+.companyCard.toneFinance .viewDetailsButton,
+.companyCard.toneInsurance .viewDetailsButton,
+.companyCard.toneDealer .viewDetailsButton {
+  min-width: 9.6rem;
+  min-height: 3.15rem;
+  padding: 0 1.1rem;
+  border: 1px solid rgba(194, 211, 224, 0.98);
+  border-radius: 1rem;
+  color: #17362c;
+  background: linear-gradient(180deg, #ffffff 0%, #f7fafb 100%);
+  box-shadow:
+    0 8px 18px rgba(30, 56, 66, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  font-family: var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.88rem;
+  font-weight: 760;
+}
+
+.viewDetailsButton:hover,
+.companyCard.toneFinance .viewDetailsButton:hover,
+.companyCard.toneInsurance .viewDetailsButton:hover,
+.companyCard.toneDealer .viewDetailsButton:hover {
+  color: #0f5840;
+  border-color: rgba(149, 204, 178, 0.98);
+  background: linear-gradient(180deg, #ffffff 0%, #edf8f2 100%);
+}
+
+.detailPanel,
+.companyCard.toneFinance .detailPanel,
+.companyCard.toneInsurance .detailPanel,
+.companyCard.toneDealer .detailPanel {
+  grid-template-columns: minmax(14rem, 17rem) minmax(0, 1fr);
+  gap: 1rem;
+  padding: 1rem;
+  border-top: 1px solid rgba(204, 219, 232, 0.9);
+  background:
+    radial-gradient(circle at top left, rgba(25, 116, 84, 0.045), transparent 22rem),
+    linear-gradient(180deg, #ffffff 0%, #f7faf9 100%);
+}
+
+.mediaPanel {
+  align-self: start;
+  border-radius: 1rem;
+  background: linear-gradient(180deg, #f6faf8 0%, #eef5f1 100%);
+}
+
+.mediaGrid {
+  min-height: 0;
+  padding: 0.55rem;
+}
+
+.mediaTile,
+.mediaTile:only-child,
+.emptyLogoTile {
+  min-height: 12.5rem;
+  height: 12.5rem;
+  border-radius: 0.82rem;
+}
+
+.emptyLogoTile span {
+  width: 5.7rem;
+  height: 5.7rem;
+  border-radius: 1.35rem;
+  font-size: 2.6rem;
+}
+
+.detailContent {
+  gap: 0.85rem;
+  padding: 0.05rem 0;
+}
+
+.detailTitleBlock {
+  gap: 0.34rem;
+}
+
+.detailTitleBlock h3 {
+  font-size: clamp(1.45rem, 2.2vw, 1.95rem);
+  font-weight: 850;
+}
+
+.detailTitleBlock p {
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+
+.typePill {
+  min-height: 1.6rem;
+  padding: 0 0.62rem;
+  font-size: 0.65rem;
+  font-weight: 820;
+  letter-spacing: 0.055em;
+}
+
+.detailMatrix {
+  gap: 0.58rem;
+}
+
+.detailRow {
+  gap: 0.26rem;
+  padding: 0.72rem 0.82rem;
+  border-radius: 0.9rem;
+  box-shadow: none;
+}
+
+.detailRow small,
+.descriptionBox small {
+  font-size: 0.65rem;
+  font-weight: 820;
+  letter-spacing: 0.055em;
+}
+
+.detailRow span {
+  font-size: 0.84rem;
+  font-weight: 680;
+}
+
+.descriptionBox {
+  gap: 0.34rem;
+  padding: 0.82rem 0.9rem;
+  border-radius: 0.9rem;
+  box-shadow: none;
+}
+
+.descriptionBox p {
+  font-size: 0.86rem;
+  font-weight: 620;
+  line-height: 1.5;
+}
+
+.emptyState,
+.noticeError {
+  border-radius: 1.25rem;
+}
+
+@media (max-width: 940px) {
+  .shell {
+    width: min(calc(100% - 1.25rem), 1360px);
+  }
+
+  .categoryGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .categoryButton,
+  .toneFinance.categoryButton,
+  .toneInsurance.categoryButton,
+  .toneDealer.categoryButton {
+    min-height: 7.2rem;
+  }
+
+  .searchPanel {
+    grid-template-columns: 1fr;
+  }
+
+  .filterButton {
+    width: 100%;
+  }
+
+  .detailPanel,
+  .companyCard.toneFinance .detailPanel,
+  .companyCard.toneInsurance .detailPanel,
+  .companyCard.toneDealer .detailPanel {
+    grid-template-columns: 1fr;
+  }
+
+  .mediaPanel {
+    max-width: 20rem;
+  }
+}
+
+@media (max-width: 620px) {
+  .shell {
+    width: min(calc(100% - 1rem), 48rem);
+    padding-top: 0.95rem;
+  }
+
+  .categoryButton,
+  .toneFinance.categoryButton,
+  .toneInsurance.categoryButton,
+  .toneDealer.categoryButton {
+    min-height: 6.8rem;
+    padding: 1rem;
+    border-radius: 1.15rem;
+  }
+
+  .categoryButtonCopy small {
+    font-size: 0.76rem;
+  }
+
+  .categoryCount {
+    font-size: 2.2rem;
+  }
+
+  .companySummary {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+    padding: 1rem 1rem 1rem 1.25rem;
+  }
+
+  .viewDetailsButton {
+    width: 100%;
+  }
+
+  .detailPanel {
+    padding: 0.72rem;
+  }
+
+  .mediaPanel {
+    max-width: none;
+  }
+
+  .detailMatrix {
+    grid-template-columns: 1fr;
+  }
+}
