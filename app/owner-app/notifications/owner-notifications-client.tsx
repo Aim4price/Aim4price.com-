@@ -468,7 +468,7 @@ export default function OwnerNotificationsClient({ viewerId }: { viewerId: strin
                           onClick={() => void handleScheduleDecision(proposalId, 'approve')}
                           disabled={processing}
                         >
-                          {processing ? 'Saving…' : 'Approve schedule'}
+                          {processing ? 'Saving…' : 'Approve'}
                         </button>
                       </div>
                     </article>
@@ -499,7 +499,7 @@ export default function OwnerNotificationsClient({ viewerId }: { viewerId: strin
                               onClick={() => void handleCorrectionDecision(correctionId, 'accept')}
                               disabled={processing}
                             >
-                              {processing ? 'Saving…' : 'Accept update'}
+                              {processing ? 'Saving…' : 'Approve'}
                             </button>
                           </>
                         ) : correctionAction === 'retry' ? (
