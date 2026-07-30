@@ -1,4 +1,6 @@
 :root {
+  --font-body: 'Montserrat';
+  --font-heading: 'Montserrat';
   --brand-700: #184d3d;
   --brand-900: #123b30;
   --text-strong: #243c35;
@@ -187,4 +189,3 @@ textarea {
     --shell-gutter: 0.68rem;
   }
 }
-
