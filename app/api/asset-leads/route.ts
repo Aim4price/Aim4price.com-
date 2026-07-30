@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession, isOwnerAppSession } from '../../../lib/auth-session';
 import {
   grantDealerMaintenanceTracking,
+  type DealerMaintenancePermissions,
 } from '../../../lib/dealer-maintenance-tracker';
 import { createAssetLead, listAssetLeadsForUser, normalizeLeadType } from '../../../lib/partner-access';
 
@@ -15,6 +16,7 @@ type CreateAssetLeadBody = {
   ownerMessage?: unknown;
   includedSections?: unknown;
   trackMaintenance?: unknown;
+  trackingPermissions?: unknown;
 };
 
 function unauthorized() {
@@ -27,6 +29,28 @@ function asRecord(value: unknown): Record<string, unknown> | null {
   }
 
   return null;
+}
+
+function readTrackingPermissions(value: unknown): DealerMaintenancePermissions | null {
+  const permissions = asRecord(value);
+  if (!permissions) return null;
+  const keys = [
+    'canViewLoggedProblems',
+    'canViewMaintenanceReports',
+    'canViewCostOfOwnership',
+    'canCreateMaintenanceSchedules',
+    'canUpdateSerial',
+    'canUpdateReplacementPrice',
+  ] as const;
+  if (keys.some((key) => typeof permissions[key] !== 'boolean')) return null;
+  return {
+    canViewLoggedProblems: permissions.canViewLoggedProblems as boolean,
+    canViewMaintenanceReports: permissions.canViewMaintenanceReports as boolean,
+    canViewCostOfOwnership: permissions.canViewCostOfOwnership as boolean,
+    canCreateMaintenanceSchedules: permissions.canCreateMaintenanceSchedules as boolean,
+    canUpdateSerial: permissions.canUpdateSerial as boolean,
+    canUpdateReplacementPrice: permissions.canUpdateReplacementPrice as boolean,
+  };
 }
 
 export async function GET() {
@@ -65,9 +89,13 @@ export async function POST(request: NextRequest) {
   const leadType = normalizeLeadType(body.leadType);
   const includedSections = asRecord(body.includedSections);
   const trackMaintenance = body.trackMaintenance === true;
+  const trackingPermissions = readTrackingPermissions(body.trackingPermissions);
 
   if (!assetId || !partnerUserId || !leadType) {
     return NextResponse.json({ ok: false, error: 'Choose a valid asset, partner and lead type.' }, { status: 400 });
+  }
+  if (trackMaintenance && body.trackingPermissions && !trackingPermissions) {
+    return NextResponse.json({ ok: false, error: 'Choose valid dealer tracking permissions.' }, { status: 400 });
   }
 
   try {
@@ -93,6 +121,7 @@ export async function POST(request: NextRequest) {
           actorType: 'owner',
           actorId: isOwnerAppSession(session) ? session.ownerApp.ownerAppUserId : session.user.id,
           actorName: isOwnerAppSession(session) ? session.ownerApp.displayName : session.user.name,
+          permissions: trackingPermissions,
         })
       : null;
 
