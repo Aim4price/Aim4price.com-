@@ -8,7 +8,10 @@ import {
   type ChangeEvent,
   type FormEvent,
 } from "react";
-import DealerMaintenanceAccessSettings from "../../../components/DealerMaintenanceAccessSettings";
+import DealerMaintenanceAccessSettings, {
+  DEFAULT_DEALER_MAINTENANCE_PERMISSIONS,
+  DealerMaintenancePermissionPicker,
+} from "../../../components/DealerMaintenanceAccessSettings";
 import FieldManagerNavLink from "../../field-manager/field-manager-nav-link";
 import type { DealerMaintenancePermissions } from "../../../lib/dealer-maintenance-tracker";
 import styles from "./page.module.css";
@@ -1491,6 +1494,12 @@ export default function ScanClient({
   const [shareLeadStep, setShareLeadStep] = useState<ShareLeadStep>(null);
   const [shareConsentAccepted, setShareConsentAccepted] = useState(false);
   const [shareTrackMaintenance, setShareTrackMaintenance] = useState(false);
+  const [shareTrackingPermissions, setShareTrackingPermissions] =
+    useState<DealerMaintenancePermissions>(() => ({
+      ...DEFAULT_DEALER_MAINTENANCE_PERMISSIONS,
+    }));
+  const [isShareTrackingPermissionsOpen, setIsShareTrackingPermissionsOpen] =
+    useState(false);
   const [shareTrackingAccess, setShareTrackingAccess] = useState<DealerTrackingAccess[]>([]);
   const [isLoadingSharePartners, setIsLoadingSharePartners] = useState(false);
   const [isSendingShareLead, setIsSendingShareLead] = useState(false);
@@ -2261,6 +2270,8 @@ export default function ScanClient({
     setShareLeadStep(null);
     setShareConsentAccepted(false);
     setShareTrackMaintenance(false);
+    setShareTrackingPermissions({ ...DEFAULT_DEALER_MAINTENANCE_PERMISSIONS });
+    setIsShareTrackingPermissionsOpen(false);
   }
 
   function closeShareModal() {
@@ -2353,6 +2364,37 @@ export default function ScanClient({
   function openShareTrackingSettings() {
     setShareLeadStep("settings");
     setShareConsentAccepted(false);
+  }
+
+  function openShareTrackingPermissions() {
+    if (!shareTrackMaintenance) {
+      setShareTrackingPermissions({
+        ...DEFAULT_DEALER_MAINTENANCE_PERMISSIONS,
+      });
+    }
+    setIsShareTrackingPermissionsOpen(true);
+  }
+
+  function cancelShareTrackingPermissions() {
+    if (!shareTrackMaintenance) {
+      setShareTrackingPermissions({
+        ...DEFAULT_DEALER_MAINTENANCE_PERMISSIONS,
+      });
+    }
+    setIsShareTrackingPermissionsOpen(false);
+  }
+
+  function confirmShareTrackingPermissions() {
+    setShareTrackMaintenance(true);
+    setIsShareTrackingPermissionsOpen(false);
+  }
+
+  function disableShareTracking() {
+    setShareTrackMaintenance(false);
+    setShareTrackingPermissions({
+      ...DEFAULT_DEALER_MAINTENANCE_PERMISSIONS,
+    });
+    setIsShareTrackingPermissionsOpen(false);
   }
 
   function openShareLeadMessage(partner: PartnerDirectoryEntry) {
@@ -2450,6 +2492,9 @@ export default function ScanClient({
             longitude: shareLongitude,
             sharePhotoUrls,
             trackMaintenance: shareTrackMaintenance,
+            trackingPermissions: shareTrackMaintenance
+              ? shareTrackingPermissions
+              : undefined,
           }),
         },
       );
@@ -3864,10 +3909,21 @@ export default function ScanClient({
                     ) : null}
                   </div>
 
-                  <label className={styles.shareTrackingChoice}>
-                    <input type="checkbox" checked={shareTrackMaintenance} onChange={(event) => setShareTrackMaintenance(event.target.checked)} />
-                    <span><strong>Add to dealer Maintenance Tracker</strong><small>The dealer can download maintenance reports and create schedules. New schedules only enter the owner&apos;s Asset Register after approval.</small></span>
-                  </label>
+                  <button
+                    type="button"
+                    className={styles.shareTrackingChoice}
+                    onClick={openShareTrackingPermissions}
+                    aria-pressed={shareTrackMaintenance}
+                  >
+                    <span className={`${styles.shareTrackingCheckbox} ${shareTrackMaintenance ? styles.shareTrackingCheckboxActive : ""}`} aria-hidden="true">
+                      {shareTrackMaintenance ? "✓" : ""}
+                    </span>
+                    <span className={styles.shareTrackingChoiceCopy}>
+                      <strong>Enable dealer tracking</strong>
+                      <small>The dealer can download maintenance reports and create schedules. New schedules only enter the owner&apos;s Asset Register after approval.</small>
+                      <em>{shareTrackMaintenance ? "Permissions selected. Tap to review." : "Choose what the dealer can see and update."}</em>
+                    </span>
+                  </button>
                 </div>
                 <footer className={styles.shareFooter}>
                   <button
@@ -3898,8 +3954,8 @@ export default function ScanClient({
                   <div className={styles.shareStepHeader}>
                     <strong>{dealerPartnerName(selectedSharePartner)}</strong>
                     <span>
-                      The asset will be sent as a replacement quote / dealer
-                      help lead.
+                      The asset will be shared with this dealer as an
+                      opportunity.
                     </span>
                   </div>
 
@@ -3911,7 +3967,7 @@ export default function ScanClient({
                       {sharePhotoUrls.length ? ", attached photos" : ""} and
                       relevant documents will be shared with this dealer.
                     </p>
-                    {shareTrackMaintenance ? <p>This dealer will receive ongoing Maintenance Tracker access, maintenance reports and permission to propose schedules for owner approval.</p> : null}
+                    {shareTrackMaintenance ? <p>This dealer will receive ongoing Maintenance Tracker access with the permissions selected. Proposed schedules and asset changes still require owner approval.</p> : null}
                   </div>
 
                   <label className={styles.shareConsentCheck}>
@@ -3987,6 +4043,54 @@ export default function ScanClient({
             )}
             </div>
           </section>
+
+          {isShareTrackingPermissionsOpen ? (
+            <div className={styles.shareTrackingPermissionOverlay}>
+              <button
+                type="button"
+                className={styles.shareTrackingPermissionBackdrop}
+                onClick={cancelShareTrackingPermissions}
+                aria-label="Close dealer tracking settings"
+              />
+              <section
+                className={styles.shareTrackingPermissionModal}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="share-tracking-permission-title"
+              >
+                <header className={styles.shareTrackingPermissionHeader}>
+                  <div>
+                    <h3 id="share-tracking-permission-title">Dealer tracking settings</h3>
+                    <p>{asset.title}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={cancelShareTrackingPermissions}
+                    aria-label="Close dealer tracking settings"
+                  >
+                    <CloseIcon className={styles.closeIcon} />
+                  </button>
+                </header>
+                <div className={styles.shareTrackingPermissionBody}>
+                  <div className={styles.shareTrackingPermissionIntro}>
+                    <strong>Choose what this dealer can access</strong>
+                    <p>Select the permissions to activate as soon as the asset is shared.</p>
+                  </div>
+                  <DealerMaintenancePermissionPicker
+                    value={shareTrackingPermissions}
+                    onChange={setShareTrackingPermissions}
+                  />
+                </div>
+                <footer className={styles.shareTrackingPermissionFooter}>
+                  <button type="button" className={styles.secondaryButton} onClick={cancelShareTrackingPermissions}>Cancel</button>
+                  {shareTrackMaintenance ? (
+                    <button type="button" className={styles.secondaryButton} onClick={disableShareTracking}>Disable tracking</button>
+                  ) : null}
+                  <button type="button" className={styles.primaryButton} onClick={confirmShareTrackingPermissions}>Save tracking settings</button>
+                </footer>
+              </section>
+            </div>
+          ) : null}
         </div>
       ) : null}
 
