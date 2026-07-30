@@ -33,6 +33,7 @@ const MONTH_LABELS = [
   'December',
 ];
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const REPORT_NAME = 'Cost of Ownership Report';
 
 function parseYear(value: string | null): number | null {
   if (!value || value === 'all') return null;
@@ -57,16 +58,6 @@ function parseFormat(value: string | null): ReportFormat {
 function parseIncludeFuelSlipCosts(value: string | null): boolean {
   const normalized = String(value ?? '').trim().toLowerCase();
   return normalized !== 'false' && normalized !== '0' && normalized !== 'no';
-}
-
-function parseReportName(value: string | null): string {
-  const normalized = String(value ?? '')
-    .replace(/[\u0000-\u001f\u007f]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, 100);
-
-  return normalized || 'Cost of Ownership Report';
 }
 
 function parseFilters(request: NextRequest): MyInvoiceListFilters {
@@ -158,7 +149,6 @@ export async function GET(request: NextRequest) {
 
     const ownerAppMode = request.nextUrl.searchParams.get('source') === 'owner-app';
     const format = ownerAppMode ? 'pdf' : parseFormat(request.nextUrl.searchParams.get('format'));
-    const reportName = parseReportName(request.nextUrl.searchParams.get('reportName'));
     const [data, profile, rawLogoUrl] = await Promise.all([
       listMyInvoicesData(reportOwnerUserId, filters),
       getAccountProfile({
@@ -173,7 +163,7 @@ export async function GET(request: NextRequest) {
     const selectedAsset = findSelectedAsset(data.assets, filters);
     const ownerDetails = buildMyInvoicesOwnerDetails(profile, ownerFallbackUser);
     const options = {
-      title: reportName,
+      title: REPORT_NAME,
       subtitle: 'Aim4price asset register',
       generatedAt: formatGeneratedDate(),
       ownerEmail: ownerDetails.businessEmail || String(ownerFallbackUser.email ?? ''),
