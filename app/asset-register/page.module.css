@@ -28975,6 +28975,23 @@ button.documentOpenLink {
   line-height: 1.45;
 }
 
+.assetRegisterMoveNoTarget {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.assetRegisterMoveNoTarget p {
+  margin: 0;
+}
+
+.assetRegisterMoveCreateButton {
+  width: 100%;
+  min-height: 3rem;
+  justify-content: center;
+  text-align: center;
+  text-decoration: none;
+}
+
 .assetRegisterMoveNoMatch {
   text-align: center;
 }

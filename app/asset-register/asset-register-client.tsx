@@ -12610,9 +12610,16 @@ export default function AssetRegisterClient() {
                           usePortal
                         />
                       ) : (
-                        <p className={styles.assetRegisterMoveNoTarget}>
-                          Create another asset register before moving this asset.
-                        </p>
+                        <div className={styles.assetRegisterMoveNoTarget}>
+                          <p>Create another asset register before moving this asset.</p>
+                          <Link
+                            href="/asset-registers"
+                            className={`${styles.primaryButton} ${styles.assetRegisterMoveCreateButton}`}
+                            onClick={closeAssetRegisterMoveManager}
+                          >
+                            Create new asset register
+                          </Link>
+                        </div>
                       )}
                     </div>
                   ) : (
