@@ -18,6 +18,7 @@ const MANAGE_SECTIONS = new Set<OwnerAssetManageSection>([
   'media',
   'marketplace',
   'maintenance',
+  'dealer-tracking',
   'delete',
 ]);
 
