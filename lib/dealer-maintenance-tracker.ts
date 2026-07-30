@@ -36,6 +36,7 @@ export type DealerMaintenanceTrackerStatus =
 export type DealerMaintenancePermissions = {
   canViewLoggedProblems: boolean;
   canViewMaintenanceReports: boolean;
+  canViewCostOfOwnership: boolean;
   canCreateMaintenanceSchedules: boolean;
   canUpdateSerial: boolean;
   canUpdateReplacementPrice: boolean;
@@ -194,6 +195,7 @@ type DealerMaintenanceAccessRow = {
   updated_at: string | Date | null;
   can_view_logged_problems: boolean | null;
   can_view_maintenance_reports: boolean | null;
+  can_view_cost_of_ownership: boolean | null;
   can_create_maintenance_schedules: boolean | null;
   can_update_serial: boolean | null;
   can_update_replacement_price: boolean | null;
@@ -388,6 +390,7 @@ function rowPermissions(row: DealerMaintenanceAccessRow): DealerMaintenancePermi
   return {
     canViewLoggedProblems: Boolean(row.can_view_logged_problems),
     canViewMaintenanceReports: Boolean(row.can_view_maintenance_reports),
+    canViewCostOfOwnership: Boolean(row.can_view_cost_of_ownership),
     canCreateMaintenanceSchedules: row.can_create_maintenance_schedules !== false,
     canUpdateSerial: row.can_update_serial !== false,
     canUpdateReplacementPrice: row.can_update_replacement_price !== false,
@@ -447,6 +450,7 @@ async function ensureDealerMaintenanceTablesOnce(): Promise<void> {
     alter table public.dealer_maintenance_access
       add column if not exists can_view_logged_problems boolean not null default false,
       add column if not exists can_view_maintenance_reports boolean not null default false,
+      add column if not exists can_view_cost_of_ownership boolean not null default false,
       add column if not exists can_create_maintenance_schedules boolean not null default true,
       add column if not exists can_update_serial boolean not null default true,
       add column if not exists can_update_replacement_price boolean not null default true
@@ -539,6 +543,7 @@ async function listAccessRows(whereSql: string, values: unknown[]): Promise<Deal
         access.updated_at,
         access.can_view_logged_problems,
         access.can_view_maintenance_reports,
+        access.can_view_cost_of_ownership,
         access.can_create_maintenance_schedules,
         access.can_update_serial,
         access.can_update_replacement_price,
@@ -599,6 +604,7 @@ export async function grantDealerMaintenanceTracking(input: {
   actorType: 'owner' | 'field_manager';
   actorId?: string | null;
   actorName?: string | null;
+  permissions?: DealerMaintenancePermissions | null;
 }): Promise<{ id: string }> {
   await ensureDealerMaintenanceTrackerTables();
   const [asset, dealer] = await Promise.all([
@@ -607,6 +613,14 @@ export async function grantDealerMaintenanceTracking(input: {
   ]);
   if (!asset) throw new Error('ASSET_NOT_FOUND');
   if (dealer.accountType !== 'dealer' || dealer.accountStatus !== 'active') throw new Error('DEALER_NOT_FOUND');
+  const permissions: DealerMaintenancePermissions = input.permissions ?? {
+    canViewLoggedProblems: false,
+    canViewMaintenanceReports: true,
+    canViewCostOfOwnership: false,
+    canCreateMaintenanceSchedules: true,
+    canUpdateSerial: true,
+    canUpdateReplacementPrice: true,
+  };
 
   const result = await getDb().query<{ id: string }>(
     `
@@ -617,21 +631,29 @@ export async function grantDealerMaintenanceTracking(input: {
         granted_by_actor_type,
         granted_by_actor_id,
         granted_by_name,
+        can_view_logged_problems,
         can_view_maintenance_reports,
+        can_view_cost_of_ownership,
         can_create_maintenance_schedules,
+        can_update_serial,
+        can_update_replacement_price,
         is_active,
         revoked_at,
         created_at,
         updated_at
       )
-      values ($1, $2, $3::uuid, $4, $5, $6, true, true, true, null, now(), now())
+      values ($1, $2, $3::uuid, $4, $5, $6, $7, $8, $9, $10, $11, $12, true, null, now(), now())
       on conflict (owner_user_id, dealer_user_id, asset_register_item_id)
       do update set
         granted_by_actor_type = excluded.granted_by_actor_type,
         granted_by_actor_id = excluded.granted_by_actor_id,
         granted_by_name = excluded.granted_by_name,
+        can_view_logged_problems = excluded.can_view_logged_problems,
         can_view_maintenance_reports = excluded.can_view_maintenance_reports,
+        can_view_cost_of_ownership = excluded.can_view_cost_of_ownership,
         can_create_maintenance_schedules = excluded.can_create_maintenance_schedules,
+        can_update_serial = excluded.can_update_serial,
+        can_update_replacement_price = excluded.can_update_replacement_price,
         is_active = true,
         revoked_at = null,
         updated_at = now()
@@ -644,6 +666,12 @@ export async function grantDealerMaintenanceTracking(input: {
       input.actorType,
       asText(input.actorId) || null,
       asText(input.actorName) || (input.actorType === 'field_manager' ? 'Field Manager' : 'Owner'),
+      permissions.canViewLoggedProblems,
+      permissions.canViewMaintenanceReports,
+      permissions.canViewCostOfOwnership,
+      permissions.canCreateMaintenanceSchedules,
+      permissions.canUpdateSerial,
+      permissions.canUpdateReplacementPrice,
     ],
   );
   const id = result.rows[0]?.id;
@@ -682,9 +710,10 @@ export async function updateDealerMaintenancePermissions(input: {
       set
         can_view_logged_problems = $4,
         can_view_maintenance_reports = $5,
-        can_create_maintenance_schedules = $6,
-        can_update_serial = $7,
-        can_update_replacement_price = $8,
+        can_view_cost_of_ownership = $6,
+        can_create_maintenance_schedules = $7,
+        can_update_serial = $8,
+        can_update_replacement_price = $9,
         updated_at = now()
       where owner_user_id = $1
         and asset_register_item_id = $2::uuid
@@ -697,6 +726,7 @@ export async function updateDealerMaintenancePermissions(input: {
       input.accessId,
       input.permissions.canViewLoggedProblems,
       input.permissions.canViewMaintenanceReports,
+      input.permissions.canViewCostOfOwnership,
       input.permissions.canCreateMaintenanceSchedules,
       input.permissions.canUpdateSerial,
       input.permissions.canUpdateReplacementPrice,
