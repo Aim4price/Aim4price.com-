@@ -15996,13 +15996,20 @@ export default function AssetRegisterClient() {
                               </label>
 
                               {selectedQuoteOption.leadType === 'replacement_quote' && quoteScope === 'asset' ? (
-                                <label className={styles.assetQuoteConsentCheck}>
+                                <label className={`${styles.assetQuoteConsentCheck} ${styles.assetQuoteTrackingChoice}`}>
                                   <input
                                     type="checkbox"
                                     checked={quoteTrackMaintenance}
                                     onChange={(event) => setQuoteTrackMaintenance(event.target.checked)}
                                   />
-                                  <span>Add this asset to the dealer&apos;s Maintenance Tracker. The dealer can download maintenance reports and create maintenance schedules, which will only appear in your Asset Register after you approve them. You can manage the dealer&apos;s detailed permissions after sharing.</span>
+                                  <span className={styles.assetQuoteTrackingIcon} aria-hidden="true">
+                                    <ManageIcon className={styles.buttonIcon} />
+                                  </span>
+                                  <span className={styles.assetQuoteTrackingCopy}>
+                                    <strong>Enable dealer tracking</strong>
+                                    <small>The dealer can download maintenance reports and create maintenance schedules, which will only appear in your Asset Register after you approve them.</small>
+                                    <em>You can review detailed permissions after sharing.</em>
+                                  </span>
                                 </label>
                               ) : null}
                             </div>
@@ -16179,11 +16186,7 @@ export default function AssetRegisterClient() {
                     <DownloadIcon className={styles.buttonIcon} />
                     <span>
                       <strong>Download reports</strong>
-                      <small>
-                        Valuation, fuel, maintenance, depreciation
-                        <br />
-                        and ownership reports.
-                      </small>
+                      <small>Choose a report for this asset.</small>
                     </span>
                   </button>
 
@@ -16249,8 +16252,8 @@ export default function AssetRegisterClient() {
         <div className={`${styles.modalOverlay} ${styles.subModalOverlay}`}>
           <div className={styles.modalBackdrop} onClick={() => setIsDealerTrackingSettingsOpen(false)} />
 
-          <div className={`${styles.modalCard} ${styles.pricingModal}`} role="dialog" aria-modal="true" aria-labelledby="dealer-tracking-settings-title">
-            <div className={`${styles.modalHeader} ${styles.pricingModalHeader}`}>
+          <div className={`${styles.modalCard} ${styles.pricingModal} ${styles.dealerTrackingModal}`} role="dialog" aria-modal="true" aria-labelledby="dealer-tracking-settings-title">
+            <div className={`${styles.modalHeader} ${styles.pricingModalHeader} ${styles.dealerTrackingHeader}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="dealer-tracking-settings-title">Dealer tracking settings</h3>
                 <p>{activeAsset.title}</p>
@@ -16261,22 +16264,28 @@ export default function AssetRegisterClient() {
               </button>
             </div>
 
-            <div className={`${styles.modalScrollBody} ${styles.pricingModalBody}`}>
+            <div className={`${styles.modalScrollBody} ${styles.pricingModalBody} ${styles.dealerTrackingBody}`}>
               {isLoadingDealerTrackingSettings ? (
                 <div className={styles.emptyState}>Loading dealer tracking settings…</div>
               ) : (
-                <DealerMaintenanceAccessSettings
-                  assetId={activeAsset.id}
-                  entries={dealerTrackingAccess}
-                  mutationUrl="/api/dealer-maintenance-access"
-                  onEntriesChange={(entries) => {
-                    setDealerTrackingAccess(entries);
-                    setActiveDealerTrackingByAssetId((current) => ({
-                      ...current,
-                      [activeAsset.id]: entries.length > 0,
-                    }));
-                  }}
-                />
+                <>
+                  <div className={styles.dealerTrackingIntro}>
+                    <strong>Choose what each dealer can access</strong>
+                    <p>Click any permission to turn it on or off. Owner approval is still required for schedules and asset changes.</p>
+                  </div>
+                  <DealerMaintenanceAccessSettings
+                    assetId={activeAsset.id}
+                    entries={dealerTrackingAccess}
+                    mutationUrl="/api/dealer-maintenance-access"
+                    onEntriesChange={(entries) => {
+                      setDealerTrackingAccess(entries);
+                      setActiveDealerTrackingByAssetId((current) => ({
+                        ...current,
+                        [activeAsset.id]: entries.length > 0,
+                      }));
+                    }}
+                  />
+                </>
               )}
             </div>
           </div>

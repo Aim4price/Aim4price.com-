@@ -33266,3 +33266,407 @@ button.documentOpenLink {
     height: 2.1rem !important;
   }
 }
+
+/* === Aim4price parity: dealer tracking and asset sharing, July 2026 === */
+.dealerTrackingModal {
+  width: min(100%, 940px) !important;
+  max-height: min(88vh, calc(100dvh - 2rem)) !important;
+  padding: clamp(1.3rem, 2vw, 1.7rem) !important;
+  border: 1px solid rgba(204, 219, 232, 0.98) !important;
+  border-radius: 1.8rem !important;
+  background:
+    radial-gradient(circle at 3% 0%, rgba(25, 116, 84, 0.075), transparent 34%),
+    linear-gradient(180deg, #ffffff 0%, #f7faf9 100%) !important;
+  box-shadow:
+    0 32px 80px rgba(11, 28, 24, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.dealerTrackingHeader {
+  align-items: center !important;
+  margin-bottom: 0 !important;
+  padding-bottom: 1rem !important;
+}
+
+.dealerTrackingHeader .modalHeaderText {
+  max-width: calc(100% - 4.4rem) !important;
+}
+
+.dealerTrackingHeader h3 {
+  color: #0c3429 !important;
+  font-size: clamp(1.85rem, 3vw, 2.35rem) !important;
+  font-weight: 840 !important;
+  line-height: 1.04 !important;
+  letter-spacing: -0.052em !important;
+}
+
+.dealerTrackingHeader p {
+  margin-top: 0.34rem !important;
+  color: #607286 !important;
+  font-family: var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif !important;
+  font-size: 0.94rem !important;
+  font-weight: 650 !important;
+  line-height: 1.4 !important;
+}
+
+.dealerTrackingBody {
+  display: grid !important;
+  gap: 0.9rem !important;
+  padding: 1rem 0.15rem 0.1rem 0 !important;
+  overflow-y: auto !important;
+}
+
+.dealerTrackingIntro {
+  display: grid;
+  gap: 0.28rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(190, 221, 207, 0.96);
+  border-radius: 1rem;
+  background:
+    radial-gradient(circle at 0 0, rgba(25, 116, 84, 0.07), transparent 44%),
+    linear-gradient(180deg, #ffffff 0%, #eff8f3 100%);
+}
+
+.dealerTrackingIntro strong {
+  color: #123a2f;
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
+  font-size: 0.9rem;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.dealerTrackingIntro p {
+  margin: 0;
+  color: #607286;
+  font-family: var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.8rem;
+  font-weight: 560;
+  line-height: 1.42;
+}
+
+.assetQuoteMessageStepModal {
+  width: min(100%, 980px) !important;
+  max-height: min(88vh, calc(100dvh - 2rem)) !important;
+  border-radius: 1.8rem !important;
+}
+
+.assetQuoteMessageStepModal .assetQuoteStepHeader {
+  align-items: center !important;
+  padding: 1.2rem clamp(1.25rem, 2vw, 1.65rem) 1rem !important;
+  background: #ffffff !important;
+}
+
+.assetQuoteMessageStepModal .assetQuoteStepHeader span {
+  margin-bottom: 0.28rem !important;
+  color: #607286 !important;
+  font-family: var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif !important;
+  font-size: 0.7rem !important;
+  font-weight: 760 !important;
+  letter-spacing: 0.055em !important;
+}
+
+.assetQuoteMessageStepModal .assetQuoteStepHeader h4 {
+  color: #0c3429 !important;
+  font-size: clamp(1.65rem, 2.4vw, 2.05rem) !important;
+  font-weight: 840 !important;
+  line-height: 1.04 !important;
+  letter-spacing: -0.05em !important;
+}
+
+.assetQuoteMessageStepBody {
+  grid-template-columns: minmax(15.5rem, 18.5rem) minmax(0, 1fr) !important;
+  align-items: stretch !important;
+  overflow-y: auto !important;
+  background: #f8fbfa !important;
+}
+
+.assetQuoteSelectedCompanyPanel {
+  grid-template-rows: auto auto !important;
+  align-content: start !important;
+  overflow: visible !important;
+  border-right-color: rgba(204, 219, 232, 0.92) !important;
+  background:
+    radial-gradient(circle at 0 0, rgba(25, 116, 84, 0.065), transparent 44%),
+    linear-gradient(180deg, #ffffff 0%, #f3f8f5 100%) !important;
+}
+
+.assetQuoteSelectedMediaGrid {
+  padding: 1rem 1rem 0 !important;
+  border-bottom: 0 !important;
+  background: transparent !important;
+}
+
+.assetQuoteSelectedMediaTile {
+  min-height: 8.4rem !important;
+  height: 8.4rem !important;
+  padding: 1rem !important;
+  border: 1px solid rgba(204, 219, 232, 0.92) !important;
+  border-radius: 1.1rem !important;
+  background: #ffffff !important;
+  box-shadow: 0 10px 22px rgba(16, 36, 40, 0.045) !important;
+}
+
+.assetQuoteSelectedMediaTile img,
+.assetQuoteSelectedLogoTile img {
+  max-width: 78% !important;
+  max-height: 5.7rem !important;
+}
+
+.assetQuoteSelectedLogoFallback {
+  border-radius: 0.85rem !important;
+  font-size: 2.35rem !important;
+}
+
+.assetQuoteSelectedCompanyInfo {
+  gap: 0.85rem !important;
+  padding: 0.95rem 1rem 1.05rem !important;
+}
+
+.assetQuoteSelectedCompanyTitle {
+  gap: 0.22rem !important;
+}
+
+.assetQuoteSelectedCompanyTitle strong {
+  font-size: 1rem !important;
+  font-weight: 820 !important;
+  letter-spacing: -0.025em !important;
+}
+
+.assetQuoteSelectedCompanyTitle span {
+  font-family: var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif !important;
+  font-size: 0.77rem !important;
+  font-weight: 580 !important;
+}
+
+.assetQuoteSelectedContactRow {
+  grid-template-columns: 4.5rem minmax(0, 1fr) !important;
+  gap: 0.55rem !important;
+  padding: 0.58rem 0 !important;
+}
+
+.assetQuoteSelectedContactRow small {
+  font-size: 0.62rem !important;
+  font-weight: 760 !important;
+}
+
+.assetQuoteSelectedContactRow span {
+  font-family: var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif !important;
+  font-size: 0.76rem !important;
+  font-weight: 620 !important;
+}
+
+.assetQuoteMessagePanel {
+  align-content: start !important;
+  gap: 0.9rem !important;
+  padding: clamp(1.1rem, 1.8vw, 1.45rem) !important;
+  overflow: visible !important;
+  background: #ffffff !important;
+}
+
+.assetQuoteMessageStepBody .assetQuoteStepNotice {
+  padding: 0.82rem 0.9rem !important;
+  border-radius: 0.95rem !important;
+  font-family: var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif !important;
+  font-size: 0.82rem !important;
+  font-weight: 680 !important;
+  line-height: 1.38 !important;
+}
+
+.assetQuoteMessageStepBody .assetQuoteMessageField {
+  gap: 0.5rem !important;
+}
+
+.assetQuoteMessageStepBody .assetQuoteMessageField > span {
+  font-family: var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif !important;
+  font-size: 0.82rem !important;
+  font-weight: 760 !important;
+}
+
+.assetQuoteMessageStepBody .assetQuoteMessageField textarea {
+  min-height: 8.35rem !important;
+  padding: 0.9rem 1rem !important;
+  border-radius: 1rem !important;
+  font-family: var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif !important;
+  font-size: 0.9rem !important;
+  line-height: 1.5 !important;
+}
+
+.assetQuoteTrackingChoice {
+  position: relative !important;
+  grid-template-columns: auto 2.8rem minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 0.8rem !important;
+  min-height: 6.1rem !important;
+  padding: 0.82rem 0.9rem !important;
+  border-radius: 1.05rem !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f7fafb 100%) !important;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease !important;
+}
+
+.assetQuoteTrackingChoice:hover {
+  transform: translateY(-1px) !important;
+  border-color: rgba(164, 201, 183, 0.98) !important;
+  box-shadow: 0 12px 24px rgba(16, 52, 41, 0.06) !important;
+}
+
+.assetQuoteTrackingChoice:has(input:checked) {
+  border-color: rgba(160, 210, 186, 0.98) !important;
+  background:
+    radial-gradient(circle at 0 0, rgba(25, 116, 84, 0.08), transparent 45%),
+    linear-gradient(180deg, #ffffff 0%, #edf8f2 100%) !important;
+}
+
+.assetQuoteTrackingChoice > input {
+  width: 1.2rem !important;
+  height: 1.2rem !important;
+  margin: 0 !important;
+}
+
+.assetQuoteTrackingIcon {
+  width: 2.8rem;
+  height: 2.8rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(204, 219, 232, 0.98);
+  border-radius: 0.9rem;
+  color: #17466d;
+  background: #f0f6fb;
+}
+
+.assetQuoteTrackingIcon .buttonIcon {
+  width: 1.18rem;
+  height: 1.18rem;
+}
+
+.assetQuoteTrackingChoice:has(input:checked) .assetQuoteTrackingIcon {
+  color: #126044;
+  border-color: rgba(174, 220, 196, 0.98);
+  background: #e7f5ed;
+}
+
+.assetQuoteTrackingCopy {
+  min-width: 0;
+  display: grid;
+  gap: 0.18rem;
+}
+
+.assetQuoteTrackingCopy strong {
+  color: #123a2f;
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
+  font-size: 0.86rem;
+  font-weight: 800;
+  line-height: 1.22;
+}
+
+.assetQuoteTrackingCopy small,
+.assetQuoteTrackingCopy em {
+  color: #607286;
+  font-family: var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.76rem;
+  font-style: normal;
+  font-weight: 560;
+  line-height: 1.38;
+}
+
+.assetQuoteTrackingCopy em {
+  color: #3c6758;
+  font-size: 0.7rem;
+  font-weight: 680;
+}
+
+.assetQuoteMessageStepModal .assetQuoteStepFooter {
+  padding: 0.85rem clamp(1.25rem, 2vw, 1.65rem) 1rem !important;
+  background: #f8fbfa !important;
+}
+
+.assetQuoteMessageStepModal .assetQuoteStepFooter .primaryButton,
+.assetQuoteMessageStepModal .assetQuoteStepFooter .secondaryButton {
+  min-height: 3.05rem !important;
+  border-radius: 0.9rem !important;
+  font-family: var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif !important;
+  font-size: 0.86rem !important;
+  font-weight: 760 !important;
+}
+
+@media (max-width: 900px) {
+  .assetQuoteMessageStepModal {
+    width: min(100%, 42rem) !important;
+  }
+
+  .assetQuoteMessageStepBody {
+    grid-template-columns: 1fr !important;
+  }
+
+  .assetQuoteSelectedCompanyPanel {
+    grid-template-columns: 9rem minmax(0, 1fr) !important;
+    grid-template-rows: auto !important;
+    border-right: 0 !important;
+    border-bottom: 1px solid rgba(204, 219, 232, 0.92) !important;
+  }
+
+  .assetQuoteSelectedMediaGrid {
+    align-self: stretch !important;
+    padding: 0.9rem 0 0.9rem 0.9rem !important;
+  }
+
+  .assetQuoteSelectedMediaTile {
+    height: 100% !important;
+    min-height: 8rem !important;
+  }
+
+  .assetQuoteSelectedCompanyInfo {
+    padding: 0.9rem !important;
+  }
+}
+
+@media (max-width: 620px) {
+  .dealerTrackingModal,
+  .assetQuoteMessageStepModal {
+    width: min(100%, calc(100vw - 1rem)) !important;
+    max-height: calc(100dvh - 1rem) !important;
+    padding: 1rem !important;
+    border-radius: 1.3rem !important;
+  }
+
+  .dealerTrackingHeader,
+  .assetQuoteMessageStepModal .assetQuoteStepHeader {
+    align-items: flex-start !important;
+  }
+
+  .dealerTrackingBody {
+    padding-top: 0.8rem !important;
+  }
+
+  .assetQuoteSelectedCompanyPanel {
+    grid-template-columns: 1fr !important;
+  }
+
+  .assetQuoteSelectedMediaGrid {
+    padding: 0.85rem 0.85rem 0 !important;
+  }
+
+  .assetQuoteSelectedMediaTile {
+    min-height: 7.5rem !important;
+    height: 7.5rem !important;
+  }
+
+  .assetQuoteSelectedContactRow {
+    grid-template-columns: 4.25rem minmax(0, 1fr) !important;
+  }
+
+  .assetQuoteTrackingChoice {
+    grid-template-columns: auto 2.55rem minmax(0, 1fr) !important;
+    align-items: start !important;
+    gap: 0.65rem !important;
+    min-height: 0 !important;
+  }
+
+  .assetQuoteTrackingIcon {
+    width: 2.55rem;
+    height: 2.55rem;
+  }
+}
