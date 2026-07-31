@@ -46,7 +46,7 @@ type TypeTab = {
 };
 
 const TYPE_TABS: TypeTab[] = [
-  { value: 'finance', title: 'Finance', description: 'Banks, finance houses and refinance partners.' },
+  { value: 'finance', title: 'Finance', description: 'Accountants, financiers and banks.' },
   { value: 'insurance', title: 'Insurance', description: 'Insurers and brokers for machinery cover.' },
   { value: 'dealer', title: 'Dealers', description: 'Dealers, replacement quotes and machinery support.' },
 ];
@@ -97,13 +97,13 @@ function CloseIcon({ className }: { className?: string }) {
 }
 
 function companyTypeLabel(value: PartnerType): string {
-  if (value === 'finance') return 'Finance';
+  if (value === 'finance') return 'Accountants & finance';
   if (value === 'insurance') return 'Insurance';
   return 'Dealer';
 }
 
 function companyTypeDescription(value: PartnerType): string {
-  if (value === 'finance') return 'Finance partner';
+  if (value === 'finance') return 'Accountant or finance partner';
   if (value === 'insurance') return 'Insurer or broker';
   return 'Dealer partner';
 }
