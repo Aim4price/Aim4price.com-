@@ -5,10 +5,13 @@ import { getAssetRegisterReportLogoUrl } from '../../../../lib/asset-registers';
 import { listMyInvoicesData, type MyInvoiceAssetOption, type MyInvoiceListFilters } from '../../../../lib/my-invoices';
 import {
   buildMyInvoicesOwnerDetails,
-  buildMyInvoicesAccountingCsv,
   buildMyInvoicesReportHtml,
   buildMyInvoicesWorkbook,
 } from '../../../../lib/my-invoices-report';
+import {
+  buildCostLedgerAccountingCsv,
+  getCostLedgerAccountingSettings,
+} from '../../../../lib/my-invoices-accounting';
 import { createXlsxWorkbook } from '../../../../lib/simple-xlsx';
 import { resolveReportLogoUrlForHtml } from '../../../../lib/report-logo';
 import { getDealerTrackedAsset } from '../../../../lib/dealer-maintenance-tracker';
@@ -185,8 +188,30 @@ export async function GET(request: NextRequest) {
       : `${slugify(options.title)}.${extension}`;
 
     if (format === 'csv') {
-      const csv = buildMyInvoicesAccountingCsv(data.invoices);
-      return new NextResponse(csv, {
+      const settings = await getCostLedgerAccountingSettings(reportOwnerUserId);
+      const accountingExport = buildCostLedgerAccountingCsv(
+        data.invoices,
+        settings,
+        request.nextUrl.searchParams.get('accountingSoftware'),
+      );
+
+      if (!settings.configured || accountingExport.issues.length) {
+        return NextResponse.json(
+          {
+            ok: false,
+            error: !settings.configured
+              ? 'Complete Accounting CSV Settings before downloading this file.'
+              : 'Some cost records need attention before the accounting CSV can be downloaded.',
+            issues: accountingExport.issues,
+            configured: settings.configured,
+            software: accountingExport.software,
+            softwareLabel: accountingExport.softwareLabel,
+          },
+          { status: 422 },
+        );
+      }
+
+      return new NextResponse(accountingExport.csv, {
         status: 200,
         headers: {
           'Content-Type': 'text/csv; charset=utf-8',
