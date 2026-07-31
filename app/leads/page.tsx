@@ -11,18 +11,21 @@ const PARTNER_ACCOUNT_TYPES = new Set(["dealer", "finance", "insurance"]);
 export default async function LeadsPage() {
   const { session } = await requireActivePageAccess();
 
-  const [profile, initialLeads] = await Promise.all([
-    getAccountProfile({
-      id: session.user.id,
-      name: session.user.name,
-      email: session.user.email,
-    }),
-    listAssetLeadsForUser(session.user.id),
-  ]);
+  const profile = await getAccountProfile({
+    id: session.user.id,
+    name: session.user.name,
+    email: session.user.email,
+  });
+
+  if (profile.accountType === "finance" && profile.accountSubtype === "accountant") {
+    redirect("/accountant/registers");
+  }
 
   if (!PARTNER_ACCOUNT_TYPES.has(profile.accountType)) {
     redirect("/account");
   }
+
+  const initialLeads = await listAssetLeadsForUser(session.user.id);
 
   return (
     <LeadsClient
