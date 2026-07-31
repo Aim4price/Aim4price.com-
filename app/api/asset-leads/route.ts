@@ -5,6 +5,7 @@ import {
   type DealerMaintenancePermissions,
 } from '../../../lib/dealer-maintenance-tracker';
 import { createAssetLead, listAssetLeadsForUser, normalizeLeadType } from '../../../lib/partner-access';
+import { syncAccountantShareSettingsFromLead } from '../../../lib/accountant-workspace';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -99,6 +100,10 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const savedSections = {
+      ...(includedSections ?? {}),
+      maintenanceTrackingEnabled: trackMaintenance,
+    };
     const lead = await createAssetLead({
       ownerUserId: session.user.id,
       ownerName: session.user.name,
@@ -107,11 +112,12 @@ export async function POST(request: NextRequest) {
       partnerUserId,
       leadType,
       ownerMessage: typeof body.ownerMessage === 'string' ? body.ownerMessage : null,
-      includedSections: {
-        ...(includedSections ?? {}),
-        maintenanceTrackingEnabled: trackMaintenance,
-      },
+      includedSections: savedSections,
     });
+
+    if (leadType === 'finance') {
+      await syncAccountantShareSettingsFromLead(lead.id, savedSections);
+    }
 
     const trackingAccess = trackMaintenance
       ? await grantDealerMaintenanceTracking({
