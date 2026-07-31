@@ -220,16 +220,21 @@ function isAccountMenuItemVisible(item: AccountMenuItem, accountType: AccountTyp
   return Boolean(accountType && item.accountTypes.includes(accountType));
 }
 
-function buildNavItems(accountType: AccountType | 'public' | null, accountSubtype?: string | null): NavItem[] {
+function buildNavItems(
+  accountType: AccountType | 'public' | null,
+  accountSubtype?: string | null,
+  accountantWorkspaceShareId?: string | null,
+): NavItem[] {
   if (accountType === null) {
     return BASE_NAV_ITEMS;
   }
 
-  if (accountType === 'finance' && accountSubtype === 'accountant') {
+  if (accountType === 'finance' && accountSubtype === 'accountant' && accountantWorkspaceShareId) {
+    const workspaceRoot = `/accountant/registers/${encodeURIComponent(accountantWorkspaceShareId)}`;
     return [
-      { key: 'shared-registers', href: '/accountant/registers', label: 'Asset Registers' },
-      { key: 'fuel', href: '/accountant/fuel', label: 'Fuel Ledger' },
-      { key: 'cost', href: '/accountant/costs', label: 'Cost Ledger' },
+      { key: 'asset-register', href: workspaceRoot, label: 'Asset Register' },
+      { key: 'fuel', href: `${workspaceRoot}/fuel`, label: 'Fuel Ledger' },
+      { key: 'cost', href: `${workspaceRoot}/costs`, label: 'Cost Ledger' },
     ];
   }
 
@@ -262,10 +267,14 @@ function buildNavItems(accountType: AccountType | 'public' | null, accountSubtyp
   return DEFAULT_NAV_ITEMS;
 }
 
-function buildMobileNavItems(accountType: AccountType, accountSubtype?: string | null): NavItem[] {
-  const items = buildNavItems(accountType, accountSubtype);
+function buildMobileNavItems(
+  accountType: AccountType,
+  accountSubtype?: string | null,
+  accountantWorkspaceShareId?: string | null,
+): NavItem[] {
+  const items = buildNavItems(accountType, accountSubtype, accountantWorkspaceShareId);
 
-  if (accountType === 'finance' && accountSubtype === 'accountant') {
+  if (accountType === 'finance' && accountSubtype === 'accountant' && accountantWorkspaceShareId) {
     return items;
   }
 
@@ -291,7 +300,10 @@ function resolveActiveNavKey(pathname: string, items: NavItem[], active: ActiveP
     return 'asset-register';
   }
 
-  const pathMatchedItem = items.find((item) => isPathMatchingHref(normalizedPath, item.href));
+  const pathMatchedItem = items.find((item) => normalizedPath === item.href)
+    ?? [...items]
+      .sort((left, right) => right.href.length - left.href.length)
+      .find((item) => isPathMatchingHref(normalizedPath, item.href));
 
   if (pathMatchedItem) {
     return pathMatchedItem.key;
@@ -502,6 +514,15 @@ export default function AppHeader({
 }: AppHeaderProps) {
   const primaryHref = ctaHref ?? signupHref;
   const pathname = usePathname();
+  const accountantWorkspaceShareId = useMemo(() => {
+    const match = /^\/accountant\/registers\/([^/]+)(?:\/|$)/.exec(pathname || '');
+    if (!match?.[1]) return null;
+    try {
+      return decodeURIComponent(match[1]);
+    } catch {
+      return match[1];
+    }
+  }, [pathname]);
   const accountMenuRef = useRef<HTMLDivElement | null>(null);
   const notificationMenuRef = useRef<HTMLDivElement | null>(null);
   const notificationDialogRef = useRef<HTMLElement | null>(null);
@@ -683,7 +704,13 @@ export default function AppHeader({
     let mounted = true;
 
     async function loadNotifications() {
-      if (!session?.id || (session.accountType === 'finance' && session.accountSubtype === 'accountant')) {
+      const isSharedAccountantWorkspace = Boolean(
+        accountantWorkspaceShareId
+        && session?.accountType === 'finance'
+        && session.accountSubtype === 'accountant',
+      );
+
+      if (!session?.id || isSharedAccountantWorkspace) {
         setNotifications([]);
         setNotificationOpen(false);
         return;
@@ -715,7 +742,7 @@ export default function AppHeader({
     return () => {
       mounted = false;
     };
-  }, [session?.id, session?.accountType, session?.accountSubtype, pathname]);
+  }, [accountantWorkspaceShareId, session?.id, session?.accountType, session?.accountSubtype, pathname]);
 
   useEffect(() => {
     function handleDealerCorrectionResolved(event: Event) {
@@ -743,20 +770,23 @@ export default function AppHeader({
   const isOwnerAccount = session?.accountType === 'owner';
   const isDealerAccount = session?.accountType === 'dealer';
   const isAccountantAccount = session?.accountType === 'finance' && session.accountSubtype === 'accountant';
+  const isAccountantWorkspace = isAccountantAccount && Boolean(accountantWorkspaceShareId);
   const navAccountType = isLoadingSession ? null : (session?.accountType ?? 'public');
   const navItems = useMemo(
-    () => buildNavItems(navAccountType, session?.accountSubtype),
-    [navAccountType, session?.accountSubtype],
+    () => buildNavItems(navAccountType, session?.accountSubtype, accountantWorkspaceShareId),
+    [accountantWorkspaceShareId, navAccountType, session?.accountSubtype],
   );
   const mobileNavItems = useMemo(
-    () => (session?.accountType ? buildMobileNavItems(session.accountType, session.accountSubtype) : navItems),
-    [navItems, session?.accountType, session?.accountSubtype],
+    () => (session?.accountType
+      ? buildMobileNavItems(session.accountType, session.accountSubtype, accountantWorkspaceShareId)
+      : navItems),
+    [accountantWorkspaceShareId, navItems, session?.accountType, session?.accountSubtype],
   );
   const activeNavKey = useMemo(
     () => resolveActiveNavKey(pathname, mobileNavItems, active),
     [active, mobileNavItems, pathname],
   );
-  const navWindowSize = isDealerAccount || isAccountantAccount ? navItems.length : NAV_WINDOW_SIZE;
+  const navWindowSize = isDealerAccount || isAccountantWorkspace ? navItems.length : NAV_WINDOW_SIZE;
   const [navWindowStart, setNavWindowStart] = useState(0);
   const navMaxWindowStart = Math.max(0, navItems.length - navWindowSize);
   const showNavWindowControls = navItems.length > navWindowSize;
@@ -892,7 +922,7 @@ export default function AppHeader({
   }
 
   function handleAccountMenuToggle() {
-    if (isAccountantAccount) {
+    if (isAccountantWorkspace) {
       setMenuOpen(false);
       setLeaveAccountOpen(true);
       return;
@@ -1243,6 +1273,13 @@ export default function AppHeader({
       setIsSigningOut(false);
       window.location.replace('/auth#login');
     }
+  }
+
+  function handleLeaveSharedAccount() {
+    setLeaveAccountOpen(false);
+    setMenuOpen(false);
+    setMobileMenuOpen(false);
+    window.location.assign('/leads');
   }
 
   function renderNotificationCopy(notification: HeaderNotificationItem, actionLabel?: string) {
@@ -1600,10 +1637,10 @@ export default function AppHeader({
             <button
               type="button"
               className={styles.mobileMenuDangerButton}
-              onClick={isAccountantAccount ? requestLeaveAccount : handleSignOut}
+              onClick={isAccountantWorkspace ? requestLeaveAccount : handleSignOut}
               disabled={isSigningOut}
             >
-              {isSigningOut ? 'Leaving...' : isAccountantAccount ? 'Leave account' : 'Sign out'}
+              {isSigningOut ? 'Signing out...' : isAccountantWorkspace ? 'Leave account' : 'Sign out'}
             </button>
           </div>
         ) : (
@@ -1835,7 +1872,7 @@ export default function AppHeader({
               <div className={styles.notificationDetailHeader}>
                 <div className={styles.notificationDetailHeaderText}>
                   <h2 id="leave-account-title">Leave this account?</h2>
-                  <p>Are you sure you want to leave this account?</p>
+                  <p>Are you sure you want to leave this account? You will return to My Leads.</p>
                 </div>
                 <button type="button" className={styles.notificationDetailCloseButton} onClick={() => setLeaveAccountOpen(false)} aria-label="Cancel leaving account">
                   ×
@@ -1845,8 +1882,8 @@ export default function AppHeader({
                 <button type="button" className={styles.notificationSecondaryButton} onClick={() => setLeaveAccountOpen(false)} disabled={isSigningOut}>
                   Cancel
                 </button>
-                <button type="button" className={styles.notificationSoftDangerButton} onClick={handleSignOut} disabled={isSigningOut}>
-                  {isSigningOut ? 'Leaving...' : 'Leave account'}
+                <button type="button" className={styles.notificationSoftDangerButton} onClick={handleLeaveSharedAccount}>
+                  Leave account
                 </button>
               </div>
             </section>
@@ -1917,7 +1954,7 @@ export default function AppHeader({
             <div className={styles.actionsRail}>
               {isLoadingSession ? null : session ? (
                 <>
-                  {!isAccountantAccount ? <div className={styles.notificationMenu} ref={notificationMenuRef}>
+                  {!isAccountantWorkspace ? <div className={styles.notificationMenu} ref={notificationMenuRef}>
                     <button
                       type="button"
                       className={`${styles.notificationButton} ${unreadNotificationCount ? styles.notificationButtonActive : ''}`}
