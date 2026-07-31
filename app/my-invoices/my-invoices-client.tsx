@@ -189,15 +189,96 @@ type Notice = {
   message: string;
 };
 
-type ReportFormat = 'pdf' | 'xlsx' | 'csv';
-type DownloadExportFormat = Exclude<ReportFormat, 'csv'>;
-type DownloadStep = 'format' | 'timeline' | 'fuel';
+type AccountingSoftware = 'sage_business_cloud' | 'generic_csv';
+type AccountingEffect = 'Increase' | 'Decrease';
 
-const DOWNLOAD_STEPS: Array<{ key: DownloadStep; label: string }> = [
+type AccountingSupplier = {
+  id: string;
+  name: string;
+  aliases: string[];
+};
+
+type AccountingSettings = {
+  configured: boolean;
+  software: AccountingSoftware;
+  defaultEffect: AccountingEffect;
+  standardVatLabel: string;
+  noVatLabel: string;
+  defaultAffectingAccount: string;
+  fuelAffectingAccount: string;
+  affectingAccounts: string[];
+  suppliers: AccountingSupplier[];
+  updatedAtIso: string | null;
+};
+
+type AccountingSettingsResponse = {
+  ok: boolean;
+  settings?: AccountingSettings;
+  error?: string;
+};
+
+type AccountingExportIssue = {
+  invoiceId: string;
+  invoiceNumber: string;
+  assetTitle: string;
+  supplierName: string;
+  field: 'invoice_date' | 'supplier' | 'vat' | 'affecting_account';
+  message: string;
+};
+
+type AccountingExportErrorResponse = {
+  ok: false;
+  error?: string;
+  issues?: AccountingExportIssue[];
+  configured?: boolean;
+};
+
+type ReportFormat = 'pdf' | 'xlsx' | 'csv';
+type DownloadExportFormat = ReportFormat;
+type DownloadStep = 'format' | 'accounting' | 'timeline' | 'fuel';
+
+const STANDARD_DOWNLOAD_STEPS: Array<{ key: DownloadStep; label: string }> = [
   { key: 'format', label: 'Format' },
   { key: 'timeline', label: 'Timeline' },
   { key: 'fuel', label: 'Fuel costs' },
 ];
+
+const CSV_DOWNLOAD_STEPS: Array<{ key: DownloadStep; label: string }> = [
+  { key: 'format', label: 'Format' },
+  { key: 'accounting', label: 'Accounting' },
+  { key: 'timeline', label: 'Timeline' },
+  { key: 'fuel', label: 'Fuel costs' },
+];
+
+const ACCOUNTING_SOFTWARE_OPTIONS: Array<{
+  value: AccountingSoftware;
+  label: string;
+  description: string;
+}> = [
+  {
+    value: 'sage_business_cloud',
+    label: 'Sage Business Cloud Accounting',
+    description: 'Supplier Adjustments Quick Entry Grid CSV.',
+  },
+  {
+    value: 'generic_csv',
+    label: 'Generic accounting CSV',
+    description: 'For accounting systems that let you map CSV columns during import.',
+  },
+];
+
+const DEFAULT_ACCOUNTING_SETTINGS: AccountingSettings = {
+  configured: false,
+  software: 'sage_business_cloud',
+  defaultEffect: 'Increase',
+  standardVatLabel: 'Standard Rate 15%',
+  noVatLabel: 'No VAT',
+  defaultAffectingAccount: 'Repairs and maintenance – tractors',
+  fuelAffectingAccount: '',
+  affectingAccounts: ['Repairs and maintenance – tractors'],
+  suppliers: [],
+  updatedAtIso: null,
+};
 
 const DEFAULT_FILTERS: InvoiceFilterState = {
   ownerId: 'all',
@@ -273,6 +354,27 @@ function DownloadIcon(props: SVGProps<SVGSVGElement>) {
       <path d="M12 3v12" />
       <path d="m7 10 5 5 5-5" />
       <path d="M5 21h14" />
+    </IconBase>
+  );
+}
+
+function CsvIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M7 3h7l3 3v15H7z" />
+      <path d="M14 3v4h4" />
+      <path d="M9 11h6" />
+      <path d="M9 15h6" />
+      <path d="M9 19h4" />
+    </IconBase>
+  );
+}
+
+function SettingsIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.12 2.12-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V20.3h-3v-.08a1.7 1.7 0 0 0-1.03-1.56 1.7 1.7 0 0 0-1.88.34l-.06.06-2.12-2.12.06-.06A1.7 1.7 0 0 0 7 15a1.7 1.7 0 0 0-1.56-1.03H5.3v-3h.14A1.7 1.7 0 0 0 7 9.94a1.7 1.7 0 0 0-.34-1.88L6.6 8l2.12-2.12.06.06a1.7 1.7 0 0 0 1.88.34A1.7 1.7 0 0 0 11.7 4.7v-.1h3v.1a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06L19.8 8l-.06.06a1.7 1.7 0 0 0-.34 1.88 1.7 1.7 0 0 0 1.56 1.03h.04v3h-.04A1.7 1.7 0 0 0 19.4 15z" />
     </IconBase>
   );
 }
@@ -723,14 +825,60 @@ function buildReportUrl(
   filters: InvoiceFilterState,
   format: ReportFormat,
   includeFuelSlipCosts: boolean,
+  accountingSoftware?: AccountingSoftware,
 ): string {
   const params = new URLSearchParams({ format, includeFuelSlipCosts: includeFuelSlipCosts ? 'true' : 'false' });
 
   if (filters.assetId !== 'all') params.set('assetId', filters.assetId);
   if (filters.year !== 'all') params.set('year', filters.year);
   if (filters.month !== 'all') params.set('month', filters.month);
+  if (format === 'csv' && accountingSoftware) params.set('accountingSoftware', accountingSoftware);
 
   return `/api/my-invoices/report?${params.toString()}`;
+}
+
+function copyAccountingSettings(settings: AccountingSettings): AccountingSettings {
+  return {
+    ...settings,
+    affectingAccounts: [...settings.affectingAccounts],
+    suppliers: settings.suppliers.map((supplier) => ({
+      ...supplier,
+      aliases: [...supplier.aliases],
+    })),
+  };
+}
+
+function clientSupplierId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+
+  return `supplier-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function aliasesText(aliases: string[]): string {
+  return aliases.join('\n');
+}
+
+function parseAliases(value: string): string[] {
+  const result: string[] = [];
+  const seen = new Set<string>();
+
+  for (const item of value.split(/[\n,;]+/)) {
+    const alias = item.replace(/\s+/g, ' ').trim();
+    const key = alias.toLowerCase();
+    if (!alias || seen.has(key)) continue;
+    seen.add(key);
+    result.push(alias);
+  }
+
+  return result;
+}
+
+function downloadFileName(response: Response, fallback: string): string {
+  const disposition = response.headers.get('Content-Disposition') ?? '';
+  const match = disposition.match(/filename="([^"]+)"/i);
+  return match?.[1]?.trim() || fallback;
 }
 
 export default function MyInvoicesClient({
@@ -764,6 +912,19 @@ export default function MyInvoicesClient({
   const [downloadStep, setDownloadStep] = useState<DownloadStep>('format');
   const [downloadFormat, setDownloadFormat] = useState<DownloadExportFormat>('pdf');
   const [includeFuelSlipCosts, setIncludeFuelSlipCosts] = useState(true);
+  const [accountingSettings, setAccountingSettings] = useState<AccountingSettings | null>(null);
+  const [accountingSettingsDraft, setAccountingSettingsDraft] = useState<AccountingSettings>(
+    copyAccountingSettings(DEFAULT_ACCOUNTING_SETTINGS),
+  );
+  const [selectedAccountingSoftware, setSelectedAccountingSoftware] = useState<AccountingSoftware>('sage_business_cloud');
+  const [accountingSettingsOpen, setAccountingSettingsOpen] = useState(false);
+  const [accountingSettingsLoading, setAccountingSettingsLoading] = useState(false);
+  const [accountingSettingsSaving, setAccountingSettingsSaving] = useState(false);
+  const [accountingSettingsError, setAccountingSettingsError] = useState('');
+  const [newAffectingAccount, setNewAffectingAccount] = useState('');
+  const [accountingExportIssues, setAccountingExportIssues] = useState<AccountingExportIssue[]>([]);
+  const [accountingExportError, setAccountingExportError] = useState('');
+  const [accountingExportDownloading, setAccountingExportDownloading] = useState(false);
   const [dealerDefaults, setDealerDefaults] = useState<DealerDefaults>(initialDealerDefaults);
   const [draft, setDraft] = useState<InvoiceDraft>(buildEmptyDraft('manual', initialDealerDefaults.supplierName));
   const [assetLockedForFlow, setAssetLockedForFlow] = useState(false);
@@ -923,7 +1084,18 @@ export default function MyInvoicesClient({
   const formTitle = flow === 'review' ? 'Review cost details' : 'Enter cost manually';
   const hasInvoiceSearch = invoiceSearch.trim().length > 0;
   const deleteConfirmOpen = Boolean(deleteCandidateInvoice);
-  const modalOpen = sourceChoiceOpen || assetPickerOpen || flow === 'upload' || formOpen || filterOpen || downloadOpen || deleteConfirmOpen;
+  const downloadSteps = downloadFormat === 'csv' ? CSV_DOWNLOAD_STEPS : STANDARD_DOWNLOAD_STEPS;
+  const selectedAccountingSoftwareOption = ACCOUNTING_SOFTWARE_OPTIONS.find(
+    (option) => option.value === selectedAccountingSoftware,
+  ) ?? ACCOUNTING_SOFTWARE_OPTIONS[0];
+  const modalOpen = sourceChoiceOpen
+    || assetPickerOpen
+    || flow === 'upload'
+    || formOpen
+    || filterOpen
+    || downloadOpen
+    || accountingSettingsOpen
+    || deleteConfirmOpen;
   const selectedUsageMetricOption = USAGE_METRIC_OPTIONS.find((option) => option.value === draft.usageMetric) ?? USAGE_METRIC_OPTIONS[0];
 
   useEffect(() => {
@@ -1166,11 +1338,40 @@ export default function MyInvoicesClient({
     }
   }
 
+  async function loadAccountingSettings(force = false): Promise<AccountingSettings | null> {
+    if (accountingSettings && !force) return accountingSettings;
+
+    setAccountingSettingsLoading(true);
+    setAccountingSettingsError('');
+
+    try {
+      const response = await fetch('/api/my-invoices/accounting-settings', { cache: 'no-store' });
+      const data = (await response.json()) as AccountingSettingsResponse;
+      if (!response.ok || !data.ok || !data.settings) {
+        throw new Error(data.error || 'Accounting CSV settings could not be loaded.');
+      }
+
+      const nextSettings = copyAccountingSettings(data.settings);
+      setAccountingSettings(nextSettings);
+      setAccountingSettingsDraft(copyAccountingSettings(nextSettings));
+      setSelectedAccountingSoftware(nextSettings.software);
+      return nextSettings;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Accounting CSV settings could not be loaded.';
+      setAccountingSettingsError(message);
+      return null;
+    } finally {
+      setAccountingSettingsLoading(false);
+    }
+  }
+
   function openDownloadModal() {
     setIncludeFuelSlipCosts(true);
     setDownloadFilters(activeFilters);
     setDownloadStep('format');
     setDownloadFormat('pdf');
+    setAccountingExportIssues([]);
+    setAccountingExportError('');
     setOpenFilterDropdown(null);
     setDownloadOpen(true);
   }
@@ -1178,7 +1379,24 @@ export default function MyInvoicesClient({
   function closeDownloadModal() {
     setOpenFilterDropdown(null);
     setDownloadStep('format');
+    setAccountingExportIssues([]);
+    setAccountingExportError('');
+    setAccountingSettingsOpen(false);
     setDownloadOpen(false);
+  }
+
+  function chooseDownloadFormat(format: DownloadExportFormat) {
+    setDownloadFormat(format);
+    setAccountingExportIssues([]);
+    setAccountingExportError('');
+
+    if (format === 'csv') {
+      if (accountingSettings) {
+        setSelectedAccountingSoftware(accountingSettings.software);
+      } else {
+        void loadAccountingSettings();
+      }
+    }
   }
 
   function showDownloadFormatStep() {
@@ -1186,9 +1404,31 @@ export default function MyInvoicesClient({
     setDownloadStep('format');
   }
 
+  function showDownloadAccountingStep() {
+    setOpenFilterDropdown(null);
+    setDownloadStep('accounting');
+    if (!accountingSettings && !accountingSettingsLoading) void loadAccountingSettings();
+  }
+
   function showDownloadTimelineStep() {
     setOpenFilterDropdown(null);
     setDownloadStep('timeline');
+  }
+
+  function showNextStepAfterFormat() {
+    if (downloadFormat === 'csv') {
+      showDownloadAccountingStep();
+      return;
+    }
+    showDownloadTimelineStep();
+  }
+
+  function showPreviousStepBeforeTimeline() {
+    if (downloadFormat === 'csv') {
+      showDownloadAccountingStep();
+      return;
+    }
+    showDownloadFormatStep();
   }
 
   function showDownloadFuelStep() {
@@ -1196,10 +1436,183 @@ export default function MyInvoicesClient({
     setDownloadStep('fuel');
   }
 
-  function handleDownloadReport(format: ReportFormat) {
-    const url = buildReportUrl(downloadFilters, format, includeFuelSlipCosts);
+  async function openAccountingSettings() {
+    const loaded = await loadAccountingSettings();
+    const nextDraft = copyAccountingSettings(loaded ?? accountingSettings ?? DEFAULT_ACCOUNTING_SETTINGS);
+    nextDraft.software = selectedAccountingSoftware;
+    setAccountingSettingsDraft(nextDraft);
+    setNewAffectingAccount('');
+    setAccountingSettingsError('');
+    setAccountingSettingsOpen(true);
+  }
 
-    if (format === 'xlsx' || format === 'csv') {
+  function closeAccountingSettings() {
+    if (accountingSettingsSaving) return;
+    setAccountingSettingsDraft(copyAccountingSettings(accountingSettings ?? DEFAULT_ACCOUNTING_SETTINGS));
+    setNewAffectingAccount('');
+    setAccountingSettingsError('');
+    setAccountingSettingsOpen(false);
+  }
+
+  function setAccountingDraftField<K extends keyof AccountingSettings>(
+    key: K,
+    value: AccountingSettings[K],
+  ) {
+    setAccountingSettingsDraft((current) => ({ ...current, [key]: value }));
+  }
+
+  function addAffectingAccount() {
+    const account = newAffectingAccount.replace(/\s+/g, ' ').trim();
+    if (!account) return;
+
+    setAccountingSettingsDraft((current) => {
+      const exists = current.affectingAccounts.some(
+        (entry) => entry.toLowerCase() === account.toLowerCase(),
+      );
+      return {
+        ...current,
+        affectingAccounts: exists ? current.affectingAccounts : [...current.affectingAccounts, account],
+        defaultAffectingAccount: current.defaultAffectingAccount || account,
+      };
+    });
+    setNewAffectingAccount('');
+  }
+
+  function removeAffectingAccount(account: string) {
+    setAccountingSettingsDraft((current) => {
+      const affectingAccounts = current.affectingAccounts.filter((entry) => entry !== account);
+      return {
+        ...current,
+        affectingAccounts,
+        defaultAffectingAccount: current.defaultAffectingAccount === account
+          ? affectingAccounts[0] ?? ''
+          : current.defaultAffectingAccount,
+        fuelAffectingAccount: current.fuelAffectingAccount === account
+          ? ''
+          : current.fuelAffectingAccount,
+      };
+    });
+  }
+
+  function addAccountingSupplier() {
+    setAccountingSettingsDraft((current) => ({
+      ...current,
+      suppliers: [
+        ...current.suppliers,
+        {
+          id: clientSupplierId(),
+          name: '',
+          aliases: [],
+        },
+      ],
+    }));
+  }
+
+  function updateAccountingSupplier(
+    supplierId: string,
+    patch: Partial<Pick<AccountingSupplier, 'name' | 'aliases'>>,
+  ) {
+    setAccountingSettingsDraft((current) => ({
+      ...current,
+      suppliers: current.suppliers.map((supplier) =>
+        supplier.id === supplierId ? { ...supplier, ...patch } : supplier,
+      ),
+    }));
+  }
+
+  function removeAccountingSupplier(supplierId: string) {
+    setAccountingSettingsDraft((current) => ({
+      ...current,
+      suppliers: current.suppliers.filter((supplier) => supplier.id !== supplierId),
+    }));
+  }
+
+  async function saveAccountingSettings(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setAccountingSettingsSaving(true);
+    setAccountingSettingsError('');
+
+    try {
+      const response = await fetch('/api/my-invoices/accounting-settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(accountingSettingsDraft),
+      });
+      const data = (await response.json()) as AccountingSettingsResponse;
+      if (!response.ok || !data.ok || !data.settings) {
+        throw new Error(data.error || 'Accounting CSV settings could not be saved.');
+      }
+
+      const nextSettings = copyAccountingSettings(data.settings);
+      setAccountingSettings(nextSettings);
+      setAccountingSettingsDraft(copyAccountingSettings(nextSettings));
+      setSelectedAccountingSoftware(nextSettings.software);
+      setAccountingExportIssues([]);
+      setAccountingExportError('');
+      setAccountingSettingsOpen(false);
+      setNotice({ tone: 'success', message: 'Accounting CSV settings saved.' });
+    } catch (error) {
+      setAccountingSettingsError(
+        error instanceof Error ? error.message : 'Accounting CSV settings could not be saved.',
+      );
+    } finally {
+      setAccountingSettingsSaving(false);
+    }
+  }
+
+  async function handleDownloadReport(format: ReportFormat) {
+    const url = buildReportUrl(
+      downloadFilters,
+      format,
+      includeFuelSlipCosts,
+      selectedAccountingSoftware,
+    );
+
+    if (format === 'csv') {
+      if (!accountingSettings?.configured) {
+        setAccountingExportError('Complete Accounting CSV Settings before downloading this file.');
+        setAccountingExportIssues([]);
+        showDownloadAccountingStep();
+        return;
+      }
+
+      setAccountingExportDownloading(true);
+      setAccountingExportIssues([]);
+      setAccountingExportError('');
+
+      try {
+        const response = await fetch(url, { cache: 'no-store' });
+        if (!response.ok) {
+          const data = await response.json().catch(() => null) as AccountingExportErrorResponse | null;
+          setAccountingExportError(data?.error || 'The accounting CSV could not be generated.');
+          setAccountingExportIssues(data?.issues ?? []);
+          setDownloadStep('accounting');
+          return;
+        }
+
+        const blob = await response.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = objectUrl;
+        link.download = downloadFileName(response, 'cost-ledger-accounting.csv');
+        link.rel = 'noreferrer';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+        closeDownloadModal();
+      } catch (error) {
+        setAccountingExportError(
+          error instanceof Error ? error.message : 'The accounting CSV could not be downloaded.',
+        );
+        setDownloadStep('accounting');
+      } finally {
+        setAccountingExportDownloading(false);
+      }
+      return;
+    }
+
+    if (format === 'xlsx') {
       const link = document.createElement('a');
       link.href = url;
       link.download = '';
@@ -1695,30 +2108,34 @@ export default function MyInvoicesClient({
 
       {!dealerMode && downloadOpen ? (
         <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label="Download cost records">
-          <div className={`${styles.downloadModal} ${styles.reportModal} ${styles.downloadExportModal} ${downloadStep === 'format' ? styles.downloadFormatModal : ''}`}>
+          <div className={`${styles.downloadModal} ${styles.reportModal} ${styles.downloadExportModal} ${downloadStep === 'format' ? styles.downloadFormatModal : ''} ${downloadStep === 'accounting' ? styles.downloadAccountingModal : ''}`}>
             <div className={styles.modalHeader}>
               <div>
                 <h2>
                   {downloadStep === 'format'
                     ? 'Download cost records'
-                    : downloadStep === 'timeline'
-                      ? 'Choose report timeline'
-                      : 'External fuel costs'}
+                    : downloadStep === 'accounting'
+                      ? 'Choose accounting system'
+                      : downloadStep === 'timeline'
+                        ? 'Choose report timeline'
+                        : 'External fuel costs'}
                 </h2>
                 <p>
                   {downloadStep === 'format'
-                    ? 'Choose PDF or Excel to begin.'
-                    : downloadStep === 'timeline'
-                      ? 'Select the year and optional month to include.'
-                      : 'Choose whether Fuel Slip records should be included.'}
+                    ? 'Choose PDF, Excel or an accounting-ready CSV to begin.'
+                    : downloadStep === 'accounting'
+                      ? 'Select the CSV template and confirm the saved accounting mappings.'
+                      : downloadStep === 'timeline'
+                        ? 'Select the year and optional month to include.'
+                        : 'Choose whether Fuel Slip records should be included.'}
                 </p>
               </div>
               <button type="button" className={styles.closeButton} onClick={closeDownloadModal} aria-label="Close download"><CloseIcon /></button>
             </div>
             <div className={styles.modalDivider} />
             <ol className={styles.downloadStageRail} aria-label="Cost ledger download progress">
-              {DOWNLOAD_STEPS.map((step, index) => {
-                const activeIndex = DOWNLOAD_STEPS.findIndex((item) => item.key === downloadStep);
+              {downloadSteps.map((step, index) => {
+                const activeIndex = downloadSteps.findIndex((item) => item.key === downloadStep);
                 const isActive = step.key === downloadStep;
                 const isComplete = index < activeIndex;
 
@@ -1740,7 +2157,7 @@ export default function MyInvoicesClient({
                   <button
                     type="button"
                     className={`${styles.reportOption} ${downloadFormat === 'pdf' ? styles.reportOptionActive : ''}`}
-                    onClick={() => setDownloadFormat('pdf')}
+                    onClick={() => chooseDownloadFormat('pdf')}
                     aria-pressed={downloadFormat === 'pdf'}
                   >
                     <span className={styles.reportGraphic}>
@@ -1754,7 +2171,7 @@ export default function MyInvoicesClient({
                   <button
                     type="button"
                     className={`${styles.reportOption} ${downloadFormat === 'xlsx' ? styles.reportOptionActive : ''}`}
-                    onClick={() => setDownloadFormat('xlsx')}
+                    onClick={() => chooseDownloadFormat('xlsx')}
                     aria-pressed={downloadFormat === 'xlsx'}
                   >
                     <span className={styles.reportGraphic}>
@@ -1765,12 +2182,125 @@ export default function MyInvoicesClient({
                       <small>Download all report rows in an Excel-ready workbook.</small>
                     </span>
                   </button>
+                  <button
+                    type="button"
+                    className={`${styles.reportOption} ${downloadFormat === 'csv' ? styles.reportOptionActive : ''}`}
+                    onClick={() => chooseDownloadFormat('csv')}
+                    aria-pressed={downloadFormat === 'csv'}
+                  >
+                    <span className={`${styles.reportGraphic} ${styles.csvReportGraphic}`}>
+                      <CsvIcon />
+                    </span>
+                    <span className={styles.reportTitleBlock}>
+                      <strong>Accounting CSV</strong>
+                      <small>Download mapped rows ready for Sage or another accounting import.</small>
+                    </span>
+                  </button>
                 </div>
                 <div className={`${styles.modalFooter} ${styles.downloadModalFooter} ${styles.downloadFormatFooter}`}>
                   <button type="button" className={`${styles.secondaryButton} ${styles.downloadSecondaryButton}`} onClick={closeDownloadModal}>Cancel</button>
-                  <button type="button" className={`${styles.primaryButton} ${styles.downloadNextButton}`} onClick={showDownloadTimelineStep}>
+                  <button type="button" className={`${styles.primaryButton} ${styles.downloadNextButton}`} onClick={showNextStepAfterFormat}>
                     <span>Next</span>
                   </button>
+                </div>
+              </div>
+            ) : downloadStep === 'accounting' ? (
+              <div className={styles.downloadStageContent}>
+                <div className={styles.accountingSoftwareGrid} aria-label="Accounting software">
+                  {ACCOUNTING_SOFTWARE_OPTIONS.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      className={`${styles.accountingSoftwareOption} ${selectedAccountingSoftware === option.value ? styles.accountingSoftwareOptionActive : ''}`}
+                      onClick={() => {
+                        setSelectedAccountingSoftware(option.value);
+                        setAccountingExportIssues([]);
+                        setAccountingExportError('');
+                      }}
+                      aria-pressed={selectedAccountingSoftware === option.value}
+                    >
+                      <span className={styles.accountingSoftwareMark} aria-hidden="true">
+                        {option.value === 'sage_business_cloud' ? 'S' : 'CSV'}
+                      </span>
+                      <span>
+                        <strong>{option.label}</strong>
+                        <small>{option.description}</small>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+
+                <section className={styles.accountingSetupPanel} aria-label="Accounting CSV settings">
+                  <div className={styles.accountingSetupHeader}>
+                    <div>
+                      <span className={`${styles.accountingStatus} ${accountingSettings?.configured ? styles.accountingStatusReady : styles.accountingStatusRequired}`}>
+                        {accountingSettings?.configured ? 'Ready' : 'Setup required'}
+                      </span>
+                      <h3>Accounting CSV Settings</h3>
+                      <p>These mappings make supplier, VAT and affecting-account values predictable before import.</p>
+                    </div>
+                    <button
+                      type="button"
+                      className={`${styles.secondaryButton} ${styles.accountingSettingsButton}`}
+                      onClick={() => void openAccountingSettings()}
+                      disabled={accountingSettingsLoading}
+                    >
+                      <SettingsIcon className={styles.buttonIcon} />
+                      <span>{accountingSettings?.configured ? 'Edit settings' : 'Set up CSV'}</span>
+                    </button>
+                  </div>
+
+                  {accountingSettingsLoading ? (
+                    <p className={styles.accountingLoadingText}>Loading accounting settings...</p>
+                  ) : accountingSettings?.configured ? (
+                    <dl className={styles.accountingSetupSummary}>
+                      <div><dt>Effect</dt><dd>{accountingSettings.defaultEffect}</dd></div>
+                      <div><dt>Standard VAT</dt><dd>{accountingSettings.standardVatLabel}</dd></div>
+                      <div><dt>Default account</dt><dd>{accountingSettings.defaultAffectingAccount}</dd></div>
+                      <div><dt>Saved suppliers</dt><dd>{accountingSettings.suppliers.length}</dd></div>
+                    </dl>
+                  ) : (
+                    <p className={styles.accountingRequiredText}>
+                      Add at least one saved supplier and alias, VAT output labels and a default affecting account.
+                    </p>
+                  )}
+                </section>
+
+                {accountingExportError ? (
+                  <section className={styles.accountingIssuePanel} role="alert">
+                    <strong>{accountingExportError}</strong>
+                    {accountingExportIssues.length ? (
+                      <>
+                        <p>Fix the following rows before downloading. No values were guessed.</p>
+                        <ul className={styles.accountingIssueList}>
+                          {accountingExportIssues.slice(0, 12).map((issue, index) => (
+                            <li key={`${issue.invoiceId}-${issue.field}-${index}`}>
+                              <span>{issue.invoiceNumber || issue.assetTitle || 'Cost record'}</span>
+                              <span>{issue.message}</span>
+                            </li>
+                          ))}
+                        </ul>
+                        {accountingExportIssues.length > 12 ? (
+                          <p>And {accountingExportIssues.length - 12} more issue(s).</p>
+                        ) : null}
+                      </>
+                    ) : null}
+                  </section>
+                ) : null}
+
+                <div className={`${styles.modalFooter} ${styles.downloadModalFooter}`}>
+                  <button type="button" className={`${styles.secondaryButton} ${styles.downloadSecondaryButton}`} onClick={showDownloadFormatStep}>Back</button>
+                  <div className={styles.downloadFooterActions}>
+                    <button type="button" className={`${styles.secondaryButton} ${styles.downloadSecondaryButton}`} onClick={closeDownloadModal}>Cancel</button>
+                    <button
+                      type="button"
+                      className={`${styles.primaryButton} ${styles.downloadNextButton}`}
+                      onClick={showDownloadTimelineStep}
+                      disabled={accountingSettingsLoading || !accountingSettings?.configured}
+                    >
+                      <span>Next</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             ) : downloadStep === 'timeline' ? (
@@ -1807,7 +2337,7 @@ export default function MyInvoicesClient({
                   </div>
                 </section>
                 <div className={`${styles.modalFooter} ${styles.downloadModalFooter}`}>
-                  <button type="button" className={`${styles.secondaryButton} ${styles.downloadSecondaryButton}`} onClick={showDownloadFormatStep}>Back</button>
+                  <button type="button" className={`${styles.secondaryButton} ${styles.downloadSecondaryButton}`} onClick={showPreviousStepBeforeTimeline}>Back</button>
                   <div className={styles.downloadFooterActions}>
                     <button type="button" className={`${styles.secondaryButton} ${styles.downloadSecondaryButton}`} onClick={closeDownloadModal}>Cancel</button>
                     <button type="button" className={`${styles.primaryButton} ${styles.downloadNextButton}`} onClick={showDownloadFuelStep}>
@@ -1861,13 +2391,18 @@ export default function MyInvoicesClient({
                     <button
                       type="button"
                       className={`${styles.primaryButton} ${styles.downloadSubmitButton}`}
-                      onClick={() => handleDownloadReport(downloadFormat)}
+                      onClick={() => void handleDownloadReport(downloadFormat)}
+                      disabled={accountingExportDownloading}
                     >
                       <DownloadIcon className={styles.buttonIcon} />
                       <span>
-                        {downloadFormat === 'pdf'
+                        {accountingExportDownloading
+                          ? 'Preparing CSV...'
+                          : downloadFormat === 'pdf'
                           ? 'Open PDF report'
-                          : 'Download Excel'}
+                          : downloadFormat === 'xlsx'
+                            ? 'Download Excel'
+                            : `Download ${selectedAccountingSoftwareOption.label === 'Generic accounting CSV' ? 'accounting' : 'Sage'} CSV`}
                       </span>
                     </button>
                   </div>
@@ -1875,6 +2410,201 @@ export default function MyInvoicesClient({
               </div>
             )}
           </div>
+        </div>
+      ) : null}
+
+      {!dealerMode && accountingSettingsOpen ? (
+        <div className={`${styles.modalBackdrop} ${styles.accountingSettingsBackdrop}`} role="dialog" aria-modal="true" aria-label="Accounting CSV settings">
+          <form className={`${styles.formModal} ${styles.accountingSettingsModal}`} onSubmit={saveAccountingSettings}>
+            <div className={styles.modalHeader}>
+              <div>
+                <h2>Accounting CSV Settings</h2>
+                <p>Save the exact output values used to build import-ready accounting rows.</p>
+              </div>
+              <button type="button" className={styles.closeButton} onClick={closeAccountingSettings} aria-label="Close accounting settings"><CloseIcon /></button>
+            </div>
+            <div className={styles.modalDivider} />
+
+            <div className={styles.accountingSettingsBody}>
+              <section className={styles.accountingSettingsSection}>
+                <div className={styles.accountingSettingsSectionHeading}>
+                  <div>
+                    <h3>Export profile</h3>
+                    <p>Choose the software and the default adjustment direction.</p>
+                  </div>
+                </div>
+                <div className={styles.accountingSettingsGrid}>
+                  <label>
+                    <span>Accounting software</span>
+                    <select
+                      value={accountingSettingsDraft.software}
+                      onChange={(event) => setAccountingDraftField('software', event.target.value as AccountingSoftware)}
+                    >
+                      {ACCOUNTING_SOFTWARE_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>{option.label}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    <span>Default effect</span>
+                    <select
+                      value={accountingSettingsDraft.defaultEffect}
+                      onChange={(event) => setAccountingDraftField('defaultEffect', event.target.value as AccountingEffect)}
+                    >
+                      <option value="Increase">Increase</option>
+                      <option value="Decrease">Decrease</option>
+                    </select>
+                  </label>
+                </div>
+                <div className={styles.accountingLockedHeaders}>
+                  <strong>Sage column outline</strong>
+                  <p>Date · Effect · Supplier · Reference · Description · VAT % · Excl. VAT · VAT · Incl. VAT · by Affecting Acc.</p>
+                  <small>The importer headers stay locked; the values below are configurable.</small>
+                </div>
+              </section>
+
+              <section className={styles.accountingSettingsSection}>
+                <div className={styles.accountingSettingsSectionHeading}>
+                  <div>
+                    <h3>VAT output values</h3>
+                    <p>Use the labels your accounting system expects, rather than exporting only “15%”.</p>
+                  </div>
+                </div>
+                <div className={styles.accountingSettingsGrid}>
+                  <label>
+                    <span>Standard VAT label</span>
+                    <input
+                      value={accountingSettingsDraft.standardVatLabel}
+                      onChange={(event) => setAccountingDraftField('standardVatLabel', event.target.value)}
+                      placeholder="Standard Rate 15%"
+                      required
+                    />
+                  </label>
+                  <label>
+                    <span>No VAT label</span>
+                    <input
+                      value={accountingSettingsDraft.noVatLabel}
+                      onChange={(event) => setAccountingDraftField('noVatLabel', event.target.value)}
+                      placeholder="No VAT"
+                      required
+                    />
+                  </label>
+                </div>
+              </section>
+
+              <section className={styles.accountingSettingsSection}>
+                <div className={styles.accountingSettingsSectionHeading}>
+                  <div>
+                    <h3>Affecting accounts</h3>
+                    <p>Preload the exact financial-statement account names used during import.</p>
+                  </div>
+                </div>
+                <div className={styles.accountingAccountAddRow}>
+                  <input
+                    value={newAffectingAccount}
+                    onChange={(event) => setNewAffectingAccount(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault();
+                        addAffectingAccount();
+                      }
+                    }}
+                    placeholder="e.g. Repairs and maintenance – tractors"
+                    aria-label="New affecting account"
+                  />
+                  <button type="button" className={styles.secondaryButton} onClick={addAffectingAccount}>Add account</button>
+                </div>
+                <div className={styles.accountingAccountChips}>
+                  {accountingSettingsDraft.affectingAccounts.map((account) => (
+                    <span key={account}>
+                      {account}
+                      <button type="button" onClick={() => removeAffectingAccount(account)} aria-label={`Remove ${account}`}>×</button>
+                    </span>
+                  ))}
+                </div>
+                <div className={styles.accountingSettingsGrid}>
+                  <label>
+                    <span>Default affecting account</span>
+                    <select
+                      value={accountingSettingsDraft.defaultAffectingAccount}
+                      onChange={(event) => setAccountingDraftField('defaultAffectingAccount', event.target.value)}
+                      required
+                    >
+                      <option value="">Choose an account</option>
+                      {accountingSettingsDraft.affectingAccounts.map((account) => (
+                        <option key={account} value={account}>{account}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    <span>Fuel affecting account (optional)</span>
+                    <select
+                      value={accountingSettingsDraft.fuelAffectingAccount}
+                      onChange={(event) => setAccountingDraftField('fuelAffectingAccount', event.target.value)}
+                    >
+                      <option value="">Use default affecting account</option>
+                      {accountingSettingsDraft.affectingAccounts.map((account) => (
+                        <option key={account} value={account}>{account}</option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+              </section>
+
+              <section className={styles.accountingSettingsSection}>
+                <div className={styles.accountingSettingsSectionHeading}>
+                  <div>
+                    <h3>Saved suppliers and aliases</h3>
+                    <p>The exported supplier is always the saved name. Aliases match spelling variants from uploaded dealer invoices.</p>
+                  </div>
+                  <button type="button" className={styles.secondaryButton} onClick={addAccountingSupplier}>Add supplier</button>
+                </div>
+                {accountingSettingsDraft.suppliers.length ? (
+                  <div className={styles.accountingSupplierList}>
+                    {accountingSettingsDraft.suppliers.map((supplier, index) => (
+                      <article className={styles.accountingSupplierCard} key={supplier.id}>
+                        <div className={styles.accountingSupplierCardHeader}>
+                          <strong>Supplier {index + 1}</strong>
+                          <button type="button" onClick={() => removeAccountingSupplier(supplier.id)}>Remove</button>
+                        </div>
+                        <div className={styles.accountingSupplierGrid}>
+                          <label>
+                            <span>Saved supplier name</span>
+                            <input
+                              value={supplier.name}
+                              onChange={(event) => updateAccountingSupplier(supplier.id, { name: event.target.value })}
+                              placeholder="Haddad"
+                              required
+                            />
+                          </label>
+                          <label>
+                            <span>Aliases (one per line)</span>
+                            <textarea
+                              value={aliasesText(supplier.aliases)}
+                              onChange={(event) => updateAccountingSupplier(supplier.id, { aliases: parseAliases(event.target.value) })}
+                              placeholder={'Haddad Tractors\nHaddad (Pty) Ltd'}
+                              rows={3}
+                            />
+                          </label>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <p className={styles.accountingRequiredText}>Add at least one supplier before saving these settings.</p>
+                )}
+              </section>
+
+              {accountingSettingsError ? <div className={styles.accountingSettingsError} role="alert">{accountingSettingsError}</div> : null}
+            </div>
+
+            <div className={`${styles.modalFooter} ${styles.accountingSettingsFooter}`}>
+              <button type="button" className={styles.secondaryButton} onClick={closeAccountingSettings} disabled={accountingSettingsSaving}>Cancel</button>
+              <button type="submit" className={styles.primaryButton} disabled={accountingSettingsSaving}>
+                {accountingSettingsSaving ? 'Saving...' : 'Save settings'}
+              </button>
+            </div>
+          </form>
         </div>
       ) : null}
 

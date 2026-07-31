@@ -2608,7 +2608,7 @@
 
 .downloadStageRail {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
   gap: 0.7rem;
   margin: 0;
   padding: 0;
@@ -2671,7 +2671,7 @@
 }
 
 .downloadFormatGrid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .downloadFormatGrid .reportOption {
@@ -2809,5 +2809,494 @@
   .downloadFooterActions,
   .downloadFormatFooter {
     grid-template-columns: 1fr;
+  }
+}
+
+/* === Accounting-ready CSV export === */
+.downloadAccountingModal {
+  width: min(100%, 980px);
+  max-height: min(92vh, calc(100dvh - 1.5rem));
+  overflow-y: auto;
+}
+
+.csvReportGraphic {
+  color: #197454;
+  background: linear-gradient(180deg, #ffffff 0%, #edf8f2 100%);
+}
+
+.accountingSoftwareGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.accountingSoftwareOption {
+  min-width: 0;
+  min-height: 5.8rem;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.95rem 1rem;
+  border: 1px solid rgba(210, 223, 232, 0.96);
+  border-radius: 1.15rem;
+  color: #183143;
+  background: linear-gradient(180deg, #ffffff 0%, #f5f8fb 100%);
+  box-shadow: 0 10px 22px rgba(16, 31, 28, 0.04);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.accountingSoftwareOption:hover,
+.accountingSoftwareOption:focus-visible {
+  transform: translateY(-1px);
+  border-color: rgba(25, 116, 84, 0.44);
+  box-shadow: 0 0 0 4px rgba(25, 116, 84, 0.08), 0 14px 26px rgba(16, 31, 28, 0.06);
+  outline: none;
+}
+
+.accountingSoftwareOptionActive {
+  border-color: rgba(155, 204, 181, 0.98);
+  background: linear-gradient(180deg, #ffffff 0%, #edf8f2 100%);
+}
+
+.accountingSoftwareOption > span:last-child {
+  min-width: 0;
+  display: grid;
+  gap: 0.22rem;
+}
+
+.accountingSoftwareOption strong {
+  color: #10352b;
+  font-size: 0.96rem;
+  font-weight: 900;
+}
+
+.accountingSoftwareOption small {
+  color: #627386;
+  font-size: 0.79rem;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.accountingSoftwareMark {
+  width: 3.25rem;
+  height: 3.25rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(201, 221, 211, 0.98);
+  border-radius: 1rem;
+  color: #ffffff;
+  background: linear-gradient(145deg, #1d8762 0%, #0f573f 100%);
+  font-size: 0.82rem;
+  font-weight: 950;
+  letter-spacing: 0.02em;
+}
+
+.accountingSetupPanel {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1rem;
+  border: 1px solid rgba(207, 224, 234, 0.92);
+  border-radius: 1.25rem;
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.07), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #f6faf8 100%);
+}
+
+.accountingSetupHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.accountingSetupHeader > div {
+  min-width: 0;
+  display: grid;
+  gap: 0.3rem;
+}
+
+.accountingSetupHeader h3 {
+  color: #10352b;
+  font-size: 1.08rem;
+  font-weight: 900;
+}
+
+.accountingSetupHeader p,
+.accountingRequiredText,
+.accountingLoadingText {
+  margin: 0;
+  color: #627386;
+  font-size: 0.84rem;
+  font-weight: 680;
+  line-height: 1.45;
+}
+
+.accountingStatus {
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.55rem;
+  padding: 0 0.6rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.accountingStatusReady {
+  color: #116043;
+  background: #dff5e9;
+}
+
+.accountingStatusRequired {
+  color: #885b08;
+  background: #fff1cc;
+}
+
+.accountingSettingsButton {
+  flex: 0 0 auto;
+  min-height: 2.9rem;
+  padding: 0 1rem;
+}
+
+.accountingSetupSummary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin: 0;
+}
+
+.accountingSetupSummary > div {
+  min-width: 0;
+  display: grid;
+  gap: 0.16rem;
+  padding: 0.7rem 0.75rem;
+  border: 1px solid rgba(220, 229, 235, 0.94);
+  border-radius: 0.85rem;
+  background: rgba(255, 255, 255, 0.86);
+}
+
+.accountingSetupSummary dt {
+  color: #788899;
+  font-size: 0.67rem;
+  font-weight: 900;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+.accountingSetupSummary dd {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: #143c31;
+  font-size: 0.82rem;
+  font-weight: 850;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.accountingIssuePanel,
+.accountingSettingsError {
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid #e9b9b2;
+  border-radius: 1rem;
+  color: #7f2d25;
+  background: #fff2f0;
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+
+.accountingIssuePanel p {
+  margin: 0;
+}
+
+.accountingIssueList {
+  max-height: 11rem;
+  display: grid;
+  gap: 0.42rem;
+  margin: 0;
+  overflow-y: auto;
+  padding: 0 0.25rem 0 1.15rem;
+}
+
+.accountingIssueList li {
+  padding-left: 0.1rem;
+}
+
+.accountingIssueList li span {
+  display: block;
+}
+
+.accountingIssueList li span:first-child {
+  font-weight: 900;
+}
+
+.accountingSettingsBackdrop {
+  z-index: 110;
+  padding: clamp(0.5rem, 2vw, 1.5rem);
+  background: rgba(9, 18, 20, 0.58);
+}
+
+.accountingSettingsModal {
+  width: min(100%, 1000px);
+  max-height: min(94vh, calc(100dvh - 1rem));
+}
+
+.accountingSettingsBody {
+  min-height: 0;
+  display: grid;
+  align-content: start;
+  gap: 0.9rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 clamp(1.25rem, 2.4vw, 2rem) 1rem;
+  scrollbar-gutter: stable;
+}
+
+.accountingSettingsSection {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1rem;
+  border: 1px solid rgba(216, 226, 234, 0.96);
+  border-radius: 1.15rem;
+  background: rgba(255, 255, 255, 0.84);
+}
+
+.accountingSettingsSectionHeading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.accountingSettingsSectionHeading > div {
+  min-width: 0;
+  display: grid;
+  gap: 0.24rem;
+}
+
+.accountingSettingsSectionHeading h3 {
+  color: #10352b;
+  font-size: 1.02rem;
+  font-weight: 900;
+}
+
+.accountingSettingsSectionHeading p,
+.accountingLockedHeaders p,
+.accountingLockedHeaders small {
+  margin: 0;
+  color: #667789;
+  font-size: 0.82rem;
+  font-weight: 660;
+  line-height: 1.42;
+}
+
+.accountingSettingsGrid,
+.accountingSupplierGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.accountingSettingsGrid label,
+.accountingSupplierGrid label {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 0.42rem;
+}
+
+.accountingSettingsGrid label > span,
+.accountingSupplierGrid label > span {
+  color: #5f7284;
+  font-size: 0.73rem;
+  font-weight: 900;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+.accountingSettingsGrid input,
+.accountingSettingsGrid select,
+.accountingSupplierGrid input,
+.accountingSupplierGrid textarea,
+.accountingAccountAddRow input {
+  width: 100%;
+  min-height: 3rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 0.9rem;
+  outline: none;
+  padding: 0 0.9rem;
+  color: var(--text);
+  background: #ffffff;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 730;
+}
+
+.accountingSupplierGrid textarea {
+  min-height: 5.6rem;
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+  line-height: 1.4;
+  resize: vertical;
+}
+
+.accountingSettingsGrid input:focus,
+.accountingSettingsGrid select:focus,
+.accountingSupplierGrid input:focus,
+.accountingSupplierGrid textarea:focus,
+.accountingAccountAddRow input:focus {
+  border-color: rgba(22, 83, 64, 0.42);
+  box-shadow: 0 0 0 4px rgba(22, 83, 64, 0.09);
+}
+
+.accountingLockedHeaders {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.8rem 0.9rem;
+  border: 1px dashed rgba(172, 197, 185, 0.96);
+  border-radius: 0.9rem;
+  color: #164b3b;
+  background: #f3faf6;
+}
+
+.accountingLockedHeaders p {
+  color: #164b3b;
+  font-weight: 800;
+}
+
+.accountingAccountAddRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.7rem;
+}
+
+.accountingAccountChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.accountingAccountChips > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 2rem;
+  padding: 0.25rem 0.35rem 0.25rem 0.7rem;
+  border: 1px solid #cce3d7;
+  border-radius: 999px;
+  color: #185641;
+  background: #eef9f3;
+  font-size: 0.78rem;
+  font-weight: 820;
+}
+
+.accountingAccountChips button,
+.accountingSupplierCardHeader button {
+  border: 0;
+  color: #8b3c34;
+  background: transparent;
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.accountingAccountChips button {
+  width: 1.45rem;
+  height: 1.45rem;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.accountingSupplierList {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.accountingSupplierCard {
+  display: grid;
+  gap: 0.7rem;
+  padding: 0.85rem;
+  border: 1px solid rgba(219, 228, 235, 0.98);
+  border-radius: 1rem;
+  background: #f8fbfc;
+}
+
+.accountingSupplierCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  color: #173d32;
+}
+
+.accountingSupplierCardHeader button {
+  color: #9a3b32;
+  font-size: 0.78rem;
+}
+
+.accountingSettingsFooter {
+  position: relative;
+  z-index: 2;
+}
+
+@media (max-width: 900px) {
+  .accountingSetupSummary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .accountingSettingsModal {
+    max-height: calc(100dvh - 1rem);
+  }
+}
+
+@media (max-width: 680px) {
+  .accountingSoftwareGrid,
+  .accountingSettingsGrid,
+  .accountingSupplierGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .accountingSetupHeader,
+  .accountingSettingsSectionHeading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .accountingSettingsButton,
+  .accountingSettingsSectionHeading .secondaryButton {
+    width: 100%;
+  }
+
+  .accountingAccountAddRow {
+    grid-template-columns: 1fr;
+  }
+
+  .accountingAccountAddRow .secondaryButton {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .accountingSetupSummary {
+    grid-template-columns: 1fr;
+  }
+
+  .accountingSettingsBackdrop {
+    padding: 0.25rem;
+  }
+
+  .accountingSettingsModal {
+    max-height: calc(100dvh - 0.5rem);
+    border-radius: 1.1rem;
   }
 }
