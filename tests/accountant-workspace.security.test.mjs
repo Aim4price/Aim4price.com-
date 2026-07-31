@@ -5,7 +5,12 @@ import test from 'node:test';
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 const workspace = read('lib/accountant-workspace.ts');
 const lifecycle = read('lib/asset-lifecycle.ts');
-const accountantUi = read('app/accountant/registers/[shareId]/accountant-register-client.tsx');
+const accountantManageUi = read('components/AccountantAssetManageModal.tsx');
+const headerUi = read('components/AppHeader.tsx');
+const accountUi = read('app/account/account-client.tsx');
+const leadsUi = read('app/leads/leads-client.tsx');
+const fuelUi = read('app/fuel/fuel-client.tsx');
+const costUi = read('app/my-invoices/my-invoices-client.tsx');
 const ownerUi = read('app/asset-register/asset-register-client.tsx');
 const registerDb = read('lib/asset-register-db.ts');
 const registerSummaries = read('lib/asset-registers.ts');
@@ -35,10 +40,46 @@ test('accountant removal ends only the lead access record', () => {
 });
 
 test('accountant asset UI exposes no owner deletion, marketplace or pricing controls', () => {
-  assert.doesNotMatch(accountantUi, /Delete asset|Send to marketplace|Manage pricing|Add Asset|Dealer tracking/);
-  assert.match(accountantUi, /Finance/);
-  assert.match(accountantUi, /Documents/);
-  assert.match(accountantUi, /Accounting value/);
+  assert.doesNotMatch(accountantManageUi, /Delete asset|Send to marketplace|Manage pricing|Add Asset|Dealer tracking/);
+  assert.match(accountantManageUi, /Finance details/);
+  assert.match(accountantManageUi, /Documents/);
+  assert.match(accountantManageUi, /Accounting carrying value/);
+  assert.match(ownerUi, /canUseOwnerOnlyAssetActions = !isAccountantWorkspace/);
+});
+
+test('normal accountant account keeps standard leads, account and notifications', () => {
+  assert.match(headerUi, /accountType === 'finance' \|\| accountType === 'insurance'/);
+  assert.match(headerUi, /label: 'My Leads'/);
+  assert.match(headerUi, /isAccountantWorkspace/);
+  assert.match(leadsUi, /accountantWorkspaceMode/);
+  assert.match(leadsUi, /window\.location\.assign\(`\/accountant\/registers\/\$\{encodeURIComponent\(leadToOpen\.id\)\}`\)/);
+  assert.match(accountUi, /Partner directory/);
+  assert.match(accountUi, /Edit business details/);
+});
+
+test('shared workspace reuses the real Asset Register, Fuel Ledger and Cost Ledger components', () => {
+  assert.match(ownerUi, /accountantShareId/);
+  assert.match(fuelUi, /accountantShareId/);
+  assert.match(costUi, /accountantShareId/);
+  assert.match(headerUi, /label: 'Asset Register'/);
+  assert.match(headerUi, /label: 'Fuel Ledger'/);
+  assert.match(headerUi, /label: 'Cost Ledger'/);
+  assert.match(headerUi, /You will return to My Leads/);
+  assert.match(headerUi, /window\.location\.assign\('\/leads'\)/);
+});
+
+test('shared Fuel and Cost Ledgers preserve viewing and downloads but hide writes', () => {
+  assert.match(fuelUi, /if \(isAccountantReadOnly\) \{\s*openFuelSlipManager\(\)/);
+  assert.match(fuelUi, /!isAccountantReadOnly/);
+  assert.match(fuelUi, /Fuel Slips/);
+  assert.match(costUi, /!isAccountantReadOnly/);
+  assert.match(costUi, /Open file/);
+  assert.match(costUi, /\/reports\?\$\{params\.toString\(\)\}/);
+});
+
+test('removing an accountant register lead removes access without deleting owner data', () => {
+  assert.match(leadsUi, /\/api\/accountant\/registers\/\$\{encodeURIComponent\(leadToDelete\.id\)\}/);
+  assert.match(leadsUi, /The owner’s register was not deleted/);
 });
 
 test('genuine disposals archive while duplicate mistakes use the delete path', () => {
