@@ -4431,3 +4431,104 @@
     min-width: 0 !important;
   }
 }
+
+/* === Accountant My Clients manage modal refinement === */
+.accountantManageModal.accountantManageModal {
+  width: min(calc(100% - 2rem), 75rem) !important;
+  border-radius: 2rem !important;
+  overflow: hidden !important;
+  scrollbar-gutter: auto !important;
+}
+
+.accountantManageHeader.accountantManageHeader {
+  padding: 1.65rem 5.4rem 1.35rem 1.8rem !important;
+}
+
+.accountantManageHeader h3 {
+  font-size: clamp(2rem, 3.35vw, 2.75rem) !important;
+  font-weight: 850 !important;
+  line-height: 1 !important;
+  letter-spacing: -0.055em !important;
+}
+
+.accountantManageHeader p {
+  max-width: none !important;
+  margin-top: 0.58rem !important;
+  overflow: hidden;
+  color: #62758b !important;
+  font-size: 1rem !important;
+  font-weight: 680 !important;
+  line-height: 1.35 !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.accountantManageBody.accountantManageBody {
+  padding: 1.35rem 1.8rem 1.75rem !important;
+  overflow-x: hidden !important;
+}
+
+.accountantManageGrid.accountantManageGrid {
+  gap: 1rem 1.1rem !important;
+}
+
+.accountantManageGrid .accountantManageAction.accountantManageAction {
+  min-height: 7rem !important;
+  grid-template-columns: 3.4rem minmax(0, 1fr) !important;
+  gap: 1.05rem !important;
+  padding: 1.15rem 1.3rem !important;
+  border-radius: 1.45rem !important;
+}
+
+.accountantManageGrid .accountantManageAction.accountantManageAction > svg {
+  width: 1.55rem !important;
+  height: 1.55rem !important;
+}
+
+.accountantManageGrid .accountantManageAction.accountantManageAction > span {
+  gap: 0.38rem !important;
+}
+
+.accountantManageGrid .accountantManageAction.accountantManageAction strong {
+  font-size: clamp(1.08rem, 1.45vw, 1.24rem) !important;
+  font-weight: 850 !important;
+  line-height: 1.08 !important;
+  letter-spacing: -0.025em !important;
+}
+
+.accountantManageGrid .accountantManageAction.accountantManageAction small {
+  max-width: none !important;
+  overflow: hidden !important;
+  font-size: 0.98rem !important;
+  font-weight: 620 !important;
+  line-height: 1.25 !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+@media (max-width: 900px) {
+  .accountantManageModal.accountantManageModal {
+    width: min(calc(100% - 1rem), 48rem) !important;
+  }
+}
+
+@media (max-width: 620px) {
+  .accountantManageHeader.accountantManageHeader {
+    padding: 1.25rem 4.3rem 1.05rem 1.2rem !important;
+  }
+
+  .accountantManageBody.accountantManageBody {
+    padding: 1.1rem 1.2rem 1.25rem !important;
+  }
+
+  .accountantManageGrid .accountantManageAction.accountantManageAction {
+    min-height: 6.25rem !important;
+    grid-template-columns: 2.8rem minmax(0, 1fr) !important;
+    gap: 0.8rem !important;
+    padding: 1rem !important;
+  }
+
+  .accountantManageGrid .accountantManageAction.accountantManageAction small {
+    font-size: 0.88rem !important;
+  }
+}

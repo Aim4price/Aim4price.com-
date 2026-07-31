@@ -183,6 +183,13 @@ const STATUS_FILTER_OPTIONS: LeadFilterOption[] = [
   { value: 'tracking', label: 'Tracking requests' },
 ];
 
+const ACCOUNTANT_STATUS_FILTER_OPTIONS: LeadFilterOption[] = [
+  { value: 'all', label: 'All clients' },
+  { value: 'new', label: 'New clients' },
+  { value: 'open', label: 'Open clients' },
+  { value: 'completed', label: 'Completed clients' },
+];
+
 const PDF_REPORT_OPTIONS: PdfReportOption[] = [
   {
     value: 'full',
@@ -3154,8 +3161,8 @@ export default function LeadsClient({
           <div className={`${assetStyles.modalCard} ${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadFilterModal}`} role="dialog" aria-modal="true" aria-labelledby="lead-filter-title">
             <div className={`${assetStyles.modalHeader} ${dealerWorkspaceClass(workspaceStyles.modalHeader)} ${styles.leadFilterHeader}`}>
               <div className={assetStyles.modalHeaderText}>
-                <h3 id="lead-filter-title">Filter leads</h3>
-                <p className={styles.leadFilterIntro}>Choose a received date, lead status, or show only asset tracking requests.</p>
+                <h3 id="lead-filter-title">{accountantWorkspaceMode ? 'Filter clients' : 'Filter leads'}</h3>
+                <p className={styles.leadFilterIntro}>{accountantWorkspaceMode ? 'Choose a received date or client status.' : 'Choose a received date, lead status, or show only asset tracking requests.'}</p>
               </div>
 
               <button type="button" className={`${assetStyles.modalCloseButton} ${dealerWorkspaceClass(workspaceStyles.modalClose)}`} onClick={closeLeadFilterModal} aria-label="Close filter modal">
@@ -3188,7 +3195,7 @@ export default function LeadsClient({
                 label="Status"
                 dropdownKey="status"
                 value={statusFilter}
-                options={STATUS_FILTER_OPTIONS}
+                options={accountantWorkspaceMode ? ACCOUNTANT_STATUS_FILTER_OPTIONS : STATUS_FILTER_OPTIONS}
                 openDropdown={openFilterDropdown}
                 onOpenChange={setOpenFilterDropdown}
                 onChange={(value) => setStatusFilter(value as LeadStatusFilter)}
@@ -3211,8 +3218,8 @@ export default function LeadsClient({
         <div className={`${assetStyles.modalOverlay} ${dealerWorkspaceClass(workspaceStyles.modalOverlay)}`}>
           <div className={assetStyles.modalBackdrop} onClick={() => setManagedLead(null)} />
 
-          <div className={`${assetStyles.optionsModal} ${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadManageModal}`} role="dialog" aria-modal="true" aria-labelledby="lead-manage-title">
-            <div className={`${assetStyles.modalHeader} ${assetStyles.optionsModalHeader} ${dealerWorkspaceClass(workspaceStyles.modalHeader)}`}>
+          <div className={`${assetStyles.optionsModal} ${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadManageModal} ${accountantWorkspaceMode ? styles.accountantManageModal : ''}`} role="dialog" aria-modal="true" aria-labelledby="lead-manage-title">
+            <div className={`${assetStyles.modalHeader} ${assetStyles.optionsModalHeader} ${dealerWorkspaceClass(workspaceStyles.modalHeader)} ${accountantWorkspaceMode ? styles.accountantManageHeader : ''}`}>
               <div className={assetStyles.modalHeaderText}>
                 <h3 id="lead-manage-title">{assetTitle(managedLead)}</h3>
                 <p>{leadAssetMeta(managedLead)}</p>
@@ -3223,34 +3230,34 @@ export default function LeadsClient({
               </button>
             </div>
 
-            <div className={`${assetStyles.modalScrollBody} ${assetStyles.optionsScrollBody} ${dealerWorkspaceClass(workspaceStyles.modalBody)}`}>
+            <div className={`${assetStyles.modalScrollBody} ${assetStyles.optionsScrollBody} ${dealerWorkspaceClass(workspaceStyles.modalBody)} ${accountantWorkspaceMode ? styles.accountantManageBody : ''}`}>
               <div className={assetStyles.optionsContent}>
-                <div className={`${assetStyles.optionsGrid} ${assetStyles.assetOptionsGrid} ${styles.manageOptionsGrid}`}>
+                <div className={`${assetStyles.optionsGrid} ${assetStyles.assetOptionsGrid} ${styles.manageOptionsGrid} ${accountantWorkspaceMode ? styles.accountantManageGrid : ''}`}>
                   {accountantWorkspaceMode ? (
                     <>
                       <button
                         type="button"
-                        className={`${assetStyles.optionActionButton} ${assetStyles.optionFeaturedButton}`}
+                        className={`${assetStyles.optionActionButton} ${assetStyles.optionFeaturedButton} ${styles.accountantManageAction}`}
                         onClick={() => void openLead(managedLead)}
                       >
                         <DocumentIcon className={assetStyles.buttonIcon} />
                         <span>
                           <strong>Open asset register</strong>
-                          <small>Open the client’s shared Asset Register workspace.</small>
+                          <small>Open the client’s shared Asset Register.</small>
                         </span>
                       </button>
 
-                      <button type="button" className={assetStyles.optionActionButton} onClick={() => openAccountantReportModal(managedLead)}>
+                      <button type="button" className={`${assetStyles.optionActionButton} ${styles.accountantManageAction}`} onClick={() => openAccountantReportModal(managedLead)}>
                         <DownloadIcon className={assetStyles.buttonIcon} />
                         <span>
                           <strong>Download reports</strong>
-                          <small>Choose an accountant-ready register report.</small>
+                          <small>Choose an accountant-ready report.</small>
                         </span>
                       </button>
 
                       <button
                         type="button"
-                        className={assetStyles.optionActionButton}
+                        className={`${assetStyles.optionActionButton} ${styles.accountantManageAction}`}
                         onClick={() => openEmail(managedLead)}
                         disabled={!leadEmailRecipient(managedLead)}
                         title={!leadEmailRecipient(managedLead) ? 'No client email address is saved on this client.' : undefined}
@@ -3258,13 +3265,13 @@ export default function LeadsClient({
                         <EmailIcon className={assetStyles.buttonIcon} />
                         <span>
                           <strong>Email client</strong>
-                          <small>{leadEmailRecipient(managedLead) ? 'Open an email draft with register context.' : 'No client email address saved.'}</small>
+                          <small>{leadEmailRecipient(managedLead) ? 'Open an email draft with register details.' : 'No client email address saved.'}</small>
                         </span>
                       </button>
 
                       <button
                         type="button"
-                        className={`${assetStyles.optionActionButton} ${styles.accountantDeleteAction}`}
+                        className={`${assetStyles.optionActionButton} ${styles.accountantManageAction} ${styles.accountantDeleteAction}`}
                         onClick={() => {
                           setManagedLead(null);
                           setDeleteLeadTarget(managedLead);
@@ -3273,7 +3280,7 @@ export default function LeadsClient({
                         <DeleteIcon className={assetStyles.buttonIcon} />
                         <span>
                           <strong>Delete client</strong>
-                          <small>Remove this shared register from My Clients.</small>
+                          <small>Remove this register from My Clients.</small>
                         </span>
                       </button>
                     </>
