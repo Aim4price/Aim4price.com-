@@ -241,7 +241,11 @@ function buildNavItems(
   if (accountType === 'finance' || accountType === 'insurance') {
     const partnerItems: NavItem[] = [
       ...BASE_NAV_ITEMS,
-      { key: 'leads', href: '/leads', label: 'My Leads' },
+      {
+        key: 'leads',
+        href: '/leads',
+        label: accountType === 'finance' && accountSubtype === 'accountant' ? 'My Clients' : 'My Leads',
+      },
     ];
 
     if (accountType === 'insurance') {
@@ -1872,7 +1876,9 @@ export default function AppHeader({
               <div className={styles.notificationDetailHeader}>
                 <div className={styles.notificationDetailHeaderText}>
                   <h2 id="leave-account-title">Leave this account?</h2>
-                  <p>Are you sure you want to leave this account? You will return to My Leads.</p>
+                  <p>{isAccountantWorkspace
+                    ? 'Are you sure you want to leave this account? You will return to My Clients.'
+                    : 'Are you sure you want to leave this account? You will return to My Leads.'}</p>
                 </div>
                 <button type="button" className={styles.notificationDetailCloseButton} onClick={() => setLeaveAccountOpen(false)} aria-label="Cancel leaving account">
                   ×

@@ -1,12 +1,14 @@
 'use client';
 
 import styles from '../app/asset-register/page.module.css';
+import { workspaceStyles } from './WorkspacePrimitives';
 
 type Props = {
   shareId: string;
   registerName: string;
   includeFuelLedger: boolean;
   includeCostLedger: boolean;
+  workspaceMode?: boolean;
   onClose: () => void;
 };
 
@@ -14,19 +16,24 @@ function ReportIcon() {
   return <svg className={styles.buttonIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M5 20h14"/></svg>;
 }
 
-export default function AccountantRegisterReportsModal({ shareId, registerName, includeFuelLedger, includeCostLedger, onClose }: Props) {
+function CloseIcon() {
+  return <svg className={styles.buttonIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" strokeLinecap="round"/></svg>;
+}
+
+export default function AccountantRegisterReportsModal({ shareId, registerName, includeFuelLedger, includeCostLedger, workspaceMode = false, onClose }: Props) {
   const root = `/api/accountant/registers/${encodeURIComponent(shareId)}/reports`;
   const href = (kind: string) => `${root}?kind=${encodeURIComponent(kind)}`;
+  const workspaceClass = (className: string) => workspaceMode ? className : '';
 
   return (
-    <div className={styles.modalOverlay}>
+    <div className={`${styles.modalOverlay} ${workspaceClass(workspaceStyles.modalOverlay)}`}>
       <div className={styles.modalBackdrop} onClick={onClose}/>
-      <section className={styles.optionsModal} role="dialog" aria-modal="true" aria-labelledby="accountant-register-reports-title">
-        <div className={`${styles.modalHeader} ${styles.optionsModalHeader}`}>
+      <section className={`${styles.optionsModal} ${workspaceClass(workspaceStyles.modal)}`} role="dialog" aria-modal="true" aria-labelledby="accountant-register-reports-title">
+        <div className={`${styles.modalHeader} ${styles.optionsModalHeader} ${workspaceClass(workspaceStyles.modalHeader)}`}>
           <div className={styles.modalHeaderText}><h3 id="accountant-register-reports-title">Download reports</h3><p>{registerName}</p></div>
-          <button type="button" className={styles.modalCloseButton} onClick={onClose} aria-label="Close reports">×</button>
+          <button type="button" className={`${styles.modalCloseButton} ${workspaceClass(workspaceStyles.modalClose)}`} onClick={onClose} aria-label="Close reports"><CloseIcon/></button>
         </div>
-        <div className={`${styles.modalScrollBody} ${styles.optionsScrollBody}`}>
+        <div className={`${styles.modalScrollBody} ${styles.optionsScrollBody} ${workspaceClass(workspaceStyles.modalBody)}`}>
           <div className={styles.optionsContent}>
             <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid}`}>
               <a className={`${styles.optionActionButton} ${styles.optionFeaturedButton}`} href={href('depreciation')}><ReportIcon/><span><strong>Asset Depreciation Schedule</strong><small>Aim4price market-value movement, not tax depreciation.</small></span></a>
