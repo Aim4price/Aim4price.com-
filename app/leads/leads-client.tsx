@@ -3162,7 +3162,11 @@ export default function LeadsClient({
             <div className={`${assetStyles.modalHeader} ${dealerWorkspaceClass(workspaceStyles.modalHeader)} ${styles.leadFilterHeader}`}>
               <div className={assetStyles.modalHeaderText}>
                 <h3 id="lead-filter-title">{accountantWorkspaceMode ? 'Filter clients' : 'Filter leads'}</h3>
-                <p className={styles.leadFilterIntro}>{accountantWorkspaceMode ? 'Choose a received date or client status.' : 'Choose a received date, lead status, or show only asset tracking requests.'}</p>
+                <p className={styles.leadFilterIntro}>
+                  {accountantWorkspaceMode
+                    ? 'Choose a received date or client status.'
+                    : 'Choose a received date, lead status, or show only asset tracking requests.'}
+                </p>
               </div>
 
               <button type="button" className={`${assetStyles.modalCloseButton} ${dealerWorkspaceClass(workspaceStyles.modalClose)}`} onClick={closeLeadFilterModal} aria-label="Close filter modal">
@@ -3218,8 +3222,8 @@ export default function LeadsClient({
         <div className={`${assetStyles.modalOverlay} ${dealerWorkspaceClass(workspaceStyles.modalOverlay)}`}>
           <div className={assetStyles.modalBackdrop} onClick={() => setManagedLead(null)} />
 
-          <div className={`${assetStyles.optionsModal} ${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadManageModal} ${accountantWorkspaceMode ? styles.accountantManageModal : ''}`} role="dialog" aria-modal="true" aria-labelledby="lead-manage-title">
-            <div className={`${assetStyles.modalHeader} ${assetStyles.optionsModalHeader} ${dealerWorkspaceClass(workspaceStyles.modalHeader)} ${accountantWorkspaceMode ? styles.accountantManageHeader : ''}`}>
+          <div className={`${assetStyles.optionsModal} ${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadManageModal}`} role="dialog" aria-modal="true" aria-labelledby="lead-manage-title">
+            <div className={`${assetStyles.modalHeader} ${assetStyles.optionsModalHeader} ${dealerWorkspaceClass(workspaceStyles.modalHeader)}`}>
               <div className={assetStyles.modalHeaderText}>
                 <h3 id="lead-manage-title">{assetTitle(managedLead)}</h3>
                 <p>{leadAssetMeta(managedLead)}</p>
@@ -3230,34 +3234,34 @@ export default function LeadsClient({
               </button>
             </div>
 
-            <div className={`${assetStyles.modalScrollBody} ${assetStyles.optionsScrollBody} ${dealerWorkspaceClass(workspaceStyles.modalBody)} ${accountantWorkspaceMode ? styles.accountantManageBody : ''}`}>
+            <div className={`${assetStyles.modalScrollBody} ${assetStyles.optionsScrollBody} ${dealerWorkspaceClass(workspaceStyles.modalBody)}`}>
               <div className={assetStyles.optionsContent}>
-                <div className={`${assetStyles.optionsGrid} ${assetStyles.assetOptionsGrid} ${styles.manageOptionsGrid} ${accountantWorkspaceMode ? styles.accountantManageGrid : ''}`}>
+                <div className={`${assetStyles.optionsGrid} ${assetStyles.assetOptionsGrid} ${styles.manageOptionsGrid}`}>
                   {accountantWorkspaceMode ? (
                     <>
                       <button
                         type="button"
-                        className={`${assetStyles.optionActionButton} ${assetStyles.optionFeaturedButton} ${styles.accountantManageAction}`}
+                        className={`${assetStyles.optionActionButton} ${assetStyles.optionFeaturedButton}`}
                         onClick={() => void openLead(managedLead)}
                       >
                         <DocumentIcon className={assetStyles.buttonIcon} />
                         <span>
                           <strong>Open asset register</strong>
-                          <small>Open the client’s shared Asset Register.</small>
+                          <small className={styles.accountantManageDescription}>Open the client’s shared Asset Register.</small>
                         </span>
                       </button>
 
-                      <button type="button" className={`${assetStyles.optionActionButton} ${styles.accountantManageAction}`} onClick={() => openAccountantReportModal(managedLead)}>
+                      <button type="button" className={assetStyles.optionActionButton} onClick={() => openAccountantReportModal(managedLead)}>
                         <DownloadIcon className={assetStyles.buttonIcon} />
                         <span>
                           <strong>Download reports</strong>
-                          <small>Choose an accountant-ready report.</small>
+                          <small className={styles.accountantManageDescription}>Choose an accountant-ready report.</small>
                         </span>
                       </button>
 
                       <button
                         type="button"
-                        className={`${assetStyles.optionActionButton} ${styles.accountantManageAction}`}
+                        className={assetStyles.optionActionButton}
                         onClick={() => openEmail(managedLead)}
                         disabled={!leadEmailRecipient(managedLead)}
                         title={!leadEmailRecipient(managedLead) ? 'No client email address is saved on this client.' : undefined}
@@ -3265,13 +3269,15 @@ export default function LeadsClient({
                         <EmailIcon className={assetStyles.buttonIcon} />
                         <span>
                           <strong>Email client</strong>
-                          <small>{leadEmailRecipient(managedLead) ? 'Open an email draft with register details.' : 'No client email address saved.'}</small>
+                          <small className={styles.accountantManageDescription}>
+                            {leadEmailRecipient(managedLead) ? 'Email the client about this register.' : 'No client email saved.'}
+                          </small>
                         </span>
                       </button>
 
                       <button
                         type="button"
-                        className={`${assetStyles.optionActionButton} ${styles.accountantManageAction} ${styles.accountantDeleteAction}`}
+                        className={`${assetStyles.optionActionButton} ${styles.accountantDeleteAction}`}
                         onClick={() => {
                           setManagedLead(null);
                           setDeleteLeadTarget(managedLead);
@@ -3280,7 +3286,7 @@ export default function LeadsClient({
                         <DeleteIcon className={assetStyles.buttonIcon} />
                         <span>
                           <strong>Delete client</strong>
-                          <small>Remove this register from My Clients.</small>
+                          <small className={styles.accountantManageDescription}>Remove this register from My Clients.</small>
                         </span>
                       </button>
                     </>
