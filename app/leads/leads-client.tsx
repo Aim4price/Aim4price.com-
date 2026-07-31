@@ -1427,6 +1427,7 @@ function searchTextForLead(lead: AssetLead): string {
 }
 
 type LeadsClientProps = {
+  accountantWorkspaceMode?: boolean;
   dealerAppMode?: boolean;
   dealerWorkspaceMode?: boolean;
   initialLeads?: AssetLead[];
@@ -1434,6 +1435,7 @@ type LeadsClientProps = {
 };
 
 export default function LeadsClient({
+  accountantWorkspaceMode = false,
   dealerAppMode = false,
   dealerWorkspaceMode,
   initialLeads = [],
@@ -1721,6 +1723,21 @@ export default function LeadsClient({
 
   async function deleteLead(leadToDelete: AssetLead): Promise<boolean> {
     try {
+      if (accountantWorkspaceMode && isFullRegisterLead(leadToDelete)) {
+        const response = await fetch(`/api/accountant/registers/${encodeURIComponent(leadToDelete.id)}`, {
+          method: 'DELETE',
+          credentials: 'include',
+        });
+        const data = (await response.json()) as { ok: boolean; error?: string };
+        if (!response.ok || !data.ok) throw new Error(data.error ?? 'Failed to remove Asset Register access.');
+
+        setLeads((current) => current.filter((lead) => lead.id !== leadToDelete.id));
+        setManagedLead((current) => (current?.id === leadToDelete.id ? null : current));
+        setOpenLeadId((current) => (current === leadToDelete.id ? null : current));
+        setNotice({ tone: 'success', message: 'Asset Register access removed from My Leads. The owner’s register was not deleted.' });
+        return true;
+      }
+
       if (leadToDelete.status !== 'declined') {
         const declineResponse = await fetch(`/api/asset-leads/${encodeURIComponent(leadToDelete.id)}`, {
           method: 'PATCH',
@@ -1821,8 +1838,14 @@ export default function LeadsClient({
 
   async function openLead(leadToOpen: AssetLead) {
     setNotice(null);
-    setOpenLeadId(leadToOpen.id);
     await markLeadViewed(leadToOpen);
+
+    if (accountantWorkspaceMode && isFullRegisterLead(leadToOpen)) {
+      window.location.assign(`/accountant/registers/${encodeURIComponent(leadToOpen.id)}`);
+      return;
+    }
+
+    setOpenLeadId(leadToOpen.id);
   }
 
   function openTracking(leadToOpen: AssetLead) {
@@ -3415,8 +3438,8 @@ export default function LeadsClient({
             <div className={`${assetStyles.deleteConfirmContent} ${styles.leadDeleteContent}`}>
               <div className={`${assetStyles.deleteConfirmHeader} ${dealerWorkspaceClass(workspaceStyles.modalHeader)} ${styles.leadDeleteHeader}`}>
                 <div>
-                  <h3 id="delete-lead-confirm-title">Delete lead?</h3>
-                  <p id="delete-lead-confirm-copy">This permanently removes the lead from your My Leads inbox.</p>
+                  <h3 id="delete-lead-confirm-title">{accountantWorkspaceMode && isFullRegisterLead(deleteLeadTarget) ? 'Remove Asset Register?' : 'Delete lead?'}</h3>
+                  <p id="delete-lead-confirm-copy">{accountantWorkspaceMode && isFullRegisterLead(deleteLeadTarget) ? 'This removes your access and the lead from My Leads. It does not delete the owner’s Asset Register.' : 'This permanently removes the lead from your My Leads inbox.'}</p>
                 </div>
 
                 <button
@@ -3437,9 +3460,11 @@ export default function LeadsClient({
               </div>
 
               <div className={styles.leadDeleteWarning}>
-                <strong>{isTrackingLead(deleteLeadTarget) ? 'Maintenance tracking will remain active.' : 'This action cannot be undone.'}</strong>
+                <strong>{accountantWorkspaceMode && isFullRegisterLead(deleteLeadTarget) ? 'Only accountant access is removed.' : isTrackingLead(deleteLeadTarget) ? 'Maintenance tracking will remain active.' : 'This action cannot be undone.'}</strong>
                 <span>
-                  {isTrackingLead(deleteLeadTarget)
+                  {accountantWorkspaceMode && isFullRegisterLead(deleteLeadTarget)
+                    ? 'The owner can share the register with your accountant account again later.'
+                    : isTrackingLead(deleteLeadTarget)
                     ? 'Delete the asset separately from Tracking if you also want to stop maintenance tracking access.'
                     : 'The owner will need to send a new lead if you need this information again.'}
                 </span>

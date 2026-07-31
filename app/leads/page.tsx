@@ -17,10 +17,6 @@ export default async function LeadsPage() {
     email: session.user.email,
   });
 
-  if (profile.accountType === "finance" && profile.accountSubtype === "accountant") {
-    redirect("/accountant/registers");
-  }
-
   if (!PARTNER_ACCOUNT_TYPES.has(profile.accountType)) {
     redirect("/account");
   }
@@ -29,6 +25,7 @@ export default async function LeadsPage() {
 
   return (
     <LeadsClient
+      accountantWorkspaceMode={profile.accountType === "finance" && profile.accountSubtype === "accountant"}
       dealerWorkspaceMode={profile.accountType === "dealer"}
       initialLeads={initialLeads}
       initialSessionUserId={session.user.id}
