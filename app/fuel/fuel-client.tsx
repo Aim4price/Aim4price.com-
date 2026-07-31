@@ -158,6 +158,10 @@ type FuelLedgerResponse = {
   message?: string;
 };
 
+type AccountantFuelLedgerResponse = FuelLedgerResponse & {
+  fuel?: FuelLedgerResponse;
+};
+
 type StorageDraft = {
   name: string;
   fuelType: string;
@@ -1566,7 +1570,14 @@ function downloadBlob(blob: Blob, fileName: string) {
   window.URL.revokeObjectURL(objectUrl);
 }
 
-export default function FuelClient({ addedByLabel }: { addedByLabel: string }) {
+export default function FuelClient({
+  addedByLabel,
+  accountantShareId,
+}: {
+  addedByLabel: string;
+  accountantShareId?: string;
+}) {
+  const isAccountantReadOnly = Boolean(accountantShareId);
   const [storages, setStorages] = useState<FuelLedgerStorage[]>([]);
   const [recentEvents, setRecentEvents] = useState<FuelLedgerEvent[]>([]);
   const [assets, setAssets] = useState<FuelLedgerAsset[]>([]);
@@ -1775,11 +1786,15 @@ export default function FuelClient({ addedByLabel }: { addedByLabel: string }) {
     }
 
     try {
-      const response = await fetch('/api/fuel', { credentials: 'include', cache: 'no-store' });
-      const data = (await response.json()) as FuelLedgerResponse;
+      const ledgerUrl = accountantShareId
+        ? `/api/accountant/registers/${encodeURIComponent(accountantShareId)}/ledger?kind=fuel`
+        : '/api/fuel';
+      const response = await fetch(ledgerUrl, { credentials: 'include', cache: 'no-store' });
+      const payload = (await response.json()) as AccountantFuelLedgerResponse;
+      const data = payload.fuel ?? payload;
 
-      if (!response.ok || !data.ok) {
-        throw new Error(data.error || 'Failed to load Fuel Ledger.');
+      if (!response.ok || !payload.ok) {
+        throw new Error(payload.error || 'Failed to load Fuel Ledger.');
       }
 
       setStorages(data.storages ?? []);
@@ -1797,7 +1812,7 @@ export default function FuelClient({ addedByLabel }: { addedByLabel: string }) {
 
   useEffect(() => {
     void loadLedger();
-  }, []);
+  }, [accountantShareId]);
 
   useEffect(() => {
     if (!openReportSelect) return undefined;
@@ -1926,6 +1941,11 @@ export default function FuelClient({ addedByLabel }: { addedByLabel: string }) {
   }
 
   function openFuelSlipMenu() {
+    if (isAccountantReadOnly) {
+      openFuelSlipManager();
+      return;
+    }
+
     resetFuelSlipValidationState();
     setFuelSlipFlow(null);
     setFuelSlipFormPage('details');
@@ -2016,6 +2036,11 @@ export default function FuelClient({ addedByLabel }: { addedByLabel: string }) {
   }
 
   function openReportModal() {
+    if (accountantShareId) {
+      window.location.assign(`/api/accountant/registers/${encodeURIComponent(accountantShareId)}/reports?kind=fuel`);
+      return;
+    }
+
     setReportYear('all');
     setReportMonth('all');
     setReportStorageId(REPORT_SOURCE_ALL_WITH_SLIPS);
@@ -2990,14 +3015,16 @@ export default function FuelClient({ addedByLabel }: { addedByLabel: string }) {
                 </label>
 
                 <div className={styles.topActionButtons}>
-                  <button
-                    type="button"
-                    className={`${styles.secondaryButton} ${styles.topActionButton} ${styles.topAddButton}`}
-                    onClick={openCreateStorage}
-                  >
-                    <PlusIcon className={styles.buttonIcon} />
-                    <span>Add Storage Tank</span>
-                  </button>
+                  {!isAccountantReadOnly ? (
+                    <button
+                      type="button"
+                      className={`${styles.secondaryButton} ${styles.topActionButton} ${styles.topAddButton}`}
+                      onClick={openCreateStorage}
+                    >
+                      <PlusIcon className={styles.buttonIcon} />
+                      <span>Add Storage Tank</span>
+                    </button>
+                  ) : null}
                   <button
                     type="button"
                     className={`${styles.secondaryButton} ${styles.topActionButton} ${styles.topFuelSlipButton}`}
@@ -3020,11 +3047,13 @@ export default function FuelClient({ addedByLabel }: { addedByLabel: string }) {
             {!isLoading && !storages.length ? (
               <div className={styles.emptyState}>
                 <strong>No fuel storage yet.</strong>
-                <span>Add your first tank, bowser or storage unit.</span>
-                <button type="button" className={styles.primaryButton} onClick={openCreateStorage}>
-                  <PlusIcon className={styles.buttonIcon} />
-                  <span>Add Storage Tank</span>
-                </button>
+                <span>{isAccountantReadOnly ? 'No fuel storage or fuel records have been shared for this register.' : 'Add your first tank, bowser or storage unit.'}</span>
+                {!isAccountantReadOnly ? (
+                  <button type="button" className={styles.primaryButton} onClick={openCreateStorage}>
+                    <PlusIcon className={styles.buttonIcon} />
+                    <span>Add Storage Tank</span>
+                  </button>
+                ) : null}
               </div>
             ) : null}
 
@@ -3070,7 +3099,7 @@ export default function FuelClient({ addedByLabel }: { addedByLabel: string }) {
                       </div>
                     </div>
 
-                    <div className={styles.storageHeaderAside}>
+                    {!isAccountantReadOnly ? <div className={styles.storageHeaderAside}>
                       <div className={styles.unitActions}>
                         <button type="button" className={styles.unitButton} onClick={() => openManageStorageChoice(storage)} disabled={isSaving}>
                           <GearIcon className={styles.buttonIcon} />
@@ -3094,7 +3123,7 @@ export default function FuelClient({ addedByLabel }: { addedByLabel: string }) {
                           <span>Delete Unit</span>
                         </button>
                       </div>
-                    </div>
+                    </div> : null}
 
                     {hasStorageWarning ? (
                       <div className={styles.storageWarningList}>
@@ -3113,9 +3142,11 @@ export default function FuelClient({ addedByLabel }: { addedByLabel: string }) {
                               <strong>Balance needs checking</strong>
                               <span>{storage.balanceCheckReason || 'Measure the tank physically and reconcile the recorded current litres.'}</span>
                             </div>
-                            <button type="button" className={styles.reconcileBalanceButton} onClick={() => openReconcileBalance(storage)} disabled={isSaving}>
-                              Reconcile Balance
-                            </button>
+                            {!isAccountantReadOnly ? (
+                              <button type="button" className={styles.reconcileBalanceButton} onClick={() => openReconcileBalance(storage)} disabled={isSaving}>
+                                Reconcile Balance
+                              </button>
+                            ) : null}
                           </div>
                         ) : null}
 
@@ -3125,9 +3156,11 @@ export default function FuelClient({ addedByLabel }: { addedByLabel: string }) {
                               <strong>Dipstick note</strong>
                               <span>{dipstickNoteText}</span>
                             </div>
-                            <button type="button" className={styles.clearDipstickButton} onClick={() => handleClearDipstickNote(storage)} disabled={isSaving}>
-                              Clear note
-                            </button>
+                            {!isAccountantReadOnly ? (
+                              <button type="button" className={styles.clearDipstickButton} onClick={() => handleClearDipstickNote(storage)} disabled={isSaving}>
+                                Clear note
+                              </button>
+                            ) : null}
                           </div>
                         ) : null}
                       </div>
@@ -3141,10 +3174,12 @@ export default function FuelClient({ addedByLabel }: { addedByLabel: string }) {
         </section>
 
         <nav className={styles.mobileQuickActions} aria-label="Fuel quick actions">
-          <button type="button" className={styles.mobileQuickButton} onClick={openCreateStorage}>
-            <PlusIcon className={styles.buttonIcon} />
-            <span>Add</span>
-          </button>
+          {!isAccountantReadOnly ? (
+            <button type="button" className={styles.mobileQuickButton} onClick={openCreateStorage}>
+              <PlusIcon className={styles.buttonIcon} />
+              <span>Add</span>
+            </button>
+          ) : null}
           <button type="button" className={styles.mobileQuickButton} onClick={openFuelSlipMenu}>
             <FuelSlipsIcon className={styles.buttonIcon} />
             <span>Slips</span>
@@ -3254,10 +3289,12 @@ export default function FuelClient({ addedByLabel }: { addedByLabel: string }) {
               </label>
 
               <div className={styles.fuelSlipManagerToolbarButtons}>
-                <button type="button" className={`${styles.secondaryButton} ${styles.fuelSlipManagerToolbarButton} ${styles.fuelSlipManagerAddButton}`} onClick={openFuelSlipModal}>
-                  <PlusIcon className={styles.buttonIcon} />
-                  <span>Add Fuel Slip</span>
-                </button>
+                {!isAccountantReadOnly ? (
+                  <button type="button" className={`${styles.secondaryButton} ${styles.fuelSlipManagerToolbarButton} ${styles.fuelSlipManagerAddButton}`} onClick={openFuelSlipModal}>
+                    <PlusIcon className={styles.buttonIcon} />
+                    <span>Add Fuel Slip</span>
+                  </button>
+                ) : null}
                 <button type="button" className={`${styles.secondaryButton} ${styles.fuelSlipManagerToolbarButton} ${styles.fuelSlipManagerFilterButton}`} onClick={openFuelSlipManagerFilterPanel}>
                   <FilterIcon className={styles.buttonIcon} />
                   <span>Filter</span>
@@ -3345,36 +3382,40 @@ export default function FuelClient({ addedByLabel }: { addedByLabel: string }) {
                               <span>Open file</span>
                             </a>
                           ) : null}
-                          {needsReview ? (
-                            <button
-                              type="button"
-                              className={`${styles.secondaryButton} ${styles.fuelSlipManagerReviewButton}`}
-                              onClick={() => openFuelSlipReview(slip)}
-                              disabled={deletingThisSlip}
-                            >
-                              <FuelSlipsIcon className={styles.buttonIcon} />
-                              <span>Review / Complete</span>
-                            </button>
-                          ) : (
-                            <button
-                              type="button"
-                              className={`${styles.secondaryButton} ${styles.fuelSlipManagerEditButton}`}
-                              onClick={() => openFuelSlipReview(slip)}
-                              disabled={deletingThisSlip}
-                            >
-                              <EditIcon className={styles.buttonIcon} />
-                              <span>Edit</span>
-                            </button>
-                          )}
-                          <button
-                            type="button"
-                            className={`${styles.secondaryButton} ${styles.fuelSlipManagerDeleteButton}`}
-                            onClick={() => openFuelSlipDeleteConfirm(slip)}
-                            disabled={deletingThisSlip}
-                          >
-                            <TrashIcon className={styles.buttonIcon} />
-                            <span>{deletingThisSlip ? 'Deleting...' : 'Delete'}</span>
-                          </button>
+                          {!isAccountantReadOnly ? (
+                            <>
+                              {needsReview ? (
+                                <button
+                                  type="button"
+                                  className={`${styles.secondaryButton} ${styles.fuelSlipManagerReviewButton}`}
+                                  onClick={() => openFuelSlipReview(slip)}
+                                  disabled={deletingThisSlip}
+                                >
+                                  <FuelSlipsIcon className={styles.buttonIcon} />
+                                  <span>Review / Complete</span>
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  className={`${styles.secondaryButton} ${styles.fuelSlipManagerEditButton}`}
+                                  onClick={() => openFuelSlipReview(slip)}
+                                  disabled={deletingThisSlip}
+                                >
+                                  <EditIcon className={styles.buttonIcon} />
+                                  <span>Edit</span>
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                className={`${styles.secondaryButton} ${styles.fuelSlipManagerDeleteButton}`}
+                                onClick={() => openFuelSlipDeleteConfirm(slip)}
+                                disabled={deletingThisSlip}
+                              >
+                                <TrashIcon className={styles.buttonIcon} />
+                                <span>{deletingThisSlip ? 'Deleting...' : 'Delete'}</span>
+                              </button>
+                            </>
+                          ) : null}
                         </div>
                       </div>
                     </article>
