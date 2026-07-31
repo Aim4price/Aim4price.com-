@@ -22,6 +22,9 @@ const USER_ID_TABLES = [
 ] as const;
 
 const PARTNER_ACCESS_TABLES = [
+  'asset_accountant_documents',
+  'asset_accounting_values',
+  'asset_lifecycle_events',
   'asset_leads',
   'asset_partner_notes',
   'asset_register_access_grants',
@@ -80,6 +83,18 @@ async function deleteUserWorkspaceDataInTransaction(
     ...PARTNER_ACCESS_TABLES,
     ...USER_COMMUNICATION_TABLES,
   ]);
+
+  if (tableSet.has('asset_accountant_documents')) {
+    await queryable.query('delete from asset_accountant_documents where owner_user_id = $1 or accountant_user_id = $1', [userId]);
+  }
+
+  if (tableSet.has('asset_accounting_values')) {
+    await queryable.query('delete from asset_accounting_values where owner_user_id = $1 or updated_by_user_id = $1', [userId]);
+  }
+
+  if (tableSet.has('asset_lifecycle_events')) {
+    await queryable.query('delete from asset_lifecycle_events where owner_user_id = $1 or actor_user_id = $1', [userId]);
+  }
 
   if (tableSet.has('asset_leads')) {
     await queryable.query('delete from asset_leads where owner_user_id = $1 or partner_user_id = $1', [userId]);

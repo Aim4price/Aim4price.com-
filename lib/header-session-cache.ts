@@ -5,6 +5,7 @@ export type HeaderSessionUser = {
   name: string;
   email: string;
   accountType: HeaderAccountType;
+  accountSubtype: string | null;
   logo?: string | null;
   logoUrl?: string | null;
   accountLogo?: string | null;
@@ -30,7 +31,7 @@ type HeaderSessionCacheEntry = {
   user: HeaderSessionUser | null;
 };
 
-const HEADER_SESSION_CACHE_KEY = 'aim4price-header-session-v1';
+const HEADER_SESSION_CACHE_KEY = 'aim4price-header-session-v2';
 const HEADER_SESSION_CACHE_MAX_AGE_MS = 5 * 60 * 1000;
 const ACCOUNT_TYPES = new Set<HeaderAccountType>(['owner', 'dealer', 'finance', 'insurance']);
 
@@ -57,6 +58,7 @@ function normalizeHeaderSessionUser(value: unknown): HeaderSessionUser | null {
     name: normalizeText(source.name),
     email: normalizeText(source.email),
     accountType,
+    accountSubtype: normalizeOptionalText(source.accountSubtype),
     logo: normalizeOptionalText(source.logo),
     logoUrl: normalizeOptionalText(source.logoUrl),
     accountLogo: normalizeOptionalText(source.accountLogo),

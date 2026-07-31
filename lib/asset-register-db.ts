@@ -2488,6 +2488,7 @@ export async function listAssetRegisterItems(userId: string, registerId?: string
         ${buildSelectList(schema)}
       from asset_register_items
       where user_id = $1 and register_id = $2::uuid
+        ${schema.columnNames.has('lifecycle_state') ? "and coalesce(lifecycle_state, 'active') = 'active'" : ''}
       order by ${primaryOrderExpression} desc nulls last${secondaryOrderClause}, id desc
     `,
     [userId, activeRegister.id],

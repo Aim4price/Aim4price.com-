@@ -20,6 +20,7 @@ export type AssetLeadStatus = 'sent' | 'viewed' | 'accepted' | 'quoted' | 'decli
 export type PartnerDirectoryEntry = {
   userId: string;
   partnerType: PartnerType;
+  accountSubtype: string;
   displayName: string;
   businessName: string;
   phone: string;
@@ -116,6 +117,7 @@ type AccountPartnerProfileRow = {
   phone: string | null;
   marketplace_email: string | null;
   account_type: string | null;
+  account_subtype: string | null;
   province: string | null;
   town_city: string | null;
   address_line_1: string | null;
@@ -662,6 +664,7 @@ function mapPartnerRow(row: AccountPartnerProfileRow): PartnerDirectoryEntry {
   return {
     userId: row.user_id,
     partnerType,
+    accountSubtype: asText(row.account_subtype),
     displayName,
     businessName,
     phone: asText(row.phone),
@@ -1005,6 +1008,7 @@ export async function listPartnerDirectory(input: {
         phone,
         marketplace_email,
         account_type,
+        account_subtype,
         province,
         town_city,
         address_line_1,
@@ -1043,6 +1047,7 @@ async function getPartnerProfile(partnerUserId: string): Promise<AccountPartnerP
         phone,
         marketplace_email,
         account_type,
+        account_subtype,
         province,
         town_city,
         address_line_1,

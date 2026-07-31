@@ -474,6 +474,7 @@ async function attachAssetRegisterOpenAlertCounts(
           from public.asset_register_items ai
           where ai.user_id = $1
             and ai.register_id::text = any($2::text[])
+            and coalesce(ai.lifecycle_state, 'active') = 'active'
         ), alert_counts as (
           ${alertSources.join('\n          union all\n')}
         )
@@ -540,6 +541,7 @@ async function ensureAssetRegisterTablesOnce(): Promise<void> {
   await db.query(`
     alter table if exists public.asset_register_items
       add column if not exists register_id uuid,
+      add column if not exists lifecycle_state text not null default 'active',
       add column if not exists license_renewal_alert_noted_for_date date,
       add column if not exists license_renewal_alert_noted_at timestamptz
   `);
@@ -908,6 +910,7 @@ export async function getAssetRegisterForUser(userId: string, registerId: string
       left join public.asset_register_items ai
         on ai.user_id = ar.user_id
        and ai.register_id = ar.id
+       and coalesce(ai.lifecycle_state, 'active') = 'active'
       where ar.user_id = $1 and ar.id::text = $2
       group by ar.id
       limit 1
@@ -945,6 +948,7 @@ export async function getSelectedAssetRegister(userId: string): Promise<AssetReg
       left join public.asset_register_items ai
         on ai.user_id = ar.user_id
        and ai.register_id = ar.id
+       and coalesce(ai.lifecycle_state, 'active') = 'active'
       where ar.user_id = $1 and ar.is_selected = true
       group by ar.id
       order by ar.updated_at desc nulls last, ar.created_at desc nulls last, ar.id desc
@@ -988,6 +992,7 @@ export async function listAssetRegisters(userId: string): Promise<AssetRegisterS
       left join public.asset_register_items ai
         on ai.user_id = ar.user_id
        and ai.register_id = ar.id
+       and coalesce(ai.lifecycle_state, 'active') = 'active'
       where ar.user_id = $1
       group by ar.id
       order by ar.is_selected desc, ar.is_primary desc, ar.updated_at desc nulls last, ar.created_at desc nulls last, ar.id desc
