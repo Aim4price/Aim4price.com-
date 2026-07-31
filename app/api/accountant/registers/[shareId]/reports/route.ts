@@ -128,7 +128,17 @@ export async function GET(request: NextRequest, context: Context) {
 
     if (kind === 'cost-of-ownership') {
       const ledger = await getAccountantLedger({ accountantUserId: session.user.id, shareId: context.params.shareId, kind: 'cost' });
-      const invoices = ledger.cost?.invoices.filter((invoice) => !requestedAssetId || invoice.assetId === requestedAssetId) ?? [];
+      const requestedYear = Number(params.get('year'));
+      const requestedMonth = Number(params.get('month'));
+      const invoices = ledger.cost?.invoices.filter((invoice) => {
+        if (requestedAssetId && invoice.assetId !== requestedAssetId) return false;
+        if (Number.isInteger(requestedYear) && requestedYear >= 2000) {
+          const invoiceDate = invoice.invoiceDate ? new Date(`${invoice.invoiceDate}T00:00:00`) : null;
+          if (!invoiceDate || Number.isNaN(invoiceDate.getTime()) || invoiceDate.getFullYear() !== requestedYear) return false;
+          if (Number.isInteger(requestedMonth) && requestedMonth >= 1 && requestedMonth <= 12 && invoiceDate.getMonth() + 1 !== requestedMonth) return false;
+        }
+        return true;
+      }) ?? [];
       return reportResponse(`${baseName}-cost-of-ownership`, [
         ['Asset', 'Date', 'Supplier', 'Invoice', 'Maintenance', 'Parts', 'Repairs', 'Other', 'VAT', 'Total incl. VAT', 'Usage'],
         ...invoices.map((invoice) => [invoice.assetTitle, invoice.invoiceDate, invoice.supplierName, invoice.invoiceNumber,
