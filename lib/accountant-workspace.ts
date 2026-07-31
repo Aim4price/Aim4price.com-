@@ -266,12 +266,14 @@ export async function listAccountantRegisters(accountantUserId: string): Promise
 
 export async function getAccountantRegisterData(accountantUserId: string, shareId: string): Promise<{
   access: AccountantRegisterAccess;
+  profile: Awaited<ReturnType<typeof getAccountProfile>>;
   register: AssetRegisterSummary;
   registers: AssetRegisterSummary[];
   items: AccountantAsset[];
 }> {
   const access = await loadAccess(accountantUserId, shareId);
-  const [register, items] = await Promise.all([
+  const [profile, register, items] = await Promise.all([
+    getAccountProfile({ id: access.ownerUserId }),
     getAssetRegisterForUser(access.ownerUserId, access.registerId),
     listAssetRegisterItems(access.ownerUserId, access.registerId),
   ]);
@@ -296,6 +298,7 @@ export async function getAccountantRegisterData(accountantUserId: string, shareI
 
   return {
     access,
+    profile,
     register,
     registers: [register],
     items: items.map((item) => ({ ...item, accountingValue: byAsset.get(item.id) ?? null })),
