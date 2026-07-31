@@ -4066,6 +4066,10 @@
   scrollbar-gutter: auto !important;
 }
 
+.accountantFilterModal.accountantFilterModal {
+  width: min(calc(100vw - 2rem), 60rem) !important;
+}
+
 .leadFilterHeader {
   margin: 0 !important;
   padding: 1.55rem 5rem 1.35rem 1.7rem !important;

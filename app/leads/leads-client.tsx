@@ -3158,7 +3158,12 @@ export default function LeadsClient({
         <div className={`${assetStyles.modalOverlay} ${dealerWorkspaceClass(workspaceStyles.modalOverlay)}`}>
           <div className={assetStyles.modalBackdrop} onClick={closeLeadFilterModal} />
 
-          <div className={`${assetStyles.modalCard} ${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadFilterModal}`} role="dialog" aria-modal="true" aria-labelledby="lead-filter-title">
+          <div
+            className={`${assetStyles.modalCard} ${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadFilterModal} ${accountantWorkspaceMode ? styles.accountantFilterModal : ''}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="lead-filter-title"
+          >
             <div className={`${assetStyles.modalHeader} ${dealerWorkspaceClass(workspaceStyles.modalHeader)} ${styles.leadFilterHeader}`}>
               <div className={assetStyles.modalHeaderText}>
                 <h3 id="lead-filter-title">{accountantWorkspaceMode ? 'Filter clients' : 'Filter leads'}</h3>
