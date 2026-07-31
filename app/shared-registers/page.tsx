@@ -10,6 +10,10 @@ export default async function SharedRegistersPage() {
   const { session } = await requireActivePageAccess();
   const profile = await getAccountProfile({ id: session.user.id, name: session.user.name, email: session.user.email });
 
+  if (profile.accountType === 'finance' && profile.accountSubtype === 'accountant') {
+    redirect('/accountant/registers');
+  }
+
   if (profile.accountType !== 'insurance') {
     redirect(profile.accountType === 'owner' ? '/asset-register' : '/leads');
   }
