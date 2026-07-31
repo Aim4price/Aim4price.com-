@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { recordAdminUsageEventSafely } from '../../../lib/admin-usage-events';
 import { getServerSession, isAdminSupportSession } from '../../../lib/auth-session';
 import { getAccountProfile } from '../../../lib/account-profile';
+import { disposeOrDeleteAsset, recordManualAssetLifecycle, type AssetDisposalReason } from '../../../lib/asset-lifecycle';
 import { attachOpenPartnerNotesToAssets } from '../../../lib/partner-access';
 import { attachOpenIssueNoteStatusToAssets } from '../../../lib/asset-issue-notes';
 import { attachLatestMaintenanceStatusToAssets } from '../../../lib/scan-assets';
@@ -24,7 +25,6 @@ import {
 } from '../../../lib/asset-register-uploads';
 import {
   createManualAssetRegisterItem,
-  deleteAssetRegisterItem,
   getAssetRegisterItemById,
   listAssetRegisterItems,
   updateAssetRegisterItem,
@@ -732,6 +732,19 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    await recordManualAssetLifecycle({
+      ownerUserId: session.user.id,
+      asset: item,
+      newlyAcquired: (body as { newlyAcquired?: unknown }).newlyAcquired === true,
+      acquisitionDate: (body as { acquisitionDate?: unknown }).acquisitionDate,
+      acquisitionAmountExVat: (body as { acquisitionAmountExVat?: unknown }).acquisitionAmountExVat,
+      note: (body as { acquisitionNote?: unknown }).acquisitionNote,
+      sourceDocumentReference:
+        (body as { acquisitionSourceDocumentReference?: unknown }).acquisitionSourceDocumentReference
+        ?? (body as { acquisitionSourceReference?: unknown }).acquisitionSourceReference,
+      actorName: session.user.name,
+    });
+
     const [itemWithAlertStatus] = await attachOpenAssetAlerts(session.user.id, [item]);
     return NextResponse.json({ ok: true, item: itemWithAlertStatus ?? item });
   } catch (error) {
@@ -1112,8 +1125,28 @@ export async function DELETE(request: NextRequest) {
 
   const uploadIds = listInternalAssetRegisterUploadIds([...existing.photos, ...documentUrls(existing.documents)]);
 
+  let body: Record<string, unknown> = {};
   try {
-    await deleteAssetRegisterItem(session.user.id, assetId);
+    body = await request.json() as Record<string, unknown>;
+  } catch {
+    body = {};
+  }
+  const reason = String(body.reason ?? '').trim() as AssetDisposalReason;
+  if (!reason) {
+    return NextResponse.json({ ok: false, error: 'Choose what happened to the asset before continuing.' }, { status: 400 });
+  }
+
+  let outcome: Awaited<ReturnType<typeof disposeOrDeleteAsset>>;
+  try {
+    outcome = await disposeOrDeleteAsset({
+      ownerUserId: session.user.id,
+      assetId,
+      reason,
+      disposalDate: body.disposalDate,
+      disposalAmountExVat: body.disposalAmountExVat,
+      note: body.note,
+      actorName: session.user.name,
+    });
   } catch (error) {
     console.error('asset register delete failed', error);
     return NextResponse.json(
@@ -1122,15 +1155,17 @@ export async function DELETE(request: NextRequest) {
     );
   }
 
-  try {
-    await deleteUnreferencedAssetRegisterUploads({
-      userId: session.user.id,
-      uploadIds,
-      excludeAssetId: assetId,
-    });
-  } catch (error) {
-    console.error('asset register upload cleanup failed after delete', error);
+  if (outcome.mode === 'deleted') {
+    try {
+      await deleteUnreferencedAssetRegisterUploads({
+        userId: session.user.id,
+        uploadIds,
+        excludeAssetId: assetId,
+      });
+    } catch (error) {
+      console.error('asset register upload cleanup failed after delete', error);
+    }
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, mode: outcome.mode });
 }
