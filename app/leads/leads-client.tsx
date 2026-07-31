@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type DragEvent } from 'react';
 import { createPortal } from 'react-dom';
 import AppHeader from '../../components/AppHeader';
+import AccountantRegisterReportsModal from '../../components/AccountantRegisterReportsModal';
 import DealerAssetCorrectionEditor from '../../components/DealerAssetCorrectionEditor';
 import DealerCostOfOwnershipReportModal from '../../components/DealerCostOfOwnershipReportModal';
 import DealerMaintenanceReportModal from '../../components/DealerMaintenanceReportModal';
@@ -295,6 +296,15 @@ function DocumentIcon({ className }: IconProps) {
       <path d="M7 3h7l5 5v13H7z" />
       <path d="M14 3v5h5" />
       <path d="M10 13h6M10 17h6" />
+    </svg>
+  );
+}
+
+function DeleteIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M10 11v5M14 11v5" strokeLinecap="round" />
     </svg>
   );
 }
@@ -1441,7 +1451,7 @@ export default function LeadsClient({
   initialLeads = [],
   initialSessionUserId = '',
 }: LeadsClientProps = {}) {
-  const useDealerWorkspaceStyles = dealerWorkspaceMode ?? dealerAppMode;
+  const useDealerWorkspaceStyles = accountantWorkspaceMode || (dealerWorkspaceMode ?? dealerAppMode);
   const canAddDealerCosts = Boolean(dealerAppMode || dealerWorkspaceMode);
   const dealerWorkspaceClass = (...classNames: string[]) =>
     useDealerWorkspaceStyles ? classNames.join(' ') : '';
@@ -1459,6 +1469,7 @@ export default function LeadsClient({
   const [assetPhotoModal, setAssetPhotoModal] = useState<PhotoModalState | null>(null);
   const [sentPhotoModal, setSentPhotoModal] = useState<PhotoModalState | null>(null);
   const [managedLead, setManagedLead] = useState<AssetLead | null>(null);
+  const [accountantReportLead, setAccountantReportLead] = useState<AssetLead | null>(null);
   const [emailLead, setEmailLead] = useState<AssetLead | null>(null);
   const [emailSubjectDraft, setEmailSubjectDraft] = useState('');
   const [emailBodyDraft, setEmailBodyDraft] = useState('');
@@ -1636,6 +1647,7 @@ export default function LeadsClient({
   const hasOpenLeadModal = Boolean(
     isFilterModalOpen
     || managedLead
+    || accountantReportLead
     || emailLead
     || reportLead
     || maintenanceReportAccessId
@@ -1692,6 +1704,7 @@ export default function LeadsClient({
       else if (costReportLead) setCostReportLead(null);
       else if (maintenanceReportAccessId) setMaintenanceReportAccessId(null);
       else if (reportLead) closeLeadReportModal();
+      else if (accountantReportLead) setAccountantReportLead(null);
       else if (emailLead) closeEmailModal();
       else if (managedLead) setManagedLead(null);
       else setIsFilterModalOpen(false);
@@ -1705,6 +1718,7 @@ export default function LeadsClient({
     };
   }, [
     assetPhotoModal,
+    accountantReportLead,
     deleteLeadTarget,
     emailLead,
     hasOpenLeadModal,
@@ -1734,7 +1748,7 @@ export default function LeadsClient({
         setLeads((current) => current.filter((lead) => lead.id !== leadToDelete.id));
         setManagedLead((current) => (current?.id === leadToDelete.id ? null : current));
         setOpenLeadId((current) => (current === leadToDelete.id ? null : current));
-        setNotice({ tone: 'success', message: 'Asset Register access removed from My Leads. The owner’s register was not deleted.' });
+        setNotice({ tone: 'success', message: 'Asset Register access removed from My Clients. The owner’s register was not deleted.' });
         return true;
       }
 
@@ -1958,6 +1972,12 @@ export default function LeadsClient({
     setNotice(null);
     setManagedLead(null);
     setReportLead(lead);
+  }
+
+  function openAccountantReportModal(lead: AssetLead) {
+    setNotice(null);
+    setManagedLead(null);
+    setAccountantReportLead(lead);
   }
 
   function openMaintenanceReport(lead: AssetLead) {
@@ -2714,7 +2734,7 @@ export default function LeadsClient({
 
         <section className={`${assetStyles.registerPanel} ${styles.leadsRegisterPanel}`}>
           {useDealerWorkspaceStyles ? (
-            <WorkspaceTitlePanel title="LEAD MANAGEMENT SYSTEM" />
+            <WorkspaceTitlePanel title={accountantWorkspaceMode ? 'CLIENT MANAGEMENT SYSTEM' : 'LEAD MANAGEMENT SYSTEM'} />
           ) : (
             <div className={`${assetStyles.registerHeader} ${styles.leadsRegisterHeader}`}>
               <div className={`${assetStyles.registerTitleBlock} ${styles.leadsHeroTitleBlock}`}>
@@ -2887,7 +2907,32 @@ export default function LeadsClient({
                                 : ''
                             }`}
                           >
-                            {isTrackingRequest ? (
+                            {accountantWorkspaceMode ? (
+                              <>
+                                <button
+                                  type="button"
+                                  className={`${assetStyles.secondaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionMint} ${isLeadDone ? styles.doneLeadPill : styles.markDoneLeadButton}`}
+                                  onClick={() => void toggleLeadDone(lead)}
+                                  disabled={Boolean(markingLeadDoneId)}
+                                  aria-pressed={isLeadDone}
+                                  title={isLeadDone ? 'Click to move this client back to Mark done' : 'Mark this client as done'}
+                                >
+                                  <CheckIcon className={assetStyles.buttonIcon} />
+                                  <span>{isMarkingThisLeadDone ? 'Updating...' : isLeadDone ? 'Done' : 'Mark done'}</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  className={`${assetStyles.primaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionGreen} ${styles.openLeadButton}`}
+                                  onClick={() => {
+                                    setManagedLead(lead);
+                                    void markLeadViewed(lead);
+                                  }}
+                                >
+                                  Manage
+                                </button>
+                              </>
+                            ) : isTrackingRequest ? (
                               <>
                                 {isLeadOpen ? (
                                   <button
@@ -3181,98 +3226,164 @@ export default function LeadsClient({
             <div className={`${assetStyles.modalScrollBody} ${assetStyles.optionsScrollBody} ${dealerWorkspaceClass(workspaceStyles.modalBody)}`}>
               <div className={assetStyles.optionsContent}>
                 <div className={`${assetStyles.optionsGrid} ${assetStyles.assetOptionsGrid} ${styles.manageOptionsGrid}`}>
-                  <button type="button" className={`${assetStyles.optionActionButton} ${assetStyles.optionFeaturedButton} ${styles.whatsAppActionButton}`} onClick={() => openWhatsApp(managedLead)}>
-                    <WhatsAppIcon className={`${assetStyles.buttonIcon} ${styles.whatsAppIcon}`} />
-                    <span>
-                      <strong>WhatsApp client</strong>
-                      <small>Open a WhatsApp message to the owner.</small>
-                    </span>
-                  </button>
+                  {accountantWorkspaceMode ? (
+                    <>
+                      <button
+                        type="button"
+                        className={`${assetStyles.optionActionButton} ${assetStyles.optionFeaturedButton}`}
+                        onClick={() => void openLead(managedLead)}
+                      >
+                        <DocumentIcon className={assetStyles.buttonIcon} />
+                        <span>
+                          <strong>Open asset register</strong>
+                          <small>Open the client’s shared Asset Register workspace.</small>
+                        </span>
+                      </button>
 
-                  <button type="button" className={assetStyles.optionActionButton} onClick={() => openLeadReportModal(managedLead)}>
-                    <DownloadIcon className={assetStyles.buttonIcon} />
-                    <span>
-                      <strong>PDF reports</strong>
-                      <small>Choose a valuation or maintenance report.</small>
-                    </span>
-                  </button>
+                      <button type="button" className={assetStyles.optionActionButton} onClick={() => openAccountantReportModal(managedLead)}>
+                        <DownloadIcon className={assetStyles.buttonIcon} />
+                        <span>
+                          <strong>Download reports</strong>
+                          <small>Choose an accountant-ready register report.</small>
+                        </span>
+                      </button>
 
-                  {isTrackingLead(managedLead) && managedLead.maintenanceAccess?.isActive ? (
-                    <button
-                      type="button"
-                      className={assetStyles.optionActionButton}
-                      onClick={() => openMaintenanceSchedule(managedLead)}
-                      disabled={!managedLead.maintenanceAccess.permissions.canCreateMaintenanceSchedules}
-                      title={!managedLead.maintenanceAccess.permissions.canCreateMaintenanceSchedules
-                        ? 'The asset owner has not enabled dealer-created schedules.'
-                        : undefined}
-                    >
-                      <MaintenanceTrackingIcon className={assetStyles.buttonIcon} />
-                      <span>
-                        <strong>Send a proposed schedule</strong>
-                        <small>
-                          {managedLead.maintenanceAccess.permissions.canCreateMaintenanceSchedules
-                            ? 'The owner can approve or disapprove it.'
-                            : 'Owner permission is required.'}
-                        </small>
-                      </span>
-                    </button>
-                  ) : null}
+                      <button
+                        type="button"
+                        className={assetStyles.optionActionButton}
+                        onClick={() => openEmail(managedLead)}
+                        disabled={!leadEmailRecipient(managedLead)}
+                        title={!leadEmailRecipient(managedLead) ? 'No client email address is saved on this client.' : undefined}
+                      >
+                        <EmailIcon className={assetStyles.buttonIcon} />
+                        <span>
+                          <strong>Email client</strong>
+                          <small>{leadEmailRecipient(managedLead) ? 'Open an email draft with register context.' : 'No client email address saved.'}</small>
+                        </span>
+                      </button>
 
-                  <button
-                    type="button"
-                    className={assetStyles.optionActionButton}
-                    onClick={() => openEmail(managedLead)}
-                    disabled={!leadEmailRecipient(managedLead)}
-                    title={!leadEmailRecipient(managedLead) ? 'No client email address is saved on this lead.' : undefined}
-                  >
-                    <EmailIcon className={assetStyles.buttonIcon} />
-                    <span>
-                      <strong>Email client</strong>
-                      <small>{leadEmailRecipient(managedLead) ? 'Open an email draft with asset context.' : 'No client email address saved.'}</small>
-                    </span>
-                  </button>
+                      <button
+                        type="button"
+                        className={`${assetStyles.optionActionButton} ${styles.accountantDeleteAction}`}
+                        onClick={() => {
+                          setManagedLead(null);
+                          setDeleteLeadTarget(managedLead);
+                        }}
+                      >
+                        <DeleteIcon className={assetStyles.buttonIcon} />
+                        <span>
+                          <strong>Delete client</strong>
+                          <small>Remove this shared register from My Clients.</small>
+                        </span>
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button type="button" className={`${assetStyles.optionActionButton} ${assetStyles.optionFeaturedButton} ${styles.whatsAppActionButton}`} onClick={() => openWhatsApp(managedLead)}>
+                        <WhatsAppIcon className={`${assetStyles.buttonIcon} ${styles.whatsAppIcon}`} />
+                        <span>
+                          <strong>WhatsApp client</strong>
+                          <small>Open a WhatsApp message to the owner.</small>
+                        </span>
+                      </button>
 
-                  <button type="button" className={assetStyles.optionActionButton} onClick={() => callClient(managedLead)}>
-                    <PhoneIcon className={assetStyles.buttonIcon} />
-                    <span>
-                      <strong>Call client</strong>
-                      <small>Start a phone call from the saved number.</small>
-                    </span>
-                  </button>
+                      <button type="button" className={assetStyles.optionActionButton} onClick={() => openLeadReportModal(managedLead)}>
+                        <DownloadIcon className={assetStyles.buttonIcon} />
+                        <span>
+                          <strong>PDF reports</strong>
+                          <small>Choose a valuation or maintenance report.</small>
+                        </span>
+                      </button>
 
-                  {useDealerWorkspaceStyles && !isFullRegisterLead(managedLead) ? (
-                    <DealerAssetCorrectionEditor
-                      assetTitle={assetTitle(managedLead)}
-                      sourceType="lead"
-                      sourceId={managedLead.id}
-                      serialNumber={asText(managedLead.assetSnapshot.serialNumber)}
-                      replacementPriceExVat={snapshotReplacementPrice(managedLead.assetSnapshot)}
-                      correction={managedLead.dealerCorrection}
-                      actionClassName={assetStyles.optionActionButton}
-                      iconClassName={assetStyles.buttonIcon}
-                      onSaved={handleDealerCorrectionSaved}
-                    />
-                  ) : null}
+                      {isTrackingLead(managedLead) && managedLead.maintenanceAccess?.isActive ? (
+                        <button
+                          type="button"
+                          className={assetStyles.optionActionButton}
+                          onClick={() => openMaintenanceSchedule(managedLead)}
+                          disabled={!managedLead.maintenanceAccess.permissions.canCreateMaintenanceSchedules}
+                          title={!managedLead.maintenanceAccess.permissions.canCreateMaintenanceSchedules
+                            ? 'The asset owner has not enabled dealer-created schedules.'
+                            : undefined}
+                        >
+                          <MaintenanceTrackingIcon className={assetStyles.buttonIcon} />
+                          <span>
+                            <strong>Send a proposed schedule</strong>
+                            <small>
+                              {managedLead.maintenanceAccess.permissions.canCreateMaintenanceSchedules
+                                ? 'The owner can approve or disapprove it.'
+                                : 'Owner permission is required.'}
+                            </small>
+                          </span>
+                        </button>
+                      ) : null}
 
-                  {canAddDealerCosts && !isFullRegisterLead(managedLead) ? (
-                    <button
-                      type="button"
-                      className={assetStyles.optionActionButton}
-                      onClick={() => openDealerCost(managedLead)}
-                    >
-                      <CostIcon className={assetStyles.buttonIcon} />
-                      <span>
-                        <strong>Add asset cost</strong>
-                        <small>Upload an invoice or enter a cost manually.</small>
-                      </span>
-                    </button>
-                  ) : null}
+                      <button
+                        type="button"
+                        className={assetStyles.optionActionButton}
+                        onClick={() => openEmail(managedLead)}
+                        disabled={!leadEmailRecipient(managedLead)}
+                        title={!leadEmailRecipient(managedLead) ? 'No client email address is saved on this lead.' : undefined}
+                      >
+                        <EmailIcon className={assetStyles.buttonIcon} />
+                        <span>
+                          <strong>Email client</strong>
+                          <small>{leadEmailRecipient(managedLead) ? 'Open an email draft with asset context.' : 'No client email address saved.'}</small>
+                        </span>
+                      </button>
+
+                      <button type="button" className={assetStyles.optionActionButton} onClick={() => callClient(managedLead)}>
+                        <PhoneIcon className={assetStyles.buttonIcon} />
+                        <span>
+                          <strong>Call client</strong>
+                          <small>Start a phone call from the saved number.</small>
+                        </span>
+                      </button>
+
+                      {canAddDealerCosts && !isFullRegisterLead(managedLead) ? (
+                        <DealerAssetCorrectionEditor
+                          assetTitle={assetTitle(managedLead)}
+                          sourceType="lead"
+                          sourceId={managedLead.id}
+                          serialNumber={asText(managedLead.assetSnapshot.serialNumber)}
+                          replacementPriceExVat={snapshotReplacementPrice(managedLead.assetSnapshot)}
+                          correction={managedLead.dealerCorrection}
+                          actionClassName={assetStyles.optionActionButton}
+                          iconClassName={assetStyles.buttonIcon}
+                          onSaved={handleDealerCorrectionSaved}
+                        />
+                      ) : null}
+
+                      {canAddDealerCosts && !isFullRegisterLead(managedLead) ? (
+                        <button
+                          type="button"
+                          className={assetStyles.optionActionButton}
+                          onClick={() => openDealerCost(managedLead)}
+                        >
+                          <CostIcon className={assetStyles.buttonIcon} />
+                          <span>
+                            <strong>Add asset cost</strong>
+                            <small>Upload an invoice or enter a cost manually.</small>
+                          </span>
+                        </button>
+                      ) : null}
+                    </>
+                  )}
                 </div>
               </div>
             </div>
           </div>
         </div>
+      ) : null}
+
+      {accountantReportLead ? (
+        <AccountantRegisterReportsModal
+          shareId={accountantReportLead.id}
+          registerName={accountantReportLead.ownerBusinessName || ownerDisplayName(accountantReportLead)}
+          includeFuelLedger={asBoolean(accountantReportLead.includedSections.includeFuelLedger)}
+          includeCostLedger={asBoolean(accountantReportLead.includedSections.includeCostLedger)}
+          workspaceMode
+          onClose={() => setAccountantReportLead(null)}
+        />
       ) : null}
 
       {emailLead ? (
@@ -3439,7 +3550,7 @@ export default function LeadsClient({
               <div className={`${assetStyles.deleteConfirmHeader} ${dealerWorkspaceClass(workspaceStyles.modalHeader)} ${styles.leadDeleteHeader}`}>
                 <div>
                   <h3 id="delete-lead-confirm-title">{accountantWorkspaceMode && isFullRegisterLead(deleteLeadTarget) ? 'Remove Asset Register?' : 'Delete lead?'}</h3>
-                  <p id="delete-lead-confirm-copy">{accountantWorkspaceMode && isFullRegisterLead(deleteLeadTarget) ? 'This removes your access and the lead from My Leads. It does not delete the owner’s Asset Register.' : 'This permanently removes the lead from your My Leads inbox.'}</p>
+                  <p id="delete-lead-confirm-copy">{accountantWorkspaceMode && isFullRegisterLead(deleteLeadTarget) ? 'This removes your access and the client from My Clients. It does not delete the owner’s Asset Register.' : 'This permanently removes the lead from your My Leads inbox.'}</p>
                 </div>
 
                 <button
@@ -3481,7 +3592,7 @@ export default function LeadsClient({
                   onClick={() => void confirmDeleteLead()}
                   disabled={isDeletingLead}
                 >
-                  <span>{isDeletingLead ? 'Deleting...' : 'Delete lead'}</span>
+                  <span>{isDeletingLead ? 'Deleting...' : accountantWorkspaceMode ? 'Delete client' : 'Delete lead'}</span>
                 </button>
               </div>
             </div>

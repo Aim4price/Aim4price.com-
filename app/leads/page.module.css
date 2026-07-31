@@ -430,6 +430,18 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.accountantDeleteAction {
+  color: var(--lead-danger) !important;
+  border-color: var(--lead-danger-line) !important;
+  background: linear-gradient(180deg, #ffffff 0%, var(--lead-danger-soft) 100%) !important;
+}
+
+.accountantDeleteAction:hover {
+  color: #842929 !important;
+  border-color: var(--lead-danger-line-hover) !important;
+  background: linear-gradient(180deg, #ffffff 0%, var(--lead-danger-hover) 100%) !important;
+}
+
 .leadAssetBody.leadAssetBody {
   grid-template-columns: minmax(220px, 300px) 1px minmax(400px, 1.55fr);
 }
