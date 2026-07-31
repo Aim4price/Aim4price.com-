@@ -220,9 +220,17 @@ function isAccountMenuItemVisible(item: AccountMenuItem, accountType: AccountTyp
   return Boolean(accountType && item.accountTypes.includes(accountType));
 }
 
-function buildNavItems(accountType: AccountType | 'public' | null): NavItem[] {
+function buildNavItems(accountType: AccountType | 'public' | null, accountSubtype?: string | null): NavItem[] {
   if (accountType === null) {
     return BASE_NAV_ITEMS;
+  }
+
+  if (accountType === 'finance' && accountSubtype === 'accountant') {
+    return [
+      { key: 'shared-registers', href: '/accountant/registers', label: 'Asset Registers' },
+      { key: 'fuel', href: '/accountant/fuel', label: 'Fuel Ledger' },
+      { key: 'cost', href: '/accountant/costs', label: 'Cost Ledger' },
+    ];
   }
 
   if (accountType === 'finance' || accountType === 'insurance') {
@@ -254,8 +262,12 @@ function buildNavItems(accountType: AccountType | 'public' | null): NavItem[] {
   return DEFAULT_NAV_ITEMS;
 }
 
-function buildMobileNavItems(accountType: AccountType): NavItem[] {
-  const items = buildNavItems(accountType);
+function buildMobileNavItems(accountType: AccountType, accountSubtype?: string | null): NavItem[] {
+  const items = buildNavItems(accountType, accountSubtype);
+
+  if (accountType === 'finance' && accountSubtype === 'accountant') {
+    return items;
+  }
 
   if (items.some((item) => item.key === 'account')) {
     return items;
@@ -522,6 +534,7 @@ export default function AppHeader({
   } | null>(null);
   const [loadingNotificationActionId, setLoadingNotificationActionId] = useState<string | null>(null);
   const [canUseNotificationPortal, setCanUseNotificationPortal] = useState(false);
+  const [leaveAccountOpen, setLeaveAccountOpen] = useState(false);
 
   useEffect(() => {
     setCanUseNotificationPortal(true);
@@ -608,6 +621,7 @@ export default function AppHeader({
         setActiveAssetDiscoveryEnquiry(null);
         setNotificationDetailError(null);
         setNotificationDetailOutcome(null);
+        setLeaveAccountOpen(false);
       }
     }
 
@@ -630,7 +644,8 @@ export default function AppHeader({
     || notificationOpen
     || Boolean(activeAssetDiscoveryEnquiry)
     || Boolean(notificationDetailError)
-    || Boolean(notificationDetailOutcome);
+    || Boolean(notificationDetailOutcome)
+    || leaveAccountOpen;
 
   useEffect(() => {
     if (!hasBlockingModal || typeof document === 'undefined') return;
@@ -668,7 +683,7 @@ export default function AppHeader({
     let mounted = true;
 
     async function loadNotifications() {
-      if (!session?.id) {
+      if (!session?.id || (session.accountType === 'finance' && session.accountSubtype === 'accountant')) {
         setNotifications([]);
         setNotificationOpen(false);
         return;
@@ -700,7 +715,7 @@ export default function AppHeader({
     return () => {
       mounted = false;
     };
-  }, [session?.id, pathname]);
+  }, [session?.id, session?.accountType, session?.accountSubtype, pathname]);
 
   useEffect(() => {
     function handleDealerCorrectionResolved(event: Event) {
@@ -727,17 +742,21 @@ export default function AppHeader({
     : sessionAccountLogoUrl;
   const isOwnerAccount = session?.accountType === 'owner';
   const isDealerAccount = session?.accountType === 'dealer';
+  const isAccountantAccount = session?.accountType === 'finance' && session.accountSubtype === 'accountant';
   const navAccountType = isLoadingSession ? null : (session?.accountType ?? 'public');
-  const navItems = useMemo(() => buildNavItems(navAccountType), [navAccountType]);
+  const navItems = useMemo(
+    () => buildNavItems(navAccountType, session?.accountSubtype),
+    [navAccountType, session?.accountSubtype],
+  );
   const mobileNavItems = useMemo(
-    () => (session?.accountType ? buildMobileNavItems(session.accountType) : navItems),
-    [navItems, session?.accountType],
+    () => (session?.accountType ? buildMobileNavItems(session.accountType, session.accountSubtype) : navItems),
+    [navItems, session?.accountType, session?.accountSubtype],
   );
   const activeNavKey = useMemo(
     () => resolveActiveNavKey(pathname, mobileNavItems, active),
     [active, mobileNavItems, pathname],
   );
-  const navWindowSize = isDealerAccount ? navItems.length : NAV_WINDOW_SIZE;
+  const navWindowSize = isDealerAccount || isAccountantAccount ? navItems.length : NAV_WINDOW_SIZE;
   const [navWindowStart, setNavWindowStart] = useState(0);
   const navMaxWindowStart = Math.max(0, navItems.length - navWindowSize);
   const showNavWindowControls = navItems.length > navWindowSize;
@@ -808,6 +827,7 @@ export default function AppHeader({
       name: activeSession.name,
       email: activeSession.email,
       accountType: activeSession.accountType,
+      accountSubtype: activeSession.accountSubtype,
       logoUrl: activeSession.logoUrl,
     };
     let mounted = true;
@@ -872,6 +892,12 @@ export default function AppHeader({
   }
 
   function handleAccountMenuToggle() {
+    if (isAccountantAccount) {
+      setMenuOpen(false);
+      setLeaveAccountOpen(true);
+      return;
+    }
+
     setMenuOpen((current) => {
       const nextOpen = !current;
 
@@ -929,6 +955,12 @@ export default function AppHeader({
 
   function closeMobileMenu() {
     setMobileMenuOpen(false);
+  }
+
+  function requestLeaveAccount() {
+    setMobileMenuOpen(false);
+    setMenuOpen(false);
+    setLeaveAccountOpen(true);
   }
 
   async function handleOpenAssetDiscoveryNotification(enquiryId: string) {
@@ -1568,10 +1600,10 @@ export default function AppHeader({
             <button
               type="button"
               className={styles.mobileMenuDangerButton}
-              onClick={handleSignOut}
+              onClick={isAccountantAccount ? requestLeaveAccount : handleSignOut}
               disabled={isSigningOut}
             >
-              {isSigningOut ? 'Signing out...' : 'Sign out'}
+              {isSigningOut ? 'Leaving...' : isAccountantAccount ? 'Leave account' : 'Sign out'}
             </button>
           </div>
         ) : (
@@ -1789,6 +1821,40 @@ export default function AppHeader({
         )
       : null;
 
+  const leaveAccountPortal =
+    leaveAccountOpen && canUseNotificationPortal
+      ? createPortal(
+          <div
+            className={styles.notificationDetailBackdrop}
+            role="presentation"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) setLeaveAccountOpen(false);
+            }}
+          >
+            <section className={styles.notificationDetailModal} role="dialog" aria-modal="true" aria-labelledby="leave-account-title">
+              <div className={styles.notificationDetailHeader}>
+                <div className={styles.notificationDetailHeaderText}>
+                  <h2 id="leave-account-title">Leave this account?</h2>
+                  <p>Are you sure you want to leave this account?</p>
+                </div>
+                <button type="button" className={styles.notificationDetailCloseButton} onClick={() => setLeaveAccountOpen(false)} aria-label="Cancel leaving account">
+                  ×
+                </button>
+              </div>
+              <div className={styles.notificationDetailActions}>
+                <button type="button" className={styles.notificationSecondaryButton} onClick={() => setLeaveAccountOpen(false)} disabled={isSigningOut}>
+                  Cancel
+                </button>
+                <button type="button" className={styles.notificationSoftDangerButton} onClick={handleSignOut} disabled={isSigningOut}>
+                  {isSigningOut ? 'Leaving...' : 'Leave account'}
+                </button>
+              </div>
+            </section>
+          </div>,
+          document.body,
+        )
+      : null;
+
   return (
     <>
       <header className={styles.header}>
@@ -1851,7 +1917,7 @@ export default function AppHeader({
             <div className={styles.actionsRail}>
               {isLoadingSession ? null : session ? (
                 <>
-                  <div className={styles.notificationMenu} ref={notificationMenuRef}>
+                  {!isAccountantAccount ? <div className={styles.notificationMenu} ref={notificationMenuRef}>
                     <button
                       type="button"
                       className={`${styles.notificationButton} ${unreadNotificationCount ? styles.notificationButtonActive : ''}`}
@@ -1871,7 +1937,7 @@ export default function AppHeader({
                         <span className={styles.notificationBadge}>{notificationBadgeText}</span>
                       ) : null}
                     </button>
-                  </div>
+                  </div> : null}
 
                   <div className={styles.accountMenu} ref={accountMenuRef}>
                     <button
@@ -1977,6 +2043,7 @@ export default function AppHeader({
       {mobileMenuPortal}
       {notificationPortal}
       {notificationDetailPortal}
+      {leaveAccountPortal}
       <DealerCostDecisionModal
         invoiceId={activeDealerCostInvoiceId}
         onClose={closeDealerCostDecisionModal}
