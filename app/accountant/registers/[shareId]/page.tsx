@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { getAccountProfile } from '../../../../lib/account-profile';
 import { getAccountantRegisterData } from '../../../../lib/accountant-workspace';
 import { requireActivePageAccess } from '../../../../lib/account-access';
-import AccountantRegisterClient from './accountant-register-client';
+import AssetRegisterClient from '../../../asset-register/asset-register-client';
 
 export const runtime = 'nodejs';
 
@@ -11,9 +11,9 @@ export default async function AccountantRegisterPage({ params }: { params: { sha
   const profile = await getAccountProfile(session.user);
   if (profile.accountType !== 'finance' || profile.accountSubtype !== 'accountant') redirect('/leads');
   try {
-    const data = await getAccountantRegisterData(session.user.id, params.shareId);
-    return <AccountantRegisterClient initialData={data} shareId={params.shareId} />;
+    await getAccountantRegisterData(session.user.id, params.shareId);
+    return <AssetRegisterClient accountantShareId={params.shareId} />;
   } catch {
-    redirect('/accountant/registers');
+    redirect('/leads');
   }
 }
