@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { createPortal } from 'react-dom';
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ChangeEvent, type FormEvent, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import AppHeader from '../../components/AppHeader';
+import AccountantAssetManageModal from '../../components/AccountantAssetManageModal';
+import AccountantRegisterReportsModal from '../../components/AccountantRegisterReportsModal';
 import DealerMaintenanceAccessSettings, {
   DEFAULT_DEALER_MAINTENANCE_PERMISSIONS,
   DealerMaintenancePermissionPicker,
@@ -499,6 +501,11 @@ type RegisterAsset = {
   maintenanceAlert?: MaintenanceUpcomingAlert | null;
   licenseRenewalAlert?: LicenseRenewalAlert | null;
   dealerAssetCorrection?: DealerAssetCorrectionRequest | null;
+  accountingValue?: {
+    carryingValue: number;
+    asAtDate: string;
+    sourceReference: string;
+  } | null;
 };
 
 type ReplacementPriceRevaluePrompt = {
@@ -580,7 +587,17 @@ type AssetRegisterApiResponse = {
   };
   item?: RegisterAsset;
   note?: OpenPartnerNote;
+  access?: AccountantRegisterAccess;
   error?: string;
+};
+
+type AccountantRegisterAccess = {
+  shareId: string;
+  ownerName: string;
+  ownerBusinessName: string;
+  allowDirectUpdates: boolean;
+  includeFuelLedger: boolean;
+  includeCostLedger: boolean;
 };
 
 type UploadedAssetFile = {
@@ -5721,8 +5738,10 @@ function renderManualAssetTypeIcon(assetKind: AssetKind, className?: string) {
   return <UpdateAssetIcon className={className} />;
 }
 
-export default function AssetRegisterClient() {
+export default function AssetRegisterClient({ accountantShareId }: { accountantShareId?: string } = {}) {
+  const isAccountantWorkspace = Boolean(accountantShareId);
   const [assets, setAssets] = useState<RegisterAsset[]>([]);
+  const [accountantAccess, setAccountantAccess] = useState<AccountantRegisterAccess | null>(null);
   const [accountProfile, setAccountProfile] = useState<AccountProfile | null>(null);
   const [assetRegisters, setAssetRegisters] = useState<AssetRegisterSummary[]>([]);
   const [activeRegister, setActiveRegister] = useState<AssetRegisterSummary | null>(null);
@@ -5886,6 +5905,7 @@ export default function AssetRegisterClient() {
   const isRegisterSummaryAtEnd = registerSummaryStartIndex >= registerSummaryMaxIndex;
   const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
   const [isRegisterShareModalOpen, setIsRegisterShareModalOpen] = useState(false);
+  const [isAccountantReportsOpen, setIsAccountantReportsOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [exportFormat, setExportFormat] = useState<ExportFormat>('pdf');
   const [exportEntityName, setExportEntityName] = useState('');
@@ -6290,10 +6310,11 @@ export default function AssetRegisterClient() {
     })),
     [assetRegisterMoveTargets],
   );
-  const canUseOwnerOnlyAssetActions = true;
+  const canUseOwnerOnlyAssetActions = !isAccountantWorkspace;
+  const canUseAccountantDocumentActions = isAccountantWorkspace && Boolean(accountantAccess?.allowDirectUpdates);
   const canShareActiveRegister = canUseOwnerOnlyAssetActions;
   const canAddAssetsToActiveRegister = canUseOwnerOnlyAssetActions && !isCombinedRegisterView;
-  const canUseMarketplaceActions = true;
+  const canUseMarketplaceActions = !isAccountantWorkspace;
   const isQuoteModalOpen = Boolean(quoteAsset);
   const isFullRegisterQuoteLead = quoteScope === 'register';
   const activeRegisterShareName = isCombinedRegisterView
@@ -6443,11 +6464,14 @@ export default function AssetRegisterClient() {
       setAssets([]);
 
       try {
-        const requestedRegisterId = readRegisterIdFromLocation();
+        const requestedRegisterId = isAccountantWorkspace ? '' : readRegisterIdFromLocation();
         setActiveRegisterId(requestedRegisterId);
-        void loadAccountProfile();
+        if (!isAccountantWorkspace) void loadAccountProfile();
 
-        const assetsResponse = await fetch(buildAssetRegisterApiUrl(requestedRegisterId), {
+        const registerUrl = accountantShareId
+          ? `/api/accountant/registers/${encodeURIComponent(accountantShareId)}`
+          : buildAssetRegisterApiUrl(requestedRegisterId);
+        const assetsResponse = await fetch(registerUrl, {
           cache: 'no-store',
           credentials: 'include',
         });
@@ -6467,6 +6491,12 @@ export default function AssetRegisterClient() {
             : [];
 
         setAssets(loadedAssets);
+
+        if (assetsData.profile) {
+          setAccountProfile(assetsData.profile);
+        }
+
+        setAccountantAccess(assetsData.access ?? null);
 
         if (assetsData.register) {
           setActiveRegister(assetsData.register);
@@ -6499,7 +6529,7 @@ export default function AssetRegisterClient() {
       mounted = false;
       window.removeEventListener('aim4price:asset-register-updated', loadAssetRegister);
     };
-  }, []);
+  }, [accountantShareId, isAccountantWorkspace]);
 
   useEffect(() => {
     if (!notice) return undefined;
@@ -6514,8 +6544,11 @@ export default function AssetRegisterClient() {
     setIsRefreshingRegister(true);
 
     try {
-      const requestedRegisterId = readRegisterIdFromLocation() || activeRegister?.id || activeRegisterId;
-      const assetsResponse = await fetch(buildAssetRegisterApiUrl(requestedRegisterId), {
+      const requestedRegisterId = isAccountantWorkspace ? '' : readRegisterIdFromLocation() || activeRegister?.id || activeRegisterId;
+      const registerUrl = accountantShareId
+        ? `/api/accountant/registers/${encodeURIComponent(accountantShareId)}`
+        : buildAssetRegisterApiUrl(requestedRegisterId);
+      const assetsResponse = await fetch(registerUrl, {
         cache: 'no-store',
         credentials: 'include',
       });
@@ -6533,6 +6566,12 @@ export default function AssetRegisterClient() {
           : [];
 
       setAssets(loadedAssets);
+
+      if (assetsData.profile) {
+        setAccountProfile(assetsData.profile);
+      }
+
+      setAccountantAccess(assetsData.access ?? null);
 
       if (assetsData.register) {
         setActiveRegister(assetsData.register);
@@ -6814,6 +6853,7 @@ export default function AssetRegisterClient() {
     Boolean(pricingPreview) ||
     isQrModalOpen ||
     isSummaryModalOpen ||
+    isAccountantReportsOpen ||
     isRegisterShareModalOpen ||
     isExportModalOpen ||
     Boolean(projectionAsset) ||
@@ -6967,6 +7007,11 @@ export default function AssetRegisterClient() {
         return;
       }
 
+      if (isAccountantReportsOpen) {
+        setIsAccountantReportsOpen(false);
+        return;
+      }
+
       if (isRegisterShareModalOpen) {
         closeRegisterShareModal();
         return;
@@ -6988,7 +7033,7 @@ export default function AssetRegisterClient() {
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [activeAsset, anyModalOpen, assetRegisterMoveAsset, deleteCandidateAsset, disposalCandidateAsset, acquisitionDetailsAsset, isSavingAcquisitionDetails, isAcquisitionChoiceOpen, isAddChoiceModalOpen, isAssetFilterOpen, isChangeRegisterModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isPricingModalOpen, pricingPreview, isQrModalOpen, isRegisterShareModalOpen, isSummaryModalOpen, marketplaceAsset, projectionAsset, isQuoteModalOpen, isQuoteTrackingSettingsOpen, quoteLeadStep, isAssetSettingsModalOpen, pendingUsageOverride, isManualConversionConfirmOpen, isSavingAssetSettings, replacementPriceRevaluePrompt, photoViewer]);
+  }, [activeAsset, anyModalOpen, assetRegisterMoveAsset, deleteCandidateAsset, disposalCandidateAsset, acquisitionDetailsAsset, isSavingAcquisitionDetails, isAcquisitionChoiceOpen, isAddChoiceModalOpen, isAssetFilterOpen, isChangeRegisterModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isPricingModalOpen, pricingPreview, isQrModalOpen, isRegisterShareModalOpen, isSummaryModalOpen, isAccountantReportsOpen, marketplaceAsset, projectionAsset, isQuoteModalOpen, isQuoteTrackingSettingsOpen, quoteLeadStep, isAssetSettingsModalOpen, pendingUsageOverride, isManualConversionConfirmOpen, isSavingAssetSettings, replacementPriceRevaluePrompt, photoViewer]);
 
   useEffect(() => {
     if (!isQuoteModalOpen || !selectedQuoteLeadType) return;
@@ -9608,6 +9653,11 @@ export default function AssetRegisterClient() {
       return;
     }
 
+    if (isAccountantWorkspace && !canUseAccountantDocumentActions) {
+      setNotice({ tone: 'error', message: 'The owner has not enabled Allow direct updates for this register.' });
+      return;
+    }
+
     const currentDocuments = assetDocuments(asset);
     const remainingSlots = MAX_DOCUMENTS - currentDocuments.length;
 
@@ -9620,6 +9670,31 @@ export default function AssetRegisterClient() {
     setDetailMediaUpload({ assetId: asset.id, type: 'document' });
 
     try {
+      if (accountantShareId) {
+        let updatedAsset = asset;
+        for (const file of filesToUpload) {
+          const form = new FormData();
+          form.append('file', file);
+          const response = await fetch(`/api/accountant/registers/${encodeURIComponent(accountantShareId)}/assets/${encodeURIComponent(asset.id)}/documents`, {
+            method: 'POST',
+            body: form,
+          });
+          const data = (await response.json()) as AssetRegisterApiResponse;
+          if (!response.ok || !data.ok || !data.item) {
+            throw new Error(data.error ?? 'Failed to upload the accountant document.');
+          }
+          updatedAsset = data.item;
+        }
+
+        syncMediaUpdatedAsset(updatedAsset);
+        setExpandedAssetId(updatedAsset.id);
+        setNotice({
+          tone: 'success',
+          message: `${filesToUpload.length} document${filesToUpload.length === 1 ? '' : 's'} added to the owner’s live Asset Register.`,
+        });
+        return;
+      }
+
       const uploads = await uploadAssetMediaFiles(filesToUpload, 'document');
       const uploadedDocuments = uploadedFilesToDocuments(uploads);
       const nextDocuments = normalizeDocuments([...currentDocuments, ...uploadedDocuments]);
@@ -12473,17 +12548,15 @@ export default function AssetRegisterClient() {
                 </button>
               ) : null}
 
-              {canUseOwnerOnlyAssetActions ? (
-                <button
-                  type="button"
-                  className={`${styles.secondaryButton} ${styles.summaryTriggerButton} ${styles.headerOptionsButton}`}
-                  onClick={openSummaryModal}
-                  disabled={isLoading}
-                >
-                  <OptionsIcon className={styles.buttonIcon} />
-                  <span>Summary</span>
-                </button>
-              ) : null}
+              <button
+                type="button"
+                className={`${styles.secondaryButton} ${styles.summaryTriggerButton} ${styles.headerOptionsButton}`}
+                onClick={openSummaryModal}
+                disabled={isLoading}
+              >
+                <OptionsIcon className={styles.buttonIcon} />
+                <span>Summary</span>
+              </button>
 
               <div className={styles.assetFilterWrap} ref={assetFilterWrapRef}>
                 <button
@@ -12502,17 +12575,15 @@ export default function AssetRegisterClient() {
                 </button>
               </div>
 
-              {canUseOwnerOnlyAssetActions ? (
-                <button
-                  type="button"
-                  className={`${styles.secondaryButton} ${styles.headerDownloadButton}`}
-                  onClick={openExportModal}
-                  disabled={!assets.length || isLoading || isExporting}
-                >
-                  <DownloadIcon className={styles.buttonIcon} />
-                  <span>Download</span>
-                </button>
-              ) : null}
+              <button
+                type="button"
+                className={`${styles.secondaryButton} ${styles.headerDownloadButton}`}
+                onClick={isAccountantWorkspace ? () => setIsAccountantReportsOpen(true) : openExportModal}
+                disabled={!assets.length || isLoading || isExporting}
+              >
+                <DownloadIcon className={styles.buttonIcon} />
+                <span>Download</span>
+              </button>
             </div>
           </div>
 
@@ -13183,29 +13254,31 @@ export default function AssetRegisterClient() {
 
                     return (
                       <div className={styles.assetCardRow} key={asset.id}>
-                        <div className={styles.assetSideActions}>
-                          <button
-                            type="button"
-                            className={`${styles.assetFlagButton} ${isFlagged ? styles.assetFlagButtonActive : ''}`}
-                            onClick={() => void handleAssetFlagToggle(asset)}
-                            disabled={isFlagBusy}
-                            aria-label={isFlagged ? `Unflag ${asset.title}` : `Flag ${asset.title}`}
-                            aria-pressed={isFlagged}
-                            title={isFlagged ? `Unflag ${asset.title}` : `Flag ${asset.title}`}
-                          >
-                            <FlagIcon className={styles.assetFlagIcon} />
-                          </button>
+                        {canUseOwnerOnlyAssetActions ? (
+                          <div className={styles.assetSideActions}>
+                            <button
+                              type="button"
+                              className={`${styles.assetFlagButton} ${isFlagged ? styles.assetFlagButtonActive : ''}`}
+                              onClick={() => void handleAssetFlagToggle(asset)}
+                              disabled={isFlagBusy}
+                              aria-label={isFlagged ? `Unflag ${asset.title}` : `Flag ${asset.title}`}
+                              aria-pressed={isFlagged}
+                              title={isFlagged ? `Unflag ${asset.title}` : `Flag ${asset.title}`}
+                            >
+                              <FlagIcon className={styles.assetFlagIcon} />
+                            </button>
 
-                          <button
-                            type="button"
-                            className={styles.assetRegisterMoveButton}
-                            onClick={() => openAssetRegisterMoveManager(asset)}
-                            aria-label={`Move ${asset.title} to another asset register`}
-                            title="Move to another asset register"
-                          >
-                            <ChangeRegisterIcon className={styles.assetRegisterMoveIcon} />
-                          </button>
-                        </div>
+                            <button
+                              type="button"
+                              className={styles.assetRegisterMoveButton}
+                              onClick={() => openAssetRegisterMoveManager(asset)}
+                              aria-label={`Move ${asset.title} to another asset register`}
+                              title="Move to another asset register"
+                            >
+                              <ChangeRegisterIcon className={styles.assetRegisterMoveIcon} />
+                            </button>
+                          </div>
+                        ) : null}
 
                         <article
                           id={`asset-card-${asset.id}`}
@@ -13270,14 +13343,16 @@ export default function AssetRegisterClient() {
                                 </button>
                               ) : null}
 
-                              <button
-                                type="button"
-                                className={`${styles.optionsButton} ${styles.cardOptionsButton}`}
-                                onClick={() => openAssetQuoteOptions(asset)}
-                              >
-                                <ShareIcon className={styles.buttonIcon} />
-                                <span>Share</span>
-                              </button>
+                              {canUseOwnerOnlyAssetActions ? (
+                                <button
+                                  type="button"
+                                  className={`${styles.optionsButton} ${styles.cardOptionsButton}`}
+                                  onClick={() => openAssetQuoteOptions(asset)}
+                                >
+                                  <ShareIcon className={styles.buttonIcon} />
+                                  <span>Share</span>
+                                </button>
+                              ) : null}
 
                               <button
                                 type="button"
@@ -13301,7 +13376,7 @@ export default function AssetRegisterClient() {
                             </div>
                           </div>
 
-                          {dealerAssetCorrection ? (
+                          {dealerAssetCorrection && canUseOwnerOnlyAssetActions ? (
                             <div className={`${styles.dealerCorrectionBanner} ${dealerCorrectionRevaluationAlert ? styles.dealerCorrectionBannerWarning : ''}`} role="status">
                               <div className={styles.dealerCorrectionCopy}>
                                 <span className={styles.dealerCorrectionIcon} aria-hidden="true">{dealerCorrectionRevaluationAlert ? '!' : '✓'}</span>
@@ -13376,13 +13451,15 @@ export default function AssetRegisterClient() {
                                   </a>
                                 ) : null}
                               </div>
-                              <button
-                                type="button"
-                                className={styles.partnerNoteButton}
-                                onClick={() => void handleMarkPartnerNoteNoted(openPartnerNote.id, asset.id)}
-                              >
-                                Noted
-                              </button>
+                              {canUseOwnerOnlyAssetActions ? (
+                                <button
+                                  type="button"
+                                  className={styles.partnerNoteButton}
+                                  onClick={() => void handleMarkPartnerNoteNoted(openPartnerNote.id, asset.id)}
+                                >
+                                  Noted
+                                </button>
+                              ) : null}
                             </div>
                           ) : null}
 
@@ -13393,14 +13470,16 @@ export default function AssetRegisterClient() {
                                 <p>{maintenanceAlert.body}</p>
                                 {maintenanceAlert.computedStatusLabel ? <small className={styles.maintenanceUpcomingMeta}>{maintenanceAlert.computedStatusLabel}</small> : null}
                               </div>
-                              <button
-                                type="button"
-                                className={styles.partnerNoteButton}
-                                disabled={isMarkingMaintenanceAlertNoted}
-                                onClick={() => void handleMarkMaintenanceAlertNoted(maintenanceAlert.id, asset.id)}
-                              >
-                                {isMarkingMaintenanceAlertNoted ? 'Noting...' : 'Noted'}
-                              </button>
+                              {canUseOwnerOnlyAssetActions ? (
+                                <button
+                                  type="button"
+                                  className={styles.partnerNoteButton}
+                                  disabled={isMarkingMaintenanceAlertNoted}
+                                  onClick={() => void handleMarkMaintenanceAlertNoted(maintenanceAlert.id, asset.id)}
+                                >
+                                  {isMarkingMaintenanceAlertNoted ? 'Noting...' : 'Noted'}
+                                </button>
+                              ) : null}
                             </div>
                           ) : null}
 
@@ -13411,14 +13490,16 @@ export default function AssetRegisterClient() {
                                 <p>{licenseRenewalAlert.body}</p>
                                 <small className={styles.maintenanceUpcomingMeta}>{licenseRenewalAlert.computedStatusLabel}</small>
                               </div>
-                              <button
-                                type="button"
-                                className={styles.partnerNoteButton}
-                                disabled={isMarkingLicenseRenewalAlertNoted}
-                                onClick={() => void handleMarkLicenseRenewalAlertNoted(asset.id, licenseRenewalAlert.renewalDate)}
-                              >
-                                {isMarkingLicenseRenewalAlertNoted ? 'Noting...' : 'Noted'}
-                              </button>
+                              {canUseOwnerOnlyAssetActions ? (
+                                <button
+                                  type="button"
+                                  className={styles.partnerNoteButton}
+                                  disabled={isMarkingLicenseRenewalAlertNoted}
+                                  onClick={() => void handleMarkLicenseRenewalAlertNoted(asset.id, licenseRenewalAlert.renewalDate)}
+                                >
+                                  {isMarkingLicenseRenewalAlertNoted ? 'Noting...' : 'Noted'}
+                                </button>
+                              ) : null}
                             </div>
                           ) : null}
 
@@ -13429,14 +13510,16 @@ export default function AssetRegisterClient() {
                                 <p>{latestIssueNoteStatus.note}</p>
                                 {issueNoteMeta ? <small className={styles.issueNoteMeta}>{issueNoteMeta}</small> : null}
                               </div>
-                              <button
-                                type="button"
-                                className={styles.partnerNoteButton}
-                                disabled={isMarkingIssueNoteNoted}
-                                onClick={() => void handleMarkIssueNoteStatusNoted(latestIssueNoteStatus.id, asset.id)}
-                              >
-                                {isMarkingIssueNoteNoted ? 'Noting...' : 'Noted'}
-                              </button>
+                              {canUseOwnerOnlyAssetActions ? (
+                                <button
+                                  type="button"
+                                  className={styles.partnerNoteButton}
+                                  disabled={isMarkingIssueNoteNoted}
+                                  onClick={() => void handleMarkIssueNoteStatusNoted(latestIssueNoteStatus.id, asset.id)}
+                                >
+                                  {isMarkingIssueNoteNoted ? 'Noting...' : 'Noted'}
+                                </button>
+                              ) : null}
                             </div>
                           ) : null}
 
@@ -13470,14 +13553,16 @@ export default function AssetRegisterClient() {
                                 ) : null}
                                 {maintenanceDoneMeta ? <small className={styles.maintenanceDoneMeta}>{maintenanceDoneMeta}</small> : null}
                               </div>
-                              <button
-                                type="button"
-                                className={styles.partnerNoteButton}
-                                disabled={isMarkingMaintenanceNoted}
-                                onClick={() => void handleMarkMaintenanceStatusNoted(latestMaintenanceStatus.id, asset.id)}
-                              >
-                                {isMarkingMaintenanceNoted ? 'Noting...' : 'Noted'}
-                              </button>
+                              {canUseOwnerOnlyAssetActions ? (
+                                <button
+                                  type="button"
+                                  className={styles.partnerNoteButton}
+                                  disabled={isMarkingMaintenanceNoted}
+                                  onClick={() => void handleMarkMaintenanceStatusNoted(latestMaintenanceStatus.id, asset.id)}
+                                >
+                                  {isMarkingMaintenanceNoted ? 'Noting...' : 'Noted'}
+                                </button>
+                              ) : null}
                             </div>
                           ) : null}
                         </div>
@@ -13642,10 +13727,10 @@ export default function AssetRegisterClient() {
                                       multiple
                                       className={styles.fileInput}
                                       onChange={(event) => { void handleDetailDocumentFilesSelected(asset, event); }}
-                                      disabled={isDetailDocumentUploading}
+                                      disabled={isDetailDocumentUploading || (isAccountantWorkspace && !canUseAccountantDocumentActions)}
                                     />
 
-                                    {canUseOwnerOnlyAssetActions ? (
+                                    {canUseOwnerOnlyAssetActions || canUseAccountantDocumentActions ? (
                                       <button
                                         type="button"
                                         className={`${styles.previewUploadPill} ${styles.assetDocumentsUploadPill}`}
@@ -13663,8 +13748,12 @@ export default function AssetRegisterClient() {
                                     <button
                                       type="button"
                                       className={`${styles.assetDocumentsCard} ${styles.assetDocumentsUploadCard} ${isDetailDocumentUploading ? styles.assetMediaBusy : ''}`}
-                                      onClick={() => triggerDetailMediaInput(asset.id, 'document')}
-                                      disabled={isDetailDocumentUploading}
+                                      onClick={() => {
+                                        if (canUseOwnerOnlyAssetActions || canUseAccountantDocumentActions) {
+                                          triggerDetailMediaInput(asset.id, 'document');
+                                        }
+                                      }}
+                                      disabled={isDetailDocumentUploading || (!canUseOwnerOnlyAssetActions && !canUseAccountantDocumentActions)}
                                     >
                                       <div className={styles.assetDocumentsMainLabel}>
                                         <DocumentIcon className={styles.buttonIcon} />
@@ -13674,8 +13763,10 @@ export default function AssetRegisterClient() {
                                         {isDetailDocumentUploading
                                           ? 'Uploading...'
                                           : detailDocuments.length
-                                            ? `${detailDocuments.length} saved · click to add`
-                                            : 'Click to upload documents'}
+                                            ? `${detailDocuments.length} saved${canUseOwnerOnlyAssetActions || canUseAccountantDocumentActions ? ' · click to add' : ''}`
+                                            : canUseOwnerOnlyAssetActions || canUseAccountantDocumentActions
+                                              ? 'Click to upload documents'
+                                              : 'No documents shared'}
                                       </span>
                                     </button>
 
@@ -16484,7 +16575,22 @@ export default function AssetRegisterClient() {
         </div>
       ) : null}
 
-      {activeAsset ? (
+      {activeAsset && isAccountantWorkspace ? (
+        accountantShareId && accountantAccess ? (
+          <AccountantAssetManageModal
+            shareId={accountantShareId}
+            asset={activeAsset}
+            allowDirectUpdates={accountantAccess.allowDirectUpdates}
+            includeFuelLedger={accountantAccess.includeFuelLedger}
+            includeCostLedger={accountantAccess.includeCostLedger}
+            onClose={closeActionDialog}
+            onChanged={(message) => {
+              setNotice({ tone: 'success', message });
+              window.dispatchEvent(new Event('aim4price:asset-register-updated'));
+            }}
+          />
+        ) : null
+      ) : activeAsset ? (
         <div className={styles.modalOverlay}>
           <div className={styles.modalBackdrop} onClick={closeActionDialog} />
 
@@ -18033,6 +18139,16 @@ export default function AssetRegisterClient() {
             </div>
           </div>
         </div>
+      ) : null}
+
+      {isAccountantReportsOpen && accountantShareId && accountantAccess ? (
+        <AccountantRegisterReportsModal
+          shareId={accountantShareId}
+          registerName={activeRegister?.businessName || accountantAccess.ownerBusinessName || 'Asset Register'}
+          includeFuelLedger={accountantAccess.includeFuelLedger}
+          includeCostLedger={accountantAccess.includeCostLedger}
+          onClose={() => setIsAccountantReportsOpen(false)}
+        />
       ) : null}
     </main>
   );

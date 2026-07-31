@@ -16793,7 +16793,7 @@
 }
 
 .registerHeader .sharedRegisterHeaderActions {
-  grid-template-columns: minmax(0, 18rem) !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   justify-content: end !important;
 }
 
@@ -16803,7 +16803,7 @@
   }
 
   .registerHeader .sharedRegisterHeaderActions {
-    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     justify-content: stretch !important;
   }
 }
@@ -32791,6 +32791,83 @@ button.documentOpenLink {
   min-width: 10.5rem !important;
   min-height: 3.25rem !important;
   border-radius: 0.92rem !important;
+}
+
+/* Accountant shared-workspace forms intentionally use the owner Asset Register modal system. */
+.accountantReadOnlyNotice {
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(215, 153, 56, 0.32);
+  border-radius: 0.9rem;
+  color: #6f4a14;
+  background: #fff8e9;
+  font-size: 0.86rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.accountantManageForm {
+  display: grid;
+  gap: 1rem;
+  width: 100%;
+}
+
+.accountantManageGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.accountantFullField {
+  grid-column: 1 / -1;
+}
+
+.accountantManageForm .assetSettingsField select {
+  min-height: 3.1rem;
+  width: 100%;
+  padding: 0.78rem 0.88rem;
+  border: 1px solid rgba(20, 72, 61, 0.2);
+  border-radius: 0.9rem;
+  color: #123f36;
+  background: #ffffff;
+  font: 650 0.91rem 'Montserrat', sans-serif;
+}
+
+.accountantDocumentList {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.accountantDocumentList a {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  min-height: 4.25rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid rgba(20, 72, 61, 0.16);
+  border-radius: 1rem;
+  color: #123f36;
+  background: #f8fbfa;
+  text-decoration: none;
+}
+
+.accountantDocumentList a > span {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.accountantDocumentList a small {
+  color: #6b7e77;
+  font-weight: 650;
+}
+
+@media (max-width: 760px) {
+  .accountantManageGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .accountantFullField {
+    grid-column: auto;
+  }
 }
 
 @media (max-width: 720px) {
