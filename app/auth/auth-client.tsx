@@ -81,7 +81,7 @@ const ADMIN_EMAIL = "aim4price@gmail.com";
 
 const SIGNUP_ACCOUNT_TYPE_OPTIONS: Array<SelectOption<SignupAccountType>> = [
   { value: "owner", label: "Asset owner" },
-  { value: "finance", label: "Finance provider" },
+  { value: "finance", label: "Finance — accountants, financiers and banks" },
   { value: "insurance", label: "Insurance provider" },
   { value: "dealer", label: "Dealer / auctioneer" },
 ];
