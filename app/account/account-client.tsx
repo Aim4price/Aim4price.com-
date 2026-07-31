@@ -586,13 +586,15 @@ function normalizePinInput(value: string): string {
   return value.replace(/\D+/g, "").slice(0, 8);
 }
 
-function formatAccountTypeLabel(value: string): string {
+function formatAccountTypeLabel(value: string, subtype = ''): string {
   const normalized = String(value ?? "").trim();
+  const normalizedSubtype = String(subtype ?? "").trim().toLowerCase();
 
   if (!normalized) {
     return "Owner";
   }
 
+  if (normalized === 'finance' && normalizedSubtype === 'accountant') return 'Accountant';
   return ACCOUNT_TYPE_LABELS[normalized] ?? normalized;
 }
 
@@ -1141,8 +1143,8 @@ export default function AccountClient() {
     [profileDraft],
   );
   const accountTypeLabel = useMemo(
-    () => formatAccountTypeLabel(profileDraft.accountType),
-    [profileDraft.accountType],
+    () => formatAccountTypeLabel(profileDraft.accountType, profile?.accountSubtype),
+    [profile?.accountSubtype, profileDraft.accountType],
   );
   const normalizedAccountType = String(
     profile?.accountType || profileDraft.accountType || "owner",
