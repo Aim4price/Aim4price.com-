@@ -18,6 +18,10 @@ export default async function AssetRegisterPage() {
     redirect("/leads");
   }
 
+  if (profile.accountType === "finance" && profile.accountSubtype === "accountant") {
+    redirect("/accountant/registers");
+  }
+
   if (profile.accountType !== "owner") {
     redirect("/leads");
   }

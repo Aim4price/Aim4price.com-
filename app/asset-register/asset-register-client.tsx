@@ -40,10 +40,39 @@ type PartnerType = 'dealer' | 'finance' | 'insurance';
 type AssetLeadType = 'finance' | 'insurance' | 'replacement_quote';
 type QuoteLeadStep = 'message' | 'consent' | null;
 type QuoteScope = 'asset' | 'register';
+type DisposalReason = 'sold' | 'traded_in' | 'scrapped' | 'written_off' | 'mistake_duplicate' | 'other';
+
+type AcquisitionDraft = {
+  newlyAcquired: boolean | null;
+  acquisitionDate: string;
+  acquisitionAmountExVat: string;
+  note: string;
+  sourceDocumentReference: string;
+};
+
+type DisposalDraft = {
+  reason: DisposalReason | '';
+  disposalDate: string;
+  disposalAmountExVat: string;
+  note: string;
+};
+
+function lifecycleToday(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function createAcquisitionDraft(): AcquisitionDraft {
+  return { newlyAcquired: null, acquisitionDate: lifecycleToday(), acquisitionAmountExVat: '', note: '', sourceDocumentReference: '' };
+}
+
+function createDisposalDraft(): DisposalDraft {
+  return { reason: '', disposalDate: lifecycleToday(), disposalAmountExVat: '', note: '' };
+}
 
 type PartnerDirectoryEntry = {
   userId: string;
   partnerType: PartnerType;
+  accountSubtype: string;
   displayName: string;
   businessName: string;
   phone: string;
@@ -1277,10 +1306,10 @@ const ASSET_QUOTE_OPTIONS: AssetQuoteOption[] = [
     partnerType: 'finance',
     title: 'Get finance help',
     shortTitle: 'Finance help',
-    descriptionLines: ['Send this asset to a finance provider.', 'Request finance or refinance.'],
-    mapTitle: 'Choose a finance provider.',
+    descriptionLines: ['Send this asset to an accountant, financier or bank.', 'Request record review, finance or refinance.'],
+    mapTitle: 'Choose an accountant, financier or bank.',
     sendLabel: 'Send finance request',
-    emptyPartnerText: 'No listed finance providers found yet. Finance accounts must enable their directory listing under Account details.',
+    emptyPartnerText: 'No listed accountants, financiers or banks found yet. Finance accounts must enable their directory listing under Account details.',
   },
   {
     leadType: 'insurance',
@@ -5487,7 +5516,7 @@ function quoteOptionForLeadType(leadType: AssetLeadType | null): AssetQuoteOptio
 
 function formatQuotePartnerType(value: PartnerType): string {
   if (value === 'dealer') return 'Dealer';
-  if (value === 'finance') return 'Finance';
+  if (value === 'finance') return 'Accountant or finance';
   return 'Insurance';
 }
 
@@ -5737,6 +5766,8 @@ export default function AssetRegisterClient() {
   const isAssetSettingsBusy = isSavingAssetSettings || isAssetSettingsLocationBusy;
   const [isManualConversionConfirmOpen, setIsManualConversionConfirmOpen] = useState(false);
   const [isAddChoiceModalOpen, setIsAddChoiceModalOpen] = useState(false);
+  const [isAcquisitionChoiceOpen, setIsAcquisitionChoiceOpen] = useState(false);
+  const [newAssetAcquisitionDraft, setNewAssetAcquisitionDraft] = useState<AcquisitionDraft>(createAcquisitionDraft);
   const [manualAssetStep, setManualAssetStep] = useState<ManualAssetStep>(1);
   const [hasManualAssetKindSelection, setHasManualAssetKindSelection] = useState(false);
   const [activeAsset, setActiveAsset] = useState<RegisterAsset | null>(null);
@@ -5757,6 +5788,9 @@ export default function AssetRegisterClient() {
   const [quoteIncludePhotos, setQuoteIncludePhotos] = useState(true);
   const [quoteIncludeDocuments, setQuoteIncludeDocuments] = useState(true);
   const [quoteIncludeScanHistory, setQuoteIncludeScanHistory] = useState(false);
+  const [quoteAllowDirectUpdates, setQuoteAllowDirectUpdates] = useState(false);
+  const [quoteIncludeFuelLedger, setQuoteIncludeFuelLedger] = useState(true);
+  const [quoteIncludeCostLedger, setQuoteIncludeCostLedger] = useState(true);
   const [isLoadingQuotePartners, setIsLoadingQuotePartners] = useState(false);
   const [isSendingQuoteLead, setIsSendingQuoteLead] = useState(false);
   const [isDealerTrackingSettingsOpen, setIsDealerTrackingSettingsOpen] = useState(false);
@@ -5805,6 +5839,13 @@ export default function AssetRegisterClient() {
   const detailTouchDidSwipeRef = useRef(false);
   const [busyDeleteId, setBusyDeleteId] = useState<string | null>(null);
   const [deleteCandidateAsset, setDeleteCandidateAsset] = useState<RegisterAsset | null>(null);
+  const [disposalCandidateAsset, setDisposalCandidateAsset] = useState<RegisterAsset | null>(null);
+  const [disposalDraft, setDisposalDraft] = useState<DisposalDraft>(createDisposalDraft);
+  const [acquisitionDetailsAsset, setAcquisitionDetailsAsset] = useState<RegisterAsset | null>(null);
+  const [acquisitionDetailsDraft, setAcquisitionDetailsDraft] = useState<AcquisitionDraft>(createAcquisitionDraft);
+  const [isLoadingAcquisitionDetails, setIsLoadingAcquisitionDetails] = useState(false);
+  const [isSavingAcquisitionDetails, setIsSavingAcquisitionDetails] = useState(false);
+  const [acquisitionDetailsError, setAcquisitionDetailsError] = useState('');
   const [marketplaceAsset, setMarketplaceAsset] = useState<RegisterAsset | null>(null);
   const [marketplaceDraft, setMarketplaceDraft] = useState<MarketplacePublishDraft | null>(null);
   const [isPublishingMarketplace, setIsPublishingMarketplace] = useState(false);
@@ -6753,6 +6794,7 @@ export default function AssetRegisterClient() {
   const anyModalOpen =
     Boolean(photoViewerAsset && photoViewerPhoto) ||
     isAddChoiceModalOpen ||
+    isAcquisitionChoiceOpen ||
     isAssetModalOpen ||
     isAssetSettingsModalOpen ||
     Boolean(pendingUsageOverride) ||
@@ -6762,6 +6804,8 @@ export default function AssetRegisterClient() {
     isQuoteModalOpen ||
     isQuoteTrackingSettingsOpen ||
     Boolean(deleteCandidateAsset) ||
+    Boolean(disposalCandidateAsset) ||
+    Boolean(acquisitionDetailsAsset) ||
     isAssetReportModalOpen ||
     isAssetFilterOpen ||
     isChangeRegisterModalOpen ||
@@ -6848,6 +6892,21 @@ export default function AssetRegisterClient() {
         return;
       }
 
+      if (disposalCandidateAsset) {
+        if (!busyDeleteId) setDisposalCandidateAsset(null);
+        return;
+      }
+
+      if (acquisitionDetailsAsset) {
+        if (!isSavingAcquisitionDetails) setAcquisitionDetailsAsset(null);
+        return;
+      }
+
+      if (isAcquisitionChoiceOpen) {
+        setIsAcquisitionChoiceOpen(false);
+        return;
+      }
+
       if (pricingPreview) {
         closePricingPreviewDialog();
         return;
@@ -6929,7 +6988,7 @@ export default function AssetRegisterClient() {
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [activeAsset, anyModalOpen, assetRegisterMoveAsset, deleteCandidateAsset, isAddChoiceModalOpen, isAssetFilterOpen, isChangeRegisterModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isPricingModalOpen, pricingPreview, isQrModalOpen, isRegisterShareModalOpen, isSummaryModalOpen, marketplaceAsset, projectionAsset, isQuoteModalOpen, isQuoteTrackingSettingsOpen, quoteLeadStep, isAssetSettingsModalOpen, pendingUsageOverride, isManualConversionConfirmOpen, isSavingAssetSettings, replacementPriceRevaluePrompt, photoViewer]);
+  }, [activeAsset, anyModalOpen, assetRegisterMoveAsset, deleteCandidateAsset, disposalCandidateAsset, acquisitionDetailsAsset, isSavingAcquisitionDetails, isAcquisitionChoiceOpen, isAddChoiceModalOpen, isAssetFilterOpen, isChangeRegisterModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isPricingModalOpen, pricingPreview, isQrModalOpen, isRegisterShareModalOpen, isSummaryModalOpen, marketplaceAsset, projectionAsset, isQuoteModalOpen, isQuoteTrackingSettingsOpen, quoteLeadStep, isAssetSettingsModalOpen, pendingUsageOverride, isManualConversionConfirmOpen, isSavingAssetSettings, replacementPriceRevaluePrompt, photoViewer]);
 
   useEffect(() => {
     if (!isQuoteModalOpen || !selectedQuoteLeadType) return;
@@ -7661,6 +7720,16 @@ export default function AssetRegisterClient() {
 
   function openManualEntryFromChoice() {
     closeAddAssetChoiceModal();
+    setNewAssetAcquisitionDraft(createAcquisitionDraft());
+    setIsAcquisitionChoiceOpen(true);
+  }
+
+  function continueManualEntryFromAcquisitionChoice() {
+    if (newAssetAcquisitionDraft.newlyAcquired === null) {
+      setNotice({ tone: 'error', message: 'Choose whether this is a newly acquired asset.' });
+      return;
+    }
+    setIsAcquisitionChoiceOpen(false);
     openCreateModal();
   }
 
@@ -8874,6 +8943,9 @@ export default function AssetRegisterClient() {
     setQuoteIncludePhotos(true);
     setQuoteIncludeDocuments(true);
     setQuoteIncludeScanHistory(false);
+    setQuoteAllowDirectUpdates(false);
+    setQuoteIncludeFuelLedger(true);
+    setQuoteIncludeCostLedger(true);
     setIsLoadingQuotePartners(false);
     setIsSendingQuoteLead(false);
 
@@ -9919,7 +9991,14 @@ export default function AssetRegisterClient() {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(payload),
+          body: JSON.stringify({
+            ...payload,
+            newlyAcquired: newAssetAcquisitionDraft.newlyAcquired === true,
+            acquisitionDate: newAssetAcquisitionDraft.acquisitionDate,
+            acquisitionAmountExVat: newAssetAcquisitionDraft.acquisitionAmountExVat,
+            acquisitionNote: newAssetAcquisitionDraft.note,
+            acquisitionSourceDocumentReference: newAssetAcquisitionDraft.sourceDocumentReference,
+          }),
         });
 
         const data = (await response.json()) as AssetRegisterApiResponse;
@@ -9995,16 +10074,23 @@ export default function AssetRegisterClient() {
     }
   }
 
-  async function handleDeleteAsset(assetId: string): Promise<boolean> {
+  async function handleDeleteAsset(assetId: string, draft: DisposalDraft): Promise<boolean> {
     setBusyDeleteId(assetId);
 
     try {
       const response = await fetch(`/api/asset-register?id=${assetId}`, {
         method: 'DELETE',
         credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reason: draft.reason,
+          disposalDate: draft.disposalDate,
+          disposalAmountExVat: draft.disposalAmountExVat,
+          note: draft.note,
+        }),
       });
 
-      const data = (await response.json()) as AssetRegisterApiResponse;
+      const data = (await response.json()) as AssetRegisterApiResponse & { mode?: 'disposed' | 'deleted' };
 
       if (!response.ok || !data.ok) {
         throw new Error(data.error ?? 'Failed to delete asset.');
@@ -10024,7 +10110,12 @@ export default function AssetRegisterClient() {
         closeProjectionModal();
       }
 
-      setNotice({ tone: 'success', message: 'Asset removed.' });
+      setNotice({
+        tone: 'success',
+        message: data.mode === 'deleted'
+          ? 'Duplicate asset permanently removed. Its deletion audit was retained.'
+          : 'Asset archived as disposed and retained for reports and history.',
+      });
       return true;
     } catch (error) {
       setNotice({
@@ -10043,12 +10134,81 @@ export default function AssetRegisterClient() {
 
   async function handleConfirmDeleteAsset() {
     if (!deleteCandidateAsset) return;
+    setDisposalDraft(createDisposalDraft());
+    setDisposalCandidateAsset(deleteCandidateAsset);
+    setDeleteCandidateAsset(null);
+  }
 
-    const deletedAssetId = deleteCandidateAsset.id;
-    const wasDeleted = await handleDeleteAsset(deletedAssetId);
+  async function handleConfirmDisposal(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!disposalCandidateAsset) return;
+    if (!disposalDraft.reason) {
+      setNotice({ tone: 'error', message: 'Choose what happened to the asset.' });
+      return;
+    }
 
-    if (wasDeleted) {
-      setDeleteCandidateAsset((current) => (current?.id === deletedAssetId ? null : current));
+    const assetId = disposalCandidateAsset.id;
+    const wasRemoved = await handleDeleteAsset(assetId, disposalDraft);
+    if (wasRemoved) {
+      setDisposalCandidateAsset(null);
+      setActiveAsset((current) => current?.id === assetId ? null : current);
+    }
+  }
+
+  async function openAcquisitionDetails(asset: RegisterAsset) {
+    setAcquisitionDetailsAsset(asset);
+    setAcquisitionDetailsDraft(createAcquisitionDraft());
+    setAcquisitionDetailsError('');
+    setIsLoadingAcquisitionDetails(true);
+    try {
+      const response = await fetch(`/api/asset-lifecycle?assetId=${encodeURIComponent(asset.id)}`, { credentials: 'include', cache: 'no-store' });
+      const data = await response.json().catch(() => null) as {
+        ok?: boolean;
+        error?: string;
+        acquisition?: { newlyAcquired?: boolean; acquisitionDate?: string; acquisitionAmountExVat?: number | null; note?: string; sourceDocumentReference?: string } | null;
+      } | null;
+      if (!response.ok || !data?.ok) throw new Error(data?.error || 'Acquisition details could not be loaded.');
+      setAcquisitionDetailsDraft({
+        newlyAcquired: data.acquisition?.newlyAcquired ?? false,
+        acquisitionDate: data.acquisition?.acquisitionDate || asset.createdAtIso.slice(0, 10) || lifecycleToday(),
+        acquisitionAmountExVat: data.acquisition?.acquisitionAmountExVat === null || typeof data.acquisition?.acquisitionAmountExVat === 'undefined' ? '' : String(data.acquisition.acquisitionAmountExVat),
+        note: data.acquisition?.note || '',
+        sourceDocumentReference: data.acquisition?.sourceDocumentReference || '',
+      });
+    } catch (error) {
+      setAcquisitionDetailsError(error instanceof Error ? error.message : 'Acquisition details could not be loaded.');
+    } finally {
+      setIsLoadingAcquisitionDetails(false);
+    }
+  }
+
+  async function handleSaveAcquisitionDetails(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!acquisitionDetailsAsset || acquisitionDetailsDraft.newlyAcquired === null) return;
+    setIsSavingAcquisitionDetails(true);
+    setAcquisitionDetailsError('');
+    try {
+      const response = await fetch('/api/asset-lifecycle', {
+        method: 'PUT',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          assetId: acquisitionDetailsAsset.id,
+          newlyAcquired: acquisitionDetailsDraft.newlyAcquired,
+          acquisitionDate: acquisitionDetailsDraft.acquisitionDate,
+          acquisitionAmountExVat: acquisitionDetailsDraft.acquisitionAmountExVat,
+          note: acquisitionDetailsDraft.note,
+          sourceDocumentReference: acquisitionDetailsDraft.sourceDocumentReference,
+        }),
+      });
+      const data = await response.json().catch(() => null) as { ok?: boolean; error?: string } | null;
+      if (!response.ok || !data?.ok) throw new Error(data?.error || 'Acquisition details could not be saved.');
+      setNotice({ tone: 'success', message: 'Acquisition details saved.' });
+      setAcquisitionDetailsAsset(null);
+    } catch (error) {
+      setAcquisitionDetailsError(error instanceof Error ? error.message : 'Acquisition details could not be saved.');
+    } finally {
+      setIsSavingAcquisitionDetails(false);
     }
   }
 
@@ -11493,13 +11653,17 @@ export default function AssetRegisterClient() {
       valuationSummary: true,
       mainPhoto: true,
       photos: true,
-      documents: false,
+      documents: leadType === 'finance' && selectedQuotePartner?.accountSubtype === 'accountant',
       scanHistory: false,
       registerLead: true,
       source: 'full_asset_register',
       registerLeadType,
       pdfReport: true,
-      liveAccess: false,
+      registerId: activeRegister?.id || activeRegisterId || null,
+      liveAccess: leadType === 'finance' && selectedQuotePartner?.accountSubtype === 'accountant',
+      allowDirectUpdates: leadType === 'finance' && selectedQuotePartner?.accountSubtype === 'accountant' && quoteAllowDirectUpdates,
+      includeFuelLedger: leadType === 'finance' && selectedQuotePartner?.accountSubtype === 'accountant' && quoteIncludeFuelLedger,
+      includeCostLedger: leadType === 'finance' && selectedQuotePartner?.accountSubtype === 'accountant' && quoteIncludeCostLedger,
       registerSnapshot: {
         snapshotType: 'full_asset_register',
         title: snapshotTitle,
@@ -13872,7 +14036,7 @@ export default function AssetRegisterClient() {
             <div className={`${styles.modalHeader} ${styles.optionsModalHeader} ${styles.assetQuoteModalHeader} ${styles.registerShareModalHeader}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="asset-register-share-title">Share {activeRegisterShareName}</h3>
-                <p>Send {activeRegisterShareName} as a once-off to a finance, insurance or dealer partner.</p>
+                <p>Share with accountants, financiers, banks, insurers or dealers. Accountant access can stay live when you authorise it.</p>
               </div>
 
               <button
@@ -13899,9 +14063,9 @@ export default function AssetRegisterClient() {
                       {renderQuoteOptionIcon('finance', styles.assetQuoteChoiceIcon)}
                     </span>
                     <span className={styles.assetQuoteChoiceText}>
-                      <strong>Get refinance quote</strong>
+                      <strong>Accountants &amp; finance</strong>
                       <small>
-                        <span>Send {activeRegisterShareName} to a finance partner.</span>
+                        <span>Share with an accountant, financier or bank.</span>
                       </small>
                     </span>
                   </button>
@@ -14054,6 +14218,62 @@ export default function AssetRegisterClient() {
                   <strong>Manual Entry</strong>
                 </span>
               </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {isAcquisitionChoiceOpen ? (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalBackdrop} onClick={() => setIsAcquisitionChoiceOpen(false)} />
+          <div className={`${styles.modalCard} ${styles.assetLifecycleModal}`} role="dialog" aria-modal="true" aria-labelledby="new-acquisition-title">
+            <div className={styles.modalHeader}>
+              <div className={styles.modalHeaderText}>
+                <h3 id="new-acquisition-title">Is this a newly acquired asset?</h3>
+                <p>Keep acquisition information separate from market, replacement, accounting and finance values.</p>
+              </div>
+              <button type="button" className={styles.modalCloseButton} onClick={() => setIsAcquisitionChoiceOpen(false)} aria-label="Close acquisition question">
+                <CloseIcon className={styles.buttonIcon} />
+              </button>
+            </div>
+            <div className={`${styles.modalScrollBody} ${styles.assetLifecycleBody}`}>
+              <div className={styles.addAssetChoiceGrid}>
+                <button
+                  type="button"
+                  className={`${styles.addAssetChoiceButton} ${newAssetAcquisitionDraft.newlyAcquired === true ? styles.addAssetChoiceButtonPrimary : ''}`}
+                  onClick={() => setNewAssetAcquisitionDraft((current) => ({ ...current, newlyAcquired: true }))}
+                >
+                  <span><strong>Yes, newly acquired</strong></span>
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.addAssetChoiceButton} ${newAssetAcquisitionDraft.newlyAcquired === false ? styles.addAssetChoiceButtonPrimary : ''}`}
+                  onClick={() => setNewAssetAcquisitionDraft((current) => ({ ...current, newlyAcquired: false }))}
+                >
+                  <span><strong>No, existing asset being added</strong></span>
+                </button>
+              </div>
+
+              {newAssetAcquisitionDraft.newlyAcquired === true ? (
+                <div className={styles.assetLifecycleFields}>
+                  <label className={styles.assetSettingsField}>
+                    <span>Acquisition date</span>
+                    <input type="date" value={newAssetAcquisitionDraft.acquisitionDate} onChange={(event) => setNewAssetAcquisitionDraft((current) => ({ ...current, acquisitionDate: event.target.value }))} required />
+                  </label>
+                  <label className={styles.assetSettingsField}>
+                    <span>Purchase or acquisition amount <small>Optional, excl. VAT</small></span>
+                    <input inputMode="decimal" value={newAssetAcquisitionDraft.acquisitionAmountExVat} onChange={(event) => setNewAssetAcquisitionDraft((current) => ({ ...current, acquisitionAmountExVat: event.target.value }))} placeholder="R 0" />
+                  </label>
+                  <label className={styles.assetSettingsField}>
+                    <span>Note or source <small>Optional</small></span>
+                    <textarea value={newAssetAcquisitionDraft.note} onChange={(event) => setNewAssetAcquisitionDraft((current) => ({ ...current, note: event.target.value }))} placeholder="Purchase reference or source note" />
+                  </label>
+                </div>
+              ) : null}
+              <div className={styles.assetSettingsActions}>
+                <button type="button" className={styles.secondaryButton} onClick={() => setIsAcquisitionChoiceOpen(false)}>Cancel</button>
+                <button type="button" className={styles.primaryButton} onClick={continueManualEntryFromAcquisitionChoice} disabled={newAssetAcquisitionDraft.newlyAcquired === null}>Continue</button>
+              </div>
             </div>
           </div>
         </div>
@@ -16029,9 +16249,31 @@ export default function AssetRegisterClient() {
                             <div className={styles.assetQuoteMessagePanel}>
                               <p className={styles.assetQuoteStepNotice}>
                                 {isFullRegisterQuoteLead
-                                  ? 'This sends a once-off full Asset Register snapshot. It does not grant live register access.'
+                                  ? selectedQuoteOption.leadType === 'finance' && selectedQuotePartner?.accountSubtype === 'accountant'
+                                    ? 'This grants the selected accountant live access to the latest authorised information in this Asset Register.'
+                                    : 'This sends a once-off full Asset Register snapshot. It does not grant live register access.'
                                   : 'This sends one asset only. It does not share the full register.'}
                               </p>
+
+                              {isFullRegisterQuoteLead && selectedQuoteOption.leadType === 'finance' && selectedQuotePartner?.accountSubtype === 'accountant' ? (
+                                <div className={styles.assetLifecycleFields}>
+                                  <button type="button" className={`${styles.assetQuoteConsentCheck} ${styles.assetQuoteTrackingChoice}`} onClick={() => setQuoteAllowDirectUpdates((current) => !current)} aria-pressed={quoteAllowDirectUpdates}>
+                                    <span className={`${styles.assetQuoteTrackingCheckbox} ${quoteAllowDirectUpdates ? styles.assetQuoteTrackingCheckboxActive : ''}`} aria-hidden="true">{quoteAllowDirectUpdates ? '✓' : ''}</span>
+                                    <span className={styles.assetQuoteTrackingCopy}>
+                                      <strong>Allow direct updates</strong>
+                                      <small>Permit immediate accountant finance changes, document uploads and accounting carrying-value references. Every change is audited.</small>
+                                    </span>
+                                  </button>
+                                  <button type="button" className={`${styles.assetQuoteConsentCheck} ${styles.assetQuoteTrackingChoice}`} onClick={() => setQuoteIncludeFuelLedger((current) => !current)} aria-pressed={quoteIncludeFuelLedger}>
+                                    <span className={`${styles.assetQuoteTrackingCheckbox} ${quoteIncludeFuelLedger ? styles.assetQuoteTrackingCheckboxActive : ''}`} aria-hidden="true">{quoteIncludeFuelLedger ? '✓' : ''}</span>
+                                    <span className={styles.assetQuoteTrackingCopy}><strong>Share Fuel Ledger reports</strong><small>Read-only access to authorised fuel records and downloads.</small></span>
+                                  </button>
+                                  <button type="button" className={`${styles.assetQuoteConsentCheck} ${styles.assetQuoteTrackingChoice}`} onClick={() => setQuoteIncludeCostLedger((current) => !current)} aria-pressed={quoteIncludeCostLedger}>
+                                    <span className={`${styles.assetQuoteTrackingCheckbox} ${quoteIncludeCostLedger ? styles.assetQuoteTrackingCheckboxActive : ''}`} aria-hidden="true">{quoteIncludeCostLedger ? '✓' : ''}</span>
+                                    <span className={styles.assetQuoteTrackingCopy}><strong>Share Cost Ledger reports</strong><small>Read-only access to authorised cost records and downloads.</small></span>
+                                  </button>
+                                </div>
+                              ) : null}
 
                               <label className={styles.assetQuoteMessageField}>
                                 <span>
@@ -16077,7 +16319,9 @@ export default function AssetRegisterClient() {
                               <strong>Disclaimer and POPIA note</strong>
                               <p>
                                 {isFullRegisterQuoteLead
-                                  ? 'By sending this request, you allow Aim4price to share a once-off full Asset Register snapshot, saved valuation details and your saved business contact details with the chosen company.'
+                                  ? selectedQuoteOption.leadType === 'finance' && selectedQuotePartner?.accountSubtype === 'accountant'
+                                    ? `By sending this request, you allow Aim4price to share live Asset Register information and your saved business contact details with the chosen accountant.${quoteAllowDirectUpdates ? ' You also allow the accountant to save the selected direct updates, with audit history.' : ' The workspace will remain read-only.'}`
+                                    : 'By sending this request, you allow Aim4price to share a once-off full Asset Register snapshot, saved valuation details and your saved business contact details with the chosen company.'
                                   : 'By sending this request, you allow Aim4price to share this selected asset, its saved valuation details and your saved business contact details with the chosen company.'}
                                 {' '}This is only a lead request and does not create a finance, insurance, valuation or sales agreement.
                               </p>
@@ -16342,6 +16586,16 @@ export default function AssetRegisterClient() {
                   ) : null}
 
                   {canUseOwnerOnlyAssetActions ? (
+                    <button type="button" className={styles.optionActionButton} onClick={() => void openAcquisitionDetails(activeAsset)}>
+                      <DocumentIcon className={styles.buttonIcon} />
+                      <span>
+                        <strong>Acquisition details</strong>
+                        <small>Record or correct the acquisition date, amount and source.</small>
+                      </span>
+                    </button>
+                  ) : null}
+
+                  {canUseOwnerOnlyAssetActions ? (
                     <button
                       type="button"
                       className={`${styles.optionActionButton} ${styles.optionDangerButton}`}
@@ -16351,7 +16605,7 @@ export default function AssetRegisterClient() {
                       <TrashIcon className={styles.buttonIcon} />
                       <span>
                         <strong>{busyDeleteId === activeAsset.id ? 'Removing...' : 'Delete asset'}</strong>
-                        <small>Permanently remove this saved asset.</small>
+                        <small>Record a disposal or remove a duplicate safely.</small>
                       </span>
                     </button>
                   ) : null}
@@ -16359,6 +16613,56 @@ export default function AssetRegisterClient() {
               </div>
             </div>
           </div>
+        </div>
+      ) : null}
+
+      {activeAsset && acquisitionDetailsAsset ? (
+        <div className={`${styles.modalOverlay} ${styles.subModalOverlay}`}>
+          <div className={styles.modalBackdrop} onClick={() => { if (!isSavingAcquisitionDetails) setAcquisitionDetailsAsset(null); }} />
+          <form className={`${styles.modalCard} ${styles.assetLifecycleModal}`} role="dialog" aria-modal="true" aria-labelledby="acquisition-details-title" onSubmit={handleSaveAcquisitionDetails}>
+            <div className={styles.modalHeader}>
+              <div className={styles.modalHeaderText}>
+                <h3 id="acquisition-details-title">Acquisition details</h3>
+                <p>{acquisitionDetailsAsset.title}</p>
+              </div>
+              <button type="button" className={styles.modalCloseButton} onClick={() => setAcquisitionDetailsAsset(null)} disabled={isSavingAcquisitionDetails} aria-label="Close acquisition details">
+                <CloseIcon className={styles.buttonIcon} />
+              </button>
+            </div>
+            <div className={`${styles.modalScrollBody} ${styles.assetLifecycleBody}`}>
+              {isLoadingAcquisitionDetails ? <div className={styles.emptyState}>Loading acquisition details…</div> : (
+                <>
+                  <div className={styles.assetLifecycleChoiceRow}>
+                    <button type="button" className={`${styles.secondaryButton} ${acquisitionDetailsDraft.newlyAcquired === true ? styles.assetLifecycleChoiceActive : ''}`} onClick={() => setAcquisitionDetailsDraft((current) => ({ ...current, newlyAcquired: true }))}>Newly acquired</button>
+                    <button type="button" className={`${styles.secondaryButton} ${acquisitionDetailsDraft.newlyAcquired === false ? styles.assetLifecycleChoiceActive : ''}`} onClick={() => setAcquisitionDetailsDraft((current) => ({ ...current, newlyAcquired: false }))}>Existing asset added</button>
+                  </div>
+                  <div className={styles.assetLifecycleFields}>
+                    <label className={styles.assetSettingsField}>
+                      <span>{acquisitionDetailsDraft.newlyAcquired ? 'Acquisition date' : 'Date added'}</span>
+                      <input type="date" required value={acquisitionDetailsDraft.acquisitionDate} onChange={(event) => setAcquisitionDetailsDraft((current) => ({ ...current, acquisitionDate: event.target.value }))} />
+                    </label>
+                    <label className={styles.assetSettingsField}>
+                      <span>Acquisition amount <small>Optional, excl. VAT</small></span>
+                      <input inputMode="decimal" value={acquisitionDetailsDraft.acquisitionAmountExVat} onChange={(event) => setAcquisitionDetailsDraft((current) => ({ ...current, acquisitionAmountExVat: event.target.value }))} placeholder="R 0" />
+                    </label>
+                    <label className={styles.assetSettingsField}>
+                      <span>Source or document reference <small>Optional</small></span>
+                      <input value={acquisitionDetailsDraft.sourceDocumentReference} onChange={(event) => setAcquisitionDetailsDraft((current) => ({ ...current, sourceDocumentReference: event.target.value }))} placeholder="Invoice or agreement reference" />
+                    </label>
+                    <label className={styles.assetSettingsField}>
+                      <span>Note <small>Optional</small></span>
+                      <textarea value={acquisitionDetailsDraft.note} onChange={(event) => setAcquisitionDetailsDraft((current) => ({ ...current, note: event.target.value }))} />
+                    </label>
+                  </div>
+                  {acquisitionDetailsError ? <p className={styles.assetSettingsError}>{acquisitionDetailsError}</p> : null}
+                  <div className={styles.assetSettingsActions}>
+                    <button type="button" className={styles.secondaryButton} onClick={() => setAcquisitionDetailsAsset(null)} disabled={isSavingAcquisitionDetails}>Cancel</button>
+                    <button type="submit" className={styles.primaryButton} disabled={isSavingAcquisitionDetails}>{isSavingAcquisitionDetails ? 'Saving…' : 'Save details'}</button>
+                  </div>
+                </>
+              )}
+            </div>
+          </form>
         </div>
       ) : null}
 
@@ -17015,8 +17319,7 @@ export default function AssetRegisterClient() {
             <div className={styles.deleteConfirmContent}>
               <h3 id="delete-confirm-title">Are you sure you want to delete this?</h3>
               <p id="delete-confirm-copy">
-                All data will be lost. This permanently removes <strong>{deleteCandidateAsset.title}</strong> from your Asset Register,
-                including saved notes, photos, documents, marketplace status and QR scan history.
+                Continue to tell Aim4price what happened to <strong>{deleteCandidateAsset.title}</strong>. Genuine disposals are archived and kept for reports and history; only mistakes or duplicates are permanently removed.
               </p>
 
               <div className={styles.deleteConfirmAsset}>
@@ -17036,11 +17339,67 @@ export default function AssetRegisterClient() {
                   onClick={() => void handleConfirmDeleteAsset()}
                   disabled={busyDeleteId === deleteCandidateAsset.id}
                 >
-                  <span>{busyDeleteId === deleteCandidateAsset.id ? 'Deleting...' : 'Yes, delete asset'}</span>
+                  <span>Yes, delete asset</span>
                 </button>
               </div>
             </div>
           </div>
+        </div>
+      ) : null}
+
+      {disposalCandidateAsset ? (
+        <div className={`${styles.modalOverlay} ${styles.confirmDeleteOverlay}`}>
+          <div className={styles.modalBackdrop} onClick={() => { if (!busyDeleteId) setDisposalCandidateAsset(null); }} />
+          <form className={`${styles.modalCard} ${styles.assetLifecycleModal}`} role="dialog" aria-modal="true" aria-labelledby="disposal-title" onSubmit={handleConfirmDisposal}>
+            <div className={styles.modalHeader}>
+              <div className={styles.modalHeaderText}>
+                <h3 id="disposal-title">What happened to this asset?</h3>
+                <p>{disposalCandidateAsset.title}</p>
+              </div>
+              <button type="button" className={styles.modalCloseButton} onClick={() => setDisposalCandidateAsset(null)} disabled={busyDeleteId === disposalCandidateAsset.id} aria-label="Close disposal details">
+                <CloseIcon className={styles.buttonIcon} />
+              </button>
+            </div>
+            <div className={`${styles.modalScrollBody} ${styles.assetLifecycleBody}`}>
+              <label className={styles.assetSettingsField}>
+                <span>Reason</span>
+                <select required value={disposalDraft.reason} onChange={(event) => setDisposalDraft((current) => ({ ...current, reason: event.target.value as DisposalReason }))}>
+                  <option value="">Choose a reason</option>
+                  <option value="sold">Sold</option>
+                  <option value="traded_in">Traded in</option>
+                  <option value="scrapped">Scrapped</option>
+                  <option value="written_off">Written off</option>
+                  <option value="mistake_duplicate">Added by mistake or duplicate</option>
+                  <option value="other">Other</option>
+                </select>
+              </label>
+              <div className={styles.assetLifecycleFields}>
+                <label className={styles.assetSettingsField}>
+                  <span>Disposal date</span>
+                  <input type="date" required value={disposalDraft.disposalDate} onChange={(event) => setDisposalDraft((current) => ({ ...current, disposalDate: event.target.value }))} />
+                </label>
+                <label className={styles.assetSettingsField}>
+                  <span>Disposal amount <small>Optional, excl. VAT</small></span>
+                  <input inputMode="decimal" value={disposalDraft.disposalAmountExVat} onChange={(event) => setDisposalDraft((current) => ({ ...current, disposalAmountExVat: event.target.value }))} placeholder="R 0" />
+                </label>
+                <label className={styles.assetSettingsField}>
+                  <span>Note <small>Optional</small></span>
+                  <textarea value={disposalDraft.note} onChange={(event) => setDisposalDraft((current) => ({ ...current, note: event.target.value }))} placeholder="Add a buyer, trade-in, write-off or other reference" />
+                </label>
+              </div>
+              <p className={styles.assetLifecycleNotice}>
+                {disposalDraft.reason === 'mistake_duplicate'
+                  ? 'This permanently removes the duplicate asset. A deletion audit and final asset snapshot are retained.'
+                  : 'The asset will leave active totals but remain available to Additions & Disposals reports with its documents, finance, cost and value history.'}
+              </p>
+              <div className={styles.assetSettingsActions}>
+                <button type="button" className={styles.secondaryButton} onClick={() => setDisposalCandidateAsset(null)} disabled={busyDeleteId === disposalCandidateAsset.id}>Cancel</button>
+                <button type="submit" className={`${styles.primaryButton} ${styles.deleteConfirmButton}`} disabled={busyDeleteId === disposalCandidateAsset.id || !disposalDraft.reason}>
+                  {busyDeleteId === disposalCandidateAsset.id ? 'Saving…' : disposalDraft.reason === 'mistake_duplicate' ? 'Delete duplicate' : 'Archive disposal'}
+                </button>
+              </div>
+            </div>
+          </form>
         </div>
       ) : null}
 

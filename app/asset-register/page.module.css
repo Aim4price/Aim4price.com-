@@ -26518,6 +26518,79 @@ button.documentOpenLink {
   box-shadow: 0 0 0 3px rgba(23, 116, 90, 0.11) !important;
 }
 
+/* Accountant-ready asset lifecycle capture reuses the owner modal language. */
+.assetLifecycleModal {
+  width: min(42rem, calc(100vw - 2rem));
+  max-height: min(88vh, 50rem);
+}
+
+.assetLifecycleBody {
+  display: grid;
+  gap: 1.15rem;
+  padding: 1.35rem;
+}
+
+.assetLifecycleFields {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1rem;
+  border: 1px solid #cfe0df;
+  border-radius: 1.15rem;
+  background: linear-gradient(135deg, #f8fcfb, #fffaf2);
+}
+
+.assetLifecycleChoiceRow {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.assetLifecycleChoiceActive {
+  color: #fff;
+  border-color: #0f684f;
+  background: #0f684f;
+}
+
+.assetLifecycleNotice {
+  margin: 0;
+  padding: 0.85rem 1rem;
+  border: 1px solid #e3c99c;
+  border-radius: 0.95rem;
+  color: #6d4910;
+  background: #fff7e9;
+  font-size: 0.86rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.assetLifecycleModal .assetSettingsField select {
+  width: 100%;
+  min-height: 3.15rem;
+  padding: 0 0.9rem;
+  border: 1px solid #c9dbdf;
+  border-radius: 0.85rem;
+  color: #0b3f35;
+  background: #fff;
+  font: inherit;
+  font-weight: 750;
+  outline: none;
+}
+
+.assetLifecycleModal .assetSettingsField select:focus {
+  border-color: #16805f;
+  box-shadow: 0 0 0 3px rgba(22, 128, 95, 0.14);
+}
+
+@media (max-width: 640px) {
+  .assetLifecycleChoiceRow {
+    grid-template-columns: 1fr;
+  }
+
+  .assetLifecycleBody {
+    padding: 1rem;
+  }
+}
+
 .assetSettingsStaticGrid {
   display: grid !important;
   grid-template-columns: repeat(auto-fit, minmax(12.5rem, 1fr)) !important;
