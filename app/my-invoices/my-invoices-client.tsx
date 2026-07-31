@@ -258,12 +258,12 @@ const ACCOUNTING_SOFTWARE_OPTIONS: Array<{
   {
     value: 'sage_business_cloud',
     label: 'Sage Business Cloud Accounting',
-    description: 'Supplier Adjustments Quick Entry Grid CSV.',
+    description: 'Supplier Adjustments Quick Entry Grid.',
   },
   {
     value: 'generic_csv',
     label: 'Generic accounting CSV',
-    description: 'For accounting systems that let you map CSV columns during import.',
+    description: 'Map the CSV columns during import.',
   },
 ];
 
@@ -361,8 +361,8 @@ function DownloadIcon(props: SVGProps<SVGSVGElement>) {
 function CsvIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <IconBase {...props}>
-      <path d="M7 3h7l3 3v15H7z" />
-      <path d="M14 3v4h4" />
+      <path d="M6 2.75h8l4 4V21.25H6z" />
+      <path d="M14 2.75v4h4" />
       <path d="M9 11h6" />
       <path d="M9 15h6" />
       <path d="M9 19h4" />
@@ -373,8 +373,49 @@ function CsvIcon(props: SVGProps<SVGSVGElement>) {
 function SettingsIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <IconBase {...props}>
-      <circle cx="12" cy="12" r="3" />
-      <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.12 2.12-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V20.3h-3v-.08a1.7 1.7 0 0 0-1.03-1.56 1.7 1.7 0 0 0-1.88.34l-.06.06-2.12-2.12.06-.06A1.7 1.7 0 0 0 7 15a1.7 1.7 0 0 0-1.56-1.03H5.3v-3h.14A1.7 1.7 0 0 0 7 9.94a1.7 1.7 0 0 0-.34-1.88L6.6 8l2.12-2.12.06.06a1.7 1.7 0 0 0 1.88.34A1.7 1.7 0 0 0 11.7 4.7v-.1h3v.1a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06L19.8 8l-.06.06a1.7 1.7 0 0 0-.34 1.88 1.7 1.7 0 0 0 1.56 1.03h.04v3h-.04A1.7 1.7 0 0 0 19.4 15z" />
+      <path d="M4 6h7" />
+      <path d="M15 6h5" />
+      <circle cx="13" cy="6" r="2" />
+      <path d="M4 12h3" />
+      <path d="M11 12h9" />
+      <circle cx="9" cy="12" r="2" />
+      <path d="M4 18h10" />
+      <path d="M18 18h2" />
+      <circle cx="16" cy="18" r="2" />
+    </IconBase>
+  );
+}
+
+function LedgerIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <rect x="4" y="3" width="16" height="18" rx="2" />
+      <path d="M8 3v18" />
+      <path d="M11.5 8h5" />
+      <path d="M11.5 12h5" />
+      <path d="M11.5 16h3.5" />
+    </IconBase>
+  );
+}
+
+function VatIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <circle cx="8" cy="8" r="2" />
+      <circle cx="16" cy="16" r="2" />
+      <path d="m17.5 6.5-11 11" />
+    </IconBase>
+  );
+}
+
+function SupplierIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M4 21V8l8-5 8 5v13" />
+      <path d="M8 21v-5h8v5" />
+      <path d="M8 10h.01" />
+      <path d="M12 10h.01" />
+      <path d="M16 10h.01" />
     </IconBase>
   );
 }
@@ -2122,9 +2163,9 @@ export default function MyInvoicesClient({
                 </h2>
                 <p>
                   {downloadStep === 'format'
-                    ? 'Choose PDF, Excel or an accounting-ready CSV to begin.'
+                    ? 'Choose a file format to begin.'
                     : downloadStep === 'accounting'
-                      ? 'Select the CSV template and confirm the saved accounting mappings.'
+                      ? 'Choose a CSV format and confirm your mappings.'
                       : downloadStep === 'timeline'
                         ? 'Select the year and optional month to include.'
                         : 'Choose whether Fuel Slip records should be included.'}
@@ -2160,12 +2201,13 @@ export default function MyInvoicesClient({
                     onClick={() => chooseDownloadFormat('pdf')}
                     aria-pressed={downloadFormat === 'pdf'}
                   >
-                    <span className={styles.reportGraphic}>
-                      <img src="/brand/pdf.png" alt="PDF report" className={styles.reportGraphicImage} />
+                    <span className={`${styles.reportGraphic} ${styles.reportFileGraphic} ${styles.pdfReportGraphic}`} aria-hidden="true">
+                      <CsvIcon />
+                      <span className={styles.reportFormatBadge}>PDF</span>
                     </span>
                     <span className={styles.reportTitleBlock}>
                       <strong>PDF report</strong>
-                      <small>Open a clear report for clients, banks or insurance partners.</small>
+                      <small>A clear report for clients, banks or insurers.</small>
                     </span>
                   </button>
                   <button
@@ -2174,12 +2216,13 @@ export default function MyInvoicesClient({
                     onClick={() => chooseDownloadFormat('xlsx')}
                     aria-pressed={downloadFormat === 'xlsx'}
                   >
-                    <span className={styles.reportGraphic}>
-                      <img src="/brand/sheet.png" alt="Excel workbook" className={styles.reportGraphicImage} />
+                    <span className={`${styles.reportGraphic} ${styles.reportFileGraphic} ${styles.xlsxReportGraphic}`} aria-hidden="true">
+                      <CsvIcon />
+                      <span className={styles.reportFormatBadge}>XLSX</span>
                     </span>
                     <span className={styles.reportTitleBlock}>
                       <strong>XLSX workbook</strong>
-                      <small>Download all report rows in an Excel-ready workbook.</small>
+                      <small>All report rows in an editable workbook.</small>
                     </span>
                   </button>
                   <button
@@ -2188,12 +2231,13 @@ export default function MyInvoicesClient({
                     onClick={() => chooseDownloadFormat('csv')}
                     aria-pressed={downloadFormat === 'csv'}
                   >
-                    <span className={`${styles.reportGraphic} ${styles.csvReportGraphic}`}>
+                    <span className={`${styles.reportGraphic} ${styles.reportFileGraphic} ${styles.csvReportGraphic}`} aria-hidden="true">
                       <CsvIcon />
+                      <span className={styles.reportFormatBadge}>CSV</span>
                     </span>
                     <span className={styles.reportTitleBlock}>
                       <strong>Accounting CSV</strong>
-                      <small>Download mapped rows ready for Sage or another accounting import.</small>
+                      <small>Mapped rows for accounting import.</small>
                     </span>
                   </button>
                 </div>
@@ -2219,8 +2263,11 @@ export default function MyInvoicesClient({
                       }}
                       aria-pressed={selectedAccountingSoftware === option.value}
                     >
-                      <span className={styles.accountingSoftwareMark} aria-hidden="true">
-                        {option.value === 'sage_business_cloud' ? 'S' : 'CSV'}
+                      <span
+                        className={`${styles.accountingSoftwareMark} ${option.value === 'sage_business_cloud' ? styles.sageAccountingMark : styles.genericAccountingMark}`}
+                        aria-hidden="true"
+                      >
+                        {option.value === 'sage_business_cloud' ? <LedgerIcon /> : <CsvIcon />}
                       </span>
                       <span>
                         <strong>{option.label}</strong>
@@ -2232,12 +2279,17 @@ export default function MyInvoicesClient({
 
                 <section className={styles.accountingSetupPanel} aria-label="Accounting CSV settings">
                   <div className={styles.accountingSetupHeader}>
-                    <div>
-                      <span className={`${styles.accountingStatus} ${accountingSettings?.configured ? styles.accountingStatusReady : styles.accountingStatusRequired}`}>
-                        {accountingSettings?.configured ? 'Ready' : 'Setup required'}
-                      </span>
-                      <h3>Accounting CSV Settings</h3>
-                      <p>These mappings make supplier, VAT and affecting-account values predictable before import.</p>
+                    <span className={styles.accountingSetupHeadingIcon} aria-hidden="true">
+                      <SettingsIcon />
+                    </span>
+                    <div className={styles.accountingSetupCopy}>
+                      <div className={styles.accountingSetupTitleRow}>
+                        <h3>Accounting CSV settings</h3>
+                        <span className={`${styles.accountingStatus} ${accountingSettings?.configured ? styles.accountingStatusReady : styles.accountingStatusRequired}`}>
+                          {accountingSettings?.configured ? 'Ready' : 'Setup required'}
+                        </span>
+                      </div>
+                      <p>Map suppliers, VAT and accounts before export.</p>
                     </div>
                     <button
                       type="button"
@@ -2261,7 +2313,7 @@ export default function MyInvoicesClient({
                     </dl>
                   ) : (
                     <p className={styles.accountingRequiredText}>
-                      Add at least one saved supplier and alias, VAT output labels and a default affecting account.
+                      Add a supplier and confirm the VAT and default account mappings.
                     </p>
                   )}
                 </section>
@@ -2419,7 +2471,7 @@ export default function MyInvoicesClient({
             <div className={styles.modalHeader}>
               <div>
                 <h2>Accounting CSV Settings</h2>
-                <p>Save the exact output values used to build import-ready accounting rows.</p>
+                <p>Set supplier, VAT and account mappings.</p>
               </div>
               <button type="button" className={styles.closeButton} onClick={closeAccountingSettings} aria-label="Close accounting settings"><CloseIcon /></button>
             </div>
@@ -2428,9 +2480,12 @@ export default function MyInvoicesClient({
             <div className={styles.accountingSettingsBody}>
               <section className={styles.accountingSettingsSection}>
                 <div className={styles.accountingSettingsSectionHeading}>
-                  <div>
-                    <h3>Export profile</h3>
-                    <p>Choose the software and the default adjustment direction.</p>
+                  <div className={styles.accountingSectionHeadingCopy}>
+                    <span className={styles.accountingSectionIcon} aria-hidden="true"><SettingsIcon /></span>
+                    <div>
+                      <h3>Export profile</h3>
+                      <p>Choose the CSV format and default effect.</p>
+                    </div>
                   </div>
                 </div>
                 <div className={styles.accountingSettingsGrid}>
@@ -2465,9 +2520,12 @@ export default function MyInvoicesClient({
 
               <section className={styles.accountingSettingsSection}>
                 <div className={styles.accountingSettingsSectionHeading}>
-                  <div>
-                    <h3>VAT output values</h3>
-                    <p>Use the labels your accounting system expects, rather than exporting only “15%”.</p>
+                  <div className={styles.accountingSectionHeadingCopy}>
+                    <span className={styles.accountingSectionIcon} aria-hidden="true"><VatIcon /></span>
+                    <div>
+                      <h3>VAT output values</h3>
+                      <p>Set the exact VAT labels used by the importer.</p>
+                    </div>
                   </div>
                 </div>
                 <div className={styles.accountingSettingsGrid}>
@@ -2494,9 +2552,12 @@ export default function MyInvoicesClient({
 
               <section className={styles.accountingSettingsSection}>
                 <div className={styles.accountingSettingsSectionHeading}>
-                  <div>
-                    <h3>Affecting accounts</h3>
-                    <p>Preload the exact financial-statement account names used during import.</p>
+                  <div className={styles.accountingSectionHeadingCopy}>
+                    <span className={styles.accountingSectionIcon} aria-hidden="true"><LedgerIcon /></span>
+                    <div>
+                      <h3>Affecting accounts</h3>
+                      <p>Add the financial-statement account names used in imports.</p>
+                    </div>
                   </div>
                 </div>
                 <div className={styles.accountingAccountAddRow}>
@@ -2553,9 +2614,12 @@ export default function MyInvoicesClient({
 
               <section className={styles.accountingSettingsSection}>
                 <div className={styles.accountingSettingsSectionHeading}>
-                  <div>
-                    <h3>Saved suppliers and aliases</h3>
-                    <p>The exported supplier is always the saved name. Aliases match spelling variants from uploaded dealer invoices.</p>
+                  <div className={styles.accountingSectionHeadingCopy}>
+                    <span className={styles.accountingSectionIcon} aria-hidden="true"><SupplierIcon /></span>
+                    <div>
+                      <h3>Saved suppliers and aliases</h3>
+                      <p>Aliases match dealer invoice variations to the saved supplier name.</p>
+                    </div>
                   </div>
                   <button type="button" className={styles.secondaryButton} onClick={addAccountingSupplier}>Add supplier</button>
                 </div>
