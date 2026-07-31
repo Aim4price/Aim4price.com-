@@ -153,7 +153,7 @@ let leafletLoaderPromise: Promise<any> | null = null;
 const ACCOUNT_TYPE_LABELS: Record<string, string> = {
   owner: "Owner",
   dealer: "Dealer",
-  finance: "Finance",
+  finance: "Finance — accountants, financiers and banks",
   insurance: "Insurance",
   broker: "Insurance",
   insurer: "Insurance",
