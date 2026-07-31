@@ -212,6 +212,13 @@ const ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
   { href: '/shared-registers', label: 'Shared Registers', accountTypes: ['insurance'] },
 ];
 
+const ACCOUNTANT_ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
+  { href: '/account', label: 'Account' },
+  { href: '/', label: 'Home' },
+  { href: '/valuation', label: 'Get Estimate' },
+  { href: '/leads', label: 'My Clients' },
+];
+
 function isAccountMenuItemVisible(item: AccountMenuItem, accountType: AccountType | undefined): boolean {
   if (!item.accountTypes?.length) {
     return true;
@@ -239,14 +246,19 @@ function buildNavItems(
   }
 
   if (accountType === 'finance' || accountType === 'insurance') {
+    const isAccountant = accountType === 'finance' && accountSubtype === 'accountant';
     const partnerItems: NavItem[] = [
       ...BASE_NAV_ITEMS,
       {
         key: 'leads',
         href: '/leads',
-        label: accountType === 'finance' && accountSubtype === 'accountant' ? 'My Clients' : 'My Leads',
+        label: isAccountant ? 'My Clients' : 'My Leads',
       },
     ];
+
+    if (isAccountant) {
+      partnerItems.push({ key: 'account', href: '/account', label: 'Account' });
+    }
 
     if (accountType === 'insurance') {
       partnerItems.push({ key: 'shared-registers', href: '/shared-registers', label: 'Shared Registers' });
@@ -2010,7 +2022,10 @@ export default function AppHeader({
 
                     {menuOpen ? (
                       <div id="header-account-menu" className={styles.accountPopover} role="menu">
-                        {ACCOUNT_MENU_ITEMS.filter((item) => isAccountMenuItemVisible(item, session?.accountType)).map((item) => {
+                        {(isAccountantAccount
+                          ? ACCOUNTANT_ACCOUNT_MENU_ITEMS
+                          : ACCOUNT_MENU_ITEMS.filter((item) => isAccountMenuItemVisible(item, session?.accountType))
+                        ).map((item) => {
                           const isActive = isAccountMenuLinkActive(item.href);
                           const menuLinkClassName = [
                             styles.menuLink,
