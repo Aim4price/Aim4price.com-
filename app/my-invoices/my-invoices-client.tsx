@@ -105,6 +105,10 @@ type InvoicesResponse = {
   error?: string;
 };
 
+type AccountantInvoicesResponse = InvoicesResponse & {
+  cost?: InvoicesResponse;
+};
+
 type DealerDefaults = {
   supplierName: string;
   vatNumber: string;
@@ -112,6 +116,7 @@ type DealerDefaults = {
 };
 
 type MyInvoicesClientProps = {
+  accountantShareId?: string;
   dealerMode?: boolean;
   showAppHeader?: boolean;
   initialAssetId?: string;
@@ -923,13 +928,19 @@ function downloadFileName(response: Response, fallback: string): string {
 }
 
 export default function MyInvoicesClient({
+  accountantShareId,
   dealerMode = false,
   showAppHeader,
   initialAssetId = '',
   initialOpenAdd = false,
   initialDealerDefaults = { supplierName: '', vatNumber: '', address: '' },
 }: MyInvoicesClientProps = {}) {
-  const apiRoot = dealerMode ? '/api/dealer/cost' : '/api/my-invoices';
+  const isAccountantReadOnly = Boolean(accountantShareId);
+  const apiRoot = accountantShareId
+    ? `/api/accountant/registers/${encodeURIComponent(accountantShareId)}/ledger`
+    : dealerMode
+      ? '/api/dealer/cost'
+      : '/api/my-invoices';
   const shouldShowAppHeader = showAppHeader ?? !dealerMode;
   const [assets, setAssets] = useState<AssetOption[]>([]);
   const [invoices, setInvoices] = useState<InvoiceRecord[]>([]);
@@ -1223,10 +1234,11 @@ export default function MyInvoicesClient({
 
   async function fetchInvoiceData(filters: InvoiceFilterState): Promise<InvoicesResponse> {
     const response = await fetch(buildInvoiceListUrl(filters, apiRoot), { cache: 'no-store' });
-    const data = (await response.json()) as InvoicesResponse;
+    const payload = (await response.json()) as AccountantInvoicesResponse;
+    const data = payload.cost ?? payload;
 
-    if (!response.ok || !data.ok) {
-      throw new Error(data.error || 'My Cost Ledger could not be loaded.');
+    if (!response.ok || !payload.ok) {
+      throw new Error(payload.error || 'My Cost Ledger could not be loaded.');
     }
 
     return data;
@@ -1407,6 +1419,15 @@ export default function MyInvoicesClient({
   }
 
   function openDownloadModal() {
+    if (accountantShareId) {
+      const params = new URLSearchParams({ kind: 'cost-of-ownership' });
+      if (activeFilters.assetId !== 'all') params.set('assetId', activeFilters.assetId);
+      if (activeFilters.year !== 'all') params.set('year', activeFilters.year);
+      if (activeFilters.year !== 'all' && activeFilters.month !== 'all') params.set('month', activeFilters.month);
+      window.location.assign(`/api/accountant/registers/${encodeURIComponent(accountantShareId)}/reports?${params.toString()}`);
+      return;
+    }
+
     setIncludeFuelSlipCosts(true);
     setDownloadFilters(activeFilters);
     setDownloadStep('format');
@@ -1909,10 +1930,12 @@ export default function MyInvoicesClient({
           </label>
 
           <div className={`${styles.toolbarButtons} ${dealerMode ? styles.dealerToolbarButtons : ''}`}>
-            <button type="button" className={`${styles.secondaryButton} ${styles.toolbarButton} ${styles.toolbarAddButton}`} onClick={() => openAddInvoiceModal()}>
-              <span className={styles.plusMark} aria-hidden="true">+</span>
-              <span>Add Cost</span>
-            </button>
+            {!isAccountantReadOnly ? (
+              <button type="button" className={`${styles.secondaryButton} ${styles.toolbarButton} ${styles.toolbarAddButton}`} onClick={() => openAddInvoiceModal()}>
+                <span className={styles.plusMark} aria-hidden="true">+</span>
+                <span>Add Cost</span>
+              </button>
+            ) : null}
             <button type="button" className={`${styles.secondaryButton} ${styles.toolbarButton} ${styles.toolbarFilterButton}`} onClick={openFilterPanel}>
               <FilterIcon className={styles.buttonIcon} />
               <span>Filter</span>
@@ -1932,7 +1955,7 @@ export default function MyInvoicesClient({
             {isLoading ? <div className={styles.emptyState}>Loading saved cost records...</div> : null}
 
             {!isLoading && !visibleInvoices.length ? (
-              <div className={styles.emptyState}>No asset costs saved yet. Add a manual cost or upload an invoice/photo.</div>
+              <div className={styles.emptyState}>{isAccountantReadOnly ? 'No cost records have been shared for this register.' : 'No asset costs saved yet. Add a manual cost or upload an invoice/photo.'}</div>
             ) : null}
 
             {!isLoading ? paginatedInvoices.map((invoice) => {
@@ -1975,19 +1998,23 @@ export default function MyInvoicesClient({
                             <span>Open file</span>
                           </a>
                         ) : null}
-                        <button type="button" className={`${styles.secondaryButtonSmall} ${styles.invoiceEditButton}`} onClick={() => editInvoice(invoice)}>
-                          <EditIcon className={styles.buttonIcon} />
-                          <span>Edit</span>
-                        </button>
-                        <button
-                          type="button"
-                          className={`${styles.dangerButtonSmall} ${styles.invoiceDeleteButton}`}
-                          onClick={() => openDeleteInvoiceDialog(invoice)}
-                          disabled={deletingInvoiceId === invoice.id}
-                        >
-                          <TrashIcon className={styles.buttonIcon} />
-                          <span>{deletingInvoiceId === invoice.id ? 'Deleting...' : 'Delete'}</span>
-                        </button>
+                        {!isAccountantReadOnly ? (
+                          <>
+                            <button type="button" className={`${styles.secondaryButtonSmall} ${styles.invoiceEditButton}`} onClick={() => editInvoice(invoice)}>
+                              <EditIcon className={styles.buttonIcon} />
+                              <span>Edit</span>
+                            </button>
+                            <button
+                              type="button"
+                              className={`${styles.dangerButtonSmall} ${styles.invoiceDeleteButton}`}
+                              onClick={() => openDeleteInvoiceDialog(invoice)}
+                              disabled={deletingInvoiceId === invoice.id}
+                            >
+                              <TrashIcon className={styles.buttonIcon} />
+                              <span>{deletingInvoiceId === invoice.id ? 'Deleting...' : 'Delete'}</span>
+                            </button>
+                          </>
+                        ) : null}
                       </div>
                     </div>
                   </div>
