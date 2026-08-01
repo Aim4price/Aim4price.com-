@@ -595,9 +595,20 @@ type AccountantRegisterAccess = {
   shareId: string;
   ownerName: string;
   ownerBusinessName: string;
+  registerId: string;
+  registerName: string;
+  assetCount: number;
+  totalValue: number;
+  lastUpdatedIso: string;
   allowDirectUpdates: boolean;
   includeFuelLedger: boolean;
   includeCostLedger: boolean;
+};
+
+type AccountantRegistersApiResponse = {
+  ok: boolean;
+  registers?: AccountantRegisterAccess[];
+  error?: string;
 };
 
 type UploadedAssetFile = {
@@ -5409,7 +5420,7 @@ function buildAssetRegisterApiUrl(registerId?: string | null): string {
   return `/api/asset-register?${params.toString()}`;
 }
 
-function buildAssetRegisterExportUrl(registerId?: string | null, entityName = ''): string {
+function buildAssetRegisterExportUrl(registerId?: string | null, entityName = '', accountantShareId?: string): string {
   const params = new URLSearchParams({ format: 'xlsx' });
   const cleanedRegisterId = String(registerId ?? '').trim();
   const cleanedEntityName = entityName.trim();
@@ -5422,6 +5433,8 @@ function buildAssetRegisterExportUrl(registerId?: string | null, entityName = ''
     params.set('registerIds', cleanedRegisterId);
     if (cleanedEntityName) params.set('entityName', cleanedEntityName);
   }
+
+  if (accountantShareId) params.set('accountantShareId', accountantShareId);
 
   return `/api/asset-register/export?${params.toString()}`;
 }
@@ -5742,6 +5755,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   const isAccountantWorkspace = Boolean(accountantShareId);
   const [assets, setAssets] = useState<RegisterAsset[]>([]);
   const [accountantAccess, setAccountantAccess] = useState<AccountantRegisterAccess | null>(null);
+  const [accountantRegisters, setAccountantRegisters] = useState<AccountantRegisterAccess[]>([]);
   const [accountProfile, setAccountProfile] = useState<AccountProfile | null>(null);
   const [assetRegisters, setAssetRegisters] = useState<AssetRegisterSummary[]>([]);
   const [activeRegister, setActiveRegister] = useState<AssetRegisterSummary | null>(null);
@@ -6227,6 +6241,24 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     };
   }, [activeRegister, assetRegisters]);
   const registerSwitcherOptions = useMemo(() => {
+    if (isAccountantWorkspace) {
+      return accountantRegisters.map((access) => ({
+        id: access.shareId,
+        userId: '',
+        businessName: access.registerName || access.ownerBusinessName || access.ownerName || 'Asset Register',
+        email: '',
+        phone: '',
+        addressLine1: access.ownerBusinessName || access.ownerName || '',
+        isPrimary: false,
+        isSelected: access.shareId === accountantShareId,
+        assetCount: access.assetCount,
+        totalValue: access.totalValue,
+        totalReplacementPrice: 0,
+        createdAtIso: access.lastUpdatedIso,
+        updatedAtIso: access.lastUpdatedIso,
+      }));
+    }
+
     const registersById = new Map<string, AssetRegisterSummary>();
 
     assetRegisters.forEach((register) => {
@@ -6250,7 +6282,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       if (!left.isSelected && right.isSelected) return 1;
       return left.businessName.localeCompare(right.businessName);
     });
-  }, [activeRegister, assetRegisters, combinedRegisterSwitcherOption]);
+  }, [accountantRegisters, accountantShareId, activeRegister, assetRegisters, combinedRegisterSwitcherOption, isAccountantWorkspace]);
   const visibleRegisterSwitcherOptions = useMemo(() => {
     const query = registerSwitcherSearchTerm.trim().toLowerCase();
 
@@ -6266,7 +6298,9 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       String(register.assetCount),
     ].some((value) => String(value ?? '').toLowerCase().includes(query)));
   }, [registerSwitcherOptions, registerSwitcherSearchTerm]);
-  const canOpenRegisterSwitcher = registerSwitcherOptions.length > 1;
+  const canOpenRegisterSwitcher = isAccountantWorkspace
+    ? registerSwitcherOptions.length > 0
+    : registerSwitcherOptions.length > 1;
   const isCombinedRegisterView = activeRegister?.id === COMBINED_REGISTER_ID || activeRegisterId === COMBINED_REGISTER_ID;
   const activeRegisterUnnotedAlertCount = useMemo(() => assetListUnnotedAlertCount(assets), [assets]);
   const registerUnnotedAlertCounts = useMemo(() => {
@@ -6497,6 +6531,11 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
         }
 
         setAccountantAccess(assetsData.access ?? null);
+        if (isAccountantWorkspace && assetsData.access) {
+          setAccountantRegisters((current) => current.some((access) => access.shareId === assetsData.access?.shareId)
+            ? current
+            : [assetsData.access as AccountantRegisterAccess, ...current]);
+        }
 
         if (assetsData.register) {
           setActiveRegister(assetsData.register);
@@ -6507,6 +6546,17 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
         if (Array.isArray(assetsData.registers)) {
           setAssetRegisters(assetsData.registers);
+        }
+
+        if (isAccountantWorkspace) {
+          const switcherResponse = await fetch('/api/accountant/registers', {
+            cache: 'no-store',
+            credentials: 'include',
+          });
+          const switcherData = (await switcherResponse.json()) as AccountantRegistersApiResponse;
+          if (mounted && switcherResponse.ok && switcherData.ok) {
+            setAccountantRegisters(switcherData.registers ?? []);
+          }
         }
       } catch (error) {
         if (!mounted) return;
@@ -6530,6 +6580,18 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       window.removeEventListener('aim4price:asset-register-updated', loadAssetRegister);
     };
   }, [accountantShareId, isAccountantWorkspace]);
+
+  useEffect(() => {
+    if (!isAccountantWorkspace || isLoading || !registerSwitcherOptions.length) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('switchAccounts') !== '1') return;
+
+    setRegisterSwitcherSearchTerm('');
+    setIsChangeRegisterModalOpen(true);
+    params.delete('switchAccounts');
+    const query = params.toString();
+    window.history.replaceState(null, '', `${window.location.pathname}${query ? `?${query}` : ''}`);
+  }, [isAccountantWorkspace, isLoading, registerSwitcherOptions.length]);
 
   useEffect(() => {
     if (!notice) return undefined;
@@ -6601,7 +6663,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
   function openChangeRegisterModal() {
     if (!canOpenRegisterSwitcher) {
-      window.location.href = '/asset-registers';
+      window.location.href = isAccountantWorkspace ? '/leads' : '/asset-registers';
       return;
     }
 
@@ -6620,12 +6682,22 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
     if (!nextRegisterId || changingRegisterId) return;
 
-    if (nextRegisterId === activeRegister?.id || nextRegisterId === activeRegisterId) {
+    if (isAccountantWorkspace && nextRegisterId === accountantShareId) {
+      closeChangeRegisterModal();
+      return;
+    }
+
+    if (!isAccountantWorkspace && (nextRegisterId === activeRegister?.id || nextRegisterId === activeRegisterId)) {
       closeChangeRegisterModal();
       return;
     }
 
     setChangingRegisterId(nextRegisterId);
+
+    if (isAccountantWorkspace) {
+      window.location.assign(`/accountant/registers/${encodeURIComponent(nextRegisterId)}`);
+      return;
+    }
     setNotice(null);
 
     if (nextRegisterId === COMBINED_REGISTER_ID) {
@@ -12089,7 +12161,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   }
 
   async function handleExportXlsx() {
-    const response = await fetch(buildAssetRegisterExportUrl(activeRegister?.id || activeRegisterId, exportEntityName), {
+    const response = await fetch(buildAssetRegisterExportUrl(activeRegister?.id || activeRegisterId, exportEntityName, accountantShareId), {
       credentials: 'include',
       cache: 'no-store',
     });
@@ -12578,7 +12650,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
               <button
                 type="button"
                 className={`${styles.secondaryButton} ${styles.headerDownloadButton}`}
-                onClick={isAccountantWorkspace ? () => setIsAccountantReportsOpen(true) : openExportModal}
+                onClick={openExportModal}
                 disabled={!assets.length || isLoading || isExporting}
               >
                 <DownloadIcon className={styles.buttonIcon} />
@@ -12704,18 +12776,20 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                   </label>
 
                   <Link
-                    href="/asset-registers"
+                    href={isAccountantWorkspace ? '/leads' : '/asset-registers'}
                     className={`${styles.secondaryButton} ${styles.changeRegisterManageButton}`}
                     onClick={closeChangeRegisterModal}
                   >
                     <ManageIcon className={styles.buttonIcon} />
-                    <span>Manage</span>
+                    <span>{isAccountantWorkspace ? 'My Clients' : 'Manage'}</span>
                   </Link>
                 </div>
 
                 <div className={styles.changeRegisterList}>
                   {visibleRegisterSwitcherOptions.map((register) => {
-                    const isCurrentRegister = register.id === activeRegister?.id || register.id === activeRegisterId;
+                    const isCurrentRegister = isAccountantWorkspace
+                      ? register.id === accountantShareId
+                      : register.id === activeRegister?.id || register.id === activeRegisterId;
                     const isChangingThisRegister = changingRegisterId === register.id;
                     const registerAssetCount = Math.max(0, Math.round(Number(register.assetCount) || 0));
                     const assetCountLabel = `${registerAssetCount.toLocaleString('en-ZA')} ${registerAssetCount === 1 ? 'asset' : 'assets'}`;
