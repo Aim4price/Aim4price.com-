@@ -258,6 +258,9 @@ export async function disposeOrDeleteAsset(input: {
          or exists (select 1 from public.asset_finance_agreement_assets where owner_user_id = $1 and asset_register_item_id = $2::uuid)
          or exists (select 1 from public.asset_recurring_commitment_assets where owner_user_id = $1 and asset_register_item_id = $2::uuid)
          or exists (select 1 from public.asset_invoices where user_id = $1 and asset_register_item_id = $2::uuid)
+         or exists (select 1 from public.fuel_storage_events where user_id = $1 and asset_register_item_id = $2::text)
+         or exists (select 1 from public.fuel_slips where user_id = $1 and asset_register_item_id = $2::uuid)
+         or exists (select 1 from public.asset_scan_events where asset_id = $2::uuid)
          as has_dependencies`,
       [input.ownerUserId, asset.id],
     );
