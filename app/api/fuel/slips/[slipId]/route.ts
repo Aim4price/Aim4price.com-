@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from '../../../../../lib/auth-session';
-import { deleteFuelSlipTransaction, listFuelLedger, saveFuelSlipTransaction } from '../../../../../lib/fuel-ledger';
+import { deleteFuelSlipTransaction, getFuelSlipTransactionById, listFuelLedger, saveFuelSlipTransaction } from '../../../../../lib/fuel-ledger';
+import {
+  assertWorkspaceAssetAccess,
+  filterFuelLedgerForWorkspace,
+  resolveOwnerWorkspaceContext,
+} from '../../../../../lib/owner-workspace-access';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -11,17 +15,10 @@ type RouteContext = {
   };
 };
 
-async function currentUserId() {
-  const session = await getServerSession({ requireActive: true });
-  return session?.user?.id ?? '';
-}
-
 export async function PATCH(request: Request, context: RouteContext) {
-  const userId = await currentUserId();
-
-  if (!userId) {
-    return NextResponse.json({ ok: false, error: 'You must be signed in to update fuel slips.' }, { status: 401 });
-  }
+  const resolved = await resolveOwnerWorkspaceContext(request, { ledger: 'fuel' });
+  if (!resolved.ok) return resolved.response;
+  const workspace = resolved.context;
 
   const slipId = context.params.slipId;
   if (!slipId) {
@@ -37,8 +34,16 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 
   try {
-    const result = await saveFuelSlipTransaction(userId, { ...payload, id: slipId, slipId, fuelSlipId: slipId });
-    const ledger = await listFuelLedger(userId);
+    const existing = await getFuelSlipTransactionById(workspace.ownerUserId, slipId);
+    if (existing?.assetId) await assertWorkspaceAssetAccess(workspace, existing.assetId);
+    if (String(payload.targetType ?? '').trim() === 'asset') {
+      await assertWorkspaceAssetAccess(workspace, payload.assetId ?? payload.targetId);
+    }
+    const result = await saveFuelSlipTransaction(workspace.ownerUserId, { ...payload, id: slipId, slipId, fuelSlipId: slipId });
+    const ledger = await filterFuelLedgerForWorkspace(
+      workspace,
+      await listFuelLedger(workspace.ownerUserId),
+    );
 
     return NextResponse.json({
       ok: true,
@@ -48,7 +53,7 @@ export async function PATCH(request: Request, context: RouteContext) {
       pendingReview: result.pendingReview,
       message: result.message,
       ...ledger,
-      assets: result.assets,
+      assets: ledger.assets,
     });
   } catch (error) {
     console.error('Aim4price fuel slip update failed.', error);
@@ -59,12 +64,10 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 }
 
-export async function DELETE(_request: Request, context: RouteContext) {
-  const userId = await currentUserId();
-
-  if (!userId) {
-    return NextResponse.json({ ok: false, error: 'You must be signed in to delete fuel slips.' }, { status: 401 });
-  }
+export async function DELETE(request: Request, context: RouteContext) {
+  const resolved = await resolveOwnerWorkspaceContext(request, { ledger: 'fuel' });
+  if (!resolved.ok) return resolved.response;
+  const workspace = resolved.context;
 
   const slipId = context.params.slipId;
   if (!slipId) {
@@ -72,8 +75,13 @@ export async function DELETE(_request: Request, context: RouteContext) {
   }
 
   try {
-    await deleteFuelSlipTransaction(userId, slipId);
-    const ledger = await listFuelLedger(userId);
+    const existing = await getFuelSlipTransactionById(workspace.ownerUserId, slipId);
+    if (existing?.assetId) await assertWorkspaceAssetAccess(workspace, existing.assetId);
+    await deleteFuelSlipTransaction(workspace.ownerUserId, slipId);
+    const ledger = await filterFuelLedgerForWorkspace(
+      workspace,
+      await listFuelLedger(workspace.ownerUserId),
+    );
 
     return NextResponse.json({
       ok: true,
