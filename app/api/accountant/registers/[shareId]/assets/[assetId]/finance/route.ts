@@ -39,12 +39,20 @@ export async function PUT(request: NextRequest, context: Context) {
       assetId: context.params.assetId,
       body,
     });
-    const agreements = await saveFinanceAgreementForAccountant({
-      accountantUserId: session.user.id,
-      shareId: context.params.shareId,
-      assetId: context.params.assetId,
-      body,
-    });
+    const financeStatus = String(body.financeStatus ?? '').trim();
+    const shouldSaveAgreement = Boolean(String(body.agreementId ?? '').trim()) || ['yes', 'paid'].includes(financeStatus);
+    const agreements = shouldSaveAgreement
+      ? await saveFinanceAgreementForAccountant({
+          accountantUserId: session.user.id,
+          shareId: context.params.shareId,
+          assetId: context.params.assetId,
+          body,
+        })
+      : await listFinanceAgreementsForAccountant({
+          accountantUserId: session.user.id,
+          shareId: context.params.shareId,
+          assetId: context.params.assetId,
+        });
     return NextResponse.json({ ok: true, item, ...agreements });
   } catch (error) {
     console.error('accountant finance PUT failed', error);

@@ -19,6 +19,7 @@ const fuelUi = read('app/fuel/fuel-client.tsx');
 const costUi = read('app/my-invoices/my-invoices-client.tsx');
 const ownerUi = read('app/asset-register/asset-register-client.tsx');
 const ownerStyles = read('app/asset-register/page.module.css');
+const ownerStatusRoute = read('app/api/asset-register/status/route.ts');
 const valuationUi = read('app/valuation/valuation-client.tsx');
 const valuationRoute = read('app/api/valuation-runs/route.ts');
 const registerManagerUi = read('app/asset-registers/asset-registers-client.tsx');
@@ -58,13 +59,13 @@ test('accountant removal ends only the lead access record', () => {
   assert.doesNotMatch(removal, /delete from public\.asset_register_items|delete from public\.asset_registers/);
 });
 
-test('accountant asset UI keeps owner-only controls hidden and separates disposal from incorrect-record deletion', () => {
+test('accountant asset UI keeps owner-only controls hidden and exposes one disposal action', () => {
   assert.doesNotMatch(accountantManageUi, /Send to marketplace|Manage pricing|Add Asset|Dealer tracking/);
   assert.match(accountantManageUi, /Finance Agreements/);
   assert.match(accountantManageUi, /Documents/);
   assert.match(accountantManageUi, /Accounting Book Value/);
-  assert.match(accountantManageUi, /Dispose asset/);
-  assert.match(accountantManageUi, /Delete incorrect asset/);
+  assert.equal((accountantManageUi.match(/<strong>Dispose asset<\/strong>/g) || []).length, 1);
+  assert.doesNotMatch(accountantManageUi, /Delete incorrect asset/);
   assert.match(accountantLifecycleRoute, /disposeOrDeleteAsset/);
   assert.match(accountantLifecycleRoute, /allowDirectUpdates/);
   assert.match(ownerUi, /canUseOwnerOnlyAssetActions = !isAccountantWorkspace/);
@@ -80,6 +81,30 @@ test('Finance Agreements preserve financier amounts and use explicit multi-asset
   assert.match(collaboration, /asset_finance_agreement_assets/);
   assert.match(collaboration, /original_amount_allocation/);
   assert.match(collaboration, /settlement_allocation/);
+});
+
+test('owner and accountant finance flows support paid-off assets and keep acquisition inside finance', () => {
+  assert.match(accountantManageUi, /<option value="paid">Paid off<\/option>/);
+  assert.match(accountantManageUi, /Finance and acquisition/);
+  assert.match(accountantManageUi, /Advanced details/);
+  assert.match(workspace, /\['yes', 'paid'\]\.includes\(status\)/);
+  assert.match(ownerUi, /type FinanceStatusChoice = AssetStatusChoice \| 'paid'/);
+  assert.match(ownerUi, /<strong>Acquisition details<\/strong>/);
+  assert.doesNotMatch(ownerUi, /openAcquisitionDetails\(activeAsset\)/);
+  assert.match(ownerStatusRoute, /normalizeFinanceStatusChoice/);
+  assert.match(ownerStatusRoute, /financeStatus === 'paid'/);
+});
+
+test('accounting manage modals keep a fixed blur layer, inner scrolling and one-line option copy', () => {
+  assert.match(accountantManageUi, /accountantManageOverlay/);
+  assert.match(accountantManageUi, /accountantManageBackdrop/);
+  assert.match(ownerStyles, /\.accountantManageBackdrop[\s\S]*?position: fixed !important/);
+  assert.match(ownerStyles, /\.accountantManageBody[\s\S]*?overflow-y: auto !important/);
+  assert.match(ownerStyles, /\.accountantManageModal \.assetOptionsGrid \.optionActionButton small[\s\S]*?white-space: nowrap !important/);
+  assert.match(ownerUi, /Remove or archive this asset safely\./);
+  assert.match(ownerStyles, /\.deleteAssetOptionSubtitle[\s\S]*?white-space: nowrap !important/);
+  assert.match(ownerStyles, /\.assetDisposalReasonGrid/);
+  assert.match(ownerStyles, /\.assetDisposalReasonButtonActive/);
 });
 
 test('normal accountant account keeps standard leads, account and notifications', () => {
@@ -219,10 +244,11 @@ test('disposed assets are excluded from active rows and register totals', () => 
   assert.equal((registerSummaries.match(/coalesce\(ai\.lifecycle_state, 'active'\) = 'active'/g) || []).length >= 4, true);
 });
 
-test('manual owner entry captures newly acquired details separately', () => {
+test('manual owner entry captures newly acquired details and later editing stays inside finance', () => {
   assert.match(ownerUi, /Newly acquired asset\?/);
   assert.match(ownerUi, /acquisitionAmountExVat/);
   assert.match(ownerUi, /Acquisition details/);
+  assert.doesNotMatch(ownerUi, /aria-labelledby="acquisition-details-title"/);
   assert.match(lifecycle, /eventType = input\.newlyAcquired \? 'acquired' : 'existing_added'/);
 });
 

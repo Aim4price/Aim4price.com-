@@ -23234,6 +23234,88 @@ button.documentOpenLink {
   }
 }
 
+/* === Accounting manage refinements: stable blur, compact copy and simple finance === */
+.accountantManageOverlay {
+  overflow: hidden !important;
+  padding: clamp(0.75rem, 2.5vh, 1.5rem) !important;
+}
+
+.accountantManageBackdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  background: rgba(15, 25, 31, 0.46) !important;
+  backdrop-filter: blur(14px) saturate(0.88) !important;
+}
+
+.optionsModal.accountantManageModal {
+  width: min(94vw, 58rem) !important;
+  max-height: min(92dvh, 54rem) !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.accountantManageModal .optionsModalHeader {
+  flex: 0 0 auto !important;
+}
+
+.accountantManageBody,
+.accountantManageBody.optionsScrollBody {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  padding: 0.1rem 0.75rem 0.8rem 0.1rem !important;
+  margin: 0 -0.28rem 0 0 !important;
+  scrollbar-gutter: stable !important;
+}
+
+.accountantManageModal .assetOptionsGrid .optionActionButton small {
+  max-width: 100% !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.accountantManageModal .accountantManageForm {
+  padding: 0.05rem 0.15rem 0.35rem !important;
+}
+
+.accountantManageModal .accountantFinanceSection {
+  padding: 1rem 1.05rem !important;
+}
+
+.accountantManageModal .assetStatusAdvancedToggle {
+  margin: 0 !important;
+}
+
+.accountantManageModal .assetSettingsActions {
+  position: sticky !important;
+  z-index: 3 !important;
+  bottom: -0.8rem !important;
+  margin-top: 0.15rem !important;
+  padding: 0.9rem 0 0.8rem !important;
+  border-top: 1px solid rgba(210, 223, 231, 0.82) !important;
+  background: linear-gradient(180deg, rgba(248, 251, 251, 0) 0%, rgba(248, 251, 251, 0.96) 22%, #f8fbfb 100%) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+@media (max-width: 760px) {
+  .optionsModal.accountantManageModal {
+    width: min(100%, calc(100vw - 1rem)) !important;
+    max-height: calc(100dvh - 1rem) !important;
+  }
+
+  .accountantManageModal .assetOptionsGrid .optionActionButton {
+    min-height: 4.9rem !important;
+  }
+
+  .accountantManageBody,
+  .accountantManageBody.optionsScrollBody {
+    padding-right: 0.5rem !important;
+  }
+}
+
 @media (max-width: 560px) {
   .pricingResultBody {
     gap: 0.78rem !important;
@@ -34262,5 +34344,197 @@ button.documentOpenLink {
   .newAcquisitionChoiceActions > button {
     width: 100% !important;
     min-width: 0 !important;
+  }
+}
+
+/* === Owner paperwork and disposal refinements === */
+.assetStatusAcquisitionPanel {
+  display: grid !important;
+  gap: 0.75rem !important;
+  padding: 0.95rem 1rem !important;
+  border: 1px solid rgba(190, 216, 204, 0.92) !important;
+  border-radius: 1rem !important;
+  background: linear-gradient(135deg, #f4faf7 0%, #ffffff 72%) !important;
+}
+
+.assetStatusAcquisitionHeader {
+  display: flex !important;
+  align-items: baseline !important;
+  justify-content: space-between !important;
+  gap: 0.75rem !important;
+}
+
+.assetStatusAcquisitionHeader strong {
+  color: #123f36 !important;
+  font-size: 0.92rem !important;
+  font-weight: 850 !important;
+}
+
+.assetStatusAcquisitionHeader small {
+  color: #65786f !important;
+  font-size: 0.73rem !important;
+  font-weight: 650 !important;
+  white-space: nowrap !important;
+}
+
+.assetStatusAcquisitionGrid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 0.8rem !important;
+}
+
+.deleteAssetOptionSubtitle {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.confirmDeleteOverlay > .modalBackdrop {
+  position: fixed !important;
+  inset: 0 !important;
+}
+
+.assetDisposalModal {
+  width: min(52rem, calc(100vw - 2rem)) !important;
+  max-height: min(90dvh, 52rem) !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+}
+
+.assetDisposalHeader {
+  margin: 0 !important;
+  padding: 1.35rem 1.5rem 1.1rem !important;
+  background: linear-gradient(135deg, rgba(238, 248, 243, 0.96), rgba(255, 255, 255, 0.98) 58%) !important;
+}
+
+.assetDisposalHeader .modalHeaderText {
+  gap: 0.28rem !important;
+}
+
+.assetDisposalBody {
+  gap: 1rem !important;
+  padding: 1.15rem 1.5rem 1.4rem !important;
+}
+
+.assetDisposalIntro {
+  display: flex !important;
+  align-items: baseline !important;
+  justify-content: space-between !important;
+  gap: 0.8rem !important;
+}
+
+.assetDisposalIntro strong {
+  color: #133c33 !important;
+  font-size: 1rem !important;
+  font-weight: 870 !important;
+}
+
+.assetDisposalIntro small {
+  color: #68798a !important;
+  font-size: 0.8rem !important;
+  font-weight: 640 !important;
+}
+
+.assetDisposalReasonGrid {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 0.65rem !important;
+}
+
+.assetDisposalReasonButton {
+  min-height: 3.55rem !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.65rem !important;
+  padding: 0.75rem 0.85rem !important;
+  border: 1px solid rgba(205, 220, 231, 0.96) !important;
+  border-radius: 0.95rem !important;
+  color: #233846 !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f6f9fb 100%) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+  cursor: pointer !important;
+  font: inherit !important;
+  text-align: left !important;
+}
+
+.assetDisposalReasonButton strong {
+  font-size: 0.84rem !important;
+  font-weight: 790 !important;
+  line-height: 1.2 !important;
+}
+
+.assetDisposalReasonMarker {
+  width: 1rem !important;
+  height: 1rem !important;
+  flex: 0 0 1rem !important;
+  border: 2px solid #b8cbd1 !important;
+  border-radius: 999px !important;
+  background: #ffffff !important;
+}
+
+.assetDisposalReasonButtonActive {
+  border-color: rgba(18, 113, 82, 0.72) !important;
+  color: #0f5e45 !important;
+  background: linear-gradient(180deg, #f7fcf9 0%, #eaf7f0 100%) !important;
+  box-shadow: 0 10px 22px rgba(18, 101, 74, 0.09), inset 0 1px 0 #ffffff !important;
+}
+
+.assetDisposalReasonButtonActive .assetDisposalReasonMarker {
+  border: 0.28rem solid #167455 !important;
+}
+
+.assetDisposalFields {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 0.85rem !important;
+  padding: 1rem !important;
+}
+
+.assetDisposalNoteField {
+  grid-column: 1 / -1 !important;
+}
+
+.assetDisposalDeleteNotice {
+  border-color: rgba(205, 78, 78, 0.28) !important;
+  color: #8c2f2f !important;
+  background: #fff4f4 !important;
+}
+
+.assetDisposalActions {
+  position: sticky !important;
+  z-index: 2 !important;
+  bottom: -1.4rem !important;
+  padding: 0.85rem 0 0 !important;
+  border-top: 1px solid rgba(211, 224, 231, 0.84) !important;
+  background: linear-gradient(180deg, rgba(249, 251, 252, 0), #f9fbfc 28%) !important;
+}
+
+@media (max-width: 720px) {
+  .assetStatusAcquisitionHeader,
+  .assetDisposalIntro {
+    align-items: flex-start !important;
+    flex-direction: column !important;
+  }
+
+  .assetStatusAcquisitionHeader small {
+    white-space: normal !important;
+  }
+
+  .assetStatusAcquisitionGrid,
+  .assetDisposalFields {
+    grid-template-columns: 1fr !important;
+  }
+
+  .assetDisposalReasonGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .assetDisposalNoteField {
+    grid-column: auto !important;
+  }
+
+  .assetDisposalHeader,
+  .assetDisposalBody {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
   }
 }

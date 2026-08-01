@@ -16,6 +16,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 type AssetStatusChoice = 'yes' | 'no' | 'unknown' | 'not_applicable';
+type FinanceStatusChoice = AssetStatusChoice | 'paid';
 type StatusSection = 'finance' | 'insurance' | 'license';
 
 type StatusRequestBody = {
@@ -109,6 +110,12 @@ function normalizeAssetStatusChoice(value: unknown, fallback: AssetStatusChoice 
   }
 
   return fallback;
+}
+
+function normalizeFinanceStatusChoice(value: unknown, fallback: FinanceStatusChoice = 'unknown'): FinanceStatusChoice {
+  const normalized = String(value ?? '').trim().toLowerCase().replace(/[\s-]+/g, '_');
+  if (['paid', 'paid_off', 'settled', 'settled_in_full', 'fully_paid'].includes(normalized)) return 'paid';
+  return normalizeAssetStatusChoice(value, fallback === 'paid' ? 'unknown' : fallback);
 }
 
 function normalizeOptionalText(value: unknown, maxLength = 240): string {
@@ -205,21 +212,22 @@ function applyPair(target: Record<string, unknown>, camelKey: string, snakeKey: 
   target[snakeKey] = value;
 }
 
-function buildFinanceSpecsUpdate(body: StatusRequestBody, financeStatus: AssetStatusChoice): Record<string, unknown> {
+function buildFinanceSpecsUpdate(body: StatusRequestBody, financeStatus: FinanceStatusChoice): Record<string, unknown> {
   const isFinanced = financeStatus === 'yes';
-  const financeType = isFinanced ? normalizeFinanceType(body.financeType) : null;
+  const hasFinanceHistory = isFinanced || financeStatus === 'paid';
+  const financeType = hasFinanceHistory ? normalizeFinanceType(body.financeType) : null;
   const currentOutstanding = isFinanced ? normalizeOptionalMoney(body.financeCurrentOutstandingExVat, 'Current outstanding amount') : null;
-  const boughtFor = isFinanced ? normalizeOptionalMoney(body.financeBoughtForExVat, 'Bought for') : null;
-  const originalAmount = isFinanced ? normalizeOptionalMoney(body.financeOriginalAmountExVat, 'Original financed amount') : null;
-  const monthlyPayment = isFinanced ? normalizeOptionalMoney(body.financeMonthlyPaymentExVat, 'Monthly payment') : null;
-  const balloonPayment = isFinanced ? normalizeOptionalMoney(body.financeBalloonPaymentExVat, 'Balloon / residual amount') : null;
-  const interestRate = isFinanced ? normalizeOptionalNumber(body.financeInterestRatePercent, 'Interest rate') : null;
-  const termMonths = isFinanced ? normalizeOptionalWholeNumber(body.financeTermMonths, 'Finance term months') : null;
-  const financierName = isFinanced ? normalizeOptionalText(body.financierName) : '';
-  const financeNote = isFinanced ? normalizeOptionalText(body.financeNote, 1000) : '';
-  const boughtWhen = isFinanced ? normalizeOptionalDate(body.financeBoughtWhen, 'Purchase date') : '';
-  const settlementDate = isFinanced ? normalizeOptionalDate(body.financeSettlementDate, 'Settlement date') : '';
-  const referenceNumber = isFinanced ? normalizeOptionalText(body.financeReferenceNumber) : '';
+  const boughtFor = normalizeOptionalMoney(body.financeBoughtForExVat, 'Acquisition amount');
+  const originalAmount = hasFinanceHistory ? normalizeOptionalMoney(body.financeOriginalAmountExVat, 'Original financed amount') : null;
+  const monthlyPayment = hasFinanceHistory ? normalizeOptionalMoney(body.financeMonthlyPaymentExVat, 'Monthly payment') : null;
+  const balloonPayment = hasFinanceHistory ? normalizeOptionalMoney(body.financeBalloonPaymentExVat, 'Balloon / residual amount') : null;
+  const interestRate = hasFinanceHistory ? normalizeOptionalNumber(body.financeInterestRatePercent, 'Interest rate') : null;
+  const termMonths = hasFinanceHistory ? normalizeOptionalWholeNumber(body.financeTermMonths, 'Finance term months') : null;
+  const financierName = hasFinanceHistory ? normalizeOptionalText(body.financierName) : '';
+  const financeNote = hasFinanceHistory ? normalizeOptionalText(body.financeNote, 1000) : '';
+  const boughtWhen = normalizeOptionalDate(body.financeBoughtWhen, 'Acquisition date');
+  const settlementDate = hasFinanceHistory ? normalizeOptionalDate(body.financeSettlementDate, 'Settlement date') : '';
+  const referenceNumber = hasFinanceHistory ? normalizeOptionalText(body.financeReferenceNumber) : '';
 
   const specs: Record<string, unknown> = {};
 
@@ -341,13 +349,13 @@ export async function PATCH(request: NextRequest) {
     let statusMetadata: Record<string, unknown> = { assetId, section };
 
     if (section === 'finance') {
-      const financeStatus = normalizeAssetStatusChoice(body.financeStatus, existing.isFinanced ? 'yes' : 'unknown');
+      const financeStatus = normalizeFinanceStatusChoice(body.financeStatus, existing.isFinanced ? 'yes' : 'unknown');
       const specsJson = buildFinanceSpecsUpdate(body, financeStatus);
 
       item = await updateAssetRegisterItemStatusDetails(session.user.id, {
         assetId,
         isFinanced: financeStatus === 'yes',
-        financeNote: financeStatus === 'yes' ? normalizeOptionalText(body.financeNote, 1000) : null,
+        financeNote: ['yes', 'paid'].includes(financeStatus) ? normalizeOptionalText(body.financeNote, 1000) : null,
         specsJson,
       });
       statusMetadata = { ...statusMetadata, financeStatus };
@@ -416,3 +424,4 @@ export async function PATCH(request: NextRequest) {
     );
   }
 }
+

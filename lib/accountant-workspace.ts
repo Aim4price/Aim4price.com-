@@ -421,23 +421,26 @@ function optionalNumber(value: unknown): number | null {
 }
 
 function financeSpecs(body: Record<string, unknown>): Record<string, unknown> {
-  const status = ['yes', 'no', 'unknown', 'not_applicable'].includes(text(body.financeStatus)) ? text(body.financeStatus) : 'unknown';
+  const status = ['yes', 'paid', 'no', 'unknown', 'not_applicable'].includes(text(body.financeStatus)) ? text(body.financeStatus) : 'unknown';
+  const hasFinanceHistory = status === 'yes' || status === 'paid';
   const values: Record<string, unknown> = {
     financeStatus: status, finance_status: status,
-    financeType: text(body.financeType) || null, finance_type: text(body.financeType) || null,
-    financierName: text(body.financierName) || null, financier_name: text(body.financierName) || null,
-    financeCurrentOutstandingExVat: optionalNumber(body.outstandingBalance), finance_current_outstanding_ex_vat: optionalNumber(body.outstandingBalance),
-    financeOriginalAmountExVat: optionalNumber(body.originalAmount), finance_original_amount_ex_vat: optionalNumber(body.originalAmount),
-    financeMonthlyPaymentExVat: optionalNumber(body.instalment), finance_monthly_payment_ex_vat: optionalNumber(body.instalment),
-    financeBalloonPaymentExVat: optionalNumber(body.balloon), finance_balloon_payment_ex_vat: optionalNumber(body.balloon),
-    financeSettlementAmountExVat: optionalNumber(body.settlementAmount), finance_settlement_amount_ex_vat: optionalNumber(body.settlementAmount),
-    financeSettlementDate: text(body.settlementDate) || null, finance_settlement_date: text(body.settlementDate) || null,
-    financeStartDate: text(body.startDate) || null, finance_start_date: text(body.startDate) || null,
-    financeEndDate: text(body.endDate) || null, finance_end_date: text(body.endDate) || null,
-    financeLatestBalanceDate: text(body.latestBalanceDate) || null, finance_latest_balance_date: text(body.latestBalanceDate) || null,
-    financeReferenceNumber: text(body.referenceNumber) || null, finance_reference_number: text(body.referenceNumber) || null,
-    financeSourceReference: text(body.sourceReference) || null, finance_source_reference: text(body.sourceReference) || null,
-    financeSecurityDescription: text(body.securityDescription) || null, finance_security_description: text(body.securityDescription) || null,
+    financeType: hasFinanceHistory ? text(body.financeType) || null : null, finance_type: hasFinanceHistory ? text(body.financeType) || null : null,
+    financierName: hasFinanceHistory ? text(body.financierName) || null : null, financier_name: hasFinanceHistory ? text(body.financierName) || null : null,
+    financeBoughtWhen: text(body.financeBoughtWhen) || null, finance_bought_when: text(body.financeBoughtWhen) || null,
+    financeBoughtForExVat: optionalNumber(body.financeBoughtForExVat), finance_bought_for_ex_vat: optionalNumber(body.financeBoughtForExVat),
+    financeCurrentOutstandingExVat: status === 'yes' ? optionalNumber(body.outstandingBalance) : null, finance_current_outstanding_ex_vat: status === 'yes' ? optionalNumber(body.outstandingBalance) : null,
+    financeOriginalAmountExVat: hasFinanceHistory ? optionalNumber(body.originalAmount) : null, finance_original_amount_ex_vat: hasFinanceHistory ? optionalNumber(body.originalAmount) : null,
+    financeMonthlyPaymentExVat: hasFinanceHistory ? optionalNumber(body.instalment) : null, finance_monthly_payment_ex_vat: hasFinanceHistory ? optionalNumber(body.instalment) : null,
+    financeBalloonPaymentExVat: hasFinanceHistory ? optionalNumber(body.balloon) : null, finance_balloon_payment_ex_vat: hasFinanceHistory ? optionalNumber(body.balloon) : null,
+    financeSettlementAmountExVat: hasFinanceHistory ? optionalNumber(body.settlementAmount) : null, finance_settlement_amount_ex_vat: hasFinanceHistory ? optionalNumber(body.settlementAmount) : null,
+    financeSettlementDate: hasFinanceHistory ? text(body.settlementDate) || null : null, finance_settlement_date: hasFinanceHistory ? text(body.settlementDate) || null : null,
+    financeStartDate: hasFinanceHistory ? text(body.startDate) || null : null, finance_start_date: hasFinanceHistory ? text(body.startDate) || null : null,
+    financeEndDate: hasFinanceHistory ? text(body.endDate) || null : null, finance_end_date: hasFinanceHistory ? text(body.endDate) || null : null,
+    financeLatestBalanceDate: hasFinanceHistory ? text(body.latestBalanceDate) || null : null, finance_latest_balance_date: hasFinanceHistory ? text(body.latestBalanceDate) || null : null,
+    financeReferenceNumber: hasFinanceHistory ? text(body.referenceNumber) || null : null, finance_reference_number: hasFinanceHistory ? text(body.referenceNumber) || null : null,
+    financeSourceReference: hasFinanceHistory ? text(body.sourceReference) || null : null, finance_source_reference: hasFinanceHistory ? text(body.sourceReference) || null : null,
+    financeSecurityDescription: hasFinanceHistory ? text(body.securityDescription) || null : null, finance_security_description: hasFinanceHistory ? text(body.securityDescription) || null : null,
   };
   return values;
 }
@@ -456,7 +459,7 @@ export async function updateAccountantFinance(input: {
   const updated = await updateAssetRegisterItemStatusDetails(access.ownerUserId, {
     assetId: asset.id,
     isFinanced: status === 'yes',
-    financeNote: text(input.body.financeNote) || null,
+    financeNote: ['yes', 'paid'].includes(status) ? text(input.body.financeNote) || null : null,
     specsJson: specs,
   });
   const after: Record<string, unknown> = { isFinanced: updated.isFinanced, financeNote: updated.financeNote, ...specs };
