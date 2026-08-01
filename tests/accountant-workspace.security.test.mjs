@@ -22,6 +22,7 @@ const accountantManagePage = read('app/accountant/registers/[shareId]/manage/pag
 const accountantOwnerRegistersRoute = read('app/api/accountant/registers/[shareId]/owner-registers/route.ts');
 const accountantMoveRoute = read('app/api/accountant/registers/[shareId]/owner-registers/move-assets/route.ts');
 const accountantFlagRoute = read('app/api/accountant/registers/[shareId]/assets/[assetId]/flag/route.ts');
+const accountantNoteRoute = read('app/api/accountant/registers/[shareId]/assets/[assetId]/notes/route.ts');
 const ownerWorkspaceAccess = read('lib/owner-workspace-access.ts');
 const registerDb = read('lib/asset-register-db.ts');
 const registerSummaries = read('lib/asset-registers.ts');
@@ -115,12 +116,26 @@ test('accountant register moves stay inside one owner and preserve shared-regist
   assert.match(workspace, /ACCOUNTANT_MOVE_LAST_SHARED_ASSET/);
 });
 
-test('accountants can flag shared assets and use aligned two-button card actions', () => {
+test('accountants can flag shared assets and use aligned three-button card actions', () => {
   assert.match(accountantFlagRoute, /updateAccountantAssetFlag/);
   assert.match(ownerUi, /canUseOwnerOnlyAssetActions \|\| isAccountantWorkspace/);
   assert.match(ownerUi, /assetHeaderActionsAccountant/);
   assert.match(ownerUi, /\/assets\/\$\{encodeURIComponent\(asset\.id\)\}\/flag/);
-  assert.match(ownerStyles, /\.page \.assetHeaderActionsAccountant[\s\S]*?grid-template-columns: repeat\(2/);
+  assert.match(ownerStyles, /\.page \.assetHeaderActionsAccountant[\s\S]*?grid-template-columns: repeat\(3/);
+});
+
+test('accountants can leave copper-styled notes on authorised client assets', () => {
+  assert.match(accountantNoteRoute, /createAccountantAssetNote/);
+  assert.match(accountantNoteRoute, /requireActive: true/);
+  assert.match(workspace, /export async function createAccountantAssetNote/);
+  assert.match(workspace, /authorisedAsset\(input\.accountantUserId, input\.shareId, input\.assetId\)/);
+  assert.match(workspace, /insert into public\.asset_partner_notes/);
+  assert.match(workspace, /accountant_asset_note_left/);
+  assert.match(ownerUi, /<span>Leave a note<\/span>/);
+  assert.match(ownerUi, /styles\.sharedNoteModal/);
+  assert.match(ownerUi, /Note to asset owner/);
+  assert.match(ownerUi, /\/assets\/\$\{encodeURIComponent\(accountantNoteAsset\.id\)\}\/notes/);
+  assert.match(ownerStyles, /\.page \.assetHeaderActions \.cardAccountantNoteButton[\s\S]*?var\(--action-clay-bg\)/);
 });
 
 test('owner and accountant asset filters share lighter labels without a visible scrollbar', () => {
