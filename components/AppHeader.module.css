@@ -957,6 +957,11 @@
   text-align: center;
 }
 
+.accountPopover button.menuLink {
+  cursor: pointer;
+  font-family: inherit;
+}
+
 .menuLinkActive {
   color: #0f684f;
   border-color: rgba(15, 104, 79, 0.22);
@@ -1101,6 +1106,42 @@
     0 32px 84px rgba(7, 27, 21, 0.28),
     0 14px 36px rgba(18, 45, 37, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.leaveAccountModal {
+  width: min(47rem, calc(100vw - 2rem));
+  grid-template-rows: auto auto;
+}
+
+.leaveAccountHeader {
+  gap: 1.5rem;
+  padding: clamp(1.75rem, 3.2vw, 2.35rem);
+}
+
+.leaveAccountHeaderText {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.leaveAccountHeaderText p {
+  max-width: none;
+  margin: 0;
+  font-size: clamp(1rem, 1.6vw, 1.08rem);
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+
+.leaveAccountActions {
+  gap: 0.85rem;
+  padding: 1.25rem clamp(1.75rem, 3.2vw, 2.35rem) clamp(1.5rem, 3vw, 2rem);
+}
+
+.leaveAccountActions .notificationSecondaryButton,
+.leaveAccountActions .notificationSoftDangerButton {
+  min-width: 8.75rem;
+  min-height: 3.35rem;
+  padding-inline: 1.4rem;
+  white-space: nowrap;
 }
 
 .notificationDiscoveryDetailModal {
@@ -2331,6 +2372,7 @@
 
 .mobileMenuNavLink,
 .mobileMenuAuthLink,
+.mobileMenuActionButton,
 .mobileMenuDangerButton {
   display: inline-flex;
   align-items: center;
@@ -2359,6 +2401,7 @@
 
 .mobileMenuNavLink:hover,
 .mobileMenuAuthLink:hover,
+.mobileMenuActionButton:hover:not(:disabled),
 .mobileMenuDangerButton:hover:not(:disabled) {
   transform: translateY(-1px);
   color: #17362c;
@@ -2401,6 +2444,15 @@
   color: #8a1f1f;
   border-color: rgba(138, 31, 31, 0.14);
   background: rgba(255, 255, 255, 0.94);
+  font: inherit;
+}
+
+.mobileMenuActionButton {
+  width: 100%;
+  cursor: pointer;
+  color: #17362c;
+  border-color: rgba(15, 104, 79, 0.16);
+  background: rgba(244, 252, 248, 0.98);
   font: inherit;
 }
 

@@ -938,12 +938,6 @@ export default function AppHeader({
   }
 
   function handleAccountMenuToggle() {
-    if (isAccountantWorkspace) {
-      setMenuOpen(false);
-      setLeaveAccountOpen(true);
-      return;
-    }
-
     setMenuOpen((current) => {
       const nextOpen = !current;
 
@@ -1007,6 +1001,14 @@ export default function AppHeader({
     setMobileMenuOpen(false);
     setMenuOpen(false);
     setLeaveAccountOpen(true);
+  }
+
+  function handleSwitchAccountantRegister() {
+    if (!accountantWorkspaceShareId) return;
+    setMobileMenuOpen(false);
+    setMenuOpen(false);
+    const workspaceRoot = `/accountant/registers/${encodeURIComponent(accountantWorkspaceShareId)}`;
+    window.location.assign(`${workspaceRoot}?switchAccounts=1`);
   }
 
   async function handleOpenAssetDiscoveryNotification(enquiryId: string) {
@@ -1650,6 +1652,11 @@ export default function AppHeader({
 
         {session ? (
           <div className={styles.mobileMenuAccountActions}>
+            {isAccountantWorkspace ? (
+              <button type="button" className={styles.mobileMenuActionButton} onClick={handleSwitchAccountantRegister}>
+                Switch accounts
+              </button>
+            ) : null}
             <button
               type="button"
               className={styles.mobileMenuDangerButton}
@@ -1884,9 +1891,9 @@ export default function AppHeader({
               if (event.target === event.currentTarget) setLeaveAccountOpen(false);
             }}
           >
-            <section className={styles.notificationDetailModal} role="dialog" aria-modal="true" aria-labelledby="leave-account-title">
-              <div className={styles.notificationDetailHeader}>
-                <div className={styles.notificationDetailHeaderText}>
+            <section className={`${styles.notificationDetailModal} ${styles.leaveAccountModal}`} role="dialog" aria-modal="true" aria-labelledby="leave-account-title">
+              <div className={`${styles.notificationDetailHeader} ${styles.leaveAccountHeader}`}>
+                <div className={`${styles.notificationDetailHeaderText} ${styles.leaveAccountHeaderText}`}>
                   <h2 id="leave-account-title">Leave this account?</h2>
                   <p>{isAccountantWorkspace
                     ? 'Are you sure you want to leave this account? You will return to My Clients.'
@@ -1896,7 +1903,7 @@ export default function AppHeader({
                   ×
                 </button>
               </div>
-              <div className={styles.notificationDetailActions}>
+              <div className={`${styles.notificationDetailActions} ${styles.leaveAccountActions}`}>
                 <button type="button" className={styles.notificationSecondaryButton} onClick={() => setLeaveAccountOpen(false)} disabled={isSigningOut}>
                   Cancel
                 </button>
@@ -2022,42 +2029,55 @@ export default function AppHeader({
 
                     {menuOpen ? (
                       <div id="header-account-menu" className={styles.accountPopover} role="menu">
-                        {(isAccountantAccount
-                          ? ACCOUNTANT_ACCOUNT_MENU_ITEMS
-                          : ACCOUNT_MENU_ITEMS.filter((item) => isAccountMenuItemVisible(item, session?.accountType))
-                        ).map((item) => {
-                          const isActive = isAccountMenuLinkActive(item.href);
-                          const menuLinkClassName = [
-                            styles.menuLink,
-                            isActive ? styles.menuLinkActive : '',
-                            item.mobileOnly ? styles.menuLinkMobileOnly : '',
-                          ]
-                            .filter(Boolean)
-                            .join(' ');
+                        {isAccountantWorkspace ? (
+                          <>
+                            <button type="button" role="menuitem" className={styles.menuLink} onClick={handleSwitchAccountantRegister}>
+                              <span>Switch accounts</span>
+                            </button>
+                            <button type="button" role="menuitem" className={styles.menuDangerButton} onClick={requestLeaveAccount}>
+                              Leave account
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            {(isAccountantAccount
+                              ? ACCOUNTANT_ACCOUNT_MENU_ITEMS
+                              : ACCOUNT_MENU_ITEMS.filter((item) => isAccountMenuItemVisible(item, session?.accountType))
+                            ).map((item) => {
+                              const isActive = isAccountMenuLinkActive(item.href);
+                              const menuLinkClassName = [
+                                styles.menuLink,
+                                isActive ? styles.menuLinkActive : '',
+                                item.mobileOnly ? styles.menuLinkMobileOnly : '',
+                              ]
+                                .filter(Boolean)
+                                .join(' ');
 
-                          return (
-                            <Link
-                              key={item.href}
-                              href={item.href}
+                              return (
+                                <Link
+                                  key={item.href}
+                                  href={item.href}
+                                  role="menuitem"
+                                  aria-current={isActive ? 'page' : undefined}
+                                  className={menuLinkClassName}
+                                  onClick={closeAccountMenu}
+                                >
+                                  <span>{item.label}</span>
+                                </Link>
+                              );
+                            })}
+
+                            <button
+                              type="button"
                               role="menuitem"
-                              aria-current={isActive ? 'page' : undefined}
-                              className={menuLinkClassName}
-                              onClick={closeAccountMenu}
+                              className={styles.menuDangerButton}
+                              onClick={handleSignOut}
+                              disabled={isSigningOut}
                             >
-                              <span>{item.label}</span>
-                            </Link>
-                          );
-                        })}
-
-                        <button
-                          type="button"
-                          role="menuitem"
-                          className={styles.menuDangerButton}
-                          onClick={handleSignOut}
-                          disabled={isSigningOut}
-                        >
-                          {isSigningOut ? 'Signing out...' : 'Sign out'}
-                        </button>
+                              {isSigningOut ? 'Signing out...' : 'Sign out'}
+                            </button>
+                          </>
+                        )}
                       </div>
                     ) : null}
                   </div>
