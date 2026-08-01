@@ -33956,8 +33956,8 @@ button.documentOpenLink {
 
 /* Final cascade: spacious shared Owner/Accountant acquisition question. */
 .newAcquisitionChoiceModal {
-  width: min(52rem, calc(100vw - 2rem)) !important;
-  max-height: min(90vh, 48rem) !important;
+  width: min(46rem, calc(100vw - 2rem)) !important;
+  max-height: min(90vh, 46rem) !important;
   overflow: hidden !important;
   border-radius: clamp(1.45rem, 2.4vw, 2rem) !important;
 }
@@ -33989,8 +33989,8 @@ button.documentOpenLink {
 }
 
 .newAcquisitionChoiceBody {
-  gap: clamp(1rem, 2vw, 1.35rem) !important;
-  padding: clamp(1.25rem, 2.6vw, 1.8rem) clamp(1.45rem, 2.8vw, 2rem) clamp(1.4rem, 2.8vw, 1.9rem) !important;
+  gap: clamp(1rem, 1.8vw, 1.25rem) !important;
+  padding: clamp(1.15rem, 2.2vw, 1.55rem) clamp(1.45rem, 2.8vw, 2rem) clamp(1.25rem, 2.4vw, 1.65rem) !important;
   overflow-x: hidden !important;
 }
 
@@ -34000,11 +34000,22 @@ button.documentOpenLink {
 }
 
 .newAcquisitionChoiceOption {
-  min-height: clamp(7.4rem, 12vw, 8.6rem) !important;
-  padding: clamp(1.15rem, 2vw, 1.55rem) !important;
+  position: relative !important;
+  min-height: clamp(6.5rem, 10vw, 7.4rem) !important;
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) !important;
+  grid-template-rows: 1fr !important;
+  align-content: stretch !important;
+  align-items: center !important;
+  justify-items: stretch !important;
+  gap: clamp(0.8rem, 1.5vw, 1rem) !important;
+  padding: clamp(1rem, 1.8vw, 1.3rem) clamp(2.8rem, 4vw, 3.2rem) clamp(1rem, 1.8vw, 1.3rem) clamp(1rem, 1.8vw, 1.3rem) !important;
   border-radius: clamp(1.15rem, 2vw, 1.5rem) !important;
   border-width: 1.5px !important;
-  background: linear-gradient(180deg, #ffffff 0%, #f7fafc 100%) !important;
+  text-align: left !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(22, 128, 95, 0.045), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #f7fafc 100%) !important;
   box-shadow:
     0 14px 30px rgba(20, 45, 57, 0.055),
     inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
@@ -34019,22 +34030,101 @@ button.documentOpenLink {
 }
 
 .newAcquisitionChoiceOption.addAssetChoiceButtonPrimary {
-  color: #ffffff !important;
-  border-color: #117052 !important;
-  background: linear-gradient(180deg, #1a8463 0%, #0f684f 100%) !important;
+  color: #0b4537 !important;
+  border-color: #23906b !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(35, 144, 107, 0.14), transparent 46%),
+    linear-gradient(180deg, #ffffff 0%, #eaf8f1 100%) !important;
   box-shadow:
-    0 16px 34px rgba(15, 104, 79, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+    0 16px 34px rgba(15, 104, 79, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
 }
 
-.newAcquisitionChoiceOption strong {
-  max-width: 18rem !important;
-  font-size: clamp(1rem, 1.6vw, 1.2rem) !important;
-  line-height: 1.25 !important;
+.newAcquisitionChoiceOption > .newAcquisitionChoiceIcon {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  width: clamp(2.7rem, 4.4vw, 3.15rem) !important;
+  height: clamp(2.7rem, 4.4vw, 3.15rem) !important;
+  justify-self: start !important;
+  padding: 0.72rem !important;
+  border: 1px solid rgba(31, 125, 94, 0.22) !important;
+  border-radius: 1rem !important;
+  color: #126849 !important;
+  background: #edf8f3 !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
 }
 
-.newAcquisitionChoiceBody .assetSettingsActions {
-  padding-top: 0.15rem !important;
+.newAcquisitionChoiceOption > .newAcquisitionChoiceCopy {
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  width: 100% !important;
+  display: grid !important;
+  justify-items: start !important;
+  gap: 0.35rem !important;
+  text-align: left !important;
+}
+
+.newAcquisitionChoiceOption .newAcquisitionChoiceCopy strong {
+  max-width: none !important;
+  font-size: clamp(0.98rem, 1.45vw, 1.12rem) !important;
+  line-height: 1.2 !important;
+  text-align: left !important;
+  text-wrap: balance !important;
+}
+
+.newAcquisitionChoiceOption .newAcquisitionChoiceCopy small {
+  display: block !important;
+  max-width: 22rem !important;
+  color: #64758a !important;
+  font-size: clamp(0.72rem, 1vw, 0.8rem) !important;
+  font-weight: 610 !important;
+  line-height: 1.42 !important;
+  text-align: left !important;
+}
+
+.newAcquisitionChoiceIndicator {
+  position: absolute !important;
+  top: 0.85rem !important;
+  right: 0.85rem !important;
+  width: 1.25rem !important;
+  height: 1.25rem !important;
+  display: grid !important;
+  place-items: center !important;
+  border: 1.5px solid #b9cbd2 !important;
+  border-radius: 999px !important;
+  background: #ffffff !important;
+  box-shadow: 0 3px 8px rgba(20, 45, 57, 0.06) !important;
+}
+
+.newAcquisitionChoiceOption.addAssetChoiceButtonPrimary .newAcquisitionChoiceIndicator {
+  border-color: #16805f !important;
+  background: #16805f !important;
+}
+
+.newAcquisitionChoiceOption.addAssetChoiceButtonPrimary .newAcquisitionChoiceIndicator::after {
+  content: '' !important;
+  width: 0.3rem !important;
+  height: 0.52rem !important;
+  margin-top: -0.08rem !important;
+  border-right: 2px solid #ffffff !important;
+  border-bottom: 2px solid #ffffff !important;
+  transform: rotate(45deg) !important;
+}
+
+.newAcquisitionChoiceOption.addAssetChoiceButtonPrimary .newAcquisitionChoiceCopy small {
+  color: #416c5f !important;
+}
+
+.newAcquisitionChoiceActions {
+  margin-top: 0.1rem !important;
+  padding-top: 1rem !important;
+  border-top: 1px solid rgba(211, 223, 231, 0.86) !important;
+}
+
+.newAcquisitionChoiceActions > button {
+  min-width: 8.35rem !important;
+  min-height: 3.15rem !important;
+  border-radius: 0.95rem !important;
 }
 
 @media (max-width: 700px) {
@@ -34057,10 +34147,20 @@ button.documentOpenLink {
   }
 
   .newAcquisitionChoiceOption {
-    min-height: 6.6rem !important;
+    min-height: 6.25rem !important;
   }
 
   .newAcquisitionChoiceBody {
     padding: 1rem 1.15rem 1.15rem !important;
+  }
+
+  .newAcquisitionChoiceActions {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  .newAcquisitionChoiceActions > button {
+    width: 100% !important;
+    min-width: 0 !important;
   }
 }
