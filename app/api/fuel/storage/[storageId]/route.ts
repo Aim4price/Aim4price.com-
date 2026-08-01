@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from '../../../../../lib/auth-session';
 import { deleteFuelStorage, listFuelLedger, updateFuelStorage } from '../../../../../lib/fuel-ledger';
+import { filterFuelLedgerForWorkspace, resolveOwnerWorkspaceContext } from '../../../../../lib/owner-workspace-access';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -30,11 +30,8 @@ function errorMessage(error: unknown, fallback: string): string {
 }
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
-  const session = await getServerSession();
-
-  if (!session?.user?.id) {
-    return unauthorized();
-  }
+  const resolved = await resolveOwnerWorkspaceContext(request, { ledger: 'fuel' });
+  if (!resolved.ok) return resolved.response;
 
   let body: FuelStorageUpdateRequest;
   try {
@@ -44,8 +41,11 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   }
 
   try {
-    const storage = await updateFuelStorage(session.user.id, context.params.storageId, body);
-    const ledger = await listFuelLedger(session.user.id);
+    const storage = await updateFuelStorage(resolved.context.ownerUserId, context.params.storageId, body);
+    const ledger = await filterFuelLedgerForWorkspace(
+      resolved.context,
+      await listFuelLedger(resolved.context.ownerUserId),
+    );
     return NextResponse.json({ ok: true, storage, ...ledger });
   } catch (error) {
     return NextResponse.json(
@@ -55,16 +55,16 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   }
 }
 
-export async function DELETE(_request: NextRequest, context: RouteContext) {
-  const session = await getServerSession();
-
-  if (!session?.user?.id) {
-    return unauthorized();
-  }
+export async function DELETE(request: NextRequest, context: RouteContext) {
+  const resolved = await resolveOwnerWorkspaceContext(request, { ledger: 'fuel' });
+  if (!resolved.ok) return resolved.response;
 
   try {
-    await deleteFuelStorage(session.user.id, context.params.storageId);
-    const ledger = await listFuelLedger(session.user.id);
+    await deleteFuelStorage(resolved.context.ownerUserId, context.params.storageId);
+    const ledger = await filterFuelLedgerForWorkspace(
+      resolved.context,
+      await listFuelLedger(resolved.context.ownerUserId),
+    );
     return NextResponse.json({ ok: true, ...ledger });
   } catch (error) {
     return NextResponse.json(
