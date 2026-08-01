@@ -34538,3 +34538,122 @@ button.documentOpenLink {
     padding-right: 1rem !important;
   }
 }
+
+/* === Bulk finance asset linking === */
+.bulkFinanceLinkCard {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 0.8rem 1rem !important;
+  padding: 1rem !important;
+  border: 1px solid rgba(184, 215, 202, 0.96) !important;
+  border-radius: 1rem !important;
+  background: linear-gradient(135deg, #f3faf6 0%, #ffffff 72%) !important;
+}
+
+.bulkFinanceLinkCard > div:first-child {
+  min-width: 0 !important;
+  display: grid !important;
+  gap: 0.22rem !important;
+}
+
+.bulkFinanceLinkCard > div:first-child strong {
+  color: #123f36 !important;
+  font-size: 0.94rem !important;
+  font-weight: 880 !important;
+}
+
+.bulkFinanceLinkCard > div:first-child small {
+  color: #687b72 !important;
+  font-size: 0.78rem !important;
+  font-weight: 680 !important;
+}
+
+.bulkFinanceChooseButton {
+  min-height: 3.35rem !important;
+  display: grid !important;
+  justify-items: end !important;
+  gap: 0.08rem !important;
+  padding: 0.55rem 0.9rem !important;
+  border: 1px solid rgba(42, 139, 102, 0.48) !important;
+  border-radius: 0.88rem !important;
+  background: linear-gradient(180deg, #ffffff 0%, #eaf7f0 100%) !important;
+  color: #126b4e !important;
+  font: inherit !important;
+  cursor: pointer !important;
+}
+
+.bulkFinanceChooseButton span {
+  color: #6c7c75 !important;
+  font-size: 0.7rem !important;
+  font-weight: 760 !important;
+}
+
+.bulkFinanceChooseButton strong {
+  font-size: 0.84rem !important;
+  font-weight: 900 !important;
+}
+
+.bulkFinanceSelectedAssets {
+  grid-column: 1 / -1 !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 0.4rem !important;
+}
+
+.bulkFinanceSelectedAssets span {
+  max-width: 100% !important;
+  overflow: hidden !important;
+  padding: 0.34rem 0.62rem !important;
+  border: 1px solid rgba(184, 214, 201, 0.94) !important;
+  border-radius: 999px !important;
+  background: #ffffff !important;
+  color: #195d46 !important;
+  font-size: 0.72rem !important;
+  font-weight: 820 !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.bulkFinancePickerOverlay {
+  z-index: 2200 !important;
+}
+
+.bulkFinanceAssetPickerModal {
+  width: min(94vw, 74rem) !important;
+}
+
+.bulkFinanceCurrentAsset {
+  box-shadow: inset 0 0 0 1px rgba(25, 116, 84, 0.18) !important;
+}
+
+.accountantFinanceAssetPicker {
+  min-height: min(64vh, 34rem) !important;
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) auto !important;
+  gap: 1rem !important;
+  padding: 0.15rem !important;
+}
+
+.accountantFinanceAssetList {
+  max-height: min(52vh, 28rem) !important;
+}
+
+.accountantFinancePickerActions {
+  margin-top: 0 !important;
+}
+
+@media (max-width: 680px) {
+  .bulkFinanceLinkCard {
+    grid-template-columns: 1fr !important;
+  }
+
+  .bulkFinanceChooseButton {
+    width: 100% !important;
+    justify-items: center !important;
+  }
+
+  .accountantFinanceAssetPicker {
+    min-height: min(68vh, 34rem) !important;
+  }
+}

@@ -5804,6 +5804,9 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   const [assetStatusAdvancedOpen, setAssetStatusAdvancedOpen] = useState(false);
   const [assetStatusError, setAssetStatusError] = useState('');
   const [isSavingAssetStatus, setIsSavingAssetStatus] = useState(false);
+  const [bulkFinanceAssetIds, setBulkFinanceAssetIds] = useState<string[]>([]);
+  const [bulkFinanceAssetPickerOpen, setBulkFinanceAssetPickerOpen] = useState(false);
+  const [bulkFinanceAssetSearch, setBulkFinanceAssetSearch] = useState('');
   const [editingAssetId, setEditingAssetId] = useState<string | null>(null);
   const [isAssetModalOpen, setIsAssetModalOpen] = useState(false);
   const [isAssetSettingsModalOpen, setIsAssetSettingsModalOpen] = useState(false);
@@ -7656,6 +7659,22 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     return editingAssetId === null ? null : assets.find((asset) => asset.id === editingAssetId) ?? null;
   }, [assets, editingAssetId]);
 
+  const bulkFinanceAssetIdSet = useMemo(() => new Set(bulkFinanceAssetIds), [bulkFinanceAssetIds]);
+  const selectedBulkFinanceAssets = useMemo(
+    () => assets.filter((asset) => bulkFinanceAssetIdSet.has(asset.id)),
+    [assets, bulkFinanceAssetIdSet],
+  );
+  const visibleBulkFinanceAssets = useMemo(() => {
+    const query = normalizeRegisterSearchText(bulkFinanceAssetSearch);
+    if (!query) return assets;
+    return assets.filter((asset) => normalizeRegisterSearchText([
+      buildSearchableText(asset),
+      buildAssetMeta(asset),
+      assetKindLabel(asset),
+      money(asset.value),
+    ].join(' ')).includes(query));
+  }, [assets, bulkFinanceAssetSearch]);
+
   const currentAssetAutosaveSignature = useMemo(
     () => buildAssetAutosaveSignature(assetDraft, assetStatusDraft, pendingPhotoFiles, pendingDocumentFiles, mainPhotoSelection),
     [assetDraft, assetStatusDraft, mainPhotoSelection, pendingDocumentFiles, pendingPhotoFiles],
@@ -7949,6 +7968,9 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
   function closeAssetModal() {
     setIsAssetModalOpen(false);
+    setBulkFinanceAssetPickerOpen(false);
+    setBulkFinanceAssetSearch('');
+    setBulkFinanceAssetIds([]);
     resetEditor();
   }
 
@@ -7974,6 +7996,9 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     setAssetStatusAdvancedOpen(false);
     setAssetStatusError('');
     setIsSavingAssetStatus(false);
+    setBulkFinanceAssetIds([asset.id]);
+    setBulkFinanceAssetPickerOpen(false);
+    setBulkFinanceAssetSearch('');
     setManualAssetStep(2);
     setHasManualAssetKindSelection(true);
     setIsAssetSettingsModalOpen(false);
@@ -8082,6 +8107,9 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     setEditingAssetId(asset.id);
     setAssetDraft(buildDraftFromAsset(asset));
     setAssetStatusDraft(buildAssetStatusDraftFromAsset(asset));
+    setBulkFinanceAssetIds([asset.id]);
+    setBulkFinanceAssetPickerOpen(false);
+    setBulkFinanceAssetSearch('');
     setAssetSettingsTypeDraft(getManualAssetOption(asset.kind).value);
     setAssetSettingsUsageInput(formatAssetSettingsUsageInput(asset, usageMode));
     setAssetSettingsError('');
@@ -8102,6 +8130,9 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   function closeAssetSettingsModal() {
     if (isAssetSettingsBusy) return;
     setIsAssetSettingsModalOpen(false);
+    setBulkFinanceAssetPickerOpen(false);
+    setBulkFinanceAssetSearch('');
+    setBulkFinanceAssetIds([]);
     setIsManualConversionConfirmOpen(false);
     setPendingUsageOverride(null);
     setAssetSettingsError('');
@@ -8637,6 +8668,27 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       financeSettlementDate: keepFinanceHistory ? current.financeSettlementDate : '',
       financeReferenceNumber: keepFinanceHistory ? current.financeReferenceNumber : '',
     }));
+    if (!keepFinanceHistory) {
+      setBulkFinanceAssetIds(editingAsset ? [editingAsset.id] : []);
+      setBulkFinanceAssetPickerOpen(false);
+    }
+  }
+
+  function setAssetFinanceType(nextFinanceType: string) {
+    updateAssetStatusDraftField('financeType', nextFinanceType);
+    if (nextFinanceType === 'bulk_group' && editingAsset) {
+      setBulkFinanceAssetIds((current) => current.includes(editingAsset.id) ? current : [editingAsset.id, ...current]);
+      return;
+    }
+    setBulkFinanceAssetIds(editingAsset ? [editingAsset.id] : []);
+    setBulkFinanceAssetPickerOpen(false);
+  }
+
+  function toggleBulkFinanceAsset(assetId: string) {
+    if (assetId === editingAsset?.id) return;
+    setBulkFinanceAssetIds((current) => current.includes(assetId)
+      ? current.filter((id) => id !== assetId)
+      : [...current, assetId]);
   }
 
   function setAssetInsuranceStatus(nextStatus: AssetStatusChoice) {
@@ -8708,6 +8760,9 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     setAssetStatusAdvancedOpen(false);
     setAssetStatusError('');
     setIsSavingAssetStatus(false);
+    setBulkFinanceAssetIds([asset.id]);
+    setBulkFinanceAssetPickerOpen(false);
+    setBulkFinanceAssetSearch('');
     setManualAssetStep(3);
     setHasManualAssetKindSelection(true);
     setIsAssetSettingsModalOpen(false);
@@ -8772,6 +8827,10 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
   function validateAssetStatusDraft(section: AssetStatusSection, showFeedback = true): boolean {
     if (section === 'finance') {
+      if (assetStatusDraft.financeType === 'bulk_group' && editingAsset && bulkFinanceAssetIds.length < 2) {
+        if (showFeedback) setAssetStatusError('Choose at least one additional asset for bulk finance.');
+        return false;
+      }
       const moneyChecks: Array<[string, string]> = [
         ['Current outstanding amount', assetStatusDraft.financeCurrentOutstandingExVat],
         ['Bought for', assetStatusDraft.financeBoughtForExVat],
@@ -8859,6 +8918,40 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     };
   }
 
+  async function saveLinkedBulkFinanceAssets(currentAsset: RegisterAsset, draft: AssetStatusDraft): Promise<RegisterAsset[]> {
+    if (draft.financeType !== 'bulk_group') return [];
+    const linkedAssets = bulkFinanceAssetIds
+      .filter((assetId) => assetId !== currentAsset.id)
+      .map((assetId) => assets.find((asset) => asset.id === assetId))
+      .filter((asset): asset is RegisterAsset => Boolean(asset));
+    const updatedAssets: RegisterAsset[] = [];
+
+    for (const linkedAsset of linkedAssets) {
+      const linkedDraft: AssetStatusDraft = {
+        ...buildAssetStatusDraftFromAsset(linkedAsset),
+        financeStatus: draft.financeStatus,
+        financeType: 'bulk_group',
+        financierName: draft.financierName,
+        financeNote: draft.financeNote,
+        financeSettlementDate: draft.financeSettlementDate,
+        financeReferenceNumber: draft.financeReferenceNumber,
+      };
+      const response = await fetch('/api/asset-register/status', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(buildAssetStatusPayload('finance', linkedDraft, linkedAsset)),
+      });
+      const data = (await response.json().catch(() => null)) as AssetRegisterApiResponse | null;
+      if (!response.ok || !data?.ok || !data.item) {
+        throw new Error(data?.error ?? `Finance could not be linked to ${linkedAsset.title}.`);
+      }
+      updatedAssets.push(data.item);
+    }
+
+    return updatedAssets;
+  }
+
   async function saveAssetStatusSection(section: AssetStatusSection) {
     if (!validateAssetStatusDraft(section)) return;
 
@@ -8914,11 +9007,18 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
         }
       }
 
+      const linkedBulkAssets = section === 'finance'
+        ? await saveLinkedBulkFinanceAssets(editingAsset, normalizedStatusDraft)
+        : [];
+
       syncSettingsUpdatedAsset(data.item);
+      linkedBulkAssets.forEach(syncSettingsUpdatedAsset);
       setAssetDraft(buildDraftFromAsset(data.item));
       setAssetStatusDraft(buildAssetStatusDraftFromAsset(data.item));
       setExpandedAssetId(data.item.id);
-      setNotice({ tone: 'success', message: 'Asset status updated.' });
+      setNotice({ tone: 'success', message: linkedBulkAssets.length
+        ? `Finance linked to ${linkedBulkAssets.length + 1} assets.`
+        : 'Asset status updated.' });
 
       if (assetStatusQuickOrigin === 'detail-card') {
         closeAssetModal();
@@ -8935,7 +9035,8 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   }
 
   async function finishAssetStatusSection(section: AssetStatusSection) {
-    if (editingAsset && assetStatusQuickOrigin !== 'detail-card') {
+    const savesBulkFinanceImmediately = section === 'finance' && assetStatusDraft.financeType === 'bulk_group';
+    if (editingAsset && assetStatusQuickOrigin !== 'detail-card' && !savesBulkFinanceImmediately) {
       if (!validateAssetStatusDraft(section)) return;
       setAssetStatusEditView('hub');
       setAssetStatusAdvancedOpen(false);
@@ -15323,11 +15424,27 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                 label="Finance type"
                                 value={assetStatusDraft.financeType}
                                 options={FINANCE_TYPE_OPTIONS}
-                                onChange={(nextFinanceType) => updateAssetStatusDraftField('financeType', nextFinanceType)}
+                                onChange={setAssetFinanceType}
                                 placeholder="Select finance type"
                                 showDescriptions={false}
                                 usePortal
                               />
+
+                              {assetStatusDraft.financeType === 'bulk_group' && editingAsset ? (
+                                <div className={`${styles.bulkFinanceLinkCard} ${styles.assetStatusWideField}`}>
+                                  <div>
+                                    <strong>Assets in this finance agreement</strong>
+                                    <small>Choose every asset covered by the same facility.</small>
+                                  </div>
+                                  <button type="button" className={styles.bulkFinanceChooseButton} onClick={() => setBulkFinanceAssetPickerOpen(true)}>
+                                    <span>{bulkFinanceAssetIds.length} selected</span>
+                                    <strong>Choose assets</strong>
+                                  </button>
+                                  <div className={styles.bulkFinanceSelectedAssets}>
+                                    {selectedBulkFinanceAssets.map((asset) => <span key={asset.id}>{asset.title}</span>)}
+                                  </div>
+                                </div>
+                              ) : null}
 
                               {assetStatusDraft.financeStatus === 'yes' ? <label className={styles.field}>
                                 <span>Current outstanding amount excl. VAT <small>(optional)</small></span>
@@ -16879,6 +16996,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
           <AccountantAssetManageModal
             shareId={accountantShareId}
             asset={activeAsset}
+            assets={assets}
             allowDirectUpdates={accountantAccess.allowDirectUpdates}
             includeFuelLedger={accountantAccess.includeFuelLedger}
             includeCostLedger={accountantAccess.includeCostLedger}
@@ -17692,6 +17810,68 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
         </div>
       ) : null}
 
+      {bulkFinanceAssetPickerOpen && editingAsset ? (
+        <div className={`${styles.modalOverlay} ${styles.bulkFinancePickerOverlay}`}>
+          <div className={styles.modalBackdrop} onClick={() => setBulkFinanceAssetPickerOpen(false)} />
+          <div className={`${styles.modalCard} ${styles.exportModal} ${styles.exportAssetPickerModal} ${styles.bulkFinanceAssetPickerModal}`} role="dialog" aria-modal="true" aria-labelledby="bulk-finance-assets-title">
+            <div className={`${styles.modalHeader} ${styles.exportModalHeader}`}>
+              <div className={styles.modalHeaderText}>
+                <h3 id="bulk-finance-assets-title">Choose assets for bulk finance</h3>
+                <p>Select every asset covered by the same finance agreement.</p>
+              </div>
+              <button type="button" className={styles.modalCloseButton} onClick={() => setBulkFinanceAssetPickerOpen(false)} aria-label="Close bulk finance asset picker">
+                <CloseIcon className={styles.buttonIcon} />
+              </button>
+            </div>
+            <div className={`${styles.modalScrollBody} ${styles.exportModalScrollBody}`}>
+              <div className={styles.exportModalBody}>
+                <section className={styles.pdfAssetDownloadPanel} aria-label="Choose assets for bulk finance">
+                  <div className={styles.pdfAssetDownloadToolbar}>
+                    <input
+                      className={styles.pdfAssetSearchInput}
+                      type="search"
+                      value={bulkFinanceAssetSearch}
+                      onChange={(event) => setBulkFinanceAssetSearch(event.target.value)}
+                      placeholder="Search assets..."
+                      aria-label="Search assets for bulk finance"
+                    />
+                    <div className={styles.pdfAssetDownloadToolbarActions}>
+                      <button type="button" className={styles.secondaryButton} onClick={() => setBulkFinanceAssetIds(Array.from(new Set([editingAsset.id, ...visibleBulkFinanceAssets.map((asset) => asset.id)])))}>Select all</button>
+                      <button type="button" className={styles.secondaryButton} onClick={() => setBulkFinanceAssetIds([editingAsset.id])} disabled={bulkFinanceAssetIds.length <= 1}>Clear</button>
+                    </div>
+                  </div>
+                  <div className={styles.pdfAssetDownloadList}>
+                    {visibleBulkFinanceAssets.length ? visibleBulkFinanceAssets.map((asset) => {
+                      const selected = bulkFinanceAssetIdSet.has(asset.id);
+                      const required = asset.id === editingAsset.id;
+                      return (
+                        <label key={asset.id} className={`${styles.pdfAssetDownloadRow} ${selected ? styles.pdfAssetDownloadRowSelected : ''} ${required ? styles.bulkFinanceCurrentAsset : ''}`}>
+                          <input className={styles.pdfAssetDownloadCheckboxInput} type="checkbox" checked={selected} onChange={() => toggleBulkFinanceAsset(asset.id)} disabled={required} />
+                          <span className={styles.pdfAssetDownloadCheckbox} aria-hidden="true" />
+                          <span className={styles.pdfAssetDownloadCopy}>
+                            <strong>{asset.title}</strong>
+                            <span>{buildAssetMeta(asset)}</span>
+                            <small>{assetKindLabel(asset)} · {methodLabel(asset.selectedMethod)}{required ? ' · Current asset' : ''}</small>
+                          </span>
+                          <span className={styles.pdfAssetDownloadValue}>
+                            <strong>{money(asset.value)}</strong>
+                            <small>current value</small>
+                          </span>
+                        </label>
+                      );
+                    }) : <div className={styles.pdfAssetDownloadEmpty}>No assets match your search.</div>}
+                  </div>
+                </section>
+                <div className={`${styles.formActions} ${styles.exportActions} ${styles.pdfAssetDownloadActions}`}>
+                  <button type="button" className={styles.secondaryButton} onClick={() => setBulkFinanceAssetPickerOpen(false)}>Back</button>
+                  <button type="button" className={styles.primaryButton} onClick={() => setBulkFinanceAssetPickerOpen(false)}>{bulkFinanceAssetIds.length} selected · Done</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {disposalCandidateAsset ? (
         <div className={`${styles.modalOverlay} ${styles.confirmDeleteOverlay}`}>
           <div className={styles.modalBackdrop} onClick={() => { if (!busyDeleteId) setDisposalCandidateAsset(null); }} />
@@ -17736,11 +17916,11 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                   <textarea value={disposalDraft.note} onChange={(event) => setDisposalDraft((current) => ({ ...current, note: event.target.value }))} placeholder="Add a buyer, trade-in, write-off or other reference" />
                 </label>
               </div>
-              <p className={`${styles.assetLifecycleNotice} ${disposalDraft.reason === 'mistake_duplicate' ? styles.assetDisposalDeleteNotice : ''}`}>
-                {disposalDraft.reason === 'mistake_duplicate'
-                  ? 'This permanently removes the duplicate asset. A deletion audit and final asset snapshot are retained.'
-                  : 'The asset will leave active totals but remain available to Additions & Disposals reports with its documents, finance, cost and value history.'}
-              </p>
+              {disposalDraft.reason === 'mistake_duplicate' ? (
+                <p className={`${styles.assetLifecycleNotice} ${styles.assetDisposalDeleteNotice}`}>
+                  This permanently removes the duplicate asset. A deletion audit and final asset snapshot are retained.
+                </p>
+              ) : null}
               <div className={`${styles.assetSettingsActions} ${styles.assetDisposalActions}`}>
                 <button type="button" className={styles.secondaryButton} onClick={() => setDisposalCandidateAsset(null)} disabled={busyDeleteId === disposalCandidateAsset.id}>Cancel</button>
                 <button type="submit" className={`${styles.primaryButton} ${styles.deleteConfirmButton}`} disabled={busyDeleteId === disposalCandidateAsset.id || !disposalDraft.reason}>

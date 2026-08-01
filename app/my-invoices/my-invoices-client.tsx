@@ -1027,6 +1027,8 @@ export default function MyInvoicesClient({
   const [draft, setDraft] = useState<InvoiceDraft>(buildEmptyDraft('manual', initialDealerDefaults.supplierName));
   const [recurringDraft, setRecurringDraft] = useState<RecurringCommitmentDraft>(buildRecurringCommitmentDraft);
   const [recurringAssetIds, setRecurringAssetIds] = useState<string[]>([]);
+  const [recurringAssetPickerOpen, setRecurringAssetPickerOpen] = useState(false);
+  const [recurringAssetSearch, setRecurringAssetSearch] = useState('');
   const [recurringError, setRecurringError] = useState('');
   const [assetLockedForFlow, setAssetLockedForFlow] = useState(false);
   const [initialLaunchHandled, setInitialLaunchHandled] = useState(!initialOpenAdd);
@@ -1094,6 +1096,17 @@ export default function MyInvoicesClient({
     if (!query) return assets;
     return assets.filter((asset) => assetSearchText(asset).includes(query));
   }, [assets, pickerSearch]);
+
+  const recurringSelectedAssets = useMemo(
+    () => assets.filter((asset) => recurringAssetIds.includes(asset.id)),
+    [assets, recurringAssetIds],
+  );
+
+  const filteredRecurringAssets = useMemo(() => {
+    const query = recurringAssetSearch.trim().toLowerCase();
+    if (!query) return assets;
+    return assets.filter((asset) => assetSearchText(asset).includes(query));
+  }, [assets, recurringAssetSearch]);
 
   const visibleInvoices = useMemo(() => {
     const query = invoiceSearch.trim().toLowerCase();
@@ -1343,6 +1356,8 @@ export default function MyInvoicesClient({
     setDraft(buildEmptyDraft('manual', dealerMode ? dealerDefaults.supplierName : ''));
     setRecurringDraft(buildRecurringCommitmentDraft());
     setRecurringAssetIds([]);
+    setRecurringAssetPickerOpen(false);
+    setRecurringAssetSearch('');
     setRecurringError('');
   }
 
@@ -1390,8 +1405,16 @@ export default function MyInvoicesClient({
     setNotice(null);
     setRecurringDraft(buildRecurringCommitmentDraft());
     setRecurringAssetIds(selectedAssetId && assets.some((asset) => asset.id === selectedAssetId) ? [selectedAssetId] : []);
+    setRecurringAssetPickerOpen(false);
+    setRecurringAssetSearch('');
     setRecurringError('');
     setFlow('recurring');
+  }
+
+  function toggleRecurringAsset(assetId: string) {
+    setRecurringAssetIds((current) => current.includes(assetId)
+      ? current.filter((id) => id !== assetId)
+      : [...current, assetId]);
   }
 
   function setRecurringField<K extends keyof RecurringCommitmentDraft>(key: K, value: RecurringCommitmentDraft[K]) {
@@ -1401,6 +1424,10 @@ export default function MyInvoicesClient({
   async function submitRecurringCommitment(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setRecurringError('');
+    if (!recurringAssetIds.length) {
+      setRecurringError('Choose at least one linked asset.');
+      return;
+    }
     setIsSaving(true);
     try {
       const response = await fetch(accountScopedUrl('/api/recurring-commitments'), {
@@ -2159,13 +2186,13 @@ export default function MyInvoicesClient({
                 </span>
               </button>
               {!dealerMode ? (
-                <button type="button" className={styles.sourceChoiceOption} onClick={startRecurringCommitment}>
+                <button type="button" className={`${styles.sourceChoiceOption} ${styles.recurringChoiceOption}`} onClick={startRecurringCommitment}>
                   <span className={styles.choiceGraphic}>
                     <ManualInvoiceIcon />
                   </span>
                   <span className={styles.choiceTitleBlock}>
                     <strong>Add recurring commitment</strong>
-                    <small>Record future insurance, service-plan or subscription commitments without creating an incurred cost.</small>
+                    <small>Track future recurring asset costs.</small>
                   </span>
                 </button>
               ) : null}
@@ -2177,23 +2204,20 @@ export default function MyInvoicesClient({
         </div>
       ) : null}
 
-      {recurringOpen ? (
+      {recurringOpen && !recurringAssetPickerOpen ? (
         <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label="Add recurring commitment">
-          <form className={`${styles.formModal} ${styles.costFormModal}`} onSubmit={submitRecurringCommitment}>
+          <form className={`${styles.formModal} ${styles.costFormModal} ${styles.recurringCommitmentModal}`} onSubmit={submitRecurringCommitment}>
             <div className={styles.modalHeader}>
               <div>
                 <h2>Add recurring commitment</h2>
-                <p>Record a future commitment separately from incurred Cost Ledger expenses.</p>
+                <p>Track a future cost and every asset it covers.</p>
               </div>
               <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close"><CloseIcon /></button>
             </div>
             <div className={styles.modalDivider} />
             <div className={styles.formModalScrollBody}>
-              <div className={styles.warningBox}>
-                <p>This does not create an expense. Add each actual invoice or payment to the Cost Ledger when it is incurred.</p>
-              </div>
-              <section className={styles.invoiceFormCard}>
-                <div className={styles.formGrid}>
+              <section className={`${styles.invoiceFormCard} ${styles.recurringCommitmentCard}`}>
+                <div className={`${styles.formGrid} ${styles.recurringCommitmentGrid}`}>
                   <label>
                     <span>Description</span>
                     <input value={recurringDraft.description} onChange={(event) => setRecurringField('description', event.target.value)} placeholder="Insurance policy or service plan" required />
@@ -2238,21 +2262,21 @@ export default function MyInvoicesClient({
                     <span>Source / reference <small>(optional)</small></span>
                     <input value={recurringDraft.sourceReference} onChange={(event) => setRecurringField('sourceReference', event.target.value)} />
                   </label>
-                  <label>
-                    <span>Linked assets</span>
-                    <select
-                      multiple
-                      size={Math.min(5, Math.max(2, assets.length))}
-                      value={recurringAssetIds}
-                      onChange={(event) => setRecurringAssetIds(Array.from(event.currentTarget.selectedOptions, (option) => option.value))}
-                      aria-label="Linked assets"
-                      required
-                    >
-                      {assets.map((asset) => <option key={asset.id} value={asset.id}>{asset.ownerName ? `${asset.ownerName} — ` : ''}{asset.title}</option>)}
-                    </select>
-                  </label>
+                  <div className={`${styles.recurringAssetField} ${styles.recurringCommitmentWide}`}>
+                    <span className={styles.recurringAssetFieldLabel}>Linked assets</span>
+                    <button type="button" className={styles.recurringAssetTrigger} onClick={() => setRecurringAssetPickerOpen(true)} aria-haspopup="dialog">
+                      <span>
+                        <strong>{recurringAssetIds.length ? `${recurringAssetIds.length} asset${recurringAssetIds.length === 1 ? '' : 's'} selected` : 'Choose linked assets'}</strong>
+                        <small>Select every asset covered by this commitment.</small>
+                      </span>
+                      <b>{recurringAssetIds.length ? 'Change' : 'Choose'}</b>
+                    </button>
+                    {recurringSelectedAssets.length ? <div className={styles.recurringAssetChips}>
+                      {recurringSelectedAssets.map((asset) => <span key={asset.id}>{asset.title}</span>)}
+                    </div> : null}
+                  </div>
                 </div>
-                <div className={styles.textAreaGrid}>
+                <div className={`${styles.textAreaGrid} ${styles.recurringCommitmentNote}`}>
                   <label><span>Note <small>(optional)</small></span><textarea value={recurringDraft.note} onChange={(event) => setRecurringField('note', event.target.value)} rows={3} /></label>
                 </div>
                 {recurringError ? <div className={styles.warningBox} role="alert"><p>{recurringError}</p></div> : null}
@@ -2263,6 +2287,63 @@ export default function MyInvoicesClient({
               <button type="submit" className={styles.primaryButton} disabled={isSaving}>{isSaving ? 'Saving...' : 'Save commitment'}</button>
             </div>
           </form>
+        </div>
+      ) : null}
+
+      {recurringOpen && recurringAssetPickerOpen ? (
+        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label="Choose linked assets">
+          <div className={`${styles.assetModal} ${styles.recurringAssetPickerModal}`}>
+            <div className={styles.modalHeader}>
+              <div>
+                <h2>Choose linked assets</h2>
+                <p>Select every asset covered by this commitment.</p>
+              </div>
+              <button type="button" className={styles.closeButton} onClick={() => setRecurringAssetPickerOpen(false)} aria-label="Close linked asset picker"><CloseIcon /></button>
+            </div>
+            <div className={styles.modalDivider} />
+            <div className={styles.pickerToolbar}>
+              <input
+                type="search"
+                value={recurringAssetSearch}
+                onChange={(event) => setRecurringAssetSearch(event.target.value)}
+                placeholder="Search assets..."
+                aria-label="Search linked assets"
+              />
+              <button type="button" className={styles.secondaryButton} onClick={() => setRecurringAssetSearch('')} disabled={!recurringAssetSearch}>Clear</button>
+            </div>
+            <div className={`${styles.assetList} ${styles.recurringAssetList}`}>
+              {filteredRecurringAssets.length ? filteredRecurringAssets.map((asset) => {
+                const selected = recurringAssetIds.includes(asset.id);
+                return (
+                  <button
+                    type="button"
+                    key={asset.id}
+                    className={`${styles.assetRow} ${styles.recurringAssetRow} ${selected ? styles.recurringAssetRowSelected : ''}`}
+                    onClick={() => toggleRecurringAsset(asset.id)}
+                    aria-pressed={selected}
+                  >
+                    <span className={styles.recurringAssetCheck} aria-hidden="true">{selected ? '✓' : ''}</span>
+                    <span className={styles.assetInfo}>
+                      {asset.ownerName ? <small>{asset.ownerName}</small> : null}
+                      <strong>{asset.title}</strong>
+                      <small>{asset.meta}</small>
+                      <small>{asset.categoryLabel} · {asset.selectedMethod === 'manual' ? 'Manual' : 'Aim4price'}</small>
+                    </span>
+                    <span className={styles.assetValue}>
+                      <strong>{formatMoney(asset.value)}</strong>
+                      <small>current value</small>
+                    </span>
+                  </button>
+                );
+              }) : <div className={styles.emptyState}>No matching assets found.</div>}
+            </div>
+            <div className={`${styles.modalFooter} ${styles.recurringAssetPickerFooter}`}>
+              <button type="button" className={styles.secondaryButton} onClick={() => setRecurringAssetIds([])} disabled={!recurringAssetIds.length}>Clear selection</button>
+              <button type="button" className={styles.primaryButton} onClick={() => setRecurringAssetPickerOpen(false)}>
+                {recurringAssetIds.length ? `Done · ${recurringAssetIds.length} selected` : 'Done'}
+              </button>
+            </div>
+          </div>
         </div>
       ) : null}
 

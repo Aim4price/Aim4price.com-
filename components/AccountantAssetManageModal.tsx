@@ -23,6 +23,12 @@ type SharedDocument = {
 export type AccountantManagedAsset = {
   id: string;
   title: string;
+  value?: number;
+  yearModel?: number | null;
+  hours?: number | null;
+  brandName?: string;
+  modelName?: string;
+  selectedMethod?: string;
   specsJson: Record<string, unknown>;
   financeNote: string;
   documents: SharedDocument[];
@@ -34,6 +40,7 @@ type View = 'menu' | 'finance' | 'accounting' | 'documents' | 'reports' | 'dispo
 type Props = {
   shareId: string;
   asset: AccountantManagedAsset;
+  assets: AccountantManagedAsset[];
   allowDirectUpdates: boolean;
   includeFuelLedger: boolean;
   includeCostLedger: boolean;
@@ -183,6 +190,16 @@ function amountText(value: number | null): string {
   return value === null ? '' : String(value);
 }
 
+function money(value: number | undefined): string {
+  return new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR', maximumFractionDigits: 0 }).format(Number(value || 0));
+}
+
+function assetMeta(item: AccountantManagedAsset): string {
+  return [item.yearModel ? `Year Model: ${item.yearModel}` : '', item.hours != null ? `Usage: ${Number(item.hours).toLocaleString('en-ZA')} hours` : '', item.brandName, item.modelName]
+    .filter(Boolean)
+    .join(' · ');
+}
+
 function financeAgreementDraft(asset: AccountantManagedAsset, agreement: FinanceAgreementOption): FinanceDraft {
   const link = agreement.links.find((item) => item.assetId === asset.id);
   return {
@@ -238,6 +255,7 @@ function ActionIcon({ type }: { type: 'finance' | 'accounting' | 'document' | 'r
 export default function AccountantAssetManageModal({
   shareId,
   asset,
+  assets,
   allowDirectUpdates,
   includeFuelLedger,
   includeCostLedger,
@@ -249,6 +267,9 @@ export default function AccountantAssetManageModal({
   const [financeAgreements, setFinanceAgreements] = useState<FinanceAgreementOption[]>([]);
   const [loadingFinanceAgreements, setLoadingFinanceAgreements] = useState(false);
   const [showFinanceAdvanced, setShowFinanceAdvanced] = useState(false);
+  const [linkedFinanceAssetIds, setLinkedFinanceAssetIds] = useState<string[]>([asset.id]);
+  const [financeAssetPickerOpen, setFinanceAssetPickerOpen] = useState(false);
+  const [financeAssetSearch, setFinanceAssetSearch] = useState('');
   const [carryingValue, setCarryingValue] = useState(asset.accountingValue ? String(asset.accountingValue.carryingValue) : '');
   const [asAtDate, setAsAtDate] = useState(asset.accountingValue?.asAtDate || new Date().toISOString().slice(0, 10));
   const [accountingSource, setAccountingSource] = useState(asset.accountingValue?.sourceReference || '');
@@ -266,6 +287,15 @@ export default function AccountantAssetManageModal({
   const root = `/api/accountant/registers/${encodeURIComponent(shareId)}`;
   const reportUrl = (kind: string) => `${root}/reports?kind=${encodeURIComponent(kind)}&assetId=${encodeURIComponent(asset.id)}`;
   const documents = useMemo(() => Array.isArray(asset.documents) ? asset.documents : [], [asset.documents]);
+  const selectedFinanceAssets = useMemo(
+    () => assets.filter((item) => linkedFinanceAssetIds.includes(item.id)),
+    [assets, linkedFinanceAssetIds],
+  );
+  const visibleFinanceAssets = useMemo(() => {
+    const query = financeAssetSearch.trim().toLowerCase();
+    if (!query) return assets;
+    return assets.filter((item) => [item.title, assetMeta(item), money(item.value)].join(' ').toLowerCase().includes(query));
+  }, [assets, financeAssetSearch]);
 
   useEffect(() => {
     if (view !== 'finance') return;
@@ -281,7 +311,16 @@ export default function AccountantAssetManageModal({
         setFinanceAgreements(agreements);
         const linkedId = data.linkedAgreementIds?.[0];
         const linked = agreements.find((agreement) => agreement.id === linkedId);
-        if (linked) setFinance(financeAgreementDraft(asset, linked));
+        if (linked) {
+          setFinance(financeAgreementDraft(asset, linked));
+          const availableIds = new Set(assets.map((item) => item.id));
+          setLinkedFinanceAssetIds(Array.from(new Set([
+            asset.id,
+            ...linked.links.map((item) => item.assetId).filter((id) => availableIds.has(id)),
+          ])));
+        } else {
+          setLinkedFinanceAssetIds([asset.id]);
+        }
       })
       .catch((nextError) => {
         if (!cancelled) setError(nextError instanceof Error ? nextError.message : 'Finance Agreements could not be loaded.');
@@ -290,11 +329,15 @@ export default function AccountantAssetManageModal({
         if (!cancelled) setLoadingFinanceAgreements(false);
       });
     return () => { cancelled = true; };
-  }, [asset, root, view]);
+  }, [asset, assets, root, view]);
 
   async function saveFinance(event: FormEvent) {
     event.preventDefault();
     if (!allowDirectUpdates || busy) return;
+    if (finance.financeType === 'bulk_group' && linkedFinanceAssetIds.length < 2) {
+      setError('Choose at least two assets for group finance.');
+      return;
+    }
     setBusy(true);
     setError('');
     try {
@@ -303,6 +346,7 @@ export default function AccountantAssetManageModal({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...finance,
+          linkedAssetIds: finance.financeType === 'bulk_group' ? linkedFinanceAssetIds : [asset.id],
           agreementStatus: finance.financeStatus === 'paid'
             ? 'settled'
             : finance.financeStatus === 'yes'
@@ -326,10 +370,32 @@ export default function AccountantAssetManageModal({
   function selectFinanceAgreement(agreementId: string) {
     if (!agreementId) {
       setFinance((current) => ({ ...financeDraft(asset), financeStatus: current.financeStatus }));
+      setLinkedFinanceAssetIds([asset.id]);
       return;
     }
     const agreement = financeAgreements.find((item) => item.id === agreementId);
-    if (agreement) setFinance(financeAgreementDraft(asset, agreement));
+    if (agreement) {
+      setFinance(financeAgreementDraft(asset, agreement));
+      const availableIds = new Set(assets.map((item) => item.id));
+      setLinkedFinanceAssetIds(Array.from(new Set([
+        asset.id,
+        ...agreement.links.map((item) => item.assetId).filter((id) => availableIds.has(id)),
+      ])));
+    }
+  }
+
+  function setFinanceType(nextFinanceType: string) {
+    setFinance((current) => ({ ...current, financeType: nextFinanceType }));
+    setLinkedFinanceAssetIds((current) => nextFinanceType === 'bulk_group'
+      ? Array.from(new Set([asset.id, ...current]))
+      : [asset.id]);
+  }
+
+  function toggleFinanceAsset(assetId: string) {
+    if (assetId === asset.id) return;
+    setLinkedFinanceAssetIds((current) => current.includes(assetId)
+      ? current.filter((id) => id !== assetId)
+      : [...current, assetId]);
   }
 
   async function saveAccounting(event: FormEvent) {
@@ -397,7 +463,7 @@ export default function AccountantAssetManageModal({
     }
   }
 
-  const title = view === 'menu' ? asset.title : {
+  const title = financeAssetPickerOpen ? 'Choose financed assets' : view === 'menu' ? asset.title : {
     finance: 'Finance Agreement', accounting: 'Accounting Book Value', documents: 'Documents', reports: 'Asset reports',
     dispose: 'Dispose asset', menu: asset.title,
   }[view];
@@ -410,9 +476,9 @@ export default function AccountantAssetManageModal({
         <div className={`${styles.modalHeader} ${styles.optionsModalHeader}`}>
           <div className={styles.modalHeaderText}>
             <h3 id="accountant-asset-manage-title">{title}</h3>
-            <p>{view === 'menu' ? 'Accountant Workspace' : asset.title}</p>
+            <p>{financeAssetPickerOpen ? 'Select every asset covered by the same agreement.' : view === 'menu' ? 'Accountant Workspace' : asset.title}</p>
           </div>
-          <button type="button" className={styles.modalCloseButton} onClick={onClose} disabled={busy} aria-label="Close asset management">×</button>
+          <button type="button" className={styles.modalCloseButton} onClick={financeAssetPickerOpen ? () => setFinanceAssetPickerOpen(false) : onClose} disabled={busy} aria-label={financeAssetPickerOpen ? 'Close financed asset picker' : 'Close asset management'}>×</button>
         </div>
 
         <div className={`${styles.modalScrollBody} ${styles.accountantManageBody} ${view === 'menu' ? styles.optionsScrollBody : styles.assetSettingsBody}`}>
@@ -439,7 +505,52 @@ export default function AccountantAssetManageModal({
             </div>
           ) : null}
 
-          {view === 'finance' ? (
+          {view === 'finance' && financeAssetPickerOpen ? (
+            <div className={`${styles.optionsContent} ${styles.accountantFinanceAssetPicker}`}>
+              <div className={styles.pdfAssetDownloadToolbar}>
+                <input
+                  className={styles.pdfAssetSearchInput}
+                  type="search"
+                  value={financeAssetSearch}
+                  onChange={(event) => setFinanceAssetSearch(event.target.value)}
+                  placeholder="Search assets..."
+                  aria-label="Search financed assets"
+                  autoFocus
+                />
+                <div className={styles.pdfAssetDownloadToolbarActions}>
+                  <button type="button" className={styles.secondaryButton} onClick={() => setLinkedFinanceAssetIds(Array.from(new Set([asset.id, ...visibleFinanceAssets.map((item) => item.id)])))}>Select all</button>
+                  <button type="button" className={styles.secondaryButton} onClick={() => setLinkedFinanceAssetIds([asset.id])} disabled={linkedFinanceAssetIds.length <= 1}>Clear</button>
+                </div>
+              </div>
+              <div className={`${styles.pdfAssetDownloadList} ${styles.accountantFinanceAssetList}`}>
+                {visibleFinanceAssets.length ? visibleFinanceAssets.map((item) => {
+                  const selected = linkedFinanceAssetIds.includes(item.id);
+                  const required = item.id === asset.id;
+                  return (
+                    <label key={item.id} className={`${styles.pdfAssetDownloadRow} ${selected ? styles.pdfAssetDownloadRowSelected : ''} ${required ? styles.bulkFinanceCurrentAsset : ''}`}>
+                      <input className={styles.pdfAssetDownloadCheckboxInput} type="checkbox" checked={selected} onChange={() => toggleFinanceAsset(item.id)} disabled={required || !allowDirectUpdates} />
+                      <span className={styles.pdfAssetDownloadCheckbox} aria-hidden="true" />
+                      <span className={styles.pdfAssetDownloadCopy}>
+                        <strong>{item.title}</strong>
+                        <span>{assetMeta(item) || 'Saved asset'}</span>
+                        <small>{item.selectedMethod === 'manual' ? 'Manual value' : 'Aim4price value'}{required ? ' · Current asset' : ''}</small>
+                      </span>
+                      <span className={styles.pdfAssetDownloadValue}>
+                        <strong>{money(item.value)}</strong>
+                        <small>current value</small>
+                      </span>
+                    </label>
+                  );
+                }) : <div className={styles.pdfAssetDownloadEmpty}>No assets match your search.</div>}
+              </div>
+              <div className={`${styles.assetSettingsActions} ${styles.accountantFinancePickerActions}`}>
+                <button type="button" className={styles.secondaryButton} onClick={() => setFinanceAssetPickerOpen(false)}>Back</button>
+                <button type="button" className={styles.primaryButton} onClick={() => setFinanceAssetPickerOpen(false)}>{linkedFinanceAssetIds.length} selected · Done</button>
+              </div>
+            </div>
+          ) : null}
+
+          {view === 'finance' && !financeAssetPickerOpen ? (
             <form className={`${styles.accountantManageForm} ${styles.accountantFinanceForm}`} onSubmit={saveFinance}>
               <div className={styles.accountantReadOnlyNotice}>{allowDirectUpdates ? 'Changes update the owner’s live register and audit history.' : 'Ask the owner to enable direct updates before changing finance.'}</div>
 
@@ -450,12 +561,25 @@ export default function AccountantAssetManageModal({
                   <label className={styles.assetSettingsField}><span>Acquisition date <small>(optional)</small></span><input type="date" value={finance.financeBoughtWhen} onChange={(event) => setFinance((current) => ({ ...current, financeBoughtWhen: event.target.value }))} disabled={!allowDirectUpdates}/></label>
                   <label className={styles.assetSettingsField}><span>Acquisition amount <small>(optional, excl. VAT)</small></span><span className={styles.accountantCurrencyField}><b>R</b><input type="text" inputMode="decimal" value={finance.financeBoughtForExVat} onChange={(event) => setFinance((current) => ({ ...current, financeBoughtForExVat: event.target.value }))} disabled={!allowDirectUpdates} placeholder="0.00"/></span></label>
                   {financeHasAgreement ? <label className={styles.assetSettingsField}><span>Finance Agreement</span><select value={finance.agreementId} onChange={(event) => selectFinanceAgreement(event.target.value)} disabled={loadingFinanceAgreements}><option value="">Create a new agreement</option>{financeAgreements.map((agreement) => <option key={agreement.id} value={agreement.id}>{agreement.agreementName}{agreement.referenceNumber ? ` — ${agreement.referenceNumber}` : ''}</option>)}</select></label> : null}
-                  {financeHasAgreement ? <label className={styles.assetSettingsField}><span>Finance type</span><select value={finance.financeType} onChange={(event) => setFinance((current) => ({ ...current, financeType: event.target.value }))} disabled={!allowDirectUpdates}><option value="">Select finance type</option><option value="asset_specific">Asset-specific finance</option><option value="bulk_group">Group finance</option><option value="unknown">Not sure</option></select></label> : null}
+                  {financeHasAgreement ? <label className={styles.assetSettingsField}><span>Finance type</span><select value={finance.financeType} onChange={(event) => setFinanceType(event.target.value)} disabled={!allowDirectUpdates}><option value="">Select finance type</option><option value="asset_specific">Asset-specific finance</option><option value="bulk_group">Group finance</option><option value="unknown">Not sure</option></select></label> : null}
                   {financeHasAgreement ? <label className={styles.assetSettingsField}><span>Financier <small>(optional)</small></span><input type="text" value={finance.financierName} onChange={(event) => setFinance((current) => ({ ...current, financierName: event.target.value }))} disabled={!allowDirectUpdates} placeholder="Bank or finance house"/></label> : null}
                   {financeHasAgreement ? <label className={styles.assetSettingsField}><span>Agreement / reference <small>(optional)</small></span><input type="text" value={finance.referenceNumber} onChange={(event) => setFinance((current) => ({ ...current, referenceNumber: event.target.value }))} disabled={!allowDirectUpdates}/></label> : null}
                   {finance.financeStatus === 'yes' ? <label className={styles.assetSettingsField}><span>Current outstanding amount <small>(optional)</small></span><span className={styles.accountantCurrencyField}><b>R</b><input type="text" inputMode="decimal" value={finance.outstandingBalance} onChange={(event) => setFinance((current) => ({ ...current, outstandingBalance: event.target.value }))} disabled={!allowDirectUpdates} placeholder="0.00"/></span></label> : null}
                   {financeHasAgreement ? <label className={`${styles.assetSettingsField} ${styles.accountantFullField}`}><span>Finance note <small>(optional)</small></span><textarea value={finance.financeNote} onChange={(event) => setFinance((current) => ({ ...current, financeNote: event.target.value }))} disabled={!allowDirectUpdates}/></label> : null}
                 </div>
+                {financeHasAgreement && finance.financeType === 'bulk_group' ? (
+                  <div className={styles.bulkFinanceLinkCard}>
+                    <div>
+                      <strong>Assets covered by this agreement</strong>
+                      <small>Choose every asset financed as part of this group.</small>
+                    </div>
+                    <button type="button" className={styles.bulkFinanceChooseButton} onClick={() => { setFinanceAssetSearch(''); setFinanceAssetPickerOpen(true); }} disabled={!allowDirectUpdates}>
+                      <span>{linkedFinanceAssetIds.length} selected</span>
+                      <strong>Choose assets</strong>
+                    </button>
+                    <div className={styles.bulkFinanceSelectedAssets}>{selectedFinanceAssets.map((item) => <span key={item.id}>{item.title}</span>)}</div>
+                  </div>
+                ) : null}
                 {finance.financeStatus === 'paid' ? <p className={styles.accountantFinanceVatNote}>Paid-off finance remains in history with no active balance.</p> : null}
               </section>
 

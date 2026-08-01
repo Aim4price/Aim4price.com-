@@ -276,6 +276,21 @@ export async function saveFinanceAgreementForAccountant(input: {
   const frequency = text(body.instalmentFrequency)
     ? allowedValue(body.instalmentFrequency, ['monthly', 'quarterly', 'six_monthly', 'annual'] as const, 'monthly')
     : null;
+  const financeType = text(body.financeType);
+  const requestedLinkedAssetIds = Array.isArray(body.linkedAssetIds)
+    ? body.linkedAssetIds.map((value) => text(value)).filter(Boolean)
+    : [];
+  const linkedAssetIds = financeType === 'bulk_group'
+    ? Array.from(new Set([asset.id, ...requestedLinkedAssetIds]))
+    : [asset.id];
+  if (financeType === 'bulk_group' && linkedAssetIds.length < 2) {
+    throw new Error('ACCOUNTANT_BULK_FINANCE_REQUIRES_MULTIPLE_ASSETS');
+  }
+  const linkedAssets = await Promise.all(linkedAssetIds.map(async (assetId) => {
+    const linkedAsset = await requireAsset(access, assetId);
+    if (linkedAsset.registerId !== access.registerId) throw new Error('ACCOUNTANT_ASSET_NOT_FOUND');
+    return linkedAsset;
+  }));
   const agreementName = text(body.agreementName) || text(body.referenceNumber) || `${asset.title} finance`;
   const requestedAgreementId = text(body.agreementId);
 
@@ -296,7 +311,7 @@ export async function saveFinanceAgreementForAccountant(input: {
          updated_by_user_id = $2, updated_at = now()
        where id = $1::uuid and owner_user_id = $20`,
       [agreementId, input.accountantUserId, agreementName, text(body.referenceNumber) || null,
-        text(body.financierName) || null, text(body.financeType) || null, status, scope,
+        text(body.financierName) || null, financeType || null, status, scope,
         dateOrNull(body.startDate), dateOrNull(body.endDate), numberOrNull(body.originalAmount),
         numberOrNull(body.instalment), frequency, numberOrNull(body.balloon), dateOrNull(body.balloonDate),
         numberOrNull(body.interestRate), text(body.sourceReference) || null,
@@ -314,7 +329,7 @@ export async function saveFinanceAgreementForAccountant(input: {
                $14::date, $15, $16, $17, $18, $19, $19, now(), now())
        returning id::text`,
       [access.ownerUserId, agreementName, text(body.referenceNumber) || null, text(body.financierName) || null,
-        text(body.financeType) || null, status, scope, dateOrNull(body.startDate), dateOrNull(body.endDate),
+        financeType || null, status, scope, dateOrNull(body.startDate), dateOrNull(body.endDate),
         numberOrNull(body.originalAmount), numberOrNull(body.instalment), frequency, numberOrNull(body.balloon),
         dateOrNull(body.balloonDate), numberOrNull(body.interestRate), text(body.sourceReference) || null,
         text(body.securityDescription) || null, text(body.financeNote) || null, input.accountantUserId],
@@ -338,21 +353,44 @@ export async function saveFinanceAgreementForAccountant(input: {
   }
 
   await getDb().query(
-    `insert into public.asset_finance_agreement_assets
-       (owner_user_id, finance_agreement_id, asset_register_item_id, link_role,
-        original_amount_allocation, settlement_allocation, allocation_date, allocation_note,
-        created_at, updated_at)
-     values ($1, $2::uuid, $3::uuid, $4, $5, $6, $7::date, $8, now(), now())
-     on conflict (finance_agreement_id, asset_register_item_id) do update
-       set link_role = excluded.link_role, original_amount_allocation = excluded.original_amount_allocation,
-           settlement_allocation = excluded.settlement_allocation, allocation_date = excluded.allocation_date,
-           allocation_note = excluded.allocation_note, updated_at = now()`,
-    [access.ownerUserId, agreementId, asset.id, linkRole, numberOrNull(body.originalAmountAllocation),
-      numberOrNull(body.settlementAllocation), dateOrNull(body.allocationDate), text(body.allocationNote) || null],
+    `delete from public.asset_finance_agreement_assets link
+     using public.asset_register_items linked_asset
+     where link.owner_user_id = $1
+       and link.finance_agreement_id = $2::uuid
+       and linked_asset.id = link.asset_register_item_id
+       and linked_asset.user_id = $1
+       and linked_asset.register_id = $3::uuid
+       and not (link.asset_register_item_id = any($4::uuid[]))`,
+    [access.ownerUserId, agreementId, access.registerId, linkedAssetIds],
   );
 
+  await Promise.all(linkedAssets.map((linkedAsset) => {
+    const isCurrentAsset = linkedAsset.id === asset.id;
+    return getDb().query(
+      `insert into public.asset_finance_agreement_assets
+         (owner_user_id, finance_agreement_id, asset_register_item_id, link_role,
+          original_amount_allocation, settlement_allocation, allocation_date, allocation_note,
+          created_at, updated_at)
+       values ($1, $2::uuid, $3::uuid, $4, $5, $6, $7::date, $8, now(), now())
+       on conflict (finance_agreement_id, asset_register_item_id) do update
+         set link_role = excluded.link_role, original_amount_allocation = excluded.original_amount_allocation,
+             settlement_allocation = excluded.settlement_allocation, allocation_date = excluded.allocation_date,
+             allocation_note = excluded.allocation_note, updated_at = now()`,
+      [access.ownerUserId, agreementId, linkedAsset.id, isCurrentAsset ? linkRole : 'financed_acquisition',
+        isCurrentAsset ? numberOrNull(body.originalAmountAllocation) : null,
+        isCurrentAsset ? numberOrNull(body.settlementAllocation) : null,
+        dateOrNull(body.allocationDate), isCurrentAsset ? text(body.allocationNote) || null : null],
+    );
+  }));
+
   await writeAudit(access, input.accountantUserId, requestedAgreementId ? 'finance_agreement_updated' : 'finance_agreement_created',
-    'asset_finance_agreement', agreementId, { assetId: asset.id, assetTitle: asset.title, agreementName, linkRole });
+    'asset_finance_agreement', agreementId, {
+      assetId: asset.id,
+      assetTitle: asset.title,
+      agreementName,
+      linkRole,
+      linkedAssetIds,
+    });
   return listFinanceAgreementsForAccountant(input);
 }
 

@@ -215,7 +215,9 @@ test('shared Fuel and Cost Ledgers reuse owner controls with register-scoped wri
   assert.match(costUi, /Open file/);
   assert.match(costUi, /\/api\/my-invoices\/report\?\$\{params\.toString\(\)\}/);
   assert.match(costUi, /Add recurring commitment/);
-  assert.match(costUi, /This does not create an expense/);
+  assert.match(costUi, /Track future recurring asset costs/);
+  assert.match(costUi, /recurringAssetPickerOpen/);
+  assert.doesNotMatch(costUi, /This does not create an expense/);
   assert.match(costUi, /\/api\/recurring-commitments/);
   assert.match(recurringCommitmentsRoute, /resolveOwnerWorkspaceContext\(request, \{ ledger: 'cost' \}\)/);
   assert.match(collaboration, /annualise\(amount, row\.frequency\)/);
