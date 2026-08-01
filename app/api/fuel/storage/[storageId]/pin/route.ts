@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from '../../../../../../lib/auth-session';
 import { saveFuelStoragePin } from '../../../../../../lib/fuel-ledger';
+import { resolveOwnerWorkspaceContext } from '../../../../../../lib/owner-workspace-access';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -24,11 +24,8 @@ function errorMessage(error: unknown, fallback: string): string {
 }
 
 export async function PUT(request: NextRequest, context: RouteContext) {
-  const session = await getServerSession();
-
-  if (!session?.user?.id) {
-    return unauthorized();
-  }
+  const resolved = await resolveOwnerWorkspaceContext(request, { ledger: 'fuel' });
+  if (!resolved.ok) return resolved.response;
 
   let body: FuelPinRequest;
   try {
@@ -38,7 +35,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
   }
 
   try {
-    const storage = await saveFuelStoragePin(session.user.id, context.params.storageId, body.pin);
+    const storage = await saveFuelStoragePin(resolved.context.ownerUserId, context.params.storageId, body.pin);
     return NextResponse.json({ ok: true, storage });
   } catch (error) {
     return NextResponse.json(
