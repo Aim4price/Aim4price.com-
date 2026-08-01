@@ -91,8 +91,12 @@ test('Get Estimate remains inside the client workspace and saves to its active o
 test('new acquisition question is shared, wider and responsive for owners and accountants', () => {
   assert.match(ownerUi, /newAcquisitionChoiceModal/);
   assert.match(ownerUi, /newAcquisitionChoiceGrid/);
-  assert.match(ownerStyles, /\.newAcquisitionChoiceModal[\s\S]*?width: min\(52rem/);
+  assert.match(ownerUi, /newAcquisitionChoiceIndicator/);
+  assert.match(ownerUi, /Recently purchased, financed, inherited or otherwise acquired/);
+  assert.match(ownerStyles, /\.newAcquisitionChoiceModal[\s\S]*?width: min\(46rem/);
   assert.match(ownerStyles, /\.newAcquisitionChoiceGrid[\s\S]*?grid-template-columns: repeat\(2/);
+  assert.match(ownerStyles, /\.newAcquisitionChoiceOption > \.newAcquisitionChoiceIcon/);
+  assert.match(ownerStyles, /\.newAcquisitionChoiceActions[\s\S]*?border-top/);
 });
 
 test('accountant register manager fills its action row without an empty QR-code column', () => {

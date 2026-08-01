@@ -14412,7 +14412,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
             <div className={`${styles.modalHeader} ${styles.newAcquisitionChoiceHeader}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="new-acquisition-title">Is this a newly acquired asset?</h3>
-                <p>Keep acquisition information separate from market, replacement, accounting and finance values.</p>
+                <p>Choose how this asset entered the register. Purchase details stay separate from its market and replacement values.</p>
               </div>
               <button type="button" className={styles.modalCloseButton} onClick={() => setIsAcquisitionChoiceOpen(false)} aria-label="Close acquisition question">
                 <CloseIcon className={styles.buttonIcon} />
@@ -14424,15 +14424,27 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                   type="button"
                   className={`${styles.addAssetChoiceButton} ${styles.newAcquisitionChoiceOption} ${newAssetAcquisitionDraft.newlyAcquired === true ? styles.addAssetChoiceButtonPrimary : ''}`}
                   onClick={() => setNewAssetAcquisitionDraft((current) => ({ ...current, newlyAcquired: true }))}
+                  aria-pressed={newAssetAcquisitionDraft.newlyAcquired === true}
                 >
-                  <span><strong>Yes, newly acquired</strong></span>
+                  <span className={styles.newAcquisitionChoiceIndicator} aria-hidden="true" />
+                  <PlusIcon className={`${styles.buttonIcon} ${styles.newAcquisitionChoiceIcon}`} />
+                  <span className={styles.newAcquisitionChoiceCopy}>
+                    <strong>Yes, newly acquired</strong>
+                    <small>Recently purchased, financed, inherited or otherwise acquired.</small>
+                  </span>
                 </button>
                 <button
                   type="button"
                   className={`${styles.addAssetChoiceButton} ${styles.newAcquisitionChoiceOption} ${newAssetAcquisitionDraft.newlyAcquired === false ? styles.addAssetChoiceButtonPrimary : ''}`}
                   onClick={() => setNewAssetAcquisitionDraft((current) => ({ ...current, newlyAcquired: false }))}
+                  aria-pressed={newAssetAcquisitionDraft.newlyAcquired === false}
                 >
-                  <span><strong>No, existing asset being added</strong></span>
+                  <span className={styles.newAcquisitionChoiceIndicator} aria-hidden="true" />
+                  <DocumentIcon className={`${styles.buttonIcon} ${styles.newAcquisitionChoiceIcon}`} />
+                  <span className={styles.newAcquisitionChoiceCopy}>
+                    <strong>No, existing asset</strong>
+                    <small>Already owned and now being added to this register for the first time.</small>
+                  </span>
                 </button>
               </div>
 
@@ -14452,7 +14464,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                   </label>
                 </div>
               ) : null}
-              <div className={styles.assetSettingsActions}>
+              <div className={`${styles.assetSettingsActions} ${styles.newAcquisitionChoiceActions}`}>
                 <button type="button" className={styles.secondaryButton} onClick={() => setIsAcquisitionChoiceOpen(false)}>Cancel</button>
                 <button type="button" className={styles.primaryButton} onClick={continueManualEntryFromAcquisitionChoice} disabled={newAssetAcquisitionDraft.newlyAcquired === null}>Continue</button>
               </div>
