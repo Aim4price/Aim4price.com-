@@ -1,21 +1,18 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from '../../../../lib/auth-session';
 import { listFuelLedger, saveFuelSlipTransaction } from '../../../../lib/fuel-ledger';
+import {
+  assertWorkspaceAssetAccess,
+  filterFuelLedgerForWorkspace,
+  resolveOwnerWorkspaceContext,
+} from '../../../../lib/owner-workspace-access';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-async function currentUserId() {
-  const session = await getServerSession({ requireActive: true });
-  return session?.user?.id ?? '';
-}
-
 export async function POST(request: Request) {
-  const userId = await currentUserId();
-
-  if (!userId) {
-    return NextResponse.json({ ok: false, error: 'You must be signed in to save fuel slips.' }, { status: 401 });
-  }
+  const resolved = await resolveOwnerWorkspaceContext(request, { ledger: 'fuel' });
+  if (!resolved.ok) return resolved.response;
+  const workspace = resolved.context;
 
   let payload: Record<string, unknown>;
 
@@ -26,8 +23,14 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await saveFuelSlipTransaction(userId, payload);
-    const ledger = await listFuelLedger(userId);
+    if (String(payload.targetType ?? '').trim() === 'asset') {
+      await assertWorkspaceAssetAccess(workspace, payload.assetId ?? payload.targetId);
+    }
+    const result = await saveFuelSlipTransaction(workspace.ownerUserId, payload);
+    const ledger = await filterFuelLedgerForWorkspace(
+      workspace,
+      await listFuelLedger(workspace.ownerUserId),
+    );
 
     return NextResponse.json({
       ok: true,
@@ -37,7 +40,7 @@ export async function POST(request: Request) {
       pendingReview: result.pendingReview,
       message: result.message,
       ...ledger,
-      assets: result.assets,
+      assets: ledger.assets,
     });
   } catch (error) {
     console.error('Aim4price fuel slip save failed.', error);
