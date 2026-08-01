@@ -4,7 +4,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEventH
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import {
   clearCachedHeaderSession,
   readCachedHeaderSession,
@@ -231,6 +231,7 @@ function buildNavItems(
   accountType: AccountType | 'public' | null,
   accountSubtype?: string | null,
   accountantWorkspaceShareId?: string | null,
+  accountantWorkspaceRegisterId?: string | null,
 ): NavItem[] {
   if (accountType === null) {
     return BASE_NAV_ITEMS;
@@ -238,10 +239,16 @@ function buildNavItems(
 
   if (accountType === 'finance' && accountSubtype === 'accountant' && accountantWorkspaceShareId) {
     const workspaceRoot = `/accountant/registers/${encodeURIComponent(accountantWorkspaceShareId)}`;
+    const registerQuery = accountantWorkspaceRegisterId
+      ? `?registerId=${encodeURIComponent(accountantWorkspaceRegisterId)}`
+      : '';
+    const valuationQuery = new URLSearchParams({ accountantShareId: accountantWorkspaceShareId });
+    if (accountantWorkspaceRegisterId) valuationQuery.set('registerId', accountantWorkspaceRegisterId);
     return [
-      { key: 'asset-register', href: workspaceRoot, label: 'Asset Register' },
-      { key: 'fuel', href: `${workspaceRoot}/fuel`, label: 'Fuel Ledger' },
-      { key: 'cost', href: `${workspaceRoot}/costs`, label: 'Cost Ledger' },
+      { key: 'valuation', href: `/valuation?${valuationQuery.toString()}`, label: 'Get Estimate' },
+      { key: 'asset-register', href: `${workspaceRoot}${registerQuery}`, label: 'Asset Register' },
+      { key: 'fuel', href: `${workspaceRoot}/fuel${registerQuery}`, label: 'Fuel Ledger' },
+      { key: 'cost', href: `${workspaceRoot}/costs${registerQuery}`, label: 'Cost Ledger' },
     ];
   }
 
@@ -287,8 +294,9 @@ function buildMobileNavItems(
   accountType: AccountType,
   accountSubtype?: string | null,
   accountantWorkspaceShareId?: string | null,
+  accountantWorkspaceRegisterId?: string | null,
 ): NavItem[] {
-  const items = buildNavItems(accountType, accountSubtype, accountantWorkspaceShareId);
+  const items = buildNavItems(accountType, accountSubtype, accountantWorkspaceShareId, accountantWorkspaceRegisterId);
 
   if (accountType === 'finance' && accountSubtype === 'accountant' && accountantWorkspaceShareId) {
     return items;
@@ -302,11 +310,12 @@ function buildMobileNavItems(
 }
 
 function isPathMatchingHref(pathname: string, href: string): boolean {
-  if (href === '/') {
+  const hrefPath = href.split(/[?#]/, 1)[0] || '/';
+  if (hrefPath === '/') {
     return pathname === '/';
   }
 
-  return pathname === href || pathname.startsWith(`${href}/`);
+  return pathname === hrefPath || pathname.startsWith(`${hrefPath}/`);
 }
 
 function resolveActiveNavKey(pathname: string, items: NavItem[], active: ActivePage): ActivePage {
@@ -316,7 +325,7 @@ function resolveActiveNavKey(pathname: string, items: NavItem[], active: ActiveP
     return 'asset-register';
   }
 
-  const pathMatchedItem = items.find((item) => normalizedPath === item.href)
+  const pathMatchedItem = items.find((item) => normalizedPath === (item.href.split(/[?#]/, 1)[0] || '/'))
     ?? [...items]
       .sort((left, right) => right.href.length - left.href.length)
       .find((item) => isPathMatchingHref(normalizedPath, item.href));
@@ -530,15 +539,20 @@ export default function AppHeader({
 }: AppHeaderProps) {
   const primaryHref = ctaHref ?? signupHref;
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const accountantWorkspaceShareId = useMemo(() => {
     const match = /^\/accountant\/registers\/([^/]+)(?:\/|$)/.exec(pathname || '');
-    if (!match?.[1]) return null;
+    const encodedShareId = match?.[1] || (pathname === '/valuation' ? searchParams.get('accountantShareId') : '');
+    if (!encodedShareId) return null;
     try {
-      return decodeURIComponent(match[1]);
+      return decodeURIComponent(encodedShareId);
     } catch {
-      return match[1];
+      return encodedShareId;
     }
-  }, [pathname]);
+  }, [pathname, searchParams]);
+  const accountantWorkspaceRegisterId = accountantWorkspaceShareId
+    ? String(searchParams.get('registerId') ?? '').trim() || null
+    : null;
   const accountMenuRef = useRef<HTMLDivElement | null>(null);
   const notificationMenuRef = useRef<HTMLDivElement | null>(null);
   const notificationDialogRef = useRef<HTMLElement | null>(null);
@@ -789,14 +803,14 @@ export default function AppHeader({
   const isAccountantWorkspace = isAccountantAccount && Boolean(accountantWorkspaceShareId);
   const navAccountType = isLoadingSession ? null : (session?.accountType ?? 'public');
   const navItems = useMemo(
-    () => buildNavItems(navAccountType, session?.accountSubtype, accountantWorkspaceShareId),
-    [accountantWorkspaceShareId, navAccountType, session?.accountSubtype],
+    () => buildNavItems(navAccountType, session?.accountSubtype, accountantWorkspaceShareId, accountantWorkspaceRegisterId),
+    [accountantWorkspaceRegisterId, accountantWorkspaceShareId, navAccountType, session?.accountSubtype],
   );
   const mobileNavItems = useMemo(
     () => (session?.accountType
-      ? buildMobileNavItems(session.accountType, session.accountSubtype, accountantWorkspaceShareId)
+      ? buildMobileNavItems(session.accountType, session.accountSubtype, accountantWorkspaceShareId, accountantWorkspaceRegisterId)
       : navItems),
-    [accountantWorkspaceShareId, navItems, session?.accountType, session?.accountSubtype],
+    [accountantWorkspaceRegisterId, accountantWorkspaceShareId, navItems, session?.accountType, session?.accountSubtype],
   );
   const activeNavKey = useMemo(
     () => resolveActiveNavKey(pathname, mobileNavItems, active),
@@ -1003,10 +1017,22 @@ export default function AppHeader({
     setLeaveAccountOpen(true);
   }
 
-  function handleSwitchAccountantRegister() {
+  function handleChangeAccountantRegister() {
     setMobileMenuOpen(false);
     setMenuOpen(false);
-    window.location.assign('/accountant/registers');
+    if (!accountantWorkspaceShareId) return;
+
+    const workspaceRoot = `/accountant/registers/${encodeURIComponent(accountantWorkspaceShareId)}`;
+    const registerQuery = accountantWorkspaceRegisterId
+      ? `registerId=${encodeURIComponent(accountantWorkspaceRegisterId)}&`
+      : '';
+
+    if (pathname === workspaceRoot) {
+      window.dispatchEvent(new CustomEvent('aim4price:open-register-change'));
+      return;
+    }
+
+    window.location.assign(`${workspaceRoot}?${registerQuery}changeRegister=1`);
   }
 
   async function handleOpenAssetDiscoveryNotification(enquiryId: string) {
@@ -1651,8 +1677,8 @@ export default function AppHeader({
         {session ? (
           <div className={styles.mobileMenuAccountActions}>
             {isAccountantWorkspace ? (
-              <button type="button" className={styles.mobileMenuActionButton} onClick={handleSwitchAccountantRegister}>
-                Switch accounts
+              <button type="button" className={styles.mobileMenuActionButton} onClick={handleChangeAccountantRegister}>
+                Change
               </button>
             ) : null}
             <button
@@ -2029,8 +2055,8 @@ export default function AppHeader({
                       <div id="header-account-menu" className={styles.accountPopover} role="menu">
                         {isAccountantWorkspace ? (
                           <>
-                            <button type="button" role="menuitem" className={styles.menuLink} onClick={handleSwitchAccountantRegister}>
-                              <span>Switch accounts</span>
+                            <button type="button" role="menuitem" className={styles.menuLink} onClick={handleChangeAccountantRegister}>
+                              <span>Change</span>
                             </button>
                             <button type="button" role="menuitem" className={styles.menuDangerButton} onClick={requestLeaveAccount}>
                               Leave account
