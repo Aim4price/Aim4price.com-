@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from '../../../../lib/auth-session';
 import { getAccountProfile, type AccountProfile } from '../../../../lib/account-profile';
 import { getAssetRegisterReportLogoUrl } from '../../../../lib/asset-registers';
 import { getFuelStorageById, listFuelEventsForReport, listFuelLedger, type FuelLedgerEvent } from '../../../../lib/fuel-ledger';
 import { createXlsxWorkbook, type XlsxCellStyle, type XlsxCellValue, type XlsxPrimitiveCellValue, type XlsxSheet } from '../../../../lib/simple-xlsx';
 import { resolveReportLogoUrlForHtml } from '../../../../lib/report-logo';
+import {
+  filterFuelLedgerForWorkspace,
+  getWorkspaceAssetIds,
+  resolveOwnerWorkspaceContext,
+} from '../../../../lib/owner-workspace-access';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -1412,11 +1416,9 @@ function buildFuelWorkbook(options: FuelReportOptions): XlsxSheet[] {
 }
 
 export async function GET(request: NextRequest) {
-  const session = await getServerSession();
-
-  if (!session?.user?.id) {
-    return NextResponse.json({ ok: false, error: 'You must be signed in.' }, { status: 401 });
-  }
+  const resolved = await resolveOwnerWorkspaceContext(request, { ledger: 'fuel' });
+  if (!resolved.ok) return resolved.response;
+  const workspace = resolved.context;
 
   const params = request.nextUrl.searchParams;
   const storageId = asText(params.get('storageId'));
@@ -1427,16 +1429,21 @@ export async function GET(request: NextRequest) {
   const dateRange = buildReportDateRange(year, month);
 
   try {
-    const [ledger, events, storage] = await Promise.all([
-      listFuelLedger(session.user.id),
-      listFuelEventsForReport(session.user.id, {
+    const [unfilteredLedger, unfilteredEvents, storage, workspaceAssetIds] = await Promise.all([
+      listFuelLedger(workspace.ownerUserId),
+      listFuelEventsForReport(workspace.ownerUserId, {
         storageId: storageId || undefined,
         fromIso: dateRange.fromIso,
         toIso: dateRange.toIso,
         includeFuelSlips,
       }),
-      storageId ? getFuelStorageById(session.user.id, storageId) : Promise.resolve(null),
+      storageId ? getFuelStorageById(workspace.ownerUserId, storageId) : Promise.resolve(null),
+      getWorkspaceAssetIds(workspace),
     ]);
+    const ledger = await filterFuelLedgerForWorkspace(workspace, unfilteredLedger);
+    const events = workspaceAssetIds
+      ? unfilteredEvents.filter((event) => !event.assetId || workspaceAssetIds.has(event.assetId))
+      : unfilteredEvents;
 
     if (storageId && !storage) {
       return NextResponse.json({ ok: false, error: 'Fuel storage not found.' }, { status: 404 });
@@ -1449,11 +1456,14 @@ export async function GET(request: NextRequest) {
       .filter((event) => event.eventType === 'stock_in' || event.eventType === 'opening_balance')
       .reduce((sum, event) => sum + event.litres, 0);
     const ownerProfile = await getAccountProfile({
-      id: session.user.id,
-      name: session.user.name,
-      email: session.user.email,
+      id: workspace.ownerUserId,
+      name: workspace.accountantAccess?.ownerName || workspace.actorName,
+      email: workspace.accountantAccess ? '' : workspace.actorEmail,
     });
-    const ownerDetails = buildOwnerReportDetails(ownerProfile, session.user);
+    const ownerDetails = buildOwnerReportDetails(ownerProfile, {
+      name: workspace.accountantAccess?.ownerName || workspace.actorName,
+      email: workspace.accountantAccess ? '' : workspace.actorEmail,
+    });
     const ownerEmail = ownerDetails.businessEmail;
     const generatedAt = new Intl.DateTimeFormat('en-ZA', {
       dateStyle: 'medium',
@@ -1471,7 +1481,7 @@ export async function GET(request: NextRequest) {
       : includeFuelSlips
         ? `All fuel storage and fuel slip transactions for ${dateRange.label}.`
         : `All fuel storage transactions for ${dateRange.label}.`;
-    const rawLogoUrl = await getAssetRegisterReportLogoUrl(session.user.id).catch(() => '');
+    const rawLogoUrl = await getAssetRegisterReportLogoUrl(workspace.ownerUserId).catch(() => '');
     const logoUrl = await resolveReportLogoUrlForHtml(rawLogoUrl, request.url);
     const reportOptions: FuelReportOptions = {
       title,
