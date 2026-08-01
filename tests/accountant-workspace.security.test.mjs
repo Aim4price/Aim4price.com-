@@ -13,6 +13,10 @@ const fuelUi = read('app/fuel/fuel-client.tsx');
 const costUi = read('app/my-invoices/my-invoices-client.tsx');
 const ownerUi = read('app/asset-register/asset-register-client.tsx');
 const ownerStyles = read('app/asset-register/page.module.css');
+const valuationUi = read('app/valuation/valuation-client.tsx');
+const valuationRoute = read('app/api/valuation-runs/route.ts');
+const registerManagerUi = read('app/asset-registers/asset-registers-client.tsx');
+const registerManagerStyles = read('app/asset-registers/page.module.css');
 const accountantRegistersPage = read('app/accountant/registers/page.tsx');
 const accountantManagePage = read('app/accountant/registers/[shareId]/manage/page.tsx');
 const accountantOwnerRegistersRoute = read('app/api/accountant/registers/[shareId]/owner-registers/route.ts');
@@ -73,6 +77,27 @@ test('client choice stays on My Clients while Change manages registers inside on
   assert.match(accountantOwnerRegistersRoute, /getAccountantRegisterAccess/);
   assert.match(ownerUi, /\/owner-registers/);
   assert.match(ownerUi, /Change Asset Register/);
+});
+
+test('Get Estimate remains inside the client workspace and saves to its active or shared register', () => {
+  assert.match(headerUi, /new URLSearchParams\(\{ accountantShareId: accountantWorkspaceShareId \}\)/);
+  assert.match(ownerUi, /const accountantValuationHref/);
+  assert.match(ownerUi, /href=\{accountantValuationHref\}/);
+  assert.match(valuationUi, /normalizedSignedInAccountType === 'finance' && Boolean\(accountantShareId\)/);
+  assert.match(valuationRoute, /requestedRegisterId \|\| accountantAccess\?\.registerId \|\| ''/);
+  assert.match(valuationUi, /savePayload\.accountantShareId = accountantShareId/);
+});
+
+test('new acquisition question is shared, wider and responsive for owners and accountants', () => {
+  assert.match(ownerUi, /newAcquisitionChoiceModal/);
+  assert.match(ownerUi, /newAcquisitionChoiceGrid/);
+  assert.match(ownerStyles, /\.newAcquisitionChoiceModal[\s\S]*?width: min\(52rem/);
+  assert.match(ownerStyles, /\.newAcquisitionChoiceGrid[\s\S]*?grid-template-columns: repeat\(2/);
+});
+
+test('accountant register manager fills its action row without an empty QR-code column', () => {
+  assert.match(registerManagerUi, /manageActionGridAccountant/);
+  assert.match(registerManagerStyles, /\.manageActionGrid\.manageActionGridAccountant[\s\S]*?repeat\(3/);
 });
 
 test('accountant register moves stay inside one owner and preserve shared-register anchors', () => {

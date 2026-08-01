@@ -3227,7 +3227,7 @@ export default function AssetRegistersClient({ accountantShareId }: { accountant
 
             <div className={styles.manageModalScrollArea}>
               <div className={styles.manageActionPanel}>
-                <div className={`${styles.manageActionGrid} ${isManagingCombined ? styles.manageActionGridCombined : ""}`}>
+                <div className={`${styles.manageActionGrid} ${isManagingCombined ? styles.manageActionGridCombined : ""} ${accountantShareId && !isManagingCombined ? styles.manageActionGridAccountant : ""}`}>
                   {!isManagingCombined ? (
                     <button
                       type="button"
