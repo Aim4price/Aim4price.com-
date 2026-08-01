@@ -1155,6 +1155,12 @@ export async function DELETE(request: NextRequest) {
     });
   } catch (error) {
     console.error('asset register delete failed', error);
+    if (error instanceof Error && error.message === 'ASSET_DELETE_HAS_DEPENDENCIES') {
+      return NextResponse.json(
+        { ok: false, error: 'This record has linked financial information or files. Resolve those links, or dispose the genuine asset instead.' },
+        { status: 409 },
+      );
+    }
     return NextResponse.json(
       { ok: false, error: formatUnknownError(error, 'Failed to delete asset.') },
       { status: 500 },
