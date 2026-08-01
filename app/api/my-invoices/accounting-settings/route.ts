@@ -1,39 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAccountProfile } from '../../../../lib/account-profile';
-import { getServerSession } from '../../../../lib/auth-session';
 import {
   ACCOUNTING_SOFTWARE_OPTIONS,
   getCostLedgerAccountingSettings,
   saveCostLedgerAccountingSettings,
 } from '../../../../lib/my-invoices-accounting';
+import { resolveOwnerWorkspaceContext } from '../../../../lib/owner-workspace-access';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-async function ownerSession() {
-  const session = await getServerSession({ requireActive: true });
-  if (!session?.user?.id) return null;
-
-  const profile = await getAccountProfile({
-    id: session.user.id,
-    name: session.user.name,
-    email: session.user.email,
-  });
-
-  return profile.accountType === 'owner' ? session : null;
-}
-
-export async function GET() {
-  const session = await ownerSession();
-  if (!session) {
-    return NextResponse.json(
-      { ok: false, error: 'An active owner account is required to manage accounting CSV settings.' },
-      { status: 401 },
-    );
-  }
+export async function GET(request: NextRequest) {
+  const resolved = await resolveOwnerWorkspaceContext(request, { ledger: 'cost' });
+  if (!resolved.ok) return resolved.response;
 
   try {
-    const settings = await getCostLedgerAccountingSettings(session.user.id);
+    const settings = await getCostLedgerAccountingSettings(resolved.context.ownerUserId);
     return NextResponse.json({
       ok: true,
       settings,
@@ -49,13 +30,8 @@ export async function GET() {
 }
 
 export async function PUT(request: NextRequest) {
-  const session = await ownerSession();
-  if (!session) {
-    return NextResponse.json(
-      { ok: false, error: 'An active owner account is required to manage accounting CSV settings.' },
-      { status: 401 },
-    );
-  }
+  const resolved = await resolveOwnerWorkspaceContext(request, { ledger: 'cost' });
+  if (!resolved.ok) return resolved.response;
 
   let body: unknown;
   try {
@@ -68,7 +44,7 @@ export async function PUT(request: NextRequest) {
   }
 
   try {
-    const settings = await saveCostLedgerAccountingSettings(session.user.id, body);
+    const settings = await saveCostLedgerAccountingSettings(resolved.context.ownerUserId, body);
     return NextResponse.json({
       ok: true,
       settings,
