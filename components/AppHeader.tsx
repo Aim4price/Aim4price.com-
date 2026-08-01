@@ -1004,11 +1004,9 @@ export default function AppHeader({
   }
 
   function handleSwitchAccountantRegister() {
-    if (!accountantWorkspaceShareId) return;
     setMobileMenuOpen(false);
     setMenuOpen(false);
-    const workspaceRoot = `/accountant/registers/${encodeURIComponent(accountantWorkspaceShareId)}`;
-    window.location.assign(`${workspaceRoot}?switchAccounts=1`);
+    window.location.assign('/accountant/registers');
   }
 
   async function handleOpenAssetDiscoveryNotification(enquiryId: string) {
