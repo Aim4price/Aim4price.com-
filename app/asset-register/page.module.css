@@ -33954,177 +33954,135 @@ button.documentOpenLink {
   font-weight: 650 !important;
 }
 
-/* Final cascade: spacious shared Owner/Accountant acquisition question. */
+/* Final cascade: simple shared Owner/Accountant acquisition question. */
 .newAcquisitionChoiceModal {
-  width: min(46rem, calc(100vw - 2rem)) !important;
-  max-height: min(90vh, 46rem) !important;
+  width: min(44rem, calc(100vw - 2rem)) !important;
+  max-height: min(90vh, 42rem) !important;
   overflow: hidden !important;
-  border-radius: clamp(1.45rem, 2.4vw, 2rem) !important;
+  border-radius: clamp(1.4rem, 2.2vw, 1.75rem) !important;
 }
 
 .newAcquisitionChoiceHeader {
   align-items: flex-start !important;
-  gap: clamp(1rem, 2vw, 1.5rem) !important;
-  padding: clamp(1.45rem, 2.8vw, 2rem) clamp(1.45rem, 2.8vw, 2rem) clamp(1.1rem, 2vw, 1.4rem) !important;
+  gap: 1rem !important;
+  padding: clamp(1.35rem, 2.4vw, 1.7rem) clamp(1.4rem, 2.6vw, 1.8rem) clamp(1rem, 1.8vw, 1.2rem) !important;
 }
 
 .newAcquisitionChoiceHeader .modalHeaderText {
   min-width: 0 !important;
   max-width: none !important;
-  gap: 0.45rem !important;
+  gap: 0.35rem !important;
 }
 
 .newAcquisitionChoiceHeader .modalHeaderText h3 {
-  font-size: clamp(1.8rem, 3vw, 2.45rem) !important;
-  line-height: 1.04 !important;
-  letter-spacing: -0.045em !important;
-  text-wrap: balance !important;
+  font-size: clamp(1.65rem, 2.6vw, 2.05rem) !important;
+  line-height: 1.08 !important;
+  letter-spacing: -0.04em !important;
+  white-space: nowrap !important;
 }
 
 .newAcquisitionChoiceHeader .modalHeaderText p {
-  max-width: 44rem !important;
-  font-size: clamp(0.95rem, 1.4vw, 1.08rem) !important;
-  font-weight: 610 !important;
-  line-height: 1.48 !important;
+  max-width: none !important;
+  font-size: clamp(0.9rem, 1.2vw, 0.98rem) !important;
+  font-weight: 600 !important;
+  line-height: 1.4 !important;
+  white-space: nowrap !important;
 }
 
 .newAcquisitionChoiceBody {
-  gap: clamp(1rem, 1.8vw, 1.25rem) !important;
-  padding: clamp(1.15rem, 2.2vw, 1.55rem) clamp(1.45rem, 2.8vw, 2rem) clamp(1.25rem, 2.4vw, 1.65rem) !important;
+  gap: clamp(1rem, 1.7vw, 1.2rem) !important;
+  padding: clamp(1.1rem, 2vw, 1.35rem) clamp(1.4rem, 2.6vw, 1.8rem) clamp(1.25rem, 2.2vw, 1.5rem) !important;
   overflow-x: hidden !important;
 }
 
 .newAcquisitionChoiceGrid {
   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  gap: clamp(0.85rem, 1.8vw, 1.15rem) !important;
+  gap: clamp(0.75rem, 1.5vw, 0.95rem) !important;
 }
 
 .newAcquisitionChoiceOption {
-  position: relative !important;
-  min-height: clamp(6.5rem, 10vw, 7.4rem) !important;
-  display: grid !important;
-  grid-template-columns: auto minmax(0, 1fr) !important;
-  grid-template-rows: 1fr !important;
-  align-content: stretch !important;
+  min-height: clamp(4.5rem, 7vw, 5rem) !important;
+  display: flex !important;
   align-items: center !important;
-  justify-items: stretch !important;
-  gap: clamp(0.8rem, 1.5vw, 1rem) !important;
-  padding: clamp(1rem, 1.8vw, 1.3rem) clamp(2.8rem, 4vw, 3.2rem) clamp(1rem, 1.8vw, 1.3rem) clamp(1rem, 1.8vw, 1.3rem) !important;
-  border-radius: clamp(1.15rem, 2vw, 1.5rem) !important;
-  border-width: 1.5px !important;
+  justify-content: flex-start !important;
+  gap: 0.75rem !important;
+  padding: 0.95rem 1.1rem !important;
+  border: 1.5px solid #cbdbe3 !important;
+  border-radius: 1.05rem !important;
   text-align: left !important;
-  background:
-    radial-gradient(circle at 0% 0%, rgba(22, 128, 95, 0.045), transparent 42%),
-    linear-gradient(180deg, #ffffff 0%, #f7fafc 100%) !important;
+  background: #ffffff !important;
   box-shadow:
-    0 14px 30px rgba(20, 45, 57, 0.055),
+    0 10px 24px rgba(20, 45, 57, 0.045),
     inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
 }
 
 .newAcquisitionChoiceOption:hover:not(:disabled) {
   transform: translateY(-1px) !important;
-  border-color: rgba(22, 128, 95, 0.52) !important;
+  border-color: rgba(22, 128, 95, 0.45) !important;
   box-shadow:
-    0 18px 36px rgba(20, 91, 70, 0.1),
+    0 14px 28px rgba(20, 91, 70, 0.08),
     inset 0 1px 0 rgba(255, 255, 255, 1) !important;
 }
 
 .newAcquisitionChoiceOption.addAssetChoiceButtonPrimary {
   color: #0b4537 !important;
   border-color: #23906b !important;
-  background:
-    radial-gradient(circle at 0% 0%, rgba(35, 144, 107, 0.14), transparent 46%),
-    linear-gradient(180deg, #ffffff 0%, #eaf8f1 100%) !important;
+  background: #edf8f3 !important;
   box-shadow:
-    0 16px 34px rgba(15, 104, 79, 0.14),
+    0 12px 28px rgba(15, 104, 79, 0.11),
     inset 0 1px 0 rgba(255, 255, 255, 1) !important;
 }
 
-.newAcquisitionChoiceOption > .newAcquisitionChoiceIcon {
-  grid-column: 1 !important;
-  grid-row: 1 !important;
-  width: clamp(2.7rem, 4.4vw, 3.15rem) !important;
-  height: clamp(2.7rem, 4.4vw, 3.15rem) !important;
-  justify-self: start !important;
-  padding: 0.72rem !important;
-  border: 1px solid rgba(31, 125, 94, 0.22) !important;
-  border-radius: 1rem !important;
-  color: #126849 !important;
-  background: #edf8f3 !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
-}
-
-.newAcquisitionChoiceOption > .newAcquisitionChoiceCopy {
-  grid-column: 2 !important;
-  grid-row: 1 !important;
-  width: 100% !important;
-  display: grid !important;
-  justify-items: start !important;
-  gap: 0.35rem !important;
-  text-align: left !important;
-}
-
-.newAcquisitionChoiceOption .newAcquisitionChoiceCopy strong {
+.newAcquisitionChoiceOption > strong {
   max-width: none !important;
-  font-size: clamp(0.98rem, 1.45vw, 1.12rem) !important;
-  line-height: 1.2 !important;
+  color: #10352b !important;
+  font-size: clamp(0.95rem, 1.3vw, 1.05rem) !important;
+  font-weight: 820 !important;
+  line-height: 1.15 !important;
   text-align: left !important;
-  text-wrap: balance !important;
+  white-space: nowrap !important;
 }
 
-.newAcquisitionChoiceOption .newAcquisitionChoiceCopy small {
-  display: block !important;
-  max-width: 22rem !important;
-  color: #64758a !important;
-  font-size: clamp(0.72rem, 1vw, 0.8rem) !important;
-  font-weight: 610 !important;
-  line-height: 1.42 !important;
-  text-align: left !important;
-}
-
-.newAcquisitionChoiceIndicator {
-  position: absolute !important;
-  top: 0.85rem !important;
-  right: 0.85rem !important;
-  width: 1.25rem !important;
-  height: 1.25rem !important;
+.newAcquisitionChoiceOption > .newAcquisitionChoiceIndicator {
+  position: static !important;
+  width: 1.15rem !important;
+  min-width: 1.15rem !important;
+  height: 1.15rem !important;
+  min-height: 1.15rem !important;
+  flex: 0 0 1.15rem !important;
   display: grid !important;
   place-items: center !important;
   border: 1.5px solid #b9cbd2 !important;
   border-radius: 999px !important;
   background: #ffffff !important;
-  box-shadow: 0 3px 8px rgba(20, 45, 57, 0.06) !important;
+  box-shadow: none !important;
 }
 
-.newAcquisitionChoiceOption.addAssetChoiceButtonPrimary .newAcquisitionChoiceIndicator {
+.newAcquisitionChoiceOption.addAssetChoiceButtonPrimary > .newAcquisitionChoiceIndicator {
   border-color: #16805f !important;
   background: #16805f !important;
 }
 
-.newAcquisitionChoiceOption.addAssetChoiceButtonPrimary .newAcquisitionChoiceIndicator::after {
+.newAcquisitionChoiceOption.addAssetChoiceButtonPrimary > .newAcquisitionChoiceIndicator::after {
   content: '' !important;
-  width: 0.3rem !important;
-  height: 0.52rem !important;
-  margin-top: -0.08rem !important;
+  width: 0.26rem !important;
+  height: 0.46rem !important;
+  margin-top: -0.07rem !important;
   border-right: 2px solid #ffffff !important;
   border-bottom: 2px solid #ffffff !important;
   transform: rotate(45deg) !important;
 }
 
-.newAcquisitionChoiceOption.addAssetChoiceButtonPrimary .newAcquisitionChoiceCopy small {
-  color: #416c5f !important;
-}
-
 .newAcquisitionChoiceActions {
-  margin-top: 0.1rem !important;
-  padding-top: 1rem !important;
-  border-top: 1px solid rgba(211, 223, 231, 0.86) !important;
+  margin-top: 0 !important;
+  padding-top: 0.1rem !important;
+  border-top: 0 !important;
 }
 
 .newAcquisitionChoiceActions > button {
-  min-width: 8.35rem !important;
-  min-height: 3.15rem !important;
-  border-radius: 0.95rem !important;
+  min-width: 7.8rem !important;
+  min-height: 3rem !important;
+  border-radius: 0.9rem !important;
 }
 
 @media (max-width: 700px) {
@@ -34142,12 +34100,17 @@ button.documentOpenLink {
     padding-right: 3rem !important;
   }
 
+  .newAcquisitionChoiceHeader .modalHeaderText h3,
+  .newAcquisitionChoiceHeader .modalHeaderText p {
+    white-space: normal !important;
+  }
+
   .newAcquisitionChoiceGrid {
     grid-template-columns: 1fr !important;
   }
 
   .newAcquisitionChoiceOption {
-    min-height: 6.25rem !important;
+    min-height: 4.35rem !important;
   }
 
   .newAcquisitionChoiceBody {
