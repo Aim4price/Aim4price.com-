@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from '../../../../lib/auth-session';
 import { extractInvoiceFromUpload } from '../../../../lib/my-invoices-extraction';
 import { getAssetRegisterItemById } from '../../../../lib/asset-register-db';
 import { getInvoiceDocumentUpload, updateInvoiceDocumentExtraction } from '../../../../lib/my-invoices';
+import { assertWorkspaceAssetAccess, resolveOwnerWorkspaceContext } from '../../../../lib/owner-workspace-access';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -13,11 +13,6 @@ type ExtractPayload = {
   assetId?: unknown;
 };
 
-async function currentUserId() {
-  const session = await getServerSession({ requireActive: true });
-  return session?.user?.id ?? '';
-}
-
 function asText(value: unknown): string {
   return String(value ?? '').trim();
 }
@@ -27,11 +22,9 @@ function asDocumentId(payload: ExtractPayload): string {
 }
 
 export async function POST(request: Request) {
-  const userId = await currentUserId();
-
-  if (!userId) {
-    return NextResponse.json({ ok: false, error: 'You must be signed in to extract cost details.' }, { status: 401 });
-  }
+  const resolved = await resolveOwnerWorkspaceContext(request, { ledger: 'cost' });
+  if (!resolved.ok) return resolved.response;
+  const { context } = resolved;
 
   let payload: ExtractPayload;
 
@@ -53,13 +46,14 @@ export async function POST(request: Request) {
   }
 
   try {
-    const asset = await getAssetRegisterItemById(userId, assetId);
+    await assertWorkspaceAssetAccess(context, assetId);
+    const asset = await getAssetRegisterItemById(context.ownerUserId, assetId);
 
     if (!asset) {
       return NextResponse.json({ ok: false, error: 'The selected asset could not be found for this account.' }, { status: 404 });
     }
 
-    const upload = await getInvoiceDocumentUpload({ userId, documentId });
+    const upload = await getInvoiceDocumentUpload({ userId: context.ownerUserId, documentId });
 
     if (!upload || upload.document.assetId !== assetId) {
       return NextResponse.json({ ok: false, error: 'The uploaded invoice/photo document could not be found for this asset.' }, { status: 404 });
@@ -73,7 +67,7 @@ export async function POST(request: Request) {
 
     const status = extraction.quality === 'none' ? 'failed' : 'extracted';
     const document = await updateInvoiceDocumentExtraction({
-      userId,
+      userId: context.ownerUserId,
       documentId,
       rawText: extraction.rawText,
       status,
