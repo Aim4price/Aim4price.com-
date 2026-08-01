@@ -33,6 +33,9 @@ test('owner and accountant finance flows support paid-off assets', () => {
   assert.match(ownerRegister, /type FinanceStatusChoice = AssetStatusChoice \| 'paid'/);
   assert.match(ownerStatusRoute, /normalizeFinanceStatusChoice/);
   assert.match(ownerStatusRoute, /financeStatus === 'paid'/);
+  assert.match(ownerRegister, /function statusChoiceReportLabel\(value: FinanceStatusChoice\)/);
+  assert.match(ownerRegister, /if \(value === 'paid'\) return 'Paid off'/);
+  assert.match(ownerRegister, /function renderAssetStatusMark\(value: FinanceStatusChoice\)/);
 });
 
 test('acquisition editing lives inside Finance and no longer opens a separate owner modal', () => {
