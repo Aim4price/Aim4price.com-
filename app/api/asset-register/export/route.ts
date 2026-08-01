@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from '../../../../lib/auth-session';
 import { getAccountProfile } from '../../../../lib/account-profile';
 import { listAssetRegisterItems, type AssetRegisterItem } from '../../../../lib/asset-register-db';
 import { getAssetRegisterForUser, getSelectedAssetRegister, getVisibleAssetRegisterLogoUrl, listAssetRegisters, type AssetRegisterSummary } from '../../../../lib/asset-registers';
 import { createXlsxWorkbook, type XlsxCellStyle, type XlsxCellValue, type XlsxSheet } from '../../../../lib/simple-xlsx';
 import { resolveReportLogoUrlForHtml } from '../../../../lib/report-logo';
+import { resolveOwnerWorkspaceContext } from '../../../../lib/owner-workspace-access';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -2757,11 +2757,10 @@ function createPdfBuffer(pageContents: string[]): Buffer {
 }
 
 export async function GET(request: NextRequest) {
-  const session = await getServerSession();
-
-  if (!session?.user?.id) {
-    return unauthorized();
-  }
+  const resolved = await resolveOwnerWorkspaceContext(request);
+  if (!resolved.ok) return resolved.response;
+  const workspace = resolved.context;
+  const ownerUserId = workspace.ownerUserId;
 
   const params = new URL(request.url).searchParams;
   const format = params.get('format');
@@ -2774,12 +2773,12 @@ export async function GET(request: NextRequest) {
 
   try {
     const profile = await getAccountProfile({
-      id: session.user.id,
-      name: session.user.name,
-      email: session.user.email,
+      id: ownerUserId,
+      name: workspace.accountantAccess?.ownerName || workspace.actorName,
+      email: workspace.accountantAccess ? '' : workspace.actorEmail,
     });
 
-    if (profile.accountType !== 'owner') {
+    if (!workspace.accountantAccess && profile.accountType !== 'owner') {
       return NextResponse.json({ ok: false, error: 'Asset Register export is only available to owner accounts.' }, { status: 403 });
     }
 
@@ -2798,8 +2797,15 @@ export async function GET(request: NextRequest) {
 
     if (isScopedExport) {
       const scope = scopeParam as RegisterExportScope;
-      const allRegisters = await listAssetRegisters(session.user.id);
-      const registerIds = parseRegisterIds(params);
+      if (workspace.accountantAccess && scope !== 'single') {
+        return NextResponse.json({ ok: false, error: 'Accountant exports are limited to the active shared Asset Register.' }, { status: 403 });
+      }
+      const allRegisters = workspace.accountantAccess
+        ? [await getAssetRegisterForUser(ownerUserId, workspace.accountantAccess.registerId)].filter((register): register is AssetRegisterSummary => Boolean(register))
+        : await listAssetRegisters(ownerUserId);
+      const registerIds = workspace.accountantAccess
+        ? [workspace.accountantAccess.registerId]
+        : parseRegisterIds(params);
       const registerById = new Map(allRegisters.map((register) => [register.id, register]));
       let selectedRegisters: AssetRegisterSummary[] = [];
 
@@ -2836,7 +2842,7 @@ export async function GET(request: NextRequest) {
       const bundles: RegisterExportBundle[] = await Promise.all(
         selectedRegisters.map(async (register) => ({
           register,
-          items: await listAssetRegisterItems(session.user.id, register.id),
+          items: await listAssetRegisterItems(ownerUserId, register.id),
         })),
       );
       const ownerSlug = pdfFileSlug(entityName || buildOwnerName(exportProfile));
@@ -2896,10 +2902,12 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const requestedRegisterId = String(params.get('registerId') ?? '').trim();
+    const requestedRegisterId = workspace.accountantAccess
+      ? workspace.accountantAccess.registerId
+      : String(params.get('registerId') ?? '').trim();
     const register = requestedRegisterId
-      ? await getAssetRegisterForUser(session.user.id, requestedRegisterId)
-      : await getSelectedAssetRegister(session.user.id);
+      ? await getAssetRegisterForUser(ownerUserId, requestedRegisterId)
+      : await getSelectedAssetRegister(ownerUserId);
 
     if (!register) {
       return NextResponse.json({ ok: false, error: 'Asset register not found.' }, { status: 404 });
@@ -2918,7 +2926,7 @@ export async function GET(request: NextRequest) {
       addressLine2: '',
     };
 
-    const items = await listAssetRegisterItems(session.user.id, register.id);
+    const items = await listAssetRegisterItems(ownerUserId, register.id);
     const generatedAt = new Date();
     const filenameDate = generatedAt.toISOString().slice(0, 10);
     if (format === 'pdf') {
