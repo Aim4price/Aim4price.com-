@@ -872,6 +872,7 @@ function buildReportUrl(
   format: ReportFormat,
   includeFuelSlipCosts: boolean,
   accountingSoftware?: AccountingSoftware,
+  accountantShareId?: string,
 ): string {
   const params = new URLSearchParams({ format, includeFuelSlipCosts: includeFuelSlipCosts ? 'true' : 'false' });
 
@@ -879,8 +880,17 @@ function buildReportUrl(
   if (filters.year !== 'all') params.set('year', filters.year);
   if (filters.month !== 'all') params.set('month', filters.month);
   if (format === 'csv' && accountingSoftware) params.set('accountingSoftware', accountingSoftware);
+  if (accountantShareId) params.set('accountantShareId', accountantShareId);
 
   return `/api/my-invoices/report?${params.toString()}`;
+}
+
+function withAccountantShare(url: string, accountantShareId?: string): string {
+  if (!accountantShareId) return url;
+
+  const scopedUrl = new URL(url, window.location.origin);
+  scopedUrl.searchParams.set('accountantShareId', accountantShareId);
+  return `${scopedUrl.pathname}${scopedUrl.search}`;
 }
 
 function copyAccountingSettings(settings: AccountingSettings): AccountingSettings {
@@ -935,12 +945,10 @@ export default function MyInvoicesClient({
   initialOpenAdd = false,
   initialDealerDefaults = { supplierName: '', vatNumber: '', address: '' },
 }: MyInvoicesClientProps = {}) {
-  const isAccountantReadOnly = Boolean(accountantShareId);
-  const apiRoot = accountantShareId
-    ? `/api/accountant/registers/${encodeURIComponent(accountantShareId)}/ledger`
-    : dealerMode
+  const apiRoot = dealerMode
       ? '/api/dealer/cost'
       : '/api/my-invoices';
+  const accountScopedUrl = (url: string) => withAccountantShare(url, accountantShareId);
   const shouldShowAppHeader = showAppHeader ?? !dealerMode;
   const [assets, setAssets] = useState<AssetOption[]>([]);
   const [invoices, setInvoices] = useState<InvoiceRecord[]>([]);
@@ -1233,7 +1241,7 @@ export default function MyInvoicesClient({
   }, [usageMetricDropdownOpen]);
 
   async function fetchInvoiceData(filters: InvoiceFilterState): Promise<InvoicesResponse> {
-    const response = await fetch(buildInvoiceListUrl(filters, apiRoot), { cache: 'no-store' });
+    const response = await fetch(accountScopedUrl(buildInvoiceListUrl(filters, apiRoot)), { cache: 'no-store' });
     const payload = (await response.json()) as AccountantInvoicesResponse;
     const data = payload.cost ?? payload;
 
@@ -1398,7 +1406,7 @@ export default function MyInvoicesClient({
     setAccountingSettingsError('');
 
     try {
-      const response = await fetch('/api/my-invoices/accounting-settings', { cache: 'no-store' });
+      const response = await fetch(accountScopedUrl('/api/my-invoices/accounting-settings'), { cache: 'no-store' });
       const data = (await response.json()) as AccountingSettingsResponse;
       if (!response.ok || !data.ok || !data.settings) {
         throw new Error(data.error || 'Accounting CSV settings could not be loaded.');
@@ -1419,15 +1427,6 @@ export default function MyInvoicesClient({
   }
 
   function openDownloadModal() {
-    if (accountantShareId) {
-      const params = new URLSearchParams({ kind: 'cost-of-ownership' });
-      if (activeFilters.assetId !== 'all') params.set('assetId', activeFilters.assetId);
-      if (activeFilters.year !== 'all') params.set('year', activeFilters.year);
-      if (activeFilters.year !== 'all' && activeFilters.month !== 'all') params.set('month', activeFilters.month);
-      window.location.assign(`/api/accountant/registers/${encodeURIComponent(accountantShareId)}/reports?${params.toString()}`);
-      return;
-    }
-
     setIncludeFuelSlipCosts(true);
     setDownloadFilters(activeFilters);
     setDownloadStep('format');
@@ -1595,7 +1594,7 @@ export default function MyInvoicesClient({
     setAccountingSettingsError('');
 
     try {
-      const response = await fetch('/api/my-invoices/accounting-settings', {
+      const response = await fetch(accountScopedUrl('/api/my-invoices/accounting-settings'), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(accountingSettingsDraft),
@@ -1628,6 +1627,7 @@ export default function MyInvoicesClient({
       format,
       includeFuelSlipCosts,
       selectedAccountingSoftware,
+      accountantShareId,
     );
 
     if (format === 'csv') {
@@ -1697,7 +1697,7 @@ export default function MyInvoicesClient({
     formData.append('source', source);
     formData.append('file', file);
 
-    const response = await fetch(`${apiRoot}/upload`, {
+    const response = await fetch(accountScopedUrl(`${apiRoot}/upload`), {
       method: 'POST',
       body: formData,
     });
@@ -1720,7 +1720,7 @@ export default function MyInvoicesClient({
       const document = await uploadInvoiceFile(selectedAssetId, 'automatic', automaticUploadFile);
       setUploadedDocument(document);
 
-      const response = await fetch(`${apiRoot}/extract`, {
+      const response = await fetch(accountScopedUrl(`${apiRoot}/extract`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ documentId: document.id, assetId: selectedAssetId }),
@@ -1791,7 +1791,7 @@ export default function MyInvoicesClient({
         notes: draft.notes,
       };
 
-      const response = await fetch(editingInvoiceId ? `${apiRoot}/${editingInvoiceId}` : apiRoot, {
+      const response = await fetch(accountScopedUrl(editingInvoiceId ? `${apiRoot}/${editingInvoiceId}` : apiRoot), {
         method: editingInvoiceId ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -1849,7 +1849,7 @@ export default function MyInvoicesClient({
     setNotice(null);
 
     try {
-      const response = await fetch(`${apiRoot}/${invoiceId}`, { method: 'DELETE' });
+      const response = await fetch(accountScopedUrl(`${apiRoot}/${invoiceId}`), { method: 'DELETE' });
       const data = (await response.json()) as InvoicesResponse;
 
       if (!response.ok || !data.ok) {
@@ -1930,12 +1930,10 @@ export default function MyInvoicesClient({
           </label>
 
           <div className={`${styles.toolbarButtons} ${dealerMode ? styles.dealerToolbarButtons : ''}`}>
-            {!isAccountantReadOnly ? (
-              <button type="button" className={`${styles.secondaryButton} ${styles.toolbarButton} ${styles.toolbarAddButton}`} onClick={() => openAddInvoiceModal()}>
-                <span className={styles.plusMark} aria-hidden="true">+</span>
-                <span>Add Cost</span>
-              </button>
-            ) : null}
+            <button type="button" className={`${styles.secondaryButton} ${styles.toolbarButton} ${styles.toolbarAddButton}`} onClick={() => openAddInvoiceModal()}>
+              <span className={styles.plusMark} aria-hidden="true">+</span>
+              <span>Add Cost</span>
+            </button>
             <button type="button" className={`${styles.secondaryButton} ${styles.toolbarButton} ${styles.toolbarFilterButton}`} onClick={openFilterPanel}>
               <FilterIcon className={styles.buttonIcon} />
               <span>Filter</span>
@@ -1955,7 +1953,7 @@ export default function MyInvoicesClient({
             {isLoading ? <div className={styles.emptyState}>Loading saved cost records...</div> : null}
 
             {!isLoading && !visibleInvoices.length ? (
-              <div className={styles.emptyState}>{isAccountantReadOnly ? 'No cost records have been shared for this register.' : 'No asset costs saved yet. Add a manual cost or upload an invoice/photo.'}</div>
+              <div className={styles.emptyState}>No asset costs saved yet. Add a manual cost or upload an invoice/photo.</div>
             ) : null}
 
             {!isLoading ? paginatedInvoices.map((invoice) => {
@@ -1998,23 +1996,21 @@ export default function MyInvoicesClient({
                             <span>Open file</span>
                           </a>
                         ) : null}
-                        {!isAccountantReadOnly ? (
-                          <>
-                            <button type="button" className={`${styles.secondaryButtonSmall} ${styles.invoiceEditButton}`} onClick={() => editInvoice(invoice)}>
-                              <EditIcon className={styles.buttonIcon} />
-                              <span>Edit</span>
-                            </button>
-                            <button
-                              type="button"
-                              className={`${styles.dangerButtonSmall} ${styles.invoiceDeleteButton}`}
-                              onClick={() => openDeleteInvoiceDialog(invoice)}
-                              disabled={deletingInvoiceId === invoice.id}
-                            >
-                              <TrashIcon className={styles.buttonIcon} />
-                              <span>{deletingInvoiceId === invoice.id ? 'Deleting...' : 'Delete'}</span>
-                            </button>
-                          </>
-                        ) : null}
+                        <>
+                          <button type="button" className={`${styles.secondaryButtonSmall} ${styles.invoiceEditButton}`} onClick={() => editInvoice(invoice)}>
+                            <EditIcon className={styles.buttonIcon} />
+                            <span>Edit</span>
+                          </button>
+                          <button
+                            type="button"
+                            className={`${styles.dangerButtonSmall} ${styles.invoiceDeleteButton}`}
+                            onClick={() => openDeleteInvoiceDialog(invoice)}
+                            disabled={deletingInvoiceId === invoice.id}
+                          >
+                            <TrashIcon className={styles.buttonIcon} />
+                            <span>{deletingInvoiceId === invoice.id ? 'Deleting...' : 'Delete'}</span>
+                          </button>
+                        </>
                       </div>
                     </div>
                   </div>
