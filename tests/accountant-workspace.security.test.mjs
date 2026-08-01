@@ -12,6 +12,7 @@ const leadsUi = read('app/leads/leads-client.tsx');
 const fuelUi = read('app/fuel/fuel-client.tsx');
 const costUi = read('app/my-invoices/my-invoices-client.tsx');
 const ownerUi = read('app/asset-register/asset-register-client.tsx');
+const ownerWorkspaceAccess = read('lib/owner-workspace-access.ts');
 const registerDb = read('lib/asset-register-db.ts');
 const registerSummaries = read('lib/asset-registers.ts');
 const migration = read('database/migrations/65-accountant-workspace-and-asset-lifecycle.sql');
@@ -68,13 +69,17 @@ test('shared workspace reuses the real Asset Register, Fuel Ledger and Cost Ledg
   assert.match(headerUi, /window\.location\.assign\('\/leads'\)/);
 });
 
-test('shared Fuel and Cost Ledgers preserve viewing and downloads but hide writes', () => {
-  assert.match(fuelUi, /if \(isAccountantReadOnly\) \{\s*openFuelSlipManager\(\)/);
-  assert.match(fuelUi, /!isAccountantReadOnly/);
+test('shared Fuel and Cost Ledgers reuse owner controls with register-scoped writes and reports', () => {
+  assert.match(fuelUi, /const isAccountantReadOnly = false/);
+  assert.match(fuelUi, /scopedApiUrl\('\/api\/fuel\/slips\/extract'\)/);
+  assert.match(fuelUi, /buildReportUrl\(reportStorageId, reportYear, normalizedMonth, 'xlsx', accountantShareId\)/);
   assert.match(fuelUi, /Fuel Slips/);
-  assert.match(costUi, /!isAccountantReadOnly/);
+  assert.match(costUi, /accountScopedUrl\(editingInvoiceId \? `\$\{apiRoot\}\/\$\{editingInvoiceId\}` : apiRoot\)/);
+  assert.match(costUi, /<span>Add Cost<\/span>/);
   assert.match(costUi, /Open file/);
-  assert.match(costUi, /\/reports\?\$\{params\.toString\(\)\}/);
+  assert.match(costUi, /\/api\/my-invoices\/report\?\$\{params\.toString\(\)\}/);
+  assert.doesNotMatch(ownerWorkspaceAccess, /requireWrite/);
+  assert.match(ownerWorkspaceAccess, /assertWorkspaceAssetAccess/);
 });
 
 test('removing an accountant register lead removes access without deleting owner data', () => {
