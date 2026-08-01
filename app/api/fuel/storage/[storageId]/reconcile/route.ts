@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAccountProfile } from '../../../../../../lib/account-profile';
-import { getServerSession } from '../../../../../../lib/auth-session';
 import { listFuelLedger, reconcileFuelStorageBalance } from '../../../../../../lib/fuel-ledger';
+import { filterFuelLedgerForWorkspace, resolveOwnerWorkspaceContext } from '../../../../../../lib/owner-workspace-access';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -12,21 +11,10 @@ function errorMessage(error: unknown, fallback: string): string {
   return error instanceof Error && error.message.trim() ? error.message : fallback;
 }
 
-async function requireOwnerSession() {
-  const session = await getServerSession({ requireActive: true });
-  if (!session?.user?.id) {
-    return { ok: false as const, response: NextResponse.json({ ok: false, error: 'You must be signed in.' }, { status: 401 }) };
-  }
-  const profile = await getAccountProfile({ id: session.user.id, name: session.user.name, email: session.user.email });
-  if (String(profile.accountType).toLowerCase() !== 'owner') {
-    return { ok: false as const, response: NextResponse.json({ ok: false, error: 'Fuel balance reconciliation is only available to owner accounts.' }, { status: 403 }) };
-  }
-  return { ok: true as const, session };
-}
-
 export async function POST(request: NextRequest, context: RouteContext) {
-  const access = await requireOwnerSession();
-  if (!access.ok) return access.response;
+  const resolved = await resolveOwnerWorkspaceContext(request, { ledger: 'fuel' });
+  if (!resolved.ok) return resolved.response;
+  const workspace = resolved.context;
 
   let payload: Record<string, unknown>;
   try {
@@ -39,12 +27,15 @@ export async function POST(request: NextRequest, context: RouteContext) {
   try {
     const result = await reconcileFuelStorageBalance({
       ...payload,
-      userId: access.session.user.id,
+      userId: workspace.ownerUserId,
       storageId: context.params.storageId,
-      addedByName: access.session.user.name,
-      addedByEmail: access.session.user.email,
+      addedByName: workspace.actorName,
+      addedByEmail: workspace.actorEmail,
     });
-    const ledger = await listFuelLedger(access.session.user.id);
+    const ledger = await filterFuelLedgerForWorkspace(
+      workspace,
+      await listFuelLedger(workspace.ownerUserId),
+    );
     return NextResponse.json({ ok: true, ...result, ...ledger, message: 'Tank balance reconciled.' });
   } catch (error) {
     return NextResponse.json({ ok: false, error: errorMessage(error, 'Failed to reconcile the tank balance.') }, { status: 400 });
