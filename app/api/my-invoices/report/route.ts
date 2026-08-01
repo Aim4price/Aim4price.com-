@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAccountProfile } from '../../../../lib/account-profile';
-import { getServerSession } from '../../../../lib/auth-session';
 import { getAssetRegisterReportLogoUrl } from '../../../../lib/asset-registers';
 import { listMyInvoicesData, type MyInvoiceAssetOption, type MyInvoiceListFilters } from '../../../../lib/my-invoices';
 import {
@@ -15,6 +14,7 @@ import {
 import { createXlsxWorkbook } from '../../../../lib/simple-xlsx';
 import { resolveReportLogoUrlForHtml } from '../../../../lib/report-logo';
 import { getDealerTrackedAsset } from '../../../../lib/dealer-maintenance-tracker';
+import { filterCostLedgerForWorkspace, resolveOwnerWorkspaceContext } from '../../../../lib/owner-workspace-access';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -119,25 +119,27 @@ function findSelectedAsset(assets: MyInvoiceAssetOption[], filters: MyInvoiceLis
 }
 
 export async function GET(request: NextRequest) {
-  const session = await getServerSession({ requireActive: true, allowOwnerApp: true });
-  const userId = session?.user?.id ?? '';
-
-  if (!session || !userId) {
-    return NextResponse.json({ ok: false, error: 'You must be signed in to export Cost of Ownership reports.' }, { status: 401 });
-  }
+  const resolved = await resolveOwnerWorkspaceContext(request, { ledger: 'cost' });
+  if (!resolved.ok) return resolved.response;
+  const workspace = resolved.context;
 
   try {
     const filters = parseFilters(request);
     const dealerAccessId = String(request.nextUrl.searchParams.get('accessId') ?? '').trim();
-    let reportOwnerUserId = userId;
-    let ownerFallbackUser: { name?: unknown; email?: unknown } = session.user;
+    let reportOwnerUserId = workspace.ownerUserId;
+    let ownerFallbackUser: { name?: unknown; email?: unknown } = workspace.accountantAccess
+      ? { name: workspace.accountantAccess.ownerName, email: '' }
+      : { name: workspace.actorName, email: workspace.actorEmail };
 
     if (dealerAccessId) {
+      if (workspace.accountantAccess) {
+        return NextResponse.json({ ok: false, error: 'Dealer report access cannot be combined with an accountant workspace.' }, { status: 400 });
+      }
       if (!UUID_PATTERN.test(dealerAccessId)) {
         return NextResponse.json({ ok: false, error: 'Cost of Ownership access is invalid.' }, { status: 400 });
       }
 
-      const trackedAsset = await getDealerTrackedAsset(userId, dealerAccessId);
+      const trackedAsset = await getDealerTrackedAsset(workspace.actorUserId, dealerAccessId);
       if (!trackedAsset || !trackedAsset.permissions.canViewCostOfOwnership) {
         return NextResponse.json({ ok: false, error: 'Cost of Ownership access is no longer active for this asset.' }, { status: 403 });
       }
@@ -152,7 +154,7 @@ export async function GET(request: NextRequest) {
 
     const ownerAppMode = request.nextUrl.searchParams.get('source') === 'owner-app';
     const format = ownerAppMode ? 'pdf' : parseFormat(request.nextUrl.searchParams.get('format'));
-    const [data, profile, rawLogoUrl] = await Promise.all([
+    const [unfilteredData, profile, rawLogoUrl] = await Promise.all([
       listMyInvoicesData(reportOwnerUserId, filters),
       getAccountProfile({
         id: reportOwnerUserId,
@@ -161,6 +163,7 @@ export async function GET(request: NextRequest) {
       }),
       getAssetRegisterReportLogoUrl(reportOwnerUserId),
     ]);
+    const data = await filterCostLedgerForWorkspace(workspace, unfilteredData);
     const logoUrl = await resolveReportLogoUrlForHtml(rawLogoUrl, request.url);
 
     const selectedAsset = findSelectedAsset(data.assets, filters);
