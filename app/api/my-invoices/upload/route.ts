@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from '../../../../lib/auth-session';
 import {
   ALLOWED_ASSET_REGISTER_IMAGE_TYPES,
   MAX_ASSET_REGISTER_DOCUMENT_UPLOAD_BYTES,
   createAssetRegisterUpload,
 } from '../../../../lib/asset-register-uploads';
 import { createInvoiceDocumentRecord, type MyInvoiceSource } from '../../../../lib/my-invoices';
+import { assertWorkspaceAssetAccess, resolveOwnerWorkspaceContext } from '../../../../lib/owner-workspace-access';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -40,17 +40,10 @@ function pickUploadFile(formData: FormData): FormFile | null {
   return null;
 }
 
-async function currentUserId() {
-  const session = await getServerSession({ requireActive: true });
-  return session?.user?.id ?? '';
-}
-
 export async function POST(request: Request) {
-  const userId = await currentUserId();
-
-  if (!userId) {
-    return NextResponse.json({ ok: false, error: 'You must be signed in to upload invoice/photo files.' }, { status: 401 });
-  }
+  const resolved = await resolveOwnerWorkspaceContext(request, { ledger: 'cost' });
+  if (!resolved.ok) return resolved.response;
+  const { context } = resolved;
 
   let formData: FormData;
 
@@ -80,9 +73,10 @@ export async function POST(request: Request) {
   }
 
   try {
-    const upload = await createAssetRegisterUpload({ userId, file });
+    await assertWorkspaceAssetAccess(context, assetId);
+    const upload = await createAssetRegisterUpload({ userId: context.ownerUserId, file });
     const document = await createInvoiceDocumentRecord({
-      userId,
+      userId: context.ownerUserId,
       assetId,
       uploadId: upload.id,
       uploadUrl: upload.url,
@@ -90,6 +84,7 @@ export async function POST(request: Request) {
       contentType: upload.contentType,
       byteSize: upload.byteSize,
       source: normalizeSource(formData.get('source')),
+      actor: { displayName: context.accountantAccess ? context.actorName : null },
     });
 
     return NextResponse.json({ ok: true, document });
