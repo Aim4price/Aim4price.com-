@@ -88,15 +88,18 @@ test('Get Estimate remains inside the client workspace and saves to its active o
   assert.match(valuationUi, /savePayload\.accountantShareId = accountantShareId/);
 });
 
-test('new acquisition question is shared, wider and responsive for owners and accountants', () => {
+test('new acquisition question is shared, simple and responsive for owners and accountants', () => {
   assert.match(ownerUi, /newAcquisitionChoiceModal/);
   assert.match(ownerUi, /newAcquisitionChoiceGrid/);
   assert.match(ownerUi, /newAcquisitionChoiceIndicator/);
-  assert.match(ownerUi, /Recently purchased, financed, inherited or otherwise acquired/);
-  assert.match(ownerStyles, /\.newAcquisitionChoiceModal[\s\S]*?width: min\(46rem/);
+  assert.match(ownerUi, /Newly acquired asset\?/);
+  assert.match(ownerUi, /<strong>Newly acquired<\/strong>/);
+  assert.match(ownerUi, /<strong>Existing asset<\/strong>/);
+  assert.doesNotMatch(ownerUi, /Recently purchased, financed, inherited or otherwise acquired/);
+  assert.match(ownerStyles, /\.newAcquisitionChoiceModal[\s\S]*?width: min\(44rem/);
   assert.match(ownerStyles, /\.newAcquisitionChoiceGrid[\s\S]*?grid-template-columns: repeat\(2/);
-  assert.match(ownerStyles, /\.newAcquisitionChoiceOption > \.newAcquisitionChoiceIcon/);
-  assert.match(ownerStyles, /\.newAcquisitionChoiceActions[\s\S]*?border-top/);
+  assert.match(ownerStyles, /\.newAcquisitionChoiceOption > \.newAcquisitionChoiceIndicator/);
+  assert.match(ownerStyles, /\.newAcquisitionChoiceOption > strong[\s\S]*?white-space: nowrap/);
 });
 
 test('accountant register manager fills its action row without an empty QR-code column', () => {
@@ -169,7 +172,7 @@ test('disposed assets are excluded from active rows and register totals', () => 
 });
 
 test('manual owner entry captures newly acquired details separately', () => {
-  assert.match(ownerUi, /Is this a newly acquired asset\?/);
+  assert.match(ownerUi, /Newly acquired asset\?/);
   assert.match(ownerUi, /acquisitionAmountExVat/);
   assert.match(ownerUi, /Acquisition details/);
   assert.match(lifecycle, /eventType = input\.newlyAcquired \? 'acquired' : 'existing_added'/);

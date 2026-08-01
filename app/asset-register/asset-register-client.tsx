@@ -14411,8 +14411,8 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
           <div className={`${styles.modalCard} ${styles.assetLifecycleModal} ${styles.newAcquisitionChoiceModal}`} role="dialog" aria-modal="true" aria-labelledby="new-acquisition-title">
             <div className={`${styles.modalHeader} ${styles.newAcquisitionChoiceHeader}`}>
               <div className={styles.modalHeaderText}>
-                <h3 id="new-acquisition-title">Is this a newly acquired asset?</h3>
-                <p>Choose how this asset entered the register. Purchase details stay separate from its market and replacement values.</p>
+                <h3 id="new-acquisition-title">Newly acquired asset?</h3>
+                <p>Choose how this asset entered the register.</p>
               </div>
               <button type="button" className={styles.modalCloseButton} onClick={() => setIsAcquisitionChoiceOpen(false)} aria-label="Close acquisition question">
                 <CloseIcon className={styles.buttonIcon} />
@@ -14427,11 +14427,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                   aria-pressed={newAssetAcquisitionDraft.newlyAcquired === true}
                 >
                   <span className={styles.newAcquisitionChoiceIndicator} aria-hidden="true" />
-                  <PlusIcon className={`${styles.buttonIcon} ${styles.newAcquisitionChoiceIcon}`} />
-                  <span className={styles.newAcquisitionChoiceCopy}>
-                    <strong>Yes, newly acquired</strong>
-                    <small>Recently purchased, financed, inherited or otherwise acquired.</small>
-                  </span>
+                  <strong>Newly acquired</strong>
                 </button>
                 <button
                   type="button"
@@ -14440,11 +14436,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                   aria-pressed={newAssetAcquisitionDraft.newlyAcquired === false}
                 >
                   <span className={styles.newAcquisitionChoiceIndicator} aria-hidden="true" />
-                  <DocumentIcon className={`${styles.buttonIcon} ${styles.newAcquisitionChoiceIcon}`} />
-                  <span className={styles.newAcquisitionChoiceCopy}>
-                    <strong>No, existing asset</strong>
-                    <small>Already owned and now being added to this register for the first time.</small>
-                  </span>
+                  <strong>Existing asset</strong>
                 </button>
               </div>
 
