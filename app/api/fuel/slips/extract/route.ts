@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from '../../../../../lib/auth-session';
 import {
   ALLOWED_ASSET_REGISTER_IMAGE_TYPES,
   MAX_ASSET_REGISTER_DOCUMENT_UPLOAD_BYTES,
   createAssetRegisterUpload,
 } from '../../../../../lib/asset-register-uploads';
 import { extractFuelSlipFromUpload } from '../../../../../lib/fuel-slip-extraction';
+import { resolveOwnerWorkspaceContext } from '../../../../../lib/owner-workspace-access';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -51,17 +51,9 @@ function isAllowedFuelSlipUpload(file: FormFile): boolean {
   return FUEL_SLIP_UPLOAD_MIME_TYPES.has(contentType) || FUEL_SLIP_UPLOAD_EXTENSIONS.has(fuelSlipFileExtension(file.name));
 }
 
-async function currentUserId() {
-  const session = await getServerSession({ requireActive: true });
-  return session?.user?.id ?? '';
-}
-
 export async function POST(request: Request) {
-  const userId = await currentUserId();
-
-  if (!userId) {
-    return NextResponse.json({ ok: false, error: 'You must be signed in to upload fuel slips.' }, { status: 401 });
-  }
+  const resolved = await resolveOwnerWorkspaceContext(request, { ledger: 'fuel' });
+  if (!resolved.ok) return resolved.response;
 
   let formData: FormData;
 
@@ -86,7 +78,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const upload = await createAssetRegisterUpload({ userId, file });
+    const upload = await createAssetRegisterUpload({ userId: resolved.context.ownerUserId, file });
     const buffer = Buffer.from(await file.arrayBuffer());
     const extraction = await extractFuelSlipFromUpload({
       data: buffer,
