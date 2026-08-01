@@ -29,8 +29,8 @@ A restricted workspace begins only when the accountant opens a shared full-regis
 - the header contains only **Asset Register**, **Fuel Ledger** and **Cost Ledger**;
 - notifications are hidden;
 - **Manage** opens a leave confirmation and returns the accountant to **My Leads** without signing out;
-- Fuel and Cost Ledgers are read-only, and owner-only Asset Register actions are not rendered;
-- finance/accounting updates and document uploads require the owner's **Allow direct updates** permission.
+- Fuel and Cost Ledgers reuse the Owner layouts, controls and PDF/XLSX exports, with accountant changes scoped to the shared register;
+- asset finance/accounting updates and document uploads in the accountant Manage modal still require the owner's **Allow direct updates** permission.
 
 ## Verification
 
@@ -43,6 +43,6 @@ npm run test:accountant-workspace
 npm run build
 ```
 
-Use an owner and accountant test account to verify a full-register Finance share in both read-only and **Allow direct updates** modes. Confirm that removing access never changes owner data, and that a disposed asset remains in the Additions & Disposals report while leaving active totals.
+Use an owner and accountant test account to verify a full-register Finance share in both asset Manage read-only and **Allow direct updates** modes. Confirm that Fuel and Cost Ledger entries remain scoped to the shared register, removing access never changes owner data, and a disposed asset remains in the Additions & Disposals report while leaving active totals.
 
 Also confirm the accountant's normal Home, Get Estimate, My Leads, Account, Partner Directory and notifications outside the shared workspace, then open the lead and verify the three-tab header and leave-to-My-Leads modal.
