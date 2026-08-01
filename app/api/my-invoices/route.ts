@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from '../../../lib/auth-session';
 import {
   createMyInvoice,
   listMyInvoicesData,
   type MyInvoiceDraftInput,
   type MyInvoiceListFilters,
 } from '../../../lib/my-invoices';
+import {
+  assertWorkspaceAssetAccess,
+  filterCostLedgerForWorkspace,
+  resolveOwnerWorkspaceContext,
+} from '../../../lib/owner-workspace-access';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -50,20 +54,16 @@ function errorMessage(error: unknown): string {
   return 'The My Cost Ledger request could not be completed.';
 }
 
-async function currentUserId() {
-  const session = await getServerSession({ requireActive: true });
-  return session?.user?.id ?? '';
-}
-
 export async function GET(request: NextRequest) {
-  const userId = await currentUserId();
-
-  if (!userId) {
-    return NextResponse.json({ ok: false, error: 'You must be signed in to view My Cost Ledger.' }, { status: 401 });
-  }
+  const resolved = await resolveOwnerWorkspaceContext(request, { ledger: 'cost' });
+  if (!resolved.ok) return resolved.response;
+  const { context } = resolved;
 
   try {
-    const data = await listMyInvoicesData(userId, parseFilters(request));
+    const data = await filterCostLedgerForWorkspace(
+      context,
+      await listMyInvoicesData(context.ownerUserId, parseFilters(request)),
+    );
     return NextResponse.json({ ok: true, ...data });
   } catch (error) {
     console.error('Aim4price My Cost Ledger GET failed.', error);
@@ -72,11 +72,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const userId = await currentUserId();
-
-  if (!userId) {
-    return NextResponse.json({ ok: false, error: 'You must be signed in to save cost records.' }, { status: 401 });
-  }
+  const resolved = await resolveOwnerWorkspaceContext(request, { ledger: 'cost' });
+  if (!resolved.ok) return resolved.response;
+  const { context } = resolved;
 
   let body: MyInvoiceDraftInput;
 
@@ -87,8 +85,14 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const result = await createMyInvoice(userId, body);
-    const data = await listMyInvoicesData(userId, {});
+    await assertWorkspaceAssetAccess(context, body.assetId);
+    const result = await createMyInvoice(context.ownerUserId, body, {
+      displayName: context.accountantAccess ? context.actorName : null,
+    });
+    const data = await filterCostLedgerForWorkspace(
+      context,
+      await listMyInvoicesData(context.ownerUserId, {}),
+    );
 
     return NextResponse.json({
       ok: true,
