@@ -7,12 +7,14 @@ import {
 } from './accountant-workspace';
 import { getAssetRegisterItemById, listAssetRegisterItems } from './asset-register-db';
 import type { FuelLedgerData } from './fuel-ledger';
+import { getAssetRegisterForUser } from './asset-registers';
 import {
   calculateMyInvoiceSummary,
   type MyInvoiceListResult,
 } from './my-invoices';
 
 export const ACCOUNTANT_SHARE_PARAM = 'accountantShareId';
+export const ACCOUNTANT_REGISTER_PARAM = 'accountantRegisterId';
 
 export type OwnerWorkspaceContext = {
   ownerUserId: string;
@@ -20,6 +22,7 @@ export type OwnerWorkspaceContext = {
   actorName: string;
   actorEmail: string;
   accountantShareId: string;
+  accountantRegisterId: string;
   accountantAccess: AccountantRegisterAccess | null;
 };
 
@@ -62,6 +65,7 @@ export async function resolveOwnerWorkspaceContext(
         actorName: String(session.user.name ?? '').trim(),
         actorEmail: String(session.user.email ?? '').trim(),
         accountantShareId: '',
+        accountantRegisterId: '',
         accountantAccess: null,
       },
     };
@@ -73,6 +77,15 @@ export async function resolveOwnerWorkspaceContext(
       shareId: accountantShareId,
       ledger: options.ledger,
     });
+    const requestedRegisterId = (() => {
+      try {
+        return new URL(request.url).searchParams.get(ACCOUNTANT_REGISTER_PARAM)?.trim() || access.registerId;
+      } catch {
+        return access.registerId;
+      }
+    })();
+    const register = await getAssetRegisterForUser(access.ownerUserId, requestedRegisterId);
+    if (!register) throw new Error('ACCOUNTANT_REGISTER_NOT_FOUND');
 
     return {
       ok: true,
@@ -82,6 +95,7 @@ export async function resolveOwnerWorkspaceContext(
         actorName: access.accountantOrganisation || access.accountantName || String(session.user.name ?? '').trim(),
         actorEmail: String(session.user.email ?? '').trim(),
         accountantShareId,
+        accountantRegisterId: register.id,
         accountantAccess: access,
       },
     };
@@ -105,14 +119,14 @@ export async function assertWorkspaceAssetAccess(
     ? await getAssetRegisterItemById(context.ownerUserId, normalizedAssetId)
     : null;
 
-  if (!asset || asset.registerId !== context.accountantAccess.registerId) {
+  if (!asset || asset.registerId !== context.accountantRegisterId) {
     throw new Error('The selected asset is not part of this shared Asset Register.');
   }
 }
 
 export async function getWorkspaceAssetIds(context: OwnerWorkspaceContext): Promise<Set<string> | null> {
   if (!context.accountantAccess) return null;
-  const assets = await listAssetRegisterItems(context.ownerUserId, context.accountantAccess.registerId);
+  const assets = await listAssetRegisterItems(context.ownerUserId, context.accountantRegisterId);
   return new Set(assets.map((asset) => asset.id));
 }
 

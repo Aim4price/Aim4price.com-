@@ -14,7 +14,7 @@ import {
   createAssetRegisterUpload,
   isAllowedAssetRegisterDocument,
 } from './asset-register-uploads';
-import { ensureAssetRegisterTables, getAssetRegisterForUser, type AssetRegisterSummary } from './asset-registers';
+import { ensureAssetRegisterTables, getAssetRegisterForUser, listAssetRegisters, type AssetRegisterSummary } from './asset-registers';
 import { getDb } from './db';
 import { listFuelLedger, type FuelLedgerData } from './fuel-ledger';
 import { listMyInvoicesData, type MyInvoiceListResult } from './my-invoices';
@@ -288,7 +288,11 @@ export async function listAccountantRegisters(accountantUserId: string): Promise
   return result.rows.map(mapAccess);
 }
 
-export async function getAccountantRegisterData(accountantUserId: string, shareId: string): Promise<{
+export async function getAccountantRegisterData(
+  accountantUserId: string,
+  shareId: string,
+  options: { registerId?: string | null; combined?: boolean } = {},
+): Promise<{
   access: AccountantRegisterAccess;
   profile: Awaited<ReturnType<typeof getAccountProfile>>;
   register: AssetRegisterSummary;
@@ -296,11 +300,36 @@ export async function getAccountantRegisterData(accountantUserId: string, shareI
   items: AccountantAsset[];
 }> {
   const access = await loadAccess(accountantUserId, shareId);
-  const [profile, register, items] = await Promise.all([
+  const [profile, registers] = await Promise.all([
     getAccountProfile({ id: access.ownerUserId }),
-    getAssetRegisterForUser(access.ownerUserId, access.registerId),
-    listAssetRegisterItems(access.ownerUserId, access.registerId),
+    listAssetRegisters(access.ownerUserId),
   ]);
+  const requestedRegisterId = String(options.registerId ?? '').trim() || access.registerId;
+  const selectedRegister = registers.find((entry) => entry.id === requestedRegisterId) ?? null;
+  if (!selectedRegister) throw new Error('ACCOUNTANT_REGISTER_NOT_FOUND');
+  const items = options.combined
+    ? (await Promise.all(registers.map((entry) => listAssetRegisterItems(access.ownerUserId, entry.id)))).flat()
+    : await listAssetRegisterItems(access.ownerUserId, selectedRegister.id);
+  const register: AssetRegisterSummary = options.combined
+    ? {
+        id: '__combined_asset_registers__',
+        userId: access.ownerUserId,
+        businessName: 'Combined Asset Registers',
+        email: '',
+        phone: '',
+        addressLine1: 'All asset registers on this account',
+        logoUrls: [],
+        showLogosOnRegister: false,
+        isPrimary: false,
+        isSelected: false,
+        assetCount: registers.reduce((sum, entry) => sum + entry.assetCount, 0),
+        totalValue: registers.reduce((sum, entry) => sum + entry.totalValue, 0),
+        totalReplacementPrice: registers.reduce((sum, entry) => sum + entry.totalReplacementPrice, 0),
+        unnotedAlertCount: registers.reduce((sum, entry) => sum + entry.unnotedAlertCount, 0),
+        createdAtIso: registers[0]?.createdAtIso ?? new Date().toISOString(),
+        updatedAtIso: registers[0]?.updatedAtIso ?? new Date().toISOString(),
+      }
+    : selectedRegister;
   if (!register) throw new Error('ACCOUNTANT_REGISTER_NOT_FOUND');
 
   const values = items.length
@@ -324,7 +353,7 @@ export async function getAccountantRegisterData(accountantUserId: string, shareI
     access,
     profile,
     register,
-    registers: [register],
+    registers,
     items: items.map((item) => ({ ...item, accountingValue: byAsset.get(item.id) ?? null })),
   };
 }
@@ -360,7 +389,8 @@ async function authorisedAsset(accountantUserId: string, shareId: string, assetI
   const access = await loadAccess(accountantUserId, shareId);
   if (requireWrite && !access.allowDirectUpdates) throw new Error('ACCOUNTANT_READ_ONLY');
   const asset = await getAssetRegisterItemById(access.ownerUserId, assetId);
-  if (!asset || asset.registerId !== access.registerId) throw new Error('ACCOUNTANT_ASSET_NOT_FOUND');
+  const register = asset?.registerId ? await getAssetRegisterForUser(access.ownerUserId, asset.registerId) : null;
+  if (!asset || !register) throw new Error('ACCOUNTANT_ASSET_NOT_FOUND');
   return { access, asset };
 }
 
@@ -634,11 +664,60 @@ export async function moveAccountantAssetBetweenRegisters(input: {
   };
 }
 
+export async function moveAccountantAssetToRegister(input: {
+  accountantUserId: string;
+  shareId: string;
+  assetId: string;
+  targetRegisterId: string;
+}): Promise<{ item: AccountantAsset; access: AccountantRegisterAccess }> {
+  const access = await loadAccess(input.accountantUserId, input.shareId);
+  const asset = await getAssetRegisterItemById(access.ownerUserId, input.assetId);
+  const targetRegister = await getAssetRegisterForUser(access.ownerUserId, input.targetRegisterId);
+
+  if (!asset) throw new Error('ACCOUNTANT_ASSET_NOT_FOUND');
+  if (!targetRegister) throw new Error('ACCOUNTANT_REGISTER_NOT_FOUND');
+  if (asset.registerId === targetRegister.id) throw new Error('ACCOUNTANT_MOVE_SAME_REGISTER');
+
+  const sourceRegister = asset.registerId
+    ? await getAssetRegisterForUser(access.ownerUserId, asset.registerId)
+    : null;
+  if (!sourceRegister) throw new Error('ACCOUNTANT_ASSET_NOT_FOUND');
+
+  const result = await getDb().query<{ id: string }>(
+    `update public.asset_register_items
+     set register_id = $4::uuid, updated_at = now()
+     where user_id = $1 and id = $2::uuid and register_id = $3::uuid
+     returning id::text`,
+    [access.ownerUserId, asset.id, sourceRegister.id, targetRegister.id],
+  );
+
+  if (!result.rows[0]) throw new Error('ACCOUNTANT_MOVE_FAILED');
+
+  const moved = await getAssetRegisterItemById(access.ownerUserId, asset.id);
+  if (!moved || moved.registerId !== targetRegister.id) throw new Error('ACCOUNTANT_MOVE_FAILED');
+
+  await writeAudit(access, input.accountantUserId, 'accountant_asset_moved', 'asset_register_item', asset.id, {
+    assetTitle: asset.title,
+    sourceRegisterId: sourceRegister.id,
+    sourceRegisterName: sourceRegister.businessName,
+    targetRegisterId: targetRegister.id,
+    targetRegisterName: targetRegister.businessName,
+  });
+
+  return {
+    item: { ...moved, accountingValue: await getAccountingValue(access.ownerUserId, moved.id) },
+    access,
+  };
+}
+
 export async function getAccountantLedger(input: {
-  accountantUserId: string; shareId: string; kind: 'fuel' | 'cost';
+  accountantUserId: string; shareId: string; kind: 'fuel' | 'cost'; registerId?: string | null;
 }): Promise<{ access: AccountantRegisterAccess; fuel?: FuelLedgerData; cost?: MyInvoiceListResult }> {
   const access = await loadAccess(input.accountantUserId, input.shareId);
-  const assets = await listAssetRegisterItems(access.ownerUserId, access.registerId);
+  const requestedRegisterId = String(input.registerId ?? '').trim() || access.registerId;
+  const register = await getAssetRegisterForUser(access.ownerUserId, requestedRegisterId);
+  if (!register) throw new Error('ACCOUNTANT_REGISTER_NOT_FOUND');
+  const assets = await listAssetRegisterItems(access.ownerUserId, register.id);
   const assetIds = new Set(assets.map((asset) => asset.id));
   if (input.kind === 'fuel') {
     if (!access.includeFuelLedger) throw new Error('ACCOUNTANT_FUEL_NOT_SHARED');
