@@ -131,11 +131,12 @@ test('accountants can leave copper-styled notes on authorised client assets', ()
   assert.match(workspace, /authorisedAsset\(input\.accountantUserId, input\.shareId, input\.assetId\)/);
   assert.match(workspace, /insert into public\.asset_partner_notes/);
   assert.match(workspace, /accountant_asset_note_left/);
-  assert.match(ownerUi, /<span>Leave a note<\/span>/);
+  assert.match(ownerUi, /<span>Note<\/span>/);
   assert.match(ownerUi, /styles\.sharedNoteModal/);
   assert.match(ownerUi, /Note to asset owner/);
   assert.match(ownerUi, /\/assets\/\$\{encodeURIComponent\(accountantNoteAsset\.id\)\}\/notes/);
   assert.match(ownerStyles, /\.page \.assetHeaderActions \.cardAccountantNoteButton[\s\S]*?var\(--action-clay-bg\)/);
+  assert.match(ownerStyles, /\.accountantNoteActions[\s\S]*?justify-content: flex-end/);
 });
 
 test('owner and accountant asset filters share lighter labels without a visible scrollbar', () => {
