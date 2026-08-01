@@ -2,6 +2,7 @@ import { getAccountProfile } from './account-profile';
 import {
   getAssetRegisterItemById,
   listAssetRegisterItems,
+  updateAssetRegisterItemFlag,
   updateAssetRegisterItemMedia,
   updateAssetRegisterItemStatusDetails,
   type AssetRegisterDocument,
@@ -510,6 +511,129 @@ export async function uploadAccountantDocument(input: {
   return { ...updated, accountingValue: await getAccountingValue(access.ownerUserId, asset.id) };
 }
 
+export async function updateAccountantAssetFlag(input: {
+  accountantUserId: string;
+  shareId: string;
+  assetId: string;
+  isFlagged: boolean;
+}): Promise<AccountantAsset> {
+  const { access, asset } = await authorisedAsset(input.accountantUserId, input.shareId, input.assetId);
+  const updated = await updateAssetRegisterItemFlag(access.ownerUserId, {
+    assetId: asset.id,
+    isFlagged: input.isFlagged,
+  });
+
+  await writeAudit(access, input.accountantUserId, input.isFlagged ? 'accountant_asset_flagged' : 'accountant_asset_unflagged', 'asset_register_item', asset.id, {
+    assetTitle: asset.title,
+    previousValue: !input.isFlagged,
+    newValue: input.isFlagged,
+    source: 'accountant_workspace',
+  });
+
+  return {
+    ...updated,
+    accountingValue: await getAccountingValue(access.ownerUserId, asset.id),
+  };
+}
+
+export async function moveAccountantAssetBetweenRegisters(input: {
+  accountantUserId: string;
+  sourceShareId: string;
+  targetShareId: string;
+  assetId: string;
+}): Promise<{ item: AccountantAsset; sourceAccess: AccountantRegisterAccess; targetAccess: AccountantRegisterAccess }> {
+  const [sourceAccess, targetAccess] = await Promise.all([
+    loadAccess(input.accountantUserId, input.sourceShareId),
+    loadAccess(input.accountantUserId, input.targetShareId),
+  ]);
+
+  if (sourceAccess.ownerUserId !== targetAccess.ownerUserId) {
+    throw new Error('ACCOUNTANT_MOVE_DIFFERENT_OWNER');
+  }
+
+  if (sourceAccess.registerId === targetAccess.registerId) {
+    throw new Error('ACCOUNTANT_MOVE_SAME_REGISTER');
+  }
+
+  const asset = await getAssetRegisterItemById(sourceAccess.ownerUserId, input.assetId);
+  if (!asset || asset.registerId !== sourceAccess.registerId) {
+    throw new Error('ACCOUNTANT_ASSET_NOT_FOUND');
+  }
+
+  const result = await getDb().query<{
+    anchored_lead_count: number | string;
+    replacement_exists: boolean;
+    moved_count: number | string;
+  }>(
+    `with replacement as (
+       select ai.id
+       from public.asset_register_items ai
+       where ai.user_id = $1 and ai.register_id = $3::uuid and ai.id <> $2::uuid
+         and coalesce(ai.lifecycle_state, 'active') = 'active'
+       order by ai.created_at asc, ai.id asc
+       limit 1
+     ), full_register_leads as (
+       select l.id
+       from public.asset_leads l
+       where l.owner_user_id = $1 and l.asset_register_item_id = $2::uuid
+         and coalesce(l.included_sections_json ->> 'source', '') = 'full_asset_register'
+     ), reassigned_leads as (
+       update public.asset_leads l
+       set asset_register_item_id = (select id from replacement), updated_at = now()
+       where l.id in (select id from full_register_leads)
+         and exists (select 1 from replacement)
+       returning l.id
+     ), moved as (
+       update public.asset_register_items ai
+       set register_id = $4::uuid, updated_at = now()
+       where ai.user_id = $1 and ai.id = $2::uuid and ai.register_id = $3::uuid
+         and (
+           not exists (select 1 from full_register_leads)
+           or exists (select 1 from replacement)
+         )
+       returning ai.id
+     )
+     select
+       (select count(*)::int from full_register_leads) as anchored_lead_count,
+       exists (select 1 from replacement) as replacement_exists,
+       (select count(*)::int from moved) as moved_count`,
+    [sourceAccess.ownerUserId, asset.id, sourceAccess.registerId, targetAccess.registerId],
+  );
+
+  const outcome = result.rows[0];
+  const anchoredLeadCount = Number(outcome?.anchored_lead_count ?? 0);
+  const movedCount = Number(outcome?.moved_count ?? 0);
+
+  if (!movedCount) {
+    if (anchoredLeadCount > 0 && !outcome?.replacement_exists) {
+      throw new Error('ACCOUNTANT_MOVE_LAST_SHARED_ASSET');
+    }
+    throw new Error('ACCOUNTANT_MOVE_FAILED');
+  }
+
+  const moved = await getAssetRegisterItemById(sourceAccess.ownerUserId, asset.id);
+  if (!moved || moved.registerId !== targetAccess.registerId) {
+    throw new Error('ACCOUNTANT_MOVE_FAILED');
+  }
+
+  await writeAudit(sourceAccess, input.accountantUserId, 'accountant_asset_moved', 'asset_register_item', asset.id, {
+    assetTitle: asset.title,
+    sourceRegisterId: sourceAccess.registerId,
+    sourceRegisterName: sourceAccess.registerName,
+    targetRegisterId: targetAccess.registerId,
+    targetRegisterName: targetAccess.registerName,
+  });
+
+  return {
+    item: {
+      ...moved,
+      accountingValue: await getAccountingValue(sourceAccess.ownerUserId, asset.id),
+    },
+    sourceAccess,
+    targetAccess,
+  };
+}
+
 export async function getAccountantLedger(input: {
   accountantUserId: string; shareId: string; kind: 'fuel' | 'cost';
 }): Promise<{ access: AccountantRegisterAccess; fuel?: FuelLedgerData; cost?: MyInvoiceListResult }> {
@@ -582,5 +706,9 @@ export function accountantWorkspaceError(error: unknown): { status: number; mess
   if (code.includes('NOT_FOUND')) return { status: 404, message: 'This shared Asset Register is unavailable or access has ended.' };
   if (code === 'ACCOUNTING_VALUE_REQUIRED') return { status: 400, message: 'Enter a valid accounting carrying value.' };
   if (code.includes('DOCUMENT')) return { status: 400, message: 'The document could not be saved. Check its type, size and the asset document limit.' };
+  if (code === 'ACCOUNTANT_MOVE_DIFFERENT_OWNER') return { status: 403, message: 'Assets can only be moved between shared registers belonging to the same owner.' };
+  if (code === 'ACCOUNTANT_MOVE_SAME_REGISTER') return { status: 400, message: 'Choose a different target Asset Register.' };
+  if (code === 'ACCOUNTANT_MOVE_LAST_SHARED_ASSET') return { status: 409, message: 'This is the last asset keeping the shared register connected. Add or retain another asset in the source register before moving it.' };
+  if (code === 'ACCOUNTANT_MOVE_FAILED') return { status: 409, message: 'The asset could not be moved between the selected registers.' };
   return { status: 500, message: 'The Accountant Workspace request could not be completed.' };
 }
