@@ -46,6 +46,10 @@ export type AccountingValueReference = {
   assetId: string;
   carryingValue: number;
   asAtDate: string;
+  originalAccountingCost: number | null;
+  accumulatedDepreciation: number | null;
+  sourceAccountingSystem: string;
+  accountantNote: string;
   sourceReference: string;
   updatedByUserId: string;
   updatedByName: string;
@@ -86,6 +90,10 @@ type AccountingValueRow = {
   asset_register_item_id: string;
   carrying_value: string | number;
   as_at_date: string;
+  original_accounting_cost: string | number | null;
+  accumulated_depreciation: string | number | null;
+  source_accounting_system: string | null;
+  accountant_note: string | null;
   source_reference: string | null;
   updated_by_user_id: string;
   updated_by_name: string | null;
@@ -149,6 +157,10 @@ function mapAccountingValue(row: AccountingValueRow): AccountingValueReference {
     assetId: row.asset_register_item_id,
     carryingValue: numberValue(row.carrying_value),
     asAtDate: dateOnly(row.as_at_date),
+    originalAccountingCost: row.original_accounting_cost === null ? null : numberValue(row.original_accounting_cost),
+    accumulatedDepreciation: row.accumulated_depreciation === null ? null : numberValue(row.accumulated_depreciation),
+    sourceAccountingSystem: text(row.source_accounting_system),
+    accountantNote: text(row.accountant_note),
     sourceReference: text(row.source_reference),
     updatedByUserId: row.updated_by_user_id,
     updatedByName: text(row.updated_by_name),
@@ -183,6 +195,13 @@ async function ensureAccountantWorkspaceSchemaOnce(): Promise<void> {
     )
   `);
   await db.query(`create unique index if not exists idx_asset_accounting_values_current on public.asset_accounting_values(owner_user_id, asset_register_item_id)`);
+  await db.query(`
+    alter table public.asset_accounting_values
+      add column if not exists original_accounting_cost numeric(14,2),
+      add column if not exists accumulated_depreciation numeric(14,2),
+      add column if not exists source_accounting_system text,
+      add column if not exists accountant_note text
+  `);
   await db.query(`
     create table if not exists public.asset_accountant_documents (
       id uuid primary key default gen_random_uuid(), owner_user_id text not null,
@@ -335,6 +354,7 @@ export async function getAccountantRegisterData(
   const values = items.length
     ? await getDb().query<AccountingValueRow>(
         `select id::text, asset_register_item_id::text, carrying_value, as_at_date::text,
+                original_accounting_cost, accumulated_depreciation, source_accounting_system, accountant_note,
                 source_reference, updated_by_user_id, updated_by_name, updated_by_organisation, updated_at::text
          from public.asset_accounting_values
          where owner_user_id = $1 and asset_register_item_id = any($2::uuid[])`,
@@ -458,7 +478,8 @@ export async function updateAccountantFinance(input: {
 
 async function getAccountingValue(ownerUserId: string, assetId: string): Promise<AccountingValueReference | null> {
   const result = await getDb().query<AccountingValueRow>(
-    `select id::text, asset_register_item_id::text, carrying_value, as_at_date::text, source_reference,
+    `select id::text, asset_register_item_id::text, carrying_value, as_at_date::text,
+            original_accounting_cost, accumulated_depreciation, source_accounting_system, accountant_note, source_reference,
             updated_by_user_id, updated_by_name, updated_by_organisation, updated_at::text
      from public.asset_accounting_values where owner_user_id = $1 and asset_register_item_id = $2::uuid limit 1`,
     [ownerUserId, assetId],
@@ -469,6 +490,8 @@ async function getAccountingValue(ownerUserId: string, assetId: string): Promise
 export async function saveAccountantCarryingValue(input: {
   accountantUserId: string; shareId: string; assetId: string;
   carryingValue: unknown; asAtDate: unknown; sourceReference: unknown;
+  originalAccountingCost?: unknown; accumulatedDepreciation?: unknown;
+  sourceAccountingSystem?: unknown; accountantNote?: unknown;
 }): Promise<AccountingValueReference> {
   const { access, asset } = await authorisedAsset(input.accountantUserId, input.shareId, input.assetId, true);
   const carryingValue = optionalNumber(input.carryingValue);
@@ -477,26 +500,46 @@ export async function saveAccountantCarryingValue(input: {
   const previous = await getAccountingValue(access.ownerUserId, asset.id);
   const result = await getDb().query<AccountingValueRow>(
     `insert into public.asset_accounting_values
-       (owner_user_id, asset_register_item_id, carrying_value, as_at_date, source_reference,
+       (owner_user_id, asset_register_item_id, carrying_value, as_at_date, original_accounting_cost,
+        accumulated_depreciation, source_accounting_system, accountant_note, source_reference,
         updated_by_user_id, updated_by_name, updated_by_organisation, created_at, updated_at)
-     values ($1, $2::uuid, $3, $4::date, $5, $6, $7, $8, now(), now())
+     values ($1, $2::uuid, $3, $4::date, $5, $6, $7, $8, $9, $10, $11, $12, now(), now())
      on conflict (owner_user_id, asset_register_item_id) do update
        set carrying_value = excluded.carrying_value, as_at_date = excluded.as_at_date,
+           original_accounting_cost = excluded.original_accounting_cost,
+           accumulated_depreciation = excluded.accumulated_depreciation,
+           source_accounting_system = excluded.source_accounting_system,
+           accountant_note = excluded.accountant_note,
            source_reference = excluded.source_reference, updated_by_user_id = excluded.updated_by_user_id,
            updated_by_name = excluded.updated_by_name, updated_by_organisation = excluded.updated_by_organisation,
            updated_at = now()
-     returning id::text, asset_register_item_id::text, carrying_value, as_at_date::text, source_reference,
+     returning id::text, asset_register_item_id::text, carrying_value, as_at_date::text,
+               original_accounting_cost, accumulated_depreciation, source_accounting_system, accountant_note, source_reference,
                updated_by_user_id, updated_by_name, updated_by_organisation, updated_at::text`,
-    [access.ownerUserId, asset.id, carryingValue, dateOnly(input.asAtDate), text(input.sourceReference) || null,
-      input.accountantUserId, actor.displayName || actor.name, actor.businessName],
+    [access.ownerUserId, asset.id, carryingValue, dateOnly(input.asAtDate),
+      optionalNumber(input.originalAccountingCost), optionalNumber(input.accumulatedDepreciation),
+      text(input.sourceAccountingSystem) || null, text(input.accountantNote) || null,
+      text(input.sourceReference) || null, input.accountantUserId,
+      actor.displayName || actor.name, actor.businessName],
   );
   const saved = mapAccountingValue(result.rows[0]);
+  await getDb().query(
+    `insert into public.asset_accounting_value_snapshots
+       (owner_user_id, asset_register_item_id, original_accounting_cost, accounting_book_value,
+        book_value_date, accumulated_depreciation, source_accounting_system, source_reference,
+        accountant_note, recorded_by_user_id, recorded_by_name, recorded_by_organisation, created_at)
+     values ($1, $2::uuid, $3, $4, $5::date, $6, $7, $8, $9, $10, $11, $12, now())`,
+    [access.ownerUserId, asset.id, saved.originalAccountingCost, saved.carryingValue, saved.asAtDate,
+      saved.accumulatedDepreciation, saved.sourceAccountingSystem || null, saved.sourceReference || null,
+      saved.accountantNote || null, input.accountantUserId, saved.updatedByName || null,
+      saved.updatedByOrganisation || null],
+  );
   await writeAudit(access, input.accountantUserId, 'accountant_carrying_value_updated', 'asset_register_item', asset.id, {
     accountantName: saved.updatedByName,
     accountantOrganisation: saved.updatedByOrganisation,
     assetId: asset.id,
     assetTitle: asset.title,
-    changedField: 'accountingCarryingValue',
+    changedField: 'accountingBookValue',
     previousValue: previous?.carryingValue ?? null,
     newValue: saved.carryingValue,
     asAtDate: saved.asAtDate,
@@ -833,7 +876,10 @@ export function accountantWorkspaceError(error: unknown): { status: number; mess
   if (code === 'ACCOUNTANT_READ_ONLY') return { status: 403, message: 'The owner has not enabled Allow direct updates for this register.' };
   if (code.includes('NOT_SHARED')) return { status: 403, message: 'The owner has not shared this ledger.' };
   if (code.includes('NOT_FOUND')) return { status: 404, message: 'This shared Asset Register is unavailable or access has ended.' };
-  if (code === 'ACCOUNTING_VALUE_REQUIRED') return { status: 400, message: 'Enter a valid accounting carrying value.' };
+  if (code === 'ACCOUNTING_VALUE_REQUIRED') return { status: 400, message: 'Enter a valid Accounting Book Value.' };
+  if (code === 'ACCOUNTANT_FINANCE_AGREEMENT_NOT_FOUND') return { status: 404, message: 'The selected Finance Agreement could not be found for this client.' };
+  if (code === 'ACCOUNTANT_FINANCE_AGREEMENT_NOT_SAVED') return { status: 409, message: 'The Finance Agreement could not be saved.' };
+  if (code === 'DISPOSAL_REASON_REQUIRED') return { status: 400, message: 'Choose a valid disposal or incorrect-record reason.' };
   if (code === 'ACCOUNTANT_NOTE_REQUIRED') return { status: 400, message: 'Write a note before saving.' };
   if (code.includes('DOCUMENT')) return { status: 400, message: 'The document could not be saved. Check its type, size and the asset document limit.' };
   if (code === 'ACCOUNTANT_MOVE_DIFFERENT_OWNER') return { status: 403, message: 'Assets can only be moved between shared registers belonging to the same owner.' };

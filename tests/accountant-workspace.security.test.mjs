@@ -5,7 +5,13 @@ import test from 'node:test';
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 const workspace = read('lib/accountant-workspace.ts');
 const lifecycle = read('lib/asset-lifecycle.ts');
+const collaboration = read('lib/accounting-collaboration.ts');
 const accountantManageUi = read('components/AccountantAssetManageModal.tsx');
+const accountantReportsUi = read('components/AccountantRegisterReportsModal.tsx');
+const accountantReportsRoute = read('app/api/accountant/registers/[shareId]/reports/route.ts');
+const accountantLifecycleRoute = read('app/api/accountant/registers/[shareId]/assets/[assetId]/lifecycle/route.ts');
+const recurringCommitmentsRoute = read('app/api/recurring-commitments/route.ts');
+const reviewItemsRoute = read('app/api/accountant/registers/[shareId]/review-items/route.ts');
 const headerUi = read('components/AppHeader.tsx');
 const accountUi = read('app/account/account-client.tsx');
 const leadsUi = read('app/leads/leads-client.tsx');
@@ -27,6 +33,7 @@ const ownerWorkspaceAccess = read('lib/owner-workspace-access.ts');
 const registerDb = read('lib/asset-register-db.ts');
 const registerSummaries = read('lib/asset-registers.ts');
 const migration = read('database/migrations/65-accountant-workspace-and-asset-lifecycle.sql');
+const collaborationMigration = read('database/migrations/66-accounting-collaboration-foundation.sql');
 
 test('accountant access is tied to the signed-in partner and an active share', () => {
   assert.match(workspace, /l\.partner_user_id = \$2/);
@@ -51,20 +58,28 @@ test('accountant removal ends only the lead access record', () => {
   assert.doesNotMatch(removal, /delete from public\.asset_register_items|delete from public\.asset_registers/);
 });
 
-test('accountant asset UI exposes no owner deletion, marketplace or pricing controls', () => {
-  assert.doesNotMatch(accountantManageUi, /Delete asset|Send to marketplace|Manage pricing|Add Asset|Dealer tracking/);
-  assert.match(accountantManageUi, /Finance details/);
+test('accountant asset UI keeps owner-only controls hidden and separates disposal from incorrect-record deletion', () => {
+  assert.doesNotMatch(accountantManageUi, /Send to marketplace|Manage pricing|Add Asset|Dealer tracking/);
+  assert.match(accountantManageUi, /Finance Agreements/);
   assert.match(accountantManageUi, /Documents/);
-  assert.match(accountantManageUi, /Accounting carrying value/);
+  assert.match(accountantManageUi, /Accounting Book Value/);
+  assert.match(accountantManageUi, /Dispose asset/);
+  assert.match(accountantManageUi, /Delete incorrect asset/);
+  assert.match(accountantLifecycleRoute, /disposeOrDeleteAsset/);
+  assert.match(accountantLifecycleRoute, /allowDirectUpdates/);
   assert.match(ownerUi, /canUseOwnerOnlyAssetActions = !isAccountantWorkspace/);
 });
 
-test('accountant finance modal makes the VAT basis explicit and saves inclusive entries excluding VAT', () => {
-  assert.match(accountantManageUi, /financeAmountBasis/);
-  assert.match(accountantManageUi, /Excl\. VAT/);
-  assert.match(accountantManageUi, /Incl\. VAT/);
-  assert.match(accountantManageUi, /convertFinanceAmounts\(finance, 1 \/ VAT_MULTIPLIER\)/);
-  assert.match(accountantManageUi, /Aim4price stores finance amounts excluding VAT\./);
+test('Finance Agreements preserve financier amounts and use explicit multi-asset link roles without automatic allocation', () => {
+  assert.doesNotMatch(accountantManageUi, /financeAmountBasis|VAT_MULTIPLIER|convertFinanceAmounts/);
+  assert.match(accountantManageUi, /Enter agreement amounts exactly as supplied by the financier/);
+  assert.match(accountantManageUi, /directly_financed/);
+  assert.match(accountantManageUi, /financed_acquisition/);
+  assert.match(accountantManageUi, /collateral_only/);
+  assert.match(accountantManageUi, /No amount is allocated automatically/);
+  assert.match(collaboration, /asset_finance_agreement_assets/);
+  assert.match(collaboration, /original_amount_allocation/);
+  assert.match(collaboration, /settlement_allocation/);
 });
 
 test('normal accountant account keeps standard leads, account and notifications', () => {
@@ -174,6 +189,11 @@ test('shared Fuel and Cost Ledgers reuse owner controls with register-scoped wri
   assert.match(costUi, /<span>Add Cost<\/span>/);
   assert.match(costUi, /Open file/);
   assert.match(costUi, /\/api\/my-invoices\/report\?\$\{params\.toString\(\)\}/);
+  assert.match(costUi, /Add recurring commitment/);
+  assert.match(costUi, /This does not create an expense/);
+  assert.match(costUi, /\/api\/recurring-commitments/);
+  assert.match(recurringCommitmentsRoute, /resolveOwnerWorkspaceContext\(request, \{ ledger: 'cost' \}\)/);
+  assert.match(collaboration, /annualise\(amount, row\.frequency\)/);
   assert.doesNotMatch(ownerWorkspaceAccess, /requireWrite/);
   assert.match(ownerWorkspaceAccess, /assertWorkspaceAssetAccess/);
 });
@@ -183,10 +203,14 @@ test('removing an accountant register lead removes access without deleting owner
   assert.match(leadsUi, /The owner’s register was not deleted/);
 });
 
-test('genuine disposals archive while duplicate mistakes use the delete path', () => {
-  assert.match(lifecycle, /hardDelete = input\.reason === 'mistake_duplicate'/);
+test('genuine disposals and incorrect records retain auditable tombstones', () => {
+  assert.match(lifecycle, /deleteRecord = \['mistake_duplicate', 'created_in_error', 'import_error', 'test_record'\]/);
   assert.match(lifecycle, /set lifecycle_state = 'disposed'/);
-  assert.match(lifecycle, /deleteAssetRegisterItem\(input\.ownerUserId, asset\.id\)/);
+  assert.match(lifecycle, /set lifecycle_state = 'archived'/);
+  assert.match(lifecycle, /ASSET_DELETE_HAS_DEPENDENCIES/);
+  assert.match(lifecycle, /fuel_storage_events/);
+  assert.match(lifecycle, /fuel_slips/);
+  assert.doesNotMatch(lifecycle, /deleteAssetRegisterItem\(/);
   assert.match(lifecycle, /asset_snapshot_json/);
 });
 
@@ -208,4 +232,38 @@ test('migration is additive, idempotent and keeps values separate', () => {
   assert.match(migration, /create table if not exists public\.asset_accounting_values/);
   assert.match(migration, /carrying_value numeric/);
   assert.doesNotMatch(migration, /drop table|truncate table/);
+  assert.match(collaborationMigration, /create table if not exists public\.asset_finance_agreements/);
+  assert.match(collaborationMigration, /create table if not exists public\.asset_finance_agreement_assets/);
+  assert.match(collaborationMigration, /create table if not exists public\.asset_accounting_value_snapshots/);
+  assert.match(collaborationMigration, /create table if not exists public\.asset_recurring_commitments/);
+  assert.match(collaborationMigration, /create table if not exists public\.asset_accounting_review_items/);
+  assert.doesNotMatch(collaborationMigration, /drop table|truncate table/);
+});
+
+test('final reports use approved accounting language and keep audit history in product', () => {
+  for (const label of ['Market versus Accounting', 'Market Value Trend', 'Finance Position and Commitments',
+    'Cost of Ownership', 'Fuel Report', 'Asset Register', 'Fuel Ledger', 'Cost Ledger']) {
+    assert.match(accountantReportsUi, new RegExp(label));
+  }
+  assert.doesNotMatch(accountantReportsUi, /depreciation schedule|Asset Change History/i);
+  assert.match(accountantReportsRoute, /Accounting Book Value/);
+  assert.match(accountantReportsRoute, /not accounting or tax depreciation/);
+  assert.match(accountantReportsRoute, /Asset Change History is an in-product audit record and is not downloadable/);
+});
+
+test('Accounting Book Value writes are dated snapshots and Needs Attention is data driven', () => {
+  assert.match(workspace, /asset_accounting_value_snapshots/);
+  assert.match(workspace, /accountingBookValue/);
+  assert.match(collaboration, /book-value-missing/);
+  assert.match(collaboration, /book-value-stale/);
+  assert.match(collaboration, /finance-unlinked/);
+  assert.match(collaboration, /negative-equity/);
+  assert.match(collaboration, /commitment-renewal/);
+  assert.match(collaboration, /dataStatus: severity/);
+  assert.match(collaboration, /partial:/);
+  assert.match(collaboration, /saveAccountingReviewDecision/);
+  assert.match(collaboration, /issue_status === 'deferred'/);
+  assert.match(reviewItemsRoute, /buildAccountantFinancialSummary/);
+  assert.match(accountantReportsUi, /Defer 30 days/);
+  assert.match(accountantReportsUi, /Reviewed/);
 });

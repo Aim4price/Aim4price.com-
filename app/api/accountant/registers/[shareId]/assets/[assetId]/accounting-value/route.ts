@@ -19,10 +19,14 @@ export async function PUT(request: NextRequest, context: Context) {
       carryingValue: body.carryingValue,
       asAtDate: body.asAtDate,
       sourceReference: body.sourceReference,
+      originalAccountingCost: body.originalAccountingCost,
+      accumulatedDepreciation: body.accumulatedDepreciation,
+      sourceAccountingSystem: body.sourceAccountingSystem,
+      accountantNote: body.accountantNote,
     });
     return NextResponse.json({ ok: true, accountingValue });
   } catch (error) {
-    console.error('accountant carrying value PUT failed', error);
+    console.error('accountant book value PUT failed', error);
     const mapped = accountantWorkspaceError(error);
     return NextResponse.json({ ok: false, error: mapped.message }, { status: mapped.status });
   }

@@ -1,5 +1,5 @@
 import { getAccountProfile } from './account-profile';
-import { deleteAssetRegisterItem, getAssetRegisterItemById, type AssetRegisterItem } from './asset-register-db';
+import { getAssetRegisterItemById, type AssetRegisterItem } from './asset-register-db';
 import { ensureAssetRegisterTables } from './asset-registers';
 import { getDb } from './db';
 import { ensurePartnerAccessTables } from './partner-access';
@@ -14,7 +14,10 @@ export type AssetAcquisitionDetails = {
   updatedAtIso: string;
 };
 
-export type AssetDisposalReason = 'sold' | 'traded_in' | 'scrapped' | 'written_off' | 'mistake_duplicate' | 'other';
+export type AssetDisposalReason =
+  | 'sold' | 'traded_in' | 'scrapped' | 'written_off' | 'stolen' | 'donated'
+  | 'returned_to_financier' | 'transferred' | 'mistake_duplicate' | 'created_in_error'
+  | 'import_error' | 'test_record' | 'other';
 
 export type AssetLifecycleReportItem = {
   id: string;
@@ -229,29 +232,60 @@ export async function disposeOrDeleteAsset(input: {
   disposalDate: unknown;
   disposalAmountExVat?: unknown;
   note?: unknown;
+  actorUserId?: string | null;
   actorName?: string | null;
+  actorOrganisation?: string | null;
 }): Promise<{ mode: 'disposed' | 'deleted'; asset: AssetRegisterItem }> {
   await ensureAssetLifecycleSchema();
   const asset = await getAssetRegisterItemById(input.ownerUserId, input.assetId);
   if (!asset) throw new Error('ASSET_NOT_FOUND');
-  const allowedReasons = new Set<AssetDisposalReason>(['sold', 'traded_in', 'scrapped', 'written_off', 'mistake_duplicate', 'other']);
+  const allowedReasons = new Set<AssetDisposalReason>([
+    'sold', 'traded_in', 'scrapped', 'written_off', 'stolen', 'donated', 'returned_to_financier',
+    'transferred', 'mistake_duplicate', 'created_in_error', 'import_error', 'test_record', 'other',
+  ]);
   if (!allowedReasons.has(input.reason)) throw new Error('DISPOSAL_REASON_REQUIRED');
-  const actor = await actorDetails(input.ownerUserId, input.actorName);
-  const hardDelete = input.reason === 'mistake_duplicate';
-  const eventType = hardDelete ? 'deleted_duplicate' : 'disposed';
+  const actorUserId = text(input.actorUserId) || input.ownerUserId;
+  const actor = input.actorOrganisation
+    ? { name: text(input.actorName) || 'Aim4price user', organisation: text(input.actorOrganisation) }
+    : await actorDetails(actorUserId, input.actorName);
+  const deleteRecord = ['mistake_duplicate', 'created_in_error', 'import_error', 'test_record'].includes(input.reason);
+  const eventType = deleteRecord ? 'deleted_duplicate' : 'disposed';
+
+  if (deleteRecord) {
+    const dependencyResult = await getDb().query<{ has_dependencies: boolean }>(
+      `select
+         exists (select 1 from public.asset_accounting_values where owner_user_id = $1 and asset_register_item_id = $2::uuid)
+         or exists (select 1 from public.asset_finance_agreement_assets where owner_user_id = $1 and asset_register_item_id = $2::uuid)
+         or exists (select 1 from public.asset_recurring_commitment_assets where owner_user_id = $1 and asset_register_item_id = $2::uuid)
+         or exists (select 1 from public.asset_invoices where user_id = $1 and asset_register_item_id = $2::uuid)
+         or exists (select 1 from public.fuel_storage_events where user_id = $1 and asset_register_item_id = $2::text)
+         or exists (select 1 from public.fuel_slips where user_id = $1 and asset_register_item_id = $2::uuid)
+         or exists (select 1 from public.asset_scan_events where asset_id = $2::uuid)
+         as has_dependencies`,
+      [input.ownerUserId, asset.id],
+    );
+    if (dependencyResult.rows[0]?.has_dependencies || asset.documents.length || asset.photos.length) throw new Error('ASSET_DELETE_HAS_DEPENDENCIES');
+  }
 
   await getDb().query(
     `insert into public.asset_lifecycle_events
        (owner_user_id, register_id, asset_register_item_id, event_type, reason, effective_date,
         amount_ex_vat, note, actor_user_id, actor_name, actor_organisation, asset_snapshot_json, created_at)
-     values ($1, $2::uuid, $3::uuid, $4, $5, $6::date, $7, $8, $1, $9, $10, $11::jsonb, now())`,
+     values ($1, $2::uuid, $3::uuid, $4, $5, $6::date, $7, $8, $9, $10, $11, $12::jsonb, now())`,
     [input.ownerUserId, asset.registerId, asset.id, eventType, input.reason, dateOnly(input.disposalDate),
-      optionalAmount(input.disposalAmountExVat), text(input.note) || null, actor.name, actor.organisation,
+      optionalAmount(input.disposalAmountExVat), text(input.note) || null, actorUserId, actor.name, actor.organisation,
       JSON.stringify(assetSnapshot(asset))],
   );
 
-  if (hardDelete) {
-    await deleteAssetRegisterItem(input.ownerUserId, asset.id);
+  if (deleteRecord) {
+    await getDb().query(
+      `update public.asset_register_items
+       set lifecycle_state = 'archived', updated_at = now(),
+           marketplace_status = case when marketplace_status is null then null else 'off' end,
+           qr_status = 'deleted'
+       where user_id = $1 and id = $2::uuid`,
+      [input.ownerUserId, asset.id],
+    );
   } else {
     await getDb().query(
       `update public.asset_register_items
@@ -269,13 +303,13 @@ export async function disposeOrDeleteAsset(input: {
   if (asset.registerId) {
     await getDb().query(`update public.asset_registers set updated_at = now() where user_id = $1 and id = $2::uuid`, [input.ownerUserId, asset.registerId]);
   }
-  await writeLifecycleAudit(input.ownerUserId, input.ownerUserId, hardDelete ? 'asset_duplicate_deleted' : 'asset_disposed', asset, {
+  await writeLifecycleAudit(input.ownerUserId, actorUserId, deleteRecord ? 'asset_record_deleted' : 'asset_disposed', asset, {
     reason: input.reason,
     disposalDate: dateOnly(input.disposalDate),
     disposalAmountExVat: optionalAmount(input.disposalAmountExVat),
-    retainedForReporting: !hardDelete,
+    retainedForReporting: true,
   });
-  return { mode: hardDelete ? 'deleted' : 'disposed', asset };
+  return { mode: deleteRecord ? 'deleted' : 'disposed', asset };
 }
 
 export async function listAssetLifecycleReport(ownerUserId: string, registerId: string, from?: string | null, to?: string | null): Promise<AssetLifecycleReportItem[]> {
