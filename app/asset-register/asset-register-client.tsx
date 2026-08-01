@@ -5755,7 +5755,6 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   const isAccountantWorkspace = Boolean(accountantShareId);
   const [assets, setAssets] = useState<RegisterAsset[]>([]);
   const [accountantAccess, setAccountantAccess] = useState<AccountantRegisterAccess | null>(null);
-  const [accountantRegisters, setAccountantRegisters] = useState<AccountantRegisterAccess[]>([]);
   const [accountProfile, setAccountProfile] = useState<AccountProfile | null>(null);
   const [assetRegisters, setAssetRegisters] = useState<AssetRegisterSummary[]>([]);
   const [activeRegister, setActiveRegister] = useState<AssetRegisterSummary | null>(null);
@@ -6245,24 +6244,6 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     };
   }, [activeRegister, assetRegisters]);
   const registerSwitcherOptions = useMemo(() => {
-    if (isAccountantWorkspace) {
-      return accountantRegisters.map((access) => ({
-        id: access.shareId,
-        userId: '',
-        businessName: access.registerName || access.ownerBusinessName || access.ownerName || 'Asset Register',
-        email: '',
-        phone: '',
-        addressLine1: access.ownerBusinessName || access.ownerName || '',
-        isPrimary: false,
-        isSelected: access.shareId === accountantShareId,
-        assetCount: access.assetCount,
-        totalValue: access.totalValue,
-        totalReplacementPrice: 0,
-        createdAtIso: access.lastUpdatedIso,
-        updatedAtIso: access.lastUpdatedIso,
-      }));
-    }
-
     const registersById = new Map<string, AssetRegisterSummary>();
 
     assetRegisters.forEach((register) => {
@@ -6286,7 +6267,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       if (!left.isSelected && right.isSelected) return 1;
       return left.businessName.localeCompare(right.businessName);
     });
-  }, [accountantRegisters, accountantShareId, activeRegister, assetRegisters, combinedRegisterSwitcherOption, isAccountantWorkspace]);
+  }, [activeRegister, assetRegisters, combinedRegisterSwitcherOption]);
   const visibleRegisterSwitcherOptions = useMemo(() => {
     const query = registerSwitcherSearchTerm.trim().toLowerCase();
 
@@ -6349,9 +6330,10 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     [assetRegisterMoveTargets],
   );
   const canUseOwnerOnlyAssetActions = !isAccountantWorkspace;
+  const canManageRegisterStructure = canUseOwnerOnlyAssetActions || isAccountantWorkspace;
   const canUseAccountantDocumentActions = isAccountantWorkspace && Boolean(accountantAccess?.allowDirectUpdates);
   const canShareActiveRegister = canUseOwnerOnlyAssetActions;
-  const canAddAssetsToActiveRegister = canUseOwnerOnlyAssetActions && !isCombinedRegisterView;
+  const canAddAssetsToActiveRegister = canManageRegisterStructure && !isCombinedRegisterView;
   const canUseMarketplaceActions = !isAccountantWorkspace;
   const isQuoteModalOpen = Boolean(quoteAsset);
   const isFullRegisterQuoteLead = quoteScope === 'register';
@@ -6502,12 +6484,17 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       setAssets([]);
 
       try {
-        const requestedRegisterId = isAccountantWorkspace ? '' : readRegisterIdFromLocation();
+        const requestedRegisterId = readRegisterIdFromLocation();
         setActiveRegisterId(requestedRegisterId);
         if (!isAccountantWorkspace) void loadAccountProfile();
 
+        const accountantRegisterQuery = requestedRegisterId === COMBINED_REGISTER_ID
+          ? '?scope=combined'
+          : requestedRegisterId
+            ? `?registerId=${encodeURIComponent(requestedRegisterId)}`
+            : '';
         const registerUrl = accountantShareId
-          ? `/api/accountant/registers/${encodeURIComponent(accountantShareId)}`
+          ? `/api/accountant/registers/${encodeURIComponent(accountantShareId)}${accountantRegisterQuery}`
           : buildAssetRegisterApiUrl(requestedRegisterId);
         const assetsResponse = await fetch(registerUrl, {
           cache: 'no-store',
@@ -6535,12 +6522,6 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
         }
 
         setAccountantAccess(assetsData.access ?? null);
-        if (isAccountantWorkspace && assetsData.access) {
-          setAccountantRegisters((current) => current.some((access) => access.shareId === assetsData.access?.shareId)
-            ? current
-            : [assetsData.access as AccountantRegisterAccess, ...current]);
-        }
-
         if (assetsData.register) {
           setActiveRegister(assetsData.register);
           setActiveRegisterId(assetsData.register.id);
@@ -6552,16 +6533,6 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
           setAssetRegisters(assetsData.registers);
         }
 
-        if (isAccountantWorkspace) {
-          const switcherResponse = await fetch('/api/accountant/registers', {
-            cache: 'no-store',
-            credentials: 'include',
-          });
-          const switcherData = (await switcherResponse.json()) as AccountantRegistersApiResponse;
-          if (mounted && switcherResponse.ok && switcherData.ok) {
-            setAccountantRegisters(switcherData.registers ?? []);
-          }
-        }
       } catch (error) {
         if (!mounted) return;
 
@@ -6588,14 +6559,21 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   useEffect(() => {
     if (!isAccountantWorkspace || isLoading || !registerSwitcherOptions.length) return;
     const params = new URLSearchParams(window.location.search);
-    if (params.get('switchAccounts') !== '1') return;
+    if (params.get('changeRegister') !== '1') return;
 
     setRegisterSwitcherSearchTerm('');
     setIsChangeRegisterModalOpen(true);
-    params.delete('switchAccounts');
+    params.delete('changeRegister');
     const query = params.toString();
     window.history.replaceState(null, '', `${window.location.pathname}${query ? `?${query}` : ''}`);
   }, [isAccountantWorkspace, isLoading, registerSwitcherOptions.length]);
+
+  useEffect(() => {
+    if (!isAccountantWorkspace) return;
+    const openRegisterChange = () => openChangeRegisterModal();
+    window.addEventListener('aim4price:open-register-change', openRegisterChange);
+    return () => window.removeEventListener('aim4price:open-register-change', openRegisterChange);
+  });
 
   useEffect(() => {
     if (!notice) return undefined;
@@ -6610,9 +6588,14 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     setIsRefreshingRegister(true);
 
     try {
-      const requestedRegisterId = isAccountantWorkspace ? '' : readRegisterIdFromLocation() || activeRegister?.id || activeRegisterId;
+      const requestedRegisterId = readRegisterIdFromLocation() || activeRegister?.id || activeRegisterId;
+      const accountantRegisterQuery = requestedRegisterId === COMBINED_REGISTER_ID
+        ? '?scope=combined'
+        : requestedRegisterId
+          ? `?registerId=${encodeURIComponent(requestedRegisterId)}`
+          : '';
       const registerUrl = accountantShareId
-        ? `/api/accountant/registers/${encodeURIComponent(accountantShareId)}`
+        ? `/api/accountant/registers/${encodeURIComponent(accountantShareId)}${accountantRegisterQuery}`
         : buildAssetRegisterApiUrl(requestedRegisterId);
       const assetsResponse = await fetch(registerUrl, {
         cache: 'no-store',
@@ -6667,7 +6650,9 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
   function openChangeRegisterModal() {
     if (!canOpenRegisterSwitcher) {
-      window.location.href = isAccountantWorkspace ? '/accountant/registers' : '/asset-registers';
+      window.location.href = isAccountantWorkspace && accountantShareId
+        ? `/accountant/registers/${encodeURIComponent(accountantShareId)}/manage`
+        : '/asset-registers';
       return;
     }
 
@@ -6686,12 +6671,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
     if (!nextRegisterId || changingRegisterId) return;
 
-    if (isAccountantWorkspace && nextRegisterId === accountantShareId) {
-      closeChangeRegisterModal();
-      return;
-    }
-
-    if (!isAccountantWorkspace && (nextRegisterId === activeRegister?.id || nextRegisterId === activeRegisterId)) {
+    if (nextRegisterId === activeRegister?.id || nextRegisterId === activeRegisterId) {
       closeChangeRegisterModal();
       return;
     }
@@ -6699,7 +6679,10 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     setChangingRegisterId(nextRegisterId);
 
     if (isAccountantWorkspace) {
-      window.location.assign(`/accountant/registers/${encodeURIComponent(nextRegisterId)}`);
+      const workspaceRoot = `/accountant/registers/${encodeURIComponent(accountantShareId ?? '')}`;
+      window.location.assign(nextRegisterId === COMBINED_REGISTER_ID
+        ? `${workspaceRoot}?scope=combined`
+        : `${workspaceRoot}?registerId=${encodeURIComponent(nextRegisterId)}`);
       return;
     }
     setNotice(null);
@@ -6738,11 +6721,6 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   }
 
   function openAssetRegisterMoveManager(asset: RegisterAsset) {
-    if (isAccountantWorkspace && accountantShareId) {
-      window.location.assign(`/accountant/registers?manage=${encodeURIComponent(accountantShareId)}&assetId=${encodeURIComponent(asset.id)}`);
-      return;
-    }
-
     setNotice(null);
     setAssetRegisterMoveAsset(asset);
     setAssetRegisterMoveSearchTerm(asset.title);
@@ -6776,7 +6754,10 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     setAssetRegisterMoveError('');
 
     try {
-      const response = await fetch('/api/asset-registers/move-assets', {
+      const moveUrl = isAccountantWorkspace && accountantShareId
+        ? `/api/accountant/registers/${encodeURIComponent(accountantShareId)}/owner-registers/move-assets`
+        : '/api/asset-registers/move-assets';
+      const response = await fetch(moveUrl, {
         method: 'PUT',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -9593,7 +9574,10 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       formData.append('files', file);
     });
 
-    const response = await fetch('/api/asset-register/uploads', {
+    const uploadUrl = isAccountantWorkspace && accountantShareId
+      ? `/api/asset-register/uploads?accountantShareId=${encodeURIComponent(accountantShareId)}`
+      : '/api/asset-register/uploads';
+    const response = await fetch(uploadUrl, {
       method: 'POST',
       credentials: 'include',
       body: formData,
@@ -10099,7 +10083,10 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       let savedAssetForEditor: RegisterAsset | null = null;
 
       if (editingAssetId !== null) {
-        const response = await fetch('/api/asset-register', {
+        const manualAssetUrl = isAccountantWorkspace && accountantShareId
+          ? `/api/asset-register?accountantShareId=${encodeURIComponent(accountantShareId)}`
+          : '/api/asset-register';
+        const response = await fetch(manualAssetUrl, {
           method: 'PUT',
           credentials: 'include',
           headers: {
@@ -10141,7 +10128,10 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
           });
         }
       } else {
-        const response = await fetch('/api/asset-register', {
+        const manualAssetUrl = isAccountantWorkspace && accountantShareId
+          ? `/api/asset-register?accountantShareId=${encodeURIComponent(accountantShareId)}`
+          : '/api/asset-register';
+        const response = await fetch(manualAssetUrl, {
           method: 'POST',
           credentials: 'include',
           headers: {
@@ -12785,20 +12775,20 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                   </label>
 
                   <Link
-                    href={isAccountantWorkspace ? '/accountant/registers' : '/asset-registers'}
+                    href={isAccountantWorkspace && accountantShareId
+                      ? `/accountant/registers/${encodeURIComponent(accountantShareId)}/manage`
+                      : '/asset-registers'}
                     className={`${styles.secondaryButton} ${styles.changeRegisterManageButton}`}
                     onClick={closeChangeRegisterModal}
                   >
                     <ManageIcon className={styles.buttonIcon} />
-                    <span>{isAccountantWorkspace ? 'All registers' : 'Manage'}</span>
+                    <span>Manage</span>
                   </Link>
                 </div>
 
                 <div className={styles.changeRegisterList}>
                   {visibleRegisterSwitcherOptions.map((register) => {
-                    const isCurrentRegister = isAccountantWorkspace
-                      ? register.id === accountantShareId
-                      : register.id === activeRegister?.id || register.id === activeRegisterId;
+                    const isCurrentRegister = register.id === activeRegister?.id || register.id === activeRegisterId;
                     const isChangingThisRegister = changingRegisterId === register.id;
                     const registerAssetCount = Math.max(0, Math.round(Number(register.assetCount) || 0));
                     const assetCountLabel = `${registerAssetCount.toLocaleString('en-ZA')} ${registerAssetCount === 1 ? 'asset' : 'assets'}`;
@@ -12931,7 +12921,9 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                         <div className={styles.assetRegisterMoveNoTarget}>
                           <p>Create another asset register before moving this asset.</p>
                           <Link
-                            href="/asset-registers"
+                            href={isAccountantWorkspace && accountantShareId
+                              ? `/accountant/registers/${encodeURIComponent(accountantShareId)}/manage`
+                              : '/asset-registers'}
                             className={`${styles.primaryButton} ${styles.assetRegisterMoveCreateButton}`}
                             onClick={closeAssetRegisterMoveManager}
                           >
@@ -14124,9 +14116,14 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
             <div className={styles.emptyState}>
               <h3>No assets saved yet</h3>
               <p>Run a valuation or add a manual asset to start building your register.</p>
-              {canUseOwnerOnlyAssetActions ? (
+              {canManageRegisterStructure ? (
                 <div className={styles.emptyStateActions}>
-                  <Link href="/valuation" className={styles.secondaryButton}>
+                  <Link
+                    href={isAccountantWorkspace && accountantShareId
+                      ? `/valuation?accountantShareId=${encodeURIComponent(accountantShareId)}&registerId=${encodeURIComponent(activeRegisterId)}`
+                      : '/valuation'}
+                    className={styles.secondaryButton}
+                  >
                     Go to valuation
                   </Link>
                   <button type="button" className={styles.primaryButton} onClick={openAddAssetChoiceModal}>

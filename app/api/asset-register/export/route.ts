@@ -2797,15 +2797,8 @@ export async function GET(request: NextRequest) {
 
     if (isScopedExport) {
       const scope = scopeParam as RegisterExportScope;
-      if (workspace.accountantAccess && scope !== 'single') {
-        return NextResponse.json({ ok: false, error: 'Accountant exports are limited to the active shared Asset Register.' }, { status: 403 });
-      }
-      const allRegisters = workspace.accountantAccess
-        ? [await getAssetRegisterForUser(ownerUserId, workspace.accountantAccess.registerId)].filter((register): register is AssetRegisterSummary => Boolean(register))
-        : await listAssetRegisters(ownerUserId);
-      const registerIds = workspace.accountantAccess
-        ? [workspace.accountantAccess.registerId]
-        : parseRegisterIds(params);
+      const allRegisters = await listAssetRegisters(ownerUserId);
+      const registerIds = parseRegisterIds(params);
       const registerById = new Map(allRegisters.map((register) => [register.id, register]));
       let selectedRegisters: AssetRegisterSummary[] = [];
 

@@ -24,6 +24,8 @@ import type { GpsType, RunValuationInput } from '../../../lib/tractor-logic';
 import { isSectorKey, type SectorKey } from '../../../lib/equipment-types';
 import { runGenericValuation, type GenericCondition, type GenericSelectedMethod } from '../../../lib/generic-valuation';
 import { advancedAssumptionsWereRequested } from '../../../lib/valuation/shared';
+import { getAccountantRegisterAccess } from '../../../lib/accountant-workspace';
+import { getAssetRegisterForUser } from '../../../lib/asset-registers';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -394,11 +396,15 @@ export async function POST(request: NextRequest) {
       photos?: unknown;
       conversionAssetId?: unknown;
       conversionMode?: unknown;
+      accountantShareId?: unknown;
+      registerId?: unknown;
     };
 
     const saveForMarketplace = parseBoolean(body.saveForMarketplace);
     const photoUrls = saveForMarketplace ? normalizePhotos(body.photos) : [];
     const requestedConversionAssetId = normalizeConversionAssetId(body.conversionAssetId);
+    const accountantShareId = String(body.accountantShareId ?? '').trim();
+    const requestedRegisterId = String(body.registerId ?? '').trim();
 
     const profile = await getAccountProfile({
       id: session.user.id,
@@ -416,7 +422,20 @@ export async function POST(request: NextRequest) {
     }
 
     const accountType = String(profile.accountType ?? '').trim().toLowerCase();
-    const canSaveAssetRegister = accountType === 'owner';
+    const accountantAccess = accountantShareId
+      ? await getAccountantRegisterAccess({ accountantUserId: session.user.id, shareId: accountantShareId })
+      : null;
+    const effectiveOwnerUserId = accountantAccess?.ownerUserId ?? session.user.id;
+    const targetRegister = accountantAccess
+      ? await getAssetRegisterForUser(effectiveOwnerUserId, requestedRegisterId)
+      : null;
+    if (accountantAccess && !targetRegister) {
+      return NextResponse.json<SaveValuationRunApiResponse>({ ok: false, error: 'Asset register not found.' }, { status: 404 });
+    }
+    if (accountantAccess && (saveForMarketplace || requestedConversionAssetId)) {
+      return NextResponse.json<SaveValuationRunApiResponse>({ ok: false, error: 'Client workspace estimates can only be saved as new client assets.' }, { status: 400 });
+    }
+    const canSaveAssetRegister = accountType === 'owner' || Boolean(accountantAccess);
     const canSaveMarketplaceAsset = !requestedConversionAssetId && saveForMarketplace && (accountType === 'owner' || accountType === 'dealer');
 
     if (!canSaveAssetRegister && !canSaveMarketplaceAsset) {
@@ -431,7 +450,7 @@ export async function POST(request: NextRequest) {
 
     const conversionAssetId = requestedConversionAssetId;
     const conversionAsset = conversionAssetId
-      ? await getManualConversionAsset(session.user.id, conversionAssetId)
+      ? await getManualConversionAsset(effectiveOwnerUserId, conversionAssetId)
       : null;
     const effectiveSaveForMarketplace = conversionAsset ? false : saveForMarketplace;
     const effectivePhotoUrls = effectiveSaveForMarketplace ? photoUrls : [];
@@ -478,7 +497,7 @@ export async function POST(request: NextRequest) {
       });
 
       const savedRun = await saveGenericValuationRunFromResult({
-        userId: session.user.id,
+        userId: effectiveOwnerUserId,
         result: genericResult,
         selectedMethod,
         valuationVersion: String(body.valuationVersion ?? 'generic-v1').trim() || 'generic-v1',
@@ -487,7 +506,7 @@ export async function POST(request: NextRequest) {
       try {
         const asset = conversionAsset
           ? await updateAssetRegisterItemFromGenericValuation({
-              userId: session.user.id,
+              userId: effectiveOwnerUserId,
               assetId: conversionAsset.id,
               valuationRunId: savedRun.runId,
               result: genericResult,
@@ -496,7 +515,8 @@ export async function POST(request: NextRequest) {
               saveReplacementPrice: true,
             })
           : await createAssetRegisterItemFromGenericValuation({
-              userId: session.user.id,
+              userId: effectiveOwnerUserId,
+              registerId: targetRegister?.id ?? null,
               valuationRunId: savedRun.runId,
               result: genericResult,
               selectedMethod,
@@ -525,7 +545,7 @@ export async function POST(request: NextRequest) {
         console.error('generic asset register save failed after valuation run save', assetSaveError);
 
         try {
-          await deleteValuationRunById(session.user.id, savedRun.runId);
+          await deleteValuationRunById(effectiveOwnerUserId, savedRun.runId);
         } catch (rollbackError) {
           console.error('generic valuation run rollback failed after asset save failure', rollbackError);
         }
@@ -557,7 +577,7 @@ export async function POST(request: NextRequest) {
     const savedRun = await saveValuationRunFromResult(
       {
         ...input,
-        userId: session.user.id,
+        userId: effectiveOwnerUserId,
       },
       valuationResult,
     );
@@ -565,7 +585,7 @@ export async function POST(request: NextRequest) {
     try {
       const asset = conversionAsset
         ? await updateAssetRegisterItemFromValuation({
-            userId: session.user.id,
+            userId: effectiveOwnerUserId,
             assetId: conversionAsset.id,
             valuationRunId: savedRun.runId,
             result: valuationResult,
@@ -578,7 +598,8 @@ export async function POST(request: NextRequest) {
             saveReplacementPrice: true,
           })
         : await createAssetRegisterItemFromValuation({
-            userId: session.user.id,
+            userId: effectiveOwnerUserId,
+            registerId: targetRegister?.id ?? null,
             valuationRunId: savedRun.runId,
             result: valuationResult,
             selectedMethod: input.selectedMethod,
@@ -610,7 +631,7 @@ export async function POST(request: NextRequest) {
       console.error('asset register save failed after valuation run save', assetSaveError);
 
       try {
-        await deleteValuationRunById(session.user.id, savedRun.runId);
+        await deleteValuationRunById(effectiveOwnerUserId, savedRun.runId);
       } catch (rollbackError) {
         console.error('valuation run rollback failed after asset save failure', rollbackError);
       }

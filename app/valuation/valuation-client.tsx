@@ -1692,6 +1692,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const [conversionSourceAsset, setConversionSourceAsset] = useState<ConversionSourceAsset | null>(null);
   const [conversionPrefillLoaded, setConversionPrefillLoaded] = useState(false);
   const [accountType, setAccountType] = useState('public');
+  const [accountantShareId, setAccountantShareId] = useState('');
+  const [accountantRegisterId, setAccountantRegisterId] = useState('');
   const [accountProfile, setAccountProfile] = useState<AccountProfile | null>(null);
   const [marketplaceDraft, setMarketplaceDraft] = useState<MarketplacePublishDraft | null>(null);
   const [marketplaceIntroOpen, setMarketplaceIntroOpen] = useState(false);
@@ -2042,7 +2044,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const normalizedSignedInAccountType = normalizeAccountType(accountType);
   const isDealerAccount = normalizedSignedInAccountType === 'dealer';
   const canUseMarketplacePublishFlow = isSignedIn && (normalizedSignedInAccountType === 'owner' || normalizedSignedInAccountType === 'dealer');
-  const canSaveToAssetRegister = isSignedIn && normalizedSignedInAccountType === 'owner';
+  const isAccountantClientWorkspace = normalizedSignedInAccountType === 'finance' && Boolean(accountantShareId && accountantRegisterId);
+  const canSaveToAssetRegister = isSignedIn && (normalizedSignedInAccountType === 'owner' || isAccountantClientWorkspace);
   const requiredSpecQuestionsCompleted = Boolean(
     conditionStepComplete &&
       shouldAskGenericSpecQuestions &&
@@ -2101,6 +2104,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     if (typeof window === 'undefined') return undefined;
 
     const searchParams = new URLSearchParams(window.location.search);
+    setAccountantShareId(normalizeText(searchParams.get('accountantShareId')));
+    setAccountantRegisterId(normalizeText(searchParams.get('registerId')));
     const nextConversionAssetId = normalizeText(searchParams.get('convertAssetId') ?? searchParams.get('conversionAssetId'));
     const nextConversionMode = searchParams.get('conversion') === 'manual-to-aim4price' || Boolean(nextConversionAssetId);
     const nextMarketplaceMode = !nextConversionMode && (searchParams.get('marketplace') === '1' || searchParams.get('marketplaceListing') === '1');
@@ -3702,16 +3707,19 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     setError('');
 
     try {
+      const savePayload = buildValuationSavePayload({
+        saveForMarketplace: options.saveForMarketplace,
+        photos: options.photos,
+      });
+      if (isAccountantClientWorkspace) {
+        savePayload.accountantShareId = accountantShareId;
+        savePayload.registerId = accountantRegisterId;
+      }
       const response = await fetch('/api/valuation-runs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify(
-          buildValuationSavePayload({
-            saveForMarketplace: options.saveForMarketplace,
-            photos: options.photos,
-          }),
-        ),
+        body: JSON.stringify(savePayload),
       });
       const data = (await response.json()) as SaveValuationRunApiResponse;
 
@@ -3721,9 +3729,11 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
       if (options.redirectToAssetRegister) {
         const focusAssetId = data.assetId ?? conversionAssetId;
-        router.push(ownerAppMode
-          ? (focusAssetId ? `/owner-app/assets/${encodeURIComponent(focusAssetId)}` : '/owner-app/assets')
-          : (focusAssetId ? `/asset-register?convertedAssetId=${encodeURIComponent(focusAssetId)}` : '/asset-register'));
+        router.push(isAccountantClientWorkspace
+          ? `/accountant/registers/${encodeURIComponent(accountantShareId)}?registerId=${encodeURIComponent(accountantRegisterId)}${focusAssetId ? `&convertedAssetId=${encodeURIComponent(focusAssetId)}` : ''}`
+          : ownerAppMode
+            ? (focusAssetId ? `/owner-app/assets/${encodeURIComponent(focusAssetId)}` : '/owner-app/assets')
+            : (focusAssetId ? `/asset-register?convertedAssetId=${encodeURIComponent(focusAssetId)}` : '/asset-register'));
       }
 
       return data;
@@ -3856,7 +3866,10 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       formData.append('files', photo.file);
     }
 
-    const response = await fetch('/api/asset-register/uploads', {
+    const uploadUrl = isAccountantClientWorkspace
+      ? `/api/asset-register/uploads?accountantShareId=${encodeURIComponent(accountantShareId)}`
+      : '/api/asset-register/uploads';
+    const response = await fetch(uploadUrl, {
       method: 'POST',
       body: formData,
       credentials: 'include',

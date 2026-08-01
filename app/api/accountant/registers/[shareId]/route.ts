@@ -16,11 +16,14 @@ function respond(error: unknown) {
   return NextResponse.json({ ok: false, error: mapped.message }, { status: mapped.status });
 }
 
-export async function GET(_request: NextRequest, context: Context) {
+export async function GET(request: NextRequest, context: Context) {
   const session = await getServerSession();
   if (!session?.user?.id) return NextResponse.json({ ok: false, error: 'You must be signed in.' }, { status: 401 });
   try {
-    const data = await getAccountantRegisterData(session.user.id, context.params.shareId);
+    const data = await getAccountantRegisterData(session.user.id, context.params.shareId, {
+      registerId: request.nextUrl.searchParams.get('registerId'),
+      combined: request.nextUrl.searchParams.get('scope') === 'combined',
+    });
     return NextResponse.json({ ok: true, ...data, summary: { count: data.items.length, totalValue: data.items.reduce((sum, item) => sum + item.value, 0) } });
   } catch (error) {
     console.error('accountant register GET failed', error);
