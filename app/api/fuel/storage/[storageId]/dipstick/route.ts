@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from '../../../../../../lib/auth-session';
 import { listFuelLedger, saveFuelStorageDipstickNote } from '../../../../../../lib/fuel-ledger';
+import { filterFuelLedgerForWorkspace, resolveOwnerWorkspaceContext } from '../../../../../../lib/owner-workspace-access';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -15,13 +15,16 @@ function errorMessage(error: unknown, fallback: string): string {
   return error instanceof Error && error.message ? error.message : fallback;
 }
 
-export async function DELETE(_request: NextRequest, context: RouteContext) {
-  const session = await getServerSession();
-  if (!session?.user?.id) return unauthorized();
+export async function DELETE(request: NextRequest, context: RouteContext) {
+  const resolved = await resolveOwnerWorkspaceContext(request, { ledger: 'fuel' });
+  if (!resolved.ok) return resolved.response;
 
   try {
-    const storage = await saveFuelStorageDipstickNote(session.user.id, context.params.storageId, { dipstickNote: '' });
-    const ledger = await listFuelLedger(session.user.id);
+    const storage = await saveFuelStorageDipstickNote(resolved.context.ownerUserId, context.params.storageId, { dipstickNote: '' });
+    const ledger = await filterFuelLedgerForWorkspace(
+      resolved.context,
+      await listFuelLedger(resolved.context.ownerUserId),
+    );
     return NextResponse.json({ ok: true, storage, ...ledger });
   } catch (error) {
     return NextResponse.json({ ok: false, error: errorMessage(error, 'Failed to clear dipstick note.') }, { status: 400 });
