@@ -2404,6 +2404,23 @@ async function listFuelSlips(userId: string, options: { limit?: number } = {}): 
   return result.rows.map(mapFuelSlipRow);
 }
 
+export async function getFuelSlipTransactionById(userId: string, fuelSlipId: string): Promise<FuelSlipTransaction | null> {
+  await ensureFuelLedgerTables();
+  const result = await getDb().query<FuelSlipRow>(
+    `
+      select ${fuelSlipSelectSql()}
+      from public.fuel_slips fs
+      left join public.asset_register_items a on a.id = fs.asset_register_item_id
+      left join public.fuel_storage_units s on s.id = fs.storage_id
+      where fs.user_id = $1 and fs.id::text = $2
+      limit 1
+    `,
+    [userId, fuelSlipId],
+  );
+
+  return result.rows[0] ? mapFuelSlipRow(result.rows[0]) : null;
+}
+
 export async function listFuelLedger(userId: string): Promise<FuelLedgerData> {
   await ensureFuelLedgerTables();
   const db = getDb();

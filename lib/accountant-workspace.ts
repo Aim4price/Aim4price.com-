@@ -250,6 +250,29 @@ async function loadAccess(accountantUserId: string, shareId: string, includeRemo
   return mapAccess(row);
 }
 
+export async function getAccountantRegisterAccess(input: {
+  accountantUserId: string;
+  shareId: string;
+  ledger?: 'fuel' | 'cost';
+  requireWrite?: boolean;
+}): Promise<AccountantRegisterAccess> {
+  const access = await loadAccess(input.accountantUserId, input.shareId);
+
+  if (input.ledger === 'fuel' && !access.includeFuelLedger) {
+    throw new Error('ACCOUNTANT_FUEL_NOT_SHARED');
+  }
+
+  if (input.ledger === 'cost' && !access.includeCostLedger) {
+    throw new Error('ACCOUNTANT_COST_NOT_SHARED');
+  }
+
+  if (input.requireWrite && !access.allowDirectUpdates) {
+    throw new Error('ACCOUNTANT_READ_ONLY');
+  }
+
+  return access;
+}
+
 export async function listAccountantRegisters(accountantUserId: string): Promise<AccountantRegisterAccess[]> {
   await ensureAccountantWorkspaceSchema();
   const result = await getDb().query<AccessRow>(
