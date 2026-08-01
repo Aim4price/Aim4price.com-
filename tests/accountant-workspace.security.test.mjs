@@ -208,6 +208,8 @@ test('genuine disposals and incorrect records retain auditable tombstones', () =
   assert.match(lifecycle, /set lifecycle_state = 'disposed'/);
   assert.match(lifecycle, /set lifecycle_state = 'archived'/);
   assert.match(lifecycle, /ASSET_DELETE_HAS_DEPENDENCIES/);
+  assert.match(lifecycle, /fuel_storage_events/);
+  assert.match(lifecycle, /fuel_slips/);
   assert.doesNotMatch(lifecycle, /deleteAssetRegisterItem\(/);
   assert.match(lifecycle, /asset_snapshot_json/);
 });
