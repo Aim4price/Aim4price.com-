@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from '../../../../../../lib/auth-session';
 import { getFuelStorageById } from '../../../../../../lib/fuel-ledger';
+import { resolveOwnerWorkspaceContext } from '../../../../../../lib/owner-workspace-access';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -555,13 +555,10 @@ function buildPrintHtml(options: {
 
 
 export async function GET(request: NextRequest, context: RouteContext) {
-  const session = await getServerSession();
+  const resolved = await resolveOwnerWorkspaceContext(request, { ledger: 'fuel' });
+  if (!resolved.ok) return resolved.response;
 
-  if (!session?.user?.id) {
-    return unauthorized();
-  }
-
-  const storage = await getFuelStorageById(session.user.id, context.params.storageId);
+  const storage = await getFuelStorageById(resolved.context.ownerUserId, context.params.storageId);
 
   if (!storage) {
     return NextResponse.json({ ok: false, error: 'Fuel storage not found.' }, { status: 404 });
