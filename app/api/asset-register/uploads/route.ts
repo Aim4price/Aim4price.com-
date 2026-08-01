@@ -10,6 +10,7 @@ import {
   isAllowedAssetRegisterDocument,
 } from '../../../../lib/asset-register-uploads';
 import { getAssetRegisterForUser, updateAssetRegisterLogo } from '../../../../lib/asset-registers';
+import { resolveOwnerWorkspaceContext } from '../../../../lib/owner-workspace-access';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -51,6 +52,11 @@ export async function POST(request: NextRequest) {
 
   if (!session?.user?.id) return unauthorized();
 
+  const hasAccountantShare = Boolean(request.nextUrl.searchParams.get('accountantShareId')?.trim());
+  const workspace = hasAccountantShare ? await resolveOwnerWorkspaceContext(request) : null;
+  if (workspace && !workspace.ok) return workspace.response;
+  const ownerUserId = workspace?.ok ? workspace.context.ownerUserId : session.user.id;
+
   try {
     const formData = await request.formData();
     const uploadType = normalizeUploadType(formData.get('uploadType'));
@@ -74,7 +80,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const register = await getAssetRegisterForUser(session.user.id, registerId);
+      const register = await getAssetRegisterForUser(ownerUserId, registerId);
       if (!register) {
         return NextResponse.json({ ok: false, error: 'Asset register not found.' }, { status: 404 });
       }
@@ -153,7 +159,7 @@ export async function POST(request: NextRequest) {
       }
 
       const saved = await createAssetRegisterUpload({
-        userId: session.user.id,
+        userId: ownerUserId,
         file,
       });
 
@@ -168,7 +174,7 @@ export async function POST(request: NextRequest) {
 
     if (uploadType === 'register-logo') {
       const register = await updateAssetRegisterLogo({
-        userId: session.user.id,
+        userId: ownerUserId,
         registerId,
         logoUrls: uploads.map((upload) => upload.url),
         showLogosOnRegister: true,

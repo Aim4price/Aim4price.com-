@@ -8,6 +8,7 @@ import { attachOpenIssueNoteStatusToAssets } from '../../../lib/asset-issue-note
 import { attachLatestMaintenanceStatusToAssets } from '../../../lib/scan-assets';
 import { attachUpcomingMaintenanceAlertsToAssets } from '../../../lib/asset-maintenance';
 import { attachUpcomingLicenseRenewalAlertsToAssets } from '../../../lib/asset-license-renewal';
+import { resolveOwnerWorkspaceContext } from '../../../lib/owner-workspace-access';
 import {
   listOwnerAssetCorrectionAlerts,
   type DealerAssetCorrectionRequest,
@@ -638,8 +639,13 @@ export async function POST(request: NextRequest) {
     return unauthorized();
   }
 
-  const ownerError = await requireOwnerAccount(session.user);
-  if (ownerError) return ownerError;
+  const workspace = await resolveOwnerWorkspaceContext(request);
+  if (!workspace.ok) return workspace.response;
+  if (!workspace.context.accountantAccess) {
+    const ownerError = await requireOwnerAccount(session.user);
+    if (ownerError) return ownerError;
+  }
+  const ownerUserId = workspace.context.ownerUserId;
 
   const body = (await request.json()) as Partial<CreateManualAssetInput>;
   const kind = normalizeKind(body.kind);
@@ -696,7 +702,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const item = await createManualAssetRegisterItem(session.user.id, {
+    const item = await createManualAssetRegisterItem(ownerUserId, {
       registerId: String((body as { registerId?: unknown }).registerId ?? '').trim() || null,
       kind,
       title,
@@ -733,7 +739,7 @@ export async function POST(request: NextRequest) {
     }
 
     await recordManualAssetLifecycle({
-      ownerUserId: session.user.id,
+      ownerUserId,
       asset: item,
       newlyAcquired: (body as { newlyAcquired?: unknown }).newlyAcquired === true,
       acquisitionDate: (body as { acquisitionDate?: unknown }).acquisitionDate,
@@ -745,7 +751,7 @@ export async function POST(request: NextRequest) {
       actorName: session.user.name,
     });
 
-    const [itemWithAlertStatus] = await attachOpenAssetAlerts(session.user.id, [item]);
+    const [itemWithAlertStatus] = await attachOpenAssetAlerts(ownerUserId, [item]);
     return NextResponse.json({ ok: true, item: itemWithAlertStatus ?? item });
   } catch (error) {
     if (error instanceof Error && error.message === 'ASSET_REGISTER_NOT_FOUND') {

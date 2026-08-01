@@ -286,12 +286,16 @@ function ChevronDownIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
-function buildOpenHref(registerId: string): string {
-  return `/asset-register?registerId=${encodeURIComponent(registerId)}`;
+function buildOpenHref(registerId: string, accountantShareId?: string): string {
+  return accountantShareId
+    ? `/accountant/registers/${encodeURIComponent(accountantShareId)}?registerId=${encodeURIComponent(registerId)}`
+    : `/asset-register?registerId=${encodeURIComponent(registerId)}`;
 }
 
-function buildCombinedOpenHref(): string {
-  return "/asset-register?scope=combined";
+function buildCombinedOpenHref(accountantShareId?: string): string {
+  return accountantShareId
+    ? `/accountant/registers/${encodeURIComponent(accountantShareId)}?scope=combined`
+    : "/asset-register?scope=combined";
 }
 
 function normalizeLogoUrls(value: unknown): string[] {
@@ -522,6 +526,7 @@ function buildExportUrl(
   scope: ExportScope,
   selectedRegisterIds: string[],
   entityName: string,
+  accountantShareId?: string,
 ): string {
   const params = new URLSearchParams({
     format,
@@ -532,6 +537,7 @@ function buildExportUrl(
   if (scope !== "all") {
     params.set("registerIds", selectedRegisterIds.join(","));
   }
+  if (accountantShareId) params.set("accountantShareId", accountantShareId);
 
   return `/api/asset-register/export?${params.toString()}`;
 }
@@ -540,6 +546,7 @@ function buildScopedSummaryUrl(
   scope: ExportScope,
   selectedRegisterIds: string[],
   entityName: string,
+  accountantShareId?: string,
 ): string {
   const params = new URLSearchParams({
     format: "pdf",
@@ -555,6 +562,7 @@ function buildScopedSummaryUrl(
   if (scope !== "all") {
     params.set("registerIds", selectedRegisterIds.join(","));
   }
+  if (accountantShareId) params.set("accountantShareId", accountantShareId);
 
   return `/api/asset-register/export?${params.toString()}`;
 }
@@ -1211,8 +1219,14 @@ function RegisterTargetDropdown({
   );
 }
 
-export default function AssetRegistersClient() {
+export default function AssetRegistersClient({ accountantShareId }: { accountantShareId?: string } = {}) {
   const router = useRouter();
+  const registersApiUrl = accountantShareId
+    ? `/api/accountant/registers/${encodeURIComponent(accountantShareId)}/owner-registers`
+    : "/api/asset-registers";
+  const registerItemsApiUrl = (registerId: string) => accountantShareId
+    ? `/api/accountant/registers/${encodeURIComponent(accountantShareId)}?registerId=${encodeURIComponent(registerId)}`
+    : `/api/asset-register?registerId=${encodeURIComponent(registerId)}`;
   const [registers, setRegisters] = useState<AssetRegisterSummary[]>([]);
   const [createDraft, setCreateDraft] =
     useState<RegisterDraft>(emptyRegisterDraft);
@@ -1407,7 +1421,7 @@ export default function AssetRegistersClient() {
     if (showLoading) setIsLoading(true);
 
     try {
-      const response = await fetch("/api/asset-registers", {
+      const response = await fetch(registersApiUrl, {
         cache: "no-store",
         credentials: "include",
       });
@@ -1552,8 +1566,7 @@ export default function AssetRegistersClient() {
     try {
       const targetRegisters = register.id === COMBINED_REGISTER_ID ? registers : [register];
       const bundles = await Promise.all(targetRegisters.map(async (targetRegister) => {
-        const params = new URLSearchParams({ registerId: targetRegister.id });
-        const response = await fetch(`/api/asset-register?${params.toString()}`, {
+        const response = await fetch(registerItemsApiUrl(targetRegister.id), {
           cache: "no-store",
           credentials: "include",
         });
@@ -1619,7 +1632,7 @@ export default function AssetRegistersClient() {
   }
 
   function openCombinedRegister() {
-    router.push(buildCombinedOpenHref());
+    router.push(buildCombinedOpenHref(accountantShareId));
   }
 
   function closeManagePanel() {
@@ -1655,7 +1668,7 @@ export default function AssetRegistersClient() {
 
   function openRegister(register: AssetRegisterSummary) {
     if (register.isSelected) {
-      router.push(buildOpenHref(register.id));
+      router.push(buildOpenHref(register.id, accountantShareId));
       return;
     }
 
@@ -1744,7 +1757,7 @@ export default function AssetRegistersClient() {
 
     const selectedIds = scope === "all" ? [] : targetRegisters.map((register) => register.id);
     const entityName = buildDefaultEntityName(scope, targetRegisters);
-    const url = buildScopedSummaryUrl(scope, selectedIds, entityName);
+    const url = buildScopedSummaryUrl(scope, selectedIds, entityName, accountantShareId);
 
     setIsExporting(true);
 
@@ -1865,8 +1878,7 @@ export default function AssetRegistersClient() {
   async function loadExportRegisterBundles(targetRegisters: AssetRegisterSummary[]): Promise<ExportRegisterBundle[]> {
     const bundles = await Promise.all(
       targetRegisters.map(async (register) => {
-        const params = new URLSearchParams({ registerId: register.id });
-        const response = await fetch(`/api/asset-register?${params.toString()}`, {
+        const response = await fetch(registerItemsApiUrl(register.id), {
           cache: "no-store",
           credentials: "include",
         });
@@ -2012,7 +2024,7 @@ export default function AssetRegistersClient() {
           message: isSummaryFlow ? "Asset register summary PDF opened." : "Asset registers PDF opened.",
         });
       } else {
-        const response = await fetch(buildExportUrl(resolvedExportFormat, exportScope, selectedIds, entityName), {
+        const response = await fetch(buildExportUrl(resolvedExportFormat, exportScope, selectedIds, entityName, accountantShareId), {
           cache: "no-store",
           credentials: "include",
         });
@@ -2191,7 +2203,10 @@ export default function AssetRegistersClient() {
     formData.append("registerId", registerId);
     files.forEach((file) => formData.append("files", file));
 
-    const response = await fetch("/api/asset-register/uploads", {
+    const uploadUrl = accountantShareId
+      ? `/api/asset-register/uploads?accountantShareId=${encodeURIComponent(accountantShareId)}`
+      : "/api/asset-register/uploads";
+    const response = await fetch(uploadUrl, {
       method: "POST",
       credentials: "include",
       body: formData,
@@ -2282,7 +2297,7 @@ export default function AssetRegistersClient() {
     setIsCreating(true);
 
     try {
-      const response = await fetch("/api/asset-registers", {
+      const response = await fetch(registersApiUrl, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -2330,7 +2345,7 @@ export default function AssetRegistersClient() {
     setSelectingRegisterId(register.id);
 
     try {
-      const response = await fetch("/api/asset-registers", {
+      const response = await fetch(registersApiUrl, {
         method: "PUT",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -2357,7 +2372,7 @@ export default function AssetRegistersClient() {
       });
 
       if (openAfterSelect) {
-        router.push(buildOpenHref(data.register.id));
+        router.push(buildOpenHref(data.register.id, accountantShareId));
       }
     } catch (error) {
       setNotice({
@@ -2386,7 +2401,7 @@ export default function AssetRegistersClient() {
     setIsSavingDetails(true);
 
     try {
-      const response = await fetch("/api/asset-registers", {
+      const response = await fetch(registersApiUrl, {
         method: "PUT",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -2439,7 +2454,10 @@ export default function AssetRegistersClient() {
     const targetRegister = managedMoveTargets.find((target) => target.id === targetRegisterId);
 
     try {
-      const response = await fetch("/api/asset-registers/move-assets", {
+      const moveApiUrl = accountantShareId
+        ? `/api/accountant/registers/${encodeURIComponent(accountantShareId)}/owner-registers/move-assets`
+        : "/api/asset-registers/move-assets";
+      const response = await fetch(moveApiUrl, {
         method: "PUT",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -2508,7 +2526,7 @@ export default function AssetRegistersClient() {
     setRemovingRegisterId(deleteCandidateRegister.id);
 
     try {
-      const response = await fetch("/api/asset-registers", {
+      const response = await fetch(registersApiUrl, {
         method: "DELETE",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -3246,7 +3264,7 @@ export default function AssetRegistersClient() {
                     <span>Download</span>
                   </button>
 
-                  <button
+                  {!accountantShareId ? <button
                     type="button"
                     className={`${styles.manageActionButton} ${styles.manageQrAction}`}
                     onClick={() => void openQrModal()}
@@ -3254,7 +3272,7 @@ export default function AssetRegistersClient() {
                   >
                     <QrCodeIcon className={styles.manageActionIcon} />
                     <span>QR Codes</span>
-                  </button>
+                  </button> : null}
                 </div>
 
                 <label className={`${styles.searchWrap} ${styles.manageAssetSearchWrap}`}>

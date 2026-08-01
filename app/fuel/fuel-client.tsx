@@ -1489,10 +1489,11 @@ function getYearOptions(entries: Array<{ createdAtIso?: string; documentDate?: s
 }
 
 
-function buildReportUrl(sourceId: string, year: string, month: string, format: ReportFormat = 'pdf', accountantShareId?: string): string {
+function buildReportUrl(sourceId: string, year: string, month: string, format: ReportFormat = 'pdf', accountantShareId?: string, accountantRegisterId?: string): string {
   const url = new URL('/api/fuel/report', window.location.origin);
   url.searchParams.set('format', format);
   if (accountantShareId) url.searchParams.set('accountantShareId', accountantShareId);
+  if (accountantRegisterId) url.searchParams.set('accountantRegisterId', accountantRegisterId);
 
   if (sourceId === REPORT_SOURCE_ALL_STORAGE_UNITS) {
     url.searchParams.set('includeFuelSlips', 'false');
@@ -1511,11 +1512,12 @@ function buildReportUrl(sourceId: string, year: string, month: string, format: R
   return url.toString();
 }
 
-function withAccountantShare(url: string, accountantShareId?: string): string {
+function withAccountantShare(url: string, accountantShareId?: string, accountantRegisterId?: string): string {
   if (!accountantShareId) return url;
 
   const scopedUrl = new URL(url, window.location.origin);
   scopedUrl.searchParams.set('accountantShareId', accountantShareId);
+  if (accountantRegisterId) scopedUrl.searchParams.set('accountantRegisterId', accountantRegisterId);
   return `${scopedUrl.pathname}${scopedUrl.search}`;
 }
 
@@ -1552,12 +1554,12 @@ function buildFuelScanUrl(storage: FuelLedgerStorage): string | null {
   return toAbsoluteUrl(`/fuel-scan/${encodeURIComponent(publicFuelStorageCode)}`);
 }
 
-function buildFuelQrSvgUrl(storage: FuelLedgerStorage, accountantShareId?: string): string {
-  return withAccountantShare(`/api/fuel/storage/${encodeURIComponent(storage.id)}/qr?format=svg`, accountantShareId);
+function buildFuelQrSvgUrl(storage: FuelLedgerStorage, accountantShareId?: string, accountantRegisterId?: string): string {
+  return withAccountantShare(`/api/fuel/storage/${encodeURIComponent(storage.id)}/qr?format=svg`, accountantShareId, accountantRegisterId);
 }
 
-function buildFuelQrPrintUrl(storage: FuelLedgerStorage, accountantShareId?: string): string {
-  return withAccountantShare(`/api/fuel/storage/${encodeURIComponent(storage.id)}/qr?format=print`, accountantShareId);
+function buildFuelQrPrintUrl(storage: FuelLedgerStorage, accountantShareId?: string, accountantRegisterId?: string): string {
+  return withAccountantShare(`/api/fuel/storage/${encodeURIComponent(storage.id)}/qr?format=print`, accountantShareId, accountantRegisterId);
 }
 
 function parseDownloadFileName(response: Response, fallback: string): string {
@@ -1582,12 +1584,14 @@ function downloadBlob(blob: Blob, fileName: string) {
 export default function FuelClient({
   addedByLabel,
   accountantShareId,
+  accountantRegisterId,
 }: {
   addedByLabel: string;
   accountantShareId?: string;
+  accountantRegisterId?: string;
 }) {
   const isAccountantReadOnly = false;
-  const scopedApiUrl = (url: string) => withAccountantShare(url, accountantShareId);
+  const scopedApiUrl = (url: string) => withAccountantShare(url, accountantShareId, accountantRegisterId);
   const [storages, setStorages] = useState<FuelLedgerStorage[]>([]);
   const [recentEvents, setRecentEvents] = useState<FuelLedgerEvent[]>([]);
   const [assets, setAssets] = useState<FuelLedgerAsset[]>([]);
@@ -1797,7 +1801,7 @@ export default function FuelClient({
 
     try {
       const ledgerUrl = accountantShareId
-        ? `/api/accountant/registers/${encodeURIComponent(accountantShareId)}/ledger?kind=fuel`
+        ? `/api/accountant/registers/${encodeURIComponent(accountantShareId)}/ledger?kind=fuel${accountantRegisterId ? `&registerId=${encodeURIComponent(accountantRegisterId)}` : ''}`
         : '/api/fuel';
       const response = await fetch(ledgerUrl, { credentials: 'include', cache: 'no-store' });
       const payload = (await response.json()) as AccountantFuelLedgerResponse;
@@ -1822,7 +1826,7 @@ export default function FuelClient({
 
   useEffect(() => {
     void loadLedger();
-  }, [accountantShareId]);
+  }, [accountantRegisterId, accountantShareId]);
 
   useEffect(() => {
     if (!openReportSelect) return undefined;
@@ -2496,7 +2500,7 @@ export default function FuelClient({
   }
 
   function handlePrintFuelQrLabel(storage: FuelLedgerStorage) {
-    const opened = window.open(buildFuelQrPrintUrl(storage, accountantShareId), '_blank', 'noopener,noreferrer');
+    const opened = window.open(buildFuelQrPrintUrl(storage, accountantShareId, accountantRegisterId), '_blank', 'noopener,noreferrer');
 
     if (!opened) {
       setNotice({ tone: 'error', message: 'Unable to open the fuel QR print page. Please allow pop-ups and try again.' });
@@ -2667,7 +2671,7 @@ export default function FuelClient({
 
   function handleOpenReport() {
     const normalizedMonth = reportYear === 'all' ? 'all' : reportMonth;
-    window.open(buildReportUrl(reportStorageId, reportYear, normalizedMonth, 'pdf', accountantShareId), '_blank', 'noopener,noreferrer');
+    window.open(buildReportUrl(reportStorageId, reportYear, normalizedMonth, 'pdf', accountantShareId, accountantRegisterId), '_blank', 'noopener,noreferrer');
     closeModal();
   }
 
@@ -2722,7 +2726,7 @@ export default function FuelClient({
   function handleDownloadXlsxReport() {
     const normalizedMonth = reportYear === 'all' ? 'all' : reportMonth;
     const downloadLink = document.createElement('a');
-    downloadLink.href = buildReportUrl(reportStorageId, reportYear, normalizedMonth, 'xlsx', accountantShareId);
+    downloadLink.href = buildReportUrl(reportStorageId, reportYear, normalizedMonth, 'xlsx', accountantShareId, accountantRegisterId);
     downloadLink.download = '';
     downloadLink.rel = 'noreferrer';
     document.body.appendChild(downloadLink);
@@ -3211,6 +3215,7 @@ export default function FuelClient({
           assets={assets}
           addedByLabel={addedByLabel}
           accountantShareId={accountantShareId}
+          accountantRegisterId={accountantRegisterId}
           onClose={closeModal}
           onLedgerUpdated={applyLedgerData}
           onReconcile={() => openReconcileBalance(selectedStorage)}
@@ -3221,6 +3226,7 @@ export default function FuelClient({
         <ReconcileFuelBalanceModal
           storage={selectedStorage}
           accountantShareId={accountantShareId}
+          accountantRegisterId={accountantRegisterId}
           onClose={closeModal}
           onLedgerUpdated={(data) => {
             applyLedgerData(data);
@@ -3969,7 +3975,7 @@ export default function FuelClient({
                   <span className={styles.qrPreviewEyebrow}>Permanent fuel QR</span>
                   <div className={styles.qrPreviewFrame}>
                     {selectedStorage.publicFuelStorageCode ? (
-                      <img src={buildFuelQrSvgUrl(selectedStorage, accountantShareId)} alt={`QR code for ${selectedStorage.name}`} />
+                      <img src={buildFuelQrSvgUrl(selectedStorage, accountantShareId, accountantRegisterId)} alt={`QR code for ${selectedStorage.name}`} />
                     ) : (
                       <p className={styles.qrPreviewFallback}>QR artwork is not ready for this fuel storage unit yet.</p>
                     )}

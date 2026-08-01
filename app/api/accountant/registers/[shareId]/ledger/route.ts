@@ -13,7 +13,12 @@ export async function GET(request: NextRequest, context: Context) {
   const searchParams = new URL(request.url).searchParams;
   const kind = searchParams.get('kind') === 'fuel' ? 'fuel' : 'cost';
   try {
-    const data = await getAccountantLedger({ accountantUserId: session.user.id, shareId: context.params.shareId, kind });
+    const data = await getAccountantLedger({
+      accountantUserId: session.user.id,
+      shareId: context.params.shareId,
+      kind,
+      registerId: searchParams.get('registerId'),
+    });
 
     if (kind === 'cost' && 'cost' in data && data.cost) {
       const assetId = searchParams.get('assetId') || '';

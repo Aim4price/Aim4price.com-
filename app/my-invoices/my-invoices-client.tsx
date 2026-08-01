@@ -117,6 +117,7 @@ type DealerDefaults = {
 
 type MyInvoicesClientProps = {
   accountantShareId?: string;
+  accountantRegisterId?: string;
   dealerMode?: boolean;
   showAppHeader?: boolean;
   initialAssetId?: string;
@@ -873,6 +874,7 @@ function buildReportUrl(
   includeFuelSlipCosts: boolean,
   accountingSoftware?: AccountingSoftware,
   accountantShareId?: string,
+  accountantRegisterId?: string,
 ): string {
   const params = new URLSearchParams({ format, includeFuelSlipCosts: includeFuelSlipCosts ? 'true' : 'false' });
 
@@ -881,15 +883,17 @@ function buildReportUrl(
   if (filters.month !== 'all') params.set('month', filters.month);
   if (format === 'csv' && accountingSoftware) params.set('accountingSoftware', accountingSoftware);
   if (accountantShareId) params.set('accountantShareId', accountantShareId);
+  if (accountantRegisterId) params.set('accountantRegisterId', accountantRegisterId);
 
   return `/api/my-invoices/report?${params.toString()}`;
 }
 
-function withAccountantShare(url: string, accountantShareId?: string): string {
+function withAccountantShare(url: string, accountantShareId?: string, accountantRegisterId?: string): string {
   if (!accountantShareId) return url;
 
   const scopedUrl = new URL(url, window.location.origin);
   scopedUrl.searchParams.set('accountantShareId', accountantShareId);
+  if (accountantRegisterId) scopedUrl.searchParams.set('accountantRegisterId', accountantRegisterId);
   return `${scopedUrl.pathname}${scopedUrl.search}`;
 }
 
@@ -939,6 +943,7 @@ function downloadFileName(response: Response, fallback: string): string {
 
 export default function MyInvoicesClient({
   accountantShareId,
+  accountantRegisterId,
   dealerMode = false,
   showAppHeader,
   initialAssetId = '',
@@ -948,7 +953,7 @@ export default function MyInvoicesClient({
   const apiRoot = dealerMode
       ? '/api/dealer/cost'
       : '/api/my-invoices';
-  const accountScopedUrl = (url: string) => withAccountantShare(url, accountantShareId);
+  const accountScopedUrl = (url: string) => withAccountantShare(url, accountantShareId, accountantRegisterId);
   const shouldShowAppHeader = showAppHeader ?? !dealerMode;
   const [assets, setAssets] = useState<AssetOption[]>([]);
   const [invoices, setInvoices] = useState<InvoiceRecord[]>([]);
@@ -1628,6 +1633,7 @@ export default function MyInvoicesClient({
       includeFuelSlipCosts,
       selectedAccountingSoftware,
       accountantShareId,
+      accountantRegisterId,
     );
 
     if (format === 'csv') {
