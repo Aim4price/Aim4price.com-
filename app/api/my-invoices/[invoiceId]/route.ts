@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from '../../../../lib/auth-session';
-import { deleteMyInvoice, updateMyInvoice, type MyInvoiceDraftInput } from '../../../../lib/my-invoices';
+import { deleteMyInvoice, getMyInvoiceById, updateMyInvoice, type MyInvoiceDraftInput } from '../../../../lib/my-invoices';
+import { assertWorkspaceAssetAccess, resolveOwnerWorkspaceContext } from '../../../../lib/owner-workspace-access';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -26,17 +26,10 @@ function errorMessage(error: unknown): string {
   return 'The cost record could not be updated.';
 }
 
-async function currentUserId() {
-  const session = await getServerSession({ requireActive: true });
-  return session?.user?.id ?? '';
-}
-
 export async function PATCH(request: NextRequest, context: RouteContext) {
-  const userId = await currentUserId();
-
-  if (!userId) {
-    return NextResponse.json({ ok: false, error: 'You must be signed in to update cost records.' }, { status: 401 });
-  }
+  const resolved = await resolveOwnerWorkspaceContext(request, { ledger: 'cost' });
+  if (!resolved.ok) return resolved.response;
+  const workspace = resolved.context;
 
   let body: MyInvoiceDraftInput;
 
@@ -47,7 +40,10 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   }
 
   try {
-    const result = await updateMyInvoice(userId, context.params.invoiceId, body);
+    await assertWorkspaceAssetAccess(workspace, body.assetId);
+    const result = await updateMyInvoice(workspace.ownerUserId, context.params.invoiceId, body, {
+      displayName: workspace.accountantAccess ? workspace.actorName : null,
+    });
     return NextResponse.json({ ok: true, invoice: result.invoice, duplicateWarnings: result.duplicateWarnings });
   } catch (error) {
     console.error('Aim4price My Cost Ledger PATCH failed.', error);
@@ -57,15 +53,15 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   }
 }
 
-export async function DELETE(_request: NextRequest, context: RouteContext) {
-  const userId = await currentUserId();
-
-  if (!userId) {
-    return NextResponse.json({ ok: false, error: 'You must be signed in to delete cost records.' }, { status: 401 });
-  }
+export async function DELETE(request: NextRequest, context: RouteContext) {
+  const resolved = await resolveOwnerWorkspaceContext(request, { ledger: 'cost' });
+  if (!resolved.ok) return resolved.response;
+  const workspace = resolved.context;
 
   try {
-    const deleted = await deleteMyInvoice(userId, context.params.invoiceId);
+    const invoice = await getMyInvoiceById(workspace.ownerUserId, context.params.invoiceId);
+    if (invoice) await assertWorkspaceAssetAccess(workspace, invoice.assetId);
+    const deleted = await deleteMyInvoice(workspace.ownerUserId, context.params.invoiceId);
 
     if (!deleted) {
       return NextResponse.json({ ok: false, error: 'The selected cost record could not be found for this account.' }, { status: 404 });
