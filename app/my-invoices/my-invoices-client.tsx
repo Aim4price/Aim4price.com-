@@ -5,7 +5,7 @@ import AppHeader from '../../components/AppHeader';
 import { WorkspaceTitlePanel } from '../../components/WorkspacePrimitives';
 import styles from './page.module.css';
 
-type FlowMode = 'source-choice' | 'asset-manual' | 'asset-automatic' | 'manual-form' | 'upload' | 'review' | null;
+type FlowMode = 'source-choice' | 'asset-manual' | 'asset-automatic' | 'manual-form' | 'upload' | 'review' | 'recurring' | null;
 type InvoiceSource = 'manual' | 'automatic' | 'fuel_slip';
 type FilterSource = 'all' | InvoiceSource;
 type UsageMetric = 'none' | 'hours' | 'km' | 'percentage';
@@ -193,6 +193,25 @@ type FilterSelectOption = {
 type Notice = {
   tone: NoticeTone;
   message: string;
+};
+
+type CommitmentFrequency = 'monthly' | 'quarterly' | 'six_monthly' | 'annual';
+
+type RecurringCommitmentDraft = {
+  description: string;
+  category: string;
+  amount: string;
+  frequency: CommitmentFrequency;
+  startDate: string;
+  endDate: string;
+  renewalDate: string;
+  sourceReference: string;
+  note: string;
+};
+
+type RecurringCommitmentResponse = {
+  ok: boolean;
+  error?: string;
 };
 
 type AccountingSoftware = 'sage_business_cloud' | 'generic_csv';
@@ -780,6 +799,20 @@ function buildEmptyDraft(source: InvoiceSource, defaultSupplierName = ''): Invoi
   };
 }
 
+function buildRecurringCommitmentDraft(): RecurringCommitmentDraft {
+  return {
+    description: '',
+    category: 'insurance',
+    amount: '',
+    frequency: 'monthly',
+    startDate: new Date().toISOString().slice(0, 10),
+    endDate: '',
+    renewalDate: '',
+    sourceReference: '',
+    note: '',
+  };
+}
+
 function draftFromExtraction(
   extractionDraft: ExtractionDraft,
   source: InvoiceSource,
@@ -992,6 +1025,9 @@ export default function MyInvoicesClient({
   const [accountingExportDownloading, setAccountingExportDownloading] = useState(false);
   const [dealerDefaults, setDealerDefaults] = useState<DealerDefaults>(initialDealerDefaults);
   const [draft, setDraft] = useState<InvoiceDraft>(buildEmptyDraft('manual', initialDealerDefaults.supplierName));
+  const [recurringDraft, setRecurringDraft] = useState<RecurringCommitmentDraft>(buildRecurringCommitmentDraft);
+  const [recurringAssetIds, setRecurringAssetIds] = useState<string[]>([]);
+  const [recurringError, setRecurringError] = useState('');
   const [assetLockedForFlow, setAssetLockedForFlow] = useState(false);
   const [initialLaunchHandled, setInitialLaunchHandled] = useState(!initialOpenAdd);
   const [editingInvoiceId, setEditingInvoiceId] = useState<string | null>(null);
@@ -1145,6 +1181,7 @@ export default function MyInvoicesClient({
   const sourceChoiceOpen = flow === 'source-choice';
   const assetPickerOpen = flow === 'asset-manual' || flow === 'asset-automatic';
   const formOpen = flow === 'manual-form' || flow === 'review';
+  const recurringOpen = flow === 'recurring';
   const flowTitle = flow === 'asset-automatic' ? 'Choose asset for uploaded cost' : 'Choose asset for manual cost';
   const formTitle = flow === 'review' ? 'Review cost details' : 'Enter cost manually';
   const hasInvoiceSearch = invoiceSearch.trim().length > 0;
@@ -1157,6 +1194,7 @@ export default function MyInvoicesClient({
     || assetPickerOpen
     || flow === 'upload'
     || formOpen
+    || recurringOpen
     || filterOpen
     || downloadOpen
     || accountingSettingsOpen
@@ -1303,6 +1341,9 @@ export default function MyInvoicesClient({
     setUsageMetricDropdownOpen(false);
     setAssetLockedForFlow(false);
     setDraft(buildEmptyDraft('manual', dealerMode ? dealerDefaults.supplierName : ''));
+    setRecurringDraft(buildRecurringCommitmentDraft());
+    setRecurringAssetIds([]);
+    setRecurringError('');
   }
 
   function openAddInvoiceModal(assetId = '') {
@@ -1343,6 +1384,44 @@ export default function MyInvoicesClient({
     setFlow(presetAssetId
       ? source === 'manual' ? 'manual-form' : 'upload'
       : source === 'manual' ? 'asset-manual' : 'asset-automatic');
+  }
+
+  function startRecurringCommitment() {
+    setNotice(null);
+    setRecurringDraft(buildRecurringCommitmentDraft());
+    setRecurringAssetIds(selectedAssetId && assets.some((asset) => asset.id === selectedAssetId) ? [selectedAssetId] : []);
+    setRecurringError('');
+    setFlow('recurring');
+  }
+
+  function setRecurringField<K extends keyof RecurringCommitmentDraft>(key: K, value: RecurringCommitmentDraft[K]) {
+    setRecurringDraft((current) => ({ ...current, [key]: value }));
+  }
+
+  async function submitRecurringCommitment(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setRecurringError('');
+    setIsSaving(true);
+    try {
+      const response = await fetch(accountScopedUrl('/api/recurring-commitments'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...recurringDraft,
+          amount: recurringDraft.amount.replace(/\s/g, '').replace(',', '.'),
+          assetIds: recurringAssetIds,
+          status: 'active',
+        }),
+      });
+      const payload = await response.json() as RecurringCommitmentResponse;
+      if (!response.ok || !payload.ok) throw new Error(payload.error || 'The recurring commitment could not be saved.');
+      closeModal();
+      setNotice({ tone: 'success', message: 'Recurring commitment saved separately from incurred Cost Ledger expenses.' });
+    } catch (error) {
+      setRecurringError(error instanceof Error ? error.message : 'The recurring commitment could not be saved.');
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   function selectAssetAndContinue(assetId: string) {
@@ -2079,11 +2158,111 @@ export default function MyInvoicesClient({
                   <small>Upload a PDF or photo, then review the extracted cost details.</small>
                 </span>
               </button>
+              {!dealerMode ? (
+                <button type="button" className={styles.sourceChoiceOption} onClick={startRecurringCommitment}>
+                  <span className={styles.choiceGraphic}>
+                    <ManualInvoiceIcon />
+                  </span>
+                  <span className={styles.choiceTitleBlock}>
+                    <strong>Add recurring commitment</strong>
+                    <small>Record future insurance, service-plan or subscription commitments without creating an incurred cost.</small>
+                  </span>
+                </button>
+              ) : null}
             </div>
             <div className={styles.modalFooter}>
               <button type="button" className={styles.secondaryButton} onClick={closeModal}>Cancel</button>
             </div>
           </div>
+        </div>
+      ) : null}
+
+      {recurringOpen ? (
+        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label="Add recurring commitment">
+          <form className={`${styles.formModal} ${styles.costFormModal}`} onSubmit={submitRecurringCommitment}>
+            <div className={styles.modalHeader}>
+              <div>
+                <h2>Add recurring commitment</h2>
+                <p>Record a future commitment separately from incurred Cost Ledger expenses.</p>
+              </div>
+              <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close"><CloseIcon /></button>
+            </div>
+            <div className={styles.modalDivider} />
+            <div className={styles.formModalScrollBody}>
+              <div className={styles.warningBox}>
+                <p>This does not create an expense. Add each actual invoice or payment to the Cost Ledger when it is incurred.</p>
+              </div>
+              <section className={styles.invoiceFormCard}>
+                <div className={styles.formGrid}>
+                  <label>
+                    <span>Description</span>
+                    <input value={recurringDraft.description} onChange={(event) => setRecurringField('description', event.target.value)} placeholder="Insurance policy or service plan" required />
+                  </label>
+                  <label>
+                    <span>Category</span>
+                    <select value={recurringDraft.category} onChange={(event) => setRecurringField('category', event.target.value)}>
+                      <option value="insurance">Insurance</option>
+                      <option value="service_plan">Service plan</option>
+                      <option value="licence">Licence</option>
+                      <option value="subscription">Subscription</option>
+                      <option value="lease">Lease</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>Amount</span>
+                    <input inputMode="decimal" value={recurringDraft.amount} onChange={(event) => setRecurringField('amount', formatInvoiceMoneyInput(event.target.value))} placeholder="R 0" required />
+                  </label>
+                  <label>
+                    <span>Frequency</span>
+                    <select value={recurringDraft.frequency} onChange={(event) => setRecurringField('frequency', event.target.value as CommitmentFrequency)}>
+                      <option value="monthly">Monthly</option>
+                      <option value="quarterly">Quarterly</option>
+                      <option value="six_monthly">Every six months</option>
+                      <option value="annual">Annual</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>Start date</span>
+                    <input type="date" value={recurringDraft.startDate} onChange={(event) => setRecurringField('startDate', event.target.value)} required />
+                  </label>
+                  <label>
+                    <span>End date <small>(optional)</small></span>
+                    <input type="date" value={recurringDraft.endDate} onChange={(event) => setRecurringField('endDate', event.target.value)} />
+                  </label>
+                  <label>
+                    <span>Renewal date <small>(optional)</small></span>
+                    <input type="date" value={recurringDraft.renewalDate} onChange={(event) => setRecurringField('renewalDate', event.target.value)} />
+                  </label>
+                  <label>
+                    <span>Source / reference <small>(optional)</small></span>
+                    <input value={recurringDraft.sourceReference} onChange={(event) => setRecurringField('sourceReference', event.target.value)} />
+                  </label>
+                  <label>
+                    <span>Linked assets</span>
+                    <select
+                      multiple
+                      size={Math.min(5, Math.max(2, assets.length))}
+                      value={recurringAssetIds}
+                      onChange={(event) => setRecurringAssetIds(Array.from(event.currentTarget.selectedOptions, (option) => option.value))}
+                      aria-label="Linked assets"
+                      required
+                    >
+                      {assets.map((asset) => <option key={asset.id} value={asset.id}>{asset.ownerName ? `${asset.ownerName} — ` : ''}{asset.title}</option>)}
+                    </select>
+                  </label>
+                </div>
+                <div className={styles.textAreaGrid}>
+                  <label><span>Note <small>(optional)</small></span><textarea value={recurringDraft.note} onChange={(event) => setRecurringField('note', event.target.value)} rows={3} /></label>
+                </div>
+                {recurringError ? <div className={styles.warningBox} role="alert"><p>{recurringError}</p></div> : null}
+              </section>
+            </div>
+            <div className={styles.modalFooter}>
+              <button type="button" className={styles.secondaryButton} onClick={() => setFlow('source-choice')} disabled={isSaving}>Back</button>
+              <button type="submit" className={styles.primaryButton} disabled={isSaving}>{isSaving ? 'Saving...' : 'Save commitment'}</button>
+            </div>
+          </form>
         </div>
       ) : null}
 
