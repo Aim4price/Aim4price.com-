@@ -14691,6 +14691,19 @@
   gap: 0.85rem;
 }
 
+.accountantNoteBody {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.accountantNoteHint {
+  margin: 0;
+  color: #64758a;
+  font-size: 0.86rem;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
 @media (max-width: 760px) {
   .sharedExportButton,
   .sharedNoteActionButton {
@@ -16122,6 +16135,18 @@
   box-shadow:
     0 13px 26px rgba(109, 63, 18, 0.12),
     inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+}
+
+.page .assetHeaderActions .cardAccountantNoteButton {
+  color: var(--action-clay-text) !important;
+  background: linear-gradient(180deg, #fffdf9 0%, var(--action-clay-bg) 100%) !important;
+  border: 1.5px solid var(--action-clay-border) !important;
+}
+
+.page .assetHeaderActions .cardAccountantNoteButton:hover:not(:disabled) {
+  color: var(--action-clay-text) !important;
+  background: linear-gradient(180deg, #fffaf4 0%, var(--action-clay-bg-hover) 100%) !important;
+  border-color: var(--action-clay-border-hover) !important;
 }
 
 .page .filterTriggerButtonActive,
@@ -33217,8 +33242,8 @@ button.documentOpenLink {
   }
 
   .page .assetHeaderActionsAccountant {
-    width: 19.35rem;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 29rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     justify-self: end;
   }
 

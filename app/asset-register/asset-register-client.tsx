@@ -105,6 +105,12 @@ type AssetLeadApiResponse = {
   error?: string;
 };
 
+type AccountantNoteApiResponse = {
+  ok: boolean;
+  note?: OpenPartnerNote;
+  error?: string;
+};
+
 type AssetQuoteOption = {
   leadType: AssetLeadType;
   partnerType: PartnerType;
@@ -1541,6 +1547,15 @@ function FlagIcon({ className }: IconProps) {
     >
       <path d="M6 20V4" />
       <path d="M6 4h10.8a1 1 0 0 1 .86 1.5L15.9 8.5l1.76 3a1 1 0 0 1-.86 1.5H6" />
+    </svg>
+  );
+}
+
+function NoteIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4 20h4.4L19.7 8.7a2.2 2.2 0 0 0 0-3.1l-1.3-1.3a2.2 2.2 0 0 0-3.1 0L4 15.6V20Z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="m13.8 5.8 4.4 4.4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
 }
@@ -5767,6 +5782,9 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   const [assetRegisterMoveTargetId, setAssetRegisterMoveTargetId] = useState('');
   const [assetRegisterMoveError, setAssetRegisterMoveError] = useState('');
   const [isMovingAssetRegister, setIsMovingAssetRegister] = useState(false);
+  const [accountantNoteAsset, setAccountantNoteAsset] = useState<RegisterAsset | null>(null);
+  const [accountantNoteDraft, setAccountantNoteDraft] = useState('');
+  const [isSavingAccountantNote, setIsSavingAccountantNote] = useState(false);
   const [assetDraft, setAssetDraft] = useState<AssetDraft>(initialAssetDraft);
   const [assetStatusDraft, setAssetStatusDraft] = useState<AssetStatusDraft>(initialAssetStatusDraft);
   const [assetStatusEditView, setAssetStatusEditView] = useState<AssetStatusEditView>('hub');
@@ -6100,6 +6118,64 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       });
     } finally {
       setBusyFlagAssetId(null);
+    }
+  }
+
+  function openAccountantNoteModal(asset: RegisterAsset): void {
+    setNotice(null);
+    setAccountantNoteAsset(asset);
+    setAccountantNoteDraft('');
+  }
+
+  function closeAccountantNoteModal(): void {
+    if (isSavingAccountantNote) return;
+    setAccountantNoteAsset(null);
+    setAccountantNoteDraft('');
+  }
+
+  async function submitAccountantNote(): Promise<void> {
+    if (!accountantShareId || !accountantNoteAsset || isSavingAccountantNote) return;
+
+    const noteText = accountantNoteDraft.trim();
+    if (!noteText) {
+      setNotice({ tone: 'error', message: 'Write a note before saving.' });
+      return;
+    }
+
+    setNotice(null);
+    setIsSavingAccountantNote(true);
+
+    try {
+      const response = await fetch(
+        `/api/accountant/registers/${encodeURIComponent(accountantShareId)}/assets/${encodeURIComponent(accountantNoteAsset.id)}/notes`,
+        {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ note: noteText }),
+        },
+      );
+      const data = (await response.json()) as AccountantNoteApiResponse;
+
+      if (!response.ok || !data.ok || !data.note) {
+        throw new Error(data.error ?? 'Failed to save note.');
+      }
+
+      const savedNote = data.note;
+      setAssets((currentAssets) => currentAssets.map((asset) => {
+        if (asset.id !== accountantNoteAsset.id) return asset;
+        const existingNotes = Array.isArray(asset.partnerNotes)
+          ? asset.partnerNotes.filter((note) => note.id !== savedNote.id)
+          : [];
+        return { ...asset, openPartnerNote: savedNote, partnerNotes: [savedNote, ...existingNotes] };
+      }));
+      setAccountantNoteAsset(null);
+      setAccountantNoteDraft('');
+      setNotice({ tone: 'success', message: `Note saved on ${accountantNoteAsset.title}.` });
+    } catch (error) {
+      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to save note.' });
+    } finally {
+      setIsSavingAccountantNote(false);
     }
   }
 
@@ -6924,6 +7000,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     isAssetFilterOpen ||
     isChangeRegisterModalOpen ||
     Boolean(assetRegisterMoveAsset) ||
+    Boolean(accountantNoteAsset) ||
     isPricingModalOpen ||
     Boolean(pricingPreview) ||
     isQrModalOpen ||
@@ -6999,6 +7076,11 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
       if (assetRegisterMoveAsset) {
         closeAssetRegisterMoveManager();
+        return;
+      }
+
+      if (accountantNoteAsset) {
+        closeAccountantNoteModal();
         return;
       }
 
@@ -7108,7 +7190,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [activeAsset, anyModalOpen, assetRegisterMoveAsset, deleteCandidateAsset, disposalCandidateAsset, acquisitionDetailsAsset, isSavingAcquisitionDetails, isAcquisitionChoiceOpen, isAddChoiceModalOpen, isAssetFilterOpen, isChangeRegisterModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isPricingModalOpen, pricingPreview, isQrModalOpen, isRegisterShareModalOpen, isSummaryModalOpen, isAccountantReportsOpen, marketplaceAsset, projectionAsset, isQuoteModalOpen, isQuoteTrackingSettingsOpen, quoteLeadStep, isAssetSettingsModalOpen, pendingUsageOverride, isManualConversionConfirmOpen, isSavingAssetSettings, replacementPriceRevaluePrompt, photoViewer]);
+  }, [activeAsset, anyModalOpen, assetRegisterMoveAsset, accountantNoteAsset, isSavingAccountantNote, deleteCandidateAsset, disposalCandidateAsset, acquisitionDetailsAsset, isSavingAcquisitionDetails, isAcquisitionChoiceOpen, isAddChoiceModalOpen, isAssetFilterOpen, isChangeRegisterModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isPricingModalOpen, pricingPreview, isQrModalOpen, isRegisterShareModalOpen, isSummaryModalOpen, isAccountantReportsOpen, marketplaceAsset, projectionAsset, isQuoteModalOpen, isQuoteTrackingSettingsOpen, quoteLeadStep, isAssetSettingsModalOpen, pendingUsageOverride, isManualConversionConfirmOpen, isSavingAssetSettings, replacementPriceRevaluePrompt, photoViewer]);
 
   useEffect(() => {
     if (!isQuoteModalOpen || !selectedQuoteLeadType) return;
@@ -13442,6 +13524,18 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                 </button>
                               ) : null}
 
+                              {isAccountantWorkspace ? (
+                                <button
+                                  type="button"
+                                  className={`${styles.optionsButton} ${styles.cardOptionsButton} ${styles.cardAccountantNoteButton}`}
+                                  onClick={() => openAccountantNoteModal(asset)}
+                                  aria-label={`Leave a note on ${asset.title}`}
+                                >
+                                  <NoteIcon className={styles.buttonIcon} />
+                                  <span>Leave a note</span>
+                                </button>
+                              ) : null}
+
                               <button
                                 type="button"
                                 className={`${styles.expandButton} ${styles.cardViewDetailsButton}`}
@@ -16665,6 +16759,60 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                   Recalculate value
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {accountantNoteAsset && isAccountantWorkspace ? (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalBackdrop} onClick={closeAccountantNoteModal} />
+
+          <div
+            className={`${styles.modalCard} ${styles.sharedNoteModal} ${styles.accountantNoteModal}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="accountant-note-title"
+          >
+            <div className={styles.modalHeader}>
+              <div className={styles.modalHeaderText}>
+                <h3 id="accountant-note-title">Leave a note</h3>
+                <p>{accountantNoteAsset.title} · {accountantAccess?.ownerBusinessName || 'Asset owner'}</p>
+              </div>
+
+              <button
+                type="button"
+                className={styles.modalCloseButton}
+                onClick={closeAccountantNoteModal}
+                aria-label="Close note modal"
+                disabled={isSavingAccountantNote}
+              >
+                <CloseIcon className={styles.buttonIcon} />
+              </button>
+            </div>
+
+            <div className={styles.accountantNoteBody}>
+              <label className={`${styles.field} ${styles.sharedNoteField}`}>
+                <span>Note to asset owner</span>
+                <textarea
+                  className={styles.sharedNoteTextarea}
+                  value={accountantNoteDraft}
+                  onChange={(event) => setAccountantNoteDraft(event.target.value)}
+                  placeholder="Write your note here."
+                  disabled={isSavingAccountantNote}
+                  autoFocus
+                />
+              </label>
+              <p className={styles.accountantNoteHint}>This note will appear on the owner&apos;s Asset Register.</p>
+            </div>
+
+            <div className={`${styles.formActions} ${styles.sharedNoteActions}`}>
+              <button type="button" className={styles.secondaryButton} onClick={closeAccountantNoteModal} disabled={isSavingAccountantNote}>
+                Cancel
+              </button>
+              <button type="button" className={styles.primaryButton} onClick={() => void submitAccountantNote()} disabled={isSavingAccountantNote || !accountantNoteDraft.trim()}>
+                {isSavingAccountantNote ? 'Saving...' : 'Save note'}
+              </button>
             </div>
           </div>
         </div>

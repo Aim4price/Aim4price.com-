@@ -18,7 +18,7 @@ import { ensureAssetRegisterTables, getAssetRegisterForUser, listAssetRegisters,
 import { getDb } from './db';
 import { listFuelLedger, type FuelLedgerData } from './fuel-ledger';
 import { listMyInvoicesData, type MyInvoiceListResult } from './my-invoices';
-import { ensurePartnerAccessTables } from './partner-access';
+import { ensurePartnerAccessTables, type AssetPartnerNote } from './partner-access';
 
 export type AccountantRegisterAccess = {
   shareId: string;
@@ -566,6 +566,56 @@ export async function updateAccountantAssetFlag(input: {
   };
 }
 
+export async function createAccountantAssetNote(input: {
+  accountantUserId: string;
+  shareId: string;
+  assetId: string;
+  noteText: unknown;
+}): Promise<AssetPartnerNote> {
+  const noteText = text(input.noteText);
+  if (!noteText) throw new Error('ACCOUNTANT_NOTE_REQUIRED');
+
+  const { access, asset } = await authorisedAsset(input.accountantUserId, input.shareId, input.assetId);
+  const actor = await getAccountProfile({ id: input.accountantUserId });
+  const result = await getDb().query<{
+    id: string;
+    created_at: string;
+    updated_at: string;
+  }>(
+    `insert into public.asset_partner_notes
+       (owner_user_id, partner_user_id, asset_register_item_id, note_text, status, created_at, updated_at)
+     values ($1, $2, $3::uuid, $4, 'open', now(), now())
+     returning id::text, created_at::text, updated_at::text`,
+    [access.ownerUserId, input.accountantUserId, asset.id, noteText],
+  );
+  const created = result.rows[0];
+  if (!created) throw new Error('ACCOUNTANT_NOTE_NOT_CREATED');
+
+  const note: AssetPartnerNote = {
+    id: created.id,
+    ownerUserId: access.ownerUserId,
+    partnerUserId: input.accountantUserId,
+    assetRegisterItemId: asset.id,
+    noteText,
+    status: 'open',
+    partnerType: 'finance',
+    partnerName: actor.displayName || actor.name || access.accountantName,
+    partnerBusinessName: actor.businessName || access.accountantOrganisation,
+    attachment: null,
+    createdAtIso: created.created_at || new Date().toISOString(),
+    notedAtIso: null,
+    updatedAtIso: created.updated_at || created.created_at || new Date().toISOString(),
+  };
+
+  await writeAudit(access, input.accountantUserId, 'accountant_asset_note_left', 'asset_partner_note', note.id, {
+    assetId: asset.id,
+    assetTitle: asset.title,
+    noteLength: noteText.length,
+  });
+
+  return note;
+}
+
 export async function moveAccountantAssetBetweenRegisters(input: {
   accountantUserId: string;
   sourceShareId: string;
@@ -784,6 +834,7 @@ export function accountantWorkspaceError(error: unknown): { status: number; mess
   if (code.includes('NOT_SHARED')) return { status: 403, message: 'The owner has not shared this ledger.' };
   if (code.includes('NOT_FOUND')) return { status: 404, message: 'This shared Asset Register is unavailable or access has ended.' };
   if (code === 'ACCOUNTING_VALUE_REQUIRED') return { status: 400, message: 'Enter a valid accounting carrying value.' };
+  if (code === 'ACCOUNTANT_NOTE_REQUIRED') return { status: 400, message: 'Write a note before saving.' };
   if (code.includes('DOCUMENT')) return { status: 400, message: 'The document could not be saved. Check its type, size and the asset document limit.' };
   if (code === 'ACCOUNTANT_MOVE_DIFFERENT_OWNER') return { status: 403, message: 'Assets can only be moved between shared registers belonging to the same owner.' };
   if (code === 'ACCOUNTANT_MOVE_SAME_REGISTER') return { status: 400, message: 'Choose a different target Asset Register.' };
