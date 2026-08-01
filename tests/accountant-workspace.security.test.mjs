@@ -12,6 +12,11 @@ const leadsUi = read('app/leads/leads-client.tsx');
 const fuelUi = read('app/fuel/fuel-client.tsx');
 const costUi = read('app/my-invoices/my-invoices-client.tsx');
 const ownerUi = read('app/asset-register/asset-register-client.tsx');
+const ownerStyles = read('app/asset-register/page.module.css');
+const accountantRegistersUi = read('app/accountant/registers/accountant-registers-client.tsx');
+const accountantRegistersPage = read('app/accountant/registers/page.tsx');
+const accountantMoveRoute = read('app/api/accountant/registers/move-assets/route.ts');
+const accountantFlagRoute = read('app/api/accountant/registers/[shareId]/assets/[assetId]/flag/route.ts');
 const ownerWorkspaceAccess = read('lib/owner-workspace-access.ts');
 const registerDb = read('lib/asset-register-db.ts');
 const registerSummaries = read('lib/asset-registers.ts');
@@ -56,6 +61,40 @@ test('normal accountant account keeps standard leads, account and notifications'
   assert.match(leadsUi, /window\.location\.assign\(`\/accountant\/registers\/\$\{encodeURIComponent\(leadToOpen\.id\)\}`\)/);
   assert.match(accountUi, /Partner directory/);
   assert.match(accountUi, /Edit business details/);
+});
+
+test('accountants have a multiple-register landing page and switch-account navigation', () => {
+  assert.match(headerUi, /window\.location\.assign\('\/accountant\/registers'\)/);
+  assert.match(accountantRegistersPage, /<AccountantRegistersClient/);
+  assert.match(accountantRegistersUi, /\/api\/accountant\/registers/);
+  assert.match(accountantRegistersUi, /Client Asset Registers/);
+  assert.match(accountantRegistersUi, /same client/);
+  assert.match(ownerUi, /\/accountant\/registers\?manage=/);
+});
+
+test('accountant register moves stay inside one owner and preserve shared-register anchors', () => {
+  assert.match(accountantMoveRoute, /moveAccountantAssetBetweenRegisters/);
+  assert.match(workspace, /sourceAccess\.ownerUserId !== targetAccess\.ownerUserId/);
+  assert.match(workspace, /ACCOUNTANT_MOVE_DIFFERENT_OWNER/);
+  assert.match(workspace, /full_register_leads/);
+  assert.match(workspace, /reassigned_leads/);
+  assert.match(workspace, /ACCOUNTANT_MOVE_LAST_SHARED_ASSET/);
+  assert.match(accountantRegistersUi, /entry\.ownerUserId === managedRegister\.ownerUserId/);
+});
+
+test('accountants can flag shared assets and use aligned two-button card actions', () => {
+  assert.match(accountantFlagRoute, /updateAccountantAssetFlag/);
+  assert.match(ownerUi, /canUseOwnerOnlyAssetActions \|\| isAccountantWorkspace/);
+  assert.match(ownerUi, /assetHeaderActionsAccountant/);
+  assert.match(ownerUi, /\/assets\/\$\{encodeURIComponent\(asset\.id\)\}\/flag/);
+  assert.match(ownerStyles, /\.page \.assetHeaderActionsAccountant[\s\S]*?grid-template-columns: repeat\(2/);
+});
+
+test('owner and accountant asset filters share lighter labels without a visible scrollbar', () => {
+  assert.match(ownerStyles, /Final cascade: shared Owner\/Accountant filter labels/);
+  assert.match(ownerStyles, /\.assetFilterModalBody[\s\S]*?scrollbar-width: none !important/);
+  assert.match(ownerStyles, /\.assetFilterModalBody::\-webkit-scrollbar[\s\S]*?display: none !important/);
+  assert.match(ownerStyles, /\.assetFilterOption strong[\s\S]*?font-weight: 650 !important/);
 });
 
 test('shared workspace reuses the real Asset Register, Fuel Ledger and Cost Ledger components', () => {
