@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from '../../../lib/auth-session';
 import { createFuelStorage, listFuelLedger } from '../../../lib/fuel-ledger';
+import { filterFuelLedgerForWorkspace, resolveOwnerWorkspaceContext } from '../../../lib/owner-workspace-access';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -24,15 +24,15 @@ function errorMessage(error: unknown, fallback: string): string {
   return error instanceof Error && error.message ? error.message : fallback;
 }
 
-export async function GET() {
-  const session = await getServerSession();
-
-  if (!session?.user?.id) {
-    return unauthorized();
-  }
+export async function GET(request: NextRequest) {
+  const resolved = await resolveOwnerWorkspaceContext(request, { ledger: 'fuel' });
+  if (!resolved.ok) return resolved.response;
 
   try {
-    const ledger = await listFuelLedger(session.user.id);
+    const ledger = await filterFuelLedgerForWorkspace(
+      resolved.context,
+      await listFuelLedger(resolved.context.ownerUserId),
+    );
     return NextResponse.json({ ok: true, ...ledger });
   } catch (error) {
     console.error('fuel ledger load failed', error);
@@ -44,11 +44,8 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const session = await getServerSession();
-
-  if (!session?.user?.id) {
-    return unauthorized();
-  }
+  const resolved = await resolveOwnerWorkspaceContext(request, { ledger: 'fuel' });
+  if (!resolved.ok) return resolved.response;
 
   let body: FuelStorageCreateRequest;
   try {
@@ -58,8 +55,11 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const storage = await createFuelStorage(session.user.id, body);
-    const ledger = await listFuelLedger(session.user.id);
+    const storage = await createFuelStorage(resolved.context.ownerUserId, body);
+    const ledger = await filterFuelLedgerForWorkspace(
+      resolved.context,
+      await listFuelLedger(resolved.context.ownerUserId),
+    );
 
     return NextResponse.json({ ok: true, storage, ...ledger });
   } catch (error) {
