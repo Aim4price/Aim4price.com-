@@ -3308,15 +3308,17 @@ function statusChoiceLabel(value: AssetStatusChoice): string {
   return 'Not sure';
 }
 
-function statusChoiceReportLabel(value: AssetStatusChoice): string {
+function statusChoiceReportLabel(value: FinanceStatusChoice): string {
+  if (value === 'paid') return 'Paid off';
   if (value === 'not_applicable') return 'Not applicable';
   return statusChoiceLabel(value);
 }
 
-function renderAssetStatusMark(value: AssetStatusChoice) {
-  const status = normalizeAssetStatusChoice(value);
+function renderAssetStatusMark(value: FinanceStatusChoice) {
+  const status = value === 'paid' ? 'paid' : normalizeAssetStatusChoice(value);
   const config = {
     yes: { label: '✓', className: styles.statusMarkYes, title: 'Yes' },
+    paid: { label: '✓', className: styles.statusMarkYes, title: 'Paid off' },
     no: { label: '×', className: styles.statusMarkNo, title: 'No' },
     unknown: { label: '?', className: styles.statusMarkUnknown, title: 'Not sure' },
     not_applicable: { label: 'N/A', className: styles.statusMarkNotApplicable, title: 'Not applicable' },
