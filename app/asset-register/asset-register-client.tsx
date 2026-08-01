@@ -152,6 +152,7 @@ type AssetConditionValue = ConditionKey | '';
 type UsageMetric = 'hours' | 'km';
 type ProjectionUsageMetric = UsageMetric | 'percent';
 type AssetStatusChoice = 'yes' | 'no' | 'unknown' | 'not_applicable';
+type FinanceStatusChoice = AssetStatusChoice | 'paid';
 type InsuranceUseContext = 'business' | 'home' | 'mixed';
 type InsuranceMobility = 'premises' | 'portable' | 'moves_between_locations' | 'fixed';
 type InsuranceFactAnswer = 'yes' | 'no' | 'unknown';
@@ -801,7 +802,7 @@ type AssetDraft = {
   isFinanced: boolean;
   isInsured: boolean;
   isLicensed: boolean;
-  financeStatus: AssetStatusChoice;
+  financeStatus: FinanceStatusChoice;
   insuranceStatus: AssetStatusChoice;
   licenseStatus: AssetStatusChoice;
   licenseRegistrationNumber: string;
@@ -818,7 +819,7 @@ type AssetDraft = {
 };
 
 type AssetStatusDraft = {
-  financeStatus: AssetStatusChoice;
+  financeStatus: FinanceStatusChoice;
   financeType: string;
   financeCurrentOutstandingExVat: string;
   financierName: string;
@@ -1088,8 +1089,9 @@ type AssetSettingsManualGpsValidation =
 
 const MAX_ASSET_SETTINGS_LOCATION_TEXT_LENGTH = 180;
 
-const FINANCE_STATUS_OPTIONS: Array<{ value: AssetStatusChoice; label: string; description: string }> = [
+const FINANCE_STATUS_OPTIONS: Array<{ value: FinanceStatusChoice; label: string; description: string }> = [
   { value: 'yes', label: 'Is financed', description: 'This asset has active finance or a lender linked to it.' },
+  { value: 'paid', label: 'Is paid off', description: 'Finance is settled, but the agreement remains in the asset history.' },
   { value: 'no', label: 'Is not financed', description: 'This asset is fully owned and has no finance balance.' },
   { value: 'not_applicable', label: 'Not applicable', description: 'Finance status does not apply to this asset.' },
   { value: 'unknown', label: 'Not sure', description: 'You can confirm the finance status later.' },
@@ -1109,8 +1111,9 @@ const LICENSE_STATUS_OPTIONS: Array<{ value: AssetStatusChoice; label: string; d
   { value: 'unknown', label: 'Not sure', description: 'You can confirm the licence status later.' },
 ];
 
-const QUICK_FINANCE_STATUS_OPTIONS: Array<{ value: AssetStatusChoice; label: string; description: string }> = [
+const QUICK_FINANCE_STATUS_OPTIONS: Array<{ value: FinanceStatusChoice; label: string; description: string }> = [
   { value: 'yes', label: 'Financed', description: 'This asset has active finance or forms part of financed group debt.' },
+  { value: 'paid', label: 'Paid off', description: 'Finance has been settled and is retained as history.' },
   { value: 'no', label: 'Not financed', description: 'This asset is not currently financed.' },
   { value: 'unknown', label: 'Not sure', description: 'You can confirm the finance status later.' },
   { value: 'not_applicable', label: 'Not applicable', description: 'Finance status does not apply to this asset.' },
@@ -2954,10 +2957,16 @@ function normalizeAssetStatusChoice(value: unknown, fallback: AssetStatusChoice 
   return fallback;
 }
 
-function readFinanceStatusChoice(asset: RegisterAsset): AssetStatusChoice {
+function normalizeFinanceStatusChoice(value: unknown, fallback: FinanceStatusChoice = 'unknown'): FinanceStatusChoice {
+  const normalized = String(value ?? '').trim().toLowerCase().replace(/[\s-]+/g, '_');
+  if (['paid', 'paid_off', 'settled', 'settled_in_full', 'fully_paid'].includes(normalized)) return 'paid';
+  return normalizeAssetStatusChoice(value, fallback === 'paid' ? 'unknown' : fallback);
+}
+
+function readFinanceStatusChoice(asset: RegisterAsset): FinanceStatusChoice {
   const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
 
-  return normalizeAssetStatusChoice(
+  return normalizeFinanceStatusChoice(
     specs.financeStatus ?? specs.finance_status ?? specs.financedStatus ?? specs.financed_status,
     asset.isFinanced ? 'yes' : 'no',
   );
@@ -3085,38 +3094,37 @@ function formatStatusNumberInput(value: unknown): string {
 
 function buildAssetStatusDraftFromAsset(asset: RegisterAsset): AssetStatusDraft {
   const financeStatus = readFinanceStatusChoice(asset);
+  const hasFinanceHistory = financeStatus === 'yes' || financeStatus === 'paid';
   const insuranceStatus = readInsuranceStatusChoice(asset);
   const licenseStatus = readLicenseStatusChoice(asset);
 
   return {
     financeStatus,
-    financeType: financeStatus === 'yes' ? readFinanceType(asset) : '',
+    financeType: hasFinanceHistory ? readFinanceType(asset) : '',
     financeCurrentOutstandingExVat: financeStatus === 'yes'
       ? formatStatusMoneyInput(readSpecsNumber(asset, ['financeCurrentOutstandingExVat', 'finance_current_outstanding_ex_vat']))
       : '',
-    financierName: financeStatus === 'yes' ? readSpecsText(asset, ['financierName', 'financier_name']) : '',
-    financeNote: financeStatus === 'yes' ? readAssetFinanceNote(asset) : '',
-    financeBoughtWhen: financeStatus === 'yes' ? readSpecsText(asset, ['financeBoughtWhen', 'finance_bought_when']) : '',
-    financeBoughtForExVat: financeStatus === 'yes'
-      ? formatStatusMoneyInput(readSpecsNumber(asset, ['financeBoughtForExVat', 'finance_bought_for_ex_vat']))
-      : '',
-    financeOriginalAmountExVat: financeStatus === 'yes'
+    financierName: hasFinanceHistory ? readSpecsText(asset, ['financierName', 'financier_name']) : '',
+    financeNote: hasFinanceHistory ? readAssetFinanceNote(asset) : '',
+    financeBoughtWhen: readSpecsText(asset, ['financeBoughtWhen', 'finance_bought_when']),
+    financeBoughtForExVat: formatStatusMoneyInput(readSpecsNumber(asset, ['financeBoughtForExVat', 'finance_bought_for_ex_vat'])),
+    financeOriginalAmountExVat: hasFinanceHistory
       ? formatStatusMoneyInput(readSpecsNumber(asset, ['financeOriginalAmountExVat', 'finance_original_amount_ex_vat']))
       : '',
-    financeMonthlyPaymentExVat: financeStatus === 'yes'
+    financeMonthlyPaymentExVat: hasFinanceHistory
       ? formatStatusMoneyInput(readSpecsNumber(asset, ['financeMonthlyPaymentExVat', 'finance_monthly_payment_ex_vat']))
       : '',
-    financeInterestRatePercent: financeStatus === 'yes'
+    financeInterestRatePercent: hasFinanceHistory
       ? formatStatusNumberInput(readSpecsNumber(asset, ['financeInterestRatePercent', 'finance_interest_rate_percent']))
       : '',
-    financeTermMonths: financeStatus === 'yes'
+    financeTermMonths: hasFinanceHistory
       ? formatStatusNumberInput(readSpecsNumber(asset, ['financeTermMonths', 'finance_term_months']))
       : '',
-    financeBalloonPaymentExVat: financeStatus === 'yes'
+    financeBalloonPaymentExVat: hasFinanceHistory
       ? formatStatusMoneyInput(readSpecsNumber(asset, ['financeBalloonPaymentExVat', 'finance_balloon_payment_ex_vat']))
       : '',
-    financeSettlementDate: financeStatus === 'yes' ? readSpecsText(asset, ['financeSettlementDate', 'finance_settlement_date']) : '',
-    financeReferenceNumber: financeStatus === 'yes' ? readSpecsText(asset, ['financeReferenceNumber', 'finance_reference_number']) : '',
+    financeSettlementDate: hasFinanceHistory ? readSpecsText(asset, ['financeSettlementDate', 'finance_settlement_date']) : '',
+    financeReferenceNumber: hasFinanceHistory ? readSpecsText(asset, ['financeReferenceNumber', 'finance_reference_number']) : '',
     insuranceStatus,
     insuredValueExVat: insuranceStatus === 'yes' ? formatStatusMoneyInput(readAssetInsuredValueExVat(asset)) : '',
     insuranceInsurerName: insuranceStatus === 'yes' ? readSpecsText(asset, ['insuranceInsurerName', 'insurance_insurer_name']) : '',
@@ -3138,6 +3146,7 @@ function statusChoiceSentenceLabel(value: AssetStatusChoice, labels: { yes: stri
 }
 
 function financeStatusSummary(draft: AssetStatusDraft): string {
+  if (draft.financeStatus === 'paid') return 'Paid off';
   if (draft.financeStatus !== 'yes') {
     return statusChoiceSentenceLabel(draft.financeStatus, {
       yes: 'Financed',
@@ -3205,29 +3214,30 @@ function statusOptionalText(value: string): string {
 
 function buildStatusSpecsFragment(draft: AssetStatusDraft, licenseApplicable: boolean): Record<string, unknown> {
   const financeStatus = draft.financeStatus;
+  const hasFinanceHistory = financeStatus === 'yes' || financeStatus === 'paid';
   const insuranceStatus = draft.insuranceStatus;
   const licenseStatus: AssetStatusChoice = licenseApplicable ? draft.licenseStatus : 'not_applicable';
   const insuredValueExVat = insuranceStatus === 'yes' ? optionalMoneyForStatusPayload(draft.insuredValueExVat) : null;
   const licenseRegistrationNumber = licenseStatus === 'yes' ? normalizeLicenseRegistrationText(draft.licenseRegistrationNumber) : '';
   const financeCurrentOutstandingExVat = financeStatus === 'yes' ? optionalMoneyForStatusPayload(draft.financeCurrentOutstandingExVat) : null;
-  const financeBoughtForExVat = financeStatus === 'yes' ? optionalMoneyForStatusPayload(draft.financeBoughtForExVat) : null;
-  const financeOriginalAmountExVat = financeStatus === 'yes' ? optionalMoneyForStatusPayload(draft.financeOriginalAmountExVat) : null;
-  const financeMonthlyPaymentExVat = financeStatus === 'yes' ? optionalMoneyForStatusPayload(draft.financeMonthlyPaymentExVat) : null;
-  const financeInterestRatePercent = financeStatus === 'yes' ? optionalNumberForStatusPayload(draft.financeInterestRatePercent) : null;
-  const financeTermMonths = financeStatus === 'yes' ? optionalNumberForStatusPayload(draft.financeTermMonths) : null;
-  const financeBalloonPaymentExVat = financeStatus === 'yes' ? optionalMoneyForStatusPayload(draft.financeBalloonPaymentExVat) : null;
+  const financeBoughtForExVat = optionalMoneyForStatusPayload(draft.financeBoughtForExVat);
+  const financeOriginalAmountExVat = hasFinanceHistory ? optionalMoneyForStatusPayload(draft.financeOriginalAmountExVat) : null;
+  const financeMonthlyPaymentExVat = hasFinanceHistory ? optionalMoneyForStatusPayload(draft.financeMonthlyPaymentExVat) : null;
+  const financeInterestRatePercent = hasFinanceHistory ? optionalNumberForStatusPayload(draft.financeInterestRatePercent) : null;
+  const financeTermMonths = hasFinanceHistory ? optionalNumberForStatusPayload(draft.financeTermMonths) : null;
+  const financeBalloonPaymentExVat = hasFinanceHistory ? optionalMoneyForStatusPayload(draft.financeBalloonPaymentExVat) : null;
 
   return {
     financeStatus,
     finance_status: financeStatus,
-    financeType: financeStatus === 'yes' ? draft.financeType || null : null,
-    finance_type: financeStatus === 'yes' ? draft.financeType || null : null,
+    financeType: hasFinanceHistory ? draft.financeType || null : null,
+    finance_type: hasFinanceHistory ? draft.financeType || null : null,
     financeCurrentOutstandingExVat,
     finance_current_outstanding_ex_vat: financeCurrentOutstandingExVat,
-    financierName: financeStatus === 'yes' ? statusOptionalText(draft.financierName) : '',
-    financier_name: financeStatus === 'yes' ? statusOptionalText(draft.financierName) : '',
-    financeBoughtWhen: financeStatus === 'yes' ? statusOptionalText(draft.financeBoughtWhen) : '',
-    finance_bought_when: financeStatus === 'yes' ? statusOptionalText(draft.financeBoughtWhen) : '',
+    financierName: hasFinanceHistory ? statusOptionalText(draft.financierName) : '',
+    financier_name: hasFinanceHistory ? statusOptionalText(draft.financierName) : '',
+    financeBoughtWhen: statusOptionalText(draft.financeBoughtWhen),
+    finance_bought_when: statusOptionalText(draft.financeBoughtWhen),
     financeBoughtForExVat,
     finance_bought_for_ex_vat: financeBoughtForExVat,
     financeOriginalAmountExVat,
@@ -3240,10 +3250,10 @@ function buildStatusSpecsFragment(draft: AssetStatusDraft, licenseApplicable: bo
     finance_term_months: financeTermMonths,
     financeBalloonPaymentExVat,
     finance_balloon_payment_ex_vat: financeBalloonPaymentExVat,
-    financeSettlementDate: financeStatus === 'yes' ? statusOptionalText(draft.financeSettlementDate) : '',
-    finance_settlement_date: financeStatus === 'yes' ? statusOptionalText(draft.financeSettlementDate) : '',
-    financeReferenceNumber: financeStatus === 'yes' ? statusOptionalText(draft.financeReferenceNumber) : '',
-    finance_reference_number: financeStatus === 'yes' ? statusOptionalText(draft.financeReferenceNumber) : '',
+    financeSettlementDate: hasFinanceHistory ? statusOptionalText(draft.financeSettlementDate) : '',
+    finance_settlement_date: hasFinanceHistory ? statusOptionalText(draft.financeSettlementDate) : '',
+    financeReferenceNumber: hasFinanceHistory ? statusOptionalText(draft.financeReferenceNumber) : '',
+    finance_reference_number: hasFinanceHistory ? statusOptionalText(draft.financeReferenceNumber) : '',
     insuranceStatus,
     insurance_status: insuranceStatus,
     insuredStatus: insuranceStatus,
@@ -4299,7 +4309,7 @@ function buildDraftFromAsset(asset: RegisterAsset): AssetDraft {
     insuranceStatus,
     licenseStatus,
     licenseRegistrationNumber: licenseStatus === 'yes' ? readLicenseRegistrationNumber(asset) : '',
-    financeNote: financeStatus === 'yes' ? asset.financeNote : '',
+    financeNote: ['yes', 'paid'].includes(financeStatus) ? asset.financeNote : '',
     insuranceNote: insuranceStatus === 'yes' ? insuranceNote : '',
     photos: normalizePhotos(asset.photos),
     documents: assetDocuments(asset),
@@ -8587,7 +8597,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       ...current,
       financeStatus: nextStatusDraft.financeStatus,
       isFinanced: nextStatusDraft.financeStatus === 'yes',
-      financeNote: nextStatusDraft.financeStatus === 'yes' ? nextStatusDraft.financeNote : '',
+      financeNote: ['yes', 'paid'].includes(nextStatusDraft.financeStatus) ? nextStatusDraft.financeNote : '',
       insuranceStatus,
       isInsured: insuranceStatus === 'yes',
       insuredValue: insuranceStatus === 'yes' ? nextStatusDraft.insuredValueExVat : '',
@@ -8606,23 +8616,24 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     });
   }
 
-  function setAssetFinanceStatus(nextStatus: AssetStatusChoice) {
+  function setAssetFinanceStatus(nextStatus: FinanceStatusChoice) {
+    const keepFinanceHistory = nextStatus === 'yes' || nextStatus === 'paid';
     setAssetStatusDraftWithSync((current) => ({
       ...current,
       financeStatus: nextStatus,
-      financeType: nextStatus === 'yes' ? current.financeType : '',
+      financeType: keepFinanceHistory ? current.financeType : '',
       financeCurrentOutstandingExVat: nextStatus === 'yes' ? current.financeCurrentOutstandingExVat : '',
-      financierName: nextStatus === 'yes' ? current.financierName : '',
-      financeNote: nextStatus === 'yes' ? current.financeNote : '',
-      financeBoughtWhen: nextStatus === 'yes' ? current.financeBoughtWhen : '',
-      financeBoughtForExVat: nextStatus === 'yes' ? current.financeBoughtForExVat : '',
-      financeOriginalAmountExVat: nextStatus === 'yes' ? current.financeOriginalAmountExVat : '',
-      financeMonthlyPaymentExVat: nextStatus === 'yes' ? current.financeMonthlyPaymentExVat : '',
-      financeInterestRatePercent: nextStatus === 'yes' ? current.financeInterestRatePercent : '',
-      financeTermMonths: nextStatus === 'yes' ? current.financeTermMonths : '',
-      financeBalloonPaymentExVat: nextStatus === 'yes' ? current.financeBalloonPaymentExVat : '',
-      financeSettlementDate: nextStatus === 'yes' ? current.financeSettlementDate : '',
-      financeReferenceNumber: nextStatus === 'yes' ? current.financeReferenceNumber : '',
+      financierName: keepFinanceHistory ? current.financierName : '',
+      financeNote: keepFinanceHistory ? current.financeNote : '',
+      financeBoughtWhen: current.financeBoughtWhen,
+      financeBoughtForExVat: current.financeBoughtForExVat,
+      financeOriginalAmountExVat: keepFinanceHistory ? current.financeOriginalAmountExVat : '',
+      financeMonthlyPaymentExVat: keepFinanceHistory ? current.financeMonthlyPaymentExVat : '',
+      financeInterestRatePercent: keepFinanceHistory ? current.financeInterestRatePercent : '',
+      financeTermMonths: keepFinanceHistory ? current.financeTermMonths : '',
+      financeBalloonPaymentExVat: keepFinanceHistory ? current.financeBalloonPaymentExVat : '',
+      financeSettlementDate: keepFinanceHistory ? current.financeSettlementDate : '',
+      financeReferenceNumber: keepFinanceHistory ? current.financeReferenceNumber : '',
     }));
   }
 
@@ -8671,6 +8682,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
   function openAssetStatusEditView(section: AssetStatusSection) {
     if (section === 'license' && !assetKindSupportsLicensing(assetFormKind)) return;
+    if (section === 'finance' && editingAsset) void loadFinanceAcquisitionDetails(editingAsset);
     setAssetStatusEditView(section);
     setAssetStatusAdvancedOpen(false);
     setAssetStatusError('');
@@ -8701,6 +8713,36 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     setPendingUsageOverride(null);
     setAssetSettingsError('');
     setIsAssetModalOpen(true);
+    if (section === 'finance') void loadFinanceAcquisitionDetails(asset);
+  }
+
+  async function loadFinanceAcquisitionDetails(asset: RegisterAsset) {
+    try {
+      const response = await fetch(`/api/asset-lifecycle?assetId=${encodeURIComponent(asset.id)}`, { credentials: 'include', cache: 'no-store' });
+      const data = await response.json().catch(() => null) as {
+        ok?: boolean;
+        acquisition?: { newlyAcquired?: boolean; acquisitionDate?: string; acquisitionAmountExVat?: number | null; note?: string; sourceDocumentReference?: string } | null;
+      } | null;
+      if (!response.ok || !data?.ok || !data.acquisition) return;
+      const acquisitionDate = data.acquisition.acquisitionDate || '';
+      const acquisitionAmount = data.acquisition.acquisitionAmountExVat === null || typeof data.acquisition.acquisitionAmountExVat === 'undefined'
+        ? ''
+        : formatRegisterValueInput(data.acquisition.acquisitionAmountExVat);
+      setAcquisitionDetailsDraft({
+        newlyAcquired: data.acquisition.newlyAcquired ?? false,
+        acquisitionDate,
+        acquisitionAmountExVat: acquisitionAmount,
+        note: data.acquisition.note || '',
+        sourceDocumentReference: data.acquisition.sourceDocumentReference || '',
+      });
+      setAssetStatusDraft((current) => ({
+        ...current,
+        financeBoughtWhen: acquisitionDate || current.financeBoughtWhen,
+        financeBoughtForExVat: acquisitionAmount || current.financeBoughtForExVat,
+      }));
+    } catch {
+      // Finance can still be edited when older assets do not yet have lifecycle details.
+    }
   }
 
   function openMappedStatusEditor(asset: RegisterAsset) {
@@ -8767,23 +8809,24 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     const statusSpecsJson = buildStatusSpecsFragment(draft, licenseApplicable);
 
     if (section === 'finance') {
+      const hasFinanceHistory = draft.financeStatus === 'yes' || draft.financeStatus === 'paid';
       return {
         assetId: asset.id,
         section,
         financeStatus: draft.financeStatus,
-        financeType: draft.financeStatus === 'yes' ? draft.financeType || null : null,
+        financeType: hasFinanceHistory ? draft.financeType || null : null,
         financeCurrentOutstandingExVat: draft.financeStatus === 'yes' ? optionalMoneyForStatusPayload(draft.financeCurrentOutstandingExVat) : null,
-        financierName: draft.financeStatus === 'yes' ? statusOptionalText(draft.financierName) : '',
-        financeNote: draft.financeStatus === 'yes' ? statusOptionalText(draft.financeNote) : '',
-        financeBoughtWhen: draft.financeStatus === 'yes' ? statusOptionalText(draft.financeBoughtWhen) : '',
-        financeBoughtForExVat: draft.financeStatus === 'yes' ? optionalMoneyForStatusPayload(draft.financeBoughtForExVat) : null,
-        financeOriginalAmountExVat: draft.financeStatus === 'yes' ? optionalMoneyForStatusPayload(draft.financeOriginalAmountExVat) : null,
-        financeMonthlyPaymentExVat: draft.financeStatus === 'yes' ? optionalMoneyForStatusPayload(draft.financeMonthlyPaymentExVat) : null,
-        financeInterestRatePercent: draft.financeStatus === 'yes' ? optionalNumberForStatusPayload(draft.financeInterestRatePercent) : null,
-        financeTermMonths: draft.financeStatus === 'yes' ? optionalNumberForStatusPayload(draft.financeTermMonths) : null,
-        financeBalloonPaymentExVat: draft.financeStatus === 'yes' ? optionalMoneyForStatusPayload(draft.financeBalloonPaymentExVat) : null,
-        financeSettlementDate: draft.financeStatus === 'yes' ? statusOptionalText(draft.financeSettlementDate) : '',
-        financeReferenceNumber: draft.financeStatus === 'yes' ? statusOptionalText(draft.financeReferenceNumber) : '',
+        financierName: hasFinanceHistory ? statusOptionalText(draft.financierName) : '',
+        financeNote: hasFinanceHistory ? statusOptionalText(draft.financeNote) : '',
+        financeBoughtWhen: statusOptionalText(draft.financeBoughtWhen),
+        financeBoughtForExVat: optionalMoneyForStatusPayload(draft.financeBoughtForExVat),
+        financeOriginalAmountExVat: hasFinanceHistory ? optionalMoneyForStatusPayload(draft.financeOriginalAmountExVat) : null,
+        financeMonthlyPaymentExVat: hasFinanceHistory ? optionalMoneyForStatusPayload(draft.financeMonthlyPaymentExVat) : null,
+        financeInterestRatePercent: hasFinanceHistory ? optionalNumberForStatusPayload(draft.financeInterestRatePercent) : null,
+        financeTermMonths: hasFinanceHistory ? optionalNumberForStatusPayload(draft.financeTermMonths) : null,
+        financeBalloonPaymentExVat: hasFinanceHistory ? optionalMoneyForStatusPayload(draft.financeBalloonPaymentExVat) : null,
+        financeSettlementDate: hasFinanceHistory ? statusOptionalText(draft.financeSettlementDate) : '',
+        financeReferenceNumber: hasFinanceHistory ? statusOptionalText(draft.financeReferenceNumber) : '',
         specsJson: statusSpecsJson,
       };
     }
@@ -8847,6 +8890,26 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
       if (!response.ok || !data?.ok || !data.item) {
         throw new Error(data?.error ?? 'Failed to update asset status.');
+      }
+
+      if (section === 'finance' && normalizedStatusDraft.financeBoughtWhen.trim()) {
+        const acquisitionResponse = await fetch('/api/asset-lifecycle', {
+          method: 'PUT',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            assetId: editingAsset.id,
+            newlyAcquired: acquisitionDetailsDraft.newlyAcquired ?? false,
+            acquisitionDate: normalizedStatusDraft.financeBoughtWhen,
+            acquisitionAmountExVat: normalizedStatusDraft.financeBoughtForExVat,
+            note: acquisitionDetailsDraft.note,
+            sourceDocumentReference: acquisitionDetailsDraft.sourceDocumentReference,
+          }),
+        });
+        const acquisitionData = await acquisitionResponse.json().catch(() => null) as { ok?: boolean; error?: string } | null;
+        if (!acquisitionResponse.ok || !acquisitionData?.ok) {
+          throw new Error(acquisitionData?.error || 'Finance was saved, but acquisition details could not be updated.');
+        }
       }
 
       syncSettingsUpdatedAsset(data.item);
@@ -10154,7 +10217,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
         isInsured: nextInsuranceStatus === 'yes',
         isLicensed: nextLicenseStatus === 'yes',
         licenseRegistrationNumber,
-        financeNote: assetStatusDraft.financeStatus === 'yes' ? assetStatusDraft.financeNote : '',
+        financeNote: ['yes', 'paid'].includes(assetStatusDraft.financeStatus) ? assetStatusDraft.financeNote : '',
         photos,
         documents,
         yearModel: hasYearModel ? Math.round(Number(yearModel)) : null,
@@ -15226,7 +15289,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                         </div>
 
                         <div className={styles.assetStatusEditGrid}>
-                          <ModalSelect<AssetStatusChoice>
+                          <ModalSelect<FinanceStatusChoice>
                             label="Finance status"
                             value={assetStatusDraft.financeStatus}
                             options={QUICK_FINANCE_STATUS_OPTIONS}
@@ -15235,7 +15298,24 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                             usePortal
                           />
 
-                          {assetStatusDraft.financeStatus === 'yes' ? (
+                          <div className={`${styles.assetStatusAcquisitionPanel} ${styles.assetStatusWideField}`}>
+                            <div className={styles.assetStatusAcquisitionHeader}>
+                              <strong>Acquisition details</strong>
+                              <small>Kept with finance and paperwork.</small>
+                            </div>
+                            <div className={styles.assetStatusAcquisitionGrid}>
+                              <label className={styles.field}>
+                                <span>Acquisition date <small>(optional)</small></span>
+                                <input type="date" value={assetStatusDraft.financeBoughtWhen} onChange={(event) => updateAssetStatusDraftField('financeBoughtWhen', event.target.value)} />
+                              </label>
+                              <label className={styles.field}>
+                                <span>Acquisition amount excl. VAT <small>(optional)</small></span>
+                                <input type="text" inputMode="numeric" value={assetStatusDraft.financeBoughtForExVat} onChange={(event) => updateAssetStatusDraftField('financeBoughtForExVat', formatRegisterValueInput(event.target.value))} placeholder="Optional" />
+                              </label>
+                            </div>
+                          </div>
+
+                          {assetStatusDraft.financeStatus === 'yes' || assetStatusDraft.financeStatus === 'paid' ? (
                             <>
                               <ModalSelect<string>
                                 label="Finance type"
@@ -15247,16 +15327,10 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                 usePortal
                               />
 
-                              <label className={styles.field}>
+                              {assetStatusDraft.financeStatus === 'yes' ? <label className={styles.field}>
                                 <span>Current outstanding amount excl. VAT <small>(optional)</small></span>
-                                <input
-                                  type="text"
-                                  inputMode="numeric"
-                                  value={assetStatusDraft.financeCurrentOutstandingExVat}
-                                  onChange={(event) => updateAssetStatusDraftField('financeCurrentOutstandingExVat', formatRegisterValueInput(event.target.value))}
-                                  placeholder="Optional"
-                                />
-                              </label>
+                                <input type="text" inputMode="numeric" value={assetStatusDraft.financeCurrentOutstandingExVat} onChange={(event) => updateAssetStatusDraftField('financeCurrentOutstandingExVat', formatRegisterValueInput(event.target.value))} placeholder="Optional" />
+                              </label> : null}
 
                               <label className={styles.field}>
                                 <span>Financier <small>(optional)</small></span>
@@ -15280,7 +15354,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                           ) : null}
                         </div>
 
-                        {assetStatusDraft.financeStatus === 'yes' ? (
+                        {assetStatusDraft.financeStatus === 'yes' || assetStatusDraft.financeStatus === 'paid' ? (
                           <>
                             <button
                               type="button"
@@ -15294,26 +15368,6 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
                             {assetStatusAdvancedOpen ? (
                               <div className={styles.assetStatusAdvancedGrid}>
-                                <label className={styles.field}>
-                                  <span>Bought when <small>(optional)</small></span>
-                                  <input
-                                    type="date"
-                                    value={assetStatusDraft.financeBoughtWhen}
-                                    onChange={(event) => updateAssetStatusDraftField('financeBoughtWhen', event.target.value)}
-                                  />
-                                </label>
-
-                                <label className={styles.field}>
-                                  <span>Bought for excl. VAT <small>(optional)</small></span>
-                                  <input
-                                    type="text"
-                                    inputMode="numeric"
-                                    value={assetStatusDraft.financeBoughtForExVat}
-                                    onChange={(event) => updateAssetStatusDraftField('financeBoughtForExVat', formatRegisterValueInput(event.target.value))}
-                                    placeholder="Optional"
-                                  />
-                                </label>
-
                                 <label className={styles.field}>
                                   <span>Original financed amount excl. VAT <small>(optional)</small></span>
                                   <input
@@ -16935,16 +16989,6 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                   ) : null}
 
                   {canUseOwnerOnlyAssetActions ? (
-                    <button type="button" className={styles.optionActionButton} onClick={() => void openAcquisitionDetails(activeAsset)}>
-                      <DocumentIcon className={styles.buttonIcon} />
-                      <span>
-                        <strong>Acquisition details</strong>
-                        <small>Record or correct the acquisition date, amount and source.</small>
-                      </span>
-                    </button>
-                  ) : null}
-
-                  {canUseOwnerOnlyAssetActions ? (
                     <button
                       type="button"
                       className={`${styles.optionActionButton} ${styles.optionDangerButton}`}
@@ -16954,7 +16998,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                       <TrashIcon className={styles.buttonIcon} />
                       <span>
                         <strong>{busyDeleteId === activeAsset.id ? 'Removing...' : 'Delete asset'}</strong>
-                        <small>Record a disposal or remove a duplicate safely.</small>
+                        <small className={styles.deleteAssetOptionSubtitle}>Remove or archive this asset safely.</small>
                       </span>
                     </button>
                   ) : null}
@@ -16962,56 +17006,6 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
               </div>
             </div>
           </div>
-        </div>
-      ) : null}
-
-      {activeAsset && acquisitionDetailsAsset ? (
-        <div className={`${styles.modalOverlay} ${styles.subModalOverlay}`}>
-          <div className={styles.modalBackdrop} onClick={() => { if (!isSavingAcquisitionDetails) setAcquisitionDetailsAsset(null); }} />
-          <form className={`${styles.modalCard} ${styles.assetLifecycleModal}`} role="dialog" aria-modal="true" aria-labelledby="acquisition-details-title" onSubmit={handleSaveAcquisitionDetails}>
-            <div className={styles.modalHeader}>
-              <div className={styles.modalHeaderText}>
-                <h3 id="acquisition-details-title">Acquisition details</h3>
-                <p>{acquisitionDetailsAsset.title}</p>
-              </div>
-              <button type="button" className={styles.modalCloseButton} onClick={() => setAcquisitionDetailsAsset(null)} disabled={isSavingAcquisitionDetails} aria-label="Close acquisition details">
-                <CloseIcon className={styles.buttonIcon} />
-              </button>
-            </div>
-            <div className={`${styles.modalScrollBody} ${styles.assetLifecycleBody}`}>
-              {isLoadingAcquisitionDetails ? <div className={styles.emptyState}>Loading acquisition details…</div> : (
-                <>
-                  <div className={styles.assetLifecycleChoiceRow}>
-                    <button type="button" className={`${styles.secondaryButton} ${acquisitionDetailsDraft.newlyAcquired === true ? styles.assetLifecycleChoiceActive : ''}`} onClick={() => setAcquisitionDetailsDraft((current) => ({ ...current, newlyAcquired: true }))}>Newly acquired</button>
-                    <button type="button" className={`${styles.secondaryButton} ${acquisitionDetailsDraft.newlyAcquired === false ? styles.assetLifecycleChoiceActive : ''}`} onClick={() => setAcquisitionDetailsDraft((current) => ({ ...current, newlyAcquired: false }))}>Existing asset added</button>
-                  </div>
-                  <div className={styles.assetLifecycleFields}>
-                    <label className={styles.assetSettingsField}>
-                      <span>{acquisitionDetailsDraft.newlyAcquired ? 'Acquisition date' : 'Date added'}</span>
-                      <input type="date" required value={acquisitionDetailsDraft.acquisitionDate} onChange={(event) => setAcquisitionDetailsDraft((current) => ({ ...current, acquisitionDate: event.target.value }))} />
-                    </label>
-                    <label className={styles.assetSettingsField}>
-                      <span>Acquisition amount <small>Optional, excl. VAT</small></span>
-                      <input inputMode="decimal" value={acquisitionDetailsDraft.acquisitionAmountExVat} onChange={(event) => setAcquisitionDetailsDraft((current) => ({ ...current, acquisitionAmountExVat: event.target.value }))} placeholder="R 0" />
-                    </label>
-                    <label className={styles.assetSettingsField}>
-                      <span>Source or document reference <small>Optional</small></span>
-                      <input value={acquisitionDetailsDraft.sourceDocumentReference} onChange={(event) => setAcquisitionDetailsDraft((current) => ({ ...current, sourceDocumentReference: event.target.value }))} placeholder="Invoice or agreement reference" />
-                    </label>
-                    <label className={styles.assetSettingsField}>
-                      <span>Note <small>Optional</small></span>
-                      <textarea value={acquisitionDetailsDraft.note} onChange={(event) => setAcquisitionDetailsDraft((current) => ({ ...current, note: event.target.value }))} />
-                    </label>
-                  </div>
-                  {acquisitionDetailsError ? <p className={styles.assetSettingsError}>{acquisitionDetailsError}</p> : null}
-                  <div className={styles.assetSettingsActions}>
-                    <button type="button" className={styles.secondaryButton} onClick={() => setAcquisitionDetailsAsset(null)} disabled={isSavingAcquisitionDetails}>Cancel</button>
-                    <button type="submit" className={styles.primaryButton} disabled={isSavingAcquisitionDetails}>{isSavingAcquisitionDetails ? 'Saving…' : 'Save details'}</button>
-                  </div>
-                </>
-              )}
-            </div>
-          </form>
         </div>
       ) : null}
 
@@ -17699,8 +17693,8 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       {disposalCandidateAsset ? (
         <div className={`${styles.modalOverlay} ${styles.confirmDeleteOverlay}`}>
           <div className={styles.modalBackdrop} onClick={() => { if (!busyDeleteId) setDisposalCandidateAsset(null); }} />
-          <form className={`${styles.modalCard} ${styles.assetLifecycleModal}`} role="dialog" aria-modal="true" aria-labelledby="disposal-title" onSubmit={handleConfirmDisposal}>
-            <div className={styles.modalHeader}>
+          <form className={`${styles.modalCard} ${styles.assetLifecycleModal} ${styles.assetDisposalModal}`} role="dialog" aria-modal="true" aria-labelledby="disposal-title" onSubmit={handleConfirmDisposal}>
+            <div className={`${styles.modalHeader} ${styles.assetDisposalHeader}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="disposal-title">What happened to this asset?</h3>
                 <p>{disposalCandidateAsset.title}</p>
@@ -17709,20 +17703,24 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                 <CloseIcon className={styles.buttonIcon} />
               </button>
             </div>
-            <div className={`${styles.modalScrollBody} ${styles.assetLifecycleBody}`}>
-              <label className={styles.assetSettingsField}>
-                <span>Reason</span>
-                <select required value={disposalDraft.reason} onChange={(event) => setDisposalDraft((current) => ({ ...current, reason: event.target.value as DisposalReason }))}>
-                  <option value="">Choose a reason</option>
-                  <option value="sold">Sold</option>
-                  <option value="traded_in">Traded in</option>
-                  <option value="scrapped">Scrapped</option>
-                  <option value="written_off">Written off</option>
-                  <option value="mistake_duplicate">Added by mistake or duplicate</option>
-                  <option value="other">Other</option>
-                </select>
-              </label>
-              <div className={styles.assetLifecycleFields}>
+            <div className={`${styles.modalScrollBody} ${styles.assetLifecycleBody} ${styles.assetDisposalBody}`}>
+              <div className={styles.assetDisposalIntro}><strong>Choose what happened</strong><small>The asset will be archived unless it was added by mistake.</small></div>
+              <div className={styles.assetDisposalReasonGrid} role="group" aria-label="Reason for removing asset">
+                {([
+                  ['sold', 'Sold'],
+                  ['traded_in', 'Traded in'],
+                  ['scrapped', 'Scrapped'],
+                  ['written_off', 'Written off'],
+                  ['mistake_duplicate', 'Added by mistake'],
+                  ['other', 'Other'],
+                ] as const).map(([value, label]) => (
+                  <button key={value} type="button" className={`${styles.assetDisposalReasonButton} ${disposalDraft.reason === value ? styles.assetDisposalReasonButtonActive : ''}`} aria-pressed={disposalDraft.reason === value} onClick={() => setDisposalDraft((current) => ({ ...current, reason: value as DisposalReason }))}>
+                    <span className={styles.assetDisposalReasonMarker} aria-hidden="true" />
+                    <strong>{label}</strong>
+                  </button>
+                ))}
+              </div>
+              <div className={`${styles.assetLifecycleFields} ${styles.assetDisposalFields}`}>
                 <label className={styles.assetSettingsField}>
                   <span>Disposal date</span>
                   <input type="date" required value={disposalDraft.disposalDate} onChange={(event) => setDisposalDraft((current) => ({ ...current, disposalDate: event.target.value }))} />
@@ -17731,20 +17729,20 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                   <span>Disposal amount <small>Optional, excl. VAT</small></span>
                   <input inputMode="decimal" value={disposalDraft.disposalAmountExVat} onChange={(event) => setDisposalDraft((current) => ({ ...current, disposalAmountExVat: event.target.value }))} placeholder="R 0" />
                 </label>
-                <label className={styles.assetSettingsField}>
+                <label className={`${styles.assetSettingsField} ${styles.assetDisposalNoteField}`}>
                   <span>Note <small>Optional</small></span>
                   <textarea value={disposalDraft.note} onChange={(event) => setDisposalDraft((current) => ({ ...current, note: event.target.value }))} placeholder="Add a buyer, trade-in, write-off or other reference" />
                 </label>
               </div>
-              <p className={styles.assetLifecycleNotice}>
+              <p className={`${styles.assetLifecycleNotice} ${disposalDraft.reason === 'mistake_duplicate' ? styles.assetDisposalDeleteNotice : ''}`}>
                 {disposalDraft.reason === 'mistake_duplicate'
                   ? 'This permanently removes the duplicate asset. A deletion audit and final asset snapshot are retained.'
                   : 'The asset will leave active totals but remain available to Additions & Disposals reports with its documents, finance, cost and value history.'}
               </p>
-              <div className={styles.assetSettingsActions}>
+              <div className={`${styles.assetSettingsActions} ${styles.assetDisposalActions}`}>
                 <button type="button" className={styles.secondaryButton} onClick={() => setDisposalCandidateAsset(null)} disabled={busyDeleteId === disposalCandidateAsset.id}>Cancel</button>
                 <button type="submit" className={`${styles.primaryButton} ${styles.deleteConfirmButton}`} disabled={busyDeleteId === disposalCandidateAsset.id || !disposalDraft.reason}>
-                  {busyDeleteId === disposalCandidateAsset.id ? 'Saving…' : disposalDraft.reason === 'mistake_duplicate' ? 'Delete duplicate' : 'Archive disposal'}
+                  {busyDeleteId === disposalCandidateAsset.id ? 'Saving…' : disposalDraft.reason === 'mistake_duplicate' ? 'Delete duplicate' : 'Save disposal'}
                 </button>
               </div>
             </div>
