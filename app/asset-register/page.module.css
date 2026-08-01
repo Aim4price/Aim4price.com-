@@ -14704,6 +14704,10 @@
   line-height: 1.4;
 }
 
+.accountantNoteActions {
+  justify-content: flex-end;
+}
+
 @media (max-width: 760px) {
   .sharedExportButton,
   .sharedNoteActionButton {

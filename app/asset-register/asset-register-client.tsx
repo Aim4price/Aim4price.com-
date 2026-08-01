@@ -13532,7 +13532,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                   aria-label={`Leave a note on ${asset.title}`}
                                 >
                                   <NoteIcon className={styles.buttonIcon} />
-                                  <span>Leave a note</span>
+                                  <span>Note</span>
                                 </button>
                               ) : null}
 
@@ -16806,7 +16806,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
               <p className={styles.accountantNoteHint}>This note will appear on the owner&apos;s Asset Register.</p>
             </div>
 
-            <div className={`${styles.formActions} ${styles.sharedNoteActions}`}>
+            <div className={`${styles.formActions} ${styles.sharedNoteActions} ${styles.accountantNoteActions}`}>
               <button type="button" className={styles.secondaryButton} onClick={closeAccountantNoteModal} disabled={isSavingAccountantNote}>
                 Cancel
               </button>
