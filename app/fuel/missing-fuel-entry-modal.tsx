@@ -252,6 +252,13 @@ function parseNumber(value: string): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function withAccountantShare(url: string, accountantShareId?: string): string {
+  if (!accountantShareId) return url;
+  const scopedUrl = new URL(url, window.location.origin);
+  scopedUrl.searchParams.set('accountantShareId', accountantShareId);
+  return `${scopedUrl.pathname}${scopedUrl.search}`;
+}
+
 export function ManageFuelStorageChoiceModal({ storage, onClose, onManage, onMissingEntry }: {
   storage: MissingFuelStorage;
   onClose: () => void;
@@ -290,10 +297,11 @@ export function ManageFuelStorageChoiceModal({ storage, onClose, onManage, onMis
   );
 }
 
-export function MissingFuelEntryModal({ storage, assets, addedByLabel, onClose, onLedgerUpdated, onReconcile }: {
+export function MissingFuelEntryModal({ storage, assets, addedByLabel, accountantShareId, onClose, onLedgerUpdated, onReconcile }: {
   storage: MissingFuelStorage;
   assets: MissingFuelAsset[];
   addedByLabel: string;
+  accountantShareId?: string;
   onClose: () => void;
   onLedgerUpdated: (payload: MissingFuelLedgerPayload) => void;
   onReconcile: () => void;
@@ -458,7 +466,7 @@ export function MissingFuelEntryModal({ storage, assets, addedByLabel, onClose, 
         tankBalanceTreatment: treatment,
         idempotencyKey,
       };
-      const response = await fetch(`/api/fuel/storage/${encodeURIComponent(storage.id)}/missing-entry`, {
+      const response = await fetch(withAccountantShare(`/api/fuel/storage/${encodeURIComponent(storage.id)}/missing-entry`, accountantShareId), {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
       });
       const data = await response.json() as MissingFuelLedgerPayload;
@@ -622,8 +630,9 @@ export function MissingFuelEntryModal({ storage, assets, addedByLabel, onClose, 
   );
 }
 
-export function ReconcileFuelBalanceModal({ storage, onClose, onLedgerUpdated }: {
+export function ReconcileFuelBalanceModal({ storage, accountantShareId, onClose, onLedgerUpdated }: {
   storage: MissingFuelStorage;
+  accountantShareId?: string;
   onClose: () => void;
   onLedgerUpdated: (payload: MissingFuelLedgerPayload) => void;
 }) {
@@ -646,7 +655,7 @@ export function ReconcileFuelBalanceModal({ storage, onClose, onLedgerUpdated }:
     if (!draft.measurementTime) { setError('Enter the physical measurement time.'); return; }
     setIsSaving(true); setError('');
     try {
-      const response = await fetch(`/api/fuel/storage/${encodeURIComponent(storage.id)}/reconcile`, {
+      const response = await fetch(withAccountantShare(`/api/fuel/storage/${encodeURIComponent(storage.id)}/reconcile`, accountantShareId), {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ currentLitres, measurementDate: draft.measurementDate, measurementTime: draft.measurementTime, note: draft.note, idempotencyKey }),
       });

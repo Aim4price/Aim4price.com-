@@ -1489,9 +1489,10 @@ function getYearOptions(entries: Array<{ createdAtIso?: string; documentDate?: s
 }
 
 
-function buildReportUrl(sourceId: string, year: string, month: string, format: ReportFormat = 'pdf'): string {
+function buildReportUrl(sourceId: string, year: string, month: string, format: ReportFormat = 'pdf', accountantShareId?: string): string {
   const url = new URL('/api/fuel/report', window.location.origin);
   url.searchParams.set('format', format);
+  if (accountantShareId) url.searchParams.set('accountantShareId', accountantShareId);
 
   if (sourceId === REPORT_SOURCE_ALL_STORAGE_UNITS) {
     url.searchParams.set('includeFuelSlips', 'false');
@@ -1508,6 +1509,14 @@ function buildReportUrl(sourceId: string, year: string, month: string, format: R
   }
 
   return url.toString();
+}
+
+function withAccountantShare(url: string, accountantShareId?: string): string {
+  if (!accountantShareId) return url;
+
+  const scopedUrl = new URL(url, window.location.origin);
+  scopedUrl.searchParams.set('accountantShareId', accountantShareId);
+  return `${scopedUrl.pathname}${scopedUrl.search}`;
 }
 
 
@@ -1543,12 +1552,12 @@ function buildFuelScanUrl(storage: FuelLedgerStorage): string | null {
   return toAbsoluteUrl(`/fuel-scan/${encodeURIComponent(publicFuelStorageCode)}`);
 }
 
-function buildFuelQrSvgUrl(storage: FuelLedgerStorage): string {
-  return `/api/fuel/storage/${encodeURIComponent(storage.id)}/qr?format=svg`;
+function buildFuelQrSvgUrl(storage: FuelLedgerStorage, accountantShareId?: string): string {
+  return withAccountantShare(`/api/fuel/storage/${encodeURIComponent(storage.id)}/qr?format=svg`, accountantShareId);
 }
 
-function buildFuelQrPrintUrl(storage: FuelLedgerStorage): string {
-  return `/api/fuel/storage/${encodeURIComponent(storage.id)}/qr?format=print`;
+function buildFuelQrPrintUrl(storage: FuelLedgerStorage, accountantShareId?: string): string {
+  return withAccountantShare(`/api/fuel/storage/${encodeURIComponent(storage.id)}/qr?format=print`, accountantShareId);
 }
 
 function parseDownloadFileName(response: Response, fallback: string): string {
@@ -1577,7 +1586,8 @@ export default function FuelClient({
   addedByLabel: string;
   accountantShareId?: string;
 }) {
-  const isAccountantReadOnly = Boolean(accountantShareId);
+  const isAccountantReadOnly = false;
+  const scopedApiUrl = (url: string) => withAccountantShare(url, accountantShareId);
   const [storages, setStorages] = useState<FuelLedgerStorage[]>([]);
   const [recentEvents, setRecentEvents] = useState<FuelLedgerEvent[]>([]);
   const [assets, setAssets] = useState<FuelLedgerAsset[]>([]);
@@ -2036,11 +2046,6 @@ export default function FuelClient({
   }
 
   function openReportModal() {
-    if (accountantShareId) {
-      window.location.assign(`/api/accountant/registers/${encodeURIComponent(accountantShareId)}/reports?kind=fuel`);
-      return;
-    }
-
     setReportYear('all');
     setReportMonth('all');
     setReportStorageId(REPORT_SOURCE_ALL_WITH_SLIPS);
@@ -2120,7 +2125,7 @@ export default function FuelClient({
 
     try {
       const isEdit = modalMode === 'edit-storage' && selectedStorage;
-      const response = await fetch(isEdit ? `/api/fuel/storage/${selectedStorage.id}` : '/api/fuel', {
+      const response = await fetch(scopedApiUrl(isEdit ? `/api/fuel/storage/${selectedStorage.id}` : '/api/fuel'), {
         method: isEdit ? 'PATCH' : 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -2229,7 +2234,7 @@ export default function FuelClient({
       const formData = new FormData();
       formData.append('file', fuelSlipUploadFile);
 
-      const response = await fetch('/api/fuel/slips/extract', {
+      const response = await fetch(scopedApiUrl('/api/fuel/slips/extract'), {
         method: 'POST',
         credentials: 'include',
         body: formData,
@@ -2341,7 +2346,7 @@ export default function FuelClient({
       };
 
       const response = await fetch(
-        reviewingExistingSlip ? `/api/fuel/slips/${encodeURIComponent(fuelSlipDraft.id)}` : '/api/fuel/slips',
+        scopedApiUrl(reviewingExistingSlip ? `/api/fuel/slips/${encodeURIComponent(fuelSlipDraft.id)}` : '/api/fuel/slips'),
         {
           method: reviewingExistingSlip ? 'PATCH' : 'POST',
           credentials: 'include',
@@ -2409,7 +2414,7 @@ export default function FuelClient({
     setNotice(null);
 
     try {
-      const response = await fetch(`/api/fuel/slips/${encodeURIComponent(deleteCandidateFuelSlip.id)}`, {
+      const response = await fetch(scopedApiUrl(`/api/fuel/slips/${encodeURIComponent(deleteCandidateFuelSlip.id)}`), {
         method: 'DELETE',
         credentials: 'include',
       });
@@ -2431,7 +2436,7 @@ export default function FuelClient({
     setNotice(null);
 
     try {
-      const response = await fetch(`/api/fuel/storage/${selectedStorage.id}/pin`, {
+      const response = await fetch(scopedApiUrl(`/api/fuel/storage/${selectedStorage.id}/pin`), {
         method: 'PUT',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -2491,7 +2496,7 @@ export default function FuelClient({
   }
 
   function handlePrintFuelQrLabel(storage: FuelLedgerStorage) {
-    const opened = window.open(buildFuelQrPrintUrl(storage), '_blank', 'noopener,noreferrer');
+    const opened = window.open(buildFuelQrPrintUrl(storage, accountantShareId), '_blank', 'noopener,noreferrer');
 
     if (!opened) {
       setNotice({ tone: 'error', message: 'Unable to open the fuel QR print page. Please allow pop-ups and try again.' });
@@ -2503,7 +2508,7 @@ export default function FuelClient({
 
   async function handleDownloadFuelQr(storage: FuelLedgerStorage) {
     try {
-      const response = await fetch(`/api/fuel/storage/${encodeURIComponent(storage.id)}/qr?format=png&download=1`, {
+      const response = await fetch(scopedApiUrl(`/api/fuel/storage/${encodeURIComponent(storage.id)}/qr?format=png&download=1`), {
         credentials: 'include',
         cache: 'no-store',
       });
@@ -2624,7 +2629,7 @@ export default function FuelClient({
     setNotice(null);
 
     try {
-      const response = await fetch(`/api/fuel/storage/${storage.id}/dipstick`, {
+      const response = await fetch(scopedApiUrl(`/api/fuel/storage/${storage.id}/dipstick`), {
         method: 'DELETE',
         credentials: 'include',
       });
@@ -2645,7 +2650,7 @@ export default function FuelClient({
     setNotice(null);
 
     try {
-      const response = await fetch(`/api/fuel/storage/${deleteCandidateStorage.id}`, {
+      const response = await fetch(scopedApiUrl(`/api/fuel/storage/${deleteCandidateStorage.id}`), {
         method: 'DELETE',
         credentials: 'include',
       });
@@ -2662,7 +2667,7 @@ export default function FuelClient({
 
   function handleOpenReport() {
     const normalizedMonth = reportYear === 'all' ? 'all' : reportMonth;
-    window.open(buildReportUrl(reportStorageId, reportYear, normalizedMonth, 'pdf'), '_blank', 'noopener,noreferrer');
+    window.open(buildReportUrl(reportStorageId, reportYear, normalizedMonth, 'pdf', accountantShareId), '_blank', 'noopener,noreferrer');
     closeModal();
   }
 
@@ -2717,7 +2722,7 @@ export default function FuelClient({
   function handleDownloadXlsxReport() {
     const normalizedMonth = reportYear === 'all' ? 'all' : reportMonth;
     const downloadLink = document.createElement('a');
-    downloadLink.href = buildReportUrl(reportStorageId, reportYear, normalizedMonth, 'xlsx');
+    downloadLink.href = buildReportUrl(reportStorageId, reportYear, normalizedMonth, 'xlsx', accountantShareId);
     downloadLink.download = '';
     downloadLink.rel = 'noreferrer';
     document.body.appendChild(downloadLink);
@@ -3205,6 +3210,7 @@ export default function FuelClient({
           storage={selectedStorage}
           assets={assets}
           addedByLabel={addedByLabel}
+          accountantShareId={accountantShareId}
           onClose={closeModal}
           onLedgerUpdated={applyLedgerData}
           onReconcile={() => openReconcileBalance(selectedStorage)}
@@ -3214,6 +3220,7 @@ export default function FuelClient({
       {modalMode === 'reconcile-balance' && selectedStorage ? (
         <ReconcileFuelBalanceModal
           storage={selectedStorage}
+          accountantShareId={accountantShareId}
           onClose={closeModal}
           onLedgerUpdated={(data) => {
             applyLedgerData(data);
@@ -3962,7 +3969,7 @@ export default function FuelClient({
                   <span className={styles.qrPreviewEyebrow}>Permanent fuel QR</span>
                   <div className={styles.qrPreviewFrame}>
                     {selectedStorage.publicFuelStorageCode ? (
-                      <img src={buildFuelQrSvgUrl(selectedStorage)} alt={`QR code for ${selectedStorage.name}`} />
+                      <img src={buildFuelQrSvgUrl(selectedStorage, accountantShareId)} alt={`QR code for ${selectedStorage.name}`} />
                     ) : (
                       <p className={styles.qrPreviewFallback}>QR artwork is not ready for this fuel storage unit yet.</p>
                     )}
