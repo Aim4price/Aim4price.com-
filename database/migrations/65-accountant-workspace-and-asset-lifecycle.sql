@@ -1,7 +1,7 @@
 -- 65-accountant-workspace-and-asset-lifecycle.sql
 -- Live accountant access remains a subtype of Finance. This migration adds
 -- revocable register permissions, asset lifecycle history and a deliberately
--- simple accounting carrying-value reference (not an accounting engine).
+-- simple accountant-supplied book-value reference (not an accounting engine).
 -- Safe to run more than once after migrations 13, 20 and 37.
 
 begin;
