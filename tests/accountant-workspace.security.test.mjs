@@ -13,9 +13,10 @@ const fuelUi = read('app/fuel/fuel-client.tsx');
 const costUi = read('app/my-invoices/my-invoices-client.tsx');
 const ownerUi = read('app/asset-register/asset-register-client.tsx');
 const ownerStyles = read('app/asset-register/page.module.css');
-const accountantRegistersUi = read('app/accountant/registers/accountant-registers-client.tsx');
 const accountantRegistersPage = read('app/accountant/registers/page.tsx');
-const accountantMoveRoute = read('app/api/accountant/registers/move-assets/route.ts');
+const accountantManagePage = read('app/accountant/registers/[shareId]/manage/page.tsx');
+const accountantOwnerRegistersRoute = read('app/api/accountant/registers/[shareId]/owner-registers/route.ts');
+const accountantMoveRoute = read('app/api/accountant/registers/[shareId]/owner-registers/move-assets/route.ts');
 const accountantFlagRoute = read('app/api/accountant/registers/[shareId]/assets/[assetId]/flag/route.ts');
 const ownerWorkspaceAccess = read('lib/owner-workspace-access.ts');
 const registerDb = read('lib/asset-register-db.ts');
@@ -29,8 +30,8 @@ test('accountant access is tied to the signed-in partner and an active share', (
   assert.match(workspace, /account_subtype.*accountant/s);
 });
 
-test('unauthorised assets cannot escape the shared register boundary', () => {
-  assert.match(workspace, /asset\.registerId !== access\.registerId/);
+test('unauthorised assets cannot escape the shared client owner boundary', () => {
+  assert.match(workspace, /getAssetRegisterForUser\(access\.ownerUserId, asset\.registerId\)/);
   assert.match(workspace, /ACCOUNTANT_ASSET_NOT_FOUND/);
 });
 
@@ -63,23 +64,23 @@ test('normal accountant account keeps standard leads, account and notifications'
   assert.match(accountUi, /Edit business details/);
 });
 
-test('accountants have a multiple-register landing page and switch-account navigation', () => {
-  assert.match(headerUi, /window\.location\.assign\('\/accountant\/registers'\)/);
-  assert.match(accountantRegistersPage, /<AccountantRegistersClient/);
-  assert.match(accountantRegistersUi, /\/api\/accountant\/registers/);
-  assert.match(accountantRegistersUi, /Client Asset Registers/);
-  assert.match(accountantRegistersUi, /same client/);
-  assert.match(ownerUi, /\/accountant\/registers\?manage=/);
+test('client choice stays on My Clients while Change manages registers inside one client', () => {
+  assert.match(accountantRegistersPage, /redirect\('\/leads'\)/);
+  assert.doesNotMatch(headerUi, /Switch accounts/);
+  assert.match(headerUi, /aim4price:open-register-change/);
+  assert.match(headerUi, /<span>Change<\/span>/);
+  assert.match(accountantManagePage, /<AssetRegistersClient accountantShareId=\{params\.shareId\}/);
+  assert.match(accountantOwnerRegistersRoute, /getAccountantRegisterAccess/);
+  assert.match(ownerUi, /\/owner-registers/);
+  assert.match(ownerUi, /Change Asset Register/);
 });
 
 test('accountant register moves stay inside one owner and preserve shared-register anchors', () => {
-  assert.match(accountantMoveRoute, /moveAccountantAssetBetweenRegisters/);
-  assert.match(workspace, /sourceAccess\.ownerUserId !== targetAccess\.ownerUserId/);
-  assert.match(workspace, /ACCOUNTANT_MOVE_DIFFERENT_OWNER/);
+  assert.match(accountantMoveRoute, /moveAccountantAssetToRegister/);
+  assert.match(workspace, /getAssetRegisterForUser\(access\.ownerUserId, input\.targetRegisterId\)/);
   assert.match(workspace, /full_register_leads/);
   assert.match(workspace, /reassigned_leads/);
   assert.match(workspace, /ACCOUNTANT_MOVE_LAST_SHARED_ASSET/);
-  assert.match(accountantRegistersUi, /entry\.ownerUserId === managedRegister\.ownerUserId/);
 });
 
 test('accountants can flag shared assets and use aligned two-button card actions', () => {
@@ -111,7 +112,7 @@ test('shared workspace reuses the real Asset Register, Fuel Ledger and Cost Ledg
 test('shared Fuel and Cost Ledgers reuse owner controls with register-scoped writes and reports', () => {
   assert.match(fuelUi, /const isAccountantReadOnly = false/);
   assert.match(fuelUi, /scopedApiUrl\('\/api\/fuel\/slips\/extract'\)/);
-  assert.match(fuelUi, /buildReportUrl\(reportStorageId, reportYear, normalizedMonth, 'xlsx', accountantShareId\)/);
+  assert.match(fuelUi, /buildReportUrl\(reportStorageId, reportYear, normalizedMonth, 'xlsx', accountantShareId, accountantRegisterId\)/);
   assert.match(fuelUi, /Fuel Slips/);
   assert.match(costUi, /accountScopedUrl\(editingInvoiceId \? `\$\{apiRoot\}\/\$\{editingInvoiceId\}` : apiRoot\)/);
   assert.match(costUi, /<span>Add Cost<\/span>/);
