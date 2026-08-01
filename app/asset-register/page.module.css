@@ -24850,6 +24850,14 @@ button.documentOpenLink {
   padding: 0 0.12rem 1rem 0;
   overflow-y: auto;
   overscroll-behavior: contain;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.assetFilterModalBody::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
 }
 
 .assetFilterOptionStack {
@@ -24922,7 +24930,7 @@ button.documentOpenLink {
 
 .assetFilterAllOptionCard .assetFilterOptionText strong {
   font-size: clamp(1.04rem, 1.55vw, 1.2rem);
-  font-weight: 950;
+  font-weight: 780;
   letter-spacing: -0.025em;
 }
 
@@ -24935,7 +24943,7 @@ button.documentOpenLink {
   display: block;
   color: #102f2a;
   font-size: 0.94rem;
-  font-weight: 900;
+  font-weight: 720;
   line-height: 1.16;
   letter-spacing: -0.018em;
 }
@@ -33208,6 +33216,12 @@ button.documentOpenLink {
     gap: 0.65rem;
   }
 
+  .page .assetHeaderActionsAccountant {
+    width: 19.35rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    justify-self: end;
+  }
+
   .page .assetHeaderActions .cardOptionsButton,
   .page .assetHeaderActions .cardViewDetailsButton,
   .page .assetHeaderActions .cardManageButton {
@@ -33910,4 +33924,32 @@ button.documentOpenLink {
     width: 100%;
     min-width: 0;
   }
+}
+
+/* Final cascade: shared Owner/Accountant filter labels stay light and the option grid has no visible scrollbar. */
+.assetFilterModalBody {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+  scrollbar-gutter: auto !important;
+}
+
+.assetFilterModalBody::-webkit-scrollbar,
+.assetFilterModalBody::-webkit-scrollbar-track,
+.assetFilterModalBody::-webkit-scrollbar-track-piece,
+.assetFilterModalBody::-webkit-scrollbar-thumb,
+.assetFilterModalBody::-webkit-scrollbar-button,
+.assetFilterModalBody::-webkit-scrollbar-corner {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+.assetFilterAllOption strong {
+  font-weight: 720 !important;
+}
+
+.assetFilterOption strong {
+  font-weight: 650 !important;
 }

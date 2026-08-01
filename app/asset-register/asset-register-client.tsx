@@ -6061,12 +6061,16 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     }
 
     try {
-      const response = await fetch('/api/asset-register', {
+      const response = await fetch(accountantShareId
+        ? `/api/accountant/registers/${encodeURIComponent(accountantShareId)}/assets/${encodeURIComponent(asset.id)}/flag`
+        : '/api/asset-register', {
         method: 'PATCH',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           assetId: asset.id,
           assetFlagged: nextIsFlagged,
+          isFlagged: nextIsFlagged,
         }),
       });
 
@@ -6663,7 +6667,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
   function openChangeRegisterModal() {
     if (!canOpenRegisterSwitcher) {
-      window.location.href = isAccountantWorkspace ? '/leads' : '/asset-registers';
+      window.location.href = isAccountantWorkspace ? '/accountant/registers' : '/asset-registers';
       return;
     }
 
@@ -6734,6 +6738,11 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   }
 
   function openAssetRegisterMoveManager(asset: RegisterAsset) {
+    if (isAccountantWorkspace && accountantShareId) {
+      window.location.assign(`/accountant/registers?manage=${encodeURIComponent(accountantShareId)}&assetId=${encodeURIComponent(asset.id)}`);
+      return;
+    }
+
     setNotice(null);
     setAssetRegisterMoveAsset(asset);
     setAssetRegisterMoveSearchTerm(asset.title);
@@ -12776,12 +12785,12 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                   </label>
 
                   <Link
-                    href={isAccountantWorkspace ? '/leads' : '/asset-registers'}
+                    href={isAccountantWorkspace ? '/accountant/registers' : '/asset-registers'}
                     className={`${styles.secondaryButton} ${styles.changeRegisterManageButton}`}
                     onClick={closeChangeRegisterModal}
                   >
                     <ManageIcon className={styles.buttonIcon} />
-                    <span>{isAccountantWorkspace ? 'My Clients' : 'Manage'}</span>
+                    <span>{isAccountantWorkspace ? 'All registers' : 'Manage'}</span>
                   </Link>
                 </div>
 
@@ -13328,7 +13337,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
                     return (
                       <div className={styles.assetCardRow} key={asset.id}>
-                        {canUseOwnerOnlyAssetActions ? (
+                        {canUseOwnerOnlyAssetActions || isAccountantWorkspace ? (
                           <div className={styles.assetSideActions}>
                             <button
                               type="button"
@@ -13404,7 +13413,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                               </div>
                             </div>
 
-                            <div className={styles.assetHeaderActions}>
+                            <div className={`${styles.assetHeaderActions} ${isAccountantWorkspace ? styles.assetHeaderActionsAccountant : ''}`}>
                               {estimateNeedsUpdate && canUseOwnerOnlyAssetActions ? (
                                 <button
                                   type="button"
