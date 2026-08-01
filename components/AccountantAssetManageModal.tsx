@@ -37,25 +37,44 @@ type Props = {
   onChanged: (message: string) => void;
 };
 
-const financeFields = [
+const financeAgreementFields = [
   ['financierName', 'Financier'],
   ['financeType', 'Finance type'],
   ['referenceNumber', 'Agreement / facility reference'],
-  ['originalAmount', 'Original finance amount'],
-  ['outstandingBalance', 'Latest outstanding balance'],
+] as const;
+
+const financeAmountFields = [
+  ['originalAmount', 'Original amount'],
+  ['outstandingBalance', 'Outstanding balance'],
   ['settlementAmount', 'Settlement amount'],
-  ['instalment', 'Instalment'],
-  ['balloon', 'Balloon'],
+  ['instalment', 'Monthly instalment'],
+  ['balloon', 'Balloon payment'],
+] as const;
+
+const financeDateFields = [
   ['startDate', 'Start date'],
   ['endDate', 'Expected end date'],
   ['latestBalanceDate', 'Latest balance date'],
   ['settlementDate', 'Settlement date'],
+] as const;
+
+const financeRecordFields = [
   ['sourceReference', 'Source document / reference'],
   ['securityDescription', 'Recorded collateral / security'],
 ] as const;
 
+const financeFields = [
+  ...financeAgreementFields,
+  ...financeAmountFields,
+  ...financeDateFields,
+  ...financeRecordFields,
+] as const;
+
 type FinanceKey = (typeof financeFields)[number][0];
 type FinanceDraft = Record<FinanceKey, string> & { financeStatus: string; financeNote: string };
+type FinanceAmountBasis = 'excluded' | 'included';
+
+const VAT_MULTIPLIER = 1.15;
 
 function text(value: unknown): string {
   return String(value ?? '').trim();
@@ -91,6 +110,21 @@ function financeDraft(asset: AccountantManagedAsset): FinanceDraft {
   };
 }
 
+function convertFinanceAmounts(draft: FinanceDraft, multiplier: number): FinanceDraft {
+  const next = { ...draft };
+  for (const [key] of financeAmountFields) {
+    const raw = draft[key].replace(/[^0-9.-]+/g, '');
+    if (!raw) {
+      next[key] = '';
+      continue;
+    }
+    const value = Number(raw);
+    if (!Number.isFinite(value)) continue;
+    next[key] = String(Math.round((value * multiplier + Number.EPSILON) * 100) / 100);
+  }
+  return next;
+}
+
 function ActionIcon({ type }: { type: 'finance' | 'accounting' | 'document' | 'report' }) {
   const paths = {
     finance: <><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M7 10h10M7 15h4"/></>,
@@ -112,6 +146,7 @@ export default function AccountantAssetManageModal({
 }: Props) {
   const [view, setView] = useState<View>('menu');
   const [finance, setFinance] = useState<FinanceDraft>(() => financeDraft(asset));
+  const [financeAmountBasis, setFinanceAmountBasis] = useState<FinanceAmountBasis>('excluded');
   const [carryingValue, setCarryingValue] = useState(asset.accountingValue ? String(asset.accountingValue.carryingValue) : '');
   const [asAtDate, setAsAtDate] = useState(asset.accountingValue?.asAtDate || new Date().toISOString().slice(0, 10));
   const [accountingSource, setAccountingSource] = useState(asset.accountingValue?.sourceReference || '');
@@ -128,10 +163,13 @@ export default function AccountantAssetManageModal({
     setBusy(true);
     setError('');
     try {
+      const financePayload = financeAmountBasis === 'included'
+        ? convertFinanceAmounts(finance, 1 / VAT_MULTIPLIER)
+        : finance;
       const response = await fetch(`${root}/assets/${encodeURIComponent(asset.id)}/finance`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(finance),
+        body: JSON.stringify(financePayload),
       });
       const data = await response.json() as { ok?: boolean; error?: string };
       if (!response.ok || !data.ok) throw new Error(data.error || 'Finance details could not be saved.');
@@ -142,6 +180,15 @@ export default function AccountantAssetManageModal({
     } finally {
       setBusy(false);
     }
+  }
+
+  function selectFinanceAmountBasis(nextBasis: FinanceAmountBasis) {
+    if (nextBasis === financeAmountBasis) return;
+    setFinance((current) => convertFinanceAmounts(
+      current,
+      nextBasis === 'included' ? VAT_MULTIPLIER : 1 / VAT_MULTIPLIER,
+    ));
+    setFinanceAmountBasis(nextBasis);
   }
 
   async function saveAccounting(event: FormEvent) {
@@ -193,7 +240,7 @@ export default function AccountantAssetManageModal({
   return (
     <div className={styles.modalOverlay}>
       <div className={styles.modalBackdrop} onClick={busy ? undefined : onClose} />
-      <section className={styles.optionsModal} role="dialog" aria-modal="true" aria-labelledby="accountant-asset-manage-title">
+      <section className={`${styles.optionsModal} ${view === 'finance' ? styles.accountantFinanceModal : ''}`} role="dialog" aria-modal="true" aria-labelledby="accountant-asset-manage-title">
         <div className={`${styles.modalHeader} ${styles.optionsModalHeader}`}>
           <div className={styles.modalHeaderText}>
             <h3 id="accountant-asset-manage-title">{title}</h3>
@@ -224,15 +271,46 @@ export default function AccountantAssetManageModal({
           ) : null}
 
           {view === 'finance' ? (
-            <form className={styles.accountantManageForm} onSubmit={saveFinance}>
-              <div className={styles.accountantReadOnlyNotice}>{allowDirectUpdates ? 'Saved changes update the owner’s live register and are written to the audit history.' : 'Ask the owner to enable Allow direct updates before changing finance details.'}</div>
-              <div className={styles.accountantManageGrid}>
-                <label className={styles.assetSettingsField}><span>Finance status</span><select value={finance.financeStatus} onChange={(event) => setFinance((current) => ({ ...current, financeStatus: event.target.value }))} disabled={!allowDirectUpdates}><option value="yes">Financed</option><option value="no">Paid off / not financed</option><option value="unknown">Unknown</option></select></label>
-                {financeFields.map(([key, label]) => <label className={styles.assetSettingsField} key={key}><span>{label}</span><input type={key.toLowerCase().includes('date') ? 'date' : 'text'} value={finance[key]} onChange={(event) => setFinance((current) => ({ ...current, [key]: event.target.value }))} disabled={!allowDirectUpdates}/></label>)}
-                <label className={`${styles.assetSettingsField} ${styles.accountantFullField}`}><span>Finance note</span><textarea value={finance.financeNote} onChange={(event) => setFinance((current) => ({ ...current, financeNote: event.target.value }))} disabled={!allowDirectUpdates}/></label>
-              </div>
+            <form className={`${styles.accountantManageForm} ${styles.accountantFinanceForm}`} onSubmit={saveFinance}>
+              <div className={styles.accountantReadOnlyNotice}>{allowDirectUpdates ? 'Changes update the owner’s register and audit history.' : 'Ask the owner to enable direct updates before changing finance details.'}</div>
+
+              <section className={styles.accountantFinanceSection}>
+                <div className={styles.accountantFinanceSectionHeader}><h4>Agreement</h4></div>
+                <div className={styles.accountantManageGrid}>
+                  <label className={styles.assetSettingsField}><span>Finance status</span><select value={finance.financeStatus} onChange={(event) => setFinance((current) => ({ ...current, financeStatus: event.target.value }))} disabled={!allowDirectUpdates}><option value="yes">Financed</option><option value="no">Paid off / not financed</option><option value="unknown">Unknown</option></select></label>
+                  {financeAgreementFields.map(([key, label]) => <label className={styles.assetSettingsField} key={key}><span>{label}</span><input type="text" value={finance[key]} onChange={(event) => setFinance((current) => ({ ...current, [key]: event.target.value }))} disabled={!allowDirectUpdates}/></label>)}
+                </div>
+              </section>
+
+              <section className={styles.accountantFinanceSection}>
+                <div className={`${styles.accountantFinanceSectionHeader} ${styles.accountantFinanceAmountHeader}`}>
+                  <div><h4>Amounts</h4><p>Select how the amounts are entered.</p></div>
+                  <div className={styles.vatToggleGroup} aria-label="Finance amount VAT basis">
+                    <button type="button" className={`${styles.vatToggleButton} ${financeAmountBasis === 'excluded' ? styles.vatToggleButtonActive : ''}`} onClick={() => selectFinanceAmountBasis('excluded')} aria-pressed={financeAmountBasis === 'excluded'}>Excl. VAT</button>
+                    <button type="button" className={`${styles.vatToggleButton} ${financeAmountBasis === 'included' ? styles.vatToggleButtonActive : ''}`} onClick={() => selectFinanceAmountBasis('included')} aria-pressed={financeAmountBasis === 'included'}>Incl. VAT</button>
+                  </div>
+                </div>
+                <div className={styles.accountantManageGrid}>
+                  {financeAmountFields.map(([key, label]) => (
+                    <label className={styles.assetSettingsField} key={key}>
+                      <span className={styles.accountantFinanceFieldLabel}><span>{label}</span><small>{financeAmountBasis === 'included' ? 'Incl. VAT' : 'Excl. VAT'}</small></span>
+                      <span className={styles.accountantCurrencyField}><b>R</b><input type="text" inputMode="decimal" placeholder="0.00" value={finance[key]} onChange={(event) => setFinance((current) => ({ ...current, [key]: event.target.value }))} disabled={!allowDirectUpdates}/></span>
+                    </label>
+                  ))}
+                </div>
+                <p className={styles.accountantFinanceVatNote}>Aim4price stores finance amounts excluding VAT.</p>
+              </section>
+
+              <section className={styles.accountantFinanceSection}>
+                <div className={styles.accountantFinanceSectionHeader}><h4>Dates & records</h4></div>
+                <div className={styles.accountantManageGrid}>
+                  {financeDateFields.map(([key, label]) => <label className={styles.assetSettingsField} key={key}><span>{label}</span><input type="date" value={finance[key]} onChange={(event) => setFinance((current) => ({ ...current, [key]: event.target.value }))} disabled={!allowDirectUpdates}/></label>)}
+                  {financeRecordFields.map(([key, label]) => <label className={styles.assetSettingsField} key={key}><span>{label}</span><input type="text" value={finance[key]} onChange={(event) => setFinance((current) => ({ ...current, [key]: event.target.value }))} disabled={!allowDirectUpdates}/></label>)}
+                  <label className={`${styles.assetSettingsField} ${styles.accountantFullField}`}><span>Finance note</span><textarea value={finance.financeNote} onChange={(event) => setFinance((current) => ({ ...current, financeNote: event.target.value }))} disabled={!allowDirectUpdates}/></label>
+                </div>
+              </section>
               {error ? <p className={styles.assetSettingsError}>{error}</p> : null}
-              <div className={styles.assetSettingsActions}><button type="button" className={styles.secondaryButton} onClick={() => setView('menu')}>Back</button>{allowDirectUpdates ? <button type="submit" className={styles.primaryButton} disabled={busy}>{busy ? 'Saving…' : 'Save finance details'}</button> : null}</div>
+              <div className={styles.assetSettingsActions}><button type="button" className={styles.secondaryButton} onClick={() => setView('menu')}>Back</button>{allowDirectUpdates ? <button type="submit" className={styles.primaryButton} disabled={busy}>{busy ? 'Saving…' : 'Save changes'}</button> : null}</div>
             </form>
           ) : null}
 

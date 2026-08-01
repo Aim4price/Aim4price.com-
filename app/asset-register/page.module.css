@@ -32848,6 +32848,100 @@ button.documentOpenLink {
   width: 100%;
 }
 
+.accountantFinanceModal {
+  width: min(94vw, 54rem) !important;
+  max-height: min(92vh, calc(100dvh - 1.5rem)) !important;
+}
+
+.accountantFinanceForm {
+  gap: 0.85rem;
+}
+
+.accountantFinanceSection {
+  display: grid;
+  gap: 0.85rem;
+  padding: 1rem;
+  border: 1px solid rgba(205, 219, 228, 0.92);
+  border-radius: 1.15rem;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 10px 28px rgba(27, 50, 63, 0.035);
+}
+
+.accountantFinanceSectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.85rem;
+}
+
+.accountantFinanceSectionHeader h4,
+.accountantFinanceSectionHeader p {
+  margin: 0;
+}
+
+.accountantFinanceSectionHeader h4 {
+  color: #123f36;
+  font-size: 1rem;
+  font-weight: 840;
+  letter-spacing: -0.02em;
+}
+
+.accountantFinanceSectionHeader p {
+  margin-top: 0.18rem;
+  color: #6b7b8b;
+  font-size: 0.78rem;
+  font-weight: 620;
+  line-height: 1.35;
+}
+
+.accountantFinanceFieldLabel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.accountantFinanceFieldLabel small {
+  flex: 0 0 auto;
+  padding: 0.18rem 0.48rem;
+  border: 1px solid rgba(191, 218, 204, 0.9);
+  border-radius: 999px;
+  color: #1c664f;
+  background: #eef8f2;
+  font-size: 0.65rem;
+  font-weight: 820;
+  line-height: 1.2;
+}
+
+.accountantCurrencyField {
+  position: relative;
+  display: block;
+}
+
+.accountantCurrencyField > b {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: 0.95rem;
+  color: #61736d;
+  font-size: 0.88rem;
+  font-weight: 800;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.accountantCurrencyField input {
+  padding-left: 2.15rem !important;
+}
+
+.accountantFinanceVatNote {
+  margin: -0.15rem 0 0;
+  color: #65766f;
+  font-size: 0.75rem;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
 .accountantManageGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -32898,6 +32992,20 @@ button.documentOpenLink {
 }
 
 @media (max-width: 760px) {
+  .accountantFinanceModal {
+    width: 100% !important;
+    max-height: calc(100dvh - 1rem) !important;
+  }
+
+  .accountantFinanceSection {
+    padding: 0.85rem;
+  }
+
+  .accountantFinanceAmountHeader {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
   .accountantManageGrid {
     grid-template-columns: 1fr;
   }

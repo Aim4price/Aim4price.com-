@@ -59,6 +59,14 @@ test('accountant asset UI exposes no owner deletion, marketplace or pricing cont
   assert.match(ownerUi, /canUseOwnerOnlyAssetActions = !isAccountantWorkspace/);
 });
 
+test('accountant finance modal makes the VAT basis explicit and saves inclusive entries excluding VAT', () => {
+  assert.match(accountantManageUi, /financeAmountBasis/);
+  assert.match(accountantManageUi, /Excl\. VAT/);
+  assert.match(accountantManageUi, /Incl\. VAT/);
+  assert.match(accountantManageUi, /convertFinanceAmounts\(finance, 1 \/ VAT_MULTIPLIER\)/);
+  assert.match(accountantManageUi, /Aim4price stores finance amounts excluding VAT\./);
+});
+
 test('normal accountant account keeps standard leads, account and notifications', () => {
   assert.match(headerUi, /accountType === 'finance' \|\| accountType === 'insurance'/);
   assert.match(headerUi, /label: 'My Leads'/);
