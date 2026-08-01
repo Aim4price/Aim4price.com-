@@ -6337,6 +6337,19 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   const canUseMarketplaceActions = !isAccountantWorkspace;
   const isQuoteModalOpen = Boolean(quoteAsset);
   const isFullRegisterQuoteLead = quoteScope === 'register';
+  const accountantValuationHref = (() => {
+    if (!isAccountantWorkspace || !accountantShareId) return '/valuation';
+
+    const params = new URLSearchParams({ accountantShareId });
+    const targetRegisterId = isCombinedRegisterView
+      ? String(accountantAccess?.registerId ?? '').trim()
+      : String(activeRegister?.id || activeRegisterId || '').trim();
+    if (targetRegisterId && targetRegisterId !== COMBINED_REGISTER_ID) {
+      params.set('registerId', targetRegisterId);
+    }
+
+    return `/valuation?${params.toString()}`;
+  })();
   const activeRegisterShareName = isCombinedRegisterView
     ? buildCombinedAssetRegisterShareName(accountProfile, assetRegisters)
     : activeRegister?.businessName || buildOwnerName(accountProfile);
@@ -14119,9 +14132,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
               {canManageRegisterStructure ? (
                 <div className={styles.emptyStateActions}>
                   <Link
-                    href={isAccountantWorkspace && accountantShareId
-                      ? `/valuation?accountantShareId=${encodeURIComponent(accountantShareId)}&registerId=${encodeURIComponent(activeRegisterId)}`
-                      : '/valuation'}
+                    href={accountantValuationHref}
                     className={styles.secondaryButton}
                   >
                     Go to valuation
@@ -14376,7 +14387,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
             </div>
 
             <div className={styles.addAssetChoiceGrid}>
-              <Link href="/valuation" className={`${styles.addAssetChoiceButton} ${styles.addAssetChoiceButtonPrimary}`}>
+              <Link href={accountantValuationHref} className={`${styles.addAssetChoiceButton} ${styles.addAssetChoiceButtonPrimary}`}>
                 <TrendIcon className={styles.buttonIcon} />
                 <span>
                   <strong>Aim4price Value</strong>
@@ -14397,8 +14408,8 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       {isAcquisitionChoiceOpen ? (
         <div className={styles.modalOverlay}>
           <div className={styles.modalBackdrop} onClick={() => setIsAcquisitionChoiceOpen(false)} />
-          <div className={`${styles.modalCard} ${styles.assetLifecycleModal}`} role="dialog" aria-modal="true" aria-labelledby="new-acquisition-title">
-            <div className={styles.modalHeader}>
+          <div className={`${styles.modalCard} ${styles.assetLifecycleModal} ${styles.newAcquisitionChoiceModal}`} role="dialog" aria-modal="true" aria-labelledby="new-acquisition-title">
+            <div className={`${styles.modalHeader} ${styles.newAcquisitionChoiceHeader}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="new-acquisition-title">Is this a newly acquired asset?</h3>
                 <p>Keep acquisition information separate from market, replacement, accounting and finance values.</p>
@@ -14407,18 +14418,18 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                 <CloseIcon className={styles.buttonIcon} />
               </button>
             </div>
-            <div className={`${styles.modalScrollBody} ${styles.assetLifecycleBody}`}>
-              <div className={styles.addAssetChoiceGrid}>
+            <div className={`${styles.modalScrollBody} ${styles.assetLifecycleBody} ${styles.newAcquisitionChoiceBody}`}>
+              <div className={`${styles.addAssetChoiceGrid} ${styles.newAcquisitionChoiceGrid}`}>
                 <button
                   type="button"
-                  className={`${styles.addAssetChoiceButton} ${newAssetAcquisitionDraft.newlyAcquired === true ? styles.addAssetChoiceButtonPrimary : ''}`}
+                  className={`${styles.addAssetChoiceButton} ${styles.newAcquisitionChoiceOption} ${newAssetAcquisitionDraft.newlyAcquired === true ? styles.addAssetChoiceButtonPrimary : ''}`}
                   onClick={() => setNewAssetAcquisitionDraft((current) => ({ ...current, newlyAcquired: true }))}
                 >
                   <span><strong>Yes, newly acquired</strong></span>
                 </button>
                 <button
                   type="button"
-                  className={`${styles.addAssetChoiceButton} ${newAssetAcquisitionDraft.newlyAcquired === false ? styles.addAssetChoiceButtonPrimary : ''}`}
+                  className={`${styles.addAssetChoiceButton} ${styles.newAcquisitionChoiceOption} ${newAssetAcquisitionDraft.newlyAcquired === false ? styles.addAssetChoiceButtonPrimary : ''}`}
                   onClick={() => setNewAssetAcquisitionDraft((current) => ({ ...current, newlyAcquired: false }))}
                 >
                   <span><strong>No, existing asset being added</strong></span>

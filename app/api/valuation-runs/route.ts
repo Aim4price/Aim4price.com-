@@ -426,8 +426,9 @@ export async function POST(request: NextRequest) {
       ? await getAccountantRegisterAccess({ accountantUserId: session.user.id, shareId: accountantShareId })
       : null;
     const effectiveOwnerUserId = accountantAccess?.ownerUserId ?? session.user.id;
+    const targetRegisterId = requestedRegisterId || accountantAccess?.registerId || '';
     const targetRegister = accountantAccess
-      ? await getAssetRegisterForUser(effectiveOwnerUserId, requestedRegisterId)
+      ? await getAssetRegisterForUser(effectiveOwnerUserId, targetRegisterId)
       : null;
     if (accountantAccess && !targetRegister) {
       return NextResponse.json<SaveValuationRunApiResponse>({ ok: false, error: 'Asset register not found.' }, { status: 404 });

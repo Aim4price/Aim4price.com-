@@ -33953,3 +33953,114 @@ button.documentOpenLink {
 .assetFilterOption strong {
   font-weight: 650 !important;
 }
+
+/* Final cascade: spacious shared Owner/Accountant acquisition question. */
+.newAcquisitionChoiceModal {
+  width: min(52rem, calc(100vw - 2rem)) !important;
+  max-height: min(90vh, 48rem) !important;
+  overflow: hidden !important;
+  border-radius: clamp(1.45rem, 2.4vw, 2rem) !important;
+}
+
+.newAcquisitionChoiceHeader {
+  align-items: flex-start !important;
+  gap: clamp(1rem, 2vw, 1.5rem) !important;
+  padding: clamp(1.45rem, 2.8vw, 2rem) clamp(1.45rem, 2.8vw, 2rem) clamp(1.1rem, 2vw, 1.4rem) !important;
+}
+
+.newAcquisitionChoiceHeader .modalHeaderText {
+  min-width: 0 !important;
+  max-width: none !important;
+  gap: 0.45rem !important;
+}
+
+.newAcquisitionChoiceHeader .modalHeaderText h3 {
+  font-size: clamp(1.8rem, 3vw, 2.45rem) !important;
+  line-height: 1.04 !important;
+  letter-spacing: -0.045em !important;
+  text-wrap: balance !important;
+}
+
+.newAcquisitionChoiceHeader .modalHeaderText p {
+  max-width: 44rem !important;
+  font-size: clamp(0.95rem, 1.4vw, 1.08rem) !important;
+  font-weight: 610 !important;
+  line-height: 1.48 !important;
+}
+
+.newAcquisitionChoiceBody {
+  gap: clamp(1rem, 2vw, 1.35rem) !important;
+  padding: clamp(1.25rem, 2.6vw, 1.8rem) clamp(1.45rem, 2.8vw, 2rem) clamp(1.4rem, 2.8vw, 1.9rem) !important;
+  overflow-x: hidden !important;
+}
+
+.newAcquisitionChoiceGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: clamp(0.85rem, 1.8vw, 1.15rem) !important;
+}
+
+.newAcquisitionChoiceOption {
+  min-height: clamp(7.4rem, 12vw, 8.6rem) !important;
+  padding: clamp(1.15rem, 2vw, 1.55rem) !important;
+  border-radius: clamp(1.15rem, 2vw, 1.5rem) !important;
+  border-width: 1.5px !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f7fafc 100%) !important;
+  box-shadow:
+    0 14px 30px rgba(20, 45, 57, 0.055),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.newAcquisitionChoiceOption:hover:not(:disabled) {
+  transform: translateY(-1px) !important;
+  border-color: rgba(22, 128, 95, 0.52) !important;
+  box-shadow:
+    0 18px 36px rgba(20, 91, 70, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+}
+
+.newAcquisitionChoiceOption.addAssetChoiceButtonPrimary {
+  color: #ffffff !important;
+  border-color: #117052 !important;
+  background: linear-gradient(180deg, #1a8463 0%, #0f684f 100%) !important;
+  box-shadow:
+    0 16px 34px rgba(15, 104, 79, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+}
+
+.newAcquisitionChoiceOption strong {
+  max-width: 18rem !important;
+  font-size: clamp(1rem, 1.6vw, 1.2rem) !important;
+  line-height: 1.25 !important;
+}
+
+.newAcquisitionChoiceBody .assetSettingsActions {
+  padding-top: 0.15rem !important;
+}
+
+@media (max-width: 700px) {
+  .newAcquisitionChoiceModal {
+    width: min(100%, calc(100vw - 1rem)) !important;
+    max-height: calc(100dvh - 1rem) !important;
+    border-radius: 1.35rem !important;
+  }
+
+  .newAcquisitionChoiceHeader {
+    padding: 1.15rem 1.15rem 1rem !important;
+  }
+
+  .newAcquisitionChoiceHeader .modalHeaderText {
+    padding-right: 3rem !important;
+  }
+
+  .newAcquisitionChoiceGrid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .newAcquisitionChoiceOption {
+    min-height: 6.6rem !important;
+  }
+
+  .newAcquisitionChoiceBody {
+    padding: 1rem 1.15rem 1.15rem !important;
+  }
+}

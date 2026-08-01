@@ -4033,6 +4033,10 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.manageActionGrid.manageActionGridAccountant {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .manageActionButton {
   min-height: clamp(4.5rem, 6vw, 5.35rem);
   padding: 0.82rem 0.9rem;
@@ -4042,14 +4046,16 @@
 
 @media (max-width: 980px) {
   .manageActionGrid,
-  .manageActionGrid.manageActionGridCombined {
+  .manageActionGrid.manageActionGridCombined,
+  .manageActionGrid.manageActionGridAccountant {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 620px) {
   .manageActionGrid,
-  .manageActionGrid.manageActionGridCombined {
+  .manageActionGrid.manageActionGridCombined,
+  .manageActionGrid.manageActionGridAccountant {
     grid-template-columns: 1fr;
   }
 }

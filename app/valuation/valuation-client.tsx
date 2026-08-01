@@ -2044,7 +2044,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const normalizedSignedInAccountType = normalizeAccountType(accountType);
   const isDealerAccount = normalizedSignedInAccountType === 'dealer';
   const canUseMarketplacePublishFlow = isSignedIn && (normalizedSignedInAccountType === 'owner' || normalizedSignedInAccountType === 'dealer');
-  const isAccountantClientWorkspace = normalizedSignedInAccountType === 'finance' && Boolean(accountantShareId && accountantRegisterId);
+  const isAccountantClientWorkspace = normalizedSignedInAccountType === 'finance' && Boolean(accountantShareId);
   const canSaveToAssetRegister = isSignedIn && (normalizedSignedInAccountType === 'owner' || isAccountantClientWorkspace);
   const requiredSpecQuestionsCompleted = Boolean(
     conditionStepComplete &&
@@ -3729,11 +3729,17 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
       if (options.redirectToAssetRegister) {
         const focusAssetId = data.assetId ?? conversionAssetId;
-        router.push(isAccountantClientWorkspace
-          ? `/accountant/registers/${encodeURIComponent(accountantShareId)}?registerId=${encodeURIComponent(accountantRegisterId)}${focusAssetId ? `&convertedAssetId=${encodeURIComponent(focusAssetId)}` : ''}`
-          : ownerAppMode
+        if (isAccountantClientWorkspace) {
+          const workspaceQuery = new URLSearchParams();
+          if (accountantRegisterId) workspaceQuery.set('registerId', accountantRegisterId);
+          if (focusAssetId) workspaceQuery.set('convertedAssetId', focusAssetId);
+          const query = workspaceQuery.toString();
+          router.push(`/accountant/registers/${encodeURIComponent(accountantShareId)}${query ? `?${query}` : ''}`);
+        } else {
+          router.push(ownerAppMode
             ? (focusAssetId ? `/owner-app/assets/${encodeURIComponent(focusAssetId)}` : '/owner-app/assets')
             : (focusAssetId ? `/asset-register?convertedAssetId=${encodeURIComponent(focusAssetId)}` : '/asset-register'));
+        }
       }
 
       return data;
