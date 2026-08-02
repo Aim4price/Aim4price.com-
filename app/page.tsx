@@ -23,54 +23,54 @@ type RolePlayer = {
 const productSteps: ProductStep[] = [
   {
     number: '01',
-    title: 'Get an estimate',
-    text: 'Start with a guided estimate built around the important details of the asset.',
+    title: 'Estimate the value',
+    text: 'Create a structured estimate using the asset details and condition.',
     href: '/valuation',
-    action: 'Get free estimate',
+    action: 'Start estimate',
   },
   {
     number: '02',
-    title: 'Build the register',
-    text: 'Save values, photos, documents and QR-linked information in one asset record.',
+    title: 'Create the record',
+    text: 'Keep values, photos, documents and QR-linked details together.',
     href: '/asset-register',
     action: 'Open Asset Register',
   },
   {
     number: '03',
-    title: 'Manage the asset',
-    text: 'Track costs, fuel, maintenance, finance and insurance throughout its lifecycle.',
+    title: 'Manage ownership',
+    text: 'Track costs, fuel, maintenance, finance, insurance and licensing.',
     href: '/asset-register',
-    action: 'Explore the tools',
+    action: 'Explore Asset Register',
   },
   {
     number: '04',
-    title: 'Work together',
-    text: 'Give trusted professionals controlled access when their help is needed.',
+    title: 'Work with your team',
+    text: 'Give trusted professionals controlled access to the same asset information.',
     href: '#roleplayers',
-    action: 'See who it helps',
+    action: 'View role players',
   },
 ];
 
 const rolePlayers: RolePlayer[] = [
   {
     role: 'Owners',
-    text: 'Stay clear on values, costs, finance and what needs attention.',
+    text: 'See values, costs, finance and what needs attention.',
   },
   {
     role: 'Dealers',
-    text: 'Provide better service, maintenance and replacement support.',
+    text: 'Support servicing, parts, maintenance and replacement decisions.',
   },
   {
     role: 'Accountants',
-    text: 'Maintain clearer records and provide stronger financial advice.',
+    text: 'Maintain finance and accounting records for better advice.',
   },
   {
     role: 'Financiers',
-    text: 'Review better-prepared asset and funding information.',
+    text: 'Review values, commitments and funding needs.',
   },
   {
-    role: 'Insurers and brokers',
-    text: 'Improve cover, renewals and claims preparation.',
+    role: 'Insurers & brokers',
+    text: 'Keep cover values, schedules and evidence current.',
   },
 ];
 
@@ -105,17 +105,17 @@ export default async function HomePage() {
                   <span className={styles.heroEyebrowDivider} aria-hidden="true">
                     |
                   </span>
-                  <span>Asset management</span>
+                  <span>Complete asset management</span>
                 </p>
 
                 <h1 className={styles.heroTitle}>
-                  <span>Know your assets.</span>
-                  <span>Manage them better.</span>
+                  <span>One clear Asset Register.</span>
+                  <span>For every asset.</span>
                 </h1>
 
                 <p className={styles.heroText}>
-                  Estimate, record and manage machinery, vehicles, property and equipment in one
-                  Asset Register.
+                  Estimate values and manage documents, costs, fuel, maintenance, finance and
+                  insurance in one place.
                 </p>
 
                 <div className={styles.heroActions}>
@@ -147,10 +147,9 @@ export default async function HomePage() {
         <div className={styles.shell}>
           <div className={styles.sectionHeading}>
             <p className={styles.sectionEyebrow}>What Aim4price does</p>
-            <h2 className={styles.sectionTitle}>From estimate to one clear Asset Register.</h2>
+            <h2 className={styles.sectionTitle}>From estimate to a complete asset record.</h2>
             <p className={styles.sectionText}>
-              Keep the important information around every asset organised and ready when you need
-              it.
+              Create the record once, then keep it useful throughout ownership.
             </p>
           </div>
 
@@ -167,10 +166,8 @@ export default async function HomePage() {
 
           <div className={styles.marketPrompt}>
             <div>
-              <p className={styles.marketLabel}>Ready for the next step?</p>
-              <p className={styles.marketText}>
-                Explore available assets and market opportunities.
-              </p>
+              <p className={styles.marketLabel}>Explore the market</p>
+              <p className={styles.marketText}>Browse listings and owner-authorised opportunities.</p>
             </div>
             <Link href="/marketplace" className={styles.marketLink}>
               View Marketplace
@@ -183,13 +180,11 @@ export default async function HomePage() {
         <div className={styles.shell}>
           <div className={styles.rolesPanel}>
             <div className={styles.rolesHeading}>
-              <p className={styles.rolesEyebrow}>Who Aim4price helps</p>
-              <h2 className={styles.rolesTitle}>
-                One Asset Register. The right people around it.
-              </h2>
+              <p className={styles.rolesEyebrow}>Controlled collaboration</p>
+              <h2 className={styles.rolesTitle}>One Asset Register. Each role sees what matters.</h2>
               <p className={styles.rolesText}>
-                Owners remain in control while trusted professionals work from a clearer asset
-                record.
+                Owners stay in control while trusted professionals maintain the information
+                relevant to them.
               </p>
             </div>
 
@@ -206,7 +201,7 @@ export default async function HomePage() {
               <div>
                 <p className={styles.rolesFooterLabel}>Start with one asset</p>
                 <p className={styles.rolesFooterText}>
-                  Get an estimate, save the record and build from there.
+                  Create the first record, then keep building the register.
                 </p>
               </div>
               <div className={styles.rolesActions}>
