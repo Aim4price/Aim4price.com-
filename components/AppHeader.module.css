@@ -3118,6 +3118,272 @@
   }
 }
 
+/* Final mobile navigation treatment. The menu is a focused drawer rather than
+   a second page, with the primary destinations kept easy to scan and tap. */
+@keyframes mobileMenuBackdropIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes mobileMenuPanelIn {
+  from {
+    opacity: 0;
+    transform: translateX(1rem) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@media (max-width: 900px) {
+  .mobileMenuBackdrop {
+    background: rgba(5, 22, 17, 0.38);
+    backdrop-filter: blur(7px);
+    animation: mobileMenuBackdropIn 180ms ease-out both;
+  }
+
+  .mobileMenuPanel {
+    left: auto;
+    width: min(25.5rem, calc(100% - 1rem));
+    gap: 0.72rem;
+    padding: 0.72rem;
+    border-radius: 1.42rem;
+    border-color: rgba(10, 50, 38, 0.14);
+    background: linear-gradient(180deg, #f9fbfa 0%, #f1f6f3 100%);
+    box-shadow:
+      0 28px 70px rgba(4, 24, 18, 0.28),
+      0 12px 30px rgba(11, 45, 35, 0.16),
+      inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    animation: mobileMenuPanelIn 210ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+
+  .mobileMenuHeader {
+    min-height: 5.25rem;
+    padding: 0.9rem 0.95rem;
+    border-radius: 1.08rem;
+    border-color: rgba(255, 255, 255, 0.1);
+    background:
+      radial-gradient(circle at 92% 8%, rgba(67, 174, 132, 0.22), transparent 9rem),
+      linear-gradient(135deg, #155843 0%, #0a382d 100%);
+    box-shadow:
+      0 12px 28px rgba(8, 49, 37, 0.18),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+
+  .mobileMenuHeaderCopy {
+    gap: 0.28rem;
+  }
+
+  .mobileMenuKicker {
+    color: #a9dfca;
+    font-size: 0.67rem;
+    letter-spacing: 0.1em;
+  }
+
+  .mobileMenuTitle {
+    color: #ffffff;
+    font-size: 1.24rem;
+    line-height: 1.1;
+    letter-spacing: -0.035em;
+  }
+
+  .mobileMenuAccountName {
+    color: rgba(232, 245, 239, 0.74);
+    font-size: 0.78rem;
+  }
+
+  .mobileMenuCloseButton {
+    width: 2.7rem;
+    min-width: 2.7rem;
+    height: 2.7rem;
+    border-color: rgba(255, 255, 255, 0.17);
+    border-radius: 0.92rem;
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(10px);
+  }
+
+  .mobileMenuCloseButton svg {
+    width: 1.2rem;
+    height: 1.2rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.9;
+    stroke-linecap: round;
+  }
+
+  .mobileMenuCloseButton:hover {
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.16);
+  }
+
+  .mobileMenuNav {
+    gap: 0.48rem;
+    padding: 0.08rem 0.1rem 0.08rem 0;
+  }
+
+  .mobileMenuNavLink {
+    min-height: 3.62rem;
+    gap: 0.72rem;
+    padding: 0.48rem 0.62rem;
+    border-radius: 1rem;
+    border-color: rgba(16, 59, 46, 0.08);
+    background: rgba(255, 255, 255, 0.86);
+    color: #234238;
+    font-size: 0.94rem;
+    box-shadow: 0 7px 18px rgba(15, 54, 42, 0.045);
+  }
+
+  .mobileMenuNavIcon {
+    width: 2.46rem;
+    min-width: 2.46rem;
+    height: 2.46rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.78rem;
+    color: #176b50;
+    background: #e8f3ee;
+    border: 1px solid rgba(23, 107, 80, 0.09);
+    transition:
+      color 180ms ease,
+      background 180ms ease,
+      border-color 180ms ease,
+      transform 180ms ease;
+  }
+
+  .mobileMenuNavIcon svg {
+    width: 1.23rem;
+    height: 1.23rem;
+  }
+
+  .mobileMenuNavLabel {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .mobileMenuNavArrow {
+    width: 1.9rem;
+    min-width: 1.9rem;
+    height: 1.9rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    color: rgba(23, 107, 80, 0.58);
+    background: rgba(23, 107, 80, 0.06);
+    transition:
+      color 180ms ease,
+      background 180ms ease,
+      transform 180ms ease;
+  }
+
+  .mobileMenuNavArrow svg {
+    width: 0.92rem;
+    height: 0.92rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .mobileMenuNavLink:hover .mobileMenuNavArrow {
+    transform: translateX(0.1rem);
+  }
+
+  .mobileMenuNavLinkActive {
+    color: #ffffff;
+    border-color: rgba(12, 80, 59, 0.85);
+    background: linear-gradient(180deg, #1e7e5e 0%, #125d47 100%);
+    box-shadow:
+      0 13px 26px rgba(14, 88, 64, 0.18),
+      inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  }
+
+  .mobileMenuNavLinkActive .mobileMenuNavIcon {
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.13);
+  }
+
+  .mobileMenuNavLinkActive .mobileMenuNavArrow {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  .mobileMenuAuthActions,
+  .mobileMenuAccountActions {
+    gap: 0.5rem;
+    padding-top: 0.68rem;
+    border-top-color: rgba(16, 59, 46, 0.1);
+  }
+
+  .mobileMenuAuthLink,
+  .mobileMenuActionButton,
+  .mobileMenuDangerButton {
+    min-height: 3.4rem;
+    justify-content: center;
+    padding: 0 0.85rem;
+    border-radius: 0.98rem;
+    font-size: 0.91rem;
+    text-align: center;
+  }
+
+  .mobileMenuButtonActive .mobileMenuIcon::before {
+    top: 50%;
+    transform: translateY(-50%) rotate(45deg);
+  }
+
+  .mobileMenuButtonActive .mobileMenuIconLine {
+    opacity: 0;
+    transform: translateY(-50%) scaleX(0.4);
+  }
+
+  .mobileMenuButtonActive .mobileMenuIcon::after {
+    bottom: 50%;
+    transform: translateY(50%) rotate(-45deg);
+  }
+}
+
+@media (max-width: 430px) {
+  .mobileMenuPanel {
+    right: max(0.35rem, env(safe-area-inset-right));
+    bottom: max(0.35rem, env(safe-area-inset-bottom));
+    width: min(25.5rem, calc(100% - 0.7rem));
+    max-height: calc(100dvh - 4.5rem);
+    padding: 0.62rem;
+    border-radius: 1.22rem;
+  }
+
+  .mobileMenuHeader {
+    min-height: 4.9rem;
+    padding: 0.78rem 0.82rem;
+    border-radius: 0.98rem;
+  }
+
+  .mobileMenuNavLink {
+    min-height: 3.45rem;
+    padding: 0.42rem 0.54rem;
+  }
+
+  .mobileMenuNavIcon {
+    width: 2.32rem;
+    min-width: 2.32rem;
+    height: 2.32rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobileMenuBackdrop,
+  .mobileMenuPanel {
+    animation: none;
+  }
+}
+
 /* === Primary navigation carousel refinement === */
 @media (max-width: 1180px) {
   .nav {
