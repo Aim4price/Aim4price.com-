@@ -55,11 +55,11 @@ const productSteps: ProductStep[] = [
 const rolePlayers: RolePlayer[] = [
   {
     role: 'Dealers',
-    text: 'Estimates, servicing, maintenance and replacement decisions.',
+    text: 'Valuation, servicing and replacement support.',
   },
   {
     role: 'Accountants',
-    text: 'Finance, accounting values, documents and reports.',
+    text: 'Financial records, documents and reports.',
   },
   {
     role: 'Financiers',
@@ -67,7 +67,7 @@ const rolePlayers: RolePlayer[] = [
   },
   {
     role: 'Insurers & brokers',
-    text: 'Cover values, schedules, photos and supporting evidence.',
+    text: 'Cover values, schedules and supporting evidence.',
   },
 ];
 
@@ -101,8 +101,14 @@ export default async function HomePage() {
                 </h1>
 
                 <p className={styles.heroText}>
-                  Build detailed records and reports, manage every stage of ownership and
-                  collaborate with trusted professionals through one owner-controlled Asset Register.
+                  <span className={styles.heroTextDesktop}>
+                    Build detailed records and reports, manage every stage of ownership and
+                    collaborate with trusted professionals through one owner-controlled Asset Register.
+                  </span>
+                  <span className={styles.heroTextMobile}>
+                    Records, reports and trusted professionals, connected through one owner-controlled
+                    Asset Register.
+                  </span>
                 </p>
 
                 <div className={styles.heroActions}>
@@ -175,7 +181,7 @@ export default async function HomePage() {
                 <span className={styles.rolesTitleLine}>Every role can contribute.</span>
               </h2>
               <p className={styles.rolesText}>
-                Each trusted professional works with the information relevant to them.
+                Trusted professionals contribute only where relevant.
               </p>
             </div>
 
@@ -184,7 +190,7 @@ export default async function HomePage() {
                 <p className={styles.ownerHubEyebrow}>Owner controlled</p>
                 <h3 className={styles.ownerHubTitle}>One Asset Register</h3>
                 <p className={styles.ownerHubText}>
-                  The owner sees the complete record and decides who can access or update it.
+                  The owner sees the full record and controls who can access or update it.
                 </p>
               </article>
 
