@@ -483,6 +483,115 @@ function AccountProfileIcon({ className, logoUrl, fallbackLabel }: AccountProfil
   );
 }
 
+function MobileNavIcon({ page }: { page: ActivePage }) {
+  let icon: ReactNode;
+
+  switch (page) {
+    case 'home':
+      icon = (
+        <>
+          <path d="m3.5 10.2 8.5-7 8.5 7" />
+          <path d="M5.8 9.2v10.1h12.4V9.2" />
+          <path d="M9.6 19.3v-5.7h4.8v5.7" />
+        </>
+      );
+      break;
+    case 'valuation':
+      icon = (
+        <>
+          <circle cx="12" cy="12" r="7.7" />
+          <circle cx="12" cy="12" r="3.2" />
+          <path d="m14.4 9.6 5.2-5.2" />
+          <path d="M16.8 4.4h2.8v2.8" />
+        </>
+      );
+      break;
+    case 'asset-register':
+      icon = (
+        <>
+          <path d="M4.3 5.4h5l1.7 2h8.7v11.2H4.3z" />
+          <path d="M8 11h8M8 14.4h6" />
+        </>
+      );
+      break;
+    case 'marketplace':
+    case 'asset-discovery':
+      icon = (
+        <>
+          <path d="M4 9.2h16l-1.2-4.4H5.2z" />
+          <path d="M5.2 9.2v9.5h13.6V9.2" />
+          <path d="M9.1 18.7v-5.3h5.8v5.3" />
+        </>
+      );
+      break;
+    case 'account':
+      icon = (
+        <>
+          <circle cx="12" cy="8.1" r="3.2" />
+          <path d="M5.7 19.1c.8-3.1 3-4.8 6.3-4.8s5.5 1.7 6.3 4.8" />
+        </>
+      );
+      break;
+    case 'asset-map':
+    case 'tracking':
+      icon = (
+        <>
+          <path d="M12 20.2s6-5.9 6-11a6 6 0 1 0-12 0c0 5.1 6 11 6 11Z" />
+          <circle cx="12" cy="9.2" r="2" />
+        </>
+      );
+      break;
+    case 'cost':
+      icon = (
+        <>
+          <path d="M6.2 3.8h11.6v16.4l-2-1.3-1.9 1.3-1.9-1.3-1.9 1.3-1.9-1.3-2 1.3z" />
+          <path d="M9 8h6M9 11.5h6M9 15h3.7" />
+        </>
+      );
+      break;
+    case 'maintenance':
+      icon = (
+        <>
+          <path d="m14.2 5.1 4.7 4.7" />
+          <path d="m12.8 6.5 2.8-2.8 4.7 4.7-2.8 2.8" />
+          <path d="m13.6 10.4-8.1 8.1-2-2 8.1-8.1" />
+        </>
+      );
+      break;
+    case 'fuel':
+      icon = <path d="M12 3.5s5.4 6.1 5.4 10.6a5.4 5.4 0 1 1-10.8 0C6.6 9.6 12 3.5 12 3.5Z" />;
+      break;
+    case 'leads':
+    case 'shared-registers':
+      icon = (
+        <>
+          <circle cx="9" cy="8.6" r="2.8" />
+          <circle cx="16.4" cy="9.5" r="2.2" />
+          <path d="M3.9 19c.6-3.4 2.3-5.1 5.1-5.1s4.5 1.7 5.1 5.1" />
+          <path d="M14 14.3c3.4-.7 5.4.9 6.1 3.9" />
+        </>
+      );
+      break;
+    default:
+      icon = (
+        <>
+          <rect x="4.5" y="4.5" width="5.5" height="5.5" rx="1" />
+          <rect x="14" y="4.5" width="5.5" height="5.5" rx="1" />
+          <rect x="4.5" y="14" width="5.5" height="5.5" rx="1" />
+          <rect x="14" y="14" width="5.5" height="5.5" rx="1" />
+        </>
+      );
+  }
+
+  return (
+    <span className={styles.mobileMenuNavIcon} aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        {icon}
+      </svg>
+    </span>
+  );
+}
+
 function clearLegacyPrototypeStorage() {
   if (typeof window === 'undefined') return;
 
@@ -1642,8 +1751,8 @@ export default function AppHeader({
       >
         <div className={styles.mobileMenuHeader}>
           <div className={styles.mobileMenuHeaderCopy}>
-            <span className={styles.mobileMenuKicker}>{session ? 'Account navigation' : 'Navigation'}</span>
-            <strong className={styles.mobileMenuTitle}>Menu</strong>
+            <span className={styles.mobileMenuKicker}>{session ? 'Your workspace' : 'Aim4price navigation'}</span>
+            <strong className={styles.mobileMenuTitle}>{session ? 'Account menu' : 'Explore Aim4price'}</strong>
             {session ? <span className={styles.mobileMenuAccountName}>{accountName}</span> : null}
           </div>
           <button
@@ -1652,7 +1761,9 @@ export default function AppHeader({
             aria-label="Close navigation menu"
             onClick={closeMobileMenu}
           >
-            ×
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m6.5 6.5 11 11M17.5 6.5l-11 11" />
+            </svg>
           </button>
         </div>
 
@@ -1668,7 +1779,13 @@ export default function AppHeader({
                 className={`${styles.mobileMenuNavLink} ${isActive ? styles.mobileMenuNavLinkActive : ''}`}
                 onClick={closeMobileMenu}
               >
-                <span>{item.label}</span>
+                <MobileNavIcon page={item.key} />
+                <span className={styles.mobileMenuNavLabel}>{item.label}</span>
+                <span className={styles.mobileMenuNavArrow} aria-hidden="true">
+                  <svg viewBox="0 0 20 20">
+                    <path d="m7.5 4.8 5.2 5.2-5.2 5.2" />
+                  </svg>
+                </span>
               </Link>
             );
           })}
@@ -1692,11 +1809,11 @@ export default function AppHeader({
           </div>
         ) : (
           <div className={styles.mobileMenuAuthActions}>
-            <SmartLink href={loginHref} className={styles.mobileMenuAuthLink} onClick={closeMobileMenu}>
-              Login
-            </SmartLink>
             <SmartLink href={primaryHref} className={`${styles.mobileMenuAuthLink} ${styles.mobileMenuAuthLinkPrimary}`} onClick={closeMobileMenu}>
               {ctaLabel}
+            </SmartLink>
+            <SmartLink href={loginHref} className={styles.mobileMenuAuthLink} onClick={closeMobileMenu}>
+              Login
             </SmartLink>
           </div>
         )}
