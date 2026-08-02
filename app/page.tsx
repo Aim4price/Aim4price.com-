@@ -2,6 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { redirectAdminToAdmin } from '../lib/account-access';
 import AppHeader from '../components/AppHeader';
+import HomeHeroVideo from './home-hero-video';
 import styles from './page.module.css';
 
 export const runtime = 'nodejs';
@@ -79,17 +80,7 @@ export default async function HomePage() {
 
       <section className={styles.heroSection}>
         <div className={styles.heroMedia}>
-          <video
-            className={styles.heroVideo}
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="auto"
-            poster="/brand/Home-page.png"
-          >
-            <source src="/brand/AIM4PRICE.mp4" type="video/mp4" />
-          </video>
+          <HomeHeroVideo />
 
           <div className={styles.heroOverlay} />
 
