@@ -1785,3 +1785,58 @@
     padding: 14px;
   }
 }
+
+/* Managers often work from tablets. Give those screens a stable workspace
+   rather than allowing the phone column to grow unpredictably. */
+@media (min-width: 768px) {
+  .mobilePage {
+    --field-page-gutter: 48px;
+  }
+
+  .loginShell {
+    width: min(calc(100% - var(--field-page-gutter)), 520px);
+  }
+
+  .assetsShell,
+  .overviewShell,
+  .maintenanceShell {
+    width: min(calc(100% - var(--field-page-gutter)), 980px);
+  }
+
+  .homeActionGrid {
+    width: min(100%, 840px);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .homeActionCard {
+    min-height: 112px;
+    padding: 22px 40px;
+  }
+
+  .homeActionCard strong {
+    font-size: 1.28rem;
+  }
+
+  .assetList,
+  .overviewList {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .maintenanceCard,
+  .maintenanceSuccess {
+    width: min(100%, 760px);
+    box-sizing: border-box;
+    margin-inline: auto;
+  }
+}
+
+.mobilePage :is(a, button) {
+  touch-action: manipulation;
+}
+
+@media (max-width: 767px) {
+  .mobilePage :is(input, select, textarea) {
+    font-size: 1rem;
+  }
+}
