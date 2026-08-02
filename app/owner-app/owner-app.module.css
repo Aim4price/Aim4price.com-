@@ -2246,3 +2246,90 @@
   }
 
 }
+
+/* Tablet and larger screens use a deliberate workspace layout instead of a
+   stretched phone column. Phone rules above remain the default. */
+@media (min-width: 768px) {
+  .page,
+  .module {
+    --owner-page-gutter: 48px;
+    --owner-content-gap: 20px;
+  }
+
+  .assetsHeader {
+    width: min(calc(100% - var(--owner-page-gutter)), 1040px);
+    padding-bottom: 18px;
+  }
+
+  .content {
+    width: min(calc(100% - var(--owner-page-gutter)), 680px);
+  }
+
+  .wideContent {
+    width: min(calc(100% - var(--owner-page-gutter)), 1040px);
+  }
+
+  .homeContent {
+    width: min(calc(100% - var(--owner-page-gutter)), 920px);
+    padding-bottom: 36px;
+  }
+
+  .homeLauncher {
+    width: min(100%, 820px);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .homeLaunchCard {
+    min-height: 104px;
+    padding: 22px 52px;
+  }
+
+  .homeLaunchCard strong {
+    font-size: 1.38rem;
+  }
+
+  .notificationContent {
+    width: min(calc(100% - var(--owner-page-gutter)), 760px);
+  }
+
+  .overviewContent {
+    width: min(calc(100% - var(--owner-page-gutter)), 840px);
+  }
+
+  .assetListToolbar,
+  .managerAssetList {
+    width: 100%;
+  }
+
+  .managerAssetList {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .detailPhotoThumbs {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .detailMediaActions,
+  .ownerOptionChoiceList {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .homeLauncher {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.page :is(a, button),
+.module :is(a, button) {
+  touch-action: manipulation;
+}
+
+@media (max-width: 767px) {
+  .page :is(input, select, textarea),
+  .module :is(input, select, textarea) {
+    font-size: 1rem;
+  }
+}
