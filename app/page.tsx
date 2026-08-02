@@ -105,13 +105,13 @@ export default async function HomePage() {
                 </p>
 
                 <h1 className={styles.heroTitle}>
-                  <span>The complete picture</span>
-                  <span>of every asset.</span>
+                  <span>Manage every asset.</span>
+                  <span>One clear system.</span>
                 </h1>
 
                 <p className={styles.heroText}>
-                  Bring estimates, records and trusted professionals together in one
-                  owner-controlled Asset Register.
+                  Build detailed records and reports, manage every stage of ownership and
+                  collaborate with trusted professionals through one owner-controlled Asset Register.
                 </p>
 
                 <div className={styles.heroActions}>
@@ -178,7 +178,10 @@ export default async function HomePage() {
             <div className={styles.rolesHeading}>
               <p className={styles.rolesEyebrow}>One system, clear roles</p>
               <h2 className={styles.rolesTitle}>
-                The owner controls the Asset Register. Every role can contribute.
+                <span className={styles.rolesTitleLine}>
+                  The owner controls the Asset Register.
+                </span>
+                <span className={styles.rolesTitleLine}>Every role can contribute.</span>
               </h2>
               <p className={styles.rolesText}>
                 Each trusted professional works with the information relevant to them.
