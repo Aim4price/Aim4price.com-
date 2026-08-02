@@ -53,24 +53,20 @@ const productSteps: ProductStep[] = [
 
 const rolePlayers: RolePlayer[] = [
   {
-    role: 'Owners',
-    text: 'See values, costs, finance and what needs attention.',
-  },
-  {
     role: 'Dealers',
-    text: 'Support servicing, parts, maintenance and replacement decisions.',
+    text: 'Estimates, servicing, maintenance and replacement decisions.',
   },
   {
     role: 'Accountants',
-    text: 'Maintain finance and accounting records for better advice.',
+    text: 'Finance, accounting values, documents and reports.',
   },
   {
     role: 'Financiers',
-    text: 'Review values, commitments and funding needs.',
+    text: 'Asset values, finance agreements and funding needs.',
   },
   {
     role: 'Insurers & brokers',
-    text: 'Keep cover values, schedules and evidence current.',
+    text: 'Cover values, schedules, photos and supporting evidence.',
   },
 ];
 
@@ -105,17 +101,17 @@ export default async function HomePage() {
                   <span className={styles.heroEyebrowDivider} aria-hidden="true">
                     |
                   </span>
-                  <span>Complete asset management</span>
+                  <span>Asset management for South Africa</span>
                 </p>
 
                 <h1 className={styles.heroTitle}>
-                  <span>One clear Asset Register.</span>
-                  <span>For every asset.</span>
+                  <span>The complete picture</span>
+                  <span>of every asset.</span>
                 </h1>
 
                 <p className={styles.heroText}>
-                  Estimate values and manage documents, costs, fuel, maintenance, finance and
-                  insurance in one place.
+                  Bring estimates, records and trusted professionals together in one
+                  owner-controlled Asset Register.
                 </p>
 
                 <div className={styles.heroActions}>
@@ -180,21 +176,32 @@ export default async function HomePage() {
         <div className={styles.shell}>
           <div className={styles.rolesPanel}>
             <div className={styles.rolesHeading}>
-              <p className={styles.rolesEyebrow}>Controlled collaboration</p>
-              <h2 className={styles.rolesTitle}>One Asset Register. Each role sees what matters.</h2>
+              <p className={styles.rolesEyebrow}>One system, clear roles</p>
+              <h2 className={styles.rolesTitle}>
+                The owner controls the Asset Register. Every role can contribute.
+              </h2>
               <p className={styles.rolesText}>
-                Owners stay in control while trusted professionals maintain the information
-                relevant to them.
+                Each trusted professional works with the information relevant to them.
               </p>
             </div>
 
-            <div className={styles.rolesGrid}>
-              {rolePlayers.map((player) => (
-                <article key={player.role} className={styles.roleCard}>
-                  <h3 className={styles.roleTitle}>{player.role}</h3>
-                  <p className={styles.roleText}>{player.text}</p>
-                </article>
-              ))}
+            <div className={styles.collaborationMap}>
+              <article className={styles.ownerHub}>
+                <p className={styles.ownerHubEyebrow}>Owner controlled</p>
+                <h3 className={styles.ownerHubTitle}>One Asset Register</h3>
+                <p className={styles.ownerHubText}>
+                  The owner sees the complete record and decides who can access or update it.
+                </p>
+              </article>
+
+              <div className={styles.partnerGrid}>
+                {rolePlayers.map((player) => (
+                  <article key={player.role} className={styles.partnerCard}>
+                    <h3 className={styles.partnerTitle}>{player.role}</h3>
+                    <p className={styles.partnerText}>{player.text}</p>
+                  </article>
+                ))}
+              </div>
             </div>
 
             <div className={styles.rolesFooter}>
