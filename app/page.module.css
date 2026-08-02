@@ -124,7 +124,8 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  font-size: clamp(4.25rem, 6.15vw, 6.75rem);
+  max-width: 43rem;
+  font-size: clamp(4rem, 5.2vw, 5.8rem);
   line-height: 0.94;
   letter-spacing: -0.056em;
   font-weight: 800;
@@ -133,7 +134,12 @@
 
 .heroTitleLine {
   display: block;
-  white-space: nowrap;
+  max-width: 100%;
+  white-space: normal;
+}
+
+.heroTitleLine:last-child {
+  max-width: 11ch;
 }
 
 .heroTitleLine + .heroTitleLine {
@@ -212,6 +218,42 @@
 
 .primaryCta:focus-visible {
   outline: 3px solid rgba(255, 255, 255, 0.28);
+  outline-offset: 4px;
+}
+
+.secondaryCta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 4.15rem;
+  padding: 0 2.05rem;
+  border-radius: 999px;
+  text-decoration: none;
+  font-size: 1.04rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.012em;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 16px 34px rgba(8, 21, 17, 0.18);
+  backdrop-filter: blur(12px);
+  transition:
+    transform 180ms ease,
+    background 180ms ease,
+    border-color 180ms ease;
+}
+
+.secondaryCta:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.58);
+}
+
+.secondaryCta:focus-visible {
+  outline: 3px solid rgba(255, 255, 255, 0.25);
   outline-offset: 4px;
 }
 
@@ -370,7 +412,7 @@
 
 .stepsGrid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: clamp(1rem, 1.6vw, 1.35rem);
 }
 
@@ -463,6 +505,417 @@
   transform: translate(0.22rem, -0.01rem);
 }
 
+.featuresSection,
+.rolesSection,
+.controlSection,
+.marketSection,
+.finalSection {
+  scroll-margin-top: 7rem;
+}
+
+.featuresSection {
+  padding: clamp(1.2rem, 2vw, 2rem) 0 clamp(4rem, 6vw, 6.5rem);
+}
+
+.sectionHeading {
+  max-width: 55rem;
+  margin: 0 auto clamp(2rem, 3.4vw, 3.25rem);
+  text-align: center;
+}
+
+.sectionEyebrow,
+.controlEyebrow,
+.finalEyebrow {
+  margin: 0;
+  font-size: 0.76rem;
+  line-height: 1.2;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.sectionEyebrow {
+  color: #247057;
+}
+
+.sectionTitle {
+  margin: 0.9rem 0 0;
+  font-size: clamp(2.45rem, 4vw, 4rem);
+  line-height: 0.98;
+  letter-spacing: -0.055em;
+  font-weight: 800;
+  color: #15372d;
+  text-wrap: balance;
+}
+
+.sectionText {
+  margin: 1.15rem auto 0;
+  max-width: 47rem;
+  font-size: clamp(1rem, 1.2vw, 1.1rem);
+  line-height: 1.72;
+  color: #63746e;
+  text-wrap: balance;
+}
+
+.featuresGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(0.9rem, 1.5vw, 1.25rem);
+}
+
+.featureCard {
+  min-height: 13.75rem;
+  padding: clamp(1.3rem, 1.8vw, 1.65rem);
+  border-radius: 1.45rem;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(20, 65, 51, 0.1);
+  box-shadow:
+    0 14px 34px rgba(18, 45, 37, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.featureNumber {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  border-radius: 999px;
+  color: #ffffff;
+  background: #174d3d;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.featureTitle {
+  margin: 1.1rem 0 0;
+  font-size: 1.13rem;
+  line-height: 1.18;
+  letter-spacing: -0.03em;
+  color: #17382e;
+}
+
+.featureText {
+  margin: 0.75rem 0 0;
+  font-size: 0.92rem;
+  line-height: 1.62;
+  color: #65756f;
+}
+
+.rolesSection {
+  padding: 0 0 clamp(4rem, 6.5vw, 6.8rem);
+}
+
+.rolesWrap {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(2.6rem, 4.5vw, 4.4rem);
+  border-radius: clamp(1.7rem, 2.4vw, 2.25rem);
+  background:
+    radial-gradient(circle at 12% 10%, rgba(34, 138, 101, 0.16) 0, transparent 24rem),
+    linear-gradient(145deg, #0b352b 0%, #082a23 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 26px 65px rgba(13, 48, 38, 0.16);
+}
+
+.rolesWrap .sectionEyebrow {
+  color: #9fd9c2;
+}
+
+.rolesWrap .sectionTitle {
+  color: #ffffff;
+}
+
+.rolesWrap .sectionText {
+  color: rgba(232, 242, 238, 0.78);
+}
+
+.rolesGrid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: clamp(0.9rem, 1.5vw, 1.25rem);
+}
+
+.roleCard {
+  position: relative;
+  flex: 0 1 calc(33.333% - 0.9rem);
+  min-width: 16rem;
+  min-height: 17rem;
+  padding: clamp(1.4rem, 1.9vw, 1.8rem);
+  border-radius: 1.45rem;
+  background: rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+}
+
+.roleIndex {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  min-height: 3rem;
+  border-radius: 999px;
+  color: #0b382c;
+  background: #f2c94c;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.rolePosition {
+  margin: 1.25rem 0 0;
+  color: #9fd9c2;
+  font-size: 0.72rem;
+  line-height: 1.2;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.roleTitle {
+  margin: 0.65rem 0 0;
+  color: #ffffff;
+  font-size: 1.45rem;
+  line-height: 1.12;
+  letter-spacing: -0.035em;
+}
+
+.roleText {
+  margin: 0.9rem 0 0;
+  color: rgba(236, 244, 241, 0.78);
+  font-size: 0.94rem;
+  line-height: 1.66;
+}
+
+.rolesFootnote {
+  margin: clamp(1.8rem, 2.8vw, 2.6rem) auto 0;
+  max-width: 58rem;
+  text-align: center;
+  color: rgba(220, 237, 230, 0.68);
+  font-size: 0.88rem;
+  line-height: 1.62;
+}
+
+.controlSection {
+  padding: 0 0 clamp(4rem, 6.5vw, 6.8rem);
+}
+
+.controlPanel {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(18rem, 0.8fr);
+  gap: clamp(2rem, 4vw, 4.5rem);
+  align-items: center;
+  padding: clamp(2.4rem, 4vw, 4rem);
+  border-radius: clamp(1.7rem, 2.4vw, 2.25rem);
+  color: #ffffff;
+  background:
+    radial-gradient(circle at 84% 18%, rgba(57, 170, 128, 0.22) 0, transparent 22rem),
+    linear-gradient(135deg, #174f3e 0%, #0b352b 100%);
+  box-shadow: 0 24px 58px rgba(12, 49, 38, 0.15);
+}
+
+.controlCopy,
+.marketCopy {
+  min-width: 0;
+}
+
+.controlEyebrow {
+  color: #a6dcc7;
+}
+
+.controlTitle {
+  margin: 0.9rem 0 0;
+  max-width: 38rem;
+  font-size: clamp(2.35rem, 3.7vw, 3.7rem);
+  line-height: 0.99;
+  letter-spacing: -0.052em;
+  text-wrap: balance;
+}
+
+.controlText {
+  margin: 1.2rem 0 0;
+  max-width: 45rem;
+  color: rgba(236, 245, 241, 0.82);
+  font-size: 1rem;
+  line-height: 1.72;
+}
+
+.controlPoints {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.controlPoints span {
+  display: flex;
+  align-items: center;
+  min-height: 3.4rem;
+  padding: 0.85rem 1rem;
+  border-radius: 1rem;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 0.92rem;
+  font-weight: 750;
+}
+
+.controlPoints span::before {
+  content: '';
+  width: 0.48rem;
+  height: 0.48rem;
+  margin-right: 0.75rem;
+  border-radius: 999px;
+  background: #f2c94c;
+  box-shadow: 0 0 0 0.25rem rgba(242, 201, 76, 0.12);
+}
+
+.marketSection {
+  padding: 0 0 clamp(4rem, 6.5vw, 6.8rem);
+}
+
+.marketPanel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2.5rem;
+  align-items: center;
+  padding: clamp(2.3rem, 4vw, 3.8rem);
+  border-radius: clamp(1.7rem, 2.4vw, 2.25rem);
+  background:
+    radial-gradient(circle at 92% 12%, rgba(255, 255, 255, 0.9) 0, transparent 20rem),
+    linear-gradient(135deg, #eaf3ef 0%, #f7faf8 100%);
+  border: 1px solid rgba(18, 45, 37, 0.08);
+  box-shadow: 0 18px 48px rgba(18, 45, 37, 0.07);
+}
+
+.marketTitle {
+  margin: 0.85rem 0 0;
+  max-width: 44rem;
+  font-size: clamp(2.25rem, 3.5vw, 3.5rem);
+  line-height: 1;
+  letter-spacing: -0.052em;
+  color: #15372d;
+  text-wrap: balance;
+}
+
+.marketText {
+  margin: 1.05rem 0 0;
+  max-width: 44rem;
+  color: #62736d;
+  font-size: 1rem;
+  line-height: 1.68;
+}
+
+.marketActions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 13.5rem;
+}
+
+.marketPrimaryAction,
+.marketSecondaryAction,
+.finalSecondaryAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3.65rem;
+  padding: 0 1.45rem;
+  border-radius: 999px;
+  text-decoration: none;
+  font-size: 0.94rem;
+  font-weight: 800;
+  transition:
+    transform 180ms ease,
+    background 180ms ease,
+    border-color 180ms ease;
+}
+
+.marketPrimaryAction {
+  color: #ffffff;
+  background: #176f50;
+  border: 1px solid #176f50;
+}
+
+.marketSecondaryAction {
+  color: #174d3d;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(23, 77, 61, 0.18);
+}
+
+.marketPrimaryAction:hover,
+.marketSecondaryAction:hover,
+.finalSecondaryAction:hover {
+  transform: translateY(-2px);
+}
+
+.marketPrimaryAction:hover {
+  background: #125c42;
+}
+
+.marketSecondaryAction:hover {
+  background: #ffffff;
+  border-color: rgba(23, 77, 61, 0.3);
+}
+
+.finalSection {
+  padding: 0 0 clamp(4.5rem, 7vw, 7.5rem);
+}
+
+.finalPanel {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(3rem, 5.5vw, 5.25rem);
+  border-radius: clamp(1.7rem, 2.4vw, 2.25rem);
+  text-align: center;
+  color: #ffffff;
+  background:
+    radial-gradient(circle at 50% -15%, rgba(73, 185, 142, 0.24) 0, transparent 25rem),
+    linear-gradient(145deg, #0c392e 0%, #08271f 100%);
+  box-shadow: 0 28px 70px rgba(11, 45, 35, 0.18);
+}
+
+.finalEyebrow {
+  color: #9fd9c2;
+}
+
+.finalTitle {
+  margin: 1rem auto 0;
+  max-width: 52rem;
+  font-size: clamp(2.65rem, 4.8vw, 4.8rem);
+  line-height: 0.98;
+  letter-spacing: -0.058em;
+  text-wrap: balance;
+}
+
+.finalText {
+  margin: 1.25rem auto 0;
+  max-width: 43rem;
+  color: rgba(234, 243, 239, 0.78);
+  font-size: 1.04rem;
+  line-height: 1.7;
+}
+
+.finalActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.9rem;
+  margin-top: 2rem;
+}
+
+.finalSecondaryAction {
+  min-height: 4.15rem;
+  padding-inline: 2rem;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+}
+
+.finalSecondaryAction:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.44);
+}
+
 @media (max-width: 1180px) {
   .heroMedia,
   .heroGrid {
@@ -481,6 +934,11 @@
 
   .heroLogo {
     width: min(100%, 18.75rem);
+  }
+
+  .stepsGrid,
+  .featuresGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -529,6 +987,16 @@
 
   .stepText {
     max-width: 100%;
+  }
+
+  .controlPanel,
+  .marketPanel {
+    grid-template-columns: 1fr;
+  }
+
+  .marketActions {
+    flex-direction: row;
+    min-width: 0;
   }
 }
 
@@ -581,6 +1049,12 @@
     font-size: 0.98rem;
   }
 
+  .secondaryCta {
+    min-height: 3.5rem;
+    padding: 0 1.5rem;
+    font-size: 0.96rem;
+  }
+
   .heroMarkStage {
     width: min(100%, 14.5rem);
   }
@@ -625,6 +1099,42 @@
   .stepText {
     margin-top: 0.85rem;
   }
+
+  .featuresGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .featureCard {
+    min-height: 0;
+  }
+
+  .roleCard {
+    flex-basis: 100%;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .controlPanel,
+  .marketPanel,
+  .finalPanel,
+  .rolesWrap {
+    padding: 1.75rem;
+    border-radius: 1.45rem;
+  }
+
+  .marketActions {
+    flex-direction: column;
+  }
+
+  .marketPrimaryAction,
+  .marketSecondaryAction,
+  .finalSecondaryAction {
+    width: 100%;
+  }
+
+  .finalActions .primaryCta {
+    width: 100%;
+  }
 }
 
 @keyframes eyebrowTypingSmall {
@@ -646,8 +1156,12 @@
 
 @media (prefers-reduced-motion: reduce) {
   .primaryCta,
+  .secondaryCta,
   .stepCard,
-  .stepAction::after {
+  .stepAction::after,
+  .marketPrimaryAction,
+  .marketSecondaryAction,
+  .finalSecondaryAction {
     transition: none;
   }
 
@@ -662,7 +1176,11 @@
   }
 
   .primaryCta:hover,
-  .stepCard:hover {
+  .secondaryCta:hover,
+  .stepCard:hover,
+  .marketPrimaryAction:hover,
+  .marketSecondaryAction:hover,
+  .finalSecondaryAction:hover {
     transform: none;
   }
 
@@ -758,4 +1276,3 @@
     font-size: clamp(2.65rem, 13.2vw, 3.75rem);
   }
 }
-
