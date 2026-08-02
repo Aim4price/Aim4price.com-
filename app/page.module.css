@@ -100,7 +100,7 @@
   flex-direction: column;
   align-items: flex-start;
   max-width: 56rem;
-  font-size: clamp(3.4rem, 4.2vw, 4.35rem);
+  font-size: clamp(3.5rem, 4.5vw, 4.75rem);
   line-height: 0.96;
   letter-spacing: -0.055em;
   font-weight: 800;
@@ -388,6 +388,7 @@
 }
 
 .rolesSection {
+  scroll-margin-top: 7rem;
   padding-bottom: clamp(4rem, 6.5vw, 6.75rem);
 }
 
@@ -406,7 +407,7 @@
   display: grid;
   justify-items: center;
   gap: 0.75rem;
-  max-width: 72rem;
+  max-width: 65rem;
   margin: 0 auto clamp(1.9rem, 2.5vw, 2.3rem);
   text-align: center;
 }
@@ -417,9 +418,9 @@
 
 .rolesTitle {
   margin: 0;
-  max-width: 72rem;
+  max-width: 65rem;
   color: #ffffff;
-  font-size: clamp(2.35rem, 3.15vw, 3.35rem);
+  font-size: clamp(2.3rem, 3vw, 3.2rem);
   line-height: 1.03;
   letter-spacing: -0.052em;
   font-weight: 800;
@@ -435,24 +436,115 @@
   text-wrap: balance;
 }
 
-.rolesGrid {
+.collaborationMap {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 0.8rem;
+  grid-template-columns: minmax(17rem, 0.72fr) minmax(0, 1.45fr);
+  gap: 2.2rem;
+  align-items: stretch;
 }
 
-.roleCard {
+.ownerHub {
+  position: relative;
+  display: flex;
   min-width: 0;
-  min-height: 9.5rem;
-  padding: 1.25rem;
+  min-height: 19rem;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(1.7rem, 2.4vw, 2.25rem);
+  border-radius: 1.45rem;
+  background:
+    radial-gradient(circle at 84% 14%, rgba(250, 210, 75, 0.16) 0, transparent 13rem),
+    linear-gradient(145deg, rgba(39, 122, 94, 0.92) 0%, rgba(23, 84, 66, 0.96) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow:
+    0 18px 38px rgba(3, 29, 23, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.ownerHub::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: -2.2rem;
+  width: 2.2rem;
+  height: 1px;
+  background: rgba(169, 219, 200, 0.35);
+}
+
+.ownerHubEyebrow,
+.ownerHubTitle,
+.ownerHubText,
+.partnerTitle,
+.partnerText {
+  margin: 0;
+}
+
+.ownerHubEyebrow {
+  color: #f4ce4b;
+  font-size: 0.72rem;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.ownerHubTitle {
+  margin-top: 0.85rem;
+  color: #ffffff;
+  font-size: clamp(1.85rem, 2.5vw, 2.5rem);
+  line-height: 1.04;
+  letter-spacing: -0.045em;
+  font-weight: 800;
+}
+
+.ownerHubText {
+  margin-top: 1rem;
+  max-width: 24rem;
+  color: rgba(229, 242, 237, 0.8);
+  font-size: 0.92rem;
+  line-height: 1.62;
+}
+
+.partnerGrid {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+  padding-left: 1rem;
+}
+
+.partnerGrid::before {
+  content: '';
+  position: absolute;
+  top: 18%;
+  bottom: 18%;
+  left: 0;
+  width: 1px;
+  background: rgba(169, 219, 200, 0.25);
+}
+
+.partnerCard {
+  position: relative;
+  min-width: 0;
+  min-height: 9.1rem;
+  padding: 1.3rem 1.35rem;
   border-radius: 1.25rem;
   background: rgba(255, 255, 255, 0.085);
   border: 1px solid rgba(255, 255, 255, 0.13);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
 }
 
-.roleTitle {
-  margin: 0;
+.partnerCard::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: -1rem;
+  width: 1rem;
+  height: 1px;
+  background: rgba(169, 219, 200, 0.25);
+}
+
+.partnerTitle {
   color: #ffffff;
   font-size: 1.08rem;
   line-height: 1.22;
@@ -461,8 +553,8 @@
   white-space: nowrap;
 }
 
-.roleText {
-  margin: 0.7rem 0 0;
+.partnerText {
+  margin-top: 0.7rem;
   color: rgba(224, 238, 232, 0.72);
   font-size: 0.86rem;
   line-height: 1.52;
@@ -524,9 +616,16 @@
   border-color: rgba(255, 255, 255, 0.45);
 }
 
+@media (min-width: 1041px) {
+  .heroMedia,
+  .heroGrid {
+    min-height: calc(100vh - 5.75rem);
+    min-height: calc(100svh - 5.75rem);
+  }
+}
+
 @media (min-width: 1181px) {
-  .sectionTitle,
-  .rolesTitle {
+  .sectionTitle {
     white-space: nowrap;
   }
 }
@@ -549,9 +648,6 @@
     min-height: 13rem;
   }
 
-  .rolesGrid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
 }
 
 @media (max-width: 900px) {
@@ -586,6 +682,25 @@
   .rolesFooter {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .collaborationMap {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .ownerHub {
+    min-height: 14rem;
+  }
+
+  .ownerHub::after,
+  .partnerGrid::before,
+  .partnerCard::before {
+    display: none;
+  }
+
+  .partnerGrid {
+    padding-left: 0;
   }
 }
 
@@ -663,7 +778,7 @@
   }
 
   .productGrid,
-  .rolesGrid {
+  .partnerGrid {
     grid-template-columns: 1fr;
   }
 
@@ -688,8 +803,13 @@
     border-radius: 1.45rem;
   }
 
-  .roleCard {
-    min-height: 8.25rem;
+  .ownerHub {
+    min-height: 12.75rem;
+    padding: 1.5rem;
+  }
+
+  .partnerCard {
+    min-height: 7.75rem;
   }
 
   .rolesActions {
