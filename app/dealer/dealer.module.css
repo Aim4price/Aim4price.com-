@@ -2157,3 +2157,66 @@
     max-height: none !important;
   }
 }
+
+/* Dealer workspaces support deliberate tablet and desktop layouts while the
+   existing single-column flow remains optimised for phones. */
+@media (min-width: 768px) {
+  .shell {
+    padding-right: max(32px, env(safe-area-inset-right));
+    padding-left: max(32px, env(safe-area-inset-left));
+  }
+
+  .nav {
+    padding-right: max(32px, env(safe-area-inset-right));
+    padding-left: max(32px, env(safe-area-inset-left));
+  }
+
+  .content {
+    width: min(100%, 880px);
+    padding-block: 28px;
+  }
+
+  .launcher {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    padding: 14px;
+  }
+
+  .launcher > :last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+
+  .card {
+    min-height: 104px;
+    padding: 22px 54px 22px 26px;
+    font-size: 1.32rem;
+  }
+
+  .module :is([class*='tableWrap'], [class*='tableScroll'], [class*='registerTable']) {
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (min-width: 1100px) {
+  .content {
+    width: min(100%, 980px);
+  }
+
+  .launcher {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .launcher > :last-child:nth-child(odd) {
+    grid-column: 2;
+  }
+}
+
+@media (max-width: 767px) {
+  .dealerLayout :is(input, select, textarea),
+  .module :is(input, select, textarea) {
+    font-size: 1rem !important;
+  }
+}
