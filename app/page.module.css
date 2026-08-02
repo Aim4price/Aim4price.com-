@@ -100,7 +100,7 @@
   flex-direction: column;
   align-items: flex-start;
   max-width: 56rem;
-  font-size: clamp(3.5rem, 4.5vw, 4.75rem);
+  font-size: clamp(3.8rem, 4.9vw, 5.25rem);
   line-height: 0.96;
   letter-spacing: -0.055em;
   font-weight: 800;
@@ -117,10 +117,10 @@
 
 .heroText {
   margin: clamp(1.1rem, 1.55vw, 1.4rem) 0 0;
-  max-width: 47rem;
+  max-width: 53rem;
   color: rgba(245, 248, 246, 0.9);
-  font-size: clamp(1rem, 1.15vw, 1.12rem);
-  line-height: 1.62;
+  font-size: clamp(1.12rem, 1.3vw, 1.28rem);
+  line-height: 1.55;
   letter-spacing: -0.005em;
   text-wrap: balance;
 }
@@ -425,6 +425,16 @@
   letter-spacing: -0.052em;
   font-weight: 800;
   text-wrap: balance;
+}
+
+.rolesTitleLine {
+  display: block;
+}
+
+@media (min-width: 901px) {
+  .rolesTitleLine:first-child {
+    white-space: nowrap;
+  }
 }
 
 .rolesText {
@@ -738,7 +748,7 @@
   .heroText {
     margin-top: 1rem;
     max-width: 34rem;
-    font-size: 0.97rem;
+    font-size: 1rem;
     line-height: 1.58;
     text-wrap: pretty;
   }
