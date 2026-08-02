@@ -359,6 +359,7 @@ function CustomSelect<T extends string>({
   );
 }
 
+
 function getDefaultSubtype(
   accountType: SignupAccountType,
 ): SignupAccountSubtype {
@@ -934,16 +935,6 @@ export default function AuthClient() {
                 noValidate
               >
                 <div className={styles.signupTypeRow}>
-                  <div className={styles.signupTypeIntro}>
-                    <strong className={styles.signupTypeTitle}>
-                      Set up your workspace
-                    </strong>
-                    <span className={styles.signupTypeText}>
-                      Choose the options that best match how you will use
-                      Aim4price.
-                    </span>
-                  </div>
-
                   <div className={styles.field}>
                     <span className={styles.label}>Choose account type</span>
                     <CustomSelect
