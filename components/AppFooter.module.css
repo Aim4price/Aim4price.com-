@@ -85,7 +85,7 @@
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: minmax(0, 35rem) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 37rem) minmax(0, 1fr);
   align-items: start;
   gap: clamp(4rem, 7vw, 6.75rem);
   padding: clamp(3.05rem, 4.7vw, 4rem) 0 clamp(2rem, 3.25vw, 2.65rem);
@@ -95,6 +95,21 @@
   display: grid;
   align-content: start;
   min-width: 0;
+}
+
+.brandEyebrow {
+  width: fit-content;
+  margin-bottom: 0.9rem;
+  padding: 0.43rem 0.72rem;
+  border: 1px solid rgba(178, 226, 207, 0.17);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.055);
+  color: rgba(201, 237, 222, 0.78);
+  font-size: 0.71rem;
+  font-weight: 820;
+  letter-spacing: 0.14em;
+  line-height: 1;
+  text-transform: uppercase;
 }
 
 .brandName {
@@ -109,12 +124,12 @@
 }
 
 .brandText {
-  margin: 1.05rem 0 0;
-  max-width: 36rem;
+  margin: 1.12rem 0 0;
+  max-width: 37rem;
   color: rgba(238, 248, 244, 0.92);
-  font-size: clamp(1rem, 1.06vw, 1.08rem);
-  font-weight: 560;
-  line-height: 1.72;
+  font-size: clamp(1.02rem, 1.08vw, 1.12rem);
+  font-weight: 590;
+  line-height: 1.67;
 }
 
 .brandSupport {
@@ -126,14 +141,6 @@
   line-height: 1.62;
 }
 
-.socialGroup {
-  display: grid;
-  align-content: start;
-  gap: 0.86rem;
-  margin-top: 1.65rem;
-}
-
-.socialLabel,
 .linkColumn h3 {
   color: rgba(216, 236, 226, 0.68);
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
@@ -143,46 +150,25 @@
   text-transform: uppercase;
 }
 
-.socialRow {
+.trustRow {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 0.72rem;
+  gap: 0.58rem;
+  margin-top: 1.5rem;
 }
 
-.socialIcon {
+.trustRow span {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 2.76rem;
-  height: 2.76rem;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  min-height: 2.15rem;
+  padding: 0.36rem 0.76rem;
+  border: 1px solid rgba(206, 239, 225, 0.13);
   border-radius: 999px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.085), rgba(255, 255, 255, 0.032));
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.1),
-    0 14px 30px rgba(2, 16, 11, 0.13);
-  transition:
-    transform 180ms ease,
-    border-color 180ms ease,
-    background 180ms ease,
-    box-shadow 180ms ease;
-}
-
-.socialIcon:hover {
-  transform: translateY(-2px);
-  border-color: rgba(255, 255, 255, 0.3);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.045));
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.13),
-    0 17px 36px rgba(2, 16, 11, 0.16);
-}
-
-.socialIcon svg {
-  width: 1.02rem;
-  height: 1.02rem;
-  fill: #ffffff;
-  opacity: 0.96;
+  background: rgba(255, 255, 255, 0.055);
+  color: rgba(230, 246, 239, 0.82);
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.25;
 }
 
 .linksGrid {
@@ -264,6 +250,12 @@
   font-size: 0.88rem;
   font-weight: 600;
   line-height: 1.55;
+}
+
+.bottomRow .rights {
+  flex: 0 0 auto;
+  color: rgba(216, 236, 226, 0.54);
+  white-space: nowrap;
 }
 
 .footerDock {
@@ -420,13 +412,8 @@
     line-height: 1.55;
   }
 
-  .socialGroup {
-    margin-top: 1.42rem;
-  }
-
-  .socialIcon {
-    width: 2.56rem;
-    height: 2.56rem;
+  .trustRow {
+    margin-top: 1.3rem;
   }
 
   .linksGrid {
@@ -443,7 +430,9 @@
   }
 
   .bottomRow {
+    flex-direction: column;
     align-items: flex-start;
+    gap: 0.28rem;
     padding: 1rem 0 1.2rem;
   }
 
@@ -465,7 +454,6 @@
   .drawerRegion,
   .drawerInner,
   .footerPanel,
-  .socialIcon,
   .linkColumn a,
   .linkColumn a::after,
   .footerDock,
@@ -541,4 +529,3 @@
     height: 3rem;
   }
 }
-
