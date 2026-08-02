@@ -3,45 +3,58 @@
 import { useEffect, useRef, useState } from 'react';
 import styles from './page.module.css';
 
-type NavigatorWithConnection = Navigator & {
-  connection?: {
-    saveData?: boolean;
-  };
-};
-
 export default function HomeHeroVideo() {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [playbackBlocked, setPlaybackBlocked] = useState(false);
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
+    const player: HTMLVideoElement = video;
 
-    const isPhone = window.matchMedia(
-      '(max-width: 720px), (max-width: 900px) and (max-height: 560px)',
-    ).matches;
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const saveData = (navigator as NavigatorWithConnection).connection?.saveData === true;
+    if (prefersReducedMotion) return;
 
-    if (isPhone || prefersReducedMotion || saveData) return;
+    player.defaultMuted = true;
+    player.muted = true;
 
-    video.preload = 'metadata';
-    video.load();
-    void video.play().then(() => setIsPlaying(true)).catch(() => undefined);
+    async function startPlayback() {
+      if (document.hidden) return;
+
+      try {
+        await player.play();
+        setPlaybackBlocked(false);
+      } catch {
+        setPlaybackBlocked(true);
+      }
+    }
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden && player.paused) void startPlayback();
+    };
+
+    void startPlayback();
+    player.addEventListener('canplay', startPlayback, { once: true });
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      player.removeEventListener('canplay', startPlayback);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   async function playVideo() {
     const video = videoRef.current;
     if (!video) return;
 
-    video.preload = 'metadata';
-    video.load();
+    video.defaultMuted = true;
+    video.muted = true;
 
     try {
       await video.play();
-      setIsPlaying(true);
+      setPlaybackBlocked(false);
     } catch {
-      setIsPlaying(false);
+      setPlaybackBlocked(true);
     }
   }
 
@@ -50,24 +63,31 @@ export default function HomeHeroVideo() {
       <video
         ref={videoRef}
         className={styles.heroVideo}
+        autoPlay
         muted
         loop
         playsInline
-        preload="none"
-        poster="/brand/Home-page.png"
+        preload="auto"
+        poster="/brand/home-hero-poster.jpg"
         aria-hidden="true"
+        onError={() => setPlaybackBlocked(true)}
       >
+        <source
+          src="/brand/AIM4PRICE-mobile.mp4"
+          type="video/mp4"
+          media="(max-width: 720px)"
+        />
         <source src="/brand/AIM4PRICE.mp4" type="video/mp4" />
       </video>
 
-      {!isPlaying ? (
+      {playbackBlocked ? (
         <button
           type="button"
           className={styles.heroVideoPlay}
-          aria-label="Play background video"
           onClick={() => void playVideo()}
         >
           <span aria-hidden="true">▶</span>
+          Play video
         </button>
       ) : null}
     </div>
