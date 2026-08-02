@@ -981,7 +981,7 @@
 
   .heroGrid {
     align-items: center;
-    padding: clamp(1.75rem, 5.5svh, 2.65rem) 0;
+    padding: clamp(1.6rem, 4.8svh, 2.4rem) 0;
   }
 
   .heroVideo {
@@ -1021,18 +1021,18 @@
   }
 
   .heroTitle {
-    max-width: 21rem;
+    max-width: 20.5rem;
     margin-top: 1rem;
-    font-size: clamp(2.35rem, 10.7vw, 3.05rem);
-    line-height: 0.97;
+    font-size: clamp(2.3rem, 10.35vw, 2.95rem);
+    line-height: 0.985;
     letter-spacing: -0.052em;
   }
 
   .heroText {
-    max-width: 30rem;
+    max-width: 22rem;
     margin-top: 0.9rem;
-    font-size: 0.94rem;
-    line-height: 1.5;
+    font-size: 0.91rem;
+    line-height: 1.47;
   }
 
   .heroTextDesktop {
@@ -1044,14 +1044,14 @@
   }
 
   .heroActions {
-    gap: 0.62rem;
-    margin-top: 1.2rem;
+    gap: 0.55rem;
+    margin-top: 1.15rem;
   }
 
   .primaryCta,
   .secondaryCta {
-    min-height: 3.2rem;
-    font-size: 0.88rem;
+    min-height: 3.1rem;
+    font-size: 0.86rem;
   }
 
   .productSection,
@@ -1061,8 +1061,8 @@
 
   .sectionHeading,
   .rolesHeading {
-    gap: 0.55rem;
-    margin-bottom: 1.25rem;
+    gap: 0.5rem;
+    margin-bottom: 1.1rem;
   }
 
   .sectionEyebrow,
@@ -1071,63 +1071,63 @@
   }
 
   .sectionTitle {
-    max-width: 20rem;
-    font-size: clamp(1.9rem, 8.5vw, 2.35rem);
-    line-height: 1.05;
+    max-width: 19.5rem;
+    font-size: clamp(1.82rem, 8.15vw, 2.25rem);
+    line-height: 1.055;
   }
 
   .sectionText {
-    max-width: 19rem;
-    font-size: 0.88rem;
-    line-height: 1.5;
+    max-width: 18.5rem;
+    font-size: 0.84rem;
+    line-height: 1.48;
   }
 
   .productGrid {
-    gap: 0.72rem;
+    gap: 0.6rem;
   }
 
   .productCard {
     min-height: 0;
     display: grid;
-    grid-template-columns: 2.7rem minmax(0, 1fr) 2.4rem;
+    grid-template-columns: 2.5rem minmax(0, 1fr) 2.2rem;
     grid-template-areas:
       'number title action'
       'number text action';
     align-items: center;
-    column-gap: 0.85rem;
-    row-gap: 0.3rem;
-    padding: 1rem;
-    border-radius: 1.15rem;
+    column-gap: 0.74rem;
+    row-gap: 0.24rem;
+    padding: 0.88rem 0.9rem;
+    border-radius: 1.08rem;
   }
 
   .productNumber {
     grid-area: number;
-    align-self: start;
-    width: 2.7rem;
-    min-height: 2.7rem;
-    font-size: 0.72rem;
+    align-self: center;
+    width: 2.5rem;
+    min-height: 2.5rem;
+    font-size: 0.68rem;
   }
 
   .productTitle {
     grid-area: title;
     margin: 0;
-    font-size: 1.02rem;
-    line-height: 1.22;
+    font-size: 0.98rem;
+    line-height: 1.2;
   }
 
   .productText {
     grid-area: text;
     margin: 0;
-    font-size: 0.79rem;
-    line-height: 1.42;
+    font-size: 0.75rem;
+    line-height: 1.4;
   }
 
   .productAction {
     grid-area: action;
     align-self: center;
     justify-self: end;
-    width: 2.35rem;
-    height: 2.35rem;
+    width: 2.18rem;
+    height: 2.18rem;
     justify-content: center;
     margin: 0;
     padding: 0;
@@ -1137,14 +1137,14 @@
   }
 
   .productAction::after {
-    font-size: 1rem;
+    font-size: 0.92rem;
   }
 
   .marketPrompt {
-    gap: 0.8rem;
-    margin-top: 0.75rem;
-    padding: 1rem;
-    border-radius: 1.15rem;
+    gap: 0.7rem;
+    margin-top: 0.65rem;
+    padding: 0.9rem;
+    border-radius: 1.08rem;
   }
 
   .marketLabel {
@@ -1157,8 +1157,8 @@
   }
 
   .marketLink {
-    min-height: 3.1rem;
-    font-size: 0.88rem;
+    min-height: 3rem;
+    font-size: 0.85rem;
   }
 
   .rolesPanel {
@@ -1253,6 +1253,32 @@
 
 @media (max-width: 430px) {
   .heroTitle {
-    font-size: clamp(2.3rem, 10.2vw, 2.72rem);
+    font-size: clamp(2.24rem, 9.95vw, 2.62rem);
+  }
+}
+
+@media (max-width: 390px) {
+  .productCard {
+    grid-template-columns: 2.38rem minmax(0, 1fr) 2.05rem;
+    column-gap: 0.62rem;
+    padding-inline: 0.78rem;
+  }
+
+  .productNumber {
+    width: 2.38rem;
+    min-height: 2.38rem;
+  }
+
+  .productTitle {
+    font-size: 0.94rem;
+  }
+
+  .productText {
+    font-size: 0.73rem;
+  }
+
+  .productAction {
+    width: 2.05rem;
+    height: 2.05rem;
   }
 }
