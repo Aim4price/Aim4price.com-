@@ -81,7 +81,7 @@ const ADMIN_EMAIL = "aim4price@gmail.com";
 
 const SIGNUP_ACCOUNT_TYPE_OPTIONS: Array<SelectOption<SignupAccountType>> = [
   { value: "owner", label: "Asset owner" },
-  { value: "finance", label: "Finance — accountants, financiers and banks" },
+  { value: "finance", label: "Finance, accounting and banking" },
   { value: "insurance", label: "Insurance provider" },
   { value: "dealer", label: "Dealer / auctioneer" },
 ];
@@ -145,9 +145,37 @@ function CustomSelect<T extends string>({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const selectedOption = options.find((option) => option.value === value);
+  const selectedIndex = Math.max(
+    options.findIndex((option) => option.value === value),
+    0,
+  );
   const buttonId = `${name}-dropdown-button`;
   const listboxId = `${name}-dropdown-listbox`;
+
+  const focusOption = (index: number) => {
+    if (!options.length) {
+      return;
+    }
+
+    const nextIndex = (index + options.length) % options.length;
+    optionRefs.current[nextIndex]?.focus();
+  };
+
+  const openMenu = (focusIndex = selectedIndex) => {
+    setIsOpen(true);
+    window.requestAnimationFrame(() => focusOption(focusIndex));
+  };
+
+  const closeMenu = (restoreButtonFocus = false) => {
+    setIsOpen(false);
+
+    if (restoreButtonFocus) {
+      window.requestAnimationFrame(() => buttonRef.current?.focus());
+    }
+  };
 
   useEffect(() => {
     if (!isOpen) {
@@ -168,7 +196,7 @@ function CustomSelect<T extends string>({
 
     const handleDocumentKeyDown = (event: globalThis.KeyboardEvent) => {
       if (event.key === "Escape") {
-        setIsOpen(false);
+        closeMenu(true);
       }
     };
 
@@ -185,23 +213,75 @@ function CustomSelect<T extends string>({
 
   const commitChange = (nextValue: T) => {
     onChange(nextValue);
-    setIsOpen(false);
+    closeMenu(true);
   };
 
   const handleButtonKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
-    if (event.key === "ArrowDown" || event.key === "Enter" || event.key === " ") {
+    if (event.key === "ArrowDown") {
       event.preventDefault();
-      setIsOpen(true);
+      openMenu(selectedIndex);
+      return;
+    }
+
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      openMenu(selectedOption ? selectedIndex : options.length - 1);
+      return;
+    }
+
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+
+      if (isOpen) {
+        closeMenu();
+      } else {
+        openMenu(selectedIndex);
+      }
     }
   };
 
   const handleOptionKeyDown = (
-    event: KeyboardEvent<HTMLDivElement>,
+    event: KeyboardEvent<HTMLButtonElement>,
     nextValue: T,
+    optionIndex: number,
   ) => {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
       commitChange(nextValue);
+      return;
+    }
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      focusOption(optionIndex + 1);
+      return;
+    }
+
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      focusOption(optionIndex - 1);
+      return;
+    }
+
+    if (event.key === "Home") {
+      event.preventDefault();
+      focusOption(0);
+      return;
+    }
+
+    if (event.key === "End") {
+      event.preventDefault();
+      focusOption(options.length - 1);
+      return;
+    }
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeMenu(true);
+    }
+
+    if (event.key === "Tab") {
+      closeMenu();
     }
   };
 
@@ -212,13 +292,20 @@ function CustomSelect<T extends string>({
     >
       <input type="hidden" name={name} value={value} />
       <button
+        ref={buttonRef}
         id={buttonId}
         type="button"
         className={`${styles.customSelectButton} ${!selectedOption ? styles.customSelectPlaceholder : ""}`}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
         aria-controls={listboxId}
-        onClick={() => setIsOpen((current) => !current)}
+        onClick={() => {
+          if (isOpen) {
+            closeMenu();
+          } else {
+            openMenu(selectedIndex);
+          }
+        }}
         onKeyDown={handleButtonKeyDown}
       >
         <span className={styles.customSelectButtonCopy}>
@@ -234,25 +321,36 @@ function CustomSelect<T extends string>({
           role="listbox"
           aria-labelledby={buttonId}
         >
-          {options.map((option) => {
+          {options.map((option, optionIndex) => {
             const isSelected = option.value === value;
 
             return (
-              <div
+              <button
                 key={option.value}
+                ref={(element) => {
+                  optionRefs.current[optionIndex] = element;
+                }}
+                type="button"
                 role="option"
-                tabIndex={0}
+                tabIndex={
+                  isSelected || (!selectedOption && optionIndex === 0) ? 0 : -1
+                }
                 aria-selected={isSelected}
                 className={`${styles.customSelectOption} ${
                   isSelected ? styles.customSelectOptionSelected : ""
                 }`}
                 onClick={() => commitChange(option.value)}
                 onKeyDown={(event) =>
-                  handleOptionKeyDown(event, option.value)
+                  handleOptionKeyDown(event, option.value, optionIndex)
                 }
               >
-                {option.label}
-              </div>
+                <span>{option.label}</span>
+                {isSelected ? (
+                  <span className={styles.customSelectCheck} aria-hidden="true">
+                    ✓
+                  </span>
+                ) : null}
+              </button>
             );
           })}
         </div>
@@ -836,6 +934,16 @@ export default function AuthClient() {
                 noValidate
               >
                 <div className={styles.signupTypeRow}>
+                  <div className={styles.signupTypeIntro}>
+                    <strong className={styles.signupTypeTitle}>
+                      Set up your workspace
+                    </strong>
+                    <span className={styles.signupTypeText}>
+                      Choose the options that best match how you will use
+                      Aim4price.
+                    </span>
+                  </div>
+
                   <div className={styles.field}>
                     <span className={styles.label}>Choose account type</span>
                     <CustomSelect
