@@ -101,14 +101,8 @@ export default async function HomePage() {
                 </h1>
 
                 <p className={styles.heroText}>
-                  <span className={styles.heroTextDesktop}>
-                    Build detailed records and reports, manage every stage of ownership and
-                    collaborate with trusted professionals through one owner-controlled Asset Register.
-                  </span>
-                  <span className={styles.heroTextMobile}>
-                    Records, reports and trusted professionals, connected through one owner-controlled
-                    Asset Register.
-                  </span>
+                  Build detailed records and reports, manage every stage of ownership and
+                  collaborate with trusted professionals through one owner-controlled Asset Register.
                 </p>
 
                 <div className={styles.heroActions}>

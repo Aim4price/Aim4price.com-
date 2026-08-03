@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 import AppFooter from '../components/AppFooter';
 import './globals.css';
@@ -20,6 +20,12 @@ export const metadata: Metadata = {
     shortcut: ['/favicon.ico?v=3'],
     apple: [{ url: '/apple-touch-icon.png?v=3', sizes: '180x180', type: 'image/png' }],
   },
+};
+
+export const viewport: Viewport = {
+  width: 1280,
+  initialScale: 1,
+  userScalable: true,
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

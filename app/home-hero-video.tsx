@@ -72,11 +72,6 @@ export default function HomeHeroVideo() {
         aria-hidden="true"
         onError={() => setPlaybackBlocked(true)}
       >
-        <source
-          src="/brand/AIM4PRICE-mobile.mp4"
-          type="video/mp4"
-          media="(max-width: 720px)"
-        />
         <source src="/brand/AIM4PRICE.mp4" type="video/mp4" />
       </video>
 

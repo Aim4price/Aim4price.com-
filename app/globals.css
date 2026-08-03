@@ -110,12 +110,6 @@ h4,
   background: rgba(23, 77, 62, 0.14);
 }
 
-@media (max-width: 640px) {
-  :root {
-    --shell-gutter: 0.85rem;
-  }
-}
-
 /* === Mobile/tablet responsive foundation pass === */
 :root {
   --mobile-gutter: 0.85rem;
