@@ -37,6 +37,7 @@ type OwnerContext = {
 type Maintenance = {
   id: string; maintenanceType: 'service' | 'checkup'; status: string; computedStatusLabel: string; title: string;
   notes: string; triggerType: string; dueDate: string | null; dueUsage: number | null; usageMetric: string | null;
+  recurringEnabled: boolean; generatedFromMaintenanceId: string | null;
 };
 type ActivityItem = {
   id: string; kind: 'work' | 'fuel' | 'maintenance' | 'lifecycle'; title: string; detail: string;
@@ -103,6 +104,17 @@ function dateOnly(value: string | null | undefined) {
   if (!value) return 'Not saved';
   const parsed = new Date(value);
   return Number.isNaN(parsed.getTime()) ? 'Not saved' : new Intl.DateTimeFormat('en-ZA', { dateStyle: 'medium' }).format(parsed);
+}
+function maintenanceDueLabel(record: Maintenance) {
+  if (record.triggerType === 'date' && record.dueDate) return dateOnly(record.dueDate);
+  if (record.triggerType === 'usage' && record.dueUsage !== null) {
+    const unit = record.usageMetric === 'km' ? 'km' : record.usageMetric === 'percentage' ? '%' : 'hours';
+    return `${new Intl.NumberFormat('en-ZA', { maximumFractionDigits: 2 }).format(record.dueUsage)} ${unit}`;
+  }
+  return record.computedStatusLabel;
+}
+function hasRecurringMaintenance(record: Maintenance) {
+  return Boolean(record.recurringEnabled || record.generatedFromMaintenanceId);
 }
 function dateTime(value: string | null) {
   if (!value) return 'Not saved';
@@ -902,7 +914,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
                     <strong>{dateOnly(licenceRenewalDate)}</strong>
                     <small>{licenceRenewalDate ? 'Open licence ›' : 'Add date ›'}</small>
                   </Link>
-                  <Link href={`/owner-app/assets/${encodeURIComponent(assetId)}/maintenance`} prefetch={false}><span>Maintenance</span><strong>{upcomingMaintenance ? upcomingMaintenance.computedStatusLabel : 'Nothing upcoming'}</strong><small>Schedule ›</small></Link>
+                  <Link href={`/owner-app/assets/${encodeURIComponent(assetId)}/maintenance`} prefetch={false}><span>Maintenance</span><strong>{upcomingMaintenance ? hasRecurringMaintenance(upcomingMaintenance) ? 'Recurring schedule active' : 'Maintenance scheduled' : 'Nothing upcoming'}</strong><small>{upcomingMaintenance ? `Next: ${maintenanceDueLabel(upcomingMaintenance)} ›` : 'Schedule ›'}</small></Link>
                   {draft.marketplaceStatus === 'live' ? (
                     <Link href={`${manageBase}/marketplace`} prefetch={false}><span>Marketplace</span><strong>Listed</strong><small>Open listing ›</small></Link>
                   ) : null}
@@ -971,7 +983,14 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
                         prefetch={false}
                         className={`${styles.manageButton} ${item.tone === 'danger' ? styles.manageButtonDanger : ''}`}
                       >
-                        <span className={styles.manageButtonCopy}><strong>{item.title}</strong></span>
+                        <span className={styles.manageButtonCopy}>
+                          <strong>{item.id === 'maintenance' && upcomingMaintenance
+                            ? hasRecurringMaintenance(upcomingMaintenance) ? 'Recurring schedule active' : 'Maintenance scheduled'
+                            : item.title}</strong>
+                          {item.id === 'maintenance' && upcomingMaintenance
+                            ? <small>Next: {upcomingMaintenance.title} · {maintenanceDueLabel(upcomingMaintenance)}</small>
+                            : null}
+                        </span>
                         <span className={styles.manageButtonArrow} aria-hidden="true">›</span>
                       </Link>
                     ))}
@@ -1613,6 +1632,7 @@ function MarketplaceSection({ draft, ownerContext, action, busy }: { draft: Asse
 }
 
 function MaintenanceSection({ assetId, records, action, busy }: { assetId: string; records: Maintenance[]; action: (body: Record<string, unknown>, message: string) => Promise<void>; busy: boolean }) {
+  const upcomingMaintenance = records.find((record) => record.status === 'upcoming') ?? null;
   async function create(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
@@ -1622,14 +1642,30 @@ function MaintenanceSection({ assetId, records, action, busy }: { assetId: strin
   }
   return (
     <section className={styles.section}>
-      <p className={styles.editorIntro}>Schedule and manage maintenance.</p>
-      <form className={styles.formGrid} onSubmit={(event) => void create(event)}>
-        <label className={styles.field}><span>Type</span><select name="maintenanceType"><option value="service">Service</option><option value="checkup">Checkup</option></select></label>
-        <label className={styles.field}><span>Due date</span><input name="dueDate" type="date" required /></label>
-        <label className={`${styles.field} ${styles.fieldFull}`}><span>Title</span><input name="title" required placeholder="Next service" /></label>
-        <label className={`${styles.field} ${styles.fieldFull}`}><span>Notes</span><textarea name="notes" /></label>
-        <button className={`${styles.maintenanceAddButton} ${styles.fieldFull}`} type="submit" disabled={busy}>Add maintenance</button>
-      </form>
+      <p className={styles.editorIntro}>{upcomingMaintenance
+        ? hasRecurringMaintenance(upcomingMaintenance)
+          ? 'A recurring schedule is already in place. Complete the physical work below to move to the next schedule.'
+          : 'Maintenance is already scheduled. Complete the physical work below before adding another schedule.'
+        : 'Schedule and manage maintenance.'}</p>
+      {upcomingMaintenance ? (
+        <div className={styles.recordList}>
+          <article className={styles.record}>
+            <div className={styles.recordHeader}>
+              <h3>{hasRecurringMaintenance(upcomingMaintenance) ? 'Recurring schedule already in place' : 'Maintenance already scheduled'}</h3>
+              <span className={styles.recordStatus}>{upcomingMaintenance.computedStatusLabel}</span>
+            </div>
+            <p>Next: {upcomingMaintenance.title} · {maintenanceDueLabel(upcomingMaintenance)}</p>
+          </article>
+        </div>
+      ) : (
+        <form className={styles.formGrid} onSubmit={(event) => void create(event)}>
+          <label className={styles.field}><span>Type</span><select name="maintenanceType"><option value="service">Service</option><option value="checkup">Checkup</option></select></label>
+          <label className={styles.field}><span>Due date</span><input name="dueDate" type="date" required /></label>
+          <label className={`${styles.field} ${styles.fieldFull}`}><span>Title</span><input name="title" required placeholder="Next service" /></label>
+          <label className={`${styles.field} ${styles.fieldFull}`}><span>Notes</span><textarea name="notes" /></label>
+          <button className={`${styles.maintenanceAddButton} ${styles.fieldFull}`} type="submit" disabled={busy}>Add maintenance</button>
+        </form>
+      )}
       <div className={styles.maintenanceRecordsBlock}>
         <h2>Maintenance records</h2>
         <div className={styles.recordList}>{records.length ? records.map((record) => <article className={styles.record} key={record.id}><div className={styles.recordHeader}><h3>{record.title}</h3><span className={styles.recordStatus}>{record.computedStatusLabel}</span></div><p>{[record.maintenanceType, record.dueDate || (record.dueUsage !== null ? `${record.dueUsage} ${record.usageMetric || ''}` : ''), record.notes].filter(Boolean).join(' · ')}</p><div className={styles.actions}>{record.status === 'upcoming' ? <><Link className={styles.smallButton} href={`/owner-app/operations/maintenance/${encodeURIComponent(assetId)}?maintenanceId=${encodeURIComponent(record.id)}&maintenanceType=${record.maintenanceType}&returnTo=${encodeURIComponent(`/owner-app/assets/${assetId}/maintenance`)}`} prefetch={false}>Record work</Link><button type="button" className={styles.smallButton} disabled={busy} onClick={() => void action({ action: 'maintenance-cancel', maintenanceId: record.id }, 'Maintenance cancelled.')}>Cancel</button></> : record.status === 'done' ? <button type="button" className={styles.smallButton} disabled={busy} onClick={() => void action({ action: 'maintenance-reopen', maintenanceId: record.id }, 'Maintenance reopened.')}>Reopen</button> : null}</div></article>) : <p className={styles.maintenanceEmpty}>No maintenance records yet.</p>}</div>
