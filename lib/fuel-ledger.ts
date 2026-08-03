@@ -9,6 +9,7 @@ import { parseFuelSlipDecimal } from './fuel-slip-number';
 import { getActiveFieldManagerSessionFromRequest } from './field-manager-session';
 import { validateFieldManagerFuelStorage } from './field-manager';
 import { getOwnerAppAccess, ownerAppCan } from './owner-app-access';
+import { resolveAssetUsage } from './asset-usage';
 
 export const FUEL_SCAN_COOKIE_NAME = 'aim4price_fuel_scan';
 export const FUEL_SCAN_SESSION_MAX_AGE_SECONDS = 60 * 60 * 12;
@@ -1285,6 +1286,15 @@ function inferAssetUsageMetric(row: FuelAssetRow): FuelLedgerAsset['usageMetric'
   ];
   const hasExplicitReadingBasis = explicitUsageBasisValues.some(metricTextIsReading);
   const hasExplicitPercentageBasis = explicitUsageBasisValues.some(metricTextIsPercentage);
+  const resolvedUsage = resolveAssetUsage({
+    kind,
+    hours: savedReading,
+    lifeWorkedPercent,
+    specsJson: specs,
+  });
+
+  if (resolvedUsage.metric === 'not_applicable') return 'none';
+  if (resolvedUsage.metric === 'percentage') return 'percentage';
 
   if (
     kind !== 'vehicle' &&
