@@ -255,6 +255,7 @@ export default function FieldManagerOverviewClient() {
       setClearCandidate(null);
     } catch (error) {
       setActionError(error instanceof Error ? error.message : 'This item could not be cleared.');
+      setClearCandidate(null);
     } finally {
       setClearingItemId(null);
     }
