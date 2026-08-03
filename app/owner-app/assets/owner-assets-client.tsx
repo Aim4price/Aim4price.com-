@@ -17,7 +17,7 @@ type Asset = {
   registerName: string;
   note: string;
   usage: number | null;
-  usageMetric: 'hours' | 'km' | 'percentage';
+  usageMetric: 'hours' | 'km' | 'percentage' | 'not_applicable';
 };
 
 type ApiResponse = {
@@ -50,6 +50,7 @@ function yearDisplayText(asset: Asset): string {
 }
 
 function usageDisplayText(asset: Asset): string {
+  if (asset.usageMetric === 'not_applicable') return 'Not applicable';
   if (asset.usage === null) return 'Not captured';
   const value = asset.usage.toLocaleString('en-ZA');
   if (asset.usageMetric === 'percentage') return `${value}%`;
@@ -59,9 +60,11 @@ function usageDisplayText(asset: Asset): string {
 export default function OwnerAssetsClient({
   initialQuery = '',
   mode = 'assets',
+  canAddAssets = false,
 }: {
   initialQuery?: string;
   mode?: 'assets' | 'maintenance';
+  canAddAssets?: boolean;
 }) {
   const [query, setQuery] = useState(initialQuery);
   const [items, setItems] = useState<Asset[]>([]);
@@ -126,7 +129,7 @@ export default function OwnerAssetsClient({
             autoComplete="off"
           />
         </div>
-        {mode === 'assets' ? (
+        {mode === 'assets' && canAddAssets ? (
           <Link className={styles.addAssetButton} href="/owner-app/assets/add" prefetch={false}>
             <span aria-hidden="true">+</span>
             <span>Add asset</span>
