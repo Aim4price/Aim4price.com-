@@ -176,11 +176,6 @@ function formatLitres(value: number | null | undefined): string {
 }
 
 
-function formatHours(value: number | null | undefined): string {
-  if (value === null || typeof value === 'undefined' || !Number.isFinite(value)) return 'Not captured';
-  return new Intl.NumberFormat('en-ZA').format(Math.round(value));
-}
-
 function assetDisplayName(asset: FuelLedgerAsset): string {
   return asset.title || [asset.brandName, asset.modelName].filter(Boolean).join(' ') || asset.assetTypeLabel || 'Asset';
 }
@@ -208,6 +203,17 @@ function assetUsageText(asset: FuelLedgerAsset): string {
   if (asset.usageMetric === 'km' || (asset.usageMetric === 'both' && asset.kind === 'vehicle')) return `${reading} km`;
   if (asset.usageMetric === 'none') return 'Not captured';
   return `${reading} hours`;
+}
+
+function assetHasMeter(asset: FuelLedgerAsset | null): boolean {
+  return Boolean(asset && (asset.usageMetric === 'hours' || asset.usageMetric === 'km' || asset.usageMetric === 'both'));
+}
+
+function assetMeterLabel(asset: FuelLedgerAsset | null): string {
+  if (asset?.usageMetric === 'km' || (asset?.usageMetric === 'both' && asset.kind === 'vehicle')) {
+    return 'Current kilometre reading';
+  }
+  return 'Current hour reading';
 }
 
 function assetSearchText(asset: FuelLedgerAsset): string {
@@ -507,7 +513,7 @@ export default function FuelScanClient({
     setAssetFuelPercentBefore(currentFuelPercent);
     setAssetFuelPercentAfter(currentFuelPercent);
     setAssetUsageReading('');
-    setUsageNotApplicable(false);
+    setUsageNotApplicable(!assetHasMeter(asset));
   }, [assetId, assets]);
 
   useEffect(() => {
@@ -602,11 +608,11 @@ export default function FuelScanClient({
   }
 
   function validateUsageStep() {
-    if (usageNotApplicable) return;
+    if (!assetHasMeter(selectedAsset) || usageNotApplicable) return;
 
     const reading = safeNumber(assetUsageReading);
     if (reading === null || reading < 0) {
-      throw new Error('Enter the new hours / km reading, or mark it not applicable.');
+      throw new Error(`Enter the ${assetMeterLabel(selectedAsset).toLowerCase()}, or choose no meter reading.`);
     }
 
     if (selectedAsset?.hours !== null && typeof selectedAsset?.hours !== 'undefined' && reading < selectedAsset.hours) {
@@ -789,7 +795,7 @@ export default function FuelScanClient({
         litres: Number(litres),
         assetFuelPercentBefore: Number(fuelPercentText(assetFuelPercentBefore)),
         assetFuelPercentAfter: Number(fuelPercentText(assetFuelPercentAfter)),
-        assetUsageReading: usageNotApplicable ? null : Number(assetUsageReading),
+        assetUsageReading: !assetHasMeter(selectedAsset) || usageNotApplicable ? null : Number(assetUsageReading),
         operatorName: operatorNameForSave,
         activityText,
         workAreaText,
@@ -1338,43 +1344,54 @@ export default function FuelScanClient({
     }
 
     if (issueStep === 'usage') {
+      const hasMeter = assetHasMeter(selectedAsset);
+
       return (
         <section className={styles.stepCard}>
           <div className={styles.stepTitleBlock}>
             <span>Step {issueStepNumber} of {TOTAL_SCAN_PAGES}</span>
-            <h1>New recorded</h1>
+            <h1>Update usage</h1>
             <p>{selectedAssetName}</p>
           </div>
           <div className={styles.readingCard}>
-            <span>Last recorded</span>
-            <strong>{formatHours(selectedAsset?.hours)}</strong>
+            <span>Saved in Asset Register</span>
+            <strong>{selectedAsset ? assetUsageText(selectedAsset) : 'Not captured'}</strong>
           </div>
-          <label className={styles.field}>
-            <span>New hours / km reading</span>
-            <input
-              type="number"
-              min="0"
-              step="1"
-              value={assetUsageReading}
-              onChange={(event) => {
-                setAssetUsageReading(event.target.value);
-                setUsageNotApplicable(false);
-              }}
-              placeholder="Current reading"
-              disabled={usageNotApplicable}
-              autoFocus
-            />
-          </label>
-          <button
-            type="button"
-            className={`${styles.optionButton} ${usageNotApplicable ? styles.optionButtonActive : ''}`}
-            onClick={() => {
-              setUsageNotApplicable((current) => !current);
-              setAssetUsageReading('');
-            }}
-          >
-            No meter
-          </button>
+          {hasMeter ? (
+            <>
+              <label className={styles.field}>
+                <span>{assetMeterLabel(selectedAsset)}</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={assetUsageReading}
+                  onChange={(event) => {
+                    setAssetUsageReading(event.target.value);
+                    setUsageNotApplicable(false);
+                  }}
+                  placeholder="Enter the reading now"
+                  disabled={usageNotApplicable}
+                  autoFocus
+                />
+              </label>
+              <button
+                type="button"
+                className={`${styles.optionButton} ${usageNotApplicable ? styles.optionButtonActive : ''}`}
+                onClick={() => {
+                  setUsageNotApplicable((current) => !current);
+                  setAssetUsageReading('');
+                }}
+              >
+                No meter reading
+              </button>
+            </>
+          ) : (
+            <div className={styles.usageSourceNote}>
+              <strong>No meter update needed</strong>
+              <span>This asset keeps the usage type saved in the Asset Register.</span>
+            </div>
+          )}
           {renderStepControls()}
         </section>
       );
