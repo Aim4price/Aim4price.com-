@@ -2372,3 +2372,76 @@
     font-size: 1rem !important;
   }
 }
+
+/* Final phone spacing shared by the Owner App's everyday screens. */
+@media (max-width: 599px) {
+  .page,
+  .module {
+    --owner-page-gutter: 28px;
+    --owner-content-gap: 14px;
+  }
+
+  .assetsHeader {
+    padding-bottom: 12px;
+  }
+
+  .homeLauncher,
+  .managerAssetList,
+  .assetList,
+  .notificationList {
+    gap: 12px;
+  }
+
+  .homeLaunchCard {
+    min-height: 74px;
+    border-radius: 18px;
+  }
+
+  .assetListToolbar,
+  .managerAssetCard,
+  .notificationCard,
+  .panel,
+  .section {
+    border-radius: 20px;
+  }
+
+  .assetListToolbar {
+    padding: 12px;
+  }
+
+  .managerAssetCard {
+    gap: 12px;
+    padding: 15px;
+  }
+
+  .managerAssetMetaGrid {
+    grid-template-columns: minmax(0, 1.35fr) minmax(76px, 0.65fr);
+    gap: 8px;
+  }
+
+  .managerAssetMetaGrid > div:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .managerAssetMetaGrid div {
+    min-height: 60px;
+    border-radius: 15px;
+  }
+
+  .ownerAssetOpenButton,
+  .assetManageButton,
+  .assetOpenButton,
+  .button,
+  .primaryButton,
+  .secondaryButton,
+  .dangerButton {
+    min-height: 54px;
+  }
+}
+
+@media (max-width: 390px) {
+  .page,
+  .module {
+    --owner-page-gutter: 20px;
+  }
+}
