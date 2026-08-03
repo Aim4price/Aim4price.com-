@@ -1,4 +1,4 @@
-export type AssetUsageMetric = 'hours' | 'km' | 'percentage';
+export type AssetUsageMetric = 'hours' | 'km' | 'percentage' | 'not_applicable';
 
 export type ResolvedAssetUsage = {
   value: number | null;
@@ -13,7 +13,7 @@ type AssetUsageInput = {
 };
 
 type ExplicitUsageBasis = {
-  basis: 'reading' | 'percentage';
+  basis: 'reading' | 'percentage' | 'not_applicable';
   metric?: 'hours' | 'km';
 };
 
@@ -31,6 +31,14 @@ const PERCENTAGE_TOKENS = new Set([
 
 const HOURS_TOKENS = new Set(['hour', 'hours', 'hr', 'hrs', 'engine_hours']);
 const KM_TOKENS = new Set(['km', 'kms', 'kilometre', 'kilometres', 'kilometer', 'kilometers']);
+const NOT_APPLICABLE_TOKENS = new Set([
+  'not_applicable',
+  'not_app',
+  'n/a',
+  'na',
+  'none',
+  'no_usage',
+]);
 
 const PERCENTAGE_VALUE_KEYS = [
   'lifeWorkedPercent',
@@ -77,6 +85,9 @@ function normalizeToken(value: unknown): string {
 function basisFromValue(value: unknown): ExplicitUsageBasis | null {
   const normalized = normalizeToken(value);
   if (!normalized) return null;
+  if (NOT_APPLICABLE_TOKENS.has(normalized)) {
+    return { basis: 'not_applicable' };
+  }
   if (PERCENTAGE_TOKENS.has(normalized) || normalized.includes('percent')) {
     return { basis: 'percentage' };
   }
@@ -97,13 +108,13 @@ function firstExplicitBasis(
   return null;
 }
 
-function firstExplicitPercentage(
+function firstExplicitSpecialBasis(
   specs: Record<string, unknown>,
   keys: readonly string[],
 ): ExplicitUsageBasis | null {
   for (const key of keys) {
     const basis = basisFromValue(specs[key]);
-    if (basis?.basis === 'percentage') return basis;
+    if (basis?.basis === 'percentage' || basis?.basis === 'not_applicable') return basis;
   }
   return null;
 }
@@ -126,7 +137,7 @@ function explicitUsageBasis(specs: Record<string, unknown>): ExplicitUsageBasis 
       'valuationMode',
       'valuation_mode',
     ]) ??
-    firstExplicitPercentage(specs, [
+    firstExplicitSpecialBasis(specs, [
       'usageMetric',
       'usage_metric',
       'usageUnit',
@@ -134,7 +145,7 @@ function explicitUsageBasis(specs: Record<string, unknown>): ExplicitUsageBasis 
       'usageMetricType',
       'usage_metric_type',
     ]) ??
-    firstExplicitPercentage(specs, [
+    firstExplicitSpecialBasis(specs, [
       'depreciationMethodUsed',
       'depreciation_method_used',
       'selectedDepreciationMethod',
@@ -192,6 +203,10 @@ export function resolveAssetUsage(input: AssetUsageInput): ResolvedAssetUsage {
   const reading = meterReading(input, specs);
   const metric = explicitBasis?.metric ?? readingMetric(specs, input.kind);
 
+  if (explicitBasis?.basis === 'not_applicable') {
+    return { value: null, metric: 'not_applicable' };
+  }
+
   if (explicitBasis?.basis === 'percentage') {
     return { value: percent, metric: 'percentage' };
   }
@@ -214,6 +229,13 @@ export function resolveAssetUsage(input: AssetUsageInput): ResolvedAssetUsage {
     return { value: percent, metric: 'percentage' };
   }
 
+  // Property and land do not normally have a meaningful usage meter. Keep an
+  // explicitly saved reading when one exists, but default empty property usage
+  // to Not applicable instead of presenting an unsaved hour meter.
+  if (normalizeToken(input.kind) === 'property') {
+    return { value: null, metric: 'not_applicable' };
+  }
+
   // Never present an unqualified legacy zero as if zero hours had been captured.
   return { value: null, metric };
 }
@@ -222,6 +244,7 @@ export function formatResolvedAssetUsage(
   usage: ResolvedAssetUsage,
   emptyLabel = 'Not captured',
 ): string {
+  if (usage.metric === 'not_applicable') return 'Not applicable';
   if (usage.value === null || !Number.isFinite(usage.value)) return emptyLabel;
 
   const value = usage.value.toLocaleString('en-ZA', {
