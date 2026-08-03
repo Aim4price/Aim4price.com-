@@ -460,7 +460,6 @@ async function buildFieldManagerOverview(input: {
   const [maintenanceRecords, problemGroups, licenseRows] = await Promise.all([
     listAssetMaintenanceRecords(input.ownerUserId, {
       status: 'upcoming',
-      assignedTo: input.managerId,
     }),
     listOpenIssueNoteGroupsForAssets(assetIds),
     listLicenseRows(assetIds),
@@ -470,8 +469,7 @@ async function buildFieldManagerOverview(input: {
 
   maintenanceRecords.forEach((record) => {
     if (
-      record.assignedFieldManagerId !== input.managerId
-      || !allowedAssetIds.has(record.assetId)
+      !allowedAssetIds.has(record.assetId)
       || !shouldIncludeMaintenance(record, horizonDays)
     ) {
       return;

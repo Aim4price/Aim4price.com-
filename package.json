@@ -8,6 +8,7 @@
     "typecheck": "tsc --noEmit",
     "test:asset-discovery": "node --test tests/asset-discovery.security.test.mjs",
     "test:accountant-workspace": "node --test tests/accountant-workspace.security.test.mjs",
+    "test:maintenance-overview": "node --test tests/maintenance-overview-visibility.test.mjs",
     "verify:insurance": "node scripts/verify-insurance-workspace.cjs"
   },
   "dependencies": {
