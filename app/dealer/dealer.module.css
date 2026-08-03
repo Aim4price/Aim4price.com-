@@ -2260,3 +2260,121 @@
     font-size: 1rem !important;
   }
 }
+
+
+/* Dealer home hierarchy: large operational cards first, quieter tools second. */
+.content {
+  justify-content: flex-start;
+  gap: 18px;
+  padding-block: 22px 32px;
+}
+
+.toolSection {
+  display: grid;
+  gap: 8px;
+}
+
+.toolSectionHeader {
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-inline: 4px;
+}
+
+.toolSectionHeader h2 {
+  margin: 0;
+  color: var(--dealer-ink);
+  font-size: 0.82rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.toolSectionHeader span {
+  color: var(--dealer-muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.card {
+  justify-content: flex-start;
+  min-height: 82px;
+  padding: 15px 82px 15px 18px;
+  text-align: left;
+}
+
+.cardCopy {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.cardCopy strong {
+  color: var(--dealer-green);
+  font-size: clamp(1.08rem, 5vw, 1.3rem);
+  font-weight: 900;
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+}
+
+.cardCopy small {
+  color: var(--dealer-muted);
+  font-size: 0.78rem;
+  font-weight: 680;
+  line-height: 1.35;
+}
+
+.cardCount {
+  position: absolute;
+  right: 43px;
+  top: 50%;
+  min-width: 28px;
+  min-height: 28px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 999px;
+  padding: 0 8px;
+  background: #e7f6ee;
+  color: #0b6448;
+  font-size: 0.76rem;
+  font-weight: 900;
+  transform: translateY(-50%);
+}
+
+.cardCount + .cardArrow {
+  right: 17px;
+}
+
+.secondaryLauncher .card {
+  min-height: 72px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbf9 100%);
+}
+
+@media (max-width: 390px) {
+  .shell {
+    padding-right: max(10px, env(safe-area-inset-right));
+    padding-left: max(10px, env(safe-area-inset-left));
+  }
+
+  .content {
+    gap: 15px;
+    padding-top: 16px;
+  }
+
+  .launcher {
+    gap: 8px;
+    padding: 8px;
+    border-radius: 20px;
+  }
+
+  .card {
+    min-height: 76px;
+    padding: 13px 74px 13px 15px;
+  }
+
+  .cardCopy small {
+    font-size: 0.74rem;
+  }
+}
