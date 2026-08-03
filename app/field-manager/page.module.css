@@ -1993,3 +1993,67 @@
     font-size: 1rem !important;
   }
 }
+
+/* Final phone spacing: consistent breathing room without adding extra scrolling. */
+@media (max-width: 599px) {
+  .mobilePage {
+    --field-page-gutter: 28px;
+  }
+
+  .loginShell,
+  .assetsShell,
+  .overviewShell,
+  .maintenanceShell {
+    width: min(calc(100% - var(--field-page-gutter)), 560px);
+  }
+
+  .homeActionGrid,
+  .assetList,
+  .overviewList,
+  .maintenanceScheduleList {
+    gap: 12px;
+  }
+
+  .searchCard,
+  .assetCard,
+  .overviewCard,
+  .maintenanceCard,
+  .maintenanceSuccess,
+  .maintenanceScheduleCard {
+    border-radius: 20px;
+  }
+
+  .assetCard,
+  .overviewCard,
+  .maintenanceCard,
+  .maintenanceSuccess,
+  .maintenanceScheduleCard {
+    padding: 15px;
+  }
+
+  .assetMetaGridVertical {
+    grid-template-columns: minmax(0, 1.35fr) minmax(76px, 0.65fr);
+  }
+
+  .assetMetaGridVertical > div:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .assetMetaGrid div {
+    min-height: 60px;
+    border-radius: 15px;
+  }
+
+  .assetOpenButton,
+  .overviewOpenButton,
+  .maintenanceAddButton,
+  .maintenanceScheduleActions button {
+    min-height: 54px;
+  }
+}
+
+@media (max-width: 390px) {
+  .mobilePage {
+    --field-page-gutter: 20px;
+  }
+}
