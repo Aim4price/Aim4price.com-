@@ -2201,7 +2201,10 @@ export default function ScanClient({
 
   function openEditor(nextEditor: EditorKey) {
     const isFieldManagerAccess =
-      fieldManagerMode || scanAccessMode === "field_manager";
+      fieldManagerMode ||
+      ownerAppMode ||
+      scanAccessMode === "field_manager" ||
+      scanAccessMode === "owner_session";
     const enforcedEditor =
       !isFieldManagerAccess &&
       nextEditor !== "usage" &&
