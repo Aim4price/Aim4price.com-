@@ -12,6 +12,7 @@ type LeadPhotoViewerModalProps = {
   urls: string[];
   initialIndex: number;
   onClose: () => void;
+  closeButtonClassName?: string;
 };
 
 function ChevronLeftIcon({ className = '' }: { className?: string }) {
@@ -44,6 +45,7 @@ export default function LeadPhotoViewerModal({
   urls,
   initialIndex,
   onClose,
+  closeButtonClassName = '',
 }: LeadPhotoViewerModalProps) {
   const [selectedIndex, setSelectedIndex] = useState(() =>
     Math.min(Math.max(initialIndex, 0), Math.max(urls.length - 1, 0)),
@@ -126,7 +128,7 @@ export default function LeadPhotoViewerModal({
 
           <button
             type="button"
-            className={leadStyles.leadPhotoModalCloseButton}
+            className={`${leadStyles.leadPhotoModalCloseButton} ${closeButtonClassName}`}
             onClick={onClose}
             aria-label="Close asset photos"
           >

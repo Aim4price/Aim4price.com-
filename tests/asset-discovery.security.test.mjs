@@ -18,6 +18,7 @@ const discoveryRoute = read("app/api/asset-discovery/route.ts");
 const marketplaceClient = read("app/marketplace/marketplace-client.tsx");
 const marketplaceEntry = read("app/marketplace/page.tsx");
 const ownerAppHome = read("app/owner-app/page.tsx");
+const photoViewer = read("components/LeadPhotoViewerModal.tsx");
 
 test("owner participation defaults to off", () => {
   assert.match(
@@ -163,6 +164,20 @@ test("Refresh remains white in every interaction state", () => {
     assert.ok(css.includes(state), `missing ${state}`);
   }
   assert.match(css, /background: #ffffff !important/);
+});
+
+test("app Discovery uses compact controls and red close actions", () => {
+  assert.match(client, /styles\.compactAppSurface/);
+  assert.match(client, /styles\.compactResultSummary/);
+  assert.match(client, /isExpanded \? styles\.discoveryCloseButton/);
+  assert.match(client, /styles\.discoveryCloseDetailsButton/);
+  assert.match(client, /closeButtonClassName=\{styles\.discoveryPhotoCloseButton\}/);
+  assert.match(photoViewer, /closeButtonClassName\?: string/);
+  assert.match(css, /\.compactAppSurface \.toolbar/);
+  assert.match(css, /\.compactAppSurface \.discoveryDetailsGrid/);
+  assert.match(css, /\.discoveryCloseButton/);
+  assert.match(css, /\.discoveryPhotoCloseButton/);
+  assert.match(css, /background: linear-gradient\(180deg, #cf4e4e 0%, #a92f2f 100%\)/);
 });
 
 test("desktop navigation exposes Discovery only through the Marketplace entry page", () => {
