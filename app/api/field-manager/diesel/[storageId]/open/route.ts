@@ -28,6 +28,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
   try {
     const storage = await getFieldManagerFuelStorageForOpen({
       ownerUserId: access.session.ownerUserId,
+      managerId: access.session.managerId,
       storageId: String(context.params?.storageId ?? ''),
     });
 
