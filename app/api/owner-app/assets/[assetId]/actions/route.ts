@@ -13,7 +13,7 @@ import {
   updateAssetMaintenanceRecord,
 } from '../../../../../../lib/asset-maintenance';
 import { publishAssetRegisterItemToMarketplace, removeAssetRegisterItemFromMarketplace } from '../../../../../../lib/marketplace-db';
-import { getOwnerAppAccess } from '../../../../../../lib/owner-app-access';
+import { getOwnerAppAccess, ownerAppCan } from '../../../../../../lib/owner-app-access';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -59,6 +59,13 @@ export async function POST(request: NextRequest, { params }: { params: { assetId
   try { body = await request.json() as Record<string, unknown>; }
   catch { return NextResponse.json({ ok: false, error: 'Invalid action details.' }, { status: 400 }); }
   const action = text(body.action);
+  const marketplaceAction = action === 'marketplace-publish' || action === 'marketplace-remove';
+  if (marketplaceAction && !ownerAppCan(access, 'manage_marketplace')) {
+    return NextResponse.json({ ok: false, error: 'Only an Owner / Admin login can manage Marketplace listings.' }, { status: 403 });
+  }
+  if (!marketplaceAction && !ownerAppCan(access, 'operate')) {
+    return NextResponse.json({ ok: false, error: 'This login has View only access.' }, { status: 403 });
+  }
 
   try {
     if (action === 'media') {
