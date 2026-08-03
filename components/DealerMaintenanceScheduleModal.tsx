@@ -510,7 +510,7 @@ export default function DealerMaintenanceScheduleModal({
 
   return (
     <div className={`${styles.page} ${styles.modalBackdrop}`} role="dialog" aria-modal="true" aria-labelledby="dealer-maintenance-form-title">
-      <section className={styles.formModal}>
+      <section className={`${styles.formModal} ${styles.maintenanceStepModal}`}>
         <header className={styles.modalHeader}>
           <div>
             <h2 id="dealer-maintenance-form-title">{`Schedule ${draft.maintenanceType}`}</h2>
