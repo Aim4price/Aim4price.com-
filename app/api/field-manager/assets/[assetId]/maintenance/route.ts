@@ -3,7 +3,7 @@ import {
   createAssetMaintenanceRecord,
   type AssetMaintenanceDraftInput,
 } from '../../../../../../lib/asset-maintenance';
-import { getFieldManagerAssetForOpen } from '../../../../../../lib/field-manager';
+import { fieldManagerCan, getFieldManagerAssetForOpen } from '../../../../../../lib/field-manager';
 import { requireActiveFieldManagerSession } from '../../../../../../lib/field-manager-session';
 
 export const runtime = 'nodejs';
@@ -20,6 +20,9 @@ function message(error: unknown): string {
 export async function POST(request: NextRequest, { params }: { params: { assetId: string } }) {
   const access = await requireActiveFieldManagerSession(request);
   if (!access.ok) return NextResponse.json({ ok: false, error: access.error }, { status: access.status });
+  if (!(await fieldManagerCan(access.session.managerId, 'schedule_maintenance'))) {
+    return NextResponse.json({ ok: false, error: 'This Field Manager login cannot create maintenance schedules.' }, { status: 403 });
+  }
 
   const asset = await getFieldManagerAssetForOpen({
     ownerUserId: access.session.ownerUserId,
