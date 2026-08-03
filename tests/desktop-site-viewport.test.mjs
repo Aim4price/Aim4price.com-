@@ -1,0 +1,58 @@
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import test from 'node:test';
+
+const rootLayoutPath = new URL('../app/layout.tsx', import.meta.url);
+const homePagePath = new URL('../app/page.tsx', import.meta.url);
+const homeStylesPath = new URL('../app/page.module.css', import.meta.url);
+const homeVideoPath = new URL('../app/home-hero-video.tsx', import.meta.url);
+
+const protectedAppLayoutPaths = [
+  new URL('../app/dealer/layout.tsx', import.meta.url),
+  new URL('../app/field-manager/layout.tsx', import.meta.url),
+  new URL('../app/fuel-scan/layout.tsx', import.meta.url),
+  new URL('../app/owner-app/layout.tsx', import.meta.url),
+  new URL('../app/scan/layout.tsx', import.meta.url),
+];
+
+test('the main site uses a zoomable fixed desktop viewport', async () => {
+  const source = await readFile(rootLayoutPath, 'utf8');
+
+  assert.match(source, /export const viewport: Viewport\s*=\s*\{/);
+  assert.match(source, /width:\s*1280/);
+  assert.match(source, /initialScale:\s*1/);
+  assert.match(source, /userScalable:\s*true/);
+  assert.doesNotMatch(source, /maximumScale|minimumScale/);
+});
+
+test('dedicated role and scan apps keep their device-width viewports', async () => {
+  for (const layoutPath of protectedAppLayoutPaths) {
+    const source = await readFile(layoutPath, 'utf8');
+
+    assert.match(source, /width:\s*['"]device-width['"]/);
+    assert.match(source, /initialScale:\s*1/);
+  }
+});
+
+test('the Home page no longer carries narrow-screen layout branches or copy', async () => {
+  const [pageSource, styleSource] = await Promise.all([
+    readFile(homePagePath, 'utf8'),
+    readFile(homeStylesPath, 'utf8'),
+  ]);
+
+  assert.doesNotMatch(styleSource, /@media\s*\([^)]*max-width/);
+  assert.match(styleSource, /@media\s*\(prefers-reduced-motion:\s*reduce\)/);
+  assert.doesNotMatch(pageSource, /heroTextMobile|heroTextDesktop/);
+});
+
+test('the Home hero keeps reliable playback without a mobile-only video asset', async () => {
+  const [videoSource, styleSource] = await Promise.all([
+    readFile(homeVideoPath, 'utf8'),
+    readFile(homeStylesPath, 'utf8'),
+  ]);
+
+  assert.match(videoSource, /src="\/brand\/AIM4PRICE\.mp4"/);
+  assert.match(videoSource, /playsInline/);
+  assert.doesNotMatch(videoSource, /AIM4PRICE-mobile\.mp4|media="\(max-width:/);
+  assert.match(styleSource, /\.heroVideoPlay\s*\{[^}]*display:\s*inline-flex/s);
+});

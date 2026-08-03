@@ -6,7 +6,7 @@ import { runInNewContext } from 'node:vm';
 const root = resolve(process.cwd());
 const failures = [];
 const expectedHashes = new Map([
-  ['app/layout.tsx', '056b119fb2a0102a350c58799490508a2c7138cb59a40f392f84fbcadd7204b5'],
+  ['app/layout.tsx', 'bbb1ba57e2eace72191a1a0cd66499de0e894d1ead8f7c1e936e751913422462'],
   ['app/dealer/layout.tsx', '23f0a63b0cd18c2784c29a9ea970b7c07748cc3ad27d396749d353fadeffe406'],
   ['app/dealer/login/dealer-login-client.tsx', 'f348f42cb021a407c0037a5af6e512d6779ae33d72c6d7ae471dde60659fe280'],
   ['app/dealer/manifest.webmanifest/route.ts', 'e8727d7a3042a63e71e6f9e9992db0f8762d1d33cd6eeaac4404c639e88c7140'],
