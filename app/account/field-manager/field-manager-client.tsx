@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import AppHeader from '../../../components/AppHeader';
+import FriendlySelect, { type FriendlySelectOption } from '../friendly-select';
+import accessStyles from '../access-page-refinements.module.css';
 import styles from './page.module.css';
 
 type NoticeTone = 'success' | 'error';
@@ -63,6 +65,16 @@ const initialDraft: DraftState = {
 };
 
 const FIELD_MANAGER_PASSWORD_MIN_LENGTH = 6;
+
+const ASSET_SCOPE_OPTIONS: Array<FriendlySelectOption<ManagerAccessSettings['assetScope']>> = [
+  { value: 'all', label: 'All assets', description: 'Includes every current and future asset.' },
+  { value: 'selected', label: 'Selected assets only', description: 'Choose the exact assets this manager may use.' },
+];
+
+const FUEL_SCOPE_OPTIONS: Array<FriendlySelectOption<ManagerAccessSettings['fuelScope']>> = [
+  { value: 'all', label: 'All fuel tanks', description: 'Includes every current and future fuel tank.' },
+  { value: 'selected', label: 'Selected tanks only', description: 'Choose the exact tanks this manager may use.' },
+];
 
 function extractError(payload: FieldManagerApiResponse | null, fallback: string): string {
   return payload?.error?.trim() || fallback;
@@ -427,8 +439,8 @@ export default function FieldManagerOwnerClient() {
           </div>
         ) : null}
 
-        <section className={styles.grid}>
-          <section className={styles.card}>
+        <section className={`${styles.grid} ${accessStyles.workspace} ${expandedManagerId ? accessStyles.workspaceFocused : ''}`}>
+          <section className={`${styles.card} ${accessStyles.createCard}`}>
             <div className={styles.cardHeader}>
               <h2>New Field Manager login</h2>
               <p>Create a dedicated username and password for one field manager.</p>
@@ -516,7 +528,7 @@ export default function FieldManagerOwnerClient() {
                 return (
                   <article
                     key={manager.id}
-                    className={`${styles.managerCard} ${isExpanded ? styles.managerCardExpanded : ''}`}
+                    className={`${styles.managerCard} ${accessStyles.managerCard} ${isExpanded ? `${styles.managerCardExpanded} ${accessStyles.focusedCard}` : ''} ${expandedManagerId && !isExpanded ? accessStyles.mutedCard : ''}`}
                   >
                     <div className={styles.managerSummary}>
                       <div className={styles.managerIdentity}>
@@ -543,6 +555,7 @@ export default function FieldManagerOwnerClient() {
                         type="button"
                         className={styles.manageButton}
                         onClick={() => setExpandedManagerId((current) => (current === manager.id ? null : manager.id))}
+                        disabled={Boolean(expandedManagerId && !isExpanded)}
                         aria-expanded={isExpanded}
                         aria-controls={managerPanelId}
                       >
@@ -552,6 +565,17 @@ export default function FieldManagerOwnerClient() {
 
                     {isExpanded ? (
                       <div id={managerPanelId} className={styles.managerDropdown}>
+                        <p className={accessStyles.focusNote}>
+                          <span className={accessStyles.focusDot} aria-hidden="true" />
+                          Finish this manager before closing the card and moving to another user.
+                        </p>
+                        <div className={accessStyles.sectionHeading}>
+                          <span className={accessStyles.stepNumber}>1</span>
+                          <div className={accessStyles.sectionHeadingCopy}>
+                            <h3>Login details</h3>
+                            <p>Update the name, username or reset the password.</p>
+                          </div>
+                        </div>
                         <form className={styles.inlineForm} onSubmit={(event) => void handleSaveManager(event, manager)}>
                           <label className={styles.compactField}>
                             <span>Display name</span>
@@ -687,7 +711,13 @@ function FieldManagerAccessPanel({ managerId }: { managerId: string }) {
   if (!settings) return <div className={styles.accessPanel}><p>{message || 'Access could not be loaded.'}</p></div>;
 
   return <section className={styles.accessPanel} aria-label="Field Manager permissions">
-    <div className={styles.accessHeader}><h3>What this manager can do</h3><p>Keep all access for a simple setup, or choose only specific assets and fuel tanks.</p></div>
+    <div className={accessStyles.sectionHeading}>
+      <span className={accessStyles.stepNumber}>2</span>
+      <div className={accessStyles.sectionHeadingCopy}>
+        <h3>App access</h3>
+        <p>Choose what this manager can do and which assets or fuel tanks they can use.</p>
+      </div>
+    </div>
     <div className={styles.permissionGrid}>
       {([
         ['canRecordWork', 'Check, service and repair'],
@@ -698,11 +728,23 @@ function FieldManagerAccessPanel({ managerId }: { managerId: string }) {
     </div>
     <div className={styles.accessColumns}>
       <div className={styles.accessColumn}>
-        <label className={styles.compactField}><span>Assets</span><select value={settings.assetScope} onChange={(event) => setSettings((current) => current ? { ...current, assetScope: event.target.value as 'all' | 'selected' } : current)}><option value="all">All assets</option><option value="selected">Selected assets only</option></select></label>
+        <FriendlySelect
+          label="Assets"
+          value={settings.assetScope}
+          options={ASSET_SCOPE_OPTIONS}
+          onChange={(assetScope) => setSettings((current) => current ? { ...current, assetScope } : current)}
+          className={accessStyles.accessSelect}
+        />
         {settings.assetScope === 'selected' ? <div className={styles.accessChecklist}>{assets.length ? assets.map((asset) => <label key={asset.id}><input type="checkbox" checked={settings.assetIds.includes(asset.id)} onChange={() => toggleId('assetIds', asset.id)} /><span><strong>{asset.title}</strong><small>{asset.kind}</small></span></label>) : <p>No assets available.</p>}</div> : null}
       </div>
       <div className={styles.accessColumn}>
-        <label className={styles.compactField}><span>Fuel tanks</span><select value={settings.fuelScope} onChange={(event) => setSettings((current) => current ? { ...current, fuelScope: event.target.value as 'all' | 'selected' } : current)}><option value="all">All fuel tanks</option><option value="selected">Selected tanks only</option></select></label>
+        <FriendlySelect
+          label="Fuel tanks"
+          value={settings.fuelScope}
+          options={FUEL_SCOPE_OPTIONS}
+          onChange={(fuelScope) => setSettings((current) => current ? { ...current, fuelScope } : current)}
+          className={accessStyles.accessSelect}
+        />
         {settings.fuelScope === 'selected' ? <div className={styles.accessChecklist}>{storages.length ? storages.map((storage) => <label key={storage.id}><input type="checkbox" checked={settings.fuelStorageIds.includes(storage.id)} onChange={() => toggleId('fuelStorageIds', storage.id)} /><span><strong>{storage.name}</strong><small>{storage.locationLabel || 'No location saved'}</small></span></label>) : <p>No fuel tanks available.</p>}</div> : null}
       </div>
     </div>
