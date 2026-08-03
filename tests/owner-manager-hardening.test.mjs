@@ -15,6 +15,9 @@ const [
   assetActivity,
   activityRoute,
   ownerAssetUi,
+  ownerHome,
+  ownerAssets,
+  ownerManagePage,
   migration,
 ] = await Promise.all([
   read('lib/field-manager.ts'),
@@ -28,11 +31,15 @@ const [
   read('lib/asset-activity.ts'),
   read('app/api/owner-app/assets/[assetId]/activity/route.ts'),
   read('app/owner-app/assets/[assetId]/owner-asset-detail-client.tsx'),
+  read('app/owner-app/page.tsx'),
+  read('app/owner-app/assets/owner-assets-client.tsx'),
+  read('app/owner-app/assets/[assetId]/manage/[section]/page.tsx'),
   read('database/migrations/66-owner-manager-hardening.sql'),
 ]);
 
 test('Field Manager passwords are hash-only and reset sessions', () => {
-  assert.doesNotMatch(fieldManager, /password_display|savedPassword/);
+  assert.doesNotMatch(fieldManager, /savedPassword/);
+  assert.match(fieldManager, /drop column if exists password_display/);
   assert.doesNotMatch(fieldManagerUi, /savedPassword|Saved password/);
   assert.match(fieldManagerUi, /Passwords are never displayed/);
   assert.match(migration, /DROP COLUMN IF EXISTS password_display/);
@@ -51,17 +58,23 @@ test('Owner App roles have simple, server-enforced permission presets', () => {
   assert.match(ownerAccess, /operations: \['view', 'operate'\]/);
   assert.match(ownerAccess, /view_only: \['view'\]/);
   assert.match(ownerAccess, /ownerAppCan/);
+  assert.match(ownerHome, /TOOLS\.filter\(\(tool\) => !tool\.permission \|\| ownerAppCan/);
+  assert.match(ownerAssets, /mode === 'assets' && canAddAssets/);
+  assert.match(ownerManagePage, /if \(!canOpen\) redirect/);
 });
 
 test('Field Manager assignments cover assets, fuel tanks, and actions', () => {
   assert.match(fieldManager, /field_manager_access_settings/);
   assert.match(fieldManager, /field_manager_fuel_storage_access/);
   assert.match(fieldManager, /assetScope: 'all' \| 'selected'/);
+  assert.match(fieldManager, /\[0-9a-f\]\{8\}-\[0-9a-f\]\{4\}-\[0-9a-f\]\{4\}-\[0-9a-f\]\{4\}-\[0-9a-f\]\{12\}/);
   assert.match(fieldManager, /FieldManagerPermission = 'record_work' \| 'schedule_maintenance' \| 'record_fuel' \| 'refill_fuel'/);
 });
 
 test('Owner Overview clearing is isolated per viewer', () => {
   assert.match(migration, /viewer_key text NOT NULL/);
+  assert.match(ownerApp, /create table if not exists public\.owner_app_overview_dismissals \([\s\S]*viewer_key text not null default 'legacy-owner'/);
+  assert.doesNotMatch(ownerApp, /create table if not exists public\.owner_app_users \([\s\S]*parent_owner_user_id[^;]*viewer_key text not null[^;]*display_name/);
   assert.match(overview, /where parent_owner_user_id = \$1 and viewer_key = \$2/);
   assert.match(overview, /on conflict \(parent_owner_user_id, viewer_key, source_kind, source_id\)/);
   assert.match(attentionRoute, /access\.viewerKey/);
