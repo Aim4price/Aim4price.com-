@@ -145,7 +145,7 @@ export default function FieldManagerOverviewClient() {
         }
 
         if (!response.ok || !payload?.ok || !Array.isArray(payload.items)) {
-          throw new Error(extractError(payload, 'Failed to load your Overview.'));
+          throw new Error(extractError(payload, 'Failed to load your notifications.'));
         }
 
         if (requestId === requestIdRef.current) {
@@ -155,7 +155,7 @@ export default function FieldManagerOverviewClient() {
         if (controller.signal.aborted) return;
 
         if (requestId === requestIdRef.current) {
-          setLoadError(error instanceof Error ? error.message : 'Failed to load your Overview.');
+          setLoadError(error instanceof Error ? error.message : 'Failed to load your notifications.');
         }
       } finally {
         if (!controller.signal.aborted && requestId === requestIdRef.current) {
@@ -291,7 +291,7 @@ export default function FieldManagerOverviewClient() {
             onClick={() => setClearCandidate(item)}
             disabled={hasPendingCardAction}
             aria-busy={isClearing}
-            aria-label={`Clear ${TYPE_LABELS[item.type].toLowerCase()} for ${item.assetTitle} from your Overview`}
+            aria-label={`Clear ${TYPE_LABELS[item.type].toLowerCase()} for ${item.assetTitle} from your notifications`}
           >
             {isClearing ? 'Clearing…' : 'Clear'}
           </button>
@@ -312,12 +312,12 @@ export default function FieldManagerOverviewClient() {
   return (
     <main className={styles.mobilePage}>
       <section className={`${styles.assetsShell} ${styles.overviewShell}`}>
-        <header className={styles.assetsHeader} aria-label="Overview controls">
+        <header className={styles.assetsHeader} aria-label="Notification controls">
           <FieldManagerNavLink href="/field-manager" label="Home" />
         </header>
 
         <div className={styles.overviewIntro}>
-          <h1>Overview</h1>
+          <h1>Notifications</h1>
           <p>Needs attention and upcoming maintenance.</p>
         </div>
 
@@ -331,7 +331,7 @@ export default function FieldManagerOverviewClient() {
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             placeholder="Search assets or maintenance"
-            aria-label="Search overview"
+            aria-label="Search notifications"
           />
         </label>
 
@@ -352,7 +352,7 @@ export default function FieldManagerOverviewClient() {
 
         {isLoading ? (
           <p className={styles.mobileEmpty} role="status">
-            Loading your Overview…
+            Loading your notifications…
           </p>
         ) : null}
 
