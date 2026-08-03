@@ -6,6 +6,7 @@ import {
   type CanonicalAssetOwnerResolution,
 } from "./asset-owner-resolver";
 import { MAX_ASSET_REGISTER_PHOTOS } from "./asset-register-uploads";
+import { resolveAssetUsage } from "./asset-usage";
 import { ensureFuelLedgerTables } from "./fuel-ledger";
 import { ensureAccountProfileColumns } from "./account-profile";
 import {
@@ -538,35 +539,73 @@ function normalizeUsageMetric(value: unknown, kind = ""): "hours" | "km" {
 
 function readSpecUsageMode(
   specs: Record<string, unknown>,
+  kind: string,
 ): ScanAssetUsageMode | null {
-  const raw = String(
-    specs.usageMode ??
-      specs.usage_mode ??
-      specs.usageMetricType ??
-      specs.usage_metric_type ??
-      specs.valuation_mode ??
-      "",
-  )
-    .trim()
-    .toLowerCase();
+  for (const value of [
+    specs.usageBasis,
+    specs.usage_basis,
+    specs.selectedUsageBasis,
+    specs.selected_usage_basis,
+    specs.usageMode,
+    specs.usage_mode,
+    specs.selectedUsageMode,
+    specs.selected_usage_mode,
+    specs.usageMetricType,
+    specs.usage_metric_type,
+    specs.valuationMode,
+    specs.valuation_mode,
+  ]) {
+    const raw = String(value ?? "")
+      .trim()
+      .toLowerCase()
+      .replace(/[\s-]+/g, "_");
 
-  if (
-    raw === "percent" ||
-    raw === "percentage" ||
-    raw === "percentage_depreciation" ||
-    raw === "percent_used" ||
-    raw === "wear_class"
-  )
-    return "percent";
-  if (
-    raw === "km" ||
-    raw === "kms" ||
-    raw === "kilometres" ||
-    raw === "kilometers"
-  )
-    return "km";
-  if (raw === "hours" || raw === "engine_hours" || raw === "hour_meter")
-    return "hours";
+    if (!raw) continue;
+    if (
+      raw === "not_applicable" ||
+      raw === "not_app" ||
+      raw === "n/a" ||
+      raw === "na" ||
+      raw === "none" ||
+      raw === "no_usage"
+    )
+      return "none";
+    if (
+      raw === "percent" ||
+      raw === "percentage" ||
+      raw === "percentage_depreciation" ||
+      raw === "percent_used" ||
+      raw === "wear_class" ||
+      raw.includes("percent")
+    )
+      return "percent";
+    if (
+      raw === "km" ||
+      raw === "kms" ||
+      raw === "kilometre" ||
+      raw === "kilometres" ||
+      raw === "kilometer" ||
+      raw === "kilometers"
+    )
+      return "km";
+    if (
+      raw === "hours" ||
+      raw === "hour" ||
+      raw === "engine_hours" ||
+      raw === "hour_meter"
+    )
+      return "hours";
+    if (raw === "reading") {
+      return normalizeUsageMetric(
+        specs.usageMetric ??
+          specs.usage_metric ??
+          specs.usageUnit ??
+          specs.usage_unit,
+        kind,
+      );
+    }
+  }
+
   return null;
 }
 
@@ -581,8 +620,8 @@ function scanLifeWorkedPercent(
 
 function inferScanUsageMode(row: ScanAccessRow): ScanAssetUsageMode {
   const specs = asRecord(row.specs_json);
-  const specUsageMode = readSpecUsageMode(specs);
   const kind = asText(row.kind).toLowerCase();
+  const specUsageMode = readSpecUsageMode(specs, kind);
   const familyUsageMetricType = asText(
     row.family_usage_metric_type,
   ).toLowerCase();
@@ -596,10 +635,21 @@ function inferScanUsageMode(row: ScanAccessRow): ScanAssetUsageMode {
   );
   const lifeWorkedPercent = scanLifeWorkedPercent(row);
   const hours = asNumber(row.hours);
+  const resolvedUsage = resolveAssetUsage({
+    kind,
+    hours,
+    lifeWorkedPercent,
+    specsJson: specs,
+  });
 
   if (kind === "property") return "none";
+  if (resolvedUsage.metric === "not_applicable") return "none";
+  if (resolvedUsage.metric === "percentage") return "percent";
   if (specUsageMode) return specUsageMode;
   if (kind === "vehicle") return usageMetric === "km" ? "km" : "hours";
+  if (resolvedUsage.value !== null) {
+    return resolvedUsage.metric === "km" ? "km" : "hours";
+  }
   if (
     familyUsageMetricType === "wear_class" ||
     familyUsageMetricType === "percent_used" ||
