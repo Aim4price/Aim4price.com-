@@ -19,6 +19,9 @@ const marketplaceClient = read("app/marketplace/marketplace-client.tsx");
 const marketplaceEntry = read("app/marketplace/page.tsx");
 const ownerAppHome = read("app/owner-app/page.tsx");
 const photoViewer = read("components/LeadPhotoViewerModal.tsx");
+const dealerCss = read("app/dealer/dealer.module.css");
+const dealerDiscoveryPage = read("app/dealer/discovery/page.tsx");
+const ownerDiscoveryPage = read("app/owner-app/discovery/page.tsx");
 
 test("owner participation defaults to off", () => {
   assert.match(
@@ -166,9 +169,19 @@ test("Refresh remains white in every interaction state", () => {
   assert.match(css, /background: #ffffff !important/);
 });
 
-test("app Discovery uses compact controls and red close actions", () => {
+test("owner and dealer Discovery follow the Overview layout", () => {
   assert.match(client, /styles\.compactAppSurface/);
-  assert.match(client, /styles\.compactResultSummary/);
+  assert.match(client, /mobileStyles\.overviewIntro/);
+  assert.match(client, /mobileStyles\.overviewSearch/);
+  assert.match(client, /mobileStyles\.overviewSectionHeading/);
+  assert.match(client, /mobileStyles\.overviewList/);
+  assert.match(client, /mobileStyles\.overviewCard/);
+  assert.match(client, /styles\.discoveryFilterRow/);
+  assert.match(client, />Available assets</);
+  assert.match(dealerDiscoveryPage, /<AssetDiscoveryClient dealerAppMode \/>/);
+  assert.match(ownerDiscoveryPage, /<AssetDiscoveryClient ownerAppMode \/>/);
+  assert.match(css, /\.discoveryOverviewIntro/);
+  assert.match(css, /\.discoverySectionHeading/);
   assert.match(client, /isExpanded \? styles\.discoveryCloseButton/);
   assert.match(client, /styles\.discoveryCloseDetailsButton/);
   assert.match(client, /closeButtonClassName=\{styles\.discoveryPhotoCloseButton\}/);
@@ -178,6 +191,20 @@ test("app Discovery uses compact controls and red close actions", () => {
   assert.match(css, /\.discoveryCloseButton/);
   assert.match(css, /\.discoveryPhotoCloseButton/);
   assert.match(css, /background: linear-gradient\(180deg, #cf4e4e 0%, #a92f2f 100%\)/);
+});
+
+test("dealer Discovery Open actions use the visible Overview treatment", () => {
+  assert.match(client, /styles\.discoveryOverviewOpenButton/);
+  assert.match(css, /\.compactAppSurface \.discoveryOverviewOpenButton/);
+  assert.match(
+    css,
+    /background: linear-gradient\(180deg, #ffffff 0%, #e6f8ef 100%\) !important/,
+  );
+  assert.match(
+    dealerCss,
+    /\.dealerDiscoverySurface \[class\*='discoveryOverviewOpenButton'\]/,
+  );
+  assert.match(dealerCss, /color: #0a543d !important/);
 });
 
 test("desktop navigation exposes Discovery only through the Marketplace entry page", () => {
