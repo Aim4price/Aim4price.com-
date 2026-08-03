@@ -2343,11 +2343,32 @@
     grid-column: 1 / -1;
   }
 
+  .detailPhotoThumbs {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .detailMediaActions,
+  .ownerOptionChoiceList {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .button,
   .primaryButton,
   .secondaryButton,
   .dangerButton {
     min-height: 56px;
     font-size: 1rem;
+  }
+}
+
+.page :is(a, button),
+.module :is(a, button) {
+  touch-action: manipulation;
+}
+
+@media (max-width: 767px) {
+  .page :is(input, select, textarea),
+  .module :is(input, select, textarea) {
+    font-size: 1rem !important;
   }
 }

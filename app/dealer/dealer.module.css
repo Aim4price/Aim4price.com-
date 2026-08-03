@@ -2228,4 +2228,18 @@
   .primary {
     min-height: 58px;
   }
+
+  .module :is([class*='tableWrap'], [class*='tableScroll'], [class*='registerTable']) {
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (max-width: 767px) {
+  .dealerLayout :is(input, select, textarea),
+  .module :is(input, select, textarea) {
+    font-size: 1rem !important;
+  }
 }

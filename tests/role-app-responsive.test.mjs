@@ -46,5 +46,10 @@ test('role apps adapt to tablet and landscape screens', async () => {
 
     assert.match(manifest, /orientation:\s*['"]any['"]/, `${roleApp.name} must not lock portrait orientation`);
     assert.match(styles, roleApp.tabletLayout, `${roleApp.name} must provide a tablet layout`);
+    assert.match(
+      styles,
+      /@media\s*\(max-width:\s*767px\)[\s\S]*?font-size:\s*1rem\s*!important/,
+      `${roleApp.name} must keep phone form controls readable without focus zoom`,
+    );
   }
 });

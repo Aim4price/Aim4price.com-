@@ -1871,4 +1871,21 @@
     min-height: 56px;
     font-size: 0.96rem;
   }
+
+  .maintenanceCard,
+  .maintenanceSuccess {
+    width: min(100%, 760px);
+    box-sizing: border-box;
+    margin-inline: auto;
+  }
+}
+
+.mobilePage :is(a, button) {
+  touch-action: manipulation;
+}
+
+@media (max-width: 767px) {
+  .mobilePage :is(input, select, textarea) {
+    font-size: 1rem !important;
+  }
 }
