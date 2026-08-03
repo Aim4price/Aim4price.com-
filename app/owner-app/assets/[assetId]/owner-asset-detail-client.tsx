@@ -198,6 +198,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
   const [photoIndex, setPhotoIndex] = useState(0);
   const [photoViewerOpen, setPhotoViewerOpen] = useState(false);
   const [disposalDraft, setDisposalDraft] = useState<DisposalDraft>(createDisposalDraft);
+  const [permissions, setPermissions] = useState<string[]>([]);
 
   const photoCount = draft?.photos.length ?? 0;
   const safePhotoIndex = photoCount ? Math.min(photoIndex, photoCount - 1) : 0;
@@ -208,6 +209,13 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
   const upcomingMaintenance = useMemo(() => maintenance.find((record) => record.status === 'upcoming') ?? null, [maintenance]);
 
   useEffect(() => { void loadDetail(); }, [assetId]);
+
+  useEffect(() => {
+    void fetch('/api/owner-app/session', { credentials: 'include', cache: 'no-store' })
+      .then((response) => response.json())
+      .then((payload) => setPermissions(Array.isArray(payload?.session?.permissions) ? payload.session.permissions : []))
+      .catch(() => setPermissions([]));
+  }, []);
 
   useEffect(() => {
     if (view !== 'manage' && section !== 'dealer-tracking') return undefined;
@@ -926,6 +934,9 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
     const availableManageSections = MANAGE_SECTIONS.filter((item) => (
       (item.id !== 'marketplace' || draft.kind !== 'property')
       && (item.id !== 'dealer-tracking' || dealerTrackingAccess.length > 0)
+      && (permissions.includes('manage_assets')
+        || (permissions.includes('operate') && ['reports', 'location', 'media', 'maintenance'].includes(item.id))
+        || (!permissions.includes('operate') && item.id === 'reports'))
     ));
     return (
       <div className={styles.wideContent}>
