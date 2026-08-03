@@ -11,7 +11,6 @@ type FieldManagerRecord = {
   ownerUserId: string;
   displayName: string;
   username: string;
-  savedPassword: string | null;
   isActive: boolean;
   status: 'active' | 'inactive';
   lastLoginAtIso: string | null;
@@ -23,6 +22,25 @@ type FieldManagerApiResponse = {
   ok: boolean;
   managers?: FieldManagerRecord[];
   manager?: FieldManagerRecord;
+  error?: string;
+};
+
+type ManagerAccessSettings = {
+  assetScope: 'all' | 'selected';
+  fuelScope: 'all' | 'selected';
+  canRecordWork: boolean;
+  canScheduleMaintenance: boolean;
+  canRecordFuel: boolean;
+  canRefillFuel: boolean;
+  assetIds: string[];
+  fuelStorageIds: string[];
+};
+
+type ManagerAccessResponse = {
+  ok: boolean;
+  settings?: ManagerAccessSettings;
+  assets?: Array<{ id: string; title: string; kind: string }>;
+  storages?: Array<{ id: string; name: string; locationLabel: string }>;
   error?: string;
 };
 
@@ -44,7 +62,7 @@ const initialDraft: DraftState = {
   password: '',
 };
 
-const FIELD_MANAGER_PASSWORD_MIN_LENGTH = 4;
+const FIELD_MANAGER_PASSWORD_MIN_LENGTH = 6;
 
 function extractError(payload: FieldManagerApiResponse | null, fallback: string): string {
   return payload?.error?.trim() || fallback;
@@ -135,7 +153,7 @@ export default function FieldManagerOwnerClient() {
           next[manager.id] = current[manager.id] ?? {
             displayName: manager.displayName,
             username: manager.username,
-            password: manager.savedPassword ?? '',
+            password: '',
           };
         });
         return next;
@@ -196,7 +214,7 @@ export default function FieldManagerOwnerClient() {
         [payload.manager!.id]: {
           displayName: payload.manager!.displayName,
           username: payload.manager!.username,
-          password: payload.manager!.savedPassword ?? '',
+          password: '',
         },
       }));
       setDraft(initialDraft);
@@ -234,7 +252,7 @@ export default function FieldManagerOwnerClient() {
         [managerId]: {
           displayName: payload.manager!.displayName,
           username: payload.manager!.username,
-          password: payload.manager!.savedPassword ?? '',
+          password: '',
         },
       }));
       setVisibleEditPasswordIds((current) => ({ ...current, [managerId]: false }));
@@ -277,7 +295,7 @@ export default function FieldManagerOwnerClient() {
       username: normalizeUsername(editDraft.username),
     };
 
-    if (editDraft.password.trim() && editDraft.password !== (manager.savedPassword ?? '')) {
+    if (editDraft.password.trim()) {
       if (editDraft.password.length < FIELD_MANAGER_PASSWORD_MIN_LENGTH) {
         setNotice({
           tone: 'error',
@@ -485,7 +503,7 @@ export default function FieldManagerOwnerClient() {
                 const editDraft = editDrafts[manager.id] ?? {
                   displayName: manager.displayName,
                   username: manager.username,
-                  password: manager.savedPassword ?? '',
+                  password: '',
                 };
                 const isExpanded = expandedManagerId === manager.id;
                 const isSavingThisManager = savingManagerId === manager.id;
@@ -563,25 +581,20 @@ export default function FieldManagerOwnerClient() {
                                 type={isEditPasswordVisible ? 'text' : 'password'}
                                 value={editDraft.password}
                                 onChange={(event) => updateEditDraft(manager.id, { password: event.target.value })}
-                                placeholder={manager.savedPassword ? 'Saved password' : 'Enter new password to save here'}
-                                autoComplete="off"
+                                placeholder="Enter a new password to reset it"
+                                autoComplete="new-password"
                               />
                               <button
                                 type="button"
                                 className={styles.passwordToggleButton}
                                 onClick={() => toggleEditPasswordVisibility(manager.id)}
-                                aria-label={isEditPasswordVisible ? 'Hide saved Field Manager password' : 'Show saved Field Manager password'}
+                                aria-label={isEditPasswordVisible ? 'Hide new Field Manager password' : 'Show new Field Manager password'}
                                 aria-pressed={isEditPasswordVisible}
                               >
                                 {isEditPasswordVisible ? 'Hide' : 'Show'}
                               </button>
                             </div>
-                            {!manager.savedPassword ? (
-                              <p className={styles.fieldHint}>
-                                Existing passwords created before this update cannot be shown. Save a new password once to
-                                make it visible here.
-                              </p>
-                            ) : null}
+                            <p className={styles.fieldHint}>Passwords are never displayed. Leave this blank to keep the current password.</p>
                           </div>
 
                           <div className={styles.managerActions}>
@@ -606,6 +619,7 @@ export default function FieldManagerOwnerClient() {
                             </button>
                           </div>
                         </form>
+                        <FieldManagerAccessPanel managerId={manager.id} />
                       </div>
                     ) : null}
                   </article>
@@ -617,4 +631,82 @@ export default function FieldManagerOwnerClient() {
       </section>
     </main>
   );
+}
+
+function FieldManagerAccessPanel({ managerId }: { managerId: string }) {
+  const [settings, setSettings] = useState<ManagerAccessSettings | null>(null);
+  const [assets, setAssets] = useState<NonNullable<ManagerAccessResponse['assets']>>([]);
+  const [storages, setStorages] = useState<NonNullable<ManagerAccessResponse['storages']>>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    void fetch(`/api/field-managers/${encodeURIComponent(managerId)}/access`, { credentials: 'include', cache: 'no-store' })
+      .then(async (response) => ({ response, payload: await response.json().catch(() => null) as ManagerAccessResponse | null }))
+      .then(({ response, payload }) => {
+        if (!active) return;
+        if (!response.ok || !payload?.ok || !payload.settings) throw new Error(payload?.error || 'Failed to load access.');
+        setSettings(payload.settings);
+        setAssets(payload.assets ?? []);
+        setStorages(payload.storages ?? []);
+      })
+      .catch((error) => { if (active) setMessage(error instanceof Error ? error.message : 'Failed to load access.'); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [managerId]);
+
+  function toggleId(key: 'assetIds' | 'fuelStorageIds', id: string) {
+    setSettings((current) => current ? {
+      ...current,
+      [key]: current[key].includes(id) ? current[key].filter((value) => value !== id) : [...current[key], id],
+    } : current);
+  }
+
+  async function saveAccess() {
+    if (!settings) return;
+    setSaving(true);
+    setMessage('');
+    try {
+      const response = await fetch(`/api/field-managers/${encodeURIComponent(managerId)}/access`, {
+        method: 'PUT', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(settings),
+      });
+      const payload = await response.json().catch(() => null) as ManagerAccessResponse | null;
+      if (!response.ok || !payload?.ok || !payload.settings) throw new Error(payload?.error || 'Failed to save access.');
+      setSettings(payload.settings);
+      setMessage('Access saved.');
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Failed to save access.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (loading) return <div className={styles.accessPanel}><p>Loading access…</p></div>;
+  if (!settings) return <div className={styles.accessPanel}><p>{message || 'Access could not be loaded.'}</p></div>;
+
+  return <section className={styles.accessPanel} aria-label="Field Manager permissions">
+    <div className={styles.accessHeader}><h3>What this manager can do</h3><p>Keep all access for a simple setup, or choose only specific assets and fuel tanks.</p></div>
+    <div className={styles.permissionGrid}>
+      {([
+        ['canRecordWork', 'Check, service and repair'],
+        ['canScheduleMaintenance', 'Schedule maintenance'],
+        ['canRecordFuel', 'Fuel assets'],
+        ['canRefillFuel', 'Refill fuel tanks'],
+      ] as const).map(([key, label]) => <label className={styles.permissionChoice} key={key}><input type="checkbox" checked={settings[key]} onChange={(event) => setSettings((current) => current ? { ...current, [key]: event.target.checked } : current)} /><span>{label}</span></label>)}
+    </div>
+    <div className={styles.accessColumns}>
+      <div className={styles.accessColumn}>
+        <label className={styles.compactField}><span>Assets</span><select value={settings.assetScope} onChange={(event) => setSettings((current) => current ? { ...current, assetScope: event.target.value as 'all' | 'selected' } : current)}><option value="all">All assets</option><option value="selected">Selected assets only</option></select></label>
+        {settings.assetScope === 'selected' ? <div className={styles.accessChecklist}>{assets.length ? assets.map((asset) => <label key={asset.id}><input type="checkbox" checked={settings.assetIds.includes(asset.id)} onChange={() => toggleId('assetIds', asset.id)} /><span><strong>{asset.title}</strong><small>{asset.kind}</small></span></label>) : <p>No assets available.</p>}</div> : null}
+      </div>
+      <div className={styles.accessColumn}>
+        <label className={styles.compactField}><span>Fuel tanks</span><select value={settings.fuelScope} onChange={(event) => setSettings((current) => current ? { ...current, fuelScope: event.target.value as 'all' | 'selected' } : current)}><option value="all">All fuel tanks</option><option value="selected">Selected tanks only</option></select></label>
+        {settings.fuelScope === 'selected' ? <div className={styles.accessChecklist}>{storages.length ? storages.map((storage) => <label key={storage.id}><input type="checkbox" checked={settings.fuelStorageIds.includes(storage.id)} onChange={() => toggleId('fuelStorageIds', storage.id)} /><span><strong>{storage.name}</strong><small>{storage.locationLabel || 'No location saved'}</small></span></label>) : <p>No fuel tanks available.</p>}</div> : null}
+      </div>
+    </div>
+    {message ? <p className={styles.accessMessage}>{message}</p> : null}
+    <button type="button" className={styles.primaryButton} onClick={() => void saveAccess()} disabled={saving}>{saving ? 'Saving access…' : 'Save access'}</button>
+  </section>;
 }
