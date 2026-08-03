@@ -7,6 +7,7 @@ const scryptAsync = promisify(scrypt);
 export const OWNER_APP_PASSCODE_LENGTH = 4;
 export const OWNER_APP_MAX_FAILED_ATTEMPTS = 5;
 export const OWNER_APP_LOCK_MINUTES = 15;
+export type OwnerAppAccessRole = 'admin' | 'operations' | 'view_only';
 
 type OwnerAppUserRow = {
   id: string;
@@ -16,6 +17,7 @@ type OwnerAppUserRow = {
   username_normalized: string;
   password_hash: string;
   is_active: boolean;
+  access_role: OwnerAppAccessRole;
   session_version: number;
   failed_login_attempts: number;
   login_locked_until: string | Date | null;
@@ -30,6 +32,7 @@ export type OwnerAppUserRecord = {
   displayName: string;
   username: string;
   isActive: boolean;
+  accessRole: OwnerAppAccessRole;
   sessionVersion: number;
   lastLoginAtIso: string | null;
   createdAtIso: string;
@@ -55,6 +58,7 @@ function mapOwnerAppUser(row: OwnerAppUserRow): OwnerAppUserRecord {
     displayName: row.display_name,
     username: row.username,
     isActive: Boolean(row.is_active),
+    accessRole: normalizeOwnerAppAccessRole(row.access_role),
     sessionVersion: Number(row.session_version || 1),
     lastLoginAtIso: toIso(row.last_login_at),
     createdAtIso: toIso(row.created_at) ?? new Date().toISOString(),
@@ -69,11 +73,13 @@ async function ensureOwnerAppTablesOnce(): Promise<void> {
     create table if not exists public.owner_app_users (
       id uuid primary key default gen_random_uuid(),
       parent_owner_user_id text not null references public."user"(id) on delete cascade,
+      viewer_key text not null,
       display_name text not null,
       username text not null,
       username_normalized text not null,
       password_hash text not null,
       is_active boolean not null default true,
+      access_role text not null default 'operations',
       session_version integer not null default 1 check (session_version > 0),
       failed_login_attempts integer not null default 0 check (failed_login_attempts >= 0),
       login_locked_until timestamptz,
@@ -84,6 +90,7 @@ async function ensureOwnerAppTablesOnce(): Promise<void> {
   `);
   await db.query('alter table public.owner_app_users add column if not exists failed_login_attempts integer not null default 0');
   await db.query('alter table public.owner_app_users add column if not exists login_locked_until timestamptz');
+  await db.query(`alter table public.owner_app_users add column if not exists access_role text not null default 'operations'`);
   await db.query('create unique index if not exists idx_owner_app_users_username_normalized on public.owner_app_users(username_normalized)');
   await db.query('create index if not exists idx_owner_app_users_parent on public.owner_app_users(parent_owner_user_id, created_at desc)');
   await db.query('create index if not exists idx_owner_app_users_active on public.owner_app_users(parent_owner_user_id, is_active)');
@@ -95,9 +102,12 @@ async function ensureOwnerAppTablesOnce(): Promise<void> {
       overview_item_id text not null,
       asset_register_item_id uuid not null references public.asset_register_items(id) on delete cascade,
       dismissed_at timestamptz not null default now(),
-      primary key (parent_owner_user_id, source_kind, source_id)
+      primary key (parent_owner_user_id, viewer_key, source_kind, source_id)
     )
   `);
+  await db.query(`alter table public.owner_app_overview_dismissals add column if not exists viewer_key text not null default 'legacy-owner'`);
+  await db.query('alter table public.owner_app_overview_dismissals drop constraint if exists owner_app_overview_dismissals_pkey');
+  await db.query('create unique index if not exists idx_owner_app_overview_viewer_source on public.owner_app_overview_dismissals(parent_owner_user_id, viewer_key, source_kind, source_id)');
   await db.query('create index if not exists idx_owner_app_overview_dismissals_asset on public.owner_app_overview_dismissals(asset_register_item_id)');
 }
 
@@ -117,6 +127,13 @@ export function normalizeOwnerAppUsername(value: unknown): string {
     .replace(/\s+/g, '')
     .replace(/[^a-z0-9._@-]/g, '')
     .slice(0, 80);
+}
+
+export function normalizeOwnerAppAccessRole(value: unknown): OwnerAppAccessRole {
+  const normalized = cleanText(value).toLowerCase().replace(/[\s-]+/g, '_');
+  if (normalized === 'admin' || normalized === 'owner_admin') return 'admin';
+  if (normalized === 'view_only' || normalized === 'viewer') return 'view_only';
+  return 'operations';
 }
 
 async function hashOwnerAppPassword(password: string): Promise<string> {
@@ -158,15 +175,16 @@ export async function createOwnerAppUser(
   const displayName = cleanText(input.displayName).replace(/\s+/g, ' ').slice(0, 120);
   const username = normalizeOwnerAppUsername(input.username);
   const password = validatePasscode(input.password);
+  const accessRole = normalizeOwnerAppAccessRole(input.accessRole);
   if (!displayName) throw new Error('Enter the user display name.');
   if (username.length < 3) throw new Error('Username must be at least 3 characters.');
 
   try {
     const result = await getDb().query<OwnerAppUserRow>(
       `insert into public.owner_app_users (
-        parent_owner_user_id, display_name, username, username_normalized, password_hash, is_active
-      ) values ($1, $2, $3, $3, $4, true) returning *`,
-      [parentOwnerUserId, displayName, username, await hashOwnerAppPassword(password)],
+        parent_owner_user_id, display_name, username, username_normalized, password_hash, is_active, access_role
+      ) values ($1, $2, $3, $3, $4, true, $5) returning *`,
+      [parentOwnerUserId, displayName, username, await hashOwnerAppPassword(password), accessRole],
     );
     return mapOwnerAppUser(result.rows[0]);
   } catch (error: any) {
@@ -196,12 +214,13 @@ export async function updateOwnerAppUser(
     : row.username_normalized;
   const passwordChanged = Object.hasOwn(input, 'password') && cleanText(input.password).length > 0;
   const isActive = Object.hasOwn(input, 'isActive') ? Boolean(input.isActive) : row.is_active;
+  const accessRole = Object.hasOwn(input, 'accessRole') ? normalizeOwnerAppAccessRole(input.accessRole) : normalizeOwnerAppAccessRole(row.access_role);
   if (!displayName) throw new Error('Enter the user display name.');
   if (username.length < 3) throw new Error('Username must be at least 3 characters.');
   const passwordHash = passwordChanged
     ? await hashOwnerAppPassword(validatePasscode(input.password))
     : row.password_hash;
-  const mustRevoke = passwordChanged || isActive !== row.is_active;
+  const mustRevoke = passwordChanged || isActive !== row.is_active || accessRole !== normalizeOwnerAppAccessRole(row.access_role);
 
   try {
     const result = await getDb().query<OwnerAppUserRow>(
@@ -211,11 +230,12 @@ export async function updateOwnerAppUser(
         username_normalized = $4,
         password_hash = $5,
         is_active = $6,
-        session_version = session_version + $7,
+        access_role = $7,
+        session_version = session_version + $8,
         updated_at = now()
       where id = $1::uuid and parent_owner_user_id = $2
       returning *`,
-      [id, parentOwnerUserId, displayName, username, passwordHash, isActive, mustRevoke ? 1 : 0],
+      [id, parentOwnerUserId, displayName, username, passwordHash, isActive, accessRole, mustRevoke ? 1 : 0],
     );
     return mapOwnerAppUser(result.rows[0]);
   } catch (error: any) {
