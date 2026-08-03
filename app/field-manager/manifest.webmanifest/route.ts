@@ -13,7 +13,7 @@ export async function GET() {
       start_url: '/field-manager/login?source=field-manager-app',
       scope: '/field-manager',
       display: 'standalone',
-      orientation: 'portrait',
+      orientation: 'any',
       background_color: '#ffffff',
       theme_color: '#ffffff',
       launch_handler: {

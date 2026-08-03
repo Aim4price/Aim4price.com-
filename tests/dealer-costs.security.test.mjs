@@ -111,7 +111,10 @@ test('both dealer workspaces show the Manage action and open the correct cost pa
 });
 
 test('dealer cost page reuses manual and automatic owner cost entry without owner-only reports', () => {
-  assert.match(costClient, /dealerMode \? '\/api\/dealer\/cost' : '\/api\/my-invoices'/);
+  assert.match(
+    costClient,
+    /const apiRoot = dealerMode\s*\?\s*'\/api\/dealer\/cost'\s*:\s*'\/api\/my-invoices'/,
+  );
   assert.match(costClient, /Enter cost manually/);
   assert.match(costClient, /Upload invoice\/photo/);
   assert.match(costClient, /dealerMode && dealerDefaults\.supplierName/);

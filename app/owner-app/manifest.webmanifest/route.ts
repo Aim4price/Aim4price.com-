@@ -12,7 +12,7 @@ export function GET() {
     start_url: '/owner-app/login?source=owner-app',
     scope: '/owner-app',
     display: 'standalone',
-    orientation: 'portrait-primary',
+    orientation: 'any',
     background_color: '#000000',
     theme_color: '#000000',
     categories: ['business', 'productivity'],

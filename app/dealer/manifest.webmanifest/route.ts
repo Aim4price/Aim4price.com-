@@ -13,7 +13,7 @@ export function GET() {
       start_url: '/dealer/login?source=dealer-app',
       scope: '/dealer',
       display: 'standalone',
-      orientation: 'portrait-primary',
+      orientation: 'any',
       background_color: '#ffffff',
       theme_color: '#ffffff',
       categories: ['business', 'productivity'],

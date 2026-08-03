@@ -10,27 +10,31 @@ const homeVideoPath = new URL('../app/home-hero-video.tsx', import.meta.url);
 const protectedAppLayoutPaths = [
   new URL('../app/dealer/layout.tsx', import.meta.url),
   new URL('../app/field-manager/layout.tsx', import.meta.url),
-  new URL('../app/fuel-scan/layout.tsx', import.meta.url),
   new URL('../app/owner-app/layout.tsx', import.meta.url),
-  new URL('../app/scan/layout.tsx', import.meta.url),
 ];
 
-test('the main site uses a zoomable fixed desktop viewport', async () => {
-  const source = await readFile(rootLayoutPath, 'utf8');
+test('the desktop viewport is isolated from the shared app root', async () => {
+  const [rootSource, homeSource] = await Promise.all([
+    readFile(rootLayoutPath, 'utf8'),
+    readFile(homePagePath, 'utf8'),
+  ]);
 
-  assert.match(source, /export const viewport: Viewport\s*=\s*\{/);
-  assert.match(source, /width:\s*1280/);
-  assert.match(source, /initialScale:\s*1/);
-  assert.match(source, /userScalable:\s*true/);
-  assert.doesNotMatch(source, /maximumScale|minimumScale/);
+  assert.doesNotMatch(rootSource, /width:\s*1280/);
+  assert.match(homeSource, /export const viewport: Viewport\s*=\s*\{/);
+  assert.match(homeSource, /width:\s*1280/);
+  assert.match(homeSource, /initialScale:\s*1/);
+  assert.match(homeSource, /userScalable:\s*true/);
+  assert.doesNotMatch(homeSource, /maximumScale|minimumScale/);
 });
 
-test('dedicated role and scan apps keep their device-width viewports', async () => {
+test('the three role apps keep zoomable device-width viewports', async () => {
   for (const layoutPath of protectedAppLayoutPaths) {
     const source = await readFile(layoutPath, 'utf8');
 
     assert.match(source, /width:\s*['"]device-width['"]/);
     assert.match(source, /initialScale:\s*1/);
+    assert.match(source, /userScalable:\s*true/);
+    assert.doesNotMatch(source, /maximumScale|minimumScale/);
   }
 });
 
