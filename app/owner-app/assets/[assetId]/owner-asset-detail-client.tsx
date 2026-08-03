@@ -38,6 +38,10 @@ type Maintenance = {
   id: string; maintenanceType: 'service' | 'checkup'; status: string; computedStatusLabel: string; title: string;
   notes: string; triggerType: string; dueDate: string | null; dueUsage: number | null; usageMetric: string | null;
 };
+type ActivityItem = {
+  id: string; kind: 'work' | 'fuel' | 'maintenance' | 'lifecycle'; title: string; detail: string;
+  actorName: string; occurredAtIso: string;
+};
 type DetailResponse = {
   ok: boolean; item?: Asset; register?: Register | null; registers?: Register[]; maintenance?: Maintenance[];
   ownerContext?: OwnerContext;
@@ -48,7 +52,7 @@ type DisposalReason = 'sold' | 'traded_in' | 'scrapped' | 'written_off' | 'mista
 type DisposalDraft = { reason: DisposalReason | ''; disposalDate: string; disposalAmountExVat: string; note: string };
 
 export type OwnerAssetView = 'summary' | 'details' | 'options' | 'manage' | 'section';
-export type OwnerAssetManageSection = 'details' | 'reports' | 'pricing' | 'finance' | 'insurance' | 'licence' | 'location' | 'media' | 'marketplace' | 'maintenance' | 'dealer-tracking' | 'delete';
+export type OwnerAssetManageSection = 'details' | 'activity' | 'reports' | 'pricing' | 'finance' | 'insurance' | 'licence' | 'location' | 'media' | 'marketplace' | 'maintenance' | 'dealer-tracking' | 'delete';
 export type OwnerAssetPricingMode = 'landing' | 'recalculate' | 'future';
 type OwnerAssetManageGroup = 'asset' | 'records' | 'selling' | 'removal';
 
@@ -76,6 +80,7 @@ const MANAGE_SECTIONS: Array<{ id: OwnerAssetManageSection; group: OwnerAssetMan
   { id: 'location', group: 'asset', title: 'Location' },
   { id: 'media', group: 'asset', title: 'Photos & documents' },
   { id: 'reports', group: 'records', title: 'Reports' },
+  { id: 'activity', group: 'records', title: 'Activity' },
   { id: 'maintenance', group: 'records', title: 'Schedule maintenance' },
   { id: 'dealer-tracking', group: 'records', title: 'Dealer tracking' },
   { id: 'finance', group: 'records', title: 'Finance' },
@@ -935,8 +940,8 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
       (item.id !== 'marketplace' || draft.kind !== 'property')
       && (item.id !== 'dealer-tracking' || dealerTrackingAccess.length > 0)
       && (permissions.includes('manage_assets')
-        || (permissions.includes('operate') && ['reports', 'location', 'media', 'maintenance'].includes(item.id))
-        || (!permissions.includes('operate') && item.id === 'reports'))
+        || (permissions.includes('operate') && ['activity', 'reports', 'location', 'media', 'maintenance'].includes(item.id))
+        || (!permissions.includes('operate') && ['activity', 'reports'].includes(item.id)))
     ));
     return (
       <div className={styles.wideContent}>
@@ -1016,6 +1021,8 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
 
       {section === 'reports' ? <ReportsSection draft={draft} openValuationReport={openValuationReport} /> : null}
 
+      {section === 'activity' ? <ActivitySection assetId={assetId} /> : null}
+
       {section === 'pricing' ? <PricingSection assetId={assetId} mode={pricingMode} draft={draft} reload={() => loadDetail(true)} setNotice={setNotice} /> : null}
 
       {section === 'finance' ? <section className={`${styles.section} ${styles.editorSection}`}>
@@ -1059,7 +1066,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
       </section> : null}
 
       {section === 'marketplace' ? <MarketplaceSection draft={draft} ownerContext={ownerContext} action={action} busy={Boolean(actionBusy)} /> : null}
-      {section === 'maintenance' ? <MaintenanceSection records={maintenance} action={action} busy={Boolean(actionBusy)} /> : null}
+      {section === 'maintenance' ? <MaintenanceSection assetId={assetId} records={maintenance} action={action} busy={Boolean(actionBusy)} /> : null}
       {section === 'dealer-tracking' ? <section className={`${styles.section} ${styles.editorSection}`}>
         {editorHeader('Dealer tracking', 'Control what each dealer can see or update for this asset.')}
         {dealerTrackingLoading ? <p className={styles.ownerOptionsEmpty}>Loading dealer tracking settings…</p> : dealerTrackingError ? (
@@ -1087,6 +1094,47 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
         <div className={styles.actions}><button type="button" className={styles.dangerButton} onClick={() => void deleteAsset()} disabled={Boolean(actionBusy) || !disposalDraft.reason}>{actionBusy === 'delete' ? 'Saving…' : disposalDraft.reason === 'mistake_duplicate' ? 'Delete duplicate' : 'Save disposal'}</button></div>
       </section> : null}
     </div>
+  );
+}
+
+function ActivitySection({ assetId }: { assetId: string }) {
+  const [items, setItems] = useState<ActivityItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setLoading(true);
+    setError('');
+    void fetch(`/api/owner-app/assets/${encodeURIComponent(assetId)}/activity`, {
+      credentials: 'include', cache: 'no-store', signal: controller.signal,
+    }).then(async (response) => {
+      const payload = await response.json().catch(() => null) as { ok?: boolean; items?: ActivityItem[]; error?: string } | null;
+      if (!response.ok || !payload?.ok || !Array.isArray(payload.items)) {
+        throw new Error(payload?.error || 'Asset activity could not be loaded.');
+      }
+      setItems(payload.items);
+    }).catch((cause) => {
+      if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : 'Asset activity could not be loaded.');
+    }).finally(() => {
+      if (!controller.signal.aborted) setLoading(false);
+    });
+    return () => controller.abort();
+  }, [assetId]);
+
+  return (
+    <section className={styles.section}>
+      <p className={styles.editorIntro}>A simple history of work, fuel and important asset changes.</p>
+      {loading ? <p className={styles.maintenanceEmpty}>Loading activity…</p> : null}
+      {error ? <div className={styles.errorNotice}>{error}</div> : null}
+      {!loading && !error ? <div className={styles.recordList}>
+        {items.length ? items.map((item) => <article className={styles.record} key={item.id}>
+          <div className={styles.recordHeader}><h3>{item.title}</h3><span className={styles.recordStatus}>{dateTime(item.occurredAtIso)}</span></div>
+          {item.detail ? <p>{item.detail}</p> : null}
+          {item.actorName ? <p>By {item.actorName}</p> : null}
+        </article>) : <p className={styles.maintenanceEmpty}>No activity recorded yet.</p>}
+      </div> : null}
+    </section>
   );
 }
 
@@ -1564,7 +1612,7 @@ function MarketplaceSection({ draft, ownerContext, action, busy }: { draft: Asse
   );
 }
 
-function MaintenanceSection({ records, action, busy }: { records: Maintenance[]; action: (body: Record<string, unknown>, message: string) => Promise<void>; busy: boolean }) {
+function MaintenanceSection({ assetId, records, action, busy }: { assetId: string; records: Maintenance[]; action: (body: Record<string, unknown>, message: string) => Promise<void>; busy: boolean }) {
   async function create(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = event.currentTarget;
@@ -1584,7 +1632,7 @@ function MaintenanceSection({ records, action, busy }: { records: Maintenance[];
       </form>
       <div className={styles.maintenanceRecordsBlock}>
         <h2>Maintenance records</h2>
-        <div className={styles.recordList}>{records.length ? records.map((record) => <article className={styles.record} key={record.id}><div className={styles.recordHeader}><h3>{record.title}</h3><span className={styles.recordStatus}>{record.computedStatusLabel}</span></div><p>{[record.maintenanceType, record.dueDate || (record.dueUsage !== null ? `${record.dueUsage} ${record.usageMetric || ''}` : ''), record.notes].filter(Boolean).join(' · ')}</p><div className={styles.actions}>{record.status === 'upcoming' ? <><button type="button" className={styles.smallButton} disabled={busy} onClick={() => void action({ action: 'maintenance-complete', maintenanceId: record.id }, 'Maintenance marked complete.')}>Complete</button><button type="button" className={styles.smallButton} disabled={busy} onClick={() => void action({ action: 'maintenance-cancel', maintenanceId: record.id }, 'Maintenance cancelled.')}>Cancel</button></> : record.status === 'done' ? <button type="button" className={styles.smallButton} disabled={busy} onClick={() => void action({ action: 'maintenance-reopen', maintenanceId: record.id }, 'Maintenance reopened.')}>Reopen</button> : null}</div></article>) : <p className={styles.maintenanceEmpty}>No maintenance records yet.</p>}</div>
+        <div className={styles.recordList}>{records.length ? records.map((record) => <article className={styles.record} key={record.id}><div className={styles.recordHeader}><h3>{record.title}</h3><span className={styles.recordStatus}>{record.computedStatusLabel}</span></div><p>{[record.maintenanceType, record.dueDate || (record.dueUsage !== null ? `${record.dueUsage} ${record.usageMetric || ''}` : ''), record.notes].filter(Boolean).join(' · ')}</p><div className={styles.actions}>{record.status === 'upcoming' ? <><Link className={styles.smallButton} href={`/owner-app/operations/maintenance/${encodeURIComponent(assetId)}?maintenanceId=${encodeURIComponent(record.id)}&maintenanceType=${record.maintenanceType}&returnTo=${encodeURIComponent(`/owner-app/assets/${assetId}/maintenance`)}`} prefetch={false}>Record work</Link><button type="button" className={styles.smallButton} disabled={busy} onClick={() => void action({ action: 'maintenance-cancel', maintenanceId: record.id }, 'Maintenance cancelled.')}>Cancel</button></> : record.status === 'done' ? <button type="button" className={styles.smallButton} disabled={busy} onClick={() => void action({ action: 'maintenance-reopen', maintenanceId: record.id }, 'Maintenance reopened.')}>Reopen</button> : null}</div></article>) : <p className={styles.maintenanceEmpty}>No maintenance records yet.</p>}</div>
       </div>
     </section>
   );
