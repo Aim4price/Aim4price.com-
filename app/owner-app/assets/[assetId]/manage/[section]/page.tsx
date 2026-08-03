@@ -9,6 +9,7 @@ export const dynamic = 'force-dynamic';
 
 const MANAGE_SECTIONS = new Set<OwnerAssetManageSection>([
   'details',
+  'activity',
   'reports',
   'pricing',
   'finance',
