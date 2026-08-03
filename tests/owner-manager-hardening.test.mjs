@@ -12,6 +12,9 @@ const [
   ownerAccess,
   overview,
   attentionRoute,
+  assetActivity,
+  activityRoute,
+  ownerAssetUi,
   migration,
 ] = await Promise.all([
   read('lib/field-manager.ts'),
@@ -22,6 +25,9 @@ const [
   read('lib/owner-app-access.ts'),
   read('lib/owner-app-overview.ts'),
   read('app/api/owner-app/attention/route.ts'),
+  read('lib/asset-activity.ts'),
+  read('app/api/owner-app/assets/[assetId]/activity/route.ts'),
+  read('app/owner-app/assets/[assetId]/owner-asset-detail-client.tsx'),
   read('database/migrations/66-owner-manager-hardening.sql'),
 ]);
 
@@ -59,4 +65,18 @@ test('Owner Overview clearing is isolated per viewer', () => {
   assert.match(overview, /where parent_owner_user_id = \$1 and viewer_key = \$2/);
   assert.match(overview, /on conflict \(parent_owner_user_id, viewer_key, source_kind, source_id\)/);
   assert.match(attentionRoute, /access\.viewerKey/);
+});
+
+test('Owner asset activity combines work, fuel, maintenance, and lifecycle history', () => {
+  assert.match(assetActivity, /listScanActivity/);
+  assert.match(assetActivity, /listFuelActivity/);
+  assert.match(assetActivity, /listMaintenanceActivity/);
+  assert.match(assetActivity, /listLifecycleActivity/);
+  assert.match(activityRoute, /getAssetRegisterItemById\(access\.ownerUserId, params\.assetId\)/);
+  assert.match(ownerAssetUi, /title: 'Activity'/);
+});
+
+test('Owner maintenance completion always routes through recorded physical work', () => {
+  assert.doesNotMatch(ownerAssetUi, /action: 'maintenance-complete'/);
+  assert.match(ownerAssetUi, />Record work<\/Link>/);
 });
