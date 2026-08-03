@@ -2763,39 +2763,39 @@ export default function LeadsClient({
           {useDealerWorkspaceStyles ? (
             <section className={`${assetStyles.summaryRow} ${assetStyles.heroSummaryRow} ${styles.leadSummaryRow}`} aria-label="Lead summary">
               <button type="button" className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${styles.leadOwnerSummaryCard} ${styles.leadOwnerSummaryCardNew} ${styles.leadSummaryFilterButton} ${statusFilter === 'new' ? styles.leadSummaryFilterButtonActive : ''}`} onClick={() => chooseLeadStatusFilter('new')} aria-pressed={statusFilter === 'new'}>
-                <div className={assetStyles.heroSummaryHead}>
+                <span className={assetStyles.heroSummaryHead}>
                   <span className={`${assetStyles.heroSummaryTitle} ${styles.leadOwnerSummaryText}`}>New</span>
-                </div>
-                <div className={assetStyles.heroSummaryValueRow}>
+                </span>
+                <span className={assetStyles.heroSummaryValueRow}>
                   <strong className={`${assetStyles.heroSummaryValue} ${styles.leadOwnerSummaryText}`}>{newLeadCount}</strong>
-                </div>
-                <div className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${styles.leadOwnerSummaryFooter}`}>
+                </span>
+                <span className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${styles.leadOwnerSummaryFooter}`}>
                   <small className={styles.leadOwnerSummaryText}>Tap to show requests not yet opened.</small>
-                </div>
+                </span>
               </button>
 
               <button type="button" className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${styles.leadOwnerSummaryCard} ${styles.leadOwnerSummaryCardOpen} ${styles.leadSummaryFilterButton} ${statusFilter === 'open' ? styles.leadSummaryFilterButtonActive : ''}`} onClick={() => chooseLeadStatusFilter('open')} aria-pressed={statusFilter === 'open'}>
-                <div className={assetStyles.heroSummaryHead}>
+                <span className={assetStyles.heroSummaryHead}>
                   <span className={`${assetStyles.heroSummaryTitle} ${styles.leadOwnerSummaryText}`}>Open</span>
-                </div>
-                <div className={assetStyles.heroSummaryValueRow}>
+                </span>
+                <span className={assetStyles.heroSummaryValueRow}>
                   <strong className={`${assetStyles.heroSummaryValue} ${styles.leadOwnerSummaryText}`}>{activeLeadCount}</strong>
-                </div>
-                <div className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${styles.leadOwnerSummaryFooter}`}>
+                </span>
+                <span className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${styles.leadOwnerSummaryFooter}`}>
                   <small className={styles.leadOwnerSummaryText}>Tap to show requests being actioned.</small>
-                </div>
+                </span>
               </button>
 
               <button type="button" className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${styles.leadOwnerSummaryCard} ${styles.leadOwnerSummaryCardDone} ${styles.leadSummaryFilterButton} ${statusFilter === 'completed' ? styles.leadSummaryFilterButtonActive : ''}`} onClick={() => chooseLeadStatusFilter('completed')} aria-pressed={statusFilter === 'completed'}>
-                <div className={assetStyles.heroSummaryHead}>
+                <span className={assetStyles.heroSummaryHead}>
                   <span className={`${assetStyles.heroSummaryTitle} ${styles.leadOwnerSummaryText}`}>Completed</span>
-                </div>
-                <div className={assetStyles.heroSummaryValueRow}>
+                </span>
+                <span className={assetStyles.heroSummaryValueRow}>
                   <strong className={`${assetStyles.heroSummaryValue} ${styles.leadOwnerSummaryText}`}>{completedLeadCount}</strong>
-                </div>
-                <div className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${styles.leadOwnerSummaryFooter}`}>
+                </span>
+                <span className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${styles.leadOwnerSummaryFooter}`}>
                   <small className={styles.leadOwnerSummaryText}>Tap to show completed requests.</small>
-                </div>
+                </span>
               </button>
             </section>
           ) : !useDealerWorkspaceStyles ? (
