@@ -476,6 +476,8 @@ async function ensureFieldManagerTablesOnce(): Promise<void> {
       add column if not exists updated_at timestamptz not null default now()
   `);
 
+  await db.query(`alter table public.field_managers drop column if exists password_display`);
+
   await db.query(`
     update public.field_managers
     set username_normalized = lower(regexp_replace(coalesce(username, ''), '\\s+', '', 'g'))
@@ -809,7 +811,9 @@ function accessScope(value: unknown): 'all' | 'selected' {
 
 function uuidList(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
-  return Array.from(new Set(value.map(asText).filter((id) => /^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(id))));
+  return Array.from(new Set(value.map(asText).filter((id) => (
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+  ))));
 }
 
 export async function getFieldManagerAccessSettings(
