@@ -7,7 +7,6 @@ import {
 } from '../../../../../../lib/asset-register-db';
 import {
   cancelAssetMaintenanceRecord,
-  completeAssetMaintenanceRecord,
   createAssetMaintenanceRecord,
   getAssetMaintenanceRecordById,
   reopenAssetMaintenanceRecord,
@@ -85,12 +84,10 @@ export async function POST(request: NextRequest, { params }: { params: { assetId
       const maintenanceId = await maintenanceIdForAsset(access.ownerUserId, params.assetId, body.maintenanceId);
       await updateAssetMaintenanceRecord(access.ownerUserId, maintenanceId, { ...body, assetId: params.assetId });
     } else if (action === 'maintenance-complete') {
-      const maintenanceId = await maintenanceIdForAsset(access.ownerUserId, params.assetId, body.maintenanceId);
-      await completeAssetMaintenanceRecord(access.ownerUserId, maintenanceId, {
-        completedUsage: body.completedUsage,
-        completedNotes: body.completedNotes,
-        completedBy: access.displayName,
-      }, { assetId: params.assetId });
+      return NextResponse.json({
+        ok: false,
+        error: 'Record the completed work, usage and notes before marking maintenance done.',
+      }, { status: 400 });
     } else if (action === 'maintenance-cancel') {
       const maintenanceId = await maintenanceIdForAsset(access.ownerUserId, params.assetId, body.maintenanceId);
       await cancelAssetMaintenanceRecord(access.ownerUserId, maintenanceId);
