@@ -36,6 +36,7 @@ import type {
   DealerMaintenancePermissions,
 } from '../../lib/dealer-maintenance-tracker';
 import styles from './page.module.css';
+import updateStyles from './asset-update-refinements.module.css';
 
 type NoticeTone = 'success' | 'warning' | 'error';
 type PartnerType = 'dealer' | 'finance' | 'insurance';
@@ -1161,6 +1162,17 @@ const CONDITION_OPTIONS: Array<{ value: AssetConditionValue; label: string }> = 
   { value: 'fair', label: 'Fair' },
   { value: 'used', label: 'Used' },
   { value: 'serious', label: 'Requires attention' },
+];
+
+const EQUIPMENT_USAGE_OPTIONS: Array<{ value: AssetDraftUsageMetric; label: string; description: string }> = [
+  { value: 'hours', label: 'Hours', description: 'Use the machine hour meter.' },
+  { value: 'percentage', label: '% worked', description: 'Use the estimated lifetime already worked.' },
+  { value: 'not_applicable', label: 'Not applicable', description: 'This asset does not have a useful usage reading.' },
+];
+
+const VEHICLE_USAGE_OPTIONS: Array<{ value: AssetDraftUsageMetric; label: string; description: string }> = [
+  { value: 'km', label: 'Kilometres', description: 'Use the current odometer reading.' },
+  { value: 'not_applicable', label: 'Not applicable', description: 'This vehicle does not have a useful usage reading.' },
 ];
 
 const ASSET_FILTER_OPTIONS: AssetFilterOption[] = [
@@ -7817,6 +7829,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     : assetFormKind === 'vehicle'
       ? 'Vehicle usage will show as kilometres across the register and marketplace.'
       : 'This can be updated later whenever the machine hours change.';
+  const usageTypeOptions = assetFormKind === 'vehicle' ? VEHICLE_USAGE_OPTIONS : EQUIPMENT_USAGE_OPTIONS;
 
   const activeAssetFilterLabel = useMemo(() => {
     return ASSET_FILTER_OPTIONS.find((option) => option.value === assetFilter)?.label ?? 'All Assets';
@@ -14914,7 +14927,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                       </button>
                     </div>
 
-                    <div className={styles.assetFormDetailsStack}>
+                    <div className={`${styles.assetFormDetailsStack} ${updateStyles.detailsStack}`}>
                       <div className={styles.assetTitleRow}>
                         <label className={`${styles.field} ${styles.manualTitleField}`}>
                           <span>Asset title</span>
@@ -15121,7 +15134,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                       ) : null}
 
                       {assetFormKind !== 'property' && assetFormKind !== 'stock' ? (
-                        <div className={styles.assetTripleGrid}>
+                        <div className={`${styles.assetTripleGrid} ${updateStyles.compactGrid}`}>
                           <label className={styles.field}>
                             <span>Serial / reference</span>
                             <input
@@ -15167,7 +15180,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                       ) : null}
 
                       {assetFormKind === 'property' ? (
-                        <div className={styles.assetTripleGrid}>
+                        <div className={`${styles.assetTripleGrid} ${updateStyles.compactGrid}`}>
                           {!isLandPropertyDraft ? (
                             <label className={styles.field}>
                               <span>{yearFieldLabel}</span>
@@ -15219,7 +15232,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                           ) : null}
                         </div>
                       ) : assetFormKind !== 'stock' ? (
-                        <div className={styles.assetTripleGrid}>
+                        <div className={`${styles.assetTripleGrid} ${updateStyles.compactGrid}`}>
                           <label className={styles.field}>
                             <span>{yearFieldLabel}</span>
                             <input
@@ -15238,60 +15251,57 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                             />
                           </label>
 
-                          <label className={styles.field}>
-                            <span className={styles.assetUsageFieldHeading}>
+                          <div className={`${styles.field} ${updateStyles.usageEditor}`}>
+                            <ModalSelect<AssetDraftUsageMetric>
+                              label="Usage type"
+                              value={assetDraft.usageMetric}
+                              options={usageTypeOptions}
+                              onChange={(usageMetric) =>
+                                setAssetDraft((current) => ({
+                                  ...current,
+                                  usageMetric,
+                                  hours: usageMetric === 'hours' || usageMetric === 'km' ? current.hours : '',
+                                  lifeWorkedPercent: usageMetric === 'percentage' ? current.lifeWorkedPercent : '',
+                                }))
+                              }
+                              className={updateStyles.usageTypeField}
+                              usePortal
+                            />
+                            <label className={updateStyles.usageReading}>
                               <span>{usageFieldLabel}</span>
-                              <select
-                                className={styles.assetUsageTypeSelect}
-                                aria-label="Usage type"
-                                value={assetDraft.usageMetric}
-                                onChange={(event) => {
-                                  const usageMetric = event.target.value as AssetDraftUsageMetric;
-                                  setAssetDraft((current) => ({
-                                    ...current,
-                                    usageMetric,
-                                    hours: usageMetric === 'hours' || usageMetric === 'km' ? current.hours : '',
-                                    lifeWorkedPercent: usageMetric === 'percentage' ? current.lifeWorkedPercent : '',
-                                  }));
-                                }}
-                              >
-                                {assetFormKind === 'vehicle' ? <option value="km">Kilometres</option> : <option value="hours">Hours</option>}
-                                {assetFormKind === 'vehicle' ? null : <option value="percentage">% worked</option>}
-                                <option value="not_applicable">Not applicable</option>
-                              </select>
-                            </span>
-                            {showPercentUsageField ? (
-                              <input
-                                type="number"
-                                min="0"
-                                max="100"
-                                step="0.1"
-                                value={assetDraft.lifeWorkedPercent}
-                                onChange={(event) =>
-                                  setAssetDraft((current) => ({
-                                    ...current,
-                                    lifeWorkedPercent: event.target.value,
-                                  }))
-                                }
-                                placeholder={usageFieldPlaceholder}
-                              />
-                            ) : assetFormUsageNotApplicable ? (
-                              <input value="Not applicable" disabled readOnly />
-                            ) : (
-                              <input
-                                type="text"
-                                inputMode="numeric"
-                                value={formatUsageAmountInput(assetDraft.hours)}
-                                onChange={(event) =>
-                                  setAssetDraft((current) => ({
-                                    ...current,
-                                    hours: formatUsageAmountInput(event.target.value),
-                                  }))
-                                }
-                                placeholder={usageFieldPlaceholder}
-                              />
-                            )}
-                          </label>
+                              {showPercentUsageField ? (
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  step="0.1"
+                                  value={assetDraft.lifeWorkedPercent}
+                                  onChange={(event) =>
+                                    setAssetDraft((current) => ({
+                                      ...current,
+                                      lifeWorkedPercent: event.target.value,
+                                    }))
+                                  }
+                                  placeholder={usageFieldPlaceholder}
+                                />
+                              ) : assetFormUsageNotApplicable ? (
+                                <input value="Not applicable" disabled readOnly />
+                              ) : (
+                                <input
+                                  type="text"
+                                  inputMode="numeric"
+                                  value={formatUsageAmountInput(assetDraft.hours)}
+                                  onChange={(event) =>
+                                    setAssetDraft((current) => ({
+                                      ...current,
+                                      hours: formatUsageAmountInput(event.target.value),
+                                    }))
+                                  }
+                                  placeholder={usageFieldPlaceholder}
+                                />
+                              )}
+                            </label>
+                          </div>
 
                           {showConditionField ? (
                             <ModalSelect<AssetConditionValue>
@@ -15310,7 +15320,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                         </div>
                       ) : null}
 
-                      <div className={styles.assetValueBoxGrid}>
+                      <div className={`${styles.assetValueBoxGrid} ${updateStyles.valueGrid}`}>
                         <label className={`${styles.field} ${styles.manualValueField}`}>
                           <span>{currentValueFieldLabel}</span>
                           <div className={styles.manualCurrencyInput}>
@@ -15407,7 +15417,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                         </div>
                       ) : null}
 
-                      <label className={`${styles.field} ${styles.fullWidth} ${styles.assetNotesField}`}>
+                      <label className={`${styles.field} ${styles.fullWidth} ${styles.assetNotesField} ${updateStyles.notesField}`}>
                         <span>Notes</span>
                         <textarea
                           rows={3}
