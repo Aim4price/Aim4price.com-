@@ -1786,41 +1786,90 @@
   }
 }
 
-/* Managers often work from tablets. Give those screens a stable workspace
-   rather than allowing the phone column to grow unpredictably. */
-@media (min-width: 768px) {
+/* Field Manager tablet layout. Keep the focused single-column phone flow, then
+   use a wider two-column workspace when a tablet or landscape screen allows it. */
+@media (min-width: 600px) {
   .mobilePage {
     --field-page-gutter: 48px;
   }
 
-  .loginShell {
-    width: min(calc(100% - var(--field-page-gutter)), 520px);
+  .installCard {
+    width: min(100%, 560px);
+    padding: 36px;
   }
 
+  .loginShell,
   .assetsShell,
   .overviewShell,
   .maintenanceShell {
-    width: min(calc(100% - var(--field-page-gutter)), 980px);
+    width: min(calc(100% - var(--field-page-gutter)), 820px);
+  }
+
+  .loginCard {
+    padding: 30px;
   }
 
   .homeActionGrid {
-    width: min(100%, 840px);
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: min(100%, 760px);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 16px;
   }
 
   .homeActionCard {
-    min-height: 112px;
-    padding: 22px 40px;
+    min-height: 96px;
+    border-radius: 21px;
+    padding: 20px 52px;
   }
 
   .homeActionCard strong {
-    font-size: 1.28rem;
+    font-size: 1.38rem;
+  }
+
+  .homeActionCard:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+
+  .assetsHeader {
+    min-height: 66px;
+  }
+
+  .logoutButton,
+  .mobilePrimaryButton {
+    min-height: 56px;
+    font-size: 0.96rem;
   }
 
   .assetList,
   .overviewList {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .assetCard:only-child,
+  .overviewCard:only-child {
+    grid-column: 1 / -1;
+  }
+
+  .assetMetaGrid:not(.assetMetaGridVertical) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .assetMetaGrid span,
+  .overviewType,
+  .overviewStatus {
+    font-size: 0.76rem;
+  }
+
+  .assetMetaGrid strong,
+  .overviewHeadline {
+    font-size: 1rem;
+  }
+
+  .assetOpenButton,
+  .overviewOpenButton,
+  .maintenanceAddButton {
+    min-height: 56px;
+    font-size: 0.96rem;
   }
 
   .maintenanceCard,
@@ -1837,6 +1886,6 @@
 
 @media (max-width: 767px) {
   .mobilePage :is(input, select, textarea) {
-    font-size: 1rem;
+    font-size: 1rem !important;
   }
 }

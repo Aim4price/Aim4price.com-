@@ -2247,9 +2247,9 @@
 
 }
 
-/* Tablet and larger screens use a deliberate workspace layout instead of a
-   stretched phone column. Phone rules above remain the default. */
-@media (min-width: 768px) {
+/* Owner App tablet layout. The phone treatment remains unchanged below 600px;
+   tablets gain wider content, two-column launchers, and larger touch controls. */
+@media (min-width: 600px) {
   .page,
   .module {
     --owner-page-gutter: 48px;
@@ -2257,53 +2257,90 @@
   }
 
   .assetsHeader {
-    width: min(calc(100% - var(--owner-page-gutter)), 1040px);
-    padding-bottom: 18px;
+    width: min(calc(100% - var(--owner-page-gutter)), 900px);
+    min-height: 66px;
+  }
+
+  .navButton,
+  .logoutButton {
+    width: min(100%, 184px);
+    min-height: 56px;
+    font-size: 0.96rem;
+  }
+
+  .assetsHeaderPair .navButton,
+  .assetsHeaderPair .logoutButton {
+    max-width: 184px;
   }
 
   .content {
-    width: min(calc(100% - var(--owner-page-gutter)), 680px);
+    width: min(calc(100% - var(--owner-page-gutter)), 720px);
   }
 
   .wideContent {
-    width: min(calc(100% - var(--owner-page-gutter)), 1040px);
+    width: min(calc(100% - var(--owner-page-gutter)), 980px);
   }
 
   .homeContent {
-    width: min(calc(100% - var(--owner-page-gutter)), 920px);
-    padding-bottom: 36px;
+    width: min(calc(100% - var(--owner-page-gutter)), 820px);
   }
 
   .homeLauncher {
-    width: min(100%, 820px);
+    width: min(100%, 760px);
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 16px;
   }
 
   .homeLaunchCard {
-    min-height: 104px;
-    padding: 22px 52px;
+    min-height: 96px;
+    border-radius: 21px;
+    padding: 20px 52px;
   }
 
   .homeLaunchCard strong {
     font-size: 1.38rem;
   }
 
-  .notificationContent {
-    width: min(calc(100% - var(--owner-page-gutter)), 760px);
-  }
-
-  .overviewContent {
-    width: min(calc(100% - var(--owner-page-gutter)), 840px);
-  }
-
   .assetListToolbar,
   .managerAssetList {
-    width: 100%;
+    width: min(100%, 720px);
   }
 
   .managerAssetList {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .managerAssetCard:only-child {
+    grid-column: 1 / -1;
+  }
+
+  .managerAssetMetaGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .assetLink {
+    grid-template-columns: 128px minmax(0, 1fr);
+  }
+
+  .thumb,
+  .thumbPlaceholder {
+    width: 128px;
+    min-height: 148px;
+  }
+
+  .notificationContent,
+  .overviewContent {
+    width: min(calc(100% - var(--owner-page-gutter)), 760px);
+  }
+
+  .notificationList {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .notificationCard:only-child {
+    grid-column: 1 / -1;
   }
 
   .detailPhotoThumbs {
@@ -2314,11 +2351,13 @@
   .ownerOptionChoiceList {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-}
 
-@media (min-width: 1024px) {
-  .homeLauncher {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+  .button,
+  .primaryButton,
+  .secondaryButton,
+  .dangerButton {
+    min-height: 56px;
+    font-size: 1rem;
   }
 }
 
@@ -2330,6 +2369,6 @@
 @media (max-width: 767px) {
   .page :is(input, select, textarea),
   .module :is(input, select, textarea) {
-    font-size: 1rem;
+    font-size: 1rem !important;
   }
 }

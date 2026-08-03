@@ -32,7 +32,10 @@ test('new tracking shares enable reports and dealer schedule proposals without r
 });
 
 test('My Leads exposes the owner-style maintenance report and schedule creation action', () => {
-  assert.match(leads, /<WorkspaceTitlePanel title="LEAD MANAGEMENT SYSTEM" \/>/);
+  assert.match(
+    leads,
+    /<WorkspaceTitlePanel title=\{accountantWorkspaceMode \? 'CLIENT MANAGEMENT SYSTEM' : 'LEAD MANAGEMENT SYSTEM'\} \/>/,
+  );
   assert.match(leads, /<h1>LEAD MANAGEMENT SYSTEM<\/h1>/);
   assert.match(leads, /<strong>PDF reports<\/strong>/);
   assert.match(leads, /assetReportOptionsGrid/);

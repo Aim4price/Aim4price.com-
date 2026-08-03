@@ -86,7 +86,7 @@ test('dealer Cost of Ownership report is permission-gated and locked to the shar
   assert.match(costReportModal, /Report timeline/);
   assert.match(costReportModal, /PDF report/);
   assert.match(costReportModal, /XLSX workbook/);
-  assert.match(costReportRoute, /getDealerTrackedAsset\(userId, dealerAccessId\)/);
+  assert.match(costReportRoute, /getDealerTrackedAsset\(workspace\.actorUserId, dealerAccessId\)/);
   assert.match(costReportRoute, /!trackedAsset\.permissions\.canViewCostOfOwnership/);
   assert.match(costReportRoute, /reportOwnerUserId = trackedAsset\.ownerUserId/);
   assert.match(costReportRoute, /filters\.assetId = trackedAsset\.assetId/);
