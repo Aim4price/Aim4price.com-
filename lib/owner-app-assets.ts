@@ -1,6 +1,6 @@
 import { listAssetRegisterItems, type AssetRegisterItem } from './asset-register-db';
 import { listAssetRegisters, type AssetRegisterSummary } from './asset-registers';
-import { resolveAssetUsage } from './asset-usage';
+import { resolveAssetUsage, type AssetUsageMetric } from './asset-usage';
 
 export type OwnerAppAssetSummary = {
   id: string;
@@ -22,7 +22,7 @@ export type OwnerAppAssetSummary = {
   isLicensed: boolean;
   marketplaceStatus: string;
   usage: number | null;
-  usageMetric: 'hours' | 'km' | 'percentage';
+  usageMetric: AssetUsageMetric;
   thumbnailUrl: string;
   updatedAtIso: string;
 };
