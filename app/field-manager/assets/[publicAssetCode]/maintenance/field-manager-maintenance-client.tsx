@@ -455,14 +455,25 @@ export default function FieldManagerMaintenanceClient({
             </section>
 
             {upcomingMaintenance ? (
-              <section className={styles.maintenanceCard} aria-label="Active maintenance schedule">
-                <p className={styles.maintenanceDescription}>
-                  {hasRecurringSchedule
-                    ? 'A recurring schedule is already in place.'
-                    : 'Maintenance is already scheduled for this asset.'}
-                </p>
-                <h2>{upcomingMaintenance.title}</h2>
-                <p className={styles.maintenanceDescription}>Next: {ownerMaintenanceDueLabel(upcomingMaintenance)}</p>
+              <section
+                className={`${styles.maintenanceCard} ${styles.maintenanceActiveCard}`}
+                aria-label="Active maintenance schedule"
+              >
+                <div className={styles.maintenanceActiveCopy}>
+                  <span>{hasRecurringSchedule ? 'Recurring schedule' : 'Scheduled maintenance'}</span>
+                  <p>
+                    {hasRecurringSchedule
+                      ? 'A recurring schedule is already in place.'
+                      : 'Maintenance is already scheduled for this asset.'}
+                  </p>
+                </div>
+                {upcomingMaintenance.title?.trim() ? (
+                  <h2 className={styles.maintenanceActiveTitle}>{upcomingMaintenance.title}</h2>
+                ) : null}
+                <div className={styles.maintenanceNextDue}>
+                  <span>Next due</span>
+                  <strong>{ownerMaintenanceDueLabel(upcomingMaintenance)}</strong>
+                </div>
               </section>
             ) : null}
 
@@ -494,7 +505,7 @@ export default function FieldManagerMaintenanceClient({
                           </span>
                           <strong>{record.computedStatusLabel}</strong>
                         </div>
-                        <h3>{record.title}</h3>
+                        {record.title?.trim() ? <h3>{record.title}</h3> : null}
                         <p>{ownerMaintenanceDueLabel(record)}</p>
                         {record.assignedName ? <small>Assigned to {record.assignedName}</small> : null}
                         {record.notes ? <small>{record.notes}</small> : null}

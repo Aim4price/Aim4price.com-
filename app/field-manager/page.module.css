@@ -1305,6 +1305,64 @@
   text-align: center;
 }
 
+.maintenanceActiveCard {
+  gap: 10px;
+  margin-bottom: 16px;
+  border-color: rgba(35, 104, 81, 0.2);
+  background:
+    radial-gradient(circle at 100% 0%, rgba(111, 197, 150, 0.12), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #f7fbf8 100%);
+  box-shadow: 0 12px 28px rgba(18, 53, 45, 0.07);
+}
+
+.maintenanceActiveCopy {
+  display: grid;
+  gap: 4px;
+}
+
+.maintenanceActiveCopy > span,
+.maintenanceNextDue > span {
+  color: #236851;
+  font-size: 0.66rem;
+  font-weight: 950;
+  letter-spacing: 0.09em;
+  line-height: 1.15;
+  text-transform: uppercase;
+}
+
+.maintenanceActiveCopy > p {
+  margin: 0;
+  color: rgba(18, 53, 45, 0.68);
+  font-size: 0.88rem;
+  font-weight: 690;
+  line-height: 1.42;
+}
+
+.maintenanceActiveTitle {
+  margin: 0;
+  color: #12352d;
+  font-size: 1.04rem;
+  font-weight: 850;
+  line-height: 1.25;
+}
+
+.maintenanceNextDue {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(18, 53, 45, 0.1);
+}
+
+.maintenanceNextDue > strong {
+  color: #15533e;
+  font-size: 0.9rem;
+  font-weight: 850;
+  line-height: 1.25;
+  text-align: right;
+}
+
 .maintenanceFormGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1444,8 +1502,8 @@
 
 .maintenanceScheduleSection {
   display: grid;
-  gap: 12px;
-  margin-bottom: 18px;
+  gap: 10px;
+  margin-bottom: 16px;
 }
 
 .maintenanceActionNotice {
@@ -1462,7 +1520,7 @@
 
 .maintenanceScheduleHeading {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
   padding: 0 3px;
@@ -1501,12 +1559,12 @@
 
 .maintenanceScheduleList {
   display: grid;
-  gap: 11px;
+  gap: 10px;
 }
 
 .maintenanceScheduleCard {
   display: grid;
-  gap: 8px;
+  gap: 9px;
   border: 1px solid rgba(18, 53, 45, 0.13);
   border-radius: 19px;
   background: #fff;
@@ -1539,6 +1597,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 10px;
 }
 
@@ -2055,5 +2114,15 @@
 @media (max-width: 390px) {
   .mobilePage {
     --field-page-gutter: 20px;
+  }
+
+  .maintenanceNextDue {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .maintenanceNextDue > strong {
+    text-align: left;
   }
 }
