@@ -44,6 +44,8 @@ type DetailResponse = {
   error?: string; requiresUsageConfirmation?: boolean;
 };
 type UploadResponse = { ok: boolean; uploads?: Array<{ uploadId: string; url: string; fileName: string; contentType: string; byteSize: number }>; error?: string };
+type DisposalReason = 'sold' | 'traded_in' | 'scrapped' | 'written_off' | 'mistake_duplicate' | 'other';
+type DisposalDraft = { reason: DisposalReason | ''; disposalDate: string; disposalAmountExVat: string; note: string };
 
 export type OwnerAssetView = 'summary' | 'details' | 'options' | 'manage' | 'section';
 export type OwnerAssetManageSection = 'details' | 'reports' | 'pricing' | 'finance' | 'insurance' | 'licence' | 'location' | 'media' | 'marketplace' | 'maintenance' | 'dealer-tracking' | 'delete';
@@ -54,6 +56,19 @@ const STATUS_OPTIONS = [
   { value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' },
   { value: 'unknown', label: 'Unknown' }, { value: 'not_applicable', label: 'Not applicable' },
 ];
+
+const DISPOSAL_REASONS: Array<{ value: DisposalReason; label: string }> = [
+  { value: 'sold', label: 'Sold' },
+  { value: 'traded_in', label: 'Traded in' },
+  { value: 'scrapped', label: 'Scrapped' },
+  { value: 'written_off', label: 'Written off' },
+  { value: 'mistake_duplicate', label: 'Added by mistake' },
+  { value: 'other', label: 'Other' },
+];
+
+function createDisposalDraft(): DisposalDraft {
+  return { reason: '', disposalDate: new Date().toISOString().slice(0, 10), disposalAmountExVat: '', note: '' };
+}
 
 const MANAGE_SECTIONS: Array<{ id: OwnerAssetManageSection; group: OwnerAssetManageGroup; title: string; tone?: 'danger' }> = [
   { id: 'details', group: 'asset', title: 'Update asset' },
@@ -182,6 +197,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
   const [location, setLocation] = useState({ locationText: '', latitude: '', longitude: '' });
   const [photoIndex, setPhotoIndex] = useState(0);
   const [photoViewerOpen, setPhotoViewerOpen] = useState(false);
+  const [disposalDraft, setDisposalDraft] = useState<DisposalDraft>(createDisposalDraft);
 
   const photoCount = draft?.photos.length ?? 0;
   const safePhotoIndex = photoCount ? Math.min(photoIndex, photoCount - 1) : 0;
@@ -317,6 +333,31 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
             usage_basis: 'percent',
             selectedUsageMode: 'percent',
             selected_usage_mode: 'percent',
+            usageApplicable: true,
+            usage_applicable: true,
+          },
+        };
+      }
+
+      if (metric === 'not_applicable') {
+        return {
+          ...current,
+          hours: null,
+          lifeWorkedPercent: null,
+          specsJson: {
+            ...current.specsJson,
+            usageMetric: 'not_applicable',
+            usage_metric: 'not_applicable',
+            usageUnit: 'not_applicable',
+            usage_unit: 'not_applicable',
+            usageMode: 'not_applicable',
+            usage_mode: 'not_applicable',
+            usageBasis: 'not_applicable',
+            usage_basis: 'not_applicable',
+            selectedUsageMode: 'not_applicable',
+            selected_usage_mode: 'not_applicable',
+            usageApplicable: false,
+            usage_applicable: false,
           },
         };
       }
@@ -336,6 +377,8 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
           usage_basis: 'reading',
           selectedUsageMode: metric,
           selected_usage_mode: metric,
+          usageApplicable: true,
+          usage_applicable: true,
         },
       };
     });
@@ -452,12 +495,20 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
   }
 
   async function deleteAsset() {
-    if (!draft || !window.confirm(`Delete ${draft.title}? This cannot be undone.`)) return;
+    if (!draft || !disposalDraft.reason) {
+      setNotice({ tone: 'error', message: 'Choose what happened to the asset before continuing.' });
+      return;
+    }
     setActionBusy('delete');
     setNotice(null);
     try {
-      const response = await fetch(`/api/owner-app/assets/${encodeURIComponent(assetId)}`, { method: 'DELETE', credentials: 'include' });
-      const payload = await response.json().catch(() => null) as { ok?: boolean; redirectTo?: string; error?: string } | null;
+      const response = await fetch(`/api/owner-app/assets/${encodeURIComponent(assetId)}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(disposalDraft),
+      });
+      const payload = await response.json().catch(() => null) as { ok?: boolean; mode?: 'disposed' | 'deleted'; redirectTo?: string; error?: string } | null;
       if (!response.ok || !payload?.ok) throw new Error(payload?.error || 'Failed to delete this asset.');
       window.location.assign(payload.redirectTo || '/owner-app/assets');
     } catch (cause) {
@@ -943,8 +994,8 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
           <label className={styles.field}><span>Year model / year built</span><input inputMode="numeric" value={draft.yearModel ?? ''} onChange={(event) => update('yearModel', event.target.value ? Number(event.target.value) : null)} /></label>
           <label className={styles.field}><span>Serial / VIN / chassis</span><input value={draft.serialNumber} onChange={(event) => update('serialNumber', event.target.value)} /></label>
           <label className={styles.field}><span>Condition</span><select value={draft.condition} onChange={(event) => update('condition', event.target.value)}><option value="">Not saved</option><option value="excellent">Excellent</option><option value="good">Good</option><option value="fair">Fair</option><option value="used">Used</option><option value="serious">Serious</option></select></label>
-          <label className={styles.field}><span>Usage type</span><select value={usageMetric} onChange={(event) => updateUsageMetric(event.target.value as AssetUsageMetric)}><option value="hours">Hours</option><option value="km">Kilometres</option><option value="percentage">Percentage worked</option></select></label>
-          {usageMetric === 'percentage' ? <label className={styles.field}><span>Percentage worked</span><input inputMode="decimal" value={draft.lifeWorkedPercent ?? ''} onChange={(event) => update('lifeWorkedPercent', event.target.value ? Number(event.target.value) : null)} /></label> : <label className={styles.field}><span>Current usage</span><input inputMode="decimal" value={draft.hours ?? ''} onChange={(event) => update('hours', event.target.value ? Number(event.target.value) : null)} /></label>}
+          <label className={styles.field}><span>Usage type</span><select value={usageMetric} onChange={(event) => updateUsageMetric(event.target.value as AssetUsageMetric)}><option value="hours">Hours</option><option value="km">Kilometres</option><option value="percentage">% worked</option><option value="not_applicable">Not applicable</option></select></label>
+          {usageMetric === 'percentage' ? <label className={styles.field}><span>Percentage worked</span><input inputMode="decimal" value={draft.lifeWorkedPercent ?? ''} onChange={(event) => update('lifeWorkedPercent', event.target.value ? Number(event.target.value) : null)} /></label> : usageMetric === 'not_applicable' ? <label className={styles.field}><span>Current usage</span><input value="Not applicable" disabled readOnly /></label> : <label className={styles.field}><span>Current usage</span><input inputMode="decimal" value={draft.hours ?? ''} onChange={(event) => update('hours', event.target.value ? Number(event.target.value) : null)} /></label>}
           <label className={styles.field}><span>Current Aim4price value excl. VAT</span><span className={styles.currencyInput}><span aria-hidden="true">R</span><GroupedCurrencyInput value={draft.value || ''} onValueChange={(value) => update('value', parseCurrencyInput(value) ?? 0)} /></span></label>
           <label className={styles.field}><span>Replacement price excl. VAT</span><span className={styles.currencyInput}><span aria-hidden="true">R</span><GroupedCurrencyInput value={draft.replacementPriceExVat ?? ''} onValueChange={(value) => update('replacementPriceExVat', parseCurrencyInput(value))} /></span></label>
           <label className={`${styles.field} ${styles.fieldFull}`}><span>Notes</span><textarea value={draft.note} onChange={(event) => update('note', event.target.value)} /></label>
@@ -1012,8 +1063,17 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
         )}
       </section> : null}
       {section === 'delete' ? <section className={`${styles.section} ${styles.deleteSection}`}>
-        <p>This cannot be undone. Only continue if you are certain that this asset must be removed.</p>
-        <button type="button" className={styles.dangerButton} onClick={() => void deleteAsset()} disabled={Boolean(actionBusy)}>{actionBusy === 'delete' ? 'Deleting asset…' : 'Delete asset permanently'}</button>
+        {editorHeader('Remove asset', 'Tell Aim4price what happened. Genuine disposals stay safely in reports and history; only a record added by mistake is removed from the active register.')}
+        <div className={styles.choiceRow} role="group" aria-label="What happened to this asset?">
+          {DISPOSAL_REASONS.map((reason) => <button key={reason.value} type="button" className={disposalDraft.reason === reason.value ? styles.choiceActive : ''} aria-pressed={disposalDraft.reason === reason.value} onClick={() => setDisposalDraft((current) => ({ ...current, reason: reason.value }))} disabled={Boolean(actionBusy)}>{reason.label}</button>)}
+        </div>
+        <div className={styles.formGrid}>
+          <label className={styles.field}><span>Date</span><input type="date" value={disposalDraft.disposalDate} onChange={(event) => setDisposalDraft((current) => ({ ...current, disposalDate: event.target.value }))} disabled={Boolean(actionBusy)} /></label>
+          <label className={styles.field}><span>Amount excl. VAT (optional)</span><span className={styles.currencyInput}><span aria-hidden="true">R</span><GroupedCurrencyInput value={disposalDraft.disposalAmountExVat} onValueChange={(value) => setDisposalDraft((current) => ({ ...current, disposalAmountExVat: value }))} /></span></label>
+          <label className={`${styles.field} ${styles.fieldFull}`}><span>Note (optional)</span><textarea value={disposalDraft.note} onChange={(event) => setDisposalDraft((current) => ({ ...current, note: event.target.value }))} placeholder="Buyer, trade-in, write-off or other reference" disabled={Boolean(actionBusy)} /></label>
+        </div>
+        {disposalDraft.reason === 'mistake_duplicate' ? <p>This removes the record from the active register. Aim4price keeps a final snapshot and deletion audit.</p> : null}
+        <div className={styles.actions}><button type="button" className={styles.dangerButton} onClick={() => void deleteAsset()} disabled={Boolean(actionBusy) || !disposalDraft.reason}>{actionBusy === 'delete' ? 'Saving…' : disposalDraft.reason === 'mistake_duplicate' ? 'Delete duplicate' : 'Save disposal'}</button></div>
       </section> : null}
     </div>
   );
