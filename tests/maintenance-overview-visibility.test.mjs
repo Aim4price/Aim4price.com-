@@ -8,6 +8,8 @@ const fieldManagerMaintenanceRoute = read('app/api/field-manager/assets/[assetId
 const ownerOverview = read('lib/owner-app-overview.ts');
 const fieldManagerOverview = read('lib/field-manager-overview.ts');
 const dealerTracker = read('lib/dealer-maintenance-tracker.ts');
+const managerOpenRoute = read('app/api/field-manager/assets/[assetId]/open/route.ts');
+const scanEventRoute = read('app/api/scan/assets/[publicAssetCode]/event/route.ts');
 
 test('owner, Field Manager and approved dealer schedules remain owner-owned maintenance records', () => {
   assert.match(ownerMaintenanceRoute, /createAssetMaintenanceRecord\(userId, body\)/);
@@ -42,6 +44,17 @@ test('Field Manager Overview includes every upcoming schedule for an accessible 
   const maintenanceFilter = fieldManagerOverview.slice(filterStart, filterEnd);
   assert.match(maintenanceFilter, /allowedAssetIds\.has\(record\.assetId\)/);
   assert.doesNotMatch(maintenanceFilter, /assignedFieldManagerId/);
+});
+
+test('an authorised Field Manager can open and record any visible schedule for an accessible asset', () => {
+  assert.match(managerOpenRoute, /getFieldManagerAssetForOpen/);
+  assert.match(managerOpenRoute, /getAssetMaintenanceRecordById/);
+  assert.match(managerOpenRoute, /maintenance\.assetId !== asset\.id/);
+  assert.doesNotMatch(managerOpenRoute, /getAssignedFieldManagerMaintenanceRecord/);
+
+  assert.match(scanEventRoute, /getAssetMaintenanceRecordById/);
+  assert.match(scanEventRoute, /scheduledMaintenance\.assetId !== access\.asset\.id/);
+  assert.doesNotMatch(scanEventRoute, /assignedFieldManagerId: access\.fieldManagerId/);
 });
 
 test('Dealer Maintenance Tracker includes every schedule for an actively shared asset', () => {
