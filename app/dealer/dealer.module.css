@@ -809,9 +809,9 @@
 
 .dealerDiscoverySurface {
   min-height: auto !important;
-  width: min(calc(100% - 16px), 820px) !important;
-  padding-top: 12px !important;
-  padding-bottom: 0 !important;
+  width: min(calc(100% - 24px), 560px) !important;
+  padding-top: 8px !important;
+  padding-bottom: max(28px, env(safe-area-inset-bottom)) !important;
 }
 
 .dealerDiscoverySurface [class*='heroPanel'] {
@@ -825,11 +825,21 @@
 }
 
 .dealerDiscoverySurface [class*='controlsPanel'] {
-  margin-top: 12px !important;
+  margin-top: 0 !important;
 }
 
 .dealerDiscoverySurface [class*='toolbar'] {
-  gap: 9px !important;
+  gap: 10px !important;
+}
+
+.dealerDiscoverySurface [class*='discoveryOverviewOpenButton'],
+.dealerDiscoverySurface [class*='discoveryOverviewOpenButton']:hover,
+.dealerDiscoverySurface [class*='discoveryOverviewOpenButton']:focus,
+.dealerDiscoverySurface [class*='discoveryOverviewOpenButton']:active {
+  border: 1.5px solid #6fc596 !important;
+  background: linear-gradient(180deg, #ffffff 0%, #e6f8ef 100%) !important;
+  color: #0a543d !important;
+  box-shadow: 0 10px 22px rgba(10, 84, 61, 0.1) !important;
 }
 
 .dealerLeadsSurface {
@@ -1343,9 +1353,12 @@
   }
 
   .dealerValuationSurface > [class*='container'],
-  .dealerDiscoverySurface,
   .dealerLeadsSurface > [class*='shell'] {
     width: calc(100% - 8px) !important;
+  }
+
+  .dealerDiscoverySurface {
+    width: calc(100% - 18px) !important;
   }
 
   .dealerValuationSurface [class*='wizardCard'],
@@ -2162,6 +2175,10 @@
    larger touch screens use their available space instead of a phone-width
    column floating in the middle of the screen. */
 @media (min-width: 600px) {
+  .dealerDiscoverySurface {
+    width: min(calc(100% - 48px), 760px) !important;
+  }
+
   .nav {
     min-height: calc(76px + env(safe-area-inset-top));
     height: calc(76px + env(safe-area-inset-top));
