@@ -11,7 +11,7 @@ import { deleteUnreferencedAssetRegisterUploads, listInternalAssetRegisterUpload
 import { resolveAssetUsage, type AssetUsageMetric } from '../../../../../lib/asset-usage';
 import { listAssetMaintenanceData } from '../../../../../lib/asset-maintenance';
 import { getAssetRegisterForUser, getAssetRegisterReportLogoUrl, listAssetRegisters, moveAssetRegisterItems } from '../../../../../lib/asset-registers';
-import { getOwnerAppAccess } from '../../../../../lib/owner-app-access';
+import { getOwnerAppAccess, ownerAppCan } from '../../../../../lib/owner-app-access';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -123,6 +123,7 @@ export async function GET(_request: NextRequest, { params }: { params: { assetId
 export async function PUT(request: NextRequest, { params }: { params: { assetId: string } }) {
   const access = await getOwnerAppAccess();
   if (!access) return unauthorized();
+  if (!ownerAppCan(access, 'manage_assets')) return NextResponse.json({ ok: false, error: 'This login has Operations or View only access.' }, { status: 403 });
   const existing = await getAssetRegisterItemById(access.ownerUserId, params.assetId);
   if (!existing) return notFound();
 
@@ -242,6 +243,7 @@ export async function PUT(request: NextRequest, { params }: { params: { assetId:
 export async function DELETE(request: NextRequest, { params }: { params: { assetId: string } }) {
   const access = await getOwnerAppAccess();
   if (!access) return unauthorized();
+  if (!ownerAppCan(access, 'manage_assets')) return NextResponse.json({ ok: false, error: 'Only an Owner / Admin login can remove an asset.' }, { status: 403 });
   const existing = await getAssetRegisterItemById(access.ownerUserId, params.assetId);
   if (!existing) return notFound();
   const uploadIds = listInternalAssetRegisterUploadIds([...existing.photos, ...existing.documents.map((document) => document.url)]);
