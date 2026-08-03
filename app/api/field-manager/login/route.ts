@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
   getFieldManagerByUsername,
+  isFieldManagerLoginLocked,
   markFieldManagerLastLogin,
+  recordFieldManagerLoginFailure,
   verifyFieldManagerPassword,
 } from '../../../../lib/field-manager';
 import {
@@ -50,9 +52,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: false, error: 'Incorrect Field Manager username or password.' }, { status: 401 });
     }
 
+    if (isFieldManagerLoginLocked(manager)) {
+      return NextResponse.json({ ok: false, error: 'Too many incorrect attempts. Try again in 15 minutes.' }, { status: 429 });
+    }
+
     const passwordMatches = await verifyFieldManagerPassword(password, manager.passwordHash);
 
     if (!passwordMatches) {
+      const locked = await recordFieldManagerLoginFailure(manager.id);
+      if (locked) {
+        return NextResponse.json({ ok: false, error: 'Too many incorrect attempts. Try again in 15 minutes.' }, { status: 429 });
+      }
       return NextResponse.json({ ok: false, error: 'Incorrect Field Manager username or password.' }, { status: 401 });
     }
 
