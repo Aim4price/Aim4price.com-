@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import styles from '../../field-manager/page.module.css';
+import OverviewClearConfirmation from '../../field-manager/overview-clear-confirmation';
 import ownerStyles from '../owner-app.module.css';
 import OwnerAppNav from '../owner-app-nav';
 
@@ -77,6 +78,7 @@ export default function OwnerAttentionClient() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [openingItemId, setOpeningItemId] = useState<string | null>(null);
   const [clearingItemId, setClearingItemId] = useState<string | null>(null);
+  const [clearCandidate, setClearCandidate] = useState<OverviewItem | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
   const requestIdRef = useRef(0);
   const hasLoadedRef = useRef(false);
@@ -170,9 +172,17 @@ export default function OwnerAttentionClient() {
   function handleOpenAsset(item: OverviewItem) {
     setOpeningItemId(item.id);
     setActionError(null);
-    const destination = item.type === 'service' || item.type === 'checkup'
-      ? `/owner-app/assets/${encodeURIComponent(item.assetId)}/maintenance?maintenanceId=${encodeURIComponent(item.sourceId)}`
-      : `/owner-app/assets/${encodeURIComponent(item.assetId)}`;
+    let destination = `/owner-app/assets/${encodeURIComponent(item.assetId)}`;
+
+    if (item.type === 'service' || item.type === 'checkup') {
+      const query = new URLSearchParams({
+        maintenanceId: item.sourceId,
+        maintenanceType: item.type,
+        returnTo: '/owner-app/attention',
+      });
+      destination = `/owner-app/operations/maintenance/${encodeURIComponent(item.assetId)}?${query.toString()}`;
+    }
+
     window.location.assign(destination);
   }
 
@@ -206,8 +216,10 @@ export default function OwnerAttentionClient() {
       setItems((current) => current.filter(
         (candidate) => candidate.id !== item.id || candidate.sourceId !== item.sourceId,
       ));
+      setClearCandidate(null);
     } catch (error) {
       setActionError(error instanceof Error ? error.message : 'This item could not be cleared.');
+      setClearCandidate(null);
     } finally {
       setClearingItemId(null);
     }
@@ -240,7 +252,7 @@ export default function OwnerAttentionClient() {
           <button
             type="button"
             className={styles.overviewClearButton}
-            onClick={() => void handleClearItem(item)}
+            onClick={() => setClearCandidate(item)}
             disabled={hasPendingCardAction}
             aria-busy={isClearing}
             aria-label={`Clear ${TYPE_LABELS[item.type].toLowerCase()} for ${item.assetTitle} from your Overview`}
@@ -338,6 +350,16 @@ export default function OwnerAttentionClient() {
               )}
             </section>
           </div>
+        ) : null}
+
+        {clearCandidate ? (
+          <OverviewClearConfirmation
+            assetTitle={clearCandidate.assetTitle}
+            itemLabel={TYPE_LABELS[clearCandidate.type]}
+            isClearing={clearingItemId === clearCandidate.id}
+            onCancel={() => setClearCandidate(null)}
+            onConfirm={() => void handleClearItem(clearCandidate)}
+          />
         ) : null}
       </section>
     </main>

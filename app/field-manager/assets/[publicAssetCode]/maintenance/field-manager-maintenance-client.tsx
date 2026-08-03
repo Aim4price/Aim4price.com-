@@ -267,7 +267,7 @@ export default function FieldManagerMaintenanceClient({
 
   async function updateOwnerMaintenance(
     record: OwnerMaintenanceRecord,
-    action: 'maintenance-complete' | 'maintenance-cancel' | 'maintenance-reopen',
+    action: 'maintenance-cancel' | 'maintenance-reopen',
   ): Promise<void> {
     if (actionMaintenanceId) return;
     setActionMaintenanceId(record.id);
@@ -289,19 +289,26 @@ export default function FieldManagerMaintenanceClient({
         throw new Error(payload?.error || 'Failed to update the maintenance schedule.');
       }
 
-      await refreshOwnerMaintenance(action === 'maintenance-complete' && record.recurringEnabled ? record.id : '');
-      setNotice(action === 'maintenance-complete'
-        ? record.recurringEnabled
-          ? 'Maintenance marked done. The next recurring schedule is highlighted below.'
-          : 'Maintenance marked done.'
-        : action === 'maintenance-reopen'
-          ? 'Maintenance schedule reopened.'
-          : 'Maintenance schedule cancelled.');
+      await refreshOwnerMaintenance();
+      setNotice(action === 'maintenance-reopen'
+        ? 'Maintenance schedule reopened.'
+        : 'Maintenance schedule cancelled.');
     } catch (error) {
       setNotice(error instanceof Error ? error.message : 'Failed to update the maintenance schedule.');
     } finally {
       setActionMaintenanceId(null);
     }
+  }
+
+  function openOwnerMaintenanceWork(record: OwnerMaintenanceRecord): void {
+    const query = new URLSearchParams({
+      maintenanceId: record.id,
+      maintenanceType: record.maintenanceType,
+      returnTo: `${assetHref}/maintenance?maintenanceId=${encodeURIComponent(record.id)}`,
+    });
+    window.location.assign(
+      `/owner-app/operations/maintenance/${encodeURIComponent(assetId)}?${query.toString()}`,
+    );
   }
 
   function update<K extends keyof ScheduleDraft>(key: K, value: ScheduleDraft[K]) {
@@ -452,9 +459,9 @@ export default function FieldManagerMaintenanceClient({
                               <button
                                 type="button"
                                 disabled={Boolean(actionMaintenanceId)}
-                                onClick={() => void updateOwnerMaintenance(record, 'maintenance-complete')}
+                                onClick={() => openOwnerMaintenanceWork(record)}
                               >
-                                {isUpdating ? 'Updating…' : 'Mark done'}
+                                Record work
                               </button>
                               <button
                                 type="button"

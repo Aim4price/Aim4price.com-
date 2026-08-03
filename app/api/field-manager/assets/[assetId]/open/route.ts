@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
-  getAssignedFieldManagerMaintenanceRecord,
+  getAssetMaintenanceRecordById,
   isAssetMaintenanceRecordId,
 } from "../../../../../../lib/asset-maintenance";
 import { getFieldManagerAssetForOpen } from "../../../../../../lib/field-manager";
@@ -134,19 +134,20 @@ export async function POST(request: NextRequest, context: RouteContext) {
         );
       }
 
-      const maintenance = await getAssignedFieldManagerMaintenanceRecord({
-        ownerUserId: access.session.ownerUserId,
-        managerId: access.session.managerId,
-        assetId: asset.id,
+      const maintenance = await getAssetMaintenanceRecordById(
+        access.session.ownerUserId,
         maintenanceId,
-      });
+      );
 
-      if (!maintenance) {
+      if (
+        !maintenance
+        || maintenance.assetId !== asset.id
+        || maintenance.status !== "upcoming"
+      ) {
         return NextResponse.json(
           {
             ok: false,
-            error:
-              "This scheduled maintenance item is no longer available to this Field Manager.",
+            error: "This scheduled maintenance item is no longer available for this asset.",
           },
           { status: 409 },
         );

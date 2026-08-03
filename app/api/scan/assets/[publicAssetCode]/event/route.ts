@@ -7,7 +7,7 @@ import {
   assetMaintenanceProcedureKindFromNote,
   assetMaintenanceProcedureMatchesType,
   completeAssetMaintenanceRecord,
-  getAssignedFieldManagerMaintenanceRecord,
+  getAssetMaintenanceRecordById,
   isAssetMaintenanceRecordId,
   type AssetMaintenanceRecord,
 } from "../../../../../../lib/asset-maintenance";
@@ -244,32 +244,28 @@ export async function POST(request: NextRequest, context: RouteContext) {
     }
 
     if (
-      access.accessMode !== "field_manager"
-      || !access.fieldManagerId
+      (access.accessMode !== "field_manager" && access.accessMode !== "owner_session")
       || !access.asset.id
     ) {
       return NextResponse.json(
         {
           ok: false,
-          error: "Field Manager access is required to complete scheduled maintenance.",
+          error: "Owner or Field Manager access is required to complete scheduled maintenance.",
         },
         { status: 403 },
       );
     }
 
     try {
-      scheduledMaintenance = await getAssignedFieldManagerMaintenanceRecord({
-        ownerUserId: access.ownerUserId,
-        managerId: access.fieldManagerId,
-        assetId: access.asset.id,
-        maintenanceId: scheduledMaintenanceId,
-        allowDone: true,
-      });
+      scheduledMaintenance = await getAssetMaintenanceRecordById(
+        access.ownerUserId,
+        scheduledMaintenanceId,
+      );
     } catch (error) {
       console.error("[scan-event] Failed to validate scheduled maintenance", {
         scheduledMaintenanceId,
         assetId: access.asset.id,
-        fieldManagerId: access.fieldManagerId,
+        accessMode: access.accessMode,
         error,
       });
       return NextResponse.json(
@@ -278,12 +274,15 @@ export async function POST(request: NextRequest, context: RouteContext) {
       );
     }
 
-    if (!scheduledMaintenance) {
+    if (
+      !scheduledMaintenance
+      || scheduledMaintenance.assetId !== access.asset.id
+      || scheduledMaintenance.status !== "upcoming"
+    ) {
       return NextResponse.json(
         {
           ok: false,
-          error:
-            "This scheduled maintenance item is no longer assigned to this Field Manager or asset.",
+          error: "This scheduled maintenance item is no longer available for this asset.",
         },
         { status: 409 },
       );
@@ -341,18 +340,18 @@ export async function POST(request: NextRequest, context: RouteContext) {
       nextMaintenanceId: string | null;
     } | null = null;
 
-    if (scheduledMaintenance && access.fieldManagerId) {
-      const currentScheduledMaintenance =
-        await getAssignedFieldManagerMaintenanceRecord({
-          ownerUserId: access.ownerUserId,
-          managerId: access.fieldManagerId,
-          assetId: saved.asset.id,
-          maintenanceId: scheduledMaintenance.id,
-          allowDone: true,
-        });
+    if (scheduledMaintenance) {
+      const currentScheduledMaintenance = await getAssetMaintenanceRecordById(
+        access.ownerUserId,
+        scheduledMaintenance.id,
+      );
 
-      if (!currentScheduledMaintenance) {
-        throw new Error("FIELD_MANAGER_MAINTENANCE_NO_LONGER_AVAILABLE");
+      if (
+        !currentScheduledMaintenance
+        || currentScheduledMaintenance.assetId !== saved.asset.id
+        || currentScheduledMaintenance.status !== "upcoming"
+      ) {
+        throw new Error("SCHEDULED_MAINTENANCE_NO_LONGER_AVAILABLE");
       }
 
       const completedUsage = currentScheduledMaintenance.triggerType === "usage"
@@ -366,14 +365,12 @@ export async function POST(request: NextRequest, context: RouteContext) {
         {
           completedUsage,
           completedNotes: saved.event.note || payload.note,
-          completedBy:
-            asText(access.fieldManagerDisplayName)
-            || asText(saved.event.operatorName)
-            || "Field Manager",
+          completedBy: access.accessMode === "owner_session"
+            ? asText(access.ownerAppDisplayName) || asText(saved.event.operatorName) || "Owner"
+            : asText(access.fieldManagerDisplayName) || asText(saved.event.operatorName) || "Field Manager",
         },
         {
           assetId: saved.asset.id,
-          assignedFieldManagerId: access.fieldManagerId,
           maintenanceType: currentScheduledMaintenance.maintenanceType,
         },
       );
@@ -460,7 +457,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     if (
       error instanceof Error
       && (
-        error.message === "FIELD_MANAGER_MAINTENANCE_NO_LONGER_AVAILABLE"
+        error.message === "SCHEDULED_MAINTENANCE_NO_LONGER_AVAILABLE"
         || error.message === "MAINTENANCE_NOT_FOUND"
       )
     ) {

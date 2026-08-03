@@ -1404,6 +1404,8 @@ export default function ScanClient({
   ownerAppMode = false,
   ownerAppAssetId = null,
   ownerAppOperatorName = '',
+  ownerAppScheduledMaintenanceId = null,
+  ownerAppScheduledMaintenanceType = null,
   ownerAppReturnTo = null,
 }: {
   publicAssetCode: string;
@@ -1415,6 +1417,8 @@ export default function ScanClient({
   ownerAppMode?: boolean;
   ownerAppAssetId?: string | null;
   ownerAppOperatorName?: string;
+  ownerAppScheduledMaintenanceId?: string | null;
+  ownerAppScheduledMaintenanceType?: string | null;
   ownerAppReturnTo?: string | null;
 }) {
   const normalizedCode = useMemo(
@@ -1430,15 +1434,23 @@ export default function ScanClient({
     [ownerAppAssetId],
   );
   const normalizedScheduledMaintenanceId = useMemo(
-    () => String(fieldManagerScheduledMaintenanceId ?? "").trim(),
-    [fieldManagerScheduledMaintenanceId],
+    () => String(
+      ownerAppMode
+        ? ownerAppScheduledMaintenanceId
+        : fieldManagerScheduledMaintenanceId,
+    ).trim(),
+    [fieldManagerScheduledMaintenanceId, ownerAppMode, ownerAppScheduledMaintenanceId],
   );
   const normalizedScheduledMaintenanceType = useMemo<ScheduledMaintenanceType | null>(() => {
-    const normalized = String(fieldManagerScheduledMaintenanceType ?? "").trim().toLowerCase();
+    const normalized = String(
+      ownerAppMode
+        ? ownerAppScheduledMaintenanceType
+        : fieldManagerScheduledMaintenanceType,
+    ).trim().toLowerCase();
     if (normalized === "checkup") return "checkup";
     if (normalized === "service") return "service";
     return null;
-  }, [fieldManagerScheduledMaintenanceType]);
+  }, [fieldManagerScheduledMaintenanceType, ownerAppMode, ownerAppScheduledMaintenanceType]);
   const scheduledMaintenanceServiceMode: ServiceMode = normalizedScheduledMaintenanceType === "checkup"
     ? "checked"
     : normalizedScheduledMaintenanceType === "service"
@@ -1453,6 +1465,8 @@ export default function ScanClient({
   const ownerAppReturnHref = useMemo(() => {
     const requested = String(ownerAppReturnTo ?? "").trim();
     return requested.startsWith("/owner-app/operations")
+      || requested.startsWith("/owner-app/attention")
+      || requested.startsWith("/owner-app/assets/")
       ? requested
       : "/owner-app/operations/maintenance";
   }, [ownerAppReturnTo]);
@@ -1831,7 +1845,9 @@ export default function ScanClient({
         setIsUnavailable(true);
         setAssetOpenError(
           data?.error ??
-            "Could not open this asset. Your Field Manager session may not have access to this asset. Please go back and try again.",
+            (ownerAppMode
+              ? "Could not open this asset from your Owner App. Please go back and try again."
+              : "Could not open this asset. Your Field Manager session may not have access to this asset. Please go back and try again."),
         );
         return false;
       }
@@ -1854,8 +1870,10 @@ export default function ScanClient({
           data?.error ??
           (response.status === 404
             ? "Asset not found."
-            : fieldManagerMode || ownerAppMode
-              ? "Could not open this asset. Your Field Manager session may not have access to this asset. Please go back and try again."
+            : ownerAppMode
+              ? "Could not open this asset from your Owner App. Please go back and try again."
+              : fieldManagerMode
+                ? "Could not open this asset. Your Field Manager session may not have access to this asset. Please go back and try again."
               : "Scan access is not enabled yet.");
         setAsset(null);
         setIsUnavailable(true);
@@ -2998,7 +3016,7 @@ export default function ScanClient({
       ? updateToPersist.hours || storedSessionUsage.hours || ""
       : "";
     const operatorNameForSave = isFieldManagerMode
-      ? operatorName.trim() || "Field Manager"
+      ? operatorName.trim() || (ownerAppMode ? "Owner" : "Field Manager")
       : operatorName.trim();
     const scheduledMaintenanceIdForSave =
       isFieldManagerMode && updateToPersist.hasService
@@ -3385,8 +3403,9 @@ export default function ScanClient({
               <span>{ownerAppMode ? "Owner maintenance" : "Field Manager asset"}</span>
               <h1>{scanTitleText(prePinAsset?.title, "Opening asset")}</h1>
               <p>
-                Checking your Field Manager access. No farm PIN or scanner name
-                is required.
+                {ownerAppMode
+                  ? "Opening your maintenance flow. No extra PIN or name is required."
+                  : "Checking your Field Manager access. No farm PIN or scanner name is required."}
               </p>
             </div>
           </section>

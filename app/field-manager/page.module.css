@@ -1124,6 +1124,110 @@
   box-shadow: none;
 }
 
+.overviewConfirmBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  overflow-y: auto;
+  background: rgba(9, 31, 25, 0.54);
+  padding: max(18px, env(safe-area-inset-top)) 18px max(18px, env(safe-area-inset-bottom));
+  backdrop-filter: blur(5px);
+}
+
+.overviewConfirmCard {
+  width: min(100%, 430px);
+  box-sizing: border-box;
+  border: 1px solid rgba(18, 53, 45, 0.13);
+  border-radius: 24px;
+  background: #ffffff;
+  padding: 24px;
+  text-align: center;
+  box-shadow: 0 26px 70px rgba(9, 31, 25, 0.25);
+}
+
+.overviewConfirmEyebrow {
+  display: block;
+  margin-bottom: 8px;
+  color: #236851;
+  font-size: 0.7rem;
+  font-weight: 950;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.overviewConfirmCard h2 {
+  margin: 0;
+  color: #12352d;
+  font-size: clamp(1.48rem, 6vw, 1.82rem);
+  font-weight: 850;
+  letter-spacing: -0.035em;
+  line-height: 1.12;
+}
+
+.overviewConfirmCard p {
+  margin: 12px auto 0;
+  color: rgba(18, 53, 45, 0.7);
+  font-size: 0.92rem;
+  font-weight: 650;
+  line-height: 1.5;
+}
+
+.overviewConfirmCard p strong {
+  color: #12352d;
+  font-weight: 850;
+}
+
+.overviewConfirmActions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.overviewConfirmCancel,
+.overviewConfirmButton {
+  min-height: 54px;
+  border-radius: 16px;
+  padding: 0 14px;
+  font: inherit;
+  font-size: 0.94rem;
+  font-weight: 900;
+  cursor: pointer;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, opacity 0.16s ease;
+}
+
+.overviewConfirmCancel {
+  border: 1px solid rgba(18, 53, 45, 0.16);
+  background: #ffffff;
+  color: #174637;
+}
+
+.overviewConfirmButton {
+  border: 1px solid #ad3232;
+  background: linear-gradient(180deg, #c64242 0%, #aa3030 100%);
+  color: #ffffff;
+  box-shadow: 0 12px 24px rgba(170, 48, 48, 0.22);
+}
+
+.overviewConfirmCancel:focus-visible,
+.overviewConfirmButton:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.14);
+}
+
+.overviewConfirmCancel:active:not(:disabled),
+.overviewConfirmButton:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.overviewConfirmCancel:disabled,
+.overviewConfirmButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 .overviewEmpty {
   margin: 0;
   border: 1px dashed rgba(18, 53, 45, 0.15);

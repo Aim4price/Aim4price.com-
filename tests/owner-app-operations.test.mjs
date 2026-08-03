@@ -53,6 +53,54 @@ test('maintenance APIs authorize the owner and derive the operator identity on t
   assert.match(uploadRoute, /authorizeOwnerAppScanAccess/);
 });
 
+test('Owner Overview only completes scheduled maintenance through recorded work', async () => {
+  const [overview, workPage, scanClient, eventRoute, scheduleClient, ownerActions] = await Promise.all([
+    source('app/owner-app/attention/owner-attention-client.tsx'),
+    source('app/owner-app/operations/maintenance/[assetId]/page.tsx'),
+    source('app/scan/[publicAssetCode]/scan-client.tsx'),
+    source('app/api/scan/assets/[publicAssetCode]/event/route.ts'),
+    source('app/field-manager/assets/[publicAssetCode]/maintenance/field-manager-maintenance-client.tsx'),
+    source('app/api/owner-app/assets/[assetId]/actions/route.ts'),
+  ]);
+
+  assert.match(overview, /owner-app\/operations\/maintenance/);
+  assert.match(overview, /maintenanceId: item\.sourceId/);
+  assert.match(overview, /maintenanceType: item\.type/);
+  assert.doesNotMatch(overview, /owner-app\/assets\/\$\{encodeURIComponent\(item\.assetId\)\}\/maintenance\?maintenanceId/);
+
+  assert.match(workPage, /ownerAppScheduledMaintenanceId=\{maintenanceId \|\| null\}/);
+  assert.match(workPage, /ownerAppScheduledMaintenanceType=\{maintenanceType\}/);
+  assert.match(scanClient, /ownerAppMode[\s\S]*ownerAppScheduledMaintenanceId/);
+  assert.match(scanClient, /scheduledMaintenanceId: scheduledMaintenanceIdForSave \|\| null/);
+  assert.match(eventRoute, /access\.accessMode !== "field_manager" && access\.accessMode !== "owner_session"/);
+  assert.match(eventRoute, /getAssetMaintenanceRecordById\([\s\S]*scheduledMaintenanceId/);
+  assert.match(eventRoute, /access\.accessMode === "owner_session"[\s\S]*access\.ownerAppDisplayName/);
+
+  assert.match(scheduleClient, />\s*Record work\s*</);
+  assert.doesNotMatch(scheduleClient, /Mark done/);
+  assert.doesNotMatch(scheduleClient, /updateOwnerMaintenance\(record, 'maintenance-complete'\)/);
+  assert.match(ownerActions, /action === 'maintenance-complete'[\s\S]*Record the completed work, usage and notes/);
+  assert.doesNotMatch(ownerActions, /completeAssetMaintenanceRecord/);
+});
+
+test('Owner and Field Manager Overview Clear actions require confirmation', async () => {
+  const [ownerOverview, managerOverview, confirmation] = await Promise.all([
+    source('app/owner-app/attention/owner-attention-client.tsx'),
+    source('app/field-manager/field-manager-overview-client.tsx'),
+    source('app/field-manager/overview-clear-confirmation.tsx'),
+  ]);
+
+  for (const overview of [ownerOverview, managerOverview]) {
+    assert.match(overview, /setClearCandidate\(item\)/);
+    assert.match(overview, /<OverviewClearConfirmation/);
+    assert.doesNotMatch(overview, /onClick=\{\(\) => void handleClearItem\(item\)\}/);
+  }
+
+  assert.match(confirmation, /Are you sure\?/);
+  assert.match(confirmation, /This will not delete the asset or its records\./);
+  assert.match(confirmation, /aria-modal="true"/);
+});
+
 test('fuel selection and save routes use signed-in Owner App access without a PIN', async () => {
   const [listPage, detailPage, fuelClient, fuelAuth, listApi, getRoute, issueRoute, refillRoute, dipstickRoute] = await Promise.all([
     source('app/owner-app/operations/fuel/page.tsx'),

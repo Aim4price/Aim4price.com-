@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import FieldManagerNavLink from './field-manager-nav-link';
+import OverviewClearConfirmation from './overview-clear-confirmation';
 import styles from './page.module.css';
 
 type OverviewRange = 'week' | 'upcoming';
@@ -93,6 +94,7 @@ export default function FieldManagerOverviewClient() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [openingItemId, setOpeningItemId] = useState<string | null>(null);
   const [clearingItemId, setClearingItemId] = useState<string | null>(null);
+  const [clearCandidate, setClearCandidate] = useState<OverviewItem | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
   const requestIdRef = useRef(0);
   const hasLoadedRef = useRef(false);
@@ -250,8 +252,10 @@ export default function FieldManagerOverviewClient() {
       setItems((current) => current.filter(
         (candidate) => candidate.id !== item.id || candidate.sourceId !== item.sourceId,
       ));
+      setClearCandidate(null);
     } catch (error) {
       setActionError(error instanceof Error ? error.message : 'This item could not be cleared.');
+      setClearCandidate(null);
     } finally {
       setClearingItemId(null);
     }
@@ -284,7 +288,7 @@ export default function FieldManagerOverviewClient() {
           <button
             type="button"
             className={styles.overviewClearButton}
-            onClick={() => void handleClearItem(item)}
+            onClick={() => setClearCandidate(item)}
             disabled={hasPendingCardAction}
             aria-busy={isClearing}
             aria-label={`Clear ${TYPE_LABELS[item.type].toLowerCase()} for ${item.assetTitle} from your Overview`}
@@ -384,6 +388,16 @@ export default function FieldManagerOverviewClient() {
               )}
             </section>
           </div>
+        ) : null}
+
+        {clearCandidate ? (
+          <OverviewClearConfirmation
+            assetTitle={clearCandidate.assetTitle}
+            itemLabel={TYPE_LABELS[clearCandidate.type]}
+            isClearing={clearingItemId === clearCandidate.id}
+            onCancel={() => setClearCandidate(null)}
+            onConfirm={() => void handleClearItem(clearCandidate)}
+          />
         ) : null}
       </section>
     </main>
