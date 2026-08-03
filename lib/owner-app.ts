@@ -73,7 +73,6 @@ async function ensureOwnerAppTablesOnce(): Promise<void> {
     create table if not exists public.owner_app_users (
       id uuid primary key default gen_random_uuid(),
       parent_owner_user_id text not null references public."user"(id) on delete cascade,
-      viewer_key text not null,
       display_name text not null,
       username text not null,
       username_normalized text not null,
@@ -97,6 +96,7 @@ async function ensureOwnerAppTablesOnce(): Promise<void> {
   await db.query(`
     create table if not exists public.owner_app_overview_dismissals (
       parent_owner_user_id text not null references public."user"(id) on delete cascade,
+      viewer_key text not null default 'legacy-owner',
       source_kind text not null check (source_kind in ('maintenance', 'problem', 'license')),
       source_id text not null,
       overview_item_id text not null,
