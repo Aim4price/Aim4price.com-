@@ -34657,3 +34657,33 @@ button.documentOpenLink {
     min-height: min(68vh, 34rem) !important;
   }
 }
+
+
+/* Compact usage-unit choice inside Update Asset. */
+.assetUsageFieldHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.field .assetUsageTypeSelect {
+  width: auto;
+  min-width: 112px;
+  min-height: 34px;
+  padding: 5px 30px 5px 10px;
+  border-radius: 10px;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+@media (max-width: 560px) {
+  .assetUsageFieldHeading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .field .assetUsageTypeSelect {
+    width: 100%;
+  }
+}
