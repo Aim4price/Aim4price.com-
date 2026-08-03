@@ -1,0 +1,124 @@
+.workspace {
+  transition: grid-template-columns 180ms ease;
+}
+
+.createCard,
+.managerCard {
+  transition: opacity 180ms ease, filter 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+}
+
+.focusedCard {
+  position: relative;
+  z-index: 3;
+  transform: translateY(-2px);
+  box-shadow: 0 26px 60px rgba(18, 70, 53, 0.13), 0 8px 22px rgba(18, 70, 53, 0.06) !important;
+}
+
+.mutedCard,
+.workspaceFocused .createCard {
+  opacity: 0.3;
+  filter: blur(1.5px) saturate(0.65);
+  transform: scale(0.985);
+  pointer-events: none;
+  user-select: none;
+}
+
+.focusNote {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin: 0 0 0.8rem;
+  border: 1px solid rgba(31, 138, 102, 0.13);
+  border-radius: 0.9rem;
+  padding: 0.72rem 0.8rem;
+  color: #2e5f4f;
+  background: linear-gradient(180deg, #f5fbf8 0%, #eef8f3 100%);
+  font-size: 0.78rem;
+  font-weight: 720;
+  line-height: 1.4;
+}
+
+.focusDot {
+  width: 0.62rem;
+  height: 0.62rem;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: #1f8a66;
+  box-shadow: 0 0 0 0.26rem rgba(31, 138, 102, 0.1);
+}
+
+.sectionHeading {
+  display: flex;
+  align-items: center;
+  gap: 0.72rem;
+  margin-bottom: 0.25rem;
+}
+
+.stepNumber {
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(31, 138, 102, 0.18);
+  border-radius: 0.72rem;
+  color: #176047;
+  background: #edf8f2;
+  font-size: 0.75rem;
+  font-weight: 900;
+}
+
+.sectionHeadingCopy {
+  min-width: 0;
+  display: grid;
+  gap: 0.12rem;
+}
+
+.sectionHeadingCopy h3 {
+  margin: 0;
+  color: #173c31;
+  font-size: 0.94rem;
+  font-weight: 900;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+}
+
+.sectionHeadingCopy p {
+  margin: 0;
+  color: #6b7d76;
+  font-size: 0.74rem;
+  font-weight: 620;
+  line-height: 1.38;
+}
+
+.roleSelect {
+  margin-top: 0.02rem;
+}
+
+.accessSelect {
+  width: 100%;
+}
+
+@media (max-width: 960px) {
+  .workspaceFocused .createCard {
+    display: none;
+  }
+}
+
+@media (max-width: 620px) {
+  .mutedCard {
+    display: none;
+  }
+
+  .focusedCard {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .createCard,
+  .managerCard,
+  .workspace {
+    transition: none;
+  }
+}

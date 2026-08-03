@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import AppHeader from '../../../components/AppHeader';
+import FriendlySelect from '../friendly-select';
+import accessStyles from '../access-page-refinements.module.css';
 import styles from '../dealer-app/page.module.css';
 
 type OwnerAppUser = {
@@ -225,8 +227,8 @@ export default function OwnerAppAccessClient() {
 
         {notice ? <div className={`${styles.notice} ${notice.tone === 'success' ? styles.noticeSuccess : styles.noticeError}`}>{notice.message}</div> : null}
 
-        <section className={styles.grid}>
-          <section className={styles.card}>
+        <section className={`${styles.grid} ${accessStyles.workspace} ${expandedId ? accessStyles.workspaceFocused : ''}`}>
+          <section className={`${styles.card} ${accessStyles.createCard}`}>
             <div className={styles.cardHeader}><h2>New Owner App user</h2><p>Create one username and a passcode of at least 4 characters.</p></div>
             <form className={styles.form} onSubmit={createUser}>
               <label className={styles.field}><span>Display name</span><input value={draft.displayName} onChange={(event) => setDraft((current) => ({ ...current, displayName: event.target.value }))} placeholder="Example: Farm owner" /></label>
@@ -242,7 +244,13 @@ export default function OwnerAppAccessClient() {
                   <button type="button" className={styles.passwordToggleButton} onClick={() => setShowCreatePassword((current) => !current)}>{showCreatePassword ? 'Hide' : 'Show'}</button>
                 </div>
               </div>
-              <label className={styles.field}><span>Access</span><select value={draft.accessRole} onChange={(event) => setDraft((current) => ({ ...current, accessRole: event.target.value as OwnerAppUser['accessRole'] }))}>{ACCESS_ROLES.map((option) => <option key={option.value} value={option.value}>{option.label} — {option.description}</option>)}</select></label>
+              <FriendlySelect
+                label="Access"
+                value={draft.accessRole}
+                options={ACCESS_ROLES}
+                onChange={(accessRole) => setDraft((current) => ({ ...current, accessRole }))}
+                className={accessStyles.roleSelect}
+              />
               <button type="submit" className={styles.primaryButton} disabled={creating}>{creating ? 'Creating…' : 'Create login'}</button>
             </form>
           </section>
@@ -257,15 +265,26 @@ export default function OwnerAppAccessClient() {
                 const expanded = expandedId === user.id;
                 const busy = busyId === user.id;
                 return (
-                  <article key={user.id} className={`${styles.managerCard} ${expanded ? styles.managerCardExpanded : ''}`}>
+                  <article key={user.id} className={`${styles.managerCard} ${accessStyles.managerCard} ${expanded ? `${styles.managerCardExpanded} ${accessStyles.focusedCard}` : ''} ${expandedId && !expanded ? accessStyles.mutedCard : ''}`}>
                     <div className={styles.managerSummary}>
                       <div className={styles.managerIdentity}><strong>{user.displayName}</strong><span>{user.username} · {accessRoleLabel(user.accessRole)}</span></div>
                       <div className={styles.managerSummaryMeta}><span><b>Last login</b>{formatDate(user.lastLoginAtIso)}</span><span><b>Updated</b>{formatDate(user.updatedAtIso)}</span></div>
                       <span className={`${styles.statusText} ${user.isActive ? styles.statusActive : styles.statusInactive}`}>{user.isActive ? 'Active' : 'Inactive'}</span>
-                      <button type="button" className={styles.manageButton} onClick={() => setExpandedId(expanded ? null : user.id)}>{expanded ? 'Close' : 'Manage'}</button>
+                      <button type="button" className={styles.manageButton} onClick={() => setExpandedId(expanded ? null : user.id)} disabled={Boolean(expandedId && !expanded)}>{expanded ? 'Close' : 'Manage'}</button>
                     </div>
                     {expanded ? (
                       <div className={styles.managerDropdown}>
+                        <p className={accessStyles.focusNote}>
+                          <span className={accessStyles.focusDot} aria-hidden="true" />
+                          Finish this user before closing the card and moving to another user.
+                        </p>
+                        <div className={accessStyles.sectionHeading}>
+                          <span className={accessStyles.stepNumber}>1</span>
+                          <div className={accessStyles.sectionHeadingCopy}>
+                            <h3>User details and access</h3>
+                            <p>Update this login and choose the simplest access level that fits the user.</p>
+                          </div>
+                        </div>
                         <form className={styles.inlineForm} onSubmit={(event) => void saveUser(event, user)}>
                           <label className={styles.compactField}><span>Display name</span><input value={edit.displayName} onChange={(event) => setEditDrafts((current) => ({ ...current, [user.id]: { ...edit, displayName: event.target.value } }))} /></label>
                           <label className={styles.compactField}>
@@ -273,7 +292,13 @@ export default function OwnerAppAccessClient() {
                             <input value={edit.username} onChange={(event) => { setEditDrafts((current) => ({ ...current, [user.id]: { ...edit, username: normalizeUsername(event.target.value) } })); setEditUsernameErrors((current) => ({ ...current, [user.id]: '' })); }} aria-invalid={Boolean(editUsernameErrors[user.id])} />
                             {editUsernameErrors[user.id] ? <small className={styles.fieldError} role="alert">{editUsernameErrors[user.id]}</small> : null}
                           </label>
-                          <label className={styles.compactField}><span>Access</span><select value={edit.accessRole} onChange={(event) => setEditDrafts((current) => ({ ...current, [user.id]: { ...edit, accessRole: event.target.value as OwnerAppUser['accessRole'] } }))}>{ACCESS_ROLES.map((option) => <option key={option.value} value={option.value}>{option.label} — {option.description}</option>)}</select></label>
+                          <FriendlySelect
+                            label="Access"
+                            value={edit.accessRole}
+                            options={ACCESS_ROLES}
+                            onChange={(accessRole) => setEditDrafts((current) => ({ ...current, [user.id]: { ...edit, accessRole } }))}
+                            className={accessStyles.roleSelect}
+                          />
                           <div className={styles.compactField}>
                             <label className={styles.fieldLabel} htmlFor={`owner-app-password-${user.id}`}>New passcode</label>
                             <div className={styles.passwordInputWrap}>
