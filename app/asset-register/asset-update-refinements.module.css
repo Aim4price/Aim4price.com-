@@ -1,0 +1,55 @@
+.detailsStack {
+  gap: 0.82rem !important;
+}
+
+.compactGrid,
+.valueGrid {
+  gap: 0.78rem !important;
+}
+
+.compactGrid > label,
+.compactGrid > div {
+  padding: 0.84rem !important;
+  border-radius: 1rem !important;
+}
+
+.valueGrid > label {
+  min-height: 6.35rem !important;
+  padding: 0.84rem !important;
+  border-radius: 1rem !important;
+}
+
+.usageEditor {
+  display: grid !important;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+  align-items: end !important;
+  gap: 0.68rem !important;
+}
+
+.usageTypeField,
+.usageReading {
+  min-width: 0;
+}
+
+.usageReading {
+  display: grid;
+  gap: 0.44rem;
+}
+
+.usageReading > span {
+  color: #2d3e4c;
+  font-size: 0.84rem;
+  font-weight: 820;
+  line-height: 1.2;
+}
+
+.notesField {
+  padding: 0.86rem !important;
+  border-radius: 1rem !important;
+}
+
+@media (max-width: 560px) {
+  .usageEditor {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
