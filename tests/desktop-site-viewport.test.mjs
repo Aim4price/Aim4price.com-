@@ -13,18 +13,18 @@ const protectedAppLayoutPaths = [
   new URL('../app/owner-app/layout.tsx', import.meta.url),
 ];
 
-test('the desktop viewport is isolated from the shared app root', async () => {
+test('the normal website inherits a zoomable fixed desktop viewport from the shared root', async () => {
   const [rootSource, homeSource] = await Promise.all([
     readFile(rootLayoutPath, 'utf8'),
     readFile(homePagePath, 'utf8'),
   ]);
 
-  assert.doesNotMatch(rootSource, /width:\s*1280/);
-  assert.match(homeSource, /export const viewport: Viewport\s*=\s*\{/);
-  assert.match(homeSource, /width:\s*1280/);
-  assert.match(homeSource, /initialScale:\s*1/);
-  assert.match(homeSource, /userScalable:\s*true/);
-  assert.doesNotMatch(homeSource, /maximumScale|minimumScale/);
+  assert.match(rootSource, /export const viewport: Viewport\s*=\s*\{/);
+  assert.match(rootSource, /width:\s*1280/);
+  assert.match(rootSource, /initialScale:\s*1/);
+  assert.match(rootSource, /userScalable:\s*true/);
+  assert.doesNotMatch(rootSource, /maximumScale|minimumScale/);
+  assert.doesNotMatch(homeSource, /export const viewport|width:\s*1280/);
 });
 
 test('the three role apps keep zoomable device-width viewports', async () => {

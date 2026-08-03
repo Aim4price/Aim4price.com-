@@ -1,18 +1,18 @@
 .navLink {
-  width: min(100%, 176px);
-  min-height: 64px;
+  width: min(100%, 164px);
+  min-height: 50px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
   gap: 7px;
   border: 1.5px solid #6fc596;
-  border-radius: 18px;
+  border-radius: 14px;
   background: linear-gradient(180deg, #ffffff 0%, #e6f8ef 100%);
   color: #0a543d;
-  padding: 0 22px;
+  padding: 0 16px;
   font-family: inherit;
-  font-size: 1.05rem;
+  font-size: 0.9rem;
   font-weight: 800;
   line-height: 1;
   text-decoration: none;
@@ -23,7 +23,7 @@
 }
 
 .arrow {
-  font-size: 1.35rem;
+  font-size: 1.15rem;
   line-height: 1;
 }
 
@@ -38,30 +38,8 @@
 
 @media (max-width: 390px) {
   .navLink {
-    padding-right: 18px;
-    padding-left: 18px;
-    font-size: 1rem;
-  }
-}
-
-@media (min-width: 540px) and (max-width: 767px) {
-  .navLink {
-    width: min(100%, 202px);
-    min-height: 88px;
-    border-radius: 25px;
-    padding: 0 28px;
-    font-size: 1.42rem;
-  }
-
-  .arrow {
-    font-size: 1.75rem;
-  }
-}
-
-@media (min-width: 768px) {
-  .navLink {
-    width: min(100%, 192px);
-    min-height: 68px;
-    font-size: 1.08rem;
+    padding-right: 14px;
+    padding-left: 14px;
+    font-size: 0.86rem;
   }
 }

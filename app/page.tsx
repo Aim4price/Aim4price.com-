@@ -1,4 +1,3 @@
-import type { Viewport } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import { redirectAdminToAdmin } from '../lib/account-access';
@@ -8,12 +7,6 @@ import styles from './page.module.css';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-
-export const viewport: Viewport = {
-  width: 1280,
-  initialScale: 1,
-  userScalable: true,
-};
 
 type ProductStep = {
   number: string;
