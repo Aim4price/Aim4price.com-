@@ -9,13 +9,24 @@ type OwnerAppUser = {
   displayName: string;
   username: string;
   isActive: boolean;
+  accessRole: 'admin' | 'operations' | 'view_only';
   lastLoginAtIso: string | null;
   updatedAtIso: string;
 };
 
 type ApiResponse = { ok: boolean; users?: OwnerAppUser[]; user?: OwnerAppUser; error?: string };
-type Draft = { displayName: string; username: string; password: string };
-const EMPTY_DRAFT: Draft = { displayName: '', username: '', password: '' };
+type Draft = { displayName: string; username: string; password: string; accessRole: OwnerAppUser['accessRole'] };
+const EMPTY_DRAFT: Draft = { displayName: '', username: '', password: '', accessRole: 'operations' };
+
+const ACCESS_ROLES: Array<{ value: OwnerAppUser['accessRole']; label: string; description: string }> = [
+  { value: 'operations', label: 'Operations', description: 'Usage, maintenance, fuel, location, photos and problems.' },
+  { value: 'view_only', label: 'View only', description: 'Can view assets and records without changing anything.' },
+  { value: 'admin', label: 'Owner / Admin', description: 'Full access, including values, finance, Marketplace and deletion.' },
+];
+
+function accessRoleLabel(role: OwnerAppUser['accessRole']) {
+  return ACCESS_ROLES.find((option) => option.value === role)?.label ?? 'Operations';
+}
 
 function normalizeUsername(value: string) {
   return value.trim().toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9._@-]/g, '').slice(0, 80);
@@ -70,6 +81,7 @@ export default function OwnerAppAccessClient() {
         displayName: user.displayName,
         username: user.username,
         password: '',
+        accessRole: user.accessRole,
       }])));
     } catch (error) {
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to load Owner App users.' });
@@ -94,7 +106,7 @@ export default function OwnerAppAccessClient() {
       const payload = await response.json().catch(() => null) as ApiResponse | null;
       if (!response.ok || !payload?.ok || !payload.user) throw new Error(payload?.error || 'Failed to create Owner App user.');
       setUsers((current) => [payload.user!, ...current]);
-      setEditDrafts((current) => ({ ...current, [payload.user!.id]: { displayName: payload.user!.displayName, username: payload.user!.username, password: '' } }));
+      setEditDrafts((current) => ({ ...current, [payload.user!.id]: { displayName: payload.user!.displayName, username: payload.user!.username, password: '', accessRole: payload.user!.accessRole } }));
       setDraft(EMPTY_DRAFT);
       setShowCreatePassword(false);
       setCreateUsernameError('');
@@ -123,7 +135,7 @@ export default function OwnerAppAccessClient() {
       if (!response.ok || !payload?.ok || !payload.user) throw new Error(payload?.error || 'Failed to update Owner App user.');
       const updated = payload.user;
       setUsers((current) => current.map((entry) => entry.id === updated.id ? updated : entry));
-      setEditDrafts((current) => ({ ...current, [updated.id]: { displayName: updated.displayName, username: updated.username, password: '' } }));
+      setEditDrafts((current) => ({ ...current, [updated.id]: { displayName: updated.displayName, username: updated.username, password: '', accessRole: updated.accessRole } }));
       setVisiblePasswords((current) => ({ ...current, [updated.id]: false }));
       setEditUsernameErrors((current) => ({ ...current, [updated.id]: '' }));
       setNotice({ tone: 'success', message });
@@ -144,7 +156,7 @@ export default function OwnerAppAccessClient() {
     event.preventDefault();
     const edit = editDrafts[user.id];
     if (!edit) return;
-    const changes: Record<string, unknown> = { displayName: edit.displayName.trim(), username: normalizeUsername(edit.username) };
+    const changes: Record<string, unknown> = { displayName: edit.displayName.trim(), username: normalizeUsername(edit.username), accessRole: edit.accessRole };
     if (edit.password) {
       if (!isValidPasscode(edit.password)) {
         setNotice({ tone: 'error', message: 'The new passcode must contain at least 4 characters.' });
@@ -230,6 +242,7 @@ export default function OwnerAppAccessClient() {
                   <button type="button" className={styles.passwordToggleButton} onClick={() => setShowCreatePassword((current) => !current)}>{showCreatePassword ? 'Hide' : 'Show'}</button>
                 </div>
               </div>
+              <label className={styles.field}><span>Access</span><select value={draft.accessRole} onChange={(event) => setDraft((current) => ({ ...current, accessRole: event.target.value as OwnerAppUser['accessRole'] }))}>{ACCESS_ROLES.map((option) => <option key={option.value} value={option.value}>{option.label} — {option.description}</option>)}</select></label>
               <button type="submit" className={styles.primaryButton} disabled={creating}>{creating ? 'Creating…' : 'Create login'}</button>
             </form>
           </section>
@@ -240,13 +253,13 @@ export default function OwnerAppAccessClient() {
             {!loading && !users.length ? <p className={styles.emptyState}>No Owner App users created yet.</p> : null}
             <div className={styles.managerList}>
               {users.map((user) => {
-                const edit = editDrafts[user.id] ?? { displayName: user.displayName, username: user.username, password: '' };
+                const edit = editDrafts[user.id] ?? { displayName: user.displayName, username: user.username, password: '', accessRole: user.accessRole };
                 const expanded = expandedId === user.id;
                 const busy = busyId === user.id;
                 return (
                   <article key={user.id} className={`${styles.managerCard} ${expanded ? styles.managerCardExpanded : ''}`}>
                     <div className={styles.managerSummary}>
-                      <div className={styles.managerIdentity}><strong>{user.displayName}</strong><span>{user.username}</span></div>
+                      <div className={styles.managerIdentity}><strong>{user.displayName}</strong><span>{user.username} · {accessRoleLabel(user.accessRole)}</span></div>
                       <div className={styles.managerSummaryMeta}><span><b>Last login</b>{formatDate(user.lastLoginAtIso)}</span><span><b>Updated</b>{formatDate(user.updatedAtIso)}</span></div>
                       <span className={`${styles.statusText} ${user.isActive ? styles.statusActive : styles.statusInactive}`}>{user.isActive ? 'Active' : 'Inactive'}</span>
                       <button type="button" className={styles.manageButton} onClick={() => setExpandedId(expanded ? null : user.id)}>{expanded ? 'Close' : 'Manage'}</button>
@@ -260,6 +273,7 @@ export default function OwnerAppAccessClient() {
                             <input value={edit.username} onChange={(event) => { setEditDrafts((current) => ({ ...current, [user.id]: { ...edit, username: normalizeUsername(event.target.value) } })); setEditUsernameErrors((current) => ({ ...current, [user.id]: '' })); }} aria-invalid={Boolean(editUsernameErrors[user.id])} />
                             {editUsernameErrors[user.id] ? <small className={styles.fieldError} role="alert">{editUsernameErrors[user.id]}</small> : null}
                           </label>
+                          <label className={styles.compactField}><span>Access</span><select value={edit.accessRole} onChange={(event) => setEditDrafts((current) => ({ ...current, [user.id]: { ...edit, accessRole: event.target.value as OwnerAppUser['accessRole'] } }))}>{ACCESS_ROLES.map((option) => <option key={option.value} value={option.value}>{option.label} — {option.description}</option>)}</select></label>
                           <div className={styles.compactField}>
                             <label className={styles.fieldLabel} htmlFor={`owner-app-password-${user.id}`}>New passcode</label>
                             <div className={styles.passwordInputWrap}>
