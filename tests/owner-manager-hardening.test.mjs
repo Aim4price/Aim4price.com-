@@ -22,7 +22,7 @@ const [
   read('lib/owner-app-access.ts'),
   read('lib/owner-app-overview.ts'),
   read('app/api/owner-app/attention/route.ts'),
-  read('database/migrations/58-owner-manager-hardening.sql'),
+  read('database/migrations/66-owner-manager-hardening.sql'),
 ]);
 
 test('Field Manager passwords are hash-only and reset sessions', () => {
