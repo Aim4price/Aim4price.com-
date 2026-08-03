@@ -20,6 +20,7 @@ type FieldManagerSessionClaims = {
   ownerUserId: string;
   username: string;
   displayName: string;
+  sessionVersion: number;
   sessionId: string;
   issuedAtMs: number;
   expiresAtMs: number;
@@ -51,6 +52,7 @@ export type ActiveFieldManagerSession = {
   ownerUserId: string;
   username: string;
   displayName: string;
+  sessionVersion: number;
   sessionId: string;
   expiresAtMs: number;
 };
@@ -165,6 +167,7 @@ function readSessionClaims(token: string): FieldManagerSessionClaims | null {
   const ownerUserId = asText(parsed.ownerUserId);
   const username = asText(parsed.username);
   const displayName = asText(parsed.displayName);
+  const sessionVersion = Number(parsed.sessionVersion);
   const sessionId = asText(parsed.sessionId);
   const issuedAtMs = Number(parsed.issuedAtMs);
   const expiresAtMs = Number(parsed.expiresAtMs);
@@ -173,7 +176,7 @@ function readSessionClaims(token: string): FieldManagerSessionClaims | null {
     return null;
   }
 
-  if (!Number.isFinite(issuedAtMs) || !Number.isFinite(expiresAtMs)) {
+  if (!Number.isFinite(sessionVersion) || sessionVersion < 1 || !Number.isFinite(issuedAtMs) || !Number.isFinite(expiresAtMs)) {
     return null;
   }
 
@@ -182,6 +185,7 @@ function readSessionClaims(token: string): FieldManagerSessionClaims | null {
     ownerUserId,
     username,
     displayName,
+    sessionVersion: Math.round(sessionVersion),
     sessionId,
     issuedAtMs,
     expiresAtMs,
@@ -272,12 +276,14 @@ function sessionFromManager(
 ): ActiveFieldManagerSession | null {
   if (!manager.isActive) return null;
   if (manager.ownerUserId !== claims.ownerUserId) return null;
+  if (manager.sessionVersion !== claims.sessionVersion) return null;
 
   return {
     managerId: manager.id,
     ownerUserId: manager.ownerUserId,
     username: manager.username,
     displayName: manager.displayName,
+    sessionVersion: manager.sessionVersion,
     sessionId: claims.sessionId,
     expiresAtMs: claims.expiresAtMs,
   };
@@ -293,6 +299,7 @@ export function applyFieldManagerSessionCookie(
     ownerUserId: manager.ownerUserId,
     username: manager.username,
     displayName: manager.displayName,
+    sessionVersion: manager.sessionVersion,
     sessionId: randomUUID(),
     issuedAtMs: now,
     expiresAtMs: now + FIELD_MANAGER_SESSION_MAX_AGE_SECONDS * 1000,
@@ -313,6 +320,7 @@ export function applyFieldManagerSessionCookie(
     ownerUserId: claims.ownerUserId,
     username: claims.username,
     displayName: claims.displayName,
+    sessionVersion: claims.sessionVersion,
     sessionId: claims.sessionId,
     expiresAtMs: claims.expiresAtMs,
   };

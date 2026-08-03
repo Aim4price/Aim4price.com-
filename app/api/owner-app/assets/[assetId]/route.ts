@@ -1,17 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAccountProfile } from '../../../../../lib/account-profile';
 import {
-  deleteAssetRegisterItem,
   getAssetRegisterItemById,
   updateAssetRegisterItem,
   type AssetRegisterDocument,
   type AssetRegisterItemKind,
 } from '../../../../../lib/asset-register-db';
+import { disposeOrDeleteAsset, type AssetDisposalReason } from '../../../../../lib/asset-lifecycle';
 import { deleteUnreferencedAssetRegisterUploads, listInternalAssetRegisterUploadIds } from '../../../../../lib/asset-register-uploads';
 import { resolveAssetUsage, type AssetUsageMetric } from '../../../../../lib/asset-usage';
 import { listAssetMaintenanceData } from '../../../../../lib/asset-maintenance';
 import { getAssetRegisterForUser, getAssetRegisterReportLogoUrl, listAssetRegisters, moveAssetRegisterItems } from '../../../../../lib/asset-registers';
-import { getOwnerAppAccess } from '../../../../../lib/owner-app-access';
+import { getOwnerAppAccess, ownerAppCan } from '../../../../../lib/owner-app-access';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -38,6 +38,7 @@ function usageMetric(
   specsJson: Record<string, unknown>,
 ): AssetUsageMetric {
   const normalized = text(value).toLowerCase();
+  if (['not_applicable', 'not-applicable', 'not applicable', 'n/a', 'na', 'none'].includes(normalized)) return 'not_applicable';
   if (normalized === 'percentage' || normalized === 'percent') return 'percentage';
   if (normalized === 'km' || normalized === 'kms') return 'km';
   if (normalized === 'hours' || normalized === 'hour' || normalized === 'hrs') return 'hours';
@@ -122,6 +123,7 @@ export async function GET(_request: NextRequest, { params }: { params: { assetId
 export async function PUT(request: NextRequest, { params }: { params: { assetId: string } }) {
   const access = await getOwnerAppAccess();
   if (!access) return unauthorized();
+  if (!ownerAppCan(access, 'manage_assets')) return NextResponse.json({ ok: false, error: 'This login has Operations or View only access.' }, { status: 403 });
   const existing = await getAssetRegisterItemById(access.ownerUserId, params.assetId);
   if (!existing) return notFound();
 
@@ -138,12 +140,23 @@ export async function PUT(request: NextRequest, { params }: { params: { assetId:
 
   const specs = { ...asRecord(existing.specsJson), ...asRecord(body.specsJson) };
   const selectedUsageMetric = usageMetric(body.usageMetric, existing, specs);
-  if (selectedUsageMetric === 'percentage') {
+  if (selectedUsageMetric === 'not_applicable') {
+    Object.assign(specs, {
+      usageMetric: 'not_applicable', usage_metric: 'not_applicable',
+      usageUnit: 'not_applicable', usage_unit: 'not_applicable',
+      usageMode: 'not_applicable', usage_mode: 'not_applicable',
+      usageBasis: 'not_applicable', usage_basis: 'not_applicable',
+      selectedUsageMode: 'not_applicable', selected_usage_mode: 'not_applicable',
+      selectedUsageBasis: 'not_applicable', selected_usage_basis: 'not_applicable',
+      usageApplicable: false, usage_applicable: false,
+    });
+  } else if (selectedUsageMetric === 'percentage') {
     Object.assign(specs, {
       usageMode: 'percent', usage_mode: 'percent',
       usageBasis: 'percent', usage_basis: 'percent',
       selectedUsageMode: 'percent', selected_usage_mode: 'percent',
       selectedUsageBasis: 'percent', selected_usage_basis: 'percent',
+      usageApplicable: true, usage_applicable: true,
     });
   } else {
     Object.assign(specs, {
@@ -153,7 +166,15 @@ export async function PUT(request: NextRequest, { params }: { params: { assetId:
       usageBasis: 'reading', usage_basis: 'reading',
       selectedUsageMode: selectedUsageMetric, selected_usage_mode: selectedUsageMetric,
       selectedUsageBasis: 'reading', selected_usage_basis: 'reading',
+      usageApplicable: true, usage_applicable: true,
     });
+  }
+  if (selectedUsageMetric !== 'percentage') {
+    for (const key of [
+      'lifeWorkedPercent', 'life_worked_percent', 'workedPercent', 'worked_percent',
+      'percentWorked', 'percent_worked', 'lifetimeWorkedPercent', 'lifetime_worked_percent',
+      'lifetimeUsedPercent', 'lifetime_used_percent',
+    ]) delete specs[key];
   }
   const financeStatus = text(specs.financeStatus || specs.finance_status || (boolean(body.isFinanced) ? 'yes' : 'no'));
   const insuranceStatus = text(specs.insuranceStatus || specs.insurance_status || (boolean(body.isInsured) ? 'yes' : 'no'));
@@ -191,8 +212,10 @@ export async function PUT(request: NextRequest, { params }: { params: { assetId:
       photos: nextPhotos,
       documents: nextDocuments,
       yearModel: numberOrNull(body.yearModel),
-      hours: selectedUsageMetric === 'percentage' ? null : numberOrNull(body.hours),
-      usageMetric: selectedUsageMetric === 'km' ? 'km' : 'hours',
+      hours: selectedUsageMetric === 'percentage' || selectedUsageMetric === 'not_applicable' ? null : numberOrNull(body.hours),
+      usageMetric: selectedUsageMetric === 'percentage' || selectedUsageMetric === 'not_applicable'
+        ? null
+        : selectedUsageMetric === 'km' ? 'km' : 'hours',
       lifeWorkedPercent: selectedUsageMetric === 'percentage' ? percentageOrNull(body.lifeWorkedPercent) : null,
       specsJson: specs,
       condition: text(body.condition) as any,
@@ -217,18 +240,40 @@ export async function PUT(request: NextRequest, { params }: { params: { assetId:
   }
 }
 
-export async function DELETE(_request: NextRequest, { params }: { params: { assetId: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: { assetId: string } }) {
   const access = await getOwnerAppAccess();
   if (!access) return unauthorized();
+  if (!ownerAppCan(access, 'manage_assets')) return NextResponse.json({ ok: false, error: 'Only an Owner / Admin login can remove an asset.' }, { status: 403 });
   const existing = await getAssetRegisterItemById(access.ownerUserId, params.assetId);
   if (!existing) return notFound();
   const uploadIds = listInternalAssetRegisterUploadIds([...existing.photos, ...existing.documents.map((document) => document.url)]);
   try {
-    await deleteAssetRegisterItem(access.ownerUserId, params.assetId);
-    await deleteUnreferencedAssetRegisterUploads({ userId: access.ownerUserId, uploadIds, excludeAssetId: params.assetId }).catch(() => undefined);
-    return NextResponse.json({ ok: true, redirectTo: '/owner-app/assets' });
+    let body: Record<string, unknown> = {};
+    try { body = await request.json() as Record<string, unknown>; } catch { body = {}; }
+    const reason = text(body.reason) as AssetDisposalReason;
+    if (!reason) {
+      return NextResponse.json({ ok: false, error: 'Choose what happened to the asset before continuing.' }, { status: 400 });
+    }
+
+    const outcome = await disposeOrDeleteAsset({
+      ownerUserId: access.ownerUserId,
+      assetId: params.assetId,
+      reason,
+      disposalDate: body.disposalDate,
+      disposalAmountExVat: body.disposalAmountExVat,
+      note: body.note,
+      actorUserId: access.ownerAppUserId || access.ownerUserId,
+      actorName: access.displayName,
+    });
+    if (outcome.mode === 'deleted') {
+      await deleteUnreferencedAssetRegisterUploads({ userId: access.ownerUserId, uploadIds, excludeAssetId: params.assetId }).catch(() => undefined);
+    }
+    return NextResponse.json({ ok: true, mode: outcome.mode, redirectTo: '/owner-app/assets' });
   } catch (error) {
     console.error('Owner App asset detail DELETE failed.', error);
+    if (error instanceof Error && error.message === 'ASSET_DELETE_HAS_DEPENDENCIES') {
+      return NextResponse.json({ ok: false, error: 'This record has linked history or files. Choose the genuine disposal reason so it can be archived safely.' }, { status: 409 });
+    }
     return NextResponse.json({ ok: false, error: 'Failed to delete this asset.' }, { status: 500 });
   }
 }

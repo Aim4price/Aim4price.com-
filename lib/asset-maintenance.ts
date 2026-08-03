@@ -428,7 +428,8 @@ function usageMetricFromSpecs(specs: Record<string, unknown>, fallback: AssetMai
 }
 
 function assetUsageMetric(asset: AssetRegisterItem | AssetForAlert | { kind?: string; specsJson?: Record<string, unknown>; lifeWorkedPercent?: number | null; hours?: number | null }): AssetMaintenanceUsageMetric {
-  return resolveAssetUsage(asset).metric;
+  const metric = resolveAssetUsage(asset).metric;
+  return metric === 'not_applicable' ? (asset.kind === 'vehicle' ? 'km' : 'hours') : metric;
 }
 
 function assetUsageReading(asset: AssetRegisterItem | AssetForAlert | { kind?: string; specsJson?: Record<string, unknown>; lifeWorkedPercent?: number | null; hours?: number | null }, metric: AssetMaintenanceUsageMetric): number | null {

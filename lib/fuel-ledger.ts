@@ -8,7 +8,7 @@ import { buildAssetRegisterUploadUrl } from './asset-register-uploads';
 import { parseFuelSlipDecimal } from './fuel-slip-number';
 import { getActiveFieldManagerSessionFromRequest } from './field-manager-session';
 import { validateFieldManagerFuelStorage } from './field-manager';
-import { getOwnerAppAccess } from './owner-app-access';
+import { getOwnerAppAccess, ownerAppCan } from './owner-app-access';
 
 export const FUEL_SCAN_COOKIE_NAME = 'aim4price_fuel_scan';
 export const FUEL_SCAN_SESSION_MAX_AGE_SECONDS = 60 * 60 * 12;
@@ -5269,6 +5269,9 @@ export async function authorizeFuelStorageScanAccess(
     const ownerAccess = await getOwnerAppAccess();
     if (!ownerAccess) {
       return { ok: false, status: 401, error: 'Aim4price Owner login is required.', pinRequired: false };
+    }
+    if (!ownerAppCan(ownerAccess, 'operate')) {
+      return { ok: false, status: 403, error: 'This Owner login has View only access.', pinRequired: false };
     }
     if (ownerAccess.ownerUserId !== storage.userId) {
       return { ok: false, status: 403, error: 'This fuel storage unit is not available to this Owner login.', pinRequired: false };

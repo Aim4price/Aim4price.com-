@@ -12,7 +12,9 @@ import {
 } from "./asset-owner-resolver";
 
 const scryptAsync = promisify(scrypt);
-const FIELD_MANAGER_PASSWORD_MIN_LENGTH = 4;
+const FIELD_MANAGER_PASSWORD_MIN_LENGTH = 6;
+export const FIELD_MANAGER_MAX_FAILED_ATTEMPTS = 5;
+export const FIELD_MANAGER_LOCK_MINUTES = 15;
 const MAX_DISPLAY_NAME_LENGTH = 120;
 const MAX_USERNAME_LENGTH = 80;
 const MAX_PASSWORD_LENGTH = 160;
@@ -24,8 +26,10 @@ type FieldManagerRow = {
   username: string | null;
   username_normalized: string | null;
   password_hash: string | null;
-  password_display: string | null;
   is_active: boolean | null;
+  session_version: string | number | null;
+  failed_login_attempts: string | number | null;
+  login_locked_until: string | Date | null;
   last_login_at: string | Date | null;
   created_at: string | Date | null;
   updated_at: string | Date | null;
@@ -62,8 +66,9 @@ export type FieldManagerRecord = {
   ownerUserId: string;
   displayName: string;
   username: string;
-  savedPassword: string | null;
   isActive: boolean;
+  sessionVersion: number;
+  loginLockedUntilIso: string | null;
   status: "active" | "inactive";
   lastLoginAtIso: string | null;
   createdAtIso: string;
@@ -112,14 +117,23 @@ export type UpdateFieldManagerInput = {
   isActive?: unknown;
 };
 
+export type FieldManagerAccessSettings = {
+  assetScope: 'all' | 'selected';
+  fuelScope: 'all' | 'selected';
+  canRecordWork: boolean;
+  canScheduleMaintenance: boolean;
+  canRecordFuel: boolean;
+  canRefillFuel: boolean;
+  assetIds: string[];
+  fuelStorageIds: string[];
+};
+
+export type FieldManagerPermission = 'record_work' | 'schedule_maintenance' | 'record_fuel' | 'refill_fuel';
+
 let fieldManagerTablesPromise: Promise<void> | null = null;
 
 function asText(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
-}
-
-function asSavedPassword(value: unknown): string | null {
-  return typeof value === "string" && value.length ? value : null;
 }
 
 function asDateIso(value: unknown): string | null {
@@ -301,8 +315,9 @@ function mapFieldManagerRow(row: FieldManagerRow): FieldManagerRecord {
     ownerUserId,
     displayName: asText(row.display_name),
     username: asText(row.username),
-    savedPassword: asSavedPassword(row.password_display),
     isActive,
+    sessionVersion: Math.max(1, Math.round(Number(row.session_version) || 1)),
+    loginLockedUntilIso: asDateIso(row.login_locked_until),
     status: isActive ? "active" : "inactive",
     lastLoginAtIso: asDateIso(row.last_login_at),
     createdAtIso,
@@ -435,8 +450,10 @@ async function ensureFieldManagerTablesOnce(): Promise<void> {
       username text not null,
       username_normalized text not null,
       password_hash text not null,
-      password_display text,
       is_active boolean not null default true,
+      session_version integer not null default 1,
+      failed_login_attempts integer not null default 0,
+      login_locked_until timestamptz,
       last_login_at timestamptz,
       created_at timestamptz not null default now(),
       updated_at timestamptz not null default now()
@@ -450,12 +467,16 @@ async function ensureFieldManagerTablesOnce(): Promise<void> {
       add column if not exists username text,
       add column if not exists username_normalized text,
       add column if not exists password_hash text,
-      add column if not exists password_display text,
       add column if not exists is_active boolean not null default true,
+      add column if not exists session_version integer not null default 1,
+      add column if not exists failed_login_attempts integer not null default 0,
+      add column if not exists login_locked_until timestamptz,
       add column if not exists last_login_at timestamptz,
       add column if not exists created_at timestamptz not null default now(),
       add column if not exists updated_at timestamptz not null default now()
   `);
+
+  await db.query(`alter table public.field_managers drop column if exists password_display`);
 
   await db.query(`
     update public.field_managers
@@ -485,6 +506,28 @@ async function ensureFieldManagerTablesOnce(): Promise<void> {
   await db.query(`
     create index if not exists idx_field_manager_asset_access_asset
       on public.field_manager_asset_access(asset_id)
+  `);
+
+  await db.query(`
+    create table if not exists public.field_manager_access_settings (
+      field_manager_id uuid primary key references public.field_managers(id) on delete cascade,
+      asset_scope text not null default 'all' check (asset_scope in ('all', 'selected')),
+      fuel_scope text not null default 'all' check (fuel_scope in ('all', 'selected')),
+      can_record_work boolean not null default true,
+      can_schedule_maintenance boolean not null default true,
+      can_record_fuel boolean not null default true,
+      can_refill_fuel boolean not null default true,
+      updated_at timestamptz not null default now()
+    )
+  `);
+
+  await db.query(`
+    create table if not exists public.field_manager_fuel_storage_access (
+      field_manager_id uuid not null references public.field_managers(id) on delete cascade,
+      fuel_storage_id uuid not null,
+      created_at timestamptz not null default now(),
+      primary key (field_manager_id, fuel_storage_id)
+    )
   `);
 
   await db
@@ -536,6 +579,40 @@ export async function verifyFieldManagerPassword(
   return expected.length === actual.length && timingSafeEqual(expected, actual);
 }
 
+export function isFieldManagerLoginLocked(manager: Pick<FieldManagerRecord, 'loginLockedUntilIso'>): boolean {
+  if (!manager.loginLockedUntilIso) return false;
+  const lockedUntil = new Date(manager.loginLockedUntilIso);
+  return !Number.isNaN(lockedUntil.getTime()) && lockedUntil.getTime() > Date.now();
+}
+
+export async function recordFieldManagerLoginFailure(managerId: string): Promise<boolean> {
+  await ensureFieldManagerTables();
+  const result = await getDb().query<{ locked: boolean }>(
+    `with current_state as (
+      select id,
+        case
+          when login_locked_until is not null and login_locked_until <= now() then 1
+          else failed_login_attempts + 1
+        end as next_attempt
+      from public.field_managers
+      where id = $1::uuid
+      for update
+    )
+    update public.field_managers as manager set
+      failed_login_attempts = current_state.next_attempt,
+      login_locked_until = case
+        when current_state.next_attempt >= $2 then now() + ($3 * interval '1 minute')
+        else null
+      end,
+      updated_at = now()
+    from current_state
+    where manager.id = current_state.id
+    returning manager.login_locked_until is not null and manager.login_locked_until > now() as locked`,
+    [managerId, FIELD_MANAGER_MAX_FAILED_ATTEMPTS, FIELD_MANAGER_LOCK_MINUTES],
+  );
+  return Boolean(result.rows[0]?.locked);
+}
+
 export async function listFieldManagers(
   ownerUserId: string,
 ): Promise<FieldManagerRecord[]> {
@@ -550,8 +627,10 @@ export async function listFieldManagers(
         username,
         username_normalized,
         password_hash,
-        password_display,
         is_active,
+        session_version,
+        failed_login_attempts,
+        login_locked_until,
         last_login_at,
         created_at,
         updated_at
@@ -583,12 +662,11 @@ export async function createFieldManager(
           username,
           username_normalized,
           password_hash,
-          password_display,
           is_active,
           created_at,
           updated_at
         )
-        values ($1, $2, $3, $4, $5, $6, true, now(), now())
+        values ($1, $2, $3, $4, $5, true, now(), now())
         returning
           id::text as id,
           owner_user_id,
@@ -596,8 +674,10 @@ export async function createFieldManager(
           username,
           username_normalized,
           password_hash,
-          password_display,
           is_active,
+          session_version,
+          failed_login_attempts,
+          login_locked_until,
           last_login_at,
           created_at,
           updated_at
@@ -608,7 +688,6 @@ export async function createFieldManager(
         normalized.username,
         normalized.usernameNormalized,
         passwordHash,
-        normalized.password,
       ],
     );
 
@@ -642,8 +721,6 @@ export async function updateFieldManager(
   const passwordHash = normalized.password
     ? await hashFieldManagerPassword(normalized.password)
     : null;
-  const savedPassword = typeof normalized.password === "string" ? normalized.password : null;
-
   try {
     const result = await db.query<FieldManagerRow>(
       `
@@ -653,8 +730,13 @@ export async function updateFieldManager(
           username = coalesce($4::text, username),
           username_normalized = coalesce($5::text, username_normalized),
           password_hash = coalesce($6::text, password_hash),
-          password_display = coalesce($7::text, password_display),
-          is_active = coalesce($8::boolean, is_active),
+          is_active = coalesce($7::boolean, is_active),
+          session_version = session_version + case
+            when $6::text is not null or ($7::boolean is not null and $7::boolean is distinct from is_active) then 1
+            else 0
+          end,
+          failed_login_attempts = case when $6::text is not null then 0 else failed_login_attempts end,
+          login_locked_until = case when $6::text is not null then null else login_locked_until end,
           updated_at = now()
         where owner_user_id = $1
           and id = $2::uuid
@@ -665,8 +747,10 @@ export async function updateFieldManager(
           username,
           username_normalized,
           password_hash,
-          password_display,
           is_active,
+          session_version,
+          failed_login_attempts,
+          login_locked_until,
           last_login_at,
           created_at,
           updated_at
@@ -678,7 +762,6 @@ export async function updateFieldManager(
         normalized.username ?? null,
         normalized.usernameNormalized ?? null,
         passwordHash,
-        savedPassword,
         typeof normalized.isActive === "boolean" ? normalized.isActive : null,
       ],
     );
@@ -722,6 +805,121 @@ export async function deleteFieldManager(
   }
 }
 
+function accessScope(value: unknown): 'all' | 'selected' {
+  return String(value ?? '').trim().toLowerCase() === 'selected' ? 'selected' : 'all';
+}
+
+function uuidList(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return Array.from(new Set(value.map(asText).filter((id) => (
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+  ))));
+}
+
+export async function getFieldManagerAccessSettings(
+  ownerUserId: string,
+  managerId: string,
+): Promise<FieldManagerAccessSettings> {
+  await ensureFieldManagerTables();
+  const result = await getDb().query<{
+    asset_scope: string | null;
+    fuel_scope: string | null;
+    can_record_work: boolean | null;
+    can_schedule_maintenance: boolean | null;
+    can_record_fuel: boolean | null;
+    can_refill_fuel: boolean | null;
+    asset_ids: unknown;
+    fuel_storage_ids: unknown;
+  }>(
+    `select
+      coalesce(s.asset_scope, 'all') as asset_scope,
+      coalesce(s.fuel_scope, 'all') as fuel_scope,
+      coalesce(s.can_record_work, true) as can_record_work,
+      coalesce(s.can_schedule_maintenance, true) as can_schedule_maintenance,
+      coalesce(s.can_record_fuel, true) as can_record_fuel,
+      coalesce(s.can_refill_fuel, true) as can_refill_fuel,
+      coalesce((select jsonb_agg(a.asset_id::text order by a.asset_id::text) from public.field_manager_asset_access a where a.field_manager_id = fm.id), '[]'::jsonb) as asset_ids,
+      coalesce((select jsonb_agg(f.fuel_storage_id::text order by f.fuel_storage_id::text) from public.field_manager_fuel_storage_access f where f.field_manager_id = fm.id), '[]'::jsonb) as fuel_storage_ids
+    from public.field_managers fm
+    left join public.field_manager_access_settings s on s.field_manager_id = fm.id
+    where fm.owner_user_id = $1 and fm.id = $2::uuid
+    limit 1`,
+    [ownerUserId, managerId],
+  );
+  const row = result.rows[0];
+  if (!row) throw new Error('Field Manager login was not found.');
+  return {
+    assetScope: accessScope(row.asset_scope),
+    fuelScope: accessScope(row.fuel_scope),
+    canRecordWork: row.can_record_work !== false,
+    canScheduleMaintenance: row.can_schedule_maintenance !== false,
+    canRecordFuel: row.can_record_fuel !== false,
+    canRefillFuel: row.can_refill_fuel !== false,
+    assetIds: uuidList(row.asset_ids),
+    fuelStorageIds: uuidList(row.fuel_storage_ids),
+  };
+}
+
+export async function updateFieldManagerAccessSettings(
+  ownerUserId: string,
+  managerId: string,
+  input: Record<string, unknown>,
+): Promise<FieldManagerAccessSettings> {
+  await getFieldManagerAccessSettings(ownerUserId, managerId);
+  const next = {
+    assetScope: accessScope(input.assetScope),
+    fuelScope: accessScope(input.fuelScope),
+    canRecordWork: normalizeBoolean(input.canRecordWork, true),
+    canScheduleMaintenance: normalizeBoolean(input.canScheduleMaintenance, true),
+    canRecordFuel: normalizeBoolean(input.canRecordFuel, true),
+    canRefillFuel: normalizeBoolean(input.canRefillFuel, true),
+    assetIds: uuidList(input.assetIds),
+    fuelStorageIds: uuidList(input.fuelStorageIds),
+  };
+  const db = getDb();
+  await db.query(
+    `insert into public.field_manager_access_settings (
+      field_manager_id, asset_scope, fuel_scope, can_record_work, can_schedule_maintenance,
+      can_record_fuel, can_refill_fuel, updated_at
+    ) values ($1::uuid, $2, $3, $4, $5, $6, $7, now())
+    on conflict (field_manager_id) do update set
+      asset_scope = excluded.asset_scope,
+      fuel_scope = excluded.fuel_scope,
+      can_record_work = excluded.can_record_work,
+      can_schedule_maintenance = excluded.can_schedule_maintenance,
+      can_record_fuel = excluded.can_record_fuel,
+      can_refill_fuel = excluded.can_refill_fuel,
+      updated_at = now()`,
+    [managerId, next.assetScope, next.fuelScope, next.canRecordWork, next.canScheduleMaintenance, next.canRecordFuel, next.canRefillFuel],
+  );
+  await db.query('delete from public.field_manager_asset_access where field_manager_id = $1::uuid', [managerId]);
+  if (next.assetScope === 'selected' && next.assetIds.length) {
+    await db.query(`insert into public.field_manager_asset_access (field_manager_id, asset_id)
+      select $1::uuid, value::uuid from unnest($2::text[]) value on conflict do nothing`, [managerId, next.assetIds]);
+  }
+  await db.query('delete from public.field_manager_fuel_storage_access where field_manager_id = $1::uuid', [managerId]);
+  if (next.fuelScope === 'selected' && next.fuelStorageIds.length) {
+    await db.query(`insert into public.field_manager_fuel_storage_access (field_manager_id, fuel_storage_id)
+      select $1::uuid, value::uuid from unnest($2::text[]) value on conflict do nothing`, [managerId, next.fuelStorageIds]);
+  }
+  return getFieldManagerAccessSettings(ownerUserId, managerId);
+}
+
+export async function fieldManagerCan(managerId: string, permission: FieldManagerPermission): Promise<boolean> {
+  await ensureFieldManagerTables();
+  const column = {
+    record_work: 'can_record_work',
+    schedule_maintenance: 'can_schedule_maintenance',
+    record_fuel: 'can_record_fuel',
+    refill_fuel: 'can_refill_fuel',
+  }[permission];
+  const result = await getDb().query<{ allowed: boolean }>(
+    `select coalesce((select ${column} from public.field_manager_access_settings where field_manager_id = $1::uuid), true) as allowed`,
+    [managerId],
+  );
+  return result.rows[0]?.allowed !== false;
+}
+
 export async function getFieldManagerById(
   managerId: string,
 ): Promise<FieldManagerPrivateRecord | null> {
@@ -736,8 +934,10 @@ export async function getFieldManagerById(
         username,
         username_normalized,
         password_hash,
-        password_display,
         is_active,
+        session_version,
+        failed_login_attempts,
+        login_locked_until,
         last_login_at,
         created_at,
         updated_at
@@ -772,8 +972,10 @@ export async function getFieldManagerByUsername(
         username,
         username_normalized,
         password_hash,
-        password_display,
         is_active,
+        session_version,
+        failed_login_attempts,
+        login_locked_until,
         last_login_at,
         created_at,
         updated_at
@@ -796,7 +998,10 @@ export async function markFieldManagerLastLogin(
   await db.query(
     `
       update public.field_managers
-      set last_login_at = now(), updated_at = now()
+      set failed_login_attempts = 0,
+          login_locked_until = null,
+          last_login_at = now(),
+          updated_at = now()
       where id = $1::uuid
     `,
     [managerId],
@@ -928,7 +1133,7 @@ export async function listFieldManagerAssets(
         from public.field_manager_asset_access
         where field_manager_id = $2::uuid
       ), access_state as (
-        select exists(select 1 from restricted_access) as has_restrictions
+        select coalesce((select asset_scope from public.field_manager_access_settings where field_manager_id = $2::uuid), 'all') as scope
       )
       ${fieldManagerAssetSelect(`
         where (
@@ -939,7 +1144,7 @@ export async function listFieldManagerAssets(
           and nullif(trim(coalesce(a.public_asset_code, '')), '') is not null
           and lower(coalesce(a.qr_status, 'active')) <> 'deleted'
           and (
-            (select has_restrictions from access_state) = false
+            (select scope from access_state) = 'all'
             or exists (
               select 1
               from restricted_access ra
@@ -991,14 +1196,14 @@ export async function getFieldManagerAssetForOpen(input: {
         from public.field_manager_asset_access
         where field_manager_id = $2::uuid
       ), access_state as (
-        select exists(select 1 from restricted_access) as has_restrictions
+        select coalesce((select asset_scope from public.field_manager_access_settings where field_manager_id = $2::uuid), 'all') as scope
       )
       ${fieldManagerAssetSelect(`
         where a.id::text = $1
           and nullif(trim(coalesce(a.public_asset_code, '')), '') is not null
           and lower(coalesce(a.qr_status, 'active')) <> 'deleted'
           and (
-            (select has_restrictions from access_state) = false
+            (select scope from access_state) = 'all'
             or exists (
               select 1
               from restricted_access ra
@@ -1043,8 +1248,10 @@ export async function validateFieldManagerScanAsset(input: {
         username,
         username_normalized,
         password_hash,
-        password_display,
         is_active,
+        session_version,
+        failed_login_attempts,
+        login_locked_until,
         last_login_at,
         created_at,
         updated_at
@@ -1084,11 +1291,7 @@ export async function validateFieldManagerScanAsset(input: {
   const accessResult = await db.query<{ allowed: boolean | null }>(
     `
       select (
-        not exists (
-          select 1
-          from public.field_manager_asset_access access_check
-          where access_check.field_manager_id = $1::uuid
-        )
+        coalesce((select asset_scope from public.field_manager_access_settings where field_manager_id = $1::uuid), 'all') = 'all'
         or exists (
           select 1
           from public.field_manager_asset_access allowed
@@ -1233,6 +1436,7 @@ function fieldManagerFuelStorageSelect(whereSql: string): string {
 
 export async function listFieldManagerFuelStorages(
   ownerUserId: string,
+  managerId?: string | null,
 ): Promise<FieldManagerFuelStorageSummary[]> {
   await ensureFieldManagerTables();
 
@@ -1249,11 +1453,14 @@ export async function listFieldManagerFuelStorages(
         where user_id = $1
           and lower(coalesce(status, 'active')) = 'active'
           and nullif(trim(coalesce(public_fuel_storage_code, '')), '') is not null
+          and ($2::uuid is null
+            or coalesce((select fuel_scope from public.field_manager_access_settings where field_manager_id = $2::uuid), 'all') = 'all'
+            or exists (select 1 from public.field_manager_fuel_storage_access allowed where allowed.field_manager_id = $2::uuid and allowed.fuel_storage_id = fuel_storage_units.id))
       `)}
       order by updated_at desc nulls last, name asc, id desc
       limit 500
     `,
-    [ownerUserId],
+    [ownerUserId, managerId || null],
   );
 
   return result.rows.map(mapFieldManagerFuelStorageRow);
@@ -1261,6 +1468,7 @@ export async function listFieldManagerFuelStorages(
 
 export async function getFieldManagerFuelStorageForOpen(input: {
   ownerUserId: string;
+  managerId: string;
   storageId: string;
 }): Promise<FieldManagerFuelStorageSummary | null> {
   await ensureFieldManagerTables();
@@ -1279,10 +1487,12 @@ export async function getFieldManagerFuelStorageForOpen(input: {
           and id::text = $2
           and lower(coalesce(status, 'active')) = 'active'
           and nullif(trim(coalesce(public_fuel_storage_code, '')), '') is not null
+          and (coalesce((select fuel_scope from public.field_manager_access_settings where field_manager_id = $3::uuid), 'all') = 'all'
+            or exists (select 1 from public.field_manager_fuel_storage_access allowed where allowed.field_manager_id = $3::uuid and allowed.fuel_storage_id = fuel_storage_units.id))
       `)}
       limit 1
     `,
-    [input.ownerUserId, input.storageId],
+    [input.ownerUserId, input.storageId, input.managerId],
   );
 
   const row = result.rows[0];
@@ -1324,6 +1534,8 @@ export async function validateFieldManagerFuelStorage(input: {
         and fm.is_active = true
         and upper(coalesce(s.public_fuel_storage_code, '')) = $3
         and lower(coalesce(s.status, 'active')) = 'active'
+        and (coalesce((select fuel_scope from public.field_manager_access_settings where field_manager_id = fm.id), 'all') = 'all'
+          or exists (select 1 from public.field_manager_fuel_storage_access allowed where allowed.field_manager_id = fm.id and allowed.fuel_storage_id = s.id))
       limit 1
     `,
     [

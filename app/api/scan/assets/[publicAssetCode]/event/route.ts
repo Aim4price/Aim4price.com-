@@ -19,6 +19,7 @@ import {
 } from "../../../../../../lib/scan-assets";
 import { MAX_ASSET_REGISTER_PHOTOS } from "../../../../../../lib/asset-register-uploads";
 import { safeAssetOwnerError } from "../../../../../../lib/asset-owner-resolver";
+import { fieldManagerCan } from "../../../../../../lib/field-manager";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -162,6 +163,10 @@ export async function POST(request: NextRequest, context: RouteContext) {
       },
       { status: access.status },
     );
+  }
+
+  if (access.accessMode === 'field_manager' && (!access.fieldManagerId || !(await fieldManagerCan(access.fieldManagerId, 'record_work')))) {
+    return NextResponse.json({ ok: false, error: 'This Field Manager login cannot record checks, services or repairs.' }, { status: 403 });
   }
 
   let body: ScanEventRequest;

@@ -150,6 +150,7 @@ type RevalueAdvancedAssumptionsRequest = {
 type ConditionKey = 'excellent' | 'good' | 'fair' | 'used' | 'serious';
 type AssetConditionValue = ConditionKey | '';
 type UsageMetric = 'hours' | 'km';
+type AssetDraftUsageMetric = UsageMetric | 'percentage' | 'not_applicable';
 type ProjectionUsageMetric = UsageMetric | 'percent';
 type AssetStatusChoice = 'yes' | 'no' | 'unknown' | 'not_applicable';
 type FinanceStatusChoice = AssetStatusChoice | 'paid';
@@ -813,7 +814,7 @@ type AssetDraft = {
   yearModel: string;
   propertySize: string;
   hours: string;
-  usageMetric: UsageMetric;
+  usageMetric: AssetDraftUsageMetric;
   lifeWorkedPercent: string;
   condition: AssetConditionValue;
 };
@@ -2661,6 +2662,29 @@ function assetUsesPercentUsage(asset: RegisterAsset): boolean {
   return percent !== null && (!hasPositiveHours || depreciationMethod === 'semi_depreciation');
 }
 
+function assetUsesNotApplicableUsage(asset: RegisterAsset): boolean {
+  const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
+  const usageValues = [
+    specs.usageApplicable,
+    specs.usage_applicable,
+    specs.usageMode,
+    specs.usage_mode,
+    specs.usageBasis,
+    specs.usage_basis,
+    specs.usageMetric,
+    specs.usage_metric,
+  ].map((value) => String(value ?? '').trim().toLowerCase().replace(/[\s-]+/g, '_'));
+
+  return asset.kind === 'property' || usageValues.some((value) =>
+    value === 'false' ||
+    value === 'not_applicable' ||
+    value === 'not_app' ||
+    value === 'n/a' ||
+    value === 'na' ||
+    value === 'none'
+  );
+}
+
 function usageMetricLabel(value: UsageMetric): string {
   return value === 'km' ? 'km' : 'hours';
 }
@@ -4317,9 +4341,9 @@ function buildDraftFromAsset(asset: RegisterAsset): AssetDraft {
     documents: assetDocuments(asset),
     yearModel: asset.yearModel === null || typeof asset.yearModel === 'undefined' ? '' : String(asset.yearModel),
     propertySize: asset.kind === 'property' ? readAssetPropertySize(asset) : '',
-    hours: asset.kind === 'property' || assetUsesPercentUsage(asset) || asset.hours === null || typeof asset.hours === 'undefined' ? '' : formatUsageAmountInput(asset.hours),
-    usageMetric: asset.kind === 'vehicle' ? 'km' : getAssetUsageMetric(asset),
-    lifeWorkedPercent: asset.kind === 'property' || getAssetLifeWorkedPercent(asset) === null ? '' : String(getAssetLifeWorkedPercent(asset)),
+    hours: asset.kind === 'property' || assetUsesPercentUsage(asset) || assetUsesNotApplicableUsage(asset) || asset.hours === null || typeof asset.hours === 'undefined' ? '' : formatUsageAmountInput(asset.hours),
+    usageMetric: assetUsesNotApplicableUsage(asset) ? 'not_applicable' : assetUsesPercentUsage(asset) ? 'percentage' : asset.kind === 'vehicle' ? 'km' : getAssetUsageMetric(asset),
+    lifeWorkedPercent: !assetUsesPercentUsage(asset) || getAssetLifeWorkedPercent(asset) === null ? '' : String(getAssetLifeWorkedPercent(asset)),
     condition: asset.condition,
   };
 }
@@ -7685,27 +7709,24 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     return editingAsset?.valuationRunId ? editingAsset.kind : normalizeDraftKind(assetDraft.kind);
   }, [assetDraft.kind, editingAsset]);
 
-  const assetFormUsesPercentUsage = useMemo(() => {
-    return editingAsset ? assetUsesPercentUsage(editingAsset) : false;
-  }, [editingAsset]);
+  const assetFormUsesPercentUsage = assetDraft.usageMetric === 'percentage';
+  const assetFormUsageNotApplicable = assetDraft.usageMetric === 'not_applicable';
 
   const isEditingSavedManualAsset = isSavedManualAsset(editingAsset);
   const isEditingSavedAim4priceAsset = isSavedAim4priceAsset(editingAsset);
   const showPercentUsageField = assetFormUsesPercentUsage;
 
-  const showUsageHoursField = useMemo(() => {
-    if (showPercentUsageField) return false;
-    return assetFormKind === 'tractor' || assetFormKind === 'equipment' || assetFormKind === 'vehicle';
-  }, [assetFormKind, showPercentUsageField]);
+  const showUsageHoursField =
+    !assetFormUsageNotApplicable &&
+    !showPercentUsageField &&
+    assetFormKind !== 'property' &&
+    assetFormKind !== 'stock';
 
   const showConditionField = useMemo(() => {
     return assetFormKind !== 'stock' && !(assetFormKind === 'property' && assetDraft.propertyAssetSubtype === 'land');
   }, [assetDraft.propertyAssetSubtype, assetFormKind]);
 
-  const showLifeWorkedPercentField = useMemo(() => {
-    if (editingAsset) return false;
-    return assetFormKind === 'tractor' || assetFormKind === 'equipment' || assetFormKind === 'tools';
-  }, [assetFormKind, editingAsset]);
+  const showLifeWorkedPercentField = false;
 
   useEffect(() => {
     if (!isAssetModalOpen || !editingAssetId) {
@@ -7777,13 +7798,15 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   ]);
 
   const yearFieldLabel = draftYearLabel(assetFormKind);
-  const usageFieldLabel = showPercentUsageField
-    ? 'Lifetime worked %'
-    : assetFormKind === 'vehicle'
-      ? 'Odometer reading'
-      : showUsageHoursField
-        ? 'Machine hours'
-        : 'Usage';
+  const usageFieldLabel = assetFormUsageNotApplicable
+    ? 'Usage'
+    : showPercentUsageField
+      ? 'Lifetime worked %'
+      : assetFormKind === 'vehicle'
+        ? 'Odometer reading'
+        : showUsageHoursField
+          ? 'Machine hours'
+          : 'Usage';
   const usageFieldPlaceholder = showPercentUsageField
     ? 'Enter lifetime worked %'
     : assetFormKind === 'vehicle'
@@ -8424,9 +8447,13 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       insuranceCriticalToOperations: nextKind === 'manual' ? current.insuranceCriticalToOperations : 'unknown',
       insuranceTemperatureSensitiveStock:
         nextKind === 'manual' || nextKind === 'stock' ? current.insuranceTemperatureSensitiveStock : 'unknown',
-      hours: nextKind === 'property' || nextKind === 'tools' || nextKind === 'manual' || nextKind === 'stock' ? '' : current.hours,
-      usageMetric: nextKind === 'vehicle' ? normalizeUsageMetric(current.usageMetric, 'vehicle') : 'hours',
-      lifeWorkedPercent: nextKind === 'property' || nextKind === 'vehicle' || nextKind === 'manual' || nextKind === 'stock' ? '' : current.lifeWorkedPercent,
+      hours: nextKind === 'property' || nextKind === 'stock' ? '' : current.hours,
+      usageMetric: nextKind === 'vehicle'
+        ? 'km'
+        : nextKind === 'property' || nextKind === 'stock'
+          ? 'not_applicable'
+          : current.usageMetric === 'km' ? 'hours' : current.usageMetric,
+      lifeWorkedPercent: nextKind === 'property' || nextKind === 'vehicle' || nextKind === 'stock' ? '' : current.lifeWorkedPercent,
       propertySize: nextKind === 'property' ? current.propertySize : '',
       licenseStatus: supportsLicensing ? current.licenseStatus : 'not_applicable',
       isLicensed: supportsLicensing ? current.isLicensed : false,
@@ -10163,12 +10190,16 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     const draftLifeWorkedPercent = (showPercentUsageField || showLifeWorkedPercentField) && hasLifeWorkedPercent
       ? Number(lifeWorkedPercent)
       : null;
-    const roundedLifeWorkedPercent = isPropertyAsset ? null : resolveLifeWorkedPercentForSave(draftLifeWorkedPercent, editingAsset ? currentLifeWorkedPercent : null);
-    const hoursForSave = showUsageHoursField && hasHours
-      ? Math.round(Number(hours))
-      : editingAsset && !isPropertyAsset
-        ? savedUsageReading
-        : null;
+    const roundedLifeWorkedPercent = !isPropertyAsset && assetDraft.usageMetric === 'percentage'
+      ? resolveLifeWorkedPercentForSave(draftLifeWorkedPercent, editingAsset ? currentLifeWorkedPercent : null)
+      : null;
+    const hoursForSave = showUsageHoursField
+      ? hasHours
+        ? Math.round(Number(hours))
+        : editingAsset && !isPropertyAsset
+          ? savedUsageReading
+          : null
+      : null;
     const licenseRegistrationNumber = nextLicenseStatus === 'yes'
       ? normalizeLicenseRegistrationText(assetStatusDraft.licenseRegistrationNumber)
       : '';
@@ -10277,6 +10308,36 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       specsJson.lifetime_worked_percent = roundedLifeWorkedPercent;
     }
 
+    if (isPropertyAsset || assetDraft.usageMetric === 'not_applicable') {
+      Object.assign(specsJson, {
+        usageMetric: 'not_applicable', usage_metric: 'not_applicable',
+        usageUnit: 'not_applicable', usage_unit: 'not_applicable',
+        usageMode: 'not_applicable', usage_mode: 'not_applicable',
+        usageBasis: 'not_applicable', usage_basis: 'not_applicable',
+        selectedUsageMode: 'not_applicable', selected_usage_mode: 'not_applicable',
+        selectedUsageBasis: 'not_applicable', selected_usage_basis: 'not_applicable',
+        usageApplicable: false, usage_applicable: false,
+      });
+    } else if (assetDraft.usageMetric === 'percentage') {
+      Object.assign(specsJson, {
+        usageMode: 'percent', usage_mode: 'percent',
+        usageBasis: 'percent', usage_basis: 'percent',
+        selectedUsageMode: 'percent', selected_usage_mode: 'percent',
+        selectedUsageBasis: 'percent', selected_usage_basis: 'percent',
+        usageApplicable: true, usage_applicable: true,
+      });
+    } else {
+      Object.assign(specsJson, {
+        usageMetric: assetDraft.usageMetric, usage_metric: assetDraft.usageMetric,
+        usageUnit: assetDraft.usageMetric, usage_unit: assetDraft.usageMetric,
+        usageMode: assetDraft.usageMetric, usage_mode: assetDraft.usageMetric,
+        usageBasis: 'reading', usage_basis: 'reading',
+        selectedUsageMode: assetDraft.usageMetric, selected_usage_mode: assetDraft.usageMetric,
+        selectedUsageBasis: 'reading', selected_usage_basis: 'reading',
+        usageApplicable: true, usage_applicable: true,
+      });
+    }
+
     setIsSavingAsset(true);
 
     const pendingPhotosForSave = pendingPhotoFiles;
@@ -10325,7 +10386,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
         documents,
         yearModel: hasYearModel ? Math.round(Number(yearModel)) : null,
         hours: hoursForSave,
-        usageMetric: isPropertyAsset ? null : hoursForSave !== null || showUsageHoursField ? (assetFormKind === 'vehicle' ? 'km' : assetDraft.usageMetric) : null,
+        usageMetric: isPropertyAsset || !showUsageHoursField ? null : assetDraft.usageMetric === 'km' ? 'km' : 'hours',
         lifeWorkedPercent: roundedLifeWorkedPercent,
         specsJson,
         condition: showConditionField ? assetDraft.condition || null : null,
@@ -15177,9 +15238,29 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                             />
                           </label>
 
-                          {showPercentUsageField ? (
-                            <label className={styles.field}>
+                          <label className={styles.field}>
+                            <span className={styles.assetUsageFieldHeading}>
                               <span>{usageFieldLabel}</span>
+                              <select
+                                className={styles.assetUsageTypeSelect}
+                                aria-label="Usage type"
+                                value={assetDraft.usageMetric}
+                                onChange={(event) => {
+                                  const usageMetric = event.target.value as AssetDraftUsageMetric;
+                                  setAssetDraft((current) => ({
+                                    ...current,
+                                    usageMetric,
+                                    hours: usageMetric === 'hours' || usageMetric === 'km' ? current.hours : '',
+                                    lifeWorkedPercent: usageMetric === 'percentage' ? current.lifeWorkedPercent : '',
+                                  }));
+                                }}
+                              >
+                                {assetFormKind === 'vehicle' ? <option value="km">Kilometres</option> : <option value="hours">Hours</option>}
+                                {assetFormKind === 'vehicle' ? null : <option value="percentage">% worked</option>}
+                                <option value="not_applicable">Not applicable</option>
+                              </select>
+                            </span>
+                            {showPercentUsageField ? (
                               <input
                                 type="number"
                                 min="0"
@@ -15194,10 +15275,9 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                 }
                                 placeholder={usageFieldPlaceholder}
                               />
-                            </label>
-                          ) : showUsageHoursField ? (
-                            <label className={styles.field}>
-                              <span>{usageFieldLabel}</span>
+                            ) : assetFormUsageNotApplicable ? (
+                              <input value="Not applicable" disabled readOnly />
+                            ) : (
                               <input
                                 type="text"
                                 inputMode="numeric"
@@ -15210,13 +15290,8 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                 }
                                 placeholder={usageFieldPlaceholder}
                               />
-                            </label>
-                          ) : (
-                            <label className={`${styles.field} ${styles.assetStaticField}`}>
-                              <span>{usageFieldLabel}</span>
-                              <input value="Not applicable" disabled readOnly />
-                            </label>
-                          )}
+                            )}
+                          </label>
 
                           {showConditionField ? (
                             <ModalSelect<AssetConditionValue>

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { fieldManagerCan } from '../../../../../../lib/field-manager';
 import { authorizeFuelStorageScanAccess, getFuelScanPayload, saveFuelStorageDipstickNote } from '../../../../../../lib/fuel-ledger';
 
 export const runtime = 'nodejs';
@@ -53,6 +54,10 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
   if (!access.ok) {
     return NextResponse.json({ ok: false, error: access.error, pinRequired: access.pinRequired }, { status: access.status });
+  }
+
+  if (access.accessMode === 'field_manager' && (!access.fieldManagerId || !(await fieldManagerCan(access.fieldManagerId, 'record_fuel')))) {
+    return NextResponse.json({ ok: false, error: 'This Field Manager login cannot add fuel tank notes.' }, { status: 403 });
   }
 
   let body: DipstickNoteRequest;

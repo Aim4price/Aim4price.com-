@@ -8,6 +8,35 @@
     linear-gradient(180deg, #f7f9f8 0%, #eef3f6 46%, #fbfcfb 100%);
 }
 
+.accessPanel {
+  display: grid;
+  gap: 16px;
+  margin-top: 18px;
+  padding: 20px;
+  border: 1px solid rgba(28, 85, 62, 0.15);
+  border-radius: 20px;
+  background: #f7fbf8;
+}
+
+.accessHeader h3 { margin: 0; color: #163e31; font-size: 1.08rem; }
+.accessHeader p, .accessPanel > p { margin: 5px 0 0; color: #60766d; line-height: 1.5; }
+.permissionGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+.permissionChoice { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 10px 12px; border: 1px solid rgba(28, 85, 62, 0.14); border-radius: 14px; background: #fff; color: #244b3d; font-weight: 750; cursor: pointer; }
+.permissionChoice input, .accessChecklist input { width: 20px; height: 20px; accent-color: #147251; flex: 0 0 auto; }
+.accessColumns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.accessColumn { display: grid; align-content: start; gap: 10px; }
+.accessChecklist { display: grid; gap: 7px; max-height: 260px; overflow: auto; padding: 4px; }
+.accessChecklist > label { display: flex; align-items: center; gap: 10px; padding: 10px; border: 1px solid rgba(28, 85, 62, 0.13); border-radius: 12px; background: #fff; cursor: pointer; }
+.accessChecklist span { display: grid; gap: 2px; min-width: 0; }
+.accessChecklist strong { color: #244b3d; font-size: 0.9rem; }
+.accessChecklist small { color: #71837c; font-size: 0.76rem; }
+.accessMessage { margin: 0; color: #315d4d; font-weight: 750; }
+
+@media (max-width: 720px) {
+  .permissionGrid, .accessColumns { grid-template-columns: 1fr; }
+  .accessPanel { padding: 16px; border-radius: 16px; }
+}
+
 .shell {
   width: var(--shell-width);
   margin: 0 auto;

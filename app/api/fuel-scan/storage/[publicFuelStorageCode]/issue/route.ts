@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { fieldManagerCan } from '../../../../../../lib/field-manager';
 import { authorizeFuelStorageScanAccess, listFuelEventsForReport, recordFuelAssetIssue } from '../../../../../../lib/fuel-ledger';
 
 export const runtime = 'nodejs';
@@ -68,6 +69,10 @@ export async function POST(request: NextRequest, context: RouteContext) {
       },
       { status: access.status },
     );
+  }
+
+  if (access.accessMode === 'field_manager' && (!access.fieldManagerId || !(await fieldManagerCan(access.fieldManagerId, 'record_fuel')))) {
+    return NextResponse.json({ ok: false, error: 'This Field Manager login cannot record fuel issues.' }, { status: 403 });
   }
 
   let body: FuelIssueRequest;

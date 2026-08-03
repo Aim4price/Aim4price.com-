@@ -17,7 +17,7 @@ import {
   type ActiveFieldManagerSession,
 } from "./field-manager-session";
 import { verifyScanPin } from "./scan-pin";
-import { getOwnerAppAccess } from "./owner-app-access";
+import { getOwnerAppAccess, ownerAppCan } from "./owner-app-access";
 
 export const SCAN_SESSION_COOKIE_NAME = "aim4price_scan";
 export const SCAN_SESSION_MAX_AGE_SECONDS = 60 * 60 * 12;
@@ -516,6 +516,9 @@ export async function authorizeOwnerAppScanAccess(
   const ownerAccess = await getOwnerAppAccess();
   if (!ownerAccess) {
     return { ok: false, status: 401, error: "Aim4price Owner login is required.", pinRequired: false };
+  }
+  if (!ownerAppCan(ownerAccess, 'operate')) {
+    return { ok: false, status: 403, error: "This Owner login has View only access.", pinRequired: false };
   }
 
   try {

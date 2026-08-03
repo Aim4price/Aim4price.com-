@@ -119,11 +119,11 @@ async function buildOverview(ownerUserId: string, range: OwnerAppOverviewRange):
   });
 }
 
-export async function listOwnerAppOverview(ownerUserId: string, range: OwnerAppOverviewRange) {
+export async function listOwnerAppOverview(ownerUserId: string, viewerKey: string, range: OwnerAppOverviewRange) {
   await ensureOwnerAppTables();
   const [items, dismissed] = await Promise.all([
     buildOverview(ownerUserId, range),
-    getDb().query<{ source_kind: string; source_id: string }>('select source_kind, source_id from public.owner_app_overview_dismissals where parent_owner_user_id = $1', [ownerUserId]),
+    getDb().query<{ source_kind: string; source_id: string }>('select source_kind, source_id from public.owner_app_overview_dismissals where parent_owner_user_id = $1 and viewer_key = $2', [ownerUserId, viewerKey]),
   ]);
   const hidden = new Set(dismissed.rows.map((row) => `${row.source_kind}\u0000${row.source_id}`));
   const visible = items.filter((item) => !hidden.has(`${item.sourceKind}\u0000${item.sourceId}`));
@@ -131,15 +131,15 @@ export async function listOwnerAppOverview(ownerUserId: string, range: OwnerAppO
   return { ok: true as const, range, items: visible, summary: { totalCount: visible.length, needsAttentionCount, comingUpCount: visible.length - needsAttentionCount } };
 }
 
-export async function dismissOwnerAppOverviewItem(ownerUserId: string, range: OwnerAppOverviewRange, itemId: string, sourceId: string) {
+export async function dismissOwnerAppOverviewItem(ownerUserId: string, viewerKey: string, range: OwnerAppOverviewRange, itemId: string, sourceId: string) {
   await ensureOwnerAppTables();
   const items = await buildOverview(ownerUserId, range);
   const item = items.find((entry) => entry.id === itemId && entry.sourceId === sourceId);
   if (!item) throw new Error('OVERVIEW_ITEM_NOT_FOUND');
   await getDb().query(`insert into public.owner_app_overview_dismissals (
-    parent_owner_user_id, source_kind, source_id, overview_item_id, asset_register_item_id, dismissed_at
-  ) values ($1, $2, $3, $4, $5::uuid, now())
-  on conflict (parent_owner_user_id, source_kind, source_id) do update set
+    parent_owner_user_id, viewer_key, source_kind, source_id, overview_item_id, asset_register_item_id, dismissed_at
+  ) values ($1, $2, $3, $4, $5, $6::uuid, now())
+  on conflict (parent_owner_user_id, viewer_key, source_kind, source_id) do update set
     overview_item_id = excluded.overview_item_id, asset_register_item_id = excluded.asset_register_item_id, dismissed_at = now()`,
-  [ownerUserId, item.sourceKind, item.sourceId, item.id, item.assetId]);
+  [ownerUserId, viewerKey, item.sourceKind, item.sourceId, item.id, item.assetId]);
 }

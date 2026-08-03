@@ -1,4 +1,5 @@
-import { requireOwnerAppPageAccess } from '../../../../../lib/owner-app-access';
+import { redirect } from 'next/navigation';
+import { ownerAppCan, requireOwnerAppPageAccess } from '../../../../../lib/owner-app-access';
 import OwnerAppNav from '../../../owner-app-nav';
 import styles from '../../../owner-app.module.css';
 import OwnerManualAssetClient from './owner-manual-asset-client';
@@ -7,7 +8,8 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export default async function OwnerManualAssetPage() {
-  await requireOwnerAppPageAccess();
+  const access = await requireOwnerAppPageAccess();
+  if (!ownerAppCan(access, 'manage_assets')) redirect('/owner-app/assets');
 
   return (
     <main className={styles.page}>

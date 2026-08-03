@@ -1,5 +1,5 @@
 import { notFound, redirect } from 'next/navigation';
-import { requireOwnerAppPageAccess } from '../../../../../../lib/owner-app-access';
+import { ownerAppCan, requireOwnerAppPageAccess } from '../../../../../../lib/owner-app-access';
 import OwnerAppNav from '../../../../owner-app-nav';
 import styles from '../../../../owner-app.module.css';
 import OwnerAssetDetailClient, { type OwnerAssetManageSection } from '../../owner-asset-detail-client';
@@ -9,6 +9,7 @@ export const dynamic = 'force-dynamic';
 
 const MANAGE_SECTIONS = new Set<OwnerAssetManageSection>([
   'details',
+  'activity',
   'reports',
   'pricing',
   'finance',
@@ -25,9 +26,15 @@ const MANAGE_SECTIONS = new Set<OwnerAssetManageSection>([
 export default async function OwnerAssetManageSectionPage({ params }: {
   params: { assetId: string; section: string };
 }) {
-  await requireOwnerAppPageAccess();
+  const access = await requireOwnerAppPageAccess();
   const section = params.section as OwnerAssetManageSection;
   if (!MANAGE_SECTIONS.has(section)) notFound();
+  const canOpen = ['activity', 'reports'].includes(section)
+    || (['location', 'media', 'maintenance'].includes(section) && ownerAppCan(access, 'operate'))
+    || (section === 'marketplace' && ownerAppCan(access, 'manage_marketplace'))
+    || (!['activity', 'reports', 'location', 'media', 'maintenance', 'marketplace'].includes(section)
+      && ownerAppCan(access, 'manage_assets'));
+  if (!canOpen) redirect(`/owner-app/assets/${encodeURIComponent(params.assetId)}/manage`);
   if (section === 'maintenance') {
     redirect(`/owner-app/assets/${encodeURIComponent(params.assetId)}/maintenance`);
   }

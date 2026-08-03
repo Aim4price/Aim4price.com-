@@ -6,7 +6,7 @@ import {
   updateDealerMaintenancePermissions,
   type DealerMaintenancePermissions,
 } from '../../../lib/dealer-maintenance-tracker';
-import { getOwnerAppAccess } from '../../../lib/owner-app-access';
+import { getOwnerAppAccess, ownerAppCan } from '../../../lib/owner-app-access';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -52,6 +52,7 @@ export async function GET(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   const access = await getOwnerAppAccess();
   if (!access) return NextResponse.json({ ok: false, error: 'Owner sign-in is required.' }, { status: 401 });
+  if (!ownerAppCan(access, 'manage_access')) return NextResponse.json({ ok: false, error: 'Only an Owner / Admin login can change dealer access.' }, { status: 403 });
   const body = await request.json().catch(() => null) as {
     assetId?: unknown;
     accessId?: unknown;
@@ -83,6 +84,7 @@ export async function PATCH(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   const access = await getOwnerAppAccess();
   if (!access) return NextResponse.json({ ok: false, error: 'Owner App login is required.' }, { status: 401 });
+  if (!ownerAppCan(access, 'manage_access')) return NextResponse.json({ ok: false, error: 'Only an Owner / Admin login can change dealer access.' }, { status: 403 });
   const body = await request.json().catch(() => null) as {
     assetId?: unknown;
     dealerUserId?: unknown;

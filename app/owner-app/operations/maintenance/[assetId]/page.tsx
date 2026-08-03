@@ -1,6 +1,6 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import ScanClient from '../../../../scan/[publicAssetCode]/scan-client';
-import { requireOwnerAppPageAccess } from '../../../../../lib/owner-app-access';
+import { ownerAppCan, requireOwnerAppPageAccess } from '../../../../../lib/owner-app-access';
 import { getScanAssetAccessContextByAssetId } from '../../../../../lib/scan-assets';
 
 export const runtime = 'nodejs';
@@ -21,6 +21,7 @@ function firstQueryValue(value: string | string[] | undefined): string {
 
 export default async function OwnerMaintenanceWorkPage({ params, searchParams }: PageProps) {
   const access = await requireOwnerAppPageAccess();
+  if (!ownerAppCan(access, 'operate')) redirect('/owner-app');
   const context = await getScanAssetAccessContextByAssetId(params.assetId, {
     expectedOwnerUserId: access.ownerUserId,
   }).catch(() => null);
