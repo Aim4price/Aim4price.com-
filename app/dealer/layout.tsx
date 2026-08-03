@@ -6,8 +6,8 @@ import styles from './dealer.module.css';
 export const metadata: Metadata = {
   applicationName: 'Aim4price Dealer App',
   title: 'Aim4price Dealer',
-  description: 'Dealer valuation, discovery, leads and marketplace tools from Aim4price.',
-  manifest: '/dealer/manifest.webmanifest?v=4',
+  description: 'Simple Dealer App access to clients, leads, maintenance, discovery, estimates, costs and Marketplace.',
+  manifest: '/dealer/manifest.webmanifest?v=5',
   icons: {
     icon: [
       { url: '/dealer-icon-192.png?v=3', sizes: '192x192', type: 'image/png' },
