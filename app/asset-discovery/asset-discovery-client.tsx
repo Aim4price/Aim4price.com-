@@ -8,6 +8,7 @@ import {
 import LeadPhotoViewerModal from "../../components/LeadPhotoViewerModal";
 import assetStyles from "../asset-register/page.module.css";
 import leadStyles from "../leads/page.module.css";
+import mobileStyles from "../field-manager/page.module.css";
 import styles from "./page.module.css";
 import dealerStyles from "../dealer/dealer.module.css";
 
@@ -1329,11 +1330,17 @@ export default function AssetDiscoveryClient({
   function renderOpenControl(asset: AssetDiscoveryAsset) {
     const isExpanded = expandedAssetId === asset.id;
     const isLoading = loadingDetailsAssetId === asset.id;
+    const compactClassName = `${styles.discoveryOpenButton} ${
+      isExpanded
+        ? styles.discoveryCloseButton
+        : `${mobileStyles.mobilePrimaryButton} ${mobileStyles.overviewOpenButton} ${styles.discoveryOverviewOpenButton}`
+    }`;
+    const desktopClassName = `${assetStyles.primaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionGreen} ${leadStyles.openLeadButton} ${styles.discoveryOpenButton} ${isExpanded ? styles.discoveryCloseButton : ""}`;
 
     return (
       <button
         type="button"
-        className={`${assetStyles.primaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionGreen} ${leadStyles.openLeadButton} ${styles.discoveryOpenButton} ${isExpanded ? styles.discoveryCloseButton : ""}`}
+        className={compactAppMode ? compactClassName : desktopClassName}
         onClick={() => void toggleAssetDetails(asset)}
         aria-expanded={isExpanded}
         aria-controls={`discovery-details-${asset.id}`}
@@ -1893,7 +1900,14 @@ export default function AssetDiscoveryClient({
 
   return (
     <section className={`${workspaceStyles.shell} ${styles.shell} ${compactAppMode ? `${dealerStyles.dealerDiscoverySurface} ${styles.compactAppSurface}` : ""}`}>
-      <WorkspaceTitlePanel title="Discover Assets" />
+      {compactAppMode ? (
+        <div className={`${mobileStyles.overviewIntro} ${styles.discoveryOverviewIntro}`}>
+          <h1>Discovery</h1>
+          <p>Browse available machinery and request access from owners.</p>
+        </div>
+      ) : (
+        <WorkspaceTitlePanel title="Discover Assets" />
+      )}
 
       <section
         className={styles.controlsPanel}
@@ -1971,7 +1985,7 @@ export default function AssetDiscoveryClient({
             className={`${workspaceStyles.controlsRow} ${styles.toolbar}`}
             aria-label="Search and filter Asset Discovery"
           >
-            <label className={`${workspaceStyles.searchField} ${styles.searchBox}`}>
+            <label className={`${mobileStyles.overviewSearch} ${workspaceStyles.searchField} ${styles.searchBox} ${styles.discoveryOverviewSearch}`}>
               <SearchIcon className={styles.searchIcon} />
               <input
                 type="search"
@@ -1992,23 +2006,25 @@ export default function AssetDiscoveryClient({
               ) : null}
             </label>
 
-            {renderDealerFilter(
-              "type",
-              type,
-              typeOptions,
-              "All types",
-              "Filter by asset type",
-              handleTypeChange,
-            )}
+            <div className={styles.discoveryFilterRow}>
+              {renderDealerFilter(
+                "type",
+                type,
+                typeOptions,
+                "All types",
+                "Filter by asset type",
+                handleTypeChange,
+              )}
 
-            {renderDealerFilter(
-              "province",
-              province,
-              provinceOptions,
-              "All provinces",
-              "Filter by province",
-              handleProvinceChange,
-            )}
+              {renderDealerFilter(
+                "province",
+                province,
+                provinceOptions,
+                "All provinces",
+                "Filter by province",
+                handleProvinceChange,
+              )}
+            </div>
           </section>
         ) : (
           <div
@@ -2087,26 +2103,30 @@ export default function AssetDiscoveryClient({
       {error ? <div className={styles.errorPanel}>{error}</div> : null}
 
       {!loading && !error ? (
-        <div className={`${leadStyles.leadResultSummary} ${compactAppMode ? styles.compactResultSummary : ""}`}>
-          {compactAppMode ? (
-            <>
-              <strong>{pagination.totalItems}</strong>
-              <span>
-                {pagination.totalItems === 1 ? "asset matches" : "assets match"} your current search
-              </span>
-            </>
-          ) : (
-            <>
-              <span>Showing</span>
-              <strong>{pagination.totalItems}</strong>
-              <span>assets for the current search and filters</span>
-            </>
-          )}
-        </div>
+        compactAppMode ? (
+          <div
+            className={`${mobileStyles.overviewSectionHeading} ${styles.discoverySectionHeading}`}
+          >
+            <h2>Available assets</h2>
+            <span aria-label={`${pagination.totalItems} available assets`}>
+              {pagination.totalItems}
+            </span>
+          </div>
+        ) : (
+          <div className={leadStyles.leadResultSummary}>
+            <span>Showing</span>
+            <strong>{pagination.totalItems}</strong>
+            <span>assets for the current search and filters</span>
+          </div>
+        )
       ) : null}
 
       <section
-        className={compactAppMode ? styles.cardStack : leadStyles.leadStack}
+        className={
+          compactAppMode
+            ? `${mobileStyles.overviewList} ${styles.cardStack}`
+            : leadStyles.leadStack
+        }
         aria-label="Asset Discovery assets"
       >
         {loading ? (
@@ -2118,15 +2138,20 @@ export default function AssetDiscoveryClient({
             return compactAppMode ? (
               <article
                 key={asset.id}
-                className={`${workspaceStyles.card} ${styles.assetCard} ${styles.dealerAssetCard} ${assetCardStatusClass(asset)}`}
+                className={`${workspaceStyles.card} ${mobileStyles.overviewCard} ${styles.assetCard} ${styles.dealerAssetCard} ${assetCardStatusClass(asset)}`}
               >
                 <div className={`${styles.assetCardHeader} ${styles.dealerAssetCardHeader}`}>
                   <div className={styles.assetIdentity}>
+                    <div className={`${mobileStyles.overviewCardLabels} ${styles.discoveryCardLabels}`}>
+                      <span className={mobileStyles.overviewType}>
+                        {cleanText(asset.type) || "Asset"}
+                      </span>
+                      <span className={styles.discoveryLocationPill}>
+                        {cleanText(asset.province) || "Location not saved"}
+                      </span>
+                    </div>
                     <h2>{dealerAssetDisplayName(asset)}</h2>
                     <p className={styles.dealerAssetMeta}>{dealerAssetMeta(asset)}</p>
-                    <span className={styles.dealerAssetProvince}>
-                      {[cleanText(asset.type) || "Asset", cleanText(asset.province) || "Location not saved"].join(" · ")}
-                    </span>
                   </div>
 
                   <div className={styles.assetActionRow}>
