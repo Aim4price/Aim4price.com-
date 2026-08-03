@@ -2138,7 +2138,7 @@ export default function AssetDiscoveryClient({
             return compactAppMode ? (
               <article
                 key={asset.id}
-                className={`${workspaceStyles.card} ${mobileStyles.overviewCard} ${styles.assetCard} ${styles.dealerAssetCard} ${assetCardStatusClass(asset)}`}
+                className={`${workspaceStyles.card} ${mobileStyles.overviewCard} ${styles.assetCard} ${styles.dealerAssetCard} ${assetCardStatusClass(asset)} ${expandedAssetId && expandedAssetId !== asset.id ? styles.discoveryCardMuted : ""}`}
               >
                 <div className={`${styles.assetCardHeader} ${styles.dealerAssetCardHeader}`}>
                   <div className={styles.assetIdentity}>
@@ -2163,7 +2163,7 @@ export default function AssetDiscoveryClient({
             ) : (
               <article
                 key={asset.id}
-                className={`${workspaceStyles.card} ${leadStyles.leadThread} ${leadParityAssetCardStatusClass(asset)} ${expandedAssetId === asset.id ? leadStyles.leadThreadOpen : ""} ${
+                className={`${workspaceStyles.card} ${leadStyles.leadThread} ${leadParityAssetCardStatusClass(asset)} ${expandedAssetId === asset.id ? leadStyles.leadThreadOpen : ""} ${expandedAssetId && expandedAssetId !== asset.id ? styles.discoveryCardMuted : ""} ${
                   asset.enquiryStatus === "temporarily_denied" &&
                   !temporaryDenialExpired(asset)
                     ? styles.discoveryAssetCardDenied

@@ -34687,3 +34687,34 @@ button.documentOpenLink {
     width: 100%;
   }
 }
+
+
+/* Keep attention on the asset whose details are open. */
+.assetCardRow {
+  transition: filter 190ms ease, opacity 190ms ease, transform 190ms ease;
+}
+
+.assetCardRowMuted {
+  opacity: 0.3;
+  filter: blur(1.7px);
+  transform: scale(0.987);
+  pointer-events: none;
+  user-select: none;
+}
+
+.assetCardRow:has(.assetCardExpanded) {
+  z-index: 2;
+}
+
+@media (max-width: 760px) {
+  .assetCardRowMuted {
+    opacity: 0.22;
+    filter: blur(1.4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .assetCardRow {
+    transition: none;
+  }
+}

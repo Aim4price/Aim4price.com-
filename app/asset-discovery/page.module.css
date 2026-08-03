@@ -1999,3 +1999,26 @@
     scroll-behavior: auto !important;
   }
 }
+
+
+.discoveryCardMuted {
+  opacity: 0.3;
+  filter: blur(1.7px);
+  transform: scale(0.987);
+  pointer-events: none;
+  user-select: none;
+  transition: filter 190ms ease, opacity 190ms ease, transform 190ms ease;
+}
+
+@media (max-width: 760px) {
+  .discoveryCardMuted {
+    opacity: 0.22;
+    filter: blur(1.4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .discoveryCardMuted {
+    transition: none;
+  }
+}

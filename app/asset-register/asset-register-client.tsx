@@ -13663,7 +13663,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                       : false;
 
                     return (
-                      <div className={styles.assetCardRow} key={asset.id}>
+                      <div className={`${styles.assetCardRow} ${expandedAssetId && !isExpanded ? styles.assetCardRowMuted : ''}`} key={asset.id}>
                         {canUseOwnerOnlyAssetActions || isAccountantWorkspace ? (
                           <div className={styles.assetSideActions}>
                             <button

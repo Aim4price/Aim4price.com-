@@ -379,8 +379,8 @@ export default function DealerAccessClient() {
           <div className={styles.heroCopy}>
             <h1>Dealer App Staff</h1>
             <p>
-              Create dedicated access for staff who use Valuation, Discovery, Leads and Marketplace without entering
-              the full Aim4price account area.
+              Create dedicated access for staff who use Get Estimate, Discovery, Leads, Client Costs, Maintenance and
+              Marketplace without entering the full Aim4price account area.
             </p>
           </div>
 
@@ -408,7 +408,7 @@ export default function DealerAccessClient() {
         ) : null}
 
         <section className={styles.grid}>
-          <section className={styles.card}>
+          <section className={`${styles.card} ${expandedManagerId ? styles.focusMuted : ''}`}>
             <div className={styles.cardHeader}>
               <h2>New Dealer App login</h2>
               <p>Create a dedicated username and password for one staff member.</p>
@@ -496,7 +496,7 @@ export default function DealerAccessClient() {
                 return (
                   <article
                     key={manager.id}
-                    className={`${styles.managerCard} ${isExpanded ? styles.managerCardExpanded : ''}`}
+                    className={`${styles.managerCard} ${isExpanded ? styles.managerCardExpanded : ''} ${expandedManagerId && !isExpanded ? styles.managerCardMuted : ''}`}
                   >
                     <div className={styles.managerSummary}>
                       <div className={styles.managerIdentity}>

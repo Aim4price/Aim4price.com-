@@ -725,3 +725,34 @@
     width: 100%;
   }
 }
+
+
+.focusMuted,
+.managerCardMuted {
+  opacity: 0.28;
+  filter: blur(1.7px);
+  transform: scale(0.987);
+  pointer-events: none;
+  user-select: none;
+  transition: filter 190ms ease, opacity 190ms ease, transform 190ms ease;
+}
+
+.managerCardExpanded {
+  position: relative;
+  z-index: 2;
+}
+
+@media (max-width: 760px) {
+  .focusMuted,
+  .managerCardMuted {
+    opacity: 0.2;
+    filter: blur(1.4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .focusMuted,
+  .managerCardMuted {
+    transition: none;
+  }
+}

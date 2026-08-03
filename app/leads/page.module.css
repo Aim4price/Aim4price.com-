@@ -4442,3 +4442,75 @@
     min-width: 0 !important;
   }
 }
+
+
+.leadSummaryFilterButton {
+  width: 100%;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  appearance: none;
+  cursor: pointer;
+  transition: transform 170ms ease, border-color 170ms ease, box-shadow 170ms ease;
+}
+
+.leadSummaryFilterButton:hover,
+.leadSummaryFilterButton:focus-visible {
+  border-color: #79bc9c !important;
+  outline: 0;
+  transform: translateY(-1px);
+}
+
+.leadSummaryFilterButtonActive {
+  border-color: #4ca77b !important;
+  box-shadow:
+    0 0 0 4px rgba(76, 167, 123, 0.12),
+    0 18px 34px rgba(16, 82, 59, 0.09) !important;
+}
+
+.leadThreadMuted {
+  opacity: 0.3;
+  filter: blur(1.7px);
+  transform: scale(0.987);
+  pointer-events: none;
+  user-select: none;
+}
+
+@media (max-width: 760px) {
+  .dealerOwnerParity .leadSummaryRow {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 0.42rem !important;
+    margin-bottom: 0.75rem !important;
+  }
+
+  .dealerOwnerParity .leadSummaryFilterButton {
+    min-height: 6.8rem !important;
+    padding: 0.75rem 0.62rem !important;
+    border-radius: 0.95rem !important;
+  }
+
+  .dealerOwnerParity .leadSummaryFilterButton [class*='heroSummaryTitle'] {
+    font-size: 0.72rem !important;
+    line-height: 1.15 !important;
+  }
+
+  .dealerOwnerParity .leadSummaryFilterButton [class*='heroSummaryValue'] {
+    font-size: 1.75rem !important;
+  }
+
+  .dealerOwnerParity .leadSummaryFilterButton [class*='heroSummaryFooter'] {
+    display: none !important;
+  }
+
+  .leadThreadMuted {
+    opacity: 0.22;
+    filter: blur(1.4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .leadSummaryFilterButton,
+  .leadThreadMuted {
+    transition: none;
+  }
+}

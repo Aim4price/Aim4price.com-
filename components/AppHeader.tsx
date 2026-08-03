@@ -28,6 +28,7 @@ type ActivePage =
   | 'account'
   | 'asset-discovery'
   | 'leads'
+  | 'clients'
   | 'tracking'
   | 'shared-registers'
   | 'marketplace'
@@ -202,13 +203,14 @@ const ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
   { href: '/asset-map', label: 'Asset Map', accountTypes: ['owner'] },
   { href: '/asset-register', label: 'Asset Register', accountTypes: ['owner'] },
   { href: '/my-invoices', label: 'Cost Ledger', accountTypes: ['owner'] },
-  { href: '/tracking', label: 'Tracking', accountTypes: ['dealer'] },
+  { href: '/tracking', label: 'Maintenance', accountTypes: ['dealer'] },
   { href: '/fuel', label: 'Fuel Ledger', accountTypes: ['owner'] },
   { href: '/valuation', label: 'Get Estimate', accountTypes: ['dealer'] },
   { href: '/maintenance', label: 'Maintenance', accountTypes: ['owner'] },
   { href: '/marketplace', label: 'Marketplace', accountTypes: ['owner', 'dealer'] },
-  { href: '/leads', label: 'My Leads', accountTypes: ['dealer'] },
+  { href: '/leads', label: 'Leads', accountTypes: ['dealer'] },
   { href: '/dealer-costs', label: 'Client Costs', accountTypes: ['dealer'] },
+  { href: '/dealer-clients', label: 'Clients', accountTypes: ['dealer'] },
   { href: '/shared-registers', label: 'Shared Registers', accountTypes: ['insurance'] },
 ];
 
@@ -277,9 +279,11 @@ function buildNavItems(
   if (accountType === 'dealer') {
     return [
       ...BASE_NAV_ITEMS,
-      { key: 'leads', href: '/leads', label: 'My Leads' },
-      { key: 'tracking', href: '/tracking', label: 'Tracking' },
+      { key: 'leads', href: '/leads', label: 'Leads' },
+      { key: 'tracking', href: '/tracking', label: 'Maintenance' },
       { key: 'marketplace', href: '/marketplace', label: 'Marketplace' },
+      { key: 'cost', href: '/dealer-costs', label: 'Client Costs' },
+      { key: 'clients', href: '/dealer-clients', label: 'Clients' },
     ];
   }
 
@@ -925,7 +929,7 @@ export default function AppHeader({
     () => resolveActiveNavKey(pathname, mobileNavItems, active),
     [active, mobileNavItems, pathname],
   );
-  const navWindowSize = isDealerAccount || isAccountantWorkspace ? navItems.length : NAV_WINDOW_SIZE;
+  const navWindowSize = isAccountantWorkspace ? navItems.length : NAV_WINDOW_SIZE;
   const [navWindowStart, setNavWindowStart] = useState(0);
   const navMaxWindowStart = Math.max(0, navItems.length - navWindowSize);
   const showNavWindowControls = navItems.length > navWindowSize;

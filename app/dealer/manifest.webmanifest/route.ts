@@ -9,7 +9,7 @@ export function GET() {
       id: '/apps/aim4price-dealer',
       name: 'Aim4price Dealer App',
       short_name: 'Dealer',
-      description: 'Mobile dealer valuation, discovery, leads and marketplace tools from Aim4price.',
+      description: 'Simple mobile access to clients, leads, maintenance, discovery, estimates, costs and Marketplace.',
       start_url: '/dealer/login?source=dealer-app',
       scope: '/dealer',
       display: 'standalone',
