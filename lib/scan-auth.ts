@@ -17,6 +17,7 @@ import {
   type ActiveFieldManagerSession,
 } from "./field-manager-session";
 import { verifyScanPin } from "./scan-pin";
+import { getOwnerAppAccess } from "./owner-app-access";
 
 export const SCAN_SESSION_COOKIE_NAME = "aim4price_scan";
 export const SCAN_SESSION_MAX_AGE_SECONDS = 60 * 60 * 12;
@@ -40,6 +41,7 @@ export type AuthorizedScanAccess = {
   fieldManagerId?: string;
   fieldManagerDisplayName?: string;
   fieldManagerSessionId?: string;
+  ownerAppDisplayName?: string;
 };
 
 export type UnauthorizedScanAccess = {
@@ -52,6 +54,8 @@ export type UnauthorizedScanAccess = {
 type AuthorizeScanAccessOptions = {
   fieldManagerHint?: boolean;
   fieldManagerAssetId?: string | null;
+  ownerAppHint?: boolean;
+  ownerAppAssetId?: string | null;
 };
 
 function asText(value: unknown): string {
@@ -498,6 +502,50 @@ export async function authorizeFieldManagerScanAccess(
   );
 }
 
+export async function authorizeOwnerAppScanAccess(
+  _request: NextRequest,
+  publicAssetCode: string,
+  ownerAppAssetId?: string | null,
+): Promise<AuthorizedScanAccess | UnauthorizedScanAccess> {
+  const normalizedCode = normalizePublicAssetCode(publicAssetCode);
+  const normalizedAssetId = asText(ownerAppAssetId);
+  if (!normalizedCode || !normalizedAssetId) {
+    return { ok: false, status: 404, error: "Asset not found.", pinRequired: false };
+  }
+
+  const ownerAccess = await getOwnerAppAccess();
+  if (!ownerAccess) {
+    return { ok: false, status: 401, error: "Aim4price Owner login is required.", pinRequired: false };
+  }
+
+  try {
+    const context = await getScanAssetAccessContextByAssetId(normalizedAssetId, {
+      publicAssetCode: normalizedCode,
+      expectedOwnerUserId: ownerAccess.ownerUserId,
+    });
+    if (!context?.asset?.id || context.asset.userId !== ownerAccess.ownerUserId) {
+      return { ok: false, status: 404, error: "Asset not found.", pinRequired: false };
+    }
+    if (!isActiveQrStatus(context.asset.qrStatus)) return inactiveQrAccess();
+
+    return {
+      ok: true,
+      accessMode: "owner_session",
+      asset: context.asset,
+      ownerUserId: ownerAccess.ownerUserId,
+      ownerAppDisplayName: ownerAccess.displayName,
+    };
+  } catch (error) {
+    const safe = safeAssetOwnerError(error, "Could not open this asset.");
+    return {
+      ok: false,
+      status: safe?.status ?? 403,
+      error: safe?.error ?? "Could not open this asset.",
+      pinRequired: false,
+    };
+  }
+}
+
 export async function authorizePublicQrScanAccess(
   request: NextRequest,
   publicAssetCode: string,
@@ -598,6 +646,14 @@ export async function authorizeScanAccess(
   publicAssetCode: string,
   options: AuthorizeScanAccessOptions = {},
 ): Promise<AuthorizedScanAccess | UnauthorizedScanAccess> {
+  if (options.ownerAppHint === true) {
+    return authorizeOwnerAppScanAccess(
+      request,
+      publicAssetCode,
+      options.ownerAppAssetId ?? null,
+    );
+  }
+
   if (options.fieldManagerHint === true) {
     return authorizeFieldManagerScanAccess(
       request,
@@ -619,7 +675,7 @@ export async function authorizeScanUpload(
 export async function hasOwnerOrValidScanSession(
   request: NextRequest,
 ): Promise<boolean> {
-  const session = await getServerSession();
+  const session = await getServerSession({ allowOwnerApp: true });
 
   if (session?.user?.id) {
     return true;

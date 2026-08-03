@@ -94,6 +94,7 @@ type ScanAssetResponse = {
   asset?: ScanSafeAsset;
   accessMode?: ScanAccessResponseMode;
   fieldManagerDisplayName?: string | null;
+  ownerAppDisplayName?: string | null;
   pinRequired?: boolean;
   preview?: boolean;
   error?: string;
@@ -1400,6 +1401,10 @@ export default function ScanClient({
   fieldManagerScheduledMaintenanceId = null,
   fieldManagerScheduledMaintenanceType = null,
   fieldManagerReturnTo = null,
+  ownerAppMode = false,
+  ownerAppAssetId = null,
+  ownerAppOperatorName = '',
+  ownerAppReturnTo = null,
 }: {
   publicAssetCode: string;
   fieldManagerMode?: boolean;
@@ -1407,6 +1412,10 @@ export default function ScanClient({
   fieldManagerScheduledMaintenanceId?: string | null;
   fieldManagerScheduledMaintenanceType?: string | null;
   fieldManagerReturnTo?: string | null;
+  ownerAppMode?: boolean;
+  ownerAppAssetId?: string | null;
+  ownerAppOperatorName?: string;
+  ownerAppReturnTo?: string | null;
 }) {
   const normalizedCode = useMemo(
     () => normalizePublicAssetCode(publicAssetCode),
@@ -1415,6 +1424,10 @@ export default function ScanClient({
   const normalizedFieldManagerAssetId = useMemo(
     () => String(fieldManagerAssetId ?? "").trim(),
     [fieldManagerAssetId],
+  );
+  const normalizedOwnerAppAssetId = useMemo(
+    () => String(ownerAppAssetId ?? "").trim(),
+    [ownerAppAssetId],
   );
   const normalizedScheduledMaintenanceId = useMemo(
     () => String(fieldManagerScheduledMaintenanceId ?? "").trim(),
@@ -1437,6 +1450,13 @@ export default function ScanClient({
       ? requested
       : "/field-manager/assets";
   }, [fieldManagerReturnTo]);
+  const ownerAppReturnHref = useMemo(() => {
+    const requested = String(ownerAppReturnTo ?? "").trim();
+    return requested.startsWith("/owner-app/operations")
+      ? requested
+      : "/owner-app/operations/maintenance";
+  }, [ownerAppReturnTo]);
+  const appReturnHref = ownerAppMode ? ownerAppReturnHref : fieldManagerReturnHref;
 
   const [asset, setAsset] = useState<ScanSafeAsset | null>(null);
   const [savedAsset, setSavedAsset] = useState<ScanSafeAsset | null>(null);
@@ -1445,7 +1465,7 @@ export default function ScanClient({
   const [pendingUpdate, setPendingUpdate] =
     useState<PendingScanUpdate>(initialPendingUpdate);
   const [pin, setPin] = useState("");
-  const [operatorName, setOperatorName] = useState("");
+  const [operatorName, setOperatorName] = useState(() => normalizeOperatorName(ownerAppOperatorName));
   const [scanAccessMode, setScanAccessMode] =
     useState<ScanAccessResponseMode | null>(null);
   const [notice, setNotice] = useState<{
@@ -1515,7 +1535,7 @@ export default function ScanClient({
       element.style.display = "none";
     });
 
-    if (!fieldManagerMode) {
+    if (!fieldManagerMode && !ownerAppMode) {
       try {
         const savedName = window.localStorage.getItem(
           "aim4price_scan_operator_name",
@@ -1532,7 +1552,7 @@ export default function ScanClient({
         element.style.display = display;
       });
     };
-  }, [fieldManagerMode]);
+  }, [fieldManagerMode, ownerAppMode]);
 
   useEffect(() => {
     setAsset(null);
@@ -1552,6 +1572,7 @@ export default function ScanClient({
       ...pendingLocationMetadata(restoredSession),
     });
     setPin("");
+    if (ownerAppMode) setOperatorName(normalizeOperatorName(ownerAppOperatorName));
     setIsUnavailable(false);
     setAssetOpenError(null);
     setIsSubmittingPin(false);
@@ -1587,8 +1608,11 @@ export default function ScanClient({
     autoFieldManagerOpenKeyRef.current = "";
   }, [
     fieldManagerMode,
+    ownerAppMode,
+    ownerAppOperatorName,
     normalizedCode,
     normalizedFieldManagerAssetId,
+    normalizedOwnerAppAssetId,
     normalizedScheduledMaintenanceId,
     normalizedScheduledMaintenanceType,
   ]);
@@ -1634,21 +1658,23 @@ export default function ScanClient({
 
   useEffect(() => {
     if (
-      !fieldManagerMode ||
+      (!fieldManagerMode && !ownerAppMode) ||
       !normalizedCode ||
       autoFieldManagerOpenKeyRef.current
-        === `${normalizedCode}:${normalizedFieldManagerAssetId}:${normalizedScheduledMaintenanceId}`
+        === `${normalizedCode}:${normalizedFieldManagerAssetId}:${normalizedOwnerAppAssetId}:${normalizedScheduledMaintenanceId}`
     )
       return;
 
     autoFieldManagerOpenKeyRef.current
-      = `${normalizedCode}:${normalizedFieldManagerAssetId}:${normalizedScheduledMaintenanceId}`;
+      = `${normalizedCode}:${normalizedFieldManagerAssetId}:${normalizedOwnerAppAssetId}:${normalizedScheduledMaintenanceId}`;
     void loadUnlockedAsset();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     fieldManagerMode,
+    ownerAppMode,
     normalizedCode,
     normalizedFieldManagerAssetId,
+    normalizedOwnerAppAssetId,
     normalizedScheduledMaintenanceId,
   ]);
 
@@ -1740,6 +1766,11 @@ export default function ScanClient({
   }, [asset?.id]);
 
   function fieldManagerQueryString(): string {
+    if (ownerAppMode) {
+      const params = new URLSearchParams({ ownerApp: "1" });
+      if (normalizedOwnerAppAssetId) params.set("assetId", normalizedOwnerAppAssetId);
+      return `?${params.toString()}`;
+    }
     if (!fieldManagerMode) return "";
 
     const params = new URLSearchParams({ fieldManager: "1" });
@@ -1773,7 +1804,7 @@ export default function ScanClient({
     }, 80);
 
     window.setTimeout(() => {
-      window.location.replace(fieldManagerReturnHref);
+      window.location.replace(appReturnHref);
     }, FIELD_MANAGER_RETURN_DELAY_MS);
   }
 
@@ -1795,7 +1826,7 @@ export default function ScanClient({
         .json()
         .catch(() => null)) as ScanAssetResponse | null;
 
-      if (response.status === 401 && fieldManagerMode) {
+      if (response.status === 401 && (fieldManagerMode || ownerAppMode)) {
         setAsset(null);
         setIsUnavailable(true);
         setAssetOpenError(
@@ -1823,7 +1854,7 @@ export default function ScanClient({
           data?.error ??
           (response.status === 404
             ? "Asset not found."
-            : fieldManagerMode
+            : fieldManagerMode || ownerAppMode
               ? "Could not open this asset. Your Field Manager session may not have access to this asset. Please go back and try again."
               : "Scan access is not enabled yet.");
         setAsset(null);
@@ -1851,10 +1882,14 @@ export default function ScanClient({
         );
         if (managerOperatorName) setOperatorName(managerOperatorName);
       }
+      if (data.accessMode === "owner_session" && data.ownerAppDisplayName?.trim()) {
+        const ownerOperatorName = normalizeOperatorName(data.ownerAppDisplayName);
+        if (ownerOperatorName) setOperatorName(ownerOperatorName);
+      }
 
       const openedAsset = data.asset;
       const isFieldManagerAccess =
-        fieldManagerMode || data.accessMode === "field_manager";
+        fieldManagerMode || ownerAppMode || data.accessMode === "field_manager" || data.accessMode === "owner_session";
       const seededSession =
         seedQrSessionFromAsset(normalizedCode, openedAsset) ??
         readQrScanSession(normalizedCode);
@@ -1940,8 +1975,8 @@ export default function ScanClient({
   }
 
   function goBackFromAssetError() {
-    if (fieldManagerMode) {
-      window.location.assign(fieldManagerReturnHref);
+    if (fieldManagerMode || ownerAppMode) {
+      window.location.assign(appReturnHref);
       return;
     }
 
@@ -2166,7 +2201,10 @@ export default function ScanClient({
 
   function openEditor(nextEditor: EditorKey) {
     const isFieldManagerAccess =
-      fieldManagerMode || scanAccessMode === "field_manager";
+      fieldManagerMode ||
+      ownerAppMode ||
+      scanAccessMode === "field_manager" ||
+      scanAccessMode === "owner_session";
     const enforcedEditor =
       !isFieldManagerAccess &&
       nextEditor !== "usage" &&
@@ -2521,6 +2559,10 @@ export default function ScanClient({
 
   function openSchedulePage() {
     if (!asset || !isFieldManagerMode) return;
+    if (ownerAppMode) {
+      window.location.assign(`/owner-app/assets/${encodeURIComponent(asset.id)}/maintenance`);
+      return;
+    }
     const params = new URLSearchParams({ assetId: asset.id });
     if (fieldManagerReturnHref.startsWith("/field-manager/overview")) {
       const returnUrl = new URL(fieldManagerReturnHref, window.location.origin);
@@ -3146,7 +3188,7 @@ export default function ScanClient({
     hasLocationCaptured(draft) ||
     sessionHasLocation(readQrScanSession(normalizedCode));
   const isFieldManagerMode =
-    fieldManagerMode || scanAccessMode === "field_manager";
+    fieldManagerMode || ownerAppMode || scanAccessMode === "field_manager" || scanAccessMode === "owner_session";
   const usageUpdateRequired =
     !isFieldManagerMode &&
     needsUsageUpdateBeforeActions(
@@ -3231,7 +3273,7 @@ export default function ScanClient({
     [sharePartners, selectedSharePartnerId],
   );
   const pageClassName = `${styles.page} ${isFieldManagerMode ? styles.fieldManagerMobileSurface : ""}`;
-  const canUseDealerShare = true;
+  const canUseDealerShare = !ownerAppMode;
   const selectedSharePartnerPhoneHref = selectedSharePartner
     ? normalizePhoneHref(selectedSharePartner.phone)
     : "";
@@ -3315,9 +3357,9 @@ export default function ScanClient({
         {isFieldManagerMode ? (
           <header
             className={styles.fieldManagerDetailHeader}
-            aria-label="Field Manager asset navigation"
+            aria-label={ownerAppMode ? "Owner maintenance navigation" : "Field Manager asset navigation"}
           >
-            <FieldManagerNavLink href={fieldManagerReturnHref} label="Back" />
+            <FieldManagerNavLink href={appReturnHref} label="Back" />
           </header>
         ) : null}
 
@@ -3340,7 +3382,7 @@ export default function ScanClient({
         {!asset && !isUnavailable && !assetOpenError && isFieldManagerMode ? (
           <section className={styles.assetOpenedCard}>
             <div className={styles.assetScanTitleBlock}>
-              <span>Field Manager asset</span>
+              <span>{ownerAppMode ? "Owner maintenance" : "Field Manager asset"}</span>
               <h1>{scanTitleText(prePinAsset?.title, "Opening asset")}</h1>
               <p>
                 Checking your Field Manager access. No farm PIN or scanner name

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { safeAssetOwnerError } from "../../../../../lib/asset-owner-resolver";
 import {
   authorizeFieldManagerScanAccess,
+  authorizeOwnerAppScanAccess,
   authorizePublicQrScanAccess,
 } from "../../../../../lib/scan-auth";
 import {
@@ -61,7 +62,8 @@ export async function GET(request: NextRequest, context: RouteContext) {
   const isPreviewRequest = request.nextUrl.searchParams.get("preview") === "1";
   const isFieldManagerHint =
     request.nextUrl.searchParams.get("fieldManager") === "1";
-  const fieldManagerAssetId = request.nextUrl.searchParams.get("assetId");
+  const isOwnerAppHint = request.nextUrl.searchParams.get("ownerApp") === "1";
+  const requestedAssetId = request.nextUrl.searchParams.get("assetId");
 
   if (isPreviewRequest) {
     let previewContext: ScanAssetAccessContext | null;
@@ -114,11 +116,13 @@ export async function GET(request: NextRequest, context: RouteContext) {
     });
   }
 
-  const access = isFieldManagerHint
+  const access = isOwnerAppHint
+    ? await authorizeOwnerAppScanAccess(request, publicAssetCode, requestedAssetId)
+    : isFieldManagerHint
     ? await authorizeFieldManagerScanAccess(
         request,
         publicAssetCode,
-        fieldManagerAssetId,
+        requestedAssetId,
       )
     : await authorizePublicQrScanAccess(request, publicAssetCode);
 
@@ -139,6 +143,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
     ok: true,
     accessMode: access.accessMode,
     fieldManagerDisplayName: access.fieldManagerDisplayName ?? null,
+    ownerAppDisplayName: access.ownerAppDisplayName ?? null,
     asset: access.asset,
     recentEvents,
   });

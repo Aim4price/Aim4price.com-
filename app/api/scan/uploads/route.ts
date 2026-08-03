@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { authorizeFieldManagerScanAccess, authorizePublicQrScanAccess } from '../../../../lib/scan-auth';
+import { authorizeFieldManagerScanAccess, authorizeOwnerAppScanAccess, authorizePublicQrScanAccess } from '../../../../lib/scan-auth';
 import {
   ALLOWED_ASSET_REGISTER_IMAGE_TYPES,
   MAX_ASSET_REGISTER_PHOTOS,
@@ -49,12 +49,15 @@ export async function POST(request: NextRequest) {
   const formData = await request.formData();
   const publicAssetCode = normalizePublicAssetCode(formData.get('publicAssetCode'));
   const isFieldManagerHint = request.nextUrl.searchParams.get('fieldManager') === '1';
-  const fieldManagerAssetId = request.nextUrl.searchParams.get('assetId');
-  const access = isFieldManagerHint
+  const isOwnerAppHint = request.nextUrl.searchParams.get('ownerApp') === '1';
+  const requestedAssetId = request.nextUrl.searchParams.get('assetId');
+  const access = isOwnerAppHint
+    ? await authorizeOwnerAppScanAccess(request, publicAssetCode, requestedAssetId)
+    : isFieldManagerHint
     ? await authorizeFieldManagerScanAccess(
         request,
         publicAssetCode,
-        fieldManagerAssetId,
+        requestedAssetId,
       )
     : await authorizePublicQrScanAccess(request, publicAssetCode);
 

@@ -53,8 +53,10 @@ function errorMessage(error: unknown, fallback: string): string {
 export async function POST(request: NextRequest, context: RouteContext) {
   const publicFuelStorageCode = normalizeFuelCode(context.params.publicFuelStorageCode);
   const isFieldManagerHint = request.nextUrl.searchParams.get('fieldManager') === '1';
+  const isOwnerAppHint = request.nextUrl.searchParams.get('ownerApp') === '1';
   const access = await authorizeFuelStorageScanAccess(request, publicFuelStorageCode, {
     fieldManagerHint: isFieldManagerHint,
+    ownerAppHint: isOwnerAppHint,
   });
 
   if (!access.ok) {
@@ -84,7 +86,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
   try {
     const operatorName = access.accessMode === 'field_manager'
       ? access.fieldManagerDisplayName ?? 'Field Manager'
-      : body.operatorName;
+      : access.accessMode === 'owner_session'
+        ? access.ownerAppDisplayName ?? 'Owner'
+        : body.operatorName;
 
     const saved = await recordFuelAssetIssue({
       userId: access.ownerUserId,

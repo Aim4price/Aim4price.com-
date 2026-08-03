@@ -11,7 +11,7 @@ import {
   isAssetMaintenanceRecordId,
   type AssetMaintenanceRecord,
 } from "../../../../../../lib/asset-maintenance";
-import { authorizeFieldManagerScanAccess, authorizePublicQrScanAccess } from "../../../../../../lib/scan-auth";
+import { authorizeFieldManagerScanAccess, authorizeOwnerAppScanAccess, authorizePublicQrScanAccess } from "../../../../../../lib/scan-auth";
 import {
   listRecentScanEvents,
   normalizePublicAssetCode,
@@ -140,13 +140,16 @@ export async function POST(request: NextRequest, context: RouteContext) {
   );
   const isFieldManagerHint =
     request.nextUrl.searchParams.get("fieldManager") === "1";
-  const fieldManagerAssetId = request.nextUrl.searchParams.get("assetId");
+  const isOwnerAppHint = request.nextUrl.searchParams.get("ownerApp") === "1";
+  const requestedAssetId = request.nextUrl.searchParams.get("assetId");
 
-  const access = isFieldManagerHint
+  const access = isOwnerAppHint
+    ? await authorizeOwnerAppScanAccess(request, publicAssetCode, requestedAssetId)
+    : isFieldManagerHint
     ? await authorizeFieldManagerScanAccess(
         request,
         publicAssetCode,
-        fieldManagerAssetId,
+        requestedAssetId,
       )
     : await authorizePublicQrScanAccess(request, publicAssetCode);
 
@@ -175,9 +178,10 @@ export async function POST(request: NextRequest, context: RouteContext) {
     body.lifeWorkedPercent,
   );
 
-  const operatorName =
-    access.accessMode === "field_manager"
-      ? asText(access.fieldManagerDisplayName) || "Field Manager"
+  const operatorName = access.accessMode === "field_manager"
+    ? asText(access.fieldManagerDisplayName) || "Field Manager"
+    : access.accessMode === "owner_session"
+      ? asText(access.ownerAppDisplayName) || "Owner"
       : asText(body.operatorName);
 
   const payload = {
@@ -193,7 +197,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     gpsAccuracyMeters: normalizeGpsAccuracyMeters(body.gpsAccuracyMeters),
   };
 
-  if (access.accessMode !== "field_manager" && payload.operatorName.length < 2) {
+  if (access.accessMode === "scan_pin" && payload.operatorName.length < 2) {
     return NextResponse.json(
       { ok: false, error: "Enter the name of the person updating this asset." },
       { status: 400 },
