@@ -4,7 +4,7 @@ import {
   type AssetRegisterItemKind,
   type CreateManualAssetInput,
 } from '../../../../lib/asset-register-db';
-import { getOwnerAppAccess } from '../../../../lib/owner-app-access';
+import { getOwnerAppAccess, ownerAppCan } from '../../../../lib/owner-app-access';
 import { filterOwnerAppAssets, listAllOwnerAppAssets } from '../../../../lib/owner-app-assets';
 
 export const runtime = 'nodejs';
@@ -85,6 +85,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const access = await getOwnerAppAccess();
   if (!access) return unauthorized();
+  if (!ownerAppCan(access, 'manage_assets')) return NextResponse.json({ ok: false, error: 'Only an Owner / Admin login can add assets.' }, { status: 403 });
 
   let body: Record<string, unknown>;
   try {
