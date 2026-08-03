@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { requireOwnerAppPageAccess } from '../../lib/owner-app-access';
+import { ownerAppCan, requireOwnerAppPageAccess, type OwnerAppPermission } from '../../lib/owner-app-access';
 import OwnerAppNav from './owner-app-nav';
 import OwnerNotificationsLink from './owner-notifications-link';
 import OwnerOverviewLink from './owner-overview-link';
@@ -8,17 +8,18 @@ import styles from './owner-app.module.css';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const TOOLS = [
+const TOOLS: Array<{ label: string; href: string; permission?: OwnerAppPermission }> = [
   { label: 'My Assets', href: '/owner-app/assets' },
-  { label: 'Maintenance & Fuel', href: '/owner-app/operations' },
-  { label: 'Get Estimate', href: '/owner-app/valuation' },
+  { label: 'Maintenance & Fuel', href: '/owner-app/operations', permission: 'operate' },
+  { label: 'Get Estimate', href: '/owner-app/valuation', permission: 'manage_assets' },
   { label: 'Discover Assets', href: '/owner-app/discovery' },
-  { label: 'Marketplace', href: '/owner-app/marketplace' },
-] as const;
+  { label: 'Marketplace', href: '/owner-app/marketplace', permission: 'manage_marketplace' },
+];
 
 export default async function OwnerAppHome() {
   const access = await requireOwnerAppPageAccess();
   const notificationViewerId = access.ownerAppUserId ?? access.ownerUserId;
+  const tools = TOOLS.filter((tool) => !tool.permission || ownerAppCan(access, tool.permission));
 
   return (
     <main className={`${styles.page} ${styles.homePage}`}>
@@ -27,7 +28,7 @@ export default async function OwnerAppHome() {
         <nav className={styles.homeLauncher} aria-label="Owner tools">
           <OwnerNotificationsLink viewerId={notificationViewerId} />
           <OwnerOverviewLink />
-          {TOOLS.map((tool) => (
+          {tools.map((tool) => (
             <Link key={tool.href} className={styles.homeLaunchCard} href={tool.href} prefetch={false}>
               <strong>{tool.label}</strong>
             </Link>
