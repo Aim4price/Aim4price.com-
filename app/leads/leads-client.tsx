@@ -1543,14 +1543,18 @@ export default function LeadsClient({
     });
   }, [periodLeads, searchTerm, statusFilter]);
 
-  const newLeadCount = useMemo(() => filteredLeads.filter((lead) => isNewLead(lead)).length, [filteredLeads]);
+  const summaryLeads = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+    return query ? periodLeads.filter((lead) => searchTextForLead(lead).includes(query)) : periodLeads;
+  }, [periodLeads, searchTerm]);
+  const newLeadCount = useMemo(() => summaryLeads.filter((lead) => isNewLead(lead)).length, [summaryLeads]);
   const activeLeadCount = useMemo(
-    () => filteredLeads.filter((lead) => !isNewLead(lead) && !isCompletedLead(lead)).length,
-    [filteredLeads],
+    () => summaryLeads.filter((lead) => !isNewLead(lead) && !isCompletedLead(lead)).length,
+    [summaryLeads],
   );
   const completedLeadCount = useMemo(
-    () => filteredLeads.filter((lead) => isCompletedLead(lead)).length,
-    [filteredLeads],
+    () => summaryLeads.filter((lead) => isCompletedLead(lead)).length,
+    [summaryLeads],
   );
   const totalLeadPages = Math.max(1, Math.ceil(filteredLeads.length / LEADS_PER_PAGE));
   const visibleLeadPage = Math.min(Math.max(currentPage, 1), totalLeadPages);
@@ -1954,6 +1958,12 @@ export default function LeadsClient({
     setYearFilter('all');
     setStatusFilter('all');
     setOpenFilterDropdown(null);
+  }
+
+  function chooseLeadStatusFilter(nextFilter: LeadStatusFilter) {
+    setStatusFilter(nextFilter);
+    setCurrentPage(1);
+    setOpenLeadId(null);
   }
 
   function openLeadFilterModal() {
@@ -2750,9 +2760,9 @@ export default function LeadsClient({
             </div>
           )}
 
-          {useDealerWorkspaceStyles && !dealerAppMode ? (
+          {useDealerWorkspaceStyles ? (
             <section className={`${assetStyles.summaryRow} ${assetStyles.heroSummaryRow} ${styles.leadSummaryRow}`} aria-label="Lead summary">
-              <article className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${styles.leadOwnerSummaryCard} ${styles.leadOwnerSummaryCardNew}`}>
+              <button type="button" className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${styles.leadOwnerSummaryCard} ${styles.leadOwnerSummaryCardNew} ${styles.leadSummaryFilterButton} ${statusFilter === 'new' ? styles.leadSummaryFilterButtonActive : ''}`} onClick={() => chooseLeadStatusFilter('new')} aria-pressed={statusFilter === 'new'}>
                 <div className={assetStyles.heroSummaryHead}>
                   <span className={`${assetStyles.heroSummaryTitle} ${styles.leadOwnerSummaryText}`}>New</span>
                 </div>
@@ -2760,11 +2770,11 @@ export default function LeadsClient({
                   <strong className={`${assetStyles.heroSummaryValue} ${styles.leadOwnerSummaryText}`}>{newLeadCount}</strong>
                 </div>
                 <div className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${styles.leadOwnerSummaryFooter}`}>
-                  <small className={styles.leadOwnerSummaryText}>Not yet opened or actioned.</small>
+                  <small className={styles.leadOwnerSummaryText}>Tap to show requests not yet opened.</small>
                 </div>
-              </article>
+              </button>
 
-              <article className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${styles.leadOwnerSummaryCard} ${styles.leadOwnerSummaryCardOpen}`}>
+              <button type="button" className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${styles.leadOwnerSummaryCard} ${styles.leadOwnerSummaryCardOpen} ${styles.leadSummaryFilterButton} ${statusFilter === 'open' ? styles.leadSummaryFilterButtonActive : ''}`} onClick={() => chooseLeadStatusFilter('open')} aria-pressed={statusFilter === 'open'}>
                 <div className={assetStyles.heroSummaryHead}>
                   <span className={`${assetStyles.heroSummaryTitle} ${styles.leadOwnerSummaryText}`}>Open</span>
                 </div>
@@ -2772,11 +2782,11 @@ export default function LeadsClient({
                   <strong className={`${assetStyles.heroSummaryValue} ${styles.leadOwnerSummaryText}`}>{activeLeadCount}</strong>
                 </div>
                 <div className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${styles.leadOwnerSummaryFooter}`}>
-                  <small className={styles.leadOwnerSummaryText}>Currently being reviewed or actioned.</small>
+                  <small className={styles.leadOwnerSummaryText}>Tap to show requests being actioned.</small>
                 </div>
-              </article>
+              </button>
 
-              <article className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${styles.leadOwnerSummaryCard} ${styles.leadOwnerSummaryCardDone}`}>
+              <button type="button" className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${styles.leadOwnerSummaryCard} ${styles.leadOwnerSummaryCardDone} ${styles.leadSummaryFilterButton} ${statusFilter === 'completed' ? styles.leadSummaryFilterButtonActive : ''}`} onClick={() => chooseLeadStatusFilter('completed')} aria-pressed={statusFilter === 'completed'}>
                 <div className={assetStyles.heroSummaryHead}>
                   <span className={`${assetStyles.heroSummaryTitle} ${styles.leadOwnerSummaryText}`}>Completed</span>
                 </div>
@@ -2784,9 +2794,9 @@ export default function LeadsClient({
                   <strong className={`${assetStyles.heroSummaryValue} ${styles.leadOwnerSummaryText}`}>{completedLeadCount}</strong>
                 </div>
                 <div className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${styles.leadOwnerSummaryFooter}`}>
-                  <small className={styles.leadOwnerSummaryText}>Marked done for the selected period.</small>
+                  <small className={styles.leadOwnerSummaryText}>Tap to show completed requests.</small>
                 </div>
-              </article>
+              </button>
             </section>
           ) : !useDealerWorkspaceStyles ? (
             <div className={`${styles.leadSummaryRow} ${dealerAppMode ? dealerStyles.dealerHidden : ''}`}>
@@ -2882,7 +2892,7 @@ export default function LeadsClient({
                 const isMarkingThisLeadDone = markingLeadDoneId === lead.id;
 
                 return (
-                  <article key={lead.id} className={`${useDealerWorkspaceStyles ? workspaceStyles.card : ''} ${styles.leadThread} ${isLeadNew ? styles.leadThreadNew : ''} ${isLeadActive ? styles.leadThreadActive : ''} ${isLeadDone ? styles.leadThreadDone : ''} ${isTrackingRequest ? styles.leadThreadTracking : ''} ${isLeadOpen ? styles.leadThreadOpen : ''}`}>
+                  <article key={lead.id} className={`${useDealerWorkspaceStyles ? workspaceStyles.card : ''} ${styles.leadThread} ${isLeadNew ? styles.leadThreadNew : ''} ${isLeadActive ? styles.leadThreadActive : ''} ${isLeadDone ? styles.leadThreadDone : ''} ${isTrackingRequest ? styles.leadThreadTracking : ''} ${isLeadOpen ? styles.leadThreadOpen : ''} ${openLeadId && !isLeadOpen ? styles.leadThreadMuted : ''}`}>
                     <div className={styles.clientPanel}>
                       <div className={styles.clientPanelHeader}>
                         <div className={`${styles.clientIdentity} ${isTrackingRequest ? styles.trackingLeadIdentity : ''}`}>
