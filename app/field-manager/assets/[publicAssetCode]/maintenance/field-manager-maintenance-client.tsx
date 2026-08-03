@@ -45,6 +45,7 @@ type AssetResponse = {
     specsJson: Record<string, unknown>;
   };
   maintenance?: OwnerMaintenanceRecord[];
+  records?: OwnerMaintenanceRecord[];
   error?: string;
 };
 
@@ -181,6 +182,10 @@ export default function FieldManagerMaintenanceClient({
   const [maintenanceRecords, setMaintenanceRecords] = useState<OwnerMaintenanceRecord[]>([]);
   const [focusedMaintenanceId, setFocusedMaintenanceId] = useState(highlightMaintenanceId);
   const [actionMaintenanceId, setActionMaintenanceId] = useState<string | null>(null);
+  const upcomingMaintenance = maintenanceRecords.find((record) => record.status === 'upcoming') ?? null;
+  const hasRecurringSchedule = Boolean(
+    upcomingMaintenance?.recurringEnabled || upcomingMaintenance?.generatedFromMaintenanceId,
+  );
 
   useEffect(() => {
     let active = true;
@@ -214,12 +219,28 @@ export default function FieldManagerMaintenanceClient({
             ? 'This asset is not available to this Owner login.'
             : 'This asset is not available to this Field Manager login.'));
         }
+
+        let loadedMaintenance = Array.isArray(payload?.maintenance) ? payload.maintenance : [];
+        if (mode === 'field-manager') {
+          const maintenanceResponse = await fetch(
+            `/api/field-manager/assets/${encodeURIComponent(assetId)}/maintenance`,
+            { credentials: 'include', cache: 'no-store' },
+          );
+          const maintenancePayload = await maintenanceResponse.json().catch(() => null) as AssetResponse | null;
+          if (maintenanceResponse.status === 401) {
+            window.location.replace('/field-manager/login');
+            return;
+          }
+          if (!maintenanceResponse.ok || !maintenancePayload?.ok) {
+            throw new Error(maintenancePayload?.error || 'Failed to load the maintenance schedule.');
+          }
+          loadedMaintenance = Array.isArray(maintenancePayload.records) ? maintenancePayload.records : [];
+        }
+
         if (!active) return;
         setAsset(loadedAsset);
         setDraft(defaultDraft(loadedAsset));
-        if (mode === 'owner') {
-          setMaintenanceRecords(Array.isArray(payload?.maintenance) ? payload.maintenance : []);
-        }
+        setMaintenanceRecords(loadedMaintenance);
       } catch (error) {
         if (active) setNotice(error instanceof Error ? error.message : 'Failed to open maintenance scheduling.');
       } finally {
@@ -300,14 +321,26 @@ export default function FieldManagerMaintenanceClient({
     }
   }
 
-  function openOwnerMaintenanceWork(record: OwnerMaintenanceRecord): void {
+  function openMaintenanceWork(record: OwnerMaintenanceRecord): void {
+    if (mode === 'owner') {
+      const query = new URLSearchParams({
+        maintenanceId: record.id,
+        maintenanceType: record.maintenanceType,
+        returnTo: `${assetHref}/maintenance?maintenanceId=${encodeURIComponent(record.id)}`,
+      });
+      window.location.assign(
+        `/owner-app/operations/maintenance/${encodeURIComponent(assetId)}?${query.toString()}`,
+      );
+      return;
+    }
+
     const query = new URLSearchParams({
-      maintenanceId: record.id,
-      maintenanceType: record.maintenanceType,
-      returnTo: `${assetHref}/maintenance?maintenanceId=${encodeURIComponent(record.id)}`,
+      assetId,
+      scheduledMaintenanceId: record.id,
+      scheduledMaintenanceType: record.maintenanceType,
     });
     window.location.assign(
-      `/owner-app/operations/maintenance/${encodeURIComponent(assetId)}?${query.toString()}`,
+      `/field-manager/assets/${encodeURIComponent(publicAssetCode)}?${query.toString()}`,
     );
   }
 
@@ -417,11 +450,23 @@ export default function FieldManagerMaintenanceClient({
           <>
             <section className={styles.maintenanceIntro}>
               <span>Maintenance</span>
-              <h1>Schedule Maintenance</h1>
+              <h1>{upcomingMaintenance ? 'Maintenance scheduled' : 'Schedule maintenance'}</h1>
               <p>{asset.title}</p>
             </section>
 
-            {mode === 'owner' && maintenanceRecords.length ? (
+            {upcomingMaintenance ? (
+              <section className={styles.maintenanceCard} aria-label="Active maintenance schedule">
+                <p className={styles.maintenanceDescription}>
+                  {hasRecurringSchedule
+                    ? 'A recurring schedule is already in place.'
+                    : 'Maintenance is already scheduled for this asset.'}
+                </p>
+                <h2>{upcomingMaintenance.title}</h2>
+                <p className={styles.maintenanceDescription}>Next: {ownerMaintenanceDueLabel(upcomingMaintenance)}</p>
+              </section>
+            ) : null}
+
+            {maintenanceRecords.length ? (
               <section className={styles.maintenanceScheduleSection} aria-labelledby="maintenance-schedules-title">
                 <div className={styles.maintenanceScheduleHeading}>
                   <div>
@@ -433,19 +478,19 @@ export default function FieldManagerMaintenanceClient({
                 <div className={styles.maintenanceScheduleList}>
                   {maintenanceRecords.map((record) => {
                     const isFocused = focusedMaintenanceId === record.id;
-                    const isRecurringFollowUp = Boolean(record.generatedFromMaintenanceId);
+                    const isRecurringSchedule = Boolean(record.recurringEnabled || record.generatedFromMaintenanceId);
                     const isDone = record.status === 'done';
-                    const isUpcomingRecurringFollowUp = isRecurringFollowUp && !isDone;
+                    const isUpcomingRecurringSchedule = isRecurringSchedule && !isDone;
                     const isUpdating = actionMaintenanceId === record.id;
                     return (
                       <article
                         id={`maintenance-${record.id}`}
                         key={record.id}
-                        className={`${styles.maintenanceScheduleCard} ${isUpcomingRecurringFollowUp ? styles.maintenanceScheduleCardRecurring : ''} ${isDone ? styles.maintenanceScheduleCardDone : ''} ${isFocused ? styles.maintenanceScheduleCardSelected : ''}`}
+                        className={`${styles.maintenanceScheduleCard} ${isUpcomingRecurringSchedule ? styles.maintenanceScheduleCardRecurring : ''} ${isDone ? styles.maintenanceScheduleCardDone : ''} ${isFocused ? styles.maintenanceScheduleCardSelected : ''}`}
                       >
                         <div className={styles.maintenanceScheduleLabels}>
-                          <span className={isUpcomingRecurringFollowUp ? styles.maintenanceScheduleRecurringLabel : ''}>
-                            {isDone ? 'Maintenance completed' : isRecurringFollowUp ? 'Next recurring maintenance' : maintenanceTypeLabel(record.maintenanceType)}
+                          <span className={isUpcomingRecurringSchedule ? styles.maintenanceScheduleRecurringLabel : ''}>
+                            {isDone ? 'Maintenance completed' : isRecurringSchedule ? 'Recurring schedule' : maintenanceTypeLabel(record.maintenanceType)}
                           </span>
                           <strong>{record.computedStatusLabel}</strong>
                         </div>
@@ -459,19 +504,21 @@ export default function FieldManagerMaintenanceClient({
                               <button
                                 type="button"
                                 disabled={Boolean(actionMaintenanceId)}
-                                onClick={() => openOwnerMaintenanceWork(record)}
+                                onClick={() => openMaintenanceWork(record)}
                               >
                                 Record work
                               </button>
-                              <button
-                                type="button"
-                                disabled={Boolean(actionMaintenanceId)}
-                                onClick={() => void updateOwnerMaintenance(record, 'maintenance-cancel')}
-                              >
-                                Cancel
-                              </button>
+                              {mode === 'owner' ? (
+                                <button
+                                  type="button"
+                                  disabled={Boolean(actionMaintenanceId)}
+                                  onClick={() => void updateOwnerMaintenance(record, 'maintenance-cancel')}
+                                >
+                                  Cancel
+                                </button>
+                              ) : null}
                             </>
-                          ) : record.status === 'done' ? (
+                          ) : record.status === 'done' && mode === 'owner' ? (
                             <button
                               type="button"
                               disabled={Boolean(actionMaintenanceId)}
@@ -488,8 +535,9 @@ export default function FieldManagerMaintenanceClient({
               </section>
             ) : null}
 
-            <section className={styles.maintenanceCard}>
-              <p className={styles.maintenanceDescription}>Schedule the next service or checkup for this asset.</p>
+            {!upcomingMaintenance ? (
+              <section className={styles.maintenanceCard}>
+                <p className={styles.maintenanceDescription}>Schedule the next service or checkup for this asset.</p>
               <form className={styles.maintenanceFormGrid} onSubmit={(event) => void createSchedule(event)}>
                 <label className={styles.maintenanceField}>
                   <span>Type</span>
@@ -565,8 +613,9 @@ export default function FieldManagerMaintenanceClient({
                 <button className={`${styles.maintenanceAddButton} ${styles.maintenanceFieldFull}`} type="submit" disabled={saving}>
                   {saving ? 'Creating schedule…' : 'Create schedule'}
                 </button>
-              </form>
-            </section>
+                </form>
+              </section>
+            ) : null}
           </>
         ) : null}
       </section>

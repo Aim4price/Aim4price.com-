@@ -126,7 +126,7 @@ type MaintenanceDraft = {
   recurringIntervalUnit: IntervalUnit;
 };
 
-type ModalMode = 'asset-picker' | 'maintenance-type' | 'trigger-type' | 'form' | 'filter' | 'download' | 'delete' | null;
+type ModalMode = 'asset-picker' | 'maintenance-type' | 'trigger-type' | 'form' | 'filter' | 'download' | 'complete' | 'delete' | null;
 
 type DownloadScope = 'total' | 'asset' | 'upcoming' | 'done';
 type DownloadFormat = 'pdf' | 'xlsx';
@@ -764,6 +764,7 @@ export default function MaintenanceClient() {
   const [draft, setDraft] = useState<MaintenanceDraft | null>(null);
   const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
   const [recordPendingDelete, setRecordPendingDelete] = useState<MaintenanceRecord | null>(null);
+  const [recordPendingComplete, setRecordPendingComplete] = useState<MaintenanceRecord | null>(null);
   const [deletingRecordId, setDeletingRecordId] = useState<string | null>(null);
   const [busyCompleteId, setBusyCompleteId] = useState<string | null>(null);
   const completeRequestInFlight = useRef(false);
@@ -871,6 +872,7 @@ export default function MaintenanceClient() {
     setPickerSearch('');
     setEditingRecordId(null);
     setRecordPendingDelete(null);
+    setRecordPendingComplete(null);
     setDraft(null);
   }
 
@@ -963,10 +965,15 @@ export default function MaintenanceClient() {
     }
   }
 
-  async function toggleComplete(record: MaintenanceRecord) {
+  function openComplete(record: MaintenanceRecord) {
+    setNotice(null);
+    setRecordPendingComplete(record);
+    setModalMode('complete');
+  }
+
+  async function completeMaintenance(record: MaintenanceRecord) {
     if (completeRequestInFlight.current) return;
 
-    const markDone = record.status !== 'done';
     completeRequestInFlight.current = true;
     setBusyCompleteId(record.id);
     setNotice(null);
@@ -976,31 +983,29 @@ export default function MaintenanceClient() {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          status: markDone ? 'done' : 'upcoming',
-          completedUsage: markDone ? record.currentUsage : null,
+          status: 'done',
+          completedUsage: record.currentUsage,
+          confirmedComplete: true,
         }),
       });
       const payload = (await response.json().catch(() => ({}))) as MaintenancePayload;
 
       if (!response.ok || payload.ok === false) {
-        throw new Error(payload.error || `Maintenance record could not be marked ${markDone ? 'done' : 'upcoming'}.`);
+        throw new Error(payload.error || 'Maintenance record could not be marked done.');
       }
 
       applyPayload(payload);
       setNotice({
         type: 'success',
-        text: markDone
-          ? record.recurringEnabled
-            ? payload.nextRecord
-              ? `Maintenance marked done. Next recurring maintenance is due at ${maintenanceDueValue(payload.nextRecord)}.`
-              : 'Maintenance marked done.'
-            : 'Maintenance marked done.'
-          : 'Maintenance moved back to upcoming.',
+        text: record.recurringEnabled && payload.nextRecord
+          ? `Maintenance marked done. Next recurring maintenance is due at ${maintenanceDueValue(payload.nextRecord)}.`
+          : 'Maintenance marked done.',
       });
+      closeModal();
     } catch (error) {
       setNotice({
         type: 'error',
-        text: error instanceof Error ? error.message : `Maintenance record could not be marked ${markDone ? 'done' : 'upcoming'}.`,
+        text: error instanceof Error ? error.message : 'Maintenance record could not be marked done.',
       });
     } finally {
       completeRequestInFlight.current = false;
@@ -1190,7 +1195,7 @@ export default function MaintenanceClient() {
                             className={`${styles.secondaryButtonSmall} ${styles.invoiceOpenButton} ${isDone ? styles.invoiceCompletedButton : ''}`}
                             type="button"
                             onClick={() => {
-                              if (!isDone) void toggleComplete(record);
+                              if (!isDone) openComplete(record);
                             }}
                             disabled={isDone || busyCompleteId !== null}
                             aria-pressed={isDone}
@@ -1464,6 +1469,39 @@ export default function MaintenanceClient() {
               <button className={styles.secondaryButton} type="button" onClick={closeModal}>Cancel</button>
               <button className={styles.primaryButton} type="button" onClick={() => void submitDraft()} disabled={isSaving}>
                 {isSaving ? 'Saving...' : editingRecordId ? 'Save changes' : `Add ${draft.maintenanceType}`}
+              </button>
+            </footer>
+          </section>
+        </div>
+      ) : null}
+
+      {modalMode === 'complete' && recordPendingComplete ? (
+        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-labelledby="maintenance-complete-title">
+          <section className={styles.deleteConfirmModal}>
+            <header className={styles.modalHeader}>
+              <div>
+                <h2 id="maintenance-complete-title">Has this maintenance physically been completed?</h2>
+              </div>
+              <button className={styles.closeButton} type="button" onClick={closeModal} aria-label="Close completion confirmation">
+                <CloseIcon />
+              </button>
+            </header>
+            <div className={styles.modalDivider} />
+            <div className={styles.deleteConfirmBody}>
+              <p>Only mark this done once the service or checkup has actually been carried out.</p>
+              <div className={styles.deleteRecordSummary}>
+                <span>Maintenance to complete</span>
+                <strong>{recordPendingComplete.assetTitle}</strong>
+                <small>{typeLabel(recordPendingComplete.maintenanceType)} · {maintenanceDueValue(recordPendingComplete)} · {recordPendingComplete.assignedName || 'Unassigned'}</small>
+              </div>
+              {recordPendingComplete.recurringEnabled ? (
+                <p>Confirming this will close the current occurrence and automatically create the next recurring schedule.</p>
+              ) : null}
+            </div>
+            <footer className={styles.modalFooter}>
+              <button className={styles.secondaryButton} type="button" onClick={closeModal}>Cancel</button>
+              <button className={styles.primaryButton} type="button" onClick={() => void completeMaintenance(recordPendingComplete)} disabled={busyCompleteId === recordPendingComplete.id}>
+                {busyCompleteId === recordPendingComplete.id ? 'Saving...' : 'Yes, the maintenance is done'}
               </button>
             </footer>
           </section>

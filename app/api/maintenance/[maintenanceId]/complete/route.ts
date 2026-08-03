@@ -24,6 +24,7 @@ type ErrorWithMessage = {
 
 type StatusToggleInput = AssetMaintenanceCompleteInput & {
   status?: unknown;
+  confirmedComplete?: unknown;
 };
 
 function parseType(value: string | null): AssetMaintenanceType | 'all' | null {
@@ -120,6 +121,12 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   const requestedStatus = String(body.status ?? '').trim().toLowerCase();
   if (requestedStatus !== 'done' && requestedStatus !== 'upcoming') {
     return NextResponse.json({ ok: false, error: 'Maintenance status must be done or upcoming.' }, { status: 400 });
+  }
+  if (requestedStatus === 'done' && body.confirmedComplete !== true) {
+    return NextResponse.json({
+      ok: false,
+      error: 'Confirm that the maintenance has physically been completed before marking it done.',
+    }, { status: 400 });
   }
 
   try {
