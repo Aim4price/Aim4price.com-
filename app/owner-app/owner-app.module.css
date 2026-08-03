@@ -7,7 +7,7 @@
   --owner-muted: #64746a;
   --owner-line: rgba(37, 71, 51, 0.15);
   --owner-page-gutter: 24px;
-  --owner-content-gap: 16px;
+  --owner-content-gap: 18px;
   --dealer-green: var(--owner-green);
   --dealer-green-dark: var(--owner-green-dark);
   --dealer-green-soft: var(--owner-soft);
@@ -30,14 +30,14 @@
 }
 
 .assetsHeader {
-  width: min(calc(100% - var(--owner-page-gutter)), 560px);
+  width: min(calc(100% - var(--owner-page-gutter)), 680px);
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 8px;
-  min-height: 58px;
+  gap: 9px;
+  min-height: 64px;
   margin: 0 auto;
-  padding: 4px 2px 14px;
+  padding: 5px 2px 16px;
 }
 
 .assetsHeaderSingle { justify-content: flex-start; }
@@ -45,15 +45,15 @@
 .assetsHeaderPair .navButton,
 .assetsHeaderPair .logoutButton {
   width: auto;
-  max-width: 164px;
+  max-width: 176px;
   flex: 1 1 0;
 }
 .assetsHeaderPair .logoutButton { margin-left: 0; }
 .assetsHeaderSignOut .logoutButton { margin-left: auto; }
 
 .navButton {
-  width: min(100%, 164px);
-  min-height: 50px;
+  width: min(100%, 176px);
+  min-height: 56px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -62,9 +62,9 @@
   border-radius: 14px;
   background: linear-gradient(180deg, #ffffff 0%, #e6f8ef 100%);
   color: #0a543d;
-  padding: 0 16px;
+  padding: 0 18px;
   font-family: inherit;
-  font-size: 0.9rem;
+  font-size: 1rem;
   font-weight: 800;
   line-height: 1;
   text-decoration: none;
@@ -86,8 +86,8 @@
 .logoutButton {
   flex: 0 0 auto;
   margin-left: auto;
-  width: min(100%, 164px);
-  min-height: 50px;
+  width: min(100%, 176px);
+  min-height: 56px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -98,7 +98,7 @@
   color: #9b3030;
   padding: 0 18px;
   font: inherit;
-  font-size: 0.9rem;
+  font-size: 1rem;
   font-weight: 800;
   line-height: 1;
   white-space: nowrap;
@@ -128,7 +128,7 @@
 
 .content,
 .wideContent {
-  width: min(calc(100% - var(--owner-page-gutter)), 480px);
+  width: min(calc(100% - var(--owner-page-gutter)), 680px);
   min-width: 0;
   max-width: calc(100% - var(--owner-page-gutter));
   box-sizing: border-box;
@@ -150,18 +150,18 @@
 
 .homeContent {
   flex: 1 1 auto;
-  width: min(calc(100% - var(--owner-page-gutter)), 560px);
+  width: min(calc(100% - var(--owner-page-gutter)), 680px);
   display: grid;
   align-content: center;
   margin: 0 auto;
-  padding: 0 0 24px;
+  padding: 8px 0 28px;
 }
 
 .homeLauncher {
-  width: min(100%, 400px);
+  width: min(100%, 650px);
   box-sizing: border-box;
   display: grid;
-  gap: 13px;
+  gap: 15px;
   margin: 0 auto;
   padding: 0;
 }
@@ -169,7 +169,7 @@
 .homeLaunchCard {
   position: relative;
   width: 100%;
-  min-height: 72px;
+  min-height: 92px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -178,7 +178,7 @@
   border-radius: 17px;
   background: #ffffff;
   color: var(--owner-ink);
-  padding: 15px 44px;
+  padding: 19px 48px;
   box-shadow: 0 9px 24px rgba(18, 53, 45, 0.07);
   text-align: center;
   text-decoration: none;
@@ -188,7 +188,7 @@
 .homeLaunchCard strong {
   margin: 0;
   color: var(--owner-ink);
-  font-size: clamp(1.28rem, 5.2vw, 1.5rem);
+  font-size: clamp(1.4rem, 5.6vw, 1.65rem);
   font-weight: 800;
   letter-spacing: -0.025em;
   line-height: 1.1;
@@ -206,41 +206,41 @@
 
 .homeLaunchBadge {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  min-width: 25px;
-  min-height: 25px;
+  top: 12px;
+  right: 12px;
+  min-width: 29px;
+  min-height: 29px;
   display: grid;
   place-items: center;
   box-sizing: border-box;
   border-radius: 999px;
   background: #e02424;
   color: #fff;
-  padding-inline: 7px;
-  font-size: 0.66rem;
+  padding-inline: 8px;
+  font-size: 0.72rem;
   font-weight: 900;
   letter-spacing: 0;
   line-height: 1;
   box-shadow: 0 8px 18px rgba(174, 35, 35, 0.22);
 }
 
-.hero { display: grid; gap: 6px; padding: 14px 2px 4px; }
+.hero { display: grid; gap: 7px; padding: 16px 3px 5px; }
 .heroCenter { text-align: center; justify-items: center; }
-.eyebrow { margin: 0; color: #2c6c55; font-size: 0.7rem; font-weight: 900; letter-spacing: 0.13em; text-transform: uppercase; }
-.hero h1 { margin: 0; color: var(--owner-ink); font-size: clamp(1.8rem, 8vw, 2.45rem); line-height: 1.04; letter-spacing: -0.045em; }
-.hero p { margin: 0; color: var(--owner-muted); font-size: 0.94rem; font-weight: 650; line-height: 1.5; }
+.eyebrow { margin: 0; color: #2c6c55; font-size: 0.76rem; font-weight: 900; letter-spacing: 0.13em; text-transform: uppercase; }
+.hero h1 { margin: 0; color: var(--owner-ink); font-size: clamp(2rem, 8vw, 2.65rem); line-height: 1.04; letter-spacing: -0.045em; }
+.hero p { margin: 0; color: var(--owner-muted); font-size: 1rem; font-weight: 650; line-height: 1.5; }
 
 .ownerPageIntro {
   min-width: 0;
   display: grid;
-  gap: 8px;
-  padding: 8px 3px 16px;
+  gap: 10px;
+  padding: 10px 3px 20px;
 }
 .notificationContent .ownerPageIntro .ownerPageTitle,
 .overviewPage .ownerPageIntro .ownerPageTitle {
   margin: 0;
   color: #12352d;
-  font-size: clamp(1.9rem, 8vw, 2.45rem);
+  font-size: clamp(2.05rem, 8vw, 2.65rem);
   font-weight: 900;
   letter-spacing: -0.045em;
   line-height: 1.04;
@@ -249,7 +249,7 @@
 .overviewPage .ownerPageIntro .ownerPageSubtitle {
   margin: 0;
   color: rgba(18, 53, 45, 0.64);
-  font-size: 0.94rem;
+  font-size: 1rem;
   font-weight: 650;
   line-height: 1.4;
 }
@@ -257,16 +257,16 @@
 .overviewPage .ownerSectionHeading h2 {
   margin: 0;
   color: #12352d;
-  font-size: clamp(1.2rem, 5vw, 1.42rem);
+  font-size: clamp(1.3rem, 5vw, 1.52rem);
   font-weight: 800;
   letter-spacing: -0.025em;
   line-height: 1.1;
 }
 .notificationContent .ownerSectionHeading > span,
 .overviewPage .ownerSectionHeading > span {
-  min-width: 29px;
-  min-height: 29px;
-  font-size: 0.78rem;
+  min-width: 32px;
+  min-height: 32px;
+  font-size: 0.82rem;
   font-weight: 800;
 }
 
@@ -277,17 +277,17 @@
 .field textarea {
   width: 100%;
   min-width: 0;
-  min-height: 52px;
+  min-height: 58px;
   box-sizing: border-box;
   border: 1px solid rgba(37, 71, 51, 0.2);
   border-radius: 14px;
   background: #fbfdfb;
   color: var(--owner-ink);
-  padding: 0 14px;
+  padding: 0 16px;
   font: 700 1rem Montserrat, var(--font-body, Inter), Arial, sans-serif;
   outline: none;
 }
-.field textarea { min-height: 100px; padding-block: 13px; resize: vertical; }
+.field textarea { min-height: 116px; padding-block: 15px; resize: vertical; }
 .field select {
   appearance: none;
   -webkit-appearance: none;
@@ -326,14 +326,14 @@
 .secondaryButton,
 .dangerButton,
 .smallButton {
-  min-height: 50px;
+  min-height: 58px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
   border-radius: 14px;
-  padding: 0 16px;
-  font: 800 0.96rem Montserrat, var(--font-body, Inter), Arial, sans-serif;
+  padding: 0 18px;
+  font: 800 1rem Montserrat, var(--font-body, Inter), Arial, sans-serif;
   text-decoration: none;
   cursor: pointer;
 }
@@ -343,7 +343,7 @@
 .button:hover { background: var(--owner-green-dark); }
 .secondaryButton { border: 1px solid var(--owner-line); background: #fff; color: var(--owner-green); }
 .dangerButton { border: 1px solid rgba(150, 56, 56, 0.28); background: #fff7f7; color: #8c3131; }
-.smallButton { min-height: 42px; padding-inline: 12px; border: 1px solid var(--owner-line); background: #fff; color: var(--owner-green); }
+.smallButton { min-height: 48px; padding-inline: 14px; border: 1px solid var(--owner-line); background: #fff; color: var(--owner-green); }
 .button:disabled,
 .primaryButton:disabled,
 .secondaryButton:disabled,
@@ -361,10 +361,10 @@
   box-shadow: 0 0 0 4px rgba(150, 56, 56, 0.11);
 }
 
-.launcher { display: grid; gap: 11px; }
+.launcher { display: grid; gap: 13px; }
 .launchCard {
   position: relative;
-  min-height: 78px;
+  min-height: 92px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -373,15 +373,15 @@
   border-radius: 18px;
   background: #fff;
   color: var(--owner-green);
-  padding: 18px 20px;
+  padding: 20px 22px;
   box-shadow: 0 12px 28px rgba(18, 53, 45, 0.075);
-  font-size: 1.18rem;
+  font-size: 1.3rem;
   font-weight: 900;
   text-decoration: none;
 }
 .launchCard span:last-child { color: rgba(37, 71, 51, 0.45); font-size: 1.5rem; }
 .notificationLink { display: flex; justify-content: space-between; align-items: center; color: var(--owner-green); font-weight: 800; text-decoration: none; }
-.count { min-width: 30px; min-height: 30px; display: inline-flex; align-items: center; justify-content: center; border-radius: 10px; color: #fff; background: var(--owner-green); }
+.count { min-width: 34px; min-height: 34px; display: inline-flex; align-items: center; justify-content: center; border-radius: 10px; color: #fff; background: var(--owner-green); }
 
 .panel,
 .assetCard,
@@ -393,17 +393,17 @@
   box-shadow: 0 12px 30px rgba(18, 53, 45, 0.065);
 }
 .panel,
-.section { padding: 16px; }
-.section { display: grid; gap: 14px; }
+.section { padding: 18px; }
+.section { display: grid; gap: 16px; }
 .sectionHeader { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .sectionHeader h2,
-.section h2 { margin: 0; font-size: 1.08rem; letter-spacing: -0.025em; }
+.section h2 { margin: 0; font-size: 1.18rem; letter-spacing: -0.025em; }
 .sectionHeader p,
-.section > p { margin: 4px 0 0; color: var(--owner-muted); font-size: 0.8rem; line-height: 1.45; }
+.section > p { margin: 5px 0 0; color: var(--owner-muted); font-size: 0.88rem; line-height: 1.5; }
 
 .notice,
 .errorNotice,
-.successNotice { border-radius: 14px; padding: 12px 14px; font-size: 0.84rem; font-weight: 750; line-height: 1.45; }
+.successNotice { border-radius: 14px; padding: 14px 16px; font-size: 0.9rem; font-weight: 750; line-height: 1.45; }
 .notice { color: #315348; background: #f1f6f3; }
 .errorNotice { color: #8d3333; background: #fff0f0; border: 1px solid rgba(150, 56, 56, 0.16); }
 .successNotice { color: #176047; background: #ecf8f2; border: 1px solid rgba(44, 173, 126, 0.18); }
@@ -419,33 +419,33 @@
   min-width: 0;
   max-width: 100%;
   display: grid;
-  gap: 10px;
+  gap: 12px;
   box-sizing: border-box;
   border: 1px solid rgba(18, 53, 45, 0.11);
   border-radius: 22px;
   background: rgba(255, 255, 255, 0.96);
-  padding: 13px;
+  padding: 16px;
   box-shadow: 0 14px 32px rgba(18, 53, 45, 0.08);
   backdrop-filter: blur(12px);
 }
 .assetSearchField { min-width: 0; max-width: 100%; display: grid; gap: 8px; }
 .assetSearchField span {
   color: rgba(18, 53, 45, 0.76);
-  font-size: 0.8rem;
+  font-size: 0.88rem;
   font-weight: 900;
 }
 .assetSearchField input {
   width: 100%;
   min-width: 0;
   max-width: 100%;
-  min-height: 56px;
+  min-height: 62px;
   box-sizing: border-box;
   border: 1px solid rgba(18, 53, 45, 0.16);
   border-radius: 17px;
   background: #fbfdfb;
   color: #12352d;
-  padding: 0 15px;
-  font: 700 1rem Montserrat, var(--font-body, Inter), Arial, sans-serif;
+  padding: 0 17px;
+  font: 700 1.05rem Montserrat, var(--font-body, Inter), Arial, sans-serif;
   outline: none;
   text-overflow: ellipsis;
 }
@@ -458,7 +458,7 @@
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-  min-height: 56px;
+  min-height: 62px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -467,8 +467,8 @@
   border-radius: 17px;
   background: var(--owner-green);
   color: #fff;
-  padding: 0 18px;
-  font-size: 0.92rem;
+  padding: 0 20px;
+  font-size: 1.02rem;
   font-weight: 800;
   text-decoration: none;
   box-shadow: 0 14px 28px rgba(37, 71, 51, 0.2);
@@ -476,21 +476,21 @@
 .addAssetButton:active { transform: translateY(1px); }
 .addAssetButton:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.12), 0 14px 28px rgba(37, 71, 51, 0.2); }
 
-.managerAssetList { min-width: 0; max-width: 100%; display: grid; gap: 14px; padding-bottom: 22px; }
+.managerAssetList { min-width: 0; max-width: 100%; display: grid; gap: 18px; padding-bottom: 26px; }
 .assetListToolbar,
-.managerAssetList { width: min(100%, 560px); max-width: 100%; box-sizing: border-box; margin-inline: auto; }
+.managerAssetList { width: min(100%, 680px); max-width: 100%; box-sizing: border-box; margin-inline: auto; }
 .managerAssetCard {
   width: 100%;
   min-width: 0;
   max-width: 100%;
   display: grid;
-  gap: 14px;
+  gap: 17px;
   box-sizing: border-box;
   overflow: hidden;
   border: 1px solid rgba(18, 53, 45, 0.12);
   border-radius: 24px;
   background: #fff;
-  padding: 18px 16px 16px;
+  padding: 21px 19px 19px;
   box-shadow: 0 16px 36px rgba(18, 53, 45, 0.08);
 }
 .managerAssetCard h2 {
@@ -499,7 +499,7 @@
   max-width: 100%;
   margin: 0 auto;
   color: var(--owner-ink);
-  font-size: clamp(1.18rem, 5.2vw, 1.5rem);
+  font-size: clamp(1.35rem, 5.5vw, 1.7rem);
   font-weight: 800;
   letter-spacing: -0.04em;
   line-height: 1.12;
@@ -507,45 +507,45 @@
   text-wrap: balance;
   overflow-wrap: anywhere;
 }
-.managerAssetMetaGrid { min-width: 0; max-width: 100%; display: grid; gap: 10px; }
+.managerAssetMetaGrid { min-width: 0; max-width: 100%; display: grid; gap: 12px; }
 .managerAssetMetaGrid div {
   min-width: 0;
   max-width: 100%;
-  min-height: 62px;
+  min-height: 74px;
   display: grid;
   align-content: center;
   justify-items: center;
   border: 1px solid rgba(18, 53, 45, 0.1);
   border-radius: 18px;
   background: #fbfdfb;
-  padding: 11px 10px;
+  padding: 13px 11px;
   text-align: center;
 }
 .managerAssetMetaGrid span {
   margin-bottom: 5px;
   color: rgba(18, 53, 45, 0.52);
-  font-size: 0.76rem;
+  font-size: 0.84rem;
   font-weight: 800;
   letter-spacing: 0.07em;
   text-transform: uppercase;
 }
 .managerAssetMetaGrid strong {
   color: var(--owner-ink);
-  font-size: clamp(0.94rem, 3.8vw, 1.08rem);
+  font-size: clamp(1.05rem, 4vw, 1.2rem);
   font-weight: 800;
   line-height: 1.2;
   overflow-wrap: anywhere;
 }
 .ownerAssetOpenButton,
 .assetManageButton {
-  min-height: 54px;
+  min-height: 64px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
   border-radius: 17px;
-  padding: 0 13px;
-  font-size: 0.96rem;
+  padding: 0 16px;
+  font-size: 1.08rem;
   font-weight: 800;
   text-align: center;
   text-decoration: none;
@@ -563,15 +563,15 @@
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 14px;
-  min-height: 94px;
-  padding: 16px;
+  min-height: 112px;
+  padding: 19px;
 }
 .assetPickerBody { min-width: 0; display: grid; gap: 7px; }
-.assetPickerBody h2 { margin: 0; overflow-wrap: anywhere; font-size: 1.02rem; line-height: 1.28; }
-.assetSerial { margin: 0; color: var(--owner-muted); font-size: 0.78rem; font-weight: 750; line-height: 1.35; overflow-wrap: anywhere; }
+.assetPickerBody h2 { margin: 0; overflow-wrap: anywhere; font-size: 1.18rem; line-height: 1.28; }
+.assetSerial { margin: 0; color: var(--owner-muted); font-size: 0.88rem; font-weight: 750; line-height: 1.35; overflow-wrap: anywhere; }
 .assetOpenButton {
-  min-width: 92px;
-  min-height: 50px;
+  min-width: 104px;
+  min-height: 58px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -581,7 +581,7 @@
   background: var(--owner-green);
   color: #fff;
   padding: 0 18px;
-  font-size: 0.86rem;
+  font-size: 0.98rem;
   font-weight: 900;
   text-decoration: none;
 }
@@ -591,11 +591,11 @@
 .thumb { width: 88px; height: 100%; min-height: 116px; object-fit: cover; background: var(--owner-soft); }
 .thumbPlaceholder { width: 88px; min-height: 116px; display: grid; place-items: center; background: var(--owner-soft); color: #4e6b5e; font-weight: 900; font-size: 0.72rem; text-align: center; padding: 8px; box-sizing: border-box; }
 .assetBody { min-width: 0; display: grid; align-content: center; gap: 5px; padding: 13px; }
-.assetBody h2 { margin: 0; overflow-wrap: anywhere; font-size: 1rem; line-height: 1.25; }
-.assetMeta { margin: 0; color: var(--owner-muted); font-size: 0.76rem; font-weight: 650; line-height: 1.4; }
-.assetValues { display: flex; gap: 10px; flex-wrap: wrap; color: var(--owner-green); font-size: 0.76rem; font-weight: 800; }
+.assetBody h2 { margin: 0; overflow-wrap: anywhere; font-size: 1.14rem; line-height: 1.25; }
+.assetMeta { margin: 0; color: var(--owner-muted); font-size: 0.86rem; font-weight: 650; line-height: 1.4; }
+.assetValues { display: flex; gap: 10px; flex-wrap: wrap; color: var(--owner-green); font-size: 0.86rem; font-weight: 800; }
 .statusRow { display: flex; gap: 6px; flex-wrap: wrap; }
-.statusLabel { border-radius: 8px; padding: 5px 7px; color: #315348; background: #eef5f0; font-size: 0.68rem; font-weight: 800; }
+.statusLabel { border-radius: 9px; padding: 6px 8px; color: #315348; background: #eef5f0; font-size: 0.76rem; font-weight: 800; }
 
 .empty { padding: 30px 16px; color: var(--owner-muted); text-align: center; font-weight: 700; }
 .loading { min-height: 45vh; display: grid; place-items: center; color: var(--owner-muted); font-weight: 800; }
@@ -604,7 +604,7 @@
 .field { min-width: 0; display: grid; gap: 7px; }
 .fieldFull { grid-column: 1 / -1; }
 .field > span:not(.currencyInput),
-.fieldLabel { color: #315348; font-size: 0.84rem; font-weight: 800; }
+.fieldLabel { color: #315348; font-size: 0.92rem; font-weight: 800; }
 .currencyInput { position: relative; min-width: 0; display: flex; align-items: center; }
 .currencyInput > span {
   position: absolute;
@@ -625,8 +625,8 @@
 }
 .currencyInput > input { padding-left: 55px; }
 .currencyInput:focus-within > span { border-color: rgba(37, 71, 51, 0.3); background: #eaf3ed; }
-.checkField { min-height: 48px; display: flex; align-items: center; gap: 9px; color: #315348; font-size: 0.82rem; font-weight: 800; }
-.checkField input { width: 20px; height: 20px; }
+.checkField { min-height: 56px; display: flex; align-items: center; gap: 10px; color: #315348; font-size: 0.92rem; font-weight: 800; }
+.checkField input { width: 23px; height: 23px; }
 .actions { display: flex; gap: 9px; flex-wrap: wrap; }
 .actions > * { flex: 1 1 135px; }
 
@@ -2247,30 +2247,467 @@
 
 }
 
-/* Owner App tablet layout. The phone treatment remains unchanged below 600px;
-   tablets gain wider content, two-column launchers, and larger touch controls. */
-@media (min-width: 600px) {
+/* Wide phones report substantially more CSS pixels than conventional phones.
+   Keep the phone layout single-column and scale its controls to the physical
+   size of the normal phone treatment instead of letting it resemble desktop. */
+@media (min-width: 540px) and (max-width: 767px) {
   .page,
   .module {
-    --owner-page-gutter: 48px;
-    --owner-content-gap: 20px;
+    --owner-page-gutter: 36px;
+    --owner-content-gap: 28px;
   }
 
   .assetsHeader {
-    width: min(calc(100% - var(--owner-page-gutter)), 900px);
-    min-height: 66px;
+    width: min(calc(100% - var(--owner-page-gutter)), 720px);
+    min-height: 112px;
+    gap: 18px;
+    padding: 8px 3px 24px;
   }
 
   .navButton,
   .logoutButton {
-    width: min(100%, 184px);
-    min-height: 56px;
-    font-size: 0.96rem;
+    width: min(100%, 230px);
+    min-height: 84px;
+    padding-inline: 28px;
+    font-size: 1.48rem;
   }
 
   .assetsHeaderPair .navButton,
   .assetsHeaderPair .logoutButton {
-    max-width: 184px;
+    max-width: 230px;
+  }
+
+  .content,
+  .homeContent,
+  .notificationContent,
+  .overviewContent {
+    width: min(calc(100% - var(--owner-page-gutter)), 700px);
+  }
+
+  .wideContent {
+    width: min(calc(100% - var(--owner-page-gutter)), 740px);
+  }
+
+  .homeContent {
+    padding: 42px 0 54px;
+  }
+
+  .homeLauncher {
+    width: min(100%, 650px);
+    grid-template-columns: 1fr;
+    gap: 26px;
+  }
+
+  .homeLaunchCard {
+    min-height: 176px;
+    padding: 34px 76px;
+  }
+
+  .homeLaunchCard strong {
+    font-size: clamp(2.35rem, 6.2vw, 2.75rem);
+  }
+
+  .homeLaunchBadge {
+    top: 20px;
+    right: 20px;
+    min-width: 50px;
+    min-height: 50px;
+    padding-inline: 13px;
+    font-size: 1.08rem;
+  }
+
+  .hero,
+  .ownerPageIntro,
+  .flowIntro,
+  .taskIdentity {
+    gap: 14px;
+  }
+
+  .hero h1,
+  .notificationContent .ownerPageIntro .ownerPageTitle,
+  .overviewPage .ownerPageIntro .ownerPageTitle,
+  .flowIntro h1,
+  .taskIdentity h1,
+  .notificationIntro h1,
+  .overviewPage [class*='overviewIntro'] h1 {
+    font-size: clamp(3.15rem, 8vw, 3.75rem);
+  }
+
+  .hero p,
+  .notificationContent .ownerPageIntro .ownerPageSubtitle,
+  .overviewPage .ownerPageIntro .ownerPageSubtitle,
+  .flowIntro p,
+  .taskIdentity p,
+  .notificationIntro p,
+  .overviewPage [class*='overviewIntro'] p {
+    font-size: 1.45rem;
+    line-height: 1.45;
+  }
+
+  .taskIdentity > strong {
+    font-size: 2rem;
+    line-height: 1.3;
+  }
+
+  .eyebrow,
+  .overviewPage [class*='overviewIntro'] > span {
+    font-size: 1.05rem;
+  }
+
+  .button,
+  .primaryButton,
+  .secondaryButton,
+  .dangerButton,
+  .smallButton,
+  .maintenanceAddButton,
+  .detailUploadButton {
+    min-height: 86px;
+    padding-inline: 26px;
+    font-size: 1.4rem;
+  }
+
+  .searchInput,
+  .field input,
+  .field select,
+  .field textarea,
+  .ownerPartnerSearch input,
+  .ownerOptionMessageField textarea {
+    min-height: 88px;
+    padding-inline: 24px;
+    font-size: 1.38rem !important;
+  }
+
+  .field textarea,
+  .ownerOptionMessageField textarea {
+    min-height: 190px;
+    padding-block: 22px;
+  }
+
+  .field > span:not(.currencyInput),
+  .fieldLabel,
+  .ownerOptionMessageField > span {
+    font-size: 1.2rem;
+  }
+
+  .checkField,
+  .revalueSaveToggle,
+  .ownerConsentField {
+    min-height: 70px;
+    font-size: 1.18rem;
+  }
+
+  .checkField input,
+  .revalueSaveToggle input,
+  .ownerConsentField input {
+    width: 31px;
+    height: 31px;
+  }
+
+  .panel,
+  .section {
+    padding: 28px;
+  }
+
+  .section {
+    gap: 24px;
+  }
+
+  .sectionHeader h2,
+  .section h2,
+  .notificationContent .ownerSectionHeading h2,
+  .overviewPage .ownerSectionHeading h2,
+  .notificationSectionHeading h2,
+  .overviewPage [class*='overviewSectionHeading'] h2 {
+    font-size: 1.9rem;
+  }
+
+  .sectionHeader p,
+  .section > p,
+  .notice,
+  .errorNotice,
+  .successNotice,
+  .infoNotice,
+  .notificationEmpty,
+  .overviewPage [class*='overviewEmpty'] {
+    font-size: 1.18rem;
+    line-height: 1.5;
+  }
+
+  .notice,
+  .errorNotice,
+  .successNotice,
+  .infoNotice {
+    padding: 20px 23px;
+  }
+
+  .assetListToolbar {
+    width: 100%;
+    gap: 20px;
+    padding: 24px;
+  }
+
+  .assetSearchField span {
+    font-size: 1.18rem;
+  }
+
+  .assetSearchField input,
+  .addAssetButton {
+    min-height: 94px;
+    padding-inline: 26px;
+    font-size: 1.4rem;
+  }
+
+  .assetListToolbar,
+  .managerAssetList {
+    width: min(100%, 700px);
+  }
+
+  .managerAssetList {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+
+  .managerAssetCard {
+    gap: 24px;
+    padding: 32px 30px 30px;
+  }
+
+  .managerAssetCard h2 {
+    font-size: clamp(2rem, 5.4vw, 2.45rem);
+    line-height: 1.12;
+  }
+
+  .managerAssetMetaGrid {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .managerAssetMetaGrid div {
+    min-height: 116px;
+    padding: 20px 18px;
+  }
+
+  .managerAssetMetaGrid span {
+    margin-bottom: 8px;
+    font-size: 1.1rem;
+  }
+
+  .managerAssetMetaGrid strong {
+    font-size: 1.52rem;
+  }
+
+  .ownerAssetOpenButton,
+  .assetManageButton,
+  .assetMirrorAction {
+    min-height: 96px;
+    padding-inline: 22px;
+    font-size: 1.45rem;
+  }
+
+  .assetPickerCard {
+    min-height: 160px;
+    gap: 22px;
+    padding: 27px;
+  }
+
+  .assetPickerBody h2 { font-size: 1.65rem; }
+  .assetSerial { font-size: 1.2rem; }
+  .assetOpenButton {
+    min-width: 150px;
+    min-height: 82px;
+    font-size: 1.28rem;
+  }
+
+  .assetBody h2 { font-size: 1.55rem; }
+  .assetMeta,
+  .assetValues { font-size: 1.15rem; }
+  .statusLabel { padding: 9px 12px; font-size: 1rem; }
+
+  .detailHeroBody,
+  .assetMirrorMediaSection,
+  .assetMirrorValuesSection,
+  .pricingPanel,
+  .marketplaceTitlePanel,
+  .marketplacePricePanel,
+  .marketplacePhotosPanel,
+  .marketplaceSellerPanel {
+    padding: 27px;
+  }
+
+  .detailIdentity h1,
+  .ownerOptionsIdentity h1,
+  .manageAssetIdentity h1 {
+    font-size: clamp(2.7rem, 7vw, 3.3rem);
+  }
+
+  .detailIdentity p,
+  .ownerOptionsIdentity p,
+  .manageAssetIdentity p {
+    font-size: 1.28rem;
+  }
+
+  .detailValueSummary {
+    padding: 22px;
+  }
+
+  .detailValueSummary span,
+  .assetMirrorDetailGrid span,
+  .assetMirrorStatusGrid span,
+  .assetMirrorSecondaryGrid span {
+    font-size: 1.05rem;
+  }
+
+  .detailValueSummary strong { font-size: 2.25rem; }
+  .detailValueSummary small { font-size: 1.04rem; }
+
+  .assetMirrorDetailGrid > div,
+  .assetMirrorStatusGrid > div,
+  .assetMirrorStatusGrid > a,
+  .assetMirrorSecondaryGrid > div,
+  .assetMirrorSecondaryGrid > a {
+    min-height: 92px;
+  }
+
+  .assetMirrorDetailGrid strong,
+  .assetMirrorStatusGrid strong,
+  .assetMirrorSecondaryGrid strong {
+    font-size: 1.22rem;
+  }
+
+  .launcher {
+    gap: 22px;
+  }
+
+  .launchCard,
+  .addChoiceCard,
+  .ownerOptionChoice {
+    min-height: 142px;
+    padding: 28px;
+    font-size: 1.75rem;
+  }
+
+  .ownerOptionChoice strong,
+  .ownerOptionsFlowHeader h2 {
+    font-size: 1.65rem;
+  }
+
+  .ownerOptionChoice small,
+  .ownerOptionsFlowHeader p,
+  .ownerPartnerCopy small,
+  .ownerShareNotice,
+  .ownerTrackingChoice small {
+    font-size: 1.16rem;
+  }
+
+  .ownerPartnerCard {
+    min-height: 130px;
+    padding: 20px;
+  }
+
+  .ownerPartnerCopy strong,
+  .ownerTrackingChoice strong {
+    font-size: 1.35rem;
+  }
+
+  .manageGroup > h2 {
+    padding: 18px 22px;
+    font-size: 1.05rem;
+  }
+
+  .manageButton {
+    min-height: 94px;
+    padding: 18px 22px;
+  }
+
+  .manageButtonCopy strong {
+    font-size: 1.35rem;
+  }
+
+  .manageButtonArrow {
+    font-size: 1.6rem;
+  }
+
+  .notificationContent {
+    padding: 30px;
+  }
+
+  .notificationCard,
+  .overviewPage [class*='overviewCard'] {
+    padding: 26px !important;
+  }
+
+  .notificationCard h3,
+  .overviewPage [class*='overviewCard'] h3 {
+    font-size: 1.85rem;
+  }
+
+  .notificationCard p,
+  .overviewPage [class*='overviewHeadline'] {
+    font-size: 1.35rem;
+  }
+
+  .overviewPage [class*='overviewDetail'],
+  .overviewPage [class*='overviewNotes'] {
+    font-size: 1.18rem;
+  }
+
+  .overviewPage [class*='overviewRange'] button,
+  .overviewPage [class*='overviewSearch'],
+  .overviewPage [class*='overviewSearch'] input,
+  .overviewPage [class*='overviewCardActions'] button,
+  .overviewOpenAction {
+    min-height: 82px !important;
+    font-size: 1.3rem !important;
+  }
+
+  .reportCard,
+  .choiceRow button,
+  .locationCurrentCard a,
+  .marketplacePanelHeading > a {
+    min-height: 78px;
+    font-size: 1.22rem;
+  }
+
+  .pricingPanelHeader strong,
+  .marketplaceTitlePanel > strong,
+  .marketplacePanelHeading strong {
+    font-size: 1.5rem;
+  }
+
+  .pricingPanelHeader small,
+  .marketplaceTitlePanel > small,
+  .marketplacePanelHeading small,
+  .locationCurrentCard small,
+  .mapHint {
+    font-size: 1.08rem;
+  }
+}
+
+/* Owner App tablet layout. Wide phones remain single-column below 768px;
+   tablets gain wider content, two-column launchers, and generous touch controls. */
+@media (min-width: 768px) {
+  .page,
+  .module {
+    --owner-page-gutter: 48px;
+    --owner-content-gap: 26px;
+  }
+
+  .assetsHeader {
+    width: min(calc(100% - var(--owner-page-gutter)), 900px);
+    min-height: 88px;
+    padding-bottom: 20px;
+  }
+
+  .navButton,
+  .logoutButton {
+    width: min(100%, 210px);
+    min-height: 70px;
+    font-size: 1.16rem;
+  }
+
+  .assetsHeaderPair .navButton,
+  .assetsHeaderPair .logoutButton {
+    max-width: 210px;
   }
 
   .content {
@@ -2288,17 +2725,16 @@
   .homeLauncher {
     width: min(100%, 760px);
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 16px;
+    gap: 22px;
   }
 
   .homeLaunchCard {
-    min-height: 96px;
-    border-radius: 21px;
-    padding: 20px 52px;
+    min-height: 124px;
+    padding: 26px 58px;
   }
 
   .homeLaunchCard strong {
-    font-size: 1.38rem;
+    font-size: 1.78rem;
   }
 
   .assetListToolbar,
@@ -2308,7 +2744,7 @@
 
   .managerAssetList {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 16px;
+    gap: 22px;
   }
 
   .managerAssetCard:only-child {
@@ -2336,7 +2772,7 @@
 
   .notificationList {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 16px;
+    gap: 22px;
   }
 
   .notificationCard:only-child {
@@ -2356,8 +2792,31 @@
   .primaryButton,
   .secondaryButton,
   .dangerButton {
-    min-height: 56px;
-    font-size: 1rem;
+    min-height: 70px;
+    border-radius: 20px;
+    font-size: 1.16rem;
+  }
+
+  .assetSearchField input,
+  .addAssetButton {
+    min-height: 72px;
+    font-size: 1.14rem;
+  }
+
+  .ownerAssetOpenButton,
+  .assetManageButton,
+  .assetMirrorAction {
+    min-height: 72px;
+    font-size: 1.16rem;
+  }
+
+  .managerAssetMetaGrid div {
+    min-height: 84px;
+  }
+
+  .panel,
+  .section {
+    padding: 24px;
   }
 }
 
@@ -2366,7 +2825,7 @@
   touch-action: manipulation;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 539px) {
   .page :is(input, select, textarea),
   .module :is(input, select, textarea) {
     font-size: 1rem !important;
