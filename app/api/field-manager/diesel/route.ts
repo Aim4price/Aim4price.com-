@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const storages = await listFieldManagerFuelStorages(access.session.ownerUserId);
+    const storages = await listFieldManagerFuelStorages(access.session.ownerUserId, access.session.managerId);
     return NextResponse.json({ ok: true, storages });
   } catch (error) {
     return NextResponse.json(
