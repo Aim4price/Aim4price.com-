@@ -1,4 +1,5 @@
-import { requireOwnerAppPageAccess } from '../../../../lib/owner-app-access';
+import { redirect } from 'next/navigation';
+import { ownerAppCan, requireOwnerAppPageAccess } from '../../../../lib/owner-app-access';
 import OwnerAssetsClient from '../../assets/owner-assets-client';
 import OwnerAppNav from '../../owner-app-nav';
 import styles from '../../owner-app.module.css';
@@ -7,7 +8,8 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export default async function OwnerMaintenanceAssetsPage({ searchParams }: { searchParams?: { q?: string | string[] } }) {
-  await requireOwnerAppPageAccess();
+  const access = await requireOwnerAppPageAccess();
+  if (!ownerAppCan(access, 'operate')) redirect('/owner-app');
   const initialQuery = Array.isArray(searchParams?.q) ? searchParams.q[0] ?? '' : searchParams?.q ?? '';
 
   return (
