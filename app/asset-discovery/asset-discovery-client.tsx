@@ -1333,10 +1333,15 @@ export default function AssetDiscoveryClient({
     return (
       <button
         type="button"
-        className={`${assetStyles.primaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionGreen} ${leadStyles.openLeadButton} ${styles.discoveryOpenButton}`}
+        className={`${assetStyles.primaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionGreen} ${leadStyles.openLeadButton} ${styles.discoveryOpenButton} ${isExpanded ? styles.discoveryCloseButton : ""}`}
         onClick={() => void toggleAssetDetails(asset)}
         aria-expanded={isExpanded}
         aria-controls={`discovery-details-${asset.id}`}
+        aria-label={
+          isExpanded
+            ? `Close ${dealerAssetDisplayName(asset)} details`
+            : `Open ${dealerAssetDisplayName(asset)} details`
+        }
       >
         {isExpanded ? "Close" : isLoading ? "Opening..." : "Open"}
       </button>
@@ -1404,29 +1409,39 @@ export default function AssetDiscoveryClient({
     return (
       <div
         id={`discovery-details-${asset.id}`}
-        className={`${assetStyles.assetCard} ${leadStyles.leadAssetCard} ${assetStyles.assetCardExpanded} ${styles.discoveryLeadAssetCard}`}
+        className={`${assetStyles.assetCard} ${leadStyles.leadAssetCard} ${assetStyles.assetCardExpanded} ${styles.discoveryLeadAssetCard} ${compactAppMode ? styles.discoveryExpandedCompact : ""}`}
         aria-label={`${assetDisplayName(asset)} Discovery details`}
       >
-        <div className={`${assetStyles.assetHeader} ${leadStyles.leadAssetHeader}`}>
-          <div className={assetStyles.assetTitleBlock}>
-            <h2>{dealerAssetDisplayName(asset)}</h2>
-            <p>{dealerAssetMeta(asset)}</p>
-            <div className={assetStyles.assetMetaRow}>
-              <span className={assetStyles.assetValueMethodLabel}>
-                {cleanText(asset.type) || "Asset"}
-              </span>
-              <span className={assetStyles.assetSavedDateLabel}>
-                {cleanText(asset.province) || "Location not saved"}
-              </span>
+        {compactAppMode ? (
+          <div className={styles.compactExpandedTop}>
+            <div>
+              <span>Asset details</span>
+              <p>Review the available information before requesting access.</p>
             </div>
+            {renderEnquiryControl(asset)}
           </div>
+        ) : (
+          <div className={`${assetStyles.assetHeader} ${leadStyles.leadAssetHeader}`}>
+            <div className={assetStyles.assetTitleBlock}>
+              <h2>{dealerAssetDisplayName(asset)}</h2>
+              <p>{dealerAssetMeta(asset)}</p>
+              <div className={assetStyles.assetMetaRow}>
+                <span className={assetStyles.assetValueMethodLabel}>
+                  {cleanText(asset.type) || "Asset"}
+                </span>
+                <span className={assetStyles.assetSavedDateLabel}>
+                  {cleanText(asset.province) || "Location not saved"}
+                </span>
+              </div>
+            </div>
 
-          <div className={`${assetStyles.assetHeaderAside} ${leadStyles.leadAssetHeaderAside}`}>
-            <div className={`${assetStyles.assetHeaderActions} ${leadStyles.leadAssetHeaderActions}`}>
-              {renderEnquiryControl(asset)}
+            <div className={`${assetStyles.assetHeaderAside} ${leadStyles.leadAssetHeaderAside}`}>
+              <div className={`${assetStyles.assetHeaderActions} ${leadStyles.leadAssetHeaderActions}`}>
+                {renderEnquiryControl(asset)}
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {isLoading ? (
           <div className={`${workspaceStyles.emptyState} ${styles.discoveryDetailsLoading}`}>
@@ -1533,23 +1548,23 @@ export default function AssetDiscoveryClient({
 
             <div className={assetStyles.assetDetailDivider} aria-hidden="true" />
 
-            <div className={assetStyles.assetDetailsPanel}>
-              <div className={assetStyles.assetDetailsGrid}>
-                <div className={assetStyles.assetPrimaryDetails}>
+            <div className={`${assetStyles.assetDetailsPanel} ${styles.discoveryDetailsPanel}`}>
+              <div className={`${assetStyles.assetDetailsGrid} ${styles.discoveryDetailsGrid}`}>
+                <div className={`${assetStyles.assetPrimaryDetails} ${styles.discoveryDetailGroup}`}>
                   {[
                     ["Asset type", details.asset.type],
                     ["Brand", details.asset.brand],
                     ["Model", details.asset.model],
                     ["Year", details.asset.year],
                   ].map(([label, value]) => (
-                    <div className={assetStyles.assetDetailRow} key={`${asset.id}-${label}`}>
+                    <div className={`${assetStyles.assetDetailRow} ${styles.discoveryDetailRow}`} key={`${asset.id}-${label}`}>
                       <span>{label}</span>
                       <strong>{value || "Not saved"}</strong>
                     </div>
                   ))}
                 </div>
 
-                <div className={assetStyles.assetPrimaryDetails}>
+                <div className={`${assetStyles.assetPrimaryDetails} ${styles.discoveryDetailGroup}`}>
                   {[
                     ["Usage", details.asset.usage],
                     ["Condition", details.asset.condition],
@@ -1559,7 +1574,7 @@ export default function AssetDiscoveryClient({
                       statusPillLabel(asset) || "Contact not requested",
                     ],
                   ].map(([label, value]) => (
-                    <div className={assetStyles.assetDetailRow} key={`${asset.id}-${label}`}>
+                    <div className={`${assetStyles.assetDetailRow} ${styles.discoveryDetailRow}`} key={`${asset.id}-${label}`}>
                       <span>{label}</span>
                       <strong>{value || "Not saved"}</strong>
                     </div>
@@ -1608,6 +1623,19 @@ export default function AssetDiscoveryClient({
                 </div>
               ) : null}
             </div>
+          </div>
+        ) : null}
+
+        {compactAppMode ? (
+          <div className={styles.discoveryExpandedFooter}>
+            <button
+              type="button"
+              className={styles.discoveryCloseDetailsButton}
+              onClick={() => void toggleAssetDetails(asset)}
+            >
+              <CloseIcon className={styles.buttonIcon} />
+              Close details
+            </button>
           </div>
         ) : null}
       </div>
@@ -1864,7 +1892,7 @@ export default function AssetDiscoveryClient({
   }
 
   return (
-    <section className={`${workspaceStyles.shell} ${styles.shell} ${compactAppMode ? dealerStyles.dealerDiscoverySurface : ""}`}>
+    <section className={`${workspaceStyles.shell} ${styles.shell} ${compactAppMode ? `${dealerStyles.dealerDiscoverySurface} ${styles.compactAppSurface}` : ""}`}>
       <WorkspaceTitlePanel title="Discover Assets" />
 
       <section
@@ -1949,7 +1977,7 @@ export default function AssetDiscoveryClient({
                 type="search"
                 value={searchInput}
                 onChange={(event) => handleSearchChange(event.target.value)}
-                placeholder="Search assets"
+                placeholder="Search brand, model or type"
                 aria-label="Search Asset Discovery"
               />
               {searchInput ? (
@@ -2059,10 +2087,21 @@ export default function AssetDiscoveryClient({
       {error ? <div className={styles.errorPanel}>{error}</div> : null}
 
       {!loading && !error ? (
-        <div className={leadStyles.leadResultSummary}>
-          <span>Showing</span>
-          <strong>{pagination.totalItems}</strong>
-          <span>assets for the current search and filters</span>
+        <div className={`${leadStyles.leadResultSummary} ${compactAppMode ? styles.compactResultSummary : ""}`}>
+          {compactAppMode ? (
+            <>
+              <strong>{pagination.totalItems}</strong>
+              <span>
+                {pagination.totalItems === 1 ? "asset matches" : "assets match"} your current search
+              </span>
+            </>
+          ) : (
+            <>
+              <span>Showing</span>
+              <strong>{pagination.totalItems}</strong>
+              <span>assets for the current search and filters</span>
+            </>
+          )}
         </div>
       ) : null}
 
@@ -2145,6 +2184,7 @@ export default function AssetDiscoveryClient({
           urls={photoModal.urls}
           initialIndex={photoModal.index}
           onClose={() => setPhotoModal(null)}
+          closeButtonClassName={styles.discoveryPhotoCloseButton}
         />
       ) : null}
 
