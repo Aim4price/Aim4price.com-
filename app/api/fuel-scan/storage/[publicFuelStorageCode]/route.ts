@@ -21,6 +21,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
   const publicFuelStorageCode = normalizeFuelCode(context.params.publicFuelStorageCode);
   const isPreviewRequest = request.nextUrl.searchParams.get('preview') === '1';
   const isFieldManagerHint = request.nextUrl.searchParams.get('fieldManager') === '1';
+  const isOwnerAppHint = request.nextUrl.searchParams.get('ownerApp') === '1';
 
   if (isPreviewRequest) {
     const preview = await getFuelStoragePublicPreview(publicFuelStorageCode);
@@ -44,6 +45,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
   const access = await authorizeFuelStorageScanAccess(request, publicFuelStorageCode, {
     fieldManagerHint: isFieldManagerHint,
+    ownerAppHint: isOwnerAppHint,
   });
 
   if (!access.ok) {
@@ -65,6 +67,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
       ...payload,
       accessMode: access.accessMode,
       fieldManagerDisplayName: access.fieldManagerDisplayName ?? null,
+      ownerAppDisplayName: access.ownerAppDisplayName ?? null,
     });
   } catch (error) {
     console.error('[fuel-scan] Failed to load fuel scan payload', {

@@ -91,7 +91,7 @@ function formatLocationLabel(value: string): string {
   return cleaned.replace(/\s+(\S+)$/, '\u00a0$1');
 }
 
-export default function FieldManagerDieselClient() {
+export default function FieldManagerDieselClient({ ownerAppMode = false }: { ownerAppMode?: boolean }) {
   const [storages, setStorages] = useState<FieldManagerFuelStorageSummary[]>([]);
   const [search, setSearch] = useState('');
   const [notice, setNotice] = useState<string | null>(null);
@@ -119,29 +119,31 @@ export default function FieldManagerDieselClient() {
     setNotice(null);
 
     try {
-      const sessionResponse = await fetch('/api/field-manager/session', {
-        credentials: 'include',
-        cache: 'no-store',
-      });
-      const sessionPayload = (await sessionResponse.json().catch(() => null)) as SessionApiResponse | null;
+      if (!ownerAppMode) {
+        const sessionResponse = await fetch('/api/field-manager/session', {
+          credentials: 'include',
+          cache: 'no-store',
+        });
+        const sessionPayload = (await sessionResponse.json().catch(() => null)) as SessionApiResponse | null;
 
-      if (sessionResponse.status === 401) {
-        window.location.replace('/field-manager/login');
-        return;
+        if (sessionResponse.status === 401) {
+          window.location.replace('/field-manager/login');
+          return;
+        }
+
+        if (!sessionResponse.ok || !sessionPayload?.ok || !sessionPayload.manager) {
+          throw new Error(extractError(sessionPayload, 'Field Manager login is required.'));
+        }
       }
 
-      if (!sessionResponse.ok || !sessionPayload?.ok || !sessionPayload.manager) {
-        throw new Error(extractError(sessionPayload, 'Field Manager login is required.'));
-      }
-
-      const dieselResponse = await fetch('/api/field-manager/diesel', {
+      const dieselResponse = await fetch(ownerAppMode ? '/api/owner-app/fuel' : '/api/field-manager/diesel', {
         credentials: 'include',
         cache: 'no-store',
       });
       const dieselPayload = (await dieselResponse.json().catch(() => null)) as DieselApiResponse | null;
 
       if (dieselResponse.status === 401) {
-        window.location.replace('/field-manager/login');
+        window.location.replace(ownerAppMode ? '/owner-app/login' : '/field-manager/login');
         return;
       }
 
@@ -162,6 +164,11 @@ export default function FieldManagerDieselClient() {
     setNotice(null);
 
     try {
+      if (ownerAppMode) {
+        window.location.assign(`/owner-app/operations/fuel/${encodeURIComponent(storage.publicFuelStorageCode)}`);
+        return;
+      }
+
       const response = await fetch(`/api/field-manager/diesel/${encodeURIComponent(storage.id)}/open`, {
         method: 'POST',
         credentials: 'include',
@@ -188,8 +195,8 @@ export default function FieldManagerDieselClient() {
   return (
     <main className={styles.mobilePage}>
       <section className={styles.assetsShell}>
-        <header className={styles.assetsHeader} aria-label="Field Manager account controls">
-          <FieldManagerNavLink href="/field-manager" label="Home" />
+        <header className={styles.assetsHeader} aria-label={ownerAppMode ? 'Owner fuel controls' : 'Field Manager account controls'}>
+          <FieldManagerNavLink href={ownerAppMode ? '/owner-app/operations' : '/field-manager'} label={ownerAppMode ? 'Back' : 'Home'} />
         </header>
 
         {notice ? <div className={styles.errorNotice}>{notice}</div> : null}
@@ -209,7 +216,7 @@ export default function FieldManagerDieselClient() {
         {isLoading ? <p className={styles.mobileEmpty}>Loading available fuel storage units…</p> : null}
 
         {!isLoading && !storages.length ? (
-          <p className={styles.mobileEmpty}>No fuel storage units are available for this Field Manager login.</p>
+          <p className={styles.mobileEmpty}>{ownerAppMode ? 'No active fuel storage units have been added yet.' : 'No fuel storage units are available for this Field Manager login.'}</p>
         ) : null}
 
         {!isLoading && storages.length > 0 && !filteredStorages.length ? (

@@ -8,6 +8,7 @@ import { buildAssetRegisterUploadUrl } from './asset-register-uploads';
 import { parseFuelSlipDecimal } from './fuel-slip-number';
 import { getActiveFieldManagerSessionFromRequest } from './field-manager-session';
 import { validateFieldManagerFuelStorage } from './field-manager';
+import { getOwnerAppAccess } from './owner-app-access';
 
 export const FUEL_SCAN_COOKIE_NAME = 'aim4price_fuel_scan';
 export const FUEL_SCAN_SESSION_MAX_AGE_SECONDS = 60 * 60 * 12;
@@ -5234,6 +5235,7 @@ export async function verifyFuelStoragePin(publicFuelStorageCode: string, pin: u
 
 type AuthorizeFuelStorageScanAccessOptions = {
   fieldManagerHint?: boolean;
+  ownerAppHint?: boolean;
 };
 
 export async function authorizeFuelStorageScanAccess(
@@ -5249,6 +5251,7 @@ export async function authorizeFuelStorageScanAccess(
       fieldManagerId?: string;
       fieldManagerDisplayName?: string;
       fieldManagerSessionId?: string;
+      ownerAppDisplayName?: string;
     }
   | { ok: false; status: number; error: string; pinRequired: boolean }
 > {
@@ -5260,6 +5263,23 @@ export async function authorizeFuelStorageScanAccess(
 
   if (storage.status !== 'active') {
     return { ok: false, status: 404, error: 'This fuel storage QR code is archived.', pinRequired: false };
+  }
+
+  if (options.ownerAppHint === true) {
+    const ownerAccess = await getOwnerAppAccess();
+    if (!ownerAccess) {
+      return { ok: false, status: 401, error: 'Aim4price Owner login is required.', pinRequired: false };
+    }
+    if (ownerAccess.ownerUserId !== storage.userId) {
+      return { ok: false, status: 403, error: 'This fuel storage unit is not available to this Owner login.', pinRequired: false };
+    }
+    return {
+      ok: true,
+      storage,
+      ownerUserId: storage.userId,
+      accessMode: 'owner_session',
+      ownerAppDisplayName: ownerAccess.displayName,
+    };
   }
 
   if (options.fieldManagerHint === true) {

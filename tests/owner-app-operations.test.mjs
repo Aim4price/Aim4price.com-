@@ -1,0 +1,83 @@
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import test from 'node:test';
+
+async function source(path) {
+  return readFile(new URL(`../${path}`, import.meta.url), 'utf8');
+}
+
+test('Owner App exposes one clear Maintenance & Fuel entry point', async () => {
+  const [home, operations] = await Promise.all([
+    source('app/owner-app/page.tsx'),
+    source('app/owner-app/operations/page.tsx'),
+  ]);
+
+  assert.match(home, /label: 'Maintenance & Fuel'/);
+  assert.match(home, /href: '\/owner-app\/operations'/);
+  assert.match(operations, /Choose what you want to record\./);
+  assert.match(operations, /href="\/owner-app\/operations\/maintenance"/);
+  assert.match(operations, /href="\/owner-app\/operations\/fuel"/);
+});
+
+test('maintenance selection reuses the friendly asset cards and signed-in owner workflow', async () => {
+  const [listPage, assetList, detailPage, scanClient] = await Promise.all([
+    source('app/owner-app/operations/maintenance/page.tsx'),
+    source('app/owner-app/assets/owner-assets-client.tsx'),
+    source('app/owner-app/operations/maintenance/[assetId]/page.tsx'),
+    source('app/scan/[publicAssetCode]/scan-client.tsx'),
+  ]);
+
+  assert.match(listPage, /mode="maintenance"/);
+  assert.match(assetList, /Record work/);
+  assert.match(assetList, /owner-app\/operations\/maintenance/);
+  assert.match(detailPage, /expectedOwnerUserId: access\.ownerUserId/);
+  assert.match(detailPage, /ownerAppMode/);
+  assert.match(scanClient, /new URLSearchParams\(\{ ownerApp: "1" \}\)/);
+  assert.match(scanClient, /params\.set\("assetId", normalizedOwnerAppAssetId\)/);
+  assert.match(scanClient, /Owner maintenance/);
+});
+
+test('maintenance APIs authorize the owner and derive the operator identity on the server', async () => {
+  const [auth, getRoute, eventRoute, uploadRoute] = await Promise.all([
+    source('lib/scan-auth.ts'),
+    source('app/api/scan/assets/[publicAssetCode]/route.ts'),
+    source('app/api/scan/assets/[publicAssetCode]/event/route.ts'),
+    source('app/api/scan/uploads/route.ts'),
+  ]);
+
+  assert.match(auth, /expectedOwnerUserId: ownerAccess\.ownerUserId/);
+  assert.match(auth, /accessMode: "owner_session"/);
+  assert.match(getRoute, /authorizeOwnerAppScanAccess/);
+  assert.match(eventRoute, /access\.accessMode === "owner_session"/);
+  assert.match(eventRoute, /asText\(access\.ownerAppDisplayName\) \|\| "Owner"/);
+  assert.match(uploadRoute, /authorizeOwnerAppScanAccess/);
+});
+
+test('fuel selection and save routes use signed-in Owner App access without a PIN', async () => {
+  const [listPage, detailPage, fuelClient, fuelAuth, listApi, getRoute, issueRoute, refillRoute, dipstickRoute] = await Promise.all([
+    source('app/owner-app/operations/fuel/page.tsx'),
+    source('app/owner-app/operations/fuel/[publicFuelStorageCode]/page.tsx'),
+    source('app/fuel-scan/[publicFuelStorageCode]/fuel-scan-client.tsx'),
+    source('lib/fuel-ledger.ts'),
+    source('app/api/owner-app/fuel/route.ts'),
+    source('app/api/fuel-scan/storage/[publicFuelStorageCode]/route.ts'),
+    source('app/api/fuel-scan/storage/[publicFuelStorageCode]/issue/route.ts'),
+    source('app/api/fuel-scan/storage/[publicFuelStorageCode]/refill/route.ts'),
+    source('app/api/fuel-scan/storage/[publicFuelStorageCode]/dipstick/route.ts'),
+  ]);
+
+  assert.match(listPage, /FieldManagerDieselClient ownerAppMode/);
+  assert.match(detailPage, /ownerAppOperatorName=\{access\.displayName\}/);
+  assert.match(fuelClient, /ownerAppMode \? '\?ownerApp=1'/);
+  assert.match(fuelClient, /No fuel PIN or name is required\./);
+  assert.match(fuelAuth, /ownerAccess\.ownerUserId !== storage\.userId/);
+  assert.match(listApi, /listFieldManagerFuelStorages\(access\.ownerUserId\)/);
+
+  for (const route of [getRoute, issueRoute, refillRoute, dipstickRoute]) {
+    assert.match(route, /ownerAppHint: isOwnerAppHint/);
+  }
+
+  for (const route of [issueRoute, refillRoute, dipstickRoute]) {
+    assert.match(route, /access\.ownerAppDisplayName \?\? 'Owner'/);
+  }
+});

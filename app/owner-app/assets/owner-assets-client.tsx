@@ -56,7 +56,13 @@ function usageDisplayText(asset: Asset): string {
   return `${value} ${asset.usageMetric}`;
 }
 
-export default function OwnerAssetsClient({ initialQuery = '' }: { initialQuery?: string }) {
+export default function OwnerAssetsClient({
+  initialQuery = '',
+  mode = 'assets',
+}: {
+  initialQuery?: string;
+  mode?: 'assets' | 'maintenance';
+}) {
   const [query, setQuery] = useState(initialQuery);
   const [items, setItems] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(true);
@@ -120,10 +126,12 @@ export default function OwnerAssetsClient({ initialQuery = '' }: { initialQuery?
             autoComplete="off"
           />
         </div>
-        <Link className={styles.addAssetButton} href="/owner-app/assets/add" prefetch={false}>
-          <span aria-hidden="true">+</span>
-          <span>Add asset</span>
-        </Link>
+        {mode === 'assets' ? (
+          <Link className={styles.addAssetButton} href="/owner-app/assets/add" prefetch={false}>
+            <span aria-hidden="true">+</span>
+            <span>Add asset</span>
+          </Link>
+        ) : null}
       </section>
 
       {error ? <div className={styles.errorNotice}>{error}</div> : null}
@@ -132,7 +140,7 @@ export default function OwnerAssetsClient({ initialQuery = '' }: { initialQuery?
       {!loading && !error && items.length > 0 && !filteredItems.length ? <div className={styles.empty}>No assets match this search.</div> : null}
 
       {!loading && !error ? (
-        <section className={styles.managerAssetList} aria-label="Owner assets">
+        <section className={styles.managerAssetList} aria-label={mode === 'maintenance' ? 'Assets available for maintenance' : 'Owner assets'}>
           {filteredItems.map((asset) => (
             <article key={asset.id} className={styles.managerAssetCard}>
               <h2><BalancedHeadingText text={asset.title} /></h2>
@@ -154,10 +162,12 @@ export default function OwnerAssetsClient({ initialQuery = '' }: { initialQuery?
 
               <Link
                 className={`${styles.assetMirrorAction} ${styles.assetMirrorManageAction} ${styles.ownerAssetOpenButton}`}
-                href={`/owner-app/assets/${encodeURIComponent(asset.id)}`}
+                href={mode === 'maintenance'
+                  ? `/owner-app/operations/maintenance/${encodeURIComponent(asset.id)}`
+                  : `/owner-app/assets/${encodeURIComponent(asset.id)}`}
                 prefetch={false}
               >
-                Open
+                {mode === 'maintenance' ? 'Record work' : 'Open'}
               </Link>
             </article>
           ))}

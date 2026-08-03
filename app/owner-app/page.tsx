@@ -10,6 +10,7 @@ export const dynamic = 'force-dynamic';
 
 const TOOLS = [
   { label: 'My Assets', href: '/owner-app/assets' },
+  { label: 'Maintenance & Fuel', href: '/owner-app/operations' },
   { label: 'Get Estimate', href: '/owner-app/valuation' },
   { label: 'Discover Assets', href: '/owner-app/discovery' },
   { label: 'Marketplace', href: '/owner-app/marketplace' },

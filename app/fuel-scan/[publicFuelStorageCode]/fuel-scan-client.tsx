@@ -104,6 +104,7 @@ type PayloadResponse = {
   recentEvents?: FuelLedgerEvent[];
   accessMode?: FuelScanAccessMode;
   fieldManagerDisplayName?: string | null;
+  ownerAppDisplayName?: string | null;
   error?: string;
   pinRequired?: boolean;
 };
@@ -123,6 +124,9 @@ type Coordinates = {
 type FuelScanClientProps = {
   publicFuelStorageCode: string;
   fieldManagerMode?: boolean;
+  ownerAppMode?: boolean;
+  ownerAppOperatorName?: string;
+  ownerAppReturnTo?: string | null;
 };
 
 const QUICK_FUEL_OPTIONS = [25, 50, 75, 100] as const;
@@ -244,14 +248,20 @@ function gpsAccuracyPayload(coordinates: Coordinates): number | '' {
   return coordinates.accuracyMeters !== null && Number.isFinite(coordinates.accuracyMeters) ? coordinates.accuracyMeters : '';
 }
 
-export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode = false }: FuelScanClientProps) {
+export default function FuelScanClient({
+  publicFuelStorageCode,
+  fieldManagerMode = false,
+  ownerAppMode = false,
+  ownerAppOperatorName = '',
+  ownerAppReturnTo = null,
+}: FuelScanClientProps) {
   const normalizedCode = normalizeFuelCode(publicFuelStorageCode);
   const [preview, setPreview] = useState<FuelStoragePublicPreview | null>(null);
   const [storage, setStorage] = useState<FuelLedgerStorage | null>(null);
   const [accountBusinessName, setAccountBusinessName] = useState('');
   const [assets, setAssets] = useState<FuelLedgerAsset[]>([]);
   const [pin, setPin] = useState('');
-  const [operatorName, setOperatorName] = useState('');
+  const [operatorName, setOperatorName] = useState(() => normalizeOperatorName(ownerAppOperatorName));
   const [scanAccessMode, setScanAccessMode] = useState<FuelScanAccessMode | null>(null);
   const [assetId, setAssetId] = useState('');
   const [assetSearch, setAssetSearch] = useState('');
@@ -289,12 +299,18 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
   const visibleStorageTitle = keepLastTwoWordsTogether(visibleStorageName);
   const unauthenticated = !storage;
   const isFieldManagerMode = fieldManagerMode || scanAccessMode === 'field_manager';
-  const scanPageClassName = `${styles.scanPage} ${isFieldManagerMode ? styles.fieldManagerMobileSurface : ''}`;
+  const isOwnerAppMode = ownerAppMode || scanAccessMode === 'owner_session';
+  const isAuthenticatedAppMode = isFieldManagerMode || isOwnerAppMode;
+  const scanPageClassName = `${styles.scanPage} ${isAuthenticatedAppMode ? styles.fieldManagerMobileSurface : ''}`;
   const issueStepIndex = ISSUE_STEPS.indexOf(issueStep);
   const issueStepNumber = issueStepIndex + 3;
   const issueStepProgress = (issueStepNumber / TOTAL_SCAN_PAGES) * 100;
   const choiceStepProgress = (2 / TOTAL_SCAN_PAGES) * 100;
-  const fieldManagerQueryString = fieldManagerMode ? '?fieldManager=1' : '';
+  const appQueryString = ownerAppMode ? '?ownerApp=1' : fieldManagerMode ? '?fieldManager=1' : '';
+  const safeOwnerReturnTo = ownerAppReturnTo?.startsWith('/owner-app/operations')
+    ? ownerAppReturnTo
+    : '/owner-app/operations/fuel';
+  const appReturnHref = ownerAppMode ? safeOwnerReturnTo : '/field-manager/diesel';
 
   const filteredAssets = useMemo(() => {
     const query = assetSearch.trim().toLowerCase();
@@ -357,7 +373,7 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
   }
 
   async function loadPayload() {
-    const response = await fetch(`/api/fuel-scan/storage/${encodeURIComponent(normalizedCode)}${fieldManagerQueryString}`, {
+    const response = await fetch(`/api/fuel-scan/storage/${encodeURIComponent(normalizedCode)}${appQueryString}`, {
       credentials: 'include',
       cache: 'no-store',
     });
@@ -365,6 +381,11 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
 
     if (response.status === 401 && fieldManagerMode) {
       window.location.replace('/field-manager/login');
+      return;
+    }
+
+    if (response.status === 401 && ownerAppMode) {
+      window.location.replace('/owner-app/login');
       return;
     }
 
@@ -376,6 +397,10 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
     if (data.accessMode === 'field_manager' && data.fieldManagerDisplayName?.trim()) {
       const managerOperatorName = normalizeOperatorName(data.fieldManagerDisplayName);
       if (managerOperatorName) setOperatorName(managerOperatorName);
+    }
+    if (data.accessMode === 'owner_session' && data.ownerAppDisplayName?.trim()) {
+      const ownerOperatorName = normalizeOperatorName(data.ownerAppDisplayName);
+      if (ownerOperatorName) setOperatorName(ownerOperatorName);
     }
 
     setStorage(data.storage);
@@ -397,7 +422,7 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
       element.style.display = 'none';
     });
 
-    if (!fieldManagerMode) {
+    if (!fieldManagerMode && !ownerAppMode) {
       try {
         const savedName = window.localStorage.getItem('aim4price_fuel_operator_name');
         if (savedName) setOperatorName(savedName);
@@ -412,7 +437,7 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
         element.style.display = display;
       });
     };
-  }, [fieldManagerMode]);
+  }, [fieldManagerMode, ownerAppMode]);
 
   useEffect(() => {
     setIsDone(false);
@@ -446,12 +471,12 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
   }, [normalizedCode]);
 
   useEffect(() => {
-    if (!fieldManagerMode || !normalizedCode) return;
+    if ((!fieldManagerMode && !ownerAppMode) || !normalizedCode) return;
     void loadPayload().catch((error) => {
-      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Field Manager fuel access is not available.' });
+      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Fuel access is not available.' });
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fieldManagerMode, normalizedCode]);
+  }, [fieldManagerMode, ownerAppMode, normalizedCode]);
 
   useEffect(() => {
     if (isLoading || coordinates || isCapturingLocation || autoLocationRequestedRef.current) return;
@@ -486,13 +511,13 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
   }, [assetId, assets]);
 
   useEffect(() => {
-    if (isFieldManagerMode || !operatorName.trim()) return;
+    if (isAuthenticatedAppMode || !operatorName.trim()) return;
     try {
       window.localStorage.setItem('aim4price_fuel_operator_name', operatorName.trim());
     } catch {
       // Local storage is optional for this scan screen.
     }
-  }, [isFieldManagerMode, operatorName]);
+  }, [isAuthenticatedAppMode, operatorName]);
 
   useEffect(() => {
     let isMounted = true;
@@ -646,7 +671,7 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
   }
 
   function finishScan(action: DoneAction, overrideMessage = '') {
-    if (isFieldManagerMode) {
+    if (isAuthenticatedAppMode) {
       finishFieldManagerScanAndReturn();
       return;
     }
@@ -686,7 +711,7 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
     }, 80);
 
     window.setTimeout(() => {
-      window.location.replace('/field-manager/diesel');
+      window.location.replace(appReturnHref);
     }, FIELD_MANAGER_RETURN_DELAY_MS);
   }
 
@@ -709,6 +734,11 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
   }
 
   async function finishServerScan(action: DoneAction) {
+    if (isOwnerAppMode) {
+      finishFieldManagerScanAndReturn();
+      return;
+    }
+
     if (isFieldManagerMode) {
       await redirectAfterFieldManagerServerSave();
       return;
@@ -736,11 +766,11 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
         throw new Error('The fuel level after filling cannot be lower than the level before filling.');
       }
 
-      const operatorNameForSave = isFieldManagerMode
-        ? operatorName.trim() || 'Field Manager'
+      const operatorNameForSave = isAuthenticatedAppMode
+        ? operatorName.trim() || (isOwnerAppMode ? 'Owner' : 'Field Manager')
         : operatorName.trim();
 
-      if (!isFieldManagerMode && operatorNameForSave.length < 2) {
+      if (!isAuthenticatedAppMode && operatorNameForSave.length < 2) {
         throw new Error('Enter your name on the first page before saving.');
       }
 
@@ -752,7 +782,7 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
         throw new Error('GPS location is required. Enable location and capture GPS again.');
       }
 
-      const endpoint = `/api/fuel-scan/storage/${encodeURIComponent(normalizedCode)}/issue${fieldManagerQueryString}`;
+      const endpoint = `/api/fuel-scan/storage/${encodeURIComponent(normalizedCode)}/issue${appQueryString}`;
       const clientEventId = createOfflineClientEventId('fuel-ledger-issue');
       const payload = {
         assetId,
@@ -873,11 +903,11 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
         throw new Error(`Storage refill exceeds tank capacity. ${formatLitres(storage.currentLitres)} is currently in the tank and capacity is ${formatLitres(storage.capacityLitres)}.`);
       }
 
-      const operatorNameForSave = isFieldManagerMode
-        ? operatorName.trim() || 'Field Manager'
+      const operatorNameForSave = isAuthenticatedAppMode
+        ? operatorName.trim() || (isOwnerAppMode ? 'Owner' : 'Field Manager')
         : operatorName.trim();
 
-      if (!isFieldManagerMode && operatorNameForSave.length < 2) {
+      if (!isAuthenticatedAppMode && operatorNameForSave.length < 2) {
         throw new Error('Enter your name before saving the storage refill.');
       }
 
@@ -885,7 +915,7 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
         throw new Error('GPS location is required. Enable location and capture GPS again.');
       }
 
-      const endpoint = `/api/fuel-scan/storage/${encodeURIComponent(normalizedCode)}/refill${fieldManagerQueryString}`;
+      const endpoint = `/api/fuel-scan/storage/${encodeURIComponent(normalizedCode)}/refill${appQueryString}`;
       const clientEventId = createOfflineClientEventId('fuel-ledger-refill');
       const payload = {
         litres: litresNumber,
@@ -953,11 +983,11 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
         throw new Error('Enter the dipstick note before saving.');
       }
 
-      const operatorNameForSave = isFieldManagerMode
-        ? operatorName.trim() || 'Field Manager'
+      const operatorNameForSave = isAuthenticatedAppMode
+        ? operatorName.trim() || (isOwnerAppMode ? 'Owner' : 'Field Manager')
         : operatorName.trim();
 
-      if (!isFieldManagerMode && operatorNameForSave.length < 2) {
+      if (!isAuthenticatedAppMode && operatorNameForSave.length < 2) {
         throw new Error('Enter your name before saving the dipstick note.');
       }
 
@@ -965,7 +995,7 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
         throw new Error('GPS location is required. Enable location and capture GPS again.');
       }
 
-      const endpoint = `/api/fuel-scan/storage/${encodeURIComponent(normalizedCode)}/dipstick${fieldManagerQueryString}`;
+      const endpoint = `/api/fuel-scan/storage/${encodeURIComponent(normalizedCode)}/dipstick${appQueryString}`;
       const clientEventId = createOfflineClientEventId('fuel-ledger-dipstick');
       const payload = {
         dipstickNote: noteText,
@@ -1483,9 +1513,12 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
   return (
     <main className={scanPageClassName}>
       <div className={styles.scanShell}>
-        {isFieldManagerMode ? (
-          <header className={styles.fieldManagerDetailHeader} aria-label="Field Manager fuel navigation">
-            <FieldManagerNavLink href="/field-manager/diesel" label="Back" />
+        {isAuthenticatedAppMode ? (
+          <header
+            className={styles.fieldManagerDetailHeader}
+            aria-label={isOwnerAppMode ? 'Owner fuel navigation' : 'Field Manager fuel navigation'}
+          >
+            <FieldManagerNavLink href={appReturnHref} label="Back" />
           </header>
         ) : null}
 
@@ -1496,12 +1529,16 @@ export default function FuelScanClient({ publicFuelStorageCode, fieldManagerMode
           </div>
         ) : null}
 
-        {unauthenticated && isFieldManagerMode ? (
+        {unauthenticated && isAuthenticatedAppMode ? (
           <section className={styles.pinStepCard}>
             <div className={styles.qrTitleBlock}>
-              <span>Field Manager fuel</span>
+              <span>{isOwnerAppMode ? 'Owner fuel' : 'Field Manager fuel'}</span>
               <h1>{visibleStorageName}</h1>
-              <p>Checking your Field Manager access. No fuel PIN or scanner name is required.</p>
+              <p>
+                {isOwnerAppMode
+                  ? 'Checking your Owner App access. No fuel PIN or name is required.'
+                  : 'Checking your Field Manager access. No fuel PIN or scanner name is required.'}
+              </p>
             </div>
           </section>
         ) : unauthenticated ? (
