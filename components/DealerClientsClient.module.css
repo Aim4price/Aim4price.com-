@@ -169,7 +169,9 @@
   outline: 0;
   background: transparent;
   color: #183a31;
-  font: 750 0.94rem inherit;
+  font-family: inherit;
+  font-size: 0.94rem;
+  font-weight: 750;
 }
 
 .search button {
@@ -298,7 +300,9 @@
   justify-content: center;
   border-radius: 14px;
   padding: 0 17px;
-  font: 850 0.82rem inherit;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 850;
   text-decoration: none;
   cursor: pointer;
 }
