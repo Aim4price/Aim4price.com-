@@ -13,18 +13,18 @@ const protectedAppLayoutPaths = [
   new URL('../app/owner-app/layout.tsx', import.meta.url),
 ];
 
-test('the normal website inherits a zoomable fixed desktop viewport from the shared root', async () => {
+test('the normal website inherits an auto-fitted desktop viewport from the shared root', async () => {
   const [rootSource, homeSource] = await Promise.all([
     readFile(rootLayoutPath, 'utf8'),
     readFile(homePagePath, 'utf8'),
   ]);
 
   assert.match(rootSource, /export const viewport: Viewport\s*=\s*\{/);
-  assert.match(rootSource, /width:\s*1280/);
-  assert.match(rootSource, /initialScale:\s*1/);
+  assert.match(rootSource, /width:\s*980/);
+  assert.match(rootSource, /initialScale:\s*-1/);
   assert.match(rootSource, /userScalable:\s*true/);
   assert.doesNotMatch(rootSource, /maximumScale|minimumScale/);
-  assert.doesNotMatch(homeSource, /export const viewport|width:\s*1280/);
+  assert.doesNotMatch(homeSource, /export const viewport|width:\s*980/);
 });
 
 test('the three role apps keep zoomable device-width viewports', async () => {
