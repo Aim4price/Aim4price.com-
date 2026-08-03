@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { listAssetActivity } from '../../../../../../../lib/asset-activity';
-import { getAssetRegisterItemById } from '../../../../../../../lib/asset-register-db';
-import { getOwnerAppAccess } from '../../../../../../../lib/owner-app-access';
+import { listAssetActivity } from '../../../../../../lib/asset-activity';
+import { getAssetRegisterItemById } from '../../../../../../lib/asset-register-db';
+import { getOwnerAppAccess } from '../../../../../../lib/owner-app-access';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
