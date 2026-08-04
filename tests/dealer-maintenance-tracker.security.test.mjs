@@ -49,14 +49,33 @@ test('upcoming work is collapsed by default and remains outside maintenance hist
 test('history opens as a focused timeline instead of extending the asset card', () => {
   assert.match(tracker, /aria-haspopup="dialog"/);
   assert.match(tracker, /aria-labelledby="maintenance-history-title"/);
-  assert.match(tracker, /historySummaryGrid/);
+  assert.match(tracker, /Choose information/);
+  assert.match(tracker, /Choose timeline/);
+  assert.match(tracker, /History records/);
   assert.match(tracker, /historyTypeTabs/);
-  assert.match(tracker, /historyDateDisclosure/);
+  assert.match(tracker, /historyTimelineFilters/);
   assert.match(tracker, /historyTimeline/);
-  assert.match(tracker, /Latest records first/);
+  assert.match(tracker, /Newest information appears first/);
   assert.match(trackerStyles, /\.historyModal\.historyModal/);
   assert.match(trackerStyles, /\.historyTimelineItem/);
   assert.doesNotMatch(tracker, /id=\{`maintenance-view-/);
+});
+
+test('history presents large record choices before timeline filters', () => {
+  const allIndex = tracker.indexOf("{ value: 'all', label: 'All' }");
+  const maintenanceIndex = tracker.indexOf("{ value: 'maintenance', label: 'Maintenance' }");
+  const notesIndex = tracker.indexOf("{ value: 'notes', label: 'Notes' }");
+  const timelineIndex = tracker.indexOf('historyTimelineOptions');
+  const resultsIndex = tracker.indexOf('history-results-step-title');
+  assert.ok(allIndex > 0);
+  assert.ok(maintenanceIndex > allIndex);
+  assert.ok(notesIndex > maintenanceIndex);
+  assert.ok(timelineIndex > notesIndex);
+  assert.ok(resultsIndex > timelineIndex);
+  assert.match(tracker, /Last 12 months/);
+  assert.match(tracker, /Last 3 months/);
+  assert.match(tracker, /Custom dates/);
+  assert.match(trackerStyles, /\.historyTypeTabs button[\s\S]*min-height: 5\.35rem/);
 });
 
 test('maintenance actions use the Aim4price Manage icon and clear report wording', () => {
