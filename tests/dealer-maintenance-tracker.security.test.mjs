@@ -134,6 +134,17 @@ test('lead and maintenance manage modals share the schedule icon and prioritize 
   assert.ok(maintenanceManage.indexOf('Schedule maintenance') < maintenanceManage.indexOf('Maintenance reports'));
 });
 
+test('dealer card actions and maintenance quick-view sections keep comfortable spacing', () => {
+  const trackerStyles = read('components/DealerMaintenanceTrackerClient.module.css');
+  const leadStyles = read('app/leads/page.module.css');
+
+  assert.match(tracker, /styles\.trackerOpenButton/);
+  assert.match(trackerStyles, /\.trackerPage \.trackerOpenButton\.trackerOpenButton \{[\s\S]*?width: 12\.5rem;/);
+  assert.match(trackerStyles, /\.section > summary \{[\s\S]*?min-height: 5\.2rem;/);
+  assert.match(trackerStyles, /\.section \.recordGrid > div:last-child:nth-child\(odd\)/);
+  assert.match(leadStyles, /\.leadsPage \.clientActionRow > button \{[\s\S]*?width: 10\.75rem;/);
+});
+
 test('dealer tracker omits replacement pricing and owner-approved asset corrections', () => {
   assert.doesNotMatch(tracker, /DealerAssetCorrectionEditor/);
   assert.doesNotMatch(tracker, /assetReplacementPriceBubble/);

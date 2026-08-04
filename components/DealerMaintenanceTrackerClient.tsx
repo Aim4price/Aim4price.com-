@@ -975,7 +975,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                               <button type="button" className={`${assetStyles.secondaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionNeutral} ${leadStyles.closeLeadButton}`} onClick={closeAsset}>Close</button>
                             </>
                           ) : (
-                            <button type="button" className={`${assetStyles.primaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionGreen} ${leadStyles.openLeadButton}`} onClick={() => openAsset(asset)}>View maintenance</button>
+                            <button type="button" className={`${assetStyles.primaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionGreen} ${leadStyles.openLeadButton} ${styles.trackerOpenButton}`} onClick={() => openAsset(asset)}>View maintenance</button>
                           )}
                         </div>
                       </div>
