@@ -24,9 +24,12 @@ test('Dealer App home separates daily work from secondary tools', () => {
 
 test('Dealer Maintenance summaries apply filters and focus the open asset', () => {
   const source = read('components/DealerMaintenanceTrackerClient.tsx');
+  assert.match(source, /WorkspaceTitlePanel title="MAINTENANCE TRACKING"/);
   assert.match(source, /chooseStatusFilter\('attention'\)/);
   assert.match(source, /chooseStatusFilter\('all'\)/);
   assert.match(source, /chooseStatusFilter\('no_open'\)/);
+  assert.match(source, />Nothing due</);
+  assert.match(source, /maintenanceStatusGuidance/);
   assert.match(source, /openAccessId && !isOpen \? styles\.trackerCardMuted/);
 });
 
@@ -36,6 +39,10 @@ test('Dealer Leads summaries use stable counts and focus the open lead', () => {
   assert.match(source, /chooseLeadStatusFilter\('new'\)/);
   assert.match(source, /chooseLeadStatusFilter\('open'\)/);
   assert.match(source, /chooseLeadStatusFilter\('completed'\)/);
+  assert.match(source, /Handled leads/);
+  assert.match(source, /Mark handled/);
+  assert.doesNotMatch(source, />Completed</);
+  assert.doesNotMatch(source, />Mark done</);
   assert.match(source, /openLeadId && !isLeadOpen \? styles\.leadThreadMuted/);
 });
 
