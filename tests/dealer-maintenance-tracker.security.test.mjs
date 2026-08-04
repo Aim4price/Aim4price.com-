@@ -87,6 +87,17 @@ test('history separates information, timeline and records into individual modal 
   assert.doesNotMatch(tracker, /aria-pressed=\{historyTimelineFilter === option\.value\}/);
 });
 
+test('history adds restrained visual guidance without adding another decision', () => {
+  assert.match(tracker, /function HistoryRecordIcon/);
+  assert.match(tracker, /function HistoryTimelineChoiceIcon/);
+  assert.match(tracker, /className=\{styles\.historyProgress\}/);
+  assert.match(tracker, /className=\{styles\.historyChoiceIcon\}/);
+  assert.match(tracker, /className=\{styles\.historyChoiceArrow\}/);
+  assert.match(trackerStyles, /\.historyProgress/);
+  assert.match(trackerStyles, /\.historyChoiceIcon/);
+  assert.match(trackerStyles, /radial-gradient\(circle at 8% 0%/);
+});
+
 test('maintenance actions use the Aim4price Manage icon and clear report wording', () => {
   const ownerManageIcon = assetRegister.match(/<path d="M12\.22 2h-\.44[^\n]+/u)?.[0];
   assert.ok(ownerManageIcon, 'Owner Asset Register Manage icon should remain available');
