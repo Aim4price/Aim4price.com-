@@ -131,6 +131,11 @@ export const auth = betterAuth({
                 ),
                 introducedByName: readSignupField(context, "introducedByName"),
                 province: readSignupField(context, "province"),
+                townCity: readSignupField(context, "townCity"),
+                partnerDirectoryEnabled: readSignupField(
+                  context,
+                  "partnerDirectoryEnabled",
+                ),
                 phone: readSignupField(context, "phone"),
               },
             );
