@@ -3790,3 +3790,393 @@
     min-height: 15rem;
   }
 }
+
+/* === Three-step account workflows and security action refinement === */
+.businessDetailsModalCard {
+  width: min(100%, 60rem) !important;
+}
+
+.partnerDirectoryModalCard {
+  width: min(100%, 66rem) !important;
+}
+
+.modalStepProgress {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  margin: 0 0 1.2rem;
+  padding: 0.15rem 0 0;
+}
+
+.modalStep {
+  position: relative;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.58rem;
+  color: #819088;
+}
+
+.modalStep:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  top: 50%;
+  right: 0.8rem;
+  left: 3rem;
+  height: 1px;
+  background: rgba(37, 71, 51, 0.14);
+}
+
+.modalStep > span {
+  position: relative;
+  z-index: 1;
+  width: 2.15rem;
+  height: 2.15rem;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(37, 71, 51, 0.14);
+  border-radius: 999px;
+  color: #62746c;
+  background: #f7faf8;
+  font-size: 0.76rem;
+  font-weight: 900;
+}
+
+.modalStep > strong {
+  position: relative;
+  z-index: 1;
+  padding-right: 0.65rem;
+  background: #ffffff;
+  font-size: 0.76rem;
+  font-weight: 850;
+  line-height: 1.25;
+}
+
+.modalStepCurrent,
+.modalStepComplete {
+  color: #185d46;
+}
+
+.modalStepCurrent > span {
+  border-color: #1f8a66;
+  color: #ffffff;
+  background: #1f8a66;
+  box-shadow: 0 0 0 0.3rem rgba(31, 138, 102, 0.1);
+}
+
+.modalStepComplete > span {
+  border-color: rgba(31, 138, 102, 0.26);
+  color: #176047;
+  background: #e8f6ef;
+}
+
+.modalStepComplete:not(:last-child)::after {
+  background: rgba(31, 138, 102, 0.36);
+}
+
+.wizardForm {
+  margin-top: 0 !important;
+}
+
+.wizardStepPanel {
+  min-height: clamp(18rem, 38vh, 25rem);
+  display: grid;
+  align-content: start;
+  gap: 1rem;
+  animation: accountWizardStepIn 180ms ease both;
+}
+
+@keyframes accountWizardStepIn {
+  from {
+    opacity: 0;
+    transform: translateX(0.45rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.wizardFieldGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem 1.1rem;
+}
+
+.wizardActions {
+  margin-top: 0.15rem !important;
+}
+
+.businessLogoCopy {
+  min-width: 0;
+  display: grid;
+  align-content: center;
+  gap: 0.45rem;
+}
+
+.businessLogoCopy > strong {
+  color: #173e33;
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.businessLogoCopy > p {
+  margin: 0;
+  color: #6d7d76;
+  font-size: 0.78rem;
+  font-weight: 650;
+  line-height: 1.5;
+}
+
+.partnerDecisionGrid,
+.partnerAdditionalGrid {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(16rem, 0.78fr) minmax(0, 1.22fr);
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.partnerAdditionalGrid {
+  grid-template-columns: minmax(0, 1.25fr) minmax(17rem, 0.75fr);
+  align-items: start;
+}
+
+.partnerAdditionalGrid .partnerDirectoryPreview {
+  position: sticky;
+  top: 0.5rem;
+}
+
+.partnerPreviewDisabled {
+  opacity: 0.58;
+  filter: saturate(0.65);
+}
+
+.partnerDirectoryModalCard .wizardStepPanel .partnerMapCanvas {
+  height: clamp(18rem, 40vh, 24rem);
+  min-height: 18rem;
+}
+
+.accountScrollableModalCard .accountModalScrollRail {
+  right: 0.42rem;
+  width: 0.46rem;
+  border: 0;
+  background: rgba(37, 71, 51, 0.07);
+  box-shadow: none;
+}
+
+.accountScrollableModalCard .accountModalScrollRail::before {
+  display: none;
+}
+
+.accountScrollableModalCard .accountModalScrollRailVisible {
+  opacity: 0.72;
+}
+
+.accountScrollableModalCard .accountModalScrollRailVisible:hover {
+  right: 0.4rem;
+  width: 0.54rem;
+  background: rgba(37, 71, 51, 0.1);
+}
+
+.accountScrollableModalCard .accountModalScrollThumb {
+  width: 0.3rem;
+  min-height: 3.6rem;
+  margin-left: -0.15rem;
+  background: #238363;
+  box-shadow: none;
+}
+
+.accountScrollableModalCard .accountModalScrollRailVisible:hover .accountModalScrollThumb,
+.accountScrollableModalCard .accountModalScrollThumb:active {
+  width: 0.38rem;
+  margin-left: -0.19rem;
+  background: #176047;
+  box-shadow: none;
+}
+
+.securityCard {
+  width: 100%;
+}
+
+.securityGrid {
+  grid-template-columns: minmax(0, 1.2fr) minmax(20rem, 0.8fr);
+  gap: 1rem;
+}
+
+.securityPanel {
+  min-height: 100%;
+  padding: 1.15rem;
+  border: 1px solid rgba(18, 45, 37, 0.09);
+  border-radius: 1.15rem;
+  background: linear-gradient(180deg, #fbfdfc 0%, #f7faf8 100%);
+}
+
+.securityPanelHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 0.15rem;
+}
+
+.securityPanelHeader > div {
+  min-width: 0;
+  display: grid;
+  gap: 0.15rem;
+}
+
+.securityPanelHeader strong {
+  color: #17362c;
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.securityPanelHeader p {
+  margin: 0;
+  color: #6b7c74;
+  font-size: 0.78rem;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.securityPanelIcon {
+  width: 2.55rem;
+  height: 2.55rem;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(31, 138, 102, 0.14);
+  border-radius: 0.82rem;
+  color: #176047;
+  background: #eaf6f0;
+  font-size: 0.82rem;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+}
+
+.securityFieldHint,
+.securityFieldError {
+  color: #708079;
+  font-size: 0.72rem;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.securityFieldError {
+  color: #a33a3a;
+}
+
+.securityEmail {
+  display: flex;
+  align-items: center;
+  min-height: 3rem;
+  overflow-wrap: anywhere;
+  padding: 0.72rem 0.85rem;
+  border: 1px solid rgba(18, 45, 37, 0.09);
+  border-radius: 0.86rem;
+  color: #234c3e;
+  background: #ffffff;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.securityActions {
+  justify-content: flex-end;
+  margin-top: auto;
+  padding-top: 0.15rem;
+}
+
+.securitySidePanel {
+  grid-template-rows: auto auto 1fr auto;
+}
+
+.securitySidePanel .ghostButton {
+  justify-self: end;
+  margin-top: auto;
+}
+
+@media (max-width: 860px) {
+  .securityGrid,
+  .partnerDecisionGrid,
+  .partnerAdditionalGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .partnerAdditionalGrid .partnerDirectoryPreview {
+    position: static;
+  }
+}
+
+@media (max-width: 760px) {
+  .modalStepProgress {
+    margin-bottom: 1rem;
+  }
+
+  .modalStep {
+    display: grid;
+    justify-items: center;
+    gap: 0.35rem;
+    text-align: center;
+  }
+
+  .modalStep:not(:last-child)::after {
+    top: 1.05rem;
+    right: -50%;
+    left: 50%;
+  }
+
+  .modalStep > strong {
+    padding: 0 0.2rem;
+    background: transparent;
+    font-size: 0.66rem;
+  }
+
+  .wizardStepPanel {
+    min-height: 0;
+  }
+
+  .wizardFieldGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .wizardActions {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  .wizardActions > :first-child {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .wizardActions > :only-child,
+  .wizardActions > :nth-child(2):last-child {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
+  .partnerDirectoryModalCard .wizardStepPanel .partnerMapCanvas {
+    height: 16rem;
+    min-height: 16rem;
+  }
+
+  .securityPanel {
+    padding: 1rem;
+  }
+
+  .securityActions .primaryButton,
+  .securitySidePanel .ghostButton {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wizardStepPanel {
+    animation: none;
+  }
+}
+
