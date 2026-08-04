@@ -12,14 +12,34 @@ test('Dealer desktop keeps Leads, Maintenance and Client Costs without a Clients
   assert.match(source, /const navWindowSize = isAccountantWorkspace \? navItems\.length : NAV_WINDOW_SIZE/);
 });
 
-test('Dealer App home separates daily work from secondary tools', () => {
+test('Dealer App home mirrors the Owner App launcher without dropping dealer tools', () => {
   const source = read('app/dealer/page.tsx');
-  assert.match(source, /<h2>Work<\/h2>/);
-  assert.match(source, /<h2>More dealer tools<\/h2>/);
+  assert.match(source, /styles\.homeLauncher/);
+  assert.match(source, /styles\.homeLaunchCard/);
+  assert.match(source, /styles\.homeLaunchBadge/);
+  assert.doesNotMatch(source, /toolSection|cardCopy|cardArrow|description:/);
   assert.doesNotMatch(source, /href: '\/dealer\/clients'|label: 'Clients'/);
+  assert.match(source, /label: 'Notifications'/);
+  assert.match(source, /label: 'Leads'/);
+  assert.match(source, /label: 'Maintenance'/);
+  assert.match(source, /label: 'Get Estimate'/);
+  assert.match(source, /label: 'Discover Assets'/);
   assert.match(source, /label: 'Client Costs'/);
+  assert.match(source, /label: 'Marketplace'/);
   assert.match(source, /newLeadCount/);
   assert.match(source, /attentionCount/);
+});
+
+test('Dealer App top controls follow the Owner App back, home and sign-out flow', () => {
+  const source = read('app/dealer/dealer-nav.tsx');
+  const styles = read('app/dealer/dealer.module.css');
+  assert.match(source, /backIsHome/);
+  assert.match(source, /styles\.navPair/);
+  assert.match(source, /Dealer App home/);
+  assert.doesNotMatch(source, /navBrand|navArrow/);
+  assert.match(styles, /\.navButton,[\s\S]*?\.signOut \{[\s\S]*?min-height: 50px/);
+  assert.match(styles, /\.homeLauncher \{[\s\S]*?width: min\(100%, 400px\)/);
+  assert.match(styles, /@media \(min-width: 600px\)[\s\S]*?\.homeLauncher \{[\s\S]*?grid-template-columns: repeat\(2/);
 });
 
 test('Dealer Maintenance summaries apply filters and focus the open asset', () => {
