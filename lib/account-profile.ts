@@ -13,6 +13,7 @@ import {
   getOrCreatePrimaryAssetRegister,
   updateAssetRegisterLogo,
 } from "./asset-registers";
+import { isDatabaseSchemaReady } from "./database-schema-readiness";
 
 export type AccountProfile = {
   userId: string;
@@ -156,6 +157,7 @@ const SOUTH_AFRICAN_PROVINCES = [
   "Western Cape",
 ] as const;
 let accountProfileColumnsEnsured = false;
+let accountProfileColumnsPromise: Promise<void> | null = null;
 
 function asText(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
@@ -424,12 +426,56 @@ function sanitizeWebsiteUrl(value: unknown): string {
   }
 }
 
-export async function ensureAccountProfileColumns(): Promise<void> {
-  if (accountProfileColumnsEnsured) {
+async function ensureAccountProfileColumnsOnce(): Promise<void> {
+  const db = getDb();
+
+  const schemaReady = await isDatabaseSchemaReady(() => db.query(`
+    select
+      user_id,
+      display_name,
+      logo_url,
+      website_url,
+      extra_photo_urls,
+      business_name,
+      phone,
+      account_type,
+      account_subtype,
+      account_status,
+      introduced_by_option,
+      introduced_by_name,
+      vat_number,
+      province,
+      town_city,
+      address_line_1,
+      address_line_2,
+      notes,
+      marketplace_seller_name,
+      marketplace_phone,
+      marketplace_email,
+      marketplace_location,
+      discovery_participation_enabled,
+      partner_directory_enabled,
+      partner_directory_status,
+      partner_description,
+      partner_latitude,
+      partner_longitude,
+      partner_service_radius_km,
+      partner_brand_focus,
+      partner_services,
+      scan_pin_hash,
+      scan_pin_enabled,
+      scan_pin_updated_at,
+      last_active_at,
+      created_at,
+      updated_at
+    from account_profiles
+    where false
+  `));
+
+  if (schemaReady) {
+    accountProfileColumnsEnsured = true;
     return;
   }
-
-  const db = getDb();
 
   await db.query(`
     create table if not exists account_profiles (
@@ -591,6 +637,21 @@ export async function ensureAccountProfileColumns(): Promise<void> {
   `);
 
   accountProfileColumnsEnsured = true;
+}
+
+export async function ensureAccountProfileColumns(): Promise<void> {
+  if (accountProfileColumnsEnsured) {
+    return;
+  }
+
+  if (!accountProfileColumnsPromise) {
+    accountProfileColumnsPromise = ensureAccountProfileColumnsOnce().catch((error) => {
+      accountProfileColumnsPromise = null;
+      throw error;
+    });
+  }
+
+  await accountProfileColumnsPromise;
 }
 
 function mapAccountProfileRow(
