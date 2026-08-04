@@ -2030,7 +2030,7 @@ export default function MyInvoicesClient({
               value={invoiceSearch}
               onChange={(event) => setInvoiceSearch(event.target.value)}
               placeholder={dealerMode
-                ? 'Search clients, shared assets, invoice numbers or costs...'
+                ? 'Search client, asset or invoice'
                 : 'Search suppliers, assets, invoice numbers or costs...'}
               aria-label="Search saved cost records"
             />
