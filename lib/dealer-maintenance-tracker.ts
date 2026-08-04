@@ -1177,7 +1177,7 @@ export async function resolveDealerMaintenanceScheduleProposal(input: {
 
 async function buildTrackedAsset(row: DealerMaintenanceAccessRow): Promise<DealerMaintenanceTrackedAsset | null> {
   const permissions = rowPermissions(row);
-  const [asset, records, scheduleProposals, loggedProblems] = await Promise.all([
+  const [asset, records, scheduleProposals] = await Promise.all([
     getAssetRegisterItemById(row.owner_user_id, row.asset_register_item_id),
     listAssetMaintenanceRecords(row.owner_user_id, {
       assetId: row.asset_register_item_id,
@@ -1186,9 +1186,6 @@ async function buildTrackedAsset(row: DealerMaintenanceAccessRow): Promise<Deale
       dealerUserId: row.dealer_user_id,
       accessId: row.id,
     }),
-    permissions.canViewLoggedProblems
-      ? listIssueNotesForAssets([row.asset_register_item_id], { includeNoted: true })
-      : Promise.resolve([]),
   ]);
   if (!asset) return null;
   const openRecords = records.filter(
@@ -1215,6 +1212,9 @@ async function buildTrackedAsset(row: DealerMaintenanceAccessRow): Promise<Deale
   const status: DealerMaintenanceTrackerStatus = next ? trackerStatus(next) : 'no_open';
   const usageMetric = assetUsageMetric(asset, next);
   const currentUsage = next?.currentUsage ?? next?.assetUsageReading ?? currentAssetUsage(asset, usageMetric);
+  const loggedProblems = permissions.canViewLoggedProblems
+    ? await listIssueNotesForAssets([asset.id], { includeNoted: true })
+    : [];
   const openSummaries = ranked.map(recordSummary);
   const completedSummaries = completedRecords.map(recordSummary);
 
