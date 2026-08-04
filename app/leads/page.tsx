@@ -7,6 +7,7 @@ import LeadsClient from "./leads-client";
 export const runtime = "nodejs";
 
 const PARTNER_ACCOUNT_TYPES = new Set(["dealer", "finance", "insurance"]);
+const INITIAL_LEAD_BATCH_SIZE = 10;
 
 export default async function LeadsPage() {
   const { session } = await requireActivePageAccess();
@@ -17,7 +18,7 @@ export default async function LeadsPage() {
       name: session.user.name,
       email: session.user.email,
     }),
-    listAssetLeadsForUser(session.user.id),
+    listAssetLeadsForUser(session.user.id, { limit: INITIAL_LEAD_BATCH_SIZE + 1 }),
   ]);
 
   if (!PARTNER_ACCOUNT_TYPES.has(profile.accountType)) {
@@ -28,7 +29,8 @@ export default async function LeadsPage() {
     <LeadsClient
       accountantWorkspaceMode={profile.accountType === "finance" && profile.accountSubtype === "accountant"}
       dealerWorkspaceMode={profile.accountType === "dealer"}
-      initialLeads={initialLeads}
+      initialLeads={initialLeads.slice(0, INITIAL_LEAD_BATCH_SIZE)}
+      initialLeadsHaveMore={initialLeads.length > INITIAL_LEAD_BATCH_SIZE}
       initialSessionUserId={session.user.id}
     />
   );
