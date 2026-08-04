@@ -3518,10 +3518,10 @@
 }
 
 .leadsPage .leadAssetCard .leadManageButton {
-  color: #ffffff !important;
-  border-color: #254733 !important;
-  background: #254733 !important;
-  box-shadow: 0 10px 22px rgba(37, 71, 51, 0.14) !important;
+  color: #0a543d !important;
+  border-color: #6fc596 !important;
+  background: linear-gradient(180deg, #ffffff 0%, #e6f8ef 100%) !important;
+  box-shadow: 0 10px 22px rgba(15, 90, 67, 0.085) !important;
 }
 
 @media (max-width: 760px) {
@@ -3531,6 +3531,11 @@
 }
 
 /* === Dealer lead modal viewport safety === */
+.leadManageModal {
+  width: min(92rem, calc(100vw - 2rem)) !important;
+  max-width: 92rem !important;
+}
+
 .leadFilterModal,
 .leadManageModal,
 .leadEmailModal,
