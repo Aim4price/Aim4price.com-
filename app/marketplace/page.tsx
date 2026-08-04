@@ -85,7 +85,6 @@ export default async function MarketplaceEntryPage({
             >
               <div className={`${valuationStyles.sectorStart} ${entryStyles.entryStart}`}>
                 <div className={`${valuationStyles.sectorIntro} ${entryStyles.entryIntro}`}>
-                  <span className={entryStyles.entryEyebrow}>Aim4price Marketplace</span>
                   <h1 className={`${valuationStyles.stepTitle} ${entryStyles.entryTitle}`}>
                     Explore assets on Aim4price
                   </h1>
