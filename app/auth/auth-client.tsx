@@ -57,6 +57,8 @@ type SignupFormState = {
   introducedByOption: SignupIntroducedByOption;
   introducedByName: string;
   province: SignupProvince;
+  townCity: string;
+  directoryParticipation: boolean;
   name: string;
   phone: string;
   email: string;
@@ -372,6 +374,8 @@ const initialSignupState: SignupFormState = {
   introducedByOption: "",
   introducedByName: "",
   province: "",
+  townCity: "",
+  directoryParticipation: false,
   name: "",
   phone: "",
   email: "",
@@ -540,6 +544,8 @@ async function saveSignupProfileFallback(
   accountType: SignupAccountType,
   accountSubtype: SignupAccountSubtype,
   province: Exclude<SignupProvince, "">,
+  townCity: string,
+  partnerDirectoryEnabled: boolean,
   displayName: string,
   phone: string,
 ) {
@@ -553,6 +559,8 @@ async function saveSignupProfileFallback(
       accountType,
       accountSubtype,
       province,
+      townCity,
+      partnerDirectoryEnabled,
       displayName,
       phone,
     }),
@@ -642,6 +650,7 @@ export default function AuthClient() {
     const email = signupForm.email.trim();
     const introducedByName = signupForm.introducedByName.trim();
     const province = signupForm.province;
+    const townCity = signupForm.townCity.trim();
 
     if (
       !name ||
@@ -685,6 +694,15 @@ export default function AuthClient() {
       return;
     }
 
+    if (!townCity) {
+      setNotice({
+        tone: "error",
+        title: "Town or city required",
+        text: "Add your town or city so Aim4price can provide relevant local tools and results.",
+      });
+      return;
+    }
+
     if (signupForm.password.length < 8) {
       setNotice({
         tone: "error",
@@ -723,6 +741,10 @@ export default function AuthClient() {
         accountType: signupForm.accountType,
         accountSubtype: signupForm.accountSubtype,
         province,
+        townCity,
+        partnerDirectoryEnabled:
+          signupForm.accountType !== "owner" &&
+          signupForm.directoryParticipation,
         introducedByOption: signupForm.introducedByOption,
         introducedByName:
           signupForm.introducedByOption === "other" ? introducedByName : "",
@@ -735,6 +757,9 @@ export default function AuthClient() {
         signupForm.accountType,
         signupForm.accountSubtype,
         province,
+        townCity,
+        signupForm.accountType !== "owner" &&
+          signupForm.directoryParticipation,
         name,
         phone,
       );
@@ -951,6 +976,7 @@ export default function AuthClient() {
                           ...current,
                           accountType: nextAccountType,
                           accountSubtype: getDefaultSubtype(nextAccountType),
+                          directoryParticipation: nextAccountType !== "owner",
                         }));
                       }}
                     />
@@ -1034,6 +1060,41 @@ export default function AuthClient() {
                     }}
                   />
                 </div>
+
+                <label className={styles.field}>
+                  <span className={styles.label}>Town / city</span>
+                  <input
+                    type="text"
+                    name="townCity"
+                    autoComplete="address-level2"
+                    placeholder="Example: Oudtshoorn"
+                    className={styles.input}
+                    value={signupForm.townCity}
+                    onChange={(event) =>
+                      setSignupForm((current) => ({
+                        ...current,
+                        townCity: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+
+                {signupForm.accountType !== "owner" ? (
+                  <label className={styles.checkboxRow}>
+                    <input
+                      type="checkbox"
+                      className={styles.checkbox}
+                      checked={signupForm.directoryParticipation}
+                      onChange={(event) =>
+                        setSignupForm((current) => ({
+                          ...current,
+                          directoryParticipation: event.target.checked,
+                        }))
+                      }
+                    />
+                    <span>List my business in the Aim4price partner directory so owners can find me by location. I can refine or disable this later.</span>
+                  </label>
+                ) : null}
 
                 <label className={styles.field}>
                   <span className={styles.label}>Full name</span>
