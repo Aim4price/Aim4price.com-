@@ -196,7 +196,7 @@ const STATUS_FILTER_OPTIONS: LeadFilterOption[] = [
   { value: 'all', label: 'All leads' },
   { value: 'new', label: 'New leads' },
   { value: 'open', label: 'Open leads' },
-  { value: 'completed', label: 'Completed leads' },
+  { value: 'completed', label: 'Handled leads' },
   { value: 'tracking', label: 'Tracking requests' },
 ];
 
@@ -204,7 +204,7 @@ const ACCOUNTANT_STATUS_FILTER_OPTIONS: LeadFilterOption[] = [
   { value: 'all', label: 'All clients' },
   { value: 'new', label: 'New clients' },
   { value: 'open', label: 'Open clients' },
-  { value: 'completed', label: 'Completed clients' },
+  { value: 'completed', label: 'Handled clients' },
 ];
 
 const PDF_REPORT_OPTIONS: PdfReportOption[] = [
@@ -546,7 +546,7 @@ function formatLeadType(value: LeadType): string {
 function formatStatus(value: LeadStatus): string {
   if (value === 'sent') return 'New';
   if (value === 'viewed' || value === 'accepted') return 'Opened';
-  if (value === 'quoted') return 'Done';
+  if (value === 'quoted') return 'Handled';
   if (value === 'declined') return 'Deleted';
   return 'Closed';
 }
@@ -1589,7 +1589,7 @@ export default function LeadsClient({
     if (yearFilter !== 'all') labels.push(yearFilter);
     if (statusFilter === 'new') labels.push('New leads');
     if (statusFilter === 'open') labels.push('Open leads');
-    if (statusFilter === 'completed') labels.push('Completed leads');
+    if (statusFilter === 'completed') labels.push('Handled leads');
     if (statusFilter === 'tracking') labels.push('Tracking requests');
 
     if (!labels.length) return 'Filter';
@@ -1934,17 +1934,17 @@ export default function LeadsClient({
       const data = (await response.json()) as LeadsResponse;
 
       if (!response.ok || !data.ok || !data.lead) {
-        throw new Error(data.error ?? (isCurrentlyDone ? 'Failed to mark lead as not done.' : 'Failed to mark lead as done.'));
+        throw new Error(data.error ?? (isCurrentlyDone ? 'Failed to return the lead to Open.' : 'Failed to mark the lead as handled.'));
       }
 
       const updatedLead = data.lead;
       setLeads((current) => current.map((lead) => (lead.id === updatedLead.id ? updatedLead : lead)));
-      setNotice({ tone: 'success', message: isCurrentlyDone ? 'Lead moved back to Mark done.' : 'Lead marked done.' });
+      setNotice({ tone: 'success', message: isCurrentlyDone ? 'Lead returned to Open.' : 'Lead marked as handled.' });
     } catch (error) {
       setLeads((current) => current.map((lead) => (lead.id === leadToToggle.id ? leadToToggle : lead)));
       setNotice({
         tone: 'error',
-        message: error instanceof Error ? error.message : isCurrentlyDone ? 'Failed to mark lead as not done.' : 'Failed to mark lead as done.',
+        message: error instanceof Error ? error.message : isCurrentlyDone ? 'Failed to return the lead to Open.' : 'Failed to mark the lead as handled.',
       });
     } finally {
       setMarkingLeadDoneId((current) => (current === leadToToggle.id ? null : current));
@@ -2790,13 +2790,13 @@ export default function LeadsClient({
 
               <button type="button" className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${styles.leadOwnerSummaryCard} ${styles.leadOwnerSummaryCardDone} ${styles.leadSummaryFilterButton} ${statusFilter === 'completed' ? styles.leadSummaryFilterButtonActive : ''}`} onClick={() => chooseLeadStatusFilter('completed')} aria-pressed={statusFilter === 'completed'}>
                 <span className={assetStyles.heroSummaryHead}>
-                  <span className={`${assetStyles.heroSummaryTitle} ${styles.leadOwnerSummaryText}`}>Completed</span>
+                  <span className={`${assetStyles.heroSummaryTitle} ${styles.leadOwnerSummaryText}`}>Handled</span>
                 </span>
                 <span className={assetStyles.heroSummaryValueRow}>
                   <strong className={`${assetStyles.heroSummaryValue} ${styles.leadOwnerSummaryText}`}>{completedLeadCount}</strong>
                 </span>
                 <span className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${styles.leadOwnerSummaryFooter}`}>
-                  <small className={styles.leadOwnerSummaryText}>Show completed requests.</small>
+                  <small className={styles.leadOwnerSummaryText}>Show requests that need no further action.</small>
                 </span>
               </button>
             </section>
@@ -2815,9 +2815,9 @@ export default function LeadsClient({
               </article>
 
               <article className={`${styles.leadSummaryCard} ${styles.leadSummaryCardDone}`}>
-                <span>Completed</span>
+                <span>Handled</span>
                 <strong>{completedLeadCount}</strong>
-                <small>Marked done for the selected period.</small>
+                <small>Reviewed and handed off outside Aim4price.</small>
               </article>
             </div>
           ) : null}
@@ -2934,10 +2934,10 @@ export default function LeadsClient({
                                   onClick={() => void toggleLeadDone(lead)}
                                   disabled={Boolean(markingLeadDoneId)}
                                   aria-pressed={isLeadDone}
-                                  title={isLeadDone ? 'Click to move this client back to Mark done' : 'Mark this client as done'}
+                                  title={isLeadDone ? 'Return this client to Open' : 'Mark this client as handled'}
                                 >
                                   <CheckIcon className={assetStyles.buttonIcon} />
-                                  <span>{isMarkingThisLeadDone ? 'Updating...' : isLeadDone ? 'Done' : 'Mark done'}</span>
+                                  <span>{isMarkingThisLeadDone ? 'Updating...' : isLeadDone ? 'Handled' : 'Mark handled'}</span>
                                 </button>
 
                                 <button
@@ -2993,10 +2993,10 @@ export default function LeadsClient({
                                   onClick={() => void toggleLeadDone(lead)}
                                   disabled={Boolean(markingLeadDoneId)}
                                   aria-pressed={isLeadDone}
-                                  title={isLeadDone ? 'Click to move this lead back to Mark done' : 'Mark this lead as done'}
+                                  title={isLeadDone ? 'Return this lead to Open' : 'Mark this lead as handled'}
                                 >
                                   <CheckIcon className={assetStyles.buttonIcon} />
-                                  <span>{isMarkingThisLeadDone ? 'Updating...' : isLeadDone ? 'Done' : 'Mark done'}</span>
+                                  <span>{isMarkingThisLeadDone ? 'Updating...' : isLeadDone ? 'Handled' : 'Mark handled'}</span>
                                 </button>
 
                                 {isLeadOpen ? (
@@ -3326,14 +3326,6 @@ export default function LeadsClient({
                         </span>
                       </button>
 
-                      <button type="button" className={assetStyles.optionActionButton} onClick={() => openLeadReportModal(managedLead)}>
-                        <DownloadIcon className={assetStyles.buttonIcon} />
-                        <span>
-                          <strong>PDF reports</strong>
-                          <small>Choose a valuation or maintenance report.</small>
-                        </span>
-                      </button>
-
                       <button
                         type="button"
                         className={assetStyles.optionActionButton}
@@ -3345,6 +3337,14 @@ export default function LeadsClient({
                         <span>
                           <strong>Email client</strong>
                           <small>{leadEmailRecipient(managedLead) ? 'Open an email draft with asset context.' : 'No client email address saved.'}</small>
+                        </span>
+                      </button>
+
+                      <button type="button" className={assetStyles.optionActionButton} onClick={() => openLeadReportModal(managedLead)}>
+                        <DownloadIcon className={assetStyles.buttonIcon} />
+                        <span>
+                          <strong>Reports</strong>
+                          <small>Choose a valuation or maintenance report.</small>
                         </span>
                       </button>
 

@@ -122,6 +122,10 @@ function MaintenanceIcon({ className = '' }: { className?: string }) {
   return <svg className={className} viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h12M7 12h12M7 19h12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /><circle cx="4" cy="5" r="1" fill="currentColor" /><circle cx="4" cy="12" r="1" fill="currentColor" /><circle cx="4" cy="19" r="1" fill="currentColor" /></svg>;
 }
 
+function ScheduleIcon({ className = '' }: { className?: string }) {
+  return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M6.5 3v3M17.5 3v3M4 8.5h16" strokeLinecap="round" /><rect x="4" y="5" width="16" height="15" rx="3" /><path d="m8.5 14 2.1 2.1 4.9-5" strokeLinecap="round" strokeLinejoin="round" /></svg>;
+}
+
 function HistoryRecordIcon({ type, className = '' }: { type: HistoryRecordType; className?: string }) {
   if (type === 'maintenance') {
     return <svg className={className} viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v3m10-3v3M5 8h14M5 5h14v15H5V5Z" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" /><path d="m9 14 2 2 4-5" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" /></svg>;
@@ -238,6 +242,15 @@ function trackerCardStatusClass(
   if (needsAttention(status)) return leadStyles.leadThreadNew;
   if (status === 'no_open') return leadStyles.leadThreadDone;
   return leadStyles.leadThreadActive;
+}
+
+function maintenanceStatusGuidance(status: DealerMaintenanceTrackerStatus): string {
+  if (status === 'overdue') return 'Maintenance is overdue — review what is required.';
+  if (status === 'due') return 'Maintenance is due now — review the current schedule.';
+  if (status === 'due_soon') return 'Maintenance is approaching — check the due date or usage.';
+  if (status === 'usage_needed') return 'A usage reading is needed to confirm what is due.';
+  if (status === 'upcoming') return 'Maintenance is scheduled for later.';
+  return 'Nothing currently requires attention.';
 }
 
 function matchesSearch(asset: DealerMaintenanceTrackedAsset, search: string): boolean {
@@ -887,13 +900,13 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
         {notice ? <div className={`${assetStyles.notice} ${notice.tone === 'success' ? assetStyles.noticeSuccess : assetStyles.noticeError}`}>{notice.text}</div> : null}
 
         <section className={`${assetStyles.registerPanel} ${leadStyles.leadsRegisterPanel}`}>
-          <WorkspaceTitlePanel title="Maintenance" />
+          <WorkspaceTitlePanel title="MAINTENANCE TRACKING" />
 
           <section className={`${assetStyles.summaryRow} ${assetStyles.heroSummaryRow} ${leadStyles.leadSummaryRow}`} aria-label="Maintenance summary">
             <button type="button" className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${leadStyles.leadOwnerSummaryCard} ${leadStyles.leadOwnerSummaryCardNew} ${styles.summaryFilterButton} ${statusFilter === 'attention' ? styles.summaryFilterButtonActive : ''}`} onClick={() => chooseStatusFilter('attention')} aria-pressed={statusFilter === 'attention'}>
               <span className={assetStyles.heroSummaryHead}><span className={`${assetStyles.heroSummaryTitle} ${leadStyles.leadOwnerSummaryText}`}>Needs attention</span></span>
               <span className={assetStyles.heroSummaryValueRow}><strong className={`${assetStyles.heroSummaryValue} ${leadStyles.leadOwnerSummaryText}`}>{attentionCount}</strong></span>
-              <span className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${leadStyles.leadOwnerSummaryFooter}`}><small className={leadStyles.leadOwnerSummaryText}>Show due, overdue or usage-needed assets.</small></span>
+              <span className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${leadStyles.leadOwnerSummaryFooter}`}><small className={leadStyles.leadOwnerSummaryText}>Overdue, due soon, or waiting for a usage reading.</small></span>
             </button>
             <button type="button" className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${leadStyles.leadOwnerSummaryCard} ${leadStyles.leadOwnerSummaryCardOpen} ${styles.summaryFilterButton} ${statusFilter === 'all' ? styles.summaryFilterButtonActive : ''}`} onClick={() => chooseStatusFilter('all')} aria-pressed={statusFilter === 'all'}>
               <span className={assetStyles.heroSummaryHead}><span className={`${assetStyles.heroSummaryTitle} ${leadStyles.leadOwnerSummaryText}`}>Tracked equipment</span></span>
@@ -901,9 +914,9 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
               <span className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${leadStyles.leadOwnerSummaryFooter}`}><small className={leadStyles.leadOwnerSummaryText}>Show all equipment shared with you.</small></span>
             </button>
             <button type="button" className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${leadStyles.leadOwnerSummaryCard} ${leadStyles.leadOwnerSummaryCardDone} ${styles.summaryFilterButton} ${statusFilter === 'no_open' ? styles.summaryFilterButtonActive : ''}`} onClick={() => chooseStatusFilter('no_open')} aria-pressed={statusFilter === 'no_open'}>
-              <span className={assetStyles.heroSummaryHead}><span className={`${assetStyles.heroSummaryTitle} ${leadStyles.leadOwnerSummaryText}`}>No open maintenance</span></span>
+              <span className={assetStyles.heroSummaryHead}><span className={`${assetStyles.heroSummaryTitle} ${leadStyles.leadOwnerSummaryText}`}>Nothing due</span></span>
               <span className={assetStyles.heroSummaryValueRow}><strong className={`${assetStyles.heroSummaryValue} ${leadStyles.leadOwnerSummaryText}`}>{noOpenCount}</strong></span>
-              <span className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${leadStyles.leadOwnerSummaryFooter}`}><small className={leadStyles.leadOwnerSummaryText}>Show assets with completed history only.</small></span>
+              <span className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${leadStyles.leadOwnerSummaryFooter}`}><small className={leadStyles.leadOwnerSummaryText}>No current maintenance requires attention.</small></span>
             </button>
           </section>
 
@@ -936,6 +949,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
               const activePhotoUrl = asset.photoUrls[photoIndex] ?? '';
               const hasMultiplePhotos = asset.photoUrls.length > 1;
               const activeProblems = asset.loggedProblems.filter((problem) => !problem.notedAtIso);
+              const pendingScheduleProposals = asset.scheduleProposals.filter((proposal) => proposal.status === 'pending');
               const isHistoryChecking = historyAccessCheckId === asset.accessId;
               return (
                 <article key={asset.accessId} className={`${workspaceStyles.card} ${leadStyles.leadThread} ${trackerCardStatusClass(asset.status)} ${isOpen ? leadStyles.leadThreadOpen : ''} ${openAccessId && !isOpen ? styles.trackerCardMuted : ''}`}>
@@ -945,6 +959,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                         <div className={leadStyles.leadCardTitleRow}><h3>{asset.ownerName}</h3></div>
                         <strong className={leadStyles.leadAssetName}>{asset.assetTitle}</strong>
                         <span className={leadStyles.clientKicker}>{[asset.brandName, asset.modelName, asset.yearModel].filter(Boolean).join(' · ') || asset.assetKind} · {asset.statusLabel}</span>
+                        <span className={styles.trackerNextStep}>{maintenanceStatusGuidance(asset.status)}</span>
                       </div>
                       <div className={leadStyles.clientDecisionArea}>
                         <div className={leadStyles.clientActionRow}>
@@ -960,7 +975,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                               <button type="button" className={`${assetStyles.secondaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionNeutral} ${leadStyles.closeLeadButton}`} onClick={closeAsset}>Close</button>
                             </>
                           ) : (
-                            <button type="button" className={`${assetStyles.primaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionGreen} ${leadStyles.openLeadButton}`} onClick={() => openAsset(asset)}>Open</button>
+                            <button type="button" className={`${assetStyles.primaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionGreen} ${leadStyles.openLeadButton}`} onClick={() => openAsset(asset)}>View maintenance</button>
                           )}
                         </div>
                       </div>
@@ -1100,9 +1115,9 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                             </div>
 
                             <div className={assetStyles.assetPrimaryDetails}>
-                              <div className={assetStyles.assetDetailRow}><span>Next</span><strong>{asset.nextMaintenance?.title || 'No open maintenance'}</strong></div>
+                              <div className={assetStyles.assetDetailRow}><span>Next</span><strong>{asset.nextMaintenance?.title || 'Nothing currently due'}</strong></div>
                               <div className={assetStyles.assetDetailRow}><span>Due</span><strong>{asset.nextMaintenance ? dueLabel(asset.nextMaintenance, asset.usageMetric) : 'Not scheduled'}</strong></div>
-                              <div className={assetStyles.assetDetailRow}><span>Remaining</span><strong>{asset.nextMaintenance ? remainingLabel(asset.nextMaintenance, asset.usageMetric) : 'No open schedule'}</strong></div>
+                              <div className={assetStyles.assetDetailRow}><span>Remaining</span><strong>{asset.nextMaintenance ? remainingLabel(asset.nextMaintenance, asset.usageMetric) : 'No action required'}</strong></div>
                               <div className={assetStyles.assetDetailRow}><span>Shared by</span><strong>{asset.grantedByName || 'Asset owner'}</strong></div>
                             </div>
                           </div>
@@ -1110,9 +1125,21 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                       </div>
 
                       <div className={styles.trackerSections}>
+                        <header className={styles.trackerSectionsIntro}>
+                          <span>Quick view</span>
+                          <h3>What needs attention?</h3>
+                          <p>Open one section to see only the information you need.</p>
+                        </header>
+
                         <details className={styles.section}>
                           <summary>
-                            <div><span>Current schedule</span><h3>Upcoming maintenance</h3></div>
+                            <div>
+                              <span>Current schedule</span>
+                              <h3>Upcoming maintenance</h3>
+                              <small>{asset.openMaintenanceRecords.length
+                                ? `${asset.openMaintenanceRecords.length} scheduled item${asset.openMaintenanceRecords.length === 1 ? '' : 's'} to review.`
+                                : 'Nothing is currently scheduled.'}</small>
+                            </div>
                             <strong>
                               {asset.openMaintenanceRecords.length}
                               <ChevronDownIcon className={styles.sectionChevron} />
@@ -1130,11 +1157,20 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                         </details>
 
                         {asset.permissions.canViewLoggedProblems ? (
-                          <section className={styles.section}>
-                            <header>
-                              <div><span>Needs attention</span><h3>Active problems and notes</h3></div>
-                              <strong>{activeProblems.length}</strong>
-                            </header>
+                          <details className={styles.section}>
+                            <summary>
+                              <div>
+                                <span>Reported by the owner</span>
+                                <h3>Problems and notes</h3>
+                                <small>{activeProblems.length
+                                  ? `${activeProblems.length} open item${activeProblems.length === 1 ? '' : 's'} need attention.`
+                                  : 'No open problems or notes.'}</small>
+                              </div>
+                              <strong>
+                                {activeProblems.length}
+                                <ChevronDownIcon className={styles.sectionChevron} />
+                              </strong>
+                            </summary>
                             {activeProblems.length ? (
                               <div className={styles.problemList}>
                                 {activeProblems.map((problem) => (
@@ -1144,22 +1180,33 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                             ) : (
                               <div className={styles.sectionEmpty}>No active problems or notes have been logged for this asset.</div>
                             )}
-                          </section>
+                          </details>
                         ) : null}
 
-                        {asset.scheduleProposals.length ? (
-                          <section className={styles.section}>
-                            <header>
-                              <div><span>Dealer-created schedules</span><h3>Schedule proposals</h3></div>
-                              <strong>{asset.scheduleProposals.length}</strong>
-                            </header>
+                        <details className={styles.section}>
+                          <summary>
+                            <div>
+                              <span>Dealer-created schedules</span>
+                              <h3>Awaiting owner approval</h3>
+                              <small>{pendingScheduleProposals.length
+                                ? `${pendingScheduleProposals.length} proposed schedule${pendingScheduleProposals.length === 1 ? '' : 's'} waiting for the owner.`
+                                : 'No schedule decisions are waiting.'}</small>
+                            </div>
+                            <strong>
+                              {pendingScheduleProposals.length}
+                              <ChevronDownIcon className={styles.sectionChevron} />
+                            </strong>
+                          </summary>
+                          {pendingScheduleProposals.length ? (
                             <div className={styles.recordList}>
-                              {asset.scheduleProposals.map((proposal) => (
+                              {pendingScheduleProposals.map((proposal) => (
                                 <ProposalCard key={proposal.id} proposal={proposal} />
                               ))}
                             </div>
-                          </section>
-                        ) : null}
+                          ) : (
+                            <div className={styles.sectionEmpty}>The owner has no proposed schedules waiting for a decision.</div>
+                          )}
+                        </details>
 
                       </div>
                     </div>
@@ -1487,19 +1534,47 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                   <button
                     type="button"
                     className={assetStyles.optionActionButton}
+                    onClick={() => callOwner(managedAsset)}
+                    disabled={!cleanPhoneForTel(managedAsset.ownerPhone)}
+                    title={!cleanPhoneForTel(managedAsset.ownerPhone) ? 'No owner contact number is saved.' : undefined}
+                  >
+                    <PhoneIcon className={assetStyles.buttonIcon} />
+                    <span>
+                      <strong>Call owner</strong>
+                      <small>{managedAsset.ownerPhone ? 'Start a phone call from the saved number.' : 'No owner contact number saved.'}</small>
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={assetStyles.optionActionButton}
+                    onClick={() => emailOwner(managedAsset)}
+                    disabled={!cleanEmail(managedAsset.ownerEmail)}
+                    title={!cleanEmail(managedAsset.ownerEmail) ? 'No owner email address is saved.' : undefined}
+                  >
+                    <EmailIcon className={assetStyles.buttonIcon} />
+                    <span>
+                      <strong>Email owner</strong>
+                      <small>{cleanEmail(managedAsset.ownerEmail) ? 'Open an email draft with asset context.' : 'No owner email address saved.'}</small>
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={assetStyles.optionActionButton}
                     onClick={() => {
                       setManagedAccessId(null);
-                      setCostReportAccessId(managedAsset.accessId);
+                      setScheduleAccessId(managedAsset.accessId);
                     }}
-                    disabled={!managedAsset.permissions.canViewCostOfOwnership}
-                    title={!managedAsset.permissions.canViewCostOfOwnership
-                      ? 'The asset owner has not granted Cost of Ownership access.'
+                    disabled={!managedAsset.permissions.canCreateMaintenanceSchedules}
+                    title={!managedAsset.permissions.canCreateMaintenanceSchedules
+                      ? 'The asset owner has not granted permission to create maintenance schedules.'
                       : undefined}
                   >
-                    <DownloadIcon className={assetStyles.buttonIcon} />
+                    <ScheduleIcon className={assetStyles.buttonIcon} />
                     <span>
-                      <strong>Cost of ownership</strong>
-                      <small>{managedAsset.permissions.canViewCostOfOwnership ? 'Choose a timeline and download the report.' : 'Owner permission is required.'}</small>
+                      <strong>Schedule maintenance</strong>
+                      <small>{managedAsset.permissions.canCreateMaintenanceSchedules ? 'Send a proposed schedule for the owner to approve.' : 'Owner permission is required.'}</small>
                     </span>
                   </button>
 
@@ -1525,45 +1600,17 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                     className={assetStyles.optionActionButton}
                     onClick={() => {
                       setManagedAccessId(null);
-                      setScheduleAccessId(managedAsset.accessId);
+                      setCostReportAccessId(managedAsset.accessId);
                     }}
-                    disabled={!managedAsset.permissions.canCreateMaintenanceSchedules}
-                    title={!managedAsset.permissions.canCreateMaintenanceSchedules
-                      ? 'The asset owner has not granted permission to create maintenance schedules.'
+                    disabled={!managedAsset.permissions.canViewCostOfOwnership}
+                    title={!managedAsset.permissions.canViewCostOfOwnership
+                      ? 'The asset owner has not granted Cost of Ownership access.'
                       : undefined}
                   >
-                    <MaintenanceIcon className={assetStyles.buttonIcon} />
+                    <DownloadIcon className={assetStyles.buttonIcon} />
                     <span>
-                      <strong>Propose schedule</strong>
-                      <small>{managedAsset.permissions.canCreateMaintenanceSchedules ? 'The owner can approve or disapprove it.' : 'Owner permission is required.'}</small>
-                    </span>
-                  </button>
-
-                  <button
-                    type="button"
-                    className={assetStyles.optionActionButton}
-                    onClick={() => callOwner(managedAsset)}
-                    disabled={!cleanPhoneForTel(managedAsset.ownerPhone)}
-                    title={!cleanPhoneForTel(managedAsset.ownerPhone) ? 'No owner contact number is saved.' : undefined}
-                  >
-                    <PhoneIcon className={assetStyles.buttonIcon} />
-                    <span>
-                      <strong>Call owner</strong>
-                      <small>{managedAsset.ownerPhone ? 'Start a phone call from the saved number.' : 'No owner contact number saved.'}</small>
-                    </span>
-                  </button>
-
-                  <button
-                    type="button"
-                    className={assetStyles.optionActionButton}
-                    onClick={() => emailOwner(managedAsset)}
-                    disabled={!cleanEmail(managedAsset.ownerEmail)}
-                    title={!cleanEmail(managedAsset.ownerEmail) ? 'No owner email address is saved.' : undefined}
-                  >
-                    <EmailIcon className={assetStyles.buttonIcon} />
-                    <span>
-                      <strong>Email owner</strong>
-                      <small>{cleanEmail(managedAsset.ownerEmail) ? 'Open an email draft with asset context.' : 'No owner email address saved.'}</small>
+                      <strong>Cost of ownership</strong>
+                      <small>{managedAsset.permissions.canViewCostOfOwnership ? 'Choose a timeline and download the report.' : 'Owner permission is required.'}</small>
                     </span>
                   </button>
                 </div>

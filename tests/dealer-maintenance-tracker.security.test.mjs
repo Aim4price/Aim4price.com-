@@ -36,13 +36,17 @@ test('history access is rechecked before records are expanded', () => {
 
 test('upcoming work is collapsed by default and remains outside maintenance history', () => {
   const upcomingIndex = tracker.indexOf('<h3>Upcoming maintenance</h3>');
-  const problemsIndex = tracker.indexOf('<h3>Active problems and notes</h3>');
+  const problemsIndex = tracker.indexOf('<h3>Problems and notes</h3>');
+  const approvalsIndex = tracker.indexOf('<h3>Awaiting owner approval</h3>');
   const historyModalIndex = tracker.indexOf('{historyAsset ? (');
   assert.ok(upcomingIndex > 0);
   assert.ok(problemsIndex > upcomingIndex);
-  assert.ok(historyModalIndex > problemsIndex);
+  assert.ok(approvalsIndex > problemsIndex);
+  assert.ok(historyModalIndex > approvalsIndex);
   assert.match(tracker, /<details className=\{styles\.section\}>/);
   assert.match(tracker, /<summary>/);
+  assert.match(tracker, /pendingScheduleProposals/);
+  assert.match(tracker, /Open one section to see only the information you need/);
   assert.match(tracker, /View maintenance history/);
 });
 
@@ -105,6 +109,29 @@ test('maintenance actions use the Aim4price Manage icon and clear report wording
   assert.match(tracker, /<strong>Maintenance reports<\/strong>/);
   assert.match(tracker, /Choose PDF or Excel and download maintenance history/);
   assert.doesNotMatch(tracker, /<strong>PDF reports<\/strong>/);
+});
+
+test('lead and maintenance manage modals share the schedule icon and prioritize contact actions', () => {
+  const sharedSchedulePaths = [
+    'M6.5 3v3M17.5 3v3M4 8.5h16',
+    'm8.5 14 2.1 2.1 4.9-5',
+  ];
+  for (const path of sharedSchedulePaths) {
+    assert.ok(leads.includes(path), `Lead schedule icon should contain ${path}`);
+    assert.ok(tracker.includes(path), `Maintenance schedule icon should contain ${path}`);
+  }
+
+  const leadManageStart = leads.indexOf('<strong>WhatsApp client</strong>', leads.indexOf('{managedLead ? ('));
+  const leadManage = leads.slice(leadManageStart);
+  assert.ok(leadManage.indexOf('WhatsApp client') < leadManage.indexOf('Email client'));
+  assert.ok(leadManage.indexOf('Email client') < leadManage.indexOf('<strong>Reports</strong>'));
+  assert.ok(leadManage.indexOf('<strong>Reports</strong>') < leadManage.indexOf('Schedule maintenance'));
+
+  const maintenanceManage = tracker.slice(tracker.indexOf('{managedAsset ? ('));
+  assert.ok(maintenanceManage.indexOf('WhatsApp owner') < maintenanceManage.indexOf('Call owner'));
+  assert.ok(maintenanceManage.indexOf('Call owner') < maintenanceManage.indexOf('Email owner'));
+  assert.ok(maintenanceManage.indexOf('Email owner') < maintenanceManage.indexOf('Schedule maintenance'));
+  assert.ok(maintenanceManage.indexOf('Schedule maintenance') < maintenanceManage.indexOf('Maintenance reports'));
 });
 
 test('dealer tracker omits replacement pricing and owner-approved asset corrections', () => {
