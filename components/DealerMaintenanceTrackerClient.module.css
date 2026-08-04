@@ -815,6 +815,15 @@
   padding: 0 !important;
 }
 
+.historyChoiceModal.historyChoiceModal {
+  width: min(calc(100vw - 2rem), 54rem) !important;
+}
+
+.historyChoiceModal .historyModalBody {
+  padding-top: 1.35rem !important;
+  padding-bottom: 1.35rem !important;
+}
+
 .historyModalHeader.historyModalHeader {
   flex: 0 0 auto;
   min-height: 0 !important;
@@ -866,6 +875,23 @@
   border: 1px solid #dce8e3;
   border-radius: 1.05rem;
   background: #fff;
+}
+
+.historyChoiceStep {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.historyChoiceModal .historyTimelineFilters {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.historyChoiceModal .historyTimelineFilters button {
+  min-height: 5rem;
+  padding: 0.9rem 1rem;
 }
 
 .historyStepHeader {
@@ -1091,6 +1117,23 @@
   gap: 1rem;
 }
 
+.historyResultsHeader > div:first-child {
+  min-width: 0;
+  display: grid;
+  gap: 0.22rem;
+}
+
+.historyResultsHeader > div:first-child > strong {
+  color: #123f34;
+  font-size: 1.08rem;
+}
+
+.historyResultsHeader > div:first-child > span {
+  color: #687b74;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
 .historyResultTotal {
   flex: 0 0 auto;
   display: grid;
@@ -1295,6 +1338,10 @@
 
 .historyModalFooter > button {
   min-width: 9rem;
+}
+
+.historyChoiceModal .historyModalFooter > button {
+  min-width: 10rem;
 }
 
 .maintenanceSearchField > button:hover {

@@ -23,6 +23,7 @@ type TrackerStatusFilter = 'all' | 'attention' | 'upcoming' | 'no_open';
 type FilterDropdownKey = 'owner' | 'status';
 type HistoryRecordType = 'all' | 'maintenance' | 'notes';
 type HistoryTimelineFilter = 'all' | '12months' | '90days' | 'custom';
+type HistoryModalStep = 1 | 2 | 3;
 type Option = { value: string; label: string };
 
 type Props = {
@@ -479,6 +480,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
   const [maintenanceSearch, setMaintenanceSearch] = useState('');
   const [historyRecordType, setHistoryRecordType] = useState<HistoryRecordType>('all');
   const [historyTimelineFilter, setHistoryTimelineFilter] = useState<HistoryTimelineFilter>('all');
+  const [historyModalStep, setHistoryModalStep] = useState<HistoryModalStep>(1);
   const [historyFromDate, setHistoryFromDate] = useState('');
   const [historyToDate, setHistoryToDate] = useState('');
   const [historyAccessCheckId, setHistoryAccessCheckId] = useState<string | null>(null);
@@ -530,6 +532,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
       setMaintenanceSearch('');
       setHistoryRecordType('all');
       setHistoryTimelineFilter('all');
+      setHistoryModalStep(1);
       setHistoryFromDate('');
       setHistoryToDate('');
     };
@@ -670,8 +673,15 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
     setMaintenanceSearch('');
     setHistoryRecordType('all');
     setHistoryTimelineFilter('all');
+    setHistoryModalStep(1);
     setHistoryFromDate('');
     setHistoryToDate('');
+  }
+
+  function chooseHistoryRecordType(recordType: HistoryRecordType) {
+    setHistoryRecordType(recordType);
+    setMaintenanceSearch('');
+    setHistoryModalStep(2);
   }
 
   function chooseHistoryTimeline(filter: HistoryTimelineFilter) {
@@ -684,6 +694,16 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
     const dates = historyTimelineDates(filter);
     setHistoryFromDate(dates.from);
     setHistoryToDate(dates.to);
+    setHistoryModalStep(3);
+  }
+
+  function showAllHistory() {
+    setMaintenanceSearch('');
+    setHistoryRecordType('all');
+    setHistoryTimelineFilter('all');
+    setHistoryFromDate('');
+    setHistoryToDate('');
+    setHistoryModalStep(3);
   }
 
   function closeHistory() {
@@ -1194,16 +1214,24 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
         <div className={`${assetStyles.modalOverlay} ${workspaceStyles.modalOverlay} ${styles.historyModalOverlay}`}>
           <div className={assetStyles.modalBackdrop} onClick={closeHistory} />
           <section
-            className={`${assetStyles.modalCard} ${workspaceStyles.modal} ${styles.historyModal}`}
+            className={`${assetStyles.modalCard} ${workspaceStyles.modal} ${styles.historyModal} ${historyModalStep < 3 ? styles.historyChoiceModal : ''}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="maintenance-history-title"
           >
             <header className={`${assetStyles.modalHeader} ${workspaceStyles.modalHeader} ${styles.historyModalHeader}`}>
               <div className={assetStyles.modalHeaderText}>
-                <span className={styles.historyModalKicker}>Saved maintenance records</span>
-                <h3 id="maintenance-history-title">Maintenance history</h3>
-                <p>{historyAsset.assetTitle} · {trackingAssetMeta(historyAsset)}</p>
+                <span className={styles.historyModalKicker}>Step {historyModalStep} of 3</span>
+                <h3 id="maintenance-history-title">{historyModalStep === 1
+                  ? 'What would you like to see?'
+                  : historyModalStep === 2
+                    ? 'Choose a timeline'
+                    : 'Maintenance history'}</h3>
+                <p>{historyModalStep === 1
+                  ? `${historyAsset.assetTitle} · Select one option to continue.`
+                  : historyModalStep === 2
+                    ? 'Choose how far back the history should go.'
+                    : `${historyAsset.assetTitle} · Newest records first.`}</p>
               </div>
               <button type="button" className={`${assetStyles.modalCloseButton} ${workspaceStyles.modalClose}`} onClick={closeHistory} aria-label="Close maintenance history">
                 <CloseIcon className={assetStyles.buttonIcon} />
@@ -1211,14 +1239,8 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
             </header>
 
             <div className={`${assetStyles.modalScrollBody} ${workspaceStyles.modalBody} ${styles.historyModalBody}`}>
-              <section className={styles.historyStep} aria-labelledby="history-record-step-title">
-                <header className={styles.historyStepHeader}>
-                  <span>1</span>
-                  <div>
-                    <strong id="history-record-step-title">Choose information</strong>
-                    <small>Show everything, completed maintenance, or saved notes.</small>
-                  </div>
-                </header>
+              {historyModalStep === 1 ? (
+                <section className={`${styles.historyStep} ${styles.historyChoiceStep}`} aria-label="Choose maintenance history information">
                 <div className={styles.historyTypeTabs} aria-label="Filter maintenance history by record type">
                   {historyRecordTypeOptions.map((option) => {
                     const count = option.value === 'maintenance'
@@ -1231,7 +1253,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                         key={option.value}
                         type="button"
                         className={historyRecordType === option.value ? styles.historyTypeTabActive : ''}
-                        onClick={() => setHistoryRecordType(option.value as HistoryRecordType)}
+                        onClick={() => chooseHistoryRecordType(option.value as HistoryRecordType)}
                         aria-pressed={historyRecordType === option.value}
                       >
                         <span>
@@ -1247,16 +1269,11 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                     );
                   })}
                 </div>
-              </section>
+                </section>
+              ) : null}
 
-              <section className={styles.historyStep} aria-labelledby="history-timeline-step-title">
-                <header className={styles.historyStepHeader}>
-                  <span>2</span>
-                  <div>
-                    <strong id="history-timeline-step-title">Choose timeline</strong>
-                    <small>Narrow the history to the period you need.</small>
-                  </div>
-                </header>
+              {historyModalStep === 2 ? (
+                <section className={`${styles.historyStep} ${styles.historyChoiceStep}`} aria-label="Choose maintenance history timeline">
                 <div className={styles.historyTimelineFilters} aria-label="Filter maintenance history by timeline">
                   {historyTimelineOptions.map((option) => (
                     <button
@@ -1310,17 +1327,16 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                     </button>
                   </div>
                 ) : null}
-              </section>
+                </section>
+              ) : null}
 
-              <section className={`${styles.historyStep} ${styles.historyRecordsStep}`} aria-labelledby="history-results-step-title">
+              {historyModalStep === 3 ? (
+                <section className={`${styles.historyStep} ${styles.historyRecordsStep}`} aria-label="Maintenance history records">
                 <div className={styles.historyResultsHeader}>
-                  <header className={styles.historyStepHeader}>
-                    <span>3</span>
-                    <div>
-                      <strong id="history-results-step-title">History records</strong>
-                      <small>Newest information appears first.</small>
-                    </div>
-                  </header>
+                  <div>
+                    <strong>{historyRecordType === 'all' ? 'All history' : historyRecordType === 'maintenance' ? 'Maintenance' : 'Notes'}</strong>
+                    <span>{historyTimelineOptions.find((option) => option.value === historyTimelineFilter)?.label || 'All time'}</span>
+                  </div>
                   <div className={styles.historyResultTotal}>
                     <strong>{historyItems.length}</strong>
                     <span>{historyItems.length === 1 ? 'record' : 'records'}</span>
@@ -1372,13 +1388,35 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                 )}
 
                 {historyFiltersActive ? (
-                  <button type="button" className={styles.historyClearAllButton} onClick={clearHistoryFilters}>Show all history</button>
+                  <button type="button" className={styles.historyClearAllButton} onClick={showAllHistory}>Show all history</button>
                 ) : null}
-              </section>
+                </section>
+              ) : null}
             </div>
 
             <footer className={`${assetStyles.formActions} ${workspaceStyles.modalFooter} ${styles.historyModalFooter}`}>
-              <button type="button" className={assetStyles.secondaryButton} onClick={closeHistory}>Close</button>
+              {historyModalStep > 1 ? (
+                <button
+                  type="button"
+                  className={assetStyles.secondaryButton}
+                  onClick={() => setHistoryModalStep(historyModalStep === 3 ? 2 : 1)}
+                >
+                  Back
+                </button>
+              ) : null}
+              {historyModalStep === 2 && historyTimelineFilter === 'custom' ? (
+                <button
+                  type="button"
+                  className={assetStyles.primaryButton}
+                  onClick={() => setHistoryModalStep(3)}
+                  disabled={!historyFromDate && !historyToDate}
+                >
+                  View history
+                </button>
+              ) : null}
+              {historyModalStep === 1 || historyModalStep === 3 ? (
+                <button type="button" className={assetStyles.secondaryButton} onClick={closeHistory}>Close</button>
+              ) : null}
             </footer>
           </section>
         </div>
