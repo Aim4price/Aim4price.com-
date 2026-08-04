@@ -519,15 +519,18 @@ export default function DealerAccessClient() {
                         {manager.isActive ? 'Active' : 'Inactive'}
                       </span>
 
-                      <button
-                        type="button"
-                        className={styles.manageButton}
-                        onClick={() => setExpandedManagerId((current) => (current === manager.id ? null : manager.id))}
-                        aria-expanded={isExpanded}
-                        aria-controls={managerPanelId}
-                      >
-                        {isExpanded ? 'Close' : 'Manage'}
-                      </button>
+                      {!isExpanded ? (
+                        <button
+                          type="button"
+                          className={styles.manageButton}
+                          onClick={() => setExpandedManagerId(manager.id)}
+                          aria-expanded="false"
+                          aria-controls={managerPanelId}
+                          aria-label={`Manage ${manager.displayName}`}
+                        >
+                          Manage <span aria-hidden="true">›</span>
+                        </button>
+                      ) : null}
                     </div>
 
                     {isExpanded ? (
@@ -596,6 +599,14 @@ export default function DealerAccessClient() {
                               disabled={isBusyThisManager}
                             >
                               {isDeletingThisManager ? 'Deleting…' : 'Delete'}
+                            </button>
+                            <button
+                              type="button"
+                              className={styles.manageCloseButton}
+                              onClick={() => setExpandedManagerId(null)}
+                              disabled={isBusyThisManager}
+                            >
+                              Close
                             </button>
                           </div>
                         </form>

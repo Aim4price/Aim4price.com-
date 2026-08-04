@@ -756,3 +756,76 @@
     transition: none;
   }
 }
+
+/* Account access actions: larger Manage target and one bottom action area. */
+.manageButton {
+  min-width: 7.5rem;
+  min-height: 3rem;
+  gap: 0.55rem;
+  padding: 0 1.05rem;
+  border-color: rgba(31, 138, 102, 0.2);
+  background: linear-gradient(180deg, rgba(31, 138, 102, 0.12), rgba(31, 138, 102, 0.075));
+  box-shadow: 0 8px 18px rgba(18, 45, 37, 0.055);
+  font-size: 0.86rem;
+}
+
+.manageButton span {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.managerActions {
+  width: 100%;
+  justify-content: flex-end;
+  margin-top: 0.2rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid rgba(18, 45, 37, 0.075);
+}
+
+.manageCloseButton {
+  min-height: 3.05rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(18, 45, 37, 0.14);
+  border-radius: 0.86rem;
+  padding: 0 1.05rem;
+  color: #254733;
+  background: #f4f8f6;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 900;
+  cursor: pointer;
+  transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+
+.manageCloseButton:hover {
+  transform: translateY(-1px);
+  border-color: rgba(31, 138, 102, 0.24);
+  background: #eaf3ee;
+}
+
+.manageCloseButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+}
+
+.managerCloseRow {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(18, 45, 37, 0.09);
+}
+
+@media (max-width: 720px) {
+  .managerActions {
+    align-items: stretch;
+  }
+
+  .managerCloseRow .manageCloseButton {
+    width: 100%;
+  }
+}
+

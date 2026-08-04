@@ -40,16 +40,27 @@ test("the restored account receives server-preloaded profile and PIN data", asyn
   assert.match(source, /if \(!initialScanPinStatus\)/);
 });
 
-test("business modal clearly groups contact and location details", async () => {
+test("business modal uses a short contact, address and logo workflow", async () => {
   const source = await read("app/account/account-client.tsx");
 
   assert.match(source, /businessDetailsModalCard/);
-  assert.match(source, /Contact information/);
-  assert.match(source, /Account location/);
-  assert.match(
-    source,
-    /Directory visibility and the public\s+map pin remain separately controlled/,
-  );
+  assert.match(source, /labels=\{\["Contact info", "Business address", "Business logo"\]\}/);
+  assert.match(source, /businessDetailsStep === 1/);
+  assert.match(source, /businessDetailsStep === 2/);
+  assert.match(source, /businessDetailsStep === 3/);
+  assert.match(source, /addressLine2: event\.target\.value/);
+  assert.match(source, /Your changes are saved\s+together on the final step/);
+});
+
+test("partner directory separates visibility, map and additional information", async () => {
+  const source = await read("app/account/account-client.tsx");
+
+  assert.match(source, /labels=\{\["Visibility", "Map", "Additional info"\]\}/);
+  assert.match(source, /partnerDirectoryStep === 1/);
+  assert.match(source, /partnerDirectoryStep === 2/);
+  assert.match(source, /partnerDirectoryStep === 3/);
+  assert.match(source, /partnerDirectoryStep !== 2/);
+  assert.match(source, /goToPartnerDirectoryStep/);
 });
 
 test("modal CSS defines focused widths, spacing and sticky actions", async () => {
@@ -62,6 +73,23 @@ test("modal CSS defines focused widths, spacing and sticky actions", async () =>
   assert.match(styles, /\.modalSectionHeading/);
   assert.match(styles, /\.businessDetailsModalCard \.businessLogoPreview/);
   assert.match(styles, /\.accountScrollableModalCard \.modalActions[\s\S]*?bottom:/);
+  assert.match(styles, /\.modalStepProgress/);
+  assert.match(styles, /\.wizardStepPanel/);
+  assert.match(styles, /\.accountScrollableModalCard \.accountModalScrollThumb/);
+});
+
+test("password security presents direct update and reset-email paths", async () => {
+  const [source, styles] = await Promise.all([
+    read("app/account/account-client.tsx"),
+    read("app/account/page.module.css"),
+  ]);
+
+  assert.match(source, /Forgot your current password\?/);
+  assert.match(source, /Email me a reset link/);
+  assert.match(source, /disabled=\{!canSubmitPasswordChange\}/);
+  assert.match(source, /The new passwords do not match/);
+  assert.match(styles, /\.securityPanelHeader/);
+  assert.match(styles, /\.securityActions[\s\S]*?justify-content: flex-end/);
 });
 
 test("signup retains town and explicit directory participation", async () => {

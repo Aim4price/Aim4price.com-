@@ -270,7 +270,7 @@ export default function OwnerAppAccessClient() {
                       <div className={styles.managerIdentity}><strong>{user.displayName}</strong><span>{user.username} · {accessRoleLabel(user.accessRole)}</span></div>
                       <div className={styles.managerSummaryMeta}><span><b>Last login</b>{formatDate(user.lastLoginAtIso)}</span><span><b>Updated</b>{formatDate(user.updatedAtIso)}</span></div>
                       <span className={`${styles.statusText} ${user.isActive ? styles.statusActive : styles.statusInactive}`}>{user.isActive ? 'Active' : 'Inactive'}</span>
-                      <button type="button" className={styles.manageButton} onClick={() => setExpandedId(expanded ? null : user.id)} disabled={Boolean(expandedId && !expanded)}>{expanded ? 'Close' : 'Manage'}</button>
+                      {!expanded ? <button type="button" className={styles.manageButton} onClick={() => setExpandedId(user.id)} disabled={Boolean(expandedId)} aria-label={`Manage ${user.displayName}`}>Manage <span aria-hidden="true">›</span></button> : null}
                     </div>
                     {expanded ? (
                       <div className={styles.managerDropdown}>
@@ -310,6 +310,7 @@ export default function OwnerAppAccessClient() {
                             <button type="submit" className={styles.secondaryButton} disabled={busy}>{busy ? 'Saving…' : 'Save changes'}</button>
                             <button type="button" className={user.isActive ? styles.dangerButton : styles.primaryButton} disabled={busy} onClick={() => void patchUser(user, { isActive: !user.isActive }, user.isActive ? 'Owner App user deactivated and sessions revoked.' : 'Owner App user activated.')}>{user.isActive ? 'Deactivate' : 'Activate'}</button>
                             <button type="button" className={styles.deleteButton} disabled={busy} onClick={() => void deleteUser(user)}>Delete</button>
+                            <button type="button" className={styles.manageCloseButton} disabled={busy} onClick={() => setExpandedId(null)}>Close</button>
                           </div>
                         </form>
                       </div>
