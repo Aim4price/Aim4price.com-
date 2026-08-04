@@ -2246,7 +2246,9 @@ export default function AccountClient({
                   className={`${styles.form} ${styles.compactEditForm}`}
                   onSubmit={handleProfileSubmit}
                 >
-                  <div className={`${styles.modalSectionHeading} ${styles.fullWidth}`}>
+                  <div
+                    className={`${styles.modalSectionHeading} ${styles.fullWidth}`}
+                  >
                     <strong>Contact information</strong>
                     <p>Core details used across your Aim4price account.</p>
                   </div>
@@ -2392,9 +2394,14 @@ export default function AccountClient({
                     </div>
                   ) : null}
 
-                  <div className={`${styles.modalSectionHeading} ${styles.fullWidth}`}>
+                  <div
+                    className={`${styles.modalSectionHeading} ${styles.fullWidth}`}
+                  >
                     <strong>Account location</strong>
-                    <p>Your main location. Directory visibility and the public map pin remain separately controlled.</p>
+                    <p>
+                      Your main location. Directory visibility and the public
+                      map pin remain separately controlled.
+                    </p>
                   </div>
 
                   <label className={`${styles.field} ${styles.thirdField}`}>
