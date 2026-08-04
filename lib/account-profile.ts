@@ -691,6 +691,8 @@ export async function createInitialAccountProfile(
     introducedByOption?: unknown;
     introducedByName?: unknown;
     province?: unknown;
+    townCity?: unknown;
+    partnerDirectoryEnabled?: unknown;
     phone?: unknown;
   },
 ): Promise<void> {
@@ -713,6 +715,11 @@ export async function createInitialAccountProfile(
       ? cleanIntroducedByName(input?.introducedByName)
       : "";
   const province = normalizeProvince(input?.province);
+  const townCity = asText(input?.townCity);
+  const initialPartnerDirectoryEnabled =
+    initialAccountType !== "owner" &&
+    (input?.partnerDirectoryEnabled === true ||
+      String(input?.partnerDirectoryEnabled ?? "").trim().toLowerCase() === "true");
   const phone = asText(input?.phone);
 
   await db.query(
@@ -727,13 +734,20 @@ export async function createInitialAccountProfile(
         introduced_by_option,
         introduced_by_name,
         province,
+        town_city,
+        partner_directory_enabled,
         created_at,
         updated_at
       )
-      values ($1, $2, $3, $4, $5, $6, $7, $8, $9, now(), now())
+      values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, now(), now())
       on conflict (user_id) do update set
         phone = coalesce(nullif(account_profiles.phone, ''), excluded.phone),
         province = coalesce(nullif(account_profiles.province, ''), excluded.province),
+        town_city = coalesce(nullif(account_profiles.town_city, ''), excluded.town_city),
+        partner_directory_enabled = case
+          when account_profiles.account_type <> 'owner' and excluded.partner_directory_enabled then true
+          else account_profiles.partner_directory_enabled
+        end,
         updated_at = now()
     `,
     [
@@ -746,6 +760,8 @@ export async function createInitialAccountProfile(
       introducedByOption,
       introducedByName || null,
       province || null,
+      townCity || null,
+      initialPartnerDirectoryEnabled,
     ],
   );
 }
