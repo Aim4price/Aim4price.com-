@@ -49,6 +49,7 @@ type SessionOptions = {
   allowAdmin?: boolean;
   allowDealerApp?: boolean;
   allowOwnerApp?: boolean;
+  authSession?: ServerSession;
 };
 
 function cleanCookieUserId(value: unknown): string {
@@ -272,7 +273,7 @@ export async function getAnyServerSession(): Promise<ServerSession> {
 export async function getServerSession(
   options: SessionOptions = {},
 ): Promise<EffectiveServerSession> {
-  const session = await readAuthSession();
+  const session = options.authSession ?? await readAuthSession();
 
   if (!session?.user?.id) {
     if (options.allowOwnerApp) {
