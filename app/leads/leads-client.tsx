@@ -277,9 +277,9 @@ function NoteIcon({ className }: IconProps) {
 
 function ManageIcon({ className }: IconProps) {
   return (
-    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M12 8.4a3.6 3.6 0 1 0 0 7.2 3.6 3.6 0 0 0 0-7.2Z" fill="none" stroke="currentColor" strokeWidth="2" />
-      <path d="M19.4 15a1.8 1.8 0 0 0 .36 1.98l.05.05a2.2 2.2 0 0 1-3.11 3.11l-.05-.05a1.8 1.8 0 0 0-1.98-.36 1.8 1.8 0 0 0-1.09 1.65V21.5a2.2 2.2 0 0 1-4.4 0v-.12a1.8 1.8 0 0 0-1.09-1.65 1.8 1.8 0 0 0-1.98.36l-.05.05a2.2 2.2 0 1 1-3.11-3.11l.05-.05A1.8 1.8 0 0 0 4.6 15a1.8 1.8 0 0 0-1.65-1.09H2.83a2.2 2.2 0 0 1 0-4.4h.12A1.8 1.8 0 0 0 4.6 8.42a1.8 1.8 0 0 0-.36-1.98l-.05-.05a2.2 2.2 0 1 1 3.11-3.11l.05.05a1.8 1.8 0 0 0 1.98.36A1.8 1.8 0 0 0 10.42 2h.12a2.2 2.2 0 0 1 4.4 0v.12a1.8 1.8 0 0 0 1.09 1.65 1.8 1.8 0 0 0 1.98-.36l.05-.05a2.2 2.2 0 1 1 3.11 3.11l-.05.05a1.8 1.8 0 0 0-.36 1.98c.28.66.93 1.09 1.65 1.09h.12a2.2 2.2 0 0 1 0 4.4h-.12A1.8 1.8 0 0 0 19.4 15Z" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.72l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z" />
+      <circle cx="12" cy="12" r="3" />
     </svg>
   );
 }
@@ -348,14 +348,6 @@ function EmailIcon({ className }: IconProps) {
     <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
       <path d="M4 6.5h16v11H4v-11Z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
       <path d="m5 8 7 5 7-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function PhoneIcon({ className }: IconProps) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M8.2 5.2 6.7 6.7c-.8.8-.9 2.1-.3 3.3 1.4 2.7 4.9 6.2 7.6 7.6 1.2.6 2.5.5 3.3-.3l1.5-1.5-3.3-3.3-1.4 1.4c-1.7-.9-3.1-2.3-4-4l1.4-1.4-3.3-3.3Z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -1078,13 +1070,6 @@ function ownerLocation(lead: AssetLead): string {
   return [lead.ownerTownCity, lead.ownerProvince].filter(Boolean).join(', ') || '—';
 }
 
-function cleanPhoneForTel(value: string): string {
-  const trimmed = value.trim();
-  if (!trimmed) return '';
-  const prefix = trimmed.startsWith('+') ? '+' : '';
-  return `${prefix}${trimmed.replace(/\D/g, '')}`;
-}
-
 function cleanPhoneForWhatsApp(value: string): string {
   const digits = value.replace(/\D/g, '');
   if (!digits) return '';
@@ -1465,6 +1450,7 @@ type LeadsClientProps = {
   dealerAppMode?: boolean;
   dealerWorkspaceMode?: boolean;
   initialLeads?: AssetLead[];
+  initialLeadsHaveMore?: boolean;
   initialSessionUserId?: string;
 };
 
@@ -1473,6 +1459,7 @@ export default function LeadsClient({
   dealerAppMode = false,
   dealerWorkspaceMode,
   initialLeads = [],
+  initialLeadsHaveMore = false,
   initialSessionUserId = '',
 }: LeadsClientProps = {}) {
   const useDealerWorkspaceStyles = accountantWorkspaceMode || (dealerWorkspaceMode ?? dealerAppMode);
@@ -1610,8 +1597,8 @@ export default function LeadsClient({
     return `${labels.length} filters`;
   }, [monthFilter, statusFilter, yearFilter]);
 
-  const loadData = useCallback(async (includeIdentity = true): Promise<boolean> => {
-    setIsLoading(true);
+  const loadData = useCallback(async (includeIdentity = true, background = false): Promise<boolean> => {
+    if (!background) setIsLoading(true);
 
     try {
       if (!includeIdentity) {
@@ -1646,10 +1633,12 @@ export default function LeadsClient({
       setLeads(leadsData.leads);
       return true;
     } catch (error) {
-      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to load leads.' });
+      if (!background) {
+        setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to load leads.' });
+      }
       return false;
     } finally {
-      setIsLoading(false);
+      if (!background) setIsLoading(false);
     }
   }, []);
 
@@ -1657,6 +1646,12 @@ export default function LeadsClient({
     if (initialSessionUserId) return;
     void loadData(true);
   }, [initialSessionUserId, loadData]);
+
+  useEffect(() => {
+    if (!initialSessionUserId || !initialLeadsHaveMore) return undefined;
+    const timeout = window.setTimeout(() => void loadData(false, true), 0);
+    return () => window.clearTimeout(timeout);
+  }, [initialLeadsHaveMore, initialSessionUserId, loadData]);
 
   useEffect(() => {
     if (!notice) return undefined;
@@ -2308,16 +2303,6 @@ export default function LeadsClient({
         document.body.removeChild(textarea);
       }
     }
-  }
-
-  function callClient(lead: AssetLead) {
-    const phone = cleanPhoneForTel(ownerPhone(lead));
-    if (!phone) {
-      setNotice({ tone: 'error', message: 'No client contact number is saved on this lead.' });
-      return;
-    }
-
-    window.location.href = `tel:${phone}`;
   }
 
   function readLeadFinanceStatusChoice(lead: AssetLead): AssetStatusChoice {
@@ -3152,6 +3137,11 @@ export default function LeadsClient({
         <DealerMaintenanceReportModal
           accessId={maintenanceReportAccessId}
           onClose={() => setMaintenanceReportAccessId(null)}
+          onBack={() => {
+            const lead = leads.find((entry) => entry.maintenanceAccess?.accessId === maintenanceReportAccessId);
+            setMaintenanceReportAccessId(null);
+            if (lead) setReportLead(lead);
+          }}
           onError={(message) => setNotice({ tone: 'error', message })}
         />
       ) : null}
@@ -3164,6 +3154,10 @@ export default function LeadsClient({
           createdAtIso={costReportLead.createdAtIso}
           updatedAtIso={costReportLead.updatedAtIso}
           onClose={() => setCostReportLead(null)}
+          onBack={() => {
+            setReportLead(costReportLead);
+            setCostReportLead(null);
+          }}
           onError={(message) => setNotice({ tone: 'error', message })}
         />
       ) : null}
@@ -3340,28 +3334,6 @@ export default function LeadsClient({
                         </span>
                       </button>
 
-                      {isTrackingLead(managedLead) && managedLead.maintenanceAccess?.isActive ? (
-                        <button
-                          type="button"
-                          className={assetStyles.optionActionButton}
-                          onClick={() => openMaintenanceSchedule(managedLead)}
-                          disabled={!managedLead.maintenanceAccess.permissions.canCreateMaintenanceSchedules}
-                          title={!managedLead.maintenanceAccess.permissions.canCreateMaintenanceSchedules
-                            ? 'The asset owner has not enabled dealer-created schedules.'
-                            : undefined}
-                        >
-                          <MaintenanceTrackingIcon className={assetStyles.buttonIcon} />
-                          <span>
-                            <strong>Send a proposed schedule</strong>
-                            <small>
-                              {managedLead.maintenanceAccess.permissions.canCreateMaintenanceSchedules
-                                ? 'The owner can approve or disapprove it.'
-                                : 'Owner permission is required.'}
-                            </small>
-                          </span>
-                        </button>
-                      ) : null}
-
                       <button
                         type="button"
                         className={assetStyles.optionActionButton}
@@ -3376,13 +3348,27 @@ export default function LeadsClient({
                         </span>
                       </button>
 
-                      <button type="button" className={assetStyles.optionActionButton} onClick={() => callClient(managedLead)}>
-                        <PhoneIcon className={assetStyles.buttonIcon} />
-                        <span>
-                          <strong>Call client</strong>
-                          <small>Start a phone call from the saved number.</small>
-                        </span>
-                      </button>
+                      {isTrackingLead(managedLead) && managedLead.maintenanceAccess?.isActive ? (
+                        <button
+                          type="button"
+                          className={assetStyles.optionActionButton}
+                          onClick={() => openMaintenanceSchedule(managedLead)}
+                          disabled={!managedLead.maintenanceAccess.permissions.canCreateMaintenanceSchedules}
+                          title={!managedLead.maintenanceAccess.permissions.canCreateMaintenanceSchedules
+                            ? 'The asset owner has not enabled dealer-created schedules.'
+                            : undefined}
+                        >
+                          <MaintenanceTrackingIcon className={assetStyles.buttonIcon} />
+                          <span>
+                            <strong>Schedule maintenance</strong>
+                            <small>
+                              {managedLead.maintenanceAccess.permissions.canCreateMaintenanceSchedules
+                                ? 'Send a schedule for the owner to approve.'
+                                : 'Owner permission is required.'}
+                            </small>
+                          </span>
+                        </button>
+                      ) : null}
 
                       {canAddDealerCosts && !isFullRegisterLead(managedLead) ? (
                         <DealerAssetCorrectionEditor

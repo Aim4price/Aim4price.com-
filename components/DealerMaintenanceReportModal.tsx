@@ -6,11 +6,13 @@ import assetStyles from '../app/asset-register/page.module.css';
 import trackerStyles from './DealerMaintenanceTrackerClient.module.css';
 
 type DownloadFormat = 'pdf' | 'xlsx';
+type ReportStep = 'format' | 'timeline';
 type ReportSelectKey = 'type' | 'year' | 'month';
 type ReportOption = { value: string; label: string };
 
 type Props = {
   accessId: string;
+  onBack?: () => void;
   onClose: () => void;
   onError?: (message: string) => void;
 };
@@ -186,8 +188,10 @@ function ReportSelect({
   );
 }
 
-export default function DealerMaintenanceReportModal({ accessId, onClose, onError }: Props) {
+export default function DealerMaintenanceReportModal({ accessId, onBack, onClose, onError }: Props) {
   const [asset, setAsset] = useState<DealerMaintenanceTrackedAsset | null>(null);
+  const [step, setStep] = useState<ReportStep>('format');
+  const [format, setFormat] = useState<DownloadFormat>('pdf');
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState<DownloadFormat | null>(null);
   const [error, setError] = useState('');
@@ -253,7 +257,7 @@ export default function DealerMaintenanceReportModal({ accessId, onClose, onErro
     return `/api/asset-register/scan-report?${params.toString()}`;
   }
 
-  async function downloadReport(format: DownloadFormat) {
+  async function downloadReport() {
     if (!asset || downloading) return;
     const popup = format === 'pdf' ? window.open('', '_blank') : null;
     if (format === 'pdf' && !popup) {
@@ -326,7 +330,64 @@ export default function DealerMaintenanceReportModal({ accessId, onClose, onErro
           {loading ? (
             <div className={assetStyles.emptyState}>Checking current maintenance report access…</div>
           ) : asset ? (
+            step === 'format' ? (
+              <>
+                <div className={assetStyles.assetTimelineStageHeading}>
+                  <strong>Choose export format</strong>
+                  <span>Select PDF or Excel, then continue to the report timeline.</span>
+                </div>
+
+                <div className={assetStyles.assetTimelineFormatGrid} aria-label="Report format">
+                  <button
+                    type="button"
+                    className={`${assetStyles.assetTimelineFormatOption} ${format === 'pdf' ? assetStyles.assetTimelineFormatOptionActive : ''}`}
+                    onClick={() => setFormat('pdf')}
+                    aria-pressed={format === 'pdf'}
+                  >
+                    <span className={assetStyles.assetTimelineFormatGraphic}>
+                      <img src="/brand/pdf.png" alt="" className={assetStyles.exportGraphicImage} />
+                    </span>
+                    <span className={assetStyles.assetTimelineFormatCopy}>
+                      <strong>PDF report</strong>
+                      <small>Open a clear report for clients, banks or insurance partners.</small>
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`${assetStyles.assetTimelineFormatOption} ${format === 'xlsx' ? assetStyles.assetTimelineFormatOptionActive : ''}`}
+                    onClick={() => setFormat('xlsx')}
+                    aria-pressed={format === 'xlsx'}
+                  >
+                    <span className={assetStyles.assetTimelineFormatGraphic}>
+                      <img src="/brand/sheet.png" alt="" className={assetStyles.exportGraphicImage} />
+                    </span>
+                    <span className={assetStyles.assetTimelineFormatCopy}>
+                      <strong>XLSX workbook</strong>
+                      <small>Download the selected timeline records in an Excel-ready workbook.</small>
+                    </span>
+                  </button>
+                </div>
+
+                <div className={`${assetStyles.formActions} ${assetStyles.exportActions} ${assetStyles.assetFuelReportActions}`}>
+                  <button type="button" className={`${assetStyles.secondaryButton} ${assetStyles.assetTimelineSecondaryButton}`} onClick={onBack ?? onClose}>
+                    Back
+                  </button>
+                  <button type="button" className={`${assetStyles.secondaryButton} ${assetStyles.assetTimelineSecondaryButton}`} onClick={onClose}>
+                    Cancel
+                  </button>
+                  <button type="button" className={assetStyles.primaryButton} onClick={() => setStep('timeline')}>
+                    Next
+                  </button>
+                </div>
+              </>
+            ) : (
             <>
+              <div className={assetStyles.assetTimelineStageHeading}>
+                <strong>Report timeline</strong>
+                <span>Choose the maintenance type, year and month to include.</span>
+              </div>
+
               <div className={`${assetStyles.assetFuelReportFilterBox} ${assetStyles.assetMaintenanceReportFilterBox}`}>
                 <ReportSelect
                   label="Type"
@@ -362,27 +423,41 @@ export default function DealerMaintenanceReportModal({ accessId, onClose, onErro
               </div>
 
               <div className={`${assetStyles.formActions} ${assetStyles.exportActions} ${assetStyles.assetFuelReportActions}`}>
-                <button type="button" className={assetStyles.secondaryButton} onClick={onClose}>Back</button>
+                <button
+                  type="button"
+                  className={`${assetStyles.secondaryButton} ${assetStyles.assetTimelineSecondaryButton}`}
+                  onClick={() => {
+                    setOpenSelect(null);
+                    setStep('format');
+                  }}
+                  disabled={Boolean(downloading)}
+                >
+                  Back
+                </button>
+                <button
+                  type="button"
+                  className={`${assetStyles.secondaryButton} ${assetStyles.assetTimelineSecondaryButton}`}
+                  onClick={onClose}
+                  disabled={Boolean(downloading)}
+                >
+                  Cancel
+                </button>
                 <button
                   type="button"
                   className={assetStyles.primaryButton}
-                  onClick={() => void downloadReport('pdf')}
+                  onClick={() => void downloadReport()}
                   disabled={Boolean(downloading)}
                 >
-                  <PdfIcon className={assetStyles.buttonIcon} />
-                  <span>{downloading === 'pdf' ? 'Preparing PDF…' : 'Download PDF'}</span>
-                </button>
-                <button
-                  type="button"
-                  className={`${assetStyles.primaryButton} ${assetStyles.assetReportExcelButton}`}
-                  onClick={() => void downloadReport('xlsx')}
-                  disabled={Boolean(downloading)}
-                >
-                  <SpreadsheetIcon className={assetStyles.buttonIcon} />
-                  <span>{downloading === 'xlsx' ? 'Preparing Excel…' : 'Download Excel'}</span>
+                  {format === 'pdf'
+                    ? <PdfIcon className={assetStyles.buttonIcon} />
+                    : <SpreadsheetIcon className={assetStyles.buttonIcon} />}
+                  <span>{downloading
+                    ? format === 'pdf' ? 'Preparing PDF…' : 'Preparing Excel…'
+                    : format === 'pdf' ? 'Open PDF report' : 'Download Excel'}</span>
                 </button>
               </div>
             </>
+            )
           ) : (
             <div className={`${assetStyles.formActions} ${assetStyles.exportActions} ${assetStyles.assetFuelReportActions}`}>
               <button type="button" className={assetStyles.secondaryButton} onClick={onClose}>Close</button>

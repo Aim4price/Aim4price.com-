@@ -842,6 +842,7 @@ async function hydrateLeadAttachmentSummaries(leads: AssetLead[], currentUserId:
   }
 
   const db = getDb();
+  const assetIds = Array.from(new Set(leads.map((lead) => lead.assetRegisterItemId)));
   const result = await db.query<LeadAttachmentSummaryRow>(
     `
       select
@@ -854,11 +855,12 @@ async function hydrateLeadAttachmentSummaries(leads: AssetLead[], currentUserId:
         max(created_at)::text as latest_attachment_created_at
       from asset_partner_notes
       where (owner_user_id = $1 or partner_user_id = $1)
+        and asset_register_item_id = any($2::uuid[])
         and nullif(trim(coalesce(attachment_file_name, '')), '') is not null
         and attachment_data is not null
       group by owner_user_id, partner_user_id, asset_register_item_id
     `,
-    [currentUserId],
+    [currentUserId, assetIds],
   );
 
   const summaries = new Map<string, LeadAttachmentSummaryRow>();
@@ -1365,12 +1367,20 @@ export async function createAssetLead(input: {
   return lead;
 }
 
-export async function listAssetLeadsForUser(userId: string): Promise<AssetLead[]> {
+export async function listAssetLeadsForUser(
+  userId: string,
+  options: { limit?: number } = {},
+): Promise<AssetLead[]> {
   await ensurePartnerAccessTables();
   const db = getDb();
+  const requestedLimit = Number.isFinite(options.limit) ? Math.trunc(options.limit as number) : 0;
+  const limit = requestedLimit > 0 ? Math.min(requestedLimit, 100) : 0;
+  const queryParams: unknown[] = [userId];
+  const limitSql = limit ? ' limit $2' : '';
+  if (limit) queryParams.push(limit);
   const result = await db.query<LeadRow>(
-    `${leadSelectSql('where l.owner_user_id = $1 or l.partner_user_id = $1')} order by l.created_at desc`,
-    [userId],
+    `${leadSelectSql('where l.owner_user_id = $1 or l.partner_user_id = $1')} order by l.created_at desc${limitSql}`,
+    queryParams,
   );
   const leads = result.rows.map(mapLeadRow);
   const [attachmentLeads, correctionLeads, maintenanceLeads] = await Promise.all([

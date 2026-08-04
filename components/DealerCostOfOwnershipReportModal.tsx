@@ -15,6 +15,7 @@ type Props = {
   assetMeta: string;
   createdAtIso?: string | null;
   updatedAtIso?: string | null;
+  onBack?: () => void;
   onClose: () => void;
   onError?: (message: string) => void;
 };
@@ -62,23 +63,6 @@ function DownloadIcon({ className = '' }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
       <path d="M12 3v12m0 0 4-4m-4 4-4-4M5 20h14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function PdfIcon({ className = '' }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M7 3h7l4 4v14H7zM14 3v5h5M9.5 15.5h5M9.5 12h5" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function SpreadsheetIcon({ className = '' }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
-      <rect x="4" y="3.5" width="16" height="17" rx="2" fill="none" stroke="currentColor" strokeWidth="1.9" />
-      <path d="M4 9h16M10 9v11.5M15 9v11.5M4 15h16" fill="none" stroke="currentColor" strokeWidth="1.7" />
     </svg>
   );
 }
@@ -180,6 +164,7 @@ export default function DealerCostOfOwnershipReportModal({
   assetMeta,
   createdAtIso,
   updatedAtIso,
+  onBack,
   onClose,
   onError,
 }: Props) {
@@ -294,7 +279,7 @@ export default function DealerCostOfOwnershipReportModal({
                   aria-pressed={format === 'pdf'}
                 >
                   <span className={assetStyles.assetTimelineFormatGraphic}>
-                    <PdfIcon className={assetStyles.assetTimelineFormatFallbackIcon} />
+                    <img src="/brand/pdf.png" alt="" className={assetStyles.exportGraphicImage} />
                   </span>
                   <span className={assetStyles.assetTimelineFormatCopy}>
                     <strong>PDF report</strong>
@@ -309,7 +294,7 @@ export default function DealerCostOfOwnershipReportModal({
                   aria-pressed={format === 'xlsx'}
                 >
                   <span className={assetStyles.assetTimelineFormatGraphic}>
-                    <SpreadsheetIcon className={assetStyles.assetTimelineFormatFallbackIcon} />
+                    <img src="/brand/sheet.png" alt="" className={assetStyles.exportGraphicImage} />
                   </span>
                   <span className={assetStyles.assetTimelineFormatCopy}>
                     <strong>XLSX workbook</strong>
@@ -319,6 +304,9 @@ export default function DealerCostOfOwnershipReportModal({
               </div>
 
               <div className={`${assetStyles.formActions} ${assetStyles.exportActions} ${assetStyles.assetFuelReportActions}`}>
+                <button type="button" className={`${assetStyles.secondaryButton} ${assetStyles.assetTimelineSecondaryButton}`} onClick={onBack ?? onClose}>
+                  Back
+                </button>
                 <button type="button" className={`${assetStyles.secondaryButton} ${assetStyles.assetTimelineSecondaryButton}`} onClick={onClose}>
                   Cancel
                 </button>
@@ -370,6 +358,14 @@ export default function DealerCostOfOwnershipReportModal({
                   disabled={downloading}
                 >
                   Back
+                </button>
+                <button
+                  type="button"
+                  className={`${assetStyles.secondaryButton} ${assetStyles.assetTimelineSecondaryButton}`}
+                  onClick={onClose}
+                  disabled={downloading}
+                >
+                  Cancel
                 </button>
                 <button
                   type="button"
