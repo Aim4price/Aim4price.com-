@@ -14,6 +14,8 @@ import AppHeader from "../../components/AppHeader";
 import styles from "./page.module.css";
 
 type NoticeTone = "success" | "error";
+type BusinessDetailsStep = 1 | 2 | 3;
+type PartnerDirectoryStep = 1 | 2 | 3;
 type AccountActionModal =
   | "business"
   | "scanPin"
@@ -949,6 +951,35 @@ function AccountModalScroller({ children }: AccountModalScrollerProps) {
   );
 }
 
+function ModalStepProgress({
+  currentStep,
+  labels,
+}: {
+  currentStep: number;
+  labels: readonly string[];
+}) {
+  return (
+    <ol className={styles.modalStepProgress} aria-label="Setup progress">
+      {labels.map((label, index) => {
+        const step = index + 1;
+        const isCurrent = currentStep === step;
+        const isComplete = currentStep > step;
+
+        return (
+          <li
+            key={label}
+            className={`${styles.modalStep} ${isCurrent ? styles.modalStepCurrent : ""} ${isComplete ? styles.modalStepComplete : ""}`}
+            aria-current={isCurrent ? "step" : undefined}
+          >
+            <span>{isComplete ? "✓" : step}</span>
+            <strong>{label}</strong>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
 export default function AccountClient({
   initialProfile = null,
   initialScanPinStatus = null,
@@ -988,6 +1019,10 @@ export default function AccountClient({
   const [isReadingLogo, setIsReadingLogo] = useState(false);
   const [activeAccountModal, setActiveAccountModal] =
     useState<AccountActionModal | null>(null);
+  const [businessDetailsStep, setBusinessDetailsStep] =
+    useState<BusinessDetailsStep>(1);
+  const [partnerDirectoryStep, setPartnerDirectoryStep] =
+    useState<PartnerDirectoryStep>(1);
   const partnerMapElementRef = useRef<HTMLDivElement | null>(null);
   const partnerLeafletMapRef = useRef<any>(null);
   const partnerPinMarkerRef = useRef<any>(null);
@@ -1215,6 +1250,15 @@ export default function AccountClient({
   const directoryStatusLabel = profileDraft.partnerDirectoryEnabled
     ? "Visible"
     : "Hidden";
+  const passwordsMatch =
+    !confirmNewPassword || newPassword === confirmNewPassword;
+  const canSubmitPasswordChange = Boolean(
+    currentPassword &&
+      newPassword.length >= 8 &&
+      confirmNewPassword &&
+      passwordsMatch &&
+      !isChangingPassword,
+  );
   const scanPinDisplayLabel = isLoadingScanPin
     ? "Loading"
     : scanPinStatus.hasPin
@@ -1226,6 +1270,7 @@ export default function AccountClient({
       isLoading ||
       !isPartnerAccount ||
       activeAccountModal !== "partnerDirectory" ||
+      partnerDirectoryStep !== 2 ||
       !partnerMapElementRef.current
     ) {
       return undefined;
@@ -1360,6 +1405,7 @@ export default function AccountClient({
     activeAccountModal,
     isLoading,
     isPartnerAccount,
+    partnerDirectoryStep,
     profileDraft.partnerLatitude,
     profileDraft.partnerLongitude,
     profileDraft.partnerServiceRadiusKm,
@@ -1406,8 +1452,7 @@ export default function AccountClient({
         setPartnerMapPin(position.coords.latitude, position.coords.longitude);
         setNotice({
           tone: "success",
-          message:
-            "Map pin set to your current location. Click Save directory to store it.",
+          message: "Map pin set. Continue to additional information when ready.",
         });
       },
       () => {
@@ -1450,10 +1495,10 @@ export default function AccountClient({
 
     try {
       const dataUrl = await readFileAsDataUrl(file);
-      const nextDraft = { ...profileDraft, logoUrl: dataUrl };
-      setProfileDraft(nextDraft);
-      await saveProfileDraft(nextDraft, "Logo saved.", {
-        syncPrimaryLogoToRegister: true,
+      setProfileDraft((current) => ({ ...current, logoUrl: dataUrl }));
+      setNotice({
+        tone: "success",
+        message: "Logo ready. Save the business details to apply it.",
       });
     } catch (error) {
       setNotice({
@@ -1466,11 +1511,11 @@ export default function AccountClient({
     }
   }
 
-  async function handleRemoveLogo() {
-    const nextDraft = { ...profileDraft, logoUrl: "" };
-    setProfileDraft(nextDraft);
-    await saveProfileDraft(nextDraft, "Logo removed.", {
-      syncPrimaryLogoToRegister: true,
+  function handleRemoveLogo() {
+    setProfileDraft((current) => ({ ...current, logoUrl: "" }));
+    setNotice({
+      tone: "success",
+      message: "Logo removed from the draft. Save to apply the change.",
     });
   }
 
@@ -1539,6 +1584,30 @@ export default function AccountClient({
 
       setActiveAccountModal(null);
     }
+  }
+
+  function handleBusinessDetailsSubmit(event: FormEvent<HTMLFormElement>) {
+    if (businessDetailsStep < 3) {
+      event.preventDefault();
+      setBusinessDetailsStep(
+        (businessDetailsStep + 1) as BusinessDetailsStep,
+      );
+      return;
+    }
+
+    void handleProfileSubmit(event);
+  }
+
+  function handlePartnerDirectorySubmit(event: FormEvent<HTMLFormElement>) {
+    if (partnerDirectoryStep < 3) {
+      event.preventDefault();
+      goToPartnerDirectoryStep(
+        (partnerDirectoryStep + 1) as PartnerDirectoryStep,
+      );
+      return;
+    }
+
+    void handleProfileSubmit(event);
   }
 
   async function handleScanPinSubmit(event: FormEvent<HTMLFormElement>) {
@@ -1678,6 +1747,8 @@ export default function AccountClient({
 
     setScanPinDraft("");
     setScanPinConfirmDraft("");
+    setBusinessDetailsStep(1);
+    setPartnerDirectoryStep(1);
     setActiveAccountModal(null);
   }
 
@@ -1693,7 +1764,23 @@ export default function AccountClient({
       setScanPinConfirmDraft("");
     }
 
+    if (modal === "business") {
+      setBusinessDetailsStep(1);
+    }
+
+    if (modal === "partnerDirectory") {
+      setPartnerDirectoryStep(1);
+    }
+
     setActiveAccountModal(modal);
+  }
+
+  function goToPartnerDirectoryStep(step: PartnerDirectoryStep) {
+    if (partnerDirectoryStep === 2 && step !== 2) {
+      destroyPartnerMap();
+    }
+
+    setPartnerDirectoryStep(step);
   }
 
   function openBusinessEditor() {
@@ -2139,22 +2226,31 @@ export default function AccountClient({
           <div className={styles.compactCardHeader}>
             <h2 id="password-security-title">Password & security</h2>
             <p>
-              Change your password or send yourself a secure reset-password
-              email.
+              Update it here when you know the current password, or request a
+              secure email link if you do not.
             </p>
           </div>
 
           <div className={styles.securityGrid}>
             <form
-              className={styles.securityForm}
+              className={`${styles.securityForm} ${styles.securityPanel}`}
               onSubmit={handlePasswordChangeSubmit}
               noValidate
             >
+              <div className={styles.securityPanelHeader}>
+                <span className={styles.securityPanelIcon} aria-hidden="true">•••</span>
+                <div>
+                  <strong>Change password</strong>
+                  <p>All three fields are required.</p>
+                </div>
+              </div>
+
               <label className={styles.modalField}>
                 <span>Current password</span>
                 <input
                   type="password"
                   autoComplete="current-password"
+                  required
                   value={currentPassword}
                   onChange={(event) => setCurrentPassword(event.target.value)}
                   placeholder="Enter current password"
@@ -2167,10 +2263,14 @@ export default function AccountClient({
                   type="password"
                   autoComplete="new-password"
                   minLength={8}
+                  required
                   value={newPassword}
                   onChange={(event) => setNewPassword(event.target.value)}
                   placeholder="Minimum 8 characters"
                 />
+                <small className={styles.securityFieldHint}>
+                  Use at least 8 characters and avoid reusing an old password.
+                </small>
               </label>
 
               <label className={styles.modalField}>
@@ -2179,33 +2279,44 @@ export default function AccountClient({
                   type="password"
                   autoComplete="new-password"
                   minLength={8}
+                  required
                   value={confirmNewPassword}
                   onChange={(event) =>
                     setConfirmNewPassword(event.target.value)
                   }
                   placeholder="Repeat new password"
+                  aria-invalid={!passwordsMatch}
                 />
+                {!passwordsMatch ? (
+                  <small className={styles.securityFieldError} role="alert">
+                    The new passwords do not match.
+                  </small>
+                ) : null}
               </label>
 
               <div className={styles.securityActions}>
                 <button
                   type="submit"
                   className={styles.primaryButton}
-                  disabled={isChangingPassword}
+                  disabled={!canSubmitPasswordChange}
                 >
                   {isChangingPassword
-                    ? "Changing password..."
-                    : "Change password"}
+                    ? "Updating password..."
+                    : "Update password"}
                 </button>
               </div>
             </form>
 
-            <div className={styles.securitySidePanel}>
-              <strong>Reset password email</strong>
-              <p>
-                Send a branded Aim4price reset link to the email address on this
-                account.
-              </p>
+            <div className={`${styles.securitySidePanel} ${styles.securityPanel}`}>
+              <div className={styles.securityPanelHeader}>
+                <span className={styles.securityPanelIcon} aria-hidden="true">↗</span>
+                <div>
+                  <strong>Forgot your current password?</strong>
+                  <p>We will email a secure reset link to:</p>
+                </div>
+              </div>
+              <span className={styles.securityEmail}>{profile?.email || "Your account email"}</span>
+              <p>The link expires automatically and can only be used once.</p>
               <button
                 type="button"
                 className={styles.ghostButton}
@@ -2214,7 +2325,7 @@ export default function AccountClient({
               >
                 {isSendingResetEmail
                   ? "Sending..."
-                  : "Send reset password email"}
+                  : "Email me a reset link"}
               </button>
             </div>
           </div>
@@ -2234,229 +2345,127 @@ export default function AccountClient({
               <div className={styles.modalHeader}>
                 <h2 id="business-details-modal-title">Business details</h2>
                 <p>
-                  Update the core account information used across Aim4price.
+                  Complete one short section at a time. Your changes are saved
+                  together on the final step.
                 </p>
                 <button type="button" className={styles.modalCloseButton} onClick={closeActionModal} aria-label="Close business details">×</button>
               </div>
+
+              <ModalStepProgress
+                currentStep={businessDetailsStep}
+                labels={["Contact info", "Business address", "Business logo"]}
+              />
 
               {isLoading ? (
                 <p className={styles.loading}>Loading account details...</p>
               ) : (
                 <form
-                  className={`${styles.form} ${styles.compactEditForm}`}
-                  onSubmit={handleProfileSubmit}
+                  className={`${styles.form} ${styles.compactEditForm} ${styles.wizardForm}`}
+                  onSubmit={handleBusinessDetailsSubmit}
                 >
-                  <div
-                    className={`${styles.modalSectionHeading} ${styles.fullWidth}`}
-                  >
-                    <strong>Contact information</strong>
-                    <p>Core details used across your Aim4price account.</p>
-                  </div>
+                  {businessDetailsStep === 1 ? (
+                    <section className={`${styles.wizardStepPanel} ${styles.fullWidth}`}>
+                      <div className={styles.modalSectionHeading}>
+                        <strong>Contact information</strong>
+                        <p>How Aim4price and customers identify and contact this business.</p>
+                      </div>
 
-                  <label className={`${styles.field} ${styles.halfField}`}>
-                    <span>Full name</span>
-                    <input
-                      value={profileDraft.displayName}
-                      onChange={(event) =>
-                        setProfileDraft((current) => ({
-                          ...current,
-                          displayName: event.target.value,
-                        }))
-                      }
-                      placeholder="Full name"
-                    />
-                  </label>
-
-                  <label className={`${styles.field} ${styles.halfField}`}>
-                    <span>Account email</span>
-                    <input value={profile?.email ?? ""} disabled />
-                    <small className={styles.fieldHint}>
-                      Used only for login and account access.
-                    </small>
-                  </label>
-
-                  <label className={`${styles.field} ${styles.halfField}`}>
-                    <span>Business name</span>
-                    <input
-                      value={profileDraft.businessName}
-                      onChange={(event) =>
-                        setProfileDraft((current) => ({
-                          ...current,
-                          businessName: event.target.value,
-                        }))
-                      }
-                      placeholder="Business name"
-                    />
-                  </label>
-
-                  <label className={`${styles.field} ${styles.halfField}`}>
-                    <span>Business email</span>
-                    <input
-                      type="email"
-                      value={profileDraft.marketplaceEmail}
-                      onChange={(event) =>
-                        setProfileDraft((current) => ({
-                          ...current,
-                          marketplaceEmail: event.target.value,
-                        }))
-                      }
-                      placeholder="business@email.co.za"
-                    />
-                  </label>
-
-                  <label
-                    className={`${styles.field} ${isPartnerAccount ? styles.halfField : styles.fullWidth}`}
-                  >
-                    <span>Contact details</span>
-                    <input
-                      type="text"
-                      value={profileDraft.phone}
-                      onChange={(event) =>
-                        setProfileDraft((current) => ({
-                          ...current,
-                          phone: event.target.value,
-                        }))
-                      }
-                      placeholder="Phone, WhatsApp or office contact details"
-                    />
-                  </label>
-
-                  {isPartnerAccount ? (
-                    <label className={`${styles.field} ${styles.halfField}`}>
-                      <span>Website link</span>
-                      <input
-                        inputMode="url"
-                        value={profileDraft.websiteUrl}
-                        onChange={(event) =>
-                          setProfileDraft((current) => ({
-                            ...current,
-                            websiteUrl: event.target.value,
-                          }))
-                        }
-                        placeholder="https://your-business.co.za"
-                      />
-                    </label>
+                      <div className={styles.wizardFieldGrid}>
+                        <label className={styles.field}>
+                          <span>Full name</span>
+                          <input value={profileDraft.displayName} onChange={(event) => setProfileDraft((current) => ({ ...current, displayName: event.target.value }))} placeholder="Full name" autoFocus />
+                        </label>
+                        <label className={styles.field}>
+                          <span>Account email</span>
+                          <input value={profile?.email ?? ""} disabled />
+                          <small className={styles.fieldHint}>Used only for login and account access.</small>
+                        </label>
+                        <label className={styles.field}>
+                          <span>Business name</span>
+                          <input value={profileDraft.businessName} onChange={(event) => setProfileDraft((current) => ({ ...current, businessName: event.target.value }))} placeholder="Business name" />
+                        </label>
+                        <label className={styles.field}>
+                          <span>Business email</span>
+                          <input type="email" value={profileDraft.marketplaceEmail} onChange={(event) => setProfileDraft((current) => ({ ...current, marketplaceEmail: event.target.value }))} placeholder="business@email.co.za" />
+                        </label>
+                        <label className={styles.field}>
+                          <span>Contact details</span>
+                          <input value={profileDraft.phone} onChange={(event) => setProfileDraft((current) => ({ ...current, phone: event.target.value }))} placeholder="Phone, WhatsApp or office number" />
+                        </label>
+                        {isPartnerAccount ? (
+                          <label className={styles.field}>
+                            <span>Website link</span>
+                            <input inputMode="url" value={profileDraft.websiteUrl} onChange={(event) => setProfileDraft((current) => ({ ...current, websiteUrl: event.target.value }))} placeholder="https://your-business.co.za" />
+                          </label>
+                        ) : null}
+                      </div>
+                    </section>
                   ) : null}
 
-                  {isPartnerAccount ? (
-                    <div
-                      className={`${styles.mediaUploadField} ${styles.fullWidth}`}
-                    >
-                      <div className={styles.mediaUploadHeader}>
-                        <div>
-                          <span>Business logo</span>
-                          <strong>Logo for company profile</strong>
-                          <p>
-                            Upload one clear logo for your business profile.
-                          </p>
+                  {businessDetailsStep === 2 ? (
+                    <section className={`${styles.wizardStepPanel} ${styles.fullWidth}`}>
+                      <div className={styles.modalSectionHeading}>
+                        <strong>Business address</strong>
+                        <p>Your main business location. The public directory map pin is controlled separately.</p>
+                      </div>
+
+                      <div className={styles.wizardFieldGrid}>
+                        <label className={styles.field}>
+                          <span>Account type</span>
+                          <div className={styles.readOnlyValue}>{accountTypeLabel}</div>
+                          <small className={styles.fieldHint}>Account type is locked after signup.</small>
+                        </label>
+                        <label className={styles.field}>
+                          <span>Province</span>
+                          <input value={profileDraft.province} onChange={(event) => setProfileDraft((current) => ({ ...current, province: event.target.value }))} placeholder="Province" autoFocus />
+                        </label>
+                        <label className={styles.field}>
+                          <span>Town / city</span>
+                          <input value={profileDraft.townCity} onChange={(event) => setProfileDraft((current) => ({ ...current, townCity: event.target.value }))} placeholder="Town or city" />
+                        </label>
+                        <label className={styles.field}>
+                          <span>Address line 1</span>
+                          <input value={profileDraft.addressLine1} onChange={(event) => setProfileDraft((current) => ({ ...current, addressLine1: event.target.value }))} placeholder="Street address" />
+                        </label>
+                        <label className={`${styles.field} ${styles.fullWidth}`}>
+                          <span>Address line 2</span>
+                          <input value={profileDraft.addressLine2} onChange={(event) => setProfileDraft((current) => ({ ...current, addressLine2: event.target.value }))} placeholder="Building, unit or area (optional)" />
+                        </label>
+                      </div>
+                    </section>
+                  ) : null}
+
+                  {businessDetailsStep === 3 ? (
+                    <section className={`${styles.wizardStepPanel} ${styles.fullWidth}`}>
+                      <div className={styles.modalSectionHeading}>
+                        <strong>Business logo</strong>
+                        <p>Add one clear logo, or keep the initials shown as your fallback.</p>
+                      </div>
+
+                      <div className={styles.mediaUploadField}>
+                        <div className={styles.businessMediaEditorGrid}>
+                          <section className={styles.businessLogoPanel}>
+                            <div className={styles.businessLogoPreview}>
+                              {logoUrl ? <img src={logoUrl} alt="Business logo preview" /> : <span>{profileInitials}</span>}
+                            </div>
+                            <div className={styles.businessLogoCopy}>
+                              <strong>{logoUrl ? "Logo ready to save" : "No logo uploaded yet"}</strong>
+                              <p>JPG, PNG or WEBP. Maximum {formatUploadSize(MAX_LOGO_UPLOAD_BYTES)}.</p>
+                              <div className={styles.businessMediaControls}>
+                                <label className={styles.uploadButton}>
+                                  <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleLogoFileChange} disabled={isReadingLogo || isSavingProfile} />
+                                  {isReadingLogo ? "Reading logo..." : logoUrl ? "Replace logo" : "Upload logo"}
+                                </label>
+                                {logoUrl ? <button type="button" className={styles.ghostButton} onClick={handleRemoveLogo} disabled={isSavingProfile || isReadingLogo}>Remove logo</button> : null}
+                              </div>
+                            </div>
+                          </section>
                         </div>
                       </div>
-
-                      <div className={styles.businessMediaEditorGrid}>
-                        <section className={styles.businessLogoPanel}>
-                          <div className={styles.businessLogoPreview}>
-                            {logoUrl ? (
-                              <img src={logoUrl} alt="Business logo preview" />
-                            ) : (
-                              <span>{profileInitials}</span>
-                            )}
-                          </div>
-
-                          <div className={styles.businessMediaControls}>
-                            <label className={styles.uploadButton}>
-                              <input
-                                type="file"
-                                accept="image/jpeg,image/png,image/webp"
-                                onChange={handleLogoFileChange}
-                                disabled={isReadingLogo || isSavingProfile}
-                              />
-                              {logoUrl ? "Replace logo" : "Upload logo"}
-                            </label>
-
-                            {logoUrl ? (
-                              <button
-                                type="button"
-                                className={styles.ghostButton}
-                                onClick={handleRemoveLogo}
-                                disabled={isSavingProfile || isReadingLogo}
-                              >
-                                Remove logo
-                              </button>
-                            ) : null}
-                          </div>
-
-                          <small>
-                            JPG, PNG or WEBP. Maximum{" "}
-                            {formatUploadSize(MAX_LOGO_UPLOAD_BYTES)}.
-                          </small>
-                        </section>
-                      </div>
-                    </div>
+                    </section>
                   ) : null}
 
-                  <div
-                    className={`${styles.modalSectionHeading} ${styles.fullWidth}`}
-                  >
-                    <strong>Account location</strong>
-                    <p>
-                      Your main location. Directory visibility and the public
-                      map pin remain separately controlled.
-                    </p>
-                  </div>
-
-                  <label className={`${styles.field} ${styles.thirdField}`}>
-                    <span>Account type</span>
-                    <div className={styles.readOnlyValue}>
-                      {accountTypeLabel}
-                    </div>
-                    <small className={styles.fieldHint}>
-                      Account type is locked after signup.
-                    </small>
-                  </label>
-
-                  <label className={`${styles.field} ${styles.thirdField}`}>
-                    <span>Province</span>
-                    <input
-                      value={profileDraft.province}
-                      onChange={(event) =>
-                        setProfileDraft((current) => ({
-                          ...current,
-                          province: event.target.value,
-                        }))
-                      }
-                      placeholder="Province"
-                    />
-                  </label>
-
-                  <label className={`${styles.field} ${styles.thirdField}`}>
-                    <span>Town / city</span>
-                    <input
-                      value={profileDraft.townCity}
-                      onChange={(event) =>
-                        setProfileDraft((current) => ({
-                          ...current,
-                          townCity: event.target.value,
-                        }))
-                      }
-                      placeholder="Town or city"
-                    />
-                  </label>
-
-                  <label className={`${styles.field} ${styles.fullWidth}`}>
-                    <span>Address line 1</span>
-                    <input
-                      value={profileDraft.addressLine1}
-                      onChange={(event) =>
-                        setProfileDraft((current) => ({
-                          ...current,
-                          addressLine1: event.target.value,
-                        }))
-                      }
-                      placeholder="Address line 1"
-                    />
-                  </label>
-
-                  <div className={styles.actionsRow}>
+                  <div className={`${styles.actionsRow} ${styles.wizardActions}`}>
                     <button
                       type="button"
                       className={styles.ghostButton}
@@ -2465,12 +2474,11 @@ export default function AccountClient({
                     >
                       Cancel
                     </button>
-                    <button
-                      type="submit"
-                      className={styles.primaryButton}
-                      disabled={isSavingProfile || isReadingLogo}
-                    >
-                      {isSavingProfile ? "Saving..." : "Save business details"}
+                    {businessDetailsStep > 1 ? (
+                      <button type="button" className={styles.secondaryButton} onClick={() => setBusinessDetailsStep((businessDetailsStep - 1) as BusinessDetailsStep)} disabled={isSavingProfile || isReadingLogo}>Back</button>
+                    ) : null}
+                    <button type="submit" className={styles.primaryButton} disabled={isSavingProfile || isReadingLogo}>
+                      {businessDetailsStep === 3 ? (isSavingProfile ? "Saving..." : "Save business details") : "Next"}
                     </button>
                   </div>
                 </form>
@@ -2790,172 +2798,117 @@ export default function AccountClient({
               <div className={styles.modalHeader}>
                 <h2 id="partner-directory-modal-title">Partner directory</h2>
                 <p>
-                  Set up how owners see and select your business when sending a
-                  quote lead.
+                  Choose your visibility, place your map pin, then add the
+                  details owners will see.
                 </p>
                 <button type="button" className={styles.modalCloseButton} onClick={closeActionModal} aria-label="Close partner directory editor">×</button>
               </div>
 
+              <ModalStepProgress
+                currentStep={partnerDirectoryStep}
+                labels={["Visibility", "Map", "Additional info"]}
+              />
+
               <form
-                className={`${styles.form} ${styles.directoryForm}`}
-                onSubmit={handleProfileSubmit}
+                className={`${styles.form} ${styles.directoryForm} ${styles.wizardForm}`}
+                onSubmit={handlePartnerDirectorySubmit}
               >
-                <div className={`${styles.partnerDirectoryTopGrid} ${styles.fullWidth}`}>
-                  <label
-                    className={`${styles.toggleField} ${styles.partnerVisibilityToggle}`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={profileDraft.partnerDirectoryEnabled}
-                      onChange={(event) =>
-                        setProfileDraft((current) => ({
-                          ...current,
-                          partnerDirectoryEnabled: event.target.checked,
-                        }))
-                      }
-                    />
-                    <span>
-                      <strong>Show in the Aim4price partner directory</strong>
-                      <small>
-                        Owners can select this business when sending a quote lead.
-                      </small>
-                    </span>
-                  </label>
+                {partnerDirectoryStep === 1 ? (
+                  <section className={`${styles.wizardStepPanel} ${styles.fullWidth}`}>
+                    <div className={styles.modalSectionHeading}>
+                      <strong>Directory visibility</strong>
+                      <p>You are always in control of whether owners can find and select this business.</p>
+                    </div>
 
-                  <aside className={styles.partnerDirectoryPreview} aria-label="Partner directory owner preview">
-                    <span className={styles.partnerPreviewEyebrow}>Owner preview</span>
-                    <div className={styles.partnerPreviewIdentity}>
-                      <div className={styles.partnerPreviewLogo}>
-                        {logoUrl ? <img src={logoUrl} alt="" /> : <strong>{profileInitials}</strong>}
+                    <div className={styles.partnerDecisionGrid}>
+                      <label className={`${styles.toggleField} ${styles.partnerVisibilityToggle}`}>
+                        <input type="checkbox" checked={profileDraft.partnerDirectoryEnabled} onChange={(event) => setProfileDraft((current) => ({ ...current, partnerDirectoryEnabled: event.target.checked }))} />
+                        <span>
+                          <strong>{profileDraft.partnerDirectoryEnabled ? "Visible in the partner directory" : "Hidden from the partner directory"}</strong>
+                          <small>{profileDraft.partnerDirectoryEnabled ? "Owners can find this business and send it quote leads." : "Owners cannot select this business until visibility is turned on."}</small>
+                        </span>
+                      </label>
+
+                      <aside className={`${styles.partnerDirectoryPreview} ${!profileDraft.partnerDirectoryEnabled ? styles.partnerPreviewDisabled : ""}`} aria-label="Partner directory owner preview">
+                        <span className={styles.partnerPreviewEyebrow}>{profileDraft.partnerDirectoryEnabled ? "Owner preview" : "Preview hidden"}</span>
+                        <div className={styles.partnerPreviewIdentity}>
+                          <div className={styles.partnerPreviewLogo}>{logoUrl ? <img src={logoUrl} alt="" /> : <strong>{profileInitials}</strong>}</div>
+                          <div><strong>{accountDisplayName}</strong><small>{marketplaceLocation}</small></div>
+                        </div>
+                        <p>{profileDraft.partnerDirectoryEnabled ? "This is the business identity owners will see." : "Turn visibility on when you are ready to receive quote leads."}</p>
+                      </aside>
+                    </div>
+                  </section>
+                ) : null}
+
+                {partnerDirectoryStep === 2 ? (
+                  <section className={`${styles.wizardStepPanel} ${styles.fullWidth}`}>
+                    <div className={`${styles.partnerMapField} ${styles.fullWidth}`}>
+                      <div className={styles.partnerMapHeader}>
+                        <div>
+                          <span>Partner map pin</span>
+                          <strong>Set your public map pin</strong>
+                          <p>Click the map, drag the pin, or use your current location. A precise street address is not displayed.</p>
+                        </div>
+                        <div className={styles.partnerMapActions}>
+                          <button type="button" className={styles.secondaryButton} onClick={handleUseCurrentLocation}>Use current location</button>
+                          {partnerDirectoryPin ? <button type="button" className={styles.ghostButton} onClick={clearPartnerMapPin}>Clear pin</button> : null}
+                        </div>
                       </div>
-                      <div>
-                        <strong>{accountDisplayName}</strong>
-                        <small>{marketplaceLocation}</small>
+                      <div ref={partnerMapElementRef} className={styles.partnerMapCanvas} aria-label="Partner directory map pin" />
+                      <div className={styles.partnerMapFooter}>
+                        <span>{partnerDirectoryPinLabel}</span>
+                        <strong>{partnerDirectoryPin ? "Pin selected" : "Click the map to place your pin"}</strong>
                       </div>
                     </div>
-                    <div className={styles.partnerPreviewDetails}>
-                      <span>{profileDraft.partnerBrandFocus.trim() || "All supported brands"}</span>
-                      <span>{profileDraft.partnerServices.trim() || "Services not added yet"}</span>
-                    </div>
-                    <p>
-                      {profileDraft.partnerDescription.trim() ||
-                        "Add a short description so owners understand how your business can help them."}
-                    </p>
-                  </aside>
-                </div>
+                  </section>
+                ) : null}
 
-                <div
-                  className={`${styles.partnerMapField} ${styles.fullWidth}`}
-                >
-                  <div className={styles.partnerMapHeader}>
-                    <div>
-                      <span>Partner map pin</span>
-                      <strong>Set your public map pin</strong>
-                      <p>
-                        Click anywhere on the map, drag the pin, or use your
-                        current location.
-                      </p>
+                {partnerDirectoryStep === 3 ? (
+                  <section className={`${styles.wizardStepPanel} ${styles.fullWidth}`}>
+                    <div className={styles.modalSectionHeading}>
+                      <strong>Additional information</strong>
+                      <p>Help owners understand where you work and what your business offers.</p>
                     </div>
 
-                    <div className={styles.partnerMapActions}>
-                      <button
-                        type="button"
-                        className={styles.secondaryButton}
-                        onClick={handleUseCurrentLocation}
-                      >
-                        Use current location
-                      </button>
-                      {partnerDirectoryPin ? (
-                        <button
-                          type="button"
-                          className={styles.ghostButton}
-                          onClick={clearPartnerMapPin}
-                        >
-                          Clear pin
-                        </button>
-                      ) : null}
+                    <div className={styles.partnerAdditionalGrid}>
+                      <div className={styles.wizardFieldGrid}>
+                        <label className={styles.field}>
+                          <span>Service radius km</span>
+                          <input inputMode="numeric" value={profileDraft.partnerServiceRadiusKm} onChange={(event) => setProfileDraft((current) => ({ ...current, partnerServiceRadiusKm: event.target.value }))} placeholder="250" autoFocus />
+                        </label>
+                        <label className={styles.field}>
+                          <span>Brand focus</span>
+                          <input value={profileDraft.partnerBrandFocus} onChange={(event) => setProfileDraft((current) => ({ ...current, partnerBrandFocus: event.target.value }))} placeholder="John Deere, Case IH, New Holland" />
+                        </label>
+                        <label className={`${styles.field} ${styles.fullWidth}`}>
+                          <span>Services</span>
+                          <input value={profileDraft.partnerServices} onChange={(event) => setProfileDraft((current) => ({ ...current, partnerServices: event.target.value }))} placeholder="Finance, insurance, replacements, trade-ins" />
+                        </label>
+                        <label className={`${styles.field} ${styles.fullWidth} ${styles.partnerDescriptionField}`}>
+                          <span>Partner description</span>
+                          <textarea value={profileDraft.partnerDescription} onChange={(event) => setProfileDraft((current) => ({ ...current, partnerDescription: event.target.value }))} placeholder="Briefly explain how your business helps agricultural asset owners." />
+                          <small className={styles.partnerDescriptionCount}>{profileDraft.partnerDescription.trim().length} characters</small>
+                        </label>
+                      </div>
+
+                      <aside className={styles.partnerDirectoryPreview} aria-label="Completed owner preview">
+                        <span className={styles.partnerPreviewEyebrow}>Owner preview</span>
+                        <div className={styles.partnerPreviewIdentity}>
+                          <div className={styles.partnerPreviewLogo}>{logoUrl ? <img src={logoUrl} alt="" /> : <strong>{profileInitials}</strong>}</div>
+                          <div><strong>{accountDisplayName}</strong><small>{marketplaceLocation}</small></div>
+                        </div>
+                        <div className={styles.partnerPreviewDetails}>
+                          <span>{profileDraft.partnerBrandFocus.trim() || "All supported brands"}</span>
+                          <span>{profileDraft.partnerServices.trim() || "Services not added yet"}</span>
+                        </div>
+                        <p>{profileDraft.partnerDescription.trim() || "Add a short description so owners understand how your business can help them."}</p>
+                      </aside>
                     </div>
-                  </div>
+                  </section>
+                ) : null}
 
-                  <div
-                    ref={partnerMapElementRef}
-                    className={styles.partnerMapCanvas}
-                    aria-label="Partner directory map pin"
-                  />
-
-                  <div className={styles.partnerMapFooter}>
-                    <span>{partnerDirectoryPinLabel}</span>
-                    <strong>
-                      {partnerDirectoryPin
-                        ? "Ready to save"
-                        : "Click the map to place your pin"}
-                    </strong>
-                  </div>
-                </div>
-
-                <label className={`${styles.field} ${styles.partnerRadiusField}`}>
-                  <span>Service radius km</span>
-                  <input
-                    inputMode="numeric"
-                    value={profileDraft.partnerServiceRadiusKm}
-                    onChange={(event) =>
-                      setProfileDraft((current) => ({
-                        ...current,
-                        partnerServiceRadiusKm: event.target.value,
-                      }))
-                    }
-                    placeholder="250"
-                  />
-                </label>
-
-                <label className={`${styles.field} ${styles.partnerBrandField}`}>
-                  <span>Brand focus</span>
-                  <input
-                    value={profileDraft.partnerBrandFocus}
-                    onChange={(event) =>
-                      setProfileDraft((current) => ({
-                        ...current,
-                        partnerBrandFocus: event.target.value,
-                      }))
-                    }
-                    placeholder="John Deere, Case IH, New Holland"
-                  />
-                </label>
-
-                <label className={`${styles.field} ${styles.partnerServicesField}`}>
-                  <span>Services</span>
-                  <input
-                    value={profileDraft.partnerServices}
-                    onChange={(event) =>
-                      setProfileDraft((current) => ({
-                        ...current,
-                        partnerServices: event.target.value,
-                      }))
-                    }
-                    placeholder="Finance, insurance, replacements, trade-ins"
-                  />
-                </label>
-
-                <label
-                  className={`${styles.field} ${styles.fullWidth} ${styles.partnerDescriptionField}`}
-                >
-                  <span>Partner description</span>
-                  <textarea
-                    value={profileDraft.partnerDescription}
-                    onChange={(event) =>
-                      setProfileDraft((current) => ({
-                        ...current,
-                        partnerDescription: event.target.value,
-                      }))
-                    }
-                    placeholder="Example: Finance partner for agricultural machinery, asset-backed finance and refinancing discussions."
-                  />
-                  <small className={styles.partnerDescriptionCount}>
-                    {profileDraft.partnerDescription.trim().length} characters
-                  </small>
-                </label>
-
-                <div className={styles.actionsRow}>
+                <div className={`${styles.actionsRow} ${styles.wizardActions}`}>
                   <button
                     type="button"
                     className={styles.ghostButton}
@@ -2964,12 +2917,11 @@ export default function AccountClient({
                   >
                     Cancel
                   </button>
-                  <button
-                    type="submit"
-                    className={styles.primaryButton}
-                    disabled={isSavingProfile || isReadingLogo}
-                  >
-                    {isSavingProfile ? "Saving..." : "Save directory"}
+                  {partnerDirectoryStep > 1 ? (
+                    <button type="button" className={styles.secondaryButton} onClick={() => goToPartnerDirectoryStep((partnerDirectoryStep - 1) as PartnerDirectoryStep)} disabled={isSavingProfile}>Back</button>
+                  ) : null}
+                  <button type="submit" className={styles.primaryButton} disabled={isSavingProfile}>
+                    {partnerDirectoryStep === 3 ? (isSavingProfile ? "Saving..." : "Save directory") : "Next"}
                   </button>
                 </div>
               </form>
