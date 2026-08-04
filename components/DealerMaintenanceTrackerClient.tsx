@@ -122,6 +122,23 @@ function MaintenanceIcon({ className = '' }: { className?: string }) {
   return <svg className={className} viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h12M7 12h12M7 19h12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /><circle cx="4" cy="5" r="1" fill="currentColor" /><circle cx="4" cy="12" r="1" fill="currentColor" /><circle cx="4" cy="19" r="1" fill="currentColor" /></svg>;
 }
 
+function HistoryRecordIcon({ type, className = '' }: { type: HistoryRecordType; className?: string }) {
+  if (type === 'maintenance') {
+    return <svg className={className} viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v3m10-3v3M5 8h14M5 5h14v15H5V5Z" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" /><path d="m9 14 2 2 4-5" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" /></svg>;
+  }
+  if (type === 'notes') {
+    return <svg className={className} viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l3 3v15H6V3Z" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" /><path d="M15 3v4h4M9 11h6M9 15h6" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" /></svg>;
+  }
+  return <svg className={className} viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h11M8 12h11M8 18h11" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" /><circle cx="4.5" cy="6" r="1.25" fill="currentColor" /><circle cx="4.5" cy="12" r="1.25" fill="currentColor" /><circle cx="4.5" cy="18" r="1.25" fill="currentColor" /></svg>;
+}
+
+function HistoryTimelineChoiceIcon({ type, className = '' }: { type: HistoryTimelineFilter; className?: string }) {
+  if (type === 'all') {
+    return <svg className={className} viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" strokeWidth="1.9" /><path d="M12 7v5l3.5 2" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" /></svg>;
+  }
+  return <svg className={className} viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v3m10-3v3M5 8h14M5 5h14v15H5V5Z" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />{type === 'custom' ? <path d="M12 11v6m-3-3h6" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" /> : <path d="M9 12h6M9 16h4" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />}</svg>;
+}
+
 function formatUsage(value: number | null, metric: string | null): string {
   if (value === null || !Number.isFinite(value)) return 'Not recorded';
   if (metric === 'percentage') return `${value.toLocaleString('en-ZA', { maximumFractionDigits: 1 })}%`;
@@ -1222,6 +1239,14 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
             <header className={`${assetStyles.modalHeader} ${workspaceStyles.modalHeader} ${styles.historyModalHeader}`}>
               <div className={assetStyles.modalHeaderText}>
                 <span className={styles.historyModalKicker}>Step {historyModalStep} of 3</span>
+                <div className={styles.historyProgress} aria-hidden="true">
+                  {[1, 2, 3].map((step) => (
+                    <span
+                      key={step}
+                      className={`${step <= historyModalStep ? styles.historyProgressComplete : ''} ${step === historyModalStep ? styles.historyProgressCurrent : ''}`}
+                    />
+                  ))}
+                </div>
                 <h3 id="maintenance-history-title">{historyModalStep === 1
                   ? 'What would you like to see?'
                   : historyModalStep === 2
@@ -1254,7 +1279,10 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                         type="button"
                         onClick={() => chooseHistoryRecordType(option.value as HistoryRecordType)}
                       >
-                        <span>
+                        <span className={styles.historyChoiceIcon}>
+                          <HistoryRecordIcon type={option.value as HistoryRecordType} />
+                        </span>
+                        <span className={styles.historyChoiceCopy}>
                           <strong>{option.label}</strong>
                           <small>{option.value === 'all'
                             ? 'All saved activity'
@@ -1277,16 +1305,23 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                     <button
                       key={option.value}
                       type="button"
+                      className={option.value === 'custom' && historyTimelineFilter === 'custom' ? styles.historyTimelineFilterActive : ''}
                       onClick={() => chooseHistoryTimeline(option.value as HistoryTimelineFilter)}
                     >
-                      <strong>{option.label}</strong>
-                      <small>{option.value === 'all'
-                        ? 'Full history'
-                        : option.value === '12months'
-                          ? 'Previous year'
-                          : option.value === '90days'
-                            ? 'Past 90 days'
-                            : 'Choose dates'}</small>
+                      <span className={styles.historyChoiceIcon}>
+                        <HistoryTimelineChoiceIcon type={option.value as HistoryTimelineFilter} />
+                      </span>
+                      <span className={styles.historyTimelineCopy}>
+                        <strong>{option.label}</strong>
+                        <small>{option.value === 'all'
+                          ? 'Full history'
+                          : option.value === '12months'
+                            ? 'Previous year'
+                            : option.value === '90days'
+                              ? 'Past 90 days'
+                              : 'Choose dates'}</small>
+                      </span>
+                      <ChevronRightIcon className={styles.historyChoiceArrow} />
                     </button>
                   ))}
                 </div>
