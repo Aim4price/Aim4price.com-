@@ -2,12 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type DragEvent } from 'react';
 import { createPortal } from 'react-dom';
+import dynamic from 'next/dynamic';
 import AppHeader from '../../components/AppHeader';
-import AccountantRegisterReportsModal from '../../components/AccountantRegisterReportsModal';
-import DealerAssetCorrectionEditor from '../../components/DealerAssetCorrectionEditor';
-import DealerCostOfOwnershipReportModal from '../../components/DealerCostOfOwnershipReportModal';
-import DealerMaintenanceReportModal from '../../components/DealerMaintenanceReportModal';
-import DealerMaintenanceScheduleModal from '../../components/DealerMaintenanceScheduleModal';
 import {
   WorkspaceTitlePanel,
   workspaceStyles,
@@ -17,6 +13,27 @@ import assetStyles from '../asset-register/page.module.css';
 import styles from './page.module.css';
 import dealerStyles from '../dealer/dealer.module.css';
 import type { DealerAssetCorrectionRequest } from '../../lib/dealer-asset-corrections';
+
+const AccountantRegisterReportsModal = dynamic(
+  () => import('../../components/AccountantRegisterReportsModal'),
+  { ssr: false },
+);
+const DealerAssetCorrectionEditor = dynamic(
+  () => import('../../components/DealerAssetCorrectionEditor'),
+  { ssr: false },
+);
+const DealerCostOfOwnershipReportModal = dynamic(
+  () => import('../../components/DealerCostOfOwnershipReportModal'),
+  { ssr: false },
+);
+const DealerMaintenanceReportModal = dynamic(
+  () => import('../../components/DealerMaintenanceReportModal'),
+  { ssr: false },
+);
+const DealerMaintenanceScheduleModal = dynamic(
+  () => import('../../components/DealerMaintenanceScheduleModal'),
+  { ssr: false },
+);
 
 type LeadType = 'finance' | 'insurance' | 'replacement_quote';
 type LeadStatus = 'sent' | 'viewed' | 'accepted' | 'quoted' | 'declined' | 'closed';
