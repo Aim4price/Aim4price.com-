@@ -3,6 +3,7 @@ import { getAssetRegisterItemById, listAssetRegisterItems, type AssetRegisterIte
 import { listAssetRegisters } from './asset-registers';
 import { resolveAssetUsage } from './asset-usage';
 import { ensureFieldManagerTables, listFieldManagers } from './field-manager';
+import { isDatabaseSchemaReady } from './database-schema-readiness';
 import type { PoolClient } from 'pg';
 
 export type AssetMaintenanceType = 'service' | 'checkup';
@@ -751,6 +752,41 @@ function sortMaintenanceRecords(records: AssetMaintenanceRecord[]): AssetMainten
 
 async function ensureAssetMaintenanceTablesOnce(): Promise<void> {
   const db = getDb();
+  const schemaReady = await isDatabaseSchemaReady(() => db.query(`
+    select
+      id,
+      user_id,
+      asset_register_item_id,
+      maintenance_type,
+      trigger_type,
+      status,
+      title,
+      notes,
+      assigned_field_manager_id,
+      assigned_name,
+      due_date,
+      due_usage,
+      usage_metric,
+      alert_before_value,
+      alert_before_unit,
+      recurring_enabled,
+      recurring_interval_value,
+      recurring_interval_unit,
+      generated_from_maintenance_id,
+      completed_at,
+      completed_usage,
+      completed_notes,
+      completed_by,
+      alert_noted_at,
+      created_at,
+      updated_at
+    from public.asset_maintenance_records
+    where false
+  `));
+
+  if (schemaReady) {
+    return;
+  }
 
   await ensureFieldManagerTables();
   await db.query(`create extension if not exists pgcrypto`);
