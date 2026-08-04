@@ -7,7 +7,6 @@ const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 test('Marketplace entry uses concise Aim4price wording', async () => {
   const source = await read('app/marketplace/page.tsx');
 
-  assert.match(source, /Aim4price Marketplace/);
   assert.match(source, /Explore assets on Aim4price/);
   assert.match(source, /Discover owner-approved assets or browse machinery currently listed for sale/);
   assert.doesNotMatch(source, /Choose an option/);
@@ -25,9 +24,14 @@ test('Marketplace cards and hover videos remain unchanged', async () => {
 });
 
 test('Marketplace heading polish is isolated to the entry introduction', async () => {
-  const styles = await read('app/marketplace/marketplace-entry.module.css');
+  const [source, styles] = await Promise.all([
+    read('app/marketplace/page.tsx'),
+    read('app/marketplace/marketplace-entry.module.css'),
+  ]);
 
-  assert.match(styles, /\.entryEyebrow/);
   assert.match(styles, /\.entryTitle\.entryTitle/);
+  assert.match(styles, /white-space: nowrap/);
   assert.match(styles, /\.entryText\.entryText/);
+  assert.doesNotMatch(source, /entryEyebrow/);
+  assert.doesNotMatch(styles, /\.entryEyebrow/);
 });
