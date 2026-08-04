@@ -49,33 +49,39 @@ test('upcoming work is collapsed by default and remains outside maintenance hist
 test('history opens as a focused timeline instead of extending the asset card', () => {
   assert.match(tracker, /aria-haspopup="dialog"/);
   assert.match(tracker, /aria-labelledby="maintenance-history-title"/);
-  assert.match(tracker, /Choose information/);
-  assert.match(tracker, /Choose timeline/);
-  assert.match(tracker, /History records/);
+  assert.match(tracker, /What would you like to see\?/);
+  assert.match(tracker, /Choose a timeline/);
+  assert.match(tracker, /Maintenance history/);
   assert.match(tracker, /historyTypeTabs/);
   assert.match(tracker, /historyTimelineFilters/);
   assert.match(tracker, /historyTimeline/);
-  assert.match(tracker, /Newest information appears first/);
+  assert.match(tracker, /Newest records first/);
   assert.match(trackerStyles, /\.historyModal\.historyModal/);
   assert.match(trackerStyles, /\.historyTimelineItem/);
   assert.doesNotMatch(tracker, /id=\{`maintenance-view-/);
 });
 
-test('history presents large record choices before timeline filters', () => {
+test('history separates information, timeline and records into individual modal screens', () => {
   const allIndex = tracker.indexOf("{ value: 'all', label: 'All' }");
   const maintenanceIndex = tracker.indexOf("{ value: 'maintenance', label: 'Maintenance' }");
   const notesIndex = tracker.indexOf("{ value: 'notes', label: 'Notes' }");
   const timelineIndex = tracker.indexOf('historyTimelineOptions');
-  const resultsIndex = tracker.indexOf('history-results-step-title');
   assert.ok(allIndex > 0);
   assert.ok(maintenanceIndex > allIndex);
   assert.ok(notesIndex > maintenanceIndex);
   assert.ok(timelineIndex > notesIndex);
-  assert.ok(resultsIndex > timelineIndex);
+  assert.match(tracker, /historyModalStep === 1/);
+  assert.match(tracker, /historyModalStep === 2/);
+  assert.match(tracker, /historyModalStep === 3/);
+  assert.match(tracker, /function chooseHistoryRecordType[\s\S]*setHistoryModalStep\(2\)/);
+  assert.match(tracker, /function chooseHistoryTimeline[\s\S]*setHistoryModalStep\(3\)/);
+  assert.match(tracker, /historyModalStep === 2 && historyTimelineFilter === 'custom'/);
+  assert.match(tracker, />\s*Back\s*</);
   assert.match(tracker, /Last 12 months/);
   assert.match(tracker, /Last 3 months/);
   assert.match(tracker, /Custom dates/);
   assert.match(trackerStyles, /\.historyTypeTabs button[\s\S]*min-height: 5\.35rem/);
+  assert.match(trackerStyles, /\.historyChoiceModal\.historyChoiceModal/);
 });
 
 test('maintenance actions use the Aim4price Manage icon and clear report wording', () => {
