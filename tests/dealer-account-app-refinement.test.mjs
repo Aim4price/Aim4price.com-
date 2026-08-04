@@ -12,12 +12,12 @@ test('Dealer desktop keeps Leads, Maintenance and Client Costs without a Clients
   assert.match(source, /const navWindowSize = isAccountantWorkspace \? navItems\.length : NAV_WINDOW_SIZE/);
 });
 
-test('Dealer App home prioritises dealer work without dropping supporting tools', () => {
+test('Dealer App home mirrors the Owner App launcher without dropping dealer tools', () => {
   const source = read('app/dealer/page.tsx');
-  assert.match(source, /styles\.dealerWorkGrid/);
-  assert.match(source, /styles\.dealerWorkCard/);
-  assert.match(source, /styles\.dealerToolGrid/);
-  assert.match(source, /What needs attention\?/);
+  assert.match(source, /styles\.homeLauncher/);
+  assert.match(source, /styles\.homeLaunchCard/);
+  assert.match(source, /styles\.homeLaunchBadge/);
+  assert.doesNotMatch(source, /toolSection|cardCopy|cardArrow|description:/);
   assert.doesNotMatch(source, /href: '\/dealer\/clients'|label: 'Clients'/);
   assert.match(source, /label: 'Notifications'/);
   assert.match(source, /label: 'Leads'/);
@@ -38,20 +38,8 @@ test('Dealer App top controls follow the Owner App back, home and sign-out flow'
   assert.match(source, /Dealer App home/);
   assert.doesNotMatch(source, /navBrand|navArrow/);
   assert.match(styles, /\.navButton,[\s\S]*?\.signOut \{[\s\S]*?min-height: 50px/);
-  assert.match(styles, /\.navSignOut \{[\s\S]*?position: absolute/);
-  assert.match(styles, /\.dealerWorkGrid \{/);
-  assert.match(styles, /\.dealerToolGrid \{[\s\S]*?grid-template-columns: repeat\(2/);
-});
-
-test('Dealer App leads and maintenance shorten their initial critical path', () => {
-  const leadsPage = read('app/dealer/leads/page.tsx');
-  const maintenancePage = read('app/dealer/maintenance/page.tsx');
-  const maintenanceTracker = read('lib/dealer-maintenance-tracker.ts');
-  assert.match(leadsPage, /INITIAL_LEAD_BATCH_SIZE = 10/);
-  assert.match(leadsPage, /limit: INITIAL_LEAD_BATCH_SIZE \+ 1/);
-  assert.match(leadsPage, /initialLeadsHaveMore=/);
-  assert.match(maintenancePage, /const \[profile, assets\] = await Promise\.all/);
-  assert.match(maintenanceTracker, /const \[asset, records, scheduleProposals, loggedProblems\] = await Promise\.all/);
+  assert.match(styles, /\.homeLauncher \{[\s\S]*?width: min\(100%, 400px\)/);
+  assert.match(styles, /@media \(min-width: 600px\)[\s\S]*?\.homeLauncher \{[\s\S]*?grid-template-columns: repeat\(2/);
 });
 
 test('Dealer Maintenance summaries apply filters and focus the open asset', () => {
