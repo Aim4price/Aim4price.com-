@@ -551,16 +551,19 @@ export default function FieldManagerOwnerClient() {
                         {manager.isActive ? 'Active' : 'Inactive'}
                       </span>
 
-                      <button
-                        type="button"
-                        className={styles.manageButton}
-                        onClick={() => setExpandedManagerId((current) => (current === manager.id ? null : manager.id))}
-                        disabled={Boolean(expandedManagerId && !isExpanded)}
-                        aria-expanded={isExpanded}
-                        aria-controls={managerPanelId}
-                      >
-                        {isExpanded ? 'Close' : 'Manage'}
-                      </button>
+                      {!isExpanded ? (
+                        <button
+                          type="button"
+                          className={styles.manageButton}
+                          onClick={() => setExpandedManagerId(manager.id)}
+                          disabled={Boolean(expandedManagerId)}
+                          aria-expanded="false"
+                          aria-controls={managerPanelId}
+                          aria-label={`Manage ${manager.displayName}`}
+                        >
+                          Manage <span aria-hidden="true">›</span>
+                        </button>
+                      ) : null}
                     </div>
 
                     {isExpanded ? (
@@ -644,6 +647,9 @@ export default function FieldManagerOwnerClient() {
                           </div>
                         </form>
                         <FieldManagerAccessPanel managerId={manager.id} />
+                        <div className={styles.managerCloseRow}>
+                          <button type="button" className={styles.manageCloseButton} onClick={() => setExpandedManagerId(null)} disabled={isBusyThisManager}>Close</button>
+                        </div>
                       </div>
                     ) : null}
                   </article>
