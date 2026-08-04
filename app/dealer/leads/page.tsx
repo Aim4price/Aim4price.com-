@@ -8,6 +8,8 @@ import styles from '../dealer.module.css';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+const INITIAL_LEAD_BATCH_SIZE = 10;
+
 export default async function DealerLeadsPage() {
   const session = await getServerSession({ allowDealerApp: true });
   if (!session?.user?.id) redirect('/dealer/login');
@@ -18,7 +20,7 @@ export default async function DealerLeadsPage() {
       name: session.user.name,
       email: session.user.email,
     }),
-    listAssetLeadsForUser(session.user.id),
+    listAssetLeadsForUser(session.user.id, { limit: INITIAL_LEAD_BATCH_SIZE + 1 }),
   ]);
   if (profile.accountType !== 'dealer' || profile.accountStatus !== 'active') redirect('/dealer/login');
 
@@ -26,7 +28,8 @@ export default async function DealerLeadsPage() {
     <div className={styles.module}>
       <LeadsClient
         dealerAppMode
-        initialLeads={initialLeads}
+        initialLeads={initialLeads.slice(0, INITIAL_LEAD_BATCH_SIZE)}
+        initialLeadsHaveMore={initialLeads.length > INITIAL_LEAD_BATCH_SIZE}
         initialSessionUserId={session.user.id}
       />
     </div>
