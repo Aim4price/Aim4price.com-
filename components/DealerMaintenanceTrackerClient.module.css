@@ -131,6 +131,44 @@
   border-top: 1px solid rgba(218, 228, 236, 0.95);
 }
 
+.trackerNextStep {
+  width: fit-content;
+  display: inline-flex;
+  margin-top: 0.28rem;
+  color: #365f53;
+  font-size: 0.78rem;
+  font-weight: 720;
+  line-height: 1.4;
+}
+
+.trackerSectionsIntro {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.2rem 0.15rem 0.1rem;
+}
+
+.trackerSectionsIntro span {
+  color: #267254;
+  font-size: 0.66rem;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.trackerSectionsIntro h3 {
+  margin: 0;
+  color: #073b30;
+  font-size: 1.18rem;
+}
+
+.trackerSectionsIntro p {
+  margin: 0.15rem 0 0;
+  color: #647870;
+  font-size: 0.78rem;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
 .expandedBody {
   display: grid;
   gap: 1rem;
@@ -362,6 +400,13 @@
   font-size: 1rem;
 }
 
+.section > summary small {
+  color: #667b73;
+  font-size: 0.75rem;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
 .section > header > strong,
 .section > summary > strong {
   color: #177047;
@@ -372,6 +417,12 @@
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
+  min-width: 3.2rem;
+  justify-content: center;
+  padding: 0.42rem 0.58rem;
+  border: 1px solid #cfe0d8;
+  border-radius: 999px;
+  background: #f2f8f5;
 }
 
 .sectionChevron {
