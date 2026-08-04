@@ -69,8 +69,11 @@ test('dealer report modal uses the owner asset maintenance report endpoint', () 
   assert.match(reportModal, /label="Type"/);
   assert.match(reportModal, /label="Year"/);
   assert.match(reportModal, /label="Month"/);
-  assert.match(reportModal, /Download PDF/);
+  assert.match(reportModal, /Choose export format/);
+  assert.match(reportModal, /Open PDF report/);
   assert.match(reportModal, /Download Excel/);
+  assert.match(reportModal, /\/brand\/pdf\.png/);
+  assert.match(reportModal, /\/brand\/sheet\.png/);
 });
 
 test('owner report endpoint validates the exact active dealer share and asset', () => {
