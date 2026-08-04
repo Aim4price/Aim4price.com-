@@ -52,3 +52,32 @@ test('Dealer staff access focuses one managed login at a time', () => {
   assert.match(source, /expandedManagerId && !isExpanded \? styles\.managerCardMuted/);
   assert.match(source, /Get Estimate, Discovery, Leads, Client Costs, Maintenance/);
 });
+
+test('Dealer desktop uses neutral summary wording and concise cost search copy', () => {
+  const leadsSource = read('app/leads/leads-client.tsx');
+  const maintenanceSource = read('components/DealerMaintenanceTrackerClient.tsx');
+  const costsSource = read('app/my-invoices/my-invoices-client.tsx');
+  assert.doesNotMatch(leadsSource, /Tap to show/);
+  assert.doesNotMatch(maintenanceSource, /Tap to show/);
+  assert.match(costsSource, /Search client, asset or invoice/);
+});
+
+test('Dealer login enters Leads directly while preserving explicit redirects', () => {
+  const source = read('app/auth/auth-client.tsx');
+  assert.match(source, /authenticatedSession\?\.accountType === "dealer"/);
+  assert.match(source, /!getSafeReturnTo\(\)/);
+  assert.match(source, /getAbsoluteUrl\("\/leads"\)/);
+  assert.match(source, /normalizeEmail\(email\) !== ADMIN_EMAIL/);
+});
+
+test('Dealer page requests deduplicate auth work and load independent data together', () => {
+  const sessionSource = read('lib/auth-session.ts');
+  const accessSource = read('lib/account-access.ts');
+  const leadsPageSource = read('app/leads/page.tsx');
+  const trackingPageSource = read('app/tracking/page.tsx');
+  assert.match(sessionSource, /const session = options\.authSession \?\? await readAuthSession\(\)/);
+  assert.match(accessSource, /getServerSession\(\{ requireActive: false, authSession: realSession \}\)/);
+  assert.match(accessSource, /const \[effectiveSession, access\] = await Promise\.all/);
+  assert.match(leadsPageSource, /const \[profile, initialLeads\] = await Promise\.all/);
+  assert.match(trackingPageSource, /const \[profile, assets\] = await Promise\.all/);
+});
