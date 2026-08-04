@@ -11,19 +11,8 @@ export const dynamic = 'force-dynamic';
 export default async function DealerMaintenancePage({ searchParams }: { searchParams?: { open?: string } }) {
   const session = await getServerSession({ allowDealerApp: true });
   if (!session?.user?.id) redirect('/dealer/login');
-
-  const [profile, assets] = await Promise.all([
-    getAccountProfile({ id: session.user.id, name: session.user.name, email: session.user.email }),
-    listDealerTrackedAssets(session.user.id),
-  ]);
+  const profile = await getAccountProfile({ id: session.user.id, name: session.user.name, email: session.user.email });
   if (profile.accountType !== 'dealer' || profile.accountStatus !== 'active') redirect('/dealer/login');
-
-  return (
-    <div className={dealerStyles.module}>
-      <DealerMaintenanceClient
-        initialAssets={assets}
-        initialOpenAccessId={String(searchParams?.open ?? '').trim() || null}
-      />
-    </div>
-  );
+  const assets = await listDealerTrackedAssets(session.user.id);
+  return <div className={dealerStyles.module}><DealerMaintenanceClient initialAssets={assets} initialOpenAccessId={String(searchParams?.open ?? '').trim() || null} /></div>;
 }

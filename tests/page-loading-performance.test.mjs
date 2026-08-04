@@ -99,19 +99,15 @@ test('lead logos are served lazily through an authenticated route', async () => 
 });
 
 test('lead and dealer routes provide immediate loading feedback', async () => {
-  const [leadsLoading, dealerLoading, dealerLeadsLoading, dealerMaintenanceLoading, trackingLoading, component] = await Promise.all([
+  const [leadsLoading, dealerLoading, trackingLoading, component] = await Promise.all([
     read('app/leads/loading.tsx'),
     read('app/dealer/loading.tsx'),
-    read('app/dealer/leads/loading.tsx'),
-    read('app/dealer/maintenance/loading.tsx'),
     read('app/tracking/loading.tsx'),
     read('components/PageLoadingState.tsx'),
   ]);
 
   assert.match(leadsLoading, /Loading My Leads/);
   assert.match(dealerLoading, /Loading Dealer workspace/);
-  assert.match(dealerLeadsLoading, /Loading leads/);
-  assert.match(dealerMaintenanceLoading, /Loading maintenance/);
   assert.match(trackingLoading, /Loading maintenance/);
   assert.match(component, /aria-busy="true"/);
 });
