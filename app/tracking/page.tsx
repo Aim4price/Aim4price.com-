@@ -16,17 +16,18 @@ export default async function TrackingPage({ searchParams }: { searchParams?: { 
     redirect('/login');
   }
 
-  const profile = await getAccountProfile({
-    id: session.user.id,
-    name: session.user.name,
-    email: session.user.email,
-  });
+  const [profile, assets] = await Promise.all([
+    getAccountProfile({
+      id: session.user.id,
+      name: session.user.name,
+      email: session.user.email,
+    }),
+    listDealerTrackedAssets(session.user.id),
+  ]);
 
   if (profile.accountType !== 'dealer' || profile.accountStatus !== 'active') {
     redirect('/account');
   }
-
-  const assets = await listDealerTrackedAssets(session.user.id);
 
   return (
     <div className={styles.screen}>
