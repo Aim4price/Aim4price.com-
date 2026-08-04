@@ -3532,8 +3532,8 @@
 
 /* === Dealer lead modal viewport safety === */
 .leadManageModal {
-  width: min(92rem, calc(100vw - 2rem)) !important;
-  max-width: 92rem !important;
+  width: min(64rem, calc(100vw - 2rem)) !important;
+  max-width: 64rem !important;
 }
 
 .leadFilterModal,
