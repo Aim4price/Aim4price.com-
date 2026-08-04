@@ -2770,7 +2770,7 @@ export default function LeadsClient({
                   <strong className={`${assetStyles.heroSummaryValue} ${styles.leadOwnerSummaryText}`}>{newLeadCount}</strong>
                 </span>
                 <span className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${styles.leadOwnerSummaryFooter}`}>
-                  <small className={styles.leadOwnerSummaryText}>Tap to show requests not yet opened.</small>
+                  <small className={styles.leadOwnerSummaryText}>Show requests not yet opened.</small>
                 </span>
               </button>
 
@@ -2782,7 +2782,7 @@ export default function LeadsClient({
                   <strong className={`${assetStyles.heroSummaryValue} ${styles.leadOwnerSummaryText}`}>{activeLeadCount}</strong>
                 </span>
                 <span className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${styles.leadOwnerSummaryFooter}`}>
-                  <small className={styles.leadOwnerSummaryText}>Tap to show requests being actioned.</small>
+                  <small className={styles.leadOwnerSummaryText}>Show requests being actioned.</small>
                 </span>
               </button>
 
@@ -2794,7 +2794,7 @@ export default function LeadsClient({
                   <strong className={`${assetStyles.heroSummaryValue} ${styles.leadOwnerSummaryText}`}>{completedLeadCount}</strong>
                 </span>
                 <span className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${styles.leadOwnerSummaryFooter}`}>
-                  <small className={styles.leadOwnerSummaryText}>Tap to show completed requests.</small>
+                  <small className={styles.leadOwnerSummaryText}>Show completed requests.</small>
                 </span>
               </button>
             </section>

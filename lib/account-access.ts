@@ -48,7 +48,13 @@ export async function requireActivePageAccess() {
     redirect("/auth#login");
   }
 
-  const effectiveSession = await getServerSession({ requireActive: false });
+  const [effectiveSession, access] = await Promise.all([
+    getServerSession({ requireActive: false, authSession: realSession }),
+    getAccountAccess({
+      id: realSession.user.id,
+      email: realSession.user.email,
+    }),
+  ]);
 
   if (isAdminSupportSession(effectiveSession)) {
     return {
@@ -61,11 +67,6 @@ export async function requireActivePageAccess() {
       },
     };
   }
-
-  const access = await getAccountAccess({
-    id: realSession.user.id,
-    email: realSession.user.email,
-  });
 
   if (access.isAdmin) {
     redirect("/admin");

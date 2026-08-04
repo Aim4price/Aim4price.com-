@@ -753,17 +753,17 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
             <button type="button" className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${leadStyles.leadOwnerSummaryCard} ${leadStyles.leadOwnerSummaryCardNew} ${styles.summaryFilterButton} ${statusFilter === 'attention' ? styles.summaryFilterButtonActive : ''}`} onClick={() => chooseStatusFilter('attention')} aria-pressed={statusFilter === 'attention'}>
               <span className={assetStyles.heroSummaryHead}><span className={`${assetStyles.heroSummaryTitle} ${leadStyles.leadOwnerSummaryText}`}>Needs attention</span></span>
               <span className={assetStyles.heroSummaryValueRow}><strong className={`${assetStyles.heroSummaryValue} ${leadStyles.leadOwnerSummaryText}`}>{attentionCount}</strong></span>
-              <span className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${leadStyles.leadOwnerSummaryFooter}`}><small className={leadStyles.leadOwnerSummaryText}>Tap to show due, overdue or usage-needed assets.</small></span>
+              <span className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${leadStyles.leadOwnerSummaryFooter}`}><small className={leadStyles.leadOwnerSummaryText}>Show due, overdue or usage-needed assets.</small></span>
             </button>
             <button type="button" className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${leadStyles.leadOwnerSummaryCard} ${leadStyles.leadOwnerSummaryCardOpen} ${styles.summaryFilterButton} ${statusFilter === 'all' ? styles.summaryFilterButtonActive : ''}`} onClick={() => chooseStatusFilter('all')} aria-pressed={statusFilter === 'all'}>
               <span className={assetStyles.heroSummaryHead}><span className={`${assetStyles.heroSummaryTitle} ${leadStyles.leadOwnerSummaryText}`}>Tracked equipment</span></span>
               <span className={assetStyles.heroSummaryValueRow}><strong className={`${assetStyles.heroSummaryValue} ${leadStyles.leadOwnerSummaryText}`}>{assets.length}</strong></span>
-              <span className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${leadStyles.leadOwnerSummaryFooter}`}><small className={leadStyles.leadOwnerSummaryText}>Tap to show all equipment shared with you.</small></span>
+              <span className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${leadStyles.leadOwnerSummaryFooter}`}><small className={leadStyles.leadOwnerSummaryText}>Show all equipment shared with you.</small></span>
             </button>
             <button type="button" className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${leadStyles.leadOwnerSummaryCard} ${leadStyles.leadOwnerSummaryCardDone} ${styles.summaryFilterButton} ${statusFilter === 'no_open' ? styles.summaryFilterButtonActive : ''}`} onClick={() => chooseStatusFilter('no_open')} aria-pressed={statusFilter === 'no_open'}>
               <span className={assetStyles.heroSummaryHead}><span className={`${assetStyles.heroSummaryTitle} ${leadStyles.leadOwnerSummaryText}`}>No open maintenance</span></span>
               <span className={assetStyles.heroSummaryValueRow}><strong className={`${assetStyles.heroSummaryValue} ${leadStyles.leadOwnerSummaryText}`}>{noOpenCount}</strong></span>
-              <span className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${leadStyles.leadOwnerSummaryFooter}`}><small className={leadStyles.leadOwnerSummaryText}>Tap to show assets with completed history only.</small></span>
+              <span className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${leadStyles.leadOwnerSummaryFooter}`}><small className={leadStyles.leadOwnerSummaryText}>Show assets with completed history only.</small></span>
             </button>
           </section>
 

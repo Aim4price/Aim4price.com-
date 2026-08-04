@@ -797,9 +797,14 @@ export default function AuthClient() {
         callbackURL: getCallbackUrl(email),
       });
 
-      const redirectUrl = extractRedirectUrl(payload) ?? POST_LOGIN_REDIRECT;
-
-      await refreshCachedHeaderSession().catch(() => null);
+      const authRedirectUrl = extractRedirectUrl(payload) ?? POST_LOGIN_REDIRECT;
+      const authenticatedSession = await refreshCachedHeaderSession().catch(() => null);
+      const redirectUrl =
+        !getSafeReturnTo() &&
+        normalizeEmail(email) !== ADMIN_EMAIL &&
+        authenticatedSession?.accountType === "dealer"
+          ? getAbsoluteUrl("/leads")
+          : authRedirectUrl;
 
       setNotice({
         tone: "success",
