@@ -802,6 +802,376 @@
   padding: 0 1rem 1rem;
 }
 
+.historyModalOverlay {
+  z-index: 180;
+}
+
+.historyModal.historyModal {
+  width: min(calc(100vw - 2rem), 72rem) !important;
+  max-height: calc(100dvh - 2rem) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+}
+
+.historyModalHeader.historyModalHeader {
+  flex: 0 0 auto;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 1.25rem 1.5rem 1.1rem !important;
+  border-bottom: 1px solid #dfe8e5;
+}
+
+.historyModalKicker {
+  color: #35705b;
+  font-size: 0.65rem;
+  font-weight: 850;
+  letter-spacing: 0.065em;
+  text-transform: uppercase;
+}
+
+.historyModalBody.historyModalBody {
+  min-height: 0;
+  display: grid !important;
+  gap: 1rem;
+  padding: 1rem 1.5rem 1.2rem !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: #2a8061 rgba(226, 237, 232, 0.86);
+}
+
+.historyModalBody::-webkit-scrollbar {
+  width: 0.68rem;
+}
+
+.historyModalBody::-webkit-scrollbar-track {
+  margin: 0.35rem 0;
+  border-radius: 999px;
+  background: rgba(226, 237, 232, 0.86);
+}
+
+.historyModalBody::-webkit-scrollbar-thumb {
+  border: 2px solid rgba(226, 237, 232, 0.86);
+  border-radius: 999px;
+  background: #2a8061;
+}
+
+.historySummaryGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.historySummaryGrid > div {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.78rem 0.9rem;
+  border: 1px solid #dce8e3;
+  border-radius: 0.9rem;
+  background: #f8fbf9;
+}
+
+.historySummaryGrid span {
+  color: #587068;
+  font-size: 0.72rem;
+  font-weight: 760;
+  line-height: 1.35;
+}
+
+.historySummaryGrid strong {
+  flex: 0 0 auto;
+  min-width: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #0b5c42;
+  font-size: 1.15rem;
+}
+
+.historyControls {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.9rem;
+  border: 1px solid #dce8e3;
+  border-radius: 1rem;
+  background: #f8fbf9;
+}
+
+.historyTypeTabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.historyTypeTabs button {
+  min-width: 0;
+  min-height: 2.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.55rem;
+  padding: 0.55rem 0.72rem;
+  border: 1px solid #d4e1dc;
+  border-radius: 0.78rem;
+  color: #315249;
+  background: #fff;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 790;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 150ms ease, background 150ms ease, box-shadow 150ms ease;
+}
+
+.historyTypeTabs button:hover {
+  border-color: #8fc7ad;
+  background: #f4faf7;
+}
+
+.historyTypeTabs button.historyTypeTabActive {
+  border-color: #73bb99;
+  color: #0a573e;
+  background: linear-gradient(180deg, #f7fcf9 0%, #e9f7ef 100%);
+  box-shadow: inset 0 0 0 1px rgba(23, 112, 71, 0.04);
+}
+
+.historyTypeTabs strong {
+  min-width: 1.65rem;
+  min-height: 1.65rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.38rem;
+  border-radius: 999px;
+  color: #44675b;
+  background: #edf3f0;
+  font-size: 0.68rem;
+}
+
+.historyTypeTabActive strong {
+  color: #0a573e;
+  background: #d7eee2;
+}
+
+.historyDateDisclosure {
+  overflow: hidden;
+  border: 1px solid #d4e1dc;
+  border-radius: 0.85rem;
+  background: #fff;
+}
+
+.historyDateDisclosure > summary {
+  min-height: 2.9rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.65rem 0.8rem;
+  color: #274c41;
+  list-style: none;
+  cursor: pointer;
+}
+
+.historyDateDisclosure > summary::-webkit-details-marker {
+  display: none;
+}
+
+.historyDateDisclosure > summary > span {
+  font-size: 0.76rem;
+  font-weight: 790;
+}
+
+.historyDateDisclosure > summary > small {
+  color: #71827c;
+  font-size: 0.68rem;
+  font-weight: 680;
+}
+
+.historyDateDisclosure[open] .sectionChevron {
+  transform: rotate(180deg);
+}
+
+.historyDateRange {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+  gap: 0.7rem;
+  align-items: end;
+  padding: 0 0.8rem 0.8rem;
+  border-top: 1px solid #e5ece9;
+}
+
+.historyDateRange .historyDateField {
+  padding-top: 0.75rem;
+}
+
+.historyResultsHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.historyResultsHeader > div {
+  min-width: 0;
+  display: grid;
+  gap: 0.2rem;
+}
+
+.historyResultsHeader strong {
+  color: #123f34;
+  font-size: 0.88rem;
+}
+
+.historyResultsHeader span {
+  color: #687b74;
+  font-size: 0.72rem;
+  font-weight: 650;
+}
+
+.historyResultsHeader > button {
+  flex: 0 0 auto;
+  border: 0;
+  padding: 0.35rem 0;
+  color: #126b4b;
+  background: transparent;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 820;
+  cursor: pointer;
+}
+
+.historyResultsHeader > button:hover {
+  text-decoration: underline;
+}
+
+.historyTimeline {
+  display: grid;
+}
+
+.historyTimelineItem {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 1.25rem minmax(0, 1fr);
+  gap: 0.65rem;
+}
+
+.historyTimelineRail {
+  position: relative;
+}
+
+.historyTimelineRail::before {
+  content: "";
+  position: absolute;
+  top: 0.78rem;
+  bottom: -0.25rem;
+  left: 0.57rem;
+  width: 2px;
+  background: #c9ded4;
+}
+
+.historyTimelineItem:last-child .historyTimelineRail::before {
+  display: none;
+}
+
+.historyTimelineRail > span {
+  position: absolute;
+  top: 0.48rem;
+  left: 0.24rem;
+  z-index: 1;
+  width: 0.72rem;
+  height: 0.72rem;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  background: #2a8061;
+  box-shadow: 0 0 0 2px #bcd9cc;
+}
+
+.historyTimelineEntry {
+  min-width: 0;
+  display: grid;
+  gap: 0.48rem;
+  padding-bottom: 0.9rem;
+}
+
+.historyTimelineMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.historyTimelineMeta > span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.65rem;
+  padding: 0.25rem 0.52rem;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.historyMaintenanceTag {
+  color: #12643f;
+  background: #eaf6ef;
+}
+
+.historyIssueTag {
+  color: #8a4c0c;
+  background: #fff3df;
+}
+
+.historyTimelineMeta time {
+  color: #70817b;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.historyTimelineEntry .recordCard,
+.historyTimelineEntry .problemCard {
+  margin: 0;
+  box-shadow: none;
+}
+
+.historyEmptyState {
+  display: grid;
+  gap: 0.3rem;
+  padding: 2rem 1rem !important;
+  border: 1px dashed #cdded7;
+  border-radius: 0.9rem;
+  text-align: center;
+  background: #f9fbfa;
+}
+
+.historyEmptyState strong {
+  color: #244c40;
+  font-size: 0.88rem;
+}
+
+.historyEmptyState span {
+  color: #71817b;
+  font-size: 0.72rem;
+  font-weight: 650;
+}
+
+.historyModalFooter.historyModalFooter {
+  flex: 0 0 auto;
+  justify-content: flex-end !important;
+  padding: 0.85rem 1.5rem 1rem !important;
+  border-top: 1px solid #dfe8e5;
+}
+
+.historyModalFooter > button {
+  min-width: 9rem;
+}
+
 .maintenanceSearchField > button:hover {
   color: #0a543d;
   background: #e1eee7;
@@ -898,6 +1268,42 @@
 }
 
 @media (max-width: 760px) {
+  .historyModal.historyModal {
+    width: calc(100vw - 1rem) !important;
+    max-height: calc(100dvh - 1rem) !important;
+  }
+
+  .historyModalHeader.historyModalHeader,
+  .historyModalBody.historyModalBody,
+  .historyModalFooter.historyModalFooter {
+    padding-right: 1rem !important;
+    padding-left: 1rem !important;
+  }
+
+  .historySummaryGrid,
+  .historyTypeTabs,
+  .historyDateRange {
+    grid-template-columns: 1fr;
+  }
+
+  .historyDateRange {
+    padding-top: 0.75rem;
+  }
+
+  .historyDateRange .historyDateField {
+    padding-top: 0;
+  }
+
+  .historyResultsHeader {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+
+  .historyModalFooter > button {
+    width: 100%;
+  }
+
   .trackerFilterForm.trackerFilterForm {
     grid-template-columns: 1fr !important;
     padding: 1.15rem 1.2rem 1.3rem !important;

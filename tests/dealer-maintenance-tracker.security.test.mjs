@@ -4,6 +4,7 @@ import test from 'node:test';
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 const tracker = read('components/DealerMaintenanceTrackerClient.tsx');
+const trackerStyles = read('components/DealerMaintenanceTrackerClient.module.css');
 const trackerData = read('lib/dealer-maintenance-tracker.ts');
 const reportModal = read('components/DealerMaintenanceReportModal.tsx');
 const costReportModal = read('components/DealerCostOfOwnershipReportModal.tsx');
@@ -36,13 +37,35 @@ test('history access is rechecked before records are expanded', () => {
 test('upcoming work is collapsed by default and remains outside maintenance history', () => {
   const upcomingIndex = tracker.indexOf('<h3>Upcoming maintenance</h3>');
   const problemsIndex = tracker.indexOf('<h3>Active problems and notes</h3>');
-  const historyConditionalIndex = tracker.indexOf('{isMaintenanceOpen ? (');
+  const historyModalIndex = tracker.indexOf('{historyAsset ? (');
   assert.ok(upcomingIndex > 0);
   assert.ok(problemsIndex > upcomingIndex);
-  assert.ok(historyConditionalIndex > problemsIndex);
+  assert.ok(historyModalIndex > problemsIndex);
   assert.match(tracker, /<details className=\{styles\.section\}>/);
   assert.match(tracker, /<summary>/);
   assert.match(tracker, /View maintenance history/);
+});
+
+test('history opens as a focused timeline instead of extending the asset card', () => {
+  assert.match(tracker, /aria-haspopup="dialog"/);
+  assert.match(tracker, /aria-labelledby="maintenance-history-title"/);
+  assert.match(tracker, /historySummaryGrid/);
+  assert.match(tracker, /historyTypeTabs/);
+  assert.match(tracker, /historyDateDisclosure/);
+  assert.match(tracker, /historyTimeline/);
+  assert.match(tracker, /Latest records first/);
+  assert.match(trackerStyles, /\.historyModal\.historyModal/);
+  assert.match(trackerStyles, /\.historyTimelineItem/);
+  assert.doesNotMatch(tracker, /id=\{`maintenance-view-/);
+});
+
+test('maintenance actions use the Aim4price Manage icon and clear report wording', () => {
+  const ownerManageIcon = assetRegister.match(/<path d="M12\.22 2h-\.44[^\n]+/u)?.[0];
+  assert.ok(ownerManageIcon, 'Owner Asset Register Manage icon should remain available');
+  assert.ok(tracker.includes(ownerManageIcon), 'Maintenance should reuse the Owner Asset Register Manage icon');
+  assert.match(tracker, /<strong>Maintenance reports<\/strong>/);
+  assert.match(tracker, /Choose PDF or Excel and download maintenance history/);
+  assert.doesNotMatch(tracker, /<strong>PDF reports<\/strong>/);
 });
 
 test('dealer tracker omits replacement pricing and owner-approved asset corrections', () => {
