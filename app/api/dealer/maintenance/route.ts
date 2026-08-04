@@ -12,17 +12,20 @@ export async function GET() {
     return NextResponse.json({ ok: false, error: 'Dealer App login is required.' }, { status: 401 });
   }
 
-  const profile = await getAccountProfile({
-    id: session.user.id,
-    name: session.user.name,
-    email: session.user.email,
-  });
-  if (profile.accountType !== 'dealer' || profile.accountStatus !== 'active') {
-    return NextResponse.json({ ok: false, error: 'Dealer App access is not available.' }, { status: 403 });
-  }
-
   try {
-    const assets = await listDealerTrackedAssets(session.user.id);
+    const [profile, assets] = await Promise.all([
+      getAccountProfile({
+        id: session.user.id,
+        name: session.user.name,
+        email: session.user.email,
+      }),
+      listDealerTrackedAssets(session.user.id),
+    ]);
+
+    if (profile.accountType !== 'dealer' || profile.accountStatus !== 'active') {
+      return NextResponse.json({ ok: false, error: 'Dealer App access is not available.' }, { status: 403 });
+    }
+
     return NextResponse.json({ ok: true, assets });
   } catch (error) {
     console.error('Dealer maintenance tracker GET failed.', error);

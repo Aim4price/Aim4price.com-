@@ -2617,3 +2617,309 @@
     transition: none;
   }
 }
+
+/* Dealer App home: work-first hierarchy without a header strip. */
+.dealerLayout {
+  position: relative;
+}
+
+.navSignOut {
+  position: absolute;
+  z-index: 20;
+  top: 0;
+  right: max(16px, env(safe-area-inset-right));
+  width: auto;
+  min-height: 0;
+  margin: 0;
+  padding: max(14px, env(safe-area-inset-top)) 0 0;
+}
+
+.navSignOut .signOut {
+  width: auto;
+  min-width: 96px;
+  min-height: 42px;
+  margin: 0;
+  border-radius: 13px;
+  padding-inline: 14px;
+  background: rgba(255, 250, 250, 0.92);
+  box-shadow: 0 8px 22px rgba(120, 39, 39, 0.08);
+  backdrop-filter: blur(12px);
+}
+
+.homeShell.homeShell {
+  min-height: 100dvh;
+  padding: 0 0 max(28px, env(safe-area-inset-bottom));
+  background:
+    radial-gradient(circle at 8% 4%, rgba(245, 184, 75, 0.16), transparent 28%),
+    radial-gradient(circle at 94% 18%, rgba(74, 165, 120, 0.17), transparent 30%),
+    linear-gradient(180deg, #f5faf7 0%, #ffffff 54%, #f4f8f6 100%);
+}
+
+.homeContent {
+  width: min(calc(100% - 32px), 560px);
+  align-content: start;
+  gap: 18px;
+  box-sizing: border-box;
+  padding: max(82px, calc(env(safe-area-inset-top) + 72px)) 0 0;
+}
+
+.dealerHomeIntro {
+  display: grid;
+  gap: 6px;
+  padding: 4px 3px 2px;
+}
+
+.dealerHomeIntro > span {
+  color: #24775a;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.dealerHomeIntro h1 {
+  margin: 0;
+  color: #12352d;
+  font-size: clamp(2rem, 9vw, 2.75rem);
+  font-weight: 900;
+  letter-spacing: -0.052em;
+  line-height: 1.02;
+  text-wrap: balance;
+}
+
+.dealerHomeIntro p {
+  margin: 0;
+  color: rgba(18, 53, 45, 0.65);
+  font-size: 0.9rem;
+  font-weight: 650;
+  line-height: 1.42;
+}
+
+.dealerWorkGrid,
+.dealerToolGrid {
+  display: grid;
+  gap: 12px;
+}
+
+.dealerWorkCard {
+  position: relative;
+  min-width: 0;
+  min-height: 104px;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  overflow: hidden;
+  box-sizing: border-box;
+  border: 1px solid rgba(18, 53, 45, 0.13);
+  border-radius: 22px;
+  color: #12352d;
+  padding: 17px 18px;
+  text-decoration: none;
+  box-shadow: 0 16px 34px rgba(18, 53, 45, 0.09);
+  transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.dealerWorkCardLeads {
+  border-color: rgba(215, 138, 28, 0.32);
+  background:
+    radial-gradient(circle at 0 0, rgba(240, 171, 65, 0.22), transparent 43%),
+    linear-gradient(135deg, #fffdf8 0%, #fff1d5 100%);
+}
+
+.dealerWorkCardMaintenance {
+  border-color: rgba(45, 145, 101, 0.28);
+  background:
+    radial-gradient(circle at 0 0, rgba(71, 170, 125, 0.2), transparent 43%),
+    linear-gradient(135deg, #fbfffc 0%, #e5f6ed 100%);
+}
+
+.dealerWorkCardNotifications {
+  border-color: rgba(65, 112, 158, 0.23);
+  background:
+    radial-gradient(circle at 0 0, rgba(91, 139, 185, 0.17), transparent 43%),
+    linear-gradient(135deg, #ffffff 0%, #eaf3fa 100%);
+}
+
+.dealerWorkIcon {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(18, 53, 45, 0.1);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.76);
+  box-shadow: 0 8px 18px rgba(18, 53, 45, 0.07);
+}
+
+.dealerWorkIcon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.dealerWorkCopy {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.dealerWorkCopy strong {
+  font-size: clamp(1.22rem, 5.2vw, 1.48rem);
+  font-weight: 850;
+  letter-spacing: -0.028em;
+  line-height: 1.08;
+}
+
+.dealerWorkCopy small {
+  color: rgba(18, 53, 45, 0.65);
+  font-size: 0.76rem;
+  font-weight: 750;
+  line-height: 1.3;
+}
+
+.dealerWorkArrow {
+  color: rgba(18, 53, 45, 0.52);
+  font-size: 2rem;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.dealerToolGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding-top: 2px;
+}
+
+.dealerToolCard {
+  min-width: 0;
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  border: 1px solid rgba(18, 53, 45, 0.13);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #12352d;
+  padding: 14px 12px;
+  text-align: center;
+  text-decoration: none;
+  box-shadow: 0 10px 24px rgba(18, 53, 45, 0.065);
+  transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.dealerToolCard strong {
+  font-size: clamp(0.96rem, 4.2vw, 1.08rem);
+  font-weight: 820;
+  letter-spacing: -0.018em;
+  line-height: 1.2;
+}
+
+.dealerWorkCard:hover,
+.dealerToolCard:hover {
+  border-color: rgba(35, 104, 81, 0.34);
+  box-shadow: 0 18px 36px rgba(18, 53, 45, 0.13);
+  transform: translateY(-1px);
+}
+
+.dealerWorkCard:active,
+.dealerToolCard:active {
+  transform: translateY(1px);
+}
+
+.dealerWorkCard:focus-visible,
+.dealerToolCard:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.13), 0 18px 36px rgba(18, 53, 45, 0.12);
+}
+
+@media (min-width: 600px) {
+  .navSignOut {
+    right: max(24px, env(safe-area-inset-right));
+    width: auto;
+    min-height: 0;
+    padding-top: max(18px, env(safe-area-inset-top));
+  }
+
+  .navSignOut .signOut {
+    width: auto;
+    min-width: 112px;
+    min-height: 46px;
+    padding-inline: 18px;
+  }
+
+  .homeShell.homeShell {
+    min-height: 100dvh;
+  }
+
+  .homeContent {
+    width: min(calc(100% - 48px), 920px);
+    gap: 22px;
+    padding-top: max(94px, calc(env(safe-area-inset-top) + 82px));
+  }
+
+  .dealerHomeIntro {
+    max-width: 650px;
+    gap: 8px;
+  }
+
+  .dealerHomeIntro h1 {
+    font-size: clamp(2.6rem, 5vw, 3.55rem);
+  }
+
+  .dealerHomeIntro p {
+    font-size: 1rem;
+  }
+
+  .dealerWorkGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .dealerWorkCard {
+    min-height: 158px;
+    grid-template-columns: 54px minmax(0, 1fr);
+    align-content: center;
+    gap: 16px;
+    padding: 22px;
+  }
+
+  .dealerWorkIcon {
+    width: 54px;
+    height: 54px;
+  }
+
+  .dealerWorkCopy strong {
+    font-size: 1.35rem;
+  }
+
+  .dealerWorkCopy small {
+    font-size: 0.78rem;
+  }
+
+  .dealerWorkArrow {
+    position: absolute;
+    right: 18px;
+    bottom: 14px;
+  }
+
+  .dealerToolGrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .dealerToolCard {
+    min-height: 82px;
+  }
+
+  .dealerToolCard strong {
+    font-size: 1.02rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dealerWorkCard,
+  .dealerToolCard {
+    transition: none;
+  }
+}
