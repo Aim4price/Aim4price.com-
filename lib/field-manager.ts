@@ -2,6 +2,7 @@ import { randomBytes, scrypt, timingSafeEqual } from "node:crypto";
 import { promisify } from "node:util";
 import { ensureAssetRegisterTables } from "./asset-registers";
 import { formatResolvedAssetUsage, resolveAssetUsage } from "./asset-usage";
+import { isDatabaseSchemaReady } from "./database-schema-readiness";
 import { getDb } from "./db";
 import {
   type CanonicalAssetOwnerResolution,
@@ -439,6 +440,55 @@ function mapFieldManagerAssetRow(
 
 async function ensureFieldManagerTablesOnce(): Promise<void> {
   const db = getDb();
+  const schemaReady = await isDatabaseSchemaReady(() => db.query(`
+    with manager_schema as (
+      select
+        id,
+        owner_user_id,
+        display_name,
+        username,
+        username_normalized,
+        password_hash,
+        is_active,
+        session_version,
+        failed_login_attempts,
+        login_locked_until,
+        last_login_at,
+        created_at,
+        updated_at
+      from public.field_managers
+      where false
+    ), asset_access_schema as (
+      select field_manager_id, asset_id, created_at
+      from public.field_manager_asset_access
+      where false
+    ), settings_schema as (
+      select
+        field_manager_id,
+        asset_scope,
+        fuel_scope,
+        can_record_work,
+        can_schedule_maintenance,
+        can_record_fuel,
+        can_refill_fuel,
+        updated_at
+      from public.field_manager_access_settings
+      where false
+    ), fuel_access_schema as (
+      select field_manager_id, fuel_storage_id, created_at
+      from public.field_manager_fuel_storage_access
+      where false
+    )
+    select 1
+    from manager_schema
+    cross join asset_access_schema
+    cross join settings_schema
+    cross join fuel_access_schema
+  `));
+
+  if (schemaReady) {
+    return;
+  }
 
   await db.query(`create extension if not exists pgcrypto`);
 
