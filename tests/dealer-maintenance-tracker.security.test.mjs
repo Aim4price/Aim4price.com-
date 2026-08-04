@@ -80,8 +80,11 @@ test('history separates information, timeline and records into individual modal 
   assert.match(tracker, /Last 12 months/);
   assert.match(tracker, /Last 3 months/);
   assert.match(tracker, /Custom dates/);
-  assert.match(trackerStyles, /\.historyTypeTabs button[\s\S]*min-height: 5\.35rem/);
+  assert.match(trackerStyles, /\.historyTypeTabs button[\s\S]*min-height: 6\.5rem/);
   assert.match(trackerStyles, /\.historyChoiceModal\.historyChoiceModal/);
+  assert.match(trackerStyles, /width: min\(calc\(100vw - 2rem\), 60rem\)/);
+  assert.doesNotMatch(tracker, /aria-pressed=\{historyRecordType === option\.value\}/);
+  assert.doesNotMatch(tracker, /aria-pressed=\{historyTimelineFilter === option\.value\}/);
 });
 
 test('maintenance actions use the Aim4price Manage icon and clear report wording', () => {
