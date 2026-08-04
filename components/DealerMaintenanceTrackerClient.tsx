@@ -1252,9 +1252,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                       <button
                         key={option.value}
                         type="button"
-                        className={historyRecordType === option.value ? styles.historyTypeTabActive : ''}
                         onClick={() => chooseHistoryRecordType(option.value as HistoryRecordType)}
-                        aria-pressed={historyRecordType === option.value}
                       >
                         <span>
                           <strong>{option.label}</strong>
@@ -1262,7 +1260,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                             ? 'All saved activity'
                             : option.value === 'maintenance'
                               ? 'Completed services and checkups'
-                              : 'Problems, updates and saved notes'}</small>
+                              : 'Problems and saved notes'}</small>
                         </span>
                         <b>{count}</b>
                       </button>
@@ -1279,18 +1277,16 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                     <button
                       key={option.value}
                       type="button"
-                      className={historyTimelineFilter === option.value ? styles.historyTimelineFilterActive : ''}
                       onClick={() => chooseHistoryTimeline(option.value as HistoryTimelineFilter)}
-                      aria-pressed={historyTimelineFilter === option.value}
                     >
                       <strong>{option.label}</strong>
                       <small>{option.value === 'all'
                         ? 'Full history'
                         : option.value === '12months'
-                          ? 'Past year'
+                          ? 'Previous year'
                           : option.value === '90days'
                             ? 'Past 90 days'
-                            : 'Select a range'}</small>
+                            : 'Choose dates'}</small>
                     </button>
                   ))}
                 </div>
