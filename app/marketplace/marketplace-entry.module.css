@@ -248,6 +248,42 @@
   gap: clamp(1.45rem, 2vw, 2rem);
 }
 
+.entryIntro.entryIntro {
+  display: grid;
+  gap: 0.48rem;
+  max-width: 58rem;
+}
+
+.entryEyebrow {
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.85rem;
+  margin-bottom: 0.12rem;
+  padding: 0.35rem 0.68rem;
+  border: 1px solid rgba(31, 138, 102, 0.15);
+  border-radius: 999px;
+  color: #176047;
+  background: rgba(31, 138, 102, 0.075);
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.085em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.entryTitle.entryTitle {
+  max-width: 52rem;
+  color: #123c32;
+  letter-spacing: -0.052em;
+}
+
+.entryText.entryText {
+  max-width: 48rem;
+  color: #60736b;
+  line-height: 1.5;
+}
+
 .entryGrid.entryGrid {
   gap: clamp(1.2rem, 1.8vw, 1.65rem);
 }
@@ -296,6 +332,16 @@
 
   .entryStart.entryStart {
     gap: 1rem;
+  }
+
+  .entryIntro.entryIntro {
+    gap: 0.4rem;
+  }
+
+  .entryEyebrow {
+    min-height: 1.7rem;
+    padding: 0.31rem 0.58rem;
+    font-size: 0.64rem;
   }
 
   .entryGrid.entryGrid {
