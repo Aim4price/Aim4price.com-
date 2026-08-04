@@ -77,7 +77,7 @@ test('Dealer lead actions and report flow match the Owner experience', async () 
   assert.match(leadsClient, /<strong>Schedule maintenance<\/strong>/);
   assert.doesNotMatch(leadsClient, /<strong>Call client<\/strong>/);
   assert.ok(leadsClient.includes(ownerGear));
-  assert.match(leadsStyles, /\.leadManageModal \{[\s\S]*max-width: 92rem !important/);
+  assert.match(leadsStyles, /\.leadManageModal \{[\s\S]*max-width: 64rem !important/);
   assert.match(leadsStyles, /\.leadsPage \.leadAssetCard \.leadManageButton \{[\s\S]*#e6f8ef/);
 
   for (const reportSource of [costReport, maintenanceReport]) {
