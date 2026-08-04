@@ -4256,35 +4256,36 @@
 
 /* === Unified dealer lead/tracking card actions and delete confirmations === */
 .leadsPage .clientActionRow > button {
-  flex: 0 0 9.5rem;
-  width: 9.5rem;
-  min-width: 9.5rem !important;
+  flex: 0 0 10.75rem;
+  width: 10.75rem;
+  min-width: 10.75rem !important;
   min-height: 3.25rem !important;
+  padding-inline: 1.2rem !important;
 }
 
 .trackingLeadActionsClosed {
   min-width: 0;
-  grid-template-columns: repeat(2, 9.5rem);
+  grid-template-columns: repeat(2, 10.75rem);
 }
 
 .trackingLeadActionsOpen {
   min-width: 0;
-  grid-template-columns: repeat(3, 9.5rem);
+  grid-template-columns: repeat(3, 10.75rem);
 }
 
 .trackingLeadActionsSingle.trackingLeadActionsClosed {
   min-width: 0;
-  grid-template-columns: 9.5rem;
+  grid-template-columns: 10.75rem;
 }
 
 .trackingLeadActionsSingle.trackingLeadActionsOpen {
   min-width: 0;
-  grid-template-columns: repeat(2, 9.5rem);
+  grid-template-columns: repeat(2, 10.75rem);
 }
 
 .trackingLeadActions > button {
-  width: 9.5rem !important;
-  min-width: 9.5rem !important;
+  width: 10.75rem !important;
+  min-width: 10.75rem !important;
 }
 
 .leadsPage .trackingLeadActions .trackingCloseButton,
