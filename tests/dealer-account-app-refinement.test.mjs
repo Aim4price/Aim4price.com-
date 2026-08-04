@@ -4,11 +4,11 @@ import test from 'node:test';
 
 const read = (path) => readFileSync(new URL('../' + path, import.meta.url), 'utf8');
 
-test('Dealer desktop keeps four visible choices and rotates secondary workspaces', () => {
+test('Dealer desktop keeps Leads, Maintenance and Client Costs without a Clients workspace', () => {
   const source = read('components/AppHeader.tsx');
   assert.match(source, /key: 'tracking', href: '\/tracking', label: 'Maintenance'/);
   assert.match(source, /key: 'cost', href: '\/dealer-costs', label: 'Client Costs'/);
-  assert.match(source, /key: 'clients', href: '\/dealer-clients', label: 'Clients'/);
+  assert.doesNotMatch(source, /dealer-clients|key: 'clients'/);
   assert.match(source, /const navWindowSize = isAccountantWorkspace \? navItems\.length : NAV_WINDOW_SIZE/);
 });
 
@@ -16,19 +16,10 @@ test('Dealer App home separates daily work from secondary tools', () => {
   const source = read('app/dealer/page.tsx');
   assert.match(source, /<h2>Work<\/h2>/);
   assert.match(source, /<h2>More dealer tools<\/h2>/);
-  assert.match(source, /label: 'Clients'/);
+  assert.doesNotMatch(source, /href: '\/dealer\/clients'|label: 'Clients'/);
   assert.match(source, /label: 'Client Costs'/);
   assert.match(source, /newLeadCount/);
   assert.match(source, /attentionCount/);
-});
-
-test('Clients workspace is scoped to the signed-in dealer and focuses one card', () => {
-  const source = read('components/DealerClientsClient.tsx');
-  assert.match(source, /filter\(\(lead\) => lead\.partnerUserId === dealerUserId\)/);
-  assert.match(source, /openClientId && !isOpen/);
-  assert.match(source, /styles\.clientCardMuted/);
-  assert.match(source, /Open Leads/);
-  assert.match(source, /Open Maintenance/);
 });
 
 test('Dealer Maintenance summaries apply filters and focus the open asset', () => {

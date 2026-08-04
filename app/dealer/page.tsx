@@ -87,7 +87,6 @@ export default async function DealerHome() {
   ];
 
   const dealerTools: DealerHomeTool[] = [
-    { label: 'Clients', description: 'See each client, their leads and tracked assets.', href: '/dealer/clients' },
     { label: 'Get Estimate', description: 'Create a clear equipment estimate.', href: '/dealer/valuation' },
     { label: 'Client Costs', description: 'Capture costs against client equipment.', href: '/dealer/cost' },
     { label: 'Marketplace', description: 'Browse and manage marketplace activity.', href: '/dealer/marketplace' },

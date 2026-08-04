@@ -28,7 +28,6 @@ type ActivePage =
   | 'account'
   | 'asset-discovery'
   | 'leads'
-  | 'clients'
   | 'tracking'
   | 'shared-registers'
   | 'marketplace'
@@ -210,7 +209,6 @@ const ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
   { href: '/marketplace', label: 'Marketplace', accountTypes: ['owner', 'dealer'] },
   { href: '/leads', label: 'Leads', accountTypes: ['dealer'] },
   { href: '/dealer-costs', label: 'Client Costs', accountTypes: ['dealer'] },
-  { href: '/dealer-clients', label: 'Clients', accountTypes: ['dealer'] },
   { href: '/shared-registers', label: 'Shared Registers', accountTypes: ['insurance'] },
 ];
 
@@ -283,7 +281,6 @@ function buildNavItems(
       { key: 'tracking', href: '/tracking', label: 'Maintenance' },
       { key: 'marketplace', href: '/marketplace', label: 'Marketplace' },
       { key: 'cost', href: '/dealer-costs', label: 'Client Costs' },
-      { key: 'clients', href: '/dealer-clients', label: 'Clients' },
     ];
   }
 
