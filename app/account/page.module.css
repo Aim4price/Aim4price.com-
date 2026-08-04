@@ -3498,3 +3498,295 @@
     grid-column: 1 / -1;
   }
 }
+
+/* === Restored account modal workflow: spacing and alignment refinement === */
+.modalBackdrop {
+  padding: clamp(1rem, 2.5vw, 2rem) !important;
+  background: rgba(12, 24, 35, 0.42) !important;
+  backdrop-filter: blur(12px) saturate(0.9) !important;
+}
+
+.accountScrollableModalCard {
+  max-height: min(54rem, calc(100dvh - 3rem)) !important;
+  border: 1px solid rgba(18, 45, 37, 0.12) !important;
+  border-radius: 1.55rem !important;
+  background: #ffffff !important;
+  box-shadow:
+    0 32px 90px rgba(7, 25, 20, 0.28),
+    0 8px 24px rgba(7, 25, 20, 0.12) !important;
+}
+
+.businessDetailsModalCard {
+  width: min(100%, 70rem) !important;
+}
+
+.marketplaceModalCard {
+  width: min(100%, 58rem) !important;
+}
+
+.scanPinModalCard,
+.discoveryModalCard,
+.deleteAccountModalCard {
+  width: min(100%, 41rem) !important;
+}
+
+.partnerDirectoryModalCard {
+  width: min(100%, 72rem) !important;
+}
+
+.accountScrollableModalCard .accountModalScrollContent,
+.partnerDirectoryModalCard .accountModalScrollContent {
+  padding: clamp(1.35rem, 2.2vw, 2rem) !important;
+  padding-right: clamp(1.75rem, 2.6vw, 2.35rem) !important;
+}
+
+.accountScrollableModalCard .modalHeader {
+  min-height: 4.7rem;
+  display: grid;
+  align-content: start;
+  gap: 0.35rem;
+  margin: 0 0 1.3rem !important;
+  padding: 0 4rem 1.15rem 0 !important;
+  border-bottom: 1px solid rgba(18, 45, 37, 0.1);
+}
+
+.accountScrollableModalCard .modalHeader h2 {
+  margin: 0;
+  font-size: clamp(1.55rem, 2.3vw, 2rem);
+  line-height: 1.08;
+}
+
+.accountScrollableModalCard .modalHeader p {
+  max-width: 54rem;
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.accountScrollableModalCard .modalCloseButton {
+  top: 0;
+  right: 0;
+  width: 2.75rem;
+  min-width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 0.9rem;
+}
+
+.accountActionModalCard .form,
+.accountActionModalCard .marketplaceFields,
+.partnerDirectoryModalCard .directoryForm {
+  gap: 1rem 1.1rem;
+  padding-top: 0;
+}
+
+.modalSectionHeading {
+  display: grid;
+  gap: 0.18rem;
+  margin-top: 0.15rem;
+  padding: 0.78rem 0.95rem;
+  border: 1px solid rgba(18, 45, 37, 0.08);
+  border-radius: 1rem;
+  background: linear-gradient(120deg, #f6faf8, #f6f8fb);
+}
+
+.modalSectionHeading strong {
+  color: #173e33;
+  font-size: 0.86rem;
+  font-weight: 850;
+}
+
+.modalSectionHeading p {
+  margin: 0;
+  color: #708079;
+  font-size: 0.72rem;
+  font-weight: 620;
+  line-height: 1.45;
+}
+
+.accountScrollableModalCard .field,
+.accountScrollableModalCard .modalField {
+  gap: 0.42rem;
+}
+
+.accountScrollableModalCard .field > span,
+.accountScrollableModalCard .modalField > span {
+  color: #405950;
+  font-size: 0.7rem;
+  font-weight: 850;
+  letter-spacing: 0.045em;
+}
+
+.accountScrollableModalCard .field input,
+.accountScrollableModalCard .field select,
+.accountScrollableModalCard .field textarea,
+.accountScrollableModalCard .modalField input,
+.accountScrollableModalCard .modalField textarea,
+.accountScrollableModalCard .readOnlyValue {
+  min-height: 3.2rem;
+  border-radius: 0.92rem;
+}
+
+.businessDetailsModalCard .mediaUploadField {
+  gap: 0.8rem;
+  padding: 1rem;
+  border-radius: 1.15rem;
+}
+
+.businessDetailsModalCard .businessLogoPanel {
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 1.15rem;
+  padding: 1rem;
+  border-radius: 1rem;
+}
+
+.businessDetailsModalCard .businessLogoPreview {
+  width: clamp(7.5rem, 11vw, 8.75rem);
+  height: clamp(7.5rem, 11vw, 8.75rem);
+  border-radius: 1rem;
+}
+
+.businessDetailsModalCard .businessMediaControls {
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.marketplaceModalCard .marketplaceFields {
+  margin-top: 0;
+}
+
+.marketplaceModalCard .marketplaceActions {
+  margin-top: 0.25rem;
+}
+
+.scanPinModalCard .pinModalStatus,
+.discoveryModalCard .confirmBox,
+.deleteAccountModalCard .confirmBox {
+  margin-top: 0;
+  border-radius: 1rem;
+}
+
+.partnerDirectoryModalCard .partnerDirectoryTopGrid {
+  gap: 1rem;
+}
+
+.partnerDirectoryModalCard .partnerVisibilityToggle,
+.partnerDirectoryModalCard .partnerDirectoryPreview,
+.partnerDirectoryModalCard .partnerMapField {
+  border-radius: 1.1rem;
+}
+
+.partnerDirectoryModalCard .partnerVisibilityToggle,
+.partnerDirectoryModalCard .partnerDirectoryPreview {
+  padding: 1.05rem;
+}
+
+.partnerDirectoryModalCard .partnerMapField {
+  padding: 1.05rem;
+}
+
+.partnerDirectoryModalCard .partnerMapHeader {
+  gap: 1rem;
+  margin-bottom: 0.9rem;
+}
+
+.partnerDirectoryModalCard .partnerMapCanvas {
+  height: clamp(16rem, 34vh, 20rem);
+  min-height: 16rem;
+  border-radius: 1rem;
+}
+
+.partnerDirectoryModalCard .partnerMapFooter {
+  margin-top: 0.75rem;
+}
+
+.accountScrollableModalCard .modalActions,
+.accountScrollableModalCard .marketplaceActions,
+.accountScrollableModalCard .actionsRow,
+.partnerDirectoryModalCard .directoryForm .actionsRow {
+  bottom: clamp(-2rem, -2.2vw, -1.35rem) !important;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  margin: 0.4rem clamp(-2.35rem, -2.6vw, -1.75rem) clamp(-2rem, -2.2vw, -1.35rem) -2rem !important;
+  padding: 1rem clamp(2.35rem, 2.6vw, 2.35rem) clamp(1.35rem, 1.8vw, 1.7rem) 2rem !important;
+  border-top: 1px solid rgba(18, 45, 37, 0.11);
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 -12px 28px rgba(18, 45, 37, 0.045);
+}
+
+.accountScrollableModalCard .modalActions > button,
+.accountScrollableModalCard .marketplaceActions > button,
+.accountScrollableModalCard .actionsRow > button {
+  min-width: 8.75rem;
+  min-height: 3rem;
+}
+
+.accountScrollableModalCard .accountModalScrollRail {
+  top: 1rem;
+  right: 0.52rem;
+  bottom: 1rem;
+}
+
+@media (max-width: 760px) {
+  .modalBackdrop {
+    padding: 0.65rem !important;
+  }
+
+  .accountScrollableModalCard,
+  .businessDetailsModalCard,
+  .marketplaceModalCard,
+  .scanPinModalCard,
+  .discoveryModalCard,
+  .deleteAccountModalCard,
+  .partnerDirectoryModalCard {
+    width: 100% !important;
+    max-height: calc(100dvh - 1.3rem) !important;
+    border-radius: 1.15rem !important;
+  }
+
+  .accountScrollableModalCard .accountModalScrollContent,
+  .partnerDirectoryModalCard .accountModalScrollContent {
+    padding: 1rem 1.35rem 1rem 1rem !important;
+  }
+
+  .accountScrollableModalCard .modalHeader {
+    min-height: 4.2rem;
+    margin-bottom: 1rem !important;
+    padding: 0 3.25rem 0.9rem 0 !important;
+  }
+
+  .accountScrollableModalCard .modalHeader h2 {
+    font-size: 1.42rem;
+  }
+
+  .businessDetailsModalCard .businessLogoPanel {
+    grid-template-columns: 1fr;
+  }
+
+  .businessDetailsModalCard .businessLogoPreview {
+    grid-row: auto;
+    width: 7rem;
+    height: 7rem;
+  }
+
+  .accountScrollableModalCard .modalActions,
+  .accountScrollableModalCard .marketplaceActions,
+  .accountScrollableModalCard .actionsRow,
+  .partnerDirectoryModalCard .directoryForm .actionsRow {
+    bottom: -1rem !important;
+    grid-template-columns: 1fr !important;
+    margin: 0.3rem -1.35rem -1rem -1rem !important;
+    padding: 0.85rem 1.35rem 1rem 1rem !important;
+  }
+
+  .accountScrollableModalCard .modalActions > button,
+  .accountScrollableModalCard .marketplaceActions > button,
+  .accountScrollableModalCard .actionsRow > button {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .partnerDirectoryModalCard .partnerMapCanvas {
+    height: 15rem;
+    min-height: 15rem;
+  }
+}
