@@ -16,20 +16,20 @@ const ATTENTION_STATUSES = new Set(['overdue', 'due', 'due_soon', 'usage_needed'
 
 type DealerHomeTool = {
   label: string;
-  description: string;
   href: string;
   count?: number;
 };
 
 function ToolCard({ tool }: { tool: DealerHomeTool }) {
   return (
-    <Link className={styles.card} href={tool.href}>
-      <span className={styles.cardCopy}>
-        <strong>{tool.label}</strong>
-        <small>{tool.description}</small>
-      </span>
-      {tool.count ? <span className={styles.cardCount}>{tool.count > 99 ? '99+' : tool.count}</span> : null}
-      <span className={styles.cardArrow} aria-hidden="true">›</span>
+    <Link
+      className={styles.homeLaunchCard}
+      href={tool.href}
+      prefetch={false}
+      aria-label={tool.count ? `${tool.label}, ${tool.count} new` : tool.label}
+    >
+      <strong>{tool.label}</strong>
+      {tool.count ? <span className={styles.homeLaunchBadge}>{tool.count > 99 ? '99+' : tool.count}</span> : null}
     </Link>
   );
 }
@@ -60,65 +60,34 @@ export default async function DealerHome() {
   ).length;
   const attentionCount = trackedAssets.filter((asset) => ATTENTION_STATUSES.has(asset.status)).length;
 
-  const workTools: DealerHomeTool[] = [
+  const tools: DealerHomeTool[] = [
     {
       label: 'Notifications',
-      description: unreadMaintenanceCount ? 'New maintenance updates are waiting.' : 'Maintenance updates and reminders.',
       href: '/dealer/notifications',
       count: unreadMaintenanceCount,
     },
     {
       label: 'Leads',
-      description: newLeadCount ? 'New client requests need a look.' : 'Review and manage client requests.',
       href: '/dealer/leads',
       count: newLeadCount,
     },
     {
       label: 'Maintenance',
-      description: attentionCount ? 'Shared equipment needs attention.' : 'Track shared equipment and schedules.',
       href: '/dealer/maintenance',
       count: attentionCount,
     },
-    {
-      label: 'Discovery',
-      description: 'Find participating assets nearby.',
-      href: '/dealer/discovery',
-    },
-  ];
-
-  const dealerTools: DealerHomeTool[] = [
-    { label: 'Get Estimate', description: 'Create a clear equipment estimate.', href: '/dealer/valuation' },
-    { label: 'Client Costs', description: 'Capture costs against client equipment.', href: '/dealer/cost' },
-    { label: 'Marketplace', description: 'Browse and manage marketplace activity.', href: '/dealer/marketplace' },
+    { label: 'Get Estimate', href: '/dealer/valuation' },
+    { label: 'Discover Assets', href: '/dealer/discovery' },
+    { label: 'Client Costs', href: '/dealer/cost' },
+    { label: 'Marketplace', href: '/dealer/marketplace' },
   ];
 
   return (
-    <main className={styles.shell}>
-      <div className={styles.content}>
-        <header className={styles.launcherIntro}>
-          <span className={styles.eyebrow}>Dealer App</span>
-          <h1 className={styles.brand}>What needs attention?</h1>
-          <p className={styles.helper}>Open one clear workspace at a time.</p>
-        </header>
-
-        <section className={styles.toolSection}>
-          <div className={styles.toolSectionHeader}>
-            <h2>Work</h2>
-            <span>Today</span>
-          </div>
-          <nav className={styles.launcher} aria-label="Dealer work">
-            {workTools.map((tool) => <ToolCard key={tool.href} tool={tool} />)}
-          </nav>
-        </section>
-
-        <section className={styles.toolSection}>
-          <div className={styles.toolSectionHeader}>
-            <h2>More dealer tools</h2>
-          </div>
-          <nav className={styles.launcher + ' ' + styles.secondaryLauncher} aria-label="More dealer tools">
-            {dealerTools.map((tool) => <ToolCard key={tool.href} tool={tool} />)}
-          </nav>
-        </section>
+    <main className={`${styles.shell} ${styles.homeShell}`}>
+      <div className={styles.homeContent}>
+        <nav className={styles.homeLauncher} aria-label="Dealer tools">
+          {tools.map((tool) => <ToolCard key={tool.href} tool={tool} />)}
+        </nav>
       </div>
     </main>
   );
