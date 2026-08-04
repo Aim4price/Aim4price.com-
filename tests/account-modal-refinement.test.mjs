@@ -46,7 +46,10 @@ test("business modal clearly groups contact and location details", async () => {
   assert.match(source, /businessDetailsModalCard/);
   assert.match(source, /Contact information/);
   assert.match(source, /Account location/);
-  assert.match(source, /Directory visibility and the public map pin remain separately controlled/);
+  assert.match(
+    source,
+    /Directory visibility and the public\s+map pin remain separately controlled/,
+  );
 });
 
 test("modal CSS defines focused widths, spacing and sticky actions", async () => {
