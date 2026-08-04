@@ -52,7 +52,7 @@ export async function generateMetadata(
 
   return {
     title: 'Marketplace',
-    description: 'Choose whether to discover participating assets or browse Marketplace listings on Aim4price.',
+    description: 'Discover owner-approved assets or browse machinery listed for sale on Aim4price.',
   };
 }
 
@@ -85,9 +85,12 @@ export default async function MarketplaceEntryPage({
             >
               <div className={`${valuationStyles.sectorStart} ${entryStyles.entryStart}`}>
                 <div className={`${valuationStyles.sectorIntro} ${entryStyles.entryIntro}`}>
-                  <h1 className={valuationStyles.stepTitle}>Choose an option</h1>
-                  <p className={valuationStyles.stepText}>
-                    Choose where you want to go. Hover over a card to preview it.
+                  <span className={entryStyles.entryEyebrow}>Aim4price Marketplace</span>
+                  <h1 className={`${valuationStyles.stepTitle} ${entryStyles.entryTitle}`}>
+                    Explore assets on Aim4price
+                  </h1>
+                  <p className={`${valuationStyles.stepText} ${entryStyles.entryText}`}>
+                    Discover owner-approved assets or browse machinery currently listed for sale.
                   </p>
                 </div>
 
