@@ -32,6 +32,13 @@
   font-weight: 800 !important;
 }
 
+.trackerPage .trackerOpenButton.trackerOpenButton {
+  flex: 0 0 12.5rem;
+  width: 12.5rem;
+  min-width: 12.5rem !important;
+  padding-inline: 1.35rem !important;
+}
+
 .trackerPage .trackerHeaderActions .maintenanceViewButton.maintenanceViewButton {
   color: var(--action-blue-text, #0f3b64) !important;
   border-color: var(--action-blue-border, #7eb4df) !important;
@@ -125,9 +132,9 @@
 
 .trackerSections {
   display: grid;
-  gap: 1rem;
-  margin-top: 1rem;
-  padding-top: 1rem;
+  gap: 0.85rem;
+  margin-top: 1.1rem;
+  padding-top: 1.1rem;
   border-top: 1px solid rgba(218, 228, 236, 0.95);
 }
 
@@ -143,8 +150,8 @@
 
 .trackerSectionsIntro {
   display: grid;
-  gap: 0.2rem;
-  padding: 0.2rem 0.15rem 0.1rem;
+  gap: 0.22rem;
+  padding: 0.1rem 0.2rem 0.25rem;
 }
 
 .trackerSectionsIntro span {
@@ -162,7 +169,7 @@
 }
 
 .trackerSectionsIntro p {
-  margin: 0.15rem 0 0;
+  margin: 0.1rem 0 0;
   color: #647870;
   font-size: 0.78rem;
   font-weight: 650;
@@ -340,33 +347,50 @@
 
 .section {
   overflow: visible;
-  border: 1px solid #dbe5e1;
-  border-radius: 1.15rem;
-  background: #fff;
+  border: 1px solid #d5e2dd;
+  border-radius: 1.05rem;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdfc 100%);
   box-shadow:
-    0 10px 22px rgba(16, 31, 28, 0.025),
+    0 10px 24px rgba(16, 49, 40, 0.04),
     inset 0 1px 0 rgba(255, 255, 255, 0.96);
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.section:hover,
+.section:focus-within {
+  border-color: #bdd8cc;
+  box-shadow:
+    0 13px 28px rgba(16, 82, 59, 0.065),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
 }
 
 .section > header,
 .section > summary {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.85rem 0.95rem;
+  min-height: 5.2rem;
+  padding: 0.95rem 1.1rem;
   border-bottom: 1px solid #e3eae8;
-  background: #fafcfb;
+  background: transparent;
 }
 
 .section > summary {
   border-bottom: 0;
+  border-radius: inherit;
   list-style: none;
   cursor: pointer;
 }
 
+.section > summary:hover {
+  background: linear-gradient(90deg, rgba(231, 246, 238, 0.62) 0%, rgba(250, 253, 251, 0.2) 72%);
+}
+
 .section[open] > summary {
   border-bottom: 1px solid #e3eae8;
+  border-radius: 1.05rem 1.05rem 0 0;
+  background: linear-gradient(90deg, #eef8f3 0%, #fbfdfc 70%);
 }
 
 .section > summary::-webkit-details-marker {
@@ -380,8 +404,9 @@
 
 .section > header > div,
 .section > summary > div {
+  min-width: 0;
   display: grid;
-  gap: 0.2rem;
+  gap: 0.22rem;
 }
 
 .section > header span,
@@ -397,14 +422,15 @@
 .section > summary h3 {
   margin: 0;
   color: #073b30;
-  font-size: 1rem;
+  font-size: 1.04rem;
+  line-height: 1.22;
 }
 
 .section > summary small {
   color: #667b73;
   font-size: 0.75rem;
   font-weight: 650;
-  line-height: 1.4;
+  line-height: 1.35;
 }
 
 .section > header > strong,
@@ -414,12 +440,14 @@
 }
 
 .section > summary > strong {
+  flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  min-width: 3.2rem;
+  min-width: 3.75rem;
+  min-height: 2.45rem;
   justify-content: center;
-  padding: 0.42rem 0.58rem;
+  padding: 0.42rem 0.72rem;
   border: 1px solid #cfe0d8;
   border-radius: 999px;
   background: #f2f8f5;
@@ -443,7 +471,9 @@
 .recordList {
   display: grid;
   gap: 0.75rem;
-  padding: 0.85rem;
+  padding: 1rem;
+  border-radius: 0 0 1.05rem 1.05rem;
+  background: #f6faf8;
 }
 
 .problemList article {
@@ -577,18 +607,20 @@
 
 .recordCard {
   overflow: hidden;
-  border: 1px solid #dce5e2;
-  border-radius: 0.78rem;
+  border: 1px solid #d5e2dd;
+  border-radius: 0.95rem;
   background: #fff;
+  box-shadow: 0 8px 18px rgba(16, 49, 40, 0.035);
 }
 
 .recordCard > header {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.78rem 0.85rem;
+  padding: 0.95rem 1rem;
   border-bottom: 1px solid #e4ebe8;
-  background: #f9fbfa;
+  background: linear-gradient(90deg, #fbfdfc 0%, #f7faf8 100%);
 }
 
 .recordCard > header > div {
@@ -606,7 +638,8 @@
 .recordCard h4 {
   margin: 0;
   color: #123b31;
-  font-size: 0.88rem;
+  font-size: 0.94rem;
+  line-height: 1.25;
 }
 
 .recordCard > header > strong {
@@ -624,7 +657,18 @@
 }
 
 .recordGrid {
-  padding: 0.75rem;
+  gap: 0.7rem;
+  padding: 0.9rem;
+}
+
+.section .recordGrid > div {
+  padding: 0.82rem 0.88rem;
+  border-radius: 0.8rem;
+  background: #ffffff;
+}
+
+.section .recordGrid > div:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
 }
 
 .note {
@@ -641,10 +685,12 @@
 }
 
 .sectionEmpty {
-  padding: 1.15rem;
+  padding: 1rem 1.1rem;
   color: #65776f;
   font-size: 0.78rem;
   font-weight: 700;
+  border-radius: 0 0 1.05rem 1.05rem;
+  background: #f8fbf9;
 }
 
 .maintenanceViewPanel {
@@ -1603,6 +1649,11 @@
   .recordGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .trackerPage .trackerOpenButton.trackerOpenButton {
+    width: 100%;
+    min-width: 0 !important;
+  }
 }
 
 @media (max-width: 760px) {
@@ -1698,6 +1749,31 @@
   .section > summary,
   .recordCard > header {
     align-items: flex-start;
+  }
+
+  .section > summary {
+    min-height: 4.75rem;
+    gap: 0.7rem;
+    padding: 0.85rem 0.9rem;
+  }
+
+  .section > summary > strong {
+    min-width: 3.35rem;
+    min-height: 2.3rem;
+    padding-inline: 0.58rem;
+  }
+
+  .problemList,
+  .recordList {
+    padding: 0.72rem;
+  }
+
+  .recordCard > header {
+    padding: 0.82rem 0.85rem;
+  }
+
+  .section .recordGrid > div:last-child:nth-child(odd) {
+    grid-column: auto;
   }
 
   .trackerHeaderActions {
