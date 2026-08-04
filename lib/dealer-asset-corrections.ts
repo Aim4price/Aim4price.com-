@@ -4,6 +4,7 @@ import {
   type AssetRegisterItem,
 } from './asset-register-db';
 import { revalueAssetRegisterItem } from './asset-register-revaluation';
+import { isDatabaseSchemaReady } from './database-schema-readiness';
 import { getDb } from './db';
 
 export type DealerAssetCorrectionSource = 'lead' | 'maintenance';
@@ -245,6 +246,37 @@ function correctionSelectSql(whereClause: string): string {
 
 async function ensureDealerAssetCorrectionTablesOnce(): Promise<void> {
   const db = getDb();
+  const schemaReady = await isDatabaseSchemaReady(() => db.query(`
+    select
+      id,
+      owner_user_id,
+      dealer_user_id,
+      asset_register_item_id,
+      source_type,
+      source_id,
+      serial_number_changed,
+      replacement_price_changed,
+      status,
+      revaluation_status,
+      revaluation_attempt_count,
+      revaluation_last_attempted_at,
+      revaluation_completed_at,
+      revaluation_run_id,
+      revaluation_previous_run_id,
+      revaluation_previous_value_ex_vat,
+      revaluation_new_value_ex_vat,
+      revaluation_failure_code,
+      revaluation_failure_message,
+      created_at,
+      updated_at
+    from public.dealer_asset_correction_requests
+    where false
+  `));
+
+  if (schemaReady) {
+    return;
+  }
+
   await db.query('create extension if not exists pgcrypto');
   await db.query(`
     create table if not exists public.dealer_asset_correction_requests (
