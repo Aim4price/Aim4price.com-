@@ -23,6 +23,7 @@ import {
   listPendingDealerAssetCorrections,
   type DealerAssetCorrectionRequest,
 } from './dealer-asset-corrections';
+import { isDatabaseSchemaReady } from './database-schema-readiness';
 import { getDb } from './db';
 
 export type DealerMaintenanceTrackerStatus =
@@ -419,8 +420,50 @@ function currentAssetUsage(asset: AssetRegisterItem, metric: AssetMaintenanceUsa
 }
 
 async function ensureDealerMaintenanceTablesOnce(): Promise<void> {
-  await ensureAssetMaintenanceTables();
   const db = getDb();
+  const schemaReady = await isDatabaseSchemaReady(() => db.query(`
+    with access_schema as (
+      select
+        id,
+        owner_user_id,
+        dealer_user_id,
+        asset_register_item_id,
+        is_active,
+        can_view_logged_problems,
+        can_view_maintenance_reports,
+        can_view_cost_of_ownership,
+        can_create_maintenance_schedules,
+        can_update_serial,
+        can_update_replacement_price,
+        created_at,
+        updated_at
+      from public.dealer_maintenance_access
+      where false
+    ), proposal_schema as (
+      select id, access_id, owner_user_id, dealer_user_id, asset_register_item_id, proposal_status
+      from public.dealer_maintenance_schedule_proposals
+      where false
+    ), notification_schema as (
+      select id, dealer_user_id, access_id, asset_register_item_id, maintenance_record_id, notification_status
+      from public.dealer_maintenance_notifications
+      where false
+    ), maintenance_schema as (
+      select id, user_id, asset_register_item_id, status
+      from public.asset_maintenance_records
+      where false
+    )
+    select 1
+    from access_schema
+    cross join proposal_schema
+    cross join notification_schema
+    cross join maintenance_schema
+  `));
+
+  if (schemaReady) {
+    return;
+  }
+
+  await ensureAssetMaintenanceTables();
   await db.query('create extension if not exists pgcrypto');
   await db.query(`
     create table if not exists public.dealer_maintenance_access (

@@ -10,6 +10,7 @@ import {
   listActiveDealerMaintenanceLeadAccess,
   type DealerMaintenanceLeadAccess,
 } from './dealer-maintenance-tracker';
+import { isDatabaseSchemaReady } from './database-schema-readiness';
 import { getDb } from './db';
 
 export type AccountRole = 'owner' | 'dealer' | 'finance' | 'insurance';
@@ -140,6 +141,7 @@ type LeadRow = {
   lead_type: string | null;
   status: string | null;
   asset_snapshot_json: unknown;
+  has_asset_logo: boolean | null;
   included_sections_json: unknown;
   owner_message: string | null;
   owner_contact_name: string | null;
@@ -200,6 +202,7 @@ const LEAD_STATUSES = new Set<AssetLeadStatus>(['sent', 'viewed', 'accepted', 'q
 const ASSET_PARTNER_NOTE_STATUSES = new Set<AssetPartnerNoteStatus>(['open', 'noted']);
 
 let partnerAccessTablesEnsured = false;
+let partnerAccessTablesPromise: Promise<void> | null = null;
 
 function asText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
@@ -478,13 +481,52 @@ function isoNowFallback(value: string | null | undefined): string {
   return value || new Date().toISOString();
 }
 
-export async function ensurePartnerAccessTables(): Promise<void> {
-  if (partnerAccessTablesEnsured) {
-    return;
-  }
-
+async function ensurePartnerAccessTablesOnce(): Promise<void> {
   await ensureAccountProfileColumns();
   const db = getDb();
+
+  const schemaReady = await isDatabaseSchemaReady(() => db.query(`
+    with lead_schema as (
+      select
+        id,
+        owner_user_id,
+        partner_user_id,
+        asset_register_item_id,
+        lead_type,
+        status,
+        asset_snapshot_json,
+        included_sections_json,
+        created_at,
+        updated_at
+      from asset_leads
+      where false
+    ), note_schema as (
+      select
+        id,
+        owner_user_id,
+        partner_user_id,
+        asset_register_item_id,
+        status,
+        attachment_file_name,
+        attachment_data,
+        created_at
+      from asset_partner_notes
+      where false
+    ), audit_schema as (
+      select id, owner_user_id, actor_user_id, entity_type, metadata_json, created_at
+      from access_audit_events
+      where false
+    )
+    select 1
+    from lead_schema
+    cross join note_schema
+    cross join audit_schema
+  `));
+
+  if (schemaReady) {
+    partnerAccessTablesEnsured = true;
+    return;
+  }
 
   await db.query('CREATE EXTENSION IF NOT EXISTS pgcrypto');
 
@@ -656,6 +698,21 @@ export async function ensurePartnerAccessTables(): Promise<void> {
   partnerAccessTablesEnsured = true;
 }
 
+export async function ensurePartnerAccessTables(): Promise<void> {
+  if (partnerAccessTablesEnsured) {
+    return;
+  }
+
+  if (!partnerAccessTablesPromise) {
+    partnerAccessTablesPromise = ensurePartnerAccessTablesOnce().catch((error) => {
+      partnerAccessTablesPromise = null;
+      throw error;
+    });
+  }
+
+  await partnerAccessTablesPromise;
+}
+
 function mapPartnerRow(row: AccountPartnerProfileRow): PartnerDirectoryEntry {
   const partnerType = normalizePartnerType(row.account_type) ?? 'dealer';
   const businessName = asText(row.business_name);
@@ -690,6 +747,11 @@ function mapLeadRow(row: LeadRow): AssetLead {
   const ownerName = asText(row.owner_display_name) || ownerBusinessName || 'Aim4price owner';
   const partnerBusinessName = asText(row.partner_business_name);
   const partnerName = asText(row.partner_display_name) || partnerBusinessName || 'Aim4price partner';
+  const assetSnapshot = { ...asRecord(row.asset_snapshot_json) };
+
+  if (row.has_asset_logo) {
+    assetSnapshot.logoUrl = `/api/asset-leads/${row.id}/logo`;
+  }
 
   return {
     id: row.id,
@@ -698,7 +760,7 @@ function mapLeadRow(row: LeadRow): AssetLead {
     assetRegisterItemId: row.asset_register_item_id,
     leadType,
     status: normalizeLeadStatus(row.status) ?? 'sent',
-    assetSnapshot: asRecord(row.asset_snapshot_json),
+    assetSnapshot,
     includedSections: asRecord(row.included_sections_json),
     ownerMessage: asText(row.owner_message),
     ownerContactName: asText(row.owner_contact_name),
@@ -738,7 +800,8 @@ function leadSelectSql(whereClause: string): string {
       l.asset_register_item_id::text,
       l.lead_type,
       l.status,
-      l.asset_snapshot_json,
+      l.asset_snapshot_json - 'logoUrl' as asset_snapshot_json,
+      nullif(l.asset_snapshot_json ->> 'logoUrl', '') is not null as has_asset_logo,
       l.included_sections_json,
       l.owner_message,
       l.owner_contact_name,
@@ -1309,10 +1372,51 @@ export async function listAssetLeadsForUser(userId: string): Promise<AssetLead[]
     `${leadSelectSql('where l.owner_user_id = $1 or l.partner_user_id = $1')} order by l.created_at desc`,
     [userId],
   );
+  const leads = result.rows.map(mapLeadRow);
+  const [attachmentLeads, correctionLeads, maintenanceLeads] = await Promise.all([
+    hydrateLeadAttachmentSummaries(leads, userId),
+    hydrateDealerAssetCorrections(leads, userId),
+    hydrateDealerMaintenanceAccess(leads, userId),
+  ]);
 
-  const leadsWithAttachments = await hydrateLeadAttachmentSummaries(result.rows.map(mapLeadRow), userId);
-  const leadsWithCorrections = await hydrateDealerAssetCorrections(leadsWithAttachments, userId);
-  return hydrateDealerMaintenanceAccess(leadsWithCorrections, userId);
+  return leads.map((lead, index) => ({
+    ...lead,
+    partnerNoteAttachmentCount: attachmentLeads[index]?.partnerNoteAttachmentCount ?? 0,
+    latestPartnerNoteAttachmentFileName: attachmentLeads[index]?.latestPartnerNoteAttachmentFileName ?? '',
+    latestPartnerNoteAttachmentByteSize: attachmentLeads[index]?.latestPartnerNoteAttachmentByteSize ?? null,
+    latestPartnerNoteAttachmentCreatedAtIso: attachmentLeads[index]?.latestPartnerNoteAttachmentCreatedAtIso ?? null,
+    assetSnapshot: correctionLeads[index]?.assetSnapshot ?? lead.assetSnapshot,
+    dealerCorrection: correctionLeads[index]?.dealerCorrection,
+    maintenanceAccess: maintenanceLeads[index]?.maintenanceAccess,
+  }));
+}
+
+export async function getAssetLeadLogoForUser(input: {
+  currentUserId: string;
+  leadId: string;
+}): Promise<string> {
+  await ensurePartnerAccessTables();
+  const result = await getDb().query<{ logo_url: string | null }>(
+    `
+      select asset_snapshot_json ->> 'logoUrl' as logo_url
+      from asset_leads
+      where id = $1::uuid
+        and (owner_user_id = $2 or partner_user_id = $2)
+      limit 1
+    `,
+    [input.leadId, input.currentUserId],
+  );
+  const logoUrl = asText(result.rows[0]?.logo_url);
+
+  if (
+    logoUrl.startsWith('/')
+    || /^https?:\/\//i.test(logoUrl)
+    || /^data:image\/[a-z0-9.+-]+;base64,/i.test(logoUrl)
+  ) {
+    return logoUrl;
+  }
+
+  return '';
 }
 
 export async function updateAssetLeadStatus(input: {

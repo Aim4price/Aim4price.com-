@@ -21,6 +21,9 @@ function createPool(): Pool {
       password: process.env.PGPASSWORD,
       database: process.env.PGDATABASE,
       ssl: false,
+      connectionTimeoutMillis: 10_000,
+      idleTimeoutMillis: 30_000,
+      keepAlive: true,
     });
   }
 
@@ -28,6 +31,9 @@ function createPool(): Pool {
     return new Pool({
       connectionString: process.env.DATABASE_URL,
       ssl: false,
+      connectionTimeoutMillis: 10_000,
+      idleTimeoutMillis: 30_000,
+      keepAlive: true,
     });
   }
 
