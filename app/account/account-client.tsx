@@ -1,169 +1,3042 @@
-import Link from "next/link";
-import AppHeader from "../../components/AppHeader";
-import type { AccountProfile, AccountScanPinStatus } from "./account-types";
-import {
-  accountTypeLabel,
-  isDealerProfile,
-  isOwnerProfile,
-  profileCompletion,
-  profileDisplayName,
-  profileLocation,
-} from "./account-types";
-import styles from "./account-system.module.css";
+"use client";
 
-type Props = {
-  initialProfile: AccountProfile;
-  initialScanPinStatus: AccountScanPinStatus;
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+  type ReactNode,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
+import AppHeader from "../../components/AppHeader";
+import styles from "./page.module.css";
+
+type NoticeTone = "success" | "error";
+type AccountActionModal =
+  | "business"
+  | "scanPin"
+  | "marketplace"
+  | "discovery"
+  | "partnerDirectory";
+
+type AccountProfile = {
+  userId: string;
+  name: string;
+  displayName: string;
+  email: string;
+  logoUrl: string;
+  websiteUrl: string;
+  extraPhotoUrls: string[];
+  businessName: string;
+  phone: string;
+  accountType: string;
+  accountSubtype: string;
+  vatNumber: string;
+  province: string;
+  townCity: string;
+  addressLine1: string;
+  addressLine2: string;
+  notes: string;
+  marketplaceSellerName: string;
+  marketplacePhone: string;
+  marketplaceEmail: string;
+  marketplaceLocation: string;
+  discoveryParticipationEnabled: boolean;
+  partnerDirectoryEnabled: boolean;
+  partnerDirectoryStatus: string;
+  partnerDescription: string;
+  partnerLatitude: number | null;
+  partnerLongitude: number | null;
+  partnerServiceRadiusKm: number | null;
+  partnerBrandFocus: string;
+  partnerServices: string;
+  createdAtIso: string | null;
+  updatedAtIso: string | null;
 };
 
-type ActionIcon = "profile" | "visibility" | "staff" | "field" | "security";
+type AccountScanPinStatus = {
+  enabled: boolean;
+  hasPin: boolean;
+  updatedAtIso: string | null;
+};
 
-function ActionGlyph({ icon }: { icon: ActionIcon }) {
+type ProfileApiResponse = {
+  ok: boolean;
+  profile?: AccountProfile;
+  error?: string;
+};
+
+type ScanPinApiResponse = {
+  ok: boolean;
+  scanPin?: AccountScanPinStatus;
+  error?: string;
+};
+
+type AccountClientProps = {
+  initialProfile?: AccountProfile | null;
+  initialScanPinStatus?: AccountScanPinStatus | null;
+};
+
+type ProfileDraft = {
+  displayName: string;
+  logoUrl: string;
+  websiteUrl: string;
+  extraPhotoUrls: string[];
+  businessName: string;
+  phone: string;
+  accountType: string;
+  vatNumber: string;
+  province: string;
+  townCity: string;
+  addressLine1: string;
+  addressLine2: string;
+  notes: string;
+  marketplaceSellerName: string;
+  marketplacePhone: string;
+  marketplaceEmail: string;
+  marketplaceLocation: string;
+  discoveryParticipationEnabled: boolean;
+  partnerDirectoryEnabled: boolean;
+  partnerDirectoryStatus: string;
+  partnerDescription: string;
+  partnerLatitude: string;
+  partnerLongitude: string;
+  partnerServiceRadiusKm: string;
+  partnerBrandFocus: string;
+  partnerServices: string;
+};
+
+const initialProfileDraft: ProfileDraft = {
+  displayName: "",
+  logoUrl: "",
+  websiteUrl: "",
+  extraPhotoUrls: [],
+  businessName: "",
+  phone: "",
+  accountType: "owner",
+  vatNumber: "",
+  province: "",
+  townCity: "",
+  addressLine1: "",
+  addressLine2: "",
+  notes: "",
+  marketplaceSellerName: "",
+  marketplacePhone: "",
+  marketplaceEmail: "",
+  marketplaceLocation: "",
+  discoveryParticipationEnabled: false,
+  partnerDirectoryEnabled: false,
+  partnerDirectoryStatus: "approved",
+  partnerDescription: "",
+  partnerLatitude: "",
+  partnerLongitude: "",
+  partnerServiceRadiusKm: "",
+  partnerBrandFocus: "",
+  partnerServices: "",
+};
+
+const emptyScanPinStatus: AccountScanPinStatus = {
+  enabled: false,
+  hasPin: false,
+  updatedAtIso: null,
+};
+
+const PROFILE_COMPLETION_TOTAL = 7;
+const MAX_LOGO_UPLOAD_BYTES = 2 * 1024 * 1024;
+const ALLOWED_LOGO_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+
+const DEFAULT_PARTNER_MAP_CENTER: [number, number] = [-29.0, 24.0];
+const DEFAULT_PARTNER_MAP_ZOOM = 5;
+const SELECTED_PARTNER_MAP_ZOOM = 11;
+const LEAFLET_SCRIPT_ID = "aim4price-leaflet-script";
+const LEAFLET_CSS_ID = "aim4price-leaflet-css";
+
+let leafletLoaderPromise: Promise<any> | null = null;
+
+const ACCOUNT_TYPE_LABELS: Record<string, string> = {
+  owner: "Owner",
+  dealer: "Dealer",
+  finance: "Finance — accountants, financiers and banks",
+  insurance: "Insurance",
+  broker: "Insurance",
+  insurer: "Insurance",
+  bank: "Finance",
+};
+
+type QuickActionIconName =
+  | "business"
+  | "registers"
+  | "pin"
+  | "fieldManager"
+  | "ownerApp"
+  | "dealer"
+  | "marketplace"
+  | "discovery"
+  | "directory"
+  | "delete";
+
+function QuickActionIcon({ name }: { name: QuickActionIconName }) {
+  const svgProps = {
+    "aria-hidden": true,
+    focusable: "false",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    xmlns: "http://www.w3.org/2000/svg",
+  } as const;
+
+  const strokeProps = {
+    stroke: "currentColor",
+    strokeWidth: 1.85,
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+    vectorEffect: "non-scaling-stroke",
+  } as const;
+
   return (
-    <span className={styles.actionIcon} aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        {icon === "profile" ? <><path d="M4.5 20V8.5L12 3l7.5 5.5V20" /><path d="M8.5 20v-6h7v6M8.5 9.5h7" /></> : null}
-        {icon === "visibility" ? <><path d="M12 21s6-5.7 6-11a6 6 0 1 0-12 0c0 5.3 6 11 6 11Z" /><circle cx="12" cy="10" r="2" /></> : null}
-        {icon === "staff" ? <><circle cx="9" cy="8" r="3" /><path d="M3.8 20c.5-3.8 2.3-5.8 5.2-5.8s4.7 2 5.2 5.8" /><path d="M15.5 6.5a2.6 2.6 0 0 1 0 5M16 15c2.4.4 3.8 2 4.2 4.6" /></> : null}
-        {icon === "field" ? <><rect x="4" y="4" width="16" height="16" rx="4" /><path d="m8.2 12.2 2.5 2.5 5.3-5.4" /></> : null}
-        {icon === "security" ? <><path d="M6.5 10V7.8a5.5 5.5 0 0 1 11 0V10" /><rect x="4.5" y="10" width="15" height="10" rx="2.5" /><path d="M12 14v2" /></> : null}
-      </svg>
+    <span className={styles.quickActionIcon} aria-hidden="true">
+      {name === "business" ? (
+        <svg {...svgProps}>
+          <path
+            d="M5.25 20.25h13.5V8.2L12 4.35 5.25 8.2v12.05Z"
+            fill="currentColor"
+            opacity="0.14"
+          />
+          <path {...strokeProps} d="M5.25 20.25V8.2L12 4.35l6.75 3.85v12.05" />
+          <path {...strokeProps} d="M9 20.25v-5.4h6v5.4" />
+          <path {...strokeProps} d="M9.2 10.1h.02" />
+          <path {...strokeProps} d="M12 10.1h.02" />
+          <path {...strokeProps} d="M14.8 10.1h.02" />
+        </svg>
+      ) : null}
+
+      {name === "registers" ? (
+        <svg {...svgProps}>
+          <path
+            d="M7 5.25h10a2 2 0 0 1 2 2v11.5H7a2 2 0 0 1-2-2V7.25a2 2 0 0 1 2-2Z"
+            fill="currentColor"
+            opacity="0.14"
+          />
+          <path
+            {...strokeProps}
+            d="M7 5.25h10a2 2 0 0 1 2 2v11.5H7a2 2 0 0 1-2-2V7.25a2 2 0 0 1 2-2Z"
+          />
+          <path {...strokeProps} d="M8.6 9h6.8" />
+          <path {...strokeProps} d="M8.6 12.25h6.8" />
+          <path {...strokeProps} d="M8.6 15.5h4.5" />
+          <path {...strokeProps} d="M16.75 5.25V3.75" />
+        </svg>
+      ) : null}
+
+      {name === "pin" ? (
+        <svg {...svgProps}>
+          <rect
+            x="5"
+            y="10"
+            width="14"
+            height="10"
+            rx="2.25"
+            fill="currentColor"
+            opacity="0.14"
+          />
+          <rect
+            {...strokeProps}
+            x="5"
+            y="10"
+            width="14"
+            height="10"
+            rx="2.25"
+          />
+          <path {...strokeProps} d="M8.25 10V7.8a3.75 3.75 0 0 1 7.5 0V10" />
+          <path {...strokeProps} d="M12 14.25v1.9" />
+          <circle cx="12" cy="13.25" r="0.75" fill="currentColor" />
+        </svg>
+      ) : null}
+
+      {name === "fieldManager" ? (
+        <svg {...svgProps}>
+          <circle
+            cx="9"
+            cy="8"
+            r="3.15"
+            fill="currentColor"
+            opacity="0.14"
+          />
+          <circle {...strokeProps} cx="9" cy="8" r="3.15" />
+          <path
+            {...strokeProps}
+            d="M3.9 19.25c.45-3.2 2.35-5.05 5.1-5.05 2.1 0 3.7 1.05 4.55 2.95"
+          />
+          <path
+            {...strokeProps}
+            d="M16.95 12.9a3.15 3.15 0 1 0 0 6.3 3.15 3.15 0 0 0 0-6.3Z"
+          />
+          <path {...strokeProps} d="m15.55 16.05.9.9 1.85-2" />
+        </svg>
+      ) : null}
+
+      {name === "ownerApp" ? (
+        <svg {...svgProps}>
+          <rect
+            x="5.5"
+            y="3.25"
+            width="13"
+            height="17.5"
+            rx="2.35"
+            fill="currentColor"
+            opacity="0.14"
+          />
+          <rect
+            {...strokeProps}
+            x="5.5"
+            y="3.25"
+            width="13"
+            height="17.5"
+            rx="2.35"
+          />
+          <circle {...strokeProps} cx="12" cy="9" r="2.05" />
+          <path
+            {...strokeProps}
+            d="M8.65 15.5c.3-2.05 1.55-3.25 3.35-3.25s3.05 1.2 3.35 3.25"
+          />
+          <path {...strokeProps} d="M10.75 18.1h2.5" />
+        </svg>
+      ) : null}
+
+      {name === "dealer" ? (
+        <svg {...svgProps}>
+          <path
+            d="M4.75 19.25c.35-3.05 2.35-4.9 5.05-4.9s4.7 1.85 5.05 4.9H4.75Z"
+            fill="currentColor"
+            opacity="0.14"
+          />
+          <circle {...strokeProps} cx="9.8" cy="8.25" r="3.1" />
+          <path {...strokeProps} d="M4.75 19.25c.35-3.05 2.35-4.9 5.05-4.9s4.7 1.85 5.05 4.9" />
+          <path {...strokeProps} d="M15.6 9.25h3.65v7.25H15.6" />
+          <path {...strokeProps} d="M17.4 12.9h.02" />
+        </svg>
+      ) : null}
+
+      {name === "marketplace" ? (
+        <svg {...svgProps}>
+          <path
+            d="M6.3 8.7h11.4l-.9 10.05H7.2L6.3 8.7Z"
+            fill="currentColor"
+            opacity="0.14"
+          />
+          <path {...strokeProps} d="M6.3 8.7h11.4l-.9 10.05H7.2L6.3 8.7Z" />
+          <path {...strokeProps} d="M9 8.7a3 3 0 0 1 6 0" />
+          <path {...strokeProps} d="M9.6 13.1h4.8" />
+          <path {...strokeProps} d="M10.7 15.55h2.6" />
+        </svg>
+      ) : null}
+
+      {name === "discovery" ? (
+        <svg {...svgProps}>
+          <circle cx="12" cy="12" r="7.7" fill="currentColor" opacity="0.14" />
+          <circle {...strokeProps} cx="12" cy="12" r="7.7" />
+          <path {...strokeProps} d="m9.2 14.8 1.65-4.15 4.15-1.65-1.65 4.15-4.15 1.65Z" />
+          <path {...strokeProps} d="M12 4.3v1.2M12 18.5v1.2M4.3 12h1.2M18.5 12h1.2" />
+        </svg>
+      ) : null}
+
+      {name === "directory" ? (
+        <svg {...svgProps}>
+          <path
+            d="M12 21s6.7-4.8 6.7-11a6.7 6.7 0 1 0-13.4 0C5.3 16.2 12 21 12 21Z"
+            fill="currentColor"
+            opacity="0.14"
+          />
+          <path
+            {...strokeProps}
+            d="M12 21s6.7-4.8 6.7-11a6.7 6.7 0 1 0-13.4 0C5.3 16.2 12 21 12 21Z"
+          />
+          <circle {...strokeProps} cx="12" cy="10" r="2.35" />
+          <path {...strokeProps} d="M8.4 18.55h7.2" />
+        </svg>
+      ) : null}
+
+      {name === "delete" ? (
+        <svg {...svgProps}>
+          <path
+            d="M7.15 8.2h9.7l-.8 11.05H7.95L7.15 8.2Z"
+            fill="currentColor"
+            opacity="0.16"
+          />
+          <path {...strokeProps} d="M4.75 8.2h14.5" />
+          <path {...strokeProps} d="M9.55 8.2V5.25h4.9V8.2" />
+          <path {...strokeProps} d="M7.15 8.2l.8 11.05h8.1l.8-11.05" />
+          <path {...strokeProps} d="M10.35 11.65v4.35" />
+          <path {...strokeProps} d="M13.65 11.65v4.35" />
+        </svg>
+      ) : null}
     </span>
   );
 }
 
-function AccountAction({
-  href,
-  icon,
-  title,
-  description,
-}: {
-  href: string;
-  icon: ActionIcon;
-  title: string;
-  description: string;
-}) {
+function loadLeaflet(): Promise<any> {
+  if (typeof window === "undefined") {
+    return Promise.reject(new Error("Leaflet can only load in the browser."));
+  }
+
+  const existingLeaflet = (window as any).L;
+
+  if (existingLeaflet) {
+    return Promise.resolve(existingLeaflet);
+  }
+
+  if (leafletLoaderPromise) {
+    return leafletLoaderPromise;
+  }
+
+  leafletLoaderPromise = new Promise((resolve, reject) => {
+    if (!document.getElementById(LEAFLET_CSS_ID)) {
+      const link = document.createElement("link");
+      link.id = LEAFLET_CSS_ID;
+      link.rel = "stylesheet";
+      link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+      document.head.appendChild(link);
+    }
+
+    const resolveIfReady = () => {
+      const nextLeaflet = (window as any).L;
+
+      if (nextLeaflet) {
+        resolve(nextLeaflet);
+        return true;
+      }
+
+      return false;
+    };
+
+    if (resolveIfReady()) {
+      return;
+    }
+
+    let script = document.getElementById(
+      LEAFLET_SCRIPT_ID,
+    ) as HTMLScriptElement | null;
+
+    if (!script) {
+      script = document.createElement("script");
+      script.id = LEAFLET_SCRIPT_ID;
+      script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+      script.async = true;
+      document.body.appendChild(script);
+    }
+
+    script.addEventListener("load", () => {
+      if (!resolveIfReady()) {
+        reject(new Error("Leaflet did not initialise correctly."));
+      }
+    });
+    script.addEventListener("error", () =>
+      reject(new Error("Failed to load the map.")),
+    );
+  });
+
+  return leafletLoaderPromise;
+}
+
+function parseCoordinate(value: string): number | null {
+  const text = String(value ?? "").trim();
+
+  if (!text) {
+    return null;
+  }
+
+  const numeric = Number(text);
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
+function readPartnerPin(
+  profile: ProfileDraft,
+): { lat: number; lng: number } | null {
+  const lat = parseCoordinate(profile.partnerLatitude);
+  const lng = parseCoordinate(profile.partnerLongitude);
+
+  if (lat === null || lng === null) {
+    return null;
+  }
+
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+    return null;
+  }
+
+  // South African partner locations should never have a zero latitude or longitude.
+  // Treat a zero coordinate as an incomplete stale/manual value instead of centering the map in the ocean.
+  if (Math.abs(lat) < 0.000001 || Math.abs(lng) < 0.000001) {
+    return null;
+  }
+
+  return { lat, lng };
+}
+
+function formatCoordinate(value: number): string {
+  return value.toFixed(6).replace(/0+$/, "").replace(/\.$/, "");
+}
+
+function readServiceRadiusKm(value: string): number | null {
+  const numeric = Number(String(value ?? "").trim());
+
+  if (!Number.isFinite(numeric) || numeric <= 0) {
+    return null;
+  }
+
+  return Math.min(Math.round(numeric), 2500);
+}
+
+function buildProfileLocation(profile: AccountProfile): string {
+  return [profile.addressLine1, profile.townCity, profile.province]
+    .map((value) => String(value ?? "").trim())
+    .filter(Boolean)
+    .join(", ");
+}
+
+function buildProfileDraft(profile: AccountProfile | null): ProfileDraft {
+  if (!profile) {
+    return initialProfileDraft;
+  }
+
+  const displayName = profile.displayName || profile.name;
+  const fallbackLocation = buildProfileLocation(profile);
+
+  return {
+    displayName,
+    logoUrl: profile.logoUrl,
+    websiteUrl: profile.websiteUrl,
+    extraPhotoUrls: [],
+    businessName: profile.businessName,
+    phone: profile.phone,
+    accountType: profile.accountType || "owner",
+    vatNumber: profile.vatNumber,
+    province: profile.province,
+    townCity: profile.townCity,
+    addressLine1: profile.addressLine1,
+    addressLine2: profile.addressLine2,
+    notes: profile.notes,
+    marketplaceSellerName:
+      profile.marketplaceSellerName || profile.businessName || displayName,
+    marketplacePhone: profile.marketplacePhone || profile.phone,
+    marketplaceEmail: profile.marketplaceEmail,
+    marketplaceLocation: profile.marketplaceLocation || fallbackLocation,
+    discoveryParticipationEnabled: Boolean(
+      profile.discoveryParticipationEnabled,
+    ),
+    partnerDirectoryEnabled: Boolean(profile.partnerDirectoryEnabled),
+    partnerDirectoryStatus: profile.partnerDirectoryStatus || "approved",
+    partnerDescription: profile.partnerDescription,
+    partnerLatitude:
+      profile.partnerLatitude === null ? "" : String(profile.partnerLatitude),
+    partnerLongitude:
+      profile.partnerLongitude === null ? "" : String(profile.partnerLongitude),
+    partnerServiceRadiusKm:
+      profile.partnerServiceRadiusKm === null
+        ? ""
+        : String(profile.partnerServiceRadiusKm),
+    partnerBrandFocus: profile.partnerBrandFocus,
+    partnerServices: profile.partnerServices,
+  };
+}
+
+function formatDate(value?: string | null): string {
+  if (!value) return "—";
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "—";
+
+  return new Intl.DateTimeFormat("en-ZA", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(parsed);
+}
+
+function formatMemberSince(value?: string | null): string {
+  if (!value) return "Member since —";
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "Member since —";
+
+  return `Member since ${new Intl.DateTimeFormat("en-ZA", {
+    month: "long",
+    year: "numeric",
+  }).format(parsed)}`;
+}
+
+function formatUploadSize(bytes: number): string {
+  return `${Math.round(bytes / (1024 * 1024))} MB`;
+}
+
+function countCompletedFields(profile: ProfileDraft): number {
+  return [
+    profile.displayName,
+    profile.businessName,
+    profile.phone,
+    profile.marketplaceEmail,
+    profile.province,
+    profile.townCity,
+    profile.addressLine1,
+  ].filter((value) => String(value ?? "").trim()).length;
+}
+
+function buildAddressLines(profile: ProfileDraft): string[] {
+  return [profile.addressLine1, profile.townCity, profile.province]
+    .map((value) => String(value ?? "").trim())
+    .filter(Boolean);
+}
+
+function normalizePinInput(value: string): string {
+  return value.replace(/\D+/g, "").slice(0, 8);
+}
+
+function formatAccountTypeLabel(value: string, subtype = ''): string {
+  const normalized = String(value ?? "").trim();
+  const normalizedSubtype = String(subtype ?? "").trim().toLowerCase();
+
+  if (!normalized) {
+    return "Owner";
+  }
+
+  if (normalized === 'finance' && normalizedSubtype === 'accountant') return 'Accountant';
+  return ACCOUNT_TYPE_LABELS[normalized] ?? normalized;
+}
+
+function buildInitials(value: string): string {
+  const parts = value.trim().split(/\s+/).filter(Boolean).slice(0, 2);
+
+  if (!parts.length) {
+    return "A4";
+  }
+
+  return parts.map((part) => part.charAt(0).toUpperCase()).join("");
+}
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      const result = typeof reader.result === "string" ? reader.result : "";
+      result
+        ? resolve(result)
+        : reject(new Error("Failed to read image file."));
+    };
+
+    reader.onerror = () => reject(new Error("Failed to read image file."));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function readResponsePayload(response: Response): Promise<unknown> {
+  const contentType = response.headers.get("content-type") ?? "";
+
+  if (contentType.includes("application/json")) {
+    return response.json().catch(() => null);
+  }
+
+  const text = await response.text().catch(() => "");
+  return text.trim() ? { message: text } : null;
+}
+
+function extractErrorMessage(payload: unknown, fallback: string): string {
+  if (!payload || typeof payload !== "object") {
+    return fallback;
+  }
+
+  const record = payload as Record<string, unknown>;
+  const errorRecord =
+    typeof record.error === "object" && record.error !== null
+      ? (record.error as Record<string, unknown>)
+      : null;
+  const dataRecord =
+    typeof record.data === "object" && record.data !== null
+      ? (record.data as Record<string, unknown>)
+      : null;
+
+  const candidates = [
+    record.message,
+    record.error,
+    record.reason,
+    errorRecord?.message,
+    errorRecord?.error,
+    dataRecord?.message,
+    dataRecord?.error,
+  ];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === "string" && candidate.trim()) {
+      return candidate;
+    }
+  }
+
+  return fallback;
+}
+
+function getResetPasswordUrl(): string {
+  if (typeof window === "undefined") {
+    return "/reset-password";
+  }
+
+  return new URL("/reset-password", window.location.origin).toString();
+}
+
+type AccountModalScrollerProps = {
+  children?: ReactNode;
+};
+
+type AccountModalScrollbarState = {
+  isScrollable: boolean;
+  thumbHeight: number;
+  thumbTop: number;
+};
+
+function AccountModalScroller({ children }: AccountModalScrollerProps) {
+  const viewportRef = useRef<HTMLDivElement | null>(null);
+  const contentRef = useRef<HTMLDivElement | null>(null);
+  const railRef = useRef<HTMLDivElement | null>(null);
+  const dragStateRef = useRef<{
+    pointerId: number;
+    startY: number;
+    startScrollTop: number;
+    maxScrollTop: number;
+    maxThumbTop: number;
+  } | null>(null);
+  const [scrollbarState, setScrollbarState] =
+    useState<AccountModalScrollbarState>({
+      isScrollable: false,
+      thumbHeight: 0,
+      thumbTop: 0,
+    });
+
+  useEffect(() => {
+    const viewport = viewportRef.current;
+
+    if (!viewport) {
+      return;
+    }
+
+    let animationFrameId = 0;
+
+    const updateScrollbar = () => {
+      if (animationFrameId) {
+        window.cancelAnimationFrame(animationFrameId);
+      }
+
+      animationFrameId = window.requestAnimationFrame(() => {
+        const scrollHeight = viewport.scrollHeight;
+        const clientHeight = viewport.clientHeight;
+        const maxScrollTop = Math.max(0, scrollHeight - clientHeight);
+        const isScrollable = maxScrollTop > 2;
+
+        if (!isScrollable) {
+          setScrollbarState((current) => {
+            if (
+              !current.isScrollable &&
+              current.thumbHeight === 0 &&
+              current.thumbTop === 0
+            ) {
+              return current;
+            }
+
+            return {
+              isScrollable: false,
+              thumbHeight: 0,
+              thumbTop: 0,
+            };
+          });
+          return;
+        }
+
+        const trackHeight = Math.max(
+          1,
+          railRef.current?.clientHeight || clientHeight,
+        );
+        const minThumbHeight = Math.min(72, Math.max(46, trackHeight * 0.18));
+        const thumbHeight = Math.min(
+          trackHeight,
+          Math.max(minThumbHeight, (clientHeight / scrollHeight) * trackHeight),
+        );
+        const maxThumbTop = Math.max(0, trackHeight - thumbHeight);
+        const thumbTop =
+          maxScrollTop > 0
+            ? (viewport.scrollTop / maxScrollTop) * maxThumbTop
+            : 0;
+        const nextState = {
+          isScrollable: true,
+          thumbHeight: Math.round(thumbHeight),
+          thumbTop: Math.round(thumbTop),
+        };
+
+        setScrollbarState((current) => {
+          if (
+            current.isScrollable === nextState.isScrollable &&
+            current.thumbHeight === nextState.thumbHeight &&
+            current.thumbTop === nextState.thumbTop
+          ) {
+            return current;
+          }
+
+          return nextState;
+        });
+      });
+    };
+
+    updateScrollbar();
+    viewport.addEventListener("scroll", updateScrollbar, { passive: true });
+    window.addEventListener("resize", updateScrollbar);
+
+    const resizeObserver =
+      typeof ResizeObserver === "undefined"
+        ? null
+        : new ResizeObserver(updateScrollbar);
+
+    if (resizeObserver) {
+      resizeObserver.observe(viewport);
+
+      if (contentRef.current) {
+        resizeObserver.observe(contentRef.current);
+      }
+
+      if (railRef.current) {
+        resizeObserver.observe(railRef.current);
+      }
+    }
+
+    return () => {
+      if (animationFrameId) {
+        window.cancelAnimationFrame(animationFrameId);
+      }
+
+      viewport.removeEventListener("scroll", updateScrollbar);
+      window.removeEventListener("resize", updateScrollbar);
+      resizeObserver?.disconnect();
+    };
+  }, []);
+
+  function handleScrollRailPointerDown(
+    event: ReactPointerEvent<HTMLDivElement>,
+  ) {
+    if (event.target !== event.currentTarget || !scrollbarState.isScrollable) {
+      return;
+    }
+
+    const viewport = viewportRef.current;
+    const rail = railRef.current;
+
+    if (!viewport || !rail) {
+      return;
+    }
+
+    event.preventDefault();
+
+    const railRect = rail.getBoundingClientRect();
+    const pointerTop = event.clientY - railRect.top;
+    const maxScrollTop = Math.max(
+      0,
+      viewport.scrollHeight - viewport.clientHeight,
+    );
+    const maxThumbTop = Math.max(
+      1,
+      rail.clientHeight - scrollbarState.thumbHeight,
+    );
+    const nextThumbTop = Math.min(
+      maxThumbTop,
+      Math.max(0, pointerTop - scrollbarState.thumbHeight / 2),
+    );
+
+    viewport.scrollTo({
+      top: (nextThumbTop / maxThumbTop) * maxScrollTop,
+      behavior: "smooth",
+    });
+  }
+
+  function handleScrollThumbPointerDown(
+    event: ReactPointerEvent<HTMLSpanElement>,
+  ) {
+    const viewport = viewportRef.current;
+    const rail = railRef.current;
+
+    if (!viewport || !rail || !scrollbarState.isScrollable) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    dragStateRef.current = {
+      pointerId: event.pointerId,
+      startY: event.clientY,
+      startScrollTop: viewport.scrollTop,
+      maxScrollTop: Math.max(0, viewport.scrollHeight - viewport.clientHeight),
+      maxThumbTop: Math.max(1, rail.clientHeight - scrollbarState.thumbHeight),
+    };
+
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function handleScrollThumbPointerMove(
+    event: ReactPointerEvent<HTMLSpanElement>,
+  ) {
+    const dragState = dragStateRef.current;
+    const viewport = viewportRef.current;
+
+    if (!dragState || !viewport || dragState.pointerId !== event.pointerId) {
+      return;
+    }
+
+    event.preventDefault();
+
+    const deltaY = event.clientY - dragState.startY;
+    const nextScrollTop =
+      dragState.startScrollTop +
+      (deltaY / dragState.maxThumbTop) * dragState.maxScrollTop;
+
+    viewport.scrollTop = Math.min(
+      dragState.maxScrollTop,
+      Math.max(0, nextScrollTop),
+    );
+  }
+
+  function handleScrollThumbPointerEnd(
+    event: ReactPointerEvent<HTMLSpanElement>,
+  ) {
+    const dragState = dragStateRef.current;
+
+    if (!dragState || dragState.pointerId !== event.pointerId) {
+      return;
+    }
+
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+
+    dragStateRef.current = null;
+  }
+
   return (
-    <Link href={href} className={styles.actionRow}>
-      <ActionGlyph icon={icon} />
-      <span className={styles.actionCopy}>
-        <strong>{title}</strong>
-        <small>{description}</small>
-      </span>
-      <span className={styles.actionChevron} aria-hidden="true">›</span>
-    </Link>
+    <div className={styles.accountModalScrollShell}>
+      <div ref={viewportRef} className={styles.accountModalScrollViewport}>
+        <div ref={contentRef} className={styles.accountModalScrollContent}>
+          {children}
+        </div>
+      </div>
+
+      <div
+        ref={railRef}
+        className={`${styles.accountModalScrollRail} ${scrollbarState.isScrollable ? styles.accountModalScrollRailVisible : ""}`}
+        aria-hidden="true"
+        onPointerDown={handleScrollRailPointerDown}
+      >
+        <span
+          className={styles.accountModalScrollThumb}
+          style={
+            scrollbarState.isScrollable
+              ? {
+                  height: `${scrollbarState.thumbHeight}px`,
+                  transform: `translate3d(0, ${scrollbarState.thumbTop}px, 0)`,
+                }
+              : undefined
+          }
+          onPointerDown={handleScrollThumbPointerDown}
+          onPointerMove={handleScrollThumbPointerMove}
+          onPointerUp={handleScrollThumbPointerEnd}
+          onPointerCancel={handleScrollThumbPointerEnd}
+        />
+      </div>
+    </div>
   );
 }
 
-function initials(value: string): string {
-  const words = value.split(/\s+/).filter(Boolean);
-  return (words.length > 1 ? `${words[0][0]}${words[1][0]}` : words[0]?.slice(0, 2) || "A").toUpperCase();
-}
+export default function AccountClient({
+  initialProfile = null,
+  initialScanPinStatus = null,
+}: AccountClientProps) {
+  const [profile, setProfile] =
+    useState<AccountProfile | null>(initialProfile);
+  const [profileDraft, setProfileDraft] =
+    useState<ProfileDraft>(() =>
+      initialProfile ? buildProfileDraft(initialProfile) : initialProfileDraft,
+    );
+  const [scanPinStatus, setScanPinStatus] =
+    useState<AccountScanPinStatus>(
+      initialScanPinStatus ?? emptyScanPinStatus,
+    );
+  const [scanPinDraft, setScanPinDraft] = useState("");
+  const [scanPinConfirmDraft, setScanPinConfirmDraft] = useState("");
+  const [notice, setNotice] = useState<{
+    tone: NoticeTone;
+    message: string;
+  } | null>(null);
+  const [isLoading, setIsLoading] = useState(!initialProfile);
+  const [isLoadingScanPin, setIsLoadingScanPin] = useState(
+    !initialScanPinStatus,
+  );
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [isSavingScanPin, setIsSavingScanPin] = useState(false);
+  const [isDisablingScanPin, setIsDisablingScanPin] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [isSendingResetEmail, setIsSendingResetEmail] = useState(false);
+  const [isReadingLogo, setIsReadingLogo] = useState(false);
+  const [activeAccountModal, setActiveAccountModal] =
+    useState<AccountActionModal | null>(null);
+  const partnerMapElementRef = useRef<HTMLDivElement | null>(null);
+  const partnerLeafletMapRef = useRef<any>(null);
+  const partnerPinMarkerRef = useRef<any>(null);
+  const partnerRadiusCircleRef = useRef<any>(null);
 
-export default function AccountClient({ initialProfile: profile, initialScanPinStatus }: Props) {
-  const owner = isOwnerProfile(profile);
-  const dealer = isDealerProfile(profile);
-  const displayName = profileDisplayName(profile);
-  const completion = profileCompletion(profile);
-  const visibilityLabel = owner
-    ? profile.discoveryParticipationEnabled ? "Discovery active" : "Private"
-    : profile.partnerDirectoryEnabled ? "Directory visible" : "Directory hidden";
-  const accessLabel = owner
-    ? "Owner App & Field Managers"
-    : dealer
-      ? "Dealer App staff"
-      : "Main account access";
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadProfile() {
+      setIsLoading(true);
+
+      try {
+        const response = await fetch("/api/account-profile", {
+          cache: "no-store",
+          credentials: "include",
+        });
+
+        const data = (await response.json()) as ProfileApiResponse;
+
+        if (!response.ok || !data.ok || !data.profile) {
+          throw new Error(data.error ?? "Failed to load account profile.");
+        }
+
+        if (!mounted) {
+          return;
+        }
+
+        setProfile(data.profile);
+        setProfileDraft(buildProfileDraft(data.profile));
+      } catch (error) {
+        if (!mounted) {
+          return;
+        }
+
+        setNotice({
+          tone: "error",
+          message:
+            error instanceof Error
+              ? error.message
+              : "Failed to load account profile.",
+        });
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    async function loadScanPin() {
+      setIsLoadingScanPin(true);
+
+      try {
+        const response = await fetch("/api/account-profile/scan-pin", {
+          cache: "no-store",
+          credentials: "include",
+        });
+
+        const data = (await response.json()) as ScanPinApiResponse;
+
+        if (!response.ok || !data.ok || !data.scanPin) {
+          throw new Error(data.error ?? "Failed to load scan PIN settings.");
+        }
+
+        if (!mounted) {
+          return;
+        }
+
+        setScanPinStatus(data.scanPin);
+      } catch (error) {
+        if (!mounted) {
+          return;
+        }
+
+        setNotice({
+          tone: "error",
+          message:
+            error instanceof Error
+              ? error.message
+              : "Failed to load scan PIN settings.",
+        });
+      } finally {
+        if (mounted) {
+          setIsLoadingScanPin(false);
+        }
+      }
+    }
+
+    if (!initialProfile) {
+      void loadProfile();
+    }
+
+    if (!initialScanPinStatus) {
+      void loadScanPin();
+    }
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!notice) return undefined;
+
+    const timeout = window.setTimeout(() => setNotice(null), 3200);
+    return () => window.clearTimeout(timeout);
+  }, [notice]);
+
+  useEffect(() => {
+    if (!isDeleteDialogOpen) {
+      return undefined;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !isDeletingAccount) {
+        setIsDeleteDialogOpen(false);
+      }
+    };
+
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [isDeleteDialogOpen, isDeletingAccount]);
+
+  useEffect(() => {
+    if (!activeAccountModal) {
+      return undefined;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (
+        event.key === "Escape" &&
+        !isSavingProfile &&
+        !isReadingLogo &&
+        !isSavingScanPin &&
+        !isDisablingScanPin
+      ) {
+        closeActionModal();
+      }
+    };
+
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [
+    activeAccountModal,
+    isDisablingScanPin,
+    isReadingLogo,
+    isSavingProfile,
+    isSavingScanPin,
+  ]);
+
+  const completedFields = useMemo(
+    () => countCompletedFields(profileDraft),
+    [profileDraft],
+  );
+  const completionPercentage = Math.round(
+    (completedFields / PROFILE_COMPLETION_TOTAL) * 100,
+  );
+  const addressLines = useMemo(
+    () => buildAddressLines(profileDraft),
+    [profileDraft],
+  );
+  const accountTypeLabel = useMemo(
+    () => formatAccountTypeLabel(profileDraft.accountType, profile?.accountSubtype),
+    [profile?.accountSubtype, profileDraft.accountType],
+  );
+  const normalizedAccountType = String(
+    profile?.accountType || profileDraft.accountType || "owner",
+  )
+    .trim()
+    .toLowerCase();
+  const isOwnerAccount = normalizedAccountType === "owner";
+  const isDealerAccount = normalizedAccountType === "dealer";
+  const isPartnerAccount = !isOwnerAccount;
+  const showScanPinControls = !isLoading && isOwnerAccount;
+  const showPartnerDirectory = !isLoading && isPartnerAccount;
+  const showMarketplaceContact = isLoading || isOwnerAccount || isDealerAccount;
+  const accountDisplayName =
+    profileDraft.displayName.trim() || profile?.name || "Aim4price user";
+  const profileInitials = useMemo(
+    () =>
+      buildInitials(
+        accountDisplayName || profileDraft.businessName || "Aim4price",
+      ),
+    [accountDisplayName, profileDraft.businessName],
+  );
+  const scanPinStatusLabel = scanPinStatus.enabled ? "Active" : "Disabled";
+  const logoUrl = profileDraft.logoUrl.trim();
+  const marketplaceSellerName =
+    profileDraft.marketplaceSellerName.trim() ||
+    profileDraft.businessName.trim() ||
+    accountDisplayName;
+  const marketplacePhone =
+    profileDraft.marketplacePhone.trim() ||
+    profileDraft.phone.trim() ||
+    "No contact details saved yet";
+  const marketplaceEmail =
+    profileDraft.marketplaceEmail.trim() || "No business email saved yet";
+  const marketplaceLocation =
+    profileDraft.marketplaceLocation.trim() ||
+    (addressLines.length ? addressLines.join(", ") : "No location saved yet");
+  const partnerDirectoryPin = useMemo(
+    () => readPartnerPin(profileDraft),
+    [profileDraft.partnerLatitude, profileDraft.partnerLongitude],
+  );
+  const partnerDirectoryPinLabel = partnerDirectoryPin
+    ? `${formatCoordinate(partnerDirectoryPin.lat)}, ${formatCoordinate(partnerDirectoryPin.lng)}`
+    : "No map pin selected yet";
+  const memberSinceLabel = formatMemberSince(profile?.createdAtIso);
+  const updatedLabel = formatDate(
+    profile?.updatedAtIso || profile?.createdAtIso,
+  );
+  const directoryStatusLabel = profileDraft.partnerDirectoryEnabled
+    ? "Visible"
+    : "Hidden";
+  const scanPinDisplayLabel = isLoadingScanPin
+    ? "Loading"
+    : scanPinStatus.hasPin
+      ? scanPinStatusLabel
+      : "Not set";
+
+  useEffect(() => {
+    if (
+      isLoading ||
+      !isPartnerAccount ||
+      activeAccountModal !== "partnerDirectory" ||
+      !partnerMapElementRef.current
+    ) {
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    async function renderPartnerMap() {
+      try {
+        const L = await loadLeaflet();
+
+        if (cancelled || !partnerMapElementRef.current) {
+          return;
+        }
+
+        const selectedPin = readPartnerPin(profileDraft);
+        const center = selectedPin
+          ? [selectedPin.lat, selectedPin.lng]
+          : DEFAULT_PARTNER_MAP_CENTER;
+        const zoom = selectedPin
+          ? SELECTED_PARTNER_MAP_ZOOM
+          : DEFAULT_PARTNER_MAP_ZOOM;
+
+        if (!partnerLeafletMapRef.current) {
+          partnerLeafletMapRef.current = L.map(partnerMapElementRef.current, {
+            zoomControl: true,
+            scrollWheelZoom: true,
+          }).setView(center, zoom);
+
+          L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            attribution: "&copy; OpenStreetMap contributors",
+            maxZoom: 19,
+            detectRetina: true,
+          }).addTo(partnerLeafletMapRef.current);
+
+          partnerLeafletMapRef.current.on("click", (event: any) => {
+            setPartnerMapPin(event.latlng.lat, event.latlng.lng);
+          });
+        }
+
+        if (partnerPinMarkerRef.current) {
+          partnerPinMarkerRef.current.remove();
+          partnerPinMarkerRef.current = null;
+        }
+
+        if (partnerRadiusCircleRef.current) {
+          partnerRadiusCircleRef.current.remove();
+          partnerRadiusCircleRef.current = null;
+        }
+
+        if (selectedPin) {
+          const icon = L.divIcon({
+            className: "accountPartnerMapMarker",
+            html: '<span class="accountPartnerMapMarkerPin"><b>PIN</b></span>',
+            iconSize: [46, 46],
+            iconAnchor: [23, 46],
+            popupAnchor: [0, -40],
+          });
+
+          const marker = L.marker([selectedPin.lat, selectedPin.lng], {
+            draggable: true,
+            icon,
+            title: "Partner directory pin",
+          }).addTo(partnerLeafletMapRef.current);
+
+          marker.on("dragend", () => {
+            const next = marker.getLatLng();
+            setPartnerMapPin(next.lat, next.lng);
+          });
+
+          marker.bindPopup(
+            `<strong>${accountDisplayName.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</strong><br />Partner directory pin`,
+          );
+
+          partnerPinMarkerRef.current = marker;
+
+          const radiusKm = readServiceRadiusKm(
+            profileDraft.partnerServiceRadiusKm,
+          );
+
+          if (radiusKm) {
+            partnerRadiusCircleRef.current = L.circle(
+              [selectedPin.lat, selectedPin.lng],
+              {
+                radius: radiusKm * 1000,
+                color: "#1f8a66",
+                fillColor: "#1f8a66",
+                fillOpacity: 0.08,
+                opacity: 0.38,
+                weight: 2,
+              },
+            ).addTo(partnerLeafletMapRef.current);
+          }
+
+          partnerLeafletMapRef.current.setView(
+            [selectedPin.lat, selectedPin.lng],
+            Math.max(partnerLeafletMapRef.current.getZoom(), 8),
+          );
+        }
+
+        window.requestAnimationFrame(() =>
+          partnerLeafletMapRef.current?.invalidateSize(),
+        );
+        window.setTimeout(
+          () => partnerLeafletMapRef.current?.invalidateSize(),
+          80,
+        );
+        window.setTimeout(
+          () => partnerLeafletMapRef.current?.invalidateSize(),
+          320,
+        );
+      } catch (error) {
+        if (!cancelled) {
+          setNotice({
+            tone: "error",
+            message:
+              error instanceof Error
+                ? error.message
+                : "Failed to load the map.",
+          });
+        }
+      }
+    }
+
+    void renderPartnerMap();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    accountDisplayName,
+    activeAccountModal,
+    isLoading,
+    isPartnerAccount,
+    profileDraft.partnerLatitude,
+    profileDraft.partnerLongitude,
+    profileDraft.partnerServiceRadiusKm,
+  ]);
+
+  useEffect(() => {
+    return () => {
+      if (partnerLeafletMapRef.current) {
+        partnerLeafletMapRef.current.remove();
+        partnerLeafletMapRef.current = null;
+        partnerPinMarkerRef.current = null;
+        partnerRadiusCircleRef.current = null;
+      }
+    };
+  }, []);
+
+  function setPartnerMapPin(lat: number, lng: number) {
+    setProfileDraft((current) => ({
+      ...current,
+      partnerLatitude: lat.toFixed(6),
+      partnerLongitude: lng.toFixed(6),
+    }));
+  }
+
+  function clearPartnerMapPin() {
+    setProfileDraft((current) => ({
+      ...current,
+      partnerLatitude: "",
+      partnerLongitude: "",
+    }));
+  }
+
+  function handleUseCurrentLocation() {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setNotice({
+        tone: "error",
+        message: "Current location is not available in this browser.",
+      });
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setPartnerMapPin(position.coords.latitude, position.coords.longitude);
+        setNotice({
+          tone: "success",
+          message:
+            "Map pin set to your current location. Click Save directory to store it.",
+        });
+      },
+      () => {
+        setNotice({
+          tone: "error",
+          message:
+            "Could not read your current location. Drop the pin manually on the map.",
+        });
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
+    );
+  }
+
+  async function handleLogoFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0] ?? null;
+    event.target.value = "";
+
+    if (!file) {
+      return;
+    }
+
+    const fileType = String(file.type ?? "")
+      .trim()
+      .toLowerCase();
+
+    if (!ALLOWED_LOGO_TYPES.has(fileType)) {
+      setNotice({ tone: "error", message: "Upload a JPG, PNG or WEBP logo." });
+      return;
+    }
+
+    if (file.size > MAX_LOGO_UPLOAD_BYTES) {
+      setNotice({
+        tone: "error",
+        message: `Logo must be ${formatUploadSize(MAX_LOGO_UPLOAD_BYTES)} or smaller.`,
+      });
+      return;
+    }
+
+    setIsReadingLogo(true);
+
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      const nextDraft = { ...profileDraft, logoUrl: dataUrl };
+      setProfileDraft(nextDraft);
+      await saveProfileDraft(nextDraft, "Logo saved.", {
+        syncPrimaryLogoToRegister: true,
+      });
+    } catch (error) {
+      setNotice({
+        tone: "error",
+        message:
+          error instanceof Error ? error.message : "Failed to read image file.",
+      });
+    } finally {
+      setIsReadingLogo(false);
+    }
+  }
+
+  async function handleRemoveLogo() {
+    const nextDraft = { ...profileDraft, logoUrl: "" };
+    setProfileDraft(nextDraft);
+    await saveProfileDraft(nextDraft, "Logo removed.", {
+      syncPrimaryLogoToRegister: true,
+    });
+  }
+
+  async function saveProfileDraft(
+    nextDraft: ProfileDraft,
+    successMessage = "Account details saved.",
+    options?: { syncPrimaryLogoToRegister?: boolean },
+  ): Promise<boolean> {
+    setIsSavingProfile(true);
+
+    const nextLogoUrl = nextDraft.logoUrl.trim();
+    const currentLogoUrl = (profile?.logoUrl ?? "").trim();
+    const shouldSyncPrimaryLogo = Boolean(
+      options?.syncPrimaryLogoToRegister || nextLogoUrl !== currentLogoUrl,
+    );
+
+    try {
+      const response = await fetch("/api/account-profile", {
+        method: "PUT",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...nextDraft,
+          discoveryParticipationEnabled: isOwnerAccount
+            ? nextDraft.discoveryParticipationEnabled
+            : undefined,
+          extraPhotoUrls: [],
+          syncPrimaryLogoToRegister: shouldSyncPrimaryLogo,
+        }),
+      });
+
+      const data = (await response.json()) as ProfileApiResponse;
+
+      if (!response.ok || !data.ok || !data.profile) {
+        throw new Error(data.error ?? "Failed to save account details.");
+      }
+
+      setProfile(data.profile);
+      setProfileDraft(buildProfileDraft(data.profile));
+      setNotice({ tone: "success", message: successMessage });
+      return true;
+    } catch (error) {
+      setNotice({
+        tone: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Failed to save account details.",
+      });
+      return false;
+    } finally {
+      setIsSavingProfile(false);
+    }
+  }
+
+  async function handleProfileSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const didSave = await saveProfileDraft(profileDraft);
+
+    if (didSave) {
+      if (activeAccountModal === "partnerDirectory") {
+        destroyPartnerMap();
+      }
+
+      setActiveAccountModal(null);
+    }
+  }
+
+  async function handleScanPinSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const normalizedPin = normalizePinInput(scanPinDraft);
+    const normalizedConfirmPin = normalizePinInput(scanPinConfirmDraft);
+
+    if (!normalizedPin) {
+      setNotice({ tone: "error", message: "Enter a scan PIN." });
+      return;
+    }
+
+    if (normalizedPin.length < 4 || normalizedPin.length > 8) {
+      setNotice({ tone: "error", message: "Scan PIN must be 4 to 8 digits." });
+      return;
+    }
+
+    if (normalizedPin !== normalizedConfirmPin) {
+      setNotice({ tone: "error", message: "Scan PINs do not match." });
+      return;
+    }
+
+    setIsSavingScanPin(true);
+
+    try {
+      const response = await fetch("/api/account-profile/scan-pin", {
+        method: "PUT",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          pin: normalizedPin,
+          confirmPin: normalizedConfirmPin,
+        }),
+      });
+
+      const payload = await readResponsePayload(response);
+      const data = (payload ?? null) as ScanPinApiResponse | null;
+
+      if (!response.ok || !data?.ok || !data.scanPin) {
+        throw new Error(
+          extractErrorMessage(payload, "Failed to save scan PIN."),
+        );
+      }
+
+      setScanPinStatus(data.scanPin);
+      setScanPinDraft("");
+      setScanPinConfirmDraft("");
+      setActiveAccountModal(null);
+      setNotice({
+        tone: "success",
+        message: "Scan PIN saved. QR scan access is now active.",
+      });
+    } catch (error) {
+      setNotice({
+        tone: "error",
+        message:
+          error instanceof Error ? error.message : "Failed to save scan PIN.",
+      });
+    } finally {
+      setIsSavingScanPin(false);
+    }
+  }
+
+  async function handleDisableScanPin() {
+    setIsDisablingScanPin(true);
+
+    try {
+      const response = await fetch("/api/account-profile/scan-pin", {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      const payload = await readResponsePayload(response);
+      const data = (payload ?? null) as ScanPinApiResponse | null;
+
+      if (!response.ok || !data?.ok || !data.scanPin) {
+        throw new Error(
+          extractErrorMessage(payload, "Failed to disable scan PIN."),
+        );
+      }
+
+      setScanPinStatus(data.scanPin);
+      setScanPinDraft("");
+      setScanPinConfirmDraft("");
+      setActiveAccountModal(null);
+      setNotice({ tone: "success", message: "Scan PIN disabled." });
+    } catch (error) {
+      setNotice({
+        tone: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Failed to disable scan PIN.",
+      });
+    } finally {
+      setIsDisablingScanPin(false);
+    }
+  }
+
+  function closeDeleteDialog() {
+    if (isDeletingAccount) {
+      return;
+    }
+
+    setIsDeleteDialogOpen(false);
+    setDeletePassword("");
+    setDeleteConfirmText("");
+  }
+
+  function destroyPartnerMap() {
+    if (partnerLeafletMapRef.current) {
+      partnerLeafletMapRef.current.remove();
+      partnerLeafletMapRef.current = null;
+      partnerPinMarkerRef.current = null;
+      partnerRadiusCircleRef.current = null;
+    }
+  }
+
+  function closeActionModal() {
+    if (
+      isSavingProfile ||
+      isReadingLogo ||
+      isSavingScanPin ||
+      isDisablingScanPin
+    ) {
+      return;
+    }
+
+    destroyPartnerMap();
+
+    if (profile) {
+      setProfileDraft(buildProfileDraft(profile));
+    }
+
+    setScanPinDraft("");
+    setScanPinConfirmDraft("");
+    setActiveAccountModal(null);
+  }
+
+  function openActionModal(modal: AccountActionModal) {
+    destroyPartnerMap();
+
+    if (profile) {
+      setProfileDraft(buildProfileDraft(profile));
+    }
+
+    if (modal === "scanPin") {
+      setScanPinDraft("");
+      setScanPinConfirmDraft("");
+    }
+
+    setActiveAccountModal(modal);
+  }
+
+  function openBusinessEditor() {
+    openActionModal("business");
+  }
+
+  function openAssetRegistersPage() {
+    window.location.assign("/asset-registers");
+  }
+
+  function openMarketplaceEditor() {
+    openActionModal("marketplace");
+  }
+
+  function openDiscoveryEditor() {
+    openActionModal("discovery");
+  }
+
+  function openScanPinEditor() {
+    openActionModal("scanPin");
+  }
+
+  function openFieldManagerPage() {
+    window.location.assign("/account/field-manager");
+  }
+
+  function openDealerAppAccessPage() {
+    window.location.assign("/account/dealer-app");
+  }
+
+  function openOwnerAppAccessPage() {
+    window.location.assign("/account/owner-app");
+  }
+
+  function openPartnerDirectory() {
+    openActionModal("partnerDirectory");
+  }
+
+  async function handlePasswordChangeSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!currentPassword.trim()) {
+      setNotice({ tone: "error", message: "Enter your current password." });
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      setNotice({
+        tone: "error",
+        message: "New password must be at least 8 characters.",
+      });
+      return;
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      setNotice({ tone: "error", message: "New passwords do not match." });
+      return;
+    }
+
+    setIsChangingPassword(true);
+
+    try {
+      const response = await fetch("/api/auth/change-password", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          currentPassword,
+          newPassword,
+          revokeOtherSessions: true,
+        }),
+      });
+
+      const payload = await readResponsePayload(response);
+
+      if (!response.ok) {
+        throw new Error(
+          extractErrorMessage(payload, "Failed to change password."),
+        );
+      }
+
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmNewPassword("");
+      setNotice({ tone: "success", message: "Password changed successfully." });
+    } catch (error) {
+      setNotice({
+        tone: "error",
+        message:
+          error instanceof Error ? error.message : "Failed to change password.",
+      });
+    } finally {
+      setIsChangingPassword(false);
+    }
+  }
+
+  async function handleSendSelfResetEmail() {
+    const email = profile?.email.trim();
+
+    if (!email) {
+      setNotice({
+        tone: "error",
+        message: "Account email is not available yet.",
+      });
+      return;
+    }
+
+    setIsSendingResetEmail(true);
+
+    try {
+      const response = await fetch("/api/auth/request-password-reset", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          redirectTo: getResetPasswordUrl(),
+        }),
+      });
+
+      const payload = await readResponsePayload(response);
+
+      if (!response.ok) {
+        throw new Error(
+          extractErrorMessage(payload, "Failed to send reset password email."),
+        );
+      }
+
+      setNotice({
+        tone: "success",
+        message:
+          "Reset password email sent. Check your inbox for the secure link.",
+      });
+    } catch (error) {
+      setNotice({
+        tone: "error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Failed to send reset password email.",
+      });
+    } finally {
+      setIsSendingResetEmail(false);
+    }
+  }
+
+  async function handleDeleteAccount(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!deletePassword.trim()) {
+      setNotice({
+        tone: "error",
+        message: "Enter your password to delete this account.",
+      });
+      return;
+    }
+
+    if (deleteConfirmText.trim().toUpperCase() !== "DELETE") {
+      setNotice({
+        tone: "error",
+        message: "Type DELETE to confirm account removal.",
+      });
+      return;
+    }
+
+    setIsDeletingAccount(true);
+
+    try {
+      const response = await fetch("/api/auth/delete-user", {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          password: deletePassword,
+          callbackURL: "/",
+        }),
+      });
+
+      const payload = await readResponsePayload(response);
+
+      if (!response.ok) {
+        throw new Error(
+          extractErrorMessage(payload, "Failed to delete account."),
+        );
+      }
+
+      setNotice({
+        tone: "success",
+        message:
+          "Your account and saved workspace data were deleted. Redirecting…",
+      });
+      setIsDeleteDialogOpen(false);
+      setDeletePassword("");
+      setDeleteConfirmText("");
+
+      window.setTimeout(() => {
+        window.location.assign("/");
+      }, 700);
+    } catch (error) {
+      setNotice({
+        tone: "error",
+        message:
+          error instanceof Error ? error.message : "Failed to delete account.",
+      });
+    } finally {
+      setIsDeletingAccount(false);
+    }
+  }
 
   return (
-    <div className={styles.screen}>
-      <AppHeader active="account" />
-      <main className={styles.page}>
-        <div className={styles.shell}>
-          <section className={styles.accountHero}>
-            <div className={styles.accountAvatar}>
-              {profile.logoUrl ? <img src={profile.logoUrl} alt="" /> : <span>{initials(displayName)}</span>}
+    <main className={styles.page}>
+      <AppHeader active="none" />
+
+      <section className={styles.shell}>
+        <section className={styles.accountHero}>
+          <div className={styles.heroIdentityGroup}>
+            <label
+              className={`${styles.heroAvatar} ${logoUrl ? styles.heroAvatarWithLogo : ""}`}
+              title="Upload account logo"
+              aria-label="Upload account logo"
+            >
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleLogoFileChange}
+                disabled={isReadingLogo || isSavingProfile}
+              />
+              {logoUrl ? (
+                <img src={logoUrl} alt="Business logo" />
+              ) : (
+                <span>{profileInitials}</span>
+              )}
+            </label>
+
+            <div className={styles.heroCopy}>
+              <h1>{accountDisplayName}</h1>
+              <p>{profile?.email || "Loading email"}</p>
+              <small>
+                {accountTypeLabel} account&nbsp; • &nbsp;{memberSinceLabel}
+              </small>
             </div>
-            <div className={styles.accountHeroCopy}>
-              <span className={styles.eyebrow}>Aim4price account</span>
-              <h1>{displayName}</h1>
-              <p>{profile.email}</p>
-              <div className={styles.heroMeta}>
-                <span>{accountTypeLabel(profile)}</span>
-                <span aria-hidden="true">•</span>
-                <span>{profileLocation(profile)}</span>
+          </div>
+
+          <div className={styles.heroStatusGroup}>
+            <span className={styles.statusBadge}>Active</span>
+            {isDealerAccount ? (
+              <span className={`${styles.statusBadge} ${styles.directoryHeroBadge}`}>
+                Directory {directoryStatusLabel.toLowerCase()}
+              </span>
+            ) : null}
+          </div>
+        </section>
+
+        {notice ? (
+          <div
+            className={`${styles.notice} ${notice.tone === "success" ? styles.noticeSuccess : styles.noticeError}`}
+          >
+            {notice.message}
+          </div>
+        ) : null}
+
+        <section className={styles.topGrid}>
+          <section className={`${styles.card} ${styles.overviewCard}`}>
+            <div className={styles.compactCardHeader}>
+              <h2>Account overview</h2>
+              <p>Your account at a glance</p>
+            </div>
+
+            <div className={styles.metricGrid}>
+              <div className={styles.metricTile}>
+                <span>Account type</span>
+                <strong>{accountTypeLabel}</strong>
               </div>
-            </div>
-            <div className={styles.heroBadges}>
-              <span>Active</span>
-              <span>{visibilityLabel}</span>
+
+              <div className={styles.metricTile}>
+                <span>Contact number</span>
+                <strong>{profileDraft.phone.trim() || "Not saved"}</strong>
+              </div>
+
+              <div className={styles.metricTile}>
+                <span>Profile progress</span>
+                <strong>
+                  {completedFields}/{PROFILE_COMPLETION_TOTAL}
+                </strong>
+                <small>{completionPercentage}% complete</small>
+                <div className={styles.progressTrack} aria-hidden="true">
+                  <span style={{ width: `${completionPercentage}%` }} />
+                </div>
+              </div>
+
+              <div className={styles.metricTile}>
+                <span>
+                  {isOwnerAccount ? "QR PIN status" : "Directory status"}
+                </span>
+                <strong>
+                  {isOwnerAccount ? scanPinDisplayLabel : directoryStatusLabel}
+                </strong>
+              </div>
+
+              <div className={styles.metricTile}>
+                <span>Last updated</span>
+                <strong>{updatedLabel}</strong>
+              </div>
             </div>
           </section>
 
-          {!completion.complete ? (
-            <Link href="/account/profile" className={styles.setupBanner}>
-              <span className={styles.setupProgress}>{completion.completed}/{completion.total}</span>
-              <span>
-                <strong>Finish setting up your account</strong>
-                <small>Add {completion.missing.slice(0, 2).join(" and ")} so your Aim4price profile is ready to use.</small>
-              </span>
-              <b aria-hidden="true">›</b>
-            </Link>
-          ) : null}
+          <section className={`${styles.card} ${styles.quickActionsCard}`}>
+            <div className={styles.compactCardHeader}>
+              <h2>Quick actions</h2>
+              <p>Frequently used actions</p>
+            </div>
 
-          <section className={styles.hubGrid}>
-            <section className={styles.card}>
-              <div className={styles.cardHeader}>
-                <h2>Account overview</h2>
-                <p>The information that matters at a glance.</p>
-              </div>
-              <div className={styles.metricGrid}>
-                <div className={styles.metricTile}><span>Account type</span><strong>{accountTypeLabel(profile)}</strong></div>
-                <div className={styles.metricTile}><span>Location</span><strong>{profileLocation(profile)}</strong></div>
-                <div className={styles.metricTile}><span>Visibility</span><strong>{visibilityLabel}</strong></div>
-                <div className={styles.metricTile}><span>App access</span><strong>{accessLabel}</strong></div>
-              </div>
-            </section>
+            <div className={styles.quickActionList}>
+              <button
+                type="button"
+                className={styles.quickActionButton}
+                onClick={openBusinessEditor}
+              >
+                <QuickActionIcon name="business" />
+                <strong>Edit business details</strong>
+                <span className={styles.quickActionChevron}>›</span>
+              </button>
 
-            <section className={styles.card}>
-              <div className={styles.cardHeader}>
-                <h2>Quick actions</h2>
-                <p>Open the area you want to manage.</p>
+              {isOwnerAccount ? (
+                <button
+                  type="button"
+                  className={styles.quickActionButton}
+                  onClick={openAssetRegistersPage}
+                >
+                  <QuickActionIcon name="registers" />
+                  <strong>Manage multiple asset registers</strong>
+                  <span className={styles.quickActionChevron}>›</span>
+                </button>
+              ) : null}
+
+              {showScanPinControls ? (
+                <button
+                  type="button"
+                  className={styles.quickActionButton}
+                  onClick={openScanPinEditor}
+                >
+                  <QuickActionIcon name="pin" />
+                  <strong>Update QR PIN</strong>
+                  <span className={styles.quickActionChevron}>›</span>
+                </button>
+              ) : null}
+
+              {isOwnerAccount ? (
+                <button
+                  type="button"
+                  className={styles.quickActionButton}
+                  onClick={openFieldManagerPage}
+                >
+                  <QuickActionIcon name="fieldManager" />
+                  <strong>Field manager app</strong>
+                  <span className={styles.quickActionChevron}>›</span>
+                </button>
+              ) : null}
+
+              {isOwnerAccount ? (
+                <button
+                  type="button"
+                  className={styles.quickActionButton}
+                  onClick={openOwnerAppAccessPage}
+                >
+                  <QuickActionIcon name="ownerApp" />
+                  <strong>Owner app</strong>
+                  <span className={styles.quickActionChevron}>›</span>
+                </button>
+              ) : null}
+
+              {isDealerAccount ? (
+                <button
+                  type="button"
+                  className={styles.quickActionButton}
+                  onClick={openDealerAppAccessPage}
+                >
+                  <QuickActionIcon name="dealer" />
+                  <strong>Manage Dealer App staff</strong>
+                  <span className={styles.quickActionChevron}>›</span>
+                </button>
+              ) : null}
+
+              {showMarketplaceContact ? (
+                <button
+                  type="button"
+                  className={styles.quickActionButton}
+                  onClick={openMarketplaceEditor}
+                >
+                  <QuickActionIcon name="marketplace" />
+                  <strong>Marketplace contact</strong>
+                  <span className={styles.quickActionChevron}>›</span>
+                </button>
+              ) : null}
+
+              {isOwnerAccount ? (
+                <button
+                  type="button"
+                  className={styles.quickActionButton}
+                  onClick={openDiscoveryEditor}
+                >
+                  <QuickActionIcon name="discovery" />
+                  <strong>Discovery participation</strong>
+                  <span className={styles.quickActionChevron}>›</span>
+                </button>
+              ) : null}
+
+              {showPartnerDirectory ? (
+                <button
+                  type="button"
+                  className={styles.quickActionButton}
+                  onClick={openPartnerDirectory}
+                >
+                  <QuickActionIcon name="directory" />
+                  <strong>Partner directory</strong>
+                  <span className={styles.quickActionChevron}>›</span>
+                </button>
+              ) : null}
+
+              <button
+                type="button"
+                className={`${styles.quickActionButton} ${styles.quickActionDanger}`}
+                onClick={() => setIsDeleteDialogOpen(true)}
+              >
+                <QuickActionIcon name="delete" />
+                <strong>Delete account</strong>
+                <span className={styles.quickActionChevron}>›</span>
+              </button>
+            </div>
+          </section>
+        </section>
+
+        <section
+          className={`${styles.card} ${styles.securityCard}`}
+          aria-labelledby="password-security-title"
+        >
+          <div className={styles.compactCardHeader}>
+            <h2 id="password-security-title">Password & security</h2>
+            <p>
+              Change your password or send yourself a secure reset-password
+              email.
+            </p>
+          </div>
+
+          <div className={styles.securityGrid}>
+            <form
+              className={styles.securityForm}
+              onSubmit={handlePasswordChangeSubmit}
+              noValidate
+            >
+              <label className={styles.modalField}>
+                <span>Current password</span>
+                <input
+                  type="password"
+                  autoComplete="current-password"
+                  value={currentPassword}
+                  onChange={(event) => setCurrentPassword(event.target.value)}
+                  placeholder="Enter current password"
+                />
+              </label>
+
+              <label className={styles.modalField}>
+                <span>New password</span>
+                <input
+                  type="password"
+                  autoComplete="new-password"
+                  minLength={8}
+                  value={newPassword}
+                  onChange={(event) => setNewPassword(event.target.value)}
+                  placeholder="Minimum 8 characters"
+                />
+              </label>
+
+              <label className={styles.modalField}>
+                <span>Confirm new password</span>
+                <input
+                  type="password"
+                  autoComplete="new-password"
+                  minLength={8}
+                  value={confirmNewPassword}
+                  onChange={(event) =>
+                    setConfirmNewPassword(event.target.value)
+                  }
+                  placeholder="Repeat new password"
+                />
+              </label>
+
+              <div className={styles.securityActions}>
+                <button
+                  type="submit"
+                  className={styles.primaryButton}
+                  disabled={isChangingPassword}
+                >
+                  {isChangingPassword
+                    ? "Changing password..."
+                    : "Change password"}
+                </button>
               </div>
-              <div className={styles.actionList}>
-                <AccountAction
-                  href="/account/profile"
-                  icon="profile"
-                  title={owner ? "Profile & location" : "Edit business details"}
-                  description="Branding, contact information and your main account location."
-                />
-                <AccountAction
-                  href="/account/visibility"
-                  icon="visibility"
-                  title={owner ? "Visibility & Discovery" : "Partner directory"}
-                  description={owner ? "Control Discovery and marketplace contact details." : "Manage your public profile, location and service area."}
-                />
-                {owner ? (
-                  <>
-                    <AccountAction href="/account/owner-app" icon="staff" title="Manage Owner App users" description="Create and manage dedicated Owner App access." />
-                    <AccountAction href="/account/field-manager" icon="field" title="Manage Field Managers" description="Control field access for daily asset work." />
-                  </>
-                ) : null}
-                {dealer ? (
-                  <AccountAction href="/account/dealer-app" icon="staff" title="Manage Dealer App staff" description="Create and manage dedicated Dealer App logins." />
-                ) : null}
-                <AccountAction
-                  href="/account/security"
-                  icon="security"
-                  title={owner ? "Security & QR access" : "Password & security"}
-                  description={owner
-                    ? `Password, reset email and QR PIN (${initialScanPinStatus.hasPin ? "configured" : "not set"}).`
-                    : "Password, reset email and protected account actions."}
-                />
+            </form>
+
+            <div className={styles.securitySidePanel}>
+              <strong>Reset password email</strong>
+              <p>
+                Send a branded Aim4price reset link to the email address on this
+                account.
+              </p>
+              <button
+                type="button"
+                className={styles.ghostButton}
+                onClick={handleSendSelfResetEmail}
+                disabled={isSendingResetEmail || !profile?.email}
+              >
+                {isSendingResetEmail
+                  ? "Sending..."
+                  : "Send reset password email"}
+              </button>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      {activeAccountModal === "business" ? (
+        <div className={styles.modalBackdrop} onClick={closeActionModal}>
+          <section
+            className={`${styles.modalCard} ${styles.accountActionModalCard} ${styles.accountScrollableModalCard} ${styles.businessDetailsModalCard}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="business-details-modal-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <AccountModalScroller>
+              <div className={styles.modalHeader}>
+                <h2 id="business-details-modal-title">Business details</h2>
+                <p>
+                  Update the core account information used across Aim4price.
+                </p>
+                <button type="button" className={styles.modalCloseButton} onClick={closeActionModal} aria-label="Close business details">×</button>
               </div>
-            </section>
+
+              {isLoading ? (
+                <p className={styles.loading}>Loading account details...</p>
+              ) : (
+                <form
+                  className={`${styles.form} ${styles.compactEditForm}`}
+                  onSubmit={handleProfileSubmit}
+                >
+                  <div className={`${styles.modalSectionHeading} ${styles.fullWidth}`}>
+                    <strong>Contact information</strong>
+                    <p>Core details used across your Aim4price account.</p>
+                  </div>
+
+                  <label className={`${styles.field} ${styles.halfField}`}>
+                    <span>Full name</span>
+                    <input
+                      value={profileDraft.displayName}
+                      onChange={(event) =>
+                        setProfileDraft((current) => ({
+                          ...current,
+                          displayName: event.target.value,
+                        }))
+                      }
+                      placeholder="Full name"
+                    />
+                  </label>
+
+                  <label className={`${styles.field} ${styles.halfField}`}>
+                    <span>Account email</span>
+                    <input value={profile?.email ?? ""} disabled />
+                    <small className={styles.fieldHint}>
+                      Used only for login and account access.
+                    </small>
+                  </label>
+
+                  <label className={`${styles.field} ${styles.halfField}`}>
+                    <span>Business name</span>
+                    <input
+                      value={profileDraft.businessName}
+                      onChange={(event) =>
+                        setProfileDraft((current) => ({
+                          ...current,
+                          businessName: event.target.value,
+                        }))
+                      }
+                      placeholder="Business name"
+                    />
+                  </label>
+
+                  <label className={`${styles.field} ${styles.halfField}`}>
+                    <span>Business email</span>
+                    <input
+                      type="email"
+                      value={profileDraft.marketplaceEmail}
+                      onChange={(event) =>
+                        setProfileDraft((current) => ({
+                          ...current,
+                          marketplaceEmail: event.target.value,
+                        }))
+                      }
+                      placeholder="business@email.co.za"
+                    />
+                  </label>
+
+                  <label
+                    className={`${styles.field} ${isPartnerAccount ? styles.halfField : styles.fullWidth}`}
+                  >
+                    <span>Contact details</span>
+                    <input
+                      type="text"
+                      value={profileDraft.phone}
+                      onChange={(event) =>
+                        setProfileDraft((current) => ({
+                          ...current,
+                          phone: event.target.value,
+                        }))
+                      }
+                      placeholder="Phone, WhatsApp or office contact details"
+                    />
+                  </label>
+
+                  {isPartnerAccount ? (
+                    <label className={`${styles.field} ${styles.halfField}`}>
+                      <span>Website link</span>
+                      <input
+                        inputMode="url"
+                        value={profileDraft.websiteUrl}
+                        onChange={(event) =>
+                          setProfileDraft((current) => ({
+                            ...current,
+                            websiteUrl: event.target.value,
+                          }))
+                        }
+                        placeholder="https://your-business.co.za"
+                      />
+                    </label>
+                  ) : null}
+
+                  {isPartnerAccount ? (
+                    <div
+                      className={`${styles.mediaUploadField} ${styles.fullWidth}`}
+                    >
+                      <div className={styles.mediaUploadHeader}>
+                        <div>
+                          <span>Business logo</span>
+                          <strong>Logo for company profile</strong>
+                          <p>
+                            Upload one clear logo for your business profile.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className={styles.businessMediaEditorGrid}>
+                        <section className={styles.businessLogoPanel}>
+                          <div className={styles.businessLogoPreview}>
+                            {logoUrl ? (
+                              <img src={logoUrl} alt="Business logo preview" />
+                            ) : (
+                              <span>{profileInitials}</span>
+                            )}
+                          </div>
+
+                          <div className={styles.businessMediaControls}>
+                            <label className={styles.uploadButton}>
+                              <input
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp"
+                                onChange={handleLogoFileChange}
+                                disabled={isReadingLogo || isSavingProfile}
+                              />
+                              {logoUrl ? "Replace logo" : "Upload logo"}
+                            </label>
+
+                            {logoUrl ? (
+                              <button
+                                type="button"
+                                className={styles.ghostButton}
+                                onClick={handleRemoveLogo}
+                                disabled={isSavingProfile || isReadingLogo}
+                              >
+                                Remove logo
+                              </button>
+                            ) : null}
+                          </div>
+
+                          <small>
+                            JPG, PNG or WEBP. Maximum{" "}
+                            {formatUploadSize(MAX_LOGO_UPLOAD_BYTES)}.
+                          </small>
+                        </section>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  <div className={`${styles.modalSectionHeading} ${styles.fullWidth}`}>
+                    <strong>Account location</strong>
+                    <p>Your main location. Directory visibility and the public map pin remain separately controlled.</p>
+                  </div>
+
+                  <label className={`${styles.field} ${styles.thirdField}`}>
+                    <span>Account type</span>
+                    <div className={styles.readOnlyValue}>
+                      {accountTypeLabel}
+                    </div>
+                    <small className={styles.fieldHint}>
+                      Account type is locked after signup.
+                    </small>
+                  </label>
+
+                  <label className={`${styles.field} ${styles.thirdField}`}>
+                    <span>Province</span>
+                    <input
+                      value={profileDraft.province}
+                      onChange={(event) =>
+                        setProfileDraft((current) => ({
+                          ...current,
+                          province: event.target.value,
+                        }))
+                      }
+                      placeholder="Province"
+                    />
+                  </label>
+
+                  <label className={`${styles.field} ${styles.thirdField}`}>
+                    <span>Town / city</span>
+                    <input
+                      value={profileDraft.townCity}
+                      onChange={(event) =>
+                        setProfileDraft((current) => ({
+                          ...current,
+                          townCity: event.target.value,
+                        }))
+                      }
+                      placeholder="Town or city"
+                    />
+                  </label>
+
+                  <label className={`${styles.field} ${styles.fullWidth}`}>
+                    <span>Address line 1</span>
+                    <input
+                      value={profileDraft.addressLine1}
+                      onChange={(event) =>
+                        setProfileDraft((current) => ({
+                          ...current,
+                          addressLine1: event.target.value,
+                        }))
+                      }
+                      placeholder="Address line 1"
+                    />
+                  </label>
+
+                  <div className={styles.actionsRow}>
+                    <button
+                      type="button"
+                      className={styles.ghostButton}
+                      onClick={closeActionModal}
+                      disabled={isSavingProfile || isReadingLogo}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className={styles.primaryButton}
+                      disabled={isSavingProfile || isReadingLogo}
+                    >
+                      {isSavingProfile ? "Saving..." : "Save business details"}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </AccountModalScroller>
           </section>
         </div>
-      </main>
-    </div>
+      ) : null}
+
+      {activeAccountModal === "scanPin" ? (
+        <div className={styles.modalBackdrop} onClick={closeActionModal}>
+          <section
+            className={`${styles.modalCard} ${styles.accountActionModalCard} ${styles.accountActionModalCardNarrow} ${styles.accountScrollableModalCard} ${styles.scanPinModalCard}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="scan-pin-modal-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <AccountModalScroller>
+              <div className={styles.modalHeader}>
+                <h2 id="scan-pin-modal-title">Update QR PIN</h2>
+                <p>
+                  Create or update the 4 to 8 digit PIN used for QR scan updates.
+                </p>
+                <button type="button" className={styles.modalCloseButton} onClick={closeActionModal} aria-label="Close QR PIN editor">×</button>
+              </div>
+
+            <div className={styles.pinModalStatus}>
+              <span>Current PIN status</span>
+              <strong>{scanPinDisplayLabel}</strong>
+              <p>
+                {scanPinStatus.hasPin
+                  ? "A PIN is already saved for QR scan access."
+                  : "No PIN is saved yet."}
+              </p>
+            </div>
+
+              <form className={styles.modalForm} onSubmit={handleScanPinSubmit}>
+              <div className={styles.pinGrid}>
+                <label className={styles.field}>
+                  <span>New scan PIN</span>
+                  <input
+                    type="password"
+                    inputMode="numeric"
+                    autoComplete="new-password"
+                    value={scanPinDraft}
+                    onChange={(event) =>
+                      setScanPinDraft(normalizePinInput(event.target.value))
+                    }
+                    placeholder="4 to 8 digits"
+                  />
+                </label>
+
+                <label className={styles.field}>
+                  <span>Confirm scan PIN</span>
+                  <input
+                    type="password"
+                    inputMode="numeric"
+                    autoComplete="new-password"
+                    value={scanPinConfirmDraft}
+                    onChange={(event) =>
+                      setScanPinConfirmDraft(
+                        normalizePinInput(event.target.value),
+                      )
+                    }
+                    placeholder="Repeat PIN"
+                  />
+                </label>
+              </div>
+
+              <div className={styles.modalActions}>
+                <button
+                  type="button"
+                  className={styles.ghostButton}
+                  onClick={closeActionModal}
+                  disabled={isSavingScanPin || isDisablingScanPin}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className={styles.secondaryButton}
+                  onClick={handleDisableScanPin}
+                  disabled={
+                    isDisablingScanPin ||
+                    isSavingScanPin ||
+                    isLoadingScanPin ||
+                    !scanPinStatus.hasPin
+                  }
+                >
+                  {isDisablingScanPin ? "Disabling..." : "Disable PIN"}
+                </button>
+                <button
+                  type="submit"
+                  className={styles.primaryButton}
+                  disabled={
+                    isSavingScanPin || isDisablingScanPin || isLoadingScanPin
+                  }
+                >
+                  {isSavingScanPin
+                    ? "Saving..."
+                    : scanPinStatus.hasPin
+                      ? "Update PIN"
+                      : "Save PIN"}
+                </button>
+              </div>
+              </form>
+            </AccountModalScroller>
+          </section>
+        </div>
+      ) : null}
+
+      {activeAccountModal === "marketplace" ? (
+        <div className={styles.modalBackdrop} onClick={closeActionModal}>
+          <section
+            className={`${styles.modalCard} ${styles.accountActionModalCard} ${styles.accountScrollableModalCard} ${styles.marketplaceModalCard}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="marketplace-contact-modal-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <AccountModalScroller>
+              <div className={styles.modalHeader}>
+                <h2 id="marketplace-contact-modal-title">Marketplace contact</h2>
+                <p>
+                  These details are shown when customers contact you from the
+                  marketplace.
+                </p>
+                <button type="button" className={styles.modalCloseButton} onClick={closeActionModal} aria-label="Close marketplace contact editor">×</button>
+              </div>
+
+              {isLoading ? (
+              <p className={styles.loading}>Loading marketplace contact...</p>
+            ) : (
+              <form
+                className={`${styles.marketplaceFields} ${styles.compactEditForm}`}
+                onSubmit={handleProfileSubmit}
+              >
+                <label className={styles.field}>
+                  <span>Seller name</span>
+                  <input
+                    value={profileDraft.marketplaceSellerName}
+                    onChange={(event) =>
+                      setProfileDraft((current) => ({
+                        ...current,
+                        marketplaceSellerName: event.target.value,
+                      }))
+                    }
+                    placeholder={marketplaceSellerName}
+                  />
+                </label>
+
+                <label className={styles.field}>
+                  <span>Contact details</span>
+                  <input
+                    type="text"
+                    value={profileDraft.marketplacePhone}
+                    onChange={(event) =>
+                      setProfileDraft((current) => ({
+                        ...current,
+                        marketplacePhone: event.target.value,
+                      }))
+                    }
+                    placeholder={marketplacePhone}
+                  />
+                </label>
+
+                <label className={styles.field}>
+                  <span>Business email</span>
+                  <input
+                    type="email"
+                    value={profileDraft.marketplaceEmail}
+                    onChange={(event) =>
+                      setProfileDraft((current) => ({
+                        ...current,
+                        marketplaceEmail: event.target.value,
+                      }))
+                    }
+                    placeholder="business@email.co.za"
+                  />
+                </label>
+
+                <label className={styles.field}>
+                  <span>Location</span>
+                  <input
+                    value={profileDraft.marketplaceLocation}
+                    onChange={(event) =>
+                      setProfileDraft((current) => ({
+                        ...current,
+                        marketplaceLocation: event.target.value,
+                      }))
+                    }
+                    placeholder={marketplaceLocation}
+                  />
+                </label>
+
+                <div className={styles.marketplaceActions}>
+                  <button
+                    type="button"
+                    className={styles.ghostButton}
+                    onClick={closeActionModal}
+                    disabled={isSavingProfile || isReadingLogo}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className={styles.primaryButton}
+                    disabled={isSavingProfile || isReadingLogo}
+                  >
+                    {isSavingProfile ? "Saving..." : "Save marketplace"}
+                  </button>
+                </div>
+              </form>
+              )}
+            </AccountModalScroller>
+          </section>
+        </div>
+      ) : null}
+
+      {activeAccountModal === "discovery" && isOwnerAccount ? (
+        <div
+          className={styles.modalBackdrop}
+          onClick={closeActionModal}
+        >
+          <section
+            className={`${styles.modalCard} ${styles.accountActionModalCardNarrow} ${styles.accountScrollableModalCard} ${styles.discoveryModalCard}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="discovery-participation-modal-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <AccountModalScroller>
+              <div className={styles.modalHeader}>
+                <h2 id="discovery-participation-modal-title">
+                  Discovery participation
+                </h2>
+                <p>
+                  Choose whether your eligible assets may participate while you
+                  browse other participating owners&apos; assets.
+                </p>
+                <button
+                  type="button"
+                  className={styles.modalCloseButton}
+                  onClick={closeActionModal}
+                  aria-label="Close Discovery participation"
+                >
+                  ×
+                </button>
+              </div>
+
+              <form className={styles.modalForm} onSubmit={handleProfileSubmit}>
+                <label
+                  className={`${styles.toggleField} ${styles.discoveryParticipationToggle}`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={profileDraft.discoveryParticipationEnabled}
+                    onChange={(event) =>
+                      setProfileDraft((current) => ({
+                        ...current,
+                        discoveryParticipationEnabled: event.target.checked,
+                      }))
+                    }
+                  />
+                  <span>
+                    <strong>Participate in Discovery</strong>
+                    <small>
+                      When enabled, all eligible Aim4price assets participate.
+                      Your own assets remain hidden from you.
+                    </small>
+                  </span>
+                </label>
+
+                <div className={styles.confirmBox}>
+                  <strong>Private information stays locked.</strong>
+                  <p>
+                    Photos and contact details are released only after you
+                    approve an enquiry. Turning this off immediately removes
+                    your assets and revokes Discovery-only access.
+                  </p>
+                </div>
+
+                <div className={styles.modalActions}>
+                  <button
+                    type="button"
+                    className={styles.ghostButton}
+                    onClick={closeActionModal}
+                    disabled={isSavingProfile}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className={styles.primaryButton}
+                    disabled={isSavingProfile}
+                  >
+                    {isSavingProfile ? "Saving..." : "Save participation"}
+                  </button>
+                </div>
+              </form>
+            </AccountModalScroller>
+          </section>
+        </div>
+      ) : null}
+
+      {activeAccountModal === "partnerDirectory" && showPartnerDirectory ? (
+        <div className={styles.modalBackdrop} onClick={closeActionModal}>
+          <section
+            className={`${styles.modalCard} ${styles.accountActionModalCard} ${styles.accountScrollableModalCard} ${styles.partnerDirectoryModalCard}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="partner-directory-modal-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <AccountModalScroller>
+              <div className={styles.modalHeader}>
+                <h2 id="partner-directory-modal-title">Partner directory</h2>
+                <p>
+                  Set up how owners see and select your business when sending a
+                  quote lead.
+                </p>
+                <button type="button" className={styles.modalCloseButton} onClick={closeActionModal} aria-label="Close partner directory editor">×</button>
+              </div>
+
+              <form
+                className={`${styles.form} ${styles.directoryForm}`}
+                onSubmit={handleProfileSubmit}
+              >
+                <div className={`${styles.partnerDirectoryTopGrid} ${styles.fullWidth}`}>
+                  <label
+                    className={`${styles.toggleField} ${styles.partnerVisibilityToggle}`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={profileDraft.partnerDirectoryEnabled}
+                      onChange={(event) =>
+                        setProfileDraft((current) => ({
+                          ...current,
+                          partnerDirectoryEnabled: event.target.checked,
+                        }))
+                      }
+                    />
+                    <span>
+                      <strong>Show in the Aim4price partner directory</strong>
+                      <small>
+                        Owners can select this business when sending a quote lead.
+                      </small>
+                    </span>
+                  </label>
+
+                  <aside className={styles.partnerDirectoryPreview} aria-label="Partner directory owner preview">
+                    <span className={styles.partnerPreviewEyebrow}>Owner preview</span>
+                    <div className={styles.partnerPreviewIdentity}>
+                      <div className={styles.partnerPreviewLogo}>
+                        {logoUrl ? <img src={logoUrl} alt="" /> : <strong>{profileInitials}</strong>}
+                      </div>
+                      <div>
+                        <strong>{accountDisplayName}</strong>
+                        <small>{marketplaceLocation}</small>
+                      </div>
+                    </div>
+                    <div className={styles.partnerPreviewDetails}>
+                      <span>{profileDraft.partnerBrandFocus.trim() || "All supported brands"}</span>
+                      <span>{profileDraft.partnerServices.trim() || "Services not added yet"}</span>
+                    </div>
+                    <p>
+                      {profileDraft.partnerDescription.trim() ||
+                        "Add a short description so owners understand how your business can help them."}
+                    </p>
+                  </aside>
+                </div>
+
+                <div
+                  className={`${styles.partnerMapField} ${styles.fullWidth}`}
+                >
+                  <div className={styles.partnerMapHeader}>
+                    <div>
+                      <span>Partner map pin</span>
+                      <strong>Set your public map pin</strong>
+                      <p>
+                        Click anywhere on the map, drag the pin, or use your
+                        current location.
+                      </p>
+                    </div>
+
+                    <div className={styles.partnerMapActions}>
+                      <button
+                        type="button"
+                        className={styles.secondaryButton}
+                        onClick={handleUseCurrentLocation}
+                      >
+                        Use current location
+                      </button>
+                      {partnerDirectoryPin ? (
+                        <button
+                          type="button"
+                          className={styles.ghostButton}
+                          onClick={clearPartnerMapPin}
+                        >
+                          Clear pin
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  <div
+                    ref={partnerMapElementRef}
+                    className={styles.partnerMapCanvas}
+                    aria-label="Partner directory map pin"
+                  />
+
+                  <div className={styles.partnerMapFooter}>
+                    <span>{partnerDirectoryPinLabel}</span>
+                    <strong>
+                      {partnerDirectoryPin
+                        ? "Ready to save"
+                        : "Click the map to place your pin"}
+                    </strong>
+                  </div>
+                </div>
+
+                <label className={`${styles.field} ${styles.partnerRadiusField}`}>
+                  <span>Service radius km</span>
+                  <input
+                    inputMode="numeric"
+                    value={profileDraft.partnerServiceRadiusKm}
+                    onChange={(event) =>
+                      setProfileDraft((current) => ({
+                        ...current,
+                        partnerServiceRadiusKm: event.target.value,
+                      }))
+                    }
+                    placeholder="250"
+                  />
+                </label>
+
+                <label className={`${styles.field} ${styles.partnerBrandField}`}>
+                  <span>Brand focus</span>
+                  <input
+                    value={profileDraft.partnerBrandFocus}
+                    onChange={(event) =>
+                      setProfileDraft((current) => ({
+                        ...current,
+                        partnerBrandFocus: event.target.value,
+                      }))
+                    }
+                    placeholder="John Deere, Case IH, New Holland"
+                  />
+                </label>
+
+                <label className={`${styles.field} ${styles.partnerServicesField}`}>
+                  <span>Services</span>
+                  <input
+                    value={profileDraft.partnerServices}
+                    onChange={(event) =>
+                      setProfileDraft((current) => ({
+                        ...current,
+                        partnerServices: event.target.value,
+                      }))
+                    }
+                    placeholder="Finance, insurance, replacements, trade-ins"
+                  />
+                </label>
+
+                <label
+                  className={`${styles.field} ${styles.fullWidth} ${styles.partnerDescriptionField}`}
+                >
+                  <span>Partner description</span>
+                  <textarea
+                    value={profileDraft.partnerDescription}
+                    onChange={(event) =>
+                      setProfileDraft((current) => ({
+                        ...current,
+                        partnerDescription: event.target.value,
+                      }))
+                    }
+                    placeholder="Example: Finance partner for agricultural machinery, asset-backed finance and refinancing discussions."
+                  />
+                  <small className={styles.partnerDescriptionCount}>
+                    {profileDraft.partnerDescription.trim().length} characters
+                  </small>
+                </label>
+
+                <div className={styles.actionsRow}>
+                  <button
+                    type="button"
+                    className={styles.ghostButton}
+                    onClick={closeActionModal}
+                    disabled={isSavingProfile || isReadingLogo}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className={styles.primaryButton}
+                    disabled={isSavingProfile || isReadingLogo}
+                  >
+                    {isSavingProfile ? "Saving..." : "Save directory"}
+                  </button>
+                </div>
+              </form>
+            </AccountModalScroller>
+          </section>
+        </div>
+      ) : null}
+
+      {isDeleteDialogOpen ? (
+        <div className={styles.modalBackdrop} onClick={closeDeleteDialog}>
+          <section
+            className={`${styles.modalCard} ${styles.accountActionModalCardNarrow} ${styles.accountScrollableModalCard} ${styles.deleteAccountModalCard}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-account-modal-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <AccountModalScroller>
+              <div className={styles.modalHeader}>
+                <h2 id="delete-account-modal-title">Confirm permanent removal</h2>
+                <p>
+                  This removes your full Aim4price workspace, including saved
+                  valuations, asset register items and account details.
+                </p>
+                <button type="button" className={styles.modalCloseButton} onClick={closeDeleteDialog} aria-label="Close account deletion">×</button>
+              </div>
+
+              <form className={styles.modalForm} onSubmit={handleDeleteAccount}>
+              <div className={styles.confirmBox}>
+                <strong>This action cannot be undone.</strong>
+                <p>Enter your password and type DELETE below to confirm.</p>
+              </div>
+
+              <label className={styles.modalField}>
+                <span>Password</span>
+                <input
+                  type="password"
+                  autoComplete="current-password"
+                  value={deletePassword}
+                  onChange={(event) => setDeletePassword(event.target.value)}
+                  placeholder="Enter your password"
+                />
+              </label>
+
+              <label className={styles.modalField}>
+                <span>Type DELETE to confirm</span>
+                <input
+                  value={deleteConfirmText}
+                  onChange={(event) => setDeleteConfirmText(event.target.value)}
+                  placeholder="DELETE"
+                />
+              </label>
+
+              <div className={styles.modalActions}>
+                <button
+                  type="button"
+                  className={styles.ghostButton}
+                  onClick={closeDeleteDialog}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className={styles.dangerButton}
+                  disabled={isDeletingAccount}
+                >
+                  {isDeletingAccount ? "Deleting account..." : "Delete account"}
+                </button>
+              </div>
+              </form>
+            </AccountModalScroller>
+          </section>
+        </div>
+      ) : null}
+    </main>
   );
 }
