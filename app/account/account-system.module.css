@@ -935,7 +935,7 @@
   margin-top: 1rem;
 }
 
-:global(.accountDirectoryMarker) {
+.map :global(.accountDirectoryMarker) {
   width: 2.8rem;
   height: 2.8rem;
   display: grid;
@@ -950,7 +950,7 @@
   transform: rotate(-45deg);
 }
 
-:global(.accountDirectoryMarker > span) {
+.map :global(.accountDirectoryMarker > span) {
   transform: rotate(45deg);
 }
 
