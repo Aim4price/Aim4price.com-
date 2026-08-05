@@ -160,3 +160,22 @@ test('Dealer App Leads keeps every mobile action clear and reachable', () => {
   assert.doesNotMatch(correctionSource, /modalIconShell|modalKicker/);
   assert.match(correctionStyles, /text-only[\s\S]*?\.modalTitleGroup \{[\s\S]*?display: block/);
 });
+
+
+test('Dealer App Leads follow-up keeps narrow screens spacious and collision free', () => {
+  const nav = read('app/dealer/dealer-nav.tsx');
+  const source = read('app/leads/leads-client.tsx');
+  const styles = read('app/leads/page.module.css');
+  const dealerStyles = read('app/dealer/dealer.module.css');
+
+  assert.match(nav, /pathname\.startsWith\('\/dealer\/leads'\)/);
+  assert.match(nav, /styles\.navLeadsSurface/);
+  assert.match(dealerStyles, /\.navLeadsSurface\.navLeadsSurface \{[\s\S]*?background: rgba\(246, 250, 247, 0\.98\)[\s\S]*?box-shadow: none/);
+  assert.match(styles, /\.dealerAppLeads \.leadsTitlePanel \{[\s\S]*?text-align: center/);
+  assert.match(source, /styles\.leadNoteOverlay/);
+  assert.match(styles, /\.leadNoteModal\.leadNoteModal \{[\s\S]*?grid-template-rows: auto minmax\(0, 1fr\) auto/);
+  assert.match(styles, /\.leadNoteBody\.leadNoteBody \{[\s\S]*?overflow-y: auto/);
+  assert.match(styles, /\.leadManageModal\.leadManageModal \{[\s\S]*?max-width: 68rem/);
+  assert.match(styles, /\.leadManageModal \.manageOptionsGrid > button \{[\s\S]*?min-height: 7rem/);
+  assert.match(styles, /@media \(max-width: 420px\)[\s\S]*?\.dealerAppLeads \.trackingLeadActionsClosed,[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/);
+});
