@@ -39,7 +39,8 @@ test('Dealer App top controls follow the Owner App back, home and sign-out flow'
   assert.doesNotMatch(source, /navBrand|navArrow/);
   assert.match(styles, /\.navButton,[\s\S]*?\.signOut \{[\s\S]*?min-height: 50px/);
   assert.match(styles, /\.navSignOut \{[\s\S]*?position: absolute;[\s\S]*?left: 50%;[\s\S]*?transform: translateX\(-50%\)/);
-  assert.match(styles, /\.homeShell\.homeShell \{[\s\S]*?min-height: 100dvh/);
+  assert.match(styles, /\.homeShell\.homeShell \{[\s\S]*?min-height: 100dvh[\s\S]*?calc\(58px \+ env\(safe-area-inset-top\)\)/);
+  assert.match(styles, /@media \(min-width: 600px\)[\s\S]*?\.homeShell\.homeShell \{[\s\S]*?padding-top: calc\(66px \+ env\(safe-area-inset-top\)\)/);
   assert.match(styles, /\.homeLauncher \{[\s\S]*?width: min\(100%, 400px\)/);
   assert.match(styles, /@media \(min-width: 600px\)[\s\S]*?\.homeLauncher \{[\s\S]*?grid-template-columns: repeat\(2/);
 });
