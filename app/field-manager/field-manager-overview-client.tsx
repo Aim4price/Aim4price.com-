@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import FieldManagerNavLink from './field-manager-nav-link';
 import OverviewClearConfirmation from './overview-clear-confirmation';
 import styles from './page.module.css';
@@ -93,7 +93,6 @@ export default function FieldManagerOverviewClient() {
   const [activeView, setActiveView] = useState<NotificationView>('active');
   const [items, setItems] = useState<OverviewItem[]>([]);
   const [viewCounts, setViewCounts] = useState({ active: 0, history: 0 });
-  const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -103,21 +102,6 @@ export default function FieldManagerOverviewClient() {
   const [reloadToken, setReloadToken] = useState(0);
   const requestIdRef = useRef(0);
   const hasLoadedRef = useRef(false);
-
-  const visibleItems = useMemo(() => {
-    const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
-    if (!normalizedQuery) return items;
-
-    return items.filter((item) => [
-      item.assetTitle,
-      item.headline,
-      item.detail,
-      item.notes,
-      TYPE_LABELS[item.type],
-      statusText(item),
-    ].join(' ').toLocaleLowerCase().includes(normalizedQuery));
-  }, [items, searchQuery]);
-  const hasSearchQuery = searchQuery.trim().length > 0;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -346,25 +330,7 @@ export default function FieldManagerOverviewClient() {
           <p>Active updates and notification history.</p>
         </div>
 
-        <section className={styles.overviewWorkspace} aria-label="Notification search">
-          <label className={styles.overviewSearch}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-              <circle cx="11" cy="11" r="7" />
-              <path d="m20 20-3.5-3.5" />
-            </svg>
-            <input
-              type="search"
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Search"
-              aria-label="Search notifications"
-            />
-            {searchQuery ? (
-              <button type="button" onClick={() => setSearchQuery('')} aria-label="Clear notification search">
-                ×
-              </button>
-            ) : null}
-          </label>
+        <section className={styles.overviewWorkspace} aria-label="Notification controls">
           <div className={styles.overviewTabs} role="tablist" aria-label="Notification sections">
             {(['active', 'history'] as NotificationView[]).map((view) => (
               <button
@@ -373,10 +339,7 @@ export default function FieldManagerOverviewClient() {
                 role="tab"
                 aria-selected={activeView === view}
                 className={activeView === view ? styles.overviewTabActive : ''}
-                onClick={() => {
-                  setSearchQuery('');
-                  setActiveView(view);
-                }}
+                onClick={() => setActiveView(view)}
               >
                 <span>{view === 'active' ? 'Active' : 'History'}</span>
                 <strong>{viewCounts[view]}</strong>
@@ -410,17 +373,15 @@ export default function FieldManagerOverviewClient() {
           <section className={styles.overviewSection} aria-labelledby="notification-view-title" aria-live="polite">
             <div className={styles.overviewSectionHeading}>
               <h2 id="notification-view-title">{activeView === 'active' ? 'Active' : 'History'}</h2>
-              <span aria-label={`${visibleItems.length} items`}>{visibleItems.length}</span>
+              <span aria-label={`${items.length} items`}>{items.length}</span>
             </div>
-            {visibleItems.length ? (
-              <div className={styles.overviewList}>{visibleItems.map(renderOverviewCard)}</div>
+            {items.length ? (
+              <div className={styles.overviewList}>{items.map(renderOverviewCard)}</div>
             ) : (
               <p className={styles.overviewEmpty}>
-                {hasSearchQuery
-                  ? 'No notifications match your search.'
-                  : activeView === 'active'
-                    ? 'You’re all caught up. Active notifications will appear here.'
-                    : 'Opened and cleared notifications will appear here.'}
+                {activeView === 'active'
+                  ? 'You’re all caught up. Active notifications will appear here.'
+                  : 'Opened and cleared notifications will appear here.'}
               </p>
             )}
           </section>
