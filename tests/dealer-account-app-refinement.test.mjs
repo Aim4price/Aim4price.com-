@@ -39,9 +39,9 @@ test('Dealer App top controls follow the Owner App back, home and sign-out flow'
   assert.doesNotMatch(source, /navBrand|navArrow/);
   assert.match(styles, /\.navButton,[\s\S]*?\.signOut \{[\s\S]*?min-height: 50px/);
   assert.match(styles, /\.navSignOut \{[\s\S]*?position: absolute;[\s\S]*?left: 50%;[\s\S]*?transform: translateX\(-50%\)/);
-  assert.match(styles, /\.homeShell\.homeShell \{[\s\S]*?flex-direction: column;[\s\S]*?box-sizing: border-box;[\s\S]*?calc\(58px \+ env\(safe-area-inset-top\)\)[\s\S]*?max\(12px, env\(safe-area-inset-right\)\)[\s\S]*?max\(12px, env\(safe-area-inset-left\)\)/);
+  assert.match(styles, /\.homeShell\.homeShell \{[\s\S]*?flex-direction: column;[\s\S]*?box-sizing: border-box;[\s\S]*?calc\(74px \+ env\(safe-area-inset-top\)\)[\s\S]*?max\(12px, env\(safe-area-inset-right\)\)[\s\S]*?max\(12px, env\(safe-area-inset-left\)\)/);
   assert.match(styles, /\.homeContent \{[\s\S]*?flex: 1 0 auto;[\s\S]*?width: min\(100%, 560px\);[\s\S]*?min-width: 0/);
-  assert.match(styles, /@media \(min-width: 600px\)[\s\S]*?\.homeShell\.homeShell \{[\s\S]*?padding-top: calc\(66px \+ env\(safe-area-inset-top\)\)[\s\S]*?max\(24px, env\(safe-area-inset-right\)\)[\s\S]*?max\(24px, env\(safe-area-inset-left\)\)/);
+  assert.match(styles, /@media \(min-width: 600px\)[\s\S]*?\.homeShell\.homeShell \{[\s\S]*?padding-top: calc\(82px \+ env\(safe-area-inset-top\)\)[\s\S]*?max\(24px, env\(safe-area-inset-right\)\)[\s\S]*?max\(24px, env\(safe-area-inset-left\)\)/);
   assert.match(styles, /\.homeLauncher \{[\s\S]*?width: min\(100%, 400px\)[\s\S]*?min-width: 0/);
   assert.match(styles, /@media \(min-width: 600px\)[\s\S]*?\.homeLauncher \{[\s\S]*?grid-template-columns: repeat\(2/);
 });
