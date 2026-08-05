@@ -48,7 +48,7 @@ test('notification surfaces separate active work and searchable history', async 
   assert.match(header, /Search notifications/);
   assert.match(ownerClient, /\['active', 'Active'\]/);
   assert.match(ownerClient, /placeholder="Search"/);
-  assert.match(ownerClient, /Checked and cleared notifications remain searchable in History/);
+  assert.match(ownerClient, /Active notifications stay here until they are opened, checked or completed/);
   assert.match(dealerClient, /Maintenance alerts and checked history/);
   assert.match(dealerClient, /<span>Active<\/span>/);
   assert.match(ownerLink, /needsActionCount/);
