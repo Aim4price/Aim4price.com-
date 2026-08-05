@@ -6,6 +6,7 @@ import OverviewClearConfirmation from './overview-clear-confirmation';
 import styles from './page.module.css';
 
 type OverviewRange = 'week' | 'upcoming';
+type NotificationView = 'active' | 'history';
 type OverviewItemType = 'problem' | 'service' | 'checkup' | 'license';
 type OverviewSection = 'needs_attention' | 'coming_up';
 type OverviewStatus = 'problem' | 'overdue' | 'due' | 'due_soon' | 'upcoming' | 'usage_needed';
@@ -14,6 +15,8 @@ type OverviewSummary = {
   totalCount: number;
   needsAttentionCount: number;
   comingUpCount: number;
+  activeCount: number;
+  historyCount: number;
 };
 
 type OverviewItem = {
@@ -87,7 +90,9 @@ function statusText(item: OverviewItem): string {
 
 export default function FieldManagerOverviewClient() {
   const range: OverviewRange = 'upcoming';
+  const [activeView, setActiveView] = useState<NotificationView>('active');
   const [items, setItems] = useState<OverviewItem[]>([]);
+  const [viewCounts, setViewCounts] = useState({ active: 0, history: 0 });
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -112,14 +117,6 @@ export default function FieldManagerOverviewClient() {
       statusText(item),
     ].join(' ').toLocaleLowerCase().includes(normalizedQuery));
   }, [items, searchQuery]);
-  const needsAttentionItems = useMemo(
-    () => visibleItems.filter((item) => item.section === 'needs_attention'),
-    [visibleItems],
-  );
-  const comingUpItems = useMemo(
-    () => visibleItems.filter((item) => item.section === 'coming_up'),
-    [visibleItems],
-  );
   const hasSearchQuery = searchQuery.trim().length > 0;
 
   useEffect(() => {
@@ -132,7 +129,7 @@ export default function FieldManagerOverviewClient() {
       setActionError(null);
 
       try {
-        const response = await fetch(`/api/field-manager/overview?range=${range}`, {
+        const response = await fetch(`/api/field-manager/overview?range=${range}&view=${activeView}`, {
           credentials: 'include',
           cache: 'no-store',
           signal: controller.signal,
@@ -150,6 +147,10 @@ export default function FieldManagerOverviewClient() {
 
         if (requestId === requestIdRef.current) {
           setItems(payload.items);
+          setViewCounts({
+            active: payload.summary?.activeCount ?? 0,
+            history: payload.summary?.historyCount ?? 0,
+          });
         }
       } catch (error) {
         if (controller.signal.aborted) return;
@@ -167,7 +168,7 @@ export default function FieldManagerOverviewClient() {
 
     void loadOverview();
     return () => controller.abort();
-  }, [reloadToken]);
+  }, [activeView, reloadToken]);
 
   useEffect(() => {
     const refresh = () => setReloadToken((current) => current + 1);
@@ -215,6 +216,24 @@ export default function FieldManagerOverviewClient() {
         throw new Error(extractError(payload, 'This asset cannot be opened.'));
       }
 
+      if (activeView === 'active') {
+        const historyResponse = await fetch('/api/field-manager/overview/dismiss', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          cache: 'no-store',
+          body: JSON.stringify({
+            range,
+            itemId: item.id,
+            sourceId: item.sourceId,
+          }),
+        });
+        const historyPayload = (await historyResponse.json().catch(() => null)) as OverviewApiResponse | null;
+        if (!historyResponse.ok || !historyPayload?.ok) {
+          throw new Error(extractError(historyPayload, 'This notification could not be moved to History.'));
+        }
+      }
+
       window.location.assign(payload.redirectTo);
     } catch (error) {
       setActionError(error instanceof Error ? error.message : 'This asset cannot be opened.');
@@ -252,6 +271,10 @@ export default function FieldManagerOverviewClient() {
       setItems((current) => current.filter(
         (candidate) => candidate.id !== item.id || candidate.sourceId !== item.sourceId,
       ));
+      setViewCounts((current) => ({
+        active: Math.max(0, current.active - 1),
+        history: current.history + 1,
+      }));
       setClearCandidate(null);
     } catch (error) {
       setActionError(error instanceof Error ? error.message : 'This item could not be cleared.');
@@ -285,16 +308,18 @@ export default function FieldManagerOverviewClient() {
         {item.notes.trim() ? <p className={styles.overviewNotes}>{item.notes}</p> : null}
 
         <div className={styles.overviewCardActions}>
-          <button
-            type="button"
-            className={styles.overviewClearButton}
-            onClick={() => setClearCandidate(item)}
-            disabled={hasPendingCardAction}
-            aria-busy={isClearing}
-            aria-label={`Clear ${TYPE_LABELS[item.type].toLowerCase()} for ${item.assetTitle} from your notifications`}
-          >
-            {isClearing ? 'Clearing…' : 'Clear'}
-          </button>
+          {activeView === 'active' ? (
+            <button
+              type="button"
+              className={styles.overviewClearButton}
+              onClick={() => setClearCandidate(item)}
+              disabled={hasPendingCardAction}
+              aria-busy={isClearing}
+              aria-label={`Clear ${TYPE_LABELS[item.type].toLowerCase()} for ${item.assetTitle} from your notifications`}
+            >
+              {isClearing ? 'Clearing…' : 'Clear'}
+            </button>
+          ) : null}
           <button
             type="button"
             className={`${styles.mobilePrimaryButton} ${styles.overviewOpenButton}`}
@@ -318,7 +343,7 @@ export default function FieldManagerOverviewClient() {
 
         <div className={styles.overviewIntro}>
           <h1>Notifications</h1>
-          <p>Needs attention and upcoming maintenance.</p>
+          <p>Active updates and notification history.</p>
         </div>
 
         <section className={styles.overviewWorkspace} aria-label="Notification search">
@@ -331,7 +356,7 @@ export default function FieldManagerOverviewClient() {
               type="search"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Search notifications"
+              placeholder="Search"
               aria-label="Search notifications"
             />
             {searchQuery ? (
@@ -340,6 +365,24 @@ export default function FieldManagerOverviewClient() {
               </button>
             ) : null}
           </label>
+          <div className={styles.overviewTabs} role="tablist" aria-label="Notification sections">
+            {(['active', 'history'] as NotificationView[]).map((view) => (
+              <button
+                key={view}
+                type="button"
+                role="tab"
+                aria-selected={activeView === view}
+                className={activeView === view ? styles.overviewTabActive : ''}
+                onClick={() => {
+                  setSearchQuery('');
+                  setActiveView(view);
+                }}
+              >
+                <span>{view === 'active' ? 'Active' : 'History'}</span>
+                <strong>{viewCounts[view]}</strong>
+              </button>
+            ))}
+          </div>
         </section>
 
         {loadError ? (
@@ -364,37 +407,23 @@ export default function FieldManagerOverviewClient() {
         ) : null}
 
         {!isLoading && !loadError ? (
-          <div className={styles.overviewSections} aria-live="polite">
-            <section className={styles.overviewSection} aria-labelledby="needs-attention-title">
-              <div className={styles.overviewSectionHeading}>
-                <h2 id="needs-attention-title">Needs attention</h2>
-                <span aria-label={`${needsAttentionItems.length} items`}>
-                  {needsAttentionItems.length}
-                </span>
-              </div>
-              {needsAttentionItems.length ? (
-                <div className={styles.overviewList}>{needsAttentionItems.map(renderOverviewCard)}</div>
-              ) : (
-                <p className={styles.overviewEmpty}>
-                  {hasSearchQuery ? 'No matching items need attention.' : 'Nothing needs attention.'}
-                </p>
-              )}
-            </section>
-
-            <section className={styles.overviewSection} aria-labelledby="upcoming-title">
-              <div className={styles.overviewSectionHeading}>
-                <h2 id="upcoming-title">Upcoming</h2>
-                <span aria-label={`${comingUpItems.length} items`}>{comingUpItems.length}</span>
-              </div>
-              {comingUpItems.length ? (
-                <div className={styles.overviewList}>{comingUpItems.map(renderOverviewCard)}</div>
-              ) : (
-                <p className={styles.overviewEmpty}>
-                  {hasSearchQuery ? 'No matching upcoming items.' : 'Nothing upcoming.'}
-                </p>
-              )}
-            </section>
-          </div>
+          <section className={styles.overviewSection} aria-labelledby="notification-view-title" aria-live="polite">
+            <div className={styles.overviewSectionHeading}>
+              <h2 id="notification-view-title">{activeView === 'active' ? 'Active' : 'History'}</h2>
+              <span aria-label={`${visibleItems.length} items`}>{visibleItems.length}</span>
+            </div>
+            {visibleItems.length ? (
+              <div className={styles.overviewList}>{visibleItems.map(renderOverviewCard)}</div>
+            ) : (
+              <p className={styles.overviewEmpty}>
+                {hasSearchQuery
+                  ? 'No notifications match your search.'
+                  : activeView === 'active'
+                    ? 'You’re all caught up. Active notifications will appear here.'
+                    : 'Opened and cleared notifications will appear here.'}
+              </p>
+            )}
+          </section>
         ) : null}
 
         {clearCandidate ? (
