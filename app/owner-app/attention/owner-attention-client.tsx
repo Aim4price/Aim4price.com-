@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import ServiceLocationGate from '../../field-manager/field-manager-location-gate';
 import styles from '../../field-manager/page.module.css';
 import OverviewClearConfirmation from '../../field-manager/overview-clear-confirmation';
 import ownerStyles from '../owner-app.module.css';
@@ -33,6 +34,22 @@ type OverviewApiResponse = {
   error?: string;
 };
 
+type OwnerAssetApiResponse = {
+  ok?: boolean;
+  item?: {
+    id?: string;
+    publicAssetCode?: string;
+  };
+  error?: string;
+};
+
+type LocationGateRequest = {
+  assetTitle: string;
+  assetId: string;
+  publicAssetCode: string;
+  redirectTo: string;
+};
+
 const TYPE_LABELS: Record<OverviewItemType, string> = {
   problem: 'Problem',
   service: 'Service',
@@ -49,7 +66,7 @@ const STATUS_LABELS: Record<OverviewStatus, string> = {
   usage_needed: 'Usage needed',
 };
 
-function extractError(payload: OverviewApiResponse | null, fallback: string): string {
+function extractError(payload: { error?: string } | null, fallback: string): string {
   return payload?.error?.trim() || fallback;
 }
 
@@ -79,6 +96,7 @@ export default function OwnerAttentionClient() {
   const [openingItemId, setOpeningItemId] = useState<string | null>(null);
   const [clearingItemId, setClearingItemId] = useState<string | null>(null);
   const [clearCandidate, setClearCandidate] = useState<OverviewItem | null>(null);
+  const [locationGate, setLocationGate] = useState<LocationGateRequest | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
   const requestIdRef = useRef(0);
   const hasLoadedRef = useRef(false);
@@ -169,21 +187,51 @@ export default function OwnerAttentionClient() {
     };
   }, []);
 
-  function handleOpenAsset(item: OverviewItem) {
+  async function handleOpenAsset(item: OverviewItem) {
     setOpeningItemId(item.id);
     setActionError(null);
     let destination = `/owner-app/assets/${encodeURIComponent(item.assetId)}`;
 
-    if (item.type === 'service' || item.type === 'checkup') {
-      const query = new URLSearchParams({
-        maintenanceId: item.sourceId,
-        maintenanceType: item.type,
-        returnTo: '/owner-app/attention',
-      });
-      destination = `/owner-app/operations/maintenance/${encodeURIComponent(item.assetId)}?${query.toString()}`;
+    if (item.type !== 'service' && item.type !== 'checkup') {
+      window.location.assign(destination);
+      return;
     }
 
-    window.location.assign(destination);
+    const query = new URLSearchParams({
+      maintenanceId: item.sourceId,
+      maintenanceType: item.type,
+      returnTo: '/owner-app/attention',
+    });
+    destination = `/owner-app/operations/maintenance/${encodeURIComponent(item.assetId)}?${query.toString()}`;
+
+    try {
+      const response = await fetch(`/api/owner-app/assets/${encodeURIComponent(item.assetId)}`, {
+        credentials: 'include',
+        cache: 'no-store',
+      });
+      const payload = (await response.json().catch(() => null)) as OwnerAssetApiResponse | null;
+
+      if (response.status === 401) {
+        window.location.replace('/owner-app/login');
+        return;
+      }
+
+      const publicAssetCode = payload?.item?.publicAssetCode?.trim();
+      if (!response.ok || !payload?.ok || !publicAssetCode) {
+        throw new Error(extractError(payload, 'This service cannot be opened.'));
+      }
+
+      setLocationGate({
+        assetTitle: item.assetTitle,
+        assetId: item.assetId,
+        publicAssetCode,
+        redirectTo: destination,
+      });
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : 'This service cannot be opened.');
+    } finally {
+      setOpeningItemId(null);
+    }
   }
 
   async function handleClearItem(item: OverviewItem) {
@@ -262,7 +310,7 @@ export default function OwnerAttentionClient() {
           <button
             type="button"
             className={`${styles.mobilePrimaryButton} ${styles.overviewOpenButton} ${ownerStyles.overviewOpenAction}`}
-            onClick={() => handleOpenAsset(item)}
+            onClick={() => void handleOpenAsset(item)}
             disabled={hasPendingCardAction}
             aria-busy={isOpening}
           >
@@ -359,6 +407,13 @@ export default function OwnerAttentionClient() {
             isClearing={clearingItemId === clearCandidate.id}
             onCancel={() => setClearCandidate(null)}
             onConfirm={() => void handleClearItem(clearCandidate)}
+          />
+        ) : null}
+
+        {locationGate ? (
+          <ServiceLocationGate
+            {...locationGate}
+            onCancel={() => setLocationGate(null)}
           />
         ) : null}
       </section>
