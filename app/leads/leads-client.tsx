@@ -3794,7 +3794,7 @@ export default function LeadsClient({
         : null}
 
       {noteLead ? (
-        <div className={`${assetStyles.modalOverlay} ${dealerWorkspaceClass(workspaceStyles.modalOverlay)}`}>
+        <div className={`${assetStyles.modalOverlay} ${dealerWorkspaceClass(workspaceStyles.modalOverlay)} ${styles.leadNoteOverlay}`}>
           <div className={assetStyles.modalBackdrop} onClick={closeNoteModal} />
 
           <div className={`${assetStyles.modalCard} ${assetStyles.sharedNoteModal} ${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadNoteModal}`} role="dialog" aria-modal="true" aria-labelledby="lead-note-title">
