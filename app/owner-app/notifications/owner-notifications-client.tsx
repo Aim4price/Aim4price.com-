@@ -128,7 +128,6 @@ export default function OwnerNotificationsClient({ viewerId: _viewerId }: { view
   const [items, setItems] = useState<Notification[]>([]);
   const [activeView, setActiveView] = useState<NotificationView>('active');
   const [categoryFilter, setCategoryFilter] = useState<NotificationCategoryFilter>('all');
-  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [updatingInbox, setUpdatingInbox] = useState(false);
   const [error, setError] = useState('');
@@ -208,22 +207,11 @@ export default function OwnerNotificationsClient({ viewerId: _viewerId }: { view
     history: items.filter((item) => item.state === 'history').length,
   }), [items]);
 
-  const visibleItems = useMemo(() => {
-    const normalizedQuery = searchQuery.trim().toLowerCase();
-    return items.filter((item) => {
-      if (!normalizedQuery) {
-        const isActive = item.state !== 'history';
-        if (activeView === 'active' ? !isActive : isActive) return false;
-      }
-      if (!matchesCategory(item, categoryFilter)) return false;
-      if (!normalizedQuery) return true;
-
-      return [item.title, item.body, item.category]
-        .join(' ')
-        .toLowerCase()
-        .includes(normalizedQuery);
-    });
-  }, [activeView, categoryFilter, items, searchQuery]);
+  const visibleItems = useMemo(() => items.filter((item) => {
+    const isActive = item.state !== 'history';
+    if (activeView === 'active' ? !isActive : isActive) return false;
+    return matchesCategory(item, categoryFilter);
+  }), [activeView, categoryFilter, items]);
 
   async function changeNotificationState(action: InboxAction, notificationIds: string[]) {
     if (!notificationIds.length) return;
@@ -552,11 +540,7 @@ export default function OwnerNotificationsClient({ viewerId: _viewerId }: { view
     );
   }
 
-  const viewTitle = searchQuery.trim()
-    ? 'Search results'
-    : activeView === 'active'
-      ? 'Active'
-      : 'History';
+  const viewTitle = activeView === 'active' ? 'Active' : 'History';
 
   return (
     <>
@@ -564,29 +548,12 @@ export default function OwnerNotificationsClient({ viewerId: _viewerId }: { view
         <section className={styles.notificationIntro}>
           <div className={styles.ownerPageIntro}>
             <h1 className={styles.ownerPageTitle}>Notifications</h1>
-            <p className={styles.ownerPageSubtitle}>Active notifications and searchable history.</p>
+            <p className={styles.ownerPageSubtitle}>Active notifications and history.</p>
           </div>
         </section>
 
         <section className={styles.notificationWorkspace} aria-label="Notification controls">
-          <label className={styles.notificationSearch}>
-            <span className="sr-only">Search notifications</span>
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="11" cy="11" r="6.5" />
-              <path d="m16 16 4 4" />
-            </svg>
-            <input
-              type="search"
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Search"
-            />
-            {searchQuery ? (
-              <button type="button" onClick={() => setSearchQuery('')} aria-label="Clear notification search">×</button>
-            ) : null}
-          </label>
-
-          <div className={styles.notificationTabs} role="tablist" aria-label="Notification sections">
+          <div className={`${styles.notificationTabs} ${styles.notificationTabsOwner}`} role="tablist" aria-label="Notification sections">
             {([
               ['active', 'Active'],
               ['history', 'History'],
@@ -595,12 +562,9 @@ export default function OwnerNotificationsClient({ viewerId: _viewerId }: { view
                 key={value}
                 type="button"
                 role="tab"
-                aria-selected={!searchQuery && activeView === value}
-                className={!searchQuery && activeView === value ? styles.notificationTabActive : ''}
-                onClick={() => {
-                  setSearchQuery('');
-                  setActiveView(value);
-                }}
+                aria-selected={activeView === value}
+                className={activeView === value ? styles.notificationTabActive : ''}
+                onClick={() => setActiveView(value)}
               >
                 <span>{label}</span>
                 <strong>{counts[value]}</strong>
@@ -625,7 +589,7 @@ export default function OwnerNotificationsClient({ viewerId: _viewerId }: { view
             <p>
               Active notifications stay here until they are opened, checked or completed.
             </p>
-            {!searchQuery && activeView === 'active' && counts.new > 0 ? (
+            {activeView === 'active' && counts.new > 0 ? (
               <div>
                 <button
                   type="button"
@@ -682,11 +646,9 @@ export default function OwnerNotificationsClient({ viewerId: _viewerId }: { view
               </div>
             ) : (
               <p className={styles.notificationEmpty} aria-live="polite">
-                {searchQuery.trim()
-                  ? 'No notifications match your search and filter.'
-                  : activeView === 'active'
-                    ? 'You’re all caught up. Active notifications will appear here.'
-                    : 'Your checked and cleared notifications will appear here.'}
+                {activeView === 'active'
+                  ? 'You’re all caught up. Active notifications will appear here.'
+                  : 'Your checked and cleared notifications will appear here.'}
               </p>
             )}
           </section>
