@@ -8,12 +8,23 @@ const dealerStyles = read('app/dealer/dealer.module.css');
 const leads = read('app/leads/leads-client.tsx');
 const costReport = read('components/DealerCostOfOwnershipReportModal.tsx');
 const maintenanceReport = read('components/DealerMaintenanceReportModal.tsx');
+const leadsLoading = read('app/dealer/leads/loading.tsx');
+const maintenanceLoading = read('app/dealer/maintenance/loading.tsx');
 
-test('Dealer App Leads uses one continuous green-tinted page and navigation surface', () => {
-  assert.match(dealerNav, /isLeadsPage \? styles\.navUnifiedSurface : isMaintenancePage \? styles\.navLeadsSurface/);
-  assert.match(dealerStyles, /\.dealerLayout:has\(\.leadsModule\) \{[\s\S]*?radial-gradient\(circle at 50% 4%, rgba\(111, 197, 150, 0\.13\)/);
+test('Dealer App Leads and Maintenance use one continuous green-tinted layout surface', () => {
+  assert.match(dealerNav, /isLeadsPage \|\| isMaintenancePage[\s\S]*?styles\.navUnifiedSurface/);
+  assert.match(dealerStyles, /\.dealerLayout:has\(\.navUnifiedSurface\),[\s\S]*?\.dealerLayout:has\(\.maintenanceModule\)[\s\S]*?radial-gradient\(circle at 50% 4%, rgba\(111, 197, 150, 0\.13\)/);
   assert.match(dealerStyles, /\.leadsModule\.leadsModule \{\s*padding-top: 0;\s*background: transparent;/);
+  assert.match(dealerStyles, /\.maintenanceModule\.maintenanceModule \{\s*padding-top: 0;\s*background: transparent;/);
   assert.match(dealerStyles, /\.navUnifiedSurface\.navUnifiedSurface \{[\s\S]*?background: transparent;[\s\S]*?box-shadow: none;/);
+});
+
+test('Dealer App Leads and Maintenance loading screens reveal the layout background', () => {
+  for (const source of [leadsLoading, maintenanceLoading]) {
+    assert.match(source, /className=\{styles\.workspaceLoading\}/);
+    assert.match(source, /<PageLoadingState/);
+  }
+  assert.match(dealerStyles, /\.workspaceLoading > main \{[\s\S]*?background: transparent;/);
 });
 
 test('Dealer App report choices use short titles without descriptions', () => {

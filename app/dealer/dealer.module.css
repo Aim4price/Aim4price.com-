@@ -20,7 +20,10 @@
   background: #ffffff;
 }
 
-.dealerLayout:has(.leadsModule) {
+.dealerLayout:has(.navUnifiedSurface),
+.dealerLayout:has(.leadsModule),
+.dealerLayout:has(.maintenanceModule),
+.dealerLayout:has(.workspaceLoading) {
   background:
     radial-gradient(circle at 50% 4%, rgba(111, 197, 150, 0.13), transparent 31rem),
     linear-gradient(180deg, #f6faf7 0%, #ffffff 42%, #f4f8f6 100%);
@@ -2688,9 +2691,19 @@
 
 .maintenanceModule.maintenanceModule {
   padding-top: 0;
-  background:
-    radial-gradient(circle at 50% 4%, rgba(111, 197, 150, 0.13), transparent 31rem),
-    linear-gradient(180deg, #f6faf7 0%, #ffffff 42%, #f4f8f6 100%);
+  background: transparent;
+}
+
+.workspaceLoading {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: transparent;
+}
+
+.workspaceLoading > main {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: transparent;
 }
 
 
