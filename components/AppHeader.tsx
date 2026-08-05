@@ -1082,9 +1082,32 @@ export default function AppHeader({
     });
   }
 
+  function markNotificationOpened(notificationId: string) {
+    const notification = notifications.find((item) => item.id === notificationId);
+    if (!notification || notification.state === 'history') return;
+
+    const now = new Date().toISOString();
+    setNotifications((current) => current.map((item) =>
+      item.id === notificationId
+        ? { ...item, state: 'history', isRead: true, readAtIso: item.readAtIso || now }
+        : item,
+    ));
+
+    void fetch('/api/notifications', {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'mark_read', notificationIds: [notificationId] }),
+    }).then((response) => {
+      if (!response.ok) throw new Error('Failed to move the notification to history.');
+    }).catch((error) => {
+      console.error('Failed to persist opened notification state', error);
+    });
+  }
+
   function resolveNotifications(predicate: (item: HeaderNotificationItem) => boolean) {
     const notificationIds = notifications
-      .filter((item) => item.state === 'needs_action' && predicate(item))
+      .filter((item) => item.actionRequired && !item.resolvedAtIso && predicate(item))
       .map((item) => item.id);
     if (!notificationIds.length) return;
 
@@ -1163,8 +1186,8 @@ export default function AppHeader({
     });
   }
 
-  function handleNotificationLinkClick() {
-    markNotificationsSeen();
+  function handleNotificationLinkClick(notificationId: string) {
+    markNotificationOpened(notificationId);
     setNotificationOpen(false);
   }
 
@@ -1211,7 +1234,8 @@ export default function AppHeader({
     window.location.assign(`${workspaceRoot}?${registerQuery}changeRegister=1`);
   }
 
-  async function handleOpenAssetDiscoveryNotification(enquiryId: string) {
+  async function handleOpenAssetDiscoveryNotification(enquiryId: string, notificationId: string) {
+    markNotificationOpened(notificationId);
     setNotificationOpen(false);
     setNotificationDetailError(null);
     setLoadingNotificationActionId(`asset-discovery:${enquiryId}`);
@@ -1228,7 +1252,6 @@ export default function AppHeader({
       }
 
       setActiveAssetDiscoveryEnquiry(data.enquiry);
-      markNotificationsSeen();
     } catch (error) {
       setNotificationDetailError(error instanceof Error ? error.message : 'Failed to load Discovery enquiry.');
     } finally {
@@ -1382,11 +1405,11 @@ export default function AppHeader({
     }
   }
 
-  function handleOpenDealerCost(invoiceId: string) {
+  function handleOpenDealerCost(invoiceId: string, notificationId: string) {
+    markNotificationOpened(notificationId);
     setNotificationOpen(false);
     closeNotificationDetailModal();
     setActiveDealerCostInvoiceId(invoiceId);
-    markNotificationsSeen();
   }
 
   function handleDealerCostResolved(
@@ -1539,7 +1562,7 @@ export default function AppHeader({
     const priorityClass = notification.priority ? styles.notificationItemPriority : '';
     const baseClassName = `${styles.notificationItem} ${toneClass} ${newClass} ${priorityClass}`;
 
-    if (notification.state === 'needs_action' && notification.dealerCostInvoiceId) {
+    if (notification.actionRequired && !notification.resolvedAtIso && notification.dealerCostInvoiceId) {
       const invoiceId = notification.dealerCostInvoiceId;
       return (
         <div key={notification.id} className={`${baseClassName} ${styles.notificationItemActionable}`}>
@@ -1554,7 +1577,7 @@ export default function AppHeader({
               <button
                 type="button"
                 className={styles.notificationApproveButton}
-                onClick={() => handleOpenDealerCost(invoiceId)}
+                onClick={() => handleOpenDealerCost(invoiceId, notification.id)}
               >
                 {notification.dealerCostAction === 'delete' ? 'Review deletion' : 'View cost'}
               </button>
@@ -1564,7 +1587,7 @@ export default function AppHeader({
       );
     }
 
-    if (notification.state === 'needs_action' && notification.dealerMaintenanceScheduleProposalId) {
+    if (notification.actionRequired && !notification.resolvedAtIso && notification.dealerMaintenanceScheduleProposalId) {
       const proposalId = notification.dealerMaintenanceScheduleProposalId;
       const processing = processingMaintenanceScheduleProposalIds.has(proposalId);
       return (
@@ -1599,7 +1622,7 @@ export default function AppHeader({
       );
     }
 
-    if (notification.state === 'needs_action' && notification.dealerAssetCorrectionId) {
+    if (notification.actionRequired && !notification.resolvedAtIso && notification.dealerAssetCorrectionId) {
       const correctionId = notification.dealerAssetCorrectionId;
       const processing = processingDealerCorrectionIds.has(correctionId);
       const correctionAction = notification.dealerAssetCorrectionAction ?? 'decision';
@@ -1655,7 +1678,7 @@ export default function AppHeader({
       );
     }
 
-    if (notification.state === 'needs_action' && notification.assetDiscoveryEnquiryId) {
+    if (notification.actionRequired && !notification.resolvedAtIso && notification.assetDiscoveryEnquiryId) {
       const loading = loadingNotificationActionId === `asset-discovery:${notification.assetDiscoveryEnquiryId}`;
 
       return (
@@ -1663,7 +1686,7 @@ export default function AppHeader({
           type="button"
           key={notification.id}
           className={`${baseClassName} ${styles.notificationItemButton}`}
-          onClick={() => handleOpenAssetDiscoveryNotification(notification.assetDiscoveryEnquiryId as string)}
+          onClick={() => handleOpenAssetDiscoveryNotification(notification.assetDiscoveryEnquiryId as string, notification.id)}
           disabled={loading}
         >
           {renderNotificationCopy(notification, loading ? 'Opening enquiry...' : 'Open enquiry')}
@@ -1677,7 +1700,7 @@ export default function AppHeader({
           key={notification.id}
           href={notification.href}
           className={baseClassName}
-          onClick={handleNotificationLinkClick}
+          onClick={() => handleNotificationLinkClick(notification.id)}
         >
           {renderNotificationCopy(notification)}
         </Link>
