@@ -114,22 +114,23 @@ export default function FieldManagerLocationGate({
       <section
         className={`${styles.locationGateCard} ${locationState === 'error' ? styles.locationGateCardError : ''}`}
       >
-        <div className={styles.locationGateIcon} aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9">
-            <path d="M12 21s6-5.1 6-11a6 6 0 1 0-12 0c0 5.9 6 11 6 11Z" />
-            <circle cx="12" cy="10" r="2.25" />
-          </svg>
+        <div className={styles.locationGateHeader}>
+          <div className={styles.locationGateIcon} aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9">
+              <path d="M12 21s6-5.1 6-11a6 6 0 1 0-12 0c0 5.9 6 11 6 11Z" />
+              <circle cx="12" cy="10" r="2.25" />
+            </svg>
+          </div>
+          <div className={styles.locationGateCopy}>
+            <p className={styles.locationGateEyebrow}>Location required</p>
+            <h2 id="location-gate-title">Ready to start service?</h2>
+          </div>
         </div>
 
-        <div className={styles.locationGateCopy}>
-          <p className={styles.locationGateEyebrow}>LOCATION REQUIRED</p>
-          <h1 id="location-gate-title">Ready to start service?</h1>
-          <p className={styles.locationGateAsset}>{assetTitle}</p>
-          <p>
-            Aim4price needs your current location before this service can open. The location will be
-            tagged to the service record.
-          </p>
-        </div>
+        <p className={styles.locationGateAsset}>{assetTitle}</p>
+        <p className={styles.locationGateDescription}>
+          Allow Aim4price to tag this service with your current location.
+        </p>
 
         <div
           className={`${styles.locationGateStatus} ${styles[
@@ -159,6 +160,9 @@ export default function FieldManagerLocationGate({
         </div>
 
         <div className={styles.locationGateActions}>
+          <button type="button" className={styles.locationGateBack} onClick={onCancel}>
+            Back
+          </button>
           <button
             type="button"
             className={styles.locationGatePrimary}
@@ -170,9 +174,6 @@ export default function FieldManagerLocationGate({
               : locationState === 'ready'
                 ? 'Opening service…'
                 : 'Getting location…'}
-          </button>
-          <button type="button" className={styles.locationGateBack} onClick={onCancel}>
-            Back to overview
           </button>
         </div>
       </section>
