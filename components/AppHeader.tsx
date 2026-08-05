@@ -116,6 +116,13 @@ type HeaderNotificationItem = {
   dealerCostInvoiceId?: string;
   dealerCostAction?: 'store' | 'delete';
   priority?: boolean;
+  state: 'needs_action' | 'new' | 'history';
+  actionRequired: boolean;
+  isRead: boolean;
+  isArchived: boolean;
+  readAtIso: string | null;
+  archivedAtIso: string | null;
+  resolvedAtIso: string | null;
 };
 
 type AssetDiscoveryDecisionStatus = 'approved' | 'denied';
@@ -600,10 +607,6 @@ function clearLegacyPrototypeStorage() {
   window.localStorage.removeItem('aim4price-tractors-kit-marketplace');
 }
 
-function getNotificationSeenStorageKey(userId: string): string {
-  return `aim4price-header-notifications-seen-${userId}`;
-}
-
 function parseTime(value: string | null | undefined): number {
   if (!value) return 0;
   const parsed = Date.parse(value);
@@ -680,8 +683,9 @@ export default function AppHeader({
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
   const [notifications, setNotifications] = useState<HeaderNotificationItem[]>([]);
-  const [notificationsSeenAt, setNotificationsSeenAt] = useState<string | null>(null);
   const [notificationPage, setNotificationPage] = useState(1);
+  const [notificationView, setNotificationView] = useState<'active' | 'history'>('active');
+  const [notificationSearchQuery, setNotificationSearchQuery] = useState('');
   const [processingAssetDiscoveryEnquiryIds, setProcessingAssetDiscoveryEnquiryIds] = useState<Set<string>>(() => new Set());
   const [processingDealerCorrectionIds, setProcessingDealerCorrectionIds] = useState<Set<string>>(() => new Set());
   const [processingMaintenanceScheduleProposalIds, setProcessingMaintenanceScheduleProposalIds] = useState<Set<string>>(() => new Set());
@@ -826,21 +830,6 @@ export default function AppHeader({
   }, [notificationOpen]);
 
   useEffect(() => {
-    if (!session?.id || typeof window === 'undefined') {
-      setNotificationsSeenAt(null);
-      return;
-    }
-
-    setNotificationsSeenAt(window.localStorage.getItem(getNotificationSeenStorageKey(session.id)));
-  }, [session?.id]);
-
-  useEffect(() => {
-    setNotificationPage((current) =>
-      Math.min(current, Math.max(1, Math.ceil(notifications.length / NOTIFICATIONS_PER_PAGE))),
-    );
-  }, [notifications.length]);
-
-  useEffect(() => {
     let mounted = true;
 
     async function loadNotifications() {
@@ -891,9 +880,17 @@ export default function AppHeader({
       ).trim();
       if (!correctionId) return;
 
-      setNotifications((current) => current.filter(
-        (item) => item.dealerAssetCorrectionId !== correctionId,
-      ));
+      void fetch('/api/notifications', {
+        credentials: 'include',
+        cache: 'no-store',
+      })
+        .then((response) => response.json())
+        .then((data: NotificationsResponse) => {
+          if (data.ok && Array.isArray(data.notifications)) setNotifications(data.notifications);
+        })
+        .catch((error) => {
+          console.error('Failed to refresh resolved dealer correction notification', error);
+        });
     }
 
     window.addEventListener('aim4price:dealer-correction-resolved', handleDealerCorrectionResolved);
@@ -934,29 +931,50 @@ export default function AppHeader({
     () => navItems.slice(navWindowStart, navWindowStart + navWindowSize),
     [navItems, navWindowSize, navWindowStart],
   );
-  const latestNotificationTime = useMemo(
-    () => notifications.reduce((latest, item) => Math.max(latest, parseTime(item.createdAtIso)), 0),
+  const activeNotifications = useMemo(
+    () => notifications.filter((item) => item.state !== 'history'),
     [notifications],
   );
-  const notificationsSeenTime = useMemo(() => parseTime(notificationsSeenAt), [notificationsSeenAt]);
-  const unreadNotificationCount = useMemo(
-    () => notifications.filter((item) => parseTime(item.createdAtIso) > notificationsSeenTime).length,
-    [notifications, notificationsSeenTime],
+  const historyNotifications = useMemo(
+    () => notifications.filter((item) => item.state === 'history'),
+    [notifications],
   );
-  const notificationBadgeText = unreadNotificationCount > 9 ? '9+' : String(unreadNotificationCount);
-  const notificationPageCount = Math.max(1, Math.ceil(notifications.length / NOTIFICATIONS_PER_PAGE));
+  const unreadNotificationCount = useMemo(
+    () => activeNotifications.filter((item) => item.state === 'new').length,
+    [activeNotifications],
+  );
+  const needsActionCount = useMemo(
+    () => activeNotifications.filter((item) => item.state === 'needs_action').length,
+    [activeNotifications],
+  );
+  const activeNotificationCount = activeNotifications.length;
+  const notificationBadgeText = activeNotificationCount > 9 ? '9+' : String(activeNotificationCount);
+  const filteredHeaderNotifications = useMemo(() => {
+    const source = notificationView === 'active' ? activeNotifications : historyNotifications;
+    const query = notificationSearchQuery.trim().toLowerCase();
+    if (!query) return source;
+    return source.filter((item) =>
+      [item.title, item.body, item.category].join(' ').toLowerCase().includes(query),
+    );
+  }, [activeNotifications, historyNotifications, notificationSearchQuery, notificationView]);
+  const displayNotificationCount = filteredHeaderNotifications.length;
+  const notificationPageCount = Math.max(1, Math.ceil(displayNotificationCount / NOTIFICATIONS_PER_PAGE));
   const activeNotificationPage = Math.min(notificationPage, notificationPageCount);
   const visibleNotifications = useMemo(() => {
     const startIndex = (activeNotificationPage - 1) * NOTIFICATIONS_PER_PAGE;
-    return notifications.slice(startIndex, startIndex + NOTIFICATIONS_PER_PAGE);
-  }, [activeNotificationPage, notifications]);
-  const notificationRangeStart = notifications.length
+    return filteredHeaderNotifications.slice(startIndex, startIndex + NOTIFICATIONS_PER_PAGE);
+  }, [activeNotificationPage, filteredHeaderNotifications]);
+  const notificationRangeStart = displayNotificationCount
     ? (activeNotificationPage - 1) * NOTIFICATIONS_PER_PAGE + 1
     : 0;
-  const notificationRangeEnd = notifications.length
-    ? Math.min(activeNotificationPage * NOTIFICATIONS_PER_PAGE, notifications.length)
+  const notificationRangeEnd = displayNotificationCount
+    ? Math.min(activeNotificationPage * NOTIFICATIONS_PER_PAGE, displayNotificationCount)
     : 0;
-  const hasNotificationPages = notifications.length > NOTIFICATIONS_PER_PAGE;
+  const hasNotificationPages = displayNotificationCount > NOTIFICATIONS_PER_PAGE;
+
+  useEffect(() => {
+    setNotificationPage((current) => Math.min(current, notificationPageCount));
+  }, [notificationPageCount]);
 
   useEffect(() => {
     if (!showNavWindowControls) {
@@ -1040,11 +1058,59 @@ export default function AppHeader({
   }, [session?.id, pathname, accountProfileLogoRefreshKey]);
 
   function markNotificationsSeen() {
-    if (!session?.id || typeof window === 'undefined') return;
+    const notificationIds = notifications
+      .filter((item) => item.state === 'new')
+      .map((item) => item.id);
+    if (!notificationIds.length) return;
 
-    const nextSeenAt = latestNotificationTime ? new Date(latestNotificationTime).toISOString() : new Date().toISOString();
-    window.localStorage.setItem(getNotificationSeenStorageKey(session.id), nextSeenAt);
-    setNotificationsSeenAt(nextSeenAt);
+    const now = new Date().toISOString();
+    setNotifications((current) => current.map((item) =>
+      notificationIds.includes(item.id)
+        ? { ...item, state: 'history', isRead: true, readAtIso: item.readAtIso || now }
+        : item,
+    ));
+
+    void fetch('/api/notifications', {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'mark_read', notificationIds }),
+    }).then((response) => {
+      if (!response.ok) throw new Error('Failed to mark notifications checked.');
+    }).catch((error) => {
+      console.error('Failed to persist notification state', error);
+    });
+  }
+
+  function resolveNotifications(predicate: (item: HeaderNotificationItem) => boolean) {
+    const notificationIds = notifications
+      .filter((item) => item.state === 'needs_action' && predicate(item))
+      .map((item) => item.id);
+    if (!notificationIds.length) return;
+
+    const now = new Date().toISOString();
+    setNotifications((current) => current.map((item) =>
+      notificationIds.includes(item.id)
+        ? {
+            ...item,
+            state: 'history',
+            isRead: true,
+            readAtIso: item.readAtIso || now,
+            resolvedAtIso: item.resolvedAtIso || now,
+          }
+        : item,
+    ));
+
+    void fetch('/api/notifications', {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'resolve', notificationIds }),
+    }).then((response) => {
+      if (!response.ok) throw new Error('Failed to resolve notifications.');
+    }).catch((error) => {
+      console.error('Failed to persist resolved notification state', error);
+    });
   }
 
   function closeNotificationDetailModal() {
@@ -1190,7 +1256,7 @@ export default function AppHeader({
       }
 
       closeNotificationDetailModal();
-      setNotifications((current) => current.filter((item) => item.assetDiscoveryEnquiryId !== enquiryId));
+      resolveNotifications((item) => item.assetDiscoveryEnquiryId === enquiryId);
       markNotificationsSeen();
     } catch (error) {
       console.error('Failed to update Discovery enquiry notification', error);
@@ -1231,19 +1297,27 @@ export default function AppHeader({
       const revaluationNeedsAttention =
         data.outcome === 'accepted_revaluation_failed'
         || data.outcome === 'accepted_revaluation_pending';
-      setNotifications((current) => revaluationNeedsAttention
-        ? current.map((item) => item.dealerAssetCorrectionId === correctionId
-          ? {
-              ...item,
-              id: `${item.id}:${data.outcome}`,
-              title: data.outcome === 'accepted_revaluation_failed'
-                ? 'Aim4price recalculation needs attention'
-                : 'Aim4price recalculation pending',
-              body: data.message || 'The replacement price was saved, but recalculation still needs attention.',
-              dealerAssetCorrectionAction: data.outcome === 'accepted_revaluation_failed' ? 'retry' : 'pending',
-            }
-          : item)
-        : current.filter((item) => item.dealerAssetCorrectionId !== correctionId));
+      if (revaluationNeedsAttention) {
+        const followUpNotifications = notifications
+          .filter((item) => item.state === 'needs_action' && item.dealerAssetCorrectionId === correctionId)
+          .map((item) => ({
+            ...item,
+            id: `${item.id}:${data.outcome}`,
+            title: data.outcome === 'accepted_revaluation_failed'
+              ? 'Aim4price recalculation needs attention'
+              : 'Aim4price recalculation pending',
+            body: data.message || 'The replacement price was saved, but recalculation still needs attention.',
+            dealerAssetCorrectionAction: data.outcome === 'accepted_revaluation_failed' ? 'retry' as const : 'pending' as const,
+            state: 'needs_action' as const,
+            isRead: false,
+            readAtIso: null,
+            resolvedAtIso: null,
+          }));
+        resolveNotifications((item) => item.dealerAssetCorrectionId === correctionId);
+        setNotifications((current) => [...current, ...followUpNotifications]);
+      } else {
+        resolveNotifications((item) => item.dealerAssetCorrectionId === correctionId);
+      }
       markNotificationsSeen();
       window.dispatchEvent(new Event('aim4price:asset-register-updated'));
       setNotificationDetailOutcome({
@@ -1285,9 +1359,7 @@ export default function AppHeader({
       if (!response.ok || !data?.ok) {
         throw new Error(data?.error || 'Failed to save the maintenance schedule decision.');
       }
-      setNotifications((current) => current.filter(
-        (item) => item.dealerMaintenanceScheduleProposalId !== proposalId,
-      ));
+      resolveNotifications((item) => item.dealerMaintenanceScheduleProposalId === proposalId);
       markNotificationsSeen();
       window.dispatchEvent(new Event('aim4price:asset-register-updated'));
       setNotificationDetailOutcome({
@@ -1323,9 +1395,7 @@ export default function AppHeader({
     decision: 'approve' | 'decline' | 'keep' | 'delete',
     message: string,
   ) {
-    setNotifications((current) => current.filter(
-      (item) => item.dealerCostInvoiceId !== invoiceId,
-    ));
+    resolveNotifications((item) => item.dealerCostInvoiceId === invoiceId);
     setActiveDealerCostInvoiceId(null);
     markNotificationsSeen();
     window.dispatchEvent(new Event('aim4price:cost-ledger-updated'));
@@ -1363,15 +1433,17 @@ export default function AppHeader({
       }
 
       const succeeded = data.outcome === 'accepted_revalued';
-      setNotifications((current) => succeeded
-        ? current.filter((item) => item.dealerAssetCorrectionId !== correctionId)
-        : current.map((item) => item.dealerAssetCorrectionId === correctionId
+      if (succeeded) {
+        resolveNotifications((item) => item.dealerAssetCorrectionId === correctionId);
+      } else {
+        setNotifications((current) => current.map((item) => item.dealerAssetCorrectionId === correctionId
           ? {
               ...item,
               body: data.message || item.body,
               dealerAssetCorrectionAction: data.outcome === 'accepted_revaluation_failed' ? 'retry' : 'pending',
             }
           : item));
+      }
       window.dispatchEvent(new Event('aim4price:asset-register-updated'));
       setNotificationDetailOutcome({
         tone: succeeded ? 'success' : 'warning',
@@ -1458,7 +1530,7 @@ export default function AppHeader({
   }
 
   function isNotificationNew(notification: HeaderNotificationItem): boolean {
-    return parseTime(notification.createdAtIso) > notificationsSeenTime;
+    return notification.state === 'new' || notification.state === 'needs_action';
   }
 
   function renderNotificationItem(notification: HeaderNotificationItem) {
@@ -1467,7 +1539,7 @@ export default function AppHeader({
     const priorityClass = notification.priority ? styles.notificationItemPriority : '';
     const baseClassName = `${styles.notificationItem} ${toneClass} ${newClass} ${priorityClass}`;
 
-    if (notification.dealerCostInvoiceId) {
+    if (notification.state === 'needs_action' && notification.dealerCostInvoiceId) {
       const invoiceId = notification.dealerCostInvoiceId;
       return (
         <div key={notification.id} className={`${baseClassName} ${styles.notificationItemActionable}`}>
@@ -1492,7 +1564,7 @@ export default function AppHeader({
       );
     }
 
-    if (notification.dealerMaintenanceScheduleProposalId) {
+    if (notification.state === 'needs_action' && notification.dealerMaintenanceScheduleProposalId) {
       const proposalId = notification.dealerMaintenanceScheduleProposalId;
       const processing = processingMaintenanceScheduleProposalIds.has(proposalId);
       return (
@@ -1527,7 +1599,7 @@ export default function AppHeader({
       );
     }
 
-    if (notification.dealerAssetCorrectionId) {
+    if (notification.state === 'needs_action' && notification.dealerAssetCorrectionId) {
       const correctionId = notification.dealerAssetCorrectionId;
       const processing = processingDealerCorrectionIds.has(correctionId);
       const correctionAction = notification.dealerAssetCorrectionAction ?? 'decision';
@@ -1583,7 +1655,7 @@ export default function AppHeader({
       );
     }
 
-    if (notification.assetDiscoveryEnquiryId) {
+    if (notification.state === 'needs_action' && notification.assetDiscoveryEnquiryId) {
       const loading = loadingNotificationActionId === `asset-discovery:${notification.assetDiscoveryEnquiryId}`;
 
       return (
@@ -1885,43 +1957,105 @@ export default function AppHeader({
                 </div>
               </div>
 
+              <div className={styles.notificationInboxControls}>
+                <label className={styles.notificationSearchBox}>
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="11" cy="11" r="6.5" />
+                    <path d="m16 16 4 4" />
+                  </svg>
+                  <input
+                    type="search"
+                    value={notificationSearchQuery}
+                    onChange={(event) => {
+                      setNotificationSearchQuery(event.target.value);
+                      setNotificationPage(1);
+                    }}
+                    placeholder="Search notifications…"
+                    aria-label="Search notifications"
+                  />
+                  {notificationSearchQuery ? (
+                    <button type="button" onClick={() => setNotificationSearchQuery('')} aria-label="Clear notification search">×</button>
+                  ) : null}
+                </label>
+                <div className={styles.notificationViewTabs} role="tablist" aria-label="Notification sections">
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={notificationView === 'active'}
+                    className={notificationView === 'active' ? styles.notificationViewTabActive : ''}
+                    onClick={() => {
+                      setNotificationView('active');
+                      setNotificationPage(1);
+                    }}
+                  >
+                    Active <span>{activeNotificationCount}</span>
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={notificationView === 'history'}
+                    className={notificationView === 'history' ? styles.notificationViewTabActive : ''}
+                    onClick={() => {
+                      setNotificationView('history');
+                      setNotificationPage(1);
+                    }}
+                  >
+                    History <span>{historyNotifications.length}</span>
+                  </button>
+                </div>
+              </div>
+
               <div className={styles.notificationListHeader} aria-live="polite">
                 <span>
                   {isLoadingNotifications
                     ? 'Checking activity'
-                    : notifications.length
+                    : displayNotificationCount
                       ? hasNotificationPages
-                        ? `${notificationRangeStart}-${notificationRangeEnd} of ${notifications.length} notifications`
-                        : `${notifications.length} ${notifications.length === 1 ? 'notification' : 'notifications'}`
-                      : 'No notifications'}
+                        ? `${notificationRangeStart}-${notificationRangeEnd} of ${displayNotificationCount} notifications`
+                        : `${displayNotificationCount} ${displayNotificationCount === 1 ? 'notification' : 'notifications'}`
+                      : notificationSearchQuery
+                        ? 'No matching notifications'
+                        : notificationView === 'history'
+                          ? 'No notification history'
+                          : 'No active notifications'}
                 </span>
                 <div className={styles.notificationListHeaderActions}>
                   <strong>
-                    {unreadNotificationCount
-                      ? `${unreadNotificationCount} new`
-                      : notifications.length
-                        ? 'All checked'
-                        : 'Clear'}
+                    {notificationView === 'history'
+                      ? 'Searchable history'
+                      : needsActionCount
+                        ? `${needsActionCount} need action`
+                        : unreadNotificationCount
+                          ? `${unreadNotificationCount} new`
+                          : 'All checked'}
                   </strong>
-                  <button
-                    type="button"
-                    className={`${styles.notificationClearButton} ${unreadNotificationCount ? styles.notificationClearButtonNew : ''}`}
-                    onClick={markNotificationsSeen}
-                    disabled={!unreadNotificationCount}
-                    aria-label={unreadNotificationCount ? `Mark ${unreadNotificationCount} new notifications checked` : 'All notifications are checked'}
-                  >
-                    {unreadNotificationCount ? 'Mark checked' : 'All checked'}
-                  </button>
+                  {notificationView === 'active' ? (
+                    <button
+                      type="button"
+                      className={`${styles.notificationClearButton} ${unreadNotificationCount ? styles.notificationClearButtonNew : ''}`}
+                      onClick={markNotificationsSeen}
+                      disabled={!unreadNotificationCount}
+                      aria-label={unreadNotificationCount ? `Mark ${unreadNotificationCount} new notifications checked` : 'All notifications are checked'}
+                    >
+                      {unreadNotificationCount ? 'Mark checked' : 'All checked'}
+                    </button>
+                  ) : null}
                 </div>
               </div>
 
               <div className={styles.notificationList}>
                 {isLoadingNotifications ? (
                   <div className={styles.notificationEmpty}>Loading notifications...</div>
-                ) : notifications.length ? (
+                ) : displayNotificationCount ? (
                   visibleNotifications.map((notification) => renderNotificationItem(notification))
                 ) : (
-                  <div className={styles.notificationEmpty}>No new messages, ads, notes or lead updates yet.</div>
+                  <div className={styles.notificationEmpty}>
+                    {notificationSearchQuery
+                      ? 'No notifications match your search.'
+                      : notificationView === 'history'
+                        ? 'Checked notifications will appear here.'
+                        : 'You’re all caught up. Checked notifications remain in History.'}
+                  </div>
                 )}
               </div>
 
@@ -2124,11 +2258,11 @@ export default function AppHeader({
                   {!isAccountantWorkspace ? <div className={styles.notificationMenu} ref={notificationMenuRef}>
                     <button
                       type="button"
-                      className={`${styles.notificationButton} ${unreadNotificationCount ? styles.notificationButtonActive : ''}`}
+                      className={`${styles.notificationButton} ${activeNotificationCount ? styles.notificationButtonActive : ''}`}
                       aria-expanded={notificationOpen}
                       aria-haspopup="dialog"
                       aria-controls={notificationOpen ? 'header-notifications-modal' : undefined}
-                      aria-label={unreadNotificationCount ? `Notifications, ${unreadNotificationCount} new` : 'Notifications'}
+                      aria-label={activeNotificationCount ? `Notifications, ${activeNotificationCount} active` : 'Notifications'}
                       onClick={handleNotificationToggle}
                     >
                       <svg className={styles.notificationIcon} viewBox="0 0 24 24" aria-hidden="true">
@@ -2137,7 +2271,7 @@ export default function AppHeader({
                           fill="currentColor"
                         />
                       </svg>
-                      {unreadNotificationCount ? (
+                      {activeNotificationCount ? (
                         <span className={styles.notificationBadge}>{notificationBadgeText}</span>
                       ) : null}
                     </button>

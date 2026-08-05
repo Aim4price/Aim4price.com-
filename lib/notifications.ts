@@ -92,7 +92,7 @@ type ListHeaderNotificationsInput = {
   accountType: AccountRole | string | null | undefined;
 };
 
-const MAX_NOTIFICATIONS = 12;
+const MAX_COMPUTED_NOTIFICATIONS = 120;
 const RECENT_SCAN_DAYS = 14;
 const RECENT_FUEL_DAYS = 14;
 const RECENT_LEAD_DAYS = 45;
@@ -794,7 +794,7 @@ async function listFuelNotifications(userId: string): Promise<HeaderNotification
   }
 }
 
-export async function listHeaderNotifications(input: ListHeaderNotificationsInput): Promise<HeaderNotificationItem[]> {
+export async function listComputedHeaderNotifications(input: ListHeaderNotificationsInput): Promise<HeaderNotificationItem[]> {
   const accountType = normalizeAccountType(input.accountType);
   const notificationGroups = accountType === 'owner'
     ? await Promise.all([
@@ -821,5 +821,5 @@ export async function listHeaderNotifications(input: ListHeaderNotificationsInpu
         Number(Boolean(right.priority)) - Number(Boolean(left.priority)) ||
         toTime(right.createdAtIso) - toTime(left.createdAtIso),
     )
-    .slice(0, MAX_NOTIFICATIONS);
+    .slice(0, MAX_COMPUTED_NOTIFICATIONS);
 }

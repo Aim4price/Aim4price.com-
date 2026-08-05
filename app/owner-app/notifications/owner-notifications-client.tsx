@@ -3,14 +3,12 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import DealerCostDecisionModal from '../../../components/DealerCostDecisionModal';
-import {
-  isOwnerNotificationNew,
-  markOwnerNotificationsSeen,
-  readOwnerNotificationsSeenAt,
-} from '../owner-notification-state';
 import styles from '../owner-app.module.css';
 
 type NotificationTone = 'neutral' | 'success' | 'warning' | 'info';
+type NotificationState = 'needs_action' | 'new' | 'history';
+type InboxAction = 'mark_read' | 'archive' | 'resolve';
+type NotificationCategoryFilter = 'all' | 'maintenance' | 'costs' | 'leads' | 'notes' | 'fuel' | 'assets' | 'discovery';
 
 type Notification = {
   id: string;
@@ -21,12 +19,20 @@ type Notification = {
   href: string;
   createdAtIso: string;
   assetId?: string;
+  assetDiscoveryEnquiryId?: string;
   dealerAssetCorrectionId?: string;
   dealerAssetCorrectionAction?: 'decision' | 'retry' | 'pending';
   dealerMaintenanceScheduleProposalId?: string;
   dealerCostInvoiceId?: string;
   dealerCostAction?: 'store' | 'delete';
   priority?: boolean;
+  state: NotificationState;
+  actionRequired: boolean;
+  isRead: boolean;
+  isArchived: boolean;
+  readAtIso: string | null;
+  archivedAtIso: string | null;
+  resolvedAtIso: string | null;
 };
 
 type NotificationsResponse = {
@@ -35,13 +41,20 @@ type NotificationsResponse = {
   error?: string;
 };
 
+const CATEGORY_FILTERS: Array<{ value: NotificationCategoryFilter; label: string }> = [
+  { value: 'all', label: 'All' },
+  { value: 'maintenance', label: 'Maintenance' },
+  { value: 'costs', label: 'Costs' },
+  { value: 'leads', label: 'Leads' },
+  { value: 'notes', label: 'Notes' },
+  { value: 'fuel', label: 'Fuel' },
+  { value: 'assets', label: 'Assets' },
+  { value: 'discovery', label: 'Discovery' },
+];
+
 function destination(item: Notification): string {
-  if (item.href.startsWith('/owner-app/')) {
-    return item.href;
-  }
-  if (item.assetId) {
-    return `/owner-app/assets/${encodeURIComponent(item.assetId)}`;
-  }
+  if (item.href.startsWith('/owner-app/')) return item.href;
+  if (item.assetId) return `/owner-app/assets/${encodeURIComponent(item.assetId)}`;
   if (item.category === 'partner_note' || item.category === 'lead' || item.category === 'asset_discovery') {
     return '/owner-app/marketplace';
   }
@@ -78,11 +91,45 @@ function toneClassName(tone: NotificationTone): string {
   return '';
 }
 
-export default function OwnerNotificationsClient({ viewerId }: { viewerId: string }) {
+function matchesCategory(item: Notification, filter: NotificationCategoryFilter): boolean {
+  if (filter === 'all') return true;
+  if (filter === 'maintenance') return item.category === 'maintenance' || item.category === 'dealer_schedule';
+  if (filter === 'costs') return item.category === 'dealer_cost';
+  if (filter === 'leads') return item.category === 'lead';
+  if (filter === 'notes') return item.category === 'partner_note';
+  if (filter === 'fuel') return item.category === 'fuel';
+  if (filter === 'discovery') return item.category === 'asset_discovery';
+  return item.category === 'qr_scan' || item.category === 'dealer_correction';
+}
+
+function historyLabel(item: Notification): string {
+  if (item.resolvedAtIso) return 'Resolved';
+  if (item.isArchived) return 'Cleared';
+  return 'Checked';
+}
+
+async function updateInboxState(action: InboxAction, notificationIds: string[]): Promise<void> {
+  if (!notificationIds.length) return;
+
+  const response = await fetch('/api/owner-app/notifications', {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, notificationIds }),
+  });
+  const payload = await response.json().catch(() => null) as { ok?: boolean; error?: string } | null;
+  if (!response.ok || !payload?.ok) {
+    throw new Error(payload?.error || 'Could not update notifications.');
+  }
+}
+
+export default function OwnerNotificationsClient({ viewerId: _viewerId }: { viewerId: string }) {
   const [items, setItems] = useState<Notification[]>([]);
-  const [seenAtIso, setSeenAtIso] = useState<string | null>(null);
-  const [seenStateReady, setSeenStateReady] = useState(false);
+  const [activeView, setActiveView] = useState<NotificationState>('new');
+  const [categoryFilter, setCategoryFilter] = useState<NotificationCategoryFilter>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
+  const [updatingInbox, setUpdatingInbox] = useState(false);
   const [error, setError] = useState('');
   const [outcomeNotice, setOutcomeNotice] = useState<{
     tone: 'success' | 'warning';
@@ -93,11 +140,7 @@ export default function OwnerNotificationsClient({ viewerId }: { viewerId: strin
   const [processingScheduleProposalIds, setProcessingScheduleProposalIds] = useState<Set<string>>(() => new Set());
   const [activeDealerCostInvoiceId, setActiveDealerCostInvoiceId] = useState<string | null>(null);
   const hasLoadedRef = useRef(false);
-
-  useEffect(() => {
-    setSeenAtIso(readOwnerNotificationsSeenAt(viewerId));
-    setSeenStateReady(true);
-  }, [viewerId]);
+  const initialViewAppliedRef = useRef(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -123,6 +166,10 @@ export default function OwnerNotificationsClient({ viewerId }: { viewerId: strin
         }
 
         setItems(payload.notifications);
+        if (!initialViewAppliedRef.current) {
+          initialViewAppliedRef.current = true;
+          setActiveView(payload.notifications.some((item) => item.state === 'needs_action') ? 'needs_action' : 'new');
+        }
       } catch (cause) {
         if (controller.signal.aborted) return;
         setError(cause instanceof Error ? cause.message : 'Failed to load notifications.');
@@ -154,24 +201,61 @@ export default function OwnerNotificationsClient({ viewerId }: { viewerId: strin
     };
   }, []);
 
-  const newItems = useMemo(
-    () => seenStateReady
-      ? items.filter((item) => (
-        item.dealerAssetCorrectionAction === 'retry'
-        || item.dealerAssetCorrectionAction === 'pending'
-        || Boolean(item.dealerCostInvoiceId)
-        || isOwnerNotificationNew(item.createdAtIso, seenAtIso)
-      ))
-      : [],
-    [items, seenAtIso, seenStateReady],
-  );
+  const counts = useMemo(() => ({
+    needs_action: items.filter((item) => item.state === 'needs_action').length,
+    new: items.filter((item) => item.state === 'new').length,
+    history: items.filter((item) => item.state === 'history').length,
+  }), [items]);
 
-  function handleMarkChecked() {
-    setSeenAtIso(markOwnerNotificationsSeen(viewerId, items));
+  const visibleItems = useMemo(() => {
+    const normalizedQuery = searchQuery.trim().toLowerCase();
+    return items.filter((item) => {
+      if (!normalizedQuery && item.state !== activeView) return false;
+      if (!matchesCategory(item, categoryFilter)) return false;
+      if (!normalizedQuery) return true;
+
+      return [item.title, item.body, item.category]
+        .join(' ')
+        .toLowerCase()
+        .includes(normalizedQuery);
+    });
+  }, [activeView, categoryFilter, items, searchQuery]);
+
+  async function changeNotificationState(action: InboxAction, notificationIds: string[]) {
+    if (!notificationIds.length) return;
+    setUpdatingInbox(true);
+    setError('');
+
+    try {
+      await updateInboxState(action, notificationIds);
+      const now = new Date().toISOString();
+      setItems((current) => current.map((item) => {
+        if (!notificationIds.includes(item.id)) return item;
+        if (action === 'resolve') {
+          return { ...item, state: 'history', isRead: true, readAtIso: item.readAtIso || now, resolvedAtIso: item.resolvedAtIso || now };
+        }
+        if (action === 'archive') {
+          return { ...item, state: 'history', isRead: true, isArchived: true, readAtIso: item.readAtIso || now, archivedAtIso: item.archivedAtIso || now };
+        }
+        return { ...item, state: 'history', isRead: true, readAtIso: item.readAtIso || now };
+      }));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Could not update notifications.');
+    } finally {
+      setUpdatingInbox(false);
+    }
   }
 
-  function handleNotificationOpen() {
-    setSeenAtIso(markOwnerNotificationsSeen(viewerId, items));
+  function resolveMatching(predicate: (item: Notification) => boolean) {
+    const notificationIds = items
+      .filter((item) => item.state === 'needs_action' && predicate(item))
+      .map((item) => item.id);
+    void changeNotificationState('resolve', notificationIds);
+  }
+
+  function handleNotificationOpen(item: Notification) {
+    if (item.state !== 'new') return;
+    void changeNotificationState('mark_read', [item.id]);
   }
 
   async function handleCorrectionDecision(correctionId: string, decision: 'accept' | 'reject') {
@@ -202,19 +286,8 @@ export default function OwnerNotificationsClient({ viewerId }: { viewerId: strin
       const needsAttention =
         payload.outcome === 'accepted_revaluation_failed'
         || payload.outcome === 'accepted_revaluation_pending';
-      setItems((current) => needsAttention
-        ? current.map((item) => item.dealerAssetCorrectionId === correctionId
-          ? {
-              ...item,
-              title: payload.outcome === 'accepted_revaluation_failed'
-                ? 'Aim4price recalculation needs attention'
-                : 'Aim4price recalculation pending',
-              body: payload.message || item.body,
-              dealerAssetCorrectionAction: payload.outcome === 'accepted_revaluation_failed' ? 'retry' : 'pending',
-            }
-          : item)
-        : current.filter((item) => item.dealerAssetCorrectionId !== correctionId));
-      setSeenAtIso(markOwnerNotificationsSeen(viewerId, items));
+      resolveMatching((item) => item.dealerAssetCorrectionId === correctionId);
+      if (needsAttention) setReloadToken((current) => current + 1);
       setOutcomeNotice({
         tone: needsAttention ? 'warning' : 'success',
         message: payload.message || (
@@ -238,6 +311,7 @@ export default function OwnerNotificationsClient({ viewerId }: { viewerId: strin
     setProcessingScheduleProposalIds((current) => new Set(current).add(proposalId));
     setError('');
     setOutcomeNotice(null);
+
     try {
       const response = await fetch(`/api/dealer-maintenance-schedule-proposals/${encodeURIComponent(proposalId)}`, {
         method: 'PATCH',
@@ -257,10 +331,8 @@ export default function OwnerNotificationsClient({ viewerId }: { viewerId: strin
       if (!response.ok || !payload?.ok) {
         throw new Error(payload?.error || 'Failed to save the maintenance schedule decision.');
       }
-      setItems((current) => current.filter(
-        (item) => item.dealerMaintenanceScheduleProposalId !== proposalId,
-      ));
-      setSeenAtIso(markOwnerNotificationsSeen(viewerId, items));
+
+      resolveMatching((item) => item.dealerMaintenanceScheduleProposalId === proposalId);
       setOutcomeNotice({
         tone: 'success',
         message: payload.message || (
@@ -286,9 +358,8 @@ export default function OwnerNotificationsClient({ viewerId }: { viewerId: strin
     decision: 'approve' | 'decline' | 'keep' | 'delete',
     message: string,
   ) {
-    setItems((current) => current.filter((item) => item.dealerCostInvoiceId !== invoiceId));
+    resolveMatching((item) => item.dealerCostInvoiceId === invoiceId);
     setActiveDealerCostInvoiceId(null);
-    setSeenAtIso(markOwnerNotificationsSeen(viewerId, items));
     setOutcomeNotice({
       tone: action === 'delete' && decision === 'delete' ? 'warning' : 'success',
       message: message || (
@@ -329,15 +400,7 @@ export default function OwnerNotificationsClient({ viewerId }: { viewerId: strin
       }
 
       const succeeded = payload.outcome === 'accepted_revalued';
-      setItems((current) => succeeded
-        ? current.filter((item) => item.dealerAssetCorrectionId !== correctionId)
-        : current.map((item) => item.dealerAssetCorrectionId === correctionId
-          ? {
-              ...item,
-              body: payload.message || item.body,
-              dealerAssetCorrectionAction: payload.outcome === 'accepted_revaluation_failed' ? 'retry' : 'pending',
-            }
-          : item));
+      if (succeeded) resolveMatching((item) => item.dealerAssetCorrectionId === correctionId);
       setOutcomeNotice({
         tone: succeeded ? 'success' : 'warning',
         message: payload.message || (
@@ -346,6 +409,7 @@ export default function OwnerNotificationsClient({ viewerId }: { viewerId: strin
             : 'Aim4price could not complete the recalculation.'
         ),
       });
+      if (!succeeded) setReloadToken((current) => current + 1);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Aim4price could not retry this valuation.');
     } finally {
@@ -357,195 +421,289 @@ export default function OwnerNotificationsClient({ viewerId }: { viewerId: strin
     }
   }
 
-  const isReady = seenStateReady && !loading;
-  const newCountLabel = `${newItems.length} new notification${newItems.length === 1 ? '' : 's'}`;
+  function renderNotificationCard(item: Notification) {
+    const className = [
+      styles.notificationCard,
+      toneClassName(item.tone),
+      item.state === 'needs_action' ? styles.notificationCardPriority : '',
+      item.state === 'new' ? styles.notificationCardNew : '',
+      item.state === 'history' ? styles.notificationCardHistory : '',
+    ].filter(Boolean).join(' ');
+    const label = item.state === 'needs_action'
+      ? 'Needs action'
+      : item.state === 'new'
+        ? 'New'
+        : historyLabel(item);
+    const cardContent = (
+      <>
+        <div className={styles.notificationCardLabels}>
+          <span className={styles.notificationKind}>
+            <i className={styles.notificationDot} aria-hidden="true" />
+            {label}
+          </span>
+          <time dateTime={item.createdAtIso}>{formatNotificationTime(item.createdAtIso)}</time>
+        </div>
+        <h3>{item.title}</h3>
+        <p>{item.body}</p>
+      </>
+    );
+
+    if (item.state === 'needs_action' && item.dealerCostInvoiceId) {
+      return (
+        <article key={item.id} className={`${className} ${styles.notificationCorrectionCard}`}>
+          {cardContent}
+          <div className={styles.notificationCorrectionActions}>
+            <button
+              type="button"
+              className={styles.notificationCorrectionAccept}
+              onClick={() => setActiveDealerCostInvoiceId(item.dealerCostInvoiceId || null)}
+            >
+              {item.dealerCostAction === 'delete' ? 'Review deletion' : 'View cost'}
+            </button>
+          </div>
+        </article>
+      );
+    }
+
+    if (item.state === 'needs_action' && item.dealerMaintenanceScheduleProposalId) {
+      const proposalId = item.dealerMaintenanceScheduleProposalId;
+      const processing = processingScheduleProposalIds.has(proposalId);
+      return (
+        <article key={item.id} className={`${className} ${styles.notificationCorrectionCard}`}>
+          {cardContent}
+          <div className={styles.notificationCorrectionActions}>
+            <button
+              type="button"
+              className={styles.notificationCorrectionDecline}
+              onClick={() => void handleScheduleDecision(proposalId, 'decline')}
+              disabled={processing}
+            >
+              {processing ? 'Saving…' : 'Disapprove'}
+            </button>
+            <button
+              type="button"
+              className={styles.notificationCorrectionAccept}
+              onClick={() => void handleScheduleDecision(proposalId, 'approve')}
+              disabled={processing}
+            >
+              {processing ? 'Saving…' : 'Approve'}
+            </button>
+          </div>
+        </article>
+      );
+    }
+
+    if (item.state === 'needs_action' && item.dealerAssetCorrectionId) {
+      const correctionId = item.dealerAssetCorrectionId;
+      const processing = processingCorrectionIds.has(correctionId);
+      const correctionAction = item.dealerAssetCorrectionAction ?? 'decision';
+      return (
+        <article key={item.id} className={`${className} ${styles.notificationCorrectionCard}`}>
+          {cardContent}
+          <div className={styles.notificationCorrectionActions}>
+            {correctionAction === 'decision' ? (
+              <>
+                <button
+                  type="button"
+                  className={styles.notificationCorrectionDecline}
+                  onClick={() => void handleCorrectionDecision(correctionId, 'reject')}
+                  disabled={processing}
+                >
+                  {processing ? 'Saving…' : 'Decline'}
+                </button>
+                <button
+                  type="button"
+                  className={styles.notificationCorrectionAccept}
+                  onClick={() => void handleCorrectionDecision(correctionId, 'accept')}
+                  disabled={processing}
+                >
+                  {processing ? 'Saving…' : 'Approve'}
+                </button>
+              </>
+            ) : correctionAction === 'retry' ? (
+              <button
+                type="button"
+                className={styles.notificationCorrectionAccept}
+                onClick={() => void handleCorrectionRetry(correctionId)}
+                disabled={processing}
+              >
+                {processing ? 'Retrying…' : 'Retry valuation'}
+              </button>
+            ) : (
+              <button type="button" className={styles.notificationCorrectionDecline} disabled>
+                Recalculation pending
+              </button>
+            )}
+          </div>
+        </article>
+      );
+    }
+
+    return (
+      <Link
+        key={item.id}
+        className={className}
+        href={destination(item)}
+        prefetch={false}
+        onClick={() => handleNotificationOpen(item)}
+      >
+        {cardContent}
+      </Link>
+    );
+  }
+
+  const viewTitle = searchQuery.trim()
+    ? 'Search results'
+    : activeView === 'needs_action'
+      ? 'Needs Action'
+      : activeView === 'new'
+        ? 'New'
+        : 'History';
 
   return (
     <>
       <div className={`${styles.content} ${styles.notificationContent}`}>
-      <section className={styles.notificationIntro}>
-        <div className={styles.ownerPageIntro}>
-          <h1 className={styles.ownerPageTitle}>Notifications</h1>
-          <p className={styles.ownerPageSubtitle}>View all new messages.</p>
-        </div>
-        <button
-          type="button"
-          className={`${styles.markCheckedButton} ${newItems.length ? styles.markCheckedButtonNew : ''}`}
-          onClick={handleMarkChecked}
-          disabled={!isReady || newItems.length === 0}
-          aria-label={newItems.length ? `Mark all ${newCountLabel} checked` : 'All notifications checked'}
-        >
-          <span aria-hidden="true">✓</span>
-          {newItems.length ? 'Mark checked' : 'All checked'}
-        </button>
-      </section>
+        <section className={styles.notificationIntro}>
+          <div className={styles.ownerPageIntro}>
+            <h1 className={styles.ownerPageTitle}>Notifications</h1>
+            <p className={styles.ownerPageSubtitle}>New activity, important actions and notification history.</p>
+          </div>
+        </section>
 
-      {error ? (
-        <div className={`${styles.errorNotice} ${styles.notificationError}`} role="alert">
-          <span>{error}</span>
-          <button type="button" onClick={() => setReloadToken((current) => current + 1)}>
-            Try again
-          </button>
-        </div>
-      ) : null}
+        <section className={styles.notificationWorkspace} aria-label="Notification controls">
+          <label className={styles.notificationSearch}>
+            <span className="sr-only">Search notifications</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="11" cy="11" r="6.5" />
+              <path d="m16 16 4 4" />
+            </svg>
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Search assets, clients or notifications…"
+            />
+            {searchQuery ? (
+              <button type="button" onClick={() => setSearchQuery('')} aria-label="Clear notification search">×</button>
+            ) : null}
+          </label>
 
-      {outcomeNotice ? (
-        <div
-          className={`${styles.notificationOutcomeNotice} ${
-            outcomeNotice.tone === 'success'
-              ? styles.notificationOutcomeSuccess
-              : styles.notificationOutcomeWarning
-          }`}
-          role="status"
-        >
-          <span aria-hidden="true">{outcomeNotice.tone === 'success' ? '✓' : '!'}</span>
-          <p>{outcomeNotice.message}</p>
-          <button type="button" onClick={() => setOutcomeNotice(null)} aria-label="Dismiss message">×</button>
-        </div>
-      ) : null}
-
-      {!error && isReady ? (
-        <section className={styles.notificationSection} aria-labelledby="new-notifications-title">
-          <div className={`${styles.notificationSectionHeading} ${styles.ownerSectionHeading}`}>
-            <h2 id="new-notifications-title">New</h2>
-            <span aria-label={newCountLabel}>{newItems.length}</span>
+          <div className={styles.notificationTabs} role="tablist" aria-label="Notification sections">
+            {([
+              ['needs_action', 'Needs Action'],
+              ['new', 'New'],
+              ['history', 'History'],
+            ] as Array<[NotificationState, string]>).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                role="tab"
+                aria-selected={!searchQuery && activeView === value}
+                className={!searchQuery && activeView === value ? styles.notificationTabActive : ''}
+                onClick={() => {
+                  setSearchQuery('');
+                  setActiveView(value);
+                }}
+              >
+                <span>{label}</span>
+                <strong>{counts[value]}</strong>
+              </button>
+            ))}
           </div>
 
-          {newItems.length ? (
-            <div className={styles.notificationList} aria-live="polite">
-              {newItems.map((item) => {
-                const className = `${styles.notificationCard} ${toneClassName(item.tone)} ${item.priority ? styles.notificationCardPriority : styles.notificationCardNew}`;
-                const cardContent = (
-                  <>
-                    <div className={styles.notificationCardLabels}>
-                      <span className={styles.notificationKind}>
-                        <i className={styles.notificationDot} aria-hidden="true" />
-                        {item.priority ? '#1 Priority' : 'New'}
-                      </span>
-                      <time dateTime={item.createdAtIso}>{formatNotificationTime(item.createdAtIso)}</time>
-                    </div>
-                    <h3>{item.title}</h3>
-                    <p>{item.body}</p>
-                  </>
-                );
+          <div className={styles.notificationFilters} aria-label="Filter notifications by type">
+            {CATEGORY_FILTERS.map((filter) => (
+              <button
+                key={filter.value}
+                type="button"
+                className={categoryFilter === filter.value ? styles.notificationFilterActive : ''}
+                onClick={() => setCategoryFilter(filter.value)}
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
 
-                if (item.dealerCostInvoiceId) {
-                  const invoiceId = item.dealerCostInvoiceId;
-                  return (
-                    <article key={item.id} className={`${className} ${styles.notificationCorrectionCard}`}>
-                      {cardContent}
-                      <div className={styles.notificationCorrectionActions}>
-                        <button
-                          type="button"
-                          className={styles.notificationCorrectionAccept}
-                          onClick={() => setActiveDealerCostInvoiceId(invoiceId)}
-                        >
-                          {item.dealerCostAction === 'delete' ? 'Review deletion' : 'View cost'}
-                        </button>
-                      </div>
-                    </article>
-                  );
-                }
-
-                if (item.dealerMaintenanceScheduleProposalId) {
-                  const proposalId = item.dealerMaintenanceScheduleProposalId;
-                  const processing = processingScheduleProposalIds.has(proposalId);
-                  return (
-                    <article key={item.id} className={`${className} ${styles.notificationCorrectionCard}`}>
-                      {cardContent}
-                      <div className={styles.notificationCorrectionActions}>
-                        <button
-                          type="button"
-                          className={styles.notificationCorrectionDecline}
-                          onClick={() => void handleScheduleDecision(proposalId, 'decline')}
-                          disabled={processing}
-                        >
-                          {processing ? 'Saving…' : 'Disapprove'}
-                        </button>
-                        <button
-                          type="button"
-                          className={styles.notificationCorrectionAccept}
-                          onClick={() => void handleScheduleDecision(proposalId, 'approve')}
-                          disabled={processing}
-                        >
-                          {processing ? 'Saving…' : 'Approve'}
-                        </button>
-                      </div>
-                    </article>
-                  );
-                }
-
-                if (item.dealerAssetCorrectionId) {
-                  const correctionId = item.dealerAssetCorrectionId;
-                  const processing = processingCorrectionIds.has(correctionId);
-                  const correctionAction = item.dealerAssetCorrectionAction ?? 'decision';
-                  return (
-                    <article key={item.id} className={`${className} ${styles.notificationCorrectionCard}`}>
-                      {cardContent}
-                      <div className={styles.notificationCorrectionActions}>
-                        {correctionAction === 'decision' ? (
-                          <>
-                            <button
-                              type="button"
-                              className={styles.notificationCorrectionDecline}
-                              onClick={() => void handleCorrectionDecision(correctionId, 'reject')}
-                              disabled={processing}
-                            >
-                              {processing ? 'Saving…' : 'Decline'}
-                            </button>
-                            <button
-                              type="button"
-                              className={styles.notificationCorrectionAccept}
-                              onClick={() => void handleCorrectionDecision(correctionId, 'accept')}
-                              disabled={processing}
-                            >
-                              {processing ? 'Saving…' : 'Approve'}
-                            </button>
-                          </>
-                        ) : correctionAction === 'retry' ? (
-                          <button
-                            type="button"
-                            className={styles.notificationCorrectionAccept}
-                            onClick={() => void handleCorrectionRetry(correctionId)}
-                            disabled={processing}
-                          >
-                            {processing ? 'Retrying…' : 'Retry valuation'}
-                          </button>
-                        ) : (
-                          <button type="button" className={styles.notificationCorrectionDecline} disabled>
-                            Recalculation pending
-                          </button>
-                        )}
-                      </div>
-                    </article>
-                  );
-                }
-
-                return (
-                  <Link
-                    key={item.id}
-                    className={className}
-                    href={destination(item)}
-                    prefetch={false}
-                    onClick={handleNotificationOpen}
-                  >
-                    {cardContent}
-                  </Link>
-                );
-              })}
-            </div>
-          ) : (
-            <p className={styles.notificationEmpty} aria-live="polite">
-              You’re all caught up. New notifications will appear here.
+          <div className={styles.notificationBulkActions}>
+            <p>
+              {activeView === 'needs_action' && !searchQuery
+                ? 'These notifications stay here until the required action is completed.'
+                : 'Checked and cleared notifications remain searchable in History.'}
             </p>
-          )}
+            {!searchQuery && activeView === 'new' ? (
+              <div>
+                <button
+                  type="button"
+                  onClick={() => void changeNotificationState('mark_read', items.filter((item) => item.state === 'new').map((item) => item.id))}
+                  disabled={updatingInbox || counts.new === 0}
+                >
+                  Mark checked
+                </button>
+                <button
+                  type="button"
+                  className={styles.notificationClearAction}
+                  onClick={() => void changeNotificationState('archive', items.filter((item) => item.state === 'new').map((item) => item.id))}
+                  disabled={updatingInbox || counts.new === 0}
+                >
+                  Clear
+                </button>
+              </div>
+            ) : null}
+          </div>
         </section>
-      ) : null}
 
-      {!error && !isReady ? (
-        <p className={styles.notificationEmpty} role="status">Loading notifications…</p>
-      ) : null}
+        {error ? (
+          <div className={`${styles.errorNotice} ${styles.notificationError}`} role="alert">
+            <span>{error}</span>
+            <button type="button" onClick={() => setReloadToken((current) => current + 1)}>Try again</button>
+          </div>
+        ) : null}
+
+        {outcomeNotice ? (
+          <div
+            className={`${styles.notificationOutcomeNotice} ${
+              outcomeNotice.tone === 'success'
+                ? styles.notificationOutcomeSuccess
+                : styles.notificationOutcomeWarning
+            }`}
+            role="status"
+          >
+            <span aria-hidden="true">{outcomeNotice.tone === 'success' ? '✓' : '!'}</span>
+            <p>{outcomeNotice.message}</p>
+            <button type="button" onClick={() => setOutcomeNotice(null)} aria-label="Dismiss message">×</button>
+          </div>
+        ) : null}
+
+        {!error && !loading ? (
+          <section className={styles.notificationSection} aria-labelledby="notification-results-title">
+            <div className={`${styles.notificationSectionHeading} ${styles.ownerSectionHeading}`}>
+              <h2 id="notification-results-title">{viewTitle}</h2>
+              <span aria-label={`${visibleItems.length} notifications`}>{visibleItems.length}</span>
+            </div>
+
+            {visibleItems.length ? (
+              <div className={styles.notificationList} aria-live="polite">
+                {visibleItems.map(renderNotificationCard)}
+              </div>
+            ) : (
+              <p className={styles.notificationEmpty} aria-live="polite">
+                {searchQuery.trim()
+                  ? 'No notifications match your search and filter.'
+                  : activeView === 'needs_action'
+                    ? 'Nothing needs your attention right now.'
+                    : activeView === 'new'
+                      ? 'You’re all caught up. New notifications will appear here.'
+                      : 'Your checked and cleared notifications will appear here.'}
+              </p>
+            )}
+          </section>
+        ) : null}
+
+        {!error && loading ? (
+          <p className={styles.notificationEmpty} role="status">Loading notifications…</p>
+        ) : null}
       </div>
+
       <DealerCostDecisionModal
         invoiceId={activeDealerCostInvoiceId}
         loginHref="/owner-app/login"
