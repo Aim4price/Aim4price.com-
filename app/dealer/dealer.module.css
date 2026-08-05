@@ -20,6 +20,12 @@
   background: #ffffff;
 }
 
+.dealerLayout:has(.leadsModule) {
+  background:
+    radial-gradient(circle at 50% 4%, rgba(111, 197, 150, 0.13), transparent 31rem),
+    linear-gradient(180deg, #f6faf7 0%, #ffffff 42%, #f4f8f6 100%);
+}
+
 .loadingPage {
   min-height: 100vh;
   min-height: 100dvh;
@@ -2677,9 +2683,7 @@
 /* Dealer App workspaces follow the in-flow navigation without the legacy fixed-header spacer. */
 .leadsModule.leadsModule {
   padding-top: 0;
-  background:
-    radial-gradient(circle at 50% 4%, rgba(111, 197, 150, 0.13), transparent 31rem),
-    linear-gradient(180deg, #f6faf7 0%, #ffffff 42%, #f4f8f6 100%);
+  background: transparent;
 }
 
 .maintenanceModule.maintenanceModule {
