@@ -27,12 +27,17 @@ test('Field Manager Overview uses the Owner Overview alignment, width and typogr
 });
 
 test('scheduled Owner maintenance uses the same compact service location gate', () => {
+  assert.match(fieldOverview, /import FieldManagerLocationGate from '.\/field-manager-location-gate'/);
+  assert.match(fieldOverview, /<FieldManagerLocationGate/);
   assert.match(ownerOverview, /import ServiceLocationGate from '..\/..\/field-manager\/field-manager-location-gate'/);
   assert.match(ownerOverview, /item\.type !== 'service' && item\.type !== 'checkup'/);
   assert.match(ownerOverview, /publicAssetCode/);
   assert.match(ownerOverview, /<ServiceLocationGate/);
   assert.match(locationGate, /Allow Aim4price to tag this service with your current location\./);
+  assert.match(locationGate, /<h2 id="location-gate-title">Location required<\/h2>/);
+  assert.match(locationGate, /locationState === 'error'\s*\? 'Retry'/);
   assert.match(locationGate, />\s*Back\s*<\/button>/);
+  assert.doesNotMatch(locationGate, /Ready to start service\?|Retry location|locationGateEyebrow/);
   assert.doesNotMatch(locationGate, /Back to overview|Aim4price needs your current location before this service can open/);
   assert.match(fieldStyles, /\.locationGateActions \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/);
 });
