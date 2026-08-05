@@ -23,7 +23,7 @@ export default async function DealerLeadsPage() {
   if (profile.accountType !== 'dealer' || profile.accountStatus !== 'active') redirect('/dealer/login');
 
   return (
-    <div className={styles.module}>
+    <div className={`${styles.module} ${styles.leadsModule}`}>
       <LeadsClient
         dealerAppMode
         initialLeads={initialLeads}

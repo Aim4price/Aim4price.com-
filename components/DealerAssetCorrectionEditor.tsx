@@ -215,11 +215,7 @@ export default function DealerAssetCorrectionEditor({
           <section className={styles.modal} role="dialog" aria-modal="true" aria-labelledby={titleId}>
             <header className={styles.modalHeader}>
               <div className={styles.modalTitleGroup}>
-                <span className={styles.modalIconShell} aria-hidden="true">
-                  {fieldIsSerial ? <SerialIcon className={styles.modalTitleIcon} /> : <PriceIcon className={styles.modalTitleIcon} />}
-                </span>
                 <div className={styles.modalHeaderCopy}>
-                  <span className={styles.modalKicker}>Dealer asset update</span>
                   <h2 id={titleId}>{fieldIsSerial ? 'Update serial number' : 'Update replacement price'}</h2>
                   <p>{assetTitle}</p>
                 </div>
