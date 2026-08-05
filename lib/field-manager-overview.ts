@@ -17,6 +17,7 @@ import {
 } from './field-manager';
 
 export type FieldManagerOverviewRange = 'week' | 'upcoming';
+export type FieldManagerOverviewView = 'active' | 'history';
 export type FieldManagerOverviewItemType =
   | 'problem'
   | 'service'
@@ -61,6 +62,8 @@ export type FieldManagerOverviewResult = {
     totalCount: number;
     needsAttentionCount: number;
     comingUpCount: number;
+    activeCount: number;
+    historyCount: number;
   };
   items: FieldManagerOverviewItem[];
 };
@@ -452,7 +455,13 @@ async function buildFieldManagerOverview(input: {
     return {
       ok: true,
       range: input.range,
-      summary: { totalCount: 0, needsAttentionCount: 0, comingUpCount: 0 },
+      summary: {
+        totalCount: 0,
+        needsAttentionCount: 0,
+        comingUpCount: 0,
+        activeCount: 0,
+        historyCount: 0,
+      },
       items: [],
     };
   }
@@ -570,6 +579,8 @@ async function buildFieldManagerOverview(input: {
       totalCount: sortedItems.length,
       needsAttentionCount,
       comingUpCount: sortedItems.length - needsAttentionCount,
+      activeCount: sortedItems.length,
+      historyCount: 0,
     },
     items: sortedItems,
   };
@@ -579,15 +590,21 @@ export async function listFieldManagerOverview(input: {
   ownerUserId: string;
   managerId: string;
   range: FieldManagerOverviewRange;
+  view?: FieldManagerOverviewView;
 }): Promise<FieldManagerOverviewResult> {
   const [overview, dismissedKeys] = await Promise.all([
     buildFieldManagerOverview(input),
     listFieldManagerOverviewDismissalKeys(input.managerId),
   ]);
-  const items = overview.items.filter((item) => {
+  const activeItems: FieldManagerOverviewItem[] = [];
+  const historyItems: FieldManagerOverviewItem[] = [];
+
+  overview.items.forEach((item) => {
     const key = overviewDismissalKey(overviewSourceKind(item), item.sourceId);
-    return !dismissedKeys.has(key);
+    (dismissedKeys.has(key) ? historyItems : activeItems).push(item);
   });
+
+  const items = input.view === 'history' ? historyItems : activeItems;
   const needsAttentionCount = items.filter(
     (item) => item.section === 'needs_attention',
   ).length;
@@ -598,6 +615,8 @@ export async function listFieldManagerOverview(input: {
       totalCount: items.length,
       needsAttentionCount,
       comingUpCount: items.length - needsAttentionCount,
+      activeCount: activeItems.length,
+      historyCount: historyItems.length,
     },
     items,
   };
