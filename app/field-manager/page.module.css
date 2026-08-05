@@ -2239,3 +2239,59 @@
     padding: 14px;
   }
 }
+
+
+/* Unified app notification views */
+.overviewTabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.overviewTabs button {
+  min-width: 0;
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border: 1px solid rgba(18, 53, 45, 0.13);
+  border-radius: 17px;
+  background: rgba(255, 255, 255, 0.86);
+  color: rgba(18, 53, 45, 0.68);
+  padding: 10px 14px;
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+  transition: border-color 0.16s ease, background 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.overviewTabs button strong {
+  min-width: 28px;
+  min-height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(18, 53, 45, 0.08);
+  font-size: 0.82rem;
+}
+
+.overviewTabs .overviewTabActive {
+  border-color: rgba(31, 143, 106, 0.58);
+  background: linear-gradient(135deg, rgba(229, 249, 239, 0.98), rgba(244, 252, 248, 0.98));
+  color: #0f654d;
+  box-shadow: 0 10px 24px rgba(18, 53, 45, 0.08);
+}
+
+.overviewTabs .overviewTabActive strong {
+  background: rgba(31, 143, 106, 0.13);
+}
+
+.overviewPage > .overviewShell > .overviewSection {
+  margin-top: 18px;
+}
+
+.overviewCardActionsHistory {
+  grid-template-columns: minmax(0, 1fr);
+}
