@@ -36,7 +36,6 @@ export default function FieldManagerLocationGate({
   const [locationState, setLocationState] = useState<LocationState>('checking');
   const [message, setMessage] = useState('Getting your current location…');
   const [accuracy, setAccuracy] = useState<number | null>(null);
-  const hasRequestedRef = useRef(false);
   const attemptRef = useRef(0);
   const redirectTimerRef = useRef<number | null>(null);
 
@@ -96,10 +95,7 @@ export default function FieldManagerLocationGate({
   }, [assetId, publicAssetCode, redirectTo]);
 
   useEffect(() => {
-    if (!hasRequestedRef.current) {
-      hasRequestedRef.current = true;
-      captureLocation();
-    }
+    captureLocation();
 
     return () => {
       attemptRef.current += 1;
