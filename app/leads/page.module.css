@@ -4865,3 +4865,42 @@
     padding: 0.8rem 0.85rem max(0.85rem, env(safe-area-inset-bottom)) !important;
   }
 }
+
+/* === Dealer desktop Leads keeps the roomy two-column management layout === */
+.dealerDesktopLeads .leadManageModal.leadManageModal {
+  width: min(74rem, calc(100vw - 3rem)) !important;
+  max-width: 74rem !important;
+  max-height: calc(100dvh - 3rem) !important;
+}
+
+.dealerDesktopLeads .leadManageModal [class*='optionsModalHeader'] {
+  min-height: 0 !important;
+  padding: 1.6rem 5rem 1.4rem 1.75rem !important;
+}
+
+.dealerDesktopLeads .leadManageScrollBody {
+  padding: 1.4rem 1.5rem 1.6rem !important;
+}
+
+.dealerDesktopLeads .leadManageModal .manageOptionsGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 1rem !important;
+}
+
+.dealerDesktopLeads .leadManageModal .manageOptionsGrid > button {
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 7rem !important;
+  box-sizing: border-box;
+  padding: 1.15rem 1.25rem !important;
+}
+
+.dealerDesktopLeads .leadManageModal .manageOptionsGrid > button > span {
+  min-width: 0;
+}
+
+.dealerDesktopLeads .leadManageModal .manageOptionsGrid > button strong,
+.dealerDesktopLeads .leadManageModal .manageOptionsGrid > button small {
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+}
