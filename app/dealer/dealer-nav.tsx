@@ -20,6 +20,7 @@ export default function DealerNav({
   const pathname = usePathname();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const isLeadsPage = pathname.startsWith('/dealer/leads');
+  const isMaintenancePage = pathname.startsWith('/dealer/maintenance');
   const resolvedShowBack = showBack ?? pathname !== '/dealer';
   const isMaintenanceDetail = pathname.startsWith('/dealer/maintenance/');
   const resolvedBackHref = backHref === '/dealer' && isMaintenanceDetail ? '/dealer/maintenance' : backHref;
@@ -52,7 +53,7 @@ export default function DealerNav({
   }
 
   return (
-    <header className={`${styles.nav} ${navLayoutClass} ${isLeadsPage ? styles.navLeadsSurface : ''}`} aria-label="Dealer App navigation">
+    <header className={`${styles.nav} ${navLayoutClass} ${isLeadsPage || isMaintenancePage ? styles.navLeadsSurface : ''}`} aria-label="Dealer App navigation">
       {resolvedShowBack ? (
         <>
           <Link className={styles.navButton} href={resolvedBackHref} prefetch={false} aria-label={resolvedBackLabel}>
