@@ -137,12 +137,12 @@ export default function FieldManagerHomeClient() {
                 className={styles.homeActionCard}
                 aria-label={
                   overviewCount && overviewCount > 0
-                    ? `Notifications, ${overviewCount} ${overviewCount === 1 ? 'item' : 'items'}`
-                    : 'Notifications'
+                    ? `Overview, ${overviewCount} ${overviewCount === 1 ? 'item' : 'items'}`
+                    : 'Overview'
                 }
                 onClick={() => window.location.assign('/field-manager/overview')}
               >
-                <strong>Notifications</strong>
+                <strong>Overview</strong>
                 {overviewCount && overviewCount > 0 ? (
                   <span className={styles.homeActionBadge} aria-hidden="true">
                     {overviewCount > 99 ? '99+' : overviewCount}
