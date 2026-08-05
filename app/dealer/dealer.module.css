@@ -16,6 +16,7 @@
 }
 
 .dealerLayout {
+  position: relative;
   background: #ffffff;
 }
 
@@ -2416,6 +2417,16 @@
   flex: 1 1 0;
 }
 
+/* On the Dealer home screen, Sign out sits over the shared page background
+   instead of creating a separate white header strip. */
+.navSignOut {
+  position: absolute;
+  z-index: 10;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
 .navSignOut .signOut {
   margin-left: auto;
 }
@@ -2455,7 +2466,7 @@
 }
 
 .homeShell.homeShell {
-  min-height: calc(100dvh - 80px - env(safe-area-inset-top));
+  min-height: 100dvh;
   display: flex;
   padding: 0 0 max(24px, env(safe-area-inset-bottom));
   background:
@@ -2582,7 +2593,10 @@
     max-width: 184px;
   }
 
-  .homeShell.homeShell,
+  .homeShell.homeShell {
+    min-height: 100dvh;
+  }
+
   .dealerLayout > .module {
     min-height: calc(100dvh - 88px - env(safe-area-inset-top));
   }
