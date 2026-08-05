@@ -2675,7 +2675,11 @@
 
 
 /* Dealer App workspaces follow the in-flow navigation without the legacy fixed-header spacer. */
-.leadsModule.leadsModule,
+.leadsModule.leadsModule {
+  padding-top: 0;
+  background: #ffffff;
+}
+
 .maintenanceModule.maintenanceModule {
   padding-top: 0;
   background:
@@ -2690,4 +2694,11 @@
   background: rgba(246, 250, 247, 0.98);
   box-shadow: none;
   backdrop-filter: blur(16px) saturate(1.04);
+}
+
+.navUnifiedSurface.navUnifiedSurface {
+  border-bottom-color: transparent;
+  background: #ffffff;
+  box-shadow: none;
+  backdrop-filter: none;
 }
