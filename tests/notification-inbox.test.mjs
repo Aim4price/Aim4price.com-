@@ -47,10 +47,10 @@ test('notification surfaces separate active work and searchable history', async 
   assert.match(header, /notificationView/);
   assert.match(header, /Search notifications/);
   assert.match(ownerClient, /Needs Action/);
-  assert.match(ownerClient, /Search assets, clients or notifications/);
+  assert.match(ownerClient, /Search notifications/);
   assert.match(ownerClient, /Checked and cleared notifications remain searchable in History/);
   assert.match(dealerClient, /Maintenance alerts and checked history/);
-  assert.match(dealerClient, /Search assets or maintenance alerts/);
+  assert.match(dealerClient, /Search notifications/);
   assert.match(ownerLink, /needsActionCount/);
 });
 
