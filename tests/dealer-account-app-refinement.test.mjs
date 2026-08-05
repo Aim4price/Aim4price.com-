@@ -67,11 +67,11 @@ test('Dealer App notifications reuse the Owner App notification experience', () 
 
 test('Dealer Maintenance summaries apply filters and focus the open asset', () => {
   const source = read('components/DealerMaintenanceTrackerClient.tsx');
-  assert.match(source, /WorkspaceTitlePanel title="MAINTENANCE TRACKING"/);
+  assert.match(source, /title=\{dealerAppMode \? 'MAINTENANCE' : 'MAINTENANCE TRACKING'\}/);
   assert.match(source, /chooseStatusFilter\('attention'\)/);
   assert.match(source, /chooseStatusFilter\('all'\)/);
   assert.match(source, /chooseStatusFilter\('no_open'\)/);
-  assert.match(source, />Nothing due</);
+  assert.match(source, /dealerAppMode \? 'Due' : 'Nothing due'/);
   assert.match(source, /maintenanceStatusGuidance/);
   assert.match(source, /openAccessId && !isOpen \? styles\.trackerCardMuted/);
 });
@@ -143,8 +143,8 @@ test('Dealer App Leads keeps every mobile action clear and reachable', () => {
 
   assert.match(page, /styles\.leadsModule/);
   assert.match(dealerStyles, /\.leadsModule\.leadsModule \{[\s\S]*?padding-top: 0/);
-  assert.match(source, /'LEADS SYSTEM'/);
-  assert.doesNotMatch(source, /LEAD MANAGEMENT SYSTEM/);
+  assert.match(source, /dealerAppMode \? 'LEADS SYSTEM' : 'LEAD MANAGEMENT SYSTEM'/);
+  assert.match(source, /<h1>LEAD MANAGEMENT SYSTEM<\/h1>/);
   assert.match(source, /nativeSelect=\{dealerAppMode\}/);
   assert.match(source, /className=\{styles\.leadFilterNativeSelect\}/);
   assert.match(source, />\s*Reset\s*</);
@@ -178,4 +178,33 @@ test('Dealer App Leads follow-up keeps narrow screens spacious and collision fre
   assert.match(styles, /\.leadManageModal\.leadManageModal \{[\s\S]*?max-width: 68rem/);
   assert.match(styles, /\.leadManageModal \.manageOptionsGrid > button \{[\s\S]*?min-height: 7rem/);
   assert.match(styles, /@media \(max-width: 420px\)[\s\S]*?\.dealerAppLeads \.trackingLeadActionsClosed,[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/);
+});
+
+test('Dealer App Maintenance and Dealer desktop dialogs keep their own rules', () => {
+  const page = read('app/dealer/maintenance/page.tsx');
+  const nav = read('app/dealer/dealer-nav.tsx');
+  const dealerStyles = read('app/dealer/dealer.module.css');
+  const maintenanceSource = read('components/DealerMaintenanceTrackerClient.tsx');
+  const maintenanceStyles = read('components/DealerMaintenanceTrackerClient.module.css');
+  const leadsSource = read('app/leads/leads-client.tsx');
+  const leadsStyles = read('app/leads/page.module.css');
+
+  assert.match(page, /dealerStyles\.maintenanceModule/);
+  assert.match(nav, /pathname\.startsWith\('\/dealer\/maintenance'\)/);
+  assert.match(dealerStyles, /\.leadsModule\.leadsModule,[\s\S]*?\.maintenanceModule\.maintenanceModule \{[\s\S]*?padding-top: 0/);
+
+  assert.match(maintenanceSource, /dealerAppMode \? 'MAINTENANCE' : 'MAINTENANCE TRACKING'/);
+  assert.match(maintenanceSource, /dealerAppMode \? 'Attention' : 'Needs attention'/);
+  assert.match(maintenanceSource, /dealerAppMode \? 'Tracked' : 'Tracked equipment'/);
+  assert.match(maintenanceSource, /dealerAppMode \? 'Due' : 'Nothing due'/);
+  assert.match(maintenanceSource, /nativeSelect=\{dealerAppMode\}/);
+  assert.match(maintenanceSource, /dealerAppMode \? 'Clear' : 'Clear filters'/);
+  assert.match(maintenanceSource, /dealerAppMode \? 'Apply' : 'Apply filters'/);
+  assert.match(maintenanceStyles, /\.dealerApp \.maintenanceTitlePanel \{[\s\S]*?text-align: center/);
+  assert.match(maintenanceStyles, /\.dealerApp \.trackerManageModal\.trackerManageModal \{[\s\S]*?height: min\(50rem/);
+  assert.match(maintenanceStyles, /\.dealerDesktop \.trackerManageModal\.trackerManageModal \{[\s\S]*?max-width: 76rem/);
+
+  assert.match(leadsSource, /if \(dealerAppMode\) \{[\s\S]*?window\.location\.href = `mailto:/);
+  assert.match(leadsSource, /dealerWorkspaceMode && !accountantWorkspaceMode \? styles\.dealerDesktopLeads/);
+  assert.match(leadsStyles, /\.dealerDesktopLeads \.leadManageModal\.leadManageModal \{[\s\S]*?max-width: 74rem/);
 });
