@@ -97,7 +97,7 @@ export default async function HomePage() {
 
                 <h1 className={styles.heroTitle}>
                   <span>Manage every asset.</span>
-                  <span>One clear system.</span>
+                  <span>One live system.</span>
                 </h1>
 
                 <p className={styles.heroText}>
