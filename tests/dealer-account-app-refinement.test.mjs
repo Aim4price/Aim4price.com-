@@ -142,7 +142,7 @@ test('Dealer App Leads keeps every mobile action clear and reachable', () => {
   const correctionStyles = read('components/DealerAssetCorrectionEditor.module.css');
 
   assert.match(page, /styles\.leadsModule/);
-  assert.match(dealerStyles, /\.leadsModule\.leadsModule \{[\s\S]*?padding-top: 0/);
+  assert.match(dealerStyles, /\.leadsModule\.leadsModule,[\s\S]*?\.maintenanceModule\.maintenanceModule \{[\s\S]*?padding-top: 0/);
   assert.match(source, /dealerAppMode \? 'LEADS SYSTEM' : 'LEAD MANAGEMENT SYSTEM'/);
   assert.match(source, /<h1>LEAD MANAGEMENT SYSTEM<\/h1>/);
   assert.match(source, /nativeSelect=\{dealerAppMode\}/);
