@@ -31,6 +31,9 @@ export default function DealerNav({
     : resolvedShowBack
       ? styles.navPair
       : styles.navSignOut;
+  const workspaceSurfaceClass = isLeadsPage || isMaintenancePage
+    ? `${styles.navLeadsSurface} ${styles.navUnifiedSurface}`
+    : '';
 
   if (pathname === '/dealer/login') return null;
 
@@ -54,7 +57,7 @@ export default function DealerNav({
 
   return (
     <header
-      className={`${styles.nav} ${navLayoutClass} ${isLeadsPage ? styles.navUnifiedSurface : isMaintenancePage ? styles.navLeadsSurface : ''}`}
+      className={`${styles.nav} ${navLayoutClass} ${workspaceSurfaceClass}`}
       aria-label="Dealer App navigation"
     >
       {resolvedShowBack ? (
