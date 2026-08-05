@@ -3173,6 +3173,7 @@ export default function LeadsClient({
       {maintenanceReportAccessId ? (
         <DealerMaintenanceReportModal
           accessId={maintenanceReportAccessId}
+          pdfOnly={dealerAppMode}
           onClose={() => setMaintenanceReportAccessId(null)}
           onBack={() => {
             const lead = leads.find((entry) => entry.maintenanceAccess?.accessId === maintenanceReportAccessId);
@@ -3190,6 +3191,7 @@ export default function LeadsClient({
           assetMeta={leadAssetMeta(costReportLead)}
           createdAtIso={costReportLead.createdAtIso}
           updatedAtIso={costReportLead.updatedAtIso}
+          pdfOnly={dealerAppMode}
           onClose={() => setCostReportLead(null)}
           onBack={() => {
             setReportLead(costReportLead);
@@ -3549,8 +3551,8 @@ export default function LeadsClient({
                 >
                   <PdfIcon className={assetStyles.buttonIcon} />
                   <span>
-                    <strong>Download asset valuation</strong>
-                    <small>PDF value summary with the shared asset details.</small>
+                    <strong>{dealerAppMode ? 'Asset valuation' : 'Download asset valuation'}</strong>
+                    {dealerAppMode ? null : <small>PDF value summary with the shared asset details.</small>}
                   </span>
                 </button>
 
@@ -3567,12 +3569,14 @@ export default function LeadsClient({
                     >
                       <DocumentIcon className={assetStyles.buttonIcon} />
                       <span>
-                        <strong>Download maintenance report</strong>
-                        <small>
-                          {reportLead.maintenanceAccess.permissions.canViewMaintenanceReports
-                            ? 'PDF or Excel maintenance history.'
-                            : 'Owner permission is required.'}
-                        </small>
+                        <strong>{dealerAppMode ? 'Maintenance report' : 'Download maintenance report'}</strong>
+                        {dealerAppMode ? null : (
+                          <small>
+                            {reportLead.maintenanceAccess.permissions.canViewMaintenanceReports
+                              ? 'PDF or Excel maintenance history.'
+                              : 'Owner permission is required.'}
+                          </small>
+                        )}
                       </span>
                     </button>
 
@@ -3587,12 +3591,14 @@ export default function LeadsClient({
                     >
                       <DocumentIcon className={assetStyles.buttonIcon} />
                       <span>
-                        <strong>Download cost of ownership</strong>
-                        <small>
-                          {reportLead.maintenanceAccess.permissions.canViewCostOfOwnership
-                            ? 'PDF or Excel ownership costs and VAT.'
-                            : 'Owner permission is required.'}
-                        </small>
+                        <strong>{dealerAppMode ? 'Cost of ownership' : 'Download cost of ownership'}</strong>
+                        {dealerAppMode ? null : (
+                          <small>
+                            {reportLead.maintenanceAccess.permissions.canViewCostOfOwnership
+                              ? 'PDF or Excel ownership costs and VAT.'
+                              : 'Owner permission is required.'}
+                          </small>
+                        )}
                       </span>
                     </button>
                   </>

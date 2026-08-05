@@ -53,7 +53,10 @@ export default function DealerNav({
   }
 
   return (
-    <header className={`${styles.nav} ${navLayoutClass} ${isLeadsPage || isMaintenancePage ? styles.navLeadsSurface : ''}`} aria-label="Dealer App navigation">
+    <header
+      className={`${styles.nav} ${navLayoutClass} ${isLeadsPage ? styles.navUnifiedSurface : isMaintenancePage ? styles.navLeadsSurface : ''}`}
+      aria-label="Dealer App navigation"
+    >
       {resolvedShowBack ? (
         <>
           <Link className={styles.navButton} href={resolvedBackHref} prefetch={false} aria-label={resolvedBackLabel}>

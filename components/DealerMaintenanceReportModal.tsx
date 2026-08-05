@@ -12,6 +12,7 @@ type ReportOption = { value: string; label: string };
 
 type Props = {
   accessId: string;
+  pdfOnly?: boolean;
   onBack?: () => void;
   onClose: () => void;
   onError?: (message: string) => void;
@@ -188,9 +189,15 @@ function ReportSelect({
   );
 }
 
-export default function DealerMaintenanceReportModal({ accessId, onBack, onClose, onError }: Props) {
+export default function DealerMaintenanceReportModal({
+  accessId,
+  pdfOnly = false,
+  onBack,
+  onClose,
+  onError,
+}: Props) {
   const [asset, setAsset] = useState<DealerMaintenanceTrackedAsset | null>(null);
-  const [step, setStep] = useState<ReportStep>('format');
+  const [step, setStep] = useState<ReportStep>(pdfOnly ? 'timeline' : 'format');
   const [format, setFormat] = useState<DownloadFormat>('pdf');
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState<DownloadFormat | null>(null);
@@ -330,7 +337,7 @@ export default function DealerMaintenanceReportModal({ accessId, onBack, onClose
           {loading ? (
             <div className={assetStyles.emptyState}>Checking current maintenance report access…</div>
           ) : asset ? (
-            step === 'format' ? (
+            !pdfOnly && step === 'format' ? (
               <>
                 <div className={assetStyles.assetTimelineStageHeading}>
                   <strong>Choose export format</strong>
@@ -428,6 +435,10 @@ export default function DealerMaintenanceReportModal({ accessId, onBack, onClose
                   className={`${assetStyles.secondaryButton} ${assetStyles.assetTimelineSecondaryButton}`}
                   onClick={() => {
                     setOpenSelect(null);
+                    if (pdfOnly) {
+                      (onBack ?? onClose)();
+                      return;
+                    }
                     setStep('format');
                   }}
                   disabled={Boolean(downloading)}

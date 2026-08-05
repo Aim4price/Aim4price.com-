@@ -15,6 +15,7 @@ type Props = {
   assetMeta: string;
   createdAtIso?: string | null;
   updatedAtIso?: string | null;
+  pdfOnly?: boolean;
   onBack?: () => void;
   onClose: () => void;
   onError?: (message: string) => void;
@@ -164,11 +165,12 @@ export default function DealerCostOfOwnershipReportModal({
   assetMeta,
   createdAtIso,
   updatedAtIso,
+  pdfOnly = false,
   onBack,
   onClose,
   onError,
 }: Props) {
-  const [step, setStep] = useState<ReportStep>('format');
+  const [step, setStep] = useState<ReportStep>(pdfOnly ? 'timeline' : 'format');
   const [format, setFormat] = useState<DownloadFormat>('pdf');
   const [reportYear, setReportYear] = useState('all');
   const [reportMonth, setReportMonth] = useState('all');
@@ -264,7 +266,7 @@ export default function DealerCostOfOwnershipReportModal({
         <div className={`${assetStyles.modalScrollBody} ${assetStyles.assetReportModalBody}`}>
           {error ? <div className={trackerStyles.reportError} role="alert">{error}</div> : null}
 
-          {step === 'format' ? (
+          {!pdfOnly && step === 'format' ? (
             <>
               <div className={assetStyles.assetTimelineStageHeading}>
                 <strong>Choose export format</strong>
@@ -353,6 +355,10 @@ export default function DealerCostOfOwnershipReportModal({
                   className={`${assetStyles.secondaryButton} ${assetStyles.assetTimelineSecondaryButton}`}
                   onClick={() => {
                     setOpenSelect(null);
+                    if (pdfOnly) {
+                      (onBack ?? onClose)();
+                      return;
+                    }
                     setStep('format');
                   }}
                   disabled={downloading}
