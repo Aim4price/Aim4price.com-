@@ -449,6 +449,7 @@ type LeadFilterDropdownProps = {
   openDropdown: FilterDropdownKey | null;
   onOpenChange: (key: FilterDropdownKey | null) => void;
   onChange: (value: string) => void;
+  nativeSelect?: boolean;
 };
 
 function LeadFilterDropdown({
@@ -459,9 +460,33 @@ function LeadFilterDropdown({
   openDropdown,
   onOpenChange,
   onChange,
+  nativeSelect = false,
 }: LeadFilterDropdownProps) {
   const selectedOption = options.find((option) => option.value === value) ?? options[0];
   const isOpen = openDropdown === dropdownKey;
+
+  if (nativeSelect) {
+    return (
+      <label className={`${assetStyles.field} ${styles.leadFilterField} ${styles.leadFilterNativeField}`}>
+        <span>{label}</span>
+        <select
+          className={styles.leadFilterNativeSelect}
+          value={value}
+          onChange={(event) => {
+            onChange(event.target.value);
+            onOpenChange(null);
+          }}
+          aria-label={label}
+        >
+          {options.map((option) => (
+            <option key={`${dropdownKey}-native-${option.value}`} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </label>
+    );
+  }
 
   return (
     <label className={`${assetStyles.field} ${styles.leadFilterField} ${isOpen ? styles.leadFilterFieldOpen : ''}`}>
@@ -2741,7 +2766,7 @@ export default function LeadsClient({
   const hasMultipleSentPhotos = Boolean(sentPhotoModal && sentPhotoModal.urls.length > 1);
 
   return (
-    <main className={`${assetStyles.page} ${useDealerWorkspaceStyles ? workspaceStyles.page : ''} ${styles.leadsPage} ${useDealerWorkspaceStyles ? styles.dealerOwnerParity : ''} ${dealerAppMode ? dealerStyles.dealerLeadsSurface : ''}`}>
+    <main className={`${assetStyles.page} ${useDealerWorkspaceStyles ? workspaceStyles.page : ''} ${styles.leadsPage} ${useDealerWorkspaceStyles ? styles.dealerOwnerParity : ''} ${dealerAppMode ? `${styles.dealerAppLeads} ${dealerStyles.dealerLeadsSurface}` : ''}`}>
       {!dealerAppMode ? <AppHeader active="leads" /> : null}
 
       <section className={`${assetStyles.shell} ${useDealerWorkspaceStyles ? workspaceStyles.shell : ''}`}>
@@ -2753,11 +2778,14 @@ export default function LeadsClient({
 
         <section className={`${assetStyles.registerPanel} ${styles.leadsRegisterPanel}`}>
           {useDealerWorkspaceStyles ? (
-            <WorkspaceTitlePanel title={accountantWorkspaceMode ? 'CLIENT MANAGEMENT SYSTEM' : 'LEAD MANAGEMENT SYSTEM'} />
+            <WorkspaceTitlePanel
+              title={accountantWorkspaceMode ? 'CLIENT MANAGEMENT SYSTEM' : 'LEADS SYSTEM'}
+              className={dealerAppMode ? styles.leadsTitlePanel : undefined}
+            />
           ) : (
             <div className={`${assetStyles.registerHeader} ${styles.leadsRegisterHeader}`}>
               <div className={`${assetStyles.registerTitleBlock} ${styles.leadsHeroTitleBlock}`}>
-                <h1>LEAD MANAGEMENT SYSTEM</h1>
+                <h1>LEADS SYSTEM</h1>
               </div>
             </div>
           )}
@@ -3209,6 +3237,7 @@ export default function LeadsClient({
                 openDropdown={openFilterDropdown}
                 onOpenChange={setOpenFilterDropdown}
                 onChange={setMonthFilter}
+                nativeSelect={dealerAppMode}
               />
 
               <LeadFilterDropdown
@@ -3219,6 +3248,7 @@ export default function LeadsClient({
                 openDropdown={openFilterDropdown}
                 onOpenChange={setOpenFilterDropdown}
                 onChange={setYearFilter}
+                nativeSelect={dealerAppMode}
               />
 
               <LeadFilterDropdown
@@ -3229,15 +3259,16 @@ export default function LeadsClient({
                 openDropdown={openFilterDropdown}
                 onOpenChange={setOpenFilterDropdown}
                 onChange={(value) => setStatusFilter(value as LeadStatusFilter)}
+                nativeSelect={dealerAppMode}
               />
             </div>
 
             <div className={`${assetStyles.formActions} ${dealerWorkspaceClass(workspaceStyles.modalFooter)} ${styles.leadFilterActions}`}>
               <button type="button" className={assetStyles.secondaryButton} onClick={resetLeadFilters} disabled={!hasActiveLeadFilter}>
-                Reset filters
+                Reset
               </button>
               <button type="button" className={assetStyles.primaryButton} onClick={closeLeadFilterModal}>
-                Apply filters
+                Apply
               </button>
             </div>
           </div>
@@ -3245,7 +3276,7 @@ export default function LeadsClient({
       ) : null}
 
       {managedLead ? (
-        <div className={`${assetStyles.modalOverlay} ${dealerWorkspaceClass(workspaceStyles.modalOverlay)}`}>
+        <div className={`${assetStyles.modalOverlay} ${dealerWorkspaceClass(workspaceStyles.modalOverlay)} ${styles.leadManageOverlay}`}>
           <div className={assetStyles.modalBackdrop} onClick={() => setManagedLead(null)} />
 
           <div className={`${assetStyles.optionsModal} ${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadManageModal}`} role="dialog" aria-modal="true" aria-labelledby="lead-manage-title">
@@ -3260,7 +3291,7 @@ export default function LeadsClient({
               </button>
             </div>
 
-            <div className={`${assetStyles.modalScrollBody} ${assetStyles.optionsScrollBody} ${dealerWorkspaceClass(workspaceStyles.modalBody)}`}>
+            <div className={`${assetStyles.modalScrollBody} ${assetStyles.optionsScrollBody} ${dealerWorkspaceClass(workspaceStyles.modalBody)} ${styles.leadManageScrollBody}`}>
               <div className={assetStyles.optionsContent}>
                 <div className={`${assetStyles.optionsGrid} ${assetStyles.assetOptionsGrid} ${styles.manageOptionsGrid}`}>
                   {accountantWorkspaceMode ? (
@@ -3435,9 +3466,6 @@ export default function LeadsClient({
 
             <div className={`${dealerWorkspaceClass(workspaceStyles.modalBody)} ${styles.leadEmailDraftPanel}`}>
               <div className={styles.leadEmailRecipientCard}>
-                <span className={styles.leadEmailRecipientIcon} aria-hidden="true">
-                  <EmailIcon className={assetStyles.buttonIcon} />
-                </span>
                 <div>
                   <span>To</span>
                   <strong>{activeEmailRecipient()}</strong>
