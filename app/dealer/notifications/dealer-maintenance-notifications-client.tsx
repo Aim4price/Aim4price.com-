@@ -31,8 +31,8 @@ export default function DealerMaintenanceNotificationsClient({
   notifications: DealerMaintenanceNotification[];
 }) {
   const [items, setItems] = useState<DealerMaintenanceNotification[]>(notifications);
-  const [activeView, setActiveView] = useState<'new' | 'history'>(
-    notifications.some((notification) => !notification.isRead) ? 'new' : 'history',
+  const [activeView, setActiveView] = useState<'active' | 'history'>(
+    notifications.some((notification) => !notification.isRead) ? 'active' : 'history',
   );
   const [searchQuery, setSearchQuery] = useState('');
   const [marking, setMarking] = useState(false);
@@ -42,7 +42,7 @@ export default function DealerMaintenanceNotificationsClient({
   const historyItems = useMemo(() => items.filter((notification) => notification.isRead), [items]);
   const visibleItems = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
-    const source = query ? items : activeView === 'new' ? newItems : historyItems;
+    const source = query ? items : activeView === 'active' ? newItems : historyItems;
     if (!query) return source;
 
     return source.filter((notification) => (
@@ -95,7 +95,7 @@ export default function DealerMaintenanceNotificationsClient({
             type="search"
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder="Search notifications"
+            placeholder="Search"
           />
           {searchQuery ? (
             <button type="button" onClick={() => setSearchQuery('')} aria-label="Clear notification search">×</button>
@@ -106,14 +106,14 @@ export default function DealerMaintenanceNotificationsClient({
           <button
             type="button"
             role="tab"
-            aria-selected={!searchQuery && activeView === 'new'}
-            className={!searchQuery && activeView === 'new' ? styles.notificationTabActive : ''}
+            aria-selected={!searchQuery && activeView === 'active'}
+            className={!searchQuery && activeView === 'active' ? styles.notificationTabActive : ''}
             onClick={() => {
               setSearchQuery('');
-              setActiveView('new');
+              setActiveView('active');
             }}
           >
-            <span>New</span>
+            <span>Active</span>
             <strong>{newItems.length}</strong>
           </button>
           <button
@@ -133,7 +133,7 @@ export default function DealerMaintenanceNotificationsClient({
 
         <div className={styles.notificationBulkActions}>
           <p>Checked maintenance alerts remain searchable in History.</p>
-          {!searchQuery && activeView === 'new' ? (
+          {!searchQuery && activeView === 'active' && newItems.length > 0 ? (
             <div>
               <button
                 type="button"
@@ -157,7 +157,7 @@ export default function DealerMaintenanceNotificationsClient({
       <section className={styles.notificationSection} aria-labelledby="dealer-notifications-title">
         <div className={`${styles.notificationSectionHeading} ${styles.ownerSectionHeading}`}>
           <h2 id="dealer-notifications-title">
-            {searchQuery ? 'Search results' : activeView === 'new' ? 'New' : 'History'}
+            {searchQuery ? 'Search results' : activeView === 'active' ? 'Active' : 'History'}
           </h2>
           <span aria-label={`${visibleItems.length} notifications`}>{visibleItems.length}</span>
         </div>
@@ -178,7 +178,7 @@ export default function DealerMaintenanceNotificationsClient({
                 <div className={styles.notificationCardLabels}>
                   <span className={styles.notificationKind}>
                     <i className={styles.notificationDot} aria-hidden="true" />
-                    {notification.isRead ? 'Checked' : 'New'}
+                    {notification.isRead ? 'Checked' : 'Active'}
                   </span>
                   <time dateTime={notification.createdAtIso}>
                     {formatNotificationTime(notification.createdAtIso)}
@@ -193,8 +193,8 @@ export default function DealerMaintenanceNotificationsClient({
           <p className={styles.notificationEmpty} aria-live="polite">
             {searchQuery
               ? 'No maintenance notifications match your search.'
-              : activeView === 'new'
-                ? 'You’re all caught up. New notifications will appear here.'
+              : activeView === 'active'
+                ? 'You’re all caught up. Active notifications will appear here.'
                 : 'Checked maintenance notifications will appear here.'}
           </p>
         )}
