@@ -7,6 +7,7 @@ import styles from '../owner-app.module.css';
 
 type NotificationTone = 'neutral' | 'success' | 'warning' | 'info';
 type NotificationState = 'needs_action' | 'new' | 'history';
+type NotificationView = 'active' | 'history';
 type InboxAction = 'mark_read' | 'archive' | 'resolve';
 type NotificationCategoryFilter = 'all' | 'maintenance' | 'costs' | 'leads' | 'notes' | 'fuel' | 'assets' | 'discovery';
 
@@ -125,7 +126,7 @@ async function updateInboxState(action: InboxAction, notificationIds: string[]):
 
 export default function OwnerNotificationsClient({ viewerId: _viewerId }: { viewerId: string }) {
   const [items, setItems] = useState<Notification[]>([]);
-  const [activeView, setActiveView] = useState<NotificationState>('new');
+  const [activeView, setActiveView] = useState<NotificationView>('active');
   const [categoryFilter, setCategoryFilter] = useState<NotificationCategoryFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
@@ -168,7 +169,7 @@ export default function OwnerNotificationsClient({ viewerId: _viewerId }: { view
         setItems(payload.notifications);
         if (!initialViewAppliedRef.current) {
           initialViewAppliedRef.current = true;
-          setActiveView(payload.notifications.some((item) => item.state === 'needs_action') ? 'needs_action' : 'new');
+          setActiveView(payload.notifications.some((item) => item.state !== 'history') ? 'active' : 'history');
         }
       } catch (cause) {
         if (controller.signal.aborted) return;
@@ -202,7 +203,7 @@ export default function OwnerNotificationsClient({ viewerId: _viewerId }: { view
   }, []);
 
   const counts = useMemo(() => ({
-    needs_action: items.filter((item) => item.state === 'needs_action').length,
+    active: items.filter((item) => item.state !== 'history').length,
     new: items.filter((item) => item.state === 'new').length,
     history: items.filter((item) => item.state === 'history').length,
   }), [items]);
@@ -210,7 +211,10 @@ export default function OwnerNotificationsClient({ viewerId: _viewerId }: { view
   const visibleItems = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
     return items.filter((item) => {
-      if (!normalizedQuery && item.state !== activeView) return false;
+      if (!normalizedQuery) {
+        const isActive = item.state !== 'history';
+        if (activeView === 'active' ? !isActive : isActive) return false;
+      }
       if (!matchesCategory(item, categoryFilter)) return false;
       if (!normalizedQuery) return true;
 
@@ -429,11 +433,7 @@ export default function OwnerNotificationsClient({ viewerId: _viewerId }: { view
       item.state === 'new' ? styles.notificationCardNew : '',
       item.state === 'history' ? styles.notificationCardHistory : '',
     ].filter(Boolean).join(' ');
-    const label = item.state === 'needs_action'
-      ? 'Needs action'
-      : item.state === 'new'
-        ? 'New'
-        : historyLabel(item);
+    const label = item.state === 'history' ? historyLabel(item) : 'Active';
     const cardContent = (
       <>
         <div className={styles.notificationCardLabels}>
@@ -554,11 +554,9 @@ export default function OwnerNotificationsClient({ viewerId: _viewerId }: { view
 
   const viewTitle = searchQuery.trim()
     ? 'Search results'
-    : activeView === 'needs_action'
-      ? 'Needs Action'
-      : activeView === 'new'
-        ? 'New'
-        : 'History';
+    : activeView === 'active'
+      ? 'Active'
+      : 'History';
 
   return (
     <>
@@ -581,7 +579,7 @@ export default function OwnerNotificationsClient({ viewerId: _viewerId }: { view
               type="search"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Search notifications"
+              placeholder="Search"
             />
             {searchQuery ? (
               <button type="button" onClick={() => setSearchQuery('')} aria-label="Clear notification search">×</button>
@@ -590,10 +588,9 @@ export default function OwnerNotificationsClient({ viewerId: _viewerId }: { view
 
           <div className={styles.notificationTabs} role="tablist" aria-label="Notification sections">
             {([
-              ['needs_action', 'Needs Action'],
-              ['new', 'New'],
+              ['active', 'Active'],
               ['history', 'History'],
-            ] as Array<[NotificationState, string]>).map(([value, label]) => (
+            ] as Array<[NotificationView, string]>).map(([value, label]) => (
               <button
                 key={value}
                 type="button"
@@ -626,11 +623,9 @@ export default function OwnerNotificationsClient({ viewerId: _viewerId }: { view
 
           <div className={styles.notificationBulkActions}>
             <p>
-              {activeView === 'needs_action' && !searchQuery
-                ? 'These notifications stay here until the required action is completed.'
-                : 'Checked and cleared notifications remain searchable in History.'}
+              Active notifications stay here until they are opened, checked or completed.
             </p>
-            {!searchQuery && activeView === 'new' ? (
+            {!searchQuery && activeView === 'active' && counts.new > 0 ? (
               <div>
                 <button
                   type="button"
@@ -689,11 +684,9 @@ export default function OwnerNotificationsClient({ viewerId: _viewerId }: { view
               <p className={styles.notificationEmpty} aria-live="polite">
                 {searchQuery.trim()
                   ? 'No notifications match your search and filter.'
-                  : activeView === 'needs_action'
-                    ? 'Nothing needs your attention right now.'
-                    : activeView === 'new'
-                      ? 'You’re all caught up. New notifications will appear here.'
-                      : 'Your checked and cleared notifications will appear here.'}
+                  : activeView === 'active'
+                    ? 'You’re all caught up. Active notifications will appear here.'
+                    : 'Your checked and cleared notifications will appear here.'}
               </p>
             )}
           </section>
