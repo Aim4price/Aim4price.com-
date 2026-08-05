@@ -212,11 +212,11 @@ function mapInboxItem(row: NotificationInboxRow, currentKeys: Set<string>): Noti
     || (row.action_required && !current ? new Date().toISOString() : null);
 
   const state: NotificationInboxState =
-    row.action_required && current && !resolvedAtIso
-      ? 'needs_action'
-      : current && !readAtIso && !archivedAtIso
-        ? 'new'
-        : 'history';
+    current && !readAtIso && !archivedAtIso
+      ? row.action_required && !resolvedAtIso
+        ? 'needs_action'
+        : 'new'
+      : 'history';
 
   return {
     id: row.event_key,
