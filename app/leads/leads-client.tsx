@@ -2242,6 +2242,15 @@ export default function LeadsClient({
     }
 
     setNotice(null);
+
+    if (dealerAppMode) {
+      const subject = buildLeadEmailSubject(lead);
+      const body = buildLeadEmailBody(lead);
+      setManagedLead(null);
+      window.location.href = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      return;
+    }
+
     setEmailLead(lead);
     setEmailSubjectDraft(buildLeadEmailSubject(lead));
     setEmailBodyDraft(buildLeadEmailBody(lead));
@@ -2766,7 +2775,7 @@ export default function LeadsClient({
   const hasMultipleSentPhotos = Boolean(sentPhotoModal && sentPhotoModal.urls.length > 1);
 
   return (
-    <main className={`${assetStyles.page} ${useDealerWorkspaceStyles ? workspaceStyles.page : ''} ${styles.leadsPage} ${useDealerWorkspaceStyles ? styles.dealerOwnerParity : ''} ${dealerAppMode ? `${styles.dealerAppLeads} ${dealerStyles.dealerLeadsSurface}` : ''}`}>
+    <main className={`${assetStyles.page} ${useDealerWorkspaceStyles ? workspaceStyles.page : ''} ${styles.leadsPage} ${useDealerWorkspaceStyles ? styles.dealerOwnerParity : ''} ${dealerAppMode ? `${styles.dealerAppLeads} ${dealerStyles.dealerLeadsSurface}` : ''} ${dealerWorkspaceMode && !accountantWorkspaceMode ? styles.dealerDesktopLeads : ''}`}>
       {!dealerAppMode ? <AppHeader active="leads" /> : null}
 
       <section className={`${assetStyles.shell} ${useDealerWorkspaceStyles ? workspaceStyles.shell : ''}`}>
@@ -2779,13 +2788,13 @@ export default function LeadsClient({
         <section className={`${assetStyles.registerPanel} ${styles.leadsRegisterPanel}`}>
           {useDealerWorkspaceStyles ? (
             <WorkspaceTitlePanel
-              title={accountantWorkspaceMode ? 'CLIENT MANAGEMENT SYSTEM' : 'LEADS SYSTEM'}
+              title={accountantWorkspaceMode ? 'CLIENT MANAGEMENT SYSTEM' : dealerAppMode ? 'LEADS SYSTEM' : 'LEAD MANAGEMENT SYSTEM'}
               className={dealerAppMode ? styles.leadsTitlePanel : undefined}
             />
           ) : (
             <div className={`${assetStyles.registerHeader} ${styles.leadsRegisterHeader}`}>
               <div className={`${assetStyles.registerTitleBlock} ${styles.leadsHeroTitleBlock}`}>
-                <h1>LEADS SYSTEM</h1>
+                <h1>LEAD MANAGEMENT SYSTEM</h1>
               </div>
             </div>
           )}

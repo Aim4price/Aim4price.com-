@@ -354,6 +354,7 @@ function Dropdown({
   openDropdown,
   onOpenChange,
   onChange,
+  nativeSelect = false,
 }: {
   label: string;
   value: string;
@@ -362,9 +363,34 @@ function Dropdown({
   openDropdown: string | null;
   onOpenChange: (key: string | null) => void;
   onChange: (value: string) => void;
+  nativeSelect?: boolean;
 }) {
   const isOpen = openDropdown === dropdownKey;
   const selected = options.find((option) => option.value === value) ?? options[0];
+
+  if (nativeSelect) {
+    return (
+      <label className={`${assetStyles.field} ${leadStyles.leadFilterField} ${leadStyles.leadFilterNativeField}`}>
+        <span>{label}</span>
+        <select
+          className={leadStyles.leadFilterNativeSelect}
+          value={value}
+          onChange={(event) => {
+            onChange(event.target.value);
+            onOpenChange(null);
+          }}
+          aria-label={label}
+        >
+          {options.map((option) => (
+            <option key={`${dropdownKey}-native-${option.value}`} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </label>
+    );
+  }
+
   return (
     <label className={`${assetStyles.field} ${leadStyles.leadFilterField} ${isOpen ? leadStyles.leadFilterFieldOpen : ''}`}>
       <span>{label}</span>
@@ -895,26 +921,29 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
   }
 
   return (
-    <main className={`${assetStyles.page} ${workspaceStyles.page} ${leadStyles.leadsPage} ${leadStyles.dealerOwnerParity} ${styles.trackerPage} ${dealerAppMode ? styles.dealerApp : ''}`}>
+    <main className={`${assetStyles.page} ${workspaceStyles.page} ${leadStyles.leadsPage} ${leadStyles.dealerOwnerParity} ${styles.trackerPage} ${dealerAppMode ? styles.dealerApp : styles.dealerDesktop}`}>
       <section className={`${assetStyles.shell} ${workspaceStyles.shell}`}>
         {notice ? <div className={`${assetStyles.notice} ${notice.tone === 'success' ? assetStyles.noticeSuccess : assetStyles.noticeError}`}>{notice.text}</div> : null}
 
         <section className={`${assetStyles.registerPanel} ${leadStyles.leadsRegisterPanel}`}>
-          <WorkspaceTitlePanel title="MAINTENANCE TRACKING" />
+          <WorkspaceTitlePanel
+            title={dealerAppMode ? 'MAINTENANCE' : 'MAINTENANCE TRACKING'}
+            className={dealerAppMode ? styles.maintenanceTitlePanel : undefined}
+          />
 
-          <section className={`${assetStyles.summaryRow} ${assetStyles.heroSummaryRow} ${leadStyles.leadSummaryRow}`} aria-label="Maintenance summary">
+          <section className={`${assetStyles.summaryRow} ${assetStyles.heroSummaryRow} ${leadStyles.leadSummaryRow} ${dealerAppMode ? styles.dealerAppSummary : ''}`} aria-label="Maintenance summary">
             <button type="button" className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${leadStyles.leadOwnerSummaryCard} ${leadStyles.leadOwnerSummaryCardNew} ${styles.summaryFilterButton} ${statusFilter === 'attention' ? styles.summaryFilterButtonActive : ''}`} onClick={() => chooseStatusFilter('attention')} aria-pressed={statusFilter === 'attention'}>
-              <span className={assetStyles.heroSummaryHead}><span className={`${assetStyles.heroSummaryTitle} ${leadStyles.leadOwnerSummaryText}`}>Needs attention</span></span>
+              <span className={assetStyles.heroSummaryHead}><span className={`${assetStyles.heroSummaryTitle} ${leadStyles.leadOwnerSummaryText}`}>{dealerAppMode ? 'Attention' : 'Needs attention'}</span></span>
               <span className={assetStyles.heroSummaryValueRow}><strong className={`${assetStyles.heroSummaryValue} ${leadStyles.leadOwnerSummaryText}`}>{attentionCount}</strong></span>
               <span className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${leadStyles.leadOwnerSummaryFooter}`}><small className={leadStyles.leadOwnerSummaryText}>Overdue, due soon, or waiting for a usage reading.</small></span>
             </button>
             <button type="button" className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${leadStyles.leadOwnerSummaryCard} ${leadStyles.leadOwnerSummaryCardOpen} ${styles.summaryFilterButton} ${statusFilter === 'all' ? styles.summaryFilterButtonActive : ''}`} onClick={() => chooseStatusFilter('all')} aria-pressed={statusFilter === 'all'}>
-              <span className={assetStyles.heroSummaryHead}><span className={`${assetStyles.heroSummaryTitle} ${leadStyles.leadOwnerSummaryText}`}>Tracked equipment</span></span>
+              <span className={assetStyles.heroSummaryHead}><span className={`${assetStyles.heroSummaryTitle} ${leadStyles.leadOwnerSummaryText}`}>{dealerAppMode ? 'Tracked' : 'Tracked equipment'}</span></span>
               <span className={assetStyles.heroSummaryValueRow}><strong className={`${assetStyles.heroSummaryValue} ${leadStyles.leadOwnerSummaryText}`}>{assets.length}</strong></span>
               <span className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${leadStyles.leadOwnerSummaryFooter}`}><small className={leadStyles.leadOwnerSummaryText}>Show all equipment shared with you.</small></span>
             </button>
             <button type="button" className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${leadStyles.leadOwnerSummaryCard} ${leadStyles.leadOwnerSummaryCardDone} ${styles.summaryFilterButton} ${statusFilter === 'no_open' ? styles.summaryFilterButtonActive : ''}`} onClick={() => chooseStatusFilter('no_open')} aria-pressed={statusFilter === 'no_open'}>
-              <span className={assetStyles.heroSummaryHead}><span className={`${assetStyles.heroSummaryTitle} ${leadStyles.leadOwnerSummaryText}`}>Nothing due</span></span>
+              <span className={assetStyles.heroSummaryHead}><span className={`${assetStyles.heroSummaryTitle} ${leadStyles.leadOwnerSummaryText}`}>{dealerAppMode ? 'Due' : 'Nothing due'}</span></span>
               <span className={assetStyles.heroSummaryValueRow}><strong className={`${assetStyles.heroSummaryValue} ${leadStyles.leadOwnerSummaryText}`}>{noOpenCount}</strong></span>
               <span className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${leadStyles.leadOwnerSummaryFooter}`}><small className={leadStyles.leadOwnerSummaryText}>No current maintenance requires attention.</small></span>
             </button>
@@ -1501,7 +1530,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
       ) : null}
 
       {managedAsset ? (
-        <div className={`${assetStyles.modalOverlay} ${workspaceStyles.modalOverlay}`}>
+        <div className={`${assetStyles.modalOverlay} ${workspaceStyles.modalOverlay} ${styles.trackerManageOverlay}`}>
           <div className={assetStyles.modalBackdrop} onClick={() => setManagedAccessId(null)} />
           <div className={`${assetStyles.optionsModal} ${workspaceStyles.modal} ${leadStyles.leadManageModal} ${styles.trackerManageModal}`} role="dialog" aria-modal="true" aria-labelledby="tracking-manage-title">
             <div className={`${assetStyles.modalHeader} ${assetStyles.optionsModalHeader} ${workspaceStyles.modalHeader}`}>
@@ -1629,12 +1658,12 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
               <button type="button" className={`${assetStyles.modalCloseButton} ${workspaceStyles.modalClose}`} onClick={() => setFilterOpen(false)} aria-label="Close filters"><CloseIcon className={assetStyles.buttonIcon} /></button>
             </div>
             <div className={`${workspaceStyles.modalBody} ${leadStyles.leadFilterForm} ${styles.trackerFilterForm}`}>
-              <Dropdown label="Asset owner" value={draftOwnerFilter} options={ownerOptions} dropdownKey="owner" openDropdown={openFilterDropdown} onOpenChange={(key) => setOpenFilterDropdown(key as FilterDropdownKey | null)} onChange={setDraftOwnerFilter} />
-              <Dropdown label="Maintenance status" value={draftStatusFilter} options={statusOptions} dropdownKey="status" openDropdown={openFilterDropdown} onOpenChange={(key) => setOpenFilterDropdown(key as FilterDropdownKey | null)} onChange={(value) => setDraftStatusFilter(value as TrackerStatusFilter)} />
+              <Dropdown label="Asset owner" value={draftOwnerFilter} options={ownerOptions} dropdownKey="owner" openDropdown={openFilterDropdown} onOpenChange={(key) => setOpenFilterDropdown(key as FilterDropdownKey | null)} onChange={setDraftOwnerFilter} nativeSelect={dealerAppMode} />
+              <Dropdown label="Maintenance status" value={draftStatusFilter} options={statusOptions} dropdownKey="status" openDropdown={openFilterDropdown} onOpenChange={(key) => setOpenFilterDropdown(key as FilterDropdownKey | null)} onChange={(value) => setDraftStatusFilter(value as TrackerStatusFilter)} nativeSelect={dealerAppMode} />
             </div>
             <div className={`${assetStyles.formActions} ${workspaceStyles.modalFooter} ${leadStyles.leadFilterActions} ${styles.trackerFilterActions}`}>
-              <button type="button" className={assetStyles.secondaryButton} onClick={clearFilters}>Clear filters</button>
-              <button type="button" className={assetStyles.primaryButton} onClick={() => { setOwnerFilter(draftOwnerFilter); setStatusFilter(draftStatusFilter); setOpenFilterDropdown(null); setFilterOpen(false); }}>Apply filters</button>
+              <button type="button" className={assetStyles.secondaryButton} onClick={clearFilters}>{dealerAppMode ? 'Clear' : 'Clear filters'}</button>
+              <button type="button" className={assetStyles.primaryButton} onClick={() => { setOwnerFilter(draftOwnerFilter); setStatusFilter(draftStatusFilter); setOpenFilterDropdown(null); setFilterOpen(false); }}>{dealerAppMode ? 'Apply' : 'Apply filters'}</button>
             </div>
           </div>
         </div>
