@@ -14,5 +14,5 @@ export default async function DealerMaintenancePage({ searchParams }: { searchPa
   const profile = await getAccountProfile({ id: session.user.id, name: session.user.name, email: session.user.email });
   if (profile.accountType !== 'dealer' || profile.accountStatus !== 'active') redirect('/dealer/login');
   const assets = await listDealerTrackedAssets(session.user.id);
-  return <div className={dealerStyles.module}><DealerMaintenanceClient initialAssets={assets} initialOpenAccessId={String(searchParams?.open ?? '').trim() || null} /></div>;
+  return <div className={`${dealerStyles.module} ${dealerStyles.maintenanceModule}`}><DealerMaintenanceClient initialAssets={assets} initialOpenAccessId={String(searchParams?.open ?? '').trim() || null} /></div>;
 }
