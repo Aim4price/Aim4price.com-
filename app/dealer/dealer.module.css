@@ -2390,7 +2390,7 @@
   left: auto;
   width: min(calc(100% - 24px), 560px);
   height: auto;
-  min-height: calc(82px + env(safe-area-inset-top));
+  min-height: calc(58px + env(safe-area-inset-top));
   align-items: center;
   justify-content: flex-start;
   gap: 8px;
@@ -2472,7 +2472,7 @@
   box-sizing: border-box;
   overflow-x: hidden;
   padding:
-    calc(58px + env(safe-area-inset-top))
+    calc(82px + env(safe-area-inset-top))
     max(12px, env(safe-area-inset-right))
     max(24px, env(safe-area-inset-bottom))
     max(12px, env(safe-area-inset-left));
