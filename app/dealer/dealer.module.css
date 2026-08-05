@@ -2468,10 +2468,14 @@
 .homeShell.homeShell {
   min-height: 100dvh;
   display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  overflow-x: hidden;
   padding:
     calc(58px + env(safe-area-inset-top))
-    0
-    max(24px, env(safe-area-inset-bottom));
+    max(12px, env(safe-area-inset-right))
+    max(24px, env(safe-area-inset-bottom))
+    max(12px, env(safe-area-inset-left));
   background:
     radial-gradient(circle at 50% 5%, rgba(111, 197, 150, 0.16), transparent 34%),
     linear-gradient(180deg, #f5faf7 0%, #ffffff 48%, #f4f9f6 100%);
@@ -2482,16 +2486,19 @@
 }
 
 .homeContent {
-  flex: 1 1 auto;
-  width: min(calc(100% - 24px), 560px);
+  flex: 1 0 auto;
+  width: min(100%, 560px);
+  min-width: 0;
   display: grid;
   align-content: center;
+  box-sizing: border-box;
   margin: 0 auto;
   padding: 0;
 }
 
 .homeLauncher {
   width: min(100%, 400px);
+  min-width: 0;
   box-sizing: border-box;
   display: grid;
   gap: 13px;
@@ -2599,6 +2606,8 @@
   .homeShell.homeShell {
     min-height: 100dvh;
     padding-top: calc(66px + env(safe-area-inset-top));
+    padding-right: max(24px, env(safe-area-inset-right));
+    padding-left: max(24px, env(safe-area-inset-left));
   }
 
   .dealerLayout > .module {
@@ -2606,7 +2615,7 @@
   }
 
   .homeContent {
-    width: min(calc(100% - 48px), 820px);
+    width: min(100%, 820px);
   }
 
   .homeLauncher {
