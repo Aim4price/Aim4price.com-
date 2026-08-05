@@ -310,7 +310,7 @@ export default function FieldManagerOverviewClient() {
   }
 
   return (
-    <main className={styles.mobilePage}>
+    <main className={`${styles.mobilePage} ${styles.overviewPage}`}>
       <section className={`${styles.assetsShell} ${styles.overviewShell}`}>
         <header className={styles.assetsHeader} aria-label="Notification controls">
           <FieldManagerNavLink href="/field-manager" label="Home" />
@@ -321,19 +321,26 @@ export default function FieldManagerOverviewClient() {
           <p>Needs attention and upcoming maintenance.</p>
         </div>
 
-        <label className={styles.overviewSearch}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-            <circle cx="11" cy="11" r="7" />
-            <path d="m20 20-3.5-3.5" />
-          </svg>
-          <input
-            type="search"
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder="Search assets or maintenance"
-            aria-label="Search notifications"
-          />
-        </label>
+        <section className={styles.overviewWorkspace} aria-label="Notification search">
+          <label className={styles.overviewSearch}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+              <circle cx="11" cy="11" r="7" />
+              <path d="m20 20-3.5-3.5" />
+            </svg>
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Search notifications"
+              aria-label="Search notifications"
+            />
+            {searchQuery ? (
+              <button type="button" onClick={() => setSearchQuery('')} aria-label="Clear notification search">
+                ×
+              </button>
+            ) : null}
+          </label>
+        </section>
 
         {loadError ? (
           <div className={`${styles.errorNotice} ${styles.overviewError}`} role="alert">

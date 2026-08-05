@@ -2672,3 +2672,173 @@
 }
 
 .notificationTabsTwo { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+/* App notification page refinement */
+.notificationContent {
+  width: min(calc(100% - var(--owner-page-gutter)), 640px);
+  margin-inline: auto;
+  gap: clamp(16px, 4vw, 22px);
+  overflow: hidden;
+}
+
+.notificationIntro {
+  justify-content: center;
+  padding: 4px 4px 2px;
+  text-align: center;
+}
+
+.notificationIntro > div {
+  width: 100%;
+  justify-items: center;
+}
+
+.notificationIntro p {
+  max-width: 34rem;
+}
+
+.notificationWorkspace {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  gap: 12px;
+  overflow: hidden;
+  padding: clamp(12px, 4vw, 16px);
+}
+
+.notificationSearch {
+  width: 100%;
+  min-width: 0;
+  min-height: 56px;
+  box-sizing: border-box;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  gap: 10px;
+  overflow: hidden;
+  border-radius: 18px;
+  padding-inline: 14px;
+}
+
+.notificationSearch input {
+  min-height: 54px;
+  line-height: 1.2;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.notificationSearch input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.notificationSearch button {
+  flex: 0 0 auto;
+}
+
+.notificationTabs button {
+  box-sizing: border-box;
+  overflow: hidden;
+  line-height: 1.15;
+}
+
+.notificationBulkActions {
+  min-width: 0;
+}
+
+.notificationSectionHeading {
+  padding-inline: 2px;
+}
+
+.notificationCardLabels {
+  flex-wrap: wrap;
+  row-gap: 8px;
+}
+
+.notificationCardLabels time {
+  margin-left: auto;
+}
+
+@media (max-width: 520px) {
+  .notificationContent {
+    border-radius: 26px;
+    padding: 16px;
+  }
+
+  .notificationIntro {
+    align-items: center;
+    padding-top: 2px;
+  }
+
+  .notificationIntro h1 {
+    font-size: clamp(1.9rem, 10vw, 2.3rem);
+  }
+
+  .notificationWorkspace {
+    border-radius: 20px;
+    padding: 12px;
+  }
+
+  .notificationSearch {
+    min-height: 56px;
+    padding-inline: 13px;
+  }
+
+  .notificationTabs {
+    gap: 7px;
+  }
+
+  .notificationTabs button {
+    min-height: 60px;
+    border-radius: 15px;
+  }
+
+  .notificationBulkActions p {
+    text-align: center;
+  }
+
+  .notificationBulkActions > div {
+    width: 100%;
+  }
+
+  .notificationBulkActions button {
+    min-height: 44px;
+  }
+
+  .notificationSectionHeading {
+    padding-top: 2px;
+  }
+}
+
+@media (max-width: 360px) {
+  .page,
+  .module {
+    --owner-page-gutter: 16px;
+  }
+
+  .notificationContent {
+    padding: 14px;
+  }
+
+  .notificationWorkspace {
+    padding: 10px;
+  }
+
+  .notificationSearch {
+    gap: 8px;
+    padding-inline: 12px;
+  }
+
+  .notificationTabs {
+    gap: 6px;
+  }
+
+  .notificationTabs button {
+    padding-inline: 4px;
+    font-size: 0.68rem;
+  }
+
+  .notificationCard {
+    padding: 14px;
+  }
+
+  .notificationCardLabels {
+    align-items: flex-start;
+  }
+}

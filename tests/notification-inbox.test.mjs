@@ -47,10 +47,10 @@ test('notification surfaces separate active work and searchable history', async 
   assert.match(header, /notificationView/);
   assert.match(header, /Search notifications/);
   assert.match(ownerClient, /Needs Action/);
-  assert.match(ownerClient, /Search assets, clients or notifications/);
+  assert.match(ownerClient, /Search notifications/);
   assert.match(ownerClient, /Checked and cleared notifications remain searchable in History/);
   assert.match(dealerClient, /Maintenance alerts and checked history/);
-  assert.match(dealerClient, /Search assets or maintenance alerts/);
+  assert.match(dealerClient, /Search notifications/);
   assert.match(ownerLink, /needsActionCount/);
 });
 
@@ -79,3 +79,24 @@ test('opening one active notification moves only that item to history', async ()
   assert.match(inbox, /current && !readAtIso && !archivedAtIso[\s\S]*?row\.action_required && !resolvedAtIso/);
 });
 
+test('app notification pages keep search controls aligned on narrow screens', async () => {
+  const [ownerClient, dealerClient, ownerStyles, managerClient, managerStyles] = await Promise.all([
+    read('app/owner-app/notifications/owner-notifications-client.tsx'),
+    read('app/dealer/notifications/dealer-maintenance-notifications-client.tsx'),
+    read('app/owner-app/owner-app.module.css'),
+    read('app/field-manager/field-manager-overview-client.tsx'),
+    read('app/field-manager/page.module.css'),
+  ]);
+
+  assert.match(ownerClient, /placeholder="Search notifications"/);
+  assert.match(dealerClient, /placeholder="Search notifications"/);
+  assert.match(ownerStyles, /App notification page refinement/);
+  assert.match(ownerStyles, /\.notificationSearch \{[\s\S]*?grid-template-columns: 22px minmax\(0, 1fr\) auto/);
+  assert.match(ownerStyles, /@media \(max-width: 360px\) \{[\s\S]*?--owner-page-gutter: 16px/);
+  assert.match(managerClient, /styles\.overviewWorkspace/);
+  assert.match(managerClient, /aria-label="Clear notification search"/);
+  assert.match(managerClient, /placeholder="Search notifications"/);
+  assert.match(managerStyles, /Field Manager notification page refinement/);
+  assert.match(managerStyles, /\.overviewPage \.overviewSearch \{[\s\S]*?grid-template-columns: 22px minmax\(0, 1fr\) auto/);
+  assert.match(managerStyles, /@media \(max-width: 390px\) \{[\s\S]*?--field-page-gutter: 16px/);
+});

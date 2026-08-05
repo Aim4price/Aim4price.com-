@@ -2126,3 +2126,116 @@
     text-align: left;
   }
 }
+
+/* Field Manager notification page refinement */
+.overviewPage {
+  background:
+    radial-gradient(circle at 100% 0, rgba(111, 197, 150, 0.16), transparent 34%),
+    linear-gradient(180deg, #f2f8f5 0%, #ffffff 62%);
+}
+
+.overviewPage .overviewShell {
+  width: min(calc(100% - var(--field-page-gutter)), 640px);
+}
+
+.overviewPage .overviewIntro {
+  display: grid;
+  justify-items: center;
+  gap: 7px;
+  padding: 10px 4px 18px;
+  text-align: center;
+}
+
+.overviewPage .overviewIntro p {
+  max-width: 32rem;
+  margin-top: 0;
+}
+
+.overviewWorkspace {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  border: 1px solid rgba(18, 53, 45, 0.12);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.78);
+  padding: 12px;
+  box-shadow: 0 14px 34px rgba(18, 53, 45, 0.07);
+}
+
+.overviewPage .overviewSearch {
+  width: 100%;
+  min-width: 0;
+  min-height: 56px;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  gap: 10px;
+  overflow: hidden;
+  border-radius: 18px;
+  padding-inline: 14px;
+  box-shadow: none;
+}
+
+.overviewPage .overviewSearch input {
+  min-width: 0;
+  min-height: 54px;
+  line-height: 1.2;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.overviewPage .overviewSearch input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.overviewSearch button {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 0;
+  border-radius: 11px;
+  background: rgba(18, 53, 45, 0.08);
+  color: #12352d;
+  padding: 0;
+  font: inherit;
+  font-size: 1.12rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.overviewSearch button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.12);
+}
+
+.overviewPage .overviewSections {
+  gap: 24px;
+  margin-top: 18px;
+}
+
+.overviewPage .overviewSectionHeading {
+  padding-inline: 2px;
+}
+
+.overviewPage .overviewCardLabels {
+  row-gap: 8px;
+}
+
+@media (max-width: 390px) {
+  .overviewPage {
+    --field-page-gutter: 16px;
+  }
+
+  .overviewPage .overviewWorkspace {
+    padding: 10px;
+  }
+
+  .overviewPage .overviewSearch {
+    gap: 8px;
+    padding-inline: 12px;
+  }
+
+  .overviewPage .overviewCard {
+    padding: 14px;
+  }
+}

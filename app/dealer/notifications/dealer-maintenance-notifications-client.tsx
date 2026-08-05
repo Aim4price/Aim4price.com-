@@ -95,7 +95,7 @@ export default function DealerMaintenanceNotificationsClient({
             type="search"
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder="Search assets or maintenance alerts…"
+            placeholder="Search notifications"
           />
           {searchQuery ? (
             <button type="button" onClick={() => setSearchQuery('')} aria-label="Clear notification search">×</button>

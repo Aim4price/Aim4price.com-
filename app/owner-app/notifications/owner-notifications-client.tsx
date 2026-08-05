@@ -581,7 +581,7 @@ export default function OwnerNotificationsClient({ viewerId: _viewerId }: { view
               type="search"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Search assets, clients or notifications…"
+              placeholder="Search notifications"
             />
             {searchQuery ? (
               <button type="button" onClick={() => setSearchQuery('')} aria-label="Clear notification search">×</button>
