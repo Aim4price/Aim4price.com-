@@ -91,6 +91,7 @@ function statusText(item: OverviewItem): string {
 export default function FieldManagerOverviewClient() {
   const range: OverviewRange = 'upcoming';
   const [items, setItems] = useState<OverviewItem[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -102,14 +103,28 @@ export default function FieldManagerOverviewClient() {
   const requestIdRef = useRef(0);
   const hasLoadedRef = useRef(false);
 
+  const visibleItems = useMemo(() => {
+    const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
+    if (!normalizedQuery) return items;
+
+    return items.filter((item) => [
+      item.assetTitle,
+      item.headline,
+      item.detail,
+      item.notes,
+      TYPE_LABELS[item.type],
+      statusText(item),
+    ].join(' ').toLocaleLowerCase().includes(normalizedQuery));
+  }, [items, searchQuery]);
   const needsAttentionItems = useMemo(
-    () => items.filter((item) => item.section === 'needs_attention'),
-    [items],
+    () => visibleItems.filter((item) => item.section === 'needs_attention'),
+    [visibleItems],
   );
   const comingUpItems = useMemo(
-    () => items.filter((item) => item.section === 'coming_up'),
-    [items],
+    () => visibleItems.filter((item) => item.section === 'coming_up'),
+    [visibleItems],
   );
+  const hasSearchQuery = searchQuery.trim().length > 0;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -322,6 +337,20 @@ export default function FieldManagerOverviewClient() {
           <p>Needs attention and upcoming maintenance.</p>
         </div>
 
+        <label className={styles.overviewSearch}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+            <circle cx="11" cy="11" r="7" />
+            <path d="m20 20-3.5-3.5" />
+          </svg>
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Search assets or maintenance"
+            aria-label="Search overview"
+          />
+        </label>
+
         {loadError ? (
           <div className={`${styles.errorNotice} ${styles.overviewError}`} role="alert">
             <span>{loadError}</span>
@@ -355,7 +384,9 @@ export default function FieldManagerOverviewClient() {
               {needsAttentionItems.length ? (
                 <div className={styles.overviewList}>{needsAttentionItems.map(renderOverviewCard)}</div>
               ) : (
-                <p className={styles.overviewEmpty}>Nothing needs attention.</p>
+                <p className={styles.overviewEmpty}>
+                  {hasSearchQuery ? 'No matching items need attention.' : 'Nothing needs attention.'}
+                </p>
               )}
             </section>
 
@@ -367,7 +398,9 @@ export default function FieldManagerOverviewClient() {
               {comingUpItems.length ? (
                 <div className={styles.overviewList}>{comingUpItems.map(renderOverviewCard)}</div>
               ) : (
-                <p className={styles.overviewEmpty}>Nothing upcoming.</p>
+                <p className={styles.overviewEmpty}>
+                  {hasSearchQuery ? 'No matching upcoming items.' : 'Nothing upcoming.'}
+                </p>
               )}
             </section>
           </div>
