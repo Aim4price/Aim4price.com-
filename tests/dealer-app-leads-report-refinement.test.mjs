@@ -11,7 +11,8 @@ const maintenanceReport = read('components/DealerMaintenanceReportModal.tsx');
 
 test('Dealer App Leads uses one continuous green-tinted page and navigation surface', () => {
   assert.match(dealerNav, /isLeadsPage \? styles\.navUnifiedSurface : isMaintenancePage \? styles\.navLeadsSurface/);
-  assert.match(dealerStyles, /\.leadsModule\.leadsModule \{[\s\S]*?radial-gradient\(circle at 50% 4%, rgba\(111, 197, 150, 0\.13\)/);
+  assert.match(dealerStyles, /\.dealerLayout:has\(\.leadsModule\) \{[\s\S]*?radial-gradient\(circle at 50% 4%, rgba\(111, 197, 150, 0\.13\)/);
+  assert.match(dealerStyles, /\.leadsModule\.leadsModule \{\s*padding-top: 0;\s*background: transparent;/);
   assert.match(dealerStyles, /\.navUnifiedSurface\.navUnifiedSurface \{[\s\S]*?background: transparent;[\s\S]*?box-shadow: none;/);
 });
 
