@@ -163,7 +163,12 @@ export async function POST(request: NextRequest, context: RouteContext) {
     }
 
     const redirectTo = `/field-manager/assets/${encodeURIComponent(asset.publicAssetCode)}?${query.toString()}`;
-    const response = NextResponse.json({ ok: true, redirectTo });
+    const response = NextResponse.json({
+      ok: true,
+      assetId: asset.id,
+      publicAssetCode: asset.publicAssetCode,
+      redirectTo,
+    });
 
     // Field Manager Manage mode is authorized from the main Field Manager
     // session cookie plus the selected assetId. Do not mint a separate

@@ -101,8 +101,8 @@ test('app notification pages remove search and keep Owner tabs large and centere
 });
 
 
-test('all app notification surfaces use Active and History views', async () => {
-  const [ownerClient, dealerClient, managerClient, managerRoute, managerInbox] = await Promise.all([
+test('Owner and Dealer notifications keep Active and History while Field Manager returns to Overview', async () => {
+  const [ownerClient, dealerClient, managerClient, managerRoute, managerOverview] = await Promise.all([
     read('app/owner-app/notifications/owner-notifications-client.tsx'),
     read('app/dealer/notifications/dealer-maintenance-notifications-client.tsx'),
     read('app/field-manager/field-manager-overview-client.tsx'),
@@ -112,11 +112,35 @@ test('all app notification surfaces use Active and History views', async () => {
 
   assert.match(ownerClient, /type NotificationView = 'active' \| 'history'/);
   assert.match(ownerClient, /\['active', 'Active'\]/);
-  assert.doesNotMatch(ownerClient, /\['needs_action', 'Needs Action'\]/);
-  assert.doesNotMatch(ownerClient, /\['new', 'New'\]/);
   assert.match(dealerClient, /<span>Active<\/span>/);
-  assert.doesNotMatch(dealerClient, /<span>New<\/span>/);
-  assert.match(managerClient, /\(\['active', 'history'\] as NotificationView\[\]\)/);
-  assert.match(managerRoute, /requestedView === 'history'/);
-  assert.match(managerInbox, /input\.view === 'history' \? historyItems : activeItems/);
+  assert.match(managerClient, /<h1>Overview<\/h1>/);
+  assert.match(managerClient, /<h2 id="needs-attention-title">Needs attention<\/h2>/);
+  assert.match(managerClient, /<h2 id="upcoming-title">Upcoming<\/h2>/);
+  assert.doesNotMatch(managerClient, /type NotificationView/);
+  assert.doesNotMatch(managerRoute, /requestedView/);
+  assert.match(managerOverview, /return !dismissedKeys\.has\(key\)/);
+});
+
+test('Field Manager Overview requires a captured location before service opens', async () => {
+  const [managerClient, locationGate, locationSession, openRoute, styles] = await Promise.all([
+    read('app/field-manager/field-manager-overview-client.tsx'),
+    read('app/field-manager/field-manager-location-gate.tsx'),
+    read('lib/field-manager-location-session.ts'),
+    read('app/api/field-manager/assets/[assetId]/open/route.ts'),
+    read('app/field-manager/page.module.css'),
+  ]);
+
+  assert.match(managerClient, /setLocationGate\(\{/);
+  assert.match(managerClient, /<FieldManagerLocationGate/);
+  assert.doesNotMatch(managerClient, /window\.location\.assign\(payload\.redirectTo\)/);
+  assert.match(locationGate, /navigator\.geolocation\.getCurrentPosition/);
+  assert.match(locationGate, /maximumAge: 0/);
+  assert.match(locationGate, /Retry location/);
+  assert.match(locationGate, /saveFieldManagerServiceLocation/);
+  assert.match(locationGate, /window\.location\.assign\(redirectTo\)/);
+  assert.match(locationSession, /aim4price_qr_scan_session_v1:/);
+  assert.match(locationSession, /latitude: String\(input\.latitude\)/);
+  assert.match(openRoute, /publicAssetCode: asset\.publicAssetCode/);
+  assert.match(styles, /\.locationGateCardError/);
+  assert.match(styles, /\.locationGateStatusError/);
 });

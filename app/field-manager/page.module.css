@@ -2295,3 +2295,240 @@
 .overviewCardActionsHistory {
   grid-template-columns: minmax(0, 1fr);
 }
+
+
+/* Field Manager service location gate */
+.locationGatePage {
+  position: fixed;
+  inset: 0;
+  z-index: 2400;
+  display: grid;
+  place-items: center;
+  overflow-y: auto;
+  box-sizing: border-box;
+  background:
+    radial-gradient(circle at 50% 8%, rgba(53, 145, 108, 0.18), transparent 36%),
+    linear-gradient(180deg, #edf7f2 0%, #ffffff 72%);
+  padding:
+    max(24px, env(safe-area-inset-top))
+    max(18px, env(safe-area-inset-right))
+    max(24px, env(safe-area-inset-bottom))
+    max(18px, env(safe-area-inset-left));
+}
+
+.locationGateCard {
+  width: min(100%, 480px);
+  display: grid;
+  gap: 22px;
+  box-sizing: border-box;
+  border: 1px solid rgba(18, 53, 45, 0.13);
+  border-radius: 30px;
+  background: rgba(255, 255, 255, 0.96);
+  padding: clamp(24px, 7vw, 38px);
+  box-shadow: 0 28px 80px rgba(18, 53, 45, 0.18);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.locationGateCardError {
+  border-color: rgba(197, 54, 54, 0.42);
+  box-shadow: 0 28px 80px rgba(115, 34, 34, 0.18);
+}
+
+.locationGateIcon {
+  width: 76px;
+  height: 76px;
+  display: grid;
+  place-items: center;
+  border-radius: 24px;
+  background: linear-gradient(145deg, #e5f7ed, #f7fcf9);
+  color: #167455;
+  box-shadow: inset 0 0 0 1px rgba(22, 116, 85, 0.12);
+}
+
+.locationGateCardError .locationGateIcon {
+  background: linear-gradient(145deg, #fff0ef, #fff8f7);
+  color: #bd3030;
+  box-shadow: inset 0 0 0 1px rgba(189, 48, 48, 0.14);
+}
+
+.locationGateIcon svg {
+  width: 38px;
+  height: 38px;
+}
+
+.locationGateCopy {
+  display: grid;
+  gap: 8px;
+}
+
+.locationGateEyebrow {
+  margin: 0;
+  color: #1f765b;
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.11em;
+}
+
+.locationGateCopy h1 {
+  margin: 0;
+  color: #0e3f34;
+  font-size: clamp(2rem, 9vw, 2.7rem);
+  line-height: 1.02;
+  letter-spacing: -0.055em;
+}
+
+.locationGateCopy > p:last-child {
+  margin: 4px 0 0;
+  color: rgba(18, 53, 45, 0.7);
+  font-size: 0.96rem;
+  font-weight: 650;
+  line-height: 1.52;
+}
+
+.locationGateAsset {
+  margin: 2px 0 0;
+  color: #154f40;
+  font-size: 1.06rem;
+  font-weight: 850;
+  line-height: 1.3;
+}
+
+.locationGateStatus {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr);
+  gap: 13px;
+  align-items: start;
+  border: 1px solid transparent;
+  border-radius: 20px;
+  padding: 16px;
+}
+
+.locationGateStatus > span {
+  width: 12px;
+  height: 12px;
+  margin-top: 5px;
+  border-radius: 999px;
+  background: currentColor;
+  box-shadow: 0 0 0 5px currentColor;
+  opacity: 0.84;
+}
+
+.locationGateStatus div {
+  display: grid;
+  gap: 4px;
+}
+
+.locationGateStatus strong,
+.locationGateStatus p,
+.locationGateStatus small {
+  margin: 0;
+}
+
+.locationGateStatus strong {
+  color: #12352d;
+  font-size: 1rem;
+  line-height: 1.25;
+}
+
+.locationGateStatus p {
+  color: rgba(18, 53, 45, 0.72);
+  font-size: 0.88rem;
+  font-weight: 650;
+  line-height: 1.42;
+}
+
+.locationGateStatus small {
+  color: rgba(18, 53, 45, 0.62);
+  font-size: 0.76rem;
+  font-weight: 750;
+}
+
+.locationGateStatusChecking {
+  border-color: rgba(202, 135, 23, 0.26);
+  background: #fff8e8;
+  color: #d58a16;
+}
+
+.locationGateStatusReady {
+  border-color: rgba(31, 143, 106, 0.26);
+  background: #eaf8f1;
+  color: #1f8f6a;
+}
+
+.locationGateStatusError {
+  border-color: rgba(197, 54, 54, 0.26);
+  background: #fff0ef;
+  color: #c53636;
+}
+
+.locationGateActions {
+  display: grid;
+  gap: 10px;
+}
+
+.locationGatePrimary,
+.locationGateBack {
+  width: 100%;
+  min-height: 60px;
+  border-radius: 18px;
+  padding: 12px 18px;
+  font: inherit;
+  font-size: 0.98rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.locationGatePrimary {
+  border: 1px solid #b82e2e;
+  background: linear-gradient(135deg, #d44747, #b92c2c);
+  color: #ffffff;
+  box-shadow: 0 12px 26px rgba(185, 44, 44, 0.2);
+}
+
+.locationGatePrimary:disabled {
+  border-color: rgba(18, 53, 45, 0.13);
+  background: #edf2ef;
+  color: rgba(18, 53, 45, 0.58);
+  box-shadow: none;
+  cursor: wait;
+}
+
+.locationGateStatusReady + .locationGateActions .locationGatePrimary {
+  border-color: #1b7659;
+  background: linear-gradient(135deg, #22916e, #176c52);
+  color: #ffffff;
+}
+
+.locationGateBack {
+  border: 1px solid rgba(18, 53, 45, 0.14);
+  background: #ffffff;
+  color: #173d34;
+}
+
+.locationGatePrimary:focus-visible,
+.locationGateBack:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(31, 143, 106, 0.18);
+}
+
+@media (max-width: 390px) {
+  .locationGatePage {
+    place-items: start center;
+    padding-inline:
+      max(14px, env(safe-area-inset-right))
+      max(14px, env(safe-area-inset-left));
+  }
+
+  .locationGateCard {
+    gap: 18px;
+    border-radius: 25px;
+    padding: 22px 20px;
+  }
+
+  .locationGateIcon {
+    width: 66px;
+    height: 66px;
+    border-radius: 21px;
+  }
+}

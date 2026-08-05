@@ -1,23 +1,15 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import FieldManagerLocationGate from './field-manager-location-gate';
 import FieldManagerNavLink from './field-manager-nav-link';
 import OverviewClearConfirmation from './overview-clear-confirmation';
 import styles from './page.module.css';
 
 type OverviewRange = 'week' | 'upcoming';
-type NotificationView = 'active' | 'history';
 type OverviewItemType = 'problem' | 'service' | 'checkup' | 'license';
 type OverviewSection = 'needs_attention' | 'coming_up';
 type OverviewStatus = 'problem' | 'overdue' | 'due' | 'due_soon' | 'upcoming' | 'usage_needed';
-
-type OverviewSummary = {
-  totalCount: number;
-  needsAttentionCount: number;
-  comingUpCount: number;
-  activeCount: number;
-  historyCount: number;
-};
 
 type OverviewItem = {
   id: string;
@@ -41,15 +33,23 @@ type OverviewItem = {
 type OverviewApiResponse = {
   ok: boolean;
   range?: OverviewRange;
-  summary?: OverviewSummary;
   items?: OverviewItem[];
   error?: string;
 };
 
 type OpenAssetApiResponse = {
   ok: boolean;
+  assetId?: string;
+  publicAssetCode?: string;
   redirectTo?: string;
   error?: string;
+};
+
+type LocationGateRequest = {
+  assetTitle: string;
+  assetId: string;
+  publicAssetCode: string;
+  redirectTo: string;
 };
 
 const TYPE_LABELS: Record<OverviewItemType, string> = {
@@ -90,18 +90,26 @@ function statusText(item: OverviewItem): string {
 
 export default function FieldManagerOverviewClient() {
   const range: OverviewRange = 'upcoming';
-  const [activeView, setActiveView] = useState<NotificationView>('active');
   const [items, setItems] = useState<OverviewItem[]>([]);
-  const [viewCounts, setViewCounts] = useState({ active: 0, history: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [openingItemId, setOpeningItemId] = useState<string | null>(null);
   const [clearingItemId, setClearingItemId] = useState<string | null>(null);
   const [clearCandidate, setClearCandidate] = useState<OverviewItem | null>(null);
+  const [locationGate, setLocationGate] = useState<LocationGateRequest | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
   const requestIdRef = useRef(0);
   const hasLoadedRef = useRef(false);
+
+  const needsAttentionItems = useMemo(
+    () => items.filter((item) => item.section === 'needs_attention'),
+    [items],
+  );
+  const comingUpItems = useMemo(
+    () => items.filter((item) => item.section === 'coming_up'),
+    [items],
+  );
 
   useEffect(() => {
     const controller = new AbortController();
@@ -113,7 +121,7 @@ export default function FieldManagerOverviewClient() {
       setActionError(null);
 
       try {
-        const response = await fetch(`/api/field-manager/overview?range=${range}&view=${activeView}`, {
+        const response = await fetch(`/api/field-manager/overview?range=${range}`, {
           credentials: 'include',
           cache: 'no-store',
           signal: controller.signal,
@@ -126,21 +134,17 @@ export default function FieldManagerOverviewClient() {
         }
 
         if (!response.ok || !payload?.ok || !Array.isArray(payload.items)) {
-          throw new Error(extractError(payload, 'Failed to load your notifications.'));
+          throw new Error(extractError(payload, 'Failed to load your overview.'));
         }
 
         if (requestId === requestIdRef.current) {
           setItems(payload.items);
-          setViewCounts({
-            active: payload.summary?.activeCount ?? 0,
-            history: payload.summary?.historyCount ?? 0,
-          });
         }
       } catch (error) {
         if (controller.signal.aborted) return;
 
         if (requestId === requestIdRef.current) {
-          setLoadError(error instanceof Error ? error.message : 'Failed to load your notifications.');
+          setLoadError(error instanceof Error ? error.message : 'Failed to load your overview.');
         }
       } finally {
         if (!controller.signal.aborted && requestId === requestIdRef.current) {
@@ -152,7 +156,7 @@ export default function FieldManagerOverviewClient() {
 
     void loadOverview();
     return () => controller.abort();
-  }, [activeView, reloadToken]);
+  }, [reloadToken]);
 
   useEffect(() => {
     const refresh = () => setReloadToken((current) => current + 1);
@@ -196,29 +200,23 @@ export default function FieldManagerOverviewClient() {
         return;
       }
 
-      if (!response.ok || !payload?.ok || !payload.redirectTo) {
+      if (
+        !response.ok
+        || !payload?.ok
+        || !payload.redirectTo
+        || !payload.assetId
+        || !payload.publicAssetCode
+      ) {
         throw new Error(extractError(payload, 'This asset cannot be opened.'));
       }
 
-      if (activeView === 'active') {
-        const historyResponse = await fetch('/api/field-manager/overview/dismiss', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          cache: 'no-store',
-          body: JSON.stringify({
-            range,
-            itemId: item.id,
-            sourceId: item.sourceId,
-          }),
-        });
-        const historyPayload = (await historyResponse.json().catch(() => null)) as OverviewApiResponse | null;
-        if (!historyResponse.ok || !historyPayload?.ok) {
-          throw new Error(extractError(historyPayload, 'This notification could not be moved to History.'));
-        }
-      }
-
-      window.location.assign(payload.redirectTo);
+      setLocationGate({
+        assetTitle: item.assetTitle,
+        assetId: payload.assetId,
+        publicAssetCode: payload.publicAssetCode,
+        redirectTo: payload.redirectTo,
+      });
+      setOpeningItemId(null);
     } catch (error) {
       setActionError(error instanceof Error ? error.message : 'This asset cannot be opened.');
       setOpeningItemId(null);
@@ -255,10 +253,6 @@ export default function FieldManagerOverviewClient() {
       setItems((current) => current.filter(
         (candidate) => candidate.id !== item.id || candidate.sourceId !== item.sourceId,
       ));
-      setViewCounts((current) => ({
-        active: Math.max(0, current.active - 1),
-        history: current.history + 1,
-      }));
       setClearCandidate(null);
     } catch (error) {
       setActionError(error instanceof Error ? error.message : 'This item could not be cleared.');
@@ -291,19 +285,17 @@ export default function FieldManagerOverviewClient() {
         {item.detail.trim() ? <p className={styles.overviewDetail}>{item.detail}</p> : null}
         {item.notes.trim() ? <p className={styles.overviewNotes}>{item.notes}</p> : null}
 
-        <div className={`${styles.overviewCardActions} ${activeView === 'history' ? styles.overviewCardActionsHistory : ''}`}>
-          {activeView === 'active' ? (
-            <button
-              type="button"
-              className={styles.overviewClearButton}
-              onClick={() => setClearCandidate(item)}
-              disabled={hasPendingCardAction}
-              aria-busy={isClearing}
-              aria-label={`Clear ${TYPE_LABELS[item.type].toLowerCase()} for ${item.assetTitle} from your notifications`}
-            >
-              {isClearing ? 'Clearing…' : 'Clear'}
-            </button>
-          ) : null}
+        <div className={styles.overviewCardActions}>
+          <button
+            type="button"
+            className={styles.overviewClearButton}
+            onClick={() => setClearCandidate(item)}
+            disabled={hasPendingCardAction}
+            aria-busy={isClearing}
+            aria-label={`Clear ${TYPE_LABELS[item.type].toLowerCase()} for ${item.assetTitle} from Overview`}
+          >
+            {isClearing ? 'Clearing…' : 'Clear'}
+          </button>
           <button
             type="button"
             className={`${styles.mobilePrimaryButton} ${styles.overviewOpenButton}`}
@@ -311,7 +303,7 @@ export default function FieldManagerOverviewClient() {
             disabled={hasPendingCardAction || !item.openAsset}
             aria-busy={isOpening}
           >
-            {isOpening ? 'Opening…' : 'Open'}
+            {isOpening ? 'Preparing…' : 'Open'}
           </button>
         </div>
       </article>
@@ -321,32 +313,14 @@ export default function FieldManagerOverviewClient() {
   return (
     <main className={`${styles.mobilePage} ${styles.overviewPage}`}>
       <section className={`${styles.assetsShell} ${styles.overviewShell}`}>
-        <header className={styles.assetsHeader} aria-label="Notification controls">
+        <header className={styles.assetsHeader} aria-label="Overview controls">
           <FieldManagerNavLink href="/field-manager" label="Home" />
         </header>
 
         <div className={styles.overviewIntro}>
-          <h1>Notifications</h1>
-          <p>Active updates and notification history.</p>
+          <h1>Overview</h1>
+          <p>Needs attention and upcoming maintenance.</p>
         </div>
-
-        <section className={styles.overviewWorkspace} aria-label="Notification controls">
-          <div className={styles.overviewTabs} role="tablist" aria-label="Notification sections">
-            {(['active', 'history'] as NotificationView[]).map((view) => (
-              <button
-                key={view}
-                type="button"
-                role="tab"
-                aria-selected={activeView === view}
-                className={activeView === view ? styles.overviewTabActive : ''}
-                onClick={() => setActiveView(view)}
-              >
-                <span>{view === 'active' ? 'Active' : 'History'}</span>
-                <strong>{viewCounts[view]}</strong>
-              </button>
-            ))}
-          </div>
-        </section>
 
         {loadError ? (
           <div className={`${styles.errorNotice} ${styles.overviewError}`} role="alert">
@@ -365,26 +339,38 @@ export default function FieldManagerOverviewClient() {
 
         {isLoading ? (
           <p className={styles.mobileEmpty} role="status">
-            Loading your notifications…
+            Loading your overview…
           </p>
         ) : null}
 
         {!isLoading && !loadError ? (
-          <section className={styles.overviewSection} aria-labelledby="notification-view-title" aria-live="polite">
-            <div className={styles.overviewSectionHeading}>
-              <h2 id="notification-view-title">{activeView === 'active' ? 'Active' : 'History'}</h2>
-              <span aria-label={`${items.length} items`}>{items.length}</span>
-            </div>
-            {items.length ? (
-              <div className={styles.overviewList}>{items.map(renderOverviewCard)}</div>
-            ) : (
-              <p className={styles.overviewEmpty}>
-                {activeView === 'active'
-                  ? 'You’re all caught up. Active notifications will appear here.'
-                  : 'Opened and cleared notifications will appear here.'}
-              </p>
-            )}
-          </section>
+          <div className={styles.overviewSections} aria-live="polite">
+            <section className={styles.overviewSection} aria-labelledby="needs-attention-title">
+              <div className={styles.overviewSectionHeading}>
+                <h2 id="needs-attention-title">Needs attention</h2>
+                <span aria-label={`${needsAttentionItems.length} items`}>
+                  {needsAttentionItems.length}
+                </span>
+              </div>
+              {needsAttentionItems.length ? (
+                <div className={styles.overviewList}>{needsAttentionItems.map(renderOverviewCard)}</div>
+              ) : (
+                <p className={styles.overviewEmpty}>Nothing needs attention.</p>
+              )}
+            </section>
+
+            <section className={styles.overviewSection} aria-labelledby="upcoming-title">
+              <div className={styles.overviewSectionHeading}>
+                <h2 id="upcoming-title">Upcoming</h2>
+                <span aria-label={`${comingUpItems.length} items`}>{comingUpItems.length}</span>
+              </div>
+              {comingUpItems.length ? (
+                <div className={styles.overviewList}>{comingUpItems.map(renderOverviewCard)}</div>
+              ) : (
+                <p className={styles.overviewEmpty}>Nothing upcoming.</p>
+              )}
+            </section>
+          </div>
         ) : null}
 
         {clearCandidate ? (
@@ -394,6 +380,13 @@ export default function FieldManagerOverviewClient() {
             isClearing={clearingItemId === clearCandidate.id}
             onCancel={() => setClearCandidate(null)}
             onConfirm={() => void handleClearItem(clearCandidate)}
+          />
+        ) : null}
+
+        {locationGate ? (
+          <FieldManagerLocationGate
+            {...locationGate}
+            onCancel={() => setLocationGate(null)}
           />
         ) : null}
       </section>
