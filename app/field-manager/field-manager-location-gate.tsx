@@ -118,8 +118,7 @@ export default function FieldManagerLocationGate({
             </svg>
           </div>
           <div className={styles.locationGateCopy}>
-            <p className={styles.locationGateEyebrow}>Location required</p>
-            <h2 id="location-gate-title">Ready to start service?</h2>
+            <h2 id="location-gate-title">Location required</h2>
           </div>
         </div>
 
@@ -166,7 +165,7 @@ export default function FieldManagerLocationGate({
             disabled={locationState !== 'error'}
           >
             {locationState === 'error'
-              ? 'Retry location'
+              ? 'Retry'
               : locationState === 'ready'
                 ? 'Opening service…'
                 : 'Getting location…'}
