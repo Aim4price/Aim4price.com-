@@ -131,3 +131,32 @@ test('Dealer page requests deduplicate auth work and load independent data toget
   assert.match(leadsPageSource, /const \[profile, initialLeads\] = await Promise\.all/);
   assert.match(trackingPageSource, /const \[profile, assets\] = await Promise\.all/);
 });
+
+
+test('Dealer App Leads keeps every mobile action clear and reachable', () => {
+  const page = read('app/dealer/leads/page.tsx');
+  const source = read('app/leads/leads-client.tsx');
+  const styles = read('app/leads/page.module.css');
+  const dealerStyles = read('app/dealer/dealer.module.css');
+  const correctionSource = read('components/DealerAssetCorrectionEditor.tsx');
+  const correctionStyles = read('components/DealerAssetCorrectionEditor.module.css');
+
+  assert.match(page, /styles\.leadsModule/);
+  assert.match(dealerStyles, /\.leadsModule\.leadsModule \{[\s\S]*?padding-top: 0/);
+  assert.match(source, /'LEADS SYSTEM'/);
+  assert.doesNotMatch(source, /LEAD MANAGEMENT SYSTEM/);
+  assert.match(source, /nativeSelect=\{dealerAppMode\}/);
+  assert.match(source, /className=\{styles\.leadFilterNativeSelect\}/);
+  assert.match(source, />\s*Reset\s*</);
+  assert.match(source, />\s*Apply\s*</);
+  assert.doesNotMatch(source, /Reset filters|Apply filters/);
+  assert.match(styles, /\.dealerAppLeads \.leadSummaryFilterButton \{[\s\S]*?text-align: center/);
+  assert.match(styles, /\.trackingLeadActionsSingle\.trackingLeadActionsClosed \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/);
+  assert.match(styles, /\.leadNoteBody textarea:focus \{[\s\S]*?min-height: 12rem/);
+  assert.match(source, /styles\.leadManageOverlay/);
+  assert.match(source, /styles\.leadManageScrollBody/);
+  assert.match(styles, /\.leadManageScrollBody \{[\s\S]*?overflow-y: auto/);
+  assert.doesNotMatch(source, /leadEmailRecipientIcon/);
+  assert.doesNotMatch(correctionSource, /modalIconShell|modalKicker/);
+  assert.match(correctionStyles, /text-only[\s\S]*?\.modalTitleGroup \{[\s\S]*?display: block/);
+});
