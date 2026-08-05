@@ -1,0 +1,45 @@
+name: Notification validation
+
+on:
+  pull_request:
+    paths:
+      - 'app/api/notifications/**'
+      - 'app/api/owner-app/notifications/**'
+      - 'app/owner-app/notifications/**'
+      - 'app/owner-app/owner-notifications-link.tsx'
+      - 'app/dealer/notifications/**'
+      - 'components/AppHeader.tsx'
+      - 'components/AppHeader.module.css'
+      - 'lib/notification-inbox.ts'
+      - 'lib/notifications.ts'
+      - 'database/migrations/67-notification-inbox.sql'
+      - 'tests/notification-inbox.test.mjs'
+      - 'package.json'
+      - 'package-lock.json'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Test notification inbox
+        run: npm run test:notifications

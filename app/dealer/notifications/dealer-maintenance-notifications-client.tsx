@@ -8,17 +8,6 @@ import styles from '../../owner-app/owner-app.module.css';
 function formatNotificationTime(value: string): string {
   const time = Date.parse(value);
   if (!Number.isFinite(time)) return '';
-
-  const difference = Date.now() - time;
-  const minute = 60 * 1000;
-  const hour = 60 * minute;
-  const day = 24 * hour;
-
-  if (difference < minute) return 'Just now';
-  if (difference < hour) return `${Math.max(1, Math.round(difference / minute))} min ago`;
-  if (difference < day) return `${Math.max(1, Math.round(difference / hour))} hr ago`;
-  if (difference < 7 * day) return `${Math.max(1, Math.round(difference / day))} days ago`;
-
   return new Intl.DateTimeFormat('en-ZA', {
     day: '2-digit',
     month: 'short',
@@ -33,9 +22,7 @@ async function markNotificationsChecked(): Promise<void> {
     method: 'POST',
     credentials: 'include',
   });
-  if (!response.ok) {
-    throw new Error('Could not mark notifications checked.');
-  }
+  if (!response.ok) throw new Error('Could not mark notifications checked.');
 }
 
 export default function DealerMaintenanceNotificationsClient({
@@ -44,14 +31,27 @@ export default function DealerMaintenanceNotificationsClient({
   notifications: DealerMaintenanceNotification[];
 }) {
   const [items, setItems] = useState<DealerMaintenanceNotification[]>(notifications);
+  const [activeView, setActiveView] = useState<'new' | 'history'>(
+    notifications.some((notification) => !notification.isRead) ? 'new' : 'history',
+  );
+  const [searchQuery, setSearchQuery] = useState('');
   const [marking, setMarking] = useState(false);
   const [error, setError] = useState('');
 
-  const newItems = useMemo(
-    () => items.filter((notification) => !notification.isRead),
-    [items],
-  );
-  const newCountLabel = `${newItems.length} new notification${newItems.length === 1 ? '' : 's'}`;
+  const newItems = useMemo(() => items.filter((notification) => !notification.isRead), [items]);
+  const historyItems = useMemo(() => items.filter((notification) => notification.isRead), [items]);
+  const visibleItems = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    const source = query ? items : activeView === 'new' ? newItems : historyItems;
+    if (!query) return source;
+
+    return source.filter((notification) => (
+      [notification.title, notification.body, notification.status]
+        .join(' ')
+        .toLowerCase()
+        .includes(query)
+    ));
+  }, [activeView, historyItems, items, newItems, searchQuery]);
 
   async function handleMarkChecked() {
     if (!newItems.length || marking) return;
@@ -61,6 +61,7 @@ export default function DealerMaintenanceNotificationsClient({
     try {
       await markNotificationsChecked();
       setItems((current) => current.map((notification) => ({ ...notification, isRead: true })));
+      setActiveView('history');
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Could not mark notifications checked.');
     } finally {
@@ -68,8 +69,9 @@ export default function DealerMaintenanceNotificationsClient({
     }
   }
 
-  function handleNotificationOpen() {
-    setItems((current) => current.map((notification) => ({ ...notification, isRead: true })));
+  function handleNotificationOpen(notification: DealerMaintenanceNotification) {
+    if (notification.isRead) return;
+    setItems((current) => current.map((item) => ({ ...item, isRead: true })));
     void markNotificationsChecked().catch(() => undefined);
   }
 
@@ -78,49 +80,105 @@ export default function DealerMaintenanceNotificationsClient({
       <section className={styles.notificationIntro}>
         <div className={styles.ownerPageIntro}>
           <h1 className={styles.ownerPageTitle}>Notifications</h1>
-          <p className={styles.ownerPageSubtitle}>View all new messages.</p>
+          <p className={styles.ownerPageSubtitle}>Maintenance alerts and checked history.</p>
         </div>
-        <button
-          type="button"
-          className={`${styles.markCheckedButton} ${newItems.length ? styles.markCheckedButtonNew : ''}`}
-          onClick={() => void handleMarkChecked()}
-          disabled={marking || newItems.length === 0}
-          aria-label={newItems.length ? `Mark all ${newCountLabel} checked` : 'All notifications checked'}
-        >
-          <span aria-hidden="true">✓</span>
-          {marking ? 'Marking…' : newItems.length ? 'Mark checked' : 'All checked'}
-        </button>
+      </section>
+
+      <section className={styles.notificationWorkspace} aria-label="Notification controls">
+        <label className={styles.notificationSearch}>
+          <span className="sr-only">Search maintenance notifications</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="11" cy="11" r="6.5" />
+            <path d="m16 16 4 4" />
+          </svg>
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Search assets or maintenance alerts…"
+          />
+          {searchQuery ? (
+            <button type="button" onClick={() => setSearchQuery('')} aria-label="Clear notification search">×</button>
+          ) : null}
+        </label>
+
+        <div className={`${styles.notificationTabs} ${styles.notificationTabsTwo}`} role="tablist" aria-label="Notification sections">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={!searchQuery && activeView === 'new'}
+            className={!searchQuery && activeView === 'new' ? styles.notificationTabActive : ''}
+            onClick={() => {
+              setSearchQuery('');
+              setActiveView('new');
+            }}
+          >
+            <span>New</span>
+            <strong>{newItems.length}</strong>
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={!searchQuery && activeView === 'history'}
+            className={!searchQuery && activeView === 'history' ? styles.notificationTabActive : ''}
+            onClick={() => {
+              setSearchQuery('');
+              setActiveView('history');
+            }}
+          >
+            <span>History</span>
+            <strong>{historyItems.length}</strong>
+          </button>
+        </div>
+
+        <div className={styles.notificationBulkActions}>
+          <p>Checked maintenance alerts remain searchable in History.</p>
+          {!searchQuery && activeView === 'new' ? (
+            <div>
+              <button
+                type="button"
+                onClick={() => void handleMarkChecked()}
+                disabled={marking || newItems.length === 0}
+              >
+                {marking ? 'Marking…' : 'Mark checked'}
+              </button>
+            </div>
+          ) : null}
+        </div>
       </section>
 
       {error ? (
         <div className={`${styles.errorNotice} ${styles.notificationError}`} role="alert">
           <span>{error}</span>
-          <button type="button" onClick={() => void handleMarkChecked()}>
-            Try again
-          </button>
+          <button type="button" onClick={() => void handleMarkChecked()}>Try again</button>
         </div>
       ) : null}
 
-      <section className={styles.notificationSection} aria-labelledby="dealer-new-notifications-title">
+      <section className={styles.notificationSection} aria-labelledby="dealer-notifications-title">
         <div className={`${styles.notificationSectionHeading} ${styles.ownerSectionHeading}`}>
-          <h2 id="dealer-new-notifications-title">New</h2>
-          <span aria-label={newCountLabel}>{newItems.length}</span>
+          <h2 id="dealer-notifications-title">
+            {searchQuery ? 'Search results' : activeView === 'new' ? 'New' : 'History'}
+          </h2>
+          <span aria-label={`${visibleItems.length} notifications`}>{visibleItems.length}</span>
         </div>
 
-        {newItems.length ? (
+        {visibleItems.length ? (
           <div className={styles.notificationList} aria-live="polite">
-            {newItems.map((notification) => (
+            {visibleItems.map((notification) => (
               <Link
                 key={notification.id}
                 href={`/dealer/maintenance/${encodeURIComponent(notification.accessId)}`}
-                className={`${styles.notificationCard} ${styles.notificationCardNew}`}
+                className={[
+                  styles.notificationCard,
+                  notification.isRead ? styles.notificationCardHistory : styles.notificationCardNew,
+                ].join(' ')}
                 prefetch={false}
-                onClick={handleNotificationOpen}
+                onClick={() => handleNotificationOpen(notification)}
               >
                 <div className={styles.notificationCardLabels}>
                   <span className={styles.notificationKind}>
                     <i className={styles.notificationDot} aria-hidden="true" />
-                    New
+                    {notification.isRead ? 'Checked' : 'New'}
                   </span>
                   <time dateTime={notification.createdAtIso}>
                     {formatNotificationTime(notification.createdAtIso)}
@@ -133,7 +191,11 @@ export default function DealerMaintenanceNotificationsClient({
           </div>
         ) : (
           <p className={styles.notificationEmpty} aria-live="polite">
-            You’re all caught up. New notifications will appear here.
+            {searchQuery
+              ? 'No maintenance notifications match your search.'
+              : activeView === 'new'
+                ? 'You’re all caught up. New notifications will appear here.'
+                : 'Checked maintenance notifications will appear here.'}
           </p>
         )}
       </section>

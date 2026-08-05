@@ -3469,3 +3469,110 @@
     overflow-x: visible;
   }
 }
+
+
+/* Persistent notification inbox */
+.notificationInboxControls {
+  display: grid;
+  gap: 10px;
+  border-bottom: 1px solid rgba(18, 53, 45, 0.09);
+  padding: 12px 16px;
+  background: rgba(247, 251, 249, 0.86);
+}
+
+.notificationSearchBox {
+  min-height: 44px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid rgba(18, 53, 45, 0.14);
+  border-radius: 14px;
+  background: #fff;
+  padding: 0 11px;
+  color: rgba(18, 53, 45, 0.55);
+}
+
+.notificationSearchBox:focus-within {
+  border-color: rgba(35, 104, 81, 0.4);
+  box-shadow: 0 0 0 3px rgba(35, 104, 81, 0.08);
+}
+
+.notificationSearchBox svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+
+.notificationSearchBox input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #12352d;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.notificationSearchBox input::placeholder { color: rgba(18, 53, 45, 0.46); }
+
+.notificationSearchBox button {
+  width: 29px;
+  height: 29px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 9px;
+  background: rgba(18, 53, 45, 0.07);
+  color: #12352d;
+  font: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.notificationViewTabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.notificationViewTabs button {
+  min-height: 39px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid rgba(18, 53, 45, 0.12);
+  border-radius: 12px;
+  background: #fff;
+  color: rgba(18, 53, 45, 0.66);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.notificationViewTabs button span {
+  min-width: 21px;
+  min-height: 21px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(18, 53, 45, 0.08);
+  font-size: 0.65rem;
+}
+
+.notificationViewTabs .notificationViewTabActive {
+  border-color: #176f51;
+  background: #e3f4eb;
+  color: #12553e;
+}
+
+.notificationViewTabs .notificationViewTabActive span {
+  background: rgba(23, 111, 81, 0.13);
+}
