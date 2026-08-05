@@ -2681,3 +2681,12 @@
     radial-gradient(circle at 50% 4%, rgba(111, 197, 150, 0.13), transparent 31rem),
     linear-gradient(180deg, #f6faf7 0%, #ffffff 42%, #f4f8f6 100%);
 }
+
+
+/* Keep the Dealer Leads navigation visually continuous with the page surface. */
+.navLeadsSurface.navLeadsSurface {
+  border-bottom-color: transparent;
+  background: rgba(246, 250, 247, 0.98);
+  box-shadow: none;
+  backdrop-filter: blur(16px) saturate(1.04);
+}
