@@ -564,7 +564,7 @@ export default function OwnerNotificationsClient({ viewerId: _viewerId }: { view
         <section className={styles.notificationIntro}>
           <div className={styles.ownerPageIntro}>
             <h1 className={styles.ownerPageTitle}>Notifications</h1>
-            <p className={styles.ownerPageSubtitle}>New activity, important actions and notification history.</p>
+            <p className={styles.ownerPageSubtitle}>Active notifications and searchable history.</p>
           </div>
         </section>
 
