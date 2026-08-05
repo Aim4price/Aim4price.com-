@@ -2673,6 +2673,27 @@
 
 .notificationTabsTwo { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
+.notificationTabsOwner {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.notificationTabsOwner button {
+  min-height: 72px;
+  flex-direction: column;
+  gap: 7px;
+  border-radius: 17px;
+  padding: 10px 12px;
+  text-align: center;
+  font-size: 0.88rem;
+}
+
+.notificationTabsOwner button strong {
+  min-width: 30px;
+  min-height: 30px;
+  font-size: 0.78rem;
+}
+
 /* App notification page refinement */
 .notificationContent {
   width: min(calc(100% - var(--owner-page-gutter)), 640px);

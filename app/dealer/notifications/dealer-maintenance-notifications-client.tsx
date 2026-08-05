@@ -34,24 +34,15 @@ export default function DealerMaintenanceNotificationsClient({
   const [activeView, setActiveView] = useState<'active' | 'history'>(
     notifications.some((notification) => !notification.isRead) ? 'active' : 'history',
   );
-  const [searchQuery, setSearchQuery] = useState('');
   const [marking, setMarking] = useState(false);
   const [error, setError] = useState('');
 
   const newItems = useMemo(() => items.filter((notification) => !notification.isRead), [items]);
   const historyItems = useMemo(() => items.filter((notification) => notification.isRead), [items]);
-  const visibleItems = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase();
-    const source = query ? items : activeView === 'active' ? newItems : historyItems;
-    if (!query) return source;
-
-    return source.filter((notification) => (
-      [notification.title, notification.body, notification.status]
-        .join(' ')
-        .toLowerCase()
-        .includes(query)
-    ));
-  }, [activeView, historyItems, items, newItems, searchQuery]);
+  const visibleItems = useMemo(
+    () => activeView === 'active' ? newItems : historyItems,
+    [activeView, historyItems, newItems],
+  );
 
   async function handleMarkChecked() {
     if (!newItems.length || marking) return;
@@ -85,33 +76,13 @@ export default function DealerMaintenanceNotificationsClient({
       </section>
 
       <section className={styles.notificationWorkspace} aria-label="Notification controls">
-        <label className={styles.notificationSearch}>
-          <span className="sr-only">Search maintenance notifications</span>
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="11" cy="11" r="6.5" />
-            <path d="m16 16 4 4" />
-          </svg>
-          <input
-            type="search"
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder="Search"
-          />
-          {searchQuery ? (
-            <button type="button" onClick={() => setSearchQuery('')} aria-label="Clear notification search">×</button>
-          ) : null}
-        </label>
-
         <div className={`${styles.notificationTabs} ${styles.notificationTabsTwo}`} role="tablist" aria-label="Notification sections">
           <button
             type="button"
             role="tab"
-            aria-selected={!searchQuery && activeView === 'active'}
-            className={!searchQuery && activeView === 'active' ? styles.notificationTabActive : ''}
-            onClick={() => {
-              setSearchQuery('');
-              setActiveView('active');
-            }}
+            aria-selected={activeView === 'active'}
+            className={activeView === 'active' ? styles.notificationTabActive : ''}
+            onClick={() => setActiveView('active')}
           >
             <span>Active</span>
             <strong>{newItems.length}</strong>
@@ -119,12 +90,9 @@ export default function DealerMaintenanceNotificationsClient({
           <button
             type="button"
             role="tab"
-            aria-selected={!searchQuery && activeView === 'history'}
-            className={!searchQuery && activeView === 'history' ? styles.notificationTabActive : ''}
-            onClick={() => {
-              setSearchQuery('');
-              setActiveView('history');
-            }}
+            aria-selected={activeView === 'history'}
+            className={activeView === 'history' ? styles.notificationTabActive : ''}
+            onClick={() => setActiveView('history')}
           >
             <span>History</span>
             <strong>{historyItems.length}</strong>
@@ -132,8 +100,8 @@ export default function DealerMaintenanceNotificationsClient({
         </div>
 
         <div className={styles.notificationBulkActions}>
-          <p>Checked maintenance alerts remain searchable in History.</p>
-          {!searchQuery && activeView === 'active' && newItems.length > 0 ? (
+          <p>Checked maintenance alerts remain in History.</p>
+          {activeView === 'active' && newItems.length > 0 ? (
             <div>
               <button
                 type="button"
@@ -157,7 +125,7 @@ export default function DealerMaintenanceNotificationsClient({
       <section className={styles.notificationSection} aria-labelledby="dealer-notifications-title">
         <div className={`${styles.notificationSectionHeading} ${styles.ownerSectionHeading}`}>
           <h2 id="dealer-notifications-title">
-            {searchQuery ? 'Search results' : activeView === 'active' ? 'Active' : 'History'}
+            {activeView === 'active' ? 'Active' : 'History'}
           </h2>
           <span aria-label={`${visibleItems.length} notifications`}>{visibleItems.length}</span>
         </div>
@@ -191,11 +159,9 @@ export default function DealerMaintenanceNotificationsClient({
           </div>
         ) : (
           <p className={styles.notificationEmpty} aria-live="polite">
-            {searchQuery
-              ? 'No maintenance notifications match your search.'
-              : activeView === 'active'
-                ? 'You’re all caught up. Active notifications will appear here.'
-                : 'Checked maintenance notifications will appear here.'}
+            {activeView === 'active'
+              ? 'You’re all caught up. Active notifications will appear here.'
+              : 'Checked maintenance notifications will appear here.'}
           </p>
         )}
       </section>
