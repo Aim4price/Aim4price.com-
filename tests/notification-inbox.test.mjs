@@ -53,3 +53,14 @@ test('notification surfaces separate active work and searchable history', async 
   assert.match(dealerClient, /Search assets or maintenance alerts/);
   assert.match(ownerLink, /needsActionCount/);
 });
+
+test('notification modal keeps status, list and pagination in separate responsive rows', async () => {
+  const styles = await read('components/AppHeader.module.css');
+
+  assert.match(styles, /Notification modal spacing and alignment refinement/);
+  assert.match(styles, /grid-template-rows: auto auto auto minmax\(0, 1fr\) auto/);
+  assert.match(styles, /\.notificationInboxControls \{[\s\S]*?border-radius: 1\.35rem/);
+  assert.match(styles, /\.notificationMetaRow \{[\s\S]*?border-top: 1px solid/);
+  assert.match(styles, /@media \(max-width: 720px\) \{[\s\S]*?\.notificationListHeader \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/);
+});
+
