@@ -4676,3 +4676,192 @@
     min-height: 10rem !important;
   }
 }
+
+
+/* === Dealer App Leads narrow-screen follow-up === */
+.dealerAppLeads .leadsTitlePanel {
+  width: 100%;
+  display: grid !important;
+  place-items: center !important;
+  text-align: center !important;
+}
+
+.dealerAppLeads .leadsTitlePanel h1 {
+  width: 100%;
+  margin-inline: auto !important;
+  text-align: center !important;
+}
+
+.dealerAppLeads .leadNoteOverlay {
+  align-items: center !important;
+  overflow: hidden !important;
+  padding:
+    max(0.5rem, env(safe-area-inset-top))
+    max(0.5rem, env(safe-area-inset-right))
+    max(0.5rem, env(safe-area-inset-bottom))
+    max(0.5rem, env(safe-area-inset-left)) !important;
+}
+
+.dealerAppLeads .leadNoteModal.leadNoteModal {
+  width: min(56rem, calc(100vw - 1rem)) !important;
+  height: min(48rem, calc(100dvh - 1rem - env(safe-area-inset-top) - env(safe-area-inset-bottom))) !important;
+  max-height: calc(100dvh - 1rem - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  margin: auto !important;
+  overflow: hidden !important;
+}
+
+.dealerAppLeads .leadNoteBody.leadNoteBody {
+  min-height: 0;
+  grid-auto-rows: max-content;
+  align-content: start;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: #2b8a63 #eef5f0;
+}
+
+.dealerAppLeads .leadNoteBody > * {
+  min-width: 0;
+  flex: none;
+}
+
+.dealerAppLeads .leadNoteBody::-webkit-scrollbar {
+  width: 0.58rem;
+}
+
+.dealerAppLeads .leadNoteBody::-webkit-scrollbar-track {
+  background: #eef5f0;
+}
+
+.dealerAppLeads .leadNoteBody::-webkit-scrollbar-thumb {
+  border: 2px solid #eef5f0;
+  border-radius: 999px;
+  background: #2b8a63;
+}
+
+.dealerAppLeads .leadManageModal.leadManageModal {
+  width: min(68rem, calc(100vw - 1rem)) !important;
+  max-width: 68rem !important;
+  height: min(52rem, calc(100dvh - 1rem - env(safe-area-inset-top) - env(safe-area-inset-bottom))) !important;
+  max-height: calc(100dvh - 1rem - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
+}
+
+.dealerAppLeads .leadManageModal [class*='optionsModalHeader'] {
+  min-height: 0 !important;
+  padding: 1.3rem 5rem 1.15rem 1.4rem !important;
+}
+
+.dealerAppLeads .leadManageModal [class*='modalHeaderText'] {
+  min-width: 0;
+}
+
+.dealerAppLeads .leadManageModal [class*='modalHeaderText'] h3 {
+  max-width: 100%;
+  margin: 0 !important;
+  font-size: clamp(1.65rem, 4vw, 2.25rem) !important;
+  line-height: 1.08 !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+}
+
+.dealerAppLeads .leadManageScrollBody {
+  padding: 1.1rem !important;
+}
+
+.dealerAppLeads .leadManageModal .manageOptionsGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 1rem !important;
+}
+
+.dealerAppLeads .leadManageModal .manageOptionsGrid > button {
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 7rem !important;
+  box-sizing: border-box;
+  padding: 1.1rem !important;
+}
+
+.dealerAppLeads .leadManageModal .manageOptionsGrid > button > span {
+  min-width: 0;
+}
+
+.dealerAppLeads .leadManageModal .manageOptionsGrid > button strong,
+.dealerAppLeads .leadManageModal .manageOptionsGrid > button small {
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 760px) {
+  .dealerAppLeads .leadManageOverlay {
+    padding:
+      max(0.35rem, env(safe-area-inset-top))
+      max(0.35rem, env(safe-area-inset-right))
+      max(0.35rem, env(safe-area-inset-bottom))
+      max(0.35rem, env(safe-area-inset-left)) !important;
+  }
+
+  .dealerAppLeads .leadManageModal.leadManageModal {
+    width: calc(100vw - 0.7rem) !important;
+    height: calc(100dvh - 0.7rem - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
+    max-height: calc(100dvh - 0.7rem - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
+  }
+
+  .dealerAppLeads .leadManageModal [class*='optionsModalHeader'] {
+    padding: 1.1rem 4.3rem 1rem 1.1rem !important;
+  }
+
+  .dealerAppLeads .leadManageScrollBody {
+    padding: 0.9rem !important;
+  }
+
+  .dealerAppLeads .leadManageModal .manageOptionsGrid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 0.9rem !important;
+  }
+
+  .dealerAppLeads .leadManageModal .manageOptionsGrid > button {
+    min-height: 7rem !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .dealerAppLeads .clientActionRow,
+  .dealerAppLeads .trackingLeadActions,
+  .dealerAppLeads .trackingLeadActionsClosed,
+  .dealerAppLeads .trackingLeadActionsOpen,
+  .dealerAppLeads .trackingLeadActionsSingle.trackingLeadActionsClosed,
+  .dealerAppLeads .trackingLeadActionsSingle.trackingLeadActionsOpen {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .dealerAppLeads .trackingLeadActions > button {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+  }
+
+  .dealerAppLeads .leadNoteModal.leadNoteModal {
+    width: calc(100vw - 0.7rem) !important;
+    height: calc(100dvh - 0.7rem - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
+    max-height: calc(100dvh - 0.7rem - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
+  }
+
+  .dealerAppLeads .leadNoteHeader.leadNoteHeader {
+    padding: 1rem 4rem 0.9rem 1rem !important;
+  }
+
+  .dealerAppLeads .leadNoteBody.leadNoteBody {
+    padding: 1rem 0.85rem !important;
+  }
+
+  .dealerAppLeads .leadNoteActions.leadNoteActions {
+    padding: 0.8rem 0.85rem max(0.85rem, env(safe-area-inset-bottom)) !important;
+  }
+}
