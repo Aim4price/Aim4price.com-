@@ -2390,7 +2390,7 @@
   left: auto;
   width: min(calc(100% - 24px), 560px);
   height: auto;
-  min-height: calc(58px + env(safe-area-inset-top));
+  min-height: calc(74px + env(safe-area-inset-top));
   align-items: center;
   justify-content: flex-start;
   gap: 8px;
@@ -2605,7 +2605,7 @@
 
   .homeShell.homeShell {
     min-height: 100dvh;
-    padding-top: calc(66px + env(safe-area-inset-top));
+    padding-top: calc(82px + env(safe-area-inset-top));
     padding-right: max(24px, env(safe-area-inset-right));
     padding-left: max(24px, env(safe-area-inset-left));
   }
