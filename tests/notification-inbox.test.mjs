@@ -64,3 +64,18 @@ test('notification modal keeps status, list and pagination in separate responsiv
   assert.match(styles, /@media \(max-width: 720px\) \{[\s\S]*?\.notificationListHeader \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/);
 });
 
+test('opening one active notification moves only that item to history', async () => {
+  const [header, inbox] = await Promise.all([
+    read('components/AppHeader.tsx'),
+    read('lib/notification-inbox.ts'),
+  ]);
+
+  assert.match(header, /function markNotificationOpened\(notificationId: string\)/);
+  assert.match(header, /notificationIds: \[notificationId\]/);
+  assert.match(header, /item\.id === notificationId[\s\S]*?state: 'history'/);
+  assert.match(header, /notification\.actionRequired && !notification\.resolvedAtIso/);
+  assert.match(header, /handleOpenAssetDiscoveryNotification\([\s\S]*?markNotificationOpened\(notificationId\)/);
+  assert.match(header, /handleNotificationLinkClick\(notification\.id\)/);
+  assert.match(inbox, /current && !readAtIso && !archivedAtIso[\s\S]*?row\.action_required && !resolvedAtIso/);
+});
+
