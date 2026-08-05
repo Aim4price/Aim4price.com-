@@ -307,7 +307,7 @@ export default function FieldManagerOverviewClient() {
         {item.detail.trim() ? <p className={styles.overviewDetail}>{item.detail}</p> : null}
         {item.notes.trim() ? <p className={styles.overviewNotes}>{item.notes}</p> : null}
 
-        <div className={styles.overviewCardActions}>
+        <div className={`${styles.overviewCardActions} ${activeView === 'history' ? styles.overviewCardActionsHistory : ''}`}>
           {activeView === 'active' ? (
             <button
               type="button"
