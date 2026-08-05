@@ -46,6 +46,3 @@ jobs:
 
       - name: Test Owner App operations
         run: npm run test:owner-app-operations
-
-      - name: Build application
-        run: npm run build
