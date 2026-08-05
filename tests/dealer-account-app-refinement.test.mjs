@@ -46,6 +46,25 @@ test('Dealer App top controls follow the Owner App back, home and sign-out flow'
   assert.match(styles, /@media \(min-width: 600px\)[\s\S]*?\.homeLauncher \{[\s\S]*?grid-template-columns: repeat\(2/);
 });
 
+test('Dealer App notifications reuse the Owner App notification experience', () => {
+  const page = read('app/dealer/notifications/page.tsx');
+  const source = read('app/dealer/notifications/dealer-maintenance-notifications-client.tsx');
+  const styles = read('app/dealer/dealer.module.css');
+  assert.match(page, /styles\.notificationOwnerPage/);
+  assert.match(source, /owner-app\/owner-app\.module\.css/);
+  assert.doesNotMatch(source, /maintenance-tracker\.module\.css/);
+  assert.match(source, /styles\.notificationContent/);
+  assert.match(source, /styles\.markCheckedButton/);
+  assert.match(source, /styles\.notificationSectionHeading/);
+  assert.match(source, /styles\.notificationCardNew/);
+  assert.match(source, /formatNotificationTime/);
+  assert.match(source, /items\.filter\(\(notification\) => !notification\.isRead\)/);
+  assert.match(source, /handleMarkChecked/);
+  assert.match(styles, /\.notificationOwnerPage\.notificationOwnerPage \{[\s\S]*?--owner-page-gutter: 28px;[\s\S]*?--owner-content-gap: 14px/);
+  assert.match(styles, /@media \(max-width: 390px\)[\s\S]*?--owner-page-gutter: 20px/);
+  assert.match(styles, /@media \(min-width: 600px\)[\s\S]*?--owner-page-gutter: 48px/);
+});
+
 test('Dealer Maintenance summaries apply filters and focus the open asset', () => {
   const source = read('components/DealerMaintenanceTrackerClient.tsx');
   assert.match(source, /WorkspaceTitlePanel title="MAINTENANCE TRACKING"/);

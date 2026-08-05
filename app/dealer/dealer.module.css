@@ -2639,6 +2639,34 @@
   }
 }
 
+/* Dealer notifications intentionally reuse the Owner App notification surface.
+   This wrapper supplies the same responsive gutters without duplicating card styles. */
+.notificationOwnerPage.notificationOwnerPage {
+  --owner-page-gutter: 28px;
+  --owner-content-gap: 14px;
+  width: 100%;
+  min-height: calc(100dvh - 80px - env(safe-area-inset-top));
+  box-sizing: border-box;
+  overflow-x: hidden;
+  background: #ffffff;
+  padding: 8px 0 max(24px, env(safe-area-inset-bottom));
+}
+
+@media (max-width: 390px) {
+  .notificationOwnerPage.notificationOwnerPage {
+    --owner-page-gutter: 20px;
+  }
+}
+
+@media (min-width: 600px) {
+  .notificationOwnerPage.notificationOwnerPage {
+    --owner-page-gutter: 48px;
+    --owner-content-gap: 20px;
+    min-height: calc(100dvh - 88px - env(safe-area-inset-top));
+    padding-top: 10px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .homeLaunchCard {
     transition: none;

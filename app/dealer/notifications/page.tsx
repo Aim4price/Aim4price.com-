@@ -11,8 +11,21 @@ export const dynamic = 'force-dynamic';
 export default async function DealerNotificationsPage() {
   const session = await getServerSession({ allowDealerApp: true });
   if (!session?.user?.id) redirect('/dealer/login');
-  const profile = await getAccountProfile({ id: session.user.id, name: session.user.name, email: session.user.email });
-  if (profile.accountType !== 'dealer' || profile.accountStatus !== 'active') redirect('/dealer/login');
+
+  const profile = await getAccountProfile({
+    id: session.user.id,
+    name: session.user.name,
+    email: session.user.email,
+  });
+  if (profile.accountType !== 'dealer' || profile.accountStatus !== 'active') {
+    redirect('/dealer/login');
+  }
+
   const notifications = await listDealerMaintenanceNotifications(session.user.id);
-  return <div className={styles.module}><DealerMaintenanceNotificationsClient notifications={notifications} /></div>;
+
+  return (
+    <main className={`${styles.module} ${styles.notificationOwnerPage}`}>
+      <DealerMaintenanceNotificationsClient notifications={notifications} />
+    </main>
+  );
 }
