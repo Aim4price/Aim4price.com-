@@ -47,7 +47,8 @@ test('notification surfaces separate active work and searchable history', async 
   assert.match(header, /notificationView/);
   assert.match(header, /Search notifications/);
   assert.match(ownerClient, /\['active', 'Active'\]/);
-  assert.match(ownerClient, /placeholder="Search"/);
+  assert.doesNotMatch(ownerClient, /placeholder="Search"/);
+  assert.match(ownerClient, /styles\.notificationTabsOwner/);
   assert.match(ownerClient, /Active notifications stay here until they are opened, checked or completed/);
   assert.match(dealerClient, /Maintenance alerts and checked history/);
   assert.match(dealerClient, /<span>Active<\/span>/);
@@ -79,26 +80,24 @@ test('opening one active notification moves only that item to history', async ()
   assert.match(inbox, /current && !readAtIso && !archivedAtIso[\s\S]*?row\.action_required && !resolvedAtIso/);
 });
 
-test('app notification pages keep search controls aligned on narrow screens', async () => {
-  const [ownerClient, dealerClient, ownerStyles, managerClient, managerStyles] = await Promise.all([
+test('app notification pages remove search and keep Owner tabs large and centered', async () => {
+  const [ownerClient, dealerClient, ownerStyles, managerClient] = await Promise.all([
     read('app/owner-app/notifications/owner-notifications-client.tsx'),
     read('app/dealer/notifications/dealer-maintenance-notifications-client.tsx'),
     read('app/owner-app/owner-app.module.css'),
     read('app/field-manager/field-manager-overview-client.tsx'),
-    read('app/field-manager/page.module.css'),
   ]);
 
-  assert.match(ownerClient, /placeholder="Search"/);
-  assert.match(dealerClient, /placeholder="Search"/);
-  assert.match(ownerStyles, /App notification page refinement/);
-  assert.match(ownerStyles, /\.notificationSearch \{[\s\S]*?grid-template-columns: 22px minmax\(0, 1fr\) auto/);
-  assert.match(ownerStyles, /@media \(max-width: 360px\) \{[\s\S]*?--owner-page-gutter: 16px/);
-  assert.match(managerClient, /styles\.overviewWorkspace/);
-  assert.match(managerClient, /aria-label="Clear notification search"/);
-  assert.match(managerClient, /placeholder="Search"/);
-  assert.match(managerStyles, /Field Manager notification page refinement/);
-  assert.match(managerStyles, /\.overviewPage \.overviewSearch \{[\s\S]*?grid-template-columns: 22px minmax\(0, 1fr\) auto/);
-  assert.match(managerStyles, /@media \(max-width: 390px\) \{[\s\S]*?--field-page-gutter: 16px/);
+  for (const source of [ownerClient, dealerClient, managerClient]) {
+    assert.doesNotMatch(source, /placeholder="Search"/);
+    assert.doesNotMatch(source, /aria-label="Search notifications"/);
+  }
+  assert.doesNotMatch(ownerClient, /styles\.notificationSearch/);
+  assert.doesNotMatch(dealerClient, /styles\.notificationSearch/);
+  assert.doesNotMatch(managerClient, /styles\.overviewSearch/);
+  assert.match(ownerClient, /styles\.notificationTabsOwner/);
+  assert.match(ownerStyles, /\.notificationTabsOwner \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(ownerStyles, /\.notificationTabsOwner button \{[\s\S]*?min-height: 72px[\s\S]*?text-align: center/);
 });
 
 
