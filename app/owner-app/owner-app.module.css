@@ -2954,3 +2954,187 @@
     align-items: flex-start;
   }
 }
+
+/* Simplified app notification pages */
+.notificationContent {
+  width: min(calc(100% - var(--owner-page-gutter)), 560px);
+  margin-inline: auto;
+  gap: 24px;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0 0 max(28px, env(safe-area-inset-bottom));
+  box-shadow: none;
+}
+
+.notificationIntro {
+  justify-content: flex-start;
+  padding: 8px 3px 0;
+  text-align: left;
+}
+
+.notificationIntro > div {
+  width: 100%;
+  justify-items: start;
+}
+
+.notificationIntro p { max-width: none; }
+
+.notificationWorkspace {
+  width: 100%;
+  gap: 10px;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  box-shadow: none;
+}
+
+.notificationTabs {
+  gap: 8px;
+}
+
+.notificationTabs button {
+  min-height: 52px;
+  flex-direction: row;
+  gap: 7px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.82);
+  padding: 0 14px;
+  font-size: 0.86rem;
+  font-weight: 800;
+  box-shadow: 0 10px 24px rgba(18, 53, 45, 0.055);
+}
+
+.notificationTabs button strong {
+  min-width: 0;
+  min-height: 0;
+  display: inline;
+  border-radius: 0;
+  background: transparent;
+  font-size: 0.78rem;
+}
+
+.notificationTabs .notificationTabActive {
+  border-color: #6fc596;
+  background: linear-gradient(180deg, #ffffff 0%, #e6f8ef 100%);
+  color: #0a543d;
+  box-shadow: 0 10px 22px rgba(10, 84, 61, 0.1);
+}
+
+.notificationTabs .notificationTabActive strong { background: transparent; }
+
+.notificationFilterSelect {
+  min-height: 50px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  border: 1px solid rgba(18, 53, 45, 0.12);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.82);
+  padding: 0 14px;
+  box-shadow: 0 10px 24px rgba(18, 53, 45, 0.05);
+}
+
+.notificationFilterSelect span {
+  color: rgba(18, 53, 45, 0.58);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.notificationFilterSelect select {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #12352d;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.notificationBulkActions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  border: 0;
+  padding: 0;
+}
+
+.notificationBulkActions button {
+  min-height: 50px;
+  border-radius: 16px;
+  font-size: 0.8rem;
+}
+
+.notificationBulkActions button:only-child { grid-column: 1 / -1; }
+
+.notificationSectionHeading {
+  padding: 0 3px 10px;
+}
+
+.notificationSectionHeading > span {
+  border-color: rgba(18, 53, 45, 0.11);
+  background: rgba(255, 255, 255, 0.78);
+  color: rgba(18, 53, 45, 0.64);
+}
+
+.notificationCard {
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.94);
+  padding: 16px;
+  box-shadow: 0 14px 32px rgba(18, 53, 45, 0.07);
+}
+
+.notificationCardNew {
+  border-color: rgba(162, 48, 48, 0.2);
+  background: linear-gradient(180deg, #fffafa 0%, #fff1f1 100%);
+  box-shadow: 0 14px 32px rgba(162, 48, 48, 0.08);
+}
+
+.notificationCardPriority {
+  border-color: rgba(161, 105, 16, 0.22);
+  background: linear-gradient(180deg, #fffdf8 0%, #fff6e5 100%);
+  box-shadow: 0 14px 32px rgba(161, 105, 16, 0.09);
+}
+
+.notificationCardHistory {
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.notificationCardTime {
+  display: block;
+  margin: 0 0 9px;
+  color: rgba(18, 53, 45, 0.54);
+  font-size: 0.7rem;
+  font-weight: 750;
+  line-height: 1.2;
+  text-align: right;
+}
+
+@media (max-width: 520px) {
+  .notificationContent {
+    gap: 22px;
+    padding: 0 0 max(24px, env(safe-area-inset-bottom));
+  }
+
+  .notificationIntro {
+    align-items: flex-start;
+    padding-top: 6px;
+  }
+
+  .notificationTabs button {
+    min-height: 52px;
+    flex-direction: row;
+    border-radius: 16px;
+  }
+
+  .notificationBulkActions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
