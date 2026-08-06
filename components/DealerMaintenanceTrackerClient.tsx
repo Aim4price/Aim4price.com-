@@ -513,7 +513,7 @@ function ProposalCard({ proposal }: { proposal: DealerMaintenanceScheduleProposa
         </strong>
       </header>
       <div className={styles.recordGrid}>
-        <div><span>Due</span><strong>{due}</strong></div>
+        <div><span>Service due</span><strong>{due}</strong></div>
         <div><span>Created</span><strong>{formatDate(proposal.createdAtIso)}</strong></div>
         <div><span>Visibility</span><strong>{proposal.status === 'declined' ? 'Dealer only' : proposal.status === 'approved' ? 'Dealer and owner' : 'Owner decision pending'}</strong></div>
       </div>
