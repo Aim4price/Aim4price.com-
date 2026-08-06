@@ -261,8 +261,8 @@
   gap: 0.5rem;
 }
 
-.field span,
-.compactField span,
+.field > span,
+.compactField > span,
 .fieldLabel {
   color: #40564e;
   font-size: 0.67rem;
@@ -272,9 +272,7 @@
 }
 
 .field input,
-.compactField input,
-.field select,
-.compactField select {
+.compactField input {
   min-height: 3.18rem;
   width: 100%;
   border: 1px solid rgba(18, 45, 37, 0.11);
@@ -306,48 +304,88 @@
   isolation: isolate;
 }
 
-.roleSelectWrap::before {
-  content: "";
-  position: absolute;
-  z-index: 1;
-  left: 1rem;
-  top: 50%;
-  width: 0.48rem;
-  height: 0.48rem;
-  transform: translateY(-50%);
-  border-radius: 999px;
-  background: #21966f;
-  box-shadow: 0 0 0 0.24rem rgba(31, 138, 102, 0.1);
-  pointer-events: none;
+.roleSelectWrapOpen {
+  z-index: 40;
 }
 
-.field .roleSelectWrap select,
-.compactField .roleSelectWrap select {
-  appearance: none;
-  cursor: pointer;
-  padding: 0 3.25rem 0 2.35rem;
-  border-color: rgba(31, 138, 102, 0.18);
+.roleSelectButton {
+  min-height: 3.45rem;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  border: 1px solid rgba(31, 138, 102, 0.2);
+  border-radius: 0.96rem;
+  padding: 0.42rem 0.55rem 0.42rem 0.72rem;
   background: linear-gradient(180deg, #ffffff 0%, #f5faf7 100%);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
     0 8px 18px rgba(18, 45, 37, 0.045);
   color: #123e31;
-  font-weight: 800;
+  font: inherit;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
 }
 
-.roleSelectWrap:hover select {
+.roleSelectButton:hover {
   border-color: rgba(31, 138, 102, 0.3);
   background: #ffffff;
 }
 
+.roleSelectButton:focus-visible,
+.roleSelectButton[aria-expanded='true'] {
+  border-color: rgba(31, 138, 102, 0.42);
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(31, 138, 102, 0.09), 0 12px 24px rgba(18, 45, 37, 0.07);
+}
+
+.roleSelectValue {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.72rem;
+}
+
+.roleSelectIcon,
+.roleSelectOptionIcon {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(31, 138, 102, 0.14);
+  background: rgba(31, 138, 102, 0.08);
+  color: #176047;
+}
+
+.roleSelectIcon {
+  width: 2.18rem;
+  height: 2.18rem;
+  border-radius: 0.72rem;
+}
+
+.roleSelectIcon svg,
+.roleSelectOptionIcon svg {
+  width: 1.14rem;
+  height: 1.14rem;
+}
+
+.roleSelectLabel {
+  min-width: 0;
+  overflow: hidden;
+  color: #123e31;
+  font-size: 0.92rem;
+  font-weight: 850;
+  letter-spacing: -0.02em;
+  text-overflow: ellipsis;
+  text-transform: none;
+  white-space: nowrap;
+}
+
 .roleSelectChevron {
-  position: absolute;
-  z-index: 1;
-  right: 0.58rem;
-  top: 50%;
+  flex: 0 0 auto;
   width: 2rem;
   height: 2rem;
-  transform: translateY(-50%);
   display: grid;
   place-items: center;
   border: 1px solid rgba(31, 138, 102, 0.14);
@@ -363,10 +401,117 @@
   height: 1rem;
 }
 
-.roleSelectWrap:focus-within .roleSelectChevron {
+.roleSelectButton[aria-expanded='true'] .roleSelectChevron {
   border-color: rgba(31, 138, 102, 0.28);
   background: rgba(31, 138, 102, 0.13);
-  transform: translateY(-50%) rotate(180deg);
+  transform: rotate(180deg);
+}
+
+.roleSelectMenu {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 0.48rem);
+  left: 0;
+  width: 100%;
+  display: grid;
+  gap: 0.34rem;
+  border: 1px solid rgba(18, 69, 53, 0.14);
+  border-radius: 1rem;
+  padding: 0.42rem;
+  background: rgba(255, 255, 255, 0.99);
+  box-shadow:
+    0 24px 48px rgba(18, 45, 37, 0.16),
+    0 8px 20px rgba(18, 45, 37, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  animation: roleSelectMenuIn 150ms ease both;
+}
+
+@keyframes roleSelectMenuIn {
+  from {
+    opacity: 0;
+    transform: translateY(-0.3rem) scale(0.99);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.roleSelectOption {
+  width: 100%;
+  min-height: 3.6rem;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.7rem;
+  border: 1px solid transparent;
+  border-radius: 0.78rem;
+  padding: 0.48rem 0.58rem;
+  background: transparent;
+  color: #173c31;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 140ms ease, background 140ms ease, transform 140ms ease;
+}
+
+.roleSelectOption:hover,
+.roleSelectOption:focus-visible {
+  border-color: rgba(31, 138, 102, 0.12);
+  background: rgba(31, 138, 102, 0.06);
+  transform: translateX(0.1rem);
+}
+
+.roleSelectOptionSelected {
+  border-color: rgba(31, 138, 102, 0.18);
+  background: linear-gradient(90deg, rgba(31, 138, 102, 0.11), rgba(31, 138, 102, 0.045));
+}
+
+.roleSelectOptionIcon {
+  width: 2.28rem;
+  height: 2.28rem;
+  border-radius: 0.72rem;
+}
+
+.roleSelectOptionCopy {
+  min-width: 0;
+  display: grid;
+  gap: 0.12rem;
+}
+
+.roleSelectOptionCopy strong {
+  color: #123e31;
+  font-size: 0.84rem;
+  font-weight: 900;
+  letter-spacing: -0.018em;
+  line-height: 1.2;
+}
+
+.roleSelectOptionCopy small {
+  overflow: hidden;
+  color: #6a7a74;
+  font-size: 0.68rem;
+  font-weight: 650;
+  letter-spacing: 0;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+.roleSelectCheck {
+  width: 1.48rem;
+  height: 1.48rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(31, 138, 102, 0.14);
+  border-radius: 999px;
+  background: rgba(31, 138, 102, 0.07);
+  color: #176047;
+  font-size: 0.72rem;
+  font-weight: 900;
 }
 
 
@@ -394,9 +539,7 @@
 }
 
 .field input:focus,
-.compactField input:focus,
-.field select:focus,
-.compactField select:focus {
+.compactField input:focus {
   border-color: rgba(31, 138, 102, 0.38);
   background: #ffffff;
   box-shadow: 0 0 0 4px rgba(31, 138, 102, 0.08);

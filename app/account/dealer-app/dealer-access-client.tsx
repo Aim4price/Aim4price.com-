@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from 'react';
 import AppHeader from '../../../components/AppHeader';
 import styles from './page.module.css';
 
@@ -56,6 +56,40 @@ function roleLabel(role: DealerStaffRole): string {
   return ROLE_OPTIONS.find((option) => option.value === role)?.label ?? 'Technician';
 }
 
+function RoleIcon({ role }: { role: DealerStaffRole }) {
+  if (role === 'owner') {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" aria-hidden="true">
+        <circle cx="9" cy="8" r="3" />
+        <path d="M3.5 20v-1.5A4.5 4.5 0 0 1 8 14h2a4.5 4.5 0 0 1 4.5 4.5V20M16 8h5M18.5 5.5v5" strokeLinecap="round" />
+      </svg>
+    );
+  }
+
+  if (role === 'sales') {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" aria-hidden="true">
+        <path d="m4 17 5-5 4 4 7-9M15 7h5v5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+
+  if (role === 'parts') {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" aria-hidden="true">
+        <path d="m4 7 8-4 8 4-8 4-8-4Z" strokeLinejoin="round" />
+        <path d="M4 7v9l8 5 8-5V7M12 11v10" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" aria-hidden="true">
+      <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function RoleSelect({
   value,
   onChange,
@@ -63,18 +97,116 @@ function RoleSelect({
   value: DealerStaffRole;
   onChange: (role: DealerStaffRole) => void;
 }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const listboxId = `${useId()}-options`;
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const selectedOption = ROLE_OPTIONS.find((option) => option.value === value) ?? {
+    value: 'technician' as const,
+    label: 'Technician',
+    description: 'Overview and Maintenance only.',
+  };
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    const selectedIndex = Math.max(0, ROLE_OPTIONS.findIndex((option) => option.value === value));
+    const focusFrame = window.requestAnimationFrame(() => optionRefs.current[selectedIndex]?.focus());
+
+    function handlePointerDown(event: PointerEvent) {
+      if (!wrapRef.current?.contains(event.target as Node)) setIsOpen(false);
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key !== 'Escape') return;
+      setIsOpen(false);
+      buttonRef.current?.focus();
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleEscape);
+
+    return () => {
+      window.cancelAnimationFrame(focusFrame);
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isOpen, value]);
+
+  function chooseRole(role: DealerStaffRole) {
+    onChange(role);
+    setIsOpen(false);
+    window.requestAnimationFrame(() => buttonRef.current?.focus());
+  }
+
+  function moveOptionFocus(currentIndex: number, direction: -1 | 1) {
+    const nextIndex = (currentIndex + direction + ROLE_OPTIONS.length) % ROLE_OPTIONS.length;
+    optionRefs.current[nextIndex]?.focus();
+  }
+
   return (
-    <div className={styles.roleSelectWrap}>
-      <select value={value} onChange={(event) => onChange(event.target.value as DealerStaffRole)}>
-        {ROLE_OPTIONS.map((option) => (
-          <option key={option.value} value={option.value}>{option.label}</option>
-        ))}
-      </select>
-      <span className={styles.roleSelectChevron} aria-hidden="true">
-        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="m6 8 4 4 4-4" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </span>
+    <div
+      ref={wrapRef}
+      className={`${styles.roleSelectWrap} ${isOpen ? styles.roleSelectWrapOpen : ''}`}
+    >
+      <button
+        ref={buttonRef}
+        type="button"
+        className={styles.roleSelectButton}
+        aria-label={`Role: ${selectedOption.label}`}
+        aria-haspopup="listbox"
+        aria-controls={listboxId}
+        aria-expanded={isOpen}
+        onClick={() => setIsOpen((current) => !current)}
+      >
+        <span className={styles.roleSelectValue}>
+          <span className={styles.roleSelectIcon}><RoleIcon role={selectedOption.value} /></span>
+          <span className={styles.roleSelectLabel}>{selectedOption.label}</span>
+        </span>
+        <span className={styles.roleSelectChevron} aria-hidden="true">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="m6 8 4 4 4-4" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </span>
+      </button>
+
+      {isOpen ? (
+        <div id={listboxId} className={styles.roleSelectMenu} role="listbox" aria-label="Dealer App staff role">
+          {ROLE_OPTIONS.map((option, index) => {
+            const isSelected = option.value === value;
+
+            return (
+              <button
+                key={option.value}
+                ref={(element) => { optionRefs.current[index] = element; }}
+                type="button"
+                role="option"
+                aria-selected={isSelected}
+                className={`${styles.roleSelectOption} ${isSelected ? styles.roleSelectOptionSelected : ''}`}
+                onClick={() => chooseRole(option.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+                    event.preventDefault();
+                    moveOptionFocus(index, event.key === 'ArrowDown' ? 1 : -1);
+                  }
+                  if (event.key === 'Home' || event.key === 'End') {
+                    event.preventDefault();
+                    optionRefs.current[event.key === 'Home' ? 0 : ROLE_OPTIONS.length - 1]?.focus();
+                  }
+                }}
+              >
+                <span className={styles.roleSelectOptionIcon}><RoleIcon role={option.value} /></span>
+                <span className={styles.roleSelectOptionCopy}>
+                  <strong>{option.label}</strong>
+                  <small>{option.description}</small>
+                </span>
+                <span className={styles.roleSelectCheck} aria-hidden="true">{isSelected ? '✓' : ''}</span>
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
     </div>
   );
 }
