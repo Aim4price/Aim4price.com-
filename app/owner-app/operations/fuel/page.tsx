@@ -13,7 +13,7 @@ export default async function OwnerFuelPage() {
 
   return (
     <main className={`${styles.page} ${styles.homePage} ${styles.operationsPage}`}>
-      <OwnerAppNav />
+      <OwnerAppNav backHref="/owner-app/operations" backLabel="Back" />
       <div className={`${styles.content} ${styles.operationsContent} ${styles.fuelSourceContent}`}>
         <nav
           className={`${styles.operationLauncher} ${styles.fuelSourceLauncher}`}
