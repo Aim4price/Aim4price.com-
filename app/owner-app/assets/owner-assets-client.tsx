@@ -202,7 +202,7 @@ export default function OwnerAssetsClient({
             <article key={asset.id} className={styles.managerAssetCard}>
               <h2><BalancedHeadingText text={asset.title} /></h2>
 
-              <div className={styles.managerAssetMetaGrid}>
+              <div className={`${styles.managerAssetMetaGrid} ${mode === 'assets' ? styles.ownerAssetMetaStack : ''}`}>
                 <div>
                   <span>Serial</span>
                   <strong>{serialDisplayText(asset)}</strong>
