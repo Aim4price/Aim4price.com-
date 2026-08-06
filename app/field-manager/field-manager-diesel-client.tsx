@@ -72,7 +72,9 @@ function formatDate(value: string | null): string {
   if (!value) return 'No update yet';
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return 'No update yet';
-  return new Intl.DateTimeFormat('en-ZA', { dateStyle: 'medium' }).format(parsed);
+  return new Intl.DateTimeFormat('en-ZA', {
+    dateStyle: 'medium',
+  }).format(parsed);
 }
 
 function formatLocationLabel(value: string): string {
@@ -242,10 +244,22 @@ export default function FieldManagerDieselClient({ ownerAppMode = false }: { own
                 </div>
 
                 <div className={styles.assetMetaGrid}>
-                  <div><span>Current level</span><strong>{formatLitres(storage.currentLitres)}</strong></div>
-                  <div><span>Capacity</span><strong>{formatLitres(storage.capacityLitres)}</strong></div>
-                  <div><span>Stock</span><strong>{formatStock(storage)}</strong></div>
-                  <div><span>Last update</span><strong>{formatDate(storage.updatedAtIso)}</strong></div>
+                  <div>
+                    <span>Current level</span>
+                    <strong>{formatLitres(storage.currentLitres)}</strong>
+                  </div>
+                  <div>
+                    <span>Capacity</span>
+                    <strong>{formatLitres(storage.capacityLitres)}</strong>
+                  </div>
+                  <div>
+                    <span>Stock</span>
+                    <strong>{formatStock(storage)}</strong>
+                  </div>
+                  <div>
+                    <span>Last update</span>
+                    <strong>{formatDate(storage.updatedAtIso)}</strong>
+                  </div>
                 </div>
 
                 <button
