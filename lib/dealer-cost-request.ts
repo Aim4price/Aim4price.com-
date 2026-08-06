@@ -1,5 +1,7 @@
 import { getAccountProfile } from './account-profile';
-import { getServerSession, isDealerAppSession } from './auth-session';
+import { getServerSession } from './auth-session';
+import { dealerRoleCan } from './dealer-app-access';
+import { getDealerAppSession } from './dealer-app-session';
 import type { DealerCostActor } from './dealer-costs';
 
 export type DealerCostRequestContext = {
@@ -11,6 +13,8 @@ export type DealerCostRequestContext = {
 export async function getDealerCostRequestContext(): Promise<DealerCostRequestContext | null> {
   const session = await getServerSession({ allowDealerApp: true });
   if (!session?.user?.id) return null;
+  const dealerAppSession = await getDealerAppSession();
+  if (dealerAppSession && !dealerRoleCan(dealerAppSession.role, 'client_costs')) return null;
 
   const profile = await getAccountProfile({
     id: session.user.id,
@@ -20,14 +24,14 @@ export async function getDealerCostRequestContext(): Promise<DealerCostRequestCo
   if (profile.accountType !== 'dealer' || profile.accountStatus !== 'active') return null;
 
   const supplierName = profile.businessName || profile.displayName || profile.name || 'Dealer';
-  const displayName = isDealerAppSession(session)
-    ? session.dealerApp.displayName
+  const displayName = dealerAppSession
+    ? dealerAppSession.displayName
     : supplierName;
 
   return {
     actor: {
       dealerUserId: session.user.id,
-      dealerStaffId: isDealerAppSession(session) ? session.dealerApp.staffId : '',
+      dealerStaffId: dealerAppSession?.staffId ?? '',
       displayName,
       supplierName,
     },

@@ -5,11 +5,13 @@ import AppHeader from '../../../components/AppHeader';
 import styles from './page.module.css';
 
 type NoticeTone = 'success' | 'error';
+type DealerStaffRole = 'owner' | 'sales' | 'parts' | 'technician';
 
 type FieldManagerRecord = {
   id: string;
   displayName: string;
   username: string;
+  role: DealerStaffRole;
   isActive: boolean;
   lastLoginAtIso: string | null;
   createdAtIso: string;
@@ -26,19 +28,33 @@ type DraftState = {
   displayName: string;
   username: string;
   password: string;
+  role: DealerStaffRole;
 };
 
 type EditDraftState = {
   displayName: string;
   username: string;
   password: string;
+  role: DealerStaffRole;
 };
 
 const initialDraft: DraftState = {
   displayName: '',
   username: '',
   password: '',
+  role: 'technician',
 };
+
+const ROLE_OPTIONS: Array<{ value: DealerStaffRole; label: string; description: string }> = [
+  { value: 'owner', label: 'Owner / Manager', description: 'Full access and problem assignment.' },
+  { value: 'sales', label: 'Sales', description: 'All tools except Client Costs.' },
+  { value: 'parts', label: 'Parts', description: 'No Marketplace or Get Estimate.' },
+  { value: 'technician', label: 'Technician', description: 'Overview and Maintenance only.' },
+];
+
+function roleLabel(role: DealerStaffRole): string {
+  return ROLE_OPTIONS.find((option) => option.value === role)?.label ?? 'Technician';
+}
 
 const DEALER_STAFF_PASSWORD_MIN_LENGTH = 8;
 
@@ -132,6 +148,7 @@ export default function DealerAccessClient() {
             displayName: manager.displayName,
             username: manager.username,
             password: '',
+            role: manager.role,
           };
         });
         return next;
@@ -178,6 +195,7 @@ export default function DealerAccessClient() {
           displayName: draft.displayName.trim(),
           username: normalizeUsername(draft.username),
           password: draft.password,
+          role: draft.role,
         }),
       });
       const payload = (await response.json().catch(() => null)) as FieldManagerApiResponse | null;
@@ -194,6 +212,7 @@ export default function DealerAccessClient() {
           displayName: createdStaff.displayName,
           username: createdStaff.username,
           password: '',
+          role: createdStaff.role,
         },
       }));
       setDraft(initialDraft);
@@ -233,6 +252,7 @@ export default function DealerAccessClient() {
           displayName: updatedStaff.displayName,
           username: updatedStaff.username,
           password: '',
+          role: updatedStaff.role,
         },
       }));
       setVisibleEditPasswordIds((current) => ({ ...current, [managerId]: false }));
@@ -251,7 +271,7 @@ export default function DealerAccessClient() {
     setEditDrafts((current) => ({
       ...current,
       [managerId]: {
-        ...(current[managerId] ?? { displayName: '', username: '', password: '' }),
+        ...(current[managerId] ?? { displayName: '', username: '', password: '', role: 'technician' }),
         ...updates,
       },
     }));
@@ -273,6 +293,7 @@ export default function DealerAccessClient() {
     const body: Record<string, unknown> = {
       displayName: editDraft.displayName.trim(),
       username: normalizeUsername(editDraft.username),
+      role: editDraft.role,
     };
 
     if (editDraft.password.trim()) {
@@ -379,8 +400,7 @@ export default function DealerAccessClient() {
           <div className={styles.heroCopy}>
             <h1>Dealer App Staff</h1>
             <p>
-              Create dedicated access for staff who use Get Estimate, Discovery, Leads, Client Costs, Maintenance and
-              Marketplace without entering the full Aim4price account area.
+              Create one role-based login for every Owner, Sales, Parts or Technician staff member.
             </p>
           </div>
 
@@ -435,6 +455,18 @@ export default function DealerAccessClient() {
                 />
               </label>
 
+              <label className={styles.field}>
+                <span>Role</span>
+                <select
+                  value={draft.role}
+                  onChange={(event) => setDraft((current) => ({ ...current, role: event.target.value as DealerStaffRole }))}
+                >
+                  {ROLE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label} · {option.description}</option>
+                  ))}
+                </select>
+              </label>
+
               <div className={styles.field}>
                 <label className={styles.fieldLabel} htmlFor="dealer-staff-create-password">
                   Password
@@ -484,6 +516,7 @@ export default function DealerAccessClient() {
                   displayName: manager.displayName,
                   username: manager.username,
                   password: '',
+                  role: manager.role,
                 };
                 const isExpanded = expandedManagerId === manager.id;
                 const isSavingThisManager = savingManagerId === manager.id;
@@ -502,6 +535,7 @@ export default function DealerAccessClient() {
                       <div className={styles.managerIdentity}>
                         <strong>{manager.displayName}</strong>
                         <span>{manager.username}</span>
+                        <small>{roleLabel(manager.role)}</small>
                       </div>
 
                       <div className={styles.managerSummaryMeta} aria-label="Dealer App staff dates">
@@ -552,6 +586,18 @@ export default function DealerAccessClient() {
                                 updateEditDraft(manager.id, { username: normalizeUsername(event.target.value) })
                               }
                             />
+                          </label>
+
+                          <label className={styles.compactField}>
+                            <span>Role</span>
+                            <select
+                              value={editDraft.role}
+                              onChange={(event) => updateEditDraft(manager.id, { role: event.target.value as DealerStaffRole })}
+                            >
+                              {ROLE_OPTIONS.map((option) => (
+                                <option key={option.value} value={option.value}>{option.label} · {option.description}</option>
+                              ))}
+                            </select>
                           </label>
 
                           <div className={styles.compactField}>

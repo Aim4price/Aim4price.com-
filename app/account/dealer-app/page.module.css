@@ -272,7 +272,9 @@
 }
 
 .field input,
-.compactField input {
+.compactField input,
+.field select,
+.compactField select {
   min-height: 3.18rem;
   width: 100%;
   border: 1px solid rgba(18, 45, 37, 0.11);
@@ -323,7 +325,9 @@
 }
 
 .field input:focus,
-.compactField input:focus {
+.compactField input:focus,
+.field select:focus,
+.compactField select:focus {
   border-color: rgba(31, 138, 102, 0.38);
   background: #ffffff;
   box-shadow: 0 0 0 4px rgba(31, 138, 102, 0.08);
@@ -534,6 +538,19 @@
   font-size: 0.78rem;
   font-weight: 750;
   letter-spacing: -0.01em;
+}
+
+.managerIdentity small {
+  display: inline-flex;
+  margin-top: 0.38rem;
+  border-radius: 999px;
+  background: rgba(31, 138, 102, 0.1);
+  padding: 0.26rem 0.48rem;
+  color: #176047;
+  font-size: 0.62rem;
+  font-weight: 900;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
 }
 
 .managerSummaryMeta {

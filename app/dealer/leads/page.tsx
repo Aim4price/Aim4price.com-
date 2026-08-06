@@ -1,5 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getServerSession } from '../../../lib/auth-session';
+import { getDealerAppSession } from '../../../lib/dealer-app-session';
+import { dealerRoleCan } from '../../../lib/dealer-app-access';
 import { getAccountProfile } from '../../../lib/account-profile';
 import { listAssetLeadsForUser } from '../../../lib/partner-access';
 import LeadsClient from '../../leads/leads-client';
@@ -11,6 +13,8 @@ export const dynamic = 'force-dynamic';
 export default async function DealerLeadsPage() {
   const session = await getServerSession({ allowDealerApp: true });
   if (!session?.user?.id) redirect('/dealer/login');
+  const dealerAppSession = await getDealerAppSession();
+  if (dealerAppSession && !dealerRoleCan(dealerAppSession.role, 'leads')) redirect('/dealer');
 
   const [profile, initialLeads] = await Promise.all([
     getAccountProfile({

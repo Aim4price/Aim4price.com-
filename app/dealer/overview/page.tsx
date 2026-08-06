@@ -1,19 +1,16 @@
 import { redirect } from 'next/navigation';
+import { getAccountProfile } from '../../../lib/account-profile';
 import { getServerSession } from '../../../lib/auth-session';
 import { getDealerAppSession } from '../../../lib/dealer-app-session';
-import { dealerRoleCan } from '../../../lib/dealer-app-access';
-import { getAccountProfile } from '../../../lib/account-profile';
-import AssetDiscoveryClient from '../../asset-discovery/asset-discovery-client';
-import styles from '../dealer.module.css';
+import { listDealerOverview } from '../../../lib/dealer-overview';
+import DealerOverviewClient from './dealer-overview-client';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-export default async function DealerDiscoveryPage() {
+export default async function DealerOverviewPage() {
   const session = await getServerSession({ allowDealerApp: true });
   if (!session?.user?.id) redirect('/dealer/login');
-  const dealerAppSession = await getDealerAppSession();
-  if (dealerAppSession && !dealerRoleCan(dealerAppSession.role, 'discovery')) redirect('/dealer');
 
   const profile = await getAccountProfile({
     id: session.user.id,
@@ -22,11 +19,12 @@ export default async function DealerDiscoveryPage() {
   });
   if (profile.accountType !== 'dealer' || profile.accountStatus !== 'active') redirect('/dealer/login');
 
-  return (
-    <div className={styles.module}>
-      <main>
-        <AssetDiscoveryClient dealerAppMode />
-      </main>
-    </div>
-  );
+  const dealerAppSession = await getDealerAppSession();
+  const overview = await listDealerOverview({
+    dealerUserId: session.user.id,
+    currentStaffId: dealerAppSession?.staffId ?? null,
+    role: dealerAppSession?.role ?? 'owner',
+  });
+
+  return <DealerOverviewClient initialOverview={overview} />;
 }
