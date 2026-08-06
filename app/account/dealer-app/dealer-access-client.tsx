@@ -56,6 +56,29 @@ function roleLabel(role: DealerStaffRole): string {
   return ROLE_OPTIONS.find((option) => option.value === role)?.label ?? 'Technician';
 }
 
+function RoleSelect({
+  value,
+  onChange,
+}: {
+  value: DealerStaffRole;
+  onChange: (role: DealerStaffRole) => void;
+}) {
+  return (
+    <div className={styles.roleSelectWrap}>
+      <select value={value} onChange={(event) => onChange(event.target.value as DealerStaffRole)}>
+        {ROLE_OPTIONS.map((option) => (
+          <option key={option.value} value={option.value}>{option.label}</option>
+        ))}
+      </select>
+      <span className={styles.roleSelectChevron} aria-hidden="true">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="m6 8 4 4 4-4" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </span>
+    </div>
+  );
+}
+
 const DEALER_STAFF_PASSWORD_MIN_LENGTH = 8;
 
 function extractError(payload: FieldManagerApiResponse | null, fallback: string): string {
@@ -457,14 +480,10 @@ export default function DealerAccessClient() {
 
               <label className={styles.field}>
                 <span>Role</span>
-                <select
+                <RoleSelect
                   value={draft.role}
-                  onChange={(event) => setDraft((current) => ({ ...current, role: event.target.value as DealerStaffRole }))}
-                >
-                  {ROLE_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label} · {option.description}</option>
-                  ))}
-                </select>
+                  onChange={(role) => setDraft((current) => ({ ...current, role }))}
+                />
               </label>
 
               <div className={styles.field}>
@@ -535,7 +554,7 @@ export default function DealerAccessClient() {
                       <div className={styles.managerIdentity}>
                         <strong>{manager.displayName}</strong>
                         <span>{manager.username}</span>
-                        <small>{roleLabel(manager.role)}</small>
+                        <small className={styles.rolePill}>{roleLabel(manager.role)}</small>
                       </div>
 
                       <div className={styles.managerSummaryMeta} aria-label="Dealer App staff dates">
@@ -590,14 +609,10 @@ export default function DealerAccessClient() {
 
                           <label className={styles.compactField}>
                             <span>Role</span>
-                            <select
+                            <RoleSelect
                               value={editDraft.role}
-                              onChange={(event) => updateEditDraft(manager.id, { role: event.target.value as DealerStaffRole })}
-                            >
-                              {ROLE_OPTIONS.map((option) => (
-                                <option key={option.value} value={option.value}>{option.label} · {option.description}</option>
-                              ))}
-                            </select>
+                              onChange={(role) => updateEditDraft(manager.id, { role })}
+                            />
                           </label>
 
                           <div className={styles.compactField}>
