@@ -6,9 +6,9 @@
   overflow: hidden;
   isolation: isolate;
   background:
-    radial-gradient(circle at top left, rgba(169, 220, 196, 0.2), transparent 34%),
-    radial-gradient(circle at 92% 92%, rgba(169, 220, 196, 0.12), transparent 30%),
-    linear-gradient(180deg, #f7fcf9 0%, #f3faf6 45%, #eaf6ef 100%);
+    radial-gradient(circle at top left, rgba(169, 220, 196, 0.12), transparent 34%),
+    radial-gradient(circle at 92% 92%, rgba(169, 220, 196, 0.07), transparent 30%),
+    linear-gradient(180deg, #fafdfb 0%, #f7faf8 45%, #f1f7f3 100%);
 }
 
 .decoration {
@@ -45,7 +45,7 @@
   fill: none;
   stroke: #78b99b;
   stroke-width: 1.25;
-  opacity: 0.24;
+  opacity: 0.18;
 }
 
 .arcsTopLeft {
@@ -65,7 +65,7 @@
   width: 60px;
   height: 60px;
   fill: #76b99a;
-  opacity: 0.34;
+  opacity: 0.25;
 }
 
 .dotGridTopRight {
@@ -84,7 +84,7 @@
   aspect-ratio: 1;
   border-radius: 50%;
   background: #a9dcc4;
-  opacity: 0.2;
+  opacity: 0.13;
 }
 
 .mintCircleLeft {
@@ -103,7 +103,7 @@
   .arcs {
     width: 270px;
     height: 270px;
-    opacity: 0.22;
+    opacity: 0.17;
   }
 
   .dotGrid {
@@ -123,7 +123,7 @@
 
   .mintCircle {
     width: 164px;
-    opacity: 0.18;
+    opacity: 0.12;
   }
 }
 
