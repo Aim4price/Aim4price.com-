@@ -1,0 +1,67 @@
+import { NextResponse } from 'next/server';
+import {
+  ALLOWED_ASSET_REGISTER_IMAGE_TYPES,
+  MAX_ASSET_REGISTER_UPLOAD_BYTES,
+  createAssetRegisterUpload,
+} from '../../../../../lib/asset-register-uploads';
+import { resolveOwnerWorkspaceContext } from '../../../../../lib/owner-workspace-access';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+type FormFile = File & {
+  size: number;
+  type: string;
+  name: string;
+};
+
+function isUploadFile(value: FormDataEntryValue | null): value is FormFile {
+  return Boolean(value && typeof value !== 'string' && typeof value.arrayBuffer === 'function');
+}
+
+export async function POST(request: Request) {
+  const resolved = await resolveOwnerWorkspaceContext(request, { ledger: 'fuel' });
+  if (!resolved.ok) return resolved.response;
+
+  let formData: FormData;
+  try {
+    formData = await request.formData();
+  } catch {
+    return NextResponse.json({ ok: false, error: 'Invalid fuel slip photo upload.' }, { status: 400 });
+  }
+
+  const file = formData.get('file');
+  if (!isUploadFile(file)) {
+    return NextResponse.json({ ok: false, error: 'Take or choose a fuel slip photo.' }, { status: 400 });
+  }
+
+  const contentType = String(file.type ?? '').trim().toLowerCase();
+  if (!ALLOWED_ASSET_REGISTER_IMAGE_TYPES.has(contentType)) {
+    return NextResponse.json({ ok: false, error: 'Upload a JPG, PNG or WEBP fuel slip photo.' }, { status: 400 });
+  }
+
+  if (!file.size || file.size > MAX_ASSET_REGISTER_UPLOAD_BYTES) {
+    return NextResponse.json({ ok: false, error: 'The fuel slip photo is empty or too large.' }, { status: 400 });
+  }
+
+  try {
+    const upload = await createAssetRegisterUpload({
+      userId: resolved.context.ownerUserId,
+      file,
+    });
+
+    return NextResponse.json({
+      ok: true,
+      uploads: [{
+        uploadId: upload.id,
+        url: upload.url,
+        fileName: upload.fileName,
+        contentType: upload.contentType,
+        byteSize: upload.byteSize,
+      }],
+    });
+  } catch (error) {
+    console.error('Aim4price petrol-station fuel slip upload failed.', error);
+    return NextResponse.json({ ok: false, error: 'The fuel slip photo could not be uploaded.' }, { status: 500 });
+  }
+}

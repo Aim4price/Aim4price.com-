@@ -101,9 +101,13 @@ test('Owner and Field Manager Overview Clear actions require confirmation', asyn
   assert.match(confirmation, /aria-modal="true"/);
 });
 
-test('fuel selection and save routes use signed-in Owner App access without a PIN', async () => {
-  const [listPage, detailPage, fuelClient, fuelAuth, listApi, getRoute, issueRoute, refillRoute, dipstickRoute] = await Promise.all([
+test('fuel selection supports storage tanks and petrol-station costs with signed-in Owner App access', async () => {
+  const [choicePage, storagePage, petrolPage, petrolClient, locationModal, detailPage, fuelClient, fuelAuth, listApi, getRoute, issueRoute, refillRoute, dipstickRoute] = await Promise.all([
     source('app/owner-app/operations/fuel/page.tsx'),
+    source('app/owner-app/operations/fuel/storage/page.tsx'),
+    source('app/owner-app/operations/fuel/petrol-station/page.tsx'),
+    source('app/owner-app/operations/fuel/petrol-station/petrol-station-fuel-client.tsx'),
+    source('components/FuelLocationModal.tsx'),
     source('app/owner-app/operations/fuel/[publicFuelStorageCode]/page.tsx'),
     source('app/fuel-scan/[publicFuelStorageCode]/fuel-scan-client.tsx'),
     source('lib/fuel-ledger.ts'),
@@ -114,9 +118,19 @@ test('fuel selection and save routes use signed-in Owner App access without a PI
     source('app/api/fuel-scan/storage/[publicFuelStorageCode]/dipstick/route.ts'),
   ]);
 
-  assert.match(listPage, /FieldManagerDieselClient ownerAppMode/);
+  assert.match(choicePage, /Choose fuel source/);
+  assert.match(choicePage, /owner-app\/operations\/fuel\/storage/);
+  assert.match(choicePage, /owner-app\/operations\/fuel\/petrol-station/);
+  assert.match(storagePage, /FieldManagerDieselClient ownerAppMode/);
+  assert.match(petrolPage, /operatorName=\{access\.displayName\}/);
+  assert.match(petrolClient, /fetch\('\/api\/fuel\/slips\/upload'/);
+  assert.match(petrolClient, /fetch\('\/api\/fuel\/slips'/);
+  assert.match(petrolClient, /targetType: 'asset'/);
+  assert.match(petrolClient, /latitude: coordinates\.latitude/);
+  assert.match(locationModal, /Location required/);
   assert.match(detailPage, /ownerAppOperatorName=\{access\.displayName\}/);
   assert.match(fuelClient, /ownerAppMode \? '\?ownerApp=1'/);
+  assert.match(fuelClient, /<FuelLocationModal/);
   assert.match(fuelClient, /No fuel PIN or name is required\./);
   assert.match(fuelAuth, /ownerAccess\.ownerUserId !== storage\.userId/);
   assert.match(listApi, /listFieldManagerFuelStorages\(access\.ownerUserId\)/);

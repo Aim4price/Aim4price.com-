@@ -18,6 +18,7 @@
     radial-gradient(circle at 100% 13%, rgba(22, 57, 95, 0.06), transparent 30%),
     linear-gradient(180deg, #fbfdfd 0%, var(--bg) 100%);
   color: var(--text);
+  font-family: 'Montserrat', var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif;
 }
 
 .scanPage *,
@@ -241,8 +242,8 @@
 .reviewBox span,
 .stepProgress span {
   color: #657789;
-  font-size: clamp(0.78rem, 2.7vw, 0.92rem);
-  font-weight: 900;
+  font-size: clamp(0.7rem, 2.5vw, 0.8rem);
+  font-weight: 850;
   letter-spacing: 0.065em;
   text-transform: uppercase;
 }
@@ -253,12 +254,12 @@
   margin: 0;
   color: var(--text);
   font-weight: 900;
-  line-height: 0.96;
-  letter-spacing: -0.062em;
+  line-height: 1.03;
+  letter-spacing: -0.045em;
 }
 
 .qrTitleBlock h1 {
-  font-size: clamp(2.25rem, 10vw, 3.5rem);
+  font-size: clamp(1.9rem, 8vw, 2.45rem);
 }
 
 .publicQrTitleBlock {
@@ -290,7 +291,7 @@
 
 .stepTitleBlock h1,
 .thankYouScreen h1 {
-  font-size: clamp(2.25rem, 10vw, 3.25rem);
+  font-size: clamp(1.85rem, 8vw, 2.35rem);
 }
 
 .qrTitleBlock p,
@@ -299,9 +300,9 @@
 .emptyText {
   margin: 0;
   color: var(--text-soft);
-  font-size: clamp(1.02rem, 3.5vw, 1.2rem);
-  font-weight: 720;
-  line-height: 1.34;
+  font-size: clamp(0.86rem, 3.2vw, 0.96rem);
+  font-weight: 650;
+  line-height: 1.45;
 }
 
 .pinForm,
@@ -320,12 +321,12 @@
 .searchField input {
   width: 100%;
   border: 1px solid var(--line);
-  border-radius: 1.2rem;
+  border-radius: 1rem;
   background: #ffffff;
   color: #1e2f3d;
   font: inherit;
-  font-size: 1.12rem;
-  font-weight: 760;
+  font-size: 1rem;
+  font-weight: 700;
   box-shadow:
     0 8px 18px rgba(23, 45, 75, 0.035),
     inset 0 1px 0 rgba(255, 255, 255, 0.98);
@@ -333,7 +334,7 @@
 
 .field input,
 .searchField input {
-  min-height: 4.2rem;
+  min-height: 3.75rem;
   padding: 0 1.1rem;
 }
 
@@ -370,7 +371,7 @@
 .field textarea::placeholder,
 .searchField input::placeholder {
   color: #9aa6b2;
-  font-weight: 640;
+  font-weight: 650;
 }
 
 .primaryButton,
@@ -414,15 +415,15 @@
 
 .primaryButton,
 .secondaryButton {
-  min-height: 4.25rem;
+  min-height: 3.65rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.72rem;
-  border-radius: 1.25rem;
+  border-radius: 1rem;
   padding: 0 1.2rem;
-  font-size: 1.1rem;
-  font-weight: 900;
+  font-size: 0.95rem;
+  font-weight: 800;
   line-height: 1.12;
   text-decoration: none;
 }
@@ -444,10 +445,10 @@
 }
 
 .notice {
-  min-height: 3.55rem;
+  min-height: 3.25rem;
   padding: 0.95rem 1.05rem;
-  font-size: 1rem;
-  font-weight: 820;
+  font-size: 0.86rem;
+  font-weight: 750;
   line-height: 1.35;
 }
 
@@ -486,15 +487,15 @@
 
 .locationGate strong {
   color: var(--text);
-  font-size: 1.08rem;
-  font-weight: 900;
+  font-size: 0.95rem;
+  font-weight: 850;
 }
 
 .locationGate span {
   color: var(--text-soft);
-  font-size: 0.92rem;
-  font-weight: 780;
-  line-height: 1.3;
+  font-size: 0.8rem;
+  font-weight: 650;
+  line-height: 1.4;
   overflow-wrap: anywhere;
 }
 
@@ -507,8 +508,8 @@
   background: #ffffff;
   color: #17362c;
   padding: 0 1rem;
-  font-size: 1rem;
-  font-weight: 900;
+  font-size: 0.9rem;
+  font-weight: 800;
   box-shadow: 0 8px 18px rgba(18, 45, 37, 0.055);
 }
 
@@ -526,15 +527,15 @@
 .stepProgress strong {
   display: block;
   color: var(--text);
-  font-size: 1.08rem;
-  font-weight: 900;
+  font-size: 0.98rem;
+  font-weight: 850;
   line-height: 1.1;
 }
 
 .stepProgress small {
   color: var(--text-soft);
-  font-size: 0.92rem;
-  font-weight: 900;
+  font-size: 0.8rem;
+  font-weight: 800;
 }
 
 .stepProgress i {
@@ -564,7 +565,7 @@
 }
 
 .simpleStepTitleBlock h1 {
-  font-size: clamp(2.55rem, 12vw, 3.8rem);
+  font-size: clamp(2rem, 9vw, 2.65rem);
 }
 
 .actionChoiceList {
@@ -575,7 +576,7 @@
 .actionChoiceButton {
   position: relative;
   width: 100%;
-  min-height: 5.45rem;
+  min-height: 5rem;
   display: grid;
   place-items: center;
   overflow: hidden;
@@ -599,10 +600,10 @@
 
 .actionChoiceButton strong {
   color: inherit;
-  font-size: clamp(1.65rem, 7vw, 2.18rem);
-  font-weight: 900;
-  line-height: 1.02;
-  letter-spacing: -0.052em;
+  font-size: clamp(1.25rem, 5.5vw, 1.55rem);
+  font-weight: 850;
+  line-height: 1.08;
+  letter-spacing: -0.035em;
 }
 
 .actionChoiceButton span {
@@ -688,7 +689,7 @@
   color: var(--green-strong);
   font: inherit;
   font-size: 0.95rem;
-  font-weight: 900;
+  font-weight: 800;
   cursor: pointer;
   touch-action: manipulation;
   box-shadow: 0 12px 24px rgba(18, 53, 45, 0.07);
@@ -731,7 +732,7 @@
 .fieldManagerAssetSearchField span {
   color: rgba(18, 53, 45, 0.76);
   font-size: 0.82rem;
-  font-weight: 920;
+  font-weight: 800;
   letter-spacing: 0;
   text-transform: none;
 }
@@ -895,7 +896,7 @@
   color: var(--green-strong);
   font: inherit;
   font-size: 0.88rem;
-  font-weight: 900;
+  font-weight: 800;
   line-height: 1.15;
   padding: 0.2rem 0;
   cursor: pointer;
@@ -963,7 +964,7 @@
   min-width: 0;
   color: #647789;
   font-size: 0.72rem;
-  font-weight: 900;
+  font-weight: 800;
   letter-spacing: 0.075em;
   line-height: 1.1;
   text-transform: uppercase;
@@ -983,7 +984,7 @@
   color: var(--green-strong);
   font-style: normal;
   font-size: 0.72rem;
-  font-weight: 900;
+  font-weight: 800;
   line-height: 1;
   padding: 0 0.58rem;
 }
@@ -992,10 +993,10 @@
   display: block;
   min-width: 0;
   color: inherit;
-  font-size: clamp(1.22rem, 5vw, 1.55rem);
-  font-weight: 900;
-  line-height: 1.04;
-  letter-spacing: -0.045em;
+  font-size: clamp(1.1rem, 4.7vw, 1.35rem);
+  font-weight: 850;
+  line-height: 1.1;
+  letter-spacing: -0.035em;
   overflow-wrap: anywhere;
 }
 
@@ -1023,7 +1024,7 @@
   min-width: 0;
   color: #697b8d;
   font-size: 0.66rem;
-  font-weight: 900;
+  font-weight: 800;
   letter-spacing: 0.08em;
   line-height: 1.05;
   text-transform: uppercase;
@@ -1162,7 +1163,7 @@
   display: grid;
   place-items: center;
   color: #123b30;
-  font-size: clamp(3.35rem, 18vw, 5.25rem);
+  font-size: clamp(2.8rem, 15vw, 4.1rem);
   font-weight: 900;
   line-height: 1;
   letter-spacing: -0.065em;
@@ -1171,7 +1172,7 @@
 .fuelValueRow span {
   color: #66798a;
   font-size: 0.78rem;
-  font-weight: 900;
+  font-weight: 850;
   letter-spacing: 0.08em;
   line-height: 1.1;
   text-transform: uppercase;
@@ -1441,7 +1442,7 @@
   border-color: #254733;
   background: #254733;
   color: #ffffff;
-  font-weight: 900;
+  font-weight: 800;
   box-shadow:
     0 16px 32px rgba(37, 71, 51, 0.22),
     inset 0 1px 0 rgba(255, 255, 255, 0.16);
