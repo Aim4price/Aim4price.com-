@@ -27,6 +27,7 @@ test('Fuel first asks for storage tank or petrol station', async () => {
   assert.doesNotMatch(choice, /Use fuel held|Record the fill, cost/);
   assert.match(choice, /styles\.fuelSourceContent/);
   assert.match(choice, /styles\.fuelSourceLauncher/);
+  assert.match(choice, /backHref="\/owner-app\/operations"/);
   assert.match(choice, /href="\/owner-app\/operations\/fuel\/storage"/);
   assert.match(choice, />Storage tank</);
   assert.match(choice, /href="\/owner-app\/operations\/fuel\/petrol-station"/);
@@ -37,6 +38,16 @@ test('Storage tank choice opens the Owner App storage tool', async () => {
   const storage = await source('app/owner-app/operations/fuel/storage/page.tsx');
 
   assert.match(storage, /FieldManagerDieselClient ownerAppMode/);
+});
+
+test('Petrol station asset picker shows the full Owner asset summary', async () => {
+  const client = await source('app/owner-app/operations/fuel/petrol-station/petrol-station-fuel-client.tsx');
+
+  assert.match(client, /<BalancedHeadingText text=\{assetName\(asset\)\}/);
+  assert.match(client, /<span>Serial<\/span>/);
+  assert.match(client, /<span>Year<\/span>/);
+  assert.match(client, /<span>Usage<\/span>/);
+  assert.match(client, /lifeWorkedPercent/);
 });
 
 test('Petrol station flow captures GPS, fuel details and a receipt-backed cost', async () => {
