@@ -205,9 +205,11 @@ test('Dealer App Maintenance and Dealer desktop dialogs keep their own rules', (
   assert.match(maintenanceSource, /dealerAppMode \? 'Apply' : 'Apply filters'/);
   assert.match(maintenanceStyles, /\.dealerApp \.maintenanceTitlePanel \{[\s\S]*?text-align: center/);
   assert.match(maintenanceStyles, /\.dealerApp \.trackerManageModal\.trackerManageModal \{[\s\S]*?height: min\(50rem/);
-  assert.match(maintenanceStyles, /\.dealerDesktop \.trackerManageModal\.trackerManageModal \{[\s\S]*?max-width: 76rem/);
+  assert.match(maintenanceStyles, /\.dealerDesktop \.trackerManageModal\.trackerManageModal \{[\s\S]*?max-width: 60rem/);
+  assert.match(maintenanceStyles, /\.dealerDesktop \.trackerManageModal \[class\*='optionActionButton'\] \{[\s\S]*?min-height: 5\.25rem/);
 
   assert.match(leadsSource, /if \(dealerAppMode\) \{[\s\S]*?window\.location\.href = `mailto:/);
   assert.match(leadsSource, /dealerWorkspaceMode && !accountantWorkspaceMode \? styles\.dealerDesktopLeads/);
-  assert.match(leadsStyles, /\.dealerDesktopLeads \.leadManageModal\.leadManageModal \{[\s\S]*?max-width: 74rem/);
+  assert.match(leadsStyles, /\.dealerDesktopLeads \.leadManageModal\.leadManageModal \{[\s\S]*?max-width: 60rem/);
+  assert.match(leadsStyles, /\.dealerDesktopLeads \.leadManageModal \.manageOptionsGrid > button \{[\s\S]*?min-height: 5\.25rem/);
 });
