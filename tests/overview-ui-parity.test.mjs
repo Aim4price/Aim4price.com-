@@ -7,6 +7,8 @@ const fieldOverview = read('app/field-manager/field-manager-overview-client.tsx'
 const ownerOverview = read('app/owner-app/attention/owner-attention-client.tsx');
 const dealerOverview = read('app/dealer/overview/dealer-overview-client.tsx');
 const locationGate = read('app/field-manager/field-manager-location-gate.tsx');
+const ownerServiceModal = read('app/owner-app/owner-service-location-modal.tsx');
+const fuelLocationModal = read('components/FuelLocationModal.tsx');
 const fieldStyles = read('app/field-manager/page.module.css');
 
 test('Field Manager Overview keeps the Owner Overview search and empty-state behaviour', () => {
@@ -41,13 +43,19 @@ test('overview cards use background colour instead of redundant pills across all
   assert.match(fieldStyles, /\.overviewCard\.overviewCardDueSoon \{[\s\S]*?background: linear-gradient\(180deg, #fffdf8 0%, #fff6e5 100%\);/);
 });
 
-test('scheduled Owner maintenance uses the same compact service location gate', () => {
+test('scheduled Owner maintenance uses the standard fuel-style location modal', () => {
   assert.match(fieldOverview, /import FieldManagerLocationGate from '.\/field-manager-location-gate'/);
   assert.match(fieldOverview, /<FieldManagerLocationGate/);
-  assert.match(ownerOverview, /import ServiceLocationGate from '..\/..\/field-manager\/field-manager-location-gate'/);
+  assert.match(ownerOverview, /import OwnerServiceLocationModal from '..\/owner-service-location-modal'/);
   assert.match(ownerOverview, /item\.type !== 'service' && item\.type !== 'checkup'/);
   assert.match(ownerOverview, /publicAssetCode/);
-  assert.match(ownerOverview, /<ServiceLocationGate/);
+  assert.match(ownerOverview, /<OwnerServiceLocationModal/);
+  assert.match(ownerServiceModal, /<FuelLocationModal/);
+  assert.match(ownerServiceModal, /recordLabel="service"/);
+  assert.match(ownerServiceModal, /saveFieldManagerServiceLocation/);
+  assert.match(fuelLocationModal, /Location required/);
+  assert.match(fuelLocationModal, /styles\.icon/);
+  assert.match(fuelLocationModal, /recordLabel = 'fuel record'/);
   assert.match(locationGate, /Allow Aim4price to tag this service with your current location\./);
   assert.match(locationGate, /<h2 id="location-gate-title">Location required<\/h2>/);
   assert.match(locationGate, /locationState === 'error'\s*\? 'Retry'/);

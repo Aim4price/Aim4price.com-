@@ -14,6 +14,7 @@ type LocationState = 'checking' | 'ready' | 'error';
 
 type FuelLocationModalProps = {
   subject: string;
+  recordLabel?: 'fuel record' | 'service';
   onReady: (coordinates: FuelLocationCoordinates) => void;
   onCancel: () => void;
 };
@@ -30,7 +31,12 @@ function geolocationErrorMessage(error: GeolocationPositionError): string {
   return 'Your location is not available yet. Turn Location Services on and retry.';
 }
 
-export default function FuelLocationModal({ subject, onReady, onCancel }: FuelLocationModalProps) {
+export default function FuelLocationModal({
+  subject,
+  recordLabel = 'fuel record',
+  onReady,
+  onCancel,
+}: FuelLocationModalProps) {
   const [locationState, setLocationState] = useState<LocationState>('checking');
   const [message, setMessage] = useState('Getting your current location…');
   const [accuracy, setAccuracy] = useState<number | null>(null);
@@ -64,7 +70,7 @@ export default function FuelLocationModal({ subject, onReady, onCancel }: FuelLo
 
         setAccuracy(coordinates.accuracyMeters);
         setLocationState('ready');
-        setMessage('Location ready. Opening the fuel record…');
+        setMessage(`Location ready. Opening the ${recordLabel}…`);
         readyTimerRef.current = window.setTimeout(() => onReady(coordinates), 450);
       },
       (error) => {
@@ -78,7 +84,7 @@ export default function FuelLocationModal({ subject, onReady, onCancel }: FuelLo
         maximumAge: 0,
       },
     );
-  }, [onReady]);
+  }, [onReady, recordLabel]);
 
   useEffect(() => {
     captureLocation();
@@ -103,7 +109,7 @@ export default function FuelLocationModal({ subject, onReady, onCancel }: FuelLo
         </div>
 
         <p className={styles.subject}>{subject}</p>
-        <p className={styles.description}>Allow Aim4price to tag this fuel record with your current location.</p>
+        <p className={styles.description}>Allow Aim4price to tag this {recordLabel} with your current location.</p>
 
         <div className={`${styles.status} ${styles[locationState]}`} role="status" aria-live="polite">
           <span aria-hidden="true" />

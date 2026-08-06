@@ -1,11 +1,11 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import ServiceLocationGate from '../../field-manager/field-manager-location-gate';
 import styles from '../../field-manager/page.module.css';
 import OverviewClearConfirmation from '../../field-manager/overview-clear-confirmation';
 import ownerStyles from '../owner-app.module.css';
 import OwnerAppNav from '../owner-app-nav';
+import OwnerServiceLocationModal from '../owner-service-location-modal';
 
 type OverviewRange = 'week' | 'upcoming';
 type OverviewItemType = 'problem' | 'service' | 'checkup' | 'license';
@@ -403,9 +403,10 @@ export default function OwnerAttentionClient() {
         ) : null}
 
         {locationGate ? (
-          <ServiceLocationGate
+          <OwnerServiceLocationModal
             {...locationGate}
             onCancel={() => setLocationGate(null)}
+            onError={setActionError}
           />
         ) : null}
       </section>
