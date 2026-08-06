@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import FieldManagerLocationGate from './field-manager-location-gate';
 import FieldManagerNavLink from './field-manager-nav-link';
+import FieldManagerServiceLocationModal from './field-manager-service-location-modal';
 import OverviewClearConfirmation from './overview-clear-confirmation';
 import styles from './page.module.css';
 
@@ -409,9 +409,10 @@ export default function FieldManagerOverviewClient() {
         ) : null}
 
         {locationGate ? (
-          <FieldManagerLocationGate
+          <FieldManagerServiceLocationModal
             {...locationGate}
             onCancel={() => setLocationGate(null)}
+            onError={(message) => setActionError(message)}
           />
         ) : null}
       </section>

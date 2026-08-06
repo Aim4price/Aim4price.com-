@@ -195,8 +195,15 @@ export default function FieldManagerDieselClient({ ownerAppMode = false }: { own
   return (
     <main className={styles.mobilePage}>
       <section className={styles.assetsShell}>
-        <header className={styles.assetsHeader} aria-label={ownerAppMode ? 'Owner fuel controls' : 'Field Manager account controls'}>
-          <FieldManagerNavLink href={ownerAppMode ? '/owner-app/operations/fuel' : '/field-manager'} label={ownerAppMode ? 'Back' : 'Home'} />
+        <header className={styles.assetsHeader} aria-label={ownerAppMode ? 'Owner fuel controls' : 'Field Manager fuel controls'}>
+          {ownerAppMode ? (
+            <FieldManagerNavLink href="/owner-app/operations/fuel" label="Back" />
+          ) : (
+            <>
+              <FieldManagerNavLink href="/field-manager/diesel" label="Back" />
+              <FieldManagerNavLink href="/field-manager" label="Home" />
+            </>
+          )}
         </header>
 
         {notice ? <div className={styles.errorNotice}>{notice}</div> : null}

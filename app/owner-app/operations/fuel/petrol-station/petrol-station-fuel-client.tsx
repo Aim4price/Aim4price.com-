@@ -123,7 +123,15 @@ function clampFuel(value: string): string {
   return String(Math.max(0, Math.min(100, Math.round(parsed))));
 }
 
-export default function PetrolStationFuelClient({ operatorName }: { operatorName: string }) {
+type PetrolStationFuelClientProps = {
+  operatorName: string;
+  fieldManagerMode?: boolean;
+};
+
+export default function PetrolStationFuelClient({
+  operatorName,
+  fieldManagerMode = false,
+}: PetrolStationFuelClientProps) {
   const [assets, setAssets] = useState<FuelAsset[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -181,11 +189,17 @@ export default function PetrolStationFuelClient({ operatorName }: { operatorName
       setLoadError('');
 
       try {
-        const response = await fetch('/api/fuel', { credentials: 'include', cache: 'no-store' });
+        const requestOptions: RequestInit = {
+          credentials: 'include',
+          cache: 'no-store',
+        };
+        const response = fieldManagerMode
+          ? await fetch('/api/field-manager/petrol-station', requestOptions)
+          : await fetch('/api/fuel', requestOptions);
         const payload = (await response.json().catch(() => null)) as FuelLedgerResponse | null;
 
         if (response.status === 401) {
-          window.location.replace('/owner-app/login');
+          window.location.replace(fieldManagerMode ? '/field-manager/login' : '/owner-app/login');
           return;
         }
 
@@ -203,7 +217,7 @@ export default function PetrolStationFuelClient({ operatorName }: { operatorName
 
     void loadAssets();
     return () => { active = false; };
-  }, []);
+  }, [fieldManagerMode]);
 
   useEffect(() => {
     if (!receipt || !receipt.type.startsWith('image/')) {
@@ -297,11 +311,14 @@ export default function PetrolStationFuelClient({ operatorName }: { operatorName
       const formData = new FormData();
       formData.append('file', receipt);
 
-      const uploadResponse = await fetch('/api/fuel/slips/upload', {
+      const uploadOptions: RequestInit = {
         method: 'POST',
         credentials: 'include',
         body: formData,
-      });
+      };
+      const uploadResponse = fieldManagerMode
+        ? await fetch('/api/field-manager/petrol-station/upload', uploadOptions)
+        : await fetch('/api/fuel/slips/upload', uploadOptions);
       const uploadPayload = (await uploadResponse.json().catch(() => null)) as UploadResponse | null;
       const upload = uploadPayload?.uploads?.[0];
 
@@ -315,7 +332,7 @@ export default function PetrolStationFuelClient({ operatorName }: { operatorName
       const reading = usageNotApplicable ? null : numberValue(usageReading);
       const locationText = `GPS ${coordinates.latitude.toFixed(6)}, ${coordinates.longitude.toFixed(6)}`;
 
-      const response = await fetch('/api/fuel/slips', {
+      const saveOptions: RequestInit = {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -339,7 +356,7 @@ export default function PetrolStationFuelClient({ operatorName }: { operatorName
           totalAmount: totalNumber,
           odometerReading: unit === 'km' ? reading : null,
           hourMeterReading: unit === 'hours' ? reading : null,
-          operatorName: operatorName.trim() || 'Owner',
+          operatorName: operatorName.trim() || (fieldManagerMode ? 'Field Manager' : 'Owner'),
           activityText: activityText.trim(),
           workAreaText: stationName.trim(),
           note: note.trim(),
@@ -354,7 +371,10 @@ export default function PetrolStationFuelClient({ operatorName }: { operatorName
           reviewRequired: false,
           extractionWarnings: [],
         }),
-      });
+      };
+      const response = fieldManagerMode
+        ? await fetch('/api/field-manager/petrol-station', saveOptions)
+        : await fetch('/api/fuel/slips', saveOptions);
       const payload = (await response.json().catch(() => null)) as SaveResponse | null;
 
       if (!response.ok || !payload?.ok || payload.pendingReview) {
@@ -543,18 +563,18 @@ export default function PetrolStationFuelClient({ operatorName }: { operatorName
         <h1>Fuel cost saved</h1>
         <p>The fuel record and slip photo are now saved against {selectedAsset ? assetName(selectedAsset) : 'the asset'}.</p>
         <button type="button" onClick={resetFlow}>Record another fill</button>
-        <a href="/owner-app/operations/fuel">Back to fuel options</a>
+        <a href={fieldManagerMode ? '/field-manager/diesel' : '/owner-app/operations/fuel'}>Back to fuel options</a>
       </section>
     );
   }
 
   return (
     <section className={styles.shell}>
-      {!isLoading && !coordinates ? (
+      {!isLoading && !loadError && !coordinates ? (
         <FuelLocationModal
           subject="Petrol station fuel"
           onReady={acceptLocation}
-          onCancel={() => window.location.assign('/owner-app/operations/fuel')}
+          onCancel={() => window.location.assign(fieldManagerMode ? '/field-manager/diesel' : '/owner-app/operations/fuel')}
         />
       ) : null}
 
