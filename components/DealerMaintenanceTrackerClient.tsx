@@ -935,17 +935,17 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
             <button type="button" className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${leadStyles.leadOwnerSummaryCard} ${leadStyles.leadOwnerSummaryCardNew} ${styles.summaryFilterButton} ${statusFilter === 'attention' ? styles.summaryFilterButtonActive : ''}`} onClick={() => chooseStatusFilter('attention')} aria-pressed={statusFilter === 'attention'}>
               <span className={assetStyles.heroSummaryHead}><span className={`${assetStyles.heroSummaryTitle} ${leadStyles.leadOwnerSummaryText}`}>{dealerAppMode ? 'Attention' : 'Needs attention'}</span></span>
               <span className={assetStyles.heroSummaryValueRow}><strong className={`${assetStyles.heroSummaryValue} ${leadStyles.leadOwnerSummaryText}`}>{attentionCount}</strong></span>
-              <span className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${leadStyles.leadOwnerSummaryFooter}`}><small className={leadStyles.leadOwnerSummaryText}>Overdue, due soon, or waiting for a usage reading.</small></span>
+              {!dealerAppMode ? <span className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${leadStyles.leadOwnerSummaryFooter}`}><small className={leadStyles.leadOwnerSummaryText}>Overdue, due soon, or waiting for a usage reading.</small></span> : null}
             </button>
             <button type="button" className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${leadStyles.leadOwnerSummaryCard} ${leadStyles.leadOwnerSummaryCardOpen} ${styles.summaryFilterButton} ${statusFilter === 'all' ? styles.summaryFilterButtonActive : ''}`} onClick={() => chooseStatusFilter('all')} aria-pressed={statusFilter === 'all'}>
               <span className={assetStyles.heroSummaryHead}><span className={`${assetStyles.heroSummaryTitle} ${leadStyles.leadOwnerSummaryText}`}>{dealerAppMode ? 'Tracked' : 'Tracked equipment'}</span></span>
               <span className={assetStyles.heroSummaryValueRow}><strong className={`${assetStyles.heroSummaryValue} ${leadStyles.leadOwnerSummaryText}`}>{assets.length}</strong></span>
-              <span className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${leadStyles.leadOwnerSummaryFooter}`}><small className={leadStyles.leadOwnerSummaryText}>Show all equipment shared with you.</small></span>
+              {!dealerAppMode ? <span className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${leadStyles.leadOwnerSummaryFooter}`}><small className={leadStyles.leadOwnerSummaryText}>Show all equipment shared with you.</small></span> : null}
             </button>
             <button type="button" className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${leadStyles.leadOwnerSummaryCard} ${leadStyles.leadOwnerSummaryCardDone} ${styles.summaryFilterButton} ${statusFilter === 'no_open' ? styles.summaryFilterButtonActive : ''}`} onClick={() => chooseStatusFilter('no_open')} aria-pressed={statusFilter === 'no_open'}>
               <span className={assetStyles.heroSummaryHead}><span className={`${assetStyles.heroSummaryTitle} ${leadStyles.leadOwnerSummaryText}`}>{dealerAppMode ? 'Due' : 'Nothing due'}</span></span>
               <span className={assetStyles.heroSummaryValueRow}><strong className={`${assetStyles.heroSummaryValue} ${leadStyles.leadOwnerSummaryText}`}>{noOpenCount}</strong></span>
-              <span className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${leadStyles.leadOwnerSummaryFooter}`}><small className={leadStyles.leadOwnerSummaryText}>No current maintenance requires attention.</small></span>
+              {!dealerAppMode ? <span className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${leadStyles.leadOwnerSummaryFooter}`}><small className={leadStyles.leadOwnerSummaryText}>No current maintenance requires attention.</small></span> : null}
             </button>
           </section>
 
@@ -1326,7 +1326,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                 <h3 id="maintenance-history-title">{historyModalStep === 1
                   ? 'What would you like to see?'
                   : historyModalStep === 2
-                    ? 'Choose a timeline'
+                    ? dealerAppMode ? 'Timeline' : 'Choose a timeline'
                     : 'Maintenance history'}</h3>
                 <p>{historyModalStep === 1
                   ? `${historyAsset.assetTitle} · Select one option to continue.`
@@ -1355,16 +1355,18 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                         type="button"
                         onClick={() => chooseHistoryRecordType(option.value as HistoryRecordType)}
                       >
-                        <span className={styles.historyChoiceIcon}>
-                          <HistoryRecordIcon type={option.value as HistoryRecordType} />
-                        </span>
+                        {!dealerAppMode ? (
+                          <span className={styles.historyChoiceIcon}>
+                            <HistoryRecordIcon type={option.value as HistoryRecordType} />
+                          </span>
+                        ) : null}
                         <span className={styles.historyChoiceCopy}>
                           <strong>{option.label}</strong>
-                          <small>{option.value === 'all'
+                          {!dealerAppMode ? <small>{option.value === 'all'
                             ? 'All saved activity'
                             : option.value === 'maintenance'
                               ? 'Completed services and checkups'
-                              : 'Problems and saved notes'}</small>
+                              : 'Problems and saved notes'}</small> : null}
                         </span>
                         <b>{count}</b>
                       </button>
@@ -1384,9 +1386,11 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                       className={option.value === 'custom' && historyTimelineFilter === 'custom' ? styles.historyTimelineFilterActive : ''}
                       onClick={() => chooseHistoryTimeline(option.value as HistoryTimelineFilter)}
                     >
-                      <span className={styles.historyChoiceIcon}>
-                        <HistoryTimelineChoiceIcon type={option.value as HistoryTimelineFilter} />
-                      </span>
+                      {!dealerAppMode ? (
+                        <span className={styles.historyChoiceIcon}>
+                          <HistoryTimelineChoiceIcon type={option.value as HistoryTimelineFilter} />
+                        </span>
+                      ) : null}
                       <span className={styles.historyTimelineCopy}>
                         <strong>{option.label}</strong>
                         <small>{option.value === 'all'
@@ -1397,7 +1401,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                               ? 'Past 90 days'
                               : 'Choose dates'}</small>
                       </span>
-                      <ChevronRightIcon className={styles.historyChoiceArrow} />
+                      {!dealerAppMode ? <ChevronRightIcon className={styles.historyChoiceArrow} /> : null}
                     </button>
                   ))}
                 </div>
@@ -1654,7 +1658,10 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
           <div className={assetStyles.modalBackdrop} onClick={() => setFilterOpen(false)} />
           <div className={`${assetStyles.modalCard} ${workspaceStyles.modal} ${leadStyles.leadFilterModal} ${styles.trackerFilterModal}`} role="dialog" aria-modal="true" aria-labelledby="tracker-filter-title">
             <div className={`${assetStyles.modalHeader} ${leadStyles.leadFilterHeader} ${styles.trackerFilterHeader}`}>
-              <div><h3 id="tracker-filter-title">Filter tracked equipment</h3><p className={leadStyles.leadFilterIntro}>Filter by asset owner and current maintenance position.</p></div>
+              <div>
+                <h3 id="tracker-filter-title">{dealerAppMode ? 'Filter' : 'Filter tracked equipment'}</h3>
+                {!dealerAppMode ? <p className={leadStyles.leadFilterIntro}>Filter by asset owner and current maintenance position.</p> : null}
+              </div>
               <button type="button" className={`${assetStyles.modalCloseButton} ${workspaceStyles.modalClose}`} onClick={() => setFilterOpen(false)} aria-label="Close filters"><CloseIcon className={assetStyles.buttonIcon} /></button>
             </div>
             <div className={`${workspaceStyles.modalBody} ${leadStyles.leadFilterForm} ${styles.trackerFilterForm}`}>
