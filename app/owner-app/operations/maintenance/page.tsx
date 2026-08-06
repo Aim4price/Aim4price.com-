@@ -16,7 +16,7 @@ export default async function OwnerMaintenanceAssetsPage({ searchParams }: { sea
     <main className={styles.page}>
       <OwnerAppNav backHref="/owner-app/operations" backLabel="Back" />
       <div className={styles.content}>
-        <section className={styles.hero}>
+        <section className={`${styles.hero} ${styles.maintenanceAssetsHero}`}>
           <h1>Maintenance</h1>
           <p>Choose an asset to check, service or repair.</p>
         </section>
