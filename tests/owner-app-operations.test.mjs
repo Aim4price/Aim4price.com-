@@ -48,6 +48,17 @@ test('maintenance selection uses Overview typography, owner asset cards and a lo
   assert.match(styles, /\.maintenanceAssetsHero h1 \{[\s\S]*?font-weight: 900/);
 });
 
+test('Owner My Assets stacks serial, year and usage vertically', async () => {
+  const [assetList, styles] = await Promise.all([
+    source('app/owner-app/assets/owner-assets-client.tsx'),
+    source('app/owner-app/owner-app.module.css'),
+  ]);
+
+  assert.match(assetList, /mode === 'assets' \? styles\.ownerAssetMetaStack/);
+  assert.match(styles, /\.managerAssetMetaGrid\.ownerAssetMetaStack \{ grid-template-columns: 1fr; \}/);
+  assert.match(styles, /\.managerAssetMetaGrid\.ownerAssetMetaStack > div:last-child \{ grid-column: auto; \}/);
+});
+
 test('maintenance selection continues into the signed-in owner workflow', async () => {
   const [detailPage, scanClient] = await Promise.all([
     source('app/owner-app/operations/maintenance/[assetId]/page.tsx'),
