@@ -69,7 +69,7 @@ export default async function DealerHome() {
   );
   const role = dealerAppSession?.role ?? 'owner';
 
-  const tools: DealerHomeTool[] = [
+  const allTools: DealerHomeTool[] = [
     {
       label: 'Overview',
       href: '/dealer/overview',
@@ -98,7 +98,8 @@ export default async function DealerHome() {
     { label: 'Discover Assets', href: '/dealer/discovery', capability: 'discovery' },
     { label: 'Client Costs', href: '/dealer/cost', capability: 'client_costs' },
     { label: 'Marketplace', href: '/dealer/marketplace', capability: 'marketplace' },
-  ].filter((tool) => dealerRoleCan(role, tool.capability));
+  ];
+  const tools = allTools.filter((tool) => dealerRoleCan(role, tool.capability));
 
   return (
     <main className={`${styles.shell} ${styles.homeShell}`}>
