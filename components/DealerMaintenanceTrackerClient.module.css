@@ -1908,8 +1908,8 @@
 }
 
 .dealerDesktop .trackerManageModal.trackerManageModal {
-  width: min(76rem, calc(100vw - 3rem)) !important;
-  max-width: 76rem !important;
+  width: min(60rem, calc(100vw - 3rem)) !important;
+  max-width: 60rem !important;
   max-height: calc(100dvh - 3rem) !important;
   display: grid !important;
   grid-template-rows: auto minmax(0, 1fr);
@@ -1919,26 +1919,26 @@
 
 .dealerDesktop .trackerManageModal [class*='optionsModalHeader'] {
   min-height: 0 !important;
-  padding: 1.6rem 5rem 1.4rem 1.75rem !important;
+  padding: 1.3rem 4.5rem 1.15rem 1.4rem !important;
 }
 
 .dealerDesktop .trackerManageBody.trackerManageBody {
   min-height: 0;
-  padding: 1.4rem 1.5rem 1.6rem !important;
+  padding: 1rem 1.1rem 1.25rem !important;
   overflow-x: hidden !important;
   overflow-y: auto !important;
 }
 
 .dealerDesktop .trackerManageModal [class*='optionsGrid'] {
   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  gap: 1rem !important;
+  gap: 0.85rem !important;
 }
 
 .dealerDesktop .trackerManageModal [class*='optionActionButton'] {
   width: 100% !important;
   min-width: 0 !important;
-  min-height: 7rem !important;
-  padding: 1.15rem 1.25rem !important;
+  min-height: 5.25rem !important;
+  padding: 0.9rem 1rem !important;
   box-sizing: border-box;
 }
 
