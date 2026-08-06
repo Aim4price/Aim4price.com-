@@ -2117,23 +2117,14 @@
   font-size: 1.08rem;
 }
 
-.dealerApp .historyChoiceModal .historyTimelineFilters {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.7rem;
-}
-
-.dealerApp .historyChoiceModal .historyTimelineFilters button {
-  min-height: 5.8rem;
+.dealerApp .historyDateRange {
   grid-template-columns: minmax(0, 1fr);
-  place-items: center;
-  gap: 0.28rem;
-  padding: 0.9rem 0.75rem;
-  text-align: center;
+  gap: 0.75rem;
+  padding: 0.9rem;
 }
 
-.dealerApp .historyTimelineCopy {
-  justify-items: center;
-  gap: 0.22rem;
+.dealerApp .historyDateRange .historyClearButton {
+  width: 100%;
 }
 
 .dealerApp .historyRecordsStep {
@@ -2255,3 +2246,7 @@
   }
 }
 
+/* Shared Dealer history type choices no longer need room for supporting copy. */
+.historyTypeTabs button {
+  min-height: 5.2rem;
+}
