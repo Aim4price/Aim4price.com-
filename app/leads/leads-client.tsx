@@ -156,6 +156,29 @@ type PhotoModalState = {
   title: string;
 };
 
+type LeadAssetMedia = {
+  id: string;
+  title: string;
+  publicAssetCode: string;
+  photos: string[];
+};
+
+type LeadAssetMediaResponse = {
+  ok: boolean;
+  asset?: LeadAssetMedia;
+  error?: string;
+};
+
+type LeadQrModalState = LeadAssetMedia & {
+  leadId: string;
+};
+
+type PendingLeadPhoto = {
+  id: string;
+  file: File;
+  previewUrl: string;
+};
+
 type PartnerNoteResponse = {
   ok: boolean;
   note?: LeadPartnerNote;
@@ -189,6 +212,9 @@ const MONTH_OPTIONS = [
 ];
 
 const MAX_LEAD_NOTE_PDF_BYTES = 12 * 1024 * 1024;
+const MAX_LEAD_ASSET_PHOTOS = 12;
+const MAX_LEAD_ASSET_PHOTO_BYTES = 5 * 1024 * 1024;
+const LEAD_ASSET_PHOTO_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const LEADS_PER_PAGE = 10;
 const PAGINATION_WINDOW = 5;
 
@@ -290,6 +316,44 @@ function DownloadIcon({ className }: IconProps) {
       <path d="M12 3v11" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
       <path d="m7 10 5 5 5-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M5 20h14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+
+function QrCodeIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4 4h6v6H4V4Zm10 0h6v6h-6V4ZM4 14h6v6H4v-6Z" fill="none" stroke="currentColor" strokeWidth="2" />
+      <path d="M14 14h2v2h-2v-2Zm4 0h2v4h-2v-4Zm-4 4h4v2h-4v-2Z" fill="currentColor" />
+    </svg>
+  );
+}
+
+function PhotosIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="3" y="5" width="18" height="14" rx="2" fill="none" stroke="currentColor" strokeWidth="2" />
+      <circle cx="8.5" cy="10" r="1.5" fill="currentColor" />
+      <path d="m5 17 4.5-4 3 2.5 2.5-2 4 3.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function CopyIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="8" y="8" width="11" height="11" rx="2" fill="none" stroke="currentColor" strokeWidth="2" />
+      <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" fill="none" stroke="currentColor" strokeWidth="2" />
+    </svg>
+  );
+}
+
+function PrintIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M7 9V4h10v5M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+      <path d="M7 14h10v6H7z" fill="none" stroke="currentColor" strokeWidth="2" />
     </svg>
   );
 }
@@ -1540,7 +1604,8 @@ export default function LeadsClient({
   initialSessionUserId = '',
 }: LeadsClientProps = {}) {
   const useDealerWorkspaceStyles = accountantWorkspaceMode || (dealerWorkspaceMode ?? dealerAppMode);
-  const canAddDealerCosts = Boolean(dealerAppMode || dealerWorkspaceMode);
+  const isDealerLeadsMode = Boolean(dealerAppMode || dealerWorkspaceMode);
+  const canAddDealerCosts = isDealerLeadsMode;
   const dealerWorkspaceClass = (...classNames: string[]) =>
     useDealerWorkspaceStyles ? classNames.join(' ') : '';
   const [sessionUserId, setSessionUserId] = useState(initialSessionUserId);
@@ -1557,6 +1622,12 @@ export default function LeadsClient({
   const [assetPhotoModal, setAssetPhotoModal] = useState<PhotoModalState | null>(null);
   const [sentPhotoModal, setSentPhotoModal] = useState<PhotoModalState | null>(null);
   const [managedLead, setManagedLead] = useState<AssetLead | null>(null);
+  const [qrLeadAsset, setQrLeadAsset] = useState<LeadQrModalState | null>(null);
+  const [copiedQrLeadId, setCopiedQrLeadId] = useState<string | null>(null);
+  const [photoUploadLead, setPhotoUploadLead] = useState<AssetLead | null>(null);
+  const [pendingLeadPhotos, setPendingLeadPhotos] = useState<PendingLeadPhoto[]>([]);
+  const [isLeadPhotoDragging, setIsLeadPhotoDragging] = useState(false);
+  const [isUploadingLeadPhotos, setIsUploadingLeadPhotos] = useState(false);
   const [accountantReportLead, setAccountantReportLead] = useState<AssetLead | null>(null);
   const [emailLead, setEmailLead] = useState<AssetLead | null>(null);
   const [emailSubjectDraft, setEmailSubjectDraft] = useState('');
@@ -1755,6 +1826,8 @@ export default function LeadsClient({
     || deleteLeadTarget
     || assetPhotoModal
     || sentPhotoModal
+    || qrLeadAsset
+    || photoUploadLead
     || noteLead,
   );
 
@@ -1793,10 +1866,12 @@ export default function LeadsClient({
         return;
       }
 
-      if (event.key !== 'Escape' || isDeletingLead || isSavingNote || isDownloadingLeadReport) return;
+      if (event.key !== 'Escape' || isDeletingLead || isSavingNote || isDownloadingLeadReport || isUploadingLeadPhotos) return;
 
       if (assetPhotoModal) setAssetPhotoModal(null);
       else if (sentPhotoModal) setSentPhotoModal(null);
+      else if (qrLeadAsset) closeLeadQrModal();
+      else if (photoUploadLead) closeLeadPhotoUploadModal();
       else if (deleteLeadTarget) setDeleteLeadTarget(null);
       else if (noteLead) closeNoteModal();
       else if (maintenanceScheduleLead) setMaintenanceScheduleLead(null);
@@ -1824,6 +1899,7 @@ export default function LeadsClient({
     isDeletingLead,
     isDownloadingLeadReport,
     isSavingNote,
+    isUploadingLeadPhotos,
     managedLead,
     costReportLead,
     maintenanceReportAccessId,
@@ -1831,6 +1907,9 @@ export default function LeadsClient({
     noteLead,
     reportLead,
     sentPhotoModal,
+    qrLeadAsset,
+    photoUploadLead,
+    pendingLeadPhotos,
     useDealerWorkspaceStyles,
   ]);
 
@@ -2062,6 +2141,252 @@ export default function LeadsClient({
   function closeLeadFilterModal() {
     setOpenFilterDropdown(null);
     setIsFilterModalOpen(false);
+  }
+
+
+  function mergeLeadAssetMedia(lead: AssetLead, asset: LeadAssetMedia): AssetLead {
+    const updatedLead = {
+      ...lead,
+      assetSnapshot: {
+        ...lead.assetSnapshot,
+        id: asset.id,
+        title: asset.title,
+        publicAssetCode: asset.publicAssetCode,
+        photos: [...asset.photos],
+      },
+    };
+
+    setLeads((current) => current.map((item) => (item.id === lead.id ? updatedLead : item)));
+    setLeadPhotoIndex(lead.id, 0);
+    return updatedLead;
+  }
+
+  async function loadLeadAssetMedia(lead: AssetLead): Promise<{ lead: AssetLead; asset: LeadAssetMedia }> {
+    const response = await fetch(`/api/asset-leads/${encodeURIComponent(lead.id)}/media`, {
+      cache: 'no-store',
+      credentials: 'include',
+    });
+    const data = (await response.json()) as LeadAssetMediaResponse;
+
+    if (!response.ok || !data.ok || !data.asset) {
+      throw new Error(data.error ?? 'Failed to load this asset.');
+    }
+
+    return {
+      asset: data.asset,
+      lead: mergeLeadAssetMedia(lead, data.asset),
+    };
+  }
+
+  async function openLeadQrModal(lead: AssetLead) {
+    setNotice(null);
+    setManagedLead(null);
+
+    try {
+      const { asset } = await loadLeadAssetMedia(lead);
+      setQrLeadAsset({ ...asset, leadId: lead.id });
+      setCopiedQrLeadId(null);
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Failed to open this asset QR code.',
+      });
+    }
+  }
+
+  function closeLeadQrModal() {
+    setQrLeadAsset(null);
+    setCopiedQrLeadId(null);
+  }
+
+  function buildLeadQrUrl(asset: LeadQrModalState, format: 'svg' | 'png' | 'print', download = false): string {
+    const params = new URLSearchParams({
+      assetId: asset.id,
+      leadId: asset.leadId,
+      format,
+    });
+    if (download) params.set('download', '1');
+    return `/api/asset-register/qr?${params.toString()}`;
+  }
+
+  async function copyLeadScanLink(asset: LeadQrModalState) {
+    if (!asset.publicAssetCode) {
+      setNotice({ tone: 'error', message: 'This asset does not have a scan link yet.' });
+      return;
+    }
+
+    const scanUrl = `${window.location.origin}/scan/${encodeURIComponent(asset.publicAssetCode)}`;
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(scanUrl);
+      } else {
+        window.prompt('Copy this asset scan link', scanUrl);
+      }
+
+      setCopiedQrLeadId(asset.leadId);
+      window.setTimeout(() => {
+        setCopiedQrLeadId((current) => (current === asset.leadId ? null : current));
+      }, 2200);
+      setNotice({ tone: 'success', message: 'Scan link copied.' });
+    } catch (error) {
+      setCopiedQrLeadId(null);
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Failed to copy the scan link.',
+      });
+    }
+  }
+
+  function printLeadQr(asset: LeadQrModalState) {
+    const opened = window.open(buildLeadQrUrl(asset, 'print'), '_blank', 'noopener,noreferrer');
+    setNotice(opened
+      ? { tone: 'success', message: 'QR print sheet opened in a new tab.' }
+      : { tone: 'error', message: 'Unable to open the QR print page. Please allow pop-ups and try again.' });
+  }
+
+  async function downloadLeadQr(asset: LeadQrModalState) {
+    try {
+      const response = await fetch(buildLeadQrUrl(asset, 'png', true), {
+        credentials: 'include',
+        cache: 'no-store',
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => null) as { error?: string } | null;
+        throw new Error(data?.error ?? 'Failed to download the asset QR image.');
+      }
+
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      const slug = asset.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'asset';
+      anchor.href = objectUrl;
+      anchor.download = `${slug}-qr.png`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(objectUrl);
+      setNotice({ tone: 'success', message: 'Asset QR image downloaded.' });
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Failed to download the asset QR image.',
+      });
+    }
+  }
+
+  async function openLeadPhotoUploadModal(lead: AssetLead) {
+    setNotice(null);
+    setManagedLead(null);
+
+    try {
+      const { lead: hydratedLead } = await loadLeadAssetMedia(lead);
+      setPendingLeadPhotos([]);
+      setIsLeadPhotoDragging(false);
+      setPhotoUploadLead(hydratedLead);
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Failed to open asset photos.',
+      });
+    }
+  }
+
+  function closeLeadPhotoUploadModal() {
+    if (isUploadingLeadPhotos) return;
+    pendingLeadPhotos.forEach((photo) => URL.revokeObjectURL(photo.previewUrl));
+    setPendingLeadPhotos([]);
+    setIsLeadPhotoDragging(false);
+    setPhotoUploadLead(null);
+  }
+
+  function queueLeadPhotoFiles(files: File[]) {
+    if (!photoUploadLead || !files.length) return;
+
+    const invalidType = files.find((file) => !LEAD_ASSET_PHOTO_TYPES.has(String(file.type ?? '').toLowerCase()));
+    if (invalidType) {
+      setNotice({ tone: 'error', message: 'Only JPG, PNG and WEBP photos are allowed.' });
+      return;
+    }
+
+    const oversized = files.find((file) => !file.size || file.size > MAX_LEAD_ASSET_PHOTO_BYTES);
+    if (oversized) {
+      setNotice({ tone: 'error', message: 'Each photo must be 5 MB or smaller.' });
+      return;
+    }
+
+    const availableSlots = MAX_LEAD_ASSET_PHOTOS - assetPhotos(photoUploadLead).length - pendingLeadPhotos.length;
+    if (availableSlots <= 0 || files.length > availableSlots) {
+      setNotice({
+        tone: 'error',
+        message: `This asset can have up to ${MAX_LEAD_ASSET_PHOTOS} photos. You can add ${Math.max(0, availableSlots)} more.`,
+      });
+      return;
+    }
+
+    const queued = files.map((file, index) => ({
+      id: `${Date.now()}-${index}-${file.name}`,
+      file,
+      previewUrl: URL.createObjectURL(file),
+    }));
+    setPendingLeadPhotos((current) => [...current, ...queued]);
+    setNotice(null);
+  }
+
+  function handleLeadPhotoInput(event: ChangeEvent<HTMLInputElement>) {
+    queueLeadPhotoFiles(Array.from(event.target.files ?? []));
+    event.target.value = '';
+  }
+
+  function handleLeadPhotoDrop(event: DragEvent<HTMLLabelElement>) {
+    event.preventDefault();
+    setIsLeadPhotoDragging(false);
+    queueLeadPhotoFiles(Array.from(event.dataTransfer.files ?? []));
+  }
+
+  function removePendingLeadPhoto(photoId: string) {
+    setPendingLeadPhotos((current) => {
+      const removed = current.find((photo) => photo.id === photoId);
+      if (removed) URL.revokeObjectURL(removed.previewUrl);
+      return current.filter((photo) => photo.id !== photoId);
+    });
+  }
+
+  async function uploadLeadPhotos() {
+    if (!photoUploadLead || !pendingLeadPhotos.length || isUploadingLeadPhotos) return;
+
+    setIsUploadingLeadPhotos(true);
+    setNotice(null);
+
+    try {
+      const formData = new FormData();
+      pendingLeadPhotos.forEach((photo) => formData.append('files', photo.file));
+      const response = await fetch(`/api/asset-leads/${encodeURIComponent(photoUploadLead.id)}/media`, {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+      });
+      const data = (await response.json()) as LeadAssetMediaResponse;
+      if (!response.ok || !data.ok || !data.asset) {
+        throw new Error(data.error ?? 'Failed to upload asset photos.');
+      }
+
+      mergeLeadAssetMedia(photoUploadLead, data.asset);
+      pendingLeadPhotos.forEach((photo) => URL.revokeObjectURL(photo.previewUrl));
+      setPendingLeadPhotos([]);
+      setPhotoUploadLead(null);
+      setNotice({
+        tone: 'success',
+        message: `${pendingLeadPhotos.length} ${pendingLeadPhotos.length === 1 ? 'photo' : 'photos'} added to the asset.`,
+      });
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Failed to upload asset photos.',
+      });
+    } finally {
+      setIsUploadingLeadPhotos(false);
+    }
   }
 
   function handleDownloadLead(lead: AssetLead, reportKind: PdfReportKind = 'full'): boolean {
@@ -3441,6 +3766,27 @@ export default function LeadsClient({
                         </span>
                       </button>
 
+
+                      {isDealerLeadsMode ? (
+                        <button type="button" className={assetStyles.optionActionButton} onClick={() => void openLeadQrModal(managedLead)}>
+                          <QrCodeIcon className={assetStyles.buttonIcon} />
+                          <span>
+                            <strong>QR code</strong>
+                            <small>Copy, download or print the asset QR label.</small>
+                          </span>
+                        </button>
+                      ) : null}
+
+                      {isDealerLeadsMode ? (
+                        <button type="button" className={assetStyles.optionActionButton} onClick={() => void openLeadPhotoUploadModal(managedLead)}>
+                          <PhotosIcon className={assetStyles.buttonIcon} />
+                          <span>
+                            <strong>Photos</strong>
+                            <small>Add photos of this asset.</small>
+                          </span>
+                        </button>
+                      ) : null}
+
                       {isTrackingLead(managedLead) && managedLead.maintenanceAccess?.isActive ? (
                         <button
                           type="button"
@@ -3494,6 +3840,145 @@ export default function LeadsClient({
                   )}
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+
+      {qrLeadAsset ? (
+        <div className={`${assetStyles.modalOverlay} ${assetStyles.subModalOverlay}`}>
+          <div className={assetStyles.modalBackdrop} onClick={closeLeadQrModal} />
+
+          <div className={`${assetStyles.modalCard} ${assetStyles.qrModal}`} role="dialog" aria-modal="true" aria-labelledby="lead-asset-qr-title">
+            <div className={`${assetStyles.modalHeader} ${assetStyles.qrModalHeader}`}>
+              <div className={assetStyles.modalHeaderText}>
+                <h3 id="lead-asset-qr-title">{qrLeadAsset.title}</h3>
+                <p>Use this permanent QR for scan access. Public QR scans always ask for the farm PIN.</p>
+              </div>
+
+              <button type="button" className={assetStyles.modalCloseButton} onClick={closeLeadQrModal} aria-label="Close QR code">
+                <CloseIcon className={assetStyles.buttonIcon} />
+              </button>
+            </div>
+
+            <div className={`${assetStyles.modalScrollBody} ${assetStyles.qrModalScrollBody}`}>
+              <div className={assetStyles.qrModalBody}>
+                <div className={assetStyles.qrPreviewCard}>
+                  <span className={assetStyles.qrPreviewEyebrow}>Permanent asset QR</span>
+                  <div className={assetStyles.qrPreviewFrame}>
+                    {qrLeadAsset.publicAssetCode ? (
+                      <img src={buildLeadQrUrl(qrLeadAsset, 'svg')} alt={`QR code for ${qrLeadAsset.title}`} />
+                    ) : (
+                      <p className={assetStyles.qrPreviewFallback}>QR artwork is not ready for this asset yet.</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className={assetStyles.qrPrimaryActionsCard}>
+                  <button
+                    type="button"
+                    className={`${assetStyles.qrPrimaryActionButton} ${copiedQrLeadId === qrLeadAsset.leadId ? assetStyles.qrCopiedButton : ''}`}
+                    onClick={() => void copyLeadScanLink(qrLeadAsset)}
+                  >
+                    <CopyIcon className={assetStyles.buttonIcon} />
+                    <span>{copiedQrLeadId === qrLeadAsset.leadId ? 'Copied' : 'Copy scan link'}</span>
+                  </button>
+
+                  <button type="button" className={assetStyles.qrPrimaryActionButton} onClick={() => printLeadQr(qrLeadAsset)}>
+                    <PrintIcon className={assetStyles.buttonIcon} />
+                    <span>Print QR label</span>
+                  </button>
+
+                  <button type="button" className={assetStyles.qrPrimaryActionButton} onClick={() => void downloadLeadQr(qrLeadAsset)}>
+                    <QrCodeIcon className={assetStyles.buttonIcon} />
+                    <span>Download QR</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {photoUploadLead ? (
+        <div className={`${assetStyles.modalOverlay} ${dealerWorkspaceClass(workspaceStyles.modalOverlay)} ${styles.leadPhotoUploadOverlay}`}>
+          <div className={assetStyles.modalBackdrop} onClick={closeLeadPhotoUploadModal} />
+
+          <div className={`${assetStyles.modalCard} ${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadPhotoUploadModal}`} role="dialog" aria-modal="true" aria-labelledby="lead-photo-upload-title">
+            <div className={`${assetStyles.modalHeader} ${dealerWorkspaceClass(workspaceStyles.modalHeader)}`}>
+              <div className={assetStyles.modalHeaderText}>
+                <h3 id="lead-photo-upload-title">Photos</h3>
+                <p>{assetTitle(photoUploadLead)} · {assetPhotos(photoUploadLead).length} of {MAX_LEAD_ASSET_PHOTOS} photos saved</p>
+              </div>
+
+              <button type="button" className={`${assetStyles.modalCloseButton} ${dealerWorkspaceClass(workspaceStyles.modalClose)}`} onClick={closeLeadPhotoUploadModal} aria-label="Close photos" disabled={isUploadingLeadPhotos}>
+                <CloseIcon className={assetStyles.buttonIcon} />
+              </button>
+            </div>
+
+            <div className={`${assetStyles.modalScrollBody} ${dealerWorkspaceClass(workspaceStyles.modalBody)} ${styles.leadPhotoUploadBody}`}>
+              {assetPhotos(photoUploadLead).length ? (
+                <section className={styles.leadSavedPhotos} aria-label="Saved asset photos">
+                  <div className={styles.leadPhotoSectionHeading}>
+                    <strong>Saved photos</strong>
+                    <span>{assetPhotos(photoUploadLead).length}</span>
+                  </div>
+                  <div className={styles.leadPhotoPreviewGrid}>
+                    {assetPhotos(photoUploadLead).map((url, index) => (
+                      <button type="button" key={url} onClick={() => openAssetPhotoModal(photoUploadLead, assetPhotos(photoUploadLead), index)}>
+                        <img src={normalizeLeadPhotoUrl(url)} alt={`${assetTitle(photoUploadLead)} photo ${index + 1}`} />
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              ) : null}
+
+              <label
+                className={`${styles.leadPhotoDropzone} ${isLeadPhotoDragging ? styles.leadPhotoDropzoneActive : ''}`}
+                onDragEnter={(event) => {
+                  event.preventDefault();
+                  setIsLeadPhotoDragging(true);
+                }}
+                onDragOver={(event) => event.preventDefault()}
+                onDragLeave={() => setIsLeadPhotoDragging(false)}
+                onDrop={handleLeadPhotoDrop}
+              >
+                <input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={handleLeadPhotoInput} disabled={isUploadingLeadPhotos} />
+                <PhotosIcon className={styles.leadPhotoDropzoneIcon} />
+                <span>Add photos</span>
+                <strong>Drop photos here or click to choose</strong>
+                <small>JPG, PNG or WEBP · up to 5 MB each · {Math.max(0, MAX_LEAD_ASSET_PHOTOS - assetPhotos(photoUploadLead).length - pendingLeadPhotos.length)} spaces available</small>
+              </label>
+
+              {pendingLeadPhotos.length ? (
+                <section className={styles.leadPendingPhotos} aria-label="Photos ready to upload">
+                  <div className={styles.leadPhotoSectionHeading}>
+                    <strong>Ready to upload</strong>
+                    <span>{pendingLeadPhotos.length}</span>
+                  </div>
+                  <div className={styles.leadPhotoPreviewGrid}>
+                    {pendingLeadPhotos.map((photo) => (
+                      <div key={photo.id} className={styles.leadPendingPhoto}>
+                        <img src={photo.previewUrl} alt={photo.file.name} />
+                        <button type="button" onClick={() => removePendingLeadPhoto(photo.id)} disabled={isUploadingLeadPhotos} aria-label={`Remove ${photo.file.name}`}>
+                          ×
+                        </button>
+                        <span title={photo.file.name}>{photo.file.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              ) : null}
+            </div>
+
+            <div className={`${assetStyles.formActions} ${dealerWorkspaceClass(workspaceStyles.modalFooter)} ${styles.leadPhotoUploadActions}`}>
+              <button type="button" className={assetStyles.secondaryButton} onClick={closeLeadPhotoUploadModal} disabled={isUploadingLeadPhotos}>
+                Cancel
+              </button>
+              <button type="button" className={assetStyles.primaryButton} onClick={() => void uploadLeadPhotos()} disabled={!pendingLeadPhotos.length || isUploadingLeadPhotos}>
+                {isUploadingLeadPhotos ? 'Uploading...' : `Add ${pendingLeadPhotos.length || ''} ${pendingLeadPhotos.length === 1 ? 'photo' : 'photos'}`.replace(/\s+/g, ' ').trim()}
+              </button>
             </div>
           </div>
         </div>
