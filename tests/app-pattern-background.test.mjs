@@ -32,7 +32,7 @@ test('the component renders the complete minimal arc composition', () => {
 });
 
 test('the background is responsive, interaction-safe, and uses the Aim4price palette', () => {
-  for (const token of ['#f7fcf9', '#f3faf6', '#eaf6ef', '#78b99b', '#76b99a', '#a9dcc4']) {
+  for (const token of ['#fafdfb', '#f7faf8', '#f1f7f3', '#78b99b', '#76b99a', '#a9dcc4']) {
     assert.ok(styles.includes(token), `missing ${token}`);
   }
   assert.match(styles, /\.decoration\s*{[^}]*position:\s*fixed/s);
@@ -42,8 +42,8 @@ test('the background is responsive, interaction-safe, and uses the Aim4price pal
   assert.match(styles, /env\(safe-area-inset-/);
   assert.match(styles, /@media \(max-width: 600px\)/);
   assert.match(styles, /stroke-width:\s*1\.25/);
-  assert.match(styles, /\.arcs\s*{[^}]*opacity:\s*0\.24/s);
-  assert.match(styles, /\.dotGrid\s*{[^}]*opacity:\s*0\.34/s);
-  assert.match(styles, /\.mintCircle\s*{[^}]*opacity:\s*0\.2/s);
+  assert.match(styles, /\.arcs\s*{[^}]*opacity:\s*0\.18/s);
+  assert.match(styles, /\.dotGrid\s*{[^}]*opacity:\s*0\.25/s);
+  assert.match(styles, /\.mintCircle\s*{[^}]*opacity:\s*0\.13/s);
   assert.match(styles, /--aim4price-card-shadow:\s*0 10px 30px rgba\(13, 62, 49, 0\.08\)/);
 });
