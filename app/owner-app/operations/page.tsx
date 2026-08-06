@@ -14,10 +14,7 @@ export default async function OwnerOperationsPage() {
   return (
     <main className={`${styles.page} ${styles.homePage} ${styles.operationsPage}`}>
       <OwnerAppNav />
-      <div className={`${styles.content} ${styles.operationsContent}`}>
-        <section className={`${styles.ownerPageIntro} ${styles.operationsIntro}`}>
-          <h1 className={styles.ownerPageTitle}>Choose option</h1>
-        </section>
+      <div className={`${styles.content} ${styles.operationsContent} ${styles.operationsLandingContent}`}>
         <nav
           className={`${styles.operationLauncher} ${styles.operationsLandingLauncher}`}
           aria-label="Maintenance and fuel tools"
