@@ -330,7 +330,7 @@
   font: inherit;
   text-align: center;
   cursor: pointer;
-  box-shadow: 0 9px 24px rgba(18, 53, 45, 0.07);
+  box-shadow: var(--aim4price-card-shadow, 0 10px 30px rgba(13, 62, 49, 0.08));
   transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
 }
 
