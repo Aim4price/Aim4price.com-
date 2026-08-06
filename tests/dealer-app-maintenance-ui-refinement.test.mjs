@@ -44,22 +44,43 @@ test("Dealer App filter is concise, uses both native dropdowns, and applies both
   );
 });
 
-test("Dealer App history choices are text-first while Dealer Desktop retains its detail", () => {
-  assert.match(source, /dealerAppMode \? 'Timeline' : 'Choose a timeline'/);
+test("Dealer App and Dealer Desktop history type choices omit supporting copy", () => {
+  assert.doesNotMatch(
+    source,
+    /All saved activity|Completed services and checkups|Problems and saved notes/,
+  );
   assert.match(source, /!dealerAppMode \? \([\s\S]*?<HistoryRecordIcon/);
-  assert.match(source, /!dealerAppMode \? <small>\{option\.value === 'all'/);
   assert.match(
     source,
-    /!dealerAppMode \? \([\s\S]*?<HistoryTimelineChoiceIcon/,
-  );
-  assert.match(source, /!dealerAppMode \? <ChevronRightIcon/);
-  assert.match(
-    styles,
-    /\.dealerApp \.historyTypeTabs button \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\) auto/,
+    /<span className=\{styles\.historyChoiceCopy\}>[\s\S]*?<strong>\{option\.label\}<\/strong>/,
   );
   assert.match(
     styles,
-    /\.dealerApp \.historyChoiceModal \.historyTimelineFilters button \{[\s\S]*?place-items: center/,
+    /\.historyTypeTabs button \{[\s\S]*?min-height: 5\.2rem/,
+  );
+});
+
+test("Dealer App timeline is a required custom date range while Desktop keeps presets", () => {
+  assert.match(source, /dealerAppMode \? 'Timeline' : 'Choose a timeline'/);
+  assert.match(
+    source,
+    /setHistoryTimelineFilter\(dealerAppMode \? 'custom' : 'all'\)/,
+  );
+  assert.match(
+    source,
+    /!dealerAppMode \? \([\s\S]*?historyTimelineOptions\.map/,
+  );
+  assert.match(source, /dealerAppMode \|\| historyTimelineFilter === 'custom'/);
+  assert.match(source, /max=\{historyToDate \|\| undefined\}/);
+  assert.match(source, /min=\{historyFromDate \|\| undefined\}/);
+  assert.match(
+    source,
+    /disabled=\{dealerAppMode \? !historyFromDate \|\| !historyToDate/,
+  );
+  assert.match(source, /historyFiltersActive && !dealerAppMode/);
+  assert.match(
+    styles,
+    /\.dealerApp \.historyDateRange \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/,
   );
 });
 
