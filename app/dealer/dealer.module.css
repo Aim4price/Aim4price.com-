@@ -2528,7 +2528,7 @@
   background: #ffffff;
   color: var(--dealer-ink);
   padding: 15px 44px;
-  box-shadow: 0 9px 24px rgba(18, 53, 45, 0.07);
+  box-shadow: var(--aim4price-card-shadow, 0 10px 30px rgba(13, 62, 49, 0.08));
   text-align: center;
   text-decoration: none;
   transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
@@ -2720,4 +2720,14 @@
   background: transparent;
   box-shadow: none;
   backdrop-filter: none;
+}
+
+
+.patternPageContent {
+  display: contents;
+}
+
+.patternPageContent > * {
+  background-color: transparent !important;
+  background-image: none !important;
 }

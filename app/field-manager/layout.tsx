@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 
+import AppPatternBackground from '../../components/AppPatternBackground';
+
 export const metadata: Metadata = {
   applicationName: 'Aim4price Farm Manager App',
   title: 'Field Manager | Aim4price',
@@ -26,5 +28,5 @@ export const viewport: Viewport = {
 };
 
 export default function FieldManagerLayout({ children }: { children: ReactNode }) {
-  return children;
+  return <AppPatternBackground>{children}</AppPatternBackground>;
 }
