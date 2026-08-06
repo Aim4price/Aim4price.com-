@@ -1453,11 +1453,54 @@ function downloadLeadAsset(lead: AssetLead, reportKind: PdfReportKind = 'full'):
   return Boolean(didOpen);
 }
 
+function searchableAssetSnapshotText(snapshot: Record<string, unknown>): string {
+  const specs = asRecord(snapshot.specsJson) ?? asRecord(snapshot.specs) ?? {};
+  const serialNumber =
+    firstTextFromRecord(snapshot, ['serialNumber', 'serial_number']) ||
+    firstTextFromRecord(specs, ['serialNumber', 'serial_number']);
+  const registrationNumber =
+    firstTextFromRecord(snapshot, [
+      'licenseRegistrationNumber',
+      'license_registration_number',
+      'licenceRegistrationNumber',
+      'licence_registration_number',
+      'registrationNumber',
+      'registration_number',
+      'numberPlate',
+      'number_plate',
+    ]) ||
+    firstTextFromRecord(specs, [
+      'licenseRegistrationNumber',
+      'license_registration_number',
+      'licenceRegistrationNumber',
+      'licence_registration_number',
+      'registrationNumber',
+      'registration_number',
+      'numberPlate',
+      'number_plate',
+    ]);
+
+  return [
+    snapshotTitle(snapshot),
+    snapshot.brandName,
+    snapshot.modelName,
+    snapshot.typedModelName,
+    snapshot.equipmentFamilyLabel,
+    snapshot.kind,
+    serialNumber,
+    registrationNumber,
+  ]
+    .filter(Boolean)
+    .join(' ');
+}
+
 function searchTextForLead(lead: AssetLead): string {
   return [
     assetTitle(lead),
     assetDescription(lead),
     leadAssetMeta(lead),
+    searchableAssetSnapshotText(lead.assetSnapshot),
+    ...registerLeadAssets(lead).map(searchableAssetSnapshotText),
     formatLeadDisplayType(lead),
     formatDate(lead.createdAtIso),
     ownerDisplayName(lead),
@@ -1468,6 +1511,15 @@ function searchTextForLead(lead: AssetLead): string {
     .filter(Boolean)
     .join(' ')
     .toLowerCase();
+}
+
+function leadMatchesSearch(lead: AssetLead, search: string): boolean {
+  const query = search.trim().toLowerCase();
+  if (!query) return true;
+  const searchText = searchTextForLead(lead);
+  if (searchText.includes(query)) return true;
+  const compactQuery = query.replace(/[^a-z0-9]/g, '');
+  return compactQuery.length > 1 && searchText.replace(/[^a-z0-9]/g, '').includes(compactQuery);
 }
 
 type LeadsClientProps = {
@@ -1567,14 +1619,13 @@ export default function LeadsClient({
       if (statusFilter === 'completed' && !isCompletedLead(lead)) return false;
       if (statusFilter === 'tracking' && !isTrackingLead(lead)) return false;
 
-      if (!query) return true;
-      return searchTextForLead(lead).includes(query);
+      return leadMatchesSearch(lead, query);
     });
   }, [periodLeads, searchTerm, statusFilter]);
 
   const summaryLeads = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
-    return query ? periodLeads.filter((lead) => searchTextForLead(lead).includes(query)) : periodLeads;
+    return query ? periodLeads.filter((lead) => leadMatchesSearch(lead, query)) : periodLeads;
   }, [periodLeads, searchTerm]);
   const newLeadCount = useMemo(() => summaryLeads.filter((lead) => isNewLead(lead)).length, [summaryLeads]);
   const activeLeadCount = useMemo(
@@ -2867,7 +2918,7 @@ export default function LeadsClient({
                 type="search"
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
-                placeholder={dealerAppMode ? 'Search leads' : 'Search by business, asset or lead date'}
+                placeholder="Search business, asset, serial or registration"
                 aria-label="Search leads"
               />
 
@@ -3386,7 +3437,7 @@ export default function LeadsClient({
                         <DownloadIcon className={assetStyles.buttonIcon} />
                         <span>
                           <strong>Reports</strong>
-                          <small>Choose a valuation or maintenance report.</small>
+                          <small>Choose a report.</small>
                         </span>
                       </button>
 
