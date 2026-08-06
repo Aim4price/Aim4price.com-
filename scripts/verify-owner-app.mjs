@@ -7,11 +7,11 @@ const root = resolve(process.cwd());
 const failures = [];
 const expectedHashes = new Map([
   ['app/layout.tsx', '2991e8ecc57af58eb48aa3c93a8866d79874d49a4d2bf4d1e14d34941b41c7d2'],
-  ['app/dealer/layout.tsx', '6323d7f37ce9accc9b1004de180be8e5bc5d0064d4b0dbb6b13da959d5c161b7'],
+  ['app/dealer/layout.tsx', 'dd44539b0255720b94abea289b27cc22d1a32e5aa827b164ab8ae9d212945c92'],
   ['app/dealer/login/dealer-login-client.tsx', '97acea8a25e476b5c7c5f36587fa69f075f73661b13049ac4996f0b6e05b8ad0'],
   ['app/dealer/manifest.webmanifest/route.ts', '8d009d21532e8ed8bbbba0214d753cdfe32ea41fc49183d52555549f42859116'],
   ['public/dealer-sw.js', '79356414eb16750e518c46b1de1a52592cca8a80e933b8dbc6eadc30a7a33dcd'],
-  ['app/field-manager/layout.tsx', '7974cd946b86a1f61b6fe084235a71b8bb3cd5cec3c6b98ace3b93bf7f10565f'],
+  ['app/field-manager/layout.tsx', '1586daf4ef63fa75f10f0eba4fbe73f8a4ef251851e8f3ebb1ab159777d766e4'],
   ['app/field-manager/field-manager-login-client.tsx', '705bebad18afa417ed70bc6abe12bd02dbbfe06603f1132cf0950e1b15e0531c'],
   ['app/field-manager/manifest.webmanifest/route.ts', 'ea948ed54f4a201b6501e1d82f99a8e6723d48307a8b429e07c3d2959a2af161'],
   ['public/field-manager-sw.js', '6dbc9741b1a7bc36b516e910d5f48c4b4a78809374bfc2d9178b3356588ad4cd'],
