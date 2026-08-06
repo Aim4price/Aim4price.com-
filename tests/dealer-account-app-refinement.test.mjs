@@ -215,3 +215,35 @@ test('Dealer App Maintenance and Dealer desktop dialogs keep their own rules', (
   assert.match(leadsStyles, /\.dealerDesktopLeads \.leadManageModal\.leadManageModal \{[\s\S]*?max-width: 60rem/);
   assert.match(leadsStyles, /\.dealerDesktopLeads \.leadManageModal \.manageOptionsGrid > button \{[\s\S]*?min-height: 5\.25rem/);
 });
+
+test('Dealer Leads and Maintenance keep search, service details and desktop actions concise', () => {
+  const leadsSource = read('app/leads/leads-client.tsx');
+  const maintenanceSource = read('components/DealerMaintenanceTrackerClient.tsx');
+  const maintenanceStyles = read('components/DealerMaintenanceTrackerClient.module.css');
+  const trackerSource = read('lib/dealer-maintenance-tracker.ts');
+
+  assert.match(leadsSource, /function searchableAssetSnapshotText[\s\S]*?serialNumber[\s\S]*?registrationNumber/);
+  assert.match(leadsSource, /registerLeadAssets\(lead\)\.map\(searchableAssetSnapshotText\)/);
+  assert.ok(leadsSource.includes("query.replace(/[^a-z0-9]/g, '')"));
+  assert.match(leadsSource, /placeholder="Search business, asset, serial or registration"/);
+  assert.match(leadsSource, /<small>Choose a report\.<\/small>/);
+
+  assert.match(trackerSource, /registrationNumber: string/);
+  assert.match(trackerSource, /registrationNumber: asset\.licenseRegistrationNumber/);
+  assert.match(maintenanceSource, /asset\.registrationNumber/);
+  assert.ok(maintenanceSource.includes("searchText.replace(/[^a-z0-9]/g, '')"));
+  assert.match(maintenanceSource, /placeholder="Search business, asset, serial or registration"/);
+  assert.match(maintenanceSource, /<span>Registration<\/span><strong>\{asset\.registrationNumber/);
+  assert.match(maintenanceSource, /Current Usage:/);
+  assert.match(maintenanceSource, /<span>Current usage<\/span>/);
+  assert.match(maintenanceSource, /<span>Service due<\/span>/);
+  assert.match(maintenanceSource, /<span>Recurring service<\/span><strong>\{asset\.nextMaintenance \? recurringLabel/);
+  assert.doesNotMatch(maintenanceSource, /<span>Quick view<\/span>/);
+  assert.doesNotMatch(maintenanceSource, /<h3>Upcoming maintenance<\/h3>/);
+
+  assert.match(maintenanceSource, /Message the owner on WhatsApp\./);
+  assert.match(maintenanceSource, /Send a schedule for owner approval\./);
+  assert.match(maintenanceSource, /Download maintenance history\./);
+  assert.match(maintenanceStyles, /\.dealerDesktop \.trackerManageModal \[class\*='optionActionButton'\] small \{[\s\S]*?white-space: nowrap/);
+  assert.match(maintenanceStyles, /\.trackerSectionsIntro h3 \{[\s\S]*?font-family:[\s\S]*?font-weight: 850/);
+});
