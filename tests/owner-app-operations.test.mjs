@@ -27,11 +27,13 @@ test('Owner App exposes one clear Maintenance & Fuel entry point', async () => {
   assert.match(styles, /\.operationsLandingLauncher \.operationChoiceCard,[\s\S]*?min-height: 78px/);
 });
 
-test('maintenance selection uses Overview typography, owner asset cards and a location gate', async () => {
-  const [listPage, assetList, balancedHeading, styles] = await Promise.all([
+test('maintenance selection uses Overview typography, stacked asset cards and the standard location modal', async () => {
+  const [listPage, assetList, balancedHeading, serviceModal, locationModal, styles] = await Promise.all([
     source('app/owner-app/operations/maintenance/page.tsx'),
     source('app/owner-app/assets/owner-assets-client.tsx'),
     source('app/owner-app/balanced-heading.tsx'),
+    source('app/owner-app/owner-service-location-modal.tsx'),
+    source('components/FuelLocationModal.tsx'),
     source('app/owner-app/owner-app.module.css'),
   ]);
 
@@ -39,22 +41,27 @@ test('maintenance selection uses Overview typography, owner asset cards and a lo
   assert.match(listPage, /styles\.maintenanceAssetsHero/);
   assert.match(assetList, /Record work/);
   assert.match(assetList, /owner-app\/operations\/maintenance/);
-  assert.match(assetList, /import ServiceLocationGate/);
+  assert.match(assetList, /import OwnerServiceLocationModal/);
   assert.match(assetList, /fetch\(`\/api\/owner-app\/assets\/\$\{encodeURIComponent\(asset\.id\)\}`/);
   assert.match(assetList, /publicAssetCode/);
-  assert.match(assetList, /<ServiceLocationGate/);
+  assert.match(assetList, /styles\.ownerAssetMetaStack/);
+  assert.match(assetList, /<OwnerServiceLocationModal/);
+  assert.match(serviceModal, /<FuelLocationModal/);
+  assert.match(serviceModal, /recordLabel="service"/);
+  assert.match(serviceModal, /saveFieldManagerServiceLocation/);
+  assert.match(locationModal, /recordLabel = 'fuel record'/);
   assert.match(balancedHeading, /\^\(\?:19\|20\)\\d\{2\}\$/);
   assert.match(balancedHeading, /\\u00A0/);
   assert.match(styles, /\.maintenanceAssetsHero h1 \{[\s\S]*?font-weight: 900/);
 });
 
-test('Owner My Assets stacks serial, year and usage vertically', async () => {
+test('Owner My Assets and Maintenance stack serial, year and usage vertically', async () => {
   const [assetList, styles] = await Promise.all([
     source('app/owner-app/assets/owner-assets-client.tsx'),
     source('app/owner-app/owner-app.module.css'),
   ]);
 
-  assert.match(assetList, /mode === 'assets' \? styles\.ownerAssetMetaStack/);
+  assert.match(assetList, /styles\.managerAssetMetaGrid\} \$\{styles\.ownerAssetMetaStack/);
   assert.match(styles, /\.managerAssetMetaGrid\.ownerAssetMetaStack \{ grid-template-columns: 1fr; \}/);
   assert.match(styles, /\.managerAssetMetaGrid\.ownerAssetMetaStack > div:last-child \{ grid-column: auto; \}/);
 });
