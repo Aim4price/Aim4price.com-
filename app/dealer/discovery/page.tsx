@@ -1,5 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getServerSession } from '../../../lib/auth-session';
+import { getDealerAppSession } from '../../../lib/dealer-app-session';
+import { dealerRoleCan } from '../../../lib/dealer-app-access';
 import { getAccountProfile } from '../../../lib/account-profile';
 import AssetDiscoveryClient from '../../asset-discovery/asset-discovery-client';
 import styles from '../dealer.module.css';
@@ -10,6 +12,8 @@ export const dynamic = 'force-dynamic';
 export default async function DealerDiscoveryPage() {
   const session = await getServerSession({ allowDealerApp: true });
   if (!session?.user?.id) redirect('/dealer/login');
+  const dealerAppSession = await getDealerAppSession();
+  if (dealerAppSession && !dealerRoleCan(dealerAppSession.role, 'discovery')) redirect('/dealer');
 
   const profile = await getAccountProfile({
     id: session.user.id,
