@@ -36,14 +36,14 @@ const defaultDraft: AssignmentDraft = {
   dueDate: '',
 };
 
-function statusClassName(item: DealerOverviewItem): string {
-  if (item.status === 'problem' || item.status === 'overdue' || item.status === 'due') {
-    return `${overviewStyles.overviewStatus} ${overviewStyles.overviewStatusUrgent}`;
-  }
-  if (item.section === 'coming_up') {
-    return `${overviewStyles.overviewStatus} ${overviewStyles.overviewStatusUpcoming}`;
-  }
-  return `${overviewStyles.overviewStatus} ${overviewStyles.overviewStatusNeutral}`;
+function cardClassName(item: DealerOverviewItem): string {
+  const attentionClass = item.section === 'needs_attention'
+    ? overviewStyles.overviewCardNeedsAttention
+    : item.status === 'due_soon'
+      ? overviewStyles.overviewCardDueSoon
+      : '';
+
+  return [overviewStyles.overviewCard, attentionClass].filter(Boolean).join(' ');
 }
 
 function errorText(payload: OverviewResponse | null, fallback: string): string {
@@ -143,11 +143,7 @@ export default function DealerOverviewClient({ initialOverview }: { initialOverv
   function renderOverviewCard(item: DealerOverviewItem) {
     const canManage = overview.canManageAssignments && item.sourceKind === 'problem';
     return (
-      <article key={`${item.id}:${item.sourceId}`} className={overviewStyles.overviewCard}>
-        <div className={overviewStyles.overviewCardLabels}>
-          <span className={overviewStyles.overviewType}>{TYPE_LABELS[item.type]}</span>
-          <span className={statusClassName(item)}>{item.statusLabel}</span>
-        </div>
+      <article key={`${item.id}:${item.sourceId}`} className={cardClassName(item)}>
         <h3>{item.assetTitle}</h3>
         <p className={overviewStyles.overviewHeadline}>{item.headline}</p>
         {item.detail.trim() ? <p className={overviewStyles.overviewDetail}>{item.detail}</p> : null}
