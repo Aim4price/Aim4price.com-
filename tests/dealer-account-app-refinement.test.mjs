@@ -145,7 +145,8 @@ test('Dealer App Leads keeps every mobile action clear and reachable', () => {
   const correctionStyles = read('components/DealerAssetCorrectionEditor.module.css');
 
   assert.match(page, /styles\.leadsModule/);
-  assert.match(dealerStyles, /\.leadsModule\.leadsModule,[\s\S]*?\.maintenanceModule\.maintenanceModule \{[\s\S]*?padding-top: 0/);
+  assert.match(dealerStyles, /\.leadsModule\.leadsModule \{[\s\S]*?padding-top: 0/);
+  assert.match(dealerStyles, /\.maintenanceModule\.maintenanceModule \{[\s\S]*?padding-top: 0/);
   assert.match(source, /dealerAppMode \? 'LEADS SYSTEM' : 'LEAD MANAGEMENT SYSTEM'/);
   assert.match(source, /<h1>LEAD MANAGEMENT SYSTEM<\/h1>/);
   assert.match(source, /nativeSelect=\{dealerAppMode\}/);
@@ -194,7 +195,8 @@ test('Dealer App Maintenance and Dealer desktop dialogs keep their own rules', (
 
   assert.match(page, /dealerStyles\.maintenanceModule/);
   assert.match(nav, /pathname\.startsWith\('\/dealer\/maintenance'\)/);
-  assert.match(dealerStyles, /\.leadsModule\.leadsModule,[\s\S]*?\.maintenanceModule\.maintenanceModule \{[\s\S]*?padding-top: 0/);
+  assert.match(dealerStyles, /\.leadsModule\.leadsModule \{[\s\S]*?padding-top: 0/);
+  assert.match(dealerStyles, /\.maintenanceModule\.maintenanceModule \{[\s\S]*?padding-top: 0/);
 
   assert.match(maintenanceSource, /dealerAppMode \? 'MAINTENANCE' : 'MAINTENANCE TRACKING'/);
   assert.match(maintenanceSource, /dealerAppMode \? 'Attention' : 'Needs attention'/);
@@ -205,9 +207,11 @@ test('Dealer App Maintenance and Dealer desktop dialogs keep their own rules', (
   assert.match(maintenanceSource, /dealerAppMode \? 'Apply' : 'Apply filters'/);
   assert.match(maintenanceStyles, /\.dealerApp \.maintenanceTitlePanel \{[\s\S]*?text-align: center/);
   assert.match(maintenanceStyles, /\.dealerApp \.trackerManageModal\.trackerManageModal \{[\s\S]*?height: min\(50rem/);
-  assert.match(maintenanceStyles, /\.dealerDesktop \.trackerManageModal\.trackerManageModal \{[\s\S]*?max-width: 76rem/);
+  assert.match(maintenanceStyles, /\.dealerDesktop \.trackerManageModal\.trackerManageModal \{[\s\S]*?max-width: 60rem/);
+  assert.match(maintenanceStyles, /\.dealerDesktop \.trackerManageModal \[class\*='optionActionButton'\] \{[\s\S]*?min-height: 5\.25rem/);
 
   assert.match(leadsSource, /if \(dealerAppMode\) \{[\s\S]*?window\.location\.href = `mailto:/);
   assert.match(leadsSource, /dealerWorkspaceMode && !accountantWorkspaceMode \? styles\.dealerDesktopLeads/);
-  assert.match(leadsStyles, /\.dealerDesktopLeads \.leadManageModal\.leadManageModal \{[\s\S]*?max-width: 74rem/);
+  assert.match(leadsStyles, /\.dealerDesktopLeads \.leadManageModal\.leadManageModal \{[\s\S]*?max-width: 60rem/);
+  assert.match(leadsStyles, /\.dealerDesktopLeads \.leadManageModal \.manageOptionsGrid > button \{[\s\S]*?min-height: 5\.25rem/);
 });
