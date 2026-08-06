@@ -7,16 +7,21 @@ async function source(path) {
 }
 
 test('Owner App exposes one clear Maintenance & Fuel entry point', async () => {
-  const [home, operations] = await Promise.all([
+  const [home, operations, styles] = await Promise.all([
     source('app/owner-app/page.tsx'),
     source('app/owner-app/operations/page.tsx'),
+    source('app/owner-app/owner-app.module.css'),
   ]);
 
   assert.match(home, /label: 'Maintenance & Fuel'/);
   assert.match(home, /href: '\/owner-app\/operations'/);
-  assert.match(operations, /Choose what you want to record\./);
+  assert.match(operations, />Choose option</);
+  assert.match(operations, /styles\.operationsLandingLauncher/);
+  assert.doesNotMatch(operations, /Choose what you want to record\./);
+  assert.doesNotMatch(operations, /Record services, repairs|Record fuel from/);
   assert.match(operations, /href="\/owner-app\/operations\/maintenance"/);
   assert.match(operations, /href="\/owner-app\/operations\/fuel"/);
+  assert.match(styles, /\.operationsLandingLauncher \.operationChoiceCard \{[\s\S]*?min-height: 78px/);
 });
 
 test('maintenance selection reuses the friendly asset cards and signed-in owner workflow', async () => {
