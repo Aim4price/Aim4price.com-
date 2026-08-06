@@ -1,0 +1,181 @@
+.dealerOverviewPage.dealerOverviewPage {
+  box-sizing: border-box;
+  padding-top: calc(78px + env(safe-area-inset-top));
+}
+
+.dealerOverviewRole {
+  margin: 12px 3px 0;
+  color: rgba(18, 53, 45, 0.62);
+  font-size: 0.76rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.dealerOverviewActionsSingle.dealerOverviewActionsSingle {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.dealerAssignmentOverlay {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow-y: auto;
+  padding: max(18px, env(safe-area-inset-top)) 16px max(18px, env(safe-area-inset-bottom));
+}
+
+.dealerAssignmentBackdrop {
+  position: fixed;
+  inset: 0;
+  border: 0;
+  background: rgba(9, 31, 25, 0.56);
+  padding: 0;
+  backdrop-filter: blur(5px);
+}
+
+.dealerAssignmentModal {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 480px);
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 1px solid rgba(18, 53, 45, 0.13);
+  border-radius: 26px;
+  background: #ffffff;
+  box-shadow: 0 30px 80px rgba(9, 31, 25, 0.28);
+}
+
+.dealerAssignmentModal > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px;
+  border-bottom: 1px solid rgba(18, 53, 45, 0.1);
+}
+
+.dealerAssignmentModal > header span {
+  color: #236851;
+  font-size: 0.69rem;
+  font-weight: 950;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.dealerAssignmentModal > header h2 {
+  margin: 5px 0 0;
+  color: #12352d;
+  font-size: clamp(1.32rem, 6vw, 1.72rem);
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+}
+
+.dealerAssignmentModal > header p {
+  margin: 7px 0 0;
+  color: rgba(18, 53, 45, 0.66);
+  font-size: 0.88rem;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.dealerAssignmentModal > header > button {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  border: 1px solid rgba(18, 53, 45, 0.12);
+  border-radius: 999px;
+  background: #f4f8f6;
+  color: #12352d;
+  font: inherit;
+  font-size: 1.45rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.dealerAssignmentFields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 13px;
+  padding: 22px;
+}
+
+.dealerAssignmentFields label {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.dealerAssignmentFields label:first-child {
+  grid-column: 1 / -1;
+}
+
+.dealerAssignmentFields label > span {
+  color: #254733;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+.dealerAssignmentFields select,
+.dealerAssignmentFields input {
+  width: 100%;
+  min-width: 0;
+  min-height: 50px;
+  box-sizing: border-box;
+  border: 1px solid rgba(18, 53, 45, 0.15);
+  border-radius: 14px;
+  background: #ffffff;
+  color: #12352d;
+  padding: 0 13px;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 750;
+}
+
+.dealerAssignmentModal > footer {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 11px;
+  padding: 18px 22px 22px;
+  border-top: 1px solid rgba(18, 53, 45, 0.1);
+}
+
+.dealerAssignmentModal > footer button {
+  min-height: 50px;
+  border: 1px solid rgba(18, 53, 45, 0.15);
+  border-radius: 15px;
+  background: #ffffff;
+  color: #12352d;
+  padding: 0 14px;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.dealerAssignmentModal > footer button:last-child {
+  border-color: #1f8a66;
+  background: #176f53;
+  color: #ffffff;
+}
+
+.dealerAssignmentModal > footer button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+@media (max-width: 390px) {
+  .dealerOverviewPage.dealerOverviewPage {
+    padding-top: calc(72px + env(safe-area-inset-top));
+  }
+
+  .dealerAssignmentFields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dealerAssignmentFields label:first-child {
+    grid-column: auto;
+  }
+}
