@@ -413,8 +413,15 @@
   top: calc(100% + 0.48rem);
   left: 0;
   width: 100%;
+  max-height: 13.25rem;
   display: grid;
   gap: 0.34rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: #4fa783 #edf6f2;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scroll-padding-block: 0.42rem;
   border: 1px solid rgba(18, 69, 53, 0.14);
   border-radius: 1rem;
   padding: 0.42rem;
@@ -424,6 +431,27 @@
     0 8px 20px rgba(18, 45, 37, 0.08),
     inset 0 1px 0 rgba(255, 255, 255, 0.95);
   animation: roleSelectMenuIn 150ms ease both;
+}
+
+.roleSelectMenu::-webkit-scrollbar {
+  width: 0.72rem;
+}
+
+.roleSelectMenu::-webkit-scrollbar-track {
+  margin: 0.48rem 0;
+  border-radius: 999px;
+  background: #edf6f2;
+}
+
+.roleSelectMenu::-webkit-scrollbar-thumb {
+  min-height: 2.5rem;
+  border: 2px solid #edf6f2;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #65b99a 0%, #328765 100%);
+}
+
+.roleSelectMenu::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #4eaa88 0%, #246f52 100%);
 }
 
 @keyframes roleSelectMenuIn {
@@ -454,6 +482,7 @@
   text-align: left;
   cursor: pointer;
   outline: none;
+  scroll-margin-block: 0.42rem;
   transition: border-color 140ms ease, background 140ms ease, transform 140ms ease;
 }
 
