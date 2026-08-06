@@ -5,6 +5,7 @@ import test from 'node:test';
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 const fieldOverview = read('app/field-manager/field-manager-overview-client.tsx');
 const ownerOverview = read('app/owner-app/attention/owner-attention-client.tsx');
+const dealerOverview = read('app/dealer/overview/dealer-overview-client.tsx');
 const locationGate = read('app/field-manager/field-manager-location-gate.tsx');
 const fieldStyles = read('app/field-manager/page.module.css');
 
@@ -24,6 +25,20 @@ test('Field Manager Overview uses the Owner Overview alignment, width and typogr
   assert.match(fieldStyles, /\.overviewPage \.overviewIntro \{[\s\S]*?justify-items: start;[\s\S]*?text-align: left;/);
   assert.match(fieldStyles, /\.overviewPage \.overviewIntro h1 \{[\s\S]*?font-size: clamp\(1\.9rem, 8vw, 2\.45rem\);[\s\S]*?font-weight: 900;/);
   assert.match(fieldStyles, /\.overviewPage \.overviewCard h3 \{[\s\S]*?font-size: clamp\(1\.16rem, 4\.8vw, 1\.38rem\);/);
+});
+
+test('overview cards use background colour instead of redundant pills across all apps', () => {
+  for (const source of [fieldOverview, ownerOverview, dealerOverview]) {
+    assert.match(source, /function cardClassName\(/);
+    assert.match(source, /item\.section === 'needs_attention'/);
+    assert.match(source, /item\.status === 'due_soon'/);
+    assert.doesNotMatch(source, /className=\{(?:styles|overviewStyles)\.overviewCardLabels\}/);
+    assert.doesNotMatch(source, /className=\{(?:styles|overviewStyles)\.overviewType\}/);
+    assert.doesNotMatch(source, /function statusClassName\(/);
+  }
+
+  assert.match(fieldStyles, /\.overviewCard\.overviewCardNeedsAttention \{[\s\S]*?background: linear-gradient\(180deg, #fffafa 0%, #fff1f1 100%\);/);
+  assert.match(fieldStyles, /\.overviewCard\.overviewCardDueSoon \{[\s\S]*?background: linear-gradient\(180deg, #fffdf8 0%, #fff6e5 100%\);/);
 });
 
 test('scheduled Owner maintenance uses the same compact service location gate', () => {
