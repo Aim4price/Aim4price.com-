@@ -6,30 +6,36 @@ async function source(path) {
   return readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 }
 
-test('Owner operations uses the Overview-aligned Choose option launcher', async () => {
+test('Owner operations centers the simplified Maintenance and Fuel launcher', async () => {
   const [operations, styles] = await Promise.all([
     source('app/owner-app/operations/page.tsx'),
     source('app/owner-app/owner-app.module.css'),
   ]);
 
-  assert.match(operations, />Choose option</);
-  assert.match(operations, /className=\{styles\.ownerPageTitle\}/);
+  assert.doesNotMatch(operations, /Choose option/);
+  assert.match(operations, /styles\.operationsLandingContent/);
+  assert.match(operations, /styles\.operationsLandingLauncher/);
   assert.match(operations, /styles\.operationChoiceCard/);
-  assert.match(styles, /\.operationsPage \.ownerPageTitle/);
+  assert.match(styles, /\.operationsLandingContent,[\s\S]*?align-content: center/);
   assert.match(styles, /\.operationChoiceCard/);
 });
 
 test('Fuel first asks for storage tank or petrol station', async () => {
-  const [choice, storage] = await Promise.all([
-    source('app/owner-app/operations/fuel/page.tsx'),
-    source('app/owner-app/operations/fuel/storage/page.tsx'),
-  ]);
+  const choice = await source('app/owner-app/operations/fuel/page.tsx');
 
-  assert.match(choice, />Choose fuel source</);
+  assert.doesNotMatch(choice, /Choose fuel source|Where is the fuel coming from/);
+  assert.doesNotMatch(choice, /Use fuel held|Record the fill, cost/);
+  assert.match(choice, /styles\.fuelSourceContent/);
+  assert.match(choice, /styles\.fuelSourceLauncher/);
   assert.match(choice, /href="\/owner-app\/operations\/fuel\/storage"/);
   assert.match(choice, />Storage tank</);
   assert.match(choice, /href="\/owner-app\/operations\/fuel\/petrol-station"/);
   assert.match(choice, />Petrol station</);
+});
+
+test('Storage tank choice opens the Owner App storage tool', async () => {
+  const storage = await source('app/owner-app/operations/fuel/storage/page.tsx');
+
   assert.match(storage, /FieldManagerDieselClient ownerAppMode/);
 });
 

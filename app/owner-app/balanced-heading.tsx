@@ -9,6 +9,10 @@ type BalancedHeadingTextProps = {
 export default function BalancedHeadingText({ text }: BalancedHeadingTextProps) {
   const words = text.trim().split(/\s+/).filter(Boolean);
 
+  if (words.length > 1 && /^(?:19|20)\d{2}$/.test(words[0])) {
+    return <>{`${words[0]}\u00A0${words.slice(1).join(' ')}`}</>;
+  }
+
   if (words.length <= 3) return <>{text}</>;
 
   const tailWordCount = Math.max(3, Math.ceil((words.length + 1) / 2));

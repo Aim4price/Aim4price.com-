@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
+import ServiceLocationGate from '../../field-manager/field-manager-location-gate';
 import BalancedHeadingText from '../balanced-heading';
 import styles from '../owner-app.module.css';
 
@@ -24,6 +25,21 @@ type ApiResponse = {
   ok: boolean;
   items?: Asset[];
   error?: string;
+};
+
+type OwnerAssetApiResponse = {
+  ok?: boolean;
+  item?: {
+    publicAssetCode?: string;
+  };
+  error?: string;
+};
+
+type LocationGateRequest = {
+  assetTitle: string;
+  assetId: string;
+  publicAssetCode: string;
+  redirectTo: string;
 };
 
 function searchHaystack(asset: Asset): string {
@@ -70,6 +86,9 @@ export default function OwnerAssetsClient({
   const [items, setItems] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [actionError, setActionError] = useState('');
+  const [openingAssetId, setOpeningAssetId] = useState<string | null>(null);
+  const [locationGate, setLocationGate] = useState<LocationGateRequest | null>(null);
 
   const filteredItems = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -117,6 +136,40 @@ export default function OwnerAssetsClient({
     return () => controller.abort();
   }, []);
 
+  async function handleOpenMaintenance(asset: Asset) {
+    setOpeningAssetId(asset.id);
+    setActionError('');
+
+    try {
+      const response = await fetch(`/api/owner-app/assets/${encodeURIComponent(asset.id)}`, {
+        credentials: 'include',
+        cache: 'no-store',
+      });
+      const payload = await response.json().catch(() => null) as OwnerAssetApiResponse | null;
+
+      if (response.status === 401) {
+        window.location.replace('/owner-app/login');
+        return;
+      }
+
+      const publicAssetCode = payload?.item?.publicAssetCode?.trim();
+      if (!response.ok || !payload?.ok || !publicAssetCode) {
+        throw new Error(payload?.error?.trim() || 'This service cannot be opened.');
+      }
+
+      setLocationGate({
+        assetTitle: asset.title,
+        assetId: asset.id,
+        publicAssetCode,
+        redirectTo: `/owner-app/operations/maintenance/${encodeURIComponent(asset.id)}`,
+      });
+    } catch (cause) {
+      setActionError(cause instanceof Error ? cause.message : 'This service cannot be opened.');
+    } finally {
+      setOpeningAssetId(null);
+    }
+  }
+
   return (
     <div className={styles.wideContent}>
       <section className={styles.assetListToolbar}>
@@ -138,6 +191,7 @@ export default function OwnerAssetsClient({
       </section>
 
       {error ? <div className={styles.errorNotice}>{error}</div> : null}
+      {actionError ? <div className={styles.errorNotice}>{actionError}</div> : null}
       {loading ? <div className={styles.loading}>Loading your assets…</div> : null}
       {!loading && !error && !items.length ? <div className={styles.empty}>No assets have been added yet.</div> : null}
       {!loading && !error && items.length > 0 && !filteredItems.length ? <div className={styles.empty}>No assets match this search.</div> : null}
@@ -163,18 +217,34 @@ export default function OwnerAssetsClient({
                 </div>
               </div>
 
-              <Link
-                className={`${styles.assetMirrorAction} ${styles.assetMirrorManageAction} ${styles.ownerAssetOpenButton}`}
-                href={mode === 'maintenance'
-                  ? `/owner-app/operations/maintenance/${encodeURIComponent(asset.id)}`
-                  : `/owner-app/assets/${encodeURIComponent(asset.id)}`}
-                prefetch={false}
-              >
-                {mode === 'maintenance' ? 'Record work' : 'Open'}
-              </Link>
+              {mode === 'maintenance' ? (
+                <button
+                  type="button"
+                  className={`${styles.assetMirrorAction} ${styles.assetMirrorManageAction} ${styles.ownerAssetOpenButton}`}
+                  onClick={() => void handleOpenMaintenance(asset)}
+                  disabled={openingAssetId !== null}
+                >
+                  {openingAssetId === asset.id ? 'Opening…' : 'Record work'}
+                </button>
+              ) : (
+                <Link
+                  className={`${styles.assetMirrorAction} ${styles.assetMirrorManageAction} ${styles.ownerAssetOpenButton}`}
+                  href={`/owner-app/assets/${encodeURIComponent(asset.id)}`}
+                  prefetch={false}
+                >
+                  Open
+                </Link>
+              )}
             </article>
           ))}
         </section>
+      ) : null}
+
+      {locationGate ? (
+        <ServiceLocationGate
+          {...locationGate}
+          onCancel={() => setLocationGate(null)}
+        />
       ) : null}
     </div>
   );

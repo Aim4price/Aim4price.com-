@@ -14,13 +14,11 @@ export default async function OwnerFuelPage() {
   return (
     <main className={`${styles.page} ${styles.homePage} ${styles.operationsPage}`}>
       <OwnerAppNav />
-      <div className={`${styles.content} ${styles.operationsContent}`}>
-        <section className={`${styles.ownerPageIntro} ${styles.operationsIntro}`}>
-          <h1 className={styles.ownerPageTitle}>Choose fuel source</h1>
-          <p>Where is the fuel coming from?</p>
-        </section>
-
-        <nav className={styles.operationLauncher} aria-label="Choose fuel source">
+      <div className={`${styles.content} ${styles.operationsContent} ${styles.fuelSourceContent}`}>
+        <nav
+          className={`${styles.operationLauncher} ${styles.fuelSourceLauncher}`}
+          aria-label="Fuel source"
+        >
           <Link className={styles.operationChoiceCard} href="/owner-app/operations/fuel/storage" prefetch={false}>
             <span className={styles.operationChoiceIcon} aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9">
@@ -31,7 +29,6 @@ export default async function OwnerFuelPage() {
             </span>
             <span className={styles.operationChoiceCopy}>
               <strong>Storage tank</strong>
-              <small>Use fuel held in one of your saved tanks.</small>
             </span>
             <span className={styles.operationChoiceArrow} aria-hidden="true">›</span>
           </Link>
@@ -45,7 +42,6 @@ export default async function OwnerFuelPage() {
             </span>
             <span className={styles.operationChoiceCopy}>
               <strong>Petrol station</strong>
-              <small>Record the fill, cost and receipt photo immediately.</small>
             </span>
             <span className={styles.operationChoiceArrow} aria-hidden="true">›</span>
           </Link>

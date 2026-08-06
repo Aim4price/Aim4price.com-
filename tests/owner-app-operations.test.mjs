@@ -15,26 +15,45 @@ test('Owner App exposes one clear Maintenance & Fuel entry point', async () => {
 
   assert.match(home, /label: 'Maintenance & Fuel'/);
   assert.match(home, /href: '\/owner-app\/operations'/);
-  assert.match(operations, />Choose option</);
+  assert.doesNotMatch(operations, /Choose option/);
+  assert.match(operations, /styles\.operationsLandingContent/);
   assert.match(operations, /styles\.operationsLandingLauncher/);
   assert.doesNotMatch(operations, /Choose what you want to record\./);
   assert.doesNotMatch(operations, /Record services, repairs|Record fuel from/);
   assert.match(operations, /href="\/owner-app\/operations\/maintenance"/);
   assert.match(operations, /href="\/owner-app\/operations\/fuel"/);
-  assert.match(styles, /\.operationsLandingLauncher \.operationChoiceCard \{[\s\S]*?min-height: 78px/);
+  assert.match(styles, /\.operationsLandingContent,[\s\S]*?align-content: center/);
+  assert.match(styles, /\.operationsLandingLauncher,[\s\S]*?margin: 0 auto/);
+  assert.match(styles, /\.operationsLandingLauncher \.operationChoiceCard,[\s\S]*?min-height: 78px/);
 });
 
-test('maintenance selection reuses the friendly asset cards and signed-in owner workflow', async () => {
-  const [listPage, assetList, detailPage, scanClient] = await Promise.all([
+test('maintenance selection uses Overview typography, owner asset cards and a location gate', async () => {
+  const [listPage, assetList, balancedHeading, styles] = await Promise.all([
     source('app/owner-app/operations/maintenance/page.tsx'),
     source('app/owner-app/assets/owner-assets-client.tsx'),
+    source('app/owner-app/balanced-heading.tsx'),
+    source('app/owner-app/owner-app.module.css'),
+  ]);
+
+  assert.match(listPage, /mode="maintenance"/);
+  assert.match(listPage, /styles\.maintenanceAssetsHero/);
+  assert.match(assetList, /Record work/);
+  assert.match(assetList, /owner-app\/operations\/maintenance/);
+  assert.match(assetList, /import ServiceLocationGate/);
+  assert.match(assetList, /fetch\(`\/api\/owner-app\/assets\/\$\{encodeURIComponent\(asset\.id\)\}`/);
+  assert.match(assetList, /publicAssetCode/);
+  assert.match(assetList, /<ServiceLocationGate/);
+  assert.match(balancedHeading, /\^\(\?:19\|20\)\\d\{2\}\$/);
+  assert.match(balancedHeading, /\\u00A0/);
+  assert.match(styles, /\.maintenanceAssetsHero h1 \{[\s\S]*?font-weight: 900/);
+});
+
+test('maintenance selection continues into the signed-in owner workflow', async () => {
+  const [detailPage, scanClient] = await Promise.all([
     source('app/owner-app/operations/maintenance/[assetId]/page.tsx'),
     source('app/scan/[publicAssetCode]/scan-client.tsx'),
   ]);
 
-  assert.match(listPage, /mode="maintenance"/);
-  assert.match(assetList, /Record work/);
-  assert.match(assetList, /owner-app\/operations\/maintenance/);
   assert.match(detailPage, /expectedOwnerUserId: access\.ownerUserId/);
   assert.match(detailPage, /ownerAppMode/);
   assert.match(scanClient, /new URLSearchParams\(\{ ownerApp: "1" \}\)/);
@@ -123,7 +142,10 @@ test('fuel selection supports storage tanks and petrol-station costs with signed
     source('app/api/fuel-scan/storage/[publicFuelStorageCode]/dipstick/route.ts'),
   ]);
 
-  assert.match(choicePage, /Choose fuel source/);
+  assert.doesNotMatch(choicePage, /Choose fuel source|Where is the fuel coming from/);
+  assert.doesNotMatch(choicePage, /Use fuel held|Record the fill, cost/);
+  assert.match(choicePage, /styles\.fuelSourceContent/);
+  assert.match(choicePage, /styles\.fuelSourceLauncher/);
   assert.match(choicePage, /owner-app\/operations\/fuel\/storage/);
   assert.match(choicePage, /owner-app\/operations\/fuel\/petrol-station/);
   assert.match(storagePage, /FieldManagerDieselClient ownerAppMode/);
