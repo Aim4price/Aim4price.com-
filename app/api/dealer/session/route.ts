@@ -1,10 +1,35 @@
-import { NextResponse } from 'next/server';
-import { getServerSession } from '../../../../lib/auth-session';
-import { getDealerAppSession } from '../../../../lib/dealer-app-session';
+import { NextRequest, NextResponse } from 'next/server';
 import { getAccountProfile } from '../../../../lib/account-profile';
+import { getServerSession } from '../../../../lib/auth-session';
+import {
+  createDealerAppToken,
+  DEALER_APP_COOKIE,
+  DEALER_APP_LEGACY_COOKIE,
+  dealerAppCookieOptions,
+  dealerAppLegacyCookieOptions,
+  getDealerAppSession,
+  type DealerAppSession,
+} from '../../../../lib/dealer-app-session';
+
+function staffSessionPayload(session: DealerAppSession) {
+  return {
+    kind: 'staff',
+    displayName: session.displayName,
+    dealerUserId: session.dealerUserId,
+    role: session.role,
+  };
+}
 
 export async function GET() {
-  const session = await getServerSession({ allowDealerApp: true });
+  const dealerAppSession = await getDealerAppSession();
+  if (dealerAppSession) {
+    return NextResponse.json({
+      ok: true,
+      session: staffSessionPayload(dealerAppSession),
+    });
+  }
+
+  const session = await getServerSession();
   if (!session?.user?.id) {
     return NextResponse.json({ ok: false, error: 'You must sign in.' }, { status: 401 });
   }
@@ -19,14 +44,40 @@ export async function GET() {
       error: 'Dealer App is available to active dealer accounts only.',
     }, { status: 403 });
   }
-  const dealerAppSession = await getDealerAppSession();
   return NextResponse.json({
     ok: true,
     session: {
-      kind: dealerAppSession ? 'staff' : 'account',
-      displayName: dealerAppSession?.displayName || profile.businessName || profile.displayName || profile.name,
+      kind: 'account',
+      displayName: profile.businessName || profile.displayName || profile.name,
       dealerUserId: session.user.id,
-      role: dealerAppSession?.role ?? 'owner',
+      role: 'owner',
     },
   });
+}
+
+export async function POST(request: NextRequest) {
+  const session = await getDealerAppSession();
+  if (!session) {
+    return NextResponse.json({ ok: false, error: 'You must sign in.' }, { status: 401 });
+  }
+
+  const token = createDealerAppToken({
+    staffId: session.staffId,
+    dealerUserId: session.dealerUserId,
+    displayName: session.displayName,
+    username: session.username,
+    role: session.role,
+    version: session.version,
+  });
+  const response = NextResponse.json({
+    ok: true,
+    session: staffSessionPayload(session),
+  });
+  response.cookies.set(DEALER_APP_COOKIE, token, dealerAppCookieOptions(request.url));
+  response.cookies.set(
+    DEALER_APP_LEGACY_COOKIE,
+    '',
+    dealerAppLegacyCookieOptions(),
+  );
+  return response;
 }
