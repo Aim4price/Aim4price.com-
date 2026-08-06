@@ -22,6 +22,8 @@ test('Owner App exposes one clear Maintenance & Fuel entry point', async () => {
   assert.doesNotMatch(operations, /Record services, repairs|Record fuel from/);
   assert.match(operations, /href="\/owner-app\/operations\/maintenance"/);
   assert.match(operations, /href="\/owner-app\/operations\/fuel"/);
+  assert.match(operations, /href="\/owner-app\/operations\/maintenance"[\s\S]*?<path d="M14\.7 6\.3[\s\S]*?<strong>Maintenance<\/strong>/);
+  assert.doesNotMatch(operations, /m14\.5 6\.5 3-3/);
   assert.match(styles, /\.operationsLandingContent,[\s\S]*?align-content: center/);
   assert.match(styles, /\.operationsLandingLauncher,[\s\S]*?margin: 0 auto/);
   assert.match(styles, /\.operationsLandingLauncher \.operationChoiceCard,[\s\S]*?min-height: 78px/);
