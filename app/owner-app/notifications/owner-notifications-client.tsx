@@ -85,13 +85,6 @@ function formatNotificationTime(value: string): string {
   }).format(new Date(time));
 }
 
-function toneClassName(tone: NotificationTone): string {
-  if (tone === 'success') return styles.notificationToneSuccess;
-  if (tone === 'warning') return styles.notificationToneWarning;
-  if (tone === 'info') return styles.notificationToneInfo;
-  return '';
-}
-
 function matchesCategory(item: Notification, filter: NotificationCategoryFilter): boolean {
   if (filter === 'all') return true;
   if (filter === 'maintenance') return item.category === 'maintenance' || item.category === 'dealer_schedule';
@@ -101,12 +94,6 @@ function matchesCategory(item: Notification, filter: NotificationCategoryFilter)
   if (filter === 'fuel') return item.category === 'fuel';
   if (filter === 'discovery') return item.category === 'asset_discovery';
   return item.category === 'qr_scan' || item.category === 'dealer_correction';
-}
-
-function historyLabel(item: Notification): string {
-  if (item.resolvedAtIso) return 'Resolved';
-  if (item.isArchived) return 'Cleared';
-  return 'Checked';
 }
 
 async function updateInboxState(action: InboxAction, notificationIds: string[]): Promise<void> {
@@ -416,21 +403,15 @@ export default function OwnerNotificationsClient({ viewerId: _viewerId }: { view
   function renderNotificationCard(item: Notification) {
     const className = [
       styles.notificationCard,
-      toneClassName(item.tone),
       item.state === 'needs_action' ? styles.notificationCardPriority : '',
       item.state === 'new' ? styles.notificationCardNew : '',
       item.state === 'history' ? styles.notificationCardHistory : '',
     ].filter(Boolean).join(' ');
-    const label = item.state === 'history' ? historyLabel(item) : 'Active';
     const cardContent = (
       <>
-        <div className={styles.notificationCardLabels}>
-          <span className={styles.notificationKind}>
-            <i className={styles.notificationDot} aria-hidden="true" />
-            {label}
-          </span>
-          <time dateTime={item.createdAtIso}>{formatNotificationTime(item.createdAtIso)}</time>
-        </div>
+        <time className={styles.notificationCardTime} dateTime={item.createdAtIso}>
+          {formatNotificationTime(item.createdAtIso)}
+        </time>
         <h3>{item.title}</h3>
         <p>{item.body}</p>
       </>
@@ -548,12 +529,12 @@ export default function OwnerNotificationsClient({ viewerId: _viewerId }: { view
         <section className={styles.notificationIntro}>
           <div className={styles.ownerPageIntro}>
             <h1 className={styles.ownerPageTitle}>Notifications</h1>
-            <p className={styles.ownerPageSubtitle}>Active notifications and history.</p>
+            <p className={styles.ownerPageSubtitle}>Updates that need your attention.</p>
           </div>
         </section>
 
         <section className={styles.notificationWorkspace} aria-label="Notification controls">
-          <div className={`${styles.notificationTabs} ${styles.notificationTabsOwner}`} role="tablist" aria-label="Notification sections">
+          <div className={`${styles.notificationTabs} ${styles.notificationTabsTwo}`} role="tablist" aria-label="Notification sections">
             {([
               ['active', 'Active'],
               ['history', 'History'],
@@ -572,31 +553,27 @@ export default function OwnerNotificationsClient({ viewerId: _viewerId }: { view
             ))}
           </div>
 
-          <div className={styles.notificationFilters} aria-label="Filter notifications by type">
-            {CATEGORY_FILTERS.map((filter) => (
-              <button
-                key={filter.value}
-                type="button"
-                className={categoryFilter === filter.value ? styles.notificationFilterActive : ''}
-                onClick={() => setCategoryFilter(filter.value)}
-              >
-                {filter.label}
-              </button>
-            ))}
-          </div>
+          <label className={styles.notificationFilterSelect}>
+            <span>Show</span>
+            <select
+              value={categoryFilter}
+              onChange={(event) => setCategoryFilter(event.target.value as NotificationCategoryFilter)}
+              aria-label="Filter notifications by type"
+            >
+              {CATEGORY_FILTERS.map((filter) => (
+                <option key={filter.value} value={filter.value}>{filter.label}</option>
+              ))}
+            </select>
+          </label>
 
-          <div className={styles.notificationBulkActions}>
-            <p>
-              Active notifications stay here until they are opened, checked or completed.
-            </p>
-            {activeView === 'active' && counts.new > 0 ? (
-              <div>
+          {activeView === 'active' && counts.new > 0 ? (
+            <div className={styles.notificationBulkActions} aria-label="Notification actions">
                 <button
                   type="button"
                   onClick={() => void changeNotificationState('mark_read', items.filter((item) => item.state === 'new').map((item) => item.id))}
                   disabled={updatingInbox || counts.new === 0}
                 >
-                  Mark checked
+                  Mark all checked
                 </button>
                 <button
                   type="button"
@@ -604,11 +581,10 @@ export default function OwnerNotificationsClient({ viewerId: _viewerId }: { view
                   onClick={() => void changeNotificationState('archive', items.filter((item) => item.state === 'new').map((item) => item.id))}
                   disabled={updatingInbox || counts.new === 0}
                 >
-                  Clear
+                  Clear all
                 </button>
-              </div>
-            ) : null}
-          </div>
+            </div>
+          ) : null}
         </section>
 
         {error ? (

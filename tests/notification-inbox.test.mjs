@@ -35,7 +35,7 @@ test('notification APIs expose durable state mutations', async () => {
   }
 });
 
-test('notification surfaces separate active work and searchable history', async () => {
+test('notification surfaces keep desktop search and use simple app controls', async () => {
   const [header, ownerClient, dealerClient, ownerLink] = await Promise.all([
     read('components/AppHeader.tsx'),
     read('app/owner-app/notifications/owner-notifications-client.tsx'),
@@ -48,9 +48,10 @@ test('notification surfaces separate active work and searchable history', async 
   assert.match(header, /Search notifications/);
   assert.match(ownerClient, /\['active', 'Active'\]/);
   assert.doesNotMatch(ownerClient, /placeholder="Search"/);
-  assert.match(ownerClient, /styles\.notificationTabsOwner/);
-  assert.match(ownerClient, /Active notifications stay here until they are opened, checked or completed/);
-  assert.match(dealerClient, /Maintenance alerts and checked history/);
+  assert.match(ownerClient, /styles\.notificationTabsTwo/);
+  assert.match(ownerClient, /styles\.notificationFilterSelect/);
+  assert.doesNotMatch(ownerClient, /Active notifications stay here until they are opened, checked or completed/);
+  assert.match(dealerClient, /Maintenance updates and history/);
   assert.match(dealerClient, /<span>Active<\/span>/);
   assert.match(ownerLink, /needsActionCount/);
 });
@@ -80,7 +81,7 @@ test('opening one active notification moves only that item to history', async ()
   assert.match(inbox, /current && !readAtIso && !archivedAtIso[\s\S]*?row\.action_required && !resolvedAtIso/);
 });
 
-test('app notification pages remove search and keep Owner tabs large and centered', async () => {
+test('app notification pages use compact Overview-style controls and cards', async () => {
   const [ownerClient, dealerClient, ownerStyles, managerClient] = await Promise.all([
     read('app/owner-app/notifications/owner-notifications-client.tsx'),
     read('app/dealer/notifications/dealer-maintenance-notifications-client.tsx'),
@@ -88,16 +89,24 @@ test('app notification pages remove search and keep Owner tabs large and centere
     read('app/field-manager/field-manager-overview-client.tsx'),
   ]);
 
-  for (const source of [ownerClient, dealerClient, managerClient]) {
+  for (const source of [ownerClient, dealerClient]) {
     assert.doesNotMatch(source, /placeholder="Search"/);
     assert.doesNotMatch(source, /aria-label="Search notifications"/);
   }
   assert.doesNotMatch(ownerClient, /styles\.notificationSearch/);
   assert.doesNotMatch(dealerClient, /styles\.notificationSearch/);
-  assert.doesNotMatch(managerClient, /styles\.overviewSearch/);
-  assert.match(ownerClient, /styles\.notificationTabsOwner/);
-  assert.match(ownerStyles, /\.notificationTabsOwner \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
-  assert.match(ownerStyles, /\.notificationTabsOwner button \{[\s\S]*?min-height: 72px[\s\S]*?text-align: center/);
+  assert.match(managerClient, /styles\.overviewSearch/);
+  for (const source of [ownerClient, dealerClient]) {
+    assert.match(source, /styles\.notificationTabsTwo/);
+    assert.doesNotMatch(source, /styles\.notificationCardLabels/);
+    assert.doesNotMatch(source, /styles\.notificationKind/);
+  }
+  assert.doesNotMatch(ownerClient, /styles\.notificationTabsOwner/);
+  assert.match(ownerClient, /styles\.notificationFilterSelect/);
+  assert.match(ownerStyles, /Simplified app notification pages[\s\S]*?\.notificationContent \{[\s\S]*?border: 0;[\s\S]*?background: transparent;/);
+  assert.match(ownerStyles, /Simplified app notification pages[\s\S]*?\.notificationTabs button \{[\s\S]*?min-height: 52px[\s\S]*?flex-direction: row;/);
+  assert.match(ownerStyles, /\.notificationCardNew \{[\s\S]*?background: linear-gradient\(180deg, #fffafa 0%, #fff1f1 100%\);/);
+  assert.match(ownerStyles, /\.notificationCardPriority \{[\s\S]*?background: linear-gradient\(180deg, #fffdf8 0%, #fff6e5 100%\);/);
 });
 
 
@@ -135,7 +144,7 @@ test('Field Manager Overview requires a captured location before service opens',
   assert.doesNotMatch(managerClient, /window\.location\.assign\(payload\.redirectTo\)/);
   assert.match(locationGate, /navigator\.geolocation\.getCurrentPosition/);
   assert.match(locationGate, /maximumAge: 0/);
-  assert.match(locationGate, /Retry location/);
+  assert.match(locationGate, /locationState === 'error'\s*\? 'Retry'/);
   assert.match(locationGate, /saveFieldManagerServiceLocation/);
   assert.match(locationGate, /window\.location\.assign\(redirectTo\)/);
   assert.match(locationSession, /aim4price_qr_scan_session_v1:/);

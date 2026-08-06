@@ -71,7 +71,7 @@ export default function DealerMaintenanceNotificationsClient({
       <section className={styles.notificationIntro}>
         <div className={styles.ownerPageIntro}>
           <h1 className={styles.ownerPageTitle}>Notifications</h1>
-          <p className={styles.ownerPageSubtitle}>Maintenance alerts and checked history.</p>
+          <p className={styles.ownerPageSubtitle}>Maintenance updates and history.</p>
         </div>
       </section>
 
@@ -99,20 +99,17 @@ export default function DealerMaintenanceNotificationsClient({
           </button>
         </div>
 
-        <div className={styles.notificationBulkActions}>
-          <p>Checked maintenance alerts remain in History.</p>
-          {activeView === 'active' && newItems.length > 0 ? (
-            <div>
+        {activeView === 'active' && newItems.length > 0 ? (
+          <div className={styles.notificationBulkActions} aria-label="Notification actions">
               <button
                 type="button"
                 onClick={() => void handleMarkChecked()}
                 disabled={marking || newItems.length === 0}
               >
-                {marking ? 'Marking…' : 'Mark checked'}
+                {marking ? 'Marking…' : 'Mark all checked'}
               </button>
-            </div>
-          ) : null}
-        </div>
+          </div>
+        ) : null}
       </section>
 
       {error ? (
@@ -143,15 +140,9 @@ export default function DealerMaintenanceNotificationsClient({
                 prefetch={false}
                 onClick={() => handleNotificationOpen(notification)}
               >
-                <div className={styles.notificationCardLabels}>
-                  <span className={styles.notificationKind}>
-                    <i className={styles.notificationDot} aria-hidden="true" />
-                    {notification.isRead ? 'Checked' : 'Active'}
-                  </span>
-                  <time dateTime={notification.createdAtIso}>
-                    {formatNotificationTime(notification.createdAtIso)}
-                  </time>
-                </div>
+                <time className={styles.notificationCardTime} dateTime={notification.createdAtIso}>
+                  {formatNotificationTime(notification.createdAtIso)}
+                </time>
                 <h3>{notification.title}</h3>
                 <p>{notification.body}</p>
               </Link>
