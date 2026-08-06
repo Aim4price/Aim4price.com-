@@ -11,7 +11,7 @@ export default function FieldManagerPetrolStationPage() {
       <div className={styles.fuelFlowShell}>
         <header className={styles.fuelFlowNav} aria-label="Field Manager petrol station controls">
           <FieldManagerNavLink href="/field-manager/diesel" label="Back" />
-          <FieldManagerNavLink href="/field-manager" label="Home" />
+          <FieldManagerNavLink href="/field-manager" label="Home" tone="home" />
         </header>
         <PetrolStationFuelClient operatorName="" fieldManagerMode />
       </div>
