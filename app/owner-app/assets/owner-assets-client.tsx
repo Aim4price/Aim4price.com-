@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
-import ServiceLocationGate from '../../field-manager/field-manager-location-gate';
 import BalancedHeadingText from '../balanced-heading';
+import OwnerServiceLocationModal from '../owner-service-location-modal';
 import styles from '../owner-app.module.css';
 
 type Asset = {
@@ -202,7 +202,7 @@ export default function OwnerAssetsClient({
             <article key={asset.id} className={styles.managerAssetCard}>
               <h2><BalancedHeadingText text={asset.title} /></h2>
 
-              <div className={`${styles.managerAssetMetaGrid} ${mode === 'assets' ? styles.ownerAssetMetaStack : ''}`}>
+              <div className={`${styles.managerAssetMetaGrid} ${styles.ownerAssetMetaStack}`}>
                 <div>
                   <span>Serial</span>
                   <strong>{serialDisplayText(asset)}</strong>
@@ -241,9 +241,10 @@ export default function OwnerAssetsClient({
       ) : null}
 
       {locationGate ? (
-        <ServiceLocationGate
+        <OwnerServiceLocationModal
           {...locationGate}
           onCancel={() => setLocationGate(null)}
+          onError={setActionError}
         />
       ) : null}
     </div>
