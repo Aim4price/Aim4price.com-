@@ -11,9 +11,11 @@ test('maintenance tracker cards use explicit status colours in desktop and Deale
   assert.match(tracker, /status === 'no_open'\) return styles\.trackerCardClear/);
   assert.match(tracker, /return styles\.trackerCardUpcoming/);
   assert.match(tracker, /dealerAppMode \? styles\.dealerApp : styles\.dealerDesktop/);
-  assert.match(styles, /\.trackerPage \.trackerCardAttention \{[\s\S]*?#ffeaea/);
-  assert.match(styles, /\.trackerPage \.trackerCardUpcoming \{[\s\S]*?#fff0d4/);
-  assert.match(styles, /\.trackerPage \.trackerCardClear \{[\s\S]*?#e6f5ed/);
+  assert.match(styles, /\.trackerPage \.trackerCardAttention \{[\s\S]*?background-color: #ffe8e8[\s\S]*?#fff7f7/);
+  assert.match(styles, /\.trackerPage \.trackerCardUpcoming \{[\s\S]*?background-color: #ffedcc[\s\S]*?#fffaf2/);
+  assert.match(styles, /\.trackerPage \.trackerCardClear \{[\s\S]*?background-color: #e5f5ec[\s\S]*?#f8fdf9/);
+  assert.match(styles, /background-size: 100% 100% !important/);
+  assert.match(styles, /print-color-adjust: exact/);
 });
 
 test('maintenance tracker proximity filters support days, hours and kilometres', () => {
