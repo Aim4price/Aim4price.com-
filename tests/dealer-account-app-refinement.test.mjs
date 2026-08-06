@@ -20,6 +20,7 @@ test('Dealer App home mirrors the Owner App launcher without dropping dealer too
   assert.doesNotMatch(source, /toolSection|cardCopy|cardArrow|description:/);
   assert.doesNotMatch(source, /href: '\/dealer\/clients'|label: 'Clients'/);
   assert.match(source, /label: 'Notifications'/);
+  assert.match(source, /label: 'Overview'/);
   assert.match(source, /label: 'Leads'/);
   assert.match(source, /label: 'Maintenance'/);
   assert.match(source, /label: 'Get Estimate'/);
@@ -100,7 +101,9 @@ test('Dealer staff access focuses one managed login at a time', () => {
   const source = read('app/account/dealer-app/dealer-access-client.tsx');
   assert.match(source, /expandedManagerId \? styles\.focusMuted/);
   assert.match(source, /expandedManagerId && !isExpanded \? styles\.managerCardMuted/);
-  assert.match(source, /Get Estimate, Discovery, Leads, Client Costs, Maintenance/);
+  assert.match(source, /Owner, Sales, Parts or Technician/);
+  assert.match(source, /ROLE_OPTIONS/);
+  assert.match(source, /role: 'technician'/);
 });
 
 test('Dealer desktop uses neutral summary wording and concise cost search copy', () => {
