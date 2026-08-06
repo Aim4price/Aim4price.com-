@@ -248,6 +248,32 @@
   box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.11), 0 16px 34px rgba(13, 62, 49, 0.12);
 }
 
+.operationsLandingLauncher .operationChoiceCard {
+  min-height: 78px;
+  grid-template-columns: 42px minmax(0, 1fr) 22px;
+  gap: 13px;
+  padding: 14px 16px;
+}
+
+.operationsLandingLauncher .operationChoiceIcon {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+}
+
+.operationsLandingLauncher .operationChoiceIcon svg {
+  width: 21px;
+  height: 21px;
+}
+
+.operationsLandingLauncher .operationChoiceCopy {
+  display: block;
+}
+
+.operationsLandingLauncher .operationChoiceCopy strong {
+  font-size: clamp(1.08rem, 4.8vw, 1.24rem);
+}
+
 .homeLauncher {
   width: min(100%, 400px);
   box-sizing: border-box;
