@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from 'react';
 import FuelLocationModal, { type FuelLocationCoordinates } from '../../../../../components/FuelLocationModal';
+import BalancedHeadingText from '../../../balanced-heading';
 import styles from './page.module.css';
 
 type FuelAsset = {
@@ -14,6 +15,8 @@ type FuelAsset = {
   plateLabel: string;
   hours: number | null;
   fuelPercent: number | null;
+  yearModel: number | null;
+  lifeWorkedPercent: number | null;
   canReceiveFuel: boolean;
   usageMetric: 'hours' | 'km' | 'both' | 'percentage' | 'none';
 };
@@ -82,6 +85,15 @@ function assetMeta(asset: FuelAsset): string {
   return asset.plateLabel || asset.serialNumber || asset.assetTypeLabel || 'Asset details not captured';
 }
 
+function serialDisplayText(asset: FuelAsset): string {
+  return asset.serialNumber || 'Not captured';
+}
+
+function yearDisplayText(asset: FuelAsset): string {
+  if (asset.yearModel) return String(asset.yearModel);
+  return asset.title.match(/\b(?:19|20)\d{2}\b/)?.[0] || 'Not captured';
+}
+
 function hasMeter(asset: FuelAsset | null): boolean {
   return Boolean(asset && ['hours', 'km', 'both'].includes(asset.usageMetric));
 }
@@ -94,6 +106,15 @@ function meterLabel(asset: FuelAsset | null): string {
 
 function meterUnit(asset: FuelAsset | null): 'km' | 'hours' {
   return meterLabel(asset).includes('kilometre') ? 'km' : 'hours';
+}
+
+function usageDisplayText(asset: FuelAsset): string {
+  if (asset.usageMetric === 'none') return 'Not applicable';
+  if (asset.usageMetric === 'percentage') {
+    return asset.lifeWorkedPercent === null ? 'Not captured' : `${asset.lifeWorkedPercent.toLocaleString('en-ZA')}%`;
+  }
+  if (asset.hours === null) return 'Not captured';
+  return `${asset.hours.toLocaleString('en-ZA')} ${meterUnit(asset)}`;
 }
 
 function clampFuel(value: string): string {
@@ -134,7 +155,15 @@ export default function PetrolStationFuelClient({ operatorName }: { operatorName
   const visibleAssets = useMemo(() => {
     const query = search.trim().toLowerCase();
     if (!query) return assets;
-    return assets.filter((asset) => [assetName(asset), assetMeta(asset), asset.brandName, asset.modelName]
+    return assets.filter((asset) => [
+      assetName(asset),
+      assetMeta(asset),
+      asset.brandName,
+      asset.modelName,
+      asset.serialNumber,
+      asset.yearModel,
+      asset.hours,
+    ]
       .join(' ')
       .toLowerCase()
       .includes(query));
@@ -405,7 +434,21 @@ export default function PetrolStationFuelClient({ operatorName }: { operatorName
           <div className={styles.assetList}>
             {visibleAssets.map((asset) => (
               <article key={asset.id} className={styles.assetCard}>
-                <div><h2>{assetName(asset)}</h2><p>{assetMeta(asset)}</p></div>
+                <h2><BalancedHeadingText text={assetName(asset)} /></h2>
+                <div className={styles.assetMetaGrid}>
+                  <div>
+                    <span>Serial</span>
+                    <strong>{serialDisplayText(asset)}</strong>
+                  </div>
+                  <div>
+                    <span>Year</span>
+                    <strong>{yearDisplayText(asset)}</strong>
+                  </div>
+                  <div>
+                    <span>Usage</span>
+                    <strong>{usageDisplayText(asset)}</strong>
+                  </div>
+                </div>
                 <button type="button" onClick={() => selectAsset(asset)}>Open</button>
               </article>
             ))}

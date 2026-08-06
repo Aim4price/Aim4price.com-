@@ -648,6 +648,8 @@
   overflow-wrap: anywhere;
 }
 .managerAssetMetaGrid { min-width: 0; max-width: 100%; display: grid; gap: 10px; }
+.managerAssetMetaGrid.ownerAssetMetaStack { grid-template-columns: 1fr; }
+.managerAssetMetaGrid.ownerAssetMetaStack > div:last-child { grid-column: auto; }
 .managerAssetMetaGrid div {
   min-width: 0;
   max-width: 100%;
