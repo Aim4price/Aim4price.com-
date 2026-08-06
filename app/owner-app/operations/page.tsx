@@ -17,9 +17,11 @@ export default async function OwnerOperationsPage() {
       <div className={`${styles.content} ${styles.operationsContent}`}>
         <section className={`${styles.ownerPageIntro} ${styles.operationsIntro}`}>
           <h1 className={styles.ownerPageTitle}>Choose option</h1>
-          <p>Choose what you want to record.</p>
         </section>
-        <nav className={styles.operationLauncher} aria-label="Maintenance and fuel tools">
+        <nav
+          className={`${styles.operationLauncher} ${styles.operationsLandingLauncher}`}
+          aria-label="Maintenance and fuel tools"
+        >
           <Link className={styles.operationChoiceCard} href="/owner-app/operations/maintenance" prefetch={false}>
             <span className={styles.operationChoiceIcon} aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9">
@@ -29,7 +31,6 @@ export default async function OwnerOperationsPage() {
             </span>
             <span className={styles.operationChoiceCopy}>
               <strong>Maintenance</strong>
-              <small>Record services, repairs and work completed.</small>
             </span>
             <span className={styles.operationChoiceArrow} aria-hidden="true">›</span>
           </Link>
@@ -42,7 +43,6 @@ export default async function OwnerOperationsPage() {
             </span>
             <span className={styles.operationChoiceCopy}>
               <strong>Fuel</strong>
-              <small>Record fuel from a storage tank or petrol station.</small>
             </span>
             <span className={styles.operationChoiceArrow} aria-hidden="true">›</span>
           </Link>
