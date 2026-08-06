@@ -1895,9 +1895,9 @@
     0 18px 34px rgba(16, 82, 59, 0.09) !important;
 }
 
-.trackerPage .trackerCardAttention,
-.trackerPage .trackerCardUpcoming,
-.trackerPage .trackerCardDone {
+.trackerPage.trackerPage .trackerCardAttention,
+.trackerPage.trackerPage .trackerCardUpcoming,
+.trackerPage.trackerPage .trackerCardDone {
   overflow: hidden;
   background-position: 0 0 !important;
   background-repeat: no-repeat !important;
@@ -1909,58 +1909,57 @@
   print-color-adjust: exact;
 }
 
-.trackerPage .trackerCardAttention {
+.trackerPage.trackerPage .trackerCardAttention {
   border-color: rgba(204, 58, 58, 0.32) !important;
-  background-color: #ffe4e4 !important;
+  background-color: #ffe8e8 !important;
   background-image:
-    radial-gradient(circle at 0 0, rgba(204, 58, 58, 0.13), transparent 42%),
-    linear-gradient(135deg, #fff0f0 0%, #ffe1e1 100%) !important;
+    radial-gradient(circle at 0 0, rgba(204, 58, 58, 0.075), transparent 32%),
+    linear-gradient(180deg, #fff7f7 0%, #ffe8e8 100%) !important;
 }
 
-.trackerPage .trackerCardUpcoming {
+.trackerPage.trackerPage .trackerCardUpcoming {
   border-color: rgba(211, 137, 31, 0.4) !important;
   background-color: #ffedcc !important;
   background-image:
-    radial-gradient(circle at 0 0, rgba(230, 161, 55, 0.16), transparent 44%),
-    linear-gradient(135deg, #fff4df 0%, #ffe9c2 100%) !important;
+    radial-gradient(circle at 0 0, rgba(230, 161, 55, 0.1), transparent 34%),
+    linear-gradient(180deg, #fffaf2 0%, #ffedcc 100%) !important;
 }
 
-.trackerPage .trackerCardDone {
+.trackerPage.trackerPage .trackerCardDone {
   border-color: rgba(43, 138, 99, 0.34) !important;
   background-color: #e5f5ec !important;
   background-image:
-    radial-gradient(circle at 0 0, rgba(43, 138, 99, 0.13), transparent 42%),
-    linear-gradient(135deg, #edf9f2 0%, #dff2e7 100%) !important;
+    radial-gradient(circle at 0 0, rgba(43, 138, 99, 0.085), transparent 34%),
+    linear-gradient(180deg, #f7fcf9 0%, #e5f5ec 100%) !important;
 }
 
-.trackerPage .trackerCardAttention:hover {
+.trackerPage.trackerPage .trackerCardAttention:hover {
   border-color: rgba(204, 58, 58, 0.48) !important;
-  background-color: #ffdddd !important;
-  background-image: linear-gradient(135deg, #ffeded 0%, #ffdcdc 100%) !important;
+  background-color: #ffe4e4 !important;
+  background-image: linear-gradient(180deg, #fffafa 0%, #ffe4e4 100%) !important;
 }
 
-.trackerPage .trackerCardUpcoming:hover {
+.trackerPage.trackerPage .trackerCardUpcoming:hover {
   border-color: rgba(211, 137, 31, 0.56) !important;
-  background-color: #ffe7b8 !important;
-  background-image: linear-gradient(135deg, #fff2d8 0%, #ffe5b4 100%) !important;
+  background-color: #ffe9c0 !important;
+  background-image: linear-gradient(180deg, #fffdf8 0%, #ffe9c0 100%) !important;
 }
 
-.trackerPage .trackerCardDone:hover {
+.trackerPage.trackerPage .trackerCardDone:hover {
   border-color: rgba(43, 138, 99, 0.48) !important;
-  background-color: #dbf0e4 !important;
-  background-image: linear-gradient(135deg, #eaf7ef 0%, #d8efe2 100%) !important;
+  background-color: #dff2e7 !important;
+  background-image: linear-gradient(180deg, #f9fdfa 0%, #dff2e7 100%) !important;
 }
 
-
-.trackerPage .trackerCardAttention > [class*='clientPanel'],
-.trackerPage .trackerCardUpcoming > [class*='clientPanel'],
-.trackerPage .trackerCardDone > [class*='clientPanel'] {
+.trackerPage.trackerPage .trackerCardAttention > [class*='clientPanel'],
+.trackerPage.trackerPage .trackerCardUpcoming > [class*='clientPanel'],
+.trackerPage.trackerPage .trackerCardDone > [class*='clientPanel'] {
   background: transparent !important;
 }
 
-.trackerPage .trackerCardAttention::before { background: #c93a3a !important; }
-.trackerPage .trackerCardUpcoming::before { background: #d28116 !important; }
-.trackerPage .trackerCardDone::before { background: #2b8a63 !important; }
+.trackerPage.trackerPage .trackerCardAttention::before { background: #c93a3a !important; }
+.trackerPage.trackerPage .trackerCardUpcoming::before { background: #d28116 !important; }
+.trackerPage.trackerPage .trackerCardDone::before { background: #2b8a63 !important; }
 
 .trackerCardMuted {
   opacity: 0.3;
