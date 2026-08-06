@@ -26,6 +26,12 @@ type HistoryTimelineFilter = 'all' | '12months' | '90days' | 'custom';
 type HistoryModalStep = 1 | 2 | 3;
 type Option = { value: string; label: string };
 
+type MaintenanceProximityFilters = {
+  days: string;
+  hours: string;
+  km: string;
+};
+
 type Props = {
   initialAssets: DealerMaintenanceTrackedAsset[];
   dealerAppMode?: boolean;
@@ -64,6 +70,12 @@ const historyTimelineOptions: Option[] = [
   { value: '90days', label: 'Last 3 months' },
   { value: 'custom', label: 'Custom dates' },
 ];
+
+const EMPTY_PROXIMITY_FILTERS: MaintenanceProximityFilters = {
+  days: '',
+  hours: '',
+  km: '',
+};
 
 function SearchIcon({ className = '' }: { className?: string }) {
   return <svg className={className} viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.7" fill="none" stroke="currentColor" strokeWidth="2" /><path d="m16 16 4.4 4.4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>;
@@ -236,12 +248,50 @@ function needsAttention(status: DealerMaintenanceTrackerStatus): boolean {
   return ['overdue', 'due', 'due_soon', 'usage_needed'].includes(status);
 }
 
+function numericProximityLimit(value: string): number | null {
+  if (!value.trim()) return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+}
+
+function daysUntilMaintenance(dueDate: string): number | null {
+  const todayKey = johannesburgDateKey(new Date().toISOString());
+  const due = new Date(`${dueDate}T00:00:00Z`);
+  const today = new Date(`${todayKey}T00:00:00Z`);
+  if (Number.isNaN(due.getTime()) || Number.isNaN(today.getTime())) return null;
+  return Math.round((due.getTime() - today.getTime()) / 86_400_000);
+}
+
+function assetMatchesProximityFilters(
+  asset: DealerMaintenanceTrackedAsset,
+  filters: MaintenanceProximityFilters,
+): boolean {
+  const dayLimit = numericProximityLimit(filters.days);
+  const hourLimit = numericProximityLimit(filters.hours);
+  const kilometreLimit = numericProximityLimit(filters.km);
+  if (dayLimit === null && hourLimit === null && kilometreLimit === null) return true;
+
+  return asset.openMaintenanceRecords.some((record) => {
+    if (record.triggerType === 'date') {
+      if (dayLimit === null || !record.dueDate) return false;
+      const remainingDays = daysUntilMaintenance(record.dueDate);
+      return remainingDays !== null && remainingDays <= dayLimit;
+    }
+
+    if (record.remainingUsage === null) return false;
+    const metric = record.usageMetric || asset.usageMetric;
+    if (metric === 'hours') return hourLimit !== null && record.remainingUsage <= hourLimit;
+    if (metric === 'km') return kilometreLimit !== null && record.remainingUsage <= kilometreLimit;
+    return false;
+  });
+}
+
 function trackerCardStatusClass(
   status: DealerMaintenanceTrackerStatus,
 ): string {
-  if (needsAttention(status)) return leadStyles.leadThreadNew;
-  if (status === 'no_open') return leadStyles.leadThreadDone;
-  return leadStyles.leadThreadActive;
+  if (needsAttention(status)) return styles.trackerCardAttention;
+  if (status === 'no_open') return styles.trackerCardClear;
+  return styles.trackerCardUpcoming;
 }
 
 function maintenanceStatusGuidance(status: DealerMaintenanceTrackerStatus): string {
@@ -529,6 +579,8 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
   const [statusFilter, setStatusFilter] = useState<TrackerStatusFilter>('all');
   const [draftOwnerFilter, setDraftOwnerFilter] = useState('all');
   const [draftStatusFilter, setDraftStatusFilter] = useState<TrackerStatusFilter>('all');
+  const [proximityFilters, setProximityFilters] = useState<MaintenanceProximityFilters>({ ...EMPTY_PROXIMITY_FILTERS });
+  const [draftProximityFilters, setDraftProximityFilters] = useState<MaintenanceProximityFilters>({ ...EMPTY_PROXIMITY_FILTERS });
   const [openFilterDropdown, setOpenFilterDropdown] = useState<FilterDropdownKey | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
   const [photoIndexes, setPhotoIndexes] = useState<Record<string, number>>({});
@@ -620,12 +672,15 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
     if (statusFilter === 'attention' && !needsAttention(asset.status)) return false;
     if (statusFilter === 'upcoming' && asset.status !== 'upcoming') return false;
     if (statusFilter === 'no_open' && asset.status !== 'no_open') return false;
+    if (!assetMatchesProximityFilters(asset, proximityFilters)) return false;
     return true;
-  }), [assets, ownerFilter, search, statusFilter]);
+  }), [assets, ownerFilter, proximityFilters, search, statusFilter]);
 
   const attentionCount = assets.filter((asset) => needsAttention(asset.status)).length;
   const noOpenCount = assets.filter((asset) => asset.status === 'no_open').length;
-  const hasActiveFilter = ownerFilter !== 'all' || statusFilter !== 'all';
+  const hasActiveProximityFilter = Object.values(proximityFilters)
+    .some((value) => numericProximityLimit(value) !== null);
+  const hasActiveFilter = ownerFilter !== 'all' || statusFilter !== 'all' || hasActiveProximityFilter;
   const activeFilterLabel = hasActiveFilter ? 'Filtered' : 'Filter';
   const managedAsset = managedAccessId
     ? assets.find((asset) => asset.accessId === managedAccessId) ?? null
@@ -696,6 +751,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
   function openFilters() {
     setDraftOwnerFilter(ownerFilter);
     setDraftStatusFilter(statusFilter);
+    setDraftProximityFilters({ ...proximityFilters });
     setOpenFilterDropdown(null);
     setFilterOpen(true);
   }
@@ -705,6 +761,8 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
     setStatusFilter('all');
     setDraftOwnerFilter('all');
     setDraftStatusFilter('all');
+    setProximityFilters({ ...EMPTY_PROXIMITY_FILTERS });
+    setDraftProximityFilters({ ...EMPTY_PROXIMITY_FILTERS });
     setFilterOpen(false);
   }
 
@@ -1648,17 +1706,65 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
             <div className={`${assetStyles.modalHeader} ${leadStyles.leadFilterHeader} ${styles.trackerFilterHeader}`}>
               <div>
                 <h3 id="tracker-filter-title">{dealerAppMode ? 'Filter' : 'Filter tracked equipment'}</h3>
-                {!dealerAppMode ? <p className={leadStyles.leadFilterIntro}>Filter by asset owner and current maintenance position.</p> : null}
+                {!dealerAppMode ? <p className={leadStyles.leadFilterIntro}>Filter by asset owner, maintenance status, or how close the next service is.</p> : null}
               </div>
               <button type="button" className={`${assetStyles.modalCloseButton} ${workspaceStyles.modalClose}`} onClick={() => setFilterOpen(false)} aria-label="Close filters"><CloseIcon className={assetStyles.buttonIcon} /></button>
             </div>
             <div className={`${workspaceStyles.modalBody} ${leadStyles.leadFilterForm} ${styles.trackerFilterForm}`}>
               <Dropdown label="Asset owner" value={draftOwnerFilter} options={ownerOptions} dropdownKey="owner" openDropdown={openFilterDropdown} onOpenChange={(key) => setOpenFilterDropdown(key as FilterDropdownKey | null)} onChange={setDraftOwnerFilter} nativeSelect={dealerAppMode} />
               <Dropdown label="Maintenance status" value={draftStatusFilter} options={statusOptions} dropdownKey="status" openDropdown={openFilterDropdown} onOpenChange={(key) => setOpenFilterDropdown(key as FilterDropdownKey | null)} onChange={(value) => setDraftStatusFilter(value as TrackerStatusFilter)} nativeSelect={dealerAppMode} />
+              <section className={styles.proximityFilterSection} aria-labelledby="maintenance-proximity-filter-title">
+                <div className={styles.proximityFilterHeading}>
+                  <strong id="maintenance-proximity-filter-title">Due within</strong>
+                  <span>Enter any distance you want to monitor.</span>
+                </div>
+                <div className={styles.proximityFilterGrid}>
+                  <label className={styles.proximityFilterField}>
+                    <span>Days</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      inputMode="numeric"
+                      value={draftProximityFilters.days}
+                      onChange={(event) => setDraftProximityFilters((current) => ({ ...current, days: event.target.value }))}
+                      placeholder="e.g. 30"
+                      aria-label="Due within days"
+                    />
+                  </label>
+                  <label className={styles.proximityFilterField}>
+                    <span>Hours</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      inputMode="decimal"
+                      value={draftProximityFilters.hours}
+                      onChange={(event) => setDraftProximityFilters((current) => ({ ...current, hours: event.target.value }))}
+                      placeholder="e.g. 100"
+                      aria-label="Due within hours"
+                    />
+                  </label>
+                  <label className={styles.proximityFilterField}>
+                    <span>Kilometres</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      inputMode="decimal"
+                      value={draftProximityFilters.km}
+                      onChange={(event) => setDraftProximityFilters((current) => ({ ...current, km: event.target.value }))}
+                      placeholder="e.g. 1 000"
+                      aria-label="Due within kilometres"
+                    />
+                  </label>
+                </div>
+                <small>When more than one value is entered, assets matching any relevant distance are shown. Overdue maintenance remains included.</small>
+              </section>
             </div>
             <div className={`${assetStyles.formActions} ${workspaceStyles.modalFooter} ${leadStyles.leadFilterActions} ${styles.trackerFilterActions}`}>
               <button type="button" className={assetStyles.secondaryButton} onClick={clearFilters}>{dealerAppMode ? 'Clear' : 'Clear filters'}</button>
-              <button type="button" className={assetStyles.primaryButton} onClick={() => { setOwnerFilter(draftOwnerFilter); setStatusFilter(draftStatusFilter); setOpenFilterDropdown(null); setFilterOpen(false); }}>{dealerAppMode ? 'Apply' : 'Apply filters'}</button>
+              <button type="button" className={assetStyles.primaryButton} onClick={() => { setOwnerFilter(draftOwnerFilter); setStatusFilter(draftStatusFilter); setProximityFilters({ ...draftProximityFilters }); setOpenFilterDropdown(null); setFilterOpen(false); }}>{dealerAppMode ? 'Apply' : 'Apply filters'}</button>
             </div>
           </div>
         </div>
