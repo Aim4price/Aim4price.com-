@@ -32,6 +32,7 @@ export type DealerMaintenanceTrackerStatus =
   | 'due_soon'
   | 'usage_needed'
   | 'upcoming'
+  | 'done'
   | 'no_open';
 
 export type DealerMaintenancePermissions = {
@@ -344,7 +345,8 @@ function trackerStatusLabel(status: DealerMaintenanceTrackerStatus): string {
   if (status === 'due') return 'Due now';
   if (status === 'due_soon') return 'Due soon';
   if (status === 'usage_needed') return 'Usage needed';
-  if (status === 'no_open') return 'No open maintenance';
+  if (status === 'done') return 'Done';
+  if (status === 'no_open') return 'Tracking';
   return 'Upcoming';
 }
 
@@ -354,7 +356,12 @@ function statusPriority(status: DealerMaintenanceTrackerStatus): number {
   if (status === 'due_soon') return 2;
   if (status === 'usage_needed') return 3;
   if (status === 'upcoming') return 4;
-  return 5;
+  if (status === 'done') return 5;
+  return 6;
+}
+
+function trackerNeedsAttention(status: DealerMaintenanceTrackerStatus): boolean {
+  return ['overdue', 'due', 'due_soon', 'usage_needed'].includes(status);
 }
 
 function recordSummary(record: AssetMaintenanceRecord): DealerMaintenanceRecordSummary {
@@ -1210,7 +1217,12 @@ async function buildTrackedAsset(row: DealerMaintenanceAccessRow): Promise<Deale
     return leftRemaining - rightRemaining;
   });
   const next = ranked[0] ?? null;
-  const status: DealerMaintenanceTrackerStatus = next ? trackerStatus(next) : 'no_open';
+  const nextStatus: DealerMaintenanceTrackerStatus = next ? trackerStatus(next) : 'no_open';
+  const status: DealerMaintenanceTrackerStatus = trackerNeedsAttention(nextStatus)
+    ? nextStatus
+    : completedRecords.length
+      ? 'done'
+      : nextStatus;
   const usageMetric = assetUsageMetric(asset, next);
   const currentUsage = next?.currentUsage ?? next?.assetUsageReading ?? currentAssetUsage(asset, usageMetric);
   const loggedProblems = permissions.canViewLoggedProblems
