@@ -11,6 +11,10 @@ export default function BalancedHeadingText({ text }: BalancedHeadingTextProps) 
 
   if (words.length <= 3) return <>{text}</>;
 
+  if (/^(?:19|20)\d{2}$/.test(words[0])) {
+    return <>{`${words[0]}\u00A0${words.slice(1).join(' ')}`}</>;
+  }
+
   const tailWordCount = Math.max(3, Math.ceil((words.length + 1) / 2));
   const splitAt = Math.max(1, words.length - tailWordCount);
   const leadingWords = words.slice(0, splitAt).join(' ');
