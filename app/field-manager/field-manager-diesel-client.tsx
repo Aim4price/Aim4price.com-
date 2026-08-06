@@ -72,9 +72,7 @@ function formatDate(value: string | null): string {
   if (!value) return 'No update yet';
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return 'No update yet';
-  return new Intl.DateTimeFormat('en-ZA', {
-    dateStyle: 'medium',
-  }).format(parsed);
+  return new Intl.DateTimeFormat('en-ZA', { dateStyle: 'medium' }).format(parsed);
 }
 
 function formatLocationLabel(value: string): string {
@@ -195,8 +193,15 @@ export default function FieldManagerDieselClient({ ownerAppMode = false }: { own
   return (
     <main className={styles.mobilePage}>
       <section className={styles.assetsShell}>
-        <header className={styles.assetsHeader} aria-label={ownerAppMode ? 'Owner fuel controls' : 'Field Manager account controls'}>
-          <FieldManagerNavLink href={ownerAppMode ? '/owner-app/operations/fuel' : '/field-manager'} label={ownerAppMode ? 'Back' : 'Home'} />
+        <header className={styles.assetsHeader} aria-label={ownerAppMode ? 'Owner fuel controls' : 'Field Manager fuel controls'}>
+          {ownerAppMode ? (
+            <FieldManagerNavLink href="/owner-app/operations/fuel" label="Back" />
+          ) : (
+            <>
+              <FieldManagerNavLink href="/field-manager/diesel" label="Back" />
+              <FieldManagerNavLink href="/field-manager" label="Home" />
+            </>
+          )}
         </header>
 
         {notice ? <div className={styles.errorNotice}>{notice}</div> : null}
@@ -237,22 +242,10 @@ export default function FieldManagerDieselClient({ ownerAppMode = false }: { own
                 </div>
 
                 <div className={styles.assetMetaGrid}>
-                  <div>
-                    <span>Current level</span>
-                    <strong>{formatLitres(storage.currentLitres)}</strong>
-                  </div>
-                  <div>
-                    <span>Capacity</span>
-                    <strong>{formatLitres(storage.capacityLitres)}</strong>
-                  </div>
-                  <div>
-                    <span>Stock</span>
-                    <strong>{formatStock(storage)}</strong>
-                  </div>
-                  <div>
-                    <span>Last update</span>
-                    <strong>{formatDate(storage.updatedAtIso)}</strong>
-                  </div>
+                  <div><span>Current level</span><strong>{formatLitres(storage.currentLitres)}</strong></div>
+                  <div><span>Capacity</span><strong>{formatLitres(storage.capacityLitres)}</strong></div>
+                  <div><span>Stock</span><strong>{formatStock(storage)}</strong></div>
+                  <div><span>Last update</span><strong>{formatDate(storage.updatedAtIso)}</strong></div>
                 </div>
 
                 <button
