@@ -237,7 +237,8 @@ test('Dealer Leads and Maintenance keep search, service details and desktop acti
   assert.match(maintenanceSource, /Current Usage:/);
   assert.match(maintenanceSource, /<span>Current usage<\/span>/);
   assert.match(maintenanceSource, /<span>Service due<\/span>/);
-  assert.match(maintenanceSource, /<span>Recurring service<\/span><strong>\{asset\.nextMaintenance \? recurringLabel/);
+  assert.match(maintenanceSource, /asset\.nextMaintenance\?\.recurringEnabled \? \([\s\S]*?<span>Recurring<\/span><strong>\{recurringLabel\(asset\.nextMaintenance\)\}/);
+  assert.doesNotMatch(maintenanceSource, /Recurring service|<strong>Not recurring<\/strong>/);
   assert.doesNotMatch(maintenanceSource, /<span>Quick view<\/span>/);
   assert.doesNotMatch(maintenanceSource, /<h3>Upcoming maintenance<\/h3>/);
 
