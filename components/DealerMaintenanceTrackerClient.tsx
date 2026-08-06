@@ -1158,7 +1158,9 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                               <div className={assetStyles.assetDetailRow}><span>Service due</span><strong>{asset.nextMaintenance ? dueLabel(asset.nextMaintenance, asset.usageMetric) : 'Not scheduled'}</strong></div>
                               <div className={assetStyles.assetDetailRow}><span>Remaining</span><strong>{asset.nextMaintenance ? remainingLabel(asset.nextMaintenance, asset.usageMetric) : 'No action required'}</strong></div>
                               <div className={assetStyles.assetDetailRow}><span>Shared by</span><strong>{asset.grantedByName || 'Asset owner'}</strong></div>
-                              <div className={assetStyles.assetDetailRow}><span>Recurring service</span><strong>{asset.nextMaintenance ? recurringLabel(asset.nextMaintenance) : 'Not recurring'}</strong></div>
+                              {asset.nextMaintenance?.recurringEnabled ? (
+                                <div className={assetStyles.assetDetailRow}><span>Recurring</span><strong>{recurringLabel(asset.nextMaintenance)}</strong></div>
+                              ) : null}
                             </div>
                           </div>
                         </div>
