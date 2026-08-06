@@ -1401,6 +1401,49 @@ export async function listAssetLeadsForUser(
   }));
 }
 
+export async function getAssetLeadForPartner(input: {
+  dealerUserId: string;
+  leadId: string;
+}): Promise<AssetLead | null> {
+  await ensurePartnerAccessTables();
+  const result = await getDb().query<LeadRow>(
+    `${leadSelectSql('where l.id = $1::uuid and l.partner_user_id = $2')} limit 1`,
+    [input.leadId, input.dealerUserId],
+  );
+
+  return result.rows[0] ? mapLeadRow(result.rows[0]) : null;
+}
+
+export async function updateAssetLeadPhotosForPartner(input: {
+  dealerUserId: string;
+  leadId: string;
+  photos: string[];
+}): Promise<void> {
+  await ensurePartnerAccessTables();
+  const photos = Array.from(new Set(input.photos.map(asText).filter(Boolean)));
+  const result = await getDb().query<{ id: string }>(
+    `
+      update asset_leads
+      set
+        asset_snapshot_json = jsonb_set(
+          coalesce(asset_snapshot_json, '{}'::jsonb),
+          '{photos}',
+          $3::jsonb,
+          true
+        ),
+        updated_at = now()
+      where id = $1::uuid
+        and partner_user_id = $2
+      returning id::text
+    `,
+    [input.leadId, input.dealerUserId, JSON.stringify(photos)],
+  );
+
+  if (!result.rows[0]) {
+    throw new Error('LEAD_NOT_FOUND');
+  }
+}
+
 export async function getAssetLeadLogoForUser(input: {
   currentUserId: string;
   leadId: string;
