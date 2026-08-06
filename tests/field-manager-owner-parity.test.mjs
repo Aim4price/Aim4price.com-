@@ -85,3 +85,10 @@ test('Home uses the Owner light-red treatment when paired with Back', () => {
   assert.match(assets, /label="Home"/);
   assert.doesNotMatch(assets, /label="Home" tone="home"/);
 });
+
+test('Field Manager home calls the asset workflow Maintenance', () => {
+  const home = source('app/field-manager/field-manager-home-client.tsx');
+
+  assert.match(home, /onClick=\{\(\) => window\.location\.assign\('\/field-manager\/assets'\)\}[\s\S]*?<strong>Maintenance<\/strong>/);
+  assert.doesNotMatch(home, /Manage Assets/);
+});
