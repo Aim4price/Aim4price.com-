@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import FieldManagerNavLink from './field-manager-nav-link';
+import FieldManagerServiceLocationModal from './field-manager-service-location-modal';
 import styles from './page.module.css';
 
 type FieldManagerSession = {
@@ -49,8 +50,17 @@ type AssetsApiResponse = {
 
 type OpenAssetApiResponse = {
   ok: boolean;
+  assetId?: string;
+  publicAssetCode?: string;
   redirectTo?: string;
   error?: string;
+};
+
+type LocationGateRequest = {
+  assetTitle: string;
+  assetId: string;
+  publicAssetCode: string;
+  redirectTo: string;
 };
 
 function extractError(payload: { error?: string } | null, fallback: string): string {
@@ -95,6 +105,7 @@ export default function FieldManagerAssetsClient() {
   const [notice, setNotice] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [openingAssetId, setOpeningAssetId] = useState<string | null>(null);
+  const [locationGate, setLocationGate] = useState<LocationGateRequest | null>(null);
 
   const filteredAssets = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -171,11 +182,17 @@ export default function FieldManagerAssetsClient() {
         return;
       }
 
-      if (!response.ok || !payload?.ok || !payload.redirectTo) {
+      if (!response.ok || !payload?.ok || !payload.redirectTo || !payload.assetId || !payload.publicAssetCode) {
         throw new Error(extractError(payload, 'This asset cannot be opened.'));
       }
 
-      window.location.assign(payload.redirectTo);
+      setLocationGate({
+        assetTitle: asset.title,
+        assetId: payload.assetId,
+        publicAssetCode: payload.publicAssetCode,
+        redirectTo: payload.redirectTo,
+      });
+      setOpeningAssetId(null);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : 'This asset cannot be opened.');
       setOpeningAssetId(null);
@@ -252,6 +269,14 @@ export default function FieldManagerAssetsClient() {
             );
           })}
         </section>
+
+        {locationGate ? (
+          <FieldManagerServiceLocationModal
+            {...locationGate}
+            onCancel={() => setLocationGate(null)}
+            onError={setNotice}
+          />
+        ) : null}
       </section>
     </main>
   );
