@@ -25,6 +25,9 @@ test('Dealer Account staff role controls use a fully custom shared dropdown', as
   assert.match(client, /event\.key === 'ArrowDown' \|\| event\.key === 'ArrowUp'/);
   assert.match(styles, /\.roleSelectButton \{[\s\S]*?background: linear-gradient/);
   assert.match(styles, /\.roleSelectMenu \{[\s\S]*?position: absolute/);
+  assert.match(styles, /\.roleSelectMenu \{[\s\S]*?max-height: 13\.25rem[\s\S]*?overflow-y: auto/);
+  assert.match(styles, /\.roleSelectMenu::\-webkit-scrollbar-thumb \{[\s\S]*?background: linear-gradient/);
+  assert.match(styles, /\.roleSelectOption \{[\s\S]*?scroll-margin-block: 0\.42rem/);
   assert.match(styles, /\.roleSelectWrapOpen \{[\s\S]*?z-index: 40/);
   assert.match(styles, /\.roleSelectOptionSelected \{/);
   assert.match(styles, /\.roleSelectChevron \{[\s\S]*?pointer-events: none/);
