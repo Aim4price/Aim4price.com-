@@ -1,0 +1,138 @@
+.background {
+  --aim4price-card-shadow: 0 10px 30px rgba(13, 62, 49, 0.08);
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow: hidden;
+  isolation: isolate;
+  background:
+    radial-gradient(circle at top left, rgba(169, 220, 196, 0.2), transparent 34%),
+    radial-gradient(circle at 92% 92%, rgba(169, 220, 196, 0.12), transparent 30%),
+    linear-gradient(180deg, #f7fcf9 0%, #f3faf6 45%, #eaf6ef 100%);
+}
+
+.decoration {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.decoration *,
+.arcs,
+.dotGrid,
+.mintCircle {
+  pointer-events: none;
+}
+
+.content {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.content > * {
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+.arcs {
+  position: absolute;
+  width: clamp(250px, 31vw, 470px);
+  height: clamp(250px, 31vw, 470px);
+  fill: none;
+  stroke: #78b99b;
+  stroke-width: 1.25;
+  opacity: 0.24;
+}
+
+.arcsTopLeft {
+  top: env(safe-area-inset-top, 0px);
+  left: env(safe-area-inset-left, 0px);
+  transform: translate(-8%, -8%);
+}
+
+.arcsBottomRight {
+  right: env(safe-area-inset-right, 0px);
+  bottom: env(safe-area-inset-bottom, 0px);
+  transform: translate(8%, 8%);
+}
+
+.dotGrid {
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  fill: #76b99a;
+  opacity: 0.34;
+}
+
+.dotGridTopRight {
+  top: calc(env(safe-area-inset-top, 0px) + clamp(88px, 12vh, 138px));
+  right: calc(env(safe-area-inset-right, 0px) + clamp(12px, 4vw, 64px));
+}
+
+.dotGridBottomLeft {
+  bottom: calc(env(safe-area-inset-bottom, 0px) + clamp(78px, 11vh, 132px));
+  left: calc(env(safe-area-inset-left, 0px) + clamp(10px, 4vw, 62px));
+}
+
+.mintCircle {
+  position: absolute;
+  width: clamp(150px, 20vw, 300px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #a9dcc4;
+  opacity: 0.2;
+}
+
+.mintCircleLeft {
+  top: 37%;
+  left: 0;
+  transform: translate(-62%, -50%);
+}
+
+.mintCircleRight {
+  top: 67%;
+  right: 0;
+  transform: translate(62%, -50%);
+}
+
+@media (max-width: 600px) {
+  .arcs {
+    width: 270px;
+    height: 270px;
+    opacity: 0.22;
+  }
+
+  .dotGrid {
+    width: 56px;
+    height: 56px;
+  }
+
+  .dotGridTopRight {
+    top: calc(env(safe-area-inset-top, 0px) + 104px);
+    right: calc(env(safe-area-inset-right, 0px) + 5px);
+  }
+
+  .dotGridBottomLeft {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 76px);
+    left: calc(env(safe-area-inset-left, 0px) + 4px);
+  }
+
+  .mintCircle {
+    width: 164px;
+    opacity: 0.18;
+  }
+}
+
+@media (min-width: 900px) {
+  .mintCircleLeft {
+    top: 42%;
+  }
+
+  .mintCircleRight {
+    top: 62%;
+  }
+}
