@@ -19,7 +19,7 @@ import assetStyles from '../app/asset-register/page.module.css';
 import leadStyles from '../app/leads/page.module.css';
 import styles from './DealerMaintenanceTrackerClient.module.css';
 
-type TrackerStatusFilter = 'all' | 'attention' | 'upcoming' | 'no_open';
+type TrackerStatusFilter = 'all' | 'attention' | 'upcoming' | 'done';
 type FilterDropdownKey = 'owner' | 'status';
 type HistoryRecordType = 'all' | 'maintenance' | 'notes';
 type HistoryTimelineFilter = 'all' | '12months' | '90days' | 'custom';
@@ -54,8 +54,8 @@ type TrackerPhotoModal = {
 const statusOptions: Option[] = [
   { value: 'all', label: 'All tracked assets' },
   { value: 'attention', label: 'Needs attention' },
-  { value: 'upcoming', label: 'Upcoming' },
-  { value: 'no_open', label: 'No open maintenance' },
+  { value: 'upcoming', label: 'Upcoming / tracking' },
+  { value: 'done', label: 'Done' },
 ];
 
 const historyRecordTypeOptions: Option[] = [
@@ -290,7 +290,7 @@ function trackerCardStatusClass(
   status: DealerMaintenanceTrackerStatus,
 ): string {
   if (needsAttention(status)) return styles.trackerCardAttention;
-  if (status === 'no_open') return styles.trackerCardClear;
+  if (status === 'done') return styles.trackerCardDone;
   return styles.trackerCardUpcoming;
 }
 
@@ -299,8 +299,9 @@ function maintenanceStatusGuidance(status: DealerMaintenanceTrackerStatus): stri
   if (status === 'due') return 'Maintenance is due now — review the current schedule.';
   if (status === 'due_soon') return 'Maintenance is approaching — check the due date or usage.';
   if (status === 'usage_needed') return 'A usage reading is needed to confirm what is due.';
+  if (status === 'done') return 'Maintenance has been completed and saved.';
   if (status === 'upcoming') return 'Maintenance is scheduled for later.';
-  return 'Nothing currently requires attention.';
+  return 'Maintenance tracking is active — no schedule has been added yet.';
 }
 
 function matchesSearch(asset: DealerMaintenanceTrackedAsset, search: string): boolean {
@@ -670,14 +671,14 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
     if (!matchesSearch(asset, search)) return false;
     if (ownerFilter !== 'all' && asset.ownerUserId !== ownerFilter) return false;
     if (statusFilter === 'attention' && !needsAttention(asset.status)) return false;
-    if (statusFilter === 'upcoming' && asset.status !== 'upcoming') return false;
-    if (statusFilter === 'no_open' && asset.status !== 'no_open') return false;
+    if (statusFilter === 'upcoming' && !['upcoming', 'no_open'].includes(asset.status)) return false;
+    if (statusFilter === 'done' && asset.status !== 'done') return false;
     if (!assetMatchesProximityFilters(asset, proximityFilters)) return false;
     return true;
   }), [assets, ownerFilter, proximityFilters, search, statusFilter]);
 
   const attentionCount = assets.filter((asset) => needsAttention(asset.status)).length;
-  const noOpenCount = assets.filter((asset) => asset.status === 'no_open').length;
+  const doneCount = assets.filter((asset) => asset.status === 'done').length;
   const hasActiveProximityFilter = Object.values(proximityFilters)
     .some((value) => numericProximityLimit(value) !== null);
   const hasActiveFilter = ownerFilter !== 'all' || statusFilter !== 'all' || hasActiveProximityFilter;
@@ -1002,17 +1003,17 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
             <button type="button" className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${leadStyles.leadOwnerSummaryCard} ${leadStyles.leadOwnerSummaryCardNew} ${styles.summaryFilterButton} ${statusFilter === 'attention' ? styles.summaryFilterButtonActive : ''}`} onClick={() => chooseStatusFilter('attention')} aria-pressed={statusFilter === 'attention'}>
               <span className={assetStyles.heroSummaryHead}><span className={`${assetStyles.heroSummaryTitle} ${leadStyles.leadOwnerSummaryText}`}>{dealerAppMode ? 'Attention' : 'Needs attention'}</span></span>
               <span className={assetStyles.heroSummaryValueRow}><strong className={`${assetStyles.heroSummaryValue} ${leadStyles.leadOwnerSummaryText}`}>{attentionCount}</strong></span>
-              {!dealerAppMode ? <span className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${leadStyles.leadOwnerSummaryFooter}`}><small className={leadStyles.leadOwnerSummaryText}>Overdue, due soon, or waiting for a usage reading.</small></span> : null}
+              {!dealerAppMode ? <span className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${leadStyles.leadOwnerSummaryFooter}`}><small className={leadStyles.leadOwnerSummaryText}>Overdue, due now, due soon, or waiting for a usage reading.</small></span> : null}
             </button>
             <button type="button" className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${leadStyles.leadOwnerSummaryCard} ${leadStyles.leadOwnerSummaryCardOpen} ${styles.summaryFilterButton} ${statusFilter === 'all' ? styles.summaryFilterButtonActive : ''}`} onClick={() => chooseStatusFilter('all')} aria-pressed={statusFilter === 'all'}>
               <span className={assetStyles.heroSummaryHead}><span className={`${assetStyles.heroSummaryTitle} ${leadStyles.leadOwnerSummaryText}`}>{dealerAppMode ? 'Tracked' : 'Tracked equipment'}</span></span>
               <span className={assetStyles.heroSummaryValueRow}><strong className={`${assetStyles.heroSummaryValue} ${leadStyles.leadOwnerSummaryText}`}>{assets.length}</strong></span>
               {!dealerAppMode ? <span className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${leadStyles.leadOwnerSummaryFooter}`}><small className={leadStyles.leadOwnerSummaryText}>Show all equipment shared with you.</small></span> : null}
             </button>
-            <button type="button" className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${leadStyles.leadOwnerSummaryCard} ${leadStyles.leadOwnerSummaryCardDone} ${styles.summaryFilterButton} ${statusFilter === 'no_open' ? styles.summaryFilterButtonActive : ''}`} onClick={() => chooseStatusFilter('no_open')} aria-pressed={statusFilter === 'no_open'}>
-              <span className={assetStyles.heroSummaryHead}><span className={`${assetStyles.heroSummaryTitle} ${leadStyles.leadOwnerSummaryText}`}>{dealerAppMode ? 'Due' : 'Nothing due'}</span></span>
-              <span className={assetStyles.heroSummaryValueRow}><strong className={`${assetStyles.heroSummaryValue} ${leadStyles.leadOwnerSummaryText}`}>{noOpenCount}</strong></span>
-              {!dealerAppMode ? <span className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${leadStyles.leadOwnerSummaryFooter}`}><small className={leadStyles.leadOwnerSummaryText}>No current maintenance requires attention.</small></span> : null}
+            <button type="button" className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${leadStyles.leadOwnerSummaryCard} ${leadStyles.leadOwnerSummaryCardDone} ${styles.summaryFilterButton} ${statusFilter === 'done' ? styles.summaryFilterButtonActive : ''}`} onClick={() => chooseStatusFilter('done')} aria-pressed={statusFilter === 'done'}>
+              <span className={assetStyles.heroSummaryHead}><span className={`${assetStyles.heroSummaryTitle} ${leadStyles.leadOwnerSummaryText}`}>Done</span></span>
+              <span className={assetStyles.heroSummaryValueRow}><strong className={`${assetStyles.heroSummaryValue} ${leadStyles.leadOwnerSummaryText}`}>{doneCount}</strong></span>
+              {!dealerAppMode ? <span className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${leadStyles.leadOwnerSummaryFooter}`}><small className={leadStyles.leadOwnerSummaryText}>Maintenance completed and saved.</small></span> : null}
             </button>
           </section>
 
