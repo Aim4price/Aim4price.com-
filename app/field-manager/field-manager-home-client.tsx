@@ -155,7 +155,7 @@ export default function FieldManagerHomeClient() {
                 className={styles.homeActionCard}
                 onClick={() => window.location.assign('/field-manager/assets')}
               >
-                <strong>Manage Assets</strong>
+                <strong>Maintenance</strong>
               </button>
 
               <button
