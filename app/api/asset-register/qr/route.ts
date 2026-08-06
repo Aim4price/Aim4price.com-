@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getAccountProfile } from '../../../../lib/account-profile';
 import { getServerSession } from '../../../../lib/auth-session';
 import { getAssetRegisterItemById } from '../../../../lib/asset-register-db';
+import { getAssetLeadForPartner } from '../../../../lib/partner-access';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -529,13 +531,14 @@ function buildPrintHtml(options: {
 }
 
 export async function GET(request: NextRequest) {
-  const session = await getServerSession();
+  const session = await getServerSession({ allowDealerApp: true });
 
   if (!session?.user?.id) {
     return unauthorized();
   }
 
   const assetId = asText(request.nextUrl.searchParams.get('assetId'));
+  const leadId = asText(request.nextUrl.searchParams.get('leadId'));
   const format = normalizeFormat(request.nextUrl.searchParams.get('format'));
   const shouldDownload = request.nextUrl.searchParams.get('download') === '1';
 
@@ -543,7 +546,27 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Valid asset id is required.' }, { status: 400 });
   }
 
-  const asset = await getAssetRegisterItemById(session.user.id, assetId);
+  let assetOwnerUserId = session.user.id;
+
+  if (leadId) {
+    const profile = await getAccountProfile({ id: session.user.id });
+    if (profile.accountType !== 'dealer' || profile.accountStatus !== 'active') {
+      return NextResponse.json({ ok: false, error: 'Dealer access is not available.' }, { status: 403 });
+    }
+
+    const lead = await getAssetLeadForPartner({
+      dealerUserId: session.user.id,
+      leadId,
+    });
+
+    if (!lead || lead.assetRegisterItemId !== assetId) {
+      return NextResponse.json({ ok: false, error: 'Asset not found.' }, { status: 404 });
+    }
+
+    assetOwnerUserId = lead.ownerUserId;
+  }
+
+  const asset = await getAssetRegisterItemById(assetOwnerUserId, assetId);
 
   if (!asset) {
     return NextResponse.json({ ok: false, error: 'Asset not found.' }, { status: 404 });
