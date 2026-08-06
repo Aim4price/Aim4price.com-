@@ -570,7 +570,7 @@ export default function PetrolStationFuelClient({
 
   return (
     <section className={styles.shell}>
-      {!isLoading && !coordinates ? (
+      {!isLoading && !loadError && !coordinates ? (
         <FuelLocationModal
           subject="Petrol station fuel"
           onReady={acceptLocation}
