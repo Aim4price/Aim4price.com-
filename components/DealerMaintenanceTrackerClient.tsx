@@ -51,6 +51,11 @@ type TrackerPhotoModal = {
   index: number;
 };
 
+type TrackerMaintenanceCard = DealerMaintenanceTrackedAsset & {
+  trackerCardId: string;
+  trackerCardKind: 'active' | 'done';
+};
+
 const statusOptions: Option[] = [
   { value: 'all', label: 'All tracked assets' },
   { value: 'attention', label: 'Needs attention' },
@@ -289,9 +294,94 @@ function assetMatchesProximityFilters(
 function trackerCardStatusClass(
   status: DealerMaintenanceTrackerStatus,
 ): string {
-  if (needsAttention(status)) return styles.trackerCardAttention;
-  if (status === 'done') return styles.trackerCardDone;
-  return styles.trackerCardUpcoming;
+  if (needsAttention(status)) return `${leadStyles.leadThreadNew} ${styles.trackerCardAttention}`;
+  if (status === 'done') return `${leadStyles.leadThreadDone} ${styles.trackerCardDone}`;
+  return `${leadStyles.leadThreadActive} ${styles.trackerCardUpcoming}`;
+}
+
+function trackerStatusForRecord(record: DealerMaintenanceRecordSummary): DealerMaintenanceTrackerStatus {
+  if (record.triggerType === 'usage' && record.currentUsage === null) return 'usage_needed';
+  if (record.computedStatus === 'overdue') return 'overdue';
+  if (record.computedStatus === 'due') return 'due';
+  if (record.computedStatus === 'due_soon') return 'due_soon';
+  return 'upcoming';
+}
+
+function trackerStatusLabel(status: DealerMaintenanceTrackerStatus): string {
+  if (status === 'overdue') return 'Overdue';
+  if (status === 'due') return 'Due now';
+  if (status === 'due_soon') return 'Due soon';
+  if (status === 'usage_needed') return 'Usage needed';
+  if (status === 'done') return 'Done';
+  if (status === 'no_open') return 'Tracking';
+  return 'Upcoming';
+}
+
+function completedMaintenanceTime(record: DealerMaintenanceRecordSummary): number {
+  const parsed = new Date(record.completedAtIso || record.updatedAtIso || record.createdAtIso).getTime();
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function completedMaintenanceCard(
+  asset: DealerMaintenanceTrackedAsset,
+  record: DealerMaintenanceRecordSummary,
+): TrackerMaintenanceCard {
+  return {
+    ...asset,
+    trackerCardId: `${asset.accessId}:done:${record.id}`,
+    trackerCardKind: 'done',
+    status: 'done',
+    statusLabel: 'Done',
+    nextMaintenance: record,
+    openMaintenanceRecords: [],
+    completedMaintenanceRecords: [record],
+    maintenanceRecords: [record],
+    // Problems belong to the live recurring cycle until the owner/dealer clears
+    // them. A completed card keeps only resolved notes for historical context.
+    loggedProblems: asset.loggedProblems.filter((problem) => Boolean(problem.notedAtIso)),
+    scheduleProposals: [],
+  };
+}
+
+function buildTrackerMaintenanceCards(asset: DealerMaintenanceTrackedAsset): TrackerMaintenanceCard[] {
+  const hasActiveMaintenance = asset.openMaintenanceRecords.length > 0;
+  const activeStatus = asset.nextMaintenance
+    ? trackerStatusForRecord(asset.nextMaintenance)
+    : 'no_open';
+  const activeCard: TrackerMaintenanceCard | null = hasActiveMaintenance || !asset.completedMaintenanceRecords.length
+    ? {
+        ...asset,
+        trackerCardId: `${asset.accessId}:active:${asset.nextMaintenance?.id || 'tracking'}`,
+        trackerCardKind: 'active',
+        status: activeStatus,
+        statusLabel: trackerStatusLabel(activeStatus),
+      }
+    : null;
+  const recurringCompletedCards = [...asset.completedMaintenanceRecords]
+    .filter((record) => record.recurringEnabled)
+    .sort((left, right) => completedMaintenanceTime(right) - completedMaintenanceTime(left))
+    .map((record) => completedMaintenanceCard(asset, record));
+
+  if (activeCard) return [activeCard, ...recurringCompletedCards];
+  if (recurringCompletedCards.length) return recurringCompletedCards;
+
+  const latestCompletedRecord = [...asset.completedMaintenanceRecords]
+    .sort((left, right) => completedMaintenanceTime(right) - completedMaintenanceTime(left))[0];
+  return latestCompletedRecord ? [completedMaintenanceCard(asset, latestCompletedRecord)] : [];
+}
+
+function trackerCardPriority(card: TrackerMaintenanceCard): number {
+  if (card.status === 'overdue') return 0;
+  if (card.status === 'due') return 1;
+  if (card.status === 'due_soon') return 2;
+  if (card.status === 'usage_needed') return 3;
+  if (card.status === 'upcoming' || card.status === 'no_open') return 4;
+  return 5;
+}
+
+function trackerCardTime(card: TrackerMaintenanceCard): number {
+  const record = card.nextMaintenance ?? card.maintenanceRecords[0];
+  return record ? completedMaintenanceTime(record) : 0;
 }
 
 function maintenanceStatusGuidance(status: DealerMaintenanceTrackerStatus): string {
@@ -586,9 +676,13 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
   const [filterOpen, setFilterOpen] = useState(false);
   const [photoIndexes, setPhotoIndexes] = useState<Record<string, number>>({});
   const [photoModal, setPhotoModal] = useState<TrackerPhotoModal | null>(null);
-  const [openAccessId, setOpenAccessId] = useState<string | null>(
-    initialAssets.some((asset) => asset.accessId === initialOpenAccessId) ? initialOpenAccessId : null,
-  );
+  const [openCardId, setOpenCardId] = useState<string | null>(() => {
+    if (!initialOpenAccessId) return null;
+    const initialCards = initialAssets.flatMap(buildTrackerMaintenanceCards);
+    return initialCards.find((card) => card.accessId === initialOpenAccessId && card.trackerCardKind === 'active')?.trackerCardId
+      ?? initialCards.find((card) => card.accessId === initialOpenAccessId)?.trackerCardId
+      ?? null;
+  });
   const [loading, setLoading] = useState(false);
   const [notice, setNotice] = useState<{ tone: 'success' | 'error'; text: string } | null>(null);
   const [maintenanceViewAccessId, setMaintenanceViewAccessId] = useState<string | null>(null);
@@ -667,7 +761,28 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
       .map(([value, label]) => ({ value, label })),
   ], [assets]);
 
-  const filteredAssets = useMemo(() => assets.filter((asset) => {
+  const maintenanceCards = useMemo(
+    () => assets
+      .flatMap(buildTrackerMaintenanceCards)
+      .sort((left, right) => {
+        const priority = trackerCardPriority(left) - trackerCardPriority(right);
+        if (priority) return priority;
+        const assetTitle = left.assetTitle.localeCompare(right.assetTitle);
+        if (assetTitle) return assetTitle;
+        return trackerCardTime(right) - trackerCardTime(left);
+      }),
+    [assets],
+  );
+
+  useEffect(() => {
+    setOpenCardId((current) => (
+      current && !maintenanceCards.some((card) => card.trackerCardId === current)
+        ? null
+        : current
+    ));
+  }, [maintenanceCards]);
+
+  const filteredCards = useMemo(() => maintenanceCards.filter((asset) => {
     if (!matchesSearch(asset, search)) return false;
     if (ownerFilter !== 'all' && asset.ownerUserId !== ownerFilter) return false;
     if (statusFilter === 'attention' && !needsAttention(asset.status)) return false;
@@ -675,10 +790,10 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
     if (statusFilter === 'done' && asset.status !== 'done') return false;
     if (!assetMatchesProximityFilters(asset, proximityFilters)) return false;
     return true;
-  }), [assets, ownerFilter, proximityFilters, search, statusFilter]);
+  }), [maintenanceCards, ownerFilter, proximityFilters, search, statusFilter]);
 
-  const attentionCount = assets.filter((asset) => needsAttention(asset.status)).length;
-  const doneCount = assets.filter((asset) => asset.status === 'done').length;
+  const attentionCount = maintenanceCards.filter((asset) => needsAttention(asset.status)).length;
+  const doneCount = maintenanceCards.filter((asset) => asset.status === 'done').length;
   const hasActiveProximityFilter = Object.values(proximityFilters)
     .some((value) => numericProximityLimit(value) !== null);
   const hasActiveFilter = ownerFilter !== 'all' || statusFilter !== 'all' || hasActiveProximityFilter;
@@ -770,13 +885,13 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
   function chooseStatusFilter(nextFilter: TrackerStatusFilter) {
     setStatusFilter(nextFilter);
     setDraftStatusFilter(nextFilter);
-    setOpenAccessId(null);
+    setOpenCardId(null);
     setMaintenanceViewAccessId(null);
     clearHistoryFilters();
   }
 
-  function openAsset(asset: DealerMaintenanceTrackedAsset) {
-    setOpenAccessId(asset.accessId);
+  function openAsset(asset: TrackerMaintenanceCard) {
+    setOpenCardId(asset.trackerCardId);
     if (maintenanceViewAccessId !== asset.accessId) {
       setMaintenanceViewAccessId(null);
       clearHistoryFilters();
@@ -784,7 +899,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
   }
 
   function closeAsset() {
-    setOpenAccessId(null);
+    setOpenCardId(null);
     setMaintenanceViewAccessId(null);
     setManagedAccessId(null);
     clearHistoryFilters();
@@ -852,7 +967,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
       }
       setAssets(payload.assets);
       if (!payload.assets.some((entry) => entry.accessId === asset.accessId)) {
-        setOpenAccessId(null);
+        setOpenCardId(null);
         setMaintenanceViewAccessId(null);
         throw new Error('This asset is no longer shared with your dealership.');
       }
@@ -965,7 +1080,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
       }
 
       setAssets((current) => current.filter((asset) => asset.accessId !== accessId));
-      setOpenAccessId((current) => (current === accessId ? null : current));
+      setOpenCardId((current) => (current?.startsWith(`${accessId}:`) ? null : current));
       setMaintenanceViewAccessId((current) => (current === accessId ? null : current));
       setManagedAccessId((current) => (current === accessId ? null : current));
       setReportAccessId((current) => (current === accessId ? null : current));
@@ -1034,14 +1149,15 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
           </div>
 
           <div className={`${leadStyles.leadResultSummary} ${leadStyles.leadResultSummaryDealer}`}>
-            <span>Showing</span><strong>{filteredAssets.length}</strong><span>of {assets.length} tracked assets</span>
+            <span>Showing</span><strong>{filteredCards.length}</strong><span>of {maintenanceCards.length} maintenance cards across {assets.length} tracked asset{assets.length === 1 ? '' : 's'}</span>
           </div>
 
-          {!filteredAssets.length ? <div className={`${assetStyles.emptyState} ${workspaceStyles.emptyState}`}>{assets.length ? 'No tracked assets match this search or filter.' : 'No tracked assets yet. Assets appear here after an owner or Field Manager enables dealer maintenance tracking.'}</div> : null}
+          {!filteredCards.length ? <div className={`${assetStyles.emptyState} ${workspaceStyles.emptyState}`}>{assets.length ? 'No maintenance cards match this search or filter.' : 'No tracked assets yet. Assets appear here after an owner or Field Manager enables dealer maintenance tracking.'}</div> : null}
 
           <div className={leadStyles.leadStack}>
-            {filteredAssets.map((asset) => {
-              const isOpen = openAccessId === asset.accessId;
+            {filteredCards.map((asset) => {
+              const isOpen = openCardId === asset.trackerCardId;
+              const isCompletedCard = asset.trackerCardKind === 'done';
               const photoIndex = selectedPhotoIndex(asset);
               const activePhotoUrl = asset.photoUrls[photoIndex] ?? '';
               const hasMultiplePhotos = asset.photoUrls.length > 1;
@@ -1049,7 +1165,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
               const pendingScheduleProposals = asset.scheduleProposals.filter((proposal) => proposal.status === 'pending');
               const isHistoryChecking = historyAccessCheckId === asset.accessId;
               return (
-                <article key={asset.accessId} className={`${workspaceStyles.card} ${leadStyles.leadThread} ${trackerCardStatusClass(asset.status)} ${isOpen ? leadStyles.leadThreadOpen : ''} ${openAccessId && !isOpen ? styles.trackerCardMuted : ''}`}>
+                <article key={asset.trackerCardId} className={`${workspaceStyles.card} ${leadStyles.leadThread} ${trackerCardStatusClass(asset.status)} ${isOpen ? leadStyles.leadThreadOpen : ''} ${openCardId && !isOpen ? styles.trackerCardMuted : ''}`}>
                   <div className={leadStyles.clientPanel}>
                     <div className={leadStyles.clientPanelHeader}>
                       <div className={leadStyles.clientIdentity}>
@@ -1213,9 +1329,9 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                             </div>
 
                             <div className={assetStyles.assetPrimaryDetails}>
-                              <div className={assetStyles.assetDetailRow}><span>Next</span><strong>{asset.nextMaintenance?.title || 'Nothing currently due'}</strong></div>
-                              <div className={assetStyles.assetDetailRow}><span>Service due</span><strong>{asset.nextMaintenance ? dueLabel(asset.nextMaintenance, asset.usageMetric) : 'Not scheduled'}</strong></div>
-                              <div className={assetStyles.assetDetailRow}><span>Remaining</span><strong>{asset.nextMaintenance ? remainingLabel(asset.nextMaintenance, asset.usageMetric) : 'No action required'}</strong></div>
+                              <div className={assetStyles.assetDetailRow}><span>{isCompletedCard ? 'Completed work' : 'Next'}</span><strong>{asset.nextMaintenance?.title || 'Nothing currently due'}</strong></div>
+                              <div className={assetStyles.assetDetailRow}><span>{isCompletedCard ? 'Completed' : 'Service due'}</span><strong>{asset.nextMaintenance ? (isCompletedCard ? formatDate(asset.nextMaintenance.completedAtIso) : dueLabel(asset.nextMaintenance, asset.usageMetric)) : 'Not scheduled'}</strong></div>
+                              <div className={assetStyles.assetDetailRow}><span>{isCompletedCard ? 'Usage at completion' : 'Remaining'}</span><strong>{asset.nextMaintenance ? (isCompletedCard ? formatUsage(asset.nextMaintenance.completedUsage, asset.nextMaintenance.usageMetric || asset.usageMetric) : remainingLabel(asset.nextMaintenance, asset.usageMetric)) : 'No action required'}</strong></div>
                               <div className={assetStyles.assetDetailRow}><span>Shared by</span><strong>{asset.grantedByName || 'Asset owner'}</strong></div>
                               {asset.nextMaintenance?.recurringEnabled ? (
                                 <div className={assetStyles.assetDetailRow}><span>Recurring</span><strong>{recurringLabel(asset.nextMaintenance)}</strong></div>
@@ -1227,8 +1343,8 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
 
                       <div className={styles.trackerSections}>
                         <header className={styles.trackerSectionsIntro}>
-                          <h3>What needs attention?</h3>
-                          <p>Open one section to see only the information you need.</p>
+                          <h3>{isCompletedCard ? 'Completed maintenance' : 'What needs attention?'}</h3>
+                          <p>{isCompletedCard ? 'This saved card keeps the completed recurring maintenance on record.' : 'Open one section to see only the information you need.'}</p>
                         </header>
 
                         {asset.permissions.canViewLoggedProblems ? (

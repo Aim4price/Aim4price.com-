@@ -360,10 +360,6 @@ function statusPriority(status: DealerMaintenanceTrackerStatus): number {
   return 6;
 }
 
-function trackerNeedsAttention(status: DealerMaintenanceTrackerStatus): boolean {
-  return ['overdue', 'due', 'due_soon', 'usage_needed'].includes(status);
-}
-
 function recordSummary(record: AssetMaintenanceRecord): DealerMaintenanceRecordSummary {
   return {
     id: record.id,
@@ -1218,7 +1214,10 @@ async function buildTrackedAsset(row: DealerMaintenanceAccessRow): Promise<Deale
   });
   const next = ranked[0] ?? null;
   const nextStatus: DealerMaintenanceTrackerStatus = next ? trackerStatus(next) : 'no_open';
-  const status: DealerMaintenanceTrackerStatus = trackerNeedsAttention(nextStatus)
+  // A recurring completion creates a new open record. Keep the aggregate asset
+  // on that live record's status; the client renders the completed cycle as its
+  // own Done card instead of allowing history to hide the replacement schedule.
+  const status: DealerMaintenanceTrackerStatus = next
     ? nextStatus
     : completedRecords.length
       ? 'done'
@@ -1477,3 +1476,4 @@ export async function markDealerMaintenanceNotificationsRead(dealerUserId: strin
     [dealerUserId],
   );
 }
+
