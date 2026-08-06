@@ -13,7 +13,7 @@ export default async function OwnerFuelActionPage({ params }: { params: { public
       publicFuelStorageCode={params.publicFuelStorageCode ?? ''}
       ownerAppMode
       ownerAppOperatorName={access.displayName}
-      ownerAppReturnTo="/owner-app/operations/fuel"
+      ownerAppReturnTo="/owner-app/operations/fuel/storage"
     />
   );
 }

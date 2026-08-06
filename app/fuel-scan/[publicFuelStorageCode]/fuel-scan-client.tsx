@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
+import FuelLocationModal, { type FuelLocationCoordinates } from '../../../components/FuelLocationModal';
 import FieldManagerNavLink from '../../field-manager/field-manager-nav-link';
 import styles from './page.module.css';
 import {
@@ -114,12 +115,7 @@ type Notice = {
   message: string;
 };
 
-type Coordinates = {
-  latitude: number;
-  longitude: number;
-  accuracyMeters: number | null;
-  capturedAtIso: string;
-};
+type Coordinates = FuelLocationCoordinates;
 
 type FuelScanClientProps = {
   publicFuelStorageCode: string;
@@ -297,7 +293,6 @@ export default function FuelScanClient({
   const [isCapturingLocation, setIsCapturingLocation] = useState(false);
   const [isDone, setIsDone] = useState(false);
   const [issueStep, setIssueStep] = useState<IssueStep>('asset');
-  const autoLocationRequestedRef = useRef(false);
 
   const selectedAsset = useMemo(() => assets.find((asset) => asset.id === assetId) ?? null, [assetId, assets]);
   const selectedAssetName = selectedAsset ? assetDisplayName(selectedAsset) : '';
@@ -315,7 +310,7 @@ export default function FuelScanClient({
   const appQueryString = ownerAppMode ? '?ownerApp=1' : fieldManagerMode ? '?fieldManager=1' : '';
   const safeOwnerReturnTo = ownerAppReturnTo?.startsWith('/owner-app/operations')
     ? ownerAppReturnTo
-    : '/owner-app/operations/fuel';
+    : '/owner-app/operations/fuel/storage';
   const appReturnHref = ownerAppMode ? safeOwnerReturnTo : '/field-manager/diesel';
 
   const filteredAssets = useMemo(() => {
@@ -353,6 +348,11 @@ export default function FuelScanClient({
       { enableHighAccuracy: true, timeout: 12000, maximumAge: 30000 },
     );
   }
+
+  const acceptRequiredLocation = useCallback((nextCoordinates: FuelLocationCoordinates) => {
+    setCoordinates(nextCoordinates);
+    setLocationStatus(`GPS captured: ${nextCoordinates.latitude.toFixed(6)}, ${nextCoordinates.longitude.toFixed(6)}`);
+  }, []);
 
   async function loadPreview() {
     setIsLoading(true);
@@ -470,7 +470,6 @@ export default function FuelScanClient({
     setDoneAction('asset_issue');
     setCoordinates(null);
     setLocationStatus('Location must be enabled before this fuel QR can continue.');
-    autoLocationRequestedRef.current = false;
     setIssueStep('asset');
     void loadPreview();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -483,19 +482,6 @@ export default function FuelScanClient({
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fieldManagerMode, ownerAppMode, normalizedCode]);
-
-  useEffect(() => {
-    if (isLoading || coordinates || isCapturingLocation || autoLocationRequestedRef.current) return;
-    if (!preview && !storage) return;
-
-    autoLocationRequestedRef.current = true;
-    const timeout = window.setTimeout(() => {
-      captureLocation();
-    }, 150);
-
-    return () => window.clearTimeout(timeout);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoading, preview, storage, coordinates, isCapturingLocation, normalizedCode]);
 
   useEffect(() => {
     if (!assetId) {
@@ -1605,19 +1591,6 @@ export default function FuelScanClient({
               </button>
             </form>
 
-            {!coordinates ? (
-              <div className={styles.locationPromptBackdrop} role="dialog" aria-modal="true" aria-labelledby="fuel-location-title">
-                <div className={styles.locationPromptCard}>
-                  <div className={styles.locationPromptIcon} aria-hidden="true">⌖</div>
-                  <h2 id="fuel-location-title">Location on</h2>
-                  <p>Every fuel issue saves a GPS point automatically. Allow location access on this phone before continuing.</p>
-                  <span>{locationStatus}</span>
-                  <button type="button" className={styles.primaryButton} onClick={captureLocation} disabled={isCapturingLocation}>
-                    {isCapturingLocation ? 'Capturing...' : 'Continue'}
-                  </button>
-                </div>
-              </div>
-            ) : null}
           </section>
         ) : scanMode === 'action-choice' ? (
           <>
@@ -1640,6 +1613,16 @@ export default function FuelScanClient({
           </>
         )}
       </div>
+      {!isLoading && (preview || storage) && !coordinates ? (
+        <FuelLocationModal
+          subject={visibleStorageName}
+          onReady={acceptRequiredLocation}
+          onCancel={() => {
+            if (isAuthenticatedAppMode) window.location.assign(appReturnHref);
+            else window.history.back();
+          }}
+        />
+      ) : null}
     </main>
   );
 }

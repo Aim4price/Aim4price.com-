@@ -157,6 +157,97 @@
   padding: 0 0 24px;
 }
 
+.operationsContent {
+  flex: 1 1 auto;
+  width: min(calc(100% - var(--owner-page-gutter)), 560px);
+  align-content: start;
+  gap: 18px;
+  padding: clamp(20px, 7vh, 64px) 0 28px;
+}
+
+.operationsIntro { padding: 0 3px 2px; }
+
+.operationsPage .ownerPageTitle {
+  margin: 0;
+  color: #12352d;
+  font-size: clamp(1.9rem, 8vw, 2.45rem);
+  font-weight: 900;
+  letter-spacing: -0.045em;
+  line-height: 1.04;
+}
+
+.operationsPage .ownerPageIntro p {
+  margin: 0;
+  color: rgba(18, 53, 45, 0.64);
+  font-size: 0.94rem;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.operationLauncher {
+  width: 100%;
+  display: grid;
+  gap: 13px;
+}
+
+.operationChoiceCard {
+  width: 100%;
+  min-height: 94px;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) 24px;
+  align-items: center;
+  gap: 14px;
+  box-sizing: border-box;
+  border: 1px solid rgba(18, 53, 45, 0.12);
+  border-radius: 20px;
+  background: #fff;
+  color: var(--owner-ink);
+  padding: 16px 17px;
+  text-decoration: none;
+  box-shadow: var(--aim4price-card-shadow, 0 12px 30px rgba(13, 62, 49, 0.08));
+  transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.operationChoiceIcon {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(35, 104, 81, 0.14);
+  border-radius: 15px;
+  background: #eef8f3;
+  color: #236851;
+}
+
+.operationChoiceIcon svg { width: 24px; height: 24px; }
+.operationChoiceCopy { min-width: 0; display: grid; gap: 5px; }
+.operationChoiceCopy strong {
+  color: #12352d;
+  font-size: clamp(1.06rem, 4.8vw, 1.28rem);
+  font-weight: 850;
+  letter-spacing: -0.025em;
+  line-height: 1.12;
+}
+.operationChoiceCopy small {
+  color: rgba(18, 53, 45, 0.62);
+  font-size: 0.78rem;
+  font-weight: 650;
+  line-height: 1.38;
+}
+.operationChoiceArrow {
+  color: rgba(18, 53, 45, 0.36);
+  font-size: 1.75rem;
+  font-weight: 500;
+  line-height: 1;
+  text-align: center;
+}
+.operationChoiceCard:active { transform: translateY(1px); }
+.operationChoiceCard:focus-visible {
+  outline: none;
+  border-color: rgba(35, 104, 81, 0.4);
+  box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.11), 0 16px 34px rgba(13, 62, 49, 0.12);
+}
+
 .homeLauncher {
   width: min(100%, 400px);
   box-sizing: border-box;

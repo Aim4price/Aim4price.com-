@@ -4203,6 +4203,11 @@ type SaveFuelSlipInput = {
   activityText?: unknown;
   workAreaText?: unknown;
   note?: unknown;
+  latitude?: unknown;
+  longitude?: unknown;
+  locationText?: unknown;
+  clientCapturedAt?: unknown;
+  gpsAccuracyMeters?: unknown;
   assetFuelPercentBefore?: unknown;
   assetFuelPercentAfter?: unknown;
   extractionStatus?: unknown;
@@ -4367,6 +4372,8 @@ async function clearFuelSlipAssetLastFields(client: PoolClient, userId: string, 
             - 'last_fuel_slip_activity_text'
             - 'lastFuelSlipWorkAreaText'
             - 'last_fuel_slip_work_area_text'
+            - 'lastFuelSlipLocationText'
+            - 'last_fuel_slip_location_text'
             - 'lastFuelSlipAssetFuelPercentBefore'
             - 'last_fuel_slip_asset_fuel_percent_before'
             - 'lastFuelSlipAssetFuelPercentAfter'
@@ -4578,6 +4585,13 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
   const activityText = sanitizeFuelSlipTextField(input.activityText, 180);
   const workAreaText = sanitizeFuelSlipTextField(input.workAreaText, 180);
   const note = sanitizeFuelSlipTextField(input.note, 1000);
+  const latitude = normalizeCoordinate(input.latitude, 90);
+  const longitude = normalizeCoordinate(input.longitude, 180);
+  const locationText = latitude !== null && longitude !== null
+    ? sanitizeFuelSlipTextField(input.locationText, 180) || `GPS ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
+    : sanitizeFuelSlipTextField(input.locationText, 180) || null;
+  const clientCapturedAt = normalizeClientCapturedAt(input.clientCapturedAt);
+  const gpsAccuracyMeters = normalizeGpsAccuracyMeters(input.gpsAccuracyMeters);
   const inputAssetFuelPercentBefore = normalizeFuelPercent(input.assetFuelPercentBefore);
   const assetFuelPercentAfter = normalizeFuelPercent(input.assetFuelPercentAfter);
   const ocrConfidence = normalizeRateValue(input.ocrConfidence);
@@ -4991,6 +5005,7 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
         operatorName ? `Operator / manager: ${operatorName}` : '',
         activityText ? `Activity: ${activityText}` : '',
         workAreaText ? `Work area: ${workAreaText}` : '',
+        locationText ? `Location: ${locationText}` : '',
         assetFuelPercentAfter !== null ? `Fuel percentage after fill: ${assetFuelPercentAfter}%` : '',
         note ? `Note: ${note}` : '',
         documentFileUrl ? `Document: ${documentFileUrl}` : '',
@@ -5069,6 +5084,8 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
         last_fuel_slip_activity_text: activityText,
         lastFuelSlipWorkAreaText: workAreaText,
         last_fuel_slip_work_area_text: workAreaText,
+        lastFuelSlipLocationText: locationText,
+        last_fuel_slip_location_text: locationText,
         lastFuelSlipAssetFuelPercentBefore: assetFuelPercentBefore,
         last_fuel_slip_asset_fuel_percent_before: assetFuelPercentBefore,
         lastFuelSlipAssetFuelPercentAfter: assetFuelPercentAfter,
@@ -5106,8 +5123,13 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
             fuel_slip_id,
             note,
             photo_urls,
+            latitude,
+            longitude,
+            location_text,
+            client_captured_at,
+            gps_accuracy_meters,
             created_at
-          ) values ($1::uuid, 'owner_session', $2, $3, $4, $5::numeric, $6::integer, $7::numeric, null, null, $10::uuid, $8, $9::jsonb, now())
+          ) values ($1::uuid, 'owner_session', $2, $3, $4, $5::numeric, $6::integer, $7::numeric, null, null, $10::uuid, $8, $9::jsonb, $11, $12, $13, $14::timestamptz, $15, now())
         `,
         [
           assetId,
@@ -5120,6 +5142,11 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
           [description, note].filter(Boolean).join('\n\n') || null,
           JSON.stringify(documentFileUrl ? [documentFileUrl] : []),
           fuelSlipId,
+          latitude,
+          longitude,
+          locationText,
+          clientCapturedAt,
+          gpsAccuracyMeters,
         ],
       );
 
