@@ -144,6 +144,7 @@ export type DealerMaintenanceTrackedAsset = {
   yearModel: number | null;
   condition: string;
   serialNumber: string;
+  registrationNumber: string;
   replacementPriceExVat: number | null;
   dealerCorrection: DealerAssetCorrectionRequest | null;
   photoUrl: string;
@@ -1233,6 +1234,7 @@ async function buildTrackedAsset(row: DealerMaintenanceAccessRow): Promise<Deale
     yearModel: asset.yearModel,
     condition: asset.condition,
     serialNumber: asset.serialNumber,
+    registrationNumber: asset.licenseRegistrationNumber,
     replacementPriceExVat: asset.replacementPriceExVat,
     dealerCorrection: null,
     photoUrl: asset.photos[0] ?? '',
