@@ -65,3 +65,23 @@ test('Petrol station asset information is stacked as Serial, Year, and Usage', (
   assert.match(styles, /\.assetMetaGrid\s*\{\s*display:\s*grid;\s*gap:/s);
   assert.doesNotMatch(styles, /\.assetMetaGrid\s*\{[^}]*grid-template-columns:/s);
 });
+
+test('Home uses the Owner light-red treatment when paired with Back', () => {
+  const nav = source('app/field-manager/field-manager-nav-link.tsx');
+  const navStyles = source('app/field-manager/field-manager-nav-link.module.css');
+  const fuelChoice = source('app/field-manager/diesel/page.tsx');
+  const storageChoice = source('app/field-manager/field-manager-diesel-client.tsx');
+  const petrolStation = source('app/field-manager/diesel/petrol-station/page.tsx');
+  const assets = source('app/field-manager/field-manager-assets-client.tsx');
+
+  assert.match(nav, /tone\?: 'default' \| 'home'/);
+  assert.match(nav, /tone === 'home' \? styles\.homeLink/);
+  assert.match(navStyles, /\.homeLink\s*\{[\s\S]*background: linear-gradient\(180deg, #fff8f8 0%, #fde8e8 100%\);[\s\S]*color: #9b3030;/);
+
+  for (const pairedScreen of [fuelChoice, storageChoice, petrolStation]) {
+    assert.match(pairedScreen, /label="Home" tone="home"/);
+  }
+
+  assert.match(assets, /label="Home"/);
+  assert.doesNotMatch(assets, /label="Home" tone="home"/);
+});

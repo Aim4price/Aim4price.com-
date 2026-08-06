@@ -11,7 +11,7 @@ export default function FieldManagerFuelPage() {
       <section className={styles.fuelChoiceShell}>
         <header className={styles.fuelChoiceNav} aria-label="Field Manager fuel controls">
           <FieldManagerNavLink href="/field-manager" label="Back" />
-          <FieldManagerNavLink href="/field-manager" label="Home" />
+          <FieldManagerNavLink href="/field-manager" label="Home" tone="home" />
         </header>
 
         <div className={styles.fuelChoiceContent}>
