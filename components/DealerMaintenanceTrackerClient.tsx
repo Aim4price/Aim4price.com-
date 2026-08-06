@@ -737,6 +737,9 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
   function chooseHistoryRecordType(recordType: HistoryRecordType) {
     setHistoryRecordType(recordType);
     setMaintenanceSearch('');
+    setHistoryTimelineFilter(dealerAppMode ? 'custom' : 'all');
+    setHistoryFromDate('');
+    setHistoryToDate('');
     setHistoryModalStep(2);
   }
 
@@ -1331,7 +1334,9 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                 <p>{historyModalStep === 1
                   ? `${historyAsset.assetTitle} · Select one option to continue.`
                   : historyModalStep === 2
-                    ? 'Choose how far back the history should go.'
+                    ? dealerAppMode
+                      ? 'Choose the date range to view.'
+                      : 'Choose how far back the history should go.'
                     : `${historyAsset.assetTitle} · Newest records first.`}</p>
               </div>
               <button type="button" className={`${assetStyles.modalCloseButton} ${workspaceStyles.modalClose}`} onClick={closeHistory} aria-label="Close maintenance history">
@@ -1362,11 +1367,6 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                         ) : null}
                         <span className={styles.historyChoiceCopy}>
                           <strong>{option.label}</strong>
-                          {!dealerAppMode ? <small>{option.value === 'all'
-                            ? 'All saved activity'
-                            : option.value === 'maintenance'
-                              ? 'Completed services and checkups'
-                              : 'Problems and saved notes'}</small> : null}
                         </span>
                         <b>{count}</b>
                       </button>
@@ -1378,40 +1378,41 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
 
               {historyModalStep === 2 ? (
                 <section className={`${styles.historyStep} ${styles.historyChoiceStep}`} aria-label="Choose maintenance history timeline">
-                <div className={styles.historyTimelineFilters} aria-label="Filter maintenance history by timeline">
-                  {historyTimelineOptions.map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      className={option.value === 'custom' && historyTimelineFilter === 'custom' ? styles.historyTimelineFilterActive : ''}
-                      onClick={() => chooseHistoryTimeline(option.value as HistoryTimelineFilter)}
-                    >
-                      {!dealerAppMode ? (
+                {!dealerAppMode ? (
+                  <div className={styles.historyTimelineFilters} aria-label="Filter maintenance history by timeline">
+                    {historyTimelineOptions.map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        className={option.value === 'custom' && historyTimelineFilter === 'custom' ? styles.historyTimelineFilterActive : ''}
+                        onClick={() => chooseHistoryTimeline(option.value as HistoryTimelineFilter)}
+                      >
                         <span className={styles.historyChoiceIcon}>
                           <HistoryTimelineChoiceIcon type={option.value as HistoryTimelineFilter} />
                         </span>
-                      ) : null}
-                      <span className={styles.historyTimelineCopy}>
-                        <strong>{option.label}</strong>
-                        <small>{option.value === 'all'
-                          ? 'Full history'
-                          : option.value === '12months'
-                            ? 'Previous year'
-                            : option.value === '90days'
-                              ? 'Past 90 days'
-                              : 'Choose dates'}</small>
-                      </span>
-                      {!dealerAppMode ? <ChevronRightIcon className={styles.historyChoiceArrow} /> : null}
-                    </button>
-                  ))}
-                </div>
-                {historyTimelineFilter === 'custom' ? (
+                        <span className={styles.historyTimelineCopy}>
+                          <strong>{option.label}</strong>
+                          <small>{option.value === 'all'
+                            ? 'Full history'
+                            : option.value === '12months'
+                              ? 'Previous year'
+                              : option.value === '90days'
+                                ? 'Past 90 days'
+                                : 'Choose dates'}</small>
+                        </span>
+                        <ChevronRightIcon className={styles.historyChoiceArrow} />
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+                {dealerAppMode || historyTimelineFilter === 'custom' ? (
                   <div className={styles.historyDateRange}>
                     <label className={styles.historyDateField}>
                       <span>From date</span>
                       <input
                         type="date"
                         value={historyFromDate}
+                        max={historyToDate || undefined}
                         onChange={(event) => setHistoryFromDate(event.target.value)}
                         aria-label={`Maintenance history from date for ${historyAsset.assetTitle}`}
                       />
@@ -1421,6 +1422,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                       <input
                         type="date"
                         value={historyToDate}
+                        min={historyFromDate || undefined}
                         onChange={(event) => setHistoryToDate(event.target.value)}
                         aria-label={`Maintenance history to date for ${historyAsset.assetTitle}`}
                       />
@@ -1493,12 +1495,14 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                   <div className={`${styles.sectionEmpty} ${styles.historyEmptyState}`}>
                     <strong>{historyFiltersActive ? 'No matching records' : 'No history saved yet'}</strong>
                     <span>{historyFiltersActive
-                      ? 'Choose a wider timeline or clear the search.'
+                      ? dealerAppMode
+                        ? 'Adjust the date range or clear the search.'
+                        : 'Choose a wider timeline or clear the search.'
                       : 'Completed maintenance and saved notes will appear here in date order.'}</span>
                   </div>
                 )}
 
-                {historyFiltersActive ? (
+                {historyFiltersActive && !dealerAppMode ? (
                   <button type="button" className={styles.historyClearAllButton} onClick={showAllHistory}>Show all history</button>
                 ) : null}
                 </section>
@@ -1515,12 +1519,12 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                   Back
                 </button>
               ) : null}
-              {historyModalStep === 2 && historyTimelineFilter === 'custom' ? (
+              {historyModalStep === 2 && (dealerAppMode || historyTimelineFilter === 'custom') ? (
                 <button
                   type="button"
                   className={assetStyles.primaryButton}
                   onClick={() => setHistoryModalStep(3)}
-                  disabled={!historyFromDate && !historyToDate}
+                  disabled={dealerAppMode ? !historyFromDate || !historyToDate : !historyFromDate && !historyToDate}
                 >
                   View history
                 </button>
