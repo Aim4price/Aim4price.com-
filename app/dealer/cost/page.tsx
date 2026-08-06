@@ -35,3 +35,4 @@ export default async function DealerCostsPage({ searchParams }: PageProps) {
     </div>
   );
 }
+
