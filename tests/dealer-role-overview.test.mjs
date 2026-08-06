@@ -11,6 +11,7 @@ test('Dealer Staff roles preserve the agreed tool visibility', () => {
   assert.match(access, /sales: new Set\([\s\S]*?'marketplace'[\s\S]*?\)/);
   assert.doesNotMatch(access.match(/sales: new Set\(([\s\S]*?)\),\n  parts:/)?.[1] ?? '', /client_costs/);
   assert.doesNotMatch(access.match(/parts: new Set\(([\s\S]*?)\),\n  technician:/)?.[1] ?? '', /valuation|marketplace/);
+  assert.match(home, /const allTools: DealerHomeTool\[\] = \[/);
   assert.match(home, /\.filter\(\(tool\) => dealerRoleCan\(role, tool\.capability\)\)/);
   const protectedPages = [
     ['app/dealer/leads/page.tsx', 'leads'],
