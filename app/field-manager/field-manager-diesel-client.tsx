@@ -201,7 +201,7 @@ export default function FieldManagerDieselClient({ ownerAppMode = false }: { own
           ) : (
             <>
               <FieldManagerNavLink href="/field-manager/diesel" label="Back" />
-              <FieldManagerNavLink href="/field-manager" label="Home" />
+              <FieldManagerNavLink href="/field-manager" label="Home" tone="home" />
             </>
           )}
         </header>
