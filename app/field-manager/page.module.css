@@ -961,6 +961,18 @@
   box-shadow: 0 16px 38px rgba(182, 111, 38, 0.13);
 }
 
+.overviewCard.overviewCardNeedsAttention {
+  border-color: rgba(162, 48, 48, 0.2);
+  background: linear-gradient(180deg, #fffafa 0%, #fff1f1 100%);
+  box-shadow: 0 16px 38px rgba(162, 48, 48, 0.1);
+}
+
+.overviewCard.overviewCardDueSoon {
+  border-color: rgba(161, 105, 16, 0.22);
+  background: linear-gradient(180deg, #fffdf8 0%, #fff6e5 100%);
+  box-shadow: 0 16px 38px rgba(161, 105, 16, 0.1);
+}
+
 .overviewCardLabels {
   display: flex;
   align-items: center;

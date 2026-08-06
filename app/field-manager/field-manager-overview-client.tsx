@@ -72,16 +72,15 @@ function extractError(payload: { error?: string } | null, fallback: string): str
   return payload?.error?.trim() || fallback;
 }
 
-function statusClassName(item: OverviewItem): string {
-  if (item.status === 'problem' || item.status === 'overdue' || item.status === 'due') {
-    return `${styles.overviewStatus} ${styles.overviewStatusUrgent}`;
-  }
+function cardClassName(item: OverviewItem): string {
+  const attentionClass = item.section === 'needs_attention'
+    ? styles.overviewCardNeedsAttention
+    : item.status === 'due_soon'
+      ? styles.overviewCardDueSoon
+      : '';
+  const recurringClass = item.isRecurringFollowUp ? styles.overviewRecurringCard : '';
 
-  if (item.section === 'coming_up') {
-    return `${styles.overviewStatus} ${styles.overviewStatusUpcoming}`;
-  }
-
-  return `${styles.overviewStatus} ${styles.overviewStatusNeutral}`;
+  return [styles.overviewCard, attentionClass, recurringClass].filter(Boolean).join(' ');
 }
 
 function statusText(item: OverviewItem): string {
@@ -285,15 +284,8 @@ export default function FieldManagerOverviewClient() {
     return (
       <article
         key={`${item.id}:${item.sourceId}`}
-        className={`${styles.overviewCard} ${item.isRecurringFollowUp ? styles.overviewRecurringCard : ''}`}
+        className={cardClassName(item)}
       >
-        <div className={styles.overviewCardLabels}>
-          <span className={`${styles.overviewType} ${item.isRecurringFollowUp ? styles.overviewRecurringType : ''}`}>
-            {item.isRecurringFollowUp ? `Recurring ${TYPE_LABELS[item.type]}` : TYPE_LABELS[item.type]}
-          </span>
-          <span className={statusClassName(item)}>{statusText(item)}</span>
-        </div>
-
         {item.isRecurringFollowUp ? <p className={styles.overviewRecurringNotice}>Next recurring maintenance</p> : null}
         <h3>{item.assetTitle}</h3>
         <p className={styles.overviewHeadline}>{item.headline}</p>
