@@ -1105,6 +1105,19 @@ export default function ScanClient({
       : "/owner-app/operations/maintenance";
   }, [ownerAppReturnTo]);
   const appReturnHref = ownerAppMode ? ownerAppReturnHref : fieldManagerReturnHref;
+  const ownerAssetActionsHref = normalizedOwnerAppAssetId
+    ? `/owner-app/operations/maintenance/${encodeURIComponent(normalizedOwnerAppAssetId)}`
+    : ownerAppReturnHref;
+  const fieldManagerAssetActionsHref = normalizedCode
+    ? `/field-manager/assets/${encodeURIComponent(normalizedCode)}${normalizedFieldManagerAssetId
+        ? `?assetId=${encodeURIComponent(normalizedFieldManagerAssetId)}`
+        : ""}`
+    : fieldManagerReturnHref;
+  const assetActionsHref = ownerAppMode
+    ? ownerAssetActionsHref
+    : fieldManagerMode
+      ? fieldManagerAssetActionsHref
+      : appReturnHref;
 
   const [asset, setAsset] = useState<ScanSafeAsset | null>(null);
   const [savedAsset, setSavedAsset] = useState<ScanSafeAsset | null>(null);
@@ -1432,11 +1445,10 @@ export default function ScanClient({
   async function redirectAfterFieldManagerServerSave(
     message = "Update saved successfully.",
   ) {
-    clearQrScanSession(normalizedCode);
     setActiveEditor(null);
     setShowLocationReminder(false);
     setNotice(null);
-    setDoneMessage(`${message} Returning to Maintenance…`);
+    setDoneMessage(`${message} Returning to asset actions…`);
     setIsDone(true);
 
     try {
@@ -1454,7 +1466,7 @@ export default function ScanClient({
     }, 80);
 
     window.setTimeout(() => {
-      window.location.replace(appReturnHref);
+      window.location.replace(assetActionsHref);
     }, FIELD_MANAGER_RETURN_DELAY_MS);
   }
 
@@ -3019,8 +3031,8 @@ export default function ScanClient({
           <h1>Thank you.</h1>
           {doneMessage ? <p>{doneMessage}</p> : null}
           {isFieldManagerMode ? (
-            <a className={styles.thankYouReturn} href={appReturnHref}>
-              Back to Maintenance
+            <a className={styles.thankYouReturn} href={assetActionsHref}>
+              Back to asset
             </a>
           ) : null}
         </section>
