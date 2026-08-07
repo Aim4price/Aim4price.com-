@@ -45,6 +45,7 @@ type ScanEventRequest = {
   clientCapturedAt?: unknown;
   gpsAccuracyMeters?: unknown;
   scheduledMaintenanceId?: unknown;
+  maintenanceDecision?: unknown;
 };
 
 function asText(value: unknown): string {
