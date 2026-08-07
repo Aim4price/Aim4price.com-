@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties, type ChangeEv
 import AppHeader from '../../components/AppHeader';
 import AccountantAssetManageModal from '../../components/AccountantAssetManageModal';
 import AccountantRegisterReportsModal from '../../components/AccountantRegisterReportsModal';
+import DealerAssetShareSelection from '../../components/DealerAssetShareSelection';
 import DealerMaintenanceAccessSettings, {
   DEFAULT_DEALER_MAINTENANCE_PERMISSIONS,
   DealerMaintenancePermissionPicker,
@@ -5885,6 +5886,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   const [quoteTrackingPermissions, setQuoteTrackingPermissions] = useState<DealerMaintenancePermissions>(() => ({
     ...DEFAULT_DEALER_MAINTENANCE_PERMISSIONS,
   }));
+  const [selectedDealerShareAssetIds, setSelectedDealerShareAssetIds] = useState<string[]>([]);
   const [isQuoteTrackingSettingsOpen, setIsQuoteTrackingSettingsOpen] = useState(false);
   const [quoteIncludePhotos, setQuoteIncludePhotos] = useState(true);
   const [quoteIncludeDocuments, setQuoteIncludeDocuments] = useState(true);
@@ -9346,6 +9348,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     setQuoteConsentAccepted(false);
     setQuoteTrackMaintenance(false);
     setQuoteTrackingPermissions({ ...DEFAULT_DEALER_MAINTENANCE_PERMISSIONS });
+    setSelectedDealerShareAssetIds([]);
     setIsQuoteTrackingSettingsOpen(false);
     setQuoteOwnerMessage('');
     setQuoteIncludePhotos(true);
@@ -9534,7 +9537,13 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       return;
     }
 
-    const leadAssetId = quoteAsset.id;
+    const isSelectedDealerRegisterShare = isFullRegisterQuoteLead && selectedQuoteOption.leadType === 'replacement_quote';
+    const leadAssetId = isSelectedDealerRegisterShare ? selectedDealerShareAssetIds[0] : quoteAsset.id;
+
+    if (isSelectedDealerRegisterShare && !leadAssetId) {
+      setNotice({ tone: 'error', message: 'Choose at least one asset to share with the dealer.' });
+      return;
+    }
 
     if (!selectedQuotePartner) {
       setNotice({ tone: 'error', message: `Choose a ${formatQuotePartnerType(selectedQuoteOption.partnerType).toLowerCase()} company first.` });
@@ -9576,6 +9585,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
           trackingPermissions: selectedQuoteOption.leadType === 'replacement_quote' && quoteTrackMaintenance
             ? quoteTrackingPermissions
             : undefined,
+          assetIds: isSelectedDealerRegisterShare ? selectedDealerShareAssetIds : undefined,
         }),
       });
 
@@ -9594,7 +9604,9 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
       setNotice({
         tone: 'success',
-        message: isFullRegisterQuoteLead
+        message: isSelectedDealerRegisterShare
+          ? `${selectedDealerShareAssetIds.length} ${selectedDealerShareAssetIds.length === 1 ? 'asset' : 'assets'} shared with ${quotePartnerName(selectedQuotePartner)}.`
+          : isFullRegisterQuoteLead
           ? `${activeRegisterShareName} ${fullRegisterQuoteLabel} sent to ${quotePartnerName(selectedQuotePartner)}.`
           : `${selectedQuoteOption.shortTitle.toLowerCase()} request sent to ${quotePartnerName(selectedQuotePartner)}.`,
       });
@@ -12110,7 +12122,16 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   }
 
   function buildFullRegisterLeadSections(leadType: AssetLeadType, profile: AccountProfile | null): Record<string, unknown> {
-    const registerAssets = assets.map(buildFullRegisterLeadAssetSnapshot);
+    const selectedAssetIds = new Set(selectedDealerShareAssetIds);
+    const sharedAssets = leadType === 'replacement_quote'
+      ? assets.filter((asset) => selectedAssetIds.has(asset.id))
+      : assets;
+    const registerAssets = sharedAssets.map(buildFullRegisterLeadAssetSnapshot);
+    const sharedTotalValue = sharedAssets.reduce((sum, asset) => sum + (Number(asset.value) || 0), 0);
+    const sharedTotalReplacementValue = sharedAssets.reduce(
+      (sum, asset) => sum + (Number(readAssetReplacementPriceExVat(asset)) || 0),
+      0,
+    );
     const generatedAtIso = new Date().toISOString();
     const leadLabel = leadType === 'insurance'
       ? 'Full insurance quote'
@@ -12154,19 +12175,19 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
         ownerName: snapshotOwnerName,
         ownerMeta: buildOwnerMeta(profile),
         logoUrl: snapshotLogoUrl,
-        assetCount: assets.length,
-        totalAssets: assets.length,
-        totalValue,
-        registerValue: totalValue,
-        totalValueInclVat,
-        totalReplacementValue,
-        totalReplacementValueInclVat,
-        replacementPricedAssetCount,
-        aim4priceAssetCount: aim4priceValuedEquipmentCount,
-        manualAssetCount: manualAssetStats.count,
-        financedAssetCount: financedAssetStats.count,
-        insuredAssetCount: insuredAssetStats.count,
-        licensedAssetCount: licensedAssetStats.count,
+        assetCount: sharedAssets.length,
+        totalAssets: sharedAssets.length,
+        totalValue: sharedTotalValue,
+        registerValue: sharedTotalValue,
+        totalValueInclVat: sharedTotalValue * 1.15,
+        totalReplacementValue: sharedTotalReplacementValue,
+        totalReplacementValueInclVat: sharedTotalReplacementValue * 1.15,
+        replacementPricedAssetCount: sharedAssets.filter((asset) => (readAssetReplacementPriceExVat(asset) ?? 0) > 0).length,
+        aim4priceAssetCount: sharedAssets.filter((asset) => asset.selectedMethod === 'aim4price').length,
+        manualAssetCount: sharedAssets.filter((asset) => asset.selectedMethod !== 'aim4price').length,
+        financedAssetCount: sharedAssets.filter((asset) => readFinanceStatusChoice(asset) === 'yes').length,
+        insuredAssetCount: sharedAssets.filter((asset) => readInsuranceStatusChoice(asset) === 'yes').length,
+        licensedAssetCount: sharedAssets.filter((asset) => readLicenseStatusChoice(asset) === 'yes').length,
         assets: registerAssets,
       },
     };
@@ -12193,6 +12214,9 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     setQuoteIncludePhotos(false);
     setQuoteIncludeDocuments(false);
     setQuoteIncludeScanHistory(false);
+    setSelectedDealerShareAssetIds(leadType === 'replacement_quote' ? assets.map((asset) => asset.id) : []);
+    setQuoteTrackMaintenance(leadType === 'replacement_quote');
+    setQuoteTrackingPermissions({ ...DEFAULT_DEALER_MAINTENANCE_PERMISSIONS });
   }
 
   function openSummaryModal() {
@@ -14615,7 +14639,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                     <span className={styles.assetQuoteChoiceText}>
                       <strong>Share with a dealer</strong>
                       <small>
-                        <span>Send {activeRegisterShareName} to a dealer.</span>
+                        <span>Choose assets and grant dealer access.</span>
                       </small>
                     </span>
                   </button>
@@ -16578,7 +16602,11 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                 {!selectedQuoteOption ? (
                   <p>{quoteAsset ? `${buildAssetMeta(quoteAsset)} · ${money(quoteAsset.value)} excl. VAT` : ''}</p>
                 ) : isFullRegisterQuoteLead ? (
-                  <p>Once-off {activeRegisterShareName} snapshot · {assets.length} {assets.length === 1 ? 'asset' : 'assets'} · {money(totalValue)} excl. VAT</p>
+                  selectedQuoteOption.leadType === 'replacement_quote' ? (
+                    <p>{selectedDealerShareAssetIds.length} of {assets.length} assets selected · ongoing access can be revoked</p>
+                  ) : (
+                    <p>Once-off {activeRegisterShareName} snapshot · {assets.length} {assets.length === 1 ? 'asset' : 'assets'} · {money(totalValue)} excl. VAT</p>
+                  )
                 ) : null}
               </div>
 
@@ -16789,7 +16817,9 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                 {isFullRegisterQuoteLead
                                   ? selectedQuoteOption.leadType === 'finance' && selectedQuotePartner?.accountSubtype === 'accountant'
                                     ? 'This grants the selected accountant live access to the latest authorised information in this Asset Register.'
-                                    : 'This sends a once-off full Asset Register snapshot. It does not grant live register access.'
+                                    : selectedQuoteOption.leadType === 'replacement_quote'
+                                      ? 'Choose the assets this dealer can work with. You can change permissions or revoke access later.'
+                                      : 'This sends a once-off full Asset Register snapshot. It does not grant live register access.'
                                   : 'This sends one asset only. It does not share the full register.'}
                               </p>
 
@@ -16813,6 +16843,21 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                 </div>
                               ) : null}
 
+                              {isFullRegisterQuoteLead && selectedQuoteOption.leadType === 'replacement_quote' ? (
+                                <DealerAssetShareSelection
+                                  assets={assets.map((asset) => ({
+                                    id: asset.id,
+                                    title: asset.title,
+                                    yearModel: asset.yearModel,
+                                    serialNumber: asset.serialNumber,
+                                    registrationNumber: readLicenseRegistrationNumber(asset),
+                                  }))}
+                                  selectedAssetIds={selectedDealerShareAssetIds}
+                                  onChange={setSelectedDealerShareAssetIds}
+                                  disabled={isSendingQuoteLead}
+                                />
+                              ) : null}
+
                               <label className={styles.assetQuoteMessageField}>
                                 <span>
                                   Message to company
@@ -16829,7 +16874,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                 />
                               </label>
 
-                              {selectedQuoteOption.leadType === 'replacement_quote' && quoteScope === 'asset' ? (
+                              {selectedQuoteOption.leadType === 'replacement_quote' ? (
                                 <button
                                   type="button"
                                   className={`${styles.assetQuoteConsentCheck} ${styles.assetQuoteTrackingChoice}`}
@@ -16843,8 +16888,8 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                     {quoteTrackMaintenance ? '✓' : ''}
                                   </span>
                                   <span className={styles.assetQuoteTrackingCopy}>
-                                    <strong>Enable dealer tracking</strong>
-                                    <small>The dealer can download maintenance reports and create maintenance schedules, which will only appear in your Asset Register after you approve them.</small>
+                                    <strong>{isFullRegisterQuoteLead ? 'Ongoing dealer access' : 'Enable dealer tracking'}</strong>
+                                    <small>{isFullRegisterQuoteLead ? 'Apply these permissions to every selected asset. Access stays revocable.' : 'The dealer can download maintenance reports and propose maintenance schedules for your approval.'}</small>
                                     <em>{quoteTrackMaintenance ? 'Permissions selected. Click to review.' : 'Choose the dealer permissions before sharing.'}</em>
                                   </span>
                                 </button>
@@ -16859,13 +16904,17 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                 {isFullRegisterQuoteLead
                                   ? selectedQuoteOption.leadType === 'finance' && selectedQuotePartner?.accountSubtype === 'accountant'
                                     ? `By sending this request, you allow Aim4price to share live Asset Register information and your saved business contact details with the chosen accountant.${quoteAllowDirectUpdates ? ' You also allow the accountant to save the selected direct updates, with audit history.' : ' The workspace will remain read-only.'}`
-                                    : 'By sending this request, you allow Aim4price to share a once-off full Asset Register snapshot, saved valuation details and your saved business contact details with the chosen company.'
+                                    : selectedQuoteOption.leadType === 'replacement_quote'
+                                      ? 'By continuing, you allow Aim4price to share the selected assets and your saved business contact details with this dealer. Ongoing access uses the permissions shown and can be revoked.'
+                                      : 'By sending this request, you allow Aim4price to share a once-off full Asset Register snapshot, saved valuation details and your saved business contact details with the chosen company.'
                                   : 'By sending this request, you allow Aim4price to share this selected asset, its saved valuation details and your saved business contact details with the chosen company.'}
                                 {' '}This is only a lead request and does not create a finance, insurance, valuation or sales agreement.
                               </p>
                               <p>
                                 {isFullRegisterQuoteLead
-                                  ? 'You confirm that you have permission to share the complete register information and understand that the selected company may contact you outside Aim4price.'
+                                  ? selectedQuoteOption.leadType === 'replacement_quote'
+                                    ? 'You confirm that you may share the selected asset information and understand that the dealer may contact you outside Aim4price.'
+                                    : 'You confirm that you have permission to share the complete register information and understand that the selected company may contact you outside Aim4price.'
                                   : 'You confirm that you have permission to share this asset information and understand that the selected company may contact you outside Aim4price.'}
                               </p>
                               {selectedQuoteOption.leadType === 'replacement_quote' && quoteTrackMaintenance ? (
