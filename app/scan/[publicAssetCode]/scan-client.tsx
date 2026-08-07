@@ -2715,15 +2715,22 @@ export default function ScanClient({
       }
 
       if (
-        scheduledMaintenanceIdForSave
-        && (
-          !data.scheduledMaintenanceCompletion?.completed
-          || data.scheduledMaintenanceCompletion.maintenanceId
-            !== scheduledMaintenanceIdForSave
-        )
+        isFieldManagerMode
+        && updateToPersist.hasService
+        && !data.scheduledMaintenanceCompletion?.completed
       ) {
         throw new Error(
-          "The asset update was saved, but scheduled maintenance could not be confirmed as done.",
+          "The asset update was saved, but maintenance could not be confirmed as done.",
+        );
+      }
+
+      if (
+        scheduledMaintenanceIdForSave
+        && data.scheduledMaintenanceCompletion?.maintenanceId
+          !== scheduledMaintenanceIdForSave
+      ) {
+        throw new Error(
+          "The asset update was saved, but the scheduled maintenance item could not be confirmed as done.",
         );
       }
 

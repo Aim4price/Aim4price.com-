@@ -8,8 +8,10 @@ import {
   assetMaintenanceProcedureMatchesType,
   completeAssetMaintenanceRecord,
   getAssetMaintenanceRecordById,
+  getAssetMaintenanceRecordBySourceScanEventId,
   isAssetMaintenanceRecordId,
   listAssetMaintenanceRecords,
+  recordStandaloneAssetMaintenanceCompletion,
   type AssetMaintenanceRecord,
 } from "../../../../../../lib/asset-maintenance";
 import { authorizeFieldManagerScanAccess, authorizeOwnerAppScanAccess, authorizePublicQrScanAccess } from "../../../../../../lib/scan-auth";
@@ -284,7 +286,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     if (
       !scheduledMaintenance
       || scheduledMaintenance.assetId !== access.asset.id
-      || scheduledMaintenance.status !== "upcoming"
+      || scheduledMaintenance.status === "cancelled"
     ) {
       return NextResponse.json(
         {
@@ -389,46 +391,110 @@ export async function POST(request: NextRequest, context: RouteContext) {
       nextMaintenanceId: string | null;
     } | null = null;
 
-    if (scheduledMaintenance) {
-      const currentScheduledMaintenance = await getAssetMaintenanceRecordById(
-        access.ownerUserId,
-        scheduledMaintenance.id,
-      );
+    const isAppMaintenanceUpdate = Boolean(
+      procedureKind
+      && (
+        access.accessMode === "field_manager"
+        || access.accessMode === "owner_session"
+      ),
+    );
 
-      if (
-        !currentScheduledMaintenance
-        || currentScheduledMaintenance.assetId !== saved.asset.id
-        || currentScheduledMaintenance.status !== "upcoming"
-      ) {
-        throw new Error("SCHEDULED_MAINTENANCE_NO_LONGER_AVAILABLE");
+    if (isAppMaintenanceUpdate) {
+      const completedBy = access.accessMode === "owner_session"
+        ? asText(access.ownerAppDisplayName)
+          || asText(saved.event.operatorName)
+          || "Owner"
+        : asText(access.fieldManagerDisplayName)
+          || asText(saved.event.operatorName)
+          || "Field Manager";
+      const existingCompletion =
+        await getAssetMaintenanceRecordBySourceScanEventId(
+          access.ownerUserId,
+          saved.event.id,
+        );
+
+      if (existingCompletion) {
+        if (
+          scheduledMaintenanceId
+          && existingCompletion.id !== scheduledMaintenanceId
+        ) {
+          throw new Error("SCHEDULED_MAINTENANCE_NO_LONGER_AVAILABLE");
+        }
+
+        scheduledMaintenanceCompletion = {
+          maintenanceId: existingCompletion.id,
+          completed: existingCompletion.status === "done",
+          nextMaintenanceId: null,
+        };
+      } else if (scheduledMaintenance) {
+        const currentScheduledMaintenance = await getAssetMaintenanceRecordById(
+          access.ownerUserId,
+          scheduledMaintenance.id,
+        );
+
+        if (
+          !currentScheduledMaintenance
+          || currentScheduledMaintenance.assetId !== saved.asset.id
+          || currentScheduledMaintenance.status !== "upcoming"
+        ) {
+          throw new Error("SCHEDULED_MAINTENANCE_NO_LONGER_AVAILABLE");
+        }
+
+        const completedUsage =
+          currentScheduledMaintenance.triggerType === "usage"
+            ? currentScheduledMaintenance.usageMetric === "percentage"
+              ? saved.asset.lifeWorkedPercent
+              : saved.asset.hours
+            : null;
+        const completion = await completeAssetMaintenanceRecord(
+          access.ownerUserId,
+          currentScheduledMaintenance.id,
+          {
+            completedUsage,
+            completedNotes: saved.event.note || payload.note,
+            completedBy,
+            sourceScanEventId: saved.event.id,
+          },
+          {
+            assetId: saved.asset.id,
+            maintenanceType: currentScheduledMaintenance.maintenanceType,
+          },
+        );
+
+        scheduledMaintenanceCompletion = {
+          maintenanceId: completion.completed.id,
+          completed: completion.completed.status === "done",
+          nextMaintenanceId: completion.nextRecord?.id ?? null,
+        };
+      } else if (procedureKind) {
+        const maintenanceType =
+          procedureKind === "checked" ? "checkup" : "service";
+        const completedUsage =
+          saved.asset.usageMode === "percent"
+            ? saved.asset.lifeWorkedPercent
+            : saved.asset.usageMode === "hours"
+                || saved.asset.usageMode === "km"
+              ? saved.asset.hours
+              : null;
+        const completion = await recordStandaloneAssetMaintenanceCompletion(
+          access.ownerUserId,
+          {
+            assetId: saved.asset.id,
+            maintenanceType,
+            sourceScanEventId: saved.event.id,
+            completedAt: saved.event.createdAtIso,
+            completedUsage,
+            completedNotes: saved.event.note || payload.note,
+            completedBy,
+          },
+        );
+
+        scheduledMaintenanceCompletion = {
+          maintenanceId: completion.id,
+          completed: completion.status === "done",
+          nextMaintenanceId: null,
+        };
       }
-
-      const completedUsage = currentScheduledMaintenance.triggerType === "usage"
-        ? currentScheduledMaintenance.usageMetric === "percentage"
-          ? saved.asset.lifeWorkedPercent
-          : saved.asset.hours
-        : null;
-      const completion = await completeAssetMaintenanceRecord(
-        access.ownerUserId,
-        currentScheduledMaintenance.id,
-        {
-          completedUsage,
-          completedNotes: saved.event.note || payload.note,
-          completedBy: access.accessMode === "owner_session"
-            ? asText(access.ownerAppDisplayName) || asText(saved.event.operatorName) || "Owner"
-            : asText(access.fieldManagerDisplayName) || asText(saved.event.operatorName) || "Field Manager",
-        },
-        {
-          assetId: saved.asset.id,
-          maintenanceType: currentScheduledMaintenance.maintenanceType,
-        },
-      );
-
-      scheduledMaintenanceCompletion = {
-        maintenanceId: completion.completed.id,
-        completed: completion.completed.status === "done",
-        nextMaintenanceId: completion.nextRecord?.id ?? null,
-      };
     }
 
     let recentEvents = [saved.event];
