@@ -70,6 +70,7 @@ export type AssetMaintenanceRecord = {
   recurringIntervalValue: number | null;
   recurringIntervalUnit: AssetMaintenanceIntervalUnit | null;
   generatedFromMaintenanceId: string | null;
+  sourceScanEventId: string | null;
   completedAtIso: string | null;
   completedUsage: number | null;
   completedNotes: string;
@@ -126,6 +127,12 @@ export type AssetMaintenanceCompleteInput = {
   completedUsage?: unknown;
   completedNotes?: unknown;
   completedBy?: unknown;
+  sourceScanEventId?: unknown;
+};
+
+export type AssetMaintenanceStandaloneCompletionInput = AssetMaintenanceCompleteInput & {
+  assetId?: unknown;
+  maintenanceType?: unknown;
 };
 
 export type AssetMaintenanceCompletionGuard = {
@@ -175,6 +182,7 @@ type MaintenanceRow = {
   recurring_interval_value: string | number | null;
   recurring_interval_unit: string | null;
   generated_from_maintenance_id: string | null;
+  source_scan_event_id: string | null;
   completed_at: string | Date | null;
   completed_usage: string | number | null;
   completed_notes: string | null;
@@ -705,6 +713,7 @@ function mapMaintenanceRow(row: MaintenanceRow): AssetMaintenanceRecord {
     recurringIntervalValue: asNumber(row.recurring_interval_value),
     recurringIntervalUnit: row.recurring_interval_unit ? normalizeIntervalUnit(row.recurring_interval_unit, triggerType === 'date' ? 'months' : usageMetric ?? 'hours') : null,
     generatedFromMaintenanceId: asText(row.generated_from_maintenance_id) || null,
+    sourceScanEventId: asText(row.source_scan_event_id) || null,
     completedAtIso: toNullableIsoString(row.completed_at),
     completedUsage: asNumber(row.completed_usage),
     completedNotes: asLongText(row.completed_notes),
@@ -781,6 +790,7 @@ async function ensureAssetMaintenanceTablesOnce(): Promise<void> {
       recurring_interval_value,
       recurring_interval_unit,
       generated_from_maintenance_id,
+      source_scan_event_id,
       completed_at,
       completed_usage,
       completed_notes,
@@ -820,6 +830,7 @@ async function ensureAssetMaintenanceTablesOnce(): Promise<void> {
       recurring_interval_value numeric(14,2),
       recurring_interval_unit text,
       generated_from_maintenance_id uuid,
+      source_scan_event_id uuid,
       completed_at timestamptz,
       completed_usage numeric(14,2),
       completed_notes text,
@@ -836,6 +847,7 @@ async function ensureAssetMaintenanceTablesOnce(): Promise<void> {
   await db.query(`alter table public.asset_maintenance_records add column if not exists completed_by text`);
   await db.query(`alter table public.asset_maintenance_records add column if not exists alert_noted_at timestamptz`);
   await db.query(`alter table public.asset_maintenance_records add column if not exists generated_from_maintenance_id uuid`);
+  await db.query(`alter table public.asset_maintenance_records add column if not exists source_scan_event_id uuid`);
 
   await db.query(`create index if not exists asset_maintenance_records_user_id_idx on public.asset_maintenance_records (user_id)`);
   await db.query(`create index if not exists asset_maintenance_records_asset_register_item_id_idx on public.asset_maintenance_records (asset_register_item_id)`);
@@ -848,6 +860,11 @@ async function ensureAssetMaintenanceTablesOnce(): Promise<void> {
     create unique index if not exists asset_maintenance_records_generated_from_active_idx
     on public.asset_maintenance_records (generated_from_maintenance_id)
     where generated_from_maintenance_id is not null and status <> 'cancelled'
+  `);
+  await db.query(`
+    create unique index if not exists asset_maintenance_records_source_scan_event_idx
+    on public.asset_maintenance_records (source_scan_event_id)
+    where source_scan_event_id is not null
   `);
 }
 
@@ -1079,6 +1096,36 @@ export async function getAssetMaintenanceRecordById(userId: string, maintenanceI
   return getAssetMaintenanceRecordByIdWithClient(getDb(), userId, maintenanceId);
 }
 
+async function getAssetMaintenanceRecordBySourceScanEventIdWithClient(
+  client: MaintenanceQueryClient,
+  userId: string,
+  sourceScanEventId: string,
+): Promise<AssetMaintenanceRecord | null> {
+  if (!isAssetMaintenanceRecordId(sourceScanEventId)) return null;
+
+  const result = await client.query<MaintenanceRow>(
+    `
+      ${maintenanceSelectSql(`where m.user_id = $1 and m.source_scan_event_id = $2::uuid`)}
+      limit 1
+    `,
+    [userId, sourceScanEventId],
+  );
+
+  return result.rows[0] ? mapMaintenanceRow(result.rows[0]) : null;
+}
+
+export async function getAssetMaintenanceRecordBySourceScanEventId(
+  userId: string,
+  sourceScanEventId: string,
+): Promise<AssetMaintenanceRecord | null> {
+  await ensureAssetMaintenanceTables();
+  return getAssetMaintenanceRecordBySourceScanEventIdWithClient(
+    getDb(),
+    userId,
+    asText(sourceScanEventId),
+  );
+}
+
 export async function getAssignedFieldManagerMaintenanceRecord(input: {
   ownerUserId: string;
   managerId: string;
@@ -1124,6 +1171,156 @@ async function verifyAssetBelongsToUser(userId: string, assetId: string): Promis
   }
 
   return asset;
+}
+
+export async function recordStandaloneAssetMaintenanceCompletion(
+  userId: string,
+  input: AssetMaintenanceStandaloneCompletionInput,
+): Promise<AssetMaintenanceRecord> {
+  await ensureAssetMaintenanceTables();
+
+  const assetId = asText(input.assetId);
+  const sourceScanEventId = asText(input.sourceScanEventId);
+  if (!assetId) throw new Error('ASSET_NOT_FOUND');
+  if (!isAssetMaintenanceRecordId(sourceScanEventId)) {
+    throw new Error('MAINTENANCE_SOURCE_EVENT_REQUIRED');
+  }
+
+  const asset = await verifyAssetBelongsToUser(userId, assetId);
+  const maintenanceType = normalizeMaintenanceType(input.maintenanceType);
+  const completedNotes = asLongText(input.completedNotes);
+  const completedBy = asText(input.completedBy);
+  const procedureKind = assetMaintenanceProcedureKindFromNote(completedNotes);
+
+  if (!assetMaintenanceProcedureMatchesType(maintenanceType, procedureKind)) {
+    throw new Error('COMPLETION_DETAILS_REQUIRED');
+  }
+  if (!completedBy) throw new Error('COMPLETION_PERFORMER_REQUIRED');
+  if (
+    maintenanceType === 'service'
+    && (!/^Company:\s*\S/im.test(completedNotes) || !/^Mechanic:\s*\S/im.test(completedNotes))
+  ) {
+    throw new Error('COMPLETION_SERVICE_PROVIDER_REQUIRED');
+  }
+
+  const requestedCompletedAt = asText(input.completedAt);
+  const parsedCompletedAt = requestedCompletedAt ? new Date(requestedCompletedAt) : new Date();
+  if (Number.isNaN(parsedCompletedAt.getTime())) {
+    throw new Error('COMPLETION_DATE_INVALID');
+  }
+  const completedAtIso = parsedCompletedAt.toISOString();
+  const usageMetric = assetUsageMetric(asset);
+  const completedUsage =
+    nonNegativeNumber(input.completedUsage)
+    ?? assetUsageReading(asset, usageMetric);
+  const triggerType: AssetMaintenanceTriggerType =
+    completedUsage === null ? 'date' : 'usage';
+  const title = procedureKind === 'repaired'
+    ? 'Repair'
+    : maintenanceType === 'checkup'
+      ? 'Check-up'
+      : 'Service';
+
+  const client = await getDb().connect();
+
+  try {
+    await client.query('begin');
+
+    const existing = await getAssetMaintenanceRecordBySourceScanEventIdWithClient(
+      client,
+      userId,
+      sourceScanEventId,
+    );
+    if (existing) {
+      await client.query('commit');
+      return existing;
+    }
+
+    const result = await client.query<{ id: string }>(
+      `
+        insert into public.asset_maintenance_records (
+          user_id,
+          asset_register_item_id,
+          maintenance_type,
+          trigger_type,
+          status,
+          title,
+          due_date,
+          due_usage,
+          usage_metric,
+          recurring_enabled,
+          source_scan_event_id,
+          completed_at,
+          completed_usage,
+          completed_notes,
+          completed_by,
+          alert_noted_at,
+          created_at,
+          updated_at
+        )
+        values (
+          $1,
+          $2::uuid,
+          $3,
+          $4,
+          'done',
+          $5,
+          $6::date,
+          $7,
+          $8,
+          false,
+          $9::uuid,
+          $10::timestamptz,
+          $7,
+          $11,
+          $12,
+          now(),
+          $10::timestamptz,
+          now()
+        )
+        on conflict do nothing
+        returning id::text as id
+      `,
+      [
+        userId,
+        assetId,
+        maintenanceType,
+        triggerType,
+        title,
+        triggerType === 'date' ? completedAtIso.slice(0, 10) : null,
+        completedUsage,
+        triggerType === 'usage' ? usageMetric : null,
+        sourceScanEventId,
+        completedAtIso,
+        completedNotes,
+        completedBy,
+      ],
+    );
+
+    const record = result.rows[0]?.id
+      ? await getAssetMaintenanceRecordByIdWithClient(
+          client,
+          userId,
+          result.rows[0].id,
+        )
+      : await getAssetMaintenanceRecordBySourceScanEventIdWithClient(
+          client,
+          userId,
+          sourceScanEventId,
+        );
+
+    if (!record || record.status !== 'done') {
+      throw new Error('MAINTENANCE_NOT_FOUND');
+    }
+
+    await client.query('commit');
+    return record;
+  } catch (error) {
+    await client.query('rollback');
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 async function resolveAssignedManager(userId: string, managerIdInput: unknown, assignedNameInput: unknown): Promise<{ id: string | null; name: string }> {
@@ -1556,6 +1753,10 @@ export async function completeAssetMaintenanceRecord(
 
       const completedNotes = asLongText(input.completedNotes);
       const completedBy = asText(input.completedBy);
+      const sourceScanEventId = asText(input.sourceScanEventId);
+      if (sourceScanEventId && !isAssetMaintenanceRecordId(sourceScanEventId)) {
+        throw new Error('MAINTENANCE_SOURCE_EVENT_REQUIRED');
+      }
       const procedureKind = assetMaintenanceProcedureKindFromNote(completedNotes);
       if (!assetMaintenanceProcedureMatchesType(existing.maintenanceType, procedureKind)) {
         throw new Error('COMPLETION_DETAILS_REQUIRED');
@@ -1587,6 +1788,7 @@ export async function completeAssetMaintenanceRecord(
             completed_usage = $4,
             completed_notes = $5,
             completed_by = $6,
+            source_scan_event_id = coalesce($7::uuid, source_scan_event_id),
             alert_noted_at = now(),
             updated_at = now()
           where user_id = $1
@@ -1600,6 +1802,7 @@ export async function completeAssetMaintenanceRecord(
           completedUsage,
           completedNotes,
           completedBy,
+          sourceScanEventId || null,
         ],
       );
 
