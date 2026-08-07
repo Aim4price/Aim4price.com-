@@ -893,13 +893,21 @@
 .detailValueUpdateButton:active { transform: translateY(1px); }
 .detailValueUpdateButton:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.12); }
 .detailValueUpdateButtonAttention {
-  border-color: #ef8f8f;
-  background: linear-gradient(180deg, #fff5f5 0%, #ffe3e3 100%);
-  color: #a62d2d;
-  box-shadow: 0 9px 20px rgba(166, 45, 45, 0.12);
+  border-color: #c82424;
+  background: linear-gradient(180deg, #ec3a3a 0%, #c92020 100%);
+  color: #ffffff;
+  box-shadow: 0 10px 24px rgba(190, 31, 31, 0.28);
+  animation: ownerEstimateAttention 1.25s ease-in-out infinite;
 }
-.detailValueUpdateButtonAttention:hover { border-color: #df6f6f; background: linear-gradient(180deg, #fff1f1 0%, #ffd7d7 100%); }
+.detailValueUpdateButtonAttention:hover { border-color: #a91919; background: linear-gradient(180deg, #d92c2c 0%, #ad1818 100%); }
 .detailValueUpdateButton:disabled { cursor: wait; opacity: 0.72; transform: none; }
+@keyframes ownerEstimateAttention {
+  0%, 100% { box-shadow: 0 8px 20px rgba(190, 31, 31, 0.2); filter: brightness(1); }
+  50% { box-shadow: 0 0 0 5px rgba(229, 61, 61, 0.16), 0 14px 30px rgba(190, 31, 31, 0.38); filter: brightness(1.12); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .detailValueUpdateButtonAttention { animation: none; }
+}
 .assetMirrorActions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 .assetMirrorAction {
   min-width: 0;

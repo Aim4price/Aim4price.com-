@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import { useEffect, useState, type FormEvent } from 'react';
+import AppLoginWelcome from '../../../components/AppLoginWelcome';
 import { clearCachedHeaderSession } from '../../../lib/header-session-cache';
 import styles from '../dealer.module.css';
 
@@ -19,6 +20,12 @@ type BeforeInstallPromptEvent = Event & {
 
 type StandaloneNavigator = Navigator & {
   standalone?: boolean;
+};
+
+type LoginWelcome = {
+  displayName: string;
+  companyName: string;
+  logoUrl: string;
 };
 
 function normalizeUsername(value: string): string {
@@ -49,6 +56,7 @@ export default function DealerLoginClient({ hasAccountSession = false }: { hasAc
   const [accountSessionActive, setAccountSessionActive] = useState(hasAccountSession);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [welcome, setWelcome] = useState<LoginWelcome | null>(null);
 
   const [installView, setInstallView] = useState<InstallView>('checking');
   const [installPlatform, setInstallPlatform] = useState<InstallPlatform>('other');
@@ -169,6 +177,7 @@ export default function DealerLoginClient({ hasAccountSession = false }: { hasAc
       const payload = (await response.json().catch(() => null)) as {
         ok?: boolean;
         redirectTo?: string;
+        welcome?: LoginWelcome;
         error?: string;
       } | null;
 
@@ -176,11 +185,21 @@ export default function DealerLoginClient({ hasAccountSession = false }: { hasAc
         throw new Error(payload?.error || 'Unable to sign in.');
       }
 
-      window.location.replace(payload.redirectTo || '/dealer');
+      const redirectTo = payload.redirectTo || '/dealer';
+      setWelcome({
+        displayName: payload.welcome?.displayName || cleanUsername,
+        companyName: payload.welcome?.companyName || 'Aim4price',
+        logoUrl: payload.welcome?.logoUrl || '/icon.png',
+      });
+      window.setTimeout(() => window.location.replace(redirectTo), 1400);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to sign in.');
       setBusy(false);
     }
+  }
+
+  if (welcome) {
+    return <main className={styles.loginPage}><AppLoginWelcome {...welcome} /></main>;
   }
 
   if (installView === 'checking') {

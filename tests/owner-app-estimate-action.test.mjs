@@ -8,7 +8,8 @@ const ownerStyles = read('app/owner-app/owner-app.module.css');
 
 test('Owner App exposes the estimate update from both asset value summaries', () => {
   assert.equal(ownerAsset.match(/renderEstimateUpdateAction\(\)/g)?.length, 2);
-  assert.match(ownerAsset, /manage\/pricing\/recalculate/);
+  assert.match(ownerAsset, /const renderEstimateUpdateAction = \(\) => estimateNeedsUpdate \?/);
+  assert.match(ownerAsset, /Update estimate[\s\S]*?<\/button>[\s\S]*?: null;/);
   assert.match(ownerAsset, /fetch\('\/api\/asset-register\/revalue'/);
   assert.match(ownerAsset, /onClick=\{\(\) => void requestRevalue\(false\)\}/);
 });
@@ -24,5 +25,6 @@ test('A stale Aim4price estimate becomes a red one-tap update', () => {
 test('The estimate action keeps the Owner App button styling and touch size', () => {
   assert.match(ownerStyles, /\.detailValueUpdateButton \{[\s\S]*?min-height: 44px;[\s\S]*?border: 1\.5px solid #62bb8a;/);
   assert.match(ownerStyles, /\.detailValueUpdateButton:focus-visible/);
-  assert.match(ownerStyles, /\.detailValueUpdateButtonAttention \{[\s\S]*?border-color: #ef8f8f;[\s\S]*?color: #a62d2d;/);
+  assert.match(ownerStyles, /\.detailValueUpdateButtonAttention \{[\s\S]*?background:[\s\S]*?#c92020[\s\S]*?color: #ffffff;[\s\S]*?animation: ownerEstimateAttention/);
+  assert.match(ownerStyles, /@media \(prefers-reduced-motion: reduce\)/);
 });

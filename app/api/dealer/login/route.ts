@@ -93,7 +93,15 @@ export async function POST(request: NextRequest) {
     role: normalizeDealerStaffRole(row!.staff_role),
     version: Number(row!.session_version),
   });
-  const response = NextResponse.json({ ok: true, redirectTo: '/dealer' });
+  const response = NextResponse.json({
+    ok: true,
+    redirectTo: '/dealer',
+    welcome: {
+      displayName: row!.display_name || row!.username,
+      companyName: profile.businessName || profile.displayName || profile.name || 'Aim4price',
+      logoUrl: profile.logoUrl || '/icon.png',
+    },
+  });
   response.cookies.set(DEALER_APP_COOKIE, token, dealerAppCookieOptions(request.url));
   response.cookies.set(
     DEALER_APP_LEGACY_COOKIE,
