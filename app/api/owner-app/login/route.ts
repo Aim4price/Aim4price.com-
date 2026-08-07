@@ -73,7 +73,15 @@ export async function POST(request: NextRequest) {
     parentOwnerUserId: row!.parent_owner_user_id,
     version: Number(row!.session_version),
   });
-  const response = NextResponse.json({ ok: true, redirectTo: '/owner-app' });
+  const response = NextResponse.json({
+    ok: true,
+    redirectTo: '/owner-app',
+    welcome: {
+      displayName: row!.display_name || row!.username,
+      companyName: profile.businessName || profile.displayName || profile.name || 'Aim4price',
+      logoUrl: profile.logoUrl || '/icon.png',
+    },
+  });
   response.cookies.set(OWNER_APP_COOKIE, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
