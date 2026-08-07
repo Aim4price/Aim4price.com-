@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import { useEffect, useState, type FormEvent } from 'react';
+import AppLoginWelcome from '../../components/AppLoginWelcome';
 import styles from './page.module.css';
 
 type InstallPlatform = 'ios' | 'other';
@@ -23,7 +24,14 @@ type StandaloneNavigator = Navigator & {
 type LoginApiResponse = {
   ok: boolean;
   redirectTo?: string;
+  welcome?: LoginWelcome;
   error?: string;
+};
+
+type LoginWelcome = {
+  displayName: string;
+  companyName: string;
+  logoUrl: string;
 };
 
 function normalizeUsername(value: string): string {
@@ -57,6 +65,7 @@ export default function FieldManagerLoginClient() {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [welcome, setWelcome] = useState<LoginWelcome | null>(null);
   const [installView, setInstallView] = useState<InstallView>('checking');
   const [installPlatform, setInstallPlatform] = useState<InstallPlatform>('other');
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
@@ -152,12 +161,26 @@ export default function FieldManagerLoginClient() {
         throw new Error(extractError(payload, 'Field Manager login failed.'));
       }
 
-      window.location.replace(payload.redirectTo || '/field-manager');
+      const redirectTo = payload.redirectTo || '/field-manager';
+      setWelcome({
+        displayName: payload.welcome?.displayName || cleanUsername,
+        companyName: payload.welcome?.companyName || 'Aim4price',
+        logoUrl: payload.welcome?.logoUrl || '/icon.png',
+      });
+      window.setTimeout(() => window.location.replace(redirectTo), 1400);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : 'Field Manager login failed.');
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  if (welcome) {
+    return (
+      <main className={`${styles.mobilePage} ${styles.installPage}`}>
+        <AppLoginWelcome {...welcome} />
+      </main>
+    );
   }
 
   if (installView === 'checking') {
