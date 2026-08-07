@@ -22,6 +22,9 @@ export type DesktopServiceRecord = {
   assetTitle: string;
   assetKind: string;
   assetCategoryLabel?: string | null;
+  assetYearModel?: number | null;
+  assetCondition?: string | null;
+  assetMeta?: string | null;
   maintenanceType: 'service' | 'checkup';
   triggerType?: 'date' | 'usage';
   title: string;
@@ -60,16 +63,35 @@ function intervalLabel(record: DesktopServiceRecord): string {
   return `Every ${value.toLocaleString('en-ZA', { maximumFractionDigits: 2 })} ${unit}`;
 }
 
+function titleCase(value: string): string {
+  return value
+    .replace(/[_-]+/g, ' ')
+    .replace(/\b\w/g, (character) => character.toUpperCase());
+}
+
+function serviceAssetMeta(record: DesktopServiceRecord): string {
+  const unit = usageUnit(record.usageMetric ?? record.assetUsageMetric ?? null);
+  const details = [
+    record.assetTitle,
+    typeof record.assetYearModel === 'number' && record.assetYearModel > 0
+      ? `Year Model: ${record.assetYearModel}`
+      : '',
+    typeof record.currentUsage === 'number' && Number.isFinite(record.currentUsage)
+      ? `Usage: ${record.currentUsage.toLocaleString('en-ZA', { maximumFractionDigits: 1 })} ${unit}`
+      : '',
+    record.assetCondition?.trim() ? `Condition: ${record.assetCondition.trim()}` : '',
+    titleCase(record.assetCategoryLabel?.trim() || record.assetKind.trim()),
+  ].filter(Boolean);
+
+  return details.length > 1 ? details.join(' · ') : record.assetMeta?.trim() || record.assetTitle;
+}
+
 function CloseIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6.5 6.5 11 11m0-11-11 11" /></svg>;
 }
 
 function CheckIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.2 4.2L19 7" /></svg>;
-}
-
-function WrenchIcon() {
-  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.8 6.2a5 5 0 0 0-6.5 6.5L3.5 17.5a2.1 2.1 0 0 0 3 3l4.8-4.8a5 5 0 0 0 6.5-6.5l-3 3-3-3 3-3Z" /></svg>;
 }
 
 export default function DesktopServiceModal({ record, busy = false, onClose, onSubmit }: Props) {
@@ -161,11 +183,9 @@ export default function DesktopServiceModal({ record, busy = false, onClose, onS
       <button className={styles.backdrop} type="button" onClick={onClose} aria-label="Close service form" disabled={busy} />
       <section className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="desktop-service-title">
         <header className={styles.header}>
-          <div className={styles.headerIcon}>{mode === 'checked' ? <CheckIcon /> : <WrenchIcon />}</div>
           <div>
-            <span className={styles.eyebrow}>Desktop backup entry</span>
             <h2 id="desktop-service-title">Record {actionName}</h2>
-            <p>{record.assetTitle} · {record.title}</p>
+            <p>{serviceAssetMeta(record)}</p>
           </div>
           <button className={styles.closeButton} type="button" onClick={onClose} aria-label="Close service form" disabled={busy}>
             <CloseIcon />
