@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getAccountProfile } from '../../../../lib/account-profile';
 import {
   getFieldManagerByUsername,
   isFieldManagerLoginLocked,
@@ -70,6 +71,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: false, error: 'This Field Manager login is inactive.' }, { status: 403 });
     }
 
+    const profile = await getAccountProfile({ id: manager.ownerUserId, name: null, email: null });
     await markFieldManagerLastLogin(manager.id);
 
     const response = NextResponse.json({
@@ -78,6 +80,11 @@ export async function POST(request: NextRequest) {
         id: manager.id,
         displayName: manager.displayName,
         username: manager.username,
+      },
+      welcome: {
+        displayName: manager.displayName || manager.username,
+        companyName: profile.businessName || profile.displayName || profile.name || 'Aim4price',
+        logoUrl: profile.logoUrl || '/icon.png',
       },
       redirectTo: '/field-manager',
     });
