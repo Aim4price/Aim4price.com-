@@ -54,6 +54,13 @@ function errorMessage(error: unknown): string {
   const message = typeof error === 'object' && error !== null ? (error as ErrorWithMessage).message : '';
 
   if (message === 'MAINTENANCE_NOT_FOUND') return 'The maintenance record could not be found.';
+  if (message === 'COMPLETION_DATE_INVALID') return 'Enter a valid service completion date.';
+  if (message === 'COMPLETION_DATE_IN_FUTURE') return 'The service completion date cannot be in the future.';
+  if (message === 'COMPLETION_USAGE_LOWER_THAN_CURRENT') return 'The completed usage reading cannot be lower than the current saved reading.';
+  if (message === 'COMPLETION_USAGE_REQUIRED') return 'Enter the final usage reading before completing this maintenance.';
+  if (message === 'COMPLETION_DETAILS_REQUIRED') return 'Select completed work or add notes/problems before saving.';
+  if (message === 'COMPLETION_PERFORMER_REQUIRED') return 'Enter who completed the maintenance.';
+  if (message === 'COMPLETION_SERVICE_PROVIDER_REQUIRED') return 'Enter the service company and mechanic before saving.';
   if (message === 'RECURRING_INTERVAL_REQUIRED') return 'Recurring maintenance needs an interval before it can create the next record.';
   if (message === 'RECURRING_FOLLOWUP_ALREADY_COMPLETED') return 'This maintenance record cannot be reopened because its next recurring service has already been completed.';
   if (typeof message === 'string' && message.trim()) return message;

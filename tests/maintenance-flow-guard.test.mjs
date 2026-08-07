@@ -39,14 +39,16 @@ test('Owner App maintenance can only be completed through recorded work', () => 
   assert.doesNotMatch(ownerClient, /Mark done/i);
 });
 
-test('Desktop completion requires a focused confirmation and server acknowledgement', () => {
+test('Desktop completion uses the servicing form and server acknowledgement', () => {
   const desktopClient = source('app/maintenance/maintenance-client.tsx');
+  const serviceModal = source('components/DesktopServiceModal.tsx');
   const completionRoute = source('app/api/maintenance/[maintenanceId]/complete/route.ts');
 
   assert.match(desktopClient, /function openComplete\(record: MaintenanceRecord\)/);
-  assert.match(desktopClient, /Has this maintenance physically been completed\?/);
-  assert.match(desktopClient, /Only mark this done once the service or checkup has actually been carried out\./);
-  assert.match(desktopClient, /automatically create the next recurring schedule/);
+  assert.match(desktopClient, /<DesktopServiceModal/);
+  assert.match(desktopClient, /Record service/);
+  assert.match(serviceModal, /Log work that has already been completed\./);
+  assert.match(serviceModal, /This entry will be saved as done and a new schedule will be created automatically/);
   assert.match(desktopClient, /confirmedComplete: true/);
   assert.match(completionRoute, /requestedStatus === 'done' && body\.confirmedComplete !== true/);
   assert.match(completionRoute, /Confirm that the maintenance has physically been completed/);

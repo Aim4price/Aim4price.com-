@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import AppHeader from '../../components/AppHeader';
+import DesktopServiceModal, { type DesktopServiceCompletion } from '../../components/DesktopServiceModal';
 import styles from './page.module.css';
 
 type MaintenanceType = 'service' | 'checkup';
@@ -971,7 +972,7 @@ export default function MaintenanceClient() {
     setModalMode('complete');
   }
 
-  async function completeMaintenance(record: MaintenanceRecord) {
+  async function completeMaintenance(record: MaintenanceRecord, completion: DesktopServiceCompletion) {
     if (completeRequestInFlight.current) return;
 
     completeRequestInFlight.current = true;
@@ -984,7 +985,7 @@ export default function MaintenanceClient() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           status: 'done',
-          completedUsage: record.currentUsage,
+          ...completion,
           confirmedComplete: true,
         }),
       });
@@ -1199,10 +1200,10 @@ export default function MaintenanceClient() {
                             }}
                             disabled={isDone || busyCompleteId !== null}
                             aria-pressed={isDone}
-                            aria-label={isDone ? `${record.assetTitle} maintenance completed` : `Mark ${record.assetTitle} maintenance done`}
+                            aria-label={isDone ? `${record.assetTitle} maintenance completed` : `Record ${record.maintenanceType} for ${record.assetTitle}`}
                           >
                             <CheckIcon />
-                            <span>{busyCompleteId === record.id ? 'Saving...' : isDone ? 'Done' : 'Mark done'}</span>
+                            <span>{busyCompleteId === record.id ? 'Saving...' : isDone ? 'Done' : record.maintenanceType === 'checkup' ? 'Record check-up' : 'Record service'}</span>
                           </button>
                           <button className={`${styles.secondaryButtonSmall} ${styles.invoiceEditButton}`} type="button" onClick={() => openEdit(record)}>
                             <EditIcon />
@@ -1476,36 +1477,12 @@ export default function MaintenanceClient() {
       ) : null}
 
       {modalMode === 'complete' && recordPendingComplete ? (
-        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-labelledby="maintenance-complete-title">
-          <section className={styles.deleteConfirmModal}>
-            <header className={styles.modalHeader}>
-              <div>
-                <h2 id="maintenance-complete-title">Has this maintenance physically been completed?</h2>
-              </div>
-              <button className={styles.closeButton} type="button" onClick={closeModal} aria-label="Close completion confirmation">
-                <CloseIcon />
-              </button>
-            </header>
-            <div className={styles.modalDivider} />
-            <div className={styles.deleteConfirmBody}>
-              <p>Only mark this done once the service or checkup has actually been carried out.</p>
-              <div className={styles.deleteRecordSummary}>
-                <span>Maintenance to complete</span>
-                <strong>{recordPendingComplete.assetTitle}</strong>
-                <small>{typeLabel(recordPendingComplete.maintenanceType)} · {maintenanceDueValue(recordPendingComplete)} · {recordPendingComplete.assignedName || 'Unassigned'}</small>
-              </div>
-              {recordPendingComplete.recurringEnabled ? (
-                <p>Confirming this will close the current occurrence and automatically create the next recurring schedule.</p>
-              ) : null}
-            </div>
-            <footer className={styles.modalFooter}>
-              <button className={styles.secondaryButton} type="button" onClick={closeModal}>Cancel</button>
-              <button className={styles.primaryButton} type="button" onClick={() => void completeMaintenance(recordPendingComplete)} disabled={busyCompleteId === recordPendingComplete.id}>
-                {busyCompleteId === recordPendingComplete.id ? 'Saving...' : 'Yes, the maintenance is done'}
-              </button>
-            </footer>
-          </section>
-        </div>
+        <DesktopServiceModal
+          record={recordPendingComplete}
+          busy={busyCompleteId === recordPendingComplete.id}
+          onClose={closeModal}
+          onSubmit={(completion) => completeMaintenance(recordPendingComplete, completion)}
+        />
       ) : null}
 
       {modalMode === 'delete' && recordPendingDelete ? (

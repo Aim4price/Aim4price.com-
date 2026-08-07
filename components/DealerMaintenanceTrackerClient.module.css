@@ -23,6 +23,7 @@
 }
 
 .maintenanceViewButton,
+.serviceActionButton,
 .manageButton {
   flex: 0 0 10rem;
   width: 10rem;
@@ -30,6 +31,18 @@
   min-height: 3.06rem !important;
   border-radius: 0.9rem !important;
   font-weight: 800 !important;
+}
+
+.trackerPage .trackerHeaderActions .serviceActionButton.serviceActionButton {
+  color: #fff !important;
+  border-color: #174f3e !important;
+  background: linear-gradient(180deg, #21654f 0%, #174f3e 100%) !important;
+  box-shadow: 0 10px 22px rgba(15, 79, 59, 0.18) !important;
+}
+
+.trackerPage .trackerHeaderActions .serviceActionButton.serviceActionButton:hover:not(:disabled) {
+  border-color: #0c3f31 !important;
+  background: linear-gradient(180deg, #28745a 0%, #13503d 100%) !important;
 }
 
 .trackerPage .trackerOpenButton.trackerOpenButton {
