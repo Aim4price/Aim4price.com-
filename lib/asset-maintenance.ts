@@ -260,7 +260,7 @@ export function assetMaintenanceProcedureMatchesType(
 ): boolean {
   return maintenanceType === 'checkup'
     ? procedureKind === 'checked'
-    : procedureKind === 'serviced';
+    : procedureKind === 'serviced' || procedureKind === 'repaired';
 }
 
 function asLongText(value: unknown, maxLength = 5000): string {
@@ -1414,11 +1414,13 @@ async function createNextRecurringRecord(
       : completedDate;
     nextDueDate = addDateInterval(baseDate, completedRecord.recurringIntervalValue, completedRecord.recurringIntervalUnit);
   } else {
-    // An early completion must still consume the clicked schedule. Advance from
-    // at least its due target so the replacement cannot repeat the same card.
-    // When work is completed late, advance from the higher actual reading.
-    const completionUsage = completedRecord.completedUsage ?? completedRecord.currentUsage ?? 0;
-    const baseUsage = Math.max(completionUsage, completedRecord.dueUsage ?? 0);
+    // Recurring usage is measured from when the work was actually completed.
+    // If an owner services early at 2 500 hours on a 250-hour interval, the
+    // replacement is due at 2 750 hours rather than the old schedule plus 250.
+    const baseUsage = completedRecord.completedUsage
+      ?? completedRecord.currentUsage
+      ?? completedRecord.dueUsage
+      ?? 0;
     nextDueUsage = Math.round((baseUsage + completedRecord.recurringIntervalValue) * 100) / 100;
   }
 
