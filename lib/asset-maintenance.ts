@@ -1544,9 +1544,6 @@ export async function completeAssetMaintenanceRecord(
       const completedUsage = existing.triggerType === 'usage'
         ? nonNegativeNumber(input.completedUsage) ?? existing.currentUsage
         : nonNegativeNumber(input.completedUsage);
-      if (existing.triggerType === 'usage' && completedUsage === null) {
-        throw new Error('COMPLETION_USAGE_REQUIRED');
-      }
       if (
         completedUsage !== null
         && existing.currentUsage !== null
@@ -1592,7 +1589,7 @@ export async function completeAssetMaintenanceRecord(
             updated_at = now()
           where user_id = $1
             and id = $2::uuid
-            and coalesce(status, 'upcoming') = 'upcoming'
+            and lower(trim(coalesce(status, 'upcoming'))) not in ('done', 'cancelled', 'canceled')
         `,
         [
           userId,
