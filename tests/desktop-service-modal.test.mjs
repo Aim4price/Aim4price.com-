@@ -42,6 +42,7 @@ test('Service and check-up validation follows the app rules', () => {
   assert.match(modal, /copy\.companyLabel.*is required/);
   assert.match(modal, /copy\.mechanicLabel.*is required/);
   assert.match(modal, /cannot be lower than the saved/);
+  assert.match(modal, /final \$\{unit\} reading for this usage-based maintenance/);
   assert.match(modal, /completion date cannot be in the future/i);
 });
 
@@ -57,6 +58,7 @@ test('Dealer completion is owner-asset guarded, audited and refreshes recurring 
 test('Backend preserves actual service date and advances recurring schedules from completion', () => {
   assert.match(maintenance, /completedAt\?: unknown/);
   assert.match(maintenance, /COMPLETION_DATE_IN_FUTURE/);
+  assert.match(maintenance, /COMPLETION_USAGE_REQUIRED/);
   assert.match(maintenance, /completed_at = \$3::timestamptz/);
   assert.match(maintenance, /completedRecord\.completedAtIso/);
   assert.match(maintenance, /createNextRecurringRecord\(client, userId, completed\)/);
