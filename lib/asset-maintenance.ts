@@ -122,6 +122,7 @@ export type AssetMaintenanceDraftInput = {
 };
 
 export type AssetMaintenanceCompleteInput = {
+  completedAt?: unknown;
   completedUsage?: unknown;
   completedNotes?: unknown;
   completedBy?: unknown;
@@ -330,6 +331,13 @@ function toDateOnly(value: unknown): string | null {
 
   const parsed = new Date(text);
   return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString().slice(0, 10);
+}
+
+function completionDateOnly(value: unknown): string | null {
+  const text = asText(value);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return null;
+  const parsed = new Date(`${text}T00:00:00Z`);
+  return Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== text ? null : text;
 }
 
 function normalizeMaintenanceType(value: unknown): AssetMaintenanceType {
@@ -1536,16 +1544,47 @@ export async function completeAssetMaintenanceRecord(
       const completedUsage = existing.triggerType === 'usage'
         ? nonNegativeNumber(input.completedUsage) ?? existing.currentUsage
         : nonNegativeNumber(input.completedUsage);
+      if (
+        completedUsage !== null
+        && existing.currentUsage !== null
+        && completedUsage < existing.currentUsage
+      ) {
+        throw new Error('COMPLETION_USAGE_LOWER_THAN_CURRENT');
+      }
+
+      const completedNotes = asLongText(input.completedNotes);
+      const completedBy = asText(input.completedBy);
+      const procedureKind = assetMaintenanceProcedureKindFromNote(completedNotes);
+      if (!assetMaintenanceProcedureMatchesType(existing.maintenanceType, procedureKind)) {
+        throw new Error('COMPLETION_DETAILS_REQUIRED');
+      }
+      if (!completedBy) throw new Error('COMPLETION_PERFORMER_REQUIRED');
+      if (
+        existing.maintenanceType === 'service'
+        && (!/^Company:\s*\S/im.test(completedNotes) || !/^Mechanic:\s*\S/im.test(completedNotes))
+      ) {
+        throw new Error('COMPLETION_SERVICE_PROVIDER_REQUIRED');
+      }
+
+      const requestedCompletedAt = asText(input.completedAt);
+      const completedDate = requestedCompletedAt ? completionDateOnly(requestedCompletedAt) : null;
+      if (requestedCompletedAt && !completedDate) throw new Error('COMPLETION_DATE_INVALID');
+      if (completedDate && completedDate > todayJohannesburgDateOnly()) {
+        throw new Error('COMPLETION_DATE_IN_FUTURE');
+      }
+      const completedAtIso = completedDate
+        ? `${completedDate}T12:00:00+02:00`
+        : new Date().toISOString();
 
       await client.query(
         `
           update public.asset_maintenance_records
           set
             status = 'done',
-            completed_at = now(),
-            completed_usage = $3,
-            completed_notes = $4,
-            completed_by = $5,
+            completed_at = $3::timestamptz,
+            completed_usage = $4,
+            completed_notes = $5,
+            completed_by = $6,
             alert_noted_at = now(),
             updated_at = now()
           where user_id = $1
@@ -1555,9 +1594,10 @@ export async function completeAssetMaintenanceRecord(
         [
           userId,
           maintenanceId,
+          completedAtIso,
           completedUsage,
-          asLongText(input.completedNotes),
-          asText(input.completedBy),
+          completedNotes,
+          completedBy,
         ],
       );
 
