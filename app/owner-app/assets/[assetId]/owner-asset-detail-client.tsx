@@ -680,6 +680,13 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
               <span>Aim4price value</span>
               <strong>{money(draft.value)}</strong>
               <small>Excl. VAT · Updated {dateOnly(draft.updatedAtIso)}</small>
+              <Link
+                className={styles.detailValueUpdateButton}
+                href={`/owner-app/assets/${encodeURIComponent(assetId)}/manage/pricing/recalculate`}
+                prefetch={false}
+              >
+                Update estimate
+              </Link>
             </div>
 
             <div className={styles.assetMirrorActions} aria-label="Asset actions">
@@ -780,6 +787,13 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
               <span>Aim4price value</span>
               <strong>{money(draft.value)}</strong>
               <small>Excl. VAT · Updated {dateOnly(draft.updatedAtIso)}</small>
+              <Link
+                className={styles.detailValueUpdateButton}
+                href={`/owner-app/assets/${encodeURIComponent(assetId)}/manage/pricing/recalculate`}
+                prefetch={false}
+              >
+                Update estimate
+              </Link>
             </div>
 
             <div className={styles.assetMirrorDetails}>
