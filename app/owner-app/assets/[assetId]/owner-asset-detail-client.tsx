@@ -661,15 +661,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
     >
       {actionBusy === 'update-estimate' ? 'Updating…' : 'Update estimate'}
     </button>
-  ) : (
-    <Link
-      className={styles.detailValueUpdateButton}
-      href={`/owner-app/assets/${encodeURIComponent(assetId)}/manage/pricing/recalculate`}
-      prefetch={false}
-    >
-      Update estimate
-    </Link>
-  );
+  ) : null;
   const extraInput = (key: string, label: string, options: { type?: string; inputMode?: 'text' | 'decimal' | 'numeric'; fallbackKeys?: string[]; currency?: boolean } = {}) => {
     const value = extra(key, ...(options.fallbackKeys ?? []));
     const input = options.currency
