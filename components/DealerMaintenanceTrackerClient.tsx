@@ -1263,18 +1263,15 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                           </div>
 
                           <div className={`${assetStyles.assetHeaderActions} ${leadStyles.leadAssetHeaderActions} ${styles.trackerHeaderActions}`}>
-                            {!dealerAppMode && !isCompletedCard && asset.nextMaintenance ? (
-                              <button
-                                type="button"
-                                className={`${assetStyles.optionsButton} ${styles.serviceActionButton}`}
-                                onClick={() => setServiceTarget({ asset, record: asset.nextMaintenance as DealerMaintenanceRecordSummary })}
-                                aria-haspopup="dialog"
-                                aria-label={`Record ${asset.nextMaintenance.maintenanceType} for ${asset.assetTitle}`}
-                              >
-                                <ServiceIcon className={assetStyles.buttonIcon} />
-                                <span>{asset.nextMaintenance.maintenanceType === 'checkup' ? 'Record check-up' : 'Record service'}</span>
-                              </button>
-                            ) : null}
+                            <button
+                              type="button"
+                              className={`${assetStyles.optionsButton} ${leadStyles.leadManageButton} ${styles.manageButton}`}
+                              onClick={() => setManagedAccessId(asset.accessId)}
+                              aria-label={`Manage ${asset.assetTitle}`}
+                            >
+                              <ManageIcon className={assetStyles.buttonIcon} />
+                              <span>Manage</span>
+                            </button>
                             <button
                               type="button"
                               className={`${assetStyles.optionsButton} ${assetStyles.sharedNoteActionButton} ${styles.maintenanceViewButton}`}
@@ -1290,15 +1287,18 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                                   : 'History'}
                               </span>
                             </button>
-                            <button
-                              type="button"
-                              className={`${assetStyles.optionsButton} ${leadStyles.leadManageButton} ${styles.manageButton}`}
-                              onClick={() => setManagedAccessId(asset.accessId)}
-                              aria-label={`Manage ${asset.assetTitle}`}
-                            >
-                              <ManageIcon className={assetStyles.buttonIcon} />
-                              <span>Manage</span>
-                            </button>
+                            {!dealerAppMode && !isCompletedCard && asset.nextMaintenance ? (
+                              <button
+                                type="button"
+                                className={`${assetStyles.optionsButton} ${styles.serviceActionButton}`}
+                                onClick={() => setServiceTarget({ asset, record: asset.nextMaintenance as DealerMaintenanceRecordSummary })}
+                                aria-haspopup="dialog"
+                                aria-label={`Record ${asset.nextMaintenance.maintenanceType} for ${asset.assetTitle}`}
+                              >
+                                <ServiceIcon className={assetStyles.buttonIcon} />
+                                <span>{asset.nextMaintenance.maintenanceType === 'checkup' ? 'Record check-up' : 'Record service'}</span>
+                              </button>
+                            ) : null}
                           </div>
                         </div>
                       </div>
@@ -1966,6 +1966,10 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
             ...serviceTarget.record,
             assetTitle: serviceTarget.asset.assetTitle,
             assetKind: serviceTarget.asset.assetKind,
+            assetCategoryLabel: serviceTarget.asset.assetKind,
+            assetYearModel: serviceTarget.asset.yearModel,
+            assetCondition: serviceTarget.asset.condition,
+            assetMeta: trackingAssetMeta(serviceTarget.asset),
             currentUsage: serviceTarget.asset.currentUsage,
             usageMetric: serviceTarget.record.usageMetric || serviceTarget.asset.usageMetric,
           }}
