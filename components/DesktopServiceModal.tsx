@@ -23,6 +23,7 @@ export type DesktopServiceRecord = {
   assetKind: string;
   assetCategoryLabel?: string | null;
   maintenanceType: 'service' | 'checkup';
+  triggerType?: 'date' | 'usage';
   title: string;
   currentUsage: number | null;
   usageMetric: 'hours' | 'km' | 'percentage' | null;
@@ -126,6 +127,10 @@ export default function DesktopServiceModal({ record, busy = false, onClose, onS
     }
 
     const usage = completedUsage.trim() === '' ? null : Number(completedUsage);
+    if (record.triggerType === 'usage' && usage === null) {
+      setError(`Enter the final ${unit} reading for this usage-based maintenance.`);
+      return;
+    }
     if (usage !== null && (!Number.isFinite(usage) || usage < 0)) {
       setError('Enter a valid non-negative usage reading.');
       return;
@@ -187,7 +192,7 @@ export default function DesktopServiceModal({ record, busy = false, onClose, onS
                 <label className={styles.field}>
                   <span>Usage at completion <small>({unit})</small></span>
                   <div className={styles.usageInput}>
-                    <input type="number" min={record.currentUsage ?? 0} step="0.1" value={completedUsage} onChange={(event) => setCompletedUsage(event.target.value)} placeholder={`Current ${unit}`} />
+                    <input type="number" min={record.currentUsage ?? 0} step="0.1" value={completedUsage} onChange={(event) => setCompletedUsage(event.target.value)} placeholder={`Current ${unit}`} required={record.triggerType === 'usage'} />
                     <b>{unit}</b>
                   </div>
                 </label>
