@@ -24,6 +24,21 @@ test('manual Owner and Field Manager service matches the nearest open maintenanc
   assert.match(eventRoute, /completeAssetMaintenanceRecord\(/);
 });
 
+test('normal Owner and Field Manager maintenance never submits a null schedule id', () => {
+  assert.match(
+    scanClient,
+    /function normalizeOptionalMaintenanceId[\s\S]*String\(value \?\? ""\)[\s\S]*\? "" : normalized/,
+  );
+  assert.match(
+    scanClient,
+    /normalizedScheduledMaintenanceId = useMemo\([\s\S]*normalizeOptionalMaintenanceId\(/,
+  );
+  assert.match(
+    eventRoute,
+    /scheduledMaintenanceId = normalizeOptionalMaintenanceId\([\s\S]*body\.scheduledMaintenanceId/,
+  );
+});
+
 test('normal maintenance without a schedule creates a completed history record', () => {
   assert.match(
     eventRoute,
