@@ -9,6 +9,7 @@ import {
   completeAssetMaintenanceRecord,
   getAssetMaintenanceRecordById,
   isAssetMaintenanceRecordId,
+  listAssetMaintenanceRecords,
   type AssetMaintenanceRecord,
 } from "../../../../../../lib/asset-maintenance";
 import { authorizeFieldManagerScanAccess, authorizeOwnerAppScanAccess, authorizePublicQrScanAccess } from "../../../../../../lib/scan-auth";
@@ -238,6 +239,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
   }
 
   const scheduledMaintenanceId = asText(body.scheduledMaintenanceId);
+  const procedureKind = assetMaintenanceProcedureKindFromNote(payload.note);
   let scheduledMaintenance: AssetMaintenanceRecord | null = null;
 
   if (scheduledMaintenanceId) {
@@ -293,7 +295,6 @@ export async function POST(request: NextRequest, context: RouteContext) {
       );
     }
 
-    const procedureKind = assetMaintenanceProcedureKindFromNote(payload.note);
     if (
       !procedureKind
       || !assetMaintenanceProcedureMatchesType(
@@ -310,6 +311,49 @@ export async function POST(request: NextRequest, context: RouteContext) {
               : "Complete the scheduled service before marking this service done.",
         },
         { status: 400 },
+      );
+    }
+  }
+
+  if (
+    !scheduledMaintenanceId
+    && procedureKind
+    && access.asset.id
+    && (access.accessMode === "field_manager" || access.accessMode === "owner_session")
+  ) {
+    const maintenanceType = procedureKind === "checked" ? "checkup" : "service";
+
+    try {
+      const openMaintenance = await listAssetMaintenanceRecords(
+        access.ownerUserId,
+        {
+          assetId: access.asset.id,
+          type: maintenanceType,
+          status: "upcoming",
+        },
+      );
+      scheduledMaintenance = openMaintenance.find(
+        (record) =>
+          record.assetId === access.asset.id
+          && record.status === "upcoming"
+          && assetMaintenanceProcedureMatchesType(
+            record.maintenanceType,
+            procedureKind,
+          ),
+      ) ?? null;
+    } catch (error) {
+      console.error("[scan-event] Failed to match asset maintenance", {
+        assetId: access.asset.id,
+        maintenanceType,
+        accessMode: access.accessMode,
+        error,
+      });
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "Maintenance could not be matched to this asset. Please retry.",
+        },
+        { status: 500 },
       );
     }
   }
@@ -470,7 +514,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
         {
           ok: false,
           error:
-            "The asset update was saved, but this scheduled maintenance item changed before it could be marked done. Return to Overview and try again.",
+            "The asset update was saved, but this maintenance item changed before it could be marked done. Return to Maintenance and try again.",
         },
         { status: 409 },
       );
