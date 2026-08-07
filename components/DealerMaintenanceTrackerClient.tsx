@@ -56,6 +56,11 @@ type DealerServiceTarget = {
   record: DealerMaintenanceRecordSummary;
 };
 
+type DealerServiceSuccess = {
+  assetTitle: string;
+  actionLabel: string;
+};
+
 type TrackerPhotoModal = {
   accessId: string;
   title: string;
@@ -717,8 +722,15 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
   const [isDeletingTracking, setIsDeletingTracking] = useState(false);
   const [serviceTarget, setServiceTarget] = useState<DealerServiceTarget | null>(null);
   const [isSavingService, setIsSavingService] = useState(false);
+  const [serviceSuccess, setServiceSuccess] = useState<DealerServiceSuccess | null>(null);
 
   useEffect(() => setAssets(initialAssets), [initialAssets]);
+
+  useEffect(() => {
+    if (!serviceSuccess) return;
+    const returnTimer = window.setTimeout(() => setServiceSuccess(null), 2600);
+    return () => window.clearTimeout(returnTimer);
+  }, [serviceSuccess]);
 
   useEffect(() => {
     let cancelled = false;
@@ -908,6 +920,10 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
         text: serviceTarget.record.recurringEnabled && refreshedAsset.nextMaintenance
           ? 'Service saved as done. The next recurring maintenance is now being tracked.'
           : 'Service saved as done.',
+      });
+      setServiceSuccess({
+        assetTitle: serviceTarget.asset.assetTitle,
+        actionLabel: serviceTarget.record.maintenanceType === 'checkup' ? 'Check-up' : 'Service',
       });
       setServiceTarget(null);
     } catch (cause) {
@@ -1958,6 +1974,20 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
           onClose={() => setReportAccessId(null)}
           onError={(message) => setNotice({ tone: 'error', text: message })}
         />
+      ) : null}
+
+      {serviceSuccess ? (
+        <div className={styles.serviceSuccessOverlay} role="dialog" aria-modal="true" aria-labelledby="dealer-service-success-title">
+          <section className={styles.serviceSuccessCard} role="status" aria-live="polite">
+            <span className={styles.serviceSuccessIcon} aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="m5 12.5 4.2 4.2L19 7" /></svg>
+            </span>
+            <h2 id="dealer-service-success-title">Thank you.</h2>
+            <p>{serviceSuccess.actionLabel} saved successfully for <strong>{serviceSuccess.assetTitle}</strong>.</p>
+            <small>Returning to Maintenance…</small>
+            <button type="button" onClick={() => setServiceSuccess(null)}>Back to Maintenance</button>
+          </section>
+        </div>
       ) : null}
 
       {serviceTarget ? (
