@@ -102,6 +102,9 @@ export async function POST(request: Request, { params }: { params: { accessId: s
     if (code === 'COMPLETION_USAGE_LOWER_THAN_CURRENT') {
       return NextResponse.json({ ok: false, error: 'The completed usage reading cannot be lower than the current saved reading.' }, { status: 400 });
     }
+    if (code === 'COMPLETION_USAGE_REQUIRED') {
+      return NextResponse.json({ ok: false, error: 'Enter the final usage reading before completing this maintenance.' }, { status: 400 });
+    }
     if (code === 'COMPLETION_DETAILS_REQUIRED') {
       return NextResponse.json({ ok: false, error: 'Select completed work or add notes/problems before saving.' }, { status: 400 });
     }
