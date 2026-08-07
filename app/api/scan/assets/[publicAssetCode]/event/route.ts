@@ -51,6 +51,11 @@ function asText(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function normalizeOptionalMaintenanceId(value: unknown): string {
+  const normalized = asText(value);
+  return /^(?:null|undefined)$/i.test(normalized) ? "" : normalized;
+}
+
 function hasSubmittedValue(value: unknown): boolean {
   return !(value === null || typeof value === "undefined" || value === "");
 }
@@ -240,7 +245,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
     );
   }
 
-  const scheduledMaintenanceId = asText(body.scheduledMaintenanceId);
+  const scheduledMaintenanceId = normalizeOptionalMaintenanceId(
+    body.scheduledMaintenanceId,
+  );
   const procedureKind = assetMaintenanceProcedureKindFromNote(payload.note);
   let scheduledMaintenance: AssetMaintenanceRecord | null = null;
 
