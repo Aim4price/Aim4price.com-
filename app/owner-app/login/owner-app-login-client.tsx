@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import { useEffect, useState, type FormEvent } from 'react';
+import AppLoginWelcome from '../../../components/AppLoginWelcome';
 import { clearCachedHeaderSession } from '../../../lib/header-session-cache';
 import styles from '../../dealer/dealer.module.css';
 
@@ -11,6 +12,7 @@ type BeforeInstallPromptEvent = Event & {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
 };
 type StandaloneNavigator = Navigator & { standalone?: boolean };
+type LoginWelcome = { displayName: string; companyName: string; logoUrl: string };
 
 function normalizeUsername(value: string) {
   return value.trim().toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9._@-]/g, '').slice(0, 80);
@@ -37,6 +39,7 @@ export default function OwnerAppLoginClient({ hasAccountSession = false }: { has
   const [accountSessionActive, setAccountSessionActive] = useState(hasAccountSession);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [welcome, setWelcome] = useState<LoginWelcome | null>(null);
 
   useEffect(() => {
     setView(isStandalone() ? 'login' : 'install');
@@ -83,11 +86,19 @@ export default function OwnerAppLoginClient({ hasAccountSession = false }: { has
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: cleanUsername, password }),
       });
-      const payload = await response.json().catch(() => null) as { ok?: boolean; redirectTo?: string; error?: string } | null;
+      const payload = await response.json().catch(() => null) as { ok?: boolean; redirectTo?: string; welcome?: LoginWelcome; error?: string } | null;
       if (!response.ok || !payload?.ok) throw new Error(payload?.error || 'Unable to sign in.');
-      window.location.replace(payload.redirectTo || '/owner-app');
+      const redirectTo = payload.redirectTo || '/owner-app';
+      setWelcome({
+        displayName: payload.welcome?.displayName || cleanUsername,
+        companyName: payload.welcome?.companyName || 'Aim4price',
+        logoUrl: payload.welcome?.logoUrl || '/icon.png',
+      });
+      window.setTimeout(() => window.location.replace(redirectTo), 1400);
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Unable to sign in.'); setBusy(false); }
   }
+
+  if (welcome) return <main className={styles.loginPage}><AppLoginWelcome {...welcome} /></main>;
 
   if (view === 'checking') return <main className={styles.loginPage}><section className={styles.installLoadingCard}><span className={styles.loadingSpinner} /><strong>Opening Aim4price Owner…</strong></section></main>;
 
