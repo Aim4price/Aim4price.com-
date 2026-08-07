@@ -95,6 +95,29 @@ test('early recurring maintenance advances from actual completion usage', () => 
   );
 });
 
+test('successful app maintenance returns to the clean asset action page', () => {
+  assert.match(
+    scanClient,
+    /ownerAssetActionsHref[\s\S]*owner-app\/operations\/maintenance/,
+  );
+  assert.match(
+    scanClient,
+    /fieldManagerAssetActionsHref[\s\S]*field-manager\/assets/,
+  );
+  assert.match(
+    scanClient,
+    /setDoneMessage\(\`\$\{message\} Returning to asset actions…\`\)/,
+  );
+  assert.match(scanClient, /window\.location\.replace\(assetActionsHref\)/);
+  assert.match(scanClient, /href=\{assetActionsHref\}[\s\S]*Back to asset/);
+
+  const successFlow = scanClient.slice(
+    scanClient.indexOf('async function redirectAfterFieldManagerServerSave'),
+    scanClient.indexOf('async function loadUnlockedAsset'),
+  );
+  assert.doesNotMatch(successFlow, /clearQrScanSession/);
+});
+
 test('Add update saves immediately in Owner and Field Manager maintenance mode', () => {
   assert.match(
     scanClient,
