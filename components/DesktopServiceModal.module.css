@@ -29,12 +29,13 @@
   border-radius: 30px;
   background: #f8fbfa;
   box-shadow: 0 34px 90px rgb(3 35 29 / 30%);
-  color: #0a382f;
+  color: #14362e;
+  font-family: var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif;
 }
 
 .header {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 16px;
   align-items: center;
   padding: 24px 28px;
@@ -42,17 +43,6 @@
   background: #fff;
 }
 
-.headerIcon {
-  display: grid;
-  width: 54px;
-  height: 54px;
-  place-items: center;
-  border-radius: 17px;
-  background: #e1f3ea;
-  color: #176b52;
-}
-
-.headerIcon svg,
 .closeButton svg,
 .checkbox svg,
 .recurringBanner svg {
@@ -65,31 +55,22 @@
   stroke-linejoin: round;
 }
 
-.eyebrow {
-  display: block;
-  margin-bottom: 3px;
-  color: #23805f;
-  font-size: 12px;
-  font-weight: 900;
-  letter-spacing: .1em;
-  text-transform: uppercase;
-}
-
 .header h2 {
   margin: 0;
-  font-size: clamp(24px, 3vw, 34px);
-  letter-spacing: -.035em;
-  line-height: 1.05;
+  color: #073b30;
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
+  font-size: clamp(1.72rem, 2.55vw, 2.28rem);
+  font-weight: 780;
+  letter-spacing: -.052em;
+  line-height: 1.02;
 }
 
 .header p {
-  margin: 7px 0 0;
-  overflow: hidden;
-  color: #62766f;
-  font-size: 14px;
-  font-weight: 700;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  margin: .35rem 0 0;
+  color: #607286;
+  font-size: .98rem;
+  font-weight: 640;
+  line-height: 1.45;
 }
 
 .closeButton {
@@ -176,15 +157,18 @@
 
 .sectionHeading h3 {
   margin: 1px 0 3px;
-  font-size: 17px;
+  color: #14362e;
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
+  font-size: 1rem;
+  font-weight: 780;
   letter-spacing: -.015em;
 }
 
 .sectionHeading p {
   margin: 0;
   color: #6b7e78;
-  font-size: 12px;
-  font-weight: 650;
+  font-size: .82rem;
+  font-weight: 620;
 }
 
 .selectedCount {
@@ -207,8 +191,8 @@
   display: grid;
   gap: 7px;
   color: #294b43;
-  font-size: 12px;
-  font-weight: 850;
+  font-size: .9rem;
+  font-weight: 720;
 }
 
 .field > span small {
@@ -225,8 +209,8 @@
   background: #fbfdfc;
   color: #103b32;
   font: inherit;
-  font-size: 14px;
-  font-weight: 650;
+  font-size: 1rem;
+  font-weight: 620;
   transition: border-color .16s ease, box-shadow .16s ease;
 }
 
@@ -397,8 +381,7 @@
   .overlay { padding: 0; place-items: stretch; }
   .modal { width: 100%; max-height: 100dvh; border: 0; border-radius: 0; }
   .header { padding: 18px; }
-  .headerIcon { width: 46px; height: 46px; border-radius: 14px; }
-  .header p { max-width: 52vw; }
+  .header p { max-width: 76vw; }
   .body { padding: 16px; }
   .section { padding: 15px; }
   .fieldGrid, .checklist { grid-template-columns: 1fr; }

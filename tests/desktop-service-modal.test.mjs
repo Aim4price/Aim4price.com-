@@ -4,8 +4,10 @@ import test from 'node:test';
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 const modal = read('components/DesktopServiceModal.tsx');
+const modalStyles = read('components/DesktopServiceModal.module.css');
 const ownerClient = read('app/maintenance/maintenance-client.tsx');
 const dealerClient = read('components/DealerMaintenanceTrackerClient.tsx');
+const dealerStyles = read('components/DealerMaintenanceTrackerClient.module.css');
 const dealerRoute = read('app/api/dealer/maintenance/[accessId]/route.ts');
 const dealerTracker = read('lib/dealer-maintenance-tracker.ts');
 const maintenance = read('lib/asset-maintenance.ts');
@@ -18,10 +20,28 @@ test('Owner and Dealer desktop maintenance use one mobile-inspired service form'
   assert.match(dealerClient, /import DesktopServiceModal/);
   assert.match(dealerClient, /<DesktopServiceModal/);
   assert.match(dealerClient, /!dealerAppMode && !isCompletedCard && asset\.nextMaintenance/);
-  assert.match(modal, /Desktop backup entry/);
+  assert.doesNotMatch(modal, /Desktop backup entry|WrenchIcon|headerIcon/);
+  assert.match(modal, /serviceAssetMeta\(record\)/);
+  assert.match(modal, /Year Model:/);
+  assert.match(modal, /Usage:/);
+  assert.match(modal, /Condition:/);
+  assert.match(modalStyles, /font-family: var\(--font-heading, 'Montserrat'\)/);
+  assert.match(modalStyles, /font-weight: 780/);
   assert.match(modal, /Completion date/);
   assert.match(modal, /Usage at completion/);
   assert.match(modal, /Notes \/ problems/);
+});
+
+test('Dealer maintenance card actions stay in one row and use the copper service action', () => {
+  const actions = dealerClient.slice(
+    dealerClient.indexOf('styles.trackerHeaderActions'),
+    dealerClient.indexOf('</div>', dealerClient.indexOf('styles.trackerHeaderActions')),
+  );
+  assert.ok(actions.indexOf('<span>Manage</span>') < actions.indexOf("'History'"));
+  assert.ok(actions.indexOf("'History'") < actions.indexOf("'Record service'"));
+  assert.match(dealerStyles, /\.trackerHeaderActions \{[\s\S]*?display: flex !important;[\s\S]*?flex-wrap: nowrap !important;/);
+  assert.match(dealerStyles, /\.serviceActionButton\.serviceActionButton \{[\s\S]*?color: #6d350f !important;[\s\S]*?border-color: #e8a56a !important;/);
+  assert.match(dealerStyles, /white-space: nowrap/);
 });
 
 test('Desktop and app servicing share the same equipment checklists and saved note format', () => {
