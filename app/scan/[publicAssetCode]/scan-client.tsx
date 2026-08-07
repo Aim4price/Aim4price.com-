@@ -226,7 +226,7 @@ const initialPendingUpdate: PendingScanUpdate = {
 const DEFAULT_LOCATION_REQUIRED_MESSAGE =
   "Location must be enabled before this asset QR can continue.";
 const GPS_READY_SESSION_MESSAGE = "GPS ready for this QR scan session.";
-const FIELD_MANAGER_RETURN_DELAY_MS = 1100;
+const FIELD_MANAGER_RETURN_DELAY_MS = 2600;
 const QR_SCAN_SESSION_STORAGE_PREFIX = "aim4price_qr_scan_session_v1:";
 
 type QrScanSessionState = {
@@ -1424,12 +1424,14 @@ export default function ScanClient({
     return `?${params.toString()}`;
   }
 
-  async function redirectAfterFieldManagerServerSave() {
+  async function redirectAfterFieldManagerServerSave(
+    message = "Update saved successfully.",
+  ) {
     clearQrScanSession(normalizedCode);
     setActiveEditor(null);
     setShowLocationReminder(false);
     setNotice(null);
-    setDoneMessage("");
+    setDoneMessage(`${message} Returning to Maintenance…`);
     setIsDone(true);
 
     try {
@@ -2570,7 +2572,15 @@ export default function ScanClient({
     if (isFieldManagerMode) {
       const result = await persistPendingScanUpdate(nextPendingUpdate);
       if (!result) return;
-      await redirectAfterFieldManagerServerSave();
+      await redirectAfterFieldManagerServerSave(
+        activeEditor === "service"
+          ? draft.serviceMode === "checked"
+            ? "Check-up saved successfully."
+            : draft.serviceMode === "repaired"
+              ? "Repair saved successfully."
+              : "Service saved successfully."
+          : "Update saved successfully.",
+      );
       return;
     }
 
@@ -2990,9 +3000,17 @@ export default function ScanClient({
   if (isDone) {
     return (
       <main className={pageClassName}>
-        <section className={styles.thankYouScreen}>
+        <section className={styles.thankYouScreen} role="status" aria-live="polite">
+          <span className={styles.thankYouIcon} aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="m5 12.5 4.2 4.2L19 7" /></svg>
+          </span>
           <h1>Thank you.</h1>
           {doneMessage ? <p>{doneMessage}</p> : null}
+          {isFieldManagerMode ? (
+            <a className={styles.thankYouReturn} href={appReturnHref}>
+              Back to Maintenance
+            </a>
+          ) : null}
         </section>
       </main>
     );

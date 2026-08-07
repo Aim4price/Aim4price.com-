@@ -2425,3 +2425,92 @@
 .historyTypeTabs button {
   min-height: 5.2rem;
 }
+
+
+.serviceSuccessOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 320;
+  display: grid;
+  place-items: center;
+  padding: max(1rem, env(safe-area-inset-top)) 1rem max(1rem, env(safe-area-inset-bottom));
+  background: rgba(13, 42, 34, 0.68);
+  backdrop-filter: blur(10px);
+}
+
+.serviceSuccessCard {
+  width: min(100%, 28rem);
+  display: grid;
+  justify-items: center;
+  gap: 0.75rem;
+  border: 1px solid rgba(37, 132, 94, 0.22);
+  border-radius: 1.65rem;
+  padding: clamp(1.7rem, 6vw, 2.4rem);
+  background:
+    radial-gradient(circle at 50% 0%, rgba(111, 197, 150, 0.16), transparent 42%),
+    #ffffff;
+  box-shadow: 0 28px 75px rgba(6, 35, 27, 0.28);
+  text-align: center;
+}
+
+.serviceSuccessIcon {
+  width: 4.5rem;
+  height: 4.5rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #ffffff;
+  background: linear-gradient(145deg, #25845e 0%, #15533d 100%);
+  box-shadow: 0 15px 30px rgba(21, 83, 61, 0.22);
+}
+
+.serviceSuccessIcon svg {
+  width: 2.2rem;
+  height: 2.2rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.serviceSuccessCard h2 {
+  margin: 0;
+  color: #12352d;
+  font-family: var(--font-heading, "Montserrat"), ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(2rem, 7vw, 2.75rem);
+  font-weight: 900;
+  letter-spacing: -0.05em;
+  line-height: 1;
+}
+
+.serviceSuccessCard p,
+.serviceSuccessCard small {
+  margin: 0;
+  color: rgba(18, 53, 45, 0.68);
+  font-size: 0.98rem;
+  font-weight: 680;
+  line-height: 1.45;
+}
+
+.serviceSuccessCard p strong {
+  color: #12352d;
+}
+
+.serviceSuccessCard small {
+  font-size: 0.82rem;
+}
+
+.serviceSuccessCard button {
+  width: 100%;
+  min-height: 3.65rem;
+  margin-top: 0.25rem;
+  border: 1px solid #1f7655;
+  border-radius: 1rem;
+  color: #ffffff;
+  background: linear-gradient(180deg, #25845e 0%, #176044 100%);
+  box-shadow: 0 12px 25px rgba(23, 96, 68, 0.18);
+  font: inherit;
+  font-weight: 850;
+  cursor: pointer;
+}
