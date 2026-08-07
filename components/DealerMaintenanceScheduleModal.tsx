@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type {
+  DealerMaintenanceRecordSummary,
   DealerMaintenanceScheduleProposal,
   DealerMaintenanceTrackedAsset,
 } from '../lib/dealer-maintenance-tracker';
@@ -10,8 +11,11 @@ import styles from '../app/maintenance/page.module.css';
 type Props = {
   accessId: string;
   leadId?: string | null;
+  initialProposal?: DealerMaintenanceScheduleProposal | null;
+  initialRecord?: DealerMaintenanceRecordSummary | null;
   onClose: () => void;
   onCreated?: (proposals: DealerMaintenanceScheduleProposal[]) => void;
+  onAssetUpdated?: (asset: DealerMaintenanceTrackedAsset) => void;
   onError?: (message: string) => void;
 };
 
@@ -43,6 +47,7 @@ type SaveResponse = {
   ok?: boolean;
   proposal?: DealerMaintenanceScheduleProposal;
   proposals?: DealerMaintenanceScheduleProposal[];
+  asset?: DealerMaintenanceTrackedAsset;
   error?: string;
 };
 
@@ -116,6 +121,42 @@ function emptyDraft(asset?: DealerMaintenanceTrackedAsset | null): Draft {
     recurringEnabled: false,
     recurringIntervalValue: '1',
     recurringIntervalUnit: 'months',
+  };
+}
+
+function draftFromProposal(
+  proposal: DealerMaintenanceScheduleProposal,
+  asset: DealerMaintenanceTrackedAsset,
+): Draft {
+  return {
+    maintenanceType: proposal.maintenanceType,
+    triggerType: proposal.triggerType,
+    notes: proposal.notes,
+    dueDate: proposal.dueDate || todayInputDate(),
+    dueUsage: proposal.dueUsage === null ? '' : String(proposal.dueUsage),
+    alertBeforeValue: proposal.alertBeforeValue === null ? '0' : String(proposal.alertBeforeValue),
+    alertBeforeUnit: (proposal.alertBeforeUnit || (proposal.triggerType === 'date' ? 'days' : asset.usageMetric)) as Draft['alertBeforeUnit'],
+    recurringEnabled: proposal.recurringEnabled,
+    recurringIntervalValue: proposal.recurringIntervalValue === null ? '' : String(proposal.recurringIntervalValue),
+    recurringIntervalUnit: (proposal.recurringIntervalUnit || (proposal.triggerType === 'date' ? 'months' : asset.usageMetric)) as Draft['recurringIntervalUnit'],
+  };
+}
+
+function draftFromRecord(
+  record: DealerMaintenanceRecordSummary,
+  asset: DealerMaintenanceTrackedAsset,
+): Draft {
+  return {
+    maintenanceType: record.maintenanceType,
+    triggerType: record.triggerType,
+    notes: record.notes,
+    dueDate: record.dueDate || todayInputDate(),
+    dueUsage: record.dueUsage === null ? '' : String(record.dueUsage),
+    alertBeforeValue: record.alertBeforeValue === null ? '0' : String(record.alertBeforeValue),
+    alertBeforeUnit: (record.alertBeforeUnit || (record.triggerType === 'date' ? 'days' : asset.usageMetric)) as Draft['alertBeforeUnit'],
+    recurringEnabled: record.recurringEnabled,
+    recurringIntervalValue: record.recurringIntervalValue === null ? '' : String(record.recurringIntervalValue),
+    recurringIntervalUnit: (record.recurringIntervalUnit || (record.triggerType === 'date' ? 'months' : asset.usageMetric)) as Draft['recurringIntervalUnit'],
   };
 }
 
@@ -262,8 +303,11 @@ function ReadOnlyField({ label, value }: { label: string; value: string }) {
 export default function DealerMaintenanceScheduleModal({
   accessId,
   leadId,
+  initialProposal = null,
+  initialRecord = null,
   onClose,
   onCreated,
+  onAssetUpdated,
   onError,
 }: Props) {
   const [asset, setAsset] = useState<DealerMaintenanceTrackedAsset | null>(null);
@@ -292,8 +336,16 @@ export default function DealerMaintenanceScheduleModal({
           throw new Error('The asset owner has not enabled dealer-created maintenance schedules.');
         }
         setAsset(payload.asset);
-        setDraft(emptyDraft(payload.asset));
-        setStep('maintenance-type');
+        if (initialProposal) {
+          setDraft(draftFromProposal(initialProposal, payload.asset));
+          setStep('form');
+        } else if (initialRecord) {
+          setDraft(draftFromRecord(initialRecord, payload.asset));
+          setStep('form');
+        } else {
+          setDraft(emptyDraft(payload.asset));
+          setStep('maintenance-type');
+        }
       } catch (cause) {
         if (controller.signal.aborted) return;
         const message = cause instanceof Error ? cause.message : 'Failed to load the shared asset.';
@@ -305,7 +357,7 @@ export default function DealerMaintenanceScheduleModal({
     }
     void load();
     return () => controller.abort();
-  }, [accessId]);
+  }, [accessId, initialProposal?.id, initialRecord?.id]);
 
   function updateDraft(update: Partial<Draft>) {
     setDraft((current) => {
@@ -345,32 +397,52 @@ export default function DealerMaintenanceScheduleModal({
     setSaving(true);
     setError('');
     try {
-      const response = await fetch('/api/dealer/maintenance/schedule-proposals', {
-        method: 'POST',
+      const schedulePayload = {
+        accessId,
+        leadId: leadId || null,
+        maintenanceType: draft.maintenanceType,
+        triggerType: draft.triggerType,
+        title: initialProposal?.title || initialRecord?.title || '',
+        notes: draft.notes,
+        dueDate: draft.triggerType === 'date' ? draft.dueDate : null,
+        dueUsage: draft.triggerType === 'usage' ? draft.dueUsage : null,
+        usageMetric: draft.triggerType === 'usage' ? asset.usageMetric : null,
+        alertBeforeValue: draft.alertBeforeValue,
+        alertBeforeUnit: draft.alertBeforeUnit,
+        recurringEnabled: draft.recurringEnabled,
+        recurringIntervalValue: draft.recurringEnabled ? draft.recurringIntervalValue : null,
+        recurringIntervalUnit: draft.recurringEnabled ? draft.recurringIntervalUnit : null,
+      };
+      const editingActiveSchedule = Boolean(initialRecord);
+      const editingProposal = Boolean(initialProposal);
+      const endpoint = editingActiveSchedule
+        ? `/api/dealer/maintenance/${encodeURIComponent(accessId)}`
+        : '/api/dealer/maintenance/schedule-proposals';
+      const response = await fetch(endpoint, {
+        method: editingActiveSchedule || editingProposal ? 'PATCH' : 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          accessId,
-          leadId: leadId || null,
-          maintenanceType: draft.maintenanceType,
-          triggerType: draft.triggerType,
-          title: '',
-          notes: draft.notes,
-          dueDate: draft.triggerType === 'date' ? draft.dueDate : null,
-          dueUsage: draft.triggerType === 'usage' ? draft.dueUsage : null,
-          usageMetric: draft.triggerType === 'usage' ? asset.usageMetric : null,
-          alertBeforeValue: draft.alertBeforeValue,
-          alertBeforeUnit: draft.alertBeforeUnit,
-          recurringEnabled: draft.recurringEnabled,
-          recurringIntervalValue: draft.recurringEnabled ? draft.recurringIntervalValue : null,
-          recurringIntervalUnit: draft.recurringEnabled ? draft.recurringIntervalUnit : null,
+          ...schedulePayload,
+          ...(initialRecord ? { maintenanceId: initialRecord.id } : {}),
+          ...(initialProposal ? { proposalId: initialProposal.id } : {}),
         }),
       });
       const payload = await response.json().catch(() => null) as SaveResponse | null;
-      if (!response.ok || !payload?.ok || !payload.proposal || !Array.isArray(payload.proposals)) {
-        throw new Error(payload?.error || 'Failed to send the proposed schedule.');
+      if (!response.ok || !payload?.ok) {
+        throw new Error(payload?.error || (editingActiveSchedule || editingProposal
+          ? 'Failed to update the maintenance schedule.'
+          : 'Failed to send the proposed schedule.'));
       }
-      onCreated?.(payload.proposals);
+      if (editingActiveSchedule) {
+        if (!payload.asset) throw new Error('The updated maintenance schedule could not be loaded.');
+        onAssetUpdated?.(payload.asset);
+      } else {
+        if (!payload.proposal || !Array.isArray(payload.proposals)) {
+          throw new Error('The maintenance proposal could not be loaded.');
+        }
+        onCreated?.(payload.proposals);
+      }
       onClose();
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : 'Failed to send the proposed schedule.';
@@ -387,7 +459,7 @@ export default function DealerMaintenanceScheduleModal({
         <section className={`${styles.formModal} ${styles.maintenanceStepModal}`}>
           <header className={styles.modalHeader}>
             <div>
-              <h2 id="dealer-schedule-loading-title">Send a proposed schedule</h2>
+              <h2 id="dealer-schedule-loading-title">{initialRecord ? 'Edit schedule' : initialProposal ? 'Edit proposal' : 'Send a proposed schedule'}</h2>
               <p>{loading ? 'Loading the shared asset…' : 'The shared asset could not be opened.'}</p>
             </div>
             <button className={styles.closeButton} type="button" onClick={onClose} aria-label="Close proposed schedule">
@@ -513,7 +585,13 @@ export default function DealerMaintenanceScheduleModal({
       <section className={`${styles.formModal} ${styles.maintenanceStepModal}`}>
         <header className={styles.modalHeader}>
           <div>
-            <h2 id="dealer-maintenance-form-title">{`Schedule ${draft.maintenanceType}`}</h2>
+            <h2 id="dealer-maintenance-form-title">
+              {initialRecord
+                ? `Edit ${draft.maintenanceType} schedule`
+                : initialProposal
+                  ? `Edit ${draft.maintenanceType} proposal`
+                  : `Schedule ${draft.maintenanceType}`}
+            </h2>
             <p>{`${triggerLabel(draft.triggerType)} • ${selectedAssetLabel(asset)}`}</p>
           </div>
           <button className={styles.closeButton} type="button" onClick={onClose} disabled={saving} aria-label="Close maintenance form">
@@ -609,10 +687,14 @@ export default function DealerMaintenanceScheduleModal({
           </div>
         </div>
         <footer className={styles.modalFooter}>
-          <button className={styles.secondaryButton} type="button" onClick={() => setStep('trigger-type')} disabled={saving}>Back</button>
+          {!initialProposal && !initialRecord ? (
+            <button className={styles.secondaryButton} type="button" onClick={() => setStep('trigger-type')} disabled={saving}>Back</button>
+          ) : null}
           <button className={styles.secondaryButton} type="button" onClick={onClose} disabled={saving}>Cancel</button>
           <button className={styles.primaryButton} type="button" onClick={() => void submit()} disabled={saving}>
-            {saving ? 'Sending…' : 'Send proposal'}
+            {saving
+              ? initialProposal || initialRecord ? 'Saving…' : 'Sending…'
+              : initialProposal || initialRecord ? 'Save changes' : 'Send proposal'}
           </button>
         </footer>
       </section>

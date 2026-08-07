@@ -15,6 +15,8 @@ export type DesktopServiceCompletion = {
   completedUsage: number | null;
   completedNotes: string;
   completedBy: string;
+  linkToScheduledMaintenance?: boolean;
+  clientEventId: string;
 };
 
 export type DesktopServiceRecord = {
@@ -40,6 +42,7 @@ export type DesktopServiceRecord = {
 type Props = {
   record: DesktopServiceRecord;
   busy?: boolean;
+  askScheduleLink?: boolean;
   onClose: () => void;
   onSubmit: (completion: DesktopServiceCompletion) => void | Promise<void>;
 };
@@ -94,7 +97,13 @@ function CheckIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.2 4.2L19 7" /></svg>;
 }
 
-export default function DesktopServiceModal({ record, busy = false, onClose, onSubmit }: Props) {
+export default function DesktopServiceModal({
+  record,
+  busy = false,
+  askScheduleLink = false,
+  onClose,
+  onSubmit,
+}: Props) {
   const mode = record.maintenanceType === 'checkup' ? 'checked' : 'serviced';
   const profile = useMemo(() => resolveAssetServiceProfile({
     title: record.assetTitle,
@@ -112,6 +121,10 @@ export default function DesktopServiceModal({ record, busy = false, onClose, onS
   const [mechanic, setMechanic] = useState(record.maintenanceType === 'checkup' ? record.assignedName?.trim() || '' : '');
   const [notes, setNotes] = useState('');
   const [error, setError] = useState('');
+  const [clientEventId] = useState(() => globalThis.crypto.randomUUID());
+  const [scheduleDecision, setScheduleDecision] = useState<
+    'scheduled' | 'separate' | null
+  >(askScheduleLink ? null : 'scheduled');
   const actionName = record.maintenanceType === 'checkup' ? 'check-up' : 'service';
   const unit = usageUnit(record.usageMetric ?? record.assetUsageMetric ?? null);
 
@@ -171,7 +184,52 @@ export default function DesktopServiceModal({ record, busy = false, onClose, onS
         note: notes,
       }),
       completedBy: mechanic.trim(),
+      linkToScheduledMaintenance: scheduleDecision !== 'separate',
+      clientEventId,
     });
+  }
+
+  if (askScheduleLink && scheduleDecision === null) {
+    return (
+      <div className={styles.overlay} role="presentation">
+        <button className={styles.backdrop} type="button" onClick={onClose} aria-label="Close service choice" disabled={busy} />
+        <section className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="scheduled-service-choice-title">
+          <header className={styles.header}>
+            <div>
+              <h2 id="scheduled-service-choice-title">Scheduled {actionName} found</h2>
+              <p>{serviceAssetMeta(record)}</p>
+            </div>
+            <button className={styles.closeButton} type="button" onClick={onClose} aria-label="Close service choice" disabled={busy}>
+              <CloseIcon />
+            </button>
+          </header>
+          <div className={styles.body}>
+            <div className={styles.infoBanner}>
+              <strong>Is this work for “{record.title}”?</strong>
+              <span>Choose whether to complete the scheduled item or keep it open and save this work separately.</span>
+            </div>
+          </div>
+          <footer className={styles.footer}>
+            <button
+              className={styles.cancelButton}
+              type="button"
+              onClick={() => setScheduleDecision('separate')}
+              disabled={busy}
+            >
+              No, save separately
+            </button>
+            <button
+              className={styles.submitButton}
+              type="button"
+              onClick={() => setScheduleDecision('scheduled')}
+              disabled={busy}
+            >
+              Yes, complete scheduled {actionName}
+            </button>
+          </footer>
+        </section>
+      </div>
+    );
   }
 
   return (

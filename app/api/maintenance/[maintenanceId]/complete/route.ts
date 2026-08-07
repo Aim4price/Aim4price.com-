@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '../../../../../lib/auth-session';
 import {
   completeAssetMaintenanceRecord,
+  getAssetMaintenanceRecordById,
   listAssetMaintenanceData,
+  recordStandaloneAssetMaintenanceCompletion,
   reopenAssetMaintenanceRecord,
   type AssetMaintenanceCompleteInput,
   type AssetMaintenanceListFilters,
@@ -25,7 +27,34 @@ type ErrorWithMessage = {
 type StatusToggleInput = AssetMaintenanceCompleteInput & {
   status?: unknown;
   confirmedComplete?: unknown;
+  linkToScheduledMaintenance?: unknown;
+  clientEventId?: unknown;
 };
+
+async function saveCompletedMaintenance(
+  userId: string,
+  maintenanceId: string,
+  body: StatusToggleInput,
+) {
+  if (body.linkToScheduledMaintenance !== false) {
+    return completeAssetMaintenanceRecord(userId, maintenanceId, body);
+  }
+
+  const scheduled = await getAssetMaintenanceRecordById(userId, maintenanceId);
+  if (!scheduled || scheduled.status === 'cancelled' || scheduled.status === 'done') {
+    throw new Error('MAINTENANCE_NOT_FOUND');
+  }
+  const completed = await recordStandaloneAssetMaintenanceCompletion(userId, {
+    assetId: scheduled.assetId,
+    maintenanceType: scheduled.maintenanceType,
+    sourceScanEventId: body.clientEventId,
+    completedAt: body.completedAt,
+    completedUsage: body.completedUsage,
+    completedNotes: body.completedNotes,
+    completedBy: body.completedBy,
+  });
+  return { completed, nextRecord: null, separateCompletion: true };
+}
 
 function parseType(value: string | null): AssetMaintenanceType | 'all' | null {
   if (value === 'service' || value === 'checkup') return value;
@@ -61,6 +90,7 @@ function errorMessage(error: unknown): string {
   if (message === 'COMPLETION_DETAILS_REQUIRED') return 'Select completed work or add notes/problems before saving.';
   if (message === 'COMPLETION_PERFORMER_REQUIRED') return 'Enter who completed the maintenance.';
   if (message === 'COMPLETION_SERVICE_PROVIDER_REQUIRED') return 'Enter the service company and mechanic before saving.';
+  if (message === 'MAINTENANCE_SOURCE_EVENT_REQUIRED') return 'This service could not be safely identified. Close it and try again.';
   if (message === 'RECURRING_INTERVAL_REQUIRED') return 'Recurring maintenance needs an interval before it can create the next record.';
   if (message === 'RECURRING_FOLLOWUP_ALREADY_COMPLETED') return 'This maintenance record cannot be reopened because its next recurring service has already been completed.';
   if (typeof message === 'string' && message.trim()) return message;
@@ -85,16 +115,16 @@ export async function POST(request: NextRequest, context: RouteContext) {
     return NextResponse.json({ ok: false, error: 'Maintenance record id is required.' }, { status: 400 });
   }
 
-  let body: AssetMaintenanceCompleteInput;
+  let body: StatusToggleInput;
 
   try {
-    body = (await request.json()) as AssetMaintenanceCompleteInput;
+    body = (await request.json()) as StatusToggleInput;
   } catch {
     return NextResponse.json({ ok: false, error: 'Invalid completion payload.' }, { status: 400 });
   }
 
   try {
-    const result = await completeAssetMaintenanceRecord(userId, maintenanceId, body);
+    const result = await saveCompletedMaintenance(userId, maintenanceId, body);
     const data = await listAssetMaintenanceData(userId, parseFilters(request));
     return NextResponse.json({ ok: true, ...result, ...data });
   } catch (error) {
@@ -138,7 +168,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 
   try {
     const result = requestedStatus === 'done'
-      ? await completeAssetMaintenanceRecord(userId, maintenanceId, body)
+      ? await saveCompletedMaintenance(userId, maintenanceId, body)
       : { reopened: await reopenAssetMaintenanceRecord(userId, maintenanceId) };
     const data = await listAssetMaintenanceData(userId, parseFilters(request));
     return NextResponse.json({ ok: true, ...result, ...data });

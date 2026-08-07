@@ -42,6 +42,23 @@ type PartnerType = "dealer" | "finance" | "insurance";
 type ShareLeadStep = "message" | "consent" | null;
 type ScanAccessResponseMode = "owner_session" | "scan_pin" | "field_manager";
 type ScheduledMaintenanceType = "service" | "checkup";
+type MaintenanceScheduleChoice =
+  | { mode: "scheduled"; maintenanceId: string }
+  | { mode: "separate"; maintenanceId: "" };
+
+type ScanMaintenanceOption = {
+  id: string;
+  maintenanceType: ScheduledMaintenanceType;
+  title: string;
+  dueDate: string | null;
+  dueUsage: number | null;
+  currentUsage: number | null;
+  usageMetric: "hours" | "km" | "percentage" | null;
+  computedStatusLabel: string;
+  recurringEnabled: boolean;
+  recurringIntervalValue: number | null;
+  recurringIntervalUnit: string | null;
+};
 
 type PartnerDirectoryEntry = {
   userId: string;
@@ -103,6 +120,7 @@ type ScanAssetResponse = {
   accessMode?: ScanAccessResponseMode;
   fieldManagerDisplayName?: string | null;
   ownerAppDisplayName?: string | null;
+  openMaintenance?: ScanMaintenanceOption[];
   pinRequired?: boolean;
   preview?: boolean;
   error?: string;
@@ -617,6 +635,25 @@ function formatUsage(asset: ScanSafeAsset | null): string {
   }
 
   return "Not tracked";
+}
+
+function maintenanceOptionDueLabel(option: ScanMaintenanceOption): string {
+  if (option.dueDate) {
+    return `Due ${new Intl.DateTimeFormat("en-ZA", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    }).format(new Date(`${option.dueDate}T00:00:00`))}`;
+  }
+  if (option.dueUsage !== null && Number.isFinite(option.dueUsage)) {
+    const unit = option.usageMetric === "km"
+      ? "km"
+      : option.usageMetric === "percentage"
+        ? "%"
+        : "hours";
+    return `Due at ${new Intl.NumberFormat("en-ZA").format(option.dueUsage)} ${unit}`;
+  }
+  return option.computedStatusLabel || "Scheduled";
 }
 
 function usageTitle(asset: ScanSafeAsset | null): string {
@@ -1154,6 +1191,12 @@ export default function ScanClient({
     useState(false);
   const [showServiceDetailsStep, setShowServiceDetailsStep] = useState(false);
   const [showServicePhotoStep, setShowServicePhotoStep] = useState(false);
+  const [openMaintenanceOptions, setOpenMaintenanceOptions] = useState<
+    ScanMaintenanceOption[]
+  >([]);
+  const [scheduleChoiceOptions, setScheduleChoiceOptions] = useState<
+    ScanMaintenanceOption[] | null
+  >(null);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [sharePartners, setSharePartners] = useState<PartnerDirectoryEntry[]>(
     [],
@@ -1247,6 +1290,8 @@ export default function ScanClient({
     setHasCompletedRequiredUsageUpdate(false);
     setShowServiceDetailsStep(false);
     setShowServicePhotoStep(false);
+    setOpenMaintenanceOptions([]);
+    setScheduleChoiceOptions(null);
     setIsShareModalOpen(false);
     setSharePartners([]);
     setSharePartnerSearch("");
@@ -1538,6 +1583,10 @@ export default function ScanClient({
       }
 
       setScanAccessMode(data.accessMode ?? null);
+      setOpenMaintenanceOptions(
+        Array.isArray(data.openMaintenance) ? data.openMaintenance : [],
+      );
+      setScheduleChoiceOptions(null);
 
       if (
         data.accessMode === "field_manager" &&
@@ -1941,6 +1990,7 @@ export default function ScanClient({
     );
     setShowServiceDetailsStep(false);
     setShowServicePhotoStep(false);
+    setScheduleChoiceOptions(null);
     setActiveEditor(null);
   }
 
@@ -2443,7 +2493,18 @@ export default function ScanClient({
     return { ok: false, message: "Choose an update first." };
   }
 
-  async function handleSaveUpdate() {
+  function matchingMaintenanceOptionsForDraft(): ScanMaintenanceOption[] {
+    if (!draft.serviceMode) return [];
+    const maintenanceType: ScheduledMaintenanceType =
+      draft.serviceMode === "checked" ? "checkup" : "service";
+    return openMaintenanceOptions.filter(
+      (option) => option.maintenanceType === maintenanceType,
+    );
+  }
+
+  async function handleSaveUpdate(
+    maintenanceChoice: MaintenanceScheduleChoice | null = null,
+  ) {
     if (!asset || !activeEditor) return;
 
     const validation = validateDraftForSave();
@@ -2453,6 +2514,20 @@ export default function ScanClient({
       return;
     }
 
+    if (
+      activeEditor === "service"
+      && !normalizedScheduledMaintenanceId
+      && !maintenanceChoice
+    ) {
+      const matchingOptions = matchingMaintenanceOptionsForDraft();
+      if (matchingOptions.length) {
+        setScheduleChoiceOptions(matchingOptions);
+        setNotice(null);
+        return;
+      }
+    }
+
+    setScheduleChoiceOptions(null);
     const storedSession = readQrScanSession(normalizedCode);
     const savedLatitude = draft.latitude || storedSession?.latitude || "";
     const savedLongitude = draft.longitude || storedSession?.longitude || "";
@@ -2587,7 +2662,10 @@ export default function ScanClient({
     setPendingUpdate(nextPendingUpdate);
 
     if (isFieldManagerMode) {
-      const result = await persistPendingScanUpdate(nextPendingUpdate);
+      const result = await persistPendingScanUpdate(
+        nextPendingUpdate,
+        maintenanceChoice,
+      );
       if (!result) return;
       await redirectAfterFieldManagerServerSave(
         activeEditor === "service"
@@ -2640,6 +2718,7 @@ export default function ScanClient({
 
   async function persistPendingScanUpdate(
     updateToPersist: PendingScanUpdate = pendingUpdate,
+    maintenanceChoice: MaintenanceScheduleChoice | null = null,
   ): Promise<PersistPendingScanUpdateResult | null> {
     if (!asset) return null;
 
@@ -2676,7 +2755,17 @@ export default function ScanClient({
       : operatorName.trim();
     const scheduledMaintenanceIdForSave =
       isFieldManagerMode && updateToPersist.hasService
-        ? normalizedScheduledMaintenanceId
+        ? maintenanceChoice?.mode === "scheduled"
+          ? maintenanceChoice.maintenanceId
+          : normalizedScheduledMaintenanceId
+        : "";
+    const maintenanceDecisionForSave =
+      isFieldManagerMode && updateToPersist.hasService
+        ? maintenanceChoice?.mode === "separate"
+          ? "separate"
+          : scheduledMaintenanceIdForSave
+            ? "scheduled"
+            : ""
         : "";
 
     if (!isFieldManagerMode && operatorNameForSave.length < 2) {
@@ -2705,6 +2794,7 @@ export default function ScanClient({
       gpsAccuracyMeters: scanLocationPayloadText(finalGpsAccuracyMeters),
       clientEventId: finalClientEventId,
       scheduledMaintenanceId: scheduledMaintenanceIdForSave || null,
+      maintenanceDecision: maintenanceDecisionForSave || null,
     };
 
     setPendingUpdate((current) => ({
@@ -3339,7 +3429,7 @@ export default function ScanClient({
                   {isFieldManagerMode ? (
                     <button type="button" className={styles.actionCard} onClick={openSchedulePage}>
                       <span className={styles.actionIconWrap}><ServiceIcon className={styles.actionIcon} /></span>
-                      <span className={styles.actionTextBlock}><strong className={styles.scheduleActionTitle}><span>Schedule</span><span>Maintenance</span></strong><small>Set the next service</small></span>
+                      <span className={styles.actionTextBlock}><strong className={styles.scheduleActionTitle}>{openMaintenanceOptions.length > 0 ? <><span>Edit</span><span>Schedule</span></> : <><span>Schedule</span><span>Maintenance</span></>}</strong><small>{openMaintenanceOptions.length > 0 ? "Review the next service" : "Set the next service"}</small></span>
                     </button>
                   ) : null}
 
@@ -3786,7 +3876,91 @@ export default function ScanClient({
         </div>
       ) : null}
 
-      {asset && activeEditor ? (
+      {asset && activeEditor && scheduleChoiceOptions ? (
+        <div className={`${styles.editorOverlay} ${isFieldManagerMode ? styles.fieldManagerEditorOverlay : ""}`}>
+          <div
+            className={`${styles.editorCard} ${styles.actionEditorCard} ${isFieldManagerMode ? styles.fieldManagerEditorCard : ""}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="scheduled-maintenance-choice-title"
+          >
+            <div className={styles.editorHeader}>
+              <div className={styles.editorTitleBlock}>
+                <h3 id="scheduled-maintenance-choice-title">
+                  Scheduled {scheduleChoiceOptions[0]?.maintenanceType === "checkup" ? "check-up" : "service"} found
+                </h3>
+                <p>{asset.title}</p>
+              </div>
+              <button
+                type="button"
+                className={styles.iconButton}
+                onClick={() => setScheduleChoiceOptions(null)}
+                aria-label="Return to maintenance form"
+                disabled={isSaving}
+              >
+                <CloseIcon className={styles.closeIcon} />
+              </button>
+            </div>
+            <div className={styles.editorContent}>
+              <div className={styles.editorBody}>
+                <div className={styles.servicePanel}>
+                  <div className={styles.serviceSectionHeader}>
+                    <strong>Is this work for scheduled maintenance?</strong>
+                    <small>Choose the schedule to complete, or save this work separately.</small>
+                  </div>
+                  <div className={styles.serviceModeGrid}>
+                    {scheduleChoiceOptions.map((option) => (
+                      <button
+                        key={option.id}
+                        type="button"
+                        className={styles.serviceModeCard}
+                        onClick={() => void handleSaveUpdate({
+                          mode: "scheduled",
+                          maintenanceId: option.id,
+                        })}
+                        disabled={isSaving}
+                      >
+                        <span className={styles.serviceModeIcon}>
+                          <WrenchIcon className={styles.serviceModeSvg} />
+                        </span>
+                        <span className={styles.serviceModeText}>
+                          <strong>{option.title}</strong>
+                          <small>
+                            {maintenanceOptionDueLabel(option)} · Yes, complete scheduled {option.maintenanceType === "checkup" ? "check-up" : "service"}
+                          </small>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className={styles.editorFooter}>
+                <button
+                  type="button"
+                  className={styles.secondaryButton}
+                  onClick={() => setScheduleChoiceOptions(null)}
+                  disabled={isSaving}
+                >
+                  Back
+                </button>
+                <button
+                  type="button"
+                  className={styles.primaryButton}
+                  onClick={() => void handleSaveUpdate({
+                    mode: "separate",
+                    maintenanceId: "",
+                  })}
+                  disabled={isSaving}
+                >
+                  No, save separately
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {asset && activeEditor && !scheduleChoiceOptions ? (
         <div className={`${styles.editorOverlay} ${isFieldManagerMode ? styles.fieldManagerEditorOverlay : ""}`}>
           <div
             className={`${styles.editorCard} ${activeEditor && activeEditor !== "usage" ? styles.actionEditorCard : ""} ${isFieldManagerMode ? styles.fieldManagerEditorCard : ""}`}

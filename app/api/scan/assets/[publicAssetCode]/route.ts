@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { listAssetMaintenanceRecords } from "../../../../../lib/asset-maintenance";
 import { safeAssetOwnerError } from "../../../../../lib/asset-owner-resolver";
 import {
   authorizeFieldManagerScanAccess,
@@ -138,6 +139,60 @@ export async function GET(request: NextRequest, context: RouteContext) {
   }
 
   const recentEvents = await listRecentScanEvents(access.asset.id, 8);
+  let openMaintenance: Array<{
+    id: string;
+    maintenanceType: "service" | "checkup";
+    title: string;
+    dueDate: string | null;
+    dueUsage: number | null;
+    currentUsage: number | null;
+    usageMetric: "hours" | "km" | "percentage" | null;
+    computedStatusLabel: string;
+    recurringEnabled: boolean;
+    recurringIntervalValue: number | null;
+    recurringIntervalUnit: string | null;
+  }> = [];
+
+  if (
+    access.accessMode === "owner_session"
+    || access.accessMode === "field_manager"
+  ) {
+    try {
+      const records = await listAssetMaintenanceRecords(access.ownerUserId, {
+        assetId: access.asset.id,
+        status: "upcoming",
+      });
+      openMaintenance = records
+        .filter(
+          (record) =>
+            record.assetId === access.asset.id
+            && record.status === "upcoming",
+        )
+        .map((record) => ({
+          id: record.id,
+          maintenanceType: record.maintenanceType,
+          title:
+            record.title
+            || (record.maintenanceType === "checkup"
+              ? "Scheduled check-up"
+              : "Scheduled service"),
+          dueDate: record.dueDate,
+          dueUsage: record.dueUsage,
+          currentUsage: record.currentUsage,
+          usageMetric: record.usageMetric,
+          computedStatusLabel: record.computedStatusLabel,
+          recurringEnabled: record.recurringEnabled,
+          recurringIntervalValue: record.recurringIntervalValue,
+          recurringIntervalUnit: record.recurringIntervalUnit,
+        }));
+    } catch (error) {
+      console.warn("[scan-assets] Open maintenance could not be loaded", {
+        assetId: access.asset.id,
+        accessMode: access.accessMode,
+        error,
+      });
+    }
+  }
 
   return NextResponse.json({
     ok: true,
@@ -146,5 +201,6 @@ export async function GET(request: NextRequest, context: RouteContext) {
     ownerAppDisplayName: access.ownerAppDisplayName ?? null,
     asset: access.asset,
     recentEvents,
+    openMaintenance,
   });
 }

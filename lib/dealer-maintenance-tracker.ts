@@ -6,9 +6,12 @@ import {
   ensureAssetMaintenanceTables,
   listAssetMaintenanceData,
   listAssetMaintenanceRecords,
+  recordStandaloneAssetMaintenanceCompletion,
+  updateAssetMaintenanceRecord,
   type AssetMaintenanceListFilters,
   type AssetMaintenanceListResult,
   type AssetMaintenanceComputedStatus,
+  type AssetMaintenanceDraftInput,
   type AssetMaintenanceCompleteInput,
   type AssetMaintenanceIntervalUnit,
   type AssetMaintenanceRecord,
@@ -973,6 +976,35 @@ export async function createDealerMaintenanceScheduleProposal(input: {
   if (!asset) throw new Error('ASSET_NOT_FOUND');
 
   const maintenanceType = normalizeProposalMaintenanceType(input.draft.maintenanceType);
+  const [currentProposals, currentOpenMaintenance] = await Promise.all([
+    listDealerMaintenanceScheduleProposals({
+      dealerUserId: input.dealerUserId,
+      accessId,
+    }),
+    listAssetMaintenanceRecords(access.owner_user_id, {
+      assetId: access.asset_register_item_id,
+      type: maintenanceType,
+      status: 'upcoming',
+    }),
+  ]);
+  if (
+    currentProposals.some(
+      (proposal) =>
+        proposal.status === 'pending'
+        && proposal.maintenanceType === maintenanceType,
+    )
+  ) {
+    throw new Error('MAINTENANCE_PROPOSAL_ALREADY_EXISTS');
+  }
+  if (
+    currentOpenMaintenance.some(
+      (record) =>
+        record.status === 'upcoming'
+        && record.maintenanceType === maintenanceType,
+    )
+  ) {
+    throw new Error('MAINTENANCE_ALREADY_SCHEDULED');
+  }
   const triggerType = normalizeProposalTriggerType(input.draft.triggerType);
   const defaultUsageMetric = assetUsageMetric(asset);
   const usageMetric = triggerType === 'usage'
@@ -1062,6 +1094,158 @@ export async function createDealerMaintenanceScheduleProposal(input: {
     accessId,
   });
   const proposal = proposals.find((entry) => entry.id === proposalId);
+  if (!proposal) throw new Error('MAINTENANCE_PROPOSAL_NOT_FOUND');
+  return proposal;
+}
+
+export async function updateDealerMaintenanceScheduleProposal(input: {
+  dealerUserId: string;
+  proposalId: string;
+  draft: DealerMaintenanceScheduleProposalInput;
+}): Promise<DealerMaintenanceScheduleProposal> {
+  await ensureDealerMaintenanceTrackerTables();
+  const accessId = asText(input.draft.accessId);
+  if (!UUID_PATTERN.test(accessId) || !UUID_PATTERN.test(input.proposalId)) {
+    throw new Error('MAINTENANCE_PROPOSAL_NOT_FOUND');
+  }
+
+  const accessRows = await listAccessRows(
+    'where access.dealer_user_id = $1 and access.id = $2::uuid and access.is_active = true',
+    [input.dealerUserId, accessId],
+  );
+  const access = accessRows[0];
+  if (!access) throw new Error('TRACKING_ACCESS_NOT_FOUND');
+  if (!rowPermissions(access).canCreateMaintenanceSchedules) {
+    throw new Error('MAINTENANCE_SCHEDULE_PERMISSION_REQUIRED');
+  }
+
+  const proposals = await listDealerMaintenanceScheduleProposals({
+    dealerUserId: input.dealerUserId,
+    accessId,
+  });
+  const current = proposals.find(
+    (proposal) =>
+      proposal.id === input.proposalId
+      && proposal.status === 'pending',
+  );
+  if (!current) throw new Error('MAINTENANCE_PROPOSAL_NOT_FOUND');
+
+  const asset = await getAssetRegisterItemById(
+    access.owner_user_id,
+    access.asset_register_item_id,
+  );
+  if (!asset) throw new Error('ASSET_NOT_FOUND');
+
+  const maintenanceType = normalizeProposalMaintenanceType(
+    input.draft.maintenanceType ?? current.maintenanceType,
+  );
+  const triggerType = normalizeProposalTriggerType(
+    input.draft.triggerType ?? current.triggerType,
+  );
+  const defaultUsageMetric = assetUsageMetric(asset);
+  const usageMetric = triggerType === 'usage'
+    ? normalizeProposalUsageMetric(
+        input.draft.usageMetric ?? current.usageMetric,
+        defaultUsageMetric,
+      )
+    : null;
+  const dueDate = triggerType === 'date'
+    ? dateOnly(input.draft.dueDate ?? current.dueDate)
+    : null;
+  const dueUsage = triggerType === 'usage'
+    ? nonNegativeNumber(input.draft.dueUsage ?? current.dueUsage)
+    : null;
+  if (triggerType === 'date' && !dueDate) throw new Error('DUE_DATE_REQUIRED');
+  if (triggerType === 'usage' && dueUsage === null) throw new Error('DUE_USAGE_REQUIRED');
+
+  const defaultAlertUnit: AssetMaintenanceIntervalUnit = triggerType === 'date'
+    ? 'days'
+    : usageMetric ?? defaultUsageMetric;
+  const alertBeforeValue = nonNegativeNumber(
+    input.draft.alertBeforeValue ?? current.alertBeforeValue,
+  ) ?? (triggerType === 'date'
+    ? 7
+    : usageMetric === 'km'
+      ? 1000
+      : usageMetric === 'percentage'
+        ? 5
+        : 20);
+  const alertBeforeUnit = normalizeProposalIntervalUnit(
+    input.draft.alertBeforeUnit ?? current.alertBeforeUnit,
+    defaultAlertUnit,
+  );
+  const recurringEnabled = input.draft.recurringEnabled === undefined
+    ? current.recurringEnabled
+    : input.draft.recurringEnabled === true;
+  const recurringIntervalValue = recurringEnabled
+    ? positiveNumber(
+        input.draft.recurringIntervalValue ?? current.recurringIntervalValue,
+      )
+    : null;
+  if (recurringEnabled && recurringIntervalValue === null) {
+    throw new Error('RECURRING_INTERVAL_REQUIRED');
+  }
+  const recurringFallbackUnit: AssetMaintenanceIntervalUnit = triggerType === 'date'
+    ? 'months'
+    : usageMetric ?? defaultUsageMetric;
+  const recurringIntervalUnit = recurringEnabled
+    ? normalizeProposalIntervalUnit(
+        input.draft.recurringIntervalUnit ?? current.recurringIntervalUnit,
+        recurringFallbackUnit,
+      )
+    : null;
+  const title = asText(input.draft.title ?? current.title).slice(0, 180)
+    || (maintenanceType === 'checkup' ? 'Scheduled checkup' : 'Scheduled service');
+  const notes = asText(input.draft.notes ?? current.notes).slice(0, 4000);
+
+  const result = await getDb().query<{ id: string }>(
+    `
+      update public.dealer_maintenance_schedule_proposals
+      set
+        maintenance_type = $4,
+        trigger_type = $5,
+        title = $6,
+        notes = $7,
+        due_date = $8::date,
+        due_usage = $9,
+        usage_metric = $10,
+        alert_before_value = $11,
+        alert_before_unit = $12,
+        recurring_enabled = $13,
+        recurring_interval_value = $14,
+        recurring_interval_unit = $15,
+        updated_at = now()
+      where id = $1::uuid
+        and dealer_user_id = $2
+        and access_id = $3::uuid
+        and proposal_status = 'pending'
+      returning id::text
+    `,
+    [
+      input.proposalId,
+      input.dealerUserId,
+      accessId,
+      maintenanceType,
+      triggerType,
+      title,
+      notes,
+      dueDate,
+      dueUsage,
+      usageMetric,
+      alertBeforeValue,
+      alertBeforeUnit,
+      recurringEnabled,
+      recurringIntervalValue,
+      recurringIntervalUnit,
+    ],
+  );
+  if (!result.rows[0]) throw new Error('MAINTENANCE_PROPOSAL_NOT_FOUND');
+
+  const updated = await listDealerMaintenanceScheduleProposals({
+    dealerUserId: input.dealerUserId,
+    accessId,
+  });
+  const proposal = updated.find((entry) => entry.id === input.proposalId);
   if (!proposal) throw new Error('MAINTENANCE_PROPOSAL_NOT_FOUND');
   return proposal;
 }
@@ -1307,7 +1491,11 @@ export async function listDealerTrackedAssets(dealerUserId: string): Promise<Dea
     dealerUserId,
     builtAssets.filter(
       (asset): asset is DealerMaintenanceTrackedAsset =>
-        asset !== null && asset.maintenanceRecords.length > 0,
+        asset !== null
+      && (
+        asset.maintenanceRecords.length > 0
+        || asset.scheduleProposals.some((proposal) => proposal.status === 'pending')
+      ),
     ),
   );
   return assets
@@ -1331,6 +1519,79 @@ export async function getDealerTrackedAsset(
   if (!asset) return null;
   const [hydratedAsset] = await hydrateTrackedAssetCorrections(dealerUserId, [asset]);
   return hydratedAsset ?? null;
+}
+
+export async function recordDealerStandaloneMaintenance(input: {
+  dealerUserId: string;
+  accessId: string;
+  maintenanceId: string;
+  completion: AssetMaintenanceCompleteInput;
+  clientEventId: string;
+}): Promise<{
+  asset: DealerMaintenanceTrackedAsset;
+  completed: AssetMaintenanceRecord;
+}> {
+  const asset = await getDealerTrackedAsset(input.dealerUserId, input.accessId);
+  if (!asset) throw new Error('DEALER_MAINTENANCE_ACCESS_NOT_FOUND');
+
+  const referenceRecord = asset.openMaintenanceRecords.find(
+    (record) => record.id === input.maintenanceId,
+  );
+  if (!referenceRecord) throw new Error('DEALER_MAINTENANCE_RECORD_NOT_FOUND');
+
+  const completed = await recordStandaloneAssetMaintenanceCompletion(
+    asset.ownerUserId,
+    {
+      assetId: asset.assetId,
+      maintenanceType: referenceRecord.maintenanceType,
+      sourceScanEventId: input.clientEventId,
+      completedAt: input.completion.completedAt,
+      completedUsage: input.completion.completedUsage,
+      completedNotes: input.completion.completedNotes,
+      completedBy: input.completion.completedBy,
+    },
+  );
+  const refreshedAsset = await getDealerTrackedAsset(
+    input.dealerUserId,
+    input.accessId,
+  );
+  if (!refreshedAsset) throw new Error('DEALER_MAINTENANCE_ACCESS_NOT_FOUND');
+  return { asset: refreshedAsset, completed };
+}
+
+export async function updateDealerTrackedMaintenanceSchedule(input: {
+  dealerUserId: string;
+  accessId: string;
+  maintenanceId: string;
+  draft: AssetMaintenanceDraftInput;
+}): Promise<{
+  asset: DealerMaintenanceTrackedAsset;
+  record: AssetMaintenanceRecord;
+}> {
+  const asset = await getDealerTrackedAsset(input.dealerUserId, input.accessId);
+  if (!asset) throw new Error('DEALER_MAINTENANCE_ACCESS_NOT_FOUND');
+  if (!asset.permissions.canCreateMaintenanceSchedules) {
+    throw new Error('MAINTENANCE_SCHEDULE_PERMISSION_REQUIRED');
+  }
+  const openRecord = asset.openMaintenanceRecords.find(
+    (record) => record.id === input.maintenanceId,
+  );
+  if (!openRecord) throw new Error('DEALER_MAINTENANCE_RECORD_NOT_FOUND');
+
+  const record = await updateAssetMaintenanceRecord(
+    asset.ownerUserId,
+    openRecord.id,
+    {
+      ...input.draft,
+      assetId: asset.assetId,
+    },
+  );
+  const refreshedAsset = await getDealerTrackedAsset(
+    input.dealerUserId,
+    input.accessId,
+  );
+  if (!refreshedAsset) throw new Error('DEALER_MAINTENANCE_ACCESS_NOT_FOUND');
+  return { asset: refreshedAsset, record };
 }
 
 export async function completeDealerTrackedMaintenance(input: {

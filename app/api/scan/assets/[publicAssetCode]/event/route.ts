@@ -248,8 +248,20 @@ export async function POST(request: NextRequest, context: RouteContext) {
   const scheduledMaintenanceId = normalizeOptionalMaintenanceId(
     body.scheduledMaintenanceId,
   );
+  const maintenanceDecision = body.maintenanceDecision === "separate"
+    ? "separate"
+    : body.maintenanceDecision === "scheduled"
+      ? "scheduled"
+      : "";
   const procedureKind = assetMaintenanceProcedureKindFromNote(payload.note);
   let scheduledMaintenance: AssetMaintenanceRecord | null = null;
+
+  if (maintenanceDecision === "scheduled" && !scheduledMaintenanceId) {
+    return NextResponse.json(
+      { ok: false, error: "Choose the scheduled maintenance item to complete." },
+      { status: 400 },
+    );
+  }
 
   if (scheduledMaintenanceId) {
     if (!isAssetMaintenanceRecordId(scheduledMaintenanceId)) {
@@ -326,6 +338,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
   if (
     !scheduledMaintenanceId
+    && maintenanceDecision !== "separate"
     && procedureKind
     && access.asset.id
     && (access.accessMode === "field_manager" || access.accessMode === "owner_session")
