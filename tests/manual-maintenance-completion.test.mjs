@@ -20,8 +20,38 @@ test('manual Owner and Field Manager service matches the nearest open maintenanc
     eventRoute,
     /scheduledMaintenance = openMaintenance\.find\([\s\S]*record\.status === "upcoming"/,
   );
-  assert.match(eventRoute, /if \(scheduledMaintenance\) \{/);
+  assert.match(eventRoute, /else if \(scheduledMaintenance\) \{/);
   assert.match(eventRoute, /completeAssetMaintenanceRecord\(/);
+});
+
+test('normal maintenance without a schedule creates a completed history record', () => {
+  assert.match(
+    eventRoute,
+    /else if \(procedureKind\)[\s\S]*recordStandaloneAssetMaintenanceCompletion\(/,
+  );
+  assert.match(
+    maintenance,
+    /recordStandaloneAssetMaintenanceCompletion[\s\S]*insert into public\.asset_maintenance_records[\s\S]*'done'/,
+  );
+  assert.match(
+    maintenance,
+    /source_scan_event_id[\s\S]*on conflict do nothing/,
+  );
+});
+
+test('normal and scheduled maintenance retries are idempotent', () => {
+  assert.match(
+    maintenance,
+    /create unique index if not exists asset_maintenance_records_source_scan_event_idx/,
+  );
+  assert.match(
+    eventRoute,
+    /getAssetMaintenanceRecordBySourceScanEventId\([\s\S]*saved\.event\.id/,
+  );
+  assert.match(
+    eventRoute,
+    /sourceScanEventId: saved\.event\.id/,
+  );
 });
 
 test('service and repair entries complete service schedules while checks complete checkups', () => {
@@ -54,5 +84,9 @@ test('Add update saves immediately in Owner and Field Manager maintenance mode',
   assert.match(
     scanClient,
     /if \(isFieldManagerMode\) \{[\s\S]*persistPendingScanUpdate\(nextPendingUpdate\)[\s\S]*redirectAfterFieldManagerServerSave/,
+  );
+  assert.match(
+    scanClient,
+    /updateToPersist\.hasService[\s\S]*!data\.scheduledMaintenanceCompletion\?\.completed/,
   );
 });
