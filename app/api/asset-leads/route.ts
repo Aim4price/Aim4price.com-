@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getAccountProfile } from '../../../lib/account-profile';
+import { getAssetRegisterItemById } from '../../../lib/asset-register-db';
 import { getServerSession, isOwnerAppSession } from '../../../lib/auth-session';
 import {
   grantDealerMaintenanceTracking,
@@ -18,7 +20,10 @@ type CreateAssetLeadBody = {
   includedSections?: unknown;
   trackMaintenance?: unknown;
   trackingPermissions?: unknown;
+  assetIds?: unknown;
 };
+
+const MAX_DEALER_SHARE_ASSETS = 250;
 
 function unauthorized() {
   return NextResponse.json({ ok: false, error: 'You must be signed in.' }, { status: 401 });
@@ -52,6 +57,15 @@ function readTrackingPermissions(value: unknown): DealerMaintenancePermissions |
     canUpdateSerial: permissions.canUpdateSerial as boolean,
     canUpdateReplacementPrice: permissions.canUpdateReplacementPrice as boolean,
   };
+}
+
+function readDealerShareAssetIds(value: unknown): string[] | null {
+  if (typeof value === 'undefined') return [];
+  if (!Array.isArray(value)) return null;
+
+  const assetIds = Array.from(new Set(value.map((entry) => String(entry ?? '').trim()).filter(Boolean)));
+  if (!assetIds.length || assetIds.length > MAX_DEALER_SHARE_ASSETS) return null;
+  return assetIds;
 }
 
 export async function GET() {
@@ -91,6 +105,7 @@ export async function POST(request: NextRequest) {
   const includedSections = asRecord(body.includedSections);
   const trackMaintenance = body.trackMaintenance === true;
   const trackingPermissions = readTrackingPermissions(body.trackingPermissions);
+  const dealerShareAssetIds = readDealerShareAssetIds(body.assetIds);
 
   if (!assetId || !partnerUserId || !leadType) {
     return NextResponse.json({ ok: false, error: 'Choose a valid asset, partner and lead type.' }, { status: 400 });
@@ -98,8 +113,37 @@ export async function POST(request: NextRequest) {
   if (trackMaintenance && body.trackingPermissions && !trackingPermissions) {
     return NextResponse.json({ ok: false, error: 'Choose valid dealer tracking permissions.' }, { status: 400 });
   }
+  if (dealerShareAssetIds === null) {
+    return NextResponse.json(
+      { ok: false, error: `Choose between 1 and ${MAX_DEALER_SHARE_ASSETS} valid assets.` },
+      { status: 400 },
+    );
+  }
+  if (dealerShareAssetIds.length && leadType !== 'replacement_quote') {
+    return NextResponse.json({ ok: false, error: 'Bulk asset sharing is only available for dealers.' }, { status: 400 });
+  }
+  if (dealerShareAssetIds.length && !dealerShareAssetIds.includes(assetId)) {
+    return NextResponse.json({ ok: false, error: 'The lead asset must be included in the dealer share.' }, { status: 400 });
+  }
 
   try {
+    if (dealerShareAssetIds.length) {
+      const profile = await getAccountProfile(session.user);
+      if (profile.accountType !== 'owner' || isOwnerAppSession(session)) {
+        return NextResponse.json(
+          { ok: false, error: 'Bulk dealer sharing is only available from the owner Asset Register.' },
+          { status: 403 },
+        );
+      }
+
+      const ownedAssets = await Promise.all(
+        dealerShareAssetIds.map((selectedAssetId) => getAssetRegisterItemById(session.user.id, selectedAssetId)),
+      );
+      if (ownedAssets.some((selectedAsset) => !selectedAsset)) {
+        return NextResponse.json({ ok: false, error: 'One or more selected assets could not be found.' }, { status: 404 });
+      }
+    }
+
     const savedSections = {
       ...(includedSections ?? {}),
       maintenanceTrackingEnabled: trackMaintenance,
@@ -119,19 +163,33 @@ export async function POST(request: NextRequest) {
       await syncAccountantShareSettingsFromLead(lead.id, savedSections);
     }
 
-    const trackingAccess = trackMaintenance
-      ? await grantDealerMaintenanceTracking({
-          ownerUserId: session.user.id,
-          dealerUserId: partnerUserId,
-          assetId,
-          actorType: 'owner',
-          actorId: isOwnerAppSession(session) ? session.ownerApp.ownerAppUserId : session.user.id,
-          actorName: isOwnerAppSession(session) ? session.ownerApp.displayName : session.user.name,
-          permissions: trackingPermissions,
-        })
-      : null;
+    const trackingAssetIds = dealerShareAssetIds.length ? dealerShareAssetIds : [assetId];
+    const trackingAccesses: Array<{ id: string }> = [];
+    if (trackMaintenance) {
+      for (let index = 0; index < trackingAssetIds.length; index += 10) {
+        const batch = trackingAssetIds.slice(index, index + 10);
+        const grantedBatch = await Promise.all(
+          batch.map((trackingAssetId) => grantDealerMaintenanceTracking({
+            ownerUserId: session.user.id,
+            dealerUserId: partnerUserId,
+            assetId: trackingAssetId,
+            actorType: 'owner',
+            actorId: isOwnerAppSession(session) ? session.ownerApp.ownerAppUserId : session.user.id,
+            actorName: isOwnerAppSession(session) ? session.ownerApp.displayName : session.user.name,
+            permissions: trackingPermissions,
+          })),
+        );
+        trackingAccesses.push(...grantedBatch);
+      }
+    }
 
-    return NextResponse.json({ ok: true, lead, trackingAccess });
+    return NextResponse.json({
+      ok: true,
+      lead,
+      trackingAccess: trackingAccesses[0] ?? null,
+      trackingAccesses,
+      sharedAssetCount: dealerShareAssetIds.length || 1,
+    });
   } catch (error) {
     if (error instanceof Error && error.message === 'ASSET_NOT_FOUND') {
       return NextResponse.json({ ok: false, error: 'Asset not found.' }, { status: 404 });

@@ -1,0 +1,154 @@
+.panel {
+  display: grid;
+  gap: 0.8rem;
+  padding: 1rem;
+  border: 1px solid rgba(198, 222, 211, 0.95);
+  border-radius: 1.1rem;
+  background: linear-gradient(180deg, #fbfefd 0%, #f2f8f5 100%);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.header h5,
+.header p {
+  margin: 0;
+}
+
+.header h5 {
+  color: #11372d;
+  font-size: 1rem;
+  font-weight: 850;
+}
+
+.header p {
+  margin-top: 0.2rem;
+  color: #647a71;
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+
+.selectAllButton {
+  min-height: 2.4rem;
+  padding: 0.55rem 0.85rem;
+  border: 1px solid rgba(95, 174, 139, 0.62);
+  border-radius: 0.8rem;
+  color: #15533f;
+  background: #fff;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 820;
+  cursor: pointer;
+}
+
+.selectAllButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.list {
+  display: grid;
+  gap: 0.55rem;
+  max-height: 15rem;
+  overflow-y: auto;
+  padding-right: 0.35rem;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(22, 83, 64, 0.72) rgba(226, 238, 232, 0.95);
+}
+
+.list::-webkit-scrollbar {
+  width: 0.7rem;
+}
+
+.list::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: rgba(226, 238, 232, 0.95);
+}
+
+.list::-webkit-scrollbar-thumb {
+  border: 0.18rem solid transparent;
+  border-radius: 999px;
+  background: rgba(22, 83, 64, 0.78);
+  background-clip: padding-box;
+}
+
+.assetRow {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 3.7rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid rgba(213, 225, 220, 0.96);
+  border-radius: 0.9rem;
+  background: #fff;
+  cursor: pointer;
+}
+
+.assetRowSelected {
+  border-color: rgba(69, 169, 124, 0.78);
+  background: #effaf5;
+}
+
+.assetRow input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.checkbox {
+  display: grid;
+  width: 1.5rem;
+  height: 1.5rem;
+  place-items: center;
+  border: 1px solid rgba(135, 168, 153, 0.72);
+  border-radius: 0.45rem;
+  color: #fff;
+  background: #fff;
+  font-size: 0.85rem;
+  font-weight: 900;
+}
+
+.assetRowSelected .checkbox {
+  border-color: #1f815f;
+  background: #1f815f;
+}
+
+.assetCopy {
+  min-width: 0;
+  display: grid;
+  gap: 0.15rem;
+}
+
+.assetCopy strong {
+  overflow: hidden;
+  color: #12372e;
+  font-size: 0.92rem;
+  font-weight: 820;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.assetCopy small {
+  overflow: hidden;
+  color: #667b73;
+  font-size: 0.76rem;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 560px) {
+  .header {
+    align-items: flex-start;
+  }
+
+  .list {
+    max-height: 12rem;
+  }
+}
