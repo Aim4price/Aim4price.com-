@@ -19,7 +19,8 @@ test('Owner and Dealer desktop maintenance use one mobile-inspired service form'
   assert.match(ownerClient, /<DesktopServiceModal/);
   assert.match(dealerClient, /import DesktopServiceModal/);
   assert.match(dealerClient, /<DesktopServiceModal/);
-  assert.match(dealerClient, /!dealerAppMode && !isCompletedCard && asset\.nextMaintenance/);
+  assert.match(dealerClient, /!isCompletedCard && asset\.nextMaintenance/);
+  assert.doesNotMatch(dealerClient, /!dealerAppMode && !isCompletedCard && asset\.nextMaintenance/);
   assert.doesNotMatch(modal, /Desktop backup entry|WrenchIcon|headerIcon/);
   assert.match(modal, /serviceAssetMeta\(record\)/);
   assert.match(modal, /Year Model:/);
