@@ -79,7 +79,9 @@ test('Dealer completion is owner-asset guarded, audited and refreshes recurring 
 test('Backend preserves actual service date and advances recurring schedules from completion', () => {
   assert.match(maintenance, /completedAt\?: unknown/);
   assert.match(maintenance, /COMPLETION_DATE_IN_FUTURE/);
-  assert.match(maintenance, /COMPLETION_USAGE_REQUIRED/);
+  assert.doesNotMatch(maintenance, /throw new Error\('COMPLETION_USAGE_REQUIRED'\)/);
+  assert.match(maintenance, /completedUsage = existing\.triggerType === 'usage'[\s\S]*?existing\.currentUsage/);
+  assert.match(maintenance, /lower\(trim\(coalesce\(status, 'upcoming'\)\)\) not in \('done', 'cancelled', 'canceled'\)/);
   assert.match(maintenance, /completed_at = \$3::timestamptz/);
   assert.match(maintenance, /completedRecord\.completedAtIso/);
   assert.match(maintenance, /createNextRecurringRecord\(client, userId, completed\)/);
