@@ -37,8 +37,9 @@ test('Dealer maintenance card actions stay in one row and use the copper service
     dealerClient.indexOf('styles.trackerHeaderActions'),
     dealerClient.indexOf('</div>', dealerClient.indexOf('styles.trackerHeaderActions')),
   );
-  assert.ok(actions.indexOf('<span>Manage</span>') < actions.indexOf("'History'"));
-  assert.ok(actions.indexOf("'History'") < actions.indexOf("'Record service'"));
+  assert.ok(actions.indexOf("'Service'") < actions.indexOf("'History'"));
+  assert.ok(actions.indexOf("'History'") < actions.indexOf('<span>Manage</span>'));
+  assert.doesNotMatch(actions, /Record service/);
   assert.match(dealerStyles, /\.trackerHeaderActions \{[\s\S]*?display: flex !important;[\s\S]*?flex-wrap: nowrap !important;/);
   assert.match(dealerStyles, /\.serviceActionButton\.serviceActionButton \{[\s\S]*?color: #6d350f !important;[\s\S]*?border-color: #e8a56a !important;/);
   assert.match(dealerStyles, /white-space: nowrap/);

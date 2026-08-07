@@ -1263,15 +1263,18 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                           </div>
 
                           <div className={`${assetStyles.assetHeaderActions} ${leadStyles.leadAssetHeaderActions} ${styles.trackerHeaderActions}`}>
-                            <button
-                              type="button"
-                              className={`${assetStyles.optionsButton} ${leadStyles.leadManageButton} ${styles.manageButton}`}
-                              onClick={() => setManagedAccessId(asset.accessId)}
-                              aria-label={`Manage ${asset.assetTitle}`}
-                            >
-                              <ManageIcon className={assetStyles.buttonIcon} />
-                              <span>Manage</span>
-                            </button>
+                            {!dealerAppMode && !isCompletedCard && asset.nextMaintenance ? (
+                              <button
+                                type="button"
+                                className={`${assetStyles.optionsButton} ${styles.serviceActionButton}`}
+                                onClick={() => setServiceTarget({ asset, record: asset.nextMaintenance as DealerMaintenanceRecordSummary })}
+                                aria-haspopup="dialog"
+                                aria-label={`Record ${asset.nextMaintenance.maintenanceType} for ${asset.assetTitle}`}
+                              >
+                                <ServiceIcon className={assetStyles.buttonIcon} />
+                                <span>{asset.nextMaintenance.maintenanceType === 'checkup' ? 'Check-up' : 'Service'}</span>
+                              </button>
+                            ) : null}
                             <button
                               type="button"
                               className={`${assetStyles.optionsButton} ${assetStyles.sharedNoteActionButton} ${styles.maintenanceViewButton}`}
@@ -1287,18 +1290,15 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                                   : 'History'}
                               </span>
                             </button>
-                            {!dealerAppMode && !isCompletedCard && asset.nextMaintenance ? (
-                              <button
-                                type="button"
-                                className={`${assetStyles.optionsButton} ${styles.serviceActionButton}`}
-                                onClick={() => setServiceTarget({ asset, record: asset.nextMaintenance as DealerMaintenanceRecordSummary })}
-                                aria-haspopup="dialog"
-                                aria-label={`Record ${asset.nextMaintenance.maintenanceType} for ${asset.assetTitle}`}
-                              >
-                                <ServiceIcon className={assetStyles.buttonIcon} />
-                                <span>{asset.nextMaintenance.maintenanceType === 'checkup' ? 'Record check-up' : 'Record service'}</span>
-                              </button>
-                            ) : null}
+                            <button
+                              type="button"
+                              className={`${assetStyles.optionsButton} ${leadStyles.leadManageButton} ${styles.manageButton}`}
+                              onClick={() => setManagedAccessId(asset.accessId)}
+                              aria-label={`Manage ${asset.assetTitle}`}
+                            >
+                              <ManageIcon className={assetStyles.buttonIcon} />
+                              <span>Manage</span>
+                            </button>
                           </div>
                         </div>
                       </div>
