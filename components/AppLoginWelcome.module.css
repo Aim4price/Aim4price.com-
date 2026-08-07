@@ -1,0 +1,95 @@
+.card {
+  width: min(100%, 390px);
+  display: grid;
+  justify-items: center;
+  box-sizing: border-box;
+  border: 1px solid rgba(18, 53, 45, 0.13);
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.97);
+  padding: clamp(28px, 8vw, 42px) clamp(22px, 7vw, 34px);
+  text-align: center;
+  box-shadow: 0 24px 58px rgba(18, 53, 45, 0.13);
+  animation: welcomeEnter 280ms ease-out both;
+}
+
+.logoFrame {
+  width: 104px;
+  height: 104px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  box-sizing: border-box;
+  border: 1px solid rgba(18, 53, 45, 0.12);
+  border-radius: 26px;
+  background: #ffffff;
+  padding: 12px;
+  box-shadow: 0 12px 28px rgba(18, 53, 45, 0.1);
+}
+
+.logoFrame img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+}
+
+.eyebrow {
+  margin-top: 21px;
+  color: #277057;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.card h1 {
+  margin: 7px 0 0;
+  color: #12352d;
+  font-size: clamp(2rem, 9vw, 2.65rem);
+  font-weight: 900;
+  letter-spacing: -0.05em;
+  line-height: 1.02;
+  overflow-wrap: anywhere;
+}
+
+.card p {
+  margin: 9px 0 0;
+  color: rgba(18, 53, 45, 0.66);
+  font-size: 0.9rem;
+  font-weight: 750;
+  line-height: 1.4;
+}
+
+.progress {
+  width: min(100%, 190px);
+  height: 5px;
+  overflow: hidden;
+  margin-top: 28px;
+  border-radius: 999px;
+  background: rgba(18, 53, 45, 0.09);
+}
+
+.progress span {
+  width: 100%;
+  height: 100%;
+  display: block;
+  border-radius: inherit;
+  background: #236851;
+  transform-origin: left center;
+  animation: welcomeProgress 1.4s linear both;
+}
+
+@keyframes welcomeEnter {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes welcomeProgress {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .progress span { animation: none; }
+}
