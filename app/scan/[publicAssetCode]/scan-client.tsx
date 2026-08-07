@@ -22,6 +22,14 @@ import {
   isOfflineNetworkError,
   syncOfflineMutations,
 } from "../../../lib/offline-mutation-queue";
+import {
+  buildMaintenanceCompletionNote,
+  checkedOptionsForProfile,
+  resolveAssetServiceProfile,
+  serviceCopyForProfile,
+  servicedOptionsForProfile,
+  type MaintenanceServiceMode,
+} from "../../../lib/maintenance-service-guidelines";
 
 type NoticeTone = "success" | "error";
 type PendingSyncKind = "asset-scan-update";
@@ -29,7 +37,7 @@ type EditorKey = "usage" | "service" | "photos" | "notes";
 type LocationState = "idle" | "capturing" | "ready" | "error";
 type ScanAssetUsageMode = "hours" | "percent" | "km" | "none";
 type ScanAssetStatusChoice = "yes" | "no" | "unknown" | "not_applicable";
-type ServiceMode = "" | "checked" | "serviced" | "repaired";
+type ServiceMode = "" | MaintenanceServiceMode;
 type PartnerType = "dealer" | "finance" | "insurance";
 type ShareLeadStep = "message" | "consent" | null;
 type ScanAccessResponseMode = "owner_session" | "scan_pin" | "field_manager";
@@ -185,212 +193,6 @@ const MAX_SHARE_PHOTOS = 3;
 const QR_PHOTO_MAX_DIMENSION = 1400;
 const QR_PHOTO_JPEG_QUALITY = 0.72;
 const QR_PHOTO_SKIP_COMPRESSION_BYTES = 700 * 1024;
-type ServiceOption = {
-  label: string;
-  description: string;
-};
-
-type AssetServiceProfile = "propelled" | "implement";
-
-const PROPELLED_CHECKED_OPTIONS: readonly ServiceOption[] = [
-  { label: "Oil level", description: "Dipstick / sight glass checked." },
-  {
-    label: "Tyres",
-    description: "Pressure, tread and visible damage checked.",
-  },
-  {
-    label: "Safety",
-    description: "Guards, warning lights and obvious risks checked.",
-  },
-  { label: "Lights", description: "Working lights and indicators checked." },
-  { label: "Brakes", description: "Brake response and pedal feel checked." },
-  { label: "Hydraulics", description: "Hoses, rams and leaks checked." },
-  { label: "Battery", description: "Terminals, charge and mounting checked." },
-  { label: "Coolant", description: "Level and visible leaks checked." },
-  { label: "Belts", description: "Wear, cracks and tension checked." },
-  {
-    label: "Leaks",
-    description: "Oil, diesel, coolant and hydraulic leaks checked.",
-  },
-] as const;
-
-const PROPELLED_SERVICED_OPTIONS: readonly ServiceOption[] = [
-  {
-    label: "Changed engine oil",
-    description: "Engine oil drained and replaced.",
-  },
-  {
-    label: "Changed hydraulic oil",
-    description: "Hydraulic oil serviced or replaced.",
-  },
-  {
-    label: "Changed air filters",
-    description: "Air filter elements cleaned or replaced.",
-  },
-  { label: "Changed oil filters", description: "Engine oil filters replaced." },
-  {
-    label: "Changed diesel filters",
-    description: "Fuel / diesel filters replaced.",
-  },
-  { label: "Greased machine", description: "Grease points completed." },
-  { label: "Coolant top-up", description: "Coolant topped up or replaced." },
-  { label: "Replaced belts", description: "Worn belts replaced or adjusted." },
-  {
-    label: "Tyre repair",
-    description: "Tyre puncture, valve or pressure repair.",
-  },
-  {
-    label: "Battery service",
-    description: "Battery serviced, replaced or terminals cleaned.",
-  },
-] as const;
-
-const IMPLEMENT_CHECKED_OPTIONS: readonly ServiceOption[] = [
-  {
-    label: "Nuts and bolts",
-    description: "Loose, missing or damaged bolts checked.",
-  },
-  {
-    label: "Pins and bushes",
-    description: "Wear, play and locking clips checked.",
-  },
-  {
-    label: "Frame and welds",
-    description: "Cracks, bent sections and welds checked.",
-  },
-  {
-    label: "Hitch / drawbar",
-    description: "Hitch points, hooks and drawbar checked.",
-  },
-  {
-    label: "Hydraulic hoses",
-    description: "Hoses, couplers, rams and leaks checked.",
-  },
-  {
-    label: "Bearings",
-    description: "Noise, heat, play and visible wear checked.",
-  },
-  {
-    label: "Wear parts",
-    description: "Blades, points, discs, tines or shoes checked.",
-  },
-  {
-    label: "PTO / guards",
-    description: "PTO shaft, covers and safety guards checked.",
-  },
-  {
-    label: "Wheels / hubs",
-    description: "Wheel nuts, hubs, bearings and tyres checked.",
-  },
-  {
-    label: "Grease points",
-    description: "Grease nipples and moving joints checked.",
-  },
-  {
-    label: "Safety decals",
-    description: "Warnings, reflectors and visible markings checked.",
-  },
-] as const;
-
-const IMPLEMENT_SERVICED_OPTIONS: readonly ServiceOption[] = [
-  {
-    label: "Tightened bolts",
-    description: "Loose fasteners tightened or replaced.",
-  },
-  {
-    label: "Replaced pins / bushes",
-    description: "Worn pins, bushes or clips replaced.",
-  },
-  {
-    label: "Repaired frame / welds",
-    description: "Cracks, bends or welds repaired.",
-  },
-  {
-    label: "Replaced wear parts",
-    description: "Blades, points, discs, tines or shoes replaced.",
-  },
-  {
-    label: "Serviced hydraulics",
-    description: "Hydraulic hoses, couplers or cylinders repaired.",
-  },
-  {
-    label: "Replaced bearings",
-    description: "Bearings, seals or hubs replaced.",
-  },
-  {
-    label: "Greased implement",
-    description: "Grease points and moving joints serviced.",
-  },
-  {
-    label: "Serviced PTO / guards",
-    description: "PTO shaft, covers or guards repaired.",
-  },
-  {
-    label: "Adjusted setup",
-    description: "Depth, angle, calibration or working setup adjusted.",
-  },
-  {
-    label: "Wheel / hub service",
-    description: "Wheel nuts, tyres, hubs or axles serviced.",
-  },
-  {
-    label: "Cleaned implement",
-    description: "Mud, crop material or residue removed.",
-  },
-] as const;
-
-const IMPLEMENT_HINTS = [
-  "implement",
-  "implements",
-  "tool",
-  "tools",
-  "attachment",
-  "attachments",
-  "trailer",
-  "trailers",
-  "header",
-  "headers",
-  "plough",
-  "plow",
-  "ripper",
-  "cultivator",
-  "harrow",
-  "disc",
-  "disk",
-  "planter",
-  "seeder",
-  "seed drill",
-  "fertilizer spreader",
-  "spreader",
-  "baler",
-  "mower",
-  "slasher",
-  "mulcher",
-  "roller",
-  "auger",
-  "fork",
-  "blade",
-] as const;
-
-const PROPELLED_HINTS = [
-  "vehicle",
-  "bakkie",
-  "truck",
-  "tractor",
-  "combine",
-  "harvester",
-  "self propelled",
-  "self-propelled",
-  "loader",
-  "telehandler",
-  "forklift",
-  "excavator",
-  "dozer",
-  "bulldozer",
-  "grader",
-  "skid steer",
-  "tlb",
-] as const;
 
 const initialDraft: DraftState = {
   hours: "",
@@ -857,142 +659,6 @@ function assetPlaceholderLabel(asset: ScanSafeAsset): string {
   return label.replace(/[_-]+/g, " ").trim() || "Asset";
 }
 
-function normalizeClassifierText(value: string): string {
-  return value.toLowerCase().replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
-}
-
-function assetClassifierText(asset: ScanSafeAsset): string {
-  return normalizeClassifierText(
-    [
-      asset.kind,
-      asset.equipmentFamilyKey,
-      asset.equipmentFamilyLabel,
-      asset.title,
-    ].join(" "),
-  );
-}
-
-function containsAnyHint(text: string, hints: readonly string[]): boolean {
-  return hints.some((hint) => text.includes(hint));
-}
-
-function resolveAssetServiceProfile(
-  asset: ScanSafeAsset | null,
-): AssetServiceProfile {
-  if (!asset) return "propelled";
-
-  if (
-    asset.isPropelled ||
-    asset.canUpdateFuel ||
-    asset.kind === "vehicle" ||
-    asset.kind === "tractor"
-  ) {
-    return "propelled";
-  }
-
-  const classifierText = assetClassifierText(asset);
-
-  if (containsAnyHint(classifierText, IMPLEMENT_HINTS)) {
-    return "implement";
-  }
-
-  if (asset.usageMode === "percent") {
-    return "implement";
-  }
-
-  if (
-    containsAnyHint(classifierText, PROPELLED_HINTS) ||
-    asset.usageMode === "km" ||
-    asset.usageMode === "hours"
-  ) {
-    return "propelled";
-  }
-
-  return "implement";
-}
-
-function checkedOptionsForProfile(
-  profile: AssetServiceProfile,
-): readonly ServiceOption[] {
-  return profile === "implement"
-    ? IMPLEMENT_CHECKED_OPTIONS
-    : PROPELLED_CHECKED_OPTIONS;
-}
-
-function servicedOptionsForProfile(
-  profile: AssetServiceProfile,
-): readonly ServiceOption[] {
-  return profile === "implement"
-    ? IMPLEMENT_SERVICED_OPTIONS
-    : PROPELLED_SERVICED_OPTIONS;
-}
-
-function serviceCopyForProfile(profile: AssetServiceProfile) {
-  if (profile === "implement") {
-    return {
-      checkedDescription: "Inspection.",
-      servicedDescription: "Service job.",
-      repairedDescription: "Repair job.",
-      checkedTitle: "Check",
-      servicedTitle: "Service",
-      repairedTitle: "Repair",
-      checkedPrompt: "Select inspected items.",
-      servicedPrompt: "Select work done.",
-      repairedPrompt: "Fault · fix · parts.",
-      checkedHeader: "Checked items",
-      checkedSubheader: "Select every item inspected.",
-      servicedHeader: "Service work",
-      servicedSubheader: "Select work completed.",
-      repairedHeader: "Repair note",
-      repairedSubheader: "Capture the fault, fix and parts replaced.",
-      detailsHeader: "Who did the work?",
-      detailsSubheader: "Company and technician.",
-      companyLabel: "Company / Workshop",
-      companyPlaceholder: "Company or workshop name",
-      mechanicLabel: "Technician name",
-      mechanicPlaceholder: "Technician name",
-      checkedNotePlaceholder:
-        "Example: bolts checked, pins checked, no visible cracks.",
-      servicedNotePlaceholder:
-        "Example: replaced points, tightened bolts and greased pins.",
-      repairedNotePlaceholder:
-        "Example: cracked bracket repaired; two bushes replaced; welds checked.",
-      repairedExtraNotePlaceholder: "Optional: parts used or follow-up needed.",
-    };
-  }
-
-  return {
-    checkedDescription: "Inspection.",
-    servicedDescription: "Service job.",
-    repairedDescription: "Repair job.",
-    checkedTitle: "Check",
-    servicedTitle: "Service",
-    repairedTitle: "Repair",
-    checkedPrompt: "Select inspected items.",
-    servicedPrompt: "Select work done.",
-    repairedPrompt: "Fault · fix · parts.",
-    checkedHeader: "Checked items",
-    checkedSubheader: "Select every item inspected.",
-    servicedHeader: "Service work",
-    servicedSubheader: "Select work completed.",
-    repairedHeader: "Repair note",
-    repairedSubheader: "Capture the fault, fix and parts replaced.",
-    detailsHeader: "Who did the work?",
-    detailsSubheader: "Company and mechanic.",
-    companyLabel: "Company / Dealer",
-    companyPlaceholder: "Company or dealer name",
-    mechanicLabel: "Mechanic name",
-    mechanicPlaceholder: "Mechanic name",
-    checkedNotePlaceholder:
-      "Example: oil checked, tyres checked, no visible leaks.",
-    servicedNotePlaceholder:
-      "Example: full service completed; oil and filters replaced.",
-    repairedNotePlaceholder:
-      "Example: hydraulic leak repaired; hose replaced; pressure tested.",
-    repairedExtraNotePlaceholder: "Optional: parts used or follow-up needed.",
-  };
-}
-
 function buildEditorSummary(
   editor: EditorKey,
   asset: ScanSafeAsset | null,
@@ -1082,53 +748,16 @@ function keepCurrentLocation(
 }
 
 function buildServiceNote(draft: DraftState): string {
-  const note = draft.note.trim();
-
-  if (draft.serviceMode === "checked") {
-    return [
-      "Checked",
-      draft.checkedItems.length
-        ? `Checked items: ${draft.checkedItems.join(", ")}`
-        : "",
-      note ? `Notes/Problems: ${note}` : "",
-    ]
-      .filter(Boolean)
-      .join("\n");
-  }
-
-  if (draft.serviceMode === "serviced") {
-    return [
-      "Serviced",
-      draft.servicedItems.length
-        ? `Work done: ${draft.servicedItems.join(", ")}`
-        : "",
-      draft.serviceCompany.trim()
-        ? `Company: ${draft.serviceCompany.trim()}`
-        : "",
-      draft.mechanicName.trim() ? `Mechanic: ${draft.mechanicName.trim()}` : "",
-      note ? `Notes/Problems: ${note}` : "",
-    ]
-      .filter(Boolean)
-      .join("\n");
-  }
-
-  if (draft.serviceMode === "repaired") {
-    return [
-      "Repaired",
-      draft.repairDetails.trim()
-        ? `Repair details: ${draft.repairDetails.trim()}`
-        : "",
-      draft.serviceCompany.trim()
-        ? `Company: ${draft.serviceCompany.trim()}`
-        : "",
-      draft.mechanicName.trim() ? `Mechanic: ${draft.mechanicName.trim()}` : "",
-      note ? `Notes/Problems: ${note}` : "",
-    ]
-      .filter(Boolean)
-      .join("\n");
-  }
-
-  return note;
+  if (!draft.serviceMode) return draft.note.trim();
+  return buildMaintenanceCompletionNote({
+    serviceMode: draft.serviceMode,
+    checkedItems: draft.checkedItems,
+    servicedItems: draft.servicedItems,
+    repairDetails: draft.repairDetails,
+    serviceCompany: draft.serviceCompany,
+    mechanicName: draft.mechanicName,
+    note: draft.note,
+  });
 }
 
 function dealerPartnerName(partner: PartnerDirectoryEntry): string {
