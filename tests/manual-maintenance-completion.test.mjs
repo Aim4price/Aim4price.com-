@@ -121,7 +121,7 @@ test('successful app maintenance returns to the clean asset action page', () => 
 test('Add update saves immediately in Owner and Field Manager maintenance mode', () => {
   assert.match(
     scanClient,
-    /if \(isFieldManagerMode\) \{[\s\S]*persistPendingScanUpdate\(nextPendingUpdate\)[\s\S]*redirectAfterFieldManagerServerSave/,
+    /if \(isFieldManagerMode\) \{[\s\S]*persistPendingScanUpdate\([\s\S]*nextPendingUpdate,[\s\S]*maintenanceChoice,[\s\S]*\)[\s\S]*redirectAfterFieldManagerServerSave/,
   );
   assert.match(
     scanClient,
