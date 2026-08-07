@@ -4,6 +4,7 @@ import { getServerSession } from '../../../../../lib/auth-session';
 import {
   createDealerMaintenanceScheduleProposal,
   listDealerMaintenanceScheduleProposals,
+  updateDealerMaintenanceScheduleProposal,
   type DealerMaintenanceScheduleProposalInput,
 } from '../../../../../lib/dealer-maintenance-tracker';
 
@@ -45,6 +46,15 @@ function proposalError(error: unknown): { message: string; status: number } {
   }
   if (code === 'RECURRING_INTERVAL_REQUIRED') {
     return { message: 'Enter a recurring interval.', status: 400 };
+  }
+  if (code === 'MAINTENANCE_PROPOSAL_ALREADY_EXISTS') {
+    return { message: 'A pending proposal already exists. Edit that proposal instead.', status: 409 };
+  }
+  if (code === 'MAINTENANCE_ALREADY_SCHEDULED') {
+    return { message: 'This maintenance is already scheduled. Edit the active schedule instead.', status: 409 };
+  }
+  if (code === 'MAINTENANCE_PROPOSAL_NOT_FOUND') {
+    return { message: 'This pending proposal is no longer available.', status: 404 };
   }
   return { message: 'The maintenance schedule could not be sent to the owner.', status: 500 };
 }
@@ -89,6 +99,41 @@ export async function POST(request: NextRequest) {
     const outcome = proposalError(error);
     if (outcome.status === 500) {
       console.error('Dealer maintenance schedule proposal POST failed.', error);
+    }
+    return NextResponse.json({ ok: false, error: outcome.message }, { status: outcome.status });
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  const dealerUserId = await activeDealerUserId();
+  if (!dealerUserId) {
+    return NextResponse.json({ ok: false, error: 'Dealer App login is required.' }, { status: 401 });
+  }
+  let draft: DealerMaintenanceScheduleProposalInput & { proposalId?: unknown };
+  try {
+    draft = (await request.json()) as DealerMaintenanceScheduleProposalInput & { proposalId?: unknown };
+  } catch {
+    return NextResponse.json({ ok: false, error: 'Send a valid maintenance schedule.' }, { status: 400 });
+  }
+  const proposalId = String(draft.proposalId ?? '').trim();
+  if (!proposalId) {
+    return NextResponse.json({ ok: false, error: 'Choose the pending proposal to edit.' }, { status: 400 });
+  }
+  try {
+    const proposal = await updateDealerMaintenanceScheduleProposal({
+      dealerUserId,
+      proposalId,
+      draft,
+    });
+    const proposals = await listDealerMaintenanceScheduleProposals({
+      dealerUserId,
+      accessId: proposal.accessId,
+    });
+    return NextResponse.json({ ok: true, proposal, proposals });
+  } catch (error) {
+    const outcome = proposalError(error);
+    if (outcome.status === 500) {
+      console.error('Dealer maintenance schedule proposal PATCH failed.', error);
     }
     return NextResponse.json({ ok: false, error: outcome.message }, { status: outcome.status });
   }
