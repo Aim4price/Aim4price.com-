@@ -998,7 +998,9 @@ export default function MaintenanceClient() {
       applyPayload(payload);
       setNotice({
         type: 'success',
-        text: record.recurringEnabled && payload.nextRecord
+        text: completion.linkToScheduledMaintenance === false
+          ? 'Maintenance saved. The scheduled maintenance remains open.'
+          : record.recurringEnabled && payload.nextRecord
           ? `Maintenance marked done. Next recurring maintenance is due at ${maintenanceDueValue(payload.nextRecord)}.`
           : 'Maintenance marked done.',
       });
@@ -1480,6 +1482,7 @@ export default function MaintenanceClient() {
         <DesktopServiceModal
           record={recordPendingComplete}
           busy={busyCompleteId === recordPendingComplete.id}
+          askScheduleLink
           onClose={closeModal}
           onSubmit={(completion) => completeMaintenance(recordPendingComplete, completion)}
         />
