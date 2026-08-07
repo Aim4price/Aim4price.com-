@@ -4017,3 +4017,43 @@
   letter-spacing: -0.02em;
   text-align: center;
 }
+
+
+.thankYouIcon {
+  width: 4.75rem;
+  height: 4.75rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #ffffff;
+  background: linear-gradient(145deg, #25845e 0%, #15533d 100%);
+  box-shadow: 0 16px 32px rgba(21, 83, 61, 0.22);
+}
+
+.thankYouIcon svg {
+  width: 2.35rem;
+  height: 2.35rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.thankYouReturn {
+  min-width: min(100%, 18rem);
+  min-height: 3.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.45rem;
+  border: 1px solid #1f7655;
+  border-radius: 1rem;
+  padding: 0.85rem 1.35rem;
+  color: #ffffff;
+  background: linear-gradient(180deg, #25845e 0%, #176044 100%);
+  box-shadow: 0 12px 25px rgba(23, 96, 68, 0.18);
+  font-size: 1rem;
+  font-weight: 850;
+  text-decoration: none;
+}
