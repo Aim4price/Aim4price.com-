@@ -57,6 +57,7 @@ function errorMessage(error: unknown): string {
   if (message === 'COMPLETION_DATE_INVALID') return 'Enter a valid service completion date.';
   if (message === 'COMPLETION_DATE_IN_FUTURE') return 'The service completion date cannot be in the future.';
   if (message === 'COMPLETION_USAGE_LOWER_THAN_CURRENT') return 'The completed usage reading cannot be lower than the current saved reading.';
+  if (message === 'COMPLETION_USAGE_REQUIRED') return 'Enter the final usage reading before completing this maintenance.';
   if (message === 'COMPLETION_DETAILS_REQUIRED') return 'Select completed work or add notes/problems before saving.';
   if (message === 'COMPLETION_PERFORMER_REQUIRED') return 'Enter who completed the maintenance.';
   if (message === 'COMPLETION_SERVICE_PROVIDER_REQUIRED') return 'Enter the service company and mechanic before saving.';
