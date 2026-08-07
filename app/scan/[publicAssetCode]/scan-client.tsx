@@ -247,6 +247,11 @@ function normalizePublicAssetCode(value: string): string {
   return value.trim().replace(/\s+/g, "").toUpperCase();
 }
 
+function normalizeOptionalMaintenanceId(value: unknown): string {
+  const normalized = String(value ?? "").trim();
+  return /^(?:null|undefined)$/i.test(normalized) ? "" : normalized;
+}
+
 function normalizePinInput(value: string): string {
   return value.replace(/\D+/g, "").slice(0, 8);
 }
@@ -1063,11 +1068,11 @@ export default function ScanClient({
     [ownerAppAssetId],
   );
   const normalizedScheduledMaintenanceId = useMemo(
-    () => String(
+    () => normalizeOptionalMaintenanceId(
       ownerAppMode
         ? ownerAppScheduledMaintenanceId
         : fieldManagerScheduledMaintenanceId,
-    ).trim(),
+    ),
     [fieldManagerScheduledMaintenanceId, ownerAppMode, ownerAppScheduledMaintenanceId],
   );
   const normalizedScheduledMaintenanceType = useMemo<ScheduledMaintenanceType | null>(() => {
