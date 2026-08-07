@@ -366,16 +366,23 @@ function completedMaintenanceCard(
 
 function buildTrackerMaintenanceCards(asset: DealerMaintenanceTrackedAsset): TrackerMaintenanceCard[] {
   const hasActiveMaintenance = asset.openMaintenanceRecords.length > 0;
+  const hasPendingProposal = asset.scheduleProposals.some(
+    (proposal) => proposal.status === 'pending',
+  );
   const activeStatus = asset.nextMaintenance
     ? trackerStatusForRecord(asset.nextMaintenance)
-    : 'no_open';
-  const activeCard: TrackerMaintenanceCard | null = hasActiveMaintenance || !asset.completedMaintenanceRecords.length
+    : hasPendingProposal
+      ? 'upcoming'
+      : 'no_open';
+  const activeCard: TrackerMaintenanceCard | null = hasActiveMaintenance || hasPendingProposal || !asset.completedMaintenanceRecords.length
     ? {
         ...asset,
         trackerCardId: `${asset.accessId}:active:${asset.nextMaintenance?.id || 'tracking'}`,
         trackerCardKind: 'active',
         status: activeStatus,
-        statusLabel: trackerStatusLabel(activeStatus),
+        statusLabel: hasPendingProposal && !asset.nextMaintenance
+          ? 'Awaiting approval'
+          : trackerStatusLabel(activeStatus),
       }
     : null;
   const recurringCompletedCards = [...asset.completedMaintenanceRecords]
@@ -831,6 +838,15 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
   const managedAsset = managedAccessId
     ? assets.find((asset) => asset.accessId === managedAccessId) ?? null
     : null;
+  const scheduleAsset = scheduleAccessId
+    ? assets.find((asset) => asset.accessId === scheduleAccessId) ?? null
+    : null;
+  const schedulePendingProposal = scheduleAsset?.scheduleProposals.find(
+    (proposal) => proposal.status === 'pending',
+  ) ?? null;
+  const scheduleActiveRecord = schedulePendingProposal
+    ? null
+    : scheduleAsset?.nextMaintenance ?? null;
   const costReportAsset = costReportAccessId
     ? assets.find((asset) => asset.accessId === costReportAccessId) ?? null
     : null;
@@ -917,9 +933,11 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
       setAssets((current) => current.map((asset) => asset.accessId === refreshedAsset.accessId ? refreshedAsset : asset));
       setNotice({
         tone: 'success',
-        text: serviceTarget.record.recurringEnabled && refreshedAsset.nextMaintenance
-          ? 'Service saved as done. The next recurring maintenance is now being tracked.'
-          : 'Service saved as done.',
+        text: completion.linkToScheduledMaintenance === false
+          ? 'Service saved separately. The scheduled maintenance remains open.'
+          : serviceTarget.record.recurringEnabled && refreshedAsset.nextMaintenance
+            ? 'Service saved as done. The next recurring maintenance is now being tracked.'
+            : 'Service saved as done.',
       });
       setServiceSuccess({
         assetTitle: serviceTarget.asset.assetTitle,
@@ -1279,7 +1297,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                           </div>
 
                           <div className={`${assetStyles.assetHeaderActions} ${leadStyles.leadAssetHeaderActions} ${styles.trackerHeaderActions}`}>
-                            {!dealerAppMode && !isCompletedCard && asset.nextMaintenance ? (
+                            {!isCompletedCard && asset.nextMaintenance ? (
                               <button
                                 type="button"
                                 className={`${assetStyles.optionsButton} ${styles.serviceActionButton}`}
@@ -1850,8 +1868,22 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                   >
                     <ScheduleIcon className={assetStyles.buttonIcon} />
                     <span>
-                      <strong>Schedule maintenance</strong>
-                      <small>{managedAsset.permissions.canCreateMaintenanceSchedules ? 'Send a schedule for owner approval.' : 'Owner permission is required.'}</small>
+                      <strong>
+                        {managedAsset.scheduleProposals.some((proposal) => proposal.status === 'pending')
+                          ? 'Edit proposal'
+                          : managedAsset.nextMaintenance
+                            ? 'Edit schedule'
+                            : 'Schedule maintenance'}
+                      </strong>
+                      <small>
+                        {!managedAsset.permissions.canCreateMaintenanceSchedules
+                          ? 'Owner permission is required.'
+                          : managedAsset.scheduleProposals.some((proposal) => proposal.status === 'pending')
+                            ? 'Update the schedule awaiting owner approval.'
+                            : managedAsset.nextMaintenance
+                              ? 'Update the active maintenance schedule.'
+                              : 'Send a schedule for owner approval.'}
+                      </small>
                     </span>
                   </button>
 
@@ -1992,6 +2024,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
 
       {serviceTarget ? (
         <DesktopServiceModal
+          askScheduleLink
           record={{
             ...serviceTarget.record,
             assetTitle: serviceTarget.asset.assetTitle,
@@ -2021,15 +2054,28 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
         />
       ) : null}
 
-      {scheduleAccessId ? (
+      {scheduleAccessId && scheduleAsset ? (
         <DealerMaintenanceScheduleModal
           accessId={scheduleAccessId}
+          initialProposal={schedulePendingProposal}
+          initialRecord={scheduleActiveRecord}
           onClose={() => setScheduleAccessId(null)}
           onCreated={(proposals) => {
             setAssets((current) => current.map((asset) => asset.accessId === scheduleAccessId
               ? { ...asset, scheduleProposals: proposals }
               : asset));
-            setNotice({ tone: 'success', text: 'Proposed schedule sent to the owner for approval.' });
+            setNotice({
+              tone: 'success',
+              text: schedulePendingProposal
+                ? 'Pending maintenance proposal updated.'
+                : 'Proposed schedule saved on the dealer side and sent to the owner for approval.',
+            });
+          }}
+          onAssetUpdated={(updatedAsset) => {
+            setAssets((current) => current.map((asset) => asset.accessId === updatedAsset.accessId
+              ? updatedAsset
+              : asset));
+            setNotice({ tone: 'success', text: 'Active maintenance schedule updated.' });
           }}
           onError={(message) => setNotice({ tone: 'error', text: message })}
         />
