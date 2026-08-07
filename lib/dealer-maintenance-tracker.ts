@@ -2,12 +2,14 @@ import { getAccountProfile } from './account-profile';
 import { getAssetRegisterItemById, type AssetRegisterItem } from './asset-register-db';
 import {
   calculateAssetMaintenanceSummary,
+  completeAssetMaintenanceRecord,
   ensureAssetMaintenanceTables,
   listAssetMaintenanceData,
   listAssetMaintenanceRecords,
   type AssetMaintenanceListFilters,
   type AssetMaintenanceListResult,
   type AssetMaintenanceComputedStatus,
+  type AssetMaintenanceCompleteInput,
   type AssetMaintenanceIntervalUnit,
   type AssetMaintenanceRecord,
   type AssetMaintenanceStatus,
@@ -1331,6 +1333,34 @@ export async function getDealerTrackedAsset(
   return hydratedAsset ?? null;
 }
 
+export async function completeDealerTrackedMaintenance(input: {
+  dealerUserId: string;
+  accessId: string;
+  maintenanceId: string;
+  completion: AssetMaintenanceCompleteInput;
+}): Promise<{
+  asset: DealerMaintenanceTrackedAsset;
+  completed: AssetMaintenanceRecord;
+  nextRecord: AssetMaintenanceRecord | null;
+}> {
+  const asset = await getDealerTrackedAsset(input.dealerUserId, input.accessId);
+  if (!asset) throw new Error('DEALER_MAINTENANCE_ACCESS_NOT_FOUND');
+
+  const openRecord = asset.openMaintenanceRecords.find((record) => record.id === input.maintenanceId);
+  if (!openRecord) throw new Error('DEALER_MAINTENANCE_RECORD_NOT_FOUND');
+
+  const result = await completeAssetMaintenanceRecord(
+    asset.ownerUserId,
+    openRecord.id,
+    input.completion,
+    { assetId: asset.assetId },
+  );
+  const refreshedAsset = await getDealerTrackedAsset(input.dealerUserId, input.accessId);
+  if (!refreshedAsset) throw new Error('DEALER_MAINTENANCE_ACCESS_NOT_FOUND');
+
+  return { asset: refreshedAsset, ...result };
+}
+
 export async function listDealerMaintenanceReportData(input: {
   dealerUserId: string;
   accessId: string;
@@ -1476,4 +1506,3 @@ export async function markDealerMaintenanceNotificationsRead(dealerUserId: strin
     [dealerUserId],
   );
 }
-
