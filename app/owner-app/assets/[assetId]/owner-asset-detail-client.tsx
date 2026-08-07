@@ -161,6 +161,14 @@ function manualMarketplaceNote(value: string) {
   return isOperationalNote ? '' : note;
 }
 
+function estimateNeedsAutomaticUpdate(asset: Pick<Asset, 'valuationRunId' | 'selectedMethod' | 'specsJson'>): boolean {
+  if (asset.valuationRunId === null || asset.selectedMethod === 'manual') return false;
+  const value = asset.specsJson.valuationNeedsUpdate ?? asset.specsJson.valuation_needs_update;
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return value === 1;
+  return ['true', '1', 'yes'].includes(String(value ?? '').trim().toLowerCase());
+}
+
 const EXPECTED_LIFETIME_SPEC_KEYS = [
   'maxLifetimeHours', 'max_lifetime_hours', 'expectedLifetimeHours', 'expected_lifetime_hours',
   'lifetimeHours', 'lifetime_hours', 'designLifeHours', 'design_life_hours', 'usefulLifeHours', 'useful_life_hours',
@@ -333,6 +341,31 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
       setNotice({ tone: 'error', message: cause instanceof Error ? cause.message : 'Failed to load this asset.' });
     } finally {
       if (!silent) setLoading(false);
+    }
+  }
+
+  async function updateEstimateNow() {
+    if (!draft || actionBusy) return;
+    setActionBusy('update-estimate');
+    setNotice(null);
+    try {
+      const response = await fetch('/api/asset-register/revalue', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ assetId: draft.id, selectedMethod: 'aim4price' }),
+      });
+      const data = await response.json().catch(() => null) as RevalueResponse | null;
+      if (response.status === 401) { window.location.replace('/owner-app/login'); return; }
+      if (!response.ok || !data?.ok || !data.item) {
+        throw new Error(data?.error || 'The Aim4price estimate could not be updated.');
+      }
+      setDraft(data.item);
+      setNotice({ tone: 'success', message: `Estimate updated to ${money(data.item.value)}.` });
+    } catch (cause) {
+      setNotice({ tone: 'error', message: cause instanceof Error ? cause.message : 'The Aim4price estimate could not be updated.' });
+    } finally {
+      setActionBusy('');
     }
   }
 
@@ -618,6 +651,25 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
   });
   const usageMetric = resolvedUsage.metric;
   const usageText = formatResolvedAssetUsage(resolvedUsage, 'Not saved');
+  const estimateNeedsUpdate = estimateNeedsAutomaticUpdate(draft);
+  const renderEstimateUpdateAction = () => estimateNeedsUpdate ? (
+    <button
+      type="button"
+      className={`${styles.detailValueUpdateButton} ${styles.detailValueUpdateButtonAttention}`}
+      onClick={() => void updateEstimateNow()}
+      disabled={Boolean(actionBusy)}
+    >
+      {actionBusy === 'update-estimate' ? 'Updating…' : 'Update estimate'}
+    </button>
+  ) : (
+    <Link
+      className={styles.detailValueUpdateButton}
+      href={`/owner-app/assets/${encodeURIComponent(assetId)}/manage/pricing/recalculate`}
+      prefetch={false}
+    >
+      Update estimate
+    </Link>
+  );
   const extraInput = (key: string, label: string, options: { type?: string; inputMode?: 'text' | 'decimal' | 'numeric'; fallbackKeys?: string[]; currency?: boolean } = {}) => {
     const value = extra(key, ...(options.fallbackKeys ?? []));
     const input = options.currency
@@ -680,13 +732,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
               <span>Aim4price value</span>
               <strong>{money(draft.value)}</strong>
               <small>Excl. VAT · Updated {dateOnly(draft.updatedAtIso)}</small>
-              <Link
-                className={styles.detailValueUpdateButton}
-                href={`/owner-app/assets/${encodeURIComponent(assetId)}/manage/pricing/recalculate`}
-                prefetch={false}
-              >
-                Update estimate
-              </Link>
+              {renderEstimateUpdateAction()}
             </div>
 
             <div className={styles.assetMirrorActions} aria-label="Asset actions">
@@ -787,13 +833,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
               <span>Aim4price value</span>
               <strong>{money(draft.value)}</strong>
               <small>Excl. VAT · Updated {dateOnly(draft.updatedAtIso)}</small>
-              <Link
-                className={styles.detailValueUpdateButton}
-                href={`/owner-app/assets/${encodeURIComponent(assetId)}/manage/pricing/recalculate`}
-                prefetch={false}
-              >
-                Update estimate
-              </Link>
+              {renderEstimateUpdateAction()}
             </div>
 
             <div className={styles.assetMirrorDetails}>

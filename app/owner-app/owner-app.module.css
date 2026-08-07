@@ -885,12 +885,21 @@
   font: 850 0.86rem/1 Montserrat, var(--font-body, Inter), Arial, sans-serif;
   text-align: center;
   text-decoration: none;
+  cursor: pointer;
   box-shadow: 0 8px 18px rgba(10, 84, 61, 0.09);
   transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
 }
 .detailValueUpdateButton:hover { border-color: #3fa96f; background: linear-gradient(180deg, #ffffff 0%, #d8f1e4 100%); }
 .detailValueUpdateButton:active { transform: translateY(1px); }
 .detailValueUpdateButton:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.12); }
+.detailValueUpdateButtonAttention {
+  border-color: #ef8f8f;
+  background: linear-gradient(180deg, #fff5f5 0%, #ffe3e3 100%);
+  color: #a62d2d;
+  box-shadow: 0 9px 20px rgba(166, 45, 45, 0.12);
+}
+.detailValueUpdateButtonAttention:hover { border-color: #df6f6f; background: linear-gradient(180deg, #fff1f1 0%, #ffd7d7 100%); }
+.detailValueUpdateButton:disabled { cursor: wait; opacity: 0.72; transform: none; }
 .assetMirrorActions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 .assetMirrorAction {
   min-width: 0;
