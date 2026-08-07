@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import DealerCostOfOwnershipReportModal from './DealerCostOfOwnershipReportModal';
 import DealerMaintenanceReportModal from './DealerMaintenanceReportModal';
 import DealerMaintenanceScheduleModal from './DealerMaintenanceScheduleModal';
+import DesktopServiceModal, { type DesktopServiceCompletion } from './DesktopServiceModal';
 import LeadPhotoViewerModal from './LeadPhotoViewerModal';
 import {
   WorkspaceTitlePanel,
@@ -42,6 +43,17 @@ type TrackerResponse = {
   ok?: boolean;
   assets?: DealerMaintenanceTrackedAsset[];
   error?: string;
+};
+
+type TrackerCompletionResponse = {
+  ok?: boolean;
+  asset?: DealerMaintenanceTrackedAsset;
+  error?: string;
+};
+
+type DealerServiceTarget = {
+  asset: DealerMaintenanceTrackedAsset;
+  record: DealerMaintenanceRecordSummary;
 };
 
 type TrackerPhotoModal = {
@@ -137,6 +149,10 @@ function WhatsAppIcon({ className = '' }: { className?: string }) {
 
 function MaintenanceIcon({ className = '' }: { className?: string }) {
   return <svg className={className} viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h12M7 12h12M7 19h12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /><circle cx="4" cy="5" r="1" fill="currentColor" /><circle cx="4" cy="12" r="1" fill="currentColor" /><circle cx="4" cy="19" r="1" fill="currentColor" /></svg>;
+}
+
+function ServiceIcon({ className = '' }: { className?: string }) {
+  return <svg className={className} viewBox="0 0 24 24" aria-hidden="true"><path d="M14.8 6.2a5 5 0 0 0-6.5 6.5L3.5 17.5a2.1 2.1 0 0 0 3 3l4.8-4.8a5 5 0 0 0 6.5-6.5l-3 3-3-3 3-3Z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>;
 }
 
 function ScheduleIcon({ className = '' }: { className?: string }) {
@@ -699,6 +715,8 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
   const [managedAccessId, setManagedAccessId] = useState<string | null>(null);
   const [deleteTrackingTarget, setDeleteTrackingTarget] = useState<DealerMaintenanceTrackedAsset | null>(null);
   const [isDeletingTracking, setIsDeletingTracking] = useState(false);
+  const [serviceTarget, setServiceTarget] = useState<DealerServiceTarget | null>(null);
+  const [isSavingService, setIsSavingService] = useState(false);
 
   useEffect(() => setAssets(initialAssets), [initialAssets]);
 
@@ -861,6 +879,41 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
       setNotice({ tone: 'error', text: cause instanceof Error ? cause.message : 'Failed to refresh the Maintenance Tracker.' });
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function completeService(completion: DesktopServiceCompletion) {
+    if (!serviceTarget || isSavingService) return;
+    setIsSavingService(true);
+    setNotice(null);
+    try {
+      const response = await fetch(`/api/dealer/maintenance/${serviceTarget.asset.accessId}`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          maintenanceId: serviceTarget.record.id,
+          ...completion,
+          confirmedComplete: true,
+        }),
+      });
+      const payload = await response.json().catch(() => null) as TrackerCompletionResponse | null;
+      if (!response.ok || !payload?.ok || !payload.asset) {
+        throw new Error(payload?.error || 'Failed to save the completed service.');
+      }
+      const refreshedAsset = payload.asset;
+      setAssets((current) => current.map((asset) => asset.accessId === refreshedAsset.accessId ? refreshedAsset : asset));
+      setNotice({
+        tone: 'success',
+        text: serviceTarget.record.recurringEnabled && refreshedAsset.nextMaintenance
+          ? 'Service saved as done. The next recurring maintenance is now being tracked.'
+          : 'Service saved as done.',
+      });
+      setServiceTarget(null);
+    } catch (cause) {
+      setNotice({ tone: 'error', text: cause instanceof Error ? cause.message : 'Failed to save the completed service.' });
+    } finally {
+      setIsSavingService(false);
     }
   }
 
@@ -1210,6 +1263,18 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                           </div>
 
                           <div className={`${assetStyles.assetHeaderActions} ${leadStyles.leadAssetHeaderActions} ${styles.trackerHeaderActions}`}>
+                            {!dealerAppMode && !isCompletedCard && asset.nextMaintenance ? (
+                              <button
+                                type="button"
+                                className={`${assetStyles.optionsButton} ${styles.serviceActionButton}`}
+                                onClick={() => setServiceTarget({ asset, record: asset.nextMaintenance as DealerMaintenanceRecordSummary })}
+                                aria-haspopup="dialog"
+                                aria-label={`Record ${asset.nextMaintenance.maintenanceType} for ${asset.assetTitle}`}
+                              >
+                                <ServiceIcon className={assetStyles.buttonIcon} />
+                                <span>{asset.nextMaintenance.maintenanceType === 'checkup' ? 'Record check-up' : 'Record service'}</span>
+                              </button>
+                            ) : null}
                             <button
                               type="button"
                               className={`${assetStyles.optionsButton} ${assetStyles.sharedNoteActionButton} ${styles.maintenanceViewButton}`}
@@ -1892,6 +1957,21 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
           accessId={reportAccessId}
           onClose={() => setReportAccessId(null)}
           onError={(message) => setNotice({ tone: 'error', text: message })}
+        />
+      ) : null}
+
+      {serviceTarget ? (
+        <DesktopServiceModal
+          record={{
+            ...serviceTarget.record,
+            assetTitle: serviceTarget.asset.assetTitle,
+            assetKind: serviceTarget.asset.assetKind,
+            currentUsage: serviceTarget.asset.currentUsage,
+            usageMetric: serviceTarget.record.usageMetric || serviceTarget.asset.usageMetric,
+          }}
+          busy={isSavingService}
+          onClose={() => setServiceTarget(null)}
+          onSubmit={completeService}
         />
       ) : null}
 
