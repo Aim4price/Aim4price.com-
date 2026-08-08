@@ -1,5 +1,6 @@
 import type { ConditionKey, TractorType } from "./tractor-data";
 import {
+  CONDITION_FACTORS,
   calculateEngineHoursValue,
   tractorLifetimeHours,
 } from "./valuation/shared";
@@ -159,14 +160,6 @@ export type DealerEconomicsSummary = {
   totalGrossContribution: number;
   riskReserve: number;
   commercialBuffer: number;
-};
-
-const CONDITION_FACTORS: Record<ConditionKey, number> = {
-  excellent: 0.95,
-  good: 0.85,
-  fair: 0.75,
-  used: 0.65,
-  serious: 0.55,
 };
 
 function finite(value: number, fallback = 0): number {
