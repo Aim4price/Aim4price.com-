@@ -102,6 +102,21 @@ test("finance step uses a dropdown for standard, service and maintenance options
   assert.match(client, /step\.id === "maintenance"[\s\S]*?packageOption === "full"/);
   assert.match(client, /Service plan included/);
   assert.match(client, /Maintenance reserve included/);
+  assert.match(client, /label="Service plan amount"[\s\S]*?value=\{state\.negotiatedServicePlan\}/);
+  assert.match(client, /label="Maintenance reserve amount"[\s\S]*?value=\{state\.fixedReserveAmount\}/);
+  assert.match(client, /function updateReserveAmount[\s\S]*?reserveMode: "fixed"/);
+});
+
+test("VAT can be switched in Finance and flows into finance, valuation and refinance values", () => {
+  assert.match(client, /vatTreatment: "included"/);
+  assert.match(client, /VAT included/);
+  assert.match(client, /VAT excluded/);
+  assert.match(client, /calculateVatSummary\([\s\S]*?state\.vatTreatment/);
+  assert.match(client, /const rawPackage =[\s\S]*?assetVat\.grossAmount/);
+  assert.match(client, /newPrice: assetVat\.grossAmount/);
+  assert.match(client, /originalLoan: loanTerms/);
+  assert.match(calculatorStyles, /\.vatButtons {/);
+  assert.match(calculatorStyles, /\.vatButtonActive/);
 });
 
 test("asset setup removes tractor-specific inputs and exposes lifetime and payment end year", () => {
