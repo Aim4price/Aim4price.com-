@@ -1,14 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { ConditionKey, TractorType } from "../../../lib/tractor-data";
+import type { ConditionKey } from "../../../lib/tractor-data";
 import { CONDITION_FACTORS } from "../../../lib/valuation/shared";
 import {
   buildCashFlowScenarios,
   buildLifecycleTimeline,
   calculateDealerEconomics,
   calculateEquity,
-  calculateFutureTractorValue,
+  calculateFutureAssetValue,
   calculateInflatedEventSpend,
   calculateLoan,
   calculateNextCycle,
@@ -29,10 +29,9 @@ type CalculatorState = {
   notes: string;
   tractorPrice: number;
   purchaseYear: number;
-  tractorType: TractorType;
-  powerKw: number;
   startingHours: number;
   annualHours: number;
+  expectedLifetimeHours: number;
   ownershipYears: number;
   condition: ConditionKey;
   replacementInflationPct: number;
@@ -84,10 +83,9 @@ const INITIAL_STATE: CalculatorState = {
   notes: "",
   tractorPrice: 500_000,
   purchaseYear: CURRENT_YEAR,
-  tractorType: "field",
-  powerKw: 90,
   startingHours: 0,
   annualHours: 1_000,
+  expectedLifetimeHours: 14_000,
   ownershipYears: 5,
   condition: "good",
   replacementInflationPct: 3,
@@ -128,25 +126,18 @@ const INITIAL_STATE: CalculatorState = {
 
 const FLOW_STEPS = [
   {
-    id: "tractor",
-    label: "Tractor",
-    title: "Tell us about the tractor",
+    id: "asset",
+    label: "Asset",
+    title: "Tell us about the asset",
     description:
-      "Start with the new tractor, how it will be used and how long it will be kept.",
-  },
-  {
-    id: "package",
-    label: "Package",
-    title: "Choose what to include",
-    description:
-      "Start with standard finance, add scheduled servicing, or include both servicing and a maintenance reserve.",
+      "Start with the new asset price, expected usage, useful lifetime and how long it will be kept.",
   },
   {
     id: "finance",
     label: "Finance",
-    title: "Set the finance structure",
+    title: "Choose the finance structure",
     description:
-      "Enter the deposit, interest rate, term and any balloon or initiation fees.",
+      "Choose standard finance or add service and maintenance, then enter the finance terms.",
   },
   {
     id: "service",
@@ -165,7 +156,7 @@ const FLOW_STEPS = [
   {
     id: "depreciation",
     label: "Depreciation",
-    title: "See how the tractor value changes",
+    title: "See how the asset value changes",
     description:
       "Aim4price combines age, projected hours and end condition to calculate future value and trade equity.",
   },
@@ -186,16 +177,16 @@ const PACKAGE_OPTIONS: Array<{
   {
     id: "standard",
     label: "Standard finance",
-    description: "Finance the tractor only. Service and maintenance remain pay-as-you-go.",
+    description: "Finance the asset only. Service and maintenance remain pay-as-you-go.",
   },
   {
     id: "service",
-    label: "Add service",
+    label: "Add service plan",
     description: "Include the scheduled warranty service plan in the financed amount.",
   },
   {
     id: "full",
-    label: "Add service + maintenance",
+    label: "Add service + maintenance reserve",
     description: "Include scheduled servicing and a separate post-warranty maintenance reserve.",
   },
 ];
@@ -374,12 +365,23 @@ export default function LifecycleCalculatorClient() {
   const selectedPackage =
     PACKAGE_OPTIONS.find((option) => option.id === state.packageOption) ??
     PACKAGE_OPTIONS[0];
+  const expectedPaymentEndYear =
+    Math.round(state.purchaseYear) + Math.ceil(state.termMonths / 12);
 
   function update<K extends keyof CalculatorState>(
     key: K,
     value: CalculatorState[K],
   ) {
     setState((current) => ({ ...current, [key]: value }));
+  }
+
+  function updateOwnershipHorizon(value: number) {
+    const years = Math.max(1, value);
+    setState((current) => ({
+      ...current,
+      ownershipYears: years,
+      termMonths: Math.max(1, Math.round(years * 12)),
+    }));
   }
 
   function moveToStep(step: number) {
@@ -409,10 +411,10 @@ export default function LifecycleCalculatorClient() {
   }
 
   const stepIsValid =
-    activeStepId === "tractor"
+    activeStepId === "asset"
       ? state.tractorPrice > 0 &&
         state.purchaseYear >= 2000 &&
-        state.powerKw > 0 &&
+        state.expectedLifetimeHours > 0 &&
         state.ownershipYears > 0 &&
         state.annualHours >= 0
       : activeStepId === "finance"
@@ -511,28 +513,26 @@ export default function LifecycleCalculatorClient() {
         feeFinance.monthlyPayment,
     );
     const targetYear = state.purchaseYear + state.ownershipYears;
-    const futureValue = calculateFutureTractorValue({
+    const futureValue = calculateFutureAssetValue({
       newPrice: state.tractorPrice,
       purchaseYear: state.purchaseYear,
       targetYear,
       startingHours: state.startingHours,
       expectedAnnualHours: state.annualHours,
-      tractorType: state.tractorType,
-      powerKw: state.powerKw,
+      lifetimeHours: state.expectedLifetimeHours,
       condition: state.condition,
       inflationRatePct: state.replacementInflationPct,
     });
     const conditionValues = CONDITION_OPTIONS.map((option) => ({
       ...option,
       factor: CONDITION_FACTORS[option.id],
-      value: calculateFutureTractorValue({
+      value: calculateFutureAssetValue({
         newPrice: state.tractorPrice,
         purchaseYear: state.purchaseYear,
         targetYear,
         startingHours: state.startingHours,
         expectedAnnualHours: state.annualHours,
-        tractorType: state.tractorType,
-        powerKw: state.powerKw,
+        lifetimeHours: state.expectedLifetimeHours,
         condition: option.id,
         inflationRatePct: state.replacementInflationPct,
       }).estimatedRetailValue,
@@ -620,8 +620,7 @@ export default function LifecycleCalculatorClient() {
         purchaseYear: state.purchaseYear,
         startingHours: state.startingHours,
         expectedAnnualHours: state.annualHours,
-        tractorType: state.tractorType,
-        powerKw: state.powerKw,
+        lifetimeHours: state.expectedLifetimeHours,
         condition: state.condition,
         inflationRatePct: state.replacementInflationPct,
       },
@@ -763,7 +762,7 @@ export default function LifecycleCalculatorClient() {
         <div className={styles.summaryHeading}>
           <div>
             <p className={styles.eyebrow}>Lifecycle results</p>
-            <h2>{state.tractorDescription || "New tractor scenario"}</h2>
+            <h2>{state.tractorDescription || "New asset scenario"}</h2>
             <span>
               {state.clientName || "Pre-purchase scenario"} · {state.ownershipYears}
               -year ownership plan · {selectedPackage.label}
@@ -788,7 +787,12 @@ export default function LifecycleCalculatorClient() {
         </div>
 
         <div className={styles.summaryGrid}>
-          <Metric label="New tractor" value={rand(state.tractorPrice)} />
+          <Metric label="New asset" value={rand(state.tractorPrice)} />
+          <Metric
+            label="Expected payment end"
+            value={String(expectedPaymentEndYear)}
+            detail={`${state.termMonths} month finance term`}
+          />
           <Metric
             label="Selected financed package"
             value={rand(model.packageLoan.principal)}
@@ -890,7 +894,7 @@ export default function LifecycleCalculatorClient() {
           <p className={styles.eyebrow}>Selected finance package</p>
           <h2>{selectedPackage.label}</h2>
           <div className={styles.resultLines}>
-            <div><span>Tractor</span><strong>{rand(state.tractorPrice)}</strong></div>
+            <div><span>Asset</span><strong>{rand(state.tractorPrice)}</strong></div>
             {includesService ? <div><span>Service plan</span><strong>{rand(model.servicePlan.packageAmount)}</strong></div> : null}
             {includesMaintenance ? <div><span>Maintenance reserve</span><strong>{rand(model.reserve.packageAmount)}</strong></div> : null}
             {state.financeFees > 0 ? <div><span>Finance fees</span><strong>{rand(state.financeFees)}</strong></div> : null}
@@ -924,17 +928,17 @@ export default function LifecycleCalculatorClient() {
       <div className={styles.contentGrid}>
         <section
           className={`${styles.card} ${styles.fullWidth}`}
-          hidden={activeStepId !== "tractor"}
+          hidden={activeStepId !== "asset"}
         >
           <div className={styles.sectionHeading}>
             <div>
-              <h2>Tractor</h2>
-              <p>Start with the negotiated new price before depreciation.</p>
+              <h2>Asset</h2>
+              <p>Start with the negotiated new price and expected working life.</p>
             </div>
           </div>
           <div className={styles.formGrid}>
             <NumericField
-              label="New tractor price"
+              label="New asset price"
               value={state.tractorPrice}
               onChange={(value) => update("tractorPrice", value)}
               prefix="R"
@@ -946,26 +950,6 @@ export default function LifecycleCalculatorClient() {
               onChange={(value) => update("purchaseYear", value)}
               min={2000}
               max={CURRENT_YEAR + 5}
-            />
-            <label className={styles.field}>
-              <span>Tractor type</span>
-              <div className={styles.inputShell}>
-                <select
-                  value={state.tractorType}
-                  onChange={(event) =>
-                    update("tractorType", event.target.value as TractorType)
-                  }
-                >
-                  <option value="field">Field</option>
-                  <option value="orchard">Orchard</option>
-                </select>
-              </div>
-            </label>
-            <NumericField
-              label="Power"
-              value={state.powerKw}
-              onChange={(value) => update("powerKw", value)}
-              suffix="kW"
             />
             <NumericField
               label="Starting hours"
@@ -981,73 +965,43 @@ export default function LifecycleCalculatorClient() {
               step={100}
             />
             <NumericField
+              label="Expected lifetime"
+              value={state.expectedLifetimeHours}
+              onChange={(value) => update("expectedLifetimeHours", value)}
+              suffix="hours"
+              min={1}
+              step={500}
+              help="Editable for the specific asset and its expected working life."
+            />
+            <NumericField
               label="Ownership horizon"
               value={state.ownershipYears}
-              onChange={(value) => update("ownershipYears", value)}
+              onChange={updateOwnershipHorizon}
               suffix="years"
               min={1}
               max={15}
             />
+            <label className={styles.field}>
+              <span>Expected end-of-payment year</span>
+              <div className={`${styles.inputShell} ${styles.calculatedInput}`}>
+                <output>{expectedPaymentEndYear}</output>
+              </div>
+              <small>Automatically follows the ownership horizon and updates if the finance term changes.</small>
+            </label>
           </div>
-          <div className={styles.inlineResult}>
-            <span>Expected future hours</span>
-            <strong>{numberFormat.format(model.futureValue.expectedHours)} h</strong>
-          </div>
-        </section>
-
-        <section
-          className={`${styles.card} ${styles.fullWidth}`}
-          hidden={activeStepId !== "package"}
-        >
-          <div className={styles.sectionHeading}>
+          <div className={styles.assetProjection}>
             <div>
-              <h2>What should the finance include?</h2>
-              <p>Choose one clear starting point. You can change it later.</p>
+              <span>Expected hours at end</span>
+              <strong>{numberFormat.format(model.futureValue.expectedHours)} h</strong>
             </div>
-          </div>
-          <div className={styles.packageChoices} role="radiogroup" aria-label="Finance package">
-            {PACKAGE_OPTIONS.map((option, index) => {
-              const selected = state.packageOption === option.id;
-              const loan =
-                option.id === "full"
-                  ? model.fullPackageLoan
-                  : option.id === "service"
-                    ? model.tractorServiceLoan
-                    : model.tractorOnlyLoan;
-              const addedAmount =
-                option.id === "full"
-                  ? model.servicePlan.packageAmount + model.reserve.packageAmount
-                  : option.id === "service"
-                    ? model.servicePlan.packageAmount
-                    : 0;
-
-              return (
-                <button
-                  key={option.id}
-                  type="button"
-                  className={`${styles.packageChoice} ${selected ? styles.packageChoiceActive : ""}`}
-                  onClick={() => update("packageOption", option.id)}
-                  role="radio"
-                  aria-checked={selected}
-                >
-                  <span className={styles.packageChoiceIcon}>{index + 1}</span>
-                  <span className={styles.packageChoiceCopy}>
-                    <strong>{option.label}</strong>
-                    <small>{option.description}</small>
-                    <b>
-                      {randCents(loan.monthlyPayment)} / month
-                      {addedAmount > 0 ? ` · adds ${rand(addedAmount)}` : ""}
-                    </b>
-                  </span>
-                  <span className={styles.packageChoiceCheck}>{selected ? "✓" : "›"}</span>
-                </button>
-              );
-            })}
-          </div>
-          <div className={styles.selectionNote}>
-            <span>Selected</span>
-            <strong>{selectedPackage.label}</strong>
-            <small>Monthly values use the current finance assumptions and update automatically.</small>
+            <div>
+              <span>Expected lifetime</span>
+              <strong>{numberFormat.format(state.expectedLifetimeHours)} h</strong>
+            </div>
+            <div>
+              <span>Payment end year</span>
+              <strong>{expectedPaymentEndYear}</strong>
+            </div>
           </div>
         </section>
 
@@ -1059,6 +1013,33 @@ export default function LifecycleCalculatorClient() {
             <div>
               <h2>Finance</h2>
               <p>Standard monthly amortising finance with an optional balloon.</p>
+            </div>
+          </div>
+          <div className={styles.financePackagePicker}>
+            <label className={styles.field}>
+              <span>Finance option</span>
+              <div className={styles.inputShell}>
+                <select
+                  value={state.packageOption}
+                  onChange={(event) =>
+                    update("packageOption", event.target.value as FinancePackage)
+                  }
+                >
+                  {PACKAGE_OPTIONS.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </label>
+            <div>
+              <strong>{selectedPackage.label}</strong>
+              <span>{selectedPackage.description}</span>
+              <small>
+                {includesService ? `${rand(model.servicePlan.packageAmount)} service plan` : "No service plan"}
+                {includesMaintenance ? ` · ${rand(model.reserve.packageAmount)} maintenance reserve` : ""}
+              </small>
             </div>
           </div>
           <div className={styles.formGrid}>
@@ -1082,7 +1063,7 @@ export default function LifecycleCalculatorClient() {
               onChange={(value) => update("termMonths", value)}
               suffix="months"
               min={1}
-              max={120}
+              max={180}
             />
             <NumericField
               label="Balloon / residual"
@@ -1280,12 +1261,12 @@ export default function LifecycleCalculatorClient() {
           </div>
           <div className={styles.packageGrid}>
             <article className={state.packageOption === "standard" ? styles.packagePrimary : ""}>
-              <span>Base tractor only</span>
+              <span>Base asset only</span>
               <strong>{rand(state.tractorPrice)}</strong>
               <small>{randCents(model.tractorOnlyLoan.monthlyPayment)} / month</small>
             </article>
             <article className={state.packageOption === "service" ? styles.packagePrimary : ""}>
-              <span>Tractor + warranty servicing</span>
+              <span>Asset + warranty servicing</span>
               <strong>{rand(state.tractorPrice + model.servicePlan.packageAmount)}</strong>
               <small>{randCents(model.tractorServiceLoan.monthlyPayment)} / month</small>
             </article>
@@ -1303,7 +1284,7 @@ export default function LifecycleCalculatorClient() {
           </div>
           <div className={styles.contributionBar} aria-label="Monthly instalment breakdown">
             <div>
-              <span>Tractor</span>
+              <span>Asset</span>
               <strong>{randCents(model.tractorContribution)}</strong>
             </div>
             <div>
@@ -1452,7 +1433,7 @@ export default function LifecycleCalculatorClient() {
           <div className={styles.sectionHeading}>
             <div>
               <h2>Future Value</h2>
-              <p>Pre-purchase projection using Aim4price tractor depreciation logic.</p>
+              <p>Pre-purchase projection using Aim4price age, usage and condition depreciation logic.</p>
             </div>
           </div>
           <div
@@ -1631,7 +1612,7 @@ export default function LifecycleCalculatorClient() {
         >
           <summary>
             <div>
-              <h2>Next Tractor Cycle</h2>
+              <h2>Next Asset Cycle</h2>
               <p>Optional: allocate future equity to the next service plan, reserve and deposit.</p>
             </div>
           </summary>
@@ -1650,7 +1631,7 @@ export default function LifecycleCalculatorClient() {
               <div className={styles.equityResult}><span>Replacement deposit</span><strong>{rand(model.nextCycle.remainingDeposit)}</strong></div>
             </div>
             <div className={styles.metricGrid} hidden={activeStepId !== "results" || resultView !== "advanced"}>
-              <Metric label="Expected equivalent tractor price" value={rand(model.nextCycle.nextTractorPrice)} />
+              <Metric label="Expected equivalent asset price" value={rand(model.nextCycle.nextTractorPrice)} />
               <Metric label="Next-cycle financed amount" value={rand(model.nextCycle.nextFinancedAmount)} />
               {model.nextCycle.allocationShortfall > 0 ? (
                 <Metric label="Maintenance allocation shortfall" value={rand(model.nextCycle.allocationShortfall)} tone="red" />
@@ -1672,7 +1653,7 @@ export default function LifecycleCalculatorClient() {
           <div className={styles.detailsBody}>
             <div className={styles.formGrid}>
               <TextField label="Client / Farm name" value={state.clientName} onChange={(value) => update("clientName", value)} placeholder="Optional" />
-              <TextField label="Tractor description" value={state.tractorDescription} onChange={(value) => update("tractorDescription", value)} placeholder="e.g. 90 kW field tractor" />
+              <TextField label="Asset description" value={state.tractorDescription} onChange={(value) => update("tractorDescription", value)} placeholder="e.g. tractor, harvester or industrial machine" />
               <TextField label="Dealer" value={state.dealerName} onChange={(value) => update("dealerName", value)} placeholder="Optional" />
               <TextField label="Quote reference" value={state.quoteReference} onChange={(value) => update("quoteReference", value)} placeholder="Optional" />
               <label className={`${styles.field} ${styles.notesField}`}>
@@ -1717,7 +1698,7 @@ export default function LifecycleCalculatorClient() {
               <NumericField label="Estimated recon cost" value={state.dealerReconCost} onChange={(value) => update("dealerReconCost", value)} prefix="R" />
               <NumericField label="Estimated holding cost" value={state.dealerHoldingCost} onChange={(value) => update("dealerHoldingCost", value)} prefix="R" />
               <NumericField label="Service / parts gross margin" value={state.dealerGrossMarginPct} onChange={(value) => update("dealerGrossMarginPct", value)} suffix="%" max={100} step={0.5} help="Gross margin, not markup." />
-              <NumericField label="New-tractor gross profit" value={state.dealerNewTractorProfit} onChange={(value) => update("dealerNewTractorProfit", value)} prefix="R" />
+              <NumericField label="New-asset gross profit" value={state.dealerNewTractorProfit} onChange={(value) => update("dealerNewTractorProfit", value)} prefix="R" />
               <NumericField label="Commercial risk reserve" value={state.dealerRiskReserve} onChange={(value) => update("dealerRiskReserve", value)} prefix="R" />
             </div>
             <div
@@ -1726,7 +1707,7 @@ export default function LifecycleCalculatorClient() {
             >
               <Metric label="Trade contribution" value={rand(model.dealer.tradeContribution)} />
               <Metric label="Service / parts contribution" value={rand(model.dealer.servicePartsContribution)} detail="Revenue multiplied by gross margin; not total package revenue." />
-              <Metric label="New tractor contribution" value={rand(model.dealer.newTractorContribution)} />
+              <Metric label="New asset contribution" value={rand(model.dealer.newTractorContribution)} />
               <Metric label="Total estimated gross contribution" value={rand(model.dealer.totalGrossContribution)} />
               <Metric label="Risk reserve" value={rand(model.dealer.riskReserve)} />
               <Metric label="Remaining commercial buffer" value={rand(model.dealer.commercialBuffer)} tone={model.dealer.commercialBuffer >= 0 ? "green" : "red"} />
