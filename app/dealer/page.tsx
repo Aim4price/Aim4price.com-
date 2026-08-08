@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { getServerSession } from '../../lib/auth-session';
+import { getServerSession, isDealerAppSession } from '../../lib/auth-session';
 import { getDealerAppSession } from '../../lib/dealer-app-session';
 import { getAccountProfile } from '../../lib/account-profile';
 import { dealerRoleCan, type DealerAppCapability } from '../../lib/dealer-app-access';
@@ -52,13 +52,14 @@ export default async function DealerHome() {
     redirect('/dealer/login');
   }
 
+  const activeStaffId = isDealerAppSession(session) ? session.dealerApp.staffId : null;
   const [maintenanceNotifications, leads, trackedAssets] = await Promise.all([
     listDealerMaintenanceNotificationsForViewer({
       dealerUserId: session.user.id,
-      viewerKey: dealerAppSession
-        ? `dealer-staff:${dealerAppSession.staffId}`
+      viewerKey: activeStaffId
+        ? `dealer-staff:${activeStaffId}`
         : `account:${session.user.id}`,
-      staffId: dealerAppSession?.staffId ?? null,
+      staffId: activeStaffId,
     }).catch(() => []),
     listAssetLeadsForUser(session.user.id).catch(() => []),
     listDealerTrackedAssets(session.user.id).catch(() => []),
