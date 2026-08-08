@@ -50,7 +50,7 @@ test('Dealer notifications are dealership-wide with per-staff clearing and assig
   assert.match(readState, /unique \(viewer_key, event_key\)/i);
 });
 
-test('Field Manager assigned notifications require explicit clear confirmation', async () => {
+test('Field Manager notifications are shared operationally while assigned items require confirmation', async () => {
   const [notifications, route, client, home] = await Promise.all([
     read('lib/field-manager-notifications.ts'),
     read('app/api/field-manager/notifications/route.ts'),
@@ -58,12 +58,15 @@ test('Field Manager assigned notifications require explicit clear confirmation',
     read('app/field-manager/field-manager-home-client.tsx'),
   ]);
 
-  assert.match(notifications, /record\.assignedFieldManagerId === input\.managerId/);
-  assert.match(notifications, /assignedToViewer: true/);
+  assert.match(notifications, /\['overdue', 'due', 'due_soon'\]\.includes\(record\.computedStatus\)/);
+  assert.match(notifications, /isSharedMaintenanceNotification\(record\)[\s\S]*?record\.assignedFieldManagerId === input\.managerId/);
+  assert.match(notifications, /const assignedToViewer = record\.assignedFieldManagerId === input\.managerId/);
+  assert.match(notifications, /listReadNotificationEventKeys\(viewerKey\(input\.managerId\), keys\)/);
   assert.match(route, /requireActiveFieldManagerSession/);
+  assert.match(client, /notification\.assignedToViewer[\s\S]*?setClearRequest\(\{ ids: \[notification\.id\], bulk: false \}\)/);
   assert.match(client, /This notification was specifically assigned to you\. Are you sure you want to clear it\?/);
-  assert.match(client, /These notifications were specifically assigned to you\. Are you sure you want to clear them\?/);
-  assert.match(client, /setClearRequest\(\{ ids: \[notification\.id\], bulk: false \}\)/);
+  assert.match(client, /Some of these notifications were specifically assigned to you\. Are you sure you want to clear them\?/);
+  assert.match(client, /void clearNotifications\(\[notification\.id\]\)/);
   assert.match(home, /\/field-manager\/notifications/);
   assert.match(home, /notificationCount/);
 });
