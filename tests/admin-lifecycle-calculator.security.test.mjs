@@ -54,7 +54,7 @@ test("normal navigation stays private while all admin navigation links to the mo
 });
 
 test("the calculator is a live workspace rather than a gated wizard", () => {
-  assert.match(client, /Lifecycle Scenario Workspace/);
+  assert.match(client, /Build the ownership case/);
   assert.match(client, /buildLifecycleWorkspaceModel\(state\.modelInput\)/);
   assert.match(client, /model\.scenarios\.map/);
   assert.match(client, /Standard vs Service Plan vs Service \+ Maintenance/);
@@ -101,8 +101,9 @@ test("service and maintenance are separate editable lifecycle assumptions", () =
   assert.match(client, /Manual package amount/);
   assert.match(client, /value=\{model\.input\.negotiatedServiceAmount\}/);
   assert.match(client, /value=\{model\.input\.negotiatedMaintenanceReserve\}/);
-  assert.match(client, /R64,000 is only the regression example/);
-  assert.match(client, /R50,000 is only the regression example/);
+  assert.match(client, /Enter the amount quoted for this deal/);
+  assert.match(client, /Enter the reserve agreed for this ownership period/);
+  assert.doesNotMatch(client, /regression example/);
 });
 
 test("VAT is explicit for base finance, package finance and refinance", () => {
