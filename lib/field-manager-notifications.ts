@@ -13,7 +13,7 @@ export type FieldManagerNotification = {
   href: string;
   createdAtIso: string;
   isRead: boolean;
-  assignedToViewer: true;
+  assignedToViewer: boolean;
 };
 
 function statusPriority(record: AssetMaintenanceRecord): number {
@@ -21,6 +21,10 @@ function statusPriority(record: AssetMaintenanceRecord): number {
   if (record.computedStatus === 'due') return 1;
   if (record.computedStatus === 'due_soon') return 2;
   return 3;
+}
+
+function isSharedMaintenanceNotification(record: AssetMaintenanceRecord): boolean {
+  return ['overdue', 'due', 'due_soon'].includes(record.computedStatus);
 }
 
 function dueText(record: AssetMaintenanceRecord): string {
@@ -52,6 +56,13 @@ function dueText(record: AssetMaintenanceRecord): string {
   return 'Open Overview to review the maintenance target.';
 }
 
+function sharedTitle(record: AssetMaintenanceRecord, maintenanceLabel: string): string {
+  if (record.computedStatus === 'overdue') return `${maintenanceLabel} overdue`;
+  if (record.computedStatus === 'due') return `${maintenanceLabel} due now`;
+  if (record.computedStatus === 'due_soon') return `${maintenanceLabel} due soon`;
+  return `${maintenanceLabel} update`;
+}
+
 function eventKey(record: AssetMaintenanceRecord): string {
   return `field-manager-maintenance:${record.id}:${record.computedStatus}`;
 }
@@ -60,14 +71,20 @@ function viewerKey(managerId: string): string {
   return `field-manager:${managerId}`;
 }
 
-async function currentAssignedRecords(input: {
+async function currentNotificationRecords(input: {
   ownerUserId: string;
   managerId: string;
 }): Promise<AssetMaintenanceRecord[]> {
   const records = await listAssetMaintenanceRecords(input.ownerUserId, { status: 'upcoming' });
   return records
-    .filter((record) => record.assignedFieldManagerId === input.managerId)
+    .filter((record) => (
+      isSharedMaintenanceNotification(record)
+      || record.assignedFieldManagerId === input.managerId
+    ))
     .sort((left, right) => {
+      const leftAssigned = left.assignedFieldManagerId === input.managerId;
+      const rightAssigned = right.assignedFieldManagerId === input.managerId;
+      if (leftAssigned !== rightAssigned) return leftAssigned ? -1 : 1;
       const priority = statusPriority(left) - statusPriority(right);
       if (priority) return priority;
       return Date.parse(right.updatedAtIso) - Date.parse(left.updatedAtIso);
@@ -78,23 +95,26 @@ export async function listFieldManagerNotifications(input: {
   ownerUserId: string;
   managerId: string;
 }): Promise<FieldManagerNotification[]> {
-  const records = await currentAssignedRecords(input);
+  const records = await currentNotificationRecords(input);
   const keys = records.map(eventKey);
   const readKeys = await listReadNotificationEventKeys(viewerKey(input.managerId), keys);
 
   return records.map((record) => {
     const key = eventKey(record);
     const maintenanceLabel = record.maintenanceType === 'checkup' ? 'Check-up' : 'Service';
+    const assignedToViewer = record.assignedFieldManagerId === input.managerId;
     return {
       id: key,
       maintenanceRecordId: record.id,
       assetId: record.assetId,
-      title: `${maintenanceLabel} assigned to you`,
+      title: assignedToViewer
+        ? `${maintenanceLabel} assigned to you`
+        : sharedTitle(record, maintenanceLabel),
       body: `${record.assetTitle}: ${record.title}. ${dueText(record)}`,
       href: '/field-manager/overview',
       createdAtIso: record.updatedAtIso || record.createdAtIso,
       isRead: readKeys.has(key),
-      assignedToViewer: true,
+      assignedToViewer,
     };
   });
 }
@@ -109,7 +129,7 @@ export async function markFieldManagerNotificationsRead(input: {
   );
   if (!requested.size) return;
 
-  const records = await currentAssignedRecords(input);
+  const records = await currentNotificationRecords(input);
   const allowedKeys = records.map(eventKey).filter((key) => requested.has(key));
   await markNotificationEventKeysRead(viewerKey(input.managerId), allowedKeys);
 }
