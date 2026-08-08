@@ -15,6 +15,10 @@ on:
       - 'app/field-manager/notifications/**'
       - 'app/field-manager/field-manager-home-client.tsx'
       - 'app/account/**'
+      - 'app/admin/lifecycle-calculator/**'
+      - 'lib/admin-lifecycle-calculator.ts'
+      - 'tests/admin-lifecycle-calculator.test.mjs'
+      - 'tests/admin-lifecycle-calculator.security.test.mjs'
       - 'app/tracking/**'
       - 'components/AppHeader.tsx'
       - 'components/AppHeader.module.css'
@@ -67,6 +71,9 @@ jobs:
 
       - name: Test app access modal flows
         run: npm run test:account-app-access
+
+      - name: Test admin lifecycle calculator
+        run: npm run test:lifecycle-calculator
 
       - name: Test Owner App operations
         run: npm run test:owner-app-operations
