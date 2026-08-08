@@ -15,8 +15,8 @@ export default async function LifecycleCalculatorPage() {
         <header className={styles.topBar}>
           <div className={styles.titleBlock}>
             <p className={styles.eyebrow}>Aim4price admin</p>
-            <h1>Lifecycle Calculator</h1>
-            <span>Asset lifecycle, depreciation and finance scenario model</span>
+            <h1>Asset Lifecycle &amp; Cash-Flow Model</h1>
+            <span>Admin-exclusive financial advice and ownership scenario workspace</span>
           </div>
 
           <nav className={styles.toolbar} aria-label="Admin navigation">
@@ -31,7 +31,7 @@ export default async function LifecycleCalculatorPage() {
               className={`${styles.adminButton} ${styles.adminButtonActive}`}
               aria-current="page"
             >
-              Lifecycle Calculator
+              Lifecycle Model
             </Link>
           </nav>
         </header>
