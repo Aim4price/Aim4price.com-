@@ -4,16 +4,23 @@ import test from 'node:test';
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
-test('Dealer App Leads paints from a ten-lead batch and hydrates the rest', async () => {
-  const [page, client] = await Promise.all([
+test('Dealer App Leads paints from received dealer leads and always hydrates the full inbox', async () => {
+  const [loader, page, client] = await Promise.all([
+    read('lib/dealer-leads-initial-load.ts'),
     read('app/dealer/leads/page.tsx'),
     read('app/leads/leads-client.tsx'),
   ]);
 
   assert.match(page, /const INITIAL_LEAD_BATCH_SIZE = 10/);
-  assert.match(page, /listAssetLeadsForUser\(session\.user\.id, \{ limit: INITIAL_LEAD_BATCH_SIZE \+ 1 \}\)/);
-  assert.match(page, /initialLeads=\{initialLeads\.slice\(0, INITIAL_LEAD_BATCH_SIZE\)\}/);
-  assert.match(page, /initialLeadsHaveMore=\{initialLeads\.length > INITIAL_LEAD_BATCH_SIZE\}/);
+  assert.match(page, /listInitialDealerReceivedLeads\(session\.user\.id, INITIAL_LEAD_BATCH_SIZE\)/);
+  assert.match(page, /initialLeads=\{initialLeads\}/);
+  assert.match(page, /initialLeadsHaveMore\s*\n/);
+
+  assert.match(loader, /where l\.partner_user_id = \$1/);
+  assert.match(loader, /order by l\.created_at desc, l\.id desc/);
+  assert.match(loader, /limit \$2/);
+  assert.doesNotMatch(loader, /owner_user_id = \$1 or l\.partner_user_id = \$1/);
+
   assert.match(client, /initialLeadsHaveMore/);
   assert.match(client, /window\.setTimeout\(\(\) => void loadData\(false, true\), 0\)/);
 });
