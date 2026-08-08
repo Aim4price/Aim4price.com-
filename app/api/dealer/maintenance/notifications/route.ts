@@ -1,30 +1,47 @@
 import { NextResponse } from 'next/server';
 import { getAccountProfile } from '../../../../../lib/account-profile';
-import { getServerSession } from '../../../../../lib/auth-session';
+import { getServerSession, isDealerAppSession } from '../../../../../lib/auth-session';
 import {
-  listDealerMaintenanceNotifications,
-  markDealerMaintenanceNotificationsRead,
-} from '../../../../../lib/dealer-maintenance-tracker';
+  listDealerMaintenanceNotificationsForViewer,
+  markDealerMaintenanceNotificationsReadForViewer,
+} from '../../../../../lib/dealer-maintenance-notification-inbox';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-async function dealerUserId(): Promise<string> {
+type DealerNotificationContext = {
+  dealerUserId: string;
+  viewerKey: string;
+  staffId: string | null;
+};
+
+async function dealerNotificationContext(): Promise<DealerNotificationContext | null> {
   const session = await getServerSession({ allowDealerApp: true });
-  if (!session?.user?.id) return '';
+  if (!session?.user?.id) return null;
+
   const profile = await getAccountProfile({
     id: session.user.id,
     name: session.user.name,
     email: session.user.email,
   });
-  return profile.accountType === 'dealer' && profile.accountStatus === 'active' ? session.user.id : '';
+  if (profile.accountType !== 'dealer' || profile.accountStatus !== 'active') return null;
+
+  const dealerAppSession = isDealerAppSession(session) ? session.dealerApp : null;
+  return {
+    dealerUserId: session.user.id,
+    viewerKey: dealerAppSession
+      ? `dealer-staff:${dealerAppSession.staffId}`
+      : `account:${session.user.id}`,
+    staffId: dealerAppSession?.staffId ?? null,
+  };
 }
 
 export async function GET() {
-  const userId = await dealerUserId();
-  if (!userId) return NextResponse.json({ ok: false, error: 'Dealer App login is required.' }, { status: 401 });
+  const context = await dealerNotificationContext();
+  if (!context) return NextResponse.json({ ok: false, error: 'Dealer App login is required.' }, { status: 401 });
+
   try {
-    const notifications = await listDealerMaintenanceNotifications(userId);
+    const notifications = await listDealerMaintenanceNotificationsForViewer(context);
     return NextResponse.json({
       ok: true,
       notifications,
@@ -36,11 +53,27 @@ export async function GET() {
   }
 }
 
-export async function POST() {
-  const userId = await dealerUserId();
-  if (!userId) return NextResponse.json({ ok: false, error: 'Dealer App login is required.' }, { status: 401 });
+export async function POST(request: Request) {
+  const context = await dealerNotificationContext();
+  if (!context) return NextResponse.json({ ok: false, error: 'Dealer App login is required.' }, { status: 401 });
+
   try {
-    await markDealerMaintenanceNotificationsRead(userId);
+    const body = await request.json().catch(() => null) as { notificationIds?: unknown[] } | null;
+    let notificationIds = Array.isArray(body?.notificationIds)
+      ? body.notificationIds.map((value) => String(value ?? '').trim()).filter(Boolean)
+      : [];
+
+    // Keep older clients safe: an empty body still means "mark all checked" for
+    // this viewer only, never for the whole dealership.
+    if (!notificationIds.length) {
+      const notifications = await listDealerMaintenanceNotificationsForViewer(context);
+      notificationIds = notifications.filter((notification) => !notification.isRead).map((notification) => notification.id);
+    }
+
+    await markDealerMaintenanceNotificationsReadForViewer({
+      ...context,
+      notificationIds,
+    });
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error('Dealer maintenance notifications POST failed.', error);

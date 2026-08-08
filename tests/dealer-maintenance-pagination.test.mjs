@@ -18,10 +18,11 @@ test('Dealer Maintenance is paginated in both Dealer App and desktop', () => {
   assert.match(desktopClient, /<DealerMaintenancePagination initialOpenAccessId=\{initialOpenAccessId\}>/);
 });
 
-test('Dealer App Maintenance loads independent profile and asset data together', () => {
+test('Dealer App Maintenance loads independent profile and fast first-page data together', () => {
   const page = read('app/dealer/maintenance/page.tsx');
 
-  assert.match(page, /const \[profile, assets\] = await Promise\.all\(\[/);
+  assert.match(page, /const \[profile, initialLoad\] = await Promise\.all\(\[/);
   assert.match(page, /getAccountProfile\(/);
-  assert.match(page, /listDealerTrackedAssets\(session\.user\.id\)/);
+  assert.match(page, /listInitialDealerTrackedAssets\(\{/);
+  assert.match(page, /initialAssetsHaveMore=\{initialLoad\.hasMore\}/);
 });

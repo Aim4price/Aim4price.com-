@@ -17,6 +17,7 @@ export async function GET() {
     const notifications = await listNotificationInbox({
       userId: access.ownerUserId,
       accountType: 'owner',
+      viewerKey: access.viewerKey,
     });
     return NextResponse.json({
       ok: true,
@@ -50,7 +51,7 @@ export async function PATCH(request: Request) {
     }
 
     await updateNotificationInboxState({
-      userId: access.ownerUserId,
+      userId: access.viewerKey,
       action,
       notificationIds,
     });

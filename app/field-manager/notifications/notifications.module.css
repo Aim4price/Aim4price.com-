@@ -1,0 +1,241 @@
+.page {
+  min-height: 100dvh;
+  background: linear-gradient(180deg, #f8fcf9 0%, #f3f8f5 100%);
+  color: #14352c;
+}
+
+.shell {
+  width: min(100%, 620px);
+  margin: 0 auto;
+  padding: calc(20px + env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) calc(34px + env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
+}
+
+.header {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr) 88px;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.header h1 {
+  margin: 0;
+  text-align: center;
+  font-size: clamp(1.55rem, 7vw, 2rem);
+  letter-spacing: -0.04em;
+}
+
+.headerSpacer {
+  width: 88px;
+}
+
+.backButton,
+.clearAllButton,
+.clearButton,
+.modalActions button {
+  min-height: 44px;
+  border: 1px solid rgba(191, 208, 199, 0.95);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.96);
+  color: #173b31;
+  font: inherit;
+  font-weight: 760;
+  cursor: pointer;
+}
+
+.backButton {
+  width: 88px;
+}
+
+.tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 6px;
+  border: 1px solid rgba(207, 220, 213, 0.95);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.tabs button {
+  min-height: 48px;
+  border: 0;
+  border-radius: 13px;
+  background: transparent;
+  color: #526b63;
+  font: inherit;
+  font-weight: 760;
+  cursor: pointer;
+}
+
+.tabs button strong {
+  margin-left: 7px;
+}
+
+.tabs .tabActive {
+  background: #e8f6ee;
+  color: #0e5c43;
+  box-shadow: inset 0 0 0 1px rgba(97, 181, 137, 0.35);
+}
+
+.clearAllButton {
+  width: 100%;
+  margin-top: 12px;
+  background: #edf8f2;
+  border-color: rgba(104, 184, 142, 0.45);
+  color: #0b6044;
+}
+
+.error,
+.empty {
+  margin: 16px 0 0;
+  padding: 16px;
+  border-radius: 16px;
+  text-align: center;
+}
+
+.error {
+  border: 1px solid #efc5c5;
+  background: #fff3f3;
+  color: #8b3030;
+}
+
+.empty {
+  border: 1px dashed rgba(191, 208, 199, 0.95);
+  background: rgba(255, 255, 255, 0.72);
+  color: #607169;
+}
+
+.list {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.card {
+  overflow: hidden;
+  border: 1px solid rgba(199, 215, 207, 0.96);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 12px 30px rgba(21, 56, 46, 0.05);
+}
+
+.cardActive {
+  border-color: rgba(99, 184, 142, 0.55);
+  background: linear-gradient(180deg, #ffffff 0%, #f0faf5 100%);
+}
+
+.cardHistory {
+  opacity: 0.78;
+}
+
+.cardLink {
+  display: block;
+  padding: 17px 17px 12px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.cardLink time {
+  display: block;
+  margin-bottom: 7px;
+  color: #74877f;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.cardLink h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.25;
+}
+
+.cardLink p {
+  margin: 8px 0 0;
+  color: #5a6c65;
+  font-size: 0.93rem;
+  line-height: 1.5;
+}
+
+.assignedBadge {
+  display: inline-flex;
+  margin-top: 11px;
+  padding: 6px 9px;
+  border-radius: 999px;
+  background: #fff3d8;
+  color: #75530b;
+  font-size: 0.74rem;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.clearButton {
+  width: calc(100% - 24px);
+  margin: 0 12px 12px;
+  background: #fff;
+}
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.modalBackdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgba(11, 30, 24, 0.5);
+}
+
+.modal {
+  position: relative;
+  width: min(100%, 420px);
+  padding: 22px;
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(12, 35, 28, 0.24);
+}
+
+.modal h2 {
+  margin: 0;
+  font-size: 1.35rem;
+}
+
+.modal p {
+  margin: 10px 0 0;
+  color: #5b6c65;
+  line-height: 1.55;
+}
+
+.modalActions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.modalActions .modalConfirm {
+  border-color: rgba(184, 133, 38, 0.45);
+  background: #fff2d5;
+  color: #684607;
+}
+
+@media (max-width: 390px) {
+  .header {
+    grid-template-columns: 72px minmax(0, 1fr) 72px;
+  }
+
+  .backButton,
+  .headerSpacer {
+    width: 72px;
+  }
+
+  .modalActions {
+    grid-template-columns: 1fr;
+  }
+}

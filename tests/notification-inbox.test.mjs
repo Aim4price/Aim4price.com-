@@ -131,25 +131,24 @@ test('Owner and Dealer notifications keep Active and History while Field Manager
 });
 
 test('Field Manager Overview requires a captured location before service opens', async () => {
-  const [managerClient, locationGate, locationSession, openRoute, styles] = await Promise.all([
+  const [managerClient, serviceLocationModal, fuelLocationModal, locationSession, openRoute] = await Promise.all([
     read('app/field-manager/field-manager-overview-client.tsx'),
-    read('app/field-manager/field-manager-location-gate.tsx'),
+    read('app/field-manager/field-manager-service-location-modal.tsx'),
+    read('components/FuelLocationModal.tsx'),
     read('lib/field-manager-location-session.ts'),
     read('app/api/field-manager/assets/[assetId]/open/route.ts'),
-    read('app/field-manager/page.module.css'),
   ]);
 
   assert.match(managerClient, /setLocationGate\(\{/);
-  assert.match(managerClient, /<FieldManagerLocationGate/);
+  assert.match(managerClient, /<FieldManagerServiceLocationModal/);
   assert.doesNotMatch(managerClient, /window\.location\.assign\(payload\.redirectTo\)/);
-  assert.match(locationGate, /navigator\.geolocation\.getCurrentPosition/);
-  assert.match(locationGate, /maximumAge: 0/);
-  assert.match(locationGate, /locationState === 'error'\s*\? 'Retry'/);
-  assert.match(locationGate, /saveFieldManagerServiceLocation/);
-  assert.match(locationGate, /window\.location\.assign\(redirectTo\)/);
+  assert.match(serviceLocationModal, /saveFieldManagerServiceLocation/);
+  assert.match(serviceLocationModal, /window\.location\.assign\(redirectTo\)/);
+  assert.match(serviceLocationModal, /<FuelLocationModal/);
+  assert.match(fuelLocationModal, /navigator\.geolocation\.getCurrentPosition/);
+  assert.match(fuelLocationModal, /maximumAge: 0/);
+  assert.match(fuelLocationModal, /locationState === 'error'[\s\S]*?\? 'Retry'/);
   assert.match(locationSession, /aim4price_qr_scan_session_v1:/);
   assert.match(locationSession, /latitude: String\(input\.latitude\)/);
   assert.match(openRoute, /publicAssetCode: asset\.publicAssetCode/);
-  assert.match(styles, /\.locationGateCardError/);
-  assert.match(styles, /\.locationGateStatusError/);
 });
