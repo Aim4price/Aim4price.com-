@@ -52,6 +52,179 @@
   white-space: nowrap;
 }
 
+.headerActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.7rem;
+}
+
+.adminNav {
+  padding: 0.25rem;
+  border: 1px solid #d7e1dc;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 12px 28px rgba(18, 45, 37, 0.045);
+  display: flex;
+  align-items: center;
+  gap: 0.18rem;
+}
+
+.adminNavLink {
+  min-height: 2.4rem;
+  padding: 0 0.95rem;
+  border-radius: 999px;
+  color: #52645d;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  font-size: 0.78rem;
+  font-weight: 850;
+  white-space: nowrap;
+  transition: 160ms ease;
+}
+
+.adminNavLink:hover {
+  color: #145840;
+  background: #eef7f2;
+}
+
+.adminNavActive,
+.adminNavActive:hover {
+  color: #ffffff;
+  background: #176c50;
+  box-shadow: 0 5px 12px rgba(23, 108, 80, 0.18);
+}
+
+.userSummary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.userSummary article {
+  min-width: 0;
+  padding: 0.95rem 1rem;
+  border: 1px solid #dfe8e3;
+  border-radius: 1rem;
+  background: #ffffff;
+  box-shadow: 0 14px 34px rgba(18, 45, 37, 0.045);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.12rem 0.75rem;
+}
+
+.userSummary span {
+  color: #52645d;
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.045em;
+}
+
+.userSummary strong {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  color: #17362c;
+  font-size: 1.45rem;
+  font-weight: 950;
+}
+
+.userSummary small {
+  color: #788780;
+  font-size: 0.7rem;
+  font-weight: 680;
+}
+
+.summaryActive {
+  border-color: #b9dcca !important;
+  background: #f2faf6 !important;
+}
+
+.summaryActive strong {
+  color: #176047;
+}
+
+.summaryPending {
+  border-color: #ecd9ab !important;
+  background: #fffbf2 !important;
+}
+
+.summaryPending strong {
+  color: #8a6125;
+}
+
+.summarySuspended {
+  border-color: #ecc9c9 !important;
+  background: #fff8f8 !important;
+}
+
+.summarySuspended strong {
+  color: #8f3333;
+}
+
+.filterPanel {
+  padding: 0.95rem 1rem 1rem;
+  border: 1px solid #dfe8e3;
+  border-radius: 1.05rem;
+  background: #ffffff;
+  box-shadow: 0 14px 34px rgba(18, 45, 37, 0.045);
+  display: grid;
+  gap: 0.8rem;
+}
+
+.filterHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.filterHeading > div {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.filterHeading strong {
+  color: #17362c;
+  font-size: 0.88rem;
+  font-weight: 900;
+}
+
+.filterHeading span {
+  color: #71817b;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.filterBar {
+  display: grid;
+  grid-template-columns: minmax(18rem, 1fr) minmax(10rem, auto) minmax(12rem, auto);
+  align-items: end;
+  gap: 0.75rem;
+}
+
+.clearFiltersButton {
+  min-height: 2.15rem;
+  padding: 0 0.8rem;
+  border: 1px solid #d7e1dc;
+  border-radius: 999px;
+  color: #375249;
+  background: #f7faf8;
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.clearFiltersButton:hover {
+  border-color: #aac9bb;
+  color: #145840;
+  background: #edf7f2;
+}
+
 .toolbar {
   flex: 1 1 52rem;
   display: flex;
@@ -1179,6 +1352,29 @@
     justify-content: stretch;
   }
 
+  .headerActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .adminNav {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    border-radius: 0.9rem;
+  }
+
+  .userSummary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .filterBar {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .filterBar .searchField {
+    grid-column: 1 / -1;
+  }
+
   .searchField {
     width: 100%;
   }
@@ -1216,6 +1412,26 @@
 
   .toolbar {
     flex-direction: column;
+  }
+
+  .adminNav,
+  .userSummary,
+  .filterBar {
+    grid-template-columns: 1fr;
+  }
+
+  .filterBar .searchField {
+    grid-column: auto;
+  }
+
+  .filterHeading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .clearFiltersButton,
+  .headerActions > .signOutButton {
+    width: 100%;
   }
 
   .signupFilter,
