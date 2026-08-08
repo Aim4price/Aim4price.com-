@@ -27,6 +27,7 @@ async function notificationViewer() {
   return {
     userId: session.user.id,
     accountType: profile.accountType,
+    viewerKey: `account:${session.user.id}`,
   };
 }
 
@@ -68,7 +69,7 @@ export async function PATCH(request: Request) {
     }
 
     await updateNotificationInboxState({
-      userId: viewer.userId,
+      userId: viewer.viewerKey,
       action,
       notificationIds,
     });
