@@ -64,31 +64,65 @@ test("all existing admin navigation surfaces link to the calculator", () => {
 test("the calculator uses a guided start-to-results flow", () => {
   for (const label of [
     "Tractor",
+    "Package",
     "Finance",
+    "Service",
     "Maintenance",
-    "Trade-in",
-    "Next cycle",
-    "Report",
+    "Depreciation",
     "Results",
   ]) {
     assert.match(client, new RegExp(`label: "${label}"`));
   }
 
   assert.match(client, /const \[activeStep, setActiveStep\] = useState\(0\)/);
-  assert.match(client, /hidden=\{activeStep !== RESULTS_STEP\}/);
+  assert.match(client, /hidden=\{activeStepId !== "results"\}/);
   assert.match(client, /"Continue"/);
   assert.match(client, /"View results"/);
   assert.match(client, /← Back/);
-  assert.match(client, /Results are shown at the end\./);
+  assert.match(client, /The full result stays separate\./);
 });
 
 test("progress, actions and result-only panels remain usable across screen sizes", () => {
-  assert.match(calculatorStyles, /\.flowSteps \{[\s\S]*?grid-template-columns: repeat\(7/);
+  assert.match(calculatorStyles, /\.flowSteps \{[\s\S]*?grid-template-columns: repeat\(auto-fit/);
   assert.match(calculatorStyles, /\.flowActions \{[\s\S]*?position: sticky/);
   assert.match(calculatorStyles, /\.calculator \[hidden\] \{[\s\S]*?display: none !important/);
-  assert.match(calculatorStyles, /@media \(max-width: 800px\)[\s\S]*?\.flowSteps \{[\s\S]*?overflow-x: auto/);
+  assert.match(calculatorStyles, /@media \(max-width: 800px\)[\s\S]*?\.flowSteps \{[\s\S]*?display: flex[\s\S]*?overflow-x: auto/);
   assert.match(calculatorStyles, /@media \(max-width: 560px\)[\s\S]*?\.flowActions \{[\s\S]*?grid-template-columns: repeat\(2/);
   assert.match(calculatorStyles, /@media print[\s\S]*?\.flowHeader,[\s\S]*?\.flowActions/);
+});
+
+test("package selection clearly separates standard finance, service and maintenance", () => {
+  assert.match(client, /type FinancePackage = "standard" \| "service" \| "full"/);
+  assert.match(client, /label: "Standard finance"/);
+  assert.match(client, /label: "Add service"/);
+  assert.match(client, /label: "Add service \+ maintenance"/);
+  assert.match(client, /packageOption: "standard"/);
+  assert.match(client, /step\.id === "service"[\s\S]*?packageOption !== "standard"/);
+  assert.match(client, /step\.id === "maintenance"[\s\S]*?packageOption === "full"/);
+  assert.match(client, /Service plan included/);
+  assert.match(client, /Maintenance reserve included/);
+});
+
+test("Aim4price depreciation is visible and feeds the default trade and equity result", () => {
+  assert.match(client, /import \{ CONDITION_FACTORS \} from "\.\.\/\.\.\/\.\.\/lib\/valuation\/shared"/);
+  assert.match(client, /tradeMode: "haircut"/);
+  assert.match(client, /const conditionValues = CONDITION_OPTIONS\.map/);
+  assert.match(client, /condition: option\.id/);
+  assert.match(client, /Expected condition after/);
+  assert.match(client, /Combined age \+ hours depreciation/);
+  assert.match(client, /estimatedRetailValue/);
+  assert.match(client, /This estimated retail value feeds the default trade-in calculation and equity result/);
+});
+
+test("results are split into focused Owner-style views", () => {
+  assert.match(client, /type ResultView = "summary" \| "finance" \| "depreciation" \| "advanced"/);
+  assert.match(client, /aria-label="Result sections"/);
+  assert.match(client, /\["summary", "Summary"\]/);
+  assert.match(client, /\["finance", "Finance"\]/);
+  assert.match(client, /\["depreciation", "Depreciation & trade"\]/);
+  assert.match(client, /\["advanced", "Advanced"\]/);
+  assert.match(calculatorStyles, /\.resultTabs \{/);
+  assert.match(calculatorStyles, /\.resultSnapshot \{/);
 });
 
 test("dealer economics is optional and excluded from results unless selected", () => {
