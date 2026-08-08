@@ -53,7 +53,7 @@ function closeTo(actual, expected, tolerance = 0.02) {
   );
 }
 
-test("R500,000 tractor finance matches the standard amortising-loan result", () => {
+test("R500,000 asset finance matches the standard amortising-loan result", () => {
   const result = calculator.calculateLoan({
     principal: 500_000,
     annualRatePct: 10.5,
@@ -196,8 +196,10 @@ test("parts inflation is compounded at each event date rather than for five full
   assert.equal(result.byYear.length, 3);
 });
 
-test("future value delegates to the existing Aim4price valuation helpers", () => {
+test("future asset value accepts editable lifetime hours and keeps the Aim4price valuation helper", () => {
   assert.match(source, /calculateEngineHoursValue/);
+  assert.match(source, /calculateFutureAssetValue/);
+  assert.match(source, /configuredLifetimeHours > 0/);
   assert.match(source, /tractorLifetimeHours/);
   assert.doesNotMatch(source, /calculateFuturePriceForAsset/);
 });

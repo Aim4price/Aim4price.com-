@@ -1103,6 +1103,85 @@
   font-size: 0.72rem;
 }
 
+.calculatedInput {
+  border-style: dashed;
+  background: #eef8f3;
+}
+
+.calculatedInput output {
+  width: 100%;
+  color: #12553e;
+  font-size: 0.92rem;
+  font-weight: 900;
+}
+
+.assetProjection {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.assetProjection > div {
+  min-width: 0;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid rgba(35, 104, 81, 0.14);
+  border-radius: 1rem;
+  background: #eef8f3;
+  display: grid;
+  gap: 0.2rem;
+}
+
+.assetProjection span {
+  color: rgba(18, 53, 45, 0.6);
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.assetProjection strong {
+  color: #12553e;
+  font-size: 0.95rem;
+  font-weight: 950;
+}
+
+.financePackagePicker {
+  padding: 0.95rem;
+  border: 1px solid rgba(35, 104, 81, 0.16);
+  border-radius: 1.1rem;
+  background: linear-gradient(180deg, #f8fcfa 0%, #eef8f3 100%);
+  display: grid;
+  grid-template-columns: minmax(15rem, 0.85fr) minmax(0, 1.15fr);
+  align-items: end;
+  gap: 1rem;
+}
+
+.financePackagePicker > div:last-child {
+  min-width: 0;
+  min-height: 3.25rem;
+  padding: 0.35rem 0;
+  display: grid;
+  align-content: center;
+  gap: 0.18rem;
+}
+
+.financePackagePicker > div:last-child strong {
+  color: #12553e;
+  font-size: 0.86rem;
+  font-weight: 900;
+}
+
+.financePackagePicker > div:last-child span {
+  color: rgba(18, 53, 45, 0.65);
+  font-size: 0.72rem;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.financePackagePicker > div:last-child small {
+  color: #176047;
+  font-size: 0.7rem;
+  font-weight: 850;
+}
+
 .depreciationInputs {
   display: grid;
   gap: 1rem;
@@ -1593,6 +1672,11 @@
     grid-template-columns: 1fr;
   }
 
+  .financePackagePicker {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
   .tradeFlow {
     display: grid;
     grid-template-columns: 1fr;
@@ -1665,7 +1749,8 @@
   }
 
   .financePreview,
-  .projectionStrip {
+  .projectionStrip,
+  .assetProjection {
     grid-template-columns: 1fr;
   }
 

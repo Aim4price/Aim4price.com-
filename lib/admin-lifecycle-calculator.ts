@@ -57,8 +57,9 @@ export type FutureValueInput = {
   targetYear: number;
   startingHours: number;
   expectedAnnualHours: number;
-  tractorType: TractorType;
-  powerKw: number;
+  lifetimeHours?: number;
+  tractorType?: TractorType;
+  powerKw?: number;
   condition: ConditionKey;
   inflationRatePct: number;
 };
@@ -326,7 +327,7 @@ export function calculateInflatedEventSpend(input: {
   };
 }
 
-export function calculateFutureTractorValue(
+export function calculateFutureAssetValue(
   input: FutureValueInput,
 ): FutureValueSummary {
   const yearsForward = Math.max(
@@ -338,10 +339,16 @@ export function calculateFutureTractorValue(
     nonNegative(input.startingHours) +
       nonNegative(input.expectedAnnualHours) * yearsForward,
   );
-  const lifetimeHours = tractorLifetimeHours(
-    input.tractorType,
-    nonNegative(input.powerKw),
+  const configuredLifetimeHours = Math.round(
+    nonNegative(input.lifetimeHours ?? 0),
   );
+  const lifetimeHours =
+    configuredLifetimeHours > 0
+      ? configuredLifetimeHours
+      : tractorLifetimeHours(
+          input.tractorType ?? "field",
+          nonNegative(input.powerKw ?? 90),
+        );
   const projectedReplacementPrice =
     newPrice *
     Math.pow(1 + nonNegative(input.inflationRatePct) / 100, yearsForward);
@@ -385,6 +392,9 @@ export function calculateFutureTractorValue(
     estimatedRetailValue: valuation.finalValueExVat,
   };
 }
+
+// Backwards-compatible export for existing tractor-specific callers.
+export const calculateFutureTractorValue = calculateFutureAssetValue;
 
 export function calculateTradeValue(input: TradeValueInput): TradeValueSummary {
   const retail = nonNegative(input.projectedRetailValue);
@@ -544,7 +554,7 @@ export function buildCashFlowScenarios(input: {
   const scenarioInputs = [
     {
       id: "tractor" as const,
-      label: "Option A — Tractor only",
+      label: "Option A — Asset only",
       description: "Lowest finance cost; servicing and maintenance are paid when incurred.",
       addOns: 0,
       serviceCash: true,
@@ -552,7 +562,7 @@ export function buildCashFlowScenarios(input: {
     },
     {
       id: "service" as const,
-      label: "Option B — Tractor + warranty service plan",
+      label: "Option B — Asset + warranty service plan",
       description: "Scheduled dealer servicing is smoothed; later maintenance remains pay-as-you-go.",
       addOns: input.servicePlan.packageAmount,
       serviceCash: false,
@@ -634,7 +644,7 @@ export function buildLifecycleTimeline(input: {
       : 0;
 
   return Array.from({ length: horizonYears + 1 }, (_, year) => {
-    const future = calculateFutureTractorValue({
+    const future = calculateFutureAssetValue({
       ...input.futureValue,
       targetYear: input.futureValue.purchaseYear + year,
     });
