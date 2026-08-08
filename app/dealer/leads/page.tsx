@@ -4,7 +4,7 @@ import { getDealerAppSession } from '../../../lib/dealer-app-session';
 import { dealerRoleCan } from '../../../lib/dealer-app-access';
 import { getAccountProfile } from '../../../lib/account-profile';
 import { listInitialDealerReceivedLeads } from '../../../lib/dealer-leads-initial-load';
-import LeadsClient from '../../leads/leads-client';
+import DealerLeadsClient from './dealer-leads-client';
 import styles from '../dealer.module.css';
 
 export const runtime = 'nodejs';
@@ -13,29 +13,27 @@ export const dynamic = 'force-dynamic';
 const INITIAL_LEAD_BATCH_SIZE = 10;
 
 export default async function DealerLeadsPage() {
-  const session = await getServerSession({ allowDealerApp: true });
-  if (!session?.user?.id) redirect('/dealer/login');
-  const dealerAppSession = await getDealerAppSession();
+  const [session, dealerAppSession] = await Promise.all([
+    getServerSession({ allowDealerApp: true }),
+    getDealerAppSession(),
+  ]);
+  if (!session?.user?.id && !dealerAppSession?.dealerUserId) redirect('/dealer/login');
   if (dealerAppSession && !dealerRoleCan(dealerAppSession.role, 'leads')) redirect('/dealer');
 
+  const dealerUserId = dealerAppSession?.dealerUserId || session?.user?.id || '';
   const [profile, initialLeads] = await Promise.all([
     getAccountProfile({
-      id: session.user.id,
-      name: session.user.name,
-      email: session.user.email,
+      id: dealerUserId,
+      name: dealerAppSession?.displayName || session?.user?.name || null,
+      email: dealerAppSession ? null : session?.user?.email || null,
     }),
-    listInitialDealerReceivedLeads(session.user.id, INITIAL_LEAD_BATCH_SIZE),
+    listInitialDealerReceivedLeads(dealerUserId, INITIAL_LEAD_BATCH_SIZE),
   ]);
   if (profile.accountType !== 'dealer' || profile.accountStatus !== 'active') redirect('/dealer/login');
 
   return (
     <div className={`${styles.module} ${styles.leadsModule}`}>
-      <LeadsClient
-        dealerAppMode
-        initialLeads={initialLeads}
-        initialLeadsHaveMore
-        initialSessionUserId={session.user.id}
-      />
+      <DealerLeadsClient dealerUserId={dealerUserId} initialLeads={initialLeads} />
     </div>
   );
 }
