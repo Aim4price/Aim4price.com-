@@ -320,7 +320,7 @@
 .metricGrid,
 .splitResult {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.7rem;
 }
 
@@ -1930,6 +1930,10 @@
   gap: 1rem;
 }
 
+.workspace [id] {
+  scroll-margin-top: 5.5rem;
+}
+
 .workspaceHeader {
   min-width: 0;
   padding: 1.2rem 1.3rem;
@@ -2021,6 +2025,104 @@
   font-weight: 750;
 }
 
+.workspaceNav {
+  position: sticky;
+  top: 0.65rem;
+  z-index: 12;
+  padding: 0.42rem;
+  border: 1px solid rgba(30, 75, 58, 0.14);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 14px 34px rgba(18, 53, 45, 0.09);
+  backdrop-filter: blur(16px);
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.35rem;
+}
+
+.workspaceNav a {
+  min-width: 0;
+  min-height: 2.65rem;
+  padding: 0 0.7rem;
+  border-radius: 0.72rem;
+  color: #52665d;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  text-decoration: none;
+  font-size: 0.71rem;
+  font-weight: 850;
+  transition: 160ms ease;
+}
+
+.workspaceNav a:hover,
+.workspaceNav a:focus-visible {
+  outline: none;
+  color: #125a43;
+  background: #edf8f3;
+}
+
+.workspaceNav b {
+  width: 1.55rem;
+  height: 1.55rem;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  color: #ffffff;
+  background: #1f7658;
+  display: grid;
+  place-items: center;
+  font-size: 0.65rem;
+}
+
+.workspaceNav span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.decisionPanel {
+  padding: 1rem;
+  border: 1px solid rgba(37, 71, 51, 0.12);
+  border-radius: 1.35rem;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 12px 30px rgba(18, 53, 45, 0.06);
+  display: grid;
+  gap: 0.8rem;
+}
+
+.decisionHeading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.decisionHeading h3 {
+  margin: 0;
+  color: #12372d;
+  font-size: 1rem;
+  letter-spacing: -0.02em;
+}
+
+.decisionHeading > p {
+  margin: 0;
+  display: grid;
+  justify-items: end;
+  gap: 0.12rem;
+}
+
+.decisionHeading > p span {
+  color: #71817b;
+  font-size: 0.62rem;
+  font-weight: 820;
+  text-transform: uppercase;
+}
+
+.decisionHeading > p strong {
+  color: #176047;
+  font-size: 0.8rem;
+}
+
 .answerStrip {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -2031,6 +2133,67 @@
   min-height: 6.1rem;
   background: rgba(255, 255, 255, 0.96);
   box-shadow: 0 10px 26px rgba(18, 53, 45, 0.045);
+}
+
+.scenarioChoice {
+  min-width: 0;
+  min-height: 7.35rem;
+  padding: 0.82rem;
+  border: 1px solid #dce6e1;
+  border-radius: 1rem;
+  color: #17362c;
+  background: #fafcfb;
+  box-shadow: 0 10px 26px rgba(18, 53, 45, 0.04);
+  display: grid;
+  align-content: start;
+  gap: 0.23rem;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  transition: 160ms ease;
+}
+
+.scenarioChoice:hover {
+  border-color: #9fcbb9;
+  transform: translateY(-1px);
+}
+
+.scenarioChoice > span {
+  color: #71817b;
+  font-size: 0.59rem;
+  font-weight: 900;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.scenarioChoice > strong {
+  font-size: 0.75rem;
+  font-weight: 900;
+}
+
+.scenarioChoice > b {
+  margin-top: 0.18rem;
+  color: #12372d;
+  font-size: 0.91rem;
+  font-weight: 950;
+}
+
+.scenarioChoice > small {
+  color: #6d7d76;
+  font-size: 0.64rem;
+  font-weight: 680;
+  line-height: 1.35;
+}
+
+.scenarioChoiceActive {
+  border-color: #6fb496;
+  background: linear-gradient(180deg, #f5fbf8 0%, #e8f6ef 100%);
+  box-shadow: inset 0 0 0 1px rgba(31, 112, 81, 0.08), 0 12px 28px rgba(18, 83, 61, 0.09);
+}
+
+.scenarioChoiceActive > span,
+.scenarioChoiceActive > b {
+  color: #126047;
 }
 
 .assumptionGrid {
@@ -2047,6 +2210,77 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
   align-items: start;
+}
+
+.flowSectionLead,
+.resultsLead {
+  padding: 1rem 1.15rem;
+  border: 1px solid #d7e5de;
+  border-radius: 1.2rem;
+  background: linear-gradient(110deg, #f6fbf8 0%, #ffffff 68%);
+  box-shadow: 0 10px 26px rgba(18, 53, 45, 0.04);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.2rem;
+}
+
+.flowSectionLead h2,
+.resultsLead h2 {
+  margin: 0;
+  color: #12372d;
+  font-size: 1.05rem;
+  letter-spacing: -0.025em;
+}
+
+.flowSectionLead > div > span,
+.resultsLead > div > span {
+  display: block;
+  max-width: 54rem;
+  margin-top: 0.3rem;
+  color: #64756e;
+  font-size: 0.72rem;
+  font-weight: 650;
+  line-height: 1.42;
+}
+
+.flowSectionLead > strong {
+  flex: 0 0 auto;
+  padding: 0.7rem 0.85rem;
+  border-radius: 0.8rem;
+  color: #155a43;
+  background: #e9f6ef;
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+.resultsLead {
+  border-color: #a9d0c0;
+  background: linear-gradient(110deg, #edf8f3 0%, #ffffff 70%);
+}
+
+.resultsLead > div:last-child {
+  flex: 0 0 auto;
+  min-width: 13rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 0.85rem;
+  color: #ffffff;
+  background: #1d5f48;
+  display: grid;
+  gap: 0.1rem;
+  text-align: right;
+}
+
+.resultsLead > div:last-child span,
+.resultsLead > div:last-child small {
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.62rem;
+  font-weight: 720;
+}
+
+.resultsLead > div:last-child strong {
+  font-size: 1rem;
+  font-weight: 950;
 }
 
 .workspace .card {
@@ -2197,7 +2431,7 @@
 
 .futurePanel {
   position: sticky;
-  top: 0.75rem;
+  top: 5rem;
   border-color: #b9d9cb !important;
   background: linear-gradient(180deg, #fbfefc 0%, #eef8f3 100%) !important;
 }
@@ -2593,6 +2827,30 @@
     grid-template-columns: 1fr;
   }
 
+  .workspaceNav {
+    position: static;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .decisionHeading,
+  .flowSectionLead,
+  .resultsLead {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .decisionHeading > p {
+    justify-items: start;
+  }
+
+  .flowSectionLead > strong,
+  .resultsLead > div:last-child {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    text-align: left;
+  }
+
   .futurePanel,
   .positionRows .positionTotal {
     grid-column: auto;
@@ -2642,6 +2900,7 @@
   }
 
   .headerActions,
+  .workspaceNav,
   .dealerSection:not(:has(.dealerBody)) {
     display: none !important;
   }
