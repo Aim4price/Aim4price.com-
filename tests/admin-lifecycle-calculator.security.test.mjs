@@ -63,8 +63,7 @@ test("all existing admin navigation surfaces link to the calculator", () => {
 
 test("the calculator uses a guided start-to-results flow", () => {
   for (const label of [
-    "Tractor",
-    "Package",
+    "Asset",
     "Finance",
     "Service",
     "Maintenance",
@@ -80,6 +79,7 @@ test("the calculator uses a guided start-to-results flow", () => {
   assert.match(client, /"View results"/);
   assert.match(client, /← Back/);
   assert.match(client, /The full result stays separate\./);
+  assert.match(client, /id: "asset"[\s\S]*?id: "finance"/);
 });
 
 test("progress, actions and result-only panels remain usable across screen sizes", () => {
@@ -91,22 +91,37 @@ test("progress, actions and result-only panels remain usable across screen sizes
   assert.match(calculatorStyles, /@media print[\s\S]*?\.flowHeader,[\s\S]*?\.flowActions/);
 });
 
-test("package selection clearly separates standard finance, service and maintenance", () => {
+test("finance step uses a dropdown for standard, service and maintenance options", () => {
   assert.match(client, /type FinancePackage = "standard" \| "service" \| "full"/);
   assert.match(client, /label: "Standard finance"/);
-  assert.match(client, /label: "Add service"/);
-  assert.match(client, /label: "Add service \+ maintenance"/);
+  assert.match(client, /label: "Add service plan"/);
+  assert.match(client, /label: "Add service \+ maintenance reserve"/);
   assert.match(client, /packageOption: "standard"/);
+  assert.match(client, /<span>Finance option<\/span>[\s\S]*?<select[\s\S]*?PACKAGE_OPTIONS\.map/);
   assert.match(client, /step\.id === "service"[\s\S]*?packageOption !== "standard"/);
   assert.match(client, /step\.id === "maintenance"[\s\S]*?packageOption === "full"/);
   assert.match(client, /Service plan included/);
   assert.match(client, /Maintenance reserve included/);
 });
 
+test("asset setup removes tractor-specific inputs and exposes lifetime and payment end year", () => {
+  assert.match(client, /<h2>Asset<\/h2>/);
+  assert.match(client, /label="New asset price"/);
+  assert.match(client, /label="Expected lifetime"/);
+  assert.match(client, /expectedLifetimeHours: 14_000/);
+  assert.match(client, /Expected end-of-payment year/);
+  assert.match(client, /Math\.ceil\(state\.termMonths \/ 12\)/);
+  assert.match(client, /termMonths: Math\.max\(1, Math\.round\(years \* 12\)\)/);
+  assert.doesNotMatch(client, />Tractor type</);
+  assert.doesNotMatch(client, /label="Power"/);
+});
+
 test("Aim4price depreciation is visible and feeds the default trade and equity result", () => {
   assert.match(client, /import \{ CONDITION_FACTORS \} from "\.\.\/\.\.\/\.\.\/lib\/valuation\/shared"/);
   assert.match(client, /tradeMode: "haircut"/);
   assert.match(client, /const conditionValues = CONDITION_OPTIONS\.map/);
+  assert.match(client, /calculateFutureAssetValue/);
+  assert.match(client, /lifetimeHours: state\.expectedLifetimeHours/);
   assert.match(client, /condition: option\.id/);
   assert.match(client, /Expected condition after/);
   assert.match(client, /Combined age \+ hours depreciation/);
