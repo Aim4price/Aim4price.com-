@@ -9,6 +9,9 @@ const page = read("app/admin/lifecycle-calculator/page.tsx");
 const client = read(
   "app/admin/lifecycle-calculator/lifecycle-calculator-client.tsx",
 );
+const calculatorStyles = read(
+  "app/admin/lifecycle-calculator/page.module.css",
+);
 const access = read("lib/account-access.ts");
 const constants = read("lib/account-constants.ts");
 const header = read("components/AppHeader.tsx");
@@ -56,4 +59,40 @@ test("all existing admin navigation surfaces link to the calculator", () => {
   assert.match(page, /href="\/admin\/lifecycle-calculator"/);
   assert.match(adminUsers, /href="\/admin\/lifecycle-calculator"/);
   assert.match(adminDashboard, /href="\/admin\/lifecycle-calculator"/);
+});
+
+test("the calculator uses a guided start-to-results flow", () => {
+  for (const label of [
+    "Tractor",
+    "Finance",
+    "Maintenance",
+    "Trade-in",
+    "Next cycle",
+    "Report",
+    "Results",
+  ]) {
+    assert.match(client, new RegExp(`label: "${label}"`));
+  }
+
+  assert.match(client, /const \[activeStep, setActiveStep\] = useState\(0\)/);
+  assert.match(client, /hidden=\{activeStep !== RESULTS_STEP\}/);
+  assert.match(client, /"Continue"/);
+  assert.match(client, /"View results"/);
+  assert.match(client, /← Back/);
+  assert.match(client, /Results are shown at the end\./);
+});
+
+test("progress, actions and result-only panels remain usable across screen sizes", () => {
+  assert.match(calculatorStyles, /\.flowSteps \{[\s\S]*?grid-template-columns: repeat\(7/);
+  assert.match(calculatorStyles, /\.flowActions \{[\s\S]*?position: sticky/);
+  assert.match(calculatorStyles, /\.calculator \[hidden\] \{[\s\S]*?display: none !important/);
+  assert.match(calculatorStyles, /@media \(max-width: 800px\)[\s\S]*?\.flowSteps \{[\s\S]*?overflow-x: auto/);
+  assert.match(calculatorStyles, /@media \(max-width: 560px\)[\s\S]*?\.flowActions \{[\s\S]*?grid-template-columns: repeat\(2/);
+  assert.match(calculatorStyles, /@media print[\s\S]*?\.flowHeader,[\s\S]*?\.flowActions/);
+});
+
+test("dealer economics is optional and excluded from results unless selected", () => {
+  assert.match(client, /const \[includeDealerEconomics, setIncludeDealerEconomics\] = useState\(false\)/);
+  assert.match(client, /label="Include dealer economics"/);
+  assert.match(client, /!includeDealerEconomics \|\|/);
 });
