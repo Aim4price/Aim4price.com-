@@ -2,16 +2,14 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-const read = (path) =>
-  readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
+const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
 const page = read("app/admin/lifecycle-calculator/page.tsx");
-const client = read(
-  "app/admin/lifecycle-calculator/lifecycle-calculator-client.tsx",
-);
-const calculatorStyles = read(
-  "app/admin/lifecycle-calculator/page.module.css",
-);
+const client = read("app/admin/lifecycle-calculator/lifecycle-calculator-client.tsx");
+const styles = read("app/admin/lifecycle-calculator/page.module.css");
+const route = read("app/api/admin/lifecycle-calculator/export/route.ts");
+const report = read("lib/admin-lifecycle-calculator-report.ts");
+const calculator = read("lib/admin-lifecycle-calculator.ts");
 const access = read("lib/account-access.ts");
 const constants = read("lib/account-constants.ts");
 const header = read("components/AppHeader.tsx");
@@ -24,139 +22,125 @@ test("the server page blocks rendering until the existing admin guard succeeds",
   assert.match(page, /export const runtime = "nodejs"/);
 });
 
-test("logged-out, normal, owner and dealer sessions all use the exact-email server guard", () => {
+test("the existing exact-email admin model remains in force", () => {
   assert.match(access, /const session = await getAnyServerSession\(\)/);
-  assert.match(
-    access,
-    /if \(!session\?\.user\?\.id\) \{[\s\S]*?redirect\("\/auth#login"\)/,
-  );
-  assert.match(
-    access,
-    /if \(!isAim4priceAdminEmail\(session\.user\.email\)\) \{[\s\S]*?redirect\("\/account"\)/,
-  );
-  assert.match(
-    constants,
-    /AIM4PRICE_ADMIN_EMAIL = "aim4price@gmail\.com"/,
-  );
-  assert.match(
-    constants,
-    /normalizeEmail\(value\) === AIM4PRICE_ADMIN_EMAIL/,
-  );
+  assert.match(access, /if \(!session\?\.user\?\.id\)/);
+  assert.match(access, /if \(!isAim4priceAdminEmail\(session\.user\.email\)\)/);
+  assert.match(constants, /AIM4PRICE_ADMIN_EMAIL = "aim4price@gmail\.com"/);
+  assert.match(constants, /normalizeEmail\(value\) === AIM4PRICE_ADMIN_EMAIL/);
   assert.doesNotMatch(access, /account_type\s*===\s*["']admin["']/i);
 });
 
-test("the calculator does not depend on client-side hiding or an unguarded calculation API", () => {
-  assert.doesNotMatch(client, /\/api\/admin\/lifecycle-calculator/);
+test("the XLSX export endpoint independently enforces authentication and admin email", () => {
+  assert.match(route, /const session = await getAnyServerSession\(\)/);
+  assert.match(route, /if \(!session\?\.user\?\.id\)[\s\S]*?status: 401/);
+  assert.match(route, /if \(!isAim4priceAdminEmail\(session\.user\.email\)\)[\s\S]*?status: 403/);
+  assert.match(route, /application\/vnd\.openxmlformats-officedocument\.spreadsheetml\.sheet/);
+  assert.match(route, /"Cache-Control": "no-store"/);
+  assert.match(route, /createXlsxWorkbook/);
+});
+
+test("the client contains no account email checks or persisted admin bypass", () => {
   assert.doesNotMatch(client, /aim4price@gmail\.com/);
   assert.doesNotMatch(client, /localStorage.*admin/is);
+  assert.match(client, /fetch\("\/api\/admin\/lifecycle-calculator\/export"/);
 });
 
-test("normal application navigation does not expose the admin-only calculator", () => {
+test("normal navigation stays private while all admin navigation links to the model", () => {
   assert.doesNotMatch(header, /\/admin\/lifecycle-calculator/);
-});
-
-test("all existing admin navigation surfaces link to the calculator", () => {
   assert.match(page, /href="\/admin\/lifecycle-calculator"/);
   assert.match(adminUsers, /href="\/admin\/lifecycle-calculator"/);
   assert.match(adminDashboard, /href="\/admin\/lifecycle-calculator"/);
 });
 
-test("the calculator uses a guided start-to-results flow", () => {
-  for (const label of [
-    "Asset",
-    "Finance",
-    "Service",
-    "Maintenance",
-    "Depreciation",
-    "Results",
-  ]) {
-    assert.match(client, new RegExp(`label: "${label}"`));
-  }
-
-  assert.match(client, /const \[activeStep, setActiveStep\] = useState\(0\)/);
-  assert.match(client, /hidden=\{activeStepId !== "results"\}/);
-  assert.match(client, /"Continue"/);
-  assert.match(client, /"View results"/);
-  assert.match(client, /← Back/);
-  assert.match(client, /The full result stays separate\./);
-  assert.match(client, /id: "asset"[\s\S]*?id: "finance"/);
+test("the calculator is a live workspace rather than a gated wizard", () => {
+  assert.match(client, /Lifecycle Scenario Workspace/);
+  assert.match(client, /buildLifecycleWorkspaceModel\(state\.modelInput\)/);
+  assert.match(client, /model\.scenarios\.map/);
+  assert.match(client, /Standard vs Service Plan vs Service \+ Maintenance/);
+  assert.match(client, /Use this structure/);
+  assert.doesNotMatch(client, /activeStep/);
+  assert.doesNotMatch(client, /hidden=\{/);
+  assert.doesNotMatch(client, />Continue</);
+  assert.doesNotMatch(client, />View results</);
+  assert.match(calculator, /id: "standard"[\s\S]*?id: "service"[\s\S]*?id: "full"/);
 });
 
-test("progress, actions and result-only panels remain usable across screen sizes", () => {
-  assert.match(calculatorStyles, /\.flowSteps \{[\s\S]*?grid-template-columns: repeat\(auto-fit/);
-  assert.match(calculatorStyles, /\.flowActions \{[\s\S]*?position: sticky/);
-  assert.match(calculatorStyles, /\.calculator \[hidden\] \{[\s\S]*?display: none !important/);
-  assert.match(calculatorStyles, /@media \(max-width: 800px\)[\s\S]*?\.flowSteps \{[\s\S]*?display: flex[\s\S]*?overflow-x: auto/);
-  assert.match(calculatorStyles, /@media \(max-width: 560px\)[\s\S]*?\.flowActions \{[\s\S]*?grid-template-columns: repeat\(2/);
-  assert.match(calculatorStyles, /@media print[\s\S]*?\.flowHeader,[\s\S]*?\.flowActions/);
-});
-
-test("finance step uses a dropdown for standard, service and maintenance options", () => {
-  assert.match(client, /type FinancePackage = "standard" \| "service" \| "full"/);
-  assert.match(client, /label: "Standard finance"/);
-  assert.match(client, /label: "Add service plan"/);
-  assert.match(client, /label: "Add service \+ maintenance reserve"/);
-  assert.match(client, /packageOption: "standard"/);
-  assert.match(client, /<span>Finance option<\/span>[\s\S]*?<select[\s\S]*?PACKAGE_OPTIONS\.map/);
-  assert.match(client, /step\.id === "service"[\s\S]*?packageOption !== "standard"/);
-  assert.match(client, /step\.id === "maintenance"[\s\S]*?packageOption === "full"/);
-  assert.match(client, /Service plan included/);
-  assert.match(client, /Maintenance reserve included/);
-  assert.match(client, /label="Service plan amount"[\s\S]*?value=\{state\.negotiatedServicePlan\}/);
-  assert.match(client, /label="Maintenance reserve amount"[\s\S]*?value=\{state\.fixedReserveAmount\}/);
-  assert.match(client, /function updateReserveAmount[\s\S]*?reserveMode: "fixed"/);
-});
-
-test("VAT can be switched in Finance and flows into finance, valuation and refinance values", () => {
-  assert.match(client, /vatTreatment: "included"/);
-  assert.match(client, /VAT included/);
-  assert.match(client, /VAT excluded/);
-  assert.match(client, /calculateVatSummary\([\s\S]*?state\.vatTreatment/);
-  assert.match(client, /const rawPackage =[\s\S]*?assetVat\.grossAmount/);
-  assert.match(client, /newPrice: assetVat\.grossAmount/);
-  assert.match(client, /originalLoan: loanTerms/);
-  assert.match(calculatorStyles, /\.vatButtons {/);
-  assert.match(calculatorStyles, /\.vatButtonActive/);
-});
-
-test("asset setup removes tractor-specific inputs and exposes lifetime and payment end year", () => {
-  assert.match(client, /<h2>Asset<\/h2>/);
-  assert.match(client, /label="New asset price"/);
-  assert.match(client, /label="Expected lifetime"/);
-  assert.match(client, /expectedLifetimeHours: 14_000/);
-  assert.match(client, /Expected end-of-payment year/);
-  assert.match(client, /Math\.ceil\(state\.termMonths \/ 12\)/);
-  assert.match(client, /termMonths: Math\.max\(1, Math\.round\(years \* 12\)\)/);
+test("asset assumptions are generic and expose depreciation inputs", () => {
+  assert.match(client, /title="Asset & Lifecycle Assumptions"/);
+  assert.match(client, /Starting \/ new asset price/);
+  assert.match(client, /Usage basis/);
+  assert.match(client, /Hours/);
+  assert.match(client, /Kilometres/);
+  assert.match(client, /Percentage worked/);
+  assert.match(client, /Expected useful life/);
+  assert.match(client, /Expected condition at disposal/);
+  assert.match(client, /CONDITION_OPTIONS\.map/);
   assert.doesNotMatch(client, />Tractor type</);
   assert.doesNotMatch(client, /label="Power"/);
 });
 
-test("Aim4price depreciation is visible and feeds the default trade and equity result", () => {
-  assert.match(client, /import \{ CONDITION_FACTORS \} from "\.\.\/\.\.\/\.\.\/lib\/valuation\/shared"/);
-  assert.match(client, /tradeMode: "haircut"/);
-  assert.match(client, /const conditionValues = CONDITION_OPTIONS\.map/);
-  assert.match(client, /calculateFutureAssetValue/);
-  assert.match(client, /lifetimeHours: state\.expectedLifetimeHours/);
-  assert.match(client, /condition: option\.id/);
-  assert.match(client, /Expected condition after/);
-  assert.match(client, /Combined age \+ hours depreciation/);
-  assert.match(client, /estimatedRetailValue/);
-  assert.match(client, /This estimated retail value feeds the default trade-in calculation and equity result/);
+test("ownership and finance terms remain independent with automatic calendar years", () => {
+  assert.match(client, /updateModel\("ownershipYears", value\)/);
+  assert.match(client, /updateModel\("financeTermMonths", value\)/);
+  assert.doesNotMatch(client, /termMonths:\s*Math\.max\(1, Math\.round\(years \* 12\)\)/);
+  assert.match(client, /Expected disposal year/);
+  assert.match(client, /purchaseYear \+ model\.input\.ownershipYears/);
+  assert.match(client, /Expected end of payment year/);
+  assert.match(client, /purchaseYear \+ Math\.ceil\(model\.input\.financeTermMonths \/ 12\)/);
+  assert.match(client, /settlementAtDisposal/);
 });
 
-test("results are split into focused Owner-style views", () => {
-  assert.match(client, /type ResultView = "summary" \| "finance" \| "depreciation" \| "advanced"/);
-  assert.match(client, /aria-label="Result sections"/);
-  assert.match(client, /\["summary", "Summary"\]/);
-  assert.match(client, /\["finance", "Finance"\]/);
-  assert.match(client, /\["depreciation", "Depreciation & trade"\]/);
-  assert.match(client, /\["advanced", "Advanced"\]/);
-  assert.match(calculatorStyles, /\.resultTabs \{/);
-  assert.match(calculatorStyles, /\.resultSnapshot \{/);
+test("service and maintenance are separate editable lifecycle assumptions", () => {
+  assert.match(client, /title="Scheduled Service Provision"/);
+  assert.match(client, /title="Maintenance & Uptime Provision"/);
+  assert.match(client, /label="Service basis"/);
+  assert.match(client, /Usage interval/);
+  assert.match(client, /Calendar interval/);
+  assert.match(client, /Fixed number of services/);
+  assert.match(client, /Manual package amount/);
+  assert.match(client, /value=\{model\.input\.negotiatedServiceAmount\}/);
+  assert.match(client, /value=\{model\.input\.negotiatedMaintenanceReserve\}/);
+  assert.match(client, /R64,000 is only the regression example/);
+  assert.match(client, /R50,000 is only the regression example/);
 });
 
-test("dealer economics is optional and excluded from results unless selected", () => {
-  assert.match(client, /const \[includeDealerEconomics, setIncludeDealerEconomics\] = useState\(false\)/);
-  assert.match(client, /label="Include dealer economics"/);
-  assert.match(client, /!includeDealerEconomics \|\|/);
+test("VAT is explicit for base finance, package finance and refinance", () => {
+  assert.match(client, /VAT Included/);
+  assert.match(client, /VAT Excluded/);
+  assert.match(client, /model\.future\.startingPrice\.netAmount/);
+  assert.match(client, /model\.future\.startingPrice\.vatAmount/);
+  assert.match(client, /model\.future\.startingPrice\.grossAmount/);
+  assert.match(client, /model\.packageVat\[preferred\.id\]\.netAmount/);
+  assert.match(client, /originalLoan: preferred\.loanTerms/);
+  assert.match(calculator, /newPrice: startingPrice\.netAmount/);
+  assert.match(styles, /\.segmentedButtons/);
+  assert.match(styles, /\.vatBreakdown/);
+});
+
+test("future value, results, equity and next-cycle outputs are first-class sections", () => {
+  assert.match(client, /title="Future Asset Position"/);
+  assert.match(client, /Age depreciation/);
+  assert.match(client, /Usage depreciation/);
+  assert.match(client, /Aim4price retail ex VAT/);
+  assert.match(client, /title="Annual Cash-Flow Comparison"/);
+  assert.match(client, /title="Asset & Equity Position"/);
+  assert.match(client, /title="Next Asset Cycle"/);
+  assert.match(client, /title="Refinance \/ Cash-Flow Stress Test"/);
+  assert.match(client, /title="Sensitivity \/ Stress Testing"/);
+});
+
+test("the optional dealer analysis is hidden until enabled", () => {
+  assert.match(client, /includeDealerEconomics: false/);
+  assert.match(client, /label="Include internal Dealer Economics"/);
+  assert.match(client, /state\.includeDealerEconomics \? \(/);
+  assert.match(report, /if \(context\.request\.includeDealerEconomics\) sheets\.push\(dealerSheet\(context\)\)/);
+});
+
+test("workspace comparison tables and panels adapt to smaller screens and print", () => {
+  assert.match(styles, /\.workspace \{/);
+  assert.match(styles, /\.answerStrip \{[\s\S]*?grid-template-columns: repeat\(5/);
+  assert.match(styles, /\.comparisonWrap \{[\s\S]*?overflow-x: auto/);
+  assert.match(styles, /@media \(max-width: 760px\)[\s\S]*?\.answerStrip,[\s\S]*?grid-template-columns: 1fr/);
+  assert.match(styles, /@media print[\s\S]*?\.headerActions/);
 });

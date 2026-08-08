@@ -23,8 +23,26 @@ const sharedValuationStub = {
     used: 0.65,
     serious: 0.55,
   },
-  calculateEngineHoursValue() {
-    throw new Error("Valuation stub is not used by the finance unit tests.");
+  calculateEngineHoursValue(input) {
+    const age = Math.max(0, (input.baseYear ?? new Date().getFullYear()) - input.yearModel);
+    let ageDepPct = 0;
+    if (age >= 1) ageDepPct += 20;
+    if (age >= 2) ageDepPct += 15;
+    if (age >= 3) ageDepPct += 10;
+    if (age >= 4) ageDepPct += (age - 3) * 2.5;
+    ageDepPct = Math.min(100, ageDepPct);
+    const usageDepPct = Math.min(100, ((input.hours ?? 0) / Math.max(1, input.maxLifetimeHours)) * 100);
+    const averageDepPct = Math.round((ageDepPct + usageDepPct) / 2);
+    const depreciatedValueExVat = input.replacementPriceExVat * (1 - averageDepPct / 100);
+    const conditionAdjustedValueExVat = depreciatedValueExVat * sharedValuationStub.CONDITION_FACTORS[input.condition];
+    return {
+      ageDepPct,
+      usageDepPct,
+      averageDepPct,
+      depreciatedValueExVat: Math.round(depreciatedValueExVat),
+      conditionAdjustedValueExVat: Math.round(conditionAdjustedValueExVat),
+      finalValueExVat: Math.round(Math.max(conditionAdjustedValueExVat, input.replacementPriceExVat * 0.05)),
+    };
   },
   tractorLifetimeHours(type, powerKw) {
     if (type === "orchard") return 10_000;
@@ -214,4 +232,142 @@ test("future asset value accepts editable lifetime hours and keeps the Aim4price
   assert.match(source, /configuredLifetimeHours > 0/);
   assert.match(source, /tractorLifetimeHours/);
   assert.doesNotMatch(source, /calculateFuturePriceForAsset/);
+});
+
+test("the live workspace calculates all three regression scenarios together", () => {
+  const model = calculator.buildLifecycleWorkspaceModel({
+    ...calculator.DEFAULT_LIFECYCLE_MODEL_INPUT,
+    purchaseYear: 2026,
+  });
+  const [standard, service, full] = model.scenarios;
+
+  assert.deepEqual(model.scenarios.map((scenario) => scenario.id), ["standard", "service", "full"]);
+  assert.equal(standard.loan.principal, 500_000);
+  assert.equal(service.loan.principal, 564_000);
+  assert.equal(full.loan.principal, 614_000);
+  closeTo(standard.loan.monthlyPayment, 10_746.95);
+  closeTo(service.loan.monthlyPayment, 12_122.56);
+  closeTo(full.loan.monthlyPayment, 13_197.25);
+  closeTo(service.additionalMonthlyPayment, 1_375.61);
+  closeTo(full.additionalMonthlyPayment - service.additionalMonthlyPayment, 1_074.7);
+});
+
+test("VAT-exclusive inputs are grossed once for finance and remain ex-VAT for depreciation", () => {
+  const model = calculator.buildLifecycleWorkspaceModel({
+    ...calculator.DEFAULT_LIFECYCLE_MODEL_INPUT,
+    vatTreatment: "excluded",
+    purchaseYear: 2026,
+  });
+
+  assert.equal(model.future.startingPrice.netAmount, 500_000);
+  assert.equal(model.future.startingPrice.vatAmount, 75_000);
+  assert.equal(model.future.startingPrice.grossAmount, 575_000);
+  assert.equal(model.service.selected.grossAmount, 73_600);
+  assert.equal(model.maintenance.selectedReserve.grossAmount, 57_500);
+  assert.equal(model.scenarios[2].loan.principal, 706_100);
+  assert.equal(model.packageVat.full.netAmount, 614_000);
+  assert.equal(model.packageVat.full.vatAmount, 92_100);
+  assert.equal(model.packageVat.full.grossAmount, 706_100);
+  assert.equal(model.future.projectedReplacementPrice.netAmount, 579_637.04);
+});
+
+test("ownership remains independent from finance term and equity deducts settlement", () => {
+  const model = calculator.buildLifecycleWorkspaceModel({
+    ...calculator.DEFAULT_LIFECYCLE_MODEL_INPUT,
+    purchaseYear: 2026,
+    ownershipYears: 4,
+    financeTermMonths: 60,
+  });
+
+  for (const scenario of model.scenarios) {
+    assert.ok(scenario.settlementAtDisposal > 0);
+    closeTo(
+      scenario.equityAtDisposal,
+      model.future.tradeValue.grossAmount - scenario.settlementAtDisposal,
+    );
+    assert.equal(scenario.loan.termMonths, 60);
+  }
+});
+
+test("financed service and maintenance are not counted again as operating cash", () => {
+  const model = calculator.buildLifecycleWorkspaceModel({
+    ...calculator.DEFAULT_LIFECYCLE_MODEL_INPUT,
+    deposit: 25_000,
+    purchaseYear: 2026,
+  });
+  const [standard, service, full] = model.scenarios;
+
+  assert.ok(standard.cashFlow.some((year) => year.serviceCashPayments > 0));
+  assert.ok(standard.cashFlow.some((year) => year.maintenanceCashPayments > 0));
+  assert.ok(service.cashFlow.every((year) => year.serviceCashPayments === 0));
+  assert.ok(full.cashFlow.every((year) => year.serviceCashPayments === 0));
+  assert.ok(full.cashFlow.every((year) => year.maintenanceCashPayments === 0));
+  for (const scenario of model.scenarios) {
+    assert.equal(
+      scenario.cashFlow.reduce((total, year) => total + year.depositPayment, 0),
+      25_000,
+    );
+  }
+});
+
+test("usage basis supports hours, kilometres and percentage worked", () => {
+  const hours = calculator.buildLifecycleWorkspaceModel({
+    ...calculator.DEFAULT_LIFECYCLE_MODEL_INPUT,
+    purchaseYear: 2026,
+  });
+  const kilometres = calculator.buildLifecycleWorkspaceModel({
+    ...calculator.DEFAULT_LIFECYCLE_MODEL_INPUT,
+    usageBasis: "kilometres",
+    annualUsage: 35_000,
+    lifetimeUsage: 350_000,
+    purchaseYear: 2026,
+  });
+  const percentage = calculator.buildLifecycleWorkspaceModel({
+    ...calculator.DEFAULT_LIFECYCLE_MODEL_INPUT,
+    usageBasis: "percentage",
+    startingUsage: 5,
+    disposalLifeWorkedPct: 40,
+    serviceInterval: 10,
+    serviceCoverageYears: 5,
+    purchaseYear: 2026,
+  });
+
+  assert.equal(hours.usageUnit, "h");
+  assert.equal(hours.future.projectedUsage, 5_000);
+  assert.equal(kilometres.usageUnit, "km");
+  assert.equal(kilometres.future.projectedUsage, 175_000);
+  assert.equal(percentage.usageUnit, "%");
+  assert.equal(percentage.future.projectedUsage, 40);
+  assert.equal(percentage.service.serviceCount, 4);
+});
+
+test("service basis supports usage, calendar, count and editable manual amounts", () => {
+  const calendar = calculator.buildLifecycleWorkspaceModel({
+    ...calculator.DEFAULT_LIFECYCLE_MODEL_INPUT,
+    serviceBasis: "calendar",
+    serviceCalendarIntervalMonths: 6,
+    serviceCoverageYears: 2,
+    useNegotiatedServiceAmount: false,
+    purchaseYear: 2026,
+  });
+  const count = calculator.buildLifecycleWorkspaceModel({
+    ...calculator.DEFAULT_LIFECYCLE_MODEL_INPUT,
+    serviceBasis: "count",
+    fixedServiceCount: 3,
+    useNegotiatedServiceAmount: false,
+    purchaseYear: 2026,
+  });
+  const manual = calculator.buildLifecycleWorkspaceModel({
+    ...calculator.DEFAULT_LIFECYCLE_MODEL_INPUT,
+    serviceBasis: "manual",
+    negotiatedServiceAmount: 81_250,
+    negotiatedMaintenanceReserve: 67_900,
+    purchaseYear: 2026,
+  });
+
+  assert.equal(calendar.service.serviceCount, 4);
+  assert.equal(count.service.serviceCount, 3);
+  assert.equal(manual.service.selected.grossAmount, 81_250);
+  assert.equal(manual.maintenance.selectedReserve.grossAmount, 67_900);
+  assert.equal(manual.scenarios[2].loan.principal, 649_150);
 });
