@@ -20,9 +20,10 @@ test('Owner notifications stay account-wide but read state follows the active ap
 });
 
 test('Dealer notifications are dealership-wide with per-staff clearing and assigned problem confirmation', async () => {
-  const [route, page, inbox, client, readState] = await Promise.all([
+  const [route, page, home, inbox, client, readState] = await Promise.all([
     read('app/api/dealer/maintenance/notifications/route.ts'),
     read('app/dealer/notifications/page.tsx'),
+    read('app/dealer/page.tsx'),
     read('lib/dealer-maintenance-notification-inbox.ts'),
     read('app/dealer/notifications/dealer-maintenance-notifications-client.tsx'),
     read('lib/app-notification-read-state.ts'),
@@ -32,8 +33,11 @@ test('Dealer notifications are dealership-wide with per-staff clearing and assig
   assert.match(route, /`dealer-staff:\$\{dealerAppSession\.staffId\}`/);
   assert.match(route, /`account:\$\{session\.user\.id\}`/);
   assert.match(route, /staffId: dealerAppSession\?\.staffId \?\? null/);
+  assert.match(page, /const activeStaffId = isDealerAppSession\(session\) \? session\.dealerApp\.staffId : null/);
   assert.match(page, /listDealerMaintenanceNotificationsForViewer/);
-  assert.match(page, /viewerKey: dealerAppSession[\s\S]*?`dealer-staff:\$\{dealerAppSession\.staffId\}`/);
+  assert.match(page, /viewerKey: activeStaffId[\s\S]*?`dealer-staff:\$\{activeStaffId\}`/);
+  assert.match(home, /const activeStaffId = isDealerAppSession\(session\) \? session\.dealerApp\.staffId : null/);
+  assert.match(home, /listDealerMaintenanceNotificationsForViewer/);
   assert.match(inbox, /listDealerMaintenanceNotifications\(input\.dealerUserId\)/);
   assert.match(inbox, /public\.dealer_problem_assignments/);
   assert.match(inbox, /assignment\.assigned_staff_id = \$2::uuid/);
