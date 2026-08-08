@@ -1182,6 +1182,75 @@
   font-weight: 850;
 }
 
+.vatControl {
+  padding: 0.9rem 0.95rem;
+  border: 1px solid rgba(35, 104, 81, 0.16);
+  border-radius: 1rem;
+  background: #f8fbf9;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.vatControl > div:first-child {
+  min-width: 0;
+  display: grid;
+  gap: 0.18rem;
+}
+
+.vatControl strong {
+  color: #17362c;
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.vatControl small,
+.financePreview small {
+  color: #71817b;
+  font-size: 0.7rem;
+  line-height: 1.4;
+  font-weight: 650;
+}
+
+.vatButtons {
+  flex: 0 0 auto;
+  padding: 0.22rem;
+  border: 1px solid #d9e6e0;
+  border-radius: 0.85rem;
+  background: #ffffff;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(7.8rem, 1fr));
+  gap: 0.2rem;
+}
+
+.vatButtons button {
+  min-height: 2.55rem;
+  padding: 0.55rem 0.8rem;
+  border: 0;
+  border-radius: 0.68rem;
+  color: #52645d;
+  background: transparent;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.vatButtons button:hover {
+  background: #f0f7f4;
+}
+
+.vatButtons .vatButtonActive {
+  color: #ffffff;
+  background: #0f7659;
+  box-shadow: 0 0.25rem 0.7rem rgba(15, 118, 89, 0.18);
+}
+
+.vatButtons .vatButtonActive:hover {
+  background: #0c684e;
+}
+
 .depreciationInputs {
   display: grid;
   gap: 1rem;
@@ -1677,6 +1746,16 @@
     align-items: stretch;
   }
 
+  .vatControl {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .vatButtons {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
   .tradeFlow {
     display: grid;
     grid-template-columns: 1fr;
@@ -1751,6 +1830,10 @@
   .financePreview,
   .projectionStrip,
   .assetProjection {
+    grid-template-columns: 1fr;
+  }
+
+  .vatButtons {
     grid-template-columns: 1fr;
   }
 
